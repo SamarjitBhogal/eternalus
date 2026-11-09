@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-11-08
+last-reviewed: 2026-11-09
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
@@ -134,9 +134,11 @@ merged. The minion-stack follow-ups (`fix/minion-stack-followups`) add the share
 `StuckSystem` with its `ChaseWatch` component (§5.2, DEC-193). A unit that chases a lane tower,
 the Stronghold or a gate aims at its `Footprint` (07 §13), so minions that target a tower now
 reach its fort wall and hit it (DEC-185), and reach to a gate is measured to its polygon (DEC-217
-(17)). The nav grid still blocks a standing tower's whole court: hordes never path through a
-court, and an A\* way to a unit inside one ends on the open ground nearest it (DEC-185 (A)); the
-routes out of a court (DEC-217 (15)) are not built yet. A fallen tower's court opens; its walls
+(17)). A standing tower's court is court ground in the nav grid (06 §6): lane flow fields treat
+it as blocked, so hordes never march through a court (DEC-185 (A)), but A\* walks it, so an A\*
+route to a unit inside a court goes in by a doorway. A mob in a court that does not chase a
+target inside the same fort leaves by the nearest doorway (DEC-217 (15), 10 §9). A fallen
+tower's court opens; its walls
 but the one that took the killing hit stand until destroyed (DEC-217 (12), 07 §13). The pull requests and interim stand-ins are in the [minion system
 plan](../plan/minion-system-plan.md) §2–§3.
 

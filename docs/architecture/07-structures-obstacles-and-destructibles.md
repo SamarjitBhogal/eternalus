@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-05
+last-reviewed: 2026-11-09
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -433,19 +433,26 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   not block, so both keep their own health. `Simulation` takes the structure
   definitions from one injected source (`SimulationOptions.structures`, default
   `STRUCTURE_DEFINITIONS`) for the structures it builds and for `StructureSystem` (DEC-168 B8).
-- **Tower ruins and gate reach (`feat/tower-ruins-and-routes`, 2026-11-05).** Each wall of a lane
-  tower's fort is its own `wall` map object, `partOf` the tower (`MapObject.partOf`); the tower's
-  own object of the same id holds its keep and corner towers, and the tower's `Footprint` is all
-  of them. When the tower dies, its fort becomes ruins (DEC-217 (12), DEC-219 (a)):
-  `WorldObjectStore` destroys the tower's own object and the wall that took the killing hit (the
-  wall nearest the killer when the hit lands; none when the keep is nearer, or the killer has no
-  position), and the grid reopens their cells and the court's. Each other wall stands as teamless
-  scenery with half a wall's own health (`RUINED_FORT_WALL_DEFINITION` in
-  `content/maps/mapObjectDefinitions.ts`) and blocks until it is destroyed on its own. A gate's
-  definition now has `hasMapFootprint` too, so reach to a gate is measured to its polygon
-  (DEC-217 (17)); `hasFortBox` keeps a gate's box out of the chase rule's fort boxes, which the
-  towers and the palace keep (DEC-217 (16)). Routes out of a standing tower's court (DEC-217 (15))
-  are not built yet: on 5 m nav cells almost every cell inside a court touches a wall or the keep.
+- **Tower ruins and gate reach (`feat/tower-ruins-and-routes`, 2026-11-05).** Each of a lane
+  tower's 11 fort wall pieces, its 7 walls and its 4 corner towers (DEC-227 (Q-C), 2026-11-09), is
+  its own `wall` map object, `partOf` the tower (`MapObject.partOf`); the tower's own object of the
+  same id holds its keep, and the tower's `Footprint` is all of them. When the tower dies, its fort
+  becomes ruins (DEC-217 (12), DEC-219 (a)): `WorldObjectStore` destroys the tower's own object
+  and the wall piece that took the killing hit (the piece nearest the killer when the hit lands;
+  none when the keep is nearer, or the killer has no position), and the grid reopens their cells
+  and the court's. Each other piece stands as teamless scenery with half a wall's own health
+  (`RUINED_FORT_WALL_DEFINITION` in `content/maps/mapObjectDefinitions.ts`) and blocks until it is
+  destroyed on its own. A gate's definition now has `hasMapFootprint` too, so reach to a gate is
+  measured to its polygon (DEC-217 (17)); `hasFortBox` keeps a gate's box out of the chase rule's
+  fort boxes, which the towers and the palace keep (DEC-217 (16)).
+- **Court routes and fort spacing (`feat/tower-ruins-and-routes`, 2026-11-09).** Routes into and
+  out of a standing tower's court are built (DEC-217 (15)): the court is court ground in the nav
+  grid (06 §6), which lane flow fields treat as blocked and A\* walks, so every route through a
+  court uses its doorways, and a mob in a court leaves by the nearest doorway (10 §9). Court
+  ground needs nav cells thinner than every fort wall piece, so the cells are 2.5 m, down from
+  5 m (DEC-227 (Q-A); the value is `config.map.navCellSize`). Lane towers of one kind stand at
+  least a fort box's diagonal apart along their lane, so their forts do not overlap (DEC-227,
+  06 §3).
 - `ObstacleDefinition` keeps `kind: 'obstacle'` (the entity class) and moves tree/rock/bridge to
   `obstacleType`; `fell` and `minimapGlyph` arrive with felling and the minimap work.
 
