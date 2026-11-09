@@ -318,7 +318,7 @@ describe('EntityStore', () => {
     expect(store.isInReach(off, tower.id)).toBe(false);
   });
 
-  it('aims at the outline point nearest the attacker, else at the centre, as reach measures (one aim rule)', () => {
+  it('aims at the outline point nearest the attacker, at the attacker inside it, else at the centre, as reach measures (one aim rule)', () => {
     const store = new EntityStore();
     const square = [
       { x: 10, y: -5 },
@@ -350,8 +350,11 @@ describe('EntityStore', () => {
     expect(aimAt('tower', { x: 60, y: 9 })).toEqual({ x: 50, y: 5 });
     expect(aimAt('round', { x: 0, y: 0 })).toEqual({ x: -7, y: 3 });
     expect(aimAt('nobody', { x: 0, y: 0 })).toBeNull();
-    expect(store.aimPointOf('house', { x: 0, y: 2 }, aim)).toBe(store.outlineOf('house'));
-    expect(store.aimPointOf('tower', { x: 60, y: 9 }, aim)).toBe(store.outlineOf('tower'));
+    // Inside the outline: the attacker's own position, so reach and chase hold there (DEC-234).
+    expect(aimAt('house', { x: 13, y: 1 })).toEqual({ x: 13, y: 1 });
+    expect(store.aimPointOf('house', { x: 0, y: 2 }, aim)).toBe('outline');
+    expect(store.aimPointOf('house', { x: 13, y: 1 }, aim)).toBe('inside');
+    expect(store.aimPointOf('tower', { x: 60, y: 9 }, aim)).toBe('outline');
     expect(store.aimPointOf('round', { x: 0, y: 0 }, aim)).toBe('centre');
     expect(store.aimPointOf('nobody', { x: 0, y: 0 }, aim)).toBeNull();
   });
