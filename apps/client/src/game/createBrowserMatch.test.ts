@@ -150,7 +150,7 @@ describe('createBrowserMatch', () => {
     expect(bus.listenerCount()).toBe(busBefore + 1);
   });
 
-  it('links each capture point the HUD lists to its zone in the simulation (PR #64)', () => {
+  it('links each capture point the HUD lists to its zone in the simulation by map feature id (PR #64, DEC-231)', () => {
     const { bus, factory, viewport, request } = setUp();
     const published: BridgeEventMap['capture-state'][] = [];
     bus.on('capture-state', (event) => published.push(event));
@@ -160,6 +160,7 @@ describe('createBrowserMatch', () => {
     running.destroy();
 
     expect(points.length).toBeGreaterThan(0);
+    // Progress 0, not `null`: core's zone names the point's feature, so the bridge found it.
     for (const point of points) {
       expect(point).toMatchObject({ ownerTeam: 'neutral', progress: 0 });
     }

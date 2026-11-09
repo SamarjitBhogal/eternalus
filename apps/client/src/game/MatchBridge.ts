@@ -6,12 +6,12 @@ import type {
   Simulation,
   Snapshot,
   Unsubscribe,
-  Vec2,
 } from '@eternalus/core';
 
 import type { CapturePointStatus, PlayerHudSnapshot, StructureStatus } from '../bridge/hud.types';
 import { ROSTER_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
-import type { CaptureSite, MatchBridgeDeps } from './MatchBridge.types';
+import type { MatchBridgeDeps } from './MatchBridge.types';
+import { PublishedRoster } from './PublishedRoster';
 
 /**
  * All game → UI publishing for one match (architecture 12 §8, 13 §5), owned by `Match`. It
@@ -30,11 +30,12 @@ import type { CaptureSite, MatchBridgeDeps } from './MatchBridge.types';
  */
 export class MatchBridge {
   private readonly structures: readonly StructureStatus[];
-  private publishedStructures: readonly StructureStatus[];
+  private readonly structureRoster: PublishedRoster<StructureStatus>;
   /** The max health of each structure tile bound to a structure at match start, by feature id. */
   private readonly boundMaxHealth: ReadonlyMap<string, number>;
-  private readonly captureSites: readonly CaptureSite[];
-  private publishedCapturePoints: readonly CapturePointStatus[];
+  /** Each capture point's status while no zone names its feature: neutral, no progress. */
+  private readonly pointsWithoutZone: readonly CapturePointStatus[];
+  private readonly captureRoster: PublishedRoster<CapturePointStatus>;
   private readonly listeners: readonly Unsubscribe[];
   private result: MatchResult | null = null;
   private wasEndPublished = false;
@@ -45,24 +46,28 @@ export class MatchBridge {
    */
   public constructor(private readonly deps: MatchBridgeDeps) {
     this.structures = MatchBridge.structuresOf(deps.map);
-    this.publishedStructures = this.structures;
+    this.structureRoster = new PublishedRoster(
+      this.structures,
+      (last, next) =>
+        last.health?.current === next.health?.current && last.health?.max === next.health?.max,
+    );
     this.boundMaxHealth = new Map(
       [...MatchBridge.healthByFeature(deps.firstSnapshot)].map(([id, { max }]) => [id, max]),
     );
     const features = deps.map.features.filter((feature) =>
       deps.captureKinds.includes(feature.kind),
     );
-    this.captureSites = features.map((feature) => ({
-      position: feature.position,
-      withoutZone: {
-        pointId: feature.id,
-        kind: feature.kind,
-        laneIndex: MatchBridge.laneIndexOf(deps.map, feature.laneId),
-        ownerTeam: 'neutral',
-        progress: null,
-      },
+    this.pointsWithoutZone = features.map((feature) => ({
+      pointId: feature.id,
+      kind: feature.kind,
+      laneIndex: MatchBridge.laneIndexOf(deps.map, feature.laneId),
+      ownerTeam: 'neutral',
+      progress: null,
     }));
-    this.publishedCapturePoints = this.captureSites.map(({ withoutZone }) => withoutZone);
+    this.captureRoster = new PublishedRoster(
+      this.pointsWithoutZone,
+      (last, next) => last.ownerTeam === next.ownerTeam && last.progress === next.progress,
+    );
     this.listeners = this.listen(deps.events);
   }
 
@@ -116,52 +121,27 @@ export class MatchBridge {
     bus.emit('hud-state', { player: MatchBridge.playerOf(snapshot, playerId) });
   }
 
+  /** Publishes both rosters; each keeps its unchanged items and array (`PublishedRoster`). */
   private publishRosters(snapshot: Snapshot): void {
-    this.publishedStructures = this.structuresAt(snapshot);
-    this.publishedCapturePoints = this.liveCapturePoints(snapshot);
-    this.deps.bus.emit('structure-state', { structures: this.publishedStructures });
-    this.deps.bus.emit('capture-state', { points: this.publishedCapturePoints });
+    const structures = this.structureRoster.update(this.structuresAt(snapshot));
+    const points = this.captureRoster.update(this.liveCapturePoints(snapshot));
+    this.deps.bus.emit('structure-state', { structures });
+    this.deps.bus.emit('capture-state', { points });
   }
 
   /**
    * The structure roster with live health (DEC-212): a tile bound at match start takes its
    * structure's health from `snapshot`, and 0 once the structure is gone from it (`DeathSystem`
    * removes a structure only when it dies; DEC-69). A feature core built no structure for (walls
-   * and turrets, 07 §13) keeps `null`: the HUD shows "no data", never a made-up value. A tile
-   * whose health did not change is the last one published.
+   * and turrets, 07 §13) keeps `null`: the HUD shows "no data", never a made-up value.
    */
   private structuresAt(snapshot: Snapshot): readonly StructureStatus[] {
     const live = MatchBridge.healthByFeature(snapshot);
-    const structures = this.structures.map((structure) => {
+    return this.structures.map((structure) => {
       const max = this.boundMaxHealth.get(structure.structureId);
       if (max === undefined) return structure;
       return { ...structure, health: live.get(structure.structureId) ?? { current: 0, max } };
     });
-    return MatchBridge.keepUnchanged(
-      this.publishedStructures,
-      structures,
-      (last, next) =>
-        last.health?.current === next.health?.current && last.health?.max === next.health?.max,
-    );
-  }
-
-  /**
-   * `next`, with each item that `isSame` as the item at its index in `last` replaced by that
-   * last object; `last` itself when every item is. So a roster re-send with no change carries
-   * the same array, so the roster selectors return the same value (DEC-221 (3), B2).
-   */
-  private static keepUnchanged<T>(
-    last: readonly T[],
-    next: readonly T[],
-    isSame: (last: T, next: T) => boolean,
-  ): readonly T[] {
-    const kept = next.map((item, index) => {
-      const previous = last[index];
-      return previous !== undefined && isSame(previous, item) ? previous : item;
-    });
-    return kept.length === last.length && kept.every((item, index) => item === last[index])
-      ? last
-      : kept;
   }
 
   /** The health of each structure in `snapshot` that names its map feature, by feature id. */
@@ -178,33 +158,29 @@ export class MatchBridge {
   }
 
   /**
-   * The capture points with each zone's owner and progress. A zone stands on its feature's
-   * position, which links it to its point; a point with no zone shows no capture (neutral, no
-   * progress). An unchanged point, and an unchanged list, is the last one published.
+   * The capture points with each zone's owner and progress. A zone names its point's map feature
+   * (`EntitySnapshot.mapFeatureId`, DEC-231), which links it to its point, never its position; a
+   * point with no zone shows no capture (neutral, no progress).
    */
   private liveCapturePoints(snapshot: Snapshot): readonly CapturePointStatus[] {
-    const points = this.captureSites.map(({ position, withoutZone }) => {
-      const capture = MatchBridge.captureAt(snapshot, position);
-      return capture === null
-        ? withoutZone
-        : { ...withoutZone, ownerTeam: capture.owner, progress: capture.progress };
+    const zones = MatchBridge.captureByFeature(snapshot);
+    return this.pointsWithoutZone.map((point) => {
+      const capture = zones.get(point.pointId);
+      return capture === undefined
+        ? point
+        : { ...point, ownerTeam: capture.owner, progress: capture.progress };
     });
-    return MatchBridge.keepUnchanged(
-      this.publishedCapturePoints,
-      points,
-      (last, next) => last.ownerTeam === next.ownerTeam && last.progress === next.progress,
-    );
   }
 
-  private static captureAt(snapshot: Snapshot, position: Vec2): CaptureSnapshot | null {
-    const zone = snapshot.entities.find(
-      ({ capture, transform }) =>
-        capture !== null &&
-        transform !== null &&
-        transform.x === position.x &&
-        transform.y === position.y,
-    );
-    return zone?.capture ?? null;
+  /** The capture state of each zone in `snapshot` that names its map feature, by feature id. */
+  private static captureByFeature(snapshot: Snapshot): ReadonlyMap<string, CaptureSnapshot> {
+    const captures = new Map<string, CaptureSnapshot>();
+    for (const entity of snapshot.entities) {
+      if (entity.mapFeatureId !== undefined && entity.capture !== null) {
+        captures.set(entity.mapFeatureId, entity.capture);
+      }
+    }
+    return captures;
   }
 
   /**
