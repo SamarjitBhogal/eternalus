@@ -411,8 +411,8 @@ quarter-mark`), a stub `GameState` stepped to tick 25; assert the `phase-changed
   cursor, that no entry fires twice, that a backwards `enter-phase` throws, and that
   `dev-set-phase` replays the skipped entries in order.
 - `MatchTimeline.test.ts`: fractions resolve against `plannedMatchSeconds`; ties keep config order;
-  every invalid config from §3 is rejected by name. `Scoring.test.ts`: one test per row of the
-  §5 table plus the assist window; `rules/CheckpointRule.test.ts`: the checkpoint row;
+  every invalid config from §3 is rejected by name. `Scoring.test.ts`: one test per §5 row that
+  the hit, death and structure rules score, plus the assist window; `rules/CheckpointRule.test.ts`: the checkpoint row;
   `rules/CaptureHoldRule.test.ts`: the held-points row and the hold accrual;
   `defaultScoringRules.test.ts`: which rules the default lists hold.
   `state/ScoreBook.test.ts`: one row per Legend, each team's total equal to its Legends' points
