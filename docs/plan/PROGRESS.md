@@ -6341,3 +6341,13 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   Prettier code style!"; `npm run docs:check` → "Documentation check passed." The full check of
   `7ddc20e0` (the entry above) holds for the code.
 - Next step: merge this head into GL-5 and GL-15, then GL-5 into GL-16; push all four.
+
+### 2026-11-09 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-4 merge (phase/3 after #87) — feat/capture-scoring — sholtzman + Claude Code
+
+- What: merged `feat/match-scoring` (`b0f3e17c`, GL-4 with phase/3 after PR #87: one `INBOX.md`
+  item and its PROGRESS entries) into this branch (`abc49376`). Conflict: this file (both, in date
+  order). Docs only: `git diff --stat 6bd828be abc49376` lists only `INBOX.md` and this file.
+- Checks run: `npx prettier --check INBOX.md docs/plan/PROGRESS.md` → "All matched files use
+  Prettier code style!"; `npm run docs:check` → "Documentation check passed." The full check of
+  `6bd828be` (an entry above) holds for the code.
+- Next step: push; PR #95 waits for review.
