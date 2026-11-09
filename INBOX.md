@@ -38,7 +38,7 @@ Reply inline (`Decision: …`).
     disc and ring as built (DEC-216 (10)). (3) Approved; built in the tidy PR after the playtest
     PRs merge (DEC-218 B5).
 
-- [ ] **Unit facing chevron, DEC-220 critic (2026-11-07, `feat/unit-facing-chevron`) — one
+- [x] **Unit facing chevron, DEC-220 critic (2026-11-07, `feat/unit-facing-chevron`) — one
       question, three better-than-design items.**
       (1) Fort court: a fort's outline is its walls and its keep, so its court is outside every
       outline. A unit in the court that attacks the tower faces the nearest wall, which can be
@@ -53,6 +53,8 @@ Reply inline (`Decision: …`).
       could use the same check, and its last cast goes. The critic's fourth item (a guard's rest
       facing as data, so `PathingSystem` writes no facing) joins the DEC-220 (4) tidy-PR item.
       Approve each for the tidy PR (DEC-218), or say no.
+  - **Answered 2026-11-09 by DEC-226** (decision page 2): (1) (A), keep as built: the court is
+    not inside the building; (2) to (4) approved for the tidy PR (DEC-218).
 
 - [ ] **`fix/blocking-at-bounds` critic (2026-11-05), better than the design — optional
       follow-ups, no decision blocks the PR.** (1) Keep one box per footprint instead of one per

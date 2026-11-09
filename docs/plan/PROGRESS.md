@@ -6165,3 +6165,19 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   EXIT=0; core "Tests 1407 passed (1407)"; client "Tests 1806 passed (1806)"; "Documentation
   check passed.". This entry was added after it.
 - Next step: push; retarget PR #79 to phase/3 after #77 merges.
+
+### 2026-11-09 — Phase 3 / unit facing chevron, owner answers (DEC-226) — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: the owner's answers on decision page 2 and in the question dialog (verbatim in
+  `eternalus-agent-work/playtest-2026-11-04/OWNER-ANSWERS-2026-11-09.md`) are recorded as the
+  batch DEC-225 to DEC-227 in the owner decisions log. The batch text is the same as on #86 and
+  `feat/tower-ruins-and-routes`. DEC-226: Q-I (A), keep as built: a fort's court is outside every
+  outline, so a unit there faces the spot it damages. The chevron critic's items (2) to (4) are
+  approved for the tidy PR. DEC-226 is cited in architecture 04 §3 and in the
+  `EntityStore.facingPointOf` TSDoc. The chevron INBOX item is ticked with its answer. Only
+  comments and docs change.
+- Checks run: `npm run check` (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-07/unit-facing-chevron.dec226.check.log`):
+  EXIT=0; core "Tests 1407 passed (1407)"; client "Tests 1806 passed (1806)"; "Documentation
+  check passed.".
+- Next step: push (script); merge after #85, then rebase-free merge of phase/3 if it moves.

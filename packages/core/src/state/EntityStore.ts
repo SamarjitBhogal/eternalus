@@ -199,7 +199,8 @@ export class EntityStore {
   /**
    * Writes into `out` the point `attackerId` faces while it attacks `targetId`: the aim point
    * (`aimPointOf`, DEC-216 (11)), except that an attacker standing inside the target's outline
-   * faces the target's centre, not the nearest edge behind it (DEC-220 (1)). Reach and chase keep
+   * faces the target's centre, not the nearest edge behind it (DEC-220 (1)). A fort's court is
+   * outside its outline, so a unit there faces the aim point (DEC-226). Reach and chase keep
    * `aimPointOf`. `false`, leaving `out` as it was, when either has no position or the target
    * has no aim point.
    */
