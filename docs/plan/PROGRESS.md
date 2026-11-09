@@ -6199,6 +6199,17 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Next step: the GL-15 pre-PR gate (architecture critic, then ponytail), then push and open the PR
   into `feat/match-scoring`.
 
+### 2026-11-08 — Phase 3 / INBOX: PR #69 critic item (Stronghold feature type) — docs/inbox-stronghold-feature-type — sholtzman + Claude Code
+
+- What was done: Sam chose to record the PR #69 round-3 critic's optional better-than-design item
+  in `INBOX.md` ("Decisions needed from Sam"): a Stronghold feature type with `wallBoundary`
+  required, so the type checker catches what `strongholdRing` checks at run time today. No code
+  changed.
+- Checks run: `npm run check` (log `eternalus-agent-work/pr-merge-74-79/check-inbox.log`): exit
+  0, Prettier passed, core `Tests 1298 passed (1298)`, client `Tests 1799 passed (1799)`, docs
+  check passed. Critic (`architecture-reviewer`): approve, 3 nits fixed. Ponytail: 1 cut taken.
+- Next step: Sam approves the item for a follow-up PR, or drops it.
+
 ### 2026-11-09 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-15 critic round 1 and DEC-223 — feat/capture-scoring — sholtzman + Claude Code
 
 - What: the GL-15 pre-PR architecture critic, round 1 (base `98e285c`, head `4d9ca6c`): approve, 0
@@ -6310,3 +6321,23 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   core "Tests 1388 passed (1388)", statements 99.17 %; client "Tests 1800 passed (1800)",
   statements 97.04 %; "Documentation check passed."
 - Next step: push; PR #95 waits for review.
+
+### 2026-11-09 — Phase 3 / merge: #88 then #87 into phase/3 — docs/inbox-stronghold-feature-type — sholtzman + Claude Code
+
+- What was done: a teammate approved #87 and #88 (CI green on both). Both append a PROGRESS entry,
+  so they conflict in either order. #88 merges first, with a merge commit, because
+  `feat/hud-aether-bar` stacks on its head `27319382`. This branch merged `27319382` and kept
+  both entries in date order; `INBOX.md` merged cleanly.
+- Checks run: Prettier on `PROGRESS.md` and `INBOX.md` passed; `npm run docs:check` passed; the
+  pre-commit `check:quick` passed. CI runs the full `npm run check` on the pushed head.
+- Next step: Sam's script merges #88, pushes this branch, waits for CI, then merges #87.
+
+### 2026-11-09 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / phase/3 merge (#87) — feat/match-scoring — sholtzman + Claude Code
+
+- What: merged `phase/3-sprint-3-work` (`86b4fc04`, PR #87: one `INBOX.md` item and its PROGRESS
+  entries) into GL-4 (`ec13abfc`), so PR #93 merges again. Conflict: this file (both, in date
+  order). Docs only: `git diff --stat 7ddc20e0 ec13abfc` lists only `INBOX.md` and this file.
+- Checks run: `npx prettier --check INBOX.md docs/plan/PROGRESS.md` → "All matched files use
+  Prettier code style!"; `npm run docs:check` → "Documentation check passed." The full check of
+  `7ddc20e0` (the entry above) holds for the code.
+- Next step: merge this head into GL-5 and GL-15, then GL-5 into GL-16; push all four.
