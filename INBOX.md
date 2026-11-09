@@ -2290,6 +2290,12 @@ Reply inline (`Decision: …`).
       `findBuildingAt` itself: a zone asks whether a point is on its own floor, and `find` returns
       only the first of two overlapping footprints. (2026-11-03: done on #64 after the HUD PR
       merged into it: `isPointInAnyPolygon` in `utils/geometry.ts`. The density % part is open.)
+- [ ] **GL-15 capture and hold points (DEC-214)** — Owner: sholtzman, `feat/capture-scoring`
+      (base `feat/match-scoring`). FR-007's capture points (3 team-only points per checkpoint a
+      team's push reaches) and hold points (1 team-only point per full minute of pooled held
+      time) at DEC-131's values; present Legends' `checkpointsWon`. The owner approved a separate
+      PR only if it is assured to happen: its PR opens after GL-4's and merges right after it.
+      Close this item when that PR merges.
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
       `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`

@@ -462,8 +462,7 @@ that Legend left the store; no projectile deals damage yet. `LegendStats` has `k
 `assists`, `minionKills`, `neutralKills`, `structureDamage` and `score`, and `TeamStats` has
 `score` and `structuresDestroyed`: structure points are built (DEC-212). The other §5 counters and
 the capture events join with the work that fills them. Capture and hold points (DEC-131) are not
-built: they need the capture events of PR #64, which reached the phase branch on 2026-11-08, after
-this branch last took it.
+built here: they are plan task GL-15 (DEC-214), on a branch stacked on this one.
 
 Not built yet: `atmosphere` in `MatchState`; an entity that carries `WinObjective` (the
 sovereign); `MatchResult.timeline` and `achievements` (with their producers); the other §5
