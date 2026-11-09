@@ -5922,3 +5922,22 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `healthBars.destroy()` turns it red).
 - Next step: pre-PR gate (architecture-reviewer, /ponytail-review), push, PR into
   `phase/3-sprint-3-work`; then task 2, the HUD aether bar.
+
+### 2026-11-09 — Phase 3 / combat sprint: health bars critic round 1 rework — feat/combat-health-bars — sholtzman + Claude Code
+
+- What was done: architecture-reviewer round 1 said REWORK. Blocker fixed: the player's team was
+  derived again from every snapshot, so after the player's Legend died (removed from the
+  snapshot) every ally bar turned red; `HealthBarVisibility` now keeps the team from the first
+  snapshot that has the player. Clears on `entity-removed` (every removal cause, after the tick's
+  last hit) instead of `entity-died`. Better-than-design item 1 built (owner rule 2026-11-09,
+  best architectural outcome now): `views/HealthBarView.ts` (+ `.types.ts`, `.constants.ts`)
+  draws the bar; `EntityLayer` keeps the after-all-entities pass; `HealthBarRule` port in
+  `EntityLayer.types.ts`. Ponytail cut: `views/rectangle.ts` shared with `CapturePointView`
+  (its private copy deleted). 08 `paths` and the README row name `HealthBarVisibility.ts`.
+  Item 2 (inject a snapshot getter instead of `observe`) not built: `Match` already pushes each
+  new snapshot to its collaborators after a step (`bridge.afterTick`, `roofs.playerAt`), and a
+  getter needs snapshot-identity caching to avoid a scan per hit.
+- Tests fail first: break A (team derived each tick) 1 red; break B (clear on `entity-died`
+  only) 2 red; restored 11/11. Client `src/game` 677 passed; `check:quick` passed.
+- Checks run: full `npm run check` not yet run on this commit.
+- Next step: full check, critic round 2 on this diff, push, PR into `phase/3-sprint-3-work`.
