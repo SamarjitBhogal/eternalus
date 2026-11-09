@@ -686,9 +686,10 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   structure core built from its feature, bound once by `EntitySnapshot.mapFeatureId` in the
   snapshot before the first tick, and `current` 0 once that structure is gone from the snapshot
   (DEC-212, DEC-69). Wall segments and turrets have no structure entity yet
-  ([07](07-structures-obstacles-and-destructibles.md) §13), so their health stays `null`: the one
-  Wall tile, which also stands for the wall segments, shows no data, and a destroyed gate still
-  marks it destroyed (DEC-108). Breakability on the strip is plan task GL-7. Each capture point
+  ([07](07-structures-obstacles-and-destructibles.md) §13), so their health stays `null`. The one
+  Wall tile, which also stands for the wall segments, sums the health of its members whose health
+  is known, today its gates, and shows no data only while none is (DEC-214 (B)); a destroyed gate
+  still marks it destroyed (DEC-108). Breakability on the strip is plan task GL-7. Each capture point
   takes its owner and progress from the zone that stands on its feature's position (PR #64), and
   the bridge re-sends the last array while they do not change. Each other field becomes live when
   core publishes it: XP and abilities (Phase 4, sprints 4.5 and 4.7, through `Snapshot.player`,

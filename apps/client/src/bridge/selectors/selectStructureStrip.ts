@@ -17,7 +17,7 @@ export type HudStructureTile = {
   readonly team: PlayableTeam;
   readonly displayName: string;
   readonly iconAssetId: AssetId;
-  /** Health 0..1 (summed over an aggregated group); `null` while any member's health is unknown. */
+  /** Health 0..1 (summed over an aggregated group's known members); `null` while none is known. */
   readonly healthFraction: number | null;
   /**
    * The tile shows destroyed (DEC-69): its structure is at zero health, or, for an aggregated
@@ -45,12 +45,16 @@ function byStripOrder(
     a.structureId.localeCompare(b.structureId);
 }
 
-/** current / max over `members`; `null` when any member's health is unknown or nothing has health. */
+/**
+ * current / max over the members whose health is known; `null` when none is (or nothing has
+ * health). A member with unknown health is left out: the one Wall tile sums its gates while its
+ * wall segments are not structures yet (DEC-214 (B)).
+ */
 function healthFractionOf(members: readonly StructureStatus[]): number | null {
   let current = 0;
   let max = 0;
   for (const { health } of members) {
-    if (health === null) return null;
+    if (health === null) continue;
     current += health.current;
     max += health.max;
   }
