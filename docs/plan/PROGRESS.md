@@ -5895,6 +5895,17 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Next step: push; tell eternalus-121 the new head (#79 merges it); PR #77 merges after #76
   once Samarjit re-approves.
 
+### 2026-11-08 — Phase 3 / INBOX: PR #69 critic item (Stronghold feature type) — docs/inbox-stronghold-feature-type — sholtzman + Claude Code
+
+- What was done: Sam chose to record the PR #69 round-3 critic's optional better-than-design item
+  in `INBOX.md` ("Decisions needed from Sam"): a Stronghold feature type with `wallBoundary`
+  required, so the type checker catches what `strongholdRing` checks at run time today. No code
+  changed.
+- Checks run: `npm run check` (log `eternalus-agent-work/pr-merge-74-79/check-inbox.log`): exit
+  0, Prettier passed, core `Tests 1298 passed (1298)`, client `Tests 1799 passed (1799)`, docs
+  check passed. Critic (`architecture-reviewer`): approve, 3 nits fixed. Ponytail: 1 cut taken.
+- Next step: Sam approves the item for a follow-up PR, or drops it.
+
 ### 2026-11-09 — Phase 3 / HUD: live level and XP — feat/hud-level-xp — sholtzman + Claude Code
 
 - What was done: the HUD shows the human Legend's live level and XP. Core: `EntitySnapshot`
@@ -5932,6 +5943,16 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `Tests 1302 passed (1302)`, client `Tests 1800 passed (1800)`, docs check passed.
 - Next step: push and open the PR into phase/3; whichever of this PR and the aether PR lands
   second resolves the adjacent `Snapshot.types.ts` lines.
+
+### 2026-11-09 — Phase 3 / merge: #88 then #87 into phase/3 — docs/inbox-stronghold-feature-type — sholtzman + Claude Code
+
+- What was done: a teammate approved #87 and #88 (CI green on both). Both append a PROGRESS entry,
+  so they conflict in either order. #88 merges first, with a merge commit, because
+  `feat/hud-aether-bar` stacks on its head `27319382`. This branch merged `27319382` and kept
+  both entries in date order; `INBOX.md` merged cleanly.
+- Checks run: Prettier on `PROGRESS.md` and `INBOX.md` passed; `npm run docs:check` passed; the
+  pre-commit `check:quick` passed. CI runs the full `npm run check` on the pushed head.
+- Next step: Sam's script merges #88, pushes this branch, waits for CI, then merges #87.
 
 ### 2026-11-09 — Phase 3 / combat sprint: live HUD aether bar (DEC-230) — feat/hud-aether-bar — sholtzman + Claude Code
 
@@ -5982,3 +6003,12 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `GameState` were weighed and rejected). Ponytail: one optional cut (a function instead of the
   class, about 8 lines) not applied, because 03 §5 names the class (DEC-232).
 - Next step: final check, push, PR after #88.
+
+### 2026-11-09 — Phase 3 / combat sprint: merge phase/3 (#87) into the aether PR (#92) — feat/hud-aether-bar — sholtzman + Claude Code
+
+- What was done: #87 merged into phase/3 (`86b4fc04`) and left #92 conflicting in `PROGRESS.md`
+  only. This branch merged `86b4fc04`. It kept phase/3's merge entry and then this branch's two
+  aether entries. `INBOX.md` merged cleanly. The merge brings in docs only.
+- Checks run: Prettier on `PROGRESS.md` passed; `npm run docs:check` passed; the pre-commit
+  `check:quick` passed. CI runs the full `npm run check` on the pushed head.
+- Next step: push, then merge #92 into phase/3 once CI is green.

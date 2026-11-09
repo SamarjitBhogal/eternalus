@@ -16,6 +16,15 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
+      blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on
+      every map feature, so `map/strongholdRing.ts` checks at run time that a Stronghold has it
+      and throws `Missing generated wall boundary` if not. Today the generator always sets it
+      (`MapBuilder.placeStrongholds`), and all three call sites (two in `MapPresentationBuilder`,
+      one in `MapSceneryBuilder`) read it through `strongholdRing`. Approve: a follow-up PR adds a
+      Stronghold feature type with `wallBoundary` required, `MapBuilder` builds it and
+      `strongholdRing` takes it, so the type checker replaces the run-time throw. Or drop it.
+
 - [ ] **`fix/blocking-at-bounds` critic (2026-11-05), better than the design — optional
       follow-ups, no decision blocks the PR.** (1) Keep one box per footprint instead of one per
       map object: a ring or multi-segment wall's box covers its whole court, so units inside it
