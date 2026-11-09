@@ -43,11 +43,16 @@ export const hudSlice = createSlice({
     selectAether: (state) => state.player?.aether ?? null,
     selectMaxAether: (state) => state.player?.maxAether ?? null,
     selectLevel: (state) => state.player?.level ?? null,
-    /** XP through the current level, 0..1; `null` while either value is missing or `xpToNext <= 0`. */
+    /**
+     * XP through the current level, 0..1; `1` at the level cap (XP but no next level, DEC-224);
+     * `null` while XP is missing or `xpToNext <= 0`.
+     */
     selectXpFraction: (state): number | null => {
       const xp = state.player?.xp ?? null;
       const xpToNext = state.player?.xpToNext ?? null;
-      if (xp === null || xpToNext === null || xpToNext <= 0) return null;
+      if (xp === null) return null;
+      if (xpToNext === null) return 1;
+      if (xpToNext <= 0) return null;
       return Math.min(1, Math.max(0, xp / xpToNext));
     },
     selectWeaponProgress: (state) => state.player?.weaponProgress ?? null,

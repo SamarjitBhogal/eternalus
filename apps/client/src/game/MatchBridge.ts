@@ -98,8 +98,8 @@ export class MatchBridge {
   }
 
   /**
-   * The player's HUD values: health from the snapshot, everything else `null` until core
-   * publishes it (interim until core fills a player snapshot; 13 §10).
+   * The player's HUD values: health, level and XP from the snapshot, everything else `null` until
+   * core publishes it (interim until core fills a player snapshot; 13 §10).
    */
   private static playerOf(snapshot: Snapshot, playerId: EntityId | null): PlayerHudSnapshot | null {
     const entity = snapshot.entities.find((candidate) => candidate.id === playerId);
@@ -113,9 +113,9 @@ export class MatchBridge {
       maxHealth: entity.health?.max ?? null,
       aether: null,
       maxAether: null,
-      level: null,
-      xp: null,
-      xpToNext: null,
+      level: entity.progression?.level ?? null,
+      xp: entity.progression?.xp ?? null,
+      xpToNext: entity.progression?.xpToNext ?? null,
       weaponProgress: null,
       ultimatePips: null,
       slots: [],
