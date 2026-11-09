@@ -226,14 +226,15 @@ its Legends' scores plus its team-only points.
 | `entity-died` (victim Legend / Mob)                     | Legend killer `kills++` (Legend victim), or `minionKills++` / `neutralKills++` (enemy team mob, Host units and tower guards alike (DEC-211 (2)) / neutral mob), victim `deaths++`; only a Legend earns a kill (a projectile's hit counts for its owner), and a non-Legend last hit gives none; for a Legend victim only, every other Legend with damage on it within `assistWindowTicks` (`ASSIST_WINDOW_SECONDS`, DEC-79) `assists++`, whoever landed the last hit |
 | `damage-applied`                                        | source Legend `damageDealt`, target Legend `damageTaken`, structure targets `structureDamage` (shield damage included, DEC-123); for assists, `ScoringState` keeps the last tick each enemy Legend hit each Legend victim, one entry per attacker and victim, so its size follows the roster, not the hit rate; a victim's entries go at its death, so a hit from an earlier life never earns an assist (DEC-132)                                                   |
 | `structure-destroyed`                                   | the team opposing the structure's playable team `structuresDestroyed++` and team-only points, whoever landed the last hit, as for structure XP (DEC-212, DEC-186); a neutral camp scores nothing; Legends above `shareThreshold` of its damage `structuresDestroyed++`                                                                                                                                                                                              |
-| `checkpoint-cleared`, `capture-point-owner-changed`     | present Legends `checkpointsWon++`; the owning team starts or stops accruing `capturesHeldTicks` each tick                                                                                                                                                                                                                                                                                                                                                          |
+| `checkpoint-reached`, `capture-point-owner-changed`     | a playable team whose push reaches a checkpoint gets team-only points, and its Legends present on the zone `checkpointsWon++` (no points); the owning team starts or stops accruing `capturesHeldTicks` each tick, pooled over its points, with team-only points per full minute that a lost point does not reset (DEC-214); a neutral camp's capture scores nothing                                                                                                |
 | `entity-revived`, `ability-cast` (ultimate), `level-up` | `revives++`, `ultimatesCast++`, `finalLevel`                                                                                                                                                                                                                                                                                                                                                                                                                        |
 
 The rules and the data are apart (DEC-211). `Scoring` (`match/`) holds the rules: what each
 event counts for. A `ScoreBook` (`state/`), which `MatchRecord` holds, holds the data and is its
 only writer: it adds a row, awards a Legend's counters and points, awards a team's counters and
-team-only points, records a hit and takes a victim's assists. Its writers keep the rule above, so
-a team's total cannot drift from its Legends' points plus its team-only points. Every other reader
+team-only points, counts the capture points each team owns, records a hit and takes a victim's
+assists. Its writers keep the rule above, so a team's total cannot drift from its Legends' points
+plus its team-only points. Every other reader
 sees the data as `MatchState.scoring`, read-only at every depth. The family of a hit's target or a
 death's victim picks its rule from a registry in `Scoring` (DEC-211 (3)); a family with no entry
 (bosses, the sovereign) scores nothing, and a new scored family, such as team boss kills, is one
@@ -244,8 +245,9 @@ Points are content, not code: `content/match/scoring.ts` holds `SCORING_WEIGHTS`
 owner's values, DEC-79): a Legend kill, an assist, a death (no points: the owner's request of
 2026-10-27, game-loop plan §4.4) and a mob kill by weight class, keyed by `MobKind` so a new class fails to compile until it has a value. It also
 holds FR-007's objective points (DEC-84 (2)) at the owner's values (DEC-131): a destroyed
-structure (team-only, DEC-212), a capture per checkpoint and a hold per minute. Bosses and the
-sovereign give no personal points. A hit on or a kill of a unit on the attacker's own team, itself
+structure (team-only, DEC-212), a capture per checkpoint and a hold per full minute of a team's
+held time pooled over its points (both team-only, DEC-214). Bosses and the sovereign give no
+personal points. A hit on or a kill of a unit on the attacker's own team, itself
 included, counts for nothing, as for XP (DEC-130; O5, `05` §18). The assist window sits beside the weights. Listeners only append to a per-tick buffer; `fold(ctx)` applies it
 inside the director's pass ("listeners defer state changes to their own system's pass", `03` §4),
 and the `ScoreBook`'s data sits in `state.match` so it is hashed. Achievements (**MVP-if-time**) are pure
@@ -459,10 +461,14 @@ golden replay is unchanged. A row is registered from `entity-spawned`. The assis
 entry per Legend and victim pair (at most the square of the Legend count) and drops a victim's entries at its
 death. A Legend's kill is credited by its row, so a hit that names a Legend still counts after
 that Legend left the store; no projectile deals damage yet. `LegendStats` has `kills`, `deaths`,
-`assists`, `minionKills`, `neutralKills`, `structureDamage` and `score`, and `TeamStats` has
-`score` and `structuresDestroyed`: structure points are built (DEC-212). The other §5 counters and
-the capture events join with the work that fills them. Capture and hold points (DEC-131) are not
-built here: they are plan task GL-15 (DEC-214), on a branch stacked on this one.
+`assists`, `minionKills`, `neutralKills`, `structureDamage`, `checkpointsWon` and `score`, and
+`TeamStats` has `score`, `structuresDestroyed` and `capturesHeldTicks`: structure points (DEC-212)
+and capture and hold points (GL-15, DEC-214) are built. `match/CaptureScoring.ts` holds the
+capture rules; `Scoring` builds it and calls it in its fold, after the buffered events, so the tick
+a capture completes counts as held. `ScoringState.ownedPoints` counts the capture points each team
+owns, from `capture-point-owner-changed`. A Legend is present on a zone when it is alive and its
+centre is on the zone's area at the `checkpoint-reached` event (`ZoneArea.contains`, as
+`CaptureSystem` counts presence). The other §5 counters join with the work that fills them.
 
 Not built yet: `atmosphere` in `MatchState`; an entity that carries `WinObjective` (the
 sovereign); `MatchResult.timeline` and `achievements` (with their producers); the other §5
