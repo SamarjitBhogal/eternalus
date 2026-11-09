@@ -1,4 +1,4 @@
-import type { GlyphSpec, ScreenRect, WorldPoint, WorldRect } from './Renderer.types';
+import type { GlyphSpec, ScreenRect, SpriteFrame, WorldPoint, WorldRect } from './Renderer.types';
 
 /**
  * The display port (architecture 09 §4): everything views may ask of the screen. Views call
@@ -6,6 +6,8 @@ import type { GlyphSpec, ScreenRect, WorldPoint, WorldRect } from './Renderer.ty
  * implementation that touches `CanvasRenderingContext2D`; tests pass recording fakes.
  */
 export interface Renderer {
+  /** Draws a cropped atlas frame without filtering, fitting at the destination's bottom centre. */
+  drawSprite(frame: SpriteFrame): void;
   /** Sets the drawing area in device pixels and how many device pixels make one CSS pixel. */
   resize(screenWidth: number, screenHeight: number, pixelRatio?: number): void;
   /** Scales and centres a world of the given size so all of it is visible on screen. */

@@ -50,15 +50,19 @@ export const isPointInPolygon = (point: Vec2, polygon: Polygon): boolean => {
   return isInside;
 };
 
-/** Shortest distance from `point` to the segment from `a` to `b`. */
-export const distanceToSegment = (point: Vec2, a: Vec2, b: Vec2): number => {
+/** The point of the segment from `a` to `b` nearest to `point`. */
+export const closestPointOnSegment = (point: Vec2, a: Vec2, b: Vec2): Vec2 => {
   const lengthSquared = (b.x - a.x) ** 2 + (b.y - a.y) ** 2;
   if (lengthSquared === 0) {
-    return distance(point, a);
+    return a;
   }
   const t = ((point.x - a.x) * (b.x - a.x) + (point.y - a.y) * (b.y - a.y)) / lengthSquared;
-  return distance(point, lerpPoint(a, b, Math.min(Math.max(t, 0), 1)));
+  return lerpPoint(a, b, Math.min(Math.max(t, 0), 1));
 };
+
+/** Shortest distance from `point` to the segment from `a` to `b`. */
+export const distanceToSegment = (point: Vec2, a: Vec2, b: Vec2): number =>
+  distance(point, closestPointOnSegment(point, a, b));
 
 /** Shortest distance from `point` to a polyline. `Infinity` for an empty path. */
 export const distanceToPath = (point: Vec2, path: readonly Vec2[]): number =>

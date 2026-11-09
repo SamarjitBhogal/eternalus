@@ -41,6 +41,8 @@ const createFakeContext = (): FakeContext => {
   };
   const context: DrawContext = {
     ...spies,
+    drawImage: vi.fn(),
+    imageSmoothingEnabled: true,
     fillStyle: '',
     strokeStyle: '',
     lineWidth: 1,
@@ -62,6 +64,31 @@ const createFittedRenderer = (context: DrawContext): Canvas2dRenderer => {
 };
 
 describe('Canvas2dRenderer', () => {
+  it('preserves sprite proportions in a narrow viewport, anchored at the bottom centre', () => {
+    const { context } = createFakeContext();
+    const renderer = new Canvas2dRenderer(context);
+    renderer.resize(500, 1000);
+    renderer.showWorldArea({ x: 0, y: 0, width: 100, height: 100 });
+    const image = {} as HTMLImageElement;
+    renderer.drawSprite({
+      image,
+      source: { x: 0, y: 0, width: 100, height: 100 },
+      destination: { x: 10, y: 20, width: 8, height: 8 },
+    });
+    expect(context.drawImage).toHaveBeenCalledWith(image, 0, 0, 100, 100, 50, 240, 40, 40);
+  });
+  it('draws exactly one atlas cell with world scaling and restores image filtering', () => {
+    const { context } = createFakeContext();
+    const renderer = createFittedRenderer(context);
+    const image = {} as HTMLImageElement;
+    renderer.drawSprite({
+      image,
+      source: { x: 100, y: 200, width: 100, height: 100 },
+      destination: { x: 10, y: 20, width: 8, height: 8 },
+    });
+    expect(context.drawImage).toHaveBeenCalledWith(image, 100, 200, 100, 100, 300, 100, 40, 40);
+    expect(context.imageSmoothingEnabled).toBe(true);
+  });
   it('scales and centres the world to fit the screen', () => {
     const renderer = createFittedRenderer(createFakeContext().context);
 

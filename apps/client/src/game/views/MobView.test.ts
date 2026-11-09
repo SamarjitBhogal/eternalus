@@ -2,7 +2,7 @@ import type { EntitySnapshot } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
-import { MOB_OUTLINE_COLOR, MOB_OUTLINE_SCALE } from './entityViews.constants';
+import { MOB_OUTLINE_COLOR, MOB_OUTLINE_SCALE, MOB_VISUAL_SCALE } from './entityViews.constants';
 import { TEAM_COLORS } from './MapView.constants';
 import { MobView } from './MobView';
 
@@ -18,7 +18,7 @@ const MINION: EntitySnapshot = {
 
 const AT = { x: 0, y: 0 };
 
-const DIAMETER = (MINION.transform?.radius ?? 0) * 2;
+const DIAMETER = (MINION.transform?.radius ?? 0) * 2 * MOB_VISUAL_SCALE;
 
 describe('MobView', () => {
   it('draws a dark outline under the team disc, so mobs show on their own Stronghold', () => {

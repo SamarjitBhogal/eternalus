@@ -22,3 +22,10 @@ export type GlyphShape = 'dot' | 'square' | 'diamond' | 'ring';
 
 /** A marker: its shape and its size (width and height). */
 export type GlyphSpec = { readonly shape: GlyphShape; readonly size: number };
+
+/** A decoded atlas frame, with pixel source bounds and a world-space destination. */
+export type SpriteFrame = {
+  readonly image: CanvasImageSource;
+  readonly source: ScreenRect;
+  readonly destination: WorldRect;
+};

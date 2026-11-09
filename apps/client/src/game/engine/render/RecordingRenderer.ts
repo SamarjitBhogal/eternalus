@@ -8,6 +8,10 @@ import type { RecordedCall } from './RecordingRenderer.types';
  * call's arguments with their types.
  */
 export class RecordingRenderer implements Renderer {
+  /** Records the atlas frame. */
+  public drawSprite(...args: Parameters<Renderer['drawSprite']>): void {
+    this.calls.push({ op: 'drawSprite', args });
+  }
   /** Every call so far, oldest first. */
   public readonly calls: RecordedCall[] = [];
 

@@ -6,6 +6,7 @@ import type { Command } from './commands/Command.types';
 import { ConfigValidationError } from './config/ConfigValidationError';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { loadDefaultContent } from './content/loadDefaultContent';
+import { loadWeapons } from './content/weapons/loadWeapons';
 import type { Logger } from './diagnostics/Logger.types';
 import { MemoryLogger } from './diagnostics/MemoryLogger';
 import { NullLogger } from './diagnostics/NullLogger';
@@ -218,5 +219,42 @@ describe('Simulation', () => {
     sim.step();
 
     expect(sim.snapshot().entities[0]?.health).toEqual({ current: 5000, max: 5000 });
+  });
+
+  it('equips a Legend with its weapon from the weapons it is given', () => {
+    const weapons = loadWeapons(createDefaultGameConfig().tickRate, [
+      {
+        id: 'test-talons',
+        displayName: 'Test talons',
+        weaponClass: 'glove',
+        attacks: [{ strategy: 'melee', damage: 50, reach: 1.5, interval: 0.5 }],
+        allowedClasses: 'any',
+        uniqueTo: null,
+      },
+    ]);
+    const armed = {
+      ...UNIT_DEFINITIONS.get('warrior'),
+      defaultLoadout: { primaryWeaponId: 'test-talons' },
+    };
+    const sim = new Simulation({
+      config: createDefaultGameConfig(),
+      seed: 1,
+      logger: new NullLogger(),
+      content: { has: (id) => id === 'warrior', get: () => armed },
+      weapons,
+    });
+    sim.enqueueCommand({
+      type: 'dev-spawn',
+      kind: 'warrior',
+      definitionId: 'warrior',
+      team: 'light',
+      at: { x: 0, y: 0 },
+      count: 1,
+    });
+
+    expect(() => {
+      sim.step();
+    }).not.toThrow();
+    expect(sim.snapshot().entities).toHaveLength(1);
   });
 });
