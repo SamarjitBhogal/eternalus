@@ -6538,3 +6538,20 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   core "Tests 1369 passed (1369)", statements 99.15 %; client "Tests 1861 passed (1861)",
   statements 97.06 %; "Documentation check passed."
 - Next step: merge this head into GL-16 (`refactor/map-feature-link`); push.
+
+### 2026-11-09 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-5 merge (phase/3 after #88) — refactor/map-feature-link — sholtzman + Claude Code
+
+- What: merged `feat/results-flow` (`2b369165`, GL-5 with GL-4 and phase/3 after PR #88) into GL-16
+  (`76d04cff`). Conflicts: `GameState.ts` and `GameState.test.ts` imports (`MapFeatureLink` and
+  `Progression`, both); `GameState.test.ts` (both tests, GL-16's link test now passes the curves to
+  `snapshot`); 13 §10 "HUD data" (GL-16's paragraph, "XP and abilities" becomes "aether and
+  abilities"; DEC-224's level and XP sentence came in from the merge); the decisions log (DEC-233,
+  DEC-231, DEC-224 batches, newest first); this file (both, in date order). #88 made
+  `EntitySnapshot.progression` required, so GL-16's `zoneSnapshot` literal in `MatchBridge.test.ts`
+  gains `progression: null`. `GameState.snapshotOf` reads both the `MapFeatureLink` and the
+  `Progression`. No production code changed beyond the merge.
+- Checks run: `npm run check` on `76d04cff` → `EXIT=0` (`gl16-merge-88-check-2026-11-09.log` in
+  `eternalus-agent-work/game-loop-plan/`): Prettier "All matched files use Prettier code style!";
+  core "Tests 1374 passed (1374)", statements 99.15 %; client "Tests 1867 passed (1867)",
+  statements 97.06 %; "Documentation check passed."
+- Next step: push; the GL-16 PR opens after GL-5 merges (DEC-231).
