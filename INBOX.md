@@ -2253,6 +2253,8 @@ Reply inline (`Decision: …`).
       the feature id; they meet when architecture 12 §8 turns `capture-point-owner-changed` into
       `point-taken`. It is a core API change (`EntitySnapshot`). Build it on #64, or later with the
       `point-taken` wiring?
+  - Answered 2026-11-09 (DEC-231): "build now", by the game-loop session. It is plan task GL-16
+    (`refactor/map-feature-link`, stacked on GL-5). Close this item when that PR merges.
 - [ ] **FR-071 still names the `returning` state (PR #56, DEC-155)** (owner: sholtzman,
       `docs/requirements/06-mvp-requirements.md`). FR-071 gives the minion FSM as
       `marching → engaging → returning`. Since DEC-155 it is `marching ⇄ engaging`: a leash break
@@ -2316,7 +2318,7 @@ Reply inline (`Decision: …`).
       PR only if it is assured to happen: its PR opens after GL-4's and merges right after it.
       Close this item when that PR merges.
 - [ ] **GL-16 map-feature link (DEC-221 (3); GL-5 critic round 3, B1)** — Owner: sholtzman,
-      `refactor/map-feature-link` (base: the phase branch after GL-5 merges). A `MapFeatureLink`
+      `refactor/map-feature-link` (base `feat/results-flow`; built now, DEC-231). A `MapFeatureLink`
       component, set from a placement's map feature id, on structures and capture zones. The
       snapshots read it instead of `instanceof Structure`, and `MatchBridge` binds a capture site
       to its zone by that id, not by position. Close this item when its PR merges.

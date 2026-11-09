@@ -21,6 +21,18 @@ overridden by the product owner. Decisions arrive through `INBOX.md`; once imple
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
 
+## Batch 2026-11-09 (the map-feature link is built now, GL-16)
+
+The owner's answers of 2026-11-09 to the `INBOX.md` item "PR #64 better than the design? (critic
+round 6, 2026-11-03)", given to the PR-review session and passed on to the game-loop session. The
+words are kept verbatim outside the repository, in
+`eternalus-agent-work/game-loop-plan/owner-answers-2026-11-08-prepr.md`, section "GL-16 build now".
+DEC-231 is this batch.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Docs changed                                                       |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| DEC-231 | **The map-feature link (plan task GL-16) is built now, on a branch stacked on GL-5** (amends the timing of DEC-221 (3); `INBOX.md` "PR #64 better than the design? (critic round 6)"). The PR #64 critic proposed that a capture zone's snapshot carry its map feature id, so that `MatchBridge` links a capture site to its zone by that id, not by position. This is GL-5's round-3 item B1, which DEC-221 (3) sent to a PR of its own after GL-5 merges. Owner: "build now"; asked who builds it and when, "Game loop builds it now (Recommended)". So GL-16 is built on `refactor/map-feature-link`, based on `feat/results-flow`, with the scope of its plan row (including DEC-222's roster rule); its PR opens after GL-5 merges. When it merges, both `INBOX.md` items close. | `refactor/map-feature-link`: game-loop plan §7 (GL-16), `INBOX.md` |
+
 ## Batch 2026-11-08, HC-Q47 (the GL-5 targeted critic's better-than-design item)
 
 The owner's answer of 2026-11-08 in chat to `INBOX.md` HC-Q47. His words are kept verbatim outside
