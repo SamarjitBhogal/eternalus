@@ -1,6 +1,6 @@
 import type {
-  CaptureSnapshot,
   EntityId,
+  EntitySnapshot,
   MapDefinition,
   MatchResult,
   Simulation,
@@ -51,8 +51,9 @@ export class MatchBridge {
       (last, next) =>
         last.health?.current === next.health?.current && last.health?.max === next.health?.max,
     );
-    this.boundMaxHealth = new Map(
-      [...MatchBridge.healthByFeature(deps.firstSnapshot)].map(([id, { max }]) => [id, max]),
+    this.boundMaxHealth = MatchBridge.byFeature(
+      deps.firstSnapshot,
+      ({ health }) => health?.max ?? null,
     );
     const features = deps.map.features.filter((feature) =>
       deps.captureKinds.includes(feature.kind),
@@ -136,25 +137,12 @@ export class MatchBridge {
    * and turrets, 07 §13) keeps `null`: the HUD shows "no data", never a made-up value.
    */
   private structuresAt(snapshot: Snapshot): readonly StructureStatus[] {
-    const live = MatchBridge.healthByFeature(snapshot);
+    const live = MatchBridge.byFeature(snapshot, ({ health }) => health);
     return this.structures.map((structure) => {
       const max = this.boundMaxHealth.get(structure.structureId);
       if (max === undefined) return structure;
       return { ...structure, health: live.get(structure.structureId) ?? { current: 0, max } };
     });
-  }
-
-  /** The health of each structure in `snapshot` that names its map feature, by feature id. */
-  private static healthByFeature(
-    snapshot: Snapshot,
-  ): ReadonlyMap<string, NonNullable<StructureStatus['health']>> {
-    const health = new Map<string, NonNullable<StructureStatus['health']>>();
-    for (const entity of snapshot.entities) {
-      if (entity.mapFeatureId !== undefined && entity.health !== null) {
-        health.set(entity.mapFeatureId, entity.health);
-      }
-    }
-    return health;
   }
 
   /**
@@ -163,7 +151,7 @@ export class MatchBridge {
    * point with no zone shows no capture (neutral, no progress).
    */
   private liveCapturePoints(snapshot: Snapshot): readonly CapturePointStatus[] {
-    const zones = MatchBridge.captureByFeature(snapshot);
+    const zones = MatchBridge.byFeature(snapshot, ({ capture }) => capture);
     return this.pointsWithoutZone.map((point) => {
       const capture = zones.get(point.pointId);
       return capture === undefined
@@ -172,15 +160,22 @@ export class MatchBridge {
     });
   }
 
-  /** The capture state of each zone in `snapshot` that names its map feature, by feature id. */
-  private static captureByFeature(snapshot: Snapshot): ReadonlyMap<string, CaptureSnapshot> {
-    const captures = new Map<string, CaptureSnapshot>();
+  /**
+   * What `pick` reads from each entity in `snapshot` that names its map feature, by feature id.
+   * One feature may back several entities (the Cathedral's zone and its structure, DEC-233), so
+   * `pick` returns `null` for an entity without the group it reads, and that entity adds nothing.
+   */
+  private static byFeature<T>(
+    snapshot: Snapshot,
+    pick: (entity: EntitySnapshot) => T | null,
+  ): ReadonlyMap<string, T> {
+    const found = new Map<string, T>();
     for (const entity of snapshot.entities) {
-      if (entity.mapFeatureId !== undefined && entity.capture !== null) {
-        captures.set(entity.mapFeatureId, entity.capture);
-      }
+      if (entity.mapFeatureId === undefined) continue;
+      const value = pick(entity);
+      if (value !== null) found.set(entity.mapFeatureId, value);
     }
-    return captures;
+    return found;
   }
 
   /**

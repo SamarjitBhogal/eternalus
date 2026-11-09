@@ -304,6 +304,20 @@ describe('MatchBridge', () => {
     });
   });
 
+  it('reads a capture point from its zone when a structure names the same feature (DEC-233)', () => {
+    const { map, bridge, captures } = setUp();
+    const cathedral = map.features.find((feature) => feature.kind === 'cathedral');
+    if (cathedral === undefined) throw new Error('The map has no cathedral.');
+    // The planned Cathedral structure and the Cathedral zone are built from one feature.
+    const zone = zoneSnapshot(cathedral.position, 'light', 0.75, cathedral.id);
+    bridge.publishAll(snapshotAt(0, [zone, structureOf(cathedral, 5_000, 5_000)]), null);
+
+    expect(captures[0]?.points.find(({ pointId }) => pointId === cathedral.id)).toMatchObject({
+      ownerTeam: 'light',
+      progress: 0.75,
+    });
+  });
+
   it('follows the lane count of the config', () => {
     const { bridge, structures: published, captures } = setUp(5);
     bridge.publishAll(snapshotAt(0), null);
