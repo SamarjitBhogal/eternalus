@@ -5953,3 +5953,34 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "✓ built in 251ms"; "Documentation check passed." (127 files).
 - Next step: the GL-4 critic re-checks this diff; `feat/results-flow` takes it with its next merge
   (its `MatchResult` literals need `structuresDestroyed: 0` per team).
+
+### 2026-11-08 — Phase 3 / game loop GL-15 capture scoring (DEC-214) — feat/capture-scoring — sholtzman + Claude Code
+
+- What: built plan task GL-15 on `feat/capture-scoring` (base `feat/match-scoring` `0009ed9e`).
+  - DEC-214 (A1): `checkpoint-reached` for a playable team gives that team
+    `SCORING_WEIGHTS.captureCheckpoint` (3, `TUNE`, DEC-131) as team-only points
+    (`ScoreBook.awardTeamPoints`, no team counter); each of its living Legends whose centre is on
+    the zone at the event (`ZoneArea.contains`, the test `CaptureSystem` counts presence with) gets
+    `checkpointsWon + 1` (new `LegendStats` counter, no points).
+  - DEC-214 (A2): `capture-point-owner-changed` moves `ScoringState.ownedPoints` (new, hashed;
+    `ScoreBook.countOwnedPoints`); each fold, every owned point adds one tick to its team's
+    `capturesHeldTicks` (new `TeamStats` counter, pooled), and each full minute
+    (`TickRate.toTicks(SECONDS_PER_MINUTE)`) gives `SCORING_WEIGHTS.holdPerMinute` (1, `TUNE`)
+    team-only points. A lost point stops adding and takes nothing back. Neutral camps score nothing.
+  - The capture rules are a new class, `match/CaptureScoring.ts` (+ `.constants.ts`, `.test.ts`),
+    that `Scoring` builds with its `defer` and calls in its fold after the buffered events, so
+    `Scoring.ts` stays at 237 lines. The `ponytail:` note in `content/match/scoring.ts` is gone.
+  - Hash: the empty scoring state carries the new fields at 0, so scoring stays out of the hash
+    until something is counted (DEC-113 (8)); the golden replay and the untouched-match hash test
+    pass unchanged.
+  - Docs: architecture 12 §5 (event name `checkpoint-reached`, DEC-214 rules, writer list, hold
+    points per full pooled minute) and §13 (built); 03 §2 (writer list) and §4
+    (`checkpoint-reached` listeners).
+- Fail-first breaks: 26, all red then restored (`git status` clean), listed with test names and red
+  messages in `eternalus-agent-work/game-loop-plan/gl15-breaks.md`.
+- Checks run: `npm run check` → `EXIT=0` (`gl15-check-2026-11-08.log` in
+  `eternalus-agent-work/game-loop-plan/`): "All matched files use Prettier code style!"; core
+  "Tests 1377 passed (1377)", statements 99.15 %; client "Tests 1778 passed (1778)", statements
+  96.98 %; "✓ built in 439ms"; "Documentation check passed." (127 files).
+- Next step: PR after GL-4's; GL-5 (feat/results-flow) `MatchResult` literals need the new
+  counters when the branches meet.
