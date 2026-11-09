@@ -6,6 +6,7 @@ import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { validateGameConfig } from '../../config/validateGameConfig';
 import type { Team } from '../../teams/teams.types';
 import { ContentCatalogue } from '../../content/ContentCatalogue';
+import { LEVEL_CURVE_CATALOGUE } from '../../content/progression/levelCurveCatalogue';
 import { Entity } from '../../entities/Entity';
 import { EntityFactory } from '../../entities/EntityFactory';
 import { EntityRegistry } from '../../entities/EntityRegistry';
@@ -101,7 +102,9 @@ describe('DevSpawnHandler', () => {
       { entityId: 'entity-2', kind: 'dummy', team: 'dark' },
     ]);
     expect(
-      context.state.snapshot().entities.map(({ team, transform }) => ({ team, transform })),
+      context.state
+        .snapshot(LEVEL_CURVE_CATALOGUE)
+        .entities.map(({ team, transform }) => ({ team, transform })),
     ).toEqual([
       { team: 'dark', transform: { x: 10, y: 20, radius: 0.5 } },
       { team: 'dark', transform: { x: 10, y: 20, radius: 0.5 } },
