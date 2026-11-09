@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import type { EntityView } from './EntityView.types';
 import { ViewRegistry } from './ViewRegistry';
 
-const view = (): EntityView => ({ draw: () => undefined });
+const view = (): EntityView => ({ draw: () => undefined, drawMinimap: () => undefined });
 
 const entity = (kind: string, family: string): EntitySnapshot => ({
   id: 'entity-1',
@@ -14,6 +14,8 @@ const entity = (kind: string, family: string): EntitySnapshot => ({
   team: null,
   transform: null,
   health: null,
+  area: null,
+  capture: null,
 });
 
 describe('ViewRegistry', () => {

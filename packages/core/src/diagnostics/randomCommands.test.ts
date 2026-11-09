@@ -6,7 +6,7 @@ import { randomCommand } from './randomCommands';
 
 const snapshotWith = (...ids: string[]): Snapshot => ({
   tick: 0,
-  phase: 'countdown',
+  match: { phase: 'countdown', phaseEnteredTick: 0, upcoming: [], humanLegendId: null },
   entities: ids.map((id) => ({
     id,
     kind: 'walker',
@@ -15,6 +15,8 @@ const snapshotWith = (...ids: string[]): Snapshot => ({
     team: 'light',
     transform: null,
     health: null,
+    area: null,
+    capture: null,
   })),
   hordes: [],
   teams: {

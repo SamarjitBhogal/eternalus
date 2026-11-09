@@ -1,19 +1,24 @@
 import { describe, expect, it } from 'vitest';
 
 import { Aether } from '../components/Aether';
+import { Capturable } from '../components/Capturable';
 import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
+import { Veterancy } from '../components/Veterancy';
 import { Vision } from '../components/Vision';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { CAPTURE_POINT } from '../content/zones/capturePoint';
 import { Entity } from '../entities/Entity';
+import { CapturePoint } from '../entities/zones/CapturePoint';
 import { SeededRandom } from '../utils/SeededRandom';
 import { fnv1a } from '../utils/fnv1a';
 import { GameState } from './GameState';
 import type { Horde } from './Horde.types';
+import type { MatchState } from './MatchState.types';
 import { StateHasher } from './StateHasher';
 
 class Soldier extends Entity {
@@ -101,6 +106,31 @@ describe('StateHasher', () => {
     expect(hasher.hash(state)).not.toBe(before);
   });
 
+  it('changes when a collider turns unbreakable', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const wall = new Soldier('entity-1', 'soldier');
+    wall.spawn({});
+    const collider = new Collider({ kind: 'circle', radius: 1 }, 'structure', true);
+    wall.addComponent(collider);
+    state.entities.add(wall);
+    const before = hasher.hash(state);
+
+    collider.setUnbreakable(true);
+
+    expect(hasher.hash(state)).not.toBe(before);
+  });
+
+  it('changes when a minion counts a kill', () => {
+    const { state, soldier } = stateWithSoldier();
+    const veterancy = new Veterancy();
+    soldier.addComponent(veterancy);
+    const before = hasher.hash(state);
+
+    veterancy.recordKill(2, 3);
+
+    expect(hasher.hash(state)).not.toBe(before);
+  });
+
   it('differs between seeds', () => {
     expect(hasher.hash(stateWithSoldier(1).state)).not.toBe(hasher.hash(stateWithSoldier(2).state));
   });
@@ -161,6 +191,97 @@ describe('StateHasher', () => {
     change(scout);
 
     expect(hasher.hash(state)).not.toBe(before);
+  });
+  it('hashes an untouched match as tick, phase and RNG only, as before the match fields existed', () => {
+    const state = new GameState(createDefaultGameConfig(), 1, null, {}, [
+      { entryId: 'later', tick: 9 },
+    ]);
+
+    expect(hasher.hash(state)).toBe(
+      fnv1a(JSON.stringify([0, 'countdown', state.rng.getState(), []])),
+    );
+  });
+
+  it.each<[string, (state: GameState) => void]>([
+    [
+      'the phase',
+      (state) => {
+        state.match.setPhase('early-game');
+      },
+    ],
+    [
+      'the timeline cursor',
+      (state) => {
+        state.match.advanceTimeline();
+      },
+    ],
+    [
+      'the idle hold',
+      (state) => {
+        state.match.holdIdle(true);
+      },
+    ],
+  ])('changes when %s of the match changes', (_, change) => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const before = hasher.hash(state);
+
+    change(state);
+
+    expect(hasher.hash(state)).not.toBe(before);
+  });
+
+  it('changes with the tick the phase was entered on', () => {
+    const enteredFirst = new GameState(createDefaultGameConfig(), 1);
+    const enteredLater = new GameState(createDefaultGameConfig(), 1);
+    enteredFirst.match.setPhase('early-game');
+    enteredFirst.advanceTick();
+    enteredLater.advanceTick();
+    enteredLater.match.setPhase('early-game');
+
+    expect(hasher.hash(enteredLater)).not.toBe(hasher.hash(enteredFirst));
+  });
+
+  describe('between two matches that have both left their initial state', () => {
+    type MatchFields = Pick<
+      MatchState,
+      'phase' | 'phaseEnteredTick' | 'timelineCursor' | 'isIdleHeld'
+    >;
+    const AWAY: MatchFields = {
+      phase: 'early-game',
+      phaseEnteredTick: 1,
+      timelineCursor: 1,
+      isIdleHeld: true,
+    };
+
+    /** A match at tick 3 whose match fields are `fields`; non-initial, so they are all hashed. */
+    const matchWith = (fields: MatchFields): GameState => {
+      const state = new GameState(createDefaultGameConfig(), 1);
+      while (state.tick < fields.phaseEnteredTick) {
+        state.advanceTick();
+      }
+      state.match.setPhase(fields.phase);
+      while (state.tick < 3) {
+        state.advanceTick();
+      }
+      for (let mark = 0; mark < fields.timelineCursor; mark += 1) {
+        state.match.advanceTimeline();
+      }
+      state.match.holdIdle(fields.isIdleHeld);
+      return state;
+    };
+
+    it.each<[string, Partial<MatchFields>]>([
+      ['phase', { phase: 'quarter-mark' }],
+      ['phaseEnteredTick', { phaseEnteredTick: 2 }],
+      ['timelineCursor', { timelineCursor: 2 }],
+      ['isIdleHeld', { isIdleHeld: false }],
+    ])('hashes differently when only %s differs', (_, change) => {
+      const base = matchWith(AWAY);
+      const changed = matchWith({ ...AWAY, ...change });
+
+      expect(hasher.hash(matchWith(AWAY))).toBe(hasher.hash(base));
+      expect(hasher.hash(changed)).not.toBe(hasher.hash(base));
+    });
   });
 
   it('covers every brain field and the deferred queue once a brain exists', () => {
@@ -237,7 +358,7 @@ describe('StateHasher', () => {
       const { state, soldier } = stateWithSoldier();
       const legacy = [
         state.tick,
-        state.phase,
+        state.match.phase,
         state.rng.getState(),
         [
           [
@@ -306,5 +427,68 @@ describe('StateHasher', () => {
         expect(new Set([withRequest(2, 2), withRequest(3, 3), withRequest(2, 1)]).size).toBe(3);
       },
     );
+  });
+
+  it('hashes a capture point: owner, progress, checkpoint and reached marks each change the hash', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const point = new CapturePoint('entity-1', CAPTURE_POINT.id);
+    point.spawn({
+      definition: CAPTURE_POINT,
+      position: { x: 5, y: 5 },
+      team: 'neutral',
+      area: [
+        [
+          { x: 0, y: 0 },
+          { x: 10, y: 0 },
+          { x: 5, y: 10 },
+        ],
+      ],
+    });
+    state.entities.add(point);
+    const zone = point.getComponent(Capturable);
+    const untouched = hasher.hash(state);
+
+    zone.setProgress(0.5, 1);
+    const progressed = hasher.hash(state);
+    zone.setProgress(0.5, 2);
+    const checkpoint = hasher.hash(state);
+    zone.markReached('light', 2);
+    const reached = hasher.hash(state);
+    zone.setOwner('light');
+    const owned = hasher.hash(state);
+
+    expect(new Set([untouched, progressed, checkpoint, reached, owned]).size).toBe(5);
+  });
+
+  describe('ally damage (DEC-89)', () => {
+    const withTally = (...tallies: readonly ['light' | 'dark', string, number][]): number => {
+      const { state } = stateWithSoldier();
+      for (const [team, lane, amount] of tallies) {
+        state.allyDamage.add(team, lane, amount);
+      }
+      return hasher.hash(state);
+    };
+
+    it('hashes the same tallies the same, and a cleared tally as none', () => {
+      const { state } = stateWithSoldier();
+      const none = hasher.hash(state);
+      state.allyDamage.add('dark', 'lane-1', 9);
+      state.allyDamage.clear('dark');
+
+      expect(withTally(['light', 'lane-0', 5])).toBe(withTally(['light', 'lane-0', 5]));
+      expect(hasher.hash(state)).toBe(none);
+    });
+
+    it('changes with the team, the lane and the amount of a tally', () => {
+      const hashes = [
+        hasher.hash(stateWithSoldier().state),
+        withTally(['light', 'lane-0', 5]),
+        withTally(['dark', 'lane-0', 5]),
+        withTally(['light', 'lane-1', 5]),
+        withTally(['light', 'lane-0', 6]),
+      ];
+
+      expect(new Set(hashes).size).toBe(5);
+    });
   });
 });

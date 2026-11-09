@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-27
+last-reviewed: 2026-11-05
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -84,7 +84,7 @@ export type AbilityTargeting =
   | { readonly kind: 'directional' }; // dashes: the aim vector, no range
 
 export type AbilityDefinition = {
-  readonly id: AbilityId; // 'blade-runner'; never renamed once used
+  readonly id: AbilityId; // 'blade-runner'; never renamed once a save or a release stores it
   readonly displayName: string; // 'Death Ray (working title)' lives here, not in code
   readonly classId: LegendId; // abilities are class-specific (game doc); enforced by LoadoutValidator
   readonly slot: AbilitySlotKind;
@@ -520,7 +520,8 @@ status event: `apply` (by id) emits `status-applied`; `remove` ends a status ear
 and `expire`, called by `StatusEffectSystem`, removes the timed-out ones, both with
 `status-expired`. `DefaultSystemPipeline` loads the statuses for the match's config and builds the
 one applier, next to the one `DamagePipeline`, so later producers (turret concussion 2.3, gate
-fire 2.4, enraged 3.3) receive it there.
+fire 2.4, enraged 3.3) receive it there. Minion plan M5b adds `veteran` and `rallied` (minion XP,
+MS-16, `balancing.md`), applied by `VeterancySystem`.
 `periodic.effects` are `StatusTickSpec`s shaped like `AbilityEffectSpec`, run by `StatusTickEffect`
 strategies (`combat/defaultStatusTickEffects.ts`, `DamageStatusTick`) until the `AbilityRegistry`
 lands; their damage goes through the match's one `DamagePipeline` with `kind: 'status'`, crediting
@@ -569,7 +570,8 @@ Sentinels" and "reduces protections (stacks)" are modifiers, never branches in `
 source)` is built and is the only caller of `Health.applyDamage`. Each modifier above is a
 `DamageStep` (`adjust(hit, state) → amount`, 0 blocks) and **the order is the list in
 `combat/defaultDamageSteps.ts`**; shields-then-base stays inside `Health`. The steps today are
-`FriendlyFireStep` (no damage between same-team entities; awaiting the owner's sign-off in
+`BreakabilityStep` (first: an unbreakable wall or gate rejects the hit before any multiplier,
+which gives the same result as §9's late check; 07 §3), `FriendlyFireStep` (no damage between same-team entities; awaiting the owner's sign-off in
 `INBOX.md`), `StatusModifierStep` (`damageDealt` / `damageTaken`; 05 §8) and `MinionStrengthStep`
 (the minion strength-by-distance curve, its base-stat point moved toward the enemy for each lane
 tower the enemy has lost there, DISC-24; [18](18-minion-system.md) MS-16). Interim differences: no `DamageType` yet (nothing reads it; it joins `DamageHit` and
@@ -689,7 +691,7 @@ export type LoadoutSlot =
 export type AbilityChoice = { readonly abilityId: AbilityId; readonly varietyId: VarietyId | null };
 export type Loadout = {
   readonly classId: LegendId;
-  readonly specId: LegendSpecId | null; // post-MVP specialisation (D11); null in the MVP
+  readonly specId: LegendSpecId | null; // gameplay spec (ADR 0018); null until built (HC-Q17)
   readonly primaryWeaponId: WeaponId; // MVP
   readonly secondaryWeaponId: WeaponId | null; // MVP-if-time
   readonly passiveId: AbilityId | null; // MVP-if-time (Magus: Studious or Necromancy)
@@ -842,8 +844,8 @@ export type PlayerSnapshot = {
   readonly aether: number;
   readonly maxAether: number;
   readonly level: number;
-  readonly xp: number;
-  readonly xpToNext: number;
+  readonly xp: number; // XP earned inside the current level (resets on level-up)
+  readonly xpToNext: number; // XP the current level needs to reach the next
   readonly slots: readonly AbilitySlotSnapshot[]; // ability-1..4, gadget-1, gadget-2, default-action, in that order
   readonly statusIds: readonly StatusEffectId[];
 };
@@ -856,8 +858,9 @@ are the same string literals as the `InputAction`s in `keybindings.ts`
 ([09 §3](09-hardware-abstraction.md#3-the-mapping-pipeline-device--inputaction--command)), so the
 glyph needs no mapping table and a rebinding updates every prompt with no code change;
 `default-action` is a contextual prompt on `<KeyGlyph action="interact" />` (`Recommendation:`).
-Display names and icons come from the catalogue the client already loads for the `LoadoutScreen`
-(`loadDefaultContent()`), resolved once at match start into the slice, never from entities.
+Display names and icons come from the display catalogue the client builds at boot (core's
+`loadDisplayContent()` and the client's own presentation data), joined with the player's selection
+by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event.
 `AetherBar` and `HealthBar` read the same record; `LoadoutScreen` edits a `Loadout` value and calls
 `validateLoadout` through the public API.
 
@@ -908,7 +911,7 @@ Display names and icons come from the catalogue the client already loads for the
 | Wuuthrad, Lightbringer, Short blades, Mortar, Soul Orb, secondary weapon, passive slot, in-match loadout changes, Ultimate Plus, combos, `summon`                          | **MVP-if-time**                                                                     |
 | Ability tree, class-switch penalty, Barricades, Eagle Eye, Firestorm, `reveal`, armour set, skins, weapon abilities (`WeaponDefinition.abilityIds` reuses `Ability`)       | **post-MVP**                                                                        |
 
-## Implementation status
+## 18. Implementation status
 
 - **Progression (PR #31, SCRUM-426).** Legends install `Aether` (own component, O1) and
   `Progression` (`xp`, `level`, `curveId`). Level curves are a catalogue
@@ -919,11 +922,33 @@ Display names and icons come from the catalogue the client already loads for the
   the store (a mob's own `xpValue`; a Legend by victim level, `xpSources.ts`), pays nothing for a
   self or ally kill (O5), and in its own pass emits `xp-gained` and gives the XP to the killer
   only. A level-up raises max health by the class's share of base health and max aether, and heals
-  and refills by the raise only while the Legend is alive (O3, O4). Not built yet: the share radius
-  and damage bias, assists, structure, checkpoint, camp and boss XP (their systems do not exist),
+  and refills by the raise only while the Legend is alive (O3, O4). Structure XP is built (DEC-186: every
+  Legend on the destroying team; a dead Legend is skipped until respawn, GL-12). Not built yet:
+  the share radius and damage bias, assists, checkpoint, camp and boss XP (their systems do not exist),
   basic-attack and ability potency per level, `upgradeIds`, the ultimate charge rules, and keeping
   dead Legends in the store until respawn (FR-051), which O4's posthumous XP needs. Numbers are
-  `TUNE`; the curve is derived from an income estimate in `INBOX.md`.
+  `TUNE`; the curve and the Legend kill and structure XP follow DEC-190 (not final; the
+  soak metric can change them) and live in `content/progression/`.
+- **HUD (`feat/hud-and-character-select`, 2026-10-24).** §15's `PlayerSnapshot` does not exist
+  in core yet: `Snapshot` holds `tick`, `phase` and `entities` only. Until `SnapshotSystem` fills
+  `Snapshot.player` (Phase 4, sprints 4.5 and 4.7), the client's `MatchBridge` projects the HUD
+  player from the player's `EntitySnapshot` into `PlayerHudSnapshot` (`bridge/hud.types.ts`): the
+  same fields, every value nullable except the two ids, with health and maximum health live, the
+  slot list empty and everything else `null` (DEC-17), no `varietyId` or `statusIds` until a
+  reader needs them, and two presentational slots, `weaponProgress` and `ultimatePips`, that stay
+  `null` until OQ-63 and OQ-64 give them a rule; its TSDoc states the one-to-one mapping to the
+  core type. Core now has the `Aether` and `Progression` components (the bullet above), but
+  `EntitySnapshot` (`state/Snapshot.types.ts`) still carries only `health`, so the HUD's aether,
+  level and XP stay `null` until `Snapshot.player` exists (INBOX HC-F6). The record lands in
+  `hudSlice`, not `matchSlice`; each slot is drawn by `AbilitySlot` through `selectHudSlotView`.
+  The kit's display names and icons come from the display catalogue the client builds at boot
+  (core's `loadDisplayContent()` plus its own presentation data, `game/content/hudPresentation.ts`,
+  published as `content-catalogue`), joined with the player's selection by `selectHudKit`; there
+  is no `hud-kit` event. The slot display names are `null` and the icons are client-side asset ids
+  until ability content exists (INBOX HC-Q3); a live match shows only the art that fits the picked
+  Legend (its class's emblem and gadget, its start weapon) and leaves every other frame empty
+  (DEC-101, DEC-114). The `xp` and `xpToNext` comments in §15 record the
+  owner's reading of the XP ring (2026-10-18).
 
 ## Related
 

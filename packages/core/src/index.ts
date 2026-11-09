@@ -21,8 +21,28 @@ export type {
   MapConfig,
   MatchConfig,
 } from './config/GameConfig.types';
+export type { MatchPhase } from './config/matchPhases';
+export type {
+  MatchTimelineEntry,
+  TimelineAction,
+  TimelineActionKind,
+  TimelineMark,
+} from './config/MatchTimelineEntry.types';
 export { validateGameConfig } from './config/validateGameConfig';
-export type { LegendKind } from './content/legends/legends.types';
+export type { VictoryConditionId } from './config/VictoryConditionId.types';
+export type {
+  ClassDetailNames,
+  LegendClassId,
+  LegendDefinition,
+  LegendKind,
+} from './content/legends/legends.types';
+export type {
+  LegendName,
+  LegendSpecDefinition,
+  RoleRatings,
+} from './content/legends/specs/legendSpecs.types';
+export { loadDisplayContent } from './content/loadDisplayContent';
+export type { DisplayContent } from './content/loadDisplayContent';
 export { DEFAULT_MAP_CONFIG } from './content/maps/defaultMapConfig';
 export type {
   MapDecoration,
@@ -37,28 +57,31 @@ export type {
   MinimapGlyph,
   MinimapGlyphShape,
 } from './content/maps/maps.types';
+export type { BotRole, BotRosterDefinition, EnemyRoverRule } from './content/teams/botRoster.types';
 export type {
   DiagnosticEvent,
   DiagnosticEventMap,
   DiagnosticEventName,
 } from './diagnostics/DiagnosticEvent.types';
 export { SEVERITY } from './diagnostics/Logger.constants';
-export type { LogAttributes, Logger, LogRecord, SeverityText } from './diagnostics/Logger.types';
+export type {
+  LogAttributes,
+  LogContext,
+  Logger,
+  LogRecord,
+  SeverityText,
+} from './diagnostics/Logger.types';
 export { makeLogRecord } from './diagnostics/makeLogRecord';
 export { MemoryLogger } from './diagnostics/MemoryLogger';
 export { NullLogger } from './diagnostics/NullLogger';
 export { runReplay } from './diagnostics/replay';
-export type {
-  Replay,
-  ReplayOutcome,
-  ReplayTarget,
-  ReplayTargetFactory,
-} from './diagnostics/Replay.types';
+export type { ReplayOutcome, ReplayTarget } from './diagnostics/Replay.types';
 export { MapPresentationBuilder } from './map/MapPresentationBuilder';
 export { MapGenerator } from './map/MapGenerator';
 export type { MapGeneratorConfig } from './map/MapGenerator.types';
 export { Simulation } from './Simulation';
-export type { RosterSlot } from './Simulation.types';
+export type { Replay, ReplaySetup, ReplayTargetFactory, RosterSlot } from './Simulation.types';
+export { isUnitFamily } from './entities/unitFamilies';
 export type { EntityId, RemovalCause } from './state/EntityStore.types';
 export type {
   GameEventHandler,
@@ -66,9 +89,17 @@ export type {
   GameEventType,
   Unsubscribe,
 } from './state/GameEvents.types';
-export type { MatchPhase } from './state/GameState.types';
-export type { EntitySnapshot, Snapshot } from './state/Snapshot.types';
+export type { MatchResult, Verdict } from './state/MatchResult.types';
+export type { ScheduledMark } from './state/MatchState.types';
+export type {
+  CaptureSnapshot,
+  EntitySnapshot,
+  MatchSnapshot,
+  Snapshot,
+} from './state/Snapshot.types';
 export { StateHasher } from './state/StateHasher';
+// DEC-178: the client uses core's "other team" rule instead of a copy.
+export { opponentOf } from './teams/playableTeams';
 export type { PlayableTeam, Team } from './teams/teams.types';
 export { isPointInPolygon } from './utils/geometry';
 export type { Polygon, Rect, Vec2 } from './utils/geometry.types';
@@ -93,4 +124,5 @@ export type { MapBuilding, MapPresentation } from './content/maps/maps.types';
 
 export { MapObjectBuilder } from './map/MapObjectBuilder';
 export type { MapObject, MapObjectKind, MapObjectSnapshot } from './content/maps/mapObjects.types';
+export { findBuildingAt } from './map/findBuildingAt';
 export { findMapObjectAt } from './map/findMapObjectAt';

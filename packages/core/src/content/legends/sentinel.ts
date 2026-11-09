@@ -11,6 +11,11 @@ export const SENTINEL = {
   kind: 'sentinel',
   displayName: 'Sentinel',
   roleBlurb: 'Heavy and powerful; needs a long runway to reach a very high top speed.',
+  roleLabel: 'Tank', // Figma 72:859
+  tagline: null,
+  description: null,
+  alternateLayoutDescription: null,
+  detailNames: { signature: null, proficiency: null, specialty: null },
   baseHealth: 1200, // TUNE:
   baseAether: 80, // TUNE: balancing.md (level 1)
   weaponBias: 'heavy',

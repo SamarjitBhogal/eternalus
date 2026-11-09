@@ -8,18 +8,19 @@ import type { GlyphSpec, ScreenRect, WorldPoint, WorldRect } from './Renderer.ty
 export interface Renderer {
   /** Sets the drawing area in device pixels and how many device pixels make one CSS pixel. */
   resize(screenWidth: number, screenHeight: number, pixelRatio?: number): void;
-  /** Scales and centres a world of the given size so all of it is visible on screen. */
-  fitWorld(worldWidth: number, worldHeight: number): void;
-  /** Scales and centres a world of the given size inside one area of the screen. */
-  fitWorldInArea(worldWidth: number, worldHeight: number, area: ScreenRect): void;
-  /** Shows one part of the world across the whole screen, like a zoomed-in camera. */
-  showWorldArea(view: WorldRect): void;
+  /**
+   * Shows one part of the world across the whole screen (or across `screenArea` when given),
+   * like a zoomed-in camera: the one way to set what the world positions below map to.
+   */
+  showWorldArea(view: WorldRect, screenArea?: ScreenRect): void;
   /** Fills the whole screen with one colour. */
   clear(color: string): void;
   /** Fills a rectangle given in screen pixels. */
   fillScreenRect(area: ScreenRect, color: string): void;
   /** Outlines a rectangle given in screen pixels. `width` is the line width in pixels. */
   strokeScreenRect(area: ScreenRect, color: string, width: number): void;
+  /** Runs `draw` with every drawing limited to the ellipse that fills `area` (screen pixels). */
+  clipToEllipse(area: ScreenRect, draw: () => void): void;
   /** Fills a closed shape given in world units. Does nothing for an empty shape. */
   fillPolygon(points: readonly WorldPoint[], color: string): void;
   /** Draws a line through points given in world units. `width` is in screen pixels. */
