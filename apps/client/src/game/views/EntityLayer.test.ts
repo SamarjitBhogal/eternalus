@@ -6,7 +6,13 @@ import { createDefaultViewRegistry } from './defaultViewRegistry';
 import { EntityLayer } from './EntityLayer';
 import type { HealthBarSide } from './HealthBarView.types';
 import { MINI_MAP_LEGEND_GLYPH, MINI_MAP_MOB_GLYPH } from './entityViews.constants';
-import { HEALTH_BAR_FILL_COLORS, HEALTH_BAR_TRACK_COLOR } from './HealthBarView.constants';
+import {
+  HEALTH_BAR_FILL_COLORS,
+  HEALTH_BAR_GAP,
+  HEALTH_BAR_HEIGHT,
+  HEALTH_BAR_TRACK_COLOR,
+  HEALTH_BAR_WIDTH_SCALE,
+} from './HealthBarView.constants';
 import type { WorldLayer } from './SceneView.types';
 import type { EntityDrawState, EntityView } from './EntityView.types';
 import { ViewRegistry } from './ViewRegistry';
@@ -163,8 +169,8 @@ describe('EntityLayer', () => {
   });
 
   it('draws the bars the injected rule picks, in their side colour, filled by health left', () => {
-    // 'foe', 0.5 in radius at (10, 20) with 3 of 10 health: its bar is 1.6 × 1 wide, 0.25 high, and
-    // sits 0.5 above the footprint (entityViews.constants). 'pal' is an ally; 'calm' draws no bar.
+    // 'foe', 0.5 in radius at (10, 20) with 3 of 10 health: its bar is centred over it and sits
+    // HEALTH_BAR_GAP above its footprint. 'pal' is an ally; 'calm' draws no bar.
     const sides: Readonly<Record<string, HealthBarSide>> = { foe: 'enemy', pal: 'ally' };
     const layer = new EntityLayer(
       createDefaultViewRegistry(),
@@ -191,11 +197,13 @@ describe('EntityLayer', () => {
       HEALTH_BAR_FILL_COLORS.enemy,
     ]);
     const [track, fill] = polygons.slice(2).map(([points]) => points);
-    expect(track?.[0]?.x).toBeCloseTo(9.2);
-    expect(track?.[0]?.y).toBeCloseTo(18.75);
-    expect(track?.[2]?.x).toBeCloseTo(10.8);
-    expect(track?.[2]?.y).toBeCloseTo(19);
-    expect(fill?.[2]?.x).toBeCloseTo(9.2 + 1.6 * 0.3);
+    const width = 2 * 0.5 * HEALTH_BAR_WIDTH_SCALE;
+    const bottom = 20 - 0.5 - HEALTH_BAR_GAP;
+    expect(track?.[0]?.x).toBeCloseTo(10 - width / 2);
+    expect(track?.[0]?.y).toBeCloseTo(bottom - HEALTH_BAR_HEIGHT);
+    expect(track?.[2]?.x).toBeCloseTo(10 + width / 2);
+    expect(track?.[2]?.y).toBeCloseTo(bottom);
+    expect(fill?.[2]?.x).toBeCloseTo(10 - width / 2 + width * 0.3);
     // The bars come after all three units, so no unit hides one.
     expect(calls.findIndex((call) => call.op === 'fillPolygon')).toBe(calls.length - 4);
   });
