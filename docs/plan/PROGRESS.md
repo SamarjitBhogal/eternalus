@@ -6056,3 +6056,25 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   EXIT=0; core "Tests 1374 passed (1374)"; client "Tests 1799 passed (1799)"; "Documentation
   check passed.". This entry was added after it.
 - Next step: push; PR #86 merges this head.
+
+### 2026-11-09 — Phase 3 / minion-stack follow-ups, PR #85 review: a chaser inside an outline holds (DEC-234) — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: Gurshaan's change request on #85 ("Minions already inside a building's attackable
+  outline keep walking toward its boundary, although combat considers them in reach.") was real:
+  `isInReach` counted an attacker inside the outline as in reach, but `PathingSystem`'s chase
+  aimed at the nearest edge. `EntityStore.aimPointOf` now gives the attacker's own position when
+  it stands inside the outline and returns what it aimed at as a tag (`AimedAt`), so the inside
+  test runs once and reach, chase and stuck detection read one point. New test in
+  `PathingSystem.chase.test.ts` ("holds a chaser that stands inside its target's outline …"); it
+  failed before the fix with heading `{ x: -1, y: 0 }`. `EntityStore.test.ts` pins the inside aim
+  and the tags. Doc 18 §5, `PathingSystem` and `Footprint` TSDoc state the hold; DEC-234 records
+  it.
+- Critic: `architecture-reviewer` on `9b776ed5`: APPROVE, no blocker; two should-fix (this entry;
+  an `aimPointOf` unit test) and four nits, all applied; its better-than-design item (the `AimedAt`
+  tag) built here under the owner's no-tech-debt rule (DEC-223), recorded as DEC-234.
+- Checks run: `npm run check` with this entry in place (log
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-85-2.log`): EXIT=0, core "Tests 1375 passed
+  (1375)", client "Tests 1799 passed (1799)", "Documentation check passed.".
+- Next step: push; merge this head into `feat/out-of-combat-heal` (#86) and
+  `feat/unit-facing-chevron` (#79, where `facingPointOf` reads the `'inside'` tag); reply on #85,
+  #86 and #79.

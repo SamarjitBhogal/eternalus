@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-06
+last-reviewed: 2026-11-09
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,19 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-09 (PR #85 review: a chaser inside an outline holds)
+
+A teammate's change request on PR #85 (2026-11-09): "Minions already inside a building's attackable
+outline keep walking toward its boundary, although combat considers them in reach." The fix and
+the critic's better-than-design item on it are built under the owner's standing rule for such
+items (2026-11-09, GL-15 critic calls, DEC-223): "choose the best design and the most
+future-proof option with the least tech debt" and "do not allow tech debt where we can eliminate
+it". DEC-234 is this batch.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Where it lands                                                                                                                                                                                                    |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DEC-234 | **A unit that stands inside its target's outline is in reach and holds there; one aim rule says so** (follows DEC-185 (E), DEC-219 and 18 §5.2, a chase stops at reach; DEC-220 (1) "reach and chase still measure to the outline edge" is read as "to the outline, not the centre"). `EntityStore.aimPointOf` gives the attacker's own position when it stands inside the outline, so reach (`isInReach`), the minion and guard chase (`PathingSystem`) and stuck detection (`StuckSystem`) read one point, and a mob inside the Stronghold's palace no longer walks out to its wall while it attacks. Better than the design (critic): `aimPointOf` returns what it aimed at as a tag (`AimedAt`: `'outline'`, `'inside'`, `'centre'` or `null`), so the inside test runs only there; `isInReach` drops its own, and `facingPointOf` (PR #79, DEC-220 (1)) reads `'inside'`. | `fix/minion-stack-followups` (PR #85): `EntityStore`, `PathingSystem.chase.test.ts`, 18 §5; merged into `feat/out-of-combat-heal` (#86) and `feat/unit-facing-chevron` (#79), where `facingPointOf` uses the tag. |
 
 ## Batch 2026-11-06 (question dialog: facing inside an outline, camp mobs, guards at their posts)
 
