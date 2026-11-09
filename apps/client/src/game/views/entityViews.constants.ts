@@ -1,3 +1,7 @@
+import type { Team } from '@eternalus/core';
+
+import type { GlyphSpec } from '../engine/render/Renderer.types';
+
 /** Colour of entities that belong to no player team (camps, bosses, obstacles). */
 export const NEUTRAL_ENTITY_COLOR = '#d9d2c3';
 
@@ -42,3 +46,35 @@ export const CAPTURE_CHECKPOINT_MARK_COLOR = '#ffffff';
 
 /** Width of a checkpoint mark, in screen pixels. */
 export const CAPTURE_CHECKPOINT_MARK_WIDTH = 1;
+
+/**
+ * Marker of a living mob (lane minion, tower guard, camp mob) on the mini map, in CSS pixels.
+ * Its colour is the team's (`TEAM_COLORS`, `NEUTRAL_ENTITY_COLOR`).
+ */
+// TUNE: owner 2026-11-04 (DEC-187): what to draw; the size accepted 2026-11-05 (DEC-187 (C))
+export const MINI_MAP_MOB_GLYPH: GlyphSpec = { shape: 'dot', size: 4 };
+
+/** Marker of a living Legend on the mini map: clearly larger than a mob's. */
+// TUNE: owner 2026-11-04 (DEC-187): what to draw; the size accepted 2026-11-05 (DEC-187 (C))
+export const MINI_MAP_LEGEND_GLYPH: GlyphSpec = { shape: 'dot', size: 9 };
+
+/**
+ * Width of the outline around a unit's mini map marker, in CSS pixels on each side. The outline
+ * also sets unit markers apart from the plain feature glyphs (a turret's 3 px dot).
+ */
+// TUNE: owner G1 (a team outline like the main view's); width accepted (DEC-187, second round)
+export const MINI_MAP_OUTLINE_WIDTH = 1.5;
+
+/**
+ * Outline colour of a unit's mini map marker, by team. Light, neutral and dark differ in
+ * lightness, so the team never shows by hue alone (13 §7).
+ */
+// TUNE: owner G1 (a team outline); the colours accepted 2026-11-05 (DEC-187, second round)
+export const MINI_MAP_OUTLINE_COLORS: Readonly<Record<Team, string>> = {
+  light: '#ffffff',
+  neutral: '#8a8a8a',
+  dark: MOB_OUTLINE_COLOR,
+};
+
+/** Mini map layer of Legends' markers: above the mobs' (layer 0), so a Legend stays on top. */
+export const MINI_MAP_LEGEND_LAYER = 1;

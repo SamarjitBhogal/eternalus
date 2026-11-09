@@ -4,7 +4,7 @@ description: Sprint checklists for the Structure family, layered shields, the da
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-05
 tags: [plan, phase-2, structures, combat, projectiles, spawning]
 paths:
   ['packages/core/src/combat/**', 'packages/core/src/entities/**', 'packages/core/src/systems/**']
@@ -211,7 +211,10 @@ Owner: _ (client lane). Weeks 4–5.
       draw-call snapshot per state. Done when: views read `Snapshot` only.
 - [ ] **Minimap glyphs through `ViewRegistry`** (glyph per definition, owner colour, capture progress
       ring). Owner: _. Test: the Phase 1 "new feature appears on the minimap" test extended to a
-      structure and an obstacle. Done when: no minimap code names a kind.
+      structure and an obstacle. Done when: no minimap code names a kind. _(2026-11-05: met for
+      units. `EntityLayer.drawMinimap` draws each living entity through its `EntityView`, and no
+      minimap code names a unit kind (DEC-187). Feature glyphs still come from `MapView`; the
+      capture-progress ring is not built.)_
 - [ ] **HUD `HealthBar` for the selected structure and `Announcer` events** (tower razed, point
       captured) via the bridge. Owner: _. Test: bridge events reach the store throttled. Done
       when: `ui/` still imports only `bridge/`.

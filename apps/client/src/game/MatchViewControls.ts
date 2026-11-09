@@ -2,10 +2,10 @@ import type { MatchViewControlsDeps } from './MatchViewControls.types';
 
 /**
  * What the canvas gestures (`CanvasPointerControls`) do to one match: move, drag and zoom the
- * camera, look at a minimap point, cut away or put back roofs in the developer explorer, attack
- * on a plain explorer click, and claim the main button's press (06 §10). `Match` builds it from
- * its camera, roofs, player commands and minimap, and stays the composition root (DEC-139, INBOX
- * HC-S6). Positions arrive in device pixels.
+ * camera, look at a minimap point, on a plain developer-explorer click attack a unit, cut away or
+ * put back a roof, or attack a map object (DEC-150, DEC-183), and claim the main button's press
+ * (06 §10). `Match` builds it from its camera, roofs, player commands and minimap, and stays the
+ * composition root (DEC-139, INBOX HC-S6). Positions arrive in device pixels.
  */
 export class MatchViewControls {
   /** Creates the controls over the match's parts; they act at once, nothing to attach. */
@@ -47,23 +47,27 @@ export class MatchViewControls {
   }
 
   /**
-   * The developer explorer's click: cuts away the roof of the building under the screen point
-   * (device pixels), or puts back one it cut away. The view does not move.
-   * @returns Whether a roof was toggled: not on open ground or the player's building (DEC-150).
+   * The developer explorer's click at a screen point (device pixels): the player's Legend attacks
+   * the living enemy unit under it, once (a unit is drawn on top of a roof; DEC-183). With no unit,
+   * the roof of the building there is cut away or put back (DEC-150); with no roof click either,
+   * the Legend attacks the map object under the point. No Legend, no attack. The view does not
+   * move.
+   *
+   * @returns Whether a roof was toggled, so the chrome can report the roofs (DEC-150).
    */
-  public toggleRoofAt(screenX: number, screenY: number): boolean {
-    const { roofs, camera } = this.deps;
-    return roofs.toggleAt(camera.worldAt(screenX, screenY));
-  }
-
-  /**
-   * The explorer's plain click that is no roof click (DEC-150): the player's Legend attacks the
-   * living map object under the screen point (device pixels), once; no Legend, no attack.
-   */
-  public attackAt(screenX: number, screenY: number): void {
-    const { playerId, camera, commands, mapObjects } = this.deps;
-    if (playerId === null) return;
-    commands.attackAt(playerId, camera.worldAt(screenX, screenY), mapObjects());
+  public clickAt(screenX: number, screenY: number): boolean {
+    const { playerId, camera, commands, roofs, snapshot } = this.deps;
+    const point = camera.worldAt(screenX, screenY);
+    if (playerId !== null && commands.attackUnitAt(playerId, point, snapshot())) {
+      return false;
+    }
+    if (roofs.toggleAt(point)) {
+      return true;
+    }
+    if (playerId !== null) {
+      commands.attackObjectAt(playerId, point, snapshot());
+    }
+    return false;
   }
 
   /**
@@ -88,7 +92,7 @@ export class MatchViewControls {
   /**
    * Whether the canvas gestures own the main button's press (a minimap click, or any press with the
    * developer explorer shown): the held button is then no attack, and a plain click with the
-   * explorer attacks on its release instead (`attackAt`, DEC-150; 06 §10, input arbitration).
+   * explorer attacks on its release instead (`clickAt`, DEC-150; 06 §10, input arbitration).
    */
   public setPointerClaimed(isClaimed: boolean): void {
     this.deps.commands.setPointerClaimed(isClaimed);
