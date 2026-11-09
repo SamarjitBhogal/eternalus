@@ -4,7 +4,7 @@ import { DamagePipeline } from '../combat/DamagePipeline';
 import { Health } from '../components/Health';
 import { TeamMembership } from '../components/TeamMembership';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
-import { ASSIST_WINDOW_SECONDS, SCORING_WEIGHTS } from '../content/match/scoring';
+import { SCORING } from '../content/match/scoring';
 import { NullLogger } from '../diagnostics/NullLogger';
 import { Entity } from '../entities/Entity';
 import type { EntityId } from '../state/EntityStore.types';
@@ -12,6 +12,7 @@ import { GameState } from '../state/GameState';
 import type { LegendStats } from '../state/ScoringState.types';
 import { DeathSystem } from '../systems/DeathSystem';
 import type { PlayableTeam, Team } from '../teams/teams.types';
+import { createDefaultScoringRules } from './defaultScoringRules';
 import { Scoring } from './Scoring';
 
 /** 30 s at 30 ticks per second (DEC-79). */
@@ -46,9 +47,15 @@ const EMPTY_ROW = {
   score: 0,
 } as const;
 
-const setUp = (assistWindowSeconds = ASSIST_WINDOW_SECONDS) => {
+const setUp = (assistWindowSeconds: number = SCORING.assistWindowSeconds) => {
   const state = new GameState(createDefaultGameConfig(), 1);
-  const scoring = new Scoring(state, { weights: SCORING_WEIGHTS, assistWindowSeconds });
+  const scoring = new Scoring(
+    state,
+    createDefaultScoringRules(
+      { weights: SCORING.weights, assistWindowSeconds },
+      state.config.tickRate,
+    ),
+  );
   const damage = new DamagePipeline();
   let next = 0;
   /** Adds a unit and announces it with `entity-spawned`, as a spawn does. */

@@ -1,17 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
-import { Health } from '../components/Health';
-import { TeamMembership } from '../components/TeamMembership';
-import { Transform } from '../components/Transform';
-import { createDefaultGameConfig } from '../config/defaultGameConfig';
-import { ASSIST_WINDOW_SECONDS, SCORING_WEIGHTS } from '../content/match/scoring';
-import { CATHEDRAL_CAPTURE_POINT } from '../content/zones/cathedralCapturePoint';
-import { Entity } from '../entities/Entity';
-import { CapturePoint } from '../entities/zones/CapturePoint';
-import type { EntityId } from '../state/EntityStore.types';
-import { GameState } from '../state/GameState';
-import type { PlayableTeam, Team } from '../teams/teams.types';
-import { Scoring } from './Scoring';
+import { Health } from '../../components/Health';
+import { TeamMembership } from '../../components/TeamMembership';
+import { Transform } from '../../components/Transform';
+import { createDefaultGameConfig } from '../../config/defaultGameConfig';
+import { SCORING } from '../../content/match/scoring';
+import { CATHEDRAL_CAPTURE_POINT } from '../../content/zones/cathedralCapturePoint';
+import { Entity } from '../../entities/Entity';
+import { CapturePoint } from '../../entities/zones/CapturePoint';
+import type { EntityId } from '../../state/EntityStore.types';
+import { GameState } from '../../state/GameState';
+import type { PlayableTeam, Team } from '../../teams/teams.types';
+import { createDefaultScoringRules } from '../defaultScoringRules';
+import { Scoring } from '../Scoring';
 
 /** One minute at 30 ticks per second: the held time one hold point needs (DEC-214 (A2)). */
 const MINUTE_TICKS = 1800;
@@ -43,10 +44,7 @@ class TestLegend extends Entity {
 
 const setUp = () => {
   const state = new GameState(createDefaultGameConfig(), 1);
-  const scoring = new Scoring(state, {
-    weights: SCORING_WEIGHTS,
-    assistWindowSeconds: ASSIST_WINDOW_SECONDS,
-  });
+  const scoring = new Scoring(state, createDefaultScoringRules(SCORING, state.config.tickRate));
   const point = new CapturePoint(POINT, CATHEDRAL_CAPTURE_POINT.id);
   point.spawn({
     definition: CATHEDRAL_CAPTURE_POINT,
@@ -287,7 +285,7 @@ describe('CaptureScoring (through Scoring)', () => {
 
     run(MINUTE_TICKS + 1);
 
-    const weights = SCORING_WEIGHTS;
+    const weights = SCORING.weights;
     for (const side of ['light', 'dark'] as const) {
       const totals = team(side);
       const legendPoints = state.match.scoring.legends

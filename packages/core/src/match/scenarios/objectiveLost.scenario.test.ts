@@ -5,7 +5,7 @@ import { WinObjective } from '../../components/WinObjective';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../../config/matchPhases';
 import { loadDefaultContent } from '../../content/loadDefaultContent';
-import { ASSIST_WINDOW_SECONDS, SCORING_WEIGHTS } from '../../content/match/scoring';
+import { SCORING } from '../../content/match/scoring';
 import { loadLevelCurves } from '../../content/progression/loadLevelCurves';
 import { XP_SOURCES } from '../../content/progression/xpSources';
 import { loadWeapons } from '../../content/weapons/loadWeapons';
@@ -42,7 +42,7 @@ const playOut = (prepare: (state: GameState) => void = () => undefined) => {
     timeline,
     debug: TEST_DEBUG_CONFIG,
     logger,
-    scoring: { weights: SCORING_WEIGHTS, assistWindowSeconds: ASSIST_WINDOW_SECONDS },
+    scoring: SCORING,
   });
   const pipeline = new DefaultSystemPipeline({
     invariants: new DefaultInvariantRunner({

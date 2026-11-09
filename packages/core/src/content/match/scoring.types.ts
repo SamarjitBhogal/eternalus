@@ -29,3 +29,11 @@ export type ScoringWeights = {
    */
   readonly holdPerMinute: number;
 };
+
+/** The scoring values in content (`SCORING`); `Simulation` passes them in (12 §1, rule 11). */
+export type ScoringOptions = {
+  /** The points per kill, assist, death, destroyed structure, checkpoint and held minute. */
+  readonly weights: ScoringWeights;
+  /** How long a hit on an enemy Legend still earns an assist, in seconds. */
+  readonly assistWindowSeconds: number;
+};
