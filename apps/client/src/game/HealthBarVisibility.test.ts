@@ -88,11 +88,11 @@ const setUp = (entities = [PLAYER, ENEMY, ALLY, CAMP, TOWER], humanLegendId?: st
   return { events, bars, damage };
 };
 
-describe('HealthBarVisibility', () => {
-  it('hides every bar of a freshly spawned unit at full health (owner, 2026-11-09)', () => {
+describe('HealthBarVisibility (DEC-195)', () => {
+  it('hides every bar of a freshly spawned unit at full health', () => {
     const { bars } = setUp();
 
-    expect([ENEMY, CAMP, ALLY].map(bars.hasHealthBar)).toEqual([false, false, false]);
+    expect([ENEMY, CAMP, ALLY].map(bars.healthBarOf)).toEqual([null, null, null]);
   });
 
   it('shows the bar of an enemy unit once it takes damage, from any source', () => {
@@ -101,55 +101,57 @@ describe('HealthBarVisibility', () => {
     damage('foe', 'me');
     damage('camp', null);
 
-    expect(bars.hasHealthBar(ENEMY)).toBe(true);
-    expect(bars.hasHealthBar(CAMP)).toBe(true);
+    expect(bars.healthBarOf(ENEMY)).toBe('enemy');
+    expect(bars.healthBarOf(CAMP)).toBe('enemy');
   });
 
-  it('shows the bar of an enemy unit that attacks a living unit, though it took no damage', () => {
+  it('shows the bar of a unit that attacks a living unit, though it took no damage', () => {
     const { bars, damage } = setUp();
 
     damage('pal', 'foe');
+    damage('foe', 'pal');
 
-    expect(bars.hasHealthBar(ENEMY)).toBe(true);
+    expect(bars.healthBarOf(ENEMY)).toBe('enemy');
+    expect(bars.healthBarOf(ALLY)).toBe('ally');
   });
 
-  it('keeps the bar of an enemy that only hits a structure or a map object hidden', () => {
+  it('keeps the bar of a unit that only hits a structure or a map object hidden', () => {
     const { bars, damage } = setUp();
 
     damage('tower', 'foe');
     damage('wall-3', 'foe');
 
-    expect(bars.hasHealthBar(ENEMY)).toBe(false);
+    expect(bars.healthBarOf(ENEMY)).toBeNull();
   });
 
   it('keeps the bar after the unit heals back to full, until it dies; a respawn starts hidden', () => {
     const { events, bars, damage } = setUp();
     damage('foe', 'me');
 
-    expect(bars.hasHealthBar({ ...ENEMY, health: { current: 10, max: 10 } })).toBe(true);
-    expect(bars.hasHealthBar({ ...ENEMY, health: { current: 0, max: 10 } })).toBe(false);
+    expect(bars.healthBarOf({ ...ENEMY, health: { current: 10, max: 10 } })).toBe('enemy');
+    expect(bars.healthBarOf({ ...ENEMY, health: { current: 0, max: 10 } })).toBeNull();
 
     events.emit('entity-died', { entityId: 'foe', killer: hit('me') });
 
-    expect(bars.hasHealthBar(ENEMY)).toBe(false);
+    expect(bars.healthBarOf(ENEMY)).toBeNull();
   });
 
-  it("never shows a bar on the player's team, or on a structure", () => {
+  it("shows an ally's bar on the ally side, never the player's own, never a structure's", () => {
     const { bars, damage } = setUp();
 
     damage('me', 'foe');
     damage('pal', 'foe');
     damage('tower', 'me');
 
-    expect([PLAYER, ALLY, TOWER].map(bars.hasHealthBar)).toEqual([false, false, false]);
+    expect([PLAYER, ALLY, TOWER].map(bars.healthBarOf)).toEqual([null, 'ally', null]);
   });
 
-  it('shows the bars of both teams when no human plays (sim mode)', () => {
+  it('shows the bars of both teams on the enemy side when no human plays (sim mode)', () => {
     const { bars, damage } = setUp(undefined, null);
 
     damage('foe', 'pal');
 
-    expect([ENEMY, ALLY].map(bars.hasHealthBar)).toEqual([true, true]);
+    expect([ENEMY, ALLY].map(bars.healthBarOf)).toEqual(['enemy', 'enemy']);
   });
 
   it('counts a hit on a unit the latest snapshot did not have as a hit on no unit', () => {
@@ -158,7 +160,7 @@ describe('HealthBarVisibility', () => {
 
     damage('pal', 'foe');
 
-    expect(bars.hasHealthBar(ENEMY)).toBe(false);
+    expect(bars.healthBarOf(ENEMY)).toBeNull();
   });
 
   it('stops listening on destroy', () => {

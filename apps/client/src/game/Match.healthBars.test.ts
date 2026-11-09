@@ -18,7 +18,8 @@ import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH } from './Match.constants';
 import type { IntentSource } from './Match.types';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
-import { HEALTH_BAR_FILL_COLOR } from './views/entityViews.constants';
+import { HEALTH_BAR_FILL_COLORS } from './views/entityViews.constants';
+import type { HealthBarSide } from './views/EntityLayer.types';
 
 const SEED = 1;
 const PLAYER: PlayerChoice = { legend: 'warrior', team: 'light' };
@@ -62,14 +63,14 @@ const setUp = () => {
   return { match, simulation, renderer };
 };
 
-/** How many health bars the last frame filled. */
-const barsDrawn = (renderer: RecordingRenderer): number =>
+/** How many health bars of `side` the last frame filled. */
+const barsDrawn = (renderer: RecordingRenderer, side: HealthBarSide): number =>
   renderer.calls.filter(
-    (call) => call.op === 'fillPolygon' && call.args[1] === HEALTH_BAR_FILL_COLOR,
+    (call) => call.op === 'fillPolygon' && call.args[1] === HEALTH_BAR_FILL_COLORS[side],
   ).length;
 
-describe('Match health bars (owner, 2026-11-09)', () => {
-  it("shows an enemy Legend's bar only once the player's attack hurts it", () => {
+describe('Match health bars (DEC-195)', () => {
+  it("shows an enemy Legend's bar once the player's attack hurts it, never the player's own", () => {
     // A dark Warrior spawned next to the player (no controller, so it never attacks first).
     const { match, simulation, renderer } = setUp();
     const player = match.snapshot.entities.find(({ id }) => id === match.playerEntityId);
@@ -90,7 +91,7 @@ describe('Match health bars (owner, 2026-11-09)', () => {
     if (enemyId === undefined) throw new Error('No enemy spawned');
 
     match.render(0);
-    expect(barsDrawn(renderer)).toBe(0);
+    expect(barsDrawn(renderer, 'enemy')).toBe(0);
 
     simulation.enqueueCommand({ type: 'attack-target', actorId: player.id, targetId: enemyId });
     let ticks = 0;
@@ -103,7 +104,9 @@ describe('Match health bars (owner, 2026-11-09)', () => {
 
     renderer.calls.length = 0;
     match.render(0);
-    expect(barsDrawn(renderer)).toBe(1);
+    expect(barsDrawn(renderer, 'enemy')).toBe(1);
+    // The player fought too (its hit landed on a unit), but the HUD shows its health, not a bar.
+    expect(barsDrawn(renderer, 'ally')).toBe(0);
     match.destroy();
   });
 });

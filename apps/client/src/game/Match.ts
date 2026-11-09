@@ -44,7 +44,7 @@ export class Match implements LoopTarget {
 
   private readonly entities: EntityLayer;
 
-  /** Which enemy units draw a world health bar; it listens to the simulation's events. */
+  /** Which units draw a world health bar, and on which side; it listens to the simulation's events. */
   private readonly healthBars: HealthBarVisibility;
 
   /** The map objects (walls, furniture, doors) and their destroyed state, drawn in the scene. */
@@ -89,7 +89,7 @@ export class Match implements LoopTarget {
         );
       }),
       isDead,
-      this.healthBars.hasHealthBar,
+      this.healthBars.healthBarOf,
     );
     this.camera = new MatchCamera(camera, map);
     this.commands = new PlayerCommands(input, simulation, this.camera, mapObjects);

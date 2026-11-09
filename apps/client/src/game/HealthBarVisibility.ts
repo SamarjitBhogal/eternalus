@@ -9,14 +9,15 @@ import {
 } from '@eternalus/core';
 
 import { isDead } from '../bridge/selectors/isDead';
+import type { HealthBarSide } from './views/EntityLayer.types';
 
 /**
- * Decides which units draw a health bar in the world (owner, 2026-11-09). A unit's bar stays
- * hidden from its spawn until it fights: it takes damage, or it deals damage to a living unit (a
- * Legend, mob or boss). A hit on a map object or a structure does not count. From then on the bar
- * shows until the unit dies. Only units outside the player's team show a bar, because the HUD
- * shows the player's own health. The rule reads the simulation's events through `Simulation.on`,
- * as `SoundView` does (08 §6). The views get only `hasHealthBar`.
+ * Decides which units draw a health bar in the world, and on which side (DEC-195). A unit's bar
+ * stays hidden from its spawn until it fights: it takes damage, or it deals damage to a living
+ * unit (a Legend, mob or boss). A hit on a map object or a structure does not count. From then on
+ * the bar shows until the unit dies. Allies and enemies both show one; the player's own Legend
+ * does not, because the HUD shows the player's health. The rule reads the simulation's events
+ * through `Simulation.on`, as `SoundView` does (08 §6). The views get only `healthBarOf`.
  */
 export class HealthBarVisibility {
   /** The units that fought since their last spawn. */
@@ -24,6 +25,8 @@ export class HealthBarVisibility {
 
   /** The units of the latest snapshot: a hit on one of them makes its attacker fight. */
   private units: ReadonlySet<EntityId> = new Set();
+
+  private playerId: EntityId | null = null;
 
   private playerTeam: Team | null = null;
 
@@ -43,23 +46,32 @@ export class HealthBarVisibility {
   }
 
   /**
-   * Reads the latest snapshot: which entities are units, and the player's team. Call it once for
-   * the first snapshot and again after each `step`, before that step's events are needed.
+   * Reads the latest snapshot: which entities are units, and the player and their team. Call it
+   * once for the first snapshot and again after each `step`, before that step's events are needed.
    */
   public observe(snapshot: Snapshot): void {
     this.units = new Set(
       snapshot.entities.filter((entity) => isUnitFamily(entity.family)).map(({ id }) => id),
     );
-    const playerId = snapshot.match.humanLegendId;
-    this.playerTeam = snapshot.entities.find(({ id }) => id === playerId)?.team ?? null;
+    this.playerId = snapshot.match.humanLegendId;
+    this.playerTeam = snapshot.entities.find(({ id }) => id === this.playerId)?.team ?? null;
   }
 
-  /** Whether `entity` draws its health bar: a living unit outside the player's team that fought. */
-  public readonly hasHealthBar = (entity: EntitySnapshot): boolean =>
-    this.fought.has(entity.id) &&
-    isUnitFamily(entity.family) &&
-    entity.team !== this.playerTeam &&
-    !isDead(entity.health);
+  /**
+   * The side of `entity`'s health bar, or `null` when it draws none: a living unit that fought,
+   * other than the player. With no player (sim mode), every unit is on the `enemy` side.
+   */
+  public readonly healthBarOf = (entity: EntitySnapshot): HealthBarSide | null => {
+    const isShown =
+      this.fought.has(entity.id) &&
+      isUnitFamily(entity.family) &&
+      entity.id !== this.playerId &&
+      !isDead(entity.health);
+    if (!isShown) {
+      return null;
+    }
+    return entity.team === this.playerTeam ? 'ally' : 'enemy';
+  };
 
   /** Stops listening, so a finished match leaves no listener behind (13 §2). */
   public destroy(): void {

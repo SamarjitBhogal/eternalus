@@ -248,14 +248,15 @@ describe('SessionController with the real match, end to end', () => {
 
     expect(first?.scheduler.hasPendingFrame).toBe(false);
     expect(session.listeners(first, firstCanvas)).toBe(0);
-    // The match makes no simulation subscription of its own (core spawns the player from the roster).
-    expect(first?.unsubscribed).toEqual([]);
+    // The match's only simulation subscriptions are the health bars' two (damage-applied,
+    // entity-died, DEC-195); its teardown drops each exactly once.
+    expect(first?.unsubscribed).toEqual([1, 1]);
     expect(session.bus.listenerCount()).toBe(busWithOne);
 
     session.intent({ kind: 'leave-match' });
     expect(second?.scheduler.hasPendingFrame).toBe(false);
     expect(session.listeners(second, secondCanvas)).toBe(0);
-    expect(second?.unsubscribed).toEqual([]);
+    expect(second?.unsubscribed).toEqual([1, 1]);
     expect(session.bus.listenerCount()).toBe(busBefore);
   });
 

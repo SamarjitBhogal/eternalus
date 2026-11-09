@@ -347,7 +347,11 @@ describe('MiniMapView unit markers (DEC-187)', () => {
       hordes: [],
       teams: { light: counters, dark: counters },
     };
-    const units = new EntityLayer(createDefaultViewRegistry(), () => false, () => false);
+    const units = new EntityLayer(
+      createDefaultViewRegistry(),
+      () => false,
+      () => null,
+    );
     units.show(null, snapshot, 0, null);
     const renderer = new RecordingRenderer();
     new MiniMapView(MAP, new SceneView([units]), RING, () => CENTRE).draw(renderer, 1920, 1080);
