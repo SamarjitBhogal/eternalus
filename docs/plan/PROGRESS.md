@@ -6198,3 +6198,33 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "Documentation check passed." Logs in `eternalus-agent-work/game-loop-plan/`.
 - Next step: the GL-15 pre-PR gate (architecture critic, then ponytail), then push and open the PR
   into `feat/match-scoring`.
+
+### 2026-11-09 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-15 critic round 1 and DEC-223 — feat/capture-scoring — sholtzman + Claude Code
+
+- What: the GL-15 pre-PR architecture critic, round 1 (base `98e285c`, head `4d9ca6c`): approve, 0
+  blocker, 0 major, 2 minor, 4 nit, 5 better-than-design. The owner's calls on the
+  better-than-design items are DEC-223; all are built on this branch.
+  - `ca8c4ab`: a scoring rule is a `ScoringListener` (event bus and `defer` only) or a `TickScorer`
+    (`scoreTick(book, state)`), listed apart in `ScoringRules`; `CaptureScoring` split into
+    `rules/CheckpointRule.ts` and `rules/CaptureHoldRule.ts`; `TeamStats.checkpointsReached`;
+    `checkpoint-reached` carries `presentLegendIds`, filled by `CaptureSystem`
+    (`ZonePresence` in `CaptureSystem.types.ts`); the hold rule reads each point's owner from its
+    `Capturable`, so `ScoringState.ownedPoints` and `ScoreBook.countOwnedPoints` are removed;
+    `StructureDestroyedRule` lost its empty `scoreTick`. Minor 1: `SECONDS_PER_MINUTE` moved to
+    `defaultScoringRules.ts`, its only user.
+  - `ba1b270`: architecture 12 (paths, §1, §5 with the lasting capture rules moved in from §13
+    (minor 2), §12, §13), 03 §2 and §4, 02 §2 and §9, 17 R3.
+  - This commit: DEC-223 in the owner decisions log.
+  - One test is deleted: `ScoreBook.test.ts` "counts the capture points each team owns up and
+    down, with no points (DEC-214)". It tested only `countOwnedPoints`, which DEC-223 (4b)
+    removes. The hold rule's owner reading has its own test in `CaptureHoldRule.test.ts`.
+  - Not taken: nit 4 (a test file per extracted rule): each rule is guarded through
+    `Scoring.test.ts` (fail-first rows 8 to 14 of `gl15-btd-breaks.md`). Nits 5 and 6 are moot
+    (the code is removed).
+- Fail-first breaks: 32 deliberate breaks on `ca8c4ab`, all red, each restored (`cmp` equal); in
+  `eternalus-agent-work/game-loop-plan/gl15-r1-breaks.md`.
+- Checks run: on `ba1b270`, `npm run check` → `EXIT=0` (`gl15-r1-check-2026-11-09.log` in
+  `eternalus-agent-work/game-loop-plan/`): core "Tests 1384 passed (1384)", statements 99.17 %;
+  client "Tests 1799 passed (1799)", statements 97.03 %; "Documentation check passed."
+- Next step: the GL-15 critic round 2 and ponytail, then push and open the PR into
+  `feat/match-scoring` after GL-4's PR.
