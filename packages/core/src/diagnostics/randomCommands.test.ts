@@ -15,6 +15,7 @@ const snapshotWith = (...ids: string[]): Snapshot => ({
     team: 'light',
     transform: null,
     health: null,
+    progression: null,
     area: null,
     capture: null,
   })),
