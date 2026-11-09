@@ -6444,3 +6444,30 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Next step: the architecture critic and ponytail on this branch (pre-PR gate); its PR opens
   after GL-5 merges (DEC-231). When it merges, `INBOX.md` "PR #64 better than the design?
   (critic round 6)" closes.
+
+### 2026-11-09 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-16 pre-PR gate: critic fixes and DEC-233 — refactor/map-feature-link — sholtzman + Claude Code
+
+- What: the pre-PR gate on GL-16 (ADR 0010).
+  - Critic round 1 (approve; 1 minor, 4 nits): architecture 04 lists `MapFeatureLink` in the
+    `Structure` and `Zone` installs (§1) and the component table (§3), and its §13 bullet only
+    points there; 07 §13 drops the history clause; 13 §10 names `PublishedRoster` as a class; the
+    decisions log's `last-reviewed` date; TSDoc on `CapturePointStatus.pointId`.
+  - Its two better-than-design items, owner answer "A: build both (Recommended)" (DEC-233): one
+    map feature may back several entities (the Cathedral's zone and its planned structure), so a
+    consumer selects by feature id and by the group it reads, and at most one entity per feature
+    carries each group (`MapFeatureLink`, `EntitySnapshot.mapFeatureId`, 04 §3, 13 §10); one
+    static `MatchBridge.byFeature(snapshot, pick)` replaces `healthByFeature` and
+    `captureByFeature`. New test: a capture point reads its zone when a structure names the same
+    feature. `INBOX.md` GL-16 item records the answer.
+  - Ponytail round 2: PASS, no cuts. Critic round 2 (approve; 2 minors, 3 nits): the plan's GL-16
+    row as built, this entry, the 13 §10 wrap, and "at most one entity per feature carries each
+    group" (04 §3 row, `byFeature` TSDoc). No round 3: what followed is docs and one TSDoc line.
+- Fail-first breaks: 3 more (rows 16 to 18), all red then restored (`cmp` equal), in
+  `eternalus-agent-work/game-loop-plan/gl16-breaks.md` (driver `gl16-r2-run-breaks.py`).
+- Checks run: `npm run check` on `8f4d8aa2` → `EXIT=0` (`gl16-final-check-2-2026-11-09.log` in
+  `eternalus-agent-work/game-loop-plan/`): Prettier "All matched files use Prettier code style!";
+  core "Tests 1370 passed (1370)", statements 99.15 %; client "Tests 1866 passed (1866)",
+  statements 97.06 %; "Documentation check passed."
+- Next step: push the branch; its PR opens after GL-5 merges (DEC-231), then targets the phase
+  branch. When it merges, `INBOX.md` HC-Q47 and "PR #64 better than the design? (critic round 6)"
+  close.
