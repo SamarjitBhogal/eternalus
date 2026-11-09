@@ -14,7 +14,13 @@ import type { Polygon, Vec2 } from '../utils/geometry.types';
 import { length, sub } from '../utils/vec2';
 import type { MutableVec2 } from '../utils/vec2.types';
 import type { Entity } from '../entities/Entity';
-import type { EntityClass, EntityId, RemovalCause, RemovalRecord } from './EntityStore.types';
+import type {
+  AimedAt,
+  EntityClass,
+  EntityId,
+  RemovalCause,
+  RemovalRecord,
+} from './EntityStore.types';
 
 /**
  * Every live entity of a match, kept in insertion order. Systems iterate with `forEach`, so the
@@ -168,28 +174,25 @@ export class EntityStore {
 
   /**
    * Writes into `out` the point of `targetId` that attack reach from `from` is measured to, which a
-   * chase heads for (`StuckSystem`, `PathingSystem`): the point of its outline (`outlineOf`)
-   * nearest `from`, or `from` itself when it stands inside the outline (in reach, so a chase
-   * holds there), else its centre (reach then also spans its collider radius). A unit that
-   * damages a building can face this point (DEC-216 (11)). Returns what it aimed at: the outline
-   * (so a caller needs no second `outlineOf`), `'centre'`, or `null`, leaving `out` as it was,
-   * when the target is unknown, has no position, or its outline has no corners.
+   * chase heads for (`StuckSystem`, `PathingSystem`): `from` itself when it stands inside the
+   * target's outline (`outlineOf`), so it is in reach and a chase holds there (DEC-234); else the
+   * point of the outline nearest `from`; else the target's centre (reach then also spans its
+   * collider radius). A unit that damages a building from outside its outline can face this point
+   * (DEC-216 (11)). Returns what it aimed at (`AimedAt`), so the inside test runs only here, or
+   * `null`, leaving `out` as it was, when the target is unknown, has no position, or its outline
+   * has no corners.
    */
-  public aimPointOf(
-    targetId: EntityId,
-    from: Vec2,
-    out: MutableVec2,
-  ): readonly Polygon[] | 'centre' | null {
+  public aimPointOf(targetId: EntityId, from: Vec2, out: MutableVec2): AimedAt {
     const outline = this.outlineOf(targetId);
     if (outline !== undefined) {
-      if (nearestPointOnPolygons(from, outline, out) === Number.POSITIVE_INFINITY) {
-        return null;
-      }
       if (isPointInAnyPolygon(from, outline)) {
         out.x = from.x;
         out.y = from.y;
+        return 'inside';
       }
-      return outline;
+      return nearestPointOnPolygons(from, outline, out) === Number.POSITIVE_INFINITY
+        ? null
+        : 'outline';
     }
     const at = this.entities.get(targetId)?.findComponent(Transform)?.position;
     if (at === undefined) {
