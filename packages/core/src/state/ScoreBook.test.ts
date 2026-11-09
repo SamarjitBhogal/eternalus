@@ -28,18 +28,20 @@ const ZERO_COUNTERS = {
   minionKills: 0,
   neutralKills: 0,
   structureDamage: 0,
+  checkpointsWon: 0,
   score: 0,
 } as const;
 
 describe('ScoreBook', () => {
-  it('starts with no rows, both teams at 0 and no recent hits', () => {
+  it('starts with no rows, both teams at 0, no recent hits and no capture point owned', () => {
     expect(new ScoreBook().view).toEqual({
       legends: [],
       teams: {
-        light: { score: 0, structuresDestroyed: 0 },
-        dark: { score: 0, structuresDestroyed: 0 },
+        light: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0 },
+        dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0 },
       },
       recentHits: [],
+      ownedPoints: { light: 0, dark: 0 },
     });
   });
 
@@ -83,8 +85,8 @@ describe('ScoreBook', () => {
       score: 4,
     });
     expect(book.view.teams).toEqual({
-      light: { score: 4, structuresDestroyed: 0 },
-      dark: { score: 0, structuresDestroyed: 0 },
+      light: { score: 4, structuresDestroyed: 0, capturesHeldTicks: 0 },
+      dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0 },
     });
   });
 
@@ -103,8 +105,16 @@ describe('ScoreBook', () => {
 
     book.awardTeam('dark', { counter: 'structuresDestroyed', by: 1, points: 5 });
 
-    expect(book.view.teams.dark).toEqual({ score: 5, structuresDestroyed: 1 });
-    expect(book.view.teams.light).toEqual({ score: 0, structuresDestroyed: 0 });
+    expect(book.view.teams.dark).toEqual({
+      score: 5,
+      structuresDestroyed: 1,
+      capturesHeldTicks: 0,
+    });
+    expect(book.view.teams.light).toEqual({
+      score: 0,
+      structuresDestroyed: 0,
+      capturesHeldTicks: 0,
+    });
     expect(book.rowOf(DARK_SENTINEL.entityId)).toEqual({ ...DARK_SENTINEL, ...ZERO_COUNTERS });
   });
 
@@ -116,10 +126,38 @@ describe('ScoreBook', () => {
     book.award(LIGHT_WARRIOR.entityId, { counter: 'kills', by: 1, points: 15 });
     book.award(LIGHT_MAGUS.entityId, { counter: 'assists', by: 1, points: 7 });
     book.awardTeam('light', { counter: 'structuresDestroyed', by: 1, points: 5 });
+    book.awardTeamPoints('light', 3);
+    book.awardTeam('light', { counter: 'capturesHeldTicks', by: 2, points: 1 });
 
     const legendPoints = book.view.legends.reduce((sum, row) => sum + row.score, 0);
     expect(legendPoints).toBe(22);
-    expect(book.view.teams.light.score).toBe(legendPoints + 5);
+    expect(book.view.teams.light.score).toBe(legendPoints + 5 + 3 + 1);
+  });
+
+  it("adds team-only points with no counter, no row's: a reached checkpoint's (DEC-214)", () => {
+    const book = new ScoreBook();
+    book.addRow(LIGHT_WARRIOR);
+
+    book.awardTeamPoints('light', 3);
+
+    expect(book.view.teams).toEqual({
+      light: { score: 3, structuresDestroyed: 0, capturesHeldTicks: 0 },
+      dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0 },
+    });
+    expect(book.rowOf(LIGHT_WARRIOR.entityId)).toEqual({ ...LIGHT_WARRIOR, ...ZERO_COUNTERS });
+  });
+
+  it('counts the capture points each team owns up and down, with no points (DEC-214)', () => {
+    const book = new ScoreBook();
+
+    book.countOwnedPoints('light', 1);
+    book.countOwnedPoints('light', 1);
+    book.countOwnedPoints('dark', 1);
+    book.countOwnedPoints('light', -1);
+
+    expect(book.view.ownedPoints).toEqual({ light: 1, dark: 1 });
+    expect(book.view.teams.light.score).toBe(0);
+    expect(book.view.teams.dark.score).toBe(0);
   });
 
   it('keeps one recent hit per Legend and victim, at its latest tick (DEC-132)', () => {

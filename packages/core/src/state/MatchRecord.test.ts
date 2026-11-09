@@ -41,10 +41,11 @@ describe('MatchRecord', () => {
       scoring: {
         legends: [],
         teams: {
-          light: { score: 0, structuresDestroyed: 0 },
-          dark: { score: 0, structuresDestroyed: 0 },
+          light: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0 },
+          dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0 },
         },
         recentHits: [],
+        ownedPoints: { light: 0, dark: 0 },
       },
       result: null,
     });
@@ -94,8 +95,8 @@ describe('MatchRecord', () => {
       configHash: 0,
       legends: [],
       teams: {
-        light: { score: 0, structuresDestroyed: 0 },
-        dark: { score: 0, structuresDestroyed: 0 },
+        light: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0 },
+        dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0 },
       },
       finalHash: 0,
     };

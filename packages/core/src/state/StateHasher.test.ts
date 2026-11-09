@@ -258,6 +258,22 @@ describe('StateHasher', () => {
         state.match.scoreBook.recordHit('entity-2', 'entity-1', 0);
       },
     ],
+    [
+      'the scoring (an owned capture point)',
+      (state) => {
+        state.match.scoreBook.countOwnedPoints('light', 1);
+      },
+    ],
+    [
+      'the scoring (held ticks)',
+      (state) => {
+        state.match.scoreBook.awardTeam('light', {
+          counter: 'capturesHeldTicks',
+          by: 1,
+          points: 0,
+        });
+      },
+    ],
   ])('changes when %s of the match changes', (_, change) => {
     const state = new GameState(createDefaultGameConfig(), 1);
     const before = hasher.hash(state);

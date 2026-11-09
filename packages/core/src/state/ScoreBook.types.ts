@@ -15,6 +15,7 @@ export type MutableScoringState = {
   readonly legends: MutableLegendStats[];
   readonly teams: Record<PlayableTeam, MutableTeamStats>;
   recentHits: MutableRecentHit[];
+  readonly ownedPoints: Record<PlayableTeam, number>;
 };
 
 /** Who a new row is for: the fields a row keeps for life (its counters start at 0). */
@@ -22,15 +23,24 @@ export type LegendIdentity = Pick<LegendStats, 'entityId' | 'team' | 'classId' |
 
 /** A Legend counter that `ScoreBook.award` raises. */
 export type LegendCounter =
-  'kills' | 'deaths' | 'assists' | 'minionKills' | 'neutralKills' | 'structureDamage';
+  | 'kills'
+  | 'deaths'
+  | 'assists'
+  | 'minionKills'
+  | 'neutralKills'
+  | 'structureDamage'
+  | 'checkpointsWon';
 
 /** A team counter that `ScoreBook.awardTeam` raises. */
-export type TeamCounter = 'structuresDestroyed';
+export type TeamCounter = 'structuresDestroyed' | 'capturesHeldTicks';
 
 /** One award: a counter goes up by `by`, and the points go to the score. */
 export type Award<Counter extends string> = {
   readonly counter: Counter;
-  /** How much the counter goes up: 1 for a kill, death or assist; the damage for `structureDamage`. */
+  /**
+   * How much the counter goes up: 1 for a kill, death or assist; the damage for `structureDamage`;
+   * the points owned for `capturesHeldTicks`.
+   */
   readonly by: number;
   /** The points it is worth; 0 for a counter with no points. */
   readonly points: number;

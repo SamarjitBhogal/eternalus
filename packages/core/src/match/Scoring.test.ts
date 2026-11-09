@@ -42,6 +42,7 @@ const EMPTY_ROW = {
   minionKills: 0,
   neutralKills: 0,
   structureDamage: 0,
+  checkpointsWon: 0,
   score: 0,
 } as const;
 
@@ -173,8 +174,8 @@ describe('Scoring', () => {
 
       expect(rowOf(killer)).toMatchObject({ kills: 1, score: 15 });
       expect(state.match.scoring.teams).toEqual({
-        light: { score: 15, structuresDestroyed: 0 },
-        dark: { score: 0, structuresDestroyed: 0 },
+        light: { score: 15, structuresDestroyed: 0, capturesHeldTicks: 0 },
+        dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0 },
       });
     });
 
@@ -365,6 +366,7 @@ describe('Scoring', () => {
         assists: 0,
         minionKills: 0,
         structureDamage: 0,
+        checkpointsWon: 0,
         score: 0,
       });
       expect(state.match.scoring.teams.light.score).toBe(0);
@@ -460,10 +462,15 @@ describe('Scoring', () => {
         destroy(kind, team);
         endTick();
 
-        expect(state.match.scoring.teams[destroyer]).toEqual({ score: 5, structuresDestroyed: 1 });
+        expect(state.match.scoring.teams[destroyer]).toEqual({
+          score: 5,
+          structuresDestroyed: 1,
+          capturesHeldTicks: 0,
+        });
         expect(state.match.scoring.teams[team]).toEqual({
           score: 0,
           structuresDestroyed: 0,
+          capturesHeldTicks: 0,
         });
         expect(state.match.scoring.legends).toEqual([
           { ...EMPTY_ROW, entityId: light, team: 'light' },
@@ -479,8 +486,8 @@ describe('Scoring', () => {
       endTick();
 
       expect(state.match.scoring.teams).toEqual({
-        light: { score: 0, structuresDestroyed: 0 },
-        dark: { score: 0, structuresDestroyed: 0 },
+        light: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0 },
+        dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0 },
       });
     });
 
@@ -529,8 +536,8 @@ describe('Scoring', () => {
         .filter((row) => row.team === team)
         .reduce((sum, row) => sum + row.score, 0);
     expect(state.match.scoring.teams).toEqual({
-      light: { score: 34, structuresDestroyed: 0 },
-      dark: { score: 4, structuresDestroyed: 0 },
+      light: { score: 34, structuresDestroyed: 0, capturesHeldTicks: 0 },
+      dark: { score: 4, structuresDestroyed: 0, capturesHeldTicks: 0 },
     });
     expect(state.match.scoring.teams.light.score).toBe(sumOf('light'));
     expect(state.match.scoring.teams.dark.score).toBe(sumOf('dark'));
@@ -545,7 +552,11 @@ describe('Scoring', () => {
     endTick();
 
     expect(state.match.scoring.legends.map((row) => row.score)).toEqual([15, 0]);
-    expect(state.match.scoring.teams.light).toEqual({ score: 25, structuresDestroyed: 2 });
+    expect(state.match.scoring.teams.light).toEqual({
+      score: 25,
+      structuresDestroyed: 2,
+      capturesHeldTicks: 0,
+    });
   });
 
   it('ignores a death announced for an entity that is not in the store', () => {
@@ -579,8 +590,8 @@ describe('Scoring', () => {
       configHash: 0,
       legends: [],
       teams: {
-        light: { score: 0, structuresDestroyed: 0 },
-        dark: { score: 0, structuresDestroyed: 0 },
+        light: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0 },
+        dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0 },
       },
       finalHash: 0,
     });
@@ -592,6 +603,10 @@ describe('Scoring', () => {
 
     expect(rowOf(killer)).toMatchObject({ kills: 0, score: 0 });
     expect(rowOf(late)).toBeUndefined();
-    expect(state.match.scoring.teams.light).toEqual({ score: 0, structuresDestroyed: 0 });
+    expect(state.match.scoring.teams.light).toEqual({
+      score: 0,
+      structuresDestroyed: 0,
+      capturesHeldTicks: 0,
+    });
   });
 });
