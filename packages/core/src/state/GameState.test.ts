@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest';
 
 import { Health } from '../components/Health';
 import { MapFeatureLink } from '../components/MapFeatureLink';
+import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { ContentCatalogue } from '../content/ContentCatalogue';
 import type { MapDefinition } from '../content/maps/maps.types';
+import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { CAPTURE_POINT } from '../content/zones/capturePoint';
 import { Entity } from '../entities/Entity';
@@ -37,6 +40,20 @@ class Marker extends Entity {
     // A marker has no components.
   }
 }
+
+/** An entity that levels along the `test` curve and has nothing else. */
+class Leveller extends Entity {
+  public readonly kind = 'leveller';
+  public readonly family = 'test';
+
+  protected installComponents(): void {
+    this.addComponent(new Progression('test'));
+  }
+}
+
+const CURVES = new ContentCatalogue<LevelCurveDefinition>([
+  { id: 'test', xpToNext: [100, 150], cap: 3 },
+]);
 
 /** An entity of any family and team at `(x, y)`, for the ally-damage tally. */
 class Placed extends Entity {
@@ -107,7 +124,7 @@ describe('GameState', () => {
     state.entities.add(spawned(new Soldier('entity-1', 'soldier-definition')));
     state.entities.add(spawned(new Marker('entity-2', 'marker-definition')));
     state.advanceTick();
-    expect(state.snapshot()).toEqual({
+    expect(state.snapshot(CURVES)).toEqual({
       tick: 1,
       match: { phase: 'countdown', phaseEnteredTick: 0, upcoming: [], humanLegendId: null },
       entities: [
@@ -119,6 +136,7 @@ describe('GameState', () => {
           team: 'light',
           transform: { x: 3, y: 4, radius: 0.5 },
           health: { current: 100, max: 100 },
+          progression: null,
           area: null,
           capture: null,
         },
@@ -130,6 +148,7 @@ describe('GameState', () => {
           team: null,
           transform: null,
           health: null,
+          progression: null,
           area: null,
           capture: null,
         },
@@ -161,7 +180,7 @@ describe('GameState', () => {
     state.entities.add(loose);
     state.entities.add(spawned(new Soldier('entity-3', 'soldier-definition')));
 
-    const [built, withoutFeature, soldier] = state.snapshot().entities;
+    const [built, withoutFeature, soldier] = state.snapshot(CURVES).entities;
 
     expect(built?.mapFeatureId).toBe('light-stronghold');
     expect(withoutFeature).not.toHaveProperty('mapFeatureId');
@@ -194,11 +213,24 @@ describe('GameState', () => {
     state.entities.add(zoneAt('entity-2'));
     state.entities.add(linked);
 
-    const [zone, looseZone, marker] = state.snapshot().entities;
+    const [zone, looseZone, marker] = state.snapshot(CURVES).entities;
 
     expect(zone?.mapFeatureId).toBe('capture-point-lane-1');
     expect(looseZone).not.toHaveProperty('mapFeatureId');
     expect(marker?.mapFeatureId).toBe('light-gate-lane-0');
+  });
+
+  it("snapshots a leveller's level, the XP inside that level and what the level needs, from the curves it is given", () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const leveller = spawned(new Leveller('entity-1', 'leveller-definition'));
+    leveller.getComponent(Progression).addXp(130, CURVES.get('test'));
+    state.entities.add(leveller);
+
+    expect(state.snapshot(CURVES).entities[0]?.progression).toEqual({
+      level: 2,
+      xp: 30,
+      xpToNext: 150,
+    });
   });
 
   it('snapshots the hordes and team counters as copies the store no longer changes', () => {
@@ -214,7 +246,7 @@ describe('GameState', () => {
     });
     state.recordSpawnRequest('dark', 3, 2);
 
-    const snapshot = state.snapshot();
+    const snapshot = state.snapshot(CURVES);
     state.hordes.removeMember('entity-1');
     state.hordes.setProgress('horde-1', 20);
     state.recordSpawnRequest('dark', 1, 1);
@@ -241,7 +273,9 @@ describe('GameState', () => {
   it('produces a snapshot that survives structuredClone unchanged', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
     state.entities.add(spawned(new Soldier('entity-1', 'soldier-definition')));
-    const snapshot = state.snapshot();
+    state.entities.add(spawned(new Leveller('entity-2', 'leveller-definition')));
+    const snapshot = state.snapshot(CURVES);
+    expect(snapshot.entities[1]?.progression).not.toBeNull();
     expect(structuredClone(snapshot)).toEqual(snapshot);
   });
 
@@ -330,7 +364,7 @@ describe('GameState', () => {
       state.match.advanceTimeline();
       state.match.setPhase('early-game');
 
-      expect(state.snapshot().match).toEqual({
+      expect(state.snapshot(CURVES).match).toEqual({
         phase: 'early-game',
         phaseEnteredTick: 0,
         upcoming: [{ entryId: 'mid-game', tick: 900 }],

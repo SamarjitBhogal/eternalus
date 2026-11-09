@@ -1,3 +1,4 @@
+import type { LevelProgress } from '../components/Progression.types';
 import type { MatchPhase } from '../config/matchPhases';
 import type { PlayableTeam, Team } from '../teams/teams.types';
 import type { EntityId } from './EntityStore.types';
@@ -9,8 +10,8 @@ import type { Polygon } from '../utils/geometry.types';
 
 /**
  * One entity as the client sees it. A field is `null` when the entity has no component behind it
- * (no `Transform`, `Health`, `TeamMembership`, `ZoneArea` or `Capturable`), never a made-up
- * default.
+ * (no `Transform`, `Health`, `Progression`, `TeamMembership`, `ZoneArea` or `Capturable`), never a
+ * made-up default.
  */
 export type EntitySnapshot = {
   readonly mapObjectId?: string;
@@ -29,10 +30,18 @@ export type EntitySnapshot = {
   readonly team: Team | null;
   readonly transform: { readonly x: number; readonly y: number; readonly radius: number } | null;
   readonly health: { readonly current: number; readonly max: number } | null;
+  /** A Legend's level and XP (`Progression`, DEC-224); `null` for every entity that does not level. */
+  readonly progression: ProgressionSnapshot | null;
   /** The ground a zone covers (`ZoneArea`), as polygons in world units; `null` for non-zones. */
   readonly area: readonly Polygon[] | null;
   /** A capture point's state (`Capturable`, architecture 07 §7); `null` for every other entity. */
   readonly capture: CaptureSnapshot | null;
+};
+
+/** A Legend's level and XP as the client sees it (architecture 05 §15, the HUD's XP ring). */
+type ProgressionSnapshot = LevelProgress & {
+  /** From 1 to the curve's cap. */
+  readonly level: number;
 };
 
 /** One zone's capture state as the client sees it. */

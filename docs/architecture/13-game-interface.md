@@ -680,9 +680,11 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   setup, HUD and match slices so a rematch shows no stale HUD.
 - **HUD data.** `MatchBridge` publishes `match-clock` and `hud-state` every 6 ticks and
   `structure-state` and `capture-state` every 30, from `Match`'s tick. Core's `Snapshot` has no
-  `player`, so it projects the HUD player from the player's `EntitySnapshot` (health and maximum
-  health live, the slot list empty, every other value `null`, DEC-17) and the structure and
-  capture rosters from the `MapDefinition`. Each structure tile takes the live health of the
+  `player`, so it projects the HUD player from the player's `EntitySnapshot` (health, maximum
+  health, level and XP live, the slot list empty, every other value `null`, DEC-17) and the
+  structure and capture rosters from the `MapDefinition`. Level and XP come from the Legend's
+  `EntitySnapshot.progression`; `xpToNext` is `null` at the level cap, where the XP ring is full
+  (DEC-224). Each structure tile takes the live health of the
   structure core built from its feature, bound once by `EntitySnapshot.mapFeatureId` in the
   snapshot before the first tick, and `current` 0 once that structure is gone from the snapshot
   (DEC-212, DEC-69). Wall segments and turrets have no structure entity yet
@@ -697,7 +699,7 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   a point (DEC-233). For either roster, the bridge re-sends each unchanged tile or point, and the
   last array while nothing in it changes, so the roster selectors return the same value
   (DEC-221 (3)); one `PublishedRoster` (`game/PublishedRoster.ts`) per roster holds the last array
-  and that rule (DEC-222). Each other field becomes live when core publishes it: XP and abilities
+  and that rule (DEC-222). Each other field becomes live when core publishes it: aether and abilities
   (Phase 4, sprints 4.5 and 4.7, through `Snapshot.player`,
   [05](05-abilities-weapons-and-loadouts.md) §15).
 - **HUD elements beyond §3's table.** `LevelBadge` (class emblem, XP ring, level), `WeaponPanel`
