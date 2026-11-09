@@ -6414,3 +6414,54 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   acceptable.
 - Checks run: docs only; `npm run docs:check` and Prettier on the three changed files (below).
 - Next step: open the GL-5 PR into `feat/match-scoring`.
+
+### 2026-11-09 — Phase 3 / HUD: live level and XP — feat/hud-level-xp — sholtzman + Claude Code
+
+- What was done: the HUD shows the human Legend's live level and XP. Core: `EntitySnapshot`
+  has a `progression` group (`level`, the XP inside that level, `xpToNext`) directly after
+  `health`, `null` for every entity without `Progression`. `Progression.levelProgress(curve)`
+  gives the XP inside the level and `xpToNext` (`null` at the curve's cap).
+  `GameState.snapshot(curves)` takes the level-curve catalogue as a required parameter, and
+  `Simulation` passes the same catalogue `ProgressionSystem` gets. Client: `MatchBridge.playerOf`
+  fills `level`, `xp` and `xpToNext` from the snapshot; aether stays `null`. The design's
+  `Snapshot.player` (05 §15) is not built yet; this is the interim 05 §18 names (the bridge
+  projects the HUD player from the player's `EntitySnapshot`). The `damage-applied` and
+  `entity-died` payloads are unchanged. Status notes: 03 §12, 05 §18, 13 §10, INBOX HC-F6.
+- Owner answers (DEC-224, 2026-11-09, question dialog): the per-Legend `progression` group and
+  the nullable `xpToNext` become the design (the critic's better-than-design item; 03 §5 and
+  05 §15 sketches updated), and the HUD's XP ring is full at the level cap
+  (`hudSlice.selectXpFraction`).
+- Critic (architecture-reviewer, base `120653b2`): PASS WITH NOTES, no blockers. Fixed: 13 §10
+  HUD data, the `MatchBridge.playerOf` TSDoc, `LevelProgress` in `Progression.types.ts` (the
+  snapshot type reuses it), this entry's checks, `xpToNext` is `null` from `curve.cap` (not
+  from the step list), tests for a player without progression, the cap in the bridge and a
+  Leveller in the structured-clone test. Not changed: `GameState.ts` is over ~300 lines (315 at
+  the base, 335 now); splitting it would cross open PRs #79 and #86, which edit it. Round 2
+  (the delta after round 1 and DEC-224): PASS WITH NOTES, no blockers; fixed the `LevelBadge`
+  TSDoc (full ring at the cap, DEC-224) and early returns in `selectXpFraction`; not changed: a
+  badge-level cap test (the slice test and the badge's full-ring test cover it) and an assert on
+  short curve tables (`loadLevelCurves` rejects them). Ponytail: nothing to cut.
+- Red proof (logs in `eternalus-agent-work/hud-level-xp/`): `red-before.log`, the five new or
+  changed tests failed before the change (`levelProgress is not a function`, `progression`
+  undefined three times, the HUD's level and XP `null`); `red-critic-r1.log`, the cap test
+  (`xpToNext: 150` at the cap); `red-critic-r1-b.log`, deliberate breaks (the bridge maps a
+  missing `xpToNext` to 0; the snapshot group holds a function) turn the bridge and
+  structured-clone tests red; `red-dec224.log`, the full-ring test (`expected null to be 1`).
+- Checks run: `npm run check` on the final code (log
+  `eternalus-agent-work/hud-level-xp/check-5.log`): exit 0, Prettier passed, core
+  `Tests 1302 passed (1302)`, client `Tests 1800 passed (1800)`, docs check passed.
+- Next step: push and open the PR into phase/3; whichever of this PR and the aether PR lands
+  second resolves the adjacent `Snapshot.types.ts` lines.
+
+### 2026-11-09 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / phase/3 merge (#88) — feat/match-scoring — sholtzman + Claude Code
+
+- What: merged `phase/3-sprint-3-work` (`089617e6`, PR #88 HUD level and XP) into GL-4 (`7ddc20e0`),
+  so PR #93 merges again. Conflicts: 03 and the decisions log `last-reviewed` (took 2026-11-09);
+  the decisions log batches (DEC-224's batch first, newest first, then GL-4's); this file (both, in
+  date order). No code conflict.
+- Checks run: `npm run check` on `7ddc20e0` → `EXIT=0` (`gl4-merge-88-check-2026-11-09.log` in
+  `eternalus-agent-work/game-loop-plan/`): Prettier "All matched files use Prettier code style!";
+  core "Tests 1363 passed (1363)", statements 99.15 %; client "Tests 1800 passed (1800)",
+  statements 97.04 %; "Documentation check passed."
+- Next step: merge this head into GL-5 (`feat/results-flow`) and GL-15 (`feat/capture-scoring`),
+  then GL-5 into GL-16 (`refactor/map-feature-link`); push all four.

@@ -29,6 +29,7 @@ const PLAYER: EntitySnapshot = {
   team: 'light',
   transform: { x: 1, y: 2, radius: 0.5 },
   health: { current: 600, max: 600 },
+  progression: { level: 3, xp: 40, xpToNext: 114 },
   area: null,
   capture: null,
 };
@@ -81,6 +82,7 @@ const structureOf = (feature: MapFeature, current: number, max: number): EntityS
   team: feature.team,
   transform: { ...feature.position, radius: 3 },
   health: { current, max },
+  progression: null,
   area: null,
   capture: null,
   mapFeatureId: feature.id,
@@ -163,7 +165,7 @@ describe('MatchBridge', () => {
     expect(huds).toEqual([{ player: null }]);
   });
 
-  it("carries only the player's health; every other HUD value stays empty", () => {
+  it("carries the player's health, level and XP; every other HUD value stays empty", () => {
     const { bridge, huds } = setUp();
     bridge.publishAll(snapshotAt(0, [PLAYER]), 'player-1');
     bridge.publishAll(snapshotAt(0, [PLAYER]), 'someone-else');
@@ -177,15 +179,29 @@ describe('MatchBridge', () => {
           maxHealth: 600,
           aether: null,
           maxAether: null,
-          level: null,
-          xp: null,
-          xpToNext: null,
+          level: 3,
+          xp: 40,
+          xpToNext: 114,
           weaponProgress: null,
           ultimatePips: null,
           slots: [],
         },
       },
       { player: null },
+    ]);
+  });
+
+  it('shows no level or XP for a player that does not level, and no next level at the cap', () => {
+    const { bridge, huds } = setUp();
+    bridge.publishAll(snapshotAt(0, [{ ...PLAYER, progression: null }]), 'player-1');
+    bridge.publishAll(
+      snapshotAt(0, [{ ...PLAYER, progression: { level: 50, xp: 12, xpToNext: null } }]),
+      'player-1',
+    );
+
+    expect(huds.map(({ player }) => [player?.level, player?.xp, player?.xpToNext])).toEqual([
+      [null, null, null],
+      [50, 12, null],
     ]);
   });
 
@@ -374,6 +390,7 @@ describe('MatchBridge', () => {
       team: tower.team,
       transform: { ...tower.position, radius: 3 },
       health: { current: 1, max: 3_000 },
+      progression: null,
       area: null,
       capture: null,
     };
