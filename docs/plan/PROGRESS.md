@@ -6404,3 +6404,13 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `eternalus-agent-work/game-loop-plan/`): core "Tests 1365 passed (1365)", statements 99.15 %;
   client "Tests 1860 passed (1860)", statements 97.05 %; "Documentation check passed."
 - Next step: push; open the GL-5 PR into `feat/match-scoring`.
+
+### 2026-11-08 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / DEC-222 (HC-Q47) — feat/results-flow — sholtzman + Claude Code
+
+- What: the owner answered `INBOX.md` HC-Q47 in chat, "(b) Build it in GL-16". DEC-222 records it
+  in the owner decisions log; HC-Q47 is closed; the game-loop plan's GL-16 row now moves
+  `MatchBridge.keepUnchanged` out of `MatchBridge` and tests it, the length-change branch
+  included. No code changes on this branch: GL-5 keeps today's form, which the critic called
+  acceptable.
+- Checks run: docs only; `npm run docs:check` and Prettier on the three changed files (below).
+- Next step: open the GL-5 PR into `feat/match-scoring`.

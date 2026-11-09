@@ -21,6 +21,16 @@ overridden by the product owner. Decisions arrive through `INBOX.md`; once imple
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
 
+## Batch 2026-11-08, HC-Q47 (the GL-5 targeted critic's better-than-design item)
+
+The owner's answer of 2026-11-08 in chat to `INBOX.md` HC-Q47. His words are kept verbatim outside
+the repository, in `eternalus-agent-work/game-loop-plan/owner-answers-2026-11-08-prepr.md`, section
+"HC-Q47". DEC-222 is this batch.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Docs changed                                               |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| DEC-222 | **The HUD rosters' "keep it if unchanged" rule moves out of `MatchBridge` in GL-16, not on GL-5** (GL-5 targeted critic after DEC-221, better than the design; DEC-139; `INBOX.md` HC-Q47). `MatchBridge.keepUnchanged` keeps each unchanged roster item and the last array (DEC-221 (3)). The critic proposed moving it to `game/keepUnchanged.ts` (a function) or to a small `PublishedRoster` class, with its own unit test that includes the length-change branch, so that `MatchBridge` only publishes. Owner: "(b) Build it in GL-16", because GL-16 rewrites `MatchBridge` anyway. So GL-5 keeps today's form, which the critic called acceptable, and GL-16 does the move. | `feat/results-flow`: game-loop plan §7 (GL-16), `INBOX.md` |
+
 ## Batch 2026-11-08, last (the owner's calls on the GL-4 and GL-5 pre-PR critics, round 3)
 
 The owner's answers of 2026-11-08 to the questions of the last (round 3) pre-PR architecture critics of
