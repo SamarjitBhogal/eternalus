@@ -6041,3 +6041,18 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   EXIT=0, core "Tests 1372 passed (1372)", client "Tests 1778 passed (1778)", "Documentation check
   passed.".
 - Next step: critic, push; merge this head into `feat/out-of-combat-heal` (#86).
+
+### 2026-11-08 — Phase 3 / minion-stack follow-ups, merge of phase/3 after #76 and #77 — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: merged phase/3 at `120653b2` (PR #76 as `6c1c3272`, PR #77 as `120653b2`) in
+  `13a6cbbb`. Conflicts: 17 (`last-reviewed` only) and this file (phase/3's file plus this
+  branch's appended entries; no-loss guard: no line of either side or the base missing). 07
+  auto-merged. No code file changed on both sides.
+- Critic: `architecture-reviewer` on `git show --remerge-diff 13a6cbbb` (report
+  `eternalus-agent-work/playtest-2026-11-04/critic-85-86-merge-120653b2.md`): APPROVE, no
+  blocker or should-fix; one nit on phase/3's own text, left as is.
+- Checks run: `npm run check` at `13a6cbbb` (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-07/minion-stack-followups.120653b2.check.log`):
+  EXIT=0; core "Tests 1374 passed (1374)"; client "Tests 1799 passed (1799)"; "Documentation
+  check passed.". This entry was added after it.
+- Next step: push; PR #86 merges this head.
