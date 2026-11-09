@@ -2,6 +2,7 @@ import {
   createDefaultGameConfig,
   type InputIntent,
   type MapDefinition,
+  type MapObject,
   MapGenerator,
   MapPresentationBuilder,
   MapObjectBuilder,
@@ -32,10 +33,16 @@ class ScriptedIntent implements IntentSource {
   public aim: Vec2 | null = null;
 
   public projection: Projection | null = null;
+  public triggered: InputIntent['triggered'] = [];
 
   public read(projection: Projection): InputIntent {
     this.projection = projection;
-    return { move: this.move, isAttacking: this.isAttacking, aim: this.aim, triggered: [] };
+    return {
+      move: this.move,
+      isAttacking: this.isAttacking,
+      aim: this.aim,
+      triggered: this.triggered,
+    };
   }
 }
 
@@ -88,6 +95,7 @@ const setUp = (
   content?: Content,
   hasHordes = false,
   hasMapObjects = false,
+  objects?: readonly MapObject[],
 ) => {
   const config = createDefaultGameConfig();
   const generated = map ?? new MapGenerator().generate(config, SEED);
@@ -104,6 +112,7 @@ const setUp = (
           ),
         }
       : {}),
+    ...(objects === undefined ? {} : { map: generated, mapObjects: objects }),
     ...(hasHordes ? { map: generated } : {}),
   });
   const scheduler = new FakeFrameScheduler();
@@ -154,6 +163,75 @@ const playerX = (match: Match): number =>
   Number.NaN;
 
 describe('Match', () => {
+  it('previews all ability slots through the controlled sprite without changing gameplay', () => {
+    const { match, renderer, input } = setUp();
+    match.setPlayerAtlas({ image: {} as HTMLImageElement, width: 1122, height: 1402 });
+    match.tick();
+    for (const [index, slot] of (
+      ['ability-1', 'ability-2', 'ability-3', 'ability-4'] as const
+    ).entries()) {
+      input.triggered = [slot];
+      match.tick();
+      renderer.calls.length = 0;
+      match.render(0.5);
+      const call = renderer.calls.find((entry) => entry.op === 'drawSprite');
+      expect(call?.args[0].source.y).toBe([845, 978, 1110, 1242][index]);
+      expect(
+        match.snapshot.entities.find((entity) => entity.id === match.playerEntityId)?.health
+          ?.current,
+      ).toBeGreaterThan(0);
+    }
+    match.destroy();
+  });
+
+  it('plays a sword swing for confirmed weapon damage against a destructible tree', () => {
+    const map = new MapGenerator().generate(createDefaultGameConfig(), SEED);
+    const home = map.features.find(
+      (feature) => feature.kind === 'stronghold' && feature.team === 'light',
+    );
+    if (home === undefined) throw new Error('Missing home');
+    const { x, y } = home.position;
+    const tree: MapObject = {
+      id: 'test-tree',
+      kind: 'tree',
+      isBlocking: true,
+      footprints: [
+        [
+          { x: x + 1, y: y - 0.2 },
+          { x: x + 1.4, y: y - 0.2 },
+          { x: x + 1.4, y: y + 0.2 },
+          { x: x + 1, y: y + 0.2 },
+        ],
+      ],
+    };
+    const { match, simulation, renderer } = setUp(map, undefined, false, false, [tree]);
+    match.setPlayerAtlas({ image: {} as HTMLImageElement, width: 1122, height: 1402 });
+    match.tick();
+    const target = match.snapshot.mapObjects?.find((object) => object.id === tree.id);
+    if (target?.entityId == null || match.playerEntityId === null)
+      throw new Error('Missing combatants');
+    simulation.enqueueCommand({
+      type: 'attack-target',
+      actorId: match.playerEntityId,
+      targetId: target.entityId,
+    });
+    match.tick();
+    match.render(0.5);
+    expect(
+      match.snapshot.mapObjects?.find((object) => object.id === tree.id)?.health?.current,
+    ).toBeLessThan(100);
+    expect(renderer.calls.find((call) => call.op === 'drawSprite')?.args[0].source.y).toBe(713);
+    match.destroy();
+  });
+
+  it('starts the following camera farther out at a 96 by 54 world view', () => {
+    const { match, renderer } = setUp();
+    match.resize(1280, 720, 1);
+    match.render(0);
+    const areas = renderer.calls.filter((call) => call.op === 'showWorldArea');
+    expect(areas[0]?.args[0]).toMatchObject({ width: 96, height: 54 });
+    match.destroy();
+  });
   it('updates the main scene and minimap when a map object is destroyed', () => {
     const { match, simulation, renderer, map } = setUp(undefined, undefined, true, true);
     const house = new MapPresentationBuilder()
@@ -320,7 +398,7 @@ describe('Match', () => {
 
     expect(scheduler.hasPendingFrame).toBe(false);
     expect(simulation.tick).toBe(0);
-    expect(unsubscribes.count).toBe(1);
+    expect(unsubscribes.count).toBe(2);
   });
 
   it('logs once for each kind it has to draw with the default view', () => {

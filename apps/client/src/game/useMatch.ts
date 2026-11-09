@@ -31,6 +31,8 @@ import {
 } from './Match.constants';
 import { createMatchSeed } from './createMatchSeed';
 import { CLICK_SLOP } from './useMatch.constants';
+import { ResourceController } from '../data/resources/ResourceController';
+import knightUrl from '../assets/golden-knight.png';
 
 /**
  * Creates a `Match` on the canvas when it mounts and destroys it on unmount: a Warrior at the
@@ -172,6 +174,23 @@ export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): {
     };
 
     resize();
+    let isMounted = true;
+    void new ResourceController()
+      .loadImage(knightUrl)
+      .then((image) => {
+        if (isMounted)
+          match.setPlayerAtlas({ image, width: image.naturalWidth, height: image.naturalHeight });
+      })
+      .catch(() => {
+        if (isMounted)
+          logger.log(
+            makeLogRecord(
+              'WARN',
+              'client.assets',
+              'Player sprite unavailable; using the hero marker.',
+            ),
+          );
+      });
     keyboard.attach(window);
     mouse.attach(canvas);
     match.start();
@@ -184,6 +203,7 @@ export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): {
     canvas.addEventListener('pointercancel', cancelDrag);
     canvas.addEventListener('wheel', wheel, { passive: false });
     return () => {
+      isMounted = false;
       window.removeEventListener('resize', resize);
       window.removeEventListener('blur', releaseInput);
       document.removeEventListener('visibilitychange', releaseInputWhenHidden);

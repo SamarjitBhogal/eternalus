@@ -209,6 +209,12 @@ export type MapDecoration = {
   readonly isMirrored?: true;
   /** Optional authored identity for the reflected artwork. */
   readonly mirrorId?: string;
+  /** Authored artwork replaces this feature's placeholder in the main view only. */
+  readonly replacesFeature?: string;
+  /** Presentation region polygon that supplies local atmospheric effects. */
+  readonly ambientBiome?: 'snow' | 'lava';
+  /** Cosmetic shimmer follows this authored lava surface, without changing its collider. */
+  readonly sceneryAnimation?: 'lava-flow';
   readonly object?: MapObjectArt;
   /** A bridge deck cuts a walkable corridor through otherwise solid decorative terrain. */
   readonly isPassage?: true;

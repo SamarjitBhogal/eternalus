@@ -7,6 +7,8 @@ import type { WorldPoint } from './Renderer.types';
 export type DrawContext = Pick<
   CanvasRenderingContext2D,
   | 'beginPath'
+  | 'drawImage'
+  | 'imageSmoothingEnabled'
   | 'closePath'
   | 'ellipse'
   | 'fill'

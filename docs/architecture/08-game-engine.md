@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-11-08
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -289,3 +289,49 @@ The design keeps the move cheap:
 - [15 Diagnostics and runtime testing](./15-diagnostics-and-runtime-testing.md)
 - [Research: game architecture and performance](../research/game-architecture-and-performance-research.md)
 - [Research: persistence, input and diagnostics](../research/persistence-input-diagnostics-research.md)
+
+### 2026-11-07 — Fantasy minion presentation
+
+The minion kind registrations select separate light, medium and heavy `MinionView` profiles.
+Local polygon figures are built once per weight and faction and drawn through `Renderer` at
+interpolated positions. Light scouts carry paired blades, medium foot soldiers carry a sword
+and kite shield, and broad armored heavies carry a maul. Silver armor, crests and cyan accents
+identify Light; dark armor, horns, goblin faces and violet accents identify Dark. Neutral units
+use a woodland palette. Visual scale follows snapshot radius; physical radii, balance values,
+AI and commands are unchanged. The existing outlined faction footprint and focused-unit ring
+remain readable beneath and above the figure respectively. Unregistered mob kinds retain the
+family fallback, and minimap marker rendering remains independent of the detailed figures.
+
+### 2026-11-07 — Unit size hierarchy
+
+Minion figure scale and fallback troop-marker scale are presentation constants. All Legend
+classes on both teams share a display diameter slightly larger than the largest shipped
+minion silhouette; the player uses that same hero presentation, with a close focus ring.
+`entityVisualState.ts` supplies view-only radius overrides for the existing marker painters,
+without modifying snapshots or changing collision, movement, combat or spawning. The values
+live in `MinionView.constants.ts` and `entityViews.constants.ts`; a render regression compares
+all three minion weights against all shipped hero classes for both factions. Minimap markers
+and the camera retain their existing scales.
+
+### 2026-11-08 — Wider follow view and local atmosphere
+
+The default player camera shows a wider world area, configured by `FOLLOW_VIEW_WIDTH` and
+`FOLLOW_VIEW_HEIGHT` in `Match.constants.ts`; tracking, manual zoom and overview keep their
+existing behavior. `BiomeAtmosphereView` reads explicitly tagged presentation geometry and
+interpolated tick time from `Match`. Molten surfaces pulse subtly; local snowfall, ash, embers
+and haze fade toward the region boundary and appear only while the camera follows a player
+inside that biome. Free/overview views suppress local weather, and the minimap receives no
+atmospheric overlay. Effects use a bounded particle count from the view's companion constants,
+create no gameplay entities and use no timers or gameplay RNG.
+
+### 2026-11-08 — Controlled hero sprite presentation
+
+The controlled hero can use a decoded atlas injected into `Match`. `PlayerKnightView` falls
+back to `LegendView` while loading and for other heroes; it retains the team ring and leaves
+simulation radii unchanged. `KnightAnimation` observes actual tick displacement for four-way
+walking and samples injected tick/interpolation time for idle and play-once clips. Confirmed
+player weapon damage triggers a sword swing, including damage to destructible scenery.
+Existing ability slots 1–4 preview the three abilities and ultimate cosmetically; previews do
+not cast new gameplay abilities or change damage, resources or cooldowns. Bindings remain in
+`keybindings.ts`. Atlas geometry, row foot anchors and presentation timing have one home in
+`KnightAnimation.constants.ts`; the renderer crops frames and disables image filtering.

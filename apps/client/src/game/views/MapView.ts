@@ -24,6 +24,7 @@ import type { WorldRect } from '../engine/render/Renderer.types';
 export class MapView implements WorldLayer {
   private readonly map: MapDefinition;
   private readonly groundScenery: SceneryView;
+  private readonly dressedFeatures: ReadonlySet<string>;
 
   /** Creates a view for one map; `scenery` supplies its ground-layer decorations. */
   public constructor(
@@ -35,6 +36,11 @@ export class MapView implements WorldLayer {
     private readonly isDestroyed: (id: string) => boolean = () => false,
   ) {
     this.map = map;
+    this.dressedFeatures = new Set(
+      scenery.flatMap((piece) =>
+        piece.replacesFeature === undefined ? [] : [piece.replacesFeature],
+      ),
+    );
     this.groundScenery = new SceneryView(scenery, 'ground', hiddenRoofs, detailArea, isDestroyed);
   }
 
@@ -43,6 +49,7 @@ export class MapView implements WorldLayer {
     this.drawGround(renderer);
     for (const feature of this.map.features) {
       if (this.isDestroyed(feature.id)) continue;
+      if (this.dressedFeatures.has(feature.id)) continue;
       if (this.hiddenRoofs.has(feature.id)) continue;
       if (this.buildings.some((building) => building.id === feature.id)) continue;
       const style = FEATURE_STYLES[feature.kind];

@@ -4,6 +4,7 @@ import { LAKES, LAVA_RIVERS, SNOW_PATCHES } from '../content/maps/map1Landforms'
 import type { SceneryLake } from './sceneryPlacement.types';
 import type { Vec2 } from '../utils/geometry.types';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
+import { sceneryBiomeAt } from './sceneryBiome';
 /** Layers local snow, flowing lava, water and weathered ground beneath landmarks. */
 export class MapLandscapeBuilder extends MapDecorationBuilder {
   /** Receives the layout and its scenery-clearance predicate. */
@@ -73,6 +74,33 @@ export class MapLandscapeBuilder extends MapDecorationBuilder {
       this.blockLastShape();
       this.ribbon(`lava-flow-${String(i)}`, path, 14, P.lava);
       this.ribbon(`lava-core-${String(i)}`, path, 5, P.lavaLight);
+      const core = this.pieces.at(-1);
+      if (core !== undefined)
+        this.pieces[this.pieces.length - 1] = { ...core, sceneryAnimation: 'lava-flow' };
+      this.ribbon(`lava-hot-thread-${String(i)}`, path, 1.6, '#ffe3a1');
+      for (const side of [-1, 1])
+        this.ribbon(
+          `lava-viscous-flow-${String(i)}-${String(side)}`,
+          path.map((point) => ({ x: point.x + side * 4, y: point.y + side * 2 })),
+          1.1,
+          side < 0 ? '#dc7035' : '#ffbd68',
+        );
+      for (let index = 1; index < path.length; index++) {
+        const before = path[index - 1],
+          after = path[index];
+        if (before === undefined || after === undefined) continue;
+        const x = (before.x + after.x) / 2,
+          y = (before.y + after.y) / 2;
+        const n = this.variation(x, y);
+        this.blob(
+          `lava-crust-${String(i)}-${String(index)}`,
+          x + (n % 9) - 4,
+          y + ((n >>> 4) % 7) - 3,
+          2 + (n % 4),
+          1.3 + (n % 3),
+          P.basalt,
+        );
+      }
     });
   }
 
@@ -126,7 +154,7 @@ export class MapLandscapeBuilder extends MapDecorationBuilder {
     for (let y: number = S.margin; y < this.map.height - S.margin; y += S.gridStep) {
       for (let x: number = S.margin; x < this.map.width - S.margin; x += S.gridStep) {
         const n = this.variation(x, y);
-        if (this.isClear({ x, y }) && n % 3 === 0)
+        if (this.isClear({ x, y }) && sceneryBiomeAt({ x, y }) === undefined && n % 3 === 0)
           this.blob(
             `ground-fleck-${String(x)}-${String(y)}`,
             x,

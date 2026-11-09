@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-08
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -514,3 +514,37 @@ The HUD branch owns attack/roof input arbitration and bridge-backed toolbar stat
 - [Map code audit (2026-10-05)](../reviews/2026-10-05-map-code-audit.md)
 - [Research: game architecture and performance](../research/game-architecture-and-performance-research.md)
 - [Reference: map](../reference/game-design/05-map.md)
+
+### 2026-11-07 — Camp presentation
+
+The author's shrine reference governs corner-camp presentation: worn stone stairs, carved
+pillars, a pointed arch and a suspended cyan crystal. Lane structures share that architectural
+language, with troop equipment identifying their visual rank by distance from their team's
+Stronghold: nearest heavy, second medium, any additional farther structures light. With the
+current two structures per lane per side, heavy and medium appear; the light design is available
+when map content includes a third. This is appearance only: counts, feature definitions, teams,
+positions, minion weights and spawning rules retain their existing sources of truth.
+
+Forest camps have a separate woodland design: mossy standing stones, a broken dolmen, roots,
+offerings and lanterns. `campScenery.ts` owns the materials and lane-theme order; dedicated
+builders produce deterministic mirrored artwork. Solid feet and plinths retain explicit object
+ownership for health and destruction; steps, shadows, light and suspended ornaments do not
+become walls. Authored `replacesFeature` metadata suppresses only the main-view placeholder;
+the feature's minimap marker continues to represent its gameplay role.
+
+### 2026-11-08 — Camp colors and expanded biomes
+
+Lane-shrine crystals identify their faction: blue on the west/Light side and purple on the
+east/Dark side. Corner shrines use orange crystals. `campScenery.ts` owns these palettes
+independently of troop-equipment themes; the neutral woodland-camp design remains distinct.
+
+`biomeScenery.ts` defines the alpine and volcanic presentation regions. Layered soils, terraces,
+ice seams, drifts, ash, dead shrubs and crusted lava blend into the existing foothills. Mountains
+inside each region use ice/snow or scorched-basalt materials, with volcanic fissures in the
+southern range. Existing forest samples become snowy firs or charred trees, retaining their
+original object IDs and trunk footprints. Region ground, small shrubs and weather marks are
+cosmetic; lava channels, bridges, lanes and capture rules keep their existing geometry.
+
+Explicit `ambientBiome` polygons and `sceneryAnimation` surfaces in `MapDecoration` supply the
+client's atmospheric view. Metadata scales with the authored world geometry and is separate
+from simulation state. Snow, ash, heat haze and molten shimmer never apply damage or statuses.

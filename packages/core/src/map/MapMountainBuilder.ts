@@ -1,6 +1,8 @@
 import { MAP_PALETTE as P } from '../content/maps/map1Scenery';
 import type { MapDecoration } from '../content/maps/maps.types';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
+import { BIOME_PALETTES } from '../content/maps/biomeScenery';
+import { sceneryBiomeAt } from './sceneryBiome';
 /** Builds overlapping, individually shaped mountain masses around the battlefield. */
 export class MapMountainBuilder extends MapDecorationBuilder {
   /** Returns varied peaks, foothills and rocky slopes without changing collision. */
@@ -97,11 +99,28 @@ export class MapMountainBuilder extends MapDecorationBuilder {
     mirrorId = `${id}-mirror`,
   ): void {
     const start = this.pieces.length;
+    const biome = sceneryBiomeAt({ x, y });
+    const material = biome === undefined ? undefined : BIOME_PALETTES[biome];
+    const colors =
+      material === undefined
+        ? P
+        : {
+            ...P,
+            mountainFoot: material.shadow,
+            mountainMass: material.rock,
+            mountainMassLight: material.rockLight,
+            mountainSunFace: material.rockLight,
+            mountainMiddleFace: material.rock,
+            mountainShadowFace: material.dark,
+            mountainRidge: material.light,
+            mountainSnow: material.surface,
+            mountainScree: material.soil,
+          };
     const point = (dx: number, dy: number) => ({ x: x + dx * rx, y: y + dy * ry });
     const peak = point(-0.35 + (n % 7) * 0.08, -0.85);
     const shoulder = point(0.38, -0.25 - (n % 3) * 0.1);
     this.beginObject(id, 'terrain');
-    this.blob(`${id}-foot`, x, y + ry * 0.2, rx * 1.12, ry * 0.77, P.mountainFoot);
+    this.blob(`${id}-foot`, x, y + ry * 0.2, rx * 1.12, ry * 0.77, colors.mountainFoot);
     this.blockPolygon(
       `${id}-mass`,
       [
@@ -115,39 +134,47 @@ export class MapMountainBuilder extends MapDecorationBuilder {
         point(0.35, 0.75),
         point(-0.45, 0.7),
       ],
-      n % 3 === 0 ? P.mountainMassLight : P.mountainMass,
+      n % 3 === 0 ? colors.mountainMassLight : colors.mountainMass,
     );
     this.polygon(
       `${id}-sun-face`,
       [point(-1, 0.55), point(-0.55, -0.4), peak, point(-0.1, 0.1), point(-0.32, 0.66)],
-      P.mountainSunFace,
+      colors.mountainSunFace,
     );
     this.polygon(
       `${id}-middle-face`,
       [peak, shoulder, point(0.36, 0.48), point(-0.1, 0.1)],
-      P.mountainMiddleFace,
+      colors.mountainMiddleFace,
     );
     this.polygon(
       `${id}-shadow-face`,
       [shoulder, point(0.81, -0.05), point(1, 0.55), point(0.35, 0.75), point(0.36, 0.48)],
-      P.mountainShadowFace,
+      colors.mountainShadowFace,
     );
     this.polygon(
       `${id}-broken-ridge`,
       [peak, point(-0.1, 0.1), point(-0.32, 0.66), point(-0.19, 0.25), point(-0.26, -0.14)],
-      P.mountainRidge,
+      colors.mountainRidge,
     );
-    if (ry > 45)
+    if ((ry > 45 && biome !== 'lava') || biome === 'snow')
       this.polygon(
         `${id}-snow`,
         [peak, point(-0.36, -0.43), point(-0.16, -0.51), point(0.05, -0.38), point(0.17, -0.5)],
-        P.mountainSnow,
+        colors.mountainSnow,
       );
     this.polygon(
       `${id}-scree`,
       [point(-0.64, 0.35), point(-0.32, 0.1), point(-0.42, 0.52), point(-0.76, 0.63)],
-      P.mountainScree,
+      colors.mountainScree,
     );
+    if (biome === 'lava')
+      this.ribbon(
+        `${id}-volcanic-fissure`,
+        [peak, point(-0.12, -0.22), point(0.04, 0.12), point(-0.2, 0.4)],
+        1.1,
+        BIOME_PALETTES.lava.accent,
+        'detail',
+      );
     for (let i = start; i < this.pieces.length; i++) {
       const piece = this.pieces[i];
       if (piece !== undefined)

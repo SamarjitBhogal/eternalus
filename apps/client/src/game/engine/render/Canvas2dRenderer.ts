@@ -1,7 +1,14 @@
 import { FULL_TURN, GLYPH_OUTLINE_WIDTH, OUTLINED_GLYPHS } from './Canvas2dRenderer.constants';
 import type { DrawContext, GlyphHalfSize, GlyphTracer } from './Canvas2dRenderer.types';
 import type { Renderer } from './Renderer';
-import type { GlyphShape, GlyphSpec, ScreenRect, WorldPoint, WorldRect } from './Renderer.types';
+import type {
+  GlyphShape,
+  GlyphSpec,
+  ScreenRect,
+  SpriteFrame,
+  WorldPoint,
+  WorldRect,
+} from './Renderer.types';
 
 /**
  * The Canvas 2D implementation of the `Renderer` port and the only class that touches
@@ -10,6 +17,28 @@ import type { GlyphShape, GlyphSpec, ScreenRect, WorldPoint, WorldRect } from '.
  * more of the world's height without showing more of its width.
  */
 export class Canvas2dRenderer implements Renderer {
+  /** Paints a cropped atlas frame without filtering into neighbouring cells. */
+  public drawSprite({ image, source, destination }: SpriteFrame): void {
+    const point = this.toScreen(destination);
+    const scale = Math.min(this.scaleX, this.scaleY);
+    const width = destination.width * scale;
+    const height = destination.height * scale;
+    const smoothing = this.context.imageSmoothingEnabled;
+    this.context.imageSmoothingEnabled = false;
+    this.context.drawImage(
+      image,
+      source.x,
+      source.y,
+      source.width,
+      source.height,
+      point.x + (destination.width * this.scaleX - width) / 2,
+      point.y + destination.height * this.scaleY - height,
+      width,
+      height,
+    );
+    this.context.imageSmoothingEnabled = smoothing;
+  }
+
   private readonly context: DrawContext;
   private screenWidth = 0;
   private screenHeight = 0;

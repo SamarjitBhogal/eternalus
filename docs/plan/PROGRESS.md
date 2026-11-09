@@ -2923,3 +2923,137 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   887 passed (887)"; client "Tests 433 passed (433)"; "Documentation check passed."
 - Next step: push to PR #30 (merges after #63); Sam applies the design-text drafts for DEC-121 (c)
   and DEC-133 (INBOX); author: S3, S5, S6, N2.
+
+### 2026-11-07 — Phase 3 / visuals — feat/visuals-and-design — camp artwork
+
+- What was done: replaced corner tents with reference-style ruined stone shrines: worn steps,
+  carved pillars, pointed arches, bronze trim and suspended cyan crystals. Lane structures now
+  share that architecture, with heavy shields/hammers nearest the home Stronghold and medium
+  spear racks/bucklers second; a light bow/quiver variant serves additional distant structures.
+  The author confirmed the current two-structure layout should show heavy then medium. Forest
+  camps use a distinct woodland circle of standing stones, a broken dolmen, roots, offerings and
+  lanterns. Materials and theme order live in content; independent builders preserve mirrored
+  geometry and explicit health/destruction ownership. Main-view placeholder glyphs are hidden
+  through presentation metadata while minimap markers remain. Counts, anchors, teams, minion
+  definitions and spawn rules are unchanged. Updated map presentation documentation and
+  inspected rendered design and map sheets from the actual builders/views.
+- Checks run: focused geometry, role, ownership and presentation tests passed (21 tests).
+  The first full run caught blocked tower deployment; moved lane shrine masonry behind the
+  anchor to preserve a clear forecourt. All 8 existing map-object simulation tests then passed,
+  including deployment for seeds 1, 2 and 10, without changing assertions. The first client run
+  also hit the unchanged roof-toolbar startup timeout. Final npm run check:quick and npm run
+  check passed (exit 0), with VITEST_MAX_WORKERS=2 for the final full check: 898 core and 434
+  client tests passed, coverage thresholds met, build and docs passed. No timeouts, assertions,
+  guardrails or dependencies changed. Verbatim final tail:
+
+  ```text
+  Checked 116 Markdown files under docs/.
+  Documentation check passed.
+  ```
+
+- Next step: author playtest and visual review. Changes remain uncommitted; no push or PR.
+
+### 2026-11-07 — Phase 3 / visuals — feat/visuals-and-design — fantasy minions
+
+- What was done: added registered weight-specific MinionView figures, preserving the existing
+  mob-family fallback. Light scouts carry paired blades, medium foot soldiers a sword and kite
+  shield, and broad armored heavies a maul. Light units use silver armor, crests and cyan trim;
+  Dark units use dark armor, violet trim, horns and goblin faces. Neutral units use a woodland
+  palette. Local polygons are cached per weight and faction, positioned from interpolated draw
+  state, and scaled from snapshot radius without changing stats, physical sizes, AI or spawning.
+  Existing faction footprints and focus rings remain. Updated the engine presentation docs and
+  inspected all six faction/weight combinations rendered through the actual registered views.
+  The author clarified to retain the current camp placement and change artwork only; no camp
+  coordinates, collision or spawn locations changed in this task.
+- Checks run: focused view and fallback tests passed (9 tests), including all existing MobView
+  and default registry assertions unchanged. npm run check:quick and npm run check passed
+  (exit 0); the full check used VITEST_MAX_WORKERS=2 with original timeouts and coverage limits.
+  Core 898/898 and client 440/440 tests passed; formatting, no-JS, lint, typecheck, Knip,
+  coverage, build and documentation all passed. Verbatim final tail:
+
+  ```text
+  Checked 116 Markdown files under docs/.
+  Documentation check passed.
+  ```
+
+- Next step: author playtest and visual review. All current visual work remains uncommitted;
+  nothing was pushed and no PR was opened.
+
+### 2026-11-07 — Phase 3 / visuals — feat/visuals-and-design — unit display sizes
+
+- What was done: enlarged minion figure scale from 1.4 to 2 (about 43 percent), preserving
+  the light/medium/heavy size hierarchy, and enlarged fallback troop markers. All hero classes
+  on both teams, including the player's hero, now share a presentation diameter slightly above
+  the largest shipped heavy-minion silhouette. Thinner hero outlines and a close focus ring
+  retain readable selection feedback. A view-only radius helper keeps marker painting separate
+  from the original snapshots. Hitboxes, stats, camera and minimap scale are unchanged. Updated
+  the engine presentation docs and inspected a rendered faction/weight/hero scale comparison.
+- Checks run: 14 focused view tests passed. New regressions compare all three troop weights
+  against Warrior, Magus and Sentinel for both teams, require a modest hero size margin and
+  verify the source snapshots remain unchanged. Existing outline/body expectations were
+  updated to the new presentation sizes while retaining their full draw-call assertions.
+  npm run check:quick and npm run check passed (exit 0); the full run used
+  VITEST_MAX_WORKERS=2 with unchanged timeouts and coverage thresholds. Core 898/898 and
+  client 443/443 tests passed; formatting, no-JS, lint, typecheck, Knip, coverage, build and
+  documentation all passed. Verbatim final tail:
+
+  ```text
+  Checked 116 Markdown files under docs/.
+  Documentation check passed.
+  ```
+
+- Next step: author playtest of unit readability at the existing camera scale. Current visual
+  work remains uncommitted; nothing was pushed and no PR was opened.
+
+### 2026-11-08 — Phase 3 / visuals — feat/visuals-and-design — biome atmosphere and camp colors
+
+- What was done: made left lane-camp crystals blue, right lane-camp crystals purple and
+  corner crystals orange. Widened the follow camera to a 96 by 54 world view. Extended snow
+  and volcanic scenery toward the border mountains with layered ground, snow drifts, frozen
+  firs, charred trees, shrubs, basalt and volcanic fissures. Added animated molten surfaces
+  and local snow, ash, embers and haze while the player follows within the matching biome.
+  Weather remains cosmetic and absent from the minimap and overview. Existing placements,
+  tree collision footprints, terrain blockers and spawn rules remain intact. Updated map
+  and engine design documentation and inspected renders from the actual map views.
+- Checks run: npm run check:quick and npm run check passed (exit 0), using
+  VITEST_MAX_WORKERS=2 with unchanged timeouts and coverage thresholds. Core 902/902 and
+  client 448/448 tests passed. Regressions cover crystal colors, biome decoration and
+  preserved footprints, wider camera framing, deterministic weather, edge fading, minimap
+  suppression and molten animation culling. Formatting, no-JS, lint, typecheck, Knip,
+  coverage, build and documentation passed. Verbatim final tail:
+
+  ```text
+  Checked 116 Markdown files under docs/.
+  Documentation check passed.
+  ```
+
+- Next step: author playtest of camera framing and biome atmosphere. Changes remain
+  uncommitted; nothing was pushed and no PR was opened.
+
+### 2026-11-08 — Phase 3 / visuals — feat/visuals-and-design — controlled knight sprite atlas
+
+- What was done: generated a silver-and-gold pixel knight sheet from the user's character
+  reference using the built-in image tool, revised clipped edge frames, and saved the selected
+  atlas plus both prompts under client assets. Added measured row crops and foot anchors,
+  four-direction walking from actual tick displacement, idle, weapon swings, three ability
+  previews and an ultimate preview. Existing configurable slots 1–4 trigger cosmetic playback;
+  confirmed player weapon damage triggers attacks, including destructible-tree hits. Pointer
+  targeting also accepts living opposing entities. Gameplay damage, physics, radii and ability
+  effects remain unchanged. Other heroes retain their views and the player keeps a team ring.
+  Added the ResourceController image facade with cached loads, retry after failure, fallback
+  rendering and unmount-safe completion. The renderer crops atlas frames with nearest-neighbour
+  sampling and preserves their proportions in narrow viewports. Updated engine/resource docs
+  and inspected the loaded knight in a running local match.
+- Checks run: focused sprite/resource/render/combat tests passed, including a real simulation
+  weapon hit against a destructible tree. npm run check:quick and npm run check passed (exit 0),
+  using VITEST_MAX_WORKERS=2 without changing timeouts, lint rules or coverage thresholds.
+  Formatting, no-JS, lint, typecheck, Knip, coverage, production build and documentation passed.
+  Core 902/902 and client 460/460 tests passed. Verbatim final tail:
+
+  ```text
+  Checked 116 Markdown files under docs/.
+  Documentation check passed.
+  ```
+
+- Next step: author playtest of WASD movement, left-click combat and ability previews on 1–4.
+  Ability previews are presentation only. Changes remain uncommitted; no push or PR was made.

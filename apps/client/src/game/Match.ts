@@ -30,6 +30,10 @@ import { MiniMapView } from './views/MiniMapView';
 import { SceneryView } from './views/SceneryView';
 import { WorldObjectsView } from './views/WorldObjectsView';
 import { SceneView } from './views/SceneView';
+import { BiomeAtmosphereView } from './views/BiomeAtmosphereView';
+import { KnightAnimation } from './views/KnightAnimation';
+import { PlayerKnightView } from './views/PlayerKnightView';
+import type { KnightAtlas } from './views/KnightAnimation.types';
 
 /**
  * The composition root of one match (architecture 08 §7): it wires the simulation, the game
@@ -41,10 +45,14 @@ import { SceneView } from './views/SceneView';
  * until the player moves.
  */
 export class Match implements LoopTarget {
+  private readonly knight = new KnightAnimation();
+  private knightAtlas: KnightAtlas | null = null;
+  private renderSeconds = 0;
   private readonly loop: GameLoop;
 
   private readonly entities: EntityLayer;
   private readonly objectView: WorldObjectsView;
+  private readonly atmosphere: BiomeAtmosphereView;
   private readonly mapObjects: ReturnType<MapObjectBuilder['build']>;
 
   private readonly world: { readonly scene: SceneView; readonly miniMap: MiniMapView };
@@ -96,15 +104,21 @@ export class Match implements LoopTarget {
     // Find the spawn point first: if the map has none, nothing has been subscribed yet.
     const spawnPoint = Match.strongholdOf(map, player.team);
     this.entities = new EntityLayer(
-      createDefaultViewRegistry((kind) => {
-        logger.log(
-          makeLogRecord(
-            'WARN',
-            'client.views',
-            `No view for kind "${kind}"; drawing the default view.`,
-          ),
-        );
-      }),
+      createDefaultViewRegistry(
+        (kind) => {
+          logger.log(
+            makeLogRecord(
+              'WARN',
+              'client.views',
+              `No view for kind "${kind}"; drawing the default view.`,
+            ),
+          );
+        },
+        new PlayerKnightView(
+          () => this.knightAtlas,
+          () => this.knight.sample(this.renderSeconds),
+        ),
+      ),
     );
     const presentation = deps.presentation ?? new MapPresentationBuilder().build(map);
     this.explorer = new MapExplorer(map, presentation);
@@ -113,6 +127,7 @@ export class Match implements LoopTarget {
       this.currentView(),
     );
     const scenery = presentation.scenery;
+    this.atmosphere = new BiomeAtmosphereView(scenery, () => this.currentView());
     const landscape = new SceneView([
       new MapView(
         map,
@@ -131,6 +146,7 @@ export class Match implements LoopTarget {
       ),
       this.objectView,
       this.entities,
+      this.atmosphere,
     ]);
     this.world = { scene: landscape, miniMap: new MiniMapView(map, landscape) };
     const tickMs = MS_PER_SECOND / tickRate;
@@ -138,11 +154,19 @@ export class Match implements LoopTarget {
       tickMs,
       maxFrameMs: MAX_TICKS_PER_FRAME * tickMs,
     });
-    this.stopListening = simulation.on('entity-spawned', ({ entityId, kind, team }) => {
+    const stopSpawn = simulation.on('entity-spawned', ({ entityId, kind, team }) => {
       if (this.playerId === null && kind === player.legend && team === player.team) {
         this.playerId = entityId;
       }
     });
+    const stopDamage = simulation.on('damage-applied', ({ source }) => {
+      if (source.attackerId === this.playerId && source.kind === 'weapon')
+        this.knight.play('attack', (this.current.tick + 1) / tickRate);
+    });
+    this.stopListening = () => {
+      stopSpawn();
+      stopDamage();
+    };
 
     simulation.enqueueCommand({
       type: 'dev-spawn',
@@ -159,6 +183,11 @@ export class Match implements LoopTarget {
   /** The id of the player's Legend, once it has spawned (after the first tick). */
   public get playerEntityId(): EntityId | null {
     return this.playerId;
+  }
+
+  /** Installs decoded player art; loading remains the resource facade's responsibility. */
+  public setPlayerAtlas(atlas: KnightAtlas): void {
+    this.knightAtlas = atlas;
   }
 
   /** Whether any building roof is hidden. */
@@ -190,10 +219,14 @@ export class Match implements LoopTarget {
     this.deps.simulation.step();
     this.previous = this.current;
     this.current = this.deps.simulation.snapshot();
+    this.knight.observe(
+      this.current.entities.find((entity) => entity.id === this.playerId)?.transform ?? null,
+    );
   }
 
   /** One frame: the camera follows the player, then the scene and the minimap are drawn. */
   public render(alpha: number): void {
+    this.renderSeconds = (this.current.tick + alpha) / this.deps.tickRate;
     const { renderer, camera } = this.deps;
     const player = this.current.entities.find((entity) => entity.id === this.playerId);
     if (this.isFollowing && player?.transform != null) {
@@ -205,6 +238,11 @@ export class Match implements LoopTarget {
     renderer.showWorldArea(view);
     this.entities.show(this.previous, this.current, alpha, this.playerId);
     this.objectView.show(this.current.mapObjects ?? []);
+    this.atmosphere.show(
+      player?.transform ?? null,
+      (this.current.tick + alpha) / this.deps.tickRate,
+      this.isFollowing && !this.isExploring,
+    );
     scene.draw(renderer);
     miniMap.draw(renderer, this.screenWidth, this.screenHeight, view);
   }
@@ -290,10 +328,29 @@ export class Match implements LoopTarget {
     if (this.playerId === null) {
       return;
     }
-    const { move, isAttacking, aim } = this.deps.input.read(this.projection);
+    const { move, isAttacking, aim, triggered } = this.deps.input.read(this.projection);
+    for (const slot of triggered) {
+      if (
+        slot === 'ability-1' ||
+        slot === 'ability-2' ||
+        slot === 'ability-3' ||
+        slot === 'ability-4'
+      )
+        this.knight.play(slot, this.current.tick / this.deps.tickRate);
+    }
     const targetId =
       isAttacking === true && aim !== null
-        ? findMapObjectAt(this.mapObjects, this.current.mapObjects ?? [], aim)
+        ? (findMapObjectAt(this.mapObjects, this.current.mapObjects ?? [], aim) ??
+          this.current.entities.find(
+            (entity) =>
+              entity.id !== this.playerId &&
+              entity.team !== this.deps.player.team &&
+              entity.transform !== null &&
+              (entity.health?.current ?? 0) > 0 &&
+              Math.hypot(entity.transform.x - aim.x, entity.transform.y - aim.y) <=
+                entity.transform.radius,
+          )?.id ??
+          null)
         : null;
     // Holding the button on one target queues one command, not one per tick.
     if (targetId !== null && targetId !== this.attackTargetId) {

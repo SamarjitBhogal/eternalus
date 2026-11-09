@@ -4,7 +4,7 @@ description: The "single access with a controller in front" design for local dat
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-09
+last-reviewed: 2026-11-08
 tags: [architecture, persistence, indexeddb, repositories, dto, migrations, resources, assets]
 paths: ['apps/client/src/data/**']
 related:
@@ -517,3 +517,12 @@ reads through the shared `readOrQuarantine`. Interim gaps, to settle before
 - [../reference/suggestions/mechanics-ideas.md](../reference/suggestions/mechanics-ideas.md): the match history DTO, sim mode, achievements.
 - [../plan/phase-5-meta-ui-and-persistence.md](../plan/phase-5-meta-ui-and-persistence.md): sprints 5.1 and 5.2.
 - Research: [persistence A1–A4](../research/persistence-input-diagnostics-research.md#a-persistence-designed-like-a-dbms); [ES-10](../requirements/05-engineering-standards.md).
+
+### 2026-11-08 — Initial image resource slice
+
+`ResourceController` is the asset-loading entry point for the controlled hero atlas. It caches
+in-flight and decoded image promises by URL and evicts failed loads so they can be retried.
+`ImageLoader` alone constructs and decodes browser images. Match composition injects the
+resolved image into the view and ignores late completion after unmount. Load failure is logged
+and keeps the existing hero marker usable. Group loading, progress reporting, audio, JSON and
+cache eviction policies remain future extensions of this same facade.
