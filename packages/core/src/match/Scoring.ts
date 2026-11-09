@@ -5,6 +5,7 @@ import type { GameState } from '../state/GameState';
 import type { ScoreBook } from '../state/ScoreBook';
 import { isPlayableTeam, opponentOf } from '../teams/playableTeams';
 import { TickRate } from '../utils/TickRate';
+import { CaptureScoring } from './CaptureScoring';
 import type { DirectorContext } from './DirectorContext.types';
 import type { ScoreKeeper } from './ScoreKeeper.types';
 import type {
@@ -17,12 +18,12 @@ import type {
 } from './Scoring.types';
 
 /**
- * The scoring rules (architecture 12 §5, DEC-79): what spawns, hits, deaths and destroyed
- * structures earn each Legend and each team. Its listeners only buffer what they saw, reading the
- * entity's family, kind and team while it is still in the store; `fold` applies the buffer in the
- * director's pass, after `DeathSystem`, so a kill on the ending tick counts. It writes only
- * through the match's `ScoreBook` (`state.match.scoreBook`, DEC-211), whose data is hashed and
- * replayed. Once the match has a result it buffers nothing.
+ * The scoring rules (architecture 12 §5, DEC-79): what spawns, hits, deaths, destroyed structures
+ * and capture points earn each Legend and each team. Its listeners only buffer what they saw,
+ * reading the entity's family, kind and team while it is still in the store; `fold` applies the
+ * buffer in the director's pass, after `DeathSystem` and `CaptureSystem`, so a kill on the ending
+ * tick counts. It writes only through the match's `ScoreBook` (`state.match.scoreBook`, DEC-211),
+ * whose data is hashed and replayed. Once the match has a result it counts nothing.
  *
  * - Rules: the target's or victim's family picks its rule from a registry (DEC-211 (3)); a family
  *   with no entry (bosses, the sovereign and the rest) scores nothing.
@@ -39,10 +40,12 @@ import type {
  * - Structures: a structure of a playable team that falls gives the opposing team team-only
  *   points, whoever landed the last hit, as for structure XP (DEC-212, DEC-186). A neutral camp
  *   gives nothing.
+ * - Capture points: checkpoints and held time, by the `CaptureScoring` it builds (DEC-214).
  */
 export class Scoring implements ScoreKeeper {
   private readonly pending: PendingChange[] = [];
   private readonly assistWindowTicks: number;
+  private readonly captures: CaptureScoring;
   /** What a hit scores, by the target's family. */
   private readonly hitRules: Readonly<Partial<Record<EntityFamily, HitRule>>> = {
     legend: (book, { targetId, attackerId, tick }) => {
@@ -86,12 +89,22 @@ export class Scoring implements ScoreKeeper {
     state.events.on('structure-destroyed', (payload) => {
       this.onStructureDestroyed(payload);
     });
+    this.captures = new CaptureScoring(state, options.weights, (change) => {
+      this.defer(change);
+    });
   }
 
-  /** Applies this tick's buffered events in order. Called by the `MatchDirector`, once per tick. */
+  /**
+   * Applies this tick's buffered events in order, then adds this tick's held time. Called by the
+   * `MatchDirector`, once per tick.
+   */
   public fold({ state }: DirectorContext): void {
+    const book = state.match.scoreBook;
     for (const change of this.pending.splice(0)) {
-      change(state.match.scoreBook);
+      change(book);
+    }
+    if (state.match.result === null) {
+      this.captures.addHeldTick(book);
     }
   }
 

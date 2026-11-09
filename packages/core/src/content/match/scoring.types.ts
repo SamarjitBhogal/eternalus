@@ -18,4 +18,14 @@ export type ScoringWeights = {
   readonly minionKill: Readonly<Record<MobKind, number>>;
   /** For the team that destroys an enemy structure: team-only points, no Legend's (DEC-212). */
   readonly structureDestroyed: number;
+  /**
+   * For the team whose push takes a capture point past a checkpoint: team-only points, no
+   * Legend's (DEC-214 (A1)).
+   */
+  readonly captureCheckpoint: number;
+  /**
+   * For each full minute of a team's held time, pooled over the capture points it owns: team-only
+   * points (DEC-214 (A2)).
+   */
+  readonly holdPerMinute: number;
 };
