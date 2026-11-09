@@ -111,7 +111,8 @@ const setUp = (
   const input = new ScriptedIntent();
   const enqueueCommand = vi.fn<Simulation['enqueueCommand']>();
   const commands = new PlayerCommands(input, { enqueueCommand }, view, [HOUSE]);
-  const miniMap = new MiniMapView(MAP, new MapView(MAP), RING);
+  // No living Legend here, so the minimap centres on the camera's focus (DEC-182).
+  const miniMap = new MiniMapView(MAP, new MapView(MAP), RING, () => look);
   const controls = new MatchViewControls({
     camera: view,
     roofs,

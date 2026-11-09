@@ -306,20 +306,41 @@ export type FlowField = { readonly integration: Uint16Array; readonly direction:
 
 ## 8. Minimap
 
-The minimap is **the same scene drawn smaller**, not a second scene graph
+The minimap is **a local view of the same scene**, not a second scene graph
 ([research §5](../research/game-architecture-and-performance-research.md#5-canvas-2d-performance)).
+It shows the circle of `MINI_MAP_VIEW_RADIUS` world units around the player's living Legend, or
+around the camera's focus while the Legend is dead or not yet spawned. North is up. A marker at
+the middle shows the centre. Everything is clipped to the HUD ring. The owner set these rules
+(DEC-182). The radius is a TUNE value in `MiniMapView.constants.ts`.
 
-- `MinimapView` (`apps/client/src/game/views/MinimapView.ts`, L4) reads the same `Snapshot` that
-  `SceneView` reads and walks the same `ViewRegistry`. It draws into the `'minimap'` layer of the
-  `Renderer` (an offscreen canvas composited into the `MinimapPanel` slot) at a lower cadence
-  (**Recommendation:** every 6th frame, TUNE) and redraws its terrain backdrop only when
-  `snapshot.terrainVersion` changes (Dirty Flag).
-- `MinimapProjection` (`apps/client/src/game/engine/camera/`) implements the same `Projection`
-  port as `Camera` (`worldToScreen`/`screenToWorld`) with a fixed scale, so culling and coordinate
-  code is shared and the HUD can turn a minimap click into a world position for a `Command`.
-- Every definition (structure, obstacle, unit, zone) may declare a `minimapGlyph`; the base
-  `EntityView.drawGlyph` reads it and falls back to `DEFAULT_MINIMAP_GLYPH`. Team colour comes from
-  the entity's `team`, not from the glyph.
+- `MiniMapView` (`apps/client/src/game/views/MiniMapView.ts`, L4) draws the same scene as the main
+  view, through each `WorldLayer`'s `drawMinimap`. The map layers draw every feature's
+  `minimapGlyph`. `EntityLayer` draws the units through the `ViewRegistry`. It draws into the
+  `'minimap'` layer of the `Renderer` (an offscreen canvas composited into the `MinimapPanel`
+  slot) at a lower cadence (**Recommendation:** every 6th frame, TUNE) and redraws its terrain
+  backdrop only when `snapshot.terrainVersion` changes (Dirty Flag). Section 10 says what is built.
+- `MinimapProjection` (`apps/client/src/game/engine/camera/`) is a per-frame value object: the
+  centre, the radius and the screen area. `apply` calls `Renderer.showWorldArea`; `worldAt` turns
+  a click back into a world point, so the picture and the click use the same numbers (DEC-191). It
+  works in device pixels and does not implement the CSS-pixel `Projection` port of
+  [08 §5](08-game-engine.md#5-camera-and-projections). It mirrors `MatchCamera.worldAt`, the
+  internal method that the camera's own `screenToWorld` wraps. Nothing consumes the minimap as a
+  `Projection`: a minimap click reaches `MatchViewControls.lookAtMinimapPoint` in device pixels.
+  If an input driver ever needs the port, a `screenToWorld` adapter that multiplies by the pixel ratio is the
+  upgrade path. A click moves the camera and makes no `Command`.
+- Units on the minimap: Legends and all mobs (lane minions, tower guards, camp mobs). Bosses and
+  the dead have no marker, and the player's own Legend is the centre marker (DEC-187). The marker
+  belongs to the unit's `EntityView`, not to its definition: `drawMinimap` draws it, and
+  `minimapLayer` orders it (higher layers draw later, on top). `DefaultEntityView` draws nothing,
+  so a kind has no marker until its view gives it one. `LegendView` and `MobView` give a dot each.
+  The Legend dot is larger than the mob dot, and that size is the only difference between them.
+  Each dot has a team outline, so team never shows by colour alone (13 §7): white for Light,
+  near-black for Dark, grey for neutral, 1.5 px (DEC-187, owner-accepted 2026-11-05). A unit up to
+  about 6 world units past the radius shows at the ring edge. The dot sizes are TUNE values in
+  `entityViews.constants.ts`.
+- Feature glyphs stay on the definition: every structure and obstacle definition may declare a
+  `minimapGlyph`, and the map layers draw it. Team colour comes from the entity's `team`, not from
+  the glyph.
 
 ```ts
 // packages/core/src/content/maps/maps.types.ts (contract)
@@ -329,44 +350,23 @@ export type MinimapGlyph = {
   readonly colourRole: 'team' | 'neutral' | 'objective' | 'terrain' | 'obstacle';
 };
 
-// apps/client/src/game/views/EntityView.ts (sketch)
-export abstract class EntityView {
-  abstract draw(entity: EntitySnapshot, ctx: DrawContext): void;
-  drawGlyph(entity: EntitySnapshot, ctx: DrawContext): void {
-    const glyph = ctx.definitions.get(entity.definitionId)?.minimapGlyph ?? DEFAULT_MINIMAP_GLYPH;
-    ctx.renderer.drawGlyph(glyph, ctx.projection.worldToScreen(entity.position), entity.team);
-  }
+// apps/client/src/game/views/EntityView.types.ts (contract)
+export interface EntityView {
+  draw(state: EntityDrawState, renderer: Renderer): void;
+  drawMinimap(state: EntityDrawState, renderer: Renderer): void; // marker in CSS pixels, or nothing
+  readonly minimapLayer?: number; // higher layers draw later; absent = 0
 }
 ```
 
-Because the generator emits features from config, `EntityFactory` turns every feature into a
-snapshot entity, and `MinimapView` draws every snapshot entity through the registry, the
-requirement "new building on map = new building on minimap with no code change" holds **by
-construction**. The test that proves it (`MinimapView.test.ts`):
-
-```ts
-it('draws one glyph per generated feature: extra config features need no view code', () => {
-  const draw = (map: MapConfig) => {
-    const sim = Simulation.create({ ...config, map }, SEED);
-    const renderer = new RecordingRenderer(); // test double for the Renderer port
-    const projection = new MinimapProjection(map, MINIMAP_SIZE);
-    new MinimapView(viewRegistry, projection).draw(sim.snapshot(), renderer);
-    return { projection, calls: renderer.calls.filter((c) => c.op === 'drawGlyph') };
-  };
-  const base = draw(config.map);
-  const more = draw({ ...config.map, buffTowersPerLane: config.map.buffTowersPerLane + 1 });
-  // one extra tower per lane per team
-  expect(more.calls.length - base.calls.length).toBe(2 * config.map.numLanes);
-  for (const call of more.calls) {
-    expect(call.position).toEqual(more.projection.worldToScreen(call.source.position));
-  }
-});
-```
-
-A second test registers a throwaway `StructureDefinition` (`'beacon'`) with a glyph and one
-generated feature, and asserts the glyph is drawn without registering any `EntityView` (the
-default view handles it). Fog of war on the minimap is **post-MVP**: when enabled, `MinimapView`
-filters entities by the player team's `Vision` snapshot before drawing.
+Because the generator emits features from config and `MapView.drawMinimap` draws every feature of
+the `MapDefinition` with its own `minimapGlyph`, the requirement "new building on map = new
+building on minimap with no code change" holds **by construction**. Two tests in
+`MiniMapView.test.ts` prove it: a map with more lanes and more BuffTowers per lane shows one marker
+per generated feature, each at its own position, and a throwaway feature with a new definition
+(`'beacon'`) is drawn with its own glyph and no client code that knows it. Units follow the same
+rule through the `ViewRegistry`: a new mob kind with a `MobView` needs no minimap code. Fog of war
+on the minimap is **post-MVP**: when enabled, `MiniMapView` filters entities by the player team's
+`Vision` snapshot before drawing.
 
 ## 9. Review notes for the `feat/map` branch
 
@@ -416,7 +416,7 @@ Still interim:
 
 | Topic                     | Today                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Until                                                                                                                   |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
-| Minimap (§8)              | `MiniMapView` draws into the main canvas every frame, clipped to the HUD's ring by `Renderer.clipToEllipse`, with the ring from `bridge/minimapRing.ts` passed in by `Match`; `MapView` draws every feature's `minimapGlyph`; no entity glyphs                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Session H's `ViewRegistry`, `EntityView` and the snapshot-driven `MinimapView`                                          |
+| Minimap (§8)              | `MiniMapView` draws a local view (DEC-182) into the main canvas every frame, clipped to the HUD's ring by `Renderer.clipToEllipse`, with the ring from `bridge/minimapRing.ts` passed in by `Match`; `MapView` draws every feature's `minimapGlyph` and `EntityLayer` draws Legends and mobs through their views (DEC-187)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | The `'minimap'` renderer layer and the lower redraw cadence (§8)                                                        |
 | Kernel stand-ins (§1, §2) | `MapRandom`, a local `MapConfig` and `DEFAULT_MAP_CONFIG`, `validateMapConfig`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Session A's swap to session B's `SeededRandom`, `GameConfig` and `validateGameConfig` (`INBOX.md`)                      |
 | Grid resolution (§6)      | `MapLayout.navCellSize` (content)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Session A's swap to `config.map.navCellSize`                                                                            |
 | `WorldMap` (§6)           | Walkability grid with stamping, no cost grid. The flow fields (minion plan M4) sit beside it, not on it: `map/LaneFlowFields` holds a `FlowField` per (lane id, team) and rebuilds dirty ones through `FlowFieldBuilder`; `DefaultSystemPipeline` builds both and `PathingSystem` calls `rebuildDirty` each tick. Nothing marks a field dirty yet: no terrain event exists                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Cost grid (Phase 3); the dirty trigger with gate and structure changes (07 §10)                                         |
@@ -430,13 +430,17 @@ Minimap and camera (`feat/hud-and-character-select`, 2026-10-24); the "Today" ce
 approved them, `INBOX.md` HC-T1), and this note gives the detail:
 
 - `MiniMapView` draws into the main canvas every frame, clipped to the HUD's minimap ring by
-  `Renderer.clipToEllipse`, with the whole map inscribed in the ring (INBOX HC-Q6 (4)). The ring's
-  geometry is written once, in `bridge/minimapRing.ts`: `Match` passes it to `MiniMapView`'s
-  constructor, and `MinimapPanel`'s test checks its CSS against it, so `game/views/` imports
-  nothing from `bridge/`.
-- Still interim toward §8: no `'minimap'` renderer layer, no `MinimapProjection` (a minimap click
-  moves the camera through `Match`, with no `Command`), no lower redraw cadence and no entity
-  glyphs (those come with Phase 2, sprint 2.8).
+  `Renderer.clipToEllipse`. Since 2026-11-05 it shows a local view: the circle of
+  `MINI_MAP_VIEW_RADIUS` around the player, north up, with a centre marker (DEC-182), and the
+  Legends and mobs inside it as team-outlined dots (DEC-187). The one minimap projection,
+  `MinimapProjection`, is built (DEC-191). `Match` gives the view the centre rule: the living
+  Legend's position, else the camera's focus. The ring's geometry is written once, in
+  `bridge/minimapRing.ts`: `Match` passes it to `MiniMapView`'s constructor, and `MinimapPanel`'s
+  test checks its CSS against it, so `game/views/` imports nothing from `bridge/`. The earlier
+  text of this bullet ("the whole map inscribed in the ring", INBOX HC-Q6 (4)) is superseded by
+  DEC-182.
+- Still interim toward §8: no `'minimap'` renderer layer and no lower redraw cadence. A minimap
+  click moves the camera through `MatchViewControls.lookAtMinimapPoint`, with no `Command`.
 - `MapExplorer` belongs to `MatchCamera`. The free camera (drag pan, wheel zoom), the overview,
   the roof click, the explorer toolbar and the map legend are developer tools: they show only
   while the developer explorer is shown (next bullet; DEC-32, DEC-105, DEC-143). Normal play has
