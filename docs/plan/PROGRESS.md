@@ -6414,3 +6414,33 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   acceptable.
 - Checks run: docs only; `npm run docs:check` and Prettier on the three changed files (below).
 - Next step: open the GL-5 PR into `feat/match-scoring`.
+
+### 2026-11-09 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-16 map-feature link and the roster rule (DEC-231, DEC-222) — refactor/map-feature-link — sholtzman + Claude Code
+
+- What: plan task GL-16, built on `refactor/map-feature-link` (base `feat/results-flow`).
+  - Core: a `MapFeatureLink` component (`components/MapFeatureLink.ts`, `featureId`), installed
+    by `Structure` and `Zone` when their placement names a map feature
+    (`Placement.mapFeatureId`, read by `SpawnContextReader.mapFeatureId`).
+    `Simulation.spawnZones` now passes each zone's feature id. `GameState.snapshotOf` reads the
+    component for any entity (no `instanceof Structure`); an entity with no link carries no
+    `mapFeatureId`. `Structure.mapFeatureId` (the getter) is gone; nothing else read it.
+    `StateHasher` does not hash the link: it is set once from the map, which a replay carries
+    (as `ZoneArea` and `ControllerBinding`), so recorded checkpoint hashes stay valid.
+  - Client: `MatchBridge` binds each capture point to the zone whose snapshot names its feature
+    (`captureByFeature`), never by position; `CaptureSite` (the feature position) is gone from
+    `MatchBridge.types.ts`. The roster rule moved out of `MatchBridge` into
+    `game/PublishedRoster.ts` (DEC-222): a class, not a function, because it owns the state the
+    rule needs (the last published array), so `MatchBridge` drops its two mutable roster fields
+    and each roster fixes its item check once, at construction.
+  - Docs: architecture 13 §10 (HUD data: capture points by feature id, `PublishedRoster`), 03 §5
+    (the `mapFeatureId` sketch comment), 04 §13 (the `MapFeatureLink` status bullet), 07 §13 (the
+    structure id and the zones' link); the plan's GL-16 row (as built).
+- Fail-first breaks: 15, all red then restored (`cmp` equal), in
+  `eternalus-agent-work/game-loop-plan/gl16-breaks.md` (driver `gl16-run-breaks.py`).
+- Checks run: `npm run check` → `EXIT=0` (`gl16-check-2026-11-09.log` in
+  `eternalus-agent-work/game-loop-plan/`): Prettier "All matched files use Prettier code style!";
+  core "Tests 1370 passed (1370)", statements 99.15 %; client "Tests 1865 passed (1865)",
+  statements 97.06 %; "Documentation check passed."
+- Next step: the architecture critic and ponytail on this branch (pre-PR gate); its PR opens
+  after GL-5 merges (DEC-231). When it merges, `INBOX.md` "PR #64 better than the design?
+  (critic round 6)" closes.

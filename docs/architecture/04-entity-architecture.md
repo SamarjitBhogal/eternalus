@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-05
+last-reviewed: 2026-11-09
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -344,6 +344,9 @@ session or phase named:
   `xp`, `level` and `curveId`, with `addXp(amount, curve)` taking the curve `ProgressionSystem`
   resolves from the injected catalogue. `Health` and `Aether` gained `raiseMax`, which raises only
   the cap; `ProgressionSystem` heals and refills by the raise while the Legend is alive (O3, O4).
+- Structures and zones built from a map feature install `MapFeatureLink` (`featureId`, the
+  `MapFeature.id`, set once at spawn from `Placement.mapFeatureId`; DEC-231); the snapshot carries
+  it as `mapFeatureId`. It is setup data the replay carries, so `StateHasher` does not hash it.
 - Shipped kinds: the Legend classes of `LEGEND_KINDS` (`content/legends/legendKinds.ts`),
   `light-mob` (the training dummy only),
   `obstacle`, `projectile` and `capture-point` (PR #64). Other mobs are SCRUM-59; structures get
