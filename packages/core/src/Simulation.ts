@@ -497,8 +497,8 @@ export class Simulation {
   /**
    * Spawns one zone per map feature that places one (`ZONE_PLACEMENTS`): a capture point where
    * each lane crosses the centre line, the middle one in the Cathedral (architecture 07 §7), each
-   * covering its building's floor (DEC-145 (a)). They come from the map alone, so a replay (seed,
-   * config and commands) rebuilds them.
+   * covering its building's floor (DEC-145 (a)) and linked to its feature (`MapFeatureLink`,
+   * DEC-231). They come from the map alone, so a replay (seed, config and commands) rebuilds them.
    */
   private static spawnZones(state: GameState, factory: EntityFactory): void {
     const map = state.world?.definition;
@@ -514,6 +514,7 @@ export class Simulation {
       const entity = factory.create(kind, definitionId, {
         position: feature.position,
         team: feature.team,
+        mapFeatureId: feature.id,
         area: zoneAreaOf(map, feature),
       });
       state.entities.add(entity);

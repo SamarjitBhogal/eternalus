@@ -4,6 +4,7 @@ import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
 import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
+import { MapFeatureLink } from '../components/MapFeatureLink';
 import { Movement } from '../components/Movement';
 import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
@@ -129,6 +130,14 @@ describe('StateHasher', () => {
     veterancy.recordKill(2, 3);
 
     expect(hasher.hash(state)).not.toBe(before);
+  });
+
+  it('hashes an entity the same with or without a map-feature link: setup the replay carries (DEC-231)', () => {
+    const { state: plain } = stateWithSoldier();
+    const { state: linked, soldier } = stateWithSoldier();
+    soldier.addComponent(new MapFeatureLink('light-stronghold'));
+
+    expect(hasher.hash(linked)).toBe(hasher.hash(plain));
   });
 
   it('differs between seeds', () => {

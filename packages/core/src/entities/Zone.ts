@@ -1,3 +1,4 @@
+import { MapFeatureLink } from '../components/MapFeatureLink';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { ZoneArea } from '../components/ZoneArea';
@@ -8,8 +9,9 @@ import { SpawnContextReader } from './SpawnContextReader';
 
 /**
  * Abstract base for areas that can be held but not hit, such as capture points. Installs
- * `ZoneArea` (the ground it covers), `Transform` (its anchor, with the area's reach as radius) and
- * `TeamMembership`, and no `Collider`; a concrete zone adds its own components.
+ * `ZoneArea` (the ground it covers), `Transform` (its anchor, with the area's reach as radius),
+ * `TeamMembership` and, when it is built from a map feature, a `MapFeatureLink`, and no
+ * `Collider`; a concrete zone adds its own components.
  */
 export abstract class Zone extends Entity {
   /** The content kind of this class; one of `ZoneKind`. */
@@ -44,5 +46,7 @@ export abstract class Zone extends Entity {
     this.addComponent(area);
     this.addComponent(new Transform(position, area.reachFrom(position)));
     this.addComponent(new TeamMembership(team));
+    const feature = reader.mapFeatureId(context);
+    if (feature !== null) this.addComponent(new MapFeatureLink(feature));
   }
 }

@@ -1,5 +1,6 @@
 import { Collider } from '../../components/Collider';
 import { Health } from '../../components/Health';
+import { MapFeatureLink } from '../../components/MapFeatureLink';
 import { TeamMembership } from '../../components/TeamMembership';
 import { Transform } from '../../components/Transform';
 import type { StructureDefinition, StructureKind } from '../../content/structures/structures.types';
@@ -10,7 +11,8 @@ import { SpawnContextReader } from '../SpawnContextReader';
 /**
  * Abstract base for static things with health: buildings, walls, gates, turrets, camps and the
  * Cathedral. Installs `Transform`, `Health`, `TeamMembership` and a static `Collider` from a
- * `StructureDefinition`. Concrete structures and their extra components arrive in Phase 2.
+ * `StructureDefinition`, and a `MapFeatureLink` when it is built from a map feature. Concrete
+ * structures and their extra components arrive in Phase 2.
  *
  * @see docs/architecture/07-structures-obstacles-and-destructibles.md (The Structure family)
  */
@@ -22,8 +24,6 @@ export abstract class Structure extends Entity {
   public readonly family: EntityFamily = 'structure';
 
   private lane: string | null = null;
-
-  private feature: string | null = null;
 
   /**
    * @param id - Unique id of this entity instance.
@@ -43,14 +43,6 @@ export abstract class Structure extends Entity {
   }
 
   /**
-   * The map feature this structure was built from (`MapFeature.id`), or `null` for one spawned
-   * without a feature. The snapshot carries it, so the HUD binds a tile to its structure.
-   */
-  public get mapFeatureId(): string | null {
-    return this.feature;
-  }
-
-  /**
    * Installs the structure components from a placed spawn context.
    *
    * @throws Error when the context is not a placed context for this structure's definition.
@@ -59,7 +51,6 @@ export abstract class Structure extends Entity {
     const reader = new SpawnContextReader(this);
     const { definition, position, team } = reader.placed<StructureDefinition>(context);
     this.lane = reader.laneId(context);
-    this.feature = reader.mapFeatureId(context);
 
     this.addComponent(new Transform(position, definition.footprintRadius));
     this.addComponent(new Health(definition.baseHealth));
@@ -72,5 +63,7 @@ export abstract class Structure extends Entity {
     // Walls and gates start the match unbreakable; `StructureSystem` flips it when the rule passes.
     collider.setUnbreakable(definition.breakability.kind !== 'always');
     this.addComponent(collider);
+    const feature = reader.mapFeatureId(context);
+    if (feature !== null) this.addComponent(new MapFeatureLink(feature));
   }
 }

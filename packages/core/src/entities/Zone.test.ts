@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Collider } from '../components/Collider';
+import { MapFeatureLink } from '../components/MapFeatureLink';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { ZoneArea } from '../components/ZoneArea';
@@ -50,6 +51,18 @@ describe('Zone', () => {
     expect(point.getComponent(Transform).radius).toBe(13);
     expect(point.getComponent(TeamMembership).team).toBe('neutral');
     expect(point.hasComponent(Collider)).toBe(false);
+  });
+
+  it('links the map feature it was built from, and has no link without one', () => {
+    const built = new FakeCapturePoint('entity-1', 'fake-capture-point');
+    const loose = new FakeCapturePoint('entity-2', 'fake-capture-point');
+    const placement = { definition: DEFINITION, position: { x: 800, y: 450 }, team: 'neutral' };
+
+    built.spawn({ ...placement, area: AREA, mapFeatureId: 'capture-point-lane-1' });
+    loose.spawn({ ...placement, area: AREA });
+
+    expect(built.getComponent(MapFeatureLink).featureId).toBe('capture-point-lane-1');
+    expect(loose.hasComponent(MapFeatureLink)).toBe(false);
   });
 
   it('refuses a spawn context without an area, or with polygons that are not point lists', () => {

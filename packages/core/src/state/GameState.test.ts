@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
 import { Health } from '../components/Health';
+import { MapFeatureLink } from '../components/MapFeatureLink';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import type { MapDefinition } from '../content/maps/maps.types';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
+import { CAPTURE_POINT } from '../content/zones/capturePoint';
 import { Entity } from '../entities/Entity';
 import { Stronghold } from '../entities/structures/Stronghold';
+import { CapturePoint } from '../entities/zones/CapturePoint';
 import type { Team } from '../teams/teams.types';
 import { SeededRandom } from '../utils/SeededRandom';
 import { TWO_LANE_MAP } from './__fixtures__/twoLaneMap';
@@ -164,6 +167,38 @@ describe('GameState', () => {
     expect(withoutFeature).not.toHaveProperty('mapFeatureId');
     expect(soldier).not.toHaveProperty('mapFeatureId');
     expect(structuredClone(built)).toEqual(built);
+  });
+
+  it('snapshots the map feature id of every entity that links one, a capture zone too (DEC-231)', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const zoneAt = (id: string, mapFeatureId?: string): CapturePoint => {
+      const zone = new CapturePoint(id, CAPTURE_POINT.id);
+      zone.spawn({
+        definition: CAPTURE_POINT,
+        position: { x: 5, y: 5 },
+        team: 'neutral',
+        area: [
+          [
+            { x: 0, y: 0 },
+            { x: 10, y: 0 },
+            { x: 5, y: 10 },
+          ],
+        ],
+        ...(mapFeatureId !== undefined && { mapFeatureId }),
+      });
+      return zone;
+    };
+    const linked = spawned(new Marker('entity-3', 'marker-definition'));
+    linked.addComponent(new MapFeatureLink('light-gate-lane-0'));
+    state.entities.add(zoneAt('entity-1', 'capture-point-lane-1'));
+    state.entities.add(zoneAt('entity-2'));
+    state.entities.add(linked);
+
+    const [zone, looseZone, marker] = state.snapshot().entities;
+
+    expect(zone?.mapFeatureId).toBe('capture-point-lane-1');
+    expect(looseZone).not.toHaveProperty('mapFeatureId');
+    expect(marker?.mapFeatureId).toBe('light-gate-lane-0');
   });
 
   it('snapshots the hordes and team counters as copies the store no longer changes', () => {

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { Collider } from '../../components/Collider';
 import { Health } from '../../components/Health';
+import { MapFeatureLink } from '../../components/MapFeatureLink';
 import { TeamMembership } from '../../components/TeamMembership';
 import { Transform } from '../../components/Transform';
 import type { StructureDefinition } from '../../content/structures/structures.types';
@@ -71,7 +72,7 @@ describe('Structure', () => {
     expect(gate.getComponent(Collider).isUnbreakable).toBe(true);
   });
 
-  it('keeps the map feature it was built from, and none without one', () => {
+  it('links the map feature it was built from, and has no link without one', () => {
     const tower = new FakeTower('entity-1', 'fake-buff-tower');
     const spawned = new FakeTower('entity-2', 'fake-buff-tower');
 
@@ -83,8 +84,8 @@ describe('Structure', () => {
     });
     spawned.spawn({ definition: DEFINITION, position: { x: 0, y: 0 }, team: 'dark' });
 
-    expect(tower.mapFeatureId).toBe('dark-buff-tower-lane-2');
-    expect(spawned.mapFeatureId).toBeNull();
+    expect(tower.getComponent(MapFeatureLink).featureId).toBe('dark-buff-tower-lane-2');
+    expect(spawned.hasComponent(MapFeatureLink)).toBe(false);
   });
 
   it('needs a team', () => {

@@ -15,8 +15,9 @@ import type { Polygon } from '../utils/geometry.types';
 export type EntitySnapshot = {
   readonly mapObjectId?: string;
   /**
-   * A structure built from a map feature: the feature's id (`MapFeature.id`), so a HUD tile binds
-   * to its structure by identity, never by position.
+   * An entity built from a map feature (a structure or a capture zone): the feature's id
+   * (`MapFeatureLink`), so a HUD tile or capture point binds to its entity by identity, never by
+   * position. Absent for an entity built from no feature.
    */
   readonly mapFeatureId?: string;
   readonly id: EntityId;
