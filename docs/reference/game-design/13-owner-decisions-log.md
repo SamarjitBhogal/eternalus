@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-06
+last-reviewed: 2026-11-09
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,18 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-09 (question dialog: the HUD's level and XP)
+
+The owner's answers of 2026-11-09 to two questions from the `feat/hud-level-xp` work, given through
+the question dialog (session PR-38-HELPER-26): the XP ring at the level cap (`INBOX.md` HC-F6) and
+the critic's better-than-design item. His words are kept verbatim outside the repository in
+`eternalus-agent-work/hud-level-xp/owner-answers-2026-11-09.md`. DEC-224 is this batch (DEC-221 to
+DEC-223 are the game loop's).
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DEC-224 | **Every Legend's entity snapshot carries its level and XP, and the HUD's XP ring is full at the level cap** (answers the critic's better-than-design item on `feat/hud-level-xp` and `INBOX.md` HC-F6). (1) `EntitySnapshot` has a `progression` group (`level`, the XP inside that level, `xpToNext`) for every entity with a `Progression` component, not only the player; the player snapshot's `level`, `xp` and `xpToNext` copy it. (2) At the level cap there is no next level: `xpToNext` is `null`, never a made-up number. (3) The HUD's XP ring is full at the cap while the badge shows the level (`hudSlice.selectXpFraction`). Built on `feat/hud-level-xp`. Changes `03-game-model.md` §5, `05-abilities-weapons-and-loadouts.md` §15, `13-game-interface.md` §10. |
 
 ## Batch 2026-11-06 (question dialog: facing inside an outline, camp mobs, guards at their posts)
 
