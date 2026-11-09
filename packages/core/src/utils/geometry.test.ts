@@ -6,6 +6,7 @@ import {
   doesPolygonOverlapRect,
   distanceToPath,
   distanceToSegment,
+  isPointInAnyPolygon,
   isPointInPolygon,
   lerpPoint,
   polarPoint,
@@ -49,6 +50,14 @@ describe('geometry', () => {
     expect(isPointInPolygon({ x: 5, y: 5 }, SQUARE)).toBe(true);
     expect(isPointInPolygon({ x: 15, y: 5 }, SQUARE)).toBe(false);
     expect(isPointInPolygon({ x: 5, y: -1 }, SQUARE)).toBe(false);
+  });
+
+  it('tells whether a point is inside any of several polygons', () => {
+    const farSquare = SQUARE.map(({ x, y }) => ({ x: x + 20, y }));
+    expect(isPointInAnyPolygon({ x: 5, y: 5 }, [SQUARE, farSquare])).toBe(true);
+    expect(isPointInAnyPolygon({ x: 25, y: 5 }, [SQUARE, farSquare])).toBe(true);
+    expect(isPointInAnyPolygon({ x: 15, y: 5 }, [SQUARE, farSquare])).toBe(false);
+    expect(isPointInAnyPolygon({ x: 5, y: 5 }, [])).toBe(false);
   });
 
   it('measures distance to a segment and a path', () => {

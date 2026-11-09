@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-03
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -671,7 +671,9 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   capture rosters from the `MapDefinition` (structure health `null`, capture owner `neutral`).
   Each field becomes live when core publishes it: structure health (Phase 2, sprint 2.1), capture
   state (sprint 2.6), XP and abilities (Phase 4, sprints 4.5 and 4.7, through `Snapshot.player`,
-  [05](05-abilities-weapons-and-loadouts.md) §15).
+  [05](05-abilities-weapons-and-loadouts.md) §15). (2026-11-03, PR #64: capture state is live.
+  `MatchBridge` takes each point's owner and progress from the zone that stands on its feature's
+  position, and re-sends the last array while they do not change.)
 - **HUD elements beyond §3's table.** `LevelBadge` (class emblem, XP ring, level), `WeaponPanel`
   (the weapon art at its manifest draw box, and the weapon-level bar, OQ-63), `GadgetBar` (the
   gadget slots, each with `<KeyGlyph>`), `UltimateChargeBar` and `ChargePips` (OQ-64),
