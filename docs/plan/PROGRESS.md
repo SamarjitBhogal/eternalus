@@ -6210,3 +6210,13 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Checks run: Prettier on `PROGRESS.md` and `INBOX.md` passed; `npm run docs:check` passed; the
   pre-commit `check:quick` passed. CI runs the full `npm run check` on the pushed head.
 - Next step: Sam's script merges #88, pushes this branch, waits for CI, then merges #87.
+
+### 2026-11-09 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / phase/3 merge (#87) — feat/match-scoring — sholtzman + Claude Code
+
+- What: merged `phase/3-sprint-3-work` (`86b4fc04`, PR #87: one `INBOX.md` item and its PROGRESS
+  entries) into GL-4 (`ec13abfc`), so PR #93 merges again. Conflict: this file (both, in date
+  order). Docs only: `git diff --stat 7ddc20e0 ec13abfc` lists only `INBOX.md` and this file.
+- Checks run: `npx prettier --check INBOX.md docs/plan/PROGRESS.md` → "All matched files use
+  Prettier code style!"; `npm run docs:check` → "Documentation check passed." The full check of
+  `7ddc20e0` (the entry above) holds for the code.
+- Next step: merge this head into GL-5 and GL-15, then GL-5 into GL-16; push all four.
