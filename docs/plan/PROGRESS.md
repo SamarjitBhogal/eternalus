@@ -5943,3 +5943,13 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `Tests 1302 passed (1302)`, client `Tests 1800 passed (1800)`, docs check passed.
 - Next step: push and open the PR into phase/3; whichever of this PR and the aether PR lands
   second resolves the adjacent `Snapshot.types.ts` lines.
+
+### 2026-11-09 — Phase 3 / merge: #88 then #87 into phase/3 — docs/inbox-stronghold-feature-type — sholtzman + Claude Code
+
+- What was done: a teammate approved #87 and #88 (CI green on both). Both append a PROGRESS entry,
+  so they conflict in either order. #88 merges first, with a merge commit, because
+  `feat/hud-aether-bar` stacks on its head `27319382`. This branch merged `27319382` and kept
+  both entries in date order; `INBOX.md` merged cleanly.
+- Checks run: Prettier on `PROGRESS.md` and `INBOX.md` passed; `npm run docs:check` passed; the
+  pre-commit `check:quick` passed. CI runs the full `npm run check` on the pushed head.
+- Next step: Sam's script merges #88, pushes this branch, waits for CI, then merges #87.
