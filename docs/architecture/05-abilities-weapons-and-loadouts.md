@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-09
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -843,9 +843,9 @@ export type PlayerSnapshot = {
   readonly maxHealth: number;
   readonly aether: number;
   readonly maxAether: number;
-  readonly level: number;
+  readonly level: number; // level, xp and xpToNext copy the Legend's EntitySnapshot.progression (DEC-224)
   readonly xp: number; // XP earned inside the current level (resets on level-up)
-  readonly xpToNext: number; // XP the current level needs to reach the next
+  readonly xpToNext: number | null; // XP the current level needs to reach the next; null at the cap
   readonly slots: readonly AbilitySlotSnapshot[]; // ability-1..4, gadget-1, gadget-2, default-action, in that order
   readonly statusIds: readonly StatusEffectId[];
 };
@@ -922,11 +922,13 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   the store (a mob's own `xpValue`; a Legend by victim level, `xpSources.ts`), pays nothing for a
   self or ally kill (O5), and in its own pass emits `xp-gained` and gives the XP to the killer
   only. A level-up raises max health by the class's share of base health and max aether, and heals
-  and refills by the raise only while the Legend is alive (O3, O4). Not built yet: the share radius
-  and damage bias, assists, structure, checkpoint, camp and boss XP (their systems do not exist),
+  and refills by the raise only while the Legend is alive (O3, O4). Structure XP is built (DEC-186: every
+  Legend on the destroying team; a dead Legend is skipped until respawn, GL-12). Not built yet:
+  the share radius and damage bias, assists, checkpoint, camp and boss XP (their systems do not exist),
   basic-attack and ability potency per level, `upgradeIds`, the ultimate charge rules, and keeping
   dead Legends in the store until respawn (FR-051), which O4's posthumous XP needs. Numbers are
-  `TUNE`; the curve is derived from an income estimate in `INBOX.md`.
+  `TUNE`; the curve and the Legend kill and structure XP follow DEC-190 (not final; the
+  soak metric can change them) and live in `content/progression/`.
 - **HUD (`feat/hud-and-character-select`, 2026-10-24).** §15's `PlayerSnapshot` does not exist
   in core yet: `Snapshot` holds `tick`, `phase` and `entities` only. Until `SnapshotSystem` fills
   `Snapshot.player` (Phase 4, sprints 4.5 and 4.7), the client's `MatchBridge` projects the HUD
@@ -935,9 +937,11 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   slot list empty and everything else `null` (DEC-17), no `varietyId` or `statusIds` until a
   reader needs them, and two presentational slots, `weaponProgress` and `ultimatePips`, that stay
   `null` until OQ-63 and OQ-64 give them a rule; its TSDoc states the one-to-one mapping to the
-  core type. Core now has the `Aether` and `Progression` components (the bullet above), but
-  `EntitySnapshot` (`state/Snapshot.types.ts`) still carries only `health`, so the HUD's aether,
-  level and XP stay `null` until `Snapshot.player` exists (INBOX HC-F6). The record lands in
+  core type. Core now has the `Aether` and `Progression` components (the bullet above), and
+  `EntitySnapshot` (`state/Snapshot.types.ts`) carries `health` and `progression` (`level`, the
+  XP inside that level and `xpToNext`, `null` at the cap; `feat/hud-level-xp`, 2026-11-09), so
+  the HUD's level and XP are live; aether stays `null` until `Snapshot.player` exists (INBOX
+  HC-F6). The record lands in
   `hudSlice`, not `matchSlice`; each slot is drawn by `AbilitySlot` through `selectHudSlotView`.
   The kit's display names and icons come from the display catalogue the client builds at boot
   (core's `loadDisplayContent()` plus its own presentation data, `game/content/hudPresentation.ts`,

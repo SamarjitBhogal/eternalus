@@ -1,7 +1,12 @@
+import { Capturable } from '../components/Capturable';
 import { Health } from '../components/Health';
+import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
+import { ZoneArea } from '../components/ZoneArea';
 import type { GameConfig } from '../config/GameConfig.types';
+import type { ContentCatalogue } from '../content/ContentCatalogue';
+import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import type { Entity } from '../entities/Entity';
 import type { PlayableTeam } from '../teams/teams.types';
 import { RingBuffer } from '../utils/RingBuffer';
@@ -13,7 +18,9 @@ import type { EntityId, RemovalRecord } from './EntityStore.types';
 import { GameEvents } from './GameEvents';
 import type { DamageSource, GameEventMap } from './GameEvents.types';
 import { RECENT_COMMAND_CAPACITY } from './GameState.constants';
-import type { GameStateIndexes, MatchPhase, RecordedCommand, TeamState } from './GameState.types';
+import type { GameStateIndexes, RecordedCommand, TeamState } from './GameState.types';
+import { MatchRecord } from './MatchRecord';
+import type { ScheduledMark } from './MatchState.types';
 import type { HordeRequest } from './HordeRequest.types';
 import { GuardStore } from './GuardStore';
 import { HordeStore } from './HordeStore';
@@ -25,6 +32,7 @@ import type { SpaceQuery } from './SpaceQuery.types';
 
 import type { WorldObjectStore } from './WorldObjectStore';
 import { MapObjectBody } from '../components/MapObjectBody';
+import { isPlayableTeam, opponentOf } from '../teams/playableTeams';
 
 /**
  * The aggregate root of one match: config, the seeded RNG, the world, the entities, the hordes, the
@@ -79,14 +87,18 @@ export class GameState {
   /** A\* for Legends over the map's grid (architecture 10 §9); `null` without a map. */
   public readonly paths: PathQuery | null;
   public readonly events: GameEvents;
-  /** Always `countdown` until the MatchDirector (phase 4) drives the timeline. */
-  public readonly phase: MatchPhase = 'countdown';
+  /**
+   * Where the match is in its timeline and the only writers of it (architecture 12 §4, DEC-172,
+   * DEC-177); a match starts in `countdown`.
+   */
+  public readonly match: MatchRecord;
   private structureIndex = LaneStructures.EMPTY;
   private currentTick = 0;
   private readonly recent = new RingBuffer<RecordedCommand>(RECENT_COMMAND_CAPACITY);
   private readonly announcedRemovals: RemovalRecord[] = [];
 
   private readonly xpAwards: GameEventMap['xp-gained'][] = [];
+  private readonly phaseChanges: GameEventMap['phase-changed'][] = [];
   private readonly killers = new Map<EntityId, DamageSource>();
 
   /**
@@ -95,6 +107,8 @@ export class GameState {
    * @param world - The match's map at runtime; without one, nothing spawns on lanes.
    * @param indexes - The neighbour index `SpaceSystem` refills each tick and A\* for Legends;
    *   each `null` without a map.
+   * @param schedule - The resolved timeline (`MatchTimeline`) as plain marks; empty when no
+   *   director runs.
    */
   public constructor(
     public readonly config: GameConfig,
@@ -103,11 +117,18 @@ export class GameState {
     /** The map, its lane routes and its grid, or `null` (most unit tests). */
     public readonly world: MatchWorld | null = null,
     indexes: GameStateIndexes = {},
+    schedule: readonly ScheduledMark[] = [],
   ) {
     this.space = indexes.space ?? null;
     this.paths = indexes.paths ?? null;
     this.rng = new SeededRandom(seed);
     this.events = new GameEvents(() => this.currentTick);
+    this.match = new MatchRecord(
+      config.match.playerTeam,
+      schedule,
+      this.events,
+      () => this.currentTick,
+    );
     this.events.on('entity-removed', (removal) => {
       this.announcedRemovals.push({ entityId: removal.entityId, cause: removal.cause });
     });
@@ -116,6 +137,9 @@ export class GameState {
     });
     this.events.on('xp-gained', (award) => {
       this.xpAwards.push(award);
+    });
+    this.events.on('phase-changed', (change) => {
+      this.phaseChanges.push(change);
     });
     this.events.on('damage-applied', (hit) => {
       this.countAllyDamage(hit);
@@ -134,9 +158,9 @@ export class GameState {
     const position = victim?.findComponent(Transform)?.position;
     if (
       (victim?.family !== 'legend' && victim?.family !== 'mob') ||
-      (team !== 'light' && team !== 'dark') ||
+      !isPlayableTeam(team) ||
       source.attackerId === null ||
-      this.entities.teamOf(source.attackerId) !== (team === 'light' ? 'dark' : 'light') ||
+      this.entities.teamOf(source.attackerId) !== opponentOf(team) ||
       position === undefined
     ) {
       return;
@@ -169,6 +193,7 @@ export class GameState {
     this.announcedRemovals.length = 0;
     this.killers.clear();
     this.xpAwards.length = 0;
+    this.phaseChanges.length = 0;
   }
 
   /**
@@ -187,6 +212,11 @@ export class GameState {
   /** Every `xp-gained` event of the current tick, in order (whatever the ring buffer keeps). */
   public xpAwardsThisTick(): readonly GameEventMap['xp-gained'][] {
     return [...this.xpAwards];
+  }
+
+  /** Every `phase-changed` event of the current tick, in order (whatever the ring buffer keeps). */
+  public phaseChangesThisTick(): readonly GameEventMap['phase-changed'][] {
+    return [...this.phaseChanges];
   }
 
   /** Records a command applied this tick, for diagnostic reports. Called by `Simulation.step()`. */
@@ -222,12 +252,19 @@ export class GameState {
     return this.recent.toArray();
   }
 
-  /** The current state as a structured-clone-safe snapshot. */
-  public snapshot(): Snapshot {
+  /**
+   * The current state as a structured-clone-safe snapshot.
+   *
+   * @param curves - The level curves a `Progression` levels along (the catalogue
+   *   `ProgressionSystem` uses), to report the XP inside each level.
+   */
+  public snapshot(curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'get'>): Snapshot {
     const entities: EntitySnapshot[] = [];
+    const { checkpoints } = this.config.match.capturePoints;
     this.entities.forEach((entity) => {
-      entities.push(GameState.snapshotOf(entity));
+      entities.push(GameState.snapshotOf(entity, checkpoints, curves));
     });
+    const { phase, phaseEnteredTick, timelineCursor, schedule, humanLegendId } = this.match;
     const hordes: HordeSnapshot[] = [];
     this.hordes.forEach((horde) => {
       hordes.push({ ...horde });
@@ -235,7 +272,12 @@ export class GameState {
     const { light, dark } = this.teamCounters;
     return {
       tick: this.currentTick,
-      phase: this.phase,
+      match: {
+        phase,
+        phaseEnteredTick,
+        upcoming: schedule.slice(timelineCursor),
+        humanLegendId,
+      },
       entities,
       hordes,
       teams: {
@@ -246,9 +288,15 @@ export class GameState {
     };
   }
 
-  private static snapshotOf(entity: Entity): EntitySnapshot {
+  private static snapshotOf(
+    entity: Entity,
+    checkpoints: number,
+    curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'get'>,
+  ): EntitySnapshot {
     const transform = entity.findComponent(Transform);
     const health = entity.findComponent(Health);
+    const progression = entity.findComponent(Progression);
+    const capture = entity.findComponent(Capturable);
     return {
       id: entity.id,
       kind: entity.kind,
@@ -263,6 +311,25 @@ export class GameState {
           ? null
           : { x: transform.position.x, y: transform.position.y, radius: transform.radius },
       health: health === undefined ? null : { current: health.current, max: health.max },
+      progression:
+        progression === undefined
+          ? null
+          : {
+              level: progression.level,
+              ...progression.levelProgress(curves.get(progression.curveId)),
+            },
+      area: entity.findComponent(ZoneArea)?.polygons ?? null,
+      capture:
+        capture === undefined
+          ? null
+          : {
+              owner: capture.owner,
+              progress: capture.progress,
+              checkpoint: capture.checkpoint,
+              checkpoints,
+              lockedBy: capture.lockedBy,
+              presence: capture.presence,
+            },
     };
   }
 }

@@ -1,32 +1,46 @@
-import type { EntityId, MapDefinition, MapFeatureKind, Snapshot } from '@eternalus/core';
+import type { CaptureSnapshot, EntityId, MapDefinition, Snapshot, Vec2 } from '@eternalus/core';
 
 import type { CapturePointStatus, PlayerHudSnapshot, StructureStatus } from '../bridge/hud.types';
 import { ROSTER_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
-import type { MatchBridgeDeps } from './MatchBridge.types';
+import type { CaptureSite, MatchBridgeDeps } from './MatchBridge.types';
 
 /**
  * All game → UI publishing for one match (architecture 12 §8, 13 §5), owned by `Match`. It
  * publishes only what the simulation has today (DEC-17, HC-F6: no made-up values):
  * - `match-clock` and `hud-state` (the player's health; every other value `null`) every
  *   `publishEveryTicks`;
- * - the team structures and the capture points from the map's features (health `null`, owner
- *   `neutral`) every `ROSTER_PUBLISH_EVERY_TICKS`.
- * `publishAll` sends everything once, before the first tick. The rosters are built once, so each
- * re-send carries the same arrays and the store sees no change.
+ * - the team structures (health `null`) and the capture points (owner and progress from each
+ *   point's zone) from the map's features every `ROSTER_PUBLISH_EVERY_TICKS`.
+ * `publishAll` sends everything once, before the first tick. A re-send with no change carries the
+ * same arrays, so the store sees no change.
  */
 export class MatchBridge {
   private readonly structures: readonly StructureStatus[];
-  private readonly capturePoints: readonly CapturePointStatus[];
+  private readonly captureSites: readonly CaptureSite[];
+  private capturePoints: readonly CapturePointStatus[];
 
   /** Builds the two rosters from the map; publishes nothing yet. */
   public constructor(private readonly deps: MatchBridgeDeps) {
     this.structures = MatchBridge.structuresOf(deps.map);
-    this.capturePoints = MatchBridge.capturePointsOf(deps.map, deps.captureKinds);
+    const features = deps.map.features.filter((feature) =>
+      deps.captureKinds.includes(feature.kind),
+    );
+    this.captureSites = features.map((feature) => ({
+      position: feature.position,
+      withoutZone: {
+        pointId: feature.id,
+        kind: feature.kind,
+        laneIndex: MatchBridge.laneIndexOf(deps.map, feature.laneId),
+        ownerTeam: 'neutral',
+        progress: null,
+      },
+    }));
+    this.capturePoints = this.captureSites.map(({ withoutZone }) => withoutZone);
   }
 
   /** Publishes both rosters, the clock and the HUD once, before the first tick. */
   public publishAll(snapshot: Snapshot, playerId: EntityId | null): void {
-    this.publishRosters();
+    this.publishRosters(snapshot);
     this.publishFast(snapshot, playerId);
   }
 
@@ -36,7 +50,7 @@ export class MatchBridge {
       this.publishFast(snapshot, playerId);
     }
     if (snapshot.tick % ROSTER_PUBLISH_EVERY_TICKS === 0) {
-      this.publishRosters();
+      this.publishRosters(snapshot);
     }
   }
 
@@ -46,14 +60,46 @@ export class MatchBridge {
     bus.emit('hud-state', { player: MatchBridge.playerOf(snapshot, playerId) });
   }
 
-  private publishRosters(): void {
+  private publishRosters(snapshot: Snapshot): void {
+    this.capturePoints = this.liveCapturePoints(snapshot);
     this.deps.bus.emit('structure-state', { structures: this.structures });
     this.deps.bus.emit('capture-state', { points: this.capturePoints });
   }
 
   /**
-   * The player's HUD values: health from the snapshot, everything else `null` until core
-   * publishes it (interim until core fills a player snapshot; 13 §10).
+   * The capture points with each zone's owner and progress. A zone stands on its feature's
+   * position, which links it to its point; a point with no zone shows no capture (neutral, no
+   * progress). An unchanged point, and an unchanged list, is the last one published.
+   */
+  private liveCapturePoints(snapshot: Snapshot): readonly CapturePointStatus[] {
+    const points = this.captureSites.map(({ position, withoutZone }, index) => {
+      const capture = MatchBridge.captureAt(snapshot, position);
+      const next =
+        capture === null
+          ? withoutZone
+          : { ...withoutZone, ownerTeam: capture.owner, progress: capture.progress };
+      const last = this.capturePoints[index] ?? withoutZone;
+      return last.ownerTeam === next.ownerTeam && last.progress === next.progress ? last : next;
+    });
+    return points.every((point, index) => point === this.capturePoints[index])
+      ? this.capturePoints
+      : points;
+  }
+
+  private static captureAt(snapshot: Snapshot, position: Vec2): CaptureSnapshot | null {
+    const zone = snapshot.entities.find(
+      ({ capture, transform }) =>
+        capture !== null &&
+        transform !== null &&
+        transform.x === position.x &&
+        transform.y === position.y,
+    );
+    return zone?.capture ?? null;
+  }
+
+  /**
+   * The player's HUD values: health, level and XP from the snapshot, everything else `null` until
+   * core publishes it (interim until core fills a player snapshot; 13 §10).
    */
   private static playerOf(snapshot: Snapshot, playerId: EntityId | null): PlayerHudSnapshot | null {
     const entity = snapshot.entities.find((candidate) => candidate.id === playerId);
@@ -67,9 +113,9 @@ export class MatchBridge {
       maxHealth: entity.health?.max ?? null,
       aether: null,
       maxAether: null,
-      level: null,
-      xp: null,
-      xpToNext: null,
+      level: entity.progression?.level ?? null,
+      xp: entity.progression?.xp ?? null,
+      xpToNext: entity.progression?.xpToNext ?? null,
       weaponProgress: null,
       ultimatePips: null,
       slots: [],
@@ -91,21 +137,6 @@ export class MatchBridge {
             },
           ],
     );
-  }
-
-  private static capturePointsOf(
-    map: MapDefinition,
-    captureKinds: readonly MapFeatureKind[],
-  ): readonly CapturePointStatus[] {
-    return map.features
-      .filter((feature) => captureKinds.includes(feature.kind))
-      .map((feature) => ({
-        pointId: feature.id,
-        kind: feature.kind,
-        laneIndex: MatchBridge.laneIndexOf(map, feature.laneId),
-        ownerTeam: 'neutral',
-        progress: null,
-      }));
   }
 
   private static laneIndexOf(map: MapDefinition, laneId: string | undefined): number | null {

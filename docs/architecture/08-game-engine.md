@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-05
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -156,22 +156,33 @@ export interface Renderer {
 ## 5. `Camera` and projections
 
 ```ts
-// apps/client/src/game/engine/camera/Camera.ts (sketch)
+// apps/client/src/game/engine/input/Projection.types.ts (contract)
 export interface Projection {
-  worldToScreen(p: Vec2Like): Vec2Like;
-  screenToWorld(p: Vec2Like): Vec2Like;
+  screenToWorld(p: Vec2Like): Vec2Like; // canvas point (CSS pixels) to world point
 }
-export class Camera implements Projection {
+// apps/client/src/game/engine/Camera.ts (sketch): the following camera
+export class Camera {
   follow(target: () => Vec2Like, lerp: number): void; // e.g. the player's Legend, interpolated
   setZoom(z: number): void; // clamped to zoomBounds from settings
   visibleRect(): RectLike; // world-space rectangle used for culling
   update(alpha: number): void; // moves toward the follow target once per frame
 }
-export class MinimapProjection implements Projection {} // fixed scale, see 06 §8
+// apps/client/src/game/MatchCamera.ts: owns a Camera and the free MapExplorer view
+export class MatchCamera implements Projection {}
 ```
 
-The same `Projection` port serves the main scene and the minimap, so culling, click-to-world and
-range-ring maths are written once (DRY).
+`MatchCamera` is the match's `Projection`: it holds the drawing size and turns a canvas point
+(CSS pixels) into a world point, so input never needs to know about cameras or screen sizes.
+
+`MinimapProjection` (`engine/camera/`, 06 §8) is a second, smaller thing. It is a per-frame value
+object for the local minimap view: a centre, a radius and a screen area. It works in device
+pixels, has no `Command`, and does not implement `Projection`. This is a better-than-design
+change that the owner signed off (DEC-191); the critic ruled it acceptable. Its `worldAt` mirrors
+`MatchCamera.worldAt`, the internal method that the camera's `screenToWorld` wraps by multiplying
+with the pixel ratio. Nothing consumes the minimap as a `Projection`, and a minimap click reaches
+`MatchViewControls.lookAtMinimapPoint` in device pixels. If an input driver ever needs the minimap as a
+`Projection`, add a `screenToWorld` adapter that multiplies by the pixel ratio. Culling is not
+shared: the minimap clips to the ring.
 
 ## 6. Assets and audio
 
@@ -226,7 +237,7 @@ flowchart LR
   SV --> E[EntityView per kind from ViewRegistry, culled, y-sorted]
   SV --> O[Overlay: rings, ranges, debug]
   S --> M[MinimapView every Nth frame]
-  M --> G[EntityView.drawGlyph via the same ViewRegistry]
+  M --> G[EntityView.drawMinimap via the same ViewRegistry]
 ```
 
 - `SceneView.draw(prev, current, alpha, camera, renderer)` is the single place that defines draw
@@ -299,6 +310,11 @@ HUD and character select (`feat/hud-and-character-select`, 2026-10-26; DEC-50):
   explorer collaborator is the split if it grows. (2026-11-02: it had grown to 364; the
   player-intent code moved to `PlayerCommands` (the ~300-line rule, `AGENTS.md`), which leaves
   328.)
+- (2026-11-04, `feat/match-director`) The split is built: `MatchViewControls` holds the canvas
+  gestures (camera, minimap look-at, roofs, attack on click), and `Match.ts` has 214 lines. The
+  player's Legend comes from `Snapshot.match.humanLegendId`, which core sets when it spawns the
+  roster's human slot (DEC-173, [12](12-game-story-and-match-director.md) §13). `Match` no longer
+  adopts the first spawn of the player's class and team.
 
 ## Related
 

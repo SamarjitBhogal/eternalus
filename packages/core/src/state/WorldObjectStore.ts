@@ -8,6 +8,7 @@ import type { EntityStore } from './EntityStore';
 import type { WorldObjectRecord } from './WorldObjectStore.types';
 import type { Vec2 } from '../utils/geometry.types';
 import { doesCircleOverlapPolygon, isCircleInsidePolygon } from '../utils/circlePolygon';
+import { boundsOf } from '../utils/geometry';
 
 /** Owns placed-object identity and persistent destroyed state after DeathSystem retires entities. */
 export class WorldObjectStore {
@@ -24,11 +25,12 @@ export class WorldObjectStore {
   ) {
     for (const object of objects) {
       const definition = definitions[object.kind];
+      const points = object.footprints.flat();
+      const bounds = boundsOf(points);
       if (definition.health === null) {
-        this.records.push({ object, entityId: null, health: null });
+        this.records.push({ object, entityId: null, health: null, bounds });
         continue;
       }
-      const points = object.footprints.flat();
       const position = points.reduce(
         (sum, p) => ({ x: sum.x + p.x / points.length, y: sum.y + p.y / points.length }),
         { x: 0, y: 0 },
@@ -39,7 +41,12 @@ export class WorldObjectStore {
       if (object.team !== undefined) entity.addComponent(new TeamMembership(object.team));
       entities.add(entity);
       this.entityObjects.set(entity.id, object);
-      this.records.push({ object, entityId: entity.id, health: entity.getComponent(Health) });
+      this.records.push({
+        object,
+        entityId: entity.id,
+        health: entity.getComponent(Health),
+        bounds,
+      });
     }
   }
 
@@ -68,8 +75,12 @@ export class WorldObjectStore {
 
   /** Independent diagnostic check against live solids and authored bridge openings. */
   public blockingAt(point: Vec2, radius: number): string | null {
-    for (const { object, health } of this.records) {
+    for (const { object, health, bounds } of this.records) {
       if (
+        point.x + radius < bounds.x ||
+        point.x - radius > bounds.x + bounds.width ||
+        point.y + radius < bounds.y ||
+        point.y - radius > bounds.y + bounds.height ||
         !object.isBlocking ||
         this.destroyed.has(object.id) ||
         health?.isDead === true ||

@@ -1,5 +1,7 @@
 import type {
   Command,
+  EntitySnapshot,
+  Team,
   InputIntent,
   MapObject,
   MapObjectSnapshot,
@@ -45,6 +47,28 @@ const HOUSE_STATES: readonly MapObjectSnapshot[] = [
   { id: 'house', entityId: HOUSE_ENTITY, health: { current: 100, max: 100 }, isDestroyed: false },
 ];
 
+const unit = (id: string, team: Team, x: number, y: number): EntitySnapshot => ({
+  id,
+  kind: 'minion',
+  family: 'mob',
+  definitionId: 'minion',
+  team,
+  transform: { x, y, radius: 1 },
+  health: { current: 10, max: 10 },
+  progression: null,
+  area: null,
+  capture: null,
+});
+const PLAYER: EntitySnapshot = { ...unit(ACTOR, 'light', 20, 20), family: 'legend' };
+/** A dark-team minion standing on the house, so the house and the unit overlap. */
+const ENEMY = unit('enemy-1', 'dark', 2, 2);
+
+/** The snapshot parts a target is picked from: `entities` and the house's state. */
+const snapshotOf = (
+  entities: readonly EntitySnapshot[],
+  mapObjects: readonly MapObjectSnapshot[] = HOUSE_STATES,
+) => ({ entities, mapObjects });
+
 const setUp = () => {
   const input = new ScriptedIntent();
   const enqueueCommand = vi.fn<Simulation['enqueueCommand']>();
@@ -56,8 +80,8 @@ const setUp = () => {
   );
   const queued = (type: Command['type']): number =>
     enqueueCommand.mock.calls.filter(([command]) => command.type === type).length;
-  const tick = (): boolean => {
-    return commands.apply(ACTOR, HOUSE_STATES);
+  const tick = (entities: readonly EntitySnapshot[] = [PLAYER]): boolean => {
+    return commands.apply(ACTOR, snapshotOf(entities));
   };
   return { input, commands, enqueueCommand, queued, tick };
 };
@@ -107,7 +131,7 @@ describe('PlayerCommands', () => {
   it("queues one attack-target on the living map object under the explorer's click (DEC-150)", () => {
     const { commands, enqueueCommand } = setUp();
 
-    commands.attackAt(ACTOR, { x: 2, y: 2 }, HOUSE_STATES);
+    commands.attackObjectAt(ACTOR, { x: 2, y: 2 }, snapshotOf([PLAYER]));
 
     expect(enqueueCommand.mock.calls.map(([command]) => command)).toEqual([
       { type: 'attack-target', actorId: ACTOR, targetId: HOUSE_ENTITY },
@@ -118,10 +142,57 @@ describe('PlayerCommands', () => {
     const { commands, enqueueCommand } = setUp();
     const destroyed = HOUSE_STATES.map((state) => ({ ...state, isDestroyed: true }));
 
-    commands.attackAt(ACTOR, { x: 10, y: 10 }, HOUSE_STATES);
-    commands.attackAt(ACTOR, { x: 2, y: 2 }, destroyed);
+    commands.attackObjectAt(ACTOR, { x: 10, y: 10 }, snapshotOf([PLAYER]));
+    commands.attackObjectAt(ACTOR, { x: 2, y: 2 }, snapshotOf([PLAYER], destroyed));
+    // A snapshot with no map objects (`mapObjects` is optional) has none to hit.
+    commands.attackObjectAt(ACTOR, { x: 2, y: 2 }, { entities: [PLAYER] });
 
     expect(enqueueCommand).not.toHaveBeenCalled();
+  });
+
+  it('attacks the enemy unit under a click, not the house it overlaps', () => {
+    const { commands, enqueueCommand } = setUp();
+
+    const isUnit = commands.attackUnitAt(ACTOR, { x: 2, y: 2 }, snapshotOf([PLAYER, ENEMY]));
+
+    expect(isUnit).toBe(true);
+    expect(enqueueCommand.mock.calls.map(([command]) => command)).toEqual([
+      { type: 'attack-target', actorId: ACTOR, targetId: 'enemy-1' },
+    ]);
+  });
+
+  it('the held attack hits the enemy unit under the cursor, and the unit wins over the house', () => {
+    const { input, queued, tick, enqueueCommand } = setUp();
+    input.isAttacking = true;
+    input.aim = { x: 2, y: 2 };
+
+    tick([PLAYER, ENEMY]);
+    tick([PLAYER, ENEMY]);
+
+    expect(queued('attack-target')).toBe(1);
+    expect(enqueueCommand).toHaveBeenCalledWith({
+      type: 'attack-target',
+      actorId: ACTOR,
+      targetId: 'enemy-1',
+    });
+  });
+
+  it('ignores allies and dead units: no unit hit, the held attack falls back to the house', () => {
+    const { input, commands, enqueueCommand, tick } = setUp();
+    const ally = unit('ally-1', 'light', 2, 2);
+    const dead = { ...ENEMY, health: { current: 0, max: 10 } };
+
+    expect(commands.attackUnitAt(ACTOR, { x: 2, y: 2 }, snapshotOf([PLAYER, ally, dead]))).toBe(
+      false,
+    );
+    expect(enqueueCommand).not.toHaveBeenCalled();
+    input.isAttacking = true;
+    input.aim = { x: 2, y: 2 };
+    tick([PLAYER, ally, dead]);
+
+    expect(enqueueCommand.mock.calls.map(([command]) => command)).toEqual([
+      { type: 'attack-target', actorId: ACTOR, targetId: HOUSE_ENTITY },
+    ]);
   });
 
   it('queues move or stop only when the axes change; returns whether the player moves', () => {

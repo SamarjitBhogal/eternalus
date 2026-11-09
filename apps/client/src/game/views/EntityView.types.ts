@@ -13,10 +13,17 @@ export type EntityDrawState = {
 };
 
 /**
- * Draws one kind (or family) of entity in the main view. Views only read snapshots and draw
- * through the `Renderer` port (architecture 08 §8). Minimap markers belong to the minimap work.
+ * Draws one kind (or family) of entity in the main view and on the mini map. Views only read
+ * snapshots and draw through the `Renderer` port (architecture 08 §8; 06 §8).
  */
 export interface EntityView {
   /** Draws the entity in the main view, sized in world units. */
   draw(state: EntityDrawState, renderer: Renderer): void;
+  /** Draws the entity's mini map marker, sized in CSS pixels, or nothing. */
+  drawMinimap(state: EntityDrawState, renderer: Renderer): void;
+  /**
+   * The mini map layer of this view's markers: higher layers are drawn later, on top. A view
+   * without one is on layer 0.
+   */
+  readonly minimapLayer?: number;
 }
