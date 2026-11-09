@@ -3,6 +3,7 @@ import { createSelector } from '@reduxjs/toolkit';
 import type { AssetId, HudStructureKind } from '../catalogue.types';
 import type { PlayableTeam } from '../domain.types';
 import type { HudSide, StructureStatus } from '../hud.types';
+import { opponentOf } from '../opponentOf';
 import { contentSlice } from '../slices/contentSlice';
 import { matchSetupSlice } from '../slices/matchSetupSlice';
 import { matchSlice } from '../slices/matchSlice';
@@ -26,10 +27,10 @@ export type HudStructureTile = {
   readonly isDestroyed: boolean;
 };
 
-/** The team each strip shows, seen from the player. */
-const SIDE_TEAM: Readonly<Record<HudSide, Readonly<Record<PlayableTeam, PlayableTeam>>>> = {
-  allied: { light: 'light', dark: 'dark' },
-  enemy: { light: 'dark', dark: 'light' },
+/** The team each strip shows, from the player's team. */
+const SIDE_TEAM: Readonly<Record<HudSide, (playerTeam: PlayableTeam) => PlayableTeam>> = {
+  allied: (playerTeam) => playerTeam,
+  enemy: opponentOf,
 };
 
 /** Sort key of a lane: lane order, structures without a lane last. */
@@ -102,7 +103,7 @@ export const selectStructureStrip = createSelector(
   ],
   (catalogue, playerTeam, structures, side): readonly HudStructureTile[] => {
     if (playerTeam === null) return [];
-    const team = SIDE_TEAM[side][playerTeam];
+    const team = SIDE_TEAM[side](playerTeam);
     const kinds = new Map(catalogue.structureKinds.map((entry) => [entry.kind, entry]));
     const shown = structures
       .filter((structure) => structure.team === team && kinds.has(structure.kind))

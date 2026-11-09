@@ -1,9 +1,8 @@
 /**
  * Display types of the match HUD (architecture 05 §15, 13 §3, §5): what `hud-state`,
  * `structure-state` and `capture-state` carry, and the view vocabulary several HUD files share.
- * A value the simulation cannot supply yet is `null` (core has no `Snapshot.player` yet, capture is
- * not simulated, and walls and turrets are not structures yet) and the HUD draws its "no data yet"
- * state. Types only:
+ * A value the simulation cannot supply yet is `null` (core has no `Snapshot.player` yet, and walls
+ * and turrets are not structures yet) and the HUD draws its "no data yet" state. Types only:
  * imports no slice and not events.ts (events.ts imports this file). A type is exported once a file
  * outside this one reads it (knip).
  */
@@ -91,9 +90,9 @@ export type CapturePointStatus = {
   readonly pointId: string;
   readonly kind: MapFeatureKind;
   readonly laneIndex: number | null;
-  /** `'neutral'` until a CaptureSystem runs (reference 04: nobody owns them at the start). */
+  /** `'neutral'` while no team owns it (reference 04: nobody owns them at the start). */
   readonly ownerTeam: Team;
-  /** −1 (Dark) … 1 (Light) (07 §7); `null` while capture is not simulated. */
+  /** −1 (Dark) … 1 (Light) (07 §7); `null` for a point with no zone. */
   readonly progress: number | null;
 };
 

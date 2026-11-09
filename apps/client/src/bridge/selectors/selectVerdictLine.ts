@@ -1,4 +1,4 @@
-import type { PlayableTeam } from '../domain.types';
+import { opponentOf } from '../opponentOf';
 import { contentSlice } from '../slices/contentSlice';
 import { matchSetupSlice } from '../slices/matchSetupSlice';
 import { matchSlice } from '../slices/matchSlice';
@@ -23,8 +23,7 @@ export function selectVerdictLine(
   const line = contentSlice.selectors.selectVerdictLines(state)[result.condition]?.[verdict];
   if (line === undefined) return null;
   // Whose sovereign fell: the enemy's on a victory, the player's own otherwise.
-  const enemyTeam: PlayableTeam = team === 'light' ? 'dark' : 'light';
-  const fallenTeam = verdict === 'victory' ? enemyTeam : team;
+  const fallenTeam = verdict === 'victory' ? opponentOf(team) : team;
   const name = contentSlice.selectors.selectSovereignNames(state)[fallenTeam];
   return line.replaceAll(NAME_PLACEHOLDER, name);
 }

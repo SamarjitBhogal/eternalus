@@ -15,7 +15,7 @@ export type HudObjectiveView = {
   readonly ownerTeam: Team;
   /** The owner seen from the player: the non-colour cue (allegiance flag, label; 13 §7). */
   readonly allegiance: HudAllegiance;
-  /** Capture progress 0..1 (`|progress|`); `null` while capture is not simulated. */
+  /** Capture progress 0..1 (`|progress|`); `null` for a point with no zone. */
   readonly captureFraction: number | null;
 };
 

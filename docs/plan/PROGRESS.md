@@ -6197,3 +6197,34 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   statements 99.14 %; client "Tests 1827 passed (1827)", statements 96.95 %; "✓ built in 258ms";
   "Documentation check passed." (127 files).
 - Next step: the pre-PR gate for GL-4 and GL-5 (critic, ponytail, re-check), then their PRs.
+
+### 2026-11-08 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-5 critic round 3 and DEC-221 (B2, B3) — feat/results-flow — sholtzman + Claude Code
+
+- What: the work on this branch after the GL-5 round-2 entry above.
+  - `e915ec4`: merged `feat/match-scoring` at `0009ed9` (phase/3 `b02ef47` with PR #64, DEC-214)
+    into this branch; 7 conflicts. `MatchBridge` keeps #64's live capture points (`captureSites`,
+    `liveCapturePoints`) and this branch's live structures; 13 §10 states both as built.
+  - `c262b58`: DEC-214 (B). The HUD Wall tile sums the health of its members whose health is
+    known (today its gates) and shows no data only while none is; a destroyed member still marks
+    it destroyed (DEC-108). This supersedes the round-2 entry's Wall tile "no data".
+  - Pre-PR critic round 3, the last (`critic-log.md`): architecture approve (0 blocker, 0 major,
+    2 minor, 3 nit, 3 better-than-design; `arch-review-gl5-round-3.md`); ponytail PASS, its 3
+    optional cuts rejected with reasons in the log.
+  - `fbe5c78`: merged `feat/match-scoring` at `42e4c46` (DEC-221, GL-16) into this branch.
+  - This commit, DEC-221 (3). B2 and nit 3: `MatchBridge.keepUnchanged` keeps each roster item
+    whose values did not change, and the last array when nothing changed, for both rosters, so a
+    structure re-send with no health change no longer re-renders the store. The structure-array
+    identity assertion is back in `MatchBridge.test.ts`, and a new test checks that an unchanged
+    tile keeps its object. B3 and nit 5: `bridge/opponentOf.ts` (the bridge imports only types
+    from core) is used by `selectVerdictLine` and by `selectStructureStrip`'s `SIDE_TEAM`. Minor
+    1: 02 says core exports the type `VerdictLines` only. Nit 4: "capture is not simulated" is
+    gone from `hud.types.ts`, `selectObjectives.ts` and the `MatchBridge` test title. 02 lists
+    `bridge/opponentOf.ts`. Minor 2 is this entry.
+- Fail-first breaks: 4, all red then restored (`cmp` equal), in
+  `eternalus-agent-work/game-loop-plan/gl5-r3-btd-breaks.txt`: b1 the structures not kept (2
+  red), b2 `keepUnchanged` never returns the last array (3 red), b3 no item kept (2 red), b4
+  `opponentOf` returns its own team (4 red).
+- Checks run: `npm run check` → `EXIT=0` (`rf-dec221-check-2026-11-08.log` in
+  `eternalus-agent-work/game-loop-plan/`): core "Tests 1363 passed (1363)", statements 99.15 %;
+  client "Tests 1839 passed (1839)", statements 97 %; "Documentation check passed."
+- Next step: a targeted architecture critic on this commit's diff only; then push and open the PR.

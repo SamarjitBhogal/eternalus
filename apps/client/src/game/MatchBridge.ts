@@ -23,12 +23,13 @@ import type { CaptureSite, MatchBridgeDeps } from './MatchBridge.types';
  *   from its feature (DEC-212), each capture point with its zone's owner and progress;
  * - `match-ended` once, after the tick whose step ended the match: the result is latched inside
  *   the simulation's event and published from `afterTick`, never mid-step.
- * `publishAll` sends everything once, before the first tick. A capture re-send with no change
+ * `publishAll` sends everything once, before the first tick. A roster re-send with no change
  * carries the same array, so the store sees no change. Its subscriptions to the simulation's
  * events are one listener table (`listen`): each announcement 12 §8 plans is one line.
  */
 export class MatchBridge {
   private readonly structures: readonly StructureStatus[];
+  private publishedStructures: readonly StructureStatus[];
   /** The max health of each structure tile bound to a structure at match start, by feature id. */
   private readonly boundMaxHealth: ReadonlyMap<string, number>;
   private readonly captureSites: readonly CaptureSite[];
@@ -43,6 +44,7 @@ export class MatchBridge {
    */
   public constructor(private readonly deps: MatchBridgeDeps) {
     this.structures = MatchBridge.structuresOf(deps.map);
+    this.publishedStructures = this.structures;
     this.boundMaxHealth = new Map(
       [...MatchBridge.healthByFeature(deps.firstSnapshot)].map(([id, { max }]) => [id, max]),
     );
@@ -114,8 +116,9 @@ export class MatchBridge {
   }
 
   private publishRosters(snapshot: Snapshot): void {
+    this.publishedStructures = this.structuresAt(snapshot);
     this.capturePoints = this.liveCapturePoints(snapshot);
-    this.deps.bus.emit('structure-state', { structures: this.structuresAt(snapshot) });
+    this.deps.bus.emit('structure-state', { structures: this.publishedStructures });
     this.deps.bus.emit('capture-state', { points: this.capturePoints });
   }
 
@@ -123,15 +126,41 @@ export class MatchBridge {
    * The structure roster with live health (DEC-212): a tile bound at match start takes its
    * structure's health from `snapshot`, and 0 once the structure is gone from it (`DeathSystem`
    * removes a structure only when it dies; DEC-69). A feature core built no structure for (walls
-   * and turrets, 07 §13) keeps `null`: the HUD shows "no data", never a made-up value.
+   * and turrets, 07 §13) keeps `null`: the HUD shows "no data", never a made-up value. A tile
+   * whose health did not change is the last one published.
    */
   private structuresAt(snapshot: Snapshot): readonly StructureStatus[] {
     const live = MatchBridge.healthByFeature(snapshot);
-    return this.structures.map((structure) => {
+    const structures = this.structures.map((structure) => {
       const max = this.boundMaxHealth.get(structure.structureId);
       if (max === undefined) return structure;
       return { ...structure, health: live.get(structure.structureId) ?? { current: 0, max } };
     });
+    return MatchBridge.keepUnchanged(
+      this.publishedStructures,
+      structures,
+      (last, next) =>
+        last.health?.current === next.health?.current && last.health?.max === next.health?.max,
+    );
+  }
+
+  /**
+   * `next`, with each item that `isSame` as the item at its index in `last` replaced by that
+   * last object; `last` itself when every item is. So a roster re-send with no change carries
+   * the same array and the store sees no change (DEC-221 (3), B2).
+   */
+  private static keepUnchanged<T>(
+    last: readonly T[],
+    next: readonly T[],
+    isSame: (last: T, next: T) => boolean,
+  ): readonly T[] {
+    const kept = next.map((item, index) => {
+      const previous = last[index];
+      return previous !== undefined && isSame(previous, item) ? previous : item;
+    });
+    return kept.length === last.length && kept.every((item, index) => item === last[index])
+      ? last
+      : kept;
   }
 
   /** The health of each structure in `snapshot` that names its map feature, by feature id. */
@@ -153,18 +182,17 @@ export class MatchBridge {
    * progress). An unchanged point, and an unchanged list, is the last one published.
    */
   private liveCapturePoints(snapshot: Snapshot): readonly CapturePointStatus[] {
-    const points = this.captureSites.map(({ position, withoutZone }, index) => {
+    const points = this.captureSites.map(({ position, withoutZone }) => {
       const capture = MatchBridge.captureAt(snapshot, position);
-      const next =
-        capture === null
-          ? withoutZone
-          : { ...withoutZone, ownerTeam: capture.owner, progress: capture.progress };
-      const last = this.capturePoints[index] ?? withoutZone;
-      return last.ownerTeam === next.ownerTeam && last.progress === next.progress ? last : next;
+      return capture === null
+        ? withoutZone
+        : { ...withoutZone, ownerTeam: capture.owner, progress: capture.progress };
     });
-    return points.every((point, index) => point === this.capturePoints[index])
-      ? this.capturePoints
-      : points;
+    return MatchBridge.keepUnchanged(
+      this.capturePoints,
+      points,
+      (last, next) => last.ownerTeam === next.ownerTeam && last.progress === next.progress,
+    );
   }
 
   private static captureAt(snapshot: Snapshot, position: Vec2): CaptureSnapshot | null {

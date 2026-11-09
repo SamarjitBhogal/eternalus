@@ -287,13 +287,36 @@ describe('MatchBridge', () => {
     }
   });
 
-  it('re-sends the same capture array, so the store sees no change (capture is not simulated)', () => {
-    const { bridge, captures } = setUp();
+  it('re-sends the same roster arrays, so the store sees no change', () => {
+    const { bridge, structures, captures } = setUp();
     bridge.publishAll(snapshotAt(0), null);
     bridge.afterTick(snapshotAt(30), null);
 
+    const [first, second] = structures;
     const [firstPoints, secondPoints] = captures;
+    expect(second?.structures).toBe(first?.structures);
     expect(secondPoints?.points).toBe(firstPoints?.points);
+  });
+
+  it('re-sends the same structure array while no health changed, and keeps each unchanged tile (DEC-221)', () => {
+    const stronghold = lightFeature('stronghold');
+    const gate = lightFeature('gate');
+    const atFull = [structureOf(stronghold, 10_000, 10_000), structureOf(gate, 3_000, 3_000)];
+    const start = snapshotAt(0, atFull);
+    const { bridge, structures: published } = setUp(undefined, start);
+    bridge.publishAll(start, null);
+    bridge.afterTick(snapshotAt(30, atFull), null);
+    bridge.afterTick(
+      snapshotAt(60, [structureOf(stronghold, 10_000, 10_000), structureOf(gate, 1_200, 3_000)]),
+      null,
+    );
+    const tileOf = (index: number, id: string) =>
+      published[index]?.structures.find(({ structureId }) => structureId === id);
+
+    expect(published[1]?.structures).toBe(published[0]?.structures);
+    expect(published[2]?.structures).not.toBe(published[1]?.structures);
+    expect(tileOf(2, stronghold.id)).toBe(tileOf(1, stronghold.id));
+    expect(tileOf(2, gate.id)?.health).toEqual({ current: 1_200, max: 3_000 });
   });
 
   it("gives each structure tile its live structure's health, bound by feature id (DEC-212)", () => {
