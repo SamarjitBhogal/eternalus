@@ -16,25 +16,25 @@ describe('StructureView', () => {
       },
     ) as Renderer;
     const view: EntityView = new StructureView();
-
-    view.draw(
-      {
-        entity: {
-          id: 'entity-1',
-          kind: 'gate',
-          family: 'structure',
-          definitionId: 'gate',
-          team: 'light',
-          transform: { x: 0, y: 0, radius: 3 },
-          health: { current: 3000, max: 3000 },
-          area: null,
-          capture: null,
-        },
-        position: { x: 0, y: 0 },
-        isFocused: false,
+    const gate = {
+      entity: {
+        id: 'entity-1',
+        kind: 'gate',
+        family: 'structure',
+        definitionId: 'gate',
+        team: 'light' as const,
+        transform: { x: 0, y: 0, radius: 3 },
+        health: { current: 3000, max: 3000 },
+        area: null,
+        capture: null,
       },
-      renderer,
-    );
+      position: { x: 0, y: 0 },
+      isFocused: false,
+    };
+
+    view.draw(gate, renderer);
+    // The map layer also draws the building's minimap glyph.
+    view.drawMinimap(gate, renderer);
 
     expect(calls).toEqual([]);
   });

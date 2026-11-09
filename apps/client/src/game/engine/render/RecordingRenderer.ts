@@ -17,16 +17,6 @@ export class RecordingRenderer implements Renderer {
   }
 
   /** Records the call. */
-  public fitWorld(...args: Parameters<Renderer['fitWorld']>): void {
-    this.calls.push({ op: 'fitWorld', args });
-  }
-
-  /** Records the call. */
-  public fitWorldInArea(...args: Parameters<Renderer['fitWorldInArea']>): void {
-    this.calls.push({ op: 'fitWorldInArea', args });
-  }
-
-  /** Records the call. */
   public showWorldArea(...args: Parameters<Renderer['showWorldArea']>): void {
     this.calls.push({ op: 'showWorldArea', args });
   }
