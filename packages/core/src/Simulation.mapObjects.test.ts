@@ -56,13 +56,13 @@ const laneTowers = (map: MapDefinition): LaneTower[] =>
       feature.laneId !== undefined,
   );
 
-/** A tower's walls, as the box around its collider polygons: its hollow core and doorways. */
 /** A tower's body: its own object and its fort's wall pieces (`partOf`, DEC-217 (12)). */
 const bodyOf = (mapObjects: readonly MapObject[], id: string) =>
   mapObjects
     .filter((object) => object.id === id || object.partOf === id)
     .flatMap((o) => o.footprints);
 
+/** A tower's walls, as the box around its collider polygons: its hollow core and doorways. */
 const wallBox = (mapObjects: readonly MapObject[], id: string) => {
   const points = bodyOf(mapObjects, id).flat();
   const xs = points.map(({ x }) => x);
@@ -420,6 +420,93 @@ describe('Simulation with a roster and map objects (as the client builds a match
       expect(grid?.isWalkableAt(at.x, at.y)).toBe(false);
       expect(state.worldObjects?.blockingAt(at, 0.5)).toBe(wall);
     }
+  });
+
+  it.each([1, 2])(
+    "routes a unit inside a lane tower's court out through a doorway, never through a wall (DEC-217 (15), seed %i)",
+    (seed) => {
+      const config = createDefaultGameConfig();
+      const map = new MapGenerator().generate(config, seed);
+      const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+      const simulation = new Simulation({
+        config,
+        seed,
+        logger: new NullLogger(),
+        map,
+        mapObjects,
+      });
+      const { state } = simulation as unknown as { readonly state: GameState };
+      const crossings: string[] = [];
+      for (const tower of laneTowers(map)) {
+        const parts = new Set(
+          mapObjects
+            .filter(({ id, partOf }) => id === tower.id || partOf === tower.id)
+            .map(({ id }) => id),
+        );
+        const { left, right, top } = wallBox(mapObjects, tower.id);
+        // A court point: 4 m in from the walls' outside (they are 3.2 m thick), 1 m clear of the
+        // fort. The goal is open ground 10 m north of the top wall, which has no doorway: above
+        // the tower, or else above one of its west and east corners.
+        let at: Vec2 | undefined;
+        for (let y = top + 4; y <= tower.position.y && at === undefined; y += 1) {
+          for (let x = left + 4; x <= right - 4 && at === undefined; x += 1) {
+            if (state.worldObjects?.blockingAt({ x, y }, 1) === null) at = { x, y };
+          }
+        }
+        const goal = [tower.position.x, left, right]
+          .map((x) => ({ x, y: top - 10 }))
+          .find(({ x, y }) => state.world?.grid.isWalkableAt(x, y) === true) ?? {
+          x: tower.position.x,
+          y: top - 10,
+        };
+        const out = { x: 0, y: 0 };
+        let isThere = false;
+        for (let leg = 0; leg < 40 && at !== undefined && !isThere; leg += 1) {
+          if (state.paths?.waypoint(at, goal, out) !== true) break;
+          // Walk the leg in 0.25 m steps: no step may touch a part of the fort. Radius 0: the grid
+          // guarantees no contact, not a margin (a cell step past a wall's end may pass a few tenths
+          // of a metre from it); keeping a body clear of walls is collision's work.
+          const from: Vec2 = at;
+          const span = Math.hypot(out.x - from.x, out.y - from.y);
+          for (let walked = 0; walked <= span; walked += 0.25) {
+            const t = span === 0 ? 0 : walked / span;
+            const step = { x: from.x + (out.x - from.x) * t, y: from.y + (out.y - from.y) * t };
+            const hit = state.worldObjects?.blockingAt(step, 0) ?? null;
+            if (hit !== null && parts.has(hit)) {
+              crossings.push(`${tower.id} leg ${String(leg)} through ${hit}`);
+              break;
+            }
+          }
+          isThere = out.x === goal.x && out.y === goal.y;
+          at = { x: out.x, y: out.y };
+        }
+        if (!isThere) crossings.push(`${tower.id} never reached the goal`);
+      }
+      expect(crossings).toEqual([]);
+    },
+  );
+
+  it('builds every lane tower fort piece as an upright box thicker than a nav cell, as court cells need (DEC-227 (Q-A))', () => {
+    const config = createDefaultGameConfig();
+    const map = new MapGenerator().generate(config, 1);
+    const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+    const pieces = laneTowers(map).flatMap((tower) => bodyOf(mapObjects, tower.id));
+    const sides = pieces.map((shape) => {
+      const xs = new Set(shape.map(({ x }) => x));
+      const ys = new Set(shape.map(({ y }) => y));
+      return { isUpright: shape.length === 4 && xs.size === 2 && ys.size === 2, xs, ys };
+    });
+
+    // `WorldMap.isCourt` opens a cell no footprint holds the centre of; a step between cells can
+    // only cross a piece that misses every centre, which an upright box thicker than a cell cannot.
+    expect(pieces.length).toBeGreaterThan(0);
+    expect(sides.every(({ isUpright }) => isUpright)).toBe(true);
+    const thinnest = Math.min(
+      ...sides.map(({ xs, ys }) =>
+        Math.min(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)),
+      ),
+    );
+    expect(thinnest).toBeGreaterThan(config.map.navCellSize);
   });
 
   it('lets a light horde sent at an enemy spawner tower on the generated map hit it within a minute (DEC-185, playtest 2026-11-04)', () => {

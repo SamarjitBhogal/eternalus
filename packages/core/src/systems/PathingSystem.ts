@@ -15,7 +15,7 @@ import type { WorldMap } from '../map/WorldMap';
 import { formationSlot } from '../state/formationSlot';
 import type { Rect, Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
-import type { PathingWorld } from './PathingSystem.types';
+import type { CourtMove, PathingWorld } from './PathingSystem.types';
 import type { System, SystemContext } from './System.types';
 
 /**
@@ -32,6 +32,11 @@ import type { System, SystemContext } from './System.types';
  *
  * A chase that `StuckSystem` found stuck heads for its `ChaseWatch` waypoint instead, the A\* way
  * round to its target (owner 2026-11-05, DEC-193), so blocked terrain holds it only until then.
+ *
+ * A mob inside a lane tower's court (blocked ground inside a fort box) that does not chase a
+ * target inside the same box leaves by the court's doorways (DEC-217 (15)): it heads for its
+ * `ChaseWatch` waypoint, or else for `AStarPathfinder.exitWaypoint`, and steers by no lane field,
+ * whose blocked cells point through the nearest wall (MS-31).
  */
 export class PathingSystem implements System {
   public readonly name = 'pathing';
@@ -110,10 +115,40 @@ export class PathingSystem implements System {
    * Whether `point` lies in a fort box (`PathingWorld.forts`: a lane tower's fort, the palace,
    * DEC-217 (16)).
    */
-  private isInsideFort({ x, y }: Vec2): boolean {
-    return this.forts.some(
+  private isInsideFort(point: Vec2): boolean {
+    return this.fortAt(point) !== undefined;
+  }
+
+  /** The first fort box `point` lies in, or `undefined`. */
+  private fortAt({ x, y }: Vec2): Rect | undefined {
+    return this.forts.find(
       (box) => x >= box.x && x <= box.x + box.width && y >= box.y && y <= box.y + box.height,
     );
+  }
+
+  /**
+   * How mob `id` moves if it stands in a fort court (`CourtMove`, DEC-217 (15)). For `exit`, writes
+   * the court's way out into `this.target`; `this.target` otherwise holds what `chase` or the
+   * caller set (the chased point, a waypoint, the slot or post).
+   */
+  private courtMove(state: SystemContext['state'], id: string, isChasing: boolean): CourtMove {
+    const entity = state.entities.get(id);
+    const self = entity?.findComponent(Transform)?.position;
+    const grid = state.world?.grid;
+    const box = self === undefined ? undefined : this.fortAt(self);
+    if (self === undefined || box === undefined || grid?.isWalkableAt(self.x, self.y) !== false) {
+      return 'stay';
+    }
+    if (entity?.findComponent(ChaseWatch)?.waypoint != null) {
+      return 'waypoint';
+    }
+    const { x, y } = this.target;
+    const isTargetInBox =
+      x >= box.x && x <= box.x + box.width && y >= box.y && y <= box.y + box.height;
+    if (isChasing && isTargetInBox) {
+      return 'stay';
+    }
+    return state.paths?.exitWaypoint(self, this.target) === true ? 'exit' : 'stay';
   }
 
   /**
@@ -133,7 +168,16 @@ export class PathingSystem implements System {
     context.arrivalRadius = reach ?? this.slotArrivalRadius;
     context.isChasing = reach !== undefined;
     context.targetBlockedDepth = this.depth;
+    const move = this.courtMove(state, id, context.isChasing);
+    if (move === 'exit') {
+      context.arrivalRadius = this.slotArrivalRadius;
+      context.isChasing = false;
+      context.targetBlockedDepth = 0;
+    }
+    const { flow } = context;
+    context.flow = move === 'stay' ? flow : null;
     movement.steer(strategy.desiredVelocity(index, context));
+    context.flow = flow;
   }
 
   /**

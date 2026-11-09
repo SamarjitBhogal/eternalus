@@ -86,12 +86,19 @@ export class DefaultSystemPipeline extends SystemPipeline {
             world.clearFootprint(footprint, object.passages),
           );
           // `Simulation.buildWorld`'s rule: the grid also stamps the blocking feature behind an
-          // object (a wall segment, turret, rock or tower shares its feature's id), so clear it too.
+          // object (a wall segment, turret, rock or tower shares its feature's id), so clear it
+          // too; a lane tower's is its fort's court (DEC-217 (15)).
           const backing = features.find(
             ({ id, definitionId }) =>
               id === object.id && MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking === true,
-          )?.footprint;
-          if (backing !== undefined) cells.push(...world.clearFootprint(backing));
+          );
+          const footprint = backing?.footprint;
+          const isCourt = MAP_FEATURE_DEFINITIONS[backing?.definitionId ?? '']?.isCourt === true;
+          if (footprint !== undefined) {
+            cells.push(
+              ...(isCourt ? world.clearCourt(footprint) : world.clearFootprint(footprint)),
+            );
+          }
           flowFields?.markDirty(cells);
         }
       });

@@ -23,6 +23,7 @@ const DEFAULT_GAME_CONFIG: Omit<GameConfig, 'match'> & {
     worldWidth: 1600, // TUNE: traced from the team sketch
     worldHeight: 900, // TUNE: traced from the team sketch
     // TUNE: DEC-227 (Q-A): 2.5 m cells, so units in a fort court find a route out (DEC-217 (15)).
+    // Keep it below the thinnest fort wall, or routes cross walls (`WorldMap.isCourt`).
     navCellSize: 2.5,
     // TUNE: room to route a 4-wide formation around an obstacle; 30 clears a tower fort on a
     // diagonal lane (DEC-121 (d)).

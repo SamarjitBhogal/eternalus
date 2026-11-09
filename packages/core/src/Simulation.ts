@@ -632,8 +632,9 @@ export class Simulation {
    * `mapObjects`, the grid also blocks what the collision system blocks (06 §6): every blocking
    * object's footprints, minus its passages. A feature whose object is walkable (a Stronghold's
    * floor, whose walls and furniture are objects of their own) is not stamped; other blocking
-   * features keep their stamp, which also fills a tower's hollow core so no path ends in a pocket
-   * the walls close off.
+   * features keep their stamp. A feature that `isCourt` inside a blocking object of its id (a lane
+   * tower inside its fort) is stamped as court ground instead: it fills the fort's hollow core so
+   * no lane field runs through it, yet A\* leads a unit inside out by the doorways (DEC-217 (15)).
    */
   private static buildWorld(
     map: MapDefinition | undefined,
@@ -650,11 +651,24 @@ export class Simulation {
     const walkable = new Set(
       mapObjects.filter(({ isBlocking }) => !isBlocking).map(({ id }) => id),
     );
+    const forts = new Set(mapObjects.filter(({ isBlocking }) => isBlocking).map(({ id }) => id));
+    const courts = map.features.filter(
+      ({ id, definitionId }) =>
+        forts.has(id) && MAP_FEATURE_DEFINITIONS[definitionId]?.isCourt === true,
+    );
     const grid = WorldMap.fromDefinition(
-      { ...map, features: map.features.filter(({ id }) => !walkable.has(id)) },
+      {
+        ...map,
+        features: map.features.filter(
+          ({ id }) => !walkable.has(id) && !courts.some((c) => c.id === id),
+        ),
+      },
       config.map.navCellSize,
       (definitionId) => MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking ?? false,
     );
+    for (const { footprint } of courts) {
+      if (footprint !== undefined) grid.stampCourt(footprint);
+    }
     for (const object of mapObjects.filter(({ isBlocking }) => isBlocking)) {
       for (const footprint of object.footprints) {
         grid.stampFootprint(footprint, object.passages);

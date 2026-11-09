@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { stampWalledCourt, WALLED_COURT } from './__fixtures__/walledCourt';
 
 import { DEFAULT_MAP_CONFIG } from '../content/maps/defaultMapConfig';
 import { DEFAULT_MAP_LAYOUT } from '../content/maps/defaultMapLayout';
@@ -105,6 +106,14 @@ const SQUARE = [
   { x: 0, y: 50 },
 ];
 
+/** A 1 m square round `at`. */
+const SQUARE_AT = ({ x, y }: { readonly x: number; readonly y: number }) => [
+  { x: x - 0.5, y: y - 0.5 },
+  { x: x + 0.5, y: y - 0.5 },
+  { x: x + 0.5, y: y + 0.5 },
+  { x: x - 0.5, y: y + 0.5 },
+];
+
 describe('WorldMap', () => {
   it('sizes the grid from the map and the cell size', () => {
     const grid = WorldMap.fromDefinition(SMALL_MAP, 10, isBlocking);
@@ -151,6 +160,60 @@ describe('WorldMap', () => {
     const cleared = grid.clearFootprint(SQUARE);
     expect([...cleared].sort((a, b) => a - b)).toEqual([30, 31, 40, 41]);
     expect(grid.walkable).toEqual(before);
+  });
+
+  it('closes a court to walking and lines but marks its cells as court until a footprint or a clear changes them (DEC-217 (15))', () => {
+    const grid = WorldMap.fromDefinition({ ...BLOCKED_LANE_MAP, terrain: [] }, 2, () => false);
+    stampWalledCourt(grid);
+    const { inside } = WALLED_COURT;
+    const cell = grid.cellAt(inside) ?? { col: -1, row: -1 };
+
+    expect(grid.isWalkable(cell.col, cell.row)).toBe(false);
+    expect(grid.isCourt(cell.col, cell.row)).toBe(true);
+    // A wall cell and an open cell are no court cells.
+    expect(grid.isCourt(10, 10)).toBe(false);
+    expect(grid.isCourt(30, 10)).toBe(false);
+    // A footprint over a court cell's centre makes it a wall cell until it is cleared.
+    const centre = { x: (cell.col + 0.5) * grid.cellSize, y: (cell.row + 0.5) * grid.cellSize };
+    grid.stampFootprint(SQUARE_AT(centre));
+    expect(grid.isCourt(cell.col, cell.row)).toBe(false);
+    grid.clearFootprint(SQUARE_AT(centre));
+    expect(grid.isCourt(cell.col, cell.row)).toBe(true);
+    grid.clearCourt(WALLED_COURT.court);
+    expect(grid.isWalkable(cell.col, cell.row)).toBe(true);
+    expect(grid.isCourt(cell.col, cell.row)).toBe(false);
+  });
+
+  it('keeps a court cell a wall only touches as court, so a corridor narrower than two cells stays open to A* (DEC-227 (Q-A))', () => {
+    const grid = WorldMap.fromDefinition({ ...BLOCKED_LANE_MAP, terrain: [] }, 2.5, () => false);
+    // A 3.8 m corridor (x 13.6..17.4) off the 2.5 m grid: walls touch both its columns.
+    const west = [
+      { x: 10, y: 10 },
+      { x: 13.6, y: 10 },
+      { x: 13.6, y: 30 },
+      { x: 10, y: 30 },
+    ];
+    const east = west.map(({ x, y }) => ({ x: x + 7.4, y }));
+    grid.stampFootprint(west);
+    grid.stampFootprint(east);
+    grid.stampCourt([
+      { x: 10, y: 10 },
+      { x: 30, y: 10 },
+      { x: 30, y: 30 },
+      { x: 10, y: 30 },
+    ]);
+    const row = 6;
+
+    // Columns 5 and 6 (x 12.5..17.5) touch a wall but their centres lie in the corridor.
+    expect([4, 5, 6, 7].map((col) => grid.isWalkable(col, row))).toEqual([
+      false,
+      false,
+      false,
+      false,
+    ]);
+    expect([4, 5, 6, 7].map((col) => grid.isCourt(col, row))).toEqual([false, true, true, false]);
+    grid.clearFootprint(west);
+    expect(grid.isCourt(4, row)).toBe(true);
   });
 
   it('blocks every cell a wall thinner than a cell passes through, leaving no gap', () => {

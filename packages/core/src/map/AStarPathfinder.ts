@@ -20,6 +20,11 @@ import type { WorldMap } from './WorldMap';
  * rather than flood the whole grid. Allocation-free after construction: a search stamps the cells
  * it touches instead of clearing whole-grid buffers.
  *
+ * Court cells (`WorldMap.isCourt`: a lane tower's fort court) are open to a search, so a way from
+ * or to a unit inside a court runs through its doorways, never through its walls (DEC-185 (A),
+ * DEC-217 (15)); `exitWaypoint` gives the way out of a court alone. Lane flow fields still treat a
+ * court as blocked, so hordes never march through one.
+ *
  * @remarks ponytail: a bot searches again on each decision whose straight line is blocked (11 §6
  * puts heavy work in systems); cache the path in the brain if profiling shows the cost.
  */
@@ -33,6 +38,8 @@ export class AStarPathfinder {
   private foundCost = -1;
   private goalCol = 0;
   private goalRow = 0;
+  /** Whether the search under way is `exitWaypoint`'s, which has no goal to estimate toward. */
+  private isExitSearch = false;
 
   /**
    * @param grid - The walkability grid every search runs over.
@@ -75,6 +82,31 @@ export class AStarPathfinder {
   }
 
   /**
+   * Writes into `out` where a walker standing on blocked ground inside a court (or on a wall cell
+   * beside one) should head next to leave it by the nearest doorway: the farthest cell of the way
+   * through court cells to open ground it can walk to in a straight line, or the first one (DEC-217
+   * (15)). Returns `false`, leaving `out` as it was, on open ground or when no way is found within
+   * `maxExpansions`.
+   */
+  public exitWaypoint(start: Vec2, out: MutableVec2): boolean {
+    const cell = this.grid.cellAt(start);
+    if (cell === null || this.grid.isWalkable(cell.col, cell.row)) {
+      return false;
+    }
+    this.isExitSearch = true;
+    const exit = this.findExit(cell.row * this.grid.cols + cell.col);
+    this.isExitSearch = false;
+    if (exit === -1) {
+      return false;
+    }
+    const { cols, cellSize } = this.grid;
+    const col = exit % cols;
+    const goal = { x: (col + 0.5) * cellSize, y: ((exit - col) / cols + 0.5) * cellSize };
+    this.pull(start, goal, exit, out);
+    return true;
+  }
+
+  /**
    * An open cell near `point`: the nearest on the first ring (by grid steps) that has one, within
    * `snapCells`, lower index on a tie; -1 when there is none.
    */
@@ -92,7 +124,7 @@ export class AStarPathfinder {
           const isOnRing = Math.max(Math.abs(row - cell.row), Math.abs(col - cell.col)) === ring;
           const gap = (row - cell.row) ** 2 + (col - cell.col) ** 2;
           // Rows and columns ascend, so a strict comparison keeps the lower index on a tie.
-          if (isOnRing && gap < bestGap && this.grid.isWalkable(col, row)) {
+          if (isOnRing && gap < bestGap && this.isOpen(col, row)) {
             best = row * cols + col;
             bestGap = gap;
           }
@@ -129,6 +161,34 @@ export class AStarPathfinder {
     return false;
   }
 
+  /**
+   * Runs `exitWaypoint`'s search from `startCell` (itself never checked): the first walkable cell
+   * it settles, cheapest first, ties by cell index; -1 when there is none within the budget.
+   */
+  private findExit(startCell: number): number {
+    this.search += 1;
+    this.heap.clear();
+    this.reach(startCell, 0, -1);
+    for (
+      let expanded = 0;
+      expanded < this.limits.maxExpansions && this.heap.size > 0;
+      expanded += 1
+    ) {
+      const cell = this.heap.pop();
+      const col = cell % this.grid.cols;
+      if (cell !== startCell && this.grid.isWalkable(col, (cell - col) / this.grid.cols)) {
+        return cell;
+      }
+      this.expand(cell);
+    }
+    return -1;
+  }
+
+  /** Whether a search may step on the cell: walkable, or court ground (`WorldMap.isCourt`). */
+  private isOpen(col: number, row: number): boolean {
+    return this.grid.isWalkable(col, row) || this.grid.isCourt(col, row);
+  }
+
   /** Relaxes the open neighbours of `cell`; diagonals never cut a corner. */
   private expand(cell: number): void {
     const { cols } = this.grid;
@@ -138,9 +198,8 @@ export class AStarPathfinder {
     for (let step = 0; step < DIRECTION_COLS.length; step += 1) {
       const nextCol = col + (DIRECTION_COLS[step] ?? 0);
       const nextRow = row + (DIRECTION_ROWS[step] ?? 0);
-      const isCornerCut =
-        step >= 4 && (!this.grid.isWalkable(nextCol, row) || !this.grid.isWalkable(col, nextRow));
-      if (!this.grid.isWalkable(nextCol, nextRow) || isCornerCut) {
+      const isCornerCut = step >= 4 && (!this.isOpen(nextCol, row) || !this.isOpen(col, nextRow));
+      if (!this.isOpen(nextCol, nextRow) || isCornerCut) {
         continue;
       }
       const next = nextRow * cols + nextCol;
@@ -161,7 +220,10 @@ export class AStarPathfinder {
   /**
    * Writes the farthest cell of the path, walking forward from the start, that the walker can
    * still see in a straight line (at least the first, its way out of blocked ground); the goal
-   * itself when the path ends in sight.
+   * itself when the path ends in sight, or when it ends in the walker's own cell. A path that
+   * starts on the walker's own cell counts from the cell after it: from blocked ground (court
+   * ground, or a wall cell `exitWaypoint` starts from) no line is clear, and a next cell on court
+   * ground is never in sight, so heading for the own cell's centre would hold the walker there.
    */
   private pull(start: Vec2, goal: Vec2, goalCell: number, out: MutableVec2): void {
     const { cols, cellSize } = this.grid;
@@ -173,16 +235,20 @@ export class AStarPathfinder {
     out.x = goal.x;
     out.y = goal.y;
     // `path` runs goal first; walk it from the start's end and stop at the first cell out of sight.
-    for (let at = length - 1; at >= 0; at -= 1) {
+    const own = this.grid.cellAt(start);
+    const isOwnFirst = own !== null && this.path[length - 1] === own.row * cols + own.col;
+    if (isOwnFirst && length === 1) return;
+    const first = isOwnFirst ? length - 2 : length - 1;
+    for (let at = first; at >= 0; at -= 1) {
       const cell = this.path[at] ?? 0;
       const col = cell % cols;
       const x = (col + 0.5) * cellSize;
       const y = ((cell - col) / cols + 0.5) * cellSize;
-      const isFirst = at === length - 1;
+      const isFirst = at === first;
       if (!isFirst && !this.grid.isLineClear(start.x, start.y, x, y)) {
         return;
       }
-      // The first cell is always taken: from a blocked start it is the way out.
+      // The first cell is always taken: a neighbour of the own cell, or the way out of blocked ground.
       out.x = x;
       out.y = y;
     }
@@ -199,8 +265,14 @@ export class AStarPathfinder {
     return totalA < totalB || (totalA === totalB && a < b);
   }
 
-  /** Octile distance to the goal in step-cost units, never more than the true cost. */
+  /**
+   * Octile distance to the goal in step-cost units, never more than the true cost; 0 in an
+   * `exitWaypoint` search, which has no goal.
+   */
   private heuristic(cell: number): number {
+    if (this.isExitSearch) {
+      return 0;
+    }
     const { cols } = this.grid;
     const col = cell % cols;
     const dx = Math.abs(col - this.goalCol);
