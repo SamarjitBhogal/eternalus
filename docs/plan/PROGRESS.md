@@ -6229,3 +6229,19 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `merge-2026-11-07/out-of-combat-heal.anypolygon.check.log`): EXIT=0, core "Tests 1414 passed
   (1414)", client "Tests 1778 passed (1778)", "Documentation check passed.".
 - Next step: push after #85; retarget #86 to phase/3 once #85 merges.
+
+### 2026-11-08 — Phase 3 / out-of-combat healing, merge of fix/minion-stack-followups (phase/3 after #76 and #77) — feat/out-of-combat-heal — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` at `13a6cbbb` (phase/3 `120653b2`, PRs #76
+  and #77) in `d1c7177d`. Conflicts: 04 and 06 (`last-reviewed` only). PROGRESS, INBOX, 04 and
+  06 auto-merged: phase/3's minimap text and this branch's heal text are in different hunks. No
+  code file changed on both sides. Then merged #85's progress entry `3fd51ab6` in `96867f11` (only
+  this file; every line of both sides kept).
+- Critic: `architecture-reviewer` on `git show --remerge-diff d1c7177d` (report
+  `eternalus-agent-work/playtest-2026-11-04/critic-85-86-merge-120653b2.md`): APPROVE, no
+  findings.
+- Checks run: `npm run check` at `d1c7177d` (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-07/out-of-combat-heal.120653b2.check.log`):
+  EXIT=0; core "Tests 1416 passed (1416)"; client "Tests 1799 passed (1799)"; "Documentation
+  check passed.". `96867f11` and this entry change only this file.
+- Next step: push; retarget PR #86 to phase/3 after #85 merges.
