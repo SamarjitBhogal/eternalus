@@ -31,9 +31,9 @@ export type MatchResult = {
   /** FNV-1a of the canonical config, so a replay can refuse a mismatched config. */
   readonly configHash: number;
   /** A copy of every Legend's row when the match ended, in spawn order (12 §5). */
-  readonly legends: readonly Readonly<LegendStats>[];
+  readonly legends: readonly LegendStats[];
   /** A copy of each team's totals when the match ended. */
-  readonly teams: Readonly<Record<PlayableTeam, Readonly<TeamStats>>>;
+  readonly teams: Readonly<Record<PlayableTeam, TeamStats>>;
   /**
    * The `StateHasher` hash of the state when the verdict came, mid-tick: before the terminal phase
    * is entered and the result stored. Not a `Simulation.hash()` between steps, a replay checkpoint

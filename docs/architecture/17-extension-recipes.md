@@ -117,7 +117,8 @@ R14 "new view" and R16 "new command".
   `core/entities/mobs/<Name>.ts` + `.test.ts`. Scoring needs no code: the mob family's death rule
   scores every `MobKind` by its weight. A new scoring rule (another victim family, such as team
   boss kills, or a new counter) is one entry in a rule registry in `core/match/Scoring.ts` plus, for
-  a new counter, a `TeamStats` or `LegendStats` field and a `ScoreBook` writer (DEC-211; 12 §5).
+  a new counter, a `TeamStats` or `LegendStats` field and its counter name; a `ScoreBook` writer
+  only if the rule is not a plain award (DEC-211; 12 §5).
 - **Registry line:** none for a flavour; `defaultEntityRegistry.ts` for a class.
 - **Tests:** content validation; a `SpawnSystem` scenario spawns a horde of it at the configured
   size; a `MinionController` scenario (attacks within N ticks); determinism.

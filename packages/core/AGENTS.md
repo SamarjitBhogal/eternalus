@@ -17,22 +17,22 @@ Package-specific rules. The root `AGENTS.md` still applies.
 `entities/`, `teams/`, and the generated map (`map/`, `content/maps/`). The other folders below
 are the **planned** layout; create them as code is added.
 
-| Folder          | Holds                                                                                                           | May import                                                            |
-| --------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `config/`       | `GameConfig`, defaults, validation, `MATCH_PHASES`, timeline types                                              | `utils/`, `teams/`                                                    |
-| `content/`      | Data only: tuning numbers, display names, keyed by kebab-case IDs                                               | `content/`, `utils/` and `teams/` (types)                             |
-| `teams/`        | `PlayableTeam`, `Team` and their helpers, shared by every layer                                                 | nothing                                                               |
-| `map/`          | `MapGenerator`, `MapBuilder`, `WorldMap`, lane and symmetry helpers                                             | `content/`, `teams/`, `utils/`                                        |
-| `utils/`        | Generic helpers: vector math, `SeededRandom`, constants                                                         | `utils/` only                                                         |
-| `components/`   | Data owned by entities (`Transform`, `Movement`)                                                                | `utils/`, `content/`, `teams/` (types)                                |
-| `entities/`     | `Entity` root class and factories                                                                               | `components/`, `content/`, ...                                        |
-| `commands/`     | `Command` union, `CommandQueue`, `applyCommand` + handler registry                                              | `state/`, `entities/`, `utils/`                                       |
-| `state/`        | `GameState`, `EntityStore`, `GameEvents`, snapshots, `StateHasher`, `MatchRecord` and its `ScoreBook` (DEC-211) | lower layers                                                          |
-| `diagnostics/`  | `Logger` port and doubles, replay harness, random command streams                                               | `state/`, `utils/`, types of `commands/` and `config/`                |
-| `match/`        | `MatchDirector`, `Scoring`, `MatchTimeline` and its actions, phases                                             | `state/`, `config/`, `components/`, `utils/`, `teams/`, content types |
-| `systems/`      | Per-tick logic implementing `System`. Never import another system.                                              | everything except `ai/`                                               |
-| `ai/`           | Bot controllers: return a `Decision`, never mutate state.                                                       | `state/`, `commands/`, `config/`, `teams/`, `utils/`, content types   |
-| `Simulation.ts` | Composes everything; the only thing the client drives                                                           | everything                                                            |
+| Folder          | Holds                                                                                                           | May import                                                                                 |
+| --------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `config/`       | `GameConfig`, defaults, validation, `MATCH_PHASES`, timeline types                                              | `utils/`, `teams/`                                                                         |
+| `content/`      | Data only: tuning numbers, display names, keyed by kebab-case IDs                                               | `content/`, `utils/` and `teams/` (types)                                                  |
+| `teams/`        | `PlayableTeam`, `Team` and their helpers, shared by every layer                                                 | nothing                                                                                    |
+| `map/`          | `MapGenerator`, `MapBuilder`, `WorldMap`, lane and symmetry helpers                                             | `content/`, `teams/`, `utils/`                                                             |
+| `utils/`        | Generic helpers: vector math, `SeededRandom`, constants                                                         | `utils/` only                                                                              |
+| `components/`   | Data owned by entities (`Transform`, `Movement`)                                                                | `utils/`, `content/`, `teams/` (types)                                                     |
+| `entities/`     | `Entity` root class and factories                                                                               | `components/`, `content/`, ...                                                             |
+| `commands/`     | `Command` union, `CommandQueue`, `applyCommand` + handler registry                                              | `state/`, `entities/`, `utils/`                                                            |
+| `state/`        | `GameState`, `EntityStore`, `GameEvents`, snapshots, `StateHasher`, `MatchRecord` and its `ScoreBook` (DEC-211) | lower layers                                                                               |
+| `diagnostics/`  | `Logger` port and doubles, replay harness, random command streams                                               | `state/`, `utils/`, types of `commands/` and `config/`                                     |
+| `match/`        | `MatchDirector`, `Scoring`, `MatchTimeline` and its actions, phases                                             | `state/`, `config/`, `components/`, `entities/` (types), `utils/`, `teams/`, content types |
+| `systems/`      | Per-tick logic implementing `System`. Never import another system.                                              | everything except `ai/`                                                                    |
+| `ai/`           | Bot controllers: return a `Decision`, never mutate state.                                                       | `state/`, `commands/`, `config/`, `teams/`, `utils/`, content types                        |
+| `Simulation.ts` | Composes everything; the only thing the client drives                                                           | everything                                                                                 |
 
 Every folder may import `teams/` (it imports nothing; DEC-171), whether or not its row names it.
 `match/` also uses the `Logger` port, `makeLogRecord` and `DebugConfig` of `diagnostics/`, as
