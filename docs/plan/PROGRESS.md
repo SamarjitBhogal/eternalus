@@ -6382,3 +6382,25 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `eternalus-agent-work/game-loop-plan/`): core "Tests 1363 passed (1363)", statements 99.15 %;
   client "Tests 1839 passed (1839)", statements 97 %; "Documentation check passed."
 - Next step: a targeted architecture critic on this commit's diff only; then push and open the PR.
+
+### 2026-11-08 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-5 targeted critic (B2, B3) and the phase/3 (#76, #77) merge — feat/results-flow — sholtzman + Claude Code
+
+- What: the targeted architecture critic on `89ab381` only (AGENTS pre-PR step 3; opus):
+  approve, 0 blocker, 1 should-fix, 3 nits, 1 better-than-design, 3 acceptable.
+  - `c464040`: should-fix 1, 13 §10 says that both rosters re-send each unchanged tile or point
+    and the last array while nothing changes, and lists `bridge/opponentOf.ts`. Nit 2: the
+    structure test changes `max` with `current` equal. Nit 3: the comments say the roster
+    selectors return the same value (the slice object is new on each dispatch). Nit 4:
+    `publishedCapturePoints`. The better-than-design item (move the helper out of `MatchBridge`)
+    is `INBOX.md` HC-Q47. Acceptable: the bridge's copy of `opponentOf` (bridge imports only
+    types from core; DEC-221 (3)), the re-padded 02 table, `SIDE_TEAM` as functions.
+  - `633af66`: merged `feat/match-scoring` at `98e285c` (phase/3 `120653b`, PR #76 and #77) into
+    this branch. Conflicts: `Match.afterStep` (phase/3's `livingPlayerAt` with this branch's
+    `ended` observer), the `last-reviewed` lines of 07 and 08, and this file (inserts only).
+- Fail-first breaks: b5 (the `max` check removed: 1 red, "expected { current: 10000, max: 10000 }
+  to deeply equal { current: 10000, max: 12000 }"), restored (`cmp` equal); in
+  `eternalus-agent-work/game-loop-plan/gl5-r3-btd-breaks.txt`.
+- Checks run: `npm run check` → `EXIT=0` (`rf-merge-98e285c-check-2026-11-08.log` in
+  `eternalus-agent-work/game-loop-plan/`): core "Tests 1365 passed (1365)", statements 99.15 %;
+  client "Tests 1860 passed (1860)", statements 97.05 %; "Documentation check passed."
+- Next step: push; open the GL-5 PR into `feat/match-scoring`.
