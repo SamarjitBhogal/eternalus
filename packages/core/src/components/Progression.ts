@@ -1,4 +1,5 @@
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
+import type { LevelProgress } from './Progression.types';
 
 /**
  * A Legend's XP and level (architecture 04 §3, 05 §13). `xp` is the total earned this match; the
@@ -41,6 +42,17 @@ export class Progression {
       this.levelValue += 1;
     }
     return this.levelValue - before;
+  }
+
+  /**
+   * Where this entity stands inside its level on `curve` (05 §15, the HUD's XP ring): the XP earned
+   * since the level began, and the XP that level needs to reach the next one, `null` at the cap.
+   */
+  public levelProgress(curve: LevelCurveDefinition): LevelProgress {
+    return {
+      xp: this.xpValue - Progression.xpForLevel(curve, this.levelValue),
+      xpToNext: this.levelValue >= curve.cap ? null : (curve.xpToNext[this.levelValue - 1] ?? null),
+    };
   }
 
   /** Total XP needed to reach `level` on `curve`. */

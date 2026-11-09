@@ -32,6 +32,7 @@ const zone = (
   team: 'neutral',
   transform: { x: AT.x, y: AT.y, radius: 28 },
   health: null,
+  progression: null,
   area,
   capture,
 });

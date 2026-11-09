@@ -591,6 +591,12 @@ Reply inline (`Decision: …`).
     `Progression` components, but its entity snapshot still carries only health, so the HUD's
     aether, level and XP keep their "no data yet" state until core publishes the player snapshot
     (architecture 05 §15 and §18; Phase 4, sprints 4.5 and 4.7). Nothing to answer.
+  - Since `feat/hud-level-xp` (2026-11-09), the entity snapshot also carries a Legend's level, the
+    XP inside that level and the XP that level needs, so the HUD's level and XP ring are live.
+    Aether keeps its "no data yet" state. Answered 2026-11-09 (question dialog): at the level cap
+    there is no next level, and the ring shows full ("Full ring (Recommended)"); the per-Legend
+    level and XP become the design ("Adopt it (Recommended)", the critic's better-than-design
+    item). Recorded in DEC-224. Nothing waits.
   - Answered 2026-10-28 (the non-blocking decision page, in chat): "Keep", with: "Keep. Empty frames
     for abilities that do not yet exist. Wuuthrad was used as weapon reference, so that artwork
     exists, as well as some ability artwork (not associated with real abilities yet). Empty frames,
