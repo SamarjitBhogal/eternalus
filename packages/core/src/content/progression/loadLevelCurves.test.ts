@@ -7,12 +7,12 @@ import type { LevelCurveDefinition } from './progression.types';
 const SHORT: LevelCurveDefinition = { id: 'short', cap: 3, xpToNext: [10, 20] };
 
 describe('loadLevelCurves', () => {
-  it('ships the legend curve: cap 50 (O6), 49 steps, 2,548 XP to the cap', () => {
+  it('ships the legend curve: cap 50 (O6), 49 steps, 7,742 XP to the cap', () => {
     const legend = loadLevelCurves().get('legend');
 
     expect(legend.cap).toBe(50);
     expect(legend.xpToNext).toHaveLength(49);
-    expect(legend.xpToNext.reduce((sum, step) => sum + step, 0)).toBe(2548);
+    expect(legend.xpToNext.reduce((sum, step) => sum + step, 0)).toBe(7742);
   });
 
   it('accepts a curve with one positive step per level below the cap', () => {

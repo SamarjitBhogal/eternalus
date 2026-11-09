@@ -3,9 +3,10 @@ import type { StuckDetectionRule } from './ai.types';
 /**
  * Stuck detection for chasing mobs and bot Legends (owner 2026-11-05, DEC-193: "if stuck, minions
  * and legends are permitted to find a path around to their target rather than shove against a
- * wall forever. detection on being \"stuck\""). DEC-217 (14): a unit is stuck when it moves less
- * than 1 m in 2 s, and a waypoint is reached within 1 m (owner: build this first, then research
- * how other games handle stuck units). No reference value exists for any of these.
+ * wall forever. detection on being \"stuck\""). DEC-217 (14): a unit is stuck when it makes less
+ * than 1 m of progress toward what it heads for in 2 s, and a waypoint is reached within 1 m
+ * (owner: build this first, then research how other games handle stuck units). No reference value
+ * exists for any of these.
  */
 export const STUCK_DETECTION = {
   // TUNE: DEC-193, DEC-217 (14); over the 1 s a bot decision and a minion hit take.

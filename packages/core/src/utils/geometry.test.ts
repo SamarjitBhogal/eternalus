@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  boundsOf,
   distance,
   doesPolygonOverlapRect,
   distanceToPath,
   distanceToSegment,
+  isPointInAnyPolygon,
   isPointInPolygon,
   lerpPoint,
   nearestPointOnPolygons,
@@ -35,10 +37,28 @@ describe('geometry', () => {
     );
   });
 
+  it('boxes a set of points, and gives an empty box for no points', () => {
+    expect(boundsOf([{ x: 3, y: -1 }, ...SQUARE])).toEqual({ x: 0, y: -1, width: 10, height: 11 });
+    expect(boundsOf([])).toEqual({
+      x: Infinity,
+      y: Infinity,
+      width: -Infinity,
+      height: -Infinity,
+    });
+  });
+
   it('tells whether a point is inside a polygon', () => {
     expect(isPointInPolygon({ x: 5, y: 5 }, SQUARE)).toBe(true);
     expect(isPointInPolygon({ x: 15, y: 5 }, SQUARE)).toBe(false);
     expect(isPointInPolygon({ x: 5, y: -1 }, SQUARE)).toBe(false);
+  });
+
+  it('tells whether a point is inside any of several polygons', () => {
+    const farSquare = SQUARE.map(({ x, y }) => ({ x: x + 20, y }));
+    expect(isPointInAnyPolygon({ x: 5, y: 5 }, [SQUARE, farSquare])).toBe(true);
+    expect(isPointInAnyPolygon({ x: 25, y: 5 }, [SQUARE, farSquare])).toBe(true);
+    expect(isPointInAnyPolygon({ x: 15, y: 5 }, [SQUARE, farSquare])).toBe(false);
+    expect(isPointInAnyPolygon({ x: 5, y: 5 }, [])).toBe(false);
   });
 
   it('measures distance to a segment and a path', () => {

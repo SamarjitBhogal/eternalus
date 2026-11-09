@@ -49,7 +49,7 @@ export class MinionController implements Controller {
     },
     helpRadius: ({ rule }) => rule.callForHelpRadius,
   };
-  /** What `decideLeashed` reads from this controller, built once (DEC-168 B1, critic A BTD 4). */
+  /** What `decideLeashed` reads from this controller, built once (DEC-168 B1, DEC-219 (d)). */
   private readonly parts: LeashDecisionParts<'marching', HordeAggroRuleDefinition> = {
     controllerId: this.id,
     profileOf: (profileId) => this.profileOf(profileId),

@@ -19,7 +19,7 @@ export class BotMovement {
   /**
    * One `move` toward `to`, through the A\* waypoint when the straight line is blocked, or a halt
    * once within `arrivalDistance` of it. A `to` on blocked ground (a tower's centre) counts as its
-   * footprint's edge on the bot's side (`approach`). When the pathfinder
+   * footprint's edge on the bot's side (`edgeOf`). When the pathfinder
    * finds no way, a `stop`, a forgotten target and `failure`, so the bot does not lean on the
    * obstruction and lower branches may run.
    */
@@ -27,7 +27,7 @@ export class BotMovement {
     if (to === null) {
       return 'failure';
     }
-    const destination = BotMovement.approach(turn, to, 0);
+    const destination = BotMovement.edgeOf(turn, to, 0) ?? to;
     const { arrivalDistance } = turn.difficulty;
     const isThere =
       BotMovement.gapSquared(turn.position, destination) <= arrivalDistance * arrivalDistance;
@@ -123,15 +123,8 @@ export class BotMovement {
    * ground, and the near edge of the footprint on blocked ground. Without it, A\* snaps a blocked
    * goal to the nearest open cell, the bot never comes within `arrivalDistance` of `to`, and every
    * decision overshoots that cell's centre and turns back: the playtest's bots moving in and out
-   * of a tower's doorway (2026-11-04). `to` when no open ground lies between, or with no grid.
-   */
-  private static approach(turn: BotTurn, to: Vec2, clearance: number): Vec2 {
-    return BotMovement.edgeOf(turn, to, clearance) ?? to;
-  }
-
-  /**
-   * `approach`'s open ground, or `null` when none lies between `to` and the bot: the bot then
-   * stands inside the blocked ground around `to` itself.
+   * of a tower's doorway (2026-11-04). `to` with no grid or when the bot stands on `to`; `null`
+   * when no open ground lies between `to` and the bot (it then stands inside the blocked ground).
    */
   private static edgeOf(turn: BotTurn, to: Vec2, clearance: number): Vec2 | null {
     const grid = turn.state.world?.grid;

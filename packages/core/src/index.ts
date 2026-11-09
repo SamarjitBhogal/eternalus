@@ -21,7 +21,15 @@ export type {
   MapConfig,
   MatchConfig,
 } from './config/GameConfig.types';
+export type { MatchPhase } from './config/matchPhases';
+export type {
+  MatchTimelineEntry,
+  TimelineAction,
+  TimelineActionKind,
+  TimelineMark,
+} from './config/MatchTimelineEntry.types';
 export { validateGameConfig } from './config/validateGameConfig';
+export type { VictoryConditionId } from './config/VictoryConditionId.types';
 export type {
   ClassDetailNames,
   LegendClassId,
@@ -73,6 +81,7 @@ export { MapGenerator } from './map/MapGenerator';
 export type { MapGeneratorConfig } from './map/MapGenerator.types';
 export { Simulation } from './Simulation';
 export type { Replay, ReplaySetup, ReplayTargetFactory, RosterSlot } from './Simulation.types';
+export { isUnitFamily } from './entities/unitFamilies';
 export type { EntityId, RemovalCause } from './state/EntityStore.types';
 export type {
   GameEventHandler,
@@ -80,9 +89,17 @@ export type {
   GameEventType,
   Unsubscribe,
 } from './state/GameEvents.types';
-export type { MatchPhase } from './state/GameState.types';
-export type { EntitySnapshot, Snapshot } from './state/Snapshot.types';
+export type { MatchResult, Verdict } from './state/MatchResult.types';
+export type { ScheduledMark } from './state/MatchState.types';
+export type {
+  CaptureSnapshot,
+  EntitySnapshot,
+  MatchSnapshot,
+  Snapshot,
+} from './state/Snapshot.types';
 export { StateHasher } from './state/StateHasher';
+// DEC-178: the client uses core's "other team" rule instead of a copy.
+export { opponentOf } from './teams/playableTeams';
 export type { PlayableTeam, Team } from './teams/teams.types';
 export { isPointInPolygon } from './utils/geometry';
 export type { Polygon, Rect, Vec2 } from './utils/geometry.types';

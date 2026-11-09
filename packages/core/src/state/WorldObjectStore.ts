@@ -8,10 +8,10 @@ import type { ObstacleDefinition } from '../content/obstacles/obstacles.types';
 import type { EntityFactory } from '../entities/EntityFactory';
 import type { EntityStore } from './EntityStore';
 import type { WorldObjectRecord, WorldObjectStoreOptions } from './WorldObjectStore.types';
-import type { Vec2 } from '../utils/geometry.types';
+import type { Rect, Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
 import { doesCircleOverlapPolygon, isCircleInsidePolygon } from '../utils/circlePolygon';
-import { nearestPointOnPolygons } from '../utils/geometry';
+import { boundsOf, nearestPointOnPolygons } from '../utils/geometry';
 
 /** Owns placed-object identity and persistent destroyed state after DeathSystem retires entities. */
 export class WorldObjectStore {
@@ -55,20 +55,21 @@ export class WorldObjectStore {
     this.ruinWall = ruinWall;
     for (const object of objects) {
       const definition = definitions[object.kind];
+      const bounds = boundsOf(object.footprints.flat());
       const owner = entities.get(owners.get(object.id) ?? '');
       const health = owner?.findComponent(Health);
       if (owner !== undefined && health !== undefined) {
         this.bodies.set(owner.id, [...(this.bodies.get(owner.id) ?? []), this.records.length]);
         this.standing.add(owner.id);
         const pool = object.partOf === undefined ? health : null;
-        this.records.push({ object, entityId: owner.id, health: pool });
+        this.records.push({ object, entityId: owner.id, health: pool, bounds });
         continue;
       }
       if (definition.health === null) {
-        this.records.push({ object, entityId: null, health: null });
+        this.records.push({ object, entityId: null, health: null, bounds });
         continue;
       }
-      this.records.push(this.spawn(object, definition));
+      this.records.push(this.spawn(object, definition, bounds));
     }
   }
 
@@ -119,9 +120,9 @@ export class WorldObjectStore {
       if (record === undefined) continue;
       if (fallen.has(record.object)) {
         this.destroyed.add(record.object.id);
-        this.records[index] = { object: record.object, entityId: null, health: null };
+        this.records[index] = { ...record, entityId: null, health: null };
       } else {
-        this.records[index] = this.spawn(record.object, this.ruinWall);
+        this.records[index] = this.spawn(record.object, this.ruinWall, record.bounds);
       }
     }
   }
@@ -145,8 +146,12 @@ export class WorldObjectStore {
 
   /** Independent diagnostic check against live solids and authored bridge openings. */
   public blockingAt(point: Vec2, radius: number): string | null {
-    for (const { object, entityId, health } of this.records) {
+    for (const { object, entityId, health, bounds } of this.records) {
       if (
+        point.x + radius < bounds.x ||
+        point.x - radius > bounds.x + bounds.width ||
+        point.y + radius < bounds.y ||
+        point.y - radius > bounds.y + bounds.height ||
         !object.isBlocking ||
         this.destroyed.has(object.id) ||
         // A structure's body stands until the structure is retired (`removed`), so only an
@@ -192,7 +197,11 @@ export class WorldObjectStore {
   }
 
   /** Spawns `object` as an obstacle of `definition` at its footprints' centroid. */
-  private spawn(object: MapObject, definition: ObstacleDefinition): WorldObjectRecord {
+  private spawn(
+    object: MapObject,
+    definition: ObstacleDefinition,
+    bounds: Rect,
+  ): WorldObjectRecord {
     const points = object.footprints.flat();
     const position = points.reduce(
       (sum, p) => ({ x: sum.x + p.x / points.length, y: sum.y + p.y / points.length }),
@@ -204,6 +213,6 @@ export class WorldObjectStore {
     if (object.team !== undefined) entity.addComponent(new TeamMembership(object.team));
     this.entities.add(entity);
     this.entityObjects.set(entity.id, object);
-    return { object, entityId: entity.id, health: entity.getComponent(Health) };
+    return { object, entityId: entity.id, health: entity.getComponent(Health), bounds };
   }
 }

@@ -51,6 +51,13 @@ export const isPointInPolygon = (point: Vec2, polygon: Polygon): boolean => {
   return isInside;
 };
 
+/**
+ * Whether `point` lies inside any of `polygons`: the one point-in-footprint test shared by a
+ * capture zone's floor (`ZoneArea.contains`) and the building at a point (`findBuildingAt`).
+ */
+export const isPointInAnyPolygon = (point: Vec2, polygons: readonly Polygon[]): boolean =>
+  polygons.some((polygon) => isPointInPolygon(point, polygon));
+
 /** The point of the segment from `a` to `b` nearest to `point`. */
 export const closestPointOnSegment = (point: Vec2, a: Vec2, b: Vec2): Vec2 => {
   const lengthSquared = (b.x - a.x) ** 2 + (b.y - a.y) ** 2;
@@ -106,6 +113,21 @@ export const nearestPointOnPolygons = (
     }
   }
   return Math.sqrt(best);
+};
+
+/**
+ * The smallest axis-aligned rectangle around a set of points. With no points, `x` and `y` are
+ * `Infinity` and `width` and `height` are `-Infinity`, so no other box overlaps it.
+ */
+export const boundsOf = (points: readonly Vec2[]): Rect => {
+  const xs = points.map((p) => p.x);
+  const ys = points.map((p) => p.y);
+  return {
+    x: Math.min(...xs),
+    y: Math.min(...ys),
+    width: Math.max(...xs) - Math.min(...xs),
+    height: Math.max(...ys) - Math.min(...ys),
+  };
 };
 
 /** Which side of the line `a`→`b` the point `c` is on: positive, negative or 0 (on the line). */

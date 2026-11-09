@@ -166,18 +166,27 @@ describe('MinionController', () => {
     expect(decision.memory).toMatchObject({ fsm: 'engaging', targetId: tower.id });
   });
 
-  it('ignores Legends during a ghosted first wave, and only then', () => {
-    const { state, add, advance } = setUp();
-    const self = add('light', 50);
-    const legend = add('dark', 52, 20, 'warrior', 'warrior');
-    const decide = () => decideAsGhost(state, self);
-    const until = state.config.match.countdownSeconds * state.config.tickRate + 30;
+  it.each([
+    // The countdown ends on a whole tick (DEC-170): 10 s = 300 ticks, 0.01 s rounds to 0, 0.25 s to 8.
+    [10, 330],
+    [0.01, 30],
+    [0.25, 38],
+  ])(
+    'ignores Legends during a ghosted first wave, and only then (countdown %s s: until tick %s)',
+    (countdownSeconds, until) => {
+      const { state, add, advance } = setUp(
+        createDefaultGameConfig({ match: { countdownSeconds } }),
+      );
+      const self = add('light', 50);
+      const legend = add('dark', 52, 20, 'warrior', 'warrior');
+      const decide = () => decideAsGhost(state, self);
 
-    advance(until - 1);
-    expect(decide()).toEqual([]);
-    advance(1);
-    expect(decide()).toEqual([{ type: 'attack-target', actorId: self, targetId: legend }]);
-  });
+      advance(until - 1);
+      expect(decide()).toEqual([]);
+      advance(1);
+      expect(decide()).toEqual([{ type: 'attack-target', actorId: self, targetId: legend }]);
+    },
+  );
 
   it('counts the ghosted first wave from the countdown’s end rounded to a tick, as the wave clocks do (X57-F7)', () => {
     const config = createDefaultGameConfig();

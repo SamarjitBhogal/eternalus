@@ -25,7 +25,7 @@ import type {
 export class GuardController implements Controller {
   public readonly id = 'guard';
   private readonly behaviour: LeashBehaviour;
-  /** What `decideLeashed` reads from this controller, built once (DEC-168 B1, critic A BTD 4). */
+  /** What `decideLeashed` reads from this controller, built once (DEC-168 B1, DEC-219 (d)). */
   private readonly parts: LeashDecisionParts<'holding', GuardAggroRuleDefinition> = {
     controllerId: this.id,
     profileOf: (profileId) => this.profileOf(profileId),

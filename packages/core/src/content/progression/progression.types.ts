@@ -22,4 +22,6 @@ export type LevelScalingDefinition = {
 export type XpSourcesDefinition = {
   /** A Legend kill: `base + perVictimLevel × victim level`, to the killer. */
   readonly legendKill: { readonly base: number; readonly perVictimLevel: number };
+  /** A destroyed structure: this much XP to every Legend of the destroying team (DEC-186). */
+  readonly structureDestroyed: number;
 };

@@ -79,7 +79,7 @@ describe('GameState', () => {
   it('starts at tick 0 in the countdown and counts ticks', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
     expect(state.tick).toBe(0);
-    expect(state.phase).toBe('countdown');
+    expect(state.match.phase).toBe('countdown');
     state.advanceTick();
     state.advanceTick();
     expect(state.tick).toBe(2);
@@ -104,7 +104,7 @@ describe('GameState', () => {
     state.advanceTick();
     expect(state.snapshot()).toEqual({
       tick: 1,
-      phase: 'countdown',
+      match: { phase: 'countdown', phaseEnteredTick: 0, upcoming: [], humanLegendId: null },
       entities: [
         {
           id: 'entity-1',
@@ -114,6 +114,8 @@ describe('GameState', () => {
           team: 'light',
           transform: { x: 3, y: 4, radius: 0.5 },
           health: { current: 100, max: 100 },
+          area: null,
+          capture: null,
         },
         {
           id: 'entity-2',
@@ -123,6 +125,8 @@ describe('GameState', () => {
           team: null,
           transform: null,
           health: null,
+          area: null,
+          capture: null,
         },
       ],
       hordes: [],
@@ -212,6 +216,7 @@ describe('GameState', () => {
       amount: 5,
       victimId: 'entity-2',
       victimTeam: 'dark',
+      cause: 'kill',
     } as const;
     state.events.emit('xp-gained', award);
     for (let i = 0; i < 600; i += 1) {
@@ -221,6 +226,53 @@ describe('GameState', () => {
     expect(state.xpAwardsThisTick()).toEqual([award]);
     state.advanceTick();
     expect(state.xpAwardsThisTick()).toEqual([]);
+  });
+  describe('match state', () => {
+    const SCHEDULE = [
+      { entryId: 'countdown-over', tick: 60 },
+      { entryId: 'mid-game', tick: 900 },
+    ];
+
+    it('builds its match record in the countdown, from the schedule it is given', () => {
+      const state = new GameState(createDefaultGameConfig(), 1, null, {}, SCHEDULE);
+      expect(state.match.phase).toBe('countdown');
+      expect(state.match.schedule).toEqual(SCHEDULE);
+      expect(Object.isFrozen(state.match.schedule[0])).toBe(true);
+    });
+
+    it("takes the player team from the config's match section", () => {
+      const config = createDefaultGameConfig({ match: { playerTeam: 'dark' } });
+      expect(new GameState(config, 1).match.playerTeam).toBe('dark');
+    });
+
+    it('stamps a phase change with its tick and records it for this tick only', () => {
+      const state = new GameState(createDefaultGameConfig(), 1);
+      state.advanceTick();
+      state.advanceTick();
+
+      state.match.setPhase('early-game');
+
+      expect(state.match.phaseEnteredTick).toBe(2);
+      expect(state.events.recentEvents()).toEqual([
+        { tick: 2, type: 'phase-changed', payload: { from: 'countdown', to: 'early-game' } },
+      ]);
+      expect(state.phaseChangesThisTick()).toEqual([{ from: 'countdown', to: 'early-game' }]);
+      state.advanceTick();
+      expect(state.phaseChangesThisTick()).toEqual([]);
+    });
+
+    it('snapshots the phase and the unfired marks, from the timeline cursor on', () => {
+      const state = new GameState(createDefaultGameConfig(), 1, null, {}, SCHEDULE);
+      state.match.advanceTimeline();
+      state.match.setPhase('early-game');
+
+      expect(state.snapshot().match).toEqual({
+        phase: 'early-game',
+        phaseEnteredTick: 0,
+        upcoming: [{ entryId: 'mid-game', tick: 900 }],
+        humanLegendId: null,
+      });
+    });
   });
 
   it('counts spawn requests per team and rejects a spawned count outside 0..requested', () => {

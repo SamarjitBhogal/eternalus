@@ -5,6 +5,9 @@ import type { ReplayOf } from '../Replay.types';
  * Golden replay: seed 7, the default config of 2026-10-06, `WanderSystem` (see `replay.test.ts`)
  * and one random command every 10 ticks for 300 ticks. If it stops reproducing, either a
  * determinism bug crept in or the rules changed on purpose; only the second may regenerate it.
+ * `config.match.timeline` was added on 2026-10-28, when `GameConfig` gained the field (the
+ * default timeline for this config); the commands and checkpoints are as recorded.
+ * `config.match.playerTeam` was added on 2026-10-30 with its default, `light`; it is not hashed.
  */
 export const WANDER_SEED_7: ReplayOf<{ readonly seed: number; readonly config: GameConfig }> = {
   seed: 7,
@@ -35,6 +38,36 @@ export const WANDER_SEED_7: ReplayOf<{ readonly seed: number; readonly config: G
         heavy: 4,
       },
       plannedMatchSeconds: 1200,
+      capturePoints: {
+        checkpoints: 3,
+        captureSeconds: 12,
+        revertSeconds: 20,
+        maxMargin: 3,
+        weights: { legend: 10, unit: 1 },
+      },
+      timeline: [
+        {
+          id: 'countdown-over',
+          at: { atTick: 1800 },
+          action: { kind: 'enter-phase', phase: 'early-game' },
+        },
+        {
+          id: 'quarter-mark',
+          at: { atFraction: 0.25 },
+          action: { kind: 'enter-phase', phase: 'quarter-mark' },
+        },
+        {
+          id: 'mid-game',
+          at: { atFraction: 0.5 },
+          action: { kind: 'enter-phase', phase: 'mid-game' },
+        },
+        {
+          id: 'end-game',
+          at: { atFraction: 0.75 },
+          action: { kind: 'enter-phase', phase: 'end-game' },
+        },
+      ],
+      playerTeam: 'light',
     },
     limits: {
       maxLegendsPerTeam: 10,
