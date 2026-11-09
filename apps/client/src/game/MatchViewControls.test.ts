@@ -1,6 +1,7 @@
 import {
   createDefaultGameConfig,
   type Command,
+  type EntitySnapshot,
   type InputIntent,
   type MapObject,
   type MapObjectSnapshot,
@@ -59,6 +60,23 @@ const HOUSE_STATES: readonly MapObjectSnapshot[] = [
   { id: 'house', entityId: HOUSE_ENTITY, health: { current: 100, max: 100 }, isDestroyed: false },
 ];
 
+/** A living mob of `team` at `at`, as a snapshot shows it. */
+const unit = (id: string, team: 'light' | 'dark', at: Vec2): EntitySnapshot => ({
+  id,
+  kind: 'minion',
+  family: 'mob',
+  definitionId: 'minion',
+  team,
+  transform: { ...at, radius: 1 },
+  health: { current: 10, max: 10 },
+  area: null,
+  capture: null,
+});
+/** The player's Legend, away from the point the camera looks at. */
+const PLAYER: EntitySnapshot = { ...unit(ACTOR, 'light', OPEN_GROUND), family: 'legend' };
+/** A dark-team minion on the house, under the cathedral's roof. */
+const ENEMY = unit('enemy-1', 'dark', IN_CATHEDRAL);
+
 /** An intent source the test steers by hand. */
 class ScriptedIntent implements IntentSource {
   public isAttacking = false;
@@ -74,23 +92,34 @@ class ScriptedIntent implements IntentSource {
 const newCamera = (look: Vec2 = IN_CATHEDRAL): Camera =>
   new Camera(look, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT);
 
-/** Real camera, roofs, commands and minimap; fake simulation and input. */
-const setUp = (playerId: string | null = ACTOR, look: Vec2 = IN_CATHEDRAL) => {
+/**
+ * Real camera, roofs, commands and minimap; fake simulation and input. `units` are the snapshot's
+ * units; `roofed` the buildings with a roof (none: no click is a roof click).
+ */
+const setUp = (
+  playerId: string | null = ACTOR,
+  look: Vec2 = IN_CATHEDRAL,
+  {
+    units = [],
+    roofed = buildings,
+  }: { units?: readonly EntitySnapshot[]; roofed?: typeof buildings } = {},
+) => {
   const camera = newCamera(look);
   const view = new MatchCamera(camera, MAP);
   view.resize(CANVAS.width, CANVAS.height, 1);
-  const roofs = new BuildingRoofs(buildings);
+  const roofs = new BuildingRoofs(roofed);
   const input = new ScriptedIntent();
   const enqueueCommand = vi.fn<Simulation['enqueueCommand']>();
   const commands = new PlayerCommands(input, { enqueueCommand }, view, [HOUSE]);
-  const miniMap = new MiniMapView(MAP, new MapView(MAP), RING);
+  // No living Legend here, so the minimap centres on the camera's focus (DEC-182).
+  const miniMap = new MiniMapView(MAP, new MapView(MAP), RING, () => look);
   const controls = new MatchViewControls({
     camera: view,
     roofs,
     commands,
     miniMap,
     playerId,
-    mapObjects: () => HOUSE_STATES,
+    snapshot: () => ({ entities: units, mapObjects: HOUSE_STATES }),
   });
   const sent = (): Command[] => enqueueCommand.mock.calls.map(([command]) => command);
   return { camera, view, roofs, input, commands, miniMap, controls, sent };
@@ -143,56 +172,68 @@ describe('MatchViewControls', () => {
     expect(view.visibleArea().width).toBeCloseTo(before.width / 2);
   });
 
-  it('toggleRoofAt cuts away the roof under the point and puts it back on a second click', () => {
-    const { roofs, controls } = setUp();
+  it('clickAt cuts away the roof under the point and puts it back, attacking nothing (DEC-150)', () => {
+    const { roofs, controls, sent } = setUp();
     expect(controls.hasDeveloperRoofs).toBe(false);
 
-    expect(controls.toggleRoofAt(CENTER.x, CENTER.y)).toBe(true);
+    expect(controls.clickAt(CENTER.x, CENTER.y)).toBe(true);
     expect([...roofs.hidden]).toEqual(['cathedral-lane-1']);
     expect(controls.hasDeveloperRoofs).toBe(true);
 
-    expect(controls.toggleRoofAt(CENTER.x, CENTER.y)).toBe(true);
+    expect(controls.clickAt(CENTER.x, CENTER.y)).toBe(true);
     expect([...roofs.hidden]).toEqual([]);
     expect(controls.hasDeveloperRoofs).toBe(false);
+    // The house under the roof is not attacked: a roof click is no attack.
+    expect(sent()).toEqual([]);
   });
 
-  it('toggleRoofAt does nothing on open ground and does not move the view', () => {
-    const { view, roofs, controls } = setUp(ACTOR, OPEN_GROUND);
+  it('clickAt does nothing on open ground and does not move the view', () => {
+    const { view, roofs, controls, sent } = setUp(ACTOR, OPEN_GROUND);
     const before = view.visibleArea();
 
-    expect(controls.toggleRoofAt(CENTER.x, CENTER.y)).toBe(false);
+    expect(controls.clickAt(CENTER.x, CENTER.y)).toBe(false);
 
     expect([...roofs.hidden]).toEqual([]);
     expect(view.visibleArea()).toEqual(before);
+    expect(sent()).toEqual([]);
   });
 
-  it('attackAt sends one attack-target for the Legend on the object under the point', () => {
-    const { controls, sent } = setUp();
+  it('clickAt attacks the enemy unit under the point and leaves its roof closed (DEC-183)', () => {
+    const { roofs, controls, sent } = setUp(ACTOR, IN_CATHEDRAL, { units: [PLAYER, ENEMY] });
 
-    controls.attackAt(CENTER.x, CENTER.y);
+    expect(controls.clickAt(CENTER.x, CENTER.y)).toBe(false);
+
+    expect(sent()).toEqual([{ type: 'attack-target', actorId: ACTOR, targetId: ENEMY.id }]);
+    expect([...roofs.hidden]).toEqual([]);
+  });
+
+  it('clickAt with no unit or roof under the point attacks the object there, once', () => {
+    const { controls, sent } = setUp(ACTOR, IN_CATHEDRAL, { roofed: [] });
+
+    expect(controls.clickAt(CENTER.x, CENTER.y)).toBe(false);
 
     expect(sent()).toEqual([{ type: 'attack-target', actorId: ACTOR, targetId: HOUSE_ENTITY }]);
   });
 
-  it('attackAt sends nothing on open ground', () => {
-    const { controls, sent } = setUp(ACTOR, OPEN_GROUND);
+  it('clickAt sends nothing on open ground with no roofs', () => {
+    const { controls, sent } = setUp(ACTOR, OPEN_GROUND, { roofed: [] });
 
-    controls.attackAt(CENTER.x, CENTER.y);
+    controls.clickAt(CENTER.x, CENTER.y);
 
     expect(sent()).toEqual([]);
   });
 
-  it('attackAt sends no attack-target command when the player has no Legend', () => {
-    const { controls, sent } = setUp(null);
+  it('clickAt sends no attack-target command when the player has no Legend', () => {
+    const { controls, sent } = setUp(null, IN_CATHEDRAL, { units: [ENEMY], roofed: [] });
 
-    controls.attackAt(CENTER.x, CENTER.y);
+    controls.clickAt(CENTER.x, CENTER.y);
 
     expect(sent()).toEqual([]);
   });
 
   it('overview shows the whole battlefield and puts back the developer roofs', () => {
     const { view, roofs, controls } = setUp();
-    controls.toggleRoofAt(CENTER.x, CENTER.y);
+    controls.clickAt(CENTER.x, CENTER.y);
     const following = view.visibleArea();
 
     controls.overview();
@@ -207,9 +248,9 @@ describe('MatchViewControls', () => {
   it('leaveExplorer puts back the roofs and returns to the following camera at base zoom', () => {
     const { camera, view, controls } = setUp();
     controls.zoomBy(3);
-    controls.toggleRoofAt(CENTER.x, CENTER.y);
+    controls.clickAt(CENTER.x, CENTER.y);
     controls.overview();
-    controls.toggleRoofAt(CENTER.x, CENTER.y);
+    controls.clickAt(CENTER.x, CENTER.y);
     expect(controls.hasDeveloperRoofs).toBe(true);
 
     controls.leaveExplorer();
@@ -230,11 +271,11 @@ describe('MatchViewControls', () => {
     input.aim = IN_CATHEDRAL;
 
     controls.setPointerClaimed(true);
-    commands.apply(ACTOR, HOUSE_STATES);
+    commands.apply(ACTOR, { entities: [], mapObjects: HOUSE_STATES });
     expect(sent()).toEqual([]);
 
     controls.setPointerClaimed(false);
-    commands.apply(ACTOR, HOUSE_STATES);
+    commands.apply(ACTOR, { entities: [], mapObjects: HOUSE_STATES });
     expect(sent()).toEqual([{ type: 'attack-target', actorId: ACTOR, targetId: HOUSE_ENTITY }]);
   });
 });

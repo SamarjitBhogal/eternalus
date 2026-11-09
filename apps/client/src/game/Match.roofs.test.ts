@@ -183,7 +183,7 @@ describe("Match roofs: the player's building opens (DEC-143)", () => {
     match.tick();
     const onPlayer = toScreen(playerPosition() ?? { x: -1, y: -1 });
 
-    expect(match.controls.toggleRoofAt(onPlayer.x, onPlayer.y)).toBe(false);
+    expect(match.controls.clickAt(onPlayer.x, onPlayer.y)).toBe(false);
 
     expect(match.controls.hasDeveloperRoofs).toBe(false);
     expect(roofsDrawn('light-stronghold').drawn).toBe(0);
@@ -194,7 +194,7 @@ describe("Match roofs: the player's building opens (DEC-143)", () => {
     match.tick();
     match.controls.overview();
     const onCathedral = toScreen(centre ?? { x: -1, y: -1 });
-    expect(match.controls.toggleRoofAt(onCathedral.x, onCathedral.y)).toBe(true);
+    expect(match.controls.clickAt(onCathedral.x, onCathedral.y)).toBe(true);
     expect(match.controls.hasDeveloperRoofs).toBe(true);
     expect(roofsDrawn('cathedral-lane-1').drawn).toBe(0);
 

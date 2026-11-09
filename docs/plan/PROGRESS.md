@@ -5656,6 +5656,32 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   1089 passed, client 1754 passed, docs check passed.
 - Next step: push.
 
+### 2026-11-05 — Phase 3 / playtest fixes: click attack — fix/click-attack-units — sholtzman + Claude Code
+
+- What was done: a click and the held attack button now target a living enemy unit under the
+  cursor, not only map objects (ddc41ce). Critic round 1 fixes (d06de14): `Match.clickAt` resolves
+  a click as unit, then roof, then map object; when units overlap the one drawn on top (largest y)
+  wins, and an exact tie goes to the later snapshot entity (DEC-183); the click resolver gets the
+  snapshot as a parameter and core owns the unit families list (`isUnitFamily`), both signed off as
+  better than the design (DEC-191). Architecture 06 §10 describes the new click order. Critic
+  round 2: no blockers. Each new test was turned red by a deliberate break first (runner report
+  `report-click-attack-r2.md` in the work folder).
+- Checks run: `npm run check` (log `check-click-docs.log` in the work folder) → `exit 0`: "All
+  matched files use Prettier code style!"; core "Tests 1058 passed (1058)"; client "Tests 1746
+  passed (1746)"; "✓ built in 300ms"; "Documentation check passed."
+- Next step: ponytail review, then the PR into `phase/3-sprint-3-work` after the rulings PR
+  (DEC-183 and DEC-191 rows).
+
+### 2026-11-06 — Phase 3 / playtest fixes: click attack, merge of phase/3 (PR #71) — fix/click-attack-units — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` at `2dc2b35d` (phase/3 (PR #71)). Only `docs/plan/PROGRESS.md` conflicted
+  (both sides appended entries); every entry is kept, the merged-in side's first. No line of either
+  side was removed (`git diff` against both parents shows only additions).
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-06/click-attack-units.check.log`): EXIT=0, core
+  1081 passed, client 1764 passed, docs check passed.
+- Next step: push.
+
 ### 2026-11-07 — Phase 3 / structure XP, merge of feat/match-director (PR #74) — feat/structure-xp — sholtzman + Claude Code
 
 - What was done: merged `feat/match-director` (PR #74, which holds #75 and phase/3 at `ed10145`),
@@ -5839,6 +5865,122 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   passed (1778)"; "✓ built in 275ms"; "Documentation check passed.".
 - Next step: push to #64; done only when CI is green on both runners; then Sam merges it and
   PR-38-HELPER-25 merges phase 3 into #76 and #77.
+
+### 2026-11-07 — Phase 3 / playtest fixes: click attack, merge of feat/structure-xp (PR #78) and review blocker — fix/click-attack-units — sholtzman + Claude Code
+
+- What was done: merged `feat/structure-xp` (PR #78, which holds #74, #75 and phase/3 at
+  `ed10145`), so this PR merges after #78 with no conflicts (merge chain #75, #74, #78, #76,
+  #77). #74 moved the canvas gestures from `Match` to `MatchViewControls`, so the click order of
+  this branch (unit, then roof, then map object; DEC-183, DEC-150) now lives in
+  `MatchViewControls.clickAt`. It replaces `toggleRoofAt` and `attackAt`; its `snapshot`
+  dependency gives the units and the map objects (was `mapObjects`). The tests call
+  `match.controls.clickAt`; architecture 06 §10 keeps both sides. The explorer tests find the
+  spawned dummy by `definitionId`, because #74 gives the test simulation the map and the map's
+  guard posts hold other dark light mobs. Review blocker (a roof click must queue no attack):
+  the `MatchViewControls` roof test puts a house under the roof and asserts that no
+  `attack-target` is queued; `Match.explorer.test.ts` asserts one command after the roof click.
+- Red proof: break = `clickAt` also calls `attackObjectAt` after it toggles a roof. The
+  `MatchViewControls` test "clickAt cuts away the roof under the point and puts it back,
+  attacking nothing (DEC-150)" went red. The new `Match.explorer.test.ts` assertion stays green
+  under that break, because nothing attackable is under that roof point; the unit test is the
+  guard.
+- Critic loop (correctness and ponytail critics on this PR's diff over `feat/structure-xp`): no
+  blockers. Fixed: the merge had dropped the line "Next step: push." from the structure-xp entry
+  of 2026-11-06 (restored); comments and a test label named `Match.clickAt`, now
+  `MatchViewControls.clickAt`. Not changed: `findUnitAt` treats every unit as an enemy when the
+  attacker is gone from the snapshot (a test pins it; core rejects the command, so no state
+  changes); `UNIT_FAMILIES` stays exported (its test reads it).
+- Checks run: `npm run check:quick` exit 0 and the eight affected client test files pass; the
+  full `npm run check` follows on this entry.
+- Next step: full check; push; PR #76 merges after #78 once Samarjit re-approves.
+
+### 2026-11-08 — Phase 3 / playtest fixes: click attack, merge of phase/3 after PR #64 — fix/click-attack-units — sholtzman + Claude Code
+
+- What was done: #75, #74 and #78 merged into phase/3, then #64 (capture zones, `b02ef47`).
+  Merged phase/3 `b02ef47` into this branch (`a7fd3a3`). Only `PROGRESS.md` conflicted
+  (append-only; both sides kept, #64's entries first; line count ours + theirs − base = merged,
+  5808). #64 added `area` and `capture` to `EntitySnapshot`, so the unit fixtures in
+  `findUnitAt.test.ts`, `MatchViewControls.test.ts` and `PlayerCommands.test.ts` set both to
+  `null`, as #64's own fixtures do (typecheck found them; git did not flag them).
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/pr-merge-74-79/check-76-post64.log`): exit 0, Prettier passed, core
+  `Tests 1298 passed (1298)`, client `Tests 1789 passed (1789)`, docs check passed.
+- Next step: push; PR #76 merges once Samarjit re-approves; then #77.
+
+### 2026-11-05 — Phase 3 / local minimap — feat/local-minimap — sholtzman + Claude Code
+
+- What was done: the minimap shows a local view. Commit `e1cf2f0`: the circle of 200 world units
+  around the player (DEC-182: north up, ring clip, camera focus while dead, centre marker, a click
+  moves the camera). Commit `b720143`: Legends and all mobs (minions, tower guards, camp mobs;
+  not bosses or the dead) as team-coloured dots (DEC-187). Commit `4068bb4` (critic round 1): unit
+  markers go through `EntityView.drawMinimap` and `minimapLayer`, one `MinimapProjection` serves
+  the picture and the click (DEC-191), team outline per dot (white, near-black, grey, 1.5 px).
+  Docs pass (this entry, docs only): architecture 04, 06 §8 and §10, 07, 08 §5 and 17 follow the
+  code; 08 §5 records `MinimapProjection` in device pixels, not the `Projection` port (critic:
+  acceptable), and names `MatchCamera` as the real `Projection`; reference 15 CD-18, INBOX HC-Q6
+  (4) and HC-U1 note 1 have dated "superseded" notes; the phase-2 plan sprint 2.8 notes the unit
+  part is met. DEC rows are on another branch; this branch does not edit the decisions log.
+- Checks run: `npm run check` → `exit 0`: "All matched files use Prettier code style!"; core
+  "Tests 1056 passed (1056)"; client "Tests 1746 passed (1746)"; "✓ built in 570ms";
+  "Documentation check passed." This entry was added after that run (docs-only); `prettier --check`
+  and `docs:check` were re-run after it.
+- Next step: add the DEC rows (DEC-187 text "Legends and all mobs", the G1 outline answer),
+  merge the sibling `unit-facing-chevron` work, then the pre-PR gate.
+
+### 2026-11-06 — Phase 3 / local minimap, merge of phase/3 (PR #71) — feat/local-minimap — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` at `2dc2b35` (phase/3 (PR #71)). Only `docs/plan/PROGRESS.md` conflicted
+  (both sides appended entries); every entry is kept, the merged-in side's first. No line of either
+  side was removed (`git diff` against both parents shows only additions).
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-06/local-minimap.check.log`): EXIT=0, core
+  1079 passed, client 1764 passed, docs check passed.
+- Next step: push.
+
+### 2026-11-07 — Phase 3 / playtest fixes: local minimap, review blocker and merge of fix/click-attack-units (PR #76) — feat/local-minimap — sholtzman + Claude Code
+
+- What was done: review blocker (DEC-187 (C), "a dot sits at the snapshot position"):
+  `EntityLayer.drawMinimap` drew the interpolated position; it now draws at `entity.transform`.
+  Then merged `fix/click-attack-units` (PR #76, which holds #78, #74, #75 and phase/3 at
+  `ed10145`), so this PR merges after #76 with no conflicts (merge chain #75, #74, #78, #76,
+  #77). #74 moved the minimap click from `Match` to `MatchViewControls`: the tests call
+  `match.controls.lookAtMinimapPoint`, and architecture 06 and 08 name
+  `MatchViewControls.lookAtMinimapPoint`. `MiniMapView` takes the centre (DEC-182), so the
+  `MatchViewControls` test passes the camera's focus; the DEC-187 minimap test builds its
+  snapshot with `Snapshot.match` (#74 replaced `Snapshot.phase`). `INBOX.md` keeps both notes on
+  HC-Q6 (4), #75's (2026-11-04) first.
+- Red proof: the `EntityLayer` minimap test was changed first to expect the snapshot positions 4
+  and 20 at an `alpha` between 0 and 1; it failed (received the interpolated 2 and 15), then
+  passed with the fix.
+- Critic loop (correctness and ponytail critics on this PR's diff over `fix/click-attack-units`,
+  two rounds; round 2 passed): `drawMinimap` skips an entity with no transform instead of falling
+  back to the interpolated position (`show()` already drops such entities); the TUNE notes of the
+  marker sizes and the outline width and colours cite the owner's acceptance (DEC-187 (C) and its
+  second round); doc 06 names `MatchViewControls.lookAtMinimapPoint`. Not changed: the centre
+  marker's size stays provisional (no DEC row accepts it).
+- Checks run: `npm run check` at `3d0a4b2` (log
+  `eternalus-agent-work/pr-merge-74-79/check-77-final.log`): exit 0, Prettier passed, core
+  `Tests 1245 passed (1245)`, client `Tests 1790 passed (1790)`, docs check passed. The head of
+  #76 (`f49ee99`, log `check-76-final.log`): exit 0, core `Tests 1245 passed (1245)`, client
+  `Tests 1780 passed (1780)`.
+- Next step: push; PR #77 merges after #76 once Samarjit re-approves; then #79 retargets.
+
+### 2026-11-08 — Phase 3 / playtest fixes: local minimap, merge of fix/click-attack-units after PR #64 — feat/local-minimap — sholtzman + Claude Code
+
+- What was done: #75, #74, #78 and then #64 (capture zones) merged into phase/3; #76 merged
+  phase/3 `b02ef47`. Merged #76 `f2574a9` into this branch (`2954cd1`). #64 conflicts:
+  `entityViews.constants.ts` (both added constants at the end; #64's capture constants first,
+  then the minimap marker constants), `StructureView.test.ts` (this branch's gate fixture plus
+  #64's `area` and `capture`), architecture 07 §12 (#64's capture-point glyph wording, then
+  this branch's sentence that `MapView.drawMinimap` draws feature glyphs and only Legends and
+  mobs have entity markers), `PROGRESS.md` (append-only). Typecheck found one more fixture: the
+  DEC-187 minion in `MiniMapView.test.ts` sets `area` and `capture` to `null`. Line counts
+  (ours + theirs − base = merged): `PROGRESS.md` 5879, `entityViews.constants.ts` 80.
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/pr-merge-74-79/check-77-post64.log`): exit 0, Prettier passed, core
+  `Tests 1298 passed (1298)`, client `Tests 1799 passed (1799)`, docs check passed.
+- Next step: push; tell eternalus-121 the new head (#79 merges it); PR #77 merges after #76
+  once Samarjit re-approves.
 
 ### 2026-11-04 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / match-director merge — feat/match-scoring — sholtzman + Claude Code
 
