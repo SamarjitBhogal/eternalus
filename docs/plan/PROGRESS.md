@@ -6169,3 +6169,32 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   96.98 %; "✓ built in 439ms"; "Documentation check passed." (127 files).
 - Next step: PR after GL-4's; GL-5 (feat/results-flow) `MatchResult` literals need the new
   counters when the branches meet.
+
+### 2026-11-08 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-15 BTD-1 to BTD-3 (DEC-221 (2)) and the GL-4 `98e285c` merge — feat/capture-scoring — sholtzman + Claude Code
+
+- What: GL-4's three better-than-design items, built on this branch (DEC-221 (2)).
+  - `fb0c118`: merged `feat/match-scoring` at `42e4c46` (DEC-221) into this branch.
+  - `86eae52`: BTD-2, the scoring rules are injected: `match/defaultScoringRules.ts` builds them
+    (as `defaultVictoryConditions.ts` builds the conditions); hit and death rules by family and
+    listener rules (`StructureDestroyedRule`, `CaptureScoring`) in `match/rules/`, typed in
+    `match/ScoringRule.types.ts` (`Scoring.types.ts` removed). BTD-1, the counter names come from
+    the stats types, so a new counter is one field and its 0. BTD-3, one content export `SCORING`
+    (the weights and the assist window; `ScoringOptions` in the content types).
+  - `15b2ab7`: architecture 12 (paths, §1, §5, §13), 02 §2 and the new §9 "Scoring rules" registry
+    row, 17 R3.
+  - `e186f69`: merged `feat/match-scoring` at `98e285c` (phase/3 `120653b`, PR #76 and #77). Only
+    this file conflicted (inserts only).
+  - This commit: 12 §12 names the test files as built (`rules/CaptureScoring.test.ts`,
+    `defaultScoringRules.test.ts`); the game-loop plan §4.4 says how `SCORING` reaches the rules.
+    Left as they are: the plan's GL-15 row (next to the GL-16 row that `feat/results-flow` changes
+    for DEC-222, so an edit here conflicts when the two meet), 03's event table (`Scoring`
+    subscribes its listener rules, `Scoring.ts`), and DEC-221's file list (a dated record).
+- Fail-first breaks: 14 deliberate breaks on `86eae52`, all red, each restored (`cmp` equal); in
+  `eternalus-agent-work/game-loop-plan/gl15-btd-breaks.md`.
+- Checks run: on `15b2ab7`, `npm run check` → `EXIT=0` (`gl15-btd-check-2026-11-08.log`): core
+  "Tests 1380 passed (1380)", client "Tests 1778 passed (1778)", "Documentation check passed."
+  On `e186f69`, `npm run check` → `EXIT=0` (`cs-merge-98e285c-check-2026-11-08.log`): core "Tests
+  1382 passed (1382)", statements 99.15 %; client "Tests 1799 passed (1799)", statements 97.03 %;
+  "Documentation check passed." Logs in `eternalus-agent-work/game-loop-plan/`.
+- Next step: the GL-15 pre-PR gate (architecture critic, then ponytail), then push and open the PR
+  into `feat/match-scoring`.

@@ -405,9 +405,10 @@ quarter-mark`), a stub `GameState` stepped to tick 25; assert the `phase-changed
   `dev-set-phase` replays the skipped entries in order.
 - `MatchTimeline.test.ts`: fractions resolve against `plannedMatchSeconds`; ties keep config order;
   every invalid config from §3 is rejected by name. `Scoring.test.ts`: one test per row of the
-  §5 table plus the assist window and the hold accrual. `state/ScoreBook.test.ts`: one row per
-  Legend, each team's total equal to its Legends' points plus its team-only points, the recent
-  hits (DEC-132).
+  §5 table plus the assist window; `rules/CaptureScoring.test.ts`: the checkpoint and hold rows
+  and the hold accrual; `defaultScoringRules.test.ts`: which rules the default list holds.
+  `state/ScoreBook.test.ts`: one row per Legend, each team's total equal to its Legends' points
+  plus its team-only points, the recent hits (DEC-132).
 - `conditions/ObjectiveLostCondition.test.ts`: objective lost → the other team wins; both on one
   tick → draw. `MatchDirector.test.ts`: `victory`/`defeat` by `playerTeam`; a draw enters `defeat`;
   sim mode ends with `hadHuman: false`; inert after the end; no move out of a terminal phase.

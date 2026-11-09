@@ -241,8 +241,10 @@ export type VictoryConditionId = 'objective-lost' | 'forfeit' | 'aborted';
 
 - `match/Scoring.ts` folds a per-tick buffer of `entity-spawned`, `damage-applied` and
   `entity-died` inside the director's pass, so a match-winning kill counts. `ScoringState` sits in
-  `state.match` and is hashed. `Simulation` (the composition root) passes `SCORING_WEIGHTS` into
-  `new Scoring(weights)`: `match/` may import content types, not content values (12 §1).
+  `state.match` and is hashed. `Simulation` (the composition root) passes `SCORING` (content) to the
+  director, which builds `new Scoring(state, createDefaultScoringRules(...))`; each rule in
+  `match/rules/` takes its part of `SCORING` (DEC-221 (2)): `match/` may import content types,
+  not content values (12 §1).
 - Rows: one `LegendStats` per Legend, registered on `entity-spawned` with family `legend` (id,
   team, class id, human or bot from `state.match.humanLegendId`, §4.5). Rows keep their data
   after the Legend dies or is removed. Events are synchronous (`GameEvents.ts`), so `Simulation`
@@ -256,7 +258,8 @@ export type VictoryConditionId = 'objective-lost' | 'forfeit' | 'aborted';
 - Points live in content, keyed so that a new weight class is a compile error:
 
 ```ts
-// Sketch: packages/core/src/content/match/scoring.ts
+// Sketch at GL-4 planning: packages/core/src/content/match/scoring.ts. As built, these are
+// `SCORING.weights` beside `SCORING.assistWindowSeconds` (DEC-221 (2)).
 export const SCORING_WEIGHTS = {
   legendKill: 15, // TUNE: GL-Q10 pending ("worth the most"; no value given)
   legendKillAssist: 7, // TUNE: GL-Q10 pending
