@@ -1,19 +1,15 @@
-import { Aether } from '../components/Aether';
-import { Capturable } from '../components/Capturable';
 import { Health } from '../components/Health';
-import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
-import { ZoneArea } from '../components/ZoneArea';
 import type { GameConfig } from '../config/GameConfig.types';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
-import type { Entity } from '../entities/Entity';
 import type { PlayableTeam } from '../teams/teams.types';
 import { RingBuffer } from '../utils/RingBuffer';
 import { SeededRandom } from '../utils/SeededRandom';
 import { AiState } from './AiState';
 import { AllyDamageStore } from './AllyDamageStore';
+import { EntitySnapshotter } from './EntitySnapshotter';
 import { EntityStore } from './EntityStore';
 import type { EntityId, RemovalRecord } from './EntityStore.types';
 import { GameEvents } from './GameEvents';
@@ -32,7 +28,6 @@ import type { EntitySnapshot, HordeSnapshot, Snapshot } from './Snapshot.types';
 import type { SpaceQuery } from './SpaceQuery.types';
 
 import type { WorldObjectStore } from './WorldObjectStore';
-import { MapObjectBody } from '../components/MapObjectBody';
 import { isPlayableTeam, opponentOf } from '../teams/playableTeams';
 
 /**
@@ -261,9 +256,9 @@ export class GameState {
    */
   public snapshot(curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'get'>): Snapshot {
     const entities: EntitySnapshot[] = [];
-    const { checkpoints } = this.config.match.capturePoints;
+    const snapshotter = new EntitySnapshotter(this.config.match.capturePoints.checkpoints, curves);
     this.entities.forEach((entity) => {
-      entities.push(GameState.snapshotOf(entity, checkpoints, curves));
+      entities.push(snapshotter.snapshotOf(entity));
     });
     const { phase, phaseEnteredTick, timelineCursor, schedule, humanLegendId } = this.match;
     const hordes: HordeSnapshot[] = [];
@@ -286,53 +281,6 @@ export class GameState {
         dark: { ...dark, towersLostByLane: { ...dark.towersLostByLane } },
       },
       ...(this.worldObjects === undefined ? {} : { mapObjects: this.worldObjects.snapshot() }),
-    };
-  }
-
-  private static snapshotOf(
-    entity: Entity,
-    checkpoints: number,
-    curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'get'>,
-  ): EntitySnapshot {
-    const transform = entity.findComponent(Transform);
-    const health = entity.findComponent(Health);
-    const progression = entity.findComponent(Progression);
-    const aether = entity.findComponent(Aether);
-    const capture = entity.findComponent(Capturable);
-    return {
-      id: entity.id,
-      kind: entity.kind,
-      family: entity.family,
-      definitionId: entity.definitionId,
-      ...(entity.findComponent(MapObjectBody) === undefined
-        ? {}
-        : { mapObjectId: entity.getComponent(MapObjectBody).object.id }),
-      team: entity.findComponent(TeamMembership)?.team ?? null,
-      transform:
-        transform === undefined
-          ? null
-          : { x: transform.position.x, y: transform.position.y, radius: transform.radius },
-      health: health === undefined ? null : { current: health.current, max: health.max },
-      progression:
-        progression === undefined
-          ? null
-          : {
-              level: progression.level,
-              ...progression.levelProgress(curves.get(progression.curveId)),
-            },
-      aether: aether === undefined ? null : { current: aether.current, max: aether.max },
-      area: entity.findComponent(ZoneArea)?.polygons ?? null,
-      capture:
-        capture === undefined
-          ? null
-          : {
-              owner: capture.owner,
-              progress: capture.progress,
-              checkpoint: capture.checkpoint,
-              checkpoints,
-              lockedBy: capture.lockedBy,
-              presence: capture.presence,
-            },
     };
   }
 }
