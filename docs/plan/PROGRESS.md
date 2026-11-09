@@ -6126,3 +6126,15 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   passed (1778)", "Documentation check passed." (127 files).
 - Next step: merge this branch into `feat/results-flow` (GL-5 B2, B3 and its minors) and into
   `feat/capture-scoring` (GL-4 BTD-1 to BTD-3, then the GL-15 pre-PR gate); push; open the PRs.
+
+### 2026-11-08 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / phase/3 merge (#76, #77) — feat/match-scoring — sholtzman + Claude Code
+
+- What: merged `origin/phase/3-sprint-3-work` at `120653b` (PR #76 click attacks, PR #77 local
+  minimap) into this branch (`750fb64`), so its PR has no conflict with the phase branch. Two
+  conflicts: this file (both sides only inserted; phase/3's entries first, then this branch's)
+  and the `last-reviewed` line of 17 (kept 2026-11-08). No scoring code changed.
+- Checks run: `npm run check` → `EXIT=0` (`ms-merge-120653b-check-2026-11-08.log` in
+  `eternalus-agent-work/game-loop-plan/`): core "Tests 1359 passed (1359)", statements 99.15 %;
+  client "Tests 1799 passed (1799)", statements 97.03 %; "Documentation check passed."
+- Next step: push; open the GL-4 PR into the phase branch; merge this branch into
+  `feat/results-flow` and `feat/capture-scoring`.
