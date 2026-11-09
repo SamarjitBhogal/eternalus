@@ -51,6 +51,11 @@ export type TeamStats = {
    * (DEC-214 (A2)). A lost point stops adding but takes nothing back.
    */
   readonly capturesHeldTicks: number;
+  /**
+   * Checkpoints its pushes reached on capture points, each worth team-only points (DEC-214 (A1),
+   * DEC-223 (3)).
+   */
+  readonly checkpointsReached: number;
 };
 
 /** The last tick a Legend hit an enemy Legend: one entry per pair, so the list stays bounded. */
@@ -71,9 +76,4 @@ export type ScoringState = {
   readonly teams: Readonly<Record<PlayableTeam, TeamStats>>;
   /** The hits that can still earn an assist; an entry goes when its victim dies. */
   readonly recentHits: readonly RecentHit[];
-  /**
-   * How many capture points each team owns now, kept from `capture-point-owner-changed`: each
-   * tick adds this many ticks to the team's `capturesHeldTicks` (12 §5, DEC-214 (A2)).
-   */
-  readonly ownedPoints: Readonly<Record<PlayableTeam, number>>;
 };

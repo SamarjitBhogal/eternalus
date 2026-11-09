@@ -294,8 +294,8 @@ describe('MatchDirector', () => {
         configHash: expect.any(Number) as number,
         legends: [],
         teams: {
-          light: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0 },
-          dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0 },
+          light: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0, checkpointsReached: 0 },
+          dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0, checkpointsReached: 0 },
         },
         finalHash: condition.hashAtVerdict,
       });
@@ -372,11 +372,12 @@ describe('MatchDirector', () => {
         score: 109,
         structuresDestroyed: 2,
         capturesHeldTicks: 0,
+        checkpointsReached: 0,
       });
       expect(state.match.result?.legends).toEqual([row]);
       expect(state.match.result?.teams).toEqual({
-        light: { score: 20, structuresDestroyed: 1, capturesHeldTicks: 0 },
-        dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0 },
+        light: { score: 20, structuresDestroyed: 1, capturesHeldTicks: 0, checkpointsReached: 0 },
+        dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0, checkpointsReached: 0 },
       });
     });
 

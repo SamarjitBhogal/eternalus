@@ -7,12 +7,12 @@ import type { PendingChange, ScoredDeath, ScoredHit, ScoringRules } from './Scor
 
 /**
  * Scoring (architecture 12 §5, DEC-79): applies the injected rules (`defaultScoringRules.ts`) to
- * what spawns, hits, deaths and the listener rules' events earn each Legend and each team. Its
- * listeners only buffer what they saw, reading the entity's family, kind and team while it is
- * still in the store; `fold` applies the buffer in the director's pass, after `DeathSystem` and
- * `CaptureSystem`, so a kill on the ending tick counts. It writes only through the match's
- * `ScoreBook` (`state.match.scoreBook`, DEC-211), whose data is hashed and replayed. Once the
- * match has a result it counts nothing.
+ * what spawns, hits, deaths, the listener rules' events and each tick earn each Legend and each
+ * team. Its listeners only buffer what they saw, reading the entity's family, kind and team while
+ * it is still in the store; `fold` applies the buffer in the director's pass, after
+ * `DeathSystem` and `CaptureSystem`, so a kill on the ending tick counts. It writes only through
+ * the match's `ScoreBook` (`state.match.scoreBook`, DEC-211), whose data is hashed and replayed.
+ * Once the match has a result it counts nothing.
  *
  * - Rows: one per Legend, from its `entity-spawned`. A row keeps its data after the Legend dies or
  *   leaves the store.
@@ -22,8 +22,10 @@ import type { PendingChange, ScoredDeath, ScoredHit, ScoringRules } from './Scor
  *   target, so a hit on a unit of its own team, itself included, counts for nothing, as for XP
  *   (DEC-130; O5, 05 §18). A hit names its attacker (05 §9), so a projectile's hit counts for the
  *   Legend that fired it, even after that Legend died.
- * - Listener rules: each subscribes to its own events when `Scoring` is built, buffers through
- *   `defer`, and scores the tick itself after the buffered changes of each fold.
+ * - Listener rules: each subscribes to its own events on the bus when `Scoring` is built and
+ *   buffers through `defer` (DEC-223 (1)).
+ * - Tick scorers: each scores the tick itself after the buffered changes of each fold, while the
+ *   match has no result (held time, DEC-223 (1)).
  */
 export class Scoring implements ScoreKeeper {
   private readonly pending: PendingChange[] = [];
@@ -31,7 +33,7 @@ export class Scoring implements ScoreKeeper {
   /**
    * @param state - The match whose events this listens to. Build it before anything spawns, so
    *   every Legend gets a row.
-   * @param rules - The hit, death and listener rules (`createDefaultScoringRules`).
+   * @param rules - The hit, death, listener and tick rules (`createDefaultScoringRules`).
    */
   public constructor(
     private readonly state: GameState,
@@ -47,14 +49,14 @@ export class Scoring implements ScoreKeeper {
       this.onDied(payload);
     });
     for (const listener of rules.listeners) {
-      listener.listen(state, (change) => {
+      listener.listen(state.events, (change) => {
         this.defer(change);
       });
     }
   }
 
   /**
-   * Applies this tick's buffered events in order, then lets each listener rule score the tick.
+   * Applies this tick's buffered events in order, then lets each tick scorer score the tick.
    * Called by the `MatchDirector`, once per tick.
    */
   public fold({ state }: DirectorContext): void {
@@ -63,8 +65,8 @@ export class Scoring implements ScoreKeeper {
       change(book);
     }
     if (state.match.result === null) {
-      for (const listener of this.rules.listeners) {
-        listener.scoreTick(book);
+      for (const scorer of this.rules.tickScorers) {
+        scorer.scoreTick(book, state);
       }
     }
   }

@@ -129,8 +129,8 @@ describe('losing the last win objective (scenario)', () => {
       },
     ]);
     expect(state.match.result?.teams).toEqual({
-      light: { score: 1, structuresDestroyed: 0, capturesHeldTicks: 0 },
-      dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0 },
+      light: { score: 1, structuresDestroyed: 0, capturesHeldTicks: 0, checkpointsReached: 0 },
+      dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0, checkpointsReached: 0 },
     });
   });
 
@@ -146,8 +146,8 @@ describe('losing the last win objective (scenario)', () => {
 
     expect(state.match.result?.legends.map((row) => row.score)).toEqual([1]);
     expect(state.match.result?.teams).toEqual({
-      light: { score: 6, structuresDestroyed: 1, capturesHeldTicks: 0 },
-      dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0 },
+      light: { score: 6, structuresDestroyed: 1, capturesHeldTicks: 0, checkpointsReached: 0 },
+      dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0, checkpointsReached: 0 },
     });
   });
 

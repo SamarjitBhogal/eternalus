@@ -69,24 +69,9 @@ export class ScoreBook {
 
   /** Raises the team's counter and adds team-only points (no Legend's) to its total. */
   public awardTeam(team: PlayableTeam, { counter, by, points }: Award<TeamCounter>): void {
-    this.data.teams[team][counter] += by;
-    this.awardTeamPoints(team, points);
-  }
-
-  /**
-   * Adds team-only points (no Legend's) to the team's total with no team counter: a reached
-   * checkpoint's (DEC-214 (A1)).
-   */
-  public awardTeamPoints(team: PlayableTeam, points: number): void {
-    this.data.teams[team].score += points;
-  }
-
-  /**
-   * Changes how many capture points `team` owns by `by` (+1 when it takes one, -1 when it loses
-   * one): the count each tick adds to its `capturesHeldTicks` (DEC-214 (A2)).
-   */
-  public countOwnedPoints(team: PlayableTeam, by: number): void {
-    this.data.ownedPoints[team] += by;
+    const totals = this.data.teams[team];
+    totals[counter] += by;
+    totals.score += points;
   }
 
   /** Records that `legendId` hit `victimId` on `tick`: one entry per pair, at its latest tick (DEC-132). */

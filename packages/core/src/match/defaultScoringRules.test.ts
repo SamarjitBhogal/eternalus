@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { SCORING } from '../content/match/scoring';
 import { createDefaultScoringRules } from './defaultScoringRules';
-import { CaptureScoring } from './rules/CaptureScoring';
+import { CaptureHoldRule } from './rules/CaptureHoldRule';
+import { CheckpointRule } from './rules/CheckpointRule';
 import { LegendDeathRule } from './rules/LegendDeathRule';
 import { LegendHitRule } from './rules/LegendHitRule';
 import { MobDeathRule } from './rules/MobDeathRule';
@@ -25,9 +26,14 @@ describe('createDefaultScoringRules', () => {
     expect(rules.deaths.mob).toBeInstanceOf(MobDeathRule);
   });
 
-  it('listens for fallen structures, then for capture points', () => {
+  it('listens for fallen structures, then for reached checkpoints', () => {
     expect(rules.listeners).toHaveLength(2);
     expect(rules.listeners[0]).toBeInstanceOf(StructureDestroyedRule);
-    expect(rules.listeners[1]).toBeInstanceOf(CaptureScoring);
+    expect(rules.listeners[1]).toBeInstanceOf(CheckpointRule);
+  });
+
+  it('scores held capture points each tick', () => {
+    expect(rules.tickScorers).toHaveLength(1);
+    expect(rules.tickScorers[0]).toBeInstanceOf(CaptureHoldRule);
   });
 });

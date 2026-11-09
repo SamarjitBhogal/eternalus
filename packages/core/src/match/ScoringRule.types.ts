@@ -1,5 +1,6 @@
 import type { EntityFamily } from '../entities/Entity.types';
 import type { EntityId } from '../state/EntityStore.types';
+import type { GameEvents } from '../state/GameEvents';
 import type { GameState } from '../state/GameState';
 import type { ScoreBook } from '../state/ScoreBook';
 import type { Team } from '../teams/teams.types';
@@ -50,30 +51,39 @@ export interface DeathRule {
 }
 
 /**
- * A scoring rule for events other than hits and deaths (12 §5): it subscribes to its own events,
- * buffers what they earn through `Scoring`'s `defer`, and can score once per fold.
+ * A scoring rule for events other than hits and deaths (12 §5, DEC-223 (1)): it subscribes to its
+ * own events and buffers what they earn through `Scoring`'s `defer`. It gets the event bus only,
+ * so it writes the `ScoreBook` only through `defer`, at the fold (DEC-211).
  */
 export interface ScoringListener {
   /**
-   * Subscribes to `state`'s events. A change given to `defer` is applied at the next fold; once
-   * the match has a result, `defer` drops it. `Scoring`'s constructor calls it once.
+   * Subscribes to `events`. A change given to `defer` is applied at the next fold; once the match
+   * has a result, `defer` drops it. `Scoring`'s constructor calls it once.
    */
-  listen(state: GameState, defer: (change: PendingChange) => void): void;
+  listen(events: GameEvents, defer: (change: PendingChange) => void): void;
+}
+
+/**
+ * A scoring rule for what the tick itself earns, such as held time (12 §5, DEC-223 (1)).
+ */
+export interface TickScorer {
   /**
-   * Writes what the tick itself earns (held time). `Scoring` calls it once per fold, after the
-   * buffered changes, while the match has no result.
+   * Writes what this tick earns to `book`, reading `state` as it stands at the fold. `Scoring`
+   * calls it once per fold, after the buffered changes, while the match has no result.
    */
-  scoreTick(book: ScoreBook): void;
+  scoreTick(book: ScoreBook, state: GameState): void;
 }
 
 /**
  * The rules `Scoring` applies (12 §5): one registry for hits and one for deaths, by the target's
- * or victim's family (a family with no entry scores nothing, DEC-211 (3)), and the listeners.
- * `defaultScoringRules.ts` builds them.
+ * or victim's family (a family with no entry scores nothing, DEC-211 (3)), the listeners and the
+ * tick scorers. `defaultScoringRules.ts` builds them.
  */
 export type ScoringRules = {
   readonly hits: Readonly<Partial<Record<EntityFamily, HitRule>>>;
   readonly deaths: Readonly<Partial<Record<EntityFamily, DeathRule>>>;
-  /** Folded in list order, after the buffered changes. */
+  /** Subscribed in list order when `Scoring` is built. */
   readonly listeners: readonly ScoringListener[];
+  /** Folded in list order, after the buffered changes, while the match has no result. */
+  readonly tickScorers: readonly TickScorer[];
 };

@@ -65,8 +65,8 @@ describe('applyCommand', () => {
       configHash: 0,
       legends: [],
       teams: {
-        light: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0 },
-        dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0 },
+        light: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0, checkpointsReached: 0 },
+        dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0, checkpointsReached: 0 },
       },
       finalHash: 0,
     });

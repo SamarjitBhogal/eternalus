@@ -181,8 +181,8 @@ describe('Scoring', () => {
 
       expect(rowOf(killer)).toMatchObject({ kills: 1, score: 15 });
       expect(state.match.scoring.teams).toEqual({
-        light: { score: 15, structuresDestroyed: 0, capturesHeldTicks: 0 },
-        dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0 },
+        light: { score: 15, structuresDestroyed: 0, capturesHeldTicks: 0, checkpointsReached: 0 },
+        dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0, checkpointsReached: 0 },
       });
     });
 
@@ -473,11 +473,13 @@ describe('Scoring', () => {
           score: 5,
           structuresDestroyed: 1,
           capturesHeldTicks: 0,
+          checkpointsReached: 0,
         });
         expect(state.match.scoring.teams[team]).toEqual({
           score: 0,
           structuresDestroyed: 0,
           capturesHeldTicks: 0,
+          checkpointsReached: 0,
         });
         expect(state.match.scoring.legends).toEqual([
           { ...EMPTY_ROW, entityId: light, team: 'light' },
@@ -493,8 +495,8 @@ describe('Scoring', () => {
       endTick();
 
       expect(state.match.scoring.teams).toEqual({
-        light: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0 },
-        dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0 },
+        light: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0, checkpointsReached: 0 },
+        dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0, checkpointsReached: 0 },
       });
     });
 
@@ -543,8 +545,8 @@ describe('Scoring', () => {
         .filter((row) => row.team === team)
         .reduce((sum, row) => sum + row.score, 0);
     expect(state.match.scoring.teams).toEqual({
-      light: { score: 34, structuresDestroyed: 0, capturesHeldTicks: 0 },
-      dark: { score: 4, structuresDestroyed: 0, capturesHeldTicks: 0 },
+      light: { score: 34, structuresDestroyed: 0, capturesHeldTicks: 0, checkpointsReached: 0 },
+      dark: { score: 4, structuresDestroyed: 0, capturesHeldTicks: 0, checkpointsReached: 0 },
     });
     expect(state.match.scoring.teams.light.score).toBe(sumOf('light'));
     expect(state.match.scoring.teams.dark.score).toBe(sumOf('dark'));
@@ -563,6 +565,7 @@ describe('Scoring', () => {
       score: 25,
       structuresDestroyed: 2,
       capturesHeldTicks: 0,
+      checkpointsReached: 0,
     });
   });
 
@@ -597,8 +600,8 @@ describe('Scoring', () => {
       configHash: 0,
       legends: [],
       teams: {
-        light: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0 },
-        dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0 },
+        light: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0, checkpointsReached: 0 },
+        dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0, checkpointsReached: 0 },
       },
       finalHash: 0,
     });
@@ -614,6 +617,7 @@ describe('Scoring', () => {
       score: 0,
       structuresDestroyed: 0,
       capturesHeldTicks: 0,
+      checkpointsReached: 0,
     });
   });
 });

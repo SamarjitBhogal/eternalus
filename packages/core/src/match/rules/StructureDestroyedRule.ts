@@ -1,5 +1,5 @@
+import type { GameEvents } from '../../state/GameEvents';
 import type { GameEventMap } from '../../state/GameEvents.types';
-import type { GameState } from '../../state/GameState';
 import { isPlayableTeam, opponentOf } from '../../teams/playableTeams';
 import type { PendingChange, ScoringListener } from '../ScoringRule.types';
 
@@ -13,15 +13,10 @@ export class StructureDestroyedRule implements ScoringListener {
   public constructor(private readonly points: number) {}
 
   /** Subscribes to `structure-destroyed`. */
-  public listen(state: GameState, defer: (change: PendingChange) => void): void {
-    state.events.on('structure-destroyed', (payload) => {
+  public listen(events: GameEvents, defer: (change: PendingChange) => void): void {
+    events.on('structure-destroyed', (payload) => {
       this.onStructureDestroyed(payload, defer);
     });
-  }
-
-  /** Nothing: a fallen structure scores at its event only. */
-  public scoreTick(): void {
-    // A fallen structure scores at its event only.
   }
 
   /** Buffers the opposing team's points for a fallen structure of a playable team (DEC-212). */

@@ -148,8 +148,8 @@ describe('Simulation: scoring', () => {
     expect(dummies).toEqual([]);
     expect(foldedState().match.scoring.legends[0]).toMatchObject({ minionKills: 1, score: 1 });
     expect(foldedState().match.scoring.teams).toEqual({
-      light: { score: 1, structuresDestroyed: 0, capturesHeldTicks: 0 },
-      dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0 },
+      light: { score: 1, structuresDestroyed: 0, capturesHeldTicks: 0, checkpointsReached: 0 },
+      dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0, checkpointsReached: 0 },
     });
   });
 
@@ -231,8 +231,13 @@ describe('Simulation: capture scoring (DEC-214)', () => {
       score: 3 * 3,
       structuresDestroyed: 0,
       capturesHeldTicks: CAPTURE_TICKS - (capturedOn[0] ?? CAPTURE_TICKS),
+      checkpointsReached: 3,
     });
-    expect(scoring?.ownedPoints).toEqual({ light: 0, dark: 1 });
+    const owners = sim
+      .snapshot()
+      .entities.flatMap(({ capture }) => (capture === null ? [] : [capture.owner]));
+    expect(owners.filter((owner) => owner === 'dark')).toHaveLength(1);
+    expect(owners).not.toContain('light');
   });
 
   it('is deterministic with a capture scored: a replay reproduces every checkpoint hash', () => {

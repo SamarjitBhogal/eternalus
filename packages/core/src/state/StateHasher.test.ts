@@ -259,9 +259,13 @@ describe('StateHasher', () => {
       },
     ],
     [
-      'the scoring (an owned capture point)',
+      'the scoring (a reached checkpoint)',
       (state) => {
-        state.match.scoreBook.countOwnedPoints('light', 1);
+        state.match.scoreBook.awardTeam('light', {
+          counter: 'checkpointsReached',
+          by: 1,
+          points: 0,
+        });
       },
     ],
     [

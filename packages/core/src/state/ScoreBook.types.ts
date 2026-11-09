@@ -15,7 +15,6 @@ export type MutableScoringState = {
   readonly legends: MutableLegendStats[];
   readonly teams: Record<PlayableTeam, MutableTeamStats>;
   recentHits: MutableRecentHit[];
-  readonly ownedPoints: Record<PlayableTeam, number>;
 };
 
 /** Who a new row is for: the fields a row keeps for life (its counters start at 0). */
@@ -37,8 +36,8 @@ export type TeamCounter = Exclude<keyof TeamStats, 'score'>;
 export type Award<Counter extends string> = {
   readonly counter: Counter;
   /**
-   * How much the counter goes up: 1 for a kill, death or assist; the damage for `structureDamage`;
-   * the points owned for `capturesHeldTicks`.
+   * How much the counter goes up: 1 for a kill, death, assist or checkpoint; the damage for
+   * `structureDamage`; the capture points owned for `capturesHeldTicks`.
    */
   readonly by: number;
   /** The points it is worth; 0 for a counter with no points. */
