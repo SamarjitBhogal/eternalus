@@ -72,13 +72,18 @@ Reply inline (`Decision: …`).
       `eternalus-agent-work/playtest-2026-11-04/critic-chevron-r3.md` and
       `eternalus-agent-work/playtest-2026-11-04/session-2383bba1-reports.md`. Approve all,
       approve some, or say no.
-- [ ] **Generated forts overlap when a lane has two or more towers of one kind (map generator).**
+- [x] **Generated forts overlap when a lane has two or more towers of one kind (map generator).**
       Found on `feat/out-of-combat-heal` (2026-11-05). With `spawnTowersPerLane` or
       `buffTowersPerLane` at 2 or more, the generator puts towers of one kind 28 to 38 m apart,
       but a fort box is 32 m wide. The forts and their heal zones then overlap, and DEC-215 (1)
       says an overlap is a bug. The default (one tower of each kind per lane) has no overlap, and
       the heal-zone overlap test covers only the default. Fix the generator now (towers of one
       kind at least one fort box apart), or with the map work? Decision: …
+  - **Answered 2026-11-09 by DEC-227** (question dialog, "Tower-ruins map PR"): fixed on
+    `feat/tower-ruins-and-routes`. `laneStructures.ts` keeps towers of one kind at least a fort
+    box's diagonal apart along the lane (a band too narrow widens round its middle), so two forts
+    never overlap on any lane heading; the fort side is `BUILDING_GEOMETRY.fort.laneTowerSize`.
+    `MapGenerator.test.ts` checks every lane tower fort pair at 2 and 3 towers per kind.
 
 - [x] **Minion M4 done-when, read for objectives (2026-11-02, `chore/minion-full-march-test`) — sign-off.**
       The plan's M4 check "hordes reach the enemy end with 0 stuck units for `numLanes` 3 and 5"
