@@ -87,6 +87,7 @@ export type StructureStatus = {
 
 /** One capture objective (07 §7 `Capturable`): the first definition of 13 §5's `CapturePointSnapshot`. */
 export type CapturePointStatus = {
+  /** The map feature's id (`MapFeature.id`); the zone's snapshot names it as `mapFeatureId`. */
   readonly pointId: string;
   readonly kind: MapFeatureKind;
   readonly laneIndex: number | null;

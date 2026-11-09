@@ -3,6 +3,8 @@
  * `Simulation` builds from the map (architecture 07 §1, §7). The snapshot carries it as
  * `EntitySnapshot.mapFeatureId`, so the client binds a HUD tile or capture point to its entity by
  * identity, never by position (DEC-221 (3), DEC-231). An entity built from no feature has none.
+ * One feature may back several entities (the Cathedral's capture zone and its planned structure,
+ * DEC-233), so a consumer selects by feature id and by the group it reads.
  *
  * @remarks Set once at spawn and never changed. It comes from the map, which a replay carries, so
  * `StateHasher` has nothing to add for it and recorded checkpoint hashes stay valid.

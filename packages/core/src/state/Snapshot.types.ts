@@ -17,7 +17,9 @@ export type EntitySnapshot = {
   /**
    * An entity built from a map feature (a structure or a capture zone): the feature's id
    * (`MapFeatureLink`), so a HUD tile or capture point binds to its entity by identity, never by
-   * position. Absent for an entity built from no feature.
+   * position. Absent for an entity built from no feature. One feature may back several entities
+   * (the Cathedral's zone and its planned structure, DEC-233), so a consumer selects by this id
+   * and by the group it reads.
    */
   readonly mapFeatureId?: string;
   readonly id: EntityId;
