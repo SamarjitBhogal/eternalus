@@ -183,6 +183,45 @@ describe('PathingSystem', () => {
     expect(minion.getComponent(Movement).heading).toEqual({ x: 0, y: 0 });
   });
 
+  it('holds a chaser that stands inside its target’s outline, where combat counts it in reach', () => {
+    const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
+    const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP), {
+      space,
+    });
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    // 11 m inside the west wall (x 84) of a palace-sized outline: far past the 0.4 m radius +
+    // 1.5 m reach from its edge, but inside it, so in reach (05 §10).
+    const minion = factory.create('light-mob', 'light-minion', {
+      team: 'light',
+      position: { x: 95, y: 22 },
+    });
+    const house = new House('house', 'map-object-house');
+    house.spawn({ at: { x: 102, y: 20 }, polygon: box(84, 4, 120, 36) });
+    state.entities.add(minion);
+    state.entities.add(house);
+    state.hordes.add({
+      id: 'horde-1',
+      team: 'light',
+      weightClass: 'light',
+      lane: 'lane-0',
+      formationId: 'ranks',
+      memberIds: [minion.id],
+      progress: 40,
+    });
+    state.entities.setAttackTarget(minion.id, house.id);
+    space.begin(1);
+    space.add(minion.id, 95, 22);
+    space.commit();
+
+    new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius).update({
+      state,
+      logger,
+    });
+
+    expect(state.entities.isInReach(minion.id, house.id)).toBe(true);
+    expect(minion.getComponent(Movement).heading).toEqual({ x: 0, y: 0 });
+  });
+
   it.each([
     ['standing', false],
     ['whose tower fell before the first chase', true],

@@ -9,7 +9,7 @@ import { Movement } from '../components/Movement';
 import { Transform } from '../components/Transform';
 import { TeamMembership } from '../components/TeamMembership';
 import type { Team } from '../teams/teams.types';
-import { distance, isPointInPolygon, nearestPointOnPolygons } from '../utils/geometry';
+import { distance, isPointInAnyPolygon, nearestPointOnPolygons } from '../utils/geometry';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
 import { length, sub } from '../utils/vec2';
 import type { MutableVec2 } from '../utils/vec2.types';
@@ -150,10 +150,7 @@ export class EntityStore {
       const gap = length(sub(this.aim, from.position));
       return gap - from.radius - to.radius <= combat.attack.reach;
     }
-    return (
-      distance(from.position, this.aim) <= from.radius + combat.attack.reach ||
-      aimed.some((shape) => isPointInPolygon(from.position, shape))
-    );
+    return distance(from.position, this.aim) <= from.radius + combat.attack.reach;
   }
 
   /**
@@ -172,7 +169,8 @@ export class EntityStore {
   /**
    * Writes into `out` the point of `targetId` that attack reach from `from` is measured to, which a
    * chase heads for (`StuckSystem`, `PathingSystem`): the point of its outline (`outlineOf`)
-   * nearest `from`, else its centre (reach then also spans its collider radius). A unit that
+   * nearest `from`, or `from` itself when it stands inside the outline (in reach, so a chase
+   * holds there), else its centre (reach then also spans its collider radius). A unit that
    * damages a building can face this point (DEC-216 (11)). Returns what it aimed at: the outline
    * (so a caller needs no second `outlineOf`), `'centre'`, or `null`, leaving `out` as it was,
    * when the target is unknown, has no position, or its outline has no corners.
@@ -184,9 +182,14 @@ export class EntityStore {
   ): readonly Polygon[] | 'centre' | null {
     const outline = this.outlineOf(targetId);
     if (outline !== undefined) {
-      return nearestPointOnPolygons(from, outline, out) === Number.POSITIVE_INFINITY
-        ? null
-        : outline;
+      if (nearestPointOnPolygons(from, outline, out) === Number.POSITIVE_INFINITY) {
+        return null;
+      }
+      if (isPointInAnyPolygon(from, outline)) {
+        out.x = from.x;
+        out.y = from.y;
+      }
+      return outline;
     }
     const at = this.entities.get(targetId)?.findComponent(Transform)?.position;
     if (at === undefined) {
