@@ -6,7 +6,6 @@ import type { Entity } from '../entities/Entity';
 import type { EntityFactory } from '../entities/EntityFactory';
 import { Structure } from '../entities/structures/Structure';
 import { Unit } from '../entities/Unit';
-import { Zone } from '../entities/Zone';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { HordeRequest } from '../state/HordeRequest.types';
@@ -67,7 +66,7 @@ export class SpawnSystem implements System {
     // The opening source sends the opening hordes even when it has no recurring waves.
     const spawners: Structure[] = [];
     state.entities.forEach((entity) => {
-      if (entity instanceof Structure || entity instanceof Zone) {
+      if (GuardRoster.isHome(entity)) {
         this.homes.add(entity.definitionId);
       }
       const team = state.entities.teamOf(entity.id);

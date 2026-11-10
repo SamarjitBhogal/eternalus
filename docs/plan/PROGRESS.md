@@ -5997,5 +5997,14 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   After the critic fixes: the first `npm run check` failed at knip (the two new union types were
   exported but unused; now file-local); the next `npm run check`: exit 0, Prettier passed, core
   `Tests 1310 passed (1310)`, client `Tests 1800 passed (1800)`, docs check passed.
-- Next step: ponytail review and cuts, re-check, then the PR; PR A2 adds the mini-boss content on
+- Ponytail (`/ponytail-review` on the branch diff): verdict Ship, no bugs or risks; ponytail: 2
+  nice-to-haves applied, net +5 lines (not net 0: the new `GuardRoster.isHome` with its TSDoc and
+  import outweighs the two copies it replaces). (1) The `GuardRoster` class TSDoc is rewrapped
+  under 100 columns. (2) `GuardRoster.isHome(entity)` is the one structure-or-zone test, used by
+  `layOut` and by `SpawnSystem`'s constructor. Checks: the first `npm run check` timed out three
+  slow tests (two in `Simulation.flowFields.test.ts` at 120 s and 60 s, one in `replay.test.ts` at
+  20 s), with no wrong results; the two files alone passed (11 tests, 105 s). The next
+  `npm run check`: exit 0, Prettier passed, core `Tests 1310 passed (1310)`, client
+  `Tests 1800 passed (1800)`, docs check passed.
+- Next step: open the PR (gate done: critic, ponytail, re-check); PR A2 adds the mini-boss content on
   its own branch, with the `Simulation`-level zone guard test as its acceptance test.
