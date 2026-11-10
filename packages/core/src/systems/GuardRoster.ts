@@ -22,9 +22,8 @@ import { countdownTicks } from '../config/countdownTicks';
  * empty), and an empty post whose time has come is filled while its home stands and the unit cap
  * has room. A row with `shrink` keeps `count` fewer posts per lost structure of the kind it names
  * (DISC-21: the Stronghold's light guards per lost SpawnerTower); a guard on a dropped post stays
- * until it dies. A `group` plan (a camp) waits for
- * its last guard to die, emits `camp-cleared` and refills every post together (18 §7.1). Plans
- * are looked up by the structure's definition id.
+ * until it dies. A `group` plan (a camp) waits for its last guard to die, emits `camp-cleared` and
+ * refills every post together (18 §7.1). Plans are looked up by the home's definition id.
  */
 export class GuardRoster {
   /**
