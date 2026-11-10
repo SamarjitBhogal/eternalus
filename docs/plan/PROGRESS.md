@@ -5989,3 +5989,17 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Checks run: `npm run check` on the merge → exit 0: core "Tests 1302 passed (1302)"; client
   "Tests 1800 passed (1800)"; "✓ built in 477ms"; "Documentation check passed."
 - Next step: push; the product owner approves; merge when CI is green.
+
+### 2026-11-09 — Phase 3 / bug tracker — docs/bug-tracker — SamarjitBhogal + Claude Code
+
+- What was done: added `docs/reference/bugs.md`, the bug overview linked to the Jira epic
+  SCRUM-433 (Epic 11 – Bugs). Logged BUG-1 to BUG-7 as Tasks SCRUM-434 to SCRUM-440, each
+  checked against the spec and decisions first: unit health bars missing; interior walls on
+  wall-segment health; minions not attacking props (a design change request, DEC-193); developer
+  menu missing (FR-096 to FR-099); bound key actions with no handler; no Legend respawn
+  (FR-051); structure health bars (won't fix, owner: structures have no health of their own).
+- Checks run: `npm run check` on `phase/3-sprint-3-work` at `8d2404c` → exit 1, local setup
+  only: `Cannot find package 'happy-dom'` in 5 client test files (in `package-lock.json`,
+  missing from `node_modules`); otherwise core "Tests 1302 passed (1302)", client
+  "Tests 1785 passed (1785)". `npm run docs:check` on this branch → "Documentation check passed."
+- Next step: switch to Node 24 (`npm ci` refuses Node 22.19 / npm 10.9: "Required: {\"node\":\">=24.21.0 <25\",\"npm\":\">=11.0.0\"}"), run `npm ci` and `npm run check`; triage BUG-3 with the product owner.

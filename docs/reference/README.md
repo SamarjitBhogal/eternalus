@@ -81,6 +81,7 @@ The requirements doc's transcription lives next door at `../requirements/source/
 - [Open questions](game-design/12-open-questions.md)
 - [Suggestions](suggestions/README.md)
 - [Glossary](glossary.md)
+- [Bug tracker](bugs.md)
 - [MVP requirements catalogue](../requirements/06-mvp-requirements.md)
 - [Architecture index](../architecture/README.md)
 - [Plan](../plan/README.md)
