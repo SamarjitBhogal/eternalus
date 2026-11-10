@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-05
+last-reviewed: 2026-11-09
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -225,7 +225,10 @@ The values live in `content/structures/spawnWaves.ts`; a wave there carries `fir
 update.
 
 Guards use `GuardController` with `leashRadius` ("don't leave the tower's perimeter") and respawn
-after `respawnTicks` (TUNE: 2 minutes = 3600 ticks). Horde sizes are
+after `respawnTicks` (TUNE: 2 minutes = 3600 ticks). A zone (§7) can be a guard home too: its
+plan is keyed by the zone's definition id, posts and leash are measured from its anchor, and it
+always stands ([18](18-minion-system.md) §7.1). A plan may activate a set time after the countdown
+ends and may never respawn (a once-per-match guard). Horde sizes are
 `GameConfig.match.hordeSizes` (FR-037) and cadences are spawner data (DISC-10); the owner may move
 either ([18-minion-system](18-minion-system.md) §10), and the `Stronghold` and `BuffTower` rows
 above follow that answer.

@@ -67,8 +67,9 @@ type GuardTableEntry = {
 };
 
 /**
- * The guards a structure keeps (architecture 07 §6, 18 §7.1): tower guards, or a camp's group.
- * Posts are filled while the structure stands.
+ * The guards a structure or zone keeps (architecture 07 §6, 18 §7.1): tower guards, a camp's
+ * group, or a zone's guards. Posts are filled while the home stands (a zone always stands).
+ * Distances are measured from the home's edge; a zone's edge is its anchor (radius 0).
  */
 export type GuardPlanDefinition = {
   readonly table: readonly GuardTableEntry[];
@@ -82,12 +83,16 @@ export type GuardPlanDefinition = {
    * between two decisions plus the farthest it stands from a target in reach.
    */
   readonly leashTolerance: number;
-  /** When the posts are first filled: the match's first tick, or when the countdown ends (camps). */
-  readonly activation: 'match-start' | 'countdown-end';
+  /**
+   * When the posts are first filled: the match's first tick, when the countdown ends (camps), or
+   * `afterCountdownSeconds` after the countdown ends.
+   */
+  readonly activation: 'match-start' | 'countdown-end' | { readonly afterCountdownSeconds: number };
   /**
    * `each`: a guard comes back `respawnSeconds` after it dies (tower guards). `group`: the posts
    * wait until every guard is dead, then all come back `respawnSeconds` later and the home is
-   * announced cleared (`camp-cleared`, camps).
+   * announced cleared (`camp-cleared`, camps). `never`: a dead guard's post stays empty for the
+   * rest of the match (`respawnSeconds` is unused).
    */
-  readonly respawn: 'each' | 'group';
+  readonly respawn: 'each' | 'group' | 'never';
 };

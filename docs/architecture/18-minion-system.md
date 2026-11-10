@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-11-04
+last-reviewed: 2026-11-09
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
@@ -120,7 +120,9 @@ structure per camp feature, the camp groups in `content/structures/guardPlans.ts
 activated when the countdown ends), camp mobs held by `GuardController`, and `camp-cleared`
 emitted by `SpawnSystem`'s `GuardRoster`; `GuardWithinLeashInvariant` covers camp mobs, since it
 checks every post. Checkpoint defenders wait for `CaptureSystem` (PR #64) to reach the phase
-branch. The pull requests and interim stand-ins are in the [minion system
+branch. Pull request A1 (`feat/zone-guard-homes`) lets a zone be a guard home (§7.1) and adds the
+`never` respawn and the `afterCountdownSeconds` activation; no zone has a guard plan in content
+yet (the capture point mini-boss is pull request A2). The pull requests and interim stand-ins are in the [minion system
 plan](../plan/minion-system-plan.md) §2–§3.
 
 ## 1. Decisions
@@ -524,11 +526,19 @@ without a new controller. Only the home changes, and it is data on the spawning 
   for the team that owns the capture point (owner, 2026-10-27). Their leash radius is open (§10,
   item 4); `Recommendation:` the leash is the zone's radius, so a capture cannot be dragged away
   from its defenders.
+- **Zone homes.** A guard plan keyed by a zone's definition id makes the zone a home, like a
+  structure's. A zone has no collider edge, so its home radius is 0: posts and the leash are
+  measured from its anchor, and the plan's `postGap` and `leashRadius` must keep posts on the
+  zone's floor. A zone has no `Health`, so it always stands. `Simulation` spawns zones right after
+  structures, before the pipeline, so `SpawnSystem` finds them and validates their plans.
+- **Activation and respawn.** A plan activates at match start, when the countdown ends, or
+  `afterCountdownSeconds` after it ends; its guards respawn `each` on their own, as a `group`, or
+  `never` (a guard that dies once leaves its post empty for the match). The values are content.
 - Neither kind joins a horde (MS-25 covers lane minions only). A mob on a team counts against that
   team's unit cap (§3.4).
-- `GuardWithinLeashInvariant` (15 §3) is defined for tower guards, measured from the structure's
-  `GuardPlan.leashRadius`. Covering camp mobs and checkpoint defenders changes that definition and
-  its tests (M6); defenders stay uncovered until their leash radius is decided (§10, item 4).
+- `GuardWithinLeashInvariant` (15 §3) checks every post: tower guards, camp mobs and zone guards,
+  each measured from its home's edge (a zone's anchor). Checkpoint defenders are covered once they
+  have posts; their leash radius is still open (§10, item 4).
 
 ## 8. Bot Legends: lane assignment (MS-20)
 

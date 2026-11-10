@@ -5953,3 +5953,30 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Checks run: Prettier on `PROGRESS.md` and `INBOX.md` passed; `npm run docs:check` passed; the
   pre-commit `check:quick` passed. CI runs the full `npm run check` on the pushed head.
 - Next step: Sam's script merges #88, pushes this branch, waits for CI, then merges #87.
+
+### 2026-11-09 — Phase 3 / sprint 3 work: PR A1, zones as guard homes — feat/zone-guard-homes — Aryan Walanj + Claude Code
+
+- Owner decisions for the capture point mini-boss (Aryan Walanj, assigned owner, 2026-11-09):
+  1. It never respawns: once per match.
+  2. It spawns 120 s after the countdown ends (`TUNE` placeholder, to change later).
+  3. Capture keeps today's behaviour: the boss counts as neutral presence and drains a held
+     point. No `CaptureSystem` change.
+- What was done (PR A1 only; the boss content is PR A2 on its own branch): `GuardRoster` takes a
+  `Structure` or a `Zone` as a home, with home radius 0 for a zone, and a home without `Health`
+  counts as standing. `SpawnSystem` counts zones among its homes, so `validate()` checks zone
+  plans, and rejects an activation a negative or non-finite time after the countdown.
+  `Simulation` spawns zones right after the structures, before the pipeline is built. Guard plans
+  gain `respawn: 'never'` and `activation: { afterCountdownSeconds }`. `GuardWithinLeashInvariant`
+  TSDoc, docs 18 §7.1, 07 §6 and the 15 §3 invariant row updated.
+- Tests: a zone home's post lands on its `ZoneArea` and off a blocking keep, home radius 0, and
+  is filled; a `never` post stays empty and emits no `camp-cleared`; the delayed activation fills
+  on tick countdown end + 120 s and not one tick before; the same zone run twice gives the same
+  `StateHasher` hash; `SpawnSystem` rejects a zone plan naming an unknown mob and a negative
+  activation delay.
+- Checks run: the first `npm run check` failed one test, `Simulation.bots.test.ts` (the director
+  and systems must subscribe before the first `entity-spawned`; zones now spawned earlier emitted
+  theirs too soon). Fix: zones still spawn before the pipeline, but their `entity-spawned` events
+  are emitted after the roster, in the old order. Second `npm run check`: exit 0, Prettier passed,
+  core `Tests 1308 passed (1308)`, client `Tests 1800 passed (1800)`, docs check passed.
+- Next step: pre-PR gate (critic, ponytail), then PR A2 adds the mini-boss content on its own
+  branch.
