@@ -16,6 +16,32 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Capture point mini-boss: two interim stand-ins (Aryan Walanj, assigned owner, 2026-11-09;
+      `feat/zone-guard-homes` critic finding 1) — due before the zone-lock PR.** (a) The boss
+      spawns 120 s after the countdown ends, a `TUNE` placeholder; reference 04 and 07 §7 put it
+      at the quarter mark on the match timeline. (b) While it lives the boss counts as neutral
+      presence and drains a held point (no `CaptureSystem` change); reference 04 and 07 §7 say
+      its zone cannot be captured (`lockedBy`, `LockedZoneOwnerInvariant` in 15 §3, phase-3
+      sprint 3.6). Neither is a design change, so reference 04 is not amended and no DEC row is
+      added. The zone-lock PR replaces both, or the owner records a decision.
+
+- [ ] **Timed guard spawns beside `MatchTimeline` (`feat/zone-guard-homes` critic finding 2,
+      2026-11-09) — accepted as interim.** Guard plans now activate `delaySeconds` after the
+      countdown ends (`GuardPlanDefinition.activation`, `content/structures/structures.types.ts`), and the
+      mini-boss (PR A2) uses it. The design schedules mini-boss spawns from `MatchTimeline` /
+      `MatchDirector` (07 §7, 12; phase-3 sprints 3.5–3.6), so timed match spawns now have two
+      paths and no doc says which owns boss timing. Due before the zone-lock PR: pick one owner
+      and update 07 §7 and 12 so only one mechanism is named.
+
+- [ ] **One guard plan per home, mates by `homeId` (`feat/zone-guard-homes` critic finding 3,
+      2026-11-09) — accepted as interim.** `GuardRoster` looks plans up by the home's definition
+      id, so a home has one plan, and `GuardController` (`ai/GuardController.ts`, `isMate`)
+      treats every guard on a home as a mate. 18 §7.1 makes the capture point the home of the
+      team checkpoint defenders too: a neutral mini-boss and a team's defenders on one zone
+      cannot both be plans, and on one `homeId` they would count as mates across teams. 18 §7.1
+      now records the limit. Due before checkpoint defenders get posts: key mates by plan or by
+      team as well as home, and allow more than one plan per home if both must coexist.
+
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on
       every map feature, so `map/strongholdRing.ts` checks at run time that a Stronghold has it

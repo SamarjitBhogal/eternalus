@@ -316,11 +316,10 @@ describe('GuardRoster', () => {
     const ZONE_PLAN: GuardPlanDefinition = {
       table: [{ mobId: 'heavy-camp-mob', count: 1 }],
       leashRadius: 8,
-      respawnSeconds: 5,
       postGap: 0,
       leashTolerance: 5,
-      activation: 'match-start',
-      respawn: 'each',
+      activation: { at: 'match-start' },
+      respawn: { kind: 'each', seconds: 5 },
     };
 
     /**
@@ -397,7 +396,7 @@ describe('GuardRoster', () => {
     });
 
     it('never refills a `never` post, and announces no clear', () => {
-      const { step, posts, kill, cleared } = zoned({ respawn: 'never' });
+      const { step, posts, kill, cleared } = zoned({ respawn: { kind: 'never' } });
       step();
       kill();
 
@@ -407,8 +406,8 @@ describe('GuardRoster', () => {
       expect(cleared).toEqual([]);
     });
 
-    it('fills its posts `afterCountdownSeconds` after the countdown ends', () => {
-      const { step, posts } = zoned({ activation: { afterCountdownSeconds: 120 } });
+    it('fills its posts `delaySeconds` after the countdown ends', () => {
+      const { step, posts } = zoned({ activation: { at: 'countdown-end', delaySeconds: 120 } });
 
       // The countdown ends at tick 60; the posts fill on tick 60 + 120 s.
       step(60 + 120 * TICK_RATE);
@@ -419,7 +418,9 @@ describe('GuardRoster', () => {
 
     it('runs the same way twice: the same state hash', () => {
       const hashes = [1, 2].map(() => {
-        const { state, step, kill } = zoned({ activation: { afterCountdownSeconds: 1 } });
+        const { state, step, kill } = zoned({
+          activation: { at: 'countdown-end', delaySeconds: 1 },
+        });
         step(200);
         kill();
         step(10 * TICK_RATE);

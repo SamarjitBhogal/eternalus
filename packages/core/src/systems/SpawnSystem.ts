@@ -98,8 +98,9 @@ export class SpawnSystem implements System {
   /**
    * Rejects a plan whose waves name an unknown mob or a mob of another weight class, start before
    * the countdown ends, or repeat more often than once a tick, or whose guard plans name an
-   * unknown mob or activate a negative or non-finite number of seconds after the countdown. Only the waves and guards this map's spawners can have are checked, so a match
-   * without hordes needs no minions.
+   * unknown mob or activate a negative or non-finite number of seconds after the countdown. Only
+   * the waves and guards this map's spawners and homes can have are checked, so a match without
+   * hordes needs no minions.
    */
   private validate(): void {
     const { openingWave, definitions, guards } = this.plan;
@@ -108,14 +109,15 @@ export class SpawnSystem implements System {
       ...(kinds.has(openingWave.source) ? [['opening', openingWave] as const] : []),
       ...this.scheduled.map(({ spawner, wave }) => [spawner.kind, wave] as const),
     ];
-    // Only the plans of structures on this map, so a match without them needs no guard content.
+    // Only the plans of structures and zones on this map, so a match without them needs no guard
+    // content.
     const guardProblems = [...this.homes].flatMap((id) => {
       const plan = guards[id];
       if (plan === undefined) {
         return [];
       }
       const { activation } = plan;
-      const delay = typeof activation === 'object' ? activation.afterCountdownSeconds : 0;
+      const delay = activation.at === 'countdown-end' ? activation.delaySeconds : 0;
       return [
         ...plan.table.flatMap(({ mobId }) =>
           definitions.has(mobId) ? [] : [`${id} guard plan names unknown mob "${mobId}"`],

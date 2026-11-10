@@ -121,7 +121,7 @@ activated when the countdown ends), camp mobs held by `GuardController`, and `ca
 emitted by `SpawnSystem`'s `GuardRoster`; `GuardWithinLeashInvariant` covers camp mobs, since it
 checks every post. Checkpoint defenders wait for `CaptureSystem` (PR #64) to reach the phase
 branch. Pull request A1 (`feat/zone-guard-homes`) lets a zone be a guard home (§7.1) and adds the
-`never` respawn and the `afterCountdownSeconds` activation; no zone has a guard plan in content
+`never` respawn and an activation `delaySeconds` after the countdown; no zone has a guard plan in content
 yet (the capture point mini-boss is pull request A2). The pull requests and interim stand-ins are in the [minion system
 plan](../plan/minion-system-plan.md) §2–§3.
 
@@ -528,12 +528,20 @@ without a new controller. Only the home changes, and it is data on the spawning 
   from its defenders.
 - **Zone homes.** A guard plan keyed by a zone's definition id makes the zone a home, like a
   structure's. A zone has no collider edge, so its home radius is 0: posts and the leash are
-  measured from its anchor, and the plan's `postGap` and `leashRadius` must keep posts on the
-  zone's floor. A zone has no `Health`, so it always stands. `Simulation` spawns zones right after
-  structures, before the pipeline, so `SpawnSystem` finds them and validates their plans.
-- **Activation and respawn.** A plan activates at match start, when the countdown ends, or
-  `afterCountdownSeconds` after it ends; its guards respawn `each` on their own, as a `group`, or
-  `never` (a guard that dies once leaves its post empty for the match). The values are content.
+  measured from its anchor. A zone has no `Health`, so it always stands. Zones exist before the
+  systems are built, so `SpawnSystem` finds them and validates their plans.
+- **Posts on the floor (content rule).** A zone plan's `postGap` and `leashRadius` are chosen so
+  its posts stay on the zone's floor. The roster does not enforce it (a blocked post searches out
+  to the leash edge), so each zone plan's tests check that its posts are inside its `ZoneArea`.
+- **One plan per home.** A home has exactly one guard plan, looked up by its definition id, and
+  every guard on a home counts as a mate of the others (`GuardController`). Two groups on one
+  zone (a neutral mini-boss and a team's checkpoint defenders) therefore cannot both be plans of
+  that zone; how they coexist is open (`INBOX.md`) and is settled before checkpoint defenders get
+  posts.
+- **Activation and respawn.** A plan activates at match start, or `delaySeconds` after the
+  countdown ends (0 for camps); its guards respawn `each` on their own or as a `group` after their
+  respawn time, or `never` (a guard that dies once leaves its post empty for the match). The
+  values are content.
 - Neither kind joins a horde (MS-25 covers lane minions only). A mob on a team counts against that
   team's unit cap (§3.4).
 - `GuardWithinLeashInvariant` (15 §3) checks every post: tower guards, camp mobs and zone guards,

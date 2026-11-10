@@ -18,9 +18,9 @@ import { countdownTicks } from '../config/countdownTicks';
  * Runs every home's guard plan for `SpawnSystem` (architecture 18 §7, 07 §6). A home is a
  * structure or a zone; a zone's edge is its anchor (home radius 0) and, having no `Health`, it
  * always stands. It lays out one post per guard on a ring around the home (`state.guards`); each
- * tick a post whose guard died empties and waits `respawnSeconds` (a `never` plan's post stays
- * empty), and an empty post whose time has come is filled while its home stands and the unit cap
- * has room. A row with `shrink` keeps `count` fewer posts per lost structure of the kind it names
+ * tick a post whose guard died empties and waits its plan's respawn time (a `never` plan's post
+ * stays empty), and an empty post whose time has come is filled while its home stands and the unit
+ * cap has room. A row with `shrink` keeps `count` fewer posts per lost structure of the kind it names
  * (DISC-21: the Stronghold's light guards per lost SpawnerTower); a guard on a dropped post stays
  * until it dies. A `group` plan (a camp) waits for its last guard to die, emits `camp-cleared` and
  * refills every post together (18 §7.1). Plans are looked up by the home's definition id.
@@ -55,6 +55,11 @@ export class GuardRoster {
       }
       const firstTick = GuardRoster.firstTick(state, plan);
       const homeRadius = home instanceof Zone ? 0 : transform.radius;
+      // A `never` post is never refilled, so it has no respawn delay.
+      const respawnTicks =
+        plan.respawn.kind === 'never'
+          ? 0
+          : Math.round(plan.respawn.seconds * state.config.tickRate);
       const total = plan.table.reduce((sum, row) => sum + row.count, 0);
       const ring = homeRadius + plan.postGap;
       const edge = homeRadius + plan.leashRadius;
@@ -79,7 +84,7 @@ export class GuardRoster {
               homeRadius,
               leashRadius: plan.leashRadius,
               leashTolerance: plan.leashTolerance,
-              respawnTicks: Math.round(plan.respawnSeconds * state.config.tickRate),
+              respawnTicks,
             },
             firstTick,
           );
@@ -95,7 +100,7 @@ export class GuardRoster {
   public update(state: GameState): void {
     state.guards.forEach((slot, index) => {
       if (slot.guardId !== null && !state.entities.isAlive(slot.guardId)) {
-        const respawn = this.planOf(state, slot)?.respawn ?? 'each';
+        const respawn = this.planOf(state, slot)?.respawn.kind ?? 'each';
         const respawnAt = {
           each: state.tick + slot.respawnTicks,
           group: WAITING_FOR_GROUP,
@@ -158,16 +163,18 @@ export class GuardRoster {
 
   /** The tick `plan`'s posts are first filled (its `activation`). */
   private static firstTick(state: GameState, { activation }: GuardPlanDefinition): number {
-    if (activation === 'match-start') {
+    if (activation.at === 'match-start') {
       return 0;
     }
-    const countdownEnd = countdownTicks(state.config.match.countdownSeconds, state.config.tickRate);
-    return activation === 'countdown-end'
-      ? countdownEnd
-      : countdownEnd + Math.round(activation.afterCountdownSeconds * state.config.tickRate);
+    const { tickRate } = state.config;
+    const countdownEnd = countdownTicks(state.config.match.countdownSeconds, tickRate);
+    return countdownEnd + Math.round(activation.delaySeconds * tickRate);
   }
 
-  /** Whether home `homeId` is in the match and not dead; a home without `Health` (a zone) stands. */
+  /**
+   * Whether home `homeId` stands: it is in the match and not dead. A home without `Health` (a
+   * zone) always stands.
+   */
   private static isStanding(state: GameState, homeId: string): boolean {
     const home = state.entities.get(homeId);
     return home !== undefined && home.findComponent(Health)?.isDead !== true;

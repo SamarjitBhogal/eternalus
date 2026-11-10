@@ -73,26 +73,31 @@ type GuardTableEntry = {
  */
 export type GuardPlanDefinition = {
   readonly table: readonly GuardTableEntry[];
-  /** How far past the structure's edge a guard may chase ("don't leave the tower's perimeter"). */
+  /** How far past the home's edge a guard may chase ("don't leave the tower's perimeter"). */
   readonly leashRadius: number;
-  readonly respawnSeconds: number;
-  /** Posts stand on a ring this far outside the structure's edge. */
+  /** Posts stand on a ring this far outside the home's edge. */
   readonly postGap: number;
   /**
    * How far past its leash a guard may stand (`GuardWithinLeashInvariant`): the distance it covers
    * between two decisions plus the farthest it stands from a target in reach.
    */
   readonly leashTolerance: number;
-  /**
-   * When the posts are first filled: the match's first tick, when the countdown ends (camps), or
-   * `afterCountdownSeconds` after the countdown ends.
-   */
-  readonly activation: 'match-start' | 'countdown-end' | { readonly afterCountdownSeconds: number };
-  /**
-   * `each`: a guard comes back `respawnSeconds` after it dies (tower guards). `group`: the posts
-   * wait until every guard is dead, then all come back `respawnSeconds` later and the home is
-   * announced cleared (`camp-cleared`, camps). `never`: a dead guard's post stays empty for the
-   * rest of the match (`respawnSeconds` is unused).
-   */
-  readonly respawn: 'each' | 'group' | 'never';
+  readonly activation: GuardActivation;
+  readonly respawn: GuardRespawn;
 };
+
+/**
+ * When a guard plan's posts are first filled (architecture 18 §7.1): the match's first tick, or
+ * `delaySeconds` after the countdown ends (0 for camps).
+ */
+type GuardActivation =
+  { readonly at: 'match-start' } | { readonly at: 'countdown-end'; readonly delaySeconds: number };
+
+/**
+ * How a guard plan's posts refill (architecture 18 §7.1). `each`: a guard comes back `seconds`
+ * after it dies (tower guards). `group`: the posts wait until every guard is dead, then all come
+ * back `seconds` later and the home is announced cleared (`camp-cleared`, camps). `never`: a dead
+ * guard's post stays empty for the rest of the match.
+ */
+type GuardRespawn =
+  { readonly kind: 'each' | 'group'; readonly seconds: number } | { readonly kind: 'never' };

@@ -5958,25 +5958,44 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 
 - Owner decisions for the capture point mini-boss (Aryan Walanj, assigned owner, 2026-11-09):
   1. It never respawns: once per match.
-  2. It spawns 120 s after the countdown ends (`TUNE` placeholder, to change later).
-  3. Capture keeps today's behaviour: the boss counts as neutral presence and drains a held
-     point. No `CaptureSystem` change.
+  2. Interim: it spawns 120 s after the countdown ends, a `TUNE` placeholder until the quarter
+     mark and the match timeline (reference 04, 07 §7).
+  3. Interim: capture keeps today's behaviour, the boss counting as neutral presence and draining
+     a held point (no `CaptureSystem` change), until the zone-lock PR (`lockedBy`, 07 §7).
+     Decisions 2 and 3 are interim stand-ins, not design changes: reference 04 is not amended and no
+     DEC row is added. Both are logged in `INBOX.md`, due before the zone-lock PR.
 - What was done (PR A1 only; the boss content is PR A2 on its own branch): `GuardRoster` takes a
   `Structure` or a `Zone` as a home, with home radius 0 for a zone, and a home without `Health`
   counts as standing. `SpawnSystem` counts zones among its homes, so `validate()` checks zone
   plans, and rejects an activation a negative or non-finite time after the countdown.
   `Simulation` spawns zones right after the structures, before the pipeline is built. Guard plans
-  gain `respawn: 'never'` and `activation: { afterCountdownSeconds }`. `GuardWithinLeashInvariant`
-  TSDoc, docs 18 §7.1, 07 §6 and the 15 §3 invariant row updated.
+  take two discriminated unions: `activation` is `{ at: 'match-start' }` or
+  `{ at: 'countdown-end', delaySeconds }` (camps use 0), and `respawn` is
+  `{ kind: 'each' | 'group', seconds }` or `{ kind: 'never' }`, so `never` needs no respawn time.
+  `GuardWithinLeashInvariant` TSDoc, docs 18 §7.1, 07 §6 and the 15 §3 invariant row updated.
 - Tests: a zone home's post lands on its `ZoneArea` and off a blocking keep, home radius 0, and
   is filled; a `never` post stays empty and emits no `camp-cleared`; the delayed activation fills
   on tick countdown end + 120 s and not one tick before; the same zone run twice gives the same
-  `StateHasher` hash; `SpawnSystem` rejects a zone plan naming an unknown mob and a negative
-  activation delay.
+  `StateHasher` hash; `SpawnSystem` rejects a zone plan naming an unknown mob and an activation
+  delay of -1, `NaN` or `Infinity`.
+- Critic (architecture-reviewer, base `86b4fc04`): PASS WITH NOTES, no blockers, 14 findings.
+  Owner sign-off: (1) decisions 2 and 3 are interim (above); (2) the second timed-spawn path
+  (guard-plan delay beside `MatchTimeline`) and (3) one plan per home, with mates by `homeId`, are
+  accepted as interim and logged in `INBOX.md`, with the one-plan-per-home note added to 18 §7.1;
+  fixed now: (4) `NaN`/`Infinity` tests, (6) a stale `SpawnSystem` comment, (8) over-long TSDoc
+  lines, (12) 18 §7.1 states the posts-on-the-floor rule as content checked by tests and the
+  spawn order as an invariant, (10) the discriminated unions above. Deferred: (5) a
+  `Simulation`-level zone guard test, as A2's acceptance test. Skipped: (9) a respawn policy
+  table. For the PR description and the squash: (7) entity ids of map objects and Legends shift by
+  the zone count, so replays recorded before this branch with id-naming commands do not
+  reproduce; (13) the TSDoc commit's type; (14) no phase-3 checkbox is ticked (groundwork).
 - Checks run: the first `npm run check` failed one test, `Simulation.bots.test.ts` (the director
   and systems must subscribe before the first `entity-spawned`; zones now spawned earlier emitted
   theirs too soon). Fix: zones still spawn before the pipeline, but their `entity-spawned` events
   are emitted after the roster, in the old order. Second `npm run check`: exit 0, Prettier passed,
   core `Tests 1308 passed (1308)`, client `Tests 1800 passed (1800)`, docs check passed.
-- Next step: pre-PR gate (critic, ponytail), then PR A2 adds the mini-boss content on its own
-  branch.
+  After the critic fixes: the first `npm run check` failed at knip (the two new union types were
+  exported but unused; now file-local); the next `npm run check`: exit 0, Prettier passed, core
+  `Tests 1310 passed (1310)`, client `Tests 1800 passed (1800)`, docs check passed.
+- Next step: ponytail review and cuts, re-check, then the PR; PR A2 adds the mini-boss content on
+  its own branch, with the `Simulation`-level zone guard test as its acceptance test.

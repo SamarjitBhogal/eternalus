@@ -11,11 +11,12 @@ const TOLERANCE = 5;
 
 const CAMP = {
   leashRadius: 6, // TUNE: balancing.md camp leash
-  respawnSeconds: 120, // TUNE: balancing.md "a cleared camp respawns 120 s later"
   postGap: POST_GAP,
   leashTolerance: TOLERANCE,
-  activation: 'countdown-end', // requirements doc: camps are inactive until the countdown ends
-  respawn: 'group',
+  // requirements doc: camps are inactive until the countdown ends
+  activation: { at: 'countdown-end', delaySeconds: 0 },
+  // TUNE: balancing.md "a cleared camp respawns 120 s later"
+  respawn: { kind: 'group', seconds: 120 },
 } as const;
 
 /**
@@ -51,20 +52,18 @@ export const GUARD_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
   'spawner-tower': {
     table: [{ mobId: 'light-guard', count: 4 }],
     leashRadius: LEASH,
-    respawnSeconds: RESPAWN,
     postGap: POST_GAP,
     leashTolerance: TOLERANCE,
-    activation: 'match-start',
-    respawn: 'each',
+    activation: { at: 'match-start' },
+    respawn: { kind: 'each', seconds: RESPAWN },
   },
   'buff-tower': {
     table: [{ mobId: 'medium-guard', count: 6 }],
     leashRadius: LEASH,
-    respawnSeconds: RESPAWN,
     postGap: POST_GAP,
     leashTolerance: TOLERANCE,
-    activation: 'match-start',
-    respawn: 'each',
+    activation: { at: 'match-start' },
+    respawn: { kind: 'each', seconds: RESPAWN },
   },
   stronghold: {
     table: [
@@ -72,11 +71,10 @@ export const GUARD_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
       { mobId: 'heavy-guard', count: 2 },
     ],
     leashRadius: LEASH,
-    respawnSeconds: RESPAWN,
     postGap: POST_GAP,
     leashTolerance: TOLERANCE,
-    activation: 'match-start',
-    respawn: 'each',
+    activation: { at: 'match-start' },
+    respawn: { kind: 'each', seconds: RESPAWN },
   },
   ...CAMP_PLANS,
 };
