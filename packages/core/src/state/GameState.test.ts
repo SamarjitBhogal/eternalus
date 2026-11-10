@@ -7,6 +7,7 @@ import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { Entity } from '../entities/Entity';
 import { SeededRandom } from '../utils/SeededRandom';
 import { GameState } from './GameState';
+import { TestBuffTower } from './__fixtures__/TestBuffTower';
 
 class Soldier extends Entity {
   public readonly kind = 'soldier';
@@ -34,6 +35,22 @@ const spawned = (entity: Entity): Entity => {
 };
 
 describe('GameState', () => {
+  it('counts living BuffTower entities by team, excluding dead, removed and non-structure entities', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    expect(state.livingBuffTowerCount('light')).toBe(0);
+    const light = spawned(new TestBuffTower('light-tower', 'light'));
+    const dark = spawned(new TestBuffTower('dark-tower', 'dark'));
+    state.entities.add(light);
+    state.entities.add(dark);
+    state.entities.add(spawned(new Soldier('soldier', 'soldier')));
+    state.entities.add(spawned(new TestBuffTower('proxy', 'light', 'obstacle')));
+    expect(state.livingBuffTowerCount('light')).toBe(1);
+    expect(state.livingBuffTowerCount('dark')).toBe(1);
+    light.getComponent(Health).applyDamage(100);
+    expect(state.livingBuffTowerCount('light')).toBe(0);
+    state.entities.remove(dark.id, 'dev-removed');
+    expect(state.livingBuffTowerCount('dark')).toBe(0);
+  });
   it('starts at tick 0 in the countdown and counts ticks', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
     expect(state.tick).toBe(0);
@@ -83,6 +100,48 @@ describe('GameState', () => {
           health: null,
         },
       ],
+      hordes: [],
+      teams: {
+        light: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
+        dark: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
+      },
+    });
+  });
+
+  it('snapshots the hordes and team counters as copies the store no longer changes', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    state.hordes.add({
+      id: 'horde-1',
+      team: 'dark',
+      weightClass: 'medium',
+      lane: 'lane-1',
+      formationId: 'ranks',
+      memberIds: ['entity-2', 'entity-1'],
+      progress: 12,
+    });
+    state.recordSpawnRequest('dark', 3, 2);
+
+    const snapshot = state.snapshot();
+    state.hordes.removeMember('entity-1');
+    state.hordes.setProgress('horde-1', 20);
+    state.recordSpawnRequest('dark', 1, 1);
+    state.recordTowerLost('dark', 'lane-1');
+
+    expect(snapshot.hordes).toEqual([
+      {
+        id: 'horde-1',
+        team: 'dark',
+        weightClass: 'medium',
+        lane: 'lane-1',
+        formationId: 'ranks',
+        memberIds: ['entity-1', 'entity-2'],
+        leaderId: 'entity-1',
+        progress: 12,
+      },
+    ]);
+    expect(snapshot.teams).toEqual({
+      light: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
+      dark: { unitsRequested: 3, unitsSuppressed: 1, towersLostByLane: {} },
     });
   });
 
@@ -119,5 +178,63 @@ describe('GameState', () => {
     state.advanceTick();
 
     expect(state.entities.removedThisTick()).toEqual([]);
+  });
+
+  it('keeps every xp award of the tick, whatever the ring buffer drops, and forgets them next tick', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const award = {
+      entityId: 'entity-1',
+      amount: 5,
+      victimId: 'entity-2',
+      victimTeam: 'dark',
+    } as const;
+    state.events.emit('xp-gained', award);
+    for (let i = 0; i < 600; i += 1) {
+      state.events.emit('tick-completed', { tick: 0 });
+    }
+
+    expect(state.xpAwardsThisTick()).toEqual([award]);
+    state.advanceTick();
+    expect(state.xpAwardsThisTick()).toEqual([]);
+  });
+
+  it('counts spawn requests per team and rejects a spawned count outside 0..requested', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+
+    state.recordSpawnRequest('dark', 16, 10);
+    state.recordSpawnRequest('dark', 16, 16);
+
+    expect(state.teams.dark).toEqual({
+      unitsRequested: 32,
+      unitsSuppressed: 6,
+      towersLostByLane: {},
+    });
+    expect(state.teams.light).toEqual({
+      unitsRequested: 0,
+      unitsSuppressed: 0,
+      towersLostByLane: {},
+    });
+    expect(() => {
+      state.recordSpawnRequest('light', 4, 5);
+    }).toThrow(RangeError);
+    expect(() => {
+      state.recordSpawnRequest('light', 4, -1);
+    }).toThrow(RangeError);
+    expect(state.teams.light).toEqual({
+      unitsRequested: 0,
+      unitsSuppressed: 0,
+      towersLostByLane: {},
+    });
+  });
+
+  it('counts lost lane towers per team and lane', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+
+    state.recordTowerLost('light', 'lane-0');
+    state.recordTowerLost('light', 'lane-0');
+    state.recordTowerLost('light', 'lane-1');
+
+    expect(state.teams.light.towersLostByLane).toEqual({ 'lane-0': 2, 'lane-1': 1 });
+    expect(state.teams.dark.towersLostByLane).toEqual({});
   });
 });

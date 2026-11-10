@@ -12,6 +12,7 @@ export const MAGUS = {
   displayName: 'Magus',
   roleBlurb: 'Magical; applies buffs or debuffs and can revive allies.',
   baseHealth: 800, // TUNE:
+  baseAether: 140, // TUNE: balancing.md (level 1)
   weaponBias: 'staff',
   damageFocus: 'magic',
   pickUp: 'levitate',
@@ -20,9 +21,12 @@ export const MAGUS = {
   referenceHeight: 3, // TUNE: ~10 ft (Hades)
   footprintRadius: 0.75, // DEC-06
   visionRadius: 25, // TUNE:
-  movement: {
+  movementProfile: {
     maxSpeed: 4.5, // TUNE: m/s
     acceleration: 22.5, // TUNE: m/s², top speed after 0.2 s (6 ticks)
     mass: 2, // TUNE:
   },
+  defaultLoadout: { primaryWeaponId: 'magus-staff' }, // TUNE: default weapon (05 §10 table) until the owner picks one (INBOX)
+  levelCurveId: 'legend',
+  levelScaling: { healthPerLevel: 0.08, aetherPerLevel: 10 }, // TUNE: balancing.md
 } as const satisfies LegendDefinition;

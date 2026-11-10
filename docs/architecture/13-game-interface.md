@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-09
+last-reviewed: 2026-10-17
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -157,15 +157,15 @@ anything that changes simulation state is a `Command` (`ui-intent { kind: 'dev-c
 anything that only changes how the client shows or paces the simulation is a client toggle
 (`ui-intent { kind: 'dev-toggle' }`) and deliberately not in the log.
 
-| Control                                          | Message                                                                                                      | Cap or rule                                                                                    | Status                        |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- | ----------------------------- |
-| Add / remove a Legend                            | `dev-spawn-legend { team, definitionId, controllerId, at? }`, `dev-remove-legend { entityId }`               | `maxLegendsPerTeam` (10, `TUNE`) → `command-rejected` shown inline; the human only in sim mode | **MVP**                       |
-| Spawn mobs from an origin                        | `dev-spawn-mobs { team, definitionId, count, origin }` (structure id, `{ lane, t }` or cursor)               | `maxUnitsPerTeam` (144, `TUNE`): clipped, `spawn-suppressed` counted, never a crash            | **MVP**                       |
-| Sim mode: remove or add the human                | `dev-set-controller { entityId, controllerId }` (DISC-56)                                                    | at most one `player` controller (`SinglePlayerBrainInvariant`)                                 | **MVP**                       |
-| Invariant level; timeline jump                   | `dev-set-assert-level { level, heavyEvery? }`; `dev-set-phase { phase }` (forward only)                      | —                                                                                              | **MVP**; jump **MVP-if-time** |
-| Pre-match config overrides                       | edits `GameConfig` on the menu's developer panel before `Simulation` exists                                  | `validateGameConfig` problems shown inline                                                     | **MVP**                       |
-| Overlays, time scale, pause, step                | `dev-toggle { toggle: 'perf-overlay' \| 'diagnostics-overlay' \| 'time-scale' … }` → `GameLoop.setTimeScale` | client-only; the simulation never knows                                                        | **MVP**                       |
-| Hash now, dump replay, save as fixture, spectate | `dev-toggle` → `Simulation.hash()`, `exportReplay()`, `spectatedLegendId`                                    | read-only / client-only                                                                        | **MVP**                       |
+| Control                                          | Message                                                                                                                                               | Cap or rule                                                                                        | Status                        |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ----------------------------- |
+| Add / remove a Legend                            | `dev-spawn-legend { team, definitionId, controllerId, at? }`, `dev-remove-legend { entityId }`                                                        | `maxLegendsPerTeam` (10, `TUNE`) → `command-rejected` shown inline; the human only in sim mode     | **MVP**                       |
+| Spawn mobs from an origin                        | `dev-spawn-mobs { team, definitionId, count, origin }` (structure id, `{ lane, t }` or cursor), spawned as one horde ([18](18-minion-system.md) §3.5) | `maxUnitsPerTeam` (144, `TUNE`): clipped, `spawn-suppressed` counted in `TeamState`, never a crash | **MVP**                       |
+| Sim mode: remove or add the human                | `dev-set-controller { entityId, controllerId }` (DISC-56)                                                                                             | at most one `player` controller (`SinglePlayerBrainInvariant`)                                     | **MVP**                       |
+| Invariant level; timeline jump                   | `dev-set-assert-level { level, heavyEvery? }`; `dev-set-phase { phase }` (forward only)                                                               | —                                                                                                  | **MVP**; jump **MVP-if-time** |
+| Pre-match config overrides                       | edits `GameConfig` on the menu's developer panel before `Simulation` exists                                                                           | `validateGameConfig` problems shown inline                                                         | **MVP**                       |
+| Overlays, time scale, pause, step                | `dev-toggle { toggle: 'perf-overlay' \| 'diagnostics-overlay' \| 'time-scale' … }` → `GameLoop.setTimeScale`                                          | client-only; the simulation never knows                                                            | **MVP**                       |
+| Hash now, dump replay, save as fixture, spectate | `dev-toggle` → `Simulation.hash()`, `exportReplay()`, `spectatedLegendId`                                                                             | read-only / client-only                                                                            | **MVP**                       |
 
 The menu has no reference to `GameState`; its test spies on `Simulation.enqueueCommand` and
 expects exactly one `Command` per gameplay button (plan Phase 5, sprint 5.5).

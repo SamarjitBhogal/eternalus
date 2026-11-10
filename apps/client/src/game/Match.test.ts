@@ -3,6 +3,8 @@ import {
   type InputIntent,
   type MapDefinition,
   MapGenerator,
+  MapPresentationBuilder,
+  MapObjectBuilder,
   MemoryLogger,
   NullLogger,
   Simulation,
@@ -15,7 +17,7 @@ import type { Projection } from './engine/input/Projection.types';
 import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
 import { RecordingRenderer } from './engine/render/RecordingRenderer';
 import { Match } from './Match';
-import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH, PROTOTYPE_ESCORT } from './Match.constants';
+import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH } from './Match.constants';
 import type { IntentSource } from './Match.types';
 import { FOCUS_RING_COLOR } from './views/entityViews.constants';
 
@@ -25,11 +27,15 @@ const SEED = 1;
 class ScriptedIntent implements IntentSource {
   public move: Vec2 = { x: 0, y: 0 };
 
+  public isAttacking = false;
+
+  public aim: Vec2 | null = null;
+
   public projection: Projection | null = null;
 
   public read(projection: Projection): InputIntent {
     this.projection = projection;
-    return { move: this.move, aim: null, triggered: [] };
+    return { move: this.move, isAttacking: this.isAttacking, aim: this.aim, triggered: [] };
   }
 }
 
@@ -37,20 +43,20 @@ class ScriptedIntent implements IntentSource {
 type Content = NonNullable<ConstructorParameters<typeof Simulation>[0]['content']>;
 
 /**
- * A rock (kind `obstacle`, which has no view of its own) plus the two units every match spawns,
- * with speeds already per tick as the simulation sees them.
+ * A rock (kind `obstacle`, which has no view of its own) plus the player's Legend, with speeds already per tick as the simulation sees them.
  */
 const CONTENT_WITH_A_ROCK: Content = (() => {
-  const movement = { maxSpeed: 0.2, acceleration: 0.05, mass: 1 };
-  const unit = { baseHealth: 100, footprintRadius: 0.5, visionRadius: 10, movement };
+  const movementProfile = { maxSpeed: 0.2, acceleration: 0.05, mass: 1 };
+  const unit = { baseHealth: 100, footprintRadius: 0.5, visionRadius: 10, movementProfile };
   const definitions = [
-    { id: 'warrior', kind: 'warrior', displayName: 'Warrior', ...unit },
-    // PROTOTYPE(PROTO-01) TEMPORARY: only because the demo escort spawns in every match.
     {
-      id: 'light-minion',
-      kind: 'light-mob',
-      displayName: 'Minion',
-      controller: 'follow-leader',
+      id: 'warrior',
+      kind: 'warrior',
+      displayName: 'Warrior',
+      baseAether: 100,
+      levelCurveId: 'legend',
+      levelScaling: { healthPerLevel: 0.08, aetherPerLevel: 10 },
+      defaultLoadout: { primaryWeaponId: 'raptor-talons' },
       ...unit,
     },
     {
@@ -77,7 +83,12 @@ const CONTENT_WITH_A_ROCK: Content = (() => {
   };
 })();
 
-const setUp = (map?: MapDefinition, content?: Content) => {
+const setUp = (
+  map?: MapDefinition,
+  content?: Content,
+  hasHordes = false,
+  hasMapObjects = false,
+) => {
   const config = createDefaultGameConfig();
   const generated = map ?? new MapGenerator().generate(config, SEED);
   const simulation = new Simulation({
@@ -85,6 +96,15 @@ const setUp = (map?: MapDefinition, content?: Content) => {
     seed: SEED,
     logger: new NullLogger(),
     ...(content === undefined ? {} : { content }),
+    ...(hasMapObjects
+      ? {
+          mapObjects: new MapObjectBuilder().build(
+            generated,
+            new MapPresentationBuilder().build(generated),
+          ),
+        }
+      : {}),
+    ...(hasHordes ? { map: generated } : {}),
   });
   const scheduler = new FakeFrameScheduler();
   const renderer = new RecordingRenderer();
@@ -134,6 +154,68 @@ const playerX = (match: Match): number =>
   Number.NaN;
 
 describe('Match', () => {
+  it('updates the main scene and minimap when a map object is destroyed', () => {
+    const { match, simulation, renderer, map } = setUp(undefined, undefined, true, true);
+    const house = new MapPresentationBuilder()
+      .build(map)
+      .scenery.find((piece) => piece.object?.kind === 'house' && piece.object.isFootprint);
+    if (house?.object === undefined) throw new Error('Missing house');
+    match.tick();
+    match.render(0);
+    const fills = () =>
+      renderer.calls.flatMap((call) => (call.op === 'fillPolygon' ? [call.args[0]] : []));
+    expect(fills()).toContainEqual(house.shape);
+    const target = match.snapshot.mapObjects?.find((object) => object.id === house.object?.id);
+    if (target?.entityId == null) throw new Error('Missing map object');
+    simulation.enqueueCommand({ type: 'dev-remove-entity', entityId: target.entityId });
+    match.tick();
+    renderer.calls.length = 0;
+    match.render(0);
+    expect(fills()).not.toContainEqual(house.shape);
+    match.destroy();
+  });
+  it('queues one attack per target while the attack button is held, and again after a release or a stop', () => {
+    const { match, simulation, input, map } = setUp(undefined, undefined, true, true);
+    const house = new MapObjectBuilder()
+      .build(map, new MapPresentationBuilder().build(map))
+      .find((object) => object.kind === 'house');
+    const corner = house?.footprints[0]?.[0];
+    const opposite = house?.footprints[0]?.[2];
+    if (corner === undefined || opposite === undefined) throw new Error('Missing house');
+    match.tick();
+    const enqueue = vi.spyOn(simulation, 'enqueueCommand');
+    const attacks = () =>
+      enqueue.mock.calls.filter(([command]) => command.type === 'attack-target').length;
+    input.isAttacking = true;
+    input.aim = { x: (corner.x + opposite.x) / 2, y: (corner.y + opposite.y) / 2 };
+
+    for (let tick = 0; tick < 5; tick += 1) match.tick();
+    expect(attacks()).toBe(1);
+    input.isAttacking = false;
+    match.tick();
+    input.isAttacking = true;
+    match.tick();
+    expect(attacks()).toBe(2);
+    // `stop` also drops the attack target, so the held button queues it once more after one.
+    input.move = { x: 1, y: 0 };
+    match.tick();
+    input.move = { x: 0, y: 0 };
+    match.tick();
+    match.tick();
+    expect(attacks()).toBe(3);
+    match.destroy();
+  });
+
+  it('reports closed roofs after the same building is toggled twice', () => {
+    const { match } = setUp();
+    // The following camera initially centres on the light stronghold.
+    expect(match.hasOpenRoofs).toBe(false);
+    expect(match.toggleRoofAt(640, 360)).toBe(true);
+    expect(match.hasOpenRoofs).toBe(true);
+    expect(match.toggleRoofAt(640, 360)).toBe(true);
+    expect(match.hasOpenRoofs).toBe(false);
+    match.destroy();
+  });
   it("spawns the player's Warrior at the Light stronghold on the first tick", () => {
     const { match, lightStronghold } = setUp();
     expect(match.playerEntityId).toBeNull();
@@ -143,35 +225,6 @@ describe('Match', () => {
     const player = match.snapshot.entities.find((entity) => entity.id === match.playerEntityId);
     expect(player).toMatchObject({ kind: 'warrior', family: 'legend', team: 'light' });
     expect(player?.transform).toMatchObject(lightStronghold?.position ?? {});
-  });
-
-  // PROTOTYPE(PROTO-01) TEMPORARY: tests the demo escort; delete with `Match.spawnEscort`.
-  it('spawns the prototype escort around the player, and the escort walks after the player', () => {
-    const { match, input, lightStronghold } = setUp();
-    const home = lightStronghold?.position ?? { x: Number.NaN, y: Number.NaN };
-    match.tick();
-    const escortX = () =>
-      match.snapshot.entities
-        .filter((entity) => entity.definitionId === PROTOTYPE_ESCORT.definitionId)
-        .map((entity) => entity.transform?.x ?? Number.NaN);
-
-    expect(escortX()).toHaveLength(PROTOTYPE_ESCORT.count);
-    for (const entity of match.snapshot.entities.filter((e) => e.family === 'mob')) {
-      const distance = Math.hypot(
-        (entity.transform?.x ?? 0) - home.x,
-        (entity.transform?.y ?? 0) - home.y,
-      );
-      expect(distance).toBeCloseTo(PROTOTYPE_ESCORT.spawnRadius, 1);
-      expect(entity.team).toBe('light');
-    }
-
-    input.move = { x: 1, y: 0 };
-    for (let tick = 0; tick < 90; tick += 1) {
-      match.tick();
-    }
-    for (const x of escortX()) {
-      expect(x).toBeGreaterThan(home.x + PROTOTYPE_ESCORT.spawnRadius);
-    }
   });
 
   it('walks east while the intent says east, and coasts to a stop when it is released', () => {
@@ -290,8 +343,8 @@ describe('Match', () => {
     ).toEqual([['WARN', 'client.views', 'No view for kind "obstacle"; drawing the default view.']]);
   });
 
-  it('draws mobs with their own view, so the escort and other mobs log no default-view warning', () => {
-    const { match, simulation, logger } = setUp();
+  it('draws the lane hordes and other mobs with their own view, logging no default-view warning', () => {
+    const { match, simulation, logger } = setUp(undefined, undefined, true);
     simulation.enqueueCommand({
       type: 'dev-spawn',
       kind: 'light-mob',
@@ -305,6 +358,10 @@ describe('Match', () => {
     match.render(0);
     match.render(0);
 
+    const minions = match.snapshot.entities.filter(
+      (entity) => entity.definitionId === 'light-minion',
+    );
+    expect(minions.length).toBeGreaterThan(0);
     expect(logger.records.filter(({ severityText }) => severityText === 'WARN')).toEqual([]);
   });
 

@@ -7,6 +7,7 @@ import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import type { Vec2 } from '../utils/geometry.types';
 import { MapGenerator } from './MapGenerator';
 import type { MapConfig } from './MapGenerator.types';
+import { BLOCKED_LANE_MAP } from './__fixtures__/blockedLaneMap';
 import { WorldMap } from './WorldMap';
 
 const isBlocking = (definitionId: string): boolean =>
@@ -131,6 +132,14 @@ describe('WorldMap', () => {
     expect(grid.isWalkable(10, 0)).toBe(false);
   });
 
+  it('answers walkability at a world position by the cell under it, and no outside the grid', () => {
+    const grid = WorldMap.fromDefinition(SMALL_MAP, 10, isBlocking);
+
+    expect(grid.isWalkableAt(45, 5)).toBe(false);
+    expect(grid.isWalkableAt(39.9, 5)).toBe(true);
+    expect(grid.isWalkableAt(-0.1, 5)).toBe(false);
+  });
+
   it('stamping a footprint blocks exactly its cells; clearing restores them', () => {
     const grid = WorldMap.fromDefinition(SMALL_MAP, 10, isBlocking);
     const before = Uint8Array.from(grid.walkable);
@@ -168,6 +177,30 @@ describe('WorldMap', () => {
     expect(grid.isWalkable(0, 3)).toBe(false);
     grid.clearFootprint(SQUARE);
     expect(grid.isWalkable(0, 3)).toBe(true);
+  });
+
+  it('leaves the cells wholly inside an opening walkable, for a stamp and its clear', () => {
+    const open: MapDefinition = { ...SMALL_MAP, terrain: [] };
+    const grid = WorldMap.fromDefinition(open, 10, isBlocking);
+    // A lava band across the map with a bridge deck from x 30 to 60 over it.
+    const lava = [
+      { x: 0, y: 20 },
+      { x: 100, y: 20 },
+      { x: 100, y: 30 },
+      { x: 0, y: 30 },
+    ];
+    const deck = [
+      { x: 30, y: 15 },
+      { x: 60, y: 15 },
+      { x: 60, y: 35 },
+      { x: 30, y: 35 },
+    ];
+    grid.stampFootprint(lava, [deck]);
+
+    expect([3, 4, 5].map((col) => grid.isWalkable(col, 2))).toEqual([true, true, true]);
+    expect([2, 6].map((col) => grid.isWalkable(col, 2))).toEqual([false, false]);
+    grid.clearFootprint(lava, [deck]);
+    expect(grid.isWalkable(2, 2)).toBe(true);
   });
 
   it('never makes terrain walkable by clearing a footprint over it', () => {
@@ -238,5 +271,14 @@ describe('WorldMap', () => {
 
       expect(reached.has(cellIndex(grid, { x: map.width / 2, y: map.height / 2 }))).toBe(false);
     }
+  });
+
+  it('checks a straight line for blocked cells, up to a distance', () => {
+    const map = WorldMap.fromDefinition(BLOCKED_LANE_MAP, 2, () => false);
+
+    expect(map.isLineClear(10, 20, 45, 20)).toBe(true);
+    expect(map.isLineClear(10, 20, 100, 20)).toBe(false);
+    expect(map.isLineClear(10, 20, 100, 20, 30)).toBe(true);
+    expect(map.isLineClear(10, 5, 100, 5)).toBe(true);
   });
 });
