@@ -56,7 +56,10 @@ export type PlayerHudSnapshot = {
   readonly aether: number | null;
   readonly maxAether: number | null;
   readonly level: number | null;
-  /** XP earned inside the current level, and the XP that level needs (the badge ring). */
+  /**
+   * XP earned inside the current level, and the XP that level needs (the badge ring); `xpToNext`
+   * is `null` at the level cap, where the ring is full (DEC-224).
+   */
   readonly xp: number | null;
   readonly xpToNext: number | null;
   /** Weapon level bar 0..1 (Figma 62:258): no rule defines it (OQ-63); always `null` live. */
