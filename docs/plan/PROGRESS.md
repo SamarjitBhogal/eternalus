@@ -6662,3 +6662,13 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "All matched files use Prettier code style!"; `npm run docs:check` → "Documentation check
   passed." The full check of `392ad70e` (an entry above) holds for the code.
 - Next step: merge this head into GL-16 (`refactor/map-feature-link`); push.
+
+### 2026-11-10 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-5 with phase/3 after #73 merge — refactor/map-feature-link — sholtzman + Claude Code
+
+- What: merged `feat/results-flow` (`9e1f2468`, GL-5 with phase/3 after #73) into this branch (`1337af7e`).
+  Conflict: this file (both, in date order). Config and docs only: `git diff --stat 76d04cff 1337af7e`
+  lists only .coderabbit.yaml, INBOX.md, docs/decisions/0018-coderabbit-runs-the-pr-review-skill.md, docs/plan/PROGRESS.md.
+- Checks run: `npx prettier --check` on `INBOX.md`, `.coderabbit.yaml`, this file and ADR 0018 →
+  "All matched files use Prettier code style!"; `npm run docs:check` → "Documentation check
+  passed." The full check of `76d04cff` (an entry above) holds for the code.
+- Next step: push; the GL-16 PR opens after GL-5 merges (DEC-231).
