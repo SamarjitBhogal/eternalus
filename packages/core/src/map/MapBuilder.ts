@@ -17,7 +17,7 @@ import type {
   MirrorSide,
 } from './MapBuilder.types';
 import { MapGenerationError } from './MapGenerationError';
-import { laneTowerSpecs, wallRingSpecs } from './laneStructures';
+import { assertLaneFortsApart, laneTowerSpecs, wallRingSpecs } from './laneStructures';
 import { scatterObstacles } from './obstacleScatter';
 import { mirrorPoint, mirrorPolygon } from './symmetry';
 import { layOutTerrain } from './terrainLayout';
@@ -92,13 +92,18 @@ export class MapBuilder {
     return this;
   }
 
-  /** Per lane: SpawnerTowers on the front band, then BuffTowers on the second band. */
+  /**
+   * Per lane: SpawnerTowers on the front band, then BuffTowers on the second band. Then checks
+   * that no two lane tower forts on the map overlap (DEC-215 (1)).
+   */
   public placeLaneStructures(): this {
+    const first = this.features.length;
     for (const lane of this.lanes) {
       for (const spec of laneTowerSpecs(lane, this.input.config, this.input.layout)) {
         this.addMirrored(spec, TEAM_SIDES);
       }
     }
+    assertLaneFortsApart(this.features.slice(first), this.input.config);
     return this;
   }
 

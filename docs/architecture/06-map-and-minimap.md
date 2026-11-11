@@ -126,9 +126,12 @@ flowchart LR
    coordinates, so N per lane works for any N. Towers of one kind stand at least a fort box's
    diagonal apart along the lane, so two forts on a straight stretch never overlap, whatever its
    heading; a band too narrow for that widens round its middle (DEC-227). The fort box is
-   measured in world units: the sketch fort (`BUILDING_GEOMETRY.fort.laneTowerSize`) stretched by
-   the larger world/sketch scale. The generator refuses (`MapGenerationError`) a config whose
-   lane towers of different kinds would come closer than that, or leave the lane.
+   measured in world units: the sketch fort (`BUILDING_GEOMETRY.fort.laneTowerSize`) stretched
+   per axis to the world (`map/fortInWorld.ts`). After placement the generator checks every pair
+   of lane tower forts on the map, both teams and all lanes, as upright boxes in world units, so
+   forts on a bend or on neighbouring lanes are checked too (DEC-215 (1), DEC-239). It refuses
+   (`MapGenerationError`, naming both towers) a config whose forts would overlap, and one whose
+   widened band would leave the lane.
 4. **raiseWalls**: one `gate` centred on each lane's exit; `wall-segment`s fill the rest of the
    ring, split so that none spans more than a maximum arc; a `turret` sits on every ring corner.
    Gate count equals `numLanes` and every lane leaves through its own gate by construction; a

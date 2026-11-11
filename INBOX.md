@@ -96,6 +96,10 @@ Reply inline (`Decision: …`).
     generator refuses (`MapGenerationError`) a config whose lane towers of different kinds would
     come closer than that.
     `MapGenerator.test.ts` checks every lane tower fort pair at 2 and 3 towers per kind.
+    Correction (critic r2, DEC-239): spacing along the lane does not keep forts apart on a bend or
+    on neighbouring lanes near the gates (critic probe: 3200x900, 7 lanes, 1 + 9 towers, four
+    overlapping pairs). The generator now checks every pair of lane tower forts on the map in
+    world units after placement (`assertLaneFortsApart` in `laneStructures.ts`).
 - [x] **Tower-ruins critic round 1 (`feat/tower-ruins-and-routes`, 2026-11-10), better than the
       design — five items.** (B1) one way-out search per court cell instead of one per court mob
       per tick; (B2) move the ruin rule out of `WorldObjectStore`; (B3) one owner of the

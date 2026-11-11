@@ -275,6 +275,26 @@ describe('MapGenerator', () => {
     },
   );
 
+  it('refuses forts on neighbouring lanes that would overlap near the gates (DEC-215 (1))', () => {
+    // Critic r2 probe: each lane keeps its own towers apart, but lanes 1 and 2 fan out from
+    // the Light gates close enough that their first BuffTower forts overlap in a 3200x900 world.
+    expect(() =>
+      generate({
+        worldWidth: 3200,
+        worldHeight: 900,
+        numLanes: 7,
+        spawnTowersPerLane: 1,
+        buffTowersPerLane: 9,
+      }),
+    ).toThrow(/forts of light-buff-tower-lane-1-0 and light-buff-tower-lane-2-0 over each other/);
+  });
+
+  it('refuses a tower band widened past the end of its lane', () => {
+    expect(() => generate({ numLanes: 3, spawnTowersPerLane: 1, buffTowersPerLane: 16 })).toThrow(
+      /map\.buffTowersPerLane = 16 put lane towers on lane-0 off the lane/,
+    );
+  });
+
   it('starts every lane at its Light gate and ends it at its Dark gate', () => {
     const map = generate();
 

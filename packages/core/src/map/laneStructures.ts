@@ -1,5 +1,5 @@
 import { BUILDING_GEOMETRY as G } from '../content/maps/buildingGeometry';
-import type { MapLane, MapLayout } from '../content/maps/maps.types';
+import type { MapFeature, MapLane, MapLayout } from '../content/maps/maps.types';
 import { fortInWorld } from './fortInWorld';
 import { LaneGeometry } from './LaneGeometry';
 import type { MirroredFeatureSpec, WallRingInput } from './MapBuilder.types';
@@ -25,40 +25,57 @@ const bandPositions = (
   );
 };
 
-/** Relative slack for the gap check: a widened band lands exactly on `minGap`, give or take rounding. */
-const GAP_TOLERANCE = 1e-9;
+const towerCounts = (config: MapConfig): string =>
+  `map.spawnTowersPerLane = ${String(config.spawnTowersPerLane)} and map.buffTowersPerLane = ${String(config.buffTowersPerLane)}`;
 
-/**
- * Throws when a tower position leaves the lane or two towers (of any kind) stand closer than
- * `minGap`: DEC-215 (1) calls an overlap a bug in the code.
- */
-const assertTowersApart = (
-  laneId: string,
-  allTs: readonly number[],
-  minGap: number,
-  config: MapConfig,
-): void => {
-  const sorted = [...allTs].sort((a, b) => a - b);
-  const first = sorted[0];
-  const last = sorted.at(-1);
-  const hasGap = sorted.every(
-    (t, index) => index === 0 || t - (sorted[index - 1] ?? t) >= minGap * (1 - GAP_TOLERANCE),
-  );
-  const isOnLane = first === undefined || last === undefined || (first >= 0 && last <= 1);
-  if (!hasGap || !isOnLane) {
+const worldSize = (config: MapConfig): string =>
+  `map.worldWidth = ${String(config.worldWidth)}, map.worldHeight = ${String(config.worldHeight)}`;
+
+/** Throws when a tower position leaves its lane: the band widened past the lane's ends. */
+const assertTowersOnLane = (laneId: string, allTs: readonly number[], config: MapConfig): void => {
+  if (!allTs.every((t) => t >= 0 && t <= 1)) {
     throw new MapGenerationError(
-      `map.spawnTowersPerLane = ${String(config.spawnTowersPerLane)} and map.buffTowersPerLane = ${String(config.buffTowersPerLane)} put lane towers on ${laneId} closer than one fort box or off the lane (map.worldWidth = ${String(config.worldWidth)}, map.worldHeight = ${String(config.worldHeight)}); a lane tower fort may not overlap another (DEC-215 (1)): use fewer towers per lane or a larger world`,
+      `${towerCounts(config)} put lane towers on ${laneId} off the lane (${worldSize(config)}): use fewer towers per lane or a larger world`,
     );
   }
+};
+
+/** Relative slack for the overlap check: forts one diagonal apart touch, give or take rounding. */
+const TOUCH_TOLERANCE = 1e-9;
+
+/**
+ * Checks every pair of lane tower forts on the whole map, both teams and all lanes, in world
+ * units: each fort is an upright box round its tower (`fortInWorld`), and two boxes overlap when
+ * both axes are closer than the box. Placement keeps towers of one lane apart along the lane;
+ * this check also covers towers on bends and on neighbouring lanes (DEC-215 (1)).
+ *
+ * @throws MapGenerationError naming both towers when two forts overlap.
+ */
+export const assertLaneFortsApart = (towers: readonly MapFeature[], config: MapConfig): void => {
+  const fort = fortInWorld(G.fort.laneTowerSize, {
+    width: config.worldWidth,
+    height: config.worldHeight,
+  });
+  towers.forEach((a, index) => {
+    for (const b of towers.slice(index + 1)) {
+      const dx = Math.abs(a.position.x - b.position.x);
+      const dy = Math.abs(a.position.y - b.position.y);
+      if (dx < fort.width * (1 - TOUCH_TOLERANCE) && dy < fort.height * (1 - TOUCH_TOLERANCE)) {
+        throw new MapGenerationError(
+          `${towerCounts(config)} put the forts of ${a.id} and ${b.id} over each other (${worldSize(config)}); a lane tower fort may not overlap another (DEC-215 (1)): use fewer towers per lane or a larger world`,
+        );
+      }
+    }
+  });
 };
 
 /**
  * One lane's Light towers: `spawnTowersPerLane` SpawnerTowers on the front band, then
  * `buffTowersPerLane` BuffTowers on the second band, at fractions of the lane's length from
  * the Light gate. "Front" and "second line" are bands. Towers stand at least a fort box's
- * diagonal apart along the lane (the box in world units), so their forts never overlap whatever
- * the lane's heading (DEC-227, DEC-215 (1)). Throws MapGenerationError when the counts cannot be
- * kept that far apart inside the lane.
+ * diagonal apart along the lane (the box in world units), a band too narrow for that widens
+ * round its middle (DEC-227); `assertLaneFortsApart` then checks the forts on the whole map.
+ * Throws MapGenerationError when a widened band puts a tower off the lane.
  */
 export const laneTowerSpecs = (
   lane: MapLane,
@@ -84,10 +101,9 @@ export const laneTowerSpecs = (
       ts: bandPositions(config.buffTowersPerLane, layout.laneBands.buff, minGap),
     },
   ];
-  assertTowersApart(
+  assertTowersOnLane(
     lane.id,
     towers.flatMap((tower) => tower.ts),
-    minGap,
     config,
   );
   return towers.flatMap((tower) =>
