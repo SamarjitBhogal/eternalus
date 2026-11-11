@@ -7,6 +7,7 @@ import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { validateGameConfig } from '../../config/validateGameConfig';
 import type { Team } from '../../teams/teams.types';
 import { ContentCatalogue } from '../../content/ContentCatalogue';
+import { LEVEL_CURVE_CATALOGUE } from '../../content/progression/levelCurveCatalogue';
 import { Entity } from '../../entities/Entity';
 import { EntityFactory } from '../../entities/EntityFactory';
 import { EntityRegistry } from '../../entities/EntityRegistry';
@@ -106,7 +107,9 @@ describe('DevSpawnHandler', () => {
       { entityId: 'entity-2', kind: 'dummy', team: 'dark' },
     ]);
     expect(
-      context.state.snapshot().entities.map(({ team, transform }) => ({ team, transform })),
+      context.state
+        .snapshot(LEVEL_CURVE_CATALOGUE)
+        .entities.map(({ team, transform }) => ({ team, transform })),
     ).toEqual([
       { team: 'dark', transform: { x: 10, y: 20, radius: 0.5, facing: INITIAL_FACING } },
       { team: 'dark', transform: { x: 10, y: 20, radius: 0.5, facing: INITIAL_FACING } },
@@ -169,7 +172,11 @@ describe('DevSpawnHandler', () => {
       new DevSpawnHandler().handle({ ...dummy, team: 'dark', at: { x: 50, y: 0 } }, context),
     ).toBeNull();
 
-    expect(context.state.snapshot().entities.map(({ transform }) => transform?.facing)).toEqual([
+    expect(
+      context.state
+        .snapshot(LEVEL_CURVE_CATALOGUE)
+        .entities.map(({ transform }) => transform?.facing),
+    ).toEqual([
       { x: 0.8, y: 0.6 },
       { x: 0.8, y: 0.6 },
       { x: -0.8, y: 0.6 },

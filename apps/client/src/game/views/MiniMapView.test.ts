@@ -336,6 +336,7 @@ describe('MiniMapView unit markers (DEC-187)', () => {
       team: 'light',
       transform: { x: CENTRE.x + 10, y: CENTRE.y, radius: 0.4, facing: { x: 1, y: 0 } },
       health: { current: 150, max: 150 },
+      progression: null,
       area: null,
       capture: null,
     };

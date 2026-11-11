@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { createDefaultGameConfig } from './config/defaultGameConfig';
+import { ContentCatalogue } from './content/ContentCatalogue';
+import type { LevelCurveDefinition } from './content/progression/progression.types';
 import type { Logger } from './diagnostics/Logger.types';
 import { MemoryLogger } from './diagnostics/MemoryLogger';
 import { NullLogger } from './diagnostics/NullLogger';
@@ -69,6 +71,30 @@ describe('Simulation: the human slot of the roster', () => {
       });
     },
   );
+
+  it("snapshots the human Legend's level and XP from the Simulation's own level curves; structures have none", () => {
+    const sim = new Simulation({
+      config: configFor(),
+      seed: 5,
+      logger: new NullLogger(),
+      map: TWO_LANE_MAP,
+      roster: [human()],
+      levelCurves: new ContentCatalogue<LevelCurveDefinition>([
+        { id: 'legend', xpToNext: [7, 8], cap: 3 },
+      ]),
+    });
+
+    const { match, entities } = sim.snapshot();
+    const others = entities.filter(({ family }) => family !== 'legend');
+
+    expect(entities.find(({ id }) => id === match.humanLegendId)?.progression).toEqual({
+      level: 1,
+      xp: 0,
+      xpToNext: 7,
+    });
+    expect(others.length).toBeGreaterThan(0);
+    expect(others.map(({ progression }) => progression)).toEqual(others.map(() => null));
+  });
 
   it('spawns the human slot in roster order, as any Rover: after the laners, at its own Stronghold', () => {
     const sim = new Simulation({

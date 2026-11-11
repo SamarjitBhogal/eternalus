@@ -18,6 +18,7 @@ const entity = (
   team,
   transform: { x, y, radius, facing: { x: 1, y: 0 } },
   health: { current: 5, max: 5 },
+  progression: null,
   area: null,
   capture: null,
 });

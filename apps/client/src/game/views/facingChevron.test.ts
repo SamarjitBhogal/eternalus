@@ -23,6 +23,7 @@ const UNIT: EntitySnapshot = {
   team: 'dark',
   transform: { x: AT.x, y: AT.y, radius: RADIUS, facing: { x: 1, y: 0 } },
   health: null,
+  progression: null,
   area: null,
   capture: null,
 };
