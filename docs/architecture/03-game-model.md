@@ -227,7 +227,7 @@ export type Snapshot = {
   readonly entities: readonly EntitySnapshot[]; // store (creation) order
   readonly hordes: readonly HordeSnapshot[];
   readonly teams: Readonly<Record<Team, TeamSnapshot>>;
-  readonly player: PlayerSnapshot | null; // HUD data for the human Legend
+  readonly player: PlayerSnapshot | null; // the human Legend's player-only HUD data (05 §15, DEC-232)
   readonly mapRevision: number; // increments when destructible terrain changed
 };
 
@@ -252,13 +252,21 @@ export type EntitySnapshot = {
   } | null;
   readonly progression: {
     readonly level: number;
-    readonly xp: number; // XP earned inside the current level
-    readonly xpToNext: number | null; // null at the level cap (DEC-224)
+    readonly xp: number; // XP earned inside the current level (resets on level-up)
+    readonly xpToNext: number | null; // XP the current level needs to reach the next; null at the cap (DEC-224)
   } | null; // any entity with Progression (every Legend), not only the player (DEC-224)
+  readonly aether: {
+    readonly current: number;
+    readonly max: number;
+  } | null; // any entity with an aether pool (every Legend), not only the player (DEC-230)
   readonly statusIds: readonly StatusEffectId[];
   readonly anim: AnimState;
 };
 ```
+
+`SnapshotSystem` builds each `EntitySnapshot` through `EntitySnapshotter`
+(`state/EntitySnapshotter.ts`), one group per component, so a new component group changes that
+class and the `EntitySnapshot` type, never `GameState` (DEC-232).
 
 `Match` keeps the two latest snapshots (`previous`, `current`); `SceneView.draw(previous, current,
 alpha)` pairs the entities of both by id (both arrays are in store order; an entity spawned or
@@ -462,14 +470,15 @@ each closed by the session or phase named:
   `throw`, `interact` and `dev-set-assert-level` are not in the union yet.
 - `dev-spawn` and `dev-remove-entity` spawn and remove directly and emit `entity-spawned` /
   `entity-removed` themselves until `SpawnSystem` / `DeathSystem` exist (session C).
-- `GameState.snapshot()` builds the snapshot until `SnapshotSystem` exists; `Snapshot` carries
+- `GameState.snapshot()` builds the snapshot, each entity through `EntitySnapshotter`, until
+  `SnapshotSystem` exists; `Snapshot` carries
   `tick`, `match`, `entities`, `hordes` and `teams` (the team counters, since minion plan M1),
   and `EntitySnapshot` its identity, `team`, `transform`
   (`x`, `y`, `radius`), `health` (`current`, `max`), `progression` (a Legend's `level`, the `xp`
   inside that level and its `xpToNext`, `null` at the cap; `snapshot(curves)` takes the level
-  curves `ProgressionSystem` uses), `area` (a zone's polygons) and `capture` (a capture point's
-  state and presence) groups only. `MatchPhase` lives in
-  `config/matchPhases.ts`; the match director is built (12 §13).
+  curves `ProgressionSystem` uses), `aether` (a Legend's `current` and `max` aether, DEC-230),
+  `area` (a zone's polygons) and `capture` (a capture point's state and presence) groups only.
+  `MatchPhase` lives in `config/matchPhases.ts`; the match director is built (12 §13).
 - `GameState.world` is a `MatchWorld` (the generated definition, its lane `routes` and the
   `WorldMap` grid) with no structures index yet (minion plan M2c), and the grid keeps no flow
   fields (`PathingSystem` caches them); `GameState` has `hordes` and `teams` (the spawn counters
