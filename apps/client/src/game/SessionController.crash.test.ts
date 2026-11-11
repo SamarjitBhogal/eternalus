@@ -18,12 +18,14 @@ const SCREEN_CRASH = {
   componentStack: 'in Screen',
 } as const;
 
-/** A session whose reports go to `writer`, whose match is a `FakeRunningMatch` and that records every `onCrash`. */
+/** A session whose reports go to `writer`, whose match is a `FakeRunningMatch` and that records every observer's `crashed`. */
 function setUp(writer = new MemoryReportWriter()) {
   const matches: FakeRunningMatch[] = [];
   const crashes: ((crash: MatchCrash) => void)[] = [];
   const createMatch: MatchFactory = (request) => {
-    crashes.push(request.onCrash);
+    crashes.push((crash) => {
+      request.observer.crashed(crash);
+    });
     const match = new FakeRunningMatch();
     matches.push(match);
     return match;

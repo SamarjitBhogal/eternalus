@@ -1,11 +1,8 @@
+import type { MatchResult } from '@eternalus/core';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
-import type { PlayableTeam } from '../domain.types';
-import type { MatchClock } from '../events';
+import type { BridgeEventMap, MatchClock } from '../events';
 import type { CapturePointStatus, StructureStatus } from '../hud.types';
-
-/** How a match ended, as the results screen shows it. */
-type MatchResultSummary = { readonly winner: PlayableTeam | null };
 
 /** Match clock, structure and capture rosters, and the result. */
 type MatchSliceState = {
@@ -13,7 +10,10 @@ type MatchSliceState = {
   readonly clock: MatchClock | null;
   readonly structures: readonly StructureStatus[];
   readonly capturePoints: readonly CapturePointStatus[];
-  readonly result: MatchResultSummary | null;
+  /** Core's result (13 §5), `null` until `match-ended`; it outlives the match until the next setup. */
+  readonly result: MatchResult | null;
+  /** The ended match's length in match seconds; `null` until `match-ended`. */
+  readonly durationSeconds: number | null;
 };
 
 const initialState: MatchSliceState = {
@@ -21,9 +21,13 @@ const initialState: MatchSliceState = {
   structures: [],
   capturePoints: [],
   result: null,
+  durationSeconds: null,
 };
 
-/** Match state the UI shows, fed by `match-clock`, `structure-state` and `capture-state`. */
+/**
+ * Match state the UI shows, fed by `match-clock`, `structure-state`, `capture-state` and
+ * `match-ended`.
+ */
 export const matchSlice = createSlice({
   name: 'match',
   initialState,
@@ -41,10 +45,16 @@ export const matchSlice = createSlice({
       ...state,
       capturePoints: action.payload,
     }),
+    ended: (state, action: PayloadAction<BridgeEventMap['match-ended']>) => ({
+      ...state,
+      result: action.payload.result,
+      durationSeconds: action.payload.durationSeconds,
+    }),
     reset: () => initialState,
   },
   selectors: {
     selectMatchResult: (state) => state.result,
+    selectMatchDurationSeconds: (state) => state.durationSeconds,
     selectMatchClock: (state) => state.clock,
     selectStructures: (state) => state.structures,
     selectCapturePoints: (state) => state.capturePoints,

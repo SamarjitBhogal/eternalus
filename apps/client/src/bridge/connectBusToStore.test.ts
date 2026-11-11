@@ -4,6 +4,7 @@ import type { DisplayCatalogue } from './catalogue.types';
 import { connectBusToStore } from './connectBusToStore';
 import type { BridgeEventMap, CreditEntry, MatchSetupDraft, RosterEntry } from './events';
 import { FIGMA_HUD_PLAYER, figmaHudState, TEST_HUD_CATALOGUE } from './__fixtures__/hudFixtures';
+import { matchResultFixture } from './__fixtures__/matchResultFixtures';
 import { createAppStore } from './store';
 import { TypedEventBus } from './TypedEventBus';
 
@@ -82,6 +83,8 @@ describe('connectBusToStore', () => {
         enemyRover: 'mirror-player',
         difficulties: { laner: 'normal', rover: 'rover' },
       },
+      verdictLines: {},
+      sovereignNames: { light: 'Queen', dark: 'Tyrant' },
     };
     bus.emit('content-catalogue', catalogue);
     bus.emit('loading-progress', {
@@ -103,14 +106,14 @@ describe('connectBusToStore', () => {
     bus.emit('class-selection', { classId: 'magus', specId: null });
     bus.emit('countdown', { kind: 'select', remainingMs: 59_000 });
     bus.emit('countdown', { kind: 'reveal', remainingMs: 9_000 });
+    bus.emit('countdown', { kind: 'results', remainingMs: 29_000 });
     expect(store.getState().matchSetup).toEqual({
       seed: 7,
       playerTeam: 'dark',
       selection: { classId: 'magus', specId: null },
       allies: DRAFT.allies,
       enemies: DRAFT.enemies,
-      countdownMs: 59_000,
-      revealMs: 9_000,
+      countdownsMs: { select: 59_000, reveal: 9_000, results: 29_000 },
       isLockedIn: false,
     });
     bus.emit('match-setup', null);
@@ -156,6 +159,15 @@ describe('connectBusToStore', () => {
     bus.emit('hud-state', { player: null });
     expect(store.getState().hud.player).toBeNull();
     expect(store.getState().hud.announcements).toHaveLength(1);
+  });
+
+  it("stores the ended match's result and length; the next setup clears them", () => {
+    const { bus, store } = connected();
+    const result = matchResultFixture();
+    bus.emit('match-ended', { result, durationSeconds: 120 });
+    expect(store.getState().match).toMatchObject({ result, durationSeconds: 120 });
+    bus.emit('match-setup', DRAFT);
+    expect(store.getState().match).toMatchObject({ result: null, durationSeconds: null });
   });
 
   it('stores the structure and capture rosters as published', () => {
@@ -207,6 +219,7 @@ describe('connectBusToStore', () => {
         structures: [],
         capturePoints: [],
         result: null,
+        durationSeconds: null,
       });
     }
   });

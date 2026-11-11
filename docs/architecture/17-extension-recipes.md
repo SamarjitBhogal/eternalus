@@ -377,7 +377,7 @@ AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `
 ### R17a. Add a victory condition
 
 - **When:** a new way for a match to end (a verdict with a winner or a draw), not a timed event (a timeline entry, 12 §3).
-- **Files:** `core/match/conditions/<Name>Condition.ts` implementing `VictoryCondition`; its id in `VictoryConditionId` (`core/config/VictoryConditionId.types.ts`).
+- **Files:** `core/match/conditions/<Name>Condition.ts` implementing `VictoryCondition`; its id in `VictoryConditionId` (`core/config/VictoryConditionId.types.ts`); its lines in `core/content/narrative/verdictLines.ts` (12 §9), or the win/lose screen shows no line for it. The client reads a verdict with no winner as a draw (`selectMatchVerdict`); a condition that ends with no winner and is not a draw (`aborted`, 12 §6) first makes that selector tell the two apart.
 - **Registry line:** one line in `core/match/defaultVictoryConditions.ts`. Check order is list order and the first verdict wins.
 - **Tests:** a co-located `<Name>Condition.test.ts`; a scenario if it needs the real systems.
 - **Docs:** the table in 12 §6.

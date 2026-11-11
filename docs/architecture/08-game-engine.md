@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-05
+last-reviewed: 2026-11-08
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -315,6 +315,11 @@ HUD and character select (`feat/hud-and-character-select`, 2026-10-26; DEC-50):
   player's Legend comes from `Snapshot.match.humanLegendId`, which core sets when it spawns the
   roster's human slot (DEC-173, [12](12-game-story-and-match-director.md) §13). `Match` no longer
   adopts the first spawn of the player's class and team.
+
+Game-loop plan GL-5 (`feat/results-flow`): `Match.tick` calls the match observer's `ended` once,
+after the tick on which `MatchBridge` publishes `match-ended`; the world keeps running (DEC-92)
+until `MatchState` leaves the phase ([13](13-game-interface.md) §2). A pause overlay still pauses
+the loop, but not the timer that leaves the phase (DEC-134).
 
 ## Related
 

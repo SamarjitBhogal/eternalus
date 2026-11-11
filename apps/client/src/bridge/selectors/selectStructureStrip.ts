@@ -3,6 +3,7 @@ import { createSelector } from '@reduxjs/toolkit';
 import type { AssetId, HudStructureKind } from '../catalogue.types';
 import type { PlayableTeam } from '../domain.types';
 import type { HudSide, StructureStatus } from '../hud.types';
+import { opponentOf } from '../opponentOf';
 import { contentSlice } from '../slices/contentSlice';
 import { matchSetupSlice } from '../slices/matchSetupSlice';
 import { matchSlice } from '../slices/matchSlice';
@@ -17,7 +18,7 @@ export type HudStructureTile = {
   readonly team: PlayableTeam;
   readonly displayName: string;
   readonly iconAssetId: AssetId;
-  /** Health 0..1 (summed over an aggregated group); `null` while any member's health is unknown. */
+  /** Health 0..1 (summed over an aggregated group's known members); `null` while none is known. */
   readonly healthFraction: number | null;
   /**
    * The tile shows destroyed (DEC-69): its structure is at zero health, or, for an aggregated
@@ -26,10 +27,10 @@ export type HudStructureTile = {
   readonly isDestroyed: boolean;
 };
 
-/** The team each strip shows, seen from the player. */
-const SIDE_TEAM: Readonly<Record<HudSide, Readonly<Record<PlayableTeam, PlayableTeam>>>> = {
-  allied: { light: 'light', dark: 'dark' },
-  enemy: { light: 'dark', dark: 'light' },
+/** The team each strip shows, from the player's team. */
+const SIDE_TEAM: Readonly<Record<HudSide, (playerTeam: PlayableTeam) => PlayableTeam>> = {
+  allied: (playerTeam) => playerTeam,
+  enemy: opponentOf,
 };
 
 /** Sort key of a lane: lane order, structures without a lane last. */
@@ -45,12 +46,16 @@ function byStripOrder(
     a.structureId.localeCompare(b.structureId);
 }
 
-/** current / max over `members`; `null` when any member's health is unknown or nothing has health. */
+/**
+ * current / max over the members whose health is known; `null` when none is (or nothing has
+ * health). A member with unknown health is left out: the one Wall tile sums its gates while its
+ * wall segments are not structures yet (DEC-214 (B)).
+ */
 function healthFractionOf(members: readonly StructureStatus[]): number | null {
   let current = 0;
   let max = 0;
   for (const { health } of members) {
-    if (health === null) return null;
+    if (health === null) continue;
     current += health.current;
     max += health.max;
   }
@@ -98,7 +103,7 @@ export const selectStructureStrip = createSelector(
   ],
   (catalogue, playerTeam, structures, side): readonly HudStructureTile[] => {
     if (playerTeam === null) return [];
-    const team = SIDE_TEAM[side][playerTeam];
+    const team = SIDE_TEAM[side](playerTeam);
     const kinds = new Map(catalogue.structureKinds.map((entry) => [entry.kind, entry]));
     const shown = structures
       .filter((structure) => structure.team === team && kinds.has(structure.kind))

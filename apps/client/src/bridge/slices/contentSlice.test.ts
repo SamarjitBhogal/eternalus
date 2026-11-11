@@ -27,6 +27,10 @@ const CATALOGUE: DisplayCatalogue = {
     enemyRover: 'mirror-player',
     difficulties: { laner: 'normal', rover: 'rover' },
   },
+  verdictLines: {
+    'objective-lost': { victory: 'Won: {name}.', defeat: 'Lost: {name}.', draw: 'Even: {name}.' },
+  },
+  sovereignNames: { light: 'Queen', dark: 'Tyrant' },
 };
 
 const {
@@ -39,6 +43,8 @@ const {
   selectLockInChromeAssetId,
   selectHudCatalogue,
   selectTeamNames,
+  selectVerdictLines,
+  selectSovereignNames,
 } = contentSlice.selectors;
 
 const loaded = () => ({
@@ -87,5 +93,13 @@ describe('contentSlice', () => {
       dark: '',
     });
     expect(selectTeamNames(loaded())).toBe(CATALOGUE.teamNames);
+  });
+
+  it('selects the verdict lines and the sovereign names, empty until the catalogue loads', () => {
+    const empty = { content: contentSlice.getInitialState() };
+    expect(selectVerdictLines(empty)).toEqual({});
+    expect(selectSovereignNames(empty)).toEqual({ light: '', dark: '' });
+    expect(selectVerdictLines(loaded())).toBe(CATALOGUE.verdictLines);
+    expect(selectSovereignNames(loaded())).toBe(CATALOGUE.sovereignNames);
   });
 });

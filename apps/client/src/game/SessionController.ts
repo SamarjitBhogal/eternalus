@@ -10,7 +10,7 @@ import type {
   SessionReason,
 } from '../bridge/events';
 import type { MatchEvidence } from '../data/logging/ErrorReport.types';
-import type { MatchCrash, PreparedWorld } from './Match.types';
+import type { MatchObserver, PreparedWorld } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
 import { SESSION_TRANSITIONS } from './SessionController.constants';
 import type {
@@ -85,7 +85,7 @@ export class SessionController {
         if (this.setup === null) throw new Error('No match setup to prepare a world for');
         this.world = deps.prepareWorld(this.setup.seed);
       },
-      createMatch: (viewport, onCrash) => this.createMatch(viewport, onCrash),
+      createMatch: (viewport, observer) => this.createMatch(viewport, observer),
       dropWorld: () => {
         this.world = null;
       },
@@ -228,7 +228,7 @@ export class SessionController {
     this.deps.bus.emit('selection-locked', this.rosters);
   }
 
-  private createMatch(viewport: MatchViewport, onCrash: (crash: MatchCrash) => void): RunningMatch {
+  private createMatch(viewport: MatchViewport, observer: MatchObserver): RunningMatch {
     const { setup, selection, rosters, world } = this;
     if (setup === null || selection === null || rosters === null || world === null) {
       throw new Error('A match needs a setup, a locked-in selection and a prepared world');
@@ -239,7 +239,7 @@ export class SessionController {
         world,
         captureKinds: this.context.catalogue.hud.objectiveKinds.map(({ kind }) => kind),
         roster: rosterSlots(rosters, this.context.catalogue.botRoster.difficulties),
-        onCrash,
+        observer,
       },
       viewport,
     );

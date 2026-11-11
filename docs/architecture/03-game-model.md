@@ -241,6 +241,7 @@ export type EntitySnapshot = {
   readonly kind: EntityKind;
   readonly family: EntityFamily;
   readonly definitionId: string;
+  readonly mapFeatureId?: string; // a structure's map feature, so the HUD binds its tile (DEC-212)
   readonly team: Team | null;
   readonly transform: {
     readonly x: number;

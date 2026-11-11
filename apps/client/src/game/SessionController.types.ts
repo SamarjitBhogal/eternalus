@@ -17,7 +17,7 @@ import type { MatchEvidence } from '../data/logging/ErrorReport.types';
 import type { ResourceController } from '../data/resources/ResourceController';
 import type { CatalogueSource } from './content/CatalogueSource.types';
 import type { SessionClock } from './engine/time/SessionClock.types';
-import type { MatchCrash, PreparedWorld } from './Match.types';
+import type { MatchCrash, MatchObserver, PreparedWorld } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
 import type { Rng } from './session/Rng.types';
 
@@ -34,8 +34,12 @@ export type MatchRequest = {
    * over the catalogue's difficulties.
    */
   readonly roster: readonly RosterSlot[];
-  /** Called once if the match's game loop stops because a tick or a frame threw (DEC-106). */
-  readonly onCrash: (crash: MatchCrash) => void;
+  /**
+   * Hears the match: `crashed` if its game loop stops because a tick or a frame threw (DEC-106),
+   * `ended` once after the tick that ended it (`match-ended`; game-loop plan A8); the match runs on
+   * until the session destroys it (DEC-92).
+   */
+  readonly observer: MatchObserver;
 };
 
 /** A match that is running in `match`; only `MatchState` holds one. */
@@ -100,10 +104,10 @@ export interface SessionContext {
   prepareWorld(): void;
   /**
    * Builds and starts the match on `viewport` from the setup with the rosters LOCK IN filled, the
-   * selection and the world; `onCrash` is called if its game loop later stops on a throw.
+   * selection and the world; `observer` hears it crash or end (`MatchRequest.observer`).
    * @throws When one of them is missing or the factory fails.
    */
-  createMatch(viewport: MatchViewport, onCrash: (crash: MatchCrash) => void): RunningMatch;
+  createMatch(viewport: MatchViewport, observer: MatchObserver): RunningMatch;
   /** Drops the prepared world (the match is over). */
   dropWorld(): void;
   /** Logs why the match could not start and returns to `menu` with reason `'match-failed'` (13 §2). */
