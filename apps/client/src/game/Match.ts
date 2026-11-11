@@ -3,6 +3,7 @@ import { type EntityId, type EntitySnapshot, makeLogRecord, type Snapshot } from
 import { isDead } from '../bridge/selectors/isDead';
 import { BuildingRoofs } from './BuildingRoofs';
 import { GameLoop } from './engine/loop/GameLoop';
+import { HealthBarVisibility } from './HealthBarVisibility';
 import type { LoopTarget } from './engine/loop/GameLoop.types';
 import type { WorldPoint, WorldRect } from './engine/render/Renderer.types';
 import {
@@ -43,6 +44,9 @@ export class Match implements LoopTarget {
 
   private readonly entities: EntityLayer;
 
+  /** Which units draw a world health bar, and on which side; it listens to the simulation's events. */
+  private readonly healthBars: HealthBarVisibility;
+
   /** The map objects (walls, furniture, doors) and their destroyed state, drawn in the scene. */
   private readonly objects: WorldObjectsView;
 
@@ -73,6 +77,7 @@ export class Match implements LoopTarget {
   public constructor(private readonly deps: MatchDeps) {
     const { simulation, world, tickRate, scheduler, camera, logger, bridge, input } = deps;
     const { map, presentation, mapObjects } = world;
+    this.healthBars = new HealthBarVisibility(simulation);
     this.entities = new EntityLayer(
       createDefaultViewRegistry((kind) => {
         logger.log(
@@ -84,6 +89,7 @@ export class Match implements LoopTarget {
         );
       }),
       isDead,
+      this.healthBars.healthBarOf,
     );
     this.camera = new MatchCamera(camera, map);
     this.commands = new PlayerCommands(input, simulation, this.camera, mapObjects);
@@ -107,6 +113,7 @@ export class Match implements LoopTarget {
       maxFrameMs: MAX_TICKS_PER_FRAME * tickMs,
     });
     this.current = simulation.snapshot();
+    this.healthBars.observe(this.current);
     this.bridge = new MatchBridge({
       ...bridge,
       tickRate,
@@ -177,6 +184,7 @@ export class Match implements LoopTarget {
     this.deps.simulation.step();
     this.previous = this.current;
     this.current = this.deps.simulation.snapshot();
+    this.healthBars.observe(this.current);
     this.roofs.playerAt(this.livingPlayerAt());
     if (this.bridge.afterTick(this.current, this.playerId)) {
       this.deps.observer.ended();
@@ -206,11 +214,12 @@ export class Match implements LoopTarget {
   }
 
   /**
-   * Stops the loop and the bridge's listener. The renderer and camera are injected, so their
-   * owner (`MatchHost`) destroys them.
+   * Stops the loop, the health bars' event listeners and the bridge's listener. The renderer and
+   * camera are injected, so their owner (`MatchHost`) destroys them.
    */
   public destroy(): void {
     this.loop.destroy();
+    this.healthBars.destroy();
     this.bridge.destroy();
   }
 
