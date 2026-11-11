@@ -16,6 +16,23 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Teammate's boss spec (Aryan Walanj, 2026-11-11): amend reference 04?** A teammate's spec
+      differs from `docs/reference/game-design/04-objectives-capture-points-and-bosses.md` in
+      four places. Nothing is built for any of them until you answer; no Cathedral or middle-boss
+      work is started. For each, reply amend 04 (and a DEC row in 13) or keep 04:
+      (1) **Capture weight instead of the zone lock**: a mini-boss counts 5 and the big boss 20
+      toward zone presence, so a boss weighs in on the capture but the zone stays capturable;
+      04 "Mini-bosses at the quarter mark" says the zone cannot be captured while it lives.
+      (2) **Eternal boss respawns after 10 minutes**; 04 gives the central boss no respawn (only
+      the corner-camp crystal's 5-minute respawn, DEC-12).
+      (3) **The killer gets a flag instead of becoming an Eternal**; 04 says the player who lands
+      the final hit becomes an Eternal (the one non-yellow Form change row). What the flag does
+      is not in the spec.
+      (4) **Regen after 30 s out of combat**; `docs/reference/suggestions/balancing.md` (boss
+      table, MiniBoss row) says 5%/s after 10 s with no enemy inside its zone. Is the 30 s a
+      replacement for the 10 s trigger, does "out of combat" replace "no enemy in the zone", and
+      is the 5%/s rate kept?
+
 - [ ] **Capture point mini-boss: two interim stand-ins (Aryan Walanj, assigned owner, 2026-11-09;
       `feat/zone-guard-homes` critic finding 1) — due before the zone-lock PR.** (a) The boss
       spawns 120 s after the countdown ends, a `TUNE` placeholder; reference 04 and 07 §7 put it
