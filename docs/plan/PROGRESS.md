@@ -5989,3 +5989,87 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Checks run: `npm run check` on the merge → exit 0: core "Tests 1302 passed (1302)"; client
   "Tests 1800 passed (1800)"; "✓ built in 477ms"; "Documentation check passed."
 - Next step: push; the product owner approves; merge when CI is green.
+
+### 2026-11-09 — Phase 3 / combat sprint: world health bars (DEC-195) — feat/combat-health-bars — sholtzman + Claude Code
+
+- What was done: a unit's world health bar is hidden from its spawn until the unit takes damage
+  or deals damage to a living unit (not a map object or structure), then shows until it dies
+  (DEC-195, the owner's brief of 2026-11-09 and his dialog answers). Enemies (camps included)
+  fill red, allies green; the player's own Legend has none (the HUD shows it); towers and the
+  Stronghold wait for the structure-views task. `game/HealthBarVisibility` reads
+  `damage-applied` and `entity-died` through `Simulation.on` (as `SoundView`, 08 §6) and gives
+  `EntityLayer` one injected rule, `healthBarOf(entity)` → `'ally' | 'enemy' | null`
+  (`views/EntityLayer.types.ts`); the layer draws the bars after all entities, colours by side in
+  `entityViews.constants.ts` (`HEALTH_BAR_*`, `TUNE` placeholders). `Match` builds it, observes
+  each snapshot and destroys it. `Match.lifecycle.test.ts`: "subscribes to nothing" became
+  "subscribes exactly to damage-applied and entity-died and drops each". Docs: DEC-195 row (first
+  of the abilities block DEC-195..209, grep of all refs, worktrees, agent-work and handoffs found
+  it unused), architecture 08 §8 names the rule's home.
+- Tests fail first: commit 1 — break 1 (an attacker counts on any target) 2 red, break 2 (death
+  keeps the bar) 1 red, break 3 (layer draws no bars) 2 red. Commit 2 (sides) — break 1 (every
+  bar on the enemy side) 2 red, break 2 (player not excluded) 2 red (incl. the whole-match test),
+  break 3 (layer ignores the side colour) 1 red; restored 16/16 green.
+- Checks run: `npm run check` (log `eternalus-agent-work/combat-health-bars/check-2.log`):
+  exit 0, Prettier passed, core `Tests 1298 passed (1298)`, client `Tests 1810 passed (1810)`,
+  docs check passed. The first run (`check-1.log`) failed one test: commit 1 left
+  `SessionController.endToEnd.test.ts` asserting the match subscribes to nothing; it now asserts
+  each of the two subscriptions is dropped exactly once (`[1, 1]`; a break that skips
+  `healthBars.destroy()` turns it red).
+- Next step: pre-PR gate (architecture-reviewer, /ponytail-review), push, PR into
+  `phase/3-sprint-3-work`; then task 2, the HUD aether bar.
+
+### 2026-11-09 — Phase 3 / combat sprint: health bars critic round 1 rework — feat/combat-health-bars — sholtzman + Claude Code
+
+- What was done: architecture-reviewer round 1 said REWORK. Blocker fixed: the player's team was
+  derived again from every snapshot, so after the player's Legend died (removed from the
+  snapshot) every ally bar turned red; `HealthBarVisibility` now keeps the team from the first
+  snapshot that has the player. Clears on `entity-removed` (every removal cause, after the tick's
+  last hit) instead of `entity-died`. Better-than-design item 1 built (owner rule 2026-11-09,
+  best architectural outcome now): `views/HealthBarView.ts` (+ `.types.ts`, `.constants.ts`)
+  draws the bar; `EntityLayer` keeps the after-all-entities pass; `HealthBarRule` port in
+  `EntityLayer.types.ts`. Ponytail cut: `views/rectangle.ts` shared with `CapturePointView`
+  (its private copy deleted). 08 `paths` and the README row name `HealthBarVisibility.ts`.
+  Item 2 (inject a snapshot getter instead of `observe`) not built: `Match` already pushes each
+  new snapshot to its collaborators after a step (`bridge.afterTick`, `roofs.playerAt`), and a
+  getter needs snapshot-identity caching to avoid a scan per hit.
+- Tests fail first: break A (team derived each tick) 1 red; break B (clear on `entity-died`
+  only) 2 red; restored 11/11. Client `src/game` 677 passed; `check:quick` passed.
+- Checks run: full `npm run check` not yet run on this commit.
+- Next step: full check, critic round 2 on this diff, push, PR into `phase/3-sprint-3-work`.
+
+### 2026-11-09 — Phase 3 / combat sprint: health bars critic round 2 — feat/combat-health-bars — sholtzman + Claude Code
+
+- What was done: round-1 nits (commit `918e85d8`): `EntityLayer.test` bar geometry computed from
+  `HEALTH_BAR_*`; new `HealthBarView.test.ts` covers the no-health / no-place guard;
+  `Match.lifecycle.test.ts` lists which subscription each unsubscribe drops (`dropped`), not a
+  count. Then architecture-reviewer round 2 on `743e1fef..918e85d8`: **APPROVE**, no blockers,
+  all 8 round-1 findings resolved; BTD-2 rejection upheld. Its nits, all applied: N1 the "late hit"
+  test now emits `entity-died`, a hit, then `entity-removed`; N2 `left` → `filled` in
+  `HealthBarView`; N3 bar geometry asserts moved to `HealthBarView.test.ts` (`EntityLayer.test`
+  keeps order, colour, after-all-units and "centred over its unit"); N4 architecture README
+  `last-reviewed` bumped; N5 this entry. Optional future item (not built, no consumer yet): when
+  structure bars come (DEC-195 (4)), let each `EntityView` give the bar's anchor so
+  `HealthBarView` needs no family branch.
+- Tests fail first: guard break (`health` or `transform` check dropped) 1 red each; no-gap break
+  1 red (`EntityLayer.test`, then `HealthBarView.test`); destroy dropping one handle twice 1 red
+  (the old count assert stayed green); clear on `entity-died` only 3 red (incl. N1's test);
+  bar off-centre 2 red; restored, client `src/game` 681 passed.
+- Checks run: `npm run check` at `918e85d8` (log `eternalus-agent-work/combat-health-bars/check-3.log`):
+  exit 0, core `Tests 1298 passed (1298)`, client `Tests 1814 passed (1814)`, docs check passed.
+  Final run after the round-2 nits: see `check-4.log`.
+- Next step: push, PR into `phase/3-sprint-3-work`; then task 2, the HUD aether bar (owner
+  2026-11-09: bar only, no regen, OQ-56 stays open), stacked on `feat/hud-level-xp`.
+
+### 2026-11-10 — Phase 3 / combat sprint: merge phase/3 into the health bars PR (#89) — feat/combat-health-bars — sholtzman + Claude Code
+
+- What was done: #87, #88, #73 and a merge of `main` moved phase/3 to `8d2404c8` and left #89
+  conflicting in `PROGRESS.md` and the owner decisions log only. This branch merged `8d2404c8`.
+  `PROGRESS.md` keeps phase/3's entries, then this branch's three. The decisions log keeps every
+  row: the 2026-11-09 HUD batch (DEC-224) above the 2026-11-09 health bars batch (DEC-195), newest
+  number first. #88 made `EntitySnapshot.progression` required, so this branch's two new test
+  snapshots (`HealthBarVisibility.test.ts`, `HealthBarView.test.ts`) gain `progression: null`,
+  as the other view tests have; `tsc -b` failed on both before.
+- Checks run: Prettier on both files passed; `npm run docs:check` passed; full `npm run check`
+  exit 0: core `Tests 1302 passed (1302)`, client `Tests 1817 passed (1817)`, `Documentation check
+passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
+- Next step: push, then merge #89 into phase/3 once CI is green.
