@@ -16,6 +16,7 @@ import { NullLogger } from '../diagnostics/NullLogger';
 import type { MapObject } from '../content/maps/mapObjects.types';
 import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import { BLOCKED_LANE_MAP } from '../map/__fixtures__/blockedLaneMap';
+import { MatchGrid } from '../map/MatchGrid';
 import { MatchWorld } from '../state/MatchWorld';
 
 describe('MapDestructionSystem', () => {
@@ -87,7 +88,10 @@ describe('MapDestructionSystem', () => {
         ],
       ],
     };
-    const world = MatchWorld.build(map, [rock], { cellSize: 2, features: MAP_FEATURE_DEFINITIONS });
+    const world = new MatchWorld(
+      map,
+      MatchGrid.build(map, [rock], { cellSize: 2, features: MAP_FEATURE_DEFINITIONS }),
+    );
     const state = new GameState(createDefaultGameConfig(), 1, world);
     state.worldObjects = new WorldObjectStore({
       objects: [rock],

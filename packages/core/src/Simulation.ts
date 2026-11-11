@@ -53,6 +53,7 @@ import { Legend } from './entities/Legend';
 import { Unit } from './entities/Unit';
 import type { GameEventHandler, GameEventType, Unsubscribe } from './state/GameEvents.types';
 import { GameState } from './state/GameState';
+import { MatchGrid } from './map/MatchGrid';
 import { MatchWorld } from './state/MatchWorld';
 import type { Snapshot } from './state/Snapshot.types';
 import { StateHasher } from './state/StateHasher';
@@ -116,7 +117,7 @@ export class Simulation {
    *
    * @throws ConfigValidationError when `options.config` is invalid, before anything runs.
    * @throws MapGenerationError when `config.map.navCellSize` is not finer than a lane tower fort
-   *   wall on a map with lane towers (`MatchWorld.build`).
+   *   wall on a map with lane towers (`MatchGrid.build`).
    */
   public constructor({
     config,
@@ -628,7 +629,7 @@ export class Simulation {
   }
 
   /**
-   * The map's spatial pieces: the match world (`MatchWorld.build`: its one walkability grid shared
+   * The map's spatial pieces: the match world (its one walkability grid, `MatchGrid.build`, shared
    * by the lane flow fields and A\* for Legends), the neighbour index and A\*. All `null` without
    * a map.
    */
@@ -644,10 +645,13 @@ export class Simulation {
     if (map === undefined) {
       return { space: null, world: null, paths: null };
     }
-    const world = MatchWorld.build(map, mapObjects, {
-      cellSize: config.map.navCellSize,
-      features: MAP_FEATURE_DEFINITIONS,
-    });
+    const world = new MatchWorld(
+      map,
+      MatchGrid.build(map, mapObjects, {
+        cellSize: config.map.navCellSize,
+        features: MAP_FEATURE_DEFINITIONS,
+      }),
+    );
     return {
       space: new SpaceIndex(map.width, map.height, SPACE_CELL_SIZE),
       world,
