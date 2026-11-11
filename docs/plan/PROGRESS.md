@@ -6301,3 +6301,20 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   (8 header and separator lines).
 - Checks run: see the next entry or the PR description.
 - Next step: `npm run check`; critic r3 (last loop); ponytail; PR.
+
+### 2026-11-10 — Phase 3 / tower ruins, critic round 3 and ponytail r3 (pre-PR gate) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: critic round 3 (last loop; `eternalus-agent-work/tower-ruins-and-routes/critic-r3.md`)
+  on `a35da809..9b22c8c7`: APPROVE, no blockers. Fixed in `17d5478f`: SF1 (placement keeps towers
+  of one kind a fort box's diagonal apart; towers of different kinds on one lane only must not
+  overlap; DEC-239 row and `laneStructures` TSDoc), N2 (`MatchGrid.test` builds its own map),
+  N3 (`MatchWorld.matchGrid`), N4 (DEC-240 "follows DEC-227 (Q-A)", 470 m), N5 (touch comment).
+  Better-than-design BTD1, BTD3 to BTD5: one INBOX item for a follow-up branch; BTD2 added to the
+  bot path cache request. Ponytail r3 (`ponytail-review-r3.md`): one cut (BTD3), not applied (it
+  deletes a test; waits in INBOX). The `npm run check` of `9b22c8c7` passed (log
+  `check-dec240.log`: EXIT 0, core 1442 tests, client 1800 tests, "Documentation check passed.").
+- Checks run: `npm run check` on `17d5478f` with this entry in place (log
+  `eternalus-agent-work/tower-ruins-and-routes/check-r3-final.log`): EXIT 0, core "Test Files
+  244 passed (244)", "Tests 1442 passed (1442)", client "Tests 1800 passed (1800)",
+  "Documentation check passed.".
+- Next step: push and open the PR on `fix/minion-stack-followups` (#85, head `2f100e87`).
