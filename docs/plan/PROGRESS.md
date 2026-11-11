@@ -6270,3 +6270,19 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `eternalus-agent-work/pr-review-2026-10-29/pr85/check-85-4.log`): EXIT=0, core "Tests 1379
   passed (1379)", client "Tests 1800 passed (1800)", "Documentation check passed.".
 - Next step: merge into #86 and #79; push; reply on #85, #86 and #79 when CI is green.
+
+### 2026-11-10 — Phase 3 / tower ruins, critic round 2 rework (DEC-239) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: the rest of the critic r2 items. SF2: the DEC-235 row names the capture-point
+  zones (commit `1639a2a7`'s subject says "heal zones" too). SF3/D1: the generator checks every
+  pair of lane tower forts on the map in world units after placement (`assertLaneFortsApart`),
+  the per-lane gap check goes, the on-lane check stays; new tests for neighbouring lanes (3200x900,
+  7 lanes, 1 + 9 towers) and a band past the lane end. D4: `utils/geometry.isPointInRect`. n2 and
+  ponytail cut 4: `FortWall` options object. n4, n5 (`DefaultSystemPipelineOptions.ruinWall`
+  from `Simulation`, throws when missing), n8 (`systems` TSDoc). Ponytail cuts 2 and 5. Docs: 06 §3,
+  decisions log (DEC-239 row), INBOX (DEC-227 correction, H1 note, DEC-235 pointer, DEC-239 entry).
+  Red-first breaks: `eternalus-agent-work/tower-ruins-and-routes/red-first-r2.md`.
+- Checks run: `npm run check:quick` on every commit (pre-commit hook); core tests from
+  `packages/core` pass. Full `npm run check` not yet run.
+- Next step: `npm run check`; critic r3 (last loop); ponytail; PR. Bot A\* finding (below) waits
+  on the owner: on 2.5 m cells `pathMaxExpansions` 6000 fails bot routes of about 470 m.

@@ -46,8 +46,7 @@ export class StructureRuins {
     if (body.length === 0) return;
     const from = this.entities.get(attackerId ?? '')?.findComponent(Transform)?.position;
     const wall = from === undefined ? undefined : this.wallHitFrom(body, from);
-    if (wall === undefined) this.hits.delete(entityId);
-    else this.hits.set(entityId, wall.id);
+    if (wall !== undefined) this.hits.set(entityId, wall.id);
   }
 
   /**

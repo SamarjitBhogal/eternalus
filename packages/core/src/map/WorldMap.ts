@@ -96,7 +96,6 @@ export class WorldMap {
   public isCourtSideAt(x: number, y: number): boolean {
     const col = Math.floor(x / this.cellSize);
     const row = Math.floor(y / this.cellSize);
-    if (this.isCourt(col, row)) return true;
     if (this.isWalkable(col, row) || this.cellAt({ x, y }) === null) return false;
     for (let dRow = -1; dRow <= 1; dRow += 1) {
       for (let dCol = -1; dCol <= 1; dCol += 1) {

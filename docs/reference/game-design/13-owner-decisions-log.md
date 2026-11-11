@@ -21,6 +21,18 @@ overridden by the product owner. Decisions arrive through `INBOX.md`; once imple
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
 
+## Batch 2026-11-10 (tower-ruins critic round 2: better-than-design items, standing rule)
+
+Four better-than-design items from the second critic round on `feat/tower-ruins-and-routes`
+(DEC-227, DEC-235). The owner was not asked: his standing rule of 2026-11-09 ("do not allow tech
+debt where we can eliminate it and always choose the option with the best architectural
+outcome") applies, as for DEC-235 B3 to B5. Full findings:
+`eternalus-agent-work/tower-ruins-and-routes/critic-r2.md`. DEC-239 is this batch.
+
+| ID      | Decision |
+| ------- | -------- |
+| DEC-239 | **Tower-ruins critic round 2 items D1 to D4 are built** (amends DEC-227, DEC-235 (B1), (B3)). (D1) After placement the map generator checks every pair of lane tower forts on the whole map, both teams and all lanes, as upright boxes in world units (`assertLaneFortsApart` in `map/laneStructures.ts`), and refuses an overlap naming both towers (DEC-215 (1)); spacing along one lane missed forts on neighbouring lanes near the gates. Placement still keeps a lane's towers a fort box's diagonal apart. (D2) The court-or-footprint stamping rule moves from `MatchWorld` to `map/MatchGrid.ts`, which builds and reopens the grid; `state/` imports `map/` as types only (architecture 02). (D3) The court exit field is its own class, `map/CourtExitField.ts`, which `AStarPathfinder` fills with its search. (D4) One point-in-rectangle test, `utils/geometry.isPointInRect`, used by `PathingSystem` and `doesPolygonOverlapRect` (INBOX H1, in part). |
+
 ## Batch 2026-11-10 (question dialog: the tower-ruins critic's better-than-design items)
 
 The owner's answers of 2026-11-10 to two of the five better-than-design items from the first

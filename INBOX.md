@@ -115,6 +115,18 @@ Reply inline (`Decision: …`).
     `AStarPathfinder`, filled on demand and reset when `WorldMap.version` changes; B2 is
     `state/StructureRuins.ts`, run by `MapDestructionSystem`; B3 is `MatchWorld.build` and
     `MatchWorld.reopen`; B5 is `map/fortInWorld.ts`. Docs 06 §3 and §6, 07 and 10 §9 updated.
+    Later (critic r2, DEC-239): the B3 stamping rule moved to `map/MatchGrid.ts` and the B1 exit
+    field to `map/CourtExitField.ts`.
+- [x] **Tower-ruins critic round 2 (`feat/tower-ruins-and-routes`, 2026-11-10), better than the
+      design — four items.** (D1) check lane tower forts on the whole map in world units, not
+      per lane in lane fractions; (D2) the stamping rule in a `map/` class, since `state/` may
+      import `map/` as types only; (D3) the court exit field in its own class; (D4) one
+      point-in-rectangle helper. Full findings:
+      `eternalus-agent-work/tower-ruins-and-routes/critic-r2.md`. Decision: …
+  - **Answered 2026-11-10 by DEC-239** (standing no-tech-debt rule, not asked): all four built on
+    `feat/tower-ruins-and-routes`. D1 is `assertLaneFortsApart` in `map/laneStructures.ts`; D2 is
+    `map/MatchGrid.ts`; D3 is `map/CourtExitField.ts`; D4 is `utils/geometry.isPointInRect`.
+    Docs 03, 06 §3, 07 and 10 §9 updated.
 
 - [x] **Minion M4 done-when, read for objectives (2026-11-02, `chore/minion-full-march-test`) — sign-off.**
       The plan's M4 check "hordes reach the enemy end with 0 stuck units for `numLanes` 3 and 5"
