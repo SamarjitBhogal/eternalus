@@ -29,9 +29,4 @@ export type WorldObjectStoreOptions = {
    * lane tower's own object and its fort walls (`MapObject.partOf`).
    */
   readonly owners?: ReadonlyMap<string, string>;
-  /**
-   * What a standing fort wall becomes when its structure falls (DEC-217 (12));
-   * `RUINED_FORT_WALL_DEFINITION` by default. `factory` must know its id.
-   */
-  readonly ruinWall?: ObstacleDefinition;
 };

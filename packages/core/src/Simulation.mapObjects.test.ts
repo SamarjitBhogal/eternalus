@@ -207,8 +207,8 @@ describe('Simulation with a roster and map objects (as the client builds a match
       }
     });
 
-    // A fort is 12 blocks: 4 walls cut by doorways into 7 wall objects, then the tower's own
-    // object: 4 corner towers and the keep (DEC-217 (12)).
+    // A fort is 12 blocks: 4 walls cut by doorways into 7 wall objects and 4 corner towers (also
+    // wall objects, DEC-227 (Q-C)), then the tower's own object, the keep (DEC-217 (12)).
     const tower = mapObjects.find(({ kind }) => kind === 'spawner-tower');
     const fort = mapObjects
       .filter(({ id, partOf }) => id === tower?.id || partOf === tower?.id)

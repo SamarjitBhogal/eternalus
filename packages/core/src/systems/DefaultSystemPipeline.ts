@@ -4,7 +4,7 @@ import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
 import { STUCK_DETECTION } from '../content/ai/stuckDetection';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
-import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
+import { RUINED_FORT_WALL_DEFINITION } from '../content/maps/mapObjectDefinitions';
 import { FORMATIONS } from '../content/mobs/formations/formations';
 import { ENRAGING_STRUCTURES } from '../content/mobs/minionModifiers';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
@@ -73,36 +73,6 @@ export class DefaultSystemPipeline extends SystemPipeline {
             state.world.definition,
             map.flowFieldCorridorHalfWidth,
           );
-    const world = state.world?.grid ?? null;
-    const features = state.world?.definition.features ?? [];
-    if (world !== null && state.worldObjects !== undefined) {
-      // A destroyed blocking map object reopens its cells and the lane fields over them (07 §10):
-      // an obstacle's own object, or the objects a structure's body loses when it falls (its own
-      // object and the fort wall that took the killing hit, DEC-217 (12)).
-      state.events.on('entity-removed', ({ entityId }) => {
-        for (const object of state.worldObjects?.fallen(entityId) ?? []) {
-          if (!object.isBlocking) continue;
-          const cells = object.footprints.flatMap((footprint) =>
-            world.clearFootprint(footprint, object.passages),
-          );
-          // `Simulation.buildWorld`'s rule: the grid also stamps the blocking feature behind an
-          // object (a wall segment, turret, rock or tower shares its feature's id), so clear it
-          // too; a lane tower's is its fort's court (DEC-217 (15)).
-          const backing = features.find(
-            ({ id, definitionId }) =>
-              id === object.id && MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking === true,
-          );
-          const footprint = backing?.footprint;
-          const isCourt = MAP_FEATURE_DEFINITIONS[backing?.definitionId ?? '']?.isCourt === true;
-          if (footprint !== undefined) {
-            cells.push(
-              ...(isCourt ? world.clearCourt(footprint) : world.clearFootprint(footprint)),
-            );
-          }
-          flowFields?.markDirty(cells);
-        }
-      });
-    }
     super([
       ...(hordes === undefined ? [] : [...hordes.decide, new HordeSystem(state, HORDE_STEERING)]),
       new StatusEffectSystem(damage, statuses),
@@ -121,7 +91,16 @@ export class DefaultSystemPipeline extends SystemPipeline {
             ),
           ]),
       new CombatSystem(damage),
-      ...(state.worldObjects === undefined ? [] : [new MapDestructionSystem(state, damage)]),
+      ...(state.worldObjects === undefined
+        ? []
+        : [
+            new MapDestructionSystem({
+              state,
+              damage,
+              flowFields,
+              ruinWall: RUINED_FORT_WALL_DEFINITION,
+            }),
+          ]),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
       new ProgressionSystem(state, progression),
       new VeterancySystem(state, statuses, progression.units, MINION_VETERANCY),

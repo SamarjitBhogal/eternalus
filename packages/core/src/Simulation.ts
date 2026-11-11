@@ -64,7 +64,6 @@ import type {
   StructureSource,
 } from './Simulation.types';
 import { SpaceIndex } from './physics/SpaceIndex';
-import { WorldMap } from './map/WorldMap';
 import { zoneAreaOf } from './map/zoneArea';
 import { DefaultSystemPipeline } from './systems/DefaultSystemPipeline';
 import type { SystemContext } from './systems/System.types';
@@ -113,6 +112,8 @@ export class Simulation {
    * Creates a match from its options (architecture 03 §6).
    *
    * @throws ConfigValidationError when `options.config` is invalid, before anything runs.
+   * @throws MapGenerationError when `config.map.navCellSize` is not finer than a lane tower fort
+   *   wall on a map with lane towers (`MatchWorld.build`).
    */
   public constructor({
     config,
@@ -179,10 +180,6 @@ export class Simulation {
         definitions: MAP_OBJECT_DEFINITIONS,
         owners,
       });
-      // Where a structure's killing hit landed decides which fort wall falls with it (DEC-217 (12)).
-      this.state.events.on('entity-died', ({ entityId, killer }) =>
-        this.state.worldObjects?.died(entityId, killer.attackerId),
-      );
       this.state.events.on('entity-removed', ({ entityId }) =>
         this.state.worldObjects?.removed(entityId),
       );
@@ -627,14 +624,9 @@ export class Simulation {
   }
 
   /**
-   * The map's spatial pieces: the match world (its one walkability grid shared by the lane flow
-   * fields and A\* for Legends), the neighbour index and A\*. All `null` without a map. With
-   * `mapObjects`, the grid also blocks what the collision system blocks (06 §6): every blocking
-   * object's footprints, minus its passages. A feature whose object is walkable (a Stronghold's
-   * floor, whose walls and furniture are objects of their own) is not stamped; other blocking
-   * features keep their stamp. A feature that `isCourt` inside a blocking object of its id (a lane
-   * tower inside its fort) is stamped as court ground instead: it fills the fort's hollow core so
-   * no lane field runs through it, yet A\* leads a unit inside out by the doorways (DEC-217 (15)).
+   * The map's spatial pieces: the match world (`MatchWorld.build`: its one walkability grid shared
+   * by the lane flow fields and A\* for Legends), the neighbour index and A\*. All `null` without
+   * a map.
    */
   private static buildWorld(
     map: MapDefinition | undefined,
@@ -648,36 +640,14 @@ export class Simulation {
     if (map === undefined) {
       return { space: null, world: null, paths: null };
     }
-    const walkable = new Set(
-      mapObjects.filter(({ isBlocking }) => !isBlocking).map(({ id }) => id),
-    );
-    const forts = new Set(mapObjects.filter(({ isBlocking }) => isBlocking).map(({ id }) => id));
-    const courts = map.features.filter(
-      ({ id, definitionId }) =>
-        forts.has(id) && MAP_FEATURE_DEFINITIONS[definitionId]?.isCourt === true,
-    );
-    const grid = WorldMap.fromDefinition(
-      {
-        ...map,
-        features: map.features.filter(
-          ({ id }) => !walkable.has(id) && !courts.some((c) => c.id === id),
-        ),
-      },
-      config.map.navCellSize,
-      (definitionId) => MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking ?? false,
-    );
-    for (const { footprint } of courts) {
-      if (footprint !== undefined) grid.stampCourt(footprint);
-    }
-    for (const object of mapObjects.filter(({ isBlocking }) => isBlocking)) {
-      for (const footprint of object.footprints) {
-        grid.stampFootprint(footprint, object.passages);
-      }
-    }
+    const world = MatchWorld.build(map, mapObjects, {
+      cellSize: config.map.navCellSize,
+      features: MAP_FEATURE_DEFINITIONS,
+    });
     return {
       space: new SpaceIndex(map.width, map.height, SPACE_CELL_SIZE),
-      world: new MatchWorld(map, grid),
-      paths: new AStarPathfinder(grid, {
+      world,
+      paths: new AStarPathfinder(world.grid, {
         maxExpansions: config.map.pathMaxExpansions,
         snapCells: config.map.pathSnapCells,
       }),

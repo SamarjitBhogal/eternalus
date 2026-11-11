@@ -1,17 +1,14 @@
 import { Health } from '../components/Health';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { TeamMembership } from '../components/TeamMembership';
-import { Transform } from '../components/Transform';
-import { RUINED_FORT_WALL_DEFINITION } from '../content/maps/mapObjectDefinitions';
 import type { MapObject, MapObjectSnapshot } from '../content/maps/mapObjects.types';
 import type { ObstacleDefinition } from '../content/obstacles/obstacles.types';
 import type { EntityFactory } from '../entities/EntityFactory';
 import type { EntityStore } from './EntityStore';
 import type { WorldObjectRecord, WorldObjectStoreOptions } from './WorldObjectStore.types';
 import type { Rect, Vec2 } from '../utils/geometry.types';
-import type { MutableVec2 } from '../utils/vec2.types';
 import { doesCircleOverlapPolygon, isCircleInsidePolygon } from '../utils/circlePolygon';
-import { boundsOf, nearestPointOnPolygons } from '../utils/geometry';
+import { boundsOf } from '../utils/geometry';
 
 /** Owns placed-object identity and persistent destroyed state after DeathSystem retires entities. */
 export class WorldObjectStore {
@@ -20,18 +17,12 @@ export class WorldObjectStore {
   private readonly destroyed = new Set<string>();
   private readonly factory: EntityFactory;
   private readonly entities: EntityStore;
-  private readonly ruinWall: ObstacleDefinition;
 
   /** A structure's id → the indexes of the records of the map objects that are its body. */
   private readonly bodies = new Map<string, readonly number[]>();
 
-  /** The ids of the structures in `bodies` that still stand. */
-  private readonly standing = new Set<string>();
-
-  /** A dead structure's id → the record index of its fort wall that took the killing hit, or -1. */
-  private readonly hits = new Map<string, number>();
-
-  private readonly aim: MutableVec2 = { x: 0, y: 0 };
+  /** Map object id → the index of its record. */
+  private readonly indexes = new Map<string, number>();
 
   /**
    * Spawns physical objects through the existing registry/factory; terrain has no health entity.
@@ -48,19 +39,17 @@ export class WorldObjectStore {
     entities,
     definitions,
     owners = new Map(),
-    ruinWall = RUINED_FORT_WALL_DEFINITION,
   }: WorldObjectStoreOptions) {
     this.factory = factory;
     this.entities = entities;
-    this.ruinWall = ruinWall;
     for (const object of objects) {
+      this.indexes.set(object.id, this.records.length);
       const definition = definitions[object.kind];
       const bounds = boundsOf(object.footprints.flat());
       const owner = entities.get(owners.get(object.id) ?? '');
       const health = owner?.findComponent(Health);
       if (owner !== undefined && health !== undefined) {
         this.bodies.set(owner.id, [...(this.bodies.get(owner.id) ?? []), this.records.length]);
-        this.standing.add(owner.id);
         const pool = object.partOf === undefined ? health : null;
         this.records.push({ object, entityId: owner.id, health: pool, bounds });
         continue;
@@ -74,57 +63,41 @@ export class WorldObjectStore {
   }
 
   /**
-   * Notes where the hit that killed `entityId` landed, from where `attackerId` stands: on the fort
-   * wall of the structure's body nearest it, when no other part of the body is nearer (attack
-   * reach is measured to that nearest point, `EntityStore.aimPointOf`), else on the structure
-   * itself. With no attacker or no position for it, on the structure itself. Does nothing for an
-   * entity that is no structure's body. Call it when the structure dies (`entity-died`).
-   */
-  public died(entityId: string, attackerId: string | null): void {
-    const body = this.bodies.get(entityId);
-    if (body === undefined) return;
-    const from = this.entities.get(attackerId ?? '')?.findComponent(Transform)?.position;
-    this.hits.set(entityId, from === undefined ? -1 : this.wallHitFrom(body, from));
-  }
-
-  /**
-   * The map objects that fall when `entityId` is retired, in record order: an obstacle's own
-   * object; for a structure, its own objects and the fort wall that took the killing hit (`died`),
-   * which falls with it (DEC-217 (12)). The same before and after `removed`.
-   */
-  public fallen(entityId: string): readonly MapObject[] {
-    const object = this.entityObjects.get(entityId);
-    if (object !== undefined) return [object];
-    const hit = this.hits.get(entityId) ?? -1;
-    return (this.bodies.get(entityId) ?? []).flatMap((index) => {
-      const record = this.records[index];
-      return record !== undefined && (record.object.partOf === undefined || index === hit)
-        ? [record.object]
-        : [];
-    });
-  }
-
-  /**
    * Marks only actual retired entities destroyed; a roof toggle never changes this state. A
-   * retired structure's body becomes ruins (DEC-217 (12)): its own objects and the wall that took
-   * the killing hit are destroyed (`fallen`), and each other fort wall stands as scenery, with no
-   * team and a pool of its own (`ruinWall`'s health, DEC-219 (a)), until it is destroyed itself.
+   * structure's body is the caller's to retire (`destroy`, `standAlone`, 07 §8): a retired
+   * structure id changes nothing here.
    */
   public removed(entityId: string): void {
     const object = this.entityObjects.get(entityId);
     if (object !== undefined) this.destroyed.add(object.id);
-    if (!this.standing.delete(entityId)) return;
-    const fallen = new Set(this.fallen(entityId));
-    for (const index of this.bodies.get(entityId) ?? []) {
+  }
+
+  /** The map objects of the body of the structure `structureId`, in record order; none for any other id. */
+  public bodyOf(structureId: string): readonly MapObject[] {
+    return (this.bodies.get(structureId) ?? []).flatMap((index) => {
       const record = this.records[index];
-      if (record === undefined) continue;
-      if (fallen.has(record.object)) {
-        this.destroyed.add(record.object.id);
-        this.records[index] = { ...record, entityId: null, health: null };
-      } else {
-        this.records[index] = this.spawn(record.object, this.ruinWall, record.bounds);
-      }
-    }
+      return record === undefined ? [] : [record.object];
+    });
+  }
+
+  /** Destroys `object` for good: it has no entity and no health pool afterwards (its record stays). */
+  public destroy(object: MapObject): void {
+    const index = this.indexes.get(object.id);
+    const record = index === undefined ? undefined : this.records[index];
+    if (index === undefined || record === undefined) return;
+    this.destroyed.add(object.id);
+    this.records[index] = { ...record, entityId: null, health: null };
+  }
+
+  /**
+   * Makes `object` stand on its own: a spawned obstacle entity of `definition`, with a health pool
+   * of its own and no team of its own beyond the object's, in place of the structure it was part of.
+   */
+  public standAlone(object: MapObject, definition: ObstacleDefinition): void {
+    const index = this.indexes.get(object.id);
+    const record = index === undefined ? undefined : this.records[index];
+    if (index === undefined || record === undefined) return;
+    this.records[index] = this.spawn(object, definition, record.bounds);
   }
 
   /** Exact map object for a live or retired entity. */
@@ -154,9 +127,9 @@ export class WorldObjectStore {
         point.y - radius > bounds.y + bounds.height ||
         !object.isBlocking ||
         this.destroyed.has(object.id) ||
-        // A structure's body stands until the structure is retired (`removed`), so only an
-        // object's own death counts.
-        (health?.isDead === true && !this.standing.has(entityId ?? '')) ||
+        // A structure's body stands until its objects are retired (`destroy`, `standAlone`), which
+        // rewrites every body record, so only an object's own death counts.
+        (health?.isDead === true && !this.bodies.has(entityId ?? '')) ||
         object.passages?.some((shape) => isCircleInsidePolygon(point, radius, shape)) === true
       )
         continue;
@@ -174,26 +147,6 @@ export class WorldObjectStore {
       health: health === null ? null : { current: health.current, max: health.max },
       isDestroyed: this.destroyed.has(object.id),
     }));
-  }
-
-  /**
-   * The record index of the fort wall of `body` nearest `from`, lower index on a tie, or -1 when
-   * a part of the body that is no wall (the keep) is nearer.
-   */
-  private wallHitFrom(body: readonly number[], from: Vec2): number {
-    let wall = -1;
-    let wallGap = Number.POSITIVE_INFINITY;
-    let ownGap = Number.POSITIVE_INFINITY;
-    for (const index of body) {
-      const object = this.records[index]?.object;
-      const gap =
-        object === undefined
-          ? Number.POSITIVE_INFINITY
-          : nearestPointOnPolygons(from, object.footprints, this.aim);
-      if (object?.partOf === undefined) ownGap = Math.min(ownGap, gap);
-      else if (gap < wallGap) [wall, wallGap] = [index, gap];
-    }
-    return wallGap <= ownGap ? wall : -1;
   }
 
   /** Spawns `object` as an obstacle of `definition` at its footprints' centroid. */
