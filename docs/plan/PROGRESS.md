@@ -6087,3 +6087,40 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `docs:check` were re-run on it.
 - Next step: an owner or orchestrator decision on (15), then the critic, ponytail and the PR
   after `fix/minion-stack-followups` and #75 merge.
+
+### 2026-11-10 — Phase 3 / tower ruins, critic round 1 rework (DEC-227, DEC-235) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: the commits since the branch merged `fix/minion-stack-followups` (`6609b56f`),
+  one line each, then the critic round 1 rework (critic report
+  `eternalus-agent-work/tower-ruins-and-routes/critic-r1.md`):
+  - `60636558`: decisions-log batch 2026-11-09 (DEC-225 to DEC-227), as on #86 and #79.
+  - `19e10fd9`: a lane tower's 4 corner towers are fort walls too, 11 pieces (DEC-227 (Q-C)).
+    Seen red: `MapObjectBuilder.test` on the old builder.
+  - `7b1d20f3`: navigation cells 2.5 m, from 5 m (DEC-227 (Q-A)). Seen red: the Stronghold
+    step-out test with `pathSnapCells` 10.
+  - `b2091978`: units in a lane tower's court leave by its doorways (DEC-217 (15)). No break was
+    recorded at commit time; on the rework tree, A\* without court ground turns 8 court tests red
+    and a `courtMove` that always stays turns 3 red.
+  - `0725607f`, `654f959a`, `2f47bc6a`: lane tower forts kept apart (DEC-227), its INBOX answer and
+    architecture 06, 07, 10 and 18.
+  - Rework, `1639a2a7` (B5, S1, S2), `62ff2387` (B2, B3), `d375ec6c` (nits), `32ad4437` (B1, B4,
+    S4, S5), `8f76fd07` (architecture docs), `523d0039` (DEC-235, INBOX): S1, S2 and B5 (`map/fortInWorld.ts`: the fort in world units; tower
+    spacing scales with the world and throws for any two towers too close; a court match refuses
+    nav cells as thick as the thinnest fort wall); B2 and B3 (`WorldObjectStore` keeps identity and
+    destroyed state; `state/StructureRuins.ts` is the ruin rule, run by `MapDestructionSystem`,
+    which also reopens the grid; `MatchWorld.build`/`reopen` own the stamping rule); B1 and B4 (an
+    exit field in `AStarPathfinder`, reset by `WorldMap.version`; one search loop); S5 (the court
+    rule applies on court ground or a wall cell beside it, `WorldMap.isCourtSideAt`, not on the
+    palace); S4 (horde member, waypoint and palace-guard court tests); nits N1 to N6, N9, N10;
+    ponytail cuts 1 to 4; docs 06, 07, 10 §9, 18; DEC-235 and its INBOX entry.
+- Red-first: every new test was seen red with its rule broken on purpose; the breaks are listed in
+  `eternalus-agent-work/tower-ruins-and-routes/red-first-rework-session2.md` and, for Part A,
+  in the 2026-11-10 handoff (unscaled spacing, no throw, unscaled wall, never-throw).
+- Checks run: `npm run check` on the rework tree before these commits (log
+  `eternalus-agent-work/tower-ruins-and-routes/check-rework.log`, branch line
+  `feat/tower-ruins-and-routes`): "All matched files use Prettier code style!"; core "Tests 1426
+  passed (1426)"; client "Tests 1799 passed (1799)"; "✓ built in 260ms"; "Documentation check
+  passed."; "check exit 0". The first run failed Prettier on two files (line breaks only, fixed).
+  This entry was added after it (docs-only); `prettier --check` and `docs:check` re-run on it.
+- Next step: critic round 2 on the rework (base `2f47bc6a`), ponytail review, re-check, then the
+  PR (base `fix/minion-stack-followups`, or phase/3 once #85 merges).
