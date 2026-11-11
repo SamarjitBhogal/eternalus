@@ -253,7 +253,7 @@ Order in `SystemPipeline`: `MovementSystem` → `CollisionSystem` → `SpaceSyst
   target inside the same fort, steers by no lane field (whose blocked cells point through the
   nearest wall). It heads for its stuck-chase waypoint, else for `AStarPathfinder.exitWaypoint`,
   the way out by the nearest doorway (DEC-217 (15)). The way out of each blocked cell is searched
-  once and kept until the grid next changes (`WorldMap.version`), so a crowd in a court costs one
+  once and kept until the grid next changes (`CourtExitField`, reset by `WorldMap.version`), so a crowd in a court costs one
   search per cell, not one per unit per tick. String pulling never heads for the centre of the
   walker's own cell: from court ground no straight line is clear, so that centre would hold the
   walker in place.

@@ -1,8 +1,9 @@
 import type { Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
-import { UNSEARCHED } from './AStarPathfinder.constants';
 import type { AStarLimits } from './AStarPathfinder.types';
 import { CellHeap } from './CellHeap';
+import { CourtExitField } from './CourtExitField';
+import type { ExitWay } from './CourtExitField.types';
 import {
   DIAGONAL_COST,
   DIRECTION_COLS,
@@ -23,10 +24,9 @@ import type { WorldMap } from './WorldMap';
  *
  * Court cells (`WorldMap.isCourt`: a lane tower's fort court) are open to a search, so a way from
  * or to a unit inside a court runs through its doorways, never through its walls (DEC-185 (A),
- * DEC-217 (15)); `exitWaypoint` gives the way out of a court alone. Lane flow fields still treat a
- * court as blocked, so hordes never march through one. The way out from each blocked cell is
- * searched once per grid version and kept (an exit field filled on demand), so a crowd in a court
- * costs one search per cell, not one per unit per tick.
+ * DEC-217 (15)); `exitWaypoint` gives the way out of a court alone, kept per cell until the grid
+ * changes (`CourtExitField`). Lane flow fields still treat a court as blocked, so hordes never
+ * march through one.
  *
  * @remarks ponytail: a bot searches again on each decision whose straight line is blocked (11 §6
  * puts heavy work in systems); cache the path in the brain if profiling shows the cost.
@@ -37,12 +37,7 @@ export class AStarPathfinder {
   private readonly stamp: Uint32Array;
   private readonly heap: CellHeap;
   private readonly path: Int32Array;
-  /** Per cell, the next cell of its way out (`exitWaypoint`); `UNSEARCHED`, or -1 for none. */
-  private readonly exitNext: Int32Array;
-  /** Per cell, the way out's open cell when it is 2 steps away, else the same as `exitNext`. */
-  private readonly exitEnd: Int32Array;
-  /** The `WorldMap.version` the exit field was filled for. */
-  private exitVersion = -1;
+  private readonly exits: CourtExitField;
   private search = 0;
   private foundCost = -1;
   /** The cell the search under way heads for; -1 in an `exitWaypoint` search, which has none. */
@@ -64,11 +59,15 @@ export class AStarPathfinder {
     this.stamp = new Uint32Array(cells);
     this.heap = new CellHeap(cells, (a, b) => this.isBefore(a, b));
     this.path = new Int32Array(cells);
-    this.exitNext = new Int32Array(cells);
-    this.exitEnd = new Int32Array(cells);
+    this.exits = new CourtExitField(grid, (cell, out) => {
+      this.searchExit(cell, out);
+    });
   }
 
-  /** The cost of the last path found, in step units (10 straight, 14 diagonal); -1 for none. */
+  /**
+   * The cost of the last search's path, in step units (10 straight, 14 diagonal); -1 for none. An
+   * `exitWaypoint` answer the exit field kept from an earlier search leaves it unchanged.
+   */
   public get lastCost(): number {
     return this.foundCost;
   }
@@ -97,65 +96,26 @@ export class AStarPathfinder {
    * beside one) should head next to leave it by the nearest doorway: the farthest cell of the way
    * through court cells to open ground it can walk to in a straight line, or the first one (DEC-217
    * (15)). Returns `false`, leaving `out` as it was, on open ground or when no way is found within
-   * `maxExpansions`.
-   *
-   * The answer for a cell is searched once per grid version and kept. That is exact: from blocked
-   * ground the only line that can be clear is the one to the way's open cell, so all but a 2-step
-   * way give the same answer anywhere in the cell, and for a 2-step way the field keeps the open
-   * cell and checks that one line.
+   * `maxExpansions`. The answer for each cell is kept until the grid changes (`CourtExitField`).
    */
   public exitWaypoint(start: Vec2, out: MutableVec2): boolean {
-    const cell = this.grid.cellAt(start);
-    if (cell === null || this.grid.isWalkable(cell.col, cell.row)) {
-      return false;
-    }
-    if (this.exitVersion !== this.grid.version) {
-      this.exitNext.fill(UNSEARCHED);
-      this.exitVersion = this.grid.version;
-    }
-    const index = cell.row * this.grid.cols + cell.col;
-    if (this.exitNext[index] === UNSEARCHED) {
-      this.fillExit(index);
-    }
-    const next = this.exitNext[index] ?? -1;
-    const end = this.exitEnd[index] ?? -1;
-    if (next === -1) {
-      return false;
-    }
-    this.centreOf(next, out);
-    if (end !== next) {
-      const { x, y } = out;
-      this.centreOf(end, out);
-      if (!this.grid.isLineClear(start.x, start.y, out.x, out.y)) {
-        out.x = x;
-        out.y = y;
-      }
-    }
-    return true;
+    return this.exits.waypoint(start, out);
   }
 
   /**
-   * Searches the way out of blocked `cell` and keeps it in the exit field: the next cell of the
-   * way, and its open cell when the way is 2 steps long (the only one whose answer depends on where
-   * in `cell` the walker stands); -1 for no way within the budget.
+   * Searches the way out of blocked `cell` into `out`: the next cell of the way, and its open
+   * cell when the way is 2 steps long (the only one whose answer depends on where in `cell` the
+   * walker stands); -1 for no way within the budget.
    */
-  private fillExit(cell: number): void {
+  private searchExit(cell: number, out: ExitWay): void {
     const exit = this.find(cell, -1);
     let next = exit;
     for (let at = exit; at !== -1 && at !== cell; at = this.from[at] ?? -1) {
       next = at;
     }
     const isTwoSteps = exit !== -1 && this.from[exit] === next && next !== exit;
-    this.exitNext[cell] = next;
-    this.exitEnd[cell] = isTwoSteps ? exit : next;
-  }
-
-  /** Writes the centre of `cell` into `out`. */
-  private centreOf(cell: number, out: MutableVec2): void {
-    const { cols, cellSize } = this.grid;
-    const col = cell % cols;
-    out.x = (col + 0.5) * cellSize;
-    out.y = ((cell - col) / cols + 0.5) * cellSize;
+    out.next = next;
+    out.end = isTwoSteps ? exit : next;
   }
 
   /**

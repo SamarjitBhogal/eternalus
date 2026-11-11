@@ -108,7 +108,7 @@ export class WorldMap {
 
   /**
    * Counts the stamps and clears so far: it changes whenever a cell may have changed, so a cache
-   * of searches over the grid (`AStarPathfinder.exitWaypoint`) knows when to start again.
+   * of searches over the grid (`CourtExitField`) knows when to start again.
    */
   public get version(): number {
     return this.changes;
