@@ -53,12 +53,7 @@ export abstract class MapDecorationBuilder {
     kind: MapObjectKind = 'furniture',
   ): void {
     const owner = this.object;
-    this.object = {
-      id: owner?.id ?? id,
-      kind: owner?.kind ?? kind,
-      isFootprint: true,
-      ...(owner?.partOf === undefined ? {} : { partOf: owner.partOf }),
-    };
+    this.object = { ...owner, id: owner?.id ?? id, kind: owner?.kind ?? kind, isFootprint: true };
     this.polygon(id, shape, color);
     this.object = owner;
   }

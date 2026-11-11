@@ -17,7 +17,7 @@ export const MAP_OBJECT_HEALTH = {
   terrain: null,
   stronghold: 10000,
   cathedral: null,
-  // Unused: a lane tower's own map object (its keep and corner towers) is always its body, and
+  // Unused: a lane tower's own map object (its keep) is always its body, and
   // shares its one health pool (DEC-185 B; DEC-217 (13): only towers share a pool, the palace and
   // gates keep their own health).
   'spawner-tower': 3000,
@@ -45,7 +45,7 @@ export const MAP_OBJECT_DEFINITIONS = Object.fromEntries(
 
 /**
  * The part of a wall's own health (`wall` above) that each standing wall of a lane tower's fort
- * keeps when its tower falls (DEC-217 (12), DEC-219 (a); owner: "the fort walls have half-health
+ * keeps when its tower falls (DEC-217 (12), DEC-219 (a), DEC-227 (Q-B); owner: "the fort walls have half-health
  * unless that wall was what was attacked to destroy the tower").
  */
 const RUINED_FORT_WALL_HEALTH_FRACTION = 0.5; // TUNE: DEC-217 (12), DEC-219 (a)

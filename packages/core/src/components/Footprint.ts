@@ -1,9 +1,10 @@
 import type { Polygon, Rect } from '../utils/geometry.types';
 
 /**
- * The exact ground a structure stands on, as world-space polygons: a lane tower's fort walls,
- * corner towers and keep, or the Stronghold's palace outline, from the map object of the same id
- * (07 §1, the definition's `hasMapFootprint`). Attack reach to the structure is measured to these
+ * The exact ground a structure stands on, as world-space polygons: a lane tower's own object (the
+ * keep) and its fort walls and corner towers (the map objects that are `partOf` it), or the
+ * Stronghold's palace outline (07 §1, the definition's `hasMapFootprint`). A gate's bounds are
+ * not a fort box (`hasFortBox`, DEC-217 (17)). Attack reach to the structure is measured to these
  * outlines instead of its collider circle, so a melee hit on the fort is a hit on the tower
  * (DEC-185) and melee at the palace wall reaches the Stronghold (DEC-185 D); a chase closes on
  * their nearest point (`EntityStore.aimPointOf`). Its `bounds` is the fort box that tells a chase
