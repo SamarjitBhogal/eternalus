@@ -19,6 +19,7 @@ const unit: EntitySnapshot = {
   team: 'dark',
   transform: { x: 0, y: 0, radius: 0.5 },
   health: { current: 5, max: 10 },
+  progression: null,
   area: null,
   capture: null,
 };

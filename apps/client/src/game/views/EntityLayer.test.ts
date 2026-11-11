@@ -19,6 +19,7 @@ const unit = (id: string, x: number, y: number): EntitySnapshot => ({
   team: 'dark',
   transform: { x, y, radius: 0.4 },
   health: null,
+  progression: null,
   area: null,
   capture: null,
 });
