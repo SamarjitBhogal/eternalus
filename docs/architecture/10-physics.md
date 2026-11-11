@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-29
+last-reviewed: 2026-11-04
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -73,7 +73,9 @@ export class Movement {
 }
 ```
 
-Integration per tick (`MovementSystem`, `dt = 1 / 30` s), in entity id order:
+While `state.match.isIdleHeld` is set (the countdown, 12 §2) `MovementSystem` treats every
+entity as `cannot-move`: the speed scale is 0 and no entity walks. Integration per tick
+(`MovementSystem`, `dt = 1 / 30` s), in entity id order:
 
 1. `dv = desiredVelocity − velocity`; clamp `|dv|` to `acceleration × dt` (acceleration-limited:
    a unit cannot change velocity faster than its stat allows, in any direction).
@@ -237,6 +239,9 @@ Order in `SystemPipeline`: `MovementSystem` → `PathingSystem` → `CollisionSy
   apply next tick" rule, and is invisible at 30 ticks/s.
 - Steering only proposes; the resolver disposes. Units never accept a steering force that pushes
   them into a wall because step 1 of §8 always runs last on positions.
+- A lane's field also covers the blocked cells of its corridor: every one reachable from open
+  ground points the shortest way out, so a horde spawned inside its structure's footprint
+  ([18](18-minion-system.md) §3.2) or a unit pushed into a wall is led back to open ground (MS-31).
 - Flow fields rebuild time-sliced after terrain changes (`06-map-and-minimap.md` §6); ORCA is
   an optional `AvoidanceStrategy` if playtests show shuffling, not an MVP item.
 
@@ -279,13 +284,22 @@ Order in `SystemPipeline`: `MovementSystem` → `PathingSystem` → `CollisionSy
 `physics/SpatialHash` (minion plan M1, M2a) has §5's `rebuild` and an exact, ascending
 `queryCircle`, over points only: no radii and no `queryRect` yet.
 `physics/SpaceIndex` wraps it as `state.space` (11 §3), rebuilt by `SpaceSystem` after
-`MovementSystem`. Horde separation (18 §5.2) falls off linearly with distance, not as 1/r.
+`MovementSystem`.
 
 Flow-field follow (§9, minion plan M4) is built for lane hordes: `LaneFollowMovementStrategy` takes
 the bilinear field direction instead of its slot while the next `blockedLookAhead` (content) of the
-straight line to the slot crosses an unwalkable cell. There is no `CollisionSystem` and no
-wall-avoidance term yet; until they arrive, the blocked corridor cells beside open ground point
-back out of it, so the field itself leads a unit pushed into a wall back to open ground.
+straight line to the slot crosses an unwalkable cell, and a mob standing on unwalkable ground takes
+it whether it marches or chases (18 §5.2). There is no `CollisionSystem` and no wall-avoidance term
+yet; until they arrive, a heading that would enter unwalkable ground turns along its open grid axis
+(18 §5.2, MS-35), and the field's blocked corridor cells (§9) lead a unit that still enters one
+back out.
+
+**2026-10-27 (PR #30, map objects).** Map-enabled simulations built with `mapObjects` now have a
+`CollisionSystem`: it resolves moving circles against authored polygon footprints after movement. `StaticCollisionIndex` provides a grid broad phase;
+`CollisionResolver` sweeps edges and vertices and slides along contacts. Building entrances are
+gaps in the same wall geometry used for drawing. Bridge decks permit passage across terrain
+while retaining collision at their sides. Destroyed object IDs disable their static footprints.
+Unit-to-unit momentum, SAT and the remaining physics described above are still planned.
 
 ## Related
 

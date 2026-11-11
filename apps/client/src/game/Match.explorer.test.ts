@@ -1,13 +1,15 @@
 import {
   createDefaultGameConfig,
   type InputIntent,
-  MapGenerator,
   NullLogger,
   Simulation,
   type Vec2,
 } from '@eternalus/core';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
+import type { BridgeEventMap } from '../bridge/events';
+import { TypedEventBus } from '../bridge/TypedEventBus';
+import { type PlayerChoice, withPlayer } from './__fixtures__/withPlayer';
 import { Camera } from './engine/Camera';
 import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
 import type { WorldRect } from './engine/render/Renderer.types';
@@ -15,7 +17,10 @@ import { RecordingRenderer } from './engine/render/RecordingRenderer';
 import { Match } from './Match';
 import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH } from './Match.constants';
 import type { IntentSource } from './Match.types';
+import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
+import { prepareMatchWorld } from './prepareMatchWorld';
 
+const PLAYER: PlayerChoice = { legend: 'warrior', team: 'light' };
 const SCREEN = { width: 1280, height: 720 };
 
 /** An intent source the test steers by hand. */
@@ -29,20 +34,32 @@ class ScriptedIntent implements IntentSource {
 
 const setUp = () => {
   const config = createDefaultGameConfig();
-  const map = new MapGenerator().generate(config, 1);
+  const world = prepareMatchWorld(config, 1);
+  const { map } = world;
   const renderer = new RecordingRenderer();
   const camera = new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT);
   const input = new ScriptedIntent();
+  const simulation = new Simulation({
+    ...withPlayer(config, PLAYER),
+    seed: 1,
+    logger: new NullLogger(),
+    map: world.map,
+  });
   const match = new Match({
-    simulation: new Simulation({ config, seed: 1, logger: new NullLogger() }),
-    map,
+    simulation,
+    world,
     tickRate: config.tickRate,
     scheduler: new FakeFrameScheduler(),
     renderer,
     camera,
     input,
-    player: { legend: 'warrior', team: 'light' },
     logger: new NullLogger(),
+    onCrash: () => undefined,
+    bridge: {
+      bus: new TypedEventBus<BridgeEventMap>(),
+      publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,
+      captureKinds: [],
+    },
   });
   match.resize(SCREEN.width, SCREEN.height, 1);
   match.tick();
@@ -59,7 +76,7 @@ const setUp = () => {
     x: ((point.x - view.x) / view.width) * SCREEN.width,
     y: ((point.y - view.y) / view.height) * SCREEN.height,
   });
-  return { match, camera, input, map, renderer, shown, cathedral, toScreen };
+  return { match, simulation, camera, input, map, renderer, shown, cathedral, toScreen };
 };
 
 describe('Match free view', () => {
@@ -67,7 +84,7 @@ describe('Match free view', () => {
     const { match, input, map, shown } = setUp();
     const following = shown();
 
-    match.overview();
+    match.controls.overview();
     const overview = shown();
 
     expect(overview.width).toBeGreaterThanOrEqual(map.width);
@@ -81,9 +98,9 @@ describe('Match free view', () => {
     const { match, shown } = setUp();
     const before = shown();
 
-    match.panBy(0, 0);
+    match.controls.panBy(0, 0);
     const start = shown();
-    match.panBy(-SCREEN.width / 2, 0);
+    match.controls.panBy(-SCREEN.width / 2, 0);
     const panned = shown();
 
     expect(start.x).toBeCloseTo(before.x);
@@ -94,37 +111,113 @@ describe('Match free view', () => {
   it('zooms the following camera, and the free view once exploring', () => {
     const { match, camera, shown } = setUp();
 
-    match.zoomBy(2);
+    match.controls.zoomBy(2);
     expect(camera.zoom).toBe(2);
 
-    match.overview();
+    match.controls.overview();
     const overview = shown();
-    match.zoomBy(2);
+    match.controls.zoomBy(2);
     expect(shown().width).toBeCloseTo(overview.width / 2);
     expect(camera.zoom).toBe(2);
   });
 
-  it('enters the cathedral on a click on it, draws the interior and leaves on overview', () => {
+  it('leaves the explorer with every developer roof back and the following camera at base zoom', () => {
+    const { match, camera, shown, cathedral, toScreen } = setUp();
+    match.controls.zoomBy(2);
+    match.controls.overview();
+    const onCathedral = toScreen(cathedral ?? { x: -1, y: -1 }, shown());
+    expect(match.controls.clickAt(onCathedral.x, onCathedral.y)).toBe(true);
+
+    match.controls.leaveExplorer();
+
+    expect(match.controls.hasDeveloperRoofs).toBe(false);
+    expect(camera.zoom).toBe(1);
+    expect(shown().width).toBeCloseTo(FOLLOW_VIEW_WIDTH);
+  });
+
+  it('toggles the cathedral roof in the same world and restores it on overview', () => {
     const { match, input, renderer, shown, cathedral, toScreen } = setUp();
-    match.overview();
+    match.controls.overview();
     const view = shown();
 
-    expect(match.enterAt(0, 0)).toBe(false);
+    expect(match.controls.clickAt(0, 0)).toBe(false);
     const onCathedral = toScreen(cathedral ?? { x: -1, y: -1 }, view);
-    expect(match.enterAt(onCathedral.x, onCathedral.y)).toBe(true);
-    expect(match.isInterior).toBe(true);
+    expect(match.controls.clickAt(onCathedral.x, onCathedral.y)).toBe(true);
+    expect(match.controls.hasDeveloperRoofs).toBe(true);
     const inside = shown();
-    expect(inside.height).toBeLessThanOrEqual(2200);
+    expect(inside).toEqual(view);
     expect(
       renderer.calls.some((call) => call.op === 'fillPolygon' && call.args[1] === '#938e7c'),
     ).toBe(true);
 
-    // Walking does not drop the player out of the cathedral view.
+    // Walking resumes player following while the roof remains open.
     input.move = { x: 1, y: 0 };
     match.tick();
-    expect(shown()).toEqual(inside);
+    expect(shown().width).toBeCloseTo(FOLLOW_VIEW_WIDTH);
+    expect(match.controls.hasDeveloperRoofs).toBe(true);
 
-    match.overview();
-    expect(match.isInterior).toBe(false);
+    match.controls.overview();
+    expect(match.controls.hasDeveloperRoofs).toBe(false);
+  });
+});
+
+describe('MatchViewControls.clickAt: unit, then roof, then map object (DEC-183, DEC-150)', () => {
+  /** Spawns a dark-team minion at `at`, ticks once, and returns its snapshot (id and position). */
+  const spawnDarkMinion = (
+    setup: ReturnType<typeof setUp>,
+    at: Vec2,
+  ): { id: string; x: number; y: number } => {
+    setup.simulation.enqueueCommand({
+      type: 'dev-spawn',
+      kind: 'light-mob',
+      definitionId: 'training-dummy',
+      team: 'dark',
+      at,
+      count: 1,
+    });
+    setup.match.tick();
+    // Found by its definition: the map's guard posts hold other dark light mobs (#74).
+    const minion = setup.match.snapshot.entities.find(
+      ({ definitionId, team }) => definitionId === 'training-dummy' && team === 'dark',
+    );
+    if (minion?.transform == null) throw new Error('The dark minion did not spawn');
+    return { id: minion.id, x: minion.transform.x, y: minion.transform.y };
+  };
+
+  it('attacks the dark-team minion under a click, through the camera and the snapshot', () => {
+    const setup = setUp();
+    const { match, simulation, shown, toScreen, map } = setup;
+    match.controls.overview();
+    const minion = spawnDarkMinion(setup, { x: map.width / 2, y: map.height / 2 + 30 });
+    const enqueue = vi.spyOn(simulation, 'enqueueCommand');
+    const onMinion = toScreen(minion, shown());
+
+    match.controls.clickAt(onMinion.x, onMinion.y);
+
+    expect(enqueue.mock.calls.map(([command]) => command)).toEqual([
+      { type: 'attack-target', actorId: match.playerEntityId, targetId: minion.id },
+    ]);
+  });
+
+  it('attacks an enemy inside the cathedral and leaves the roof closed; no unit toggles it', () => {
+    const setup = setUp();
+    const { match, simulation, shown, toScreen, cathedral } = setup;
+    match.controls.overview();
+    const minion = spawnDarkMinion(setup, cathedral ?? { x: -1, y: -1 });
+    const enqueue = vi.spyOn(simulation, 'enqueueCommand');
+    const onMinion = toScreen(minion, shown());
+
+    expect(match.controls.clickAt(onMinion.x, onMinion.y)).toBe(false);
+
+    expect(match.controls.hasDeveloperRoofs).toBe(false);
+    expect(enqueue.mock.calls.map(([command]) => command)).toEqual([
+      { type: 'attack-target', actorId: match.playerEntityId, targetId: minion.id },
+    ]);
+    // With no unit under the cursor a click on the same roof still toggles it (DEC-150, DEC-153).
+    const roofSpot = toScreen({ x: minion.x + 5, y: minion.y + 5 }, shown());
+    expect(match.controls.clickAt(roofSpot.x, roofSpot.y)).toBe(true);
+    expect(match.controls.hasDeveloperRoofs).toBe(true);
+    // The roof click queues no attack-target: still only the one on the minion.
+    expect(enqueue).toHaveBeenCalledTimes(1);
   });
 });

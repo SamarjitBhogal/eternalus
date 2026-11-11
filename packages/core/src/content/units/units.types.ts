@@ -19,7 +19,7 @@ export type MovementProfile = {
  * How a unit steers: one `MovementStrategy` per id in `entities/strategies/defaultStrategyRegistry.ts`
  * (architecture 04 §4).
  */
-export type MovementStrategyId = 'lane-follow';
+export type MovementStrategyId = 'lane-follow' | 'leashed-chase';
 
 /** How an attack is carried out; one `AttackStrategy` per id in `entities/strategies/defaultStrategyRegistry.ts`. */
 export type AttackStrategyId = 'melee';
@@ -46,7 +46,8 @@ export type UnitDefinition = EntityDefinitionBase & {
   readonly footprintRadius: number;
   /** Sight radius in world units. */
   readonly visionRadius: number;
-  readonly movement: MovementProfile;
+  /** Top speed, acceleration and mass; `movementStrategy` says how the unit steers. */
+  readonly movementProfile: MovementProfile;
   /** The strategy that steers this unit each tick; none for a unit nothing steers. */
   readonly movementStrategy?: MovementStrategyId;
   /** The basic attack; a unit without one cannot attack (a training dummy). */

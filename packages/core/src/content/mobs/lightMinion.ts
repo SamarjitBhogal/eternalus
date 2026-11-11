@@ -17,7 +17,7 @@ export const LIGHT_MINION = {
   aiProfile: 'lane-minion',
   attack: { strategy: 'melee', damage: 12, reach: 1.5, interval: 1.0 }, // TUNE: balancing.md light minion (12 / 1.0 s); reach unspecified
   xpValue: 20, // TUNE: balancing.md "XP sources" (light minion kill)
-  movement: {
+  movementProfile: {
     maxSpeed: 3.5, // TUNE: m/s, balancing.md light minion
     acceleration: 17.5, // TUNE: m/s², top speed after 0.2 s
     mass: 0.5, // TUNE: balancing.md's 40 on this repo's scale (Warrior mass 1 for its 80)

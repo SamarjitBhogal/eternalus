@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-29
+last-reviewed: 2026-11-09
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -35,7 +35,7 @@ carried over unchanged.
 
 ```mermaid
 flowchart LR
-  IN[InputMapper / controllers / DeveloperMenu] -->|Command| Q[CommandQueue]
+  IN[InputMapper / controllers / DeveloperMenu] -->|Command| Q["CommandQueues (bots', external)"]
   Q -->|next tick| APPLY[CommandApplySystem]
   APPLY --> SYS[SystemPipeline: AiSystem ... MovementSystem, CombatSystem, DeathSystem ... InvariantSystem]
   SYS -->|mutates| STATE[(GameState)]
@@ -58,16 +58,26 @@ export class GameState {
   public readonly config: GameConfig;
   public readonly rng: SeededRandom; // the only source of randomness
   public readonly entities: EntityStore; // deterministic, creation-order iteration
-  public readonly world: WorldMap; // grid, cost field, flow fields, structures index
+  public readonly world: MatchWorld | null; // definition, lane routes, WorldMap (grid, cost field, flow fields), structures index; null without a map
   public readonly teams: Readonly<Record<Team, TeamState>>; // score, structures alive, buffs, spawn counters (18 §3.4)
   public readonly hordes: HordeRegistry; // Horde aggregates (not entities)
   public readonly events: GameEvents;
   public readonly recentCommands: RingBuffer<TimedCommand>; // post-mortem context; recent events: events.recentEvents() (§4)
 
+  public readonly match: MatchRecord; // the director's memory (12 §4) and its only writers (DEC-177); `phase` is `match.phase`
+
   public get tick(): number;
-  public get phase(): MatchPhase;
   public advanceTick(): void; // called once per step(), by Simulation only
-  public setPhase(next: MatchPhase): void; // called by MatchDirector only; emits 'phase-changed'
+}
+
+// Sketch: packages/core/src/state/MatchRecord.ts — GameState.match (DEC-177)
+export class MatchRecord implements MatchState {
+  // the MatchState fields (12 §4) as read-only getters; only these five write them (DEC-172)
+  public setPhase(next: MatchPhase): void; // MatchDirector only; stamps `phaseEnteredTick`, emits 'phase-changed'
+  public holdIdle(isHeld: boolean): void; // the countdown phase only (DEC-88)
+  public endMatch(result: MatchResult): void; // MatchDirector only, once; a second call throws
+  public seatHuman(legendId: EntityId): void; // Simulation only, once, when the human slot's Legend spawns
+  public advanceTimeline(): void; // MatchDirector only, once per fired timeline entry
 }
 ```
 
@@ -132,18 +142,21 @@ export type Command =
   | { readonly type: 'dev-set-assert-level'; readonly level: AssertLevel };
 ```
 
-- `CommandQueue` is drained once (DEC-20), at the start of each `step()`, in enqueue order; a
-  command enqueued while a step runs (a bot deciding during `AiSystem`) waits for the next drain, so
-  every command applies exactly one tick boundary after it was issued. The client enqueues the
-  human's commands first, then controllers enqueue in store order during `AiSystem`, so the order is
-  deterministic.
+- Two `CommandQueue`s, the bots' (filled during `AiSystem`) and the external one
+  (`enqueueCommand`: player, developer menu), are drained once (DEC-20), at the start of each
+  `step()`: the bots' first, then the external, each in enqueue order (DEC-156). A command enqueued
+  while a step runs (a bot deciding during `AiSystem`, an event handler) waits for the next drain,
+  so every command applies exactly one tick boundary after it was issued. Controllers enqueue in
+  store order, so the order is deterministic, and a replay, which feeds the external commands
+  before each step, reproduces it.
 - `applyCommand(command, handlers, ctx)` dispatches to the handler registered for
   `command.type` (DEC-20): one `CommandHandler` class per type in `commands/handlers/`, listed in
   `commands/defaultCommandHandlers.ts` (the single place of change, 02 §9). The registry's type
   needs a handler for every union member, so a new command does not compile until its handler
   exists. A handler validates (actor alive, slot ready, caps such as `maxLegendsPerTeam` not
   exceeded) and returns a `CommandRejectReason` instead of throwing; `applyCommand` announces it
-  as `command-rejected`.
+  as `command-rejected`. Once `state.match.result` is set, `applyCommand` refuses every command as
+  `match-ended` before any handler runs (FR-002).
 - `dev-*` commands are the developer menu (requirements: add/remove Legends, spawn mobs from
   chosen origins, sim mode). They are ordinary commands so they appear in the log, respect the
   caps, and are covered by the same tests. `Match` only forwards them when the developer menu is
@@ -167,28 +180,32 @@ plus a deferred queue, research §2). `GameEvents` keeps the most recent events 
 (`recentEvents()`, capacity in `GameEvents.constants.ts`) for invariant reports. Payload objects for
 high-frequency events (`damage-applied`) may be pooled (Recommendation, profile first).
 
-| Event                               | Payload                                                | Emitted by                        | Typical listeners                                                  |
-| ----------------------------------- | ------------------------------------------------------ | --------------------------------- | ------------------------------------------------------------------ |
-| `entity-spawned`                    | `{ entityId, kind, team }`                             | `EntityFactory` via `SpawnSystem` | `SnapshotSystem`, views                                            |
-| `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`           | `DeathSystem` only                | `HordeSystem`, `ProjectilePool`, invariants                        |
-| `damage-applied`                    | `{ targetId, amount, absorbed, source: DamageSource }` | `DamagePipeline`                  | `ProgressionSystem` (assists), `AiSystem` (aggro)                  |
-| `entity-died`                       | `{ entityId, killer: DamageSource }`                   | `DeathResolver`                   | `DeathSystem`, `ProgressionSystem`, `Scoring`                      |
-| `structure-destroyed`               | `{ entityId, kind, team, lane }`                       | `StructureSystem`                 | `EnragedSystem` (enraged lane), `StructureSystem` (walls, shields) |
-| `shield-bars-changed`               | `{ entityId, bars }`                                   | `StructureSystem`                 | HUD, views                                                         |
-| `capture-progress`                  | `{ pointId, team, progress, checkpoint }`              | `CaptureSystem`                   | HUD, `MinimapView`                                                 |
-| `capture-point-owner-changed`       | `{ pointId, from, to }`                                | `CaptureSystem`                   | `Scoring`, `MatchDirector`, `StatusEffectSystem`                   |
-| `phase-changed`                     | `{ from, to }`                                         | `MatchDirectorSystem`             | `SpawnSystem`, `Announcer`                                         |
-| `ability-cast`                      | `{ casterId, abilityId, slot }`                        | `AbilitySystem`                   | views (VFX), `Announcer`                                           |
-| `status-applied`                    | `{ entityId, statusId, sourceId }`                     | `StatusEffectApplier` (DEC-41)    | views, HUD                                                         |
-| `status-expired`                    | `{ entityId, statusId, sourceId }`                     | `StatusEffectSystem`              | views, HUD                                                         |
-| `horde-spawned` / `horde-dissolved` | `{ hordeId, lane, team, memberIds }`                   | `SpawnSystem` / `HordeSystem`     | `EnragedSystem`, `MinimapView`                                     |
-| `level-up`                          | `{ entityId, level }`                                  | `ProgressionSystem`               | `AbilitySystem` (scaling), HUD                                     |
-| `team-changed`                      | `{ entityId, from, to, cause }`                        | `Team` component                  | `HordeSystem`, views                                               |
-| `boss-summoned`                     | `{ entityId, kind }`                                   | `SpawnSystem` (timeline)          | `Announcer`, `AiSystem` (camps turn aggressive)                    |
-| `command-rejected`                  | `{ command, reason }`                                  | `applyCommand`                    | `DeveloperMenu`, tests                                             |
-| `collision-anomaly`                 | `{ entityId, from, to, colliderId }`                   | `CollisionSystem`                 | `InvariantSystem`, `Logger`                                        |
-| `invariant-violated`                | `{ invariantId, tick, details }`                       | `InvariantRunner`                 | `Logger`, `PerfOverlay`, tests (throw)                             |
-| `tick-completed`                    | `{ tick }`                                             | `Simulation`                      | `Match` (publish snapshot, throttle to the store)                  |
+| Event                               | Payload                                                | Emitted by                                                      | Typical listeners                                                       |
+| ----------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `entity-spawned`                    | `{ entityId, kind, team }`                             | `EntityFactory` via `SpawnSystem`, or `Simulation` for a roster | `SnapshotSystem`, views                                                 |
+| `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`           | `DeathSystem` only                                              | `HordeSystem`, `ProjectilePool`, invariants                             |
+| `damage-applied`                    | `{ targetId, amount, absorbed, source: DamageSource }` | `DamagePipeline`                                                | `ProgressionSystem` (assists), `AiSystem` (aggro)                       |
+| `entity-died`                       | `{ entityId, killer: DamageSource }`                   | `DeathResolver`                                                 | `DeathSystem`, `ProgressionSystem`, `Scoring`, `ObjectiveLostCondition` |
+| `structure-destroyed`               | `{ entityId, kind, team, lane }`                       | `StructureSystem`                                               | `EnragedSystem` (enraged lane), `StructureSystem` (walls, shields)      |
+| `structure-breakability-changed`    | `{ entityId, isBreakable, lane }`                      | `StructureSystem`                                               | `HordeSystem` (gate holding), views                                     |
+| `camp-cleared`                      | `{ entityId }`                                         | `SpawnSystem`                                                   | `ProgressionSystem` (camp reward), `MatchDirector`                      |
+| `shield-bars-changed`               | `{ entityId, bars }`                                   | `StructureSystem`                                               | HUD, views                                                              |
+| `capture-progress`                  | `{ pointId, team, progress, checkpoint }`              | `CaptureSystem`                                                 | HUD, `MinimapView`                                                      |
+| `checkpoint-reached`                | `{ pointId, team, checkpoint }`                        | `CaptureSystem`                                                 | checkpoint spawners (Phase 3)                                           |
+| `capture-point-owner-changed`       | `{ pointId, from, to }`                                | `CaptureSystem`                                                 | `Scoring`, `MatchDirector`, `StatusEffectSystem`                        |
+| `phase-changed`                     | `{ from, to }`                                         | `MatchRecord.setPhase` (called by `MatchDirector`)              | `Announcer`                                                             |
+| `match-ended`                       | `{ result: MatchResult }`                              | `MatchDirector`                                                 | client `MatchBridge` (the results flow)                                 |
+| `ability-cast`                      | `{ casterId, abilityId, slot }`                        | `AbilitySystem`                                                 | views (VFX), `Announcer`                                                |
+| `status-applied`                    | `{ entityId, statusId, sourceId }`                     | `StatusEffectApplier` (DEC-41)                                  | views, HUD                                                              |
+| `status-expired`                    | `{ entityId, statusId, sourceId }`                     | `StatusEffectSystem`                                            | views, HUD                                                              |
+| `horde-spawned` / `horde-dissolved` | `{ hordeId, lane, team, memberIds }`                   | `SpawnSystem` / `HordeSystem`                                   | `EnragedSystem`, `MinimapView`                                          |
+| `level-up`                          | `{ entityId, level }`                                  | `ProgressionSystem`                                             | `AbilitySystem` (scaling), HUD                                          |
+| `team-changed`                      | `{ entityId, from, to, cause }`                        | `Team` component                                                | `HordeSystem`, views                                                    |
+| `boss-summoned`                     | `{ entityId, kind }`                                   | `SpawnSystem` (timeline)                                        | `Announcer`, `AiSystem` (camps turn aggressive)                         |
+| `command-rejected`                  | `{ command, reason }`                                  | `applyCommand`                                                  | `DeveloperMenu`, tests                                                  |
+| `collision-anomaly`                 | `{ entityId, from, to, colliderId }`                   | `CollisionSystem`                                               | `InvariantSystem`, `Logger`                                             |
+| `invariant-violated`                | `{ invariantId, tick, details }`                       | `InvariantRunner`                                               | `Logger`, `PerfOverlay`, tests (throw)                                  |
+| `tick-completed`                    | `{ tick }`                                             | `Simulation`                                                    | `Match` (publish snapshot, throttle to the store)                       |
 
 Systems subscribe in their constructor and never call another system. `Simulation.on()` exposes
 the same channel to the client; the bridge re-publishes a throttled subset to React.
@@ -206,7 +223,7 @@ can be `postMessage`d to a Worker later without change (decided, D8; research §
 // Sketch: packages/core/src/state/Snapshot.types.ts
 export type Snapshot = {
   readonly tick: number;
-  readonly phase: MatchPhase;
+  readonly match: MatchSnapshot; // phase, phaseEnteredTick, the unfired timeline marks (12 §3), humanLegendId
   readonly entities: readonly EntitySnapshot[]; // store (creation) order
   readonly hordes: readonly HordeSnapshot[];
   readonly teams: Readonly<Record<Team, TeamSnapshot>>;
@@ -233,6 +250,11 @@ export type EntitySnapshot = {
     readonly max: number;
     readonly shieldBars: readonly number[];
   } | null;
+  readonly progression: {
+    readonly level: number;
+    readonly xp: number; // XP earned inside the current level
+    readonly xpToNext: number | null; // null at the level cap (DEC-224)
+  } | null; // any entity with Progression (every Legend), not only the player (DEC-224)
   readonly statusIds: readonly StatusEffectId[];
   readonly anim: AnimState;
 };
@@ -316,24 +338,35 @@ JavaScript-specific hazards and their rules (research §1, table "Determinism pi
 [persistence C3](../research/persistence-input-diagnostics-research.md#c3-testing-a-running-game-properties-replays-golden-hashes-soak-tests))
 over a canonical serialisation of its own (DEC-20): `tick`, `phase`, the RNG state, then every
 entity in store order with its component fields in a fixed order, including state the client never
-sees (velocity). It does not hash the snapshot, so the hash covers what the snapshot leaves out; a
+sees (velocity), then the other match fields once the match has left its initial state (a match
+no director runs keeps its hash). It does not hash the snapshot, so the hash covers what the snapshot leaves out; a
 component with simulation state adds its fields in `StateHasher`. `Simulation.hash()` is cheap
 enough to call every N ticks in tests and on demand from the developer menu.
 
 ```ts
-// Sketch: packages/core/src/diagnostics/Replay.types.ts
-export type Replay = {
+// Sketch: `ReplayOf<S>` and `ReplayTargetFactoryOf<S>` are generic, in
+// packages/core/src/diagnostics/Replay.types.ts; the concrete types below are in
+// packages/core/src/Simulation.types.ts.
+// What the match was built with: the required `seed` and `config` and the optional `map`,
+// `mapObjects` and `roster` of `SimulationOptions`.
+export type ReplaySetup = Pick<
+  SimulationOptions,
+  'seed' | 'config' | 'map' | 'mapObjects' | 'roster'
+>;
+export type Replay = ReplaySetup & {
   readonly versions: { readonly core: string; readonly content: string; readonly schema: number };
-  readonly seed: number;
-  readonly config: GameConfig;
   readonly commands: readonly { readonly tick: number; readonly command: Command }[];
   readonly checkpoints: readonly { readonly tick: number; readonly hash: number }[];
 };
 ```
 
-A replay is seed + config + command log + versions; `runReplay(replay, createTarget)` builds a
-fresh `Simulation` through the factory it is given (so `diagnostics/` never imports
-`Simulation`), feeds the commands at their ticks, and compares `hash()` at each checkpoint.
+A replay is self-contained: its setup (seed, config and, when the match had them, the generated
+map, the map objects and the whole roster), the command log and the versions. The setup is plain
+data and `exportReplay()` copies it from the options the match was built with, so a replay
+reproduces a match whose world the client prepared (the roster can depend on the player's pick)
+without the code that prepared it. `runReplay(replay, createTarget)` builds a fresh `Simulation`
+through the factory it is given, which receives the replay itself and builds from its setup
+fields (so `diagnostics/` never imports `Simulation`), feeds the commands at their ticks, and compares `hash()` at each checkpoint.
 Replays are the regression-test format (fixtures under `__fixtures__/`, format in
 [15](15-diagnostics-and-runtime-testing.md) §7), the bug-report format (the developer menu can dump
 one) and the match-history record persisted by `ReplayRepository`.
@@ -359,7 +392,6 @@ export type MatchConfig = {
   readonly legendsPerLane: number;
   readonly countdownSeconds: number;
   readonly hordeSizes: { readonly light: number; readonly medium: number; readonly heavy: number };
-  readonly initialHordesPerTeam: number;
   readonly plannedMatchSeconds: number;
   readonly hordeSpawnIntervalSeconds: number;
   readonly capturePoints: CapturePointConfig;
@@ -384,9 +416,9 @@ requirement ceilings in `config/GameConfig.constants.ts`; this table records whe
 | `cornerCamps`                                       | **MVP-if-time**; 0 disables                                                  | game doc, Outer (Corner) Camps             |
 | `legendsPerTeam`, `legendsPerLane`                  | the lane Legends plus the Rover                                              | game doc, Minions and lanes; contract §2.1 |
 | `maxLegendsPerTeam`, `maxUnitsPerTeam`              | caps the developer menu and spawners respect                                 | requirements doc, developer menu           |
-| `countdownSeconds`                                  | only the initial hordes spawn                                                | requirements doc                           |
-| `hordeSizes`, `initialHordesPerTeam`                | one initial horde per lane, from the stronghold                              | requirements doc                           |
-| `plannedMatchSeconds`                               | the target match length                                                      | DEC-13 (pending)                           |
+| `countdownSeconds`                                  | the freeze length: no tower spawns, nothing moves (DEC-81)                   | requirements doc; DEC-81                   |
+| `hordeSizes`                                        | per weight class; the opening hordes are one per lane (`map.numLanes`)       | requirements doc; DEC-84                   |
+| `plannedMatchSeconds`                               | the target match length; its value: `config/defaultGameConfig.ts`            | DEC-13; DEC-81                             |
 | `flowFieldCorridorHalfWidth`, `flowFieldCellBudget` | a lane field's corridor reach; cells rebuilt per tick after a terrain change | 06 §6, 10 §9; Phase 3 sprint 3.2 (`TUNE`)  |
 | `pathMaxExpansions`, `pathSnapCells`                | A\* for Legends: cells one search may settle; how far a blocked end snaps    | 10 §9, 11 §6 (`TUNE`)                      |
 | `capturePoints`, `timeline`                         | one capture point per lane, the middle one the Cathedral; timed events       | game doc, Capture zones; 12                |
@@ -396,8 +428,9 @@ field (`path`) and its `rule` (integration contract §2.2), and returns the conf
 rule holds; `Simulation` validates in its constructor, so it never starts on a bad config. The rules
 live in `config/validateGameConfig.ts`, cross-field rules after the fields they read: whole numbers
 where counts are meant, `tickRate` the supported rate, caps within the requirement ceilings,
-`maxUnitsPerTeam >= initialHordesPerTeam * hordeSizes.light`, the map rules of 06 §2; timeline
-entries ordered is a `Recommendation:`, and `campsPerSide` need not divide by the corridors
+`maxUnitsPerTeam >= map.numLanes * hordeSizes.light`, the map rules of 06 §2; timeline
+entries in tick order, the first `enter-phase` entry at the end of the countdown, no `enter-phase`
+into `victory` or `defeat`, and `campsPerSide` need not divide by the corridors
 (DEC-14). Time fields are authored in seconds and converted to ticks once at construction, so
 systems only ever see ticks. `Match` builds the config from `createDefaultGameConfig()` plus
 developer-menu overrides (`map.presetId` picks a `MapPreset`, which shapes the ground and the lanes
@@ -418,24 +451,31 @@ a view never needs anything from the entity beyond its `definitionId`.
 The simulation kernel (sprint 1.1, PR #13) implements §2–§10 as written, with these interim gaps,
 each closed by the session or phase named:
 
-- `Simulation` takes `(config, seed, logger, systems = [])` (Sprint 1 brief); it becomes
-  `SimulationOptions` when content and `debug` arrive (four parameters at most, CONTRIBUTING §4).
-  No `exportReplay()` or `dispose()` yet. Its `EntityFactory` has an empty registry until session
-  C passes `createDefaultEntityRegistry()` (marked `TODO` in `Simulation.ts`).
-- `move`, `stop`, `attack-target`, `cast-ability`, `intent` and `dev-set-controller` are routed to
+- `Simulation` takes one `SimulationOptions` object (`SimulationOptions` in
+  `packages/core/src/Simulation.types.ts` lists its fields; CONTRIBUTING §4). Its `EntityFactory`
+  uses `createDefaultEntityRegistry()`. `exportReplay()` and `recentContext()` exist (ADR 0025 §4:
+  a log of the external commands and replay checkpoints, both outside the hashed state); no
+  `dispose()` yet.
+- `move`, `stop` and `attack-target` have their own handlers (`MoveHandler`, `StopHandler`,
+  `AttackTargetHandler`). `cast-ability`, `intent` and `dev-set-controller` are routed to
   `UnsupportedCommandHandler` (rejected `not-supported`) until their systems exist; `pick-up`,
   `throw`, `interact` and `dev-set-assert-level` are not in the union yet.
 - `dev-spawn` and `dev-remove-entity` spawn and remove directly and emit `entity-spawned` /
   `entity-removed` themselves until `SpawnSystem` / `DeathSystem` exist (session C).
 - `GameState.snapshot()` builds the snapshot until `SnapshotSystem` exists; `Snapshot` carries
-  `tick`, `phase` and `entities`, and `EntitySnapshot` its identity, `team`, `transform`
-  (`x`, `y`, `radius`) and `health` (`current`, `max`) groups only. `MatchPhase` lives in
-  `state/GameState.types.ts` and stays `countdown` until `match/` exists (phase 4).
-- `GameState` has no `world` yet; it has `hordes`, `teams` (the spawn
-  counters only), the generated `map` and its `routes` since minion plan M1, and `ai`, `space`
-  and `hordeRequests` since M2a (11, 18); `EntityFactory` keeps its
+  `tick`, `match`, `entities`, `hordes` and `teams` (the team counters, since minion plan M1),
+  and `EntitySnapshot` its identity, `team`, `transform`
+  (`x`, `y`, `radius`), `health` (`current`, `max`), `progression` (a Legend's `level`, the `xp`
+  inside that level and its `xpToNext`, `null` at the cap; `snapshot(curves)` takes the level
+  curves `ProgressionSystem` uses), `area` (a zone's polygons) and `capture` (a capture point's
+  state and presence) groups only. `MatchPhase` lives in
+  `config/matchPhases.ts`; the match director is built (12 §13).
+- `GameState.world` is a `MatchWorld` (the generated definition, its lane `routes` and the
+  `WorldMap` grid) with no structures index yet (minion plan M2c), and the grid keeps no flow
+  fields (`PathingSystem` caches them); `GameState` has `hordes` and `teams` (the spawn counters
+  only) since minion plan M1, and `ai`, `space` and `hordeRequests` since M2a (11, 18); `EntityFactory` keeps its
   own id counter until session C switches it to `IdGenerator`. `MatchConfig` has no
-  `hordeSpawnIntervalSeconds`, `capturePoints` or `timeline` yet (they arrive with their systems).
+  `hordeSpawnIntervalSeconds` or `timeline` yet (they arrive with their systems).
 - `Simulation.step()` applies the queued commands itself, before the pipeline (Sprint 1 brief),
   until `CommandApplySystem` heads the default `SystemPipeline` (§1).
 - `Replay` has no `versions` yet (they arrive with the content catalogue).

@@ -4,7 +4,7 @@ description: What the suggestions folder is for, how the product owner accepts o
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-28
 tags: [reference, suggestions, process]
 related:
   - 'docs/reference/game-design/12-open-questions.md'
@@ -43,7 +43,7 @@ flowchart LR
 1. The owner reads the item and picks an option (or writes a different answer).
 2. The decision is written down in exactly one place: `../game-design/12-open-questions.md` for design and naming decisions, or a new ADR under `../../decisions/` (copy `0000-template.md`) when the decision changes the architecture, a guardrail or a dependency.
 3. The reference doc that owns the topic is updated to state the decision as fact (for example `../game-design/01-classes-and-subclasses.md` for a class name, `../glossary.md` for any renamed term). The suggestion item is marked `accepted` with a link to where the decision lives, or `rejected` with a one-line reason. Rejected items stay in the file so the same idea is not proposed twice.
-4. Code follows the docs, never the other way round: display names and tuning values change in `packages/core/src/content/`; kebab-case content IDs are never renamed once used (`CONTRIBUTING.md` §2); a class identifier rename is a mechanical IDE rename (see `naming.md`, "In-code naming convention").
+4. Code follows the docs, never the other way round: display names and tuning values change in `packages/core/src/content/`; kebab-case content IDs are never renamed once a save or a release stores them (`CONTRIBUTING.md` §2); a class identifier rename is a mechanical IDE rename (see `naming.md`, "In-code naming convention").
 
 Decisions that only the owner can make are collected at the end of `discrepancies.md` and copied into the root `INBOX.md` so they are not lost.
 

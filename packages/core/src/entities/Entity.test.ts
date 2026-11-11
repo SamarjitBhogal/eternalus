@@ -90,6 +90,20 @@ describe('Entity', () => {
     expect(() => entity.getComponent(Missing)).toThrow('Missing component "Missing".');
   });
 
+  it('detaches a component with removeComponent and ignores a missing one', () => {
+    const entity = new ConcreteEntity('entity-8', 'test-definition', []);
+    entity.addComponent(new TestMovement(3));
+
+    entity.removeComponent(TestMovement);
+    expect(entity.findComponent(TestMovement)).toBeUndefined();
+    expect(entity.hasComponent(TestMovement)).toBe(false);
+
+    expect(() => {
+      entity.removeComponent(Missing);
+    }).not.toThrow();
+    expect(entity.hasComponent(Missing)).toBe(false);
+  });
+
   it('replaces a component of the same class', () => {
     const entity = new ConcreteEntity('entity-7', 'test-definition', []);
     entity.addComponent(new TestMovement(1));

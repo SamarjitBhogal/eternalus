@@ -6,6 +6,7 @@ import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { validateGameConfig } from '../../config/validateGameConfig';
 import type { Team } from '../../teams/teams.types';
 import { ContentCatalogue } from '../../content/ContentCatalogue';
+import { LEVEL_CURVE_CATALOGUE } from '../../content/progression/levelCurveCatalogue';
 import { Entity } from '../../entities/Entity';
 import { EntityFactory } from '../../entities/EntityFactory';
 import { EntityRegistry } from '../../entities/EntityRegistry';
@@ -58,18 +59,23 @@ const contextWithDummy = (
   registry.register('grunt', Grunt);
   registry.register('hero', Hero);
   return {
-    // One Legend and no initial hordes, so the small caps below are valid configs.
+    // One Legend, one lane and one-mob light hordes, so the small caps below are valid configs.
     state: new GameState(
       validateGameConfig(
-        createDefaultGameConfig({ limits, match: { legendsPerTeam: 1, initialHordesPerTeam: 0 } }),
+        createDefaultGameConfig({
+          limits,
+          map: { numLanes: 1, campsPerSide: 0 },
+          match: { legendsPerTeam: 1, hordeSizes: { light: 1 } },
+        }),
       ),
       1,
     ),
     factory: new EntityFactory(
       registry,
-      new ContentCatalogue(
-        ['dummy', 'grunt', 'hero'].map((kind) => ({ id: kind, kind, displayName: kind })),
-      ),
+      new ContentCatalogue([
+        ...['dummy', 'grunt', 'hero'].map((kind) => ({ id: kind, kind, displayName: kind })),
+        { id: 'lane-grunt', kind: 'grunt', displayName: 'lane grunt', controller: 'minion' },
+      ]),
     ),
   };
 };
@@ -96,7 +102,9 @@ describe('DevSpawnHandler', () => {
       { entityId: 'entity-2', kind: 'dummy', team: 'dark' },
     ]);
     expect(
-      context.state.snapshot().entities.map(({ team, transform }) => ({ team, transform })),
+      context.state
+        .snapshot(LEVEL_CURVE_CATALOGUE)
+        .entities.map(({ team, transform }) => ({ team, transform })),
     ).toEqual([
       { team: 'dark', transform: { x: 10, y: 20, radius: 0.5 } },
       { team: 'dark', transform: { x: 10, y: 20, radius: 0.5 } },
@@ -111,6 +119,8 @@ describe('DevSpawnHandler', () => {
     ['invalid-count', { count: 1.5 }],
     ['invalid-position', { at: { x: Number.NaN, y: 0 } }],
     ['invalid-position', { at: { x: 0, y: Infinity } }],
+    // A lane minion only spawns in a horde, through `dev-spawn-mobs` (MS-25).
+    ['horde-only', { kind: 'grunt', definitionId: 'lane-grunt' }],
   ])('rejects with %s and spawns nothing', (reason, overrides) => {
     const context = contextWithDummy();
     expect(new DevSpawnHandler().handle(spawn(overrides), context)).toBe(reason);

@@ -1,24 +1,32 @@
-import type { FormationDefinition } from '../content/mobs/formations/formations.types';
+import type {
+  FormationDefinition,
+  FormationShape,
+} from '../content/mobs/formations/formations.types';
 import type { Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
 
 /**
- * Where one member of a horde stands (architecture 18 §5.1): the leader (`follower` −1) on the
- * anchor; follower `i` in rank `floor(i / ranksWidth) + 1` behind it and file
- * `i % ranksWidth − (ranksWidth − 1) / 2` across, `slotSpacing` apart. Vectors only (ADR 0012).
+ * Lays out where one member of a horde stands (architecture 18 §5.1).
  *
  * @param anchor - The formation anchor on the lane.
  * @param forward - The lane's unit direction at the anchor.
  * @param follower - The member's index in `memberIds` with the leader left out; −1 for the leader.
  * @param out - Written and returned, so nothing allocates.
  */
-export const formationSlot = (
+type SlotFunction = (
   anchor: Vec2,
   forward: Vec2,
   follower: number,
   formation: FormationDefinition,
   out: MutableVec2,
-): MutableVec2 => {
+) => MutableVec2;
+
+/**
+ * The `ranks` shape: the leader (`follower` −1) on the anchor; follower `i` in rank
+ * `floor(i / ranksWidth) + 1` behind it and file `i % ranksWidth − (ranksWidth − 1) / 2` across,
+ * `slotSpacing` apart. Vectors only (ADR 0012).
+ */
+const ranksSlot: SlotFunction = (anchor, forward, follower, formation, out) => {
   if (follower < 0) {
     out.x = anchor.x;
     out.y = anchor.y;
@@ -32,6 +40,15 @@ export const formationSlot = (
   out.y = anchor.y - forward.y * back + forward.x * across;
   return out;
 };
+
+/** Every formation shape's slot function: a new shape is one entry here (architecture 18 §5.1). */
+export const FORMATION_SLOTS: Readonly<Record<FormationShape, SlotFunction>> = {
+  ranks: ranksSlot,
+};
+
+/** Where one member of a horde stands: its formation's shape's slot function decides. */
+export const formationSlot: SlotFunction = (anchor, forward, follower, formation, out) =>
+  FORMATION_SLOTS[formation.shape](anchor, forward, follower, formation, out);
 
 /**
  * A member's `follower` index for `formationSlot`: its place in `memberIds` with the leader left

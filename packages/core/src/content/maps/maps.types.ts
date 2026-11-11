@@ -1,4 +1,5 @@
 import type { Team } from '../../teams/teams.types';
+import type { MapObjectArt } from './mapObjects.types';
 import type { Polygon, Vec2 } from '../../utils/geometry.types';
 
 /**
@@ -44,6 +45,8 @@ export type MapFeature = {
   readonly laneId?: string;
   /** The ground the feature covers, in world units, when its definition has a size. */
   readonly footprint?: Polygon;
+  /** Generated boundary dimensions; palace presentation must use the actual enclosing layout. */
+  readonly wallBoundary?: Pick<MapLayout['wallRing'], 'radius' | 'thickness'>;
 };
 
 /** The kinds of ground shapes that are not entities. Walls are features, not terrain. */
@@ -87,6 +90,14 @@ export type MapFeatureDefinition = {
   readonly footprintRadius: number;
   /** Whether the footprint blocks walking in the `WorldMap` grid. */
   readonly isBlocking: boolean;
+  /**
+   * Name the HUD shows for this kind; `null` when no screen names it. Not copied into `MapFeature`.
+   *
+   * TODO(sam): when structure content exists, the stronghold, wall, tower and cathedral names move
+   * to `StructureDefinition.displayName` (one per kind, 04 §5); this field then keeps only kinds
+   * without a structure definition (capture-point).
+   */
+  readonly displayName: string | null;
 };
 
 /**
@@ -117,6 +128,8 @@ export type MapLayout = {
     readonly buff: readonly [number, number];
   };
   readonly wallRing: {
+    /** Open, enemy-facing shield arc from cliff to cliff (DEC-158; no closed ring, DEC-159). */
+    readonly frontArc: { readonly verticalScale: number; readonly curveStepDegrees: number };
     readonly radius: number;
     readonly thickness: number;
     /** The arc facing the enemy over which the gates are spread evenly (architecture 06 §3). */
@@ -189,10 +202,42 @@ export type MapPreset = {
 /** Which pass draws a decoration: `ground` under terrain and lanes, `detail` above features. */
 export type MapDecorationLayer = 'ground' | 'detail';
 
-/** A presentation-only polygon; it never changes collision, ownership or gameplay. */
+/** Cosmetic roof cutaways never change collision or ownership. */
+type MapDecorationVisibility = 'roof' | 'interior';
+
+/** Authored artwork with explicit selection, reflection and physical-object metadata. */
 export type MapDecoration = {
   readonly id: string;
   readonly shape: Polygon;
   readonly color: string;
   readonly layer: MapDecorationLayer;
+  /** Main building that owns this piece, if any. */
+  readonly buildingId?: string;
+  /** Roof/interior visibility; omitted for permanent walls and ground. */
+  readonly visibility?: MapDecorationVisibility;
+  /** Floor or doorway included in the building's roof-toggle target. */
+  readonly isFootprint?: true;
+  /** Reflect this west-half piece as a complete polygon. */
+  readonly isMirrored?: true;
+  /** Optional authored identity for the reflected artwork. */
+  readonly mirrorId?: string;
+  readonly object?: MapObjectArt;
+  /** A bridge deck cuts a walkable corridor through otherwise solid decorative terrain. */
+  readonly isPassage?: true;
+  /** Authored lane surface replaces the main view's schematic screen-width lane line. */
+  readonly isLaneSurface?: true;
+  /** This artwork supplies the main-view drawing of a generated feature, without changing it. */
+  readonly replacesFeature?: string;
+};
+
+/** A selectable same-world building, derived from its interior floor and door polygons. */
+export type MapBuilding = {
+  readonly id: string;
+  readonly footprint: readonly Polygon[];
+};
+
+/** Presentation data kept separate from the generated simulation map contract. */
+export type MapPresentation = {
+  readonly scenery: readonly MapDecoration[];
+  readonly buildings: readonly MapBuilding[];
 };

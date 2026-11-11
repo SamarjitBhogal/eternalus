@@ -1,0 +1,42 @@
+/* The 1920 × 1080 artboard (Figma 62:125, 62:70, 58:271), centred by margins so that at
+   1920 × 1080 it sits at (0, 0) with no transform (I-45); the inline scale fits other windows. */
+.artboard {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1920px;
+  height: 1080px;
+  margin: -540px 0 0 -960px;
+  isolation: isolate;
+  transform-origin: center;
+  /* Figma rasterises text without the stem darkening Chrome adds on macOS by default; measured on
+     the 58:271 text leaves, this halves their difference to the reference (inherited by all text). */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 62:131 Top Vignette (0, 0) 1920 × 187: --selection-ink at y 0 → transparent at y 187, extended
+   1000 px outward so a letterbox band above the artboard is ink too (no seam). */
+.vignetteTop {
+  position: absolute;
+  left: -1000px;
+  top: -1000px;
+  z-index: -3;
+  width: 3920px;
+  height: 1187px;
+  background: linear-gradient(to bottom, var(--selection-ink) 1000px, transparent 1187px);
+  pointer-events: none;
+}
+
+/* 62:132 / 62:229 Bottom Vignette (0, 805) 1920 × 275: opaque at y 1080 → transparent at y 805,
+   extended 1000 px below the artboard. */
+.vignetteBottom {
+  position: absolute;
+  left: -1000px;
+  top: 805px;
+  z-index: -1;
+  width: 3920px;
+  height: 1275px;
+  background: linear-gradient(to top, var(--selection-ink) 1000px, transparent 1275px);
+  pointer-events: none;
+}

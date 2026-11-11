@@ -19,6 +19,8 @@ export type FlowQuery = {
   isLineClear(fromX: number, fromY: number, toX: number, toY: number, maxDistance: number): boolean;
   /** Writes the field's unit direction at `(x, y)` into `out`; `false` where it has none. */
   directionAt(x: number, y: number, out: MutableVec2): boolean;
+  /** Whether the ground under `(x, y)` is walkable; `false` outside the world. */
+  isWalkableAt(x: number, y: number): boolean;
 };
 
 /**

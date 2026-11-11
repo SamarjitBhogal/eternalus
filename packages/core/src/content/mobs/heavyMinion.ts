@@ -17,7 +17,7 @@ export const HEAVY_MINION = {
   controller: 'minion',
   aiProfile: 'lane-minion',
   attack: { strategy: 'melee', damage: 70, reach: 1.5, interval: 1.6 }, // TUNE: balancing.md heavy minion (70 / 1.6 s); reach unspecified
-  movement: {
+  movementProfile: {
     maxSpeed: 2.8, // TUNE: m/s, balancing.md heavy minion
     acceleration: 14, // TUNE: m/s², top speed after 0.2 s
     mass: 3.125, // TUNE: balancing.md's 250 on this repo's scale (Warrior mass 1 for its 80)

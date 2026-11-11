@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { Deploying } from '../components/Deploying';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { loadDefaultContent } from '../content/loadDefaultContent';
@@ -11,6 +12,8 @@ import { EntityFactory } from '../entities/EntityFactory';
 import { Legend } from '../entities/Legend';
 import { Unit } from '../entities/Unit';
 import { EntityStore } from './EntityStore';
+import { MapObjectBody } from '../components/MapObjectBody';
+import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
 
 class Dummy extends Entity {
   public readonly kind = 'dummy';
@@ -95,6 +98,19 @@ describe('EntityStore', () => {
     expect(removed.retiredWith).toBe('dev-removed');
     expect(store.has('entity-1')).toBe(false);
     expect(idsOf(store)).toEqual(['entity-2']);
+  });
+
+  it('reports an entity as deploying only while it has the Deploying component', () => {
+    const store = storeWith('entity-1');
+    const entity = store.get('entity-1');
+    expect(store.isDeploying('entity-1')).toBe(false);
+
+    entity?.addComponent(new Deploying({ x: 5, y: 5 }));
+    expect(store.isDeploying('entity-1')).toBe(true);
+
+    entity?.removeComponent(Deploying);
+    expect(store.isDeploying('entity-1')).toBe(false);
+    expect(store.isDeploying('entity-9')).toBe(false);
   });
 
   it('refuses to remove an unknown id', () => {
@@ -221,5 +237,48 @@ describe('EntityStore', () => {
     expect(store.isInReach(minion.id, far.id)).toBe(false);
     expect(store.isInReach('dummy', near.id)).toBe(false);
     expect(store.isInReach(minion.id, 'nobody')).toBe(false);
+  });
+
+  it('measures reach to a map object from its footprint edge, and never to a cornerless one', () => {
+    const store = new EntityStore();
+    const content = loadDefaultContent(30);
+    const { house } = MAP_OBJECT_DEFINITIONS;
+    const factory = new EntityFactory(createDefaultEntityRegistry(), {
+      has: (id) => id === house.id || content.has(id),
+      get: (id) => (id === house.id ? house : content.get(id)),
+    });
+    const minion = factory.create('light-mob', 'light-minion', {
+      team: 'dark',
+      position: { x: 0, y: 0 },
+    });
+    const body = (id: string, footprint: readonly { x: number; y: number }[]) => {
+      const entity = factory.create('obstacle', house.id, {
+        position: { x: 50, y: 50 },
+      });
+      entity.addComponent(
+        new MapObjectBody({ id, kind: 'house', isBlocking: true, footprints: [footprint] }),
+      );
+      store.add(entity);
+      return entity.id;
+    };
+    store.add(minion);
+    // The closing edge (x = 1.5) is the near one: 1.5 − 0.4 radius = 1.1 m, inside the 1.5 m reach.
+    const near = body('near', [
+      { x: 1.5, y: 5 },
+      { x: 20, y: 5 },
+      { x: 20, y: -5 },
+      { x: 1.5, y: -5 },
+    ]);
+    const far = body('far', [
+      { x: 4, y: 5 },
+      { x: 20, y: 5 },
+      { x: 20, y: -5 },
+      { x: 4, y: -5 },
+    ]);
+    const cornerless = body('cornerless', []);
+
+    expect(store.isInReach(minion.id, near)).toBe(true);
+    expect(store.isInReach(minion.id, far)).toBe(false);
+    expect(store.isInReach(minion.id, cornerless)).toBe(false);
   });
 });
