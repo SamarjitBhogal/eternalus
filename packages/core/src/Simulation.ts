@@ -106,6 +106,9 @@ export class Simulation {
    */
   private readonly setup: ReplaySetup;
 
+  /** The level curves `ProgressionSystem` levels Legends along; the snapshot reports XP on them. */
+  private readonly curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'has' | 'get'>;
+
   /**
    * Creates a match from its options (architecture 03 §6).
    *
@@ -140,6 +143,7 @@ export class Simulation {
     this.state = new GameState(validConfig, seed, world, { space, paths }, schedule);
     const { tickRate } = this.state.config;
     const curves = levelCurves ?? loadLevelCurves();
+    this.curves = curves;
     const weaponSource = weapons ?? loadWeapons(tickRate);
     const controllers = Simulation.createControllers();
     const units = content ?? Simulation.defaultContent(tickRate, curves, controllers, weaponSource);
@@ -265,7 +269,7 @@ export class Simulation {
 
   /** The current state as a structured-clone-safe snapshot. */
   public snapshot(): Snapshot {
-    return this.state.snapshot();
+    return this.state.snapshot(this.curves);
   }
 
   /** Subscribes to a game event; returns the function that unsubscribes. */

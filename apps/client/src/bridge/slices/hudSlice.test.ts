@@ -65,13 +65,14 @@ describe('hudSlice', () => {
     expect(selectSlotStatus(state, 'gadget-1')).toMatchObject({ slot: 'gadget-1', isReady: false });
   });
 
-  it('reads the XP fraction as null without a usable value, and clamps it to 1', () => {
+  it('reads the XP fraction as null without a usable value, full at the level cap, and clamps it to 1', () => {
     const fraction = (xp: number | null, xpToNext: number | null) =>
       selectXpFraction(withPlayer({ ...FIGMA_HUD_PLAYER, xp, xpToNext }));
     expect(fraction(699, 1000)).toBe(0.699);
     expect(fraction(699, 0)).toBeNull();
     expect(fraction(null, 1000)).toBeNull();
-    expect(fraction(699, null)).toBeNull();
+    expect(fraction(null, null)).toBeNull();
+    expect(fraction(699, null)).toBe(1); // the level cap has no next level: a full ring (DEC-224)
     expect(fraction(1200, 1000)).toBe(1);
   });
 
