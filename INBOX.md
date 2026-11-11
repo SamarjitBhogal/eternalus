@@ -55,6 +55,9 @@ Reply inline (`Decision: …`).
       Approve each for the tidy PR (DEC-218), or say no.
   - **Answered 2026-11-09 by DEC-226** (decision page 2): (1) (A), keep as built: the court is
     not inside the building; (2) to (4) approved for the tidy PR (DEC-218).
+  - **(2) done by DEC-234** (#85, 2026-11-09): the inside test runs once, in `aimPointOf`, which
+    returns an `AimedAt` tag; `isInReach` and `facingPointOf` read it. The tidy PR builds no
+    helper for it.
 
 - [ ] **`fix/blocking-at-bounds` critic (2026-11-05), better than the design — optional
       follow-ups, no decision blocks the PR.** (1) Keep one box per footprint instead of one per

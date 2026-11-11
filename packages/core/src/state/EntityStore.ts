@@ -181,7 +181,7 @@ export class EntityStore {
    * `null`, leaving `out` as it was, when the target is unknown, has no position, or its outline
    * has no corners.
    */
-  public aimPointOf(targetId: EntityId, from: Vec2, out: MutableVec2): AimedAt {
+  public aimPointOf(targetId: EntityId, from: Vec2, out: MutableVec2): AimedAt | null {
     const outline = this.outlineOf(targetId);
     if (outline !== undefined) {
       if (isPointInAnyPolygon(from, outline)) {

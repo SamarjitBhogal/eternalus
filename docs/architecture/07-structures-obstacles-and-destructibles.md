@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-05
+last-reviewed: 2026-11-10
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -425,7 +425,7 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   Stronghold also carry a `Footprint` component: the polygons of their map object of the same id
   (a tower's fort, the Stronghold's palace outline), which `Simulation` copies for a definition
   with `hasMapFootprint`. Attack reach to the structure is measured to those outlines, and a chase
-  aims at their nearest point, so a hit on a fort wall is a hit on the tower and melee at the
+  aims at their nearest point, or holds inside them (DEC-234), so a hit on a fort wall is a hit on the tower and melee at the
   palace wall reaches the Stronghold (DEC-185, DEC-185 (D)). The circle `Collider` stays. A lane
   tower's fort map object, which blocks, is the tower's body: it has no health of its own, so
   damage to the fort goes to the tower (one pool, DEC-185 (B)). After the tower falls, its fort
