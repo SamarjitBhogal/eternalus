@@ -26,6 +26,7 @@ export class WorldMap {
   /** Per cell, how many stamped footprints hold its centre (`isCourt`). */
   private readonly cores: Uint16Array;
   private readonly courts: Uint16Array;
+  private changes = 0;
 
   private constructor(width: number, height: number, cellSize: number) {
     this.cellSize = cellSize;
@@ -39,8 +40,8 @@ export class WorldMap {
   }
 
   /**
-   * Builds the grid for a map. `cellSize` comes from content (`DEFAULT_MAP_LAYOUT.navCellSize`)
-   * until it moves to `GameConfig`; `isBlocking` says which feature definitions block walking.
+   * Builds the grid for a map. `cellSize` is `GameConfig.map.navCellSize`; `isBlocking` says
+   * which feature definitions block walking.
    */
   public static fromDefinition(
     map: MapDefinition,
@@ -85,6 +86,32 @@ export class WorldMap {
       this.cores[cell] === 0 &&
       this.terrainWalkable[cell] === 1
     );
+  }
+
+  /**
+   * Whether the cell under the world position `(x, y)` is court ground (`isCourt`), or blocked
+   * ground with court ground among its 8 neighbours (a fort wall's cell beside its court): where a
+   * unit leaves by the court's doorways (DEC-217 (15)). Cells outside the grid are neither.
+   */
+  public isCourtSideAt(x: number, y: number): boolean {
+    const col = Math.floor(x / this.cellSize);
+    const row = Math.floor(y / this.cellSize);
+    if (this.isCourt(col, row)) return true;
+    if (this.isWalkable(col, row) || this.cellAt({ x, y }) === null) return false;
+    for (let dRow = -1; dRow <= 1; dRow += 1) {
+      for (let dCol = -1; dCol <= 1; dCol += 1) {
+        if (this.isCourt(col + dCol, row + dRow)) return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Counts the stamps and clears so far: it changes whenever a cell may have changed, so a cache
+   * of searches over the grid (`AStarPathfinder.exitWaypoint`) knows when to start again.
+   */
+  public get version(): number {
+    return this.changes;
   }
 
   /** Whether the cell under the world position `(x, y)` can be walked on; outside the grid, no. */
@@ -171,16 +198,19 @@ export class WorldMap {
    * and lines like a footprint, but not a wall. Returns the cells that changed.
    */
   public stampCourt(court: Polygon): readonly number[] {
-    return this.cellsInside(court).filter((cell) => {
-      this.courts[cell] = (this.courts[cell] ?? 0) + 1;
-      return this.refresh(cell);
-    });
+    return this.recourt(court, 1);
   }
 
   /** Undoes one `stampCourt` of the same polygon. Returns the cells that changed. */
   public clearCourt(court: Polygon): readonly number[] {
+    return this.recourt(court, -1);
+  }
+
+  /** Adds `delta` to the court count of every cell `court` covers. Returns the cells that changed. */
+  private recourt(court: Polygon, delta: 1 | -1): number[] {
+    this.changes += 1;
     return this.cellsInside(court).filter((cell) => {
-      this.courts[cell] = Math.max((this.courts[cell] ?? 0) - 1, 0);
+      this.courts[cell] = Math.max((this.courts[cell] ?? 0) + delta, 0);
       return this.refresh(cell);
     });
   }
@@ -190,6 +220,7 @@ export class WorldMap {
    * those whose centre it holds outside `openings`. Returns the cells whose walkability changed.
    */
   private restamp(footprint: Polygon, openings: readonly Polygon[], delta: 1 | -1): number[] {
+    this.changes += 1;
     const half = this.cellSize / 2;
     return this.cellsInside(footprint, openings).filter((cell) => {
       this.stamps[cell] = Math.max((this.stamps[cell] ?? 0) + delta, 0);

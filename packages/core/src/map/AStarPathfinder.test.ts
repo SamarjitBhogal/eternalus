@@ -112,6 +112,61 @@ describe('AStarPathfinder (A* for Legends, 10 §9)', () => {
     expect(finder.exitWaypoint({ x: 10, y: 20 }, out)).toBe(false);
   });
 
+  it('keeps the way out of each court cell: a second question from the same cell searches nothing', () => {
+    const grid = openGrid();
+    stampWalledCourt(grid);
+    const finder = new AStarPathfinder(grid, LIMITS);
+    const out = { x: 0, y: 0 };
+    const { inside } = WALLED_COURT;
+
+    finder.exitWaypoint(inside, out);
+    const first = { ...out };
+    const farCost = finder.lastCost;
+    // Cell (18, 9), beside the doorway: a cheaper search.
+    finder.exitWaypoint({ x: 37, y: 19 }, out);
+    const nearCost = finder.lastCost;
+    finder.exitWaypoint(inside, out);
+
+    expect(nearCost).toBeLessThan(farCost);
+    expect(out).toEqual(first);
+    // Answered from the exit field: the last search is still the near one.
+    expect(finder.lastCost).toBe(nearCost);
+  });
+
+  it('searches the way out again once the grid changes (WorldMap.version)', () => {
+    const grid = openGrid();
+    stampWalledCourt(grid);
+    const finder = new AStarPathfinder(grid, LIMITS);
+    const out = { x: 0, y: 0 };
+    const { inside, walls } = WALLED_COURT;
+    expect(finder.exitWaypoint(inside, out)).toBe(true);
+    expect(out.x).toBeGreaterThan(inside.x);
+
+    // The west wall falls: open ground is now 2 cells west, not through the east doorway.
+    grid.clearFootprint(walls[2]);
+
+    expect(finder.exitWaypoint(inside, out)).toBe(true);
+    expect(out.x).toBeLessThan(inside.x);
+  });
+
+  it('heads a walker 2 steps from open ground for the open cell when it is in sight, else for the next cell, wherever it stood first', () => {
+    const grid = openGrid();
+    stampWalledCourt(grid);
+    const finder = new AStarPathfinder(grid, LIMITS);
+    const out = { x: 0, y: 0 };
+    // Cell (18, 8) (x 36..38, y 16..18): its way out is court cell (18, 9), then doorway cell
+    // (19, 9), centre (39, 19). From the cell's south-east corner that centre is in sight.
+    const corner = { x: 37.9, y: 17.9 };
+    const back = { x: 36.5, y: 16.5 };
+
+    expect(finder.exitWaypoint(corner, out)).toBe(true);
+    expect(out).toEqual({ x: 39, y: 19 });
+    expect(finder.exitWaypoint(back, out)).toBe(true);
+    expect(out).toEqual({ x: 37, y: 19 });
+    expect(finder.exitWaypoint(corner, out)).toBe(true);
+    expect(out).toEqual({ x: 39, y: 19 });
+  });
+
   it('walks into a court to a goal inside it, through its doorway (DEC-185 (A))', () => {
     const grid = openGrid();
     stampWalledCourt(grid);

@@ -33,10 +33,11 @@ import type { System, SystemContext } from './System.types';
  * A chase that `StuckSystem` found stuck heads for its `ChaseWatch` waypoint instead, the A\* way
  * round to its target (owner 2026-11-05, DEC-193), so blocked terrain holds it only until then.
  *
- * A mob inside a lane tower's court (blocked ground inside a fort box) that does not chase a
- * target inside the same box leaves by the court's doorways (DEC-217 (15)): it heads for its
- * `ChaseWatch` waypoint, or else for `AStarPathfinder.exitWaypoint`, and steers by no lane field,
- * whose blocked cells point through the nearest wall (MS-31).
+ * A mob inside a lane tower's court (`WorldMap.isCourtSideAt`: court ground, or a wall cell beside
+ * it) that does not chase a target inside the same fort box leaves by the court's doorways
+ * (DEC-217 (15)): it heads for its `ChaseWatch` waypoint, or else for
+ * `AStarPathfinder.exitWaypoint`, and steers by no lane field, whose blocked cells point through
+ * the nearest wall (MS-31). Other blocked ground in a fort box (the palace's) is not a court.
  */
 export class PathingSystem implements System {
   public readonly name = 'pathing';
@@ -105,25 +106,23 @@ export class PathingSystem implements System {
       this.depth = grid?.blockedRun(this.target.x, this.target.y, x, y) ?? 0;
       return self.radius + combat.attack.reach;
     }
-    if (grid !== undefined && this.isInsideFort(other.position)) {
+    if (grid !== undefined && this.fortAt(other.position) !== undefined) {
       this.depth = grid.blockedRun(this.target.x, this.target.y, x, y);
     }
     return self.radius + other.radius + combat.attack.reach;
   }
 
   /**
-   * Whether `point` lies in a fort box (`PathingWorld.forts`: a lane tower's fort, the palace,
-   * DEC-217 (16)).
+   * The first fort box `point` lies in (`PathingWorld.forts`: a lane tower's fort, the palace,
+   * DEC-217 (16)), or `undefined`.
    */
-  private isInsideFort(point: Vec2): boolean {
-    return this.fortAt(point) !== undefined;
+  private fortAt(point: Vec2): Rect | undefined {
+    return this.forts.find((box) => PathingSystem.isInBox(box, point));
   }
 
-  /** The first fort box `point` lies in, or `undefined`. */
-  private fortAt({ x, y }: Vec2): Rect | undefined {
-    return this.forts.find(
-      (box) => x >= box.x && x <= box.x + box.width && y >= box.y && y <= box.y + box.height,
-    );
+  /** Whether `point` lies in `box`, edges included. */
+  private static isInBox(box: Rect, { x, y }: Vec2): boolean {
+    return x >= box.x && x <= box.x + box.width && y >= box.y && y <= box.y + box.height;
   }
 
   /**
@@ -136,16 +135,13 @@ export class PathingSystem implements System {
     const self = entity?.findComponent(Transform)?.position;
     const grid = state.world?.grid;
     const box = self === undefined ? undefined : this.fortAt(self);
-    if (self === undefined || box === undefined || grid?.isWalkableAt(self.x, self.y) !== false) {
+    if (self === undefined || box === undefined || grid?.isCourtSideAt(self.x, self.y) !== true) {
       return 'stay';
     }
     if (entity?.findComponent(ChaseWatch)?.waypoint != null) {
       return 'waypoint';
     }
-    const { x, y } = this.target;
-    const isTargetInBox =
-      x >= box.x && x <= box.x + box.width && y >= box.y && y <= box.y + box.height;
-    if (isChasing && isTargetInBox) {
+    if (isChasing && PathingSystem.isInBox(box, this.target)) {
       return 'stay';
     }
     return state.paths?.exitWaypoint(self, this.target) === true ? 'exit' : 'stay';

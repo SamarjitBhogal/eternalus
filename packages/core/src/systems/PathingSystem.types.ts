@@ -17,7 +17,7 @@ export type PathingWorld = {
 };
 
 /**
- * How a mob on blocked ground inside a fort box moves this tick (DEC-217 (15)): as it would
+ * How a mob in a fort court (`WorldMap.isCourtSideAt`) moves this tick (DEC-217 (15)): as it would
  * anywhere (`stay`: it is not in a court, or it chases a target inside the same box, DEC-185), to
  * its `ChaseWatch` waypoint (`waypoint`), or by the court's way out (`exit`); the last two steer
  * by no lane field.

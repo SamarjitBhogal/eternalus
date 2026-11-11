@@ -184,6 +184,38 @@ describe('WorldMap', () => {
     expect(grid.isCourt(cell.col, cell.row)).toBe(false);
   });
 
+  it('tells court ground and the wall cells beside it from open ground and other blocked ground (isCourtSideAt, DEC-217 (15))', () => {
+    const grid = WorldMap.fromDefinition({ ...BLOCKED_LANE_MAP, terrain: [] }, 2, () => false);
+    stampWalledCourt(grid);
+    grid.stampFootprint(SQUARE_AT({ x: 81, y: 21 }));
+
+    expect(grid.isCourtSideAt(WALLED_COURT.inside.x, WALLED_COURT.inside.y)).toBe(true);
+    // The west wall's cell beside the court, and a corner cell whose court neighbour is diagonal.
+    expect(grid.isCourtSideAt(21, 20)).toBe(true);
+    expect(grid.isCourtSideAt(21, 11)).toBe(true);
+    // The doorway and the ground outside are open; a footprint far from any court is no court.
+    expect(grid.isCourtSideAt(39, 19)).toBe(false);
+    expect(grid.isCourtSideAt(10, 20)).toBe(false);
+    expect(grid.isCourtSideAt(81, 21)).toBe(false);
+  });
+
+  it('starts a new version on every stamp and clear of a footprint or a court, so a search cache knows to start again', () => {
+    const grid = WorldMap.fromDefinition({ ...BLOCKED_LANE_MAP, terrain: [] }, 2, () => false);
+    const versions = [grid.version];
+    const record = () => versions.push(grid.version);
+
+    grid.stampFootprint(SQUARE_AT({ x: 81, y: 21 }));
+    record();
+    grid.clearFootprint(SQUARE_AT({ x: 81, y: 21 }));
+    record();
+    grid.stampCourt(WALLED_COURT.court);
+    record();
+    grid.clearCourt(WALLED_COURT.court);
+    record();
+
+    expect(new Set(versions).size).toBe(versions.length);
+  });
+
   it('keeps a court cell a wall only touches as court, so a corridor narrower than two cells stays open to A* (DEC-227 (Q-A))', () => {
     const grid = WorldMap.fromDefinition({ ...BLOCKED_LANE_MAP, terrain: [] }, 2.5, () => false);
     // A 3.8 m corridor (x 13.6..17.4) off the 2.5 m grid: walls touch both its columns.
