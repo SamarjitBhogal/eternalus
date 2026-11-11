@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-11-09
+last-reviewed: 2026-11-10
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
@@ -138,9 +138,9 @@ reach its fort wall and hit it (DEC-185), and reach to a gate is measured to its
 it as blocked, so hordes never march through a court (DEC-185 (A)), but A\* walks it, so an A\*
 route to a unit inside a court goes in by a doorway. A mob in a court that does not chase a
 target inside the same fort leaves by the nearest doorway (DEC-217 (15), 10 §9). A fallen
-tower's court opens; its walls
-but the one that took the killing hit stand until destroyed (DEC-217 (12), 07 §13). The pull requests and interim stand-ins are in the [minion system
-plan](../plan/minion-system-plan.md) §2–§3.
+tower's court opens; every wall except the one that took the killing hit stands until it is
+destroyed (DEC-217 (12), 07 §13). The pull requests and interim stand-ins are in the
+[minion system plan](../plan/minion-system-plan.md) §2–§3.
 
 ## 1. Decisions
 

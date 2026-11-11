@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-09
+last-reviewed: 2026-11-10
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -437,10 +437,13 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   tower's 11 fort wall pieces, its 7 walls and its 4 corner towers (DEC-227 (Q-C), 2026-11-09), is
   its own `wall` map object, `partOf` the tower (`MapObject.partOf`); the tower's own object of the
   same id holds its keep, and the tower's `Footprint` is all of them. When the tower dies, its fort
-  becomes ruins (DEC-217 (12), DEC-219 (a)): `WorldObjectStore` destroys the tower's own object
-  and the wall piece that took the killing hit (the piece nearest the killer when the hit lands;
-  none when the keep is nearer, or the killer has no position), and the grid reopens their cells
-  and the court's. Each other piece stands as teamless scenery with half a wall's own health
+  becomes ruins (DEC-217 (12), DEC-219 (a)). `StructureRuins` holds that rule, and
+  `MapDestructionSystem` runs it from its `entity-died` and `entity-removed` listeners;
+  `WorldObjectStore` keeps only object identity and destroyed state. The tower's own object and
+  the wall piece that took the killing hit are destroyed (the piece nearest the killer when the
+  hit lands; none when the keep is nearer, or the killer has no position). The system reopens
+  their cells and the court's through `MatchWorld.reopen`; `MatchWorld.build` holds the rule that
+  stamps the grid. Each other piece stands as teamless scenery with half a wall's own health
   (`RUINED_FORT_WALL_DEFINITION` in `content/maps/mapObjectDefinitions.ts`) and blocks until it is
   destroyed on its own. A gate's definition now has `hasMapFootprint` too, so reach to a gate is
   measured to its polygon (DEC-217 (17)); `hasFortBox` keeps a gate's box out of the chase rule's

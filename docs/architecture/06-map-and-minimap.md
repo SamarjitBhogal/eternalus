@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-09
+last-reviewed: 2026-11-10
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -125,8 +125,10 @@ flowchart LR
    own gate (`t = 0`) to the enemy gate (`t = 1`): "front line" and "second line" are bands, not
    coordinates, so N per lane works for any N. Towers of one kind stand at least a fort box's
    diagonal apart along the lane, so two forts on a straight stretch never overlap, whatever its
-   heading; a band too narrow for that widens round its middle (DEC-227; the fort side is
-   `BUILDING_GEOMETRY.fort.laneTowerSize`).
+   heading; a band too narrow for that widens round its middle (DEC-227). The fort box is
+   measured in world units: the sketch fort (`BUILDING_GEOMETRY.fort.laneTowerSize`) stretched by
+   the larger world/sketch scale. The generator refuses (`MapGenerationError`) a config whose
+   lane towers of different kinds would come closer than that, or leave the lane.
 4. **raiseWalls**: one `gate` centred on each lane's exit; `wall-segment`s fill the rest of the
    ring, split so that none spans more than a maximum arc; a `turret` sits on every ring corner.
    Gate count equals `numLanes` and every lane leaves through its own gate by construction; a
@@ -294,7 +296,8 @@ export type FlowField = { readonly integration: Uint16Array; readonly direction:
   doorways (DEC-217 (15), `10-physics.md` §9). The centre rule is sound only while every fort
   wall piece is an upright box thicker than a nav cell: a step across such a wall then always
   lands on a cell whose centre the wall holds. `config.map.navCellSize` is set to keep that true
-  (DEC-227 (Q-A)), and a test pins it.
+  (DEC-227 (Q-A)), and a match that stamps a court refuses nav cells as thick as its thinnest
+  lane tower wall (`assertFortWallsResolve` in `map/fortInWorld.ts`, a `MapGenerationError`).
 - Typed arrays keep the hot data allocation-free and transferable (D8).
 
 ## 7. Generator tests (`packages/core/src/map/MapGenerator.test.ts`)
