@@ -6256,3 +6256,13 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Checks run: `npm run check` on the merge → exit 0: core "Tests 1302 passed (1302)"; client
   "Tests 1800 passed (1800)"; "✓ built in 477ms"; "Documentation check passed."
 - Next step: push; the product owner approves; merge when CI is green.
+
+### 2026-11-10 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / phase/3 with main (#73, CodeRabbit config) merge — feat/match-scoring — sholtzman + Claude Code
+
+- What: merged `phase/3-sprint-3-work` (`8d2404c8`, phase/3 with main (#73, CodeRabbit config)) into this branch (`221d365d`).
+  Conflict: this file (both, in date order). Config and docs only: `git diff --stat 7ddc20e0 221d365d`
+  lists only .coderabbit.yaml, INBOX.md, docs/decisions/0018-coderabbit-runs-the-pr-review-skill.md, docs/plan/PROGRESS.md.
+- Checks run: `npx prettier --check` on `INBOX.md`, `.coderabbit.yaml`, this file and ADR 0018 →
+  "All matched files use Prettier code style!"; `npm run docs:check` → "Documentation check
+  passed." The full check of `7ddc20e0` (an entry above) holds for the code.
+- Next step: merge this head into GL-5 and GL-15, then GL-5 into GL-16; push all four.
