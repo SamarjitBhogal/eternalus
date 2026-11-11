@@ -77,6 +77,10 @@ Reply inline (`Decision: …`).
       `partOf` (stays as ruins); (T2) `WorldObjectStore.spawn` gets only the definition id: pass
       what it needs explicitly. Heal (DEC-215): (H1) one point-in-box helper instead of three
       copies (`PathingSystem.isInsideFort`, `geometry.doesPolygonOverlapRect`, `HealingZones`).
+      (H1 is built in part on `feat/tower-ruins-and-routes` as tower-ruins critic r2 D4, DEC-239:
+      `utils/geometry.isPointInRect` replaces `PathingSystem.isInBox`, the later name of
+      `isInsideFort`, and the copy in `doesPolygonOverlapRect`. `HealingZones` is only on
+      `feat/out-of-combat-heal`, not merged: it uses `isPointInRect` once both branches meet.)
       Full findings: `eternalus-agent-work/minion-stack-audit/reports/runner-reports/critic-followups-r2.md`,
       `eternalus-agent-work/playtest-2026-11-04/critic-chevron-r3.md` and
       `eternalus-agent-work/playtest-2026-11-04/session-2383bba1-reports.md`. Approve all,

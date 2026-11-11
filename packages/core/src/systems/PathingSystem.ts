@@ -13,6 +13,7 @@ import type {
 import type { LaneFlowFields } from '../map/LaneFlowFields';
 import type { WorldMap } from '../map/WorldMap';
 import { formationSlot } from '../state/formationSlot';
+import { isPointInRect } from '../utils/geometry';
 import type { Rect, Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
 import type { CourtMove, PathingWorld } from './PathingSystem.types';
@@ -118,12 +119,7 @@ export class PathingSystem implements System {
    * DEC-217 (16)), or `undefined`.
    */
   private fortAt(point: Vec2): Rect | undefined {
-    return this.forts.find((box) => PathingSystem.isInBox(box, point));
-  }
-
-  /** Whether `point` lies in `box`, edges included. */
-  private static isInBox(box: Rect, { x, y }: Vec2): boolean {
-    return x >= box.x && x <= box.x + box.width && y >= box.y && y <= box.y + box.height;
+    return this.forts.find((box) => isPointInRect(point, box));
   }
 
   /**
@@ -142,7 +138,7 @@ export class PathingSystem implements System {
     if (entity?.findComponent(ChaseWatch)?.waypoint != null) {
       return 'waypoint';
     }
-    if (isChasing && PathingSystem.isInBox(box, this.target)) {
+    if (isChasing && isPointInRect(this.target, box)) {
       return 'stay';
     }
     return state.paths?.exitWaypoint(self, this.target) === true ? 'exit' : 'stay';
