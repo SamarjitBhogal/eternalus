@@ -82,8 +82,22 @@ Reply inline (`Decision: …`).
   - **Answered 2026-11-09 by DEC-227** (question dialog, "Tower-ruins map PR"): fixed on
     `feat/tower-ruins-and-routes`. `laneStructures.ts` keeps towers of one kind at least a fort
     box's diagonal apart along the lane (a band too narrow widens round its middle), so two forts
-    never overlap on any lane heading; the fort side is `BUILDING_GEOMETRY.fort.laneTowerSize`.
+    never overlap on any lane heading. The fort box is measured in world units (the sketch fort,
+    `BUILDING_GEOMETRY.fort.laneTowerSize`, stretched by the larger world/sketch scale). The
+    generator refuses (`MapGenerationError`) a config whose lane towers of different kinds would
+    come closer than that.
     `MapGenerator.test.ts` checks every lane tower fort pair at 2 and 3 towers per kind.
+- [x] **Tower-ruins critic round 1 (`feat/tower-ruins-and-routes`, 2026-11-10), better than the
+      design — five items.** (B1) one way-out search per court cell instead of one per court mob
+      per tick; (B2) move the ruin rule out of `WorldObjectStore`; (B3) one owner of the
+      court-or-footprint stamping rule; (B4) one A\* search loop; (B5) one "lane tower fort in
+      world units" helper, with a check that nav cells stay thinner than the fort walls. Full
+      findings: `eternalus-agent-work/tower-ruins-and-routes/critic-r1.md`. Decision: …
+  - **Answered 2026-11-10 by DEC-235** (question dialog for B1 and B2; B3 to B5 under the standing
+    no-tech-debt rule): all five built on `feat/tower-ruins-and-routes`. B1 is an exit field in
+    `AStarPathfinder`, filled on demand and reset when `WorldMap.version` changes; B2 is
+    `state/StructureRuins.ts`, run by `MapDestructionSystem`; B3 is `MatchWorld.build` and
+    `MatchWorld.reopen`; B5 is `map/fortInWorld.ts`. Docs 06 §3 and §6, 07 and 10 §9 updated.
 
 - [x] **Minion M4 done-when, read for objectives (2026-11-02, `chore/minion-full-march-test`) — sign-off.**
       The plan's M4 check "hordes reach the enemy end with 0 stuck units for `numLanes` 3 and 5"
