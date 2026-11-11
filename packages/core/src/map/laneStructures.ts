@@ -40,14 +40,15 @@ const assertTowersOnLane = (laneId: string, allTs: readonly number[], config: Ma
   }
 };
 
-/** Relative slack for the overlap check: forts one diagonal apart touch, give or take rounding. */
+/** Relative slack for the overlap check: two forts touch, not overlap, when one axis gap equals the box side. */
 const TOUCH_TOLERANCE = 1e-9;
 
 /**
  * Checks every pair of lane tower forts on the whole map, both teams and all lanes, in world
  * units: each fort is an upright box round its tower (`fortInWorld`), and two boxes overlap when
- * both axes are closer than the box. Placement keeps towers of one lane apart along the lane;
- * this check also covers towers on bends and on neighbouring lanes (DEC-215 (1)).
+ * both axes are closer than the box. Placement keeps towers of one kind on a lane apart along
+ * the lane; this check also covers towers of different kinds, bends and neighbouring lanes
+ * (DEC-215 (1)).
  *
  * @throws MapGenerationError naming both towers when two forts overlap.
  */
@@ -72,8 +73,8 @@ export const assertLaneFortsApart = (towers: readonly MapFeature[], config: MapC
 /**
  * One lane's Light towers: `spawnTowersPerLane` SpawnerTowers on the front band, then
  * `buffTowersPerLane` BuffTowers on the second band, at fractions of the lane's length from
- * the Light gate. "Front" and "second line" are bands. Towers stand at least a fort box's
- * diagonal apart along the lane (the box in world units), a band too narrow for that widens
+ * the Light gate. "Front" and "second line" are bands. Towers of one kind stand at least a fort
+ * box's diagonal apart along the lane (the box in world units), a band too narrow for that widens
  * round its middle (DEC-227); `assertLaneFortsApart` then checks the forts on the whole map.
  * Throws MapGenerationError when a widened band puts a tower off the lane.
  */

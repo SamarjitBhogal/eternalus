@@ -19,14 +19,14 @@ export class MatchWorld {
 
   /**
    * @param definition - The generated map.
-   * @param stamps - Its grid with the rule that stamped it (`MatchGrid.build`), built by the
+   * @param matchGrid - Its grid with the rule that stamped it (`MatchGrid.build`), built by the
    *   composition root.
    */
   public constructor(
     public readonly definition: MapDefinition,
-    private readonly stamps: MatchGrid,
+    private readonly matchGrid: MatchGrid,
   ) {
-    this.grid = stamps.grid;
+    this.grid = matchGrid.grid;
     this.routes = new LaneRoutes(definition);
   }
 
@@ -35,6 +35,6 @@ export class MatchWorld {
    * whose walkability changed.
    */
   public reopen(object: MapObject): readonly number[] {
-    return this.stamps.reopen(object);
+    return this.matchGrid.reopen(object);
   }
 }

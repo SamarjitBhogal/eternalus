@@ -136,6 +136,18 @@ Reply inline (`Decision: …`).
   - **Answered 2026-11-10 by DEC-240** (question dialog): A, plus a request for a bot path cache
     ("Requests for the agent" below). Built on `feat/tower-ruins-and-routes`:
     `config/defaultGameConfig.ts`, test in `map/AStarPathfinder.test.ts`.
+- [ ] **Tower-ruins critic round 3 (`feat/tower-ruins-and-routes`, 2026-11-10), better than the
+      design — four follow-ups, no decision blocks the PR.** (BTD1) Set the A\* cap as a search
+      area in world units (m², divided by `navCellSize`²), or validate the two together, so the
+      next cell-size change cannot shrink the search again (DEC-240 was needed for this reason).
+      (BTD3) Make `DefaultSystemPipelineOptions.ruinWall` required, as the round-1 ruling said:
+      about 12 test call sites add one line, and the type check replaces the run-time throw.
+      (BTD4) One `doRectsOverlap` in `utils/geometry` for `assertLaneFortsApart`,
+      `MapSceneryBuilder`, `StaticCollisionIndex` and two copies in `MapGenerator.test.ts`.
+      (BTD5) `MatchWorld` takes the definition and a `MatchGrid` that another definition could
+      have built: let `MatchGrid` keep its definition and `MatchWorld` take only the grid.
+      Full findings: `eternalus-agent-work/tower-ruins-and-routes/critic-r3.md`. Approve: one
+      follow-up branch builds all four. Decision: …
 
 - [x] **Minion M4 done-when, read for objectives (2026-11-02, `chore/minion-full-march-test`) — sign-off.**
       The plan's M4 check "hordes reach the enemy end with 0 stuck units for `numLanes` 3 and 5"
@@ -2549,7 +2561,10 @@ Reply inline (`Decision: …`).
       5.2 ms (a full normal match shows no change). Keep each bot's path and re-plan only when its
       goal moves or `WorldMap.version` changes (architecture 11 §6 names this as the next step).
       Note: on seed 1, nine routes of 650 to 810 m between tower forts on opposite sides of the map
-      still settle more than 24000 cells; no bot took such a route in the test. Evidence:
+      still settle more than 24000 cells; no bot took such a route in the test. Also (critic r3
+      BTD2): one A\* work budget a tick, counted in searched cells and shared by bot searches and
+      `StuckSystem` plans; `maxDecisionsPerTick` and `STUCK_DETECTION.maxPlansPerTick` count
+      searches, and DEC-240 makes one failed search up to 4 times dearer. Evidence:
       `eternalus-agent-work/tower-ruins-and-routes/astar-finding-2026-11-10.md`.
 
 ## Feedback

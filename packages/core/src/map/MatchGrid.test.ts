@@ -5,7 +5,6 @@ import type { MapDefinition, MapFeature } from '../content/maps/maps.types';
 import type { MapObject } from '../content/maps/mapObjects.types';
 import { MapGenerationError } from './MapGenerationError';
 import type { Polygon } from '../utils/geometry.types';
-import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { MatchGrid } from './MatchGrid';
 
 const CELL = 2.5;
@@ -37,9 +36,13 @@ const object = (id: string, isBlocking: boolean, footprint: Polygon): MapObject 
 
 /** A 1600 x 900 map: a tower court, a wall segment, and a Stronghold floor that is walkable. */
 const mapOf = (width: number, height: number): MapDefinition => ({
-  ...TWO_LANE_MAP,
+  id: 'match-grid-test-map',
+  displayName: 'Match grid',
   width,
   height,
+  seed: 1,
+  lanes: [],
+  terrain: [],
   features: [
     placed('tower', 'spawner-tower', box(200, 200, 260, 260)),
     placed('segment', 'wall-segment', box(600, 200, 640, 240)),
@@ -77,23 +80,23 @@ describe('MatchGrid', () => {
   });
 
   it('reopens the court behind a destroyed object, and returns the cells that changed', () => {
-    const stamps = MatchGrid.build(mapOf(1600, 900), [TOWER, SEGMENT, FLOOR], OPTIONS);
+    const matchGrid = MatchGrid.build(mapOf(1600, 900), [TOWER, SEGMENT, FLOOR], OPTIONS);
 
-    const cells = stamps.reopen(TOWER);
+    const cells = matchGrid.reopen(TOWER);
 
     expect(cells.length).toBeGreaterThan(0);
-    expect(stamps.grid.isWalkableAt(205, 205)).toBe(true);
-    expect(stamps.grid.isWalkableAt(230, 230)).toBe(true);
-    expect(stamps.grid.isCourt(Math.floor(205 / CELL), Math.floor(205 / CELL))).toBe(false);
+    expect(matchGrid.grid.isWalkableAt(205, 205)).toBe(true);
+    expect(matchGrid.grid.isWalkableAt(230, 230)).toBe(true);
+    expect(matchGrid.grid.isCourt(Math.floor(205 / CELL), Math.floor(205 / CELL))).toBe(false);
     // Another object's stamp stays.
-    expect(stamps.grid.isWalkableAt(620, 220)).toBe(false);
+    expect(matchGrid.grid.isWalkableAt(620, 220)).toBe(false);
   });
 
   it('reopens the footprint behind a destroyed plain object', () => {
-    const stamps = MatchGrid.build(mapOf(1600, 900), [TOWER, SEGMENT, FLOOR], OPTIONS);
+    const matchGrid = MatchGrid.build(mapOf(1600, 900), [TOWER, SEGMENT, FLOOR], OPTIONS);
 
-    expect(stamps.reopen(SEGMENT).length).toBeGreaterThan(0);
-    expect(stamps.grid.isWalkableAt(620, 220)).toBe(true);
+    expect(matchGrid.reopen(SEGMENT).length).toBeGreaterThan(0);
+    expect(matchGrid.grid.isWalkableAt(620, 220)).toBe(true);
   });
 
   it('refuses a court on a world too small for its fort walls', () => {

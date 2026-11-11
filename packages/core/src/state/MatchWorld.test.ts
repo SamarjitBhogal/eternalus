@@ -8,11 +8,11 @@ import { MatchWorld } from './MatchWorld';
 
 describe('MatchWorld', () => {
   it('walks the lanes of its definition and keeps the grid it was given', () => {
-    const stamps = MatchGrid.build(TWO_LANE_MAP, [], { cellSize: 2, features: {} });
-    const world = new MatchWorld(TWO_LANE_MAP, stamps);
+    const matchGrid = MatchGrid.build(TWO_LANE_MAP, [], { cellSize: 2, features: {} });
+    const world = new MatchWorld(TWO_LANE_MAP, matchGrid);
 
     expect(world.definition).toBe(TWO_LANE_MAP);
-    expect(world.grid).toBe(stamps.grid);
+    expect(world.grid).toBe(matchGrid.grid);
     expect(world.grid.cellSize).toBe(2);
     expect(world.routes.lanes.map((lane) => lane.id)).toEqual(['lane-0', 'lane-1']);
     expect(world.routes.length('lane-0')).toBe(160);
