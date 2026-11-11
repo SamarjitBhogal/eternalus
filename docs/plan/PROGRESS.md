@@ -6719,3 +6719,18 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "All matched files use Prettier code style!"; `npm run docs:check` → "Documentation check
   passed." The full check of `392ad70e` (an entry above) holds for the code.
 - Next step: merge this head into GL-16 (`refactor/map-feature-link`); push.
+
+### 2026-11-11 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-4 with GL-5 (#94) merge — feat/capture-scoring — sholtzman + Claude Code
+
+- What: merged `feat/match-scoring` (`7df92530`, GL-4 after #94 merged GL-5 into it) into this
+  branch (`87c2b605`); the owner chose to collapse the game-loop stack into GL-4. Conflicts: the
+  game-loop plan §7 table (this branch's GL-15 and GL-17 rows, GL-5's GL-3 and GL-16 rows), the
+  owner decisions log (DEC-223 batch above DEC-222), this file (date order) and 07's
+  `last-reviewed` (the later date). Semantic fix: GL-5's client `matchResultFixtures.ts`
+  (`NO_SCORE`) gains GL-15's `TeamStats` fields `capturesHeldTicks` and `checkpointsReached`
+  (typecheck failed without them).
+- Checks run: `npm run check` on `87c2b605` → Prettier "All matched files use Prettier code
+  style!"; core "Test Files 241 passed (241)", "Tests 1394 passed (1394)"; client "Test Files 278
+  passed (278)", "Tests 1861 passed (1861)"; build "✓ built in 322ms"; "Documentation check
+  passed."; exit 0. Log: `eternalus-agent-work/game-loop-plan/gl15-merge-gl5-check-2026-11-11.log`.
+- Next step: push; the owner merges #95 into GL-4, then GL-4 takes phase/3 (#89) once.
