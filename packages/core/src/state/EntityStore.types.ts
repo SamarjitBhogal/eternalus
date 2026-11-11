@@ -14,7 +14,7 @@ export type RemovalRecord = { readonly entityId: EntityId; readonly cause: Remov
 
 /**
  * What `EntityStore.aimPointOf` aimed at: the nearest point of the target's `'outline'`, the
- * attacker's own position because it stands `'inside'` the outline (in reach, DEC-234), the
- * target's `'centre'` (it has no outline), or `null` when there is nothing to aim at.
+ * attacker's own position because it stands `'inside'` the outline (in reach, DEC-234), or the
+ * target's `'centre'` (it has no outline).
  */
-export type AimedAt = 'outline' | 'inside' | 'centre' | null;
+export type AimedAt = 'outline' | 'inside' | 'centre';

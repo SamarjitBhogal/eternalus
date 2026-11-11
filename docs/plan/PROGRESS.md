@@ -6299,3 +6299,29 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   passed (1417)", client "Tests 1799 passed (1799)", "Documentation check passed.". This entry
   was added after that run (docs-only); `prettier --check` and `docs:check` were re-run on it.
 - Next step: push; reply on #86.
+
+### 2026-11-10 — Phase 3 / minion-stack follow-ups, critic on the DEC-234 follow-ups; owner confirms DEC-234 — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: `architecture-reviewer` on `9b776ed5..a049db6d`: APPROVE, one should-fix and four
+  nits. Should-fix: DEC-234 reads the owner's DEC-220 (1) words, and only he can settle that. He
+  confirmed the reading through the question dialog on 2026-11-10 ("Yes, hold inside"); the
+  DEC-234 row cites it. Nits applied: `AimedAt` drops `null` and `aimPointOf` returns
+  `AimedAt | null`, as the other queries do; 18 §5.2 no longer cites itself; the row cites
+  DEC-219 (d). From the critic of the #79 merge: 07's status note says a chase holds inside the
+  outlines (DEC-234). Rejected: naming `feat/capture-scoring` next to the DEC-223 citation (a DEC
+  ID is stable, and a branch name in a dated record ages).
+- Checks run: `npm run check` with this entry in place (log
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-85-3.log`): EXIT=0, core "Tests 1375
+  passed (1375)", client "Tests 1799 passed (1799)", "Documentation check passed.".
+- Next step: merge into `feat/out-of-combat-heal` (#86) and `feat/unit-facing-chevron` (#79);
+  push; reply on #85, #86 and #79.
+
+### 2026-11-10 — Phase 3 / out-of-combat healing, merge of fix/minion-stack-followups (DEC-234 confirmed) — feat/out-of-combat-heal — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` at `ceb79a2e` (the owner confirms DEC-234;
+  `AimedAt` drops `null`; 07, 18 and the DEC-234 row edits). Only PROGRESS conflicted: both sides
+  kept; `git diff` against both parents shows no removed line.
+- Checks run: `npm run check` with this entry in place (log
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-86-merge-2.log`): EXIT=0, core "Tests 1417
+  passed (1417)", client "Tests 1799 passed (1799)", "Documentation check passed.".
+- Next step: push; reply on #86.
