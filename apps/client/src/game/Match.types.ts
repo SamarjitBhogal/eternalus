@@ -1,4 +1,5 @@
 import type {
+  EntityId,
   InputIntent,
   Logger,
   MapDefinition,
@@ -14,6 +15,7 @@ import type { Camera } from './engine/Camera';
 import type { Projection } from './engine/input/Projection.types';
 import type { FrameScheduler } from './engine/loop/FrameScheduler.types';
 import type { Renderer } from './engine/render/Renderer';
+import type { PlayerActions } from './PlayerActions';
 
 /**
  * Where the player's intent comes from each tick (movement axes, aim, abilities). The input
@@ -50,9 +52,26 @@ export type MatchCrash = {
   readonly tick: number;
 };
 
+/**
+ * What `Match` needs from the thing that steps the world: core's `Simulation` for a local match,
+ * `RemoteSimulation` (the latest snapshot the Duel server sent) online. The seam that lets one
+ * `Match` run both (ADR 0016).
+ */
+export type MatchSimulation = Pick<Simulation, 'tick' | 'step' | 'snapshot' | 'enqueueCommand'>;
+
+/** How an online Duel differs from a local match for `Match` (ADR 0016 point 1). */
+type RemotePlayer = {
+  /** The player's Legend from the server's `match-found`; never `snapshot.match.humanLegendId`. */
+  readonly legendId: EntityId;
+  /** Builds what the player's input does each tick; it sends intents, never runs commands. */
+  readonly createActions: (camera: Projection) => PlayerActions;
+};
+
 /** Everything a `Match` is wired from (architecture 08 §7). */
 export type MatchDeps = {
-  readonly simulation: Simulation;
+  readonly simulation: MatchSimulation;
+  /** Set for an online Duel: replaces the local `PlayerCommands` and the snapshot's human Legend. */
+  readonly remote?: RemotePlayer;
   /** The world the simulation plays on (`map`, `mapObjects`) and the views draw. */
   readonly world: PreparedWorld;
   /** Ticks per second (`GameConfig.tickRate`). */

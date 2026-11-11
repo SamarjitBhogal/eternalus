@@ -5989,3 +5989,28 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Checks run: `npm run check` on the merge → exit 0: core "Tests 1302 passed (1302)"; client
   "Tests 1800 passed (1800)"; "✓ built in 477ms"; "Documentation check passed."
 - Next step: push; the product owner approves; merge when CI is green.
+
+### 2026-11-10 — Phase 3 / sprint 3.1 — feat/duel-server — claudiodh + Claude Code
+
+- What was done: the online 1v1 Duel along ADR 0016 (draft; built ahead of acceptance by
+  claudiodh's call, INBOX DEC-36/37 note). Core seats one human per team
+  (`Simulation.humanLegendIdOf`) and exports `findUnitAt`, `PLAYABLE_TEAMS`, `isPlayableTeam`.
+  New `packages/protocol` (wire messages, `ClientMessageParser`). New `apps/server`: `ws` gateway
+  with per-connection `TokenBucket`, total and per-address connection caps (`ClientAddress` reads
+  `X-Forwarded-For` only from a loopback peer), heartbeat, `DuelQueue`, `DuelHost`/`DuelMatch`
+  stepping core at 30 TPS, `SeatCommands` (intent → move/stop/attack-target while core's `intent`
+  is a stub), `StdoutLogger`, graceful shutdown. Client: `game/engine/net/` transport port
+  (recipe R25), `game/duel/` (`DuelSession`, `RemoteSimulation`, `RemoteIntentSender`), `Match`
+  driven through a `MatchSimulation` seam, "Duel online" menu entry, queue screen, Victory/Defeat
+  and "Opponent left" results. `eslint.config.js` gains import-boundary blocks (owner sign-off
+  asked in INBOX). New dependencies, approved by claudiodh: `ws` 8.22.2, `@types/ws` 8.18.2.
+- Gate: architecture critic → request-changes, no blockers; every should-fix and nit applied
+  (stuck queue on an early `match-ended`, results per own team and reason, connection caps and
+  heartbeat, import-boundary lint, types moved to `.types.ts`, shutdown, socket closed on end,
+  docs). Ponytail: 2 reuse cuts applied (`findUnitAt` and the team list from core).
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1314 passed (1314)"; protocol "Tests 18
+  passed (18)"; client "Tests 1861 passed (1861)"; server "Tests 49 passed (49)"; "✓ built in
+  219ms"; "Documentation check passed." Smoke: two clients through `tailscale serve` (wss) got
+  `match-found` with the same seed and ~85 states each.
+- Next step: open the PR into `phase/3-sprint-3-work`; the owner accepts or changes ADR 0016 and
+  answers the INBOX interim choices.
