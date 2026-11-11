@@ -6009,6 +6009,19 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Next step: commit and push the merge, then merge `feat/match-scoring` into `feat/results-flow`
   the same way.
 
+### 2026-11-04 — Phase 3 / sprint 3.1 — chore/coderabbit-config — SamarjitBhogal + Claude Code
+
+- What was done: fixed the `.coderabbit.yaml` parse error ("An override must specify teams,
+  paths, or both" at `reviews.auto_approvals.overrides[0]`) by giving the never-approve override
+  `paths` globs matching every file, dotfiles included. The error made CodeRabbit fall back to
+  defaults, which also dropped `base_branches` and skipped reviews on PRs into phase branches;
+  both are fixed by this. Critic: approve, no blockers; its dotfile-glob and heading fixes
+  applied. Ponytail: no cuts.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 887 passed (887)"; client "Tests 433 passed
+  (433)"; "Documentation check passed."
+- Next step: PR into `phase/3-sprint-3-work`; the custom check flags `.coderabbit.yaml` changes,
+  so the product owner signs it off.
+
 ### 2026-11-05 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / match-director merge (the human slot, `MatchRecord`) — feat/match-scoring — sholtzman + Claude Code
 
 - What: merged `feat/match-director` (`6d049e7`, PR #74's head with DEC-210) into
@@ -6351,3 +6364,36 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   Prettier code style!"; `npm run docs:check` → "Documentation check passed." The full check of
   `6bd828be` (an entry above) holds for the code.
 - Next step: push; PR #95 waits for review.
+
+### 2026-11-09 — Phase 3 / sprint 3.1 — chore/coderabbit-config — sholtzman + Claude Code
+
+- What was done: the product owner keeps CodeRabbit, so PR #73 is finished for merge. `e24a62c`
+  merges `phase/3-sprint-3-work` at `120653b`; only this file conflicted (both sides appended),
+  and both sides are kept. ADR 0018 gets a dated note in its implementation status: CodeRabbit's
+  validator rejects an override with neither `teams` nor `paths`, so the never-approve override
+  lists paths that match every file; the intent of amendment item 2 is unchanged. This answers
+  CodeRabbit's one blocker on #73. The fix is needed now: CodeRabbit skips every PR into
+  phase 3 (#87: "Validation error: An override must specify teams, paths, or both", "Review
+  skipped"). On #73's own head, CodeRabbit parsed the config and ran a full review.
+- Checks run: `npm run check` on the merge with the ADR note → exit 0: core "Tests 1298 passed
+  (1298)"; client "Tests 1799 passed (1799)"; "✓ built in 483ms"; "Documentation check passed."
+- Next step: push; the product owner approves (his sign-off on the guardrail change); merge
+  when CI is green on both runners.
+
+### 2026-11-09 — Phase 3 / sprint 3.1 — chore/coderabbit-config — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` at `86b4fc0` into PR #73 to clear its conflict.
+  Only this file conflicted (both sides appended); all entries are kept, in date order.
+- Checks run: `npm run check` on the merge → exit 0: core "Tests 1302 passed (1302)"; client
+  "Tests 1800 passed (1800)"; "✓ built in 477ms"; "Documentation check passed."
+- Next step: push; the product owner approves; merge when CI is green.
+
+### 2026-11-10 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / phase/3 with main (#73, CodeRabbit config) merge — feat/match-scoring — sholtzman + Claude Code
+
+- What: merged `phase/3-sprint-3-work` (`8d2404c8`, phase/3 with main (#73, CodeRabbit config)) into this branch (`221d365d`).
+  Conflict: this file (both, in date order). Config and docs only: `git diff --stat 7ddc20e0 221d365d`
+  lists only .coderabbit.yaml, INBOX.md, docs/decisions/0018-coderabbit-runs-the-pr-review-skill.md, docs/plan/PROGRESS.md.
+- Checks run: `npx prettier --check` on `INBOX.md`, `.coderabbit.yaml`, this file and ADR 0018 →
+  "All matched files use Prettier code style!"; `npm run docs:check` → "Documentation check
+  passed." The full check of `7ddc20e0` (an entry above) holds for the code.
+- Next step: merge this head into GL-5 and GL-15, then GL-5 into GL-16; push all four.
