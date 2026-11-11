@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-11-09
+last-reviewed: 2026-11-10
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
@@ -430,8 +430,8 @@ called by `PathingSystem` (10 §9). `PathingSystem` reads the mob's `Combat.targ
   with an outline (a map object, or a structure with a `Footprint`: a lane tower's fort, the
   Stronghold's palace, 07 §13) aims at the nearest point of its outline, the point attack reach
   is measured to (`EntityStore.aimPointOf`); a mob that stands inside the outline is in reach
-  already, so it holds there, as every chase stops at reach (§5.2; it faces the building's centre,
-  DEC-220 (1); DEC-234). The blocked
+  already, so it holds there, as every chase stops at reach (DEC-234); it faces the building's
+  centre (DEC-220 (1)). The blocked
   ground under the target (a fort's cells, under the structure or under a unit inside its court,
   or a map object's cells)
   never holds or turns a chase: the mob closes in until collision stops it at a wall, in reach
