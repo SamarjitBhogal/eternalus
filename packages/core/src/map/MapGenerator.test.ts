@@ -21,6 +21,7 @@ import {
 import type { LaneShape } from './LaneShape.types';
 import { MapGenerationError } from './MapGenerationError';
 import { MapGenerator } from './MapGenerator';
+import { fortInWorld } from './fortInWorld';
 import { findAsymmetries } from './mapSymmetry';
 import type { MapConfig } from './MapGenerator.types';
 
@@ -228,6 +229,49 @@ describe('MapGenerator', () => {
       }
 
       expect(overlaps).toEqual([]);
+    },
+  );
+
+  it.each([
+    [3200, 1800],
+    [3200, 900],
+  ])(
+    'keeps every lane tower fort apart in a stretched %ix%i world with 3 towers of each kind (DEC-227)',
+    (worldWidth, worldHeight) => {
+      const fort = fortInWorld(BUILDING_GEOMETRY.fort.laneTowerSize, {
+        width: worldWidth,
+        height: worldHeight,
+      });
+      const overlaps: string[] = [];
+      for (const ground of GROUNDS) {
+        const map = generate(
+          { worldWidth, worldHeight, spawnTowersPerLane: 3, buffTowersPerLane: 3 },
+          SEED,
+          ground,
+        );
+        const towers = [...ofKind(map, 'spawner-tower'), ...ofKind(map, 'buff-tower')];
+        expect(towers).toHaveLength(2 * 3 * 3 * 2);
+        towers.forEach((a, index) => {
+          for (const b of towers.slice(index + 1)) {
+            const dx = Math.abs(a.position.x - b.position.x);
+            const dy = Math.abs(a.position.y - b.position.y);
+            if (dx < fort.width && dy < fort.height) {
+              overlaps.push(`${ground}: ${a.id} ${b.id}`);
+            }
+          }
+        });
+      }
+
+      expect(overlaps).toEqual([]);
+    },
+  );
+
+  it.each([3, 5, 7])(
+    'refuses 5 towers of each kind on %i lanes, whose forts would overlap (DEC-215 (1))',
+    (numLanes) => {
+      expect(() => generate({ numLanes, spawnTowersPerLane: 5, buffTowersPerLane: 5 })).toThrow(
+        /map\.spawnTowersPerLane = 5.*map\.buffTowersPerLane = 5.*lane-\d/,
+      );
     },
   );
 
