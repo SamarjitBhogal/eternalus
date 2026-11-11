@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { STRINGS } from '../strings';
 import { accessibleNames, renderWithStore } from '../testStore';
 import { Countdown } from './Countdown';
 import countdownCss from './Countdown.module.css?raw';
@@ -7,7 +8,7 @@ import { SELECTION_DEF_IDS } from './SelectionDefs.constants';
 
 describe('Countdown', () => {
   it.each([60, 42, 10, 1, 0])('shows %i seconds in the same static look', (seconds) => {
-    const html = renderWithStore(<Countdown remainingSeconds={seconds} />);
+    const html = renderWithStore(<Countdown remainingSeconds={seconds} label="Time left" />);
 
     expect(html).toMatch(
       new RegExp(`^<p class="[^"]+" role="timer" aria-label="[^"]+">${String(seconds)}</p>$`),
@@ -16,14 +17,20 @@ describe('Countdown', () => {
     expect(html).not.toContain('aria-live');
   });
 
-  it('is a timer named by its label', () => {
-    expect(
-      accessibleNames(renderWithStore(<Countdown remainingSeconds={42} />), '[role=timer]'),
-    ).toEqual(['Time left to choose']);
-  });
+  it.each([STRINGS.characterSelect.countdownLabel, STRINGS.results.countdownLabel])(
+    'is a timer named by the label it is given: %s',
+    (label) => {
+      expect(
+        accessibleNames(
+          renderWithStore(<Countdown remainingSeconds={42} label={label} />),
+          '[role=timer]',
+        ),
+      ).toEqual([label]);
+    },
+  );
 
   it('takes its colours from tokens only', () => {
-    const html = renderWithStore(<Countdown remainingSeconds={31} />);
+    const html = renderWithStore(<Countdown remainingSeconds={31} label="Time left" />);
 
     expect(html).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgba?\(/);
     expect(countdownCss).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|color-mix\(/);

@@ -106,8 +106,14 @@ export class Match implements LoopTarget {
       tickMs,
       maxFrameMs: MAX_TICKS_PER_FRAME * tickMs,
     });
-    this.bridge = new MatchBridge({ ...bridge, tickRate, map });
     this.current = simulation.snapshot();
+    this.bridge = new MatchBridge({
+      ...bridge,
+      tickRate,
+      map,
+      events: simulation,
+      firstSnapshot: this.current,
+    });
     this.playerId = this.current.match.humanLegendId;
     this.controls = new MatchViewControls({
       camera: this.camera,
@@ -158,7 +164,8 @@ export class Match implements LoopTarget {
    * One tick: the player's intent becomes commands (and moving input sends the camera back to
    * following), the simulation steps, and the roof of the building the player's Legend now stands
    * in opens. A dead Legend (`isDead`, or gone from the snapshot) stands in no building, so its
-   * roof closes (DEC-143, DEC-149).
+   * roof closes (DEC-143, DEC-149). After the tick that ended the match, tells the observer once
+   * (`ended`).
    */
   public tick(): void {
     if (this.playerId !== null) {
@@ -171,7 +178,9 @@ export class Match implements LoopTarget {
     this.previous = this.current;
     this.current = this.deps.simulation.snapshot();
     this.roofs.playerAt(this.livingPlayerAt());
-    this.bridge.afterTick(this.current, this.playerId);
+    if (this.bridge.afterTick(this.current, this.playerId)) {
+      this.deps.observer.ended();
+    }
   }
 
   /** One frame: the camera follows the player, then the scene and the minimap are drawn. */
@@ -190,18 +199,19 @@ export class Match implements LoopTarget {
 
   /**
    * The game loop stopped because a tick or a frame threw: hands the error and the tick to the
-   * match's owner (`onCrash`), which ends the match (DEC-106).
+   * observer (`crashed`), whose owner ends the match (DEC-106).
    */
   public crashed(error: unknown): void {
-    this.deps.onCrash({ error, tick: this.deps.simulation.tick });
+    this.deps.observer.crashed({ error, tick: this.deps.simulation.tick });
   }
 
   /**
-   * Stops the loop. The renderer and camera are injected, so their
+   * Stops the loop and the bridge's listener. The renderer and camera are injected, so their
    * owner (`MatchHost`) destroys them.
    */
   public destroy(): void {
     this.loop.destroy();
+    this.bridge.destroy();
   }
 
   /**

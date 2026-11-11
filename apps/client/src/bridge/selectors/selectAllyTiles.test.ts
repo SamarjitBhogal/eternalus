@@ -172,7 +172,9 @@ describe('selectAllyTiles', () => {
     const store = storeWith(null);
     const before = selectAllyTiles(store.getState());
 
-    store.dispatch(matchSetupSlice.actions.setCountdown(41_000));
+    store.dispatch(
+      matchSetupSlice.actions.countdownChanged({ kind: 'select', remainingMs: 41_000 }),
+    );
     expect(selectAllyTiles(store.getState())).toBe(before);
 
     store.dispatch(matchSetupSlice.actions.select({ classId: 'magus', specId: null }));

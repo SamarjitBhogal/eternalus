@@ -23,6 +23,8 @@ export abstract class Structure extends Entity {
 
   private lane: string | null = null;
 
+  private feature: string | null = null;
+
   /**
    * @param id - Unique id of this entity instance.
    * @param definitionId - Content definition this entity was built from.
@@ -41,6 +43,14 @@ export abstract class Structure extends Entity {
   }
 
   /**
+   * The map feature this structure was built from (`MapFeature.id`), or `null` for one spawned
+   * without a feature. The snapshot carries it, so the HUD binds a tile to its structure.
+   */
+  public get mapFeatureId(): string | null {
+    return this.feature;
+  }
+
+  /**
    * Installs the structure components from a placed spawn context.
    *
    * @throws Error when the context is not a placed context for this structure's definition.
@@ -49,6 +59,7 @@ export abstract class Structure extends Entity {
     const reader = new SpawnContextReader(this);
     const { definition, position, team } = reader.placed<StructureDefinition>(context);
     this.lane = reader.laneId(context);
+    this.feature = reader.mapFeatureId(context);
 
     this.addComponent(new Transform(position, definition.footprintRadius));
     this.addComponent(new Health(definition.baseHealth));

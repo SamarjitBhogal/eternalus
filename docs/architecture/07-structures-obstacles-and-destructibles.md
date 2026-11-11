@@ -410,7 +410,9 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   `Stronghold`, `SpawnerTower`, `BuffTower` and `Gate`, with `content/structures/structureCatalogue.ts`
   (base health from `balancing.md`) and their registry lines. `Simulation` builds one per map
   feature with a structure definition, in feature id order, carrying the feature's lane
-  (`Structure.laneId`). `BreakabilityRule` (§3, without `all-of`) is evaluated by `StructureSystem`,
+  (`Structure.laneId`) and id (`Structure.mapFeatureId`, which the snapshot carries as
+  `EntitySnapshot.mapFeatureId`, so the HUD structure strip binds each tile to its structure,
+  DEC-212). `BreakabilityRule` (§3, without `all-of`) is evaluated by `StructureSystem`,
   which also emits `structure-destroyed`; `BreakabilityStep` blocks damage to unbreakable targets.
   The BuffTower total is `numLanes × buffTowersPerLane` from config. Not built yet: shield bars
   from BuffTowers, the `all-of` rule, the §11 invariants (`BreakabilityMatchesRuleInvariant`,

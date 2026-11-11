@@ -85,7 +85,7 @@ describe('selectStructureStrip', () => {
     expect(ids('light', 'allied', teamStructures('light', 3))).not.toContain('light-turret');
   });
 
-  it('merges wall segments and gates into one tile whose health is the sum, unknown if any is', () => {
+  it('merges wall segments and gates into one tile whose health is the sum of the known members', () => {
     const walls = (gateHealth: StructureStatus['health']) => [
       structure('light-wall-0', 'wall-segment', 'light', null, { current: 10, max: 40 }),
       structure('light-wall-1', 'wall-segment', 'light', null, { current: 30, max: 40 }),
@@ -103,7 +103,33 @@ describe('selectStructureStrip', () => {
         isDestroyed: false,
       },
     ]);
-    expect(wallTile(null)[0]?.healthFraction).toBeNull();
+    // DEC-214 (B): a member with unknown health is left out of the sum, not the whole tile.
+    expect(wallTile(null)[0]?.healthFraction).toBe(0.5);
+  });
+
+  it('sums the gates while the wall segments have no health, unknown only when no member has (DEC-214 (B))', () => {
+    const wallTile = (gateHealth: StructureStatus['health']) =>
+      selectStructureStrip(
+        storeWith('light', [
+          structure('light-wall-0', 'wall-segment', 'light', null, null),
+          structure('light-gate-0', 'gate', 'light', 0, gateHealth),
+          structure('light-gate-1', 'gate', 'light', 1, { current: 20, max: 20 }),
+        ]).getState(),
+        'allied',
+      )[0];
+    expect(wallTile({ current: 10, max: 20 })?.healthFraction).toBe(0.75);
+    expect(wallTile({ current: 0, max: 20 })).toMatchObject({
+      healthFraction: 0.5,
+      isDestroyed: true,
+    });
+    const unknown = selectStructureStrip(
+      storeWith('light', [
+        structure('light-wall-0', 'wall-segment', 'light', null, null),
+        structure('light-gate-0', 'gate', 'light', 0, null),
+      ]).getState(),
+      'allied',
+    );
+    expect(unknown[0]?.healthFraction).toBeNull();
   });
 
   it('shows a structure destroyed at zero health, never at unknown or some health (DEC-69)', () => {

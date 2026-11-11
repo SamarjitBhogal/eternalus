@@ -44,7 +44,7 @@ function render(
       ...matchSetupSlice.getInitialState(),
       playerTeam: team,
       selection: { classId, specId },
-      countdownMs,
+      countdownsMs: { select: countdownMs, reveal: 0, results: 0 },
       isLockedIn,
     },
   });

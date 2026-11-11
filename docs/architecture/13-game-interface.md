@@ -90,7 +90,7 @@ export class SessionController {
     persistence: PersistenceController;
     resources: ResourceController;
     prepareWorld: (seed: number) => PreparedWorld; // pure: the map from the seed, run in 'match-loading' (DEC-50)
-    createMatch: (request: MatchRequest, viewport: MatchViewport) => RunningMatch; // the match factory main.tsx binds; Match stays the composition root of a match (DEC-50)
+    createMatch: (request: MatchRequest, viewport: MatchViewport) => RunningMatch; // the match factory main.tsx binds; the request carries one match observer (`crashed`, `ended`, DEC-213); Match stays the composition root of a match (DEC-50)
     states: Readonly<Record<SessionPhase, SessionState>>; // defaultSessionStates.ts, the only file naming them
     createRng: (seed: number) => Rng; // the match's random stream from its seed
     createRosterRng: (seed: number) => Pick<SeededRandom, 'nextInt'>; // LOCK IN's stream for the bots' Legends (DEC-61)
@@ -111,8 +111,8 @@ export class SessionController {
 | `character-select` | `pre-launch` / `menu`       | the 60 s `SessionClock` countdown ended after LOCK IN: it always runs the full 60 s, and LOCK IN locks the pick, fills the bots and shows the locked view without ending it (DEC-60, DEC-61) / it ended before LOCK IN, with or without a class: no match starts, and the home screen shows the select-timeout popup (`reason: 'select-timeout'`, DEC-102) | records the class pick and then the Legend pick, in two steps of one screen (DEC-49; `Recommendation:`, INBOX HC-F1); Back clears the class (`clear-class-selection`); `SessionController` holds the selection and `canConfirmSelection` (`bridge/selectionRules.ts`) decides LOCK IN; starts the countdown through the injected `SessionClock`; LOCK IN locks the pick, gives each bot a Legend of its class from the seed's roster stream and the enemy Rover a copy of the pick (`fillRosters`; DEC-61, DEC-102; the Legend copy is `Recommendation:`), publishes the rosters (`selection-locked`) and shows the locked view (DEC-60); the rosters' classes and `playerTeam` come from the setup built in `menu` (DEC-34, SD-2) |
 | `pre-launch`       | `match-loading`             | 10 s `SessionClock` reveal elapsed                                                                                                                                                                                                                                                                                                                         | shows the allied team on pedestals and the enemy roster top right; no cancel                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `match-loading`    | `match` / `menu`            | `match` asset group loaded and the match world prepared / either failed                                                                                                                                                                                                                                                                                    | prepares the match world (`prepareWorld`: the map from `setup.seed`) once the `match` group has loaded; on failure logs and returns to `menu` with a banner. The `Match` is created in `match` (DEC-50)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `match`            | `results` / `menu`          | `match-ended { result }` from `Simulation.on`, `forfeit` / `leave-match`, a crash (a tick, a frame or the screen throws; DEC-106)                                                                                                                                                                                                                          | when the match screen's viewport attaches, `createMatch(request, viewport)` builds and starts the match, and its detach destroys it (DEC-50); releases the selection asset groups (`Recommendation:`, the owner's Keep of 2026-10-28, INBOX HC-F9); pauses the match while an overlay is open (single player); `persistence.saveMatchResult(…)` in one unit of work ([14](14-persistence-and-resources.md) §6); `match.destroy()` on exit: 0 listeners, 0 frames                                                                                                                                                                                                                                                                   |
-| `results`          | `menu` / `loading`          | `navigate` / `start-match` (rematch with the same setup, `Recommendation:`)                                                                                                                                                                                                                                                                                | releases the `match` asset group                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `match`            | `results` / `menu`          | the running match's end (the match observer's `ended`, called after the tick whose step emitted `match-ended`), `forfeit` / `leave-match`, a crash (a tick, a frame or the screen throws; DEC-106)                                                                                                                                                         | when the match screen's viewport attaches, `createMatch(request, viewport)` builds and starts the match, and its detach destroys it (DEC-50); releases the selection asset groups (`Recommendation:`, the owner's Keep of 2026-10-28, INBOX HC-F9); pauses the match while an overlay is open (single player); after the match's end the world runs on for `RESULTS_DELAY_MS` (DEC-92) (an open overlay does not stop it, DEC-134 (2)), timed on the `SessionClock` so the match is never destroyed inside its own loop frame; `persistence.saveMatchResult(…)` in one unit of work ([14](14-persistence-and-resources.md) §6); `match.destroy()` on exit: 0 listeners, 0 frames                                                   |
+| `results`          | `menu` / `loading`          | the `SessionClock` countdown (`RESULTS_COUNTDOWN_MS`, DEC-78) ends, `continue` skips it, or `navigate` / `start-match` (rematch with the same setup, `Recommendation:`)                                                                                                                                                                                    | on entry releases the `match` asset group (the match is already destroyed), loads the `selection` group (the screen reuses the selection art; if it fails to load, the screen shows without it) and starts the countdown; on exit stops both and releases `selection`                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 
 **The screen-crash exit is not a table edge (DEC-149; DEC-141).** A screen that throws
 (`report-screen-crash`) leaves every phase except `menu` and `match` through one method,
@@ -124,7 +124,7 @@ use it, and `pre-launch` has no `menu` edge: the reveal has no cancel (DEC-141),
 crash ends it early. A crash in `menu` itself shows `screen-crashed` again and goes back to
 `home`; the table has no `menu` → `menu` move.
 
-The three selection phases come from the owner's screen flow of 2026-10-03 ([reference 14](../reference/game-design/14-interface-and-screen-flow.md)); their countdowns are session time through the `SessionClock` port, never simulation ticks. Any other pair throws (`IllegalSessionTransition`): a wrong transition is a bug, not a state. The
+The three selection phases come from the owner's screen flow of 2026-10-03 ([reference 14](../reference/game-design/14-interface-and-screen-flow.md)); their countdowns, and the win/lose screen's (DEC-78), are session time through the `SessionClock` port, never simulation ticks. Any other pair throws (`IllegalSessionTransition`): a wrong transition is a bug, not a state. The
 table is the test (`SessionController.transitions.test.ts` walks every pair with fake states, a
 `MemoryStorageAdapter` and a fake asset loader).
 
@@ -150,7 +150,7 @@ show comes from content through the store (`contentSlice`, `matchSlice`), never 
 | `AboutScreen`                                                                                                                                                                                                               | `selectCredits` (generated from the manifest's `licence` and `source` fields)                                                                                                               | none                                                                                        | **MVP**                                                                           |
 | `CharacterSelectScreen` (the class step, then the Legend step, DEC-49, then the locked view after LOCK IN, DEC-60; the class step's layout by data, DEC-52; View Details over the class and Legend steps, DEC-103, DEC-109) | `contentSlice` (classes, Legends, layout), `matchSetupSlice` (team, allies, selection, lock, countdown), `selectAllyTiles`, `assetsSlice` (art URLs)                                        | `select-class`, `clear-class-selection`, `confirm-selection`                                | **MVP** (DEC-49)                                                                  |
 | `MatchScreen`                                                                                                                                                                                                               | the open overlay and the bindings (`usePauseMenuKey`); renders the `viewport` prop (the only screen that does, so no `Match` exists outside `match`, DEC-50), the HUD and the pause overlay | `open-overlay`, `close-overlay`; `leave-match` (from the pause overlay), `forfeit`          | **MVP**                                                                           |
-| `ResultsScreen`                                                                                                                                                                                                             | `selectMatchResult`, `selectVerdictLine`                                                                                                                                                    | `navigate`, `start-match` (rematch)                                                         | **MVP**                                                                           |
+| `ResultsScreen`                                                                                                                                                                                                             | `selectMatchVerdict`, `selectVerdictLine`, `selectMatchDurationText` (DEC-129), `selectCountdownSeconds('results')` (`matchSetupSlice`)                                                     | `continue` (DEC-78), `navigate`, `start-match` (rematch)                                    | **MVP**                                                                           |
 
 | HUD element                                           | Source in the store                                                                        | Behaviour                                                                                                                                                                                                                                                       | Status                                      |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
@@ -207,8 +207,9 @@ Simulation.on / snapshot → MatchBridge (throttle, project) → eventBus.emit �
     → useAppSelector → screens and HUD → bus.emit('ui-intent') → SessionController / Match → Simulation.enqueueCommand
 ```
 
-- **Game → UI.** `MatchBridge` subscribes to `Simulation.on` and reads the current `Snapshot`
-  in `Match.tick()`; every `publishEveryTicks` (6 = 5 Hz, [08](08-game-engine.md) §7) it emits
+- **Game → UI.** `MatchBridge` subscribes to `Simulation.on` (one listener table, one line per
+  event, [12](12-game-story-and-match-director.md) §8) and reads the current `Snapshot` in
+  `Match.tick()`; every `publishEveryTicks` (6 = 5 Hz, [08](08-game-engine.md) §7) it emits
   `match-clock` and `hud-state`, every 30 ticks `scoreboard` and `capture-state`, and on the
   event `announce`, `match-ended` and `diagnostic`. `connectBusToStore(bus, store)` in
   `bridge/store.ts` dispatches each event to its slice; components subscribe to memoised
@@ -246,10 +247,14 @@ export type BridgeEventMap = {
     readonly params: Readonly<Record<string, string>>;
     readonly tick: number;
   };
-  'match-ended': { readonly result: MatchResult };
+  'match-ended': {
+    readonly result: MatchResult;
+    readonly durationSeconds: number; // DEC-129
+  };
   diagnostic: { readonly record: LogRecord }; // violations and warnings for the overlay
   'perf-sample': PerfSample; // histograms, last long frame, memory (a bridge-defined type)
   'session-phase': { readonly phase: SessionPhase };
+  countdown: { readonly kind: 'select' | 'reveal' | 'results'; readonly remainingMs: number }; // session time (SessionClock, §2)
   'loading-progress': {
     readonly group: AssetGroup; // 'boot', the selection groups, 'match' (14 §11)
     readonly loadedBytes: number;
@@ -641,43 +646,57 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   `SessionReason` banner (`cancelled`, `match-failed`, `load-failed`); `match-crashed` and
   `screen-crashed` open the crash popup instead (§3). A `boot` load that rejects (a loader bug; a
   missing asset is only warned) opens the menu with `load-failed` until `BootScreen` offers a
-  retry (plan Phase 5, sprint 5.2). Nothing produces `results` yet: `match-ended` comes with the
-  `MatchDirector` (Phase 3, sprint 3.5). A throw from a tick or a frame during a match stops
-  `GameLoop`, which calls `LoopTarget.crashed` once; `Match` passes the error and the tick to the
-  request's `onCrash`, and the running `MatchState` ends the match through
-  `SessionContext.endCrashedMatch`: `SessionCrashes` logs FATAL `client.session` (error, stack,
-  seed, tick) and reports the crash at once through the page's `ErrorReporter` (`CrashReportFlow`;
-  the report holds the match's replay and recent context and no note yet, ADR 0025 §3), then
-  returns to `menu` with `match-crashed`, where the crash popup asks for the note (DEC-106,
-  DEC-124). A screen that throws reaches the same flow through `ErrorBoundary`
-  (`report-screen-crash`): in a match it ends the match the same way; elsewhere the crash is
-  reported with `screen-crashed`, then `crashToMenu` returns to `menu` (§2, DEC-149; ADR 0025 §5).
-  `SessionController` takes no `persistence` yet (`main.tsx` opens it
+  retry (plan Phase 5, sprint 5.2). A match's end leads to `results` (game-loop plan GL-5):
+  `MatchBridge` publishes `match-ended` once, after the tick that ended the match; `Match` then
+  calls the match observer's `ended`, and `MatchState` moves on after `RESULTS_DELAY_MS`. `results`
+  goes to `menu` when its countdown ends or on `continue`; the post-game screen (plan task GL-10,
+  stretch) is not built; until it is, the win/lose screen keeps Play again and Main menu beside
+  Continue (DEC-129 (2)). `RESULTS_DELAY_MS` and `RESULTS_COUNTDOWN_MS` sit in
+  `game/session/sessionTiming.constants.ts` until plan task GL-11 moves them to core content. In
+  the browser nothing ends a match yet: the sovereign (plan task GL-3) is not built. A throw from
+  a tick or a frame during a match stops `GameLoop`, which calls `LoopTarget.crashed` once;
+  `Match` passes the error and the tick to the request's observer (`crashed`), and the running
+  `MatchState` ends the match through `SessionContext.endCrashedMatch`: `SessionCrashes` logs FATAL
+  `client.session` (error, stack, seed, tick) and reports the crash at once through the page's
+  `ErrorReporter` (`CrashReportFlow`; the report holds the match's replay and recent context and
+  no note yet, ADR 0025 §3), then returns to `menu` with `match-crashed`, where the crash popup
+  asks for the note (DEC-106, DEC-124). A screen that throws reaches the same flow through
+  `ErrorBoundary` (`report-screen-crash`): in a match it ends the match the same way; elsewhere the
+  crash is reported with `screen-crashed`, then `crashToMenu` returns to `menu` (§2, DEC-149; ADR
+  0025 §5). `SessionController` takes no `persistence` yet (`main.tsx` opens it
   beside the session, and nothing saves a match result), so its transitions test has no
   `MemoryStorageAdapter` (§2).
 - **Bridge.** New events beyond §5's sketch: `structure-state`, `asset-urls` (each image's URL and,
   where the manifest declares one, its draw box), `credits` and `selection-locked` (the rosters LOCK
-  IN filled); §5's `capture-state` is now published; `loading-progress` names seven asset groups
-  ([14](14-persistence-and-resources.md) §14); `hud-state` is `{ player }` with no
+  IN filled); the session countdowns are one record by kind in `matchSetupSlice`, with one
+  action (`countdownChanged`) and one selector (`selectCountdownSeconds(kind)`; DEC-213); §5's
+  `capture-state` is now
+  published; `loading-progress` names seven asset groups ([14](14-persistence-and-resources.md)
+  §14); `hud-state` is `{ player }` with no
   `spectatedLegendId` (no spectate producer yet). The display types live in
   `bridge/catalogue.types.ts` and `bridge/hud.types.ts`; `bridge/` also gains `selectionRules.ts`,
-  `minimapRing.ts` and `legendNames.ts`, and `assetsSlice`. The HUD data is in
+  `minimapRing.ts`, `legendNames.ts` and `opponentOf.ts`, and `assetsSlice`. The HUD data is in
   `hudSlice` (the Sprint 1 contract), `matchSlice.clock` is nullable, and `match-setup` resets the
   setup, HUD and match slices so a rematch shows no stale HUD.
 - **HUD data.** `MatchBridge` publishes `match-clock` and `hud-state` every 6 ticks and
   `structure-state` and `capture-state` every 30, from `Match`'s tick. Core's `Snapshot` has no
   `player`, so it projects the HUD player from the player's `EntitySnapshot` (health, maximum
   health, level and XP live, the slot list empty, every other value `null`, DEC-17) and the
-  structure and capture rosters from the `MapDefinition` (structure health `null`, capture owner
-  `neutral`).
-  Each field becomes live when core publishes it: structure health (Phase 2, sprint 2.1), capture
-  state (sprint 2.6), aether and abilities (Phase 4, sprints 4.5 and 4.7, through `Snapshot.player`,
-  [05](05-abilities-weapons-and-loadouts.md) §15). (2026-11-03, PR #64: capture state is live.
-  `MatchBridge` takes each point's owner and progress from the zone that stands on its feature's
-  position, and re-sends the last array while they do not change. 2026-11-09,
-  `feat/hud-level-xp`: level and XP are live; `MatchBridge` reads them from the Legend's
-  `EntitySnapshot.progression`; `xpToNext` is `null` at the level cap, where the XP ring is full,
-  DEC-224.)
+  structure and capture rosters from the `MapDefinition`. Level and XP come from the Legend's
+  `EntitySnapshot.progression`; `xpToNext` is `null` at the level cap, where the XP ring is full
+  (DEC-224). Each structure tile takes the live health of the
+  structure core built from its feature, bound once by `EntitySnapshot.mapFeatureId` in the
+  snapshot before the first tick, and `current` 0 once that structure is gone from the snapshot
+  (DEC-212, DEC-69). Wall segments and turrets have no structure entity yet
+  ([07](07-structures-obstacles-and-destructibles.md) §13), so their health stays `null`. The one
+  Wall tile, which also stands for the wall segments, sums the health of its members whose health
+  is known, today its gates, and shows no data only while none is (DEC-214 (B)); a destroyed gate
+  still marks it destroyed (DEC-108). Breakability on the strip is plan task GL-7. Each capture point
+  takes its owner and progress from the zone that stands on its feature's position (PR #64). For
+  either roster, the bridge re-sends each unchanged tile or point, and the last array while nothing
+  in it changes, so the roster selectors return the same value (DEC-221 (3)). Each other field becomes live when
+  core publishes it: aether and abilities (Phase 4, sprints 4.5 and 4.7, through `Snapshot.player`,
+  [05](05-abilities-weapons-and-loadouts.md) §15).
 - **HUD elements beyond §3's table.** `LevelBadge` (class emblem, XP ring, level), `WeaponPanel`
   (the weapon art at its manifest draw box, and the weapon-level bar, OQ-63), `GadgetBar` (the
   gadget slots, each with `<KeyGlyph>`), `UltimateChargeBar` and `ChargePips` (OQ-64),

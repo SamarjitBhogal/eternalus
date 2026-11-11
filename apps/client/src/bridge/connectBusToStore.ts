@@ -45,10 +45,9 @@ export function connectBusToStore(
     }),
     bus.on('class-selection', (selection) => dispatch(setup.select(selection))),
     bus.on('selection-locked', (rosters) => dispatch(setup.lockIn(rosters))),
-    bus.on('countdown', ({ kind, remainingMs }) =>
-      dispatch(kind === 'select' ? setup.setCountdown(remainingMs) : setup.setReveal(remainingMs)),
-    ),
+    bus.on('countdown', (countdown) => dispatch(setup.countdownChanged(countdown))),
     bus.on('match-clock', (clock) => dispatch(match.clockChanged(clock))),
+    bus.on('match-ended', (event) => dispatch(match.ended(event))),
     bus.on('hud-state', ({ player }) => dispatch(hudSlice.actions.hudStateChanged(player))),
     bus.on('structure-state', ({ structures }) => dispatch(match.structuresChanged(structures))),
     bus.on('capture-state', ({ points }) => dispatch(match.capturePointsChanged(points))),

@@ -52,9 +52,14 @@ describe('STRINGS no-data template', () => {
 });
 
 describe('STRINGS team-name templates', () => {
-  it('names the winner and each stronghold from a team name (content)', () => {
-    expect(STRINGS.results.winner('Lux')).toBe('Lux wins.');
+  it('names each stronghold from a team name (content)', () => {
     expect(STRINGS.viewport.explorer.legend.stronghold('Umbra')).toBe('Umbra stronghold');
+  });
+});
+
+describe('STRINGS.results', () => {
+  it("words the ended match's length", () => {
+    expect(STRINGS.results.duration('14:32')).toBe('Match length 14:32');
   });
 });
 

@@ -3,7 +3,13 @@
  * `content-catalogue` carries a `DisplayCatalogue`; `contentSlice` stores it. Types only: imports
  * no slice and not events.ts. A type is exported once a file outside this one reads it (knip).
  */
-import type { BotRosterDefinition, LegendName, MapFeatureKind, RoleRatings } from '@eternalus/core';
+import type {
+  BotRosterDefinition,
+  LegendName,
+  MapFeatureKind,
+  RoleRatings,
+  VerdictLines,
+} from '@eternalus/core';
 
 import type { HudSlotId } from './Binding.types';
 import type { LegendClassId, PlayableTeam, Team } from './domain.types';
@@ -273,4 +279,8 @@ export type DisplayCatalogue = {
   readonly teamNames: Readonly<Record<PlayableTeam, string>>;
   /** Who the bots are (core content, DEC-61, DEC-102); the session builds the rosters from it. */
   readonly botRoster: BotRosterDefinition;
+  /** The win/lose screen's line under the verdict, per victory condition and side (core, 12 §9). */
+  readonly verdictLines: VerdictLines;
+  /** Each team's sovereign display name (core content, DEC-74); fills a verdict line's `{name}`. */
+  readonly sovereignNames: Readonly<Record<PlayableTeam, string>>;
 };
