@@ -5895,6 +5895,19 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Next step: push; tell eternalus-121 the new head (#79 merges it); PR #77 merges after #76
   once Samarjit re-approves.
 
+### 2026-11-04 — Phase 3 / sprint 3.1 — chore/coderabbit-config — SamarjitBhogal + Claude Code
+
+- What was done: fixed the `.coderabbit.yaml` parse error ("An override must specify teams,
+  paths, or both" at `reviews.auto_approvals.overrides[0]`) by giving the never-approve override
+  `paths` globs matching every file, dotfiles included. The error made CodeRabbit fall back to
+  defaults, which also dropped `base_branches` and skipped reviews on PRs into phase branches;
+  both are fixed by this. Critic: approve, no blockers; its dotfile-glob and heading fixes
+  applied. Ponytail: no cuts.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 887 passed (887)"; client "Tests 433 passed
+  (433)"; "Documentation check passed."
+- Next step: PR into `phase/3-sprint-3-work`; the custom check flags `.coderabbit.yaml` changes,
+  so the product owner signs it off.
+
 ### 2026-11-08 — Phase 3 / INBOX: PR #69 critic item (Stronghold feature type) — docs/inbox-stronghold-feature-type — sholtzman + Claude Code
 
 - What was done: Sam chose to record the PR #69 round-3 critic's optional better-than-design item
@@ -5954,6 +5967,29 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   pre-commit `check:quick` passed. CI runs the full `npm run check` on the pushed head.
 - Next step: Sam's script merges #88, pushes this branch, waits for CI, then merges #87.
 
+### 2026-11-09 — Phase 3 / sprint 3.1 — chore/coderabbit-config — sholtzman + Claude Code
+
+- What was done: the product owner keeps CodeRabbit, so PR #73 is finished for merge. `e24a62c`
+  merges `phase/3-sprint-3-work` at `120653b`; only this file conflicted (both sides appended),
+  and both sides are kept. ADR 0018 gets a dated note in its implementation status: CodeRabbit's
+  validator rejects an override with neither `teams` nor `paths`, so the never-approve override
+  lists paths that match every file; the intent of amendment item 2 is unchanged. This answers
+  CodeRabbit's one blocker on #73. The fix is needed now: CodeRabbit skips every PR into
+  phase 3 (#87: "Validation error: An override must specify teams, paths, or both", "Review
+  skipped"). On #73's own head, CodeRabbit parsed the config and ran a full review.
+- Checks run: `npm run check` on the merge with the ADR note → exit 0: core "Tests 1298 passed
+  (1298)"; client "Tests 1799 passed (1799)"; "✓ built in 483ms"; "Documentation check passed."
+- Next step: push; the product owner approves (his sign-off on the guardrail change); merge
+  when CI is green on both runners.
+
+### 2026-11-09 — Phase 3 / sprint 3.1 — chore/coderabbit-config — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` at `86b4fc0` into PR #73 to clear its conflict.
+  Only this file conflicted (both sides appended); all entries are kept, in date order.
+- Checks run: `npm run check` on the merge → exit 0: core "Tests 1302 passed (1302)"; client
+  "Tests 1800 passed (1800)"; "✓ built in 477ms"; "Documentation check passed."
+- Next step: push; the product owner approves; merge when CI is green.
+
 ### 2026-11-09 — Phase 3 / combat sprint: live HUD aether bar (DEC-230) — feat/hud-aether-bar — sholtzman + Claude Code
 
 - What was done: owner answers 2026-11-09 (DEC-230): the aether bar only, no regeneration until
@@ -6011,4 +6047,14 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   aether entries. `INBOX.md` merged cleanly. The merge brings in docs only.
 - Checks run: Prettier on `PROGRESS.md` passed; `npm run docs:check` passed; the pre-commit
   `check:quick` passed. CI runs the full `npm run check` on the pushed head.
+- Next step: push, then merge #92 into phase/3 once CI is green.
+
+### 2026-11-10 — Phase 3 / combat sprint: merge phase/3 (#73, main) into the aether PR (#92) — feat/hud-aether-bar — sholtzman + Claude Code
+
+- What was done: #73 and a merge of `main` moved phase/3 to `8d2404c8` and left #92 conflicting
+  in `PROGRESS.md` only. This branch merged `8d2404c8`. It kept phase/3's two #73 entries and
+  then this branch's entries. The merge brings in `.coderabbit.yaml`, the ADR 0018 note and
+  `PROGRESS.md` only.
+- Checks run: Prettier on `PROGRESS.md` passed; `npm run docs:check` passed; the pre-commit
+  `check:quick` runs on commit. CI runs the full `npm run check` on the pushed head.
 - Next step: push, then merge #92 into phase/3 once CI is green.
