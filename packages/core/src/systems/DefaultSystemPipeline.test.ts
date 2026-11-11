@@ -26,7 +26,10 @@ import { BLOCKED_LANE_MAP } from '../map/__fixtures__/blockedLaneMap';
 import { SystemPipeline } from './SystemPipeline';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { loadWeapons } from '../content/weapons/loadWeapons';
-import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
+import {
+  MAP_OBJECT_DEFINITIONS,
+  RUINED_FORT_WALL_DEFINITION,
+} from '../content/maps/mapObjectDefinitions';
 import type { MapObject } from '../content/maps/mapObjects.types';
 import type { MapFeature } from '../content/maps/maps.types';
 import { WorldObjectStore } from '../state/WorldObjectStore';
@@ -116,6 +119,7 @@ describe('DefaultSystemPipeline', () => {
         decide: [{ name: 'ai', update: () => undefined }],
         collisions: [{ name: 'collision', update: () => undefined }],
       },
+      ruinWall: RUINED_FORT_WALL_DEFINITION,
     });
 
     // Collision resolves positions before the index, steering, combat and next tick's AI read them.
@@ -431,6 +435,7 @@ describe('DefaultSystemPipeline', () => {
         progression: PROGRESSION,
         director: IDLE_DIRECTOR,
         ...(hasLanes ? { hordes: { factory, space: null, decide: [] } } : {}),
+        ruinWall: RUINED_FORT_WALL_DEFINITION,
       });
       const entityId = state.worldObjects.snapshot()[0]?.entityId ?? '';
       expect(world?.isWalkable(9, 5)).toBe(false);
@@ -448,6 +453,32 @@ describe('DefaultSystemPipeline', () => {
       expect(reopened.includes(5 * (world?.cols ?? 0) + 9)).toBe(hasLanes);
     },
   );
+  it('refuses a match with map objects but no ruinWall to ruin fort walls with (DEC-219 (a))', () => {
+    const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP));
+    state.worldObjects = new WorldObjectStore({
+      objects: [],
+      factory: new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS),
+      entities: state.entities,
+      definitions: MAP_OBJECT_DEFINITIONS,
+    });
+
+    expect(
+      () =>
+        new DefaultSystemPipeline({
+          invariants: new DefaultInvariantRunner({
+            debug: TEST_DEBUG_CONFIG,
+            logger: new MemoryLogger(),
+            curves: PROGRESSION.curves,
+            phaseOrder: MATCH_PHASES,
+            terminalPhases: TERMINAL_MATCH_PHASES,
+          }),
+          state,
+          progression: PROGRESSION,
+          director: IDLE_DIRECTOR,
+        }),
+    ).toThrow(/needs DefaultSystemPipelineOptions\.ruinWall/);
+  });
+
   it.each([
     // A tower's fort box is one (DEC-185); the chase closes in over the court's blocked ground.
     { definitionId: 'spawner-tower', heading: { x: 1, y: 0 } },

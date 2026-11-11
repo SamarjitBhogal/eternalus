@@ -217,6 +217,7 @@ export class Simulation {
           ],
         },
         structures,
+        ruinWall: RUINED_FORT_WALL_DEFINITION,
       });
       director.start(this.state);
     } else {

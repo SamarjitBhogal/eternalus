@@ -4,13 +4,13 @@ import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
 import { STUCK_DETECTION } from '../content/ai/stuckDetection';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
-import { RUINED_FORT_WALL_DEFINITION } from '../content/maps/mapObjectDefinitions';
 import { FORMATIONS } from '../content/mobs/formations/formations';
 import { ENRAGING_STRUCTURES } from '../content/mobs/minionModifiers';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { OPENING_WAVE, SPAWN_WAVES } from '../content/structures/spawnWaves';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
+import type { ObstacleDefinition } from '../content/obstacles/obstacles.types';
 import type { StructureDefinition } from '../content/structures/structures.types';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { LaneFlowFields } from '../map/LaneFlowFields';
@@ -59,6 +59,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
     director,
     hordes,
     structures = STRUCTURE_DEFINITIONS,
+    ruinWall,
   }: DefaultSystemPipelineOptions) {
     const { tickRate, map } = state.config;
     const damage = new DamagePipeline();
@@ -98,7 +99,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
               state,
               damage,
               flowFields,
-              ruinWall: RUINED_FORT_WALL_DEFINITION,
+              ruinWall: DefaultSystemPipeline.requireRuinWall(ruinWall),
             }),
           ]),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
@@ -125,6 +126,20 @@ export class DefaultSystemPipeline extends SystemPipeline {
       new MatchDirectorSystem(director),
       new InvariantSystem(invariants),
     ]);
+  }
+
+  /**
+   * The injected `ruinWall`, which a match with map objects needs (DEC-219 (a)).
+   *
+   * @throws Error when it is missing.
+   */
+  private static requireRuinWall(ruinWall: ObstacleDefinition | undefined): ObstacleDefinition {
+    if (ruinWall === undefined) {
+      throw new Error(
+        'A match with map objects needs DefaultSystemPipelineOptions.ruinWall: what a standing fort wall becomes when its tower falls',
+      );
+    }
+    return ruinWall;
   }
 
   /**

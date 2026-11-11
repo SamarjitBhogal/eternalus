@@ -25,7 +25,11 @@ export type SimulationOptions = {
   readonly seed: number;
   /** Where core's log records go. */
   readonly logger: Logger;
-  /** The tick's systems in execution order; the `DefaultSystemPipeline` when omitted. */
+  /**
+   * The tick's systems in execution order; the `DefaultSystemPipeline` when omitted. Custom
+   * systems replace all of it: without a `MapDestructionSystem` among them, a destroyed map
+   * object leaves no ruins and does not reopen the grid.
+   */
   readonly systems?: readonly System[];
   /** Invariant settings for the default pipeline; `RELEASE_DEBUG_CONFIG` when omitted. */
   readonly debug?: DebugConfig;
