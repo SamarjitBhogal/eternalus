@@ -2,7 +2,7 @@ import type { MapDecoration, MapFeature } from '../content/maps/maps.types';
 import { BUILDING_GEOMETRY as G } from '../content/maps/buildingGeometry';
 import { MAP_PALETTE as P, SKETCH_HEIGHT } from '../content/maps/map1Scenery';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
-import type { Rect } from '../utils/geometry.types';
+import type { FortWall } from './MapFortificationBuilder.types';
 
 /**
  * Dresses existing square anchors with masonry, towers, battlements and faction banners. A lane
@@ -30,38 +30,49 @@ export class MapFortificationBuilder extends MapDecorationBuilder {
     const wall = size / G.fort.wallDivisor;
     const tower = size / 5;
     const id = feature.id;
-    const fort = { id, hasOwnWalls: !isCapturePoint };
+    // A lane tower's wall pieces are its body (`partOf`); a capture point's fort stays one object.
+    const piece = { color: stone, ...(isCapturePoint ? {} : { partOf: id }) };
     this.beginObject(id, 'fort');
     this.rect(`${id}-fort-shadow`, left + 5, top + 6, size, size, P.shadow);
     this.rect(`${id}-fort-court`, left, top, size, size, south ? P.ash : P.road);
-    this.wall(fort, `${id}-fort-wall-top`, { x: left, y: top, width: size, height: wall }, stone);
+    this.wall({
+      ...piece,
+      id: `${id}-fort-wall-top`,
+      box: { x: left, y: top, width: size, height: wall },
+    });
     // Lane gates west and east, as wide as the south gate, so the lane runs through (DEC-121 (d)).
     for (const [side, wallX] of [
       ['left', left],
       ['right', left + size - wall],
     ] as const) {
       const height = size / 3;
-      this.wall(fort, `${id}-fort-wall-${side}`, { x: wallX, y: top, width: wall, height }, stone);
-      this.wall(
-        fort,
-        `${id}-fort-wall-${side}-lower`,
-        { x: wallX, y: y + size / 6, width: wall, height },
-        stone,
-      );
+      this.wall({
+        ...piece,
+        id: `${id}-fort-wall-${side}`,
+        box: { x: wallX, y: top, width: wall, height },
+      });
+      this.wall({
+        ...piece,
+        id: `${id}-fort-wall-${side}-lower`,
+        box: { x: wallX, y: y + size / 6, width: wall, height },
+      });
     }
     const bottom = { y: top + size - wall, width: size / 3, height: wall };
-    this.wall(fort, `${id}-fort-wall-bottom-left`, { x: left, ...bottom }, stone);
-    this.wall(fort, `${id}-fort-wall-bottom-right`, { x: x + size / 6, ...bottom }, stone);
+    this.wall({ ...piece, id: `${id}-fort-wall-bottom-left`, box: { x: left, ...bottom } });
+    this.wall({
+      ...piece,
+      id: `${id}-fort-wall-bottom-right`,
+      box: { x: x + size / 6, ...bottom },
+    });
     for (const dx of [0, size - tower]) {
       for (const dy of [0, size - tower]) {
         const suffix = String(dx) + '-' + String(dy);
-        this.wall(
-          fort,
-          `${id}-fort-tower-${suffix}`,
-          { x: left + dx, y: top + dy, width: tower, height: tower },
-          stone,
+        this.wall({
+          ...piece,
+          id: `${id}-fort-tower-${suffix}`,
+          box: { x: left + dx, y: top + dy, width: tower, height: tower },
           roof,
-        );
+        });
       }
     }
     for (let i = 0; i < 7; i++) {
@@ -83,20 +94,14 @@ export class MapFortificationBuilder extends MapDecorationBuilder {
   }
 
   /**
-   * One fort wall piece: on a lane tower's fort (`fort.hasOwnWalls`) its own `wall` object, part
-   * of the tower (`partOf`); otherwise a block of the fort's one object. A corner tower passes
-   * `roof`, so its roof belongs to the same object and is hidden when that piece falls.
+   * One fort wall piece: on a lane tower's fort (`partOf` set) its own `wall` object, part of the
+   * tower; otherwise a block of the fort's one object. A corner tower passes `roof`, so its roof
+   * belongs to the same object and is hidden when that piece falls.
    */
-  private wall(
-    fort: { readonly id: string; readonly hasOwnWalls: boolean },
-    id: string,
-    { x, y, width, height }: Rect,
-    color: string,
-    roof?: string,
-  ): void {
-    if (fort.hasOwnWalls) this.beginObject(id, 'wall', fort.id);
+  private wall({ id, box: { x, y, width, height }, color, roof, partOf }: FortWall): void {
+    if (partOf !== undefined) this.beginObject(id, 'wall', partOf);
     this.blockRect(id, x, y, width, height, color);
     if (roof !== undefined) this.rect(`${id}-roof`, x + 3, y + 3, width - 6, height - 6, roof);
-    if (fort.hasOwnWalls) this.beginObject(fort.id, 'fort');
+    if (partOf !== undefined) this.beginObject(partOf, 'fort');
   }
 }
