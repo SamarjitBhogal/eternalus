@@ -1,0 +1,127 @@
+import { describe, expect, it } from 'vitest';
+import { WorldObjectStore } from './WorldObjectStore';
+import { EntityStore } from './EntityStore';
+import { EntityFactory } from '../entities/EntityFactory';
+import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
+import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
+import type { MapObject } from '../content/maps/mapObjects.types';
+import { Health } from '../components/Health';
+import type { Vec2 } from '../utils/geometry.types';
+
+/** A factory over every map-object definition, as the match builds it. */
+const fixtureFactory = (): EntityFactory => {
+  const definitions = new Map(
+    Object.values(MAP_OBJECT_DEFINITIONS).map((definition) => [definition.id, definition]),
+  );
+  return new EntityFactory(createDefaultEntityRegistry(), {
+    has: (id) => definitions.has(id),
+    get: (id) => {
+      const definition = definitions.get(id);
+      if (definition === undefined) throw new Error('Unknown fixture');
+      return definition;
+    },
+  });
+};
+
+describe('WorldObjectStore', () => {
+  it('uses injected content policy instead of global map-object defaults', () => {
+    const definitions = {
+      ...MAP_OBJECT_DEFINITIONS,
+      house: { ...MAP_OBJECT_DEFINITIONS.house, id: 'fixture-house', health: 275 },
+    };
+    const byId = new Map(
+      Object.values(definitions).map((definition) => [definition.id, definition]),
+    );
+    const factory = new EntityFactory(createDefaultEntityRegistry(), {
+      has: (id) => byId.has(id),
+      get: (id) => {
+        const definition = byId.get(id);
+        if (definition === undefined) throw new Error('Unknown injected definition');
+        return definition;
+      },
+    });
+    const world = new WorldObjectStore(
+      [{ id: 'house', kind: 'house', isBlocking: true, footprints: [[{ x: 0, y: 0 }]] }],
+      factory,
+      new EntityStore(),
+      definitions,
+    );
+    expect(world.snapshot()[0]?.health).toEqual({ current: 275, max: 275 });
+  });
+
+  it('keeps health on obstacle entities and retains destroyed state after retirement', () => {
+    const factory = fixtureFactory();
+    const entities = new EntityStore();
+    const object: MapObject = {
+      id: 'house',
+      kind: 'house',
+      isBlocking: true,
+      buildingId: 'palace',
+      footprints: [
+        [
+          { x: 1, y: 1 },
+          { x: 2, y: 1 },
+          { x: 2, y: 2 },
+        ],
+      ],
+    };
+    const world = new WorldObjectStore(
+      [object, { ...object, id: 'mountain', kind: 'terrain' }],
+      factory,
+      entities,
+      MAP_OBJECT_DEFINITIONS,
+    );
+    const house = world.snapshot()[0];
+    expect(house?.health).toEqual({ current: 100, max: 100 });
+    expect(world.snapshot()[1]?.health).toBeNull();
+    expect(entities.size).toBe(1);
+    const entity = entities.get(house?.entityId ?? '');
+    if (entity === undefined) throw new Error('No house');
+    expect(world.contentsOf('palace')).toEqual([entity.id]);
+    expect(world.objectFor(entity.id)).toBe(object);
+    entity.getComponent(Health).applyDamage(100);
+    entities.remove(entity.id, 'died');
+    world.removed(entity.id);
+    world.removed('unknown');
+    expect(world.snapshot()[0]).toMatchObject({
+      isDestroyed: true,
+      health: { current: 0, max: 100 },
+    });
+    expect(world.destroyedIds.has('house')).toBe(true);
+  });
+
+  it('skips an object whose footprint box misses the circle, without testing its shape', () => {
+    let reads = 0;
+    const corner = (x: number, y: number): Vec2 => ({
+      get x() {
+        reads += 1;
+        return x;
+      },
+      get y() {
+        reads += 1;
+        return y;
+      },
+    });
+    const factory = fixtureFactory();
+    const world = new WorldObjectStore(
+      [
+        {
+          id: 'rock',
+          kind: 'terrain',
+          isBlocking: true,
+          footprints: [[corner(0, 0), corner(4, 0), corner(4, 4)]],
+        },
+      ],
+      factory,
+      new EntityStore(),
+      MAP_OBJECT_DEFINITIONS,
+    );
+    expect(world.blockingAt({ x: 2.5, y: 1 }, 0.5)).toBe('rock');
+    // Centre outside the box, circle across its edge: the box test counts the radius.
+    expect(world.blockingAt({ x: 2, y: -0.4 }, 0.5)).toBe('rock');
+
+    reads = 0;
+    expect(world.blockingAt({ x: 50, y: 50 }, 1)).toBeNull();
+    expect(reads).toBe(0);
+  });
+});

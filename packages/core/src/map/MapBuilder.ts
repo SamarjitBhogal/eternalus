@@ -53,7 +53,15 @@ export class MapBuilder {
   /** Light's Stronghold on the west edge, centred vertically; Dark's is its mirror. */
   public placeStrongholds(): this {
     this.addMirrored(
-      { suffix: 'stronghold', definitionId: this.ids().stronghold, position: this.stronghold },
+      {
+        suffix: 'stronghold',
+        definitionId: this.ids().stronghold,
+        position: this.stronghold,
+        wallBoundary: {
+          radius: this.input.layout.wallRing.radius,
+          thickness: this.input.layout.wallRing.thickness,
+        },
+      },
       TEAM_SIDES,
     );
     return this;
@@ -119,6 +127,7 @@ export class MapBuilder {
       stronghold: this.stronghold,
       centreX: this.centreX,
       band: layout.camps.band,
+      rng: this.input.rng,
     });
     for (const slot of slots) {
       const definitionId = campDefinitionFor(slot.depth, layout.camps.weightClasses);
@@ -135,7 +144,11 @@ export class MapBuilder {
       );
     }
     cornerCampPositions(config.cornerCamps, layout.cornerCamps, config.worldHeight).forEach(
-      (position, index) => {
+      (anchor, index) => {
+        const position = {
+          x: anchor.x + this.input.rng.next() * layout.cornerCamps.stepX,
+          y: anchor.y,
+        };
         this.addMirrored(
           { suffix: `corner-camp-${String(index)}`, definitionId: this.ids().cornerCamp, position },
           NEUTRAL_SIDES,

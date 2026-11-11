@@ -11,10 +11,12 @@ import type { BotMemory, BotLegendControllerContent, BotTurn } from './BotLegend
 import type { Decision, DecisionInput } from './Controller.types';
 import { closeness, weakness } from './utility/considerations';
 import { UtilityScorer } from './utility/UtilityScorer';
+import { isPlayableTeam } from '../teams/playableTeams';
 
 /**
  * The conditions and actions every bot Legend tree is built from (architecture 11 §4.2):
- * surviving, choosing and fighting an enemy (and casting), following the lead horde and walking,
+ * surviving, choosing and fighting an enemy (and casting), attacking the lane's next enemy
+ * structure, following the lead horde and walking,
  * around obstacles through A\* (`state.paths`). `BotLegendController` and `RoverController` arrange
  * them into their trees. Stateless apart from scratch: what a bot remembers is its brain.
  */
@@ -46,7 +48,7 @@ export class BotLeaves {
     }
     const position = BotLeaves.positionOf(state, entityId);
     const team = state.entities.teamOf(entityId);
-    if (position === undefined || (team !== 'light' && team !== 'dark')) {
+    if (position === undefined || !isPlayableTeam(team)) {
       return null;
     }
     const memory = BotLeaves.read(brain.memory);
@@ -62,6 +64,7 @@ export class BotLeaves {
       next: memory,
       commands: [],
       enemy: null,
+      objective: null,
       destination: null,
     };
   }
@@ -88,7 +91,7 @@ export class BotLeaves {
   public retreat(turn: BotTurn): BtStatus {
     let best: { readonly id: string; readonly position: Vec2 } | null = null;
     let bestGap = Number.POSITIVE_INFINITY;
-    for (const feature of turn.state.map?.features ?? []) {
+    for (const feature of turn.state.world?.definition.features ?? []) {
       const gap = BotLeaves.gapSquared(turn.position, feature.position);
       const isNearer =
         gap < bestGap || (gap === bestGap && best !== null && compareById(feature.id, best.id) < 0);
@@ -143,10 +146,69 @@ export class BotLeaves {
     return this.moveTo(turn, at);
   }
 
+  /**
+   * Finds `lane`'s next standing enemy structure (18 §6.2) once the bot has come within
+   * `engageRadius` of the point hordes gather at to attack it. A gate that cannot be broken yet
+   * does not count, so the bot stays with its horde, which holds in front of it.
+   */
+  public findObjective(turn: BotTurn, lane: string): boolean {
+    const { state, team, position, difficulty } = turn;
+    const routes = state.world?.routes ?? null;
+    if (routes === null || lane === '') {
+      return false;
+    }
+    const objective = state.laneStructures.objectiveFor(lane, team, state.entities);
+    const progress = routes.distanceAlong(lane, team, position);
+    if (
+      objective === null ||
+      !objective.isBreakable ||
+      progress + difficulty.engageRadius < objective.frontProgress
+    ) {
+      return false;
+    }
+    turn.objective = objective;
+    return true;
+  }
+
+  /**
+   * Attacks `turn.objective` (11 §4.2 `Push`): walks to the point hordes gather at, then straight
+   * at the structure, whose footprint blocks the A\* grid, and holds once it is in reach.
+   *
+   * @remarks ponytail: the last leg ignores obstacles. A tower's or gate's gather point faces its
+   * footprint, but the Stronghold stands off the lane inside its wall ring, so a bot can lean on
+   * the ring; A\* to the nearest open point of the footprint's edge lifts that.
+   */
+  public siege(turn: BotTurn): BtStatus {
+    const { state, id, team, position, objective } = turn;
+    const routes = state.world?.routes ?? null;
+    if (objective === null || routes === null) {
+      return 'failure';
+    }
+    if (objective.id !== turn.memory.targetId) {
+      turn.commands.push({ type: 'attack-target', actorId: id, targetId: objective.id });
+      turn.next = { ...turn.next, targetId: objective.id };
+    }
+    if (state.entities.isInReach(id, objective.id)) {
+      turn.commands.push({ type: 'move', actorId: id, direction: { x: 0, y: 0 } });
+      return 'running';
+    }
+    routes.pose(turn.memory.lane, team, objective.frontProgress, this.anchor, this.forward);
+    const { arrivalDistance } = turn.difficulty;
+    if (BotLeaves.gapSquared(position, this.anchor) > arrivalDistance * arrivalDistance) {
+      return this.moveTo(turn, { x: this.anchor.x, y: this.anchor.y });
+    }
+    turn.commands.push({
+      type: 'move',
+      actorId: id,
+      direction: { x: objective.x - position.x, y: objective.y - position.y },
+    });
+    return 'running';
+  }
+
   /** Finds the anchor of the most advanced allied horde on `lane`. */
   public findHorde(turn: BotTurn, lane: string): boolean {
     const { state, team } = turn;
-    const routes = state.routes;
+    const routes = state.world?.routes ?? null;
     let lead = -1;
     state.hordes.forEach((horde) => {
       // The progress is all that is read, so which of two equal hordes wins does not matter.
@@ -164,7 +226,7 @@ export class BotLeaves {
 
   /** Finds the nearest point of `lane` to `point` (the lane corridor, 11 §4.2). */
   public findLanePoint(turn: BotTurn, lane: string, point: Vec2): boolean {
-    const routes = turn.state.routes;
+    const routes = turn.state.world?.routes ?? null;
     if (routes === null || lane === '') {
       return false;
     }

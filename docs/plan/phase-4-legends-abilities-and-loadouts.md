@@ -4,7 +4,7 @@ description: Sprint checklists for the three Legend classes, the ability framewo
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-29
+last-reviewed: 2026-11-05
 tags: [plan, phase-4, legends, abilities, loadouts, progression, hud]
 paths:
   ['packages/core/src/abilities/**', 'packages/core/src/loadout/**', 'apps/client/src/ui/hud/**']
@@ -21,8 +21,8 @@ related:
 ## Purpose
 
 Read this when you pick up a Phase 4 task or review the Phase 4 PR. Phase 4 replaces the
-placeholder Legend with the three MVP classes (**Warrior** (rename pending), **Sentinel**,
-**Magus**), adds the ability framework the requirements doc demands to be "extremely simple"
+placeholder Legend with the MVP classes (`content/legends/`;
+reference 01), adds the ability framework the requirements doc demands to be "extremely simple"
 to extend (a new ability is one `AbilityEffect` strategy plus one content entry plus one
 `AbilityRegistry` line), the MVP ability set and ultimates from the game doc, weapons and
 artifacts as definitions, the `Loadout` model, XP-based scaling, and the HUD `AbilityBar` whose
@@ -46,7 +46,7 @@ Owner: _ (sim lane A). Week 7. Follows [04-entity-architecture.md](../architectu
 
 - [ ] **`Legend` abstract** (3 abilities + ultimate, 2 artifact slots, `Loadout`,
       `Progression`, aether) + **`Warrior`, `Sentinel`, `Magus` concrete** with
-      `LegendDefinition` content; `[Flying]` reserved as a content id with no class. Owner: _.
+      `LegendDefinition` content; `harbinger` reserved as a content id with no class (DEC-59). Owner: _.
       Test: each class spawns with its components; the class chain depth is 3. Done when:
       renaming `Warrior` touches the class, its imports and one display name.
 - [ ] **Sizes and movement profiles** (`TUNE`, game doc "Entity Class Specifics": Warrior ≈
@@ -59,7 +59,9 @@ Owner: _ (sim lane A). Week 7. Follows [04-entity-architecture.md](../architectu
       pending) and "Necromancy") applied through `StatusEffects`/modifiers. Owner: _. Test: each
       passive changes the documented stat. Done when: passives are entries, not subclasses.
 - [ ] **`LegendSpecDefinition` extension point** (D11: sub-classes as data-driven
-      specializations; no MVP content). Owner: _. Test: an empty spec is accepted by validation.
+      specializations; MVP since ADR 0018: the specs ship as display and setup data, and the phase
+      that builds their gameplay is open, `INBOX.md` HC-Q17). Owner: _. Test: an empty spec is
+      accepted by validation.
       Done when: [17-extension-recipes.md](../architecture/17-extension-recipes.md) shows the
       recipe.
 
@@ -138,7 +140,11 @@ Owner: _ (sim lane). Week 8.
 - [ ] **`AttackStrategy` implementations** (`melee`, `ranged-projectile`, `melee-with-ranged- flex`; heavy attack with cooldown for Wuuthrad and Lightbringer; parry as a status).
       Owner: _. Test: each named weapon's documented effect (bleed, protection reduction stacks,
       piercing, concussion, lightning stun) as a scenario. Done when: weapons select strategies
-      by id.
+      by id. **Hit model (DEC-184):** a weapon hits the whole area it reaches, not one target. A
+      melee weapon sweeps the area in front of the user, with a range set by the weapon's reach
+      (an arc where the weapon sweeps); a projectile weapon goes along the aim. Everything in that
+      area takes damage, so a minion and an object in one sweep are both hit. A click does not
+      need a target under the cursor.
 - [ ] **`ArtifactDefinition` content + gadget slots Z/C** (`TUNE`: Sentinel Mortar with impact
       and air-burst modes; Magus Soul Orb (pending) with Cast Forward and Follower; the second
       Sentinel artifact and the Warrior artifact per INBOX). Owner: _. Test: artifacts are
@@ -168,7 +174,11 @@ Owner: _ (sim lane). Week 8.
 
 **Status (2026-10-16, PR #31, Claudio):** `Progression` + `ProgressionSystem` started early (S2,
 SCRUM-426): level curve and per-level health and aether from content, kill XP to the killer. Shared,
-assist, structure, checkpoint, camp and boss XP and potency scaling remain, so the box stays open.
+assist, checkpoint, camp and boss XP and potency scaling remain, so the box stays open.
+**Status (2026-11-05, `feat/structure-xp`):** structure XP is built (DEC-186: every Legend on the
+destroying team; a dead Legend is paid on respawn once GL-12 exists). The curve and the Legend
+kill and structure numbers follow DEC-190. They are not final and can change after the soak
+metric "Legend level at 10 and 20 minutes".
 
 **Success metric:** a bot-vs-bot match ends with every Legend at a level consistent with its
 XP events (asserted by an invariant), and loadout validation rejects 100% of a fixture set of
@@ -196,7 +206,7 @@ recorded as cut in [PROGRESS.md](PROGRESS.md).
 
 Owner: _ (client lane). Weeks 7–8.
 
-- [ ] **`AbilityBar`, `AetherBar`, `HealthBar` HUD** fed by a throttled `legendSlice` in the
+- [ ] _(feat/hud-and-character-select: `HealthBar`, `AetherBar` and the ability and gadget slots read store selectors only (`hudSlice`, `selectHudSlotView`), with server-render tests of the cooldown and ready looks (register CD-28); cooldowns, aether, charge and level stay `null` until core publishes `Snapshot.player`, architecture 05 §18)_ **`AbilityBar`, `AetherBar`, `HealthBar` HUD** fed by a throttled `legendSlice` in the
       bridge (cooldowns, aether, charge, level). Owner: _. Test: `react-dom/server` render
       snapshots for cooldown and ready states. Done when: the HUD reads store selectors only.
 - [ ] **`<KeyGlyph action="…"/>`** renders the current binding for an `InputAction` (1–4

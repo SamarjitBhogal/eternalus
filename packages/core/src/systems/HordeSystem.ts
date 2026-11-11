@@ -1,7 +1,10 @@
+import { Deploying } from '../components/Deploying';
 import { Movement } from '../components/Movement';
 import type { EntityId } from '../state/EntityStore.types';
+import type { GameEventMap } from '../state/GameEvents.types';
 import type { GameState } from '../state/GameState';
 import type { Horde } from '../state/Horde.types';
+import type { HordeSteeringProfile } from '../content/ai/ai.types';
 import type { System, SystemContext } from './System.types';
 
 /**
@@ -9,12 +12,12 @@ import type { System, SystemContext } from './System.types';
  * and drops them at the start of its next pass (03 §4), so a member removed late in a tick leaves
  * its record at the start of the next; the lowest remaining id in string order leads and an empty
  * horde dissolves with `horde-dissolved`. Each tick it advances every horde's formation anchor by `marchSpeedFactor`
- * of its slowest member's top speed, up to the lane's end, except while the leader has an attack
- * target, when the anchor holds. It never creates a horde: `SpawnSystem`
+ * of its slowest member's top speed, up to the lane's end, except while any member has an attack
+ * target (MS-33) or the match holds units idle (`state.match.isIdleHeld`, the countdown, DEC-88),
+ * when the anchor holds, and never past `objectiveHoldGap` in front of the edge of its next
+ * standing objective (18 §6.2), so the horde gathers there; when that objective falls the next
+ * one takes over and the anchor advances again. It never creates a horde: `SpawnSystem`
  * adds members and record together (18 §3.2).
- *
- * @remarks ponytail: the anchor does not hold at a standing objective yet; that arrives with
- * structure entities (minion plan M2c).
  */
 export class HordeSystem implements System {
   public readonly name = 'hordes';
@@ -22,11 +25,12 @@ export class HordeSystem implements System {
 
   /**
    * @param state - The match whose events this system listens to.
-   * @param marchSpeedFactor - The anchor's speed as a fraction of the slowest member's top speed.
+   * @param steering - The anchor's speed (a fraction of the slowest member's top speed) and how far
+   *   in front of an objective it stops.
    */
   public constructor(
     state: GameState,
-    private readonly marchSpeedFactor: number,
+    private readonly steering: Pick<HordeSteeringProfile, 'marchSpeedFactor' | 'objectiveHoldGap'>,
   ) {
     const leave = ({ entityId }: { readonly entityId: EntityId }): void => {
       this.leaving.push(entityId);
@@ -38,19 +42,23 @@ export class HordeSystem implements System {
   /** Drops the members that left, then advances every horde's formation anchor along its lane. */
   public update({ state }: SystemContext): void {
     for (const entityId of this.leaving) {
+      // Only `PathingSystem` ends a horde member's walk out (DEC-133); outside a horde it ends here.
+      state.entities.get(entityId)?.removeComponent(Deploying);
       const horde = state.hordes.removeMember(entityId);
       if (horde?.memberIds.length === 0) {
         state.events.emit('horde-dissolved', HordeSystem.payloadOf(horde));
       }
     }
     this.leaving.length = 0;
-    const routes = state.routes;
-    if (routes === null) {
+    const routes = state.world?.routes;
+    // The countdown freezes the march too (DEC-88): an anchor that walked on would leave its frozen
+    // members behind their slots.
+    if (routes === undefined || state.match.isIdleHeld) {
       return;
     }
     state.hordes.forEach((horde) => {
-      // The anchor holds while the leader fights (18 §4), so the ranks wait for it.
-      if (state.entities.attackTargetOf(horde.leaderId) !== null) {
+      // The anchor holds while any member fights (18 §4, MS-33), so the horde fights as one.
+      if (horde.memberIds.some((id) => state.entities.attackTargetOf(id) !== null)) {
         return;
       }
       let slowest = Number.POSITIVE_INFINITY;
@@ -63,20 +71,21 @@ export class HordeSystem implements System {
       if (slowest === Number.POSITIVE_INFINITY) {
         return;
       }
-      const end = routes.length(horde.lane);
-      state.hordes.setProgress(
-        horde.id,
-        Math.min(end, horde.progress + slowest * this.marchSpeedFactor),
+      const objective = state.laneStructures.objectiveFor(horde.lane, horde.team, state.entities);
+      const hold =
+        objective === null
+          ? routes.length(horde.lane)
+          : objective.frontProgress - this.steering.objectiveHoldGap;
+      const next = Math.min(
+        routes.length(horde.lane),
+        horde.progress + slowest * this.steering.marchSpeedFactor,
       );
+      // Never walk back: a horde already past its hold point (spawned there) just stops.
+      state.hordes.setProgress(horde.id, next > hold ? Math.max(horde.progress, hold) : next);
     });
   }
 
-  private static payloadOf(horde: Horde): {
-    readonly hordeId: string;
-    readonly lane: string;
-    readonly team: Horde['team'];
-    readonly memberIds: readonly EntityId[];
-  } {
+  private static payloadOf(horde: Horde): GameEventMap['horde-dissolved'] {
     return { hordeId: horde.id, lane: horde.lane, team: horde.team, memberIds: horde.memberIds };
   }
 }

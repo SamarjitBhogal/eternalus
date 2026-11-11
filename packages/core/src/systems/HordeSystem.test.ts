@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { Deploying } from '../components/Deploying';
 import { Movement } from '../components/Movement';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
@@ -8,14 +9,21 @@ import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { GameState } from '../state/GameState';
+import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
+import { IdGenerator } from '../utils/IdGenerator';
+import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { HordeSystem } from './HordeSystem';
 
 const FACTOR = 0.5;
 const logger = new NullLogger();
 
 const setUp = (map: typeof TWO_LANE_MAP | null = TWO_LANE_MAP) => {
-  const state = new GameState(createDefaultGameConfig(), 1, map);
-  const system = new HordeSystem(state, FACTOR);
+  const state = new GameState(
+    createDefaultGameConfig(),
+    1,
+    map === null ? null : matchWorldOf(map),
+  );
+  const system = new HordeSystem(state, { marchSpeedFactor: FACTOR, objectiveHoldGap: 1 });
   const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
   const addHorde = (members: readonly [string, string][], progress = 0) => {
     const memberIds = members.map(([kind, definitionId]) => {
@@ -72,6 +80,29 @@ describe('HordeSystem', () => {
     expect(dissolved).toEqual([hordeId]);
   });
 
+  it('ends the walk out of a member that leaves its horde, since nothing else would (DEC-133)', () => {
+    const { state, system, addHorde } = setUp();
+    const { memberIds } = addHorde([
+      ['light-mob', 'light-minion'],
+      ['light-mob', 'light-minion'],
+    ]);
+    const [stays = '', leaves = ''] = memberIds;
+    for (const id of memberIds) {
+      state.entities.get(id)?.addComponent(new Deploying({ x: 40, y: 20 }));
+    }
+
+    state.events.emit('team-changed', {
+      entityId: leaves,
+      from: 'light',
+      to: 'dark',
+      cause: 'test',
+    });
+    system.update({ state, logger });
+
+    expect(state.entities.get(leaves)?.hasComponent(Deploying)).toBe(false);
+    expect(state.entities.get(stays)?.hasComponent(Deploying)).toBe(true);
+  });
+
   it('advances the anchor at a fraction of the slowest member’s speed, up to the lane end', () => {
     const { state, system, addHorde } = setUp();
     const { hordeId, memberIds } = addHorde([
@@ -105,6 +136,41 @@ describe('HordeSystem', () => {
     expect(state.hordes.get(hordeId)?.progress).toBeGreaterThan(10);
   });
 
+  it('holds the anchor while any member fights, not only the leader (MS-33)', () => {
+    const { state, system, addHorde } = setUp();
+    const { hordeId, memberIds } = addHorde(
+      [
+        ['light-mob', 'light-minion'],
+        ['light-mob', 'light-minion'],
+      ],
+      10,
+    );
+    const [leader = '', follower = ''] = memberIds;
+    expect(state.hordes.get(hordeId)?.leaderId).toBe(leader);
+    const { memberIds: enemies } = addHorde([['light-mob', 'training-dummy']]);
+    state.entities.setAttackTarget(follower, enemies[0] ?? '');
+
+    system.update({ state, logger });
+    expect(state.hordes.get(hordeId)?.progress).toBe(10);
+
+    state.entities.clearAttackTarget(follower);
+    system.update({ state, logger });
+    expect(state.hordes.get(hordeId)?.progress).toBeGreaterThan(10);
+  });
+
+  it('holds every anchor while the match holds units idle, and marches again after (DEC-88)', () => {
+    const { state, system, addHorde } = setUp();
+    const { hordeId } = addHorde([['light-mob', 'light-minion']], 10);
+    state.match.holdIdle(true);
+
+    system.update({ state, logger });
+    expect(state.hordes.get(hordeId)?.progress).toBe(10);
+
+    state.match.holdIdle(false);
+    system.update({ state, logger });
+    expect(state.hordes.get(hordeId)?.progress).toBeGreaterThan(10);
+  });
+
   it('leaves the anchor where it is without a map', () => {
     const { state, system, addHorde } = setUp(null);
     const { hordeId } = addHorde([['light-mob', 'light-minion']], 10);
@@ -112,5 +178,32 @@ describe('HordeSystem', () => {
     system.update({ state, logger });
 
     expect(state.hordes.get(hordeId)?.progress).toBe(10);
+  });
+
+  it('holds the anchor in front of a standing objective and advances once it falls', () => {
+    const { state, system, addHorde } = setUp();
+    const structures = new EntityFactory(
+      createDefaultEntityRegistry(),
+      STRUCTURE_DEFINITIONS,
+      new IdGenerator(1000),
+    );
+    // The dark SpawnerTower on lane-0 stands 120 along it from the light gate; radius 14.
+    const tower = structures.create('spawner-tower', 'spawner-tower', {
+      team: 'dark',
+      position: { x: 140, y: 20 },
+      laneId: 'lane-0',
+    });
+    state.entities.add(tower);
+    state.indexStructures();
+    const { hordeId } = addHorde([['light-mob', 'light-minion']], 100);
+
+    for (let tick = 0; tick < 200; tick += 1) {
+      system.update({ state, logger });
+    }
+    expect(state.hordes.get(hordeId)?.progress).toBeCloseTo(120 - 14 - 1);
+
+    state.entities.remove(tower.id, 'died');
+    system.update({ state, logger });
+    expect(state.hordes.get(hordeId)?.progress).toBeGreaterThan(105);
   });
 });

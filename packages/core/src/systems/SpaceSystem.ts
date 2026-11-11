@@ -5,8 +5,8 @@ import type { System, SystemContext } from './System.types';
 
 /**
  * Refills the state's neighbour index (`state.space`, architecture 11 §3) with every unit's
- * position, in store order. Runs right after `MovementSystem`, so steering and next tick's
- * decisions see this tick's positions.
+ * position, in store order. Runs right after movement and collision, so steering and next tick's
+ * decisions see this tick's resolved positions.
  */
 export class SpaceSystem implements System {
   public readonly name = 'space';

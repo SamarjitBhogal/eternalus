@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-29
+last-reviewed: 2026-11-05
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -72,16 +72,16 @@ classDiagram
   Zone <|-- CapturePoint
 ```
 
-| Family (abstract)       | Concrete kinds (`EntityKind`)                                                                      | Installs                                                                                                           | Owned per tick by                                              | Status                                                   |
-| ----------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- | -------------------------------------------------------- |
-| `Unit`                  | (abstract: mobile things)                                                                          | `Transform`, `Health`, `Movement`, `Combat`, `Team`, `Collider` (circle), `StatusEffects`, `Vision`, `Carry`       | `MovementSystem`, `CollisionSystem`, `CombatSystem`            | MVP                                                      |
-| `Legend`                | `warrior` (rename pending), `sentinel`, `magus`; `flying` reserved                                 | plus `Abilities` (3 + ultimate + 2 gadget slots), `Loadout`, `Progression`                                         | `AbilitySystem`, `ProgressionSystem`, controllers              | MVP; `flying` **post-MVP** (D12)                         |
-| `Mob`                   | `light-mob`, `medium-mob`, `heavy-mob`                                                             | `Unit` set; belongs to a `Horde` or a `Spawner`; `team` may be `neutral`                                           | `HordeSystem`, `PathingSystem`, `MinionController`             | MVP                                                      |
-| `Boss`                  | `mini-boss`, `greater-boss` (the Eternal)                                                          | `Unit` set with a multi-move FSM in `BossController`; zone-restricted                                              | `BossController`                                               | MVP-if-time (mini-boss), MVP-if-time (greater boss)      |
-| `Structure`             | `stronghold`, `spawner-tower`, `buff-tower`, `wall-segment`, `gate`, `turret`, `camp`, `cathedral` | `Transform`, `Health` (layered shield bars), `Team`, `Collider` (polygon footprint); `Spawner`, `Vision` as needed | `StructureSystem`, `SpawnSystem`, `TurretController`           | MVP (turrets, camps MVP; corner camps MVP-if-time)       |
-| `Zone`                  | `capture-point`                                                                                    | `Transform`, `Capturable`, `Team`; no `Collider`                                                                   | `CaptureSystem`                                                | MVP                                                      |
-| `Obstacle` (concrete)   | `obstacle` with data-driven `kind`: tree, rock, bridge-segment                                     | `Transform`, `Collider`, optional `Health` (breakable), carry weight                                               | `StructureSystem` (breakability), `Carry` via `PickUpStrategy` | MVP (static); felling, burning, throwing **MVP-if-time** |
-| `Projectile` (concrete) | `projectile`                                                                                       | `Transform`, `Movement`, `Collider`, `Team`; pooled                                                                | `MovementSystem` (swept), `CombatSystem`                       | MVP                                                      |
+| Family (abstract)       | Concrete kinds (`EntityKind`)                                                                                                             | Installs                                                                                                           | Owned per tick by                                              | Status                                                   |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- | -------------------------------------------------------- |
+| `Unit`                  | (abstract: mobile things)                                                                                                                 | `Transform`, `Health`, `Movement`, `Combat`, `Team`, `Collider` (circle), `StatusEffects`, `Vision`, `Carry`       | `MovementSystem`, `CollisionSystem`, `CombatSystem`            | MVP                                                      |
+| `Legend`                | `warrior` (display name in content, DEC-48), `sentinel`, `magus`; `harbinger` reserved (shown as a locked selection card, DEC-48, DEC-59) | plus `Abilities` (3 + ultimate + 2 gadget slots), `Loadout`, `Progression`                                         | `AbilitySystem`, `ProgressionSystem`, controllers              | MVP; `harbinger` **post-MVP** (D12)                      |
+| `Mob`                   | `light-mob`, `medium-mob`, `heavy-mob`                                                                                                    | `Unit` set; belongs to a `Horde` or a `Spawner`; `team` may be `neutral`                                           | `HordeSystem`, `PathingSystem`, `MinionController`             | MVP                                                      |
+| `Boss`                  | `mini-boss`, `greater-boss` (the Eternal)                                                                                                 | `Unit` set with a multi-move FSM in `BossController`; zone-restricted                                              | `BossController`                                               | MVP-if-time (mini-boss), MVP-if-time (greater boss)      |
+| `Structure`             | `stronghold`, `spawner-tower`, `buff-tower`, `wall-segment`, `gate`, `turret`, `camp`, `cathedral`                                        | `Transform`, `Health` (layered shield bars), `Team`, `Collider` (polygon footprint); `Spawner`, `Vision` as needed | `StructureSystem`, `SpawnSystem`, `TurretController`           | MVP (turrets, camps MVP; corner camps MVP-if-time)       |
+| `Zone`                  | `capture-point`                                                                                                                           | `ZoneArea`, `Transform`, `Capturable`, `Team`; no `Collider`                                                       | `CaptureSystem`                                                | MVP                                                      |
+| `Obstacle` (concrete)   | `obstacle` with data-driven `kind`: tree, rock, bridge-segment                                                                            | `Transform`, `Collider`, optional `Health` (breakable), carry weight                                               | `StructureSystem` (breakability), `Carry` via `PickUpStrategy` | MVP (static); felling, burning, throwing **MVP-if-time** |
+| `Projectile` (concrete) | `projectile`                                                                                                                              | `Transform`, `Movement`, `Collider`, `Team`; pooled                                                                | `MovementSystem` (swept), `CombatSystem`                       | MVP                                                      |
 
 Subclasses exist only where an instance genuinely needs different lifecycle code (a Legend levels
 up and respawns; a Mob despawns with its horde; a Structure never moves). Everything tunable is a
@@ -135,22 +135,23 @@ registries. Components are looked up by class (`entity.get(Health)`), never by s
 Components are classes with private state and methods; systems call the methods, never poke the
 fields. Each component guards its own invariants so a bug shows up where it happens.
 
-| Component       | Encapsulated state                                                               | Invariants it guards                                                     | Key methods                                                                                       |
-| --------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
-| `Transform`     | `position: Vec2`, `facing`, `radius`                                             | position finite                                                          | `moveBy`, `lookAt`                                                                                |
-| `Health`        | `base`, `current`, `shieldBars: ShieldBar[]` (one per living allied `BuffTower`) | `0 <= current <= base`; bars drain before base; bar count ≤ towers alive | `applyDamage(amount, source)`, `heal`, `addShieldBar(sourceId, max)`, `removeShieldBar(sourceId)` |
-| `Movement`      | `speed`, `maxSpeed`, `acceleration`, `mass`, `velocity: Vec2`                    | `0 <= speed <= maxSpeed`; mass > 0                                       | `accelerateToward`, `applyImpulse` (knockback), `stop`                                            |
-| `Combat`        | `weaponId`, `attackStrategy`, `targetingStrategy`, `targetId`, `cooldownTicks`   | cooldown never negative                                                  | `canAttack(tick)`, `setTarget`, `beginAttack`                                                     |
-| `Abilities`     | `slots: Record<AbilitySlot, AbilityRuntime>`                                     | one runtime per slot                                                     | `runtime(slot)`, `forEachReady`                                                                   |
-| `Progression`   | `xp`, `level`, `curveId`                                                         | level never decreases; xp ≥ 0                                            | `addXp(amount) → levelsGained`                                                                    |
-| `Team`          | `team: Team` (type from `teams/teams.types.ts`)                                  | transitions emit `team-changed`                                          | `setTeam(next, cause)`, `isAlly(other)`, `isEnemy(other)`                                         |
-| `Collider`      | `shape: Circle \| ConvexPolygon`, `layer`, `isSolid`                             | shape convex                                                             | `bounds()`                                                                                        |
-| `StatusEffects` | `active: StatusEffectRuntime[]`                                                  | stacks ≤ `maxStacks`; no duplicates when `stacking: 'refresh'`           | `apply(definition, sourceId, tick)`, `expire`, `has(flag)`                                        |
-| `Carry`         | `carriedId: EntityId \| null`, `maxWeight`, `pickUpStrategy`                     | carried entity exists and is carryable                                   | `canCarry(target)`, `pickUp`, `release`                                                           |
-| `Loadout`       | the resolved `Loadout` (weapons, artifacts, abilities, varieties)                | validated against content on set                                         | `apply(loadout)`                                                                                  |
-| `Vision`        | `radius`, `revealedUntilTick`                                                    | radius ≥ 0                                                               | `canSee(target)`                                                                                  |
-| `Spawner`       | `spawnTableId`, `intervalTicks`, `nextSpawnTick`, `guardIds`                     | next spawn ≥ current tick                                                | `isDue(tick)`, `schedule(tick)`                                                                   |
-| `Capturable`    | `ownerTeam`, `progress`, `checkpoint`, `contestedBy`                             | `0 <= progress <= 1`; checkpoint ∈ 1..3                                  | `advance(team, amount)`, `reset`                                                                  |
+| Component       | Encapsulated state                                                                        | Invariants it guards                                                                                            | Key methods                                                                                        |
+| --------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `Transform`     | `position: Vec2`, `facing`, `radius`                                                      | position finite                                                                                                 | `moveBy`, `lookAt`                                                                                 |
+| `Health`        | `base`, `current`, `shieldBars: ShieldBar[]` (one per living allied `BuffTower`)          | `0 <= current <= base`; bars drain before base; bar count ≤ towers alive                                        | `applyDamage(amount, source)`, `heal`, `addShieldBar(sourceId, max)`, `removeShieldBar(sourceId)`  |
+| `Movement`      | `speed`, `maxSpeed`, `acceleration`, `mass`, `velocity: Vec2`                             | `0 <= speed <= maxSpeed`; mass > 0                                                                              | `accelerateToward`, `applyImpulse` (knockback), `stop`                                             |
+| `Combat`        | `weaponId`, `attackStrategy`, `targetingStrategy`, `targetId`, `cooldownTicks`            | cooldown never negative                                                                                         | `canAttack(tick)`, `setTarget`, `beginAttack`                                                      |
+| `Abilities`     | `slots: Record<AbilitySlot, AbilityRuntime>`                                              | one runtime per slot                                                                                            | `runtime(slot)`, `forEachReady`                                                                    |
+| `Progression`   | `xp`, `level`, `curveId`                                                                  | level never decreases; xp ≥ 0                                                                                   | `addXp(amount) → levelsGained`                                                                     |
+| `Team`          | `team: Team` (type from `teams/teams.types.ts`)                                           | transitions emit `team-changed`                                                                                 | `setTeam(next, cause)`, `isAlly(other)`, `isEnemy(other)`                                          |
+| `Collider`      | `shape: Circle \| ConvexPolygon`, `layer`, `isSolid`                                      | shape convex                                                                                                    | `bounds()`                                                                                         |
+| `StatusEffects` | `active: StatusEffectRuntime[]`                                                           | stacks ≤ `maxStacks`; no duplicates when `stacking: 'refresh'`                                                  | `apply(definition, sourceId, tick)`, `expire`, `has(flag)`                                         |
+| `Carry`         | `carriedId: EntityId \| null`, `maxWeight`, `pickUpStrategy`                              | carried entity exists and is carryable                                                                          | `canCarry(target)`, `pickUp`, `release`                                                            |
+| `Loadout`       | the resolved `Loadout` (weapons, artifacts, abilities, varieties)                         | validated against content on set                                                                                | `apply(loadout)`                                                                                   |
+| `Vision`        | `radius`, `revealedUntilTick`                                                             | radius ≥ 0                                                                                                      | `canSee(target)`                                                                                   |
+| `Spawner`       | `spawnTableId`, `intervalTicks`, `nextSpawnTick`, `guardIds`                              | next spawn ≥ current tick                                                                                       | `isDue(tick)`, `schedule(tick)`                                                                    |
+| `Capturable`    | `owner`, `progress`, `checkpoint`, `lockedBy`, `presence`, each side's reached checkpoint | `-1 <= progress <= 1`; `0 <= checkpoint <= ` the configured count (checked by `CaptureProgressBoundsInvariant`) | `setProgress`, `setOwner` (clears the checkpoints each side reached), `setPresence`, `markReached` |
+| `ZoneArea`      | `polygons` (the building's floor, world units)                                            | at least one polygon of at least 3 finite points                                                                | `contains(point)`, `reachFrom(center)`                                                             |
 
 Cross-component calls go through the entity (`entity.get(Team)`), not through a global lookup.
 Pairs that are always used together (`Combat` and `Movement`) may hold a direct reference,
@@ -165,7 +166,7 @@ A strategy is a stateless, shared object selected by a definition field and reso
 | ------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
 | `TargetingStrategy` | `selectTarget(self, perception): EntityId \| null` | `NearestEnemyTargetingStrategy`, `StickyTurretTargetingStrategy`, `CommandedTargetingStrategy` (player picks); minions and guards rank targets in their controllers ([18](18-minion-system.md) §6.1)                                                         | `definition.targeting`                                          |
 | `AttackStrategy`    | `attack(attacker, targetId, attack, ctx): void`    | `MeleeAttackStrategy`, `RangedProjectileAttackStrategy`, `BeamAttackStrategy` (Death Ray, MVP-if-time)                                                                                                                                                       | `weapon.attack`                                                 |
-| `MovementStrategy`  | `desiredVelocity(self, ctx): Vec2`                 | `LaneFollowMovementStrategy` (hordes, flow-field target; [18-minion-system](18-minion-system.md) §5), `SeekArriveMovementStrategy`, `LeashedChaseMovementStrategy` (camps, tower guards), `DirectedMovementStrategy` (Legends), `StationaryMovementStrategy` | `definition.movementStrategy` (`movement` is the speed profile) |
+| `MovementStrategy`  | `desiredVelocity(self, ctx): Vec2`                 | `LaneFollowMovementStrategy` (hordes, flow-field target; [18-minion-system](18-minion-system.md) §5), `SeekArriveMovementStrategy`, `LeashedChaseMovementStrategy` (camps, tower guards), `DirectedMovementStrategy` (Legends), `StationaryMovementStrategy` | `definition.movementStrategy` (speed profile `movementProfile`) |
 | `PickUpStrategy`    | `canPickUp(self, target)`, `pickUp`, `throw`       | `LightPickUpStrategy` (Warrior), `GrabPickUpStrategy` (Sentinel, applies crushed), `LevitatePickUpStrategy` (Magus); `GraspPickUpStrategy` **post-MVP**                                                                                                      | `definition.pickUp`                                             |
 
 Strategies use the seeded `Rng` from the context and vectors only (no angles), so they stay
@@ -180,12 +181,12 @@ copy-down by `ContentCatalogue` so the runtime never walks a chain (research §9
 ```ts
 // Sketch: packages/core/src/content/EntityDefinition.types.ts
 export type EntityDefinitionBase = {
-  readonly id: string; // 'warrior', never renamed once used
+  readonly id: string; // kebab-case content id (17 R26)
   readonly kind: EntityKind; // which concrete class builds it
-  readonly displayName: string; // 'Warrior (formerly Assault)' lives here, not in code
+  readonly displayName: string; // the name players see; lives here, not in code
   readonly extends?: string; // single parent, same family
   readonly sprite: SpriteRef;
-  readonly minimapGlyph?: MinimapGlyph; // 06 §8; absent = DEFAULT_MINIMAP_GLYPH
+  readonly minimapGlyph?: MinimapGlyph; // 06 §8; the map layers draw it; units' markers are on their EntityView
 };
 
 export type LegendDefinition = EntityDefinitionBase & {
@@ -202,12 +203,12 @@ export type LegendDefinition = EntityDefinitionBase & {
 };
 ```
 
-| Definition            | Distinctive fields                                                                                                                                                                            |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `MobDefinition`       | `weightClass`, `stats`, `movement`, `targeting`, `attack`, `aggro` (acquisition range, leash ticks, aggro cooldown, priority order, as data), `xpValue`, `strengthByDistance` curve id        |
-| `BossDefinition`      | `stats`, `moves: BossMoveDefinition[]` (FSM states with ability ids and transition rules), `zoneRestriction`, `rewards` (team XP, permanent buff id, final-hit item, MVP-if-time)             |
-| `StructureDefinition` | `footprint` (convex polygon), `baseHealth`, `shieldPerBuffTower` (`TUNE` 1.25 spawner / 1.5 buff / 2.0 wall, game doc), `breakableWhen` rule id, `spawnTable?`, `aura?`, `turret?`, `guards?` |
-| `ObstacleDefinition`  | `kind` (tree, rock, bridge-segment), `breakable`, `health?`, `weight` (which `PickUpStrategy` may lift it), `blocksPathing`, `fallDamage?` (MVP-if-time)                                      |
+| Definition            | Distinctive fields                                                                                                                                                                                                |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MobDefinition`       | `weightClass`, `stats`, `movementStrategy`, `movementProfile`, `targeting`, `attack`, `aggro` (acquisition range, leash ticks, aggro cooldown, priority order, as data), `xpValue`, `strengthByDistance` curve id |
+| `BossDefinition`      | `stats`, `moves: BossMoveDefinition[]` (FSM states with ability ids and transition rules), `zoneRestriction`, `rewards` (team XP, permanent buff id, final-hit item, MVP-if-time)                                 |
+| `StructureDefinition` | `footprint` (convex polygon), `baseHealth`, `shieldPerBuffTower` (`TUNE` 1.25 spawner / 1.5 buff / 2.0 wall, game doc), `breakableWhen` rule id, `spawnTable?`, `aura?`, `turret?`, `guards?`                     |
+| `ObstacleDefinition`  | `kind` (tree, rock, bridge-segment), `breakable`, `health?`, `weight` (which `PickUpStrategy` may lift it), `blocksPathing`, `fallDamage?` (MVP-if-time)                                                          |
 
 Definitions are Flyweights: shared, immutable, referenced by id from state
 ([03-game-model.md](03-game-model.md) §11).
@@ -219,6 +220,10 @@ can check the ids a definition names (dangling references), and the validator re
 broken rule at once in one `ContentValidationError`. The rules are listed in one file,
 `content/defaultContentRules.ts` (`createDefaultContentRules()`); a new rule is a class and one
 line there.
+`loadDisplayContent()` validates the display-only families (Legends, Legend specs and the locked
+classes) and the bot roster, setup data, through the same `ContentValidator`; the rules that need
+the Legend catalogue come from `createLegendSpecRules(legends)` (ADR 0018) and
+`createBotRosterRules(legends)` (DEC-61).
 
 ## 6. `EntityFactory` and `EntityRegistry`
 
@@ -232,9 +237,7 @@ export class EntityRegistry {
 // Sketch: packages/core/src/entities/defaultEntityRegistry.ts — the ONLY file that names concrete classes
 export function createDefaultEntityRegistry(): EntityRegistry {
   const registry = new EntityRegistry();
-  registry.register('warrior', (id, def) => new Warrior(id, def));
-  registry.register('sentinel', (id, def) => new Sentinel(id, def));
-  registry.register('magus', (id, def) => new Magus(id, def));
+  registry.register('<kind>', (id, def) => new <Class>(id, def)); // one line per Legend class
   registry.register('light-mob', (id, def) => new LightMob(id, def));
   // ... one line per concrete kind
   return registry;
@@ -265,25 +268,29 @@ are `Camp` structures (neutral spawners) and bosses are `Boss` units with `team:
 "neutral" queries are a filter on `Team`, not an `instanceof`. Nothing is lost: every place the
 old design would have said `NeutralEntity` now says `team === 'neutral'`.
 
-## 9. Sub-classes and specialisations (D11, post-MVP)
+## 9. Sub-classes and specialisations (D11)
 
-Assassin/Knight/Paladin, Colossus, Necromancer/Druid/Mage and Hover/Strafe arrive after the MVP
-as `LegendSpecDefinition` data (stat modifiers, ability overrides, pick-up strategy, skin) that the
-existing class consumes; no new code class. Only unique behaviour earns a class, and note the
-depth budget: `Entity → Unit → Legend → Warrior` already uses the three levels, so an
-`Assassin extends Warrior` is forbidden. A behaviour-unique specialisation becomes a **sibling**
-concrete kind under `Legend` (`Necromancer extends Legend`) whose definition `extends: 'magus'`
-for its data; shared behaviour is reached through strategies and components, never through a
-fourth inheritance level.
+Sub-classes (Legends) are MVP (ADR 0018), each as `LegendSpecDefinition` data (stat modifiers,
+ability overrides, pick-up strategy, skin) that the existing class consumes; no new code class. The
+roster is content (the specs in `packages/core/src/content/legends/specs/` and the class files
+beside them), never copied into a doc. The player already picks a Legend at character select as
+display and setup data (DEC-49); its gameplay is MVP scope, and the phase that builds it is open
+(`INBOX.md` HC-Q17). Only unique behaviour earns a class, and note the depth budget:
+`Entity → Unit → Legend → Warrior` already uses the three levels, so a sub-class class extending
+`Warrior` is forbidden. A behaviour-unique specialisation becomes a **sibling** concrete kind under
+`Legend` (`<Name> extends Legend`) whose definition `extends` its class's id for its data; shared
+behaviour is reached through strategies and components, never through a fourth inheritance level.
 
 ## 10. Renaming is cheap by rule
 
-Display names live in content (`displayName: 'Warrior (formerly Assault)'`), so a rename the
-players see is a one-line content change. Renaming the class is a file rename plus the imports
-and the `extends` clause of its subclasses (an IDE refactor), exactly as the requirements doc asks.
-The content **id** (`'warrior'`) is the one thing that does not change once used, because replays,
-loadouts and match history reference it; if the team ever insists, that is a persistence migration
-(Recommendation: do not).
+Display names live in content (each definition's `displayName`), so a rename the players see is a
+one-line content change. Renaming the class is a file rename plus the imports and the `extends`
+clause of its subclasses (an IDE refactor), exactly as the requirements doc asks. The content
+**id** (`'warrior'`) is the one thing that does not change once a save or a release stores it,
+because replays, loadouts and match history reference it; if the team ever insists, that is a
+persistence migration (Recommendation: do not). No saves or release exist yet (ADR 0023): until
+they do, renaming an id is a content refactor, and a reference it misses must fail the checks (a
+test or the boot-time content validation), never silently.
 
 ## 11. Object pooling
 
@@ -295,7 +302,8 @@ client-side (views) and pooled there; mobs may be pooled later if profiling show
 
 ## 12. Worked example: adding a fourth Legend class
 
-`flying` (rename pending, post-MVP) needs a unique movement layer, so it is a class, not data.
+`harbinger` (shown locked, its display name in content, DEC-48, DEC-59;
+post-MVP) needs a unique movement layer, so it is a class, not data.
 
 | Step | File                                                                                                    | Change                                                                                     |
 | ---- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
@@ -336,9 +344,10 @@ session or phase named:
   `xp`, `level` and `curveId`, with `addXp(amount, curve)` taking the curve `ProgressionSystem`
   resolves from the injected catalogue. `Health` and `Aether` gained `raiseMax`, which raises only
   the cap; `ProgressionSystem` heals and refills by the raise while the Legend is alive (O3, O4).
-- Shipped kinds: `warrior`, `sentinel`, `magus`, `light-mob` (the training dummy only),
-  `obstacle` and `projectile`. Other mobs are SCRUM-59; structures and zones get concrete kinds in
-  Phase 2 and 3.
+- Shipped kinds: the Legend classes of `LEGEND_KINDS` (`content/legends/legendKinds.ts`),
+  `light-mob` (the training dummy only),
+  `obstacle`, `projectile` and `capture-point` (PR #64). Other mobs are SCRUM-59; structures get
+  concrete kinds in Phase 2 and 3.
 
 ## Related
 

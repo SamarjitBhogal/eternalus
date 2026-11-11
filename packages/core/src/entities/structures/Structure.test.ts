@@ -17,6 +17,7 @@ const DEFINITION: StructureDefinition = {
   displayName: 'Fake Buff Tower',
   baseHealth: 1000,
   footprintRadius: 14,
+  breakability: { kind: 'always' },
 };
 
 describe('Structure', () => {
@@ -46,6 +47,28 @@ describe('Structure', () => {
     tower.getComponent(Health).addShield('buff-tower-2', 1500);
 
     expect(tower.getComponent(Health).total).toBe(2500);
+  });
+
+  it('keeps the lane it was placed on, and starts unbreakable unless its rule is `always`', () => {
+    const tower = new FakeTower('entity-1', 'fake-buff-tower');
+    const gate = new FakeTower('entity-2', 'fake-gate');
+
+    tower.spawn({
+      definition: DEFINITION,
+      position: { x: 0, y: 0 },
+      team: 'dark',
+      laneId: 'lane-2',
+    });
+    gate.spawn({
+      definition: { ...DEFINITION, breakability: { kind: 'never' } },
+      position: { x: 0, y: 0 },
+      team: 'dark',
+    });
+
+    expect(tower.laneId).toBe('lane-2');
+    expect(gate.laneId).toBeNull();
+    expect(tower.getComponent(Collider).isUnbreakable).toBe(false);
+    expect(gate.getComponent(Collider).isUnbreakable).toBe(true);
   });
 
   it('needs a team', () => {

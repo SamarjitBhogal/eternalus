@@ -27,8 +27,7 @@ import { UtilityScorer } from './utility/UtilityScorer';
  *
  * @remarks ponytail: the human is the enemy Legend no controller drives, sensed through
  * `Perception` (Legends only) within `senseRadius`, wider than 11 §3's vision-sized queries, until
- * the match state names it (12 §4 `humanLegendId`); the lane scores stand in for structure health
- * per lane until structure entities exist (minion plan M2c); no `LaneAdvantage` push yet.
+ * the match state names it (12 §4 `humanLegendId`); no `LaneAdvantage` push yet.
  */
 export class RoverController implements Controller {
   public readonly id = 'rover';
@@ -100,7 +99,8 @@ export class RoverController implements Controller {
     const { state } = turn;
     const human = this.humanNear(turn, this.content.tactics.senseRadius);
     const humanAt = human === null ? undefined : BotLeaves.positionOf(state, human);
-    const humanLane = humanAt === undefined ? undefined : state.routes?.nearestLane(humanAt)?.id;
+    const humanLane =
+      humanAt === undefined ? undefined : state.world?.routes.nearestLane(humanAt)?.id;
     const scores = laneScores(state, turn.team, this.content.laneWeights);
     // Pressure counts from the calmest lane, so what every lane shares does not dilute it.
     const calmest = Math.min(...scores.map(({ score }) => score));
