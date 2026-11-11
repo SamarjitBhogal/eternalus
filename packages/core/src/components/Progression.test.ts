@@ -31,6 +31,25 @@ describe('Progression', () => {
     expect(progression.xp).toBe(20_000);
   });
 
+  it('reports the XP inside the current level and what that level needs, and no next level at the cap (05 §15)', () => {
+    const progression = new Progression('test');
+
+    expect(progression.levelProgress(CURVE)).toEqual({ xp: 0, xpToNext: 100 });
+    progression.addXp(130, CURVE); // level 2 starts at 100
+    expect(progression.levelProgress(CURVE)).toEqual({ xp: 30, xpToNext: 150 });
+    progression.addXp(10_000, CURVE); // level 4 (the cap) starts at 100 + 150 + 200 = 450
+    expect(progression.levelProgress(CURVE)).toEqual({ xp: 10_130 - 450, xpToNext: null });
+  });
+
+  it('reports no next level at the cap, even when the curve lists more steps than its cap uses', () => {
+    const progression = new Progression('test');
+    const capped = { id: 'capped', xpToNext: [100, 150, 200], cap: 2 };
+
+    progression.addXp(100, capped);
+    expect(progression.level).toBe(2);
+    expect(progression.levelProgress(capped)).toEqual({ xp: 0, xpToNext: null });
+  });
+
   it('rejects negative or non-finite XP', () => {
     const progression = new Progression('test');
 

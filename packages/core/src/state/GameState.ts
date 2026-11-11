@@ -1,9 +1,12 @@
 import { Capturable } from '../components/Capturable';
 import { Health } from '../components/Health';
+import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { ZoneArea } from '../components/ZoneArea';
 import type { GameConfig } from '../config/GameConfig.types';
+import type { ContentCatalogue } from '../content/ContentCatalogue';
+import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import type { Entity } from '../entities/Entity';
 import type { PlayableTeam } from '../teams/teams.types';
 import { RingBuffer } from '../utils/RingBuffer';
@@ -222,12 +225,17 @@ export class GameState {
     return this.recent.toArray();
   }
 
-  /** The current state as a structured-clone-safe snapshot. */
-  public snapshot(): Snapshot {
+  /**
+   * The current state as a structured-clone-safe snapshot.
+   *
+   * @param curves - The level curves a `Progression` levels along (the catalogue
+   *   `ProgressionSystem` uses), to report the XP inside each level.
+   */
+  public snapshot(curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'get'>): Snapshot {
     const entities: EntitySnapshot[] = [];
     const { checkpoints } = this.config.match.capturePoints;
     this.entities.forEach((entity) => {
-      entities.push(GameState.snapshotOf(entity, checkpoints));
+      entities.push(GameState.snapshotOf(entity, checkpoints, curves));
     });
     const { phase, phaseEnteredTick, timelineCursor, schedule, humanLegendId } = this.match;
     const hordes: HordeSnapshot[] = [];
@@ -253,9 +261,14 @@ export class GameState {
     };
   }
 
-  private static snapshotOf(entity: Entity, checkpoints: number): EntitySnapshot {
+  private static snapshotOf(
+    entity: Entity,
+    checkpoints: number,
+    curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'get'>,
+  ): EntitySnapshot {
     const transform = entity.findComponent(Transform);
     const health = entity.findComponent(Health);
+    const progression = entity.findComponent(Progression);
     const capture = entity.findComponent(Capturable);
     return {
       id: entity.id,
@@ -271,6 +284,13 @@ export class GameState {
           ? null
           : { x: transform.position.x, y: transform.position.y, radius: transform.radius },
       health: health === undefined ? null : { current: health.current, max: health.max },
+      progression:
+        progression === undefined
+          ? null
+          : {
+              level: progression.level,
+              ...progression.levelProgress(curves.get(progression.curveId)),
+            },
       area: entity.findComponent(ZoneArea)?.polygons ?? null,
       capture:
         capture === undefined

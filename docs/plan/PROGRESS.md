@@ -5895,6 +5895,101 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Next step: push; tell eternalus-121 the new head (#79 merges it); PR #77 merges after #76
   once Samarjit re-approves.
 
+### 2026-11-04 — Phase 3 / sprint 3.1 — chore/coderabbit-config — SamarjitBhogal + Claude Code
+
+- What was done: fixed the `.coderabbit.yaml` parse error ("An override must specify teams,
+  paths, or both" at `reviews.auto_approvals.overrides[0]`) by giving the never-approve override
+  `paths` globs matching every file, dotfiles included. The error made CodeRabbit fall back to
+  defaults, which also dropped `base_branches` and skipped reviews on PRs into phase branches;
+  both are fixed by this. Critic: approve, no blockers; its dotfile-glob and heading fixes
+  applied. Ponytail: no cuts.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 887 passed (887)"; client "Tests 433 passed
+  (433)"; "Documentation check passed."
+- Next step: PR into `phase/3-sprint-3-work`; the custom check flags `.coderabbit.yaml` changes,
+  so the product owner signs it off.
+
+### 2026-11-08 — Phase 3 / INBOX: PR #69 critic item (Stronghold feature type) — docs/inbox-stronghold-feature-type — sholtzman + Claude Code
+
+- What was done: Sam chose to record the PR #69 round-3 critic's optional better-than-design item
+  in `INBOX.md` ("Decisions needed from Sam"): a Stronghold feature type with `wallBoundary`
+  required, so the type checker catches what `strongholdRing` checks at run time today. No code
+  changed.
+- Checks run: `npm run check` (log `eternalus-agent-work/pr-merge-74-79/check-inbox.log`): exit
+  0, Prettier passed, core `Tests 1298 passed (1298)`, client `Tests 1799 passed (1799)`, docs
+  check passed. Critic (`architecture-reviewer`): approve, 3 nits fixed. Ponytail: 1 cut taken.
+- Next step: Sam approves the item for a follow-up PR, or drops it.
+
+### 2026-11-09 — Phase 3 / HUD: live level and XP — feat/hud-level-xp — sholtzman + Claude Code
+
+- What was done: the HUD shows the human Legend's live level and XP. Core: `EntitySnapshot`
+  has a `progression` group (`level`, the XP inside that level, `xpToNext`) directly after
+  `health`, `null` for every entity without `Progression`. `Progression.levelProgress(curve)`
+  gives the XP inside the level and `xpToNext` (`null` at the curve's cap).
+  `GameState.snapshot(curves)` takes the level-curve catalogue as a required parameter, and
+  `Simulation` passes the same catalogue `ProgressionSystem` gets. Client: `MatchBridge.playerOf`
+  fills `level`, `xp` and `xpToNext` from the snapshot; aether stays `null`. The design's
+  `Snapshot.player` (05 §15) is not built yet; this is the interim 05 §18 names (the bridge
+  projects the HUD player from the player's `EntitySnapshot`). The `damage-applied` and
+  `entity-died` payloads are unchanged. Status notes: 03 §12, 05 §18, 13 §10, INBOX HC-F6.
+- Owner answers (DEC-224, 2026-11-09, question dialog): the per-Legend `progression` group and
+  the nullable `xpToNext` become the design (the critic's better-than-design item; 03 §5 and
+  05 §15 sketches updated), and the HUD's XP ring is full at the level cap
+  (`hudSlice.selectXpFraction`).
+- Critic (architecture-reviewer, base `120653b2`): PASS WITH NOTES, no blockers. Fixed: 13 §10
+  HUD data, the `MatchBridge.playerOf` TSDoc, `LevelProgress` in `Progression.types.ts` (the
+  snapshot type reuses it), this entry's checks, `xpToNext` is `null` from `curve.cap` (not
+  from the step list), tests for a player without progression, the cap in the bridge and a
+  Leveller in the structured-clone test. Not changed: `GameState.ts` is over ~300 lines (315 at
+  the base, 335 now); splitting it would cross open PRs #79 and #86, which edit it. Round 2
+  (the delta after round 1 and DEC-224): PASS WITH NOTES, no blockers; fixed the `LevelBadge`
+  TSDoc (full ring at the cap, DEC-224) and early returns in `selectXpFraction`; not changed: a
+  badge-level cap test (the slice test and the badge's full-ring test cover it) and an assert on
+  short curve tables (`loadLevelCurves` rejects them). Ponytail: nothing to cut.
+- Red proof (logs in `eternalus-agent-work/hud-level-xp/`): `red-before.log`, the five new or
+  changed tests failed before the change (`levelProgress is not a function`, `progression`
+  undefined three times, the HUD's level and XP `null`); `red-critic-r1.log`, the cap test
+  (`xpToNext: 150` at the cap); `red-critic-r1-b.log`, deliberate breaks (the bridge maps a
+  missing `xpToNext` to 0; the snapshot group holds a function) turn the bridge and
+  structured-clone tests red; `red-dec224.log`, the full-ring test (`expected null to be 1`).
+- Checks run: `npm run check` on the final code (log
+  `eternalus-agent-work/hud-level-xp/check-5.log`): exit 0, Prettier passed, core
+  `Tests 1302 passed (1302)`, client `Tests 1800 passed (1800)`, docs check passed.
+- Next step: push and open the PR into phase/3; whichever of this PR and the aether PR lands
+  second resolves the adjacent `Snapshot.types.ts` lines.
+
+### 2026-11-09 — Phase 3 / merge: #88 then #87 into phase/3 — docs/inbox-stronghold-feature-type — sholtzman + Claude Code
+
+- What was done: a teammate approved #87 and #88 (CI green on both). Both append a PROGRESS entry,
+  so they conflict in either order. #88 merges first, with a merge commit, because
+  `feat/hud-aether-bar` stacks on its head `27319382`. This branch merged `27319382` and kept
+  both entries in date order; `INBOX.md` merged cleanly.
+- Checks run: Prettier on `PROGRESS.md` and `INBOX.md` passed; `npm run docs:check` passed; the
+  pre-commit `check:quick` passed. CI runs the full `npm run check` on the pushed head.
+- Next step: Sam's script merges #88, pushes this branch, waits for CI, then merges #87.
+
+### 2026-11-09 — Phase 3 / sprint 3.1 — chore/coderabbit-config — sholtzman + Claude Code
+
+- What was done: the product owner keeps CodeRabbit, so PR #73 is finished for merge. `e24a62c`
+  merges `phase/3-sprint-3-work` at `120653b`; only this file conflicted (both sides appended),
+  and both sides are kept. ADR 0018 gets a dated note in its implementation status: CodeRabbit's
+  validator rejects an override with neither `teams` nor `paths`, so the never-approve override
+  lists paths that match every file; the intent of amendment item 2 is unchanged. This answers
+  CodeRabbit's one blocker on #73. The fix is needed now: CodeRabbit skips every PR into
+  phase 3 (#87: "Validation error: An override must specify teams, paths, or both", "Review
+  skipped"). On #73's own head, CodeRabbit parsed the config and ran a full review.
+- Checks run: `npm run check` on the merge with the ADR note → exit 0: core "Tests 1298 passed
+  (1298)"; client "Tests 1799 passed (1799)"; "✓ built in 483ms"; "Documentation check passed."
+- Next step: push; the product owner approves (his sign-off on the guardrail change); merge
+  when CI is green on both runners.
+
+### 2026-11-09 — Phase 3 / sprint 3.1 — chore/coderabbit-config — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` at `86b4fc0` into PR #73 to clear its conflict.
+  Only this file conflicted (both sides appended); all entries are kept, in date order.
+- Checks run: `npm run check` on the merge → exit 0: core "Tests 1302 passed (1302)"; client
+  "Tests 1800 passed (1800)"; "✓ built in 477ms"; "Documentation check passed."
+- Next step: push; the product owner approves; merge when CI is green.
+
 ### 2026-11-05 — Phase 3 / minion-stack follow-ups and tower access — fix/minion-stack-followups — sholtzman + Claude Code
 
 - What was done (one line per commit, then this docs step):
@@ -6094,3 +6189,16 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   passed (1375)", client "Tests 1799 passed (1799)", "Documentation check passed.".
 - Next step: merge into `feat/out-of-combat-heal` (#86) and `feat/unit-facing-chevron` (#79);
   push; reply on #85, #86 and #79.
+
+### 2026-11-10 — Phase 3 / minion-stack follow-ups, merge of phase/3 (#73, main) — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: PR #85 showed "conflicting" against `phase/3-sprint-3-work`, so GitHub ran no CI
+  on `ceb79a2e`. Merged `origin/phase/3-sprint-3-work` at `8d2404c8` (#73 CodeRabbit config, and
+  `main` with #32). Conflicts: architecture 03 and the decisions log (`last-reviewed`; the later
+  date kept), the decisions log batches (the DEC-234 batch above phase/3's DEC-224 batch, newest
+  batch first) and PROGRESS (both sides kept, phase/3's entries first). `git diff` against both
+  parents shows no removed line except the older `last-reviewed` date.
+- Checks run: `npm run check` with this entry in place (log
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-85-4.log`): EXIT=0, core "Tests 1379
+  passed (1379)", client "Tests 1800 passed (1800)", "Documentation check passed.".
+- Next step: merge into #86 and #79; push; reply on #85, #86 and #79 when CI is green.

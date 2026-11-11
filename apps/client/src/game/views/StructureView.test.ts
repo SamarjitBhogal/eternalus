@@ -25,6 +25,7 @@ describe('StructureView', () => {
         team: 'light' as const,
         transform: { x: 0, y: 0, radius: 3 },
         health: { current: 3000, max: 3000 },
+        progression: null,
         area: null,
         capture: null,
       },
