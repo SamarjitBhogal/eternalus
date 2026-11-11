@@ -19,6 +19,7 @@ const unit = (
   transform: { x, y, radius: 1 },
   health: { current: hp, max: 10 },
   progression: null,
+  aether: null,
   area: null,
   capture: null,
 });

@@ -16,6 +16,7 @@ const snapshotWith = (...ids: string[]): Snapshot => ({
     transform: null,
     health: null,
     progression: null,
+    aether: null,
     area: null,
     capture: null,
   })),

@@ -1,4 +1,4 @@
-import type { Snapshot } from '@eternalus/core';
+import type { Snapshot, Unsubscribe } from '@eternalus/core';
 
 import type { MatchSimulation } from '../Match.types';
 import type { DuelLink } from './DuelLink.types';
@@ -11,6 +11,8 @@ import type { DuelLink } from './DuelLink.types';
  * add both only if the netcode spike asks for them (ADR 0016 point 1).
  */
 export class RemoteSimulation implements MatchSimulation {
+  private static readonly NO_LISTENER: Unsubscribe = () => undefined;
+
   private current: Snapshot;
 
   /** Starts on the snapshot that started the Duel. */
@@ -42,5 +44,14 @@ export class RemoteSimulation implements MatchSimulation {
    */
   public enqueueCommand(): void {
     return undefined;
+  }
+
+  /**
+   * No game events reach the client online: the server sends snapshots only (ADR 0016 point 1), so
+   * listeners never fire. ponytail: health bars stay hidden in a Duel; send the tick's events (or
+   * derive hits from health changes) when the Duel needs them.
+   */
+  public on(): Unsubscribe {
+    return RemoteSimulation.NO_LISTENER;
   }
 }

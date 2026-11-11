@@ -57,7 +57,10 @@ export type MatchCrash = {
  * `RemoteSimulation` (the latest snapshot the Duel server sent) online. The seam that lets one
  * `Match` run both (ADR 0016).
  */
-export type MatchSimulation = Pick<Simulation, 'tick' | 'step' | 'snapshot' | 'enqueueCommand'>;
+export type MatchSimulation = Pick<
+  Simulation,
+  'tick' | 'step' | 'snapshot' | 'enqueueCommand' | 'on'
+>;
 
 /** How an online Duel differs from a local match for `Match` (ADR 0016 point 1). */
 type RemotePlayer = {

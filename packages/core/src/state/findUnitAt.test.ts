@@ -20,6 +20,7 @@ const entity = (
   transform: { x, y, radius },
   health: { current: 5, max: 5 },
   progression: null,
+  aether: null,
   area: null,
   capture: null,
 });

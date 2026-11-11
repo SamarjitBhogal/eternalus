@@ -26,4 +26,13 @@ describe('RemoteSimulation', () => {
     expect(simulation.snapshot()).toBe(second);
     expect(simulation.tick).toBe(3);
   });
+
+  it('has no game events online: a listener never fires and unsubscribing is safe', () => {
+    const first = snapshotAtTick(1);
+    const simulation = new RemoteSimulation(new FakeDuelLink('entity-1', first), first);
+
+    const unsubscribe = simulation.on();
+
+    expect(unsubscribe).not.toThrow();
+  });
 });
