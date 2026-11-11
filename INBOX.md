@@ -127,6 +127,15 @@ Reply inline (`Decision: …`).
     `feat/tower-ruins-and-routes`. D1 is `assertLaneFortsApart` in `map/laneStructures.ts`; D2 is
     `map/MatchGrid.ts`; D3 is `map/CourtExitField.ts`; D4 is `utils/geometry.isPointInRect`.
     Docs 03, 06 §3, 07 and 10 §9 updated.
+- [x] **Bot A\* search cap on 2.5 m cells (`feat/tower-ruins-and-routes`, 2026-11-10).** With a
+      horde at every lane tower, bot Legends' A\* failed 190 to 273 times in 300 ticks:
+      `map.pathMaxExpansions` 6000 settles too few 2.5 m cells (DEC-227 (Q-A)) for routes of
+      about 470 m, and a failed search stops the bot. (A) raise the cap to 24000; (B) 12000;
+      (C) keep it and add a bot path cache later. Evidence:
+      `eternalus-agent-work/tower-ruins-and-routes/astar-finding-2026-11-10.md`. Decision: …
+  - **Answered 2026-11-10 by DEC-240** (question dialog): A, plus a request for a bot path cache
+    ("Requests for the agent" below). Built on `feat/tower-ruins-and-routes`:
+    `config/defaultGameConfig.ts`, test in `map/AStarPathfinder.test.ts`.
 
 - [x] **Minion M4 done-when, read for objectives (2026-11-02, `chore/minion-full-march-test`) — sign-off.**
       The plan's M4 check "hordes reach the enemy end with 0 stuck units for `numLanes` 3 and 5"
@@ -2533,6 +2542,15 @@ Reply inline (`Decision: …`).
   - Decision (sholtzman, chat, 2026-10-30, Call 5): "fix and get the fighting / proceeding
     working"; the critic ruled this rule better than the design. Built as MS-33 on
     `fix/minion-m1-review`; doc 18 §1 and §4 and the minion plan §3 updated.
+
+- [ ] **Bot path cache (DEC-240, 2026-11-10)** — Owner: unassigned, own branch. A bot searches
+      A\* again on each blocked decision. On 2.5 m cells (DEC-227 (Q-A)) a search costs about 4
+      times what it cost on 5 m cells: with a horde at every lane tower, 13.6 ms a tick against
+      5.2 ms (a full normal match shows no change). Keep each bot's path and re-plan only when its
+      goal moves or `WorldMap.version` changes (architecture 11 §6 names this as the next step).
+      Note: on seed 1, nine routes of 650 to 810 m between tower forts on opposite sides of the map
+      still settle more than 24000 cells; no bot took such a route in the test. Evidence:
+      `eternalus-agent-work/tower-ruins-and-routes/astar-finding-2026-11-10.md`.
 
 ## Feedback
 

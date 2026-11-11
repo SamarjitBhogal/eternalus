@@ -29,7 +29,9 @@ const DEFAULT_GAME_CONFIG: Omit<GameConfig, 'match'> & {
     // diagonal lane (DEC-121 (d)).
     flowFieldCorridorHalfWidth: 30,
     flowFieldCellBudget: 2000, // TUNE: Recommendation (sprint 3.2): rebuild cost well under 1 ms
-    pathMaxExpansions: 6000, // TUNE: a cost cap for A* (10 §9), not a gameplay number
+    // TUNE: a cost cap for A* (10 §9), not a gameplay number. DEC-240: on 2.5 m cells it searches
+    // the area 6000 searched on 5 m cells, so bot routes of about 500 m across forts are found.
+    pathMaxExpansions: 24000,
     // TUNE: on 2.5 m cells (DEC-227 (Q-A)) a ring's corners clear a Stronghold's round footprint
     // (`MAP_FEATURE_DEFINITIONS`), which the grid blocks when a match has no map objects.
     pathSnapCells: 12,

@@ -6,6 +6,9 @@ import type { Polygon } from '../utils/geometry.types';
 import { BLOCKED_LANE_MAP } from './__fixtures__/blockedLaneMap';
 import { AStarPathfinder } from './AStarPathfinder';
 import { MapGenerator } from './MapGenerator';
+import { MapObjectBuilder } from './MapObjectBuilder';
+import { MapPresentationBuilder } from './MapPresentationBuilder';
+import { MatchGrid } from './MatchGrid';
 import { WorldMap } from './WorldMap';
 import { stampWalledCourt, WALLED_COURT } from './__fixtures__/walledCourt';
 
@@ -229,5 +232,26 @@ describe('AStarPathfinder (A* for Legends, 10 §9)', () => {
 
     expect(grid.isWalkableAt(home.x, home.y)).toBe(false);
     expect(finder.waypoint(home, { x: home.x + 60, y: home.y }, out)).toBe(true);
+  });
+
+  it('with the default config, finds a bot route of about 560 m between lane tower forts on a generated map with its map objects (DEC-240)', () => {
+    const config = createDefaultGameConfig();
+    const map = new MapGenerator().generate(config, 1);
+    const objects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+    const { grid } = MatchGrid.build(map, objects, {
+      cellSize: config.map.navCellSize,
+      features: MAP_FEATURE_DEFINITIONS,
+    });
+    const finder = new AStarPathfinder(grid, {
+      maxExpansions: config.map.pathMaxExpansions,
+      snapCells: config.map.pathSnapCells,
+    });
+    const [from, to] = ['light-spawner-tower-lane-0-0', 'light-buff-tower-lane-2-0'].map(
+      (id) => map.features.find((feature) => feature.id === id)?.position,
+    );
+    const out = { x: 0, y: 0 };
+
+    expect(from && to && grid.isLineClear(from.x, from.y, to.x, to.y)).toBe(false);
+    expect(from && to && finder.waypoint(from, to, out)).toBe(true);
   });
 });

@@ -6286,3 +6286,18 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `packages/core` pass. Full `npm run check` not yet run.
 - Next step: `npm run check`; critic r3 (last loop); ponytail; PR. Bot A\* finding (below) waits
   on the owner: on 2.5 m cells `pathMaxExpansions` 6000 fails bot routes of about 470 m.
+
+### 2026-11-10 — Phase 3 / tower ruins, bot A\* search cap (DEC-240) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: the owner chose option A for the bot A\* finding (question dialog, DEC-240):
+  `GameConfig.map.pathMaxExpansions` goes from 6000 to 24000, so on 2.5 m cells one search covers
+  the area 6000 covered on 5 m cells. New test in `map/AStarPathfinder.test.ts`: a route of about
+  560 m between two lane tower forts on a generated map with its map objects; red at 6000 and
+  12000, green at 24000 (`eternalus-agent-work/tower-ruins-and-routes/red-first-r2.md`). Docs:
+  decisions log (DEC-240 batch), INBOX (answered entry; bot path cache request), 03 (source
+  column). The first full `npm run check` on the r2 rework failed at `prettier --check` on the
+  decisions log: this branch's DEC-239 and DEC-235 edits left two table headers unpadded
+  (the file is clean on `a35da809` and on #85's head). Fixed with `prettier --write` on that file
+  (8 header and separator lines).
+- Checks run: see the next entry or the PR description.
+- Next step: `npm run check`; critic r3 (last loop); ponytail; PR.
