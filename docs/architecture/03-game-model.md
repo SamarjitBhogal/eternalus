@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-05
+last-reviewed: 2026-11-09
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -250,6 +250,11 @@ export type EntitySnapshot = {
     readonly max: number;
     readonly shieldBars: readonly number[];
   } | null;
+  readonly progression: {
+    readonly level: number;
+    readonly xp: number; // XP earned inside the current level
+    readonly xpToNext: number | null; // null at the level cap (DEC-224)
+  } | null; // any entity with Progression (every Legend), not only the player (DEC-224)
   readonly statusIds: readonly StatusEffectId[];
   readonly anim: AnimState;
 };
@@ -460,8 +465,10 @@ each closed by the session or phase named:
 - `GameState.snapshot()` builds the snapshot until `SnapshotSystem` exists; `Snapshot` carries
   `tick`, `match`, `entities`, `hordes` and `teams` (the team counters, since minion plan M1),
   and `EntitySnapshot` its identity, `team`, `transform`
-  (`x`, `y`, `radius`), `health` (`current`, `max`), `area` (a zone's polygons) and `capture` (a
-  capture point's state and presence) groups only. `MatchPhase` lives in
+  (`x`, `y`, `radius`), `health` (`current`, `max`), `progression` (a Legend's `level`, the `xp`
+  inside that level and its `xpToNext`, `null` at the cap; `snapshot(curves)` takes the level
+  curves `ProgressionSystem` uses), `area` (a zone's polygons) and `capture` (a capture point's
+  state and presence) groups only. `MatchPhase` lives in
   `config/matchPhases.ts`; the match director is built (12 §13).
 - `GameState.world` is a `MatchWorld` (the generated definition, its lane `routes` and the
   `WorldMap` grid) with no structures index yet (minion plan M2c), and the grid keeps no flow

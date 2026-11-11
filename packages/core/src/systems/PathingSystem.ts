@@ -72,7 +72,8 @@ export class PathingSystem implements System {
    * Points `target` at the unit `memberId` attacks (18 §5.2, engaging) and returns the distance
    * from it at which the target is in reach; `undefined` when it attacks nothing. The target point
    * is `EntityStore.aimPointOf`'s, the one `isInReach` measures to: on the outline of a target that
-   * has one (a map object; a lane tower's fort or the Stronghold's palace, DEC-185), else its
+   * has one (a map object; a lane tower's fort or the Stronghold's palace, DEC-185), or the unit's
+   * own position when it stands inside that outline, so it holds there (DEC-234), else its
    * centre. For an outline, and for a unit standing inside a fort's box, `depth` is how far the
    * blocked nav ground under the target reaches back toward the attacker: the grid blocks a fort's
    * whole court, but its walls stop no one at the doorways (owner 2026-11-04: units may enter
