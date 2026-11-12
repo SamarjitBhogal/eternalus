@@ -15,12 +15,12 @@ import { spawnMapStructures } from '../state/__fixtures__/spawnMapStructures';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { Unit } from '../entities/Unit';
 import type { Vec2 } from '../utils/geometry.types';
-import type { SpawnPlan } from './SpawnSystem.types';
 import {
   newSystem,
   NO_OPENING,
   setUp,
   summary,
+  type SpawnPlanOverrides,
   LIGHT,
   MEDIUM,
   HEAVY,
@@ -223,7 +223,7 @@ describe('SpawnSystem', () => {
     expect(state.hordes.size).toBe(4);
   });
 
-  it.each<[string, Partial<Pick<SpawnPlan, 'openingWave' | 'waves'>>, RegExp]>([
+  it.each<[string, Omit<SpawnPlanOverrides, 'guards'>, RegExp]>([
     [
       'an unknown mob',
       {

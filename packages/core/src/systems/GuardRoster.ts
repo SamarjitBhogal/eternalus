@@ -35,7 +35,8 @@ export class GuardRoster {
   /**
    * @param factory - Builds the guards.
    * @param definitions - Where each guard's mob definition, and so its kind, is looked up.
-   * @param plans - Each structure's guard plan, keyed by structure definition id (content).
+   * @param plans - Each structure's guard plan, keyed by structure definition id (content, loaded
+   *   in ticks).
    */
   public constructor(
     private readonly factory: EntityFactory,
@@ -87,7 +88,7 @@ export class GuardRoster {
               homeRadius: transform.radius,
               leashRadius: plan.leashRadius,
               leashTolerance: plan.leashTolerance,
-              respawnTicks: Math.round(plan.respawnSeconds * state.config.tickRate),
+              respawnTicks: plan.respawnTicks,
             },
             firstTick,
           );

@@ -13,7 +13,7 @@ import type { System, SystemContext } from './System.types';
  * Minion XP (game doc, MVP-if-time; architecture 18 MS-16): a lane minion (a horde member) or a
  * tower guard (DEC-165) that kills a lane minion, a tower guard or a camp mob counts the kill in
  * its `Veterancy`; each level it gains raises its max health by `healthPerLevel` of its base
- * health (healing by the same) and adds a stack of the veteran status. Every `aura.everySeconds`,
+ * health (healing by the same) and adds a stack of the veteran status. Every `aura.everyTicks`,
  * each unit with a level gives the aura status to the other friendly horde minions and tower
  * guards (DEC-165) within `aura.radius`. Kills come from `entity-died`, counted on this system's
  * pass; it runs after every system that deals damage and before `DeathSystem`.
@@ -27,7 +27,7 @@ export class VeterancySystem implements System {
    * @param state - The match whose deaths this system listens to.
    * @param statuses - The match's one status applier.
    * @param units - Unit definitions, for a minion's base health.
-   * @param veterancy - The growth rules (content).
+   * @param veterancy - The growth rules (content, loaded in ticks).
    */
   public constructor(
     state: GameState,
@@ -47,8 +47,7 @@ export class VeterancySystem implements System {
     for (const { killerId, victimId } of this.kills.splice(0)) {
       this.countKill(state, killerId, victimId);
     }
-    const every = Math.max(1, Math.round(this.veterancy.aura.everySeconds * state.config.tickRate));
-    if (state.tick % every === 0) {
+    if (state.tick % this.veterancy.aura.everyTicks === 0) {
       this.spreadAura(state);
     }
   }

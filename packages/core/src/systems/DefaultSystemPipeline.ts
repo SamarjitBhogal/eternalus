@@ -2,14 +2,15 @@ import { DamagePipeline } from '../combat/DamagePipeline';
 import { Footprint } from '../components/Footprint';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
-import { STUCK_DETECTION } from '../content/ai/stuckDetection';
+import { loadStuckDetection } from '../content/ai/loadStuckDetection';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
 import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import { FORMATIONS } from '../content/mobs/formations/formations';
 import { ENRAGING_STRUCTURES } from '../content/mobs/minionModifiers';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
-import { OPENING_WAVE, SPAWN_WAVES } from '../content/structures/spawnWaves';
+import { loadSpawnWaves } from '../content/structures/loadSpawnWaves';
+import { OPENING_WAVE } from '../content/structures/spawnWaves';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { LaneFlowFields } from '../map/LaneFlowFields';
 import type { GameState } from '../state/GameState';
@@ -31,9 +32,9 @@ import { SpawnSystem } from './SpawnSystem';
 import { StructureSystem } from './StructureSystem';
 import { StuckSystem } from './StuckSystem';
 import { VeterancySystem } from './VeterancySystem';
-import { MINION_VETERANCY } from '../content/mobs/minionVeterancy';
+import { loadMinionVeterancy } from '../content/mobs/loadMinionVeterancy';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
-import { GUARD_PLANS } from '../content/structures/guardPlans';
+import { loadGuardPlans } from '../content/structures/loadGuardPlans';
 import { StatusEffectSystem } from './StatusEffectSystem';
 import { SystemPipeline } from './SystemPipeline';
 
@@ -100,7 +101,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
         ? []
         : [
             ...(hordes.space === null ? [] : [new SpaceSystem(hordes.space)]),
-            new StuckSystem(STUCK_DETECTION),
+            new StuckSystem(loadStuckDetection(tickRate)),
             new PathingSystem(
               createDefaultStrategyRegistry().movement,
               FORMATIONS,
@@ -112,7 +113,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
       ...(state.worldObjects === undefined ? [] : [new MapDestructionSystem(state, damage)]),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
       new ProgressionSystem(state, progression),
-      new VeterancySystem(state, statuses, progression.units, MINION_VETERANCY),
+      new VeterancySystem(state, statuses, progression.units, loadMinionVeterancy(tickRate)),
       new StructureSystem(structures),
       ...(hordes === undefined
         ? []
@@ -120,11 +121,11 @@ export class DefaultSystemPipeline extends SystemPipeline {
             new SpawnSystem(state, hordes.factory, {
               definitions: hordes.factory.definitions,
               openingWave: OPENING_WAVE,
-              waves: SPAWN_WAVES,
+              waves: loadSpawnWaves(tickRate),
               steering: HORDE_STEERING,
               weights: LANE_ASSESSMENT_WEIGHTS,
               formationId: RANKS_FORMATION.id,
-              guards: GUARD_PLANS,
+              guards: loadGuardPlans(tickRate),
             }),
             new EnragedSystem(state, statuses, ENRAGING_STRUCTURES),
           ]),

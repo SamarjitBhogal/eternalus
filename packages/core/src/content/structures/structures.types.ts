@@ -36,19 +36,30 @@ export type StructureDefinition = EntityDefinitionBase & {
 /** Which lane a spawner's horde takes: the spawner's own lane, or the team's worst lane. */
 type SpawnLaneRule = 'own-lane' | 'worst-lane';
 
-/**
- * One repeating horde wave of a spawning structure (DISC-10, architecture 18 §3.1). Its clock
- * starts when the countdown ends: the first wave goes out `firstAtSeconds` later, then one every
- * `everySeconds` (DEC-87); the horde size comes from `GameConfig.match.hordeSizes`.
- */
-export type SpawnWaveDefinition = {
+/** The fields of a horde wave that are the same as authored and as loaded. */
+type SpawnWaveBase = {
   /** The mob definition the horde is made of. */
   readonly mobId: string;
   readonly weightClass: 'light' | 'medium' | 'heavy';
+  readonly lane: SpawnLaneRule;
+};
+
+/**
+ * One repeating horde wave of a spawning structure (DISC-10, architecture 18 §3.1), as authored.
+ * Its clock starts when the countdown ends: the first wave goes out `firstAtSeconds` later, then
+ * one every `everySeconds` (DEC-87); the horde size comes from `GameConfig.match.hordeSizes`.
+ */
+export type AuthoredSpawnWave = SpawnWaveBase & {
   /** Seconds from the countdown's end to the first wave. */
   readonly firstAtSeconds: number;
   readonly everySeconds: number;
-  readonly lane: SpawnLaneRule;
+};
+
+/** A horde wave as loaded (`loadSpawnWaves`): its times in ticks, converted once. */
+export type SpawnWaveDefinition = SpawnWaveBase & {
+  /** Ticks from the countdown's end to the first wave. */
+  readonly firstAtTicks: number;
+  readonly everyTicks: number;
 };
 
 /**
@@ -72,15 +83,11 @@ type GuardTableEntry = {
   readonly shrink?: { readonly perLost: string; readonly count: number };
 };
 
-/**
- * The guards a structure keeps (architecture 07 §6, 18 §7.1): tower guards, or a camp's group.
- * Posts are filled while the structure stands.
- */
-export type GuardPlanDefinition = {
+/** The fields of a guard plan that are the same as authored and as loaded. */
+type GuardPlanBase = {
   readonly table: readonly GuardTableEntry[];
   /** How far past the structure's edge a guard may chase ("don't leave the tower's perimeter"). */
   readonly leashRadius: number;
-  readonly respawnSeconds: number;
   /** Posts stand on a ring this far outside the structure's edge. */
   readonly postGap: number;
   /**
@@ -91,9 +98,18 @@ export type GuardPlanDefinition = {
   /** When the posts are first filled: the match's first tick, or when the countdown ends (camps). */
   readonly activation: 'match-start' | 'countdown-end';
   /**
-   * `each`: a guard comes back `respawnSeconds` after it dies (tower guards). `group`: the posts
-   * wait until every guard is dead, then all come back `respawnSeconds` later and the home is
+   * `each`: a guard comes back one respawn time after it dies (tower guards). `group`: the posts
+   * wait until every guard is dead, then all come back one respawn time later and the home is
    * announced cleared (`camp-cleared`, camps).
    */
   readonly respawn: 'each' | 'group';
 };
+
+/**
+ * The guards a structure keeps (architecture 07 §6, 18 §7.1): tower guards, or a camp's group,
+ * as authored. Posts are filled while the structure stands.
+ */
+export type AuthoredGuardPlan = GuardPlanBase & { readonly respawnSeconds: number };
+
+/** A guard plan as loaded (`loadGuardPlans`): its respawn time in ticks, converted once. */
+export type GuardPlanDefinition = GuardPlanBase & { readonly respawnTicks: number };

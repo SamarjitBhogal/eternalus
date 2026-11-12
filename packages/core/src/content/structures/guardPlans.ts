@@ -1,5 +1,5 @@
 import { GUARD_LEASH } from './guardLeash';
-import type { GuardPlanDefinition } from './structures.types';
+import type { AuthoredGuardPlan } from './structures.types';
 
 const RESPAWN = 120; // TUNE: game doc "respawn every 2 minutes"
 // TUNE: owner 2026-11-02 (DEC-144): one decision's walk (10 ticks at up to 3.5 m/s) plus the
@@ -24,7 +24,7 @@ const CAMP = {
  * balancing.md's `Recommendation:` (light 4 light; medium 2 medium + 2 light; heavy 1 heavy + 2
  * medium).
  */
-const CAMP_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
+const CAMP_PLANS: Readonly<Record<string, AuthoredGuardPlan>> = {
   'forest-camp-light': { ...CAMP, table: [{ mobId: 'light-camp-mob', count: 4 }] },
   'forest-camp-medium': {
     ...CAMP,
@@ -48,7 +48,7 @@ const CAMP_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
  * melee, minus 2 light per lost SpawnerTower). Ranged attacks wait for projectiles (sprint 2.3),
  * so the Stronghold's light guards fight in melee for now. The forest camps' groups follow.
  */
-export const GUARD_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
+export const GUARD_PLANS: Readonly<Record<string, AuthoredGuardPlan>> = {
   'spawner-tower': {
     table: [{ mobId: 'light-guard', count: 4 }],
     leashRadius: GUARD_LEASH.tower,

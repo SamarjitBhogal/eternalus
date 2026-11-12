@@ -75,24 +75,13 @@ export type AggroPriority =
   | 'closest-legend'
   | 'lane-objective';
 
-/**
- * How a leashed mob picks and keeps targets (architecture 11 §4.3, 18 §6.1, §7): the fields
- * `LeashBehaviour` reads for minions and guards alike. Distances are metres; durations are seconds,
- * converted with the match's tick rate where they are read, except `ghostFirstWaveTicks`.
- */
-export type AggroRuleDefinition = {
+/** The fields of an aggro rule that are the same as authored and as loaded. */
+type AggroRuleBase = {
   readonly id: string;
   /** Enemies this close may be acquired. */
   readonly acquisitionRadius: number;
   /** Best first; an enemy that matches no entry is never acquired. */
   readonly priority: readonly AggroPriority[];
-  /**
-   * A target outside the leash is chased this long, then dropped; back inside sooner, it is
-   * fought on. 0 drops it at once (DEC-144 E).
-   */
-  readonly leashGraceSeconds: number;
-  /** For this long after a leash breaks, the mob leaves alone the enemy that escaped. */
-  readonly aggroCooldownSeconds: number;
   /**
    * The ghosted first wave (11 §4.3, MVP-if-time): for this many ticks after the countdown, and
    * during it, Legends match no priority entry, so the opening hordes meet before a Legend can bait
@@ -102,10 +91,35 @@ export type AggroRuleDefinition = {
 };
 
 /**
- * A horde minion's aggro profile (18 §6.1): its leash is a circle around where it took its target,
- * and it answers its horde-mates' calls for help. Only `MinionController` reads it.
+ * How a leashed mob picks and keeps targets, as authored (architecture 11 §4.3, 18 §6.1, §7).
+ * Distances are metres; durations are seconds, except `ghostFirstWaveTicks`.
  */
-export type HordeAggroRuleDefinition = AggroRuleDefinition & {
+type AuthoredAggroRule = AggroRuleBase & {
+  /**
+   * A target outside the leash is chased this long, then dropped; back inside sooner, it is
+   * fought on. 0 drops it at once (DEC-144 E).
+   */
+  readonly leashGraceSeconds: number;
+  /** For this long after a leash breaks, the mob leaves alone the enemy that escaped. */
+  readonly aggroCooldownSeconds: number;
+};
+
+/**
+ * An aggro rule as loaded (`loadAggroRules`): the fields `LeashBehaviour` reads for minions and
+ * guards alike, with the durations converted to ticks once, at load (architecture 03 §11).
+ */
+export type AggroRuleDefinition = AggroRuleBase & {
+  /** `leashGraceSeconds` in ticks; 0 drops the target at once. */
+  readonly leashGraceTicks: number;
+  /** `aggroCooldownSeconds` in ticks. */
+  readonly aggroCooldownTicks: number;
+};
+
+/**
+ * What a horde minion's aggro profile adds (18 §6.1): its leash is a circle around where it took
+ * its target, and it answers its horde-mates' calls for help. Only `MinionController` reads it.
+ */
+type HordeAggroFields = {
   readonly controller: 'minion';
   /** A mob fights only a target this close to where it took it (MS-36, DEC-144). */
   readonly leashRadius: number;
@@ -116,23 +130,32 @@ export type HordeAggroRuleDefinition = AggroRuleDefinition & {
   readonly callForHelpRadius: number;
 };
 
-/**
- * A guard's aggro profile (18 §7): its leash and its mates come from its post's guard plan, so it
- * adds nothing to the shared fields. Only `GuardController` reads it.
- */
-export type GuardAggroRuleDefinition = AggroRuleDefinition & { readonly controller: 'guard' };
+/** A horde minion's aggro profile as authored, in seconds. */
+export type AuthoredHordeAggroRule = AuthoredAggroRule & HordeAggroFields;
 
-/** Any aggro profile; `controller` names the one controller that may read it (AI56-F9). */
+/** A horde minion's aggro profile as loaded, in ticks. */
+export type HordeAggroRuleDefinition = AggroRuleDefinition & HordeAggroFields;
+
+/**
+ * What a guard's aggro profile adds (18 §7): its leash and its mates come from its post's guard
+ * plan, so it adds nothing to the shared fields. Only `GuardController` reads it.
+ */
+type GuardAggroFields = { readonly controller: 'guard' };
+
+/** A guard's aggro profile as authored, in seconds. */
+export type AuthoredGuardAggroRule = AuthoredAggroRule & GuardAggroFields;
+
+/** A guard's aggro profile as loaded, in ticks. */
+export type GuardAggroRuleDefinition = AggroRuleDefinition & GuardAggroFields;
+
+/** Any aggro profile as authored; `controller` names the one controller that may read it. */
+export type AuthoredAggroProfile = AuthoredHordeAggroRule | AuthoredGuardAggroRule;
+
+/** Any aggro profile as loaded; `controller` names the one controller that may read it (AI56-F9). */
 export type AggroProfileDefinition = HordeAggroRuleDefinition | GuardAggroRuleDefinition;
 
-/**
- * When a unit chasing its attack target counts as stuck, and how it then goes round (owner
- * 2026-11-05, DEC-193): a mob or bot Legend that has not come `minProgress` closer to its target
- * (or to its detour waypoint) for `windowSeconds`, and is not in reach, follows the nav grid's A\*
- * path to it instead of pressing on in a straight line. Metres and seconds.
- */
-export type StuckDetectionRule = {
-  readonly windowSeconds: number;
+/** The fields of a stuck-detection rule that are the same as authored and as loaded. */
+type StuckDetectionBase = {
   readonly minProgress: number;
   /** A detouring unit this close to its waypoint asks A\* for the next one. */
   readonly waypointRadius: number;
@@ -142,6 +165,17 @@ export type StuckDetectionRule = {
    */
   readonly maxPlansPerTick: number;
 };
+
+/**
+ * When a unit chasing its attack target counts as stuck, and how it then goes round (owner
+ * 2026-11-05, DEC-193), as authored: a mob or bot Legend that has not come `minProgress` closer to
+ * its target (or to its detour waypoint) for `windowSeconds`, and is not in reach, follows the nav
+ * grid's A\* path to it instead of pressing on in a straight line. Metres and seconds.
+ */
+export type AuthoredStuckDetectionRule = StuckDetectionBase & { readonly windowSeconds: number };
+
+/** A stuck-detection rule as loaded (`loadStuckDetection`): the window in ticks, converted once. */
+export type StuckDetectionRule = StuckDetectionBase & { readonly windowTicks: number };
 
 /** A controller's plain-data memory between decisions: FSM state, target, timers (11 §2). */
 export type AiMemory = Readonly<Record<string, string | number | boolean | null>>;

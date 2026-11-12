@@ -25,7 +25,7 @@ import { isPlayableTeam } from '../teams/playableTeams';
  * Spawns the lane hordes (architecture 18 §3): after the developer menu's queued requests
  * (`state.hordeRequests`, 18 §3.5), the opening hordes at load-in (tick 0), one per lane from the
  * lane's base (DEC-84, DEC-87 (e)), then every spawning structure's DISC-10 waves: each wave's
- * clock starts when the countdown ends, its first horde goes out `firstAtSeconds` later and then
+ * clock starts when the countdown ends, its first horde goes out `firstAtTicks` later and then
  * one every interval (DEC-87). Each wave horde spawns at its structure's position and takes its
  * own lane or the worst lane (`assessLanes`). A horde is clipped to `limits.maxUnitsPerTeam`,
  * with the team's `unitsRequested` and `unitsSuppressed` counted (18 §3.4). Members and the horde
@@ -35,7 +35,8 @@ import { isPlayableTeam } from '../teams/playableTeams';
  * movement.
  *
  * The spawners are the structure entities standing at construction; a destroyed one stops. The
- * schedule's times are converted to ticks once, so the system keeps no schedule state of its own.
+ * schedule's times come in ticks, converted once at load (`loadSpawnWaves`), so the system keeps
+ * no schedule state of its own.
  *
  * It also runs every structure's guard plan (18 §7, 07 §6) through its `GuardRoster`.
  */
@@ -48,11 +49,11 @@ export class SpawnSystem implements System {
   /**
    * @param state - The match; its structure entities, already spawned, are the spawn points.
    * @param factory - Builds the minions.
-   * @param plan - The waves, the opening wave, the guards, the definitions and the spawn layout.
+   * @param plan - The waves and the guards (loaded in ticks), the opening wave, the definitions and
+   *   the spawn layout.
    * @throws ContentValidationError when a wave this map can spawn names an unknown mob or a mob of
-   *   another weight class, starts before the countdown ends, or repeats more often than once a
-   *   tick, or a guard plan names an unknown mob, so bad content fails when the match is built,
-   *   not when the wave is due.
+   *   another weight class, or a guard plan names an unknown mob, so bad content fails when the
+   *   match is built, not when the wave is due. Wave times are checked at load (`loadSpawnWaves`).
    */
   public constructor(
     state: GameState,
@@ -77,14 +78,12 @@ export class SpawnSystem implements System {
       }
     });
     this.spawners = spawners.sort((a, b) => compareById(a.id, b.id));
-    const { tickRate } = state.config;
-    const countdownEnd = countdownTicks(state.config.match.countdownSeconds, tickRate);
+    const countdownEnd = countdownTicks(state.config.match.countdownSeconds, state.config.tickRate);
     this.scheduled = this.spawners.flatMap((spawner) =>
       (plan.waves[spawner.kind] ?? []).map((wave) => ({
         spawner,
         wave,
-        firstTick: countdownEnd + Math.round(wave.firstAtSeconds * tickRate),
-        everyTicks: Math.round(wave.everySeconds * tickRate),
+        firstTick: countdownEnd + wave.firstAtTicks,
       })),
     );
     this.validate(homes);
@@ -93,11 +92,10 @@ export class SpawnSystem implements System {
   }
 
   /**
-   * Rejects a plan whose waves name an unknown mob or a mob of another weight class, start before
-   * the countdown ends, or repeat more often than once a tick, or whose guard plans name an
-   * unknown mob. Only the waves this map's spawners can send and the guard plans of the structures
-   * on it (`homes`, by definition id, whether or not they spawn hordes) are checked, so a match
-   * without hordes needs no minions.
+   * Rejects a plan whose waves name an unknown mob or a mob of another weight class, or whose
+   * guard plans name an unknown mob. Only the waves this map's spawners can send and the guard
+   * plans of the structures on it (`homes`, by definition id, whether or not they spawn hordes)
+   * are checked, so a match without hordes needs no minions.
    */
   private validate(homes: ReadonlySet<string>): void {
     const { openingWave, definitions, guards } = this.plan;
@@ -121,15 +119,7 @@ export class SpawnSystem implements System {
         ? []
         : [`${source} wave says "${mobId}" is ${weightClass}, but its kind is "${kind}"`];
     });
-    const timingProblems = this.scheduled.flatMap(({ spawner, wave, everyTicks }) => [
-      ...(Number.isFinite(everyTicks) && everyTicks >= 1
-        ? []
-        : [`${spawner.kind} wave repeats every ${String(wave.everySeconds)} s`]),
-      ...(Number.isFinite(wave.firstAtSeconds) && wave.firstAtSeconds >= 0
-        ? []
-        : [`${spawner.kind} wave starts ${String(wave.firstAtSeconds)} s after the countdown`]),
-    ]);
-    const problems = [...new Set([...guardProblems, ...mobProblems, ...timingProblems])];
+    const problems = [...new Set([...guardProblems, ...mobProblems])];
     if (problems.length > 0) {
       throw new ContentValidationError(`Invalid spawn plan: ${problems.join('; ')}`);
     }
@@ -176,10 +166,10 @@ export class SpawnSystem implements System {
    */
   private dueWaves(state: GameState): HordeRequest[] {
     const due: HordeRequest[] = [];
-    for (const { spawner, wave, firstTick, everyTicks } of this.scheduled) {
+    for (const { spawner, wave, firstTick } of this.scheduled) {
       const sinceFirst = state.tick - firstTick;
       const team = SpawnSystem.standingTeam(state, spawner);
-      if (sinceFirst < 0 || sinceFirst % everyTicks !== 0 || team === undefined) {
+      if (sinceFirst < 0 || sinceFirst % wave.everyTicks !== 0 || team === undefined) {
         continue;
       }
       const lane =

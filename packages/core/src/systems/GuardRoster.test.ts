@@ -9,7 +9,7 @@ import { WorldObjectStore } from '../state/WorldObjectStore';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import type { DeepPartial, GameConfig } from '../config/GameConfig.types';
 import { loadDefaultContent } from '../content/loadDefaultContent';
-import { GUARD_PLANS } from '../content/structures/guardPlans';
+import { loadGuardPlans } from '../content/structures/loadGuardPlans';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import { spawnMapStructures } from '../state/__fixtures__/spawnMapStructures';
@@ -22,6 +22,8 @@ import type { MapDefinition } from '../content/maps/maps.types';
 import { GuardRoster } from './GuardRoster';
 
 const TICK_RATE = 30;
+/** The shipped guard plans, loaded at `TICK_RATE`. */
+const GUARD_PLANS = loadGuardPlans(TICK_RATE);
 
 describe('GuardRoster', () => {
   const guarded = (overrides: DeepPartial<GameConfig> = {}) => {
