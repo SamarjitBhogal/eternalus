@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { Aether } from '../components/Aether';
 import { Health } from '../components/Health';
 import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
@@ -44,6 +45,16 @@ class Leveller extends Entity {
 
   protected installComponents(): void {
     this.addComponent(new Progression('test'));
+  }
+}
+
+/** An entity with an aether pool of 80 and nothing else. */
+class Caster extends Entity {
+  public readonly kind = 'caster';
+  public readonly family = 'test';
+
+  protected installComponents(): void {
+    this.addComponent(new Aether(80));
   }
 }
 
@@ -145,6 +156,7 @@ describe('GameState', () => {
           transform: { x: 3, y: 4, radius: 0.5, facing: INITIAL_FACING },
           health: { current: 100, max: 100 },
           progression: null,
+          aether: null,
           area: null,
           capture: null,
         },
@@ -157,6 +169,7 @@ describe('GameState', () => {
           transform: null,
           health: null,
           progression: null,
+          aether: null,
           area: null,
           capture: null,
         },
@@ -180,6 +193,16 @@ describe('GameState', () => {
       xp: 30,
       xpToNext: 150,
     });
+  });
+
+  it("snapshots a caster's aether left and its full pool", () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const caster = spawned(new Caster('entity-1', 'caster-definition'));
+    caster.getComponent(Aether).spend(30);
+    caster.getComponent(Aether).raiseMax(10);
+    state.entities.add(caster);
+
+    expect(state.snapshot(CURVES).entities[0]?.aether).toEqual({ current: 50, max: 90 });
   });
 
   it('snapshots the hordes and team counters as copies the store no longer changes', () => {
@@ -223,8 +246,10 @@ describe('GameState', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
     state.entities.add(spawned(new Soldier('entity-1', 'soldier-definition')));
     state.entities.add(spawned(new Leveller('entity-2', 'leveller-definition')));
+    state.entities.add(spawned(new Caster('entity-3', 'caster-definition')));
     const snapshot = state.snapshot(CURVES);
     expect(snapshot.entities[1]?.progression).not.toBeNull();
+    expect(snapshot.entities[2]?.aether).not.toBeNull();
     expect(structuredClone(snapshot)).toEqual(snapshot);
   });
 

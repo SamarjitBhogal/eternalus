@@ -116,6 +116,8 @@ describe('Simulation', () => {
         health: { current: 600, max: 600 },
         // Level 1 of the Legend curve: its first step is 110 XP (DEC-190).
         progression: { level: 1, xp: 0, xpToNext: 110 },
+        // The Warrior's full pool at level 1 (`baseAether`, balancing.md).
+        aether: { current: 100, max: 100 },
         area: null,
         capture: null,
       },

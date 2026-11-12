@@ -18,8 +18,7 @@ const ghosting = new MinionController({
 });
 
 /** `self`'s commands from `ghosting`, after indexing every unit. */
-const decideAsGhost = (state: GameState, self: string) => {
-  const space = state.space as SpaceIndex;
+const decideAsGhost = (state: GameState, space: SpaceIndex, self: string) => {
   space.begin(state.entities.size);
   state.entities.forEach((entity) => {
     const { x, y } = entity.getComponent(Transform).position;
@@ -174,12 +173,12 @@ describe('MinionController', () => {
   ])(
     'ignores Legends during a ghosted first wave, and only then (countdown %s s: until tick %s)',
     (countdownSeconds, until) => {
-      const { state, add, advance } = setUp(
+      const { state, space, add, advance } = setUp(
         createDefaultGameConfig({ match: { countdownSeconds } }),
       );
       const self = add('light', 50);
       const legend = add('dark', 52, 20, 'warrior', 'warrior');
-      const decide = () => decideAsGhost(state, self);
+      const decide = () => decideAsGhost(state, space, self);
 
       advance(until - 1);
       expect(decide()).toEqual([]);
@@ -191,7 +190,7 @@ describe('MinionController', () => {
   it('counts the ghosted first wave from the countdown’s end rounded to a tick, as the wave clocks do (X57-F7)', () => {
     const config = createDefaultGameConfig();
     // 0.04 s is 1.2 ticks: the wave clocks start at tick 1, so a 30-tick ghost ends at tick 31.
-    const { state, add, advance } = setUp({
+    const { state, space, add, advance } = setUp({
       ...config,
       match: { ...config.match, countdownSeconds: 0.04 },
     });
@@ -199,9 +198,9 @@ describe('MinionController', () => {
     const legend = add('dark', 52, 20, 'warrior', 'warrior');
 
     advance(30);
-    expect(decideAsGhost(state, self)).toEqual([]);
+    expect(decideAsGhost(state, space, self)).toEqual([]);
     advance(1);
-    expect(decideAsGhost(state, self)).toEqual([
+    expect(decideAsGhost(state, space, self)).toEqual([
       { type: 'attack-target', actorId: self, targetId: legend },
     ]);
   });

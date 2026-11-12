@@ -67,7 +67,7 @@ export class StuckSystem implements System {
         entity.addComponent(watch);
       }
       const isInReach = state.entities.isInReach(entity.id, targetId);
-      const gap = distance(self.position, watch.waypoint ?? this.aim);
+      const gap = distance(self.position, watch.waypointFor(targetId) ?? this.aim);
       const isStuck = watch.observe(targetId, gap, isInReach, window);
       const isAtWaypoint = watch.waypoint !== null && gap <= this.rule.waypointRadius;
       if (isStuck || isAtWaypoint) {

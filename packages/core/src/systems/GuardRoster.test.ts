@@ -202,7 +202,10 @@ describe('GuardRoster', () => {
   it('empties the post of a guard that changes team, and refills it after the respawn time', () => {
     const { state, step, guardsOf } = guarded();
     step();
-    const [turned = ''] = guardsOf('spawner-tower', 'light') as string[];
+    const turned = guardsOf('spawner-tower', 'light')[0];
+    if (turned === null || turned === undefined) {
+      throw new Error('The first spawner-tower post holds no guard.');
+    }
     const from = state.entities.get(turned)?.getComponent(TeamMembership).setTeam('dark');
     state.events.emit('team-changed', {
       entityId: turned,
@@ -410,6 +413,22 @@ describe('GuardRoster', () => {
       step();
 
       expect(payloads).toEqual([{ entityId: camp, team: 'light', killerId: light }]);
+    });
+
+    it('names no killer or team in camp-cleared when the killer is no longer in the store', () => {
+      const { state, step, campMobs, payloads } = camped();
+      step(61);
+      const mobs = campMobs().map((id) => id ?? '');
+      mobs.forEach((id) => {
+        state.entities.get(id)?.getComponent(Health).applyDamage(1e6);
+        state.events.emit('entity-died', {
+          entityId: id,
+          killer: { attackerId: 'removed-killer', kind: 'weapon', definitionId: 'test-blade' },
+        });
+      });
+      step();
+
+      expect(payloads).toMatchObject([{ team: null, killerId: null }]);
     });
 
     it('names no killer or team in camp-cleared when the last mob died outside the damage pipeline', () => {

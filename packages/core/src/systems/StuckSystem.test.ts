@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ChaseWatch } from '../components/ChaseWatch';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
@@ -159,6 +159,38 @@ describe('StuckSystem', () => {
     chase.run(1);
 
     expect(chase.chaser.hasComponent(ChaseWatch)).toBe(false);
+  });
+
+  it('judges the chase of a new target by the gap to it, not to the old detour waypoint', () => {
+    const chase = riftChase(() => []);
+    const system = new StuckSystem(STUCK_DETECTION);
+    const window = STUCK_DETECTION.windowSeconds * config.tickRate;
+    const tick = () => {
+      system.update({ state: chase.state, logger });
+      chase.state.advanceTick();
+    };
+    // Held in front of the rift for a window: stuck, so it detours round it.
+    for (let step = 0; step <= window; step += 1) tick();
+    expect(chase.chaser.getComponent(ChaseWatch).waypoint).not.toBeNull();
+    // A new target in the open, 35 m behind it (the waypoint is far closer); the unit closes in
+    // steadily, 3 m a window.
+    const behind = chase.factory.create('light-mob', 'light-minion', {
+      team: 'dark',
+      position: { x: 5, y: 20 },
+    });
+    chase.state.entities.add(behind);
+    chase.state.entities.setAttackTarget(chase.chaser.id, behind.id);
+    const { paths } = chase.state;
+    if (paths === null) throw new Error('The rift chase has no A* paths.');
+    const plans = vi.spyOn(paths, 'waypoint');
+
+    for (let step = 0; step < 2 * window; step += 1) {
+      chase.chaser.getComponent(Transform).moveBy({ x: -0.05, y: 0 });
+      tick();
+    }
+
+    // Closing in is progress: it never counts as stuck, so it plans nothing.
+    expect(plans).not.toHaveBeenCalled();
   });
 
   it('is deterministic: the same chase hashes the same at every second, detours included', () => {

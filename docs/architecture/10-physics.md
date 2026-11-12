@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-05
+last-reviewed: 2026-11-11
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -201,7 +201,7 @@ Overlap tests are therefore not enough:
 
 ## 8. `CollisionResolver` ordering and iteration count
 
-`CollisionSystem` runs after `PathingSystem` and calls the resolver once per tick:
+`CollisionSystem` runs before `PathingSystem` (§9) and calls the resolver once per tick:
 
 1. **Swept vs unbreakable statics** for every mover flagged in §7 (walls, closed gates, bounds,
    unbreakable obstacles). Positions are corrected to the time of impact first so nothing below

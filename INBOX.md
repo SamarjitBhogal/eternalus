@@ -640,6 +640,19 @@ Reply inline (`Decision: …`).
     there is no next level, and the ring shows full ("Full ring (Recommended)"); the per-Legend
     level and XP become the design ("Adopt it (Recommended)", the critic's better-than-design
     item). Recorded in DEC-224. Nothing waits.
+  - Since `feat/hud-aether-bar` (2026-11-09), the entity snapshot also carries a Legend's aether
+    (left and full), so the HUD's aether bar is live. Answered 2026-11-09 (question dialog): the
+    bar only, no regeneration until the first ability spends aether ("Bar only, no regen
+    (Recommended)"; OQ-56 stays open); the owner left the data path to the session ("choose the
+    best long-term design with the least tech-debt"), which made the per-Legend aether group the
+    design. Recorded in DEC-230. Nothing waits.
+  - The aether bar's critic (2026-11-09) found two designs better than the docs: (A) the player
+    snapshot should hold only what the player alone has (the ability slots) while the bridge joins
+    the Legend's health, aether, level and XP from its entity snapshot, so each value is in the
+    snapshot once; (B) one class should build each entity's snapshot, so a new group no longer
+    changes `GameState`. Answered 2026-11-09 (chat): "A only if there is an assurance that B will
+    be done in the near-future. no tech-debt if possible, when possible." No plan schedules
+    either, so both were built on `feat/hud-aether-bar`. Recorded in DEC-232. Nothing waits.
   - Answered 2026-10-28 (the non-blocking decision page, in chat): "Keep", with: "Keep. Empty frames
     for abilities that do not yet exist. Wuuthrad was used as weapon reference, so that artwork
     exists, as well as some ability artwork (not associated with real abilities yet). Empty frames,

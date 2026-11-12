@@ -36,6 +36,8 @@ describe('ChaseWatch', () => {
     watch.headFor(3, 4, 5, 60);
 
     expect(watch.waypoint).toEqual({ x: 3, y: 4 });
+    expect(watch.waypointFor('enemy')).toEqual({ x: 3, y: 4 });
+    expect(watch.waypointFor('other')).toBeNull();
     expect(watch.fields).toEqual(['enemy', 5, 60, true, 3, 4, false]);
     expect(watch.observe('enemy', 4, false, at(100))).toBe(false);
     expect(watch.observe('enemy', 4, false, at(160))).toBe(true);

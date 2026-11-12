@@ -24,6 +24,7 @@ const UNIT: EntitySnapshot = {
   transform: { x: AT.x, y: AT.y, radius: RADIUS, facing: { x: 1, y: 0 } },
   health: null,
   progression: null,
+  aether: null,
   area: null,
   capture: null,
 };

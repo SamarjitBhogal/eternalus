@@ -24,6 +24,7 @@ const unit = (id: string, x: number, y: number, facing = EAST): EntitySnapshot =
   transform: { x, y, radius: 0.4, facing },
   health: null,
   progression: null,
+  aether: null,
   area: null,
   capture: null,
 });

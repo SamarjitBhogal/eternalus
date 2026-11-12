@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-10
+last-reviewed: 2026-11-11
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -429,7 +429,8 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   palace wall reaches the Stronghold (DEC-185, DEC-185 (D)). The circle `Collider` stays. A lane
   tower's fort map object, which blocks, is the tower's body: it has no health of its own, so
   damage to the fort goes to the tower (one pool, DEC-185 (B)). After the tower falls, its fort
-  stays standing as scenery with no health. Only towers share one pool with their fort
+  stays standing as scenery with no health on this branch: the ruins with half-health walls
+  (DEC-217 (12), DEC-219 (a)) are built on a later branch (DEC-219 (d)). Only towers share one pool with their fort
   (DEC-217 (13)): the Stronghold's palace map object does not block, and a gate's definition has
   no `hasMapFootprint`, so both keep their own health. `Simulation` takes the structure
   definitions from one injected source (`SimulationOptions.structures`, default

@@ -18,6 +18,7 @@ const entity = (kind: string, family: string): EntitySnapshot => ({
   transform: { x: 0, y: 0, radius: 0.5, facing: { x: 1, y: 0 } },
   health: null,
   progression: null,
+  aether: null,
   area: null,
   capture: null,
 });

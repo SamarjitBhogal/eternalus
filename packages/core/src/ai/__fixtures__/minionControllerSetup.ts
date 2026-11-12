@@ -103,7 +103,7 @@ export const setUp = (config: GameConfig = createDefaultGameConfig()) => {
     });
     return entity;
   };
-  return { state, add, decide, advance, moveTo, objective };
+  return { state, space, add, decide, advance, moveTo, objective };
 };
 
 /** A minion's memory while it fights `targetId`, its leash anchored at (50, 20). */
