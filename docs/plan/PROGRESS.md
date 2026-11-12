@@ -6222,3 +6222,26 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: full `npm run check` exit 0 on the merged tree: core `Tests 1313 passed (1313)`,
   client `Tests 1818 passed (1818)`, `Documentation check passed.`
 - Next step: Sam answers the boss-spec question; open the PR A1 PR.
+
+### 2026-11-11 — Phase 3 / sprint 3 work: capture point mini-boss (PR A2) — feat/capture-point-boss — Aryan Walanj + Claude Code
+
+- What was done: the outer capture points get their mini-boss as content on PR A1's zone guard
+  homes. `content/mobs/capturePointBoss.ts` (`capture-point-boss`: `heavy-mob`, `guard`
+  controller, `leashed-chase`; balancing.md MiniBoss 8,200 HP, 205 per hit every 1.5 s, 500 XP;
+  size and speed as the heavy minion, `TUNE`), its own aggro rule
+  (`content/ai/aggro/capturePointBoss.ts`, acquisition 10 m = leash less post gap) and a
+  `capture-point` guard plan: 1 boss, leash 35 m (the fort court's inscribed circle), post gap
+  25 m, activation 120 s after the countdown (`TUNE` placeholder), never respawns. The Cathedral's
+  zone (`cathedral-capture-point`) has no plan. Acceptance test (A1 critic finding 5):
+  `Simulation.bosses.test.ts`, seeds 1 and 2, no boss the tick before the delay, then exactly one
+  neutral boss on each outer capture point's floor and none on the Cathedral's, with
+  `TEST_DEBUG_CONFIG` (throws on any invariant) and no non-INFO log record. Doc 07 §13 status
+  note. Not built: moves, regeneration, the zone lock, support mobs, capture weights, team-wide
+  rewards, the Cathedral boss.
+- Error report `logs/errors/2026-11-11T20-29-51-977Z-error-973e7e32.json` (ResizeObserver loop,
+  `client.window`, no match, no tick) is not from A1, which changed only core and docs; the only
+  `ResizeObserver` in the client is `ui/components/useFitFontSize.ts`. Not fixed here.
+- Checks run: `npm run check` exit 0: core `Tests 1315 passed (1315)`, client
+  `Tests 1818 passed (1818)`, `Documentation check passed.`
+- Next step: pre-PR gate (critic, ponytail, re-check), then the PR into feat/zone-guard-homes or
+  phase/3 once A1 merges.

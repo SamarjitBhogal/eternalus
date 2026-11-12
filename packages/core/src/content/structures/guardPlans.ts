@@ -46,7 +46,8 @@ const CAMP_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
  * Each structure's guards, keyed by structure definition id (architecture 07 §6, 18 §7). Counts are balancing.md's
  * `Recommendation:` (SpawnerTower 4 light, BuffTower 6 medium, Stronghold 6 light ranged + 2 heavy
  * melee, minus 2 light per lost SpawnerTower). Ranged attacks wait for projectiles (sprint 2.3),
- * so the Stronghold's light guards fight in melee for now. Camps follow.
+ * so the Stronghold's light guards fight in melee for now. Camps and the outer capture points'
+ * mini-boss follow.
  */
 export const GUARD_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
   'spawner-tower': {
@@ -77,4 +78,14 @@ export const GUARD_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
     respawn: { kind: 'each', seconds: RESPAWN },
   },
   ...CAMP_PLANS,
+  // The outer capture points' mini-boss (18 §7.1); the Cathedral's zone has no plan.
+  'capture-point': {
+    table: [{ mobId: 'capture-point-boss', count: 1 }],
+    leashRadius: 35, // TUNE: the fort court's inscribed circle (buildingGeometry.ts fort)
+    postGap: 25, // TUNE: no reference value; out in the court, clear of the keep
+    leashTolerance: TOLERANCE,
+    // TUNE: placeholder; reference 04 spawns it at the quarter mark (MatchDirector, later)
+    activation: { at: 'countdown-end', delaySeconds: 120 },
+    respawn: { kind: 'never' }, // reference 04: one mini-boss per match
+  },
 };
