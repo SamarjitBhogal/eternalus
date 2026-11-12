@@ -6636,6 +6636,17 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-85-6.log`).
 - Next step: push; owner sign-off comment (DEC-234, `AimedAt`); merge the new head into #86, #79.
 
+### 2026-11-12 — Phase 3 / minion follow-ups: the last two test casts — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: the review of 2026-11-12 names two more `as string[]` casts in
+  `GuardRoster.test.ts` (lines 71 and 83). Both now narrow with a throw, like line 186.
+- Rejected again: `op` validation in `loadStatusEffects`. The modifier type allows only `'mul'`
+  and `'add'`, so the check can never be true (`no-unnecessary-condition` fails the lint), and a
+  test for it needs a cast.
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-85-7.log`).
+- Next step: push; merge the new head into #86 and #79.
+
 ### 2026-11-11 — Phase 3 / out-of-combat healing, merge of fix/minion-stack-followups (phase/3 with #89) — feat/out-of-combat-heal — sholtzman + Claude Code
 
 - What was done: merged `fix/minion-stack-followups` at `f08d0a39`, which merges
@@ -6656,3 +6667,11 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: full `npm run check` exit 0
   (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-86-merge-5.log`).
 - Next step: push; owner sign-off comment (DEC-225 to DEC-227); merge after #85.
+
+### 2026-11-12 — Phase 3 / out-of-combat healing: merge of fix/minion-stack-followups (c09507f6) — feat/out-of-combat-heal — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` at `c09507f6` (the last two test casts in
+  `GuardRoster.test.ts`). Only PROGRESS conflicted; both sides kept. No code conflict.
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-86-merge-6.log`).
+- Next step: push; merge after #85.

@@ -68,7 +68,10 @@ describe('GuardRoster', () => {
   it('respawns a dead guard after the respawn time, only while its structure stands', () => {
     const { state, step, guardsOf } = guarded();
     step();
-    const [first = ''] = guardsOf('spawner-tower', 'light') as string[];
+    const first = guardsOf('spawner-tower', 'light')[0];
+    if (first === null || first === undefined) {
+      throw new Error('The first spawner-tower post holds no guard.');
+    }
     state.entities.get(first)?.getComponent(Health).applyDamage(1e6);
     step();
     expect(guardsOf('spawner-tower', 'light')[0]).toBeNull();
@@ -80,7 +83,10 @@ describe('GuardRoster', () => {
     step();
     expect(guardsOf('spawner-tower', 'light')[0]).not.toBeNull();
 
-    const [second = ''] = guardsOf('spawner-tower', 'light') as string[];
+    const second = guardsOf('spawner-tower', 'light')[0];
+    if (second === null || second === undefined) {
+      throw new Error('The first spawner-tower post was not refilled.');
+    }
     state.entities.forEach((entity) => {
       if (entity.kind === 'spawner-tower' && state.entities.teamOf(entity.id) === 'light') {
         entity.getComponent(Health).applyDamage(1e6);
