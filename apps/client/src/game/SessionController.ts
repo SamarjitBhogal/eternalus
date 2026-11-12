@@ -110,6 +110,13 @@ export class SessionController {
       },
       prepareWorld: () => {
         if (this.duel.status === 'started') {
+          // The HUD reads the seat from the setup, as in a solo match; a Duel has no rosters.
+          this.publishSetup({
+            seed: this.duel.mapSeed,
+            playerTeam: this.duel.team,
+            allies: [],
+            enemies: [],
+          });
           this.world = deps.prepareWorld(this.duel.mapSeed);
           return;
         }

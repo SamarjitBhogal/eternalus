@@ -2,6 +2,7 @@ import { DeviceIntentSource } from './DeviceIntentSource';
 import { RingBufferSink } from '../data/logging/RingBufferSink';
 import { type BrowserMatchDeps, createMatchLogger } from './createBrowserMatch';
 import { RemoteIntentSender } from './duel/RemoteIntentSender';
+import { NEUTRAL_INTENT } from './duel/RemoteIntentSender.constants';
 import { RemoteSimulation } from './duel/RemoteSimulation';
 import { Camera } from './engine/Camera';
 import { KeyboardDevice } from './engine/input/KeyboardDevice';
@@ -75,7 +76,14 @@ export function createBrowserDuelMatch(deps: BrowserMatchDeps): DuelMatchFactory
       document: deps.document,
       keyboard,
       mouse,
-      input,
+      input: {
+        // Pause, a lost focus and a hidden tab stop the ticks that would send the release, so the
+        // server would keep walking the Legend: tell it now.
+        releaseAll: () => {
+          input.releaseAll();
+          link.sendIntent(NEUTRAL_INTENT);
+        },
+      },
       bus: deps.bus,
       mapper,
       adapters: [renderer, camera],

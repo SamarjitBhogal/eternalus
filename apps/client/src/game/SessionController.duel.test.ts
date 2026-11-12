@@ -105,6 +105,14 @@ describe('SessionController, online Duel (ADR 0016)', () => {
     expect(request?.world.map).toBeDefined();
   });
 
+  it('publishes the seat as the setup team so the HUD selectors work in a Duel', async () => {
+    const session = await setUp();
+
+    await session.startDuel();
+
+    expect(session.store.getState().matchSetup.playerTeam).toBe('dark');
+  });
+
   it('shows the results from the own team when the server ends the match, then returns to the menu', async () => {
     const session = await setUp();
     await session.startDuel();

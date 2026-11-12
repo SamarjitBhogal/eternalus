@@ -1,11 +1,13 @@
 import type { ServerMessage } from '@eternalus/protocol';
 import type { ClientConnection } from './ClientConnection.types';
-import { WS_OPEN } from './WsConnection.constants';
+import { MAX_BUFFERED_BYTES, WS_OPEN } from './WsConnection.constants';
 import type { WsSocketLike } from './WsConnection.types';
 
 /**
  * A `ClientConnection` over one WebSocket (ADR 0016 point 3): JSON text in and out. Binary
- * frames are ignored, so the parser only ever sees text. A socket error closes the connection.
+ * frames are ignored, so the parser only ever sees text. A socket error closes the connection, and
+ * so does a peer that leaves more than `MAX_BUFFERED_BYTES` unread (it answers pings, so the
+ * heartbeat cannot catch it).
  */
 export class WsConnection implements ClientConnection {
   private readonly messageHandlers: ((raw: string) => void)[] = [];
@@ -35,9 +37,14 @@ export class WsConnection implements ClientConnection {
     });
   }
 
-  /** Sends `message` as JSON while the socket is open. */
+  /** Sends `message` as JSON while the socket is open; a peer too far behind is terminated. */
   public send(message: ServerMessage): void {
-    if (this.socket.readyState === WS_OPEN) this.socket.send(JSON.stringify(message));
+    if (this.socket.readyState !== WS_OPEN) return;
+    if (this.socket.bufferedAmount > MAX_BUFFERED_BYTES) {
+      this.terminate();
+      return;
+    }
+    this.socket.send(JSON.stringify(message));
   }
 
   /** Closes the socket. */

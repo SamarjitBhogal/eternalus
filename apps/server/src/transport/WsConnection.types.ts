@@ -2,6 +2,8 @@
 export interface WsSocketLike {
   /** `1` (OPEN) while messages can be sent. */
   readonly readyState: number;
+  /** Bytes queued by `send` that the peer has not read yet. */
+  readonly bufferedAmount: number;
   send(data: string): void;
   close(): void;
   ping(): void;

@@ -26,6 +26,11 @@ export class WsListener {
     server.on('connection', (socket, request) => {
       const ip = this.address.resolve(request.socket.remoteAddress, request.headers);
       if (!this.limiter.tryAcquire(ip)) {
+        // The closing handshake is still open: a bad frame in it emits `error`, and an
+        // unhandled `error` would end the process.
+        socket.on('error', () => {
+          socket.terminate();
+        });
         socket.close(WS_TRY_AGAIN_LATER);
         return;
       }
@@ -37,12 +42,18 @@ export class WsListener {
     this.server = server;
   }
 
-  /** Stops accepting clients and closes the open sockets. */
-  public close(): void {
-    this.server?.clients.forEach((socket) => {
-      socket.close();
-    });
-    this.server?.close();
+  /** Stops accepting clients and closes the open sockets; resolves once every socket is closed. */
+  public close(): Promise<void> {
+    const server = this.server;
     this.server = null;
+    if (server === null) return Promise.resolve();
+    return new Promise((resolve) => {
+      server.close(() => {
+        resolve();
+      });
+      server.clients.forEach((socket) => {
+        socket.close();
+      });
+    });
   }
 }

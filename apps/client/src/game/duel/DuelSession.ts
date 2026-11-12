@@ -46,6 +46,12 @@ export class DuelSession implements DuelLink {
     return this.ownLegendId;
   }
 
+  /** The team this player was seated on. @throws Before match-found. */
+  public get team(): PlayableTeam {
+    if (this.ownTeam === null) throw new Error('The Duel has no team before match-found');
+    return this.ownTeam;
+  }
+
   /** The seed the server generated the match's map from. @throws Before match-found. */
   public get mapSeed(): number {
     if (this.ownMapSeed === null) throw new Error('The Duel has no map seed before match-found');

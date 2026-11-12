@@ -6179,3 +6179,10 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `match-found` with the same seed and ~85 states each.
 - Next step: open the PR into `phase/3-sprint-3-work`; the owner accepts or changes ADR 0016 and
   answers the INBOX interim choices.
+
+### 2026-11-11 — Phase 3 / online Duel — feat/duel-server (Copilot review fixes) — claudiodh + Claude Code
+
+- What was done: answered the five Copilot threads on PR #97. Server: a connection refused by the cap now gets an `error` handler, because a bad frame during the closing handshake would otherwise end the process (P1); `WsConnection` terminates a peer that leaves more than 1 MiB unread, since a client that answers pings but never reads would grow the queue (P2); `WsListener.close()` returns a promise and `main.ts` exits only when the WebSocket sockets and the health server are closed (P2). Client: the Duel publishes the seat as the setup team so the objective and structure selectors work (P2); releasing input (pause, focus loss, hidden tab) also sends a neutral intent, since no tick would send it (P2).
+- Tests: `WsListener.test.ts` (new; fails with an unhandled error without the handler, 3 of 3 runs), `WsConnection.test.ts` (slow reader), `SessionController.duel.test.ts` (seat team), `createBrowserDuelMatch.test.ts` (neutral intent on pause).
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1320 passed (1320)"; protocol "Tests 18 passed (18)"; client "Tests 1883 passed (1883)"; server "Tests 79 passed (79)"; "Documentation check passed."
+- Next step: reviewer re-check; the team merges.

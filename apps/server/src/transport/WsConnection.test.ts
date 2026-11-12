@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { WsConnection } from './WsConnection';
+import { MAX_BUFFERED_BYTES } from './WsConnection.constants';
 import type { WsSocketLike } from './WsConnection.types';
 
 class FakeSocket implements WsSocketLike {
   public readyState = 1;
+  public bufferedAmount = 0;
   public readonly sent: string[] = [];
   public closeCalls = 0;
   public pingCalls = 0;
@@ -40,6 +42,16 @@ describe('WsConnection', () => {
     socket.readyState = 3;
     connection.send({ type: 'queue-waiting' });
     expect(socket.sent).toEqual(['{"type":"queue-waiting"}']);
+  });
+
+  it('terminates a peer that leaves too much unread instead of queueing more', () => {
+    const socket = new FakeSocket();
+    const connection = new WsConnection(socket);
+    let closes = 0;
+    connection.onClose(() => (closes += 1));
+    socket.bufferedAmount = MAX_BUFFERED_BYTES + 1;
+    connection.send({ type: 'queue-waiting' });
+    expect([socket.sent.length, socket.terminateCalls, closes]).toEqual([0, 1, 1]);
   });
 
   it('passes text frames and ignores binary ones', () => {

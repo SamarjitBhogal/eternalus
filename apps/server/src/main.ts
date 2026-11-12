@@ -65,11 +65,16 @@ logger.log(makeLogRecord('INFO', 'server.main', 'Duel server started.'));
 const shutdown = (): void => {
   logger.log(makeLogRecord('INFO', 'server.main', 'Duel server shutting down.'));
   stopHeartbeat();
-  listener.close();
-  ops.close(() => {
-    process.exit(0);
+  const opsClosed = new Promise<void>((resolve) => {
+    ops.close(() => {
+      resolve();
+    });
   });
   ops.closeAllConnections();
+  // Exit only once the WebSocket closing handshakes are done too, so no client is cut off mid-flush.
+  void Promise.all([listener.close(), opsClosed]).then(() => {
+    process.exit(0);
+  });
 };
 process.once('SIGTERM', shutdown);
 process.once('SIGINT', shutdown);

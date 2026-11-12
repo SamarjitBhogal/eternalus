@@ -6,6 +6,7 @@ import { TypedEventBus } from '../bridge/TypedEventBus';
 import { withPlayer } from './__fixtures__/withPlayer';
 import { createBrowserDuelMatch } from './createBrowserDuelMatch';
 import { FakeDuelLink } from './duel/FakeDuelLink';
+import { NEUTRAL_INTENT } from './duel/RemoteIntentSender.constants';
 import { FakeSessionClock } from './engine/time/FakeSessionClock';
 import { FakeBrowserTarget } from './FakeBrowserTarget';
 import { FakeViewportCanvas } from './FakeViewportCanvas';
@@ -58,6 +59,18 @@ function setUp(canvas = new FakeViewportCanvas()) {
 }
 
 describe('createBrowserDuelMatch', () => {
+  it('sends a neutral intent when the match is paused, since no tick will send the release', () => {
+    const { window, factory, viewport, request, link } = setUp();
+    const running = factory(request, viewport);
+    window.runFrame(0);
+    const before = link.intents.length;
+
+    running.setPaused(true);
+
+    expect(link.intents.length).toBe(before + 1);
+    expect(link.intents.at(-1)).toEqual(NEUTRAL_INTENT);
+  });
+
   it('throws for a canvas without a 2D context and leaves nothing behind', () => {
     const { window, factory, viewport, request, listeners } = setUp(
       new FakeViewportCanvas(1280, 720, null),
