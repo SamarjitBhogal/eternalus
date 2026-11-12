@@ -27,10 +27,12 @@ export class GroupGuardRespawn implements GuardRespawnRule {
     });
     const killerId =
       (slot.guardId === null ? undefined : state.killerOf(slot.guardId))?.attackerId ?? null;
+    // A killer whose team cannot be read (it left the store) is not named: both or neither.
+    const team = killerId === null ? null : (state.entities.teamOf(killerId) ?? null);
     state.events.emit('camp-cleared', {
       entityId: slot.homeId,
-      team: killerId === null ? null : (state.entities.teamOf(killerId) ?? null),
-      killerId,
+      team,
+      killerId: team === null ? null : killerId,
     });
   }
 }

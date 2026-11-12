@@ -27,6 +27,14 @@ export class ChaseWatch {
   }
 
   /**
+   * The waypoint of the chase of `targetId`: `null` when there is none, or when this watch follows
+   * another target, since a new target's chase starts without one (its gap is to the target).
+   */
+  public waypointFor(targetId: string): Vec2 | null {
+    return targetId === this.watchedId ? this.waypoint : null;
+  }
+
+  /**
    * Whether the unit waits for an A\* plan: stuck, or at its waypoint, on a tick whose plan budget
    * was spent (`requestPlan`). `headFor` and `dropWaypoint` answer it.
    */

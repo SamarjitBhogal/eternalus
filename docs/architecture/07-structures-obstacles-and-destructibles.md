@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-10
+last-reviewed: 2026-11-11
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [

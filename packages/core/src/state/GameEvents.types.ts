@@ -70,7 +70,7 @@ export type GameEventMap = {
   /**
    * A camp's whole group is dead (18 §7.1); the group comes back after its respawn time.
    * `killerId` dealt the last mob's lethal hit and `team` is its team; both `null` when no killer
-   * is known (a death outside the damage pipeline).
+   * is known (a death outside the damage pipeline, or a killer that left the store).
    */
   readonly 'camp-cleared': {
     readonly entityId: EntityId;
