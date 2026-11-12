@@ -6379,3 +6379,17 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `Tests 1818 passed (1818)`, `Documentation check passed.`
   (`eternalus-agent-work/hud-aether-bar/check-3.log`).
 - Next step: push; CodeRabbit re-review after the owner's sign-off comment; merge into phase/3.
+
+### 2026-11-11 — Phase 3 / minion follow-ups: merge phase/3 (#92) and the CodeRabbit fixes — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: merged phase/3 `1b25f586` (#89, #92). Fixes from the CodeRabbit review of
+  `2f100e87`: `StuckSystem` judges a new target's first gap to that target, not to the old
+  waypoint; `camp-cleared` names no killer when the killer's team cannot be read (it left the
+  store); two test casts removed (`MinionController.test.ts`, `GuardRoster.test.ts`); 10 §8 says
+  `CollisionSystem` runs before `PathingSystem`, as the pipeline and §9 do; the 07 status note
+  cites DEC-219 (d) for the fort ruins. Both behaviour tests failed before their fix.
+- Rejected: `op` validation in `loadStatusEffects` (the `'mul' | 'add'` union already rejects
+  other values in typed content).
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-85-6.log`).
+- Next step: push; owner sign-off comment (DEC-234, `AimedAt`); merge the new head into #86, #79.
