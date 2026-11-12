@@ -6292,3 +6292,19 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   error).
 - Next step: open the PR into feat/zone-guard-homes (or phase/3 once A1 merges) with the critic
   verdicts, the ponytail cut and this check output.
+
+### 2026-11-12 — Phase 3 / sprint 3 work: capture point mini-boss quarter-mark spawn and court aggro (PR A2) — feat/capture-point-boss — Aryan Walanj + Claude Code
+
+- What was done: (2) The `capture-point` guard plan activates 440 s after the countdown ends: the
+  default timeline's `quarter-mark` entry (0.25 × `plannedMatchSeconds`, counted from match start,
+  tick 13,500) less the 10 s countdown, since guard plan delays count from the countdown's end.
+  Reference 04 cited. `content/` may not import `config/`, so the number is written in
+  `guardPlans.ts` and `guardPlans.test.ts` derives it from `createDefaultGameConfig` with
+  `timelineMarkTick` and `countdownTicks`. `INBOX.md` interim (a) now keeps only the mechanism
+  (guard plan delay instead of `MatchTimeline`). (4) The boss's `acquisitionRadius` and
+  `visionRadius` go from 10/12 m to 60 m (the 35 m leash plus the 25 m post gap), so it reacts to
+  an enemy anywhere in its court, as the corner boss's aggro was widened (PR #91). TUNE markers
+  kept. Doc 07 status note updated.
+- Checks run: `npm run check` exit 0: core `Tests 1316 passed (1316)`, client
+  `Tests 1818 passed (1818)`, `Documentation check passed.`
+- Next step: Part B (support guards, 25% minion damage) on `feat/capture-point-boss-guards`.

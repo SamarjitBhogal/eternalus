@@ -37,8 +37,11 @@ Reply inline (`Decision: …`).
       `feat/zone-guard-homes` critic finding 1; (c) and (d) `feat/capture-point-boss` critic
       findings 1 and 2, 2026-11-11) — (a) and (b) due before the zone-lock PR, (c) and (d) with
       phase-3 sprint 3.6's `BossController`.** (a) The boss
-      spawns 120 s after the countdown ends, a `TUNE` placeholder; reference 04 and 07 §7 put it
-      at the quarter mark on the match timeline. (b) While it lives the boss counts as neutral
+      spawns at the default timeline's quarter mark (440 s after the countdown ends, 2026-11-12;
+      `guardPlans.test.ts` derives it from `createDefaultGameConfig`'s `quarter-mark` entry), but
+      through its guard plan's `delaySeconds`, not `MatchTimeline`: a match with another
+      `plannedMatchSeconds` or countdown keeps 440 s. Reference 04 and 07 §7 schedule it from the
+      match timeline; only that mechanism is still interim. (b) While it lives the boss counts as neutral
       presence and drains a held point (no `CaptureSystem` change); reference 04 and 07 §7 say
       its zone cannot be captured (`lockedBy`, `LockedZoneOwnerInvariant` in 15 §3, phase-3
       sprint 3.6). Neither is a design change, so reference 04 is not amended and no DEC row is

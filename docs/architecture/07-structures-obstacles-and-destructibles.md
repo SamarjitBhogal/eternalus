@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-11
+last-reviewed: 2026-11-12
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -451,9 +451,10 @@ so a replay or a match without map objects rebuilds the same zones. Interim diff
 - **Capture point mini-boss (`feat/capture-point-boss`, 2026-11-11).** The `MiniBoss` is not an
   entity class yet: each outer capture point (definition `capture-point`; the Cathedral has none)
   keeps one `capture-point-boss` through its zone guard plan (§6 status, 18 §7.1), a `heavy-mob`
-  with `GuardController` and balancing.md's MiniBoss health, hit and XP. It appears a set delay
-  after the countdown (a `TUNE` placeholder for the `MatchDirector`'s quarter mark) and never
-  respawns. Its moves, regeneration, the zone lock, support mobs and team-wide rewards come later.
+  with `GuardController` and balancing.md's MiniBoss health, hit and XP. It appears at the
+  default timeline's quarter mark through its guard plan's delay after the countdown (not yet the
+  `MatchDirector`'s timeline, `INBOX.md` interim (a)), sees and attacks an enemy anywhere in the
+  court, and never respawns. Its moves, regeneration, the zone lock, support mobs and team-wide rewards come later.
 - Scheduled later, through the two capture events: holding buffs (Phase 3 sprint 3.3), score
   (sprint 3.5), checkpoint defender spawns (Phase 3) and checkpoint XP (Phase 4). The minimap glyph
   does not follow the owner yet (the minimap entity markers, SCRUM-151).

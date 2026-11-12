@@ -84,8 +84,11 @@ export const GUARD_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
     leashRadius: 35, // TUNE: the fort court's inscribed circle (buildingGeometry.ts fort)
     postGap: 25, // TUNE: no reference value; out in the court, clear of the keep
     leashTolerance: TOLERANCE,
-    // TUNE: placeholder; reference 04 spawns it at the quarter mark (MatchDirector, later)
-    activation: { at: 'countdown-end', delaySeconds: 120 },
+    // TUNE: reference 04 "Mini-bosses at the quarter mark": the default timeline's quarter-mark
+    // entry (0.25 × plannedMatchSeconds 1800, from match start: 450 s) less the 10 s countdown,
+    // since this delay counts from the countdown's end. guardPlans.test.ts derives it from the
+    // config; content may not import config/, so the number is written here.
+    activation: { at: 'countdown-end', delaySeconds: 440 },
     respawn: { kind: 'never' }, // reference 04: one mini-boss per match
   },
 };

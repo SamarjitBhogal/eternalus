@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
+import { countdownTicks } from '../../config/countdownTicks';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
+import { timelineMarkTick } from '../../config/timelineMarkTick';
 import { AI_CADENCE } from '../ai/cadence';
 import { LEGEND_CLASSES } from '../legends/legendCatalogue';
 import { MOB_DEFINITIONS } from '../mobs/mobCatalogue';
@@ -26,10 +28,19 @@ describe('GUARD_PLANS', () => {
     }
   });
 
-  it('activates the capture point boss a positive delay after the countdown (reference 04: the quarter mark)', () => {
+  it('activates the capture point boss on the default timeline quarter mark (reference 04)', () => {
+    const { tickRate, match } = createDefaultGameConfig();
+    const quarter = match.timeline.find(({ id }) => id === 'quarter-mark');
     const activation = GUARD_PLANS['capture-point']?.activation;
+    // The timeline counts from match start (tick 0); the guard plan from the countdown's end.
+    const quarterTick =
+      quarter === undefined
+        ? -1
+        : timelineMarkTick(quarter.at, tickRate, match.plannedMatchSeconds);
+    const delayTicks =
+      activation?.at === 'countdown-end' ? Math.round(activation.delaySeconds * tickRate) : 0;
 
     expect(activation?.at).toBe('countdown-end');
-    expect(activation?.at === 'countdown-end' ? activation.delaySeconds : 0).toBeGreaterThan(0);
+    expect(countdownTicks(match.countdownSeconds, tickRate) + delayTicks).toBe(quarterTick);
   });
 });

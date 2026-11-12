@@ -13,7 +13,7 @@ export const CAPTURE_POINT_BOSS = {
   displayName: 'Capture Point Boss',
   baseHealth: 8200, // TUNE: balancing.md MiniBoss "10 × refHealth ≈ 8,200"
   footprintRadius: 0.8, // TUNE: no reference value; as the heavy minion
-  visionRadius: 12, // TUNE: no reference value; past its 10 m acquisition radius
+  visionRadius: 60, // TUNE: as far as its aggro radius, so it sees the whole court
   movementStrategy: 'leashed-chase',
   controller: 'guard',
   aiProfile: 'capture-point-boss',
