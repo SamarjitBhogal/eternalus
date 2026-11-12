@@ -230,7 +230,7 @@ export type BridgeEventMap = {
     readonly elapsedSeconds: number;
   };
   'hud-state': {
-    readonly player: PlayerSnapshot | null;
+    readonly player: PlayerHudSnapshot | null; // Snapshot.player joined with the Legend's EntitySnapshot (05 §15, DEC-232)
     readonly spectatedLegendId: EntityId | null;
   };
   scoreboard: {
@@ -289,7 +289,8 @@ accessibility, developer, hud), `loadingSlice`, `persistenceSlice`, and the `Rec
 `contentSlice` (display-ready content index), `profileSlice` (summary, loadouts, history,
 achievements), `diagnosticsSlice` (perf samples, violations, log tail) and `assetsSlice`
 (the URLs of the loaded images and the credits, [14](14-persistence-and-resources.md) §11). Slice state is plain
-data typed with core `import type`s (`PlayerSnapshot`, `MatchResult`, `Loadout`); the `data/`
+data typed with core `import type`s (`MatchResult`, `Loadout`) or with bridge types such as the
+HUD's joined player record (`PlayerHudSnapshot`, 05 §15); the `data/`
 vocabulary (persistence status, asset groups) is re-stated as string unions in `events.ts`
 because `bridge/` may not import `data/`.
 
@@ -665,19 +666,20 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   `hudSlice` (the Sprint 1 contract), `matchSlice.clock` is nullable, and `match-setup` resets the
   setup, HUD and match slices so a rematch shows no stale HUD.
 - **HUD data.** `MatchBridge` publishes `match-clock` and `hud-state` every 6 ticks and
-  `structure-state` and `capture-state` every 30, from `Match`'s tick. Core's `Snapshot` has no
-  `player`, so it projects the HUD player from the player's `EntitySnapshot` (health, maximum
-  health, level and XP live, the slot list empty, every other value `null`, DEC-17) and the
-  structure and capture rosters from the `MapDefinition` (structure health `null`, capture owner
-  `neutral`).
+  `structure-state` and `capture-state` every 30, from `Match`'s tick. It joins the HUD player
+  from the player's `EntitySnapshot` groups (health, maximum health, aether, level and XP live;
+  05 §15, DEC-232); core's `Snapshot` has no `player` yet, so the slot list is empty and every
+  other value `null` (DEC-17). It projects the structure and capture rosters from the
+  `MapDefinition` (structure health `null`, capture owner `neutral`).
   Each field becomes live when core publishes it: structure health (Phase 2, sprint 2.1), capture
-  state (sprint 2.6), aether and abilities (Phase 4, sprints 4.5 and 4.7, through `Snapshot.player`,
+  state (sprint 2.6), abilities (Phase 4, sprints 4.5 and 4.7, through `Snapshot.player`,
   [05](05-abilities-weapons-and-loadouts.md) §15). (2026-11-03, PR #64: capture state is live.
   `MatchBridge` takes each point's owner and progress from the zone that stands on its feature's
   position, and re-sends the last array while they do not change. 2026-11-09,
   `feat/hud-level-xp`: level and XP are live; `MatchBridge` reads them from the Legend's
   `EntitySnapshot.progression`; `xpToNext` is `null` at the level cap, where the XP ring is full,
-  DEC-224.)
+  DEC-224. 2026-11-09, `feat/hud-aether-bar`: aether is live; `MatchBridge` reads it from the
+  Legend's `EntitySnapshot.aether`, DEC-230.)
 - **HUD elements beyond §3's table.** `LevelBadge` (class emblem, XP ring, level), `WeaponPanel`
   (the weapon art at its manifest draw box, and the weapon-level bar, OQ-63), `GadgetBar` (the
   gadget slots, each with `<KeyGlyph>`), `UltimateChargeBar` and `ChargePips` (OQ-64),
