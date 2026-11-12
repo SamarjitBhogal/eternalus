@@ -454,7 +454,10 @@ so a replay or a match without map objects rebuilds the same zones. Interim diff
   with `GuardController` and balancing.md's MiniBoss health, hit and XP. It appears at the
   default timeline's quarter mark through its guard plan's delay after the countdown (not yet the
   `MatchDirector`'s timeline, `INBOX.md` interim (a)), sees and attacks an enemy anywhere in the
-  court, and never respawns. Its moves, regeneration, the zone lock, support mobs and team-wide rewards come later.
+  court, and never respawns. Its support mobs (2 heavy and 4 light guards, `INBOX.md`
+  interim (e)) share its plan, activation and `never` respawn, and it takes 25% of a lane
+  minion's hit (`BossMinionDamageStep`). Its moves, regeneration, the zone lock and team-wide
+  rewards come later.
 - Scheduled later, through the two capture events: holding buffs (Phase 3 sprint 3.3), score
   (sprint 3.5), checkpoint defender spawns (Phase 3) and checkpoint XP (Phase 4). The minimap glyph
   does not follow the owner yet (the minimap entity markers, SCRUM-151).

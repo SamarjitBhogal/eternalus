@@ -78,9 +78,17 @@ export const GUARD_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
     respawn: { kind: 'each', seconds: RESPAWN },
   },
   ...CAMP_PLANS,
-  // The outer capture points' mini-boss (18 §7.1); the Cathedral's zone has no plan.
+  // The outer capture points' mini-boss and its support mobs (18 §7.1, reference 04 "along with
+  // high-power enemy and support mobs"); the Cathedral's zone has no plan. Posts share the court's
+  // ring, spread evenly around it with the boss.
   'capture-point': {
-    table: [{ mobId: 'capture-point-boss', count: 1 }],
+    table: [
+      { mobId: 'capture-point-boss', count: 1 },
+      // TUNE: no reference count for the support mobs; balancing.md's checkpoint-2 capture point
+      // guard set (2 heavy + 4 light), the heavies being the "high-power" mobs.
+      { mobId: 'heavy-guard', count: 2 },
+      { mobId: 'light-guard', count: 4 },
+    ],
     leashRadius: 35, // TUNE: the fort court's inscribed circle (buildingGeometry.ts fort)
     postGap: 25, // TUNE: no reference value; out in the court, clear of the keep
     leashTolerance: TOLERANCE,
@@ -89,6 +97,8 @@ export const GUARD_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
     // since this delay counts from the countdown's end. guardPlans.test.ts derives it from the
     // config; content may not import config/, so the number is written here.
     activation: { at: 'countdown-end', delaySeconds: 440 },
-    respawn: { kind: 'never' }, // reference 04: one mini-boss per match
+    // reference 04: one mini-boss per match; its support mobs do not come back either until
+    // respawning guards is signed off (INBOX.md)
+    respawn: { kind: 'never' },
   },
 };

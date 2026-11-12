@@ -33,10 +33,10 @@ Reply inline (`Decision: …`).
       replacement for the 10 s trigger, does "out of combat" replace "no enemy in the zone", and
       is the 5%/s rate kept?
 
-- [ ] **Capture point mini-boss: four interim stand-ins (Aryan Walanj, assigned owner, 2026-11-09;
+- [ ] **Capture point mini-boss: five interim stand-ins (Aryan Walanj, assigned owner, 2026-11-09;
       `feat/zone-guard-homes` critic finding 1; (c) and (d) `feat/capture-point-boss` critic
       findings 1 and 2, 2026-11-11) — (a) and (b) due before the zone-lock PR, (c) and (d) with
-      phase-3 sprint 3.6's `BossController`.** (a) The boss
+      phase-3 sprint 3.6's `BossController`, (e) awaits the owner and Sam.** (a) The boss
       spawns at the default timeline's quarter mark (440 s after the countdown ends, 2026-11-12;
       `guardPlans.test.ts` derives it from `createDefaultGameConfig`'s `quarter-mark` entry), but
       through its guard plan's `delaySeconds`, not `MatchTimeline`: a match with another
@@ -50,8 +50,13 @@ Reply inline (`Decision: …`).
       18 (MS-28), 11 §4.6 and 04 give it a `MiniBoss` class and `BossController` (moves, roaming,
       damage-dealer bias). Recorded in 18's implementation status note. (d) Its 500 XP
       (balancing.md "500 XP team-wide") goes to the killer alone through the ordinary mob-kill
-      path, as the corner boss's does (PR #91); it takes full damage from minions (balancing.md:
-      25%), and its kill gives no permanent team buff (reference 04). Sprint 3.6 replaces both.
+      path, as the corner boss's does (PR #91), and its kill gives no permanent team buff
+      (reference 04). Sprint 3.6 replaces both. (Its 25% damage from minions, balancing.md, is
+      built since 2026-11-12: `combat/BossMinionDamageStep.ts`.) (e) Its support mobs
+      (`feat/capture-point-boss-guards`, 2026-11-12): reference 04 gives no count, so the plan
+      borrows balancing.md's checkpoint-2 set, 2 `heavy-guard` + 4 `light-guard`, on the boss's
+      ring; like the boss they never respawn, since respawning them needs Sam's sign-off. Approve
+      the count and whether they respawn, or correct them.
 
 - [ ] **Guard leash and acquisition radii derived, not hand-copied (`feat/capture-point-boss`
       critic finding 6, 2026-11-11) — better than the design, optional follow-up, no code change

@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-11-11
+last-reviewed: 2026-11-12
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
@@ -78,7 +78,7 @@ guards and are the lane objectives (§6.2), but doc 07 implements them. The mini
 level-up** (MVP, a `CaptureSystem` reward, 07 §7) and **Ascend** (MVP-if-time, a Legend-kill
 reward) belong to their reward systems, not to this doc.
 
-**Implementation status (2026-11-11).** Minion plan phase M1 (marching) is built: the three lane
+**Implementation status (2026-11-12).** Minion plan phase M1 (marching) is built: the three lane
 minions (`content/mobs/`), the `ranks` formation, `HordeStore`, `LaneRoutes` and the team spawn
 counters on `GameState`, `assessLanes`, `HordeSystem`, `SpatialHash`, `LaneFollowMovementStrategy`
 with `PathingSystem`, and `SpawnSystem` with the DISC-10 waves and the one-step fulfilment;
@@ -122,12 +122,13 @@ emitted by `SpawnSystem`'s `GuardRoster`; `GuardWithinLeashInvariant` covers cam
 checks every post. Checkpoint defenders wait for `CaptureSystem` (PR #64) to reach the phase
 branch. Pull request A1 (`feat/zone-guard-homes`) lets a zone be a guard home (§7.1) and adds the
 `never` respawn and an activation `delaySeconds` after the countdown. Pull request A2
-(`feat/capture-point-boss`) gives each outer capture point its mini-boss as a zone guard plan.
+(`feat/capture-point-boss`) gives each outer capture point its mini-boss as a zone guard plan,
+and `feat/capture-point-boss-guards` adds its support mobs to that plan.
 Interim, against "the minion system never controls a boss" above: until Phase 3 sprint 3.6 builds
 `MiniBoss` and `BossController` (11 §4.6, 04), the boss is a `heavy-mob` (`capture-point-boss`)
 held by `GuardController`, with one melee hit and no moves, roaming or damage-dealer bias; its kill
-XP goes to the killer alone, it takes full damage from minions and gives no team buff (`INBOX.md`,
-capture point mini-boss interims (c) and (d)). The pull requests and interim stand-ins are in the
+XP goes to the killer alone and it gives no team buff (`INBOX.md`, capture point mini-boss
+interims (c) and (d)); it takes 25% of a lane minion's hit (`BossMinionDamageStep`, 05 §9). The pull requests and interim stand-ins are in the
 [minion system plan](../plan/minion-system-plan.md) §2–§3.
 
 ## 1. Decisions
