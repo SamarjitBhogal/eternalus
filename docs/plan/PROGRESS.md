@@ -6280,3 +6280,15 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `Tests 1818 passed (1818)`, `Documentation check passed.` (knip: one configuration hint, no
   error).
 - Next step: ponytail review on the branch diff, re-check, then the PR.
+
+### 2026-11-12 — Phase 3 / sprint 3 work: capture point mini-boss ponytail cut (PR A2) — feat/capture-point-boss — Aryan Walanj + Claude Code
+
+- What was done: `/ponytail-review` on the branch diff (`0e8d7956...6293059d`): verdict Ship, one
+  nice-to-have. Applied: `Simulation.bosses.test.ts` uses its injected `DELAY_SECONDS` directly
+  instead of reading it back from the plan it built and asserting it. ponytail: 1 nice-to-have
+  applied, -4 lines. Line edits inside one test, no structural change, so no critic re-check.
+- Checks run: `npm run check` exit 0: core `Tests 1316 passed (1316)`, client
+  `Tests 1818 passed (1818)`, `Documentation check passed.` (knip: one configuration hint, no
+  error).
+- Next step: open the PR into feat/zone-guard-homes (or phase/3 once A1 merges) with the critic
+  verdicts, the ponytail cut and this check output.

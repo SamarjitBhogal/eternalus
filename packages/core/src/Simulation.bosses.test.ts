@@ -40,18 +40,15 @@ describe('Simulation capture point bosses', () => {
         map: new MapGenerator().generate(CONFIG, seed),
         guardPlans: PLANS,
       });
-      const { activation } = PLANS['capture-point'] ?? {};
-      const delay = activation?.at === 'countdown-end' ? activation.delaySeconds : 0;
       const firstTick =
         countdownTicks(CONFIG.match.countdownSeconds, CONFIG.tickRate) +
-        Math.round(delay * CONFIG.tickRate);
+        DELAY_SECONDS * CONFIG.tickRate;
       const bosses = () =>
         simulation
           .snapshot()
           .entities.filter(({ definitionId }) => definitionId === 'capture-point-boss');
 
       run(simulation, firstTick - 1);
-      expect(delay).toBe(DELAY_SECONDS);
       expect(bosses()).toEqual([]);
 
       run(simulation, 2);
