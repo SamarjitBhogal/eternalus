@@ -1,3 +1,4 @@
+import type { GuardPlanDefinition } from '../content/structures/structures.types';
 import type { InvariantRunner } from '../diagnostics/InvariantRunner';
 import type { EntityFactory } from '../entities/EntityFactory';
 import type { MatchDirector } from '../match/MatchDirector';
@@ -30,5 +31,7 @@ export type DefaultSystemPipelineOptions = {
     /** Runs first: the AI, which `systems/` may not import, so `Simulation` composes it. */
     readonly decide: readonly System[];
     readonly collisions?: readonly System[];
+    /** Each guard home's plan by definition id; `GUARD_PLANS` when omitted. */
+    readonly guards?: Readonly<Record<string, GuardPlanDefinition>>;
   };
 };

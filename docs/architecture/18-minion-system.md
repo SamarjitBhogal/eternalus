@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-11-09
+last-reviewed: 2026-11-11
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
@@ -121,8 +121,13 @@ activated when the countdown ends), camp mobs held by `GuardController`, and `ca
 emitted by `SpawnSystem`'s `GuardRoster`; `GuardWithinLeashInvariant` covers camp mobs, since it
 checks every post. Checkpoint defenders wait for `CaptureSystem` (PR #64) to reach the phase
 branch. Pull request A1 (`feat/zone-guard-homes`) lets a zone be a guard home (§7.1) and adds the
-`never` respawn and an activation `delaySeconds` after the countdown; no zone has a guard plan in content
-yet (the capture point mini-boss is pull request A2). The pull requests and interim stand-ins are in the [minion system
+`never` respawn and an activation `delaySeconds` after the countdown. Pull request A2
+(`feat/capture-point-boss`) gives each outer capture point its mini-boss as a zone guard plan.
+Interim, against "the minion system never controls a boss" above: until Phase 3 sprint 3.6 builds
+`MiniBoss` and `BossController` (11 §4.6, 04), the boss is a `heavy-mob` (`capture-point-boss`)
+held by `GuardController`, with one melee hit and no moves, roaming or damage-dealer bias; its kill
+XP goes to the killer alone, it takes full damage from minions and gives no team buff (`INBOX.md`,
+capture point mini-boss interims (c) and (d)). The pull requests and interim stand-ins are in the [minion system
 plan](../plan/minion-system-plan.md) §2–§3.
 
 ## 1. Decisions

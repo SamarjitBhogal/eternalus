@@ -117,7 +117,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
               steering: HORDE_STEERING,
               weights: LANE_ASSESSMENT_WEIGHTS,
               formationId: RANKS_FORMATION.id,
-              guards: GUARD_PLANS,
+              guards: hordes.guards ?? GUARD_PLANS,
             }),
             new EnragedSystem(state, statuses, ENRAGING_STRUCTURES),
           ]),

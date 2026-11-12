@@ -124,6 +124,7 @@ export class Simulation {
     levelCurves,
     roster = [],
     weapons,
+    guardPlans,
   }: SimulationOptions) {
     const validConfig = validateGameConfig(config);
     const timeline = MatchTimeline.resolve(validConfig);
@@ -196,6 +197,7 @@ export class Simulation {
         hordes: {
           factory,
           space,
+          ...(guardPlans === undefined ? {} : { guards: guardPlans }),
           collisions:
             map === undefined || mapObjects === undefined
               ? []

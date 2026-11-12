@@ -9,8 +9,8 @@ import { Simulation } from '../Simulation';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 
 /**
- * The shipped content with every minion's and tower guard's controller and attack taken away, so
- * hordes only march and nothing fights them (a guard chases a minion to its death, MS-34).
+ * The shipped content with every minion's and guard-post mob's (tower guards, camp mobs, the
+ * capture point boss) controller and attack taken away, so hordes only march and nothing fights them (a guard chases a minion to its death, MS-34).
  */
 export const MARCHING_ONLY = new ContentCatalogue<UnitDefinition>(
   loadDefaultContent(30)

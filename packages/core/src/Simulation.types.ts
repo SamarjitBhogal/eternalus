@@ -6,6 +6,7 @@ import type { DebugConfig } from './diagnostics/InvariantRunner.types';
 import type { Logger } from './diagnostics/Logger.types';
 import type { ReplayOf, ReplayTargetFactoryOf } from './diagnostics/Replay.types';
 import type { ContentCatalogue } from './content/ContentCatalogue';
+import type { GuardPlanDefinition } from './content/structures/structures.types';
 import type { LevelCurveDefinition } from './content/progression/progression.types';
 import type { DefinitionSource, WeaponSource } from './entities/EntityFactory.types';
 import type { System } from './systems/System.types';
@@ -42,6 +43,8 @@ export type SimulationOptions = {
   readonly roster?: readonly RosterSlot[];
   /** Where Legends find their weapons by id; `loadWeapons(config.tickRate)` when omitted. */
   readonly weapons?: WeaponSource;
+  /** Each guard home's plan by definition id; `GUARD_PLANS` when omitted. */
+  readonly guardPlans?: Readonly<Record<string, GuardPlanDefinition>>;
 };
 
 /** What every roster slot names: who, for which team, in which role (architecture 18 §8). */

@@ -10,8 +10,22 @@ import { Simulation } from './Simulation';
 import { isPointInAnyPolygon } from './utils/geometry';
 import { run } from './__fixtures__/hordeMatches';
 
-// A one-second countdown keeps the run short; the boss's delay counts from its end.
+// A one-second countdown and a two-second boss delay (from the countdown's end) keep the run short;
+// the shipped plan's other terms are kept.
 const CONFIG = createDefaultGameConfig({ match: { countdownSeconds: 1 } });
+const SHIPPED_PLAN = GUARD_PLANS['capture-point'];
+const DELAY_SECONDS = 2;
+const PLANS = {
+  ...GUARD_PLANS,
+  ...(SHIPPED_PLAN === undefined
+    ? {}
+    : {
+        'capture-point': {
+          ...SHIPPED_PLAN,
+          activation: { at: 'countdown-end', delaySeconds: DELAY_SECONDS },
+        },
+      }),
+} as const satisfies typeof GUARD_PLANS;
 
 describe('Simulation capture point bosses', () => {
   it.each([1, 2])(
@@ -24,8 +38,9 @@ describe('Simulation capture point bosses', () => {
         logger,
         debug: TEST_DEBUG_CONFIG,
         map: new MapGenerator().generate(CONFIG, seed),
+        guardPlans: PLANS,
       });
-      const { activation } = GUARD_PLANS['capture-point'] ?? {};
+      const { activation } = PLANS['capture-point'] ?? {};
       const delay = activation?.at === 'countdown-end' ? activation.delaySeconds : 0;
       const firstTick =
         countdownTicks(CONFIG.match.countdownSeconds, CONFIG.tickRate) +
@@ -36,7 +51,8 @@ describe('Simulation capture point bosses', () => {
           .entities.filter(({ definitionId }) => definitionId === 'capture-point-boss');
 
       run(simulation, firstTick - 1);
-      expect(delay).toBeGreaterThan(0);
+      expect(SHIPPED_PLAN?.activation).toMatchObject({ at: 'countdown-end' });
+      expect(delay).toBe(DELAY_SECONDS);
       expect(bosses()).toEqual([]);
 
       run(simulation, 2);

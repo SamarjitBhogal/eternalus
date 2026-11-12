@@ -6239,9 +6239,29 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   note. Not built: moves, regeneration, the zone lock, support mobs, capture weights, team-wide
   rewards, the Cathedral boss.
 - Error report `logs/errors/2026-11-11T20-29-51-977Z-error-973e7e32.json` (ResizeObserver loop,
-  `client.window`, no match, no tick) is not from A1, which changed only core and docs; the only
+  `client.window`, no match, no tick) is not from this branch (A2), which changed only core and docs; the only
   `ResizeObserver` in the client is `ui/components/useFitFontSize.ts`. Not fixed here.
 - Checks run: `npm run check` exit 0: core `Tests 1315 passed (1315)`, client
   `Tests 1818 passed (1818)`, `Documentation check passed.`
 - Next step: pre-PR gate (critic, ponytail, re-check), then the PR into feat/zone-guard-homes or
   phase/3 once A1 merges.
+
+### 2026-11-11 — Phase 3 / sprint 3 work: capture point mini-boss critic fixes (PR A2) — feat/capture-point-boss — Aryan Walanj + Claude Code
+
+- What was done: pre-PR critic (architecture-reviewer, base `0e8d7956`): pass with notes, no
+  blockers. The owner signed off the findings. (1, 3) Doc 18's implementation status note records
+  interim (c), the boss on `GuardController` until sprint 3.6's `BossController`; 11 §10 and 04
+  §13 point to it; all three `last-reviewed` bumped; `INBOX.md` capture point mini-boss item gains
+  (c). (2) Interim (d) kept, as the corner boss (PR #91): the 500 XP goes to the killer alone, the
+  boss takes full damage from minions and gives no team buff; recorded in `INBOX.md` and doc 18.
+  (5) `Simulation.bosses.test.ts` injects a 2 s activation delay through the new optional
+  `SimulationOptions.guardPlans` (passed to `DefaultSystemPipeline` as `hordes.guards`;
+  `GUARD_PLANS` when omitted), same checks, and asserts the shipped plan still activates after the
+  countdown. (6, 7) Logged in `INBOX.md` as better-than-design follow-ups, no code change. (9) The
+  ResizeObserver note above now names this branch. (11) The `MARCHING_ONLY` TSDoc names every
+  guard-post mob. Skipped by the owner: 4 (engagement test), 8 (rename). 10 goes in the PR
+  description.
+- Checks run: `npm run check` exit 0: core `Tests 1315 passed (1315)`, client
+  `Tests 1818 passed (1818)`, `Documentation check passed.` (knip: one configuration hint, no
+  error).
+- Next step: ponytail review on the branch diff, re-check, then the PR.
