@@ -6298,3 +6298,84 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `eternalus-agent-work/pr-review-2026-10-29/pr85/check-85-5.log`): EXIT=0, core "Tests 1379
   passed (1379)", client "Tests 1817 passed (1817)", "Documentation check passed.".
 - Next step: merge into #86 and #79; push; reply on #85, #86 and #79 when CI is green.
+
+### 2026-11-09 — Phase 3 / combat sprint: live HUD aether bar (DEC-230) — feat/hud-aether-bar — sholtzman + Claude Code
+
+- What was done: owner answers 2026-11-09 (DEC-230): the aether bar only, no regeneration until
+  the first ability spends aether (OQ-56 stays open); the design call delegated ("choose the best
+  long-term design with the least tech-debt"), so every Legend's `EntitySnapshot` carries an
+  `aether` group (`current`, `max`) for every entity with `Aether`, as health and DEC-224's
+  `progression` do. `GameState.snapshotOf` fills it; `MatchBridge` copies it into the HUD
+  player's `aether` and `maxAether`; the existing `AetherBar`/`ResourceBar` show it. Every
+  hand-built `EntitySnapshot` in the tests gains `aether: null`. Docs: DEC-230 batch, 03 §5
+  sketch and §12 status, 05 §15 sketch comment and §18 status, 13 §10 status, INBOX HC-F6 status
+  line, OQ-56's Decision cell. Branch stacked on `feat/hud-level-xp` (PR #88, `27319382`).
+- Tests fail first: break 1 (snapshot leaves `aether` null) 3 red (the caster test, the
+  structuredClone test, the Warrior spawn test); break 2 (`current` and `max` swapped) 1 red;
+  break 3 (`MatchBridge` leaves aether null) 1 red; restored green.
+- Checks run: `check:quick` passed; full `npm run check` in
+  `eternalus-agent-work/hud-aether-bar/check-1.log`.
+- Next step: critic, ponytail review, push, PR into `phase/3-sprint-3-work` after #88.
+
+### 2026-11-09 — Phase 3 / combat sprint: aether critic's better-than-design items built (DEC-232) — feat/hud-aether-bar — sholtzman + Claude Code
+
+- What was done: the owner's answer to critic round 1's two better-than-design items ("A only if
+  there is an assurance that B will be done in the near-future. no tech-debt if possible, when
+  possible."); no plan schedules them, so both are built here (DEC-232). (A) 05 §15's
+  `PlayerSnapshot` holds only `entityId` and the ability `slots`; the Legend's definition, health,
+  aether, level, XP and status effects stay in its `EntitySnapshot` groups and `MatchBridge` joins
+  them by id (docs and TSDoc only: core has no `Snapshot.player` yet, and the bridge already
+  joins). The XP-ring comments move from 05 §15 to 03 §5's `progression` group. (B)
+  `state/EntitySnapshotter.ts` builds each `EntitySnapshot`; `GameState.snapshot()` uses it
+  (`GameState.ts` 338 → 286 lines), and 03 §5 names it as the piece `SnapshotSystem` uses. Docs:
+  DEC-232 batch, 03 §5 and status, 05 §15 and §18 status, 13 §5 (`hud-state` sketch, slice
+  types) and §10 status, INBOX HC-F6 line, `hud.types.ts` and `MatchBridge` TSDoc.
+- Correction to the entry above: critic round 1 left OQ-56's Decision cell blank
+  (`12-open-questions.md` is back to its base content), so "OQ-56's Decision cell" there is not
+  in the branch.
+- Tests fail first (`EntitySnapshotter.test.ts`): break 1 (`checkpoints` from the zone, not the
+  constructor) 1 red; break 2 (`mapObjectId` key always present) 1 red; break 3 (`area` always
+  null) 1 red; restored byte-identical, green. `GameState.test.ts` unchanged and green.
+- Checks run: `npm run check` passed (exit 0): Prettier passed, core `Tests 1305 passed (1305)`,
+  client `Tests 1801 passed (1801)`, docs check passed
+  (`eternalus-agent-work/hud-aether-bar/check-2.log`).
+- Critic round 2 (architecture-reviewer, `14c8365d..cb45cd6d`): APPROVE WITH NOTES, no blockers;
+  the move is the old behaviour. Fixed: the stale phase-4 plan note (aether and level do not wait
+  for `Snapshot.player`), 03 §5 wording (a new group changes `EntitySnapshotter` and the type,
+  never `GameState`), forward pointers to DEC-232 in the DEC-224 and DEC-230 rows, the
+  `ProgressionSnapshot` citation (03 §5), the `mapObjectId` note in the `EntitySnapshotter` TSDoc,
+  this entry's check result. Better-than-design: none (a projector registry and one snapshotter per
+  `GameState` were weighed and rejected). Ponytail: one optional cut (a function instead of the
+  class, about 8 lines) not applied, because 03 §5 names the class (DEC-232).
+- Next step: final check, push, PR after #88.
+
+### 2026-11-09 — Phase 3 / combat sprint: merge phase/3 (#87) into the aether PR (#92) — feat/hud-aether-bar — sholtzman + Claude Code
+
+- What was done: #87 merged into phase/3 (`86b4fc04`) and left #92 conflicting in `PROGRESS.md`
+  only. This branch merged `86b4fc04`. It kept phase/3's merge entry and then this branch's two
+  aether entries. `INBOX.md` merged cleanly. The merge brings in docs only.
+- Checks run: Prettier on `PROGRESS.md` passed; `npm run docs:check` passed; the pre-commit
+  `check:quick` passed. CI runs the full `npm run check` on the pushed head.
+- Next step: push, then merge #92 into phase/3 once CI is green.
+
+### 2026-11-10 — Phase 3 / combat sprint: merge phase/3 (#73, main) into the aether PR (#92) — feat/hud-aether-bar — sholtzman + Claude Code
+
+- What was done: #73 and a merge of `main` moved phase/3 to `8d2404c8` and left #92 conflicting
+  in `PROGRESS.md` only. This branch merged `8d2404c8`. It kept phase/3's two #73 entries and
+  then this branch's entries. The merge brings in `.coderabbit.yaml`, the ADR 0018 note and
+  `PROGRESS.md` only.
+- Checks run: Prettier on `PROGRESS.md` passed; `npm run docs:check` passed; the pre-commit
+  `check:quick` runs on commit. CI runs the full `npm run check` on the pushed head.
+- Next step: push, then merge #92 into phase/3 once CI is green.
+
+### 2026-11-11 — Phase 3 / combat sprint: merge phase/3 (#89) into the aether PR (#92) — feat/hud-aether-bar — sholtzman + Claude Code
+
+- What was done: #89 (world health bars) merged into phase/3 (`c560b578`) and left #92
+  conflicting in `PROGRESS.md` only. This branch merged `c560b578` and kept phase/3's entries,
+  then this branch's. This branch makes `EntitySnapshot.aether` required (DEC-230), so #89's two
+  test snapshots (`HealthBarVisibility.test.ts`, `HealthBarView.test.ts`) gain `aether: null`, as
+  the other view tests have; `tsc -b` failed on both before.
+- Checks run: full `npm run check` exit 0: core `Tests 1305 passed (1305)`, client
+  `Tests 1818 passed (1818)`, `Documentation check passed.`
+  (`eternalus-agent-work/hud-aether-bar/check-3.log`).
+- Next step: push; CodeRabbit re-review after the owner's sign-off comment; merge into phase/3.

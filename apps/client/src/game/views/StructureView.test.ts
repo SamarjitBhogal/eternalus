@@ -26,6 +26,7 @@ describe('StructureView', () => {
         transform: { x: 0, y: 0, radius: 3 },
         health: { current: 3000, max: 3000 },
         progression: null,
+        aether: null,
         area: null,
         capture: null,
       },
