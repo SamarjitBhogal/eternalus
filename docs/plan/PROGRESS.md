@@ -6308,3 +6308,16 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: `npm run check` exit 0: core `Tests 1316 passed (1316)`, client
   `Tests 1818 passed (1818)`, `Documentation check passed.`
 - Next step: Part B (support guards, 25% minion damage) on `feat/capture-point-boss-guards`.
+
+### 2026-11-12 — Phase 3 / sprint 3 work: capture point mini-boss footprint (PR A2) — feat/capture-point-boss — Aryan Walanj + Claude Code
+
+- What was done: `capture-point-boss` `footprintRadius` 0.8 → 1.2 m (TUNE: 1.5× the heavy minion,
+  so it reads as a boss; larger sizes stay for the Cathedral boss). Checked the DEC-144 leash
+  tolerance rule: one decision walk (2.8 m/s × 10 ticks / 30 = 0.93 m) plus its farthest stance
+  (1.2 + 1.25 Sentinel + 1.5 reach = 3.95 m) is 4.88 m, within the shared 5 m tolerance, so the
+  `capture-point` plan's `leashTolerance` is unchanged; the `guardPlans.ts` comment now names the
+  boss as the tightest case (about 0.1 m of margin). Checked the post clears the keep: the fort
+  keep (`MapFortificationBuilder`, size 88) reaches at most about 22.7 m from the anchor, so a post
+  25 m out keeps at least 2.3 m from it, more than the 1.2 m radius.
+- Checks run: `npm run check` exit 0, ending `Documentation check passed.`
+- Next step: merge into `feat/capture-point-boss-guards` and run the boss tests there.
