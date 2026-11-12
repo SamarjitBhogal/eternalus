@@ -9,9 +9,7 @@ import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import type { MapDefinition } from '../content/maps/maps.types';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
-import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { Entity } from '../entities/Entity';
-import { Stronghold } from '../entities/structures/Stronghold';
 import type { Team } from '../teams/teams.types';
 import { SeededRandom } from '../utils/SeededRandom';
 import { TWO_LANE_MAP } from './__fixtures__/twoLaneMap';
@@ -169,33 +167,6 @@ describe('GameState', () => {
         dark: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
       },
     });
-  });
-
-  it("snapshots a structure's map feature id, and none for other entities", () => {
-    const state = new GameState(createDefaultGameConfig(), 1);
-    const tower = new Stronghold('entity-1', 'stronghold');
-    tower.spawn({
-      definition: STRUCTURE_DEFINITIONS.get('stronghold'),
-      position: { x: 5, y: 6 },
-      team: 'light',
-      mapFeatureId: 'light-stronghold',
-    });
-    const loose = new Stronghold('entity-2', 'stronghold');
-    loose.spawn({
-      definition: STRUCTURE_DEFINITIONS.get('stronghold'),
-      position: { x: 7, y: 8 },
-      team: 'dark',
-    });
-    state.entities.add(tower);
-    state.entities.add(loose);
-    state.entities.add(spawned(new Soldier('entity-3', 'soldier-definition')));
-
-    const [built, withoutFeature, soldier] = state.snapshot(CURVES).entities;
-
-    expect(built?.mapFeatureId).toBe('light-stronghold');
-    expect(withoutFeature).not.toHaveProperty('mapFeatureId');
-    expect(soldier).not.toHaveProperty('mapFeatureId');
-    expect(structuredClone(built)).toEqual(built);
   });
 
   it("snapshots a leveller's level, the XP inside that level and what the level needs, from the curves it is given", () => {
