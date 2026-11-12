@@ -51,7 +51,6 @@ describe('Simulation capture point bosses', () => {
           .entities.filter(({ definitionId }) => definitionId === 'capture-point-boss');
 
       run(simulation, firstTick - 1);
-      expect(SHIPPED_PLAN?.activation).toMatchObject({ at: 'countdown-end' });
       expect(delay).toBe(DELAY_SECONDS);
       expect(bosses()).toEqual([]);
 

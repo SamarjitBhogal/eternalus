@@ -43,7 +43,10 @@ export type SimulationOptions = {
   readonly roster?: readonly RosterSlot[];
   /** Where Legends find their weapons by id; `loadWeapons(config.tickRate)` when omitted. */
   readonly weapons?: WeaponSource;
-  /** Each guard home's plan by definition id; `GUARD_PLANS` when omitted. */
+  /**
+   * Each guard home's plan by definition id; `GUARD_PLANS` when omitted. Not recorded in
+   * `ReplaySetup`, so a match built with other plans does not replay: tests and tools only.
+   */
   readonly guardPlans?: Readonly<Record<string, GuardPlanDefinition>>;
 };
 

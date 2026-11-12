@@ -25,4 +25,11 @@ describe('GUARD_PLANS', () => {
       }
     }
   });
+
+  it('activates the capture point boss a positive delay after the countdown (reference 04: the quarter mark)', () => {
+    const activation = GUARD_PLANS['capture-point']?.activation;
+
+    expect(activation?.at).toBe('countdown-end');
+    expect(activation?.at === 'countdown-end' ? activation.delaySeconds : 0).toBeGreaterThan(0);
+  });
 });

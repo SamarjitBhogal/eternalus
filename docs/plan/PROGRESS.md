@@ -6256,12 +6256,27 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   boss takes full damage from minions and gives no team buff; recorded in `INBOX.md` and doc 18.
   (5) `Simulation.bosses.test.ts` injects a 2 s activation delay through the new optional
   `SimulationOptions.guardPlans` (passed to `DefaultSystemPipeline` as `hordes.guards`;
-  `GUARD_PLANS` when omitted), same checks, and asserts the shipped plan still activates after the
-  countdown. (6, 7) Logged in `INBOX.md` as better-than-design follow-ups, no code change. (9) The
+  `GUARD_PLANS` when omitted), same checks; it checks only that the shipped plan activates after
+  the countdown, not that its delay is above 0 (round 2 finding 1). (6, 7) Logged in `INBOX.md` as better-than-design follow-ups, no code change. (9) The
   ResizeObserver note above now names this branch. (11) The `MARCHING_ONLY` TSDoc names every
   guard-post mob. Skipped by the owner: 4 (engagement test), 8 (rename). 10 goes in the PR
   description.
 - Checks run: `npm run check` exit 0: core `Tests 1315 passed (1315)`, client
+  `Tests 1818 passed (1818)`, `Documentation check passed.` (knip: one configuration hint, no
+  error).
+- Next step: ponytail review on the branch diff, re-check, then the PR.
+
+### 2026-11-11 — Phase 3 / sprint 3 work: capture point mini-boss critic round 2 fixes (PR A2) — feat/capture-point-boss — Aryan Walanj + Claude Code
+
+- What was done: critic round 2 (head `78d7b30d`): pass with notes, no blockers. The owner signed
+  off the findings. (1) `guardPlans.test.ts` pins that the shipped capture point plan activates a
+  delay above 0 after the countdown; the boss test drops its weaker shipped-plan check. (2) The
+  `SimulationOptions.guardPlans` TSDoc says it is not recorded in `ReplaySetup` (tests and tools
+  only). (3, 4) Long lines re-wrapped in `hordeMatches.ts` and doc 18; doc 18's implementation
+  status date bumped to 2026-11-11. (7) The entry above now says what the boss test checks. (8)
+  The `GuardPlanSource` alias is logged in `INBOX.md` as a follow-up, no code change. 5, 6 and 9
+  go in the PR description.
+- Checks run: `npm run check` exit 0: core `Tests 1316 passed (1316)`, client
   `Tests 1818 passed (1818)`, `Documentation check passed.` (knip: one configuration hint, no
   error).
 - Next step: ponytail review on the branch diff, re-check, then the PR.

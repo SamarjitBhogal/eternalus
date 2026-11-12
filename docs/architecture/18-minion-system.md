@@ -78,7 +78,7 @@ guards and are the lane objectives (§6.2), but doc 07 implements them. The mini
 level-up** (MVP, a `CaptureSystem` reward, 07 §7) and **Ascend** (MVP-if-time, a Legend-kill
 reward) belong to their reward systems, not to this doc.
 
-**Implementation status (2026-10-30).** Minion plan phase M1 (marching) is built: the three lane
+**Implementation status (2026-11-11).** Minion plan phase M1 (marching) is built: the three lane
 minions (`content/mobs/`), the `ranks` formation, `HordeStore`, `LaneRoutes` and the team spawn
 counters on `GameState`, `assessLanes`, `HordeSystem`, `SpatialHash`, `LaneFollowMovementStrategy`
 with `PathingSystem`, and `SpawnSystem` with the DISC-10 waves and the one-step fulfilment;
@@ -127,8 +127,8 @@ Interim, against "the minion system never controls a boss" above: until Phase 3 
 `MiniBoss` and `BossController` (11 §4.6, 04), the boss is a `heavy-mob` (`capture-point-boss`)
 held by `GuardController`, with one melee hit and no moves, roaming or damage-dealer bias; its kill
 XP goes to the killer alone, it takes full damage from minions and gives no team buff (`INBOX.md`,
-capture point mini-boss interims (c) and (d)). The pull requests and interim stand-ins are in the [minion system
-plan](../plan/minion-system-plan.md) §2–§3.
+capture point mini-boss interims (c) and (d)). The pull requests and interim stand-ins are in the
+[minion system plan](../plan/minion-system-plan.md) §2–§3.
 
 ## 1. Decisions
 

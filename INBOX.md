@@ -59,6 +59,14 @@ Reply inline (`Decision: …`).
       size or world scale changes, the leash no longer fits the court. Approve: a follow-up derives
       a zone's leash from its geometry and acquisition from `leashRadius − postGap`. Or drop it.
 
+- [ ] **A named `GuardPlanSource` type (`feat/capture-point-boss` critic round 2 finding 8,
+      2026-11-11) — better than the design, optional follow-up, no code change yet.**
+      `Readonly<Record<string, GuardPlanDefinition>>` is spelled out in six places
+      (`Simulation.types.ts`, `DefaultSystemPipeline.types.ts`, `SpawnSystem.types.ts`,
+      `GuardRoster.ts`, twice in `content/structures/guardPlans.ts`). Approve: a type-only
+      follow-up adds `GuardPlanSource` to `content/structures/structures.types.ts`, as
+      `WeaponSource` and `DefinitionSource` are named, and uses it in all six. Or drop it.
+
 - [ ] **One shared guard-post target priority (`feat/capture-point-boss` critic finding 7,
       2026-11-11) — better than the design, optional follow-up, no code change yet.** The tower
       guard, camp mob and capture point boss aggro rules (`content/ai/aggro/`) each repeat the same
