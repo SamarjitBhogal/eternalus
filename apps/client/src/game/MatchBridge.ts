@@ -7,8 +7,8 @@ import type { CaptureSite, MatchBridgeDeps } from './MatchBridge.types';
 /**
  * All game → UI publishing for one match (architecture 12 §8, 13 §5), owned by `Match`. It
  * publishes only what the simulation has today (DEC-17, HC-F6: no made-up values):
- * - `match-clock` and `hud-state` (the player's health; every other value `null`) every
- *   `publishEveryTicks`;
+ * - `match-clock` and `hud-state` (the player's health, aether, level and XP; every other value
+ *   `null`) every `publishEveryTicks`;
  * - the team structures (health `null`) and the capture points (owner and progress from each
  *   point's zone) from the map's features every `ROSTER_PUBLISH_EVERY_TICKS`.
  * `publishAll` sends everything once, before the first tick. A re-send with no change carries the
@@ -98,8 +98,9 @@ export class MatchBridge {
   }
 
   /**
-   * The player's HUD values: health, level and XP from the snapshot, everything else `null` until
-   * core publishes it (interim until core fills a player snapshot; 13 §10).
+   * The player's HUD values, joined from the Legend's entity groups by id (05 §15, DEC-232): health,
+   * aether, level and XP. The slots stay `[]` until core fills `Snapshot.player`, and the rest is
+   * `null` until core publishes it (13 §10).
    */
   private static playerOf(snapshot: Snapshot, playerId: EntityId | null): PlayerHudSnapshot | null {
     const entity = snapshot.entities.find((candidate) => candidate.id === playerId);
@@ -111,8 +112,8 @@ export class MatchBridge {
       definitionId: entity.definitionId,
       health: entity.health?.current ?? null,
       maxHealth: entity.health?.max ?? null,
-      aether: null,
-      maxAether: null,
+      aether: entity.aether?.current ?? null,
+      maxAether: entity.aether?.max ?? null,
       level: entity.progression?.level ?? null,
       xp: entity.progression?.xp ?? null,
       xpToNext: entity.progression?.xpToNext ?? null,
