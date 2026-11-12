@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-10
+last-reviewed: 2026-11-11
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,18 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-11 (question dialog: where seconds become ticks)
+
+The owner's answer of 2026-11-11 to one question from the review of PR #85 and PR #79 (session
+PR-REVIEW-ASSIST-23). The reviewer saw that architecture 11 said durations become ticks "where they
+are read", and architecture 03 says "at load". The owner chose the option "as built, fix on own
+branch": sign off the built conversion for #85 and #79, and build the load-time conversion for all
+five readers on a new branch straight away. DEC-241 is this batch.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Changed                                                                                                                                                                        |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| DEC-241 | **Content durations become ticks once, at load** (confirms architecture 03 §8, "durations are ticks converted from seconds at load"). Content states a duration in seconds. A loader turns it into ticks once with the match's tick rate, and systems and controllers read only ticks. This now holds for the five readers that converted at read time: the leash grace and the aggro cooldown (`loadAggroRules`), the stuck window (`loadStuckDetection`), the veterancy aura period (`loadMinionVeterancy`), the spawn waves (`loadSpawnWaves`) and the guard respawn time (`loadGuardPlans`). No tick value changes. A time of 0 s stays 0 ticks where 0 has a meaning (a guard's leash grace and cooldown, DEC-144); `TickRate.roundToTicks` does this, and `TickRate.toTicks` keeps its floor of one tick. The wave timing rules are checked in the loader, for every authored wave. | `refactor/durations-at-load`: the five loaders and their tests, `TickRate`, `LeashBehaviour`, `StuckSystem`, `VeterancySystem`, `SpawnSystem`, `GuardRoster`, architecture 11. |
 
 ## Batch 2026-11-09 (PR #85 review: a chaser inside an outline holds)
 

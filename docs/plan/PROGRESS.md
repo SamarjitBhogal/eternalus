@@ -6404,3 +6404,17 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: full `npm run check` exit 0
   (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-85-7.log`).
 - Next step: push; merge the new head into #86 and #79.
+
+### 2026-11-12 — Phase 3 / minion follow-ups: content durations become ticks at load (DEC-241) — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: five loaders (`loadAggroRules`, `loadStuckDetection`, `loadMinionVeterancy`,
+  `loadSpawnWaves`, `loadGuardPlans`) turn seconds into ticks once; `LeashBehaviour`,
+  `StuckSystem`, `VeterancySystem`, `SpawnSystem` and `GuardRoster` read ticks.
+  `TickRate.roundToTicks` keeps 0 s at 0 ticks. Wave timing is checked in the loader, now for
+  every authored wave, not only for the spawners on the map. Branch cut from #85's head.
+- Critics: correctness PASS (a 9000-tick match hashes the same as the base for seeds 1 and 2);
+  its aura-cadence test gap is closed (the new assertion failed under a mutation). Ponytail: the
+  repeated `ScheduledWave.everyTicks` is removed.
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-2.log`).
+- Next step: open the PR after #85 merges into phase/3.
