@@ -81,4 +81,23 @@ describe('DuelHost', () => {
     expect(logger.records).toHaveLength(1);
     expect(host.isInMatch(a)).toBe(false);
   });
+
+  it('ends the match cleanly when a seat closes while it is being told match-found', () => {
+    const { host, scheduler } = setup();
+    class ClosesOnSend extends FakeConnection {
+      public override send(message: Parameters<FakeConnection['send']>[0]): void {
+        super.send(message);
+        this.close();
+      }
+    }
+    const a = new ClosesOnSend();
+    const b = new FakeConnection();
+    a.onClose(() => {
+      host.leave(a);
+    });
+    host.start({ connection: a, name: 'Ana' }, { connection: b, name: 'Ben' });
+    expect(b.sent).toEqual([{ type: 'match-ended', reason: 'opponent-left', winner: null }]);
+    expect([host.isInMatch(a), host.isInMatch(b)]).toEqual([false, false]);
+    expect(scheduler.activeCount).toBe(0);
+  });
 });

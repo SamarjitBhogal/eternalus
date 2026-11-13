@@ -9,6 +9,8 @@ describe('BotOptionsParser', () => {
       players: 2,
       seconds: 20,
       staggerMs: 200,
+      mode: 'duel',
+      rounds: 5,
     });
   });
 
@@ -18,6 +20,8 @@ describe('BotOptionsParser', () => {
     ['players', 'x'],
     ['seconds', '0'],
     ['stagger', '-1'],
+    ['mode', 'fast'],
+    ['rounds', '0'],
   ])('rejects %s=%s', (key, value) => {
     expect(() => new BotOptionsParser().parse({ ...BOT_OPTION_DEFAULTS, [key]: value })).toThrow(
       RangeError,

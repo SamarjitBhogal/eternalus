@@ -10,6 +10,9 @@ export const DUEL_HOST_VARIABLE = 'DUEL_HOST';
 /** Environment variable that names the Duel WebSocket port. */
 export const DUEL_PORT_VARIABLE = 'DUEL_PORT';
 
+/** Environment variable that names the ops `/health` port. */
+export const OPS_PORT_VARIABLE = 'OPS_PORT';
+
 /** The highest valid TCP port. */
 export const MAX_PORT = 65535;
 

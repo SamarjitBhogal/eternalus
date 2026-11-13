@@ -15,7 +15,7 @@ Package-specific rules. The root `AGENTS.md` still applies. Design: ADR 0016
   place using timers or the clock.
 - Run with `npm run build -w @eternalus/server` then `npm run start -w @eternalus/server`;
   `DUEL_HOST` / `DUEL_PORT` choose the listener (default `127.0.0.1:8787`); `/health` answers on
-  `127.0.0.1:8788`.
+  `127.0.0.1:8788` (`OPS_PORT` changes it, so a second instance can run beside one).
 
 ## Folders
 
@@ -43,3 +43,8 @@ core's `MatchPathfinderFactory` on the map regenerated from `match-found.seed`. 
 
 - Each test sits next to its source; tests use the fakes, never real sockets or timers.
 - Coverage thresholds (85%) live in `vitest.config.ts` and only go up.
+
+Queue load: `npm run duel:bots -- --mode queue --players 100 --rounds 5 --stagger 0` joins the queue
+`--rounds` times per bot (the light seat forfeits, the dark seat waits for `match-ended`, both
+reconnect), prints time-to-match p50/p99/max and queue size, and fails on a lost or duplicated
+player. It spreads sockets over `X-Forwarded-For` addresses so the per-address cap does not stop it.

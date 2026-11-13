@@ -4,7 +4,7 @@ description: Draft plan for the two Sprint 3 requirements the course instructor 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-10
+last-reviewed: 2026-11-12
 tags: [plan, multiplayer, duel, server, scalability, sprint-2, sprint-3]
 related:
   - 'docs/plan/README.md'
@@ -237,6 +237,41 @@ the real arena with the Duel rules.
 
 Glicko-2 (the research's spike C) waits for the database decision (question 35) and for whether the
 owner's matchmaking factors must be explicit inputs (question 49).
+
+### Implementation status: matchmaking under load (2026-11-12, SCRUM-432)
+
+Measured with `npm run duel:bots -- --mode queue --rounds 5 --stagger 0` against a separate local
+server instance (`DUEL_PORT=18787 OPS_PORT=18788`, the production build, the real Duel simulation
+factory). Machine: AMD Ryzen 9 9950X3D (32 threads), Node 24.21.0, bots and server on the same
+host over loopback, one run per row. Each bot joins 5 times; the light seat forfeits at once and
+the dark seat waits for `match-ended`, then both reconnect. "Time to match" is `queue-join` sent
+to `match-found` heard. "Queue max" is what the bots see (joined, not yet paired); the server
+queue itself holds at most one player (DEC-36).
+
+| Bots | Joins | Matches | Time to match p50 | p99      | Max      | Queue max | Run    | Lost / duplicated |
+| ---- | ----- | ------- | ----------------- | -------- | -------- | --------- | ------ | ----------------- |
+| 10   | 50    | 25      | 246.5 ms          | 521.8 ms | 521.8 ms | 10        | 3.6 s  | 0 / 0             |
+| 50   | 250   | 125     | 242.5 ms          | 2174 ms  | 2296 ms  | 50        | 15.7 s | 0 / 0             |
+| 100  | 500   | 250     | 250.9 ms          | 1989 ms  | 2236 ms  | 99        | 31.7 s | 0 / 0             |
+| 200  | 1000  | 500     | 249.8 ms          | 5981 ms  | 6612 ms  | 199       | 62.6 s | 0 / 0             |
+| 300  | 1500  | 750     | 249.1 ms          | 5271 ms  | 6149 ms  | 299       | 94.3 s | 0 / 0             |
+
+- Each row is ONE run, not an average. Throughput was about 8 match starts per second for one
+  process (500 matches in 62.6 s). Building a Duel (map generation) probably dominates: a one-off
+  timing of `CoreDuelSimulationFactory.create()` in a throwaway vitest file gave 132 to 147 ms per
+  call on this machine. That test file was deleted, so the figure is not reproducible from the
+  repo as it is. If it holds, pairs wait in line behind each other's builds on the main thread,
+  which would explain why p99 grows with the number of bots; p50 stayed near 250 ms in every row.
+- p99 varies a lot between runs (an earlier 50-bot run gave 626 ms, an earlier 200-bot run
+  1963 ms), so read the p99 column as an order of magnitude, not a precise value.
+- 400 bots failed: 2 to 8 joins were never answered and bots were stuck in `joining` (two runs).
+  The cause is probably the server's `MAX_CONNECTIONS = 500` cap, but it was not confirmed. In a
+  25 s rerun, `ss -tn state established '( sport = :18787 )' | wc -l` sampled on the server side
+  every 0.5 s reached 451 (that count includes one header line, and sockets in closing states
+  are not counted, while the limiter frees a slot only on the server's `close` event). So the
+  peak seen does not prove the cap was reached. Finding out needs an `onClose` handler in the
+  bots or a refusal counter in the server.
+- Matches are forfeited at once, so these numbers exclude 30 TPS ticking; MP-5 adds that.
 
 ## 8. Risks
 

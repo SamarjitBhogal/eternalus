@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { BotLogger } from './BotLogger';
 import { BotNavigator } from './BotNavigator';
 import { BotRun } from './BotRun';
+import { FakeClock } from '../time/FakeClock';
 import { FakeBotLinks } from './FakeBotLinks';
 
 const run = async (players: number, pairUp: boolean) => {
@@ -11,9 +12,10 @@ const run = async (players: number, pairUp: boolean) => {
   const sleeps: number[] = [];
   const navigator = new BotNavigator({ waypoint: () => false });
   const botRun = new BotRun(
-    { url: 'ws://x', players, seconds: 2, staggerMs: 5 },
+    { url: 'ws://x', players, seconds: 2, staggerMs: 5, mode: 'duel', rounds: 1 },
     {
       links,
+      clock: new FakeClock(),
       navigators: { forSeed: () => navigator },
       logger: new BotLogger(
         { out: (line) => lines.push(line), err: (line) => errors.push(line) },
