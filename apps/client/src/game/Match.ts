@@ -17,6 +17,7 @@ import type { MatchDeps } from './Match.types';
 import { MatchBridge } from './MatchBridge';
 import { MatchCamera } from './MatchCamera';
 import { MatchViewControls } from './MatchViewControls';
+import type { PlayerActions } from './PlayerActions';
 import { PlayerCommands } from './PlayerCommands';
 import { createDefaultViewRegistry } from './views/defaultViewRegistry';
 import { EntityLayer } from './views/EntityLayer';
@@ -32,7 +33,9 @@ import { WorldObjectsView } from './views/WorldObjectsView';
  * turns the player's intent into commands (`PlayerCommands`), steps the simulation and keeps the
  * last two snapshots; each frame follows the player with the camera and draws the scene and the
  * minimap (inside the HUD ring). The player's Legend is the simulation's, spawned at its team's
- * Stronghold by core from the roster's human slot. Which part of the world is shown (the following
+ * Stronghold by core from the roster's human slot. In an online Duel (`deps.remote`) the simulation
+ * is the server's latest snapshot and the tick sends the intent instead of queueing commands; the
+ * Legend is the one the server named (ADR 0016). Which part of the world is shown (the following
  * camera, or the free view that dragging and the overview switch to) is `MatchCamera`'s. Buildings
  * stay in the same world scene: `BuildingRoofs` cuts away the roof of the building the player's
  * Legend stands in (DEC-143) and those the developer explorer opens, and the views draw those
@@ -57,7 +60,7 @@ export class Match implements LoopTarget {
 
   private readonly roofs: BuildingRoofs;
 
-  private readonly commands: PlayerCommands;
+  private readonly commands: PlayerActions;
 
   private readonly bridge: MatchBridge;
 
@@ -96,7 +99,9 @@ export class Match implements LoopTarget {
       this.healthBars.healthBarOf,
     );
     this.camera = new MatchCamera(camera, map);
-    this.commands = new PlayerCommands(input, simulation, this.camera, mapObjects);
+    this.commands =
+      deps.remote?.createActions(this.camera) ??
+      new PlayerCommands(input, simulation, this.camera, mapObjects);
     const { scenery, buildings } = presentation;
     this.roofs = new BuildingRoofs(buildings);
     const { hidden: hiddenRoofs } = this.roofs;
@@ -124,8 +129,8 @@ export class Match implements LoopTarget {
       map,
     });
     this.current = simulation.snapshot();
-    this.healthBars.observe(this.current);
-    this.playerId = this.current.match.humanLegendId;
+    this.playerId = deps.remote?.legendId ?? this.current.match.humanLegendId;
+    this.healthBars.observe(this.current, this.playerId);
     this.controls = new MatchViewControls({
       camera: this.camera,
       roofs: this.roofs,
@@ -199,7 +204,7 @@ export class Match implements LoopTarget {
     this.deps.simulation.step();
     this.previous = this.current;
     this.current = this.deps.simulation.snapshot();
-    this.healthBars.observe(this.current);
+    this.healthBars.observe(this.current, this.playerId);
     this.roofs.playerAt(this.livingPlayerAt());
     this.bridge.afterTick(this.current, this.playerId);
   }

@@ -1,12 +1,13 @@
-import { type EntityId, type EntitySnapshot, isUnitFamily, type Vec2 } from '@eternalus/core';
-
-import { isDead } from '../bridge/selectors/isDead';
+import { isUnitFamily } from '../entities/unitFamilies';
+import type { Vec2 } from '../utils/geometry.types';
+import type { EntityId } from './EntityStore.types';
+import type { EntitySnapshot } from './Snapshot.types';
 
 /**
  * Selects the living enemy unit (Legend, mob or boss) drawn under `point` (world units): the
  * snapshot position and `radius` set its disc. Allies (the attacker included) and dead units are
  * skipped. Where discs overlap the unit drawn on top wins: the largest `y`, the order of
- * `EntityLayer.draw` (a later entity wins a tie as it is drawn later; DEC-183). Structures and map
+ * the client's `EntityLayer.draw` (a later entity wins a tie as it is drawn later; DEC-183). Structures and map
  * objects are no units, so a click on a unit wins over the building behind it.
  *
  * ponytail: the hit test uses the snapshot position; the drawn one is interpolated up to one tick
@@ -29,12 +30,14 @@ export const findUnitAt = (
       !isUnitFamily(family) ||
       transform === null ||
       health === null ||
-      isDead(health)
+      health.current <= 0
     ) {
       continue;
     }
-    const isUnderPoint =
-      Math.hypot(transform.x - point.x, transform.y - point.y) <= transform.radius;
+    const dx = transform.x - point.x;
+    const dy = transform.y - point.y;
+    // Squared distances: core keeps transcendental Math out (ADR 0012).
+    const isUnderPoint = dx * dx + dy * dy <= transform.radius * transform.radius;
     if (isUnderPoint && transform.y >= frontY) {
       selected = id;
       frontY = transform.y;

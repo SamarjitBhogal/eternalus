@@ -55,9 +55,54 @@ export default defineConfig(
     rules: {
       'no-restricted-imports': [
         'error',
-        { patterns: ['react', 'react-dom', 'react-redux', '@reduxjs/*', '@eternalus/client'] },
+        {
+          patterns: [
+            'react',
+            'react-dom',
+            'react-redux',
+            '@reduxjs/*',
+            '@eternalus/client',
+            '@eternalus/server',
+            '@eternalus/protocol',
+          ],
+        },
       ],
       'no-restricted-properties': ['error', NO_MATH_RANDOM, ...NO_TRANSCENDENTAL_MATH],
+    },
+  },
+
+  {
+    // The wire types import only core's types (ADR 0016 point 6).
+    files: ['packages/protocol/src/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { patterns: ['react', 'react-dom', 'ws', '@eternalus/client', '@eternalus/server'] },
+      ],
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        { paths: [{ name: '@eternalus/core', allowTypeImports: true }] },
+      ],
+    },
+  },
+
+  {
+    // The Duel server never imports the client; only its listener touches `ws` (ADR 0016).
+    files: ['apps/server/src/**/*.ts'],
+    ignores: ['apps/server/src/transport/WsListener.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { patterns: ['react', 'react-dom', 'ws', '@eternalus/client'] },
+      ],
+    },
+  },
+
+  {
+    // The client never imports the server or its socket library (ADR 0016 point 6).
+    files: ['apps/client/src/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: ['ws', '@eternalus/server'] }],
     },
   },
 
@@ -82,7 +127,12 @@ export default defineConfig(
     // Zero-dependency Node scripts (agent hooks, docs check). Plain ESM, no type checking.
     files: ['scripts/**/*.mjs'],
     languageOptions: {
-      globals: { process: 'readonly', console: 'readonly', Buffer: 'readonly', URL: 'readonly' },
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+        Buffer: 'readonly',
+        URL: 'readonly',
+      },
     },
   },
 
