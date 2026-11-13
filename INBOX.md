@@ -597,6 +597,19 @@ Reply inline (`Decision: …`).
     there is no next level, and the ring shows full ("Full ring (Recommended)"); the per-Legend
     level and XP become the design ("Adopt it (Recommended)", the critic's better-than-design
     item). Recorded in DEC-224. Nothing waits.
+  - Since `feat/hud-aether-bar` (2026-11-09), the entity snapshot also carries a Legend's aether
+    (left and full), so the HUD's aether bar is live. Answered 2026-11-09 (question dialog): the
+    bar only, no regeneration until the first ability spends aether ("Bar only, no regen
+    (Recommended)"; OQ-56 stays open); the owner left the data path to the session ("choose the
+    best long-term design with the least tech-debt"), which made the per-Legend aether group the
+    design. Recorded in DEC-230. Nothing waits.
+  - The aether bar's critic (2026-11-09) found two designs better than the docs: (A) the player
+    snapshot should hold only what the player alone has (the ability slots) while the bridge joins
+    the Legend's health, aether, level and XP from its entity snapshot, so each value is in the
+    snapshot once; (B) one class should build each entity's snapshot, so a new group no longer
+    changes `GameState`. Answered 2026-11-09 (chat): "A only if there is an assurance that B will
+    be done in the near-future. no tech-debt if possible, when possible." No plan schedules
+    either, so both were built on `feat/hud-aether-bar`. Recorded in DEC-232. Nothing waits.
   - Answered 2026-10-28 (the non-blocking decision page, in chat): "Keep", with: "Keep. Empty frames
     for abilities that do not yet exist. Wuuthrad was used as weapon reference, so that artwork
     exists, as well as some ability artwork (not associated with real abilities yet). Empty frames,
@@ -2230,6 +2243,22 @@ Reply inline (`Decision: …`).
       `onHit`, heavy and parry wait for the ability framework (4.2). SCRUM-287's "validation
       rejects a class-locked weapon in the wrong loadout" waits for `WeaponAllowedRule`
       (SCRUM-290).
+- [x] **ObjectPool — pooled `GameEvents` payloads (SCRUM-427, branch `feat/object-pool`).** The
+      `ObjectPool` base is built in `utils/` (phase 1 plan, sprint 1.2: "pool resets fields on
+      acquire and nulls references on release"). The item's "done when" (high-frequency
+      `GameEvents` payloads come from the pool) is **not wired**, because it clashes with how
+      events work today: `GameEvents.emit` keeps every payload in the recent-events ring buffer
+      (diagnostic reports), and handlers (`GameState`, `ProgressionSystem`, the client via
+      `Simulation.on`) may keep a payload after `emit` returns. A recycled payload would silently
+      change those records. Options: (1) pool only projectiles first (04 §11), and keep event
+      payloads unpooled until profiling shows GC pauses (NFR-023 soak); (2) pool payloads and copy
+      them into the ring buffer, with a rule that handlers never keep a payload. Which one?
+      Option (1) also means updating 02-coding-principles (Object Pool row) and the phase 1 plan
+      item, which list event payloads as pooled; 04 §11 already names only projectiles.
+      Option (2) also needs a snapshot rule: payloads hold nested references (`DamageSource`,
+      `memberIds`, `bars`), so the ring buffer would need a deep or immutable copy, not a shallow one.
+  - Answered 2026-10-30 (DEC-94): option (1), pool projectiles only; payloads stay unpooled until
+    profiling shows GC pauses.
 - [ ] **PR #30 — schedule occupancy-driven cutaways** (owner: Gurshaan). A building's roof opens
       today only when it is clicked; no plan item has the roof open while a unit is inside it.
       The PR #30 notes said "Phase 2 sprints 2.1 and 2.4", but those sprints are the Structure
