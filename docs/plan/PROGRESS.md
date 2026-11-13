@@ -4,7 +4,7 @@ description: The running, append-only log of what was done, which checks ran and
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-05
+last-reviewed: 2026-11-12
 tags: [plan, progress, log]
 related: ['docs/plan/README.md', 'docs/agents/running-agents.md', 'docs/agents/checklists.md']
 ---
@@ -6297,3 +6297,71 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   Only this file conflicted; every entry from both sides is kept, date-ordered. No code changed.
 - Checks run: `npm run check` → `EXIT=0` (Node 24.21.0).
 - Next step: squash-merge #52 into phase/3.
+
+### 2026-11-06 — Phase 3 / minion plan MVP gaps — docs/minion-plan-mvp-gaps — SamarjitBhogal + Claude Code
+
+- What was done: audited `phase/3-sprint-3-work` and the open pull requests against the MVP scope
+  for the minion system. Minion plan: new §1.2 (the gaps before the MVP, each with who builds it,
+  its blocker and the next action); new phase M10 (zone level-up, designed in 07 §7 but scheduled
+  nowhere); M6's pull request split into M6 (camps, merged) and M6b (checkpoint defenders, after PR #64); §3
+  drops the built "straight-line bots" row and points the Rover and strength-by-distance rows at
+  what now unblocks them. `INBOX.md`: one item (zone level-up numbers and OQ-47, the M6 defender
+  sign-off, and pushing the unpushed follow-up branches). Stacked on `docs/playtest-rulings`
+  (PR #75), which edits the same plan.
+- Checks run: `npm run check` passed (format, no-js, lint, typecheck, knip, coverage, build,
+  docs:check): core `Tests  1079 passed (1079)`, client `Tests  1754 passed (1754)`,
+  `Documentation check passed.` Critic (`architecture-reviewer`): approve, 0 blockers; its three
+  minor items and four nits are applied.
+- Next step: the owner answers the `INBOX.md` item; M6b and M10 start when PR #64 merges; the
+  unit-cap performance check can start now.
+
+### 2026-11-12 — Phase 3 / minion plan MVP gaps (review round) — docs/minion-plan-mvp-gaps — SamarjitBhogal + Claude Code
+
+- What was done: answered claudiodh's review of PR #81. Merged `phase/3-sprint-3-work` (conflicts
+  in `INBOX.md` and this file; both sides kept, this branch's entries last). The 2026-11-06 entry
+  above is superseded where it says M6b and M10 wait for PR #64 and that the follow-up branches
+  are not on `origin`: #64 merged on 2026-11-08, and the branches are PRs #85 and #86 (#83 is the
+  perf check). Minion plan §1.2, §3 and the phase table now say so; the push request is dropped;
+  the INBOX item is split into three questions; the "Minion M6" item no longer says #64 is open.
+  CodeRabbit: the M10 row no longer states the ownership-event handler, same-tick removal and
+  DEC-168 superseding 07 §7 as settled; they are INBOX question (1) (c). Merged phase/3 again
+  (#52; PROGRESS only).
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code style!";
+  core "Tests 1314 passed (1314)"; client "Tests 1818 passed (1818)"; "✓ built in 322ms";
+  "Documentation check passed."
+- Next step: the owner answers the three INBOX items; M6b starts on the defenders sign-off.
+
+### 2026-11-07 — Phase 3 / bot path cache (minion plan §3, M8 stand-in) — feat/minion-bot-path-cache — SamarjitBhogal + Claude Code
+
+- What was done: a bot Legend's brain caches its last A\* search (11 §6): `BotMemory` gains
+  `pathGoalX`, `pathGoalY`, `pathStepX`, `pathStepY` (plain numbers, so the cache is hashed and
+  replayed like the rest of the memory), and `BotLeaves.moveTo` reuses the cached waypoint without
+  a search while the destination stays within the bot's `arrivalDistance` of the cached one, the
+  waypoint is not yet reached but still nearer than the destination, and the straight line to it
+  is clear. Only a real search is cached: a clear line to the destination caches nothing, so a
+  chased enemy is followed where it is now; arriving clears the cache. `PathQuery` gains
+  `isLineClear`, which `AStarPathfinder` implements on the `WorldMap`. A search that finds no way
+  clears it too. Doc 11 §6 and its Implementation status describe it; the minion plan's
+  "A\* again on each blocked decision" stand-in is removed.
+- Why: the `npm run bench` of `chore/minion-perf-check` measured tick p95 8 to 12 ms against the
+  8 ms target, and a one-off probe (not committed) put almost all of it in the bot laners' A\*
+  searches (3,010 searches, 1.9 s of 900 ticks, about one per bot decision).
+- Measured with that bench (its exact-fill version) on this branch, three runs, same machine as
+  that entry: 144 mobs per team + 10 Legends each: p50 0.7 to 0.9 ms, p95 2.9 to 3.1 ms, max 15.7
+  to 17.2 ms; 290 mobs per team + 10 Legends each: p50 1.1 to 1.7 ms, p95 2.9 to 4.1 ms, max 9.7
+  to 14.7 ms. The p95 target (≤ 8 ms) now holds at both counts; single ticks still reach 10 to
+  17 ms.
+- Checks run: `npm run check` passed: core `Tests  1088 passed (1088)`, client
+  `Tests  1754 passed (1754)`, `Documentation check passed.`
+- Next step: the remaining items of the minion plan §1.2 (M6b and M10 wait for PR #64).
+
+### 2026-11-12 — Phase 3 / sync — feat/minion-bot-path-cache — SamarjitBhogal + Claude Code
+
+- What was done: merged `docs/minion-plan-mvp-gaps` (PR #81, which now carries
+  `phase/3-sprint-3-work` at `3dc9e908`) into PR #84; it was 166 commits behind and conflicting.
+  Append-only logs: both sides kept, this branch's entries last. Docs 11 and the minion plan:
+  the later `last-reviewed` each. No code conflict.
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code
+  style!"; core "Tests 1330 passed (1330)"; client "Tests 1818 passed (1818)"; "✓ built in
+  337ms"; "Documentation check passed."
+- Next step: review once PR #81 merges.

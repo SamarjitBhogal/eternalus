@@ -10,6 +10,7 @@ import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { SeededRandom } from '../utils/SeededRandom';
 import type { BotTurn } from './BotLegendController.types';
 import { BotLeaves } from './BotLeaves';
+import { NO_PATH } from './BotLeaves.constants';
 import { Perception } from './perception/Perception';
 
 const leaves = new BotLeaves({
@@ -25,10 +26,11 @@ const STUB_PATHS: PathQuery = {
     out.y = isBlocked ? 34 : goal.y;
     return true;
   },
+  isLineClear: () => true,
 };
 
 /** A pathfinder stub that never finds a way. */
-const NO_WAY: PathQuery = { waypoint: () => false };
+const NO_WAY: PathQuery = { waypoint: () => false, isLineClear: () => false };
 
 /** A turn for a bot at `position` on the blocked-lane map, with or without pathfinding. */
 const turnAt = (
@@ -39,7 +41,13 @@ const turnAt = (
   const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(BLOCKED_LANE_MAP), {
     paths: withPaths ? paths : null,
   });
-  const memory = { lane: 'lane-0', isRetreating: false, targetId: null, nextCastTick: 0 };
+  const memory = {
+    lane: 'lane-0',
+    isRetreating: false,
+    targetId: null,
+    nextCastTick: 0,
+    ...NO_PATH,
+  };
   return {
     state,
     id: 'bot',
@@ -91,5 +99,104 @@ describe('BotLeaves.moveTo (A* for Legends, 10 §9)', () => {
 
     expect(turn.next.targetId).toBeNull();
     expect(turn.next.lane).toBe('lane-0');
+  });
+});
+
+describe('BotLeaves.moveTo path cache (11 §6)', () => {
+  /** A stub that counts searches; `isClear` decides the line check. */
+  const counting = (isClear = true) => {
+    const calls = { searches: 0 };
+    const paths: PathQuery = {
+      waypoint: (start, goal, out) => {
+        calls.searches += 1;
+        return STUB_PATHS.waypoint(start, goal, out);
+      },
+      isLineClear: () => isClear,
+    };
+    return { calls, paths };
+  };
+
+  /** Runs `moveTo` from `position` toward `destination`, carrying `memory` from a previous turn. */
+  const decide = (
+    paths: PathQuery,
+    position: { x: number; y: number },
+    destination: { x: number; y: number },
+    memory?: BotTurn['memory'],
+  ) => {
+    const base = turnAt(position, true, paths);
+    const turn = memory === undefined ? base : { ...base, memory, next: memory };
+    leaves.moveTo(turn, destination);
+    return turn;
+  };
+
+  it('remembers the search’s destination and waypoint, then reuses them without a new search', () => {
+    const { calls, paths } = counting();
+    const first = decide(paths, { x: 40, y: 20 }, { x: 80, y: 20 });
+    expect(first.next).toMatchObject({
+      pathGoalX: 80,
+      pathGoalY: 20,
+      pathStepX: 60,
+      pathStepY: 34,
+    });
+
+    const second = decide(paths, { x: 42, y: 21 }, { x: 81, y: 20 }, first.next);
+
+    expect(calls.searches).toBe(1);
+    expect(second.commands).toEqual([
+      { type: 'move', actorId: 'bot', direction: { x: 18, y: 13 } },
+    ]);
+  });
+
+  it('searches again when the destination moved past arrivalDistance', () => {
+    const { calls, paths } = counting();
+    const first = decide(paths, { x: 40, y: 20 }, { x: 80, y: 20 });
+    decide(paths, { x: 42, y: 21 }, { x: 80, y: 20 + NORMAL_BOT.arrivalDistance + 1 }, first.next);
+    expect(calls.searches).toBe(2);
+  });
+
+  it('searches again once the waypoint is reached', () => {
+    const { calls, paths } = counting();
+    const first = decide(paths, { x: 40, y: 20 }, { x: 80, y: 20 });
+    decide(paths, { x: 60, y: 33 }, { x: 80, y: 20 }, first.next);
+    expect(calls.searches).toBe(2);
+  });
+
+  it('searches again when the straight line to the waypoint is blocked', () => {
+    const { calls, paths } = counting(false);
+    const first = decide(paths, { x: 40, y: 20 }, { x: 80, y: 20 });
+    decide(paths, { x: 42, y: 21 }, { x: 80, y: 20 }, first.next);
+    expect(calls.searches).toBe(2);
+  });
+
+  it('forgets the path when no way is found', () => {
+    const { paths } = counting();
+    const first = decide(paths, { x: 40, y: 20 }, { x: 80, y: 20 });
+    const lost = decide(NO_WAY, { x: 40, y: 20 }, { x: 10, y: 90 }, first.next);
+    expect(lost.next).toMatchObject(NO_PATH);
+  });
+
+  it('caches nothing when the line is clear, so a moving destination is followed where it is now', () => {
+    const { calls, paths } = counting();
+    const first = decide(paths, { x: 40, y: 20 }, { x: 45, y: 20 });
+    expect(first.next).toMatchObject(NO_PATH);
+
+    const second = decide(paths, { x: 40, y: 20 }, { x: 45, y: 21 }, first.next);
+
+    expect(calls.searches).toBe(2);
+    expect(second.commands).toEqual([{ type: 'move', actorId: 'bot', direction: { x: 5, y: 1 } }]);
+  });
+
+  it('searches again when the cached waypoint is no longer on the way (the bot was shoved past it)', () => {
+    const { calls, paths } = counting();
+    const first = decide(paths, { x: 40, y: 20 }, { x: 80, y: 20 });
+    decide(paths, { x: 78, y: 22 }, { x: 80, y: 20 }, first.next);
+    expect(calls.searches).toBe(2);
+  });
+
+  it('forgets the path on arrival', () => {
+    const { paths } = counting();
+    const first = decide(paths, { x: 40, y: 20 }, { x: 80, y: 20 });
+    const there = decide(paths, { x: 80, y: 21 }, { x: 80, y: 20 }, first.next);
+    expect(there.next).toMatchObject(NO_PATH);
   });
 });

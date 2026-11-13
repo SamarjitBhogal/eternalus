@@ -11,4 +11,7 @@ export interface PathQuery {
    * there is no way (or none found within the search budget).
    */
   waypoint(start: Vec2, goal: Vec2, out: MutableVec2): boolean;
+
+  /** Whether a walker can go straight from `start` to `end` without crossing blocked ground. */
+  isLineClear(start: Vec2, end: Vec2): boolean;
 }

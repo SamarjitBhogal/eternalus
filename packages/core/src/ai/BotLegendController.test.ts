@@ -18,6 +18,7 @@ import type { AiMemory } from '../state/AiState.types';
 import { GameState } from '../state/GameState';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { spawnMapStructures } from '../state/__fixtures__/spawnMapStructures';
+import { NO_PATH } from './BotLeaves.constants';
 import { BotLegendController } from './BotLegendController';
 import { Perception } from './perception/Perception';
 
@@ -91,11 +92,13 @@ describe('BotLegendController (laner tree, 11 §4.2)', () => {
       { type: 'stop', actorId: bot },
       { type: 'move', actorId: bot, direction: { x: -20, y: 0 } },
     ]);
+    // No pathfinder in this match, so nothing is cached.
     expect(decision.memory).toEqual({
       lane: 'lane-0',
       isRetreating: true,
       targetId: null,
       nextCastTick: 0,
+      ...NO_PATH,
     });
   });
 
