@@ -531,9 +531,14 @@ the applier. Readers: `MovementSystem` (`moveSpeed`, `cannot-move`), `CombatSyst
 (`cannot-attack`; `attackSpeed`, fixed when a hit lands), `StatusModifierStep` (`damageDealt`, `damageTaken`); `cannot-cast` waits for
 `AbilitySystem`. Whether the applier's `remove` / `expire` (and so `status-expired`) are covered by
 DEC-41 is still open. `blind` has no hard miss (DEC-42): its aim wobble and the client vignette are
-follow-ups. `StatusStacksWithinMaxInvariant` runs every tick. Not built yet: `polarity`,
-`controlClass` and `control-immune` (so a producer that reapplies `stun` before `onExpire` exists
-can stun-lock), `onExpire`, `appliesTo` (the component is the gate), the `duration`,
+follow-ups. `StatusStacksWithinMaxInvariant` runs every tick. `polarity`, `controlClass` and
+`onExpire` (`apply-status` specs, run by the applier's `expire` on time-out only, credited to the
+same source, ids checked at load) are built: `stun` is followed by `control-immune` (0.5 s), and the
+applier refuses `hard` control on a `control-immune` target (SCRUM-228, `feat/status-control-immune`).
+`stun` and `crushed` are both followed by `control-immune`; re-applying an active stun restarts its
+timer by owner ruling (DEC-99), so `control-immune` follows only when it runs out, and a producer
+that re-applies a stun before it ends can hold a target until it stops.
+Not built yet: `controlResistance` (bosses, Eternal), `appliesTo` (the component is the gate), the `duration`,
 `independent` and `permanent` modes, and a max-health stat (the FR-029 aura). `StatusEffectSystem`
 runs before movement.
 
