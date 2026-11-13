@@ -128,7 +128,8 @@ Interim, against "the minion system never controls a boss" above: until Phase 3 
 `MiniBoss` and `BossController` (11 §4.6, 04), the boss is a `heavy-mob` (`capture-point-boss`)
 held by `GuardController`, with one melee hit and no moves, roaming or damage-dealer bias; its kill
 XP goes to the killer alone and it gives no team buff (`INBOX.md`, capture point mini-boss
-interims (c) and (d)); it takes 25% of a lane minion's hit (`BossMinionDamageStep`, 05 §9). The pull requests and interim stand-ins are in the
+interims (c) and (d)); it takes only its share of a lane minion's hit (`BossMinionDamageStep`,
+05 §9; shares in `content/mobs/minionModifiers.ts`). The pull requests and interim stand-ins are in the
 [minion system plan](../plan/minion-system-plan.md) §2–§3.
 
 ## 1. Decisions

@@ -6309,33 +6309,6 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `Tests 1818 passed (1818)`, `Documentation check passed.`
 - Next step: Part B (support guards, 25% minion damage) on `feat/capture-point-boss-guards`.
 
-### 2026-11-12 — Phase 3 / sprint 3 work: capture point mini-boss support mobs and minion damage share — feat/capture-point-boss-guards — Aryan Walanj + Claude Code
-
-- What was done: (1) The `capture-point` guard plan adds the boss's support mobs (reference 04
-  "along with high-power enemy and support mobs"): 2 `heavy-guard` + 4 `light-guard`, a count
-  reference 04 does not give, borrowed from balancing.md's checkpoint-2 capture point guard set
-  (TUNE). They take the plan's posts on the boss's 25 m ring, its activation (the quarter mark)
-  and its `never` respawn (respawning guards needs Sam's sign-off); no guard plan shape change.
-  `INBOX.md` interim (e) asks the owner to confirm. (3) `combat/BossMinionDamageStep.ts`, the last
-  of the default damage steps: a hit from a horde member on a mob listed in
-  `BOSS_MINION_DAMAGE_TAKEN` (`content/mobs/minionModifiers.ts`, `capture-point-boss: 0.25`, TUNE,
-  balancing.md) is cut to that share. The corner boss is not on this branch (`feat/bosses-p3`), so
-  it is not listed; adding it is one line there. Interim (d) no longer lists the minion damage.
-  Tests: `BossMinionDamageStep.test.ts` (the step alone and through the default `DamagePipeline`:
-  a minion's 100 takes 25 off the boss, a Legend's 100 takes 100; guards, Legends and attackerless
-  hits are untouched); `Simulation.bosses.test.ts` now builds the real map objects and checks,
-  seeds 1 and 2, the boss and every support mob on each outer capture point's floor, none on the
-  Cathedral's, none inside a blocking footprint (keep, walls, scenery), with every invariant
-  (`no-map-object-overlap`, `guard-within-leash`) run each tick. Docs 05 §9, 07 and 18 status notes.
-- Checks run: `npm run check` exit 0 on the third run: core `Tests 1318 passed (1318)`,
-  client `Tests 1818 passed (1818)`, `Documentation check passed.` The first two runs failed one
-  test, `diagnostics/replay.test.ts` "reproduces 10 seeds x 3,000 ticks …" (`Test timed out in
-20000ms`, 21.7–25.6 s under the full parallel run); alone it takes about 4 s on this branch and
-  on its base, the four slowest Simulation test files time the same on both (within 3%), and the
-  core suite alone passed, so it is a load-dependent timeout, not a regression. Timeout not
-  raised; a flaky-timeout follow-up is for the owner.
-- Next step: critic and ponytail on the branch, then the PR into feat/capture-point-boss.
-
 ### 2026-11-12 — Phase 3 / sprint 3 work: capture point mini-boss footprint (PR A2) — feat/capture-point-boss — Aryan Walanj + Claude Code
 
 - What was done: `capture-point-boss` `footprintRadius` 0.8 → 1.2 m (TUNE: 1.5× the heavy minion,
@@ -6348,6 +6321,34 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   25 m out keeps at least 2.3 m from it, more than the 1.2 m radius.
 - Checks run: `npm run check` exit 0, ending `Documentation check passed.`
 - Next step: merge into `feat/capture-point-boss-guards` and run the boss tests there.
+
+### 2026-11-12 — Phase 3 / sprint 3 work: capture point mini-boss support mobs and minion damage share — feat/capture-point-boss-guards — Aryan Walanj + Claude Code
+
+- What was done: (1) The `capture-point` guard plan adds the boss's support mobs (reference 04
+  "along with high-power enemy and support mobs"): 2 `heavy-guard` + 4 `light-guard`, a count
+  reference 04 does not give, borrowed from balancing.md's checkpoint-2 capture point guard set
+  (TUNE). They take the plan's posts on the boss's 25 m ring, its activation (the quarter mark)
+  and its `never` respawn (respawning guards needs Sam's sign-off); no guard plan shape change.
+  `INBOX.md` interim (e) asks the owner to confirm. (2) The quarter-mark spawn (and (4) the
+  court-wide aggro) were done on `feat/capture-point-boss` and come in through its merge.
+  (3) `combat/BossMinionDamageStep.ts`, the last of the default damage steps: a hit from a horde member on a mob listed in
+  `BOSS_MINION_DAMAGE_TAKEN` (`content/mobs/minionModifiers.ts`, `capture-point-boss: 0.25`, TUNE,
+  balancing.md) is cut to that share. The corner boss is not on this branch (`feat/bosses-p3`), so
+  it is not listed; adding it is one line there. Interim (d) no longer lists the minion damage.
+  Tests: `BossMinionDamageStep.test.ts` (the step alone and through the default `DamagePipeline`:
+  a minion's 100 takes 25 off the boss, a Legend's 100 takes 100; guards, Legends and attackerless
+  hits are untouched); `Simulation.bosses.test.ts` now builds the real map objects and checks,
+  seeds 1 and 2, the boss and every support mob on each outer capture point's floor, none on the
+  Cathedral's, none inside a blocking footprint (keep, walls, scenery), with every invariant
+  (`no-map-object-overlap`, `guard-within-leash`) run each tick. Docs 05 §9, 07 and 18 status notes.
+- Checks run: `npm run check` exit 0 on the third run: core `Tests 1318 passed (1318)`,
+  client `Tests 1818 passed (1818)`, `Documentation check passed.` The first two runs failed one
+  test, `diagnostics/replay.test.ts` "reproduces 10 seeds x 3,000 ticks …"
+  (`Test timed out in 20000ms`, 21.7–25.6 s under the full parallel run); alone it takes about
+  4 s on this branch and on its base, the four slowest Simulation test files time the same on both (within 3%), and the
+  core suite alone passed, so it is a load-dependent timeout, not a regression. Timeout not
+  raised; a flaky-timeout follow-up is for the owner.
+- Next step: critic and ponytail on the branch, then the PR into feat/capture-point-boss.
 
 ### 2026-11-12 — Phase 3 / sprint 3 work: capture point mini-boss pre-PR gate fixes (PR A2) — feat/capture-point-boss — Aryan Walanj + Claude Code
 
@@ -6362,3 +6363,21 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: `npm run check:quick` exit 0; `guardPlans.test.ts` `Tests 3 passed (3)`; prettier
   clean. The full `npm run check` runs after the commit, alone, with the result in the chat report.
 - Next step: merge into `feat/capture-point-boss-guards`.
+
+### 2026-11-12 — Phase 3 / sprint 3 work: capture point mini-boss support mobs pre-PR gate fixes — feat/capture-point-boss-guards — Aryan Walanj + Claude Code
+
+- What was done: merged `feat/capture-point-boss` (its gate fixes) and applied the pre-PR gate's
+  should-fix and nits for `f4fc910b..df8e309e` (critic PASS WITH NOTES, ponytail Ship).
+  (1) `BossMinionDamageStep`'s constructor takes the mob ids and throws on an id that is not a
+  mob or a share outside (0, 1]; `defaultDamageSteps.ts` passes `MOB_DEFINITIONS.ids`. New
+  `content/mobs/minionModifiers.test.ts` checks every `BOSS_MINION_DAMAGE_TAKEN` key is a mob.
+  (2) `BossMinionDamageStep.test.ts` derives the expected damage from the content share and
+  tests the constructor's rejections. (3) Doc 05 §9 lists the step as an interim stand-in for
+  `damageMultipliers` keyed by `damageClass` and splits the run-on list; docs 05, 07 and 18 name
+  `minionModifiers.ts` and the `capture-point` plan in `guardPlans.ts` instead of copying the
+  share and the support-mob count. (4) This file: the support-mob entry names item (2), its
+  indent is fixed, and it now follows the footprint entry. Better-than-design items and a
+  long-run determinism test are not taken up.
+- Checks run: `npm run check:quick` and the touched tests before the commit; the full
+  `npm run check` runs after the commit, alone, with the result in the chat report.
+- Next step: open the PRs with the critic verdicts, ponytail results and check output.

@@ -4,6 +4,7 @@ import { Health } from '../components/Health';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { BOSS_MINION_DAMAGE_TAKEN } from '../content/mobs/minionModifiers';
+import { MOB_DEFINITIONS } from '../content/mobs/mobCatalogue';
 import { loadWeapons } from '../content/weapons/loadWeapons';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
@@ -41,6 +42,9 @@ const setUp = () => {
   return { state, boss, guard, minion, legend };
 };
 
+/** The share of a minion's hit the capture point boss takes, from content. */
+const SHARE = BOSS_MINION_DAMAGE_TAKEN['capture-point-boss'] ?? Number.NaN;
+
 const hit = (attackerId: string | null, targetId: string) => ({
   targetId,
   amount: 100,
@@ -50,24 +54,33 @@ const hit = (attackerId: string | null, targetId: string) => ({
 describe('BossMinionDamageStep', () => {
   it("cuts a minion's hit on the boss to its content share, and leaves every other hit whole", () => {
     const { state, boss, guard, minion, legend } = setUp();
-    const step = new BossMinionDamageStep(BOSS_MINION_DAMAGE_TAKEN);
+    const step = new BossMinionDamageStep(BOSS_MINION_DAMAGE_TAKEN, MOB_DEFINITIONS.ids);
 
-    expect(step.adjust(hit(minion, boss), state)).toBeCloseTo(25);
+    expect(step.adjust(hit(minion, boss), state)).toBeCloseTo(100 * SHARE);
     expect(step.adjust(hit(legend, boss), state)).toBe(100);
     expect(step.adjust(hit(null, boss), state)).toBe(100);
     expect(step.adjust(hit(minion, guard), state)).toBe(100);
     expect(step.adjust(hit(minion, legend), state)).toBe(100);
   });
 
-  it("takes 25% of a minion's hit off the boss's health through the default pipeline", () => {
+  it("takes its share of a minion's hit off the boss's health through the default pipeline", () => {
     const { state, boss, minion, legend } = setUp();
     const pipeline = new DamagePipeline();
     const health = state.entities.get(boss)?.getComponent(Health);
     const before = health?.current ?? 0;
 
     pipeline.apply(state, boss, 100, hit(minion, boss).source);
-    expect(before - (health?.current ?? 0)).toBeCloseTo(25);
+    expect(before - (health?.current ?? 0)).toBeCloseTo(100 * SHARE);
     pipeline.apply(state, boss, 100, hit(legend, boss).source);
-    expect(before - (health?.current ?? 0)).toBeCloseTo(125);
+    expect(before - (health?.current ?? 0)).toBeCloseTo(100 * SHARE + 100);
+  });
+
+  it.each([
+    [{ 'no-such-mob': 0.25 }, /not a mob definition id/],
+    [{ 'capture-point-boss': 0 }, /share in \(0, 1\]/],
+    [{ 'capture-point-boss': 1.5 }, /share in \(0, 1\]/],
+    [{ 'capture-point-boss': Number.NaN }, /share in \(0, 1\]/],
+  ])('rejects the table %o', (table, message) => {
+    expect(() => new BossMinionDamageStep(table, MOB_DEFINITIONS.ids)).toThrow(message);
   });
 });

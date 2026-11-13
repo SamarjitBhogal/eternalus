@@ -572,13 +572,17 @@ source)` is built and is the only caller of `Health.applyDamage`. Each modifier 
 `combat/defaultDamageSteps.ts`**; shields-then-base stays inside `Health`. The steps today are
 `BreakabilityStep` (first: an unbreakable wall or gate rejects the hit before any multiplier,
 which gives the same result as §9's late check; 07 §3), `FriendlyFireStep` (no damage between same-team entities; awaiting the owner's sign-off in
-`INBOX.md`), `StatusModifierStep` (`damageDealt` / `damageTaken`; 05 §8) and `MinionStrengthStep`
+`INBOX.md`), `StatusModifierStep` (`damageDealt` / `damageTaken`; 05 §8), `MinionStrengthStep`
 (the minion strength-by-distance curve, its base-stat point moved toward the enemy for each lane
 tower the enemy has lost there, DISC-24; [18](18-minion-system.md) MS-16) and
-`BossMinionDamageStep` (a boss listed in `content/mobs/minionModifiers.ts` takes its share, 25%,
-of a lane minion's hit; balancing.md). Interim differences: no `DamageType` yet (nothing reads it; it joins `DamageHit` and
+`BossMinionDamageStep` (a boss takes only its share of a lane minion's hit, balancing.md; the
+shares are `BOSS_MINION_DAMAGE_TAKEN` in `content/mobs/minionModifiers.ts`). Interim differences:
+no `DamageType` yet (nothing reads it; it joins `DamageHit` and
 `apply` with the first resistance); the pipeline itself emits `entity-died` with the killer, so
-`DeathResolver` is not a separate class yet. `GameState.killerOf` keeps this tick's killers, so
+`DeathResolver` is not a separate class yet. `BossMinionDamageStep` stands in for the target's
+`damageMultipliers` keyed by the attacker's `damageClass` above: mobs have neither field yet, so
+the step keys its own table by boss id and finds a lane minion by horde membership; a
+`damageClass` on lane minions and `damageMultipliers` on the boss replace it. `GameState.killerOf` keeps this tick's killers, so
 `DeathSystem` removes with the cause `died` and puts the killer on `entity-removed`;
 `no-death-without-killer` (15) flags a death without one.
 `DefaultSystemPipeline` builds the match's one `DamagePipeline` and injects it into every system
