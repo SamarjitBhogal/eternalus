@@ -44,8 +44,9 @@ export type SimulationOptions = {
   /** Where Legends find their weapons by id; `loadWeapons(config.tickRate)` when omitted. */
   readonly weapons?: WeaponSource;
   /**
-   * Each guard home's plan by definition id; `GUARD_PLANS` when omitted. Not recorded in
-   * `ReplaySetup`, so a match built with other plans does not replay: tests and tools only.
+   * Each guard home's plan by definition id; `GUARD_PLANS` when omitted. Tests and tools only: it
+   * is not recorded in `ReplaySetup`, so a match built with other plans replays only through a
+   * target factory that passes the same plans (architecture 15 §7).
    */
   readonly guardPlans?: Readonly<Record<string, GuardPlanDefinition>>;
 };

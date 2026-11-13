@@ -1,3 +1,4 @@
+import { CAPTURE_POINT_COURT } from '../../zones/capturePointCourt';
 import type { AggroRuleDefinition } from '../ai.types';
 
 /**
@@ -9,9 +10,8 @@ import type { AggroRuleDefinition } from '../ai.types';
  */
 export const CAPTURE_POINT_BOSS_AGGRO = {
   id: 'capture-point-boss',
-  // TUNE: the zone plan's 35 m leash plus its 25 m post gap (the post's distance from the zone
-  // centre), so from its post it reaches the far side of the court (guardPlans.test.ts checks it).
-  acquisitionRadius: 60,
+  // From its post it reaches the far side of the court (guardPlans.test.ts checks it).
+  acquisitionRadius: CAPTURE_POINT_COURT.acquisitionRadius,
   priority: [
     'legend-attacking-ally-legend',
     'minion-attacking-ally-legend',
@@ -19,7 +19,7 @@ export const CAPTURE_POINT_BOSS_AGGRO = {
     'closest-minion',
     'closest-legend',
   ],
-  leashRadius: 35, // TUNE: the court's inscribed circle (the guard plan's is the one guards read)
+  leashRadius: CAPTURE_POINT_COURT.leashRadius, // the guard plan's is the one guards read
   leashGraceTicks: 0, // as the tower guard (DEC-144 E): never chases past its circle
   aggroCooldownTicks: 0, // as the tower guard (DEC-144): no rest
   ghostFirstWaveTicks: 0, // bosses never ghost

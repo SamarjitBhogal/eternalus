@@ -447,14 +447,25 @@ and a `Capturable` component, one per `capture-point` and `cathedral` map featur
 (`map/zoneArea.ts`) instead of taking it as an explicit placement (06): zones come from the map,
 so a replay or a match without map objects rebuilds the same zones. Interim differences:
 
-- `lockedBy` is always `null`: the mini-boss lock arrives in Phase 3 sprint 3.6.
+- **Zone lock (2026-11-12).** `CaptureSystem` sets `lockedBy` every tick from the zone's guard
+  posts: a living guard of a mob in `content/zones/zoneLocks.ts` (the capture point boss) locks
+  the zone, and a locked zone publishes its presence but its progress does not move, so it is
+  neither captured, drained nor reverted. 12 clears the lock on the boss's `entity-died`; reading
+  the posts each tick needs no listener and unlocks in the same tick. `LockedZoneOwnerInvariant`
+  (15 §3) is not built.
 - **Capture point mini-boss (`feat/capture-point-boss`, 2026-11-11).** The `MiniBoss` is not an
   entity class yet: each outer capture point (definition `capture-point`; the Cathedral has none)
   keeps one `capture-point-boss` through its zone guard plan (§6 status, 18 §7.1), a `heavy-mob`
-  with `GuardController` and balancing.md's MiniBoss health, hit and XP. It appears at the
+  with `GuardController` and balancing.md's MiniBoss health and hit. It appears at the
   default timeline's quarter mark through its guard plan's delay after the countdown (not yet the
   `MatchDirector`'s timeline, `INBOX.md` interim (a)), sees and attacks an enemy anywhere in the
-  court, and never respawns. Its moves, regeneration, the zone lock, support mobs and team-wide rewards come later.
+  court, and never respawns. Its leash, post gap and aggro range come from the fort's geometry
+  (`content/zones/capturePointCourt.ts`). Its kill pays balancing.md's 500 XP to the killer's
+  team, at most 2 levels each (DEC-237, 05 §13 status). Its support mobs (the `capture-point` plan's table in
+  `content/structures/guardPlans.ts`, `INBOX.md` interim (e)) share its plan, activation and
+  `never` respawn, and it takes only its share of a lane minion's hit (`BossMinionDamageStep`,
+  shares in `content/mobs/minionModifiers.ts`). Its moves, regeneration and permanent team buff come
+  later.
 - Scheduled later, through the two capture events: holding buffs (Phase 3 sprint 3.3), score
   (sprint 3.5), checkpoint defender spawns (Phase 3) and checkpoint XP (Phase 4). The minimap glyph
   does not follow the owner yet (the minimap entity markers, SCRUM-151).

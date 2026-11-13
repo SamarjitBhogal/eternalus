@@ -25,7 +25,11 @@ const UNITS = loadDefaultContent(CONFIG.tickRate);
 const CURVES = new ContentCatalogue<LevelCurveDefinition>([
   { id: 'legend', cap: 4, xpToNext: [100, 150, 200] },
 ]);
-const XP_SOURCES = { legendKill: { base: 150, perVictimLevel: 25 }, structureDestroyed: 300 };
+const XP_SOURCES = {
+  legendKill: { base: 150, perVictimLevel: 25 },
+  structureDestroyed: 300,
+  teamKills: { 'capture-point-boss': { xp: 500, maxLevels: 2 } },
+};
 
 const setUp = () => {
   const state = new GameState(CONFIG, 1);
@@ -261,6 +265,67 @@ describe('ProgressionSystem', () => {
 
       expect(warrior.getComponent(Progression).xp).toBe(0);
       expect(payloads('xp-gained')).toEqual([]);
+    });
+  });
+
+  describe('team kill (DEC-237)', () => {
+    it("pays every Legend of the killer's team, capped at two levels, and none to the killer alone", () => {
+      const { spawn, kill, run, payloads } = setUp();
+      const killer = spawn('warrior', 'warrior', 'light');
+      const mate = spawn('magus', 'magus', 'light');
+      mate.getComponent(Progression).addXp(50, CURVES.get('legend'));
+      const dark = spawn('warrior', 'warrior', 'dark');
+      const boss = spawn('heavy-mob', 'capture-point-boss', 'neutral');
+
+      kill(killer, boss);
+      run();
+
+      // 500 XP, but two levels at most on the test curve [100, 150, 200]: the start of level 3 (250).
+      expect(killer.getComponent(Progression)).toMatchObject({ xp: 250, level: 3 });
+      expect(mate.getComponent(Progression)).toMatchObject({ xp: 250, level: 3 });
+      expect(dark.getComponent(Progression).xp).toBe(0);
+      expect(payloads('xp-gained')).toEqual([
+        {
+          entityId: killer.id,
+          amount: 250,
+          victimId: boss.id,
+          victimTeam: 'neutral',
+          cause: 'team-kill',
+        },
+        {
+          entityId: mate.id,
+          amount: 200,
+          victimId: boss.id,
+          victimTeam: 'neutral',
+          cause: 'team-kill',
+        },
+      ]);
+    });
+
+    it("pays the killing minion's team, and nothing for a death with no attacker", () => {
+      const { spawn, kill, run } = setUp();
+      const warrior = spawn('warrior', 'warrior', 'dark');
+
+      kill(
+        spawn('light-mob', 'light-minion', 'dark'),
+        spawn('heavy-mob', 'capture-point-boss', 'neutral'),
+      );
+      kill(null, spawn('heavy-mob', 'capture-point-boss', 'neutral'));
+      run();
+
+      expect(warrior.getComponent(Progression)).toMatchObject({ xp: 250, level: 3 });
+    });
+
+    it('pays the full reward when two levels need more', () => {
+      const { spawn, kill, run } = setUp();
+      const warrior = spawn('warrior', 'warrior', 'light');
+      warrior.getComponent(Progression).addXp(100, CURVES.get('legend'));
+
+      kill(warrior, spawn('heavy-mob', 'capture-point-boss', 'neutral'));
+      run();
+
+      // From level 2 the cap is level 4 (450 XP), 350 away: less than 500, so capped there.
+      expect(warrior.getComponent(Progression)).toMatchObject({ xp: 450, level: 4 });
     });
   });
 });
