@@ -111,6 +111,8 @@ export interface SessionContext {
   joinDuelQueue(name: string): void;
   /** Leaves the Duel queue (`queue-leave`) and closes the connection. */
   leaveDuelQueue(): void;
+  /** Forfeits the Duel in progress (`forfeit`) and closes the connection. */
+  forfeitDuel(): void;
   /**
    * Drops the setup, the selection, the prepared world and the team theme, and closes any Duel
    * connection (the menu is where every match ends up).

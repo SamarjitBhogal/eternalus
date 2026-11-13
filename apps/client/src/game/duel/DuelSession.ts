@@ -32,6 +32,8 @@ export class DuelSession implements DuelLink {
 
   private nextSeq = 0;
 
+  private opponentGraceMs: number | null = null;
+
   /** The guest id the server issued, kept across Duels and sent on every join (so a reconnect is recognised). */
   private guestId: string | null = null;
 
@@ -73,6 +75,11 @@ export class DuelSession implements DuelLink {
     return this.ownMapSeed;
   }
 
+  /** How long the server holds the opponent's seat while they are disconnected; `null` while they are connected. */
+  public get opponentDisconnectedGraceMs(): number | null {
+    return this.opponentGraceMs;
+  }
+
   /** The newest snapshot. @throws Before the first one arrived. */
   public latestSnapshot(): Snapshot {
     if (this.latest === null) throw new Error('The Duel has no snapshot yet');
@@ -106,6 +113,17 @@ export class DuelSession implements DuelLink {
     this.close();
   }
 
+  /**
+   * Gives up the Duel in progress (`forfeit`: the opponent wins and is told at once), then closes
+   * the connection; outside a paired Duel it only closes.
+   */
+  public forfeit(): void {
+    if (this.state === 'matched' || this.state === 'started') {
+      this.transport?.send({ type: 'forfeit' });
+    }
+    this.close();
+  }
+
   /** Closes the connection and resets to `idle`. Safe twice. */
   public close(): void {
     this.transport?.close();
@@ -116,6 +134,7 @@ export class DuelSession implements DuelLink {
     this.ownMapSeed = null;
     this.ownTeam = null;
     this.nextSeq = 0;
+    this.opponentGraceMs = null;
   }
 
   /** Sends `intent` with the next sequence number while the Duel is `started`. */
@@ -145,6 +164,11 @@ export class DuelSession implements DuelLink {
           this.state = 'started';
           this.deps.handlers.started();
         }
+        break;
+      case 'opponent-presence':
+        if (this.state !== 'matched' && this.state !== 'started') break;
+        this.opponentGraceMs = message.status === 'disconnected' ? message.graceMs : null;
+        this.deps.handlers.opponentPresence(this.opponentGraceMs);
         break;
       case 'match-ended':
         this.finish(message.winner, message.reason);
@@ -181,6 +205,7 @@ export class DuelSession implements DuelLink {
     if ((this.state !== 'matched' && this.state !== 'started') || this.ownTeam === null) return;
     const team = this.ownTeam;
     this.state = 'ended';
+    this.opponentGraceMs = null;
     this.transport?.close();
     this.transport = null;
     this.deps.handlers.ended({ winner, reason, team });

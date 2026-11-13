@@ -23,6 +23,8 @@ describe('ServerMessageDecoder', () => {
     [{ type: 'match-ended', reason: 'opponent-left', winner: 'light' }],
     [{ type: 'match-ended', reason: 'finished', winner: null }],
     [{ type: 'rejected', reason: 'in-match' }],
+    [{ type: 'opponent-presence', status: 'disconnected', graceMs: 10_000 }],
+    [{ type: 'opponent-presence', status: 'reconnected' }],
   ])('decodes %j', (message) => {
     expect(decoder.decode(JSON.stringify(message))).toEqual(message);
   });
@@ -52,6 +54,8 @@ describe('ServerMessageDecoder', () => {
     ],
     ['{"type":"state","snapshot":{},"ackSeq":1}'],
     ['{"type":"match-ended","reason":"quit","winner":null}'],
+    ['{"type":"opponent-presence","status":"disconnected"}'],
+    ['{"type":"opponent-presence","status":"gone"}'],
     ['{"type":"rejected","reason":"other"}'],
   ])('returns null for %s', (raw) => {
     expect(decoder.decode(raw)).toBeNull();

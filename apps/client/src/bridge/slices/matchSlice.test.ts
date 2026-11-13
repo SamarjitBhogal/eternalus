@@ -62,6 +62,13 @@ describe('matchSlice', () => {
     });
   });
 
+  it("stores the disconnected opponent's reconnect window and clears it on reconnect", () => {
+    let match = matchSlice.reducer(undefined, matchSlice.actions.opponentPresenceChanged(10_000));
+    expect(matchSlice.selectors.selectOpponentGraceMs({ match })).toBe(10_000);
+    match = matchSlice.reducer(match, matchSlice.actions.opponentPresenceChanged(null));
+    expect(matchSlice.selectors.selectOpponentGraceMs({ match })).toBeNull();
+  });
+
   it('resets to the initial state', () => {
     const { structures } = figmaHudState().match;
     const match = matchSlice.reducer(undefined, structuresChanged(structures));
@@ -72,6 +79,7 @@ describe('matchSlice', () => {
       result: null,
       versus: null,
       duel: null,
+      opponentGraceMs: null,
     });
   });
 });

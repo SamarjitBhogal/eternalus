@@ -6417,3 +6417,10 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Tests: `CoreDuelSimulation.test.ts` (new; fails without the reset), `SeatCommands.test.ts` (held movement and attack queue again after `reset`).
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 1356 passed (1356)"; protocol "Tests 29 passed (29)"; client "Tests 1909 passed (1909)"; server "Tests 84 passed (84)"; "Documentation check passed."
 - Next step: reviewer re-check; the team merges in stack order.
+
+### 2026-11-13 — Phase 3 / online Duel — feat/duel-player-messaging (stacked on #104) — claudiodh + Claude Code
+
+- What was done: the player is told what the online Duel is doing. The queue screen explains the wait and shows an elapsed timer; the VERSUS screen says "Match found: A VS B. The match starts in a moment." The `pause-menu` key in an online match opens a Leave-the-Duel confirmation (Stay or Leave = `forfeit`; the match does not pause and only Escape works while it is open) and a `beforeunload` guard warns before the tab closes. New server message `opponent-presence` (`disconnected` with the reconnect window, then `reconnected`) from `PresenceBook`, shown in the Duel HUD as a countdown banner. No game numbers or design decisions.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1356 passed (1356)"; protocol "Tests 31 passed (31)"; client "Tests 1942 passed (1942)"; server "Tests 143 passed (143)"; "Documentation check passed."
+- Pre-PR gate: critic request-changes (the client `ServerMessageDecoder` dropped `opponent-presence`; `graceMs` optional) → fixed (decoder case + tests, `graceMs` required on `disconnected`); ponytail cuts not applied (one-class rule, existing tests read the getter).
+- Next step: reviewer approval; merges in stack order after #104.
