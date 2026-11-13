@@ -238,12 +238,12 @@ describe('Simulation: the human slot of the roster', () => {
     ).toThrow("The map has no dark Stronghold for the human's Legend.");
   });
 
-  it('refuses a second human slot and a human slot off playerTeam, before anything spawns', () => {
+  it('refuses a second human slot on a team and a human slot off playerTeam, before anything spawns', () => {
     const logger = new MemoryLogger();
     const withRoster = (roster: readonly RosterSlot[]) => () => build(roster, logger);
 
     expect(withRoster([human(), human('magus')])).toThrow(
-      'The roster has 2 human slots; a match has at most one human.',
+      'The dark team has 2 human slots; a team has at most one human.',
     );
     expect(withRoster([human('warrior', 'light')])).toThrow(
       "The roster's human slot is on the light team; match.playerTeam is dark.",
@@ -327,5 +327,115 @@ describe('Simulation: the human slot of the roster', () => {
 
   it('hashes a match with a human differently from one in sim mode (the Legend is in the entities)', () => {
     expect(build([human()]).hash()).not.toBe(build([]).hash());
+  });
+
+  describe('a Duel roster: one human per team (ADR 0016)', () => {
+    const duelRoster = [human('warrior', 'light'), human('warrior', 'dark')];
+    const duelConfig = () =>
+      createDefaultGameConfig({ match: { playerTeam: 'light', countdownSeconds: 0 } });
+    const createDuel = (roster: readonly RosterSlot[] = duelRoster) =>
+      new Simulation({
+        config: duelConfig(),
+        seed: 5,
+        logger: new NullLogger(),
+        map: TWO_LANE_MAP,
+        roster,
+      });
+    const positionOf = (sim: Simulation, id: string | null) =>
+      sim.snapshot().entities.find((entity) => entity.id === id)?.transform;
+
+    it('seats each human at its own Stronghold; humanLegendId stays the playerTeam one', () => {
+      const sim = createDuel();
+      const light = sim.humanLegendIdOf('light');
+      const dark = sim.humanLegendIdOf('dark');
+
+      expect(light).not.toBeNull();
+      expect(dark).not.toBeNull();
+      expect(light).not.toBe(dark);
+      expect(sim.snapshot().match.humanLegendId).toBe(light);
+      expect(positionOf(sim, light)).toMatchObject({ x: 10, y: 30 });
+      expect(positionOf(sim, dark)).toMatchObject(DARK_STRONGHOLD);
+    });
+
+    it('returns null for a team without a human', () => {
+      expect(build([]).humanLegendIdOf('dark')).toBeNull();
+      expect(build([human()]).humanLegendIdOf('light')).toBeNull();
+    });
+
+    it('moves each Legend only by its own move command', () => {
+      const sim = createDuel();
+      const light = sim.humanLegendIdOf('light') ?? '';
+      const dark = sim.humanLegendIdOf('dark') ?? '';
+      const before = { light: positionOf(sim, light), dark: positionOf(sim, dark) };
+
+      sim.enqueueCommand({ type: 'move', actorId: light, direction: { x: 0, y: 1 } });
+      for (let tick = 0; tick < 30; tick += 1) {
+        sim.step();
+      }
+
+      expect(positionOf(sim, light)?.y).toBeGreaterThan(before.light?.y ?? Infinity);
+      expect(positionOf(sim, dark)).toEqual(before.dark);
+
+      sim.enqueueCommand({ type: 'move', actorId: dark, direction: { x: 0, y: -1 } });
+      for (let tick = 0; tick < 30; tick += 1) {
+        sim.step();
+      }
+
+      expect(positionOf(sim, dark)?.y).toBeLessThan(before.dark?.y ?? -Infinity);
+    });
+
+    it('is deterministic and replays with commands for both humans', () => {
+      const commandsFor = (tick: number, sim: Simulation) =>
+        tick === 3
+          ? [
+              {
+                type: 'move' as const,
+                actorId: sim.humanLegendIdOf('light') ?? '',
+                direction: { x: 1, y: 0 },
+              },
+              {
+                type: 'move' as const,
+                actorId: sim.humanLegendIdOf('dark') ?? '',
+                direction: { x: -1, y: 0 },
+              },
+            ]
+          : [];
+      const createTarget = ({ config, seed, roster }: ReplaySetup) =>
+        new Simulation({
+          config,
+          seed,
+          logger: new NullLogger(),
+          map: TWO_LANE_MAP,
+          ...(roster === undefined ? {} : { roster }),
+        });
+      const run = () => {
+        const sim = createDuel();
+        for (let tick = 0; tick < 20; tick += 1) {
+          commandsFor(tick, sim).forEach((command) => {
+            sim.enqueueCommand(command);
+          });
+          sim.step();
+        }
+        return sim.hash();
+      };
+      // Legend ids are fixed by the seed, so one Duel names both seats for every tick.
+      const seats = createDuel();
+      const replay = recordReplay(
+        { config: duelConfig(), seed: 5, roster: duelRoster },
+        { ticks: 40, checkpointEvery: 10, commandsFor: (tick) => commandsFor(tick, seats) },
+        createTarget,
+      );
+
+      expect(run()).toBe(run());
+      expect(replay.commands).toHaveLength(2);
+      expect(runReplay(replay, createTarget).firstDivergence).toBeNull();
+    });
+
+    it('lets bots share the Duel roster', () => {
+      const sim = createDuel([laner('light'), ...duelRoster, laner('dark')]);
+
+      expect(legendsOf(sim)).toHaveLength(4);
+      expect(sim.humanLegendIdOf('dark')).not.toBeNull();
+    });
   });
 });
