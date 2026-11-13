@@ -89,6 +89,11 @@ export class PresenceBook {
     return this.stateOf(guest) !== 'online';
   }
 
+  /** The guest id of `connection`, or `null` if it is not a guest (closed). */
+  public guestIdOf(connection: ClientConnection): string | null {
+    return this.byConnection.get(connection)?.id ?? null;
+  }
+
   /** Guests per state, for tests and `/metrics`; the three states add up to the open connections. */
   public counts(): PresenceCounts {
     let online = 0;
@@ -121,5 +126,6 @@ export class PresenceBook {
     guest.cancelDrop?.();
     this.byConnection.delete(guest.connection);
     this.byId.delete(guest.id);
+    this.options.ratings.forget(guest.id);
   }
 }

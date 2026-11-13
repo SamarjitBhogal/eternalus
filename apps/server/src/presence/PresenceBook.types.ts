@@ -1,4 +1,5 @@
 import type { DuelHost } from '../match/DuelHost';
+import type { PlayerRatings } from '../rating/PlayerRatings';
 import type { DuelQueue } from '../queue/DuelQueue';
 import type { TickScheduler } from '../time/TickScheduler.types';
 
@@ -17,6 +18,8 @@ export type PresenceCounts = {
 export type PresenceBookOptions = {
   readonly queue: DuelQueue;
   readonly host: DuelHost;
+  /** Forgets a guest's rating when the guest is forgotten. */
+  readonly ratings: PlayerRatings;
   /** Times the reconnect window (a one-shot task on a repeating scheduler). */
   readonly scheduler: TickScheduler;
   readonly reconnectWindowMs: number;

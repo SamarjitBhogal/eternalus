@@ -7,6 +7,7 @@ import { FakeDuelSimulation } from '../match/FakeDuelSimulation';
 import { PresenceBook } from '../presence/PresenceBook';
 import { MAX_HELD_GUESTS, RECONNECT_WINDOW_MS } from '../presence/PresenceBook.constants';
 import { DuelQueue } from '../queue/DuelQueue';
+import { PlayerRatings } from '../rating/PlayerRatings';
 import { FakeClock } from '../time/FakeClock';
 import { FakeTickScheduler } from '../time/FakeTickScheduler';
 import { FakeConnection } from '../transport/FakeConnection';
@@ -35,15 +36,22 @@ export class LoopbackBotLinks implements BotLinkFactory {
 
   public constructor() {
     const scheduler = new FakeTickScheduler();
+    const ratings = new PlayerRatings();
     const host = new DuelHost({
       factory: { create: () => new FakeDuelSimulation() },
       scheduler,
       tickIntervalMs: 33,
       versusMs: 0,
       logger: new MemoryLogger(),
+      ratings,
     });
     const clock = new FakeClock();
-    const queue = new DuelQueue(host);
+    const queue = new DuelQueue({
+      starter: host,
+      ratings,
+      clock,
+      scheduler: new FakeTickScheduler(),
+    });
     let guests = 0;
     this.gateway = new DuelGateway({
       parser: new ClientMessageParser(),
@@ -52,6 +60,7 @@ export class LoopbackBotLinks implements BotLinkFactory {
       presence: new PresenceBook({
         queue,
         host,
+        ratings,
         scheduler,
         reconnectWindowMs: RECONNECT_WINDOW_MS,
         maxHeldGuests: MAX_HELD_GUESTS,

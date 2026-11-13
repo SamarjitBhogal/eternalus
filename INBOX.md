@@ -16,6 +16,26 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Glicko-2 rating and skill-based pairing (SCRUM-431, 2026-11-13) — interim choices, owner to
+      confirm or change.** (1) Storage: ratings and records live in memory by guest id
+      (`PlayerRatings`); the server has no database, so a restart loses them, and a guest id only
+      survives a reconnect, not a new session: persistence needs plan question 35 (database) and
+      real accounts. (2) Rating period: each match is its own period (simple); a batch per day
+      would be closer to Glickman's advice. (3) Results: a leaver or disconnect-after-window counts
+      as a loss for the leaver and a win for the other; a draw (no winner, or a failed simulation
+      step) scores 0.5 and clears the streak. (4) Pairing: closest rating first; allowed gap =
+      100 + 25 per second of the longer waiter, unlimited after 30 s, checked on join and every 1 s
+      (all `// TUNE:` in `DuelQueue.constants.ts`). (5) Glicko-2 defaults 1500 / 350 / 0.06, tau 0.5
+      (`Glicko2.constants.ts`). (6) Nothing shows ratings to players and `match-found` does not carry
+      the opponent's rating (no protocol change); say if you want either. (7) The seat order is
+      still arrival order (question 45).
+      (8) Known limit: one person with two connections can farm wins when both seats are held (the
+      guest who disconnects second is dropped first), and a forfeit-then-return loop re-enters as a
+      fresh 1500 / 350; bounded because ratings are not shown. (9) Streak and matches are stored but
+      pairing does not use them yet (DEC-36 groundwork). (10) Plan question 47 (how long a player
+      waits) is answered by the 30 s timeout, pending your confirmation. (11) A held (disconnected)
+      queued guest can still be paired, and the sweeps make that likelier.
+
 - [ ] **Guest identity, presence and reconnect (SCRUM-430, 2026-11-13) — interim choices, owner to
       confirm or change.** (1) Id: `randomUUID` (122 random bits), sent as `welcome`, a bearer token
       never logged; a malformed or unknown id gets a fresh one. (2) Window: `RECONNECT_WINDOW_MS` =

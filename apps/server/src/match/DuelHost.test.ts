@@ -1,5 +1,6 @@
 import { MemoryLogger } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
+import { PlayerRatings } from '../rating/PlayerRatings';
 import { FakeTickScheduler } from '../time/FakeTickScheduler';
 import { FakeConnection } from '../transport/FakeConnection';
 import { DuelHost } from './DuelHost';
@@ -11,6 +12,7 @@ function setup(fails = false) {
   const simulation = new FakeDuelSimulation();
   const scheduler = new FakeTickScheduler();
   const logger = new MemoryLogger();
+  const ratings = new PlayerRatings();
   const host = new DuelHost({
     factory: {
       create: () => {
@@ -22,8 +24,9 @@ function setup(fails = false) {
     tickIntervalMs: 33,
     versusMs: 0,
     logger,
+    ratings,
   });
-  return { host, simulation, scheduler, logger };
+  return { host, simulation, scheduler, logger, ratings };
 }
 
 describe('DuelHost', () => {
@@ -31,7 +34,10 @@ describe('DuelHost', () => {
     const { host, simulation, scheduler } = setup();
     const a = new FakeConnection();
     const b = new FakeConnection();
-    host.start({ connection: a, name: 'Ana' }, { connection: b, name: 'Ben' });
+    host.start(
+      { connection: a, name: 'Ana', guestId: 'ga' },
+      { connection: b, name: 'Ben', guestId: 'gb' },
+    );
     expect(host.isInMatch(a)).toBe(true);
     expect(host.submit(b, 1, INTENT)).toBe(true);
     expect(simulation.intents[0]?.team).toBe('dark');
@@ -39,6 +45,44 @@ describe('DuelHost', () => {
     scheduler.tick();
     expect(host.isInMatch(a)).toBe(false);
     expect(host.submit(a, 2, INTENT)).toBe(false);
+  });
+
+  it('rates both players when the match ends, and counts a leaver as the loser', () => {
+    const { host, simulation, scheduler, ratings } = setup();
+    const [a, b] = [new FakeConnection(), new FakeConnection()];
+    host.start(
+      { connection: a, name: 'Ana', guestId: 'ga' },
+      { connection: b, name: 'Ben', guestId: 'gb' },
+    );
+    simulation.result = { winner: 'light' };
+    scheduler.tick();
+    expect(ratings.get('ga')).toMatchObject({ wins: 1, matches: 1 });
+    expect(ratings.get('gb')).toMatchObject({ losses: 1, matches: 1 });
+    const [c, d] = [new FakeConnection(), new FakeConnection()];
+    host.start(
+      { connection: c, name: 'Cy', guestId: 'gc' },
+      { connection: d, name: 'Di', guestId: 'gd' },
+    );
+    host.leave(c);
+    expect(ratings.get('gc')).toMatchObject({ losses: 1 });
+    expect(ratings.get('gd')).toMatchObject({ wins: 1 });
+  });
+
+  it('still cleans the match up when rating it throws', () => {
+    const { host, simulation, scheduler, ratings, logger } = setup();
+    ratings.recordMatch = () => {
+      throw new Error('boom');
+    };
+    const [a, b] = [new FakeConnection(), new FakeConnection()];
+    host.start(
+      { connection: a, name: 'Ana', guestId: 'ga' },
+      { connection: b, name: 'Ben', guestId: 'gb' },
+    );
+    simulation.result = { winner: 'light' };
+    scheduler.tick();
+    expect(host.isInMatch(a)).toBe(false);
+    expect([a.isClosed, b.isClosed]).toEqual([true, true]);
+    expect(logger.records.some((record) => record.body.includes('could not be rated'))).toBe(true);
   });
 
   it('closes both connections after the verdict and cleans up once their close handlers run', () => {
@@ -52,7 +96,10 @@ describe('DuelHost', () => {
     b.onClose(() => {
       host.leave(b);
     });
-    host.start({ connection: a, name: 'Ana' }, { connection: b, name: 'Ben' });
+    host.start(
+      { connection: a, name: 'Ana', guestId: 'ga' },
+      { connection: b, name: 'Ben', guestId: 'gb' },
+    );
     simulation.result = { winner: 'light' };
     scheduler.tick();
     expect([a.isClosed, b.isClosed]).toEqual([true, true]);
@@ -65,7 +112,10 @@ describe('DuelHost', () => {
     const { host } = setup();
     const a = new FakeConnection();
     const b = new FakeConnection();
-    host.start({ connection: a, name: 'Ana' }, { connection: b, name: 'Ben' });
+    host.start(
+      { connection: a, name: 'Ana', guestId: 'ga' },
+      { connection: b, name: 'Ben', guestId: 'gb' },
+    );
     host.leave(a);
     expect(b.sent.at(-1)).toMatchObject({ reason: 'opponent-left' });
     expect(host.isInMatch(b)).toBe(false);
@@ -76,7 +126,10 @@ describe('DuelHost', () => {
     const { host, logger } = setup(true);
     const a = new FakeConnection();
     const b = new FakeConnection();
-    host.start({ connection: a, name: 'Ana' }, { connection: b, name: 'Ben' });
+    host.start(
+      { connection: a, name: 'Ana', guestId: 'ga' },
+      { connection: b, name: 'Ben', guestId: 'gb' },
+    );
     expect([a.isClosed, b.isClosed]).toEqual([true, true]);
     expect(logger.records).toHaveLength(1);
     expect(host.isInMatch(a)).toBe(false);
@@ -95,7 +148,10 @@ describe('DuelHost', () => {
     a.onClose(() => {
       host.leave(a);
     });
-    host.start({ connection: a, name: 'Ana' }, { connection: b, name: 'Ben' });
+    host.start(
+      { connection: a, name: 'Ana', guestId: 'ga' },
+      { connection: b, name: 'Ben', guestId: 'gb' },
+    );
     expect(b.sent).toEqual([{ type: 'match-ended', reason: 'opponent-left', winner: null }]);
     expect([host.isInMatch(a), host.isInMatch(b)]).toEqual([false, false]);
     expect(scheduler.activeCount).toBe(0);

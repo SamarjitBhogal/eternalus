@@ -7,6 +7,7 @@ import { DuelHost } from '../match/DuelHost';
 import { PresenceBook } from '../presence/PresenceBook';
 import { MAX_HELD_GUESTS, RECONNECT_WINDOW_MS } from '../presence/PresenceBook.constants';
 import { DuelQueue } from '../queue/DuelQueue';
+import { PlayerRatings } from '../rating/PlayerRatings';
 import { FakeClock } from '../time/FakeClock';
 import { FakeTickScheduler } from '../time/FakeTickScheduler';
 import { FakeConnection } from '../transport/FakeConnection';
@@ -25,18 +26,26 @@ function setup(burst = 100) {
   let guests = 0;
   const simulation = new FakeDuelSimulation();
   const scheduler = new FakeTickScheduler();
+  const ratings = new PlayerRatings();
   const host = new DuelHost({
     factory: { create: () => simulation },
     scheduler,
     tickIntervalMs: 33,
     versusMs: 0,
     logger: new MemoryLogger(),
+    ratings,
   });
   const clock = new FakeClock();
-  const queue = new DuelQueue(host);
+  const queue = new DuelQueue({
+    starter: host,
+    ratings,
+    clock: new FakeClock(),
+    scheduler: new FakeTickScheduler(),
+  });
   const presence = new PresenceBook({
     queue,
     host,
+    ratings,
     scheduler,
     reconnectWindowMs: RECONNECT_WINDOW_MS,
     maxHeldGuests: MAX_HELD_GUESTS,

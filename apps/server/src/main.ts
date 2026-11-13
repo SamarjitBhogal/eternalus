@@ -15,6 +15,7 @@ import { DuelHost } from './match/DuelHost';
 import { DUEL_VERSUS_MS } from './match/DuelHost.constants';
 import { PresenceBook } from './presence/PresenceBook';
 import { MAX_HELD_GUESTS, RECONNECT_WINDOW_MS } from './presence/PresenceBook.constants';
+import { PlayerRatings } from './rating/PlayerRatings';
 import { DuelQueue } from './queue/DuelQueue';
 import { IntervalTickScheduler } from './time/IntervalTickScheduler';
 import { SystemClock } from './time/SystemClock';
@@ -30,17 +31,20 @@ const config = createDefaultGameConfig({
 });
 
 const scheduler = new IntervalTickScheduler();
+const ratings = new PlayerRatings();
 const host = new DuelHost({
   factory: new CoreDuelSimulationFactory(config, logger, () => randomInt(SEED_LIMIT)),
   scheduler,
   tickIntervalMs: MS_PER_SECOND / config.tickRate,
   versusMs: DUEL_VERSUS_MS,
   logger,
+  ratings,
 });
-const queue = new DuelQueue(host);
+const queue = new DuelQueue({ starter: host, ratings, clock, scheduler });
 const presence = new PresenceBook({
   queue,
   host,
+  ratings,
   scheduler,
   reconnectWindowMs: RECONNECT_WINDOW_MS,
   maxHeldGuests: MAX_HELD_GUESTS,

@@ -19,19 +19,20 @@ Package-specific rules. The root `AGENTS.md` still applies. Design: ADR 0016
 
 ## Folders
 
-| Folder       | Holds                                                                   |
-| ------------ | ----------------------------------------------------------------------- |
-| `config/`    | `ServerConfig`: environment variables to listener options               |
-| `gateway/`   | `DuelGateway`: per-connection parsing, rate limits and routing          |
-| `limits/`    | `TokenBucket`                                                           |
-| `logging/`   | `StdoutLogger`, core's `Logger` port as JSON lines                      |
-| `match/`     | `DuelHost`, `DuelMatch`, the `DuelSimulation` port and its core adapter |
-| `presence/`  | `PresenceBook`: guest ids, presence counts, the reconnect window        |
-| `queue/`     | `DuelQueue`: first-come pairing                                         |
-| `time/`      | The `Clock` and `TickScheduler` ports, their system adapters and fakes  |
-| `transport/` | The `ClientConnection` port, the `ws` adapters and a fake               |
-| `bots/`      | Dev tool: scripted Duel players (`npm run duel:bots`), A\* via core     |
-| `main.ts`    | The composition root                                                    |
+| Folder       | Holds                                                                    |
+| ------------ | ------------------------------------------------------------------------ |
+| `config/`    | `ServerConfig`: environment variables to listener options                |
+| `gateway/`   | `DuelGateway`: per-connection parsing, rate limits and routing           |
+| `limits/`    | `TokenBucket`                                                            |
+| `logging/`   | `StdoutLogger`, core's `Logger` port as JSON lines                       |
+| `match/`     | `DuelHost`, `DuelMatch`, the `DuelSimulation` port and its core adapter  |
+| `presence/`  | `PresenceBook`: guest ids, presence counts, the reconnect window         |
+| `queue/`     | `DuelQueue`: closest-rating pairing, the allowed gap widens with waiting |
+| `rating/`    | `Glicko2` (pure) and `PlayerRatings` (in memory, by guest id)            |
+| `time/`      | The `Clock` and `TickScheduler` ports, their system adapters and fakes   |
+| `transport/` | The `ClientConnection` port, the `ws` adapters and a fake                |
+| `bots/`      | Dev tool: scripted Duel players (`npm run duel:bots`), A\* via core      |
+| `main.ts`    | The composition root                                                     |
 
 ## Bots (dev tool)
 

@@ -16,6 +16,6 @@ export type DuelMatchOptions = {
   /** The VERSUS screen's length: the match does not step until it has passed. */
   readonly versusMs: number;
   readonly logger: Logger;
-  /** Called once when the match is over, after the players were told. */
-  readonly onEnded: (match: DuelMatch) => void;
+  /** Called once when the match is over, after the players were told; `winner` is `null` for a draw. */
+  readonly onEnded: (match: DuelMatch, winner: PlayableTeam | null) => void;
 };

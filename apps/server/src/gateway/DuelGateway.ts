@@ -44,7 +44,10 @@ export class DuelGateway {
         // A reconnect takes over its held slot and is told its state: nothing more to do.
         if (message.guestId !== undefined && presence.resume(connection, message.guestId)) return;
         if (host.isInMatch(connection)) connection.send({ type: 'rejected', reason: 'in-match' });
-        else queue.join(connection, message.name);
+        else {
+          const guestId = presence.guestIdOf(connection);
+          if (guestId !== null) queue.join(connection, message.name, guestId);
+        }
         return;
       case 'queue-leave':
         if (host.isInMatch(connection)) connection.send({ type: 'rejected', reason: 'in-match' });
