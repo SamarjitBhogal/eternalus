@@ -27,34 +27,50 @@ export type SimulationOptions = {
   readonly debug?: DebugConfig;
   /** Where entity definitions are found by id; `loadDefaultContent(config.tickRate)` when omitted. */
   readonly content?: DefinitionSource;
-  /** The generated map; its lanes and structures drive the lane hordes (architecture 18). Without one, nothing spawns on lanes. */
+  /**
+   * The generated map; its lanes and structures drive the lane hordes (architecture 18). Without
+   * one, nothing spawns on lanes, and a `roster` throws.
+   */
   readonly map?: MapDefinition;
   /** The level curves Legends level along; `loadLevelCurves()` when omitted. */
   readonly levelCurves?: Pick<ContentCatalogue<LevelCurveDefinition>, 'has' | 'get'>;
   /**
-   * The bot Legends, spawned when the match is built at the start of their lane on their side
-   * (architecture 18 §8); a match without one has no bots. Needs `map`.
+   * The match's Legends, spawned when the match is built by their role (architecture 18 §8): the
+   * bots, and the human's Legend when one slot has `pilot: 'human'` (DISC-51); a match without one
+   * has no Legends, and one without a human slot is in sim mode. Needs `map`.
    */
   readonly roster?: readonly RosterSlot[];
   /** Where Legends find their weapons by id; `loadWeapons(config.tickRate)` when omitted. */
   readonly weapons?: WeaponSource;
 };
 
-/** One bot Legend of a match roster (architecture 18 §8): who, for which team, in which role. */
-export type RosterSlot = {
+/** What every roster slot names: who, for which team, in which role (architecture 18 §8). */
+type RosterSlotBase = {
   readonly team: PlayableTeam;
   /** The Legend definition (its class). */
   readonly definitionId: string;
-  /** A `laner` gets a lane at setup; the `rover` takes none (MS-20). */
+  /** A `laner` gets a lane at setup; the `rover` takes none and starts at its Stronghold (MS-20). */
   readonly role: BotRole;
-  /** The bot's difficulty (`content/ai/difficulties/`). */
-  readonly difficulty: string;
 };
 
 /**
+ * One Legend of a match roster (architecture 18 §8), told apart by who pilots it: a `bot` plays at
+ * its difficulty; the `human` slot is the player's Legend, at most one per roster and on
+ * `config.match.playerTeam`, with no controller (DISC-51: the human player is their team's Rover;
+ * DEC-173).
+ */
+export type RosterSlot =
+  | (RosterSlotBase & {
+      readonly pilot: 'bot';
+      /** The bot's difficulty (`content/ai/difficulties/`). */
+      readonly difficulty: string;
+    })
+  | (RosterSlotBase & { readonly pilot: 'human' });
+
+/**
  * What a match was built with: the seed, the config and, when the match had them, the generated
- * map, its placed objects and the bot roster. Plain data, so a replay can rebuild the same
- * world without the code that prepared it (architecture 03 §9, 15 §7).
+ * map, its placed objects and the roster (the human's slot among them). Plain data, so a replay
+ * can rebuild the same world without the code that prepared it (architecture 03 §9, 15 §7).
  */
 export type ReplaySetup = Pick<
   SimulationOptions,

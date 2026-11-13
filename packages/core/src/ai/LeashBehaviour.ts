@@ -10,6 +10,7 @@ import type {
   LeashSituation,
   LeashStep,
 } from './LeashBehaviour.types';
+import { countdownTicks } from '../config/countdownTicks';
 
 /**
  * The acquire and engage logic every leashed mob shares (architecture 18 §6.1, §7;
@@ -76,7 +77,8 @@ export class LeashBehaviour {
   /** The candidate's place in the priority list; infinite when it matches no entry. */
   public rankOf({ state, team, rule, objective }: LeashSituation, candidate: EntityId): number {
     const { countdownSeconds } = state.config.match;
-    const ghostUntil = countdownSeconds * state.config.tickRate + rule.ghostFirstWaveTicks;
+    const ghostUntil =
+      countdownTicks(countdownSeconds, state.config.tickRate) + rule.ghostFirstWaveTicks;
     const kind = state.entities.get(candidate)?.kind;
     if (
       rule.ghostFirstWaveTicks > 0 &&

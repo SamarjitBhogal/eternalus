@@ -16,22 +16,41 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
-- [ ] **Minion plan MVP gaps (2026-11-06, `docs/minion-plan-mvp-gaps`) — three answers.** The
-      minion plan's new §1.2 lists what the minions still lack for the MVP. (1) **Zone level-up**
-      (reference 02, MVP) is designed in architecture 07 §7 but no plan scheduled it; it is now
-      minion plan phase M10, after PR #64. Open: which zones count, the Cathedral only or all three
-      central zones (OQ-47)? And the numbers: `balancing.md`'s `Recommendation:` is +1 minion level
-      for that lane's newly spawned minions after 90 s of continuous ownership, at most 3, all lost
-      with the zone. Approve, or give others. (2) **Checkpoint defenders** (M6b) wait for PR #64.
-      Sign off the recommendations of the "Minion M6" item (1) now (the leash is the zone's radius;
-      defenders at an unowned point are neutral), so M6b can start when #64 lands. (3) **Zone
-      cooldown reduction** (FR-041, 07 §7) is Legend-side, not minion work, and no plan schedules
-      it. Who owns it?
+- [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
+      blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on
+      every map feature, so `map/strongholdRing.ts` checks at run time that a Stronghold has it
+      and throws `Missing generated wall boundary` if not. Today the generator always sets it
+      (`MapBuilder.placeStrongholds`), and all three call sites (two in `MapPresentationBuilder`,
+      one in `MapSceneryBuilder`) read it through `strongholdRing`. Approve: a follow-up PR adds a
+      Stronghold feature type with `wallBoundary` required, `MapBuilder` builds it and
+      `strongholdRing` takes it, so the type checker replaces the run-time throw. Or drop it.
 
-- [ ] **Request (2026-11-06, `docs/minion-plan-mvp-gaps`): push the minion follow-up branches.**
-      `fix/minion-stack-followups` and `feat/out-of-combat-heal` carry many of your rulings
-      (DEC-160 to DEC-169, DEC-181, DEC-185, DEC-188, DEC-189, DEC-193, DEC-215, DEC-217, DEC-219)
-      but are not on `origin`. Please push them and open their pull requests.
+- [ ] **`fix/blocking-at-bounds` critic (2026-11-05), better than the design — optional
+      follow-ups, no decision blocks the PR.** (1) Keep one box per footprint instead of one per
+      map object: a ring or multi-segment wall's box covers its whole court, so units inside it
+      still run the full shape test (not needed now: 125 ticks with map objects take 0.19 s).
+      (2) Three places still build the same box by hand and could call `boundsOf`
+      (`utils/geometry.ts`): `map/MapSceneryBuilder.ts`, `map/findMapObjectAt.ts` and
+      `map/WorldMap.ts` (a follow-up PR; no drive-by refactor here). (3) Doc 15's invariant
+      catalogue does not list `NoMapObjectOverlapInvariant` (`no-map-object-overlap`); a
+      doc-gardening fix. Approve which to schedule, or drop them.
+
+- [ ] **Minion plan MVP gaps (1): zone level-up numbers (2026-11-06, refreshed 2026-11-12,
+      PR #81).** Zone level-up (reference 02, MVP) is designed in architecture 07 §7 and now
+      scheduled as minion plan phase M10; `CaptureSystem` is on the phase branch (PR #64), so
+      only your answers block it. (a) Which zones count: the Cathedral only, or all three central
+      zones (OQ-47)? (b) The numbers: `balancing.md`'s `Recommendation:` is +1 minion level for
+      that lane's newly spawned minions after 90 s of continuous ownership, at most 3, all lost
+      with the zone. Approve, or give others.
+
+- [ ] **Minion plan MVP gaps (2): checkpoint defenders sign-off (2026-11-06, refreshed
+      2026-11-12, PR #81).** M6b (checkpoint defenders) no longer waits for PR #64, which merged
+      on 2026-11-08. Sign off the recommendations of the "Minion M6" item (1) below (the leash is
+      the zone's radius; defenders at an unowned point are neutral), and M6b can start.
+
+- [ ] **Minion plan MVP gaps (3): who owns the zone cooldown reduction (2026-11-06, PR #81).**
+      The zone's cooldown reduction (FR-041, 07 §7) is Legend-side, not minion work, and no plan
+      schedules it. Who owns it?
 
 - [ ] **Minion follow-ups: 12 better-than-design items for the tidy PR (critics A and B on
       `fix/minion-stack-followups`, 2026-11-05; DEC-219 (d)) — sign-off per item.** Built on that
@@ -55,6 +74,37 @@ Reply inline (`Decision: …`).
       `waypointRadius` is dropped (inferred, not measured). Full findings:
       `eternalus-agent-work/minion-stack-audit/reports/runner-reports/critic-followups-r1.md`.
       Approve all, approve some, or say no.
+- [ ] **More better-than-design items for the tidy PR (DEC-218), found 2026-11-05 and 2026-11-06
+      on the follow-ups, chevron, heal and tower-ruins branches — sign-off per item.** Not built.
+      Follow-ups critic round 2: (C1) `DefaultSystemPipeline.fortBoxesOf` reads the store when
+      the pipeline is built (an order coupling); `Simulation.spawnStructures` returns the static
+      fort boxes, or `MatchWorld` keeps them, so a dev-spawned tower gets a box too; (C2) the
+      per-tick A\* plan budget uses the AI round-robin cursor (`state.ai.cursor`) instead of store
+      order (the follow-ups runner proposed the same); (C3) only `VeterancySystem` adds levels:
+      `Veterancy.gainLevels` is still public. Follow-ups runner: (R1) `GuardController` builds
+      the per-post leash rules and closures on each decision; it can read the post from the
+      situation (one field); (R3) `PathingSystem` takes one options object; (R4) the `moveTo` tests
+      move to `BotMovement.test.ts`. Chevron critic round 3: item 1 is DEC-220 (4) (a start-facing
+      port for `EntityFactory`, guard-plan data `facesOutward`); (V2) `MatchWorld.strongholdOf(team)`
+      reuses the strongholds map and replaces the second lookup and throw in the Rover spawn in
+      `Simulation`; (V3) one reach-and-aim query, `EntityStore.reachAimOf`, because
+      `CombatSystem` looks up the aim point twice for an attacker in reach. For DEC-218 (B4): a fifth copy of the opposing-team rule is in `MatchWorld.startFacing` (it
+      maps `neutral` to no team). Tower ruins (DEC-217): (T1) one body relation with a data field
+      (collapse or ruin) instead of `buildingId` (collapses through `MapDestructionSystem`) and
+      `partOf` (stays as ruins); (T2) `WorldObjectStore.spawn` gets only the definition id: pass
+      what it needs explicitly. Heal (DEC-215): (H1) one point-in-box helper instead of three
+      copies (`PathingSystem.isInsideFort`, `geometry.doesPolygonOverlapRect`, `HealingZones`).
+      Full findings: `eternalus-agent-work/minion-stack-audit/reports/runner-reports/critic-followups-r2.md`,
+      `eternalus-agent-work/playtest-2026-11-04/critic-chevron-r3.md` and
+      `eternalus-agent-work/playtest-2026-11-04/session-2383bba1-reports.md`. Approve all,
+      approve some, or say no.
+- [ ] **Generated forts overlap when a lane has two or more towers of one kind (map generator).**
+      Found on `feat/out-of-combat-heal` (2026-11-05). With `spawnTowersPerLane` or
+      `buffTowersPerLane` at 2 or more, the generator puts towers of one kind 28 to 38 m apart,
+      but a fort box is 32 m wide. The forts and their heal zones then overlap, and DEC-215 (1)
+      says an overlap is a bug. The default (one tower of each kind per lane) has no overlap, and
+      the heal-zone overlap test covers only the default. Fix the generator now (towers of one
+      kind at least one fort box apart), or with the map work? Decision: …
 
 - [x] **Minion M4 done-when, read for objectives (2026-11-02, `chore/minion-full-march-test`) — sign-off.**
       The plan's M4 check "hordes reach the enemy end with 0 stuck units for `numLanes` 3 and 5"
@@ -69,11 +119,10 @@ Reply inline (`Decision: …`).
     objective" check is approved.
 
 - [ ] **Minion M6 (`feat/minion-m6-camps-defenders`, overnight 2026-10-30) — camps built,
-      checkpoint defenders blocked.** (1) **Blocked:** checkpoint defenders need `CaptureSystem`,
-      which is only on PR #64 (`feat/capture-points-v2`, open; #49 was closed), not yet on the
-      phase branch. Once #64 is on the phase branch,
-      defenders are a guard plan per checkpoint asked for by `CaptureSystem`. Recommendations
-      ready for then: the leash is the zone's radius; defenders at an unowned point are neutral
+      checkpoint defenders wait on your sign-off.** (1) **Sign-off needed:** checkpoint defenders
+      need `CaptureSystem`, which is on the phase branch since PR #64 merged (2026-11-08; #49 was
+      closed). Defenders are a guard plan per checkpoint asked for by `CaptureSystem`.
+      Recommendations: the leash is the zone's radius; defenders at an unowned point are neutral
       (doc 18 §10, item 4). (2) **Camps as built:** inactive until the countdown ends; light 4
       light, medium 2 medium + 2 light, heavy 1 heavy + 2 medium (balancing.md); 6 m leash; the
       whole group respawns 120 s after its last mob dies, and `camp-cleared` fires then. A camp
@@ -215,6 +264,7 @@ Reply inline (`Decision: …`).
       values, also for you to confirm: level cap 10, `xpToNext = 100 + 50·(L−1)`, +8% base health
       and +10 aether per level, Legend kill 150 + 25 × victim level, minion kill 20 / 45 / 120.
   - Update after your PR #31 review (O1–O8): cap 50 (O6). **Income estimate to check:**
+    **Superseded by DEC-190 (2026-11-05); see the update below.**
     balancing.md says its XP sources take an active Legend to 2,700 XP in 18–22 minutes, about
     135 XP/min (minions about 110 XP/min, the rest kills and objectives). Keeping that income and
     balancing.md's curve shape (growth = half the first step), the cap-50 curve is
@@ -230,6 +280,16 @@ Reply inline (`Decision: …`).
     Legend, with the XP to the next level rising each level. Your choice of 2026-10-30: the resize
     waits for bot laners (PR #46). Measure the real XP per minute once bots fight in lanes, then
     size `content/progression/levelCurves.ts` to DEC-90.
+  - **Update 2026-11-05 (DEC-186, DEC-190):** the owner approved a new XP model that replaces the
+    income estimate above. Goal: a Legend with 10+ Legend kills and 100+ minion kills, on a team
+    that destroyed 4 towers, is about level 40 at 20 minutes, and no single kill or structure
+    gives several levels. The curve, the Legend kill formula and the structure XP are in
+    `content/progression/levelCurves.ts` and `xpSources.ts`; minion XP did not change. Every
+    Legend on the destroying team gets structure XP (DEC-186). **This is not final:** it can
+    change if the soak metric "Legend level at 10 and 20 minutes" shows that levelling does not
+    happen as the owner wants. A dead Legend gets no structure XP today. The owner ruled that
+    it is paid on respawn once respawn (GL-12) exists; a `ponytail:` note in
+    `ProgressionSystem.ts` marks the stand-in.
 
 - [ ] **DEC-15 — camp placement, still open after your answer** (the rule is recorded as DEC-15,
       2026-10-10). (1) Does the random, parity-checked placement also apply to the corner camps?
@@ -547,6 +607,25 @@ Reply inline (`Decision: …`).
     `Progression` components, but its entity snapshot still carries only health, so the HUD's
     aether, level and XP keep their "no data yet" state until core publishes the player snapshot
     (architecture 05 §15 and §18; Phase 4, sprints 4.5 and 4.7). Nothing to answer.
+  - Since `feat/hud-level-xp` (2026-11-09), the entity snapshot also carries a Legend's level, the
+    XP inside that level and the XP that level needs, so the HUD's level and XP ring are live.
+    Aether keeps its "no data yet" state. Answered 2026-11-09 (question dialog): at the level cap
+    there is no next level, and the ring shows full ("Full ring (Recommended)"); the per-Legend
+    level and XP become the design ("Adopt it (Recommended)", the critic's better-than-design
+    item). Recorded in DEC-224. Nothing waits.
+  - Since `feat/hud-aether-bar` (2026-11-09), the entity snapshot also carries a Legend's aether
+    (left and full), so the HUD's aether bar is live. Answered 2026-11-09 (question dialog): the
+    bar only, no regeneration until the first ability spends aether ("Bar only, no regen
+    (Recommended)"; OQ-56 stays open); the owner left the data path to the session ("choose the
+    best long-term design with the least tech-debt"), which made the per-Legend aether group the
+    design. Recorded in DEC-230. Nothing waits.
+  - The aether bar's critic (2026-11-09) found two designs better than the docs: (A) the player
+    snapshot should hold only what the player alone has (the ability slots) while the bridge joins
+    the Legend's health, aether, level and XP from its entity snapshot, so each value is in the
+    snapshot once; (B) one class should build each entity's snapshot, so a new group no longer
+    changes `GameState`. Answered 2026-11-09 (chat): "A only if there is an assurance that B will
+    be done in the near-future. no tech-debt if possible, when possible." No plan schedules
+    either, so both were built on `feat/hud-aether-bar`. Recorded in DEC-232. Nothing waits.
   - Answered 2026-10-28 (the non-blocking decision page, in chat): "Keep", with: "Keep. Empty frames
     for abilities that do not yet exist. Wuuthrad was used as weapon reference, so that artwork
     exists, as well as some ability artwork (not associated with real abilities yet). Empty frames,
@@ -1422,6 +1501,11 @@ Reply inline (`Decision: …`).
   - **Update 2026-11-04 by DEC-182:** default (4) is replaced by the local minimap view (400 world
     units across, north up, clipped to the ring; `feat/local-minimap`). DEC-187: it shows Legends
     and minions.
+  - Superseded 2026-11-05 (default (4) only; the answer above stays as written): the owner's local
+    minimap ruling DEC-182 replaces "the whole map inscribed". The minimap shows the circle of 200
+    world units around the player, north up, clipped to the ring, with a centre marker, and it
+    follows the camera while the player is dead. DEC-187 adds Legends and all mobs (minions, tower
+    guards, camp mobs; not bosses or the dead) as team-outlined dots. Built on `feat/local-minimap`.
 - [ ] **HC-Q7 — Scope and docs questions from this branch.** (1) Your Figma art ships now (DEC-51),
       but 10-art-and-lore and 11-mvp-scope list "High-quality character art on the selection screen"
       as post-MVP, and the MVP requirements' FR-111 says that art "is not built"; the branch treats
@@ -1901,6 +1985,10 @@ Reply inline (`Decision: …`).
     `2aa9651`: `Match` reads `MatchState.humanLegendId`), which reaches the phase branch after the
     HUD PR. Until then a test pins the interim adoption (`Match.lifecycle.test.ts`, "adopts its own spawn, never a roster bot
     of the same class and team"; `99563b4`).
+  - 2026-11-04, built on `feat/match-director`: core sets `MatchState.humanLegendId` when it
+    spawns the roster's human slot, and `Match` reads it from `Snapshot.match.humanLegendId`. The
+    adopt-the-first-spawn interim is gone from `Match.ts`. The canvas gestures moved to
+    `MatchViewControls` (HC-S6).
 - [x] **HC-Q33 — Critic loop 2 of the HUD PR: replay size, three code tidies and the explorer's
       left button (2026-11-02).** (1) A crash report's replay holds the whole generated map and
       map objects (about 0.5 MB; cap 16 MB): keep that, or keep only the roster and generate the
@@ -1923,7 +2011,7 @@ Reply inline (`Decision: …`).
     (Recommended)" (DEC-153, built on `feat/hud-plan-b6` in `5500a0c`). The re-check (one
     correctness critic on `eaa5f7c..dd41ca1`) approved with four nits: one doc wording fixed,
     three rejected with reasons in the PR changelog.
-- [ ] **HC-S6 — Better than the design, scheduled: `Match`'s pointer and explorer controls in their
+- [x] **HC-S6 — Better than the design, scheduled: `Match`'s pointer and explorer controls in their
       own class (HUD PR, critic loop 3, BD-B; DEC-139).** About 85 lines of `Match` only pass the
       canvas gestures through (`hasDeveloperRoofs`, `lookAtMinimapPoint`, `panBy`, `zoomBy`,
       `toggleRoofAt`, `attackAt`, `overview`, `leaveExplorer`, `setPointerClaimed`). A
@@ -1934,7 +2022,49 @@ Reply inline (`Decision: …`).
       loop: (a) BD-C, Phase 5: nest a replay's setup (`{ setup: S; commands; checkpoints }`)
       instead of spreading it (noted on the Phase 5 replay task, with DEC-152); (b) a map validation rule
       against overlapping building footprints before #64's capture zones reuse `findBuildingAt`
-      (told to the #64 lane; noted in the HUD PR).
+      (told to the #64 lane; noted in the HUD PR). (2026-11-03, #64 lane: zones share the point
+      test `isPointInAnyPolygon`, not `findBuildingAt`, so (b) does not gate #64; it still holds
+      for the roofs.)
+  - Built 2026-11-04 (`feat/match-director`, after the phase/3 merge): `MatchViewControls` holds
+    the nine members; `Match` builds it and exposes it as `controls`, and `MatchHost` gives
+    `match.controls` to `CanvasPointerControls`. Architecture 06 §10 names the new owner. (a) and
+    (b) stay where they were noted.
+- [x] **HC-Q35 — The human's Legend: shared spawn path, or a roster slot (match-director critic, better than the design; DEC-139).** Spawn the human through one Legend spawn path shared with the bot roster (built as plan A19, with the seat as `{ definitionId }`), or record the human as a `player` slot of the roster? Recommendation: the shared path; the roster option changes plan A19.
+      Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
+  - Answered 2026-11-04 (DEC-173): A1, with the note to accept it only if a critique finds it as
+    good as or better; the critic found A2 better, and the owner then chose "Keep A2" in chat. Built
+    on `feat/match-director`: `RosterSlot.pilot` (`'bot'` or `'human'`); `MatchConfig.seat` removed.
+- [x] **HC-Q36 — The countdown-end tick: one helper, or one mark kind (match-director critic, better than the design; DEC-139).** Keep `Math.round(countdownSeconds * tickRate)` in three production files behind a `countdownTicks` helper in `config/`, or add an at-countdown-end mark kind to the timeline so `countdownSeconds` is the one source? The two critic runs preferred different options; see the decision page.
+      Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
+  - Answered 2026-11-04 (DEC-170): "One helper" (B1). Built on `feat/match-director`:
+    `config/countdownTicks.ts`, used by every copy, including `ai/LeashBehaviour.ts`.
+- [x] **HC-Q37 — Team helpers in `teams/` (match-director critic, better than the design; DEC-139).** Add value helpers (`PLAYABLE_TEAMS`, `isPlayableTeam`, the opposing team) to `teams/`, which holds types only today? It repeats the same two literals in five places now, and it changes the architecture 02 §2 row for `teams/`.
+      Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
+  - Answered 2026-11-04 (DEC-171): "Build in this PR". Built on `feat/match-director`:
+    `teams/playableTeams.ts` (`PLAYABLE_TEAMS`, `isPlayableTeam`, `opponentOf`).
+- [x] **HC-Q38 — `GameState.match` read-only, with narrow writers (match-director critic, better than the design; DEC-139).** Expose `GameState.match` as read-only and add narrow writers (`holdIdle`, `endMatch`, `seatHuman`, `advanceTimeline`), as `setPhase` already is for the phase (DEC-84 (6))? Today any system can set `match.result` or `isIdleHeld`.
+      Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
+  - Answered 2026-11-04 (DEC-172): "Build in this PR". Built on `feat/match-director`: the
+    writers `holdIdle`, `endMatch`, `seatHuman` and `advanceTimeline` on `GameState`.
+- [x] **HC-Q39 — `DefaultInvariantRunner` takes an options object (match-director critic, better than the design; DEC-139).** Replace the five positional constructor arguments of `DefaultInvariantRunner` with an options object, as DEC-113 (4) did for `MatchDirector`?
+      Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
+  - Answered 2026-11-04 (DEC-174): "Build in this PR". Done on `feat/match-director`: `DefaultInvariantRunnerOptions`.
+- [x] **HC-Q40 — The `end-game` mark 0.75 has no source (match-director critic).** The default timeline enters `end-game` at 0.75 of the planned length (`config/defaultGameConfig.ts`), and architecture 12 §3 calls it a recommendation with no source. Keep 0.75, give a source, or change it?
+      Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
+  - Answered 2026-11-04 (DEC-175): "Keep 0.75 as your ruling" (D1). Done on `feat/match-director`: the `end-game` mark cites DEC-175.
+- [x] **HC-Q41 — FR-006 wording (match-director critic).** FR-006 still names `match-phase-changed`, the phases "late → ended" and a "20-minute timeline"; the built director has the event `phase-changed`, the phases of architecture 12 §2, and a 1800 s planned length. What wording do you want for the statement and its acceptance example?
+      Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
+  - Answered 2026-11-04 (DEC-176): "Use the proposed wording" (E1). Done on `feat/match-director`: FR-006 in requirements 06.
+- [x] **HC-Q43 — Split a `MatchRecord` store out of `GameState` now, or schedule it (match-director critic, round 2).** `GameState.ts` is 349 lines, over the ~300-line guide, mostly from the match writers of DEC-172. Build a `MatchRecord` store in `state/` in this PR, or schedule the split with HC-S7?
+  - Answered 2026-11-04 in chat (DEC-177): "A: Build MatchRecord now". Done on `feat/match-director`: `state/MatchRecord.ts`; `GameState.match` is a `MatchRecord`.
+- [x] **HC-Q44 — Export `opponentOf` from core (match-director critic, round 2).** The client's `game/session/buildMatchSetup.ts` has its own one-line copy of the "other team" rule (DEC-171). Export `opponentOf` from `@eternalus/core` and use it, or leave the copy?
+  - Answered 2026-11-04 in chat (DEC-178): "A: Export opponentOf". Done on `feat/match-director`: core `index.ts`, used in `buildMatchSetup.ts`.
+- [x] **HC-Q45 — `check:quick` fails on agents' untracked probe tests (match-director, round 2).** In the main checkout, ESLint lints untracked `zz*Probe.test.ts` files that agent sessions left in `eternalus-agent-work/`. How do we fix it?
+  - Answered 2026-11-04 in chat (DEC-179): "A: Ignore eternalus-agent-work/". Done on `feat/match-director`: `eslint.config.js` `globalIgnores` and `.gitignore`.
+- [ ] **HC-Q46 — Only the match code can reach the match writers (match-director critic round 3, better than the design; DEC-139).** `GameState.match` is a `MatchRecord` (DEC-177), so every system, command handler and bot controller that holds `GameState` can call `endMatch`, `holdIdle` and the other writers. Only review keeps DEC-172's "one caller each" (today the calls are only in `match/` and `Simulation.ts`). Options: (a) type the public `GameState.match` as the read-only `MatchState` and give the `MatchRecord` only to `DirectorContext` and `Simulation` (the compiler stops other callers; changes the 03 §2 sketch); (b) an ESLint `no-restricted-syntax` rule that refuses `.match.<writer>(` outside `match/`, `Simulation.ts` and tests; (c) leave it to review. Agent's recommendation: (a), in its own PR with the HC-S7 split, not in the match-director PR (its critic rounds are used up, and round 2 had the same exposure).
+  - Answered 2026-11-05 in chat (DEC-210): "(a) Read-only type". To build: its own PR from the phase
+    branch after the match-director PR (#74) merges, with the HC-S7 split.
+- [ ] **HC-Q42 — Where do Legends spawn at tick 0: all at their Citadel (DEC-80), or as built (match-director critic).** DEC-80 says "All Legends spawn at their Citadel at tick 0." As built (architecture 18 §8, MS-20), each bot laner spawns at its team's end of its assigned lane, and only the Rovers (the bot Rover and the human's Legend, DEC-173) spawn at their team's Stronghold. Keep the as-built lane start for laners and narrow DEC-80 to respawns, or spawn every Legend at its Citadel and let laners walk to their lanes?
 - [ ] **HC-S7 — Scheduled: split `Simulation.ts` and `SessionController.ts` below the ~300-line
       guide (PR #68 review, follow-up 3).** `Simulation.ts` (461 lines) holds start-up helpers
       (`spawnRoster`, `spawnRovers`, `spawnBot`, `buildWorld`, `createControllers`,
@@ -1943,6 +2073,26 @@ Reply inline (`Decision: …`).
       merge. `SessionController.ts` (327 lines): its asset loading (`loadAssets`,
       `releaseAssets`, `publishLoaded`, `publishProgress`) is the part to move out. Nothing to
       answer unless you want it sooner.
+  - 2026-11-04 (match-director critic round 2, #4): on `feat/match-director`, `Simulation.ts` is
+    618 lines; `spawnRovers` and `spawnBot` are gone. Its roster helpers (`spawnRoster`,
+    `planLanes`, `humanSlotOf`, `controllerOf`, `spawnSlot`, `strongholdOf`, `legendRefusal`)
+    are one responsibility: the split is a `RosterSpawner` class. #56, #57, #58, #66 and #67 have
+    merged; open PRs #64 and #32 still edit the file. `SessionController.ts` is 326 lines.
+- [ ] **HC-S8 — Scheduled with GL-3: filter the timeline rules by action kind (match-director
+      critic).** `validateGameConfig` reads every timeline entry as `enter-phase`: the rules "at
+      least one `enter-phase` entry" and "the first `enter-phase` entry ends the countdown" count
+      any entry. When `spawn-sovereigns` lands (a tick-0 entry), filter by action kind, or the
+      default config becomes invalid. Nothing to answer.
+- [ ] **HC-S9 — Scheduled with GL-3: command logging after the end (match-director critic).**
+      Once the match has ended, every bot and human command logs INFO `core.commands` during
+      the 5 s run-on (DEC-92). That can flood the client's TRACE ring, which is the error-report
+      evidence. Decide the log level or a one-line summary when GL-3 builds the end. Nothing to
+      answer.
+- [ ] **HC-S10 — Scheduled with GL-3: the FR-002 acceptance test through `Simulation`
+      (match-director critic).** The FR-002 test ("kills a King at tick T, receives `match-ended`
+      and a `MatchResult` at tick T, no further commands") runs on a test entity with
+      `WinObjective` today, because no shipped kind has the component. Add the test through
+      `Simulation` when GL-3 gives the sovereign the component. Nothing to answer.
 - [ ] **HC-S1 — Suggestion, not built: countdown urgency.** At 10 s or less, a stronger glow, a
       1 Hz pulse and screen-reader lines at 10 and 5 s. If you want it, it comes back as a
       `creative` row: a data-selectable variant with your static original kept live (DEC-53).
@@ -2037,6 +2187,10 @@ Reply inline (`Decision: …`).
     panel of a Magus player: your HUD frame draws only the Vanguard's battle axe, so the build shows
     the staff from your alternate class layout; your HC-F6 note ("empty weapon container") may mean
     it should stay empty (asked in HC-F6).
+  - Note 1 superseded 2026-11-05 (the note above stays as written): DEC-182 sets the local minimap
+    view at radius 200 world units (not 400), with a centre marker (a white ring) in place of the
+    red chevron, and a click that moves the camera. DEC-187 adds the unit dots. Built on
+    `feat/local-minimap`. Notes 2 to 4 are unchanged.
 
 - [ ] **Combat — friendly fire (PR #34, `feat/combat-damage-pipeline`).** No reference doc says
       whether allies can hurt each other. The combat pipeline ships `FriendlyFireStep` as the
@@ -2105,6 +2259,22 @@ Reply inline (`Decision: …`).
       `onHit`, heavy and parry wait for the ability framework (4.2). SCRUM-287's "validation
       rejects a class-locked weapon in the wrong loadout" waits for `WeaponAllowedRule`
       (SCRUM-290).
+- [x] **ObjectPool — pooled `GameEvents` payloads (SCRUM-427, branch `feat/object-pool`).** The
+      `ObjectPool` base is built in `utils/` (phase 1 plan, sprint 1.2: "pool resets fields on
+      acquire and nulls references on release"). The item's "done when" (high-frequency
+      `GameEvents` payloads come from the pool) is **not wired**, because it clashes with how
+      events work today: `GameEvents.emit` keeps every payload in the recent-events ring buffer
+      (diagnostic reports), and handlers (`GameState`, `ProgressionSystem`, the client via
+      `Simulation.on`) may keep a payload after `emit` returns. A recycled payload would silently
+      change those records. Options: (1) pool only projectiles first (04 §11), and keep event
+      payloads unpooled until profiling shows GC pauses (NFR-023 soak); (2) pool payloads and copy
+      them into the ring buffer, with a rule that handlers never keep a payload. Which one?
+      Option (1) also means updating 02-coding-principles (Object Pool row) and the phase 1 plan
+      item, which list event payloads as pooled; 04 §11 already names only projectiles.
+      Option (2) also needs a snapshot rule: payloads hold nested references (`DamageSource`,
+      `memberIds`, `bars`), so the ring buffer would need a deep or immutable copy, not a shallow one.
+  - Answered 2026-10-30 (DEC-94): option (1), pool projectiles only; payloads stay unpooled until
+    profiling shows GC pauses.
 - [ ] **PR #30 — schedule occupancy-driven cutaways** (owner: Gurshaan). A building's roof opens
       today only when it is clicked; no plan item has the roof open while a unit is inside it.
       The PR #30 notes said "Phase 2 sprints 2.1 and 2.4", but those sprints are the Structure
@@ -2119,6 +2289,16 @@ Reply inline (`Decision: …`).
       and stops deploying once its body stands wholly on walkable ground, or at its exit;
       architecture 18 §3.2/§5.2 still say the lane field leads it out. Edit and apply the rest of
       Draft 2 in the same file.
+- [ ] **PR #64 better than the design? (critic round 6, 2026-11-03)** — `MatchBridge` finds each
+      capture point's zone by position: core's `Simulation.spawnZones` puts a zone on its map
+      feature's position, and the client relies on that (a whole-match test in
+      `createBrowserMatch.test.ts` guards it). The critic suggests that a zone's `EntitySnapshot`
+      carries its map feature id, as a map object carries `mapObjectId`. Then the link is a field,
+      not an unwritten contract between the packages. It also settles two meanings of `pointId`:
+      core's capture events name the zone's entity id, the HUD's `CapturePointStatus.pointId` is
+      the feature id; they meet when architecture 12 §8 turns `capture-point-owner-changed` into
+      `point-taken`. It is a core API change (`EntitySnapshot`). Build it on #64, or later with the
+      `point-taken` wiring?
 - [ ] **FR-071 still names the `returning` state (PR #56, DEC-155)** (owner: sholtzman,
       `docs/requirements/06-mvp-requirements.md`). FR-071 gives the minion FSM as
       `marching → engaging → returning`. Since DEC-155 it is `marching ⇄ engaging`: a leash break
@@ -2165,6 +2345,16 @@ Reply inline (`Decision: …`).
       left-click roof toggles against the attack binding after PR #30 merges.
 - [ ] **PR #22 toolbar follow-up** — Owner: sholtzman, HUD/character-select branch. Move map
       toolbar state from game/useMatch into the bridge after PR #30 merges.
+- [ ] **PR #64 density follow-up** — Owner: sholtzman, HUD/character-select branch, after PR #64
+      merges. Show each team's density % (its share of `CaptureSnapshot.presence`) in
+      `ObjectiveTracker` while the player's Legend stands in a zone (DEC-145 (c), owner answer A).
+      The HUD branch's snapshot fixtures also need the new fields: `EntitySnapshot.area` and
+      `CaptureSnapshot.presence`. Whichever of PR #64 and the HUD PR lands second makes
+      `ZoneArea.contains` and the HUD PR's `findBuildingAt` (its DEC-149 (6)) share one
+      point-in-footprint predicate (`footprint.some(isPointInPolygon)`). Share the predicate, not
+      `findBuildingAt` itself: a zone asks whether a point is on its own floor, and `find` returns
+      only the first of two overlapping footprints. (2026-11-03: done on #64 after the HUD PR
+      merged into it: `isPointInAnyPolygon` in `utils/geometry.ts`. The density % part is open.)
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
       `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`
