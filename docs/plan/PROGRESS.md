@@ -6345,3 +6345,33 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   Only this file conflicted; every entry from both sides is kept, date-ordered. No code changed.
 - Checks run: `npm run check` → `EXIT=0` (Node 24.21.0).
 - Next step: squash-merge #52 into phase/3.
+
+### 2026-11-12 — Phase 3 / corner camp boss (interim), PR #91 review (Sam) — feat/bosses-p3 — Aryan Walanj + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` (`3dc9e908`) into this branch; only this
+  file conflicted (both sides' entries kept); `structureCatalogue.ts` and doc 07 merged cleanly.
+  Answered Sam's review of PR #91 where it does not wait on another PR:
+  - "PM-approved" wording replaced by DEC-236 citations (`mobs/cornerBoss.ts`, `guardPlans.ts`,
+    doc 07); the 300 s respawn cites DEC-12. The DEC-236 row is not added to the decisions log:
+    `docs:check` does not require a cited DEC to exist, so the row stays for the batch Sam asked
+    for. DEC-237 is not added here (PR #99 adds it).
+  - B5: new `Simulation.cornerBoss.test.ts` on a taller two-lane map with one corner camp away
+    from the lanes: an enemy Legend 15 m inside the ring loses health within 10 s; a Legend just
+    past the leash (leash + camp footprint + 1 m) is not chased (the boss stays within 1 m of its
+    post for 10 s and the Legend keeps full health); removing the boss fires `camp-cleared` once
+    with the camp's id and the boss is back 300 s later, not one tick sooner. Each test was broken
+    once and failed: aggro `acquisitionRadius` 26 → 5 (attack test), `GuardController` leash
+    check + 100 m (leash test), `respawnSeconds` 300 → 299 and the `camp-cleared` emit removed
+    (respawn test); all restored. The team-reward test waits for B2 (#99).
+  - S4: dated implementation status notes citing DEC-236 in docs 11 (§10) and 18; the sprint 3.6
+    "Bosses" list in `phase-3-minions-hordes-and-ai.md` gains "Corner boss into the `Boss` family".
+  - S2: doc 07's note lists the MiniBoss row's 5%/s regeneration and 25% minion damage cut as not
+    built. S2/S3/nit: one `INBOX.md` item for Sam with the new `TUNE` values (footprint, reach,
+    speed, acceleration, mass, vision), the "Corner Camp Boss" display name, and B2 and N4.
+  - Nit: forest and corner camps spread one `CAMP_BODY` in `structureCatalogue.ts`.
+- Waiting on #99 and #85 (not done): B2 team-wide XP capped at 2 levels (DEC-237, #99) and its
+  test; B3 the aggro rule as `GuardAggroRuleDefinition` with `GUARD_LEASH` (#85); B4 the corner
+  camp radius in core content (after #85's `GUARD_LEASH`); S5 the tolerance comments (after #85's
+  5.5 m tolerance). S1 (acquisition from the real post) goes with B4.
+- Checks run: see below.
+- Next step: Aryan pushes and re-requests review; then B2–B5 leftovers once #85 and #99 merge.

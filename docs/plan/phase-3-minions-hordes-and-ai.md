@@ -4,7 +4,7 @@ description: Sprint checklists for the Mob family, the Horde composite, flow-fie
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-03
+last-reviewed: 2026-11-12
 tags: [plan, phase-3, minions, hordes, ai, pathing, match-director]
 paths: ['packages/core/src/ai/**', 'packages/core/src/match/**', 'packages/core/src/map/**']
 related:
@@ -174,6 +174,9 @@ Owner: _ (sim lane A). Week 7. Depends on 3.3 and 3.5.
       from content: move list, cooldowns, zone restriction; fights anyone from either team).
       Owner: _. Test: a boss never leaves its zone; move selection is seeded-random and
       replayable. Done when: a new boss is a definition with a move table.
+- [ ] **Corner boss into the `Boss` family** (DEC-236): the corner camp's `corner-boss` moves
+      from its interim `GuardController` stand-in (a `heavy-mob` guard) to the `Boss` family with
+      `BossController`. Owner: _. Done when: no guard plan posts a boss.
 - [ ] **Mini-boss rules** (`TUNE`: spawn at the quarter mark on the outer lanes with support
       mobs; its capture point cannot be captured while it lives; on defeat the team gets a
       permanent buff and ability XP). The final-hit consumable is an open question (INBOX).

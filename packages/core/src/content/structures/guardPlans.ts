@@ -22,7 +22,7 @@ const CAMP = {
  * The forest camps' groups (architecture 18 §7.1), keyed by camp definition id. Compositions are
  * balancing.md's `Recommendation:` (light 4 light; medium 2 medium + 2 light; heavy 1 heavy + 2
  * medium). The corner camp holds one corner boss (game doc "Outer (Corner) Camps"; interim,
- * PM-approved for Phase 3).
+ * DEC-236).
  */
 const CAMP_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
   'forest-camp-light': { ...CAMP, table: [{ mobId: 'light-camp-mob', count: 4 }] },
@@ -45,7 +45,7 @@ const CAMP_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
     // TUNE: the client draws the corner camp ring 45 m across (MapView.constants.ts), so its
     // 22.5 m radius less the camp's 1 m footprint: the boss guards exactly the ring.
     leashRadius: 21.5,
-    respawnSeconds: 300, // TUNE: game doc "spawns new bosses every 5 minutes"
+    respawnSeconds: 300, // TUNE: DEC-12; game doc "spawns new bosses every 5 minutes"
     // TUNE: the boss is bigger and reaches further than any guard (1.5 + 2 + a Sentinel's 1.25 m)
     leashTolerance: 7,
     activation: 'match-start', // game doc: corner camps hold their bosses "from the start"

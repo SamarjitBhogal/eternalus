@@ -2,9 +2,9 @@ import type { MobDefinition } from './mobs.types';
 
 /**
  * The corner camp boss (game doc "Outer (Corner) Camps"): one per corner camp, held at its camp
- * by `GuardController`. Interim (PM-approved for Phase 3): a heavy mob with the MiniBoss's stats
- * and no moves, support or team-wide reward yet. Leash and the 5-minute respawn are the corner
- * camp's guard plan (`content/structures/guardPlans.ts`).
+ * by `GuardController`. Interim (DEC-236, until the `Boss` family in sprint 3.6): a heavy mob
+ * with the MiniBoss's stats and no moves, support or team-wide reward yet. Leash and the 5-minute
+ * respawn are the corner camp's guard plan (`content/structures/guardPlans.ts`).
  */
 export const CORNER_BOSS = {
   id: 'corner-boss',

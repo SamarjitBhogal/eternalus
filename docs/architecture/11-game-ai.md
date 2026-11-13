@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-04
+last-reviewed: 2026-11-12
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -395,6 +395,10 @@ work named:
   content) or the first tick `AiSystem` sees the entity (injected content).
 - `Perception` has `unitsWithin` and `nearest`; `structuresWithin` waits for a controller that
   needs it (M2c reads lane objectives from `state.laneStructures`).
+- **2026-11-12 (corner camp boss).** §4.6 places corner-camp bosses post-MVP; DEC-236 approves
+  corner camps for Phase 3 instead. Until `BossController` (Phase 3 sprint 3.6), the corner boss
+  (`corner-boss`) is a guard of the `corner-camp` guard plan held by `GuardController` (§4.4),
+  with no moves or roaming; doc 07's implementation status lists the rest it lacks.
 
 ## Related
 

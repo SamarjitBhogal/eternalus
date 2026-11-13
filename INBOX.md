@@ -16,6 +16,21 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Corner camp boss: new `TUNE` values, its display name, and better-than-design items B2
+      and N4 (Aryan Walanj, 2026-11-12; PR #91 `feat/bosses-p3`, your review S2, S3 and nit 3;
+      DEC-236).** (1) The values with no reference source, all `TUNE` in
+      `content/mobs/cornerBoss.ts`: footprint radius 1.5 m (about twice a heavy camp mob), attack
+      reach 2 m, max speed 2.5 m/s, acceleration 8 m/s², mass 12, vision radius 26 m (its aggro
+      radius). Its health (8,200), damage (205 per hit every 1.5 s) and XP (500) are
+      `balancing.md`'s MiniBoss row, sized for level-4 Legends, though this boss exists from
+      t = 0. Approve them or give values. (2) The display name "Corner Camp Boss" (names are open
+      with HC-Q4). Approve or rename. (3) **B2, better than the design:** store the boss's health
+      and damage as multiples of `refHealth(level)` (10 × and 0.25 ×), as `balancing.md`
+      recommends, instead of absolute numbers. (4) **N4, better than the design:** the capture
+      point boss (`capturePointBoss.ts`, PR #99) uses the same MiniBoss row; once B2 is done, keep
+      that row in one shared constant, as `refHealth` multiples, that both bosses use. Approve
+      B2 and N4 (one follow-up PR), or drop them.
+
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on
       every map feature, so `map/strongholdRing.ts` checks at run time that a Stronghold has it
