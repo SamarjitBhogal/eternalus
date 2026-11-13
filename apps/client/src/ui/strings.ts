@@ -149,6 +149,19 @@ export const STRINGS = {
     reduceMotion: 'Reduce motion',
     colourBlindMode: 'Colour-blind mode',
   },
+  /** The developer menu (13 §4; `?dev=1` only). */
+  developerMenu: {
+    title: 'Developer menu',
+    spawnMobs: 'Spawn mobs',
+    team: 'Team',
+    mob: 'Mob',
+    count: 'Count',
+    origin: 'Origin',
+    spawn: 'Spawn',
+    removeEntity: 'Remove entity',
+    entityId: 'Entity id',
+    remove: 'Remove',
+  },
   pause: { title: 'Paused', resume: 'Resume', settings: 'Settings', leave: 'Leave match' },
   /** The match viewport; the explorer labels show only with the developer flag (13 §4, DEC-32). */
   viewport: {

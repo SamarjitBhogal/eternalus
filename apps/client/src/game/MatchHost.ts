@@ -10,7 +10,7 @@ import type { RunningMatch } from './SessionController.types';
  * the window and the mouse and pointer controls to the canvas, follows the player's bindings,
  * releases held input on focus loss, a hidden tab or pause, runs the client-only one-shot actions
  * on their key press (DEC-117; the developer explorer's hotkey, DEC-105, every build; the zoom
- * keys; the minimap key, DEC-147), and tears all of it down again, leaving 0 listeners and 0
+ * keys; the minimap key, DEC-147; the developer menu key, 13 §4), and tears all of it down again, leaving 0 listeners and 0
  * frames (13 §2). It owns the match and the adapters it is given.
  */
 export class MatchHost implements RunningMatch {
@@ -41,6 +41,12 @@ export class MatchHost implements RunningMatch {
       'camera-zoom-out',
       () => {
         this.deps.match.controls.zoomBy(1 / KEY_ZOOM_STEP);
+      },
+    ],
+    [
+      'toggle-developer-menu',
+      () => {
+        this.deps.match.developerMenu.toggle();
       },
     ],
     [

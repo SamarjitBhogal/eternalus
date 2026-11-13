@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-12
+last-reviewed: 2026-11-13
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -574,6 +574,14 @@ and the keybinding and settings stack of §6: `keybindings.ts`, `BindingResolver
 - Boot does not wait for the settings: the store has no bindings until the first `settings`
   event; with the memory adapter that is immediate, with IndexedDB (S2) it needs a boot-time wait
   or the `degraded` path of [14](14-persistence-and-resources.md) §10.
+
+Developer menu (2026-11-13, slice 1): `DeveloperMenu` is enabled by `?dev=1` only (the
+persisted `settings.developer.menuEnabled` needs settings persistence, which does not exist) and
+opened by `toggle-developer-menu` (F1). Built controls: spawn mobs (`dev-spawn-mobs`) and remove an
+entity by id (`dev-remove-entity`), each sent as a `dev-command` intent that `Match` enqueues. The
+mob picker is a short client list of the lane minions, not core content. Not built: `dev-spawn-legend`
+and `dev-remove-legend`, sim mode, `dev-toggle`, invariant level, timeline jump, config overrides,
+and showing core's refusals in the UI. `bridge/events.ts` has no `dev-toggle` yet.
 
 HUD (2026-10-18): the `AbilityBar` cooldown sweep of §3 is the owner's Figma look, a vertical fill
 rather than a conic sweep. A slot on cooldown shows the frame's red vertical gradient, cut from the

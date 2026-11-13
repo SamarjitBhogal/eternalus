@@ -16,6 +16,27 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu`) — developer menu, slice 1 built;
+      the rest needs owner and core work.** Built: `?dev=1` enables the menu, F1
+      (`toggle-developer-menu`) opens it, and it spawns a horde of lane minions at a map structure
+      (`dev-spawn-mobs`) and removes an entity by id (`dev-remove-entity`). Not built, and why:
+      (a) the persisted `settings.developer.menuEnabled` toggle, because settings persistence does
+      not exist yet (only the query flag enables the menu; there is no session toggle either);
+      (b) add/remove Legends with class and team pickers (FR-097), which needs a new core
+      `dev-spawn-legend` command; (c) sim mode / `dev-set-controller` (FR-099), unsupported in
+      core; (d) invariant level, timeline jump, overlays, time scale, replay dump and fixture
+      (FR-110), pre-match config overrides; (e) teleport, which no requirement names (SCRUM-437
+      says to raise it as a feature request); (f) showing core's refusals (unit cap clipping,
+      `command-rejected`): the bridge carries no diagnostic event yet. The mob picker is a short
+      client list of the three lane minions (`DeveloperMenuController.constants.ts`) because
+      neither the display catalogue nor core's public API lists mobs; a test spawns each one in a
+      real simulation. Decide: (1) the menu's name ("Architect's Table" is still only proposed);
+      (2) whether core should publish its mob list in `loadDisplayContent`; (3) whether the next
+      slice adds `dev-spawn-legend` (FR-097); (4) `?dev=1` also works in release builds (the same
+      flag already turns on the explorer chrome): add a build-time guard? Online play: a remote
+      (online Duel) match must always keep the menu disabled (`Match.isDeveloperMenuEnabled` is
+      optional and off by default, and the online match factory must not pass it), otherwise dev
+      commands would be a cheat path.
 - [ ] **BUG-5 / SCRUM-438 (2026-11-12, `fix/bound-key-actions`) — two owner questions.** (1) Bound
       but unhandled actions: `toggle-developer-menu` (BUG-4, a feature), `sprint`, `interact`,
       `turret-toggle-control`, `turret-switch-ammo` (gameplay not built) and `toggle-perf-overlay`

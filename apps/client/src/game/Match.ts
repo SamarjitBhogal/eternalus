@@ -3,6 +3,7 @@ import { type EntityId, type EntitySnapshot, makeLogRecord, type Snapshot } from
 import { isDead } from '../bridge/selectors/isDead';
 import { BuildingRoofs } from './BuildingRoofs';
 import { GameLoop } from './engine/loop/GameLoop';
+import { DeveloperMenuController } from './DeveloperMenuController';
 import { HealthBarVisibility } from './HealthBarVisibility';
 import type { LoopTarget } from './engine/loop/GameLoop.types';
 import type { WorldPoint, WorldRect } from './engine/render/Renderer.types';
@@ -69,6 +70,9 @@ export class Match implements LoopTarget {
 
   private readonly playerId: EntityId | null;
 
+  /** The developer menu's key, state and `dev-command` path (13 §4); inert unless enabled. */
+  public readonly developerMenu: DeveloperMenuController;
+
   /** What the canvas gestures do to this match: camera, minimap, roofs, explorer attack. */
   public readonly controls: MatchViewControls;
 
@@ -118,6 +122,12 @@ export class Match implements LoopTarget {
       maxFrameMs: MAX_TICKS_PER_FRAME * tickMs,
     });
     this.bridge = new MatchBridge({ ...bridge, tickRate, map });
+    this.developerMenu = new DeveloperMenuController({
+      isEnabled: deps.isDeveloperMenuEnabled === true,
+      simulation,
+      bus: bridge.bus,
+      map,
+    });
     this.current = simulation.snapshot();
     this.playerId = deps.remote?.legendId ?? this.current.match.humanLegendId;
     this.healthBars.observe(this.current, this.playerId);
@@ -155,6 +165,7 @@ export class Match implements LoopTarget {
    */
   public start(): void {
     this.bridge.publishAll(this.current, this.playerId);
+    this.developerMenu.publish();
     this.deps.bridge.bus.emit('minimap-visibility', { isShown: this.world.miniMap.isVisible });
     this.loop.start();
   }
@@ -227,6 +238,7 @@ export class Match implements LoopTarget {
   public destroy(): void {
     this.loop.destroy();
     this.healthBars.destroy();
+    this.developerMenu.destroy();
   }
 
   /**

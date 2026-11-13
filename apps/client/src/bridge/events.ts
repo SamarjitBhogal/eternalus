@@ -6,6 +6,7 @@
 import type { InputAction, InputChord } from './Binding.types';
 import type { AssetId, DisplayCatalogue, RasterBox } from './catalogue.types';
 import type { CrashReportState } from './CrashReport.types';
+import type { DevCommand, DeveloperMenuState } from './developerMenu.types';
 import type { LegendClassId, MatchEndReason, PlayableTeam } from './domain.types';
 import type {
   Announcement,
@@ -91,7 +92,9 @@ export type UiIntent =
     }
   /** The player's note on a crash (the crash popup, DEC-106). */
   | { readonly kind: 'save-crash-note'; readonly note: string }
-  | { readonly kind: 'dismiss-crash-report' };
+  | { readonly kind: 'dismiss-crash-report' }
+  /** The developer menu's gameplay button: `Match` enqueues the command; ignored while the menu is off (13 §4). */
+  | { readonly kind: 'dev-command'; readonly command: DevCommand };
 
 /** One Legend shown on the selection and loading screens, built before the simulation exists. */
 export type RosterEntry = {
@@ -222,6 +225,8 @@ export type BridgeEventMap = {
   announcement: Announcement;
   /** The player's minimap key showed (`true`) or hid (`false`) the minimap (DEC-147). */
   'minimap-visibility': { readonly isShown: boolean };
+  /** The developer menu's state: enabled, open, and its pickers (13 §4). */
+  'developer-menu': DeveloperMenuState;
   /** The whole settings state, published whenever it changes. */
   settings: SettingsSliceState;
 };
