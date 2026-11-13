@@ -248,6 +248,16 @@ id on `queue-join` inside it takes the slot over, after it the guest leaves the 
 (question 44 is still open). The client does not rejoin on its own yet; it only stores and sends
 the id.
 
+### Implementation status: Glicko-2 rating and skill-based pairing (2026-11-13, SCRUM-431)
+
+`PlayerRatings` (`apps/server/src/rating/`, in memory, by guest id) keeps rating, deviation,
+volatility, wins, losses, streak and matches, and `DuelHost` updates both players with `Glicko2`
+when a match ends (each match is one rating period; a leaver loses; a draw scores 0.5). `DuelQueue`
+now holds several waiters and pairs the closest ratings first, within a gap that widens with the
+wait until a timeout lifts it (numbers in `DuelQueue.constants.ts`). A server restart forgets the
+ratings; the database decision (question 35) is still open. The "queue holds at most one player"
+note in the load section below dates from before this change.
+
 ### Implementation status: matchmaking under load (2026-11-12, SCRUM-432)
 
 Measured with `npm run duel:bots -- --mode queue --rounds 5 --stagger 0` against a separate local

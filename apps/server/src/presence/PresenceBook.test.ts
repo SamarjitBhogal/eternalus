@@ -6,6 +6,7 @@ import { TokenBucket } from '../limits/TokenBucket';
 import { DuelHost } from '../match/DuelHost';
 import { FakeDuelSimulation } from '../match/FakeDuelSimulation';
 import { DuelQueue } from '../queue/DuelQueue';
+import { PlayerRatings } from '../rating/PlayerRatings';
 import { FakeClock } from '../time/FakeClock';
 import { FakeTickScheduler } from '../time/FakeTickScheduler';
 import { FakeConnection } from '../transport/FakeConnection';
@@ -21,18 +22,26 @@ const join = (guestId?: string): string =>
 
 function setup(maxHeldGuests = MAX_HELD_GUESTS) {
   const scheduler = new FakeTickScheduler();
+  const ratings = new PlayerRatings();
   const host = new DuelHost({
     factory: { create: () => new FakeDuelSimulation() },
     scheduler,
     tickIntervalMs: 33,
     versusMs: 0,
     logger: new MemoryLogger(),
+    ratings,
   });
-  const queue = new DuelQueue(host);
+  const queue = new DuelQueue({
+    starter: host,
+    ratings,
+    clock: new FakeClock(),
+    scheduler: new FakeTickScheduler(),
+  });
   let issued = 0;
   const presence = new PresenceBook({
     queue,
     host,
+    ratings,
     scheduler,
     reconnectWindowMs: RECONNECT_WINDOW_MS,
     maxHeldGuests,

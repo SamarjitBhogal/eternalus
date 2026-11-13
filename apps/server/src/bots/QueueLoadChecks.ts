@@ -13,7 +13,8 @@ export class QueueLoadChecks {
     if (stats.duplicates > 0) {
       failures.push(`${String(stats.duplicates)} match-found while not queued (two matches)`);
     }
-    // DEC-36: at most one player waits, so at most one join can end the run unpaired.
+    // Every bot is a new guest at the default rating, so all are within the allowed gap of each
+    // other and at most one can end the run unpaired. Rating-spread crowds may leave more waiting.
     if (stats.timeouts > 1) failures.push(`${String(stats.timeouts)} players left waiting, max 1`);
     failures.push(...this.matchFailures(bots));
     for (const bot of bots) {

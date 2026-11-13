@@ -83,7 +83,12 @@ export class DuelMatch {
     const team = this.seatOf(connection);
     if (team === null) return;
     const opponent = this.seats[opponentOf(team)];
-    this.end({ type: 'match-ended', reason: 'opponent-left', winner: null }, opponent);
+    // The protocol reports no winner; the rating counts the leaver as the loser.
+    this.end(
+      { type: 'match-ended', reason: 'opponent-left', winner: null },
+      opponentOf(team),
+      opponent,
+    );
   }
 
   private sendFound(team: PlayableTeam): void {
@@ -129,17 +134,21 @@ export class DuelMatch {
 
   private finish(winner: PlayableTeam | null): void {
     const reason: MatchEndReason = 'finished';
-    this.end({ type: 'match-ended', reason, winner }, ...this.connections);
+    this.end({ type: 'match-ended', reason, winner }, winner, ...this.connections);
   }
 
-  private end(message: ServerMessage, ...recipients: readonly ClientConnection[]): void {
+  private end(
+    message: ServerMessage,
+    winner: PlayableTeam | null,
+    ...recipients: readonly ClientConnection[]
+  ): void {
     if (this.hasEnded) return;
     this.hasEnded = true;
     this.cancelTicks?.();
     recipients.forEach((connection) => {
       connection.send(message);
     });
-    this.options.onEnded(this);
+    this.options.onEnded(this, winner);
     // The verdict is sent: close both sockets so none lingers (ADR 0016 point 7).
     this.connections.forEach((connection) => {
       connection.close();
