@@ -6347,6 +6347,7 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 
 - What was done: merged `feat/duel-server` into this branch (its base, updated after the sync with `phase/3-sprint-3-work` 3dc9e908) because #102 was CONFLICTING. Only the append-only logs conflicted; both sides' entries are kept. No feature code changed. No force push.
 - Checks run: `npm run check` → `EXIT=0`: Tests 1356 passed (1356);Tests 29 passed (29);Tests 1909 passed (1909);Tests 82 passed (82); "Documentation check passed."
+
 - Next step: reviewer approval; the team merges in stack order.
 
 ### 2026-11-12 — Phase 3 / online Duel — feat/mm-queue-load (SCRUM-432, stacked on #102) — claudiodh + Claude Code
@@ -6358,5 +6359,5 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 ### 2026-11-13 — Phase 3 / sync — feat/mm-queue-load (PR #103) — claudiodh + Claude Code
 
 - What was done: merged `feat/duel-rules` into this branch (its base, updated after the sync with `phase/3-sprint-3-work` 3dc9e908) because #103 was CONFLICTING. Only the append-only logs conflicted; both sides' entries are kept. No feature code changed. No force push.
-- Checks run: `npm run check` → `EXIT=0`: Tests  1356 passed (1356);Tests  29 passed (29);Tests  1909 passed (1909);Tests  111 passed (111); "Documentation check passed."
+- Checks run: `npm run check` → `EXIT=0`: Tests 1356 passed (1356);Tests 29 passed (29);Tests 1909 passed (1909);Tests 111 passed (111); "Documentation check passed."
 - Next step: reviewer approval; the team merges in stack order.
