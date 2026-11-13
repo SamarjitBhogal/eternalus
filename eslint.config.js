@@ -22,7 +22,14 @@ const NO_TRANSCENDENTAL_MATH = ['sin', 'cos', 'atan2', 'exp', 'pow'].map((proper
 
 export default defineConfig(
   // Flat config ignores .gitignore; each worktree is linted by its own hooks and CI (ADR 0014).
-  globalIgnores(['**/dist/', '**/coverage/', '.worktrees/', '.claude/worktrees/']),
+  // eternalus-agent-work/ is agents' untracked scratch (probes, logs), not source (DEC-179).
+  globalIgnores([
+    '**/dist/',
+    '**/coverage/',
+    '.worktrees/',
+    '.claude/worktrees/',
+    'eternalus-agent-work/',
+  ]),
 
   js.configs.recommended,
 

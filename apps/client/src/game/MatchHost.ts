@@ -34,7 +34,10 @@ export class MatchHost implements RunningMatch {
 
   /** Creates the host; nothing listens until `start()`. */
   public constructor(private readonly deps: MatchHostDeps) {
-    this.pointer = new CanvasPointerControls({ match: deps.match, viewport: deps.viewport });
+    this.pointer = new CanvasPointerControls({
+      controls: deps.match.controls,
+      viewport: deps.viewport,
+    });
   }
 
   /**

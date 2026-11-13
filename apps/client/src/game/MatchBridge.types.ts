@@ -1,6 +1,7 @@
-import type { MapDefinition, MapFeatureKind } from '@eternalus/core';
+import type { MapDefinition, MapFeatureKind, Vec2 } from '@eternalus/core';
 
 import type { BridgeEventMap } from '../bridge/events';
+import type { CapturePointStatus } from '../bridge/hud.types';
 import type { TypedEventBus } from '../bridge/TypedEventBus';
 
 /** What `Match` builds its `MatchBridge` from. */
@@ -14,4 +15,12 @@ export type MatchBridgeDeps = {
   readonly map: MapDefinition;
   /** Map-feature kinds the HUD lists as capture points (`catalogue.hud.objectiveKinds`, one list). */
   readonly captureKinds: readonly MapFeatureKind[];
+};
+
+/** A capture point the HUD lists, and where its zone stands. */
+export type CaptureSite = {
+  /** The map feature's position, where `Simulation.spawnZones` puts the zone. */
+  readonly position: Vec2;
+  /** The point's status while no zone stands there: neutral, no progress. */
+  readonly withoutZone: CapturePointStatus;
 };
