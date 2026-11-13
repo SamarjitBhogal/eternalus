@@ -8,10 +8,13 @@ import type { AuthoredStatusEffect } from './statusEffects.types';
 export const RALLIED = {
   id: 'rallied',
   displayName: 'Rallied',
+  polarity: 'buff',
+  controlClass: 'none',
   durationSeconds: 1, // TUNE: no reference value; a little over the aura's refresh interval
   stacking: 'refresh',
   maxStacks: 1,
   modifiers: [{ stat: 'damageDealt', op: 'mul', value: 1.05 }], // TUNE: balancing.md +5%
   flags: [],
   periodic: null,
+  onExpire: [],
 } as const satisfies AuthoredStatusEffect;
