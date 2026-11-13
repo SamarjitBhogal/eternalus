@@ -21,6 +21,7 @@ export class CoreDuelSimulation implements DuelSimulation {
   private latest: Snapshot;
   private verdictWinner: PlayableTeam | null = null;
   private over = false;
+  private killsSeen = 0;
 
   /** @throws Error when a seat's Legend did not spawn. */
   public constructor(
@@ -47,6 +48,7 @@ export class CoreDuelSimulation implements DuelSimulation {
   public step(): void {
     this.simulation.step();
     this.latest = this.simulation.snapshot();
+    this.resetSeatsOnNewRound();
   }
 
   public enqueueIntent(team: PlayableTeam, intent: InputIntent): void {
@@ -67,6 +69,16 @@ export class CoreDuelSimulation implements DuelSimulation {
 
   public winner(): PlayableTeam | null {
     return this.verdictWinner;
+  }
+
+  /** A kill resets both Legends' movement and target (`DuelRoundSystem`), so the seats forget theirs. */
+  private resetSeatsOnNewRound(): void {
+    const kills = this.latest.match.duel?.kills;
+    const total = (kills?.light ?? 0) + (kills?.dark ?? 0);
+    if (total === this.killsSeen) return;
+    this.killsSeen = total;
+    this.seats.light.reset();
+    this.seats.dark.reset();
   }
 
   private static legendOrThrow(simulation: Simulation, team: PlayableTeam): EntityId {
