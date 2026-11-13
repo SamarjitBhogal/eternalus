@@ -195,6 +195,8 @@ export type BridgeEventMap = {
   /** The licence blocks of every bundled asset, once at boot. */
   credits: { readonly entries: readonly CreditEntry[] };
   announcement: Announcement;
+  /** The player's minimap key showed (`true`) or hid (`false`) the minimap (DEC-147). */
+  'minimap-visibility': { readonly isShown: boolean };
   /** The whole settings state, published whenever it changes. */
   settings: SettingsSliceState;
 };

@@ -36,6 +36,16 @@ export class MatchViewControls {
     return true;
   }
 
+  /**
+   * The player's minimap key: shows or hides the minimap (canvas and HUD ring), and tells the UI
+   * (DEC-147). A hidden minimap takes no click.
+   */
+  public toggleMiniMap(): void {
+    const { miniMap, onMiniMapShownChanged } = this.deps;
+    miniMap.toggle();
+    onMiniMapShownChanged(miniMap.isVisible);
+  }
+
   /** Drags the view by a screen offset (device pixels), switching to the free view. */
   public panBy(screenDx: number, screenDy: number): void {
     this.deps.camera.panBy(screenDx, screenDy);

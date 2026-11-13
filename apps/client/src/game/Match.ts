@@ -121,6 +121,9 @@ export class Match implements LoopTarget {
       roofs: this.roofs,
       commands: this.commands,
       miniMap: this.world.miniMap,
+      onMiniMapShownChanged: (isShown) => {
+        bridge.bus.emit('minimap-visibility', { isShown });
+      },
       playerId: this.playerId,
       snapshot: () => this.current,
     });

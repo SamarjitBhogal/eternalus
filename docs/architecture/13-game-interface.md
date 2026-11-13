@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-09
+last-reviewed: 2026-11-12
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -695,9 +695,9 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   `MatchClock` shows no phase label until `match-clock` carries the phase (Phase 3, sprint 3.5).
   `MinimapPanel` is a frame only: there is no `minimap-click` intent (the canvas handles a click)
   and no `minimapVisible` setting, and the canvas draws the minimap inside the HUD's ring
-  ([06](06-map-and-minimap.md) §10). The `toggle-minimap` binding (M) has no handler, so the key
-  does nothing; the setting and the M handler are a Phase 5, sprint 5.4 task (DEC-147; `INBOX.md`
-  HC-Q19). Not built,
+  ([06](06-map-and-minimap.md) §10). The `toggle-minimap` binding (M) hides and shows the minimap
+  for the current match (see the note appended 2026-11-12 below); the persisted setting is a
+  Phase 5, sprint 5.4 task (DEC-147; `INBOX.md` HC-Q19). Not built,
   because the frames do not draw them, each with the plan entry that schedules it: `Scoreboard`
   (named for Phase 3, sprint 3.5 in [the Phase 2 architecture
   plan](../plan/phase-2-architecture.md), with no task line yet), `Announcer` (Phase 2, sprint 2.8,
@@ -752,6 +752,13 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   `INBOX.md` HC-T1 (T-196, T-202, T-209 to T-212). **Appended 2026-11-02:** step 12 replaced the
   banner with the crash popup and added the `ErrorBoundary` (the "Session" bullet above, §3), and
   the owner approved those rows (HC-T1, DEC-142), so §3, §6.1, §6.2, §9 and this note say it.
+- **More one-shot actions (2026-11-12).** The table in `MatchHost` now also holds
+  `camera-zoom-in` and `camera-zoom-out` (one `KEY_ZOOM_STEP` through the wheel's `zoomBy` and its
+  limits) and `toggle-minimap` (`MatchViewControls.toggleMiniMap`: the canvas minimap and the HUD
+  ring hide, no click reaches a hidden minimap; the state reaches the UI by the
+  `minimap-visibility` event into `viewSlice`; not persisted, an owner question in `INBOX.md`).
+  Still bound but unhandled: `toggle-perf-overlay` (no overlay exists), `toggle-developer-menu`,
+  `sprint`, `interact`, `turret-toggle-control`, `turret-switch-ammo` (`INBOX.md`).
 
 ## Related
 

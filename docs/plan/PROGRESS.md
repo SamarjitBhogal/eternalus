@@ -6154,3 +6154,17 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `Tests 1818 passed (1818)`, `Documentation check passed.`
   (`eternalus-agent-work/hud-aether-bar/check-3.log`).
 - Next step: push; CodeRabbit re-review after the owner's sign-off comment; merge into phase/3.
+
+### 2026-11-12 — Phase 3 / combat sprint: bound key actions, part 1 (BUG-5 / SCRUM-438) — fix/bound-key-actions — Claude Code
+
+- What was done: `camera-zoom-in`, `camera-zoom-out` and `toggle-minimap` now work as `MatchHost`
+  one-shot actions (DEC-117). Zoom multiplies by `KEY_ZOOM_STEP` (`MatchHost.constants.ts`,
+  `TUNE:`) through `MatchViewControls.zoomBy`, the wheel's path and clamp. The minimap key calls
+  `MatchViewControls.toggleMiniMap`: `MiniMapView` stops drawing and answering clicks, and the
+  `minimap-visibility` event feeds the new `viewSlice` so `MinimapPanel` hides the ring. Not
+  persisted. `toggle-perf-overlay` is left out: no overlay exists. Left for the owner
+  (`INBOX.md`): `toggle-developer-menu`, `sprint`, `interact`, `turret-*`, and whether to hide
+  them from the bindings screen. Note added to `13-game-interface.md` section 10.
+- Checks run: full `npm run check` exit 0: core `Tests 1305 passed (1305)`, client
+  `Tests 1824 passed (1824)`, `Documentation check passed.`
+- Next step: owner answers the INBOX item; the other bound actions follow with their features.
