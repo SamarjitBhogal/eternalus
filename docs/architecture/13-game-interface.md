@@ -575,12 +575,16 @@ and the keybinding and settings stack of §6: `keybindings.ts`, `BindingResolver
   event; with the memory adapter that is immediate, with IndexedDB (S2) it needs a boot-time wait
   or the `degraded` path of [14](14-persistence-and-resources.md) §10.
 
+Developer menu (2026-11-13, slice 2): the menu also adds a bot Legend of a selectable class to a
+team (`dev-spawn-legend { team, definitionId }`, at the Stronghold, Rover controller, refused at
+`maxLegendsPerTeam`); removing a Legend uses `dev-remove-entity`, so there is no
+`dev-remove-legend`. The table's `controllerId` and `at?` are not built.
+
 Developer menu (2026-11-13, slice 1): `DeveloperMenu` is enabled by `?dev=1` only (the
 persisted `settings.developer.menuEnabled` needs settings persistence, which does not exist) and
 opened by `toggle-developer-menu` (F1). Built controls: spawn mobs (`dev-spawn-mobs`) and remove an
 entity by id (`dev-remove-entity`), each sent as a `dev-command` intent that `Match` enqueues. The
-mob picker is a short client list of the lane minions, not core content. Not built: `dev-spawn-legend`
-and `dev-remove-legend`, sim mode, `dev-toggle`, invariant level, timeline jump, config overrides,
+mob picker is a short client list of the lane minions, not core content. Not built: sim mode, `dev-toggle`, invariant level, timeline jump, config overrides,
 and showing core's refusals in the UI. `bridge/events.ts` has no `dev-toggle` yet.
 
 HUD (2026-10-18): the `AbilityBar` cooldown sweep of §3 is the owner's Figma look, a vertical fill

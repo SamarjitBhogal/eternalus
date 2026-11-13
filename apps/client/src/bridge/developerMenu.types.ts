@@ -7,7 +7,7 @@ import type { Command } from '@eternalus/core';
 /** The gameplay commands the menu sends so far; `Match` forwards one to `Simulation.enqueueCommand`. */
 export type DevCommand = Extract<
   Command,
-  { readonly type: 'dev-spawn-mobs' | 'dev-remove-entity' }
+  { readonly type: 'dev-spawn-mobs' | 'dev-spawn-legend' | 'dev-remove-entity' }
 >;
 
 /** One entry of a picker: the id the command carries and the text the menu shows. */

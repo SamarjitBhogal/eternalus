@@ -14,11 +14,13 @@ const context = (): CommandContext => ({
   factory: new EntityFactory(new EntityRegistry(), new ContentCatalogue([])),
 });
 
+const TEST_CONTROLLER = { controllerId: 'rover', profileId: 'rover', memory: {} } as const;
+
 describe('applyCommand', () => {
   it('dispatches to the handler registered for the command type', () => {
     const seen: string[] = [];
     const handlers: CommandHandlers = {
-      ...createDefaultCommandHandlers(),
+      ...createDefaultCommandHandlers(TEST_CONTROLLER),
       stop: {
         handle: (command) => {
           seen.push(command.actorId);
@@ -39,7 +41,7 @@ describe('applyCommand', () => {
     const rejected: unknown[] = [];
     ctx.state.events.on('command-rejected', (payload) => rejected.push(payload));
     const command = { type: 'stop', actorId: 'entity-3' } as const;
-    applyCommand(command, createDefaultCommandHandlers(), ctx);
+    applyCommand(command, createDefaultCommandHandlers(TEST_CONTROLLER), ctx);
     expect(rejected).toEqual([{ command, reason: 'unknown-entity' }]);
   });
 
@@ -47,7 +49,7 @@ describe('applyCommand', () => {
     const ctx = context();
     let calls = 0;
     const handlers: CommandHandlers = {
-      ...createDefaultCommandHandlers(),
+      ...createDefaultCommandHandlers(TEST_CONTROLLER),
       stop: {
         handle: () => {
           calls += 1;
