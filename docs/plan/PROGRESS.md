@@ -4,7 +4,7 @@ description: The running, append-only log of what was done, which checks ran and
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-05
+last-reviewed: 2026-11-12
 tags: [plan, progress, log]
 related: ['docs/plan/README.md', 'docs/agents/running-agents.md', 'docs/agents/checklists.md']
 ---
@@ -6297,3 +6297,68 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   Only this file conflicted; every entry from both sides is kept, date-ordered. No code changed.
 - Checks run: `npm run check` → `EXIT=0` (Node 24.21.0).
 - Next step: squash-merge #52 into phase/3.
+
+### 2026-11-06 — Phase 3 / minion plan MVP gaps — docs/minion-plan-mvp-gaps — SamarjitBhogal + Claude Code
+
+- What was done: audited `phase/3-sprint-3-work` and the open pull requests against the MVP scope
+  for the minion system. Minion plan: new §1.2 (the gaps before the MVP, each with who builds it,
+  its blocker and the next action); new phase M10 (zone level-up, designed in 07 §7 but scheduled
+  nowhere); M6's pull request split into M6 (camps, merged) and M6b (checkpoint defenders, after PR #64); §3
+  drops the built "straight-line bots" row and points the Rover and strength-by-distance rows at
+  what now unblocks them. `INBOX.md`: one item (zone level-up numbers and OQ-47, the M6 defender
+  sign-off, and pushing the unpushed follow-up branches). Stacked on `docs/playtest-rulings`
+  (PR #75), which edits the same plan.
+- Checks run: `npm run check` passed (format, no-js, lint, typecheck, knip, coverage, build,
+  docs:check): core `Tests  1079 passed (1079)`, client `Tests  1754 passed (1754)`,
+  `Documentation check passed.` Critic (`architecture-reviewer`): approve, 0 blockers; its three
+  minor items and four nits are applied.
+- Next step: the owner answers the `INBOX.md` item; M6b and M10 start when PR #64 merges; the
+  unit-cap performance check can start now.
+
+### 2026-11-12 — Phase 3 / minion plan MVP gaps (review round) — docs/minion-plan-mvp-gaps — SamarjitBhogal + Claude Code
+
+- What was done: answered claudiodh's review of PR #81. Merged `phase/3-sprint-3-work` (conflicts
+  in `INBOX.md` and this file; both sides kept, this branch's entries last). The 2026-11-06 entry
+  above is superseded where it says M6b and M10 wait for PR #64 and that the follow-up branches
+  are not on `origin`: #64 merged on 2026-11-08, and the branches are PRs #85 and #86 (#83 is the
+  perf check). Minion plan §1.2, §3 and the phase table now say so; the push request is dropped;
+  the INBOX item is split into three questions; the "Minion M6" item no longer says #64 is open.
+  CodeRabbit: the M10 row no longer states the ownership-event handler, same-tick removal and
+  DEC-168 superseding 07 §7 as settled; they are INBOX question (1) (c). Merged phase/3 again
+  (#52; PROGRESS only).
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code style!";
+  core "Tests 1314 passed (1314)"; client "Tests 1818 passed (1818)"; "✓ built in 322ms";
+  "Documentation check passed."
+- Next step: the owner answers the three INBOX items; M6b starts on the defenders sign-off.
+
+### 2026-11-07 — Phase 3 / minion strength by flow-field distance (M5a stand-in) — feat/minion-strength-flow-field — SamarjitBhogal + Claude Code
+
+- What was done: `MinionStrengthStep` measures a horde member's lane progress `t` by path cost on
+  its lane's flow field, as `balancing.md` recommends, instead of along the lane polyline. The step
+  reads it through a `LaneProgressOf` port (`combat/` may not import `map/`, 02 §2);
+  `LaneFlowFields.progress` implements it through the new `FlowField.progressAt` and `costAt`, and
+  `DefaultSystemPipeline` wires it into the damage steps. `t` keeps the polyline's reference
+  points, gate to gate (0 at the team's own lane end, 1 at the enemy end), not Stronghold to
+  Stronghold as `balancing.md` words it, so the curve's base-stat points keep their meaning. Each
+  field stores its own start cell, nudged off cell edges like the goal, so Light and Dark read the
+  same progress at mirrored points (tested cell by cell). Off the corridor the step falls back to
+  the polyline. The field and the polyline agree within 2% along the generated lanes (largest
+  measured 1.4% with 3 lanes, 1.6% with 5; a test holds the bound for both), so the curve's
+  balance barely moves. Minion plan: the polyline stand-in row is removed; doc 18
+  Implementation status names the port.
+- Checks run: `npm run check` passed: core `Tests  1087 passed (1087)`, client
+  `Tests  1754 passed (1754)`, `Documentation check passed.`
+- Next step: the unit-cap performance check and the bot path cache, on their own branches.
+
+### 2026-11-12 — Phase 3 / sync — feat/minion-strength-flow-field — SamarjitBhogal + Claude Code
+
+- What was done: merged `docs/minion-plan-mvp-gaps` (PR #81, which now carries
+  `phase/3-sprint-3-work` at `3dc9e908`) into PR #82; it was 166 commits behind and conflicting.
+  Append-only logs: both sides kept, this branch's entries last. Code: `MinionStrengthStep.ts`
+  keeps both imports (`LaneProgressOf`, phase/3's `opponentOf`);
+  `DefaultSystemPipeline.strength.test.ts` moves to the options-object constructors phase/3
+  introduced (same assertions).
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code
+  style!"; core "Tests 1329 passed (1329)"; client "Tests 1818 passed (1818)"; "✓ built in
+  307ms"; "Documentation check passed."
+- Next step: review once PR #81 merges.

@@ -3,6 +3,7 @@ import type { MinionStrengthCurve } from '../content/mobs/mobs.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { DamageHit, DamageStep } from './DamageStep.types';
+import type { LaneProgressOf } from './MinionStrengthStep.types';
 import { opponentOf } from '../teams/playableTeams';
 
 /**
@@ -13,17 +14,22 @@ import { opponentOf } from '../teams/playableTeams';
  * each lane tower the enemy has lost on that lane (DISC-24), up to `maxBasePoint`. Health never
  * rescales, so a health bar never jumps. Anything outside a horde (Legends included) is 1.
  *
- * @remarks ponytail: `t` follows the lane polyline; the flow-field distance `balancing.md`
- * recommends replaces it with minion plan M4.
+ * `t` is measured by path cost on the lane's flow field (`balancing.md`), gate to gate, through
+ * the injected `LaneProgressOf`; where the field cannot say (no field, or a unit off its corridor),
+ * `t` falls back to the nearest point of the lane polyline.
  */
 export class MinionStrengthStep implements DamageStep {
   public readonly name = 'minion-strength';
 
   /**
    * @param curve - The curve's slope, clamps and base-stat point, from content.
+   * @param progressOf - Lane progress by flow-field path cost; `null` measures along the polyline.
    * @throws Error when the base-stat point is not inside the lane (`0 < basePoint ≤ maxBasePoint ≤ 1`).
    */
-  public constructor(private readonly curve: MinionStrengthCurve) {
+  public constructor(
+    private readonly curve: MinionStrengthCurve,
+    private readonly progressOf: LaneProgressOf | null = null,
+  ) {
     if (!(
       curve.basePoint > 0 &&
       curve.basePoint <= curve.maxBasePoint &&
@@ -47,7 +53,9 @@ export class MinionStrengthStep implements DamageStep {
       return 1;
     }
     const length = routes.length(horde.lane);
-    const t = length > 0 ? routes.distanceAlong(horde.lane, horde.team, position) / length : 0;
+    const t =
+      this.progressOf?.(horde.lane, horde.team, position) ??
+      (length > 0 ? routes.distanceAlong(horde.lane, horde.team, position) / length : 0);
     const { k, min, max, basePoint, shiftPerTowerLost, maxBasePoint } = this.curve;
     const enemy = opponentOf(horde.team);
     const lost = state.teams[enemy].towersLostByLane[horde.lane] ?? 0;

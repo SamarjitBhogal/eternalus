@@ -1,5 +1,6 @@
 import type { PlayableTeam } from '../teams/teams.types';
 import { sqrt } from '../utils/deterministicMath';
+import type { Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
 import { DIRECTION_XS, DIRECTION_YS, NO_DIRECTION, UNREACHED } from './FlowField.constants';
 import type { WorldMap } from './WorldMap';
@@ -22,6 +23,8 @@ export class FlowField {
    * @param team - The team walking it, toward the enemy end.
    * @param mask - 1 for every cell of the corridor, row-major like `grid.walkable`.
    * @param goal - The cell of the lane's enemy end.
+   * @param start - The cell of the lane's own end for `team`, where its walk starts (progress 0);
+   *   -1 when the lane end lies outside the world.
    */
   public constructor(
     public readonly grid: WorldMap,
@@ -29,6 +32,7 @@ export class FlowField {
     public readonly team: PlayableTeam,
     public readonly mask: Uint8Array,
     public readonly goal: number,
+    public readonly start = -1,
   ) {
     this.cells = mask.reduce((sum, cell) => sum + cell, 0);
     this.integrationCells = new Uint16Array(mask.length).fill(UNREACHED);
@@ -48,6 +52,33 @@ export class FlowField {
   /** The direction index to step in per cell (`NO_DIRECTION` when there is none). */
   public get direction(): Int8Array {
     return this.directionCells;
+  }
+
+  /** Path cost to the goal of the cell under `point` (`UNREACHED` outside the world or the fill). */
+  public costAt(point: Vec2): number {
+    const { cellSize, cols, rows } = this.grid;
+    const col = Math.floor(point.x / cellSize);
+    const row = Math.floor(point.y / cellSize);
+    if (col < 0 || row < 0 || col >= cols || row >= rows) {
+      return UNREACHED;
+    }
+    return this.integrationCells[row * cols + col] ?? UNREACHED;
+  }
+
+  /**
+   * How far `point` lies along the lane by path cost: 0 at the lane's own end (`start`, and
+   * anywhere costlier, such as inside the team's Stronghold), 1 at the enemy end. Measured gate to
+   * gate, the lane's ends, as the lane polyline was before it, not Stronghold to Stronghold as
+   * `balancing.md` words it, so the strength curve's base-stat points keep their meaning. `null`
+   * where the field cannot say: the point or `start` outside the fill, or a zero-cost start.
+   */
+  public progressAt(point: Vec2): number | null {
+    const home = this.start < 0 ? UNREACHED : (this.integrationCells[this.start] ?? UNREACHED);
+    const here = this.costAt(point);
+    if (home === UNREACHED || here === UNREACHED || home === 0) {
+      return null;
+    }
+    return Math.min(1, Math.max(0, 1 - here / home));
   }
 
   /** Whether the field may route through `cell`: in the corridor and walkable now. */
