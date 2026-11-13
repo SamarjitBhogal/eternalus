@@ -6154,3 +6154,23 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `Tests 1818 passed (1818)`, `Documentation check passed.`
   (`eternalus-agent-work/hud-aether-bar/check-3.log`).
 - Next step: push; CodeRabbit re-review after the owner's sign-off comment; merge into phase/3.
+
+### 2026-11-11 — Phase 3 / sprint 3: interim Legend respawn (BUG-6, SCRUM-439, plan task GL-12) — fix/legend-respawn — Claude Code
+
+- What was done: a dead Legend came back never, so a human Legend's death stalled the match
+  (`DeathSystem` removes every dead entity and `Entity.retire` drops its components). New
+  `RespawnSystem` (just before `DeathSystem`) queues each dead Legend of a playable team in
+  `state.respawns` (new `RespawnQueue`, hashed by `StateHasher` only while non-empty, so the empty
+  hash is unchanged) and, after `LEGEND_RESPAWN_SECONDS` (10 s, `content/progression/legendRespawn.ts`,
+  `// TUNE:`, DEC-80), rebuilds the same Legend at its team's Stronghold: same id
+  (`EntityFactory.createWithId`, the id counter does not move), level, XP (`Progression.restore`)
+  and raised caps, full health and aether, same bot controller; it emits `entity-spawned` and the
+  new `legend-respawned`. `MatchWorld.strongholdOf` is shared with `Simulation`. The sovereign is
+  not a Legend, so it never returns. `TODO(claudiodh)` in `ProgressionSystem` stays (momentum
+  timer); structure XP for a Legend dead at that moment ("pay on respawn", DEC-186) is not built.
+  No new invariant (the queue's `add` and the store's duplicate-id check already throw).
+  Docs: doc 05 section 18 note, `INBOX.md` item with the three open points.
+- Checks run: full `npm run check` exit 0: core `Test Files 237 passed (237)` and
+  `Tests 1322 passed (1322)`, client `Tests 1818 passed (1818)`, `Documentation check passed.`
+- Next step: critic and ponytail gate, then PR into phase/3; claudiodh's momentum-scaling timer
+  replaces the fixed delay.

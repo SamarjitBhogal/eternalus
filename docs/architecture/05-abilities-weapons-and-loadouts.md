@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-09
+last-reviewed: 2026-11-11
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -923,6 +923,19 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   dead Legends in the store until respawn (FR-051), which O4's posthumous XP needs. Numbers are
   `TUNE`; the curve and the Legend kill and structure XP follow DEC-190 (not final; the
   soak metric can change them) and live in `content/progression/`.
+- **Legend respawn (`fix/legend-respawn`, GL-12, 2026-11-11).** Interim, FR-051 and DEC-80.
+  `RespawnSystem` (just before `DeathSystem`) queues every dead Legend in `state.respawns`
+  (`RespawnQueue`, hashed only while non-empty) and, after the fixed delay in
+  `content/progression/legendRespawn.ts`, rebuilds the same Legend with the same id
+  (`EntityFactory.createWithId`) at its team's Stronghold, with its level, XP and caps restored,
+  health and aether refilled and its bot controller kept, and emits `legend-respawned`. The
+  sovereign is not a Legend, so it never returns. The momentum-scaling timer (claudiodh, DEC-80)
+  replaces the fixed value; a structure's XP for a Legend dead at that moment is still skipped
+  (DEC-186 "pay on respawn" is not built). The Legend is absent from the store while it waits.
+  Interim: `RespawnSystem` polls `Health.isDead` before `DeathSystem` instead of subscribing to
+  `entity-died` (the entity is retired by the time that event's listeners could read it); the
+  planned switch is to subscribe to `entity-died`. `legend-respawned` is a new event in
+  `GameEventMap`.
 - **HUD (`feat/hud-and-character-select`, 2026-10-24).** §15's `PlayerSnapshot` does not exist
   in core yet. The client's `MatchBridge` joins the player's `EntitySnapshot` groups into
   `PlayerHudSnapshot` (`bridge/hud.types.ts`), as §15 sets (DEC-232); until `SnapshotSystem` fills

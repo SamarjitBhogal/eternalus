@@ -558,13 +558,11 @@ export class Simulation {
    * @throws Error naming `forWhom` when the map has no Stronghold for `team`.
    */
   private static strongholdOf(state: GameState, team: PlayableTeam, forWhom: string): Vec2 {
-    const stronghold = state.world?.definition.features.find(
-      (feature) => feature.kind === 'stronghold' && feature.team === team,
-    );
-    if (stronghold === undefined) {
+    const position = state.world?.strongholdOf(team);
+    if (position === undefined) {
       throw new Error(`The map has no ${team} Stronghold for ${forWhom}.`);
     }
-    return { x: stronghold.position.x, y: stronghold.position.y };
+    return position;
   }
 
   /**

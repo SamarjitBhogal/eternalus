@@ -22,6 +22,21 @@ describe('Progression', () => {
     expect(progression.level).toBe(4);
   });
 
+  it('restores the XP and level a Legend had, and rejects nonsense', () => {
+    const progression = new Progression('test');
+
+    progression.restore(250, 3);
+
+    expect(progression.xp).toBe(250);
+    expect(progression.level).toBe(3);
+    expect(() => {
+      progression.restore(-1, 3);
+    }).toThrow(/Cannot restore/);
+    expect(() => {
+      progression.restore(10, 0);
+    }).toThrow(/Cannot restore/);
+  });
+
   it('never passes the cap, but keeps counting XP', () => {
     const progression = new Progression('test');
 

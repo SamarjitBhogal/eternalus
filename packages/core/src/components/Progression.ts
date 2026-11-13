@@ -45,6 +45,20 @@ export class Progression {
   }
 
   /**
+   * Puts a returning Legend back where it was (FR-051): the XP and level it had when it died.
+   * The caller passes values read from a `Progression` on the same curve.
+   *
+   * @throws Error when `xp` is negative or not finite, or `level` is not a whole number ≥ 1.
+   */
+  public restore(xp: number, level: number): void {
+    if (!(xp >= 0) || !Number.isFinite(xp) || !Number.isInteger(level) || level < 1) {
+      throw new Error(`Cannot restore progression to ${String(xp)} XP at level ${String(level)}.`);
+    }
+    this.xpValue = xp;
+    this.levelValue = level;
+  }
+
+  /**
    * Where this entity stands inside its level on `curve` (05 §15, the HUD's XP ring): the XP earned
    * since the level began, and the XP that level needs to reach the next one, `null` at the cap.
    */

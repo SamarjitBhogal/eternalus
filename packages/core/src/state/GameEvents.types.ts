@@ -106,6 +106,12 @@ export type GameEventMap = {
   readonly 'status-expired': StatusPayload;
   readonly 'horde-spawned': HordePayload;
   readonly 'horde-dissolved': HordePayload;
+  /** A dead Legend came back at its Stronghold (FR-051), with the id, level and XP it had. */
+  readonly 'legend-respawned': {
+    readonly entityId: EntityId;
+    readonly team: Team;
+    readonly position: Vec2;
+  };
   readonly 'level-up': { readonly entityId: EntityId; readonly level: number };
   /**
    * XP reaching a Legend; one per award, so the invariant can audit every award. A kill pays its
