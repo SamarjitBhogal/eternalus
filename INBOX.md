@@ -16,6 +16,14 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Per-address connection cap and `X-Forwarded-For` (SCRUM-432 critic, 2026-11-12) — owner /
+      security, not introduced by this branch.** `ClientAddress.resolve` (`apps/server/src/transport/`)
+      takes the FIRST `X-Forwarded-For` entry when the peer is loopback. Behind `tailscale serve`
+      every peer is loopback, so if the proxy appends to a client-supplied header instead of
+      replacing it, a remote client can pick its own address and defeat the per-address cap (the
+      load bots do exactly this on purpose). Decide: take the LAST trusted hop, or verify what
+      `tailscale serve` does with the header.
+
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on
       every map feature, so `map/strongholdRing.ts` checks at run time that a Stronghold has it

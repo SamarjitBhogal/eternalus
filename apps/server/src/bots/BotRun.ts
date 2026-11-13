@@ -1,27 +1,11 @@
 import { BotChecks } from './BotChecks';
-import type { BotLinkFactory } from './BotLink.types';
-import type { BotLogger } from './BotLogger';
-import type { BotNavigatorSource } from './BotNavigatorSource';
 import type { BotOptions } from './BotOptions.types';
+import type { BotRunDeps } from './BotRun.types';
 import { BotSummary } from './BotSummary';
 import { DuelBot } from './DuelBot';
-import {
-  ALPHABET_SIZE,
-  CLOSE_GRACE_MS,
-  EXIT_FAIL,
-  EXIT_OK,
-  FIRST_LETTER_CODE,
-  MS_PER_SECOND,
-} from './BotRun.constants';
-
-/** What a run needs from the outside world. */
-export type BotRunDeps = {
-  readonly links: BotLinkFactory;
-  readonly navigators: Pick<BotNavigatorSource, 'forSeed'>;
-  readonly logger: BotLogger;
-  /** Resolves after `ms` milliseconds. */
-  readonly sleep: (ms: number) => Promise<void>;
-};
+import { QueueLoadRun } from './QueueLoadRun';
+import { BotNames } from './BotNames';
+import { CLOSE_GRACE_MS, EXIT_FAIL, EXIT_OK, MS_PER_SECOND } from './BotRun.constants';
 
 /**
  * Plays the online Duel with scripted players to check the server end to end (ADR 0016): every
@@ -35,8 +19,9 @@ export class BotRun {
     private readonly deps: BotRunDeps,
   ) {}
 
-  /** Runs for the configured time; resolves with the process exit code (0 when every check passes). */
+  /** Runs for the configured time (or, in `queue` mode, the queue load); resolves with the process exit code (0 when every check passes). */
   public async run(): Promise<number> {
+    if (this.options.mode === 'queue') return new QueueLoadRun(this.options, this.deps).run();
     const { options, deps } = this;
     const { logger, sleep } = deps;
     logger.plain(
@@ -45,7 +30,7 @@ export class BotRun {
     const bots = Array.from(
       { length: options.players },
       (_, index) =>
-        new DuelBot(BotRun.nameOf(index), options.url, deps.links, deps.navigators, logger),
+        new DuelBot(new BotNames().of(index), options.url, deps.links, deps.navigators, logger),
     );
     for (const bot of bots) {
       bot.connect();
@@ -83,11 +68,5 @@ export class BotRun {
       `\n[duel-bots] OK: ${String(checks.matchCount(reports))} match(es), every check passed`,
     );
     return EXIT_OK;
-  }
-
-  private static nameOf(index: number): string {
-    return index < ALPHABET_SIZE
-      ? String.fromCharCode(FIRST_LETTER_CODE + index)
-      : `P${String(index)}`;
   }
 }

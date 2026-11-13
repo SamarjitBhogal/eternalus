@@ -68,4 +68,27 @@ describe('DuelQueue', () => {
     queue.join(new FakeConnection(), 'n');
     expect(started).toHaveLength(1);
   });
+
+  it('lets a player join again right after leaving, and pairs them with the next one', () => {
+    const { queue, started } = setup();
+    const a = new FakeConnection();
+    const b = new FakeConnection();
+    queue.join(a, 'n');
+    queue.leave(a);
+    queue.join(a, 'n');
+    queue.join(b, 'n');
+    expect(a.sentOfType('queue-waiting')).toHaveLength(2);
+    expect(started).toEqual([[a, b]]);
+  });
+
+  it('keeps nobody waiting once a pair is made, so the third player waits alone', () => {
+    const { queue, started } = setup();
+    const [a, b, c] = [new FakeConnection(), new FakeConnection(), new FakeConnection()];
+    queue.join(a, 'n');
+    queue.join(b, 'n');
+    queue.leave(a);
+    queue.join(c, 'n');
+    expect(started).toHaveLength(1);
+    expect(c.sent).toEqual([{ type: 'queue-waiting' }]);
+  });
 });

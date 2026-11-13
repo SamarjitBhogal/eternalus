@@ -43,6 +43,8 @@ export class DuelMatch {
   public start(): void {
     const { seats, simulation, scheduler, tickIntervalMs, id } = this.options;
     for (const team of PLAYABLE_TEAMS) {
+      // A seat that closed while being told ended the match: no more messages, no tick task.
+      if (this.hasEnded) return;
       seats[team].send({
         type: 'match-found',
         matchId: id,
@@ -52,6 +54,7 @@ export class DuelMatch {
         opponentName: this.options.names[opponentOf(team)],
       });
     }
+    if (this.hasEnded) return;
     this.cancelTicks = scheduler.every(tickIntervalMs, () => {
       this.tick();
     });
