@@ -12,7 +12,7 @@ import { HUMAN_CONTROLLER_ID } from './DevSetControllerHandler.constants';
  * `human` detaches its AI binding and makes it the human's Legend (the previous human's Legend, if
  * any, becomes a bot with the Rover controller); the Rover's controller id binds the Rover to it
  * and, when it was the human's Legend, leaves the match with no human. A re-bound bot starts a
- * fresh brain (its old memory is dropped), unless it already plays the Rover. Refused for an unknown entity, a non-Legend or a
+ * fresh brain (its old memory is dropped), unless it already plays the Rover. Refused in a Duel (`not-supported`), for an unknown entity, a non-Legend or a
  * controller id that is neither `human` nor the Rover's.
  */
 export class DevSetControllerHandler implements CommandHandler<'dev-set-controller'> {
@@ -24,6 +24,10 @@ export class DevSetControllerHandler implements CommandHandler<'dev-set-controll
     { entityId, controllerId }: Command<'dev-set-controller'>,
     { state }: CommandContext,
   ): CommandRejectReason | null {
+    const rival = state.match.playerTeam === 'light' ? 'dark' : 'light';
+    if (state.match.humanLegendIdOf(rival) !== null) {
+      return 'not-supported'; // A Duel seats one human per team (ADR 0016): sim mode only.
+    }
     const entity = state.entities.get(entityId);
     if (entity === undefined) {
       return 'unknown-entity';

@@ -31,6 +31,7 @@ import { AStarPathfinder } from './map/AStarPathfinder';
 import { RETREAT_STRUCTURES } from './content/ai/botLaner';
 import { BOT_DIFFICULTIES } from './content/ai/difficulties/botDifficulties';
 import { RANKS_FORMATION } from './content/mobs/formations/ranks';
+import type { EntityId } from './state/EntityStore.types';
 import { assignLanes } from './state/assignLanes';
 import { formationSlot } from './state/formationSlot';
 import { unitClassOf } from './content/ai/unitClasses';
@@ -39,7 +40,6 @@ import type { ContentCatalogue } from './content/ContentCatalogue';
 import { loadDefaultContent } from './content/loadDefaultContent';
 import { STRUCTURE_DEFINITIONS } from './content/structures/structureCatalogue';
 import { compareById } from './utils/compareById';
-import { MAP_FEATURE_DEFINITIONS } from './content/maps/mapFeatureDefinitions';
 import type { LevelCurveDefinition } from './content/progression/progression.types';
 import { loadLevelCurves } from './content/progression/loadLevelCurves';
 import { XP_SOURCES } from './content/progression/xpSources';
@@ -58,7 +58,7 @@ import type { Snapshot } from './state/Snapshot.types';
 import { StateHasher } from './state/StateHasher';
 import type { Replay, ReplaySetup, RosterSlot, SimulationOptions } from './Simulation.types';
 import { SpaceIndex } from './physics/SpaceIndex';
-import { WorldMap } from './map/WorldMap';
+import { MatchPathfinderFactory } from './map/MatchPathfinderFactory';
 import { zoneAreaOf } from './map/zoneArea';
 import { DefaultSystemPipeline } from './systems/DefaultSystemPipeline';
 import type { SystemContext } from './systems/System.types';
@@ -262,7 +262,16 @@ export class Simulation {
     this.state.events.emit('tick-completed', { tick: this.state.tick });
   }
 
+  /**
+   * The Legend seated for `team`'s human slot (ADR 0016); `null` when that team has no human or
+   * its Legend did not spawn. The server routes each seat's `intent` to this id.
+   */
+  public humanLegendIdOf(team: PlayableTeam): EntityId | null {
+    return this.state.match.humanLegendIdOf(team);
+  }
+
   /** The current state as a structured-clone-safe snapshot. */
+  // ponytail: one shared snapshot for every seat; a per-seat Veil-filtered snapshot goes here.
   public snapshot(): Snapshot {
     return this.state.snapshot(this.curves);
   }
@@ -336,14 +345,14 @@ export class Simulation {
    * go to the lane with the fewest Legends, lowest index first, and stand in ranks behind their own
    * end of it; Rovers start at their Stronghold. A bot gets its controller (a laner's with the lane
    * in its brain's memory); the human slot gets none (a human plays it), and its Legend's id goes
-   * to `state.match.humanLegendId`. Runs once the match director exists, so its listeners hear
+   * to its team's seat in `state.match` (`humanLegendId` for `playerTeam`). Runs once the match director exists, so its listeners hear
    * every `entity-spawned` (plan §4.4). The roster is setup, so nothing is queued or recorded: a
    * replay rebuilds it. A human slot whose definition does not exist or is not a Legend logs ERROR
    * `core.match` and does not spawn, and the match runs on without a human: the class comes from
    * saved data and can be stale (ADR 0023).
    *
-   * @throws Error when there is a roster but no map, more than one human slot, a human slot off
-   *   `playerTeam`, a team's slots do not fit under `legendsPerTeam` or the Unit cap, its laners do
+   * @throws Error when there is a roster but no map, more than one human slot on a team, a lone
+   *   human slot off `playerTeam`, a team's slots do not fit under `legendsPerTeam` or the Unit cap, its laners do
    *   not fit under `legendsPerLane`, or a bot's controller or difficulty does not exist or its
    *   definition is not a Legend (checked before anything spawns).
    */
@@ -364,7 +373,7 @@ export class Simulation {
       );
     }
     const legends = new LegendSpawner(factory);
-    const human = Simulation.humanSlotOf(roster, state.config.match.playerTeam);
+    const humans = Simulation.humanSlotsOf(roster, state.config.match.playerTeam);
     AiSystem.assertRegistered(
       roster.flatMap((slot, index) =>
         slot.pilot === 'bot'
@@ -387,24 +396,26 @@ export class Simulation {
         );
       }
     });
-    const refusal = human === undefined ? null : legends.refusal(human.definitionId);
+    const refusals = new Map(humans.map((human) => [human, legends.refusal(human.definitionId)]));
     // A refused human slot still counts against the caps below, but takes no lane and no spawn.
-    const spawning = refusal === null ? roster : roster.filter((slot) => slot !== human);
+    const spawning = roster.filter((slot) => (refusals.get(slot) ?? null) === null);
     const plans = Simulation.planLanes(
       state,
       roster,
       spawning,
       routes.lanes.map(({ id }) => id),
     );
-    if (human !== undefined && refusal !== null) {
-      logger.log(
-        makeLogRecord(
-          'ERROR',
-          'core.match',
-          `The human's Legend "${human.definitionId}" did not spawn: ${refusal}.`,
-          { attributes: { definitionId: human.definitionId, reason: refusal } },
-        ),
-      );
+    for (const [human, refusal] of refusals) {
+      if (refusal !== null) {
+        logger.log(
+          makeLogRecord(
+            'ERROR',
+            'core.match',
+            `The human's Legend "${human.definitionId}" did not spawn: ${refusal}.`,
+            { attributes: { definitionId: human.definitionId, reason: refusal } },
+          ),
+        );
+      }
     }
     const anchor = { x: 0, y: 0 };
     const forward = { x: 0, y: 0 };
@@ -466,28 +477,32 @@ export class Simulation {
   }
 
   /**
-   * The roster's human slot; `undefined` in sim mode (no human).
+   * The roster's human slots, at most one per team (ADR 0016); empty in sim mode. A lone human
+   * must be on `playerTeam`; with two, `playerTeam` is the team `humanLegendId` follows.
    *
-   * @throws Error when the roster has more than one human slot, or its human slot is not on
+   * @throws Error when a team has more than one human slot, or a lone human slot is not on
    *   `playerTeam`.
    */
-  private static humanSlotOf(
+  private static humanSlotsOf(
     roster: readonly RosterSlot[],
     playerTeam: PlayableTeam,
-  ): RosterSlot | undefined {
+  ): readonly RosterSlot[] {
     const humans = roster.filter(({ pilot }) => pilot === 'human');
-    if (humans.length > 1) {
+    for (const team of PLAYABLE_TEAMS) {
+      const count = humans.filter((human) => human.team === team).length;
+      if (count > 1) {
+        throw new Error(
+          `The ${team} team has ${String(count)} human slots; a team has at most one human.`,
+        );
+      }
+    }
+    const [lone] = humans;
+    if (humans.length === 1 && lone !== undefined && lone.team !== playerTeam) {
       throw new Error(
-        `The roster has ${String(humans.length)} human slots; a match has at most one human.`,
+        `The roster's human slot is on the ${lone.team} team; match.playerTeam is ${playerTeam}.`,
       );
     }
-    const [human] = humans;
-    if (human !== undefined && human.team !== playerTeam) {
-      throw new Error(
-        `The roster's human slot is on the ${human.team} team; match.playerTeam is ${playerTeam}.`,
-      );
-    }
-    return human;
+    return humans;
   }
 
   /**
@@ -548,7 +563,7 @@ export class Simulation {
         : undefined,
     );
     if (slot.pilot === 'human') {
-      state.match.seatHuman(entity.id);
+      state.match.seatHuman(entity.id, slot.team);
     }
   }
 
@@ -587,26 +602,11 @@ export class Simulation {
     if (map === undefined) {
       return { space: null, world: null, paths: null };
     }
-    const walkable = new Set(
-      mapObjects.filter(({ isBlocking }) => !isBlocking).map(({ id }) => id),
-    );
-    const grid = WorldMap.fromDefinition(
-      { ...map, features: map.features.filter(({ id }) => !walkable.has(id)) },
-      config.map.navCellSize,
-      (definitionId) => MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking ?? false,
-    );
-    for (const object of mapObjects.filter(({ isBlocking }) => isBlocking)) {
-      for (const footprint of object.footprints) {
-        grid.stampFootprint(footprint, object.passages);
-      }
-    }
+    const { grid, paths } = new MatchPathfinderFactory().create(map, config, mapObjects);
     return {
       space: new SpaceIndex(map.width, map.height, SPACE_CELL_SIZE),
       world: new MatchWorld(map, grid),
-      paths: new AStarPathfinder(grid, {
-        maxExpansions: config.map.pathMaxExpansions,
-        snapCells: config.map.pathSnapCells,
-      }),
+      paths,
     };
   }
 

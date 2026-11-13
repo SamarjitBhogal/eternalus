@@ -270,6 +270,31 @@ Reply inline (`Decision: …`).
       `docs/decisions/0016-multiplayer-server-authoritative-duel.md` (draft): accept, change or
       reject it. The consolidated questions about the Duel mode and the server are in
       `docs/plan/multiplayer-and-scalability-plan.md` §9; answer them there or inline here.
+  - 2026-11-10 (claudiodh, `feat/duel-server`): because of the 2026-11-13 deadline, claudiodh chose
+    to build the Duel along this draft before acceptance, and approved `ws` 8.22.2 and `@types/ws`
+    8.18.2 (server only). The PR is the ADR's spike: accept, change or reject the ADR on it. Built:
+    `packages/protocol`, `apps/server` (one Node process, `ws` gateway, Duel queue, match host),
+    the client's `game/engine/net/` port and `game/duel/`, a "Duel online" menu entry, and core
+    seating one human per team (`Simulation.humanLegendIdOf`). Left for you: (1) the doc edits the
+    ADR lists as the owner's (`AGENTS.md` "no server", README, requirements, architecture 02/03,
+    the ADR's status). (2) Interim choices to confirm or change, each marked `ponytail:` in code:
+    sides by arrival order (plan §9 question 45); both players are Warriors; no first-to-10-kills
+    rule, the match ends on core's normal verdict; no per-seat visibility filter yet (one shared
+    snapshot); a snapshot every tick, no interpolation or prediction. (3) Core's `intent` command
+    is still a stub (sprint 1.5 PlayerController), so the server translates intents into
+    `move`/`stop`/`attack-target` (`SeatCommands`, ported from the client's `PlayerCommands`);
+    once `intent` is applied in core, `SeatCommands` goes. (4) Map desync risk: the client
+    regenerates the map from `match-found.seed` with its own default `GameConfig`; a config drift
+    between the two builds, or an engine-level Math difference (03 §8), would draw a world that is
+    not the server's. Send the map (or a config hash) on the wire, or accept the risk while both
+    run the same build? (5) Before the Duel is reachable beyond the team's tailnet, the per-seat
+    snapshot with the visibility filter (ADR point 1) is needed: today both seats see everything.
+    (6) Guardrail change for your sign-off: `eslint.config.js` gains import-boundary blocks
+    (protocol imports only core's types; the server never imports the client and only
+    `transport/WsListener.ts` imports `ws`; the client never imports the server or `ws`; core
+    never imports protocol or the server). They only add rules. (7) Architecture 02's folder and
+    may-import tables do not list `apps/server` and `packages/protocol` yet (your edit, with the
+    ADR); their package `AGENTS.md` files hold the rules meanwhile.
 - [ ] **DEC-11 — still open after your answer** (the approvals are recorded as DEC-11 in
       `docs/reference/game-design/13-owner-decisions-log.md`, 2026-10-10; your chat clarifications
       of 2026-10-10 answered the former (1) and (2), see Done). (3) Your Roar row says Legends only

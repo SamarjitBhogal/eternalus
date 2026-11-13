@@ -31,7 +31,7 @@ export type BrowserMatchDeps = {
   readonly document: HostDocument;
   readonly gameConfig: GameConfig;
   /** `?dev=1` (13 §4): the developer menu exists in every match this factory builds. */
-  readonly isDeveloperMenuEnabled: boolean;
+  readonly isDeveloperMenuEnabled?: boolean;
   readonly bus: TypedEventBus<BridgeEventMap>;
   /** The player's bindings when the match starts; later changes arrive as `settings` events. */
   readonly settings: Pick<SettingsController, 'bindings'>;
@@ -48,7 +48,7 @@ export type BrowserMatchDeps = {
  * A match's logger: everything to its own TRACE ring buffer first, so a report a page sink makes
  * already holds the record (ADR 0025 §3), then WARN and worse to the page's sinks.
  */
-function createMatchLogger(deps: BrowserMatchDeps, ring: RingBufferSink): SinkLogger {
+export function createMatchLogger(deps: BrowserMatchDeps, ring: RingBufferSink): SinkLogger {
   return new SinkLogger(
     () => deps.clock.now(),
     [
@@ -117,7 +117,7 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
         input,
         logger,
         onCrash: request.onCrash,
-        isDeveloperMenuEnabled: deps.isDeveloperMenuEnabled,
+        isDeveloperMenuEnabled: deps.isDeveloperMenuEnabled === true,
         bridge: {
           bus: deps.bus,
           publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,

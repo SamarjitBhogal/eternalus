@@ -31,10 +31,11 @@ export interface MatchState {
   /** The team the match is played (or spectated) for, from `config.match.playerTeam`. */
   readonly playerTeam: PlayableTeam;
   /**
-   * The human's Legend; `null` in sim mode (11 §7: no human slot in the roster), and when the
-   * human slot names no Legend definition. Set through `MatchRecord.seatHuman` by `Simulation`
-   * from the roster's human slot, when the match is built (once); sim mode's `dev-set-controller`
-   * moves it afterwards through `MatchRecord.reseatHuman`.
+   * The Legend of the human on `playerTeam`; `null` in sim mode (11 §7: no human slot in the
+   * roster), and when the human slot names no Legend definition. Set through
+   * `MatchRecord.seatHuman` by `Simulation` from the roster's human slot, when the match is
+   * built. Sim mode's `dev-set-controller` moves it afterwards through `MatchRecord.reseatHuman`.
+   * A Duel (ADR 0016) seats one human per team: `Simulation.humanLegendIdOf` reads either.
    */
   readonly humanLegendId: EntityId | null;
   /**

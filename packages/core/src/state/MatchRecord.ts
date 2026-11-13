@@ -18,7 +18,7 @@ export class MatchRecord implements MatchState {
   private enteredTick = 0;
   private cursor = 0;
   private isHeld = false;
-  private humanId: EntityId | null = null;
+  private readonly seats = new Map<PlayableTeam, EntityId>();
   private verdict: MatchResult | null = null;
 
   /**
@@ -56,9 +56,17 @@ export class MatchRecord implements MatchState {
     return this.isHeld;
   }
 
-  /** The human's Legend; `null` in sim mode and when the human slot did not spawn. */
+  /**
+   * The Legend of the human on `playerTeam`; `null` in sim mode and when that human slot did not
+   * spawn. In a Duel (ADR 0016) it is the `playerTeam` seat; `humanLegendIdOf` reads the other.
+   */
   public get humanLegendId(): EntityId | null {
-    return this.humanId;
+    return this.humanLegendIdOf(this.playerTeam);
+  }
+
+  /** The Legend seated for `team`'s human slot (ADR 0016); `null` when that team has none. */
+  public humanLegendIdOf(team: PlayableTeam): EntityId | null {
+    return this.seats.get(team) ?? null;
   }
 
   /** How the match ended; `null` until a verdict. */
@@ -94,26 +102,30 @@ export class MatchRecord implements MatchState {
   }
 
   /**
-   * Records the human's Legend. Called by `Simulation` only, once, when the human slot's Legend
-   * spawns; a second call throws.
+   * Records the Legend of `team`'s human (default `playerTeam`). Called by `Simulation` only, once
+   * per team, when that human slot's Legend spawns; a second call for a team throws.
    */
-  public seatHuman(legendId: EntityId): void {
-    if (this.humanId !== null) {
-      throw new Error('The human is already seated: humanLegendId is set once.');
+  public seatHuman(legendId: EntityId, team: PlayableTeam = this.playerTeam): void {
+    if (this.seats.has(team)) {
+      throw new Error(`The ${team} human is already seated: a team's seat is set once.`);
     }
-    this.humanId = legendId;
+    this.seats.set(team, legendId);
   }
 
   /**
-   * Moves the human seat (sim mode, FR-099) to `legendId`, or to nobody (`null`). Called by
-   * `DevSetControllerHandler` only, after the match is built; a move to the current seat is a bug
-   * and throws.
+   * Moves the `playerTeam` human seat (sim mode, FR-099) to `legendId`, or to nobody (`null`).
+   * Called by `DevSetControllerHandler` only, after the match is built; a move to the current seat
+   * is a bug and throws. A Duel's seats (ADR 0016) are never moved: the handler refuses there.
    */
   public reseatHuman(legendId: EntityId | null): void {
-    if (legendId === this.humanId) {
+    if (legendId === this.humanLegendId) {
       throw new Error('The human is already seated there: reseat only moves humanLegendId.');
     }
-    this.humanId = legendId;
+    if (legendId === null) {
+      this.seats.delete(this.playerTeam);
+    } else {
+      this.seats.set(this.playerTeam, legendId);
+    }
   }
 
   /** Moves the timeline cursor past the entry that is due. Called by the `MatchDirector` only. */

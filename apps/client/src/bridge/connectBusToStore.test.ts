@@ -157,6 +157,13 @@ describe('connectBusToStore', () => {
     expect(store.getState().matchSetup.selection).toEqual({ classId: null, specId: null });
   });
 
+  it('copies the match result', () => {
+    const { bus, store } = connected();
+    const result = { winner: 'light', ownTeam: 'dark', reason: 'finished' } as const;
+    bus.emit('match-result', result);
+    expect(store.getState().match.result).toEqual(result);
+  });
+
   it('copies the match clock, HUD state and announcements', () => {
     const { bus, store } = connected();
     bus.emit('match-clock', { tick: 60, seconds: 2 });

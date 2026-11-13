@@ -105,6 +105,16 @@ describe('DevSetControllerHandler', () => {
     expect(context.state.entities.controllerOf('entity-1')?.controllerId).toBe('bot-legend');
   });
 
+  it('is not supported in a Duel: a human seated on the other team refuses the move', () => {
+    const context = contextWith();
+    context.state.match.seatHuman('entity-2', 'dark');
+
+    expect(new DevSetControllerHandler(ROVER).handle(command('entity-1', 'human'), context)).toBe(
+      'not-supported',
+    );
+    expect(context.state.match.humanLegendId).toBeNull();
+  });
+
   it('keeps the brain of a bot that already plays the Rover', () => {
     const context = contextWith();
     const handler = new DevSetControllerHandler(ROVER);
