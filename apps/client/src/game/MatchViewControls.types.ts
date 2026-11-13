@@ -2,14 +2,14 @@ import type { EntityId, Snapshot } from '@eternalus/core';
 
 import type { BuildingRoofs } from './BuildingRoofs';
 import type { MatchCamera } from './MatchCamera';
-import type { PlayerCommands } from './PlayerCommands';
+import type { PlayerActions } from './PlayerActions';
 import type { MiniMapView } from './views/MiniMapView';
 
 /** The parts of a `Match` its view controls drive; `Match` builds them and owns their lifetime. */
 export type MatchViewControlsDeps = {
   readonly camera: MatchCamera;
   readonly roofs: BuildingRoofs;
-  readonly commands: PlayerCommands;
+  readonly commands: PlayerActions;
   readonly miniMap: MiniMapView;
   /** Told whenever the player shows or hides the minimap (`Match` publishes it to the HUD). */
   readonly onMiniMapShownChanged: (isShown: boolean) => void;

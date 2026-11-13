@@ -9,6 +9,12 @@
       "path": "./packages/core/tsconfig.test.json"
     },
     {
+      "path": "./packages/protocol"
+    },
+    {
+      "path": "./packages/protocol/tsconfig.test.json"
+    },
+    {
       "path": "./apps/client"
     },
     {
@@ -16,6 +22,9 @@
     },
     {
       "path": "./apps/client/tsconfig.node.json"
+    },
+    {
+      "path": "./apps/server"
     }
   ]
 }

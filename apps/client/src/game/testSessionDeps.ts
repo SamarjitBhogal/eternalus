@@ -14,6 +14,7 @@ import { describeCredits } from '../data/resources/describeCredits';
 import { FakeAssetLoader } from '../data/resources/loaders/FakeAssetLoader';
 import { ResourceController } from '../data/resources/ResourceController';
 import { shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
+import { FakeMessageTransport } from './engine/net/FakeMessageTransport';
 import { FakeSessionClock } from './engine/time/FakeSessionClock';
 import { FakeRunningMatch } from './FakeRunningMatch';
 import { prepareMatchWorld } from './prepareMatchWorld';
@@ -84,7 +85,8 @@ export function testReporter(
  * A full `SessionControllerDeps` for tests (02 §8: real classes, fakes at the ports): a real
  * bus, a `FakeSessionClock`, the default states, `shippedCatalogue()`, core's match config, seeds
  * counting from 42, `LcgRng`, the real roster stream, a bare theme root, worlds from
- * `prepareMatchWorld`, a match factory returning an inert handle, a `MemoryLogger`, resources over
+ * `prepareMatchWorld`, match factories (local and Duel) returning an inert handle, a
+ * `FakeMessageTransport` per Duel, a `MemoryLogger`, resources over
  * an empty manifest (every load is synchronous; pass `testResources()` for pending loads) and the
  * shipped credits.
  */
@@ -106,6 +108,8 @@ export function testSessionDeps(
     themeRoot: { dataset: {} },
     prepareWorld: (value) => prepareMatchWorld(config, value),
     createMatch: () => new FakeRunningMatch(),
+    createDuelMatch: () => new FakeRunningMatch(),
+    createDuelTransport: () => new FakeMessageTransport(),
     logger: new MemoryLogger(),
     resources: new ResourceController({
       manifest: { version: 'test', assets: [] },
