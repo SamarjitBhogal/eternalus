@@ -71,7 +71,7 @@ function setUp(numLanes = createDefaultGameConfig().map.numLanes) {
     map,
     captureKinds: CAPTURE_KINDS,
   });
-  return { map, bridge, order, clocks, huds, structures, captures };
+  return { map, bridge, bus, order, clocks, huds, structures, captures };
 }
 
 describe('MatchBridge', () => {
@@ -249,5 +249,50 @@ describe('MatchBridge', () => {
     const [firstPoints, secondPoints] = captures;
     expect(second?.structures).toBe(first?.structures);
     expect(secondPoints?.points).toBe(firstPoints?.points);
+  });
+});
+
+describe('MatchBridge: a Duel', () => {
+  const duelSnapshot = (tick: number, phase: 'countdown' | 'early-game', phaseEnteredTick = 0) => ({
+    ...snapshotAt(tick, [{ ...PLAYER, team: 'dark' }]),
+    match: {
+      phase,
+      phaseEnteredTick,
+      upcoming: phase === 'countdown' ? [{ entryId: 'countdown-over', tick: 90 }] : [],
+      humanLegendId: null,
+      duel: { kills: { light: 3, dark: 1 }, killTarget: 10 },
+    },
+  });
+
+  const publishedAt = (snapshot: Snapshot) => {
+    const { bridge, bus } = setUp();
+    const states: BridgeEventMap['duel-state'][] = [];
+    bus.on('duel-state', (state) => states.push(state));
+    bridge.publishAll(snapshot, 'player-1');
+    return states;
+  };
+
+  it("publishes the score from the player's side", () => {
+    expect(publishedAt(duelSnapshot(120, 'early-game', 90))).toEqual([
+      { ownKills: 1, opponentKills: 3, killTarget: 10, countdown: null },
+    ]);
+  });
+
+  it.each([
+    [0, 3],
+    [30, 2],
+    [60, 1],
+    [89, 1],
+  ])('counts the countdown down number by number: tick %i shows %i', (tick, shown) => {
+    expect(publishedAt(duelSnapshot(tick, 'countdown'))[0]?.countdown).toBe(shown);
+  });
+
+  it('shows START (0) for the first second after the countdown, then nothing', () => {
+    expect(publishedAt(duelSnapshot(100, 'early-game', 90))[0]?.countdown).toBe(0);
+    expect(publishedAt(duelSnapshot(121, 'early-game', 90))[0]?.countdown).toBeNull();
+  });
+
+  it('publishes nothing outside a Duel', () => {
+    expect(publishedAt(snapshotAt(0, [PLAYER]))).toEqual([]);
   });
 });

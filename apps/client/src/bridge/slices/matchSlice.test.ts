@@ -28,6 +28,19 @@ describe('matchSlice', () => {
     expect(selectCapturePoints({ match })).toBe(capturePoints);
   });
 
+  it('stores the Duel names and scoreboard, and has none outside a Duel', () => {
+    expect(matchSlice.selectors.selectVersus({ match: matchSlice.getInitialState() })).toBeNull();
+    expect(matchSlice.selectors.selectDuel({ match: matchSlice.getInitialState() })).toBeNull();
+    const duel = { ownKills: 2, opponentKills: 0, killTarget: 10, countdown: 3 };
+    let match = matchSlice.reducer(
+      undefined,
+      matchSlice.actions.versusChanged({ own: 'A', opponent: 'B' }),
+    );
+    match = matchSlice.reducer(match, matchSlice.actions.duelChanged(duel));
+    expect(matchSlice.selectors.selectVersus({ match })).toEqual({ own: 'A', opponent: 'B' });
+    expect(matchSlice.selectors.selectDuel({ match })).toBe(duel);
+  });
+
   it('stores the result, a draw included', () => {
     const won = matchSlice.reducer(
       undefined,
@@ -57,6 +70,8 @@ describe('matchSlice', () => {
       structures: [],
       capturePoints: [],
       result: null,
+      versus: null,
+      duel: null,
     });
   });
 });

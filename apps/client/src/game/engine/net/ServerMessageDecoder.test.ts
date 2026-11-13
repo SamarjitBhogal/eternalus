@@ -8,7 +8,16 @@ const SNAPSHOT = { tick: 3, match: {}, entities: [] };
 describe('ServerMessageDecoder', () => {
   it.each([
     [{ type: 'queue-waiting' }],
-    [{ type: 'match-found', matchId: 'm1', seed: 3, team: 'dark', legendId: 'entity-2' }],
+    [
+      {
+        type: 'match-found',
+        matchId: 'm1',
+        seed: 3,
+        team: 'dark',
+        legendId: 'entity-2',
+        opponentName: 'Ana',
+      },
+    ],
     [{ type: 'state', snapshot: SNAPSHOT, ackSeq: 4 }],
     [{ type: 'match-ended', reason: 'opponent-left', winner: 'light' }],
     [{ type: 'match-ended', reason: 'finished', winner: null }],
@@ -21,10 +30,23 @@ describe('ServerMessageDecoder', () => {
     ['text'],
     ['[]'],
     ['{"type":"unknown"}'],
-    ['{"type":"match-found","matchId":1,"seed":1,"team":"dark","legendId":"a"}'],
-    ['{"type":"match-found","matchId":"m","seed":1,"team":"neutral","legendId":"a"}'],
-    ['{"type":"match-found","matchId":"m","team":"dark","legendId":"a"}'],
-    ['{"type":"match-found","matchId":"m","seed":1.5,"team":"dark","legendId":"a"}'],
+    [
+      '{"type":"match-found","matchId":1,"seed":1,"team":"dark","legendId":"a","opponentName":"Ana"}',
+    ],
+    [
+      '{"type":"match-found","matchId":"m","seed":1,"team":"neutral","legendId":"a","opponentName":"Ana"}',
+    ],
+    ['{"type":"match-found","matchId":"m","team":"dark","legendId":"a","opponentName":"Ana"}'],
+    [
+      '{"type":"match-found","matchId":"m","seed":1.5,"team":"dark","legendId":"a","opponentName":"Ana"}',
+    ],
+    ['{"type":"match-found","matchId":"m","seed":1,"team":"dark","legendId":"a"}'],
+    [
+      '{"type":"match-found","matchId":"m","seed":1,"team":"dark","legendId":"a","opponentName":"<b>"}',
+    ],
+    [
+      `{"type":"match-found","matchId":"m","seed":1,"team":"dark","legendId":"a","opponentName":"${'x'.repeat(17)}"}`,
+    ],
     ['{"type":"state","snapshot":{},"ackSeq":1}'],
     ['{"type":"match-ended","reason":"quit","winner":null}'],
     ['{"type":"rejected","reason":"other"}'],

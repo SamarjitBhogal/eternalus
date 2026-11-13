@@ -103,10 +103,11 @@ export interface SessionContext {
   /** Publishes the current setup again, unchanged (a rematch, architecture 13 §2). */
   repeatMatchSetup(): void;
   /**
-   * Joins the online Duel queue (ADR 0016): connects to the server and sends `queue-join`. When an
-   * opponent is found and the first snapshot arrives, the session moves to `match-loading`.
+   * Joins the online Duel queue as `name` (ADR 0016): connects to the server and sends
+   * `queue-join`. When an opponent is found the VERSUS screen shows, and once the first snapshot
+   * arrives the session moves to `match-loading`.
    */
-  joinDuelQueue(): void;
+  joinDuelQueue(name: string): void;
   /** Leaves the Duel queue (`queue-leave`) and closes the connection. */
   leaveDuelQueue(): void;
   /**

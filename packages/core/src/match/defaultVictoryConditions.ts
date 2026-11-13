@@ -1,4 +1,5 @@
 import type { GameState } from '../state/GameState';
+import { KillCountCondition } from './conditions/KillCountCondition';
 import { ObjectiveLostCondition } from './conditions/ObjectiveLostCondition';
 import type { VictoryCondition } from './VictoryCondition.types';
 
@@ -8,4 +9,5 @@ import type { VictoryCondition } from './VictoryCondition.types';
  */
 export const createDefaultVictoryConditions = (state: GameState): readonly VictoryCondition[] => [
   new ObjectiveLostCondition(state),
+  new KillCountCondition(),
 ];

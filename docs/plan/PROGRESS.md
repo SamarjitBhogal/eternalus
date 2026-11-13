@@ -6335,3 +6335,23 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - What was done: merged `phase/3-sprint-3-work` (3dc9e908, after #51 and #52) into this branch because #97 was CONFLICTING. Only `docs/plan/PROGRESS.md` conflicted; both sides' entries are kept. No feature code changed. No force push.
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 1336 passed (1336)"; protocol "Tests 18 passed (18)"; server "Tests 79 passed (79)"; client "Tests 1883 passed (1883)"; "Documentation check passed."
 - Next step: reviewer approval; the team merges.
+
+### 2026-11-12 — Phase 3 / online Duel — feat/duel-rules (stacked on #97) — claudiodh + Claude Code
+
+- What was done: the Duel rules and the organic start flow. Core: `SimulationOptions.duel` (kept in the replay setup), both Legends start in the Cathedral, `DuelRoundSystem` counts a kill and resets both Legends to their start points at full health, `KillCountCondition` ends the match at 10 (`DUEL_RULES`, `// TUNE:`), score in `Snapshot.match.duel`. Protocol: `queue-join` carries a validated `name`, `match-found` carries `opponentName`. Server: the queue keeps names, the match waits 4 s for the VERSUS screen, the countdown is 3 s. Client: name entry screen, VERSUS screen, countdown 3, 2, 1, START and a "3 - 1 (first to 10)" scoreboard on the HUD (`duel-state`); results reuse the existing screen.
+- Tests: `Simulation.duel.test.ts` (spawn, kill and reset, win at a target of 2, replay), `KillCountCondition.test.ts`, `duelStartPoints.test.ts`, parser name cases, `DuelQueue`/`DuelGateway`/`DuelMatch` names and VERSUS wait, `DuelSession`, `SessionController.duel.test.ts` (VERSUS then loading), `MatchBridge.test.ts` (score side, countdown numbers), `DuelHud`, `DuelVersusScreen`, `DuelNameScreen`.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1340 passed (1340)"; protocol "Tests 29 passed (29)"; client "Tests 1909 passed (1909)"; server "Tests 82 passed (82)"; "Documentation check passed."
+- Next step: the owner answers the INBOX items of 2026-11-12 (spawn points, kill credit, name rules, FR-115's inert world); the gate (critic, ponytail) runs before the PR.
+
+### 2026-11-13 — Phase 3 / sync — feat/duel-rules (PR #102) — claudiodh + Claude Code
+
+- What was done: merged `feat/duel-server` into this branch (its base, updated after the sync with `phase/3-sprint-3-work` 3dc9e908) because #102 was CONFLICTING. Only the append-only logs conflicted; both sides' entries are kept. No feature code changed. No force push.
+- Checks run: `npm run check` → `EXIT=0`: Tests 1356 passed (1356);Tests 29 passed (29);Tests 1909 passed (1909);Tests 82 passed (82); "Documentation check passed."
+- Next step: reviewer approval; the team merges in stack order.
+
+### 2026-11-13 — Phase 3 / online Duel — feat/duel-rules (Copilot review fix) — claudiodh + Claude Code
+
+- What was done: answered the Copilot thread on PR #102 (`DuelRoundSystem` clears the heading and target, but the server's `SeatCommands` kept its last movement and target). Valid: a test through `CoreDuelSimulationFactory` (a seat holds a direction, a kill resets both Legends) left the Legend still at its start point. `SeatCommands.reset()` forgets the cached movement and target, and `CoreDuelSimulation` calls it for both seats when the Duel score changes. Core is untouched; no product decision needed.
+- Tests: `CoreDuelSimulation.test.ts` (new; fails without the reset), `SeatCommands.test.ts` (held movement and attack queue again after `reset`).
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1356 passed (1356)"; protocol "Tests 29 passed (29)"; client "Tests 1909 passed (1909)"; server "Tests 84 passed (84)"; "Documentation check passed."
+- Next step: reviewer re-check; the team merges in stack order.

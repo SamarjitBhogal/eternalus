@@ -59,7 +59,7 @@ describe('DuelBot', () => {
     handlers.onOpen();
     handlers.onMessage({ type: 'queue-waiting' });
 
-    expect(sent).toEqual([{ type: 'queue-join' }]);
+    expect(sent).toEqual([{ type: 'queue-join', name: 'Bot' }]);
     expect(bot.report.isWaiting).toBe(true);
   });
 
@@ -68,6 +68,7 @@ describe('DuelBot', () => {
 
     handlers.onMessage({
       type: 'match-found',
+      opponentName: 'Rival',
       matchId: 'm1',
       seed: 7,
       team: 'light',
@@ -85,6 +86,7 @@ describe('DuelBot', () => {
     const { bot, handlers, sent } = setup();
     handlers.onMessage({
       type: 'match-found',
+      opponentName: 'Rival',
       matchId: 'm1',
       seed: 7,
       team: 'light',
@@ -112,6 +114,7 @@ describe('DuelBot', () => {
 
     handlers.onMessage({
       type: 'match-found',
+      opponentName: 'Rival',
       matchId: 'm1',
       seed: 7,
       team: 'light',
@@ -128,6 +131,7 @@ describe('DuelBot', () => {
     const { handlers, lines } = setup();
     handlers.onMessage({
       type: 'match-found',
+      opponentName: 'Rival',
       matchId: 'm1',
       seed: 7,
       team: 'light',
@@ -145,6 +149,7 @@ describe('DuelBot', () => {
     const { bot, handlers } = setup();
     handlers.onMessage({
       type: 'match-found',
+      opponentName: 'Rival',
       matchId: 'm1',
       seed: 7,
       team: 'light',
@@ -168,6 +173,7 @@ describe('DuelBot', () => {
     const { bot, handlers, lines } = setup();
     handlers.onMessage({
       type: 'match-found',
+      opponentName: 'Rival',
       matchId: 'm1',
       seed: 7,
       team: 'light',

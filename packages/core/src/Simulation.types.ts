@@ -42,7 +42,15 @@ export type SimulationOptions = {
   readonly roster?: readonly RosterSlot[];
   /** Where Legends find their weapons by id; `loadWeapons(config.tickRate)` when omitted. */
   readonly weapons?: WeaponSource;
+  /**
+   * Makes the match a Duel (ADR 0016, DEC-36): both humans start in the Cathedral, each kill
+   * resets both Legends, and `killTarget` kills win. Needs `map` and the default pipeline.
+   */
+  readonly duel?: DuelOptions;
 };
+
+/** A Duel's rules; `DUEL_RULES.killTarget` is the shipped target. */
+export type DuelOptions = { readonly killTarget: number };
 
 /** What every roster slot names: who, for which team, in which role (architecture 18 §8). */
 type RosterSlotBase = {
@@ -74,7 +82,7 @@ export type RosterSlot =
  */
 export type ReplaySetup = Pick<
   SimulationOptions,
-  'seed' | 'config' | 'map' | 'mapObjects' | 'roster'
+  'seed' | 'config' | 'map' | 'mapObjects' | 'roster' | 'duel'
 >;
 
 /** A recorded match: its `ReplaySetup`, the commands and the checkpoint hashes. */

@@ -3,6 +3,12 @@ import type { AbilitySlot } from '@eternalus/core';
 /** The largest client message the server reads, in UTF-16 code units (ADR 0016 point 7). */
 export const MAX_CLIENT_MESSAGE_LENGTH = 1024;
 
+/** The longest player name a Duel accepts, in characters. */
+export const MAX_PLAYER_NAME_LENGTH = 16;
+
+/** What a player name may hold: letters, digits, spaces, `_` and `-`, with no space at either end. */
+export const PLAYER_NAME_PATTERN = /^[\p{L}\p{N}_-]+(?: +[\p{L}\p{N}_-]+)*$/u;
+
 /** The highest `intent.seq` accepted: JSON numbers stay exact up to here. */
 export const MAX_INTENT_SEQ = Number.MAX_SAFE_INTEGER;
 

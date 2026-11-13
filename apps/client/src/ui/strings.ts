@@ -86,6 +86,15 @@ export const STRINGS = {
   },
   loadouts: { title: 'Loadouts', classesTitle: 'Classes' },
   profile: { history: 'Match history and achievements appear here.' },
+  duelName: {
+    title: 'Duel online',
+    nameLabel: 'Your name',
+    find: 'Find opponent',
+    back: 'Back',
+    /** The name the field starts with. */
+    defaultName: 'Player',
+  },
+  duelVersus: { title: 'Duel online', versus: 'VS' },
   duelQueue: {
     title: 'Duel online',
     searching: 'Searching for an opponent…',
@@ -120,7 +129,9 @@ export const STRINGS = {
       profile: 'Profile',
       settings: 'Settings',
       about: 'About',
+      'duel-name': 'Duel name',
       'duel-queue': 'Duel queue',
+      'duel-versus': 'Duel versus',
     } satisfies Record<MenuRoute, string>,
   },
   /** Shown where an action has no binding (`KeyGlyph`, the settings list). */
@@ -224,6 +235,11 @@ export const STRINGS = {
   /** The match HUD (62:231); slot names reuse `ACTION_LABELS`, gameplay names are content. */
   hud: {
     label: 'Match HUD',
+    duelScore: 'Duel score',
+    /** "3 - 1" with the target beside it: "first to 10". */
+    duelFirstTo: (target: number): string => `first to ${String(target)}`,
+    duelCountdown: 'Match start',
+    duelStart: 'START',
     health: 'Health',
     aether: 'Aether',
     level: 'Level',

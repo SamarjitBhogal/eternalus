@@ -20,6 +20,7 @@ function setup(fails = false) {
     },
     scheduler,
     tickIntervalMs: 33,
+    versusMs: 0,
     logger,
   });
   return { host, simulation, scheduler, logger };
@@ -30,7 +31,7 @@ describe('DuelHost', () => {
     const { host, simulation, scheduler } = setup();
     const a = new FakeConnection();
     const b = new FakeConnection();
-    host.start(a, b);
+    host.start({ connection: a, name: 'Ana' }, { connection: b, name: 'Ben' });
     expect(host.isInMatch(a)).toBe(true);
     expect(host.submit(b, 1, INTENT)).toBe(true);
     expect(simulation.intents[0]?.team).toBe('dark');
@@ -51,7 +52,7 @@ describe('DuelHost', () => {
     b.onClose(() => {
       host.leave(b);
     });
-    host.start(a, b);
+    host.start({ connection: a, name: 'Ana' }, { connection: b, name: 'Ben' });
     simulation.result = { winner: 'light' };
     scheduler.tick();
     expect([a.isClosed, b.isClosed]).toEqual([true, true]);
@@ -64,7 +65,7 @@ describe('DuelHost', () => {
     const { host } = setup();
     const a = new FakeConnection();
     const b = new FakeConnection();
-    host.start(a, b);
+    host.start({ connection: a, name: 'Ana' }, { connection: b, name: 'Ben' });
     host.leave(a);
     expect(b.sent.at(-1)).toMatchObject({ reason: 'opponent-left' });
     expect(host.isInMatch(b)).toBe(false);
@@ -75,7 +76,7 @@ describe('DuelHost', () => {
     const { host, logger } = setup(true);
     const a = new FakeConnection();
     const b = new FakeConnection();
-    host.start(a, b);
+    host.start({ connection: a, name: 'Ana' }, { connection: b, name: 'Ben' });
     expect([a.isClosed, b.isClosed]).toEqual([true, true]);
     expect(logger.records).toHaveLength(1);
     expect(host.isInMatch(a)).toBe(false);

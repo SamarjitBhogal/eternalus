@@ -1,19 +1,44 @@
 import { describe, expect, it } from 'vitest';
 import { ClientMessageParser } from './ClientMessageParser';
-import { MAX_CLIENT_MESSAGE_LENGTH } from './ClientMessageParser.constants';
+import { MAX_CLIENT_MESSAGE_LENGTH, MAX_PLAYER_NAME_LENGTH } from './ClientMessageParser.constants';
 
 const parser = new ClientMessageParser();
 const intent = { move: { x: 1, y: 0 }, aim: { x: 5, y: 6 }, triggered: ['ability-1'] };
 
 describe('ClientMessageParser', () => {
   it('parses the queue messages', () => {
-    expect(parser.parse('{"type":"queue-join"}')).toEqual({
+    expect(parser.parse('{"type":"queue-join","name":"Ana"}')).toEqual({
       ok: true,
-      message: { type: 'queue-join' },
+      message: { type: 'queue-join', name: 'Ana' },
     });
     expect(parser.parse('{"type":"queue-leave"}')).toEqual({
       ok: true,
       message: { type: 'queue-leave' },
+    });
+  });
+
+  it.each(['Ana', 'Ana Maria', 'Ñandú_2-b', 'x'.repeat(MAX_PLAYER_NAME_LENGTH)])(
+    'accepts the name %j',
+    (name) => {
+      expect(parser.parse(JSON.stringify({ type: 'queue-join', name }))).toEqual({
+        ok: true,
+        message: { type: 'queue-join', name },
+      });
+    },
+  );
+
+  it.each([
+    ['missing', undefined],
+    ['not a string', 7],
+    ['empty', ''],
+    ['too long', 'x'.repeat(MAX_PLAYER_NAME_LENGTH + 1)],
+    ['padded with a space', ' Ana'],
+    ['holding markup', '<b>Ana</b>'],
+    ['holding a control character', 'An\na'],
+  ])('rejects a join whose name is %s', (_why, name) => {
+    expect(parser.parse(JSON.stringify({ type: 'queue-join', name }))).toEqual({
+      ok: false,
+      reason: 'malformed',
     });
   });
 

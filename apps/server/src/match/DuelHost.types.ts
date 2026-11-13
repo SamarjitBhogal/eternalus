@@ -8,5 +8,7 @@ export type DuelHostOptions = {
   readonly scheduler: TickScheduler;
   /** Milliseconds per tick: `1000 / config.tickRate`. */
   readonly tickIntervalMs: number;
+  /** How long the players see the VERSUS screen before the match steps, in milliseconds. */
+  readonly versusMs: number;
   readonly logger: Logger;
 };

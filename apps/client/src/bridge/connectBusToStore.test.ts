@@ -214,8 +214,21 @@ describe('connectBusToStore', () => {
         structures: [],
         capturePoints: [],
         result: null,
+        versus: null,
+        duel: null,
       });
     }
+  });
+
+  it('copies the Duel names and scoreboard, and clears them with the next setup', () => {
+    const { bus, store } = connected();
+    const duel = { ownKills: 3, opponentKills: 1, killTarget: 10, countdown: null };
+    bus.emit('duel-versus', { own: 'Ana', opponent: 'Ben' });
+    bus.emit('duel-state', duel);
+    expect(store.getState().match.versus).toEqual({ own: 'Ana', opponent: 'Ben' });
+    expect(store.getState().match.duel).toEqual(duel);
+    bus.emit('match-setup', null);
+    expect(store.getState().match.duel).toBeNull();
   });
 
   it('copies the settings state', () => {

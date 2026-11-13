@@ -21,6 +21,8 @@ export type DuelResult = {
 
 /** What `DuelSession` tells its owner; each is called at most once per Duel. */
 export type DuelSessionHandlers = {
+  /** The server paired this player with `opponentName`, for the VERSUS screen. */
+  readonly matched: (opponentName: string) => void;
   /** Paired with an opponent and the first snapshot arrived: the match can be built. */
   readonly started: () => void;
   /** The server ended the match, before or after the first snapshot. */

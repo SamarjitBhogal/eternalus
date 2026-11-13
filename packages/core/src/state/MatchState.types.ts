@@ -9,6 +9,12 @@ export type ScheduledMark = {
   readonly tick: number;
 };
 
+/** A Duel's score: the kills each team has made and the count that wins (ADR 0016, DEC-36). */
+export type DuelScore = {
+  readonly kills: Readonly<Record<PlayableTeam, number>>;
+  readonly killTarget: number;
+};
+
 /**
  * The match director's memory (architecture 12 §4), all plain data, so it is hashed, snapshotted
  * and replayed like the rest of the state. Read-only: only the writers of `MatchRecord`, which
@@ -43,4 +49,9 @@ export interface MatchState {
    * already is.
    */
   readonly result: MatchResult | null;
+  /**
+   * The Duel's score; `null` outside a Duel. Started once by `Simulation` (`startDuel`) and
+   * counted only through `MatchRecord.recordDuelKill`, by `DuelRoundSystem`.
+   */
+  readonly duel: DuelScore | null;
 }

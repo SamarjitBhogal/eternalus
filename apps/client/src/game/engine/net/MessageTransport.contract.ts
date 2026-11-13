@@ -16,7 +16,7 @@ export type MessageTransportHarness = {
   received(): readonly ClientMessage[];
 };
 
-const JOIN: ClientMessage = { type: 'queue-join' };
+const JOIN: ClientMessage = { type: 'queue-join', name: 'Ana' };
 const LEAVE: ClientMessage = { type: 'queue-leave' };
 const WAITING: ServerMessage = { type: 'queue-waiting' };
 

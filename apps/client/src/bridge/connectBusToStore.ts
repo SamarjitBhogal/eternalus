@@ -50,6 +50,8 @@ export function connectBusToStore(
     ),
     bus.on('match-result', (result) => dispatch(match.resultChanged(result))),
     bus.on('match-clock', (clock) => dispatch(match.clockChanged(clock))),
+    bus.on('duel-versus', (names) => dispatch(match.versusChanged(names))),
+    bus.on('duel-state', (state) => dispatch(match.duelChanged(state))),
     bus.on('hud-state', ({ player }) => dispatch(hudSlice.actions.hudStateChanged(player))),
     bus.on('structure-state', ({ structures }) => dispatch(match.structuresChanged(structures))),
     bus.on('capture-state', ({ points }) => dispatch(match.capturePointsChanged(points))),

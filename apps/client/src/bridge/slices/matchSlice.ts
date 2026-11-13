@@ -1,7 +1,7 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import type { MatchClock, MatchResultSummary } from '../events';
-import type { CapturePointStatus, StructureStatus } from '../hud.types';
+import type { CapturePointStatus, DuelHudState, DuelVersus, StructureStatus } from '../hud.types';
 
 /** Match clock, structure and capture rosters, and the result. */
 type MatchSliceState = {
@@ -10,6 +10,10 @@ type MatchSliceState = {
   readonly structures: readonly StructureStatus[];
   readonly capturePoints: readonly CapturePointStatus[];
   readonly result: MatchResultSummary | null;
+  /** The Duel's names for the VERSUS screen; `null` outside a Duel. */
+  readonly versus: DuelVersus | null;
+  /** The Duel's scoreboard and countdown; `null` outside a Duel. */
+  readonly duel: DuelHudState | null;
 };
 
 const initialState: MatchSliceState = {
@@ -17,6 +21,8 @@ const initialState: MatchSliceState = {
   structures: [],
   capturePoints: [],
   result: null,
+  versus: null,
+  duel: null,
 };
 
 /** Match state the UI shows, fed by `match-clock`, `structure-state` and `capture-state`. */
@@ -41,6 +47,14 @@ export const matchSlice = createSlice({
       ...state,
       result: action.payload,
     }),
+    versusChanged: (state, action: PayloadAction<DuelVersus>) => ({
+      ...state,
+      versus: action.payload,
+    }),
+    duelChanged: (state, action: PayloadAction<DuelHudState>) => ({
+      ...state,
+      duel: action.payload,
+    }),
     reset: () => initialState,
   },
   selectors: {
@@ -48,5 +62,7 @@ export const matchSlice = createSlice({
     selectMatchClock: (state) => state.clock,
     selectStructures: (state) => state.structures,
     selectCapturePoints: (state) => state.capturePoints,
+    selectVersus: (state) => state.versus,
+    selectDuel: (state) => state.duel,
   },
 });

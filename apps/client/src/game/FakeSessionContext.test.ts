@@ -44,7 +44,7 @@ describe('FakeSessionContext', () => {
     context.newMatchSetup();
     context.repeatMatchSetup();
     context.clearMatchSetup();
-    context.joinDuelQueue();
+    context.joinDuelQueue('Ana');
     context.leaveDuelQueue();
     context.lockIn();
     context.prepareWorld();
@@ -60,7 +60,7 @@ describe('FakeSessionContext', () => {
       clearMatchSetup: [[]],
       selection: [],
       recordSelection: [],
-      joinDuelQueue: [[]],
+      joinDuelQueue: [['Ana']],
       leaveDuelQueue: [[]],
       lockIn: [[]],
       prepareWorld: [[]],
