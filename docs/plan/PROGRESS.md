@@ -6335,3 +6335,35 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - What was done: merged `phase/3-sprint-3-work` (3dc9e908, after #51 and #52) into this branch because #97 was CONFLICTING. Only `docs/plan/PROGRESS.md` conflicted; both sides' entries are kept. No feature code changed. No force push.
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 1336 passed (1336)"; protocol "Tests 18 passed (18)"; server "Tests 79 passed (79)"; client "Tests 1883 passed (1883)"; "Documentation check passed."
 - Next step: reviewer approval; the team merges.
+
+### 2026-11-12 — Phase 3 / combat sprint: bound key actions, part 1 (BUG-5 / SCRUM-438) — fix/bound-key-actions — Claude Code
+
+- What was done: `camera-zoom-in`, `camera-zoom-out` and `toggle-minimap` now work as `MatchHost`
+  one-shot actions (DEC-117). Zoom multiplies by `KEY_ZOOM_STEP` (`MatchHost.constants.ts`,
+  `TUNE:`) through `MatchViewControls.zoomBy`, the wheel's path and clamp. The minimap key calls
+  `MatchViewControls.toggleMiniMap`: `MiniMapView` stops drawing and answering clicks, and the
+  `minimap-visibility` event feeds the new `viewSlice` so `MinimapPanel` hides the ring. Not
+  persisted. `toggle-perf-overlay` is left out: no overlay exists. Left for the owner
+  (`INBOX.md`): `toggle-developer-menu`, `sprint`, `interact`, `turret-*`, and whether to hide
+  them from the bindings screen. Note added to `13-game-interface.md` section 10.
+- Checks run: full `npm run check` exit 0: core `Tests 1305 passed (1305)`, client
+  `Tests 1824 passed (1824)`, `Documentation check passed.`
+- Next step: owner answers the INBOX item; the other bound actions follow with their features.
+
+### 2026-11-13 — Phase 3 / sync — fix/bound-key-actions (PR #101) — claudiodh + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (3dc9e908, after #51 and #52) into this branch because #101 was CONFLICTING. Only `docs/plan/PROGRESS.md` conflicted; both sides' entries are kept. No feature code changed. No force push.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1321 passed (1321)"; client "Tests 1824 passed (1824)"; "Documentation check passed."
+- Next step: reviewer approval; the team merges.
+
+### 2026-11-13 — Phase 3 / combat sprint: bound key actions, review fixes (BUG-5 / SCRUM-438) — fix/bound-key-actions (PR #101) — Claude Code
+
+- What was done: answered the four Copilot comments. `Match.start()` now publishes the minimap's
+  visibility, so a Match that replaces a hidden one (`attachViewport`) no longer leaves the store
+  and its new `MiniMapView` disagreeing. A minimap toggle while paused repaints one frame
+  (`Match.render`, no tick), as the loop is stopped. `MiniMapView.test.ts` now covers that a
+  hidden minimap draws nothing. Mouse chords for the zoom and minimap actions are not fixed (a
+  mouse path beside the canvas gestures is a new input path); recorded in `INBOX.md` as a known
+  limit with the decision it needs.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1321 passed (1321)"; client "Tests 1827 passed (1827)"; "✓ built in 248ms"; "Documentation check passed."
+- Next step: reviewer approval; the owner answers the INBOX item.

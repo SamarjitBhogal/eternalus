@@ -33,6 +33,12 @@ function connected() {
 }
 
 describe('connectBusToStore', () => {
+  it('copies minimap-visibility into the view slice', () => {
+    const { bus, store } = connected();
+    bus.emit('minimap-visibility', { isShown: false });
+    expect(store.getState().view.isMinimapShown).toBe(false);
+  });
+
   it('copies session events into the session slice', () => {
     const { bus, store } = connected();
     bus.emit('session-phase', { phase: 'menu', reason: 'select-timeout' });

@@ -16,6 +16,19 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **BUG-5 / SCRUM-438 (2026-11-12, `fix/bound-key-actions`) — two owner questions.** (1) Bound
+      but unhandled actions: `toggle-developer-menu` (BUG-4, a feature), `sprint`, `interact`,
+      `turret-toggle-control`, `turret-switch-ammo` (gameplay not built) and `toggle-perf-overlay`
+      (no overlay exists) are in `InputAction`, bound in `keybindings.ts` and shown as rebindable
+      in settings, yet nothing handles them. Decide whether to hide them from the bindings screen
+      until their features exist. (2) `toggle-minimap` (M) now hides and shows the minimap for the
+      current match only (DEC-147); it is not persisted. Decide whether the choice should persist
+      across matches and sessions (a settings field and a migration).
+      (3) Known limit (PR #101 review): the zoom and minimap actions run only from a key press.
+      The bindings screen also accepts a mouse button for them, and such a binding does nothing
+      yet, because the one-shot table has no mouse path (the canvas gestures own the mouse).
+      Decide whether to add one, or to make the bindings screen accept only keys for these
+      actions.
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on
       every map feature, so `map/strongholdRing.ts` checks at run time that a Stronghold has it

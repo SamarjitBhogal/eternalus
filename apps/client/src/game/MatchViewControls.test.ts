@@ -115,16 +115,18 @@ const setUp = (
   const commands = new PlayerCommands(input, { enqueueCommand }, view, [HOUSE]);
   // No living Legend here, so the minimap centres on the camera's focus (DEC-182).
   const miniMap = new MiniMapView(MAP, new MapView(MAP), RING, () => look);
+  const onMiniMapShownChanged = vi.fn<(isShown: boolean) => void>();
   const controls = new MatchViewControls({
     camera: view,
     roofs,
     commands,
     miniMap,
+    onMiniMapShownChanged,
     playerId,
     snapshot: () => ({ entities: units, mapObjects: HOUSE_STATES }),
   });
   const sent = (): Command[] => enqueueCommand.mock.calls.map(([command]) => command);
-  return { camera, view, roofs, input, commands, miniMap, controls, sent };
+  return { camera, view, roofs, input, commands, miniMap, onMiniMapShownChanged, controls, sent };
 };
 
 describe('MatchViewControls', () => {
@@ -151,6 +153,21 @@ describe('MatchViewControls', () => {
     expect(controls.lookAtMinimapPoint(0, 0)).toBe(false);
 
     expect(view.visibleArea()).toEqual(before);
+  });
+
+  it('toggleMiniMap hides, then shows the minimap, tells the UI, and a hidden one takes no click', () => {
+    const { miniMap, onMiniMapShownChanged, controls } = setUp();
+    const area = miniMap.areaFor(CANVAS.width, CANVAS.height);
+    const click = { x: area.x + area.width / 2, y: area.y + area.height / 2 };
+
+    controls.toggleMiniMap();
+    expect(miniMap.isVisible).toBe(false);
+    expect(controls.lookAtMinimapPoint(click.x, click.y)).toBe(false);
+
+    controls.toggleMiniMap();
+    expect(miniMap.isVisible).toBe(true);
+    expect(controls.lookAtMinimapPoint(click.x, click.y)).toBe(true);
+    expect(onMiniMapShownChanged.mock.calls).toEqual([[false], [true]]);
   });
 
   it('panBy drags the free view against the drag, keeping its size', () => {
