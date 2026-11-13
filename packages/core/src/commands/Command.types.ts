@@ -67,6 +67,11 @@ type CommandPayloads = {
     readonly count: number;
     readonly origin: SpawnOrigin;
   };
+  /**
+   * Developer menu: add one bot Legend of class `definitionId` at `team`'s Stronghold, played by
+   * the Rover controller (it takes no lane). Refused at `maxLegendsPerTeam`.
+   */
+  readonly 'dev-spawn-legend': { readonly team: PlayableTeam; readonly definitionId: string };
   /** Developer menu: remove an entity (cause `dev-removed`). */
   readonly 'dev-remove-entity': { readonly entityId: EntityId };
   /** Developer menu: hand an entity to another controller (sim mode). */
@@ -93,6 +98,8 @@ export type CommandRejectReason =
   | 'invalid-position'
   | 'invalid-origin'
   | 'cap-exceeded'
+  | 'not-a-legend'
+  | 'no-stronghold'
   | 'horde-only'
   | 'map-only'
   | 'invalid-direction'

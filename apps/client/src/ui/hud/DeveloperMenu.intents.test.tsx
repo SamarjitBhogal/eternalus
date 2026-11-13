@@ -157,4 +157,35 @@ describe('DeveloperMenu buttons', () => {
       { kind: 'dev-command', command: { type: 'dev-remove-entity', entityId: 'e42' } },
     ]);
   });
+
+  it('Add sends exactly one dev-spawn-legend with the chosen team and class', () => {
+    const { container, intents, stop } = mount();
+    pick(container, 'Team', 'dark');
+    pick(container, 'Class', 'sentinel');
+    click(container, 'Add');
+    stop();
+    expect(intents).toEqual([
+      {
+        kind: 'dev-command',
+        command: { type: 'dev-spawn-legend', team: 'dark', definitionId: 'sentinel' },
+      },
+    ]);
+  });
+
+  it('Add with no edits sends the first selectable class for the light team, never the locked one', () => {
+    const { container, intents, stop } = mount();
+    expect([...field(container, 'Class').querySelectorAll('option')].map((o) => o.value)).toEqual([
+      'warrior',
+      'sentinel',
+      'magus',
+    ]);
+    click(container, 'Add');
+    stop();
+    expect(intents).toEqual([
+      {
+        kind: 'dev-command',
+        command: { type: 'dev-spawn-legend', team: 'light', definitionId: 'warrior' },
+      },
+    ]);
+  });
 });

@@ -22,6 +22,11 @@ const SPAWN: Command<'dev-spawn-mobs'> = {
   count: 3,
   origin: { kind: 'structure', structureId: 'any' },
 };
+const ADD_LEGEND: Command<'dev-spawn-legend'> = {
+  type: 'dev-spawn-legend',
+  team: 'dark',
+  definitionId: 'warrior',
+};
 const REMOVE: Command<'dev-remove-entity'> = { type: 'dev-remove-entity', entityId: 'e1' };
 
 const feature = (id: string, kind: MapFeatureKind, laneId?: string): MapFeature => ({
@@ -52,8 +57,9 @@ describe('DeveloperMenuController', () => {
   it('enqueues exactly one command per dev-command intent while enabled', () => {
     const { bus, enqueueCommand } = setUp(true);
     bus.emit('ui-intent', { kind: 'dev-command', command: SPAWN });
+    bus.emit('ui-intent', { kind: 'dev-command', command: ADD_LEGEND });
     bus.emit('ui-intent', { kind: 'dev-command', command: REMOVE });
-    expect(enqueueCommand.mock.calls).toEqual([[SPAWN], [REMOVE]]);
+    expect(enqueueCommand.mock.calls).toEqual([[SPAWN], [ADD_LEGEND], [REMOVE]]);
   });
 
   it('ignores a dev-command while the menu is not enabled', () => {
@@ -117,5 +123,30 @@ describe('DeveloperMenuController', () => {
     }
     simulation.step();
     expect(rejected).toEqual([]);
+  });
+
+  it('adds a Legend to a real simulation and refuses the one past the team cap', () => {
+    const config = createDefaultGameConfig({ match: { countdownSeconds: 0 } });
+    const { map } = prepareMatchWorld(config, 1);
+    const simulation = new Simulation({
+      seed: 1,
+      logger: new NullLogger(),
+      ...withPlayer(config, { legend: 'warrior', team: 'light' }),
+      map,
+    });
+    const bus = new TypedEventBus<BridgeEventMap>();
+    new DeveloperMenuController({ isEnabled: true, simulation, bus, map });
+    const rejected: string[] = [];
+    simulation.on('command-rejected', ({ reason }) => rejected.push(reason));
+    const legends = () =>
+      simulation
+        .snapshot()
+        .entities.filter(({ kind, team }) => kind === 'warrior' && team === 'dark');
+    for (let sent = 0; sent <= config.limits.maxLegendsPerTeam; sent += 1) {
+      bus.emit('ui-intent', { kind: 'dev-command', command: ADD_LEGEND });
+    }
+    simulation.step();
+    expect(legends()).toHaveLength(config.limits.maxLegendsPerTeam);
+    expect(rejected).toEqual(['cap-exceeded']);
   });
 });

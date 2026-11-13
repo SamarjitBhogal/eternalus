@@ -16,6 +16,22 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu-legends`) — developer menu, slice 2
+      (add/remove Legends, FR-097) built; decisions for the owner.** (a) `dev-spawn-legend` takes
+      `{ team, definitionId }`, not the `{ team, definitionId, controllerId, at? }` of 13 section
+      4: the Legend always plays with the Rover controller (it takes no lane, so it needs no lane
+      memory, and it starts at the Stronghold like a roster Rover) with the `rover` difficulty.
+      A controller picker, a lane for a laner bot and a spawn point other than the Stronghold are
+      left out. (b) Removal reuses `dev-remove-entity`; there is no `dev-remove-legend` (the
+      existing command removes any entity and emits `entity-removed`). (c) FR-097 and FR-105 call
+      the removal cause `developer-menu`; the code's `RemovalCause` is `dev-removed` (used by tests,
+      invariants and 03). Not renamed here: do you want the rename? (d) The class picker lists the
+      selectable classes of the display catalogue (a class id is the Legend definition id). (e) The
+      team picker is now one control above both the mob and the Legend sections. (f) Refusals
+      (`cap-exceeded`, `not-a-legend`, `no-stronghold`) still reach only the log: the bridge has
+      no diagnostic event. (g) Adding or removing the human Legend and sim mode
+      (`dev-set-controller`, FR-099) stay for slice 3.
+      Decision:
 - [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu`) — developer menu, slice 1 built;
       the rest needs owner and core work.** Built: `?dev=1` enables the menu, F1
       (`toggle-developer-menu`) opens it, and it spawns a horde of lane minions at a map structure

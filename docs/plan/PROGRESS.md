@@ -6388,3 +6388,18 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - What was done: merged `fix/bound-key-actions` into this branch (its base, updated after the sync with `phase/3-sprint-3-work` 3dc9e908) because #107 was CONFLICTING. Only the append-only logs conflicted; both sides' entries are kept. No feature code changed. No force push.
 - Checks run: `npm run check` → `EXIT=0`: Tests 1321 passed (1321);Tests 1846 passed (1846); "Documentation check passed."
 - Next step: reviewer approval; the team merges in stack order.
+
+### 2026-11-13 — Phase 3 / combat sprint: developer menu, slice 2: add and remove Legends (BUG-4 / SCRUM-437) — feat/developer-menu-legends — Claude Code
+
+- What was done: core command `dev-spawn-legend { team, definitionId }` (`DevSpawnLegendHandler`,
+  registered in `defaultCommandHandlers.ts`): one bot Legend at its team's Stronghold, bound to the
+  Rover controller, refused with `unknown-definition`, `not-a-legend`, `no-stronghold` or
+  `cap-exceeded` (`maxLegendsPerTeam`, and the Unit cap). `LegendSpawner` (entities/) is the one Legend check and spawn, shared with `Simulation.spawnRoster`; the Rover controller is passed to the handler by `Simulation`, so `commands/` imports no content. `MatchWorld.strongholdOf` is the one
+  Stronghold lookup, now also used by `Simulation.spawnRoster`. Removing a bot Legend reuses
+  `dev-remove-entity` (cause `dev-removed`, not FR-105's `developer-menu`: `INBOX.md`). The
+  `DeveloperMenu` has an Add Legend section (class picker from the display catalogue's selectable
+  classes, the team picker now shared with the mob section, one `dev-spawn-legend` per press).
+  Left out (`INBOX.md`): the human Legend and sim mode, a controller picker, other spawn points,
+  refusals shown in the UI.
+- Checks run: full `npm run check` exit 0: core `Tests 1331 passed (1331)`, client `Tests 1849 passed (1849)`, `Documentation check passed.`
+- Next step: slice 3 (`dev-set-controller`, sim mode) after the owner answers the `INBOX.md` item.

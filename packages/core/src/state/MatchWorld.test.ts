@@ -15,4 +15,21 @@ describe('MatchWorld', () => {
     expect(world.routes.lanes.map((lane) => lane.id)).toEqual(['lane-0', 'lane-1']);
     expect(world.routes.length('lane-0')).toBe(160);
   });
+
+  it('finds the Stronghold of each team, as a copy', () => {
+    const world = new MatchWorld(
+      TWO_LANE_MAP,
+      WorldMap.fromDefinition(TWO_LANE_MAP, 2, () => false),
+    );
+
+    expect(world.strongholdOf('light')).toEqual({ x: 10, y: 30 });
+    expect(world.strongholdOf('dark')).toEqual({ x: 190, y: 30 });
+    expect(world.strongholdOf('light')).not.toBe(world.strongholdOf('light'));
+    expect(
+      new MatchWorld(
+        { ...TWO_LANE_MAP, features: [] },
+        WorldMap.fromDefinition(TWO_LANE_MAP, 2, () => false),
+      ).strongholdOf('light'),
+    ).toBeUndefined();
+  });
 });

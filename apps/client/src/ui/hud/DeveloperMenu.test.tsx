@@ -27,11 +27,11 @@ describe('DeveloperMenu', () => {
     expect(render({ ...STATE, isOpen: false })).toBe('');
   });
 
-  it('shows the pickers and both gameplay buttons when enabled and open', () => {
+  it('shows the pickers and every gameplay button when enabled and open', () => {
     const html = render(STATE);
     expect(html).toContain('aria-label="Developer menu"');
     expect(html).toContain('Light Minion');
     expect(html).toContain('gate-a (gate)');
-    expect(buttonNames(html)).toEqual(['Spawn', 'Remove']);
+    expect(buttonNames(html)).toEqual(['Spawn', 'Add', 'Remove']);
   });
 });

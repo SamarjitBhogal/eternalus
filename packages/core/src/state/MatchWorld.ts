@@ -1,4 +1,6 @@
 import type { MapDefinition } from '../content/maps/maps.types';
+import type { PlayableTeam } from '../teams/teams.types';
+import type { Vec2 } from '../utils/geometry.types';
 import type { WorldMap } from '../map/WorldMap';
 import { LaneRoutes } from './LaneRoutes';
 
@@ -20,5 +22,15 @@ export class MatchWorld {
     public readonly grid: WorldMap,
   ) {
     this.routes = new LaneRoutes(definition);
+  }
+
+  /** Where `team`'s Stronghold stands (a copy), or `undefined` when the map has none for it. */
+  public strongholdOf(team: PlayableTeam): Vec2 | undefined {
+    const stronghold = this.definition.features.find(
+      (feature) => feature.kind === 'stronghold' && feature.team === team,
+    );
+    return stronghold === undefined
+      ? undefined
+      : { x: stronghold.position.x, y: stronghold.position.y };
   }
 }

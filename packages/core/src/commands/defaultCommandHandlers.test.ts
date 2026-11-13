@@ -26,6 +26,8 @@ const NOT_YET_SUPPORTED: readonly Command[] = [
   { type: 'dev-set-controller', entityId: 'entity-1', controllerId: 'bot-legend' },
 ];
 
+const TEST_CONTROLLER = { controllerId: 'rover', profileId: 'rover', memory: {} } as const;
+
 describe('createDefaultCommandHandlers', () => {
   it.each(NOT_YET_SUPPORTED)(
     'rejects $type as not supported until its system exists',
@@ -33,7 +35,7 @@ describe('createDefaultCommandHandlers', () => {
       const state = new GameState(createDefaultGameConfig(), 1);
       const reasons: string[] = [];
       state.events.on('command-rejected', ({ reason }) => reasons.push(reason));
-      applyCommand(command, createDefaultCommandHandlers(), {
+      applyCommand(command, createDefaultCommandHandlers(TEST_CONTROLLER), {
         state,
         factory: new EntityFactory(new EntityRegistry(), new ContentCatalogue([])),
       });
