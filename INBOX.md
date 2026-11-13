@@ -16,12 +16,12 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
-- [ ] **BUG-2: interior wall health (2026-11-12, PR #96, SCRUM-435).** Every `'wall'` map object,
-      the Stronghold's interior walls included, uses the WallSegment value from balancing.md
-      (`content/maps/mapObjectDefinitions.ts`), so a Legend takes a long time to break an interior
-      wall and the playtest reported "player attack is weak". No spec gives interior walls their
-      own value. Should interior walls keep the WallSegment value, or get their own (which
-      number)?
+- [ ] **BUG-2: interior wall health (2026-11-12, PR #96, SCRUM-435).** Every `'wall'` map object
+      uses the WallSegment value from balancing.md (`content/maps/mapObjectDefinitions.ts`): the
+      Stronghold's wall ring and the `'wall'` features inside it alike. The playtest called the
+      inner walls "interior walls" and reported "player attack is weak" because they take long to
+      break. No spec gives the inner walls their own value. Should the `'wall'` features inside the
+      Stronghold ring keep the WallSegment value, or get their own (which number)?
 
 - [ ] **BUG-3: minions attack obstacles (2026-11-12, PR #96, SCRUM-436).** Today a stuck unit
       paths around an obstacle (DEC-193); minions never attack obstacles or props. The playtest

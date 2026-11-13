@@ -6300,14 +6300,28 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 
 ### 2026-11-09 — Phase 3 / bug tracker — docs/bug-tracker — SamarjitBhogal + Claude Code
 
-- What was done: added `docs/reference/bugs.md`, the bug overview linked to the Jira epic
+- What was done: added the bug tracker (now `docs/plan/bugs.md`), the bug overview linked to the Jira epic
   SCRUM-433 (Epic 11 – Bugs). Logged BUG-1 to BUG-7 as Tasks SCRUM-434 to SCRUM-440, each
   checked against the spec and decisions first: unit health bars missing; interior walls on
   wall-segment health; minions not attacking props (a design change request, DEC-193); developer
   menu missing (FR-096 to FR-099); bound key actions with no handler; no Legend respawn
-  (FR-051); structure health bars (won't fix, owner: structures have no health of their own).
-- Checks run: `npm run check` on `phase/3-sprint-3-work` at `8d2404c` → exit 1, local setup
-  only: `Cannot find package 'happy-dom'` in 5 client test files (in `package-lock.json`,
-  missing from `node_modules`); otherwise core "Tests 1302 passed (1302)", client
-  "Tests 1785 passed (1785)". `npm run docs:check` on this branch → "Documentation check passed."
-- Next step: switch to Node 24 (`npm ci` refuses Node 22.19 / npm 10.9: "Required: {\"node\":\">=24.21.0 <25\",\"npm\":\">=11.0.0\"}"), run `npm ci` and `npm run check`; triage BUG-3 with the product owner.
+  (FR-051); structure health bars (open, deferred to the structure-views task, DEC-195 (4)).
+- Checks run: superseded by the 2026-11-12 entry below (the first local run failed on Node 22).
+- Next step: see the 2026-11-12 entry.
+
+### 2026-11-12 — Phase 3 / bug tracker (review round) — docs/bug-tracker — SamarjitBhogal + Claude Code
+
+- What was done: answered the PR #96 reviews (swholtzman, claudiodh, CodeRabbit) and the pre-PR
+  critic. Merged `phase/3-sprint-3-work` twice (PROGRESS only; both sides kept). Moved the
+  tracker to `docs/plan/bugs.md`. BUG-7 is open, deferred to Phase 2 sprint 2.8 (DEC-195 (4));
+  no owner ruling said structures have no health. BUG-1 fixed by #89. BUG-4, BUG-5 and BUG-6 name
+  the plan items that schedule them. BUG-2 and BUG-3 got `INBOX.md` questions. How to add a
+  bug: name the plan item, Jira status first, a Jira status mapping.
+- Pre-PR gate: critic (`architecture-reviewer`) request-changes with 2 blockers (this file's
+  stale entry, a new conflict) and should-fix rows; all applied except B1 (a `Scheduled`
+  status), which is the owner's call. Ponytail: two cuts applied (a repeated rule, a duplicate
+  key note).
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code
+  style!"; core "Tests 1321 passed (1321)"; client "Tests 1818 passed (1818)"; "✓ built in
+  314ms"; "Documentation check passed."
+- Next step: reviewers re-review; the owner answers the BUG-2 and BUG-3 INBOX items.
