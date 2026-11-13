@@ -6375,3 +6375,10 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - What was done: merged `feat/mm-queue-load` into this branch (its base, updated after the sync with `phase/3-sprint-3-work` 3dc9e908) because #104 was CONFLICTING. Only the append-only logs conflicted; both sides' entries are kept. No feature code changed. No force push.
 - Checks run: `npm run check` → `EXIT=0`: Tests 1356 passed (1356);Tests 31 passed (31);Tests 1917 passed (1917);Tests 124 passed (124); "Documentation check passed."
 - Next step: reviewer approval; the team merges in stack order.
+
+### 2026-11-13 — Phase 3 / online Duel — feat/duel-rules (Copilot review fix) — claudiodh + Claude Code
+
+- What was done: answered the Copilot thread on PR #102 (`DuelRoundSystem` clears the heading and target, but the server's `SeatCommands` kept its last movement and target). Valid: a test through `CoreDuelSimulationFactory` (a seat holds a direction, a kill resets both Legends) left the Legend still at its start point. `SeatCommands.reset()` forgets the cached movement and target, and `CoreDuelSimulation` calls it for both seats when the Duel score changes. Core is untouched; no product decision needed.
+- Tests: `CoreDuelSimulation.test.ts` (new; fails without the reset), `SeatCommands.test.ts` (held movement and attack queue again after `reset`).
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1356 passed (1356)"; protocol "Tests 29 passed (29)"; client "Tests 1909 passed (1909)"; server "Tests 84 passed (84)"; "Documentation check passed."
+- Next step: reviewer re-check; the team merges in stack order.
