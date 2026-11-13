@@ -4,7 +4,7 @@ description: Generated log of every learning CodeRabbit announced on this repo's
 audience: [humans]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-13
 tags: [agents, review, coderabbit]
 related: ['docs/decisions/0018-coderabbit-runs-the-pr-review-skill.md', 'docs/agents/tool-setup.md']
 ---
@@ -99,4 +99,12 @@ Learnt from `SamarjitBhogal` ([comment](https://github.com/SamarjitBhogal/eterna
 
 ```text
 Within repository "SamarjitBhogal/eternalus", only for files matching one of ["packages/core/src/ai/**","packages/core/AGENTS.md","docs/architecture/02-code-structure.md","docs/architecture/11-game-ai.md"]: When reviewing AI imports or their documented allow-lists, permit type-only imports from content/ and teams/ in packages/core/src/ai/. Keep this allowance consistent in packages/core/AGENTS.md, docs/architecture/02-code-structure.md §2, and docs/architecture/11-game-ai.md §1. Do not treat this type-only allowance as permission for value imports from those folders.
+```
+
+## 2026-11-13 · PR #96 · `docs/reference/bugs.md:0-0`
+
+Learnt from `SamarjitBhogal` ([comment](https://github.com/SamarjitBhogal/eternalus/pull/96#discussion_r4559888097)).
+
+```text
+Within repository "SamarjitBhogal/eternalus", only for files matching one of ["docs/reference/bugs.md","docs/plan/bugs.md","docs/reference/game-design/13-owner-decisions-log.md"]: When reviewing structure-health descriptions or BUG-7, account for DEC-217: the Stronghold palace and gates keep their own health. Do not assume that all structures lack their own health.
 ```
