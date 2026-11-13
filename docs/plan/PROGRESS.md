@@ -6168,3 +6168,18 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: full `npm run check` exit 0: core `Tests 1305 passed (1305)`, client
   `Tests 1824 passed (1824)`, `Documentation check passed.`
 - Next step: owner answers the INBOX item; the other bound actions follow with their features.
+
+### 2026-11-13 — Phase 3 / combat sprint: developer menu, slice 1 (BUG-4 / SCRUM-437) — feat/developer-menu — Claude Code
+
+- What was done: `DeveloperMenu` (`ui/hud/`) mounts only when `?dev=1` enabled it and F1
+  (`toggle-developer-menu`, a `MatchHost` one-shot action, DEC-117) opened it. New bridge pieces:
+  the `dev-command` intent, the `developer-menu` event and `developerMenuSlice`. The game side is
+  `DeveloperMenuController`, built by `Match`: it publishes the pickers (the lane minions, the map
+  structures that sit on a lane), toggles open, and turns each `dev-command` into one
+  `Simulation.enqueueCommand` while the menu is enabled. Controls: spawn mobs (`dev-spawn-mobs`
+  with team, mob, count, origin) and remove an entity by id (`dev-remove-entity`). Left out
+  (`INBOX.md`): the persisted setting, Legends (FR-097), sim mode (FR-099), the other FR-098/110
+  controls, refusals shown in the UI, teleport.
+- Checks run: full `npm run check` exit 0: core `Tests 1305 passed (1305)`, client
+  `Tests 1846 passed (1846)`, `Documentation check passed.`
+- Next step: owner answers the `INBOX.md` item; slice 2 adds `dev-spawn-legend` and the toggles.

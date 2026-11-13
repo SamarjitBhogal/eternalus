@@ -139,6 +139,7 @@ const session = new SessionController({
     window,
     document,
     gameConfig,
+    isDeveloperMenuEnabled: developer.isDeveloper,
     bus: eventBus,
     settings,
     clock: sessionClock,

@@ -41,6 +41,7 @@ function setUp(canvas = new FakeViewportCanvas(), sinks: readonly LogSink[] = []
     window,
     document,
     gameConfig: CONFIG,
+    isDeveloperMenuEnabled: false,
     bus,
     settings: { bindings: null },
     clock: new FakeSessionClock(),

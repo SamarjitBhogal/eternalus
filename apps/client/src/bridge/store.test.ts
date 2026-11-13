@@ -4,11 +4,12 @@ import { sessionSlice } from './slices/sessionSlice';
 import { createAppStore, store } from './store';
 
 describe('store', () => {
-  it('registers the nine contract slices', () => {
+  it('registers the ten contract slices', () => {
     expect(Object.keys(store.getState()).sort()).toEqual(
       [
         'assets',
         'content',
+        'developerMenu',
         'hud',
         'loading',
         'match',

@@ -4,6 +4,7 @@ import type { MatchEvidence } from '../data/logging/ErrorReport.types';
 import type { CanvasPointerControlsDeps } from './CanvasPointerControls.types';
 import type { InputDevice } from './engine/input/InputDevice.types';
 import type { InputMapper } from './input/InputMapper';
+import type { DeveloperMenuController } from './DeveloperMenuController';
 import type { Match } from './Match';
 import type { MatchViewControls } from './MatchViewControls';
 import type { MatchViewport } from './MatchViewport.types';
@@ -18,6 +19,7 @@ export type HostDocument = EventTarget & { readonly hidden: boolean };
 export type MatchHostDeps = {
   /** The parts of `Match` the host and its pointer controls drive. */
   readonly match: Pick<Match, 'start' | 'destroy' | 'resize' | 'setPaused'> & {
+    readonly developerMenu: Pick<DeveloperMenuController, 'toggle'>;
     readonly controls: CanvasPointerControlsDeps['controls'] &
       Pick<MatchViewControls, 'toggleMiniMap'>;
   };

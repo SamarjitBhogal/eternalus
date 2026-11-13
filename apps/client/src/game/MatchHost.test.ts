@@ -6,6 +6,7 @@ import { fakeMatchEvidence } from '../data/logging/__fixtures__/errorReports';
 import { fakeKeyEvent } from './engine/input/fakeKeyEvent';
 import { KeyboardDevice } from './engine/input/KeyboardDevice';
 import { MouseDevice } from './engine/input/MouseDevice';
+import { DeveloperMenuController } from './DeveloperMenuController';
 import { FakeBrowserTarget } from './FakeBrowserTarget';
 import { FakeViewportCanvas } from './FakeViewportCanvas';
 import { InputMapper } from './input/InputMapper';
@@ -15,13 +16,24 @@ import { KEY_ZOOM_STEP } from './MatchHost.constants';
 import { settingsWithDefaults } from './settings/settingsState';
 
 /** A host over fakes, with a stub match and adapters that log their calls in order. */
-function setUp(options: { readonly isStartThrowing?: boolean } = {}) {
+function setUp(
+  options: { readonly isStartThrowing?: boolean; readonly isDeveloperMenuEnabled?: boolean } = {},
+) {
   const window = new FakeBrowserTarget();
   window.devicePixelRatio = 2;
   const document = new FakeBrowserTarget();
   const canvas = new FakeViewportCanvas(640, 360);
   const bus = new TypedEventBus<BridgeEventMap>();
   const log: string[] = [];
+  // The real controller over the real bus: the key's effect is what the UI would receive.
+  const developerMenu = new DeveloperMenuController({
+    isEnabled: options.isDeveloperMenuEnabled === true,
+    simulation: { enqueueCommand: vi.fn() },
+    bus,
+    map: { features: [] },
+  });
+  const menuStates: BridgeEventMap['developer-menu'][] = [];
+  bus.on('developer-menu', (state) => menuStates.push(state));
   const atStart = { windowListeners: 0, canvasListeners: 0, busListeners: 0 };
   const match = {
     start: vi.fn(() => {
@@ -34,6 +46,7 @@ function setUp(options: { readonly isStartThrowing?: boolean } = {}) {
     destroy: vi.fn(() => log.push('match.destroy')),
     resize: vi.fn(),
     setPaused: vi.fn(),
+    developerMenu,
     controls: {
       lookAtMinimapPoint: vi.fn(() => false),
       panBy: vi.fn(),
@@ -89,6 +102,7 @@ function setUp(options: { readonly isStartThrowing?: boolean } = {}) {
     mapper,
     chrome,
     listeners,
+    menuStates,
   };
 }
 
@@ -177,6 +191,26 @@ describe('MatchHost', () => {
     window.dispatchEvent(fakeKeyEvent('keydown', 'KeyM', { repeat: true }));
 
     expect(match.controls.toggleMiniMap).toHaveBeenCalledTimes(1);
+  });
+
+  it('opens and closes the developer menu on F1 when it is enabled, not on a held repeat', () => {
+    const { host, window, menuStates } = setUp({ isDeveloperMenuEnabled: true });
+    host.start();
+
+    const press = fakeKeyEvent('keydown', 'F1');
+    window.dispatchEvent(press);
+    window.dispatchEvent(fakeKeyEvent('keydown', 'F1', { repeat: true }));
+    window.dispatchEvent(fakeKeyEvent('keydown', 'F1'));
+
+    expect(press.defaultPrevented).toBe(true);
+    expect(menuStates.map(({ isOpen }) => isOpen)).toEqual([true, false]);
+  });
+
+  it('ignores F1 while the developer menu is not enabled', () => {
+    const { host, window, menuStates } = setUp();
+    host.start();
+    window.dispatchEvent(fakeKeyEvent('keydown', 'F1'));
+    expect(menuStates).toEqual([]);
   });
 
   it('ignores F3 without both modifiers, with an extra one, and a held repeat (DEC-105)', () => {

@@ -1,6 +1,7 @@
 import type { BridgeEventMap } from './events';
 import { assetsSlice } from './slices/assetsSlice';
 import { contentSlice } from './slices/contentSlice';
+import { developerMenuSlice } from './slices/developerMenuSlice';
 import { hudSlice } from './slices/hudSlice';
 import { loadingSlice } from './slices/loadingSlice';
 import { matchSetupSlice } from './slices/matchSetupSlice';
@@ -41,6 +42,7 @@ export function connectBusToStore(
       dispatch(hudSlice.actions.reset());
       dispatch(match.reset());
       dispatch(viewSlice.actions.reset());
+      dispatch(developerMenuSlice.actions.reset());
       if (draft === null) return;
       dispatch(setup.setTeam({ seed: draft.seed, playerTeam: draft.playerTeam }));
       dispatch(setup.setRosters({ allies: draft.allies, enemies: draft.enemies }));
@@ -58,6 +60,7 @@ export function connectBusToStore(
     bus.on('minimap-visibility', ({ isShown }) =>
       dispatch(viewSlice.actions.minimapShownChanged(isShown)),
     ),
+    bus.on('developer-menu', (state) => dispatch(developerMenuSlice.actions.changed(state))),
     bus.on('settings', (settings) => dispatch(settingsSlice.actions.settingsChanged(settings))),
   ];
   return () => {

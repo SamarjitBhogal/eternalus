@@ -3,6 +3,7 @@ import { type ReactElement, useRef } from 'react';
 import { useAppSelector } from '../../bridge/hooks';
 import { AbilityBar } from '../hud/AbilityBar';
 import { AetherBar } from '../hud/AetherBar';
+import { DeveloperMenu } from '../hud/DeveloperMenu';
 import { CrystalStatus } from '../hud/CrystalStatus';
 import { GadgetBar } from '../hud/GadgetBar';
 import { HealthBar } from '../hud/HealthBar';
@@ -70,6 +71,7 @@ export function MatchScreen({ viewport }: ScreenProps): ReactElement {
           <MinimapPanel />
         </div>
       </section>
+      <DeveloperMenu />
       <PauseOverlay openerRef={openerRef} />
     </main>
   );

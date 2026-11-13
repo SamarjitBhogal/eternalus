@@ -61,6 +61,8 @@ export type MatchDeps = {
   readonly renderer: Renderer;
   readonly camera: Camera;
   readonly input: IntentSource;
+  /** Whether the developer menu exists in this match (`?dev=1`, 13 §4); off when left out. */
+  readonly isDeveloperMenuEnabled?: boolean;
   /** Where client-side problems are reported (e.g. a kind drawn with the default view). */
   readonly logger: Logger;
   /** Called once when the game loop stops because a tick or a frame threw (DEC-106). */

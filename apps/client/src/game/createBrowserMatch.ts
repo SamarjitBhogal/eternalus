@@ -30,6 +30,8 @@ export type BrowserMatchDeps = {
   readonly window: HostWindow & Pick<Window, 'requestAnimationFrame' | 'cancelAnimationFrame'>;
   readonly document: HostDocument;
   readonly gameConfig: GameConfig;
+  /** `?dev=1` (13 §4): the developer menu exists in every match this factory builds. */
+  readonly isDeveloperMenuEnabled: boolean;
   readonly bus: TypedEventBus<BridgeEventMap>;
   /** The player's bindings when the match starts; later changes arrive as `settings` events. */
   readonly settings: Pick<SettingsController, 'bindings'>;
@@ -115,6 +117,7 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
         input,
         logger,
         onCrash: request.onCrash,
+        isDeveloperMenuEnabled: deps.isDeveloperMenuEnabled,
         bridge: {
           bus: deps.bus,
           publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,
