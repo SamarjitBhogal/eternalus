@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-09
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -529,9 +529,14 @@ the applier. Readers: `MovementSystem` (`moveSpeed`, `cannot-move`), `CombatSyst
 (`cannot-attack`; `attackSpeed`, fixed when a hit lands), `StatusModifierStep` (`damageDealt`, `damageTaken`); `cannot-cast` waits for
 `AbilitySystem`. Whether the applier's `remove` / `expire` (and so `status-expired`) are covered by
 DEC-41 is still open. `blind` has no hard miss (DEC-42): its aim wobble and the client vignette are
-follow-ups. `StatusStacksWithinMaxInvariant` runs every tick. Not built yet: `polarity`,
-`controlClass` and `control-immune` (so a producer that reapplies `stun` before `onExpire` exists
-can stun-lock), `onExpire`, `appliesTo` (the component is the gate), the `duration`,
+follow-ups. `StatusStacksWithinMaxInvariant` runs every tick. `polarity`, `controlClass` and
+`onExpire` (`apply-status` specs, run by the applier's `expire` on time-out only, credited to the
+same source, ids checked at load) are built: `stun` is followed by `control-immune` (0.5 s), and the
+applier refuses `hard` control on a `control-immune` target (SCRUM-228, `feat/status-control-immune`).
+`stun` and `crushed` are both followed by `control-immune`; re-applying an active stun restarts its
+timer by owner ruling (DEC-99), so `control-immune` follows only when it runs out, and a producer
+that re-applies a stun before it ends can hold a target until it stops.
+Not built yet: `controlResistance` (bosses, Eternal), `appliesTo` (the component is the gate), the `duration`,
 `independent` and `permanent` modes, and a max-health stat (the FR-029 aura). `StatusEffectSystem`
 runs before movement.
 
@@ -822,7 +827,10 @@ file plus a catalogue line; a new effect or restriction kind is one class plus o
 ## 15. HUD contract
 
 The HUD never reads core objects. `SnapshotSystem` fills `Snapshot.player`
-([03 §5](03-game-model.md#5-snapshot)) for the human Legend:
+([03 §5](03-game-model.md#5-snapshot)) for the human Legend with the data only the player has,
+the ability slots. Every value the Legend has as an entity (definition, health, aether, level and
+XP, status effects) stays in its `EntitySnapshot` groups, once each; `MatchBridge` joins the two
+by `entityId` (DEC-232):
 
 ```ts
 // Sketch: packages/core/src/state/Snapshot.types.ts (player part)
@@ -837,21 +845,12 @@ export type AbilitySlotSnapshot = {
   readonly blockedBy: AbilityRejectReason | null;
 };
 export type PlayerSnapshot = {
-  readonly entityId: EntityId;
-  readonly definitionId: LegendId;
-  readonly health: number;
-  readonly maxHealth: number;
-  readonly aether: number;
-  readonly maxAether: number;
-  readonly level: number;
-  readonly xp: number; // XP earned inside the current level (resets on level-up)
-  readonly xpToNext: number; // XP the current level needs to reach the next
+  readonly entityId: EntityId; // the Legend's EntitySnapshot, which holds everything else (DEC-232)
   readonly slots: readonly AbilitySlotSnapshot[]; // ability-1..4, gadget-1, gadget-2, default-action, in that order
-  readonly statusIds: readonly StatusEffectId[];
 };
 ```
 
-`Match`'s `MatchBridge` publishes it (throttled) as the `hud-state` bridge event into `matchSlice`; `AbilityBar`
+`Match`'s `MatchBridge` publishes the joined record (throttled) as the `hud-state` bridge event into `matchSlice`; `AbilityBar`
 (`ui/hud/`) maps `selectAbilitySlots` and renders each slot as its icon, a cooldown sweep and
 `<KeyGlyph action={slot.slot} />`. The slot ids `ability-1` … `ability-4`, `gadget-1`, `gadget-2`
 are the same string literals as the `InputAction`s in `keybindings.ts`
@@ -922,22 +921,28 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   the store (a mob's own `xpValue`; a Legend by victim level, `xpSources.ts`), pays nothing for a
   self or ally kill (O5), and in its own pass emits `xp-gained` and gives the XP to the killer
   only. A level-up raises max health by the class's share of base health and max aether, and heals
-  and refills by the raise only while the Legend is alive (O3, O4). Not built yet: the share radius
-  and damage bias, assists, structure, checkpoint, camp and boss XP (their systems do not exist),
+  and refills by the raise only while the Legend is alive (O3, O4). Structure XP is built (DEC-186: every
+  Legend on the destroying team; a dead Legend is skipped until respawn, GL-12). Not built yet:
+  the share radius and damage bias, assists, checkpoint, camp and boss XP (their systems do not exist),
   basic-attack and ability potency per level, `upgradeIds`, the ultimate charge rules, and keeping
   dead Legends in the store until respawn (FR-051), which O4's posthumous XP needs. Numbers are
-  `TUNE`; the curve is derived from an income estimate in `INBOX.md`.
+  `TUNE`; the curve and the Legend kill and structure XP follow DEC-190 (not final; the
+  soak metric can change them) and live in `content/progression/`.
 - **HUD (`feat/hud-and-character-select`, 2026-10-24).** §15's `PlayerSnapshot` does not exist
-  in core yet: `Snapshot` holds `tick`, `phase` and `entities` only. Until `SnapshotSystem` fills
-  `Snapshot.player` (Phase 4, sprints 4.5 and 4.7), the client's `MatchBridge` projects the HUD
-  player from the player's `EntitySnapshot` into `PlayerHudSnapshot` (`bridge/hud.types.ts`): the
-  same fields, every value nullable except the two ids, with health and maximum health live, the
-  slot list empty and everything else `null` (DEC-17), no `varietyId` or `statusIds` until a
-  reader needs them, and two presentational slots, `weaponProgress` and `ultimatePips`, that stay
-  `null` until OQ-63 and OQ-64 give them a rule; its TSDoc states the one-to-one mapping to the
-  core type. Core now has the `Aether` and `Progression` components (the bullet above), but
-  `EntitySnapshot` (`state/Snapshot.types.ts`) still carries only `health`, so the HUD's aether,
-  level and XP stay `null` until `Snapshot.player` exists (INBOX HC-F6). The record lands in
+  in core yet. The client's `MatchBridge` joins the player's `EntitySnapshot` groups into
+  `PlayerHudSnapshot` (`bridge/hud.types.ts`), as §15 sets (DEC-232); until `SnapshotSystem` fills
+  `Snapshot.player` (Phase 4, sprints 4.5 and 4.7) the slot list is empty. Every value is nullable
+  except the two ids and is `null` while core has no group for it (DEC-17); there is no
+  `varietyId` or `statusIds` until a reader needs them, and two presentational slots,
+  `weaponProgress` and `ultimatePips`, stay `null` until OQ-63 and OQ-64 give them a rule; its
+  TSDoc states where each field comes from. Core now has the `Aether` and `Progression` components (the bullet above), and
+  `EntitySnapshot` (`state/Snapshot.types.ts`) carries `health` and `progression` (`level`, the
+  XP inside that level and `xpToNext`, `null` at the cap; `feat/hud-level-xp`, 2026-11-09), so
+  the HUD's level and XP are live (INBOX HC-F6). Since `feat/hud-aether-bar` (2026-11-09),
+  `EntitySnapshot` also carries `aether` (`current`, `max`) for every entity with `Aether`, and
+  the HUD's aether bar is live (DEC-230).
+  Aether regeneration is not built: no ability spends aether yet, and the rate and whether
+  structures refill it stay open (OQ-56, DEC-230 (2)). The record lands in
   `hudSlice`, not `matchSlice`; each slot is drawn by `AbilitySlot` through `selectHudSlotView`.
   The kit's display names and icons come from the display catalogue the client builds at boot
   (core's `loadDisplayContent()` plus its own presentation data, `game/content/hudPresentation.ts`,
@@ -945,7 +950,8 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   is no `hud-kit` event. The slot display names are `null` and the icons are client-side asset ids
   until ability content exists (INBOX HC-Q3); a live match shows only the art that fits the picked
   Legend (its class's emblem and gadget, its start weapon) and leaves every other frame empty
-  (DEC-101, DEC-114). The `xp` and `xpToNext` comments in §15 record the
+  (DEC-101, DEC-114). The `xp` and `xpToNext` comments of the `progression` group in
+  [03 §5](03-game-model.md#5-snapshot) (in §15's `PlayerSnapshot` until DEC-232) record the
   owner's reading of the XP ring (2026-10-18).
 
 ## Related

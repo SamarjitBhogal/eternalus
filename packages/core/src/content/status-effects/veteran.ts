@@ -7,10 +7,13 @@ import type { AuthoredStatusEffect } from './statusEffects.types';
 export const VETERAN = {
   id: 'veteran',
   displayName: 'Veteran',
+  polarity: 'buff',
+  controlClass: 'none',
   durationSeconds: null,
   stacking: 'intensity',
   maxStacks: 3, // TUNE: balancing.md "max 3"
   modifiers: [{ stat: 'damageDealt', op: 'mul', value: 1.1 }], // TUNE: balancing.md +10%
   flags: [],
   periodic: null,
+  onExpire: [],
 } as const satisfies AuthoredStatusEffect;

@@ -4,7 +4,7 @@ description: One recipe per kind of addition, from a Legend class to a port and 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-05
 tags: [architecture, recipes, extension-points, ocp, registries]
 paths:
   [
@@ -77,7 +77,7 @@ R14 "new view" and R16 "new command".
   needs an altitude layer). Numbers, abilities or a skin alone: R2 or plain content.
   `Entity → Unit → Legend → <Name>` is the last allowed level (04 §9).
 - **Files:** `core/content/legends/<id>.ts` (`LegendDefinition` with `kind`, stats, ability
-  ids, `pickUp`, `defaultLoadout`, `minimapGlyph`) + `legendCatalogue.ts` line; its abilities
+  ids, `pickUp`, `defaultLoadout`) + `legendCatalogue.ts` line; its abilities
   (R8); `core/entities/legends/<Name>.ts` (`extends Legend`, overrides `attachComponents`) +
   `.test.ts`; a strategy if movement or pick-up is new (R13); sprites in its asset group's manifest
   file (concatenated by `AssetManifest.ts`).
@@ -311,8 +311,8 @@ AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `
 - **Registry line:** `defaultEntityRegistry.ts`: `EntityFactory.fromFeature` is the only reader
   of feature kinds and asks the registry for `definition.kind`.
 - **Tests:** `MapGenerator.test.ts` (mirror, counts follow config, determinism, containment);
-  `MinimapView.test.ts`: the glyph count rises by the placed count and the `'beacon'` test draws
-  it with **no `EntityView` registered** (the base `EntityView.drawGlyph` reads the glyph). A
+  `MiniMapView.test.ts`: the glyph count rises by the placed count and the `'beacon'` test draws
+  it with **no `EntityView` registered** (`MapView.drawMinimap` reads the feature's glyph). A
   bespoke main-canvas look is optional: `client/game/views/<Name>View.ts` plus a
   `defaultViewRegistry.ts` line.
 - **Docs:** the kind table in 06 §4; `../reference/game-design/05-map.md`.
@@ -367,6 +367,15 @@ AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `
   `recentEvents` ring buffer shows it in invariant reports.
 - **Docs:** the event table in 03 §4 (07 §11 for structure events).
 - **Skill:** `new-system` · [03 §4](03-game-model.md#4-gameevents-the-typed-channel).
+
+### R17a. Add a victory condition
+
+- **When:** a new way for a match to end (a verdict with a winner or a draw), not a timed event (a timeline entry, 12 §3).
+- **Files:** `core/match/conditions/<Name>Condition.ts` implementing `VictoryCondition`; its id in `VictoryConditionId` (`core/config/VictoryConditionId.types.ts`).
+- **Registry line:** one line in `core/match/defaultVictoryConditions.ts`. Check order is list order and the first verdict wins.
+- **Tests:** a co-located `<Name>Condition.test.ts`; a scenario if it needs the real systems.
+- **Docs:** the table in 12 §6.
+- **Skill:** `new-system` · [12 §6](12-game-story-and-match-director.md#6-victory-conditions-and-match-end).
 
 ### R18. Add an AI controller
 
