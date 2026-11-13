@@ -6336,5 +6336,5 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 ### 2026-11-13 — Phase 3 / sync — feat/developer-menu (PR #107) — claudiodh + Claude Code
 
 - What was done: merged `fix/bound-key-actions` into this branch (its base, updated after the sync with `phase/3-sprint-3-work` 3dc9e908) because #107 was CONFLICTING. Only the append-only logs conflicted; both sides' entries are kept. No feature code changed. No force push.
-- Checks run: `npm run check` → `EXIT=0`: Tests  1321 passed (1321);Tests  1846 passed (1846); "Documentation check passed."
+- Checks run: `npm run check` → `EXIT=0`: Tests 1321 passed (1321);Tests 1846 passed (1846); "Documentation check passed."
 - Next step: reviewer approval; the team merges in stack order.
