@@ -6213,3 +6213,10 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Tests: `Glicko2.test.ts` (Glickman's worked example: 1464.05, 151.52, 0.05999; RD growth with no games), `PlayerRatings.test.ts`, `DuelQueue.test.ts` (close pairs first, 300 gap widens, everyone pairs within the timeout, leaver never paired, reconnect slot), `DuelHost.test.ts` and `DuelMatch.test.ts` (ratings after win and forfeit).
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 1340 passed (1340)"; protocol "Tests 31 passed (31)"; client "Tests 1917 passed (1917)"; server "Tests 139 passed (139)"; "Documentation check passed."
 - Next step: the owner answers the INBOX item on ratings (persistence, rating period, gap numbers); the gate (critic, ponytail) runs before the PR.
+
+### 2026-11-13 — Phase 3 / online Duel — chore/server-dockerfile (SCRUM-404, stacked on #105) — claudiodh + Claude Code
+
+- What was done: `apps/server/Dockerfile` and a root `.dockerignore` for the Duel server image. Two stages: the build stage runs `npm ci` for the server workspace and bundles the server with core and protocol into one file; the run stage copies only `ws` (the lockfile-pinned version from the build stage's `npm ci`, nothing fetched from the registry) beside that file, runs as the `node` user, listens on `0.0.0.0:8787` and has a `HEALTHCHECK` on the container's own `/health`. Added a line to `apps/server/AGENTS.md` and an INBOX item on the open deploy choices (the per-IP cap behind a platform proxy, the health check, TLS, the platform).
+- Verified: `docker build -f apps/server/Dockerfile -t eternalus-duel .` builds (333 MB), the container reports `healthy`, and `npm run duel:bots -- --url ws://127.0.0.1:18787` finishes a Duel against it ("every check passed"). Not deployed anywhere.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1340 passed (1340)"; protocol "Tests 31 passed (31)"; client "Tests 1917 passed (1917)"; server "Tests 139 passed (139)"; "Documentation check passed."
+- Next step: the owner picks the platform (SCRUM-404) and answers the INBOX item on the proxy and the cap; then deploy and run the load test (SCRUM-403).
