@@ -6318,6 +6318,18 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 1321 passed (1321)"; client "Tests 1824 passed (1824)"; "Documentation check passed."
 - Next step: reviewer approval; the team merges.
 
+### 2026-11-13 — Phase 3 / combat sprint: bound key actions, review fixes (BUG-5 / SCRUM-438) — fix/bound-key-actions (PR #101) — Claude Code
+
+- What was done: answered the four Copilot comments. `Match.start()` now publishes the minimap's
+  visibility, so a Match that replaces a hidden one (`attachViewport`) no longer leaves the store
+  and its new `MiniMapView` disagreeing. A minimap toggle while paused repaints one frame
+  (`Match.render`, no tick), as the loop is stopped. `MiniMapView.test.ts` now covers that a
+  hidden minimap draws nothing. Mouse chords for the zoom and minimap actions are not fixed (a
+  mouse path beside the canvas gestures is a new input path); recorded in `INBOX.md` as a known
+  limit with the decision it needs.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1321 passed (1321)"; client "Tests 1827 passed (1827)"; "✓ built in 248ms"; "Documentation check passed."
+- Next step: reviewer approval; the owner answers the INBOX item.
+
 ### 2026-11-13 — Phase 3 / combat sprint: developer menu, slice 1 (BUG-4 / SCRUM-437) — feat/developer-menu — Claude Code
 
 - What was done: `DeveloperMenu` (`ui/hud/`) mounts only when `?dev=1` enabled it and F1
