@@ -6186,3 +6186,10 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Tests: `WsListener.test.ts` (new; fails with an unhandled error without the handler, 3 of 3 runs), `WsConnection.test.ts` (slow reader), `SessionController.duel.test.ts` (seat team), `createBrowserDuelMatch.test.ts` (neutral intent on pause).
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 1320 passed (1320)"; protocol "Tests 18 passed (18)"; client "Tests 1883 passed (1883)"; server "Tests 79 passed (79)"; "Documentation check passed."
 - Next step: reviewer re-check; the team merges.
+
+### 2026-11-12 — Phase 3 / online Duel — feat/duel-rules (stacked on #97) — claudiodh + Claude Code
+
+- What was done: the Duel rules and the organic start flow. Core: `SimulationOptions.duel` (kept in the replay setup), both Legends start in the Cathedral, `DuelRoundSystem` counts a kill and resets both Legends to their start points at full health, `KillCountCondition` ends the match at 10 (`DUEL_RULES`, `// TUNE:`), score in `Snapshot.match.duel`. Protocol: `queue-join` carries a validated `name`, `match-found` carries `opponentName`. Server: the queue keeps names, the match waits 4 s for the VERSUS screen, the countdown is 3 s. Client: name entry screen, VERSUS screen, countdown 3, 2, 1, START and a "3 - 1 (first to 10)" scoreboard on the HUD (`duel-state`); results reuse the existing screen.
+- Tests: `Simulation.duel.test.ts` (spawn, kill and reset, win at a target of 2, replay), `KillCountCondition.test.ts`, `duelStartPoints.test.ts`, parser name cases, `DuelQueue`/`DuelGateway`/`DuelMatch` names and VERSUS wait, `DuelSession`, `SessionController.duel.test.ts` (VERSUS then loading), `MatchBridge.test.ts` (score side, countdown numbers), `DuelHud`, `DuelVersusScreen`, `DuelNameScreen`.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1340 passed (1340)"; protocol "Tests 29 passed (29)"; client "Tests 1909 passed (1909)"; server "Tests 82 passed (82)"; "Documentation check passed."
+- Next step: the owner answers the INBOX items of 2026-11-12 (spawn points, kill credit, name rules, FR-115's inert world); the gate (critic, ponytail) runs before the PR.

@@ -40,6 +40,10 @@ export class StateHasher {
     if (matchFields.some((value) => value !== 0 && value !== false)) {
       parts.push(['match', ...matchFields]);
     }
+    // A Duel's score, only in a Duel, so every other match hashes as before.
+    if (match.duel !== null) {
+      parts.push(['duel', match.duel.kills.light, match.duel.kills.dark]);
+    }
     // Hordes and the spawn counters are appended only once a horde was asked for, for the same
     // reason.
     const { light, dark } = state.teams;

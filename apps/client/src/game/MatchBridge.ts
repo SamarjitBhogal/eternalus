@@ -1,7 +1,23 @@
-import type { CaptureSnapshot, EntityId, MapDefinition, Snapshot, Vec2 } from '@eternalus/core';
+import {
+  type CaptureSnapshot,
+  type EntityId,
+  type MapDefinition,
+  opponentOf,
+  type Snapshot,
+  type Vec2,
+} from '@eternalus/core';
 
-import type { CapturePointStatus, PlayerHudSnapshot, StructureStatus } from '../bridge/hud.types';
-import { ROSTER_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
+import type {
+  CapturePointStatus,
+  DuelHudState,
+  PlayerHudSnapshot,
+  StructureStatus,
+} from '../bridge/hud.types';
+import {
+  COUNTDOWN_OVER_ENTRY_ID,
+  POST_COUNTDOWN_PHASE,
+  ROSTER_PUBLISH_EVERY_TICKS,
+} from './MatchBridge.constants';
 import type { CaptureSite, MatchBridgeDeps } from './MatchBridge.types';
 
 /**
@@ -58,6 +74,39 @@ export class MatchBridge {
     const { bus, tickRate } = this.deps;
     bus.emit('match-clock', { tick: snapshot.tick, seconds: snapshot.tick / tickRate });
     bus.emit('hud-state', { player: MatchBridge.playerOf(snapshot, playerId) });
+    if (snapshot.match.duel !== undefined) {
+      bus.emit('duel-state', MatchBridge.duelOf(snapshot, snapshot.match.duel, playerId, tickRate));
+    }
+  }
+
+  /**
+   * The Duel's score from the player's side, and the countdown number the server's match shows:
+   * whole seconds left while the `countdown` phase runs (3, 2, 1), 0 ("START") for the first
+   * second after it, `null` once the match is on.
+   */
+  private static duelOf(
+    snapshot: Snapshot,
+    duel: NonNullable<Snapshot['match']['duel']>,
+    playerId: EntityId | null,
+    tickRate: number,
+  ): DuelHudState {
+    const own = snapshot.entities.find((entity) => entity.id === playerId)?.team;
+    const ownTeam = own === 'dark' ? 'dark' : 'light';
+    const opponentTeam = opponentOf(ownTeam);
+    const { phase, phaseEnteredTick, upcoming } = snapshot.match;
+    const over = upcoming.find((mark) => mark.entryId === COUNTDOWN_OVER_ENTRY_ID);
+    let countdown: number | null = null;
+    if (phase === 'countdown' && over !== undefined) {
+      countdown = Math.ceil((over.tick - snapshot.tick) / tickRate);
+    } else if (snapshot.tick - phaseEnteredTick < tickRate && phase === POST_COUNTDOWN_PHASE) {
+      countdown = 0;
+    }
+    return {
+      ownKills: duel.kills[ownTeam],
+      opponentKills: duel.kills[opponentTeam],
+      killTarget: duel.killTarget,
+      countdown,
+    };
   }
 
   private publishRosters(snapshot: Snapshot): void {

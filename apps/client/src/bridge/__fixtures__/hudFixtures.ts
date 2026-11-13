@@ -152,6 +152,8 @@ export function figmaHudState(): Pick<RootState, 'hud' | 'match'> {
       structures: [...figmaStructures('light'), ...figmaStructures('dark')],
       capturePoints: [...FIGMA_CAPTURE_POINTS],
       result: null,
+      versus: null,
+      duel: null,
     },
   };
 }

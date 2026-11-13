@@ -230,6 +230,24 @@ Reply inline (`Decision: …`).
     never imports protocol or the server). They only add rules. (7) Architecture 02's folder and
     may-import tables do not list `apps/server` and `packages/protocol` yet (your edit, with the
     ADR); their package `AGENTS.md` files hold the rules meanwhile.
+  - 2026-11-12 (claudiodh, `feat/duel-rules`): Duel rules and the organic start flow built on top
+    of the server PR. Decisions I took, each to confirm or change: (1) spawn points: Cathedral
+    centre, light 50 world units west, dark 50 east (`DUEL_RULES.startOffset`), in the transept
+    clear of the capture floor. (2) A kill is any death of a seat's Legend, whoever dealt it (a
+    mob counts for the other team); FR-115's "no mobs, inert structures" is not built, the rest of
+    the map runs as generated. (3) First to 10 (`DUEL_RULES.killTarget`); both teams reaching it
+    on one tick is a draw. (4) Names: 1 to 16 letters, digits, `_` or `-`, single spaces between
+    words, none at the ends (`PLAYER_NAME_PATTERN` in `packages/protocol`); no profanity filter,
+    no uniqueness check, two players may share a name. (5) The server holds the match 4 s
+    (`DUEL_VERSUS_MS`) for the VERSUS screen and the countdown is 3 s (`DUEL_RULES.countdownSeconds`);
+    the client's match loading runs while the countdown ticks, so a slow load can start it at 2.
+    (6) The countdown numbers come from the existing `countdown` phase; the announcer store has
+    no producer or screen, so it was not reused. (7) XP still flows from Legend kills, so a
+    Legend's level can rise during a Duel.
+    (8) The reset after a kill drops status effects and the attack target but keeps, on purpose,
+    shield bars and anything else on the Legend (no ability cooldowns exist yet to reset).
+    (9) `DUEL_RULES.startOffset` is read from live content, not the replay setup, so retuning it
+    changes old Duel replays.
 - [ ] **DEC-11 — still open after your answer** (the approvals are recorded as DEC-11 in
       `docs/reference/game-design/13-owner-decisions-log.md`, 2026-10-10; your chat clarifications
       of 2026-10-10 answered the former (1) and (2), see Done). (3) Your Roar row says Legends only

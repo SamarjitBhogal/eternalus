@@ -21,9 +21,9 @@ describe('MenuState', () => {
     const routes: string[] = [];
     context.bus.on('menu-route', ({ route }) => routes.push(route));
 
-    new MenuState().handleIntent({ kind: 'start-duel' }, context);
+    new MenuState().handleIntent({ kind: 'start-duel', name: 'Ana' }, context);
 
-    expect(context.calls.joinDuelQueue).toHaveLength(1);
+    expect(context.calls.joinDuelQueue).toEqual([['Ana']]);
     expect(routes).toEqual(['duel-queue']);
     expect(context.calls.transition).toEqual([]);
   });

@@ -1,4 +1,5 @@
 import {
+  DUEL_RULES,
   type GameConfig,
   type Logger,
   MapGenerator,
@@ -41,6 +42,7 @@ export class CoreDuelSimulationFactory implements DuelSimulationFactory {
       map,
       mapObjects,
       roster: DUEL_ROSTER,
+      duel: { killTarget: DUEL_RULES.killTarget },
     });
     return new CoreDuelSimulation(simulation, mapObjects, seed);
   }

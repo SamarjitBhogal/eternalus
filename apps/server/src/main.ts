@@ -1,6 +1,6 @@
 import { randomInt } from 'node:crypto';
 import { createServer } from 'node:http';
-import { createDefaultGameConfig, makeLogRecord } from '@eternalus/core';
+import { createDefaultGameConfig, DUEL_RULES, makeLogRecord } from '@eternalus/core';
 import { ClientMessageParser } from '@eternalus/protocol';
 import { OPS_HOST, OPS_PORT, SEED_LIMIT } from './config/ServerConfig.constants';
 import { ServerConfig } from './config/ServerConfig';
@@ -12,6 +12,7 @@ import { TokenBucket } from './limits/TokenBucket';
 import { StdoutLogger } from './logging/StdoutLogger';
 import { CoreDuelSimulationFactory } from './match/CoreDuelSimulationFactory';
 import { DuelHost } from './match/DuelHost';
+import { DUEL_VERSUS_MS } from './match/DuelHost.constants';
 import { DuelQueue } from './queue/DuelQueue';
 import { IntervalTickScheduler } from './time/IntervalTickScheduler';
 import { SystemClock } from './time/SystemClock';
@@ -22,13 +23,16 @@ import { WsListener } from './transport/WsListener';
 // Composition root: the only place the adapters are chosen and wired.
 const logger = new StdoutLogger();
 const clock = new SystemClock();
-const config = createDefaultGameConfig();
+const config = createDefaultGameConfig({
+  match: { countdownSeconds: DUEL_RULES.countdownSeconds },
+});
 
 const scheduler = new IntervalTickScheduler();
 const host = new DuelHost({
   factory: new CoreDuelSimulationFactory(config, logger, () => randomInt(SEED_LIMIT)),
   scheduler,
   tickIntervalMs: MS_PER_SECOND / config.tickRate,
+  versusMs: DUEL_VERSUS_MS,
   logger,
 });
 const queue = new DuelQueue(host);

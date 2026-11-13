@@ -50,6 +50,8 @@ export class SessionController {
   private readonly context: SessionContext;
   private readonly crashes: SessionCrashes;
   private readonly duel: DuelSession;
+  /** The name this player joined the Duel queue with, for the VERSUS screen. */
+  private duelName = '';
 
   /** Loads the content catalogue; nothing runs until `start()`. */
   public constructor(private readonly deps: SessionControllerDeps) {
@@ -57,6 +59,10 @@ export class SessionController {
       createTransport: deps.createDuelTransport,
       logger: deps.logger,
       handlers: {
+        matched: (opponent) => {
+          deps.bus.emit('duel-versus', { own: this.duelName, opponent });
+          deps.bus.emit('menu-route', { route: 'duel-versus' });
+        },
         started: () => {
           this.transition('match-loading', null);
         },
@@ -99,8 +105,9 @@ export class SessionController {
         this.selection = selection;
         deps.bus.emit('class-selection', selection);
       },
-      joinDuelQueue: () => {
-        this.duel.join();
+      joinDuelQueue: (name) => {
+        this.duelName = name;
+        this.duel.join(name);
       },
       leaveDuelQueue: () => {
         this.duel.leave();

@@ -4,7 +4,7 @@ import type { PlayableTeam, Team } from '../teams/teams.types';
 import type { EntityId } from './EntityStore.types';
 import type { TeamState } from './GameState.types';
 import type { Horde } from './Horde.types';
-import type { ScheduledMark } from './MatchState.types';
+import type { DuelScore, ScheduledMark } from './MatchState.types';
 import type { MapObjectSnapshot } from '../content/maps/mapObjects.types';
 import type { Polygon } from '../utils/geometry.types';
 
@@ -64,6 +64,8 @@ export type MatchSnapshot = {
   readonly upcoming: readonly ScheduledMark[];
   /** The human's Legend; `null` in sim mode, or when the human slot names no Legend definition. */
   readonly humanLegendId: EntityId | null;
+  /** The Duel's score and kill target (ADR 0016); present only in a Duel. */
+  readonly duel?: DuelScore;
 };
 
 /** A lane horde as the client sees it (architecture 18 §4): the store's plain fields, copied. */

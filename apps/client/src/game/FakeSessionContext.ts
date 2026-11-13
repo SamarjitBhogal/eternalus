@@ -94,8 +94,8 @@ export class FakeSessionContext implements SessionContext {
   }
 
   /** Records the call. */
-  public joinDuelQueue(): void {
-    this.record('joinDuelQueue', []);
+  public joinDuelQueue(name: string): void {
+    this.record('joinDuelQueue', [name]);
   }
 
   /** Records the call. */

@@ -22,6 +22,7 @@ function setup(burst = 100) {
     factory: { create: () => simulation },
     scheduler: new FakeTickScheduler(),
     tickIntervalMs: 33,
+    versusMs: 0,
     logger: new MemoryLogger(),
   });
   const clock = new FakeClock();
@@ -71,14 +72,16 @@ describe('DuelGateway', () => {
     const { connect, simulation } = setup();
     const a = connect();
     const b = connect();
-    a.receive('{"type":"queue-join"}');
+    a.receive('{"type":"queue-join","name":"Ana"}');
     expect(a.sent).toEqual([{ type: 'queue-waiting' }]);
-    b.receive('{"type":"queue-join"}');
+    b.receive('{"type":"queue-join","name":"Bob"}');
     expect(a.sentOfType('match-found')).toHaveLength(1);
     expect(b.sentOfType('match-found')).toHaveLength(1);
+    expect(a.sentOfType('match-found')[0]?.opponentName).toBe('Bob');
+    expect(b.sentOfType('match-found')[0]?.opponentName).toBe('Ana');
     a.receive(INTENT);
     expect(simulation.intents).toHaveLength(1);
-    a.receive('{"type":"queue-join"}');
+    a.receive('{"type":"queue-join","name":"Ana"}');
     a.receive('{"type":"queue-leave"}');
     expect(a.sentOfType('rejected')).toEqual([
       { type: 'rejected', reason: 'in-match' },
@@ -91,11 +94,11 @@ describe('DuelGateway', () => {
     const a = connect();
     const b = connect();
     const c = connect();
-    a.receive('{"type":"queue-join"}');
+    a.receive('{"type":"queue-join","name":"Ana"}');
     a.receive('{"type":"queue-leave"}');
-    b.receive('{"type":"queue-join"}');
+    b.receive('{"type":"queue-join","name":"Ana"}');
     b.close();
-    c.receive('{"type":"queue-join"}');
+    c.receive('{"type":"queue-join","name":"Ana"}');
     expect(c.sent).toEqual([{ type: 'queue-waiting' }]);
   });
 
@@ -103,8 +106,8 @@ describe('DuelGateway', () => {
     const { connect } = setup();
     const a = connect();
     const b = connect();
-    a.receive('{"type":"queue-join"}');
-    b.receive('{"type":"queue-join"}');
+    a.receive('{"type":"queue-join","name":"Ana"}');
+    b.receive('{"type":"queue-join","name":"Ana"}');
     a.close();
     expect(b.sent.at(-1)).toMatchObject({ type: 'match-ended', reason: 'opponent-left' });
   });

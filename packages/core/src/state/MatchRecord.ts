@@ -4,7 +4,7 @@ import { deepFreeze } from '../utils/deepFreeze';
 import type { EntityId } from './EntityStore.types';
 import type { GameEvents } from './GameEvents';
 import type { MatchResult } from './MatchResult.types';
-import type { MatchState, ScheduledMark } from './MatchState.types';
+import type { DuelScore, MatchState, ScheduledMark } from './MatchState.types';
 
 /**
  * The match director's memory (architecture 12 §4), kept as `GameState.match` (DEC-177): the
@@ -20,6 +20,8 @@ export class MatchRecord implements MatchState {
   private isHeld = false;
   private readonly seats = new Map<PlayableTeam, EntityId>();
   private verdict: MatchResult | null = null;
+  private duelKills: Record<PlayableTeam, number> | null = null;
+  private duelKillTarget = 0;
 
   /**
    * @param playerTeam - The team the match is played (or spectated) for.
@@ -72,6 +74,33 @@ export class MatchRecord implements MatchState {
   /** How the match ended; `null` until a verdict. */
   public get result(): MatchResult | null {
     return this.verdict;
+  }
+
+  /** The Duel's score; `null` outside a Duel. */
+  public get duel(): DuelScore | null {
+    return this.duelKills === null
+      ? null
+      : { kills: { ...this.duelKills }, killTarget: this.duelKillTarget };
+  }
+
+  /**
+   * Makes this match a Duel won at `killTarget` kills, both teams at 0. Called by `Simulation`
+   * only, once, when the match is built; a second call throws.
+   */
+  public startDuel(killTarget: number): void {
+    if (this.duelKills !== null) {
+      throw new Error('The Duel has already started: its target is set once.');
+    }
+    this.duelKills = { light: 0, dark: 0 };
+    this.duelKillTarget = killTarget;
+  }
+
+  /** Counts a kill for `team`. Called by `DuelRoundSystem` only; throws outside a Duel. */
+  public recordDuelKill(team: PlayableTeam): void {
+    if (this.duelKills === null) {
+      throw new Error('There is no Duel to record a kill in.');
+    }
+    this.duelKills[team] += 1;
   }
 
   /**

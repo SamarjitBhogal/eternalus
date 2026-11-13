@@ -1,6 +1,7 @@
 import { isPlayableTeam, type Snapshot } from '@eternalus/core';
 import type { MatchEndReason, RejectReason, ServerMessage } from '@eternalus/protocol';
 
+import { MAX_PLAYER_NAME_LENGTH, PLAYER_NAME_PATTERN } from '../../../bridge/domain.types';
 import { MATCH_END_REASONS, REJECT_REASONS } from './ServerMessageDecoder.constants';
 
 type Fields = Readonly<Record<string, unknown>>;
@@ -28,12 +29,13 @@ export class ServerMessageDecoder {
       case 'queue-waiting':
         return { type: 'queue-waiting' };
       case 'match-found': {
-        const { matchId, seed, team, legendId } = data;
+        const { matchId, seed, team, legendId, opponentName } = data;
         return typeof matchId === 'string' &&
           Number.isSafeInteger(seed) &&
           isPlayableTeam(team) &&
-          typeof legendId === 'string'
-          ? { type: 'match-found', matchId, seed: seed as number, team, legendId }
+          typeof legendId === 'string' &&
+          ServerMessageDecoder.isPlayerName(opponentName)
+          ? { type: 'match-found', matchId, seed: seed as number, team, legendId, opponentName }
           : null;
       }
       case 'state': {
@@ -56,6 +58,14 @@ export class ServerMessageDecoder {
       default:
         return null;
     }
+  }
+
+  private static isPlayerName(value: unknown): value is string {
+    return (
+      typeof value === 'string' &&
+      value.length <= MAX_PLAYER_NAME_LENGTH &&
+      PLAYER_NAME_PATTERN.test(value)
+    );
   }
 
   private static isSnapshot(value: unknown): value is Snapshot {
