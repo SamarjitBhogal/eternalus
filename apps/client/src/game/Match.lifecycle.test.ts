@@ -88,6 +88,8 @@ function build(world?: PreparedWorld) {
     match,
     simulation: deps.simulation,
     scheduler: deps.scheduler,
+    bus: deps.bridge.bus,
+    renderer: deps.renderer,
     clocks,
     dropped,
     on,
@@ -269,6 +271,31 @@ describe('Match lifecycle', () => {
     expect(simulation.tick).toBe(3);
     scheduler.runFrames(3, TICK_MS);
     expect(simulation.tick).toBe(6);
+  });
+
+  it("publishes the minimap as shown on start, so a new match resets the last one's hidden state", () => {
+    const { match, bus } = build();
+    const shown: boolean[] = [];
+    bus.on('minimap-visibility', ({ isShown }) => shown.push(isShown));
+
+    match.start();
+
+    expect(shown).toEqual([true]);
+  });
+
+  it('repaints the canvas when the minimap is toggled while paused, without ticking', () => {
+    const { match, simulation, scheduler, renderer } = build();
+    match.start();
+    scheduler.advance(0);
+    scheduler.runFrames(3, TICK_MS);
+    match.setPaused(true);
+    const drawn = (): number => renderer.calls.filter((call) => call.op === 'clear').length;
+    const before = drawn();
+
+    match.controls.toggleMiniMap();
+
+    expect(drawn()).toBe(before + 1);
+    expect(simulation.tick).toBe(3);
   });
 
   it('stops the loop and its subscriptions on destroy: 0 scheduled frames, 0 listeners', () => {

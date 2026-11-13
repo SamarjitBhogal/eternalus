@@ -123,6 +123,10 @@ export class Match implements LoopTarget {
       miniMap: this.world.miniMap,
       onMiniMapShownChanged: (isShown) => {
         bridge.bus.emit('minimap-visibility', { isShown });
+        // The loop is stopped while paused, so nothing else would repaint the canvas.
+        if (!this.loop.isRunning) {
+          this.render(1);
+        }
       },
       playerId: this.playerId,
       snapshot: () => this.current,
@@ -140,9 +144,13 @@ export class Match implements LoopTarget {
     return this.current;
   }
 
-  /** Publishes everything the HUD shows once, then starts the game loop. */
+  /**
+   * Publishes everything the HUD shows once (the minimap's visibility too: a new match starts with
+   * it shown, whatever the last one left in the store), then starts the game loop.
+   */
   public start(): void {
     this.bridge.publishAll(this.current, this.playerId);
+    this.deps.bridge.bus.emit('minimap-visibility', { isShown: this.world.miniMap.isVisible });
     this.loop.start();
   }
 
