@@ -24,7 +24,7 @@ Reply inline (`Decision: …`).
       radius). Its health (8,200), damage (205 per hit every 1.5 s) and XP (500) are
       `balancing.md`'s MiniBoss row, sized for level-4 Legends, though this boss exists from
       t = 0. Approve them or give values. (2) The display name "Corner Camp Boss" (names are open
-      with HC-Q4). Approve or rename. (3) **B2, better than the design:** store the boss's health
+      with HC-Q4). Approve or rename. (3) **B2 of the PR #91 body (your S2 calls it "your B2"; not your review's B2, the team XP), better than the design:** store the boss's health
       and damage as multiples of `refHealth(level)` (10 × and 0.25 ×), as `balancing.md`
       recommends, instead of absolute numbers. (4) **N4, better than the design:** the capture
       point boss (`capturePointBoss.ts`, PR #99) uses the same MiniBoss row; once B2 is done, keep

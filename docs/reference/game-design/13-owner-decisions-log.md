@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-09
+last-reviewed: 2026-11-13
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,17 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-10 (PR #91 review: corner camps)
+
+The owner's decisions of 2026-11-10, posted in the review of PR #91 (`feat/bosses-p3`,
+2026-11-11, "Product owner decisions (2026-11-10)"), which reserved DEC-236 and DEC-237 for that
+pull request. This batch records DEC-236 only; DEC-237 (boss kill rewards) is recorded by
+`feat/capture-point-boss` (PR #99) in its own batch, "PR #91 review: boss kill rewards".
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Changes                                                                                                                                                                                                                                                                                                            |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| DEC-236 | **Corner camps are approved for Phase 3.** The owner's words: "i approve adding corner camps." The corner boss may run on `GuardController` as an interim stand-in until it moves to the `Boss` family with `BossController` in Phase 3 sprint 3.6. Built on `feat/bosses-p3`: each corner camp holds one `corner-boss` (a `heavy-mob` with `balancing.md`'s MiniBoss row stats) from match start, held over the camp's ring by `GuardController` and respawned 300 s after it dies (DEC-12). | `packages/core/src/content/mobs/cornerBoss.ts`, `content/ai/aggro/cornerBoss.ts`, `content/structures/guardPlans.ts` (`corner-camp`), `structureCatalogue.ts`; architecture 07 §13, 11 §10 and 18 implementation status; `docs/plan/phase-3-minions-hordes-and-ai.md` sprint 3.6; `INBOX.md` corner camp boss item |
 
 ## Batch 2026-11-09 (chat: the aether bar critic's better-than-design items)
 

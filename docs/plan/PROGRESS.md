@@ -6352,9 +6352,10 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   file conflicted (both sides' entries kept); `structureCatalogue.ts` and doc 07 merged cleanly.
   Answered Sam's review of PR #91 where it does not wait on another PR:
   - "PM-approved" wording replaced by DEC-236 citations (`mobs/cornerBoss.ts`, `guardPlans.ts`,
-    doc 07); the 300 s respawn cites DEC-12. The DEC-236 row is not added to the decisions log:
-    `docs:check` does not require a cited DEC to exist, so the row stays for the batch Sam asked
-    for. DEC-237 is not added here (PR #99 adds it).
+    doc 07); the 300 s respawn cites DEC-12. The DEC-236 row is added (2026-11-13) to the
+    decisions log in a new top batch, "Batch 2026-11-10 (PR #91 review: corner camps)", with
+    Sam's words, laid out like PR #99's "PR #91 review: boss kill rewards" batch. DEC-237 is not
+    added here (PR #99 adds it).
   - B5: new `Simulation.cornerBoss.test.ts` on a taller two-lane map with one corner camp away
     from the lanes: an enemy Legend 15 m inside the ring loses health within 10 s; a Legend just
     past the leash (leash + camp footprint + 1 m) is not chased (the boss stays within 1 m of its
@@ -6367,11 +6368,11 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
     "Bosses" list in `phase-3-minions-hordes-and-ai.md` gains "Corner boss into the `Boss` family".
   - S2: doc 07's note lists the MiniBoss row's 5%/s regeneration and 25% minion damage cut as not
     built. S2/S3/nit: one `INBOX.md` item for Sam with the new `TUNE` values (footprint, reach,
-    speed, acceleration, mass, vision), the "Corner Camp Boss" display name, and B2 and N4.
+    speed, acceleration, mass, vision), the "Corner Camp Boss" display name, and the PR body's B2 (`refHealth` multiples) and N4.
   - Nit: forest and corner camps spread one `CAMP_BODY` in `structureCatalogue.ts`.
-- Waiting on #99 and #85 (not done): B2 team-wide XP capped at 2 levels (DEC-237, #99) and its
+- Waiting on #99 and #85 (not done): Sam's B2 team-wide XP capped at 2 levels (DEC-237, #99) and its
   test; B3 the aggro rule as `GuardAggroRuleDefinition` with `GUARD_LEASH` (#85); B4 the corner
   camp radius in core content (after #85's `GUARD_LEASH`); S5 the tolerance comments (after #85's
   5.5 m tolerance). S1 (acquisition from the real post) goes with B4.
-- Checks run: see below.
+- Checks run: the critic ran `npm run check` on `5c2fda3e` → `EXIT 0` ("Documentation check passed."). The final run on the post-ponytail tree (the test edits after `5c2fda3e`) was stopped by Claude Code for low system memory, so it has no result yet; the three corner boss tests pass, and eslint and Prettier pass on the changed files.
 - Next step: Aryan pushes and re-requests review; then B2–B5 leftovers once #85 and #99 merge.

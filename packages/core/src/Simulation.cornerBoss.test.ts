@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { countdownTicks } from './config/countdownTicks';
 import type { MapDefinition } from './content/maps/maps.types';
 import { GUARD_PLANS } from './content/structures/guardPlans';
+import { STRUCTURE_DEFINITIONS } from './content/structures/structureCatalogue';
 import { match, run, STRONGHOLDS_ONLY } from './__fixtures__/hordeMatches';
 
 /**
@@ -27,7 +28,7 @@ const CORNER_MAP: MapDefinition = {
   ],
 };
 const PLAN = GUARD_PLANS['corner-camp'];
-const CAMP_FOOTPRINT = 1; // structureCatalogue.ts `corner-camp` footprintRadius
+const CAMP_FOOTPRINT = STRUCTURE_DEFINITIONS.get('corner-camp').footprintRadius;
 
 /** A match past its countdown (DEC-88 holds every unit until then), with the boss at its post. */
 const cornerMatch = () => {
@@ -85,8 +86,8 @@ describe('Simulation corner camp boss (DEC-236)', () => {
     expect(entity(legendId)?.health?.current).toBe(fullHealth);
   });
 
-  it('fires camp-cleared when the boss dies and respawns it 300 s later (DEC-12)', () => {
-    const { config, simulation, boss } = cornerMatch();
+  it('fires camp-cleared when the boss is removed and respawns it at its post 300 s later (DEC-12)', () => {
+    const { config, simulation, boss, post } = cornerMatch();
     const cleared: { readonly entityId: string; readonly tick: number }[] = [];
     simulation.on('camp-cleared', ({ entityId }) => {
       cleared.push({ entityId, tick: simulation.tick });
@@ -105,7 +106,7 @@ describe('Simulation corner camp boss (DEC-236)', () => {
     run(simulation, (cleared[0]?.tick ?? 0) + respawnTicks - simulation.tick - 1);
     expect(boss()).toBeUndefined();
     run(simulation, 2);
-    expect(boss()).toBeDefined();
+    expect(boss()?.transform).toEqual(post);
     expect(cleared).toHaveLength(1);
   });
 });
