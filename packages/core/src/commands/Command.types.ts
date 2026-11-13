@@ -74,7 +74,10 @@ type CommandPayloads = {
   readonly 'dev-spawn-legend': { readonly team: PlayableTeam; readonly definitionId: string };
   /** Developer menu: remove an entity (cause `dev-removed`). */
   readonly 'dev-remove-entity': { readonly entityId: EntityId };
-  /** Developer menu: hand an entity to another controller (sim mode). */
+  /**
+   * Developer menu, sim mode: hand a Legend to a controller. `controllerId` is `human` (the Legend
+   * becomes the human's) or the Rover's id (a bot plays it; on the human's Legend, no human is left).
+   */
   readonly 'dev-set-controller': { readonly entityId: EntityId; readonly controllerId: string };
 };
 
@@ -94,6 +97,7 @@ export type CommandRejectReason =
   | 'unknown-entity'
   | 'unknown-kind'
   | 'unknown-definition'
+  | 'unknown-controller'
   | 'invalid-count'
   | 'invalid-position'
   | 'invalid-origin'

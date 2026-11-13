@@ -12,6 +12,8 @@ type DeveloperMenuControllerDeps = {
   readonly simulation: Pick<Simulation, 'enqueueCommand'>;
   readonly bus: TypedEventBus<BridgeEventMap>;
   readonly map: Pick<MapDefinition, 'features'>;
+  /** The human's Legend now (it changes in sim mode); `null` when there is none. */
+  readonly humanLegendId: () => string | null;
 };
 
 /**
@@ -35,10 +37,11 @@ export class DeveloperMenuController {
 
   /** Publishes the menu's state: its pickers, whether it is enabled and open. */
   public publish(): void {
-    const { bus, map } = this.deps;
+    const { bus, map, humanLegendId } = this.deps;
     bus.emit('developer-menu', {
       isOpen: this.isOpen,
       mobs: DEVELOPER_MOBS,
+      humanLegendId: humanLegendId(),
       origins: map.features.flatMap(({ id, kind, laneId }): DeveloperMenuOption[] =>
         laneId === undefined ? [] : [{ id, label: `${id} (${kind})` }],
       ),

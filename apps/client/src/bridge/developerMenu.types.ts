@@ -7,7 +7,10 @@ import type { Command } from '@eternalus/core';
 /** The gameplay commands the menu sends so far; `Match` forwards one to `Simulation.enqueueCommand`. */
 export type DevCommand = Extract<
   Command,
-  { readonly type: 'dev-spawn-mobs' | 'dev-spawn-legend' | 'dev-remove-entity' }
+  {
+    readonly type:
+      'dev-spawn-mobs' | 'dev-spawn-legend' | 'dev-remove-entity' | 'dev-set-controller';
+  }
 >;
 
 /** One entry of a picker: the id the command carries and the text the menu shows. */
@@ -21,4 +24,6 @@ export type DeveloperMenuState = {
   readonly mobs: readonly DeveloperMenuOption[];
   /** The map structures a horde can start at (the structures that sit on a lane). */
   readonly origins: readonly DeveloperMenuOption[];
+  /** The human's Legend, or `null` in sim mode (no human); sim mode's buttons read it. */
+  readonly humanLegendId: string | null;
 };

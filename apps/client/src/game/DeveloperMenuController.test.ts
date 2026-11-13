@@ -49,6 +49,7 @@ function setUp(isEnabled: boolean) {
     simulation: { enqueueCommand },
     bus,
     map: { features: [feature('gate-a', 'gate', 'lane-1'), feature('camp-a', 'camp')] },
+    humanLegendId: () => 'entity-1',
   });
   return { bus, enqueueCommand, states, controller };
 }
@@ -101,7 +102,13 @@ describe('DeveloperMenuController', () => {
       map,
     });
     const bus = new TypedEventBus<BridgeEventMap>();
-    const controller = new DeveloperMenuController({ isEnabled: true, simulation, bus, map });
+    const controller = new DeveloperMenuController({
+      isEnabled: true,
+      simulation,
+      bus,
+      map,
+      humanLegendId: () => null,
+    });
     const states: BridgeEventMap['developer-menu'][] = [];
     bus.on('developer-menu', (state) => states.push(state));
     controller.publish();
@@ -135,7 +142,13 @@ describe('DeveloperMenuController', () => {
       map,
     });
     const bus = new TypedEventBus<BridgeEventMap>();
-    new DeveloperMenuController({ isEnabled: true, simulation, bus, map });
+    new DeveloperMenuController({
+      isEnabled: true,
+      simulation,
+      bus,
+      map,
+      humanLegendId: () => null,
+    });
     const rejected: string[] = [];
     simulation.on('command-rejected', ({ reason }) => rejected.push(reason));
     const legends = () =>

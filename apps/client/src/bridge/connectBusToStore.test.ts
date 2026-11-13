@@ -41,7 +41,7 @@ describe('connectBusToStore', () => {
 
   it('copies developer-menu into its slice and clears it on the next match-setup', () => {
     const { bus, store } = connected();
-    bus.emit('developer-menu', { isOpen: true, mobs: [], origins: [] });
+    bus.emit('developer-menu', { isOpen: true, mobs: [], origins: [], humanLegendId: null });
     expect(store.getState().developerMenu.isOpen).toBe(true);
     bus.emit('match-setup', null);
     expect(store.getState().developerMenu.isOpen).toBe(false);

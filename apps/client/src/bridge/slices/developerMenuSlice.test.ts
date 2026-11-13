@@ -7,6 +7,7 @@ const OPEN = {
   isOpen: true,
   mobs: [{ id: 'light-minion', label: 'Light Minion' }],
   origins: [{ id: 'gate-1', label: 'gate-1' }],
+  humanLegendId: 'entity-1',
 };
 
 describe('developerMenuSlice', () => {

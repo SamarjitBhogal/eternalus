@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-04
+last-reviewed: 2026-11-13
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -346,6 +346,9 @@ and utility better
 [research §7](../research/game-architecture-and-performance-research.md#7-game-ai-for-bots).
 
 ## 10. Implementation status
+
+`dev-set-controller` (2026-11-13, FR-099) is applied by `DevSetControllerHandler` from the queue, not
+by a `CommandApplySystem`; it moves the `ControllerBinding` and drops the brain (03, status).
 
 Minion plan pull request M2a builds §1–§3, §5 and §6 with these differences, each closed by the
 work named:

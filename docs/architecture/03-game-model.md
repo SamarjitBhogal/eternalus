@@ -465,9 +465,14 @@ each closed by the session or phase named:
   a log of the external commands and replay checkpoints, both outside the hashed state); no
   `dispose()` yet.
 - `move`, `stop` and `attack-target` have their own handlers (`MoveHandler`, `StopHandler`,
-  `AttackTargetHandler`). `cast-ability`, `intent` and `dev-set-controller` are routed to
+  `AttackTargetHandler`). `cast-ability` and `intent` are routed to
   `UnsupportedCommandHandler` (rejected `not-supported`) until their systems exist; `pick-up`,
   `throw`, `interact` and `dev-set-assert-level` are not in the union yet.
+- `dev-set-controller` (2026-11-13, FR-099) has `DevSetControllerHandler`: `controllerId` `human`
+  makes the Legend the human's (no `ControllerBinding`, no brain; the previous human becomes a Rover
+  bot), the Rover's id binds the Rover (on the human's Legend: no human left; `humanLegendId` null).
+  Refused `unknown-entity`, `not-a-legend` or the new `unknown-controller`. `MatchRecord.reseatHuman`
+  is the second writer of `humanLegendId`. A bot re-bound loses its brain memory.
 - `dev-spawn-legend` (2026-11-13) is built as `{ team, definitionId }` (a bot Legend at the
   Stronghold, Rover controller); it is in `Command.types.ts`; the union listing below does not show it yet.
 - `dev-spawn` and `dev-remove-entity` spawn and remove directly and emit `entity-spawned` /

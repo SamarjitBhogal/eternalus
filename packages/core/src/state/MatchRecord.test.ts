@@ -106,6 +106,19 @@ describe('MatchRecord', () => {
     expect(match.humanLegendId).toBe('entity-7');
   });
 
+  it('moves the human seat (sim mode) to another Legend or to nobody, never to where it is', () => {
+    const { match } = recordAt({ tick: 0 });
+    match.seatHuman('entity-7');
+
+    match.reseatHuman('entity-8');
+    expect(match.humanLegendId).toBe('entity-8');
+    expect(() => {
+      match.reseatHuman('entity-8');
+    }).toThrow('already seated');
+    match.reseatHuman(null);
+    expect(match.humanLegendId).toBeNull();
+  });
+
   it('seats one human per team: humanLegendIdOf reads each seat, humanLegendId the playerTeam one', () => {
     const { match } = recordAt({ tick: 0 });
 

@@ -10,7 +10,11 @@ import { developerMenuSlice } from '../../bridge/slices/developerMenuSlice';
 import type { PlayableTeam } from '../../bridge/domain.types';
 import { Button } from '../components/Button';
 import { STRINGS } from '../strings';
-import { DEFAULT_HORDE_COUNT } from './DeveloperMenu.constants';
+import {
+  DEFAULT_HORDE_COUNT,
+  HUMAN_CONTROLLER_ID,
+  ROVER_CONTROLLER_ID,
+} from './DeveloperMenu.constants';
 import styles from './DeveloperMenu.module.css';
 
 const TEAMS: readonly PlayableTeam[] = ['light', 'dark'];
@@ -25,20 +29,24 @@ const TEAMS: readonly PlayableTeam[] = ['light', 'dark'];
  */
 export function DeveloperMenu(): ReactElement | null {
   const state = useAppSelector(developerMenuSlice.selectors.selectDeveloperMenu);
-  return state.isOpen ? <DeveloperPanel mobs={state.mobs} origins={state.origins} /> : null;
+  return state.isOpen ? (
+    <DeveloperPanel mobs={state.mobs} origins={state.origins} humanLegendId={state.humanLegendId} />
+  ) : null;
 }
 
 /** The open menu; mounted per opening, so its pickers start on the first mob and origin. */
 function DeveloperPanel({
   mobs,
   origins,
-}: Pick<DeveloperMenuState, 'mobs' | 'origins'>): ReactElement {
+  humanLegendId,
+}: Pick<DeveloperMenuState, 'mobs' | 'origins' | 'humanLegendId'>): ReactElement {
   const teamNames = useAppSelector(contentSlice.selectors.selectTeamNames);
   const [team, setTeam] = useState<PlayableTeam>('light');
   const [mobId, setMobId] = useState(mobs[0]?.id ?? '');
   const [count, setCount] = useState(DEFAULT_HORDE_COUNT);
   const [originId, setOriginId] = useState(origins[0]?.id ?? '');
   const [entityId, setEntityId] = useState('');
+  const [controlId, setControlId] = useState('');
   const classes = useAppSelector(selectSelectableClasses);
   const [classId, setClassId] = useState(classes[0]?.classId ?? '');
   const ids = {
@@ -47,6 +55,7 @@ function DeveloperPanel({
     count: useId(),
     origin: useId(),
     entity: useId(),
+    control: useId(),
     legendClass: useId(),
   };
   const labels = STRINGS.developerMenu;
@@ -183,6 +192,52 @@ function DeveloperPanel({
           }}
         >
           {labels.remove}
+        </Button>
+      </fieldset>
+      <fieldset className={styles.group}>
+        <legend>{labels.simMode}</legend>
+        <Button
+          isDisabled={humanLegendId === null}
+          onClick={() => {
+            if (humanLegendId !== null) {
+              emitIntent({
+                kind: 'dev-command',
+                command: {
+                  type: 'dev-set-controller',
+                  entityId: humanLegendId,
+                  controllerId: ROVER_CONTROLLER_ID,
+                },
+              });
+            }
+          }}
+        >
+          {labels.removeHuman}
+        </Button>
+        <div className={styles.field}>
+          <label htmlFor={ids.control}>{labels.legendId}</label>
+          <input
+            id={ids.control}
+            type="text"
+            value={controlId}
+            onChange={(event) => {
+              setControlId(event.currentTarget.value.trim());
+            }}
+          />
+        </div>
+        <Button
+          isDisabled={controlId === ''}
+          onClick={() => {
+            emitIntent({
+              kind: 'dev-command',
+              command: {
+                type: 'dev-set-controller',
+                entityId: controlId,
+                controllerId: HUMAN_CONTROLLER_ID,
+              },
+            });
+          }}
+        >
+          {labels.takeControl}
         </Button>
       </fieldset>
     </aside>

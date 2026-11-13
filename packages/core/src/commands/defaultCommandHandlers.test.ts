@@ -23,7 +23,6 @@ const NOT_YET_SUPPORTED: readonly Command[] = [
     actorId: 'entity-1',
     intent: { move: { x: 1, y: 0 }, aim: null, triggered: ['ability-2'] },
   },
-  { type: 'dev-set-controller', entityId: 'entity-1', controllerId: 'bot-legend' },
 ];
 
 const TEST_CONTROLLER = { controllerId: 'rover', profileId: 'rover', memory: {} } as const;

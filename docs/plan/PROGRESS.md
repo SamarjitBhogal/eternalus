@@ -6403,3 +6403,22 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   refusals shown in the UI.
 - Checks run: full `npm run check` exit 0: core `Tests 1331 passed (1331)`, client `Tests 1849 passed (1849)`, `Documentation check passed.`
 - Next step: slice 3 (`dev-set-controller`, sim mode) after the owner answers the `INBOX.md` item.
+
+### 2026-11-13 — Phase 3 / combat sprint: developer menu, slice 3: sim mode (BUG-4 / SCRUM-437) — feat/developer-menu-sim-mode — Claude Code
+
+- What was done: core `dev-set-controller { entityId, controllerId }` (`DevSetControllerHandler`,
+  replaces the `unsupported` route): `human` detaches the Legend's AI binding and brain and seats
+  it as the human's (the old human becomes a Rover bot); the Rover's id binds the Rover (on the
+  human's Legend: no human). Refused `unknown-entity`, `not-a-legend`, `unknown-controller`.
+  `MatchRecord.reseatHuman` is the guarded second writer of `humanLegendId`. Client: the menu has a
+  Sim mode section (Remove human, Take control by Legend id); `Match` reads the human Legend from
+  each snapshot, so a match with none keeps running (camera idle, HUD player block hidden). Left
+  out (`INBOX.md`): spectate UI, controller picker, CLI runner, a verdict in `Simulation`.
+- Checks run: full `npm run check` exit 0: core `Tests 1341 passed (1341)`, client `Tests 1852 passed (1852)`, `Documentation check passed.`
+- Next step: owner answers the `INBOX.md` item; the remaining FR-098/110 controls.
+
+## 2026-11-13 — Merge feat/developer-menu-legends into sim mode (PR #112)
+
+- Done: merged the Legends slice and the Duel seat model (ADR 0016) into sim mode. `MatchRecord.reseatHuman` now moves the `playerTeam` seat in the per-team seat map; `Match.playerId` reads the Duel's own Legend (`deps.remote`) first, else the snapshot's human, and passes it to the health bars.
+- Decision: `dev-set-controller` is refused with `not-supported` when the other team has a human seated (a Duel), with a test. Sim mode stays solo.
+- Checks run: full `npm run check` exit 0: core `Tests 1357 passed (1357)`, protocol `18`, client `Tests 1920 passed (1920)`, server `79`, `Documentation check passed.`
