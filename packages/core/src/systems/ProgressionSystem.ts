@@ -17,9 +17,10 @@ import type { Award, ProgressionContent } from './ProgressionSystem.types';
  * while the victim is still in the store, and in its own pass gives the XP to the killer's
  * `Progression`. A destroyed structure (`structure-destroyed`) pays every Legend of the opposing
  * team (DEC-186), and a boss in `xpSources.teamKills` pays every Legend of its killer's playable
- * team instead of the killer, lifting none more than the reward's `maxLevels` (DEC-237). Self-kills and ally kills pay nothing (O5). Each level gained raises max health by
- * the class's share of its base health (O3) and max aether, heals and refills by the raise only
- * while the Legend is alive (O4), and emits `level-up`.
+ * team instead of the killer, lifting none more than the reward's `maxLevels` (DEC-237); a Legend
+ * the cap leaves nothing to pay gets no award. Self-kills and ally kills pay nothing (O5). Each
+ * level gained raises max health by the class's share of its base health (O3) and max aether,
+ * heals and refills by the raise only while the Legend is alive (O4), and emits `level-up`.
  */
 export class ProgressionSystem implements System {
   public readonly name = 'progression';
@@ -49,6 +50,9 @@ export class ProgressionSystem implements System {
       }
       const teamKill = content.xpSources.teamKills[victim.definitionId];
       if (teamKill !== undefined) {
+        // shortcut: the team is the killer's, read from the store, so a boss killed by a hit from
+        // a Legend already removed (e.g. its projectile) pays nobody; upgrade when `DamageSource`
+        // carries the attacker's team (INBOX.md capture point mini-boss interim (d)).
         if (isPlayableTeam(killerTeam)) {
           this.pending.push({
             kind: 'team-kill',
@@ -125,6 +129,9 @@ export class ProgressionSystem implements System {
               progression.xpToReach(progression.level + award.maxLevels, curve),
             ),
           };
+    if (capped.kind === 'team-kill' && capped.xp <= 0) {
+      return;
+    }
     const gained = this.award(recipient, progression, capped, state);
     const definition = this.legendOf(recipient);
     for (let step = gained - 1; step >= 0; step -= 1) {

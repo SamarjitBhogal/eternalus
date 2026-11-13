@@ -177,8 +177,12 @@ describe('Simulation capture point boss fight', () => {
       .snapshot()
       .entities.filter(({ definitionId }) => definitionId === 'capture-point-boss');
     expect(bosses.every(({ id }) => id !== bossId)).toBe(true);
-    expect(bosses).toHaveLength(CONFIG.map.numLanes - 2);
+    // Every other outer capture point keeps its boss.
+    const outerZones = simulation
+      .snapshot()
+      .entities.filter(({ definitionId }) => definitionId === 'capture-point');
+    expect(bosses).toHaveLength(outerZones.length - 1);
     expect(entity(zoneId)?.capture?.owner).toBe('light');
     expect(logger.records.filter(({ severityText }) => severityText === 'ERROR')).toEqual([]);
-  });
+  }, 120_000); // a real 8,200 HP kill in a full match takes about 20 s of test time
 });

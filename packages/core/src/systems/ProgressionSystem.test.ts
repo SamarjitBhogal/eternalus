@@ -316,7 +316,7 @@ describe('ProgressionSystem', () => {
       expect(warrior.getComponent(Progression)).toMatchObject({ xp: 250, level: 3 });
     });
 
-    it('pays the full reward when two levels need more', () => {
+    it('caps two levels up from partway through level 2', () => {
       const { spawn, kill, run } = setUp();
       const warrior = spawn('warrior', 'warrior', 'light');
       warrior.getComponent(Progression).addXp(100, CURVES.get('legend'));
@@ -326,6 +326,39 @@ describe('ProgressionSystem', () => {
 
       // From level 2 the cap is level 4 (450 XP), 350 away: less than 500, so capped there.
       expect(warrior.getComponent(Progression)).toMatchObject({ xp: 450, level: 4 });
+    });
+
+    it('pays the full reward when two levels need more, and nothing at the level cap', () => {
+      // Its own system on a curve with big steps; setUp's system is never run here.
+      const { state, spawn, kill, payloads } = setUp();
+      const bigSteps = new ContentCatalogue<LevelCurveDefinition>([
+        { id: 'legend', cap: 4, xpToNext: [400, 400, 400] },
+      ]);
+      const system = new ProgressionSystem(state, {
+        units: UNITS,
+        curves: bigSteps,
+        xpSources: XP_SOURCES,
+      });
+      const fresh = spawn('warrior', 'warrior', 'light');
+      const capped = spawn('magus', 'magus', 'light');
+      capped.getComponent(Progression).addXp(1200, bigSteps.get('legend'));
+
+      const boss = spawn('heavy-mob', 'capture-point-boss', 'neutral');
+      kill(fresh, boss);
+      system.update({ state, logger: new NullLogger() });
+
+      // Two levels on this curve take 800 XP, more than the 500 the boss pays.
+      expect(fresh.getComponent(Progression)).toMatchObject({ xp: 500, level: 2 });
+      expect(capped.getComponent(Progression).xp).toBe(1200);
+      expect(payloads('xp-gained')).toEqual([
+        {
+          entityId: fresh.id,
+          amount: 500,
+          victimId: boss.id,
+          victimTeam: 'neutral',
+          cause: 'team-kill',
+        },
+      ]);
     });
   });
 });
