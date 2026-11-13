@@ -6403,3 +6403,10 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - What was done: merged `feat/mm-glicko` into this branch (its base, updated after the sync with `phase/3-sprint-3-work` 3dc9e908) because #106 was CONFLICTING. Only the append-only logs conflicted; both sides' entries are kept. No feature code changed. No force push.
 - Checks run: `npm run check` → `EXIT=0`: Tests 1356 passed (1356);Tests 31 passed (31);Tests 1917 passed (1917);Tests 139 passed (139); "Documentation check passed."
 - Next step: reviewer approval; the team merges in stack order.
+
+### 2026-11-13 — Phase 3 / online Duel — chore/server-deploy-units (SCRUM-404, stacked on #106) — claudiodh + Claude Code
+
+- What was done: `apps/server/deploy/` with the two systemd user units that run the Duel server and the static client on a Linux host without a container (`eternalus-duel.service`, `eternalus-client.service`) and a README with the layout, the first install, the redeploy, the check and the proxy note. The units use `%h` and no user, host or machine name; `ExecStart` points at `/usr/bin/node` and says it needs Node 24. A line in `apps/server/AGENTS.md`. No code change.
+- Verified: the same units, with a Node 24 path, run the Duel server and the client on the author's machine, and `npm run duel:bots` plays a Duel against it.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1356 passed (1356)"; protocol "Tests 31 passed (31)"; client "Tests 1917 passed (1917)"; server "Tests 139 passed (139)"; "Documentation check passed."
+- Next step: the owner picks the platform (SCRUM-404); this folder is the fallback for a self-hosted demo.
