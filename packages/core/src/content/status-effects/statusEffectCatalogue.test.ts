@@ -11,8 +11,19 @@ describe('STATUS_EFFECTS', () => {
       'blind',
       'enraged',
       'crushed',
+      'control-immune',
       'veteran',
       'rallied',
     ]);
+  });
+
+  it('makes the minion veterancy statuses plain buffs: no control, no follow-up', () => {
+    for (const id of ['veteran', 'rallied']) {
+      expect(STATUS_EFFECTS.get(id)).toMatchObject({
+        polarity: 'buff',
+        controlClass: 'none',
+        onExpire: [],
+      });
+    }
   });
 });
