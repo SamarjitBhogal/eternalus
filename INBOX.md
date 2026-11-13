@@ -58,6 +58,14 @@ Reply inline (`Decision: …`).
       ring; like the boss they never respawn, since respawning them needs Sam's sign-off. Approve
       the count and whether they respawn, or correct them.
 
+- [ ] **Capture point boss size: sign off 1.2 m? (Aryan Walanj, 2026-11-12; `feat/capture-point-boss`
+      critic finding 2) — before the PR merges.** The `capture-point-boss` footprint radius went
+      from 0.8 m to 1.2 m (`content/mobs/capturePointBoss.ts`, `TUNE`): 1.5× the heavy minion so it
+      reads as a boss. No reference or requirement gives a boss size, and 1.2 m is slightly
+      smaller than the Sentinel Legend (1.25 m, DEC-06). Above about 1.3 m the `capture-point`
+      plan's `leashTolerance` must grow (DEC-144; `guardPlans.test.ts` fails otherwise). Reply
+      keep 1.2 m, or give a size.
+
 - [ ] **Guard leash and acquisition radii derived, not hand-copied (`feat/capture-point-boss`
       critic finding 6, 2026-11-11) — better than the design, optional follow-up, no code change
       yet.** The capture point plan's `leashRadius` 35 is worked out by hand from the fort court

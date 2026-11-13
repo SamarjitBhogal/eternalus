@@ -2,14 +2,15 @@ import type { AggroRuleDefinition } from '../ai.types';
 
 /**
  * The capture point mini-boss's aggro rules (architecture 18 §7.1): the tower guard's priority list,
- * with a radius wide enough that the boss goes for an enemy anywhere inside its court, as the
- * corner boss does in its camp ring (PR #91). The guard plan's leash still keeps it from chasing
- * anyone outside the court.
+ * with a radius wide enough that, from its post, the boss goes for an enemy anywhere inside its
+ * court, as the corner boss does in its camp ring (PR #91). Away from its post (at the court's
+ * edge after a fight) the far side can be out of range until it walks back. The guard plan's leash
+ * still keeps it from chasing anyone outside the court.
  */
 export const CAPTURE_POINT_BOSS_AGGRO = {
   id: 'capture-point-boss',
   // TUNE: the zone plan's 35 m leash plus its 25 m post gap (the post's distance from the zone
-  // centre), so it reaches the far side of the court.
+  // centre), so from its post it reaches the far side of the court (guardPlans.test.ts checks it).
   acquisitionRadius: 60,
   priority: [
     'legend-attacking-ally-legend',

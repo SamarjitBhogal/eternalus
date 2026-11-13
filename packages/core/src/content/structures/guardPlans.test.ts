@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { countdownTicks } from '../../config/countdownTicks';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { timelineMarkTick } from '../../config/timelineMarkTick';
+import { AGGRO_RULES } from '../ai/aggro/aggroRules';
 import { AI_CADENCE } from '../ai/cadence';
 import { LEGEND_CLASSES } from '../legends/legendCatalogue';
 import { MOB_DEFINITIONS } from '../mobs/mobCatalogue';
@@ -26,6 +27,16 @@ describe('GUARD_PLANS', () => {
         });
       }
     }
+  });
+
+  it('gives the capture point boss an aggro range that reaches across its court from its post', () => {
+    const plan = GUARD_PLANS['capture-point'];
+    const aggro = AGGRO_RULES[MOB_DEFINITIONS.get('capture-point-boss').aiProfile ?? ''];
+
+    expect(plan?.table.some(({ mobId }) => mobId === 'capture-point-boss')).toBe(true);
+    expect(aggro?.acquisitionRadius ?? 0).toBeGreaterThanOrEqual(
+      (plan?.leashRadius ?? Number.POSITIVE_INFINITY) + (plan?.postGap ?? 0),
+    );
   });
 
   it('activates the capture point boss on the default timeline quarter mark (reference 04)', () => {
