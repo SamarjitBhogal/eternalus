@@ -76,6 +76,11 @@ Reply inline (`Decision: …`).
       until their features exist. (2) `toggle-minimap` (M) now hides and shows the minimap for the
       current match only (DEC-147); it is not persisted. Decide whether the choice should persist
       across matches and sessions (a settings field and a migration).
+      (3) Known limit (PR #101 review): the zoom and minimap actions run only from a key press.
+      The bindings screen also accepts a mouse button for them, and such a binding does nothing
+      yet, because the one-shot table has no mouse path (the canvas gestures own the mouse).
+      Decide whether to add one, or to make the bindings screen accept only keys for these
+      actions.
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on
       every map feature, so `map/strongholdRing.ts` checks at run time that a Stronghold has it
