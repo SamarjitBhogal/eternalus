@@ -32,7 +32,7 @@ export type XpSourcesDefinition = {
 };
 
 /** A team-wide kill reward (balancing.md boss table, DEC-237). */
-export type TeamKillReward = {
+type TeamKillReward = {
   readonly xp: number;
   /** The most levels one award may lift a Legend; XP past that point is not paid. */
   readonly maxLevels: number;
