@@ -20,7 +20,8 @@ import { MS_PER_SECOND } from './Match.constants';
 import type { PreparedWorld } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
 import { prepareMatchWorld } from './prepareMatchWorld';
-import type { MatchRequest } from './SessionController.types';
+import type { MatchEvidence } from '../data/logging/ErrorReport.types';
+import type { MatchRequest, RunningMatch } from './SessionController.types';
 import { rosterSlots } from './session/rosterSlots';
 
 const CONFIG = createDefaultGameConfig();
@@ -32,6 +33,13 @@ const PLAYER_SLOT: RosterSlot = {
   definitionId: 'sentinel',
   role: 'rover',
 };
+
+/** The evidence of a local match, which always has some. */
+function evidenceOf(running: RunningMatch): MatchEvidence {
+  const evidence = running.evidence();
+  if (evidence === null) throw new Error('A local match reports evidence');
+  return evidence;
+}
 
 function setUp(canvas = new FakeViewportCanvas(), sinks: readonly LogSink[] = []) {
   const window = new FakeBrowserTarget();
@@ -167,7 +175,7 @@ describe('createBrowserMatch', () => {
     const running = factory(stale, viewport);
     window.runFrame(0);
     window.runFrame(MS_PER_SECOND / CONFIG.tickRate);
-    const { match, logTail } = running.evidence();
+    const { match, logTail } = evidenceOf(running);
 
     expect(match.seed).toBe(SEED);
     expect(match.tick).toBe(1);
@@ -215,7 +223,7 @@ describe('createBrowserMatch', () => {
     };
 
     const running = factory(withBots, viewport);
-    const spawned = running.evidence().match.recentEvents.flatMap((event) =>
+    const spawned = evidenceOf(running).match.recentEvents.flatMap((event) =>
       // The map's capture points (PR #64) spawn too; this test is about the roster.
       event.type === 'entity-spawned' && event.payload.kind !== 'capture-point'
         ? [[event.payload.kind, event.payload.team]]
@@ -237,7 +245,7 @@ describe('createBrowserMatch', () => {
     const world = prepareMatchWorld(CONFIG, SEED);
 
     const running = factory(request(world), viewport);
-    const { replay } = running.evidence().match;
+    const { replay } = evidenceOf(running).match;
 
     expect(world.mapObjects.length).toBeGreaterThan(0);
     expect(replay.mapObjects).toEqual(world.mapObjects);
