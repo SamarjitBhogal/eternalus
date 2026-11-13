@@ -4134,6 +4134,56 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   759 passed (759)"; client "Tests 416 passed (416)"; "Documentation check passed."
 - Next step: push, then CodeRabbit re-review and approval.
 
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/status-control-immune — claudiodh + Claude Code
+
+- What was done: SCRUM-228 follow-up (05 §8, more-abilities §7). Status definitions gain
+  `polarity`, `controlClass` and `onExpire` (`apply-status` specs; unknown ids rejected at load).
+  New status `control-immune` (Unshaken, 0.5 s, `TUNE`). `StatusEffectApplier.expire` runs
+  `onExpire` on time-out only, credited to the same source, so `stun` is followed by
+  `control-immune`; `apply` refuses `hard` control on a `control-immune` target. 05's
+  Implementation status note and the INBOX status-effects item updated (crushed's class to
+  confirm).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 612 passed (612)"; client "Tests 416 passed (416)"; "✓ built in 101ms"; "Documentation
+  check passed."
+- Next step: Sam confirms INBOX item (6); then `slowed` with `independent` stacking (crushed's
+  release), `controlResistance` and the DEC-42 wobble once its questions are answered.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/status-control-immune (review round) — claudiodh + Claude Code
+
+- What was done: PR #52 review round (CodeRabbit, Copilot). Documented in 05's Implementation
+  status that `control-immune` stops chains of separate stuns only: a stun refreshed before it
+  expires never expires, so a steady refresher still locks the target. The recovery rule is a new
+  INBOX question (status effects, point 7). `crushed` as `hard` stays the open point (6).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 667 passed (667)"; client "Tests 415 passed (415)"; "✓ built in 95ms"; "Documentation
+  check passed."
+- Next step: Sam answers points (6) and (7).
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/object-pool — claudiodh + Claude Code
+
+- What was done: SCRUM-427. `ObjectPool<T>` in `packages/core/src/utils/` (Object Pool, 04 §11,
+  research §6): `capacity` objects made up front, `reset` on `acquire` and on `release`,
+  `acquire()` returns `undefined` when empty, a double release throws. Test covers the phase 1
+  plan's "resets fields on acquire, nulls references on release". Not exported from `index.ts`
+  (the client does not need it). Pooled `GameEvents` payloads are not wired: they clash with the
+  recent-events ring buffer and with handlers that keep payloads; question added to `INBOX.md`.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 616 passed (616)"; client "Tests 416 passed (416)"; "✓ built in 106ms"; "Documentation
+  check passed."
+- Next step: Sam answers the INBOX item; the first real user is projectiles (SCRUM-169).
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/object-pool (review round) — claudiodh + Claude Code
+
+- What was done: PR #51 review round (CodeRabbit, Copilot). `ObjectPool.release` rejects an object
+  the pool did not make (it would grow past `capacity`), with a test; the reuse test checks
+  identity, not shape. INBOX pooling item notes that option (2) needs a deep or immutable
+  snapshot of nested payloads. The "resolve before merge" note stays with the owner.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 672 passed (672)"; client "Tests 415 passed (415)"; "✓ built in 96ms"; "Documentation
+  check passed."
+- Next step: Sam answers the INBOX pooling item.
+
 ### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m8-rover-astar — SamarjitBhogal + Claude Code
 
 - What was done: merged the updated M3 (#46) into PR #47: M2b's chase fix (no lane field while
@@ -4190,6 +4240,59 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   787 passed (787)"; client "Tests 419 passed (419)"; "✓ built in 159ms"; "Documentation check
   passed."
 - Next step: CodeRabbit re-review; review and merge.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/status-control-immune (sync) — claudiodh + Claude Code
+
+- What was done: PR #52 synced with `phase/2-sprint-2-work` at the author's explicit request. The
+  earlier revert was reverted first, so the base's commits stay in the branch. This picks up the
+  `LaneFlowFields` mirror test fix (`923f336`) that failed the Windows runner. The duplicate
+  `PROGRESS.md` heading now reads `(review round)`. No feature code changed.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 763 passed (763)"; client "Tests 416 passed (416)"; "Documentation check passed."
+- Next step: Sam answers the open INBOX points for this PR; team review.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/object-pool (sync) — claudiodh + Claude Code
+
+- What was done: PR #51 synced with `phase/2-sprint-2-work` at the author's explicit request. The
+  earlier revert was reverted first, so the base's commits stay in the branch. This picks up the
+  `LaneFlowFields` mirror test fix (`923f336`) that failed the Windows runner. The duplicate
+  `PROGRESS.md` heading now reads `(review round)`. No feature code changed.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 768 passed (768)"; client "Tests 416 passed (416)"; "Documentation check passed."
+- Next step: Sam answers the open INBOX points for this PR; team review.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/status-control-immune (review fixes) — Claude Code, for claudiodh, on Sam's request
+
+- What was done: review fixes F1/F2/N1/N2 and DEC-99 applied on Sam's request, on behalf of the
+  author. Merged `phase/2-sprint-2-work` (PROGRESS.md conflict: both sides kept, date-ordered).
+  `crushed` now has `onExpire` → `control-immune` (DEC-99 (a)); a re-applied stun keeps `refresh`
+  (DEC-99 (b)). New tests: stun and crushed each followed by `control-immune`; a `StateHasher`
+  determinism check. 05 §8, more-abilities §7 and INBOX points (6)/(7) updated.
+- Fail-first breaks, run: remove `crushed` `onExpire` → the crushed case red; remove `stun`
+  `onExpire` → the stun case red; hash ignores `control-immune` → the hash test red. Author's
+  tests, derived by reading, not run: remove the `onExpire` loop in `expire`; drop the
+  `controlClass === 'hard'` clause; `remove` calls the follow-ups; make `control-immune` permanent.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 793 passed (793)"; client "Tests 419 passed
+  (419)"; "✓ built in 276ms"; "Documentation check passed."
+- Next step: squash-merge: the branch has sync/revert commits.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/object-pool (review fixes) — Sam Holtzman + Claude Code, for claudiodh
+
+- What was done: PR #51 review fixes, applied on Sam's request on behalf of the author. F1: merged
+  `phase/2-sprint-2-work` again; the only conflict was `PROGRESS.md`, resolved by keeping both
+  sides' entries, ordered by date. T2: the "allocates none after construction" test now counts
+  `create` calls and asserts the count stays at `capacity` over acquire and release cycles, and
+  keeps the identity assertion. DEC-94 applied: `ObjectPool` TSDoc says event payloads are not
+  pooled; the INBOX item is ticked with the answer; the phase 1 plan item is ticked with an
+  updated status sentence (`IdGenerator` and `RingBuffer` already exist in `utils/`).
+- Fail-first breaks (run, then restored): (A) `acquire` made one extra `create()` call and
+  discarded it → "reuses the same objects and allocates none after construction" red ("expected 6
+  to be 2"), the only failing test. (B) `acquire` returned `create()` instead of the pooled object
+  → "resets fields on acquire", "nulls references on release", the reuse test and "rejects a double
+  release" red.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 796 passed (796)"; client "Tests 419 passed
+  (419)"; "Documentation check passed."
+- Next step: squash-merge: the branch history has revert/merge noise.
 
 ### 2026-10-30 — Phase 2 / sprint 2.2 — fix/coderabbit-review — sholtzman + Claude Code
 
@@ -6155,6 +6258,46 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   (`eternalus-agent-work/hud-aether-bar/check-3.log`).
 - Next step: push; CodeRabbit re-review after the owner's sign-off comment; merge into phase/3.
 
+### 2026-11-10 — Phase 3 / sprint 3.1 — feat/status-control-immune (sync) — claudiodh + Claude Code
+
+- What was done: answered SamarjitBhogal's 2026-11-07 review on PR #52. Merged
+  `phase/3-sprint-3-work`; conflicts in the status catalogue and its test (both sides' ids kept),
+  the `last-reviewed` dates of architecture 05 and more-abilities (the later date kept) and this
+  file (both sides kept). `veteran` and `rallied`, new on phase/3, get the now-required
+  `polarity: 'buff'`, `controlClass: 'none'` and `onExpire: []`: both only raise damage dealt
+  (architecture 18), with no control and no follow-up. The catalogue test pins those three fields.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1309 passed (1309)"; client "Tests 1800
+  passed (1800)"; "✓ built in 266ms"; "Documentation check passed."
+- Next step: CI on both runners; review; squash-merge.
+
+### 2026-11-11 — Phase 3 / sprint 3.1 — feat/status-control-immune (sync) — claudiodh + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` into this branch for PR #52 (SCRUM-228) (it was CONFLICTING after the phase branch moved). Only `docs/plan/PROGRESS.md` conflicted; both sides' entries are kept. No feature code changed. No force push.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1312 passed (1312)"; client "Tests 1818 passed (1818)"; "✓ built in 223ms"; "Documentation check passed."
+- Next step: CI on both runners; reviewer re-approval; the team merges.
+
+### 2026-11-10 — Phase 3 / sprint 3.1 — feat/object-pool (sync) — claudiodh + Claude Code
+
+- What was done: answered SamarjitBhogal's 2026-11-07 review blocker on PR #51: merged
+  `phase/3-sprint-3-work` (base now phase/3). Only `INBOX.md` and this file conflicted (both sides
+  appended); every entry from both sides is kept. No feature code changed.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1311 passed (1311)"; client "Tests 1800
+  passed (1800)"; "✓ built in 273ms"; "Documentation check passed."
+- Next step: CI on both runners; review; squash-merge.
+
+### 2026-11-11 — Phase 3 / sprint 3.1 — feat/object-pool (sync) — claudiodh + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` into this branch for PR #51 (SCRUM-427) (it was CONFLICTING after the phase branch moved). Only `docs/plan/PROGRESS.md` conflicted; both sides' entries are kept. No feature code changed. No force push.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1314 passed (1314)"; client "Tests 1818 passed (1818)"; "✓ built in 225ms"; "Documentation check passed."
+- Next step: CI on both runners; reviewer re-approval; the team merges.
+
+### 2026-11-12 — Phase 3 / sprint 3.1 — feat/status-control-immune (sync) — SamarjitBhogal + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` into PR #52 (CONFLICTING after #51 merged).
+  Only this file conflicted; every entry from both sides is kept, date-ordered. No code changed.
+- Checks run: `npm run check` → `EXIT=0` (Node 24.21.0).
+- Next step: squash-merge #52 into phase/3.
+
 ### 2026-11-12 — Phase 3 / combat sprint: bound key actions, part 1 (BUG-5 / SCRUM-438) — fix/bound-key-actions — Claude Code
 
 - What was done: `camera-zoom-in`, `camera-zoom-out` and `toggle-minimap` now work as `MatchHost`
@@ -6168,6 +6311,12 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: full `npm run check` exit 0: core `Tests 1305 passed (1305)`, client
   `Tests 1824 passed (1824)`, `Documentation check passed.`
 - Next step: owner answers the INBOX item; the other bound actions follow with their features.
+
+### 2026-11-13 — Phase 3 / sync — fix/bound-key-actions (PR #101) — claudiodh + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (3dc9e908, after #51 and #52) into this branch because #101 was CONFLICTING. Only `docs/plan/PROGRESS.md` conflicted; both sides' entries are kept. No feature code changed. No force push.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1321 passed (1321)"; client "Tests 1824 passed (1824)"; "Documentation check passed."
+- Next step: reviewer approval; the team merges.
 
 ### 2026-11-13 — Phase 3 / combat sprint: developer menu, slice 1 (BUG-4 / SCRUM-437) — feat/developer-menu — Claude Code
 
@@ -6183,3 +6332,9 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: full `npm run check` exit 0: core `Tests 1305 passed (1305)`, client
   `Tests 1846 passed (1846)`, `Documentation check passed.`
 - Next step: owner answers the `INBOX.md` item; slice 2 adds `dev-spawn-legend` and the toggles.
+
+### 2026-11-13 — Phase 3 / sync — feat/developer-menu (PR #107) — claudiodh + Claude Code
+
+- What was done: merged `fix/bound-key-actions` into this branch (its base, updated after the sync with `phase/3-sprint-3-work` 3dc9e908) because #107 was CONFLICTING. Only the append-only logs conflicted; both sides' entries are kept. No feature code changed. No force push.
+- Checks run: `npm run check` → `EXIT=0`: Tests  1321 passed (1321);Tests  1846 passed (1846); "Documentation check passed."
+- Next step: reviewer approval; the team merges in stack order.
