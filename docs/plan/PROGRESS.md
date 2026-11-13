@@ -6407,3 +6407,23 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   touched suites pass (`Tests 328 passed (328)` and the progression, capture and roster suites).
   The full `npm run check` is left to the human.
 - Next step: critic and ponytail review; then the human runs `npm run check` and updates the PR.
+
+### 2026-11-12 — Phase 3 / sprint 3 work: PR #99 review fixes, pre-PR gate notes — feat/capture-point-boss-guards, merged into feat/capture-point-boss — Aryan Walanj + Claude Code
+
+- What was done: the critic (PASS WITH NOTES, no blockers) and ponytail (Ship) reviewed
+  `e2490797`. Applied: (1) the capped-reward test is named for what it checks, and a new test
+  pays the full 500 XP when two levels need more and nothing to a Legend at the level cap; (2) a
+  `shortcut:` comment and `INBOX.md` interim (d) record that a boss killed by a hit from a removed
+  Legend pays nobody; (3) `INBOX.md` asks Sam and the owner about four better-than-design items
+  (the lock read from state instead of 12 §7's listener, one boss traits block, a typed cap, a
+  `GuardStore` query); (5) `CAPTURE_POINT_COURT`'s TSDoc sits on the export; (6) the fight test
+  derives the boss count from the map's outer zones and has a 120 s timeout; (7) a long TSDoc line
+  is rewrapped; (8) a Legend the cap leaves nothing to pay gets no `xp-gained`. Not taken up:
+  (4) `LockedZoneOwnerInvariant` stays open (INBOX interim (b), 07 status); (9) a dead `never`
+  post's hashed respawn tick changed with the merged sentinel, to mention in the PR. Ponytail's
+  two test-only nice-to-haves are skipped.
+- Checks run: `npm run check:quick` via the pre-commit hook; `npm run docs:check` passed;
+  `ProgressionSystem.test.ts` `Tests 16 passed (16)`, `Simulation.bossFight.test.ts`
+  `Tests 3 passed (3)`. The full `npm run check` is left to the human.
+- Next step: the human runs `npm run check` and updates PR #99 with the critic verdict, the
+  ponytail result and the check output.

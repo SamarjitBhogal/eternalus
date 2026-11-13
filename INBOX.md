@@ -57,7 +57,10 @@ Reply inline (`Decision: …`).
       Legend of the killer's team, each paid at most what lifts it 2 levels (DEC-237,
       `XP_SOURCES.teamKills`); the killer gets nothing on its own. Still open: its kill gives no
       permanent team buff (reference 04), and the reward comes from `ProgressionSystem`'s own
-      `entity-died` listener, not 12's `xp-granted` reward path; sprint 3.6 replaces both. (Its 25% damage from minions, balancing.md, is
+      `entity-died` listener, not 12's `xp-granted` reward path; sprint 3.6 replaces both. Known
+      limit (PR #99 critic finding 2): the rewarded team is read from the killer in the store, so
+      a boss killed by a hit from a Legend already removed pays nobody, until `DamageSource`
+      carries the attacker's team. (Its 25% damage from minions, balancing.md, is
       built since 2026-11-12: `combat/BossMinionDamageStep.ts`.) (e) Its support mobs
       (`feat/capture-point-boss-guards`, 2026-11-12): reference 04 gives no count, so the plan
       borrows balancing.md's checkpoint-2 set, 2 `heavy-guard` + 4 `light-guard`, on the boss's
@@ -83,6 +86,20 @@ Reply inline (`Decision: …`).
       derives them from `leashRadius − postGap`, or drop it. The court is in sketch units, which
       are metres on the default 1600 × 900 world; on another world size `map/zoneArea.ts`
       stretches the floor and the leash does not follow.
+
+- [ ] **Capture point boss: four better-than-design items (PR #99 critic, 2026-11-12) — Sam and
+      the owner: approve or drop; no code change until then.** (1) **Zone lock read from state,
+      not an event listener.** 12 §7 says `CaptureSystem` clears `lockedBy` on its own
+      `entity-died` listener; the build sets it every tick from the zone's guard posts (no scratch
+      state, nothing to desync on replay, unlocks in the death tick). Approve, and 12 §7 is
+      amended to match; note that a sprint 3.6 `BossController` boss is not a guard post, so the
+      lock's source moves then. (2) **One boss traits block.** `XP_SOURCES.teamKills`,
+      `ZONE_LOCKING_MOBS` and the boss's `xpValue: 0` all key `capture-point-boss` and only tests
+      keep them aligned; one interim block on the mob, shaped like 04's planned
+      `BossDefinition.rewards`, would make sprint 3.6 a move. (3) **The XP cap in its own type.** A
+      `TeamKillAward` with a required `maxLevels` (or `Progression.cappedXp`) instead of the
+      optional field `ProgressionSystem.grant` branches on. (4) **A `GuardStore` query**
+      (`postsOf(homeId)`) instead of `CaptureSystem.lockOf`'s hand-rolled scan of every post.
 
 - [ ] **A named `GuardPlanSource` type (`feat/capture-point-boss` critic round 2 finding 8,
       2026-11-11) — better than the design, optional follow-up, no code change yet.**

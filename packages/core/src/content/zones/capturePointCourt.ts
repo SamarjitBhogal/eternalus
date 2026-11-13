@@ -10,16 +10,16 @@ const KEEP_REACH = Math.hypot(
   capturePointSize / keepHeightDivisor / 2,
 );
 
+// TUNE: no reference value; posts stand midway between the keep's corners and the court's walls,
+// clear of both.
+const POST_GAP = (KEEP_REACH + COURT_HALF) / 2;
+
 /**
  * The outer capture point's court, derived from the fort (`buildingGeometry.ts`, the one source),
  * for the zone's guard plan and its boss's aggro rule. Fort geometry is in sketch units, which are
  * metres on the default 1600 × 900 world (`map/zoneArea.ts` stretches it on another size; the
  * guard plan does not).
  */
-// TUNE: no reference value; posts stand midway between the keep's corners and the court's walls,
-// clear of both.
-const POST_GAP = (KEEP_REACH + COURT_HALF) / 2;
-
 export const CAPTURE_POINT_COURT = {
   /** The court's inscribed circle: a zone guard never chases out of the court. */
   leashRadius: COURT_HALF,
