@@ -6381,3 +6381,29 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: `npm run check:quick` and the touched tests before the commit; the full
   `npm run check` runs after the commit, alone, with the result in the chat report.
 - Next step: open the PRs with the critic verdicts, ponytail results and check output.
+
+### 2026-11-12 — Phase 3 / sprint 3 work: PR #99 review (claudiodh) fixes — feat/capture-point-boss-guards, merged into feat/capture-point-boss — Aryan Walanj + Claude Code
+
+- What was done: addressed claudiodh's request-changes review of PR #99. PR #85 is not merged
+  into `origin/phase/3-sprint-3-work` (still at `1b25f586`), so F5 (the aggro rule as a
+  `GuardAggroRuleDefinition`) is skipped. (F1) The boss's 500 XP (balancing.md MiniBoss row) is
+  paid to every Legend of the killer's playable team, each at most what lifts it 2 levels
+  (DEC-237, recorded in the decisions log from the owner's words in Sam's PR #91 review):
+  `XP_SOURCES.teamKills`, `Progression.xpToReach`, `ProgressionSystem`'s `team-kill` award, and
+  `level-matches-xp` checks the killer's team; the boss's own `xpValue` is 0. (F2) The
+  quarter-mark activation was already in place (`43c923b1`, `guardPlans.test.ts` derives it).
+  (F8) Zone lock: `CaptureSystem` sets `Capturable.lockedBy` from the zone's guard posts
+  (`content/zones/zoneLocks.ts`) and a locked zone's progress does not move (reference 04).
+  (F4) `Simulation.bossFight.test.ts`: the boss goes for and hits an enemy Legend in its court,
+  chases one leaving the court no farther than its leash, locks its zone, and after a real kill
+  (warriors attacking it) never respawns while the zone is then captured;
+  `CaptureSystem.lock.test.ts` covers the lock itself. (F6) `content/zones/capturePointCourt.ts`
+  derives the leash, post gap (now midway between keep corners and walls, about 29 m) and the
+  boss's acquisition and vision radii from the fort in `buildingGeometry.ts`, which now holds the
+  keep's divisors too. (F7) `Simulation.types.ts` and doc 15 §7 say `guardPlans` is not in
+  `ReplaySetup`. (Nit) One `NO_RESPAWN_TICK` sentinel; the group clear checks the plan's kind.
+  (F3) Unchanged; `INBOX.md` interim (c) asks Sam to sign off.
+- Checks run: `npm run check:quick` exit 0 after the lint fix; `npm run docs:check` passed; the
+  touched suites pass (`Tests 328 passed (328)` and the progression, capture and roster suites).
+  The full `npm run check` is left to the human.
+- Next step: critic and ponytail review; then the human runs `npm run check` and updates the PR.

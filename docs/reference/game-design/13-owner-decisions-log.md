@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-09
+last-reviewed: 2026-11-12
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,17 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-10 (PR #91 review: boss kill rewards)
+
+The owner's decisions of 2026-11-10, posted in his review of PR #91 (`feat/bosses-p3`,
+2026-11-11, "Product owner decisions (2026-11-10)"), which reserved DEC-236 and DEC-237 for that
+pull request. DEC-237 is recorded here first because `feat/capture-point-boss` (PR #99) builds it
+for the capture point boss; PR #91 adds DEC-236 and cites this row rather than adding it again.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Changes                                                                                                                                                                                                                |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DEC-237 | **Boss kill rewards.** The owner's words: "killing mini-bosses can go up 2 levels at most (new decision). Killing the middle boss puts you up 5 levels from wherever you are, flat (for the time being until a better idea comes into play)." And for the corner boss: "team-wide is fine for now." So a mini-boss kill (the outer capture points' and the corner camps') pays team-wide and lifts no Legend more than 2 levels; the Eternal's kill lifts each rewarded Legend exactly 5 levels. Built for the capture point boss on `feat/capture-point-boss`: its `balancing.md` 500 XP goes to every Legend of the killer's team, each paid at most what brings it 2 levels up (`XP_SOURCES.teamKills`); the killer gets nothing on its own. | `packages/core/src/content/progression/xpSources.ts` (`teamKills`, `TUNE`), `ProgressionSystem`, `level-matches-xp`; `05-abilities-weapons-and-loadouts.md` §13 status; `INBOX.md` capture point mini-boss interim (d) |
 
 ## Batch 2026-11-09 (chat: the aether bar critic's better-than-design items)
 

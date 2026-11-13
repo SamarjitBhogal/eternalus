@@ -1,3 +1,4 @@
+import { CAPTURE_POINT_COURT } from '../zones/capturePointCourt';
 import type { GuardPlanDefinition } from './structures.types';
 
 const LEASH = 8; // TUNE: balancing.md "leash radius 8 m"
@@ -91,8 +92,8 @@ export const GUARD_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
       { mobId: 'heavy-guard', count: 2 },
       { mobId: 'light-guard', count: 4 },
     ],
-    leashRadius: 35, // TUNE: the fort court's inscribed circle (buildingGeometry.ts fort)
-    postGap: 25, // TUNE: no reference value; out in the court, clear of the keep
+    leashRadius: CAPTURE_POINT_COURT.leashRadius,
+    postGap: CAPTURE_POINT_COURT.postGap,
     leashTolerance: TOLERANCE,
     // TUNE: reference 04 "Mini-bosses at the quarter mark": the default timeline's quarter-mark
     // entry (0.25 × plannedMatchSeconds 1800, from match start: 450 s) less the 10 s countdown,

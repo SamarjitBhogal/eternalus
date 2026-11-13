@@ -35,23 +35,29 @@ Reply inline (`Decision: …`).
 
 - [ ] **Capture point mini-boss: five interim stand-ins (Aryan Walanj, assigned owner, 2026-11-09;
       `feat/zone-guard-homes` critic finding 1; (c) and (d) `feat/capture-point-boss` critic
-      findings 1 and 2, 2026-11-11) — (a) and (b) due before the zone-lock PR, (c) and (d) with
-      phase-3 sprint 3.6's `BossController`, (e) awaits the owner and Sam.** (a) The boss
+      findings 1 and 2, 2026-11-11) — (a) due before the `MatchTimeline` boss spawn, (b) built,
+      (c) needs Sam's sign-off now and is replaced by phase-3 sprint 3.6's `BossController`, (d)
+      partly built, (e) awaits the owner and Sam.** (a) The boss
       spawns at the default timeline's quarter mark (440 s after the countdown ends, 2026-11-12;
       `guardPlans.test.ts` derives it from `createDefaultGameConfig`'s `quarter-mark` entry), but
       through its guard plan's `delaySeconds`, not `MatchTimeline`: a match with another
       `plannedMatchSeconds` or countdown keeps 440 s. Reference 04 and 07 §7 schedule it from the
-      match timeline; only that mechanism is still interim. (b) While it lives the boss counts as neutral
-      presence and drains a held point (no `CaptureSystem` change); reference 04 and 07 §7 say
-      its zone cannot be captured (`lockedBy`, `LockedZoneOwnerInvariant` in 15 §3, phase-3
-      sprint 3.6). Neither is a design change, so reference 04 is not amended and no DEC row is
-      added. The zone-lock PR replaces both, or the owner records a decision. (c) The boss is a
-      `heavy-mob` (`capture-point-boss`) held by `GuardController`, a minion-system controller;
-      18 (MS-28), 11 §4.6 and 04 give it a `MiniBoss` class and `BossController` (moves, roaming,
-      damage-dealer bias). Recorded in 18's implementation status note. (d) Its 500 XP
-      (balancing.md "500 XP team-wide") goes to the killer alone through the ordinary mob-kill
-      path, as the corner boss's does (PR #91), and its kill gives no permanent team buff
-      (reference 04). Sprint 3.6 replaces both. (Its 25% damage from minions, balancing.md, is
+      match timeline; only that mechanism is still interim. (b) **Built 2026-11-12 (PR #99 review
+      F8):** while the boss lives its zone cannot be captured, as reference 04 says:
+      `CaptureSystem` sets `lockedBy` from the zone's guard posts (`content/zones/zoneLocks.ts`)
+      and a locked zone's progress does not move, so the boss no longer drains a held point as
+      neutral presence. Still open: `LockedZoneOwnerInvariant` (15 §3). (c) **Sam: please sign
+      off this interim (PR #99 review F3, 2026-11-12).** The boss is a `heavy-mob`
+      (`capture-point-boss`) held by `GuardController`, a minion-system controller, against 18's
+      "the minion system never controls a boss"; 18 (MS-28), 11 §4.6 and 04 give it a `MiniBoss`
+      class and `BossController` (moves, roaming, damage-dealer bias), scheduled for sprint 3.6.
+      DEC-236 approved the same stand-in for the corner boss only. Recorded in 18's implementation
+      status note. Reply approve until sprint 3.6, or say what to change. (d) **XP built
+      2026-11-12 (PR #99 review F1):** its 500 XP (balancing.md "500 XP team-wide") goes to every
+      Legend of the killer's team, each paid at most what lifts it 2 levels (DEC-237,
+      `XP_SOURCES.teamKills`); the killer gets nothing on its own. Still open: its kill gives no
+      permanent team buff (reference 04), and the reward comes from `ProgressionSystem`'s own
+      `entity-died` listener, not 12's `xp-granted` reward path; sprint 3.6 replaces both. (Its 25% damage from minions, balancing.md, is
       built since 2026-11-12: `combat/BossMinionDamageStep.ts`.) (e) Its support mobs
       (`feat/capture-point-boss-guards`, 2026-11-12): reference 04 gives no count, so the plan
       borrows balancing.md's checkpoint-2 set, 2 `heavy-guard` + 4 `light-guard`, on the boss's
@@ -67,13 +73,16 @@ Reply inline (`Decision: …`).
       keep 1.2 m, or give a size.
 
 - [ ] **Guard leash and acquisition radii derived, not hand-copied (`feat/capture-point-boss`
-      critic finding 6, 2026-11-11) — better than the design, optional follow-up, no code change
-      yet.** The capture point plan's `leashRadius` 35 is worked out by hand from the fort court
-      (`buildingGeometry.ts` fort) and written twice (`content/structures/guardPlans.ts`,
-      `content/ai/aggro/capturePointBoss.ts`), and each guard aggro rule's `acquisitionRadius` is
-      the plan's leash less its post gap, also by hand (tower guard, camp mob, boss). If the fort
-      size or world scale changes, the leash no longer fits the court. Approve: a follow-up derives
-      a zone's leash from its geometry and acquisition from `leashRadius − postGap`. Or drop it.
+      critic finding 6, 2026-11-11) — better than the design; capture point part built
+      2026-11-12 (PR #99 review F6), tower guard and camp part optional.** Built: the capture
+      point plan's leash and post gap and its boss's acquisition and vision radii now come from
+      the fort in `buildingGeometry.ts` through `content/zones/capturePointCourt.ts` (the post gap
+      is now midway between the keep's corners and the court's walls, about 29 m, instead of a
+      hand-picked 25 m). Still open: the tower guard and camp mob aggro rules' `acquisitionRadius`
+      is still their plan's leash less its post gap, worked out by hand. Approve a follow-up that
+      derives them from `leashRadius − postGap`, or drop it. The court is in sketch units, which
+      are metres on the default 1600 × 900 world; on another world size `map/zoneArea.ts`
+      stretches the floor and the leash does not follow.
 
 - [ ] **A named `GuardPlanSource` type (`feat/capture-point-boss` critic round 2 finding 8,
       2026-11-11) — better than the design, optional follow-up, no code change yet.**

@@ -923,8 +923,13 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   self or ally kill (O5), and in its own pass emits `xp-gained` and gives the XP to the killer
   only. A level-up raises max health by the class's share of base health and max aether, and heals
   and refills by the raise only while the Legend is alive (O3, O4). Structure XP is built (DEC-186: every
-  Legend on the destroying team; a dead Legend is skipped until respawn, GL-12). Not built yet:
-  the share radius and damage bias, assists, checkpoint, camp and boss XP (their systems do not exist),
+  Legend on the destroying team; a dead Legend is skipped until respawn, GL-12). Team-kill XP is
+  built for the capture point boss (DEC-237): a mob in `XP_SOURCES.teamKills` pays every Legend of
+  its killer's playable team, not the killer alone, and each Legend gets at most the XP that lifts
+  it `maxLevels` levels (`Progression.xpToReach`); `level-matches-xp` checks that the killer is on
+  the recipient's team (`cause: 'team-kill'`). It listens to `entity-died` itself, not 12's
+  `xp-granted` reward path. Not built yet: the share radius and damage bias, assists, checkpoint and
+  camp XP, the Eternal's flat 5 levels (DEC-237) (their systems do not exist),
   basic-attack and ability potency per level, `upgradeIds`, the ultimate charge rules, and keeping
   dead Legends in the store until respawn (FR-051), which O4's posthumous XP needs. Numbers are
   `TUNE`; the curve and the Legend kill and structure XP follow DEC-190 (not final; the

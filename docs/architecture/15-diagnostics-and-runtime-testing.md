@@ -4,7 +4,7 @@ description: Testing while the game is running - the Invariant interface and the
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-09
+last-reviewed: 2026-11-12
 tags: [architecture, diagnostics, invariants, logging, performance, replays, soak-tests, testing]
 paths: ['packages/core/src/diagnostics/**']
 related:
@@ -279,7 +279,11 @@ and the roster) + versions + the externally enqueued commands + checkpoint
 hashes ([03](03-game-model.md) §9; [research C3](../research/persistence-input-diagnostics-research.md#c3-testing-a-running-game-properties-replays-golden-hashes-soak-tests)).
 Recording captures every command that enters through `Simulation.enqueueCommand` and a
 `StateHasher` checkpoint every `checkpointEvery` ticks (`TUNE` 100 in fixtures); the roster is
-part of the setup, and the bots' own commands are regenerated from it. `StateHasher` is FNV-1a
+part of the setup, and the bots' own commands are regenerated from it. `ReplaySetup` holds only
+those fields: a `Simulation` option outside it, such as `guardPlans` (each guard home's plan,
+`GUARD_PLANS` when omitted), is not recorded, so a match built with a non-default value replays
+only through a target factory that passes the same value. Such options are for tests and tools,
+never for a match a player can record. `StateHasher` is FNV-1a
 32-bit (offset basis `0x811c9dc5`, prime `0x01000193`, `Math.imul`) over its own canonical
 serialisation: tick, phase, RNG state, then every entity in store order with its component
 fields, then the other match fields once the match has left its initial state

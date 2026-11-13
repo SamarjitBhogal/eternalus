@@ -23,6 +23,11 @@ import type { System, SystemContext } from './System.types';
  * zone stays the owner's until the capture completes. With nobody inside, an unfinished capture
  * falls back to the owner's locking state, so an owned zone stays owned.
  *
+ * While a living guard of a locking mob (`lockingMobIds`, the mini-boss) holds one of a zone's
+ * guard posts, the zone is locked (`Capturable.lockedBy`, reference 04 "Mini-bosses at the quarter
+ * mark"): its presence is still published, but its progress does not move at all, so it can be
+ * neither captured, drained nor reverted. It unlocks the tick the boss is dead.
+ *
  * Emits `capture-progress` when a zone passes a checkpoint (either way), `checkpoint-reached`
  * when a side's push on a zone it does not own passes one for the first time since the zone last
  * changed owner (FR-031, DEC-145 (b), (g)), then `capture-point-owner-changed` when a capture
@@ -34,15 +39,20 @@ export class CaptureSystem implements System {
   public readonly name = 'capture';
   private readonly capturePerTick: number;
   private readonly revertPerTick: number;
+  private readonly lockingMobs: ReadonlySet<string>;
 
   /**
    * @param rules - The capture tuning (`GameConfig.match.capturePoints`).
    * @param tickRate - `GameConfig.tickRate`; the authored seconds are turned into ticks once here.
+   * @param lockingMobIds - The mob definition ids whose living guard locks its zone home, from
+   *   content (`ZONE_LOCKING_MOBS`).
    */
   public constructor(
     private readonly rules: CapturePointsConfig,
     tickRate: number,
+    lockingMobIds: readonly string[],
   ) {
+    this.lockingMobs = new Set(lockingMobIds);
     const rate = new TickRate(tickRate);
     this.capturePerTick = 1 / rate.toTicks(rules.captureSeconds);
     this.revertPerTick = 1 / rate.toTicks(rules.revertSeconds);
@@ -62,8 +72,26 @@ export class CaptureSystem implements System {
       }
     });
     for (const zone of zones) {
+      zone.capturable.setLock(this.lockOf(state, zone.entity.id));
       this.advance(state, zone, this.weightsInside(zone, units));
     }
+  }
+
+  /** The living locking guard posted to zone `zoneId`, or `null` when there is none. */
+  private lockOf(state: GameState, zoneId: string): string | null {
+    let lock: string | null = null;
+    state.guards.forEach(({ homeId, guardId, mobId }) => {
+      if (
+        lock === null &&
+        homeId === zoneId &&
+        guardId !== null &&
+        this.lockingMobs.has(mobId) &&
+        state.entities.get(guardId)?.findComponent(Health)?.isDead === false
+      ) {
+        lock = guardId;
+      }
+    });
+    return lock;
   }
 
   /**
@@ -94,6 +122,9 @@ export class CaptureSystem implements System {
   private advance(state: GameState, zone: CaptureZone, weights: SideWeights): void {
     const { capturable } = zone;
     capturable.setPresence(weights);
+    if (capturable.lockedBy !== null) {
+      return;
+    }
     const move = this.moveFor(capturable, weights);
     if (move === null) {
       return;

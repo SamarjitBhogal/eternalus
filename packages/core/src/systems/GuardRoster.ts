@@ -11,7 +11,7 @@ import type { GameState } from '../state/GameState';
 import type { GuardSlot } from '../state/GuardStore.types';
 import { compareById } from '../utils/compareById';
 import { cos, sin } from '../utils/deterministicMath';
-import { NEVER_AGAIN, WAITING_FOR_GROUP } from './GuardRoster.constants';
+import { NO_RESPAWN_TICK } from './GuardRoster.constants';
 import type { Vec2 } from '../utils/geometry.types';
 import { countdownTicks } from '../config/countdownTicks';
 
@@ -107,12 +107,10 @@ export class GuardRoster {
     state.guards.forEach((slot, index) => {
       if (slot.guardId !== null && !state.entities.isAlive(slot.guardId)) {
         const respawn = this.planOf(state, slot)?.respawn.kind ?? 'each';
-        const respawnAt = {
-          each: state.tick + slot.respawnTicks,
-          group: WAITING_FOR_GROUP,
-          never: NEVER_AGAIN,
-        }[respawn];
-        state.guards.vacate(index, respawnAt);
+        state.guards.vacate(
+          index,
+          respawn === 'each' ? state.tick + slot.respawnTicks : NO_RESPAWN_TICK,
+        );
       }
     });
     this.announceCleared(state);
@@ -148,10 +146,13 @@ export class GuardRoster {
    */
   private announceCleared(state: GameState): void {
     const homes = new Map<string, { isAllEmpty: boolean; isWaiting: boolean; ticks: number }>();
-    state.guards.forEach(({ homeId, guardId, respawnAtTick, respawnTicks }) => {
+    state.guards.forEach((slot) => {
+      const { homeId, guardId, respawnAtTick, respawnTicks } = slot;
       const home = homes.get(homeId) ?? { isAllEmpty: true, isWaiting: false, ticks: respawnTicks };
       home.isAllEmpty &&= guardId === null;
-      home.isWaiting ||= respawnAtTick === WAITING_FOR_GROUP;
+      // Only a `group` post waits for its group; a `never` post waits for nothing.
+      home.isWaiting ||=
+        respawnAtTick === NO_RESPAWN_TICK && this.planOf(state, slot)?.respawn.kind === 'group';
       homes.set(homeId, home);
     });
     for (const [homeId, { isAllEmpty, isWaiting, ticks }] of homes) {

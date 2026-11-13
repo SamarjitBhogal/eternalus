@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Progression } from '../../components/Progression';
+import { MOB_DEFINITIONS } from '../mobs/mobCatalogue';
 import { LEGEND_LEVEL_CURVE } from './levelCurves';
 import { XP_SOURCES } from './xpSources';
 
@@ -35,6 +36,23 @@ describe('legend XP design intent (DEC-190)', () => {
         levelsGained(level, XP_SOURCES.structureDestroyed),
         `level ${String(level)}`,
       ).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('a team-kill reward names a mob that pays its killer nothing alone, and lifts at most 2 levels (DEC-237)', () => {
+    for (const [mobId, { xp, maxLevels }] of Object.entries(XP_SOURCES.teamKills)) {
+      expect({ mobId, xpValue: MOB_DEFINITIONS.get(mobId).xpValue }).toEqual({ mobId, xpValue: 0 });
+      expect({ mobId, isAtMostTwo: maxLevels <= 2 }).toEqual({ mobId, isAtMostTwo: true });
+      for (const level of levels) {
+        // As ProgressionSystem pays it: no more than brings the Legend `maxLevels` levels up.
+        const progression = new Progression(LEGEND_LEVEL_CURVE.id);
+        progression.addXp(xpAtLevel(level), LEGEND_LEVEL_CURVE);
+        const paid = Math.min(xp, progression.xpToReach(level + maxLevels, LEGEND_LEVEL_CURVE));
+        expect(
+          progression.addXp(paid, LEGEND_LEVEL_CURVE),
+          `${mobId} level ${String(level)}`,
+        ).toBeLessThanOrEqual(maxLevels);
+      }
     }
   });
 });

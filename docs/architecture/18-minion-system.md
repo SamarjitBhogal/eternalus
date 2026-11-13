@@ -126,9 +126,10 @@ branch. Pull request A1 (`feat/zone-guard-homes`) lets a zone be a guard home (�
 and `feat/capture-point-boss-guards` adds its support mobs to that plan.
 Interim, against "the minion system never controls a boss" above: until Phase 3 sprint 3.6 builds
 `MiniBoss` and `BossController` (11 §4.6, 04), the boss is a `heavy-mob` (`capture-point-boss`)
-held by `GuardController`, with one melee hit and no moves, roaming or damage-dealer bias; its kill
-XP goes to the killer alone and it gives no team buff (`INBOX.md`, capture point mini-boss
-interims (c) and (d)); it takes only its share of a lane minion's hit (`BossMinionDamageStep`,
+held by `GuardController`, with one melee hit and no moves, roaming or damage-dealer bias, and its
+kill gives no team buff (`INBOX.md`, capture point mini-boss interims (c) and (d); (c) awaits
+Sam's sign-off). Its kill XP is team-wide, at most 2 levels each (DEC-237), and its zone cannot be
+captured while it lives (07 §7 status); it takes only its share of a lane minion's hit (`BossMinionDamageStep`,
 05 §9; shares in `content/mobs/minionModifiers.ts`). The pull requests and interim stand-ins are in the
 [minion system plan](../plan/minion-system-plan.md) §2–§3.
 
