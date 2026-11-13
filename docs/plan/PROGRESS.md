@@ -6424,3 +6424,15 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 1356 passed (1356)"; protocol "Tests 31 passed (31)"; client "Tests 1942 passed (1942)"; server "Tests 143 passed (143)"; "Documentation check passed."
 - Pre-PR gate: critic request-changes (the client `ServerMessageDecoder` dropped `opponent-presence`; `graceMs` optional) → fixed (decoder case + tests, `graceMs` required on `disconnected`); ponytail cuts not applied (one-class rule, existing tests read the getter).
 - Next step: reviewer approval; merges in stack order after #104.
+
+### 2026-11-13 — Phase 3 / sprint 3.1 — feat/duel-player-messaging (known gap) — claudiodh + Claude Code
+
+- What was done: closed the PR #118 known gap. `MatchScreen` read `isDuel` from the first
+  `duel-state`, so an Escape before it opened the single-player pause menu. New
+  `matchSlice.selectors.selectIsDuel` is true from `match-found` on (the VERSUS names) or once a
+  scoreboard exists; `MatchScreen` uses it for the Escape key and the unload guard. A slice test
+  covers outside, matched and scored.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1356 passed (1356)"; protocol "Tests 31
+  passed (31)"; client "Tests 1943 passed (1943)"; server "Tests 143 passed (143)"; "Documentation
+  check passed."
+- Next step: review; merge after #104.
