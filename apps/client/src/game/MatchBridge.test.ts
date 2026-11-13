@@ -3,6 +3,7 @@ import {
   type EntitySnapshot,
   type MapFeatureKind,
   type Snapshot,
+  type Team,
 } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
@@ -21,11 +22,15 @@ const PLAYER: EntitySnapshot = {
   team: 'light',
   transform: { x: 1, y: 2, radius: 0.5 },
   health: { current: 600, max: 600 },
+  progression: { level: 3, xp: 40, xpToNext: 114 },
+  aether: { current: 95, max: 160 },
+  area: null,
+  capture: null,
 };
 
 const snapshotAt = (tick: number, entities: readonly EntitySnapshot[] = []): Snapshot => ({
   tick,
-  phase: 'early-game',
+  match: { phase: 'early-game', phaseEnteredTick: 0, upcoming: [], humanLegendId: null },
   entities,
   hordes: [],
   teams: {
@@ -90,7 +95,7 @@ describe('MatchBridge', () => {
     expect(huds).toEqual([{ player: null }]);
   });
 
-  it("carries only the player's health; every other HUD value stays empty", () => {
+  it("carries the player's health, aether, level and XP; every other HUD value stays empty", () => {
     const { bridge, huds } = setUp();
     bridge.publishAll(snapshotAt(0, [PLAYER]), 'player-1');
     bridge.publishAll(snapshotAt(0, [PLAYER]), 'someone-else');
@@ -102,11 +107,11 @@ describe('MatchBridge', () => {
           definitionId: 'magus',
           health: 600,
           maxHealth: 600,
-          aether: null,
-          maxAether: null,
-          level: null,
-          xp: null,
-          xpToNext: null,
+          aether: 95,
+          maxAether: 160,
+          level: 3,
+          xp: 40,
+          xpToNext: 114,
           weaponProgress: null,
           ultimatePips: null,
           slots: [],
@@ -114,6 +119,27 @@ describe('MatchBridge', () => {
       },
       { player: null },
     ]);
+  });
+
+  it('shows no level or XP for a player that does not level, and no next level at the cap', () => {
+    const { bridge, huds } = setUp();
+    bridge.publishAll(snapshotAt(0, [{ ...PLAYER, progression: null }]), 'player-1');
+    bridge.publishAll(
+      snapshotAt(0, [{ ...PLAYER, progression: { level: 50, xp: 12, xpToNext: null } }]),
+      'player-1',
+    );
+
+    expect(huds.map(({ player }) => [player?.level, player?.xp, player?.xpToNext])).toEqual([
+      [null, null, null],
+      [50, 12, null],
+    ]);
+  });
+
+  it('shows no aether for a player without an aether pool', () => {
+    const { bridge, huds } = setUp();
+    bridge.publishAll(snapshotAt(0, [{ ...PLAYER, aether: null }]), 'player-1');
+
+    expect(huds.map(({ player }) => [player?.aether, player?.maxAether])).toEqual([[null, null]]);
   });
 
   it('lists every team feature once as a structure, with its lane and no health', () => {
@@ -150,6 +176,54 @@ describe('MatchBridge', () => {
     for (const point of points) {
       expect(point).toMatchObject({ ownerTeam: 'neutral', progress: null });
     }
+  });
+
+  it("publishes each capture point's owner and progress from the zone on its feature, or none without one", () => {
+    const { map, bridge, captures } = setUp();
+    const [first, second] = map.features.filter((feature) => CAPTURE_KINDS.includes(feature.kind));
+    if (first === undefined || second === undefined) {
+      throw new Error('The map needs two capture features.');
+    }
+    const zoneOn = (owner: Team, progress: number): EntitySnapshot => ({
+      ...PLAYER,
+      id: 'zone-1',
+      kind: 'capture-point',
+      family: 'zone',
+      definitionId: 'capture-point',
+      team: 'neutral',
+      transform: { ...first.position, radius: 0 },
+      health: null,
+      area: [],
+      capture: {
+        owner,
+        progress,
+        checkpoint: 0,
+        checkpoints: 3,
+        lockedBy: null,
+        presence: { light: 0, dark: 0, neutral: 0 },
+      },
+    });
+    bridge.publishAll(snapshotAt(0, [PLAYER, zoneOn('light', 0.5)]), null);
+    bridge.afterTick(snapshotAt(30, [PLAYER, zoneOn('light', 0.5)]), null);
+    bridge.afterTick(snapshotAt(60, [PLAYER, zoneOn('dark', -1)]), null);
+    bridge.afterTick(snapshotAt(90, [PLAYER]), null);
+    const [atStart, unchanged, later, zoneGone] = captures.map((event) => event.points);
+
+    expect(atStart?.[0]).toMatchObject({ pointId: first.id, ownerTeam: 'light', progress: 0.5 });
+    expect(atStart?.[1]).toMatchObject({
+      pointId: second.id,
+      ownerTeam: 'neutral',
+      progress: null,
+    });
+    expect(unchanged).toBe(atStart);
+    expect(later?.[0]).toMatchObject({ pointId: first.id, ownerTeam: 'dark', progress: -1 });
+    expect(later?.[1]).toBe(atStart?.[1]);
+    expect(zoneGone?.[1]).toBe(atStart?.[1]);
+    expect(zoneGone?.[0]).toMatchObject({
+      pointId: first.id,
+      ownerTeam: 'neutral',
+      progress: null,
+    });
   });
 
   it('follows the lane count of the config', () => {

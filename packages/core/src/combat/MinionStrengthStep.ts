@@ -4,6 +4,7 @@ import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { DamageHit, DamageStep } from './DamageStep.types';
 import type { LaneProgressOf } from './MinionStrengthStep.types';
+import { opponentOf } from '../teams/playableTeams';
 
 /**
  * Lane minions are stronger near home (architecture 05 §9, 18 MS-16, DISC-24): a horde member's
@@ -56,7 +57,7 @@ export class MinionStrengthStep implements DamageStep {
       this.progressOf?.(horde.lane, horde.team, position) ??
       (length > 0 ? routes.distanceAlong(horde.lane, horde.team, position) / length : 0);
     const { k, min, max, basePoint, shiftPerTowerLost, maxBasePoint } = this.curve;
-    const enemy = horde.team === 'light' ? 'dark' : 'light';
+    const enemy = opponentOf(horde.team);
     const lost = state.teams[enemy].towersLostByLane[horde.lane] ?? 0;
     const c = Math.min(maxBasePoint, basePoint + shiftPerTowerLost * lost);
     return Math.min(max, Math.max(min, 1 + k * (1 - t / c)));

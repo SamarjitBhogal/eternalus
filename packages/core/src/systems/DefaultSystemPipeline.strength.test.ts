@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import * as damageSteps from '../combat/defaultDamageSteps';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../config/matchPhases';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { loadLevelCurves } from '../content/progression/loadLevelCurves';
 import { XP_SOURCES } from '../content/progression/xpSources';
@@ -32,16 +33,24 @@ describe('DefaultSystemPipeline minion strength wiring', () => {
     const curves = loadLevelCurves();
     vi.mocked(damageSteps.createDefaultDamageSteps).mockClear();
 
-    new DefaultSystemPipeline(
-      new DefaultInvariantRunner(TEST_DEBUG_CONFIG, new MemoryLogger(), curves),
+    new DefaultSystemPipeline({
+      invariants: new DefaultInvariantRunner({
+        debug: TEST_DEBUG_CONFIG,
+        logger: new MemoryLogger(),
+        curves,
+        phaseOrder: MATCH_PHASES,
+        terminalPhases: TERMINAL_MATCH_PHASES,
+      }),
       state,
-      { units, curves, xpSources: XP_SOURCES },
-      {
+      progression: { units, curves, xpSources: XP_SOURCES },
+      // Strength wiring is the subject here, not the match: no director moves the phase.
+      director: { update: () => undefined },
+      hordes: {
         factory: new EntityFactory(createDefaultEntityRegistry(), units),
         space: null,
         decide: [],
       },
-    );
+    });
 
     const [progressOf] = vi.mocked(damageSteps.createDefaultDamageSteps).mock.calls[0] ?? [];
     expect(progressOf).toBeTypeOf('function');

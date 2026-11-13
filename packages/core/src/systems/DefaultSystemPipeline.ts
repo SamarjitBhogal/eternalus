@@ -9,22 +9,20 @@ import { ENRAGING_STRUCTURES } from '../content/mobs/minionModifiers';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { OPENING_WAVE, SPAWN_WAVES } from '../content/structures/spawnWaves';
-import type { InvariantRunner } from '../diagnostics/InvariantRunner';
-import type { EntityFactory } from '../entities/EntityFactory';
-import type { SpaceIndex } from '../physics/SpaceIndex';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { LaneFlowFields } from '../map/LaneFlowFields';
-import type { GameState } from '../state/GameState';
+import { CaptureSystem } from './CaptureSystem';
 import { CombatSystem } from './CombatSystem';
 import { MapDestructionSystem } from './MapDestructionSystem';
 import { DeathSystem } from './DeathSystem';
+import type { DefaultSystemPipelineOptions } from './DefaultSystemPipeline.types';
 import { EnragedSystem } from './EnragedSystem';
 import { HordeSystem } from './HordeSystem';
 import { InvariantSystem } from './InvariantSystem';
+import { MatchDirectorSystem } from './MatchDirectorSystem';
 import { MovementSystem } from './MovementSystem';
 import { PathingSystem } from './PathingSystem';
 import { ProgressionSystem } from './ProgressionSystem';
-import type { ProgressionContent } from './ProgressionSystem.types';
 import { SpaceSystem } from './SpaceSystem';
 import { SpawnSystem } from './SpawnSystem';
 import { StructureSystem } from './StructureSystem';
@@ -33,43 +31,28 @@ import { MINION_VETERANCY } from '../content/mobs/minionVeterancy';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { GUARD_PLANS } from '../content/structures/guardPlans';
 import { StatusEffectSystem } from './StatusEffectSystem';
-import type { System } from './System.types';
 import { SystemPipeline } from './SystemPipeline';
 
 /**
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
  * progress, statuses, movement, collision (DEC-121 (c): every later reader sees resolved
  * positions), the neighbour index, steering, combat, map destruction, progression (kill XP),
- * minion veterancy, structure losses and breakability, spawning, enraging, death, then invariants
- * last. This is the one place a system is added, at its position in the tick (architecture 02 §9).
+ * minion veterancy, structure losses and breakability, spawning, enraging, death, capture points,
+ * the match director, then invariants last. This is the one place a system is added, at its
+ * position in the tick (architecture 02 §9).
  * It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the status
  * effects loaded for this match's config) and hands them to the systems that need them, so a damage
  * step applies to every hit and every status event comes from one place.
  */
 export class DefaultSystemPipeline extends SystemPipeline {
-  /**
-   * Creates the pipeline.
-   *
-   * @param invariants - The runner the last system checks with.
-   * @param state - The match; its config sets the tick rate and lane structure count statuses load
-   *   with, and systems that listen to its events subscribe here.
-   * @param progression - The content kills are priced and levels applied with, injected.
-   * @param hordes - The factory (and its definitions), neighbour index and AI the horde systems
-   *   (architecture 11, 18) need; without them nothing decides, marches, steers or spawns on lanes.
-   */
-  public constructor(
-    invariants: InvariantRunner,
-    state: GameState,
-    progression: ProgressionContent,
-    hordes?: {
-      readonly factory: EntityFactory;
-      /** The index `state.space` exposes; `null` for a match without a map. */
-      readonly space: SpaceIndex | null;
-      /** Runs first: the AI, which `systems/` may not import, so `Simulation` composes it. */
-      readonly decide: readonly System[];
-      readonly collisions?: readonly System[];
-    },
-  ) {
+  /** Creates the pipeline from its injected parts (`DefaultSystemPipelineOptions`). */
+  public constructor({
+    invariants,
+    state,
+    progression,
+    director,
+    hordes,
+  }: DefaultSystemPipelineOptions) {
     const { tickRate, map } = state.config;
     const statuses = new StatusEffectApplier(
       loadStatusEffects(tickRate, map.spawnTowersPerLane + map.buffTowersPerLane),
@@ -143,6 +126,9 @@ export class DefaultSystemPipeline extends SystemPipeline {
             new EnragedSystem(state, statuses, ENRAGING_STRUCTURES),
           ]),
       new DeathSystem(),
+      new CaptureSystem(state.config.match.capturePoints, tickRate),
+      // After death, so an objective lost this tick can end the match this tick (12 §1).
+      new MatchDirectorSystem(director),
       new InvariantSystem(invariants),
     ]);
   }
