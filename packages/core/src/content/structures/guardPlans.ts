@@ -3,9 +3,10 @@ import type { GuardPlanDefinition } from './structures.types';
 const LEASH = 8; // TUNE: balancing.md "leash radius 8 m"
 const RESPAWN = 120; // TUNE: game doc "respawn every 2 minutes"
 const POST_GAP = 2; // TUNE: no reference value; just outside the footprint
-// TUNE: owner 2026-11-02 (DEC-144): one decision's walk (10 ticks at up to 3.5 m/s) plus the
-// farthest a guard stands from a target in reach (radii + reach, up to 1.2 + 1.25 + 1.5 = 3.95 m
-// for the capture point boss against a Sentinel); at most 4.9 m for one guard, so about 0.1 m of
+// TUNE: owner 2026-11-02 (DEC-144): per guard, one decision's walk (10 ticks at its own top
+// speed) plus the farthest it stands from a target in reach (its radius + the largest target's
+// radius + its reach). The tightest is the capture point boss against a Sentinel: walk
+// 10 × 2.8 / 30 ≈ 0.93 m plus stance 1.2 + 1.25 + 1.5 = 3.95 m, so 4.88 m and about 0.1 m of
 // margin: a larger or faster guard needs a larger tolerance.
 // guardPlans.test.ts checks the sum against every guard and target in content.
 const TOLERANCE = 5;

@@ -6321,3 +6321,17 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   25 m out keeps at least 2.3 m from it, more than the 1.2 m radius.
 - Checks run: `npm run check` exit 0, ending `Documentation check passed.`
 - Next step: merge into `feat/capture-point-boss-guards` and run the boss tests there.
+
+### 2026-11-12 — Phase 3 / sprint 3 work: capture point mini-boss pre-PR gate fixes (PR A2) — feat/capture-point-boss — Aryan Walanj + Claude Code
+
+- What was done: applied the pre-PR gate's should-fix and nits for `93f594d0..f4fc910b` (critic
+  PASS WITH NOTES, ponytail Ship). (1) `INBOX.md` asks Sam to sign off the boss's 1.2 m
+  footprint (kept). (2) The boss aggro comments say its 60 m range covers the court from its
+  post; at the court's edge the far side can be out of range. (3) The `TOLERANCE` comment in
+  `guardPlans.ts` works the DEC-144 sum per guard and shows the tightest case, the boss at
+  4.88 m. (4) `guardPlans.test.ts` checks that the boss's aggro range (through its `aiProfile`)
+  is at least the `capture-point` plan's leash radius plus its post gap. Better-than-design
+  items (timeline-mark activation, aggro range derived from the plan) are not taken up.
+- Checks run: `npm run check:quick` exit 0; `guardPlans.test.ts` `Tests 3 passed (3)`; prettier
+  clean. The full `npm run check` runs after the commit, alone, with the result in the chat report.
+- Next step: merge into `feat/capture-point-boss-guards`.
