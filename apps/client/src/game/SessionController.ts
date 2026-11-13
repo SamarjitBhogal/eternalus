@@ -57,6 +57,7 @@ export class SessionController {
   public constructor(private readonly deps: SessionControllerDeps) {
     this.duel = new DuelSession({
       createTransport: deps.createDuelTransport,
+      guestIds: deps.guestIds,
       logger: deps.logger,
       handlers: {
         matched: (opponent) => {

@@ -9,6 +9,9 @@ export const MAX_PLAYER_NAME_LENGTH = 16;
 /** What a player name may hold: letters, digits, spaces, `_` and `-`, with no space at either end. */
 export const PLAYER_NAME_PATTERN = /^[\p{L}\p{N}_-]+(?: +[\p{L}\p{N}_-]+)*$/u;
 
+/** What a guest id looks like: a lower-case UUID (the server issues them with `randomUUID`). */
+export const GUEST_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
 /** The highest `intent.seq` accepted: JSON numbers stay exact up to here. */
 export const MAX_INTENT_SEQ = Number.MAX_SAFE_INTEGER;
 

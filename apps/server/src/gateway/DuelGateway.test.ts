@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { TokenBucket } from '../limits/TokenBucket';
 import { FakeDuelSimulation } from '../match/FakeDuelSimulation';
 import { DuelHost } from '../match/DuelHost';
+import { PresenceBook } from '../presence/PresenceBook';
+import { MAX_HELD_GUESTS, RECONNECT_WINDOW_MS } from '../presence/PresenceBook.constants';
 import { DuelQueue } from '../queue/DuelQueue';
 import { FakeClock } from '../time/FakeClock';
 import { FakeTickScheduler } from '../time/FakeTickScheduler';
@@ -20,6 +22,7 @@ const INTENT = JSON.stringify({
 });
 
 function setup(burst = 100) {
+  let guests = 0;
   const simulation = new FakeDuelSimulation();
   const scheduler = new FakeTickScheduler();
   const host = new DuelHost({
@@ -30,18 +33,35 @@ function setup(burst = 100) {
     logger: new MemoryLogger(),
   });
   const clock = new FakeClock();
-  const gateway = new DuelGateway(
-    new ClientMessageParser(),
-    new DuelQueue(host),
+  const queue = new DuelQueue(host);
+  const presence = new PresenceBook({
+    queue,
     host,
-    () => new TokenBucket(clock, burst, 1),
-  );
+    scheduler,
+    reconnectWindowMs: RECONNECT_WINDOW_MS,
+    maxHeldGuests: MAX_HELD_GUESTS,
+    newGuestId: () => `00000000-0000-4000-8000-${String((guests += 1)).padStart(12, '0')}`,
+  });
+  const gateway = new DuelGateway({
+    parser: new ClientMessageParser(),
+    queue,
+    host,
+    presence,
+    newLimiter: () => new TokenBucket(clock, burst, 1),
+  });
+  // The `welcome` every connection gets first is covered in PresenceBook.test.ts: drop it here.
   const connect = (): FakeConnection => {
     const connection = new FakeConnection();
     gateway.accept(connection);
+    connection.sent.length = 0;
     return connection;
   };
-  return { simulation, scheduler, connect };
+  // A disconnect whose reconnect window then runs out (the immediate drop these tests check).
+  const drop = (connection: FakeConnection): void => {
+    connection.close();
+    scheduler.tick();
+  };
+  return { simulation, scheduler, connect, drop };
 }
 
 describe('DuelGateway', () => {
@@ -94,26 +114,37 @@ describe('DuelGateway', () => {
   });
 
   it('removes a waiting player who leaves or disconnects', () => {
-    const { connect } = setup();
+    const { connect, drop } = setup();
     const a = connect();
     const b = connect();
     const c = connect();
     a.receive('{"type":"queue-join","name":"Ana"}');
     a.receive('{"type":"queue-leave"}');
     b.receive('{"type":"queue-join","name":"Ana"}');
-    b.close();
+    drop(b);
     c.receive('{"type":"queue-join","name":"Ana"}');
     expect(c.sent).toEqual([{ type: 'queue-waiting' }]);
   });
 
   it('tells the opponent when a player disconnects mid-match', () => {
-    const { connect } = setup();
+    const { connect, drop } = setup();
     const a = connect();
     const b = connect();
     a.receive('{"type":"queue-join","name":"Ana"}');
     b.receive('{"type":"queue-join","name":"Ana"}');
-    a.close();
+    drop(a);
     expect(b.sent.at(-1)).toMatchObject({ type: 'match-ended', reason: 'opponent-left' });
+  });
+
+  it('ends a match at once when a player forfeits, and refuses a forfeit outside one', () => {
+    const { connect } = setup();
+    const [a, b, c] = [connect(), connect(), connect()];
+    c.receive('{"type":"forfeit"}');
+    expect(c.sent).toEqual([{ type: 'rejected', reason: 'not-in-match' }]);
+    a.receive(JOIN);
+    b.receive(JOIN);
+    a.receive('{"type":"forfeit"}');
+    expect(b.sentOfType('match-ended')).toMatchObject([{ reason: 'opponent-left' }]);
   });
 
   it('ignores a second join by a waiting player and still pairs the next one with them', () => {
@@ -152,10 +183,10 @@ describe('DuelGateway', () => {
   });
 
   it('never pairs a player who disconnected while queued', () => {
-    const { connect } = setup();
+    const { connect, drop } = setup();
     const [a, b, c] = [connect(), connect(), connect()];
     a.receive(JOIN);
-    a.close();
+    drop(a);
     b.receive(JOIN);
     expect(b.sent).toEqual([{ type: 'queue-waiting' }]);
     c.receive(JOIN);
@@ -164,11 +195,11 @@ describe('DuelGateway', () => {
   });
 
   it('forfeits a match when a player disconnects and frees the other to queue again', () => {
-    const { connect, scheduler } = setup();
+    const { connect, drop, scheduler } = setup();
     const [a, b, c] = [connect(), connect(), connect()];
     a.receive(JOIN);
     b.receive(JOIN);
-    a.close();
+    drop(a);
     expect(b.sentOfType('match-ended')).toEqual([
       { type: 'match-ended', reason: 'opponent-left', winner: null },
     ]);
@@ -182,17 +213,17 @@ describe('DuelGateway', () => {
   });
 
   it('handles a disconnect right before and right after a pairing', () => {
-    const { connect, scheduler } = setup();
+    const { connect, drop, scheduler } = setup();
     const [a, b] = [connect(), connect()];
     a.receive(JOIN);
-    a.close();
+    drop(a);
     b.receive(JOIN);
     expect(b.sent).toEqual([{ type: 'queue-waiting' }]);
     const [c, d] = [connect(), connect()];
     b.receive(LEAVE);
     c.receive(JOIN);
     d.receive(JOIN);
-    d.close();
+    drop(d);
     expect(c.sent.at(-1)).toMatchObject({ type: 'match-ended', reason: 'opponent-left' });
     expect(scheduler.activeCount).toBe(0);
   });

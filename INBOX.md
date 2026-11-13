@@ -16,6 +16,23 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Guest identity, presence and reconnect (SCRUM-430, 2026-11-13) — interim choices, owner to
+      confirm or change.** (1) Id: `randomUUID` (122 random bits), sent as `welcome`, a bearer token
+      never logged; a malformed or unknown id gets a fresh one. (2) Window: `RECONNECT_WINDOW_MS` =
+      10 s (`// TUNE:`), timed on the existing `TickScheduler` as a one-shot; plan question 44
+      (window, forfeit stats, deploys) is still yours. (3) Duplicate: only a HELD guest can be resumed; the id of a
+      still-connected guest is ignored (the new connection gets a fresh id), so nobody can kick a
+      live player. Abuse bounds (critic): at most `MAX_HELD_GUESTS` = 100 held guests (beyond it a
+      disconnect drops at once), and a match whose two seats are both held ends at once. (4) In-match: the new connection
+      takes the seat, is sent `match-found` again and then the next `state`; the opponent is not
+      told about the gap, and a queued guest whose slot is held can still be paired (the match
+      starts with a seat that is waiting to come back). (5) New `forfeit` message (needs your confirmation; it only touches the sender's own match) so the queue-load
+      bots (and a future "leave match" button) end a match at once instead of closing a socket the
+      window now holds. (6) Storage: the id is saved through `PersistenceController` (new `guest`
+      store), which is in memory until IndexedDB lands, so it survives a reconnect but not a page
+      reload yet. (7) The client still ends the Duel as lost on a dropped socket; automatic rejoin
+      is a follow-up.
+
 - [ ] **Per-address connection cap and `X-Forwarded-For` (SCRUM-432 critic, 2026-11-12) — owner /
       security, not introduced by this branch.** `ClientAddress.resolve` (`apps/server/src/transport/`)
       takes the FIRST `X-Forwarded-For` entry when the peer is loopback. Behind `tailscale serve`

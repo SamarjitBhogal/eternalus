@@ -25,6 +25,18 @@ export class DuelQueue {
     this.starter.start(first, { connection, name });
   }
 
+  /** Whether `connection` is the waiting player. */
+  public isWaiting(connection: ClientConnection): boolean {
+    return this.waiting?.connection === connection;
+  }
+
+  /** Hands the waiting slot of `from` to `to` (a reconnect) and tells `to` it waits; does nothing if `from` is not waiting. */
+  public replace(from: ClientConnection, to: ClientConnection): void {
+    if (this.waiting?.connection !== from) return;
+    this.waiting = { connection: to, name: this.waiting.name };
+    to.send({ type: 'queue-waiting' });
+  }
+
   /** Removes `connection` if it waits; used by `queue-leave` and on disconnect. */
   public leave(connection: ClientConnection): void {
     if (this.waiting?.connection === connection) this.waiting = null;

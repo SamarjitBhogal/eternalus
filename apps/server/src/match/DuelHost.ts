@@ -76,6 +76,21 @@ export class DuelHost implements MatchStarter {
     this.matchByConnection.get(connection)?.leave(connection);
   }
 
+  /** The other seat's connection in `connection`'s match, or `null`. */
+  public rivalOf(connection: ClientConnection): ClientConnection | null {
+    const match = this.matchByConnection.get(connection);
+    return match?.connections.find((seat) => seat !== connection) ?? null;
+  }
+
+  /** A reconnect: `to` takes over `from`'s seat; does nothing if `from` has no match. */
+  public replace(from: ClientConnection, to: ClientConnection): void {
+    const match = this.matchByConnection.get(from);
+    if (match === undefined) return;
+    this.matchByConnection.delete(from);
+    this.matchByConnection.set(to, match);
+    match.replaceSeat(from, to);
+  }
+
   private forget(match: DuelMatch): void {
     match.connections.forEach((connection) => this.matchByConnection.delete(connection));
     this.options.logger.log(

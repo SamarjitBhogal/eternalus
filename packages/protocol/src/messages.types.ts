@@ -11,14 +11,22 @@ export type MatchEndReason = 'finished' | 'opponent-left';
  * server stamps the actor from the connection, so no message names an entity.
  */
 export type ClientMessage =
-  /** Joins the Duel queue as `name` (1 to `MAX_PLAYER_NAME_LENGTH` letters, digits, spaces, `_`, `-`). */
-  | { readonly type: 'queue-join'; readonly name: string }
+  /**
+   * Joins the Duel queue as `name` (1 to `MAX_PLAYER_NAME_LENGTH` letters, digits, spaces, `_`, `-`).
+   * `guestId` is the id from an earlier `welcome`: if the server still holds that guest's queue
+   * slot or seat (reconnect window), this connection takes it over.
+   */
+  | { readonly type: 'queue-join'; readonly name: string; readonly guestId?: string }
   | { readonly type: 'queue-leave' }
+  /** Gives up the Duel in progress; the opponent is told `opponent-left` at once. */
+  | { readonly type: 'forfeit' }
   /** The player's per-tick input; `seq` rises by one per message and is echoed in `state`. */
   | { readonly type: 'intent'; readonly seq: number; readonly intent: InputIntent };
 
 /** Every message the server sends: plain JSON, discriminated by `type`. */
 export type ServerMessage =
+  /** The guest id of this connection, sent on connect and again when a held guest is resumed; the client keeps it. */
+  | { readonly type: 'welcome'; readonly guestId: string }
   | { readonly type: 'queue-waiting' }
   /**
    * Two players were paired; `legendId` is the receiver's own Legend. `seed` is the match's map

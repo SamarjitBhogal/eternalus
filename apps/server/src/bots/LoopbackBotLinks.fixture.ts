@@ -4,6 +4,8 @@ import { DuelGateway } from '../gateway/DuelGateway';
 import { TokenBucket } from '../limits/TokenBucket';
 import { DuelHost } from '../match/DuelHost';
 import { FakeDuelSimulation } from '../match/FakeDuelSimulation';
+import { PresenceBook } from '../presence/PresenceBook';
+import { MAX_HELD_GUESTS, RECONNECT_WINDOW_MS } from '../presence/PresenceBook.constants';
 import { DuelQueue } from '../queue/DuelQueue';
 import { FakeClock } from '../time/FakeClock';
 import { FakeTickScheduler } from '../time/FakeTickScheduler';
@@ -32,20 +34,31 @@ export class LoopbackBotLinks implements BotLinkFactory {
   private readonly gateway: DuelGateway;
 
   public constructor() {
+    const scheduler = new FakeTickScheduler();
     const host = new DuelHost({
       factory: { create: () => new FakeDuelSimulation() },
-      scheduler: new FakeTickScheduler(),
+      scheduler,
       tickIntervalMs: 33,
       versusMs: 0,
       logger: new MemoryLogger(),
     });
     const clock = new FakeClock();
-    this.gateway = new DuelGateway(
-      new ClientMessageParser(),
-      new DuelQueue(host),
+    const queue = new DuelQueue(host);
+    let guests = 0;
+    this.gateway = new DuelGateway({
+      parser: new ClientMessageParser(),
+      queue,
       host,
-      () => new TokenBucket(clock, 1000, 1),
-    );
+      presence: new PresenceBook({
+        queue,
+        host,
+        scheduler,
+        reconnectWindowMs: RECONNECT_WINDOW_MS,
+        maxHeldGuests: MAX_HELD_GUESTS,
+        newGuestId: () => `00000000-0000-4000-8000-${String((guests += 1)).padStart(12, '0')}`,
+      }),
+      newLimiter: () => new TokenBucket(clock, 1000, 1),
+    });
   }
 
   /** Opens a connection; the bot's `onOpen` fires on the next `pump()`. */

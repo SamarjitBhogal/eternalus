@@ -26,6 +26,7 @@ Package-specific rules. The root `AGENTS.md` still applies. Design: ADR 0016
 | `limits/`    | `TokenBucket`                                                           |
 | `logging/`   | `StdoutLogger`, core's `Logger` port as JSON lines                      |
 | `match/`     | `DuelHost`, `DuelMatch`, the `DuelSimulation` port and its core adapter |
+| `presence/`  | `PresenceBook`: guest ids, presence counts, the reconnect window        |
 | `queue/`     | `DuelQueue`: first-come pairing                                         |
 | `time/`      | The `Clock` and `TickScheduler` ports, their system adapters and fakes  |
 | `transport/` | The `ClientConnection` port, the `ws` adapters and a fake               |
@@ -45,6 +46,6 @@ core's `MatchPathfinderFactory` on the map regenerated from `match-found.seed`. 
 - Coverage thresholds (85%) live in `vitest.config.ts` and only go up.
 
 Queue load: `npm run duel:bots -- --mode queue --players 100 --rounds 5 --stagger 0` joins the queue
-`--rounds` times per bot (the light seat forfeits, the dark seat waits for `match-ended`, both
+`--rounds` times per bot (the light seat sends `forfeit`, the dark seat waits for `match-ended`, both
 reconnect), prints time-to-match p50/p99/max and queue size, and fails on a lost or duplicated
 player. It spreads sockets over `X-Forwarded-For` addresses so the per-address cap does not stop it.

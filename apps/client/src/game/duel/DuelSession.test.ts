@@ -4,11 +4,15 @@ import { describe, expect, it } from 'vitest';
 import { FakeMessageTransport } from '../engine/net/FakeMessageTransport';
 import { snapshotAtTick } from './__fixtures__/snapshots';
 import { DuelSession } from './DuelSession';
-import type { DuelResult, DuelSessionHandlers } from './DuelSession.types';
+import type { DuelResult, DuelSessionHandlers, GuestIdStore } from './DuelSession.types';
 
 const INTENT = { move: { x: 1, y: 0 }, aim: null, triggered: [] };
 
-function setUp() {
+const GUEST_ID = '123e4567-e89b-42d3-a456-426614174000';
+
+function setUp(
+  guestIds: GuestIdStore = { load: () => Promise.resolve(null), save: () => Promise.resolve() },
+) {
   const transports: FakeMessageTransport[] = [];
   const calls: string[] = [];
   const paired: string[] = [];
@@ -29,6 +33,7 @@ function setUp() {
       transports.push(transport);
       return transport;
     },
+    guestIds,
     logger,
     handlers,
   });
@@ -253,5 +258,47 @@ describe('DuelSession', () => {
     expect(() => session.legendId).toThrow('match-found');
     expect(() => session.mapSeed).toThrow('match-found');
     expect(() => session.latestSnapshot()).toThrow('no snapshot');
+  });
+
+  it('keeps the guest id the server issues and sends it on the next join', () => {
+    const saved: string[] = [];
+    const { session, transport, transports } = setUp({
+      load: () => Promise.resolve(null),
+      save: (id) => {
+        saved.push(id);
+        return Promise.resolve();
+      },
+    });
+    session.join('Ana');
+    expect(transport().sent).toEqual([{ type: 'queue-join', name: 'Ana' }]);
+    transport().receive({ type: 'welcome', guestId: GUEST_ID });
+    expect(saved).toEqual([GUEST_ID]);
+    session.close();
+    session.join('Ana');
+    expect(transports[1]?.sent).toEqual([{ type: 'queue-join', name: 'Ana', guestId: GUEST_ID }]);
+  });
+
+  it('sends the guest id saved by an earlier visit', async () => {
+    const { session, transport } = setUp({
+      load: () => Promise.resolve(GUEST_ID),
+      save: () => Promise.resolve(),
+    });
+    await Promise.resolve();
+    session.join('Ana');
+    expect(transport().sent).toEqual([{ type: 'queue-join', name: 'Ana', guestId: GUEST_ID }]);
+  });
+
+  it('still joins when storage fails to read or to write', async () => {
+    const { session, transport, logger } = setUp({
+      load: () => Promise.reject(new Error('denied')),
+      save: () => Promise.reject(new Error('denied')),
+    });
+    await Promise.resolve();
+    session.join('Ana');
+    transport().receive({ type: 'welcome', guestId: GUEST_ID });
+    await Promise.resolve();
+    expect(transport().sent).toEqual([{ type: 'queue-join', name: 'Ana' }]);
+    expect(session.status).toBe('queued');
+    expect(logger.records.length).toBeGreaterThanOrEqual(2);
   });
 });
