@@ -2251,6 +2251,19 @@ Reply inline (`Decision: …`).
       `control-immune` (stun-lock risk once a producer reapplies stun), `onExpire` (crushed →
       slowed), bleed ignoring shields, concussion's aether cost, blind's vision cut, a max-health
       stat for the FR-029 aura. Confirm or correct.
+      (6) 2026-10-29 (`feat/status-control-immune`): `polarity`, `controlClass`, `onExpire` and
+      `control-immune` are built from 05 §8 and more-abilities §7. Kinds mapped to `controlClass`:
+      hard control → `hard` (stun, crushed), control-lite → `soft` (concussion, blind), the rest
+      `none`. `control-immune` refuses every `hard` status, so it also blocks `crushed`, which §7's
+      kind calls hard control but its immunity list (stun, knockup, pulled, taunted) leaves out;
+      and no `control-immune` follows `crushed`. Confirm or correct.
+      Answered 2026-10-30 (DEC-99 (a)): `crushed` is hard control; `control-immune` blocks it. It
+      also follows it (derived from more-abilities §7, not asked).
+      (7) Still open after (6): a `stun` refreshed before it runs out (`refresh` restarts its
+      timer) never expires, so `control-immune` never follows; a producer that reapplies every
+      second keeps a 2 s stun up forever. What guarantees the recovery window: a hard status
+      cannot be refreshed while active, a cap on total stun time, or something else?
+      Answered 2026-10-30 (DEC-99 (b)): refresh stays; a re-applied stun restarts its timer.
   - Decision: DEC-40 to DEC-42 (`docs/reference/game-design/13-owner-decisions-log.md`,
     2026-10-16, PR #36). DEC-42's open questions are their own item (PR #36).
 - [ ] **MS-28 — plan every AI-driven enemy in the minion plan (changes DEC-47's split).**
@@ -2286,6 +2299,22 @@ Reply inline (`Decision: …`).
       `onHit`, heavy and parry wait for the ability framework (4.2). SCRUM-287's "validation
       rejects a class-locked weapon in the wrong loadout" waits for `WeaponAllowedRule`
       (SCRUM-290).
+- [x] **ObjectPool — pooled `GameEvents` payloads (SCRUM-427, branch `feat/object-pool`).** The
+      `ObjectPool` base is built in `utils/` (phase 1 plan, sprint 1.2: "pool resets fields on
+      acquire and nulls references on release"). The item's "done when" (high-frequency
+      `GameEvents` payloads come from the pool) is **not wired**, because it clashes with how
+      events work today: `GameEvents.emit` keeps every payload in the recent-events ring buffer
+      (diagnostic reports), and handlers (`GameState`, `ProgressionSystem`, the client via
+      `Simulation.on`) may keep a payload after `emit` returns. A recycled payload would silently
+      change those records. Options: (1) pool only projectiles first (04 §11), and keep event
+      payloads unpooled until profiling shows GC pauses (NFR-023 soak); (2) pool payloads and copy
+      them into the ring buffer, with a rule that handlers never keep a payload. Which one?
+      Option (1) also means updating 02-coding-principles (Object Pool row) and the phase 1 plan
+      item, which list event payloads as pooled; 04 §11 already names only projectiles.
+      Option (2) also needs a snapshot rule: payloads hold nested references (`DamageSource`,
+      `memberIds`, `bars`), so the ring buffer would need a deep or immutable copy, not a shallow one.
+  - Answered 2026-10-30 (DEC-94): option (1), pool projectiles only; payloads stay unpooled until
+    profiling shows GC pauses.
 - [ ] **PR #30 — schedule occupancy-driven cutaways** (owner: Gurshaan). A building's roof opens
       today only when it is clicked; no plan item has the roof open while a unit is inside it.
       The PR #30 notes said "Phase 2 sprints 2.1 and 2.4", but those sprints are the Structure
