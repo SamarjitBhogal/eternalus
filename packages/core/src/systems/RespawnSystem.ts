@@ -17,7 +17,9 @@ import type { System, SystemContext } from './System.types';
  * `DeathSystem` then removes as it does any dead entity; and once `respawnTicks` have passed it
  * rebuilds the same Legend (same id, level, XP and caps, same bot controller) at its team's
  * Stronghold with full health and aether, and announces `legend-respawned`. A match without a
- * Stronghold for the team queues nothing: its Legends stay gone, as before.
+ * Stronghold for the team queues nothing: its Legends stay gone, as before. A returning Legend
+ * ignores the unit caps (they gate new spawns only), so a team can briefly hold one Unit over
+ * `limits.maxUnitsPerTeam` until a unit dies.
  */
 export class RespawnSystem implements System {
   public readonly name = 'respawn';

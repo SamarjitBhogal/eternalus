@@ -12,6 +12,7 @@ import { loadWeapons } from '../content/weapons/loadWeapons';
 import { NullLogger } from '../diagnostics/NullLogger';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
+import { Unit } from '../entities/Unit';
 import { WorldMap } from '../map/WorldMap';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { GameState } from '../state/GameState';
@@ -211,20 +212,41 @@ describe('RespawnSystem', () => {
     expect(next.id).toBe('entity-2');
   });
 
-  it('gives the same hash for the same run, and a different one while a Legend waits', () => {
-    const run = (): { whileWaiting: number; atEnd: number } => {
-      const match = setUp();
-      const legend = addLegend(match);
-      kill(match, legend.id);
-      match.step();
-      const whileWaiting = new StateHasher().hash(match.state);
-      for (let tick = 0; tick <= DELAY; tick += 1) match.step();
-      return { whileWaiting, atEnd: new StateHasher().hash(match.state) };
-    };
+  it('hashes the waiting queue: the same tick and entities, only the queue differs', () => {
+    const [empty, waiting] = [setUp(), setUp()];
+    waiting.state.respawns.add({
+      entityId: 'entity-1',
+      kind: 'warrior',
+      definitionId: 'warrior',
+      team: 'dark',
+      xp: 0,
+      level: 1,
+      healthMax: 100,
+      aetherMax: 50,
+      returnsAtTick: DELAY,
+    });
 
-    const [first, second] = [run(), run()];
+    expect(new StateHasher().hash(waiting.state)).not.toBe(new StateHasher().hash(empty.state));
+  });
 
-    expect(second).toEqual(first);
-    expect(first.whileWaiting).not.toBe(first.atEnd);
+  it('brings a Legend back even when its team filled the unit cap meanwhile', () => {
+    const match = setUp();
+    const legend = addLegend(match);
+    kill(match, legend.id);
+    match.step();
+    const { maxUnitsPerTeam } = CONFIG.limits;
+    for (let count = 0; count < maxUnitsPerTeam; count += 1) {
+      match.state.entities.add(
+        match.factory.create('light-mob', 'training-dummy', {
+          position: { x: 5, y: 5 },
+          team: 'dark',
+        }),
+      );
+    }
+
+    for (let tick = 0; tick < DELAY; tick += 1) match.step();
+
+    expect(match.state.entities.has(legend.id)).toBe(true);
+    expect(match.state.entities.countOnTeam('dark', Unit)).toBe(maxUnitsPerTeam + 1);
   });
 });

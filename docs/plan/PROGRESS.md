@@ -871,7 +871,7 @@ The example below is fenced so it is not read as a real entry.
 
 - What was done: replaced PR #25's approach, at sholtzman's request. #25 turned the
   character-select timeout off; now the timeout is back to the design's behaviour and character
-  select starts with the Warrior selected (`PLACEHOLDER_PRESELECTED_CLASS_ID` in
+  select starts with the Warrior selected (``npm run check`→`EXIT=0`: core "Tests 1340 passed (1340)"; client "Tests 1819 passed (1819)"; "Documentation check passed."_PRESELECTED_CLASS_ID` in
   `game/content/placeholderSetup.ts`, `TODO(sam)`), so the 60 s countdown leads into
   `pre-launch` and the match instead of cancelling. `CharacterSelectState` takes
   `preselectedClassId` (selected on entry through the normal `select-class` path, so it is
@@ -6322,4 +6322,10 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 
 - What was done: merged `phase/3-sprint-3-work` (3dc9e908, after #51 and #52) into this branch because #100 was CONFLICTING. Only `docs/plan/PROGRESS.md` conflicted; both sides' entries are kept. No feature code changed. No force push.
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 1339 passed (1339)"; client "Tests 1818 passed (1818)"; "Documentation check passed."
+- Next step: reviewer approval; the team merges.
+
+### 2026-11-13 — Phase 3 / sprint 3: Copilot review fixes — fix/legend-respawn (PR #100) — Claude Code
+
+- What was done: three Copilot comments, all valid. (1) Unit cap: a returning Legend is not counted while it waits, so spawns can fill its slot. Decision (simplest, in `INBOX.md`): a returning Legend ignores the caps, which gate new spawns only; documented on `RespawnSystem`, pinned by a new test (it passes before and after, since it records the behaviour). (2) Client: `PlayerCommands` kept `lastMove` and `attackTargetId` while the rebuilt Legend had no movement or target, so held input stayed idle; it now resets both when the Legend reappears in the snapshot (new test fails without it). (3) The hash test now compares two states at the same tick with the same entities, only the queue differs (fails when the queue is left out of `StateHasher`).
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1340 passed (1340)"; client "Tests 1819 passed (1819)"; "Documentation check passed."
 - Next step: reviewer approval; the team merges.

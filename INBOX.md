@@ -32,6 +32,10 @@ Reply inline (`Decision: …`).
       `RespawnSystem` is registered only when the horde options exist, though it only needs a
       factory (decouple later); (e) it polls `Health.isDead` instead of subscribing to
       `entity-died` (interim).
+      (4) PR #100 review: a returning Legend **ignores the unit caps** (they gate new spawns
+      only), so its team can briefly hold one Unit over `limits.maxUnitsPerTeam` until a unit
+      dies; nothing reserves its slot during the 10 s. Confirm, or say that the slot must be
+      reserved (horde, guard and developer spawns would count the waiting Legends).
 
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on
