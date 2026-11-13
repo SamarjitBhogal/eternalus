@@ -18,6 +18,7 @@
     "dev": "npm run dev -w @eternalus/client",
     "build": "tsc -b && npm run build --workspaces --if-present",
     "check": "npm run format:check && npm run check:no-js && npm run lint && npm run typecheck && npm run knip && npm run test:coverage && npm run build && npm run docs:check",
+    "bench": "node scripts/bench/hordes.mjs",
     "check:quick": "npm run check:no-js && npm run typecheck && npm run lint",
     "check:no-js": "node scripts/checks/no-js.mjs",
     "test": "npm run test --workspaces --if-present",
@@ -41,6 +42,7 @@
     "knip": "6.38.0",
     "prettier": "3.9.9",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.70.1"
+    "typescript-eslint": "8.70.1",
+    "vite": "8.3.1"
   }
 }

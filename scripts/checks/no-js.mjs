@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * Fails when a JavaScript file is tracked or staged. The codebase is TypeScript only; the
- * allowlist holds the tooling that must stay plain JS (ESLint config, zero-dependency Node scripts).
+ * allowlist holds the tooling that must stay plain JS (ESLint config, Node scripts: zero-dependency
+ * except the tick bench, which loads core through Vite).
  */
 import { execFileSync } from 'node:child_process';
 

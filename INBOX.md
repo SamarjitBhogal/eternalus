@@ -16,6 +16,17 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Tick time misses the 8 ms target (2026-11-07, `chore/minion-perf-check`) — for your
+      information, one question.** The new `npm run bench` (a 3-lane match with 144, then 290 mobs
+      per team, 10 bot Legends per team, hordes fighting) measured p50 2 to 3 ms but p95 8 to 12 ms,
+      max up to 26 ms, against the plan's p95 ≤ 8 ms. Pathing plus steering is about 0.6 ms p95,
+      inside its 2.5 ms share, and the spikes are the bot laners' decisions (both from a one-off probe,
+      not committed) (0.45 ms each on average,
+      up to 6.9 ms), which run A\* again on every blocked decision (minion plan §3, M8 stand-in);
+      the bot path cache is being built next on its own branch. `maxDecisionsPerTick` 96 held:
+      about 88 decisions were due per tick at the cap (DEC-181). Question: the targets name "the
+      reference dev laptop"; which machine is it? These numbers are from an AMD Ryzen AI 9 HX 370.
+
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on
       every map feature, so `map/strongholdRing.ts` checks at run time that a Stronghold has it
@@ -34,6 +45,27 @@ Reply inline (`Decision: …`).
       `map/WorldMap.ts` (a follow-up PR; no drive-by refactor here). (3) Doc 15's invariant
       catalogue does not list `NoMapObjectOverlapInvariant` (`no-map-object-overlap`); a
       doc-gardening fix. Approve which to schedule, or drop them.
+
+- [ ] **Minion plan MVP gaps (1): zone level-up numbers (2026-11-06, refreshed 2026-11-12,
+      PR #81).** Zone level-up (reference 02, MVP) is designed in architecture 07 §7 and now
+      scheduled as minion plan phase M10; `CaptureSystem` is on the phase branch (PR #64), so
+      only your answers block it. (a) Which zones count: the Cathedral only, or all three central
+      zones (OQ-47)? (b) The numbers: `balancing.md`'s `Recommendation:` is +1 minion level for
+      that lane's newly spawned minions after 90 s of continuous ownership, at most 3, all lost
+      with the zone. Approve, or give others. (c) How it is built (CodeRabbit on PR #81): the
+      plan proposes applying the level from content by a handler of `CaptureSystem`'s ownership
+      events instead of 07 §7's status effect (one minion level with two sources, DEC-168 B3),
+      and removing it on the same tick the zone is lost. Approve both, or keep 07 §7's status
+      effect and say when the level is removed.
+
+- [ ] **Minion plan MVP gaps (2): checkpoint defenders sign-off (2026-11-06, refreshed
+      2026-11-12, PR #81).** M6b (checkpoint defenders) no longer waits for PR #64, which merged
+      on 2026-11-08. Sign off the recommendations of the "Minion M6" item (1) below (the leash is
+      the zone's radius; defenders at an unowned point are neutral), and M6b can start.
+
+- [ ] **Minion plan MVP gaps (3): who owns the zone cooldown reduction (2026-11-06, PR #81).**
+      The zone's cooldown reduction (FR-041, 07 §7) is Legend-side, not minion work, and no plan
+      schedules it. Who owns it?
 
 - [ ] **Minion follow-ups: 12 better-than-design items for the tidy PR (critics A and B on
       `fix/minion-stack-followups`, 2026-11-05; DEC-219 (d)) — sign-off per item.** Built on that
@@ -102,11 +134,10 @@ Reply inline (`Decision: …`).
     objective" check is approved.
 
 - [ ] **Minion M6 (`feat/minion-m6-camps-defenders`, overnight 2026-10-30) — camps built,
-      checkpoint defenders blocked.** (1) **Blocked:** checkpoint defenders need `CaptureSystem`,
-      which is only on PR #64 (`feat/capture-points-v2`, open; #49 was closed), not yet on the
-      phase branch. Once #64 is on the phase branch,
-      defenders are a guard plan per checkpoint asked for by `CaptureSystem`. Recommendations
-      ready for then: the leash is the zone's radius; defenders at an unowned point are neutral
+      checkpoint defenders wait on your sign-off.** (1) **Sign-off needed:** checkpoint defenders
+      need `CaptureSystem`, which is on the phase branch since PR #64 merged (2026-11-08; #49 was
+      closed). Defenders are a guard plan per checkpoint asked for by `CaptureSystem`.
+      Recommendations: the leash is the zone's radius; defenders at an unowned point are neutral
       (doc 18 §10, item 4). (2) **Camps as built:** inactive until the countdown ends; light 4
       light, medium 2 medium + 2 light, heavy 1 heavy + 2 medium (balancing.md); 6 m leash; the
       whole group respawns 120 s after its last mob dies, and `camp-cleared` fires then. A camp

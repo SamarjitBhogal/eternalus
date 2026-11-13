@@ -4,7 +4,7 @@ description: Testing while the game is running - the Invariant interface and the
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-04
+last-reviewed: 2026-11-07
 tags: [architecture, diagnostics, invariants, logging, performance, replays, soak-tests, testing]
 paths: ['packages/core/src/diagnostics/**']
 related:
@@ -515,6 +515,13 @@ core's `Simulation.exportReplay()` and `recentContext()` (with the log of extern
 the replay checkpoints; `531cd90`), the client's writer (`ErrorReporter`, `ReportWriter` and its
 adapters, the dev-server plugin; `6db5713`), and the crash popup and the `ErrorBoundary`
 (`226e2c6`).
+
+The headless bench is built as `npm run bench` (`scripts/bench/hordes.mjs`, 2026-11-07): it loads
+core through Vite's module runner, fills a generated match with lane hordes and every bot Legend,
+and prints p50, p95 and max tick time; CI runs it without a time assertion, and it fails only when
+it cannot fill a case. It times whole ticks only; per-system times wait for the `Profiler` port (§6),
+which is still not built. It measures lane hordes with bot Legends, not the Phase 1 plan's
+300-dummy case, whose p95 ≤ 4 ms target is still unmeasured.
 
 ## Related
 
