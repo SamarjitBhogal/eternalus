@@ -8,6 +8,8 @@ import type { AuthoredStatusEffect } from './statusEffects.types';
 export const ENRAGED = {
   id: 'enraged',
   displayName: 'Enraged',
+  polarity: 'buff',
+  controlClass: 'none',
   durationSeconds: null,
   stacking: 'intensity',
   maxStacks: 'structures-per-lane',
@@ -18,4 +20,5 @@ export const ENRAGED = {
   ],
   flags: [],
   periodic: null,
+  onExpire: [],
 } as const satisfies AuthoredStatusEffect;
