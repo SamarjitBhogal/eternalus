@@ -5,10 +5,11 @@ import { buttonNames, renderWithStore, sessionAt } from '../testStore';
 import { MainMenuScreen } from './MainMenuScreen';
 
 describe('MainMenuScreen', () => {
-  it('lists the five options in order, with the profile under its content name', () => {
+  it('lists the six options in order, with the profile under its content name', () => {
     const html = renderWithStore(<MainMenuScreen />, { session: sessionAt('menu') });
     expect(buttonNames(html)).toEqual([
       STRINGS.menu.startMatch,
+      STRINGS.menu.duelOnline,
       STRINGS.menu.loadouts,
       'Chronicle',
       STRINGS.menu.settings,

@@ -33,6 +33,8 @@ export class FakeSessionContext implements SessionContext {
     clearMatchSetup: [],
     selection: [],
     recordSelection: [],
+    joinDuelQueue: [],
+    leaveDuelQueue: [],
     lockIn: [],
     prepareWorld: [],
     createMatch: [],
@@ -89,6 +91,16 @@ export class FakeSessionContext implements SessionContext {
   public recordSelection(selection: ClassSelection | null): void {
     this.record('recordSelection', [selection]);
     this.picked = selection;
+  }
+
+  /** Records the call. */
+  public joinDuelQueue(): void {
+    this.record('joinDuelQueue', []);
+  }
+
+  /** Records the call. */
+  public leaveDuelQueue(): void {
+    this.record('leaveDuelQueue', []);
   }
 
   /** Records the call. */
