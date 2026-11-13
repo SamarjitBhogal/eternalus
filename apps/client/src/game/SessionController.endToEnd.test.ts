@@ -1,5 +1,5 @@
 import { createDefaultGameConfig, NullLogger, Simulation } from '@eternalus/core';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { BridgeEventMap } from '../bridge/events';
 import { isSelectableClass } from '../bridge/selectionRules';
@@ -41,6 +41,12 @@ const viewport = (canvas: FakeViewportCanvas): MatchViewport => ({
 });
 
 describe('SessionController with the real match, end to end', () => {
+  // The tick-throws test spies on `Simulation.prototype.step`; the config's `restoreMocks` does not
+  // undo it, so a test that ran after it saw every tick throw (the result then hung on test order).
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   /** One build of the real `Match` and `MatchHost`, with every browser part a fake. */
   type Build = {
     readonly match: Match;
