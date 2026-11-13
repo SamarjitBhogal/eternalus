@@ -16,6 +16,10 @@ Package-specific rules. The root `AGENTS.md` still applies. Design: ADR 0016
 - Run with `npm run build -w @eternalus/server` then `npm run start -w @eternalus/server`;
   `DUEL_HOST` / `DUEL_PORT` choose the listener (default `127.0.0.1:8787`); `/health` answers on
   `127.0.0.1:8788` (`OPS_PORT` changes it, so a second instance can run beside one).
+- The container image: `docker build -f apps/server/Dockerfile -t eternalus-duel .` from the
+  repository root (two stages: bundle, then the bundle plus `ws`; listens on `0.0.0.0:8787`,
+  `HEALTHCHECK` on the container's own `/health`). TLS belongs to the platform in front of it.
+- Without a container: the systemd user units and the install steps in `apps/server/deploy/`.
 
 ## Folders
 

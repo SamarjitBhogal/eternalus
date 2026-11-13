@@ -16,6 +16,20 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Server image and the connection cap behind a platform proxy (SCRUM-404, 2026-11-13) — owner
+      decision before deploying.** `apps/server/Dockerfile` builds the Duel server image (tested:
+      it runs, `HEALTHCHECK` is healthy and two bots finish a Duel against it). Open: (1)
+      `ClientAddress` reads `X-Forwarded-For` only when the peer is loopback (`tailscale serve`).
+      On Fly.io or Render the peer is the platform's proxy, not loopback, so every player would
+      share one address and the per-IP cap of 10 would limit the whole server to about 10
+      connections. Either add an environment switch that reads the forwarded address from the
+      platform's proxy (never from a directly reachable server) or raise the cap for that
+      deployment; this touches ADR 0016 point 7, so it is yours to choose. (2) The platform's
+      health check cannot reach `/health` (it listens on the container's loopback, `OPS_HOST`);
+      use a TCP check on the WebSocket port, or tell me to make `OPS_HOST` configurable. (3) TLS is
+      the platform's job; the client must be built with `VITE_DUEL_SERVER_URL=wss://<host>`. (4)
+      Which platform: see the comparison on SCRUM-404.
+
 - [ ] **Glicko-2 rating and skill-based pairing (SCRUM-431, 2026-11-13) — interim choices, owner to
       confirm or change.** (1) Storage: ratings and records live in memory by guest id
       (`PlayerRatings`); the server has no database, so a restart loses them, and a guest id only
