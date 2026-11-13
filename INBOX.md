@@ -41,7 +41,11 @@ Reply inline (`Decision: …`).
       only your answers block it. (a) Which zones count: the Cathedral only, or all three central
       zones (OQ-47)? (b) The numbers: `balancing.md`'s `Recommendation:` is +1 minion level for
       that lane's newly spawned minions after 90 s of continuous ownership, at most 3, all lost
-      with the zone. Approve, or give others.
+      with the zone. Approve, or give others. (c) How it is built (CodeRabbit on PR #81): the
+      plan proposes applying the level from content by a handler of `CaptureSystem`'s ownership
+      events instead of 07 §7's status effect (one minion level with two sources, DEC-168 B3),
+      and removing it on the same tick the zone is lost. Approve both, or keep 07 §7's status
+      effect and say when the level is removed.
 
 - [ ] **Minion plan MVP gaps (2): checkpoint defenders sign-off (2026-11-06, refreshed
       2026-11-12, PR #81).** M6b (checkpoint defenders) no longer waits for PR #64, which merged
@@ -2224,6 +2228,19 @@ Reply inline (`Decision: …`).
       `control-immune` (stun-lock risk once a producer reapplies stun), `onExpire` (crushed →
       slowed), bleed ignoring shields, concussion's aether cost, blind's vision cut, a max-health
       stat for the FR-029 aura. Confirm or correct.
+      (6) 2026-10-29 (`feat/status-control-immune`): `polarity`, `controlClass`, `onExpire` and
+      `control-immune` are built from 05 §8 and more-abilities §7. Kinds mapped to `controlClass`:
+      hard control → `hard` (stun, crushed), control-lite → `soft` (concussion, blind), the rest
+      `none`. `control-immune` refuses every `hard` status, so it also blocks `crushed`, which §7's
+      kind calls hard control but its immunity list (stun, knockup, pulled, taunted) leaves out;
+      and no `control-immune` follows `crushed`. Confirm or correct.
+      Answered 2026-10-30 (DEC-99 (a)): `crushed` is hard control; `control-immune` blocks it. It
+      also follows it (derived from more-abilities §7, not asked).
+      (7) Still open after (6): a `stun` refreshed before it runs out (`refresh` restarts its
+      timer) never expires, so `control-immune` never follows; a producer that reapplies every
+      second keeps a 2 s stun up forever. What guarantees the recovery window: a hard status
+      cannot be refreshed while active, a cap on total stun time, or something else?
+      Answered 2026-10-30 (DEC-99 (b)): refresh stays; a re-applied stun restarts its timer.
   - Decision: DEC-40 to DEC-42 (`docs/reference/game-design/13-owner-decisions-log.md`,
     2026-10-16, PR #36). DEC-42's open questions are their own item (PR #36).
 - [ ] **MS-28 — plan every AI-driven enemy in the minion plan (changes DEC-47's split).**
