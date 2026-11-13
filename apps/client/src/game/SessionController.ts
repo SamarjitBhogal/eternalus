@@ -67,6 +67,9 @@ export class SessionController {
         started: () => {
           this.transition('match-loading', null);
         },
+        opponentPresence: (graceMs) => {
+          deps.bus.emit('duel-opponent-presence', { graceMs });
+        },
         ended: (result) => {
           this.endDuel(result);
         },
@@ -112,6 +115,9 @@ export class SessionController {
       },
       leaveDuelQueue: () => {
         this.duel.leave();
+      },
+      forfeitDuel: () => {
+        this.duel.forfeit();
       },
       lockIn: () => {
         this.lockIn();

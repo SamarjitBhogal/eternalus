@@ -57,7 +57,7 @@ export type MenuRoute =
   | 'duel-versus';
 
 /** Overlays that can open over the match. */
-export type Overlay = 'pause' | 'settings';
+export type Overlay = 'pause' | 'settings' | 'leave-duel';
 
 /** Everything the UI can ask the game to do. Components emit these and never write the store. */
 export type UiIntent =
@@ -75,6 +75,8 @@ export type UiIntent =
   | { readonly kind: 'clear-class-selection' }
   | { readonly kind: 'cancel-match' }
   | { readonly kind: 'leave-match' }
+  /** Forfeit the online Duel in progress (the opponent wins) and return to the main menu. */
+  | { readonly kind: 'forfeit-duel' }
   | { readonly kind: 'open-overlay'; readonly overlay: Overlay }
   | { readonly kind: 'close-overlay' }
   | {
@@ -217,6 +219,8 @@ export type BridgeEventMap = {
   'duel-versus': DuelVersus;
   /** The Duel's scoreboard and countdown, on the HUD cadence; only in a Duel. */
   'duel-state': DuelHudState;
+  /** The Duel opponent's connection: `graceMs` is the reconnect window while they are away, `null` once connected. */
+  'duel-opponent-presence': { readonly graceMs: number | null };
   /** How a match ended, for the results screen. */
   'match-result': MatchResultSummary;
   /** The human Legend for the HUD, every 6 ticks (13 §5); `null` before it spawns. */

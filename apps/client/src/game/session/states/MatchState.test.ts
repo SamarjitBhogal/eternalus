@@ -108,6 +108,26 @@ describe('MatchState', () => {
     expect(context.calls.transition).toEqual([['menu']]);
   });
 
+  it('does not pause for the Duel leave confirmation: the server runs the match', () => {
+    const { context, handles, overlays, state } = setUp();
+    state.attachViewport(VIEWPORT, context);
+    state.handleIntent({ kind: 'open-overlay', overlay: 'leave-duel' }, context);
+    state.handleIntent({ kind: 'close-overlay' }, context);
+    expect(handles[0]?.pauses).toEqual([]);
+    expect(overlays).toEqual(['leave-duel', null]);
+  });
+
+  it('forfeits the Duel, then returns to the menu, on forfeit-duel', () => {
+    const order: string[] = [];
+    const context = new FakeSessionContext(order);
+    const state = new MatchState();
+    state.enter(context);
+    order.length = 0;
+    state.handleIntent({ kind: 'forfeit-duel' }, context);
+    expect(order).toEqual(['forfeitDuel', 'transition']);
+    expect(context.calls.transition).toEqual([['menu']]);
+  });
+
   it("gives the running match's evidence, and null without a match (ADR 0025 §3)", () => {
     const { context, handles, state } = setUp();
     expect(state.matchEvidence()).toBeNull();

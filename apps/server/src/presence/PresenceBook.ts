@@ -60,6 +60,12 @@ export class PresenceBook {
     if (other !== undefined && !other.isConnected) {
       this.drop(guest);
       this.drop(other);
+    } else {
+      rival?.send({
+        type: 'opponent-presence',
+        status: 'disconnected',
+        graceMs: this.options.reconnectWindowMs,
+      });
     }
   }
 
@@ -76,6 +82,7 @@ export class PresenceBook {
     if (own === undefined || guest === undefined || guest.isConnected) return false;
     if (this.stateOf(own) !== 'online') return false;
     const previous = guest.connection;
+    const rival = this.options.host.rivalOf(previous);
     guest.cancelDrop?.();
     guest.cancelDrop = null;
     this.options.host.replace(previous, connection);
@@ -86,6 +93,7 @@ export class PresenceBook {
     guest.isConnected = true;
     this.byConnection.set(connection, guest);
     connection.send({ type: 'welcome', guestId: guest.id });
+    rival?.send({ type: 'opponent-presence', status: 'reconnected' });
     return this.stateOf(guest) !== 'online';
   }
 

@@ -48,4 +48,14 @@ export type ServerMessage =
       readonly reason: MatchEndReason;
       readonly winner: PlayableTeam | null;
     }
+  /**
+   * The opponent's connection dropped (`disconnected`, `graceMs` is how long the server holds their
+   * seat) or came back (`reconnected`). If the window runs out, `match-ended` `opponent-left` follows.
+   */
+  | {
+      readonly type: 'opponent-presence';
+      readonly status: 'disconnected';
+      readonly graceMs: number;
+    }
+  | { readonly type: 'opponent-presence'; readonly status: 'reconnected' }
   | { readonly type: 'rejected'; readonly reason: RejectReason };

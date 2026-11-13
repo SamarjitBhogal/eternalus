@@ -115,6 +115,37 @@ describe('PresenceBook', () => {
     expect(a2.sentOfType('rejected')).toEqual([]);
   });
 
+  it('tells the opponent when a seat is held and when it is taken back', () => {
+    const { connect, guestIdOf, scheduler } = setup();
+    const [a, b] = [connect(), connect()];
+    const id = guestIdOf(a);
+    a.receive(join());
+    b.receive(join());
+    a.close();
+    expect(b.sentOfType('opponent-presence')).toEqual([
+      { type: 'opponent-presence', status: 'disconnected', graceMs: RECONNECT_WINDOW_MS },
+    ]);
+    connect().receive(join(id));
+    expect(b.sentOfType('opponent-presence')).toHaveLength(2);
+    expect(b.sentOfType('opponent-presence')[1]).toEqual({
+      type: 'opponent-presence',
+      status: 'reconnected',
+    });
+    scheduler.tick();
+    expect(b.sentOfType('match-ended')).toEqual([]);
+  });
+
+  it('adds no second opponent presence message when the window runs out: match-ended covers it', () => {
+    const { connect, scheduler } = setup();
+    const [a, b] = [connect(), connect()];
+    a.receive(join());
+    b.receive(join());
+    a.close();
+    scheduler.tick();
+    expect(b.sentOfType('opponent-presence')).toHaveLength(1);
+    expect(b.sentOfType('match-ended')).toMatchObject([{ reason: 'opponent-left' }]);
+  });
+
   it('drops a queued guest after the window: the id is then unknown', () => {
     const { connect, guestIdOf, presence, scheduler } = setup();
     const a = connect();

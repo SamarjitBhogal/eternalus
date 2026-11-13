@@ -10,6 +10,8 @@ describe('DuelVersusScreen', () => {
       match: { ...matchSlice.getInitialState(), versus: { own: 'Ana', opponent: 'Ben' } },
     });
 
-    expect(html.replace(/<!-- -->/g, '')).toContain('Ana VS Ben');
+    expect(html.replace(/<!-- -->/g, '')).toContain(
+      'Match found: Ana VS Ben. The match starts in a moment.',
+    );
   });
 });

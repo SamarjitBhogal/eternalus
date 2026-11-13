@@ -94,10 +94,18 @@ export const STRINGS = {
     /** The name the field starts with. */
     defaultName: 'Player',
   },
-  duelVersus: { title: 'Duel online', versus: 'VS' },
+  duelVersus: {
+    title: 'Duel online',
+    versus: 'VS',
+    matchFound: 'Match found:',
+    startsSoon: 'The match starts in a moment.',
+  },
   duelQueue: {
     title: 'Duel online',
     searching: 'Searching for an opponent…',
+    explanation:
+      'You are in the Duel queue. We are looking for an opponent with a similar rating; this usually takes a moment.',
+    waitedLabel: 'Time in queue',
     cancel: 'Cancel',
   },
   results: {
@@ -159,6 +167,13 @@ export const STRINGS = {
     renderScale: 'Render scale',
     reduceMotion: 'Reduce motion',
     colourBlindMode: 'Colour-blind mode',
+  },
+  /** The confirmation before leaving an online Duel: leaving forfeits, the server keeps running the match. */
+  duelLeave: {
+    title: 'Leave the Duel?',
+    text: 'If you leave, you forfeit the match and your opponent wins. The match does not pause.',
+    stay: 'Stay',
+    leave: 'Leave',
   },
   pause: { title: 'Paused', resume: 'Resume', settings: 'Settings', leave: 'Leave match' },
   /** The match viewport; the explorer labels show only with the developer flag (13 §4, DEC-32). */
@@ -231,6 +246,10 @@ export const STRINGS = {
     /** A roster tile's name: who, then their class once known ("You, Magus"). */
     allyTile: (who: string, className: string | null): string =>
       className === null ? who : `${who}, ${className}`,
+  },
+  duelOpponent: {
+    lostConnection: (seconds: number): string =>
+      `Your opponent lost connection. Waiting up to ${String(seconds)} s for them to come back…`,
   },
   /** The match HUD (62:231); slot names reuse `ACTION_LABELS`, gameplay names are content. */
   hud: {

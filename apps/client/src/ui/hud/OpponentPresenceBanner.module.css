@@ -1,0 +1,12 @@
+.banner {
+  position: absolute;
+  left: 50%;
+  top: calc(260 * var(--hud-u));
+  margin: 0;
+  transform: translateX(-50%);
+  pointer-events: none;
+  color: var(--hud-text);
+  font-family: var(--font-game);
+  font-size: max(calc(22 * var(--hud-u)), var(--text-min));
+  white-space: nowrap;
+}

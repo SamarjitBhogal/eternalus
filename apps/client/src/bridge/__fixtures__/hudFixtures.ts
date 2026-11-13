@@ -154,6 +154,7 @@ export function figmaHudState(): Pick<RootState, 'hud' | 'match'> {
       result: null,
       versus: null,
       duel: null,
+      opponentGraceMs: null,
     },
   };
 }

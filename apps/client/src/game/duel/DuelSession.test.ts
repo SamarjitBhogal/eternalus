@@ -24,6 +24,7 @@ function setUp(
       calls.push('ended');
       results.push(result);
     },
+    opponentPresence: (graceMs) => calls.push(`opponent:${String(graceMs)}`),
     lost: () => calls.push('lost'),
   };
   const logger = new MemoryLogger();
@@ -194,6 +195,27 @@ describe('DuelSession', () => {
     expect(session.status).toBe('idle');
   });
 
+  it('tracks the opponent dropping and coming back', () => {
+    const { session, transport, calls, pair } = setUp();
+    pair();
+    expect(session.opponentDisconnectedGraceMs).toBeNull();
+
+    transport().receive({ type: 'opponent-presence', status: 'disconnected', graceMs: 10_000 });
+    expect(session.opponentDisconnectedGraceMs).toBe(10_000);
+    transport().receive({ type: 'opponent-presence', status: 'reconnected' });
+
+    expect(session.opponentDisconnectedGraceMs).toBeNull();
+    expect(calls).toEqual(['started', 'opponent:10000', 'opponent:null']);
+  });
+
+  it('ignores opponent presence outside a match', () => {
+    const { session, transport, calls } = setUp();
+    session.join('Ana');
+    transport().receive({ type: 'opponent-presence', status: 'disconnected', graceMs: 10_000 });
+    expect(session.opponentDisconnectedGraceMs).toBeNull();
+    expect(calls).toEqual([]);
+  });
+
   it('reports a lost connection while queued', () => {
     const { session, transport, calls } = setUp();
     session.join('Ana');
@@ -228,6 +250,27 @@ describe('DuelSession', () => {
     expect(transport().hasEnded).toBe(true);
     expect(session.status).toBe('idle');
     expect(calls).toEqual([]);
+  });
+
+  it('sends forfeit and closes when forfeiting a paired Duel', () => {
+    const { session, transport, pair } = setUp();
+    pair();
+
+    session.forfeit();
+
+    expect(transport().sent).toEqual([{ type: 'queue-join', name: 'Ana' }, { type: 'forfeit' }]);
+    expect(transport().hasEnded).toBe(true);
+    expect(session.status).toBe('idle');
+  });
+
+  it('only closes, sending no forfeit, when forfeiting while queued', () => {
+    const { session, transport } = setUp();
+    session.join('Ana');
+
+    session.forfeit();
+
+    expect(transport().sent).toEqual([{ type: 'queue-join', name: 'Ana' }]);
+    expect(session.status).toBe('idle');
   });
 
   it('closes without queue-leave once matched, and can join again', () => {

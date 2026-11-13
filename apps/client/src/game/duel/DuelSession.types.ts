@@ -27,6 +27,11 @@ export type DuelSessionHandlers = {
   readonly started: () => void;
   /** The server ended the match, before or after the first snapshot. */
   readonly ended: (result: DuelResult) => void;
+  /**
+   * The opponent's connection dropped (`graceMs`: how long the server holds their seat) or came
+   * back (`null`). If the window runs out, `ended` follows with `opponent-left`.
+   */
+  readonly opponentPresence: (graceMs: number | null) => void;
   /** The connection ended before the match did. */
   readonly lost: () => void;
 };

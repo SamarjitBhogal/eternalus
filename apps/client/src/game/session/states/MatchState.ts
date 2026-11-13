@@ -67,15 +67,22 @@ export class MatchState implements SessionState {
     context.bus.emit('overlay', { overlay: null });
   }
 
-  /** `open-overlay` pauses, `close-overlay` resumes (single player), `leave-match` → `menu`. */
+  /**
+   * `open-overlay` pauses and `close-overlay` resumes (single player), except the Duel's
+   * `leave-duel` dialog, which never pauses: the server runs the match. `leave-match` → `menu`;
+   * `forfeit-duel` forfeits the Duel, then → `menu`.
+   */
   public handleIntent(intent: UiIntent, context: SessionContext): void {
     if (intent.kind === 'open-overlay') {
       context.bus.emit('overlay', { overlay: intent.overlay });
-      this.setPaused(true);
+      this.setPaused(intent.overlay !== 'leave-duel');
     } else if (intent.kind === 'close-overlay') {
       context.bus.emit('overlay', { overlay: null });
       this.setPaused(false);
     } else if (intent.kind === 'leave-match') {
+      context.transition('menu');
+    } else if (intent.kind === 'forfeit-duel') {
+      context.forfeitDuel();
       context.transition('menu');
     }
   }

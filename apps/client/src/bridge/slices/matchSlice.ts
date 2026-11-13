@@ -14,6 +14,8 @@ type MatchSliceState = {
   readonly versus: DuelVersus | null;
   /** The Duel's scoreboard and countdown; `null` outside a Duel. */
   readonly duel: DuelHudState | null;
+  /** The reconnect window of a disconnected Duel opponent, in ms; `null` while they are connected. */
+  readonly opponentGraceMs: number | null;
 };
 
 const initialState: MatchSliceState = {
@@ -23,6 +25,7 @@ const initialState: MatchSliceState = {
   result: null,
   versus: null,
   duel: null,
+  opponentGraceMs: null,
 };
 
 /** Match state the UI shows, fed by `match-clock`, `structure-state` and `capture-state`. */
@@ -55,6 +58,10 @@ export const matchSlice = createSlice({
       ...state,
       duel: action.payload,
     }),
+    opponentPresenceChanged: (state, action: PayloadAction<number | null>) => ({
+      ...state,
+      opponentGraceMs: action.payload,
+    }),
     reset: () => initialState,
   },
   selectors: {
@@ -64,5 +71,11 @@ export const matchSlice = createSlice({
     selectCapturePoints: (state) => state.capturePoints,
     selectVersus: (state) => state.versus,
     selectDuel: (state) => state.duel,
+    /**
+     * Whether this is an online Duel: from `match-found` (the VERSUS names) on, before the first
+     * `duel-state`, so Escape asks to leave the Duel instead of opening the pause menu.
+     */
+    selectIsDuel: (state) => state.versus !== null || state.duel !== null,
+    selectOpponentGraceMs: (state) => state.opponentGraceMs,
   },
 });

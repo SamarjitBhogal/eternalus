@@ -41,6 +41,27 @@ describe('matchSlice', () => {
     expect(matchSlice.selectors.selectDuel({ match })).toBe(duel);
   });
 
+  it('knows a Duel from match-found on, before its first scoreboard', () => {
+    const outside = matchSlice.getInitialState();
+    const found = matchSlice.reducer(
+      undefined,
+      matchSlice.actions.versusChanged({ own: 'A', opponent: 'B' }),
+    );
+    const scored = matchSlice.reducer(
+      undefined,
+      matchSlice.actions.duelChanged({
+        ownKills: 0,
+        opponentKills: 0,
+        killTarget: 10,
+        countdown: 3,
+      }),
+    );
+
+    expect(matchSlice.selectors.selectIsDuel({ match: outside })).toBe(false);
+    expect(matchSlice.selectors.selectIsDuel({ match: found })).toBe(true);
+    expect(matchSlice.selectors.selectIsDuel({ match: scored })).toBe(true);
+  });
+
   it('stores the result, a draw included', () => {
     const won = matchSlice.reducer(
       undefined,
@@ -62,6 +83,13 @@ describe('matchSlice', () => {
     });
   });
 
+  it("stores the disconnected opponent's reconnect window and clears it on reconnect", () => {
+    let match = matchSlice.reducer(undefined, matchSlice.actions.opponentPresenceChanged(10_000));
+    expect(matchSlice.selectors.selectOpponentGraceMs({ match })).toBe(10_000);
+    match = matchSlice.reducer(match, matchSlice.actions.opponentPresenceChanged(null));
+    expect(matchSlice.selectors.selectOpponentGraceMs({ match })).toBeNull();
+  });
+
   it('resets to the initial state', () => {
     const { structures } = figmaHudState().match;
     const match = matchSlice.reducer(undefined, structuresChanged(structures));
@@ -72,6 +100,7 @@ describe('matchSlice', () => {
       result: null,
       versus: null,
       duel: null,
+      opponentGraceMs: null,
     });
   });
 });
