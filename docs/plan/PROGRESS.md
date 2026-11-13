@@ -6579,3 +6579,18 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: full `npm run check` exit 0
   (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-3.log`).
 - Next step: pre-PR gate; open the PR after #85 merges into phase/3.
+
+### 2026-11-12 — Phase 3 / content durations at load (DEC-241): pre-PR critic — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: the `architecture-reviewer` critic read `18c50e9d..131f5008`: no blockers. Built
+  its better-than-design item 1: `loadAggroRules`, `loadStuckDetection`, `loadMinionVeterancy`
+  and `loadGuardPlans` now reject a time that is negative or not finite, through one helper
+  (`content/assertValidSeconds.ts`), as `loadSpawnWaves` already did for waves. The four new
+  tests failed first ("expected function to throw an error, but it didn't"). The loaders and
+  `ai.types.ts` now cite architecture 03 §8 (the rule) instead of §11. Rejected item 2 (derive
+  the loaded types with a mapped type): it hides the per-field TSDoc for about 60 lines saved.
+  Not changed: the same §11 citation in `loadStatusEffects`, `loadWeapons` and
+  `loadDefaultContent` (not in this branch's diff).
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-4.log`).
+- Next step: open the PR after #85 merges into phase/3.

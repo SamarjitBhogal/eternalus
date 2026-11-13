@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { ContentValidationError } from '../../ContentValidationError';
 import { AGGRO_RULES } from './aggroRules';
 import { LANE_MINION_AGGRO } from './laneMinion';
 import { loadAggroRules } from './loadAggroRules';
@@ -39,5 +40,22 @@ describe('loadAggroRules', () => {
       aggroCooldownTicks: 15,
     });
     expect(Object.keys(loadAggroRules(30))).toEqual(Object.keys(AGGRO_RULES));
+  });
+
+  it('rejects a grace or a cooldown that is negative or not a number, naming each rule', () => {
+    expect(() =>
+      loadAggroRules(30, {
+        odd: {
+          ...LANE_MINION_AGGRO,
+          id: 'odd',
+          leashGraceSeconds: -1,
+          aggroCooldownSeconds: Number.NaN,
+        },
+      }),
+    ).toThrow(
+      new ContentValidationError(
+        'Invalid aggro rules: odd leashGraceSeconds is -1 s; odd aggroCooldownSeconds is NaN s',
+      ),
+    );
   });
 });

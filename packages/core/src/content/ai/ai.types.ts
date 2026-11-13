@@ -106,7 +106,7 @@ type AuthoredAggroRule = AggroRuleBase & {
 
 /**
  * An aggro rule as loaded (`loadAggroRules`): the fields `LeashBehaviour` reads for minions and
- * guards alike, with the durations converted to ticks once, at load (architecture 03 §11).
+ * guards alike, with the durations converted to ticks once, at load (architecture 03 §8).
  */
 export type AggroRuleDefinition = AggroRuleBase & {
   /** `leashGraceSeconds` in ticks; 0 drops the target at once. */

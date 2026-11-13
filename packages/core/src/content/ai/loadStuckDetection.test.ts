@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { ContentValidationError } from '../ContentValidationError';
 import { loadStuckDetection } from './loadStuckDetection';
 import { STUCK_DETECTION } from './stuckDetection';
 
@@ -19,5 +20,14 @@ describe('loadStuckDetection', () => {
       15,
     );
     expect(loadStuckDetection(30, { ...STUCK_DETECTION, windowSeconds: 0 }).windowTicks).toBe(0);
+  });
+
+  it('rejects a window that is negative or not a number', () => {
+    expect(() => loadStuckDetection(30, { ...STUCK_DETECTION, windowSeconds: -1 })).toThrow(
+      ContentValidationError,
+    );
+    expect(() => loadStuckDetection(30, { ...STUCK_DETECTION, windowSeconds: Number.NaN })).toThrow(
+      'Invalid stuck detection: windowSeconds is NaN s',
+    );
   });
 });

@@ -5,7 +5,7 @@ import type { AuthoredSpawnWave, SpawnWaveDefinition } from './structures.types'
 
 /**
  * Loads the horde waves: the first wave's time and the interval from seconds to ticks, once
- * (architecture 03 §11, as `loadStatusEffects` does for statuses), rounded with no one-tick floor
+ * (architecture 03 §8, as `loadStatusEffects` does for statuses), rounded with no one-tick floor
  * so a first wave at 0 s goes out when the countdown ends.
  *
  * @param tickRate - Ticks per second (`GameConfig.tickRate`).

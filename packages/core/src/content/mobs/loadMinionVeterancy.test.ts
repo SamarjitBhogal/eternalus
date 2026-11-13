@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { ContentValidationError } from '../ContentValidationError';
 import { loadMinionVeterancy } from './loadMinionVeterancy';
 import { MINION_VETERANCY } from './minionVeterancy';
 
@@ -28,5 +29,16 @@ describe('loadMinionVeterancy', () => {
 
     expect(every(0.51)).toBe(15);
     expect(every(0)).toBe(1);
+  });
+
+  it('rejects an aura period that is negative or not a number', () => {
+    const withEvery = (everySeconds: number) => () =>
+      loadMinionVeterancy(30, {
+        ...MINION_VETERANCY,
+        aura: { ...MINION_VETERANCY.aura, everySeconds },
+      });
+
+    expect(withEvery(-0.5)).toThrow(ContentValidationError);
+    expect(withEvery(Number.NaN)).toThrow('Invalid minion veterancy: aura everySeconds is NaN s');
   });
 });
