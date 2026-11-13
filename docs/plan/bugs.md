@@ -1,0 +1,49 @@
+---
+title: Bug tracker
+description: The overview of known bugs in Eternalus, one row per bug linked to its Jira issue under the Bugs epic (SCRUM-433); read this before picking up a bug fix or to see what is broken right now.
+audience: [humans, agents]
+status: active
+owner: SamarjitBhogal
+last-reviewed: 2026-11-12
+tags: [plan, bugs, jira]
+related: ['docs/plan/PROGRESS.md', 'docs/plan/README.md', 'INBOX.md']
+---
+
+# Bug tracker
+
+## Overview
+
+Jira is the source of truth for each bug: its details, steps to reproduce, assignee and history.
+This page gives the short overview so you can see everything that is open at a glance; agents
+cannot read Jira, so the table is what they work from.
+
+- **Epic:** [SCRUM-433 – Epic 11 – Bugs](https://comp7082-eternalus.atlassian.net/browse/SCRUM-433)
+- **Board:** [SCRUM backlog](https://comp7082-eternalus.atlassian.net/jira/software/projects/SCRUM/boards/1/backlog)
+
+## How to add a bug
+
+1. Create a **Task** in Jira project SCRUM. Set its parent to SCRUM-433 and add the label `bug`.
+   The project has no Bug issue type.
+2. Add a row to the table below. Use the next `BUG-n` ID and link the Jira key.
+3. Before filing, check the plan: work that a phase doc, plan item or DEC row already schedules
+   is not a bug. If part of the report is scheduled, name that item in Notes and keep only what
+   is wrong outside it.
+4. A fix that needs a product decision (a new number, a design change) gets an `INBOX.md`
+   question; link it from Notes. Agents never decide it.
+5. When the status changes, change Jira first; the row follows in the same PR as the fix. Once
+   the bug is fixed, set the status to `Fixed` and put the PR in Notes. Keep the row: the table is
+   the history of bugs.
+
+Status values: `Open`, `In progress`, `Fixed`, `Won't fix`.
+
+## Bugs
+
+| ID    | Jira                                                                   | Title                                                    | Area           | Status | Notes                                                                                                                                                                                                                                  |
+| ----- | ---------------------------------------------------------------------- | -------------------------------------------------------- | -------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| BUG-1 | [SCRUM-434](https://comp7082-eternalus.atlassian.net/browse/SCRUM-434) | Units show no health bar, so attacks look like they miss | client / views | Fixed  | PR #89 (DEC-195): a unit's bar shows once it has fought, until it dies.                                                                                                                                                                |
+| BUG-2 | [SCRUM-435](https://comp7082-eternalus.atlassian.net/browse/SCRUM-435) | Interior walls use wall-segment health (2,000 HP)        | core / content | Open   | Reported as "player attack is weak". Attack numbers match the spec; every `'wall'` map object uses the WallSegment value. No spec gives interior walls their own health: owner question in `INBOX.md` ("BUG-2: interior wall health"). |
+| BUG-3 | [SCRUM-436](https://comp7082-eternalus.atlassian.net/browse/SCRUM-436) | Minions do not attack obstacles or props                 | core / ai      | Open   | A design change request, not a defect: a stuck unit paths around the obstacle (DEC-193). Owner question in `INBOX.md` ("BUG-3: minions attack obstacles").                                                                             |
+| BUG-4 | [SCRUM-437](https://comp7082-eternalus.atlassian.net/browse/SCRUM-437) | Developer menu not implemented (FR-096 to FR-099)        | client         | Open   | Scheduled: Phase 5, "complete developer menu" ([plan README](README.md)). Free camera (Ctrl+Shift+F3) and wheel zoom work. Teleport is in no requirement: raise it as a feature request.                                               |
+| BUG-5 | [SCRUM-438](https://comp7082-eternalus.atlassian.net/browse/SCRUM-438) | Bound key actions do nothing                             | client / input | Open   | Open outside any plan: zoom `=`/`-`, sprint, interact. Scheduled elsewhere: minimap M (DEC-147, Phase 5 sprint 5.4), perf overlay (Phase 5, "Invariant and perf overlays"), turret control (MVP cut line, DEC-07), F1 (BUG-4).         |
+| BUG-6 | [SCRUM-439](https://comp7082-eternalus.atlassian.net/browse/SCRUM-439) | A dead Legend never respawns, so the match stalls        | core           | Open   | Scheduled: GL-12 (`feat/legend-respawn`, DEC-80, FR-051). Dropped kill XP for a dead Legend is the documented interim until GL-12 (Phase 4 plan). Relates to SCRUM-178.                                                                |
+| BUG-7 | [SCRUM-440](https://comp7082-eternalus.atlassian.net/browse/SCRUM-440) | Structures draw no health bar of their own               | client / views | Open   | Deferred to the structure-views task (DEC-195 (4)). Structures do have health; the Stronghold palace and gates keep their own (DEC-217).                                                                                               |
