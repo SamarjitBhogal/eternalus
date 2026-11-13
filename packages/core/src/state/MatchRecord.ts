@@ -104,6 +104,18 @@ export class MatchRecord implements MatchState {
     this.humanId = legendId;
   }
 
+  /**
+   * Moves the human seat (sim mode, FR-099) to `legendId`, or to nobody (`null`). Called by
+   * `DevSetControllerHandler` only, after the match is built; a move to the current seat is a bug
+   * and throws.
+   */
+  public reseatHuman(legendId: EntityId | null): void {
+    if (legendId === this.humanId) {
+      throw new Error('The human is already seated there: reseat only moves humanLegendId.');
+    }
+    this.humanId = legendId;
+  }
+
   /** Moves the timeline cursor past the entry that is due. Called by the `MatchDirector` only. */
   public advanceTimeline(): void {
     this.cursor += 1;

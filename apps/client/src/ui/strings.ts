@@ -155,6 +155,10 @@ export const STRINGS = {
     removeEntity: 'Remove entity or Legend',
     entityId: 'Entity id',
     remove: 'Remove',
+    simMode: 'Sim mode',
+    legendId: 'Legend id',
+    removeHuman: 'Remove human',
+    takeControl: 'Take control',
   },
   pause: { title: 'Paused', resume: 'Resume', settings: 'Settings', leave: 'Leave match' },
   /** The match viewport; the explorer labels show only with the developer flag (13 §4, DEC-32). */

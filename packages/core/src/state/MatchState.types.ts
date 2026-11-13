@@ -32,8 +32,9 @@ export interface MatchState {
   readonly playerTeam: PlayableTeam;
   /**
    * The human's Legend; `null` in sim mode (11 §7: no human slot in the roster), and when the
-   * human slot names no Legend definition. Set once, only through `MatchRecord.seatHuman`, by
-   * `Simulation` from the roster's human slot, when the match is built.
+   * human slot names no Legend definition. Set through `MatchRecord.seatHuman` by `Simulation`
+   * from the roster's human slot, when the match is built (once); sim mode's `dev-set-controller`
+   * moves it afterwards through `MatchRecord.reseatHuman`.
    */
   readonly humanLegendId: EntityId | null;
   /**

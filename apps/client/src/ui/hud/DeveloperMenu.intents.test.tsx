@@ -23,6 +23,7 @@ function mount() {
     developerMenu: {
       ...developerMenuSlice.getInitialState(),
       isOpen: true,
+      humanLegendId: 'e1',
       mobs: [
         { id: 'light-minion', label: 'Light Minion' },
         { id: 'heavy-minion', label: 'Heavy Minion' },
@@ -185,6 +186,33 @@ describe('DeveloperMenu buttons', () => {
       {
         kind: 'dev-command',
         command: { type: 'dev-spawn-legend', team: 'light', definitionId: 'warrior' },
+      },
+    ]);
+  });
+
+  it('Remove human sends one dev-set-controller to the Rover for the human Legend', () => {
+    const { container, intents, stop } = mount();
+    click(container, 'Remove human');
+    stop();
+    expect(intents).toEqual([
+      {
+        kind: 'dev-command',
+        command: { type: 'dev-set-controller', entityId: 'e1', controllerId: 'rover' },
+      },
+    ]);
+  });
+
+  it('Take control sends one dev-set-controller to the human for the typed id, and nothing without one', () => {
+    const { container, intents, stop } = mount();
+    click(container, 'Take control');
+    expect(intents).toEqual([]);
+    type(container, 'Legend id', ' e7 ');
+    click(container, 'Take control');
+    stop();
+    expect(intents).toEqual([
+      {
+        kind: 'dev-command',
+        command: { type: 'dev-set-controller', entityId: 'e7', controllerId: 'human' },
       },
     ]);
   });

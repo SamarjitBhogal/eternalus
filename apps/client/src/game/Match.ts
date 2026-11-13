@@ -65,8 +65,6 @@ export class Match implements LoopTarget {
 
   private current: Snapshot;
 
-  private readonly playerId: EntityId | null;
-
   /** The developer menu's key, state and `dev-command` path (13 §4); inert unless enabled. */
   public readonly developerMenu: DeveloperMenuController;
 
@@ -122,27 +120,34 @@ export class Match implements LoopTarget {
       simulation,
       bus: bridge.bus,
       map,
+      humanLegendId: () => this.playerId,
     });
     this.current = simulation.snapshot();
     this.healthBars.observe(this.current);
-    this.playerId = this.current.match.humanLegendId;
     this.controls = new MatchViewControls({
       camera: this.camera,
       roofs: this.roofs,
       commands: this.commands,
+      playerId: () => this.playerId,
       miniMap: this.world.miniMap,
       onMiniMapShownChanged: (isShown) => {
         bridge.bus.emit('minimap-visibility', { isShown });
       },
-      playerId: this.playerId,
       snapshot: () => this.current,
     });
     camera.lookAt(this.playerEntity()?.transform ?? { x: map.width / 2, y: map.height / 2 });
   }
 
-  /** The id of the player's Legend; known from construction, `null` when its spawn failed. */
+  /**
+   * The id of the player's Legend: `null` when its spawn failed or, in sim mode, while the match
+   * has no human (`dev-set-controller` moves it, 13 §4); follows the latest snapshot.
+   */
   public get playerEntityId(): EntityId | null {
     return this.playerId;
+  }
+
+  private get playerId(): EntityId | null {
+    return this.current.match.humanLegendId;
   }
 
   /** The latest snapshot. */
@@ -190,7 +195,11 @@ export class Match implements LoopTarget {
     }
     this.deps.simulation.step();
     this.previous = this.current;
+    const hadHuman = this.playerId;
     this.current = this.deps.simulation.snapshot();
+    if (this.playerId !== hadHuman) {
+      this.developerMenu.publish();
+    }
     this.healthBars.observe(this.current);
     this.roofs.playerAt(this.livingPlayerAt());
     this.bridge.afterTick(this.current, this.playerId);
