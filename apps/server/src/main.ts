@@ -1,4 +1,4 @@
-import { randomInt } from 'node:crypto';
+import { randomInt, randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
 import { createDefaultGameConfig, DUEL_RULES, makeLogRecord } from '@eternalus/core';
 import { ClientMessageParser } from '@eternalus/protocol';
@@ -13,6 +13,9 @@ import { StdoutLogger } from './logging/StdoutLogger';
 import { CoreDuelSimulationFactory } from './match/CoreDuelSimulationFactory';
 import { DuelHost } from './match/DuelHost';
 import { DUEL_VERSUS_MS } from './match/DuelHost.constants';
+import { PresenceBook } from './presence/PresenceBook';
+import { MAX_HELD_GUESTS, RECONNECT_WINDOW_MS } from './presence/PresenceBook.constants';
+import { PlayerRatings } from './rating/PlayerRatings';
 import { DuelQueue } from './queue/DuelQueue';
 import { IntervalTickScheduler } from './time/IntervalTickScheduler';
 import { SystemClock } from './time/SystemClock';
@@ -28,20 +31,32 @@ const config = createDefaultGameConfig({
 });
 
 const scheduler = new IntervalTickScheduler();
+const ratings = new PlayerRatings();
 const host = new DuelHost({
   factory: new CoreDuelSimulationFactory(config, logger, () => randomInt(SEED_LIMIT)),
   scheduler,
   tickIntervalMs: MS_PER_SECOND / config.tickRate,
   versusMs: DUEL_VERSUS_MS,
   logger,
+  ratings,
 });
-const queue = new DuelQueue(host);
-const gateway = new DuelGateway(
-  new ClientMessageParser(),
+const queue = new DuelQueue({ starter: host, ratings, clock, scheduler });
+const presence = new PresenceBook({
   queue,
   host,
-  () => new TokenBucket(clock, MESSAGE_BURST, MESSAGES_PER_SECOND),
-);
+  ratings,
+  scheduler,
+  reconnectWindowMs: RECONNECT_WINDOW_MS,
+  maxHeldGuests: MAX_HELD_GUESTS,
+  newGuestId: randomUUID,
+});
+const gateway = new DuelGateway({
+  parser: new ClientMessageParser(),
+  queue,
+  host,
+  presence,
+  newLimiter: () => new TokenBucket(clock, MESSAGE_BURST, MESSAGES_PER_SECOND),
+});
 
 const heartbeat = new ConnectionHeartbeat(scheduler, HEARTBEAT_INTERVAL_MS);
 const stopHeartbeat = heartbeat.start();

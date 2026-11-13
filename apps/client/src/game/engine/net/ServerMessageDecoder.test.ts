@@ -7,6 +7,7 @@ const SNAPSHOT = { tick: 3, match: {}, entities: [] };
 
 describe('ServerMessageDecoder', () => {
   it.each([
+    [{ type: 'welcome', guestId: '123e4567-e89b-42d3-a456-426614174000' }],
     [{ type: 'queue-waiting' }],
     [
       {
@@ -30,6 +31,8 @@ describe('ServerMessageDecoder', () => {
     ['text'],
     ['[]'],
     ['{"type":"unknown"}'],
+    ['{"type":"welcome","guestId":"nope"}'],
+    ['{"type":"welcome"}'],
     [
       '{"type":"match-found","matchId":1,"seed":1,"team":"dark","legendId":"a","opponentName":"Ana"}',
     ],

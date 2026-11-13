@@ -17,6 +17,26 @@ describe('ClientMessageParser', () => {
     });
   });
 
+  it('keeps a well-formed guest id on a join and drops a malformed one', () => {
+    const guestId = '123e4567-e89b-42d3-a456-426614174000';
+    expect(parser.parse(JSON.stringify({ type: 'queue-join', name: 'Ana', guestId }))).toEqual({
+      ok: true,
+      message: { type: 'queue-join', name: 'Ana', guestId },
+    });
+    for (const bad of ['', 'abc', guestId.toUpperCase(), `${guestId}0`, 7, null]) {
+      expect(
+        parser.parse(JSON.stringify({ type: 'queue-join', name: 'Ana', guestId: bad })),
+      ).toEqual({
+        ok: true,
+        message: { type: 'queue-join', name: 'Ana' },
+      });
+    }
+  });
+
+  it('parses a forfeit', () => {
+    expect(parser.parse('{"type":"forfeit"}')).toEqual({ ok: true, message: { type: 'forfeit' } });
+  });
+
   it.each(['Ana', 'Ana Maria', 'Ñandú_2-b', 'x'.repeat(MAX_PLAYER_NAME_LENGTH)])(
     'accepts the name %j',
     (name) => {

@@ -14,6 +14,7 @@ function setup(versusMs = 0) {
   const scheduler = new FakeTickScheduler();
   const logger = new MemoryLogger();
   const ended: DuelMatch[] = [];
+  const winners: (string | null)[] = [];
   const match = new DuelMatch({
     id: 'duel-1',
     seats: { light, dark },
@@ -23,10 +24,13 @@ function setup(versusMs = 0) {
     versusMs,
     names: { light: 'Ana', dark: 'Ben' },
     logger,
-    onEnded: (m) => ended.push(m),
+    onEnded: (m, winner) => {
+      ended.push(m);
+      winners.push(winner);
+    },
   });
   match.start();
-  return { light, dark, simulation, scheduler, logger, ended, match };
+  return { light, dark, simulation, scheduler, logger, ended, winners, match };
 }
 
 describe('DuelMatch', () => {
@@ -80,7 +84,7 @@ describe('DuelMatch', () => {
   });
 
   it('ends with the winner when the simulation is over, and stops ticking', () => {
-    const { light, dark, simulation, scheduler, ended } = setup();
+    const { light, dark, simulation, scheduler, ended, winners } = setup();
     simulation.result = { winner: 'dark' };
     scheduler.tick();
     for (const c of [light, dark]) {
@@ -88,11 +92,12 @@ describe('DuelMatch', () => {
     }
     expect(scheduler.activeCount).toBe(0);
     expect(ended).toHaveLength(1);
+    expect(winners).toEqual(['dark']);
     expect([light.isClosed, dark.isClosed]).toEqual([true, true]);
   });
 
   it('ends with opponent-left for the one who stays', () => {
-    const { light, dark, scheduler, ended, match } = setup();
+    const { light, dark, scheduler, ended, winners, match } = setup();
     match.leave(light);
     match.leave(dark);
     expect(dark.sent.at(-1)).toEqual({
@@ -103,11 +108,12 @@ describe('DuelMatch', () => {
     expect(light.sentOfType('match-ended')).toEqual([]);
     expect(scheduler.activeCount).toBe(0);
     expect(ended).toHaveLength(1);
+    expect(winners).toEqual(['dark']); // the leaver loses
     match.submit(dark, 1, INTENT);
   });
 
   it('logs and ends instead of throwing when a step fails', () => {
-    const { light, simulation, scheduler, logger, ended } = setup();
+    const { light, simulation, scheduler, logger, ended, winners } = setup();
     simulation.failOnStep = true;
     expect(() => {
       scheduler.tick();
@@ -115,5 +121,6 @@ describe('DuelMatch', () => {
     expect(logger.records).toHaveLength(1);
     expect(light.sent.at(-1)).toMatchObject({ type: 'match-ended', winner: null });
     expect(ended).toHaveLength(1);
+    expect(winners).toEqual([null]);
   });
 });

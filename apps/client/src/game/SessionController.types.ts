@@ -18,6 +18,7 @@ import type { ResourceController } from '../data/resources/ResourceController';
 import type { DuelLink } from './duel/DuelLink.types';
 import type { CatalogueSource } from './content/CatalogueSource.types';
 import type { MessageTransport } from './engine/net/MessageTransport';
+import type { GuestIdStore } from './duel/DuelSession.types';
 import type { SessionClock } from './engine/time/SessionClock.types';
 import type { MatchCrash, PreparedWorld } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
@@ -218,6 +219,8 @@ export type SessionControllerDeps = {
   readonly createDuelMatch: DuelMatchFactory;
   /** A new, unconnected transport to the Duel server per Duel (`WebSocketTransport` in the app). */
   readonly createDuelTransport: () => MessageTransport;
+  /** Where the guest id the Duel server issued is kept (`PersistenceController` in the app). */
+  readonly guestIds: GuestIdStore;
   /** Where the session reports a match that could not start or a load bug. */
   readonly logger: Logger;
   /**

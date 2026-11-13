@@ -16,6 +16,57 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Server image and the connection cap behind a platform proxy (SCRUM-404, 2026-11-13) — owner
+      decision before deploying.** `apps/server/Dockerfile` builds the Duel server image (tested:
+      it runs, `HEALTHCHECK` is healthy and two bots finish a Duel against it). Open: (1)
+      `ClientAddress` reads `X-Forwarded-For` only when the peer is loopback (`tailscale serve`).
+      On Fly.io or Render the peer is the platform's proxy, not loopback, so every player would
+      share one address and the per-IP cap of 10 would limit the whole server to about 10
+      connections. Either add an environment switch that reads the forwarded address from the
+      platform's proxy (never from a directly reachable server) or raise the cap for that
+      deployment; this touches ADR 0016 point 7, so it is yours to choose. (2) The platform's
+      health check cannot reach `/health` (it listens on the container's loopback, `OPS_HOST`);
+      use a TCP check on the WebSocket port, or tell me to make `OPS_HOST` configurable. (3) TLS is
+      the platform's job; the client must be built with `VITE_DUEL_SERVER_URL=wss://<host>`. (4)
+      Which platform: see the comparison on SCRUM-404.
+
+- [ ] **Glicko-2 rating and skill-based pairing (SCRUM-431, 2026-11-13) — interim choices, owner to
+      confirm or change.** (1) Storage: ratings and records live in memory by guest id
+      (`PlayerRatings`); the server has no database, so a restart loses them, and a guest id only
+      survives a reconnect, not a new session: persistence needs plan question 35 (database) and
+      real accounts. (2) Rating period: each match is its own period (simple); a batch per day
+      would be closer to Glickman's advice. (3) Results: a leaver or disconnect-after-window counts
+      as a loss for the leaver and a win for the other; a draw (no winner, or a failed simulation
+      step) scores 0.5 and clears the streak. (4) Pairing: closest rating first; allowed gap =
+      100 + 25 per second of the longer waiter, unlimited after 30 s, checked on join and every 1 s
+      (all `// TUNE:` in `DuelQueue.constants.ts`). (5) Glicko-2 defaults 1500 / 350 / 0.06, tau 0.5
+      (`Glicko2.constants.ts`). (6) Nothing shows ratings to players and `match-found` does not carry
+      the opponent's rating (no protocol change); say if you want either. (7) The seat order is
+      still arrival order (question 45).
+      (8) Known limit: one person with two connections can farm wins when both seats are held (the
+      guest who disconnects second is dropped first), and a forfeit-then-return loop re-enters as a
+      fresh 1500 / 350; bounded because ratings are not shown. (9) Streak and matches are stored but
+      pairing does not use them yet (DEC-36 groundwork). (10) Plan question 47 (how long a player
+      waits) is answered by the 30 s timeout, pending your confirmation. (11) A held (disconnected)
+      queued guest can still be paired, and the sweeps make that likelier.
+
+- [ ] **Guest identity, presence and reconnect (SCRUM-430, 2026-11-13) — interim choices, owner to
+      confirm or change.** (1) Id: `randomUUID` (122 random bits), sent as `welcome`, a bearer token
+      never logged; a malformed or unknown id gets a fresh one. (2) Window: `RECONNECT_WINDOW_MS` =
+      10 s (`// TUNE:`), timed on the existing `TickScheduler` as a one-shot; plan question 44
+      (window, forfeit stats, deploys) is still yours. (3) Duplicate: only a HELD guest can be resumed; the id of a
+      still-connected guest is ignored (the new connection gets a fresh id), so nobody can kick a
+      live player. Abuse bounds (critic): at most `MAX_HELD_GUESTS` = 100 held guests (beyond it a
+      disconnect drops at once), and a match whose two seats are both held ends at once. (4) In-match: the new connection
+      takes the seat, is sent `match-found` again and then the next `state`; the opponent is not
+      told about the gap, and a queued guest whose slot is held can still be paired (the match
+      starts with a seat that is waiting to come back). (5) New `forfeit` message (needs your confirmation; it only touches the sender's own match) so the queue-load
+      bots (and a future "leave match" button) end a match at once instead of closing a socket the
+      window now holds. (6) Storage: the id is saved through `PersistenceController` (new `guest`
+      store), which is in memory until IndexedDB lands, so it survives a reconnect but not a page
+      reload yet. (7) The client still ends the Duel as lost on a dropped socket; automatic rejoin
+      is a follow-up.
+
 - [ ] **Per-address connection cap and `X-Forwarded-For` (SCRUM-432 critic, 2026-11-12) — owner /
       security, not introduced by this branch.** `ClientAddress.resolve` (`apps/server/src/transport/`)
       takes the FIRST `X-Forwarded-For` entry when the peer is loopback. Behind `tailscale serve`

@@ -1,4 +1,5 @@
 import type { DtoCheck } from './DtoCheck.types';
+import { isRecord } from './isRecord';
 
 /** The modifier keys a stored keyboard chord may name (`bridge/Binding.types.ts` `ChordModifier`). */
 const CHORD_MODIFIERS = ['Alt', 'Control', 'Meta', 'Shift'] as const;
@@ -39,10 +40,6 @@ const isBoolean: FieldCheck = (value) => typeof value === 'boolean';
 const isVolume: FieldCheck = (value) => typeof value === 'number' && value >= 0 && value <= 1;
 const isScale: FieldCheck = (value) =>
   typeof value === 'number' && Number.isFinite(value) && value > 0;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 function isModifierList(value: unknown): boolean {
   const known: readonly unknown[] = CHORD_MODIFIERS;

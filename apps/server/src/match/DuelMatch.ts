@@ -22,10 +22,12 @@ export class DuelMatch {
     dark: NO_ACK_SEQ,
   };
   private cancelTicks: CancelTask | null = null;
+  private readonly seats: Record<PlayableTeam, ClientConnection>;
   private hasEnded = false;
   private versusTicksLeft: number;
 
   public constructor(private readonly options: DuelMatchOptions) {
+    this.seats = { ...options.seats };
     this.versusTicksLeft = Math.ceil(options.versusMs / options.tickIntervalMs);
   }
 
@@ -36,28 +38,33 @@ export class DuelMatch {
 
   /** The seats' connections. */
   public get connections(): readonly ClientConnection[] {
-    return PLAYABLE_TEAMS.map((team) => this.options.seats[team]);
+    return PLAYABLE_TEAMS.map((team) => this.seats[team]);
   }
 
   /** Tells each player their seat and opponent, then starts ticking (stepping waits out the VERSUS screen). */
   public start(): void {
-    const { seats, simulation, scheduler, tickIntervalMs, id } = this.options;
+    const { scheduler, tickIntervalMs } = this.options;
     for (const team of PLAYABLE_TEAMS) {
       // A seat that closed while being told ended the match: no more messages, no tick task.
       if (this.hasEnded) return;
-      seats[team].send({
-        type: 'match-found',
-        matchId: id,
-        seed: simulation.seed,
-        team,
-        legendId: simulation.legendOf(team),
-        opponentName: this.options.names[opponentOf(team)],
-      });
+      this.sendFound(team);
     }
     if (this.hasEnded) return;
     this.cancelTicks = scheduler.every(tickIntervalMs, () => {
       this.tick();
     });
+  }
+
+  /**
+   * A reconnect: `to` takes over `from`'s seat and is told `match-found` again; the next tick
+   * sends it the state. Its intent numbering starts over.
+   */
+  public replaceSeat(from: ClientConnection, to: ClientConnection): void {
+    const team = this.seatOf(from);
+    if (this.hasEnded || team === null) return;
+    this.seats[team] = to;
+    this.ackSeq[team] = NO_ACK_SEQ;
+    this.sendFound(team);
   }
 
   /**
@@ -75,8 +82,25 @@ export class DuelMatch {
   public leave(connection: ClientConnection): void {
     const team = this.seatOf(connection);
     if (team === null) return;
-    const opponent = this.options.seats[opponentOf(team)];
-    this.end({ type: 'match-ended', reason: 'opponent-left', winner: null }, opponent);
+    const opponent = this.seats[opponentOf(team)];
+    // The protocol reports no winner; the rating counts the leaver as the loser.
+    this.end(
+      { type: 'match-ended', reason: 'opponent-left', winner: null },
+      opponentOf(team),
+      opponent,
+    );
+  }
+
+  private sendFound(team: PlayableTeam): void {
+    const { simulation, id, names } = this.options;
+    this.seats[team].send({
+      type: 'match-found',
+      matchId: id,
+      seed: simulation.seed,
+      team,
+      legendId: simulation.legendOf(team),
+      opponentName: names[opponentOf(team)],
+    });
   }
 
   private tick(): void {
@@ -102,7 +126,7 @@ export class DuelMatch {
     }
     const snapshot = simulation.snapshot();
     for (const team of PLAYABLE_TEAMS) {
-      this.options.seats[team].send({ type: 'state', snapshot, ackSeq: this.ackSeq[team] });
+      this.seats[team].send({ type: 'state', snapshot, ackSeq: this.ackSeq[team] });
     }
     // ponytail: a snapshot every tick (30/s); send every Nth tick, then deltas, once bandwidth shows.
     if (simulation.isOver()) this.finish(simulation.winner());
@@ -110,17 +134,21 @@ export class DuelMatch {
 
   private finish(winner: PlayableTeam | null): void {
     const reason: MatchEndReason = 'finished';
-    this.end({ type: 'match-ended', reason, winner }, ...this.connections);
+    this.end({ type: 'match-ended', reason, winner }, winner, ...this.connections);
   }
 
-  private end(message: ServerMessage, ...recipients: readonly ClientConnection[]): void {
+  private end(
+    message: ServerMessage,
+    winner: PlayableTeam | null,
+    ...recipients: readonly ClientConnection[]
+  ): void {
     if (this.hasEnded) return;
     this.hasEnded = true;
     this.cancelTicks?.();
     recipients.forEach((connection) => {
       connection.send(message);
     });
-    this.options.onEnded(this);
+    this.options.onEnded(this, winner);
     // The verdict is sent: close both sockets so none lingers (ADR 0016 point 7).
     this.connections.forEach((connection) => {
       connection.close();
@@ -128,6 +156,6 @@ export class DuelMatch {
   }
 
   private seatOf(connection: ClientConnection): PlayableTeam | null {
-    return PLAYABLE_TEAMS.find((team) => this.options.seats[team] === connection) ?? null;
+    return PLAYABLE_TEAMS.find((team) => this.seats[team] === connection) ?? null;
   }
 }

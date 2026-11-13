@@ -1,0 +1,11 @@
+# Keep the build context small: only the sources the server image builds from.
+**/node_modules
+**/dist
+**/coverage
+**/*.tsbuildinfo
+.git
+.worktrees
+docs
+logs
+apps/client
+INBOX.md

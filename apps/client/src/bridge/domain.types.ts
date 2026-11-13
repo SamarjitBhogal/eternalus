@@ -7,4 +7,4 @@
 
 export type { LegendClassId, PlayableTeam, Team } from '@eternalus/core';
 export type { MatchEndReason } from '@eternalus/protocol';
-export { MAX_PLAYER_NAME_LENGTH, PLAYER_NAME_PATTERN } from '@eternalus/protocol';
+export { GUEST_ID_PATTERN, MAX_PLAYER_NAME_LENGTH, PLAYER_NAME_PATTERN } from '@eternalus/protocol';

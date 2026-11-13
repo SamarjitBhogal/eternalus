@@ -6360,7 +6360,56 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 
 - What was done: merged `feat/duel-rules` into this branch (its base, updated after the sync with `phase/3-sprint-3-work` 3dc9e908) because #103 was CONFLICTING. Only the append-only logs conflicted; both sides' entries are kept. No feature code changed. No force push.
 - Checks run: `npm run check` → `EXIT=0`: Tests 1356 passed (1356);Tests 29 passed (29);Tests 1909 passed (1909);Tests 111 passed (111); "Documentation check passed."
+
 - Next step: reviewer approval; the team merges in stack order.
+
+### 2026-11-13 — Phase 3 / online Duel — feat/mm-guest-identity (SCRUM-430, stacked on #103) — claudiodh + Claude Code
+
+- What was done: guest identity, presence and a reconnect window. Protocol: server `welcome {guestId}` (a `randomUUID`, sent on connect and again on a resume), `queue-join` may carry `guestId` (a malformed one is dropped by the parser), new `forfeit` message. Server: `PresenceBook` gives each connection a guest id and reads its state (online, queued, in-match) from the queue and host; a queued or in-match guest that disconnects keeps its slot for `RECONNECT_WINDOW_MS` (10 s), a connection presenting the same id inside the window takes the slot over (`DuelQueue.replace`, `DuelHost.replace`, `DuelMatch.replaceSeat`: the client gets `welcome`, then `queue-waiting` or `match-found` and the next `state`), after it the guest leaves the queue or forfeits; only a held guest can be resumed (the id of a connected guest is ignored); at most `MAX_HELD_GUESTS` guests are held and a match with both seats held ends at once (gate fixes). `DuelGateway` takes an options object. The load bots' light seat now sends `forfeit` instead of only closing. Client: `DuelSession` keeps the id from `welcome` through `PersistenceController` (new `GuestRepository`, `guest` store) and sends it on every join; storage failure only means a new id.
+- Tests: `PresenceBook.test.ts` (same id and state back for queued and in-match, window expiry, malformed or unknown id, duplicate id, counts equal open connections), parser id and forfeit cases, gateway forfeit, `DuelSession` (id stored and sent, storage failure), `ServerMessageDecoder`, `PersistenceController` (guest id). Existing gateway disconnect tests now run out the window with `drop()`.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1340 passed (1340)"; protocol "Tests 31 passed (31)"; client "Tests 1917 passed (1917)"; server "Tests 124 passed (124)"; "Documentation check passed." Smoke: `npm run duel:bots -- --mode queue --players 20 --rounds 3 --stagger 0` against the production build: 30 matches, 0 lost, 0 duplicated.
+- Next step: the owner answers the INBOX item on guest identity (window length, duplicate rule, id storage); the client does not reconnect by itself yet (it ends the Duel as lost), a follow-up wires an automatic rejoin; the gate (critic, ponytail) runs before the PR.
+
+### 2026-11-13 — Phase 3 / sync — feat/mm-guest-identity (PR #104) — claudiodh + Claude Code
+
+- What was done: merged `feat/mm-queue-load` into this branch (its base, updated after the sync with `phase/3-sprint-3-work` 3dc9e908) because #104 was CONFLICTING. Only the append-only logs conflicted; both sides' entries are kept. No feature code changed. No force push.
+- Checks run: `npm run check` → `EXIT=0`: Tests 1356 passed (1356);Tests 31 passed (31);Tests 1917 passed (1917);Tests 124 passed (124); "Documentation check passed."
+
+- Next step: reviewer approval; the team merges in stack order.
+
+### 2026-11-13 — Phase 3 / online Duel — feat/mm-glicko (SCRUM-431, stacked on #104) — claudiodh + Claude Code
+
+- What was done: Glicko-2 rating and skill-based pairing. `Glicko2` (pure, Glickman's algorithm) and `PlayerRatings` (rating, deviation, volatility, wins, losses, streak, matches by guest id, in memory). `DuelMatch` reports the winner to `onEnded` (a leaver counts as the loser) and `DuelHost` records it. `DuelQueue` holds several waiters and pairs the closest ratings first: allowed gap = `BASE_RATING_GAP` (100) + `GAP_WIDENING_PER_SECOND` (25) x seconds the longer-waiting of the two has waited, unlimited after `QUEUE_TIMEOUT_MS` (30 s), re-checked on each join and every `QUEUE_SWEEP_MS` (1 s). The gateway passes the guest id (`PresenceBook.guestIdOf`). Queue-load check comment updated: bots are all default-rated, so "at most one waits" still holds.
+- Tests: `Glicko2.test.ts` (Glickman's worked example: 1464.05, 151.52, 0.05999; RD growth with no games), `PlayerRatings.test.ts`, `DuelQueue.test.ts` (close pairs first, 300 gap widens, everyone pairs within the timeout, leaver never paired, reconnect slot), `DuelHost.test.ts` and `DuelMatch.test.ts` (ratings after win and forfeit).
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1340 passed (1340)"; protocol "Tests 31 passed (31)"; client "Tests 1917 passed (1917)"; server "Tests 139 passed (139)"; "Documentation check passed."
+- Next step: the owner answers the INBOX item on ratings (persistence, rating period, gap numbers); the gate (critic, ponytail) runs before the PR.
+
+### 2026-11-13 — Phase 3 / sync — feat/mm-glicko (PR #105) — claudiodh + Claude Code
+
+- What was done: merged `feat/mm-guest-identity` into this branch (its base, updated after the sync with `phase/3-sprint-3-work` 3dc9e908) because #105 was CONFLICTING. Only the append-only logs conflicted; both sides' entries are kept. No feature code changed. No force push.
+- Checks run: `npm run check` → `EXIT=0`: Tests 1356 passed (1356);Tests 31 passed (31);Tests 1917 passed (1917);Tests 139 passed (139); "Documentation check passed."
+
+- Next step: reviewer approval; the team merges in stack order.
+
+### 2026-11-13 — Phase 3 / online Duel — chore/server-dockerfile (SCRUM-404, stacked on #105) — claudiodh + Claude Code
+
+- What was done: `apps/server/Dockerfile` and a root `.dockerignore` for the Duel server image. Two stages: the build stage runs `npm ci` for the server workspace and bundles the server with core and protocol into one file; the run stage copies only `ws` (the lockfile-pinned version from the build stage's `npm ci`, nothing fetched from the registry) beside that file, runs as the `node` user, listens on `0.0.0.0:8787` and has a `HEALTHCHECK` on the container's own `/health`. Added a line to `apps/server/AGENTS.md` and an INBOX item on the open deploy choices (the per-IP cap behind a platform proxy, the health check, TLS, the platform).
+- Verified: `docker build -f apps/server/Dockerfile -t eternalus-duel .` builds (333 MB), the container reports `healthy`, and `npm run duel:bots -- --url ws://127.0.0.1:18787` finishes a Duel against it ("every check passed"). Not deployed anywhere.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1340 passed (1340)"; protocol "Tests 31 passed (31)"; client "Tests 1917 passed (1917)"; server "Tests 139 passed (139)"; "Documentation check passed."
+- Next step: the owner picks the platform (SCRUM-404) and answers the INBOX item on the proxy and the cap; then deploy and run the load test (SCRUM-403).
+
+### 2026-11-13 — Phase 3 / sync — chore/server-dockerfile (PR #106) — claudiodh + Claude Code
+
+- What was done: merged `feat/mm-glicko` into this branch (its base, updated after the sync with `phase/3-sprint-3-work` 3dc9e908) because #106 was CONFLICTING. Only the append-only logs conflicted; both sides' entries are kept. No feature code changed. No force push.
+- Checks run: `npm run check` → `EXIT=0`: Tests 1356 passed (1356);Tests 31 passed (31);Tests 1917 passed (1917);Tests 139 passed (139); "Documentation check passed."
+- Next step: reviewer approval; the team merges in stack order.
+
+### 2026-11-13 — Phase 3 / online Duel — chore/server-deploy-units (SCRUM-404, stacked on #106) — claudiodh + Claude Code
+
+- What was done: `apps/server/deploy/` with the two systemd user units that run the Duel server and the static client on a Linux host without a container (`eternalus-duel.service`, `eternalus-client.service`) and a README with the layout, the first install, the redeploy, the check and the proxy note. The units use `%h` and no user, host or machine name; `ExecStart` points at `/usr/bin/node` and says it needs Node 24. A line in `apps/server/AGENTS.md`. No code change.
+- Verified: the same units, with a Node 24 path, run the Duel server and the client on the author's machine, and `npm run duel:bots` plays a Duel against it.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1356 passed (1356)"; protocol "Tests 31 passed (31)"; client "Tests 1917 passed (1917)"; server "Tests 139 passed (139)"; "Documentation check passed."
+- Next step: the owner picks the platform (SCRUM-404); this folder is the fallback for a self-hosted demo.
 
 ### 2026-11-13 — Phase 3 / online Duel — feat/duel-rules (Copilot review fix) — claudiodh + Claude Code
 

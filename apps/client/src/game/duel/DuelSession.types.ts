@@ -31,10 +31,19 @@ export type DuelSessionHandlers = {
   readonly lost: () => void;
 };
 
+/** Where the guest id the server issued is kept between visits (`PersistenceController` in the app). */
+export type GuestIdStore = {
+  /** The saved id, or `null`; may reject (storage unavailable). */
+  readonly load: () => Promise<string | null>;
+  /** Saves the id; may reject. */
+  readonly save: (guestId: string) => Promise<void>;
+};
+
 /** Everything `DuelSession` is built from. */
 export type DuelSessionDeps = {
   /** A new, unconnected transport per Duel (`WebSocketTransport` in the app). */
   readonly createTransport: () => MessageTransport;
+  readonly guestIds: GuestIdStore;
   readonly logger: Logger;
   readonly handlers: DuelSessionHandlers;
 };
