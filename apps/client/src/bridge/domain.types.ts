@@ -6,3 +6,4 @@
  */
 
 export type { LegendClassId, PlayableTeam, Team } from '@eternalus/core';
+export type { MatchEndReason } from '@eternalus/protocol';

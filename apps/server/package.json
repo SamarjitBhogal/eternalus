@@ -1,0 +1,25 @@
+{
+  "name": "@eternalus/server",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The online match server: hosts Duel and 10v10 matches.",
+  "type": "module",
+  "scripts": {
+    "build": "vite build --ssr src/main.ts --outDir dist",
+    "start": "node dist/main.js",
+    "bots": "vite build --ssr src/bots/main.ts --outDir dist/bots && node dist/bots/main.js",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@eternalus/core": "0.0.0",
+    "@eternalus/protocol": "0.0.0",
+    "ws": "8.22.2"
+  },
+  "devDependencies": {
+    "@types/ws": "8.18.2",
+    "@vitest/coverage-v8": "5.0.2",
+    "vite": "8.3.1",
+    "vitest": "5.0.2"
+  }
+}
