@@ -293,24 +293,26 @@ describe('MapGenerator', () => {
   );
 
   it('refuses forts on neighbouring lanes that would overlap near the gates (DEC-215 (1))', () => {
-    // Critic r2 probe: each lane keeps its own towers apart, but lanes 1 and 2 fan out from
-    // the Light gates close enough that their first BuffTower forts overlap in a 3200x900 world.
-    expect(() =>
-      generate({
-        worldWidth: 3200,
-        worldHeight: 900,
-        numLanes: 7,
-        spawnTowersPerLane: 1,
-        // 11, not 9: since a band widens by the fort box diagonal (not its larger side times
-        // root 2), 9 BuffTowers no longer reach the gates.
-        buffTowersPerLane: 11,
-      }),
-    ).toThrow(/forts of light-buff-tower-lane-1-0 and light-buff-tower-lane-2-0 over each other/);
+    // Critic r2 probe, moved off 7 lanes with 11 BuffTowers on a 3200x900 world: that config now
+    // breaks a lane band rule first (the widened buff band reaches the spawner band). Each lane
+    // keeps its own towers apart and the bands hold, but lanes 0 and 1 fan out from the Light
+    // gates close enough that their first BuffTower forts overlap.
+    expect(() => generate({ numLanes: 9, spawnTowersPerLane: 1, buffTowersPerLane: 4 })).toThrow(
+      /forts of light-buff-tower-lane-0-0 and light-buff-tower-lane-1-0 over each other/,
+    );
   });
 
   it('refuses a tower band widened past the end of its lane', () => {
     expect(() => generate({ numLanes: 3, spawnTowersPerLane: 1, buffTowersPerLane: 16 })).toThrow(
-      /map\.buffTowersPerLane = 16 put lane towers on lane-0 off the lane/,
+      /map\.buffTowersPerLane = 16 break a lane band rule on the widened tower bands of lane-0: .*laneBands\.buff must be a band inside \[0, 1\]/,
+    );
+  });
+
+  it('refuses a widened buff band that reaches the spawner band, naming the cause', () => {
+    // 1 SpawnerTower keeps its band, 6 BuffTowers widen theirs past it: without this rule the
+    // map is refused later, as forts over each other.
+    expect(() => generate({ numLanes: 3, spawnTowersPerLane: 1, buffTowersPerLane: 6 })).toThrow(
+      /map\.spawnTowersPerLane = 1 and map\.buffTowersPerLane = 6 break a lane band rule on the widened tower bands of lane-\d: laneBands\.spawner must lie ahead of laneBands\.buff \(map\.worldWidth = 1600, map\.worldHeight = 900\)/,
     );
   });
 
