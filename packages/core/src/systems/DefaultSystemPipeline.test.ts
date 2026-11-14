@@ -455,7 +455,7 @@ describe('DefaultSystemPipeline', () => {
     // holds at the blocked ground.
     { definitionId: 'gate', heading: { x: 0, y: 0 } },
   ])(
-    'gives steering the fort boxes of the structures standing when it is built, so a fallen tower keeps its box ($definitionId)',
+    'gives steering only the fort boxes of the hasFortBox structures standing when it is built, so a fallen tower keeps its box ($definitionId)',
     ({ definitionId, heading }) => {
       const logger = new MemoryLogger();
       const space = new SpaceIndex(BLOCKED_LANE_MAP.width, BLOCKED_LANE_MAP.height, 2);
@@ -531,7 +531,8 @@ describe('DefaultSystemPipeline', () => {
 
       pipeline.run({ state, logger });
 
-      // Inside the fort's box the chase closes in over the court's blocked ground (owner 2026-11-04).
+      // Inside a fort box the chase closes in over the blocked ground (owner 2026-11-04); with no
+      // box (the gate) it holds.
       expect(minion.getComponent(Movement).heading).toEqual(heading);
     },
   );
