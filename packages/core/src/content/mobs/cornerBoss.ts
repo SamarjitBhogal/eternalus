@@ -1,3 +1,4 @@
+import { CORNER_CAMP_RING } from '../structures/cornerCampRing';
 import type { MobDefinition } from './mobs.types';
 
 /**
@@ -14,7 +15,7 @@ export const CORNER_BOSS = {
   // 10 × refHealth ≈ 8,200 (refHealth ≈ 819 at the expected level 4).
   baseHealth: 8200,
   footprintRadius: 1.5, // TUNE: about twice a heavy camp mob
-  visionRadius: 26, // TUNE: as far as its aggro radius, so it sees the whole camp ring
+  visionRadius: CORNER_CAMP_RING.acquisitionRadius, // as far as its aggro: the whole ring
   movementStrategy: 'leashed-chase',
   controller: 'guard',
   aiProfile: 'corner-boss',

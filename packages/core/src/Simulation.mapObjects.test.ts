@@ -5,6 +5,7 @@ import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { DEFAULT_MAP_LAYOUT } from './content/maps/defaultMapLayout';
 import type { MapObject } from './content/maps/mapObjects.types';
 import type { MapDefinition, MapFeature } from './content/maps/maps.types';
+import { CORNER_CAMP_RING } from './content/structures/cornerCampRing';
 import { SPAWN_WAVES } from './content/structures/spawnWaves';
 import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { NullLogger } from './diagnostics/NullLogger';
@@ -355,7 +356,7 @@ describe('Simulation with a roster and map objects (as the client builds a match
   );
 
   // Game doc "Outer (Corner) Camps": every corner camp holds one boss from the start of the match,
-  // inside the camp's ring (the client draws it 45 m across), with every invariant clean.
+  // inside the camp's ring (`CORNER_CAMP_RING`, which the client draws), with every invariant clean.
   it.each([1, 2])('puts one corner boss in every corner camp from the start (seed %i)', (seed) => {
     const config = createDefaultGameConfig({ match: { countdownSeconds: 10 } });
     const map = new MapGenerator().generate(config, seed);
@@ -378,7 +379,7 @@ describe('Simulation with a roster and map objects (as the client builds a match
     const bosses = simulation
       .snapshot()
       .entities.filter(({ definitionId }) => definitionId === 'corner-boss');
-    const ringRadius = 45 / 2;
+    const ringRadius = CORNER_CAMP_RING.radius;
     const transforms = bosses.map(({ transform }) => transform);
     expect(transforms).not.toContain(null);
     const bossesPerCamp = cornerCamps.map(

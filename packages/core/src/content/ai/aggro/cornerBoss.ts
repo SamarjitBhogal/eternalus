@@ -1,3 +1,4 @@
+import { CORNER_CAMP_RING } from '../../structures/cornerCampRing';
 import type { AggroRuleDefinition } from '../ai.types';
 
 /**
@@ -7,9 +8,7 @@ import type { AggroRuleDefinition } from '../ai.types';
  */
 export const CORNER_BOSS_AGGRO = {
   id: 'corner-boss',
-  // TUNE: the corner camp ring's 22.5 m radius plus the boss's post, 3 m off the centre (1 m
-  // footprint + 2 m post gap), so it sees an enemy anywhere inside the ring.
-  acquisitionRadius: 26,
+  acquisitionRadius: CORNER_CAMP_RING.acquisitionRadius, // anywhere inside the ring
   priority: [
     'legend-attacking-ally-legend',
     'minion-attacking-ally-legend',
@@ -17,7 +16,7 @@ export const CORNER_BOSS_AGGRO = {
     'closest-minion',
     'closest-legend',
   ],
-  leashRadius: 21.5, // TUNE: the corner camp leash (the guard plan's is the one guards read)
+  leashRadius: CORNER_CAMP_RING.leashRadius, // the guard plan's is the one guards read
   leashGraceTicks: 0, // as the camp mob (DEC-144 E): never chases past its circle
   aggroCooldownTicks: 0, // as the camp mob (DEC-144): no rest
   ghostFirstWaveTicks: 0, // camps never ghost

@@ -6456,3 +6456,26 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   style!"; core "Tests 1336 passed (1336)"; protocol "Tests 18 passed (18)"; client "Tests 1883
   passed (1883)"; server "Tests 79 passed (79)"; "Documentation check passed."
 - Next step: review and merge; then sync the stacked drafts #82, #83 and #84.
+
+### 2026-11-13 — Phase 3 / corner camp boss (interim), PR #91 re-review (claudiodh) — feat/bosses-p3 — Aryan Walanj + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` (`76d1007d`); only this file conflicted,
+  both sides kept. B4 + S1: the corner camp's ring is core content, `CORNER_CAMP_RING`
+  (`content/structures/cornerCampRing.ts`, after `capturePointCourt.ts` on
+  `feat/capture-point-boss`): radius 22.5 m (the 45 m ring the client drew); the guard plan's
+  leash (21.5 m) and post gap, the aggro rule's acquisition and leash radius and the boss's vision
+  derive from it. Acquisition and vision go 26 → 25.5 m (ring + the post's 3 m off the centre,
+  no longer rounded up). Core exports `CORNER_CAMP_RING` (public API change); `Match` injects the
+  ring size into `MapView` (`featureSizes`), since views only `import type` from core;
+  `Simulation.mapObjects.test.ts` reads the same value. S-1: the leash test asserts the intruder
+  stands inside the boss's acquisition radius from its post. Doc 07's note updated.
+- Not done here: B2 (team XP, DEC-237) waits for #99 to merge first and then uses its
+  `XP_SOURCES.teamKills`; B3 (#85 types) left as is.
+- Note: the merged lockfile lacks the client's `@eternalus/protocol` entry (`npm install` adds it);
+  left untouched here for upstream to fix.
+- Pre-PR gate: the architecture-reviewer critic approved (no blockers); its better-than-design
+  item (the ring radius on the map feature instead of an export plus `featureSizes`; one shared
+  camp post gap) is in `INBOX.md`. Ponytail review: ship, no cuts.
+- Checks run: `npm run check:quick` passed on the merge; the touched core tests (6 files, 28 tests)
+  and client tests (`MapView`, `Match`: 27 tests) pass. `npm run check` not run (Aryan runs it).
+- Next step: Aryan runs `npm run check`, pushes and re-requests review; B2 after #99.

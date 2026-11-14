@@ -31,6 +31,20 @@ Reply inline (`Decision: …`).
       that row in one shared constant, as `refHealth` multiples, that both bosses use. Approve
       B2 and N4 (one follow-up PR), or drop them.
 
+- [ ] **PR #91 critic (2026-11-13), better than the design: the ring size on the map feature
+      (Aryan Walanj, `feat/bosses-p3`, claudiodh's B4).** The corner camp's ring is now core
+      content (`CORNER_CAMP_RING`, `content/structures/cornerCampRing.ts`, radius 22.5 m; the
+      boss's vision and acquisition radius follow it: 25.5 m, no longer the 26 m in item (1)
+      above). The client draws it because core exports the constant and `Match` passes the size
+      into `MapView` (`featureSizes`). The critic proposes instead an optional ring radius on
+      `MapFeatureDefinition` (`content/maps/mapFeatureDefinitions.ts`), copied onto `MapFeature`
+      by the generator, which `MapView` draws from the map data it already gets. That drops the
+      new export, the constructor parameter and the size-0 placeholder in `FEATURE_STYLES`, and
+      the capture point's ring (still 45 m in `FEATURE_STYLES`) could use the same field. It also
+      suggests one shared camp post gap constant (2 m is now written in `guardPlans.ts` and
+      `cornerCampRing.ts`). Approve as a follow-up PR (docs 06 and 07 updated with it), or keep
+      the current wiring.
+
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on
       every map feature, so `map/strongholdRing.ts` checks at run time that a Stronghold has it

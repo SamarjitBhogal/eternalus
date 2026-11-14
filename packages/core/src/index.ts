@@ -44,6 +44,7 @@ export type {
 export { loadDisplayContent } from './content/loadDisplayContent';
 export type { DisplayContent } from './content/loadDisplayContent';
 export { DEFAULT_MAP_CONFIG } from './content/maps/defaultMapConfig';
+export { CORNER_CAMP_RING } from './content/structures/cornerCampRing';
 export type {
   MapDecoration,
   MapDecorationLayer,

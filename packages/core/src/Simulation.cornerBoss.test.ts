@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { countdownTicks } from './config/countdownTicks';
+import { CORNER_BOSS_AGGRO } from './content/ai/aggro/cornerBoss';
 import type { MapDefinition } from './content/maps/maps.types';
 import { GUARD_PLANS } from './content/structures/guardPlans';
 import { STRUCTURE_DEFINITIONS } from './content/structures/structureCatalogue';
@@ -74,6 +75,11 @@ describe('Simulation corner camp boss (DEC-236)', () => {
     // Just outside the leash circle (leash + the camp's footprint), yet inside the boss's sight.
     const legendId = legendAt((PLAN?.leashRadius ?? 0) + CAMP_FOOTPRINT + 1);
     const fullHealth = entity(legendId)?.health?.current ?? 0;
+    // The boss would acquire it from its post, so only the leash keeps it home (fails if it grows).
+    const at = entity(legendId)?.transform ?? { x: Number.NaN, y: Number.NaN };
+    expect(Math.hypot(at.x - post.x, at.y - post.y)).toBeLessThan(
+      CORNER_BOSS_AGGRO.acquisitionRadius,
+    );
 
     let farthest = 0;
     for (let tick = 0; tick < 10 * config.tickRate; tick += 1) {

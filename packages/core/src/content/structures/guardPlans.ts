@@ -1,3 +1,4 @@
+import { CORNER_CAMP_RING } from './cornerCampRing';
 import type { GuardPlanDefinition } from './structures.types';
 
 const LEASH = 8; // TUNE: balancing.md "leash radius 8 m"
@@ -42,9 +43,8 @@ const CAMP_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
   },
   'corner-camp': {
     ...CAMP,
-    // TUNE: the client draws the corner camp ring 45 m across (MapView.constants.ts), so its
-    // 22.5 m radius less the camp's 1 m footprint: the boss guards exactly the ring.
-    leashRadius: 21.5,
+    leashRadius: CORNER_CAMP_RING.leashRadius, // the boss guards exactly the ring
+    postGap: CORNER_CAMP_RING.postGap,
     respawnSeconds: 300, // TUNE: DEC-12; game doc "spawns new bosses every 5 minutes"
     // TUNE: the boss is bigger and reaches further than any guard (1.5 + 2 + a Sentinel's 1.25 m)
     leashTolerance: 7,
