@@ -666,7 +666,7 @@ export class Simulation {
     const { matchGrid, paths } = new MatchPathfinderFactory().create(map, config, mapObjects);
     return {
       space: new SpaceIndex(map.width, map.height, SPACE_CELL_SIZE),
-      world: new MatchWorld(map, matchGrid),
+      world: new MatchWorld(matchGrid),
       paths,
     };
   }
