@@ -7122,3 +7122,30 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   style!"; core "Tests 1336 passed (1336)"; protocol "Tests 18 passed (18)"; client "Tests 1883
   passed (1883)"; server "Tests 79 passed (79)"; "Documentation check passed."
 - Next step: review and merge; then sync the stacked drafts #82, #83 and #84.
+
+### 2026-11-13 — Phase 3 / GL-4 with GL-5 and GL-15, sync with the Duel — feat/match-scoring (PR #93) — sholtzman + Claude Code
+
+- What was done: PR #95 (GL-15) merged into this branch, so PR #93 now carries GL-4, GL-5 and
+  GL-15 (owner decision of 2026-11-11). Merged `phase/3-sprint-3-work` up to `76d1007d` (#89,
+  #92, #97 online Duel, #51, #52, #81). The Duel's results join the GL-5 flow (owner-work
+  precedence; #97's results screen was an interim one): the bus event `duel-ended` carries the
+  Duel's outcome in place of #97's `match-result`; `selectMatchVerdict` reads the match result or
+  the Duel's outcome; `ResultsScreen` keeps the GL-5 layout, names an opponent who left and offers
+  a rematch only after a local match; the Duel `Match` takes the match observer.
+  `ui/screens/resultVerdict.ts` is not kept (its only user was #97's screen; each branch is
+  covered by the `ResultsScreen` tests). Critic findings fixed: `ResultsState` ignores
+  `start-match` when `SessionContext.canRepeatMatchSetup()` is false (before, a Duel that ended
+  while loading made `repeatMatchSetup` throw); new tests for the Duel cases of
+  `selectMatchVerdict`, a Duel loop crash reaching the observer, and an opponent leaving over a
+  winning verdict, each seen red against a broken production line first. Review findings of
+  claudiodh fixed: the `Scoring.pending` comment and the named long comment lines. Doc 13
+  (game interface): the event list has `duel-ended`; §2 has the `menu → match-loading` and
+  `match-loading → results` edges; §3 and §10 name the Duel's way into results.
+- Checks run: `npm run check` → `EXIT=0` on the tree of this merge before this entry: core
+  "Tests 1428 passed (1428)"; protocol "Tests 18 passed (18)"; client "Tests 1956 passed
+  (1956)"; server "Tests 79 passed (79)". Critic (`architecture-reviewer`) on the Duel merge:
+  approve, 0 blockers, 0 major; its minors M2 to M5 and nits N1, N3, N4 are applied; N2 and its
+  three better-than-design items wait for the owner.
+- Next step: the owner answers the open items (the `scoreBook` field, the event name, the
+  better-than-design items, whether the DEC-92 run-on covers a Duel); claudiodh re-reviews
+  PR #93; then GL-16 merges the new phase branch.
