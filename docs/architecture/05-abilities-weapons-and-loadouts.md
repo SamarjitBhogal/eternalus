@@ -967,15 +967,20 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   rest. Where the code differs from the sketches above:
   - **Content.** `content/abilities/` holds the types (`AuthoredAbility` in seconds,
     `AbilityDefinition` in ticks, `AbilityKit`, `AbilitySlot`, `AbilityRejectReason`), one file
-    per ability, `abilityCatalogue.ts` and `loadAbilities`, which checks each step's fields and
-    status ids at load (the job of §3's `validate`). A definition also has a `description` for
+    per ability, `abilityCatalogue.ts` and `loadAbilities`, which knows no effect or shape kind:
+    it checks the ability's own fields and that every time is 0 or more, and turns every
+    `<name>Seconds` field of a step into `<name>Ticks`. §3's `validate` is built as
+    `validate(spec)` on each effect and shape strategy (a strategy that reads content gets it in
+    its constructor, as `DebuffEffect` gets the statuses); `AbilityRegistry.resolveAll` runs it
+    for every step at boot. A definition also has a `description` for
     the kit rows. It has no `castTicks`, `channelTicks`, `interruptedBy`, `varieties` or `icon`
     yet; `targeting` is `self` or `directional` (`null` while the ability has no effects); the
     slot kinds are `ability` and `ultimate`; the one restriction kind is `min-level`. Every kit
     ability is content (DEC-199, DEC-209 (2)). Blade Runner (its Physical variety only), Slam and
     Shockwave have effects; the other nine have `effects: []` and are `unavailable` (ADR 0026
     decision 3). Each Legend class has `abilityPool` and `defaultKit`, each spec a `kit`, `null`
-    in every shipped spec (ADR 0026 decision 1). The numbers are `TUNE` from `balancing.md`
+    in every shipped spec (ADR 0026 decision 1); `content/legends/specs/kitOf.ts` picks the kit
+    for the simulation and the client's kit rows. The numbers are `TUNE` from `balancing.md`
     (DEC-197) and DEC-209 (1).
   - **Effects and shapes.** `damage`, `debuff`, `knockback` and `dash` (`abilities/effects/`);
     the other kinds of §3 are not built. A knock-back's spec field is `distance` in metres; the
@@ -984,15 +989,17 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
     not a unit (structures, obstacles, map objects; DEC-209 (1)). The shapes are `circle` (on the
     caster, or on a dash's end for its `onEnd` steps) and `path` (with a `width`), one
     `AreaShape` class each in `abilities/shapes/` (ADR 0026 decision 7); `self`, `cone` and
-    `line` are not built (the cone comes with Rip & Tear, DEC-206). `TargetFilter` has `team`
-    and `includeSelf` only. `CastContext` has `placement`, `direction`, `scaled(field, value)`
+    `line` are not built (the cone comes with Rip & Tear, DEC-206). A map object
+    (`MapObjectBody`) is hit by its footprints, as a basic attack reaches it; any other body by
+    its circle. `TargetFilter` has `team` and `includeSelf` only. `CastContext` has `placement`, `direction`, `scaled(field, value)`
     (the level growth that §13 calls `potency`), `targets`, `centreFor` and `run` (a dash's
     nested steps) in place of `origin`, `facing`, `potency`, `rng` and `factory`. The pipeline
     still takes no `DamageType` (§9).
   - **Registry and cast.** `AbilityRegistry.resolve(abilityId)` takes no variety or upgrade yet;
-    `createDefaultAbilityRegistry` also registers the shapes and resolves every ability at boot. A
-    new effect kind also needs its spec type in the `AbilityEffectSpec` union and a case in
-    `loadAbilities`' field check, beyond §14's one class and one line. `CastAbilityHandler` checks
+    `createDefaultAbilityRegistry` also registers the shapes and checks and resolves every ability
+    at boot. A new effect kind also needs its spec type in the `AuthoredEffectSpec` union, beyond
+    §14's one class and one line; the aim overlay's rows come from its `describe`
+    (`AbilityRegistry.describe`, bound into core's `loadDisplayContent`). `CastAbilityHandler` checks
     with `CastValidator`, and `AbilitySystem` checks again (ADR 0026 decision 2). A cast is refused
     with `cannot-cast` while the match holds units idle (the countdown, DEC-88). `casting` means
     another cast of the same Legend waits this tick; a directional cast aimed at the caster is
@@ -1012,10 +1019,11 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
     still be pushed: DEC-208's stacking is kept over `more-abilities.md` §7's "cannot be pushed
     further" (`INBOX.md` HC-Q53). The 0.2 s landing stagger and `control-immune` wait for status
     `onExpire` (§8). A status applied again keeps the longer of its remaining time and the new
-    duration. Concussion's `aetherCost` modifier is read by `CastValidator.price`.
+    duration. Concussion's `aetherCost` modifier is read by `CastValidator.priceOf`.
   - **Snapshot, bots and checks.** `state/PlayerSnapshotter` fills `Snapshot.player` (§15) with
     all seven slots through the `SlotReadiness` port; a slot has `aetherCost` (after status
-    modifiers) and no `varietyId`, and a dash slot is judged with a 1 m aim beside the Legend.
+    modifiers) and no `varietyId`, and is judged without an aim (`slotBlockedBy`: every check
+    but `no-target`). `CastValidator` implements the port; `Simulation` builds one per match.
     Bots cast any ready slot (`ai/pickReadySlot.ts`, DEC-205). `StateHasher` adds a slot only
     once it leaves its first state. Built: the scenario tests of the three abilities, every
     reject reason, the litmus `FakeBolt`, the determinism test and the golden replay

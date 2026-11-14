@@ -348,8 +348,10 @@ session or phase named:
 - Legends also install `Abilities` (`feat/ability-framework`, 2026-11-13; ADR 0026 decision 1):
   seven `AbilitySlotRuntime`s in bar order, filled from the kit, with `slot(slot)`, `slots` and
   `hasPendingCast` in place of §3's `runtime` and `forEachReady`. The kit is the Legend spec's own
-  `kit`, else the class's `defaultKit`; the spec comes from `RosterSlot.specId`, and a spec that
-  does not exist or belongs to another class throws at spawn. This is the first piece of
+  `kit`, else the class's `defaultKit` (`content/legends/specs/kitOf.ts`); the spec comes from
+  `RosterSlot.specId`, looked up in the spec source the `EntityFactory` passes in the spawn
+  context next to the weapon source (`Simulation` injects `LEGEND_SPECS`), and a spec that does
+  not exist or belongs to another class throws at spawn, as does a spec id with no spec source. This is the first piece of
   sub-class gameplay of §9 (HC-Q17); every shipped spec's `kit` is `null`. The ultimate is the
   kit's `ultimate`, not a separate `ultimateId`. `Aether` keeps its `base` capacity for
   `AetherRegenSystem` (05 §18).

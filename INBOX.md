@@ -37,8 +37,9 @@ Reply inline (`Decision: …`).
       tick, so it cannot go stale after a level-up or an aura change.
       (2) **A `SlotReadiness` port.** Design (05 §6, §15): `AbilityRuntime.canCast` decides, and
       the snapshot's `isReady` has no stated source. Built: `abilities/CastValidator` is the one
-      rule; `abilities/CastReadiness` implements `state/SlotReadiness.types.ts`, and `Simulation`
-      gives it to the snapshot and the bots (ADR 0026 decision 2). Better: the HUD, the bots, the
+      rule and implements `state/SlotReadiness.types.ts` itself (since HC-B6 (4); first built with
+      an adapter, `abilities/CastReadiness`), and `Simulation` gives it to the snapshot and the
+      bots (ADR 0026 decision 2). Better: the HUD, the bots, the
       handler and `AbilitySystem` judge a cast by one rule, and the folder import rules hold.
       (3) **Forced motion instead of impulses.** Design (10 §2, 05 §3): every push is an impulse,
       velocity change `J / mass`. Built: `Movement.push` spreads a displacement over a number of
@@ -59,6 +60,44 @@ Reply inline (`Decision: …`).
       Where DEC-198, DEC-201 or DEC-208 require it, 04 §5, 05 §2, §3, §6, §7 and 10 §2 already
       say this (each change cites its ruling). Approve all, approve some, or say no; a "no" reworks the
       code and those lines.
+- [ ] **HC-B6 — Better than the design, for sign-off: seven more parts of the ability framework,
+      from critic round 1 (`feat/ability-framework`, 2026-11-14) — sign-off per item.** All seven
+      are built, under your 2026-11-09 rule "pick the best architectural outcome, build it now".
+      (1) **A dash stops where walking stops.** First built: the dash was clamped on the 5 m nav
+      grid, so a Blade Runner cast beside a wall moved 0 m and still cost aether. Built now:
+      `dashReach` uses the radius-aware sweep of `physics/CollisionResolver` through a
+      `CollisionQuery` port on `MatchWorld` (ADR 0026 decision 4). The cast and the aim overlay
+      use the same function.
+      (2) **A `DashReach` port for the client.** `MatchDeps.dashReach` replaces `dashReach` on the
+      `MatchSimulation` pick; the Duel's stub is gone, and the overlay view gets a finished target
+      and never calls the simulation.
+      (3) **One `Aim` type.** `components/AbilitySlotRuntime.types.ts` holds it and `commands/`
+      re-exports it; `CastAim` is deleted, so `state/` no longer imports `commands/`.
+      (4) **One `CastValidator` per match, and it is the `SlotReadiness` port.** The `CastCheck`
+      port and `abilities/CastReadiness` are deleted (ADR 0026 decision 2 is rewritten to this). A
+      slot's HUD state is judged with no aim (`slotBlockedBy`), not with an invented one.
+      (5) **One kit rule.** `kitOf` ("the spec's kit, else the class default") is one core content
+      function; `Legend` and the client's kit rows both use it. Legend specs reach `Legend`
+      through an injected source, as weapons do.
+      (6) **Strategies validate and describe themselves.** Each effect and shape strategy has
+      `validate(spec)` and `describe(spec)`; the registry runs them at boot. `loadAbilities` and
+      `loadDisplayContent` know no effect or shape kind (05 §3 put `validate` on the strategy; it
+      takes no `content` argument, a strategy gets content in its constructor).
+      (7) **Ability areas hit buildings by their footprints,** with the geometry basic attacks
+      use, not a 0.5 m circle at the centre (DEC-209 (1) now holds for houses, forts and towers).
+      Approve all, approve some, or say no; a "no" reworks the code.
+- [ ] **HC-Q54 — Derive each class's ability pool from the abilities' `classId`?
+      (`feat/ability-framework`; changes DEC-198's shape, not built).** Today `abilityPool` on
+      the class lists every ability, and each ability also names its `classId`: two sources, and
+      no rule checks that the pool is complete. Deriving the pool removes `abilityPool`,
+      `KitInPoolRule` and its test (about 45 lines); an extra approved ability (DEC-11) then joins
+      a pool by content alone. Derive it, or keep the explicit list?
+- [ ] **HC-Q55 — What does a Duel show for abilities? (`feat/ability-framework`, critic finding
+      C6, not changed).** A Duel casts no abilities, but the seat on the snapshot's player team
+      still sees its ability slots as ready; the other seat sees none
+      (`GameState.snapshot` fills `player` for one Legend only). Hiding `player` in a Duel also
+      hides that seat's aether and level data. Options: hide the ability bar in a Duel; send
+      `player` per seat once Duels cast abilities; or leave it until then.
 - [ ] **HC-Q49 — Five tuning values the ability framework uses until you set them (`TUNE`,
       `feat/ability-framework`).** (1) Blade Runner's path width: 1.5 m, the 05 §4 sketch value
       (`content/abilities/bladeRunner.ts`). (2) Blade Runner's end-stun radius: 1.5 m, the same
@@ -79,15 +118,18 @@ Reply inline (`Decision: …`).
       (`packages/core/src/content/abilities/<id>.ts`). Blade Runner, Slam and Shockwave quote the
       game doc's Abilities table. The other nine texts were written in the session and name no
       source; the build plan lists Veil, Fury, Rip & Tear, Berserk, Imbue and Death Ray for your
-      review first. **Rip & Tear's text contradicts DEC-204 and DEC-206:** it says low-health
-      enemies "take double and are dragged toward you", but they are knocked back, not pulled in,
-      those at or below 10% die, and survivors get Fear. Give the texts you want, or approve them;
-      Rip & Tear's text is corrected in the Sentinel PR at the latest.
+      review first. Rip & Tear's text now follows DEC-204 and DEC-206 (corrected on this branch,
+      `8d230e9a`): enemies under 30% health are knocked back, those at 10% or less die, and
+      survivors get Fear. Give the texts you want, or approve them.
 - [ ] **HC-Q52 — The Legend specs' `detailNames` ability rows are now unused
       (`feat/ability-framework`).** The kit rows come from the abilities' content (DEC-199), so the
-      client no longer reads a spec's `detailNames` (`ultimate`, `ability-1` to `ability-3`); core
-      still validates them. The class `detailNames` rows are still read. Remove the spec rows (a
-      content refactor in a later PR), or keep them for another use?
+      client no longer reads a spec's `detailNames` (`ultimate`, `ability-1` to `ability-3`). No
+      content rule checks them: only the TypeScript type and `legendSpecCatalogue.test.ts` hold
+      them (corrected 2026-11-14; this item first said "core still validates them"). The class
+      `detailNames` rows are still read. Removing the spec rows (about 28 lines) also removes the
+      Oracle names "Severed Accord" and "Unison Ward" (DEC-103), which are in no other content
+      file. Remove the spec rows, move those two names into ability content first, or keep the
+      rows for another use?
 - [ ] **HC-Q53 — Seven readings the framework session took, for you to confirm
       (`feat/ability-framework`; none blocks the PR).** (1) An airborne target can still be
       pushed: DEC-208's stacking is kept over `more-abilities.md` §7, whose `knockup` row says an

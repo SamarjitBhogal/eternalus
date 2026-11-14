@@ -368,7 +368,7 @@ text since 2026-10-28 (the owner approved them, `INBOX.md` HC-T1):
 Ability framework (`feat/ability-framework`, 2026-11-13; ADR 0026). Files the branch added:
 
 - **Core.** `abilities/` holds `AbilityRegistry`, `ComposedAbility`, `defaultAbilityRegistry.ts`,
-  `CastValidator`, `CastReadiness`, `CastInstance`, `TargetQuery`, `dashReach.ts`, `effects/`,
+  `CastValidator`, `CastInstance`, `TargetQuery`, `dashReach.ts`, `effects/`,
   `restrictions/` and `shapes/`. The slot state is `components/Abilities.ts` and
   `components/AbilitySlotRuntime.ts`, not an `AbilityRuntime` in `abilities/`, because
   `components/` may not import `abilities/`. `content/abilities/` holds the ability files, the
@@ -376,9 +376,18 @@ Ability framework (`feat/ability-framework`, 2026-11-13; ADR 0026). Files the br
   `commands/handlers/CastAbilityHandler.ts`, `systems/AbilitySystem.ts`,
   `systems/AetherRegenSystem.ts`, `state/SlotReadiness.types.ts`, `state/PlayerSnapshotter.ts`,
   `ai/pickReadySlot.ts` and the two invariants in `diagnostics/invariants/`. `abilities/` imports
-  beyond its §2 "May import" cell: `map/` (the `WorldMap` type, `dashReach.ts`), `commands/` (the
-  `Aim` type, `CastReadiness.ts`) and `entities/` (`unitFamilies`, `DamageEffect.ts`).
+  one module beyond its §2 "May import" cell: `entities/unitFamilies` (`DamageEffect.ts`; ADR
+  0026, `packages/core/AGENTS.md`). `CastValidator` implements `state/SlotReadiness.types.ts`,
+  and `Simulation` builds one per match for the handler, `AbilitySystem`, the snapshot and the
+  bots. The one `Aim` type lives in `components/AbilitySlotRuntime.types.ts`;
+  `commands/Command.types.ts` re-exports it, as it re-exports `AbilitySlot` from `content/`: two
+  type imports outside `commands/`' "May import" cell (ADR 0026 decision 2). The kit rule ("the
+  spec's kit, else the class's") is `content/legends/specs/kitOf.ts`, exported for the client's
+  kit rows; `Legend` reads specs from the source the `EntityFactory` puts in the spawn context. A
+  dash reaches the walls through `state/CollisionQuery.types.ts` (`MatchWorld.collisions`), whose
+  index `map/staticCollisionIndexOf.ts` builds for `Simulation`.
 - **Client.** `game/AbilityCasts.ts` (the two cast modes), `game/content/kitRows.ts`,
+  `game/AimTargeting.ts` (what the overlay draws, with the `MatchDeps.dashReach` port),
   `game/views/AimOverlayView.ts` with `aimShapePainters.ts`, and `ui/components/InfoPanelKit.tsx`
   ([13](13-game-interface.md) §10).
 

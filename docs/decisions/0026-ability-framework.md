@@ -34,7 +34,8 @@ beyond that sketch, beyond [04](../architecture/04-entity-architecture.md) §5 a
 [10](../architecture/10-physics.md) §2, or against them. Each is below with its own context, the
 decision, the alternatives rejected and the consequences. The folder import rules in
 `packages/core/AGENTS.md` bind several of them: `commands/` imports only `state/`, `entities/`
-and `utils/`; `components/`, `state/` and `ai/` do not import `abilities/`.
+and `utils/` (and the shared types it re-exports, decision 2); `components/`, `state/` and `ai/`
+do not import `abilities/`.
 
 ## Decision
 
@@ -51,8 +52,11 @@ and `utils/`; `components/`, `state/` and `ai/` do not import `abilities/`.
   `ability-3` and the ultimate for `ability-4`. `LegendSpecDefinition.kit` is an `AbilityKit` or
   `null`; `null` means the class's default kit. `RosterSlot.specId` (optional) names the Legend
   of a roster slot; the client passes the pick for the player and for each bot. `Legend` builds
-  its `Abilities` from the spec's kit, else from the class's default kit. A spec id that does not
-  exist, or that belongs to another class, throws at spawn. `KitInPoolRule` and
+  its `Abilities` from the spec's kit, else from the class's default kit: one rule,
+  `content/legends/specs/kitOf.ts`, which the client's kit rows also call through
+  `@eternalus/core`. `Legend` looks the spec up in the spec source the `EntityFactory` passes in
+  the spawn context, as it passes the weapon source (`Simulation` injects `LEGEND_SPECS`). A spec
+  id that does not exist, or that belongs to another class, throws at spawn. `KitInPoolRule` and
   `KnownAbilityRefsRule` check the pool and every kit at content load. **This amends ADR 0018
   point 2, the sentence quoted above:** the simulation now reads the Legend through
   `RosterSlot.specId`, and only to choose the kit. The pick still gives no stats, sizes or
@@ -75,21 +79,30 @@ and `utils/`; `components/`, `state/` and `ai/` do not import `abilities/`.
   holds no units idle and no status forbids casting (`cannot-cast`; the countdown is a freeze,
   DEC-88), the cooldown is over, an ultimate's meter is full (`not-charged`), the aether covers
   the price after status modifiers, a directional cast has a direction (`no-target`), then each
-  restriction in content order. `Simulation` injects it into `CastAbilityHandler`, which types
-  it by shape (`CastCheck`). `abilities/CastReadiness` implements the port
-  `state/SlotReadiness.types.ts` with the same validator; `Simulation` passes it to
-  `GameState.snapshot` (for `PlayerSnapshotter`) and to the bot controllers. `AbilitySystem` runs
-  the validator again on each queued cast: a cast that fails then is announced with
-  `command-rejected` and spends nothing. The slot state is `components/AbilitySlotRuntime`, next
-  to `Abilities` (as `StatusEffectRuntime` sits next to `StatusEffects`); it holds no rule.
+  restriction in content order. `slotBlockedBy` runs the same checks without the aim's: a slot's
+  readiness does not depend on where a cast would be aimed. `CastValidator` implements the port
+  `state/SlotReadiness.types.ts` itself (`blockedBy`, `slotBlockedBy`, `priceOf`,
+  `cooldownTicksOf`). `Simulation` builds one validator per match and injects it into
+  `CastAbilityHandler` (typed `Pick<SlotReadiness, 'blockedBy'>`), `GameState.snapshot` (for
+  `PlayerSnapshotter`, which asks `slotBlockedBy`), the bot controllers and, through
+  `DefaultSystemPipeline`, `AbilitySystem`, which runs it again on each queued cast: a cast that
+  fails then is announced with `command-rejected` and spends nothing. The slot state is
+  `components/AbilitySlotRuntime`, next to `Abilities` (as `StatusEffectRuntime` sits next to
+  `StatusEffects`); it holds no rule. Its pending cast's `Aim` is the one aim type: it lives in
+  `components/AbilitySlotRuntime.types.ts`, the lowest layer that holds one, and
+  `commands/Command.types.ts` re-exports it for the `cast-ability` command, as it re-exports
+  `AbilitySlot` from `content/`.
 - **Alternatives rejected.** `canCast` on the slot runtime: `components/` would import the
   registry. The handler imports `abilities/` directly: breaks the folder rule. The snapshot and
   the bots keep their own readiness check: two definitions of "ready" drift, and the HUD could
-  show a slot as ready that the handler refuses.
-- **Consequences.** The handler, the system, the HUD and the bots judge a cast by one rule. The
-  port has one implementation, which `AGENTS.md` ("Ponytail") keeps on purpose. A new reject
-  reason is one member of `AbilityRejectReason` (`content/abilities/AbilityDefinition.types.ts`);
-  the client's `HudBlockReason` is that type.
+  show a slot as ready that the handler refuses. A separate port for the handler (`CastCheck`)
+  and an adapter class over the validator for the snapshot and the bots (`CastReadiness`): two
+  ports with one shape and three validators per match. The snapshot judging a slot with a made-up
+  aim: it guesses at what the aim check would say.
+- **Consequences.** The handler, the system, the HUD and the bots judge a cast by one rule and one
+  validator. The port has one implementation, which `AGENTS.md` ("Ponytail") keeps on purpose. A
+  new reject reason is one member of `AbilityRejectReason`
+  (`content/abilities/AbilityDefinition.types.ts`); the client's `HudBlockReason` is that type.
 
 ### 3. An ability with no effects is unavailable; a missing strategy fails at boot
 
@@ -123,16 +136,21 @@ and `utils/`; `components/`, `state/` and `ai/` do not import `abilities/`.
   `content/abilities/knockback.ts` (`TUNE`, proposals pending the owner). Each knock-back is its
   own push, so knock-backs in one tick add up as vectors (DEC-208 (3)). Every target a
   knock-back reaches gets `staggered`; `knockup: true` adds `knockup`. A dash resolves its path
-  at cast: along the aim, cut where `WorldMap.isLineClear` first finds blocked ground
-  (`abilities/dashReach.ts`). Its path steps hit each unit on the path once, at cast, and its end
+  at cast: along the aim, cut where the caster's circle first touches a wall or the map's edge
+  (`abilities/dashReach.ts`), with the sweep `CollisionSystem` moves units with. `Simulation`
+  builds one static collision index for both and hands its sweep to `abilities/` through the
+  `CollisionQuery` port on `MatchWorld`; the client's aim overlay asks the same rule
+  (`Simulation.dashReach`). Its path steps hit each unit on the path once, at cast, and its end
   steps run at the cut end.
 - **Alternatives rejected.** Impulses as designed: they need a velocity model that keeps
   momentum (10 §2's friction and acceleration clamp), which `Movement` does not have. Moving the
   `Transform` directly: skips collision. The last push wins: contradicts DEC-208 (3).
 - **Consequences.** 10 §2's knock-back paragraph and 05 §3's `knockback` row change. Impulses
   stay the design for throwing a carried unit (10 §3), which is not built. Boss masses (DEC-208)
-  need no code change. The dash's hit path follows the nav grid, so it can stop up to one nav
-  cell (`GameConfig.map.navCellSize`) short of a wall.
+  need no code change. The dash's hit path ends where its motion ends: a dash aimed away from a
+  wall it stands beside goes its whole distance, one aimed into the wall stops at it. In a match
+  without map objects there is no `CollisionSystem`, so nothing stops a dash, as nothing stops
+  walking.
 
 ### 5. Aether regeneration is its own system, with exact amounts
 
@@ -202,5 +220,9 @@ and `utils/`; `components/`, `state/` and `ai/` do not import `abilities/`.
   stays the intent; 05 §18 lists what is built.
 - The better-than-design parts (decisions 1, 2, 4 and 5, and the client's `HudBlockReason`) are
   in `INBOX.md` HC-B5 for the owner's sign-off.
+- `abilities/` imports what [02](../architecture/02-code-structure.md) §2 allows (`combat/`,
+  `components/`, `content/`, `state/`, `utils/`) plus one module, `entities/unitFamilies`
+  (`DamageEffect` scales damage on a target that is not a unit). `packages/core/AGENTS.md`'s
+  `abilities/` row says exactly that.
 - Documents amended on acceptance: ADR 0018's Status line ("amended by 0026"; its body is not
   edited) and this ADR's Status.

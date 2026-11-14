@@ -383,10 +383,10 @@ work named:
 - Bots cast at their enemy when `abilityUseChance` comes up on the brain's own RNG stream, at
   most every `castIntervalTicks` (DEC-205, `feat/ability-framework`): `ai/pickReadySlot.ts` picks
   one of the Legend's filled slots that the `SlotReadiness` port accepts now
-  (`state/SlotReadiness.types.ts`, implemented by `abilities/CastReadiness` and injected by
-  `Simulation`; ADR 0026 decision 2), with the turn's seeded RNG, and casts nothing when no slot
-  is ready. §4.2's utility pick of a defensive ability is not built: situational casting is a
-  follow-up PR (DEC-205; `INBOX.md` HC-S12).
+  (`state/SlotReadiness.types.ts`, implemented by the match's one `abilities/CastValidator` and
+  injected by `Simulation`; ADR 0026 decision 2), with the turn's seeded RNG, and casts nothing
+  when no slot is ready. §4.2's utility pick of a defensive ability is not built: situational
+  casting is a follow-up PR (DEC-205; `INBOX.md` HC-S12).
 - A\* for Legends (M8, §6) is `map/AStarPathfinder` behind the `PathQuery` port (`state.paths`).
   One `WorldMap` serves it and the lane flow fields. No path cache yet: a bot searches again on
   each blocked decision.

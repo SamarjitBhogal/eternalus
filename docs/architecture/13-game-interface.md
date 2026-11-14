@@ -774,12 +774,15 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   - **Range overlay.** `game/views/AimOverlayView.ts` draws the selected ability's area from
     each effect step's area in the display data (`AbilityDisplay.steps`), one painter per shape
     kind (`aimShapePainters.ts`). A caster-centred ability shows its circle on the caster; a
-    dash shows its path toward the pointer, cut where the dash would stop
-    (`Simulation.dashReach`), and its end circle. `DisplayCatalogue`, `MatchRequest` and
-    `MatchDeps` gained `abilities` for it.
+    dash shows its path toward the pointer, cut where the dash would stop, and its end circle.
+    `game/AimTargeting.ts` builds what the view draws each frame: the selected ability, aimed from
+    where the player's Legend is drawn (its interpolated position), with each dash's reach from
+    the `MatchDeps.dashReach` port (`Simulation.dashReach` locally; absent in a Duel), so the view
+    never calls the simulation. `DisplayCatalogue`, `MatchRequest` and `MatchDeps` gained
+    `abilities` for it.
   - **Kit rows.** The Legend step and View Details show the Legend's ultimate, then abilities 1
-    to 3, with name, description, cost and cooldown from content (`game/content/kitRows.ts`,
-    `ui/components/InfoPanelKit.tsx`; DEC-199). This closes the "Character select, known gaps"
+    to 3, with name, description, cost and cooldown from content (`game/content/kitRows.ts`, the
+    kit from core's `kitOf`; `ui/components/InfoPanelKit.tsx`; DEC-199). This closes the "Character select, known gaps"
     bullet's missing descriptions for a Legend's abilities. Spec `detailNames` ability rows are
     no longer read by the client (`INBOX.md` HC-Q52). No check in a browser yet: the panels'
     ability bands changed size, so a long description may wrap tight.

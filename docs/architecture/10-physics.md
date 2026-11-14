@@ -311,10 +311,12 @@ Unit-to-unit momentum, SAT and the remaining physics described above are still p
 `takeForcedStep` for dashes and knock-backs; it has no `pendingImpulse` or `desiredVelocity` (a
 heading set by `steer`). Forced motion moves an entity that `cannot-move` (Slam knocks back and up
 at once) and waits while the match holds units idle. The knock-back's base mass and travel time are
-in `content/abilities/knockback.ts` (`TUNE`). A dash's hit path does not come from §7's swept test:
-it is cut at cast where `WorldMap.isLineClear` first finds blocked ground (`abilities/dashReach.ts`),
-so it can stop up to one nav cell (`GameConfig.map.navCellSize`) short of a wall. The dash's motion
-goes through `MovementSystem` and `CollisionSystem` like walking.
+in `content/abilities/knockback.ts` (`TUNE`). A dash's hit path is cut at cast where the caster's
+circle first touches a wall or the map's edge (`abilities/dashReach.ts`): one straight sweep
+(`CollisionResolver.travel`, §7's swept test without the slide) on the same `StaticCollisionIndex`
+`CollisionSystem` uses, which `Simulation` builds once (`map/staticCollisionIndexOf.ts`) and hands
+to `abilities/` as `MatchWorld.collisions` (the `CollisionQuery` port). The dash's motion goes
+through `MovementSystem` and `CollisionSystem` like walking.
 
 ## Related
 

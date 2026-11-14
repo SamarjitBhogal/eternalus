@@ -465,8 +465,9 @@ each closed by the session or phase named:
   a log of the external commands and replay checkpoints, both outside the hashed state); no
   `dispose()` yet. Since `feat/ability-framework` the options take `abilities` (the ability
   registry), a `RosterSlot` may name its Legend spec (`specId`, ADR 0026 decision 1), and
-  `dashReach(from, direction, distance)` answers how far a dash may go, for the client's aim
-  overlay (ADR 0026 decision 7).
+  `dashReach(from, direction, distance, radius)` answers how far a dash may go, for the client's
+  aim overlay (ADR 0026 decisions 4 and 7). `MatchWorld` also carries the match's collision sweep
+  (`collisions`, the `CollisionQuery` port; `null` without map objects).
 - `move`, `stop` and `attack-target` have their own handlers (`MoveHandler`, `StopHandler`,
   `AttackTargetHandler`). `cast-ability` has `CastAbilityHandler`, which checks with the
   `CastValidator` that `Simulation` injects and queues the cast for `AbilitySystem`; a cast that
@@ -484,9 +485,9 @@ each closed by the session or phase named:
   inside that level and its `xpToNext`, `null` at the cap; `snapshot(curves)` takes the level
   curves `ProgressionSystem` uses), `aether` (a Legend's `current` and `max` aether, DEC-230),
   `area` (a zone's polygons) and `capture` (a capture point's state and presence) groups only.
-  `Snapshot.player` (05 §15) is built by `PlayerSnapshotter` when `snapshot(curves, readiness)`
-  gets the cast rules (`feat/ability-framework`); it is `null` without them or without a human
-  Legend.
+  `Snapshot.player` (05 §15) is built by `PlayerSnapshotter` from the cast rules
+  `snapshot(curves, readiness)` takes (`feat/ability-framework`; the match's `CastValidator`); it
+  is `null` without a human Legend.
   `MatchPhase` lives in `config/matchPhases.ts`; the match director is built (12 §13).
 - `GameState.world` is a `MatchWorld` (the generated definition, its lane `routes` and the
   `WorldMap` grid) with no structures index yet (minion plan M2c), and the grid keeps no flow
