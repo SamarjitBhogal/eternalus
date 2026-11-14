@@ -121,4 +121,26 @@ describe('EntityFactory', () => {
       weapons,
     });
   });
+
+  it('creates an entity with a given id without moving the id counter', () => {
+    const factory = makeFactory();
+
+    const returning = factory.createWithId(
+      'entity-9',
+      'factory-entity',
+      'factory-definition',
+      PLACEMENT,
+    );
+    const next = factory.create('factory-entity', 'factory-definition', PLACEMENT);
+
+    expect(returning.id).toBe('entity-9');
+    expect(returning.definitionId).toBe('factory-definition');
+    expect(next.id).toBe('entity-1');
+  });
+
+  it('checks the kind and definition for a given id too', () => {
+    expect(() =>
+      makeFactory().createWithId('entity-9', 'factory-entity', 'other-definition', PLACEMENT),
+    ).toThrow(/built by "other-kind"/);
+  });
 });

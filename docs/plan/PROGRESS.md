@@ -871,7 +871,7 @@ The example below is fenced so it is not read as a real entry.
 
 - What was done: replaced PR #25's approach, at sholtzman's request. #25 turned the
   character-select timeout off; now the timeout is back to the design's behaviour and character
-  select starts with the Warrior selected (`PLACEHOLDER_PRESELECTED_CLASS_ID` in
+  select starts with the Warrior selected (``npm run check`→`EXIT=0`: core "Tests 1340 passed (1340)"; client "Tests 1819 passed (1819)"; "Documentation check passed."_PRESELECTED_CLASS_ID` in
   `game/content/placeholderSetup.ts`, `TODO(sam)`), so the 60 s countdown leads into
   `pre-launch` and the match instead of cancelling. `CharacterSelectState` takes
   `preselectedClassId` (selected on entry through the normal `select-class` path, so it is
@@ -6334,6 +6334,37 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 
 - What was done: merged `phase/3-sprint-3-work` (3dc9e908, after #51 and #52) into this branch because #97 was CONFLICTING. Only `docs/plan/PROGRESS.md` conflicted; both sides' entries are kept. No feature code changed. No force push.
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 1336 passed (1336)"; protocol "Tests 18 passed (18)"; server "Tests 79 passed (79)"; client "Tests 1883 passed (1883)"; "Documentation check passed."
+
+### 2026-11-11 — Phase 3 / sprint 3: interim Legend respawn (BUG-6, SCRUM-439, plan task GL-12) — fix/legend-respawn — Claude Code
+
+- What was done: a dead Legend came back never, so a human Legend's death stalled the match
+  (`DeathSystem` removes every dead entity and `Entity.retire` drops its components). New
+  `RespawnSystem` (just before `DeathSystem`) queues each dead Legend of a playable team in
+  `state.respawns` (new `RespawnQueue`, hashed by `StateHasher` only while non-empty, so the empty
+  hash is unchanged) and, after `LEGEND_RESPAWN_SECONDS` (10 s, `content/progression/legendRespawn.ts`,
+  `// TUNE:`, DEC-80), rebuilds the same Legend at its team's Stronghold: same id
+  (`EntityFactory.createWithId`, the id counter does not move), level, XP (`Progression.restore`)
+  and raised caps, full health and aether, same bot controller; it emits `entity-spawned` and the
+  new `legend-respawned`. `MatchWorld.strongholdOf` is shared with `Simulation`. The sovereign is
+  not a Legend, so it never returns. `TODO(claudiodh)` in `ProgressionSystem` stays (momentum
+  timer); structure XP for a Legend dead at that moment ("pay on respawn", DEC-186) is not built.
+  No new invariant (the queue's `add` and the store's duplicate-id check already throw).
+  Docs: doc 05 section 18 note, `INBOX.md` item with the three open points.
+- Checks run: full `npm run check` exit 0: core `Test Files 237 passed (237)` and
+  `Tests 1322 passed (1322)`, client `Tests 1818 passed (1818)`, `Documentation check passed.`
+- Next step: critic and ponytail gate, then PR into phase/3; claudiodh's momentum-scaling timer
+  replaces the fixed delay.
+
+### 2026-11-13 — Phase 3 / sync — fix/legend-respawn (PR #100) — claudiodh + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (3dc9e908, after #51 and #52) into this branch because #100 was CONFLICTING. Only `docs/plan/PROGRESS.md` conflicted; both sides' entries are kept. No feature code changed. No force push.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1339 passed (1339)"; client "Tests 1818 passed (1818)"; "Documentation check passed."
+- Next step: reviewer approval; the team merges.
+
+### 2026-11-13 — Phase 3 / sprint 3: Copilot review fixes — fix/legend-respawn (PR #100) — Claude Code
+
+- What was done: three Copilot comments, all valid. (1) Unit cap: a returning Legend is not counted while it waits, so spawns can fill its slot. Decision (simplest, in `INBOX.md`): a returning Legend ignores the caps, which gate new spawns only; documented on `RespawnSystem`, pinned by a new test (it passes before and after, since it records the behaviour). (2) Client: `PlayerCommands` kept `lastMove` and `attackTargetId` while the rebuilt Legend had no movement or target, so held input stayed idle; it now resets both when the Legend reappears in the snapshot (new test fails without it). (3) The hash test now compares two states at the same tick with the same entities, only the queue differs (fails when the queue is left out of `StateHasher`).
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1340 passed (1340)"; client "Tests 1819 passed (1819)"; "Documentation check passed."
 - Next step: reviewer approval; the team merges.
 
 ### 2026-11-06 — Phase 3 / minion plan MVP gaps — docs/minion-plan-mvp-gaps — SamarjitBhogal + Claude Code

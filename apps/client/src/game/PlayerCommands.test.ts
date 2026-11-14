@@ -212,4 +212,19 @@ describe('PlayerCommands', () => {
       { type: 'stop', actorId: ACTOR },
     ]);
   });
+
+  it('sends held movement and the held attack again when the Legend returns from a respawn', () => {
+    const { input, queued, tick } = setUp();
+    input.move = { x: 1, y: 0 };
+    input.isAttacking = true;
+    input.aim = { x: 2, y: 2 };
+    tick();
+    tick([]);
+    tick([]);
+    expect([queued('move'), queued('attack-target')]).toEqual([1, 1]);
+
+    tick([PLAYER]);
+
+    expect([queued('move'), queued('attack-target')]).toEqual([2, 2]);
+  });
 });

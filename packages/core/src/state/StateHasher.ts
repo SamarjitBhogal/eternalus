@@ -73,6 +73,25 @@ export class StateHasher {
       });
       parts.push(['guards', ...posts]);
     }
+    // Dead Legends waiting to respawn are appended only while some wait, for the same reason.
+    if (state.respawns.size > 0) {
+      const waiting: unknown[] = [];
+      state.respawns.forEach((entry) => {
+        waiting.push([
+          entry.entityId,
+          entry.kind,
+          entry.definitionId,
+          entry.team,
+          entry.controller ?? null,
+          entry.xp,
+          entry.level,
+          entry.healthMax,
+          entry.aetherMax,
+          entry.returnsAtTick,
+        ]);
+      });
+      parts.push(['respawns', ...waiting]);
+    }
     // Ally damage (DEC-89) is appended only while some is counted, for the same reason.
     if (state.allyDamage.size > 0) {
       const tallies: unknown[] = [];

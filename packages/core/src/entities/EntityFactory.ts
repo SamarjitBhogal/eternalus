@@ -40,6 +40,26 @@ export class EntityFactory {
    * @throws Error when the kind is unknown, the definition is missing or another kind builds it.
    */
   public create(kind: string, definitionId: string, placement: Placement): Entity {
+    return this.build(kind, definitionId, placement);
+  }
+
+  /**
+   * Like `create`, but the entity gets the given `id` instead of the next one, so a Legend that
+   * died can return as itself (FR-051). The id counter does not move, so later ids stay the same.
+   * The caller guarantees the id is free (the store rejects a duplicate when it is added).
+   *
+   * @throws Error as `create` does.
+   */
+  public createWithId(
+    id: string,
+    kind: string,
+    definitionId: string,
+    placement: Placement,
+  ): Entity {
+    return this.build(kind, definitionId, placement, id);
+  }
+
+  private build(kind: string, definitionId: string, placement: Placement, id?: string): Entity {
     const EntityConstructor = this.registry.get(kind);
 
     if (EntityConstructor === undefined) {
@@ -59,7 +79,7 @@ export class EntityFactory {
     }
 
     const entity = new EntityConstructor(
-      `${ENTITY_ID_PREFIX}${String(this.ids.next())}`,
+      id ?? `${ENTITY_ID_PREFIX}${String(this.ids.next())}`,
       definitionId,
     );
 
