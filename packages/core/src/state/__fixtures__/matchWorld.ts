@@ -4,10 +4,7 @@ import type { MapDefinition } from '../../content/maps/maps.types';
 import { WorldMap } from '../../map/WorldMap';
 import { MatchWorld } from '../MatchWorld';
 
-/**
- * `map` as `Simulation` builds its world without map objects: the default cell size, the
- * content's blocking rule and no collision sweep.
- */
+/** `map` as `Simulation` builds its world: the default cell size and the content's blocking rule. */
 export const matchWorldOf = (
   map: MapDefinition,
   cellSize = createDefaultGameConfig().map.navCellSize,
@@ -19,5 +16,4 @@ export const matchWorldOf = (
       cellSize,
       (definitionId) => MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking ?? false,
     ),
-    null,
   );

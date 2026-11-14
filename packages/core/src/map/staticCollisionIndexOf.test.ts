@@ -31,13 +31,17 @@ const object = (id: string, x: number, isBlocking: boolean): MapObject => ({
   footprints: [square(x)],
 });
 
+/** The map's bounds. */
+const BOUNDS = { x: 0, y: 0, width: MAP.width, height: MAP.height };
+
 /** How far east from x = 0 a 0.5 m circle gets on `objects` and the map's terrain. */
 const reachEast = (objects: readonly MapObject[]) =>
-  new CollisionResolver(staticCollisionIndexOf(MAP, objects)).travel(
+  new CollisionResolver(staticCollisionIndexOf(MAP, objects), BOUNDS).reach(
     { x: 0, y: 0 },
-    { x: 100, y: 0 },
+    { x: 1, y: 0 },
+    100,
     0.5,
-  ) * 100;
+  );
 
 describe('staticCollisionIndexOf', () => {
   it("indexes each blocking object's footprints and the map's terrain", () => {
@@ -53,9 +57,8 @@ describe('staticCollisionIndexOf', () => {
     const index = staticCollisionIndexOf(MAP, [object('wall', 10, true)]);
     index.remove('wall');
 
-    expect(new CollisionResolver(index).travel({ x: 0, y: 0 }, { x: 100, y: 0 }, 0.5)).toBeCloseTo(
-      0.295,
-      5,
-    );
+    expect(
+      new CollisionResolver(index, BOUNDS).reach({ x: 0, y: 0 }, { x: 1, y: 0 }, 100, 0.5),
+    ).toBeCloseTo(29.5, 4);
   });
 });

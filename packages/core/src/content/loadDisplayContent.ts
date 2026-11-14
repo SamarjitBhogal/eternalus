@@ -2,7 +2,8 @@ import type { PlayableTeam } from '../teams/teams.types';
 import { ABILITIES } from './abilities/abilityCatalogue';
 import type {
   AuthoredAbility,
-  AuthoredEffectSpec,
+  AuthoredAbilityWith,
+  AuthoredStep,
   EffectShape,
 } from './abilities/AbilityDefinition.types';
 import { ContentCatalogue } from './ContentCatalogue';
@@ -29,12 +30,14 @@ import { ContentValidator } from './validation/ContentValidator';
 /**
  * One step of an ability's effect list as the client draws it: what it does and the area it covers,
  * for the range overlay. Each effect strategy describes its own steps (`AbilityEffect.describe`): a
- * dash step is `{ kind: 'dash', shape: path, distance }` (the path as wide as its widest `onPath`
- * path step), followed by its `onPath` and `onEnd` steps.
+ * dash step is `{ kind: 'dash', distance }`, followed by its `onPath` and `onEnd` steps, whose
+ * areas the overlay places along and at the end of that distance.
  */
 export type AbilityDisplayStep = {
-  readonly kind: AuthoredEffectSpec['kind'];
-  readonly shape: EffectShape;
+  /** The effect kind (`AbilityEffect.kind`): any string, so a new effect kind needs no edit here. */
+  readonly kind: string;
+  /** The area the step acts on; absent on a step that moves rather than hits (a dash). */
+  readonly shape?: EffectShape;
   /** A dash's length in metres; absent on every other step. */
   readonly distance?: number;
 };
@@ -80,10 +83,11 @@ export type DisplayContent = {
 /**
  * Turns an ability's effect steps into its overlay rows (`AbilityDisplay.steps`). Each effect kind
  * describes its own steps, so this is the effect strategies' job (`AbilityRegistry.describe`),
- * injected because `content/` does not import `abilities/`.
+ * injected because `content/` does not import `abilities/`. It reads a step by its kind only, so a
+ * new effect kind needs no edit here.
  */
 export type AbilityStepDescriber = (
-  effects: readonly AuthoredEffectSpec[],
+  effects: readonly AuthoredStep[],
 ) => readonly AbilityDisplayStep[];
 
 /** The catalogues `loadDisplayContent` validates and returns; each defaults to the shipped one. */
@@ -92,11 +96,12 @@ export type DisplayCatalogues = {
   readonly specs?: ContentCatalogue<LegendSpecDefinition>;
   readonly lockedClasses?: ContentCatalogue<LockedClassDefinition>;
   readonly botRoster?: BotRosterDefinition;
-  readonly abilities?: ContentCatalogue<AuthoredAbility>;
+  /** The abilities as authored, whatever their effect kinds (the shipped ones by default). */
+  readonly abilities?: ContentCatalogue<AuthoredAbilityWith<AuthoredStep>>;
 };
 
 const toAbilityDisplay = (
-  ability: AuthoredAbility,
+  ability: AuthoredAbilityWith<AuthoredStep>,
   describeSteps: AbilityStepDescriber,
 ): AbilityDisplay => ({
   id: ability.id,

@@ -48,6 +48,26 @@ describe('AbilityRegistry', () => {
     }).toThrow('effect kind "fake-strike" is already registered');
   });
 
+  it('checks each step once when it resolves every ability at boot (critic r2 N-1)', () => {
+    const checked: string[] = [];
+    /** A strike that notes each step it is asked to check. */
+    class CountingStrike extends RecordingEffect {
+      public override validate(): readonly string[] {
+        checked.push(this.kind);
+        return [];
+      }
+    }
+    const registry = testAbilityRegistry(
+      [new CountingStrike('fake-strike')],
+      new ContentCatalogue([fakeAbility({ id: 'one-strike', effects: [{ kind: 'fake-strike' }] })]),
+    );
+
+    registry.resolveAll();
+
+    expect(checked).toEqual(['fake-strike']);
+    expect(registry.resolve('one-strike').steps).toHaveLength(1);
+  });
+
   it('makes an ability with no effects (not built, S1) unavailable', () => {
     const veil = testAbilityRegistry([]).resolve('veil');
     expect(veil).toMatchObject({ isAvailable: false, steps: [] });

@@ -54,6 +54,21 @@ export type CastContext = {
 export type NestedDescriber = (step: EffectStep) => readonly AbilityDisplayStep[];
 
 /**
+ * `T` without its time fields, at any depth: every `<name>Seconds` (as authored) and `<name>Ticks`
+ * (as loaded) field dropped. What loading leaves as authored (kinds, areas, distances, nested
+ * steps), so an authored step and a loaded one both fit it: what `AbilityEffect.describe` reads.
+ */
+export type WithoutTimes<T> = T extends readonly (infer Item)[]
+  ? readonly WithoutTimes<Item>[]
+  : T extends object
+    ? {
+        readonly [
+          K in keyof T as K extends `${string}Seconds` | `${string}Ticks` ? never : K
+        ]: WithoutTimes<T[K]>;
+      }
+    : T;
+
+/**
  * One kind of effect (05 §3): a stateless Flyweight, one instance per kind in the
  * `AbilityRegistry`. A new kind is one class and one `defaultAbilityRegistry.ts` line: the loader
  * and the display content know no kind, so the class checks and describes its own spec.
@@ -69,10 +84,11 @@ export interface AbilityEffect<S extends EffectStep = EffectStep> {
   validate(spec: S): readonly string[];
   /**
    * The rows the aim overlay draws for the step (`AbilityDisplay.steps`, 05 §15): its own area and,
-   * through `nested`, those of the steps it runs. It reads only areas, distances and nested steps,
-   * which loading leaves as authored, so it describes an authored step too.
+   * through `nested`, those of the steps it runs. It gets the step without its times
+   * (`WithoutTimes`), so it describes the authored step the display content passes and a loaded
+   * one alike.
    */
-  describe(spec: S, nested: NestedDescriber): readonly AbilityDisplayStep[];
+  describe(spec: WithoutTimes<S>, nested: NestedDescriber): readonly AbilityDisplayStep[];
   /** Applies `spec` for the cast described by `cast`, this tick. */
   apply(spec: S, cast: CastContext): void;
 }

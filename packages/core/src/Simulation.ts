@@ -141,10 +141,14 @@ export class Simulation {
       ...(mapObjects === undefined ? {} : { mapObjects }),
       ...(roster.length === 0 ? {} : { roster }),
     };
-    const { space, world, paths, walls } = Simulation.buildWorld(map, validConfig, mapObjects);
+    const { space, world, paths, walls, collisions } = Simulation.buildWorld(
+      map,
+      validConfig,
+      mapObjects,
+    );
     // Without the default pipeline no director runs, so no mark would ever fire: list none.
     const schedule = systems === undefined ? timeline.schedule() : [];
-    this.state = new GameState(validConfig, seed, world, { space, paths }, schedule);
+    this.state = new GameState(validConfig, seed, world, { space, paths, collisions }, schedule);
     const { tickRate } = this.state.config;
     const curves = levelCurves ?? loadLevelCurves();
     this.curves = curves;
@@ -186,9 +190,12 @@ export class Simulation {
         this.state.entities,
         MAP_OBJECT_DEFINITIONS,
       );
-      this.state.events.on('entity-removed', ({ entityId }) =>
-        this.state.worldObjects?.removed(entityId),
-      );
+      this.state.events.on('entity-removed', ({ entityId }) => {
+        this.state.worldObjects?.removed(entityId);
+        // At once, so walking and a dash both stop seeing it from now on (critic r2 F1).
+        const object = this.state.worldObjects?.objectFor(entityId);
+        if (object !== undefined) walls?.remove(object.id);
+      });
     }
     this.systemContext = { state: this.state, logger };
     if (systems === undefined) {
@@ -210,7 +217,7 @@ export class Simulation {
         hordes: {
           factory,
           space,
-          collisions: map === undefined || walls === null ? [] : [new CollisionSystem(map, walls)],
+          collisions: collisions === null ? [] : [new CollisionSystem(collisions)],
           decide: [
             new AiSystem(this.state, controllers, AI_CADENCE, (command) => {
               this.botQueue.enqueue(command);
@@ -241,7 +248,7 @@ export class Simulation {
    * the match's own walls. A read-only query for aim previews; it changes nothing.
    */
   public dashReach(from: Vec2, direction: Vec2, distance: number, radius: number): number {
-    return dashReach(this.state.world, from, direction, distance, radius);
+    return dashReach(this.state.collisions, from, direction, distance, radius);
   }
 
   /** Number of ticks completed. */
@@ -634,8 +641,10 @@ export class Simulation {
    * object's footprints, minus its passages. A feature whose object is walkable (a Stronghold's
    * floor, whose walls and furniture are objects of their own) is not stamped; other blocking
    * features keep their stamp, which also fills a tower's hollow core so no path ends in a pocket
-   * the walls close off. Also with `mapObjects`, `walls` is the one static collision index that
-   * `CollisionSystem` moves units against and the world's collision sweep cuts dashes with.
+   * the walls close off. Also with `mapObjects`, `walls` is the one static collision index, from
+   * which a destroyed object is removed, and `collisions` the one `CollisionResolver` on it and the
+   * map's bounds: `CollisionSystem` moves units with it and the state's `collisions` port cuts
+   * dashes with it.
    */
   private static buildWorld(
     map: MapDefinition | undefined,
@@ -646,17 +655,22 @@ export class Simulation {
     readonly world: MatchWorld | null;
     readonly paths: AStarPathfinder | null;
     readonly walls: StaticCollisionIndex | null;
+    readonly collisions: CollisionResolver | null;
   } {
     if (map === undefined) {
-      return { space: null, world: null, paths: null, walls: null };
+      return { space: null, world: null, paths: null, walls: null, collisions: null };
     }
     const { grid, paths } = new MatchPathfinderFactory().create(map, config, mapObjects);
     const walls = mapObjects === undefined ? null : staticCollisionIndexOf(map, mapObjects);
     return {
       space: new SpaceIndex(map.width, map.height, SPACE_CELL_SIZE),
-      world: new MatchWorld(map, grid, walls === null ? null : new CollisionResolver(walls)),
+      world: new MatchWorld(map, grid),
       paths,
       walls,
+      collisions:
+        walls === null
+          ? null
+          : new CollisionResolver(walls, { x: 0, y: 0, width: map.width, height: map.height }),
     };
   }
 

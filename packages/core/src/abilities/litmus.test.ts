@@ -3,11 +3,15 @@ import { describe, expect, it } from 'vitest';
 import { ABILITIES } from '../content/abilities/abilityCatalogue';
 import type { AuthoredAbilityWith } from '../content/abilities/AbilityDefinition.types';
 import { loadAbilities } from '../content/abilities/loadAbilities';
+import { ContentCatalogue } from '../content/ContentCatalogue';
 import type { AbilityDisplayStep } from '../content/loadDisplayContent';
+import { loadDisplayContent } from '../content/loadDisplayContent';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { NullLogger } from '../diagnostics/NullLogger';
 import { Simulation } from '../Simulation';
-import type { AbilityEffect, CastContext } from './AbilityEffect.types';
+import type { AbilityEffect, CastContext, WithoutTimes } from './AbilityEffect.types';
+import type { ComposableAbility } from './AbilityRegistry.types';
+import { createDefaultAbilityRegistry } from './defaultAbilityRegistry';
 import { unitsWithWarriorKit } from './__fixtures__/casterState';
 import { testAbilityRegistry } from './__fixtures__/fakeAbilities';
 
@@ -26,9 +30,9 @@ class FakeBoltEffect implements AbilityEffect<FakeBoltSpec> {
     return spec.amount > 0 ? [] : ['fake-bolt amount must be positive'];
   }
 
-  /** The overlay's rows are typed by the shipped kinds; a test kind draws nothing. */
-  public describe(): readonly AbilityDisplayStep[] {
-    return [];
+  /** Its area, as the shipped area effects describe theirs. */
+  public describe({ kind, shape }: WithoutTimes<FakeBoltSpec>): readonly AbilityDisplayStep[] {
+    return [{ kind, shape }];
   }
 
   public apply(spec: FakeBoltSpec, cast: CastContext): void {
@@ -60,14 +64,15 @@ const FAKE_BOLT: AuthoredAbilityWith<FakeBoltSpec> = {
 };
 
 describe('the ability framework litmus (architecture 05 §16, Phase 4.2 metric)', () => {
-  it('casts a new ability added as content plus one registry line, with no other change', () => {
-    // The content: Fake Bolt authored as every ability is and loaded with the shipped ones by the
-    // unchanged `loadAbilities`, and a Warrior kit that holds it. The one registry line: the
-    // registry's own strategies plus `FakeBoltEffect` (`createDefaultAbilityRegistry` would refuse
-    // Fake Bolt at boot, since its kind has no line in `defaultAbilityRegistry.ts`).
-    const abilities = loadAbilities(30, [...ABILITIES.all(), FAKE_BOLT]);
-    const registry = testAbilityRegistry([new FakeBoltEffect()], abilities);
+  // The content: Fake Bolt authored as every ability is and loaded with the shipped ones by the
+  // unchanged `loadAbilities`. The one registry line: the registry's own strategies plus
+  // `FakeBoltEffect` (`createDefaultAbilityRegistry` would refuse Fake Bolt at boot, since its kind
+  // has no line in `defaultAbilityRegistry.ts`).
+  const abilities = loadAbilities(30, [...ABILITIES.all(), FAKE_BOLT]);
+  const registry = testAbilityRegistry([new FakeBoltEffect()], abilities);
 
+  it('casts a new ability added as content plus one registry line, with no other change', () => {
+    // A Warrior kit that holds it.
     const sim = new Simulation({
       config: createDefaultGameConfig(),
       seed: 7,
@@ -119,5 +124,22 @@ describe('the ability framework litmus (architecture 05 §16, Phase 4.2 metric)'
     expect(entity(dummyId)?.health?.current).toBe(75);
     expect(entity(casterId)?.aether?.current).toBeLessThan(100);
     expect(abilities.get('fake-bolt').cooldownTicks).toBe(60); // 2 s at 30 ticks per second
+  });
+
+  it('shows the new ability in the display content with its overlay row, with no other change', () => {
+    // The unchanged display loader, its steps described as core's `loadShippedDisplayContent`
+    // describes them (the shipped strategies) plus the one registry line for Fake Bolt.
+    const strategies = createDefaultAbilityRegistry(new ContentCatalogue<ComposableAbility>([]));
+    strategies.registerEffect(new FakeBoltEffect());
+    const display = loadDisplayContent((effects) => strategies.describe(effects), {
+      abilities: new ContentCatalogue([...ABILITIES.all(), FAKE_BOLT]),
+    });
+
+    expect(display.abilities.find(({ id }) => id === 'fake-bolt')).toMatchObject({
+      displayName: 'Fake Bolt',
+      cooldownSeconds: 2,
+      isAvailable: true,
+      steps: [{ kind: 'fake-bolt', shape: { kind: 'circle', radius: 4 } }],
+    });
   });
 });

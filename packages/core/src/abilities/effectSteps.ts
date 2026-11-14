@@ -1,9 +1,6 @@
+import { isKinded } from '../content/abilities/isKinded';
 import type { EffectStep } from './AbilityEffect.types';
 import type { ShapeSpec } from './shapes/AreaShape.types';
-
-/** Whether `value` is an object with a string `kind` (a step or a shape). */
-const isKinded = (value: unknown): value is EffectStep =>
-  typeof value === 'object' && value !== null && 'kind' in value && typeof value.kind === 'string';
 
 /** The steps nested in `step` (a dash's `onPath` and `onEnd`): every list field of kinded items. */
 const childStepsOf = (step: EffectStep): EffectStep[] =>

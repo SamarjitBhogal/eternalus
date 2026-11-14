@@ -10,16 +10,13 @@ import type {
   AuthoredStep,
   InTicks,
 } from './AbilityDefinition.types';
+import { isKinded } from './isKinded';
 
 /** The suffix of an authored time field (`durationSeconds`) and of its loaded one (`durationTicks`). */
 const SECONDS = 'Seconds';
 const TICKS = 'Ticks';
 
 const isNonNegative = (value: number): boolean => value >= 0 && Number.isFinite(value);
-
-/** Whether `value` is an object with a string `kind`: an effect step, or a shape inside one. */
-const isKinded = (value: object): value is AuthoredStep =>
-  'kind' in value && typeof value.kind === 'string';
 
 /**
  * Every `<name>Seconds` field in `value` (at any depth) that is not a finite time of 0 or more,

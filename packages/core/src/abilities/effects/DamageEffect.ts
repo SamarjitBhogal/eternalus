@@ -2,9 +2,8 @@ import type { DamageSpec } from '../../content/abilities/AbilityDefinition.types
 import { isUnitFamily } from '../../entities/unitFamilies';
 import type { DamageSource } from '../../state/GameEvents.types';
 import type { AbilityDisplayStep } from '../../content/loadDisplayContent';
-import type { AbilityEffect, CastContext } from '../AbilityEffect.types';
+import type { AbilityEffect, CastContext, WithoutTimes } from '../AbilityEffect.types';
 import { mustBePositive, mustNotBeNegative } from '../specChecks';
-import { areaRow } from './areaRow';
 
 /**
  * Damages every enemy in the step's shape through the match's one `DamagePipeline` (architecture
@@ -25,8 +24,8 @@ export class DamageEffect implements AbilityEffect<DamageSpec> {
   }
 
   /** Its area. */
-  public describe(spec: DamageSpec): readonly AbilityDisplayStep[] {
-    return areaRow(spec);
+  public describe({ kind, shape }: WithoutTimes<DamageSpec>): readonly AbilityDisplayStep[] {
+    return [{ kind, shape }];
   }
 
   /** Deals the step's damage to every enemy in its shape, in id order. */

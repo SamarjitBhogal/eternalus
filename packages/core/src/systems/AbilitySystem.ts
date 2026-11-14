@@ -1,6 +1,5 @@
 import type { AbilityRegistry } from '../abilities/AbilityRegistry';
 import { CastInstance } from '../abilities/CastInstance';
-import type { CastValidator } from '../abilities/CastValidator';
 import { TargetQuery } from '../abilities/TargetQuery';
 import type { DamagePipeline } from '../combat/DamagePipeline';
 import type { Command } from '../commands/Command.types';
@@ -12,6 +11,7 @@ import { Progression } from '../components/Progression';
 import { Transform } from '../components/Transform';
 import type { Entity } from '../entities/Entity';
 import type { GameState } from '../state/GameState';
+import type { SlotReadiness } from '../state/SlotReadiness.types';
 import { compareById } from '../utils/compareById';
 import type { System, SystemContext } from './System.types';
 
@@ -30,13 +30,14 @@ export class AbilitySystem implements System {
 
   /**
    * @param registry - Where abilities are composed and effects found.
-   * @param validator - The cast rules, the same the handler checks with.
+   * @param validator - The cast rules, the same the handler checks with (the match's
+   *   `CastValidator`, through its `SlotReadiness` port).
    * @param damage - The match's one damage pipeline, for the effects.
    * @param statuses - The match's one status applier, for the effects.
    */
   public constructor(
     private readonly registry: AbilityRegistry,
-    private readonly validator: CastValidator,
+    private readonly validator: Pick<SlotReadiness, 'blockedBy' | 'priceOf'>,
     private readonly damage: DamagePipeline,
     private readonly statuses: StatusEffectApplier,
   ) {

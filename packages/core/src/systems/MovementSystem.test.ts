@@ -11,6 +11,7 @@ import { MapObjectBuilder } from '../map/MapObjectBuilder';
 import { staticCollisionIndexOf } from '../map/staticCollisionIndexOf';
 import { NullLogger } from '../diagnostics/NullLogger';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
+import { CollisionResolver } from '../physics/CollisionResolver';
 import { Entity } from '../entities/Entity';
 import { EntityFactory } from '../entities/EntityFactory';
 import { GameState } from '../state/GameState';
@@ -212,8 +213,10 @@ describe('MovementSystem', () => {
     const intoEdge = pushed(15, 10);
     const movement = new MovementSystem();
     const collision = new CollisionSystem(
-      WALLED_MAP,
-      staticCollisionIndexOf(WALLED_MAP, new MapObjectBuilder().build(WALLED_MAP, WALL)),
+      new CollisionResolver(
+        staticCollisionIndexOf(WALLED_MAP, new MapObjectBuilder().build(WALLED_MAP, WALL)),
+        { x: 0, y: 0, width: WALLED_MAP.width, height: WALLED_MAP.height },
+      ),
     );
 
     for (let tick = 0; tick < 3; tick += 1) {

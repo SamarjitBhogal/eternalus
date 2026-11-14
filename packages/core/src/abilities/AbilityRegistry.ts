@@ -93,37 +93,23 @@ export class AbilityRegistry {
       return cached;
     }
     const definition = this.definitions.get(abilityId);
-    const problems = this.problemsOf(definition);
-    if (problems.length > 0) {
-      throw new ContentValidationError(problems.join('\n'));
-    }
-    const ability = new ComposedAbility(
-      definition,
-      definition.effects.map((spec) => ({ effect: this.effectFor(spec.kind), spec })),
-      definition.restrictions.map((spec): BoundRestriction => ({
-        rule: AbilityRegistry.required(this.restrictionRules, spec.kind, 'restriction'),
-        spec,
-      })),
-      definition.effects.length > 0,
-    );
-    this.resolved.set(abilityId, ability);
-    return ability;
+    AbilityRegistry.throwIfAny(this.problemsOf(definition));
+    return this.compose(definition);
   }
 
   /**
    * Checks and composes every ability once, at boot: a missing strategy or a step a strategy
-   * refuses fails here, never mid-match.
+   * refuses fails here, never mid-match. Each ability is checked once, here, not again on compose.
    *
    * @throws ContentValidationError listing every problem of every ability.
    */
   public resolveAll(): void {
     const definitions = this.definitions.all();
-    const problems = definitions.flatMap((definition) => this.problemsOf(definition));
-    if (problems.length > 0) {
-      throw new ContentValidationError(problems.join('\n'));
-    }
-    for (const { id } of definitions) {
-      this.resolve(id);
+    AbilityRegistry.throwIfAny(definitions.flatMap((definition) => this.problemsOf(definition)));
+    for (const definition of definitions) {
+      if (!this.resolved.has(definition.id)) {
+        this.compose(definition);
+      }
     }
   }
 
@@ -140,31 +126,40 @@ export class AbilityRegistry {
     );
   }
 
+  /** Composes `definition`, already checked, and caches it. */
+  private compose(definition: ComposableAbility): Ability {
+    const ability = new ComposedAbility(
+      definition,
+      definition.effects.map((spec) => ({ effect: this.effectFor(spec.kind), spec })),
+      definition.restrictions.map((spec): BoundRestriction => ({
+        rule: AbilityRegistry.required(this.restrictionRules, spec.kind, 'restriction'),
+        spec,
+      })),
+      definition.effects.length > 0,
+    );
+    this.resolved.set(definition.id, ability);
+    return ability;
+  }
+
   /**
    * Everything wrong with `definition`: kinds with no strategy, then each step's and each shape's
    * own `validate` problems, every step nested in another included.
    */
   private problemsOf(definition: ComposableAbility): string[] {
-    const steps = flattenSteps(definition.effects);
+    const steps = flattenSteps(definition.effects).map((step) => ({ step, shape: shapeOf(step) }));
     const missing = [
-      ...steps.flatMap((step) => {
-        const shape = shapeOf(step);
-        return [
-          ...(this.effects.has(step.kind) ? [] : [`effect "${step.kind}"`]),
-          ...(shape === undefined || this.shapes.has(shape.kind) ? [] : [`shape "${shape.kind}"`]),
-        ];
-      }),
+      ...steps.flatMap(({ step, shape }) => [
+        ...(this.effects.has(step.kind) ? [] : [`effect "${step.kind}"`]),
+        ...(shape === undefined || this.shapes.has(shape.kind) ? [] : [`shape "${shape.kind}"`]),
+      ]),
       ...definition.restrictions
         .filter(({ kind }) => !this.restrictionRules.has(kind))
         .map(({ kind }) => `restriction "${kind}"`),
     ];
-    const invalid = steps.flatMap((step) => {
-      const shape = shapeOf(step);
-      return [
-        ...(this.effects.get(step.kind)?.validate(step) ?? []),
-        ...(shape === undefined ? [] : (this.shapes.get(shape.kind)?.validate(shape) ?? [])),
-      ];
-    });
+    const invalid = steps.flatMap(({ step, shape }) => [
+      ...(this.effects.get(step.kind)?.validate(step) ?? []),
+      ...(shape === undefined ? [] : (this.shapes.get(shape.kind)?.validate(shape) ?? [])),
+    ]);
     return [
       ...(missing.length > 0
         ? [
@@ -173,6 +168,13 @@ export class AbilityRegistry {
         : []),
       ...invalid.map((problem) => `Ability "${definition.id}": ${problem}.`),
     ];
+  }
+
+  /** @throws ContentValidationError listing `problems`, when there are any. */
+  private static throwIfAny(problems: readonly string[]): void {
+    if (problems.length > 0) {
+      throw new ContentValidationError(problems.join('\n'));
+    }
   }
 
   private static add<T extends { readonly kind: string }>(

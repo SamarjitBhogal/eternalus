@@ -6,9 +6,8 @@ import type { Vec2 } from '../../utils/geometry.types';
 import { TickRate } from '../../utils/TickRate';
 import { normalize } from '../../utils/vec2';
 import type { AbilityDisplayStep } from '../../content/loadDisplayContent';
-import type { AbilityEffect, CastContext } from '../AbilityEffect.types';
+import type { AbilityEffect, CastContext, WithoutTimes } from '../AbilityEffect.types';
 import { mustBePositive } from '../specChecks';
-import { areaRow } from './areaRow';
 
 /**
  * Knocks every enemy in the step's shape away from the shape's centre (architecture 05 §3) as
@@ -32,8 +31,8 @@ export class KnockbackEffect implements AbilityEffect<KnockbackSpec> {
   }
 
   /** Its area. */
-  public describe(spec: KnockbackSpec): readonly AbilityDisplayStep[] {
-    return areaRow(spec);
+  public describe({ kind, shape }: WithoutTimes<KnockbackSpec>): readonly AbilityDisplayStep[] {
+    return [{ kind, shape }];
   }
 
   /** Pushes and staggers every enemy in the step's shape, in id order. */

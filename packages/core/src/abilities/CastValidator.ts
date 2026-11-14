@@ -31,16 +31,6 @@ export class CastValidator implements SlotReadiness {
   /** @param registry - Where abilities are composed (`AbilityRegistry`). */
   public constructor(private readonly registry: { resolve(abilityId: string): Ability }) {}
 
-  /** Why `actorId` may not cast `slot` aimed at `aim` now, or `null` when it may. */
-  public blockedBy(
-    state: GameState,
-    actorId: EntityId,
-    slot: AbilitySlot,
-    aim: Aim,
-  ): CastRejectReason | null {
-    return this.reasonFor(state, actorId, slot, aim);
-  }
-
   /**
    * Why `actorId` may not cast `slot` now whatever the aim, or `null`: the slot's own state, for
    * the player snapshot.
@@ -52,7 +42,7 @@ export class CastValidator implements SlotReadiness {
     actorId: EntityId,
     slot: AbilitySlot,
   ): AbilityRejectReason | null {
-    const reason = this.reasonFor(state, actorId, slot, null);
+    const reason = this.blockedBy(state, actorId, slot, null);
     if (reason === 'unknown-entity') {
       throw new Error(`CastValidator: no entity "${actorId}" to judge slot ${slot} of.`);
     }
@@ -72,8 +62,11 @@ export class CastValidator implements SlotReadiness {
     return this.registry.resolve(abilityId).definition.cooldownTicks;
   }
 
-  /** The checks in order; the aim's only when `aim` is given. */
-  private reasonFor(
+  /**
+   * Why `actorId` may not cast `slot` aimed at `aim` now, or `null` when it may: the checks in
+   * order, the aim's only when `aim` is given (`slotBlockedBy` passes `null`).
+   */
+  public blockedBy(
     state: GameState,
     actorId: EntityId,
     slot: AbilitySlot,

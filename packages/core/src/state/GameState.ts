@@ -22,6 +22,7 @@ import type { HordeRequest } from './HordeRequest.types';
 import { GuardStore } from './GuardStore';
 import { HordeStore } from './HordeStore';
 import { LaneStructures } from './LaneStructures';
+import type { CollisionQuery } from './CollisionQuery.types';
 import type { MatchWorld } from './MatchWorld';
 import type { PathQuery } from './PathQuery.types';
 import type { EntitySnapshot, HordeSnapshot, Snapshot } from './Snapshot.types';
@@ -84,6 +85,13 @@ export class GameState {
 
   /** A\* for Legends over the map's grid (architecture 10 §9); `null` without a map. */
   public readonly paths: PathQuery | null;
+
+  /**
+   * The match's collision rule, the one `CollisionSystem` walks units with (architecture 10 §7):
+   * how far a dash goes before a wall or the map's edge stops it. `null` without map objects, where
+   * no `CollisionSystem` runs and nothing stops a unit.
+   */
+  public readonly collisions: CollisionQuery | null;
   public readonly events: GameEvents;
   /**
    * Where the match is in its timeline and the only writers of it (architecture 12 §4, DEC-172,
@@ -103,8 +111,8 @@ export class GameState {
    * @param config - A config that passed `validateGameConfig()`.
    * @param seed - The match seed (a whole number from 0 to 2^32 - 1).
    * @param world - The match's map at runtime; without one, nothing spawns on lanes.
-   * @param indexes - The neighbour index `SpaceSystem` refills each tick and A\* for Legends;
-   *   each `null` without a map.
+   * @param indexes - The neighbour index `SpaceSystem` refills each tick, A\* for Legends and the
+   *   collision rule; each `null` without a map, the collision rule also without map objects.
    * @param schedule - The resolved timeline (`MatchTimeline`) as plain marks; empty when no
    *   director runs.
    */
@@ -119,6 +127,7 @@ export class GameState {
   ) {
     this.space = indexes.space ?? null;
     this.paths = indexes.paths ?? null;
+    this.collisions = indexes.collisions ?? null;
     this.rng = new SeededRandom(seed);
     this.events = new GameEvents(() => this.currentTick);
     this.match = new MatchRecord(

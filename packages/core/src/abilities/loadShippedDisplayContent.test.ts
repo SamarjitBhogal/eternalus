@@ -15,7 +15,7 @@ describe('loadShippedDisplayContent', () => {
       loadShippedDisplayContent().abilities.find((ability) => ability.id === id)?.steps;
 
     expect(steps('blade-runner')).toEqual([
-      { kind: 'dash', shape: { kind: 'path', width: 1.5 }, distance: 8 },
+      { kind: 'dash', distance: 8 },
       { kind: 'damage', shape: { kind: 'path', width: 1.5 } },
       { kind: 'knockback', shape: { kind: 'path', width: 1.5 } },
       { kind: 'debuff', shape: area(1.5) },
@@ -31,7 +31,7 @@ describe('loadShippedDisplayContent', () => {
     ]);
   });
 
-  it('draws a dash whose path steps have no path area as a lane 0 m wide', () => {
+  it("gives a dash's own row its distance and no area, whatever areas its path steps have", () => {
     const blink = {
       ...BLADE_RUNNER,
       id: 'blink',
@@ -51,7 +51,7 @@ describe('loadShippedDisplayContent', () => {
     }).abilities.filter(({ id }) => id === 'blink');
 
     expect(display?.steps).toEqual([
-      { kind: 'dash', shape: { kind: 'path', width: 0 }, distance: 6 },
+      { kind: 'dash', distance: 6 },
       { kind: 'debuff', shape: area(2) },
     ]);
   });

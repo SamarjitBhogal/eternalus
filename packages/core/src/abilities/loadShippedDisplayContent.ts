@@ -14,6 +14,9 @@ import { createDefaultAbilityRegistry } from './defaultAbilityRegistry';
  * @param catalogues - The catalogues (and the bot roster) to load; each one left out is the
  *   shipped one.
  * @throws ContentValidationError as `loadDisplayContent` does.
+ * @throws Error when an ability's effect step names a kind with no registered strategy
+ *   (`AbilityRegistry.describe`), which only a `catalogues.abilities` override can do: the shipped
+ *   abilities pass `createDefaultAbilityRegistry` at every boot.
  */
 export const loadShippedDisplayContent = (catalogues: DisplayCatalogues = {}): DisplayContent => {
   const strategies = createDefaultAbilityRegistry(new ContentCatalogue<ComposableAbility>([]));

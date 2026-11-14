@@ -246,6 +246,16 @@ describe('GameState', () => {
     expect(new GameState(createDefaultGameConfig(), 77).seed).toBe(77);
   });
 
+  // Moved from `MatchWorld.test.ts`: the port sits beside `space` and `paths` (critic r2 BTD-B).
+  it('keeps the collision rule it was given beside its other indexes, and none without one', () => {
+    const collisions = { reach: () => 1 };
+
+    const state = new GameState(createDefaultGameConfig(), 1, null, { collisions });
+
+    expect(state.collisions).toBe(collisions);
+    expect(new GameState(createDefaultGameConfig(), 1).collisions).toBeNull();
+  });
+
   it('records applied commands with their tick, oldest first', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
     state.recordCommand({ type: 'stop' });

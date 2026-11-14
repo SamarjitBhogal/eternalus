@@ -1,8 +1,7 @@
 import type { DebuffSpec } from '../../content/abilities/AbilityDefinition.types';
 import type { AbilityDisplayStep } from '../../content/loadDisplayContent';
-import type { AbilityEffect, CastContext } from '../AbilityEffect.types';
+import type { AbilityEffect, CastContext, WithoutTimes } from '../AbilityEffect.types';
 import { mustBePositive } from '../specChecks';
-import { areaRow } from './areaRow';
 
 /**
  * Applies a negative status to every enemy in the step's shape through the match's one
@@ -27,8 +26,8 @@ export class DebuffEffect implements AbilityEffect<DebuffSpec> {
   }
 
   /** Its area. */
-  public describe(spec: DebuffSpec): readonly AbilityDisplayStep[] {
-    return areaRow(spec);
+  public describe({ kind, shape }: WithoutTimes<DebuffSpec>): readonly AbilityDisplayStep[] {
+    return [{ kind, shape }];
   }
 
   /** Applies the step's status to every enemy in its shape, in id order. */

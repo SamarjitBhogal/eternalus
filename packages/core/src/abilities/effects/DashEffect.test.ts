@@ -10,10 +10,8 @@ import { createDefaultEntityRegistry } from '../../entities/defaultEntityRegistr
 import type { Entity } from '../../entities/Entity';
 import { EntityFactory } from '../../entities/EntityFactory';
 import { staticCollisionIndexOf } from '../../map/staticCollisionIndexOf';
-import { WorldMap } from '../../map/WorldMap';
 import { CollisionResolver } from '../../physics/CollisionResolver';
 import { GameState } from '../../state/GameState';
-import { MatchWorld } from '../../state/MatchWorld';
 import { unitsWithWarriorKit } from '../__fixtures__/casterState';
 import { castSteps } from '../__fixtures__/castSteps';
 import { DashEffect } from './DashEffect';
@@ -52,16 +50,20 @@ const RIFT_MAP: MapDefinition = {
   ],
 };
 
-/** A light Warrior at (1, 10), on the rift map or on no map, and a spawner for dark dummies. */
+/**
+ * A light Warrior at (1, 10), with the rift map's collision rule or with none (no map objects), and
+ * a spawner for dark dummies.
+ */
 const setUp = (hasMap = false) => {
-  const world = hasMap
-    ? new MatchWorld(
-        RIFT_MAP,
-        WorldMap.fromDefinition(RIFT_MAP, 1, () => false),
-        new CollisionResolver(staticCollisionIndexOf(RIFT_MAP, [])),
-      )
+  const collisions = hasMap
+    ? new CollisionResolver(staticCollisionIndexOf(RIFT_MAP, []), {
+        x: 0,
+        y: 0,
+        width: RIFT_MAP.width,
+        height: RIFT_MAP.height,
+      })
     : null;
-  const state = new GameState(createDefaultGameConfig(), 1, world);
+  const state = new GameState(createDefaultGameConfig(), 1, null, { collisions });
   const factory = new EntityFactory(
     createDefaultEntityRegistry(),
     unitsWithWarriorKit(),
@@ -146,5 +148,13 @@ describe('DashEffect', () => {
     castSteps(state, caster.id, [DASH], { aim: { x: -30, y: 10 } });
 
     expect(dashOf(caster).x).toBeCloseTo(-0.5, 9); // from x = 1 to x = 0.5, the Warrior's radius
+  });
+
+  it('throws for a caster the state does not hold, never dashing a 0 m circle (critic r2 F3)', () => {
+    const { state } = setUp(true);
+
+    expect(() => {
+      castSteps(state, 'entity-404', [DASH], { aim: { x: 30, y: 10 } });
+    }).toThrow('"entity-404"');
   });
 });

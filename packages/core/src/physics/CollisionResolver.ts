@@ -1,4 +1,4 @@
-import type { Vec2 } from '../utils/geometry.types';
+import type { Rect, Vec2 } from '../utils/geometry.types';
 import { MAX_SLIDE_CONTACTS } from './CollisionResolver.constants';
 import type { StaticCollisionIndex } from './StaticCollisionIndex';
 import type { IndexedPolygon } from './StaticCollisionIndex.types';
@@ -8,13 +8,62 @@ import { isPointInPolygon } from '../utils/geometry';
 import { circlePenetration, isCircleInsidePolygon } from '../utils/circlePolygon';
 import { CONTACT_EPSILON } from '../utils/circlePolygon.constants';
 
-/** Resolves continuous circle motion against static polygons, sliding along walls and corners. */
+/**
+ * Resolves continuous circle motion against static polygons, sliding along walls and corners, and
+ * keeps every circle inside the world's bounds. The one collision rule of a match: `Simulation`
+ * builds one and gives it to `CollisionSystem`, which walks units with `move`, and to the state as
+ * its `CollisionQuery` port, which cuts a dash with `reach` (architecture 10 §7, ADR 0026
+ * decision 4).
+ *
+ * @remarks ponytail: a mover that starts overlapping a polygon is never stopped by that polygon
+ * when its move ends no deeper (`startsInside`), so a move longer than the polygon is thick can
+ * cross it. `CollisionSystem` keeps every unit out of walls, so a walk or a dash never starts
+ * inside one (critic r2 F2: not reached in 5400 ticks of 8 bots); `CollisionQuery.reach` states
+ * that precondition. Upgrade path: sweep the exit leg once something places units inside walls.
+ */
 export class CollisionResolver {
-  /** The static index is shared by every moving unit in a match. */
-  public constructor(private readonly index: StaticCollisionIndex) {}
+  /**
+   * @param index - The match's static polygons (`staticCollisionIndexOf`), shared by every mover.
+   * @param bounds - The world: a circle's centre stays its radius inside it on each axis.
+   */
+  public constructor(
+    private readonly index: StaticCollisionIndex,
+    private readonly bounds: Rect,
+  ) {}
 
-  /** Returns a safe endpoint without mutating the index, start or requested displacement. */
+  /**
+   * Where a circle of `radius` that moves `displacement` from `start` ends: short of the first
+   * wall, sliding along it, and inside the bounds. Mutates nothing.
+   */
   public move(start: Vec2, displacement: Vec2, radius: number): Vec2 {
+    const end = this.slide(start, displacement, radius);
+    const { x, y, width, height } = this.bounds;
+    return {
+      x: CollisionResolver.clamp(end.x, x, width, radius),
+      y: CollisionResolver.clamp(end.y, y, height, radius),
+    };
+  }
+
+  /**
+   * How far, up to `distance` metres, a circle of `radius` moves from `from` along `direction` (a
+   * unit vector) in a straight line before it first touches a wall or the edge of the bounds, kept
+   * as far short of a wall as `move` keeps a unit: `move`'s first sweep, without the slide. The
+   * whole `distance` when nothing is in the way. Read-only, like `move`.
+   */
+  public reach(from: Vec2, direction: Vec2, distance: number, radius: number): number {
+    const { x, y, width, height } = this.bounds;
+    const reach = Math.min(
+      distance,
+      CollisionResolver.toEdge(from.x, direction.x, x, width, radius),
+      CollisionResolver.toEdge(from.y, direction.y, y, height, radius),
+    );
+    const displacement = { x: direction.x * reach, y: direction.y * reach };
+    const contact = this.firstContact(from, displacement, radius);
+    return reach * (contact === null ? 1 : CollisionResolver.shortOf(contact, displacement));
+  }
+
+  /** `move` without the bounds: the sweep and the slide. */
+  private slide(start: Vec2, displacement: Vec2, radius: number): Vec2 {
     let position = { ...start };
     let delta = { ...displacement };
     for (let iteration = 0; iteration < MAX_SLIDE_CONTACTS; iteration++) {
@@ -34,13 +83,27 @@ export class CollisionResolver {
   }
 
   /**
-   * The share (0 to 1) of `displacement` a circle of `radius` moves from `start` in a straight
-   * line before its first contact, kept as far short of it as `move` keeps a unit: the sweep `move`
-   * starts with, without the slide. 1 when nothing is in the way. Read-only, like `move`.
+   * `at` on one axis kept where a circle of `radius` stays inside the bounds' span from `low`,
+   * `size` long: [`low` + `radius`, `low` + `size` - `radius`].
    */
-  public travel(start: Vec2, displacement: Vec2, radius: number): number {
-    const contact = this.firstContact(start, displacement, radius);
-    return contact === null ? 1 : CollisionResolver.shortOf(contact, displacement);
+  private static clamp(at: number, low: number, size: number, radius: number): number {
+    return Math.max(low + radius, Math.min(low + size - radius, at));
+  }
+
+  /**
+   * How far a circle of `radius` at `at` on one axis moves at `step` per metre before it leaves the
+   * span `clamp` keeps it in; infinite when it does not move along the axis.
+   */
+  private static toEdge(
+    at: number,
+    step: number,
+    low: number,
+    size: number,
+    radius: number,
+  ): number {
+    if (step === 0) return Number.POSITIVE_INFINITY;
+    const edge = step > 0 ? low + size - radius : low + radius;
+    return Math.max(0, (edge - at) / step);
   }
 
   /** The share of `delta` that stops `CONTACT_EPSILON` short of `contact`, never below 0. */
@@ -91,11 +154,8 @@ export class CollisionResolver {
    * For a mover that starts overlapping `entry` outside its passages (it spawned or was placed
    * there): `null` when the move does not take it deeper, so it can always walk out; otherwise a
    * contact at once whose normal leads out, so the slide keeps only the part of the move that does
-   * not go deeper. `undefined` when the start does not overlap, for the ordinary sweep.
-   *
-   * @remarks ponytail: a move that ends no deeper skips the sweep, so one longer than the wall is
-   * thick can cross it. Walking never moves that far in a tick; dashes (10 §7) need the exit leg
-   * swept as well.
+   * not go deeper. `undefined` when the start does not overlap, for the ordinary sweep. A move
+   * that ends no deeper skips the sweep (see the class's `ponytail` remark).
    */
   private static startsInside(
     start: Vec2,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MapObjectBuilder } from '../map/MapObjectBuilder';
 import { staticCollisionIndexOf } from '../map/staticCollisionIndexOf';
+import { CollisionResolver } from '../physics/CollisionResolver';
 import { CollisionSystem } from './CollisionSystem';
 import { GameState } from '../state/GameState';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
@@ -55,10 +56,12 @@ describe('CollisionSystem', () => {
     const transform = unit.getComponent(Transform);
     transform.moveBy({ x: 50, y: 0 });
     const collision = new CollisionSystem(
-      EMPTY_MAP,
-      staticCollisionIndexOf(
-        EMPTY_MAP,
-        new MapObjectBuilder().build(EMPTY_MAP, HOUSE_PRESENTATION),
+      new CollisionResolver(
+        staticCollisionIndexOf(
+          EMPTY_MAP,
+          new MapObjectBuilder().build(EMPTY_MAP, HOUSE_PRESENTATION),
+        ),
+        { x: 0, y: 0, width: EMPTY_MAP.width, height: EMPTY_MAP.height },
       ),
     );
     collision.update({ state, logger: new NullLogger() });
@@ -78,10 +81,12 @@ describe('CollisionSystem', () => {
       loadWeapons(config.tickRate),
     );
     const collision = new CollisionSystem(
-      EMPTY_MAP,
-      staticCollisionIndexOf(
-        EMPTY_MAP,
-        new MapObjectBuilder().build(EMPTY_MAP, HOUSE_PRESENTATION),
+      new CollisionResolver(
+        staticCollisionIndexOf(
+          EMPTY_MAP,
+          new MapObjectBuilder().build(EMPTY_MAP, HOUSE_PRESENTATION),
+        ),
+        { x: 0, y: 0, width: EMPTY_MAP.width, height: EMPTY_MAP.height },
       ),
     );
     const walk = (isDeploying: boolean): number => {

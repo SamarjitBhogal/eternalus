@@ -4,9 +4,10 @@ import { StaticCollisionIndex } from '../physics/StaticCollisionIndex';
 
 /**
  * The one static collision index of a match (architecture 10 §5): every footprint of each blocking
- * map object, with its passages, and every terrain shape. `Simulation` builds it once and shares
- * it between `CollisionSystem`, which moves units against it and removes destroyed objects from
- * it, and the match world's collision sweep (`MatchWorld.collisions`), which cuts a dash with it.
+ * map object, with its passages, and every terrain shape. `Simulation` builds it once, removes a
+ * destroyed object from it the moment the object's entity is removed, and builds the match's one
+ * `CollisionResolver` on it, which `CollisionSystem` moves units with and the state's `collisions`
+ * port cuts a dash with.
  */
 export function staticCollisionIndexOf(
   map: MapDefinition,

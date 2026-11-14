@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
+import { abilityMatch } from './abilities/__fixtures__/abilityMatch';
 import { TEST_KIT, unitsWithWarriorKit } from './abilities/__fixtures__/casterState';
 import { testAbilityRegistry } from './abilities/__fixtures__/fakeAbilities';
 import { RecordingEffect } from './abilities/__fixtures__/RecordingEffect';
 import { stepPastCountdown } from './abilities/__fixtures__/stepPastCountdown';
 import type { Command } from './commands/Command.types';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
+import type { MapObject } from './content/maps/mapObjects.types';
 import { NullLogger } from './diagnostics/NullLogger';
 import { Simulation } from './Simulation';
 import type { RosterSlot } from './Simulation.types';
@@ -204,5 +206,55 @@ describe('Simulation.dashReach', () => {
 
     expect(sim.dashReach({ x: 0, y: 0 }, { x: 1, y: 0 }, 8, 0.5)).toBe(8);
     expect(sim.snapshot()).toEqual(before);
+  });
+});
+
+describe('Simulation: a dash in the tick after a map object breaks (critic r2 F1)', () => {
+  /** A 100-HP rock 0.6 m thick, 0.5 m east of the Warrior's circle. */
+  const ROCK: MapObject = {
+    id: 'rock',
+    kind: 'rock',
+    isBlocking: true,
+    footprints: [
+      [
+        { x: 55, y: 45 },
+        { x: 55.6, y: 45 },
+        { x: 55.6, y: 55 },
+        { x: 55, y: 55 },
+      ],
+    ],
+  };
+
+  it('goes its whole distance through where the rock stood, as walking does', () => {
+    const { sim, ids, cast, run, at, log } = abilityMatch(
+      [{ kind: 'warrior', team: 'light', at: { x: 54, y: 50 } }],
+      {
+        content: unitsWithWarriorKit({
+          abilities: ['blade-runner', 'slam', 'hamstring'],
+          ultimate: 'fury',
+        }),
+        world: { map: TWO_LANE_MAP, mapObjects: [ROCK] },
+      },
+    );
+    const [warrior] = ids;
+    const rockId = sim.snapshot().mapObjects?.find(({ id }) => id === ROCK.id)?.entityId;
+    const removedOnTick: number[] = [];
+    sim.on('entity-removed', ({ entityId }) => {
+      if (entityId === rockId) removedOnTick.push(sim.tick);
+    });
+
+    cast(warrior ?? '', 'ability-2', { x: 60, y: 50 }); // Slam: 150 x 2 against an obstacle
+    run(1);
+    const brokenOn = removedOnTick[0];
+    cast(warrior ?? '', 'ability-1', { x: 70, y: 50 }); // Blade Runner, the next tick
+    run(12);
+
+    expect(brokenOn).toBe(sim.tick - 13);
+    expect(log.filter((line) => line.includes(' cast '))).toEqual([
+      `1 cast ${warrior ?? ''} slam`,
+      `2 cast ${warrior ?? ''} blade-runner`,
+    ]);
+    expect(at(warrior).x).toBeCloseTo(62, 5);
+    expect(at(warrior).y).toBeCloseTo(50, 5);
   });
 });

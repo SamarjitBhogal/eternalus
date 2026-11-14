@@ -1,10 +1,10 @@
 import type { AbilityRegistry } from '../abilities/AbilityRegistry';
-import type { CastValidator } from '../abilities/CastValidator';
 import type { InvariantRunner } from '../diagnostics/InvariantRunner';
 import type { EntityFactory } from '../entities/EntityFactory';
 import type { MatchDirector } from '../match/MatchDirector';
 import type { SpaceIndex } from '../physics/SpaceIndex';
 import type { GameState } from '../state/GameState';
+import type { SlotReadiness } from '../state/SlotReadiness.types';
 import type { ProgressionContent } from './ProgressionSystem.types';
 import type { System } from './System.types';
 
@@ -27,11 +27,11 @@ export type DefaultSystemPipelineOptions = {
    */
   readonly abilities?: AbilityRegistry;
   /**
-   * The match's one cast rule over `abilities`, shared with the `cast-ability` handler, the
-   * snapshot and the bots (ADR 0026 decision 2); a new `CastValidator` over `abilities` when
-   * omitted.
+   * The match's one cast rule over `abilities`, as the `SlotReadiness` port it is to the
+   * `cast-ability` handler, the snapshot and the bots (ADR 0026 decision 2); a new
+   * `CastValidator` over `abilities` when omitted.
    */
-  readonly validator?: CastValidator;
+  readonly validator?: SlotReadiness;
   /**
    * The factory (and its definitions), neighbour index and AI the horde systems (architecture 11,
    * 18) need; without them nothing decides, marches, steers or spawns on lanes.

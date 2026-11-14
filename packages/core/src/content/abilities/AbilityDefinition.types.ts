@@ -103,9 +103,6 @@ export type DebuffSpec = InTicks<AuthoredDebuffSpec>;
 /** An effect that acts on the targets in its `shape`, as authored. */
 type AuthoredShapedEffectSpec = DamageSpec | KnockbackSpec | AuthoredDebuffSpec;
 
-/** An effect that acts on the targets in its `shape`, loaded. */
-export type ShapedEffectSpec = InTicks<AuthoredShapedEffectSpec>;
-
 /**
  * Moves the caster `distance` metres along the aim (05 §3 `DashEffect`); `onPath` runs on the
  * units the dash sweeps, `onEnd` where it stops. Seconds as authored.
@@ -122,7 +119,7 @@ type AuthoredDashSpec = {
 export type DashSpec = InTicks<AuthoredDashSpec>;
 
 /** One step of an ability's cast timeline as authored (05 §3); one effect strategy per `kind`. */
-export type AuthoredEffectSpec = AuthoredShapedEffectSpec | AuthoredDashSpec;
+type AuthoredEffectSpec = AuthoredShapedEffectSpec | AuthoredDashSpec;
 
 /** One loaded step of an ability's cast timeline: every time in ticks. */
 export type AbilityEffectSpec = InTicks<AuthoredEffectSpec>;
