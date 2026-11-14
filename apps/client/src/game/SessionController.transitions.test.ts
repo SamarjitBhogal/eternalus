@@ -11,12 +11,14 @@ import { testSessionDeps } from './testSessionDeps';
 const LEGAL: readonly (readonly [SessionPhase, SessionPhase])[] = [
   ['boot', 'menu'],
   ['menu', 'loading'],
+  ['menu', 'match-loading'], // the online Duel: the server paired the player (ADR 0016)
   ['loading', 'character-select'],
   ['loading', 'menu'],
   ['character-select', 'pre-launch'],
   ['character-select', 'menu'],
   ['pre-launch', 'match-loading'],
   ['match-loading', 'match'],
+  ['match-loading', 'results'], // the server ended a Duel before it started (ADR 0016)
   ['match-loading', 'menu'],
   ['match', 'results'],
   ['match', 'menu'],
