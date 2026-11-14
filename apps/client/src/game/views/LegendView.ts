@@ -9,12 +9,19 @@ import {
   FOCUS_RING_COLOR,
 } from './entityViews.constants';
 import { withVisualRadius } from './entityVisualState';
+import { MINI_MAP_LEGEND_GLYPH, MINI_MAP_LEGEND_LAYER } from './entityViews.constants';
 
 /**
  * The placeholder look for Legends (the characters): the default disc with a white outline, so a
- * player stands out among mobs. Final class art replaces it later.
+ * player stands out among mobs. Final class art replaces it later. On the mini map a Legend is a
+ * large dot, drawn over the mobs' (DEC-187).
  */
 export class LegendView extends DefaultEntityView {
+  /** Legends' markers sit over the mobs'. */
+  public readonly minimapLayer = MINI_MAP_LEGEND_LAYER;
+
+  protected override readonly minimapGlyph = MINI_MAP_LEGEND_GLYPH;
+
   /** Draws the white outline, then the team disc and focus ring on top. */
   public override draw(state: EntityDrawState, renderer: Renderer): void {
     const visual = withVisualRadius(state, LEGEND_VISUAL_DIAMETER / 2);

@@ -2,26 +2,33 @@ import { Health } from '../components/Health';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import type { GameConfig } from '../config/GameConfig.types';
-import type { Entity } from '../entities/Entity';
+import type { ContentCatalogue } from '../content/ContentCatalogue';
+import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import type { PlayableTeam } from '../teams/teams.types';
 import { RingBuffer } from '../utils/RingBuffer';
 import { SeededRandom } from '../utils/SeededRandom';
 import { AiState } from './AiState';
+import { AllyDamageStore } from './AllyDamageStore';
+import { EntitySnapshotter } from './EntitySnapshotter';
 import { EntityStore } from './EntityStore';
 import type { EntityId, RemovalRecord } from './EntityStore.types';
 import { GameEvents } from './GameEvents';
 import type { DamageSource, GameEventMap } from './GameEvents.types';
 import { RECENT_COMMAND_CAPACITY } from './GameState.constants';
-import type { GameStateIndexes, MatchPhase, RecordedCommand, TeamState } from './GameState.types';
+import type { GameStateIndexes, RecordedCommand, TeamState } from './GameState.types';
+import { MatchRecord } from './MatchRecord';
+import type { ScheduledMark } from './MatchState.types';
 import type { HordeRequest } from './HordeRequest.types';
+import { GuardStore } from './GuardStore';
 import { HordeStore } from './HordeStore';
+import { LaneStructures } from './LaneStructures';
 import type { MatchWorld } from './MatchWorld';
 import type { PathQuery } from './PathQuery.types';
 import type { EntitySnapshot, HordeSnapshot, Snapshot } from './Snapshot.types';
 import type { SpaceQuery } from './SpaceQuery.types';
 
 import type { WorldObjectStore } from './WorldObjectStore';
-import { MapObjectBody } from '../components/MapObjectBody';
+import { isPlayableTeam, opponentOf } from '../teams/playableTeams';
 
 /**
  * The aggregate root of one match: config, the seeded RNG, the world, the entities, the hordes, the
@@ -52,6 +59,10 @@ export class GameState {
   public readonly ai = new AiState();
   /** The lane hordes (architecture 18 §4). */
   public readonly hordes = new HordeStore();
+  /** Every structure's guard posts (architecture 18 §7). */
+  public readonly guards = new GuardStore();
+  /** Each team's ally damage per lane since its last heavy wave (DEC-89, architecture 18 §3.3). */
+  public readonly allyDamage = new AllyDamageStore();
   /** Hordes asked for this tick (developer menu), fulfilled by `SpawnSystem` in order. */
   public readonly hordeRequests: HordeRequest[] = [];
   private readonly teamCounters: Record<
@@ -72,13 +83,18 @@ export class GameState {
   /** A\* for Legends over the map's grid (architecture 10 §9); `null` without a map. */
   public readonly paths: PathQuery | null;
   public readonly events: GameEvents;
-  /** Always `countdown` until the MatchDirector (phase 4) drives the timeline. */
-  public readonly phase: MatchPhase = 'countdown';
+  /**
+   * Where the match is in its timeline and the only writers of it (architecture 12 §4, DEC-172,
+   * DEC-177); a match starts in `countdown`.
+   */
+  public readonly match: MatchRecord;
+  private structureIndex = LaneStructures.EMPTY;
   private currentTick = 0;
   private readonly recent = new RingBuffer<RecordedCommand>(RECENT_COMMAND_CAPACITY);
   private readonly announcedRemovals: RemovalRecord[] = [];
 
   private readonly xpAwards: GameEventMap['xp-gained'][] = [];
+  private readonly phaseChanges: GameEventMap['phase-changed'][] = [];
   private readonly killers = new Map<EntityId, DamageSource>();
 
   /**
@@ -87,6 +103,8 @@ export class GameState {
    * @param world - The match's map at runtime; without one, nothing spawns on lanes.
    * @param indexes - The neighbour index `SpaceSystem` refills each tick and A\* for Legends;
    *   each `null` without a map.
+   * @param schedule - The resolved timeline (`MatchTimeline`) as plain marks; empty when no
+   *   director runs.
    */
   public constructor(
     public readonly config: GameConfig,
@@ -95,11 +113,18 @@ export class GameState {
     /** The map, its lane routes and its grid, or `null` (most unit tests). */
     public readonly world: MatchWorld | null = null,
     indexes: GameStateIndexes = {},
+    schedule: readonly ScheduledMark[] = [],
   ) {
     this.space = indexes.space ?? null;
     this.paths = indexes.paths ?? null;
     this.rng = new SeededRandom(seed);
     this.events = new GameEvents(() => this.currentTick);
+    this.match = new MatchRecord(
+      config.match.playerTeam,
+      schedule,
+      this.events,
+      () => this.currentTick,
+    );
     this.events.on('entity-removed', (removal) => {
       this.announcedRemovals.push({ entityId: removal.entityId, cause: removal.cause });
     });
@@ -109,6 +134,47 @@ export class GameState {
     this.events.on('xp-gained', (award) => {
       this.xpAwards.push(award);
     });
+    this.events.on('phase-changed', (change) => {
+      this.phaseChanges.push(change);
+    });
+    this.events.on('damage-applied', (hit) => {
+      this.countAllyDamage(hit);
+    });
+  }
+
+  /**
+   * Adds a hit on a playable team's Legend or mob to `allyDamage`, on the lane nearest the victim
+   * (DEC-89, architecture 18 §3.3). Only a hit from the victim's enemy team counts: not one with no
+   * attacker, or from a neutral (forest camp), removed or same-team attacker; nor any hit in a
+   * match without a map.
+   */
+  private countAllyDamage({ targetId, amount, source }: GameEventMap['damage-applied']): void {
+    const victim = this.entities.get(targetId);
+    const team = this.entities.teamOf(targetId);
+    const position = victim?.findComponent(Transform)?.position;
+    if (
+      (victim?.family !== 'legend' && victim?.family !== 'mob') ||
+      !isPlayableTeam(team) ||
+      source.attackerId === null ||
+      this.entities.teamOf(source.attackerId) !== opponentOf(team) ||
+      position === undefined
+    ) {
+      return;
+    }
+    const lane = this.world?.routes.nearestLane(position);
+    if (lane !== undefined) {
+      this.allyDamage.add(team, lane.id, amount);
+    }
+  }
+
+  /** The lane structures as they stood at match start (architecture 18 §6.2); empty until indexed. */
+  public get laneStructures(): LaneStructures {
+    return this.structureIndex;
+  }
+
+  /** Indexes the lane structures now in the store; call once, after the map's structures spawn. */
+  public indexStructures(): void {
+    this.structureIndex = LaneStructures.build(this.entities, this.world?.routes ?? null);
   }
 
   /** Number of ticks completed. */
@@ -123,6 +189,7 @@ export class GameState {
     this.announcedRemovals.length = 0;
     this.killers.clear();
     this.xpAwards.length = 0;
+    this.phaseChanges.length = 0;
   }
 
   /**
@@ -141,6 +208,11 @@ export class GameState {
   /** Every `xp-gained` event of the current tick, in order (whatever the ring buffer keeps). */
   public xpAwardsThisTick(): readonly GameEventMap['xp-gained'][] {
     return [...this.xpAwards];
+  }
+
+  /** Every `phase-changed` event of the current tick, in order (whatever the ring buffer keeps). */
+  public phaseChangesThisTick(): readonly GameEventMap['phase-changed'][] {
+    return [...this.phaseChanges];
   }
 
   /** Records a command applied this tick, for diagnostic reports. Called by `Simulation.step()`. */
@@ -176,20 +248,37 @@ export class GameState {
     return this.recent.toArray();
   }
 
-  /** The current state as a structured-clone-safe snapshot. */
-  public snapshot(): Snapshot {
+  /**
+   * The current state as a structured-clone-safe snapshot.
+   *
+   * @param curves - The level curves a `Progression` levels along (the catalogue
+   *   `ProgressionSystem` uses), to report the XP inside each level.
+   */
+  public snapshot(curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'get'>): Snapshot {
     const entities: EntitySnapshot[] = [];
+    const snapshotter = new EntitySnapshotter(this.config.match.capturePoints.checkpoints, curves);
     this.entities.forEach((entity) => {
-      entities.push(GameState.snapshotOf(entity));
+      entities.push(snapshotter.snapshotOf(entity));
     });
+    const { phase, phaseEnteredTick, timelineCursor, schedule, humanLegendId } = this.match;
     const hordes: HordeSnapshot[] = [];
     this.hordes.forEach((horde) => {
       hordes.push({ ...horde });
     });
     const { light, dark } = this.teamCounters;
+    const player = new PlayerSnapshotter(this.config.tickRate).snapshotOf(
+      this.entities.get(humanLegendId ?? ''),
+      this.currentTick,
+    );
     return {
       tick: this.currentTick,
-      phase: this.phase,
+      ...(player === undefined ? {} : { player }),
+      match: {
+        phase,
+        phaseEnteredTick,
+        upcoming: schedule.slice(timelineCursor),
+        humanLegendId,
+      },
       entities,
       hordes,
       teams: {
@@ -199,24 +288,5 @@ export class GameState {
       ...(this.worldObjects === undefined ? {} : { mapObjects: this.worldObjects.snapshot() }),
     };
   }
-
-  private static snapshotOf(entity: Entity): EntitySnapshot {
-    const transform = entity.findComponent(Transform);
-    const health = entity.findComponent(Health);
-    return {
-      id: entity.id,
-      kind: entity.kind,
-      family: entity.family,
-      definitionId: entity.definitionId,
-      ...(entity.findComponent(MapObjectBody) === undefined
-        ? {}
-        : { mapObjectId: entity.getComponent(MapObjectBody).object.id }),
-      team: entity.findComponent(TeamMembership)?.team ?? null,
-      transform:
-        transform === undefined
-          ? null
-          : { x: transform.position.x, y: transform.position.y, radius: transform.radius },
-      health: health === undefined ? null : { current: health.current, max: health.max },
-    };
-  }
 }
+import { PlayerSnapshotter } from './PlayerSnapshotter';

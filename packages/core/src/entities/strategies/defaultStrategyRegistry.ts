@@ -1,7 +1,9 @@
+import { RangedAttackStrategy } from './RangedAttackStrategy';
 import { HORDE_STEERING } from '../../content/ai/hordeSteering';
 import type { AttackStrategyId, MovementStrategyId } from '../../content/units/units.types';
 import type { AttackStrategy } from './AttackStrategy.types';
 import { LaneFollowMovementStrategy } from './LaneFollowMovementStrategy';
+import { LeashedChaseMovementStrategy } from './LeashedChaseMovementStrategy';
 import { MeleeAttackStrategy } from './MeleeAttackStrategy';
 import type { MovementStrategy } from './MovementStrategy.types';
 
@@ -18,8 +20,10 @@ export type StrategyRegistry = {
 export const createDefaultStrategyRegistry = (): StrategyRegistry => ({
   movement: {
     'lane-follow': new LaneFollowMovementStrategy(HORDE_STEERING),
+    'leashed-chase': new LeashedChaseMovementStrategy(HORDE_STEERING),
   },
   attack: {
     melee: new MeleeAttackStrategy(),
+    ranged: new RangedAttackStrategy(),
   },
 });

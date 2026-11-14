@@ -1,9 +1,14 @@
+import { AbilityRuntime } from '../components/AbilityRuntime';
+import { SpellZoneRuntime } from '../components/SpellZoneRuntime';
+import { ProjectileFlight } from '../components/ProjectileFlight';
 import { Aether } from '../components/Aether';
+import { Capturable } from '../components/Capturable';
 import { Collider } from '../components/Collider';
 import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { Progression } from '../components/Progression';
+import { Veterancy } from '../components/Veterancy';
 import { StatusEffects } from '../components/StatusEffects';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
@@ -11,13 +16,15 @@ import { Vision } from '../components/Vision';
 import type { Entity } from '../entities/Entity';
 import { fnv1a } from '../utils/fnv1a';
 import type { GameState } from './GameState';
+import { PLAYABLE_TEAMS } from '../teams/playableTeams';
 
 /**
  * Fingerprints a match state as a 32-bit FNV-1a hash of a canonical serialisation
  * (architecture 03 §9): tick, phase and RNG state, then every entity in store order with its
- * component fields in a fixed order, then the hordes and spawn counters (architecture 18 §3.4, §4). It covers state the client never sees (velocity), so two
- * runs that diverge anywhere show it at the next hash. A new component with simulation state adds
- * its fields to `fieldsOf`.
+ * component fields in a fixed order, then the rest of the match state: the timeline, the hordes and
+ * spawn counters (architecture 18 §3.4, §4). It covers state the client never sees (velocity), so
+ * two runs that diverge anywhere show it at the next hash. A new component with simulation state
+ * adds its fields to `fieldsOf`.
  */
 export class StateHasher {
   /** The hash of `state` right now. */
@@ -26,9 +33,18 @@ export class StateHasher {
     state.entities.forEach((entity) => {
       entities.push(StateHasher.fieldsOf(entity));
     });
-    const parts: unknown[] = [state.tick, state.phase, state.rng.getState(), entities];
-    // Hordes and the spawn counters are appended only once a horde was asked for, so a match
-    // without hordes hashes exactly as before (recorded replay checkpoints stay valid).
+    const { match } = state;
+    const parts: unknown[] = [state.tick, match.phase, state.rng.getState(), entities];
+    // Appended only once a field leaves its initial value (0 or false), so a match no director
+    // runs hashes exactly as before (recorded replay checkpoints stay valid). One list feeds both
+    // the check and the hash, so a new field cannot be left out of the check. The schedule comes
+    // from the config, which a replay carries, so it is not hashed.
+    const matchFields = [match.phaseEnteredTick, match.timelineCursor, match.isIdleHeld];
+    if (matchFields.some((value) => value !== 0 && value !== false)) {
+      parts.push(['match', ...matchFields]);
+    }
+    // Hordes and the spawn counters are appended only once a horde was asked for, for the same
+    // reason.
     const { light, dark } = state.teams;
     if (state.hordes.issuedIds > 0 || light.unitsRequested > 0 || dark.unitsRequested > 0) {
       const hordes: unknown[] = [
@@ -52,8 +68,24 @@ export class StateHasher {
       });
       parts.push(['hordes', ...hordes]);
     }
+    // Guard posts are appended only once one exists, for the same reason.
+    if (state.guards.size > 0) {
+      const posts: unknown[] = [];
+      state.guards.forEach(({ id, guardId, respawnAtTick }) => {
+        posts.push([id, guardId, respawnAtTick]);
+      });
+      parts.push(['guards', ...posts]);
+    }
+    // Ally damage (DEC-89) is appended only while some is counted, for the same reason.
+    if (state.allyDamage.size > 0) {
+      const tallies: unknown[] = [];
+      state.allyDamage.forEach((team, lane, amount) => {
+        tallies.push([team, lane, amount]);
+      });
+      parts.push(['allyDamage', ...tallies]);
+    }
     // Lost towers are appended only once a lane has one, for the same reason.
-    const lost = (['light', 'dark'] as const).flatMap((team) =>
+    const lost = PLAYABLE_TEAMS.flatMap((team) =>
       Object.keys(state.teams[team].towersLostByLane)
         .sort()
         .map((lane) => [team, lane, state.teams[team].towersLostByLane[lane]]),
@@ -99,7 +131,12 @@ export class StateHasher {
     }
     const collider = entity.findComponent(Collider);
     if (collider !== undefined) {
-      fields.push(['collider', collider.isEnabled]);
+      // Only an unbreakable collider adds a field, so states without walls hash as before.
+      fields.push(
+        collider.isUnbreakable
+          ? ['collider', collider.isEnabled, 'unbreakable']
+          : ['collider', collider.isEnabled],
+      );
     }
     const combat = entity.findComponent(Combat);
     if (combat !== undefined && (combat.targetId !== null || combat.readyAtTick > 0)) {
@@ -126,10 +163,34 @@ export class StateHasher {
         ]),
       ]);
     }
+    const capture = entity.findComponent(Capturable);
+    if (capture !== undefined) {
+      fields.push([
+        'capture',
+        capture.owner,
+        capture.progress,
+        capture.checkpoint,
+        capture.lockedBy,
+        // The reached checkpoints decide which `checkpoint-reached` events still fire (DEC-145).
+        capture.reachedBy('light'),
+        capture.reachedBy('dark'),
+        capture.reachedBy('neutral'),
+      ]);
+    }
+    const veterancy = entity.findComponent(Veterancy);
+    if (veterancy !== undefined) {
+      fields.push(['veterancy', veterancy.kills, veterancy.level]);
+    }
     const progression = entity.findComponent(Progression);
     if (progression !== undefined) {
       fields.push(['progression', progression.xp, progression.level]);
     }
+    const abilities = entity.findComponent(AbilityRuntime);
+    if (abilities !== undefined) fields.push(['abilities', abilities.fields()]);
+    const zone = entity.findComponent(SpellZoneRuntime);
+    if (zone !== undefined) fields.push(['spell-zone', zone.fields()]);
+    const flight = entity.findComponent(ProjectileFlight);
+    if (flight !== undefined) fields.push(['flight', flight.shot]);
     return fields;
   }
 }

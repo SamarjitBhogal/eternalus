@@ -1,108 +1,96 @@
-import {
-  MapPresentationBuilder,
-  MapObjectBuilder,
-  findMapObjectAt,
-  type EntityId,
-  makeLogRecord,
-  type MapDefinition,
-  type Snapshot,
-  type Vec2,
-} from '@eternalus/core';
+import { type EntityId, type EntitySnapshot, makeLogRecord, type Snapshot } from '@eternalus/core';
 
-import type { Projection } from './engine/input/Projection.types';
-import type { WorldRect } from './engine/render/Renderer.types';
+import { isDead } from '../bridge/selectors/isDead';
+import { BuildingRoofs } from './BuildingRoofs';
+import { LegendAnimation } from './LegendAnimation';
+import { LEGEND_ANIMATION } from './LegendAnimation.constants';
+import { LegendSpriteView } from './views/LegendSpriteView';
 import { GameLoop } from './engine/loop/GameLoop';
+import { HealthBarVisibility } from './HealthBarVisibility';
 import type { LoopTarget } from './engine/loop/GameLoop.types';
+import type { WorldPoint, WorldRect } from './engine/render/Renderer.types';
 import {
   BACKGROUND_COLOR,
-  CAMERA_SMOOTHING,
-  DEFAULT_ASPECT,
+  HUD_MINIMAP_RING,
   MAX_TICKS_PER_FRAME,
   MS_PER_SECOND,
 } from './Match.constants';
 import type { MatchDeps } from './Match.types';
-import { MapExplorer } from './MapExplorer';
-import { EXPLORER_SETTINGS } from './MapExplorer.constants';
+import { MatchBridge } from './MatchBridge';
+import { MatchCamera } from './MatchCamera';
+import { MatchViewControls } from './MatchViewControls';
+import { PlayerCommands } from './PlayerCommands';
 import { createDefaultViewRegistry } from './views/defaultViewRegistry';
 import { EntityLayer } from './views/EntityLayer';
 import { MapView } from './views/MapView';
 import { MiniMapView } from './views/MiniMapView';
 import { SceneryView } from './views/SceneryView';
-import { WorldObjectsView } from './views/WorldObjectsView';
 import { SceneView } from './views/SceneView';
 import { BiomeAtmosphereView } from './views/BiomeAtmosphereView';
-import { KnightAnimation } from './views/KnightAnimation';
-import { PlayerKnightView } from './views/PlayerKnightView';
-import type { KnightAtlas } from './views/KnightAnimation.types';
+import { WorldObjectsView } from './views/WorldObjectsView';
 
 /**
- * The composition root of one match (architecture 08 §7): it wires the simulation, the game
- * loop, the renderer, the camera, the player's intent and the views, and owns their lifetime.
- * Each tick turns the player's intent into commands, steps the simulation and keeps the last two
- * snapshots; each frame follows the player with the camera and draws the scene. The player's
- * Legend is spawned at its team's stronghold when the match is created. Building roof cutaways
- * stay in the same world scene; dragging and the overview switch to the free `MapExplorer` view
- * until the player moves.
+ * The composition root of one match (architecture 08 §7): it wires the simulation, the game loop,
+ * the renderer, the camera, the player's intent and the views, and owns their lifetime. Each tick
+ * turns the player's intent into commands (`PlayerCommands`), steps the simulation and keeps the
+ * last two snapshots; each frame follows the player with the camera and draws the scene and the
+ * minimap (inside the HUD ring). The player's Legend is the simulation's, spawned at its team's
+ * Stronghold by core from the roster's human slot. Which part of the world is shown (the following
+ * camera, or the free view that dragging and the overview switch to) is `MatchCamera`'s. Buildings
+ * stay in the same world scene: `BuildingRoofs` cuts away the roof of the building the player's
+ * Legend stands in (DEC-143) and those the developer explorer opens, and the views draw those
+ * interiors in place. The minimap is player HUD, drawn every frame whatever the developer flag
+ * (DEC-143). The world (map, presentation, map objects) arrives prepared (06 §1); its `MatchBridge`
+ * publishes to the UI. The canvas gestures act through its `controls` (`MatchViewControls`).
  */
 export class Match implements LoopTarget {
-  private readonly knight = new KnightAnimation();
-  private knightAtlas: KnightAtlas | null = null;
-  private renderSeconds = 0;
+  private readonly legendAnimation: LegendAnimation;
+  private frameTick = 0;
   private readonly loop: GameLoop;
 
   private readonly entities: EntityLayer;
-  private readonly objectView: WorldObjectsView;
+
+  /** Which units draw a world health bar, and on which side; it listens to the simulation's events. */
+  private readonly healthBars: HealthBarVisibility;
+
+  /** The map objects (walls, furniture, doors) and their destroyed state, drawn in the scene. */
+  private readonly objects: WorldObjectsView;
   private readonly atmosphere: BiomeAtmosphereView;
-  private readonly mapObjects: ReturnType<MapObjectBuilder['build']>;
 
   private readonly world: { readonly scene: SceneView; readonly miniMap: MiniMapView };
 
-  private readonly explorer: MapExplorer;
+  private readonly camera: MatchCamera;
 
-  private readonly stopListening: () => void;
+  private readonly roofs: BuildingRoofs;
+
+  private readonly commands: PlayerCommands;
+
+  private readonly bridge: MatchBridge;
 
   private previous: Snapshot | null = null;
 
   private current: Snapshot;
 
-  private playerId: EntityId | null = null;
+  private readonly playerId: EntityId | null;
 
-  private lastMove: Vec2 = { x: 0, y: 0 };
-
-  /** The map object the held attack button last targeted; `null` once released or stopped. */
-  private attackTargetId: EntityId | null = null;
-
-  private isFollowing = true;
-
-  /** Whether the free `MapExplorer` view is on screen instead of the camera's. */
-  private isExploring = false;
-
-  private screenWidth = 0;
-
-  private screenHeight = 0;
-
-  private pixelRatio = 1;
-
-  /** Canvas CSS pixels → device pixels → the world point the camera shows there. */
-  private readonly projection: Projection = {
-    screenToWorld: (point) => {
-      const view = this.currentView();
-      return {
-        x: view.x + ((point.x * this.pixelRatio) / this.screenWidth) * view.width,
-        y: view.y + ((point.y * this.pixelRatio) / this.screenHeight) * view.height,
-      };
-    },
-  };
+  /** What the canvas gestures do to this match: camera, minimap, roofs, explorer attack. */
+  public readonly controls: MatchViewControls;
 
   /**
-   * Creates the match, queues the player's spawn and points the camera at the spawn point.
-   *
-   * @throws Error when the map has no stronghold for the player's team.
+   * Creates the match, takes the player's Legend from the simulation's snapshot (core spawned it
+   * from the roster's human slot) and points the camera at it; with no Legend (the human slot
+   * named no Legend definition), at the middle of the map.
    */
   public constructor(private readonly deps: MatchDeps) {
-    const { simulation, map, tickRate, scheduler, camera, player, logger } = deps;
-    // Find the spawn point first: if the map has none, nothing has been subscribed yet.
-    const spawnPoint = Match.strongholdOf(map, player.team);
+    const { simulation, world, tickRate, scheduler, camera, logger, bridge, input } = deps;
+    const { map, presentation, mapObjects } = world;
+    this.healthBars = new HealthBarVisibility(simulation);
+    this.legendAnimation = new LegendAnimation(
+      simulation.snapshot().match.humanLegendId,
+      deps.playerSpecId ?? null,
+      tickRate,
+      simulation,
+    );
     this.entities = new EntityLayer(
       createDefaultViewRegistry(
         (kind) => {
@@ -114,85 +102,58 @@ export class Match implements LoopTarget {
             ),
           );
         },
-        new PlayerKnightView(
-          () => this.knightAtlas,
-          () => this.knight.sample(this.renderSeconds),
+        new LegendSpriteView(
+          (entity) => this.legendAnimation.frame(entity, this.frameTick),
+          LEGEND_ANIMATION.spriteSize,
+          () => this.legendAnimation.effects(this.frameTick),
         ),
+        () => this.frameTick / tickRate,
       ),
+      isDead,
+      this.healthBars.healthBarOf,
     );
-    const presentation = deps.presentation ?? new MapPresentationBuilder().build(map);
-    this.explorer = new MapExplorer(map, presentation);
-    this.mapObjects = new MapObjectBuilder().build(map, presentation);
-    this.objectView = new WorldObjectsView(this.mapObjects, this.explorer.hiddenRoofs, () =>
-      this.currentView(),
-    );
-    const scenery = presentation.scenery;
-    this.atmosphere = new BiomeAtmosphereView(scenery, () => this.currentView());
-    const landscape = new SceneView([
-      new MapView(
-        map,
-        scenery,
-        this.explorer.hiddenRoofs,
-        () => this.currentView(),
-        presentation.buildings,
-        this.objectView.isDestroyed,
-      ),
-      new SceneryView(
-        scenery,
-        'detail',
-        this.explorer.hiddenRoofs,
-        () => this.currentView(),
-        this.objectView.isDestroyed,
-      ),
-      this.objectView,
+    this.camera = new MatchCamera(camera, map);
+    this.commands = new PlayerCommands(input, simulation, this.camera, mapObjects);
+    const { scenery, buildings } = presentation;
+    this.roofs = new BuildingRoofs(buildings);
+    const { hidden: hiddenRoofs } = this.roofs;
+    const shown = (): WorldRect => this.camera.visibleArea();
+    this.objects = new WorldObjectsView(mapObjects, hiddenRoofs, shown);
+    const { isDestroyed } = this.objects;
+    this.atmosphere = new BiomeAtmosphereView(scenery, shown);
+    const scene = new SceneView([
+      new MapView(map, scenery, hiddenRoofs, shown, buildings, isDestroyed),
+      new SceneryView(scenery, 'detail', hiddenRoofs, shown, isDestroyed),
+      this.objects,
       this.entities,
       this.atmosphere,
     ]);
-    this.world = { scene: landscape, miniMap: new MiniMapView(map, landscape) };
+    const centre = (): WorldPoint => this.miniMapCentre();
+    this.world = { scene, miniMap: new MiniMapView(map, scene, HUD_MINIMAP_RING, centre) };
     const tickMs = MS_PER_SECOND / tickRate;
     this.loop = new GameLoop(scheduler, this, {
       tickMs,
       maxFrameMs: MAX_TICKS_PER_FRAME * tickMs,
     });
-    const stopSpawn = simulation.on('entity-spawned', ({ entityId, kind, team }) => {
-      if (this.playerId === null && kind === player.legend && team === player.team) {
-        this.playerId = entityId;
-      }
-    });
-    const stopDamage = simulation.on('damage-applied', ({ source }) => {
-      if (source.attackerId === this.playerId && source.kind === 'weapon')
-        this.knight.play('attack', (this.current.tick + 1) / tickRate);
-    });
-    this.stopListening = () => {
-      stopSpawn();
-      stopDamage();
-    };
-
-    simulation.enqueueCommand({
-      type: 'dev-spawn',
-      kind: player.legend,
-      definitionId: player.legend,
-      team: player.team,
-      at: spawnPoint,
-      count: 1,
-    });
+    this.bridge = new MatchBridge({ ...bridge, tickRate, map });
     this.current = simulation.snapshot();
-    camera.lookAt(spawnPoint);
+    this.legendAnimation.observe(null, this.current);
+    this.healthBars.observe(this.current);
+    this.playerId = this.current.match.humanLegendId;
+    this.controls = new MatchViewControls({
+      camera: this.camera,
+      roofs: this.roofs,
+      commands: this.commands,
+      miniMap: this.world.miniMap,
+      playerId: this.playerId,
+      snapshot: () => this.current,
+    });
+    camera.lookAt(this.playerEntity()?.transform ?? { x: map.width / 2, y: map.height / 2 });
   }
 
-  /** The id of the player's Legend, once it has spawned (after the first tick). */
+  /** The id of the player's Legend; known from construction, `null` when its spawn failed. */
   public get playerEntityId(): EntityId | null {
     return this.playerId;
-  }
-
-  /** Installs decoded player art; loading remains the resource facade's responsibility. */
-  public setPlayerAtlas(atlas: KnightAtlas): void {
-    this.knightAtlas = atlas;
-  }
-
-  /** Whether any building roof is hidden. */
-  public get hasOpenRoofs(): boolean {
-    return this.explorer.hiddenRoofs.size > 0;
   }
 
   /** The latest snapshot. */
@@ -200,218 +161,107 @@ export class Match implements LoopTarget {
     return this.current;
   }
 
-  /** Starts the game loop. */
+  /** Publishes everything the HUD shows once, then starts the game loop. */
   public start(): void {
+    this.bridge.publishAll(this.current, this.playerId);
     this.loop.start();
+  }
+
+  /**
+   * Stops the loop (pause) or starts it again; the loop keeps its remainder and restarts its frame
+   * clock, so paused time is not simulated (13 §7: the match pauses from `pause-menu`; ES-11).
+   */
+  public setPaused(isPaused: boolean): void {
+    if (isPaused) {
+      this.loop.stop();
+    } else {
+      this.loop.start();
+    }
   }
 
   /** Sets the drawing area in device pixels; call on mount and on every resize. */
   public resize(screenWidth: number, screenHeight: number, pixelRatio: number): void {
-    this.screenWidth = screenWidth;
-    this.screenHeight = screenHeight;
-    this.pixelRatio = pixelRatio;
+    this.camera.resize(screenWidth, screenHeight, pixelRatio);
     this.deps.renderer.resize(screenWidth, screenHeight, pixelRatio);
   }
 
-  /** One tick: the player's intent becomes commands, then the simulation steps. */
+  /**
+   * One tick: the player's intent becomes commands (and moving input sends the camera back to
+   * following), the simulation steps, and the roof of the building the player's Legend now stands
+   * in opens. A dead Legend (`isDead`, or gone from the snapshot) stands in no building, so its
+   * roof closes (DEC-143, DEC-149).
+   */
   public tick(): void {
-    this.applyIntent();
+    if (this.playerId !== null) {
+      const isMoving = this.commands.apply(this.playerId, this.current);
+      if (isMoving) {
+        this.camera.playerMoved();
+      }
+    }
     this.deps.simulation.step();
     this.previous = this.current;
     this.current = this.deps.simulation.snapshot();
-    this.knight.observe(
-      this.current.entities.find((entity) => entity.id === this.playerId)?.transform ?? null,
-    );
+    this.legendAnimation.observe(this.previous, this.current);
+    this.healthBars.observe(this.current);
+    this.roofs.playerAt(this.livingPlayerAt());
+    this.bridge.afterTick(this.current, this.playerId);
   }
 
   /** One frame: the camera follows the player, then the scene and the minimap are drawn. */
   public render(alpha: number): void {
-    this.renderSeconds = (this.current.tick + alpha) / this.deps.tickRate;
-    const { renderer, camera } = this.deps;
-    const player = this.current.entities.find((entity) => entity.id === this.playerId);
-    if (this.isFollowing && player?.transform != null) {
-      camera.track(player.transform, CAMERA_SMOOTHING);
-    }
-    const view = this.currentView();
+    this.frameTick = this.current.tick + alpha;
+    const { renderer } = this.deps;
+    this.camera.follow(this.playerEntity()?.transform ?? null);
+    const view = this.camera.visibleArea();
     const { scene, miniMap } = this.world;
     renderer.clear(BACKGROUND_COLOR);
     renderer.showWorldArea(view);
     this.entities.show(this.previous, this.current, alpha, this.playerId);
-    this.objectView.show(this.current.mapObjects ?? []);
+    this.objects.show(this.current.mapObjects ?? []);
     this.atmosphere.show(
-      player?.transform ?? null,
+      this.livingPlayerAt(),
       (this.current.tick + alpha) / this.deps.tickRate,
-      this.isFollowing && !this.isExploring,
+      this.camera.isPlayerFollowing,
     );
     scene.draw(renderer);
-    miniMap.draw(renderer, this.screenWidth, this.screenHeight, view);
+    miniMap.draw(renderer, this.camera.screenWidth, this.camera.screenHeight);
   }
 
   /**
-   * Moves the camera to the world point under a minimap click and stops following the player
-   * until the player moves again.
-   *
-   * @returns Whether the click was on the minimap.
+   * The game loop stopped because a tick or a frame threw: hands the error and the tick to the
+   * match's owner (`onCrash`), which ends the match (DEC-106).
    */
-  public lookAtMinimapPoint(screenX: number, screenY: number): boolean {
-    const target = this.world.miniMap.worldPointAt(
-      screenX,
-      screenY,
-      this.screenWidth,
-      this.screenHeight,
-    );
-    if (target === null) {
-      return false;
-    }
-    if (this.isExploring) {
-      this.explorer.lookAt(target);
-      this.explorer.zoomBy(EXPLORER_SETTINGS.minimapZoom);
-    } else {
-      this.deps.camera.lookAt(target);
-    }
-    this.isFollowing = false;
-    return true;
-  }
-
-  /** Drags the view by a screen offset (device pixels), switching to the free view. */
-  public panBy(screenDx: number, screenDy: number): void {
-    this.explore();
-    const area = this.explorer.areaFor(this.aspect);
-    this.explorer.pan(
-      (-screenDx * area.width) / this.screenWidth,
-      (-screenDy * area.height) / this.screenHeight,
-      this.aspect,
-    );
-  }
-
-  /** Zooms whichever view is on screen; `factor` above 1 zooms in. */
-  public zoomBy(factor: number): void {
-    const { camera } = this.deps;
-    if (this.isExploring) {
-      this.explorer.zoomBy(factor);
-    } else {
-      camera.zoomTo(camera.zoom * factor);
-    }
+  public crashed(error: unknown): void {
+    this.deps.onCrash({ error, tick: this.deps.simulation.tick });
   }
 
   /**
-   * Toggles a building roof when the screen point (device pixels) is on it.
-   *
-   * @returns Whether a building was selected.
-   */
-  public toggleRoofAt(screenX: number, screenY: number): boolean {
-    const view = this.currentView();
-    const wasToggled = this.explorer.toggleRoofAt({
-      x: view.x + (screenX / this.screenWidth) * view.width,
-      y: view.y + (screenY / this.screenHeight) * view.height,
-    });
-    return wasToggled;
-  }
-
-  /** Shows the whole battlefield in the free view, restoring all building roofs. */
-  public overview(): void {
-    this.explorer.overview();
-    this.isExploring = true;
-    this.isFollowing = false;
-  }
-
-  /**
-   * Stops the loop and the event subscription. The renderer and camera are injected, so their
-   * owner (`useMatch`) destroys them.
+   * Stops the loop and the health bars' event listeners. The renderer and camera are injected, so
+   * their owner (`MatchHost`) destroys them.
    */
   public destroy(): void {
     this.loop.destroy();
-    this.stopListening();
+    this.healthBars.destroy();
+    this.legendAnimation.destroy();
   }
 
-  private applyIntent(): void {
-    if (this.playerId === null) {
-      return;
-    }
-    const { move, isAttacking, aim, triggered } = this.deps.input.read(this.projection);
-    for (const slot of triggered) {
-      if (
-        slot === 'ability-1' ||
-        slot === 'ability-2' ||
-        slot === 'ability-3' ||
-        slot === 'ability-4'
-      )
-        this.knight.play(slot, this.current.tick / this.deps.tickRate);
-    }
-    const targetId =
-      isAttacking === true && aim !== null
-        ? (findMapObjectAt(this.mapObjects, this.current.mapObjects ?? [], aim) ??
-          this.current.entities.find(
-            (entity) =>
-              entity.id !== this.playerId &&
-              entity.team !== this.deps.player.team &&
-              entity.transform !== null &&
-              (entity.health?.current ?? 0) > 0 &&
-              Math.hypot(entity.transform.x - aim.x, entity.transform.y - aim.y) <=
-                entity.transform.radius,
-          )?.id ??
-          null)
-        : null;
-    // Holding the button on one target queues one command, not one per tick.
-    if (targetId !== null && targetId !== this.attackTargetId) {
-      this.deps.simulation.enqueueCommand({
-        type: 'attack-target',
-        actorId: this.playerId,
-        targetId,
-      });
-    }
-    this.attackTargetId = targetId;
-    const isMoving = move.x !== 0 || move.y !== 0;
-    // Any movement brings the camera back to the player, including held keys.
-    if (isMoving) {
-      this.isFollowing = true;
-      this.isExploring = false;
-    }
-    if (move.x === this.lastMove.x && move.y === this.lastMove.y) {
-      return;
-    }
-    this.deps.simulation.enqueueCommand(
-      isMoving
-        ? { type: 'move', actorId: this.playerId, direction: move }
-        : { type: 'stop', actorId: this.playerId },
-    );
-    if (!isMoving) {
-      // `stop` also drops the attack target, so a button still held queues it again next tick.
-      this.attackTargetId = null;
-    }
-    this.lastMove = move;
+  /**
+   * Where the player's Legend stands while it lives (the open roof and the minimap's centre);
+   * `null` before it spawns, once dead or gone. The minimap then centres on the camera (DEC-182).
+   */
+  private livingPlayerAt(): WorldPoint | null {
+    const player = this.playerEntity();
+    return isDead(player?.health ?? null) ? null : (player?.transform ?? null);
   }
 
-  /** The drawing area's width over its height, until the first resize a default. */
-  private get aspect(): number {
-    return this.screenHeight > 0 ? this.screenWidth / this.screenHeight : DEFAULT_ASPECT;
+  /** The minimap's centre: the living player's Legend, else the camera's centre (DEC-182). */
+  private miniMapCentre(): WorldPoint {
+    const view = this.camera.visibleArea();
+    return this.livingPlayerAt() ?? { x: view.x + view.width / 2, y: view.y + view.height / 2 };
   }
 
-  /** The part of the world on screen: the free view's or the camera's. */
-  private currentView(): WorldRect {
-    const { camera, map } = this.deps;
-    return this.isExploring
-      ? this.explorer.areaFor(this.aspect)
-      : camera.visibleArea(map.width, map.height);
-  }
-
-  /** Switches to the free view, starting from what the camera shows so nothing jumps. */
-  private explore(): void {
-    if (!this.isExploring) {
-      const { camera, map } = this.deps;
-      this.explorer.showArea(camera.visibleArea(map.width, map.height), this.aspect);
-      this.isExploring = true;
-    }
-    this.isFollowing = false;
-  }
-
-  private static strongholdOf(map: MapDefinition, team: MatchDeps['player']['team']): Vec2 {
-    const stronghold = map.features.find(
-      (feature) => feature.kind === 'stronghold' && feature.team === team,
-    );
-    if (stronghold === undefined) {
-      throw new Error(`Map "${map.id}" has no ${team} stronghold to spawn the player at.`);
-    }
-    return stronghold.position;
+  /** The player's Legend in the latest snapshot; `undefined` before it spawns or once removed. */
+  private playerEntity(): EntitySnapshot | undefined {
+    return this.current.entities.find((entity) => entity.id === this.playerId);
   }
 }

@@ -5,8 +5,10 @@ import {
   CAMP_MATERIALS as M,
   LANE_SHRINE_OFFSET_Y,
 } from '../content/maps/campScenery';
-import type { CampTheme } from './MapCampBuilder.types';
+import type { CampTheme } from '../content/maps/maps.types';
+import { placeLocalArt } from './placeLocalArt';
 import { CampShrineBuilder } from './CampShrineBuilder';
+import { TowerSanctumBuilder } from './TowerSanctumBuilder';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
 
 /** Dresses corner and lane anchors with the reference shrine and troop-specific equipment. */
@@ -43,8 +45,36 @@ export class MapCampBuilder extends MapDecorationBuilder {
           ? 'buff-tower'
           : 'spawner-tower';
     this.ellipse(`${id}-camp-clearing`, 0, 13, 39, 17, M.shadow, 'ground');
-    this.pieces.push(...new CampShrineBuilder().build(id));
+    this.pieces.push(
+      ...(feature.kind === 'corner-camp'
+        ? new CampShrineBuilder().build(id)
+        : new TowerSanctumBuilder().build(id, feature.team === 'dark')),
+    );
     this.beginObject(id, kind);
+    this.crystal(id, appearance);
+    this.equipment[theme]?.(id);
+    const scale = appearance.scale;
+    return placeLocalArt(
+      this.pieces.map((piece) => ({
+        ...piece,
+        // Masonry and equipment form one destructible structure, with only the feet blocking.
+        ...(piece.object === undefined ? {} : { object: { ...piece.object, kind } }),
+        replacesFeature: id,
+      })),
+      {
+        x: feature.position.x,
+        y: feature.position.y + (feature.kind === 'corner-camp' ? 0 : LANE_SHRINE_OFFSET_Y) * scale,
+      },
+      scale,
+      mirrorWidth !== undefined,
+      mirrorWidth,
+    );
+  }
+
+  private crystal(
+    id: string,
+    appearance: { readonly glow: string; readonly crystal: string; readonly core: string },
+  ): void {
     this.ellipse(`${id}-crystal-aura`, 0, -18, 12, 16, appearance.glow);
     this.chain(id);
     this.ellipse(`${id}-crystal-pool`, 0, -6, 6, 1.6, appearance.glow);
@@ -82,23 +112,6 @@ export class MapCampBuilder extends MapDecorationBuilder {
         'detail',
       );
     }
-    this.equipment[theme]?.(id);
-    const scale = appearance.scale;
-    return this.pieces.map((piece) => ({
-      ...piece,
-      // Masonry and equipment form one destructible structure, with only the feet blocking.
-      ...(piece.object === undefined ? {} : { object: { ...piece.object, kind } }),
-      replacesFeature: id,
-      shape: piece.shape.map((point) => ({
-        x:
-          mirrorWidth === undefined
-            ? feature.position.x + point.x * scale
-            : mirrorWidth - (mirrorWidth - feature.position.x + point.x * scale),
-        y:
-          feature.position.y +
-          (point.y + (feature.kind === 'corner-camp' ? 0 : LANE_SHRINE_OFFSET_Y)) * scale,
-      })),
-    }));
   }
 
   private chain(id: string): void {

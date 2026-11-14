@@ -1,4 +1,5 @@
-import type { Polygon, Rect } from '../utils/geometry.types';
+import { boundsOf } from '../utils/geometry';
+import type { Rect } from '../utils/geometry.types';
 import { STATIC_BUCKET_SIZE } from './StaticCollisionIndex.constants';
 import type { IndexedPolygon, StaticCollisionShape } from './StaticCollisionIndex.types';
 
@@ -12,7 +13,7 @@ export class StaticCollisionIndex {
   public constructor(shapes: readonly StaticCollisionShape[]) {
     for (const shape of shapes) {
       if (shape.polygon.length < 3) continue;
-      const entry = { ...shape, bounds: StaticCollisionIndex.bounds(shape.polygon) };
+      const entry = { ...shape, bounds: boundsOf(shape.polygon) };
       this.cells(entry.bounds, (key) => {
         const bucket = this.buckets.get(key) ?? [];
         bucket.push(entry);
@@ -57,16 +58,5 @@ export class StaticCollisionIndex {
       )
         visit(`${String(col)}:${String(row)}`);
     }
-  }
-
-  private static bounds(polygon: Polygon): Rect {
-    const xs = polygon.map((p) => p.x);
-    const ys = polygon.map((p) => p.y);
-    return {
-      x: Math.min(...xs),
-      y: Math.min(...ys),
-      width: Math.max(...xs) - Math.min(...xs),
-      height: Math.max(...ys) - Math.min(...ys),
-    };
   }
 }

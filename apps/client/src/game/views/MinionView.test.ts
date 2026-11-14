@@ -15,6 +15,10 @@ const unit = (weight: MinionWeight, team: EntitySnapshot['team'] = 'light'): Ent
   team,
   transform: { x: 10, y: 20, radius: { light: 0.4, medium: 0.5, heavy: 0.8 }[weight] },
   health: { current: 100, max: 100 },
+  progression: null,
+  aether: null,
+  area: null,
+  capture: null,
 });
 const draw = (entity: EntitySnapshot, isFocused = false): RecordingRenderer => {
   const renderer = new RecordingRenderer();

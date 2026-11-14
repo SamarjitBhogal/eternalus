@@ -5,6 +5,7 @@ import type { WorldLayer } from './SceneView.types';
 import type { AtmosphericRegion } from './BiomeAtmosphereView.types';
 import {
   WEATHER_EDGE_FADE,
+  WEATHER_MOTION as M,
   WEATHER_PALETTES,
   WEATHER_PARTICLES,
 } from './BiomeAtmosphereView.constants';
@@ -12,7 +13,10 @@ import {
 /** Animated lava light and local snow/ash, driven by render time rather than gameplay systems. */
 export class BiomeAtmosphereView implements WorldLayer {
   private readonly regions: readonly AtmosphericRegion[];
-  private readonly flows: readonly MapDecoration[];
+  private readonly flows: readonly {
+    readonly shape: MapDecoration['shape'];
+    readonly bounds: WorldRect;
+  }[];
   private player: WorldPoint | null = null;
   private seconds = 0;
   private shouldShowWeather = false;
@@ -27,7 +31,9 @@ export class BiomeAtmosphereView implements WorldLayer {
         ? []
         : [{ kind: piece.ambientBiome, bounds: BiomeAtmosphereView.boundsOf(piece.shape) }],
     );
-    this.flows = scenery.filter((piece) => piece.sceneryAnimation === 'lava-flow');
+    this.flows = scenery
+      .filter((piece) => piece.sceneryAnimation === 'lava-flow')
+      .map((piece) => ({ shape: piece.shape, bounds: BiomeAtmosphereView.boundsOf(piece.shape) }));
   }
 
   /** Receives the player's position and interpolated tick time; never mutates either. */
@@ -41,7 +47,7 @@ export class BiomeAtmosphereView implements WorldLayer {
   public draw(renderer: Renderer): void {
     const view = this.view();
     for (const flow of this.flows) {
-      const bounds = BiomeAtmosphereView.boundsOf(flow.shape);
+      const bounds = flow.bounds;
       if (
         bounds.x > view.x + view.width ||
         bounds.x + bounds.width < view.x ||
@@ -51,7 +57,7 @@ export class BiomeAtmosphereView implements WorldLayer {
         continue;
       renderer.fillPolygon(
         flow.shape,
-        `rgba(255,215,111,${String(0.06 + Math.sin(this.seconds * 1.4) * 0.035)})`,
+        `rgba(${M.glowRgb},${String(M.glowAlpha + Math.sin(this.seconds * M.glowSpeed) * M.glowPulse)})`,
       );
     }
     if (!this.shouldShowWeather || this.player === null) return;
@@ -81,20 +87,23 @@ export class BiomeAtmosphereView implements WorldLayer {
   ): void {
     const palette = WEATHER_PALETTES[kind];
     for (let i = 0; i < WEATHER_PARTICLES; i++) {
-      const seed = (i * 0.61803398875) % 1;
-      const phase = (seed + this.seconds * (0.045 + (i % 5) * 0.008)) % 1;
+      const seed = (i * M.seed) % 1;
+      const phase = (seed + this.seconds * (M.speed + (i % M.speedSteps) * M.speedStep)) % 1;
       const x =
         view.x +
-        ((((i * 0.381966 + Math.sin(this.seconds * 0.4 + i) * 0.025 + this.seconds * 0.012) % 1) +
+        ((((i * M.horizontalSeed +
+          Math.sin(this.seconds * M.swaySpeed + i) * M.sway +
+          this.seconds * M.wind) %
+          1) +
           1) %
           1) *
           view.width;
-      const y = view.y + (kind === 'snow' ? phase : 1 - phase) * view.height;
-      const radius = view.width * (kind === 'snow' ? 0.0013 : 0.0009) * (0.6 + (i % 3) * 0.3);
+      const y = view.y + (palette.direction > 0 ? phase : 1 - phase) * view.height;
+      const radius = view.width * palette.radius * (M.size + (i % M.sizeSteps) * M.sizeStep);
       const color =
-        kind === 'lava' && i % 7 === 0
-          ? `rgba(255,171,78,${String(strength * 0.65)})`
-          : `rgba(${palette.particle.join(',')},${String(strength * (0.25 + (i % 4) * 0.12))})`;
+        palette.emberEvery > 0 && i % palette.emberEvery === 0
+          ? `rgba(${M.emberRgb},${String(strength * M.emberAlpha)})`
+          : `rgba(${palette.particle.join(',')},${String(strength * (M.alpha + (i % M.alphaSteps) * M.alphaStep))})`;
       renderer.fillPolygon(
         [
           { x, y: y - radius },
@@ -114,17 +123,20 @@ export class BiomeAtmosphereView implements WorldLayer {
     strength: number,
   ): void {
     const rgb = WEATHER_PALETTES[kind].haze.join(',');
-    for (let i = 0; i < 5; i++) {
-      const x = view.x + (i / 5) * view.width;
-      const y = view.y + (0.18 + i * 0.15 + Math.sin(this.seconds * 0.3 + i) * 0.025) * view.height;
+    for (let i = 0; i < M.hazeBands; i++) {
+      const x = view.x + (i / M.hazeBands) * view.width;
+      const y =
+        view.y +
+        (M.hazeTop + i * M.hazeStep + Math.sin(this.seconds * M.hazeSpeed + i) * M.hazeSway) *
+          view.height;
       renderer.fillPolygon(
         [
           { x, y },
-          { x: x + view.width * 0.3, y: y - view.height * 0.04 },
-          { x: x + view.width * 0.35, y: y + view.height * 0.04 },
-          { x, y: y + view.height * 0.02 },
+          { x: x + view.width * M.hazeWidth, y: y - view.height * M.hazeHeight },
+          { x: x + view.width * M.hazeTip, y: y + view.height * M.hazeHeight },
+          { x, y: y + view.height * M.hazeTail },
         ],
-        `rgba(${rgb},${String(strength * 0.035)})`,
+        `rgba(${rgb},${String(strength * M.hazeAlpha)})`,
       );
     }
   }

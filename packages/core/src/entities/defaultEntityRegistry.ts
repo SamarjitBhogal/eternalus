@@ -1,3 +1,4 @@
+import { EffectZone } from './zones/EffectZone';
 import { EntityRegistry } from './EntityRegistry';
 import { Magus } from './legends/Magus';
 import { Sentinel } from './legends/Sentinel';
@@ -7,6 +8,12 @@ import { LightMob } from './mobs/LightMob';
 import { MediumMob } from './mobs/MediumMob';
 import { Obstacle } from './Obstacle';
 import { Projectile } from './Projectile';
+import { BuffTower } from './structures/BuffTower';
+import { Camp } from './structures/Camp';
+import { Gate } from './structures/Gate';
+import { SpawnerTower } from './structures/SpawnerTower';
+import { Stronghold } from './structures/Stronghold';
+import { CapturePoint } from './zones/CapturePoint';
 
 /**
  * The registry of every shipped entity kind (architecture 04 §6). The ONLY file that names
@@ -22,5 +29,12 @@ export const createDefaultEntityRegistry = (): EntityRegistry => {
   registry.register('heavy-mob', HeavyMob);
   registry.register('obstacle', Obstacle);
   registry.register('projectile', Projectile);
+  registry.register('effect-zone', EffectZone);
+  registry.register('stronghold', Stronghold);
+  registry.register('spawner-tower', SpawnerTower);
+  registry.register('buff-tower', BuffTower);
+  registry.register('gate', Gate);
+  registry.register('camp', Camp);
+  registry.register('capture-point', CapturePoint);
   return registry;
 };

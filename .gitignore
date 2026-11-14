@@ -8,7 +8,8 @@ dist/
 # Test output
 coverage/
 
-# Logs
+# Logs (logs/errors/: error reports from the dev server, ADR 0025)
+logs/
 *.log
 npm-debug.log*
 
@@ -27,6 +28,8 @@ Thumbs.db
 # Agent worktrees (see docs/agents/running-agents.md)
 .worktrees/
 .claude/worktrees/
+# Agents' untracked scratch: probes, logs, reviews (DEC-179; ADR 0014: untracked folders only)
+eternalus-agent-work/
 
 # Personal agent settings and a private inbox (see docs/agents/tool-setup.md, INBOX.md)
 .claude/settings.local.json

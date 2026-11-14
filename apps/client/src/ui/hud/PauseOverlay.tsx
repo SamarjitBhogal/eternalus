@@ -4,26 +4,38 @@ import { emitIntent } from '../../bridge/eventBus';
 import { useAppSelector } from '../../bridge/hooks';
 import { Button } from '../components/Button';
 import { SettingsScreen } from '../screens/SettingsScreen';
-import styles from './PauseOverlay.module.css';
 import { STRINGS } from '../strings';
+import styles from './PauseOverlay.module.css';
+import type { PauseOpenerRef } from './usePauseMenuKey';
+import { usePauseOverlayFocus } from './usePauseOverlayFocus';
 
 /**
- * The in-match pause overlay: Resume, Settings (the settings screen embedded) and Leave match.
- * `MatchScreen` mounts it always; it shows only while the session's overlay is open.
+ * The in-match pause overlay: Resume, Settings (the settings screen embedded) and Leave match, as
+ * a modal dialog beside the `inert` viewport and HUD (13 §7; CD-11). Resume takes focus when the
+ * pause view mounts (again on settings → pause); the rest of the focus, including its return to
+ * `openerRef` on close, is `usePauseOverlayFocus`'s. `MatchScreen` mounts it always; it shows only
+ * while the session's overlay is open.
  */
-export function PauseOverlay(): ReactElement | null {
+export function PauseOverlay({
+  openerRef,
+}: {
+  readonly openerRef: PauseOpenerRef;
+}): ReactElement | null {
   const overlay = useAppSelector((state) => state.session.overlay);
   const titleId = useId();
+  const dialogRef = usePauseOverlayFocus(overlay, openerRef);
   if (overlay === null) {
     return null;
   }
   return (
     <div className={styles.scrim}>
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={overlay === 'pause' ? titleId : undefined}
         aria-label={overlay === 'pause' ? undefined : STRINGS.pause.settings}
+        tabIndex={-1}
         className={styles.dialog}
       >
         {overlay === 'settings' ? (
@@ -35,6 +47,7 @@ export function PauseOverlay(): ReactElement | null {
             </h2>
             <div className={styles.actions}>
               <Button
+                autoFocus
                 onClick={() => {
                   emitIntent({ kind: 'close-overlay' });
                 }}

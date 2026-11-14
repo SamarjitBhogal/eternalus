@@ -3,6 +3,7 @@ import { sqrt } from '../../utils/deterministicMath';
 import type { Vec2 } from '../../utils/geometry.types';
 import { length } from '../../utils/vec2';
 import type { MutableVec2 } from '../../utils/vec2.types';
+import { addSeparation } from './addSeparation';
 import type { FlowQuery, MovementContext, MovementStrategy } from './MovementStrategy.types';
 
 /**
@@ -27,8 +28,8 @@ export class LaneFollowMovementStrategy implements MovementStrategy {
 
   /** Toward the target, or none once there, plus the separation push; below `minSteer` is none. */
   public desiredVelocity(self: number, context: MovementContext): Vec2 {
-    const { positions, target, out, found, arrivalRadius } = context;
-    const { separationRadius, separationWeight, minSteer, blockedLookAhead } = this.profile;
+    const { positions, target, out, arrivalRadius } = context;
+    const { minSteer, blockedLookAhead } = this.profile;
     const x = positions[2 * self] ?? 0;
     const y = positions[2 * self + 1] ?? 0;
     const dx = target.x - x;
@@ -49,20 +50,7 @@ export class LaneFollowMovementStrategy implements MovementStrategy {
       out.x = isHeld ? 0 : dx / gap;
       out.y = isHeld ? 0 : dy / gap;
     }
-    const count = context.neighbours.queryCircle(x, y, separationRadius, found);
-    for (let at = 0; at < count; at += 1) {
-      const other = found[at] ?? self;
-      const awayX = x - (positions[2 * other] ?? x);
-      const awayY = y - (positions[2 * other + 1] ?? y);
-      const apart = sqrt(awayX * awayX + awayY * awayY);
-      if (other === self || apart === 0 || apart >= separationRadius) {
-        continue;
-      }
-      // Away from the neighbour, weighted 1/r (10 §9) and shifted to reach 0 at the radius.
-      const strength = (separationWeight * (separationRadius - apart)) / apart;
-      out.x += (awayX / apart) * strength;
-      out.y += (awayY / apart) * strength;
-    }
+    addSeparation(self, x, y, context, this.profile);
     // The final heading, separation included, never steps onto unwalkable ground (18 §5.2:
     // obstacle avoidance comes first): one that would turns along the wall, and a chase that
     // cannot turn holds. A march that cannot turn keeps its heading: holding it there for good

@@ -7,8 +7,7 @@ import type { WorldPoint } from './Renderer.types';
 export type DrawContext = Pick<
   CanvasRenderingContext2D,
   | 'beginPath'
-  | 'drawImage'
-  | 'imageSmoothingEnabled'
+  | 'clip'
   | 'closePath'
   | 'ellipse'
   | 'fill'
@@ -19,10 +18,19 @@ export type DrawContext = Pick<
   | 'lineWidth'
   | 'moveTo'
   | 'rect'
+  | 'restore'
+  | 'save'
   | 'stroke'
   | 'strokeRect'
   | 'strokeStyle'
->;
+> &
+  Partial<Pick<CanvasRenderingContext2D, 'drawImage' | 'imageSmoothingEnabled'>>;
+
+/**
+ * What `Canvas2dRenderer.fromCanvas` needs of a canvas: its 2D context. An `HTMLCanvasElement`
+ * satisfies it; tests pass a fake.
+ */
+export type DrawSurface = { getContext(contextId: '2d'): DrawContext | null };
 
 /** Traces one glyph's outline around a screen-space centre, given its half width and height. */
 export type GlyphTracer = (center: WorldPoint, halfWidth: number, halfHeight: number) => void;

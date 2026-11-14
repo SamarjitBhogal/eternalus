@@ -1,0 +1,19 @@
+/* The locked view (DEC-60) fills the artboard like the Legend step and creates no stacking context:
+   its children stack in SelectionStage's artboard, beneath the shell's banner and countdown. The
+   panel, rating bars and roster keep the Legend step's places. */
+.step {
+  position: absolute;
+  inset: 0;
+}
+
+/* Recommendation: the Legend stands centred on the artboard, at its own size up to 560 x 720 px
+   (the layout is not in the owner's Figma, DEC-60). */
+.figure {
+  position: absolute;
+  inset: 0;
+  max-width: 560px;
+  max-height: 720px;
+  margin: auto;
+  object-fit: contain;
+  pointer-events: none;
+}

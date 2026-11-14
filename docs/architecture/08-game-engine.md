@@ -4,13 +4,14 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-08
+last-reviewed: 2026-11-13
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
     'apps/client/src/game/engine/**',
     'apps/client/src/game/views/**',
     'apps/client/src/game/Match.ts',
+    'apps/client/src/game/HealthBarVisibility.ts',
   ]
 related:
   [
@@ -63,6 +64,7 @@ requestAnimationFrame(t)
 export interface LoopTarget {
   tick(): void;
   render(alpha: number): void;
+  crashed(error: unknown): void; // `tick` or `render` threw: the loop has stopped for good; called once
 }
 export type GameLoopOptions = {
   readonly tickMs: number; // 1000 / 30 (D9)
@@ -155,22 +157,33 @@ export interface Renderer {
 ## 5. `Camera` and projections
 
 ```ts
-// apps/client/src/game/engine/camera/Camera.ts (sketch)
+// apps/client/src/game/engine/input/Projection.types.ts (contract)
 export interface Projection {
-  worldToScreen(p: Vec2Like): Vec2Like;
-  screenToWorld(p: Vec2Like): Vec2Like;
+  screenToWorld(p: Vec2Like): Vec2Like; // canvas point (CSS pixels) to world point
 }
-export class Camera implements Projection {
+// apps/client/src/game/engine/Camera.ts (sketch): the following camera
+export class Camera {
   follow(target: () => Vec2Like, lerp: number): void; // e.g. the player's Legend, interpolated
   setZoom(z: number): void; // clamped to zoomBounds from settings
   visibleRect(): RectLike; // world-space rectangle used for culling
   update(alpha: number): void; // moves toward the follow target once per frame
 }
-export class MinimapProjection implements Projection {} // fixed scale, see 06 §8
+// apps/client/src/game/MatchCamera.ts: owns a Camera and the free MapExplorer view
+export class MatchCamera implements Projection {}
 ```
 
-The same `Projection` port serves the main scene and the minimap, so culling, click-to-world and
-range-ring maths are written once (DRY).
+`MatchCamera` is the match's `Projection`: it holds the drawing size and turns a canvas point
+(CSS pixels) into a world point, so input never needs to know about cameras or screen sizes.
+
+`MinimapProjection` (`engine/camera/`, 06 §8) is a second, smaller thing. It is a per-frame value
+object for the local minimap view: a centre, a radius and a screen area. It works in device
+pixels, has no `Command`, and does not implement `Projection`. This is a better-than-design
+change that the owner signed off (DEC-191); the critic ruled it acceptable. Its `worldAt` mirrors
+`MatchCamera.worldAt`, the internal method that the camera's `screenToWorld` wraps by multiplying
+with the pixel ratio. Nothing consumes the minimap as a `Projection`, and a minimap click reaches
+`MatchViewControls.lookAtMinimapPoint` in device pixels. If an input driver ever needs the minimap as a
+`Projection`, add a `screenToWorld` adapter that multiplies by the pixel ratio. Culling is not
+shared: the minimap clips to the ring.
 
 ## 6. Assets and audio
 
@@ -193,6 +206,7 @@ wires them by constructor injection (no Service Locator, no singletons except th
 export class Match implements LoopTarget {
   constructor(deps: {
     simulation: Simulation; // from @eternalus/core, built from GameConfig + seed
+    world: PreparedWorld; // the generated map and its scenery, prepared in 'match-loading' (DEC-50)
     loop: GameLoop;
     renderer: Renderer;
     camera: Camera;
@@ -224,7 +238,7 @@ flowchart LR
   SV --> E[EntityView per kind from ViewRegistry, culled, y-sorted]
   SV --> O[Overlay: rings, ranges, debug]
   S --> M[MinimapView every Nth frame]
-  M --> G[EntityView.drawGlyph via the same ViewRegistry]
+  M --> G[EntityView.drawMinimap via the same ViewRegistry]
 ```
 
 - `SceneView.draw(prev, current, alpha, camera, renderer)` is the single place that defines draw
@@ -234,6 +248,11 @@ flowchart LR
   only and never mutate state (rule 6).
 - Interpolation: views draw `prev + (current - prev) × alpha` for position and facing; entities
   that appeared this tick draw at `current` (no ghost from the origin).
+- World health bars: `EntityLayer` has `HealthBarView` draw a unit's bar after every entity of
+  its layer, so no entity hides it. Which units show one, and on which side, is decided in `game/`
+  by `HealthBarVisibility` (DEC-195), which reads `damage-applied` and `entity-removed` through
+  `Simulation.on`, as §6 designs `SoundView`; `Match` injects its rule into the layer, because
+  views read only snapshots.
 - `MinimapView` runs at a lower cadence into the `'minimap'` layer (`06-map-and-minimap.md` §8).
 
 ## 9. Performance budget and how it is measured
@@ -278,17 +297,34 @@ The design keeps the move cheap:
 - `SharedArrayBuffer` is not planned (needs cross-origin isolation headers); revisit only if
   snapshots exceed the ~10 KiB per message rule of thumb.
 
-## Related
+## 11. Implementation status
 
-- [01 Layered OOP model](./01-layered-oop-model.md)
-- [02 Code structure](./02-code-structure.md)
-- [06 Map and minimap](./06-map-and-minimap.md)
-- [09 Hardware abstraction](./09-hardware-abstraction.md)
-- [10 Physics](./10-physics.md)
-- [13 Game interface](./13-game-interface.md) (HUD, `MinimapPanel`, `PerfOverlay`)
-- [15 Diagnostics and runtime testing](./15-diagnostics-and-runtime-testing.md)
-- [Research: game architecture and performance](../research/game-architecture-and-performance-research.md)
-- [Research: persistence, input and diagnostics](../research/persistence-input-diagnostics-research.md)
+HUD and character select (`feat/hud-and-character-select`, 2026-10-26; DEC-50):
+
+- `Match` receives a prepared world (`MatchDeps.world`: the map from `setup.seed`, generated in
+  `match-loading`) and the bridge (`MatchDeps.bridge`, with the capture-point kinds); it builds
+  the views, `GameLoop`, `MatchCamera` and `MatchBridge` itself. The browser adapters (renderer,
+  frame scheduler, devices, the simulation's logger) are built by `game/createBrowserMatch.ts`,
+  the match factory that only `main.tsx` binds, and `MatchHost` owns the window, document and
+  canvas listeners, the devices and the ordered teardown.
+- The tick has `PlayerCommands` read the intent source (`input.read`) and enqueue `move`, `stop`
+  or `attack-target`, steps the simulation, swaps the snapshots and lets `MatchBridge`
+  publish; there is no `devices.poll()` or `inputMapper.map` step and no `PerfMonitor` yet.
+- The minimap is drawn into the main canvas, clipped to the HUD's ring
+  ([06](06-map-and-minimap.md) §10), not into a separate `'minimap'` layer.
+- `Match.ts` has 335 lines (`wc -l` at `fcc7c85`), over the ~300-line guideline; a camera or
+  explorer collaborator is the split if it grows. (2026-11-02: it had grown to 364; the
+  player-intent code moved to `PlayerCommands` (the ~300-line rule, `AGENTS.md`), which leaves
+  328.)
+- (2026-11-04, `feat/match-director`) The split is built: `MatchViewControls` holds the canvas
+  gestures (camera, minimap look-at, roofs, attack on click), and `Match.ts` has 214 lines. The
+  player's Legend comes from `Snapshot.match.humanLegendId`, which core sets when it spawns the
+  roster's human slot (DEC-173, [12](12-game-story-and-match-director.md) §13). `Match` no longer
+  adopts the first spawn of the player's class and team.
+
+**2026-11-11 — DEC-238 visual stand-ins.**
+
+[DEC-238](../reference/game-design/13-owner-decisions-log.md#batch-2026-11-10-pr-90-review-visuals) approves these provisional visuals.
 
 ### 2026-11-07 — Fantasy minion presentation
 
@@ -324,14 +360,45 @@ inside that biome. Free/overview views suppress local weather, and the minimap r
 atmospheric overlay. Effects use a bounded particle count from the view's companion constants,
 create no gameplay entities and use no timers or gameplay RNG.
 
-### 2026-11-08 — Controlled hero sprite presentation
+The controlled hero retains LegendView while the golden-knight reference licence is unresolved. The raw-image sprite renderer extension and input-only animation previews have been removed; future atlas work must use the existing manifest and the SpriteRef contract above.
 
-The controlled hero can use a decoded atlas injected into `Match`. `PlayerKnightView` falls
-back to `LegendView` while loading and for other heroes; it retains the team ring and leaves
-simulation radii unchanged. `KnightAnimation` observes actual tick displacement for four-way
-walking and samples injected tick/interpolation time for idle and play-once clips. Confirmed
-player weapon damage triggers a sword swing, including damage to destructible scenery.
-Existing ability slots 1–4 preview the three abilities and ultimate cosmetically; previews do
-not cast new gameplay abilities or change damage, resources or cooldowns. Bindings remain in
-`keybindings.ts`. Atlas geometry, row foot anchors and presentation timing have one home in
-`KnightAnimation.constants.ts`; the renderer crops frames and disables image filtering.
+### Magus character presentation
+
+The golden-knight reference remains unused. The Magus presentation slice adds generated sheets
+based on the owner's existing Catalyst, Oracle and Heretic selection art. `LegendAnimation`
+observes successful simulation events and displacement; `LegendSpriteView` requests `SpriteRef`s and
+retains the Legend fallback when an atlas is unavailable. `Canvas2dRenderer` receives decoded
+atlases by constructor injection and caches frame sizes for unscaled copies. The sheets load through the match manifest under the human-approved allowance recorded in ADR 0026. Nova uses a separately labelled, presentation-only preview event.
+
+### Additional character presentation
+
+`LegendAnimation` and `LegendSpriteView` serve every selected playable Legend. Skin IDs map
+stable spec IDs to manifest atlases; bot and missing-atlas paths retain the Legend fallback.
+Melee weapon damage starts the attack row, including hits on destructible scenery; staff attacks
+start on projectile release. Preview events drive the documented class-pool action rows. Motion
+uses observed displacement, and all animation phases use interpolated simulation ticks.
+Magus cast ornaments use bounded fire motes, radiant rays or violet orbits through Renderer.
+Selection art and the five additional sheets use the approved allowance in ADR 0027.
+
+Combat atlas packing must isolate each source pose before composing uniform runtime cells:
+generated art is not assumed to have exact cell spacing. Preserve aspect ratio, a common ground
+baseline and transparent gutters at both densities. Manifest hashes pin the inspected assets.
+Oversized effects belong in renderer strategies, where they can extend beyond a sprite cell.
+Combat playback durations live in `LegendAnimation.constants.ts`; they do not control gameplay.
+An active combat cast has presentation priority over weapon-hit feedback. `LegendAnimation`
+owns bounded tick-derived cast history, capturing the ground origin and observed facing at cast
+time. Renderer strategies add directional trails, projectiles, shields, shockwaves and fading
+ground cracks. These scars are cosmetic: they create no terrain, colliders, damage or entities.
+Magus playback and ornaments retain their separate existing path.
+
+## Related
+
+- [01 Layered OOP model](./01-layered-oop-model.md)
+- [02 Code structure](./02-code-structure.md)
+- [06 Map and minimap](./06-map-and-minimap.md)
+- [09 Hardware abstraction](./09-hardware-abstraction.md)
+- [10 Physics](./10-physics.md)
+- [13 Game interface](./13-game-interface.md) (HUD, `MinimapPanel`, `PerfOverlay`)
+- [15 Diagnostics and runtime testing](./15-diagnostics-and-runtime-testing.md)
+- [Research: game architecture and performance](../research/game-architecture-and-performance-research.md)
+- [Research: persistence, input and diagnostics](../research/persistence-input-diagnostics-research.md)

@@ -22,10 +22,11 @@ export type GlyphShape = 'dot' | 'square' | 'diamond' | 'ring';
 
 /** A marker: its shape and its size (width and height). */
 export type GlyphSpec = { readonly shape: GlyphShape; readonly size: number };
-
-/** A decoded atlas frame, with pixel source bounds and a world-space destination. */
-export type SpriteFrame = {
-  readonly image: CanvasImageSource;
-  readonly source: ScreenRect;
-  readonly destination: WorldRect;
+/** Immutable atlas frame reference; bitmap ownership stays outside views. */
+export type SpriteRef = { readonly atlasId: string; readonly frame: number };
+/** A decoded uniform atlas injected into the renderer by the match factory. */
+export type SpriteAtlas = {
+  readonly image: ImageBitmap;
+  readonly columns: number;
+  readonly rows: number;
 };

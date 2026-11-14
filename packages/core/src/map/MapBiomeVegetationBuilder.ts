@@ -1,5 +1,5 @@
-import { BIOME_PALETTES } from '../content/maps/biomeScenery';
-import type { MapDecoration } from '../content/maps/maps.types';
+import { BIOME_PALETTES, BIOME_PROFILES, BIOME_MATERIALS } from '../content/maps/biomeScenery';
+import type { BiomeKind, MapDecoration } from '../content/maps/maps.types';
 import type { Vec2 } from '../utils/geometry.types';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
 
@@ -11,15 +11,15 @@ export class MapBiomeVegetationBuilder extends MapDecorationBuilder {
     point: Vec2,
     size: number,
     n: number,
-    kind: 'snow' | 'lava',
+    kind: BiomeKind,
   ): readonly MapDecoration[] {
     const p = BIOME_PALETTES[kind];
     const { x, y } = point;
     this.isMirrored = true;
     this.beginObject(id, 'tree');
-    this.ellipse(`${id}-biome-shadow`, x + 4, y + 6, size, size * 0.4, 'rgba(18,29,32,0.25)');
+    this.ellipse(`${id}-biome-shadow`, x + 4, y + 6, size, size * 0.4, BIOME_MATERIALS.treeShadow);
     this.blockRect(`${id}-trunk`, x - 1, y, 3, n % 3 === 0 ? 9 : 10, p.vegetation);
-    if (kind === 'snow') {
+    if (BIOME_PROFILES[kind].treeStyle === 'fir') {
       for (let tier = 0; tier < 3; tier++) {
         const top = y - size * 1.5 + tier * size * 0.5;
         const width = size * (0.4 + tier * 0.16);

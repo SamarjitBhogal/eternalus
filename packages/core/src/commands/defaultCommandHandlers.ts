@@ -1,3 +1,4 @@
+import { CastAbilityHandler } from './handlers/CastAbilityHandler';
 import type { CommandHandlers } from './CommandHandler.types';
 import { AttackTargetHandler } from './handlers/AttackTargetHandler';
 import { DevRemoveEntityHandler } from './handlers/DevRemoveEntityHandler';
@@ -14,7 +15,7 @@ export const createDefaultCommandHandlers = (): CommandHandlers => {
     move: new MoveHandler(),
     stop: new StopHandler(),
     'attack-target': new AttackTargetHandler(),
-    'cast-ability': unsupported, // TODO(sholtzman): with phase 2 abilities
+    'cast-ability': new CastAbilityHandler(),
     intent: unsupported, // TODO(sholtzman): with sprint 1.5 PlayerController
     'dev-spawn': new DevSpawnHandler(),
     'dev-spawn-mobs': new DevSpawnMobsHandler(),

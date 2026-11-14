@@ -45,6 +45,8 @@ export type MapFeature = {
   readonly laneId?: string;
   /** The ground the feature covers, in world units, when its definition has a size. */
   readonly footprint?: Polygon;
+  /** Generated boundary dimensions; palace presentation must use the actual enclosing layout. */
+  readonly wallBoundary?: Pick<MapLayout['wallRing'], 'radius' | 'thickness'>;
 };
 
 /** The kinds of ground shapes that are not entities. Walls are features, not terrain. */
@@ -88,6 +90,14 @@ export type MapFeatureDefinition = {
   readonly footprintRadius: number;
   /** Whether the footprint blocks walking in the `WorldMap` grid. */
   readonly isBlocking: boolean;
+  /**
+   * Name the HUD shows for this kind; `null` when no screen names it. Not copied into `MapFeature`.
+   *
+   * TODO(sam): when structure content exists, the stronghold, wall, tower and cathedral names move
+   * to `StructureDefinition.displayName` (one per kind, 04 §5); this field then keeps only kinds
+   * without a structure definition (capture-point).
+   */
+  readonly displayName: string | null;
 };
 
 /**
@@ -118,6 +128,8 @@ export type MapLayout = {
     readonly buff: readonly [number, number];
   };
   readonly wallRing: {
+    /** Open, enemy-facing shield arc from cliff to cliff (DEC-158; no closed ring, DEC-159). */
+    readonly frontArc: { readonly verticalScale: number; readonly curveStepDegrees: number };
     readonly radius: number;
     readonly thickness: number;
     /** The arc facing the enemy over which the gates are spread evenly (architecture 06 §3). */
@@ -212,12 +224,14 @@ export type MapDecoration = {
   /** Authored artwork replaces this feature's placeholder in the main view only. */
   readonly replacesFeature?: string;
   /** Presentation region polygon that supplies local atmospheric effects. */
-  readonly ambientBiome?: 'snow' | 'lava';
+  readonly ambientBiome?: BiomeKind;
   /** Cosmetic shimmer follows this authored lava surface, without changing its collider. */
   readonly sceneryAnimation?: 'lava-flow';
   readonly object?: MapObjectArt;
   /** A bridge deck cuts a walkable corridor through otherwise solid decorative terrain. */
   readonly isPassage?: true;
+  /** Authored lane surface replaces the main view's schematic screen-width lane line. */
+  readonly isLaneSurface?: true;
 };
 
 /** A selectable same-world building, derived from its interior floor and door polygons. */
@@ -231,3 +245,8 @@ export type MapPresentation = {
   readonly scenery: readonly MapDecoration[];
   readonly buildings: readonly MapBuilding[];
 };
+
+/** Shared presentation biome vocabulary (DEC-238). */
+export type BiomeKind = 'snow' | 'lava';
+/** Shrine equipment themes, independent of gameplay weights (DEC-238). */
+export type CampTheme = 'corner' | 'heavy' | 'medium' | 'light';

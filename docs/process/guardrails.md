@@ -4,7 +4,7 @@ description: Every automated guardrail in the repository (TypeScript, ESLint, kn
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-13
 tags: [process, guardrails, ci, tooling]
 paths:
   [
@@ -19,6 +19,7 @@ paths:
   ]
 related:
   [
+    'docs/decisions/0028-user-attachment-art-provenance.md',
     'docs/process/sdlc.md',
     'docs/agents/tool-setup.md',
     'docs/decisions/0008-docs-structure-and-frontmatter.md',
@@ -35,6 +36,7 @@ human and every AI tool. Everything else is policy, checked in review.
 
 | Guardrail                  | Enforces                                                                                                                                           | Tool                                               | Configured in                                                      | What a failure looks like                                                                                          | How to fix it properly                                                               |
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| Asset provenance           | Public URL/Figma source or registered attachment with original hash and documented permission (ADR 0028)                                           | Vitest                                             | `data/resources/AssetManifest.test.ts`, ADR 0028                   | Invalid or undocumented asset provenance                                                                           | Supply the source or approved attachment record; never invent a URL                  |
 | Strict TypeScript          | `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, no implicit returns/overrides, no unused locals/params, `verbatimModuleSyntax` | `tsc -b`                                           | `tsconfig.base.json`, per-package `tsconfig*.json`                 | `error TS2532: Object is possibly 'undefined'`                                                                     | Handle the case (narrow, default, early return). Never cast it away                  |
 | core has no platform types | No DOM/Node globals in core                                                                                                                        | `tsc`                                              | `packages/core/tsconfig.json` (`lib: ES2023`, `types: []`)         | `Cannot find name 'window'`                                                                                        | Move the code to the client, or pass the data in                                     |
 | No `any` / unsafe          | `no-explicit-any`, `no-unsafe-*`                                                                                                                   | ESLint (`strictTypeChecked`)                       | `eslint.config.js`                                                 | `Unexpected any. Specify a different type`                                                                         | Use `unknown` and narrow, or write the real type                                     |

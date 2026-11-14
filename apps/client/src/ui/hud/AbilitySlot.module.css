@@ -1,0 +1,245 @@
+/* One HUD slot (Figma 62:231). The box has the frame's exact size (SLOT_FRAMES; the frame itself
+   is SVG geometry); the parent places it. */
+.slot {
+  position: relative;
+}
+
+.slot[data-slot='ability-1'] {
+  width: calc(70 * var(--hud-u));
+  height: calc(70 * var(--hud-u));
+}
+
+.slot[data-slot='ability-2'] {
+  width: calc(70 * var(--hud-u));
+  height: calc(70 * var(--hud-u));
+}
+
+.slot[data-slot='ability-3'] {
+  width: calc(70 * var(--hud-u));
+  height: calc(70 * var(--hud-u));
+}
+
+.slot[data-slot='ability-4'] {
+  width: calc(83.5146 * var(--hud-u));
+  height: calc(83.5146 * var(--hud-u));
+}
+
+.slot[data-slot='gadget-1'] {
+  width: calc(86.6326 * var(--hud-u));
+  height: calc(86.6326 * var(--hud-u));
+}
+
+.slot[data-slot='gadget-2'] {
+  width: calc(87 * var(--hud-u));
+  height: calc(87 * var(--hud-u));
+}
+
+/* No runtime entry yet (CD-13, DEC-17). */
+.hatch {
+  position: absolute;
+  inset: calc(1 * var(--hud-u));
+  background: repeating-linear-gradient(
+    135deg,
+    var(--hud-no-data-hatch) 0 calc(2 * var(--hud-u)),
+    transparent calc(2 * var(--hud-u)) calc(5 * var(--hud-u))
+  );
+}
+
+/* The class kit's icon raster at its placement box (I-45): abilities (5, 5) 60 × 60, the
+   ultimate (2, 2) 80 × 80, gadgets (−20, −20) 127 × 127 (so the glows are not clipped). */
+.icon {
+  position: absolute;
+}
+
+.ability .icon {
+  left: calc(5 * var(--hud-u));
+  top: calc(5 * var(--hud-u));
+  width: calc(60 * var(--hud-u));
+  height: calc(60 * var(--hud-u));
+}
+
+.ultimate .icon {
+  left: calc(2 * var(--hud-u));
+  top: calc(2 * var(--hud-u));
+  width: calc(80 * var(--hud-u));
+  height: calc(80 * var(--hud-u));
+}
+
+.gadget .icon {
+  left: calc(-20 * var(--hud-u));
+  top: calc(-20 * var(--hud-u));
+  width: calc(127 * var(--hud-u));
+  height: calc(127 * var(--hud-u));
+}
+
+/* A blocked slot (13 §3): the icon dimmed, the reason in the slot's name (never colour alone). */
+.isBlocked .icon {
+  opacity: 0.4;
+}
+
+/* The key glyph box (65:657/659/663 at the abilities, 65:666 at the ultimate; the gadgets' 5 px
+   under the slot, CD-01). */
+.glyph {
+  position: absolute;
+  display: flex;
+}
+
+.ability .glyph {
+  left: calc(22 * var(--hud-u));
+  top: calc(75 * var(--hud-u));
+}
+
+.ultimate .glyph {
+  left: calc(29 * var(--hud-u));
+  top: calc(88 * var(--hud-u));
+}
+
+.gadget .glyph {
+  left: calc(31 * var(--hud-u));
+  top: calc(92 * var(--hud-u));
+}
+.castFlash {
+  --castCore: #fff5b9cc;
+  --castGlow: #bcb2ff66;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--castCore), var(--castGlow) 40%, transparent 72%);
+  animation: castFlash calc(var(--motion-medium) * 3) ease-out both;
+}
+
+.slot[data-skin='catalyst'] .castFlash {
+  --castCore: #ffe6aacc;
+  --castGlow: #ff682688;
+  border-radius: 45% 55% 35% 65%;
+}
+
+.slot[data-skin='oracle'] .castFlash {
+  --castCore: #fffdeccc;
+  --castGlow: #d7e8ff88;
+  background:
+    repeating-conic-gradient(from 15deg, transparent 0deg 20deg, var(--castGlow) 20deg 30deg),
+    radial-gradient(circle, var(--castCore), transparent 70%);
+}
+
+.slot[data-skin='necromancer'] .castFlash {
+  --castCore: #e5bcffcc;
+  --castGlow: #8437ed88;
+  border: calc(2 * var(--hud-u)) solid var(--castCore);
+}
+
+@keyframes castFlash {
+  from {
+    opacity: 1;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.65);
+  }
+}
+
+.slot[data-skin='assassin'] .castFlash {
+  --castCore: #fff3c6ee;
+  --castGlow: #e7ac3688;
+  border-radius: 15% 70% 15% 70%;
+}
+
+.slot[data-skin='knight'] .castFlash {
+  --castCore: #fff5bbee;
+  --castGlow: #ff6b2288;
+  background: conic-gradient(transparent, var(--castGlow), var(--castCore), transparent 55%);
+}
+
+.slot[data-skin='paladin'] .castFlash {
+  --castCore: #ffffffee;
+  --castGlow: #f9d97888;
+  background:
+    repeating-conic-gradient(transparent 0deg 35deg, var(--castCore) 35deg 45deg),
+    radial-gradient(circle, var(--castGlow), transparent 70%);
+}
+
+.slot[data-skin='colossus'] .castFlash {
+  --castCore: #e1ffffee;
+  --castGlow: #43e6e088;
+  border-radius: 20%;
+}
+
+.slot[data-skin='juggernaut'] .castFlash {
+  --castCore: #d6f3ffee;
+  --castGlow: #488effaa;
+  clip-path: polygon(
+    50% 0,
+    62% 25%,
+    90% 10%,
+    75% 40%,
+    100% 60%,
+    70% 70%,
+    60% 100%,
+    40% 80%,
+    10% 90%,
+    25% 60%,
+    0 40%,
+    35% 30%
+  );
+}
+
+.slot:is(
+    [data-skin='assassin'],
+    [data-skin='knight'],
+    [data-skin='paladin'],
+    [data-skin='colossus'],
+    [data-skin='juggernaut']
+  )
+  .castFlash {
+  animation: combatFlash calc(var(--motion-medium) * 8) ease-out both;
+  filter: drop-shadow(0 0 calc(8 * var(--hud-u)) var(--castGlow));
+}
+
+.slot:is(
+    [data-skin='assassin'],
+    [data-skin='knight'],
+    [data-skin='paladin'],
+    [data-skin='colossus'],
+    [data-skin='juggernaut']
+  )
+  .castFlash::after {
+  content: '';
+  position: absolute;
+  inset: -15%;
+  border: calc(2 * var(--hud-u)) solid var(--castCore);
+  border-radius: 50%;
+  box-shadow: 0 0 calc(14 * var(--hud-u)) var(--castGlow);
+}
+
+@keyframes combatFlash {
+  0% {
+    opacity: 0;
+    transform: scale(0.55) rotate(-30deg);
+  }
+  15% {
+    opacity: 1;
+    transform: scale(1.15) rotate(0deg);
+  }
+  45% {
+    opacity: 0.8;
+    transform: scale(1.45) rotate(35deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2) rotate(75deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .castFlash {
+    animation: none;
+    opacity: 0;
+  }
+
+  .slot[data-skin] .castFlash {
+    animation: none;
+    opacity: 0;
+  }
+}

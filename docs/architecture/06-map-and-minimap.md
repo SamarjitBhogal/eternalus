@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-08
+last-reviewed: 2026-11-12
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -13,6 +13,8 @@ paths:
     'packages/core/src/teams/**',
     'apps/client/src/game/views/MiniMapView*',
     'apps/client/src/game/views/MapView*',
+    'apps/client/src/game/views/WorldObjectsView*',
+    'apps/client/src/game/views/*[Rr]uin*',
   ]
 related:
   [
@@ -304,20 +306,41 @@ export type FlowField = { readonly integration: Uint16Array; readonly direction:
 
 ## 8. Minimap
 
-The minimap is **the same scene drawn smaller**, not a second scene graph
+The minimap is **a local view of the same scene**, not a second scene graph
 ([research §5](../research/game-architecture-and-performance-research.md#5-canvas-2d-performance)).
+It shows the circle of `MINI_MAP_VIEW_RADIUS` world units around the player's living Legend, or
+around the camera's focus while the Legend is dead or not yet spawned. North is up. A marker at
+the middle shows the centre. Everything is clipped to the HUD ring. The owner set these rules
+(DEC-182). The radius is a TUNE value in `MiniMapView.constants.ts`.
 
-- `MinimapView` (`apps/client/src/game/views/MinimapView.ts`, L4) reads the same `Snapshot` that
-  `SceneView` reads and walks the same `ViewRegistry`. It draws into the `'minimap'` layer of the
-  `Renderer` (an offscreen canvas composited into the `MinimapPanel` slot) at a lower cadence
-  (**Recommendation:** every 6th frame, TUNE) and redraws its terrain backdrop only when
-  `snapshot.terrainVersion` changes (Dirty Flag).
-- `MinimapProjection` (`apps/client/src/game/engine/camera/`) implements the same `Projection`
-  port as `Camera` (`worldToScreen`/`screenToWorld`) with a fixed scale, so culling and coordinate
-  code is shared and the HUD can turn a minimap click into a world position for a `Command`.
-- Every definition (structure, obstacle, unit, zone) may declare a `minimapGlyph`; the base
-  `EntityView.drawGlyph` reads it and falls back to `DEFAULT_MINIMAP_GLYPH`. Team colour comes from
-  the entity's `team`, not from the glyph.
+- `MiniMapView` (`apps/client/src/game/views/MiniMapView.ts`, L4) draws the same scene as the main
+  view, through each `WorldLayer`'s `drawMinimap`. The map layers draw every feature's
+  `minimapGlyph`. `EntityLayer` draws the units through the `ViewRegistry`. It draws into the
+  `'minimap'` layer of the `Renderer` (an offscreen canvas composited into the `MinimapPanel`
+  slot) at a lower cadence (**Recommendation:** every 6th frame, TUNE) and redraws its terrain
+  backdrop only when `snapshot.terrainVersion` changes (Dirty Flag). Section 10 says what is built.
+- `MinimapProjection` (`apps/client/src/game/engine/camera/`) is a per-frame value object: the
+  centre, the radius and the screen area. `apply` calls `Renderer.showWorldArea`; `worldAt` turns
+  a click back into a world point, so the picture and the click use the same numbers (DEC-191). It
+  works in device pixels and does not implement the CSS-pixel `Projection` port of
+  [08 §5](08-game-engine.md#5-camera-and-projections). It mirrors `MatchCamera.worldAt`, the
+  internal method that the camera's own `screenToWorld` wraps. Nothing consumes the minimap as a
+  `Projection`: a minimap click reaches `MatchViewControls.lookAtMinimapPoint` in device pixels.
+  If an input driver ever needs the port, a `screenToWorld` adapter that multiplies by the pixel ratio is the
+  upgrade path. A click moves the camera and makes no `Command`.
+- Units on the minimap: Legends and all mobs (lane minions, tower guards, camp mobs). Bosses and
+  the dead have no marker, and the player's own Legend is the centre marker (DEC-187). The marker
+  belongs to the unit's `EntityView`, not to its definition: `drawMinimap` draws it, and
+  `minimapLayer` orders it (higher layers draw later, on top). `DefaultEntityView` draws nothing,
+  so a kind has no marker until its view gives it one. `LegendView` and `MobView` give a dot each.
+  The Legend dot is larger than the mob dot, and that size is the only difference between them.
+  Each dot has a team outline, so team never shows by colour alone (13 §7): white for Light,
+  near-black for Dark, grey for neutral, 1.5 px (DEC-187, owner-accepted 2026-11-05). A unit up to
+  about 6 world units past the radius shows at the ring edge. The dot sizes are TUNE values in
+  `entityViews.constants.ts`.
+- Feature glyphs stay on the definition: every structure and obstacle definition may declare a
+  `minimapGlyph`, and the map layers draw it. Team colour comes from the entity's `team`, not from
+  the glyph.
 
 ```ts
 // packages/core/src/content/maps/maps.types.ts (contract)
@@ -327,44 +350,23 @@ export type MinimapGlyph = {
   readonly colourRole: 'team' | 'neutral' | 'objective' | 'terrain' | 'obstacle';
 };
 
-// apps/client/src/game/views/EntityView.ts (sketch)
-export abstract class EntityView {
-  abstract draw(entity: EntitySnapshot, ctx: DrawContext): void;
-  drawGlyph(entity: EntitySnapshot, ctx: DrawContext): void {
-    const glyph = ctx.definitions.get(entity.definitionId)?.minimapGlyph ?? DEFAULT_MINIMAP_GLYPH;
-    ctx.renderer.drawGlyph(glyph, ctx.projection.worldToScreen(entity.position), entity.team);
-  }
+// apps/client/src/game/views/EntityView.types.ts (contract)
+export interface EntityView {
+  draw(state: EntityDrawState, renderer: Renderer): void;
+  drawMinimap(state: EntityDrawState, renderer: Renderer): void; // marker in CSS pixels, or nothing
+  readonly minimapLayer?: number; // higher layers draw later; absent = 0
 }
 ```
 
-Because the generator emits features from config, `EntityFactory` turns every feature into a
-snapshot entity, and `MinimapView` draws every snapshot entity through the registry, the
-requirement "new building on map = new building on minimap with no code change" holds **by
-construction**. The test that proves it (`MinimapView.test.ts`):
-
-```ts
-it('draws one glyph per generated feature: extra config features need no view code', () => {
-  const draw = (map: MapConfig) => {
-    const sim = Simulation.create({ ...config, map }, SEED);
-    const renderer = new RecordingRenderer(); // test double for the Renderer port
-    const projection = new MinimapProjection(map, MINIMAP_SIZE);
-    new MinimapView(viewRegistry, projection).draw(sim.snapshot(), renderer);
-    return { projection, calls: renderer.calls.filter((c) => c.op === 'drawGlyph') };
-  };
-  const base = draw(config.map);
-  const more = draw({ ...config.map, buffTowersPerLane: config.map.buffTowersPerLane + 1 });
-  // one extra tower per lane per team
-  expect(more.calls.length - base.calls.length).toBe(2 * config.map.numLanes);
-  for (const call of more.calls) {
-    expect(call.position).toEqual(more.projection.worldToScreen(call.source.position));
-  }
-});
-```
-
-A second test registers a throwaway `StructureDefinition` (`'beacon'`) with a glyph and one
-generated feature, and asserts the glyph is drawn without registering any `EntityView` (the
-default view handles it). Fog of war on the minimap is **post-MVP**: when enabled, `MinimapView`
-filters entities by the player team's `Vision` snapshot before drawing.
+Because the generator emits features from config and `MapView.drawMinimap` draws every feature of
+the `MapDefinition` with its own `minimapGlyph`, the requirement "new building on map = new
+building on minimap with no code change" holds **by construction**. Two tests in
+`MiniMapView.test.ts` prove it: a map with more lanes and more BuffTowers per lane shows one marker
+per generated feature, each at its own position, and a throwaway feature with a new definition
+(`'beacon'`) is drawn with its own glyph and no client code that knows it. Units follow the same
+rule through the `ViewRegistry`: a new mob kind with a `MobView` needs no minimap code. Fog of war
+on the minimap is **post-MVP**: when enabled, `MiniMapView` filters entities by the player team's
+`Vision` snapshot before drawing.
 
 ## 9. Review notes for the `feat/map` branch
 
@@ -412,16 +414,87 @@ part of §2–§6; why each one differs is recorded in
 
 Still interim:
 
-| Topic                     | Today                                                                                                                                                                                                                                                                                                                                                                      | Until                                                                                              |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Minimap (§8)              | `MiniMapView` draws each layer's `drawMinimap`; `MapView` draws every feature's `minimapGlyph`                                                                                                                                                                                                                                                                             | Session H's `ViewRegistry`, `EntityView` and the snapshot-driven `MinimapView`                     |
-| Kernel stand-ins (§1, §2) | `MapRandom`, a local `MapConfig` and `DEFAULT_MAP_CONFIG`, `validateMapConfig`                                                                                                                                                                                                                                                                                             | Session A's swap to session B's `SeededRandom`, `GameConfig` and `validateGameConfig` (`INBOX.md`) |
-| Grid resolution (§6)      | `MapLayout.navCellSize` (content)                                                                                                                                                                                                                                                                                                                                          | Session A's swap to `config.map.navCellSize`                                                       |
-| `WorldMap` (§6)           | Walkability grid with stamping, no cost grid. The flow fields (minion plan M4) sit beside it, not on it: `map/LaneFlowFields` holds a `FlowField` per (lane id, team) and rebuilds dirty ones through `FlowFieldBuilder`; `DefaultSystemPipeline` builds both and `PathingSystem` calls `rebuildDirty` each tick. Nothing marks a field dirty yet: no terrain event exists | Cost grid (Phase 3); the dirty trigger with gate and structure changes (07 §10)                    |
-| Renderer port (08 §4)     | The `feat/map-view` method set plus glyph drawing                                                                                                                                                                                                                                                                                                                          | Session H's layers and sprites                                                                     |
-| Map scenery (08 §4)       | `MapSceneryBuilder` dresses the generated map with presentation-only polygons authored in map-1's 1600 × 900 sketch (`content/maps/map1Scenery.ts`, `map1Landforms.ts`) and stretched to the world size; `MapView` draws the `ground` layer, `SceneryView` the `detail` layer                                                                                              | Per-preset scenery and sprite assets                                                               |
-| Free view and interior    | `MapExplorer` in `Match`: drag pan, wheel zoom, overview and the presentation-only cathedral interior (`CathedralInteriorBuilder`); walking returns to the following camera outside the cathedral                                                                                                                                                                          | Player movement, doorways and collision into the interior                                          |
-| Camp weights (§3 step 5)  | Depth-based classes (DISC-42)                                                                                                                                                                                                                                                                                                                                              | The owner's answer to DEC-15                                                                       |
+| Topic                     | Today                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Until                                                                                                                   |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| Minimap (§8)              | `MiniMapView` draws a local view (DEC-182) into the main canvas every frame, clipped to the HUD's ring by `Renderer.clipToEllipse`, with the ring from `bridge/minimapRing.ts` passed in by `Match`; `MapView` draws every feature's `minimapGlyph` and `EntityLayer` draws Legends and mobs through their views (DEC-187)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | The `'minimap'` renderer layer and the lower redraw cadence (§8)                                                        |
+| Kernel stand-ins (§1, §2) | `MapRandom`, a local `MapConfig` and `DEFAULT_MAP_CONFIG`, `validateMapConfig`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Session A's swap to session B's `SeededRandom`, `GameConfig` and `validateGameConfig` (`INBOX.md`)                      |
+| Grid resolution (§6)      | `MapLayout.navCellSize` (content)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Session A's swap to `config.map.navCellSize`                                                                            |
+| `WorldMap` (§6)           | Walkability grid with stamping, no cost grid. The flow fields (minion plan M4) sit beside it, not on it: `map/LaneFlowFields` holds a `FlowField` per (lane id, team) and rebuilds dirty ones through `FlowFieldBuilder`; `DefaultSystemPipeline` builds both and `PathingSystem` calls `rebuildDirty` each tick. Nothing marks a field dirty yet: no terrain event exists                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Cost grid (Phase 3); the dirty trigger with gate and structure changes (07 §10)                                         |
+| Renderer port (08 §4)     | The `feat/map-view` method set plus glyph drawing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Session H's layers and sprites                                                                                          |
+| Map scenery (08 §4)       | `MapSceneryBuilder` dresses the generated map with presentation-only polygons authored in map-1's 1600 × 900 sketch (`content/maps/map1Scenery.ts`, `map1Landforms.ts`) and stretched to the world size; `MapView` draws the `ground` layer, `SceneryView` the `detail` layer                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Per-preset scenery and sprite assets                                                                                    |
+| Free view and interior    | The developer explorer (`MapExplorer` in `MatchCamera`, gestures in `CanvasPointerControls`): drag pan, wheel zoom, the overview, the toolbar and legend, and a click that cuts a building's roof away ("Restore roofs & overview" puts those roofs back; hiding the explorer also returns to the following camera); shown at the start with `?dev=1` and shown or hidden by Cmd/Ctrl+Shift+F3 in any build (DEC-105, DEC-117, DEC-118). In normal play `BuildingRoofs` cuts away the roof of the building the player's Legend stands in (its `MapPresentation.buildings` footprint) and puts it back when the Legend walks out or dies (DEC-143); developer roofs and that roof add up, neither closes the other. The minimap is player HUD, drawn every frame whatever the flag (DEC-143). Walking returns to the following camera | The Structure family's walls, gates and doors decide who can enter (Phase 2 sprints 2.1 and 2.4); roofs stay view state |
+| Camp weights (§3 step 5)  | Depth-based classes (DISC-42)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | The owner's answer to DEC-15                                                                                            |
+
+Minimap and camera (`feat/hud-and-character-select`, 2026-10-24); the "Today" cells of the
+"Minimap (§8)" and "Free view and interior" rows above say this since 2026-10-28 (the owner
+approved them, `INBOX.md` HC-T1), and this note gives the detail:
+
+- `MiniMapView` draws into the main canvas every frame, clipped to the HUD's minimap ring by
+  `Renderer.clipToEllipse`. Since 2026-11-05 it shows a local view: the circle of
+  `MINI_MAP_VIEW_RADIUS` around the player, north up, with a centre marker (DEC-182), and the
+  Legends and mobs inside it as team-outlined dots (DEC-187). The one minimap projection,
+  `MinimapProjection`, is built (DEC-191). `Match` gives the view the centre rule: the living
+  Legend's position, else the camera's focus. The ring's geometry is written once, in
+  `bridge/minimapRing.ts`: `Match` passes it to `MiniMapView`'s constructor, and `MinimapPanel`'s
+  test checks its CSS against it, so `game/views/` imports nothing from `bridge/`. The earlier
+  text of this bullet ("the whole map inscribed in the ring", INBOX HC-Q6 (4)) is superseded by
+  DEC-182.
+- Still interim toward §8: no `'minimap'` renderer layer and no lower redraw cadence. A minimap
+  click moves the camera through `MatchViewControls.lookAtMinimapPoint`, with no `Command`.
+- `MapExplorer` belongs to `MatchCamera`. The free camera (drag pan, wheel zoom), the overview,
+  the roof click, the explorer toolbar and the map legend are developer tools: they show only
+  while the developer explorer is shown (next bullet; DEC-32, DEC-105, DEC-143). Normal play has
+  no cathedral click and no "Leave cathedral" control (register CD-22 in
+  [reference 15](../reference/game-design/15-figma-frames-and-creative-decisions.md) has a dated
+  note): roofs open when the player's Legend walks in (DEC-143).
+- **Explorer shown or hidden (2026-10-30).** The developer flag `?dev=1` starts a match with the
+  explorer tools shown, and the hotkey Cmd+Shift+F3 or Ctrl+Shift+F3 shows or hides them in any
+  build (DEC-105, DEC-117, DEC-118); `MatchHost` runs the hotkey, because the explorer belongs to
+  its pointer controls, not to `Match`. The `MapExplorer` bullet above says the hotkey "is not
+  built yet"; it is built. The design wording is pending in `INBOX.md` HC-T1 (T-199).
+  (2026-11-02: both statements are out of date. The `MapExplorer` bullet was rewritten in 6a00e25,
+  and T-199 was applied there (DEC-143).)
+- **Roofs and the minimap (2026-11-02, DEC-143).** The owner's ruling: "the minimap should always
+  be shown in the new stylized HUD. the dev options may not always be shown (such as free view,
+  etc), but the minimap is not a dev item and is part of the HUD for players. building roofs
+  should automatically disappear when players enter said buildings, not require players to hide
+  them." Built: `Match` draws the minimap every frame and never reads the developer flag. The
+  player's own minimap setting, on by default, may hide it once Phase 5, sprint 5.4 builds it
+  (DEC-147). Roof
+  state has one owner, `BuildingRoofs` (`game/`), which `Match` builds from
+  `MapPresentation.buildings` and whose live `hidden` set `MapView`, `SceneryView` and
+  `WorldObjectsView` read, as #30 built them. After each tick `Match` passes it the player's
+  Legend's position, or none once the Legend is dead (no health left, or gone from the snapshot;
+  DEC-149), and it opens the roof whose footprint holds that point, by the same polygon test as
+  the roof click. The roof click and its restore are the developer explorer's only
+  (`CanvasPointerControls`), so they never close the player's roof, and the player walking out
+  never closes a roof the developer opened. Hiding the explorer puts the developer's roofs back
+  and returns to the following camera at its base zoom (`MatchViewControls.leaveExplorer`), so
+  developer state does not stay in normal play. A press the canvas gestures own (a minimap click, or
+  any press with the explorer shown) is claimed until its release
+  (`MatchViewControls.setPointerClaimed`), so the held attack button does not act on it. With the
+  explorer shown, a click (a press whose pointer travels less than the click slop in total before
+  its release) is resolved once at its release point in this order (`MatchViewControls.clickAt`,
+  DEC-183): a living enemy unit there is attacked; else a click that toggles a roof is a roof
+  click; else the click attacks the map object there. A drag does neither. When units overlap, the
+  one drawn on top wins (DEC-183). The held attack button aims the same way: a unit first, else a
+  map object (`PlayerCommands`). A click on the building the player's Legend stands in toggles
+  nothing (its roof is already cut away), so it attacks (DEC-153). The owner selected "Allow attack"
+  (option text: "A plain click on the world attacks even with the explorer shown; only drags and
+  roof clicks are claimed."), DEC-150. This is the attack and roof input arbitration the
+  2026-10-30 amendment gives this branch. View state only: the simulation and its determinism
+  are untouched.
+  This builds the "occupancy-driven cutaways" the 2026-10-30
+  amendment below calls not yet scheduled; the "Free view and interior" row's Today cell says
+  this since 2026-11-02 (T-199). This bullet supersedes two sentences of the 2026-10-20
+  amendment: "only a selected roof is hidden while its furnished interior is shown" and
+  "MapExplorer owns its private roof set, exposes a read-only view, toggles by polygon hit
+  testing and clears on overview". `BuildingRoofs` owns the roof state now.
+- **Building at a point (2026-11-02, DEC-149).** Core's `findBuildingAt` (`map/findBuildingAt.ts`)
+  is the one "which building's interior holds this point" test over `MapBuilding` footprints:
+  `BuildingRoofs` uses it, and capture zones are meant to reuse it. (2026-11-03, PR #64: zones
+  share its point test, `isPointInAnyPolygon` in `utils/geometry.ts`, not the function: a fort
+  zone is the court, DEC-145 (a).)
 
 ### 2026-10-20 — PR #30 review corrections and accepted cutaway design
 
@@ -503,22 +576,54 @@ Renderer caching and close-view material detail belong to the separate renderer 
 INBOX, with camera-moving p95 measurements. The map keeps its seeded scenery and worn roads.
 The HUD branch owns attack/roof input arbitration and bridge-backed toolbar state.
 
-## Related
+### 2026-11-03 — Lane-facing entrances and environmental remains
 
-- [03 Game model](./03-game-model.md)
-- [07 Structures, obstacles and destructibles](./07-structures-obstacles-and-destructibles.md)
-- [08 Game engine](./08-game-engine.md) (render pipeline, `SceneView`, `ViewRegistry`)
-- [10 Physics](./10-physics.md) (grid resolution, colliders, `SpatialHash`)
-- [11 Game AI](./11-game-ai.md) (flow-field following)
-- [17 Extension recipes](./17-extension-recipes.md)
-- [Map code audit (2026-10-05)](../reviews/2026-10-05-map-code-audit.md)
-- [Research: game architecture and performance](../research/game-architecture-and-performance-research.md)
-- [Reference: map](../reference/game-design/05-map.md)
+Cathedral side portals use shared doorway geometry alongside the north and south entrances.
+Exterior portals, interior thresholds and roof-selection footprints align with the existing
+walkable transept openings. Door ornaments and steps add no new solid footprints.
+
+Lane roads follow the generated polyline with joined, world-sized surfaces and restrained wear.
+Explicit `MapDecoration.isLaneSurface` metadata suppresses the main view's schematic lane
+stroke when authored road surfaces exist; schematic maps and minimaps retain their route lines.
+Road styling lives in `content/maps/map1Scenery.ts` and never changes lane routing.
+
+Destroyed artwork is selected by physical object kind: tree stumps and fallen logs, burned house
+shells, scattered rock fragments, collapsed tents, broken timber and ruined stone structures.
+The client caches those polygons from the original footprint. Remains and cosmetic fire do not
+add colliders, damage or simulation state; snapshot destruction still controls visibility and
+walkability. Interior remains follow the same roof and parent-building visibility as intact art.
+
+### 2026-11-03 — Front-facing stronghold shield (owner rulings DEC-158, DEC-159 of 2026-11-04)
+
+The owner ruled that the Stronghold wall is an arc from cliff face to cliff face, not a ring
+(DEC-158): the default stronghold boundary is an open, enemy-facing blue shield arc. This
+supersedes the earlier amendment's unchanged circular-ring appearance. Its curved front, taller
+tips and tessellation come from `defaultMapLayout.ts` (`wallRing.frontArc`). The profile is
+required: there is no closed-ring wall (DEC-159). Layout validation rejects outer gates that would
+end past ±90°, so each tip meets its cliff corner. Both sides use mirrored generated geometry. Gate count still
+follows `numLanes`. Mountain bounds join the two rear endpoints to the world edge, so closed gates
+still seal the base. Preset corner bounds are fitted behind that boundary instead of covering its
+lane exits.
+
+Each segment remains an independent wall object with the same health and destruction rules.
+Physical footprints follow the visible curve; gate positions and lane starts share the same
+profile while preserving the original lane and tower anchors. Generated strongholds carry copied `MapFeature.wallBoundary` dimensions, which palace
+placement reads instead of mistaking the taller shield's extent for a larger palace radius.
+
+`MapShieldBuilder` dresses those exact polygons with translucent blue panels, luminous edges,
+seams, runes and emitter artwork for the existing turret features. `MapDecoration.replacesFeature`
+suppresses the main view's plain feature marker; explicit object ownership removes the correct
+panel artwork when its wall segment dies. The minimap retains its generated feature markers.
+All decoration stays in the existing render layers and adds no new shield-immunity mechanic.
+
+**2026-11-11 — DEC-238 visual stand-ins.**
+
+[DEC-238](../reference/game-design/13-owner-decisions-log.md#batch-2026-11-10-pr-90-review-visuals) approves these provisional visuals.
 
 ### 2026-11-07 — Camp presentation
 
-The author's shrine reference governs corner-camp presentation: worn stone stairs, carved
-pillars, a pointed arch and a suspended cyan crystal. Lane structures share that architectural
+The DEC-238 corner-camp stand-in uses worn stone stairs, carved
+pillars, a pointed arch and a suspended orange crystal. Lane towers retain their original forts and exact collision footprints, with decorative shrine artwork. They share that architectural
 language, with troop equipment identifying their visual rank by distance from their team's
 Stronghold: nearest heavy, second medium, any additional farther structures light. With the
 current two structures per lane per side, heavy and medium appear; the light design is available
@@ -548,3 +653,24 @@ cosmetic; lava channels, bridges, lanes and capture rules keep their existing ge
 Explicit `ambientBiome` polygons and `sceneryAnimation` surfaces in `MapDecoration` supply the
 client's atmospheric view. Metadata scales with the authored world geometry and is separate
 from simulation state. Snow, ash, heat haze and molten shimmer never apply damage or statuses.
+
+### Faction tower artwork
+
+Lane tower dressing can use a top-down crystal sanctum: stepped plinths, carved pillars,
+metal inlays and wing reliefs. `TowerSanctumBuilder` owns that cosmetic silhouette, with
+faction crystal colours from `campScenery.ts`; troop equipment remains the lane-rank cue.
+The existing fort builder remains the sole source of solid tower footprints. Decorative
+pieces belong to the same destructible tower and never introduce additional collision.
+Corner shrines and neutral woodland camps retain their distinct architectural language.
+
+## Related
+
+- [03 Game model](./03-game-model.md)
+- [07 Structures, obstacles and destructibles](./07-structures-obstacles-and-destructibles.md)
+- [08 Game engine](./08-game-engine.md) (render pipeline, `SceneView`, `ViewRegistry`)
+- [10 Physics](./10-physics.md) (grid resolution, colliders, `SpatialHash`)
+- [11 Game AI](./11-game-ai.md) (flow-field following)
+- [17 Extension recipes](./17-extension-recipes.md)
+- [Map code audit (2026-10-05)](../reviews/2026-10-05-map-code-audit.md)
+- [Research: game architecture and performance](../research/game-architecture-and-performance-research.md)
+- [Reference: map](../reference/game-design/05-map.md)

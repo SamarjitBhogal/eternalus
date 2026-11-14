@@ -8,9 +8,10 @@ import type { RecordedCall } from './RecordingRenderer.types';
  * call's arguments with their types.
  */
 export class RecordingRenderer implements Renderer {
-  /** Records the atlas frame. */
-  public drawSprite(...args: Parameters<Renderer['drawSprite']>): void {
+  /** Records an atlas frame request without decoding images. */
+  public drawSprite(...args: Parameters<Renderer['drawSprite']>): boolean {
     this.calls.push({ op: 'drawSprite', args });
+    return true;
   }
   /** Every call so far, oldest first. */
   public readonly calls: RecordedCall[] = [];
@@ -18,16 +19,6 @@ export class RecordingRenderer implements Renderer {
   /** Records the call. */
   public resize(...args: Parameters<Renderer['resize']>): void {
     this.calls.push({ op: 'resize', args });
-  }
-
-  /** Records the call. */
-  public fitWorld(...args: Parameters<Renderer['fitWorld']>): void {
-    this.calls.push({ op: 'fitWorld', args });
-  }
-
-  /** Records the call. */
-  public fitWorldInArea(...args: Parameters<Renderer['fitWorldInArea']>): void {
-    this.calls.push({ op: 'fitWorldInArea', args });
   }
 
   /** Records the call. */
@@ -48,6 +39,12 @@ export class RecordingRenderer implements Renderer {
   /** Records the call. */
   public strokeScreenRect(...args: Parameters<Renderer['strokeScreenRect']>): void {
     this.calls.push({ op: 'strokeScreenRect', args });
+  }
+
+  /** Records the call, then runs `draw`, so the calls it makes follow it in `calls`. */
+  public clipToEllipse(...args: Parameters<Renderer['clipToEllipse']>): void {
+    this.calls.push({ op: 'clipToEllipse', args });
+    args[1]();
   }
 
   /** Records the call. */

@@ -1,5 +1,10 @@
+/** Stand-in artwork approved by DEC-238; no new gameplay rules. */
 /** Visual materials only: camp allegiance, weights and spawning stay in their existing content. */
 export const CAMP_MATERIALS = {
+  rune: '#9da77a',
+  water: '#718b79',
+  lanternGlow: 'rgba(190,207,139,0.10)',
+  lanternLight: '#c5d39b',
   shadow: 'rgba(14,20,18,0.38)',
   dust: '#686858',
   stone: '#777769',
@@ -18,6 +23,7 @@ export const CAMP_MATERIALS = {
 } as const;
 
 /** Shrine variations share the reference's masonry; troop equipment supplies their identity. */
+// TUNE: Provisional presentation sizes approved by DEC-238.
 export const CAMP_APPEARANCES = {
   corner: { scale: 1 },
   heavy: { scale: 0.82 },
@@ -29,6 +35,7 @@ export const CAMP_APPEARANCES = {
 export const LANE_CAMP_THEMES = ['heavy', 'medium', 'light'] as const;
 
 /** Set the lane shrine behind its anchor, leaving the approach across its front steps clear. */
+// TUNE: Visual offset only; fort collision stays in MapFortificationBuilder (DEC-238).
 export const LANE_SHRINE_OFFSET_Y = -14;
 
 /** Faction-readable crystals; all corner shrines use the same orange objective gem. */

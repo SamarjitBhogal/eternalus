@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 
@@ -8,10 +8,12 @@ import { loadDefaultContent } from './content/loadDefaultContent';
 import { MemoryLogger } from './diagnostics/MemoryLogger';
 import { Simulation } from './Simulation';
 import type { RosterSlot } from './Simulation.types';
+import { GameEvents } from './state/GameEvents';
 import { TWO_LANE_MAP } from './state/__fixtures__/twoLaneMap';
 
 const laners = (team: 'light' | 'dark', count: number): RosterSlot[] =>
   Array.from({ length: count }, () => ({
+    pilot: 'bot',
     team,
     definitionId: 'warrior',
     role: 'laner',
@@ -25,7 +27,7 @@ const match = (
 ) =>
   new Simulation({
     config: createDefaultGameConfig({
-      match: { countdownSeconds: 600, legendsPerTeam },
+      match: { countdownSeconds: 0, legendsPerTeam },
     }),
     seed: 1,
     logger: new MemoryLogger(),
@@ -64,6 +66,32 @@ describe('Simulation with bot laners (minion plan M3)', () => {
     expect(runs[0]?.hash).toBe(runs[1]?.hash);
   });
 
+  it('hits the enemy structures on its lane once its horde reaches them (11 §4.2 Push)', () => {
+    const simulation = match(laners('light', 2));
+    const structures = new Set(
+      simulation
+        .snapshot()
+        .entities.filter(({ family, team }) => family === 'structure' && team === 'dark')
+        .map(({ id }) => id),
+    );
+    const bots = new Set(
+      simulation
+        .snapshot()
+        .entities.filter(({ kind }) => kind === 'warrior')
+        .map(({ id }) => id),
+    );
+    let botHits = 0;
+    simulation.on('damage-applied', ({ targetId, source }) => {
+      botHits += structures.has(targetId) && bots.has(source.attackerId ?? '') ? 1 : 0;
+    });
+
+    for (let tick = 0; tick < 90 * 30; tick += 1) {
+      simulation.step();
+    }
+
+    expect(botHits).toBeGreaterThan(0);
+  });
+
   it('refuses a roster without a map, laners that do not fit, or a difficulty that does not exist', () => {
     expect(() => match(laners('light', 1), false)).toThrow('A roster needs a map');
     // Two lanes of `legendsPerLane` 3 hold six laners a team.
@@ -86,13 +114,65 @@ describe('Simulation with bot laners (minion plan M3)', () => {
         }),
     ).toThrow('limits.maxUnitsPerTeam allows 1');
     expect(() =>
-      match([{ team: 'light', definitionId: 'warrior', role: 'laner', difficulty: 'nightmare' }]),
+      match([
+        {
+          pilot: 'bot',
+          team: 'light',
+          definitionId: 'warrior',
+          role: 'laner',
+          difficulty: 'nightmare',
+        },
+      ]),
     ).toThrow('AI profile "nightmare"');
+  });
+
+  it.each([
+    ['an unknown id', 'stale-class', 'unknown-definition'],
+    ['a definition that is not a Legend', 'training-dummy', 'not-a-legend'],
+  ])(
+    'refuses a bot slot with %s, before any Legend spawns (DEC-173)',
+    (_case, definitionId, reason) => {
+      const emit = vi.spyOn(GameEvents.prototype, 'emit');
+      const bad: RosterSlot = {
+        pilot: 'bot',
+        team: 'dark',
+        definitionId,
+        role: 'laner',
+        difficulty: 'normal',
+      };
+
+      expect(() => match([...laners('light', 1), bad])).toThrow(
+        `Roster slot 1 (a dark bot) cannot spawn "${definitionId}": ${reason}.`,
+      );
+      // The valid light laner before it did not spawn either.
+      const spawned = emit.mock.calls.filter(([type]) => type === 'entity-spawned');
+      expect(spawned.map(([, payload]) => payload)).not.toContainEqual(
+        expect.objectContaining({ kind: 'warrior' }),
+      );
+      emit.mockRestore();
+    },
+  );
+
+  it('builds the match director and the systems before the roster spawns, so they hear every bot (plan §4.4)', () => {
+    const on = vi.spyOn(GameEvents.prototype, 'on');
+    const emit = vi.spyOn(GameEvents.prototype, 'emit');
+    match([...laners('light', 1), ...laners('dark', 1)]);
+    const ordersOf = (spy: typeof on | typeof emit, type: string) =>
+      spy.mock.calls.flatMap(([called], index) =>
+        called === type ? [spy.mock.invocationCallOrder[index] ?? Number.NaN] : [],
+      );
+
+    // `GameState`, the director's `ObjectiveLostCondition` and some systems listen to deaths.
+    const listeners = ordersOf(on, 'entity-died');
+    const [firstSpawn] = ordersOf(emit, 'entity-spawned');
+
+    expect(listeners.length).toBeGreaterThan(2);
+    expect(Math.max(...listeners)).toBeLessThan(firstSpawn ?? Number.NaN);
   });
 
   it('spawns a Rover at its Stronghold with no lane, playing the Rover tree (M8)', () => {
     const simulation = match([
-      { team: 'dark', definitionId: 'warrior', role: 'rover', difficulty: 'rover' },
+      { pilot: 'bot', team: 'dark', definitionId: 'warrior', role: 'rover', difficulty: 'rover' },
     ]);
 
     const rover = simulation
@@ -101,7 +181,15 @@ describe('Simulation with bot laners (minion plan M3)', () => {
     // The dark Stronghold of the two-lane map stands at (190, 30).
     expect(rover?.transform).toMatchObject({ x: 190, y: 30 });
     expect(() =>
-      match([{ team: 'dark', definitionId: 'warrior', role: 'rover', difficulty: 'nightmare' }]),
+      match([
+        {
+          pilot: 'bot',
+          team: 'dark',
+          definitionId: 'warrior',
+          role: 'rover',
+          difficulty: 'nightmare',
+        },
+      ]),
     ).toThrow('AI profile "nightmare"');
   });
 
@@ -109,13 +197,13 @@ describe('Simulation with bot laners (minion plan M3)', () => {
     const roster: RosterSlot[] = [
       ...laners('light', 2),
       ...laners('dark', 2),
-      { team: 'dark', definitionId: 'warrior', role: 'rover', difficulty: 'rover' },
+      { pilot: 'bot', team: 'dark', definitionId: 'warrior', role: 'rover', difficulty: 'rover' },
     ];
     const runs = [1, 2].map(() => {
       const logger = new MemoryLogger();
       const simulation = new Simulation({
         config: createDefaultGameConfig({
-          match: { countdownSeconds: 600 },
+          match: { countdownSeconds: 0 },
         }),
         seed: 1,
         logger,
@@ -141,7 +229,7 @@ describe('Simulation with bot laners (minion plan M3)', () => {
     const veteran = { ...defaults.get('warrior'), id: 'warrior-veteran' };
     const simulation = new Simulation({
       config: createDefaultGameConfig({
-        match: { countdownSeconds: 600 },
+        match: { countdownSeconds: 0 },
       }),
       seed: 1,
       logger: new MemoryLogger(),
@@ -149,7 +237,13 @@ describe('Simulation with bot laners (minion plan M3)', () => {
       map: TWO_LANE_MAP,
       content: new ContentCatalogue([...defaults.all(), veteran]),
       roster: [
-        { team: 'light', definitionId: 'warrior-veteran', role: 'laner', difficulty: 'normal' },
+        {
+          pilot: 'bot',
+          team: 'light',
+          definitionId: 'warrior-veteran',
+          role: 'laner',
+          difficulty: 'normal',
+        },
       ],
     });
 

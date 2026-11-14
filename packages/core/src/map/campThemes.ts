@@ -1,6 +1,6 @@
 import type { MapDefinition } from '../content/maps/maps.types';
 import { LANE_CAMP_THEMES } from '../content/maps/campScenery';
-import type { CampTheme } from './MapCampBuilder.types';
+import type { CampTheme } from '../content/maps/maps.types';
 import { distance } from '../utils/geometry';
 
 /** Visual lane themes ordered from the home base: heavy, medium, then light. */

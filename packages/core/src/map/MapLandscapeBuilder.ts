@@ -1,3 +1,4 @@
+import { BIOME_MATERIALS } from '../content/maps/biomeScenery';
 import type { MapDefinition, MapDecoration } from '../content/maps/maps.types';
 import { MAP_PALETTE as P, SCENERY_SETTINGS as S } from '../content/maps/map1Scenery';
 import { LAKES, LAVA_RIVERS, SNOW_PATCHES } from '../content/maps/map1Landforms';
@@ -5,6 +6,7 @@ import type { SceneryLake } from './sceneryPlacement.types';
 import type { Vec2 } from '../utils/geometry.types';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
 import { sceneryBiomeAt } from './sceneryBiome';
+import { MapRoadBuilder } from './MapRoadBuilder';
 /** Layers local snow, flowing lava, water and weathered ground beneath landmarks. */
 export class MapLandscapeBuilder extends MapDecorationBuilder {
   /** Receives the layout and its scenery-clearance predicate. */
@@ -23,7 +25,7 @@ export class MapLandscapeBuilder extends MapDecorationBuilder {
     this.lakes();
     this.ground();
     this.isMirrored = undefined;
-    this.laneRoads();
+    this.pieces.push(...new MapRoadBuilder().build(this.map.lanes));
     this.bridges();
     return this.pieces.map((piece) => ({
       ...piece,
@@ -77,13 +79,13 @@ export class MapLandscapeBuilder extends MapDecorationBuilder {
       const core = this.pieces.at(-1);
       if (core !== undefined)
         this.pieces[this.pieces.length - 1] = { ...core, sceneryAnimation: 'lava-flow' };
-      this.ribbon(`lava-hot-thread-${String(i)}`, path, 1.6, '#ffe3a1');
+      this.ribbon(`lava-hot-thread-${String(i)}`, path, 1.6, BIOME_MATERIALS.lavaThread);
       for (const side of [-1, 1])
         this.ribbon(
           `lava-viscous-flow-${String(i)}-${String(side)}`,
           path.map((point) => ({ x: point.x + side * 4, y: point.y + side * 2 })),
           1.1,
-          side < 0 ? '#dc7035' : '#ffbd68',
+          side < 0 ? BIOME_MATERIALS.lavaFlowDark : BIOME_MATERIALS.lavaFlowLight,
         );
       for (let index = 1; index < path.length; index++) {
         const before = path[index - 1],
@@ -190,20 +192,6 @@ export class MapLandscapeBuilder extends MapDecorationBuilder {
         );
       this.blockRect(`lava-bridge-${String(i)}-west-rail`, ...at(-17, -25, 4, 50), P.bridgeRail);
       this.blockRect(`lava-bridge-${String(i)}-east-rail`, ...at(13, -25, 4, 50), P.bridgeRail);
-    }
-  }
-
-  private laneRoads(): void {
-    for (const lane of this.map.lanes) {
-      for (let edge = 3; edge > 0; edge--)
-        this.ribbon(
-          `lane-road-${lane.id}-verge-${String(edge)}`,
-          lane.path,
-          3 + edge,
-          P.laneVerge,
-          'ground',
-        );
-      this.ribbon(`lane-road-${lane.id}-track`, lane.path, 3, P.road, 'ground');
     }
   }
 }

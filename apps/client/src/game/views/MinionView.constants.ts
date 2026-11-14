@@ -1,3 +1,4 @@
+/** Provisional display tuning approved by DEC-238 (owner decisions log). */
 import type { MinionPalette, MinionWeight } from './MinionView.types';
 
 /** Presentation scale only; physical size continues to come from the snapshot. */

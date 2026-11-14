@@ -22,6 +22,7 @@ import { MapStrongholdBuilder } from './MapStrongholdBuilder';
 import { MapStrongholdGatesBuilder } from './MapStrongholdGatesBuilder';
 import { MapVillageBuilder } from './MapVillageBuilder';
 import { CathedralExteriorBuilder } from './CathedralExteriorBuilder';
+import { MapShieldBuilder } from './MapShieldBuilder';
 import { LAVA_RIVERS } from '../content/maps/map1Landforms';
 import { distance, distanceToPath, isPointInPolygon } from '../utils/geometry';
 import { SeededRandom } from '../utils/SeededRandom';
@@ -109,6 +110,7 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
           ...new MapStrongholdBuilder().build(feature, strongholdRing(this.world, feature)),
           ...new MapStrongholdGatesBuilder().build(feature, this.world.features),
         ]),
+      ...new MapShieldBuilder().build(this.world.features),
     ];
   }
 
@@ -127,12 +129,20 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
     this.map.features.forEach((feature) => {
       const mirrorWidth = feature.position.x > this.map.width / 2 ? this.map.width : undefined;
       const theme = themes.get(feature.id);
-      if (feature.kind === 'corner-camp' || theme !== undefined) {
+      if (FORTIFIED_KINDS.has(feature.kind)) {
+        this.pieces.push(...new MapFortificationBuilder().build(feature));
+        if (theme !== undefined)
+          this.pieces.push(
+            ...new MapCampBuilder().build(feature, theme, mirrorWidth).map((piece) => ({
+              ...piece,
+              object: { id: feature.id, kind: 'fort' as const, isFootprint: false },
+            })),
+          );
+      } else if (feature.kind === 'corner-camp') {
         this.pieces.push(...new MapCampBuilder().build(feature, theme ?? 'corner', mirrorWidth));
       } else if (CAMP_KINDS.has(feature.kind)) {
         this.pieces.push(...new NeutralCampBuilder().build(feature, mirrorWidth));
-      } else if (FORTIFIED_KINDS.has(feature.kind))
-        this.pieces.push(...new MapFortificationBuilder().build(feature));
+      }
     });
     const cathedral = this.map.features.find((f) => f.kind === 'cathedral');
     if (cathedral !== undefined)

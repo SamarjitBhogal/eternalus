@@ -1,8 +1,9 @@
 import type { ShieldBar } from '../components/Health.types';
+import type { MatchPhase } from '../config/matchPhases';
 import type { Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
 import type { EntityId, RemovalCause } from './EntityStore.types';
-import type { MatchPhase } from './GameState.types';
+import type { MatchResult } from './MatchResult.types';
 
 /**
  * Who or what dealt damage (architecture 05 §9). Every hit names one, so every death has a killer.
@@ -36,6 +37,25 @@ type StatusPayload = {
  * Ids of things that have no type yet (lanes, hordes, statuses, abilities) are plain strings.
  */
 export type GameEventMap = {
+  /** An explicit visual preview; no gameplay cast is announced. */
+  readonly 'ability-previewed': { readonly casterId: EntityId; readonly abilityId: string };
+  readonly 'projectile-requested': {
+    readonly attackerId: EntityId;
+    readonly targetId: EntityId;
+    readonly origin: Vec2;
+    readonly destination: Vec2;
+    readonly damage: number;
+    readonly weaponId: string;
+  };
+  readonly 'projectile-fired': {
+    readonly entityId: EntityId;
+    readonly attackerId: EntityId;
+    readonly targetId: EntityId;
+    readonly origin: Vec2;
+    readonly destination: Vec2;
+    readonly damage: number;
+    readonly weaponId: string;
+  };
   readonly 'entity-spawned': {
     readonly entityId: EntityId;
     readonly kind: string;
@@ -60,6 +80,14 @@ export type GameEventMap = {
     readonly team: Team;
     readonly lane: string | null;
   };
+  /** A wall or gate turned breakable (or back); `lane` is its `MapLane.id`, `null` off the lanes. */
+  readonly 'structure-breakability-changed': {
+    readonly entityId: EntityId;
+    readonly isBreakable: boolean;
+    readonly lane: string | null;
+  };
+  /** A camp's whole group is dead (18 §7.1); the group comes back after its respawn time. */
+  readonly 'camp-cleared': { readonly entityId: EntityId };
   readonly 'shield-bars-changed': {
     readonly entityId: EntityId;
     readonly bars: readonly ShieldBar[];
@@ -70,12 +98,23 @@ export type GameEventMap = {
     readonly progress: number;
     readonly checkpoint: number;
   };
+  /**
+   * A side's capture passed checkpoint 1, 2 or 3 (FR-031, DEC-145 (b)); never on a drain, a revert
+   * or an owner refilling its own zone, and once per side until the zone changes owner (DEC-145 (g)).
+   */
+  readonly 'checkpoint-reached': {
+    readonly pointId: string;
+    readonly team: Team;
+    readonly checkpoint: number;
+  };
   readonly 'capture-point-owner-changed': {
     readonly pointId: string;
     readonly from: Team;
     readonly to: Team;
   };
   readonly 'phase-changed': { readonly from: MatchPhase; readonly to: MatchPhase };
+  /** Once per match, when a verdict ends it; `result` is the one stored in `state.match.result`. */
+  readonly 'match-ended': { readonly result: MatchResult };
   /** `slot` is an `AbilitySlot` (typed loosely: `state/` sits below `commands/`). */
   readonly 'ability-cast': {
     readonly casterId: EntityId;
@@ -87,12 +126,16 @@ export type GameEventMap = {
   readonly 'horde-spawned': HordePayload;
   readonly 'horde-dissolved': HordePayload;
   readonly 'level-up': { readonly entityId: EntityId; readonly level: number };
-  /** A kill's XP reaching its killer; one per award, so the invariant can audit every award. */
+  /**
+   * XP reaching a Legend; one per award, so the invariant can audit every award. A kill pays its
+   * killer; `cause: 'structure-destroyed'` pays a Legend of the team that destroyed `victimId`.
+   */
   readonly 'xp-gained': {
     readonly entityId: EntityId;
     readonly amount: number;
     readonly victimId: EntityId;
     readonly victimTeam: Team;
+    readonly cause: 'kill' | 'structure-destroyed';
   };
   readonly 'team-changed': {
     readonly entityId: EntityId;

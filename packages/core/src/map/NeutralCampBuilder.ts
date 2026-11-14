@@ -1,5 +1,6 @@
 import type { MapDecoration, MapFeature } from '../content/maps/maps.types';
 import { CAMP_MATERIALS as M } from '../content/maps/campScenery';
+import { placeLocalArt } from './placeLocalArt';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
 
 /** Forest camps are abandoned woodland circles, distinct from the lane and corner shrines. */
@@ -10,6 +11,19 @@ export class NeutralCampBuilder extends MapDecorationBuilder {
     this.blob(`${id}-camp-clearing`, 0, 0, 27, 20, M.dust, 'ground');
     this.blob(`${id}-forest-moss`, -2, 0, 24, 17, M.moss, 'ground');
     this.beginObject(id, 'camp');
+    this.stones(id);
+    this.dolmen(id);
+    this.offerings(id);
+    return placeLocalArt(
+      this.pieces.map((piece) => ({ ...piece, replacesFeature: id })),
+      feature.position,
+      1,
+      mirrorWidth !== undefined,
+      mirrorWidth,
+    );
+  }
+
+  private stones(id: string): void {
     for (const [index, x, y, height] of [
       [0, -19, -3, 18],
       [1, 17, -5, 22],
@@ -42,9 +56,12 @@ export class NeutralCampBuilder extends MapDecorationBuilder {
         ],
         M.face,
       );
-      this.rect(`${prefix}-rune`, x - 0.5, y - height + 6, 1, 5, '#9da77a');
+      this.rect(`${prefix}-rune`, x - 0.5, y - height + 6, 1, 5, M.rune);
       this.blob(`${prefix}-lichen`, x - 2, y - 2, 3, 2, M.moss);
     }
+  }
+
+  private dolmen(id: string): void {
     for (const side of [-1, 1]) {
       this.blockRect(`${id}-dolmen-leg-${String(side)}`, side * 7 - 2, -10, 4, 5, M.face);
     }
@@ -70,8 +87,11 @@ export class NeutralCampBuilder extends MapDecorationBuilder {
       M.crack,
       'detail',
     );
+  }
+
+  private offerings(id: string): void {
     this.ellipse(`${id}-offering-bowl`, 0, 2, 6, 3, M.face);
-    this.ellipse(`${id}-offering-water`, 0, 1, 4, 1.5, '#718b79');
+    this.ellipse(`${id}-offering-water`, 0, 1, 4, 1.5, M.water);
     for (const side of [-1, 1]) {
       this.ribbon(
         `${id}-root-${String(side)}`,
@@ -86,16 +106,16 @@ export class NeutralCampBuilder extends MapDecorationBuilder {
         'detail',
       );
       this.rect(`${id}-lantern-post-${String(side)}`, side * 23, -11, 0.8, 13, M.wood);
-      this.ellipse(
-        `${id}-lantern-glow-${String(side)}`,
-        side * 23,
-        -11,
-        4,
-        5,
-        'rgba(190,207,139,0.10)',
-      );
+      this.ellipse(`${id}-lantern-glow-${String(side)}`, side * 23, -11, 4, 5, M.lanternGlow);
       this.rect(`${id}-lantern-cage-${String(side)}`, side * 23 - 1.5, -13, 3, 4, M.iron);
-      this.rect(`${id}-lantern-light-${String(side)}`, side * 23 - 0.6, -12, 1.2, 2, '#c5d39b');
+      this.rect(
+        `${id}-lantern-light-${String(side)}`,
+        side * 23 - 0.6,
+        -12,
+        1.2,
+        2,
+        M.lanternLight,
+      );
     }
     for (let i = 0; i < 9; i++) {
       const x = -20 + i * 5;
@@ -103,16 +123,5 @@ export class NeutralCampBuilder extends MapDecorationBuilder {
       this.rect(`${id}-mushroom-stem-${String(i)}`, x, y, 0.6, 2, M.edge);
       this.ellipse(`${id}-mushroom-cap-${String(i)}`, x + 0.3, y, 1.3, 0.8, M.bronze);
     }
-    return this.pieces.map((piece) => ({
-      ...piece,
-      replacesFeature: id,
-      shape: piece.shape.map((point) => ({
-        x:
-          mirrorWidth === undefined
-            ? feature.position.x + point.x
-            : mirrorWidth - (mirrorWidth - feature.position.x + point.x),
-        y: feature.position.y + point.y,
-      })),
-    }));
   }
 }
