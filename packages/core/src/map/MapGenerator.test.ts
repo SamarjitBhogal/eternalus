@@ -310,7 +310,27 @@ describe('MapGenerator', () => {
 
   it('refuses a tower band widened past the end of its lane', () => {
     expect(() => generate({ numLanes: 3, spawnTowersPerLane: 1, buffTowersPerLane: 16 })).toThrow(
-      /map\.buffTowersPerLane = 16 put lane towers on lane-0 off the lane/,
+      /map\.buffTowersPerLane = 16 put the towers of lane-0 where a lane band rule breaks: .*laneBands\.buff must be a band inside \[0, 1\]/,
+    );
+  });
+
+  it('generates 1 SpawnerTower and 6 BuffTowers on 3 lanes: the buff band widens but no tower passes the spawner (DEC-246 (2))', () => {
+    expect(() =>
+      generate({ numLanes: 3, spawnTowersPerLane: 1, buffTowersPerLane: 6 }),
+    ).not.toThrow();
+  });
+
+  it('generates a lane with no SpawnerTower: the order rule needs a tower of each kind', () => {
+    expect(() =>
+      generate({ numLanes: 3, spawnTowersPerLane: 0, buffTowersPerLane: 8 }),
+    ).not.toThrow();
+  });
+
+  it('refuses a last BuffTower that is not behind the first SpawnerTower, naming the cause', () => {
+    // 10 BuffTowers widen their band until the last one stands past the SpawnerTower. The map
+    // was refused before too, but as forts over each other, which does not name the cause.
+    expect(() => generate({ numLanes: 3, spawnTowersPerLane: 1, buffTowersPerLane: 10 })).toThrow(
+      /map\.spawnTowersPerLane = 1 and map\.buffTowersPerLane = 10 put the towers of lane-\d where a lane band rule breaks: laneBands\.spawner must lie ahead of laneBands\.buff \(map\.worldWidth = 1600, map\.worldHeight = 900\)/,
     );
   });
 

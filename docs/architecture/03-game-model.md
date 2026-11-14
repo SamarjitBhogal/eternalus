@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-10
+last-reviewed: 2026-11-14
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [

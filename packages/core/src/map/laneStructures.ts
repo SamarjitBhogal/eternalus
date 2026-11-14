@@ -1,6 +1,8 @@
 import { BUILDING_GEOMETRY as G } from '../content/maps/buildingGeometry';
 import type { MapFeature, MapLane, MapLayout } from '../content/maps/maps.types';
 import { fortInWorld } from './fortInWorld';
+import { brokenLaneBandRules } from './laneBandRules';
+import type { LaneBand } from './laneBandRules';
 import { LaneGeometry } from './LaneGeometry';
 import type { MirroredFeatureSpec, WallRingInput } from './MapBuilder.types';
 import { MapGenerationError } from './MapGenerationError';
@@ -8,37 +10,28 @@ import type { MapConfig } from './MapGenerator.types';
 import { buildWallRing } from './wallRing';
 
 /**
- * `count` evenly spaced positions inside a `[from, to]` band, never on its edges. A band too
- * narrow to keep neighbours `minGap` apart widens round its middle until it does (DEC-227).
+ * The band `count` towers need inside `[from, to]`: the band itself, or, when it is too narrow to
+ * keep neighbours `minGap` apart, a band widened round its middle until it is wide enough (DEC-227).
  */
-const bandPositions = (
-  count: number,
-  [from, to]: readonly [number, number],
-  minGap: number,
-): number[] => {
-  const isWideEnough = count < 2 || (to - from) / (count + 1) >= minGap;
+const towerBand = (count: number, [from, to]: LaneBand, minGap: number): LaneBand => {
+  if (count < 2 || (to - from) / (count + 1) >= minGap) return [from, to];
   const half = ((count + 1) * minGap) / 2;
-  const [start, end] = isWideEnough ? [from, to] : [(from + to) / 2 - half, (from + to) / 2 + half];
-  return Array.from(
-    { length: count },
-    (_, slot) => start + ((slot + 1) / (count + 1)) * (end - start),
-  );
+  return [(from + to) / 2 - half, (from + to) / 2 + half];
 };
+
+/** The ground towers at `ts` occupy, `[first, last]`; none for a kind with no tower. */
+const occupiedBand = (ts: readonly number[]): LaneBand | undefined =>
+  ts.length === 0 ? undefined : [Math.min(...ts), Math.max(...ts)];
+
+/** `count` evenly spaced positions inside `[start, end]`, never on its edges. */
+const bandPositions = (count: number, [start, end]: LaneBand): number[] =>
+  Array.from({ length: count }, (_, slot) => start + ((slot + 1) / (count + 1)) * (end - start));
 
 const towerCounts = (config: MapConfig): string =>
   `map.spawnTowersPerLane = ${String(config.spawnTowersPerLane)} and map.buffTowersPerLane = ${String(config.buffTowersPerLane)}`;
 
 const worldSize = (config: MapConfig): string =>
   `map.worldWidth = ${String(config.worldWidth)}, map.worldHeight = ${String(config.worldHeight)}`;
-
-/** Throws when a tower position leaves its lane: the band widened past the lane's ends. */
-const assertTowersOnLane = (laneId: string, allTs: readonly number[], config: MapConfig): void => {
-  if (!allTs.every((t) => t >= 0 && t <= 1)) {
-    throw new MapGenerationError(
-      `${towerCounts(config)} put lane towers on ${laneId} off the lane (${worldSize(config)}): use fewer towers per lane or a larger world`,
-    );
-  }
-};
 
 /** Relative slack for the overlap check: two forts touch, not overlap, when one axis gap equals the box side. */
 const TOUCH_TOLERANCE = 1e-9;
@@ -76,7 +69,9 @@ export const assertLaneFortsApart = (towers: readonly MapFeature[], config: MapC
  * the Light gate. "Front" and "second line" are bands. Towers of one kind stand at least a fort
  * box's diagonal apart along the lane (the box in world units), a band too narrow for that widens
  * round its middle (DEC-227); `assertLaneFortsApart` then checks the forts on the whole map.
- * Throws MapGenerationError when a widened band puts a tower off the lane.
+ * Throws MapGenerationError when the ground the towers occupy breaks a lane band rule
+ * (`brokenLaneBandRules`): a tower off the lane, or the first SpawnerTower not ahead of the last
+ * BuffTower. A lane with no tower of a kind has no order to break.
  */
 export const laneTowerSpecs = (
   lane: MapLane,
@@ -90,23 +85,27 @@ export const laneTowerSpecs = (
   });
   // Two upright boxes this far apart along any heading do not overlap: the box's diagonal.
   const minGap = Math.hypot(fort.width, fort.height) / geometry.length;
-  const towers = [
-    {
-      name: 'spawner-tower',
-      definitionId: layout.definitionIds.spawnerTower,
-      ts: bandPositions(config.spawnTowersPerLane, layout.laneBands.spawner, minGap),
-    },
-    {
-      name: 'buff-tower',
-      definitionId: layout.definitionIds.buffTower,
-      ts: bandPositions(config.buffTowersPerLane, layout.laneBands.buff, minGap),
-    },
-  ];
-  assertTowersOnLane(
-    lane.id,
-    towers.flatMap((tower) => tower.ts),
-    config,
+  const spawnerTs = bandPositions(
+    config.spawnTowersPerLane,
+    towerBand(config.spawnTowersPerLane, layout.laneBands.spawner, minGap),
   );
+  const buffTs = bandPositions(
+    config.buffTowersPerLane,
+    towerBand(config.buffTowersPerLane, layout.laneBands.buff, minGap),
+  );
+  const broken = brokenLaneBandRules({
+    spawner: occupiedBand(spawnerTs),
+    buff: occupiedBand(buffTs),
+  });
+  if (broken.length > 0) {
+    throw new MapGenerationError(
+      `${towerCounts(config)} put the towers of ${lane.id} where a lane band rule breaks: ${broken.join('; ')} (${worldSize(config)}): use fewer towers per lane or a larger world`,
+    );
+  }
+  const towers = [
+    { name: 'spawner-tower', definitionId: layout.definitionIds.spawnerTower, ts: spawnerTs },
+    { name: 'buff-tower', definitionId: layout.definitionIds.buffTower, ts: buffTs },
+  ];
   return towers.flatMap((tower) =>
     tower.ts.map((t, slot) => ({
       suffix: `${tower.name}-${lane.id}-${String(slot)}`,

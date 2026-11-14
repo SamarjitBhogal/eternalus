@@ -9,4 +9,4 @@ export const matchWorldOf = (
   map: MapDefinition,
   cellSize = createDefaultGameConfig().map.navCellSize,
 ): MatchWorld =>
-  new MatchWorld(map, MatchGrid.build(map, [], { cellSize, features: MAP_FEATURE_DEFINITIONS }));
+  new MatchWorld(MatchGrid.build(map, [], { cellSize, features: MAP_FEATURE_DEFINITIONS }));

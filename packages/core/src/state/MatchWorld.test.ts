@@ -9,7 +9,7 @@ import { MatchWorld } from './MatchWorld';
 describe('MatchWorld', () => {
   it('walks the lanes of its definition and keeps the grid it was given', () => {
     const matchGrid = MatchGrid.build(TWO_LANE_MAP, [], { cellSize: 2, features: {} });
-    const world = new MatchWorld(TWO_LANE_MAP, matchGrid);
+    const world = new MatchWorld(matchGrid);
 
     expect(world.definition).toBe(TWO_LANE_MAP);
     expect(world.grid).toBe(matchGrid.grid);
@@ -33,7 +33,6 @@ describe('MatchWorld', () => {
       ],
     };
     const world = new MatchWorld(
-      TWO_LANE_MAP,
       MatchGrid.build(TWO_LANE_MAP, [rock], { cellSize: 2, features: MAP_FEATURE_DEFINITIONS }),
     );
     expect(world.grid.isWalkableAt(42, 20)).toBe(false);

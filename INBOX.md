@@ -16,6 +16,11 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **`refactor/tower-ruins-followups` critic (2026-11-14), better than the design — one item
+      for the tidy PR (DEC-218), sign-off.** Not built: this branch stays small. (BT2) One `Band`
+      type in `content/maps/maps.types.ts` (`readonly [number, number]`, a stretch of a lane as
+      fractions) serves `MapLayout.laneBands` and `camps.band`, instead of `LaneBand` in
+      `map/laneBandRules.ts` and the repeated tuple types.
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on
       every map feature, so `map/strongholdRing.ts` checks at run time that a Stronghold has it
@@ -164,7 +169,7 @@ Reply inline (`Decision: …`).
   - **Answered 2026-11-10 by DEC-240** (question dialog): A, plus a request for a bot path cache
     ("Requests for the agent" below). Built on `feat/tower-ruins-and-routes`:
     `config/defaultGameConfig.ts`, test in `map/AStarPathfinder.test.ts`.
-- [ ] **Tower-ruins critic round 3 (`feat/tower-ruins-and-routes`, 2026-11-10), better than the
+- [x] **Tower-ruins critic round 3 (`feat/tower-ruins-and-routes`, 2026-11-10), better than the
       design — four follow-ups, no decision blocks the PR.** (BTD1) Set the A\* cap as a search
       area in world units (m², divided by `navCellSize`²), or validate the two together, so the
       next cell-size change cannot shrink the search again (DEC-240 was needed for this reason).
@@ -176,6 +181,10 @@ Reply inline (`Decision: …`).
       have built: let `MatchGrid` keep its definition and `MatchWorld` take only the grid.
       Full findings: `eternalus-agent-work/tower-ruins-and-routes/critic-r3.md`. Approve: one
       follow-up branch builds all four. Decision: …
+  - **Answered 2026-11-14** (question dialog, 2026-11-13 answer 3: "A: follow-up branch now"):
+    BTD3 and BTD5 built on `refactor/tower-ruins-followups` (**DEC-245**), with the layout band
+    rules on the placed towers ("Build now"). BTD1 = DEC-243 on `refactor/astar-search-area`;
+    BTD4 = DEC-244 on `refactor/fort-geometry-helpers`.
 
 - [x] **Minion M4 done-when, read for objectives (2026-11-02, `chore/minion-full-march-test`) — sign-off.**
       The plan's M4 check "hordes reach the enemy end with 0 stuck units for `numLanes` 3 and 5"

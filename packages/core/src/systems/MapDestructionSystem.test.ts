@@ -89,7 +89,6 @@ describe('MapDestructionSystem', () => {
       ],
     };
     const world = new MatchWorld(
-      map,
       MatchGrid.build(map, [rock], { cellSize: 2, features: MAP_FEATURE_DEFINITIONS }),
     );
     const state = new GameState(createDefaultGameConfig(), 1, world);

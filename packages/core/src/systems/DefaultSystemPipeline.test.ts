@@ -61,6 +61,7 @@ describe('DefaultSystemPipeline', () => {
       state,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
+      ruinWall: RUINED_FORT_WALL_DEFINITION,
     });
     const factory = newFactory();
     const runner = factory.create('warrior', 'warrior', {
@@ -113,13 +114,13 @@ describe('DefaultSystemPipeline', () => {
       state,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
+      ruinWall: RUINED_FORT_WALL_DEFINITION,
       hordes: {
         factory,
         space,
         decide: [{ name: 'ai', update: () => undefined }],
         collisions: [{ name: 'collision', update: () => undefined }],
       },
-      ruinWall: RUINED_FORT_WALL_DEFINITION,
     });
 
     // Collision resolves positions before the index, steering, combat and next tick's AI read them.
@@ -160,6 +161,7 @@ describe('DefaultSystemPipeline', () => {
       state,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
+      ruinWall: RUINED_FORT_WALL_DEFINITION,
     });
     const factory = newFactory();
     const warrior = factory.create('warrior', 'warrior', {
@@ -196,6 +198,7 @@ describe('DefaultSystemPipeline', () => {
       state,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
+      ruinWall: RUINED_FORT_WALL_DEFINITION,
     });
     const factory = newFactory();
     const warrior = factory.create('warrior', 'warrior', {
@@ -233,6 +236,7 @@ describe('DefaultSystemPipeline', () => {
       state,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
+      ruinWall: RUINED_FORT_WALL_DEFINITION,
     });
     const factory = newFactory();
     const warrior = factory.create('warrior', 'warrior', {
@@ -307,6 +311,7 @@ describe('DefaultSystemPipeline', () => {
           directed.match.setPhase('countdown');
         },
       },
+      ruinWall: RUINED_FORT_WALL_DEFINITION,
     });
 
     expect(() => {
@@ -329,6 +334,7 @@ describe('DefaultSystemPipeline', () => {
       state,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
+      ruinWall: RUINED_FORT_WALL_DEFINITION,
     });
     const factory = new EntityFactory(
       createDefaultEntityRegistry(),
@@ -453,32 +459,6 @@ describe('DefaultSystemPipeline', () => {
       expect(reopened.includes(5 * (world?.cols ?? 0) + 9)).toBe(hasLanes);
     },
   );
-  it('refuses a match with map objects but no ruinWall to ruin fort walls with (DEC-219 (a))', () => {
-    const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP));
-    state.worldObjects = new WorldObjectStore({
-      objects: [],
-      factory: new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS),
-      entities: state.entities,
-      definitions: MAP_OBJECT_DEFINITIONS,
-    });
-
-    expect(
-      () =>
-        new DefaultSystemPipeline({
-          invariants: new DefaultInvariantRunner({
-            debug: TEST_DEBUG_CONFIG,
-            logger: new MemoryLogger(),
-            curves: PROGRESSION.curves,
-            phaseOrder: MATCH_PHASES,
-            terminalPhases: TERMINAL_MATCH_PHASES,
-          }),
-          state,
-          progression: PROGRESSION,
-          director: IDLE_DIRECTOR,
-        }),
-    ).toThrow(/needs DefaultSystemPipelineOptions\.ruinWall/);
-  });
-
   it.each([
     // A tower's fort box is one (DEC-185); the chase closes in over the court's blocked ground.
     { definitionId: 'spawner-tower', heading: { x: 1, y: 0 } },
@@ -525,6 +505,7 @@ describe('DefaultSystemPipeline', () => {
         state,
         progression: PROGRESSION,
         director: IDLE_DIRECTOR,
+        ruinWall: RUINED_FORT_WALL_DEFINITION,
         hordes: { factory, space, decide: [] },
       });
       // The tower falls before any chase; the grid still blocks the court (the rift, x 50..70).

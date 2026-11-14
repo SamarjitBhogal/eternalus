@@ -55,6 +55,12 @@ const SEGMENT = object('segment', true, box(600, 200, 640, 240));
 const FLOOR = object('floor', false, box(800, 200, 900, 300));
 
 describe('MatchGrid', () => {
+  it('keeps the map it was built from', () => {
+    const map = mapOf(1600, 900);
+
+    expect(MatchGrid.build(map, [], OPTIONS).definition).toBe(map);
+  });
+
   it('stamps a court feature inside its fort as court ground and a plain blocking feature as a footprint', () => {
     const { grid } = MatchGrid.build(mapOf(1600, 900), [TOWER, SEGMENT, FLOOR], OPTIONS);
 
