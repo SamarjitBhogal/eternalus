@@ -87,7 +87,6 @@ describe('WorldObjectStore', () => {
       isDestroyed: true,
       health: { current: 0, max: 100 },
     });
-    expect(world.destroyedIds.has('house')).toBe(true);
   });
 
   it('skips an object whose footprint box misses the circle, without testing its shape', () => {

@@ -184,17 +184,20 @@ export class Simulation {
     if (mapObjects !== undefined && map === undefined)
       throw new Error('Map objects require a generated map');
     if (mapObjects !== undefined) {
-      this.state.worldObjects = new WorldObjectStore(
+      // A skipped removal here leaves a broken wall in the collision index (critic r2 F1).
+      if (walls === null) throw new Error('Map objects require a collision index');
+      const worldObjects = new WorldObjectStore(
         mapObjects,
         this.commandContext.factory,
         this.state.entities,
         MAP_OBJECT_DEFINITIONS,
       );
+      this.state.worldObjects = worldObjects;
       this.state.events.on('entity-removed', ({ entityId }) => {
-        this.state.worldObjects?.removed(entityId);
+        worldObjects.removed(entityId);
         // At once, so walking and a dash both stop seeing it from now on (critic r2 F1).
-        const object = this.state.worldObjects?.objectFor(entityId);
-        if (object !== undefined) walls?.remove(object.id);
+        const object = worldObjects.objectFor(entityId);
+        if (object !== undefined) walls.remove(object.id);
       });
     }
     this.systemContext = { state: this.state, logger };

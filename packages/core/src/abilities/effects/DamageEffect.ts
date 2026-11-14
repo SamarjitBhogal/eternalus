@@ -1,8 +1,8 @@
-import type { DamageSpec } from '../../content/abilities/AbilityDefinition.types';
+import type { DamageSpec, WithoutTimes } from '../../content/abilities/AbilityDefinition.types';
 import { isUnitFamily } from '../../entities/unitFamilies';
 import type { DamageSource } from '../../state/GameEvents.types';
 import type { AbilityDisplayStep } from '../../content/loadDisplayContent';
-import type { AbilityEffect, CastContext, WithoutTimes } from '../AbilityEffect.types';
+import type { AbilityEffect, CastContext } from '../AbilityEffect.types';
 import { mustBePositive, mustNotBeNegative } from '../specChecks';
 
 /**

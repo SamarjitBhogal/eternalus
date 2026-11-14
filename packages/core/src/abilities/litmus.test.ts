@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import { ABILITIES } from '../content/abilities/abilityCatalogue';
-import type { AuthoredAbilityWith } from '../content/abilities/AbilityDefinition.types';
+import type {
+  AuthoredAbilityWith,
+  WithoutTimes,
+} from '../content/abilities/AbilityDefinition.types';
 import { loadAbilities } from '../content/abilities/loadAbilities';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import type { AbilityDisplayStep } from '../content/loadDisplayContent';
@@ -9,7 +12,7 @@ import { loadDisplayContent } from '../content/loadDisplayContent';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { NullLogger } from '../diagnostics/NullLogger';
 import { Simulation } from '../Simulation';
-import type { AbilityEffect, CastContext, WithoutTimes } from './AbilityEffect.types';
+import type { AbilityEffect, CastContext } from './AbilityEffect.types';
 import type { ComposableAbility } from './AbilityRegistry.types';
 import { createDefaultAbilityRegistry } from './defaultAbilityRegistry';
 import { unitsWithWarriorKit } from './__fixtures__/casterState';

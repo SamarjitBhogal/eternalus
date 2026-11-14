@@ -1,7 +1,7 @@
 import type { DamagePipeline } from '../combat/DamagePipeline';
 import type { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import type { Aim } from '../components/AbilitySlotRuntime.types';
-import type { AbilitySlot } from '../content/abilities/AbilityDefinition.types';
+import type { AbilitySlot, WithoutTimes } from '../content/abilities/AbilityDefinition.types';
 import type { AbilityDisplayStep } from '../content/loadDisplayContent';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
@@ -52,21 +52,6 @@ export type CastContext = {
 
 /** The overlay rows of one nested step (a dash's `onPath` and `onEnd`), from its own strategy. */
 export type NestedDescriber = (step: EffectStep) => readonly AbilityDisplayStep[];
-
-/**
- * `T` without its time fields, at any depth: every `<name>Seconds` (as authored) and `<name>Ticks`
- * (as loaded) field dropped. What loading leaves as authored (kinds, areas, distances, nested
- * steps), so an authored step and a loaded one both fit it: what `AbilityEffect.describe` reads.
- */
-export type WithoutTimes<T> = T extends readonly (infer Item)[]
-  ? readonly WithoutTimes<Item>[]
-  : T extends object
-    ? {
-        readonly [
-          K in keyof T as K extends `${string}Seconds` | `${string}Ticks` ? never : K
-        ]: WithoutTimes<T[K]>;
-      }
-    : T;
 
 /**
  * One kind of effect (05 §3): a stateless Flyweight, one instance per kind in the

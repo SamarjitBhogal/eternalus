@@ -1,4 +1,4 @@
-import type { KnockbackSpec } from '../../content/abilities/AbilityDefinition.types';
+import type { KnockbackSpec, WithoutTimes } from '../../content/abilities/AbilityDefinition.types';
 import type { KnockbackDefinition } from '../../content/abilities/knockback';
 import { Movement } from '../../components/Movement';
 import { Transform } from '../../components/Transform';
@@ -6,7 +6,7 @@ import type { Vec2 } from '../../utils/geometry.types';
 import { TickRate } from '../../utils/TickRate';
 import { normalize } from '../../utils/vec2';
 import type { AbilityDisplayStep } from '../../content/loadDisplayContent';
-import type { AbilityEffect, CastContext, WithoutTimes } from '../AbilityEffect.types';
+import type { AbilityEffect, CastContext } from '../AbilityEffect.types';
 import { mustBePositive } from '../specChecks';
 
 /**

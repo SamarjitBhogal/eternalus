@@ -27,7 +27,7 @@ const DASH = {
   onEnd: [{ kind: 'debuff', statusId: 'stun', durationTicks: 15, shape: END }],
 } as const;
 
-/** A 20 x 20 map with a rift filling x = 5.2 to 5.8, on a 1 m grid, with its collision sweep. */
+/** A 20 x 20 map with a rift filling x = 5.2 to 5.8, on a 1 m grid, with its collision rule. */
 const RIFT_MAP: MapDefinition = {
   id: 'dash-test',
   displayName: 'Test',
@@ -156,5 +156,16 @@ describe('DashEffect', () => {
     expect(() => {
       castSteps(state, 'entity-404', [DASH], { aim: { x: 30, y: 10 } });
     }).toThrow('"entity-404"');
+  });
+
+  it('throws for a caster that cannot be moved, never running the steps of a dash that did not start (critic r3 nit 1)', () => {
+    const { state, caster, dummyAt } = setUp();
+    const onPath = dummyAt(4);
+    caster.removeComponent(Movement);
+
+    expect(() => {
+      castSteps(state, caster.id, [DASH], { aim: { x: 30, y: 10 } });
+    }).toThrow('Missing component "Movement"');
+    expect(damageTaken(onPath)).toBe(0);
   });
 });

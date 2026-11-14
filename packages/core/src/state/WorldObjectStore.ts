@@ -68,11 +68,6 @@ export class WorldObjectStore {
     );
   }
 
-  /** Persistent destroyed identifiers, including walkable rubble left by retired entities. */
-  public get destroyedIds(): ReadonlySet<string> {
-    return this.destroyed;
-  }
-
   /** Independent diagnostic check against live solids and authored bridge openings. */
   public blockingAt(point: Vec2, radius: number): string | null {
     for (const { object, health, bounds } of this.records) {

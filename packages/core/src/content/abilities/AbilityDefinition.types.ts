@@ -97,6 +97,21 @@ export type InTicks<T> = T extends readonly (infer Item)[]
       }
     : T;
 
+/**
+ * `T` without its time fields, at any depth: every `<name>Seconds` (as authored) and `<name>Ticks`
+ * (as loaded) field dropped. What loading leaves as authored (kinds, areas, distances, nested
+ * steps), so an authored step and a loaded one both fit it: what `AbilityEffect.describe` reads.
+ */
+export type WithoutTimes<T> = T extends readonly (infer Item)[]
+  ? readonly WithoutTimes<Item>[]
+  : T extends object
+    ? {
+        readonly [
+          K in keyof T as K extends `${string}Seconds` | `${string}Ticks` ? never : K
+        ]: WithoutTimes<T[K]>;
+      }
+    : T;
+
 /** A loaded debuff: the duration override in ticks. */
 export type DebuffSpec = InTicks<AuthoredDebuffSpec>;
 

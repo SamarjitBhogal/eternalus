@@ -1,6 +1,6 @@
-import type { DebuffSpec } from '../../content/abilities/AbilityDefinition.types';
+import type { DebuffSpec, WithoutTimes } from '../../content/abilities/AbilityDefinition.types';
 import type { AbilityDisplayStep } from '../../content/loadDisplayContent';
-import type { AbilityEffect, CastContext, WithoutTimes } from '../AbilityEffect.types';
+import type { AbilityEffect, CastContext } from '../AbilityEffect.types';
 import { mustBePositive } from '../specChecks';
 
 /**
