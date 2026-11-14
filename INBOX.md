@@ -16,6 +16,103 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **HC-Q48 — Accept ADR 0026, the ability framework's build decisions
+      (`feat/ability-framework`, 2026-11-13).** `docs/decisions/0026-ability-framework.md`
+      (proposed) records seven decisions
+      the framework PR took beyond or against architecture 05, 04 and 10: (1) kits from a class
+      pool, with an optional kit per Legend read through `RosterSlot.specId`, which amends ADR 0018
+      point 2 ("nothing in the simulation or in a running match reads it"); (2) one
+      `CastValidator` for the cast handler, `AbilitySystem`, the HUD snapshot and the bots; (3) an
+      ability with no effects is `unavailable`, and a missing strategy stops the boot; (4) forced
+      motion instead of impulses for dashes and knock-backs; (5) aether regeneration in its own
+      system, with exact amounts; (6) where the two new systems run in the tick; (7) area shapes
+      behind a registry, shared with the aim overlay. The code is built on the branch. Accept, or
+      name the decisions to change. On acceptance, ADR 0018's Status line gets "amended by 0026".
+- [ ] **HC-B5 — Better than the design, for sign-off: five parts of the ability framework
+      (`feat/ability-framework`, 2026-11-13) — sign-off per item.** All five are built.
+      (1) **Aether regeneration is its own system.** Design (05 §6): `AbilitySystem` adds
+      `aetherRegenPerTick`, a field on `Abilities`. Built: `AetherRegenSystem` refills every
+      `Aether` pool right after `AbilitySystem` (ADR 0026 decisions 5 and 6). Better: each class
+      has one reason to change, and the rate is computed from the maximum and base aether every
+      tick, so it cannot go stale after a level-up or an aura change.
+      (2) **A `SlotReadiness` port.** Design (05 §6, §15): `AbilityRuntime.canCast` decides, and
+      the snapshot's `isReady` has no stated source. Built: `abilities/CastValidator` is the one
+      rule; `abilities/CastReadiness` implements `state/SlotReadiness.types.ts`, and `Simulation`
+      gives it to the snapshot and the bots (ADR 0026 decision 2). Better: the HUD, the bots, the
+      handler and `AbilitySystem` judge a cast by one rule, and the folder import rules hold.
+      (3) **Forced motion instead of impulses.** Design (10 §2, 05 §3): every push is an impulse,
+      velocity change `J / mass`. Built: `Movement.push` spreads a displacement over a number of
+      ticks; a knock-back's distance shrinks with the target's mass, and knock-backs in one tick
+      add up (DEC-208; ADR 0026 decision 4). Better: `Movement` re-points its velocity every tick,
+      so an impulse would be gone a tick later; a push gives each knock-back an exact distance
+      that content tunes.
+      (4) **A kit per Legend, read through `specId`.** Design (04 §5, 05 §2): a fixed
+      `abilityIds` and `ultimateId` per class; ADR 0018 point 2: the simulation does not read the
+      Legend pick. Built: `abilityPool` and `defaultKit` per class, an optional `kit` per Legend
+      spec, and `RosterSlot.specId` (DEC-198; ADR 0026 decision 1). Better: DEC-198's "each Legend
+      has its own default kit" needs no code per Legend, and a custom loadout later picks from the
+      same pool.
+      (5) **`HudBlockReason` is core's type.** Before: the client restated 05 §6's reasons in
+      `bridge/hud.types.ts` "until core exports it". Built: `HudBlockReason` is core's
+      `AbilityRejectReason`, exported from `@eternalus/core`. Better: one list; a new reason (here
+      `unavailable`) reaches the HUD with no client edit.
+      Where DEC-198, DEC-201 or DEC-208 require it, 04 §5, 05 §2, §3, §6, §7 and 10 §2 already
+      say this (each change cites its ruling). Approve all, approve some, or say no; a "no" reworks the
+      code and those lines.
+- [ ] **HC-Q49 — Five tuning values the ability framework uses until you set them (`TUNE`,
+      `feat/ability-framework`).** (1) Blade Runner's path width: 1.5 m, the 05 §4 sketch value
+      (`content/abilities/bladeRunner.ts`). (2) Blade Runner's end-stun radius: 1.5 m, the same
+      sketch value and file. (3) The aura radius for the aether refill: 12 m, `balancing.md`
+      "Auras" (`content/abilities/aetherRegen.ts`). (4) Knock-back: travel time 0.25 s, base mass
+      1 (the Vanguard's mass), and the formula distance × base mass / max(base mass, target mass)
+      (`content/abilities/knockback.ts`); DEC-208 (1) says only that a heavier target moves less.
+      With these, a Sentinel (mass 6) moves a sixth of the distance and a Magus (mass 2) half.
+      (5) How the refill grows with capacity (DEC-201 (3), "Proceed, mark TUNE"): in the same
+      ratio as the maximum aether, so a full refill takes the same time at every level. Keep each
+      value, or give yours.
+- [ ] **HC-Q50 — Does a right click also cancel an aimed ability? (`feat/ability-framework`).** In
+      aim-then-click mode, Esc cancels a selected ability and does not open the pause menu
+      (DEC-200, DEC-209 (3)). The branch builds Esc only. Keep Esc only, or add the right mouse
+      button as a second way to cancel.
+- [ ] **HC-Q51 — Review the kit ability descriptions (`feat/ability-framework`; DEC-199).** The
+      Legend panels and View Details now show each kit ability's description from content
+      (`packages/core/src/content/abilities/<id>.ts`). Blade Runner, Slam and Shockwave quote the
+      game doc's Abilities table. The other nine texts were written in the session and name no
+      source; the build plan lists Veil, Fury, Rip & Tear, Berserk, Imbue and Death Ray for your
+      review first. **Rip & Tear's text contradicts DEC-204 and DEC-206:** it says low-health
+      enemies "take double and are dragged toward you", but they are knocked back, not pulled in,
+      those at or below 10% die, and survivors get Fear. Give the texts you want, or approve them;
+      Rip & Tear's text is corrected in the Sentinel PR at the latest.
+- [ ] **HC-Q52 — The Legend specs' `detailNames` ability rows are now unused
+      (`feat/ability-framework`).** The kit rows come from the abilities' content (DEC-199), so the
+      client no longer reads a spec's `detailNames` (`ultimate`, `ability-1` to `ability-3`); core
+      still validates them. The class `detailNames` rows are still read. Remove the spec rows (a
+      content refactor in a later PR), or keep them for another use?
+- [ ] **HC-Q53 — Seven readings the framework session took, for you to confirm
+      (`feat/ability-framework`; none blocks the PR).** (1) An airborne target can still be
+      pushed: DEC-208's stacking is kept over `more-abilities.md` §7, whose `knockup` row says an
+      airborne unit cannot "be pushed further". (2) Blade Runner knocks back along the whole path
+      (sideways off the dash line) and stuns only at the end (game doc: "knocks back enemies in
+      your way and stuns anyone at the end of your path"). (3) A dash's end steps run at cast, at
+      the point where the dash will stop, while the caster is still on the way (0.3 s). (4) The
+      structure multiplier applies to every target that is not a unit: structures, obstacles and
+      map objects (DEC-209 (1)). (5) Ability potency grows linearly:
+      amount × (1 + 0.04 × (level − 1)) (`balancing.md`, +4% per level). (6) Inside several allied auras a Legend gets the
+      largest refill bonus; bonuses never add up. (7) The default cast mode is quick cast. Keep
+      each, or say which to change.
+- [ ] **HC-S12 — Scheduled: follow-ups of the ability framework (`feat/ability-framework`,
+      2026-11-13).** Already scheduled by your rulings: (a) the ultimate meter, with Fury, in the
+      Vanguard PR (DEC-202; phase-4 sprint 4.3); (b) situational bot casting in its own follow-up
+      PR: a heal when the bot or nearby allies have low health, a courage ability on first entering
+      combat, an execute when an enemy is in range (DEC-205); (c) a page of proposed numbers for the
+      seven abilities with no price in `balancing.md`, before they ship (DEC-197); (d) boss masses
+      with the boss content (DEC-208 (2)). Not scheduled yet, approve a PR for each or drop it:
+      (e) status `onExpire`, which the 0.2 s landing stagger after a knock-up and `control-immune`
+      after hard control need (`more-abilities.md` §7; 05 §8); (f) icons for the kit abilities,
+      which have none, and new Oracle icons (its Legend panel still shows the old preview icons
+      beside the new kit names); (g) the aether cost on the HUD bar (the snapshot carries it); (h)
+      a check in the browser of the Legend panels, whose ability bands changed size.
+
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on
       every map feature, so `map/strongholdRing.ts` checks at run time that a Stronghold has it

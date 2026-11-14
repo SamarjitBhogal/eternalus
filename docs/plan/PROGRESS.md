@@ -6154,3 +6154,27 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `Tests 1818 passed (1818)`, `Documentation check passed.`
   (`eternalus-agent-work/hud-aether-bar/check-3.log`).
 - Next step: push; CodeRabbit re-review after the owner's sign-off comment; merge into phase/3.
+
+### 2026-11-13 — Phase 4 / sprints 4.2–4.3 and 4.7: ability framework (PR 1) — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: the owner's rulings DEC-196 to DEC-209 (framework first, then one PR per class;
+  `balancing.md` numbers as `TUNE`; class pool and a kit per Legend; the kits; two cast modes;
+  aether refill; one ultimate meter; Fear; Rip & Tear; bots cast any ready ability; knock-back
+  mass and stacking; structure multipliers, slot order and the range overlay). Built in six
+  slices: (S1) ability content, twelve kit abilities, `knockup` and `staggered`, kit rules; (S2)
+  `Abilities` slots, `AbilityRegistry`, `CastValidator`, `CastAbilityHandler`, `AbilitySystem`,
+  `AetherRegenSystem`, two invariants; (S3) `damage`, `debuff`, `knockback` and `dash` effects,
+  forced motion on `Movement`, status duration override, Blade Runner, Slam and Shockwave with
+  scenario tests and a golden replay; (S4) `Snapshot.player`, the `SlotReadiness` port, bots
+  pick any ready slot; (S5) quick and aim-then-click casting, Esc cancels an aim (Gameplay
+  settings tab); (S6) kit rows from content, live HUD slots, the range overlay. Integration:
+  casts refused during the countdown (DEC-88), a re-applied status keeps the longer time, the
+  overlay cuts a dash where the cast does. Decisions beyond 05: ADR 0026 (proposed, HC-Q48);
+  INBOX HC-B5, HC-Q49 to HC-Q53, HC-S12. Docs: 05, 04, 10, 13, 11, 03, 02, reference 09 and 12,
+  `more-abilities.md`, `balancing.md`, backlog, phase-4 plan.
+- Checks run: CHECK-RESULT-PENDING (`npm run check`, verbatim result to be filled in from the
+  final run; see the PR description). Docs pass: `npm run docs:check` →
+  `Documentation check passed.`; `npx prettier --check docs INBOX.md` →
+  `All matched files use Prettier code style!`
+- Next step: critic and ponytail gate, then the PR; next the per-class PRs, the Vanguard first
+  with the ultimate meter and Fury (DEC-202), then the Sentinel (Rip & Tear, Fear) and the Magus.

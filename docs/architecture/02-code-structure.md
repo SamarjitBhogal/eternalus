@@ -4,7 +4,7 @@ description: The planned folder tree of packages/core and apps/client with one l
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-04
+last-reviewed: 2026-11-13
 tags: [architecture, code-structure, conventions, registries]
 paths: ['packages/core/src/**', 'apps/client/src/**', 'eslint.config.js', 'knip.json']
 related:
@@ -53,7 +53,7 @@ core/src/
   map/                 MapGenerator (+ MapBuilder), WorldMap, LaneGeometry, symmetry (types: content/maps)
   physics/             SpatialHash, Circle, ConvexPolygon, sat, sweptTests, Kinematics, CollisionResolver
   ai/                  Controller interface + controllers, Perception queries, aggro rules (data)
-  abilities/           Ability, AbilityRuntime, effects/, restrictions/, AbilityRegistry
+  abilities/           Ability, AbilityRuntime, effects/, restrictions/, shapes/, AbilityRegistry
   combat/              DamagePipeline, DamageSource, DeathResolver
   match/               MatchDirector, MatchPhase states, MatchTimeline, Scoring, VictoryCondition + defaults
   loadout/             Loadout model, validateLoadout(), autoBuildLoadout()
@@ -73,7 +73,7 @@ core/src/
 | `commands/`     | Everything a player, bot or developer menu can ask for, and how it is applied                             | `state/`, `entities/`, `utils/`                                                             | `Command.types.ts`, `CommandQueue`, `applyCommand.ts`, `CommandHandler.types.ts`, `handlers/*Handler.ts`, `defaultCommandHandlers.ts`                                                                                  |
 | `map/`          | Config + seed → `MapDefinition`; the runtime `WorldMap` with cost grid and flow fields                    | `config/`, `content/`, `teams/`, `utils/`, `physics/`                                       | `MapGenerator`, `MapBuilder`, `WorldMap`, `LaneGeometry`, `symmetry.ts` (map types in `content/maps/maps.types.ts`)                                                                                                    |
 | `combat/`       | Damage resolution, death causes, applying statuses                                                        | `components/`, `content/`, `state/`, `utils/`                                               | `DamagePipeline`, `DamagePipeline.types.ts`, `DamageStep.types.ts`, `<Name>Step.ts`, `defaultDamageSteps.ts`, `DeathResolver`                                                                                          |
-| `abilities/`    | Ability behaviour built from effect and restriction strategies                                            | `combat/`, `components/`, `content/`, `state/`, `utils/`                                    | `Ability`, `AbilityRuntime`, `effects/*Effect.ts`, `restrictions/*Restriction.ts`, `AbilityRegistry`, `defaultAbilityRegistry.ts`                                                                                      |
+| `abilities/`    | Ability behaviour built from effect and restriction strategies                                            | `combat/`, `components/`, `content/`, `state/`, `utils/`                                    | `Ability`, `AbilityRuntime`, `effects/*Effect.ts`, `restrictions/*Restriction.ts`, `shapes/*Shape.ts` (ADR 0026), `AbilityRegistry`, `defaultAbilityRegistry.ts`                                                       |
 | `loadout/`      | The loadout model and its validation against content                                                      | `content/`, `utils/`                                                                        | `Loadout.types.ts`, `validateLoadout.ts`, `autoBuildLoadout.ts`                                                                                                                                                        |
 | `ai/`           | Controllers that read state and emit `Command`s; perception; aggro data                                   | `state/` (read), `commands/`, `config/`, `content/` (types), `teams/`, `utils/`             | `Controller`, `PlayerController`, `BotLegendController`, `MinionController`, `GuardController`, `TurretController`, `BossController`, `RoverController`, `Perception`                                                  |
 | `match/`        | Phases, timeline, scoring, victory                                                                        | `state/`, `config/`, `components/`, `utils/`, `teams/`, content types, some `diagnostics/`  | `MatchDirector`, `phases/*Phase.ts`, `MatchTimeline`, `Scoring`, `VictoryCondition.types.ts`, `defaultVictoryConditions.ts`                                                                                            |
@@ -224,7 +224,7 @@ changes the shape of the world, it is config. If a player may change it, it is a
 | `EntityRegistry`            | `core/src/entities/defaultEntityRegistry.ts`                                         | A concrete entity class for an `EntityKind`                                                                                    |
 | `StrategyRegistry`          | `core/src/entities/strategies/defaultStrategyRegistry.ts`                            | A movement, targeting, attack or pick-up strategy                                                                              |
 | Damage steps                | `core/src/combat/defaultDamageSteps.ts`                                              | A rule every hit runs through, at its position                                                                                 |
-| `AbilityRegistry`           | `core/src/abilities/defaultAbilityRegistry.ts`                                       | An `AbilityEffect` or `AbilityRestriction` class                                                                               |
+| `AbilityRegistry`           | `core/src/abilities/defaultAbilityRegistry.ts`                                       | An `AbilityEffect`, `AbilityRestriction` or `AreaShape` class (ADR 0026)                                                       |
 | `ControllerRegistry`        | `core/src/ai/defaultControllerRegistry.ts`                                           | A `Controller` for a `ControllerId`                                                                                            |
 | Content catalogues          | `core/src/content/<family>/<family>Catalogue.ts`                                     | A definition (legend, mob, ability, weapon, ...)                                                                               |
 | `SystemPipeline` order      | `core/src/systems/defaultSystemPipeline.ts`                                          | A system, at its position in the tick                                                                                          |
@@ -364,6 +364,23 @@ text since 2026-10-28 (the owner approved them, `INBOX.md` HC-T1):
   control are gone. New is `game/BuildingRoofs.ts`, the one owner of roof cutaways: the
   player's building and the developer explorer's clicks (DEC-143; [06](06-map-and-minimap.md)
   §10).
+
+Ability framework (`feat/ability-framework`, 2026-11-13; ADR 0026). Files the branch added:
+
+- **Core.** `abilities/` holds `AbilityRegistry`, `ComposedAbility`, `defaultAbilityRegistry.ts`,
+  `CastValidator`, `CastReadiness`, `CastInstance`, `TargetQuery`, `dashReach.ts`, `effects/`,
+  `restrictions/` and `shapes/`. The slot state is `components/Abilities.ts` and
+  `components/AbilitySlotRuntime.ts`, not an `AbilityRuntime` in `abilities/`, because
+  `components/` may not import `abilities/`. `content/abilities/` holds the ability files, the
+  catalogue, `loadAbilities.ts`, `aetherRegen.ts` and `knockback.ts`. Also new:
+  `commands/handlers/CastAbilityHandler.ts`, `systems/AbilitySystem.ts`,
+  `systems/AetherRegenSystem.ts`, `state/SlotReadiness.types.ts`, `state/PlayerSnapshotter.ts`,
+  `ai/pickReadySlot.ts` and the two invariants in `diagnostics/invariants/`. `abilities/` imports
+  beyond its §2 "May import" cell: `map/` (the `WorldMap` type, `dashReach.ts`), `commands/` (the
+  `Aim` type, `CastReadiness.ts`) and `entities/` (`unitFamilies`, `DamageEffect.ts`).
+- **Client.** `game/AbilityCasts.ts` (the two cast modes), `game/content/kitRows.ts`,
+  `game/views/AimOverlayView.ts` with `aimShapePainters.ts`, and `ui/components/InfoPanelKit.tsx`
+  ([13](13-game-interface.md) §10).
 
 ## Related
 

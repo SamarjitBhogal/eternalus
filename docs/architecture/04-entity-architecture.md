@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-05
+last-reviewed: 2026-11-13
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -17,6 +17,7 @@ related:
     'docs/architecture/03-game-model.md',
     'docs/architecture/05-abilities-weapons-and-loadouts.md',
     'docs/architecture/17-extension-recipes.md',
+    'docs/decisions/0026-ability-framework.md',
   ]
 ---
 
@@ -192,8 +193,8 @@ export type EntityDefinitionBase = {
 export type LegendDefinition = EntityDefinitionBase & {
   readonly kind: LegendKind;
   readonly stats: UnitStats; // health, aether, radius, movement { speed, maxSpeed, acceleration, mass }
-  readonly abilityIds: readonly [AbilityId, AbilityId, AbilityId];
-  readonly ultimateId: AbilityId;
+  readonly abilityPool: readonly AbilityId[]; // every ability and ultimate of the class (DEC-198; ADR 0026)
+  readonly defaultKit: AbilityKit; // three abilities and the ultimate; a spec may carry its own kit (DEC-198, DEC-199)
   readonly passiveId: AbilityId | null;
   readonly defaultActionId: AbilityId | null; // Magus: 'revive'
   readonly pickUp: PickUpStrategyId;
@@ -344,6 +345,14 @@ session or phase named:
   `xp`, `level` and `curveId`, with `addXp(amount, curve)` taking the curve `ProgressionSystem`
   resolves from the injected catalogue. `Health` and `Aether` gained `raiseMax`, which raises only
   the cap; `ProgressionSystem` heals and refills by the raise while the Legend is alive (O3, O4).
+- Legends also install `Abilities` (`feat/ability-framework`, 2026-11-13; ADR 0026 decision 1):
+  seven `AbilitySlotRuntime`s in bar order, filled from the kit, with `slot(slot)`, `slots` and
+  `hasPendingCast` in place of §3's `runtime` and `forEachReady`. The kit is the Legend spec's own
+  `kit`, else the class's `defaultKit`; the spec comes from `RosterSlot.specId`, and a spec that
+  does not exist or belongs to another class throws at spawn. This is the first piece of
+  sub-class gameplay of §9 (HC-Q17); every shipped spec's `kit` is `null`. The ultimate is the
+  kit's `ultimate`, not a separate `ultimateId`. `Aether` keeps its `base` capacity for
+  `AetherRegenSystem` (05 §18).
 - Shipped kinds: the Legend classes of `LEGEND_KINDS` (`content/legends/legendKinds.ts`),
   `light-mob` (the training dummy only),
   `obstacle`, `projectile` and `capture-point` (PR #64). Other mobs are SCRUM-59; structures get

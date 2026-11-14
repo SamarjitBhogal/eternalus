@@ -4,7 +4,7 @@ description: Proposed tuning values, formulas and balance knobs for the MVP (hor
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-05
+last-reviewed: 2026-11-13
 tags: [reference, suggestions, balancing, content, testing]
 paths: ['packages/core/src/content/**', 'packages/core/src/config/**']
 related:
@@ -173,7 +173,7 @@ Express boss stats as multiples of a reference Legend rather than absolute numbe
 
 ## Aether costs and cooldowns for the 3 + 1 abilities — MVP
 
-The game doc gives each MVP class only two abilities (Warrior: Veil, Blade Runner; Sentinel: Rip & Tear, Slam; Magus: Imbue, Shockwave) and one to two ultimates; the third ability per class below (Hamstring, Shield Wall, Sanctuary) was the proposal from `more-abilities.md` (DISC-19). The owner approved those three and more abilities and alternate ultimates (DEC-11), and each class's set is a pool from which a loadout picks 3 abilities and 1 ultimate (confirmed in chat 2026-10-10); the other approved items are not priced here: TBD (owner). Aether: max 100 / 80 / 140 (Warrior / Sentinel / Magus) at level 1, +10 per level; regeneration 2 per second, +50% inside an allied BuffTower or Stronghold aura. Ultimates cost no aether; they charge a 0–100 meter. Cooldowns start at cast. All `Recommendation:`.
+The game doc gives each MVP class only two abilities (Warrior: Veil, Blade Runner; Sentinel: Rip & Tear, Slam; Magus: Imbue, Shockwave) and one to two ultimates; the third ability per class below (Hamstring, Shield Wall, Sanctuary) was the proposal from `more-abilities.md` (DISC-19). The owner approved those three and more abilities and alternate ultimates (DEC-11), and each class's set is a pool from which a loadout picks 3 abilities and 1 ultimate (confirmed in chat 2026-10-10); the other approved items are not priced here: TBD (owner). Aether: max 100 / 80 / 140 (Warrior / Sentinel / Magus) at level 1, +10 per level; regeneration 2 per second (overridden by DEC-201: 4 per second at the base capacity, growing with the maximum aether), +50% inside an allied BuffTower or Stronghold aura. Ultimates cost no aether; they charge a 0–100 meter. Cooldowns start at cast. All `Recommendation:`.
 
 | Class    | Ability                            | Cooldown | Aether | Level-1 magnitude                                                                                                                                                          |
 | -------- | ---------------------------------- | -------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

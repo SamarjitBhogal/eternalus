@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-09
+last-reviewed: 2026-11-13
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -23,6 +23,7 @@ related:
     'docs/architecture/04-entity-architecture.md',
     'docs/architecture/13-game-interface.md',
     'docs/architecture/17-extension-recipes.md',
+    'docs/decisions/0026-ability-framework.md',
     'docs/reference/game-design/06-abilities-and-progression.md',
     'docs/reference/game-design/07-weapons-and-artifacts.md',
     'docs/reference/game-design/08-loadout.md',
@@ -39,8 +40,8 @@ the `Ability` contract, the `AbilityDefinition` content shape, the `AbilityEffec
 charge), the status-effect and damage pipelines in `combat/`, weapons and artifacts as
 definitions, the `Loadout` model with its validator, and `Progression`. The requirements doc's
 own acceptance test governs every choice: "adding abilities, changing abilities, adding
-restrictions to abilities should all be extremely simple". Everything below is a **sketch**; the
-repo has no ability code yet.
+restrictions to abilities should all be extremely simple". Everything below is a **sketch**; §18
+says what is built and where the code differs (ADR 0026).
 
 ## 1. Composition, not subclassing
 
@@ -59,7 +60,7 @@ effect class has one reason to change, a definition another).
 flowchart LR
   DEF[AbilityDefinition in content/abilities] --> REG[AbilityRegistry.resolve]
   REG --> AB[Ability: cast steps bound to AbilityEffect instances]
-  CMD[cast-ability command] --> APPLY[applyCommand: AbilityRuntime.canCast]
+  CMD[cast-ability command] --> APPLY[applyCommand: CastValidator]
   APPLY --> SYS[AbilitySystem: pay aether, start cooldown, run steps]
   AB --> SYS
   SYS --> EFF[AbilityEffect.apply]
@@ -117,9 +118,11 @@ Content files follow [02-code-structure.md §4](02-code-structure.md#4-naming):
 and converting seconds to ticks) and runs `ContentValidator` once with the rule classes listed in
 `content/defaultContentRules.ts` (04 §5, DEC-22). Each rule's `check(definition, content)` sees the
 whole catalogue, so the rules cover: every `effects[].kind` and `restrictions[].kind` is registered, every
-`statusId`, `definitionId` and `projectileId` resolves, every variety patch path exists, each
-`LegendDefinition.abilityIds` entry has `slot: 'ability'`, its `ultimateId` has `slot: 'ultimate'`
-and its `allowedArtifactIds` have `slot: 'gadget'`. A typo fails at boot, never mid-match.
+`statusId`, `definitionId` and `projectileId` resolves, every variety patch path exists, every
+id in a class's `abilityPool` is an ability of that class, each kit (the class's `defaultKit`
+and a Legend spec's own `kit`) takes its ids from that pool with its first three of
+`slot: 'ability'` and its last of `slot: 'ultimate'` (DEC-198; ADR 0026 decision 1), and each
+class's `allowedArtifactIds` have `slot: 'gadget'`. A typo fails at boot, never mid-match.
 
 ## 3. `AbilityEffect` strategies
 
@@ -149,8 +152,8 @@ export type CastContext = {
 ```
 
 Effects are stateless Flyweights (one instance per kind, like controllers). They call component
-methods (`Health.applyDamage`, `Movement.applyImpulse`), the `StatusEffectApplier` and the
-`DamagePipeline`, never each other and never a system (rule 12). The catalogue, aligned with
+methods (`Health.applyDamage`, `Movement.push`; ADR 0026 decision 4), the `StatusEffectApplier`
+and the `DamagePipeline`, never each other and never a system (rule 12). The catalogue, aligned with
 [more-abilities.md §1](../reference/suggestions/more-abilities.md#1-the-abilityeffect-catalogue-these-proposals-compose):
 
 | `kind`       | Class (`abilities/effects/`) | Does                                                                                                    | Key spec fields                                                     | Status                                       |
@@ -160,7 +163,7 @@ methods (`Health.applyDamage`, `Movement.applyImpulse`), the `StatusEffectApplie
 | `buff`       | `BuffEffect`                 | Applies a positive `StatusEffectDefinition` to self or allies                                           | `statusId`, `durationSeconds?`, `stacks?`, `shape`                  | MVP (Veil, Imbue, Berserk, passives)         |
 | `debuff`     | `DebuffEffect`               | Applies a negative status to enemies                                                                    | `statusId`, `durationSeconds?`, `stacks?`, `shape`, `filter?`       | MVP (Shockwave, Rip & Tear)                  |
 | `dash`       | `DashEffect`                 | Moves the caster along `aim` with swept collision; collects units on the path                           | `distance`, `durationTicks`, `teleport?`, `onPath`, `onEnd`         | MVP (Blade Runner, Fury dash, Meteor Fall)   |
-| `knockback`  | `KnockbackEffect`            | Impulse away from `origin` via `Movement.applyImpulse`, scaled by mass; `knockup` adds `airborne`       | `impulse`, `knockup?`, `shape`                                      | MVP (Slam, Shockwave, Nova)                  |
+| `knockback`  | `KnockbackEffect`            | `Movement.push` from the centre, less for heavier targets, summed per tick; `knockup` adds `knockup`    | `distance`, `knockup?`, `shape` (DEC-208; ADR 0026 decision 4)      | MVP (Slam, Shockwave, Nova)                  |
 | `zone`       | `ZoneEffect`                 | Spawns an `EffectZone` (`Zone` family, kind `effect-zone`) with a lifetime; children `onEnter`/`onTick` | `shape`, `lifetimeSeconds`, `everyTicks`, `follow?`, `grow?`        | MVP (Death Ray, Nova, flame trail)           |
 | `projectile` | `ProjectileEffect`           | Spawns a pooled `Projectile`; children `onHit`; `pierce` or burst                                       | `speed`, `radius`, `range`, `pierce?`, `onHit`                      | MVP (weapons; Hamstring proposed)            |
 | `summon`     | `SummonEffect`               | Spawns entities from a definition, owned by the caster, with an expiry (`RemovalCause` `'despawned'`)   | `definitionId`, `count`, `lifetimeSeconds`, `controllerId?`         | MVP-if-time (Soul Orb; Shield Wall proposed) |
@@ -350,7 +353,8 @@ the Stronghold" (the upgrade and loadout-change rule, reference 08) is
 `{ kind: 'near-structure', kinds: ['buff-tower', 'stronghold'], radius: 8, team: 'allied' }`. A
 new **rule** is a class plus a registry line; a new **use** of a rule is a line in a content file.
 Class ownership is deliberately not a runtime restriction: `classId` on the definition is checked
-once by `LoadoutValidator` (§12), so `AbilityRuntime.canCast` never asks "which class am I?".
+once by `LoadoutValidator` (§12), so `CastValidator` never asks "which class am I?" (ADR 0026
+decision 2).
 
 ## 6. `Abilities`, `AbilityRuntime`, aether and the ultimate meter
 
@@ -374,7 +378,8 @@ export type AbilityRejectReason =
   | 'casting'
   | 'cannot-cast'
   | 'no-target'
-  | 'restricted';
+  | 'restricted'
+  | 'unavailable'; // the ability has no effects yet (ADR 0026 decision 3)
 
 export class AbilityRuntime {
   public readonly slot: AbilitySlot;
@@ -383,11 +388,7 @@ export class AbilityRuntime {
   public cooldownUntilTick: number; // stamped at cast, never decremented per tick
   public charge: number; // 0..1, ULTIMATE_SLOT only; written by ProgressionSystem only
   public pendingCast: Aim | null; // set by applyCommand, consumed by AbilitySystem the same tick
-  public canCast(
-    ability: Ability,
-    caster: Entity,
-    state: GameState,
-  ): { ok: true } | { ok: false; reason: AbilityRejectReason };
+  // No cast rule here: abilities/CastValidator decides (§7; ADR 0026 decision 2).
   public reset(tick: number, ability: Ability): void; // loadout change: full cooldown, charge = 0 (game doc)
 }
 
@@ -404,10 +405,13 @@ export class Abilities {
 ```
 
 Aether is the game doc's mana: a cast needs the cooldown elapsed **and** `aether >= aetherCost`;
-`AbilitySystem` adds `aetherRegenPerTick` each tick (`Recommendation:`
-[balancing.md](../reference/suggestions/balancing.md#aether-costs-and-cooldowns-for-the-3--1-abilities--mvp):
-2/s, +50% inside an allied BuffTower or Stronghold aura). The ultimate uses `charge` instead: it
-fills from kills, assists and objective damage, never passively, and loses a small `N%` on death
+`AetherRegenSystem` refills it every tick (DEC-201; ADR 0026 decisions 5 and 6). The rate is set
+for the class's base capacity and grows in the same ratio as the maximum aether, so a full refill
+takes the same time at every level. An allied BuffTower or Stronghold aura raises it; the
+Stronghold's bonus shrinks with the share of its team's BuffTowers that have fallen. The rate,
+the bonus and the aura radius live in `content/abilities/aetherRegen.ts`. The ultimate uses
+`charge` instead: it fills from kills, assists and objective damage, never passively, and loses
+a small `N%` on death
 (`TUNE`, game doc). The rules are data in `content/progression/ultimateCharge.ts`, evaluated by
 `ProgressionSystem`, the only writer of `charge`:
 
@@ -435,17 +439,21 @@ ability.
 1. `InputMapper` (human) or a controller (bot) enqueues `cast-ability { actorId, slot, aim }`
    ([03 §3](03-game-model.md#3-commands)); gadgets are the same command with `slot: 'gadget-1' |
 'gadget-2'`, so artifacts need no second path.
-2. `CommandApplySystem` → `applyCommand`: the actor is alive and owns the slot;
-   `runtime.canCast()` checks cooldown, aether or charge, `casting`, the `cannot-cast` flag on
-   `StatusEffects`, targeting range and every restriction in order. Failure emits
-   `command-rejected { command, reason }` (the HUD greys the slot with the reason); success sets
-   `pendingCast`.
+2. `CommandApplySystem` → `applyCommand`: the actor is alive and owns the slot; the
+   `CastValidator` that `Simulation` injects into the handler (ADR 0026 decision 2) checks that
+   the ability is built, then cooldown, aether or charge, `casting`, the `cannot-cast` flag on
+   `StatusEffects` and the countdown hold (DEC-88), targeting range and every restriction in
+   order. Failure emits `command-rejected { command, reason }` (the HUD greys the slot with the
+   reason); success sets `pendingCast`.
 3. `AbilitySystem` (after `AiSystem`, before `MovementSystem`) walks Legends in id order: for each
-   `pendingCast` it spends aether or zeroes `charge`, stamps `cooldownUntilTick = tick +
+   `pendingCast` it checks the cast again with the same `CastValidator` (a cast that now fails
+   emits `command-rejected` and spends nothing; ADR 0026 decision 2), spends aether or zeroes
+   `charge`, stamps `cooldownUntilTick = tick +
 cooldownTicks` (cooldowns start at cast), builds the `CastInstance` and emits `ability-cast {
 casterId, abilityId, slot }`; then it advances every live `CastInstance` (wind-up, due steps,
    channel interruption when an `interruptedBy` status is present) and ticks every `EffectZone`
-   (its `onTick` children) through the same effects.
+   (its `onTick` children) through the same effects. `AetherRegenSystem` runs right after it, so
+   a cast pays before the tick's refill (ADR 0026 decision 6).
 4. Effects mutate components and the pipeline; deaths resolve in `DeathSystem`; nothing here calls
    another system.
 
@@ -526,8 +534,7 @@ MS-16, `balancing.md`), applied by `VeterancySystem`.
 strategies (`combat/defaultStatusTickEffects.ts`, `DamageStatusTick`) until the `AbilityRegistry`
 lands; their damage goes through the match's one `DamagePipeline` with `kind: 'status'`, crediting
 the applier. Readers: `MovementSystem` (`moveSpeed`, `cannot-move`), `CombatSystem`
-(`cannot-attack`; `attackSpeed`, fixed when a hit lands), `StatusModifierStep` (`damageDealt`, `damageTaken`); `cannot-cast` waits for
-`AbilitySystem`. Whether the applier's `remove` / `expire` (and so `status-expired`) are covered by
+(`cannot-attack`; `attackSpeed`, fixed when a hit lands), `StatusModifierStep` (`damageDealt`, `damageTaken`); `CastValidator` (`cannot-cast` and the `aetherCost` stat, §18). Whether the applier's `remove` / `expire` (and so `status-expired`) are covered by
 DEC-41 is still open. `blind` has no hard miss (DEC-42): its aim wobble and the client vignette are
 follow-ups. `StatusStacksWithinMaxInvariant` runs every tick. Not built yet: `polarity`,
 `controlClass` and `control-immune` (so a producer that reapplies `stun` before `onExpire` exists
@@ -870,7 +877,8 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   (`loadout/__fixtures__/badLoadouts.ts`) must report every violation.
 - **Scenario per ability and variety** (`abilities/scenarios/<abilityId>.test.ts`): drive a real
   `Simulation`, enqueue `cast-ability`, `step()` N ticks, assert the documented effect (Blade
-  Runner Physical: the caster moved `distance`, units on the path took damage and an impulse, the
+  Runner Physical: the caster moved `distance`, units on the path took damage and a knock-back
+  (ADR 0026 decision 4), the
   unit at the end is stunned; Magical: a flame `EffectZone` exists for 3 s and applies `burn`),
   the cooldown and aether accounting, and that `command-rejected` carries the right reason when
   cast early or broke.
@@ -923,10 +931,10 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   dead Legends in the store until respawn (FR-051), which O4's posthumous XP needs. Numbers are
   `TUNE`; the curve and the Legend kill and structure XP follow DEC-190 (not final; the
   soak metric can change them) and live in `content/progression/`.
-- **HUD (`feat/hud-and-character-select`, 2026-10-24).** §15's `PlayerSnapshot` does not exist
-  in core yet. The client's `MatchBridge` joins the player's `EntitySnapshot` groups into
-  `PlayerHudSnapshot` (`bridge/hud.types.ts`), as §15 sets (DEC-232); until `SnapshotSystem` fills
-  `Snapshot.player` (Phase 4, sprints 4.5 and 4.7) the slot list is empty. Every value is nullable
+- **HUD (`feat/hud-and-character-select`, 2026-10-24).** The client's `MatchBridge` joins the
+  player's `EntitySnapshot` groups and the slots of core's `Snapshot.player` (since
+  `feat/ability-framework`, the bullet below) into `PlayerHudSnapshot` (`bridge/hud.types.ts`), as
+  §15 sets (DEC-232); the `default-action` slot is not drawn. Every value is nullable
   except the two ids and is `null` while core has no group for it (DEC-17); there is no
   `varietyId` or `statusIds` until a reader needs them, and two presentational slots,
   `weaponProgress` and `ultimatePips`, stay `null` until OQ-63 and OQ-64 give them a rule; its
@@ -936,18 +944,80 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   the HUD's level and XP are live (INBOX HC-F6). Since `feat/hud-aether-bar` (2026-11-09),
   `EntitySnapshot` also carries `aether` (`current`, `max`) for every entity with `Aether`, and
   the HUD's aether bar is live (DEC-230).
-  Aether regeneration is not built: no ability spends aether yet, and the rate and whether
-  structures refill it stay open (OQ-56, DEC-230 (2)). The record lands in
+  Casts spend aether and `AetherRegenSystem` refills it (the bullet below; DEC-201 answers OQ-56
+  and replaces DEC-230 (2)). The record lands in
   `hudSlice`, not `matchSlice`; each slot is drawn by `AbilitySlot` through `selectHudSlotView`.
   The kit's display names and icons come from the display catalogue the client builds at boot
   (core's `loadDisplayContent()` plus its own presentation data, `game/content/hudPresentation.ts`,
   published as `content-catalogue`), joined with the player's selection by `selectHudKit`; there
-  is no `hud-kit` event. The slot display names are `null` and the icons are client-side asset ids
-  until ability content exists (INBOX HC-Q3); a live match shows only the art that fits the picked
+  is no `hud-kit` event. The slot display names come from the picked Legend's kit (DEC-199); the
+  icons are still client-side asset ids (INBOX HC-Q3), with no icon of each kit ability yet
+  (`INBOX.md` HC-S12); a live match shows only the art that fits the picked
   Legend (its class's emblem and gadget, its start weapon) and leaves every other frame empty
   (DEC-101, DEC-114). The `xp` and `xpToNext` comments of the `progression` group in
   [03 §5](03-game-model.md#5-snapshot) (in §15's `PlayerSnapshot` until DEC-232) record the
   owner's reading of the XP ring (2026-10-18).
+- **Ability framework (`feat/ability-framework`, 2026-11-13; DEC-196 to DEC-209, ADR 0026).**
+  The framework and one ability for each class are built (DEC-196); the per-class PRs build the
+  rest. Where the code differs from the sketches above:
+  - **Content.** `content/abilities/` holds the types (`AuthoredAbility` in seconds,
+    `AbilityDefinition` in ticks, `AbilityKit`, `AbilitySlot`, `AbilityRejectReason`), one file
+    per ability, `abilityCatalogue.ts` and `loadAbilities`, which checks each step's fields and
+    status ids at load (the job of §3's `validate`). A definition also has a `description` for
+    the kit rows. It has no `castTicks`, `channelTicks`, `interruptedBy`, `varieties` or `icon`
+    yet; `targeting` is `self` or `directional` (`null` while the ability has no effects); the
+    slot kinds are `ability` and `ultimate`; the one restriction kind is `min-level`. Every kit
+    ability is content (DEC-199, DEC-209 (2)). Blade Runner (its Physical variety only), Slam and
+    Shockwave have effects; the other nine have `effects: []` and are `unavailable` (ADR 0026
+    decision 3). Each Legend class has `abilityPool` and `defaultKit`, each spec a `kit`, `null`
+    in every shipped spec (ADR 0026 decision 1). The numbers are `TUNE` from `balancing.md`
+    (DEC-197) and DEC-209 (1).
+  - **Effects and shapes.** `damage`, `debuff`, `knockback` and `dash` (`abilities/effects/`);
+    the other kinds of §3 are not built. A knock-back's spec field is `distance` in metres; the
+    §4 sketches' `impulse` values predate ADR 0026 decision 4. A debuff's `durationSeconds`
+    overrides the status's own duration. `structureMultiplier` applies to every target that is
+    not a unit (structures, obstacles, map objects; DEC-209 (1)). The shapes are `circle` (on the
+    caster, or on a dash's end for its `onEnd` steps) and `path` (with a `width`), one
+    `AreaShape` class each in `abilities/shapes/` (ADR 0026 decision 7); `self`, `cone` and
+    `line` are not built (the cone comes with Rip & Tear, DEC-206). `TargetFilter` has `team`
+    and `includeSelf` only. `CastContext` has `placement`, `direction`, `scaled(field, value)`
+    (the level growth that §13 calls `potency`), `targets`, `centreFor` and `run` (a dash's
+    nested steps) in place of `origin`, `facing`, `potency`, `rng` and `factory`. The pipeline
+    still takes no `DamageType` (§9).
+  - **Registry and cast.** `AbilityRegistry.resolve(abilityId)` takes no variety or upgrade yet;
+    `createDefaultAbilityRegistry` also registers the shapes and resolves every ability at boot. A
+    new effect kind also needs its spec type in the `AbilityEffectSpec` union and a case in
+    `loadAbilities`' field check, beyond §14's one class and one line. `CastAbilityHandler` checks
+    with `CastValidator`, and `AbilitySystem` checks again (ADR 0026 decision 2). A cast is refused
+    with `cannot-cast` while the match holds units idle (the countdown, DEC-88). `casting` means
+    another cast of the same Legend waits this tick; a directional cast aimed at the caster is
+    `no-target`. `CastInstance` runs every step at cast: there are no due ticks, wind-up, channels
+    or `EffectZone`s yet. A dash's path and its hits are resolved at cast, and its `onEnd` steps run
+    then at the path's end while the caster is still on the way (ADR 0026 decision 4).
+  - **Slots, aether and the ultimate.** `components/Abilities` holds seven
+    `AbilitySlotRuntime`s in bar order (`slot(slot)`, `slots`, `hasPendingCast`); a runtime has
+    no `varietyId`, no `reset` and no cast rule. `Aether` stays its own component and keeps its
+    `base` (the class's starting capacity). `AetherRegenSystem` refills it (DEC-201; ADR 0026
+    decisions 5 and 6). Ultimates are content only: the meter is built with Fury in the Vanguard
+    PR, so the ultimate slot reports `not-charged` and `charge: null`.
+  - **Motion and statuses.** Dashes and knock-backs are forced motion (`Movement.push`; ADR 0026
+    decision 4); a knock-back's base mass and travel time are in
+    `content/abilities/knockback.ts`. Every knock-back target gets `staggered` (cannot cast);
+    `knockup` (shown as "Airborne") stops moving, attacking and casting. An airborne target can
+    still be pushed: DEC-208's stacking is kept over `more-abilities.md` §7's "cannot be pushed
+    further" (`INBOX.md` HC-Q53). The 0.2 s landing stagger and `control-immune` wait for status
+    `onExpire` (§8). A status applied again keeps the longer of its remaining time and the new
+    duration. Concussion's `aetherCost` modifier is read by `CastValidator.price`.
+  - **Snapshot, bots and checks.** `state/PlayerSnapshotter` fills `Snapshot.player` (§15) with
+    all seven slots through the `SlotReadiness` port; a slot has `aetherCost` (after status
+    modifiers) and no `varietyId`, and a dash slot is judged with a 1 m aim beside the Legend.
+    Bots cast any ready slot (`ai/pickReadySlot.ts`, DEC-205). `StateHasher` adds a slot only
+    once it leaves its first state. Built: the scenario tests of the three abilities, every
+    reject reason, the litmus `FakeBolt`, the determinism test and the golden replay
+    `abilities/__fixtures__/abilityCastsSeed11.replay.ts`, and the invariants
+    `cooldown-and-aether-bounds` and `no-cast-while-not-ready`.
+  - **Client.** Kit rows from content on the Legend panels, the HUD slots, the two cast modes
+    and the range overlay: [13](13-game-interface.md) §10.
 
 ## Related
 

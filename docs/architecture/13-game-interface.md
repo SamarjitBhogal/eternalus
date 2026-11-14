@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-09
+last-reviewed: 2026-11-13
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -752,6 +752,37 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   `INBOX.md` HC-T1 (T-196, T-202, T-209 to T-212). **Appended 2026-11-02:** step 12 replaced the
   banner with the crash popup and added the `ErrorBoundary` (the "Session" bullet above, §3), and
   the owner approved those rows (HC-T1, DEC-142), so §3, §6.1, §6.2, §9 and this note say it.
+- **Abilities (`feat/ability-framework`, 2026-11-13; DEC-199, DEC-200, DEC-209; ADR 0026).**
+  - **HUD slots are live.** `MatchBridge` fills `PlayerHudSnapshot.slots` from core's
+    `Snapshot.player` ([05](05-abilities-weapons-and-loadouts.md) §15) and leaves out
+    `default-action`. A slot also carries `aetherCost` (after status modifiers), which the bar
+    does not show yet (`INBOX.md` HC-S12). `HudBlockReason` is core's `AbilityRejectReason`, no
+    longer a copy, so it gains `unavailable` (an ability in the kit that is not built yet;
+    HC-B5). The ultimate shows `not-charged` until its meter is built (the Vanguard PR).
+  - **Two cast modes.** `settings.gameplay.castMode` (`'quick' | 'aim-then-click'`, quick by
+    default) is on a new Gameplay tab of `SettingsScreen` (`selectGameplay`); a save without it
+    loads with the default. `game/AbilityCasts.ts` turns the slot keys into `cast-ability`:
+    quick casts at the pointer at once; aim-then-click selects the slot, and the next main-button
+    press casts at the click and is no basic attack (DEC-200, DEC-209 (3)). `MatchHost` passes
+    the setting to `Match.setCastMode`.
+  - **Bridge messages beyond §5's sketch.** `aiming-slot { slot }` goes out the moment the
+    selection changes, not with the throttled `hud-state`, because the Esc key reads it at
+    keydown; it lands in `hudSlice.aimingSlot` (`selectAimingSlot`; the bar highlights that
+    slot). While a slot is selected and no overlay is open, `usePauseMenuKey` sends the intent
+    `cancel-aim` instead of opening the pause menu (DEC-200); `MatchHost` calls
+    `Match.cancelAim`, and a pause also drops the selection.
+  - **Range overlay.** `game/views/AimOverlayView.ts` draws the selected ability's area from
+    each effect step's area in the display data (`AbilityDisplay.steps`), one painter per shape
+    kind (`aimShapePainters.ts`). A caster-centred ability shows its circle on the caster; a
+    dash shows its path toward the pointer, cut where the dash would stop
+    (`Simulation.dashReach`), and its end circle. `DisplayCatalogue`, `MatchRequest` and
+    `MatchDeps` gained `abilities` for it.
+  - **Kit rows.** The Legend step and View Details show the Legend's ultimate, then abilities 1
+    to 3, with name, description, cost and cooldown from content (`game/content/kitRows.ts`,
+    `ui/components/InfoPanelKit.tsx`; DEC-199). This closes the "Character select, known gaps"
+    bullet's missing descriptions for a Legend's abilities. Spec `detailNames` ability rows are
+    no longer read by the client (`INBOX.md` HC-Q52). No check in a browser yet: the panels'
+    ability bands changed size, so a long description may wrap tight.
 
 ## Related
 

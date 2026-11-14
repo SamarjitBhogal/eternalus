@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-04
+last-reviewed: 2026-11-13
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -380,9 +380,13 @@ work named:
   nearest the middle. Until the match state names the human (12 §4), the human is the enemy
   Legend no controller drives, sensed through `Perception` within the `senseRadius` of
   `content/ai/rover.ts`. No `LaneAdvantage` push yet. Its numbers are `TUNE` (`INBOX.md`).
-- Bots cast `ability-1` at their enemy when `abilityUseChance` comes up on the brain's own RNG
-  stream, at most every `castIntervalTicks`; the cast handler refuses casts until abilities land
-  (Phase 4), with no controller change needed then.
+- Bots cast at their enemy when `abilityUseChance` comes up on the brain's own RNG stream, at
+  most every `castIntervalTicks` (DEC-205, `feat/ability-framework`): `ai/pickReadySlot.ts` picks
+  one of the Legend's filled slots that the `SlotReadiness` port accepts now
+  (`state/SlotReadiness.types.ts`, implemented by `abilities/CastReadiness` and injected by
+  `Simulation`; ADR 0026 decision 2), with the turn's seeded RNG, and casts nothing when no slot
+  is ready. §4.2's utility pick of a defensive ability is not built: situational casting is a
+  follow-up PR (DEC-205; `INBOX.md` HC-S12).
 - A\* for Legends (M8, §6) is `map/AStarPathfinder` behind the `PathQuery` port (`state.paths`).
   One `WorldMap` serves it and the lane flow fields. No path cache yet: a bot searches again on
   each blocked decision.

@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-04
+last-reviewed: 2026-11-13
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -22,6 +22,7 @@ related:
     'docs/architecture/06-map-and-minimap.md',
     'docs/architecture/07-structures-obstacles-and-destructibles.md',
     'docs/architecture/11-game-ai.md',
+    'docs/decisions/0026-ability-framework.md',
     'docs/research/game-architecture-and-performance-research.md',
   ]
 ---
@@ -89,8 +90,13 @@ entity as `cannot-move`: the speed scale is 0 and no entity walks. Integration p
 Arrival is a steering concern: `PathingSystem` scales the desired speed down inside a slowing
 radius so units stop on their target without overshooting (Reynolds' arrival).
 
-**Momentum and knockback.** Every push is an impulse `J` (a `Vec2`, in mass × units/s) added to
-`pendingImpulse`; the velocity change is `J / mass`. That single rule gives the game doc's
+**Momentum and knockback.** A push that is not a dash or a knock-back is an impulse `J` (a `Vec2`,
+in mass × units/s) added to `pendingImpulse`; the velocity change is `J / mass`. Dashes and
+knock-backs are forced motion instead: `Movement.push` spreads a displacement over a number of
+ticks, and `MovementSystem` adds each tick's share to the walking step, so collision sweeps both
+alike. A knock-back's content distance is for a target of base mass, a heavier target moves
+less, and knock-backs that reach one target in the same tick add up as vectors (DEC-208; ADR
+0026 decision 4). That gives the game doc's
 class feel from content alone: the **Sentinel** has low `acceleration`, one of the highest
 `maxSpeed`s and a high `mass`, so it starts slowly, keeps its momentum, and barely moves when hit;
 the game doc's "up to 1 minute of running straight to get to full speed" is simply
@@ -300,6 +306,15 @@ back out.
 gaps in the same wall geometry used for drawing. Bridge decks permit passage across terrain
 while retaining collision at their sides. Destroyed object IDs disable their static footprints.
 Unit-to-unit momentum, SAT and the remaining physics described above are still planned.
+
+**2026-11-13 (`feat/ability-framework`, ADR 0026 decision 4).** `Movement` has `push` and
+`takeForcedStep` for dashes and knock-backs; it has no `pendingImpulse` or `desiredVelocity` (a
+heading set by `steer`). Forced motion moves an entity that `cannot-move` (Slam knocks back and up
+at once) and waits while the match holds units idle. The knock-back's base mass and travel time are
+in `content/abilities/knockback.ts` (`TUNE`). A dash's hit path does not come from §7's swept test:
+it is cut at cast where `WorldMap.isLineClear` first finds blocked ground (`abilities/dashReach.ts`),
+so it can stop up to one nav cell (`GameConfig.map.navCellSize`) short of a wall. The dash's motion
+goes through `MovementSystem` and `CollisionSystem` like walking.
 
 ## Related
 
