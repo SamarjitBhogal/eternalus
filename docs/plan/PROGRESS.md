@@ -6400,3 +6400,23 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Next step: critic and ponytail on the branch; then a PR into `phase/3-sprint-3-work`. When it
   merges and #98 takes phase/3, #98 drops its 24000 and renames its callers of
   `pathMaxExpansions`/`maxExpansions`.
+
+### 2026-11-14 — Phase 3 / A\* search area: pre-PR gate — refactor/astar-search-area — sholtzman + Claude Code
+
+- What was done: the pre-PR gate (ADR 0010). Critic (architecture-reviewer) on
+  `76d1007d..0581a90e`: approve, 0 blockers. Fixed in `c8e7ed3d`: the "Safe:" comment on the
+  validator's cast, the `MapConfig` TSDoc (the area fixes the reach, not the cost), the DEC-243
+  batch clause. Its better-than-design item (`pathSnapCells` is counted in cells too) is an INBOX
+  item for the tidy PR (DEC-218), not built. Its nit N3 (a string case for the validator) is
+  rejected: the typed case table refuses a string. Ponytail: nothing to cut
+  (`eternalus-agent-work/tower-ruins-and-routes/astar-search-area/ponytail-review-r1.md`). The
+  subject of `0581a90e` ("docs: ...") has no scope; it is not the tip, and a rebase is not
+  allowed here, so it stays.
+- Checks run: full `npm run check` on `c8e7ed3d`, before this entry (log
+  `eternalus-agent-work/tower-ruins-and-routes/astar-search-area/check-2.log`): EXIT=0, "All
+  matched files use Prettier code style!", core "Tests 1340 passed (1340)", protocol "Tests 18
+  passed (18)", client "Tests 1883 passed (1883)", server "Tests 79 passed (79)",
+  "Documentation check passed.".
+- Next step: push; PR against `phase/3-sprint-3-work` (head `76d1007d`). When it merges and #98
+  takes phase/3, #98 drops its 24000 and renames its callers of
+  `pathMaxExpansions`/`maxExpansions`.
