@@ -19,6 +19,8 @@ import type {
   SessionControllerDeps,
   SessionState,
 } from './SessionController.types';
+import { DuelSession } from './duel/DuelSession';
+import type { DuelResult } from './duel/DuelSession.types';
 import { rosterSlots } from './session/rosterSlots';
 import { buildMatchSetup } from './session/buildMatchSetup';
 import { fillRosters } from './session/fillRosters';
@@ -30,7 +32,10 @@ import { SessionCrashes } from './session/SessionCrashes';
  * → pre-launch → match-loading → match → results. Each phase is a `SessionState`; UI intents go
  * to the current state; every phase change is checked against `SESSION_TRANSITIONS` and published
  * as `session-phase`. Owns the match's lifetime (DEC-50): `match-loading` prepares the world,
- * `attachViewport` in `match` creates the `Match`, leaving `match` destroys it. Loads and releases
+ * `attachViewport` in `match` creates the `Match`, leaving `match` destroys it. An online Duel
+ * (`DuelSession`, ADR 0016) joins from `menu` and skips selection: when the server has paired the
+ * player, `menu` goes straight to `match-loading`, and the server's `match-ended` leads to
+ * `results`. Loads and releases
  * the asset groups each phase needs through the resources facade. Keeps the setup as built (what a
  * rematch republishes) apart from the rosters LOCK IN fills (what the match is built from).
  */
@@ -44,9 +49,25 @@ export class SessionController {
   private stopListening = (): void => undefined;
   private readonly context: SessionContext;
   private readonly crashes: SessionCrashes;
+  private readonly duel: DuelSession;
 
   /** Loads the content catalogue; nothing runs until `start()`. */
   public constructor(private readonly deps: SessionControllerDeps) {
+    this.duel = new DuelSession({
+      createTransport: deps.createDuelTransport,
+      logger: deps.logger,
+      handlers: {
+        started: () => {
+          this.transition('match-loading', null);
+        },
+        ended: (result) => {
+          this.endDuel(result);
+        },
+        lost: () => {
+          this.loseDuel();
+        },
+      },
+    });
     this.crashes = new SessionCrashes(deps, {
       phase: () => this.current?.phase ?? null,
       seed: () => this.setup?.seed ?? null,
@@ -78,10 +99,27 @@ export class SessionController {
         this.selection = selection;
         deps.bus.emit('class-selection', selection);
       },
+      joinDuelQueue: () => {
+        this.duel.join();
+      },
+      leaveDuelQueue: () => {
+        this.duel.leave();
+      },
       lockIn: () => {
         this.lockIn();
       },
       prepareWorld: () => {
+        if (this.duel.status === 'started') {
+          // The HUD reads the seat from the setup, as in a solo match; a Duel has no rosters.
+          this.publishSetup({
+            seed: this.duel.mapSeed,
+            playerTeam: this.duel.team,
+            allies: [],
+            enemies: [],
+          });
+          this.world = deps.prepareWorld(this.duel.mapSeed);
+          return;
+        }
         if (this.setup === null) throw new Error('No match setup to prepare a world for');
         this.world = deps.prepareWorld(this.setup.seed);
       },
@@ -206,6 +244,7 @@ export class SessionController {
   }
 
   private clearMatchSetup(): void {
+    this.duel.close();
     this.setup = null;
     this.selection = null;
     this.rosters = null;
@@ -230,6 +269,18 @@ export class SessionController {
 
   private createMatch(viewport: MatchViewport, onCrash: (crash: MatchCrash) => void): RunningMatch {
     const { setup, selection, rosters, world } = this;
+    if (this.duel.status === 'started') {
+      if (world === null) throw new Error('A Duel needs a prepared world');
+      return this.deps.createDuelMatch(
+        {
+          world,
+          captureKinds: this.context.catalogue.hud.objectiveKinds.map(({ kind }) => kind),
+          link: this.duel,
+          onCrash,
+        },
+        viewport,
+      );
+    }
     if (setup === null || selection === null || rosters === null || world === null) {
       throw new Error('A match needs a setup, a locked-in selection and a prepared world');
     }
@@ -244,6 +295,34 @@ export class SessionController {
       },
       viewport,
     );
+  }
+
+  /**
+   * The server ended the Duel: from the loading or the match phase it publishes the result and
+   * shows the results screen; from the queue (the opponent left before the first snapshot) it
+   * shows the home screen. Not a lost connection, so nothing is logged as an error.
+   */
+  private endDuel({ winner, reason, team }: DuelResult): void {
+    if (this.current?.phase === 'menu') {
+      this.deps.bus.emit('menu-route', { route: 'home' });
+      return;
+    }
+    this.deps.bus.emit('match-result', { winner, reason, ownTeam: team });
+    this.transition('results', null);
+  }
+
+  /**
+   * The Duel's connection ended before the Duel did: from the loading or the match phase the
+   * session returns to the menu with a banner; from the queue, to the home screen (the menu phase
+   * cannot re-enter itself).
+   */
+  private loseDuel(): void {
+    this.logError('The Duel connection was lost.', {});
+    if (this.current?.phase === 'menu') {
+      this.deps.bus.emit('menu-route', { route: 'home' });
+    } else {
+      this.transition('menu', 'duel-unavailable');
+    }
   }
 
   /** `SessionContext.loadAssets`: the groups one after another, each published when it is ready. */

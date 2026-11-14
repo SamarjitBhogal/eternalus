@@ -106,7 +106,7 @@ export type {
 } from './state/Snapshot.types';
 export { StateHasher } from './state/StateHasher';
 // DEC-178: the client uses core's "other team" rule instead of a copy.
-export { opponentOf } from './teams/playableTeams';
+export { isPlayableTeam, opponentOf, PLAYABLE_TEAMS } from './teams/playableTeams';
 export type { PlayableTeam, Team } from './teams/teams.types';
 export { isPointInPolygon } from './utils/geometry';
 export type { Polygon, Rect, Vec2 } from './utils/geometry.types';
@@ -130,6 +130,10 @@ export type FeatureOwner = Team;
 export type { MapBuilding, MapPresentation } from './content/maps/maps.types';
 
 export { MapObjectBuilder } from './map/MapObjectBuilder';
+export { AStarPathfinder } from './map/AStarPathfinder';
+export { MatchPathfinderFactory } from './map/MatchPathfinderFactory';
+export type { MatchNavigation } from './map/MatchPathfinderFactory.types';
 export type { MapObject, MapObjectKind, MapObjectSnapshot } from './content/maps/mapObjects.types';
 export { findBuildingAt } from './map/findBuildingAt';
 export { findMapObjectAt } from './map/findMapObjectAt';
+export { findUnitAt } from './state/findUnitAt';

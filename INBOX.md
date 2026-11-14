@@ -302,6 +302,31 @@ Reply inline (`Decision: …`).
       `docs/decisions/0016-multiplayer-server-authoritative-duel.md` (draft): accept, change or
       reject it. The consolidated questions about the Duel mode and the server are in
       `docs/plan/multiplayer-and-scalability-plan.md` §9; answer them there or inline here.
+  - 2026-11-10 (claudiodh, `feat/duel-server`): because of the 2026-11-13 deadline, claudiodh chose
+    to build the Duel along this draft before acceptance, and approved `ws` 8.22.2 and `@types/ws`
+    8.18.2 (server only). The PR is the ADR's spike: accept, change or reject the ADR on it. Built:
+    `packages/protocol`, `apps/server` (one Node process, `ws` gateway, Duel queue, match host),
+    the client's `game/engine/net/` port and `game/duel/`, a "Duel online" menu entry, and core
+    seating one human per team (`Simulation.humanLegendIdOf`). Left for you: (1) the doc edits the
+    ADR lists as the owner's (`AGENTS.md` "no server", README, requirements, architecture 02/03,
+    the ADR's status). (2) Interim choices to confirm or change, each marked `ponytail:` in code:
+    sides by arrival order (plan §9 question 45); both players are Warriors; no first-to-10-kills
+    rule, the match ends on core's normal verdict; no per-seat visibility filter yet (one shared
+    snapshot); a snapshot every tick, no interpolation or prediction. (3) Core's `intent` command
+    is still a stub (sprint 1.5 PlayerController), so the server translates intents into
+    `move`/`stop`/`attack-target` (`SeatCommands`, ported from the client's `PlayerCommands`);
+    once `intent` is applied in core, `SeatCommands` goes. (4) Map desync risk: the client
+    regenerates the map from `match-found.seed` with its own default `GameConfig`; a config drift
+    between the two builds, or an engine-level Math difference (03 §8), would draw a world that is
+    not the server's. Send the map (or a config hash) on the wire, or accept the risk while both
+    run the same build? (5) Before the Duel is reachable beyond the team's tailnet, the per-seat
+    snapshot with the visibility filter (ADR point 1) is needed: today both seats see everything.
+    (6) Guardrail change for your sign-off: `eslint.config.js` gains import-boundary blocks
+    (protocol imports only core's types; the server never imports the client and only
+    `transport/WsListener.ts` imports `ws`; the client never imports the server or `ws`; core
+    never imports protocol or the server). They only add rules. (7) Architecture 02's folder and
+    may-import tables do not list `apps/server` and `packages/protocol` yet (your edit, with the
+    ADR); their package `AGENTS.md` files hold the rules meanwhile.
 - [ ] **DEC-11 — still open after your answer** (the approvals are recorded as DEC-11 in
       `docs/reference/game-design/13-owner-decisions-log.md`, 2026-10-10; your chat clarifications
       of 2026-10-10 answered the former (1) and (2), see Done). (3) Your Roar row says Legends only
@@ -2305,6 +2330,19 @@ Reply inline (`Decision: …`).
       `control-immune` (stun-lock risk once a producer reapplies stun), `onExpire` (crushed →
       slowed), bleed ignoring shields, concussion's aether cost, blind's vision cut, a max-health
       stat for the FR-029 aura. Confirm or correct.
+      (6) 2026-10-29 (`feat/status-control-immune`): `polarity`, `controlClass`, `onExpire` and
+      `control-immune` are built from 05 §8 and more-abilities §7. Kinds mapped to `controlClass`:
+      hard control → `hard` (stun, crushed), control-lite → `soft` (concussion, blind), the rest
+      `none`. `control-immune` refuses every `hard` status, so it also blocks `crushed`, which §7's
+      kind calls hard control but its immunity list (stun, knockup, pulled, taunted) leaves out;
+      and no `control-immune` follows `crushed`. Confirm or correct.
+      Answered 2026-10-30 (DEC-99 (a)): `crushed` is hard control; `control-immune` blocks it. It
+      also follows it (derived from more-abilities §7, not asked).
+      (7) Still open after (6): a `stun` refreshed before it runs out (`refresh` restarts its
+      timer) never expires, so `control-immune` never follows; a producer that reapplies every
+      second keeps a 2 s stun up forever. What guarantees the recovery window: a hard status
+      cannot be refreshed while active, a cap on total stun time, or something else?
+      Answered 2026-10-30 (DEC-99 (b)): refresh stays; a re-applied stun restarts its timer.
   - Decision: DEC-40 to DEC-42 (`docs/reference/game-design/13-owner-decisions-log.md`,
     2026-10-16, PR #36). DEC-42's open questions are their own item (PR #36).
 - [ ] **MS-28 — plan every AI-driven enemy in the minion plan (changes DEC-47's split).**
@@ -2340,6 +2378,22 @@ Reply inline (`Decision: …`).
       `onHit`, heavy and parry wait for the ability framework (4.2). SCRUM-287's "validation
       rejects a class-locked weapon in the wrong loadout" waits for `WeaponAllowedRule`
       (SCRUM-290).
+- [x] **ObjectPool — pooled `GameEvents` payloads (SCRUM-427, branch `feat/object-pool`).** The
+      `ObjectPool` base is built in `utils/` (phase 1 plan, sprint 1.2: "pool resets fields on
+      acquire and nulls references on release"). The item's "done when" (high-frequency
+      `GameEvents` payloads come from the pool) is **not wired**, because it clashes with how
+      events work today: `GameEvents.emit` keeps every payload in the recent-events ring buffer
+      (diagnostic reports), and handlers (`GameState`, `ProgressionSystem`, the client via
+      `Simulation.on`) may keep a payload after `emit` returns. A recycled payload would silently
+      change those records. Options: (1) pool only projectiles first (04 §11), and keep event
+      payloads unpooled until profiling shows GC pauses (NFR-023 soak); (2) pool payloads and copy
+      them into the ring buffer, with a rule that handlers never keep a payload. Which one?
+      Option (1) also means updating 02-coding-principles (Object Pool row) and the phase 1 plan
+      item, which list event payloads as pooled; 04 §11 already names only projectiles.
+      Option (2) also needs a snapshot rule: payloads hold nested references (`DamageSource`,
+      `memberIds`, `bars`), so the ring buffer would need a deep or immutable copy, not a shallow one.
+  - Answered 2026-10-30 (DEC-94): option (1), pool projectiles only; payloads stay unpooled until
+    profiling shows GC pauses.
 - [ ] **PR #30 — schedule occupancy-driven cutaways** (owner: Gurshaan). A building's roof opens
       today only when it is clicked; no plan item has the roof open while a unit is inside it.
       The PR #30 notes said "Phase 2 sprints 2.1 and 2.4", but those sprints are the Structure

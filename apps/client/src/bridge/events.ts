@@ -6,7 +6,7 @@
 import type { HudSlotId, InputAction, InputChord } from './Binding.types';
 import type { AssetId, DisplayCatalogue, RasterBox } from './catalogue.types';
 import type { CrashReportState } from './CrashReport.types';
-import type { LegendClassId, PlayableTeam } from './domain.types';
+import type { LegendClassId, MatchEndReason, PlayableTeam } from './domain.types';
 import type {
   Announcement,
   CapturePointStatus,
@@ -14,6 +14,16 @@ import type {
   StructureStatus,
 } from './hud.types';
 import type { SettingsPatch, SettingsSliceState } from './slices/settingsSlice';
+
+/** How a match ended, for the results screen. */
+export type MatchResultSummary = {
+  /** The winning team; `null` for a draw. */
+  readonly winner: PlayableTeam | null;
+  /** The viewing player's own team. */
+  readonly ownTeam: PlayableTeam;
+  /** Why the server ended the match. */
+  readonly reason: MatchEndReason;
+};
 
 /** Every session phase, in flow order (architecture 13 §2). */
 export const SESSION_PHASES = [
@@ -31,7 +41,14 @@ export const SESSION_PHASES = [
 export type SessionPhase = (typeof SESSION_PHASES)[number];
 
 /** Sub-screens of the menu phase (a store value, not a session phase). */
-export type MenuRoute = 'home' | 'loadouts' | 'profile' | 'settings' | 'about';
+export type MenuRoute =
+  | 'home'
+  | 'loadouts'
+  | 'profile'
+  | 'settings'
+  | 'about'
+  /** The online Duel's waiting screen: searching for an opponent (ADR 0016). */
+  | 'duel-queue';
 
 /** Overlays that can open over the match. */
 export type Overlay = 'pause' | 'settings';
@@ -39,6 +56,10 @@ export type Overlay = 'pause' | 'settings';
 /** Everything the UI can ask the game to do. Components emit these and never write the store. */
 export type UiIntent =
   | { readonly kind: 'start-match' }
+  /** Join the online Duel queue (ADR 0016); the menu shows the waiting screen. */
+  | { readonly kind: 'start-duel' }
+  /** Leave the Duel queue and return to the home screen. */
+  | { readonly kind: 'cancel-duel' }
   | { readonly kind: 'navigate'; readonly route: MenuRoute }
   | { readonly kind: 'select-class'; readonly classId: LegendClassId; readonly specId?: string }
   | { readonly kind: 'confirm-selection' }
@@ -98,7 +119,9 @@ export type SessionReason =
   | 'match-failed'
   | 'match-crashed'
   | 'screen-crashed'
-  | 'load-failed';
+  | 'load-failed'
+  /** The connection to the Duel server ended before the Duel did. */
+  | 'duel-unavailable';
 
 /**
  * When assets load (13 §2): `selection` holds what both class layouts and the Legend step show, the
@@ -186,6 +209,8 @@ export type BridgeEventMap = {
   /** Remaining session time of the select (60 s) or reveal (10 s) countdown. */
   countdown: { readonly kind: 'select' | 'reveal'; readonly remainingMs: number };
   'match-clock': MatchClock;
+  /** How a match ended, for the results screen. */
+  'match-result': MatchResultSummary;
   /** The human Legend for the HUD, every 6 ticks (13 §5); `null` before it spawns. */
   'hud-state': { readonly player: PlayerHudSnapshot | null };
   /**

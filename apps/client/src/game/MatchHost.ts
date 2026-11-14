@@ -91,7 +91,7 @@ export class MatchHost implements RunningMatch {
   }
 
   /** What an error report needs from the match (ADR 0025 §3), as `createBrowserMatch` reads it. */
-  public evidence(): MatchEvidence {
+  public evidence(): MatchEvidence | null {
     return this.deps.evidence();
   }
 

@@ -7,10 +7,13 @@ import type { AuthoredStatusEffect } from './statusEffects.types';
 export const STAGGERED = {
   id: 'staggered',
   displayName: 'Staggered',
+  polarity: 'debuff',
+  controlClass: 'soft',
   durationSeconds: 0.3,
   stacking: 'refresh',
   maxStacks: 1,
   modifiers: [],
   flags: ['cannot-cast'],
   periodic: null,
+  onExpire: [],
 } as const satisfies AuthoredStatusEffect;

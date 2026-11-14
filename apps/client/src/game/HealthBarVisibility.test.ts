@@ -149,6 +149,24 @@ describe('HealthBarVisibility (DEC-195)', () => {
     expect([PLAYER, ALLY, TOWER].map(bars.healthBarOf)).toEqual([null, 'ally', null]);
   });
 
+  it('takes the player from the caller in an online Duel, not the snapshot human (ADR 0016)', () => {
+    // The dark seat: the snapshot's human is the light player, the caller names its own Legend.
+    const OPPONENT = entity('rival', 'legend', 'light');
+    const DARK_PLAYER = entity('mine', 'legend', 'dark');
+    const events = new FakeEvents();
+    const bars = new HealthBarVisibility(events);
+    bars.observe(snapshotOf([OPPONENT, DARK_PLAYER, ENEMY], 'rival'), 'mine');
+    const damage = (targetId: string) => {
+      events.emit('damage-applied', { targetId, amount: 1, absorbed: 0, source: hit('x') });
+    };
+
+    damage('rival');
+    damage('mine');
+    damage('foe');
+
+    expect([OPPONENT, DARK_PLAYER, ENEMY].map(bars.healthBarOf)).toEqual(['enemy', null, 'ally']);
+  });
+
   it("keeps allies on the ally side after the player's Legend dies and leaves the snapshot", () => {
     const { bars, damage } = setUp();
     damage('pal', 'foe');

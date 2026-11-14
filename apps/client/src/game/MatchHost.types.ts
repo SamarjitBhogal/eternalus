@@ -38,8 +38,11 @@ export type MatchHostDeps = {
   readonly mapper: Pick<InputMapper, 'setBindings' | 'isActionKey'>;
   /** Adapters destroyed after the match (renderer, camera): the host is their owner. */
   readonly adapters: readonly { destroy(): void }[];
-  /** The match's evidence for an error report (`createBrowserMatch` reads the simulation). */
-  readonly evidence: () => MatchEvidence;
+  /**
+   * The match's evidence for an error report (`createBrowserMatch` reads the simulation); `null`
+   * for an online Duel.
+   */
+  readonly evidence: () => MatchEvidence | null;
   /** The simulation's tick, without building the evidence. */
   readonly currentTick: () => number;
 };

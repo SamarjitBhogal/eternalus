@@ -1,0 +1,121 @@
+import {
+  type InputIntent,
+  makeLogRecord,
+  PLAYABLE_TEAMS,
+  type PlayableTeam,
+} from '@eternalus/core';
+import type { MatchEndReason, ServerMessage } from '@eternalus/protocol';
+import type { ClientConnection } from '../transport/ClientConnection.types';
+import type { CancelTask } from '../time/TickScheduler.types';
+import { MATCH_LOG_SCOPE, NO_ACK_SEQ } from './DuelMatch.constants';
+import type { DuelMatchOptions } from './DuelMatch.types';
+
+/**
+ * One running Duel (ADR 0016 point 1): steps its simulation on the scheduler, applies each seat's
+ * intents for the next tick, sends every seat the state with its `ackSeq`, and ends with a
+ * verdict or when a player leaves. Never throws on a bad input or a failed step.
+ */
+export class DuelMatch {
+  private readonly ackSeq: Record<PlayableTeam, number> = {
+    light: NO_ACK_SEQ,
+    dark: NO_ACK_SEQ,
+  };
+  private cancelTicks: CancelTask | null = null;
+  private hasEnded = false;
+
+  public constructor(private readonly options: DuelMatchOptions) {}
+
+  /** The match's id, sent in `match-found`. */
+  public get id(): string {
+    return this.options.id;
+  }
+
+  /** The seats' connections. */
+  public get connections(): readonly ClientConnection[] {
+    return PLAYABLE_TEAMS.map((team) => this.options.seats[team]);
+  }
+
+  /** Tells each player their seat, then starts ticking. */
+  public start(): void {
+    const { seats, simulation, scheduler, tickIntervalMs, id } = this.options;
+    for (const team of PLAYABLE_TEAMS) {
+      seats[team].send({
+        type: 'match-found',
+        matchId: id,
+        seed: simulation.seed,
+        team,
+        legendId: simulation.legendOf(team),
+      });
+    }
+    this.cancelTicks = scheduler.every(tickIntervalMs, () => {
+      this.tick();
+    });
+  }
+
+  /**
+   * Applies `intent` from `connection`'s seat on the next tick. A `seq` that does not rise past
+   * the last one is a stale or replayed message and is dropped.
+   */
+  public submit(connection: ClientConnection, seq: number, intent: InputIntent): void {
+    const team = this.seatOf(connection);
+    if (this.hasEnded || team === null || seq <= this.ackSeq[team]) return;
+    this.ackSeq[team] = seq;
+    this.options.simulation.enqueueIntent(team, intent);
+  }
+
+  /** `connection` left: the other player is told and the match ends. */
+  public leave(connection: ClientConnection): void {
+    const team = this.seatOf(connection);
+    if (team === null) return;
+    const opponent = this.options.seats[team === 'light' ? 'dark' : 'light'];
+    this.end({ type: 'match-ended', reason: 'opponent-left', winner: null }, opponent);
+  }
+
+  private tick(): void {
+    const { simulation } = this.options;
+    try {
+      simulation.step();
+    } catch (error) {
+      this.options.logger.log(
+        makeLogRecord('ERROR', MATCH_LOG_SCOPE, 'The Duel failed to step; ending it.', {
+          attributes: {
+            matchId: this.id,
+            error: error instanceof Error ? error.message : String(error),
+          },
+        }),
+      );
+      // ponytail: reported as a draw; add an 'error' MatchEndReason to the protocol.
+      this.finish(null);
+      return;
+    }
+    const snapshot = simulation.snapshot();
+    for (const team of PLAYABLE_TEAMS) {
+      this.options.seats[team].send({ type: 'state', snapshot, ackSeq: this.ackSeq[team] });
+    }
+    // ponytail: a snapshot every tick (30/s); send every Nth tick, then deltas, once bandwidth shows.
+    if (simulation.isOver()) this.finish(simulation.winner());
+  }
+
+  private finish(winner: PlayableTeam | null): void {
+    const reason: MatchEndReason = 'finished';
+    this.end({ type: 'match-ended', reason, winner }, ...this.connections);
+  }
+
+  private end(message: ServerMessage, ...recipients: readonly ClientConnection[]): void {
+    if (this.hasEnded) return;
+    this.hasEnded = true;
+    this.cancelTicks?.();
+    recipients.forEach((connection) => {
+      connection.send(message);
+    });
+    this.options.onEnded(this);
+    // The verdict is sent: close both sockets so none lingers (ADR 0016 point 7).
+    this.connections.forEach((connection) => {
+      connection.close();
+    });
+  }
+
+  private seatOf(connection: ClientConnection): PlayableTeam | null {
+    return PLAYABLE_TEAMS.find((team) => this.options.seats[team] === connection) ?? null;
+  }
+}

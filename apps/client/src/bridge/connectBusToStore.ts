@@ -48,6 +48,7 @@ export function connectBusToStore(
     bus.on('countdown', ({ kind, remainingMs }) =>
       dispatch(kind === 'select' ? setup.setCountdown(remainingMs) : setup.setReveal(remainingMs)),
     ),
+    bus.on('match-result', (result) => dispatch(match.resultChanged(result))),
     bus.on('match-clock', (clock) => dispatch(match.clockChanged(clock))),
     bus.on('hud-state', ({ player }) => dispatch(hudSlice.actions.hudStateChanged(player))),
     bus.on('aiming-slot', ({ slot }) => dispatch(hudSlice.actions.aimingSlotChanged(slot))),

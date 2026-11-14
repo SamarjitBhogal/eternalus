@@ -14,6 +14,7 @@ const REASON_BANNERS: Readonly<Record<string, string>> = {
   cancelled: 'Match cancelled.',
   'match-failed': 'Match could not start.',
   'load-failed': 'Loading failed.',
+  'duel-unavailable': 'Connection to the Duel server was lost.',
 } satisfies Record<
   Exclude<SessionReason, 'select-timeout' | 'match-crashed' | 'screen-crashed'>,
   string
@@ -32,6 +33,7 @@ export const STRINGS = {
   menu: {
     navLabel: 'Main menu',
     startMatch: 'Start match',
+    duelOnline: 'Duel online',
     loadouts: 'Loadouts',
     settings: 'Settings',
     about: 'About / credits',
@@ -85,13 +87,19 @@ export const STRINGS = {
   },
   loadouts: { title: 'Loadouts', classesTitle: 'Classes' },
   profile: { history: 'Match history and achievements appear here.' },
+  duelQueue: {
+    title: 'Duel online',
+    searching: 'Searching for an opponent…',
+    cancel: 'Cancel',
+  },
   results: {
     title: 'Match results',
     // TODO(sam): verdict lines are core content (content/narrative/, selectVerdictLine) once it exists.
     noResult: 'No result recorded.',
     draw: 'Draw.',
-    /** The winning team's name is content (`contentSlice.selectors.selectTeamNames`). */
-    winner: (teamName: string): string => `${teamName} wins.`,
+    victory: 'Victory.',
+    defeat: 'Defeat.',
+    opponentLeft: 'Opponent left.',
     playAgain: 'Play again',
     mainMenu: 'Main menu',
   },
@@ -113,6 +121,7 @@ export const STRINGS = {
       profile: 'Profile',
       settings: 'Settings',
       about: 'About',
+      'duel-queue': 'Duel queue',
     } satisfies Record<MenuRoute, string>,
   },
   /** Shown where an action has no binding (`KeyGlyph`, the settings list). */

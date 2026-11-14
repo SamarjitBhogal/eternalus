@@ -44,7 +44,7 @@ describe('Slam (scenario)', () => {
     expect(entity(rock)).toBeUndefined(); // 100 health, hit for 300: destroyed and removed
   });
 
-  it('knocks the enemies up for 0.8 s and staggers them for 0.3 s', () => {
+  it('knocks the enemies up for 0.8 s, staggers them for 0.3 s, and control-immune follows the knock-up (DEC-99)', () => {
     const { ids, cast, run, log } = match();
     const [sentinel, warrior] = ids;
 
@@ -56,6 +56,7 @@ describe('Slam (scenario)', () => {
       `1 knockup on ${warrior ?? ''}`,
       `10 staggered off ${warrior ?? ''}`,
       `25 knockup off ${warrior ?? ''}`,
+      `25 control-immune on ${warrior ?? ''}`,
     ]);
   });
 
