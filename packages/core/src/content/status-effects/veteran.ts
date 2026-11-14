@@ -9,10 +9,13 @@ import type { AuthoredStatusEffect } from './statusEffects.types';
 export const VETERAN = {
   id: 'veteran',
   displayName: 'Veteran',
+  polarity: 'buff',
+  controlClass: 'none',
   durationSeconds: null,
   stacking: 'intensity',
   maxStacks: MINION_VETERANCY.maxLevel, // one stack per minion level, so the levels' cap
   modifiers: [{ stat: 'damageDealt', op: 'add', value: 0.1 }], // TUNE: balancing.md +10%; DEC-164 additive
   flags: [],
   periodic: null,
+  onExpire: [],
 } as const satisfies AuthoredStatusEffect;
