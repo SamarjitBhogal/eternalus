@@ -1,12 +1,14 @@
 import type { KnockbackSpec } from '../../content/abilities/AbilityDefinition.types';
 import type { KnockbackDefinition } from '../../content/abilities/knockback';
-import { KNOCKBACK } from '../../content/abilities/knockback';
 import { Movement } from '../../components/Movement';
 import { Transform } from '../../components/Transform';
 import type { Vec2 } from '../../utils/geometry.types';
 import { TickRate } from '../../utils/TickRate';
 import { normalize } from '../../utils/vec2';
+import type { AbilityDisplayStep } from '../../content/loadDisplayContent';
 import type { AbilityEffect, CastContext } from '../AbilityEffect.types';
+import { mustBePositive } from '../specChecks';
+import { areaRow } from './areaRow';
 
 /**
  * Knocks every enemy in the step's shape away from the shape's centre (architecture 05 §3) as
@@ -21,8 +23,18 @@ import type { AbilityEffect, CastContext } from '../AbilityEffect.types';
 export class KnockbackEffect implements AbilityEffect<KnockbackSpec> {
   public readonly kind = 'knockback';
 
-  /** @param tuning - Base mass, travel time and the follow-up statuses; the shipped tuning by default. */
-  public constructor(private readonly tuning: KnockbackDefinition = KNOCKBACK) {}
+  /** @param tuning - Base mass, travel time and the follow-up statuses (`content/abilities/knockback.ts`). */
+  public constructor(private readonly tuning: KnockbackDefinition) {}
+
+  /** A knock-back needs a positive distance. */
+  public validate(spec: KnockbackSpec): readonly string[] {
+    return mustBePositive(spec.distance, 'knockback distance');
+  }
+
+  /** Its area. */
+  public describe(spec: KnockbackSpec): readonly AbilityDisplayStep[] {
+    return areaRow(spec);
+  }
 
   /** Pushes and staggers every enemy in the step's shape, in id order. */
   public apply(spec: KnockbackSpec, cast: CastContext): void {

@@ -31,15 +31,21 @@ describe('AbilityRegistry', () => {
     expect(gated.definition).toBe(ABILITIES_WITH_FAKES.get('fake-gated'));
   });
 
-  it('composes each ability once (a cached Flyweight) until a strategy is registered', () => {
-    const registry = testAbilityRegistry([new RecordingEffect('fake-strike')]);
+  it('composes each ability once (a cached Flyweight), and a later registration changes none', () => {
+    const strike = new RecordingEffect('fake-strike');
+    const registry = testAbilityRegistry([strike]);
     const before = registry.resolve('fake-strike');
     expect(registry.resolve('fake-strike')).toBe(before);
 
+    // A kind is registered once (see "refuses a second strategy"), so a later registration only
+    // adds a kind that no resolved ability names: the cached composition stays the right one.
     registry.registerEffect(new RecordingEffect('fake-other'));
 
-    expect(registry.resolve('fake-strike')).not.toBe(before);
-    expect(registry.resolve('fake-strike').isAvailable).toBe(true);
+    expect(registry.resolve('fake-strike')).toBe(before);
+    expect(before.steps).toEqual([{ effect: strike, spec: { kind: 'fake-strike' } }]);
+    expect(() => {
+      registry.registerEffect(new RecordingEffect('fake-strike'));
+    }).toThrow('effect kind "fake-strike" is already registered');
   });
 
   it('makes an ability with no effects (not built, S1) unavailable', () => {

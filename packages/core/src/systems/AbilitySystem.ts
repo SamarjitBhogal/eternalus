@@ -65,7 +65,7 @@ export class AbilitySystem implements System {
     if (aim === null || abilityId === null) {
       return;
     }
-    const reason = this.validator.check(state, caster.id, slot, aim);
+    const reason = this.validator.blockedBy(state, caster.id, slot, aim);
     if (reason !== null) {
       const command: Command<'cast-ability'> = {
         type: 'cast-ability',
@@ -77,10 +77,7 @@ export class AbilitySystem implements System {
       return;
     }
     const ability = this.registry.resolve(abilityId);
-    const price = this.validator.price(state, caster.id, ability);
-    if (price > 0) {
-      caster.getComponent(Aether).spend(price);
-    }
+    caster.getComponent(Aether).spend(this.validator.priceOf(state, caster.id, abilityId));
     runtime.recordCast(state.tick, ability.definition.cooldownTicks);
     state.events.emit('ability-cast', { casterId: caster.id, abilityId, slot });
     const { position } = caster.getComponent(Transform);

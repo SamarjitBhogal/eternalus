@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MapObjectBuilder } from '../map/MapObjectBuilder';
+import { staticCollisionIndexOf } from '../map/staticCollisionIndexOf';
 import { CollisionSystem } from './CollisionSystem';
 import { GameState } from '../state/GameState';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
@@ -55,7 +56,10 @@ describe('CollisionSystem', () => {
     transform.moveBy({ x: 50, y: 0 });
     const collision = new CollisionSystem(
       EMPTY_MAP,
-      new MapObjectBuilder().build(EMPTY_MAP, HOUSE_PRESENTATION),
+      staticCollisionIndexOf(
+        EMPTY_MAP,
+        new MapObjectBuilder().build(EMPTY_MAP, HOUSE_PRESENTATION),
+      ),
     );
     collision.update({ state, logger: new NullLogger() });
     expect(transform.position.x).toBeCloseTo(4.5);
@@ -75,7 +79,10 @@ describe('CollisionSystem', () => {
     );
     const collision = new CollisionSystem(
       EMPTY_MAP,
-      new MapObjectBuilder().build(EMPTY_MAP, HOUSE_PRESENTATION),
+      staticCollisionIndexOf(
+        EMPTY_MAP,
+        new MapObjectBuilder().build(EMPTY_MAP, HOUSE_PRESENTATION),
+      ),
     );
     const walk = (isDeploying: boolean): number => {
       const state = new GameState(config, 1);

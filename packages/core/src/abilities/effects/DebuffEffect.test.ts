@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { StatusEffects } from '../../components/StatusEffects';
+import { STATUS_EFFECTS } from '../../content/status-effects/statusEffectCatalogue';
 import type { GameEventMap } from '../../state/GameEvents.types';
 import { casterState } from '../__fixtures__/casterState';
 import { castSteps } from '../__fixtures__/castSteps';
@@ -25,7 +26,7 @@ const setUp = () => {
 
 describe('DebuffEffect', () => {
   it('has the kind it is registered under', () => {
-    expect(new DebuffEffect().kind).toBe('debuff');
+    expect(new DebuffEffect(STATUS_EFFECTS).kind).toBe('debuff');
   });
 
   it('applies its status to every enemy in its shape, credited to the caster', () => {
@@ -50,5 +51,25 @@ describe('DebuffEffect', () => {
 
     expect(expiryOf(enemy, 'stun')).toBe(state.tick + 15);
     expect(expiryOf(enemy, 'concussion')).toBe(state.tick + 90);
+  });
+
+  it('checks its own fields: a known status, a duration override of at least one tick', () => {
+    const debuff = new DebuffEffect(STATUS_EFFECTS);
+    const stun = { kind: 'debuff', statusId: 'stun', shape: AREA } as const;
+
+    expect(debuff.validate(stun)).toEqual([]);
+    expect(debuff.validate({ ...stun, durationTicks: 15 })).toEqual([]);
+    expect(debuff.validate({ ...stun, statusId: 'frozen', durationTicks: 0 })).toEqual([
+      'debuff status "frozen" is unknown',
+      'debuff duration must be positive',
+    ]);
+  });
+
+  it('shows its area on the aim overlay', () => {
+    const stun = { kind: 'debuff', statusId: 'stun', shape: AREA } as const;
+
+    expect(new DebuffEffect(STATUS_EFFECTS).describe(stun)).toEqual([
+      { kind: 'debuff', shape: AREA },
+    ]);
   });
 });

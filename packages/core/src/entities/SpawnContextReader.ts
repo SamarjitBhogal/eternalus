@@ -2,7 +2,7 @@ import type { ControllerSpawn } from './EntityFactory.types';
 import { CONTROLLER_IDS } from '../content/ai/controllerIds';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
 import type { Entity } from './Entity';
-import type { WeaponSource } from './EntityFactory.types';
+import type { LegendSpecSource, WeaponSource } from './EntityFactory.types';
 import { SPAWNABLE_TEAMS } from './SpawnContextReader.constants';
 import type {
   DefinitionRef,
@@ -125,7 +125,22 @@ export class SpawnContextReader {
     return SpawnContextReader.isWeaponSource(weapons) ? weapons : null;
   }
 
+  /** The Legend spec source the factory put in the context, or `null` when it has none. */
+  public specs(context: unknown): LegendSpecSource | null {
+    const { specs } = SpawnContextReader.fields(context);
+    return SpawnContextReader.isSpecSource(specs) ? specs : null;
+  }
+
   private static isWeaponSource(value: unknown): value is WeaponSource {
+    return SpawnContextReader.isLookup(value);
+  }
+
+  private static isSpecSource(value: unknown): value is LegendSpecSource {
+    return SpawnContextReader.isLookup(value);
+  }
+
+  /** Whether `value` has `has()` and `get()`, as a content source does. */
+  private static isLookup(value: unknown): boolean {
     return (
       SpawnContextReader.isObject(value) &&
       typeof value.has === 'function' &&

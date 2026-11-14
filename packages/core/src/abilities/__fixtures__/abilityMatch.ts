@@ -1,11 +1,14 @@
 import type { AbilitySlot } from '../../commands/Command.types';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
+import type { MapObject } from '../../content/maps/mapObjects.types';
+import type { MapDefinition } from '../../content/maps/maps.types';
 import { NullLogger } from '../../diagnostics/NullLogger';
 import type { DefinitionSource } from '../../entities/EntityFactory.types';
 import { Simulation } from '../../Simulation';
 import type { EntityId } from '../../state/EntityStore.types';
 import type { Team } from '../../teams/teams.types';
 import type { Vec2 } from '../../utils/geometry.types';
+import { stepPastCountdown } from './stepPastCountdown';
 
 /** One entity to place before the first tick: a dev-spawn of `kind` (and definition `kind` by default). */
 export type ScenarioSpawn = {
@@ -16,21 +19,31 @@ export type ScenarioSpawn = {
 };
 
 /**
- * A real `Simulation` with the shipped content and abilities (no map: no walls, no lanes), the
- * given entities spawned in the first tick (`ids`, in the same order) and the countdown stepped
+ * A real `Simulation` with the shipped content and abilities, on `world`'s map and map objects or
+ * on no map (no walls, no lanes), the given entities spawned in the first tick (`ids`, in the same
+ * order) and the countdown stepped
  * past (DEC-88 holds every unit idle until it ends), and a log of what the cast path and the
  * statuses announced. Each log line starts with its tick counted from the end of the countdown:
  * the first step after it is tick 1.
  */
 export const abilityMatch = (
   spawns: readonly ScenarioSpawn[],
-  { seed = 1, content }: { readonly seed?: number; readonly content?: DefinitionSource } = {},
+  {
+    seed = 1,
+    content,
+    world,
+  }: {
+    readonly seed?: number;
+    readonly content?: DefinitionSource;
+    readonly world?: { readonly map: MapDefinition; readonly mapObjects: readonly MapObject[] };
+  } = {},
 ) => {
   const sim = new Simulation({
     config: createDefaultGameConfig(),
     seed,
     logger: new NullLogger(),
     ...(content === undefined ? {} : { content }),
+    ...world,
   });
   const ids: EntityId[] = [];
   const log: string[] = [];
@@ -53,9 +66,7 @@ export const abilityMatch = (
   for (const { kind, definitionId = kind, team, at } of spawns) {
     sim.enqueueCommand({ type: 'dev-spawn', kind, definitionId, team, at, count: 1 });
   }
-  do {
-    sim.step();
-  } while (sim.snapshot().match.phase === 'countdown');
+  stepPastCountdown(sim);
   origin = sim.tick - 1;
   log.length = 0;
 

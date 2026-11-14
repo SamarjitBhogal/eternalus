@@ -44,7 +44,7 @@ const statusesOf = (entity: Entity) =>
 
 describe('KnockbackEffect', () => {
   it('has the kind it is registered under', () => {
-    expect(new KnockbackEffect().kind).toBe('knockback');
+    expect(new KnockbackEffect(KNOCKBACK).kind).toBe('knockback');
   });
 
   it('pushes a base-mass target the full distance away from the centre, over the travel time', () => {
@@ -119,5 +119,20 @@ describe('KnockbackEffect', () => {
       castSteps(state, caster.id, [PUSH]);
     }).not.toThrow();
     expect(tower.hasComponent(Movement)).toBe(false);
+  });
+
+  it('checks its own fields: a positive distance', () => {
+    const knockback = new KnockbackEffect(KNOCKBACK);
+
+    expect(knockback.validate(PUSH)).toEqual([]);
+    expect(knockback.validate({ ...PUSH, distance: 0 })).toEqual([
+      'knockback distance must be positive',
+    ]);
+  });
+
+  it('shows its area on the aim overlay', () => {
+    expect(new KnockbackEffect(KNOCKBACK).describe(PUSH)).toEqual([
+      { kind: 'knockback', shape: AREA },
+    ]);
   });
 });

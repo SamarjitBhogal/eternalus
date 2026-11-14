@@ -10,7 +10,7 @@ import type { CommandContext, CommandHandlers } from './CommandHandler.types';
 import { createDefaultCommandHandlers } from './defaultCommandHandlers';
 
 /** No caster in these tests can cast: the cast rules are `CastValidator`'s, tested with it. */
-const NO_CASTS = { check: () => 'empty-slot' as const };
+const NO_CASTS = { blockedBy: () => 'empty-slot' as const };
 
 const context = (): CommandContext => ({
   state: new GameState(createDefaultGameConfig(), 1),

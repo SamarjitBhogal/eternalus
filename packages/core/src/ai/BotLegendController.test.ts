@@ -20,7 +20,7 @@ import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { spawnMapStructures } from '../state/__fixtures__/spawnMapStructures';
 import { BotLegendController } from './BotLegendController';
 import type { SlotReadiness } from '../state/SlotReadiness.types';
-import { onlyReady } from './__fixtures__/stubReadiness';
+import { onlyReady } from '../state/__fixtures__/stubReadiness';
 import type { SeededRandomState } from '../utils/SeededRandom.types';
 import { Perception } from './perception/Perception';
 

@@ -255,11 +255,11 @@ export class GameState {
    *
    * @param curves - The level curves a `Progression` levels along (the catalogue
    *   `ProgressionSystem` uses), to report the XP inside each level.
-   * @param readiness - The cast rules for the player's slots; without them `player` is `null`.
+   * @param readiness - The cast rules the player's slots are judged by (the match's `CastValidator`).
    */
   public snapshot(
     curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'get'>,
-    readiness: SlotReadiness | null = null,
+    readiness: SlotReadiness,
   ): Snapshot {
     const entities: EntitySnapshot[] = [];
     const snapshotter = new EntitySnapshotter(this.config.match.capturePoints.checkpoints, curves);
@@ -281,10 +281,7 @@ export class GameState {
         upcoming: schedule.slice(timelineCursor),
         humanLegendId,
       },
-      player:
-        human === undefined || readiness === null
-          ? null
-          : new PlayerSnapshotter(readiness).snapshotOf(this, human),
+      player: human === undefined ? null : new PlayerSnapshotter(readiness).snapshotOf(this, human),
       entities,
       hordes,
       teams: {

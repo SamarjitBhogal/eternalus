@@ -8,6 +8,7 @@ import { loadDefaultContent } from '../content/loadDefaultContent';
 import type { MapDefinition, MapPresentation } from '../content/maps/maps.types';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { MapObjectBuilder } from '../map/MapObjectBuilder';
+import { staticCollisionIndexOf } from '../map/staticCollisionIndexOf';
 import { NullLogger } from '../diagnostics/NullLogger';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { Entity } from '../entities/Entity';
@@ -212,7 +213,7 @@ describe('MovementSystem', () => {
     const movement = new MovementSystem();
     const collision = new CollisionSystem(
       WALLED_MAP,
-      new MapObjectBuilder().build(WALLED_MAP, WALL),
+      staticCollisionIndexOf(WALLED_MAP, new MapObjectBuilder().build(WALLED_MAP, WALL)),
     );
 
     for (let tick = 0; tick < 3; tick += 1) {

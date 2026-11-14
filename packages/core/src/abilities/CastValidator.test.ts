@@ -145,8 +145,7 @@ describe('CastValidator through the cast-ability command', () => {
     cast('ability-1');
 
     expect(rejected).toEqual(['not-enough-aether']);
-    const strike = testAbilityRegistry([new RecordingEffect('fake-strike')]).resolve('fake-strike');
-    expect(validator.price(state, caster.id, strike)).toBe(37.5);
+    expect(validator.priceOf(state, caster.id, 'fake-strike')).toBe(37.5);
   });
 
   it('rejects a directional cast aimed at the caster itself as no-target', () => {
@@ -163,5 +162,42 @@ describe('CastValidator through the cast-ability command', () => {
     });
     cast('ability-1');
     expect(rejected).toEqual(['restricted']);
+  });
+});
+
+describe('CastValidator.slotBlockedBy (the slot alone, for the player snapshot)', () => {
+  it('judges a directional slot ready with no aim at all, where the full check needs one', () => {
+    const { state, caster, validator } = setUp();
+    const onCaster: Aim = { point: { x: 0, y: 0 }, targetId: null };
+
+    expect(validator.slotBlockedBy(state, caster.id, 'ability-3')).toBeNull();
+    expect(validator.blockedBy(state, caster.id, 'ability-3', onCaster)).toBe('no-target');
+  });
+
+  it('gives every other reason the full check gives, in the same order', () => {
+    const { state, caster, validator } = setUp();
+    const reasons = (): readonly unknown[] =>
+      (['ability-1', 'ability-2', 'ability-4', 'gadget-1'] as const).map((slot) => [
+        validator.slotBlockedBy(state, caster.id, slot),
+        validator.blockedBy(state, caster.id, slot, AIM_EAST),
+      ]);
+
+    expect(reasons()).toEqual([
+      [null, null],
+      ['unavailable', 'unavailable'],
+      ['not-charged', 'not-charged'],
+      ['empty-slot', 'empty-slot'],
+    ]);
+    caster.getComponent(Health).applyDamage(1_000_000);
+    expect(reasons()).toEqual(Array.from({ length: 4 }, () => ['dead', 'dead']));
+  });
+
+  it('throws for an id that names no entity: the snapshot only asks about a Legend it holds', () => {
+    const { state, validator } = setUp();
+
+    expect(() => validator.slotBlockedBy(state, 'entity-404', 'ability-1')).toThrow(
+      'no entity "entity-404"',
+    );
+    expect(validator.blockedBy(state, 'entity-404', 'ability-1', AIM_EAST)).toBe('unknown-entity');
   });
 });

@@ -9,10 +9,8 @@ import { isPlayableTeam } from '../teams/playableTeams';
 import type { Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
 import { AETHER_REGEN_QUANTUM } from './AetherRegenSystem.constants';
+import type { Aura } from './AetherRegenSystem.types';
 import type { System, SystemContext } from './System.types';
-
-/** A live aura structure: whose it is, where it stands and the bonus it gives this tick. */
-type Aura = { readonly team: Team; readonly position: Vec2; readonly bonus: number };
 
 /**
  * Refills every `Aether` pool each tick (DEC-201): `perSecondAtBase` × max / base per second, so a

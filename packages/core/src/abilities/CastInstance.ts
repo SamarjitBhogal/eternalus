@@ -39,7 +39,6 @@ export class CastInstance {
       aim,
       direction: toAim.x === 0 && toAim.y === 0 ? { x: 0, y: 0 } : normalize(toAim),
       placement,
-      casterLevel,
       scaled: (field, value) => value * (1 + (scaling[field]?.perLevel ?? 0) * (casterLevel - 1)),
       damage,
       statuses,

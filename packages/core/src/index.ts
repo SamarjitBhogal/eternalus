@@ -37,12 +37,15 @@ export type {
   LegendDefinition,
   LegendKind,
 } from './content/legends/legends.types';
+// The kit rule the client's kit rows share with the simulation (ADR 0026 decision 1).
+export { kitOf } from './content/legends/specs/kitOf';
 export type {
   LegendName,
   LegendSpecDefinition,
   RoleRatings,
 } from './content/legends/specs/legendSpecs.types';
-export { loadDisplayContent } from './content/loadDisplayContent';
+// The display loader with the shipped effect strategies describing each ability's steps.
+export { loadShippedDisplayContent as loadDisplayContent } from './abilities/loadShippedDisplayContent';
 export type {
   AbilityDisplay,
   AbilityDisplayStep,
@@ -101,7 +104,6 @@ export type {
   CaptureSnapshot,
   EntitySnapshot,
   MatchSnapshot,
-  PlayerSnapshot,
   Snapshot,
 } from './state/Snapshot.types';
 export { StateHasher } from './state/StateHasher';

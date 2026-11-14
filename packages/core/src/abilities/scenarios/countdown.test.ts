@@ -4,11 +4,7 @@ import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { NullLogger } from '../../diagnostics/NullLogger';
 import { Simulation } from '../../Simulation';
 import { TWO_LANE_MAP } from '../../state/__fixtures__/twoLaneMap';
-
-/** Steps `sim` until the match leaves the countdown; the next step is the first one not held. */
-const stepPastCountdown = (sim: Simulation): void => {
-  while (sim.snapshot().match.phase === 'countdown') sim.step();
-};
+import { stepPastCountdown } from '../__fixtures__/stepPastCountdown';
 
 describe('casting during the countdown (DEC-88: nothing casts until it ends)', () => {
   it('refuses a cast as cannot-cast, spends no aether and starts no cooldown', () => {

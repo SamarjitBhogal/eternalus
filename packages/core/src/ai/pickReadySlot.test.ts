@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
 import { casterState } from '../abilities/__fixtures__/casterState';
-import { CastReadiness } from '../abilities/CastReadiness';
+import { CastValidator } from '../abilities/CastValidator';
 import { createDefaultAbilityRegistry } from '../abilities/defaultAbilityRegistry';
 import { loadAbilities } from '../content/abilities/loadAbilities';
 import { Perception } from './perception/Perception';
 import type { BotTurn } from './BotLegendController.types';
 import { NORMAL_BOT } from '../content/ai/difficulties/normal';
 import { SeededRandom } from '../utils/SeededRandom';
-import { allReady, onlyReady } from './__fixtures__/stubReadiness';
+import { allReady, onlyReady } from '../state/__fixtures__/stubReadiness';
 import { pickReadySlot } from './pickReadySlot';
 
 const AIM = { point: { x: 5, y: 0 }, targetId: null };
@@ -72,7 +72,7 @@ describe('pickReadySlot (DEC-205)', () => {
   });
 
   it('picks nothing while the match holds units idle (DEC-88), so a bot sends no cast then', () => {
-    const readiness = new CastReadiness(createDefaultAbilityRegistry(loadAbilities(30)));
+    const readiness = new CastValidator(createDefaultAbilityRegistry(loadAbilities(30)));
     const turn = turnWith(1);
 
     expect(pickReadySlot(turn, readiness, AIM)).toBe('ability-1'); // Blade Runner, the one built

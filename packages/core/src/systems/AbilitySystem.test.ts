@@ -78,7 +78,6 @@ describe('AbilitySystem', () => {
       aim: AIM,
       direction: { x: 0, y: 1 },
       placement: { from: { x: 0, y: 0 }, to: { x: 0, y: 0 } },
-      casterLevel: 1,
     });
   });
 

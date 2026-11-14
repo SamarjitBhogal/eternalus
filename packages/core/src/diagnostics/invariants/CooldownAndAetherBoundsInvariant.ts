@@ -2,9 +2,7 @@ import { Abilities } from '../../components/Abilities';
 import { Aether } from '../../components/Aether';
 import type { GameState } from '../../state/GameState';
 import type { Invariant, Violation } from '../Invariant.types';
-
-/** Where the invariant finds an ability's cooldown; the loaded ability catalogue satisfies it. */
-type CooldownSource = { get(id: string): { readonly cooldownTicks: number } };
+import type { CooldownSource } from './CooldownAndAetherBoundsInvariant.types';
 
 /**
  * `cooldown-and-aether-bounds` (architecture 05 §16, light): every `Aether` holds a finite amount

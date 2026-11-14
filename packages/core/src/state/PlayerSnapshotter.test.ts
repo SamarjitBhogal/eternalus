@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { casterState } from '../abilities/__fixtures__/casterState';
 import { RecordingEffect } from '../abilities/__fixtures__/RecordingEffect';
 import { testAbilityRegistry } from '../abilities/__fixtures__/fakeAbilities';
-import { CastReadiness } from '../abilities/CastReadiness';
+import { CastValidator } from '../abilities/CastValidator';
 import { Abilities } from '../components/Abilities';
 import { Aether } from '../components/Aether';
 import { StatusEffects } from '../components/StatusEffects';
@@ -14,7 +14,7 @@ import { PlayerSnapshotter } from './PlayerSnapshotter';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { Entity } from '../entities/Entity';
 
-const READINESS = new CastReadiness(testAbilityRegistry([new RecordingEffect('fake-strike')]));
+const READINESS = new CastValidator(testAbilityRegistry([new RecordingEffect('fake-strike')]));
 
 /** A Warrior with the test kit: strike, unbuilt veil, dash, ultimate, then three empty slots. */
 const setUp = () => {
@@ -103,7 +103,7 @@ describe('PlayerSnapshotter', () => {
     });
   });
 
-  it('reports a directional ability as ready: the snapshot aims it itself', () => {
+  it('reports a directional ability as ready: a slot is judged without an aim', () => {
     expect(setUp().slot('ability-3')).toMatchObject({ isReady: true, blockedBy: null });
   });
 
@@ -159,12 +159,5 @@ describe('GameState.snapshot player', () => {
 
     expect(player?.entityId).toBe(caster.id);
     expect(player?.slots).toHaveLength(7);
-  });
-
-  it('is null when no readiness is given', () => {
-    const { state, caster } = setUp();
-    state.match.seatHuman(caster.id);
-
-    expect(state.snapshot(CURVES).player).toBeNull();
   });
 });

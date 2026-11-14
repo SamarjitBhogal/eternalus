@@ -1,14 +1,9 @@
 import { Progression } from '../../components/Progression';
-import type {
-  AbilityRejectReason,
-  AbilityRestrictionSpec,
-} from '../../content/abilities/AbilityDefinition.types';
+import type { AbilityRejectReason } from '../../content/abilities/AbilityDefinition.types';
 import type { EntityId } from '../../state/EntityStore.types';
 import type { GameState } from '../../state/GameState';
 import type { AbilityRestriction } from '../AbilityRestriction.types';
-
-/** A `min-level` restriction's spec. */
-type MinLevelSpec = Extract<AbilityRestrictionSpec, { readonly kind: 'min-level' }>;
+import type { MinLevelSpec } from './MinLevelRestriction.types';
 
 /** `min-level` (05 §5): the caster must be at least `level`; one without `Progression` is level 1. */
 export class MinLevelRestriction implements AbilityRestriction<MinLevelSpec> {

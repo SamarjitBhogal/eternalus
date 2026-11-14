@@ -82,16 +82,29 @@ type AuthoredDebuffSpec = {
   readonly shape: EffectShape;
 };
 
+/**
+ * `T` as loaded (architecture 03 §11): every `<name>Seconds` field, at any depth, becomes
+ * `<name>Ticks`. `loadAbilities` converts every authored time this way, whatever the step's kind,
+ * so a new effect kind needs no loader change.
+ */
+export type InTicks<T> = T extends readonly (infer Item)[]
+  ? readonly InTicks<Item>[]
+  : T extends object
+    ? {
+        readonly [K in keyof T as K extends `${infer Name}Seconds` ? `${Name}Ticks` : K]: InTicks<
+          T[K]
+        >;
+      }
+    : T;
+
 /** A loaded debuff: the duration override in ticks. */
-export type DebuffSpec = Omit<AuthoredDebuffSpec, 'durationSeconds'> & {
-  readonly durationTicks?: number;
-};
+export type DebuffSpec = InTicks<AuthoredDebuffSpec>;
 
 /** An effect that acts on the targets in its `shape`, as authored. */
-export type AuthoredShapedEffectSpec = DamageSpec | KnockbackSpec | AuthoredDebuffSpec;
+type AuthoredShapedEffectSpec = DamageSpec | KnockbackSpec | AuthoredDebuffSpec;
 
 /** An effect that acts on the targets in its `shape`, loaded. */
-export type ShapedEffectSpec = DamageSpec | KnockbackSpec | DebuffSpec;
+export type ShapedEffectSpec = InTicks<AuthoredShapedEffectSpec>;
 
 /**
  * Moves the caster `distance` metres along the aim (05 §3 `DashEffect`); `onPath` runs on the
@@ -106,17 +119,20 @@ type AuthoredDashSpec = {
 };
 
 /** A loaded dash: its duration in ticks. */
-export type DashSpec = Omit<AuthoredDashSpec, 'durationSeconds' | 'onPath' | 'onEnd'> & {
-  readonly durationTicks: number;
-  readonly onPath: readonly ShapedEffectSpec[];
-  readonly onEnd: readonly ShapedEffectSpec[];
-};
+export type DashSpec = InTicks<AuthoredDashSpec>;
 
 /** One step of an ability's cast timeline as authored (05 §3); one effect strategy per `kind`. */
 export type AuthoredEffectSpec = AuthoredShapedEffectSpec | AuthoredDashSpec;
 
 /** One loaded step of an ability's cast timeline: every time in ticks. */
-export type AbilityEffectSpec = ShapedEffectSpec | DashSpec;
+export type AbilityEffectSpec = InTicks<AuthoredEffectSpec>;
+
+/**
+ * What `loadAbilities` reads of any effect step: its kind. The shipped steps are
+ * `AuthoredEffectSpec`; a test may author a kind that union does not list (the Fake Bolt litmus,
+ * 05 §16). Each kind's fields are its strategy's to check (`AbilityEffect.validate`).
+ */
+export type AuthoredStep = { readonly kind: string };
 
 /**
  * A cast precondition as data (05 §5); one `AbilityRestriction` class per `kind`. The other kinds
@@ -143,24 +159,30 @@ export type AbilityBase = {
   readonly scaling: Readonly<Record<string, { readonly perLevel: number }>>;
 };
 
+/** An ability as authored whose effect steps are `Step`: times in seconds. */
+export type AuthoredAbilityWith<Step extends AuthoredStep> = AbilityBase & {
+  /** 0 for an ultimate: the meter gates it (DEC-202). */
+  readonly cooldownSeconds: number;
+  readonly effects: readonly Step[];
+};
+
 /**
  * An ability as authored in `content/abilities/<camelId>.ts`: times in seconds. `effects: []`
  * marks an ability that is in a kit but not built yet; it cannot be cast (`unavailable`).
  */
-export type AuthoredAbility = AbilityBase & {
-  /** 0 for an ultimate: the meter gates it (DEC-202). */
-  readonly cooldownSeconds: number;
-  readonly effects: readonly AuthoredEffectSpec[];
+export type AuthoredAbility = AuthoredAbilityWith<AuthoredEffectSpec>;
+
+/** A loaded ability whose effect steps are `Step`: times in ticks. */
+export type AbilityDefinitionWith<Step> = AbilityBase & {
+  readonly cooldownTicks: number;
+  readonly effects: readonly Step[];
 };
 
 /**
  * One loaded ability (05 §2): times in ticks. Shared, immutable and keyed by `id`; built only by
  * `loadAbilities`.
  */
-export type AbilityDefinition = AbilityBase & {
-  readonly cooldownTicks: number;
-  readonly effects: readonly AbilityEffectSpec[];
-};
+export type AbilityDefinition = AbilityDefinitionWith<AbilityEffectSpec>;
 
 /**
  * The abilities a Legend equips (DEC-198): three abilities for `ability-1` to `ability-3`, in

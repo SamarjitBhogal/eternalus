@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { DamagePipeline } from '../combat/DamagePipeline';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { ContentCatalogue } from '../content/ContentCatalogue';
+import type { AbilityDisplayStep } from '../content/loadDisplayContent';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import type { AbilityEffect, CastContext, EffectStep } from './AbilityEffect.types';
 import { casterState } from './__fixtures__/casterState';
@@ -17,6 +18,14 @@ const END = { from: { x: 6, y: 0 }, to: { x: 6, y: 0 } };
 /** A dash stand-in: runs its nested step at the dash's end, through the context. */
 class NestingEffect implements AbilityEffect {
   public readonly kind = 'fake-nest';
+
+  public validate(): readonly string[] {
+    return [];
+  }
+
+  public describe(): readonly AbilityDisplayStep[] {
+    return [];
+  }
 
   public apply(_spec: EffectStep, cast: CastContext): void {
     cast.run({ kind: 'fake-strike' }, END);
@@ -61,7 +70,6 @@ describe('CastInstance', () => {
       casterId: caster.id,
       abilityId: 'fake-nest',
       tick: 7,
-      casterLevel: 3,
       direction: { x: 1, y: 0 },
       placement: END,
     });

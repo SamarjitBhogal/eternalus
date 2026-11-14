@@ -1,4 +1,5 @@
 import { Health } from '../components/Health';
+import { MapObjectBody } from '../components/MapObjectBody';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import type { EntityId } from '../state/EntityStore.types';
@@ -10,8 +11,10 @@ import type { TargetFilter } from './TargetQuery.types';
 /**
  * Finds what an effect step hits (plan arch call 10): walks the `EntityStore` for live entities
  * with a position and health whose body overlaps the step's shape, filtered by team relative to
- * the caster, and returns their ids sorted by id, so every run hits in the same order. A walk, not
- * the `SpatialHash`: casts are rare and the store is small enough.
+ * the caster, and returns their ids sorted by id, so every run hits in the same order. A map object
+ * (`MapObjectBody`: a house, a wall, a fort) is tested by its footprints, as a basic attack reaches
+ * it; any other body by its circle. A walk, not the `SpatialHash`: casts are rare and the store is
+ * small enough.
  */
 export class TargetQuery {
   /** @param shapes - Where each shape kind's `AreaShape` is found (the `AbilityRegistry`). */
@@ -47,7 +50,12 @@ export class TargetQuery {
       if ((filter.team === 'allies' && !isAlly) || (filter.team === 'enemies' && isAlly)) {
         return;
       }
-      if (area.overlaps(shape, placement, transform.position, transform.radius)) {
+      const footprints = entity.findComponent(MapObjectBody)?.object.footprints;
+      const isHit =
+        footprints === undefined
+          ? area.overlaps(shape, placement, transform.position, transform.radius)
+          : footprints.some((footprint) => area.overlapsPolygon(shape, placement, footprint));
+      if (isHit) {
         hits.push(entity.id);
       }
     });

@@ -42,7 +42,7 @@ describe('createDefaultCommandHandlers', () => {
   it('routes cast-ability through the injected cast check and announces its reason', () => {
     const asked: unknown[] = [];
     const handlers = createDefaultCommandHandlers({
-      check: (_state, actorId, slot, aim) => {
+      blockedBy: (_state, actorId, slot, aim) => {
         asked.push({ actorId, slot, aim });
         return 'on-cooldown';
       },
@@ -55,7 +55,7 @@ describe('createDefaultCommandHandlers', () => {
   it.each(NOT_YET_SUPPORTED)(
     'rejects $type as not supported until its system exists',
     (command) => {
-      const handlers = createDefaultCommandHandlers({ check: () => null });
+      const handlers = createDefaultCommandHandlers({ blockedBy: () => null });
       expect(rejectionsOf(command, handlers)).toEqual(['not-supported']);
     },
   );

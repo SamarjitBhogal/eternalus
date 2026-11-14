@@ -1,3 +1,4 @@
+import type { AbilityDisplayStep } from '../../content/loadDisplayContent';
 import type { AbilityEffect, CastContext, EffectStep } from '../AbilityEffect.types';
 
 /** One step a `RecordingEffect` ran. */
@@ -16,6 +17,16 @@ export class RecordingEffect implements AbilityEffect {
     public readonly kind: string,
     public readonly log: RecordedStep[] = [],
   ) {}
+
+  /** Accepts any step. */
+  public validate(): readonly string[] {
+    return [];
+  }
+
+  /** Draws nothing. */
+  public describe(): readonly AbilityDisplayStep[] {
+    return [];
+  }
 
   /** Records the step. */
   public apply(spec: EffectStep, cast: CastContext): void {

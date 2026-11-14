@@ -1,7 +1,10 @@
 import type { DamageSpec } from '../../content/abilities/AbilityDefinition.types';
 import { isUnitFamily } from '../../entities/unitFamilies';
 import type { DamageSource } from '../../state/GameEvents.types';
+import type { AbilityDisplayStep } from '../../content/loadDisplayContent';
 import type { AbilityEffect, CastContext } from '../AbilityEffect.types';
+import { mustBePositive, mustNotBeNegative } from '../specChecks';
+import { areaRow } from './areaRow';
 
 /**
  * Damages every enemy in the step's shape through the match's one `DamagePipeline` (architecture
@@ -12,6 +15,19 @@ import type { AbilityEffect, CastContext } from '../AbilityEffect.types';
  */
 export class DamageEffect implements AbilityEffect<DamageSpec> {
   public readonly kind = 'damage';
+
+  /** A hit needs a positive amount, and a structure multiplier, when set, of 0 or more. */
+  public validate(spec: DamageSpec): readonly string[] {
+    return [
+      ...mustBePositive(spec.amount, 'damage amount'),
+      ...mustNotBeNegative(spec.structureMultiplier, 'structureMultiplier'),
+    ];
+  }
+
+  /** Its area. */
+  public describe(spec: DamageSpec): readonly AbilityDisplayStep[] {
+    return areaRow(spec);
+  }
 
   /** Deals the step's damage to every enemy in its shape, in id order. */
   public apply(spec: DamageSpec, cast: CastContext): void {

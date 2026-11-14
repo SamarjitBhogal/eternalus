@@ -1,36 +1,27 @@
+import type { AbilityDisplayStep } from '../content/loadDisplayContent';
 import { ContentValidationError } from '../content/ContentValidationError';
 import type { AbilityEffect, EffectStep } from './AbilityEffect.types';
 import type { AbilityRestriction } from './AbilityRestriction.types';
-import type { Ability, AbilitySource, BoundRestriction } from './AbilityRegistry.types';
+import type {
+  Ability,
+  AbilitySource,
+  BoundRestriction,
+  ComposableAbility,
+} from './AbilityRegistry.types';
 import { ComposedAbility } from './ComposedAbility';
-import type { AreaShape, ShapeSpec } from './shapes/AreaShape.types';
-
-/** Whether `value` is an object with a string `kind` (a step or a shape). */
-const isKinded = (value: unknown): value is EffectStep =>
-  typeof value === 'object' && value !== null && 'kind' in value && typeof value.kind === 'string';
-
-/** The steps nested in `step` (a dash's `onPath` and `onEnd`): every list field of kinded items. */
-const childStepsOf = (step: EffectStep): EffectStep[] =>
-  Object.values(step).flatMap((value: unknown) =>
-    Array.isArray(value) ? value.filter(isKinded) : [],
-  );
-
-/** `steps` and every step nested in them, depth first. */
-const flatten = (steps: readonly EffectStep[]): EffectStep[] =>
-  steps.flatMap((step) => [step, ...flatten(childStepsOf(step))]);
-
-/** The step's area, when it has one. */
-const shapeOf = (step: EffectStep): ShapeSpec | undefined =>
-  'shape' in step && isKinded(step.shape) ? step.shape : undefined;
+import { flattenSteps, shapeOf } from './effectSteps';
+import type { AreaShape } from './shapes/AreaShape.types';
 
 /**
  * The single place abilities are composed (architecture 05 §14): effect, restriction and shape
  * strategies are registered by kind (`defaultAbilityRegistry.ts` names every class), and
  * `resolve` binds an ability's steps and restrictions to them once, cached as a Flyweight.
  *
- * An effect, shape or restriction kind with no strategy throws at `resolve`, so `resolveAll` at
- * boot fails loudly on it. Only an ability with no effects at all (`effects: []`, in a kit but not
- * built yet) composes as unavailable (`unavailable` at cast).
+ * Composing an ability also checks it: every effect, shape and restriction kind it names needs a
+ * strategy, and each step and shape must pass its strategy's `validate`. `resolveAll` at boot
+ * reports every problem of every ability at once, so content fails loudly before a match starts.
+ * Only an ability with no effects at all (`effects: []`, in a kit but not built yet) composes as
+ * unavailable (`unavailable` at cast).
  */
 export class AbilityRegistry {
   private readonly effects = new Map<string, AbilityEffect>();
@@ -50,7 +41,7 @@ export class AbilityRegistry {
    * @throws Error when the kind already has one.
    */
   public registerEffect(effect: AbilityEffect): void {
-    this.add(this.effects, effect, 'effect');
+    AbilityRegistry.add(this.effects, effect, 'effect');
   }
 
   /**
@@ -59,7 +50,7 @@ export class AbilityRegistry {
    * @throws Error when the kind already has one.
    */
   public registerRestriction(restriction: AbilityRestriction): void {
-    this.add(this.restrictionRules, restriction, 'restriction');
+    AbilityRegistry.add(this.restrictionRules, restriction, 'restriction');
   }
 
   /**
@@ -68,7 +59,7 @@ export class AbilityRegistry {
    * @throws Error when the kind already has one.
    */
   public registerShape(shape: AreaShape): void {
-    this.add(this.shapes, shape, 'shape');
+    AbilityRegistry.add(this.shapes, shape, 'shape');
   }
 
   /**
@@ -90,11 +81,11 @@ export class AbilityRegistry {
   }
 
   /**
-   * The composed ability `abilityId`, built once and cached (05 §14).
+   * The composed ability `abilityId`, built and checked once and cached (05 §14).
    *
    * @throws UnknownDefinitionError when no ability has the id.
    * @throws ContentValidationError when it names an effect, shape or restriction kind with no
-   *   strategy.
+   *   strategy, or a step or shape fails its strategy's `validate`.
    */
   public resolve(abilityId: string): Ability {
     const cached = this.resolved.get(abilityId);
@@ -102,7 +93,59 @@ export class AbilityRegistry {
       return cached;
     }
     const definition = this.definitions.get(abilityId);
-    const steps = flatten(definition.effects);
+    const problems = this.problemsOf(definition);
+    if (problems.length > 0) {
+      throw new ContentValidationError(problems.join('\n'));
+    }
+    const ability = new ComposedAbility(
+      definition,
+      definition.effects.map((spec) => ({ effect: this.effectFor(spec.kind), spec })),
+      definition.restrictions.map((spec): BoundRestriction => ({
+        rule: AbilityRegistry.required(this.restrictionRules, spec.kind, 'restriction'),
+        spec,
+      })),
+      definition.effects.length > 0,
+    );
+    this.resolved.set(abilityId, ability);
+    return ability;
+  }
+
+  /**
+   * Checks and composes every ability once, at boot: a missing strategy or a step a strategy
+   * refuses fails here, never mid-match.
+   *
+   * @throws ContentValidationError listing every problem of every ability.
+   */
+  public resolveAll(): void {
+    const definitions = this.definitions.all();
+    const problems = definitions.flatMap((definition) => this.problemsOf(definition));
+    if (problems.length > 0) {
+      throw new ContentValidationError(problems.join('\n'));
+    }
+    for (const { id } of definitions) {
+      this.resolve(id);
+    }
+  }
+
+  /**
+   * The rows the aim overlay draws for `steps` (`AbilityDisplay.steps`, 05 §15), in cast order:
+   * each step's strategy describes it, and a step that runs nested steps describes them through
+   * this registry. What `loadDisplayContent` publishes; no loader knows an effect kind.
+   *
+   * @throws Error when a step's effect kind has no strategy.
+   */
+  public describe(steps: readonly EffectStep[]): readonly AbilityDisplayStep[] {
+    return steps.flatMap((step) =>
+      this.effectFor(step.kind).describe(step, (nested) => this.describe([nested])),
+    );
+  }
+
+  /**
+   * Everything wrong with `definition`: kinds with no strategy, then each step's and each shape's
+   * own `validate` problems, every step nested in another included.
+   */
+  private problemsOf(definition: ComposableAbility): string[] {
+    const steps = flattenSteps(definition.effects);
     const missing = [
       ...steps.flatMap((step) => {
         const shape = shapeOf(step);
@@ -115,37 +158,24 @@ export class AbilityRegistry {
         .filter(({ kind }) => !this.restrictionRules.has(kind))
         .map(({ kind }) => `restriction "${kind}"`),
     ];
-    if (missing.length > 0) {
-      throw new ContentValidationError(
-        `Ability "${abilityId}" names ${missing.join(', ')} with no registered strategy (defaultAbilityRegistry.ts).`,
-      );
-    }
-    const isAvailable = definition.effects.length > 0;
-    const ability = new ComposedAbility(
-      definition,
-      definition.effects.map((spec) => ({ effect: this.effectFor(spec.kind), spec })),
-      definition.restrictions.map((spec): BoundRestriction => ({
-        rule: AbilityRegistry.required(this.restrictionRules, spec.kind, 'restriction'),
-        spec,
-      })),
-      isAvailable,
-    );
-    this.resolved.set(abilityId, ability);
-    return ability;
+    const invalid = steps.flatMap((step) => {
+      const shape = shapeOf(step);
+      return [
+        ...(this.effects.get(step.kind)?.validate(step) ?? []),
+        ...(shape === undefined ? [] : (this.shapes.get(shape.kind)?.validate(shape) ?? [])),
+      ];
+    });
+    return [
+      ...(missing.length > 0
+        ? [
+            `Ability "${definition.id}" names ${missing.join(', ')} with no registered strategy (defaultAbilityRegistry.ts).`,
+          ]
+        : []),
+      ...invalid.map((problem) => `Ability "${definition.id}": ${problem}.`),
+    ];
   }
 
-  /**
-   * Resolves every ability once, so a missing effect, shape or restriction strategy fails at boot.
-   *
-   * @throws ContentValidationError as `resolve` does.
-   */
-  public resolveAll(): void {
-    for (const { id } of this.definitions.all()) {
-      this.resolve(id);
-    }
-  }
-
-  private add<T extends { readonly kind: string }>(
+  private static add<T extends { readonly kind: string }>(
     into: Map<string, T>,
     strategy: T,
     what: string,
@@ -153,9 +183,9 @@ export class AbilityRegistry {
     if (into.has(strategy.kind)) {
       throw new Error(`The ${what} kind "${strategy.kind}" is already registered.`);
     }
+    // No cached ability needs composing again: a kind is registered once, so a registration only
+    // adds a kind that no ability resolved so far names (each one resolved with all its kinds).
     into.set(strategy.kind, strategy);
-    // A registration can bind a new strategy into a cached ability: compose again.
-    this.resolved.clear();
   }
 
   private static required<T>(from: ReadonlyMap<string, T>, kind: string, what: string): T {

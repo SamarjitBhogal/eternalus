@@ -48,41 +48,51 @@ describe('loadAbilities', () => {
     });
   });
 
-  it('rejects broken content at load, naming every problem', () => {
+  it('converts the times of any step kind, nested ones included, with no loader change', () => {
+    const lance = {
+      ...SLAM,
+      id: 'lance',
+      effects: [
+        {
+          kind: 'fake-lance',
+          windupSeconds: 0.5,
+          delaySeconds: 0,
+          onHit: [{ kind: 'fake-burn', fadeSeconds: 2, shape: { kind: 'circle', radius: 1 } }],
+        },
+      ],
+    } as const;
+
+    const loaded = loadAbilities(30, [lance]).get('lance').effects[0];
+
+    expect(loaded).toEqual({
+      kind: 'fake-lance',
+      windupTicks: 15,
+      delayTicks: 0,
+      onHit: [{ kind: 'fake-burn', fadeTicks: 60, shape: { kind: 'circle', radius: 1 } }],
+    });
+  });
+
+  it('rejects broken content at load, naming every problem; step fields are left to the strategies', () => {
     const broken = [
       { ...SLAM, id: 'Bad_Id', cooldownSeconds: -1 },
-      {
-        ...SHOCKWAVE,
-        id: 'ghost',
-        effects: [{ kind: 'debuff', statusId: 'frozen', shape: { kind: 'circle', radius: 0 } }],
-      },
       { ...BLADE_RUNNER, id: 'lunge', targeting: null },
       { ...FURY, id: 'rage', aetherCost: 10 },
       { ...SLAM, id: 'idle', effects: [] },
       {
-        ...SLAM,
-        id: 'bad-numbers',
-        effects: [
-          {
-            kind: 'damage',
-            amount: 0,
-            damageType: 'physical',
-            shape: { kind: 'circle', radius: 1 },
-            structureMultiplier: -1,
-          },
-          { kind: 'knockback', distance: 0, shape: { kind: 'circle', radius: 1 } },
-          { kind: 'dash', distance: 0, durationSeconds: 0, onPath: [], onEnd: [] },
-        ],
+        ...SHOCKWAVE,
+        id: 'ghost',
+        // An unknown status and a zero radius: `DebuffEffect` and `CircleShape` refuse them at boot.
+        effects: [{ kind: 'debuff', statusId: 'frozen', shape: { kind: 'circle', radius: 0 } }],
       },
     ] as const;
 
     expect(() => loadAbilities(30, broken)).toThrow(ContentValidationError);
     expect(() => loadAbilities(30, broken)).toThrow(
-      /"Bad_Id": id must be kebab-case[\s\S]*"Bad_Id": cooldownSeconds must not be negative[\s\S]*"ghost": debuff status "frozen" is unknown[\s\S]*"ghost": circle radius must be positive[\s\S]*"lunge": an ability with effects needs targeting[\s\S]*"rage": an ultimate costs no aether[\s\S]*"idle": an ability with no effects has no targeting yet[\s\S]*"bad-numbers": damage amount must be positive[\s\S]*"bad-numbers": structureMultiplier must not be negative[\s\S]*"bad-numbers": knockback distance must be positive[\s\S]*"bad-numbers": dash distance must be positive[\s\S]*"bad-numbers": dash durationSeconds must be positive/,
+      /^Ability "Bad_Id": id must be kebab-case\.\nAbility "Bad_Id": cooldownSeconds must not be negative\.\nAbility "lunge": an ability with effects needs targeting\.\nAbility "rage": an ultimate costs no aether[^\n]*\nAbility "idle": an ability with no effects has no targeting yet\.$/,
     );
   });
 
-  it('checks the steps inside a dash, and a debuff duration override', () => {
+  it('refuses a negative time anywhere in a step, nested ones included, before it becomes ticks', () => {
     const dash = {
       ...BLADE_RUNNER,
       id: 'lunge',
@@ -90,22 +100,22 @@ describe('loadAbilities', () => {
         {
           kind: 'dash',
           distance: 8,
-          durationSeconds: 0.3,
-          onPath: [
+          durationSeconds: -0.3,
+          onPath: [],
+          onEnd: [
             {
               kind: 'debuff',
-              statusId: 'frozen',
-              durationSeconds: 0,
-              shape: { kind: 'path', width: 0 },
+              statusId: 'stun',
+              durationSeconds: -1,
+              shape: { kind: 'circle', radius: 1 },
             },
           ],
-          onEnd: [],
         },
       ],
     } as const;
 
     expect(() => loadAbilities(30, [dash])).toThrow(
-      /"lunge": debuff status "frozen" is unknown[\s\S]*"lunge": debuff durationSeconds must be positive[\s\S]*"lunge": path width must be positive/,
+      /"lunge": dash durationSeconds must not be negative[\s\S]*"lunge": debuff durationSeconds must not be negative/,
     );
   });
 });

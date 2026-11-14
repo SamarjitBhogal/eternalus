@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
+import { BLADE_RUNNER } from '../content/abilities/bladeRunner';
 import { loadAbilities } from '../content/abilities/loadAbilities';
+import { SHOCKWAVE } from '../content/abilities/shockwave';
+import { SLAM } from '../content/abilities/slam';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import { ContentValidationError } from '../content/ContentValidationError';
 import { fakeAbility, SHIPPED_EFFECT_KINDS } from './__fixtures__/fakeAbilities';
@@ -48,5 +51,74 @@ describe('createDefaultAbilityRegistry', () => {
 
     expect(() => createDefaultAbilityRegistry(abilities)).toThrow(ContentValidationError);
     expect(() => createDefaultAbilityRegistry(abilities)).toThrow('effect "zone"');
+  });
+
+  it('fails at build on every step and shape its strategy refuses, nested ones included', () => {
+    const abilities = loadAbilities(30, [
+      {
+        ...SHOCKWAVE,
+        id: 'ghost',
+        effects: [{ kind: 'debuff', statusId: 'frozen', shape: { kind: 'circle', radius: 0 } }],
+      },
+      {
+        ...SLAM,
+        id: 'bad-numbers',
+        effects: [
+          {
+            kind: 'damage',
+            amount: 0,
+            damageType: 'physical',
+            shape: { kind: 'circle', radius: 1 },
+            structureMultiplier: -1,
+          },
+          { kind: 'knockback', distance: 0, shape: { kind: 'circle', radius: 1 } },
+          { kind: 'dash', distance: 0, durationSeconds: 0, onPath: [], onEnd: [] },
+        ],
+      },
+      {
+        ...BLADE_RUNNER,
+        id: 'lunge',
+        effects: [
+          {
+            kind: 'dash',
+            distance: 8,
+            durationSeconds: 0.3,
+            onPath: [
+              {
+                kind: 'debuff',
+                statusId: 'frozen',
+                durationSeconds: 0,
+                shape: { kind: 'path', width: 0 },
+              },
+            ],
+            onEnd: [],
+          },
+        ],
+      },
+    ]);
+
+    expect(() => createDefaultAbilityRegistry(abilities)).toThrow(ContentValidationError);
+    expect(() => createDefaultAbilityRegistry(abilities)).toThrow(
+      new ContentValidationError(
+        [
+          'Ability "ghost": debuff status "frozen" is unknown.',
+          'Ability "ghost": circle radius must be positive.',
+          'Ability "bad-numbers": damage amount must be positive.',
+          'Ability "bad-numbers": structureMultiplier must not be negative.',
+          'Ability "bad-numbers": knockback distance must be positive.',
+          'Ability "bad-numbers": dash distance must be positive.',
+          'Ability "bad-numbers": dash duration must be positive.',
+          'Ability "lunge": debuff status "frozen" is unknown.',
+          'Ability "lunge": debuff duration must be positive.',
+          'Ability "lunge": path width must be positive.',
+        ].join('\n'),
+      ),
+    );
+  });
+
+  it('checks a debuff against the statuses it is given', () => {
+    expect(() => createDefaultAbilityRegistry(loadAbilities(30), { has: () => false })).toThrow(
+      'Ability "shockwave": debuff status "concussion" is unknown.',
+    );
   });
 });

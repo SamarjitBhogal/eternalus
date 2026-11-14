@@ -9,7 +9,9 @@ import { loadWeapons } from '../../content/weapons/loadWeapons';
 import { createDefaultEntityRegistry } from '../../entities/defaultEntityRegistry';
 import type { Entity } from '../../entities/Entity';
 import { EntityFactory } from '../../entities/EntityFactory';
+import { staticCollisionIndexOf } from '../../map/staticCollisionIndexOf';
 import { WorldMap } from '../../map/WorldMap';
+import { CollisionResolver } from '../../physics/CollisionResolver';
 import { GameState } from '../../state/GameState';
 import { MatchWorld } from '../../state/MatchWorld';
 import { unitsWithWarriorKit } from '../__fixtures__/casterState';
@@ -27,7 +29,7 @@ const DASH = {
   onEnd: [{ kind: 'debuff', statusId: 'stun', durationTicks: 15, shape: END }],
 } as const;
 
-/** A 20 x 20 map with a rift filling x = 5 to 6, on a 1 m grid. */
+/** A 20 x 20 map with a rift filling x = 5.2 to 5.8, on a 1 m grid, with its collision sweep. */
 const RIFT_MAP: MapDefinition = {
   id: 'dash-test',
   displayName: 'Test',
@@ -56,6 +58,7 @@ const setUp = (hasMap = false) => {
     ? new MatchWorld(
         RIFT_MAP,
         WorldMap.fromDefinition(RIFT_MAP, 1, () => false),
+        new CollisionResolver(staticCollisionIndexOf(RIFT_MAP, [])),
       )
     : null;
   const state = new GameState(createDefaultGameConfig(), 1, world);
@@ -124,15 +127,24 @@ describe('DashEffect', () => {
     expect([onPath, nearEnd, pastEnd, beside].map(isStunned)).toEqual([false, true, false, false]);
   });
 
-  it('stops the path where the ground is first blocked (WorldMap.isLineClear)', () => {
+  it("stops the path where the caster's circle first touches a wall, as walking stops", () => {
     const { state, caster, dummyAt } = setUp(true);
     const behindRift = dummyAt(7);
     const atWall = dummyAt(4.6);
 
     castSteps(state, caster.id, [DASH], { aim: { x: 30, y: 10 } });
 
-    expect(dashOf(caster).x).toBeCloseTo(4, 3); // from x = 1 to the blocked cell at x = 5
+    // From x = 1 to x = 4.7: the Warrior's 0.5 m circle touches the rift at x = 5.2.
+    expect(dashOf(caster).x).toBeCloseTo(3.7, 5);
     expect(damageTaken(behindRift)).toBe(0);
     expect(isStunned(atWall)).toBe(true);
+  });
+
+  it("stops the path at the map's edge, where the caster's circle meets it", () => {
+    const { state, caster } = setUp(true);
+
+    castSteps(state, caster.id, [DASH], { aim: { x: -30, y: 10 } });
+
+    expect(dashOf(caster).x).toBeCloseTo(-0.5, 9); // from x = 1 to x = 0.5, the Warrior's radius
   });
 });

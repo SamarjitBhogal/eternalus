@@ -20,11 +20,7 @@ export class CollisionResolver {
     for (let iteration = 0; iteration < MAX_SLIDE_CONTACTS; iteration++) {
       const contact = this.firstContact(position, delta, radius);
       if (contact === null) return { x: position.x + delta.x, y: position.y + delta.y };
-      const length = Math.hypot(delta.x, delta.y);
-      const travel = Math.max(
-        0,
-        contact.time - CONTACT_EPSILON / Math.max(length, CONTACT_EPSILON),
-      );
+      const travel = CollisionResolver.shortOf(contact, delta);
       position = { x: position.x + delta.x * travel, y: position.y + delta.y * travel };
       const remainder = { x: delta.x * (1 - contact.time), y: delta.y * (1 - contact.time) };
       const intoWall = Math.min(0, remainder.x * contact.normal.x + remainder.y * contact.normal.y);
@@ -35,6 +31,22 @@ export class CollisionResolver {
       if (Math.hypot(delta.x, delta.y) <= CONTACT_EPSILON) return position;
     }
     return position;
+  }
+
+  /**
+   * The share (0 to 1) of `displacement` a circle of `radius` moves from `start` in a straight
+   * line before its first contact, kept as far short of it as `move` keeps a unit: the sweep `move`
+   * starts with, without the slide. 1 when nothing is in the way. Read-only, like `move`.
+   */
+  public travel(start: Vec2, displacement: Vec2, radius: number): number {
+    const contact = this.firstContact(start, displacement, radius);
+    return contact === null ? 1 : CollisionResolver.shortOf(contact, displacement);
+  }
+
+  /** The share of `delta` that stops `CONTACT_EPSILON` short of `contact`, never below 0. */
+  private static shortOf(contact: SweepContact, delta: Vec2): number {
+    const length = Math.hypot(delta.x, delta.y);
+    return Math.max(0, contact.time - CONTACT_EPSILON / Math.max(length, CONTACT_EPSILON));
   }
 
   private firstContact(start: Vec2, delta: Vec2, radius: number): SweepContact | null {

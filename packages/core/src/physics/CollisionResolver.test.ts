@@ -58,4 +58,33 @@ describe('CollisionResolver', () => {
     expect(slid.x).toBeCloseTo(-0.3);
     expect(slid.y).toBeCloseTo(8);
   });
+
+  describe('travel', () => {
+    const wall = () =>
+      new CollisionResolver(
+        new StaticCollisionIndex([{ id: 'wall', polygon: rect(5, -20, 1, 40) }]),
+      );
+
+    it('is the whole move when nothing is in the way, the side of the wall included', () => {
+      expect(wall().travel({ x: 0, y: 0 }, { x: -8, y: 0 }, 0.5)).toBe(1);
+      expect(wall().travel({ x: 0, y: 0 }, { x: 4, y: 0 }, 0.5)).toBe(1);
+      expect(wall().travel({ x: 4.4, y: 0 }, { x: -8, y: 0 }, 0.5)).toBe(1);
+    });
+
+    it('stops the circle where `move` first touches the wall, without the slide', () => {
+      const resolver = wall();
+      const share = resolver.travel({ x: 0, y: 0 }, { x: 8, y: 0 }, 0.5);
+      const diagonal = resolver.travel({ x: 0, y: 0 }, { x: 8, y: 8 }, 0.5);
+
+      expect(share * 8).toBeCloseTo(4.5, 6);
+      expect(share * 8).toBeLessThan(4.5);
+      expect(share).toBeCloseTo(resolver.move({ x: 0, y: 0 }, { x: 8, y: 0 }, 0.5).x / 8, 12);
+      expect(diagonal * 8).toBeCloseTo(4.5, 6);
+    });
+
+    it('is 0 against the wall, and never takes the circle through a wall thinner than the move', () => {
+      expect(wall().travel({ x: 4.5, y: 0 }, { x: 8, y: 0 }, 0.5)).toBe(0);
+      expect(wall().travel({ x: 0, y: 0 }, { x: 100, y: 0 }, 0.5) * 100).toBeLessThan(4.5);
+    });
+  });
 });

@@ -2,20 +2,19 @@ import type {
   AbilityRejectReason,
   AbilitySlot,
 } from '../content/abilities/AbilityDefinition.types';
+import type { Aim } from '../components/AbilitySlotRuntime.types';
 import type { PlayableTeam, Team } from '../teams/teams.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { Vec2 } from '../utils/geometry.types';
 
 export type { AbilitySlot } from '../content/abilities/AbilityDefinition.types';
+export type { Aim } from '../components/AbilitySlotRuntime.types';
 
 /** Where a developer-menu horde appears (architecture 13 §4). */
 export type SpawnOrigin =
   | { readonly kind: 'structure'; readonly structureId: string }
   | { readonly kind: 'lane'; readonly lane: string; readonly t: number }
   | { readonly kind: 'point'; readonly at: Vec2 };
-
-/** Where an ability is aimed: a world point and, for targeted abilities, the target. */
-export type Aim = { readonly point: Vec2; readonly targetId: EntityId | null };
 
 /**
  * The human's per-tick input with no key names in it (architecture 13 §6.2): movement axes as one

@@ -12,6 +12,7 @@ import { EntityFactory } from '../../entities/EntityFactory';
 import { EntityRegistry } from '../../entities/EntityRegistry';
 import { Legend } from '../../entities/Legend';
 import { Unit } from '../../entities/Unit';
+import { allReady } from '../../state/__fixtures__/stubReadiness';
 import { GameState } from '../../state/GameState';
 import type { Vec2 } from '../../utils/geometry.types';
 import type { Command } from '../Command.types';
@@ -103,7 +104,7 @@ describe('DevSpawnHandler', () => {
     ]);
     expect(
       context.state
-        .snapshot(LEVEL_CURVE_CATALOGUE)
+        .snapshot(LEVEL_CURVE_CATALOGUE, allReady)
         .entities.map(({ team, transform }) => ({ team, transform })),
     ).toEqual([
       { team: 'dark', transform: { x: 10, y: 20, radius: 0.5 } },

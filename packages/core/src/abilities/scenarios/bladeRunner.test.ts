@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
+import { createDefaultGameConfig } from '../../config/defaultGameConfig';
+import { MapGenerator } from '../../map/MapGenerator';
+import { MapObjectBuilder } from '../../map/MapObjectBuilder';
+import { MapPresentationBuilder } from '../../map/MapPresentationBuilder';
+import { doesCircleOverlapPolygon } from '../../utils/circlePolygon';
+import type { Vec2 } from '../../utils/geometry.types';
 import { abilityMatch } from '../__fixtures__/abilityMatch';
 
 /**
@@ -92,5 +98,55 @@ describe('Blade Runner (scenario)', () => {
       `360 rejected ${id} on-cooldown`,
       `361 cast ${id} blade-runner`,
     ]);
+  });
+});
+
+describe('Blade Runner beside a wall (the generated map, seed 1)', () => {
+  const config = createDefaultGameConfig();
+  const map = new MapGenerator().generate(config, 1);
+  const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+  const walls = mapObjects.filter(({ isBlocking }) => isBlocking).flatMap((o) => o.footprints);
+  const touchesWall = (point: Vec2, radius: number): boolean =>
+    walls.some((footprint) => doesCircleOverlapPolygon(point, radius, footprint));
+  const tower = map.features.find(({ id }) => id === 'light-spawner-tower-lane-1-0');
+  /** The first point west of the tower's centre whose 0.6 m circle is clear of every wall. */
+  const besideWall = (): Vec2 => {
+    const centre = tower?.position ?? { x: Number.NaN, y: Number.NaN };
+    let offset = 0;
+    while (touchesWall({ x: centre.x - offset, y: centre.y }, 0.6)) offset += 0.01;
+    return { x: centre.x - offset, y: centre.y };
+  };
+  const warriorAt = (at: Vec2) =>
+    abilityMatch([{ kind: 'warrior', team: 'light', at }], { world: { map, mapObjects } });
+
+  it('dashes the whole 8 m away from a tower wall 0.6 m behind the Warrior, as previewed', () => {
+    const spot = besideWall();
+    const { sim, ids, cast, run, at, entity, log } = warriorAt(spot);
+    const [warrior] = ids;
+    const preview = sim.dashReach(spot, { x: -1, y: 0 }, 8, 0.5);
+
+    cast(warrior ?? '', 'ability-1', { x: spot.x - 20, y: spot.y });
+    run(12);
+
+    expect(log).toEqual([`1 cast ${warrior ?? ''} blade-runner`]);
+    expect(entity(warrior)?.aether?.current).toBeLessThan(100);
+    expect(at(warrior).x).toBeCloseTo(spot.x - 8, 5);
+    expect(at(warrior).y).toBeCloseTo(spot.y, 5);
+    expect(preview).toBe(8);
+  });
+
+  it('stops at the wall, not through it, when aimed into the tower, as previewed', () => {
+    const spot = besideWall();
+    const { sim, ids, cast, run, at } = warriorAt(spot);
+    const [warrior] = ids;
+    const preview = sim.dashReach(spot, { x: 1, y: 0 }, 8, 0.5);
+
+    cast(warrior ?? '', 'ability-1', { x: spot.x + 20, y: spot.y });
+    run(12);
+
+    expect(at(warrior).x).toBeGreaterThan(spot.x);
+    expect(at(warrior).x).toBeLessThan(spot.x + 0.6);
+    expect(at(warrior).x).toBeCloseTo(spot.x + preview, 5);
+    expect(touchesWall(at(warrior), 0.5)).toBe(false);
   });
 });

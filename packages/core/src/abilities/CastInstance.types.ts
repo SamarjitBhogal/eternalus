@@ -1,6 +1,6 @@
 import type { DamagePipeline } from '../combat/DamagePipeline';
 import type { StatusEffectApplier } from '../combat/StatusEffectApplier';
-import type { CastAim } from '../components/AbilitySlotRuntime.types';
+import type { Aim } from '../components/AbilitySlotRuntime.types';
 import type { AbilitySlot } from '../content/abilities/AbilityDefinition.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
@@ -15,7 +15,7 @@ export type CastFacts = {
   readonly casterId: EntityId;
   readonly ability: Ability;
   readonly slot: AbilitySlot;
-  readonly aim: CastAim;
+  readonly aim: Aim;
   /** The caster's position at the cast. */
   readonly origin: Vec2;
   readonly casterLevel: number;

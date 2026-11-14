@@ -127,6 +127,14 @@ export class StateHasher {
     if (movement !== undefined && (movement.heading.x !== 0 || movement.heading.y !== 0)) {
       fields.push(['heading', movement.heading.x, movement.heading.y]);
     }
+    // Forced motion (a dash or knock-back, ADR 0026 decision 4) adds a field only while a push is
+    // under way, so a match where nobody was pushed hashes as before.
+    if (movement?.isForced === true) {
+      fields.push([
+        'forced',
+        ...movement.forcedPushes.flatMap(({ x, y, ticksLeft }) => [x, y, ticksLeft]),
+      ]);
+    }
     const collider = entity.findComponent(Collider);
     if (collider !== undefined) {
       // Only an unbreakable collider adds a field, so states without walls hash as before.

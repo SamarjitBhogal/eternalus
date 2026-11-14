@@ -1,4 +1,5 @@
 import type { AiMemory, ControllerId } from '../content/ai/ai.types';
+import type { LegendSpecDefinition } from '../content/legends/specs/legendSpecs.types';
 import type { WeaponDefinition } from '../content/weapons/weapons.types';
 import type { EntityDefinitionBase } from '../content/EntityDefinition.types';
 import type { Team } from '../teams/teams.types';
@@ -49,4 +50,15 @@ export interface WeaponSource {
   has(id: string): boolean;
   /** The weapon with the id `id`. */
   get(id: string): WeaponDefinition;
+}
+
+/**
+ * Where a Legend finds the spec a `Placement.specId` names, for its kit (ADR 0026 decision 1).
+ * A `ContentCatalogue<LegendSpecDefinition>` satisfies it.
+ */
+export interface LegendSpecSource {
+  /** Whether a spec has the id `id`. */
+  has(id: string): boolean;
+  /** The spec with the id `id`. */
+  get(id: string): LegendSpecDefinition;
 }

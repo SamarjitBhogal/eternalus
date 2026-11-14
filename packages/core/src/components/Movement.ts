@@ -146,6 +146,11 @@ export class Movement {
     return this.pushes.length > 0;
   }
 
+  /** The pushes under way, oldest first: each one's share per tick and its ticks left. */
+  public get forcedPushes(): readonly Readonly<ForcedPush>[] {
+    return this.pushes;
+  }
+
   /**
    * Moves the entity by `displacement` (world units), spread evenly over the next `ticks` ticks.
    * Pushes under way add up as vectors (two knock-backs in one tick move the sum, DEC-208), and

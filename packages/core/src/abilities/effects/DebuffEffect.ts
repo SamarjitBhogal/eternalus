@@ -1,5 +1,8 @@
 import type { DebuffSpec } from '../../content/abilities/AbilityDefinition.types';
+import type { AbilityDisplayStep } from '../../content/loadDisplayContent';
 import type { AbilityEffect, CastContext } from '../AbilityEffect.types';
+import { mustBePositive } from '../specChecks';
+import { areaRow } from './areaRow';
 
 /**
  * Applies a negative status to every enemy in the step's shape through the match's one
@@ -9,6 +12,24 @@ import type { AbilityEffect, CastContext } from '../AbilityEffect.types';
  */
 export class DebuffEffect implements AbilityEffect<DebuffSpec> {
   public readonly kind = 'debuff';
+
+  /** @param statuses - The statuses a debuff may name (`content/status-effects/`). */
+  public constructor(private readonly statuses: { has(id: string): boolean }) {}
+
+  /** A debuff names a known status, and a duration override, when set, of at least one tick. */
+  public validate(spec: DebuffSpec): readonly string[] {
+    return [
+      ...(this.statuses.has(spec.statusId) ? [] : [`debuff status "${spec.statusId}" is unknown`]),
+      ...(spec.durationTicks === undefined
+        ? []
+        : mustBePositive(spec.durationTicks, 'debuff duration')),
+    ];
+  }
+
+  /** Its area. */
+  public describe(spec: DebuffSpec): readonly AbilityDisplayStep[] {
+    return areaRow(spec);
+  }
 
   /** Applies the step's status to every enemy in its shape, in id order. */
   public apply(spec: DebuffSpec, cast: CastContext): void {

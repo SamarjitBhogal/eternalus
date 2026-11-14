@@ -58,6 +58,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
     director,
     hordes,
     abilities = createDefaultAbilityRegistry(loadAbilities(state.config.tickRate)),
+    validator = new CastValidator(abilities),
   }: DefaultSystemPipelineOptions) {
     const { tickRate, map } = state.config;
     const damage = new DamagePipeline();
@@ -94,7 +95,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
     }
     super([
       ...(hordes === undefined ? [] : [...hordes.decide, new HordeSystem(state, HORDE_STEERING)]),
-      new AbilitySystem(abilities, new CastValidator(abilities), damage, statuses),
+      new AbilitySystem(abilities, validator, damage, statuses),
       // After the casts, so a cast spends before the tick's regeneration (plan arch call 13).
       new AetherRegenSystem(AETHER_REGEN, tickRate),
       new StatusEffectSystem(damage, statuses),

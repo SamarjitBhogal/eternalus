@@ -1,7 +1,7 @@
+import type { SlotReadiness } from '../state/SlotReadiness.types';
 import type { CommandHandlers } from './CommandHandler.types';
 import { AttackTargetHandler } from './handlers/AttackTargetHandler';
 import { CastAbilityHandler } from './handlers/CastAbilityHandler';
-import type { CastCheck } from './handlers/CastAbilityHandler.types';
 import { DevRemoveEntityHandler } from './handlers/DevRemoveEntityHandler';
 import { DevSpawnHandler } from './handlers/DevSpawnHandler';
 import { DevSpawnMobsHandler } from './handlers/DevSpawnMobsHandler';
@@ -12,10 +12,12 @@ import { UnsupportedCommandHandler } from './handlers/UnsupportedCommandHandler'
 /**
  * The command registry: one line per command type (architecture 02 §9).
  *
- * @param cast - The cast rules `cast-ability` checks with (`abilities/CastValidator`, injected
- *   because `commands/` may not import `abilities/`).
+ * @param cast - The cast rules `cast-ability` checks with (the match's `abilities/CastValidator`,
+ *   injected through the `SlotReadiness` port because `commands/` may not import `abilities/`).
  */
-export const createDefaultCommandHandlers = (cast: CastCheck): CommandHandlers => {
+export const createDefaultCommandHandlers = (
+  cast: Pick<SlotReadiness, 'blockedBy'>,
+): CommandHandlers => {
   const unsupported = new UnsupportedCommandHandler();
   return {
     move: new MoveHandler(),

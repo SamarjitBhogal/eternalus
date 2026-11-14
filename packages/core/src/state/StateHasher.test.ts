@@ -145,6 +145,26 @@ describe('StateHasher', () => {
     expect(hashes.size).toBe(4);
   });
 
+  it('hashes forced motion only while a push is under way, then each push field', () => {
+    const { state, soldier } = stateWithSoldier();
+    const before = hasher.hash(state);
+    const movement = soldier.getComponent(Movement);
+
+    movement.push({ x: 3, y: 0 }, 8);
+    const pushed = hasher.hash(state);
+    const { state: other, soldier: twin } = stateWithSoldier();
+    twin.getComponent(Movement).push({ x: 0, y: 3 }, 8);
+    const pushedElsewhere = hasher.hash(other);
+    movement.takeForcedStep();
+    const stepped = hasher.hash(state);
+    for (let tick = 1; tick < 8; tick += 1) movement.takeForcedStep();
+
+    expect(new Set([before, pushed, pushedElsewhere, stepped]).size).toBe(4);
+    // Once the push ends, the entity hashes as one never pushed: the golden replays stay valid.
+    expect(movement.isForced).toBe(false);
+    expect(hasher.hash(state)).toBe(before);
+  });
+
   it('changes when a minion counts a kill', () => {
     const { state, soldier } = stateWithSoldier();
     const veterancy = new Veterancy();

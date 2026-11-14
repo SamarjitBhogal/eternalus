@@ -100,7 +100,7 @@ const orientation = (a: Vec2, b: Vec2, c: Vec2): number =>
   (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
 
 /** Whether segments `a`–`b` and `c`–`d` touch or cross (collinear overlaps count). */
-const doSegmentsIntersect = (a: Vec2, b: Vec2, c: Vec2, d: Vec2): boolean => {
+export const doSegmentsIntersect = (a: Vec2, b: Vec2, c: Vec2, d: Vec2): boolean => {
   const isWithin = (p: Vec2, q: Vec2, r: Vec2): boolean =>
     Math.min(p.x, q.x) <= r.x &&
     r.x <= Math.max(p.x, q.x) &&

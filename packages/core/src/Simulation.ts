@@ -1,4 +1,3 @@
-import { CastReadiness } from './abilities/CastReadiness';
 import { CastValidator } from './abilities/CastValidator';
 import { dashReach } from './abilities/dashReach';
 import { createDefaultAbilityRegistry } from './abilities/defaultAbilityRegistry';
@@ -27,6 +26,7 @@ import { LANE_ASSESSMENT_WEIGHTS } from './content/ai/laneAssessmentWeights';
 import { ROVER_TACTICS } from './content/ai/rover';
 import { loadAbilities } from './content/abilities/loadAbilities';
 import { LEGEND_KIND_IDS } from './content/legends/legendKinds';
+import { LEGEND_SPECS } from './content/legends/specs/legendSpecCatalogue';
 import type { MapDefinition } from './content/maps/maps.types';
 import type { MapObject } from './content/maps/mapObjects.types';
 import type { GameConfig } from './config/GameConfig.types';
@@ -63,7 +63,10 @@ import type { Snapshot } from './state/Snapshot.types';
 import { StateHasher } from './state/StateHasher';
 import type { Replay, ReplaySetup, RosterSlot, SimulationOptions } from './Simulation.types';
 import { SpaceIndex } from './physics/SpaceIndex';
+import { CollisionResolver } from './physics/CollisionResolver';
+import type { StaticCollisionIndex } from './physics/StaticCollisionIndex';
 import { MatchPathfinderFactory } from './map/MatchPathfinderFactory';
+import { staticCollisionIndexOf } from './map/staticCollisionIndexOf';
 import { zoneAreaOf } from './map/zoneArea';
 import { DefaultSystemPipeline } from './systems/DefaultSystemPipeline';
 import type { SystemContext } from './systems/System.types';
@@ -107,7 +110,8 @@ export class Simulation {
 
   /** The level curves `ProgressionSystem` levels Legends along; the snapshot reports XP on them. */
   private readonly curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'has' | 'get'>;
-  private readonly readiness: CastReadiness;
+  /** The match's one cast rule (`CastValidator`), as the snapshot reads it. */
+  private readonly readiness: SlotReadiness;
 
   /**
    * Creates a match from its options (architecture 03 §6).
@@ -137,7 +141,7 @@ export class Simulation {
       ...(mapObjects === undefined ? {} : { mapObjects }),
       ...(roster.length === 0 ? {} : { roster }),
     };
-    const { space, world, paths } = Simulation.buildWorld(map, validConfig, mapObjects);
+    const { space, world, paths, walls } = Simulation.buildWorld(map, validConfig, mapObjects);
     // Without the default pipeline no director runs, so no mark would ever fire: list none.
     const schedule = systems === undefined ? timeline.schedule() : [];
     this.state = new GameState(validConfig, seed, world, { space, paths }, schedule);
@@ -146,9 +150,11 @@ export class Simulation {
     this.curves = curves;
     const weaponSource = weapons ?? loadWeapons(tickRate);
     const registry = abilities ?? createDefaultAbilityRegistry(loadAbilities(tickRate));
-    this.handlers = createDefaultCommandHandlers(new CastValidator(registry));
-    this.readiness = new CastReadiness(registry);
-    const controllers = Simulation.createControllers(this.readiness);
+    // One cast rule per match: the handler, `AbilitySystem`, the snapshot and the bots share it.
+    const validator = new CastValidator(registry);
+    this.handlers = createDefaultCommandHandlers(validator);
+    this.readiness = validator;
+    const controllers = Simulation.createControllers(validator);
     const units = content ?? Simulation.defaultContent(tickRate, curves, controllers, weaponSource);
     const objectsById = new Map(
       Object.values(MAP_OBJECT_DEFINITIONS).map((definition) => [definition.id, definition]),
@@ -166,6 +172,7 @@ export class Simulation {
       Simulation.withStructures(definitions),
       undefined,
       weaponSource,
+      LEGEND_SPECS,
     );
     Simulation.spawnStructures(this.state, factory);
     this.state.indexStructures();
@@ -199,13 +206,11 @@ export class Simulation {
         progression: { units, curves, xpSources: XP_SOURCES },
         director,
         abilities: registry,
+        validator,
         hordes: {
           factory,
           space,
-          collisions:
-            map === undefined || mapObjects === undefined
-              ? []
-              : [new CollisionSystem(map, mapObjects)],
+          collisions: map === undefined || walls === null ? [] : [new CollisionSystem(map, walls)],
           decide: [
             new AiSystem(this.state, controllers, AI_CADENCE, (command) => {
               this.botQueue.enqueue(command);
@@ -231,12 +236,12 @@ export class Simulation {
   }
 
   /**
-   * How far a dash from `from` along `direction` (a unit vector) may go before a wall stops it, up
-   * to `distance` metres: `DashEffect`'s own rule on the match's own grid. A read-only query for
-   * aim previews; it changes nothing.
+   * How far a dash of a caster of `radius` from `from` along `direction` (a unit vector) may go
+   * before a wall or the map's edge stops it, up to `distance` metres: `DashEffect`'s own rule on
+   * the match's own walls. A read-only query for aim previews; it changes nothing.
    */
-  public dashReach(from: Vec2, direction: Vec2, distance: number): number {
-    return dashReach(this.state.world?.grid, from, direction, distance);
+  public dashReach(from: Vec2, direction: Vec2, distance: number, radius: number): number {
+    return dashReach(this.state.world, from, direction, distance, radius);
   }
 
   /** Number of ticks completed. */
@@ -629,25 +634,29 @@ export class Simulation {
    * object's footprints, minus its passages. A feature whose object is walkable (a Stronghold's
    * floor, whose walls and furniture are objects of their own) is not stamped; other blocking
    * features keep their stamp, which also fills a tower's hollow core so no path ends in a pocket
-   * the walls close off.
+   * the walls close off. Also with `mapObjects`, `walls` is the one static collision index that
+   * `CollisionSystem` moves units against and the world's collision sweep cuts dashes with.
    */
   private static buildWorld(
     map: MapDefinition | undefined,
     config: GameConfig,
-    mapObjects: readonly MapObject[] = [],
+    mapObjects: readonly MapObject[] | undefined,
   ): {
     readonly space: SpaceIndex | null;
     readonly world: MatchWorld | null;
     readonly paths: AStarPathfinder | null;
+    readonly walls: StaticCollisionIndex | null;
   } {
     if (map === undefined) {
-      return { space: null, world: null, paths: null };
+      return { space: null, world: null, paths: null, walls: null };
     }
     const { grid, paths } = new MatchPathfinderFactory().create(map, config, mapObjects);
+    const walls = mapObjects === undefined ? null : staticCollisionIndexOf(map, mapObjects);
     return {
       space: new SpaceIndex(map.width, map.height, SPACE_CELL_SIZE),
-      world: new MatchWorld(map, grid),
+      world: new MatchWorld(map, grid, walls === null ? null : new CollisionResolver(walls)),
       paths,
+      walls,
     };
   }
 

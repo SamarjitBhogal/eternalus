@@ -1,9 +1,9 @@
 import { Abilities } from '../components/Abilities';
 import { Aether } from '../components/Aether';
 import { Progression } from '../components/Progression';
-import type { AbilityKit } from '../content/abilities/AbilityDefinition.types';
 import type { LegendDefinition } from '../content/legends/legends.types';
-import { LEGEND_SPECS } from '../content/legends/specs/legendSpecCatalogue';
+import { kitOf } from '../content/legends/specs/kitOf';
+import type { LegendSpecDefinition } from '../content/legends/specs/legendSpecs.types';
 import { SpawnContextReader } from './SpawnContextReader';
 import { Unit } from './Unit';
 import type { BasicAttack } from './Unit.types';
@@ -31,7 +31,8 @@ export abstract class Legend extends Unit {
    * Installs the unit components, then the legend-only `Aether` (MP) pool, `Progression` (XP
    * and level) and `Abilities` (the ability bar, from the kit). Mobs and structures have none.
    *
-   * @throws Error when the context names a Legend spec that does not exist or is of another class.
+   * @throws Error when the context names a Legend spec but has no spec source, or a spec that
+   *   does not exist or is of another class.
    */
   protected override installComponents(context: unknown): void {
     super.installComponents(context);
@@ -42,26 +43,36 @@ export abstract class Legend extends Unit {
     // The id is checked at content load (`KnownLevelCurveRule`); `ProgressionSystem` resolves it.
     this.addComponent(new Progression(definition.levelCurveId));
     // The kit's ids are checked at content load (`KitInPoolRule`, `KnownAbilityRefsRule`).
-    this.addComponent(new Abilities(this.kitOf(definition, reader.specId(context))));
+    this.addComponent(new Abilities(kitOf(this.specOf(definition, reader, context), definition)));
   }
 
   /**
-   * The kit this Legend equips (DEC-198, plan arch call 1): its spec's own kit, else its class's
-   * `defaultKit`.
+   * The Legend spec the spawn context names, from the injected spec source (DEC-198, ADR 0026
+   * decision 1), or `null` when it names none.
    *
-   * @throws Error when `specId` names no spec, or a spec of another class.
+   * @throws Error when it names a spec but has no spec source, or the spec does not exist or is
+   *   of another class.
    */
-  private kitOf(definition: LegendDefinition, specId: string | null): AbilityKit {
+  private specOf(
+    definition: LegendDefinition,
+    reader: SpawnContextReader,
+    context: unknown,
+  ): LegendSpecDefinition | null {
+    const specId = reader.specId(context);
     if (specId === null) {
-      return definition.defaultKit;
+      return null;
     }
-    const spec = LEGEND_SPECS.has(specId) ? LEGEND_SPECS.get(specId) : undefined;
+    const specs = reader.specs(context);
+    if (specs === null) {
+      throw new Error(`Legend "${this.id}" needs a spec source to use the spec "${specId}".`);
+    }
+    const spec = specs.has(specId) ? specs.get(specId) : undefined;
     if (spec?.classId !== definition.id) {
       throw new Error(
         `Legend "${this.id}" (class "${definition.id}") cannot use the spec "${specId}": it is not a spec of that class.`,
       );
     }
-    return spec.kit ?? definition.defaultKit;
+    return spec;
   }
 
   /**

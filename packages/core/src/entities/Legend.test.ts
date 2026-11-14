@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { Abilities } from '../components/Abilities';
 import { Combat } from '../components/Combat';
@@ -61,10 +61,6 @@ describe('Legend', () => {
   });
 
   describe('its ability bar', () => {
-    afterEach(() => {
-      vi.restoreAllMocks();
-    });
-
     const SHIPPED_WEAPONS = loadWeapons(30);
 
     const barOf = (legend: Warrior) =>
@@ -88,6 +84,10 @@ describe('Legend', () => {
 
     it('equips its spec’s own kit when the spawn names a spec that has one, else the class kit', () => {
       const own = { abilities: ['veil', 'hamstring', 'blade-runner'], ultimate: 'fury' } as const;
+      const ownKnight = {
+        has: (id: string) => id === 'knight',
+        get: () => ({ ...KNIGHT, kit: own }),
+      };
       const withKit = new Warrior('entity-1', 'warrior');
       const withoutKit = new Warrior('entity-2', 'warrior');
 
@@ -95,13 +95,14 @@ describe('Legend', () => {
         ...PLACEMENT,
         definition: WARRIOR,
         weapons: SHIPPED_WEAPONS,
+        specs: LEGEND_SPECS,
         specId: 'knight',
       });
-      vi.spyOn(LEGEND_SPECS, 'get').mockReturnValue({ ...KNIGHT, kit: own });
       withKit.spawn({
         ...PLACEMENT,
         definition: WARRIOR,
         weapons: SHIPPED_WEAPONS,
+        specs: ownKnight,
         specId: 'knight',
       });
 
@@ -118,9 +119,38 @@ describe('Legend', () => {
       for (const specId of ['no-such-spec', 'oracle']) {
         const legend = new Warrior('entity-1', 'warrior');
         expect(() => {
-          legend.spawn({ ...PLACEMENT, definition: WARRIOR, weapons: SHIPPED_WEAPONS, specId });
+          legend.spawn({
+            ...PLACEMENT,
+            definition: WARRIOR,
+            weapons: SHIPPED_WEAPONS,
+            specs: LEGEND_SPECS,
+            specId,
+          });
         }).toThrow(`cannot use the spec "${specId}"`);
       }
+    });
+
+    it('reads specs only from the injected spec source, and throws when a spec is named without one', () => {
+      const legend = new Warrior('entity-1', 'warrior');
+      const noSpecs = { has: () => false, get: () => KNIGHT };
+
+      expect(() => {
+        legend.spawn({
+          ...PLACEMENT,
+          definition: WARRIOR,
+          weapons: SHIPPED_WEAPONS,
+          specs: noSpecs,
+          specId: 'knight',
+        });
+      }).toThrow('cannot use the spec "knight"');
+      expect(() => {
+        new Warrior('entity-2', 'warrior').spawn({
+          ...PLACEMENT,
+          definition: WARRIOR,
+          weapons: SHIPPED_WEAPONS,
+          specId: 'knight',
+        });
+      }).toThrow('Legend "entity-2" needs a spec source to use the spec "knight".');
     });
   });
 });

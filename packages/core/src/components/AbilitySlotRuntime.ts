@@ -1,5 +1,5 @@
 import type { AbilitySlot } from '../content/abilities/AbilityDefinition.types';
-import type { CastAim, LastCast } from './AbilitySlotRuntime.types';
+import type { Aim, LastCast } from './AbilitySlotRuntime.types';
 
 /**
  * One ability bar slot's runtime state (architecture 05 §6, `AbilityRuntime`): which ability it
@@ -14,7 +14,7 @@ export class AbilitySlotRuntime {
   /** The ultimate meter, 0 to 1 (DEC-202); filled by the charge rules, emptied by a cast. */
   public charge = 0;
 
-  private pending: CastAim | null = null;
+  private pending: Aim | null = null;
 
   private last: LastCast | null = null;
 
@@ -28,7 +28,7 @@ export class AbilitySlotRuntime {
   ) {}
 
   /** The accepted cast waiting for `AbilitySystem` this tick, or `null`. */
-  public get pendingCast(): CastAim | null {
+  public get pendingCast(): Aim | null {
     return this.pending;
   }
 
@@ -48,12 +48,12 @@ export class AbilitySlotRuntime {
   }
 
   /** Records an accepted `cast-ability` aimed at `aim`; `AbilitySystem` takes it this tick. */
-  public queue(aim: CastAim): void {
+  public queue(aim: Aim): void {
     this.pending = aim;
   }
 
   /** Returns the pending cast and clears it. */
-  public takePending(): CastAim | null {
+  public takePending(): Aim | null {
     const aim = this.pending;
     this.pending = null;
     return aim;

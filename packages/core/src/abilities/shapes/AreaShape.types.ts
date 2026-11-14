@@ -1,4 +1,4 @@
-import type { Vec2 } from '../../utils/geometry.types';
+import type { Polygon, Vec2 } from '../../utils/geometry.types';
 
 /** The area part of an effect step (05 §3 `EffectShape`) as the registry sees it: its kind is the key. */
 export type ShapeSpec = { readonly kind: string };
@@ -18,8 +18,15 @@ export type ShapePlacement = { readonly from: Vec2; readonly to: Vec2 };
 export interface AreaShape<S extends ShapeSpec = ShapeSpec> {
   /** The registry key, e.g. `circle`. */
   readonly kind: S['kind'];
+  /** What is wrong with `shape` as authored, or nothing; run at boot by `AbilityRegistry.resolveAll`. */
+  validate(shape: S): readonly string[];
   /** Whether a body of `radius` at `point` overlaps `shape` placed at `placement`. */
   overlaps(shape: S, placement: ShapePlacement, point: Vec2, radius: number): boolean;
+  /**
+   * Whether `polygon` (one footprint of a map object: a house, a wall, a fort) overlaps `shape`
+   * placed at `placement`, measured to its outline as basic attacks are (`EntityStore.isInReach`).
+   */
+  overlapsPolygon(shape: S, placement: ShapePlacement, polygon: Polygon): boolean;
   /**
    * The point of `shape` placed at `placement` nearest to its middle as seen from `point`: what a
    * knock-back at `point` pushes away from (a circle's centre, the nearest point of a path's line).

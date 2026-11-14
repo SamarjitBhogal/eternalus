@@ -10,7 +10,7 @@ import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { SeededRandom } from '../utils/SeededRandom';
 import type { BotTurn } from './BotLegendController.types';
 import { BotLeaves } from './BotLeaves';
-import { allReady } from './__fixtures__/stubReadiness';
+import { allReady } from '../state/__fixtures__/stubReadiness';
 import { Perception } from './perception/Perception';
 
 const leaves = new BotLeaves({

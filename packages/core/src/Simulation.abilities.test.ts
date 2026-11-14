@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { TEST_KIT, unitsWithWarriorKit } from './abilities/__fixtures__/casterState';
 import { testAbilityRegistry } from './abilities/__fixtures__/fakeAbilities';
 import { RecordingEffect } from './abilities/__fixtures__/RecordingEffect';
+import { stepPastCountdown } from './abilities/__fixtures__/stepPastCountdown';
 import type { Command } from './commands/Command.types';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { NullLogger } from './diagnostics/NullLogger';
@@ -35,13 +36,6 @@ const castBy = (actorId: string, slot: 'ability-1' | 'ability-3' = 'ability-1'):
   slot,
   aim: { point: { x: 55, y: 50 }, targetId: null },
 });
-
-/** Steps until the countdown is over: it holds every unit idle and refuses casts (DEC-88). */
-const stepPastCountdown = (sim: Simulation): void => {
-  do {
-    sim.step();
-  } while (sim.snapshot().match.phase === 'countdown');
-};
 
 /**
  * A match whose Warriors carry `TEST_KIT` and whose `fake-strike` effect records, with the two
@@ -192,22 +186,23 @@ describe('Simulation.dashReach', () => {
       config: createDefaultGameConfig(),
       seed: 1,
       logger: new NullLogger(),
-      ...(map === undefined ? {} : { map }),
+      ...(map === undefined ? {} : { map, mapObjects: [] }),
     });
 
-  it("stops a dash at the match's own wall and reports the whole distance elsewhere", () => {
+  it("stops a dash where the caster's circle meets the match's own wall or edge", () => {
     const sim = simOn(riftMap);
 
-    expect(sim.dashReach({ x: 96, y: 30 }, { x: 1, y: 0 }, 8)).toBeLessThan(5);
-    expect(sim.dashReach({ x: 96, y: 30 }, { x: 1, y: 0 }, 8)).toBeGreaterThan(3);
-    expect(sim.dashReach({ x: 96, y: 30 }, { x: -1, y: 0 }, 8)).toBe(8);
+    expect(sim.dashReach({ x: 96, y: 30 }, { x: 1, y: 0 }, 8, 0.5)).toBeCloseTo(3.7, 5);
+    expect(sim.dashReach({ x: 96, y: 30 }, { x: 1, y: 0 }, 8, 1.25)).toBeCloseTo(2.95, 5);
+    expect(sim.dashReach({ x: 96, y: 30 }, { x: -1, y: 0 }, 8, 0.5)).toBe(8);
+    expect(sim.dashReach({ x: 96, y: 3 }, { x: 0, y: -1 }, 8, 0.5)).toBeCloseTo(2.5, 9);
   });
 
   it('is the whole distance in a match with no map, and changes nothing', () => {
     const sim = simOn();
     const before = sim.snapshot();
 
-    expect(sim.dashReach({ x: 0, y: 0 }, { x: 1, y: 0 }, 8)).toBe(8);
+    expect(sim.dashReach({ x: 0, y: 0 }, { x: 1, y: 0 }, 8, 0.5)).toBe(8);
     expect(sim.snapshot()).toEqual(before);
   });
 });

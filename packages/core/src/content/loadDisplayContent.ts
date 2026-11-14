@@ -3,7 +3,6 @@ import { ABILITIES } from './abilities/abilityCatalogue';
 import type {
   AuthoredAbility,
   AuthoredEffectSpec,
-  AuthoredShapedEffectSpec,
   EffectShape,
 } from './abilities/AbilityDefinition.types';
 import { ContentCatalogue } from './ContentCatalogue';
@@ -29,8 +28,9 @@ import { ContentValidator } from './validation/ContentValidator';
 
 /**
  * One step of an ability's effect list as the client draws it: what it does and the area it covers,
- * for the range overlay. A dash step is `{ kind: 'dash', shape: path, distance }` (the path as wide
- * as its widest `onPath` path step), followed by its `onPath` and `onEnd` steps.
+ * for the range overlay. Each effect strategy describes its own steps (`AbilityEffect.describe`): a
+ * dash step is `{ kind: 'dash', shape: path, distance }` (the path as wide as its widest `onPath`
+ * path step), followed by its `onPath` and `onEnd` steps.
  */
 export type AbilityDisplayStep = {
   readonly kind: AuthoredEffectSpec['kind'];
@@ -47,7 +47,6 @@ export type AbilityDisplay = {
   readonly id: string;
   readonly displayName: string;
   readonly description: string;
-  readonly classId: string;
   /** `ultimate` for the key-4 ability. */
   readonly slot: AuthoredAbility['slot'];
   readonly aetherCost: number;
@@ -78,8 +77,17 @@ export type DisplayContent = {
   readonly botRoster: BotRosterDefinition;
 };
 
+/**
+ * Turns an ability's effect steps into its overlay rows (`AbilityDisplay.steps`). Each effect kind
+ * describes its own steps, so this is the effect strategies' job (`AbilityRegistry.describe`),
+ * injected because `content/` does not import `abilities/`.
+ */
+export type AbilityStepDescriber = (
+  effects: readonly AuthoredEffectSpec[],
+) => readonly AbilityDisplayStep[];
+
 /** The catalogues `loadDisplayContent` validates and returns; each defaults to the shipped one. */
-type DisplayCatalogues = {
+export type DisplayCatalogues = {
   readonly legends?: ContentCatalogue<LegendDefinition>;
   readonly specs?: ContentCatalogue<LegendSpecDefinition>;
   readonly lockedClasses?: ContentCatalogue<LockedClassDefinition>;
@@ -87,42 +95,18 @@ type DisplayCatalogues = {
   readonly abilities?: ContentCatalogue<AuthoredAbility>;
 };
 
-const shapedStep = ({ kind, shape }: AuthoredShapedEffectSpec): readonly AbilityDisplayStep[] => [
-  { kind, shape },
-];
-
-/**
- * The step of `effect` and, for a dash, its child steps, in cast order. A dash's own sweep is as
- * wide as the widest `path` step it runs on the way (0 when it runs none).
- */
-const stepsOf = (effect: AuthoredEffectSpec): readonly AbilityDisplayStep[] =>
-  effect.kind === 'dash'
-    ? [
-        {
-          kind: 'dash',
-          shape: {
-            kind: 'path',
-            width: Math.max(
-              0,
-              ...effect.onPath.map(({ shape }) => ('width' in shape ? shape.width : 0)),
-            ),
-          },
-          distance: effect.distance,
-        },
-        ...[...effect.onPath, ...effect.onEnd].flatMap(shapedStep),
-      ]
-    : shapedStep(effect);
-
-const toAbilityDisplay = (ability: AuthoredAbility): AbilityDisplay => ({
+const toAbilityDisplay = (
+  ability: AuthoredAbility,
+  describeSteps: AbilityStepDescriber,
+): AbilityDisplay => ({
   id: ability.id,
   displayName: ability.displayName,
   description: ability.description,
-  classId: ability.classId,
   slot: ability.slot,
   aetherCost: ability.aetherCost,
   cooldownSeconds: ability.cooldownSeconds,
   isAvailable: ability.effects.length > 0,
-  steps: ability.effects.flatMap(stepsOf),
+  steps: describeSteps(ability.effects),
 });
 
 /**
@@ -133,19 +117,24 @@ const toAbilityDisplay = (ability: AuthoredAbility): AbilityDisplay => ({
  * through a `ContentValidator` (04 §5, DEC-22). The display sibling of `loadDefaultContent`
  * (02 §6).
  *
+ * @param describeSteps - Each ability's overlay rows: the effect strategies' descriptions. Core
+ *   exports this loader with the shipped strategies bound (`loadShippedDisplayContent`).
  * @param catalogues - The catalogues (and the bot roster) to load; each one left out is the
  *   shipped one.
  * @throws ContentValidationError listing every broken rule of the first catalogue that fails (each
  *   catalogue reports all its own problems at once; a catalogue is not checked while one before it
  *   fails).
  */
-export const loadDisplayContent = ({
-  legends = LEGEND_CLASSES,
-  specs = LEGEND_SPECS,
-  lockedClasses = LOCKED_CLASSES,
-  botRoster = BOT_ROSTER,
-  abilities = ABILITIES,
-}: DisplayCatalogues = {}): DisplayContent => {
+export const loadDisplayContent = (
+  describeSteps: AbilityStepDescriber,
+  {
+    legends = LEGEND_CLASSES,
+    specs = LEGEND_SPECS,
+    lockedClasses = LOCKED_CLASSES,
+    botRoster = BOT_ROSTER,
+    abilities = ABILITIES,
+  }: DisplayCatalogues = {},
+): DisplayContent => {
   new ContentValidator(
     createDefaultContentRules(undefined, undefined, abilities, legends),
   ).validate(legends);
@@ -154,7 +143,7 @@ export const loadDisplayContent = ({
   new ContentValidator(createBotRosterRules(legends)).validate(new ContentCatalogue([botRoster]));
 
   return {
-    abilities: abilities.all().map(toAbilityDisplay),
+    abilities: abilities.all().map((ability) => toAbilityDisplay(ability, describeSteps)),
     legends: legends.all(),
     specs: specs.all(),
     lockedClasses: lockedClasses.all(),

@@ -1,5 +1,4 @@
 import { Abilities } from '../components/Abilities';
-import { Transform } from '../components/Transform';
 import type { Entity } from '../entities/Entity';
 import type { GameState } from './GameState';
 import type { AbilitySlotSnapshot, PlayerSnapshot } from './Snapshot.types';
@@ -11,7 +10,7 @@ import type { SlotReadiness } from './SlotReadiness.types';
  * here, never in `GameState`.
  */
 export class PlayerSnapshotter {
-  /** @param readiness - The cast rules the slots are judged by (`abilities/CastReadiness`). */
+  /** @param readiness - The cast rules the slots are judged by (the match's `CastValidator`). */
   public constructor(private readonly readiness: SlotReadiness) {}
 
   /** The player's slots, or `null` when `legend` has no ability bar. */
@@ -20,13 +19,10 @@ export class PlayerSnapshotter {
     if (abilities === undefined) {
       return null;
     }
-    // A directional ability needs an aim; the slot's own state decides readiness, so aim one
-    // metre to the right of the Legend (a zero aim would read as `no-target` on every dash).
-    const at = legend.findComponent(Transform)?.position ?? { x: 0, y: 0 };
-    const aim = { point: { x: at.x + 1, y: at.y }, targetId: null };
     const slots: AbilitySlotSnapshot[] = abilities.slots.map((runtime) => {
       const { abilityId, slot } = runtime;
-      const blockedBy = this.readiness.blockedBy(state, legend.id, slot, aim);
+      // The slot's own state decides readiness; the aim is the cast's, not the slot's.
+      const blockedBy = this.readiness.slotBlockedBy(state, legend.id, slot);
       return {
         slot,
         abilityId,
@@ -36,8 +32,7 @@ export class PlayerSnapshotter {
         // ponytail: the ultimate meter is built with Fury (phase 4); until then no slot reports one.
         charge: null,
         isReady: blockedBy === null,
-        // `unknown-entity` cannot happen: the legend is in the store; `dead` is the closest reason.
-        blockedBy: blockedBy === 'unknown-entity' ? 'dead' : blockedBy,
+        blockedBy,
       };
     });
     return { entityId: legend.id, slots };

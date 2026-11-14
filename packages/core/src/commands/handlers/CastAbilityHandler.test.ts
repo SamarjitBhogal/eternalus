@@ -15,7 +15,7 @@ const CAST: Command<'cast-ability'> = {
 describe('CastAbilityHandler', () => {
   it('queues the cast on the caster’s slot when the check passes', () => {
     const { state, factory, caster } = casterState();
-    const handler = new CastAbilityHandler({ check: () => null });
+    const handler = new CastAbilityHandler({ blockedBy: () => null });
 
     expect(handler.handle(CAST, { state, factory })).toBeNull();
     expect(caster.getComponent(Abilities).slot('ability-1')?.pendingCast).toEqual(CAST.aim);
@@ -23,7 +23,7 @@ describe('CastAbilityHandler', () => {
 
   it('returns the check’s reason and queues nothing when it fails', () => {
     const { state, factory, caster } = casterState();
-    const handler = new CastAbilityHandler({ check: () => 'on-cooldown' });
+    const handler = new CastAbilityHandler({ blockedBy: () => 'on-cooldown' });
 
     expect(handler.handle(CAST, { state, factory })).toBe('on-cooldown');
     expect(caster.getComponent(Abilities).hasPendingCast).toBe(false);
@@ -31,7 +31,7 @@ describe('CastAbilityHandler', () => {
 
   it('refuses as empty-slot when the actor has no ability bar, even if the check passed', () => {
     const { state, factory } = casterState();
-    const handler = new CastAbilityHandler({ check: () => null });
+    const handler = new CastAbilityHandler({ blockedBy: () => null });
 
     expect(handler.handle({ ...CAST, actorId: 'entity-404' }, { state, factory })).toBe(
       'empty-slot',

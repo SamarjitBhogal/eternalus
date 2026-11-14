@@ -1,5 +1,5 @@
 import { Abilities } from '../components/Abilities';
-import type { CastAim } from '../components/AbilitySlotRuntime.types';
+import type { Aim } from '../components/AbilitySlotRuntime.types';
 import { Combat } from '../components/Combat';
 import { ControllerBinding } from '../components/ControllerBinding';
 import { Deploying } from '../components/Deploying';
@@ -10,7 +10,7 @@ import { Transform } from '../components/Transform';
 import { TeamMembership } from '../components/TeamMembership';
 import type { AbilitySlot } from '../content/abilities/AbilityDefinition.types';
 import type { Team } from '../teams/teams.types';
-import { distanceToPath, distanceToSegment, isPointInPolygon } from '../utils/geometry';
+import { doesDiscReachPolygon } from '../utils/circlePolygon';
 import type { Vec2 } from '../utils/geometry.types';
 import { length, sub } from '../utils/vec2';
 import type { Entity } from '../entities/Entity';
@@ -142,20 +142,9 @@ export class EntityStore {
     const object = target?.findComponent(MapObjectBody);
     if (object !== undefined) {
       const reach = from.radius + combat.attack.reach;
-      return object.object.footprints.some((shape) => {
-        const first = shape[0];
-        const last = shape.at(-1);
-        // A shape without corners is never in reach (`MapObjectBuilder` rejects one anyway).
-        return (
-          first !== undefined &&
-          last !== undefined &&
-          (isPointInPolygon(from.position, shape) ||
-            Math.min(
-              distanceToPath(from.position, shape),
-              distanceToSegment(from.position, last, first),
-            ) <= reach)
-        );
-      });
+      return object.object.footprints.some((shape) =>
+        doesDiscReachPolygon(from.position, reach, shape),
+      );
     }
     const gap = length(sub(to.position, from.position));
     return gap - from.radius - to.radius <= combat.attack.reach;
@@ -215,7 +204,7 @@ export class EntityStore {
    *
    * @returns `false` when the entity is unknown or has no such slot.
    */
-  public queueCast(id: EntityId, slot: AbilitySlot, aim: CastAim): boolean {
+  public queueCast(id: EntityId, slot: AbilitySlot, aim: Aim): boolean {
     const runtime = this.entities.get(id)?.findComponent(Abilities)?.slot(slot);
     if (runtime === undefined) {
       return false;

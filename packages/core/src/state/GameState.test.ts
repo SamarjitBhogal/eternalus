@@ -16,6 +16,7 @@ import { TWO_LANE_MAP } from './__fixtures__/twoLaneMap';
 import { matchWorldOf } from './__fixtures__/matchWorld';
 import { GameState } from './GameState';
 import { TestBuffTower } from './__fixtures__/TestBuffTower';
+import { allReady } from './__fixtures__/stubReadiness';
 
 class Soldier extends Entity {
   public readonly kind = 'soldier';
@@ -130,7 +131,7 @@ describe('GameState', () => {
     state.entities.add(spawned(new Soldier('entity-1', 'soldier-definition')));
     state.entities.add(spawned(new Marker('entity-2', 'marker-definition')));
     state.advanceTick();
-    expect(state.snapshot(CURVES)).toEqual({
+    expect(state.snapshot(CURVES, allReady)).toEqual({
       tick: 1,
       match: { phase: 'countdown', phaseEnteredTick: 0, upcoming: [], humanLegendId: null },
       entities: [
@@ -176,7 +177,7 @@ describe('GameState', () => {
     leveller.getComponent(Progression).addXp(130, CURVES.get('test'));
     state.entities.add(leveller);
 
-    expect(state.snapshot(CURVES).entities[0]?.progression).toEqual({
+    expect(state.snapshot(CURVES, allReady).entities[0]?.progression).toEqual({
       level: 2,
       xp: 30,
       xpToNext: 150,
@@ -190,7 +191,7 @@ describe('GameState', () => {
     caster.getComponent(Aether).raiseMax(10);
     state.entities.add(caster);
 
-    expect(state.snapshot(CURVES).entities[0]?.aether).toEqual({ current: 50, max: 90 });
+    expect(state.snapshot(CURVES, allReady).entities[0]?.aether).toEqual({ current: 50, max: 90 });
   });
 
   it('snapshots the hordes and team counters as copies the store no longer changes', () => {
@@ -206,7 +207,7 @@ describe('GameState', () => {
     });
     state.recordSpawnRequest('dark', 3, 2);
 
-    const snapshot = state.snapshot(CURVES);
+    const snapshot = state.snapshot(CURVES, allReady);
     state.hordes.removeMember('entity-1');
     state.hordes.setProgress('horde-1', 20);
     state.recordSpawnRequest('dark', 1, 1);
@@ -235,7 +236,7 @@ describe('GameState', () => {
     state.entities.add(spawned(new Soldier('entity-1', 'soldier-definition')));
     state.entities.add(spawned(new Leveller('entity-2', 'leveller-definition')));
     state.entities.add(spawned(new Caster('entity-3', 'caster-definition')));
-    const snapshot = state.snapshot(CURVES);
+    const snapshot = state.snapshot(CURVES, allReady);
     expect(snapshot.entities[1]?.progression).not.toBeNull();
     expect(snapshot.entities[2]?.aether).not.toBeNull();
     expect(structuredClone(snapshot)).toEqual(snapshot);
@@ -326,7 +327,7 @@ describe('GameState', () => {
       state.match.advanceTimeline();
       state.match.setPhase('early-game');
 
-      expect(state.snapshot(CURVES).match).toEqual({
+      expect(state.snapshot(CURVES, allReady).match).toEqual({
         phase: 'early-game',
         phaseEnteredTick: 0,
         upcoming: [{ entryId: 'mid-game', tick: 900 }],

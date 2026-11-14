@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { DamagePipeline } from '../../combat/DamagePipeline';
 import { Health } from '../../components/Health';
 import { Transform } from '../../components/Transform';
 import { Entity } from '../../entities/Entity';
@@ -60,6 +61,16 @@ describe('DamageEffect', () => {
     );
   });
 
+  it('picks enemies itself: with no friendly-fire step in the pipeline, allies are still spared', () => {
+    const { state, caster, at, hits } = setUp();
+    const enemy = at(2, 'dark');
+    at(-2, 'light');
+
+    castSteps(state, caster.id, [HIT], { damage: new DamagePipeline([]) });
+
+    expect(hits.map(({ targetId }) => targetId)).toEqual([enemy.id]);
+  });
+
   it('grows the amount by the ability’s per-level scaling: +4% per level above 1', () => {
     const { state, caster, at, hits } = setUp();
     at(2, 'dark');
@@ -101,5 +112,20 @@ describe('DamageEffect', () => {
     castSteps(state, caster.id, [{ ...HIT, amount: 40 }]);
 
     expect(hits.map(({ targetId, amount }) => [targetId, amount])).toEqual([[tower.id, 40]]);
+  });
+
+  it('checks its own fields: a positive amount, a structure multiplier of 0 or more', () => {
+    const damage = new DamageEffect();
+
+    expect(damage.validate(HIT)).toEqual([]);
+    expect(damage.validate({ ...HIT, structureMultiplier: 0 })).toEqual([]);
+    expect(damage.validate({ ...HIT, amount: 0, structureMultiplier: -1 })).toEqual([
+      'damage amount must be positive',
+      'structureMultiplier must not be negative',
+    ]);
+  });
+
+  it('shows its area on the aim overlay', () => {
+    expect(new DamageEffect().describe(HIT)).toEqual([{ kind: 'damage', shape: AREA }]);
   });
 });
