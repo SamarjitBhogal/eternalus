@@ -24,6 +24,13 @@ describe('laneBandRules', () => {
     ]);
   });
 
+  it('applies the order rule only when both bands are given: a kind with no tower has no ground', () => {
+    expect(brokenLaneBandRules({ spawner: undefined, buff: [0.1, 0.9] })).toEqual([]);
+    expect(brokenLaneBandRules({ spawner: [0.2, 1.1], buff: undefined })).toEqual([
+      'laneBands.spawner must be a band inside [0, 1]',
+    ]);
+  });
+
   it('is the rule validateMapLayout applies to the configured bands', () => {
     const layout = {
       ...DEFAULT_MAP_LAYOUT,

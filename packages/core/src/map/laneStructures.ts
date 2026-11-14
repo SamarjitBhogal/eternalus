@@ -19,9 +19,9 @@ const towerBand = (count: number, [from, to]: LaneBand, minGap: number): LaneBan
   return [(from + to) / 2 - half, (from + to) / 2 + half];
 };
 
-/** The ground towers at `ts` occupy: `[first, last]`, or `configured` for a kind with no tower. */
-const occupiedBand = (ts: readonly number[], configured: LaneBand): LaneBand =>
-  ts.length === 0 ? configured : [Math.min(...ts), Math.max(...ts)];
+/** The ground towers at `ts` occupy, `[first, last]`; none for a kind with no tower. */
+const occupiedBand = (ts: readonly number[]): LaneBand | undefined =>
+  ts.length === 0 ? undefined : [Math.min(...ts), Math.max(...ts)];
 
 /** `count` evenly spaced positions inside `[start, end]`, never on its edges. */
 const bandPositions = (count: number, [start, end]: LaneBand): number[] =>
@@ -71,7 +71,7 @@ export const assertLaneFortsApart = (towers: readonly MapFeature[], config: MapC
  * round its middle (DEC-227); `assertLaneFortsApart` then checks the forts on the whole map.
  * Throws MapGenerationError when the ground the towers occupy breaks a lane band rule
  * (`brokenLaneBandRules`): a tower off the lane, or the first SpawnerTower not ahead of the last
- * BuffTower.
+ * BuffTower. A lane with no tower of a kind has no order to break.
  */
 export const laneTowerSpecs = (
   lane: MapLane,
@@ -85,34 +85,27 @@ export const laneTowerSpecs = (
   });
   // Two upright boxes this far apart along any heading do not overlap: the box's diagonal.
   const minGap = Math.hypot(fort.width, fort.height) / geometry.length;
-  const towers = [
-    {
-      name: 'spawner-tower',
-      definitionId: layout.definitionIds.spawnerTower,
-      ts: bandPositions(
-        config.spawnTowersPerLane,
-        towerBand(config.spawnTowersPerLane, layout.laneBands.spawner, minGap),
-      ),
-    },
-    {
-      name: 'buff-tower',
-      definitionId: layout.definitionIds.buffTower,
-      ts: bandPositions(
-        config.buffTowersPerLane,
-        towerBand(config.buffTowersPerLane, layout.laneBands.buff, minGap),
-      ),
-    },
-  ];
-  const [spawner, buff] = towers;
+  const spawnerTs = bandPositions(
+    config.spawnTowersPerLane,
+    towerBand(config.spawnTowersPerLane, layout.laneBands.spawner, minGap),
+  );
+  const buffTs = bandPositions(
+    config.buffTowersPerLane,
+    towerBand(config.buffTowersPerLane, layout.laneBands.buff, minGap),
+  );
   const broken = brokenLaneBandRules({
-    spawner: occupiedBand(spawner?.ts ?? [], layout.laneBands.spawner),
-    buff: occupiedBand(buff?.ts ?? [], layout.laneBands.buff),
+    spawner: occupiedBand(spawnerTs),
+    buff: occupiedBand(buffTs),
   });
   if (broken.length > 0) {
     throw new MapGenerationError(
       `${towerCounts(config)} put the towers of ${lane.id} where a lane band rule breaks: ${broken.join('; ')} (${worldSize(config)}): use fewer towers per lane or a larger world`,
     );
   }
+  const towers = [
+    { name: 'spawner-tower', definitionId: layout.definitionIds.spawnerTower, ts: spawnerTs },
+    { name: 'buff-tower', definitionId: layout.definitionIds.buffTower, ts: buffTs },
+  ];
   return towers.flatMap((tower) =>
     tower.ts.map((t, slot) => ({
       suffix: `${tower.name}-${lane.id}-${String(slot)}`,
