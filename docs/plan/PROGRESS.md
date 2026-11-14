@@ -6824,3 +6824,17 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   passed (1480)", protocol "Tests 18 passed (18)", client "Tests 1883 passed (1883)", server
   "Tests 79 passed (79)", "Documentation check passed.".
 - Next step: push; the owner's call on the DEC-239 rules (DEC-246) and the reply on #98.
+
+### 2026-11-14 — Phase 3 / tower ruins: the owner confirms the DEC-239 rules (DEC-246) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: the owner confirmed the four DEC-239 generator rules in the question dialog
+  ("Confirm"), after the critique of 2026-11-13 found them within the design. New batch and row
+  DEC-246 in the decisions log; a dated line under the INBOX answer. DEC-239's row is not
+  changed. The owner also answered "Build now" for the layout band rules on the widened bands:
+  that goes on the BTD3 and BTD5 branch (DEC-245). Answers verbatim:
+  `eternalus-agent-work/tower-ruins-and-routes/OWNER-ANSWERS-2026-11-14.md`. Docs only.
+- Checks run: `npx prettier --check` on the three files and `npm run docs:check`: "All matched
+  files use Prettier code style!", "Documentation check passed.". No code changed since the full
+  `npm run check` in the entry above (EXIT=0).
+- Next step: push (`push-98.sh`); post the reply on #98; build the BTD3 and BTD5 branch with the
+  band rules (DEC-245).

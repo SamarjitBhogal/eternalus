@@ -152,6 +152,8 @@ Reply inline (`Decision: …`).
   - **Answered 2026-11-10 by DEC-239** (standing no-tech-debt rule, not asked): all four built on
     `feat/tower-ruins-and-routes`. D1 is `assertLaneFortsApart` in `map/laneStructures.ts`; D2 is
     `map/MatchGrid.ts`; D3 is `map/CourtExitField.ts`; D4 is `utils/geometry.isPointInRect`.
+    Confirmed by the owner 2026-11-14 (**DEC-246**, "Confirm"), after a critique found the four
+    generator rules within the design.
     Docs 03, 06 §3, 07 and 10 §9 updated.
 - [x] **Bot A\* search cap on 2.5 m cells (`feat/tower-ruins-and-routes`, 2026-11-10).** With a
       horde at every lane tower, bot Legends' A\* failed 190 to 273 times in 300 ticks:

@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-14
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,21 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-14 (question dialog: the DEC-239 generator rules)
+
+A teammate's review of PR #98 called the DEC-239 row a blocker, because it says the owner was not
+asked. The owner first asked for a critique of the four generator rules (2026-11-13: "critique
+these to see if they are within the design, or as-good-or-better-than the design"). The critique
+found all four within the design (DEC-215 (1), DEC-227, DEC-235 (B5)) and found that none
+overwrites a better mechanism on phase/3 or on the open branches
+(`eternalus-agent-work/tower-ruins-and-routes/critic-dec239-rules-2026-11-13.md`). The owner then
+answered in the question dialog (2026-11-14; kept in
+`eternalus-agent-work/tower-ruins-and-routes/OWNER-ANSWERS-2026-11-14.md`). DEC-246 is this batch.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DEC-246 | **The four DEC-239 generator rules are the owner's rulings: "Confirm"** (the question: "Do you confirm them as owner rulings?"). (1) The map generator refuses a map where two lane tower forts overlap, checked on the whole map (`assertLaneFortsApart` in `map/laneStructures.ts`). (2) Towers of one kind on a lane stand at least a fort box's diagonal apart, `hypot(width, height)`; towers of different kinds on one lane only must not overlap. (3) A lane's tower band widens to hold two or more towers of a kind, and a tower that would leave the lane is refused. (4) A navigation cell as thick as the thinnest fort wall, or thicker, is refused when the grid is built (`map/MatchGrid.ts`). DEC-239's row stands as written; this row adds the owner's confirmation. The critique's one nit, the diagonal as `max(width, height) * sqrt(2)`, was fixed before this answer (`fa7808ce`). |
 
 ## Batch 2026-11-13 (question dialog: the scope of PR #98)
 
