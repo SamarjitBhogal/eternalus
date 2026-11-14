@@ -480,8 +480,8 @@ each closed by the session or phase named:
   `area` (a zone's polygons) and `capture` (a capture point's state and presence) groups only.
   `MatchPhase` lives in `config/matchPhases.ts`; the match director is built (12 §13).
 - `GameState.world` is a `MatchWorld` (the generated definition, its lane `routes` and the
-  `WorldMap` grid, stamped and reopened by `map/MatchGrid`, which the composition root builds and
-  which keeps the definition it was built from, so `state/` imports `map/` types only) with no structures index yet (minion plan M2c), and the grid keeps no flow
+  `WorldMap` grid, stamped and reopened by `map/MatchGrid`, which the composition root builds, so
+  `state/` imports `map/` types only) with no structures index yet (minion plan M2c), and the grid keeps no flow
   fields (`PathingSystem` caches them); `GameState` has `hordes` and `teams` (the spawn counters
   only) since minion plan M1, and `ai`, `space` and `hordeRequests` since M2a (11, 18); `EntityFactory` keeps its
   own id counter until session C switches it to `IdGenerator`. `MatchConfig` has no

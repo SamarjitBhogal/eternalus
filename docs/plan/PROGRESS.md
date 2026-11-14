@@ -6863,3 +6863,32 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   (1883)", server "Tests 79 passed (79)", "Documentation check passed.". Critic and ponytail
   not run (pre-PR gate is for the session that opens the PR).
 - Next step: critic and ponytail on this branch, then the PR after #98.
+- Correction, 2026-11-14 (critic r1, appended, not an edit): this entry and the DEC-245 row first
+  said the 3-lane, 1 spawner, 6 buff config on the default world was "refused only later, as
+  forts over each other". False: it generates at `f3f649db`. The band rules were also checked on
+  the widened band edges, which can be empty ground, so 406 configs that generated at base were
+  refused. Fixed in the next entry.
+
+### 2026-11-14 — Phase 3 / tower ruins: critic round 1 on the follow-ups — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: critic r1 (REQUEST CHANGES, 2 blockers; `eternalus-agent-work/tower-ruins-and-routes/tower-ruins-followups/critic-r1.md`).
+  (B1) `laneTowerSpecs` now runs `brokenLaneBandRules` on the ground the towers occupy (first to
+  last tower of each kind; the configured band for a kind with none), so the rules mean: every
+  tower on the lane, and the first SpawnerTower ahead of the last BuffTower. Placement
+  (`towerBand`, `bandPositions`) is unchanged. (B2, N1) the false "refused only later" text is
+  corrected in the DEC-245 row, the test comment and architecture 06 §3; the neighbouring-lane
+  test is called "the same kind of assertion". (S1, ponytail 1 and 3) the rule array is typed,
+  `half` is computed only when a band widens. (N2) "keeps the definition it was built from" moved
+  from the 03 status note to 06 §6. Not built: one shared `Band` type (INBOX item for the tidy PR,
+  DEC-218); a getter for `MatchWorld.definition` (rejected, the field stays).
+- Probe (`.../tower-ruins-followups/probe/`, seed 1234, 4800 configs: 2 grounds x 5 worlds x
+  lanes 1/3/5/7/9 x spawn 1-6 x buff 1-16): accepted at `f3f649db` 922, at the new HEAD 922;
+  accepted at base and refused now 0; refused at base and accepted now 0. The new message fires
+  on 2280 configs, all refused at base too (696 as forts over each other, 1584 as off the lane):
+  it is a clearer message, not a new refusal. Default world, 3 lanes: 1/6 generates, 1/10 is
+  refused with the new message.
+- Red-first: `.../tower-ruins-followups/red-first.md` section 4.
+- Checks run: full `npm run check` (log `.../check-2.log`, run with only the docs and this entry
+  uncommitted): EXIT=0, core "Tests 1486 passed (1486)", protocol "Tests 18 passed (18)", client
+  "Tests 1883 passed (1883)", server "Tests 79 passed (79)", "Documentation check passed.".
+- Next step: critic r2 on the changed lines, then the PR after #98.

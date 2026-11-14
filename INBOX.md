@@ -16,6 +16,11 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **`refactor/tower-ruins-followups` critic (2026-11-14), better than the design — one item
+      for the tidy PR (DEC-218), sign-off.** Not built: this branch stays small. (BT2) One `Band`
+      type in `content/maps/maps.types.ts` (`readonly [number, number]`, a stretch of a lane as
+      fractions) serves `MapLayout.laneBands` and `camps.band`, instead of `LaneBand` in
+      `map/laneBandRules.ts` and the repeated tuple types.
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on
       every map feature, so `map/strongholdRing.ts` checks at run time that a Stronghold has it
