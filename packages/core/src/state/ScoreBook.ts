@@ -48,6 +48,7 @@ export class ScoreBook {
       minionKills: 0,
       neutralKills: 0,
       structureDamage: 0,
+      checkpointsWon: 0,
       score: 0,
     });
   }

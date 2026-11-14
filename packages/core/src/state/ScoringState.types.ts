@@ -30,6 +30,11 @@ export type LegendStats = {
   readonly neutralKills: number;
   /** Damage it dealt to enemy structures, shield bars included (DEC-123). */
   readonly structureDamage: number;
+  /**
+   * Checkpoints its team's push reached on a capture point while it stood in the zone: a counter
+   * only, with no points (DEC-214 (A1)).
+   */
+  readonly checkpointsWon: number;
   readonly score: number;
 };
 
@@ -41,6 +46,16 @@ export type TeamStats = {
   readonly score: number;
   /** Enemy structures that fell, whoever landed the last hit (DEC-212). */
   readonly structuresDestroyed: number;
+  /**
+   * Ticks of capture points held, pooled over its points: each tick adds one per point it owns
+   * (DEC-214 (A2)). A lost point stops adding but takes nothing back.
+   */
+  readonly capturesHeldTicks: number;
+  /**
+   * Checkpoints its pushes reached on capture points, each worth team-only points (DEC-214 (A1),
+   * DEC-223 (3)).
+   */
+  readonly checkpointsReached: number;
 };
 
 /** The last tick a Legend hit an enemy Legend: one entry per pair, so the list stays bounded. */

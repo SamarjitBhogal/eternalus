@@ -1,14 +1,15 @@
+import type { ScoringOptions } from '../content/match/scoring.types';
 import type { MatchTimeline } from './MatchTimeline';
 import type { MatchDirectorOptions } from './MatchDirector.types';
 import type { GameState } from '../state/GameState';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../config/matchPhases';
 import { StateHasher } from '../state/StateHasher';
 import { createDefaultMatchPhases } from './defaultMatchPhases';
+import { createDefaultScoringRules } from './defaultScoringRules';
 import { createDefaultTimelineActions } from './defaultTimelineActions';
 import { createDefaultVictoryConditions } from './defaultVictoryConditions';
 import { MatchDirector } from './MatchDirector';
 import { Scoring } from './Scoring';
-import type { ScoringOptions } from './Scoring.types';
 
 /** What `createDefaultMatchDirector` needs from its caller. */
 export type DefaultMatchDirectorOptions = {
@@ -45,5 +46,5 @@ export const createDefaultMatchDirector = ({
     debug,
     logger,
     conditions: createDefaultVictoryConditions(state),
-    scoring: new Scoring(state, scoring),
+    scoring: new Scoring(state, createDefaultScoringRules(scoring, state.config.tickRate)),
   });
