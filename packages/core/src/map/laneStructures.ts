@@ -88,8 +88,8 @@ export const laneTowerSpecs = (
     width: config.worldWidth,
     height: config.worldHeight,
   });
-  // The larger side times root 2 covers the fort box's diagonal on any lane heading.
-  const minGap = (Math.max(fort.width, fort.height) * Math.SQRT2) / geometry.length;
+  // Two upright boxes this far apart along any heading do not overlap: the box's diagonal.
+  const minGap = Math.hypot(fort.width, fort.height) / geometry.length;
   const towers = [
     {
       name: 'spawner-tower',

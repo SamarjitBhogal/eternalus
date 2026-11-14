@@ -104,6 +104,11 @@ Reply inline (`Decision: …`).
     on neighbouring lanes near the gates (critic probe: 3200x900, 7 lanes, 1 + 9 towers, four
     overlapping pairs). The generator now checks every pair of lane tower forts on the map in
     world units after placement (`assertLaneFortsApart` in `laneStructures.ts`).
+    Correction (DEC-239 rules critique, 2026-11-13): towers of different kinds only must not
+    overlap (no diagonal gap), and the fort box is stretched per axis (`fortInWorld`), not by the
+    larger scale. Towers of one kind are spaced by the box's diagonal, `hypot(width, height)`;
+    until 2026-11-13 the code used the larger side times root 2, which over-spaced a non-square
+    box (3200x900: 90.5 m for 71.6 m). The neighbouring-lanes probe is now 1 + 11 towers.
 - [x] **Tower-ruins critic round 1 (`feat/tower-ruins-and-routes`, 2026-11-10), better than the
       design — five items.** (B1) one way-out search per court cell instead of one per court mob
       per tick; (B2) move the ruin rule out of `WorldObjectStore`; (B3) one owner of the

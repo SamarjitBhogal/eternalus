@@ -266,6 +266,23 @@ describe('MapGenerator', () => {
     },
   );
 
+  it('spaces a widened band by the fort box diagonal, not its larger side times root 2 (DEC-227)', () => {
+    // In a 3200x900 world the fort box is not square, so the two measures differ.
+    const fort = fortInWorld(BUILDING_GEOMETRY.fort.laneTowerSize, { width: 3200, height: 900 });
+    const map = generate({ worldWidth: 3200, worldHeight: 900, spawnTowersPerLane: 3 });
+    const [first, second] = ofKind(map, 'spawner-tower').filter(({ id }) =>
+      id.startsWith('light-spawner-tower-lane-1-'),
+    );
+
+    expect(fort.width).not.toBeCloseTo(fort.height);
+    expect(
+      Math.hypot(
+        (second?.position.x ?? 0) - (first?.position.x ?? 0),
+        (second?.position.y ?? 0) - (first?.position.y ?? 0),
+      ),
+    ).toBeCloseTo(Math.hypot(fort.width, fort.height), 6);
+  });
+
   it.each([3, 5, 7])(
     'refuses 5 towers of each kind on %i lanes, whose forts would overlap (DEC-215 (1))',
     (numLanes) => {
@@ -284,7 +301,9 @@ describe('MapGenerator', () => {
         worldHeight: 900,
         numLanes: 7,
         spawnTowersPerLane: 1,
-        buffTowersPerLane: 9,
+        // 11, not 9: since a band widens by the fort box diagonal (not its larger side times
+        // root 2), 9 BuffTowers no longer reach the gates.
+        buffTowersPerLane: 11,
       }),
     ).toThrow(/forts of light-buff-tower-lane-1-0 and light-buff-tower-lane-2-0 over each other/);
   });
