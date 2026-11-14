@@ -6935,5 +6935,5 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   Critic reports: `critic-r1.md`, `critic-r2-r3.md` in the same folder.
 - Checks run: the full `npm run check` of the entry above covers the code (`check-3.log`,
   EXIT=0); the commits after it change docs only. `npx prettier --check` and `npm run
-  docs:check` pass on this entry.
+docs:check` pass on this entry.
 - Next step: push after `feat/tower-ruins-and-routes` (`f3f649db`) is on origin; PR against it.
