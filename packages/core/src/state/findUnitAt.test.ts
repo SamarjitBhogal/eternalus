@@ -1,7 +1,8 @@
-import type { EntitySnapshot, Team } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
+import type { Team } from '../teams/teams.types';
 import { findUnitAt } from './findUnitAt';
+import type { EntitySnapshot } from './Snapshot.types';
 
 const entity = (
   id: string,

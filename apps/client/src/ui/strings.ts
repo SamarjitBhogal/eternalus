@@ -14,6 +14,7 @@ const REASON_BANNERS: Readonly<Record<string, string>> = {
   cancelled: 'Match cancelled.',
   'match-failed': 'Match could not start.',
   'load-failed': 'Loading failed.',
+  'duel-unavailable': 'Connection to the Duel server was lost.',
 } satisfies Record<
   Exclude<SessionReason, 'select-timeout' | 'match-crashed' | 'screen-crashed'>,
   string
@@ -32,6 +33,7 @@ export const STRINGS = {
   menu: {
     navLabel: 'Main menu',
     startMatch: 'Start match',
+    duelOnline: 'Duel online',
     loadouts: 'Loadouts',
     settings: 'Settings',
     about: 'About / credits',
@@ -85,12 +87,20 @@ export const STRINGS = {
   },
   loadouts: { title: 'Loadouts', classesTitle: 'Classes' },
   profile: { history: 'Match history and achievements appear here.' },
+  duelQueue: {
+    title: 'Duel online',
+    searching: 'Searching for an opponent…',
+    cancel: 'Cancel',
+  },
   /**
    * The win/lose screen, wording kept as built (DEC-134 (1)); its verdict line is core content
    * (`selectVerdictLine`, DEC-83).
    */
   results: {
-    /** The banner without a result (results follow `match-ended`, so only a bug shows it). */
+    /**
+     * The banner without a verdict: a Duel the other player left, or no result (results follow
+     * `match-ended`, so only a bug shows that).
+     */
     title: 'Match results',
     noResult: 'No result recorded.',
     /** The banner per verdict: the owner's "VICTORY or DEFEAT" (2026-10-27); a draw (DEC-77). */
@@ -103,6 +113,8 @@ export const STRINGS = {
     countdownLabel: 'Time left before the main menu',
     // DEC-78: "A Continue control skips the wait."
     continue: 'Continue',
+    /** An online Duel the other player left (ADR 0016). */
+    opponentLeft: 'Opponent left.',
     playAgain: 'Play again',
     mainMenu: 'Main menu',
   },
@@ -124,6 +136,7 @@ export const STRINGS = {
       profile: 'Profile',
       settings: 'Settings',
       about: 'About',
+      'duel-queue': 'Duel queue',
     } satisfies Record<MenuRoute, string>,
   },
   /** Shown where an action has no binding (`KeyGlyph`, the settings list). */

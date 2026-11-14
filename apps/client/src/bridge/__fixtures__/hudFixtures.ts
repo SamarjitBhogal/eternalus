@@ -153,6 +153,7 @@ export function figmaHudState(): Pick<RootState, 'hud' | 'match'> {
       capturePoints: [...FIGMA_CAPTURE_POINTS],
       result: null,
       durationSeconds: null,
+      duel: null,
     },
   };
 }

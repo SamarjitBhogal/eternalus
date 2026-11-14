@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-09
+last-reviewed: 2026-11-13
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -251,6 +251,11 @@ export type BridgeEventMap = {
     readonly result: MatchResult;
     readonly durationSeconds: number; // DEC-129
   };
+  'duel-ended': {
+    readonly winner: PlayableTeam | null;
+    readonly ownTeam: PlayableTeam;
+    readonly reason: MatchEndReason;
+  }; // an online Duel the server ended (ADR 0016); the session publishes it in place of `match-ended`
   diagnostic: { readonly record: LogRecord }; // violations and warnings for the overlay
   'perf-sample': PerfSample; // histograms, last long frame, memory (a bridge-defined type)
   'session-phase': { readonly phase: SessionPhase };
