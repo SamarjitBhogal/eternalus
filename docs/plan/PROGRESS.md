@@ -4,7 +4,7 @@ description: The running, append-only log of what was done, which checks ran and
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-05
+last-reviewed: 2026-11-12
 tags: [plan, progress, log]
 related: ['docs/plan/README.md', 'docs/agents/running-agents.md', 'docs/agents/checklists.md']
 ---
@@ -6297,6 +6297,86 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   Only this file conflicted; every entry from both sides is kept, date-ordered. No code changed.
 - Checks run: `npm run check` → `EXIT=0` (Node 24.21.0).
 - Next step: squash-merge #52 into phase/3.
+
+### 2026-11-10 — Phase 3 / sprint 3.1 — feat/duel-server — claudiodh + Claude Code
+
+- What was done: the online 1v1 Duel along ADR 0016 (draft; built ahead of acceptance by
+  claudiodh's call, INBOX DEC-36/37 note). Core seats one human per team
+  (`Simulation.humanLegendIdOf`) and exports `findUnitAt`, `PLAYABLE_TEAMS`, `isPlayableTeam`.
+  New `packages/protocol` (wire messages, `ClientMessageParser`). New `apps/server`: `ws` gateway
+  with per-connection `TokenBucket`, total and per-address connection caps (`ClientAddress` reads
+  `X-Forwarded-For` only from a loopback peer), heartbeat, `DuelQueue`, `DuelHost`/`DuelMatch`
+  stepping core at 30 TPS, `SeatCommands` (intent → move/stop/attack-target while core's `intent`
+  is a stub), `StdoutLogger`, graceful shutdown. Client: `game/engine/net/` transport port
+  (recipe R25), `game/duel/` (`DuelSession`, `RemoteSimulation`, `RemoteIntentSender`), `Match`
+  driven through a `MatchSimulation` seam, "Duel online" menu entry, queue screen, Victory/Defeat
+  and "Opponent left" results. `eslint.config.js` gains import-boundary blocks (owner sign-off
+  asked in INBOX). New dependencies, approved by claudiodh: `ws` 8.22.2, `@types/ws` 8.18.2.
+- Gate: architecture critic → request-changes, no blockers; every should-fix and nit applied
+  (stuck queue on an early `match-ended`, results per own team and reason, connection caps and
+  heartbeat, import-boundary lint, types moved to `.types.ts`, shutdown, socket closed on end,
+  docs). Ponytail: 2 reuse cuts applied (`findUnitAt` and the team list from core).
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1314 passed (1314)"; protocol "Tests 18
+  passed (18)"; client "Tests 1861 passed (1861)"; server "Tests 49 passed (49)"; "✓ built in
+  219ms"; "Documentation check passed." Smoke: two clients through `tailscale serve` (wss) got
+  `match-found` with the same seed and ~85 states each.
+- Next step: open the PR into `phase/3-sprint-3-work`; the owner accepts or changes ADR 0016 and
+  answers the INBOX interim choices.
+
+### 2026-11-11 — Phase 3 / online Duel — feat/duel-server (Copilot review fixes) — claudiodh + Claude Code
+
+- What was done: answered the five Copilot threads on PR #97. Server: a connection refused by the cap now gets an `error` handler, because a bad frame during the closing handshake would otherwise end the process (P1); `WsConnection` terminates a peer that leaves more than 1 MiB unread, since a client that answers pings but never reads would grow the queue (P2); `WsListener.close()` returns a promise and `main.ts` exits only when the WebSocket sockets and the health server are closed (P2). Client: the Duel publishes the seat as the setup team so the objective and structure selectors work (P2); releasing input (pause, focus loss, hidden tab) also sends a neutral intent, since no tick would send it (P2).
+- Tests: `WsListener.test.ts` (new; fails with an unhandled error without the handler, 3 of 3 runs), `WsConnection.test.ts` (slow reader), `SessionController.duel.test.ts` (seat team), `createBrowserDuelMatch.test.ts` (neutral intent on pause).
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1320 passed (1320)"; protocol "Tests 18 passed (18)"; client "Tests 1883 passed (1883)"; server "Tests 79 passed (79)"; "Documentation check passed."
+- Next step: reviewer re-check; the team merges.
+
+### 2026-11-13 — Phase 3 / sync — feat/duel-server (PR #97) — claudiodh + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (3dc9e908, after #51 and #52) into this branch because #97 was CONFLICTING. Only `docs/plan/PROGRESS.md` conflicted; both sides' entries are kept. No feature code changed. No force push.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1336 passed (1336)"; protocol "Tests 18 passed (18)"; server "Tests 79 passed (79)"; client "Tests 1883 passed (1883)"; "Documentation check passed."
+- Next step: reviewer approval; the team merges.
+
+### 2026-11-06 — Phase 3 / minion plan MVP gaps — docs/minion-plan-mvp-gaps — SamarjitBhogal + Claude Code
+
+- What was done: audited `phase/3-sprint-3-work` and the open pull requests against the MVP scope
+  for the minion system. Minion plan: new §1.2 (the gaps before the MVP, each with who builds it,
+  its blocker and the next action); new phase M10 (zone level-up, designed in 07 §7 but scheduled
+  nowhere); M6's pull request split into M6 (camps, merged) and M6b (checkpoint defenders, after PR #64); §3
+  drops the built "straight-line bots" row and points the Rover and strength-by-distance rows at
+  what now unblocks them. `INBOX.md`: one item (zone level-up numbers and OQ-47, the M6 defender
+  sign-off, and pushing the unpushed follow-up branches). Stacked on `docs/playtest-rulings`
+  (PR #75), which edits the same plan.
+- Checks run: `npm run check` passed (format, no-js, lint, typecheck, knip, coverage, build,
+  docs:check): core `Tests  1079 passed (1079)`, client `Tests  1754 passed (1754)`,
+  `Documentation check passed.` Critic (`architecture-reviewer`): approve, 0 blockers; its three
+  minor items and four nits are applied.
+- Next step: the owner answers the `INBOX.md` item; M6b and M10 start when PR #64 merges; the
+  unit-cap performance check can start now.
+
+### 2026-11-12 — Phase 3 / minion plan MVP gaps (review round) — docs/minion-plan-mvp-gaps — SamarjitBhogal + Claude Code
+
+- What was done: answered claudiodh's review of PR #81. Merged `phase/3-sprint-3-work` (conflicts
+  in `INBOX.md` and this file; both sides kept, this branch's entries last). The 2026-11-06 entry
+  above is superseded where it says M6b and M10 wait for PR #64 and that the follow-up branches
+  are not on `origin`: #64 merged on 2026-11-08, and the branches are PRs #85 and #86 (#83 is the
+  perf check). Minion plan §1.2, §3 and the phase table now say so; the push request is dropped;
+  the INBOX item is split into three questions; the "Minion M6" item no longer says #64 is open.
+  CodeRabbit: the M10 row no longer states the ownership-event handler, same-tick removal and
+  DEC-168 superseding 07 §7 as settled; they are INBOX question (1) (c). Merged phase/3 again
+  (#52; PROGRESS only).
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code style!";
+  core "Tests 1314 passed (1314)"; client "Tests 1818 passed (1818)"; "✓ built in 322ms";
+  "Documentation check passed."
+- Next step: the owner answers the three INBOX items; M6b starts on the defenders sign-off.
+
+### 2026-11-13 — Phase 3 / sync — docs/minion-plan-mvp-gaps (PR #81) — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (`9e2516cf`, with #97) into PR #81, which was
+  CONFLICTING again. Only this file conflicted; both sides kept, this branch's entries last.
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code
+  style!"; core "Tests 1336 passed (1336)"; protocol "Tests 18 passed (18)"; client "Tests 1883
+  passed (1883)"; server "Tests 79 passed (79)"; "Documentation check passed."
+- Next step: review and merge; then sync the stacked drafts #82, #83 and #84.
 
 ### 2026-11-09 — Phase 3 / bug tracker — docs/bug-tracker — SamarjitBhogal + Claude Code
 
