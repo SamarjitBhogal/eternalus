@@ -42,8 +42,8 @@ export type DefaultSystemPipelineOptions = {
   readonly structures?: Pick<ContentCatalogue<StructureDefinition>, 'get'>;
   /**
    * What a standing wall of a lane tower's fort becomes when its tower falls (DEC-219 (a)).
-   * `Simulation` passes the definition it registers with the entity factory. Needed when the
-   * match has map objects (`state.worldObjects`); the pipeline throws without it.
+   * `Simulation` passes the definition it registers with the entity factory. Required, so a
+   * match with map objects (`state.worldObjects`) can never lack it; a match without them ignores it.
    */
-  readonly ruinWall?: ObstacleDefinition;
+  readonly ruinWall: ObstacleDefinition;
 };

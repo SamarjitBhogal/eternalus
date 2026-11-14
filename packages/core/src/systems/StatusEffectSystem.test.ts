@@ -9,6 +9,7 @@ import { DamagePipeline } from '../combat/DamagePipeline';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../config/matchPhases';
+import { RUINED_FORT_WALL_DEFINITION } from '../content/maps/mapObjectDefinitions';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { loadLevelCurves } from '../content/progression/loadLevelCurves';
 import { XP_SOURCES } from '../content/progression/xpSources';
@@ -91,6 +92,7 @@ const tickPipeline = (state: GameState): System => {
     },
     // Statuses are the subject here, not the match: no director moves the phase.
     director: { update: () => undefined },
+    ruinWall: RUINED_FORT_WALL_DEFINITION,
   });
   return {
     name: 'tick',
