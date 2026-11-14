@@ -76,7 +76,7 @@ describe('ResultsState', () => {
     },
   );
 
-  it('ignores start-match when there is no setup to repeat (after an online Duel)', () => {
+  it('ignores start-match when the setup is not repeatable (after an online Duel)', () => {
     const { context, state } = setUp();
     context.canRepeat = false;
 

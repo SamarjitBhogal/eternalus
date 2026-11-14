@@ -7219,5 +7219,10 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   rematch case tests the selector's wiring; HC-Q48 (4) asks for the rule in `bridge/` as
   `selectionRules.ts` is; the spawn block belongs to a merged test; the union and the two
   `opponent-left` checks are separate concerns).
-- Checks run: see the commit that follows this entry.
+- Checks run: `npm run check` → `EXIT=0` on `9c441d7a` (the branch with `phase/3-sprint-3-work`
+  merged up to `a99c3129`, #96): core "Tests 1428 passed (1428)"; protocol "Tests 18 passed (18)";
+  client "Tests 1972 passed (1972)"; server "Tests 79 passed (79)"; "Documentation check passed.".
+  After it, one test title in `ResultsState.test.ts` was reworded (round-2 critic, the only
+  finding) and that file re-run: passed. Round-2 critic on the fixes, the records and the merge:
+  pass.
 - Next step: the owner runs the push script; claudiodh re-reviews PR #93; then GL-16.
