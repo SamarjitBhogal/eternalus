@@ -14,10 +14,14 @@ import { buildWallRing } from './wallRing';
  * keep neighbours `minGap` apart, a band widened round its middle until it is wide enough (DEC-227).
  */
 const towerBand = (count: number, [from, to]: LaneBand, minGap: number): LaneBand => {
-  const isWideEnough = count < 2 || (to - from) / (count + 1) >= minGap;
+  if (count < 2 || (to - from) / (count + 1) >= minGap) return [from, to];
   const half = ((count + 1) * minGap) / 2;
-  return isWideEnough ? [from, to] : [(from + to) / 2 - half, (from + to) / 2 + half];
+  return [(from + to) / 2 - half, (from + to) / 2 + half];
 };
+
+/** The ground towers at `ts` occupy: `[first, last]`, or `configured` for a kind with no tower. */
+const occupiedBand = (ts: readonly number[], configured: LaneBand): LaneBand =>
+  ts.length === 0 ? configured : [Math.min(...ts), Math.max(...ts)];
 
 /** `count` evenly spaced positions inside `[start, end]`, never on its edges. */
 const bandPositions = (count: number, [start, end]: LaneBand): number[] =>
@@ -65,8 +69,9 @@ export const assertLaneFortsApart = (towers: readonly MapFeature[], config: MapC
  * the Light gate. "Front" and "second line" are bands. Towers of one kind stand at least a fort
  * box's diagonal apart along the lane (the box in world units), a band too narrow for that widens
  * round its middle (DEC-227); `assertLaneFortsApart` then checks the forts on the whole map.
- * Throws MapGenerationError when the widened bands break a lane band rule (`brokenLaneBandRules`):
- * a band off the lane, or the spawner band reaching back past the buff band.
+ * Throws MapGenerationError when the ground the towers occupy breaks a lane band rule
+ * (`brokenLaneBandRules`): a tower off the lane, or the first SpawnerTower not ahead of the last
+ * BuffTower.
  */
 export const laneTowerSpecs = (
   lane: MapLane,
@@ -80,28 +85,34 @@ export const laneTowerSpecs = (
   });
   // Two upright boxes this far apart along any heading do not overlap: the box's diagonal.
   const minGap = Math.hypot(fort.width, fort.height) / geometry.length;
-  const bands = {
-    spawner: towerBand(config.spawnTowersPerLane, layout.laneBands.spawner, minGap),
-    buff: towerBand(config.buffTowersPerLane, layout.laneBands.buff, minGap),
-  };
-  const broken = brokenLaneBandRules(bands);
-  if (broken.length > 0) {
-    throw new MapGenerationError(
-      `${towerCounts(config)} break a lane band rule on the widened tower bands of ${lane.id}: ${broken.join('; ')} (${worldSize(config)}): use fewer towers per lane or a larger world`,
-    );
-  }
   const towers = [
     {
       name: 'spawner-tower',
       definitionId: layout.definitionIds.spawnerTower,
-      ts: bandPositions(config.spawnTowersPerLane, bands.spawner),
+      ts: bandPositions(
+        config.spawnTowersPerLane,
+        towerBand(config.spawnTowersPerLane, layout.laneBands.spawner, minGap),
+      ),
     },
     {
       name: 'buff-tower',
       definitionId: layout.definitionIds.buffTower,
-      ts: bandPositions(config.buffTowersPerLane, bands.buff),
+      ts: bandPositions(
+        config.buffTowersPerLane,
+        towerBand(config.buffTowersPerLane, layout.laneBands.buff, minGap),
+      ),
     },
   ];
+  const [spawner, buff] = towers;
+  const broken = brokenLaneBandRules({
+    spawner: occupiedBand(spawner?.ts ?? [], layout.laneBands.spawner),
+    buff: occupiedBand(buff?.ts ?? [], layout.laneBands.buff),
+  });
+  if (broken.length > 0) {
+    throw new MapGenerationError(
+      `${towerCounts(config)} put the towers of ${lane.id} where a lane band rule breaks: ${broken.join('; ')} (${worldSize(config)}): use fewer towers per lane or a larger world`,
+    );
+  }
   return towers.flatMap((tower) =>
     tower.ts.map((t, slot) => ({
       suffix: `${tower.name}-${lane.id}-${String(slot)}`,

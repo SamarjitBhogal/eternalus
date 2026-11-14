@@ -10,12 +10,14 @@ export const isBand = ([from, to]: LaneBand): boolean =>
 /**
  * The rules the two tower bands of a lane must meet, as the messages of the broken ones: each is
  * a band inside [0, 1], and the spawner band lies ahead of the buff band. One rule set for the
- * configured bands (`validateMapLayout`) and for the bands as widened to fit a tower count
- * (`laneTowerSpecs`).
+ * configured bands (`validateMapLayout`) and for the ground the placed towers occupy
+ * (`laneTowerSpecs`, which passes `[first, last]` of each kind).
  */
-export const brokenLaneBandRules = (bands: MapLayout['laneBands']): readonly string[] =>
-  [
+export const brokenLaneBandRules = (bands: MapLayout['laneBands']): readonly string[] => {
+  const rules: readonly (readonly [boolean, string])[] = [
     [!isBand(bands.spawner), 'laneBands.spawner must be a band inside [0, 1]'],
     [!isBand(bands.buff), 'laneBands.buff must be a band inside [0, 1]'],
     [bands.spawner[0] <= bands.buff[1], 'laneBands.spawner must lie ahead of laneBands.buff'],
-  ].flatMap(([isBroken, message]) => (isBroken === true ? [String(message)] : []));
+  ];
+  return rules.filter(([isBroken]) => isBroken).map(([, message]) => message);
+};
