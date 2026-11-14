@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-11
+last-reviewed: 2026-11-13
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -431,10 +431,13 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   damage to the fort goes to the tower (one pool, DEC-185 (B)). After the tower falls, its fort
   stays standing as scenery with no health on this branch: the ruins with half-health walls
   (DEC-217 (12), DEC-219 (a)) are built on a later branch (DEC-219 (d)). Only towers share one pool with their fort
-  (DEC-217 (13)): the Stronghold's palace map object does not block, and a gate's definition has
-  no `hasMapFootprint`, so both keep their own health. `Simulation` takes the structure
+  (DEC-217 (13)): the Stronghold's palace map object and a gate's map object do not block, so
+  both keep their own health. `Simulation` takes the structure
   definitions from one injected source (`SimulationOptions.structures`, default
   `STRUCTURE_DEFINITIONS`) for the structures it builds and for `StructureSystem` (DEC-168 B8).
+- **Gate reach (`feat/gate-reach`, 2026-11-13).** A gate's definition has `hasMapFootprint` too, so
+  reach to a gate is measured to its polygon (DEC-217 (17)); `hasFortBox` keeps a gate's box out of
+  the chase rule's fort boxes, which the towers and the palace keep (DEC-217 (16)).
 - `ObstacleDefinition` keeps `kind: 'obstacle'` (the entity class) and moves tree/rock/bridge to
   `obstacleType`; `fell` and `minimapGlyph` arrive with felling and the minimap work.
 
