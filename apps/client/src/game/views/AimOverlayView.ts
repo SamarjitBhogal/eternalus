@@ -23,7 +23,10 @@ export class AimOverlayView implements WorldLayer {
     this.target = target;
   }
 
-  /** Draws the selected ability's areas, each distinct one once, in cast order. */
+  /**
+   * Draws the selected ability's areas, each distinct one once, in cast order. A dash's own row has
+   * no area: it sets how long the paths after it are and where the circles after it sit.
+   */
   public draw(renderer: Renderer): void {
     if (this.target === null) return;
     const { origin, direction, steps } = this.target;
@@ -37,6 +40,7 @@ export class AimOverlayView implements WorldLayer {
           circleCentre: { x: origin.x + direction.x * reach, y: origin.y + direction.y * reach },
         };
       }
+      if (shape === null) continue;
       const key = `${JSON.stringify(shape)}@${String(frame.circleCentre.x)},${String(frame.circleCentre.y)}`;
       if (!drawn.has(key)) {
         drawn.add(key);

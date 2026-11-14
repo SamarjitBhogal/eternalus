@@ -1,9 +1,10 @@
-import type {
-  ClassDetailNames,
-  DisplayContent,
-  LegendDefinition,
-  LegendSpecDefinition,
-  MapFeatureKind,
+import {
+  type ClassDetailNames,
+  type DisplayContent,
+  kitOf,
+  type LegendDefinition,
+  type LegendSpecDefinition,
+  type MapFeatureKind,
 } from '@eternalus/core';
 
 import type {
@@ -23,7 +24,7 @@ import type {
   DisplayOverrides,
   HudPresentation,
 } from './CataloguePresentation.types';
-import { kitDetailRows, kitOf, kitRows } from './kitRows';
+import { kitDetailRows, kitRows } from './kitRows';
 
 /**
  * Panel order of a class card's detail rows: the three slots of core's `detailNames`. A Legend's

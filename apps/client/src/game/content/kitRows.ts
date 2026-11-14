@@ -6,9 +6,6 @@ import type { DetailIcons } from './CataloguePresentation.types';
 /** The abilities a Legend equips (core's `AbilityKit`, which core does not export by name). */
 type Kit = LegendDefinition['defaultKit'];
 
-/** The kit a Legend equips: core's one rule (the spec's own kit, else the class's default). */
-export { kitOf } from '@eternalus/core';
-
 /** The kit row's bar slot for each position of a kit: abilities 1 to 3, then the ultimate. */
 const KIT_SLOTS: readonly KitRow['slot'][] = ['ability-1', 'ability-2', 'ability-3', 'ability-4'];
 

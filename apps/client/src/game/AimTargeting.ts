@@ -45,7 +45,7 @@ export class AimTargeting {
         ? { x: 0, y: 0 }
         : { x: (aim.x - origin.x) / length, y: (aim.y - origin.y) / length };
     const steps = ability.steps.map(({ shape, distance }) => ({
-      shape,
+      shape: shape ?? null,
       reach:
         distance === undefined
           ? null

@@ -26,7 +26,7 @@ const targetOf = (abilityId: string, aim: { x: number; y: number }, reach?: numb
       : { x: (aim.x - ORIGIN.x) / length, y: (aim.y - ORIGIN.y) / length };
   const steps: AimStep[] = (ABILITIES.find(({ id }) => id === abilityId)?.steps ?? []).map(
     ({ shape, distance }) => ({
-      shape,
+      shape: shape ?? null,
       reach: distance === undefined ? null : (reach ?? distance),
     }),
   );
@@ -126,6 +126,24 @@ describe('AimOverlayView', () => {
       { x: 13, y: 19.25 },
       { x: 10, y: 19.25 },
     ]);
+    for (const radius of radiusOf(endCircle ?? [], { x: 13, y: 20 })) {
+      expect(radius).toBeCloseTo(1.5);
+    }
+  });
+
+  it("draws no area for a dash's own row, which still moves the end circle to its reach", () => {
+    const target: AimTarget = {
+      origin: ORIGIN,
+      direction: { x: 1, y: 0 },
+      steps: [
+        { shape: null, reach: 3 },
+        { shape: { kind: 'circle', radius: 1.5 }, reach: null },
+      ],
+    };
+
+    const [endCircle, ...rest] = fills(drawn(target));
+
+    expect(rest).toEqual([]);
     for (const radius of radiusOf(endCircle ?? [], { x: 13, y: 20 })) {
       expect(radius).toBeCloseTo(1.5);
     }

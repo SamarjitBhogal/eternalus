@@ -1,7 +1,7 @@
-import { loadDisplayContent } from '@eternalus/core';
+import { kitOf, loadDisplayContent } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
-import { kitDetailRows, kitOf, kitRows } from './kitRows';
+import { kitDetailRows, kitRows } from './kitRows';
 
 const CONTENT = loadDisplayContent();
 const legend = (id: string) => {

@@ -3,7 +3,7 @@ import type { AbilityDisplayStep, Vec2 } from '@eternalus/core';
 import type { Renderer } from '../engine/render/Renderer';
 
 /** The area of one effect step, as the display data gives it (`AbilityDisplayStep['shape']`). */
-type AimShape = AbilityDisplayStep['shape'];
+type AimShape = NonNullable<AbilityDisplayStep['shape']>;
 
 /** Each shape kind's own shape type, by kind: the painters and their lookup index it. */
 export type AimShapeOf = {
@@ -11,11 +11,12 @@ export type AimShapeOf = {
 };
 
 /**
- * One effect step of the selected ability, as the overlay draws it: its area and, for a dash, how
- * far the dash really goes (a wall or the map's edge stops it); `null` for a step that is no dash.
+ * One effect step of the selected ability, as the overlay draws it: its area (`null` for a step
+ * with none, a dash's own row) and, for a dash, how far the dash really goes (a wall or the map's
+ * edge stops it); `null` for a step that is no dash.
  */
 export type AimStep = {
-  readonly shape: AimShape;
+  readonly shape: AimShape | null;
   readonly reach: number | null;
 };
 
