@@ -68,6 +68,10 @@ describe('validateGameConfig', () => {
     expect(failurePath({ limits: { maxUnitsPerTeam: 48 } })).toBeNull();
   });
 
+  it('accepts an A* search area of exactly one nav cell', () => {
+    expect(failurePath({ map: { navCellSize: 2.5, pathMaxSearchArea: 6.25 } })).toBeNull();
+  });
+
   it('accepts a five-lane map with two spawner towers per lane', () => {
     expect(failurePath({ map: { numLanes: 5, spawnTowersPerLane: 2 } })).toBeNull();
   });
@@ -105,7 +109,9 @@ describe('validateGameConfig', () => {
     ['map.flowFieldCorridorHalfWidth', { map: { flowFieldCorridorHalfWidth: 0 } }],
     ['map.flowFieldCellBudget', { map: { flowFieldCellBudget: 0 } }],
     ['map.flowFieldCellBudget', { map: { flowFieldCellBudget: 12.5 } }],
-    ['map.pathMaxExpansions', { map: { pathMaxExpansions: 0 } }],
+    ['map.pathMaxSearchArea', { map: { pathMaxSearchArea: 0 } }],
+    ['map.pathMaxSearchArea', { map: { pathMaxSearchArea: Infinity } }],
+    ['map.pathMaxSearchArea', { map: { navCellSize: 5, pathMaxSearchArea: 24 } }],
     ['map.pathSnapCells', { map: { pathSnapCells: -1 } }],
     ['map.presetId', { map: { presetId: '' } }],
     ['match.legendsPerTeam', { match: { legendsPerTeam: 0 } }],

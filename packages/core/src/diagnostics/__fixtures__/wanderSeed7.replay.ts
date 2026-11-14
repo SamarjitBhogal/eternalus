@@ -8,6 +8,8 @@ import type { ReplayOf } from '../Replay.types';
  * `config.match.timeline` was added on 2026-10-28, when `GameConfig` gained the field (the
  * default timeline for this config); the commands and checkpoints are as recorded.
  * `config.match.playerTeam` was added on 2026-10-30 with its default, `light`; it is not hashed.
+ * `config.map.pathMaxExpansions: 6000` became `pathMaxSearchArea: 150000` on 2026-11-13
+ * (DEC-243): the same 6000 cells on this config's 5 m cells; it is not hashed.
  */
 export const WANDER_SEED_7: ReplayOf<{ readonly seed: number; readonly config: GameConfig }> = {
   seed: 7,
@@ -24,7 +26,7 @@ export const WANDER_SEED_7: ReplayOf<{ readonly seed: number; readonly config: G
       navCellSize: 5,
       flowFieldCorridorHalfWidth: 25,
       flowFieldCellBudget: 2000,
-      pathMaxExpansions: 6000,
+      pathMaxSearchArea: 150000,
       pathSnapCells: 12,
       presetId: 'map-1',
     },

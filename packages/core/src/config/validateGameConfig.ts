@@ -123,9 +123,10 @@ const RULES: readonly Rule[] = [
     isValid: (value) => isWhole(value, 1),
   },
   {
-    path: 'map.pathMaxExpansions',
-    rule: 'must be a whole number >= 1',
-    isValid: (value) => isWhole(value, 1),
+    path: 'map.pathMaxSearchArea',
+    rule: 'must be a finite number >= map.navCellSize squared (one cell)',
+    isValid: (value, config) =>
+      isPositive(value) && value >= (valueAt(config, 'map.navCellSize') as number) ** 2,
   },
   {
     path: 'map.pathSnapCells',

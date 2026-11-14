@@ -38,7 +38,7 @@ export class MatchPathfinderFactory {
     return {
       grid,
       paths: new AStarPathfinder(grid, {
-        maxExpansions: config.map.pathMaxExpansions,
+        maxSearchArea: config.map.pathMaxSearchArea,
         snapCells: config.map.pathSnapCells,
       }),
     };
