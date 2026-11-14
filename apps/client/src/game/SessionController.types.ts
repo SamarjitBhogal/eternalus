@@ -15,7 +15,9 @@ import type { TypedEventBus } from '../bridge/TypedEventBus';
 import type { ErrorReporter } from '../data/logging/ErrorReporter';
 import type { MatchEvidence } from '../data/logging/ErrorReport.types';
 import type { ResourceController } from '../data/resources/ResourceController';
+import type { DuelLink } from './duel/DuelLink.types';
 import type { CatalogueSource } from './content/CatalogueSource.types';
+import type { MessageTransport } from './engine/net/MessageTransport';
 import type { SessionClock } from './engine/time/SessionClock.types';
 import type { MatchCrash, PreparedWorld } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
@@ -38,6 +40,17 @@ export type MatchRequest = {
   readonly onCrash: (crash: MatchCrash) => void;
 };
 
+/** What the session hands the Duel match factory (ADR 0016): no roster, the server owns the match. */
+export type DuelMatchRequest = {
+  /** The Duel's world, built from the shared map seed. */
+  readonly world: PreparedWorld;
+  readonly captureKinds: readonly MapFeatureKind[];
+  /** The started Duel: this player's Legend, the server's snapshots and the intent's way out. */
+  readonly link: DuelLink;
+  /** Called once if the match's game loop stops because a tick or a frame threw (DEC-106). */
+  readonly onCrash: (crash: MatchCrash) => void;
+};
+
 /** A match that is running in `match`; only `MatchState` holds one. */
 export interface RunningMatch {
   /** Stops the loop and releases every listener, device and adapter; safe to call twice. */
@@ -49,9 +62,10 @@ export interface RunningMatch {
   setPaused(isPaused: boolean): void;
   /**
    * What an error report needs from this match (ADR 0025 §3): its seed, tick, recent commands and
-   * events, replay so far and log records. Only reads; works after a crash too.
+   * events, replay so far and log records. Only reads; works after a crash too. `null` for an
+   * online Duel: its simulation runs on the server, so there is no replay to report.
    */
-  evidence(): MatchEvidence;
+  evidence(): MatchEvidence | null;
   /** Ticks the simulation has completed; a cheap read, unlike `evidence()`, which copies the log. */
   currentTick(): number;
 }
@@ -62,6 +76,13 @@ export interface RunningMatch {
  * @throws When it cannot (no 2D canvas, a map without the player's stronghold).
  */
 export type MatchFactory = (request: MatchRequest, viewport: MatchViewport) => RunningMatch;
+
+/**
+ * Builds and starts an online Duel on a viewport: the same adapters, a `Match` over the server's
+ * snapshots and its `MatchHost` (`createBrowserDuelMatch` in the app).
+ * @throws When it cannot (no 2D canvas).
+ */
+export type DuelMatchFactory = (request: DuelMatchRequest, viewport: MatchViewport) => RunningMatch;
 
 /** What the current `SessionState` may use and do. */
 export interface SessionContext {
@@ -81,7 +102,17 @@ export interface SessionContext {
   newMatchSetup(): void;
   /** Publishes the current setup again, unchanged (a rematch, architecture 13 §2). */
   repeatMatchSetup(): void;
-  /** Drops the setup, the selection, the prepared world and the team theme. */
+  /**
+   * Joins the online Duel queue (ADR 0016): connects to the server and sends `queue-join`. When an
+   * opponent is found and the first snapshot arrives, the session moves to `match-loading`.
+   */
+  joinDuelQueue(): void;
+  /** Leaves the Duel queue (`queue-leave`) and closes the connection. */
+  leaveDuelQueue(): void;
+  /**
+   * Drops the setup, the selection, the prepared world and the team theme, and closes any Duel
+   * connection (the menu is where every match ends up).
+   */
   clearMatchSetup(): void;
   /** The player's pick for the current setup, or `null` (13 §2 `character-select` records it). */
   selection(): ClassSelection | null;
@@ -94,13 +125,15 @@ export interface SessionContext {
    */
   lockIn(): void;
   /**
-   * Builds the world for the current setup's seed (06 §1: the generator runs before `Simulation`).
-   * @throws Without a setup, or when generation fails.
+   * Builds the world for the current setup's seed (06 §1: the generator runs before `Simulation`),
+   * or for the Duel's map seed while a Duel is started.
+   * @throws Without a setup (and no Duel), or when generation fails.
    */
   prepareWorld(): void;
   /**
    * Builds and starts the match on `viewport` from the setup with the rosters LOCK IN filled, the
-   * selection and the world; `onCrash` is called if its game loop later stops on a throw.
+   * selection and the world, or the online Duel (ADR 0016) while one is started; `onCrash` is
+   * called if its game loop later stops on a throw.
    * @throws When one of them is missing or the factory fails.
    */
   createMatch(viewport: MatchViewport, onCrash: (crash: MatchCrash) => void): RunningMatch;
@@ -180,6 +213,10 @@ export type SessionControllerDeps = {
   readonly prepareWorld: (seed: number) => PreparedWorld;
   /** Builds and starts a match on a viewport. */
   readonly createMatch: MatchFactory;
+  /** Builds and starts an online Duel on a viewport (ADR 0016). */
+  readonly createDuelMatch: DuelMatchFactory;
+  /** A new, unconnected transport to the Duel server per Duel (`WebSocketTransport` in the app). */
+  readonly createDuelTransport: () => MessageTransport;
   /** Where the session reports a match that could not start or a load bug. */
   readonly logger: Logger;
   /**
