@@ -143,9 +143,8 @@ describe('MatchHost', () => {
     expect(mapper.setBindings).toHaveBeenCalledWith(PRESETS.arrows);
   });
 
-  it('sets the cast mode from the settings event and from the host, and cancels the aim on cancel-aim', () => {
+  it('sets the cast mode from the settings event and cancels the aim on cancel-aim', () => {
     const { host, bus, match } = setUp();
-    host.setCastMode('aim-then-click');
     host.start();
 
     bus.emit('settings', {
@@ -156,7 +155,7 @@ describe('MatchHost', () => {
     expect(match.cancelAim).not.toHaveBeenCalled();
     bus.emit('ui-intent', { kind: 'cancel-aim' });
 
-    expect(match.setCastMode.mock.calls).toEqual([['aim-then-click'], ['aim-then-click']]);
+    expect(match.setCastMode.mock.calls).toEqual([['aim-then-click']]);
     expect(match.cancelAim).toHaveBeenCalledTimes(1);
   });
 

@@ -54,6 +54,14 @@ export class EntityLayer implements WorldLayer {
   }
 
   /**
+   * Where `id` is drawn in the main view since the last `show` (its interpolated position), so
+   * what is drawn around a unit sits on it; `null` when the layer does not draw it.
+   */
+  public drawnAt(id: string | null): WorldPoint | null {
+    return this.states.find(({ entity }) => entity.id === id)?.position ?? null;
+  }
+
+  /**
    * Draws every entity, back to front by `y`, so lower entities overlap higher ones. The health
    * bars (`HealthBarView`) come after every entity of this layer, so no entity hides a bar.
    */

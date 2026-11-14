@@ -1,6 +1,7 @@
 import { emitIntent } from '../../bridge/eventBus';
 import type { Overlay, UiIntent } from '../../bridge/events';
 import { useAppStore } from '../../bridge/hooks';
+import { hudSlice } from '../../bridge/slices/hudSlice';
 import { useActionShortcut } from '../components/useActionShortcut';
 
 /** Where the element that had focus when the pause menu opened is kept (13 §7; CD-11). */
@@ -45,6 +46,11 @@ export function pressPauseMenuKey<TElement>(
 export function usePauseMenuKey(overlay: Overlay | null, openerRef: PauseOpenerRef): void {
   const store = useAppStore();
   useActionShortcut('pause-menu', () => {
-    pressPauseMenuKey(overlay, openerRef, document, store.getState().hud.aimingSlot !== null);
+    pressPauseMenuKey(
+      overlay,
+      openerRef,
+      document,
+      hudSlice.selectors.selectAimingSlot(store.getState()) !== null,
+    );
   });
 }

@@ -1,5 +1,4 @@
 import type { InputAction } from '../bridge/Binding.types';
-import type { CastMode } from '../bridge/slices/settingsSlice';
 import type { MatchEvidence } from '../data/logging/ErrorReport.types';
 import { CanvasPointerControls } from './CanvasPointerControls';
 import type { MatchHostDeps } from './MatchHost.types';
@@ -72,11 +71,6 @@ export class MatchHost implements RunningMatch {
       this.destroy();
       throw error;
     }
-  }
-
-  /** Sets how the ability keys cast; later changes arrive as `settings` events. */
-  public setCastMode(mode: CastMode): void {
-    this.deps.match.setCastMode(mode);
   }
 
   /**

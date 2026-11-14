@@ -116,6 +116,8 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
         input,
         logger,
         abilities: request.abilities,
+        dashReach: (origin, direction, distance, radius) =>
+          simulation.dashReach(origin, direction, distance, radius),
         onCrash: request.onCrash,
         bridge: {
           bus: deps.bus,
@@ -143,7 +145,7 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
       evidence: () => readEvidence(simulation, ring),
       currentTick: () => simulation.tick,
     });
-    host.setCastMode(settings.castMode ?? settingsSlice.getInitialState().gameplay.castMode);
+    match.setCastMode(settings.castMode ?? settingsSlice.getInitialState().gameplay.castMode);
     // A throw here has already been undone by the host (every listener, the match, the adapters).
     host.start();
     return host;

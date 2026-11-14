@@ -1,4 +1,4 @@
-import type { Snapshot, Unsubscribe, Vec2 } from '@eternalus/core';
+import type { Snapshot, Unsubscribe } from '@eternalus/core';
 
 import type { MatchSimulation } from '../Match.types';
 import type { DuelLink } from './DuelLink.types';
@@ -44,16 +44,6 @@ export class RemoteSimulation implements MatchSimulation {
    */
   public enqueueCommand(): void {
     return undefined;
-  }
-
-  /**
-   * The whole `distance`: the client has no world grid online, and nothing asks, because a Duel
-   * sends intents and selects no ability for aiming.
-   * ponytail: no ability casts in a Duel; when the server reads the intent's `triggered` slots,
-   * the range overlay needs the wall clamp from the server or a client-side grid.
-   */
-  public dashReach(_from: Vec2, _direction: Vec2, distance: number): number {
-    return distance;
   }
 
   /**

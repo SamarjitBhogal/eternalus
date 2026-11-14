@@ -7,6 +7,7 @@ import {
 import { describe, expect, it, vi } from 'vitest';
 
 import type { BridgeEventMap, RosterEntry } from '../bridge/events';
+import type { CastMode } from '../bridge/slices/settingsSlice';
 import type { PlayerHudSnapshot } from '../bridge/hud.types';
 import { TypedEventBus } from '../bridge/TypedEventBus';
 import type { LogSink } from '../data/logging/LogSink.types';
@@ -41,7 +42,11 @@ function evidenceOf(running: RunningMatch): MatchEvidence {
   return evidence;
 }
 
-function setUp(canvas = new FakeViewportCanvas(), sinks: readonly LogSink[] = []) {
+function setUp(
+  canvas = new FakeViewportCanvas(),
+  sinks: readonly LogSink[] = [],
+  castMode: CastMode | null = null,
+) {
   const window = new FakeBrowserTarget();
   const document = new FakeBrowserTarget();
   const bus = new TypedEventBus<BridgeEventMap>();
@@ -50,7 +55,7 @@ function setUp(canvas = new FakeViewportCanvas(), sinks: readonly LogSink[] = []
     document,
     gameConfig: CONFIG,
     bus,
-    settings: { bindings: null, castMode: null },
+    settings: { bindings: null, castMode },
     clock: new FakeSessionClock(),
     sinks,
   });
@@ -140,6 +145,24 @@ describe('createBrowserMatch', () => {
     expect(listeners()).toBe(0);
     expect(window.pendingFrames).toBe(0);
     expect(bus.listenerCount()).toBe(busBefore + 1);
+  });
+
+  it("starts with the settings' cast mode: aim-then-click selects an ability key instead of casting", () => {
+    const { window, bus, factory, viewport, request } = setUp(
+      new FakeViewportCanvas(),
+      [],
+      'aim-then-click',
+    );
+    const slots: (string | null)[] = [];
+    bus.on('aiming-slot', ({ slot }) => slots.push(slot));
+    const running = factory(request(), viewport);
+
+    window.dispatchEvent(Object.assign(new Event('keydown'), { code: 'Digit1', key: '1' }));
+    window.runFrame(0);
+    window.runFrame(MS_PER_SECOND / CONFIG.tickRate);
+
+    expect(slots).toEqual(['ability-1']);
+    running.destroy();
   });
 
   it('links each capture point the HUD lists to its zone in the simulation (PR #64)', () => {

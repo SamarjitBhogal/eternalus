@@ -89,6 +89,27 @@ describe('EntityLayer', () => {
     expect(spy.drawn.map((state) => state.position)).toEqual([{ x: 2.5, y: 1 }]);
   });
 
+  it('tells where it draws an entity (the interpolated position), and null for one it does not', () => {
+    const layer = new EntityLayer(
+      new ViewRegistry(new SpyView()),
+      () => false,
+      () => null,
+    );
+    const placeless = { ...unit('ghost', 0, 0), transform: null };
+
+    layer.show(
+      snapshot(1, [unit('a', 0, 0)]),
+      snapshot(2, [unit('a', 10, 4), placeless]),
+      0.25,
+      null,
+    );
+
+    expect(layer.drawnAt('a')).toEqual({ x: 2.5, y: 1 });
+    expect(layer.drawnAt('ghost')).toBeNull();
+    expect(layer.drawnAt('missing')).toBeNull();
+    expect(layer.drawnAt(null)).toBeNull();
+  });
+
   it('draws a new entity where it is, without a ghost from the origin', () => {
     const spy = new SpyView();
     const layer = new EntityLayer(

@@ -10,7 +10,6 @@ import type {
   AssetId,
   ClassLayoutOverride,
   DetailRow,
-  DetailSlot,
   DisplayCatalogue,
   EffectsRenderer,
   HudCatalogue,
@@ -27,18 +26,14 @@ import type {
 import { kitDetailRows, kitOf, kitRows } from './kitRows';
 
 /**
- * Panel order of the detail rows; a class card lists the slots its core `detailNames` has (its
- * three). A Legend's rows come from its kit (`kitDetailRows`, DEC-65, DEC-199).
+ * Panel order of a class card's detail rows: the three slots of core's `detailNames`. A Legend's
+ * rows come from its kit (`kitDetailRows`, DEC-65, DEC-199).
  */
-const DETAIL_SLOT_ORDER: readonly DetailSlot[] = [
+const CLASS_DETAIL_SLOTS = [
   'signature',
   'proficiency',
   'specialty',
-  'ultimate',
-  'ability-1',
-  'ability-2',
-  'ability-3',
-];
+] as const satisfies readonly (keyof ClassDetailNames)[];
 
 /** A locked card's detail rows: the class slots, unnamed and without icons (placeholder rows). */
 const LOCKED_DETAIL_NAMES: ClassDetailNames = {
@@ -70,11 +65,8 @@ const fail = (problem: string): never => {
 };
 
 /** Core names × presentation icons, in panel order. */
-function detailRows(
-  names: Readonly<Partial<Record<DetailSlot, string | null>>>,
-  icons: DetailIcons,
-): readonly DetailRow[] {
-  return DETAIL_SLOT_ORDER.filter((slot) => Object.hasOwn(names, slot)).map((slot) => ({
+function detailRows(names: ClassDetailNames, icons: DetailIcons): readonly DetailRow[] {
+  return CLASS_DETAIL_SLOTS.map((slot) => ({
     slot,
     displayName: names[slot] ?? null,
     iconAssetId: icons[slot] ?? null,

@@ -133,6 +133,9 @@ const setUp = (content?: Content, withMapObjects = false) => {
     input,
     logger,
     abilities: ABILITIES,
+    // The port as `createBrowserMatch` binds it.
+    dashReach: (origin, direction, distance, radius) =>
+      simulation.dashReach(origin, direction, distance, radius),
     onCrash: () => undefined,
     // A bus only the tests listen to, at the shipped cadence.
     bridge: {
@@ -244,6 +247,34 @@ describe('Match range overlay', () => {
     renderer.calls.length = 0;
     match.render(0);
     expect(overlayFills(renderer)).toBe(0);
+    match.destroy();
+  });
+
+  it('aims from where the Legend is drawn between two ticks, not from its snapshot position', () => {
+    const { match, input, simulation } = setUp();
+    const reach = vi.spyOn(simulation, 'dashReach');
+    const playerAt = () => {
+      const transform = match.snapshot.entities.find(
+        ({ id }) => id === match.playerEntityId,
+      )?.transform;
+      return { x: transform?.x ?? Number.NaN, y: transform?.y ?? Number.NaN };
+    };
+    match.setCastMode('aim-then-click');
+    input.move = { x: 1, y: 0 };
+    for (let tick = 0; tick < 5; tick += 1) match.tick();
+    input.aim = { x: 40, y: 50 };
+    input.triggered = ['ability-1'];
+    const before = playerAt();
+    match.tick();
+    input.triggered = [];
+    const after = playerAt();
+
+    match.render(0.5);
+
+    expect(after.x).not.toBeCloseTo(before.x, 3);
+    const [origin] = reach.mock.lastCall ?? [];
+    expect(origin?.x).toBeCloseTo((before.x + after.x) / 2, 9);
+    expect(origin?.y).toBeCloseTo((before.y + after.y) / 2, 9);
     match.destroy();
   });
 

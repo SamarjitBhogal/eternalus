@@ -1,10 +1,13 @@
-import type { AbilityDisplay, LegendDefinition, LegendSpecDefinition } from '@eternalus/core';
+import type { AbilityDisplay, LegendDefinition } from '@eternalus/core';
 
 import type { DetailRow, DetailSlot, KitRow } from '../../bridge/catalogue.types';
 import type { DetailIcons } from './CataloguePresentation.types';
 
 /** The abilities a Legend equips (core's `AbilityKit`, which core does not export by name). */
 type Kit = LegendDefinition['defaultKit'];
+
+/** The kit a Legend equips: core's one rule (the spec's own kit, else the class's default). */
+export { kitOf } from '@eternalus/core';
 
 /** The kit row's bar slot for each position of a kit: abilities 1 to 3, then the ultimate. */
 const KIT_SLOTS: readonly KitRow['slot'][] = ['ability-1', 'ability-2', 'ability-3', 'ability-4'];
@@ -16,14 +19,6 @@ const DETAIL_ORDER: readonly { readonly slot: DetailSlot; readonly kitSlot: KitR
   { slot: 'ability-2', kitSlot: 'ability-2' },
   { slot: 'ability-3', kitSlot: 'ability-3' },
 ];
-
-/**
- * The kit a Legend equips (DEC-198): its own when its spec carries one, else its class's default.
- * A later kit change is a content edit only.
- */
-export function kitOf(spec: LegendSpecDefinition, legend: LegendDefinition): Kit {
-  return spec.kit ?? legend.defaultKit;
-}
 
 /**
  * The kit's four rows, abilities 1 to 3 and then the ultimate, from the ability catalogue. An

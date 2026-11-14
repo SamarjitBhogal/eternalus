@@ -3,6 +3,7 @@ import { type EntityId, type EntitySnapshot, makeLogRecord, type Snapshot } from
 import type { CastMode } from '../bridge/slices/settingsSlice';
 import { isDead } from '../bridge/selectors/isDead';
 import { AbilityCasts } from './AbilityCasts';
+import { AimTargeting } from './AimTargeting';
 import { BuildingRoofs } from './BuildingRoofs';
 import { GameLoop } from './engine/loop/GameLoop';
 import { HealthBarVisibility } from './HealthBarVisibility';
@@ -68,7 +69,10 @@ export class Match implements LoopTarget {
   private readonly casts: AbilityCasts;
 
   /** The range overlay of the ability selected for aiming, drawn over the units. */
-  private readonly aimOverlay: AimOverlayView;
+  private readonly aimOverlay = new AimOverlayView();
+
+  /** What the range overlay shows each frame, with the simulation's dash reach. */
+  private readonly aiming: AimTargeting;
 
   private readonly bridge: MatchBridge;
 
@@ -119,11 +123,7 @@ export class Match implements LoopTarget {
     const shown = (): WorldRect => this.camera.visibleArea();
     this.objects = new WorldObjectsView(mapObjects, hiddenRoofs, shown);
     const { isDestroyed } = this.objects;
-    this.aimOverlay = new AimOverlayView(
-      deps.abilities,
-      this.playerId,
-      (from, direction, distance) => simulation.dashReach(from, direction, distance),
-    );
+    this.aiming = new AimTargeting(deps.abilities, this.playerId, deps.dashReach);
     const scene = new SceneView([
       new MapView(map, scenery, hiddenRoofs, shown, buildings, isDestroyed),
       new SceneryView(scenery, 'detail', hiddenRoofs, shown, isDestroyed),
@@ -226,7 +226,14 @@ export class Match implements LoopTarget {
     renderer.showWorldArea(view);
     this.entities.show(this.previous, this.current, alpha, this.playerId);
     this.objects.show(this.current.mapObjects ?? []);
-    this.aimOverlay.show(this.current, this.casts.aimingSlot, this.casts.aimPoint);
+    this.aimOverlay.show(
+      this.aiming.targetOf(
+        this.current,
+        this.casts.aimingSlot,
+        this.casts.aimPoint,
+        this.entities.drawnAt(this.playerId),
+      ),
+    );
     scene.draw(renderer);
     miniMap.draw(renderer, this.camera.screenWidth, this.camera.screenHeight);
   }
