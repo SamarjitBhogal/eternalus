@@ -6405,3 +6405,17 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   style!"; core "Tests 1321 passed (1321)"; client "Tests 1818 passed (1818)"; "✓ built in
   314ms"; "Documentation check passed."
 - Next step: reviewers re-review; the owner answers the BUG-2 and BUG-3 INBOX items.
+
+### 2026-11-14 — Phase 3 / bug tracker (owner answers) — docs/bug-tracker — sholtzman + Claude Code
+
+- What was done: recorded the owner's answers to PR #96 as DEC-247 (BUG-2), DEC-248 (BUG-3,
+  amends DEC-193) and DEC-249 (critic B1, a `Scheduled` status); ticked the two `INBOX.md` items.
+  `bugs.md`: BUG-4, BUG-6 and BUG-7 are `Scheduled`; BUG-2 and BUG-3 cite their rulings; BUG-4,
+  BUG-5 and BUG-6 name the open fix PRs (#100, #101, #107, #109, #112); BUG-5's sprint note names
+  the Sentinel's Wrecking Run.
+- Pre-PR gate: critic (`architecture-reviewer`) and ponytail on this change; see the PR comment.
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code
+  style!"; core "Tests 1336 passed (1336)"; protocol "Tests 18 passed (18)"; client "Tests 1883
+  passed (1883)"; server "Tests 79 passed (79)"; "Documentation check passed."
+- Next step: merge PR #96. PR #110 drops or ticks its BUG-2/BUG-3 INBOX questions (answered by
+  DEC-247/248). The open fix PRs update their rows. BUG-2 and BUG-3 need a plan item.
