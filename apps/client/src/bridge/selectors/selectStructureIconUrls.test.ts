@@ -33,7 +33,7 @@ function storeWith(urls: Readonly<Record<string, string>>) {
       hud: TEST_HUD_CATALOGUE,
     }),
   );
-  store.dispatch(matchSetupSlice.actions.setTeam({ seed: 1, playerTeam: 'light' }));
+  store.dispatch(matchSetupSlice.actions.setTeam({ mode: 'local', seed: 1, playerTeam: 'light' }));
   store.dispatch(matchSlice.actions.structuresChanged(figmaHudState().match.structures));
   store.dispatch(assetsSlice.actions.groupUrlsChanged({ group: 'match', urls, boxes: {} }));
   return store;

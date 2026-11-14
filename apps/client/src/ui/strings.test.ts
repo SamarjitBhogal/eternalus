@@ -57,6 +57,12 @@ describe('STRINGS team-name templates', () => {
   });
 });
 
+describe('STRINGS.results', () => {
+  it("words the ended match's length", () => {
+    expect(STRINGS.results.duration('14:32')).toBe('Match length 14:32');
+  });
+});
+
 describe('STRINGS.settings templates', () => {
   it('words a binding conflict and a reset', () => {
     expect(STRINGS.settings.conflict('Esc', 'Pause menu')).toBe(

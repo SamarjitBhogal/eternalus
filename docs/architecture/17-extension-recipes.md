@@ -4,7 +4,7 @@ description: One recipe per kind of addition, from a Legend class to a port and 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-05
+last-reviewed: 2026-11-09
 tags: [architecture, recipes, extension-points, ocp, registries]
 paths:
   [
@@ -112,7 +112,15 @@ R14 "new view" and R16 "new command".
   (`extends: 'light-mob'`); a new weight class with its own lifecycle is a class.
 - **Files:** `core/content/mobs/<id>.ts` (`MobDefinition`: `weightClass`, stats, `aggro` as
   data, `controller`) + `mobCatalogue.ts` line; a new weight class adds a `GameConfig.match.hordeSizes`
-  key (validated) and, only if lifecycle differs, `core/entities/mobs/<Name>.ts` + `.test.ts`.
+  key (validated) and a `minionKill` value in `core/content/match/scoring.ts` (keyed by `MobKind`,
+  so it fails to compile without one) and, only if lifecycle differs,
+  `core/entities/mobs/<Name>.ts` + `.test.ts`. Scoring needs no code: the mob family's death rule
+  scores every `MobKind` by its weight. A new scoring rule (another victim family, such as team
+  boss kills, another event, or a score for each tick) is a rule class in `core/match/rules/` that
+  implements one of `HitRule`, `DeathRule`, `ScoringListener` or `TickScorer`
+  (`core/match/ScoringRule.types.ts`), and one line in `core/match/defaultScoringRules.ts`; a new
+  counter is one `TeamStats` or `LegendStats` field and its 0; a `ScoreBook` writer only if the
+  rule is not a plain award (DEC-211, DEC-221; 12 §5).
 - **Registry line:** none for a flavour; `defaultEntityRegistry.ts` for a class.
 - **Tests:** content validation; a `SpawnSystem` scenario spawns a horde of it at the configured
   size; a `MinionController` scenario (attacks within N ticks); determinism.
@@ -371,7 +379,7 @@ AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `
 ### R17a. Add a victory condition
 
 - **When:** a new way for a match to end (a verdict with a winner or a draw), not a timed event (a timeline entry, 12 §3).
-- **Files:** `core/match/conditions/<Name>Condition.ts` implementing `VictoryCondition`; its id in `VictoryConditionId` (`core/config/VictoryConditionId.types.ts`).
+- **Files:** `core/match/conditions/<Name>Condition.ts` implementing `VictoryCondition`; its id in `VictoryConditionId` (`core/config/VictoryConditionId.types.ts`); its lines in `core/content/narrative/verdictLines.ts` (12 §9), or the win/lose screen shows no line for it. The client reads a verdict with no winner as a draw (`selectMatchVerdict`); a condition that ends with no winner and is not a draw (`aborted`, 12 §6) first makes that selector tell the two apart.
 - **Registry line:** one line in `core/match/defaultVictoryConditions.ts`. Check order is list order and the first verdict wins.
 - **Tests:** a co-located `<Name>Condition.test.ts`; a scenario if it needs the real systems.
 - **Docs:** the table in 12 §6.

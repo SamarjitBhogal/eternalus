@@ -4,6 +4,7 @@ import type { Logger } from '../diagnostics/Logger.types';
 import type { StateHasher } from '../state/StateHasher';
 import type { MatchPhaseRegistry } from './MatchPhaseState.types';
 import type { MatchTimeline } from './MatchTimeline';
+import type { ScoreKeeper } from './ScoreKeeper.types';
 import type { TimelineActionRegistry } from './TimelineActionRegistry.types';
 import type { VictoryCondition } from './VictoryCondition.types';
 
@@ -21,10 +22,21 @@ export type MatchDirectorOptions = {
   readonly terminal: readonly MatchPhase[];
   /** Hashes the state for `MatchResult.finalHash` (a `StateHasher`). */
   readonly hasher: Pick<StateHasher, 'hash'>;
-  /** A move that is not forward is a bug: it throws when set (tests), else it is logged (browser). */
+  /**
+   * A move that is not forward is a bug: it throws when set (tests), else it is logged
+   * (browser).
+   */
   readonly debug: Pick<DebugConfig, 'throwOnViolation'>;
   /** Where a skipped move is reported when `debug.throwOnViolation` is off. */
   readonly logger: Logger;
-  /** The victory conditions in check order (`defaultVictoryConditions.ts`); the first verdict wins. */
+  /**
+   * The victory conditions in check order (`defaultVictoryConditions.ts`); the first verdict
+   * wins.
+   */
   readonly conditions: readonly VictoryCondition[];
+  /**
+   * Folds the tick's buffered scoring events, after the phase update and before the verdict
+   * (`Scoring`).
+   */
+  readonly scoring: ScoreKeeper;
 };

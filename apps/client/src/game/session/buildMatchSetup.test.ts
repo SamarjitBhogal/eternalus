@@ -45,6 +45,10 @@ describe('buildMatchSetup', () => {
     expect(enemies[0]).toMatchObject({ isBot: true, isRover: true });
   });
 
+  it('marks the setup as a local match', () => {
+    expect(build(fixedRng(0)).mode).toBe('local');
+  });
+
   it('puts allies on the player’s team and enemies on the other', () => {
     for (const [draw, team, other] of [
       [0, 'light', 'dark'],

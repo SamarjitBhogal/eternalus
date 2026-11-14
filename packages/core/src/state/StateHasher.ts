@@ -12,6 +12,7 @@ import { Transform } from '../components/Transform';
 import { Vision } from '../components/Vision';
 import type { Entity } from '../entities/Entity';
 import { fnv1a } from '../utils/fnv1a';
+import { createEmptyScoringState } from './emptyScoringState';
 import type { GameState } from './GameState';
 import { PLAYABLE_TEAMS } from '../teams/playableTeams';
 
@@ -39,6 +40,12 @@ export class StateHasher {
     const matchFields = [match.phaseEnteredTick, match.timelineCursor, match.isIdleHeld];
     if (matchFields.some((value) => value !== 0 && value !== false)) {
       parts.push(['match', ...matchFields]);
+    }
+    // Scoring joins by the same rule, once it differs from the empty state: one serialisation
+    // feeds both the check and the hash, so a new scoring field cannot be left out of either.
+    const scoring = JSON.stringify(match.scoring);
+    if (scoring !== StateHasher.EMPTY_SCORING) {
+      parts.push(['scoring', scoring]);
     }
     // Hordes and the spawn counters are appended only once a horde was asked for, for the same
     // reason.
@@ -101,6 +108,8 @@ export class StateHasher {
     if (state.worldObjects !== undefined) parts.push(state.worldObjects.snapshot());
     return fnv1a(JSON.stringify(parts));
   }
+
+  private static readonly EMPTY_SCORING = JSON.stringify(createEmptyScoringState());
 
   private static fieldsOf(entity: Entity): unknown[] {
     const transform = entity.findComponent(Transform);

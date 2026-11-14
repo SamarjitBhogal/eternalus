@@ -16,7 +16,7 @@ describe('selectSelectedClassCard', () => {
       ...state,
       matchSetup: matchSetupSlice.reducer(
         state.matchSetup,
-        matchSetupSlice.actions.setCountdown(41_000),
+        matchSetupSlice.actions.countdownChanged({ kind: 'select', remainingMs: 41_000 }),
       ),
     };
     expect(selectSelectedClassCard(ticked)).toBe(CLASSES[1]);

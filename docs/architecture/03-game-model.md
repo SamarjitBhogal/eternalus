@@ -59,7 +59,7 @@ export class GameState {
   public readonly rng: SeededRandom; // the only source of randomness
   public readonly entities: EntityStore; // deterministic, creation-order iteration
   public readonly world: MatchWorld | null; // definition, lane routes, WorldMap (grid, cost field, flow fields), structures index; null without a map
-  public readonly teams: Readonly<Record<Team, TeamState>>; // score, structures alive, buffs, spawn counters (18 §3.4)
+  public readonly teams: Readonly<Record<Team, TeamState>>; // structures alive, buffs, spawn counters (18 §3.4); the score is `TeamStats` (12 §5)
   public readonly hordes: HordeRegistry; // Horde aggregates (not entities)
   public readonly events: GameEvents;
   public readonly recentCommands: RingBuffer<TimedCommand>; // post-mortem context; recent events: events.recentEvents() (§4)
@@ -78,6 +78,9 @@ export class MatchRecord implements MatchState {
   public endMatch(result: MatchResult): void; // MatchDirector only, once; a second call throws
   public seatHuman(legendId: EntityId): void; // Simulation only, once, when the human slot's Legend spawns
   public advanceTimeline(): void; // MatchDirector only, once per fired timeline entry
+  // the scoring data's only writer (DEC-211): written by Scoring only, in its fold (12 §5)
+  public readonly scoreBook: ScoreBook; // addRow, award, awardTeam, recordHit, takeAssists
+  public get scoring(): ScoringState; // the book's data, read-only at every depth
 }
 ```
 
@@ -180,32 +183,32 @@ plus a deferred queue, research §2). `GameEvents` keeps the most recent events 
 (`recentEvents()`, capacity in `GameEvents.constants.ts`) for invariant reports. Payload objects for
 high-frequency events (`damage-applied`) may be pooled (Recommendation, profile first).
 
-| Event                               | Payload                                                | Emitted by                                                      | Typical listeners                                                       |
-| ----------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `entity-spawned`                    | `{ entityId, kind, team }`                             | `EntityFactory` via `SpawnSystem`, or `Simulation` for a roster | `SnapshotSystem`, views                                                 |
-| `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`           | `DeathSystem` only                                              | `HordeSystem`, `ProjectilePool`, invariants                             |
-| `damage-applied`                    | `{ targetId, amount, absorbed, source: DamageSource }` | `DamagePipeline`                                                | `ProgressionSystem` (assists), `AiSystem` (aggro)                       |
-| `entity-died`                       | `{ entityId, killer: DamageSource }`                   | `DeathResolver`                                                 | `DeathSystem`, `ProgressionSystem`, `Scoring`, `ObjectiveLostCondition` |
-| `structure-destroyed`               | `{ entityId, kind, team, lane }`                       | `StructureSystem`                                               | `EnragedSystem` (enraged lane), `StructureSystem` (walls, shields)      |
-| `structure-breakability-changed`    | `{ entityId, isBreakable, lane }`                      | `StructureSystem`                                               | `HordeSystem` (gate holding), views                                     |
-| `camp-cleared`                      | `{ entityId }`                                         | `SpawnSystem`                                                   | `ProgressionSystem` (camp reward), `MatchDirector`                      |
-| `shield-bars-changed`               | `{ entityId, bars }`                                   | `StructureSystem`                                               | HUD, views                                                              |
-| `capture-progress`                  | `{ pointId, team, progress, checkpoint }`              | `CaptureSystem`                                                 | HUD, `MinimapView`                                                      |
-| `checkpoint-reached`                | `{ pointId, team, checkpoint }`                        | `CaptureSystem`                                                 | checkpoint spawners (Phase 3)                                           |
-| `capture-point-owner-changed`       | `{ pointId, from, to }`                                | `CaptureSystem`                                                 | `Scoring`, `MatchDirector`, `StatusEffectSystem`                        |
-| `phase-changed`                     | `{ from, to }`                                         | `MatchRecord.setPhase` (called by `MatchDirector`)              | `Announcer`                                                             |
-| `match-ended`                       | `{ result: MatchResult }`                              | `MatchDirector`                                                 | client `MatchBridge` (the results flow)                                 |
-| `ability-cast`                      | `{ casterId, abilityId, slot }`                        | `AbilitySystem`                                                 | views (VFX), `Announcer`                                                |
-| `status-applied`                    | `{ entityId, statusId, sourceId }`                     | `StatusEffectApplier` (DEC-41)                                  | views, HUD                                                              |
-| `status-expired`                    | `{ entityId, statusId, sourceId }`                     | `StatusEffectSystem`                                            | views, HUD                                                              |
-| `horde-spawned` / `horde-dissolved` | `{ hordeId, lane, team, memberIds }`                   | `SpawnSystem` / `HordeSystem`                                   | `EnragedSystem`, `MinimapView`                                          |
-| `level-up`                          | `{ entityId, level }`                                  | `ProgressionSystem`                                             | `AbilitySystem` (scaling), HUD                                          |
-| `team-changed`                      | `{ entityId, from, to, cause }`                        | `Team` component                                                | `HordeSystem`, views                                                    |
-| `boss-summoned`                     | `{ entityId, kind }`                                   | `SpawnSystem` (timeline)                                        | `Announcer`, `AiSystem` (camps turn aggressive)                         |
-| `command-rejected`                  | `{ command, reason }`                                  | `applyCommand`                                                  | `DeveloperMenu`, tests                                                  |
-| `collision-anomaly`                 | `{ entityId, from, to, colliderId }`                   | `CollisionSystem`                                               | `InvariantSystem`, `Logger`                                             |
-| `invariant-violated`                | `{ invariantId, tick, details }`                       | `InvariantRunner`                                               | `Logger`, `PerfOverlay`, tests (throw)                                  |
-| `tick-completed`                    | `{ tick }`                                             | `Simulation`                                                    | `Match` (publish snapshot, throttle to the store)                       |
+| Event                               | Payload                                                | Emitted by                                                      | Typical listeners                                                                        |
+| ----------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `entity-spawned`                    | `{ entityId, kind, team }`                             | `EntityFactory` via `SpawnSystem`, or `Simulation` for a roster | `SnapshotSystem`, views, `Scoring` (a row per Legend)                                    |
+| `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`           | `DeathSystem` only                                              | `HordeSystem`, `ProjectilePool`, invariants                                              |
+| `damage-applied`                    | `{ targetId, amount, absorbed, source: DamageSource }` | `DamagePipeline`                                                | `ProgressionSystem` (assists), `AiSystem` (aggro), `Scoring` (assists, structure damage) |
+| `entity-died`                       | `{ entityId, killer: DamageSource }`                   | `DeathResolver`                                                 | `DeathSystem`, `ProgressionSystem`, `Scoring`, `ObjectiveLostCondition`                  |
+| `structure-destroyed`               | `{ entityId, kind, team, lane }`                       | `StructureSystem`                                               | `EnragedSystem` (enraged lane), `StructureSystem` (walls, shields), `Scoring` (DEC-212)  |
+| `structure-breakability-changed`    | `{ entityId, isBreakable, lane }`                      | `StructureSystem`                                               | `HordeSystem` (gate holding), views                                                      |
+| `camp-cleared`                      | `{ entityId }`                                         | `SpawnSystem`                                                   | `ProgressionSystem` (camp reward), `MatchDirector`                                       |
+| `shield-bars-changed`               | `{ entityId, bars }`                                   | `StructureSystem`                                               | HUD, views                                                                               |
+| `capture-progress`                  | `{ pointId, team, progress, checkpoint }`              | `CaptureSystem`                                                 | HUD, `MinimapView`                                                                       |
+| `checkpoint-reached`                | `{ pointId, team, checkpoint, presentLegendIds }`      | `CaptureSystem`                                                 | `Scoring` (DEC-214, DEC-223), checkpoint spawners (Phase 3)                              |
+| `capture-point-owner-changed`       | `{ pointId, from, to }`                                | `CaptureSystem`                                                 | `MatchDirector`, `StatusEffectSystem`                                                    |
+| `phase-changed`                     | `{ from, to }`                                         | `MatchRecord.setPhase` (called by `MatchDirector`)              | `Announcer`                                                                              |
+| `match-ended`                       | `{ result: MatchResult }`                              | `MatchDirector`                                                 | client `MatchBridge` (the results flow)                                                  |
+| `ability-cast`                      | `{ casterId, abilityId, slot }`                        | `AbilitySystem`                                                 | views (VFX), `Announcer`                                                                 |
+| `status-applied`                    | `{ entityId, statusId, sourceId }`                     | `StatusEffectApplier` (DEC-41)                                  | views, HUD                                                                               |
+| `status-expired`                    | `{ entityId, statusId, sourceId }`                     | `StatusEffectSystem`                                            | views, HUD                                                                               |
+| `horde-spawned` / `horde-dissolved` | `{ hordeId, lane, team, memberIds }`                   | `SpawnSystem` / `HordeSystem`                                   | `EnragedSystem`, `MinimapView`                                                           |
+| `level-up`                          | `{ entityId, level }`                                  | `ProgressionSystem`                                             | `AbilitySystem` (scaling), HUD                                                           |
+| `team-changed`                      | `{ entityId, from, to, cause }`                        | `Team` component                                                | `HordeSystem`, views                                                                     |
+| `boss-summoned`                     | `{ entityId, kind }`                                   | `SpawnSystem` (timeline)                                        | `Announcer`, `AiSystem` (camps turn aggressive)                                          |
+| `command-rejected`                  | `{ command, reason }`                                  | `applyCommand`                                                  | `DeveloperMenu`, tests                                                                   |
+| `collision-anomaly`                 | `{ entityId, from, to, colliderId }`                   | `CollisionSystem`                                               | `InvariantSystem`, `Logger`                                                              |
+| `invariant-violated`                | `{ invariantId, tick, details }`                       | `InvariantRunner`                                               | `Logger`, `PerfOverlay`, tests (throw)                                                   |
+| `tick-completed`                    | `{ tick }`                                             | `Simulation`                                                    | `Match` (publish snapshot, throttle to the store)                                        |
 
 Systems subscribe in their constructor and never call another system. `Simulation.on()` exposes
 the same channel to the client; the bridge re-publishes a throttled subset to React.
@@ -238,6 +241,7 @@ export type EntitySnapshot = {
   readonly kind: EntityKind;
   readonly family: EntityFamily;
   readonly definitionId: string;
+  readonly mapFeatureId?: string; // a structure's map feature, so the HUD binds its tile (DEC-212)
   readonly team: Team | null;
   readonly transform: {
     readonly x: number;

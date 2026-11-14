@@ -10,6 +10,7 @@ import {
 } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
 
+import { matchResultFixture } from '../bridge/__fixtures__/matchResultFixtures';
 import type { BridgeEventMap, MatchClock } from '../bridge/events';
 import { TypedEventBus } from '../bridge/TypedEventBus';
 import { type PlayerChoice, withPlayer } from './__fixtures__/withPlayer';
@@ -18,7 +19,7 @@ import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
 import { RecordingRenderer } from './engine/render/RecordingRenderer';
 import { Match } from './Match';
 import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH, MS_PER_SECOND } from './Match.constants';
-import type { MatchDeps, PreparedWorld } from './Match.types';
+import type { MatchObserver, PreparedWorld } from './Match.types';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
 
@@ -73,7 +74,10 @@ function matchDeps(
     camera: new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT),
     input: { read: () => STILL },
     logger: new NullLogger(),
-    onCrash: vi.fn<MatchDeps['onCrash']>(),
+    observer: {
+      crashed: vi.fn<MatchObserver['crashed']>(),
+      ended: vi.fn<MatchObserver['ended']>(),
+    },
     bridge: { bus, publishEveryTicks: HUD_PUBLISH_EVERY_TICKS, captureKinds: [] },
   };
   return { deps, clocks, on, dropped };
@@ -181,7 +185,7 @@ describe('Match lifecycle', () => {
     expect(twins.filter((id) => id !== match.playerEntityId)).toEqual(bots);
   });
 
-  it('hands a throw from a tick to onCrash with the tick, and its loop stops (DEC-106)', () => {
+  it('hands a throw from a tick to the observer with the tick, and its loop stops (DEC-106)', () => {
     const { deps } = matchDeps();
     const match = new Match(deps);
     const error = new Error('step failed');
@@ -194,8 +198,41 @@ describe('Match lifecycle', () => {
 
     deps.scheduler.advance(TICK_MS);
 
-    expect(deps.onCrash.mock.calls).toEqual([[{ error, tick: 1 }]]);
+    expect(deps.observer.crashed.mock.calls).toEqual([[{ error, tick: 1 }]]);
     expect(deps.scheduler.hasPendingFrame).toBe(false);
+  });
+
+  it('tells its owner once, after the tick whose step ended the match, and runs on (DEC-92)', () => {
+    const { deps, on } = matchDeps();
+    const match = new Match(deps);
+    const ended = on.mock.calls.find(([type]) => type === 'match-ended')?.[1];
+    match.start();
+    deps.scheduler.advance(0);
+    deps.scheduler.advance(TICK_MS);
+    expect(deps.observer.ended).not.toHaveBeenCalled();
+
+    // Core emits `match-ended` inside the step; the bridge publishes it after that tick.
+    ended?.({ result: matchResultFixture() });
+    expect(deps.observer.ended).not.toHaveBeenCalled();
+    deps.scheduler.runFrames(3, TICK_MS);
+
+    expect(deps.observer.ended).toHaveBeenCalledTimes(1);
+    expect(deps.simulation.tick).toBe(4);
+    expect(deps.scheduler.hasPendingFrame).toBe(true);
+  });
+
+  it('never tells its owner once destroyed, even when the end came on its last tick', () => {
+    const { deps, on } = matchDeps();
+    const match = new Match(deps);
+    const ended = on.mock.calls.find(([type]) => type === 'match-ended')?.[1];
+    match.start();
+    deps.scheduler.advance(0);
+
+    ended?.({ result: matchResultFixture() });
+    match.destroy();
+    deps.scheduler.runFrames(3, TICK_MS);
+
+    expect(deps.observer.ended).not.toHaveBeenCalled();
   });
 
   it('runs whole ticks from the loop: 100 ms of frames is 3 ticks', () => {
@@ -218,6 +255,26 @@ describe('Match lifecycle', () => {
 
     expect(simulation.tick).toBe(30);
     expect(clocks.map((clock) => clock.tick)).toEqual([0, 6, 12, 18, 24, 30]);
+  });
+
+  it("shows each structure tile with its real structure's health from the start (DEC-212)", () => {
+    const { deps } = matchDeps();
+    const published: BridgeEventMap['structure-state'][] = [];
+    deps.bridge.bus.on('structure-state', (event) => published.push(event));
+    new Match(deps).start();
+    const live = new Map(
+      deps.simulation
+        .snapshot()
+        .entities.flatMap(({ mapFeatureId, health }) =>
+          mapFeatureId === undefined ? [] : [[mapFeatureId, health] as const],
+        ),
+    );
+    const shown = published[0]?.structures ?? [];
+
+    expect(shown.filter(({ health }) => health !== null).length).toBeGreaterThan(0);
+    for (const { structureId, health } of shown) {
+      expect(health).toEqual(live.get(structureId) ?? null);
+    }
   });
 
   it('plays the same way twice for the same seed and intents (deterministic)', () => {
@@ -280,8 +337,9 @@ describe('Match lifecycle', () => {
 
     expect(scheduler.hasPendingFrame).toBe(false);
     expect(simulation.tick).toBe(0);
-    // The match subscribes only to the health bars' events, and drops each subscription once.
-    expect(on.mock.calls.map(([type]) => type)).toEqual(['damage-applied', 'entity-removed']);
-    expect(dropped).toEqual(['damage-applied', 'entity-removed']);
+    // The health bars' two subscriptions (DEC-195) and the bridge's `match-ended`; each is dropped once.
+    const types = ['damage-applied', 'entity-removed', 'match-ended'];
+    expect(on.mock.calls.map(([type]) => type)).toEqual(types);
+    expect(dropped).toEqual(types);
   });
 });

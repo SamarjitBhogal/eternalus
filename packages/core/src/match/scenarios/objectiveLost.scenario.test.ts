@@ -5,6 +5,7 @@ import { WinObjective } from '../../components/WinObjective';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../../config/matchPhases';
 import { loadDefaultContent } from '../../content/loadDefaultContent';
+import { SCORING } from '../../content/match/scoring';
 import { loadLevelCurves } from '../../content/progression/loadLevelCurves';
 import { XP_SOURCES } from '../../content/progression/xpSources';
 import { loadWeapons } from '../../content/weapons/loadWeapons';
@@ -29,9 +30,10 @@ const MAX_TICKS = 30;
 /**
  * Builds the real per-tick systems and director (as `Simulation` does), with a light warrior
  * beside a dark training dummy that carries `WinObjective` and one hit point, the warrior told to
- * attack it. Steps until the match ends or `MAX_TICKS`.
+ * attack it. The warrior is announced with `entity-spawned`, as a spawn does, so it has a scoring
+ * row. `prepare` runs before the first step. Steps until the match ends or `MAX_TICKS`.
  */
-const playOut = () => {
+const playOut = (prepare: (state: GameState) => void = () => undefined) => {
   const logger = new MemoryLogger();
   const timeline = MatchTimeline.resolve(CONFIG);
   const state = new GameState(CONFIG, 7, null, {}, timeline.schedule());
@@ -40,6 +42,7 @@ const playOut = () => {
     timeline,
     debug: TEST_DEBUG_CONFIG,
     logger,
+    scoring: SCORING,
   });
   const pipeline = new DefaultSystemPipeline({
     invariants: new DefaultInvariantRunner({
@@ -69,6 +72,7 @@ const playOut = () => {
   const health = objective.getComponent(Health);
   health.applyDamage(health.max - 1);
   state.entities.add(warrior);
+  state.events.emit('entity-spawned', { entityId: warrior.id, kind: 'warrior', team: 'light' });
   state.entities.add(objective);
   state.entities.setAttackTarget(warrior.id, objective.id);
 
@@ -79,6 +83,7 @@ const playOut = () => {
   state.events.on('match-ended', () => {
     events.push(`${String(state.tick)}: match-ended`);
   });
+  prepare(state);
   while (state.match.result === null && state.tick < MAX_TICKS) {
     pipeline.run({ state, logger });
     state.advanceTick();
@@ -102,6 +107,48 @@ describe('losing the last win objective (scenario)', () => {
       seed: 7,
     });
     expect(logger.records).toEqual([]);
+  });
+
+  it('counts the winning kill in the result: a light mob is a minion kill worth 1 (DEC-79)', () => {
+    const { state } = playOut();
+
+    expect(state.match.result?.legends).toEqual([
+      {
+        entityId: 'entity-1',
+        team: 'light',
+        classId: 'warrior',
+        controller: 'bot',
+        kills: 0,
+        deaths: 0,
+        assists: 0,
+        minionKills: 1,
+        neutralKills: 0,
+        structureDamage: 0,
+        checkpointsWon: 0,
+        score: 1,
+      },
+    ]);
+    expect(state.match.result?.teams).toEqual({
+      light: { score: 1, structuresDestroyed: 0, capturesHeldTicks: 0, checkpointsReached: 0 },
+      dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0, checkpointsReached: 0 },
+    });
+  });
+
+  it("counts a fallen enemy structure in the result's team totals, not in a row (DEC-212)", () => {
+    const { state } = playOut(({ events }) => {
+      events.emit('structure-destroyed', {
+        entityId: 'entity-99',
+        kind: 'spawner-tower',
+        team: 'dark',
+        lane: null,
+      });
+    });
+
+    expect(state.match.result?.legends.map((row) => row.score)).toEqual([1]);
+    expect(state.match.result?.teams).toEqual({
+      light: { score: 6, structuresDestroyed: 1, capturesHeldTicks: 0, checkpointsReached: 0 },
+      dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0, checkpointsReached: 0 },
+    });
   });
 
   it('is deterministic: two runs give deep-equal results and equal hashes', () => {

@@ -1,19 +1,28 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import type { LegendClassId, PlayableTeam } from '../domain.types';
-import type { ClassSelection, FilledRosters, RosterEntry } from '../events';
+import type {
+  ClassSelection,
+  CountdownKind,
+  FilledRosters,
+  MatchMode,
+  RosterEntry,
+} from '../events';
 
 /** The match being set up, as the selection and loading screens show it. */
 type MatchSetupSliceState = {
+  /** Where the match runs; `null` until a setup is published. */
+  readonly mode: MatchMode | null;
   readonly seed: number;
   readonly playerTeam: PlayableTeam | null;
   readonly selection: { readonly classId: LegendClassId | null; readonly specId: string | null };
   readonly allies: readonly RosterEntry[];
   readonly enemies: readonly RosterEntry[];
-  /** Remaining character-select time (session time, ms). */
-  readonly countdownMs: number;
-  /** Remaining pre-launch reveal time (session time, ms). */
-  readonly revealMs: number;
+  /**
+   * Remaining session time of each countdown, in ms (13 §2): character select, the pre-launch
+   * reveal and the win/lose screen (DEC-78). A new kind is one `CountdownKind` member.
+   */
+  readonly countdownsMs: Readonly<Record<CountdownKind, number>>;
   /** LOCK IN was pressed: the pick holds and the locked view shows until the countdown ends (DEC-60). */
   readonly isLockedIn: boolean;
 };
@@ -22,13 +31,13 @@ type MatchSetupSliceState = {
 const MS_PER_SECOND = 1000;
 
 const initialState: MatchSetupSliceState = {
+  mode: null,
   seed: 0,
   playerTeam: null,
   selection: { classId: null, specId: null },
   allies: [],
   enemies: [],
-  countdownMs: 0,
-  revealMs: 0,
+  countdownsMs: { select: 0, reveal: 0, results: 0 },
   isLockedIn: false,
 };
 
@@ -44,8 +53,13 @@ export const matchSetupSlice = createSlice({
   reducers: {
     setTeam(
       state,
-      action: PayloadAction<{ readonly seed: number; readonly playerTeam: PlayableTeam }>,
+      action: PayloadAction<{
+        readonly mode: MatchMode;
+        readonly seed: number;
+        readonly playerTeam: PlayableTeam;
+      }>,
     ) {
+      state.mode = action.payload.mode;
       state.seed = action.payload.seed;
       state.playerTeam = action.payload.playerTeam;
     },
@@ -63,11 +77,12 @@ export const matchSetupSlice = createSlice({
     select(state, action: PayloadAction<ClassSelection | null>) {
       state.selection = action.payload ?? { classId: null, specId: null };
     },
-    setCountdown(state, action: PayloadAction<number>) {
-      state.countdownMs = action.payload;
-    },
-    setReveal(state, action: PayloadAction<number>) {
-      state.revealMs = action.payload;
+    /** One countdown's remaining time (the `countdown` event as it is). */
+    countdownChanged(
+      state,
+      action: PayloadAction<{ readonly kind: CountdownKind; readonly remainingMs: number }>,
+    ) {
+      state.countdownsMs[action.payload.kind] = action.payload.remainingMs;
     },
     /** LOCK IN: the filled rosters replace the draft's, and the pick is locked (DEC-60, DEC-61). */
     lockIn(state, action: PayloadAction<FilledRosters>) {
@@ -80,9 +95,11 @@ export const matchSetupSlice = createSlice({
   selectors: {
     selectSelection: (state) => state.selection,
     selectPlayerTeam: (state) => state.playerTeam,
+    selectMode: (state) => state.mode,
     selectAllies: (state) => state.allies,
     selectIsLockedIn: (state) => state.isLockedIn,
-    /** Whole seconds left, rounded up, as the countdown shows them (42000 → 42, 41001 → 42). */
-    selectCountdownSeconds: (state) => Math.ceil(state.countdownMs / MS_PER_SECOND),
+    /** One countdown's whole seconds left, rounded up, as it shows them (42000 → 42, 41001 → 42). */
+    selectCountdownSeconds: (state, kind: CountdownKind) =>
+      Math.ceil(state.countdownsMs[kind] / MS_PER_SECOND),
   },
 });

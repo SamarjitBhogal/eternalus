@@ -5455,6 +5455,216 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `docs/game-loop-and-results-plan` branch (DEC-71 to DEC-88) merges first and this branch is
   rebased on the phase branch.
 
+### 2026-10-30 — Game loop plan GL-4 (Phase 3 sprint 3.5, pulled forward) / match scoring — feat/match-scoring — sholtzman + Claude Code
+
+- What: built GL-4 of the game loop and results plan (§4.4, §4.5, A5, A6; DEC-79, DEC-84 (2),
+  DEC-113 (8) and (10)). Uncommitted, on `feat/match-scoring` from `feat/match-director` at
+  `2aa9651`.
+  - Core: `match/Scoring.ts` (+ `Scoring.types.ts`), `state/ScoringState.types.ts`
+    (`LegendStats`, `TeamStats`, `ScoringState`), `state/emptyScoringState.ts`,
+    `content/match/scoring.ts` (`SCORING_WEIGHTS`: Legend kill 15 and assist 7, both `TUNE`;
+    death 0; mobs by kind 1, 4, 12; `ASSIST_WINDOW_SECONDS` 30, `TUNE`) and `scoring.types.ts`,
+    `MobKind` in `content/mobs/mobs.types.ts`. `Simulation` passes the content values into
+    `createDefaultMatchDirector`, which builds `Scoring` before the seat spawns, so the seat's
+    Legend has a row from the fold of tick 0. The director folds after the phase update and before
+    the victory check, so a kill on the ending tick counts; `end()` copies the rows and team totals
+    into `MatchResult.legends` and `teams`. `ScoringState` sits in `state.match` and joins the
+    state hash once it differs from the empty state, so the golden replay
+    (`wanderSeed7.replay.ts`) is unchanged and was not re-recorded. `index.ts` exports the
+    `LegendStats` and `TeamStats` types (API change for the PR).
+  - Rules: only a Legend (a row) earns a kill, and a hit names its attacker, so a hit still counts
+    after its Legend left the store; a non-Legend last hit gives no kill and the assists still
+    count; assists are for Legend victims only, inside the window (its last tick included), and
+    never for the killer; Host mobs count as `minionKills`, neutral mobs as `neutralKills`, both
+    by kind; bosses, the sovereign and other families give nothing; `structureDamage` counts the
+    health a Legend takes off structures, with no points; a team's score is the sum of its
+    Legends' scores; nothing is buffered once the match has a result. Points for structures,
+    captures and holds (FR-007) wait for the owner's values (`ponytail:` note in
+    `content/match/scoring.ts`).
+  - Docs (owner docs, every edit reported): 12 §5 (the accepted §6 row: weights, assist rule and
+    window, FR-007 points pending, `neutralKills`, team total) and §13; 03 §2 (`TeamState` comment
+    drops `score`) and §4 (`Scoring` listens to `entity-spawned` and `damage-applied`); 02 §2
+    (`state/` and `content/` rows).
+- Fail-first breaks: each new test was seen red under a deliberate break, then the file was
+  restored (`cmp`): 27 breaks, 36 test results, `eternalus-agent-work/game-loop-plan/gl4-breaks.md`
+  (script `gl4-breaks.py` beside it).
+- Checks run: `npm run check` → `EXIT=0` (`gl4-check-2026-10-30.log`): core "Tests 792 passed
+  (792)", statements 99.29 % (was 99.26); client "Tests 1365 passed (1365)", statements 96.38 %;
+  "✓ built" (the build line); "Documentation check passed."
+- Next step: the pre-PR gate for GL-1, GL-2 and GL-4 (architecture critic, then ponytail), GL-5
+  (the client end flow reads `MatchResult.legends` and `teams`), and GL-3 (the King) after M1.
+  Owner points still open: structure, capture and hold points (FR-007).
+- Critic loop (session c2172931, 2026-10-30, two rounds; triage in
+  `eternalus-agent-work/game-loop-plan/critic-log.md`):
+  - Round 1 correctness: FAIL on one major. Self-kills, self-assists and ally kills scored (no
+    team check). Fixed: `Scoring` compares teams as `ProgressionSystem` does (O5, 05 §18), on
+    hits, Legend kills and mob kills; self-damage is still blocked by `FriendlyFireStep`, so the
+    self-kill test announces the events. Owner call on `structureDamage`: shield damage included
+    (DEC-123). Fixed: the `death: 0` citation (the owner's request of 2026-10-27, not DEC-79), a
+    `recentHits` check, the assist-ring bound wording in 12 §13. Rejected: a throw for an unknown
+    mob kind (the type guard is the narrowing; `xpFor` does the same) and no kill for a neutral
+    Legend (it is an enemy Legend).
+  - Round 1 ponytail (`ponytail-gl4-round-1.md`): 2 cuts rejected (a merged filter loop is no
+    shorter; `PendingChange` stays in `Scoring.types.ts` by CONTRIBUTING §3.1); 12 §5 now names
+    `ASSIST_WINDOW_SECONDS` instead of copying 30 s.
+  - Round 2: correctness PASS (one DEC-123 wording fix, two TSDoc nits fixed); ponytail PASS,
+    0 findings (`ponytail-gl4-round-2.md`).
+  - Owner rulings: DEC-122 (`LegendStats` holds only filled counters; plan §4.4 cites it) and
+    DEC-123, on `docs/game-loop-and-results-plan`, uncommitted.
+  - Fail-first: 3 new tests red before the fix; breaks B1-B5 each red, file restored (`cmp`):
+    `gl4-breaks.md`, section "Critic round 1 fixes".
+- Checks after the fixes: `npm run check` → `EXIT=0` (`gl4-r2-check-2026-10-30.log`): core
+  "Tests 795 passed (795)", statements 99.29 %; client "Tests 1365 passed (1365)", statements
+  96.38 %; "✓ built in 251ms"; "Documentation check passed." Only this entry changed after it.
+
+### 2026-10-30 — Game loop plan GL-4 pre-PR review round 1 (Phase 3 sprint 3.5, pulled forward) — feat/match-scoring — sholtzman + Claude Code
+
+- What: the pre-PR architecture review of GL-4 (`2aa9651..80d0a5d`): approve, 0 blockers, 5 minor,
+  4 nits (`eternalus-agent-work/game-loop-plan/arch-review-gl4-round-1.md`). Owner answers, logged
+  on `docs/game-loop-and-results-plan`: DEC-130 (own-side hits and kills score nothing, as O5),
+  DEC-131 (FR-007 points, structure 5, capture 3 per checkpoint, hold 1 per minute, not built),
+  DEC-132 (a design critic chose the as-built per-pair list of recent damagers over the design's
+  per-victim ring: the ring can drop a valid assist and keeps hits from an earlier life; neither
+  serves the checkpoint damage bias, which 05 §13 gives to `ProgressionSystem`). Applied:
+  - Citations: `Scoring.ts` and 12 §5 cite DEC-130; `content/match/scoring.ts`'s `ponytail:`
+    note and 12 §5 cite DEC-131; the 12 §5 `damage-applied` row describes the per-pair list
+    (DEC-132) and drops "and the checkpoint damage bias"; the status note says "assist store".
+  - 17 R3 (add a mob type): a new weight class also adds a `minionKill` value in
+    `core/content/match/scoring.ts`. `packages/core/AGENTS.md`: `match/` holds `Scoring`.
+  - Correction to the GL-4 entry above (entries are not rewritten): the work there was committed
+    (`3af30f3`, `80d0a5d`), not "Uncommitted"; and per DEC-123 `structureDamage` counts health and
+    shield damage, not only "the health a Legend takes off structures".
+  - Not changed: the legend/mob branch in `Scoring` (a handler map when a third family scores);
+    the `Pick<Scoring, 'fold'>` port (the doubles work).
+  - Owner docs edited (reported): 12 §5 and §13, 17 R3.
+- Checks run: comment and doc edits only; the pre-commit hook (typecheck, lint) and
+  `npm run docs:check` pass.
+- Next step: merge `docs/game-loop-and-results-plan` first (DEC-122, 123, 129 to 132); merge this
+  branch into `feat/results-flow`; GL-4's ponytail review.
+
+### 2026-10-30 — Game loop plan GL-5 (Phase 3 sprint 3.5, pulled forward) / client end flow and the MVP results screen — feat/results-flow — sholtzman + Claude Code
+
+- What: built GL-5 of the game loop and results plan (§4.5 client path steps 1 to 6, "Win/lose for
+  the viewer", "Results screen (MVP)", A8, A9, A18, §8 as far as it covers the win/lose screen;
+  DEC-78, DEC-83 (2), DEC-92, DEC-74). Uncommitted, on `feat/results-flow` at `d8a803b` (GL-4 with
+  the HUD branch merged in).
+  - Core: `content/narrative/verdictLines.ts` (+ `.types.ts`: `VerdictLines`, `VerdictLineSet`),
+    the `objective-lost` lines only (DEC-83 placeholders, `TUNE`), `{name}` for the fallen side's
+    sovereign; `content/sovereigns/sovereignDisplayNames.ts` ("Emperor" per team, DEC-74), the one
+    place the sovereign's display name lives, for GL-3's `monarch` to reuse. `loadDisplayContent()`
+    returns both; `index.ts` exports the two types (API change for the PR).
+  - Bridge: `match-ended { result, durationSeconds }`, the `continue` intent, `CountdownKind` with
+    `results`; `matchSlice` keeps core's `MatchResult` and the length; `matchSetupSlice.resultsMs`;
+    `connectBusToStore` keeps each countdown by a kind table; selectors `selectMatchVerdict`,
+    `selectVerdictLine`, `selectMatchDurationText` (sharing `matchTimeText` with the match clock);
+    the catalogue carries `verdictLines` and `sovereignNames`.
+  - Game: `MatchBridge` latches core's `match-ended` and publishes it once from `afterTick`, and
+    drops its listener on `destroy`; `Match.tick` calls `onEnded` once after that tick (the
+    `RunningMatch` observer, passed through `MatchRequest` and `SessionContext.createMatch` beside
+    `onCrash`); `MatchState` moves to `results` `RESULTS_DELAY_MS` (5 s, DEC-92) later on the
+    session clock, never for a replaced match, and drops the timer when the match stops;
+    `ResultsState` releases `match`, loads `selection` and runs `RESULTS_COUNTDOWN_MS` (30 s,
+    DEC-78) to `menu`, `continue` skips it, and every exit releases `selection`. Both timings sit
+    in `sessionTiming.constants.ts` with `ponytail:` notes until GL-11.
+  - UI: `ResultsScreen` on the selection artboard: the verdict as the banner title, the countdown
+    (`Countdown` gains a `label` prop), the verdict line, the length, then Continue (focused), Play
+    again and Main menu; `ResultsScreen.module.css` (tokens only). `ResultsScreen.intents.test.tsx`
+    clicks each button in a page (DEC-111).
+  - Docs (owner docs, every edit reported): 13 §2 (`match` row trigger and work, `results` row,
+    the session-time paragraph), §3 (`ResultsScreen` row), §5 (the `countdown` line in the
+    sketch), §10 (Session and Bridge notes); 12 §13 (status of the verdict lines); 02 §12 (Core
+    status); `packages/core/AGENTS.md` (`content/` may import `config/` types, plan §6 A2 row).
+- Fail-first breaks: each new or changed test was seen red under a deliberate break, then the file
+  was restored (`cmp`): 53 breaks, 87 test results, all red, all restores identical,
+  `eternalus-agent-work/game-loop-plan/gl5-breaks.md` (script `gl5-breaks.py` beside it).
+- Checks run: `npm run check` → `EXIT=0` (`gl5-check-2026-10-30.log`): core "Tests 806 passed
+  (806)", statements 99.29 % (unchanged); client "Tests 1542 passed (1542)", statements 96.53 %
+  (was 96.51); "✓ built"; "Documentation check passed."
+- Next step: the pre-PR gate for GL-5 (architecture critic, then ponytail); owner sign-off on the
+  items beyond the plan (the `durationSeconds` field, Play again and Main menu kept on the win/lose
+  screen until GL-10); GL-3 (the sovereign) so a browser match can end; GL-11 moves both timings.
+
+### 2026-10-30 — Game loop plan GL-5 critic round 1 (Phase 3 sprint 3.5, pulled forward) — feat/results-flow — sholtzman + Claude Code
+
+- What: the critic loop on GL-5 (`d8a803b..3495c3b`). Correctness critic: PASS (2 minor, 3 nits,
+  14 mutation probes all red). Ponytail critic: PASS (4 nits, 0 cuts). Applied:
+  - `MatchBridge.afterTick` returns `true` only on the tick that publishes `match-ended`, and
+    `Match.tick` calls `onEnded` on it; the `hasEnded` getter and `Match.wasEndReported` are gone
+    (one end flag, not two).
+  - `selectVerdictLine` picks the fallen team with one comparison instead of a table of three
+    functions.
+  - `sovereignDisplayNames.ts` is a `ponytail:` stand-in for the per-team display name on the
+    `monarch` definition (plan §4.3); GL-3 moves the names there. This corrects the GL-5 entry
+    above, which called it "the one place the sovereign's display name lives, for GL-3's `monarch`
+    to reuse".
+  - Owner docs (reported): 13 §2 `results` row says a failed `selection` load shows the screen
+    without its art; 13 §10 drops the stale sentence "Nothing catches an exception thrown by
+    `Simulation.step()`…" (a loop crash ends the match since DEC-106, as the same section's
+    2026-10-30 note says).
+  - Rejected: inlining `ResultsState.finish` (the one place GL-10 changes); the claim that GL-11
+    moves only `RESULTS_COUNTDOWN_MS` (GL-11's acceptance: "`sessionTiming.constants.ts` holds no
+    timing this plan added", which includes `RESULTS_DELAY_MS`).
+- Fail-first breaks: 3 breaks, all red, restores checked by `shasum`
+  (`eternalus-agent-work/game-loop-plan/gl5-r1-fix-breaks.md`).
+- Checks run: `npm run check` → `EXIT=0` (`gl5-r1-check-2026-10-30.log`): core "Tests 806 passed
+  (806)", statements 99.29 %; client "Tests 1542 passed (1542)", statements 96.53 %; "✓ built";
+  "Documentation check passed."
+- Next step: the owner signed off the GL-5 items beyond the plan (DEC-129, logged on
+  `docs/game-loop-and-results-plan`); cite it at the values, then the pre-PR gate for GL-5.
+
+### 2026-10-30 — Game loop plan GL-4 into GL-5, DEC-129 and DEC-134 cited (Phase 3 sprint 3.5, pulled forward) — feat/results-flow — sholtzman + Claude Code
+
+- What: merged `feat/match-scoring` (`49c7117`) into this branch (`ed2b93f`; the only conflict was
+  this file, both sides kept). Cited the owner's answers at their values (rows on
+  `docs/game-loop-and-results-plan`):
+  - DEC-129: `match-ended`'s `durationSeconds` (`bridge/events.ts`, 13 §10 Bridge note); Play again
+    and Main menu stay on the win/lose screen until GL-10 (a `ponytail:` note in
+    `ResultsScreen.tsx`, 13 §10 Session note); `selectMatchDurationText` in 13 §3's
+    `ResultsScreen` row.
+  - DEC-134 (new, the owner's A1 and B1): the win/lose screen's wording stays as built
+    (`ui/strings.ts`; `content/narrative/verdictLines.ts`, whose draw line names only the player's
+    sovereign until GL-3); the 5 s run-on after the match ends does not stop for a pause
+    (`MatchState.scheduleResults`, and a `MatchState.test.ts` case that pins it).
+  - Owner docs edited (reported): 13 §3 (one citation in the `ResultsScreen` row, width kept), §10
+    (two status-note sentences).
+- Fail-first: the DEC-134 test went red when `setPaused(true)` dropped the pending move to
+  `results`; restore checked by `shasum` and `cmp`
+  (`eternalus-agent-work/game-loop-plan/gl5-dec134-break.md`).
+- Checks run: the merge, before these edits: `npm run check` EXIT=0, core "Tests 806 passed
+  (806)", client "Tests 1542 passed (1542)", "✓ built", "Documentation check passed."
+  (`gl45-merge-check-2026-10-30.log`). After these edits: `npm run check` EXIT=0, core "Tests 806
+  passed (806)", client "Tests 1543 passed (1543)", "✓ built", "Documentation check passed."
+  (`gl5-cite-check-2026-10-30.log`).
+- Next step: the pre-PR gate for GL-5 (architecture critic, then ponytail on GL-4 and GL-5).
+
+### 2026-10-31 — Game loop plan GL-5 pre-PR gate round 1 (Phase 3 sprint 3.5, pulled forward) — feat/results-flow — sholtzman + Claude Code
+
+- What: the pre-PR gate's architecture critic on GL-5 (`d8a803b..5badcf0`) and the ponytail review
+  of GL-4 (`2aa9651..49c7117`) and GL-5.
+  - Architecture critic: approve; 0 blocker, 0 major, 1 minor, 6 nits, 12 acceptable
+    (`eternalus-agent-work/game-loop-plan/arch-review-gl5-round-1.md`). Fixed: V1 (17 R17a: a new
+    condition adds its verdict lines, and a no-winner end that is not a draw first makes
+    `selectMatchVerdict` tell the two apart); V2 (02 §12 and 12 §13: the sovereign-name file is a
+    stand-in until GL-3); V3 (the `bridge/domain.types.ts` header allows bridge-only types such as
+    `MatchVerdict`); V4 (`SessionCountdown` takes its selector and label, and the win/lose screen
+    uses it, so the screen no longer re-renders each second); V6 (08 §11: `Match.tick` calls
+    `onEnded`). V5, a correction to the first GL-5 entry above, which says "Uncommitted": that code
+    was committed in `2ec78de` and `0732400`. Not changed: V7 (13 §5's sketch; 13 §10 lists
+    `durationSeconds` with the other additions to the sketch and cites DEC-129).
+  - Ponytail: PASS, 4 low-confidence cuts
+    (`eternalus-agent-work/game-loop-plan/ponytail-prepr-gl4-gl5.md`). Applied: `selectVerdictLine`
+    flips the team inline, as `buildMatchSetup` does. Rejected: dropping `LegendStats.controller`
+    and `classId` (12 §5 names them); inlining `ResultsState.finish` (rejected in critic round 1:
+    the one place GL-10 changes).
+  - Owner docs edited (reported): 17 R17a, 02 §12, 12 §13, 08 §11; `last-reviewed` 2026-10-31 on
+    each.
+- Fail-first: two breaks of `SessionCountdown` (selector ignored; label ignored), both red, restore
+  checked by `shasum` (`eternalus-agent-work/game-loop-plan/gl5-prepr-r1-breaks.md`).
+- Checks run: `npm run check` EXIT=0, core "Tests 806 passed (806)", client "Tests 1544 passed
+  (1544)", "✓ built", "Documentation check passed." (`gl5-prepr-r1-check-2026-10-31.log`).
+- Next step: the GL PRs wait for the HUD PR (owner, 2026-10-30), then open in the order docs, HUD,
+  match-director, match-scoring, results-flow.
+
 ### 2026-11-04 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / phase/3 merge, BD-B — feat/match-director — sholtzman + Claude Code
 
 - What: merged `phase/3-sprint-3-work` (`387a5fd`, PR #68) into `feat/match-director`
@@ -5998,6 +6208,57 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Next step: push; tell eternalus-121 the new head (#79 merges it); PR #77 merges after #76
   once Samarjit re-approves.
 
+### 2026-11-04 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / match-director merge — feat/match-scoring — sholtzman + Claude Code
+
+- What: merged `feat/match-director` (`12e030b`, which holds phase/3 `387a5fd`) into
+  `feat/match-scoring` (`49c7117`).
+  - Conflicts: `StateHasher` puts the scoring block right after the match fields, then phase/3's
+    hordes, enraged, ai and world-object blocks (each only when non-empty, so the golden hashes
+    hold); `GameState` keeps both imports; `GameState.test.ts` takes phase/3's five-argument
+    constructor; `Simulation.ts` drops the unused `FOLLOW_LEADER_PROFILE` import; architecture 02
+    and 03 tables take both sides; this file keeps every entry of both branches.
+  - Merge fallout: `Simulation.scoring.test.ts` uses phase/3's
+    `recordReplay(setup, plan, createTarget)` form.
+  - Roster order (behaviour fix in the merge): phase/3 spawned the roster before the director, and
+    `Scoring` gives a row only to a Legend whose `entity-spawned` it hears (12 §5). The roster bots
+    had no scoreboard rows. `Simulation.spawnRoster` now runs after the director is built, just
+    before `seatHuman`. Only `Scoring` and `seatHuman` listen to `entity-spawned`, and nothing
+    spawns in between, so entity ids do not change.
+- Fail-first break: the new test "gives a roster bot a bot row in the fold of tick 0" is red with
+  `spawnRoster` back before the director (`expected [] to deeply equal [ ObjectContaining{…} ]`);
+  file restored and compared with the backup (`cmp`).
+- Checks run: `npm run check` → `EXIT=0` (`ms-check-2026-11-04.log` in
+  `eternalus-agent-work/game-loop-plan/`): core "Tests 1125 passed (1125)", statements 99.1 %;
+  client "Tests 1740 passed (1740)", statements 96.82 %; "✓ built in 484ms"; "Documentation check
+  passed." The first run failed because this worktree had no `happy-dom` (5 client files did not
+  start); `npm ci` from the unchanged lock fixed it.
+- Next step: commit and push the merge, then merge `feat/match-scoring` into `feat/results-flow`
+  the same way.
+
+### 2026-11-04 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / match-scoring merge — feat/results-flow — sholtzman + Claude Code
+
+- What: merged `feat/match-scoring` (`ad2e8e7`, which holds `feat/match-director` and phase/3
+  `387a5fd`) into `feat/results-flow` (`ce2c67b`).
+  - Conflicts: `Match.ts` keeps GL-5's `onMatchEnded` wiring and `onEnded` call after phase/3's
+    roof update, takes phase/3's removal of the demo escort and BD-B's move of the camera
+    gestures to `MatchViewControls`; the bot roster's `difficulties` and GL-5's `verdictLines` and
+    `sovereignNames` sit side by side in the content slice and its fixtures; core's `index.ts`
+    exports both `VerdictLines` and `BotRole`; test imports take both sides.
+  - Docs: architecture 13's `match` row names GL-5's end trigger and phase/3's crash trigger, and
+    keeps GL-5's run-on and `results` row; phase/3's screen-crash paragraph comes before the edited
+    selection paragraph; the implementation-status note holds both GL-5's end flow and phase/3's
+    crash flow (checked with a word diff against phase/3's text after a padding-normalised
+    `git merge-file`). Architecture 02 keeps phase/3's `BotRosterDifficultyRule.ts` and GL-5's
+    verdict lines. This file keeps every entry of both branches (GL-5's four entries go before the
+    two 2026-11-04 entries).
+  - Merge fallout: phase/3's `Match.roofs.test.ts` gives GL-5's required `onEnded`.
+- Checks run: `npm run check` → `EXIT=0` (`rf-check-2026-11-04.log` in
+  `eternalus-agent-work/game-loop-plan/`): core "Tests 1127 passed (1127)", statements 99.1 %;
+  client "Tests 1789 passed (1789)", statements 96.83 %; "✓ built in 341ms"; "Documentation check
+  passed."
+- Next step: commit and push the merge; finish match-director's pre-PR gate, then PRs in the order
+  #71, match-director, match-scoring, results-flow.
+
 ### 2026-11-04 — Phase 3 / sprint 3.1 — chore/coderabbit-config — SamarjitBhogal + Claude Code
 
 - What was done: fixed the `.coderabbit.yaml` parse error ("An override must specify teams,
@@ -6011,6 +6272,325 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Next step: PR into `phase/3-sprint-3-work`; the custom check flags `.coderabbit.yaml` changes,
   so the product owner signs it off.
 
+### 2026-11-05 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / match-director merge (the human slot, `MatchRecord`) — feat/match-scoring — sholtzman + Claude Code
+
+- What: merged `feat/match-director` (`6d049e7`, PR #74's head with DEC-210) into
+  `feat/match-scoring` (`ad2e8e7`), now rather than after #74's review (owner's call, 2026-11-05).
+  - Conflicts: `MatchState` keeps #74's read-only fields and adds `scoring`; `MatchRecord` holds
+    `scoring` (it starts as `createEmptyScoringState()`, which `GameState` held before);
+    `MatchDirector.end()` copies the rows and team totals and hashes with `this.options.hasher`;
+    `Simulation.ts` takes #74's `spawnRoster(…, logger)` (the human is a roster slot, DEC-173),
+    still after the director, so `Scoring` hears every Legend's `entity-spawned`; the director and
+    `GameState` tests take both sides' cases (scoring double, injected hasher and terminal phases);
+    architecture 02 and 03 tables take both sides (padding-normalised `git merge-file`, Prettier,
+    word diff against each side); this file keeps #74's entries, then this branch's.
+  - Merge fallout: the scoring tests write through `state.match.seatHuman` and
+    `state.match.endMatch`; `MatchRecord.test.ts` and `defaultMatchPhases.test.ts` read `scoring`;
+    `Simulation.scoring.test.ts` puts the human in a roster slot on the two-lane map (at the light
+    Stronghold) instead of `config.match.seat`, and checks that the training dummy is gone instead
+    of "only a Legend is left" (the map's guard posts add mobs); architecture 12's status note
+    says "the roster" instead of "the seat".
+  - The human's row is still `human` although `spawnSlot` emits `entity-spawned` before
+    `seatHuman`: `Scoring` reads `humanLegendId` at the fold, not at the event.
+- Fail-first breaks (`Simulation.scoring.test.ts`, restored after each): `Scoring` marking every
+  row `bot` turns "gives the human's Legend a human row" red; no attack command turns "counts a
+  minion killed through full steps" red.
+- Checks run: `npm run check` → `EXIT=0` (`ms-merge-check-2026-11-05.log` in
+  `eternalus-agent-work/game-loop-plan/`): core "Tests 1269 passed (1269)", statements 99.13 %;
+  client "Tests 1769 passed (1769)", statements 96.93 %; "✓ built in 384ms"; "Documentation check
+  passed." (125 files).
+- Next step: commit and push, then merge `feat/match-scoring` into `feat/results-flow`.
+
+### 2026-11-08 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / phase/3 merge (#74, #75, #78, #80) — feat/match-scoring — sholtzman + Claude Code
+
+- What: merged `origin/phase/3-sprint-3-work` at `85b6781` (PR #74 merged as `c3e178d`, after
+  #80 and #75; #78 on top) into `feat/match-scoring`, so this branch's PR is based on the phase
+  branch. One conflict, in this file: both sides added entries at the end. Kept every entry,
+  phase/3's first, then this branch's, so the branch's diff to phase/3 only adds lines here.
+  - #78 adds `cause` to `xp-gained`; `Scoring` reads `entity-spawned`, `damage-applied` and
+    `entity-died` only, so no scoring code changes.
+- Checks run: `npm run check` → `EXIT=0` (`ms-merge-85b6781-check-2026-11-08.log` in
+  `eternalus-agent-work/game-loop-plan/`): Prettier passed; core "Tests 1281 passed (1281)",
+  statements 99.13 %; client "Tests 1769 passed (1769)", statements 96.93 %; "✓ built in 282ms";
+  "Documentation check passed." (127 files).
+- Next step: merge `feat/match-scoring` into `feat/results-flow`; then the pre-PR gate for both.
+
+### 2026-11-08 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-4 critic round 2: the `ScoreBook` and structure points (DEC-211, DEC-212) — feat/match-scoring — sholtzman + Claude Code
+
+- What: built the owner's calls on the GL-4 pre-PR critic, round 2
+  (`eternalus-agent-work/game-loop-plan/arch-review-gl4-round-2.md`).
+  - DEC-211 (1), finding 1, BTD-1: `state/ScoreBook.ts` holds the scoring data (plain data, so
+    `StateHasher` hashes it) and is its only writer: `addRow`, `award`, `awardTeam`, `recordHit`,
+    `takeAssists`. `MatchRecord` holds it as `scoreBook`; `MatchState.scoring` (and
+    `MatchRecord.scoring`) is its read-only view: `LegendStats`, `TeamStats`, `RecentHit` and
+    `ScoringState` are read-only at every depth, so `state.match.scoring.teams.light.score = 99`
+    no longer compiles. `Scoring` keeps the rules and writes through `state.match.scoreBook` in its
+    fold. The tests that wrote scoring directly (`MatchDirector.test.ts`, `StateHasher.test.ts`,
+    `Simulation.scoring.test.ts`) use the writers; each keeps its assertions and adds one.
+  - DEC-211 (3), BTD-2: the target's or victim's family picks its rule from a registry in `Scoring`
+    (one for hits: Legend, structure; one for deaths: Legend, mob); no entry scores nothing.
+  - DEC-211 (4), BTD-3: `match/ScoreKeeper.types.ts` (`fold`), which `Scoring` implements;
+    `MatchDirectorOptions.scoring` takes it.
+  - DEC-212, finding 2: `Scoring` listens to `structure-destroyed`; a fallen structure of a
+    playable team gives the opposing team `SCORING_WEIGHTS.structureDestroyed` (5, `TUNE`,
+    DEC-131) as team-only points and `structuresDestroyed + 1` (new `TeamStats` counter); a neutral
+    camp gives nothing. The `ponytail:` note in `content/match/scoring.ts` now covers capture and
+    hold points only and cites PR #64 (merged into the phase branch at `b02ef47`, not yet in this
+    branch). No plan task or `INBOX.md` item schedules capture and hold scoring.
+  - Findings 4 to 6: the assist window uses `TickRate.toTicks`; `ScoreBook.addRow` keeps one row
+    per Legend (a second `entity-spawned` adds none); `minionKills` names "enemy team mobs (Host
+    units and tower guards)" and a guard-kill test covers it (DEC-211 (2)).
+  - Docs: architecture 03 §2 (`MatchRecord` sketch) and §4 (`structure-destroyed` listeners), 12
+    §4 (`MatchState` sketch), §5 (rules and data apart, registry, `ScoreKeeper`, structure row,
+    guards, FR-007 weights as design), §12, §13 (status; "wait for the owner's values" dropped), 02
+    (state listings), 17 R3 (a scoring rule is a registry entry plus a `ScoreBook` writer),
+    `packages/core/AGENTS.md` (`state/` row).
+  - Hash: no fixture changed. A non-empty scoring now serialises `structuresDestroyed` per team;
+    no recorded replay or checkpoint holds a non-empty scoring (the golden replay runs no
+    director), and the empty check uses the new empty state, so an untouched match hashes as
+    before.
+- Fail-first breaks: 21, all red then restored (`cmp` equal), listed with test names and red
+  messages in `eternalus-agent-work/game-loop-plan/gl4-r2-breaks.md` (b1 to b16 vitest, b17 to b21
+  `tsc -b` "Unused '@ts-expect-error' directive" for the read-only view).
+- Checks run: `npm run check` → `EXIT=0` (`gl4-r2-check-2026-11-08.log` in
+  `eternalus-agent-work/game-loop-plan/`): "All matched files use Prettier code style!"; core "Tests
+  1304 passed (1304)", statements 99.14 %; client "Tests 1769 passed (1769)", statements 96.93 %;
+  "✓ built in 251ms"; "Documentation check passed." (127 files).
+- Next step: the GL-4 critic re-checks this diff; `feat/results-flow` takes it with its next merge
+  (its `MatchResult` literals need `structuresDestroyed: 0` per team).
+
+### 2026-11-08 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / phase/3 merge (#64), DEC-214, GL-4 critic round 3, DEC-221 — feat/match-scoring — sholtzman + Claude Code
+
+- What: the work on this branch after the round-2 entry above.
+  - `58e66bc`: merged `origin/phase/3-sprint-3-work` at `b02ef47` (PR #64, capture points) into
+    this branch. Architecture 03 §4 keeps both new event rows (`structure-destroyed` from this
+    branch, `checkpoint-reached` from #64). Check: `EXIT=0`, core "Tests 1357 passed (1357)",
+    client "Tests 1778 passed (1778)", "Documentation check passed."
+    (`ms-merge-b02ef47-check-2026-11-08.log` in `eternalus-agent-work/game-loop-plan/`).
+  - `0009ed9`: DEC-214 (owner, 2026-11-08). Capture and hold points (DEC-131) are plan task GL-15,
+    built on `feat/capture-scoring`, stacked on this branch, with its PR opened after this one's
+    (game-loop plan §7, `INBOX.md` GL-15). This supersedes the round-2 entry's "No plan task or
+    `INBOX.md` item schedules capture and hold scoring". The `ponytail:` note in
+    `content/match/scoring.ts` and the 12 §13 status note name GL-15.
+  - Pre-PR critic round 3, the last (`critic-log.md`): architecture approve (0 blocker, 0 major,
+    3 minor, 3 nit, 3 better-than-design; `arch-review-gl4-round-3.md`); ponytail PASS
+    (`ponytail-gl4-prepr-round-3.md`).
+  - `00bb99e`: minor 2 (the GL-15 plan row has all seven cells), nit 5 (`ScoreKeeper.types.ts`
+    in 12 §1 and 02 §2; `state/ScoringState.types.ts` in 12 `paths:`), nit 6 (`Readonly<>`
+    dropped in `MatchResult.types.ts`; the `PLAYABLE_TEAMS` map is rejected: the `{ light, dark }`
+    literal is compile-checked against `Record<PlayableTeam, …>`).
+  - This commit: DEC-221 (owner, 2026-11-08). Minor 1: `match/` may import the types of
+    `entities/` (02 §2, 12 §1, `packages/core/AGENTS.md`). Nit 4: a new counter needs a field and
+    its counter name, and a `ScoreBook` writer only if its rule is not a plain award (12 §5, 17
+    R3, `scoring.ts`). The critic's BTD-1 to BTD-3 go to GL-15. The GL-5 critic's B1 is plan task
+    GL-16 and an `INBOX.md` item. Minor 3 is this entry.
+- Checks run: `npm run check` → `EXIT=0` (`ms-dec221-check-2026-11-08.log` in
+  `eternalus-agent-work/game-loop-plan/`): core "Tests 1357 passed (1357)", client "Tests 1778
+  passed (1778)", "Documentation check passed." (127 files).
+- Next step: merge this branch into `feat/results-flow` (GL-5 B2, B3 and its minors) and into
+  `feat/capture-scoring` (GL-4 BTD-1 to BTD-3, then the GL-15 pre-PR gate); push; open the PRs.
+
+### 2026-11-08 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / phase/3 merge (#76, #77) — feat/match-scoring — sholtzman + Claude Code
+
+- What: merged `origin/phase/3-sprint-3-work` at `120653b` (PR #76 click attacks, PR #77 local
+  minimap) into this branch (`750fb64`), so its PR has no conflict with the phase branch. Two
+  conflicts: this file (both sides only inserted; phase/3's entries first, then this branch's)
+  and the `last-reviewed` line of 17 (kept 2026-11-08). No scoring code changed.
+- Checks run: `npm run check` → `EXIT=0` (`ms-merge-120653b-check-2026-11-08.log` in
+  `eternalus-agent-work/game-loop-plan/`): core "Tests 1359 passed (1359)", statements 99.15 %;
+  client "Tests 1799 passed (1799)", statements 97.03 %; "Documentation check passed."
+- Next step: push; open the GL-4 PR into the phase branch; merge this branch into
+  `feat/results-flow` and `feat/capture-scoring`.
+
+### 2026-11-05 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / match-scoring merge (the human slot, `MatchRecord`) — feat/results-flow — sholtzman + Claude Code
+
+- What: merged `feat/match-scoring` (`5da2ab5`, which holds PR #74's head `6d049e7`) into
+  `feat/results-flow` (`4204741`).
+  - Conflicts: `Match.lifecycle.test.ts` and `SessionController.endToEnd.test.ts` keep this
+    branch's one `match-ended` subscription, with #74's "from the roster" wording;
+    `packages/core/AGENTS.md` takes #74's `config/` and `teams/` rows and keeps this branch's
+    `content/` row; architecture 12 takes the later `last-reviewed`; this file keeps both
+    branches' entries.
+  - The client's seat code (`seatedConfig`, `config.match.seat`) merged cleanly to #74's roster
+    slot (`withPlayerTeam`); typecheck clean, no stale "seat" wording left outside this file.
+- Checks run: `npm run check` → `EXIT=0` (`rf-merge-check-2026-11-05.log` in
+  `eternalus-agent-work/game-loop-plan/`): core "Tests 1271 passed (1271)", statements 99.13 %;
+  client "Tests 1818 passed (1818)", statements 96.94 %; "✓ built in 311ms"; "Documentation check
+  passed." (125 files).
+- Next step: commit and push; open the GL-4 and GL-5 PRs once PR #74 merges.
+
+### 2026-11-08 — Phase 3 / game loop GL-15 capture scoring (DEC-214) — feat/capture-scoring — sholtzman + Claude Code
+
+- What: built plan task GL-15 on `feat/capture-scoring` (base `feat/match-scoring` `0009ed9e`).
+  - DEC-214 (A1): `checkpoint-reached` for a playable team gives that team
+    `SCORING_WEIGHTS.captureCheckpoint` (3, `TUNE`, DEC-131) as team-only points
+    (`ScoreBook.awardTeamPoints`, no team counter); each of its living Legends whose centre is on
+    the zone at the event (`ZoneArea.contains`, the test `CaptureSystem` counts presence with) gets
+    `checkpointsWon + 1` (new `LegendStats` counter, no points).
+  - DEC-214 (A2): `capture-point-owner-changed` moves `ScoringState.ownedPoints` (new, hashed;
+    `ScoreBook.countOwnedPoints`); each fold, every owned point adds one tick to its team's
+    `capturesHeldTicks` (new `TeamStats` counter, pooled), and each full minute
+    (`TickRate.toTicks(SECONDS_PER_MINUTE)`) gives `SCORING_WEIGHTS.holdPerMinute` (1, `TUNE`)
+    team-only points. A lost point stops adding and takes nothing back. Neutral camps score nothing.
+  - The capture rules are a new class, `match/CaptureScoring.ts` (+ `.constants.ts`, `.test.ts`),
+    that `Scoring` builds with its `defer` and calls in its fold after the buffered events, so
+    `Scoring.ts` stays at 237 lines. The `ponytail:` note in `content/match/scoring.ts` is gone.
+  - Hash: the empty scoring state carries the new fields at 0, so scoring stays out of the hash
+    until something is counted (DEC-113 (8)); the golden replay and the untouched-match hash test
+    pass unchanged.
+  - Docs: architecture 12 §5 (event name `checkpoint-reached`, DEC-214 rules, writer list, hold
+    points per full pooled minute) and §13 (built); 03 §2 (writer list) and §4
+    (`checkpoint-reached` listeners).
+- Fail-first breaks: 26, all red then restored (`git status` clean), listed with test names and red
+  messages in `eternalus-agent-work/game-loop-plan/gl15-breaks.md`.
+- Checks run: `npm run check` → `EXIT=0` (`gl15-check-2026-11-08.log` in
+  `eternalus-agent-work/game-loop-plan/`): "All matched files use Prettier code style!"; core
+  "Tests 1377 passed (1377)", statements 99.15 %; client "Tests 1778 passed (1778)", statements
+  96.98 %; "✓ built in 439ms"; "Documentation check passed." (127 files).
+- Next step: PR after GL-4's; GL-5 (feat/results-flow) `MatchResult` literals need the new
+  counters when the branches meet.
+
+### 2026-11-08 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-15 BTD-1 to BTD-3 (DEC-221 (2)) and the GL-4 `98e285c` merge — feat/capture-scoring — sholtzman + Claude Code
+
+- What: GL-4's three better-than-design items, built on this branch (DEC-221 (2)).
+  - `fb0c118`: merged `feat/match-scoring` at `42e4c46` (DEC-221) into this branch.
+  - `86eae52`: BTD-2, the scoring rules are injected: `match/defaultScoringRules.ts` builds them
+    (as `defaultVictoryConditions.ts` builds the conditions); hit and death rules by family and
+    listener rules (`StructureDestroyedRule`, `CaptureScoring`) in `match/rules/`, typed in
+    `match/ScoringRule.types.ts` (`Scoring.types.ts` removed). BTD-1, the counter names come from
+    the stats types, so a new counter is one field and its 0. BTD-3, one content export `SCORING`
+    (the weights and the assist window; `ScoringOptions` in the content types).
+  - `15b2ab7`: architecture 12 (paths, §1, §5, §13), 02 §2 and the new §9 "Scoring rules" registry
+    row, 17 R3.
+  - `e186f69`: merged `feat/match-scoring` at `98e285c` (phase/3 `120653b`, PR #76 and #77). Only
+    this file conflicted (inserts only).
+  - This commit: 12 §12 names the test files as built (`rules/CaptureScoring.test.ts`,
+    `defaultScoringRules.test.ts`); the game-loop plan §4.4 says how `SCORING` reaches the rules.
+    Left as they are: the plan's GL-15 row (next to the GL-16 row that `feat/results-flow` changes
+    for DEC-222, so an edit here conflicts when the two meet), 03's event table (`Scoring`
+    subscribes its listener rules, `Scoring.ts`), and DEC-221's file list (a dated record).
+- Fail-first breaks: 14 deliberate breaks on `86eae52`, all red, each restored (`cmp` equal); in
+  `eternalus-agent-work/game-loop-plan/gl15-btd-breaks.md`.
+- Checks run: on `15b2ab7`, `npm run check` → `EXIT=0` (`gl15-btd-check-2026-11-08.log`): core
+  "Tests 1380 passed (1380)", client "Tests 1778 passed (1778)", "Documentation check passed."
+  On `e186f69`, `npm run check` → `EXIT=0` (`cs-merge-98e285c-check-2026-11-08.log`): core "Tests
+  1382 passed (1382)", statements 99.15 %; client "Tests 1799 passed (1799)", statements 97.03 %;
+  "Documentation check passed." Logs in `eternalus-agent-work/game-loop-plan/`.
+- Next step: the GL-15 pre-PR gate (architecture critic, then ponytail), then push and open the PR
+  into `feat/match-scoring`.
+
+### 2026-11-08 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / match-scoring merge (phase/3 after #74) — feat/results-flow — sholtzman + Claude Code
+
+- What: merged `feat/match-scoring` at `03af15e` (which merged phase/3 at `85b6781`: #74 as
+  `c3e178d`, #75, #78, #80) into `feat/results-flow`. One conflict, in this file: both sides added
+  entries at the end. Kept every entry, `feat/match-scoring`'s first, then this branch's.
+- Checks run: `npm run check` → `EXIT=0` (`rf-merge-03af15e-check-2026-11-08.log` in
+  `eternalus-agent-work/game-loop-plan/`): Prettier passed; core "Tests 1283 passed (1283)",
+  statements 99.13 %; client "Tests 1818 passed (1818)", statements 96.94 %; "✓ built in 278ms";
+  "Documentation check passed." (127 files).
+- Next step: the pre-PR gate for GL-4 and GL-5, then their PRs (GL-5 targets
+  `feat/match-scoring` until GL-4 merges).
+
+### 2026-11-08 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-5 round 2: DEC-212, DEC-213 and the critic's nits — feat/results-flow — sholtzman + Claude Code
+
+- What: the owner's calls on the GL-5 critic, round 2 (DEC-213 B1, B2, B3, B5), the HUD
+  structure strip on the real structures (DEC-212), and the critic's nits V1 to V8 and V10.
+  - B1: `MatchBridge` takes the simulation's event subscription (`events: Pick<Simulation, 'on'>`)
+    and keeps one listener table (`match-ended` today); `destroy()` unsubscribes all of it.
+  - B2: `createMatch` and `MatchRequest` carry one `MatchObserver` (`crashed`, `ended`) in place of
+    the `onCrash` and `onEnded` callbacks.
+  - B3: the session countdowns are one record by kind, `matchSetupSlice.countdownsMs`, with one
+    action (`countdownChanged`) and one selector (`selectCountdownSeconds(state, kind)`). The record
+    stays in `matchSetupSlice`: the `match-setup` reset that clears it is that slice's, and moving
+    it would change no behaviour.
+  - B5: `match/defaultVictoryConditions.test.ts` checks that every default condition has verdict
+    lines.
+  - DEC-212: core puts each structure's map feature id on its placement, `Structure.mapFeatureId`
+    and `EntitySnapshot.mapFeatureId?` (not hashed; the golden replay is unchanged).
+    `MatchBridge` binds each strip tile to its structure in the snapshot before the first tick and
+    publishes the structure's live health, and `current` 0 once it is gone. Tiles: every
+    team-owned feature, as before; wall segments and turrets have no structure entity yet, so their
+    health stays `null` and the one Wall tile shows no data (a destroyed gate still marks it
+    destroyed, DEC-108).
+  - Nits: V5 `VerdictLineSet` is a local type, core exports only `VerdictLines`; V6
+    `bridge/selectors/matchTimeText.ts`; V4 the `DisplayContent` TSDoc and 02 §6; V1, V2, V3 in
+    13 §2 and §5; V7 the plan's GL-3 row; V8 12 §13 re-wrapped; V10 DEC-92's Changes column.
+  - Docs: architecture 02 §6, 03 §5, 07 §13, 08 (GL-5 note), 12 §8 and §13, 13 §2, §3, §5 and
+    §10, the plan's GL-3 row and DEC-92's row.
+- Fail-first breaks: 13, each recorded with its red message in
+  `eternalus-agent-work/game-loop-plan/gl5-r2-breaks.md` (B1 `destroy()`, B3 reducer and
+  `SessionCountdown`, B5 verdict lines, three core `mapFeatureId` breaks, five `MatchBridge` and
+  `Match` live-health breaks, V6 clamp). B1 to B3 are refactors: the existing tests stay green and
+  each changed assertion follows the designed change.
+- Checks run: `npm run check` → `EXIT=0` (`gl5-r2-check-2026-11-08.log` in
+  `eternalus-agent-work/game-loop-plan/`): Prettier passed; core "Tests 1287 passed (1287)",
+  statements 99.14 %; client "Tests 1827 passed (1827)", statements 96.95 %; "✓ built in 258ms";
+  "Documentation check passed." (127 files).
+- Next step: the pre-PR gate for GL-4 and GL-5 (critic, ponytail, re-check), then their PRs.
+
+### 2026-11-08 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-5 critic round 3 and DEC-221 (B2, B3) — feat/results-flow — sholtzman + Claude Code
+
+- What: the work on this branch after the GL-5 round-2 entry above.
+  - `e915ec4`: merged `feat/match-scoring` at `0009ed9` (phase/3 `b02ef47` with PR #64, DEC-214)
+    into this branch; 7 conflicts. `MatchBridge` keeps #64's live capture points (`captureSites`,
+    `liveCapturePoints`) and this branch's live structures; 13 §10 states both as built.
+  - `c262b58`: DEC-214 (B). The HUD Wall tile sums the health of its members whose health is
+    known (today its gates) and shows no data only while none is; a destroyed member still marks
+    it destroyed (DEC-108). This supersedes the round-2 entry's Wall tile "no data".
+  - Pre-PR critic round 3, the last (`critic-log.md`): architecture approve (0 blocker, 0 major,
+    2 minor, 3 nit, 3 better-than-design; `arch-review-gl5-round-3.md`); ponytail PASS, its 3
+    optional cuts rejected with reasons in the log.
+  - `fbe5c78`: merged `feat/match-scoring` at `42e4c46` (DEC-221, GL-16) into this branch.
+  - This commit, DEC-221 (3). B2 and nit 3: `MatchBridge.keepUnchanged` keeps each roster item
+    whose values did not change, and the last array when nothing changed, for both rosters, so a
+    structure re-send with no health change no longer re-renders the store. The structure-array
+    identity assertion is back in `MatchBridge.test.ts`, and a new test checks that an unchanged
+    tile keeps its object. B3 and nit 5: `bridge/opponentOf.ts` (the bridge imports only types
+    from core) is used by `selectVerdictLine` and by `selectStructureStrip`'s `SIDE_TEAM`. Minor
+    1: 02 says core exports the type `VerdictLines` only. Nit 4: "capture is not simulated" is
+    gone from `hud.types.ts`, `selectObjectives.ts` and the `MatchBridge` test title. 02 lists
+    `bridge/opponentOf.ts`. Minor 2 is this entry.
+- Fail-first breaks: 4, all red then restored (`cmp` equal), in
+  `eternalus-agent-work/game-loop-plan/gl5-r3-btd-breaks.txt`: b1 the structures not kept (2
+  red), b2 `keepUnchanged` never returns the last array (3 red), b3 no item kept (2 red), b4
+  `opponentOf` returns its own team (4 red).
+- Checks run: `npm run check` → `EXIT=0` (`rf-dec221-check-2026-11-08.log` in
+  `eternalus-agent-work/game-loop-plan/`): core "Tests 1363 passed (1363)", statements 99.15 %;
+  client "Tests 1839 passed (1839)", statements 97 %; "Documentation check passed."
+- Next step: a targeted architecture critic on this commit's diff only; then push and open the PR.
+
+### 2026-11-08 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-5 targeted critic (B2, B3) and the phase/3 (#76, #77) merge — feat/results-flow — sholtzman + Claude Code
+
+- What: the targeted architecture critic on `89ab381` only (AGENTS pre-PR step 3; opus):
+  approve, 0 blocker, 1 should-fix, 3 nits, 1 better-than-design, 3 acceptable.
+  - `c464040`: should-fix 1, 13 §10 says that both rosters re-send each unchanged tile or point
+    and the last array while nothing changes, and lists `bridge/opponentOf.ts`. Nit 2: the
+    structure test changes `max` with `current` equal. Nit 3: the comments say the roster
+    selectors return the same value (the slice object is new on each dispatch). Nit 4:
+    `publishedCapturePoints`. The better-than-design item (move the helper out of `MatchBridge`)
+    is `INBOX.md` HC-Q47. Acceptable: the bridge's copy of `opponentOf` (bridge imports only
+    types from core; DEC-221 (3)), the re-padded 02 table, `SIDE_TEAM` as functions.
+  - `633af66`: merged `feat/match-scoring` at `98e285c` (phase/3 `120653b`, PR #76 and #77) into
+    this branch. Conflicts: `Match.afterStep` (phase/3's `livingPlayerAt` with this branch's
+    `ended` observer), the `last-reviewed` lines of 07 and 08, and this file (inserts only).
+- Fail-first breaks: b5 (the `max` check removed: 1 red, "expected { current: 10000, max: 10000 }
+  to deeply equal { current: 10000, max: 12000 }"), restored (`cmp` equal); in
+  `eternalus-agent-work/game-loop-plan/gl5-r3-btd-breaks.txt`.
+- Checks run: `npm run check` → `EXIT=0` (`rf-merge-98e285c-check-2026-11-08.log` in
+  `eternalus-agent-work/game-loop-plan/`): core "Tests 1365 passed (1365)", statements 99.15 %;
+  client "Tests 1860 passed (1860)", statements 97.05 %; "Documentation check passed."
+- Next step: push; open the GL-5 PR into `feat/match-scoring`.
+
+### 2026-11-08 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / DEC-222 (HC-Q47) — feat/results-flow — sholtzman + Claude Code
+
+- What: the owner answered `INBOX.md` HC-Q47 in chat, "(b) Build it in GL-16". DEC-222 records it
+  in the owner decisions log; HC-Q47 is closed; the game-loop plan's GL-16 row now moves
+  `MatchBridge.keepUnchanged` out of `MatchBridge` and tests it, the length-change branch
+  included. No code changes on this branch: GL-5 keeps today's form, which the critic called
+  acceptable.
+- Checks run: docs only; `npm run docs:check` and Prettier on the three changed files (below).
+- Next step: open the GL-5 PR into `feat/match-scoring`.
+
 ### 2026-11-08 — Phase 3 / INBOX: PR #69 critic item (Stronghold feature type) — docs/inbox-stronghold-feature-type — sholtzman + Claude Code
 
 - What was done: Sam chose to record the PR #69 round-3 critic's optional better-than-design item
@@ -6021,6 +6601,55 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   0, Prettier passed, core `Tests 1298 passed (1298)`, client `Tests 1799 passed (1799)`, docs
   check passed. Critic (`architecture-reviewer`): approve, 3 nits fixed. Ponytail: 1 cut taken.
 - Next step: Sam approves the item for a follow-up PR, or drops it.
+
+### 2026-11-09 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-15 critic round 1 and DEC-223 — feat/capture-scoring — sholtzman + Claude Code
+
+- What: the GL-15 pre-PR architecture critic, round 1 (base `98e285c`, head `4d9ca6c`): approve, 0
+  blocker, 0 major, 2 minor, 4 nit, 5 better-than-design. The owner's calls on the
+  better-than-design items are DEC-223; all are built on this branch.
+  - `ca8c4ab`: a scoring rule is a `ScoringListener` (event bus and `defer` only) or a `TickScorer`
+    (`scoreTick(book, state)`), listed apart in `ScoringRules`; `CaptureScoring` split into
+    `rules/CheckpointRule.ts` and `rules/CaptureHoldRule.ts`; `TeamStats.checkpointsReached`;
+    `checkpoint-reached` carries `presentLegendIds`, filled by `CaptureSystem`
+    (`ZonePresence` in `CaptureSystem.types.ts`); the hold rule reads each point's owner from its
+    `Capturable`, so `ScoringState.ownedPoints` and `ScoreBook.countOwnedPoints` are removed;
+    `StructureDestroyedRule` lost its empty `scoreTick`. Minor 1: `SECONDS_PER_MINUTE` moved to
+    `defaultScoringRules.ts`, its only user.
+  - `ba1b270`: architecture 12 (paths, §1, §5 with the lasting capture rules moved in from §13
+    (minor 2), §12, §13), 03 §2 and §4, 02 §2 and §9, 17 R3.
+  - This commit: DEC-223 in the owner decisions log.
+  - One test is deleted: `ScoreBook.test.ts` "counts the capture points each team owns up and
+    down, with no points (DEC-214)". It tested only `countOwnedPoints`, which DEC-223 (4b)
+    removes. The hold rule's owner reading has its own test in `CaptureHoldRule.test.ts`.
+  - Not taken: nit 4 (a test file per extracted rule): each rule is guarded through
+    `Scoring.test.ts` (fail-first rows 8 to 14 of `gl15-btd-breaks.md`). Nits 5 and 6 are moot
+    (the code is removed).
+- Fail-first breaks: 32 deliberate breaks on `ca8c4ab`, all red, each restored (`cmp` equal); in
+  `eternalus-agent-work/game-loop-plan/gl15-r1-breaks.md`.
+- Checks run: on `ba1b270`, `npm run check` → `EXIT=0` (`gl15-r1-check-2026-11-09.log` in
+  `eternalus-agent-work/game-loop-plan/`): core "Tests 1384 passed (1384)", statements 99.17 %;
+  client "Tests 1799 passed (1799)", statements 97.03 %; "Documentation check passed."
+- Next step: the GL-15 critic round 2 and ponytail, then push and open the PR into
+  `feat/match-scoring` after GL-4's PR.
+
+### 2026-11-09 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-15 critic round 2 and DEC-229 — feat/capture-scoring — sholtzman + Claude Code
+
+- What: the GL-15 pre-PR gate, round 2 (base `98e285c`, head `e6bee16`). Architecture critic:
+  approve, 0 blocker, 0 major, 1 minor, 2 nit, 2 better-than-design; it judged the deleted
+  `ScoreBook.test.ts` test acceptable (the test and its method were both added on this branch).
+  Ponytail: one optional cut (the `rowOf` guard in `CheckpointRule`), not taken: `ScoreBook.award`
+  throws for an id with no row, and its contract is that callers check `rowOf` first.
+  - `953cb85`: minor 1, architecture 07 §7 says `checkpoint-reached` names the Legends on the zone,
+    and its status note says capture scoring is built; nit 2, DEC-223's wording; nit 3, 12 §12's
+    test wording.
+  - This commit: DEC-229 (the owner's call on the two better-than-design items: one entity query
+    on `EntityStore`, plan task GL-17, its own PR after #79 and #85), the GL-17 plan row and
+    `INBOX.md` item, and the plan's GL-15 row as built (DEC-223 file names). The plan table now
+    differs from `feat/results-flow`'s (its GL-16 row, DEC-222): when the branches meet, keep this
+    branch's GL-15 and GL-17 rows and that branch's GL-16 row.
+- Checks run: `npm run docs:check` → "Documentation check passed."; Prettier on the changed files
+  passed. Full `npm run check` on the PR head: in the PR description.
+- Next step: push and open the PR into `feat/match-scoring` after GL-4's PR exists.
 
 ### 2026-11-09 — Phase 3 / HUD: live level and XP — feat/hud-level-xp — sholtzman + Claude Code
 
@@ -6060,6 +6689,47 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Next step: push and open the PR into phase/3; whichever of this PR and the aether PR lands
   second resolves the adjacent `Snapshot.types.ts` lines.
 
+### 2026-11-09 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / phase/3 merge (#88) — feat/match-scoring — sholtzman + Claude Code
+
+- What: merged `phase/3-sprint-3-work` (`089617e6`, PR #88 HUD level and XP) into GL-4 (`7ddc20e0`),
+  so PR #93 merges again. Conflicts: 03 and the decisions log `last-reviewed` (took 2026-11-09);
+  the decisions log batches (DEC-224's batch first, newest first, then GL-4's); this file (both, in
+  date order). No code conflict.
+- Checks run: `npm run check` on `7ddc20e0` → `EXIT=0` (`gl4-merge-88-check-2026-11-09.log` in
+  `eternalus-agent-work/game-loop-plan/`): Prettier "All matched files use Prettier code style!";
+  core "Tests 1363 passed (1363)", statements 99.15 %; client "Tests 1800 passed (1800)",
+  statements 97.04 %; "Documentation check passed."
+- Next step: merge this head into GL-5 (`feat/results-flow`) and GL-15 (`feat/capture-scoring`),
+  then GL-5 into GL-16 (`refactor/map-feature-link`); push all four.
+
+### 2026-11-09 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-4 merge (phase/3 after #88) — feat/capture-scoring — sholtzman + Claude Code
+
+- What: merged `feat/match-scoring` (`b0a48167`, GL-4 with phase/3 after PR #88) into GL-15
+  (`6bd828be`), so PR #95 holds its base again. Conflicts: the decisions log (the 2026-11-09
+  batches by number, newest first: DEC-229, DEC-224, DEC-223); this file (both, in date order).
+  No code conflict, and no snapshot literal needed `progression`.
+- Checks run: `npm run check` on `6bd828be` → `EXIT=0` (`gl15-merge-88-check-2026-11-09.log` in
+  `eternalus-agent-work/game-loop-plan/`): Prettier "All matched files use Prettier code style!";
+  core "Tests 1388 passed (1388)", statements 99.17 %; client "Tests 1800 passed (1800)",
+  statements 97.04 %; "Documentation check passed."
+- Next step: push; PR #95 waits for review.
+
+### 2026-11-09 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-4 merge (phase/3 after #88) — feat/results-flow — sholtzman + Claude Code
+
+- What: merged `feat/match-scoring` (`b0a48167`, GL-4 with phase/3 after PR #88) into GL-5
+  (`392ad70e`). Conflicts: `MatchBridge.test.ts` (#88's level and XP test kept, then GL-5's renamed
+  structure-roster title); `GameState.test.ts` (both imports; both tests, GL-5's map-feature test
+  now passes the curves to `snapshot`); 13 §10 "HUD data" (GL-5's paragraph, plus DEC-224's live
+  level and XP; "XP and abilities" becomes "aether and abilities"); the decisions log (DEC-224's
+  batch first, newest first); this file (both, in date order). #88 made
+  `EntitySnapshot.progression` required, so two GL-5 snapshot literals in `MatchBridge.test.ts`
+  gain `progression: null`. No production code changed beyond the merge.
+- Checks run: `npm run check` on `392ad70e` → `EXIT=0` (`gl5-merge-88-check-2026-11-09.log` in
+  `eternalus-agent-work/game-loop-plan/`): Prettier "All matched files use Prettier code style!";
+  core "Tests 1369 passed (1369)", statements 99.15 %; client "Tests 1861 passed (1861)",
+  statements 97.06 %; "Documentation check passed."
+- Next step: merge this head into GL-16 (`refactor/map-feature-link`); push.
+
 ### 2026-11-09 — Phase 3 / merge: #88 then #87 into phase/3 — docs/inbox-stronghold-feature-type — sholtzman + Claude Code
 
 - What was done: a teammate approved #87 and #88 (CI green on both). Both append a PROGRESS entry,
@@ -6069,6 +6739,36 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Checks run: Prettier on `PROGRESS.md` and `INBOX.md` passed; `npm run docs:check` passed; the
   pre-commit `check:quick` passed. CI runs the full `npm run check` on the pushed head.
 - Next step: Sam's script merges #88, pushes this branch, waits for CI, then merges #87.
+
+### 2026-11-09 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / phase/3 merge (#87) — feat/match-scoring — sholtzman + Claude Code
+
+- What: merged `phase/3-sprint-3-work` (`86b4fc04`, PR #87: one `INBOX.md` item and its PROGRESS
+  entries) into GL-4 (`ec13abfc`), so PR #93 merges again. Conflict: this file (both, in date
+  order). Docs only: `git diff --stat 7ddc20e0 ec13abfc` lists only `INBOX.md` and this file.
+- Checks run: `npx prettier --check INBOX.md docs/plan/PROGRESS.md` → "All matched files use
+  Prettier code style!"; `npm run docs:check` → "Documentation check passed." The full check of
+  `7ddc20e0` (the entry above) holds for the code.
+- Next step: merge this head into GL-5 and GL-15, then GL-5 into GL-16; push all four.
+
+### 2026-11-09 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-4 merge (phase/3 after #87) — feat/capture-scoring — sholtzman + Claude Code
+
+- What: merged `feat/match-scoring` (`b0f3e17c`, GL-4 with phase/3 after PR #87: one `INBOX.md`
+  item and its PROGRESS entries) into this branch (`abc49376`). Conflict: this file (both, in date
+  order). Docs only: `git diff --stat 6bd828be abc49376` lists only `INBOX.md` and this file.
+- Checks run: `npx prettier --check INBOX.md docs/plan/PROGRESS.md` → "All matched files use
+  Prettier code style!"; `npm run docs:check` → "Documentation check passed." The full check of
+  `6bd828be` (an entry above) holds for the code.
+- Next step: push; PR #95 waits for review.
+
+### 2026-11-09 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-4 merge (phase/3 after #87) — feat/results-flow — sholtzman + Claude Code
+
+- What: merged `feat/match-scoring` (`b0f3e17c`, GL-4 with phase/3 after PR #87: one `INBOX.md`
+  item and its PROGRESS entries) into this branch (`d030d05a`). Conflict: this file (both, in date
+  order). Docs only: `git diff --stat 392ad70e d030d05a` lists only `INBOX.md` and this file.
+- Checks run: `npx prettier --check INBOX.md docs/plan/PROGRESS.md` → "All matched files use
+  Prettier code style!"; `npm run docs:check` → "Documentation check passed." The full check of
+  `392ad70e` (an entry above) holds for the code.
+- Next step: merge this head into GL-16 (`refactor/map-feature-link`); push.
 
 ### 2026-11-09 — Phase 3 / sprint 3.1 — chore/coderabbit-config — sholtzman + Claude Code
 
@@ -6163,6 +6863,36 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Next step: push, PR into `phase/3-sprint-3-work`; then task 2, the HUD aether bar (owner
   2026-11-09: bar only, no regen, OQ-56 stays open), stacked on `feat/hud-level-xp`.
 
+### 2026-11-10 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / phase/3 with main (#73, CodeRabbit config) merge — feat/match-scoring — sholtzman + Claude Code
+
+- What: merged `phase/3-sprint-3-work` (`8d2404c8`, phase/3 with main (#73, CodeRabbit config)) into this branch (`221d365d`).
+  Conflict: this file (both, in date order). Config and docs only: `git diff --stat 7ddc20e0 221d365d`
+  lists only .coderabbit.yaml, INBOX.md, docs/decisions/0018-coderabbit-runs-the-pr-review-skill.md, docs/plan/PROGRESS.md.
+- Checks run: `npx prettier --check` on `INBOX.md`, `.coderabbit.yaml`, this file and ADR 0018 →
+  "All matched files use Prettier code style!"; `npm run docs:check` → "Documentation check
+  passed." The full check of `7ddc20e0` (an entry above) holds for the code.
+- Next step: merge this head into GL-5 and GL-15, then GL-5 into GL-16; push all four.
+
+### 2026-11-10 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-4 with phase/3 after #73 merge — feat/capture-scoring — sholtzman + Claude Code
+
+- What: merged `feat/match-scoring` (`c711f2e0`, GL-4 with phase/3 after #73) into this branch (`0cc3277c`).
+  Conflict: this file (both, in date order). Config and docs only: `git diff --stat 6bd828be 0cc3277c`
+  lists only .coderabbit.yaml, INBOX.md, docs/decisions/0018-coderabbit-runs-the-pr-review-skill.md, docs/plan/PROGRESS.md.
+- Checks run: `npx prettier --check` on `INBOX.md`, `.coderabbit.yaml`, this file and ADR 0018 →
+  "All matched files use Prettier code style!"; `npm run docs:check` → "Documentation check
+  passed." The full check of `6bd828be` (an entry above) holds for the code.
+- Next step: push; PR #95 waits for review.
+
+### 2026-11-10 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-4 with phase/3 after #73 merge — feat/results-flow — sholtzman + Claude Code
+
+- What: merged `feat/match-scoring` (`c711f2e0`, GL-4 with phase/3 after #73) into this branch (`ca455106`).
+  Conflict: this file (both, in date order). Config and docs only: `git diff --stat 392ad70e ca455106`
+  lists only .coderabbit.yaml, INBOX.md, docs/decisions/0018-coderabbit-runs-the-pr-review-skill.md, docs/plan/PROGRESS.md.
+- Checks run: `npx prettier --check` on `INBOX.md`, `.coderabbit.yaml`, this file and ADR 0018 →
+  "All matched files use Prettier code style!"; `npm run docs:check` → "Documentation check
+  passed." The full check of `392ad70e` (an entry above) holds for the code.
+- Next step: merge this head into GL-16 (`refactor/map-feature-link`); push.
+
 ### 2026-11-10 — Phase 3 / combat sprint: merge phase/3 into the health bars PR (#89) — feat/combat-health-bars — sholtzman + Claude Code
 
 - What was done: #87, #88, #73 and a merge of `main` moved phase/3 to `8d2404c8` and left #89
@@ -6245,6 +6975,21 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: Prettier on `PROGRESS.md` passed; `npm run docs:check` passed; the pre-commit
   `check:quick` runs on commit. CI runs the full `npm run check` on the pushed head.
 - Next step: push, then merge #92 into phase/3 once CI is green.
+
+### 2026-11-11 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-4 with GL-5 (#94) merge — feat/capture-scoring — sholtzman + Claude Code
+
+- What: merged `feat/match-scoring` (`7df92530`, GL-4 after #94 merged GL-5 into it) into this
+  branch (`87c2b605`); the owner chose to collapse the game-loop stack into GL-4. Conflicts: the
+  game-loop plan §7 table (this branch's GL-15 and GL-17 rows, GL-5's GL-3 and GL-16 rows), the
+  owner decisions log (DEC-223 batch above DEC-222), this file (date order) and 07's
+  `last-reviewed` (the later date). Semantic fix: GL-5's client `matchResultFixtures.ts`
+  (`NO_SCORE`) gains GL-15's `TeamStats` fields `capturesHeldTicks` and `checkpointsReached`
+  (typecheck failed without them).
+- Checks run: `npm run check` on `87c2b605` → Prettier "All matched files use Prettier code
+  style!"; core "Test Files 241 passed (241)", "Tests 1394 passed (1394)"; client "Test Files 278
+  passed (278)", "Tests 1861 passed (1861)"; build "✓ built in 322ms"; "Documentation check
+  passed."; exit 0. Log: `eternalus-agent-work/game-loop-plan/gl15-merge-gl5-check-2026-11-11.log`.
+- Next step: push; the owner merges #95 into GL-4, then GL-4 takes phase/3 (#89) once.
 
 ### 2026-11-11 — Phase 3 / combat sprint: merge phase/3 (#89) into the aether PR (#92) — feat/hud-aether-bar — sholtzman + Claude Code
 
@@ -6419,3 +7164,65 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   passed (1883)"; server "Tests 79 passed (79)"; "Documentation check passed."
 - Next step: merge PR #96. PR #110 drops or ticks its BUG-2/BUG-3 INBOX questions (answered by
   DEC-247/248). The open fix PRs update their rows. BUG-2 and BUG-3 need a plan item.
+
+### 2026-11-13 — Phase 3 / GL-4 with GL-5 and GL-15, sync with the Duel — feat/match-scoring (PR #93) — sholtzman + Claude Code
+
+- What was done: PR #95 (GL-15) merged into this branch, so PR #93 now carries GL-4, GL-5 and
+  GL-15 (owner decision of 2026-11-11). Merged `phase/3-sprint-3-work` up to `76d1007d` (#89,
+  #92, #97 online Duel, #51, #52, #81). The Duel's results join the GL-5 flow (owner-work
+  precedence; #97's results screen was an interim one): the bus event `duel-ended` carries the
+  Duel's outcome in place of #97's `match-result`; `selectMatchVerdict` reads the match result or
+  the Duel's outcome; `ResultsScreen` keeps the GL-5 layout, names an opponent who left and offers
+  a rematch only after a local match; the Duel `Match` takes the match observer.
+  `ui/screens/resultVerdict.ts` is not kept (its only user was #97's screen; each branch is
+  covered by the `ResultsScreen` tests). Critic findings fixed: `ResultsState` ignores
+  `start-match` when `SessionContext.canRepeatMatchSetup()` is false (before, a Duel that ended
+  while loading made `repeatMatchSetup` throw); new tests for the Duel cases of
+  `selectMatchVerdict`, a Duel loop crash reaching the observer, and an opponent leaving over a
+  winning verdict, each seen red against a broken production line first. Review findings of
+  claudiodh fixed: the `Scoring.pending` comment and the named long comment lines. Doc 13
+  (game interface): the event list has `duel-ended`; §2 has the `menu → match-loading` and
+  `match-loading → results` edges; §3 and §10 name the Duel's way into results.
+- Checks run: `npm run check` → `EXIT=0` on `114fab64` with this entry and the INBOX item in the
+  tree: core "Tests 1428 passed (1428)"; protocol "Tests 18 passed (18)"; client "Tests 1957
+  passed (1957)"; server "Tests 79 passed (79)"; "Documentation check passed.". Critic (`architecture-reviewer`) on the Duel merge:
+  approve, 0 blockers, 0 major; its minors M2 to M5 and nits N1, N3, N4 are applied. Critic on
+  that fix delta: approve, 0 blockers, 0 major; its three minors (`repeatMatchSetup` throws without
+  a repeatable setup, the `match` row's lost-connection exit, the rematch rule held twice, which
+  is INBOX HC-Q48 (4)) and its nits are applied or in HC-Q48. N2 and the better-than-design items
+  of both critics wait for the owner (INBOX HC-Q48).
+- Next step: the owner answers the open items (the `scoreBook` field, the event name, INBOX
+  HC-Q48); claudiodh re-reviews PR #93; then GL-16 merges the new phase branch.
+
+### 2026-11-14 — Phase 3 / GL-4, the Duel in the results flow (INBOX HC-Q48) — feat/match-scoring (PR #93) — sholtzman + Claude Code
+
+- What changed: the owner's answers to INBOX HC-Q48 (DEC-250). Built, after a critic passed
+  items (1) to (4): `MatchEnding` in `@eternalus/protocol` is the one type of the server's
+  `match-ended` message, `DuelSession`'s `ended` handler and the bus event `duel-ended` (the
+  client's `DuelOutcome` and `DuelResult` are gone); the match setup has a `mode` (`'local'` or
+  `'duel'`); the session publishes a Duel's setup at its first snapshot, before `match-loading`,
+  and `prepareWorld` has one path; `canRepeatSetup` (`bridge/matchSetupRules.ts`) is the one
+  rematch rule; `selectMatchVerdict` gives no verdict for a Duel the other player left and takes
+  the team from the setup only; `ResultsScreen` reads the new `selectResultsView`. One visible
+  change: a Duel that ends while loading now shows its results in the seat's team theme, as a
+  Duel that ended in the match does. Also a test from the #89 merge review, not part of HC-Q48:
+  `Match.healthBars.test.ts` covers a hit on the first tick (the constructor's `observe` call).
+  Scheduled, not built: the match-mode strategy (HC-S7), the Duel's run-on and the loss for a
+  player who leaves (with the Duel's own win rules, DEC-36). Docs: architecture 13 §2, §3, §5,
+  §10 and 02 (the bridge may import protocol types; `matchSetupRules.ts`).
+- Fail-first: each new test was seen red against a broken production line; the list is in
+  `eternalus-agent-work/game-loop-plan/gl4-duel-btd-breaks.md` (16 breaks).
+- Critics on the delta (`7c372d74..`): `architecture-reviewer` approve, 0 blockers, should-fix S1
+  to S3 and nits N1 to N7 applied (N4 in part: the selector keeps the name `selectDuelOutcome`),
+  N8 to INBOX; correctness: no bug, its findings 1 to 7 applied; ponytail: findings 3 (the test
+  cast) applied through the correctness critic's cast-free form, 1, 2, 4, 5, 6 rejected (the
+  rematch case tests the selector's wiring; HC-Q48 (4) asks for the rule in `bridge/` as
+  `selectionRules.ts` is; the spawn block belongs to a merged test; the union and the two
+  `opponent-left` checks are separate concerns).
+- Checks run: `npm run check` → `EXIT=0` on `9c441d7a` (the branch with `phase/3-sprint-3-work`
+  merged up to `a99c3129`, #96): core "Tests 1428 passed (1428)"; protocol "Tests 18 passed (18)";
+  client "Tests 1972 passed (1972)"; server "Tests 79 passed (79)"; "Documentation check passed.".
+  After it, one test title in `ResultsState.test.ts` was reworded (round-2 critic, the only
+  finding) and that file re-run: passed. Round-2 critic on the fixes, the records and the merge:
+  pass.
+- Next step: the owner runs the push script; claudiodh re-reviews PR #93; then GL-16.

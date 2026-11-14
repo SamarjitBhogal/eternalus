@@ -221,6 +221,63 @@ describe('StateHasher', () => {
         state.match.holdIdle(true);
       },
     ],
+    [
+      'the scoring (a Legend row)',
+      (state) => {
+        state.match.scoreBook.addRow({
+          entityId: 'entity-1',
+          team: 'light',
+          classId: 'warrior',
+          controller: 'bot',
+        });
+      },
+    ],
+    [
+      'the scoring (a team total)',
+      (state) => {
+        state.match.scoreBook.awardTeam('dark', {
+          counter: 'structuresDestroyed',
+          by: 0,
+          points: 4,
+        });
+      },
+    ],
+    [
+      'the scoring (a team counter)',
+      (state) => {
+        state.match.scoreBook.awardTeam('dark', {
+          counter: 'structuresDestroyed',
+          by: 1,
+          points: 0,
+        });
+      },
+    ],
+    [
+      'the scoring (a recent hit)',
+      (state) => {
+        state.match.scoreBook.recordHit('entity-2', 'entity-1', 0);
+      },
+    ],
+    [
+      'the scoring (a reached checkpoint)',
+      (state) => {
+        state.match.scoreBook.awardTeam('light', {
+          counter: 'checkpointsReached',
+          by: 1,
+          points: 0,
+        });
+      },
+    ],
+    [
+      'the scoring (held ticks)',
+      (state) => {
+        state.match.scoreBook.awardTeam('light', {
+          counter: 'capturesHeldTicks',
+          by: 1,
+          points: 0,
+        });
+      },
+    ],
   ])('changes when %s of the match changes', (_, change) => {
     const state = new GameState(createDefaultGameConfig(), 1);
     const before = hasher.hash(state);

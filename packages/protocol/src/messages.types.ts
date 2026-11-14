@@ -6,6 +6,14 @@ export type RejectReason = 'malformed' | 'too-large' | 'rate-limited' | 'not-in-
 /** Why a Duel ended (ADR 0016 point 1). */
 export type MatchEndReason = 'finished' | 'opponent-left';
 
+/** How the server ended a match (ADR 0016 point 1): the winning team (`null`: none) and why. */
+export type MatchEnding = {
+  /** The winning team; `null` for a draw. */
+  readonly winner: PlayableTeam | null;
+  /** Why the match ended. */
+  readonly reason: MatchEndReason;
+};
+
 /**
  * Every message a client sends: plain JSON, discriminated by `type` (ADR 0016 point 3). The
  * server stamps the actor from the connection, so no message names an entity.
@@ -32,9 +40,5 @@ export type ServerMessage =
     }
   /** The match after a tick; `ackSeq` is the last `intent.seq` applied for the receiver. */
   | { readonly type: 'state'; readonly snapshot: Snapshot; readonly ackSeq: number }
-  | {
-      readonly type: 'match-ended';
-      readonly reason: MatchEndReason;
-      readonly winner: PlayableTeam | null;
-    }
+  | ({ readonly type: 'match-ended' } & MatchEnding)
   | { readonly type: 'rejected'; readonly reason: RejectReason };
