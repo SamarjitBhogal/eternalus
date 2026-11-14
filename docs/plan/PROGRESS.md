@@ -7141,11 +7141,13 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   claudiodh fixed: the `Scoring.pending` comment and the named long comment lines. Doc 13
   (game interface): the event list has `duel-ended`; §2 has the `menu → match-loading` and
   `match-loading → results` edges; §3 and §10 name the Duel's way into results.
-- Checks run: `npm run check` → `EXIT=0` on the tree of this merge before this entry: core
-  "Tests 1428 passed (1428)"; protocol "Tests 18 passed (18)"; client "Tests 1956 passed
-  (1956)"; server "Tests 79 passed (79)". Critic (`architecture-reviewer`) on the Duel merge:
-  approve, 0 blockers, 0 major; its minors M2 to M5 and nits N1, N3, N4 are applied; N2 and its
-  three better-than-design items wait for the owner.
-- Next step: the owner answers the open items (the `scoreBook` field, the event name, the
-  better-than-design items, whether the DEC-92 run-on covers a Duel); claudiodh re-reviews
-  PR #93; then GL-16 merges the new phase branch.
+- Checks run: `npm run check` → `EXIT=0` on `114fab64` with this entry and the INBOX item in the
+  tree: core "Tests 1428 passed (1428)"; protocol "Tests 18 passed (18)"; client "Tests 1957
+  passed (1957)"; server "Tests 79 passed (79)"; "Documentation check passed.". Critic (`architecture-reviewer`) on the Duel merge:
+  approve, 0 blockers, 0 major; its minors M2 to M5 and nits N1, N3, N4 are applied. Critic on
+  that fix delta: approve, 0 blockers, 0 major; its three minors (`repeatMatchSetup` throws without
+  a repeatable setup, the `match` row's lost-connection exit, the rematch rule held twice, which
+  is INBOX HC-Q48 (4)) and its nits are applied or in HC-Q48. N2 and the better-than-design items
+  of both critics wait for the owner (INBOX HC-Q48).
+- Next step: the owner answers the open items (the `scoreBook` field, the event name, INBOX
+  HC-Q48); claudiodh re-reviews PR #93; then GL-16 merges the new phase branch.

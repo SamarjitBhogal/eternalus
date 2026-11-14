@@ -2103,6 +2103,28 @@ Reply inline (`Decision: …`).
       keep it as it is.
   - Answered 2026-11-08 in chat (DEC-222): "(b) Build it in GL-16". To build: in GL-16 (game-loop
     plan §7), with its own unit test, the length-change branch included.
+- [ ] **HC-Q48 — The online Duel in the results flow: five better-than-design items and one rule
+      question (critics on the #97 merge into GL-4, PR #93; DEC-139).** The merge keeps GL-5's
+      results flow for a Duel (`duel-ended`, `selectMatchVerdict`, `ResultsScreen`). Both critics
+      approved it and proposed:
+  - (1) `selectMatchVerdict` returns no verdict for a Duel the other player left. Today it says
+    `draw`, and only `ResultsScreen` overrides it; a later reader (post-game GL-10, match history)
+    would count a draw. Or one bridge selector that holds all the results screen's rules.
+  - (2) Publish the Duel's setup when the Duel starts, not in `prepareWorld`. The setup's team
+    then always exists, and `DuelOutcome.ownTeam` with its fallback branch goes away.
+  - (3) `DuelResult` (`DuelSession.types.ts`) and `DuelOutcome` (`bridge/events.ts`) hold the same
+    data; make them one type.
+  - (4) One rematch rule shared by the session (`canRepeatMatchSetup`) and `ResultsScreen`, in
+    `bridge/` as `canConfirmSelection` is, and stated as "not after a Duel" instead of "the setup
+    has rosters".
+  - (5) A match-mode strategy (local, Duel) for `SessionController`, which now asks "is this a
+    Duel" in `prepareWorld`, `createMatch` and `canRepeatMatchSetup`.
+  - (6) Rule question: after a match ends the world runs on for 5 s (DEC-92). A Duel goes to the
+    results at once, as #97 built it (the server closes the connection). Keep, or give a Duel the
+    run-on (it needs the server to keep sending snapshots)?
+  - Also a finished Duel has no status line under its verdict (the line comes from core's result,
+    which a Duel does not have); (1) decides what it shows.
+  - Answer per item: build now on PR #93, schedule, or keep as it is.
 - [ ] **HC-Q42 — Where do Legends spawn at tick 0: all at their Citadel (DEC-80), or as built (match-director critic).** DEC-80 says "All Legends spawn at their Citadel at tick 0." As built (architecture 18 §8, MS-20), each bot laner spawns at its team's end of its assigned lane, and only the Rovers (the bot Rover and the human's Legend, DEC-173) spawn at their team's Stronghold. Keep the as-built lane start for laners and narrow DEC-80 to respawns, or spawn every Legend at its Citadel and let laners walk to their lanes?
 - [ ] **HC-S7 — Scheduled: split `Simulation.ts` and `SessionController.ts` below the ~300-line
       guide (PR #68 review, follow-up 3).** `Simulation.ts` (461 lines) holds start-up helpers
