@@ -10,10 +10,13 @@ export const RALLIED = {
   displayName: 'Rallied',
   polarity: 'buff',
   controlClass: 'none',
-  durationSeconds: 1, // TUNE: no reference value; a little over the aura's refresh interval
+  // TUNE: no reference value, a little over the aura's refresh interval; DEC-165: a tuning default.
+  durationSeconds: 1,
   stacking: 'refresh',
   maxStacks: 1,
-  modifiers: [{ stat: 'damageDealt', op: 'mul', value: 1.05 }], // TUNE: balancing.md +5%
+  // TUNE: balancing.md +5%. DEC-219 (c): it multiplies the additive veteran bonus, as built:
+  // stat = (1 + Σ add) × Π mul, so a rallied level-3 veteran deals ×1.3 × 1.05 = ×1.365.
+  modifiers: [{ stat: 'damageDealt', op: 'mul', value: 1.05 }],
   flags: [],
   periodic: null,
   onExpire: [],

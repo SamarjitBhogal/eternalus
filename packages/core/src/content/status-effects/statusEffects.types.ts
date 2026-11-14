@@ -31,10 +31,14 @@ export type StatusExpireSpec = { readonly kind: 'apply-status'; readonly statusI
  */
 type StatusStacking = 'refresh' | 'intensity';
 
-/** Multiplies a stat by `value` once per stack (architecture 05 section 8), e.g. 0.7 for a 30% slow. */
+/**
+ * Changes a stat once per stack (architecture 05 section 8). `mul` multiplies it by `value`, e.g.
+ * 0.7 for a 30% slow, so stacks compound. `add` adds `value` to its bonus, so stacks do not:
+ * 0.1 at 3 stacks is ×1.3 (veteran, DEC-164). A stat is (1 + every `add`) × every `mul`.
+ */
 type StatModifier = {
   readonly stat: StatusStat;
-  readonly op: 'mul';
+  readonly op: 'mul' | 'add';
   readonly value: number;
 };
 

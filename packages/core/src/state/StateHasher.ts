@@ -1,5 +1,6 @@
 import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
+import { ChaseWatch } from '../components/ChaseWatch';
 import { Collider } from '../components/Collider';
 import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
@@ -181,6 +182,10 @@ export class StateHasher {
     const progression = entity.findComponent(Progression);
     if (progression !== undefined) {
       fields.push(['progression', progression.xp, progression.level]);
+    }
+    const watch = entity.findComponent(ChaseWatch);
+    if (watch !== undefined) {
+      fields.push(['chase', ...watch.fields]);
     }
     return fields;
   }

@@ -30,6 +30,7 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       baseHealth: 10_000, // TUNE: balancing.md
       footprintRadius: footprintOf('stronghold'),
       breakability: { kind: 'always' },
+      hasMapFootprint: true, // DEC-185 D: melee at the palace wall is in reach
     },
     {
       id: 'spawner-tower',
@@ -38,6 +39,7 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       baseHealth: 3_000, // TUNE: balancing.md
       footprintRadius: footprintOf('spawner-tower'),
       breakability: { kind: 'always' },
+      hasMapFootprint: true, // DEC-185: reach to the fort's walls; one pool, DEC-185 B
     },
     {
       id: 'buff-tower',
@@ -46,6 +48,7 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       baseHealth: 2_500, // TUNE: balancing.md
       footprintRadius: footprintOf('buff-tower'),
       breakability: { kind: 'always' },
+      hasMapFootprint: true, // DEC-185: reach to the fort's walls; one pool, DEC-185 B
     },
     {
       id: 'gate',
@@ -56,12 +59,28 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       footprintRadius: 3,
       breakability: AFTER_BUFF_TOWERS,
     },
-    ...(['light', 'medium', 'heavy'] as const).map((weight): StructureDefinition => ({
-      id: `forest-camp-${weight}`,
+    {
+      id: 'forest-camp-light',
       kind: 'camp',
-      displayName: `Forest Camp (${weight})`,
+      displayName: 'Forest Camp (light)',
       baseHealth: 1, // never damaged: a camp is only its group's home
       footprintRadius: 1, // TUNE: no reference value; the map gives camps no footprint
       breakability: { kind: 'never' },
-    })),
+    },
+    {
+      id: 'forest-camp-medium',
+      kind: 'camp',
+      displayName: 'Forest Camp (medium)',
+      baseHealth: 1, // never damaged: a camp is only its group's home
+      footprintRadius: 1, // TUNE: no reference value; the map gives camps no footprint
+      breakability: { kind: 'never' },
+    },
+    {
+      id: 'forest-camp-heavy',
+      kind: 'camp',
+      displayName: 'Forest Camp (heavy)',
+      baseHealth: 1, // never damaged: a camp is only its group's home
+      footprintRadius: 1, // TUNE: no reference value; the map gives camps no footprint
+      breakability: { kind: 'never' },
+    },
   ]);
