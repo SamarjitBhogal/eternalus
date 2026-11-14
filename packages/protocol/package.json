@@ -1,0 +1,26 @@
+{
+  "name": "@eternalus/protocol",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Wire messages between the client and the Duel server (ADR 0016 point 6). Pure TypeScript: imports only core's types.",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@eternalus/core": "0.0.0"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "5.0.2",
+    "vitest": "5.0.2"
+  }
+}
