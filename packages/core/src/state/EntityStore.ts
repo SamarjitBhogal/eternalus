@@ -162,7 +162,8 @@ export class EntityStore {
   /**
    * The outlines attack reach to `id` is measured to and a chase of it aims at: its map object's
    * footprints, else its structure `Footprint`'s polygons (a lane tower's fort, the Stronghold's
-   * palace, DEC-185). `undefined` for a body that is only its collider circle, or an unknown id.
+   * palace, DEC-185; a gate's outline, DEC-217 (17)). `undefined` for a body that is only its
+   * collider circle, or an unknown id.
    */
   public outlineOf(id: EntityId): readonly Polygon[] | undefined {
     const entity = this.entities.get(id);

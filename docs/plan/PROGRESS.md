@@ -6658,3 +6658,36 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: full `npm run check` exit 0
   (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-85-10.log`).
 - Next step: push; merge the new head into #86 and #79.
+
+### 2026-11-13 — Phase 3 / gate reach — feat/gate-reach — sholtzman + Claude Code
+
+- What was done: split from PR #98 (`feat/tower-ruins-and-routes`) by the owner's ruling DEC-242
+  (row on #98). The PR base is `fix/minion-stack-followups` (#85), as #98's. It builds DEC-217
+  (16) and (17), whose rows are on phase/3: a gate's definition has `hasMapFootprint`, so reach to
+  a gate is measured to its polygon, and `hasFortBox` keeps a gate's box out of the chase rule's
+  fort boxes. Cherry-picked from #98's `af76b908`; the conflict in
+  `DefaultSystemPipeline.test.ts` was resolved with #98's version of the gate test, without its
+  ruin parts. Architecture 07 and 18 carry the gate text only.
+- Red-first: dropping `hasMapFootprint` from the gate definition turned 2 tests in
+  `Simulation.mapObjects.test.ts` red (gate Footprint count; melee reach at a gate). Counting every
+  structure as a fort box turned the gate case of the fort-boxes test in
+  `DefaultSystemPipeline.test.ts` red (`red-first.md`).
+- Checks run: see `eternalus-agent-work/tower-ruins-and-routes/gate-reach/check-1.log`.
+- Next step: push; PR against `fix/minion-stack-followups`.
+
+### 2026-11-13 — Phase 3 / gate reach: pre-PR gate and merge of #85 — feat/gate-reach — sholtzman + Claude Code
+
+- What was done: the pre-PR gate (ADR 0010). Critic (architecture-reviewer) on
+  `c09507f6..f3ccc334`: approve, 0 blockers. Fixed in `edab6521`: the `Footprint` and
+  `EntityStore.outlineOf` TSDoc name the gate; the fort-box test title covers both rows. Its two
+  better-than-design items (one field for `hasMapFootprint` and `hasFortBox`; the fort-box fact
+  recorded where the `Footprint` is made) are one INBOX item for the tidy PR (DEC-218), not built.
+  Ponytail: nothing to cut
+  (`eternalus-agent-work/tower-ruins-and-routes/gate-reach/ponytail-review-r1.md`). Then this
+  branch merged #85's `2e8df5bc` (phase/3 `76d1007d` with #97 and #81); one conflict, in this
+  file, both sides kept.
+- Checks run: full `npm run check` with the merge in place, before this entry (log
+  `eternalus-agent-work/tower-ruins-and-routes/gate-reach/check-3.log`): EXIT=0, core "Tests
+  1417 passed (1417)", protocol "Tests 18 passed (18)", client "Tests 1883 passed (1883)",
+  server "Tests 79 passed (79)", "Documentation check passed.".
+- Next step: push; PR against `fix/minion-stack-followups` (#85, head `2e8df5bc`).
