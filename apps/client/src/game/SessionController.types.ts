@@ -114,7 +114,7 @@ export interface SessionContext {
   canRepeatMatchSetup(): boolean;
   /**
    * Publishes the current setup again, unchanged (a rematch, architecture 13 §2).
-   * @throws Without a setup; ask `canRepeatMatchSetup` first.
+   * @throws Without a setup a rematch can repeat; ask `canRepeatMatchSetup` first.
    */
   repeatMatchSetup(): void;
   /**

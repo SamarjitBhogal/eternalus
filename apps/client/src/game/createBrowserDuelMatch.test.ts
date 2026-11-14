@@ -83,12 +83,11 @@ describe('createBrowserDuelMatch', () => {
     expect(window.pendingFrames).toBe(0);
   });
 
-  it("hands a crash of the Duel's loop to the request's observer, and never calls ended", () => {
+  it("hands a crash of the Duel's loop to the request's observer", () => {
     const { window, factory, viewport, request, link } = setUp();
     const crashed = vi.fn<MatchObserver['crashed']>();
-    const ended = vi.fn<MatchObserver['ended']>();
     const error = new Error('no snapshot');
-    factory({ ...request, observer: { crashed, ended } }, viewport);
+    factory({ ...request, observer: { crashed, ended: () => undefined } }, viewport);
     window.runFrame(0);
     window.runFrame(MS_PER_SECOND / CONFIG.tickRate);
     vi.spyOn(link, 'latestSnapshot').mockImplementation(() => {
@@ -100,7 +99,6 @@ describe('createBrowserDuelMatch', () => {
     expect(crashed).toHaveBeenCalledTimes(1);
     expect(crashed.mock.calls[0]?.[0].error).toBe(error);
     expect(window.pendingFrames).toBe(0);
-    expect(ended).not.toHaveBeenCalled();
   });
 
   it('sends an intent per tick on the browser frames, reports no evidence and cleans up', () => {

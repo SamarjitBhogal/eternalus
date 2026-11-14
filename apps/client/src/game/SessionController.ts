@@ -87,9 +87,11 @@ export class SessionController {
       newMatchSetup: () => {
         this.newMatchSetup();
       },
-      canRepeatMatchSetup: () => this.setup !== null && this.setup.allies.length > 0,
+      canRepeatMatchSetup: () => this.canRepeatMatchSetup(),
       repeatMatchSetup: () => {
-        if (this.setup === null) throw new Error('No match setup to repeat');
+        if (this.setup === null || !this.canRepeatMatchSetup()) {
+          throw new Error('No match setup to repeat');
+        }
         this.publishSetup(this.setup);
       },
       clearMatchSetup: () => {
@@ -295,6 +297,11 @@ export class SessionController {
       },
       viewport,
     );
+  }
+
+  /** `SessionContext.canRepeatMatchSetup`: a setup with rosters, which only a local match has. */
+  private canRepeatMatchSetup(): boolean {
+    return this.setup !== null && this.setup.allies.length > 0;
   }
 
   /**
