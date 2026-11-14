@@ -6428,3 +6428,25 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   style!"; "Documentation check passed."
 - Next step: critic round 3 on the round 2 fixes, then the PR into `phase/3-sprint-3-work`; the
   owner's answers to HC-Q48, HC-B5 and HC-B6; then the per-class PRs, the Vanguard first.
+
+### 2026-11-14 — Phase 4 / sprints 4.2–4.3 and 4.7: ability framework, critic round 3 — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: critic round 3 (the last) on the round 2 fixes: the architecture reviewer
+  approved; the correctness critic found no blocker and no should-fix. Fixed its nits: a dash
+  throws for a caster with no `Movement` (it skipped the motion and still ran the path and end
+  steps); `Simulation` holds the map-object store and the collision index in locals for the
+  `entity-removed` handler, with no optional chaining; a test that the dash's overlay row gets a
+  `null` shape; `WorldObjectStore.destroyedIds` removed (no caller; the test keeps its check
+  through `snapshot().isDestroyed`); the two status entries in architecture 10 and 02 marked
+  "updated 2026-11-14"; comment wording. Built better-than-design item H: `WithoutTimes` now
+  sits beside `InTicks` in `content/abilities/AbilityDefinition.types.ts`. INBOX HC-Q56: item
+  (4) corrected, item (5) added (one subscriber for a retired map object, not built). Both new
+  tests failed first: the dash test before the fix ("expected [Function] to throw an error"),
+  the overlay test with `shape ?? null` changed to `shape` ("expected undefined to be null").
+- Checks run: `npm run check` → `EXIT=0`: core "Test Files 277 passed (277)", "Tests 1590
+  passed (1590)"; protocol "Tests 18 passed (18)"; client "Test Files 290 passed (290)", "Tests
+  1965 passed (1965)"; server "Tests 79 passed (79)"; "All matched files use Prettier code
+  style!"; "Documentation check passed."
+- Next step: the PR into `phase/3-sprint-3-work`; the owner's answers to HC-Q48, HC-B5, HC-B6
+  and HC-Q54..Q56; a browser check of the aim overlay; then the per-class PRs, the Vanguard
+  first.

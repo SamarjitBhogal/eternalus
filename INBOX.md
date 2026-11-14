@@ -106,7 +106,7 @@ Reply inline (`Decision: …`).
       (`GameState.snapshot` fills `player` for one Legend only). Hiding `player` in a Duel also
       hides that seat's aether and level data. Options: hide the ability bar in a Duel; send
       `player` per seat once Duels cast abilities; or leave it until then.
-- [ ] **HC-Q56 — Four ideas from critic round 2, not built: your call
+- [ ] **HC-Q56 — Four ideas from critic round 2 and one from round 3, not built: your call
       (`feat/ability-framework`, 2026-11-14).** (1) **Name and home of the display loader.**
       `abilities/loadShippedDisplayContent` is exported as `loadDisplayContent` and wraps
       `content/loadDisplayContent`: two functions with one public name, and `abilities/` holds a
@@ -116,9 +116,13 @@ Reply inline (`Decision: …`).
       generic loader types** (`AuthoredAbilityWith`, `AbilityDefinitionWith`, the `loadAbilities`
       overloads, about 25 lines): they exist so the Fake Bolt litmus can load an unlisted effect
       kind with full types; one cast in that test would replace them. (4) **Merge `slotBlockedBy`
-      into `blockedBy` with an aim that can be null** (about 12 lines). The session kept (3) and
-      (4) as built: (3) is what the litmus proves, and (4) keeps the HUD check apart from the cast
-      check. Say which to build.
+      into `blockedBy` with an aim that can be null** (about 12 lines). `CastValidator.blockedBy`
+      already takes a null aim; only the `SlotReadiness` port keeps two methods. The session kept
+      (3) and (4) as built: (3) is what the litmus proves, and (4) keeps the HUD check apart from
+      the cast check. (5) **One subscriber for "a map object is retired"** (critic round 3):
+      `Simulation` (marks the object destroyed and takes it out of the collision index) and
+      `DefaultSystemPipeline` both listen to `entity-removed` for map objects; one owner of that
+      reaction would keep the two from drifting apart. Say which to build.
 - [ ] **HC-Q49 — Five tuning values the ability framework uses until you set them (`TUNE`,
       `feat/ability-framework`).** (1) Blade Runner's path width: 1.5 m, the 05 §4 sketch value
       (`content/abilities/bladeRunner.ts`). (2) Blade Runner's end-stun radius: 1.5 m, the same

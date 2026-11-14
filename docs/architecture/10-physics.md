@@ -307,7 +307,7 @@ gaps in the same wall geometry used for drawing. Bridge decks permit passage acr
 while retaining collision at their sides. Destroyed object IDs disable their static footprints.
 Unit-to-unit momentum, SAT and the remaining physics described above are still planned.
 
-**2026-11-13 (`feat/ability-framework`, ADR 0026 decision 4).** `Movement` has `push` and
+**2026-11-13, updated 2026-11-14 (`feat/ability-framework`, ADR 0026 decision 4).** `Movement` has `push` and
 `takeForcedStep` for dashes and knock-backs; it has no `pendingImpulse` or `desiredVelocity` (a
 heading set by `steer`). Forced motion moves an entity that `cannot-move` (Slam knocks back and up
 at once) and waits while the match holds units idle. The knock-back's base mass and travel time are

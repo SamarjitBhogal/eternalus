@@ -365,7 +365,7 @@ text since 2026-10-28 (the owner approved them, `INBOX.md` HC-T1):
   player's building and the developer explorer's clicks (DEC-143; [06](06-map-and-minimap.md)
   §10).
 
-Ability framework (`feat/ability-framework`, 2026-11-13; ADR 0026). Files the branch added:
+Ability framework (`feat/ability-framework`, 2026-11-13, updated 2026-11-14; ADR 0026). Files the branch added:
 
 - **Core.** `abilities/` holds `AbilityRegistry`, `ComposedAbility`, `defaultAbilityRegistry.ts`,
   `CastValidator`, `CastInstance`, `TargetQuery`, `dashReach.ts`, `effects/`,
