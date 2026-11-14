@@ -12,6 +12,9 @@
   "references": [
     {
       "path": "../../packages/core"
+    },
+    {
+      "path": "../../packages/protocol"
     }
   ],
   "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]

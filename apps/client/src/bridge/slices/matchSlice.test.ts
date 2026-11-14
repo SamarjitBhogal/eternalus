@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { figmaHudState } from '../__fixtures__/hudFixtures';
 import { matchSlice } from './matchSlice';
 
-const { clockChanged, structuresChanged, capturePointsChanged, reset } = matchSlice.actions;
+const { clockChanged, structuresChanged, capturePointsChanged, resultChanged, reset } =
+  matchSlice.actions;
 const { selectMatchClock, selectStructures, selectCapturePoints, selectMatchResult } =
   matchSlice.selectors;
 
@@ -25,6 +26,27 @@ describe('matchSlice', () => {
     expect(selectMatchClock({ match })).toBe(clock);
     expect(selectStructures({ match })).toBe(structures);
     expect(selectCapturePoints({ match })).toBe(capturePoints);
+  });
+
+  it('stores the result, a draw included', () => {
+    const won = matchSlice.reducer(
+      undefined,
+      resultChanged({ winner: 'dark', ownTeam: 'light', reason: 'finished' }),
+    );
+    expect(selectMatchResult({ match: won })).toEqual({
+      winner: 'dark',
+      ownTeam: 'light',
+      reason: 'finished',
+    });
+    const drawn = matchSlice.reducer(
+      won,
+      resultChanged({ winner: null, ownTeam: 'light', reason: 'finished' }),
+    );
+    expect(selectMatchResult({ match: drawn })).toEqual({
+      winner: null,
+      ownTeam: 'light',
+      reason: 'finished',
+    });
   });
 
   it('resets to the initial state', () => {

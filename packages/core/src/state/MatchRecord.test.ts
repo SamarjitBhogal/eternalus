@@ -105,4 +105,19 @@ describe('MatchRecord', () => {
     }).toThrow('already seated');
     expect(match.humanLegendId).toBe('entity-7');
   });
+
+  it('seats one human per team: humanLegendIdOf reads each seat, humanLegendId the playerTeam one', () => {
+    const { match } = recordAt({ tick: 0 });
+
+    expect(match.humanLegendIdOf('dark')).toBeNull();
+    match.seatHuman('entity-8', 'dark');
+    match.seatHuman('entity-7', 'light');
+
+    expect(match.humanLegendIdOf('light')).toBe('entity-7');
+    expect(match.humanLegendIdOf('dark')).toBe('entity-8');
+    expect(match.humanLegendId).toBe('entity-7');
+    expect(() => {
+      match.seatHuman('entity-9', 'dark');
+    }).toThrow('dark human is already seated');
+  });
 });

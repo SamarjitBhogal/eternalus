@@ -15,4 +15,27 @@ describe('MenuState', () => {
     expect(context.calls.clearMatchSetup).toHaveLength(1);
     expect(routes).toEqual(['home']);
   });
+
+  it('joins the Duel queue on start-duel and shows the waiting screen', () => {
+    const context = new FakeSessionContext();
+    const routes: string[] = [];
+    context.bus.on('menu-route', ({ route }) => routes.push(route));
+
+    new MenuState().handleIntent({ kind: 'start-duel' }, context);
+
+    expect(context.calls.joinDuelQueue).toHaveLength(1);
+    expect(routes).toEqual(['duel-queue']);
+    expect(context.calls.transition).toEqual([]);
+  });
+
+  it('leaves the Duel queue on cancel-duel and shows home again', () => {
+    const context = new FakeSessionContext();
+    const routes: string[] = [];
+    context.bus.on('menu-route', ({ route }) => routes.push(route));
+
+    new MenuState().handleIntent({ kind: 'cancel-duel' }, context);
+
+    expect(context.calls.leaveDuelQueue).toHaveLength(1);
+    expect(routes).toEqual(['home']);
+  });
 });
