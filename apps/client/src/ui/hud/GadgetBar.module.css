@@ -1,0 +1,21 @@
+/* Region (1694, 957) 181 × 87 (Figma 62:275). */
+.bar {
+  position: relative;
+  width: calc(181 * var(--hud-u));
+  height: calc(87 * var(--hud-u));
+}
+
+/* Courage 62:281 at (1694, 957); Sword Container 65:711 at (1788, 957). */
+.gadget1,
+.gadget2 {
+  position: absolute;
+  top: 0;
+}
+
+.gadget1 {
+  left: 0;
+}
+
+.gadget2 {
+  left: calc(94 * var(--hud-u));
+}

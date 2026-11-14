@@ -15,16 +15,17 @@ import type { Controller, Decision, DecisionInput } from './Controller.types';
  *    target and falls back to the nearest allied tower or its Stronghold.
  * 2. `Fight`: an enemy inside `engageRadius` → the `UtilityScorer` picks one by closeness and
  *    weakness; it attacks it (casting when the roll allows) and closes in until it is in reach.
- * 3. `Push`: it walks with the most advanced allied horde on its lane, at that horde's anchor.
+ * 3. `Push`: once it has come up to its lane's next enemy structure (a gate only when it can be
+ *    broken), it attacks it: to the point hordes gather at, then in reach of it. Before that it
+ *    walks with the most advanced allied horde on its lane, at that horde's anchor.
  * 4. `Regroup`: with no allied horde on its lane, it returns to the nearest point of its lane.
  *
  * Every step is a `move`, `attack-target`, `cast-ability` or `stop` command for the next tick,
  * routed around obstacles by A\*. Stateless: its lane, retreat flag, target and cast timer live in
  * the brain it returns, and its rolls advance the brain's own RNG stream.
  *
- * @remarks ponytail: never attacks structures (minion plan M2c); casts go nowhere until abilities
- * land (Phase 4); nothing heals a retreated bot yet, so it rejoins only once something restores
- * its health.
+ * @remarks ponytail: casts go nowhere until abilities land (Phase 4); nothing heals a retreated
+ * bot yet, so it rejoins only once something restores its health.
  */
 export class BotLegendController implements Controller {
   public readonly id = 'bot-legend';
@@ -43,6 +44,10 @@ export class BotLegendController implements Controller {
       new Sequence([
         new Condition((turn) => leaves.findEnemy(turn)),
         new Action((turn) => leaves.fight(turn)),
+      ]),
+      new Sequence([
+        new Condition((turn) => leaves.findObjective(turn, turn.memory.lane)),
+        new Action((turn) => leaves.siege(turn)),
       ]),
       new Sequence([
         new Condition((turn) => leaves.findHorde(turn, turn.memory.lane)),

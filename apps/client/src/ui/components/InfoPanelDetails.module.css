@@ -1,0 +1,325 @@
+/* `.details` is a plain, unpositioned wrapper: every box below is relative to the enclosing
+   InfoPanel's origin. */
+
+/* Header box 72:755 (0, 274) 374 × 22, 62:92 (0, 274) 291 × 22, 56:45 (4, 274) 265 × 22: ink
+   scrim, 1 px white INSIDE, radius 2. */
+.headerBox {
+  position: absolute;
+  left: var(--header-box-x);
+  top: 274px;
+  width: var(--header-box-w);
+  height: 22px;
+  border: 1px solid var(--selection-text);
+  border-radius: 2px;
+  background: var(--selection-ink-scrim);
+}
+
+/* Header text: 72:756 Regular 14 centred in (0, 276) 374 × 19; 62:93 Regular 15 left in
+   (5, 275) 279 × 20; 56:46 Regular 15 left at x 9, centred on the box (275, h 20). */
+.headerText {
+  position: absolute;
+  left: var(--header-text-x);
+  top: 275px;
+  height: 20px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  color: var(--selection-text);
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(15px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-15) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+  white-space: nowrap;
+}
+
+.details[data-layout='class'] {
+  --header-box-x: 0;
+  --header-box-w: 374px;
+  --header-text-x: 0;
+}
+
+.details[data-layout='class-alternate'] {
+  --header-box-x: 0;
+  --header-box-w: 291px;
+  --header-text-x: 5px;
+}
+
+/* Recommendation: 56:45's box narrowed from 265 to 170 px for the shorter "Ultimate / Abilities"
+   (DEC-65), its 5 px padding kept; the width is estimated from the 15 px Cinzel text, not drawn. */
+.details[data-layout='legend'] {
+  --header-box-x: 4px;
+  --header-box-w: 170px;
+  --header-text-x: 9px;
+}
+
+.details[data-layout='class'] .headerText {
+  top: 276px;
+  width: 374px;
+  height: 19px;
+  justify-content: center;
+  font-size: max(14px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-14) * 1px);
+}
+
+/* 56:46: Chrome sets the 15 px Cinzel cap rows 1 px above Figma's in the same 20 px box (Figma cap
+   rows 409–417, build at 275 px 408–416); 276 px puts the ink on Figma's rows. 62:93 measured the
+   same on 62:70 (rule below). */
+.details[data-layout='legend'] .headerText {
+  top: 276px;
+}
+
+/* 62:93: at 275 px its ink sat 1 px high too (the visual audit of 62:70: p95 40.5 → 7.7, zero
+   shift at 276 px). */
+.details[data-layout='class-alternate'] .headerText {
+  top: 276px;
+}
+
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Detail icons: each row's rendition at its manifest draw box, at its own pixel size, with
+   no fit, rotation or transform (I-45); a missing icon shows a 1 px placeholder box in its slot. */
+.icon,
+.placeholder {
+  position: absolute;
+  display: block;
+  left: var(--icon-x);
+  top: var(--icon-y);
+  width: var(--icon-w);
+  height: var(--icon-h);
+}
+
+.placeholder {
+  border: 1px solid var(--selection-placeholder-line);
+  border-radius: 2px;
+}
+
+/* View Details' row labels (148:179 …): Cinzel Regular 20 white, above each name. */
+.label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--selection-text);
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(20px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-20) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+  white-space: nowrap;
+  transform: translate(var(--label-x), var(--label-y));
+}
+
+/* Row names: Cinzel Regular 24 white at each Figma origin (the Figma's x 243 vs 233 kept as drawn,
+   reference 15 §2). */
+.name {
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--selection-text);
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(24px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-24) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+  white-space: nowrap;
+  transform: translate(var(--name-x), var(--name-y));
+}
+
+/* 62:125: aetheric-recall (111, 424) 90 × 115, staff (121, 559) 73 × 72, arcane intellect
+   (133, 666) 54 × 64; names 72:773 (243, 466), 72:767 (233, 578.967), 72:761 (233, 685.909). */
+.details[data-layout='class'] [data-row='0'] {
+  --icon-x: 66px;
+  --icon-y: 296px;
+  --icon-w: 90px;
+  --icon-h: 115px;
+  --name-x: 198px;
+  --name-y: 338px;
+}
+
+.details[data-layout='class'] [data-row='1'] {
+  --icon-x: 76px;
+  --icon-y: 431px;
+  --icon-w: 73px;
+  --icon-h: 72px;
+  --name-x: 188px;
+  --name-y: 450.967px;
+}
+
+.details[data-layout='class'] [data-row='2'] {
+  --icon-x: 88px;
+  --icon-y: 538px;
+  --icon-w: 54px;
+  --icon-h: 64px;
+  --name-x: 188px;
+  --name-y: 557.909px;
+}
+
+/* 62:70: aetheric-recall (131, 424) 92 × 118, staff (110, 584) 133 × 19, flame (154, 653)
+   44 × 78; names 62:110 (281, 467), 62:104 (283, 578), 62:98 (283, 680). */
+.details[data-layout='class-alternate'] [data-row='0'] {
+  --icon-x: 66px;
+  --icon-y: 296px;
+  --icon-w: 92px;
+  --icon-h: 118px;
+  --name-x: 216px;
+  --name-y: 339px;
+}
+
+.details[data-layout='class-alternate'] [data-row='1'] {
+  --icon-x: 45px;
+  --icon-y: 456px;
+  --icon-w: 133px;
+  --icon-h: 19px;
+  --name-x: 218px;
+  --name-y: 450px;
+}
+
+.details[data-layout='class-alternate'] [data-row='2'] {
+  --icon-x: 89px;
+  --icon-y: 525px;
+  --icon-w: 44px;
+  --icon-h: 78px;
+  --name-x: 218px;
+  --name-y: 552px;
+}
+
+/* 58:271 with DEC-65's four rows, "Ultimate / Abilities": the Ultimate on top in the larger row
+   (56:63's row band, 296–414; name at 56:63's (243, 467)), then abilities 1 to 3 in three 60 px
+   bands below divider-0 (427, 495, 563), clear of the rating bars at 766. Each icon box is its
+   detail-legend rendition's own size (I-45): the Ultimate the severed accord's 51 × 56 centred
+   where 56:62 was, the abilities the unison ward's 72 × 56. Recommendation: the four-row geometry
+   (the owner's "adjust sizing", DEC-65; no frame draws it). */
+.details[data-layout='legend'] [data-row='0'] {
+  --icon-x: 90px;
+  --icon-y: 327px;
+  --icon-w: 51px;
+  --icon-h: 56px;
+  --name-x: 190px;
+  --name-y: 339px;
+}
+
+.details[data-layout='legend'] [data-row='1'] {
+  --icon-x: 80px;
+  --icon-y: 429px;
+  --icon-w: 72px;
+  --icon-h: 56px;
+  --name-x: 192px;
+  --name-y: 441px;
+}
+
+.details[data-layout='legend'] [data-row='2'] {
+  --icon-x: 80px;
+  --icon-y: 497px;
+  --icon-w: 72px;
+  --icon-h: 56px;
+  --name-x: 192px;
+  --name-y: 509px;
+}
+
+.details[data-layout='legend'] [data-row='3'] {
+  --icon-x: 80px;
+  --icon-y: 565px;
+  --icon-w: 72px;
+  --icon-h: 56px;
+  --name-x: 192px;
+  --name-y: 577px;
+}
+
+/* View Details (145:2, DEC-103), in the panel's px from (116, 254): the right column's rows at
+   x 1038, each icon centred in 145:87's 118 × 151 icon box but at its panel rendition's own size
+   (I-45), its label at x 1214 and its name 35 px below in Cinzel 32 cyan (148:180 …). The class
+   rows are 148:177, 148:178 and 148:185 at y 227, 471.5 and 692.6. */
+.details[data-layout='class-details'] .name,
+.details[data-layout='legend-details'] .name {
+  color: var(--selection-detail-name);
+  font-size: max(32px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-32) * 1px);
+}
+
+.details[data-layout='class-details'] [data-row='0'] {
+  --icon-x: 936px;
+  --icon-y: -4px;
+  --icon-w: 90px;
+  --icon-h: 115px;
+  --label-x: 1098px;
+  --label-y: -27px;
+  --name-x: 1098px;
+  --name-y: 8px;
+}
+
+.details[data-layout='class-details'] [data-row='1'] {
+  --icon-x: 945px;
+  --icon-y: 250px;
+  --icon-w: 73px;
+  --icon-h: 72px;
+  --label-x: 1098px;
+  --label-y: 217.5px;
+  --name-x: 1098px;
+  --name-y: 252.5px;
+}
+
+.details[data-layout='class-details'] [data-row='2'] {
+  --icon-x: 954px;
+  --icon-y: 487px;
+  --icon-w: 54px;
+  --icon-h: 64px;
+  --label-x: 1098px;
+  --label-y: 438.6px;
+  --name-x: 1098px;
+  --name-y: 473.6px;
+}
+
+/* The Legend's four rows (DEC-65, DEC-103) in the same column: the Ultimate in 148:177's larger
+   row (y 227), then abilities 1 to 3 in 140 px rows from y 420 (its dividers at y 410, 570 and
+   730), the label-to-name spacing of 145:2. Recommendation: the four-row geometry (145:2 draws only
+   the class). Icon boxes as on the Legend step. */
+.details[data-layout='legend-details'] [data-row='0'] {
+  --icon-x: 956px;
+  --icon-y: 26px;
+  --icon-w: 51px;
+  --icon-h: 56px;
+  --label-x: 1098px;
+  --label-y: -27px;
+  --name-x: 1098px;
+  --name-y: 8px;
+}
+
+.details[data-layout='legend-details'] [data-row='1'] {
+  --icon-x: 945px;
+  --icon-y: 213px;
+  --icon-w: 72px;
+  --icon-h: 56px;
+  --label-x: 1098px;
+  --label-y: 176px;
+  --name-x: 1098px;
+  --name-y: 211px;
+}
+
+.details[data-layout='legend-details'] [data-row='2'] {
+  --icon-x: 945px;
+  --icon-y: 373px;
+  --icon-w: 72px;
+  --icon-h: 56px;
+  --label-x: 1098px;
+  --label-y: 336px;
+  --name-x: 1098px;
+  --name-y: 371px;
+}
+
+.details[data-layout='legend-details'] [data-row='3'] {
+  --icon-x: 945px;
+  --icon-y: 533px;
+  --icon-w: 72px;
+  --icon-h: 56px;
+  --label-x: 1098px;
+  --label-y: 496px;
+  --name-x: 1098px;
+  --name-y: 531px;
+}

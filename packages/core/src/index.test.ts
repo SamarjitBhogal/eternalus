@@ -1,28 +1,44 @@
 import { describe, expect, it } from 'vitest';
 
+import { LEGEND_SPECS } from './content/legends/specs/legendSpecCatalogue';
 import * as core from './index';
 
 describe('@eternalus/core public API', () => {
   it('exports exactly the documented runtime values', () => {
     expect(Object.keys(core).sort()).toEqual([
+      'AStarPathfinder',
       'ConfigValidationError',
       'DEFAULT_MAP_CONFIG',
       'MapGenerator',
       'MapObjectBuilder',
       'MapPresentationBuilder',
+      'MatchPathfinderFactory',
       'MemoryLogger',
       'NullLogger',
+      'PLAYABLE_TEAMS',
       'SEVERITY',
       'SeededRandom',
       'Simulation',
       'StateHasher',
       'createDefaultGameConfig',
+      'findBuildingAt',
       'findMapObjectAt',
+      'findUnitAt',
+      'isPlayableTeam',
       'isPointInPolygon',
+      'isUnitFamily',
+      'loadDisplayContent',
       'makeLogRecord',
+      'opponentOf',
       'runReplay',
       'validateGameConfig',
     ]);
+  });
+
+  it('keeps the raw content catalogues internal: display content comes from loadDisplayContent', () => {
+    expect(Object.keys(core)).not.toContain('LEGEND_CLASSES');
+    expect(Object.keys(core)).not.toContain('LEGEND_SPECS');
+    expect(core.loadDisplayContent().specs).toEqual(LEGEND_SPECS.all());
   });
 
   it('generates the default map-1 from the default config', () => {
@@ -48,7 +64,17 @@ describe('@eternalus/core public API', () => {
     sim.step();
     expect(sim.snapshot()).toEqual({
       tick: 1,
-      phase: 'countdown',
+      match: {
+        phase: 'countdown',
+        phaseEnteredTick: 0,
+        upcoming: [
+          { entryId: 'countdown-over', tick: 300 },
+          { entryId: 'quarter-mark', tick: 13_500 },
+          { entryId: 'mid-game', tick: 27_000 },
+          { entryId: 'end-game', tick: 40_500 },
+        ],
+        humanLegendId: null,
+      },
       entities: [],
       hordes: [],
       teams: {

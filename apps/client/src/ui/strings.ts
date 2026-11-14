@@ -1,11 +1,26 @@
 import type { InputAction } from '../bridge/Binding.types';
-import type { MenuRoute, SessionPhase } from '../bridge/events';
+import type { DetailSlot, RoleRatingAxis } from '../bridge/catalogue.types';
+import type { MenuRoute, SessionPhase, SessionReason } from '../bridge/events';
+import type { HudAllegiance, HudBlockReason } from '../bridge/hud.types';
 
-/** Banner text per `session.reason`; reasons without an entry show no banner. */
+/**
+ * Banner text per `session.reason`: every `SessionReason` but the popup ones has one (a missing
+ * reason is a compile error); `select-timeout` shows `selectTimeoutPopup` instead (DEC-102), and
+ * `match-crashed` and `screen-crashed` show `crashReportPopup` (DEC-106, DEC-124). The store holds
+ * the reason as a string, so an unknown one shows no banner.
+ */
 const REASON_BANNERS: Readonly<Record<string, string>> = {
-  'select-timeout': 'Match cancelled: no character selected.',
   cancelled: 'Match cancelled.',
-};
+  'match-failed': 'Match could not start.',
+  'load-failed': 'Loading failed.',
+  'duel-unavailable': 'Connection to the Duel server was lost.',
+} satisfies Record<
+  Exclude<SessionReason, 'select-timeout' | 'match-crashed' | 'screen-crashed'>,
+  string
+>;
+
+/** A value not known yet, e.g. before the first publish (CD-13, DEC-17). */
+const NO_DATA_YET = 'No data yet';
 
 /**
  * UI labels (architecture 13 §1). Game names (classes, the profile screen's "Chronicle") come
@@ -17,32 +32,78 @@ export const STRINGS = {
   menu: {
     navLabel: 'Main menu',
     startMatch: 'Start match',
+    duelOnline: 'Duel online',
     loadouts: 'Loadouts',
     settings: 'Settings',
     about: 'About / credits',
   },
   reasonBanners: REASON_BANNERS,
+  /** The popup over the home screen when the select countdown ended before LOCK IN (DEC-102). */
+  selectTimeoutPopup: {
+    // DEC-102: the owner's title and text, word for word.
+    title: 'Failed to Choose Legend',
+    text: 'The countdown ended before you locked in a Legend. You have been returned to the lobby.',
+    // Recommendation: the review page's preview of the one close control, not the owner's words
+    // (DEC-102).
+    close: 'Continue',
+  },
+  /**
+   * The crash popup over the menu after a crash (DEC-106, ADR 0025 §5): it replaces the old
+   * `match-crashed` banner and opens for `match-crashed` and `screen-crashed`.
+   */
+  crashReportPopup: {
+    // DEC-106: the build plan's message, kept by the owner.
+    matchMessage: 'The match stopped because of an error.',
+    // DEC-124 (b): the owner's text for a screen crash outside a match.
+    screenMessage: 'The screen stopped because of an error.',
+    // DEC-106: the review page's note prompt and buttons, unchanged by the owner.
+    notePrompt: 'What were you doing when it happened? (optional)',
+    saveNote: 'Save note and return to menu',
+    returnToMenu: 'Return to menu',
+    // DEC-124 (c): the owner's text and the button for a report that could not be saved.
+    copyMessage: 'The report could not be saved. Copy it and send it to the team.',
+    copyReport: 'Copy report',
+    // DEC-140 (owner, 2026-11-02; INBOX HC-Q30 item 3): the owner's text for a saved report whose
+    // note write failed.
+    noteNotSavedMessage:
+      'The report was saved, but the note was not. Copy the note and send it to the team via the shared Discord channel.',
+    // DEC-140 (owner, 2026-11-02; INBOX HC-Q30 item 1): the owner's text while the note is written.
+    saving: 'Saving the note and report...',
+    // DEC-140 (owner, 2026-11-02; INBOX HC-Q30 item 2): approved as built.
+    saved: (file: string): string => `The report was saved as ${file}.`,
+    reportLabel: 'Report text',
+  },
   comingSoon: 'Coming in sprint 2.',
   about: {
     title: 'About / credits',
-    credits: 'Eternalus is a COMP 7003 team project. Full credits arrive with the asset manifest.',
+    credits: 'Eternalus is a COMP 7003 team project.',
+    /** Heading of the art and font credits generated from the asset manifest. */
+    assetCreditsTitle: 'Art and fonts',
+    /** Summary of each credit's licence text and file list. */
+    creditDetails: 'Licence text and files',
     licencesTitle: 'Software licences',
     licences: ['React (MIT)', 'Redux Toolkit (MIT)', 'React Redux (MIT)', 'Vite (MIT)'],
   },
   loadouts: { title: 'Loadouts', classesTitle: 'Classes' },
   profile: { history: 'Match history and achievements appear here.' },
+  duelQueue: {
+    title: 'Duel online',
+    searching: 'Searching for an opponent…',
+    cancel: 'Cancel',
+  },
   results: {
     title: 'Match results',
     // TODO(sam): verdict lines are core content (content/narrative/, selectVerdictLine) once it exists.
     noResult: 'No result recorded.',
     draw: 'Draw.',
-    winner: { light: 'Light wins.', dark: 'Dark wins.' },
+    victory: 'Victory.',
+    defeat: 'Defeat.',
+    opponentLeft: 'Opponent left.',
     playAgain: 'Play again',
     mainMenu: 'Main menu',
   },
   placeholder: {
     body: 'This screen is being built.',
-    leaveMatch: 'Leave match',
     phases: {
       boot: 'Starting',
       menu: 'Menu',
@@ -59,10 +120,15 @@ export const STRINGS = {
       profile: 'Profile',
       settings: 'Settings',
       about: 'About',
+      'duel-queue': 'Duel queue',
     } satisfies Record<MenuRoute, string>,
   },
   /** Shown where an action has no binding (`KeyGlyph`, the settings list). */
   unbound: '—',
+  /** A value not known yet: a HUD slot's or structure's state (CD-13, DEC-17). */
+  noDataYet: NO_DATA_YET,
+  /** The name of the image that stands in for a meter without a value: "<label>: No data yet" (CD-13). */
+  noDataFor: (label: string): string => `${label}: ${NO_DATA_YET}`,
   settings: {
     title: 'Settings',
     tablist: 'Settings sections',
@@ -84,6 +150,124 @@ export const STRINGS = {
     colourBlindMode: 'Colour-blind mode',
   },
   pause: { title: 'Paused', resume: 'Resume', settings: 'Settings', leave: 'Leave match' },
+  /** The match viewport; the explorer labels show only with the developer flag (13 §4, DEC-32). */
+  viewport: {
+    canvas: 'Battlefield',
+    explorer: {
+      canvas: 'Drag to explore, scroll to zoom, click a building to toggle its roof',
+      hint: 'Drag to explore · Scroll to zoom · Click a building to toggle its roof',
+      overview: 'World overview',
+      restoreRoofs: 'Restore roofs & overview',
+      /** Team names are content (`DisplayCatalogue.teamNames`, passed by `main.tsx`). */
+      legend: {
+        stronghold: (teamName: string): string => `${teamName} stronghold`,
+        camps: 'Neutral camps',
+      },
+    },
+  },
+  /** Both selection steps (62:125, 62:70, 58:271). Class, Legend and ability names are content. */
+  characterSelect: {
+    bannerTitle: 'Legend Selection',
+    chooseClass: 'Choose Your Class',
+    selectClass: 'Select Class',
+    selectClassHint: 'Choose a class first.',
+    classDetailsHeader: 'Default ability / Weapon Proficiency / Specialty',
+    classAlternateDetailsHeader: 'Signature / Proficiency / Specialty',
+    /** DEC-65: the Ultimate on top, then abilities 1 to 3. */
+    legendDetailsHeader: 'Ultimate / Abilities',
+    legendsHeader: 'Legends',
+    legendsPending: 'Legends to come',
+    legendBreadcrumb: (classDisplayName: string): string =>
+      `${classDisplayName} > Choose Your Legend`,
+    viewDetails: 'View Details',
+    /**
+     * View Details' row labels (DEC-65, DEC-103): the class rows as the Figma's View Details
+     * Example draws them (145:2: 148:179 …), the Legend's Ultimate as the owner names it (DEC-65).
+     */
+    detailLabels: {
+      signature: 'Default ability',
+      proficiency: 'Weapon Proficiency',
+      specialty: 'Specialty',
+      ultimate: 'Ultimate',
+      // Recommendation: "Ability n". The owner names the rows "abilities 1, 2, and 3" (DEC-65) but
+      // gives them no labels.
+      'ability-1': 'Ability 1',
+      'ability-2': 'Ability 2',
+      'ability-3': 'Ability 3',
+    } satisfies Record<DetailSlot, string>,
+    previousClass: 'Previous class',
+    nextClass: 'Next class',
+    // Cinzel draws lower case as small capitals (58:276, 58:326).
+    lockIn: 'lock in',
+    lockInHint: 'Choose a Legend to lock in.',
+    back: 'back',
+    allyCount: (count: number): string => (count === 1 ? '1 Ally' : `${String(count)} Allies`),
+    locked: 'Locked',
+    /** A locked class card's only text, in place of its name (DEC-59, DEC-104). */
+    comingSoon: 'Coming Soon...',
+    missingName: '—',
+    ratingAxes: {
+      damage: 'Damage',
+      support: 'Support',
+      control: 'Control',
+    } satisfies Record<RoleRatingAxis, string>,
+    /** Two spaces and U+00B7 each side (57:35, 72:749). */
+    detailLine: (left: string, right: string): string => `${left}  ·  ${right}`,
+    countdownLabel: 'Time left to choose',
+    rosterLabel: (team: string): string => `${team} team`,
+    teamBadge: (team: string): string => `You are on the ${team} team`,
+    you: 'You',
+    /** A roster tile's name: who, then their class once known ("You, Magus"). */
+    allyTile: (who: string, className: string | null): string =>
+      className === null ? who : `${who}, ${className}`,
+  },
+  /** The match HUD (62:231); slot names reuse `ACTION_LABELS`, gameplay names are content. */
+  hud: {
+    label: 'Match HUD',
+    health: 'Health',
+    aether: 'Aether',
+    level: 'Level',
+    ultimateCharge: 'Ultimate charge',
+    ultimatePips: 'Ultimate charges',
+    weaponLevel: 'Weapon level',
+    matchClock: 'Match time',
+    alliedStructures: 'Your structures',
+    enemyStructures: 'Enemy structures',
+    objectives: 'Capture points',
+    captureProgress: 'Capture progress',
+    noData: '—',
+    emptySlot: 'empty',
+    /** A structure tile's state once its structure is destroyed (DEC-69). */
+    destroyed: 'destroyed',
+    ready: 'ready',
+    notReady: 'not ready',
+    /** Objective shield letters in lane order (65:620, 65:613, 65:617); past the end, `index + 1`. */
+    objectiveLetters: ['A', 'B', 'C', 'D', 'E'],
+    meterValue: (current: number, max: number): string => `${String(current)} of ${String(max)}`,
+    levelValue: (level: number, percent: number): string =>
+      `Level ${String(level)}, ${String(percent)}% to the next`,
+    slot: (action: string, name: string | null, state: string): string =>
+      `${action}${name === null ? '' : `: ${name}`}, ${state}`,
+    structure: (name: string, state: string): string => `${name}, ${state}`,
+    objective: (label: string, kind: string, holder: string): string =>
+      `${kind} ${label}, ${holder}`,
+    allegiance: {
+      ours: 'held by your team',
+      theirs: 'held by the enemy',
+      neutral: 'not captured',
+    } satisfies Record<HudAllegiance, string>,
+    blockedBy: {
+      'empty-slot': 'Empty slot',
+      dead: 'Defeated',
+      'on-cooldown': 'Cooling down',
+      'not-enough-aether': 'Not enough aether',
+      'not-charged': 'Not charged',
+      casting: 'Casting',
+      'cannot-cast': 'Cannot cast',
+      'no-target': 'No target',
+      restricted: 'Restricted',
+    } satisfies Record<HudBlockReason, string>,
+  },
 } as const;
 
 /** What the settings screen calls each action. A missing action is a compile error. */
@@ -107,8 +291,10 @@ export const ACTION_LABELS: Readonly<Record<InputAction, string>> = {
   'camera-zoom-out': 'Zoom out',
   'toggle-minimap': 'Toggle minimap',
   'pause-menu': 'Pause menu',
+  'view-details': 'View Details',
   'toggle-developer-menu': 'Developer menu',
   'toggle-perf-overlay': 'Performance overlay',
+  'toggle-developer-camera': 'Developer camera tools',
 };
 
 /** Names of `MouseEvent.button` 0–4 as a captured chord shows them. */

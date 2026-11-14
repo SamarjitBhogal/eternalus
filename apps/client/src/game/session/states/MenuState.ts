@@ -5,17 +5,31 @@ import type { SessionContext, SessionState } from '../../SessionController.types
 export class MenuState implements SessionState {
   public readonly phase: SessionPhase = 'menu';
 
-  /** Drops any previous setup and shows the home route. */
+  /**
+   * Releases the match's assets (`leave-match` skips results; a no-op once released), drops any
+   * previous setup and shows the home route.
+   */
   public enter(context: SessionContext): void {
+    context.releaseAssets('match');
     context.clearMatchSetup();
     context.bus.emit('menu-route', { route: 'home' });
   }
 
-  /** `start-match` → `loading` with a new setup; `navigate` changes the menu route. */
+  /**
+   * `start-match` → `loading` with a new setup; `start-duel` joins the Duel queue and shows its
+   * waiting screen (the session moves on when the server pairs the player); `cancel-duel` leaves
+   * the queue and shows home; `navigate` changes the menu route.
+   */
   public handleIntent(intent: UiIntent, context: SessionContext): void {
     if (intent.kind === 'start-match') {
       context.newMatchSetup();
       context.transition('loading');
+    } else if (intent.kind === 'start-duel') {
+      context.joinDuelQueue();
+      context.bus.emit('menu-route', { route: 'duel-queue' });
+    } else if (intent.kind === 'cancel-duel') {
+      context.leaveDuelQueue();
+      context.bus.emit('menu-route', { route: 'home' });
     } else if (intent.kind === 'navigate') {
       context.bus.emit('menu-route', { route: intent.route });
     }
