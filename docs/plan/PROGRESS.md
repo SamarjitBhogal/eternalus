@@ -6922,3 +6922,18 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   after the run; prettier and `docs:check` pass on it.
 - Next step: critic round 3 (the last) on this delta; then push and a PR on
   `feat/tower-ruins-and-routes`.
+
+### 2026-11-14 — Phase 3 / tower-ruins follow-ups: pre-PR gate passed — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: critic round 3 (architecture-reviewer) on `48c5d74f..c982e3a0`: approve, 0
+  blockers; both round-2 blockers fixed, the rejected message nit accepted. Its own probes, base
+  `f3f649db` against `c982e3a0` (three scripts, 11298 configs, seeds 1, 42, 1234 and 987654):
+  no config changes between accepted and refused, and no output differs. Ponytail
+  (`eternalus-agent-work/tower-ruins-and-routes/tower-ruins-followups/ponytail-review-r1.md`):
+  cuts 1 and 3 applied in `f98af117`; cut 2 (a getter for `MatchWorld.definition`) rejected, a
+  readonly field beside `grid` is as short. The round-2 fix changed lines, not structure.
+  Critic reports: `critic-r1.md`, `critic-r2-r3.md` in the same folder.
+- Checks run: the full `npm run check` of the entry above covers the code (`check-3.log`,
+  EXIT=0); the commits after it change docs only. `npx prettier --check` and `npm run
+  docs:check` pass on this entry.
+- Next step: push after `feat/tower-ruins-and-routes` (`f3f649db`) is on origin; PR against it.
