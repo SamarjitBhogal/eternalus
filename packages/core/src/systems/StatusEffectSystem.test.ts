@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { loadAbilities } from '../content/abilities/loadAbilities';
 
 import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
@@ -79,6 +80,7 @@ const tickPipeline = (state: GameState): System => {
     invariants: new DefaultInvariantRunner({
       debug: RELEASE_DEBUG_CONFIG,
       logger: new NullLogger(),
+      abilities: loadAbilities(30),
       curves: loadLevelCurves(),
       phaseOrder: MATCH_PHASES,
       terminalPhases: TERMINAL_MATCH_PHASES,

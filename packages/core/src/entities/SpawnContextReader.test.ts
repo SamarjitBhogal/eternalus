@@ -86,4 +86,10 @@ describe('SpawnContextReader', () => {
     expect(reader.weapons({})).toBeNull();
     expect(reader.weapons({ weapons: { has: 'nope' } })).toBeNull();
   });
+
+  it('reads the Legend spec a context names, or null', () => {
+    expect(reader.specId({ specId: 'oracle' })).toBe('oracle');
+    expect(reader.specId({ specId: 7 })).toBeNull();
+    expect(reader.specId({})).toBeNull();
+  });
 });

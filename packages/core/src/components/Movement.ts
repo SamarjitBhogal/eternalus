@@ -1,11 +1,17 @@
 import type { MovementProfile, MovementStrategyId } from '../content/units/units.types';
 import type { Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
+import type { ForcedPush } from './Movement.types';
 
 /**
  * How fast an entity moves and in which direction. Speed builds up by `acceleration` each tick
  * and never goes above `topSpeed`. A command sets the heading with `steer`; each tick
  * `MovementSystem` calls `advance` and applies `velocity` to the `Transform`.
+ *
+ * Dashes and knock-backs are forced motion (plan arch call 6), not impulses: `push` spreads a
+ * displacement over a number of ticks, and `takeForcedStep` gives `MovementSystem` this tick's
+ * share, which it adds to `velocity`. Forced motion never touches velocity or heading, so the
+ * per-tick re-pointing of velocity along the heading cannot wipe it, and pushes add up as vectors.
  *
  * @remarks Velocity and heading are updated in place, so a tick allocates nothing per unit.
  * Read them, but do not keep them: they change on the next tick.
@@ -27,6 +33,11 @@ export class Movement {
   private readonly currentVelocity: MutableVec2 = { x: 0, y: 0 };
 
   private readonly currentHeading: MutableVec2 = { x: 0, y: 0 };
+
+  /** The pushes under way, oldest first. */
+  private readonly pushes: ForcedPush[] = [];
+
+  private readonly forcedStep: MutableVec2 = { x: 0, y: 0 };
 
   /**
    * Creates a stopped movement component from a unit's movement profile.
@@ -130,7 +141,55 @@ export class Movement {
     this.currentVelocity.y = direction.y * scale;
   }
 
-  /** Stops at once and drops the heading. */
+  /** Whether a push (a dash or knock-back) is still moving the entity. */
+  public get isForced(): boolean {
+    return this.pushes.length > 0;
+  }
+
+  /**
+   * Moves the entity by `displacement` (world units), spread evenly over the next `ticks` ticks.
+   * Pushes under way add up as vectors (two knock-backs in one tick move the sum, DEC-208), and
+   * the entity's own walking adds to them. Walls and world bounds stop it as they stop walking,
+   * because `MovementSystem` moves the forced step and the walking step together.
+   *
+   * @throws Error when `displacement` is not finite or `ticks` is not a positive whole number.
+   */
+  public push(displacement: Vec2, ticks: number): void {
+    if (!Number.isFinite(displacement.x) || !Number.isFinite(displacement.y)) {
+      throw new Error(
+        `Push displacement must be finite, got (${String(displacement.x)}, ${String(displacement.y)}).`,
+      );
+    }
+    if (!Number.isInteger(ticks) || ticks < 1) {
+      throw new Error(`A push lasts a positive whole number of ticks, got ${String(ticks)}.`);
+    }
+    this.pushes.push({ x: displacement.x / ticks, y: displacement.y / ticks, ticksLeft: ticks });
+  }
+
+  /**
+   * This tick's forced displacement: the sum of every push under way, oldest first, each then one
+   * tick closer to its end; zero with none. `MovementSystem` calls it once per tick.
+   *
+   * @returns A vector reused on the next call; read it, do not keep it.
+   */
+  public takeForcedStep(): Vec2 {
+    this.forcedStep.x = 0;
+    this.forcedStep.y = 0;
+    let kept = 0;
+    for (const push of this.pushes) {
+      this.forcedStep.x += push.x;
+      this.forcedStep.y += push.y;
+      push.ticksLeft -= 1;
+      if (push.ticksLeft > 0) {
+        this.pushes[kept] = push;
+        kept += 1;
+      }
+    }
+    this.pushes.length = kept;
+    return this.forcedStep;
+  }
+
+  /** Stops at once and drops the heading. A push under way goes on: it is not the entity's will. */
   public stop(): void {
     this.currentSpeed = 0;
     this.currentVelocity.x = 0;

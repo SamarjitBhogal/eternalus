@@ -1,3 +1,4 @@
+import type { AbilityRegistry } from '../abilities/AbilityRegistry';
 import type { InvariantRunner } from '../diagnostics/InvariantRunner';
 import type { EntityFactory } from '../entities/EntityFactory';
 import type { MatchDirector } from '../match/MatchDirector';
@@ -19,6 +20,11 @@ export type DefaultSystemPipelineOptions = {
   readonly progression: ProgressionContent;
   /** The match's director, built and started by `Simulation`; it runs after `DeathSystem`. */
   readonly director: Pick<MatchDirector, 'update'>;
+  /**
+   * The match's ability registry, shared with the `cast-ability` handler; the shipped abilities
+   * (`createDefaultAbilityRegistry(loadAbilities(tickRate))`) when omitted.
+   */
+  readonly abilities?: AbilityRegistry;
   /**
    * The factory (and its definitions), neighbour index and AI the horde systems (architecture 11,
    * 18) need; without them nothing decides, marches, steers or spawns on lanes.

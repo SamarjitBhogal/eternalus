@@ -1,3 +1,7 @@
+import { CastReadiness } from './abilities/CastReadiness';
+import { CastValidator } from './abilities/CastValidator';
+import { dashReach } from './abilities/dashReach';
+import { createDefaultAbilityRegistry } from './abilities/defaultAbilityRegistry';
 import { AiSystem } from './ai/AiSystem';
 import type { AiMemory } from './content/ai/ai.types';
 import {
@@ -21,6 +25,7 @@ import { AGGRO_RULES } from './content/ai/aggro/aggroRules';
 import { AI_CADENCE } from './content/ai/cadence';
 import { LANE_ASSESSMENT_WEIGHTS } from './content/ai/laneAssessmentWeights';
 import { ROVER_TACTICS } from './content/ai/rover';
+import { loadAbilities } from './content/abilities/loadAbilities';
 import { LEGEND_KIND_IDS } from './content/legends/legendKinds';
 import type { MapDefinition } from './content/maps/maps.types';
 import type { MapObject } from './content/maps/mapObjects.types';
@@ -31,6 +36,7 @@ import { BOT_DIFFICULTIES } from './content/ai/difficulties/botDifficulties';
 import { RANKS_FORMATION } from './content/mobs/formations/ranks';
 import { assignLanes } from './state/assignLanes';
 import { formationSlot } from './state/formationSlot';
+import type { SlotReadiness } from './state/SlotReadiness.types';
 import { unitClassOf } from './content/ai/unitClasses';
 import { SPACE_CELL_SIZE } from './content/ai/hordeSteering';
 import type { ContentCatalogue } from './content/ContentCatalogue';
@@ -81,7 +87,7 @@ export class Simulation {
   private readonly botQueue = new CommandQueue();
   /** Commands from `enqueueCommand` (player, developer menu). Each one enters the replay log. */
   private readonly externalQueue = new CommandQueue();
-  private readonly handlers: CommandHandlers = createDefaultCommandHandlers();
+  private readonly handlers: CommandHandlers;
   private readonly commandContext: CommandContext;
   private readonly systemContext: SystemContext;
   private readonly pipeline: SystemPipeline;
@@ -101,6 +107,7 @@ export class Simulation {
 
   /** The level curves `ProgressionSystem` levels Legends along; the snapshot reports XP on them. */
   private readonly curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'has' | 'get'>;
+  private readonly readiness: CastReadiness;
 
   /**
    * Creates a match from its options (architecture 03 §6).
@@ -119,6 +126,7 @@ export class Simulation {
     levelCurves,
     roster = [],
     weapons,
+    abilities,
   }: SimulationOptions) {
     const validConfig = validateGameConfig(config);
     const timeline = MatchTimeline.resolve(validConfig);
@@ -137,7 +145,10 @@ export class Simulation {
     const curves = levelCurves ?? loadLevelCurves();
     this.curves = curves;
     const weaponSource = weapons ?? loadWeapons(tickRate);
-    const controllers = Simulation.createControllers();
+    const registry = abilities ?? createDefaultAbilityRegistry(loadAbilities(tickRate));
+    this.handlers = createDefaultCommandHandlers(new CastValidator(registry));
+    this.readiness = new CastReadiness(registry);
+    const controllers = Simulation.createControllers(this.readiness);
     const units = content ?? Simulation.defaultContent(tickRate, curves, controllers, weaponSource);
     const objectsById = new Map(
       Object.values(MAP_OBJECT_DEFINITIONS).map((definition) => [definition.id, definition]),
@@ -179,6 +190,7 @@ export class Simulation {
         invariants: new DefaultInvariantRunner({
           debug,
           logger,
+          abilities: registry.definitions,
           curves,
           phaseOrder: MATCH_PHASES,
           terminalPhases: TERMINAL_MATCH_PHASES,
@@ -186,6 +198,7 @@ export class Simulation {
         state: this.state,
         progression: { units, curves, xpSources: XP_SOURCES },
         director,
+        abilities: registry,
         hordes: {
           factory,
           space,
@@ -215,6 +228,15 @@ export class Simulation {
       );
     });
     this.recordCheckpoint();
+  }
+
+  /**
+   * How far a dash from `from` along `direction` (a unit vector) may go before a wall stops it, up
+   * to `distance` metres: `DashEffect`'s own rule on the match's own grid. A read-only query for
+   * aim previews; it changes nothing.
+   */
+  public dashReach(from: Vec2, direction: Vec2, distance: number): number {
+    return dashReach(this.state.world?.grid, from, direction, distance);
   }
 
   /** Number of ticks completed. */
@@ -259,7 +281,7 @@ export class Simulation {
 
   /** The current state as a structured-clone-safe snapshot. */
   public snapshot(): Snapshot {
-    return this.state.snapshot(this.curves);
+    return this.state.snapshot(this.curves, this.readiness);
   }
 
   /** Subscribes to a game event; returns the function that unsubscribes. */
@@ -532,6 +554,7 @@ export class Simulation {
     const entity = factory.create(kind, slot.definitionId, {
       position,
       team: slot.team,
+      ...(slot.specId !== undefined && { specId: slot.specId }),
       ...(slot.pilot === 'bot' && {
         controller: {
           controllerId: Simulation.controllerOf(slot),
@@ -627,8 +650,8 @@ export class Simulation {
   }
 
   /** Every controller, with the shipped content it reads (architecture 11 §2). */
-  private static createControllers(): ControllerRegistry {
-    const bots = { difficulties: BOT_DIFFICULTIES, retreatTo: RETREAT_STRUCTURES };
+  private static createControllers(readiness: SlotReadiness): ControllerRegistry {
+    const bots = { difficulties: BOT_DIFFICULTIES, retreatTo: RETREAT_STRUCTURES, readiness };
     return createDefaultControllerRegistry({
       minion: { aggro: AGGRO_RULES, classOf: unitClassOf },
       botLegend: bots,

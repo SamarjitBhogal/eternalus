@@ -162,6 +162,7 @@ describe('GameState', () => {
         },
       ],
       hordes: [],
+      player: null,
       teams: {
         light: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
         dark: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },

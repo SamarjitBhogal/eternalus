@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { loadAbilities } from '../../content/abilities/loadAbilities';
 
 import { Health } from '../../components/Health';
 import { WinObjective } from '../../components/WinObjective';
@@ -45,6 +46,7 @@ const playOut = () => {
     invariants: new DefaultInvariantRunner({
       debug: TEST_DEBUG_CONFIG,
       logger,
+      abilities: loadAbilities(30),
       curves: CURVES,
       phaseOrder: MATCH_PHASES,
       terminalPhases: TERMINAL_MATCH_PHASES,

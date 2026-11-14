@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { Abilities } from '../components/Abilities';
 import { Deploying } from '../components/Deploying';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
@@ -207,6 +208,23 @@ describe('EntityStore', () => {
     store.clearAttackTarget('dummy');
     expect(store.attackTargetOf('dummy')).toBeNull();
     expect(store.attackTargetOf('nobody')).toBeNull();
+  });
+
+  it('queues a cast on an ability slot, and refuses an entity without that slot', () => {
+    const store = storeWith('dummy');
+    const legend = new Dummy('legend-1', 'dummy-definition');
+    const bar = new Abilities({
+      abilities: ['slam', 'rip-and-tear', 'shield-wall'],
+      ultimate: 'berserk',
+    });
+    legend.addComponent(bar);
+    store.add(legend);
+    const aim = { point: { x: 1, y: 2 }, targetId: null };
+
+    expect(store.queueCast('legend-1', 'ability-2', aim)).toBe(true);
+    expect(bar.slot('ability-2')?.pendingCast).toBe(aim);
+    expect(store.queueCast('dummy', 'ability-2', aim)).toBe(false);
+    expect(store.queueCast('nobody', 'ability-2', aim)).toBe(false);
   });
 
   it('reads health as a fraction and whether a target is in attack reach', () => {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { Abilities } from '../components/Abilities';
 import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
 import { Collider } from '../components/Collider';
@@ -118,6 +119,30 @@ describe('StateHasher', () => {
     collider.setUnbreakable(true);
 
     expect(hasher.hash(state)).not.toBe(before);
+  });
+
+  it('hashes an ability bar only once a slot leaves its initial state, then each slot field', () => {
+    const { state, soldier } = stateWithSoldier();
+    const before = hasher.hash(state);
+    const bar = new Abilities({
+      abilities: ['slam', 'rip-and-tear', 'shield-wall'],
+      ultimate: 'berserk',
+    });
+    soldier.addComponent(bar);
+    // A fresh bar (a match where nobody cast) hashes as before: the golden replays stay valid.
+    expect(hasher.hash(state)).toBe(before);
+
+    const hashes = new Set<number>([before]);
+    bar.slot('ability-1')?.queue({ point: { x: 1, y: 1 }, targetId: null });
+    hashes.add(hasher.hash(state));
+    bar.slot('ability-1')?.takePending();
+    bar.slot('ability-1')?.recordCast(0, 480);
+    hashes.add(hasher.hash(state));
+    const ultimate = bar.slot('ability-4');
+    if (ultimate !== undefined) ultimate.charge = 0.5;
+    hashes.add(hasher.hash(state));
+
+    expect(hashes.size).toBe(4);
   });
 
   it('changes when a minion counts a kill', () => {

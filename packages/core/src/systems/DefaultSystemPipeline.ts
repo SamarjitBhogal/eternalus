@@ -1,5 +1,9 @@
+import { CastValidator } from '../abilities/CastValidator';
+import { createDefaultAbilityRegistry } from '../abilities/defaultAbilityRegistry';
 import { DamagePipeline } from '../combat/DamagePipeline';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
+import { AETHER_REGEN } from '../content/abilities/aetherRegen';
+import { loadAbilities } from '../content/abilities/loadAbilities';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
 import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
@@ -10,6 +14,8 @@ import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { OPENING_WAVE, SPAWN_WAVES } from '../content/structures/spawnWaves';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { LaneFlowFields } from '../map/LaneFlowFields';
+import { AbilitySystem } from './AbilitySystem';
+import { AetherRegenSystem } from './AetherRegenSystem';
 import { CaptureSystem } from './CaptureSystem';
 import { CombatSystem } from './CombatSystem';
 import { MapDestructionSystem } from './MapDestructionSystem';
@@ -34,7 +40,7 @@ import { SystemPipeline } from './SystemPipeline';
 
 /**
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
- * progress, statuses, movement, collision (DEC-121 (c): every later reader sees resolved
+ * progress, the queued casts, aether regeneration, statuses, movement, collision (DEC-121 (c): every later reader sees resolved
  * positions), the neighbour index, steering, combat, map destruction, progression (kill XP),
  * minion veterancy, structure losses and breakability, spawning, enraging, death, capture points,
  * the match director, then invariants last. This is the one place a system is added, at its
@@ -51,6 +57,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
     progression,
     director,
     hordes,
+    abilities = createDefaultAbilityRegistry(loadAbilities(state.config.tickRate)),
   }: DefaultSystemPipelineOptions) {
     const { tickRate, map } = state.config;
     const damage = new DamagePipeline();
@@ -87,6 +94,9 @@ export class DefaultSystemPipeline extends SystemPipeline {
     }
     super([
       ...(hordes === undefined ? [] : [...hordes.decide, new HordeSystem(state, HORDE_STEERING)]),
+      new AbilitySystem(abilities, new CastValidator(abilities), damage, statuses),
+      // After the casts, so a cast spends before the tick's regeneration (plan arch call 13).
+      new AetherRegenSystem(AETHER_REGEN, tickRate),
       new StatusEffectSystem(damage, statuses),
       new MovementSystem(),
       ...(hordes?.collisions ?? []),

@@ -9,6 +9,15 @@ describe('Aether', () => {
     expect(aether.current).toBe(300);
   });
 
+  it('keeps its starting cap as its base when the cap rises (regeneration scales by max / base)', () => {
+    const aether = new Aether(100);
+
+    aether.raiseMax(30);
+
+    expect(aether.base).toBe(100);
+    expect(aether.max).toBe(130);
+  });
+
   it('spends what it can afford', () => {
     const aether = new Aether(100);
 

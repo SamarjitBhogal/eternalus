@@ -12,6 +12,7 @@ export type {
   CommandType,
   InputIntent,
 } from './commands/Command.types';
+export type { AbilityRejectReason } from './content/abilities/AbilityDefinition.types';
 export { ConfigValidationError } from './config/ConfigValidationError';
 export { createDefaultGameConfig } from './config/defaultGameConfig';
 export type {
@@ -42,7 +43,11 @@ export type {
   RoleRatings,
 } from './content/legends/specs/legendSpecs.types';
 export { loadDisplayContent } from './content/loadDisplayContent';
-export type { DisplayContent } from './content/loadDisplayContent';
+export type {
+  AbilityDisplay,
+  AbilityDisplayStep,
+  DisplayContent,
+} from './content/loadDisplayContent';
 export { DEFAULT_MAP_CONFIG } from './content/maps/defaultMapConfig';
 export type {
   MapDecoration,
@@ -92,9 +97,11 @@ export type {
 export type { MatchResult, Verdict } from './state/MatchResult.types';
 export type { ScheduledMark } from './state/MatchState.types';
 export type {
+  AbilitySlotSnapshot,
   CaptureSnapshot,
   EntitySnapshot,
   MatchSnapshot,
+  PlayerSnapshot,
   Snapshot,
 } from './state/Snapshot.types';
 export { StateHasher } from './state/StateHasher';

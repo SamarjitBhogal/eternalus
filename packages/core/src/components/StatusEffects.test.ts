@@ -28,6 +28,17 @@ describe('StatusEffects', () => {
     expect(statuses.multiplier('moveSpeed')).toBe(1);
   });
 
+  it('applies a source’s duration override, never expiring a status in the tick it lands', () => {
+    const statuses = new StatusEffects();
+    statuses.apply(STUN, 'a', 10, 15); // Blade Runner's 0.5 s instead of the 2 s default
+
+    statuses.expire(10);
+    statuses.expire(24);
+    expect(statuses.has('cannot-cast')).toBe(true);
+    statuses.expire(25);
+    expect(statuses.active).toHaveLength(0);
+  });
+
   it('multiplies modifiers: value once per stack, and across statuses', () => {
     const statuses = new StatusEffects();
     statuses.apply(ENRAGED, 'b', 0);

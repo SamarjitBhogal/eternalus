@@ -1,4 +1,11 @@
 import type { PlayableTeam } from '../teams/teams.types';
+import { ABILITIES } from './abilities/abilityCatalogue';
+import type {
+  AuthoredAbility,
+  AuthoredEffectSpec,
+  AuthoredShapedEffectSpec,
+  EffectShape,
+} from './abilities/AbilityDefinition.types';
 import { ContentCatalogue } from './ContentCatalogue';
 import {
   createBotRosterRules,
@@ -20,10 +27,42 @@ import type { BotRosterDefinition } from './teams/botRoster.types';
 import { TEAM_DISPLAY_NAMES } from './teams/teamDisplayNames';
 import { ContentValidator } from './validation/ContentValidator';
 
+/**
+ * One step of an ability's effect list as the client draws it: what it does and the area it covers,
+ * for the range overlay. A dash step is `{ kind: 'dash', shape: path, distance }` (the path as wide
+ * as its widest `onPath` path step), followed by its `onPath` and `onEnd` steps.
+ */
+export type AbilityDisplayStep = {
+  readonly kind: AuthoredEffectSpec['kind'];
+  readonly shape: EffectShape;
+  /** A dash's length in metres; absent on every other step. */
+  readonly distance?: number;
+};
+
+/**
+ * An ability as the kit rows, the HUD and the aim overlay show it (read-only; seconds, not ticks).
+ * An ability with no effects is `isAvailable: false`: it is in a kit but cannot be cast yet.
+ */
+export type AbilityDisplay = {
+  readonly id: string;
+  readonly displayName: string;
+  readonly description: string;
+  readonly classId: string;
+  /** `ultimate` for the key-4 ability. */
+  readonly slot: AuthoredAbility['slot'];
+  readonly aetherCost: number;
+  readonly cooldownSeconds: number;
+  readonly isAvailable: boolean;
+  /** Every effect step's area, in cast order. */
+  readonly steps: readonly AbilityDisplayStep[];
+};
+
 /** Display data the client's selection screens and HUD show (read-only definitions). */
 export type DisplayContent = {
   readonly legends: readonly LegendDefinition[];
   readonly specs: readonly LegendSpecDefinition[];
+  /** Every ability, in catalogue order; kits name them by id (`LegendDefinition.defaultKit`). */
+  readonly abilities: readonly AbilityDisplay[];
   /** Shown after the playable classes as locked cards, never selectable (DEC-48). */
   readonly lockedClasses: readonly LockedClassDefinition[];
   readonly mapFeatures: readonly {
@@ -45,11 +84,51 @@ type DisplayCatalogues = {
   readonly specs?: ContentCatalogue<LegendSpecDefinition>;
   readonly lockedClasses?: ContentCatalogue<LockedClassDefinition>;
   readonly botRoster?: BotRosterDefinition;
+  readonly abilities?: ContentCatalogue<AuthoredAbility>;
 };
 
+const shapedStep = ({ kind, shape }: AuthoredShapedEffectSpec): readonly AbilityDisplayStep[] => [
+  { kind, shape },
+];
+
 /**
- * Loads the display content and validates it once: the legends with `createDefaultContentRules()`,
- * then the specs with `createLegendSpecRules(legends)`, then the locked classes with
+ * The step of `effect` and, for a dash, its child steps, in cast order. A dash's own sweep is as
+ * wide as the widest `path` step it runs on the way (0 when it runs none).
+ */
+const stepsOf = (effect: AuthoredEffectSpec): readonly AbilityDisplayStep[] =>
+  effect.kind === 'dash'
+    ? [
+        {
+          kind: 'dash',
+          shape: {
+            kind: 'path',
+            width: Math.max(
+              0,
+              ...effect.onPath.map(({ shape }) => ('width' in shape ? shape.width : 0)),
+            ),
+          },
+          distance: effect.distance,
+        },
+        ...[...effect.onPath, ...effect.onEnd].flatMap(shapedStep),
+      ]
+    : shapedStep(effect);
+
+const toAbilityDisplay = (ability: AuthoredAbility): AbilityDisplay => ({
+  id: ability.id,
+  displayName: ability.displayName,
+  description: ability.description,
+  classId: ability.classId,
+  slot: ability.slot,
+  aetherCost: ability.aetherCost,
+  cooldownSeconds: ability.cooldownSeconds,
+  isAvailable: ability.effects.length > 0,
+  steps: ability.effects.flatMap(stepsOf),
+});
+
+/**
+ * Loads the display content and validates it once: the legends with
+ * `createDefaultContentRules(undefined, undefined, abilities, legends)`, then the specs with
+ * `createLegendSpecRules(legends, abilities)`, then the locked classes with
  * `createLockedClassRules()`, then the bot roster with `createBotRosterRules(legends)`, each
  * through a `ContentValidator` (04 §5, DEC-22). The display sibling of `loadDefaultContent`
  * (02 §6).
@@ -65,13 +144,17 @@ export const loadDisplayContent = ({
   specs = LEGEND_SPECS,
   lockedClasses = LOCKED_CLASSES,
   botRoster = BOT_ROSTER,
+  abilities = ABILITIES,
 }: DisplayCatalogues = {}): DisplayContent => {
-  new ContentValidator(createDefaultContentRules()).validate(legends);
-  new ContentValidator(createLegendSpecRules(legends)).validate(specs);
+  new ContentValidator(
+    createDefaultContentRules(undefined, undefined, abilities, legends),
+  ).validate(legends);
+  new ContentValidator(createLegendSpecRules(legends, abilities)).validate(specs);
   new ContentValidator(createLockedClassRules()).validate(lockedClasses);
   new ContentValidator(createBotRosterRules(legends)).validate(new ContentCatalogue([botRoster]));
 
   return {
+    abilities: abilities.all().map(toAbilityDisplay),
     legends: legends.all(),
     specs: specs.all(),
     lockedClasses: lockedClasses.all(),

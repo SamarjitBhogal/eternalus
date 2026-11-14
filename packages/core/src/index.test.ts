@@ -70,6 +70,7 @@ describe('@eternalus/core public API', () => {
         ],
         humanLegendId: null,
       },
+      player: null,
       entities: [],
       hordes: [],
       teams: {

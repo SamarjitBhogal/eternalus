@@ -19,14 +19,23 @@ export class StatusEffectApplier {
    * Applies status `statusId` to `targetId`, credited to `sourceId`. Returns whether it landed: a
    * missing or dead target, or one without `StatusEffects` (a structure), is immune.
    *
+   * @param durationTicks - The source's own duration for this application (a debuff step's
+   *   `durationTicks`); the status's own duration when omitted.
    * @throws UnknownDefinitionError when no status has the id `statusId`.
+   * @throws Error when `durationTicks` is given and is not a positive whole number of ticks.
    */
   public apply(
     state: GameState,
     targetId: EntityId,
     statusId: string,
     sourceId: EntityId | null,
+    durationTicks?: number,
   ): boolean {
+    if (durationTicks !== undefined && !(Number.isInteger(durationTicks) && durationTicks > 0)) {
+      throw new Error(
+        `A status duration must be a positive whole tick count, got ${String(durationTicks)}.`,
+      );
+    }
     const definition = this.statuses.get(statusId);
     const target = state.entities.get(targetId);
     const statuses = target?.findComponent(StatusEffects);
@@ -37,7 +46,7 @@ export class StatusEffectApplier {
     ) {
       return false;
     }
-    statuses.apply(definition, sourceId, state.tick);
+    statuses.apply(definition, sourceId, state.tick, durationTicks);
     state.events.emit('status-applied', { entityId: targetId, statusId, sourceId });
     return true;
   }

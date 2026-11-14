@@ -19,21 +19,28 @@ import { GameState } from '../state/GameState';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { spawnMapStructures } from '../state/__fixtures__/spawnMapStructures';
 import { BotLegendController } from './BotLegendController';
+import type { SlotReadiness } from '../state/SlotReadiness.types';
+import { onlyReady } from './__fixtures__/stubReadiness';
+import type { SeededRandomState } from '../utils/SeededRandom.types';
 import { Perception } from './perception/Perception';
 
 /** The shipped difficulties, plus `normal` pinned to never and to always cast. */
-const controller = new BotLegendController({
-  difficulties: {
-    ...BOT_DIFFICULTIES,
-    'never-casts': { ...NORMAL_BOT, id: 'never-casts', abilityUseChance: 0 },
-    'always-casts': { ...NORMAL_BOT, id: 'always-casts', abilityUseChance: 1 },
-  },
-  retreatTo: RETREAT_STRUCTURES,
-});
+const controllerWith = (readiness: SlotReadiness) =>
+  new BotLegendController({
+    difficulties: {
+      ...BOT_DIFFICULTIES,
+      'never-casts': { ...NORMAL_BOT, id: 'never-casts', abilityUseChance: 0 },
+      'always-casts': { ...NORMAL_BOT, id: 'always-casts', abilityUseChance: 1 },
+    },
+    retreatTo: RETREAT_STRUCTURES,
+    readiness,
+  });
+/** Only `ability-1` is ready, so the cast rule has one choice. */
+const controller = controllerWith(onlyReady('ability-1'));
 const RNG = { seed: 1, words: [1, 2, 3, 4] as const };
 
 /** A light Warrior laner on lane-0 (from x 20 to x 180 along y 20) of the two-lane map. */
-const setUp = (at = { x: 60, y: 20 }) => {
+const setUp = (at = { x: 60, y: 20 }, who: BotLegendController = controller) => {
   const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
   const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP), { space });
   const factory = new EntityFactory(
@@ -55,7 +62,11 @@ const setUp = (at = { x: 60, y: 20 }) => {
     return entity.id;
   };
   const bot = add('light', at.x, at.y, 'warrior', 'warrior');
-  const decide = (memory: AiMemory = { lane: 'lane-0' }, profileId = 'normal') => {
+  const decide = (
+    memory: AiMemory = { lane: 'lane-0' },
+    profileId = 'normal',
+    rngState: SeededRandomState = RNG,
+  ) => {
     space.begin(state.entities.size);
     // Units only, as `SpaceSystem` indexes them: structures are never perceived as enemies.
     state.entities.forEach((entity) => {
@@ -65,11 +76,11 @@ const setUp = (at = { x: 60, y: 20 }) => {
       }
     });
     space.commit();
-    return controller.decide({
+    return who.decide({
       state,
       entityId: bot,
       perception,
-      brain: { controllerId: 'bot-legend', profileId, memory, rngState: RNG },
+      brain: { controllerId: 'bot-legend', profileId, memory, rngState },
     });
   };
   const hurt = (fraction: number) => {
@@ -167,6 +178,37 @@ describe('BotLegendController (laner tree, 11 §4.2)', () => {
       'always-casts',
     );
     expect(waiting.commands.some(({ type }) => type === 'cast-ability')).toBe(false);
+  });
+
+  it('Fight: casts a ready slot chosen by its seeded stream, never one that is not ready', () => {
+    const slots = new Set<unknown>();
+    for (const seed of Array.from({ length: 30 }, (_, i) => i + 1)) {
+      const { bot, add, decide } = setUp(
+        undefined,
+        controllerWith(onlyReady('ability-2', 'ability-4')),
+      );
+      const enemy = add('dark', 64);
+      const run = (): unknown =>
+        decide({ lane: 'lane-0', targetId: enemy }, 'always-casts', {
+          seed,
+          words: [seed * 7919, seed * 104729 + 1, (seed * 2654435761) >>> 0, seed * 31 + 7],
+        }).commands.find(({ type }) => type === 'cast-ability');
+      const first = run();
+      expect(run()).toEqual(first);
+      expect(first).toMatchObject({ actorId: bot, aim: { targetId: enemy } });
+      slots.add((first as { slot: string }).slot);
+    }
+    expect([...slots].sort()).toEqual(['ability-2', 'ability-4']);
+  });
+
+  it('Fight: with no ready slot it sends no cast and keeps its cast timer', () => {
+    const { add, decide } = setUp(undefined, controllerWith(onlyReady()));
+    const enemy = add('dark', 64);
+
+    const decision = decide({ lane: 'lane-0', targetId: enemy }, 'always-casts');
+
+    expect(decision.commands.some(({ type }) => type === 'cast-ability')).toBe(false);
+    expect(decision.memory).toMatchObject({ nextCastTick: 0 });
   });
 
   it('Push: walks with the most advanced allied horde on its lane', () => {

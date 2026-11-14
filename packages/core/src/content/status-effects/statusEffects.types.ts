@@ -1,5 +1,5 @@
-/** A number a status scales: each reader asks `StatusEffects.multiplier(stat)` for one value. */
-export type StatusStat = 'moveSpeed' | 'attackSpeed' | 'damageDealt' | 'damageTaken';
+/** A number a status scales: each reader asks `StatusEffects.multiplier(stat)` for one value. `aetherCost` multiplies what a cast costs (read by the cast path in the next slice). */
+export type StatusStat = 'moveSpeed' | 'attackSpeed' | 'damageDealt' | 'damageTaken' | 'aetherCost';
 
 /**
  * A yes/no rule a status imposes. `cannot-cast` waits for `AbilitySystem` (phase 4); the others are

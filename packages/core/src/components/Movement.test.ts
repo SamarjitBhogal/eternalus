@@ -134,4 +134,63 @@ describe('Movement', () => {
     expect(movement.topSpeed).toBe(STATS.maxSpeed);
     expect(movement.speed).toBe(STATS.maxSpeed);
   });
+
+  it('spreads a push evenly over its ticks, then stops pushing', () => {
+    const movement = new Movement(STATS);
+    movement.push({ x: 6, y: -3 }, 3);
+
+    const steps = [1, 2, 3, 4].map(() => {
+      const { x, y } = movement.takeForcedStep();
+      return { x, y };
+    });
+
+    expect(steps).toEqual([
+      { x: 2, y: -1 },
+      { x: 2, y: -1 },
+      { x: 2, y: -1 },
+      { x: 0, y: 0 },
+    ]);
+    expect(movement.isForced).toBe(false);
+  });
+
+  it('adds pushes up as vectors, each over its own ticks (DEC-208: never last one wins)', () => {
+    const movement = new Movement(STATS);
+    movement.push({ x: 4, y: 0 }, 2);
+    movement.push({ x: 0, y: 3 }, 3);
+    movement.push({ x: -4, y: 0 }, 2);
+
+    expect({ ...movement.takeForcedStep() }).toEqual({ x: 0, y: 1 });
+    expect({ ...movement.takeForcedStep() }).toEqual({ x: 0, y: 1 });
+    expect({ ...movement.takeForcedStep() }).toEqual({ x: 0, y: 1 });
+    expect(movement.isForced).toBe(false);
+  });
+
+  it('leaves velocity and heading alone, and keeps a push going through stop()', () => {
+    const movement = new Movement(STATS);
+    movement.steer({ x: 1, y: 0 });
+    movement.advance();
+    movement.push({ x: 0, y: 2 }, 2);
+    const velocity = { ...movement.velocity };
+
+    expect(movement.velocity).toEqual(velocity);
+    expect(movement.heading).toEqual({ x: 1, y: 0 });
+    movement.stop();
+    expect(movement.isForced).toBe(true);
+    expect({ ...movement.takeForcedStep() }).toEqual({ x: 0, y: 1 });
+  });
+
+  it('rejects a non-finite push or one that does not last a whole positive number of ticks', () => {
+    const movement = new Movement(STATS);
+
+    expect(() => {
+      movement.push({ x: Number.NaN, y: 0 }, 2);
+    }).toThrow(/finite/);
+    expect(() => {
+      movement.push({ x: 1, y: 0 }, 0);
+    }).toThrow(/whole number/);
+    expect(() => {
+      movement.push({ x: 1, y: 0 }, 1.5);
+    }).toThrow(/whole number/);
+    expect(movement.isForced).toBe(false);
+  });
 });

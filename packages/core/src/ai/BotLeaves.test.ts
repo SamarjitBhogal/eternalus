@@ -10,11 +10,13 @@ import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { SeededRandom } from '../utils/SeededRandom';
 import type { BotTurn } from './BotLegendController.types';
 import { BotLeaves } from './BotLeaves';
+import { allReady } from './__fixtures__/stubReadiness';
 import { Perception } from './perception/Perception';
 
 const leaves = new BotLeaves({
   difficulties: { normal: NORMAL_BOT },
   retreatTo: RETREAT_STRUCTURES,
+  readiness: allReady,
 });
 
 /** A pathfinder stub: past x 50 it leads via (60, 34), otherwise straight to the goal. */

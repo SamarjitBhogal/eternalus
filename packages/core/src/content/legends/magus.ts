@@ -35,6 +35,11 @@ export const MAGUS = {
   weaponBias: 'staff',
   damageFocus: 'magic',
   pickUp: 'levitate',
+  abilityPool: ['shockwave', 'sanctuary', 'imbue', 'death-ray'], // DEC-198: every ability and ultimate of the class
+  defaultKit: {
+    abilities: ['shockwave', 'sanctuary', 'imbue'], // DEC-209 (2): keys 1-3, similar effects share a key
+    ultimate: 'death-ray', // DEC-209 (2): key 4
+  },
   passiveOptions: ['studious', 'necromancy'],
   defaultAction: 'revive',
   referenceHeight: 3, // TUNE: ~10 ft (Hades)

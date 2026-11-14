@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { loadAbilities } from '../content/abilities/loadAbilities';
 
 import { loadLevelCurves } from '../content/progression/loadLevelCurves';
 
@@ -16,6 +17,7 @@ describe('DefaultInvariantRunner', () => {
     const runner = new DefaultInvariantRunner({
       debug: TEST_DEBUG_CONFIG,
       logger: new MemoryLogger(),
+      abilities: loadAbilities(30),
       curves: loadLevelCurves(),
       phaseOrder: MATCH_PHASES,
       terminalPhases: TERMINAL_MATCH_PHASES,

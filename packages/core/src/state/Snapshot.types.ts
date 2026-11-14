@@ -1,3 +1,7 @@
+import type {
+  AbilityRejectReason,
+  AbilitySlot,
+} from '../content/abilities/AbilityDefinition.types';
 import type { LevelProgress } from '../components/Progression.types';
 import type { MatchPhase } from '../config/matchPhases';
 import type { PlayableTeam, Team } from '../teams/teams.types';
@@ -56,6 +60,34 @@ export type CaptureSnapshot = {
   readonly presence: Readonly<Record<Team, number>>;
 };
 
+/**
+ * One ability bar slot as the HUD shows it (architecture 05 §15 `AbilitySlotSnapshot`). An empty
+ * slot has `abilityId: null`, both cooldown fields and the cost at 0 and `blockedBy: 'empty-slot'`.
+ */
+export type AbilitySlotSnapshot = {
+  readonly slot: AbilitySlot;
+  readonly abilityId: string | null;
+  /** Ticks until the cooldown ends; 0 when it is over. */
+  readonly cooldownRemainingTicks: number;
+  /** The ability's full cooldown in ticks. */
+  readonly cooldownTicks: number;
+  /** The aether the cast costs now, after status modifiers. */
+  readonly aetherCost: number;
+  /** The ultimate's meter 0..1; `null` on every slot until the meter is built (a later PR). */
+  readonly charge: number | null;
+  /** Whether a cast would be accepted now. */
+  readonly isReady: boolean;
+  /** Why it would be refused; `null` exactly when `isReady`. */
+  readonly blockedBy: AbilityRejectReason | null;
+};
+
+/** What only the human player's Legend needs (architecture 05 §15, DEC-232). */
+export type PlayerSnapshot = {
+  readonly entityId: EntityId;
+  /** In bar order: every slot, empty ones included. */
+  readonly slots: readonly AbilitySlotSnapshot[];
+};
+
 /** Where the match is in its timeline, for the HUD's phase and countdowns (plan §4.2). */
 export type MatchSnapshot = {
   readonly phase: MatchPhase;
@@ -81,6 +113,8 @@ export type Snapshot = {
   readonly mapObjects?: readonly MapObjectSnapshot[];
   readonly tick: number;
   readonly match: MatchSnapshot;
+  /** The human Legend's player-only data; `null` in sim mode or when it has no ability bar. */
+  readonly player: PlayerSnapshot | null;
   /** In the store's insertion order. */
   readonly entities: readonly EntitySnapshot[];
   /** In creation order. */

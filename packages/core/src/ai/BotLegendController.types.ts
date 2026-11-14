@@ -2,6 +2,7 @@ import type { Command } from '../commands/Command.types';
 import type { BotDifficultyDefinition } from '../content/ai/ai.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
+import type { SlotReadiness } from '../state/SlotReadiness.types';
 import type { LaneObjective } from '../state/LaneStructures.types';
 import type { PlayableTeam } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
@@ -26,6 +27,8 @@ export type BotLegendControllerContent = {
   readonly difficulties: Readonly<Record<string, BotDifficultyDefinition>>;
   /** The map feature kinds a retreating bot falls back to. */
   readonly retreatTo: readonly string[];
+  /** The cast rules a bot picks its ready abilities by (DEC-205). */
+  readonly readiness: SlotReadiness;
 };
 
 /** One bot's decision in the making: what the tree reads, and what its nodes write. */

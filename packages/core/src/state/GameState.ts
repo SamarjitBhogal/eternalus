@@ -25,6 +25,8 @@ import { LaneStructures } from './LaneStructures';
 import type { MatchWorld } from './MatchWorld';
 import type { PathQuery } from './PathQuery.types';
 import type { EntitySnapshot, HordeSnapshot, Snapshot } from './Snapshot.types';
+import { PlayerSnapshotter } from './PlayerSnapshotter';
+import type { SlotReadiness } from './SlotReadiness.types';
 import type { SpaceQuery } from './SpaceQuery.types';
 
 import type { WorldObjectStore } from './WorldObjectStore';
@@ -253,8 +255,12 @@ export class GameState {
    *
    * @param curves - The level curves a `Progression` levels along (the catalogue
    *   `ProgressionSystem` uses), to report the XP inside each level.
+   * @param readiness - The cast rules for the player's slots; without them `player` is `null`.
    */
-  public snapshot(curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'get'>): Snapshot {
+  public snapshot(
+    curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'get'>,
+    readiness: SlotReadiness | null = null,
+  ): Snapshot {
     const entities: EntitySnapshot[] = [];
     const snapshotter = new EntitySnapshotter(this.config.match.capturePoints.checkpoints, curves);
     this.entities.forEach((entity) => {
@@ -266,6 +272,7 @@ export class GameState {
       hordes.push({ ...horde });
     });
     const { light, dark } = this.teamCounters;
+    const human = humanLegendId === null ? undefined : this.entities.get(humanLegendId);
     return {
       tick: this.currentTick,
       match: {
@@ -274,6 +281,10 @@ export class GameState {
         upcoming: schedule.slice(timelineCursor),
         humanLegendId,
       },
+      player:
+        human === undefined || readiness === null
+          ? null
+          : new PlayerSnapshotter(readiness).snapshotOf(this, human),
       entities,
       hordes,
       teams: {

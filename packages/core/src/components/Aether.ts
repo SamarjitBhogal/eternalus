@@ -1,12 +1,14 @@
 /**
- * Aether: a Legend's magic-point pool (MP). Abilities and class default actions spend it; regen
- * over time is a Phase 4 system, not this component. `current` always stays between 0 and `max`.
+ * Aether: a Legend's magic-point pool (MP). Abilities and class default actions spend it;
+ * `AetherRegenSystem` refills it. `current` always stays between 0 and `max`.
  * Only Legends carry Aether — mobs and structures have none.
  */
 export class Aether {
   private currentValue: number;
 
   private maxValue: number;
+
+  private readonly baseValue: number;
 
   /**
    * Creates a full aether pool.
@@ -16,7 +18,13 @@ export class Aether {
   public constructor(max: number) {
     Aether.checkPositive(max, 'max');
     this.maxValue = max;
+    this.baseValue = max;
     this.currentValue = max;
+  }
+
+  /** The pool's starting cap (the class's `baseAether`), before any `raiseMax`. */
+  public get base(): number {
+    return this.baseValue;
   }
 
   /** Full aether now: the starting pool plus every `raiseMax` (level-ups). */

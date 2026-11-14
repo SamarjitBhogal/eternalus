@@ -36,6 +36,8 @@ export type Placement = {
   readonly controller?: ControllerSpawn;
   /** The ground a zone covers, as polygons in world units (zones only, `ZoneArea`). */
   readonly area?: readonly Polygon[];
+  /** The Legend spec whose kit a Legend equips (`RosterSlot.specId`); absent = its class's kit. */
+  readonly specId?: string;
 };
 
 /**

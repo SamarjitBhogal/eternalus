@@ -113,6 +113,12 @@ export class SpawnContextReader {
     return typeof laneId === 'string' ? laneId : null;
   }
 
+  /** The Legend spec the context names (`Placement.specId`), or `null`. */
+  public specId(context: unknown): string | null {
+    const { specId } = SpawnContextReader.fields(context);
+    return typeof specId === 'string' ? specId : null;
+  }
+
   /** The weapon source the factory put in the context, or `null` when it has none. */
   public weapons(context: unknown): WeaponSource | null {
     const { weapons } = SpawnContextReader.fields(context);

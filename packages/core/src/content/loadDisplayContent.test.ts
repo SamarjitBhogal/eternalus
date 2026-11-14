@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { ABILITIES } from './abilities/abilityCatalogue';
 import { ContentCatalogue } from './ContentCatalogue';
 import { ContentValidationError } from './ContentValidationError';
 import { LEGEND_CLASSES } from './legends/legendCatalogue';
@@ -131,6 +132,89 @@ describe('loadDisplayContent', () => {
     expect(() => loadDisplayContent({ botRoster })).toThrow(
       new ContentValidationError(
         'Invalid content: standard: rover difficulty "nightmare" is not a bot difficulty',
+      ),
+    );
+  });
+
+  it('describes every ability for the kit rows: name, text, cost, cooldown, availability', () => {
+    const { abilities } = loadDisplayContent();
+
+    expect(abilities.map((ability) => ability.id)).toEqual(ABILITIES.ids);
+    expect(abilities.find((ability) => ability.id === 'blade-runner')).toMatchObject({
+      displayName: 'Blade Runner',
+      classId: 'warrior',
+      slot: 'ability',
+      aetherCost: 35,
+      cooldownSeconds: 12,
+      isAvailable: true,
+    });
+    expect(abilities.find((ability) => ability.id === 'blade-runner')?.description).toMatch(
+      /^Dash forward/,
+    );
+  });
+
+  it('marks exactly the three built abilities available; the others have no steps', () => {
+    const { abilities } = loadDisplayContent();
+
+    expect(abilities.filter((ability) => ability.isAvailable).map((ability) => ability.id)).toEqual(
+      ['blade-runner', 'slam', 'shockwave'],
+    );
+    for (const ability of abilities.filter((entry) => !entry.isAvailable)) {
+      expect(ability.steps).toEqual([]);
+    }
+  });
+
+  it("carries each effect step's area, a dash's steps after the dash itself", () => {
+    const steps = (id: string) =>
+      loadDisplayContent().abilities.find((ability) => ability.id === id)?.steps;
+    const area = (radius: number) => ({ kind: 'circle', radius });
+
+    expect(steps('blade-runner')).toEqual([
+      { kind: 'dash', shape: { kind: 'path', width: 1.5 }, distance: 8 },
+      { kind: 'damage', shape: { kind: 'path', width: 1.5 } },
+      { kind: 'knockback', shape: { kind: 'path', width: 1.5 } },
+      { kind: 'debuff', shape: area(1.5) },
+    ]);
+    expect(steps('slam')).toEqual([
+      { kind: 'damage', shape: area(4) },
+      { kind: 'knockback', shape: area(4) },
+    ]);
+    expect(steps('shockwave')).toEqual([
+      { kind: 'damage', shape: area(5) },
+      { kind: 'knockback', shape: area(5) },
+      { kind: 'debuff', shape: area(5) },
+    ]);
+  });
+
+  it('rejects a Legend class whose default kit names an ability that does not exist', () => {
+    const legends = new ContentCatalogue<LegendDefinition>([
+      { ...WARRIOR, defaultKit: { ...WARRIOR.defaultKit, ultimate: 'fury-two' } },
+      SENTINEL,
+      MAGUS,
+    ]);
+
+    expect(() => loadDisplayContent({ legends })).toThrow(
+      new ContentValidationError(
+        'Invalid content: warrior: defaultKit "fury-two" names no ability; ' +
+          'warrior: defaultKit "fury-two" is not in the abilityPool of class "warrior"',
+      ),
+    );
+  });
+
+  it("rejects a Legend whose own kit leaves its class's pool", () => {
+    const specs = new ContentCatalogue<LegendSpecDefinition>([
+      { ...ORACLE, kit: { abilities: ['shockwave', 'sanctuary', 'imbue'], ultimate: 'death-ray' } },
+      {
+        ...ORACLE,
+        id: 'stray',
+        kit: { abilities: ['shockwave', 'sanctuary', 'imbue'], ultimate: 'berserk' },
+      },
+    ]);
+
+    expect(() => loadDisplayContent({ specs })).toThrow(
+      new ContentValidationError(
+        'Invalid content: stray: kit "berserk" belongs to class "sentinel"; ' +
+          'stray: kit "berserk" is not in the abilityPool of class "magus"',
       ),
     );
   });

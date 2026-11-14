@@ -1,6 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { Abilities } from '../components/Abilities';
 import { Combat } from '../components/Combat';
+import { KNIGHT } from '../content/legends/specs/knight';
+import { LEGEND_SPECS } from '../content/legends/specs/legendSpecCatalogue';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { loadWeapons } from '../content/weapons/loadWeapons';
 import type { WeaponDefinition } from '../content/weapons/weapons.types';
@@ -55,5 +58,69 @@ describe('Legend', () => {
     expect(() => {
       legend.spawn({ ...PLACEMENT, definition: ARMED_WARRIOR, weapons: unarmed });
     }).toThrow('Legend "entity-1": weapon "test-talons" has no attacks.');
+  });
+
+  describe('its ability bar', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    const SHIPPED_WEAPONS = loadWeapons(30);
+
+    const barOf = (legend: Warrior) =>
+      legend.getComponent(Abilities).slots.map(({ slot, abilityId }) => [slot, abilityId]);
+
+    it('equips its class kit by default: keys 1-3 the abilities, key 4 the ultimate (DEC-209 (2))', () => {
+      const legend = new Warrior('entity-1', 'warrior');
+
+      legend.spawn({ ...PLACEMENT, definition: WARRIOR, weapons: SHIPPED_WEAPONS });
+
+      expect(barOf(legend)).toEqual([
+        ['ability-1', 'blade-runner'],
+        ['ability-2', 'veil'],
+        ['ability-3', 'hamstring'],
+        ['ability-4', 'fury'],
+        ['gadget-1', null],
+        ['gadget-2', null],
+        ['default-action', null],
+      ]);
+    });
+
+    it('equips its spec’s own kit when the spawn names a spec that has one, else the class kit', () => {
+      const own = { abilities: ['veil', 'hamstring', 'blade-runner'], ultimate: 'fury' } as const;
+      const withKit = new Warrior('entity-1', 'warrior');
+      const withoutKit = new Warrior('entity-2', 'warrior');
+
+      withoutKit.spawn({
+        ...PLACEMENT,
+        definition: WARRIOR,
+        weapons: SHIPPED_WEAPONS,
+        specId: 'knight',
+      });
+      vi.spyOn(LEGEND_SPECS, 'get').mockReturnValue({ ...KNIGHT, kit: own });
+      withKit.spawn({
+        ...PLACEMENT,
+        definition: WARRIOR,
+        weapons: SHIPPED_WEAPONS,
+        specId: 'knight',
+      });
+
+      expect(barOf(withoutKit)[0]).toEqual(['ability-1', 'blade-runner']);
+      expect(barOf(withKit).slice(0, 4)).toEqual([
+        ['ability-1', 'veil'],
+        ['ability-2', 'hamstring'],
+        ['ability-3', 'blade-runner'],
+        ['ability-4', 'fury'],
+      ]);
+    });
+
+    it('throws for a spec that does not exist or belongs to another class', () => {
+      for (const specId of ['no-such-spec', 'oracle']) {
+        const legend = new Warrior('entity-1', 'warrior');
+        expect(() => {
+          legend.spawn({ ...PLACEMENT, definition: WARRIOR, weapons: SHIPPED_WEAPONS, specId });
+        }).toThrow(`cannot use the spec "${specId}"`);
+      }
+    });
   });
 });

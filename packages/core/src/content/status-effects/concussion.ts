@@ -1,8 +1,9 @@
 import type { AuthoredStatusEffect } from './statusEffects.types';
 
 /**
- * Concussed: slower movement and attacks. TUNE: more-abilities.md section 7 (−30% each, 3 s from
- * balancing.md Shockwave). The +25% aether cost waits for abilities (phase 4).
+ * Concussed: slower movement and attacks, and casts cost more aether. TUNE: more-abilities.md
+ * section 7 (−30% speed, −30% attack speed, abilities cost +25% aether; 3 s from balancing.md
+ * Shockwave). `CastValidator.price` reads `aetherCost`.
  */
 export const CONCUSSION = {
   id: 'concussion',
@@ -13,6 +14,7 @@ export const CONCUSSION = {
   modifiers: [
     { stat: 'moveSpeed', op: 'mul', value: 0.7 },
     { stat: 'attackSpeed', op: 'mul', value: 0.7 },
+    { stat: 'aetherCost', op: 'mul', value: 1.25 },
   ],
   flags: [],
   periodic: null,

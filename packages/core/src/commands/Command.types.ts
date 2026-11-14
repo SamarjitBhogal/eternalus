@@ -1,16 +1,12 @@
+import type {
+  AbilityRejectReason,
+  AbilitySlot,
+} from '../content/abilities/AbilityDefinition.types';
 import type { PlayableTeam, Team } from '../teams/teams.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { Vec2 } from '../utils/geometry.types';
 
-/** An ability bar slot (architecture 05 §6); `ability-4` is the ultimate. */
-export type AbilitySlot =
-  | 'ability-1'
-  | 'ability-2'
-  | 'ability-3'
-  | 'ability-4'
-  | 'gadget-1'
-  | 'gadget-2'
-  | 'default-action';
+export type { AbilitySlot } from '../content/abilities/AbilityDefinition.types';
 
 /** Where a developer-menu horde appears (architecture 13 §4). */
 export type SpawnOrigin =
@@ -84,8 +80,9 @@ export type Command<K extends CommandType = CommandType> = {
   readonly [P in K]: { readonly type: P } & CommandPayloads[P];
 }[K];
 
-/** Why a command was not applied; sent with `command-rejected`. */
+/** Why a command was not applied; sent with `command-rejected`. A refused cast gives its `AbilityRejectReason`. */
 export type CommandRejectReason =
+  | AbilityRejectReason
   | 'unknown-entity'
   | 'unknown-kind'
   | 'unknown-definition'

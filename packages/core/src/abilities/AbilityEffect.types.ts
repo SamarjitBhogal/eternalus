@@ -1,0 +1,63 @@
+import type { DamagePipeline } from '../combat/DamagePipeline';
+import type { StatusEffectApplier } from '../combat/StatusEffectApplier';
+import type { CastAim } from '../components/AbilitySlotRuntime.types';
+import type { AbilitySlot } from '../content/abilities/AbilityDefinition.types';
+import type { EntityId } from '../state/EntityStore.types';
+import type { GameState } from '../state/GameState';
+import type { Vec2 } from '../utils/geometry.types';
+import type { ShapePlacement, ShapeSpec } from './shapes/AreaShape.types';
+import type { TargetFilter } from './TargetQuery.types';
+
+/**
+ * The part of an effect step the registry reads: its kind, the key of its `AbilityEffect`. The
+ * shipped steps are `content/abilities`' `AbilityEffectSpec` union; each strategy narrows to its own.
+ */
+export type EffectStep = { readonly kind: string };
+
+/**
+ * What an effect sees while it runs (05 §3 `CastContext`), built once per cast by `CastInstance`.
+ * Effects change components through the pipeline and the applier given here, never by calling
+ * each other or a system (rule 12).
+ */
+export type CastContext = {
+  readonly casterId: EntityId;
+  readonly abilityId: string;
+  readonly slot: AbilitySlot;
+  /** The tick of the cast. */
+  readonly tick: number;
+  readonly state: GameState;
+  readonly aim: CastAim;
+  /** Unit vector from the caster toward `aim.point`; `{ 0, 0 }` when the aim is on the caster. */
+  readonly direction: Vec2;
+  /** Where this step's shapes sit: on the caster for the cast's own steps. */
+  readonly placement: ShapePlacement;
+  /** The caster's level (1 without `Progression`), for the ability's `scaling` (05 §13). */
+  readonly casterLevel: number;
+  /**
+   * `value`, the spec field `field` of a step, grown by the ability's per-level `scaling` of that
+   * field: `value × (1 + perLevel × (casterLevel − 1))` (`balancing.md`: +4% potency per level,
+   * so level 1 is the content value). A field the ability does not scale comes back unchanged.
+   */
+  scaled(field: string, value: number): number;
+  /** The match's one damage pipeline. */
+  readonly damage: DamagePipeline;
+  /** The match's one status applier. */
+  readonly statuses: StatusEffectApplier;
+  /** Every live entity that overlaps `shape` at this step's placement and passes `filter`, by id. */
+  targets(shape: ShapeSpec, filter: TargetFilter): readonly EntityId[];
+  /** The point of `shape` at this step's placement that a push at `point` moves away from. */
+  centreFor(shape: ShapeSpec, point: Vec2): Vec2;
+  /** Runs a nested step (a dash's `onPath` or `onEnd`) through the registry at `placement`. */
+  run(step: EffectStep, placement: ShapePlacement): void;
+};
+
+/**
+ * One kind of effect (05 §3): a stateless Flyweight, one instance per kind in the
+ * `AbilityRegistry`. A new kind is one class and one `defaultAbilityRegistry.ts` line.
+ */
+export interface AbilityEffect<S extends EffectStep = EffectStep> {
+  /** The registry key, e.g. `knockback`. */
+  readonly kind: S['kind'];
+  /** Applies `spec` for the cast described by `cast`, this tick. */
+  apply(spec: S, cast: CastContext): void;
+}

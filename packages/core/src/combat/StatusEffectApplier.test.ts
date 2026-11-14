@@ -67,6 +67,44 @@ describe('StatusEffectApplier', () => {
     expect(events).toEqual([]);
   });
 
+  it('lands a status for the source’s own duration when given, the status’s otherwise', () => {
+    const { state, dummy, applier } = setUp();
+    for (let tick = 0; tick < 5; tick += 1) state.advanceTick();
+
+    applier.apply(state, dummy.id, 'stun', 'entity-9', 15);
+    applier.apply(state, dummy.id, 'concussion', 'entity-9');
+
+    expect(
+      dummy
+        .getComponent(StatusEffects)
+        .active.map(({ definition, expiresTick }) => [definition.id, expiresTick]),
+    ).toEqual([
+      ['stun', 20],
+      ['concussion', 5 + 90],
+    ]);
+  });
+
+  it('never shortens a status by reapplying it for less (Blade Runner’s 0.5 s stun on a stunned target)', () => {
+    const { state, dummy, applier } = setUp();
+    const stunEndsAt = () =>
+      dummy.getComponent(StatusEffects).active.find(({ definition }) => definition.id === 'stun')
+        ?.expiresTick;
+
+    applier.apply(state, dummy.id, 'stun', 'entity-9'); // 2 s: ends at tick 60
+    applier.apply(state, dummy.id, 'stun', 'entity-8', 15);
+    expect(stunEndsAt()).toBe(60);
+
+    for (let tick = 0; tick < 54; tick += 1) state.advanceTick(); // 0.2 s (6 ticks) left
+    applier.apply(state, dummy.id, 'stun', 'entity-8', 15);
+    expect(stunEndsAt()).toBe(54 + 15);
+  });
+
+  it.each([0, -3, 1.5])('throws on a duration override of %d ticks', (ticks) => {
+    const { state, dummy, applier } = setUp();
+
+    expect(() => applier.apply(state, dummy.id, 'stun', null, ticks)).toThrow(/positive whole/);
+  });
+
   it('throws on an unknown status id (a dangling content reference)', () => {
     const { state, dummy, applier } = setUp();
 

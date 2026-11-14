@@ -17,6 +17,7 @@ import { SpaceIndex } from '../physics/SpaceIndex';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { GameState } from '../state/GameState';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
+import { allReady } from './__fixtures__/stubReadiness';
 import { Perception } from './perception/Perception';
 import { RoverController } from './RoverController';
 
@@ -27,6 +28,7 @@ const controller = new RoverController({
   tactics: ROVER_TACTICS,
   legendKinds: LEGEND_KIND_IDS,
   laneWeights: LANE_ASSESSMENT_WEIGHTS,
+  readiness: allReady,
 });
 
 /** A dark Rover on the two-lane map (lane-0 along y 20, lane-1 along y 40, x 20 to 180). */

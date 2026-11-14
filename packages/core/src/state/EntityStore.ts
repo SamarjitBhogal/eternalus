@@ -1,3 +1,5 @@
+import { Abilities } from '../components/Abilities';
+import type { CastAim } from '../components/AbilitySlotRuntime.types';
 import { Combat } from '../components/Combat';
 import { ControllerBinding } from '../components/ControllerBinding';
 import { Deploying } from '../components/Deploying';
@@ -6,6 +8,7 @@ import { MapObjectBody } from '../components/MapObjectBody';
 import { Movement } from '../components/Movement';
 import { Transform } from '../components/Transform';
 import { TeamMembership } from '../components/TeamMembership';
+import type { AbilitySlot } from '../content/abilities/AbilityDefinition.types';
 import type { Team } from '../teams/teams.types';
 import { distanceToPath, distanceToSegment, isPointInPolygon } from '../utils/geometry';
 import type { Vec2 } from '../utils/geometry.types';
@@ -204,6 +207,28 @@ export class EntityStore {
     }
     combat.setTarget(targetId);
     return true;
+  }
+
+  /**
+   * Queues a checked cast on the entity's ability slot for `AbilitySystem` (05 §7). Lets
+   * `commands/` queue a cast without importing `components/`, as `setAttackTarget` does.
+   *
+   * @returns `false` when the entity is unknown or has no such slot.
+   */
+  public queueCast(id: EntityId, slot: AbilitySlot, aim: CastAim): boolean {
+    const runtime = this.entities.get(id)?.findComponent(Abilities)?.slot(slot);
+    if (runtime === undefined) {
+      return false;
+    }
+    runtime.queue(aim);
+    return true;
+  }
+
+  /** The slots of the entity's ability bar that hold an ability, in bar order; empty for an entity without a bar. */
+  public filledSlotsOf(id: EntityId): readonly AbilitySlot[] {
+    return (this.entities.get(id)?.findComponent(Abilities)?.slots ?? [])
+      .filter(({ abilityId }) => abilityId !== null)
+      .map(({ slot }) => slot);
   }
 
   /** Visits every entity in insertion order. Entities removed during the walk are skipped. */
