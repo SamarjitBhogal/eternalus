@@ -98,17 +98,84 @@ Reply inline (`Decision: …`).
       `partOf` (stays as ruins); (T2) `WorldObjectStore.spawn` gets only the definition id: pass
       what it needs explicitly. Heal (DEC-215): (H1) one point-in-box helper instead of three
       copies (`PathingSystem.isInsideFort`, `geometry.doesPolygonOverlapRect`, `HealingZones`).
+      (H1 is built in part on `feat/tower-ruins-and-routes` as tower-ruins critic r2 D4, DEC-239:
+      `utils/geometry.isPointInRect` replaces `PathingSystem.isInBox`, the later name of
+      `isInsideFort`, and the copy in `doesPolygonOverlapRect`. `HealingZones` is only on
+      `feat/out-of-combat-heal`, not merged: it uses `isPointInRect` once both branches meet.)
       Full findings: `eternalus-agent-work/minion-stack-audit/reports/runner-reports/critic-followups-r2.md`,
       `eternalus-agent-work/playtest-2026-11-04/critic-chevron-r3.md` and
       `eternalus-agent-work/playtest-2026-11-04/session-2383bba1-reports.md`. Approve all,
       approve some, or say no.
-- [ ] **Generated forts overlap when a lane has two or more towers of one kind (map generator).**
+- [x] **Generated forts overlap when a lane has two or more towers of one kind (map generator).**
       Found on `feat/out-of-combat-heal` (2026-11-05). With `spawnTowersPerLane` or
       `buffTowersPerLane` at 2 or more, the generator puts towers of one kind 28 to 38 m apart,
       but a fort box is 32 m wide. The forts and their heal zones then overlap, and DEC-215 (1)
       says an overlap is a bug. The default (one tower of each kind per lane) has no overlap, and
       the heal-zone overlap test covers only the default. Fix the generator now (towers of one
       kind at least one fort box apart), or with the map work? Decision: …
+  - **Answered 2026-11-09 by DEC-227** (question dialog, "Tower-ruins map PR"): fixed on
+    `feat/tower-ruins-and-routes`. `laneStructures.ts` keeps towers of one kind at least a fort
+    box's diagonal apart along the lane (a band too narrow widens round its middle), so two forts
+    never overlap on any lane heading. The fort box is measured in world units (the sketch fort,
+    `BUILDING_GEOMETRY.fort.laneTowerSize`, stretched by the larger world/sketch scale). The
+    generator refuses (`MapGenerationError`) a config whose lane towers of different kinds would
+    come closer than that.
+    `MapGenerator.test.ts` checks every lane tower fort pair at 2 and 3 towers per kind.
+    Correction (critic r2, DEC-239): spacing along the lane does not keep forts apart on a bend or
+    on neighbouring lanes near the gates (critic probe: 3200x900, 7 lanes, 1 + 9 towers, four
+    overlapping pairs). The generator now checks every pair of lane tower forts on the map in
+    world units after placement (`assertLaneFortsApart` in `laneStructures.ts`).
+    Correction (DEC-239 rules critique, 2026-11-13): towers of different kinds only must not
+    overlap (no diagonal gap), and the fort box is stretched per axis (`fortInWorld`), not by the
+    larger scale. Towers of one kind are spaced by the box's diagonal, `hypot(width, height)`;
+    until 2026-11-13 the code used the larger side times root 2, which over-spaced a non-square
+    box (3200x900: 90.5 m for 71.6 m). The neighbouring-lanes probe is now 1 + 11 towers.
+- [x] **Tower-ruins critic round 1 (`feat/tower-ruins-and-routes`, 2026-11-10), better than the
+      design — five items.** (B1) one way-out search per court cell instead of one per court mob
+      per tick; (B2) move the ruin rule out of `WorldObjectStore`; (B3) one owner of the
+      court-or-footprint stamping rule; (B4) one A\* search loop; (B5) one "lane tower fort in
+      world units" helper, with a check that nav cells stay thinner than the fort walls. Full
+      findings: `eternalus-agent-work/tower-ruins-and-routes/critic-r1.md`. Decision: …
+  - **Answered 2026-11-10 by DEC-235** (question dialog for B1 and B2; B3 to B5 under the standing
+    no-tech-debt rule): all five built on `feat/tower-ruins-and-routes`. B1 is an exit field in
+    `AStarPathfinder`, filled on demand and reset when `WorldMap.version` changes; B2 is
+    `state/StructureRuins.ts`, run by `MapDestructionSystem`; B3 is `MatchWorld.build` and
+    `MatchWorld.reopen`; B5 is `map/fortInWorld.ts`. Docs 06 §3 and §6, 07 and 10 §9 updated.
+    Later (critic r2, DEC-239): the B3 stamping rule moved to `map/MatchGrid.ts` and the B1 exit
+    field to `map/CourtExitField.ts`.
+- [x] **Tower-ruins critic round 2 (`feat/tower-ruins-and-routes`, 2026-11-10), better than the
+      design — four items.** (D1) check lane tower forts on the whole map in world units, not
+      per lane in lane fractions; (D2) the stamping rule in a `map/` class, since `state/` may
+      import `map/` as types only; (D3) the court exit field in its own class; (D4) one
+      point-in-rectangle helper. Full findings:
+      `eternalus-agent-work/tower-ruins-and-routes/critic-r2.md`. Decision: …
+  - **Answered 2026-11-10 by DEC-239** (standing no-tech-debt rule, not asked): all four built on
+    `feat/tower-ruins-and-routes`. D1 is `assertLaneFortsApart` in `map/laneStructures.ts`; D2 is
+    `map/MatchGrid.ts`; D3 is `map/CourtExitField.ts`; D4 is `utils/geometry.isPointInRect`.
+    Confirmed by the owner 2026-11-14 (**DEC-246**, "Confirm"), after a critique found the four
+    generator rules within the design.
+    Docs 03, 06 §3, 07 and 10 §9 updated.
+- [x] **Bot A\* search cap on 2.5 m cells (`feat/tower-ruins-and-routes`, 2026-11-10).** With a
+      horde at every lane tower, bot Legends' A\* failed 190 to 273 times in 300 ticks:
+      `map.pathMaxExpansions` 6000 settles too few 2.5 m cells (DEC-227 (Q-A)) for routes of
+      about 470 m, and a failed search stops the bot. (A) raise the cap to 24000; (B) 12000;
+      (C) keep it and add a bot path cache later. Evidence:
+      `eternalus-agent-work/tower-ruins-and-routes/astar-finding-2026-11-10.md`. Decision: …
+  - **Answered 2026-11-10 by DEC-240** (question dialog): A, plus a request for a bot path cache
+    ("Requests for the agent" below). Built on `feat/tower-ruins-and-routes`:
+    `config/defaultGameConfig.ts`, test in `map/AStarPathfinder.test.ts`.
+- [ ] **Tower-ruins critic round 3 (`feat/tower-ruins-and-routes`, 2026-11-10), better than the
+      design — four follow-ups, no decision blocks the PR.** (BTD1) Set the A\* cap as a search
+      area in world units (m², divided by `navCellSize`²), or validate the two together, so the
+      next cell-size change cannot shrink the search again (DEC-240 was needed for this reason).
+      (BTD3) Make `DefaultSystemPipelineOptions.ruinWall` required, as the round-1 ruling said:
+      about 12 test call sites add one line, and the type check replaces the run-time throw.
+      (BTD4) One `doRectsOverlap` in `utils/geometry` for `assertLaneFortsApart`,
+      `MapSceneryBuilder`, `StaticCollisionIndex` and two copies in `MapGenerator.test.ts`.
+      (BTD5) `MatchWorld` takes the definition and a `MatchGrid` that another definition could
+      have built: let `MatchGrid` keep its definition and `MatchWorld` take only the grid.
+      Full findings: `eternalus-agent-work/tower-ruins-and-routes/critic-r3.md`. Approve: one
+      follow-up branch builds all four. Decision: …
 
 - [x] **Minion M4 done-when, read for objectives (2026-11-02, `chore/minion-full-march-test`) — sign-off.**
       The plan's M4 check "hordes reach the enemy end with 0 stuck units for `numLanes` 3 and 5"
@@ -2581,6 +2648,18 @@ Reply inline (`Decision: …`).
   - Decision (sholtzman, chat, 2026-10-30, Call 5): "fix and get the fighting / proceeding
     working"; the critic ruled this rule better than the design. Built as MS-33 on
     `fix/minion-m1-review`; doc 18 §1 and §4 and the minion plan §3 updated.
+
+- [ ] **Bot path cache (DEC-240, 2026-11-10)** — Owner: unassigned, own branch. A bot searches
+      A\* again on each blocked decision. On 2.5 m cells (DEC-227 (Q-A)) a search costs about 4
+      times what it cost on 5 m cells: with a horde at every lane tower, 13.6 ms a tick against
+      5.2 ms (a full normal match shows no change). Keep each bot's path and re-plan only when its
+      goal moves or `WorldMap.version` changes (architecture 11 §6 names this as the next step).
+      Note: on seed 1, nine routes of 650 to 810 m between tower forts on opposite sides of the map
+      still settle more than 24000 cells; no bot took such a route in the test. Also (critic r3
+      BTD2): one A\* work budget a tick, counted in searched cells and shared by bot searches and
+      `StuckSystem` plans; `maxDecisionsPerTick` and `STUCK_DETECTION.maxPlansPerTick` count
+      searches, and DEC-240 makes one failed search up to 4 times dearer. Evidence:
+      `eternalus-agent-work/tower-ruins-and-routes/astar-finding-2026-11-10.md`.
 
 ## Feedback
 

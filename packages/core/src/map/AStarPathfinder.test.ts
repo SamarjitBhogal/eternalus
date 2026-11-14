@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
+import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import type { Polygon } from '../utils/geometry.types';
 import { BLOCKED_LANE_MAP } from './__fixtures__/blockedLaneMap';
 import { AStarPathfinder } from './AStarPathfinder';
+import { MapGenerator } from './MapGenerator';
+import { MapObjectBuilder } from './MapObjectBuilder';
+import { MapPresentationBuilder } from './MapPresentationBuilder';
+import { MatchGrid } from './MatchGrid';
 import { WorldMap } from './WorldMap';
+import { stampWalledCourt, WALLED_COURT } from './__fixtures__/walledCourt';
 
 /** An open 120 x 40 map on 2 m cells: the blocked-lane map without its rift. */
 const openGrid = () =>
@@ -84,6 +91,112 @@ describe('AStarPathfinder (A* for Legends, 10 §9)', () => {
     expect(finder.waypoint({ x: 40, y: 20 }, { x: 60, y: 28 }, out)).toBe(true);
   });
 
+  it('leads a walker inside a court out through its doorway, not to the open ground behind its wall (DEC-217 (15))', () => {
+    const grid = openGrid();
+    stampWalledCourt(grid);
+    const finder = new AStarPathfinder(grid, { maxExpansions: 10_000, snapCells: 6 });
+    const out = { x: 0, y: 0 };
+    const { inside } = WALLED_COURT;
+
+    // West of the fort: the open ground behind the west wall is nearer, but the way is east.
+    expect(finder.waypoint(inside, { x: 10, y: 20 }, out)).toBe(true);
+    expect(out.x).toBeGreaterThan(inside.x);
+    // The way out of the court alone, to the nearest open ground through its doorway.
+    expect(finder.exitWaypoint(inside, out)).toBe(true);
+    expect(out.x).toBeGreaterThan(inside.x);
+    let at: { x: number; y: number } = { ...inside };
+    for (let step = 0; step < 20 && !grid.isWalkableAt(at.x, at.y); step += 1) {
+      finder.exitWaypoint(at, out);
+      at = { x: out.x, y: out.y };
+    }
+    expect(grid.isWalkableAt(at.x, at.y)).toBe(true);
+    expect(at.x).toBeGreaterThan(WALLED_COURT.box.x + WALLED_COURT.box.width - 2);
+    // On open ground there is no way out to give.
+    expect(finder.exitWaypoint({ x: 10, y: 20 }, out)).toBe(false);
+  });
+
+  it('keeps the way out of each court cell: a second question from the same cell searches nothing', () => {
+    const grid = openGrid();
+    stampWalledCourt(grid);
+    const finder = new AStarPathfinder(grid, LIMITS);
+    const out = { x: 0, y: 0 };
+    const { inside } = WALLED_COURT;
+
+    finder.exitWaypoint(inside, out);
+    const first = { ...out };
+    const farCost = finder.lastCost;
+    // Cell (18, 9), beside the doorway: a cheaper search.
+    finder.exitWaypoint({ x: 37, y: 19 }, out);
+    const nearCost = finder.lastCost;
+    finder.exitWaypoint(inside, out);
+
+    expect(nearCost).toBeLessThan(farCost);
+    expect(out).toEqual(first);
+    // Answered from the exit field: the last search is still the near one.
+    expect(finder.lastCost).toBe(nearCost);
+  });
+
+  it('searches the way out again once the grid changes (WorldMap.version)', () => {
+    const grid = openGrid();
+    stampWalledCourt(grid);
+    const finder = new AStarPathfinder(grid, LIMITS);
+    const out = { x: 0, y: 0 };
+    const { inside, walls } = WALLED_COURT;
+    expect(finder.exitWaypoint(inside, out)).toBe(true);
+    expect(out.x).toBeGreaterThan(inside.x);
+
+    // The west wall falls: open ground is now 2 cells west, not through the east doorway.
+    grid.clearFootprint(walls[2]);
+
+    expect(finder.exitWaypoint(inside, out)).toBe(true);
+    expect(out.x).toBeLessThan(inside.x);
+  });
+
+  it('heads a walker 2 steps from open ground for the open cell when it is in sight, else for the next cell, wherever it stood first', () => {
+    const grid = openGrid();
+    stampWalledCourt(grid);
+    const finder = new AStarPathfinder(grid, LIMITS);
+    const out = { x: 0, y: 0 };
+    // Cell (18, 8) (x 36..38, y 16..18): its way out is court cell (18, 9), then doorway cell
+    // (19, 9), centre (39, 19). From the cell's south-east corner that centre is in sight.
+    const corner = { x: 37.9, y: 17.9 };
+    const back = { x: 36.5, y: 16.5 };
+
+    expect(finder.exitWaypoint(corner, out)).toBe(true);
+    expect(out).toEqual({ x: 39, y: 19 });
+    expect(finder.exitWaypoint(back, out)).toBe(true);
+    expect(out).toEqual({ x: 37, y: 19 });
+    expect(finder.exitWaypoint(corner, out)).toBe(true);
+    expect(out).toEqual({ x: 39, y: 19 });
+  });
+
+  it('walks into a court to a goal inside it, through its doorway (DEC-185 (A))', () => {
+    const grid = openGrid();
+    stampWalledCourt(grid);
+    const finder = new AStarPathfinder(grid, { maxExpansions: 10_000, snapCells: 0 });
+    const out = { x: 0, y: 0 };
+
+    expect(finder.waypoint({ x: 10, y: 20 }, WALLED_COURT.inside, out)).toBe(true);
+    // Round the fort to the east doorway: never straight at the west wall.
+    expect(out.x === WALLED_COURT.inside.x && out.y === WALLED_COURT.inside.y).toBe(false);
+    expect(Math.abs(out.y - 20)).toBeGreaterThan(5);
+  });
+
+  it('walks every leg into a court to its goal: from the doorway on, the next cell is court ground (DEC-227 (Q-A))', () => {
+    const grid = openGrid();
+    stampWalledCourt(grid);
+    const finder = new AStarPathfinder(grid, { maxExpansions: 10_000, snapCells: 0 });
+    const out = { x: 0, y: 0 };
+    const { inside } = WALLED_COURT;
+
+    let at: { x: number; y: number } = { x: 10, y: 20 };
+    for (let leg = 0; leg < 40 && (at.x !== inside.x || at.y !== inside.y); leg += 1) {
+      expect(finder.waypoint(at, inside, out)).toBe(true);
+      at = { x: out.x, y: out.y };
+    }
+    expect(at).toEqual(inside);
+  });
+
   it('finds no way to a blocked goal without snapping, off the map, or past its budget', () => {
     const finder = new AStarPathfinder(riftGrid(), LIMITS);
     const out = { x: 0, y: 0 };
@@ -97,5 +210,48 @@ describe('AStarPathfinder (A* for Legends, 10 §9)', () => {
         out,
       ),
     ).toBe(false);
+  });
+
+  it("with the default config, steps out of a Stronghold's blocked footprint on a generated map without map objects (DEC-227 (Q-A))", () => {
+    const config = createDefaultGameConfig();
+    const map = new MapGenerator().generate(config, 1);
+    const grid = WorldMap.fromDefinition(
+      map,
+      config.map.navCellSize,
+      (definitionId) => MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking ?? false,
+    );
+    const finder = new AStarPathfinder(grid, {
+      maxExpansions: config.map.pathMaxExpansions,
+      snapCells: config.map.pathSnapCells,
+    });
+    const home = map.features.find(({ id }) => id === 'light-stronghold')?.position ?? {
+      x: 0,
+      y: 0,
+    };
+    const out = { x: 0, y: 0 };
+
+    expect(grid.isWalkableAt(home.x, home.y)).toBe(false);
+    expect(finder.waypoint(home, { x: home.x + 60, y: home.y }, out)).toBe(true);
+  });
+
+  it('with the default config, finds a bot route of about 560 m between lane tower forts on a generated map with its map objects (DEC-240)', () => {
+    const config = createDefaultGameConfig();
+    const map = new MapGenerator().generate(config, 1);
+    const objects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+    const { grid } = MatchGrid.build(map, objects, {
+      cellSize: config.map.navCellSize,
+      features: MAP_FEATURE_DEFINITIONS,
+    });
+    const finder = new AStarPathfinder(grid, {
+      maxExpansions: config.map.pathMaxExpansions,
+      snapCells: config.map.pathSnapCells,
+    });
+    const [from, to] = ['light-spawner-tower-lane-0-0', 'light-buff-tower-lane-2-0'].map(
+      (id) => map.features.find((feature) => feature.id === id)?.position,
+    );
+    const out = { x: 0, y: 0 };
+
+    expect(from && to && grid.isLineClear(from.x, from.y, to.x, to.y)).toBe(false);
+    expect(from && to && finder.waypoint(from, to, out)).toBe(true);
   });
 });

@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-09
+last-reviewed: 2026-11-10
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -428,7 +428,7 @@ requirement ceilings in `config/GameConfig.constants.ts`; this table records whe
 | `hordeSizes`                                        | per weight class; the opening hordes are one per lane (`map.numLanes`)       | requirements doc; DEC-84                   |
 | `plannedMatchSeconds`                               | the target match length; its value: `config/defaultGameConfig.ts`            | DEC-13; DEC-81                             |
 | `flowFieldCorridorHalfWidth`, `flowFieldCellBudget` | a lane field's corridor reach; cells rebuilt per tick after a terrain change | 06 §6, 10 §9; Phase 3 sprint 3.2 (`TUNE`)  |
-| `pathMaxExpansions`, `pathSnapCells`                | A\* for Legends: cells one search may settle; how far a blocked end snaps    | 10 §9, 11 §6 (`TUNE`)                      |
+| `pathMaxExpansions`, `pathSnapCells`                | A\* for Legends: cells one search may settle; how far a blocked end snaps    | 10 §9, 11 §6 (`TUNE`); DEC-240             |
 | `capturePoints`, `timeline`                         | one capture point per lane, the middle one the Cathedral; timed events       | game doc, Capture zones; 12                |
 
 `validateGameConfig(config: unknown)` throws a `ConfigValidationError` naming the first offending
@@ -480,7 +480,8 @@ each closed by the session or phase named:
   `area` (a zone's polygons) and `capture` (a capture point's state and presence) groups only.
   `MatchPhase` lives in `config/matchPhases.ts`; the match director is built (12 §13).
 - `GameState.world` is a `MatchWorld` (the generated definition, its lane `routes` and the
-  `WorldMap` grid) with no structures index yet (minion plan M2c), and the grid keeps no flow
+  `WorldMap` grid, stamped and reopened by `map/MatchGrid`, which the composition root builds, so
+  `state/` imports `map/` types only) with no structures index yet (minion plan M2c), and the grid keeps no flow
   fields (`PathingSystem` caches them); `GameState` has `hordes` and `teams` (the spawn counters
   only) since minion plan M1, and `ai`, `space` and `hordeRequests` since M2a (11, 18); `EntityFactory` keeps its
   own id counter until session C switches it to `IdGenerator`. `MatchConfig` has no

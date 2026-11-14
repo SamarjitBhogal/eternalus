@@ -1,4 +1,5 @@
 import type { ContentCatalogue } from '../content/ContentCatalogue';
+import type { ObstacleDefinition } from '../content/obstacles/obstacles.types';
 import type { StructureDefinition } from '../content/structures/structures.types';
 import type { InvariantRunner } from '../diagnostics/InvariantRunner';
 import type { EntityFactory } from '../entities/EntityFactory';
@@ -39,4 +40,10 @@ export type DefaultSystemPipelineOptions = {
    * structures from.
    */
   readonly structures?: Pick<ContentCatalogue<StructureDefinition>, 'get'>;
+  /**
+   * What a standing wall of a lane tower's fort becomes when its tower falls (DEC-219 (a)).
+   * `Simulation` passes the definition it registers with the entity factory. Needed when the
+   * match has map objects (`state.worldObjects`); the pipeline throws without it.
+   */
+  readonly ruinWall?: ObstacleDefinition;
 };

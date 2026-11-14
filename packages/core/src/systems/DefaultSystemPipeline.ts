@@ -4,12 +4,14 @@ import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
 import { STUCK_DETECTION } from '../content/ai/stuckDetection';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
-import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import { FORMATIONS } from '../content/mobs/formations/formations';
 import { ENRAGING_STRUCTURES } from '../content/mobs/minionModifiers';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { OPENING_WAVE, SPAWN_WAVES } from '../content/structures/spawnWaves';
+import type { ContentCatalogue } from '../content/ContentCatalogue';
+import type { ObstacleDefinition } from '../content/obstacles/obstacles.types';
+import type { StructureDefinition } from '../content/structures/structures.types';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { LaneFlowFields } from '../map/LaneFlowFields';
 import type { GameState } from '../state/GameState';
@@ -57,6 +59,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
     director,
     hordes,
     structures = STRUCTURE_DEFINITIONS,
+    ruinWall,
   }: DefaultSystemPipelineOptions) {
     const { tickRate, map } = state.config;
     const damage = new DamagePipeline();
@@ -71,26 +74,6 @@ export class DefaultSystemPipeline extends SystemPipeline {
             state.world.definition,
             map.flowFieldCorridorHalfWidth,
           );
-    const world = state.world?.grid ?? null;
-    const features = state.world?.definition.features ?? [];
-    if (world !== null && state.worldObjects !== undefined) {
-      // A destroyed blocking map object reopens its cells and the lane fields over them (07 §10).
-      state.events.on('entity-removed', ({ entityId }) => {
-        const object = state.worldObjects?.objectFor(entityId);
-        if (object?.isBlocking !== true) return;
-        const cells = object.footprints.flatMap((footprint) =>
-          world.clearFootprint(footprint, object.passages),
-        );
-        // `Simulation.buildWorld`'s rule: the grid also stamps the blocking feature behind an
-        // object (a wall segment, turret or rock shares its feature's id), so clear that stamp too.
-        const backing = features.find(
-          ({ id, definitionId }) =>
-            id === object.id && MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking === true,
-        )?.footprint;
-        if (backing !== undefined) cells.push(...world.clearFootprint(backing));
-        flowFields?.markDirty(cells);
-      });
-    }
     super([
       ...(hordes === undefined ? [] : [...hordes.decide, new HordeSystem(state, HORDE_STEERING)]),
       new StatusEffectSystem(damage, statuses),
@@ -105,11 +88,20 @@ export class DefaultSystemPipeline extends SystemPipeline {
               createDefaultStrategyRegistry().movement,
               FORMATIONS,
               HORDE_STEERING.slotArrivalRadius,
-              { flowFields, forts: DefaultSystemPipeline.fortBoxesOf(state) },
+              { flowFields, forts: DefaultSystemPipeline.fortBoxesOf(state, structures) },
             ),
           ]),
       new CombatSystem(damage),
-      ...(state.worldObjects === undefined ? [] : [new MapDestructionSystem(state, damage)]),
+      ...(state.worldObjects === undefined
+        ? []
+        : [
+            new MapDestructionSystem({
+              state,
+              damage,
+              flowFields,
+              ruinWall: DefaultSystemPipeline.requireRuinWall(ruinWall),
+            }),
+          ]),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
       new ProgressionSystem(state, progression),
       new VeterancySystem(state, statuses, progression.units, MINION_VETERANCY),
@@ -137,14 +129,34 @@ export class DefaultSystemPipeline extends SystemPipeline {
   }
 
   /**
-   * The box of every structure's `Footprint` (`PathingWorld.forts`). `Simulation` builds the
-   * structures before the pipeline, so they are read here once, while every one still stands.
+   * The injected `ruinWall`, which a match with map objects needs (DEC-219 (a)).
+   *
+   * @throws Error when it is missing.
    */
-  private static fortBoxesOf(state: GameState): readonly Rect[] {
+  private static requireRuinWall(ruinWall: ObstacleDefinition | undefined): ObstacleDefinition {
+    if (ruinWall === undefined) {
+      throw new Error(
+        'A match with map objects needs DefaultSystemPipelineOptions.ruinWall: what a standing fort wall becomes when its tower falls',
+      );
+    }
+    return ruinWall;
+  }
+
+  /**
+   * The box of the `Footprint` of every structure whose definition `hasFortBox`
+   * (`PathingWorld.forts`; not a gate's, DEC-217 (17)). `Simulation` builds the structures before
+   * the pipeline, so they are read here once, while every one still stands.
+   */
+  private static fortBoxesOf(
+    state: GameState,
+    structures: Pick<ContentCatalogue<StructureDefinition>, 'get'>,
+  ): readonly Rect[] {
     const forts: Rect[] = [];
     state.entities.forEach((entity) => {
       const box = entity.findComponent(Footprint)?.bounds;
-      if (box !== undefined) forts.push(box);
+      if (box !== undefined && structures.get(entity.definitionId).hasFortBox === true) {
+        forts.push(box);
+      }
     });
     return forts;
   }

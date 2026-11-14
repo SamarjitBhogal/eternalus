@@ -31,6 +31,7 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       footprintRadius: footprintOf('stronghold'),
       breakability: { kind: 'always' },
       hasMapFootprint: true, // DEC-185 D: melee at the palace wall is in reach
+      hasFortBox: true, // DEC-217 (16): the palace box is a fort box for the chase rule
     },
     {
       id: 'spawner-tower',
@@ -40,6 +41,7 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       footprintRadius: footprintOf('spawner-tower'),
       breakability: { kind: 'always' },
       hasMapFootprint: true, // DEC-185: reach to the fort's walls; one pool, DEC-185 B
+      hasFortBox: true, // DEC-185: a chase closes in on a unit inside the fort
     },
     {
       id: 'buff-tower',
@@ -49,15 +51,19 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       footprintRadius: footprintOf('buff-tower'),
       breakability: { kind: 'always' },
       hasMapFootprint: true, // DEC-185: reach to the fort's walls; one pool, DEC-185 B
+      hasFortBox: true, // DEC-185: a chase closes in on a unit inside the fort
     },
     {
       id: 'gate',
       kind: 'gate',
       displayName: 'Gate',
       baseHealth: 3_000, // TUNE: balancing.md
-      // TUNE: no reference value; the map gives each gate a polygon, the collider is a circle for now.
+      // TUNE: no reference value; the collider circle only, reach is to the gate's polygon.
       footprintRadius: 3,
       breakability: AFTER_BUFF_TOWERS,
+      // DEC-217 (17): reach to the gate's footprint, like towers. Its map object does not block,
+      // so it is not the gate's body: the gate keeps its own health (DEC-217 (13)).
+      hasMapFootprint: true,
     },
     {
       id: 'forest-camp-light',

@@ -24,6 +24,9 @@ export type WorldObjectStoreOptions = {
   readonly entities: EntityStore;
   /** Each map-object kind's obstacle definition (its health; `null` is indestructible). */
   readonly definitions: Readonly<Record<MapObjectKind, ObstacleDefinition>>;
-  /** Map object id → the id of the structure in `entities` the object is the body of. */
+  /**
+   * Map object id → the id of the structure in `entities` the object is part of the body of: a
+   * lane tower's own object and its fort walls (`MapObject.partOf`).
+   */
   readonly owners?: ReadonlyMap<string, string>;
 };

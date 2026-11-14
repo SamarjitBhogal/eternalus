@@ -26,7 +26,10 @@ import { BLOCKED_LANE_MAP } from '../map/__fixtures__/blockedLaneMap';
 import { SystemPipeline } from './SystemPipeline';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { loadWeapons } from '../content/weapons/loadWeapons';
-import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
+import {
+  MAP_OBJECT_DEFINITIONS,
+  RUINED_FORT_WALL_DEFINITION,
+} from '../content/maps/mapObjectDefinitions';
 import type { MapObject } from '../content/maps/mapObjects.types';
 import type { MapFeature } from '../content/maps/maps.types';
 import { WorldObjectStore } from '../state/WorldObjectStore';
@@ -116,6 +119,7 @@ describe('DefaultSystemPipeline', () => {
         decide: [{ name: 'ai', update: () => undefined }],
         collisions: [{ name: 'collision', update: () => undefined }],
       },
+      ruinWall: RUINED_FORT_WALL_DEFINITION,
     });
 
     // Collision resolves positions before the index, steering, combat and next tick's AI read them.
@@ -431,6 +435,7 @@ describe('DefaultSystemPipeline', () => {
         progression: PROGRESSION,
         director: IDLE_DIRECTOR,
         ...(hasLanes ? { hordes: { factory, space: null, decide: [] } } : {}),
+        ruinWall: RUINED_FORT_WALL_DEFINITION,
       });
       const entityId = state.worldObjects.snapshot()[0]?.entityId ?? '';
       expect(world?.isWalkable(9, 5)).toBe(false);
@@ -448,82 +453,117 @@ describe('DefaultSystemPipeline', () => {
       expect(reopened.includes(5 * (world?.cols ?? 0) + 9)).toBe(hasLanes);
     },
   );
-  it('gives steering the fort boxes of the structures standing when it is built, so a fallen tower keeps its box', () => {
-    const logger = new MemoryLogger();
-    const space = new SpaceIndex(BLOCKED_LANE_MAP.width, BLOCKED_LANE_MAP.height, 2);
-    const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(BLOCKED_LANE_MAP), {
-      space,
+  it('refuses a match with map objects but no ruinWall to ruin fort walls with (DEC-219 (a))', () => {
+    const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP));
+    state.worldObjects = new WorldObjectStore({
+      objects: [],
+      factory: new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS),
+      entities: state.entities,
+      definitions: MAP_OBJECT_DEFINITIONS,
     });
-    const factory = newFactory();
-    const fort = new Fort('fort', 'spawner-tower');
-    // The fort's walls (x 50..52 and 68..70, y 10..30) give a box round the rift.
-    fort.spawn({
-      at: { x: 60, y: 20 },
-      polygons: [
-        [
-          { x: 50, y: 10 },
-          { x: 52, y: 10 },
-          { x: 52, y: 30 },
-          { x: 50, y: 30 },
-        ],
-        [
-          { x: 68, y: 10 },
-          { x: 70, y: 10 },
-          { x: 70, y: 30 },
-          { x: 68, y: 30 },
-        ],
-      ],
-    });
-    state.entities.add(fort);
-    const pipeline = new DefaultSystemPipeline({
-      invariants: new DefaultInvariantRunner({
-        debug: TEST_DEBUG_CONFIG,
-        logger,
-        curves: PROGRESSION.curves,
-        phaseOrder: MATCH_PHASES,
-        terminalPhases: TERMINAL_MATCH_PHASES,
-      }),
-      state,
-      progression: PROGRESSION,
-      director: IDLE_DIRECTOR,
-      hordes: { factory, space, decide: [] },
-    });
-    // The tower falls before any chase; the grid still blocks the court (the rift, x 50..70).
-    state.entities.remove(fort.id, 'died');
-    state.advanceTick();
-    const minion = factory.create('light-mob', 'light-minion', {
-      team: 'light',
-      position: { x: 45, y: 20 },
-    });
-    const enemy = factory.create('light-mob', 'light-minion', {
-      team: 'dark',
-      position: { x: 58, y: 20 },
-    });
-    state.entities.add(minion);
-    state.entities.add(enemy);
-    state.hordes.add({
-      id: 'horde-1',
-      team: 'light',
-      weightClass: 'light',
-      lane: 'lane-0',
-      formationId: 'ranks',
-      memberIds: [minion.id],
-      progress: 45,
-    });
-    state.hordes.add({
-      id: 'horde-2',
-      team: 'dark',
-      weightClass: 'light',
-      lane: 'lane-0',
-      formationId: 'ranks',
-      memberIds: [enemy.id],
-      progress: 40,
-    });
-    state.entities.setAttackTarget(minion.id, enemy.id);
 
-    pipeline.run({ state, logger });
-
-    // Inside the fort's box the chase closes in over the court's blocked ground (owner 2026-11-04).
-    expect(minion.getComponent(Movement).heading).toEqual({ x: 1, y: 0 });
+    expect(
+      () =>
+        new DefaultSystemPipeline({
+          invariants: new DefaultInvariantRunner({
+            debug: TEST_DEBUG_CONFIG,
+            logger: new MemoryLogger(),
+            curves: PROGRESSION.curves,
+            phaseOrder: MATCH_PHASES,
+            terminalPhases: TERMINAL_MATCH_PHASES,
+          }),
+          state,
+          progression: PROGRESSION,
+          director: IDLE_DIRECTOR,
+        }),
+    ).toThrow(/needs DefaultSystemPipelineOptions\.ruinWall/);
   });
+
+  it.each([
+    // A tower's fort box is one (DEC-185); the chase closes in over the court's blocked ground.
+    { definitionId: 'spawner-tower', heading: { x: 1, y: 0 } },
+    // A gate's footprint is only its outline for reach (DEC-217 (17)), not a fort box: the chase
+    // holds at the blocked ground.
+    { definitionId: 'gate', heading: { x: 0, y: 0 } },
+  ])(
+    'gives steering the fort boxes of the structures standing when it is built, so a fallen tower keeps its box ($definitionId)',
+    ({ definitionId, heading }) => {
+      const logger = new MemoryLogger();
+      const space = new SpaceIndex(BLOCKED_LANE_MAP.width, BLOCKED_LANE_MAP.height, 2);
+      const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(BLOCKED_LANE_MAP), {
+        space,
+      });
+      const factory = newFactory();
+      const fort = new Fort('fort', definitionId);
+      // The fort's walls (x 50..52 and 68..70, y 10..30) give a box round the rift.
+      fort.spawn({
+        at: { x: 60, y: 20 },
+        polygons: [
+          [
+            { x: 50, y: 10 },
+            { x: 52, y: 10 },
+            { x: 52, y: 30 },
+            { x: 50, y: 30 },
+          ],
+          [
+            { x: 68, y: 10 },
+            { x: 70, y: 10 },
+            { x: 70, y: 30 },
+            { x: 68, y: 30 },
+          ],
+        ],
+      });
+      state.entities.add(fort);
+      const pipeline = new DefaultSystemPipeline({
+        invariants: new DefaultInvariantRunner({
+          debug: TEST_DEBUG_CONFIG,
+          logger,
+          curves: PROGRESSION.curves,
+          phaseOrder: MATCH_PHASES,
+          terminalPhases: TERMINAL_MATCH_PHASES,
+        }),
+        state,
+        progression: PROGRESSION,
+        director: IDLE_DIRECTOR,
+        hordes: { factory, space, decide: [] },
+      });
+      // The tower falls before any chase; the grid still blocks the court (the rift, x 50..70).
+      state.entities.remove(fort.id, 'died');
+      state.advanceTick();
+      const minion = factory.create('light-mob', 'light-minion', {
+        team: 'light',
+        position: { x: 45, y: 20 },
+      });
+      const enemy = factory.create('light-mob', 'light-minion', {
+        team: 'dark',
+        position: { x: 58, y: 20 },
+      });
+      state.entities.add(minion);
+      state.entities.add(enemy);
+      state.hordes.add({
+        id: 'horde-1',
+        team: 'light',
+        weightClass: 'light',
+        lane: 'lane-0',
+        formationId: 'ranks',
+        memberIds: [minion.id],
+        progress: 45,
+      });
+      state.hordes.add({
+        id: 'horde-2',
+        team: 'dark',
+        weightClass: 'light',
+        lane: 'lane-0',
+        formationId: 'ranks',
+        memberIds: [enemy.id],
+        progress: 40,
+      });
+      state.entities.setAttackTarget(minion.id, enemy.id);
+
+      pipeline.run({ state, logger });
+
+      // Inside the fort's box the chase closes in over the court's blocked ground (owner 2026-11-04).
+      expect(minion.getComponent(Movement).heading).toEqual(heading);
+    },
+  );
 });
