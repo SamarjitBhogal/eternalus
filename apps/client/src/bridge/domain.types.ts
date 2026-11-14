@@ -7,6 +7,7 @@
  */
 
 export type { LegendClassId, PlayableTeam, Team } from '@eternalus/core';
+export type { MatchEndReason } from '@eternalus/protocol';
 
 /**
  * How the match ended for the player's team (game-loop plan §4.5): its winner, the other team, or

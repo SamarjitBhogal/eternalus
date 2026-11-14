@@ -30,6 +30,7 @@ const PLAYER: EntitySnapshot = {
   transform: { x: 1, y: 2, radius: 0.5 },
   health: { current: 600, max: 600 },
   progression: { level: 3, xp: 40, xpToNext: 114 },
+  aether: { current: 95, max: 160 },
   area: null,
   capture: null,
 };
@@ -83,6 +84,7 @@ const structureOf = (feature: MapFeature, current: number, max: number): EntityS
   transform: { ...feature.position, radius: 3 },
   health: { current, max },
   progression: null,
+  aether: null,
   area: null,
   capture: null,
   mapFeatureId: feature.id,
@@ -165,7 +167,7 @@ describe('MatchBridge', () => {
     expect(huds).toEqual([{ player: null }]);
   });
 
-  it("carries the player's health, level and XP; every other HUD value stays empty", () => {
+  it("carries the player's health, aether, level and XP; every other HUD value stays empty", () => {
     const { bridge, huds } = setUp();
     bridge.publishAll(snapshotAt(0, [PLAYER]), 'player-1');
     bridge.publishAll(snapshotAt(0, [PLAYER]), 'someone-else');
@@ -177,8 +179,8 @@ describe('MatchBridge', () => {
           definitionId: 'magus',
           health: 600,
           maxHealth: 600,
-          aether: null,
-          maxAether: null,
+          aether: 95,
+          maxAether: 160,
           level: 3,
           xp: 40,
           xpToNext: 114,
@@ -203,6 +205,13 @@ describe('MatchBridge', () => {
       [null, null, null],
       [50, 12, null],
     ]);
+  });
+
+  it('shows no aether for a player without an aether pool', () => {
+    const { bridge, huds } = setUp();
+    bridge.publishAll(snapshotAt(0, [{ ...PLAYER, aether: null }]), 'player-1');
+
+    expect(huds.map(({ player }) => [player?.aether, player?.maxAether])).toEqual([[null, null]]);
   });
 
   it('lists every team feature once as a structure, with its lane and, with no structure built, no health', () => {
@@ -391,6 +400,7 @@ describe('MatchBridge', () => {
       transform: { ...tower.position, radius: 3 },
       health: { current: 1, max: 3_000 },
       progression: null,
+      aether: null,
       area: null,
       capture: null,
     };

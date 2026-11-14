@@ -28,6 +28,11 @@ import type { PendingChange, ScoredDeath, ScoredHit, ScoringRules } from './Scor
  *   match has no result (held time, DEC-223 (1)).
  */
 export class Scoring implements ScoreKeeper {
+  /**
+   * The tick's buffered changes, kept outside the hashed state. That is safe only while the
+   * director's fold runs after every system that emits a scored event (the order in
+   * `DefaultSystemPipeline`): the buffer is then empty between ticks.
+   */
   private readonly pending: PendingChange[] = [];
 
   /**

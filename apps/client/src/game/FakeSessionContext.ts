@@ -29,10 +29,13 @@ export class FakeSessionContext implements SessionContext {
   public readonly calls: SessionContextCalls = {
     transition: [],
     newMatchSetup: [],
+    canRepeatMatchSetup: [],
     repeatMatchSetup: [],
     clearMatchSetup: [],
     selection: [],
     recordSelection: [],
+    joinDuelQueue: [],
+    leaveDuelQueue: [],
     lockIn: [],
     prepareWorld: [],
     createMatch: [],
@@ -46,6 +49,8 @@ export class FakeSessionContext implements SessionContext {
   public readonly cancelledLoads: number[] = [];
   /** Every match `createMatch` built, in order. */
   public readonly matches: FakeRunningMatch[] = [];
+  /** What `canRepeatMatchSetup` answers. */
+  public canRepeat = true;
   /** When set, `prepareWorld` throws it. */
   public prepareWorldError: Error | null = null;
   /** When set, `createMatch` throws it. */
@@ -69,6 +74,12 @@ export class FakeSessionContext implements SessionContext {
     this.record('newMatchSetup', []);
   }
 
+  /** Records the call; answers `canRepeat`. */
+  public canRepeatMatchSetup(): boolean {
+    this.record('canRepeatMatchSetup', []);
+    return this.canRepeat;
+  }
+
   /** Records the call. */
   public repeatMatchSetup(): void {
     this.record('repeatMatchSetup', []);
@@ -89,6 +100,16 @@ export class FakeSessionContext implements SessionContext {
   public recordSelection(selection: ClassSelection | null): void {
     this.record('recordSelection', [selection]);
     this.picked = selection;
+  }
+
+  /** Records the call. */
+  public joinDuelQueue(): void {
+    this.record('joinDuelQueue', []);
+  }
+
+  /** Records the call. */
+  public leaveDuelQueue(): void {
+    this.record('leaveDuelQueue', []);
   }
 
   /** Records the call. */

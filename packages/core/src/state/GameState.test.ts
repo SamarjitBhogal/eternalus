@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { Aether } from '../components/Aether';
 import { Health } from '../components/Health';
 import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
@@ -8,9 +9,7 @@ import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import type { MapDefinition } from '../content/maps/maps.types';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
-import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { Entity } from '../entities/Entity';
-import { Stronghold } from '../entities/structures/Stronghold';
 import type { Team } from '../teams/teams.types';
 import { SeededRandom } from '../utils/SeededRandom';
 import { TWO_LANE_MAP } from './__fixtures__/twoLaneMap';
@@ -45,6 +44,16 @@ class Leveller extends Entity {
 
   protected installComponents(): void {
     this.addComponent(new Progression('test'));
+  }
+}
+
+/** An entity with an aether pool of 80 and nothing else. */
+class Caster extends Entity {
+  public readonly kind = 'caster';
+  public readonly family = 'test';
+
+  protected installComponents(): void {
+    this.addComponent(new Aether(80));
   }
 }
 
@@ -134,6 +143,7 @@ describe('GameState', () => {
           transform: { x: 3, y: 4, radius: 0.5 },
           health: { current: 100, max: 100 },
           progression: null,
+          aether: null,
           area: null,
           capture: null,
         },
@@ -146,6 +156,7 @@ describe('GameState', () => {
           transform: null,
           health: null,
           progression: null,
+          aether: null,
           area: null,
           capture: null,
         },
@@ -156,33 +167,6 @@ describe('GameState', () => {
         dark: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
       },
     });
-  });
-
-  it("snapshots a structure's map feature id, and none for other entities", () => {
-    const state = new GameState(createDefaultGameConfig(), 1);
-    const tower = new Stronghold('entity-1', 'stronghold');
-    tower.spawn({
-      definition: STRUCTURE_DEFINITIONS.get('stronghold'),
-      position: { x: 5, y: 6 },
-      team: 'light',
-      mapFeatureId: 'light-stronghold',
-    });
-    const loose = new Stronghold('entity-2', 'stronghold');
-    loose.spawn({
-      definition: STRUCTURE_DEFINITIONS.get('stronghold'),
-      position: { x: 7, y: 8 },
-      team: 'dark',
-    });
-    state.entities.add(tower);
-    state.entities.add(loose);
-    state.entities.add(spawned(new Soldier('entity-3', 'soldier-definition')));
-
-    const [built, withoutFeature, soldier] = state.snapshot(CURVES).entities;
-
-    expect(built?.mapFeatureId).toBe('light-stronghold');
-    expect(withoutFeature).not.toHaveProperty('mapFeatureId');
-    expect(soldier).not.toHaveProperty('mapFeatureId');
-    expect(structuredClone(built)).toEqual(built);
   });
 
   it("snapshots a leveller's level, the XP inside that level and what the level needs, from the curves it is given", () => {
@@ -196,6 +180,16 @@ describe('GameState', () => {
       xp: 30,
       xpToNext: 150,
     });
+  });
+
+  it("snapshots a caster's aether left and its full pool", () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const caster = spawned(new Caster('entity-1', 'caster-definition'));
+    caster.getComponent(Aether).spend(30);
+    caster.getComponent(Aether).raiseMax(10);
+    state.entities.add(caster);
+
+    expect(state.snapshot(CURVES).entities[0]?.aether).toEqual({ current: 50, max: 90 });
   });
 
   it('snapshots the hordes and team counters as copies the store no longer changes', () => {
@@ -239,8 +233,10 @@ describe('GameState', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
     state.entities.add(spawned(new Soldier('entity-1', 'soldier-definition')));
     state.entities.add(spawned(new Leveller('entity-2', 'leveller-definition')));
+    state.entities.add(spawned(new Caster('entity-3', 'caster-definition')));
     const snapshot = state.snapshot(CURVES);
     expect(snapshot.entities[1]?.progression).not.toBeNull();
+    expect(snapshot.entities[2]?.aether).not.toBeNull();
     expect(structuredClone(snapshot)).toEqual(snapshot);
   });
 

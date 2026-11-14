@@ -4,13 +4,15 @@ import { figmaHudState } from '../__fixtures__/hudFixtures';
 import { matchResultFixture } from '../__fixtures__/matchResultFixtures';
 import { matchSlice } from './matchSlice';
 
-const { clockChanged, structuresChanged, capturePointsChanged, ended, reset } = matchSlice.actions;
+const { clockChanged, structuresChanged, capturePointsChanged, ended, duelEnded, reset } =
+  matchSlice.actions;
 const {
   selectMatchClock,
   selectStructures,
   selectCapturePoints,
   selectMatchResult,
   selectMatchDurationSeconds,
+  selectDuelOutcome,
 } = matchSlice.selectors;
 
 describe('matchSlice', () => {
@@ -44,16 +46,42 @@ describe('matchSlice', () => {
     expect(selectCapturePoints({ match })).toBe(capturePoints);
   });
 
+  it("stores a Duel's outcome, a draw included", () => {
+    const won = matchSlice.reducer(
+      undefined,
+      duelEnded({ winner: 'dark', ownTeam: 'light', reason: 'finished' }),
+    );
+    expect(selectDuelOutcome({ match: won })).toEqual({
+      winner: 'dark',
+      ownTeam: 'light',
+      reason: 'finished',
+    });
+    const drawn = matchSlice.reducer(
+      won,
+      duelEnded({ winner: null, ownTeam: 'light', reason: 'finished' }),
+    );
+    expect(selectDuelOutcome({ match: drawn })).toEqual({
+      winner: null,
+      ownTeam: 'light',
+      reason: 'finished',
+    });
+  });
+
   it('resets to the initial state', () => {
     const { structures } = figmaHudState().match;
     let match = matchSlice.reducer(undefined, structuresChanged(structures));
     match = matchSlice.reducer(match, ended({ result: matchResultFixture(), durationSeconds: 9 }));
+    match = matchSlice.reducer(
+      match,
+      duelEnded({ winner: null, ownTeam: 'light', reason: 'opponent-left' }),
+    );
     expect(matchSlice.reducer(match, reset())).toEqual({
       clock: null,
       structures: [],
       capturePoints: [],
       result: null,
       durationSeconds: null,
+      duel: null,
     });
   });
 });

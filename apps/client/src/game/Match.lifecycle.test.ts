@@ -40,7 +40,7 @@ function deepFreeze<T>(value: T): T {
 
 /**
  * What a test match on `world` is built from. Its `match-clock` publishes go to `clocks`, `on`
- * watches its simulation subscriptions and `unsubscribes` counts the ones it dropped.
+ * watches its simulation subscriptions and `dropped` lists the event type of each one it dropped.
  */
 function matchDeps(
   world: PreparedWorld = prepareMatchWorld(CONFIG, 1),
@@ -56,12 +56,12 @@ function matchDeps(
     logger: simulationLogger,
     map: world.map,
   });
-  const unsubscribes = { count: 0 };
+  const dropped: string[] = [];
   const subscribe = simulation.on.bind(simulation);
   const on = vi.spyOn(simulation, 'on').mockImplementation((type, handler) => {
     const unsubscribe = subscribe(type, handler);
     return () => {
-      unsubscribes.count += 1;
+      dropped.push(type);
       unsubscribe();
     };
   });
@@ -80,12 +80,12 @@ function matchDeps(
     },
     bridge: { bus, publishEveryTicks: HUD_PUBLISH_EVERY_TICKS, captureKinds: [] },
   };
-  return { deps, clocks, on, unsubscribes };
+  return { deps, clocks, on, dropped };
 }
 
 /** A match on `world`, sized to a 1280 × 720 canvas. */
 function build(world?: PreparedWorld) {
-  const { deps, clocks, unsubscribes, on } = matchDeps(world);
+  const { deps, clocks, dropped, on } = matchDeps(world);
   const match = new Match(deps);
   match.resize(1280, 720, 1);
   return {
@@ -93,7 +93,7 @@ function build(world?: PreparedWorld) {
     simulation: deps.simulation,
     scheduler: deps.scheduler,
     clocks,
-    unsubscribes,
+    dropped,
     on,
   };
 }
@@ -329,7 +329,7 @@ describe('Match lifecycle', () => {
   });
 
   it('stops the loop and its subscriptions on destroy: 0 scheduled frames, 0 listeners', () => {
-    const { match, scheduler, simulation, unsubscribes, on } = build();
+    const { match, scheduler, simulation, dropped, on } = build();
     match.start();
 
     match.destroy();
@@ -337,8 +337,9 @@ describe('Match lifecycle', () => {
 
     expect(scheduler.hasPendingFrame).toBe(false);
     expect(simulation.tick).toBe(0);
-    // Its one subscription, the bridge's `match-ended` (core spawns the player from the roster).
-    expect(on.mock.calls.map(([type]) => type)).toEqual(['match-ended']);
-    expect(unsubscribes.count).toBe(1);
+    // The health bars' two subscriptions (DEC-195) and the bridge's `match-ended`; each is dropped once.
+    const types = ['damage-applied', 'entity-removed', 'match-ended'];
+    expect(on.mock.calls.map(([type]) => type)).toEqual(types);
+    expect(dropped).toEqual(types);
   });
 });

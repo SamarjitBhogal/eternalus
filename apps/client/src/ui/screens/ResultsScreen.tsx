@@ -7,6 +7,7 @@ import { selectMatchVerdict } from '../../bridge/selectors/selectMatchVerdict';
 import { selectVerdictLine } from '../../bridge/selectors/selectVerdictLine';
 import { contentSlice } from '../../bridge/slices/contentSlice';
 import { matchSetupSlice } from '../../bridge/slices/matchSetupSlice';
+import { matchSlice } from '../../bridge/slices/matchSlice';
 import { Button } from '../components/Button';
 import { ScreenFrame } from '../components/ScreenFrame';
 import { SelectionBanner } from '../components/SelectionBanner';
@@ -23,7 +24,8 @@ const VIGNETTES: readonly VignetteEdge[] = ['top', 'bottom'];
 /**
  * The win/lose screen (13 §3, DEC-78) in the character-select style (game-loop plan §8): the
  * verdict as the banner's title, the session's countdown, the verdict line from content, the
- * match's length, then Continue (skips the wait), a rematch and the main menu.
+ * match's length, then Continue (skips the wait), a rematch and the main menu. An online Duel (ADR
+ * 0016) has no setup to repeat, so no rematch; one the other player left names that, not a verdict.
  */
 export function ResultsScreen(): ReactElement {
   const verdict = useAppSelector(selectMatchVerdict);
@@ -31,13 +33,24 @@ export function ResultsScreen(): ReactElement {
   const duration = useAppSelector(selectMatchDurationText);
   const team = useAppSelector(matchSetupSlice.selectors.selectPlayerTeam);
   const bannerAssetId = useAppSelector(contentSlice.selectors.selectSelectionBannerAssetId);
-  const status = verdict === null ? STRINGS.results.noResult : line;
+  const hasOpponentLeft =
+    useAppSelector(matchSlice.selectors.selectDuelOutcome)?.reason === 'opponent-left';
+  // A local match leaves its setup for a rematch; an online Duel has none.
+  const canRematch = useAppSelector(matchSetupSlice.selectors.selectAllies).length > 0;
+  const shownVerdict = hasOpponentLeft ? null : verdict;
+  const status = hasOpponentLeft
+    ? STRINGS.results.opponentLeft
+    : verdict === null
+      ? STRINGS.results.noResult
+      : line;
   return (
     <ScreenFrame team={team ?? 'neutral'} layout="stage">
       <SelectionStage vignettes={VIGNETTES}>
         <SelectionDefs />
         <SelectionBanner
-          title={verdict === null ? STRINGS.results.title : STRINGS.results.verdicts[verdict]}
+          title={
+            shownVerdict === null ? STRINGS.results.title : STRINGS.results.verdicts[shownVerdict]
+          }
           bannerAssetId={bannerAssetId}
         />
         <SessionCountdown kind="results" label={STRINGS.results.countdownLabel} />
@@ -61,13 +74,15 @@ export function ResultsScreen(): ReactElement {
             </Button>
             {/* ponytail: Play again and Main menu stay here until the post-game screen (plan task
                 GL-10) exists, then move there as DEC-78 says (DEC-129 (2)). */}
-            <Button
-              onClick={() => {
-                emitIntent({ kind: 'start-match' });
-              }}
-            >
-              {STRINGS.results.playAgain}
-            </Button>
+            {canRematch && (
+              <Button
+                onClick={() => {
+                  emitIntent({ kind: 'start-match' });
+                }}
+              >
+                {STRINGS.results.playAgain}
+              </Button>
+            )}
             <Button
               onClick={() => {
                 emitIntent({ kind: 'navigate', route: 'home' });

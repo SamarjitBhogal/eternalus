@@ -76,6 +76,16 @@ describe('ResultsState', () => {
     },
   );
 
+  it('ignores start-match when there is no setup to repeat (after an online Duel)', () => {
+    const { context, state } = setUp();
+    context.canRepeat = false;
+
+    state.handleIntent({ kind: 'start-match' }, context);
+
+    expect(context.calls.repeatMatchSetup).toEqual([]);
+    expect(context.calls.transition).toEqual([]);
+  });
+
   it('ignores the other intents', () => {
     const { context, state } = setUp();
 

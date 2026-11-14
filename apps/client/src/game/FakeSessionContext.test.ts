@@ -45,6 +45,8 @@ describe('FakeSessionContext', () => {
     context.newMatchSetup();
     context.repeatMatchSetup();
     context.clearMatchSetup();
+    context.joinDuelQueue();
+    context.leaveDuelQueue();
     context.lockIn();
     context.prepareWorld();
     context.dropWorld();
@@ -55,10 +57,13 @@ describe('FakeSessionContext', () => {
     expect(context.calls).toEqual({
       transition: [['menu'], ['menu', 'load-failed']],
       newMatchSetup: [[]],
+      canRepeatMatchSetup: [],
       repeatMatchSetup: [[]],
       clearMatchSetup: [[]],
       selection: [],
       recordSelection: [],
+      joinDuelQueue: [[]],
+      leaveDuelQueue: [[]],
       lockIn: [[]],
       prepareWorld: [[]],
       createMatch: [],
@@ -75,6 +80,8 @@ describe('FakeSessionContext', () => {
       'newMatchSetup',
       'repeatMatchSetup',
       'clearMatchSetup',
+      'joinDuelQueue',
+      'leaveDuelQueue',
       'lockIn',
       'prepareWorld',
       'dropWorld',

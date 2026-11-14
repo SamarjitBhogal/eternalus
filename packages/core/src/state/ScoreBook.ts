@@ -74,7 +74,10 @@ export class ScoreBook {
     totals.score += points;
   }
 
-  /** Records that `legendId` hit `victimId` on `tick`: one entry per pair, at its latest tick (DEC-132). */
+  /**
+   * Records that `legendId` hit `victimId` on `tick`: one entry per pair, at its latest tick
+   * (DEC-132).
+   */
   public recordHit(victimId: EntityId, legendId: EntityId, tick: number): void {
     const known = this.data.recentHits.find(
       (hit) => hit.victimId === victimId && hit.legendId === legendId,
