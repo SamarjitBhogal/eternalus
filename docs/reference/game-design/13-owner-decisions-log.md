@@ -29,7 +29,8 @@ than the design: "A: follow-up branch now (Recommended)". By his split ruling on
 ("Split it"), this item is built on its own branch, `refactor/astar-search-area`. The owner's
 words are kept verbatim outside the repository in
 `eternalus-agent-work/tower-ruins-and-routes/OWNER-ANSWERS-2026-11-13.md`. DEC-243 is this batch
-(DEC-240 and DEC-242 are rows on #98).
+(DEC-240 and DEC-242 are rows on #98 and arrive with it). The option the owner chose read "One
+new branch off #98 with all four"; after DEC-242 this item is alone on a branch off phase/3.
 
 | ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

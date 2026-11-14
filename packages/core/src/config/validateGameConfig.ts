@@ -126,6 +126,7 @@ const RULES: readonly Rule[] = [
     path: 'map.pathMaxSearchArea',
     rule: 'must be a finite number >= map.navCellSize squared (one cell)',
     isValid: (value, config) =>
+      // Safe: the map.navCellSize rule passed before this one.
       isPositive(value) && value >= (valueAt(config, 'map.navCellSize') as number) ** 2,
   },
   {

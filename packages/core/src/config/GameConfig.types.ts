@@ -24,6 +24,7 @@ export type MapConfig = {
   /**
    * Most ground one A\* search for a Legend may settle, in square world units (10 §9, 11 §6 cost
    * control). An area, not a cell count, so a change of `navCellSize` keeps the reach (DEC-243).
+   * The area fixes the reach, not the cost: a search settles more cells as the cells shrink.
    */
   readonly pathMaxSearchArea: number;
   /** How many cells out A\* looks for open ground when a start or goal is blocked (10 §9). */

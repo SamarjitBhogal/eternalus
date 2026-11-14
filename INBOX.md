@@ -16,6 +16,12 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **`refactor/astar-search-area` critic (2026-11-13), better than the design — one item,
+      sign-off.** Not built. `GameConfig.map.pathSnapCells` (12) is counted in cells, like the
+      old A\* cap: its comment says it "covers a Stronghold footprint on 5 m cells" (60 m), and on
+      PR #98's 2.5 m cells it reaches 30 m. Proposed: `pathSnapDistance` in world units, with the
+      rings derived as `ceil(distance / cellSize)`. Whether 30 m still covers a Stronghold is a
+      live question on #98.
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on
       every map feature, so `map/strongholdRing.ts` checks at run time that a Stronghold has it
@@ -418,7 +424,8 @@ Reply inline (`Decision: …`).
       `MovementStrategy`", but bots steer by `move`
       commands, so A\* is a `PathQuery` the bot leaves call (doc 11 §10). Its cost then sits in
       the AI decision budget, not in `PathingSystem` as 11 §6 puts heavy work: each blocked
-      decision searches again (capped by `GameConfig.map.pathMaxExpansions`). If accepted,
+      decision searches again (capped by `GameConfig.map.pathMaxExpansions`; since 2026-11-13
+      `pathMaxSearchArea`, DEC-243). If accepted,
       sprint 3.2's line changes, and a path cache in the brain is the next step if profiling
       shows the cost.
   - Decision (SamarjitBhogal, chat, 2026-10-27): (2) accepted; doc 11 §6 and sprint 3.2's
