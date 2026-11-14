@@ -223,6 +223,7 @@ Every phase PR needs one human approval plus green CI on Linux and Windows; an a
 - [phase-5-meta-ui-and-persistence.md](phase-5-meta-ui-and-persistence.md)
 - [phase-6-hardening-balance-and-release.md](phase-6-hardening-balance-and-release.md)
 - [backlog-post-mvp.md](backlog-post-mvp.md)
+- [bugs.md](bugs.md)
 - [PROGRESS.md](PROGRESS.md)
 - [../requirements/06-mvp-requirements.md](../requirements/06-mvp-requirements.md)
 - [../process/git-workflow.md](../process/git-workflow.md)
