@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-10
+last-reviewed: 2026-11-14
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -130,8 +130,11 @@ flowchart LR
    per axis to the world (`map/fortInWorld.ts`). After placement the generator checks every pair
    of lane tower forts on the map, both teams and all lanes, as upright boxes in world units, so
    forts on a bend or on neighbouring lanes are checked too (DEC-215 (1), DEC-239). It refuses
-   (`MapGenerationError`, naming both towers) a config whose forts would overlap, and one whose
-   widened band would leave the lane.
+   (`MapGenerationError`, naming both towers) a config whose forts would overlap. It also
+   refuses, naming the lane, the tower counts and the world size, a config whose widened bands
+   break a lane band rule: a band off the lane, or the spawner band reaching back past the buff
+   band. That rule set (`map/laneBandRules.ts`) is the one `validateMapLayout` applies to the
+   configured bands.
 4. **raiseWalls**: one `gate` centred on each lane's exit; `wall-segment`s fill the rest of the
    ring, split so that none spans more than a maximum arc; a `turret` sits on every ring corner.
    Gate count equals `numLanes` and every lane leaves through its own gate by construction; a

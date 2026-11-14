@@ -6838,3 +6838,28 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `npm run check` in the entry above (EXIT=0).
 - Next step: push (`push-98.sh`); post the reply on #98; build the BTD3 and BTD5 branch with the
   band rules (DEC-245).
+
+### 2026-11-14 — Phase 3 / tower ruins: follow-ups BTD3, BTD5 and the band rules (DEC-245) — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: built off `feat/tower-ruins-and-routes` (PR #98), three commits. (BTD3)
+  `DefaultSystemPipelineOptions.ruinWall` is required; the run-time throw is gone, and so is the
+  one test that asserted only that throw ("refuses a match with map objects but no ruinWall"):
+  the type check replaces it (this removal is why the item waited for the owner: "A: follow-up
+  branch now", DEC-245). Nine test call sites pass `ruinWall`. No other test was weakened or
+  deleted. (BTD5) `MatchGrid` keeps its `definition`; `MatchWorld` takes only the grid. (Band
+  rules, "Build now") `map/laneBandRules.ts` holds the one rule set (each band inside [0, 1];
+  spawner band ahead of buff band); `validateMapLayout` and `laneTowerSpecs` both use it, the
+  latter on the widened bands, with a message naming the cause, lane, tower counts and world
+  size. `assertTowersOnLane` is removed. Refused on the default world: 3 lanes, 1 spawner and 6
+  buff towers. The "neighbouring lanes" fort test moved to 9 lanes, 1 spawner, 4 buff towers
+  (same assertion): its old config now breaks the band rule first. Docs: 03 and 06 each had one
+  sentence made false and fixed (06 §3 placement refusal list; 03 `MatchWorld`), `last-reviewed`
+  bumped; decisions log batch and DEC-245; INBOX item ticked with a dated answer line.
+- Red-first: `eternalus-agent-work/tower-ruins-and-routes/tower-ruins-followups/red-first.md`
+  (typecheck red at 9 call sites; copied definition turns 2 tests red; rule off turns 2 red;
+  spawner-ahead rule off turns 2 red).
+- Checks run: full `npm run check` (log `.../tower-ruins-followups/check-1.log`): EXIT=0, core
+  "Tests 1485 passed (1485)", protocol "Tests 18 passed (18)", client "Tests 1883 passed
+  (1883)", server "Tests 79 passed (79)", "Documentation check passed.". Critic and ponytail
+  not run (pre-PR gate is for the session that opens the PR).
+- Next step: critic and ponytail on this branch, then the PR after #98.
