@@ -1,8 +1,8 @@
 import type { MobKind } from '../mobs/mobs.types';
 
 /**
- * The points a Legend or a team earns (architecture 12 §5). `minionKill` is keyed by `MobKind`, so a new mob
- * weight class does not compile until it has a value.
+ * The points a Legend or a team earns (architecture 12 §5). `minionKill` is keyed by `MobKind`,
+ * so a new mob weight class does not compile until it has a value.
  */
 export type ScoringWeights = {
   /** For the last hit on an enemy Legend. */
