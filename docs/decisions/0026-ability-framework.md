@@ -4,7 +4,7 @@ description: Proposed record of seven decisions the ability framework PR (DEC-19
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-14
 tags: [adr, abilities, kits, physics, aether, content]
 related:
   - 'docs/architecture/05-abilities-weapons-and-loadouts.md'
@@ -137,11 +137,14 @@ do not import `abilities/`.
   own push, so knock-backs in one tick add up as vectors (DEC-208 (3)). Every target a
   knock-back reaches gets `staggered`; `knockup: true` adds `knockup`. A dash resolves its path
   at cast: along the aim, cut where the caster's circle first touches a wall or the map's edge
-  (`abilities/dashReach.ts`), with the sweep `CollisionSystem` moves units with. `Simulation`
-  builds one static collision index for both and hands its sweep to `abilities/` through the
-  `CollisionQuery` port on `MatchWorld`; the client's aim overlay asks the same rule
-  (`Simulation.dashReach`). Its path steps hit each unit on the path once, at cast, and its end
-  steps run at the cut end.
+  (`abilities/dashReach.ts`), with the collision rule `CollisionSystem` moves units with.
+  `Simulation` builds one `CollisionResolver` per match, on the one static collision index and
+  the map's bounds, so the bounds rule lives once, inside it. It injects that resolver into
+  `CollisionSystem` and hands it to `abilities/` as the `CollisionQuery` port on `GameState`,
+  beside `space` and `paths`, so `MatchWorld` stays map data. A destroyed object leaves the index
+  the moment its entity is removed, so walking and a dash stop seeing it at once. The client's
+  aim overlay asks the same rule (`Simulation.dashReach`). Its path steps hit each unit on the
+  path once, at cast, and its end steps run at the cut end.
 - **Alternatives rejected.** Impulses as designed: they need a velocity model that keeps
   momentum (10 §2's friction and acceleration clamp), which `Movement` does not have. Moving the
   `Transform` directly: skips collision. The last push wins: contradicts DEC-208 (3).
@@ -203,9 +206,11 @@ do not import `abilities/`.
   `PathShape`; a `path` has a `width`), registered in `AbilityRegistry` through
   `defaultAbilityRegistry.ts`. A body counts when its circle overlaps the area. A shape kind with
   no class fails at boot (decision 3). `TargetQuery` walks the `EntityStore` and sorts the hits
-  by id. `loadDisplayContent` publishes each effect step's kind and area in `AbilityDisplay`;
-  the client's `AimOverlayView` draws them with one painter per shape kind (`aimShapePainters.ts`,
-  a mapped type keyed by the kind, so a kind with no painter does not compile).
+  by id. `loadDisplayContent` publishes each effect step's kind and area in `AbilityDisplay`
+  (a dash's own row carries its distance and no area; the kind is any string, so a new effect
+  kind needs no edit to the display types); the client's `AimOverlayView` draws them with one
+  painter per shape kind (`aimShapePainters.ts`, a mapped type keyed by the kind, so a kind with
+  no painter does not compile).
 - **Alternatives rejected.** A `switch` over shape kinds: rule 12 forbids it. Areas computed by
   the client from its own data: two sources for one area. A `SpatialHash` query: it has no body
   radii, and casts are rare enough for a walk.

@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-14
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -313,10 +313,13 @@ heading set by `steer`). Forced motion moves an entity that `cannot-move` (Slam 
 at once) and waits while the match holds units idle. The knock-back's base mass and travel time are
 in `content/abilities/knockback.ts` (`TUNE`). A dash's hit path is cut at cast where the caster's
 circle first touches a wall or the map's edge (`abilities/dashReach.ts`): one straight sweep
-(`CollisionResolver.travel`, §7's swept test without the slide) on the same `StaticCollisionIndex`
-`CollisionSystem` uses, which `Simulation` builds once (`map/staticCollisionIndexOf.ts`) and hands
-to `abilities/` as `MatchWorld.collisions` (the `CollisionQuery` port). The dash's motion goes
-through `MovementSystem` and `CollisionSystem` like walking.
+(`CollisionResolver.reach`, §7's swept test without the slide, cut at the map's bounds) by the
+same `CollisionResolver` `CollisionSystem` moves units with. `Simulation` builds one per match on
+the one `StaticCollisionIndex` (`map/staticCollisionIndexOf.ts`) and the map's bounds, so the
+bounds clamp lives once, inside it, and hands it to `abilities/` as `GameState.collisions` (the
+`CollisionQuery` port, beside `space` and `paths`). A destroyed object leaves the index when its
+entity is removed, so walking and a dash stop seeing it at once. The dash's motion goes through
+`MovementSystem` and `CollisionSystem` like walking.
 
 ## Related
 

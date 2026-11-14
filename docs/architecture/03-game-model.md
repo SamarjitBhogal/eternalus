@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-14
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -466,8 +466,9 @@ each closed by the session or phase named:
   `dispose()` yet. Since `feat/ability-framework` the options take `abilities` (the ability
   registry), a `RosterSlot` may name its Legend spec (`specId`, ADR 0026 decision 1), and
   `dashReach(from, direction, distance, radius)` answers how far a dash may go, for the client's
-  aim overlay (ADR 0026 decisions 4 and 7). `MatchWorld` also carries the match's collision sweep
-  (`collisions`, the `CollisionQuery` port; `null` without map objects).
+  aim overlay (ADR 0026 decisions 4 and 7). `GameState` also carries the match's collision rule
+  (`collisions`, the `CollisionQuery` port beside `space` and `paths`: the one `CollisionResolver`
+  `CollisionSystem` uses; `null` without map objects).
 - `move`, `stop` and `attack-target` have their own handlers (`MoveHandler`, `StopHandler`,
   `AttackTargetHandler`). `cast-ability` has `CastAbilityHandler`, which checks with the
   `CastValidator` that `Simulation` injects and queues the cast for `AbilitySystem`; a cast that

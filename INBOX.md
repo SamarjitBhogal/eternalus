@@ -67,12 +67,20 @@ Reply inline (`Decision: …`).
       grid, so a Blade Runner cast beside a wall moved 0 m and still cost aether. Built now:
       `dashReach` uses the radius-aware sweep of `physics/CollisionResolver` through a
       `CollisionQuery` port on `MatchWorld` (ADR 0026 decision 4). The cast and the aim overlay
-      use the same function.
+      use the same function. Critic round 2 (2026-11-14) built three more parts of it: the
+      map-bounds rule lives once, inside the resolver (`move` keeps a unit inside the map,
+      `reach` cuts a dash at its edge); the `CollisionQuery` port moved from `MatchWorld` to
+      `GameState`, beside `space` and `paths`, so `MatchWorld` is map data again; and one
+      `CollisionResolver` per match is injected into both `CollisionSystem` and that port, on the
+      one index a destroyed object leaves at once (a dash cast the tick after an object breaks
+      now goes through, as walking does).
       (2) **A `DashReach` port for the client.** `MatchDeps.dashReach` replaces `dashReach` on the
       `MatchSimulation` pick; the Duel's stub is gone, and the overlay view gets a finished target
       and never calls the simulation.
       (3) **One `Aim` type.** `components/AbilitySlotRuntime.types.ts` holds it and `commands/`
-      re-exports it; `CastAim` is deleted, so `state/` no longer imports `commands/`.
+      re-exports it; `CastAim` is deleted, so `state/` no longer imports `commands/`. The
+      `commands/` row of `packages/core/AGENTS.md` now names the types of `content/` and
+      `components/` it re-exports (critic round 2).
       (4) **One `CastValidator` per match, and it is the `SlotReadiness` port.** The `CastCheck`
       port and `abilities/CastReadiness` are deleted (ADR 0026 decision 2 is rewritten to this). A
       slot's HUD state is judged with no aim (`slotBlockedBy`), not with an invented one.
@@ -98,6 +106,19 @@ Reply inline (`Decision: …`).
       (`GameState.snapshot` fills `player` for one Legend only). Hiding `player` in a Duel also
       hides that seat's aether and level data. Options: hide the ability bar in a Duel; send
       `player` per seat once Duels cast abilities; or leave it until then.
+- [ ] **HC-Q56 — Four ideas from critic round 2, not built: your call
+      (`feat/ability-framework`, 2026-11-14).** (1) **Name and home of the display loader.**
+      `abilities/loadShippedDisplayContent` is exported as `loadDisplayContent` and wraps
+      `content/loadDisplayContent`: two functions with one public name, and `abilities/` holds a
+      loader that also checks Legends, specs and the bot roster. The reviewer proposes a
+      composition file beside `Simulation.ts` and a distinct inner name. (2) **One `sources`
+      object for `EntityFactory`,** which now has five positional parameters. (3) **Drop the
+      generic loader types** (`AuthoredAbilityWith`, `AbilityDefinitionWith`, the `loadAbilities`
+      overloads, about 25 lines): they exist so the Fake Bolt litmus can load an unlisted effect
+      kind with full types; one cast in that test would replace them. (4) **Merge `slotBlockedBy`
+      into `blockedBy` with an aim that can be null** (about 12 lines). The session kept (3) and
+      (4) as built: (3) is what the litmus proves, and (4) keeps the HUD check apart from the cast
+      check. Say which to build.
 - [ ] **HC-Q49 — Five tuning values the ability framework uses until you set them (`TUNE`,
       `feat/ability-framework`).** (1) Blade Runner's path width: 1.5 m, the 05 §4 sketch value
       (`content/abilities/bladeRunner.ts`). (2) Blade Runner's end-stun radius: 1.5 m, the same

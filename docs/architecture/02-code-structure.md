@@ -4,7 +4,7 @@ description: The planned folder tree of packages/core and apps/client with one l
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-14
 tags: [architecture, code-structure, conventions, registries]
 paths: ['packages/core/src/**', 'apps/client/src/**', 'eslint.config.js', 'knip.json']
 related:
@@ -384,8 +384,9 @@ Ability framework (`feat/ability-framework`, 2026-11-13; ADR 0026). Files the br
   type imports outside `commands/`' "May import" cell (ADR 0026 decision 2). The kit rule ("the
   spec's kit, else the class's") is `content/legends/specs/kitOf.ts`, exported for the client's
   kit rows; `Legend` reads specs from the source the `EntityFactory` puts in the spawn context. A
-  dash reaches the walls through `state/CollisionQuery.types.ts` (`MatchWorld.collisions`), whose
-  index `map/staticCollisionIndexOf.ts` builds for `Simulation`.
+  dash reaches the walls through `state/CollisionQuery.types.ts` (`GameState.collisions`): the
+  match's one `CollisionResolver`, which `CollisionSystem` shares, on the index
+  `map/staticCollisionIndexOf.ts` builds for `Simulation`.
 - **Client.** `game/AbilityCasts.ts` (the two cast modes), `game/content/kitRows.ts`,
   `game/AimTargeting.ts` (what the overlay draws, with the `MatchDeps.dashReach` port),
   `game/views/AimOverlayView.ts` with `aimShapePainters.ts`, and `ui/components/InfoPanelKit.tsx`

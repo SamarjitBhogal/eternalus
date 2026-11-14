@@ -6395,9 +6395,36 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   overlay cuts a dash where the cast does. Decisions beyond 05: ADR 0026 (proposed, HC-Q48);
   INBOX HC-B5, HC-Q49 to HC-Q53, HC-S12. Docs: 05, 04, 10, 13, 11, 03, 02, reference 09 and 12,
   `more-abilities.md`, `balancing.md`, backlog, phase-4 plan.
-- Checks run: CHECK-RESULT-PENDING (`npm run check`, verbatim result to be filled in from the
-  final run; see the PR description). Docs pass: `npm run docs:check` →
+- Checks run: `npm run check` → exit 0 on the tree merged with phase/3 `9e2516cf`: core "Tests
+  1542 passed (1542)"; protocol "Tests 18 passed (18)"; client "Tests 1958 passed (1958)";
+  server "Tests 79 passed (79)"; "Documentation check passed." Docs pass: `npm run docs:check` →
   `Documentation check passed.`; `npx prettier --check docs INBOX.md` →
   `All matched files use Prettier code style!`
 - Next step: critic and ponytail gate, then the PR; next the per-class PRs, the Vanguard first
   with the ultimate meter and Fury (DEC-202), then the Sentinel (Rip & Tear, Fear) and the Magus.
+
+### 2026-11-14 — Phase 4 / sprints 4.2–4.3 and 4.7: ability framework, critic rounds 1 and 2 — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` `76d1007d` (#81; only this file conflicted, both
+  sides kept). Fixed critic round 1 (4 blockers): a dash stops where walking stops, through the
+  `CollisionQuery` port and the match's one `CollisionResolver` (it was clamped on the nav grid,
+  so a Blade Runner beside a wall moved 0 m and was paid for); forced motion is in `StateHasher`;
+  one `Aim` type, so `state/` no longer imports `commands/`; effect and shape strategies
+  `validate` and `describe` themselves, so `loadAbilities` and `loadDisplayContent` name no kind.
+  Also: ability areas hit map objects by their footprints; one `CastValidator` per match, which
+  is the `SlotReadiness` port (`CastCheck` and `CastReadiness` removed); `kitOf` and an injected
+  Legend spec source; a `DashReach` port for the client, and the aim overlay view gets a finished
+  target; the ponytail cuts. Critic round 2 (no blockers): a destroyed map object leaves the
+  collision index at once (a dash in the next tick was still cut by it); the map-bounds rule
+  lives in the resolver; the `collisions` port is on `GameState`; the dash's overlay row carries
+  only its distance and the display step `kind` is open (the litmus proves the overlay row too).
+  `packages/core/AGENTS.md`: the `abilities/` and `commands/` import rows. INBOX: HC-B6, HC-Q54,
+  HC-Q55, HC-Q56 added; HC-Q51 and HC-Q52 corrected. ADR 0026 (proposed) decisions 1, 2, 4 and 7
+  follow the code. Not changed: critic finding C6 (HC-Q55); a dash that starts inside a wall
+  (precondition stated on `CollisionQuery.reach`).
+- Checks run: `npm run check` → `EXIT=0`: core "Test Files 277 passed (277)", "Tests 1589
+  passed (1589)"; protocol "Tests 18 passed (18)"; client "Test Files 290 passed (290)", "Tests
+  1965 passed (1965)"; server "Tests 79 passed (79)"; "All matched files use Prettier code
+  style!"; "Documentation check passed."
+- Next step: critic round 3 on the round 2 fixes, then the PR into `phase/3-sprint-3-work`; the
+  owner's answers to HC-Q48, HC-B5 and HC-B6; then the per-class PRs, the Vanguard first.
