@@ -6404,3 +6404,21 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: full `npm run check` exit 0
   (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-85-7.log`).
 - Next step: push; merge the new head into #86 and #79.
+
+### 2026-11-13 — Phase 3 / PR #98 split: the geometry helpers — refactor/fort-geometry-helpers — sholtzman + Claude Code
+
+- What was done: split from PR #98 by DEC-242; PR base is `fix/minion-stack-followups` (#85).
+  `map/fortInWorld.ts` (`fortInWorld`, byte-identical to #98 without its nav-cell check) now
+  serves `map/zoneArea.ts`; `utils/geometry.isPointInRect` serves `PathingSystem.isInsideFort`
+  and `doesPolygonOverlapRect`; new `doRectsOverlap` (critic BTD4) serves `MapSceneryBuilder` and
+  `StaticCollisionIndex.query`. No rule changes; the capture-zone court is bit-identical at the
+  default world size and within one unit in the last place of a float at other sizes (critic
+  finding 1). DEC-244. INBOX H1 notes the part built.
+- Red-first: one deliberate break per helper turned its tests red, then restored green
+  (`eternalus-agent-work/tower-ruins-and-routes/fort-geometry-helpers/red-first.md`).
+- Checks run: full `npm run check` on the tree before the critic's fixes (log
+  `eternalus-agent-work/tower-ruins-and-routes/fort-geometry-helpers/check-3.log`): EXIT=0, core
+  "Tests 1388 passed (1388)", client "Tests 1818 passed (1818)", "Documentation check passed.".
+  Two earlier runs (`check-1.log`, `check-2.log`) failed on test timeouts only, while several
+  worktrees ran checks at once. The run after the fixes and the merge of #85 is in the next entry.
+- Next step: PR into #85; `assertFortWallsResolve` and `assertLaneFortsApart` stay on #98.
