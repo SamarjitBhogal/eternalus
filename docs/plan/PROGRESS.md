@@ -6534,3 +6534,20 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `eternalus-agent-work/tower-ruins-and-routes/check-merge85-r4.log`): EXIT=0, core "Tests 1447
   passed (1447)", client "Tests 1818 passed (1818)", "Documentation check passed.".
 - Next step: push and open the PR on `fix/minion-stack-followups` (#85, head `65c4d436`).
+
+### 2026-11-13 — Phase 3 / tower ruins: PR #98 review response — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: claudiodh requested changes on PR #98 (2026-11-13). This branch merged #85's
+  `c09507f6` (`65482701`). The owner asked for a critique of the DEC-239 generator rules
+  (`eternalus-agent-work/tower-ruins-and-routes/critic-dec239-rules-2026-11-13.md`): all four are
+  within the design. Its one nit is fixed in `fa7808ce`: towers of one kind are spaced by the fort
+  box diagonal, `hypot(width, height)`, not `max(width, height) * sqrt(2)` (DEC-227). The owner
+  ruled "Split it" (DEC-242, written here): gate reach, the A\* search cap and the geometry
+  helpers move to `feat/gate-reach`, `refactor/astar-search-area` and
+  `refactor/fort-geometry-helpers`.
+- Red-first: "spaces a widened band by the fort box diagonal" failed (1 failed) before the fix.
+- Checks run: full `npm run check` on `fa7808ce` (log
+  `eternalus-agent-work/tower-ruins-and-routes/check-hypot-fa7808ce.log`): EXIT=0, core "Tests
+  1448 passed (1448)", client "Tests 1818 passed (1818)", "Documentation check passed.".
+- Next step: the owner's call on the DEC-239 rules (DEC-246), the reply on #98, the BTD3 and BTD5
+  branch (DEC-245), and the merge of #85's next head.

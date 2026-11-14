@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-10
+last-reviewed: 2026-11-13
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,16 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-13 (question dialog: the scope of PR #98)
+
+A teammate's review of PR #98 (`feat/tower-ruins-and-routes`) asked for a smaller scope. The owner
+answered in the question dialog (2026-11-13; kept in
+`eternalus-agent-work/tower-ruins-and-routes/OWNER-ANSWERS-2026-11-13.md`). DEC-242 is this batch.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DEC-242 | **PR #98 is split: "Split it"** (the question: "Keep one PR or split?"). Three parts move to their own PRs: gate reach with `hasFortBox` (DEC-217 (16), (17); `feat/gate-reach`), the A\* search cap (`refactor/astar-search-area`, its row is DEC-243) and the fort-world and rectangle helpers (`refactor/fort-geometry-helpers`, its row is DEC-244). The ruins, the court routes, the 2.5 m cells, the fort spacing and the client hiding of a dead tower's objects stay in #98: each needs the others. The critic's better-than-design items BTD1 and BTD3 to BTD5 are built now: "A: follow-up branch now" (BTD1 and BTD4 in the split PRs, BTD3 and BTD5 on a branch off #98). |
 
 ## Batch 2026-11-10 (question dialog: bot A\* search cap on 2.5 m cells)
 
