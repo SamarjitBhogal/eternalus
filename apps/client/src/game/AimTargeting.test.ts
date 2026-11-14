@@ -63,6 +63,8 @@ describe('AimTargeting', () => {
     expect(asked).toEqual([[DRAWN_AT, { x: 1, y: 0 }, 8, 0.5]]);
     expect(target?.origin).toEqual(DRAWN_AT);
     expect(target?.direction).toEqual({ x: 1, y: 0 });
+    // The dash's own row has no area: the view gets `null`, never a missing field.
+    expect(target?.steps[0]?.shape).toBeNull();
     expect(target?.steps.map(({ reach: reached }) => reached)).toEqual(
       ABILITIES.find(({ id }) => id === 'blade-runner')?.steps.map(({ distance }) =>
         distance === undefined ? null : 3,
