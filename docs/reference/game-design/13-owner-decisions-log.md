@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-09
+last-reviewed: 2026-11-13
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,20 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-13 (question dialog: the A\* search cap as an area)
+
+The owner's answer of 2026-11-13 (session eternalus-132), through the question dialog, on when to
+build the follow-ups the critic's round 3 on PR #98 (`feat/tower-ruins-and-routes`) found better
+than the design: "A: follow-up branch now (Recommended)". By his split ruling on #98, DEC-242
+("Split it"), this item is built on its own branch, `refactor/astar-search-area`. The owner's
+words are kept verbatim outside the repository in
+`eternalus-agent-work/tower-ruins-and-routes/OWNER-ANSWERS-2026-11-13.md`. DEC-243 is this batch
+(DEC-240 and DEC-242 are rows on #98).
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| DEC-243 | **One A\* search is capped by an area of ground, not a count of cells** (critic round 3 on #98, better-than-design item BTD1). `GameConfig.map.pathMaxSearchArea` (m², `config/defaultGameConfig.ts`) replaces `pathMaxExpansions`. `AStarPathfinder` divides the area by its grid's cell area, so the next change of `navCellSize` cannot shrink the ground a search covers, and `validateGameConfig` refuses an area smaller than one cell. The default, 150000 m², is 6000 cells of 5 m, so the 5 m grid behaves as before. On #98's 2.5 m cells it gives 24000 cells, the number DEC-240 chose, so DEC-240's outcome stands without a number of its own. |
 
 ## Batch 2026-11-09 (chat: the aether bar critic's better-than-design items)
 

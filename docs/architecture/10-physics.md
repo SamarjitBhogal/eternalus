@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-04
+last-reviewed: 2026-11-13
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -233,7 +233,10 @@ Order in `SystemPipeline`: `MovementSystem` → `PathingSystem` → `CollisionSy
   the goal, combined by priority (wall avoidance, then separation, then a horde member's
   formation slot ([18](18-minion-system.md) §5), then flow) and truncated to
   `maxSpeed`. Legends (bots and click-to-move) use A* with an octile heuristic and string pulling
-  on the same `WorldMap` grid; camp guards use seek/arrival inside their leash.
+  on the same `WorldMap` grid; camp guards use seek/arrival inside their leash. One search
+  settles at most `GameConfig.map.pathMaxSearchArea` of ground, an area in m², not a count of
+  cells: the pathfinder divides it by its grid's cell area, so a change of `navCellSize` keeps the
+  distance a search reaches (DEC-243).
 - The one-tick latency between deciding and integrating is deliberate: it removes any ordering
   dependency between steering and integration (both read last tick's state), matches the "commands
   apply next tick" rule, and is invisible at 30 ticks/s.

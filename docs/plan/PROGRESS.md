@@ -6377,3 +6377,26 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   style!"; core "Tests 1336 passed (1336)"; protocol "Tests 18 passed (18)"; client "Tests 1883
   passed (1883)"; server "Tests 79 passed (79)"; "Documentation check passed."
 - Next step: review and merge; then sync the stacked drafts #82, #83 and #84.
+
+### 2026-11-13 — Phase 3 / A\* search area (DEC-243) — refactor/astar-search-area — Sam Holtzman + Claude Code
+
+- What was done: one A\* search is capped by an area of ground, not a count of cells (critic
+  BTD1 on PR #98; the owner's "A: follow-up branch now", split from #98 by DEC-242).
+  `GameConfig.map.pathMaxSearchArea` (m², default 150000 = 6000 cells of 5 m) replaces
+  `pathMaxExpansions`; `AStarLimits.maxSearchArea` replaces `maxExpansions`, and
+  `AStarPathfinder` turns it into cells of its own grid once, at construction.
+  `validateGameConfig` refuses an area that is not finite or is under one nav cell. The golden
+  replay `wanderSeed7` carries the equal area (header notes it; config is not hashed). Docs: 03
+  §10 table, 10 §9, 11 §6, DEC-243.
+- Red-first: a fixed 5 m cell area in the pathfinder turned the new 2.5 m route test red; the
+  validator without the one-cell rule, without the finite check, or with `>` for `>=` turned one
+  validation case red each; the factory passing area 0 and the fixture holding 0 turned the
+  factory and golden replay tests red. Each restored green
+  (`eternalus-agent-work/tower-ruins-and-routes/astar-search-area/red-first.md`).
+- Checks run: `npm run check` (Node 24.21.0) on a421db26 plus these docs → `EXIT=0`: "All matched
+  files use Prettier code style!"; core "Tests 1340 passed (1340)"; protocol "Tests 18 passed
+  (18)"; client "Tests 1883 passed (1883)"; server "Tests 79 passed (79)"; "Documentation check
+  passed." (`eternalus-agent-work/tower-ruins-and-routes/astar-search-area/check-1.log`).
+- Next step: critic and ponytail on the branch; then a PR into `phase/3-sprint-3-work`. When it
+  merges and #98 takes phase/3, #98 drops its 24000 and renames its callers of
+  `pathMaxExpansions`/`maxExpansions`.

@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-04
+last-reviewed: 2026-11-13
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -293,7 +293,7 @@ when it is spent; the round-robin cursor lives in `state.ai.cursor`, so deferral
 and the skipped brains go first next tick. A decision is atomic and cheap: radius-bounded queries,
 no allocation in hot paths, scratch vectors reused. A bot's A\* is the exception: bots steer by
 `move` commands, so A\* is a `PathQuery` (`state.paths`) its leaves call when the straight line is
-blocked, its cost inside the decision budget and capped by `GameConfig.map.pathMaxExpansions` (a
+blocked, its cost inside the decision budget and capped by `GameConfig.map.pathMaxSearchArea` (a
 path cache in the brain is the next step if profiling shows the cost). Other heavy work (flow
 fields) belongs to `PathingSystem`, which time-slices its rebuilds
 [research §3](../research/game-architecture-and-performance-research.md#3-pathfinding-and-movement-for-lane-minions-and-large-unit-counts).
