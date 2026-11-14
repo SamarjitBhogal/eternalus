@@ -16,6 +16,11 @@ import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { GameState } from '../state/GameState';
 import type { MapDefinition } from '../content/maps/maps.types';
+import { ZONE_DEFINITIONS } from '../content/zones/zoneCatalogue';
+import type { GuardPlanDefinition } from '../content/structures/structures.types';
+import { ZoneArea } from '../components/ZoneArea';
+import { StateHasher } from '../state/StateHasher';
+import type { GuardSlot } from '../state/GuardStore.types';
 import { GuardRoster } from './GuardRoster';
 
 const TICK_RATE = 30;
@@ -298,5 +303,131 @@ describe('GuardRoster', () => {
       expect(gap - post.homeRadius).toBeLessThanOrEqual(base.leashRadius);
     });
     expect(posts).toBe(4);
+  });
+
+  describe('zone homes (18 §7)', () => {
+    const CENTRE = { x: 100, y: 50 };
+    const square = (half: number) => [
+      { x: CENTRE.x - half, y: CENTRE.y - half },
+      { x: CENTRE.x + half, y: CENTRE.y - half },
+      { x: CENTRE.x + half, y: CENTRE.y + half },
+      { x: CENTRE.x - half, y: CENTRE.y + half },
+    ];
+    const ZONE_PLAN: GuardPlanDefinition = {
+      table: [{ mobId: 'heavy-camp-mob', count: 1 }],
+      leashRadius: 8,
+      postGap: 0,
+      leashTolerance: 5,
+      activation: { at: 'match-start' },
+      respawn: { kind: 'each', seconds: 5 },
+    };
+
+    /**
+     * The two-lane map with a neutral capture point at `CENTRE` (a 20 m square floor) and a
+     * blocking 8 m keep on its anchor; countdown 2 s (60 ticks).
+     */
+    const zoned = (plan: Partial<GuardPlanDefinition> = {}) => {
+      const config = createDefaultGameConfig({ match: { countdownSeconds: 2 } });
+      const state = new GameState(config, 1, matchWorldOf(TWO_LANE_MAP));
+      spawnMapStructures(state);
+      const units = loadDefaultContent(TICK_RATE);
+      const objects = new Map(Object.values(MAP_OBJECT_DEFINITIONS).map((d) => [d.id, d]));
+      const factory = new EntityFactory(createDefaultEntityRegistry(), {
+        has: (id) => units.has(id) || objects.has(id) || ZONE_DEFINITIONS.has(id),
+        get: (id) =>
+          objects.get(id) ?? (ZONE_DEFINITIONS.has(id) ? ZONE_DEFINITIONS.get(id) : units.get(id)),
+      });
+      const zone = factory.create('capture-point', 'capture-point', {
+        position: CENTRE,
+        team: 'neutral',
+        area: [square(10)],
+      });
+      state.entities.add(zone);
+      state.worldObjects = new WorldObjectStore(
+        [{ id: 'keep', kind: 'furniture', isBlocking: true, footprints: [square(4)] }],
+        factory,
+        state.entities,
+        MAP_OBJECT_DEFINITIONS,
+      );
+      const roster = new GuardRoster(factory, factory.definitions, {
+        'capture-point': { ...ZONE_PLAN, ...plan },
+      });
+      roster.layOut(state);
+      const cleared: string[] = [];
+      state.events.on('camp-cleared', ({ entityId }) => cleared.push(entityId));
+      const step = (ticks = 1) => {
+        for (let tick = 0; tick < ticks; tick += 1) {
+          roster.update(state);
+          state.advanceTick();
+        }
+      };
+      const posts = () => {
+        const found: GuardSlot[] = [];
+        state.guards.forEach((post) => {
+          if (post.homeId === zone.id) found.push(post);
+        });
+        return found;
+      };
+      const kill = () => {
+        for (const { guardId } of posts()) {
+          state.entities
+            .get(guardId ?? '')
+            ?.getComponent(Health)
+            .applyDamage(1e6);
+        }
+      };
+      return { state, zone, step, posts, kill, cleared };
+    };
+
+    it('posts a zone’s guard inside its area and off the keep, with home radius 0', () => {
+      const { zone, step, posts, state } = zoned();
+      const area = zone.getComponent(ZoneArea);
+
+      step();
+
+      const [post] = posts();
+      if (post === undefined) throw new Error('no zone post');
+      const at = { x: post.postX, y: post.postY };
+      expect(post.homeRadius).toBe(0);
+      expect(area.contains(at)).toBe(true);
+      expect(state.worldObjects?.blockingAt(at, 0.8)).toBeNull();
+      // A zone has no Health, yet counts as standing: the post is filled.
+      expect(post.guardId).not.toBeNull();
+    });
+
+    it('never refills a `never` post, and announces no clear', () => {
+      const { step, posts, kill, cleared } = zoned({ respawn: { kind: 'never' } });
+      step();
+      kill();
+
+      step(10 * 60 * TICK_RATE);
+
+      expect(posts().map(({ guardId }) => guardId)).toEqual([null]);
+      expect(cleared).toEqual([]);
+    });
+
+    it('fills its posts `delaySeconds` after the countdown ends', () => {
+      const { step, posts } = zoned({ activation: { at: 'countdown-end', delaySeconds: 120 } });
+
+      // The countdown ends at tick 60; the posts fill on tick 60 + 120 s.
+      step(60 + 120 * TICK_RATE);
+      expect(posts().map(({ guardId }) => guardId)).toEqual([null]);
+      step();
+      expect(posts()[0]?.guardId).not.toBeNull();
+    });
+
+    it('runs the same way twice: the same state hash', () => {
+      const hashes = [1, 2].map(() => {
+        const { state, step, kill } = zoned({
+          activation: { at: 'countdown-end', delaySeconds: 1 },
+        });
+        step(200);
+        kill();
+        step(10 * TICK_RATE);
+        return new StateHasher().hash(state);
+      });
+
+      expect(hashes[0]).toBe(hashes[1]);
+    });
   });
 });

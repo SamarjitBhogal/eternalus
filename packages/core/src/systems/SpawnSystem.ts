@@ -37,24 +37,26 @@ import { isPlayableTeam } from '../teams/playableTeams';
  * The spawners are the structure entities standing at construction; a destroyed one stops. The
  * schedule's times are converted to ticks once, so the system keeps no schedule state of its own.
  *
- * It also runs every structure's guard plan (18 §7, 07 §6) through its `GuardRoster`.
+ * It also runs every structure's and zone's guard plan (18 §7, 07 §6) through its `GuardRoster`.
  */
 export class SpawnSystem implements System {
   public readonly name = 'spawn';
   private readonly spawners: readonly Structure[];
   private readonly scheduled: readonly ScheduledWave[];
   private readonly guards: GuardRoster;
-  /** The definition ids of the structures on this map, whose guard plans are checked. */
+  /** The definition ids of the structures and zones on this map, whose guard plans are checked. */
   private readonly homes = new Set<string>();
 
   /**
-   * @param state - The match; its structure entities, already spawned, are the spawn points.
+   * @param state - The match; its structure entities, already spawned, are the spawn points, and
+   *   its structures and zones, already spawned, the guard homes.
    * @param factory - Builds the minions.
    * @param plan - The waves, the opening wave, the guards, the definitions and the spawn layout.
    * @throws ContentValidationError when a wave this map can spawn names an unknown mob or a mob of
    *   another weight class, starts before the countdown ends, or repeats more often than once a
    *   tick, or a guard plan names an unknown mob, so bad content fails when the match is built,
-   *   not when the wave is due.
+   *   not when the wave is due. A guard plan that activates a negative or non-finite number of
+   *   seconds after the countdown is rejected too.
    */
   public constructor(
     state: GameState,
@@ -64,7 +66,7 @@ export class SpawnSystem implements System {
     // The opening source sends the opening hordes even when it has no recurring waves.
     const spawners: Structure[] = [];
     state.entities.forEach((entity) => {
-      if (entity instanceof Structure) {
+      if (GuardRoster.isHome(entity)) {
         this.homes.add(entity.definitionId);
       }
       const team = state.entities.teamOf(entity.id);
@@ -95,8 +97,9 @@ export class SpawnSystem implements System {
   /**
    * Rejects a plan whose waves name an unknown mob or a mob of another weight class, start before
    * the countdown ends, or repeat more often than once a tick, or whose guard plans name an
-   * unknown mob. Only the waves and guards this map's spawners can have are checked, so a match
-   * without hordes needs no minions.
+   * unknown mob or activate a negative or non-finite number of seconds after the countdown. Only
+   * the waves and guards this map's spawners and homes can have are checked, so a match without
+   * hordes needs no minions.
    */
   private validate(): void {
     const { openingWave, definitions, guards } = this.plan;
@@ -105,12 +108,24 @@ export class SpawnSystem implements System {
       ...(kinds.has(openingWave.source) ? [['opening', openingWave] as const] : []),
       ...this.scheduled.map(({ spawner, wave }) => [spawner.kind, wave] as const),
     ];
-    // Only the plans of structures on this map, so a match without them needs no guard content.
-    const guardProblems = [...this.homes].flatMap((id) =>
-      (guards[id]?.table ?? []).flatMap(({ mobId }) =>
-        definitions.has(mobId) ? [] : [`${id} guard plan names unknown mob "${mobId}"`],
-      ),
-    );
+    // Only the plans of structures and zones on this map, so a match without them needs no guard
+    // content.
+    const guardProblems = [...this.homes].flatMap((id) => {
+      const plan = guards[id];
+      if (plan === undefined) {
+        return [];
+      }
+      const { activation } = plan;
+      const delay = activation.at === 'countdown-end' ? activation.delaySeconds : 0;
+      return [
+        ...plan.table.flatMap(({ mobId }) =>
+          definitions.has(mobId) ? [] : [`${id} guard plan names unknown mob "${mobId}"`],
+        ),
+        ...(Number.isFinite(delay) && delay >= 0
+          ? []
+          : [`${id} guard plan activates ${String(delay)} s after the countdown`]),
+      ];
+    });
     const mobProblems = waves.flatMap(([source, { mobId, weightClass }]) => {
       if (!definitions.has(mobId)) {
         return [`${source} wave names unknown mob "${mobId}"`];

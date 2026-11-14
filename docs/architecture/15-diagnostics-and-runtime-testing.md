@@ -4,7 +4,7 @@ description: Testing while the game is running - the Invariant interface and the
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-04
+last-reviewed: 2026-11-12
 tags: [architecture, diagnostics, invariants, logging, performance, replays, soak-tests, testing]
 paths: ['packages/core/src/diagnostics/**']
 related:
@@ -124,7 +124,7 @@ canonical (`07` §11, `05` §16 and `12` §12 use them).
 | `TeamUnitCapInvariant` (`team-unit-cap`)                                               | tick           | error        | living `Unit`s per playable team ≤ `config.limits.maxUnitsPerTeam` (144, `TUNE`); living `Legend`s per team ≤ `config.limits.maxLegendsPerTeam` (10, `TUNE`); `spawn-suppressed` counted, never exceeded                                                                                                                                                                                                     | requirements                |
 | `FiniteTransformsInvariant` (`finite-transforms`)                                      | tick           | fatal        | `Number.isFinite` for every `Transform.position`, `facing` and `Movement.velocity` component; `\|velocity\| ≤ maxSpeed + impulse bound`                                                                                                                                                                                                                                                                      | 10 §11                      |
 | `HordeMembershipConsistentInvariant` (`horde-membership-consistent`)                   | periodic       | error        | every id in a `Horde` is a living `Mob`, or is in `entities.removedThisTick` (`HordeSystem` prunes it on its next pass, 18 §4), and `state.hordes.hordeOf` files it under that horde; the leader is the lowest surviving id in string order; no empty horde exists (it must have dissolved with `horde-dissolved`)                                                                                           | 18 §4                       |
-| `GuardWithinLeashInvariant` (`guard-within-leash`)                                     | periodic       | error        | every guard post's mob (tower guards, camp mobs) is within its home's `GuardPlan.leashRadius` plus a `TUNE` tolerance (the distance it can cover between two decisions, plus the farthest it stands from a target in reach: a guard fighting at the circle's edge stands beyond its target; DEC-144) of that home                                                                                            | 18 §7                       |
+| `GuardWithinLeashInvariant` (`guard-within-leash`)                                     | periodic       | error        | every guard post's mob (tower guards, camp mobs, zone guards) is within its home's `GuardPlan.leashRadius` plus a `TUNE` tolerance (the distance it can cover between two decisions, plus the farthest it stands from a target in reach: a guard fighting at the circle's edge stands beyond its target; DEC-144) of that home                                                                               | 18 §7                       |
 | `CaptureProgressBoundsInvariant` (`capture-progress-bounds`)                           | tick           | error        | `-1 ≤ Capturable.progress ≤ 1`, `checkpoint` a whole number from 0 to `GameConfig.match.capturePoints.checkpoints`, `owner` a `Team`; a locked zone (living mini-boss) never changes owner (`LockedZoneOwnerInvariant`, 12 §12)                                                                                                                                                                              | 04 §3, 07 §7                |
 | `CooldownAndAetherBoundsInvariant` (`cooldown-aether-bounds`)                          | tick           | error        | for every `AbilityRuntime`: `0 ≤ cooldownRemainingTicks ≤ cooldownTicks`; `0 ≤ aether ≤ maxAether`; ultimate charge `∈ [0, 1]` (formerly 05 §16's `AetherWithinBounds`, folded in)                                                                                                                                                                                                                           | 05 §6                       |
 | `SnapshotHashMatchesStateInvariant` (`snapshot-hash-matches-state`)                    | periodic       | fatal        | `StateHasher.hashSnapshot(snapshot)` over the canonical subset (tick, ids, positions, health, team, phase) equals `StateHasher.hash(state)` over the same subset: `SnapshotSystem` dropped or staled nothing; runs after the snapshot of the previous tick, so it lags by one                                                                                                                                | 03 §5, §9                   |
@@ -279,7 +279,11 @@ and the roster) + versions + the externally enqueued commands + checkpoint
 hashes ([03](03-game-model.md) §9; [research C3](../research/persistence-input-diagnostics-research.md#c3-testing-a-running-game-properties-replays-golden-hashes-soak-tests)).
 Recording captures every command that enters through `Simulation.enqueueCommand` and a
 `StateHasher` checkpoint every `checkpointEvery` ticks (`TUNE` 100 in fixtures); the roster is
-part of the setup, and the bots' own commands are regenerated from it. `StateHasher` is FNV-1a
+part of the setup, and the bots' own commands are regenerated from it. `ReplaySetup` holds only
+those fields: a `Simulation` option outside it, such as `guardPlans` (each guard home's plan,
+`GUARD_PLANS` when omitted), is not recorded, so a match built with a non-default value replays
+only through a target factory that passes the same value. Such options are for tests and tools,
+never for a match a player can record. `StateHasher` is FNV-1a
 32-bit (offset basis `0x811c9dc5`, prime `0x01000193`, `Math.imul`) over its own canonical
 serialisation: tick, phase, RNG state, then every entity in store order with its component
 fields, then the other match fields once the match has left its initial state

@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-04
+last-reviewed: 2026-11-11
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -349,6 +349,10 @@ and utility better
 
 Minion plan pull request M2a builds §1–§3, §5 and §6 with these differences, each closed by the
 work named:
+
+- §4.6 `BossController` is not built (Phase 3 sprint 3.6). Until then the capture point mini-boss
+  runs on `GuardController`; the interim is recorded in
+  [18's implementation status note](18-minion-system.md#minion-system).
 
 - `AiSystem` lives in `ai/` and fits the `System` contract by shape; `Simulation` puts it first in
   the pipeline, because `systems/` may not import `ai/` (where it lives is the owner's open

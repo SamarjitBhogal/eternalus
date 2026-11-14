@@ -1,26 +1,31 @@
+import { Health } from '../components/Health';
 import { Transform } from '../components/Transform';
 import type { GuardPlanDefinition } from '../content/structures/structures.types';
+import type { Entity } from '../entities/Entity';
 import type { DefinitionSource } from '../entities/EntityFactory.types';
 import type { EntityFactory } from '../entities/EntityFactory';
 import { Structure } from '../entities/structures/Structure';
 import { Unit } from '../entities/Unit';
+import { Zone } from '../entities/Zone';
 import type { GameState } from '../state/GameState';
 import type { GuardSlot } from '../state/GuardStore.types';
 import { compareById } from '../utils/compareById';
 import { cos, sin } from '../utils/deterministicMath';
-import { WAITING_FOR_GROUP } from './GuardRoster.constants';
+import { NO_RESPAWN_TICK } from './GuardRoster.constants';
 import type { Vec2 } from '../utils/geometry.types';
 import { countdownTicks } from '../config/countdownTicks';
 
 /**
- * Runs every structure's guard plan for `SpawnSystem` (architecture 18 §7, 07 §6): it lays out
- * one post per guard on a ring around the structure (`state.guards`); each tick a post whose guard
- * died empties and waits `respawnSeconds`, and an empty post whose time has come is filled while
- * its structure stands and the unit cap has room. A row with `shrink` keeps `count` fewer posts per
- * lost structure of the kind it names (DISC-21: the Stronghold's light guards per lost
- * SpawnerTower); a guard on a dropped post stays until it dies. A `group` plan (a camp) waits for
- * its last guard to die, emits `camp-cleared` and refills every post together (18 §7.1). Plans
- * are looked up by the structure's definition id.
+ * Runs every home's guard plan for `SpawnSystem` (architecture 18 §7, 07 §6). A home is a
+ * structure or a zone; a zone's edge is its anchor (home radius 0) and, having no `Health`, it
+ * always stands. It lays out one post per guard on a ring around the home (`state.guards`); each
+ * tick a post whose guard died empties and waits its plan's respawn time (a `never` plan's post
+ * stays empty), and an empty post whose time has come is filled while its home stands and the unit
+ * cap has room. A row with `shrink` keeps `count` fewer posts per lost structure of the kind it
+ * names (DISC-21: the Stronghold's light guards per lost SpawnerTower); a guard on a dropped post
+ * stays until it dies. A `group` plan (a camp) waits for its last guard to die, emits
+ * `camp-cleared` and refills every post together (18 §7.1). Plans are looked up by the home's
+ * definition id.
  */
 export class GuardRoster {
   /**
@@ -34,11 +39,16 @@ export class GuardRoster {
     private readonly plans: Readonly<Record<string, GuardPlanDefinition>>,
   ) {}
 
-  /** Lays out one post per guard of every standing structure's plan, in structure id order. */
+  /** Whether `entity` can be a guard home: a structure or a zone (18 §7.1). */
+  public static isHome(entity: Entity): entity is Structure | Zone {
+    return entity instanceof Structure || entity instanceof Zone;
+  }
+
+  /** Lays out one post per guard of every home's plan, in home id order. */
   public layOut(state: GameState): void {
-    const homes: Structure[] = [];
+    const homes: (Structure | Zone)[] = [];
     state.entities.forEach((entity) => {
-      if (entity instanceof Structure && this.plans[entity.definitionId] !== undefined) {
+      if (GuardRoster.isHome(entity) && this.plans[entity.definitionId] !== undefined) {
         homes.push(entity);
       }
     });
@@ -49,14 +59,16 @@ export class GuardRoster {
       if (plan === undefined || team === undefined || transform === undefined) {
         continue;
       }
-      const { countdownSeconds } = state.config.match;
-      const firstTick =
-        plan.activation === 'countdown-end'
-          ? countdownTicks(countdownSeconds, state.config.tickRate)
-          : 0;
+      const firstTick = GuardRoster.firstTick(state, plan);
+      const homeRadius = home instanceof Zone ? 0 : transform.radius;
+      // A `never` post is never refilled, so it has no respawn delay.
+      const respawnTicks =
+        plan.respawn.kind === 'never'
+          ? 0
+          : Math.round(plan.respawn.seconds * state.config.tickRate);
       const total = plan.table.reduce((sum, row) => sum + row.count, 0);
-      const ring = transform.radius + plan.postGap;
-      const edge = transform.radius + plan.leashRadius;
+      const ring = homeRadius + plan.postGap;
+      const edge = homeRadius + plan.leashRadius;
       let post = 0;
       plan.table.forEach((row, rowIndex) => {
         const body = this.bodyRadius(row.mobId);
@@ -75,10 +87,10 @@ export class GuardRoster {
               postY: at.y,
               homeX: transform.position.x,
               homeY: transform.position.y,
-              homeRadius: transform.radius,
+              homeRadius,
               leashRadius: plan.leashRadius,
               leashTolerance: plan.leashTolerance,
-              respawnTicks: Math.round(plan.respawnSeconds * state.config.tickRate),
+              respawnTicks,
             },
             firstTick,
           );
@@ -94,8 +106,11 @@ export class GuardRoster {
   public update(state: GameState): void {
     state.guards.forEach((slot, index) => {
       if (slot.guardId !== null && !state.entities.isAlive(slot.guardId)) {
-        const isGroup = this.planOf(state, slot)?.respawn === 'group';
-        state.guards.vacate(index, isGroup ? WAITING_FOR_GROUP : state.tick + slot.respawnTicks);
+        const respawn = this.planOf(state, slot)?.respawn.kind ?? 'each';
+        state.guards.vacate(
+          index,
+          respawn === 'each' ? state.tick + slot.respawnTicks : NO_RESPAWN_TICK,
+        );
       }
     });
     this.announceCleared(state);
@@ -107,7 +122,7 @@ export class GuardRoster {
       // camps count against no team's unit cap (18 §7.1).
       if (
         state.tick < slot.respawnAtTick ||
-        !state.entities.isAlive(slot.homeId) ||
+        !GuardRoster.isStanding(state, slot.homeId) ||
         !this.isPostKept(state, slot) ||
         (slot.team !== 'neutral' &&
           state.entities.countOnTeam(slot.team, Unit) >= state.config.limits.maxUnitsPerTeam)
@@ -131,10 +146,13 @@ export class GuardRoster {
    */
   private announceCleared(state: GameState): void {
     const homes = new Map<string, { isAllEmpty: boolean; isWaiting: boolean; ticks: number }>();
-    state.guards.forEach(({ homeId, guardId, respawnAtTick, respawnTicks }) => {
+    state.guards.forEach((slot) => {
+      const { homeId, guardId, respawnAtTick, respawnTicks } = slot;
       const home = homes.get(homeId) ?? { isAllEmpty: true, isWaiting: false, ticks: respawnTicks };
       home.isAllEmpty &&= guardId === null;
-      home.isWaiting ||= respawnAtTick === WAITING_FOR_GROUP;
+      // Only a `group` post waits for its group; a `never` post waits for nothing.
+      home.isWaiting ||=
+        respawnAtTick === NO_RESPAWN_TICK && this.planOf(state, slot)?.respawn.kind === 'group';
       homes.set(homeId, home);
     });
     for (const [homeId, { isAllEmpty, isWaiting, ticks }] of homes) {
@@ -148,6 +166,25 @@ export class GuardRoster {
       });
       state.events.emit('camp-cleared', { entityId: homeId });
     }
+  }
+
+  /** The tick `plan`'s posts are first filled (its `activation`). */
+  private static firstTick(state: GameState, { activation }: GuardPlanDefinition): number {
+    if (activation.at === 'match-start') {
+      return 0;
+    }
+    const { tickRate } = state.config;
+    const countdownEnd = countdownTicks(state.config.match.countdownSeconds, tickRate);
+    return countdownEnd + Math.round(activation.delaySeconds * tickRate);
+  }
+
+  /**
+   * Whether home `homeId` stands: it is in the match and not dead. A home without `Health` (a
+   * zone) always stands.
+   */
+  private static isStanding(state: GameState, homeId: string): boolean {
+    const home = state.entities.get(homeId);
+    return home !== undefined && home.findComponent(Health)?.isDead !== true;
   }
 
   private planOf(state: GameState, slot: GuardSlot): GuardPlanDefinition | undefined {

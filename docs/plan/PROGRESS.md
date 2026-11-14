@@ -6258,6 +6258,279 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   (`eternalus-agent-work/hud-aether-bar/check-3.log`).
 - Next step: push; CodeRabbit re-review after the owner's sign-off comment; merge into phase/3.
 
+### 2026-11-09 — Phase 3 / sprint 3 work: PR A1, zones as guard homes — feat/zone-guard-homes — Aryan Walanj + Claude Code
+
+- Owner decisions for the capture point mini-boss (Aryan Walanj, assigned owner, 2026-11-09):
+  1. It never respawns: once per match.
+  2. Interim: it spawns 120 s after the countdown ends, a `TUNE` placeholder until the quarter
+     mark and the match timeline (reference 04, 07 §7).
+  3. Interim: capture keeps today's behaviour, the boss counting as neutral presence and draining
+     a held point (no `CaptureSystem` change), until the zone-lock PR (`lockedBy`, 07 §7).
+     Decisions 2 and 3 are interim stand-ins, not design changes: reference 04 is not amended and no
+     DEC row is added. Both are logged in `INBOX.md`, due before the zone-lock PR.
+- What was done (PR A1 only; the boss content is PR A2 on its own branch): `GuardRoster` takes a
+  `Structure` or a `Zone` as a home, with home radius 0 for a zone, and a home without `Health`
+  counts as standing. `SpawnSystem` counts zones among its homes, so `validate()` checks zone
+  plans, and rejects an activation a negative or non-finite time after the countdown.
+  `Simulation` spawns zones right after the structures, before the pipeline is built. Guard plans
+  take two discriminated unions: `activation` is `{ at: 'match-start' }` or
+  `{ at: 'countdown-end', delaySeconds }` (camps use 0), and `respawn` is
+  `{ kind: 'each' | 'group', seconds }` or `{ kind: 'never' }`, so `never` needs no respawn time.
+  `GuardWithinLeashInvariant` TSDoc, docs 18 §7.1, 07 §6 and the 15 §3 invariant row updated.
+- Tests: a zone home's post lands on its `ZoneArea` and off a blocking keep, home radius 0, and
+  is filled; a `never` post stays empty and emits no `camp-cleared`; the delayed activation fills
+  on tick countdown end + 120 s and not one tick before; the same zone run twice gives the same
+  `StateHasher` hash; `SpawnSystem` rejects a zone plan naming an unknown mob and an activation
+  delay of -1, `NaN` or `Infinity`.
+- Critic (architecture-reviewer, base `86b4fc04`): PASS WITH NOTES, no blockers, 14 findings.
+  Owner sign-off: (1) decisions 2 and 3 are interim (above); (2) the second timed-spawn path
+  (guard-plan delay beside `MatchTimeline`) and (3) one plan per home, with mates by `homeId`, are
+  accepted as interim and logged in `INBOX.md`, with the one-plan-per-home note added to 18 §7.1;
+  fixed now: (4) `NaN`/`Infinity` tests, (6) a stale `SpawnSystem` comment, (8) over-long TSDoc
+  lines, (12) 18 §7.1 states the posts-on-the-floor rule as content checked by tests and the
+  spawn order as an invariant, (10) the discriminated unions above. Deferred: (5) a
+  `Simulation`-level zone guard test, as A2's acceptance test. Skipped: (9) a respawn policy
+  table. For the PR description and the squash: (7) entity ids of map objects and Legends shift by
+  the zone count, so replays recorded before this branch with id-naming commands do not
+  reproduce; (13) the TSDoc commit's type; (14) no phase-3 checkbox is ticked (groundwork).
+- Checks run: the first `npm run check` failed one test, `Simulation.bots.test.ts` (the director
+  and systems must subscribe before the first `entity-spawned`; zones now spawned earlier emitted
+  theirs too soon). Fix: zones still spawn before the pipeline, but their `entity-spawned` events
+  are emitted after the roster, in the old order. Second `npm run check`: exit 0, Prettier passed,
+  core `Tests 1308 passed (1308)`, client `Tests 1800 passed (1800)`, docs check passed.
+  After the critic fixes: the first `npm run check` failed at knip (the two new union types were
+  exported but unused; now file-local); the next `npm run check`: exit 0, Prettier passed, core
+  `Tests 1310 passed (1310)`, client `Tests 1800 passed (1800)`, docs check passed.
+- Ponytail (`/ponytail-review` on the branch diff): verdict Ship, no bugs or risks; ponytail: 2
+  nice-to-haves applied, net +5 lines (not net 0: the new `GuardRoster.isHome` with its TSDoc and
+  import outweighs the two copies it replaces). (1) The `GuardRoster` class TSDoc is rewrapped
+  under 100 columns. (2) `GuardRoster.isHome(entity)` is the one structure-or-zone test, used by
+  `layOut` and by `SpawnSystem`'s constructor. Checks: the first `npm run check` timed out three
+  slow tests (two in `Simulation.flowFields.test.ts` at 120 s and 60 s, one in `replay.test.ts` at
+  20 s), with no wrong results; the two files alone passed (11 tests, 105 s). The next
+  `npm run check`: exit 0, Prettier passed, core `Tests 1310 passed (1310)`, client
+  `Tests 1800 passed (1800)`, docs check passed.
+- Next step: open the PR (gate done: critic, ponytail, re-check); PR A2 adds the mini-boss content on
+  its own branch, with the `Simulation`-level zone guard test as its acceptance test.
+
+### 2026-11-11 — Phase 3 / sprint 3 work: boss-spec question, merge phase/3 — feat/zone-guard-homes — Aryan Walanj + Claude Code
+
+- What was done: `INBOX.md` gets one question for Sam: does a teammate's boss spec amend
+  reference 04 (capture weights mini-boss 5 / big boss 20 instead of the zone lock, a 10-minute
+  Eternal respawn, a flag for the killer instead of the Eternal form, 30 s out-of-combat regen
+  against balancing.md's 5%/s in zone)? Nothing is built for it, and no Cathedral or middle-boss
+  work is started. Merged `origin/phase/3-sprint-3-work` at `1b25f586`; only this file conflicted
+  (both sides appended), and both are kept: phase/3's entries, then this branch's. PR #91's
+  corner-camp guard plan is not on phase/3, so nothing was converted to the activation shape.
+- Checks run: full `npm run check` exit 0 on the merged tree: core `Tests 1313 passed (1313)`,
+  client `Tests 1818 passed (1818)`, `Documentation check passed.`
+- Next step: Sam answers the boss-spec question; open the PR A1 PR.
+
+### 2026-11-11 — Phase 3 / sprint 3 work: capture point mini-boss (PR A2) — feat/capture-point-boss — Aryan Walanj + Claude Code
+
+- What was done: the outer capture points get their mini-boss as content on PR A1's zone guard
+  homes. `content/mobs/capturePointBoss.ts` (`capture-point-boss`: `heavy-mob`, `guard`
+  controller, `leashed-chase`; balancing.md MiniBoss 8,200 HP, 205 per hit every 1.5 s, 500 XP;
+  size and speed as the heavy minion, `TUNE`), its own aggro rule
+  (`content/ai/aggro/capturePointBoss.ts`, acquisition 10 m = leash less post gap) and a
+  `capture-point` guard plan: 1 boss, leash 35 m (the fort court's inscribed circle), post gap
+  25 m, activation 120 s after the countdown (`TUNE` placeholder), never respawns. The Cathedral's
+  zone (`cathedral-capture-point`) has no plan. Acceptance test (A1 critic finding 5):
+  `Simulation.bosses.test.ts`, seeds 1 and 2, no boss the tick before the delay, then exactly one
+  neutral boss on each outer capture point's floor and none on the Cathedral's, with
+  `TEST_DEBUG_CONFIG` (throws on any invariant) and no non-INFO log record. Doc 07 §13 status
+  note. Not built: moves, regeneration, the zone lock, support mobs, capture weights, team-wide
+  rewards, the Cathedral boss.
+- Error report `logs/errors/2026-11-11T20-29-51-977Z-error-973e7e32.json` (ResizeObserver loop,
+  `client.window`, no match, no tick) is not from this branch (A2), which changed only core and docs; the only
+  `ResizeObserver` in the client is `ui/components/useFitFontSize.ts`. Not fixed here.
+- Checks run: `npm run check` exit 0: core `Tests 1315 passed (1315)`, client
+  `Tests 1818 passed (1818)`, `Documentation check passed.`
+- Next step: pre-PR gate (critic, ponytail, re-check), then the PR into feat/zone-guard-homes or
+  phase/3 once A1 merges.
+
+### 2026-11-11 — Phase 3 / sprint 3 work: capture point mini-boss critic fixes (PR A2) — feat/capture-point-boss — Aryan Walanj + Claude Code
+
+- What was done: pre-PR critic (architecture-reviewer, base `0e8d7956`): pass with notes, no
+  blockers. The owner signed off the findings. (1, 3) Doc 18's implementation status note records
+  interim (c), the boss on `GuardController` until sprint 3.6's `BossController`; 11 §10 and 04
+  §13 point to it; all three `last-reviewed` bumped; `INBOX.md` capture point mini-boss item gains
+  (c). (2) Interim (d) kept, as the corner boss (PR #91): the 500 XP goes to the killer alone, the
+  boss takes full damage from minions and gives no team buff; recorded in `INBOX.md` and doc 18.
+  (5) `Simulation.bosses.test.ts` injects a 2 s activation delay through the new optional
+  `SimulationOptions.guardPlans` (passed to `DefaultSystemPipeline` as `hordes.guards`;
+  `GUARD_PLANS` when omitted), same checks; it checks only that the shipped plan activates after
+  the countdown, not that its delay is above 0 (round 2 finding 1). (6, 7) Logged in `INBOX.md` as better-than-design follow-ups, no code change. (9) The
+  ResizeObserver note above now names this branch. (11) The `MARCHING_ONLY` TSDoc names every
+  guard-post mob. Skipped by the owner: 4 (engagement test), 8 (rename). 10 goes in the PR
+  description.
+- Checks run: `npm run check` exit 0: core `Tests 1315 passed (1315)`, client
+  `Tests 1818 passed (1818)`, `Documentation check passed.` (knip: one configuration hint, no
+  error).
+- Next step: ponytail review on the branch diff, re-check, then the PR.
+
+### 2026-11-11 — Phase 3 / sprint 3 work: capture point mini-boss critic round 2 fixes (PR A2) — feat/capture-point-boss — Aryan Walanj + Claude Code
+
+- What was done: critic round 2 (head `78d7b30d`): pass with notes, no blockers. The owner signed
+  off the findings. (1) `guardPlans.test.ts` pins that the shipped capture point plan activates a
+  delay above 0 after the countdown; the boss test drops its weaker shipped-plan check. (2) The
+  `SimulationOptions.guardPlans` TSDoc says it is not recorded in `ReplaySetup` (tests and tools
+  only). (3, 4) Long lines re-wrapped in `hordeMatches.ts` and doc 18; doc 18's implementation
+  status date bumped to 2026-11-11. (7) The entry above now says what the boss test checks. (8)
+  The `GuardPlanSource` alias is logged in `INBOX.md` as a follow-up, no code change. 5, 6 and 9
+  go in the PR description.
+- Checks run: `npm run check` exit 0: core `Tests 1316 passed (1316)`, client
+  `Tests 1818 passed (1818)`, `Documentation check passed.` (knip: one configuration hint, no
+  error).
+- Next step: ponytail review on the branch diff, re-check, then the PR.
+
+### 2026-11-12 — Phase 3 / sprint 3 work: capture point mini-boss ponytail cut (PR A2) — feat/capture-point-boss — Aryan Walanj + Claude Code
+
+- What was done: `/ponytail-review` on the branch diff (`0e8d7956...6293059d`): verdict Ship, one
+  nice-to-have. Applied: `Simulation.bosses.test.ts` uses its injected `DELAY_SECONDS` directly
+  instead of reading it back from the plan it built and asserting it. ponytail: 1 nice-to-have
+  applied, -4 lines. Line edits inside one test, no structural change, so no critic re-check.
+- Checks run: `npm run check` exit 0: core `Tests 1316 passed (1316)`, client
+  `Tests 1818 passed (1818)`, `Documentation check passed.` (knip: one configuration hint, no
+  error).
+- Next step: open the PR into feat/zone-guard-homes (or phase/3 once A1 merges) with the critic
+  verdicts, the ponytail cut and this check output.
+
+### 2026-11-12 — Phase 3 / sprint 3 work: capture point mini-boss quarter-mark spawn and court aggro (PR A2) — feat/capture-point-boss — Aryan Walanj + Claude Code
+
+- What was done: (2) The `capture-point` guard plan activates 440 s after the countdown ends: the
+  default timeline's `quarter-mark` entry (0.25 × `plannedMatchSeconds`, counted from match start,
+  tick 13,500) less the 10 s countdown, since guard plan delays count from the countdown's end.
+  Reference 04 cited. `content/` may not import `config/`, so the number is written in
+  `guardPlans.ts` and `guardPlans.test.ts` derives it from `createDefaultGameConfig` with
+  `timelineMarkTick` and `countdownTicks`. `INBOX.md` interim (a) now keeps only the mechanism
+  (guard plan delay instead of `MatchTimeline`). (4) The boss's `acquisitionRadius` and
+  `visionRadius` go from 10/12 m to 60 m (the 35 m leash plus the 25 m post gap), so it reacts to
+  an enemy anywhere in its court, as the corner boss's aggro was widened (PR #91). TUNE markers
+  kept. Doc 07 status note updated.
+- Checks run: `npm run check` exit 0: core `Tests 1316 passed (1316)`, client
+  `Tests 1818 passed (1818)`, `Documentation check passed.`
+- Next step: Part B (support guards, 25% minion damage) on `feat/capture-point-boss-guards`.
+
+### 2026-11-12 — Phase 3 / sprint 3 work: capture point mini-boss footprint (PR A2) — feat/capture-point-boss — Aryan Walanj + Claude Code
+
+- What was done: `capture-point-boss` `footprintRadius` 0.8 → 1.2 m (TUNE: 1.5× the heavy minion,
+  so it reads as a boss; larger sizes stay for the Cathedral boss). Checked the DEC-144 leash
+  tolerance rule: one decision walk (2.8 m/s × 10 ticks / 30 = 0.93 m) plus its farthest stance
+  (1.2 + 1.25 Sentinel + 1.5 reach = 3.95 m) is 4.88 m, within the shared 5 m tolerance, so the
+  `capture-point` plan's `leashTolerance` is unchanged; the `guardPlans.ts` comment now names the
+  boss as the tightest case (about 0.1 m of margin). Checked the post clears the keep: the fort
+  keep (`MapFortificationBuilder`, size 88) reaches at most about 22.7 m from the anchor, so a post
+  25 m out keeps at least 2.3 m from it, more than the 1.2 m radius.
+- Checks run: `npm run check` exit 0, ending `Documentation check passed.`
+- Next step: merge into `feat/capture-point-boss-guards` and run the boss tests there.
+
+### 2026-11-12 — Phase 3 / sprint 3 work: capture point mini-boss support mobs and minion damage share — feat/capture-point-boss-guards — Aryan Walanj + Claude Code
+
+- What was done: (1) The `capture-point` guard plan adds the boss's support mobs (reference 04
+  "along with high-power enemy and support mobs"): 2 `heavy-guard` + 4 `light-guard`, a count
+  reference 04 does not give, borrowed from balancing.md's checkpoint-2 capture point guard set
+  (TUNE). They take the plan's posts on the boss's 25 m ring, its activation (the quarter mark)
+  and its `never` respawn (respawning guards needs Sam's sign-off); no guard plan shape change.
+  `INBOX.md` interim (e) asks the owner to confirm. (2) The quarter-mark spawn (and (4) the
+  court-wide aggro) were done on `feat/capture-point-boss` and come in through its merge.
+  (3) `combat/BossMinionDamageStep.ts`, the last of the default damage steps: a hit from a horde member on a mob listed in
+  `BOSS_MINION_DAMAGE_TAKEN` (`content/mobs/minionModifiers.ts`, `capture-point-boss: 0.25`, TUNE,
+  balancing.md) is cut to that share. The corner boss is not on this branch (`feat/bosses-p3`), so
+  it is not listed; adding it is one line there. Interim (d) no longer lists the minion damage.
+  Tests: `BossMinionDamageStep.test.ts` (the step alone and through the default `DamagePipeline`:
+  a minion's 100 takes 25 off the boss, a Legend's 100 takes 100; guards, Legends and attackerless
+  hits are untouched); `Simulation.bosses.test.ts` now builds the real map objects and checks,
+  seeds 1 and 2, the boss and every support mob on each outer capture point's floor, none on the
+  Cathedral's, none inside a blocking footprint (keep, walls, scenery), with every invariant
+  (`no-map-object-overlap`, `guard-within-leash`) run each tick. Docs 05 §9, 07 and 18 status notes.
+- Checks run: `npm run check` exit 0 on the third run: core `Tests 1318 passed (1318)`,
+  client `Tests 1818 passed (1818)`, `Documentation check passed.` The first two runs failed one
+  test, `diagnostics/replay.test.ts` "reproduces 10 seeds x 3,000 ticks …"
+  (`Test timed out in 20000ms`, 21.7–25.6 s under the full parallel run); alone it takes about
+  4 s on this branch and on its base, the four slowest Simulation test files time the same on both (within 3%), and the
+  core suite alone passed, so it is a load-dependent timeout, not a regression. Timeout not
+  raised; a flaky-timeout follow-up is for the owner.
+- Next step: critic and ponytail on the branch, then the PR into feat/capture-point-boss.
+
+### 2026-11-12 — Phase 3 / sprint 3 work: capture point mini-boss pre-PR gate fixes (PR A2) — feat/capture-point-boss — Aryan Walanj + Claude Code
+
+- What was done: applied the pre-PR gate's should-fix and nits for `93f594d0..f4fc910b` (critic
+  PASS WITH NOTES, ponytail Ship). (1) `INBOX.md` asks Sam to sign off the boss's 1.2 m
+  footprint (kept). (2) The boss aggro comments say its 60 m range covers the court from its
+  post; at the court's edge the far side can be out of range. (3) The `TOLERANCE` comment in
+  `guardPlans.ts` works the DEC-144 sum per guard and shows the tightest case, the boss at
+  4.88 m. (4) `guardPlans.test.ts` checks that the boss's aggro range (through its `aiProfile`)
+  is at least the `capture-point` plan's leash radius plus its post gap. Better-than-design
+  items (timeline-mark activation, aggro range derived from the plan) are not taken up.
+- Checks run: `npm run check:quick` exit 0; `guardPlans.test.ts` `Tests 3 passed (3)`; prettier
+  clean. The full `npm run check` runs after the commit, alone, with the result in the chat report.
+- Next step: merge into `feat/capture-point-boss-guards`.
+
+### 2026-11-12 — Phase 3 / sprint 3 work: capture point mini-boss support mobs pre-PR gate fixes — feat/capture-point-boss-guards — Aryan Walanj + Claude Code
+
+- What was done: merged `feat/capture-point-boss` (its gate fixes) and applied the pre-PR gate's
+  should-fix and nits for `f4fc910b..df8e309e` (critic PASS WITH NOTES, ponytail Ship).
+  (1) `BossMinionDamageStep`'s constructor takes the mob ids and throws on an id that is not a
+  mob or a share outside (0, 1]; `defaultDamageSteps.ts` passes `MOB_DEFINITIONS.ids`. New
+  `content/mobs/minionModifiers.test.ts` checks every `BOSS_MINION_DAMAGE_TAKEN` key is a mob.
+  (2) `BossMinionDamageStep.test.ts` derives the expected damage from the content share and
+  tests the constructor's rejections. (3) Doc 05 §9 lists the step as an interim stand-in for
+  `damageMultipliers` keyed by `damageClass` and splits the run-on list; docs 05, 07 and 18 name
+  `minionModifiers.ts` and the `capture-point` plan in `guardPlans.ts` instead of copying the
+  share and the support-mob count. (4) This file: the support-mob entry names item (2), its
+  indent is fixed, and it now follows the footprint entry. Better-than-design items and a
+  long-run determinism test are not taken up.
+- Checks run: `npm run check:quick` and the touched tests before the commit; the full
+  `npm run check` runs after the commit, alone, with the result in the chat report.
+- Next step: open the PRs with the critic verdicts, ponytail results and check output.
+
+### 2026-11-12 — Phase 3 / sprint 3 work: PR #99 review (claudiodh) fixes — feat/capture-point-boss-guards, merged into feat/capture-point-boss — Aryan Walanj + Claude Code
+
+- What was done: addressed claudiodh's request-changes review of PR #99. PR #85 is not merged
+  into `origin/phase/3-sprint-3-work` (still at `1b25f586`), so F5 (the aggro rule as a
+  `GuardAggroRuleDefinition`) is skipped. (F1) The boss's 500 XP (balancing.md MiniBoss row) is
+  paid to every Legend of the killer's playable team, each at most what lifts it 2 levels
+  (DEC-237, recorded in the decisions log from the owner's words in Sam's PR #91 review):
+  `XP_SOURCES.teamKills`, `Progression.xpToReach`, `ProgressionSystem`'s `team-kill` award, and
+  `level-matches-xp` checks the killer's team; the boss's own `xpValue` is 0. (F2) The
+  quarter-mark activation was already in place (`43c923b1`, `guardPlans.test.ts` derives it).
+  (F8) Zone lock: `CaptureSystem` sets `Capturable.lockedBy` from the zone's guard posts
+  (`content/zones/zoneLocks.ts`) and a locked zone's progress does not move (reference 04).
+  (F4) `Simulation.bossFight.test.ts`: the boss goes for and hits an enemy Legend in its court,
+  chases one leaving the court no farther than its leash, locks its zone, and after a real kill
+  (warriors attacking it) never respawns while the zone is then captured;
+  `CaptureSystem.lock.test.ts` covers the lock itself. (F6) `content/zones/capturePointCourt.ts`
+  derives the leash, post gap (now midway between keep corners and walls, about 29 m) and the
+  boss's acquisition and vision radii from the fort in `buildingGeometry.ts`, which now holds the
+  keep's divisors too. (F7) `Simulation.types.ts` and doc 15 §7 say `guardPlans` is not in
+  `ReplaySetup`. (Nit) One `NO_RESPAWN_TICK` sentinel; the group clear checks the plan's kind.
+  (F3) Unchanged; `INBOX.md` interim (c) asks Sam to sign off.
+- Checks run: `npm run check:quick` exit 0 after the lint fix; `npm run docs:check` passed; the
+  touched suites pass (`Tests 328 passed (328)` and the progression, capture and roster suites).
+  The full `npm run check` is left to the human.
+- Next step: critic and ponytail review; then the human runs `npm run check` and updates the PR.
+
+### 2026-11-12 — Phase 3 / sprint 3 work: PR #99 review fixes, pre-PR gate notes — feat/capture-point-boss-guards, merged into feat/capture-point-boss — Aryan Walanj + Claude Code
+
+- What was done: the critic (PASS WITH NOTES, no blockers) and ponytail (Ship) reviewed
+  `e2490797`. Applied: (1) the capped-reward test is named for what it checks, and a new test
+  pays the full 500 XP when two levels need more and nothing to a Legend at the level cap; (2) a
+  `shortcut:` comment and `INBOX.md` interim (d) record that a boss killed by a hit from a removed
+  Legend pays nobody; (3) `INBOX.md` asks Sam and the owner about four better-than-design items
+  (the lock read from state instead of 12 §7's listener, one boss traits block, a typed cap, a
+  `GuardStore` query); (5) `CAPTURE_POINT_COURT`'s TSDoc sits on the export; (6) the fight test
+  derives the boss count from the map's outer zones and has a 120 s timeout; (7) a long TSDoc line
+  is rewrapped; (8) a Legend the cap leaves nothing to pay gets no `xp-gained`. Not taken up:
+  (4) `LockedZoneOwnerInvariant` stays open (INBOX interim (b), 07 status); (9) a dead `never`
+  post's hashed respawn tick changed with the merged sentinel, to mention in the PR. Ponytail's
+  two test-only nice-to-haves are skipped.
+- Checks run: `npm run check:quick` via the pre-commit hook; `npm run docs:check` passed;
+  `ProgressionSystem.test.ts` `Tests 16 passed (16)`, `Simulation.bossFight.test.ts`
+  `Tests 3 passed (3)`. The full `npm run check` is left to the human.
+- Next step: the human runs `npm run check` and updates PR #99 with the critic verdict, the
+  ponytail result and the check output.
+
 ### 2026-11-10 — Phase 3 / sprint 3.1 — feat/status-control-immune (sync) — claudiodh + Claude Code
 
 - What was done: answered SamarjitBhogal's 2026-11-07 review on PR #52. Merged

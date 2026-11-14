@@ -8,7 +8,7 @@ import type { LevelScalingDefinition } from '../content/progression/progression.
 import { MOB_KINDS } from '../content/mobs/mobKinds';
 import type { Entity } from '../entities/Entity';
 import type { GameState } from '../state/GameState';
-import { opponentOf } from '../teams/playableTeams';
+import { isPlayableTeam, opponentOf } from '../teams/playableTeams';
 import type { System, SystemContext } from './System.types';
 import type { Award, ProgressionContent } from './ProgressionSystem.types';
 
@@ -16,9 +16,11 @@ import type { Award, ProgressionContent } from './ProgressionSystem.types';
  * Turns kills into XP and levels (architecture 05 §13). It listens to `entity-died`, prices the kill
  * while the victim is still in the store, and in its own pass gives the XP to the killer's
  * `Progression`. A destroyed structure (`structure-destroyed`) pays every Legend of the opposing
- * team (DEC-186). Self-kills and ally kills pay nothing (O5). Each level gained raises max health by
- * the class's share of its base health (O3) and max aether, heals and refills by the raise only
- * while the Legend is alive (O4), and emits `level-up`.
+ * team (DEC-186), and a boss in `xpSources.teamKills` pays every Legend of its killer's playable
+ * team instead of the killer, lifting none more than the reward's `maxLevels` (DEC-237); a Legend
+ * the cap leaves nothing to pay gets no award. Self-kills and ally kills pay nothing (O5). Each
+ * level gained raises max health by the class's share of its base health (O3) and max aether,
+ * heals and refills by the raise only while the Legend is alive (O4), and emits `level-up`.
  */
 export class ProgressionSystem implements System {
   public readonly name = 'progression';
@@ -44,6 +46,23 @@ export class ProgressionSystem implements System {
       if (victimTeam === undefined || killerTeam === victimTeam) {
         // O5: no reward for an ally kill or a self-kill (a killer is on its own team); teams are
         // compared, so neutral camp mobs still pay.
+        return;
+      }
+      const teamKill = content.xpSources.teamKills[victim.definitionId];
+      if (teamKill !== undefined) {
+        // shortcut: the team is the killer's, read from the store, so a boss killed by a hit from
+        // a Legend already removed (e.g. its projectile) pays nobody; upgrade when `DamageSource`
+        // carries the attacker's team (INBOX.md capture point mini-boss interim (d)).
+        if (isPlayableTeam(killerTeam)) {
+          this.pending.push({
+            kind: 'team-kill',
+            team: killerTeam,
+            victimId: entityId,
+            victimTeam,
+            xp: teamKill.xp,
+            maxLevels: teamKill.maxLevels,
+          });
+        }
         return;
       }
       const xp = this.xpFor(victim);
@@ -79,7 +98,7 @@ export class ProgressionSystem implements System {
         }
         continue;
       }
-      // Every Legend still in the store on the destroying team; a dead one is already removed.
+      // Every Legend still in the store on the rewarded team; a dead one is already removed.
       // ponytail: stand-in removed by GL-12 (DEC-186, owner 2026-11-05: "pay on respawn"): a Legend
       // dead when the structure falls must get its share when it respawns; respawn does not exist.
       state.entities.forEach((entity) => {
@@ -99,7 +118,21 @@ export class ProgressionSystem implements System {
     if (progression === undefined) {
       return;
     }
-    const gained = this.award(recipient, progression, award, state);
+    const curve = this.content.curves.get(progression.curveId);
+    const capped =
+      award.kind === 'kill' || award.maxLevels === undefined
+        ? award
+        : {
+            ...award,
+            xp: Math.min(
+              award.xp,
+              progression.xpToReach(progression.level + award.maxLevels, curve),
+            ),
+          };
+    if (capped.kind === 'team-kill' && capped.xp <= 0) {
+      return;
+    }
+    const gained = this.award(recipient, progression, capped, state);
     const definition = this.legendOf(recipient);
     for (let step = gained - 1; step >= 0; step -= 1) {
       if (definition !== undefined) {
