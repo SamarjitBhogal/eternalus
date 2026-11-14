@@ -4,9 +4,11 @@ import { Health } from '../components/Health';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { MapGenerator } from '../map/MapGenerator';
 import type { Team } from '../teams/teams.types';
 import { Entity } from '../entities/Entity';
 import { Simulation } from '../Simulation';
+import type { Replay, ReplayTargetFactory } from '../Simulation.types';
 import type { System, SystemContext } from '../systems/System.types';
 import type { Vec2 } from '../utils/geometry.types';
 import { IdGenerator } from '../utils/IdGenerator';
@@ -15,7 +17,7 @@ import { WANDER_SEED_7 } from './__fixtures__/wanderSeed7.replay';
 import { NullLogger } from './NullLogger';
 import { randomCommand } from './randomCommands';
 import { recordReplay, runReplay } from './replay';
-import type { Replay, ReplayTarget, ReplayTargetFactory } from './Replay.types';
+import type { ReplayTarget } from './Replay.types';
 
 const MAX_WALKERS = 64;
 const SPAWN_CHANCE = 0.2;
@@ -55,15 +57,14 @@ class WanderSystem implements System {
   }
 }
 
-const createTarget: ReplayTargetFactory = (config, seed) =>
-  new Simulation({ config, seed, logger: new NullLogger(), systems: [new WanderSystem()] });
+const createTarget: ReplayTargetFactory = (setup) =>
+  new Simulation({ ...setup, logger: new NullLogger(), systems: [new WanderSystem()] });
 
 const recordRandomMatch = (seed: number, ticks: number, commandEvery: number): Replay => {
   const commandRng = new SeededRandom(seed).fork('commands');
   return recordReplay(
+    { config: createDefaultGameConfig(), seed },
     {
-      config: createDefaultGameConfig(),
-      seed,
       ticks,
       checkpointEvery: 100,
       commandsFor: (tick, snapshot) =>
@@ -86,8 +87,8 @@ describe('replay', () => {
         expect(second).toEqual(first);
         expect(first.checkpoints).toHaveLength(31);
         let replayed: ReplayTarget | undefined;
-        const outcome = runReplay(first, (config, matchSeed) => {
-          replayed = createTarget(config, matchSeed);
+        const outcome = runReplay(first, (setup) => {
+          replayed = createTarget(setup);
           return replayed;
         });
         expect(outcome.firstDivergence).toBeNull();
@@ -117,11 +118,30 @@ describe('replay', () => {
     expect(outcome.firstDivergence?.actual).toBe(replay.checkpoints[2]?.hash);
   });
 
+  it('returns the setup it was given beside the commands and checkpoints', () => {
+    const config = createDefaultGameConfig();
+    const map = new MapGenerator().generate(config, 11);
+    const replay = recordReplay(
+      { config, seed: 11, map },
+      { ticks: 10, checkpointEvery: 5, commandsFor: () => [] },
+      createTarget,
+    );
+
+    expect(replay).toMatchObject({ seed: 11, config, map, commands: [] });
+    expect(Object.keys(replay).sort()).toEqual([
+      'checkpoints',
+      'commands',
+      'config',
+      'map',
+      'seed',
+    ]);
+    expect(replay.checkpoints.map(({ tick }) => tick)).toEqual([0, 5, 10]);
+  });
+
   it('notices a missing command', () => {
     const replay = recordReplay(
+      { config: createDefaultGameConfig(), seed: 4 },
       {
-        config: createDefaultGameConfig(),
-        seed: 4,
         ticks: 300,
         checkpointEvery: 100,
         commandsFor: (tick, snapshot) => {

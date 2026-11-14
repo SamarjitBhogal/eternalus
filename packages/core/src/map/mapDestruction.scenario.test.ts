@@ -5,6 +5,7 @@ import { NullLogger } from '../diagnostics/NullLogger';
 import { MapGenerator } from './MapGenerator';
 import { MapPresentationBuilder } from './MapPresentationBuilder';
 import { MapObjectBuilder } from './MapObjectBuilder';
+import { countdownTicks } from '../config/countdownTicks';
 
 describe('map-object destruction scenario', () => {
   it('destroys a house using normal attacks and replays seed, objects and rubble state deterministically', () => {
@@ -24,6 +25,9 @@ describe('map-object destruction scenario', () => {
         map,
         mapObjects: objects,
       });
+      // The countdown holds every move and attack (DEC-88).
+      const countdownEnd = countdownTicks(config.match.countdownSeconds, config.tickRate);
+      for (let i = 0; i < countdownEnd; i++) sim.step();
       sim.enqueueCommand({
         type: 'dev-spawn',
         kind: 'warrior',

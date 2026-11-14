@@ -4,7 +4,7 @@ description: Sprint checklists for the Structure family, layered shields, the da
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-29
+last-reviewed: 2026-11-05
 tags: [plan, phase-2, structures, combat, projectiles, spawning]
 paths:
   ['packages/core/src/combat/**', 'packages/core/src/entities/**', 'packages/core/src/systems/**']
@@ -33,7 +33,7 @@ in Phase 4. Every number below is `TUNE` from the game doc's "Stronghold Defense
 - **Branch:** `phase/2-structures-and-combat` (stacked on `phase/1-…` until it merges).
 - **Weeks:** 4–5 (2026-10-26 → 2026-11-06). Week 4: sprints 2.1, 2.2, 2.6, 2.8; week 5:
   sprints 2.3, 2.4, 2.5, 2.7, 2.9.
-- **Requirement areas served:** "FR: lanes & towers", "FR: strongholds & walls", "FR: capture
+- **Requirement areas served:** "FR: character select" (FR-119, the Legend pick; Track B carry-over), "FR: lanes & towers", "FR: strongholds & walls", "FR: capture
   points", "FR: hordes & spawning" (schedule), "FR: map & minimap" (structures on both), "FR:
   runtime monitoring & logging" (pass-through and unexplained-death checks), "NFR: no
   hardcoding" (ammo, multipliers and schedule in content).
@@ -211,10 +211,25 @@ Owner: _ (client lane). Weeks 4–5.
       draw-call snapshot per state. Done when: views read `Snapshot` only.
 - [ ] **Minimap glyphs through `ViewRegistry`** (glyph per definition, owner colour, capture progress
       ring). Owner: _. Test: the Phase 1 "new feature appears on the minimap" test extended to a
-      structure and an obstacle. Done when: no minimap code names a kind.
+      structure and an obstacle. Done when: no minimap code names a kind. _(2026-11-05: met for
+      units. `EntityLayer.drawMinimap` draws each living entity through its `EntityView`, and no
+      minimap code names a unit kind (DEC-187). Feature glyphs still come from `MapView`; the
+      capture-progress ring is not built.)_
 - [ ] **HUD `HealthBar` for the selected structure and `Announcer` events** (tower razed, point
       captured) via the bridge. Owner: _. Test: bridge events reach the store throttled. Done
       when: `ui/` still imports only `bridge/`.
+- [x] **HUD leave-interior control** (replaces the interim "Leave cathedral" button in
+      `game/GameCanvasChrome.tsx`, register CD-22: the bridge publishes whether the camera is
+      inside the cathedral interior, a `ui/hud/` control shows only then, styled from tokens, and
+      emits a `leave-interior` `UiIntent` that `Match` handles, per the architecture 13 §9
+      recipe). Owner: _. Test: the control renders only while the camera is inside and dispatches
+      `leave-interior`; `Match` returns to the following camera on the intent. Done when: `game/`
+      renders no normal-play control.
+      **Superseded 2026-11-02 (DEC-143):** the separate interior is gone (#30's same-world
+      buildings), and a building's roof opens while the player's Legend stands inside it, so
+      there is no interior state to leave and no control to build; `game/` renders no
+      normal-play control. Dropped by the owner on 2026-11-02 (DEC-148)
+      ([06](../architecture/06-map-and-minimap.md) §10).
 
 **Success metric:** every structure and obstacle kind renders on the map and minimap with 0
 kind-specific code outside `ViewRegistry` entries.

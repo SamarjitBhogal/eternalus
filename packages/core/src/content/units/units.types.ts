@@ -19,7 +19,7 @@ export type MovementProfile = {
  * How a unit steers: one `MovementStrategy` per id in `entities/strategies/defaultStrategyRegistry.ts`
  * (architecture 04 §4).
  */
-export type MovementStrategyId = 'lane-follow';
+export type MovementStrategyId = 'lane-follow' | 'leashed-chase';
 
 /** How an attack is carried out; one `AttackStrategy` per id in `entities/strategies/defaultStrategyRegistry.ts`. */
 export type AttackStrategyId = 'melee';

@@ -1,11 +1,19 @@
 import { describe, expect, it } from 'vitest';
 
+import { Aether } from '../components/Aether';
 import { Health } from '../components/Health';
+import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { ContentCatalogue } from '../content/ContentCatalogue';
+import type { MapDefinition } from '../content/maps/maps.types';
+import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import { Entity } from '../entities/Entity';
+import type { Team } from '../teams/teams.types';
 import { SeededRandom } from '../utils/SeededRandom';
+import { TWO_LANE_MAP } from './__fixtures__/twoLaneMap';
+import { matchWorldOf } from './__fixtures__/matchWorld';
 import { GameState } from './GameState';
 import { TestBuffTower } from './__fixtures__/TestBuffTower';
 
@@ -26,6 +34,51 @@ class Marker extends Entity {
 
   protected installComponents(): void {
     // A marker has no components.
+  }
+}
+
+/** An entity that levels along the `test` curve and has nothing else. */
+class Leveller extends Entity {
+  public readonly kind = 'leveller';
+  public readonly family = 'test';
+
+  protected installComponents(): void {
+    this.addComponent(new Progression('test'));
+  }
+}
+
+/** An entity with an aether pool of 80 and nothing else. */
+class Caster extends Entity {
+  public readonly kind = 'caster';
+  public readonly family = 'test';
+
+  protected installComponents(): void {
+    this.addComponent(new Aether(80));
+  }
+}
+
+const CURVES = new ContentCatalogue<LevelCurveDefinition>([
+  { id: 'test', xpToNext: [100, 150], cap: 3 },
+]);
+
+/** An entity of any family and team at `(x, y)`, for the ally-damage tally. */
+class Placed extends Entity {
+  public readonly kind = 'placed';
+
+  public constructor(
+    id: string,
+    public readonly family: string,
+    private readonly team: Team,
+    private readonly x: number,
+    private readonly y: number,
+  ) {
+    super(id, 'placed');
+  }
+
+  protected installComponents(): void {
+    this.addComponent(new Transform({ x: this.x, y: this.y }, 0.5));
+    this.addComponent(new Health(100));
+    this.addComponent(new TeamMembership(this.team));
   }
 }
 
@@ -54,7 +107,7 @@ describe('GameState', () => {
   it('starts at tick 0 in the countdown and counts ticks', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
     expect(state.tick).toBe(0);
-    expect(state.phase).toBe('countdown');
+    expect(state.match.phase).toBe('countdown');
     state.advanceTick();
     state.advanceTick();
     expect(state.tick).toBe(2);
@@ -77,9 +130,9 @@ describe('GameState', () => {
     state.entities.add(spawned(new Soldier('entity-1', 'soldier-definition')));
     state.entities.add(spawned(new Marker('entity-2', 'marker-definition')));
     state.advanceTick();
-    expect(state.snapshot()).toEqual({
+    expect(state.snapshot(CURVES)).toEqual({
       tick: 1,
-      phase: 'countdown',
+      match: { phase: 'countdown', phaseEnteredTick: 0, upcoming: [], humanLegendId: null },
       entities: [
         {
           id: 'entity-1',
@@ -89,6 +142,10 @@ describe('GameState', () => {
           team: 'light',
           transform: { x: 3, y: 4, radius: 0.5 },
           health: { current: 100, max: 100 },
+          progression: null,
+          aether: null,
+          area: null,
+          capture: null,
         },
         {
           id: 'entity-2',
@@ -98,6 +155,10 @@ describe('GameState', () => {
           team: null,
           transform: null,
           health: null,
+          progression: null,
+          aether: null,
+          area: null,
+          capture: null,
         },
       ],
       hordes: [],
@@ -106,6 +167,29 @@ describe('GameState', () => {
         dark: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
       },
     });
+  });
+
+  it("snapshots a leveller's level, the XP inside that level and what the level needs, from the curves it is given", () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const leveller = spawned(new Leveller('entity-1', 'leveller-definition'));
+    leveller.getComponent(Progression).addXp(130, CURVES.get('test'));
+    state.entities.add(leveller);
+
+    expect(state.snapshot(CURVES).entities[0]?.progression).toEqual({
+      level: 2,
+      xp: 30,
+      xpToNext: 150,
+    });
+  });
+
+  it("snapshots a caster's aether left and its full pool", () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const caster = spawned(new Caster('entity-1', 'caster-definition'));
+    caster.getComponent(Aether).spend(30);
+    caster.getComponent(Aether).raiseMax(10);
+    state.entities.add(caster);
+
+    expect(state.snapshot(CURVES).entities[0]?.aether).toEqual({ current: 50, max: 90 });
   });
 
   it('snapshots the hordes and team counters as copies the store no longer changes', () => {
@@ -121,7 +205,7 @@ describe('GameState', () => {
     });
     state.recordSpawnRequest('dark', 3, 2);
 
-    const snapshot = state.snapshot();
+    const snapshot = state.snapshot(CURVES);
     state.hordes.removeMember('entity-1');
     state.hordes.setProgress('horde-1', 20);
     state.recordSpawnRequest('dark', 1, 1);
@@ -148,7 +232,11 @@ describe('GameState', () => {
   it('produces a snapshot that survives structuredClone unchanged', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
     state.entities.add(spawned(new Soldier('entity-1', 'soldier-definition')));
-    const snapshot = state.snapshot();
+    state.entities.add(spawned(new Leveller('entity-2', 'leveller-definition')));
+    state.entities.add(spawned(new Caster('entity-3', 'caster-definition')));
+    const snapshot = state.snapshot(CURVES);
+    expect(snapshot.entities[1]?.progression).not.toBeNull();
+    expect(snapshot.entities[2]?.aether).not.toBeNull();
     expect(structuredClone(snapshot)).toEqual(snapshot);
   });
 
@@ -187,6 +275,7 @@ describe('GameState', () => {
       amount: 5,
       victimId: 'entity-2',
       victimTeam: 'dark',
+      cause: 'kill',
     } as const;
     state.events.emit('xp-gained', award);
     for (let i = 0; i < 600; i += 1) {
@@ -196,6 +285,53 @@ describe('GameState', () => {
     expect(state.xpAwardsThisTick()).toEqual([award]);
     state.advanceTick();
     expect(state.xpAwardsThisTick()).toEqual([]);
+  });
+  describe('match state', () => {
+    const SCHEDULE = [
+      { entryId: 'countdown-over', tick: 60 },
+      { entryId: 'mid-game', tick: 900 },
+    ];
+
+    it('builds its match record in the countdown, from the schedule it is given', () => {
+      const state = new GameState(createDefaultGameConfig(), 1, null, {}, SCHEDULE);
+      expect(state.match.phase).toBe('countdown');
+      expect(state.match.schedule).toEqual(SCHEDULE);
+      expect(Object.isFrozen(state.match.schedule[0])).toBe(true);
+    });
+
+    it("takes the player team from the config's match section", () => {
+      const config = createDefaultGameConfig({ match: { playerTeam: 'dark' } });
+      expect(new GameState(config, 1).match.playerTeam).toBe('dark');
+    });
+
+    it('stamps a phase change with its tick and records it for this tick only', () => {
+      const state = new GameState(createDefaultGameConfig(), 1);
+      state.advanceTick();
+      state.advanceTick();
+
+      state.match.setPhase('early-game');
+
+      expect(state.match.phaseEnteredTick).toBe(2);
+      expect(state.events.recentEvents()).toEqual([
+        { tick: 2, type: 'phase-changed', payload: { from: 'countdown', to: 'early-game' } },
+      ]);
+      expect(state.phaseChangesThisTick()).toEqual([{ from: 'countdown', to: 'early-game' }]);
+      state.advanceTick();
+      expect(state.phaseChangesThisTick()).toEqual([]);
+    });
+
+    it('snapshots the phase and the unfired marks, from the timeline cursor on', () => {
+      const state = new GameState(createDefaultGameConfig(), 1, null, {}, SCHEDULE);
+      state.match.advanceTimeline();
+      state.match.setPhase('early-game');
+
+      expect(state.snapshot(CURVES).match).toEqual({
+        phase: 'early-game',
+        phaseEnteredTick: 0,
+        upcoming: [{ entryId: 'mid-game', tick: 900 }],
+        humanLegendId: null,
+      });
+    });
   });
 
   it('counts spawn requests per team and rejects a spawned count outside 0..requested', () => {
@@ -236,5 +372,74 @@ describe('GameState', () => {
 
     expect(state.teams.light.towersLostByLane).toEqual({ 'lane-0': 2, 'lane-1': 1 });
     expect(state.teams.dark.towersLostByLane).toEqual({});
+  });
+
+  describe('ally damage (DEC-89, architecture 18 §3.3)', () => {
+    /**
+     * The two-lane map (lane-0 at y 20, lane-1 at y 40) with a Light Legend near lane-0, a Light
+     * mob and a Light structure near lane-1, a Dark mob, and a neutral camp mob.
+     */
+    const stateWithUnits = (map: MapDefinition | null = TWO_LANE_MAP) => {
+      const state = new GameState(
+        createDefaultGameConfig(),
+        1,
+        map === null ? null : matchWorldOf(map),
+      );
+      for (const entity of [
+        new Placed('legend-light', 'legend', 'light', 60, 22),
+        new Placed('mob-light', 'mob', 'light', 60, 38),
+        new Placed('tower-light', 'structure', 'light', 60, 41),
+        new Placed('mob-dark', 'mob', 'dark', 140, 20),
+        new Placed('camp-mob', 'mob', 'neutral', 100, 30),
+      ]) {
+        state.entities.add(spawned(entity));
+      }
+      const hit = (targetId: string, attackerId: string | null, amount: number) => {
+        state.events.emit('damage-applied', {
+          targetId,
+          amount,
+          absorbed: 0,
+          source: { attackerId, kind: 'weapon', definitionId: 'test-weapon' },
+        });
+      };
+      return { state, hit };
+    };
+
+    it("counts enemy hits on a team's Legends and mobs on the lane nearest each victim", () => {
+      const { state, hit } = stateWithUnits();
+
+      hit('legend-light', 'mob-dark', 30);
+      hit('mob-light', 'mob-dark', 10);
+      hit('mob-dark', 'legend-light', 25);
+
+      expect(state.allyDamage.share('light', 'lane-0')).toBe(0.75);
+      expect(state.allyDamage.share('light', 'lane-1')).toBe(0.25);
+      expect(state.allyDamage.share('dark', 'lane-0')).toBe(1);
+    });
+
+    it('leaves out hits from a neutral attacker or no attacker, on structures, and without a map', () => {
+      const { state, hit } = stateWithUnits();
+
+      hit('legend-light', 'camp-mob', 30);
+      hit('mob-light', null, 10);
+      hit('tower-light', 'mob-dark', 40);
+      hit('camp-mob', 'legend-light', 15);
+      const withoutMap = stateWithUnits(null);
+      withoutMap.hit('legend-light', 'mob-dark', 30);
+
+      expect(state.allyDamage.size).toBe(0);
+      expect(withoutMap.state.allyDamage.size).toBe(0);
+    });
+
+    it("leaves out hits from the victim's own team and from an attacker already removed", () => {
+      const { state, hit } = stateWithUnits();
+      state.entities.remove('camp-mob', 'died');
+
+      hit('legend-light', 'camp-mob', 30);
+      hit('legend-light', 'legend-light', 10);
+      hit('mob-light', 'legend-light', 5);
+
+      expect(state.allyDamage.size).toBe(0);
+    });
   });
 });

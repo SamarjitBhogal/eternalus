@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-05
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -232,27 +232,32 @@ above follow that answer.
 
 ## 7. Capture points
 
-`CapturePoint` is a `Zone` with a `Capturable` component; the `Cathedral` structure stands inside
-the middle one.
+`CapturePoint` is a `Zone` with a `ZoneArea` and a `Capturable` component. A zone covers the floor
+of the building its map feature stands for (DEC-145 (a)): an outer capture point the court inside
+its fort's walls (a unit in a gateway counts once past their inner face), the middle one the whole
+floor of the `Cathedral` to its walls (nave, transept with both chapels, apse). A unit counts when
+its centre is on that floor.
 
 ```ts
 export class Capturable {
-  ownerTeam: Team; // the last locking state: 'neutral' at match start
+  owner: Team; // the last locking state: 'neutral' at match start
   progress: number; // -1..1, negative = dark, positive = light; ±1 = fully captured
   checkpoint: 0 | 1 | 2 | 3;
   lockedBy: EntityId | null; // a living MiniBoss locks the zone
+  presence: Record<Team, number>; // each side's summed weight inside this tick
+  reached: Record<Team, number>; // each side's highest checkpoint since the last owner change
 }
 ```
 
 `CaptureSystem` applies the owner's capture rules (DEC-86) while `lockedBy === null`:
 
-- **Who counts.** Every `Unit` inside the zone counts for its team: Legends, minions and
-  neutral-team units. Structures and projectiles never count.
+- **Who counts.** Every living `Unit` whose centre is on the zone's floor counts for its team:
+  Legends, minions and neutral-team units. Structures and projectiles never count.
 - **Weighted majority.** A side's presence is the sum of its units' weights, and a Legend weighs
   more than any other unit. The side with the highest presence moves `progress` toward itself, at
   a rate that grows with its margin over the next side, up to a cap. When the two highest
   presences are equal, `progress` does not change.
-- **Locking states.** Neutral, fully light and fully dark. `ownerTeam` holds the last one. A zone
+- **Locking states.** Neutral, fully light and fully dark. `owner` holds the last one. A zone
   stays in its locking state until a capture changes it, so an owned zone with nobody inside
   stays owned.
 - **Taking an owned zone.** The owner's progress drains to 0 before the taker's fills, and the
@@ -261,11 +266,21 @@ export class Capturable {
   zone becomes neutral again.
 - **Revert.** With no counted unit inside, an unfinished capture slowly moves back to the last
   locking state.
+- **Checkpoints.** A side's push on a zone it does not own announces each checkpoint it passes
+  (`checkpoint-reached`), once per side until the zone changes owner (DEC-145 (b), (g)): a capture
+  that reverts and is pushed again announces only the checkpoints that side had not reached, so
+  the assist mobs cannot be farmed for XP. A drain, a revert and an owner refilling its own zone
+  announce none. `capture-progress` reports every checkpoint the progress crosses, either way.
+- **Density.** Each side's presence is published with the zone's state, and the client shows each
+  side's share of the total (DEC-145 (c)): in the world under the progress bar, and on the HUD
+  while the player's Legend stands in the zone.
 
 The weights, the rate cap and the revert rate are `TUNE` values in
-`GameConfig.match.capturePoints`; the zone radius is in the zone's `content/zones/` definition.
+`GameConfig.match.capturePoints` (DEC-146). A zone's floor comes from its building's geometry,
+looked up by map feature kind in `map/zoneArea.ts` (the fort's size and the Cathedral's floor are
+in `content/maps/buildingGeometry.ts`); the zone definition has no size.
 
-Crossing a checkpoint threshold spawns that checkpoint's defenders (held by `GuardController` with the zone as home and fighting
+Reaching a checkpoint (`checkpoint-reached`) spawns that checkpoint's defenders (held by `GuardController` with the zone as home and fighting
 for the team that owns the point, [18](18-minion-system.md) MS-28, §7.1) through a `Spawner` table (1: medium assist mobs; 2: heavy plus light assist mobs; 3: one massive
 "Balrog-type" mob) and, when cleared, awards XP shared among nearby allies biased toward the top
 damage dealer (`ProgressionSystem` listens to `checkpoint-cleared`). Holding a zone applies
@@ -332,7 +347,7 @@ out of the still-stamped cells, so nothing tunnels during the gap.
 Emitted (typed `GameEvents`): `structure-damaged`, `shield-bar-removed`,
 `structure-breakability-changed`, `structure-destroyed`, `gate-state-changed`,
 `turret-control-changed`, `turret-fired`, `spawn-requested`, `capture-progress`,
-`checkpoint-cleared`, `capture-point-captured`, `obstacle-destroyed`, `tree-felled`,
+`checkpoint-reached`, `checkpoint-cleared`, `capture-point-captured`, `obstacle-destroyed`, `tree-felled`,
 `terrain-changed`, `entity-removed { cause: RemovalCause }`.
 
 | Invariant (`diagnostics/`)             | Kind  | Checks                                                                         |
@@ -352,8 +367,10 @@ These are the requirements doc's runtime checks ("entity passes through an unbre
 
 Every `StructureDefinition` and `ObstacleDefinition` carries an optional `minimapGlyph`
 (`06-map-and-minimap.md` §8). `WallSegment`s and towers use team-coloured glyphs; camps neutral
-dots; capture points rings whose colour follows `Capturable.ownerTeam`. No view code per kind: the
-default `EntityView.drawGlyph` handles all.
+dots; capture points the glyph of the map feature that places them, coloured by
+`Capturable.owner`. No view code per kind: `MapView.drawMinimap` draws every feature's glyph. The
+default entity view draws no minimap marker; only Legends and mobs have one, from their own views
+(06 §8, DEC-187).
 
 ## 13. Extension recipe: a new structure type
 
@@ -384,9 +401,22 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
 `Health`, with these interim differences:
 
 - `Structure` and `Obstacle` use a circle `Collider` from `footprintRadius`; convex polygon
-  footprints arrive with the structures in Phase 2. No concrete structure kind or content exists yet.
+  footprints arrive with the structures in Phase 2. No concrete structure kind or content existed until the minion slice below.
 - `Health` keeps `current`/`max` for the base bar and adds `shields`, `total`, `addShield` and
   `removeShield`; bars stay in source id order.
+- **Minion slice (`feat/minion-structures`, 2026-10-30).** The lane structures exist as entities:
+  `Stronghold`, `SpawnerTower`, `BuffTower` and `Gate`, with `content/structures/structureCatalogue.ts`
+  (base health from `balancing.md`) and their registry lines. `Simulation` builds one per map
+  feature with a structure definition, in feature id order, carrying the feature's lane
+  (`Structure.laneId`). `BreakabilityRule` (§3, without `all-of`) is evaluated by `StructureSystem`,
+  which also emits `structure-destroyed`; `BreakabilityStep` blocks damage to unbreakable targets.
+  The BuffTower total is `numLanes × buffTowersPerLane` from config. Not built yet: shield bars
+  from BuffTowers, the `all-of` rule, the §11 invariants (`BreakabilityMatchesRuleInvariant`,
+  `NoPassThroughUnbreakableInvariant`), the gate state machine, damage multipliers, walls,
+  turrets and the Cathedral as entities, and clearing a destroyed structure's footprint from
+  `WorldMap`; the main view draws structures from the map layer (`StructureView` draws nothing).
+  Minion plan M6 adds `Camp` (forest camps, rule `never`, circle radius 1 `TUNE`, since camp
+  features have no footprint); its group is a guard plan (18 §7.1), not a `Spawner` component yet.
 - `ObstacleDefinition` keeps `kind: 'obstacle'` (the entity class) and moves tree/rock/bridge to
   `obstacleType`; `fell` and `minimapGlyph` arrive with felling and the minimap work.
 
@@ -406,6 +436,20 @@ only living `structure` / `buff-tower` entities with the owning team's membershi
 Decorative obstacle proxies never grant King immunity. The King's victory and immunity damage
 step remain owned by the game-loop work. The hall's throne anchor and room bounds are content
 in `buildingGeometry.ts`; the hall rotates toward the middle entrance before ring scaling.
+
+Capture points (PR #64, DEC-86 and DEC-145 rules) ship as `CapturePoint` zones with a `ZoneArea`
+and a `Capturable` component, one per `capture-point` and `cathedral` map feature
+(`content/zones/`), moved by `CaptureSystem` with the weights and rates of
+`GameConfig.match.capturePoints`. `Simulation` computes each zone's floor from the map alone
+(`map/zoneArea.ts`) instead of taking it as an explicit placement (06): zones come from the map,
+so a replay or a match without map objects rebuilds the same zones. Interim differences:
+
+- `lockedBy` is always `null`: the mini-boss lock arrives in Phase 3 sprint 3.6.
+- Scheduled later, through the two capture events: holding buffs (Phase 3 sprint 3.3), score
+  (sprint 3.5), checkpoint defender spawns (Phase 3) and checkpoint XP (Phase 4). The minimap glyph
+  does not follow the owner yet (the minimap entity markers, SCRUM-151).
+- The density numbers on the HUD arrive with the HUD work (`feat/hud-and-character-select`, its
+  capture tracker); this PR publishes the presence and draws the split bar in the world.
 
 ## Related
 

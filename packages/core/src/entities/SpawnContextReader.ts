@@ -1,6 +1,6 @@
 import type { ControllerSpawn } from './EntityFactory.types';
 import { CONTROLLER_IDS } from '../content/ai/controllerIds';
-import type { Vec2 } from '../utils/geometry.types';
+import type { Polygon, Vec2 } from '../utils/geometry.types';
 import type { Entity } from './Entity';
 import type { WeaponSource } from './EntityFactory.types';
 import { SPAWNABLE_TEAMS } from './SpawnContextReader.constants';
@@ -81,6 +81,36 @@ export class SpawnContextReader {
     }
     // Safe: memory is the plain data the spawner wrote (`Placement.controller` is typed).
     return { controllerId: id, profileId, memory: memory as ControllerSpawn['memory'] };
+  }
+
+  /**
+   * The context's `Placement.area`: a zone's polygons in world units.
+   *
+   * @throws Error when the context gives no list of polygons of points.
+   */
+  public area(context: unknown): readonly Polygon[] {
+    const { area } = SpawnContextReader.fields(context);
+    if (!SpawnContextReader.isArea(area)) {
+      throw new Error(`Entity "${this.entity.id}" needs a spawn context with an area.`);
+    }
+    return area;
+  }
+
+  /** A list of point lists; `ZoneArea` then rejects a polygon without 3 finite points. */
+  private static isArea(value: unknown): value is readonly Polygon[] {
+    return (
+      Array.isArray(value) &&
+      value.every(
+        (polygon) =>
+          Array.isArray(polygon) && polygon.every((point) => SpawnContextReader.isObject(point)),
+      )
+    );
+  }
+
+  /** The lane the context places the entity on (a lane structure's `MapLane.id`), or `null`. */
+  public laneId(context: unknown): string | null {
+    const { laneId } = SpawnContextReader.fields(context);
+    return typeof laneId === 'string' ? laneId : null;
   }
 
   /** The weapon source the factory put in the context, or `null` when it has none. */

@@ -20,29 +20,33 @@ Package-specific rules. The root `AGENTS.md` still applies.
 
 **Planned** layout (create folders as code is added):
 
-| Folder                | Holds                                                                          |
-| --------------------- | ------------------------------------------------------------------------------ |
-| `game/engine/`        | `GameLoop` (fixed 30 TPS + interpolation), `Renderer`, `Camera`, `AssetLoader` |
-| `game/views/`         | Drawing code. `SceneView.draw` is the single place that defines draw order     |
-| `game/input/`         | `keybindings.ts` (the only place keys are bound), input → `Command`            |
-| `game/settings/`      | `SettingsController`: settings intents → `settings` event + persistence        |
-| `game/Match.ts`       | Wires simulation, loop, renderer, input, views and bridge together             |
-| `game/GameCanvas.tsx` | The React component that owns the canvas and the `Match` lifetime              |
-| `ui/screens/`         | Full-screen layouts                                                            |
-| `ui/hud/`             | In-game overlay elements                                                       |
-| `ui/components/`      | Reusable presentational components                                             |
-| `bridge/`             | `store` (Redux), event bus and event types                                     |
-| `styles/`             | Global CSS variables and reset only                                            |
-| `assets/`             | Asset manifest (licensed or team-made assets only)                             |
+| Folder                | Holds                                                                                                                                                                                                                          |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `game/engine/`        | `GameLoop` (fixed 30 TPS + interpolation), `Renderer`, `Camera`                                                                                                                                                                |
+| `game/engine/net/`    | The Duel server transport port (`MessageTransport`), its `WebSocket` adapter (the only file touching the browser `WebSocket`), a fake and its contract suite (ADR 0016 point 3, recipe R25)                                    |
+| `game/duel/`          | The online Duel: `DuelSession` (queue, match-found, server snapshots), `RemoteSimulation` and `RemoteIntentSender`, which `Match` drives instead of a local simulation (ADR 0016)                                              |
+| `game/views/`         | Drawing code. `SceneView.draw` is the single place that defines draw order                                                                                                                                                     |
+| `game/input/`         | `keybindings.ts` (the only place keys are bound), input → `Command`                                                                                                                                                            |
+| `game/settings/`      | `SettingsController`: settings intents → `settings` event + persistence                                                                                                                                                        |
+| `game/Match.ts`       | Wires the views, the loop, the camera and `MatchBridge` around the simulation, renderer and input it is given; `game/createBrowserMatch.ts` builds those adapters (bound only by `main.tsx`)                                   |
+| `game/GameCanvas.tsx` | The React component that owns the canvas elements and hands them to `SessionController` (`attachViewport`); `SessionController` owns the `Match` lifetime (DEC-50)                                                             |
+| `ui/screens/`         | Full-screen layouts                                                                                                                                                                                                            |
+| `ui/hud/`             | In-game overlay elements                                                                                                                                                                                                       |
+| `ui/components/`      | Reusable presentational components                                                                                                                                                                                             |
+| `bridge/`             | `store` (Redux), event bus and event types                                                                                                                                                                                     |
+| `data/resources/`     | `ResourceController`, the typed asset manifest (`AssetManifest.ts`, one file per asset group) and `loaders/` (the `AssetLoader` port and its adapters)                                                                         |
+| `styles/`             | Global CSS variables and reset only                                                                                                                                                                                            |
+| `assets/`             | Licensed or team-made asset files only, one folder per asset group, licence texts in `licences/`; the typed manifest is `data/resources/AssetManifest.ts` (the generated `manifest.json` of architecture 14 §11 stays planned) |
 
 ## Adding code
 
 - React component: create `<Name>.tsx`, a co-located `<Name>.module.css`, and a test.
-- Function components only. Put logic in custom hooks (`useXxx.ts`) next to the component.
+- Function components only, except the one `ErrorBoundary` class (ADR 0025). Put logic in custom
+  hooks (`useXxx.ts`) next to the component.
 - Styles in the co-located `.module.css` with camelCase class names. No inline `style` except
   for values computed at runtime.
 - New game → UI data: add the event to `bridge/events.ts`, publish it (throttled) from
-  `Match.ts`, copy it into the store in `bridge/store.ts`, read it with a selector.
+  `MatchBridge.ts`, copy it into the store in `bridge/store.ts`, read it with a selector.
 - Redux: there is exactly **one** store, `bridge/store.ts` (Redux Toolkit). Add state as a slice
   (`createSlice`) in `bridge/`, registered in the store's `combineSlices(...)`. Never call
   `configureStore` anywhere else. With the first slice, add `RootState`/`AppDispatch` types and
@@ -54,5 +58,7 @@ Package-specific rules. The root `AGENTS.md` still applies.
 
 - Each test sits next to its source file (`Foo.tsx` + `Foo.test.tsx`). Tests run in Node (no
   DOM): render components with `react-dom/server` (see `GameCanvas.test.tsx`), and drive the
-  planned game loop with a fake frame scheduler.
+  planned game loop with a fake frame scheduler. A test that needs a page (real key events, the
+  focus) opts in on its first line with `// @vitest-environment happy-dom` (DEC-111; see
+  `ClassSelectStep.viewDetails.test.tsx`); keep every other test in Node.
 - Coverage thresholds live in `vitest.config.ts` and only go up.

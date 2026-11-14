@@ -1,0 +1,174 @@
+import { CLICK_SLOP } from './CanvasPointerControls.constants';
+import type { CanvasPointerControlsDeps } from './CanvasPointerControls.types';
+import { MAIN_BUTTON } from './engine/input/mouseButtons.constants';
+import { EXPLORER_SETTINGS } from './MapExplorer.constants';
+
+/**
+ * The match canvas's pointer gestures. Always: a main-button click on the minimap moves the
+ * camera there (the minimap is player HUD, DEC-143). With the developer explorer only (on at the
+ * start with `?dev=1`, then shown or hidden by DEC-105's hotkey; demo-only by DEC-32, INBOX
+ * HC-F8): drag to pan, the wheel to zoom, a short click on a building to cut its roof away or put
+ * it back (a unit under the click is attacked instead), and the toolbar's world overview, which
+ * also puts those roofs back. In normal play a roof opens only while the player's Legend is inside
+ * (DEC-143). A press these gestures own (a minimap click, or any press with the explorer) is
+ * claimed until its release, so the held attack button does not act on it. With the explorer, a
+ * click (a release within the click slop) that is no unit or roof click attacks once at the
+ * release point (`MatchViewControls.clickAt`: unit, roof, map object; DEC-150, DEC-183); a drag
+ * does neither (06 §10). Positions arrive in CSS pixels and reach the match in device pixels.
+ */
+export class CanvasPointerControls {
+  private press: { x: number; y: number; distance: number } | null = null;
+
+  private isExplorerShown: boolean;
+
+  /** Creates the controls; nothing listens until `attach()`. */
+  public constructor(private readonly deps: CanvasPointerControlsDeps) {
+    this.isExplorerShown = deps.viewport.isExplorerShown;
+  }
+
+  /**
+   * Listens for clicks; with the explorer, drags and the wheel too, and gives the chrome its
+   * overview.
+   */
+  public attach(): void {
+    const { canvas } = this.deps.viewport;
+    canvas.addEventListener('pointerdown', this.onPointerDown);
+    canvas.addEventListener('pointerup', this.onPointerUp);
+    if (this.isExplorerShown) {
+      this.attachExplorer();
+    }
+  }
+
+  /** Removes every listener and takes the chrome's action back. */
+  public detach(): void {
+    const { canvas } = this.deps.viewport;
+    canvas.removeEventListener('pointerdown', this.onPointerDown);
+    canvas.removeEventListener('pointerup', this.onPointerUp);
+    this.detachExplorer();
+    this.press = null;
+  }
+
+  /**
+   * Shows the developer explorer (its drag, wheel and overview) or hides it, and tells the chrome
+   * (DEC-105's hotkey). Hiding it also puts back the roofs the developer cut away and returns to
+   * the following camera, so developer state does not stay in normal play (DEC-143). Call it only
+   * while attached.
+   */
+  public toggleExplorer(): void {
+    this.isExplorerShown = !this.isExplorerShown;
+    const { chrome } = this.deps.viewport;
+    if (this.isExplorerShown) {
+      this.attachExplorer();
+    } else {
+      this.detachExplorer();
+      this.deps.controls.leaveExplorer();
+      chrome.onDeveloperRoofsChanged(false);
+    }
+    chrome.onExplorerChanged(this.isExplorerShown);
+  }
+
+  /** Forgets a press or drag in progress (focus lost, pointer cancelled). */
+  public readonly cancelDrag = (): void => {
+    this.press = null;
+    this.deps.controls.setPointerClaimed(false);
+  };
+
+  private attachExplorer(): void {
+    const { controls, viewport } = this.deps;
+    const { canvas, chrome } = viewport;
+    canvas.addEventListener('pointermove', this.onPointerMove);
+    canvas.addEventListener('pointercancel', this.cancelDrag);
+    canvas.addEventListener('wheel', this.onWheel, { passive: false });
+    chrome.setOverview(() => {
+      controls.overview();
+      chrome.onDeveloperRoofsChanged(false);
+    });
+  }
+
+  private detachExplorer(): void {
+    const { canvas, chrome } = this.deps.viewport;
+    canvas.removeEventListener('pointermove', this.onPointerMove);
+    canvas.removeEventListener('pointercancel', this.cancelDrag);
+    canvas.removeEventListener('wheel', this.onWheel);
+    chrome.setOverview(null);
+  }
+
+  private readonly onPointerDown = (event: Event): void => {
+    const pointer = event as PointerEvent;
+    if (pointer.button !== MAIN_BUTTON) {
+      return;
+    }
+    const point = this.devicePoint(pointer);
+    const { controls } = this.deps;
+    // The claim comes from this press alone, so a press whose release never arrived leaves none.
+    const isOnMinimap = controls.lookAtMinimapPoint(point.x, point.y);
+    // With the explorer the press may yet be a drag, so it never attacks while held (DEC-150).
+    controls.setPointerClaimed(isOnMinimap || this.isExplorerShown);
+    if (isOnMinimap) {
+      return;
+    }
+    this.press = { x: pointer.clientX, y: pointer.clientY, distance: 0 };
+    if (this.isExplorerShown) {
+      this.deps.viewport.canvas.setPointerCapture(pointer.pointerId);
+    }
+  };
+
+  private readonly onPointerMove = (event: Event): void => {
+    const pointer = event as PointerEvent;
+    if (this.press === null) {
+      return;
+    }
+    const { canvas } = this.deps.viewport;
+    const dx = pointer.clientX - this.press.x;
+    const dy = pointer.clientY - this.press.y;
+    this.deps.controls.panBy(
+      dx * (canvas.width / canvas.clientWidth),
+      dy * (canvas.height / canvas.clientHeight),
+    );
+    this.press = {
+      x: pointer.clientX,
+      y: pointer.clientY,
+      distance: this.press.distance + Math.hypot(dx, dy),
+    };
+  };
+
+  private readonly onPointerUp = (event: Event): void => {
+    const pointer = event as PointerEvent;
+    const { press } = this;
+    this.press = null;
+    this.deps.controls.setPointerClaimed(false);
+    const { canvas, chrome } = this.deps.viewport;
+    if (canvas.hasPointerCapture(pointer.pointerId)) {
+      canvas.releasePointerCapture(pointer.pointerId);
+    }
+    if (press === null) {
+      return;
+    }
+    const distance =
+      press.distance + Math.hypot(pointer.clientX - press.x, pointer.clientY - press.y);
+    if (!this.isExplorerShown || distance >= CLICK_SLOP) {
+      return;
+    }
+    const point = this.devicePoint(pointer);
+    const { controls } = this.deps;
+    if (controls.clickAt(point.x, point.y)) {
+      chrome.onDeveloperRoofsChanged(controls.hasDeveloperRoofs);
+    }
+  };
+
+  private readonly onWheel = (event: Event): void => {
+    const wheel = event as WheelEvent;
+    wheel.preventDefault();
+    this.deps.controls.zoomBy(Math.exp(-wheel.deltaY * EXPLORER_SETTINGS.wheelSensitivity));
+  };
+
+  /** A pointer position in the canvas's device pixels (the canvas may have more real pixels). */
+  private devicePoint(event: PointerEvent): { x: number; y: number } {
+    const { canvas } = this.deps.viewport;
+    const bounds = canvas.getBoundingClientRect();
+    return {
+      x: ((event.clientX - bounds.left) * canvas.width) / bounds.width,
+      y: ((event.clientY - bounds.top) * canvas.height) / bounds.height,
+    };
+  }
+}

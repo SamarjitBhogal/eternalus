@@ -4,7 +4,7 @@ description: The default MVP key bindings, the requirement that no binding is ha
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-11-02
 tags: [reference, game-design, controls, input, keybindings, settings]
 paths: ['apps/client/src/game/input/**', 'apps/client/src/ui/screens/SettingsScreen*']
 related:
@@ -37,6 +37,7 @@ Top-down, single-character control. Defaults from both sources (all **MVP**):
 | Turret: assume / exit control   | P                              | `turret-toggle`                                   | game doc (Turrets)                    |
 | Turret: switch ammo type        | T                              | `turret-ammo`                                     | game doc (Turrets)                    |
 | Fury dash direction             | WASD (or joystick) during Fury | reuses move actions                               | game doc (Fury)                       |
+| View Details (character select) | V                              | `view-details`                                    | DEC-103 (owner, 2026-10-29)           |
 
 Defaults are data in `apps/client/src/game/input/keybindings.ts`; the table is the initial
 content of that file, not a spec for code paths. Unspecified defaults (sprint, interact, Fury's
