@@ -7151,3 +7151,31 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   of both critics wait for the owner (INBOX HC-Q48).
 - Next step: the owner answers the open items (the `scoreBook` field, the event name, INBOX
   HC-Q48); claudiodh re-reviews PR #93; then GL-16 merges the new phase branch.
+
+### 2026-11-14 — Phase 3 / GL-4, the Duel in the results flow (INBOX HC-Q48) — feat/match-scoring (PR #93) — sholtzman + Claude Code
+
+- What changed: the owner's answers to INBOX HC-Q48 (DEC-250). Built, after a critic passed
+  items (1) to (4): `MatchEnding` in `@eternalus/protocol` is the one type of the server's
+  `match-ended` message, `DuelSession`'s `ended` handler and the bus event `duel-ended` (the
+  client's `DuelOutcome` and `DuelResult` are gone); the match setup has a `mode` (`'local'` or
+  `'duel'`); the session publishes a Duel's setup at its first snapshot, before `match-loading`,
+  and `prepareWorld` has one path; `canRepeatSetup` (`bridge/matchSetupRules.ts`) is the one
+  rematch rule; `selectMatchVerdict` gives no verdict for a Duel the other player left and takes
+  the team from the setup only; `ResultsScreen` reads the new `selectResultsView`. One visible
+  change: a Duel that ends while loading now shows its results in the seat's team theme, as a
+  Duel that ended in the match does. Also a test from the #89 merge review, not part of HC-Q48:
+  `Match.healthBars.test.ts` covers a hit on the first tick (the constructor's `observe` call).
+  Scheduled, not built: the match-mode strategy (HC-S7), the Duel's run-on and the loss for a
+  player who leaves (with the Duel's own win rules, DEC-36). Docs: architecture 13 §2, §3, §5,
+  §10 and 02 (the bridge may import protocol types; `matchSetupRules.ts`).
+- Fail-first: each new test was seen red against a broken production line; the list is in
+  `eternalus-agent-work/game-loop-plan/gl4-duel-btd-breaks.md` (16 breaks).
+- Critics on the delta (`7c372d74..`): `architecture-reviewer` approve, 0 blockers, should-fix S1
+  to S3 and nits N1 to N7 applied (N4 in part: the selector keeps the name `selectDuelOutcome`),
+  N8 to INBOX; correctness: no bug, its findings 1 to 7 applied; ponytail: findings 3 (the test
+  cast) applied through the correctness critic's cast-free form, 1, 2, 4, 5, 6 rejected (the
+  rematch case tests the selector's wiring; HC-Q48 (4) asks for the rule in `bridge/` as
+  `selectionRules.ts` is; the spawn block belongs to a merged test; the union and the two
+  `opponent-left` checks are separate concerns).
+- Checks run: see the commit that follows this entry.
+- Next step: the owner runs the push script; claudiodh re-reviews PR #93; then GL-16.

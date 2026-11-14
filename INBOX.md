@@ -2093,6 +2093,8 @@ Reply inline (`Decision: …`).
 - [ ] **HC-Q46 — Only the match code can reach the match writers (match-director critic round 3, better than the design; DEC-139).** `GameState.match` is a `MatchRecord` (DEC-177), so every system, command handler and bot controller that holds `GameState` can call `endMatch`, `holdIdle` and the other writers. Only review keeps DEC-172's "one caller each" (today the calls are only in `match/` and `Simulation.ts`). Options: (a) type the public `GameState.match` as the read-only `MatchState` and give the `MatchRecord` only to `DirectorContext` and `Simulation` (the compiler stops other callers; changes the 03 §2 sketch); (b) an ESLint `no-restricted-syntax` rule that refuses `.match.<writer>(` outside `match/`, `Simulation.ts` and tests; (c) leave it to review. Agent's recommendation: (a), in its own PR with the HC-S7 split, not in the match-director PR (its critic rounds are used up, and round 2 had the same exposure).
   - Answered 2026-11-05 in chat (DEC-210): "(a) Read-only type". To build: its own PR from the phase
     branch after the match-director PR (#74) merges, with the HC-S7 split.
+  - 2026-11-14: the build also covers `MatchRecord.scoreBook` (DEC-211), which GL-4 (PR #93) added
+    as a writer-reachable field (DEC-250 (1)).
 - [x] **HC-Q47 — One small roster type for the HUD's "re-send if unchanged" rule (GL-5 targeted critic
       after DEC-221, better than the design; DEC-139).** `MatchBridge.keepUnchanged` keeps each
       unchanged HUD roster item and the last array (DEC-221 (3), B2). The critic proposes moving it
@@ -2125,6 +2127,21 @@ Reply inline (`Decision: …`).
   - Also a finished Duel has no status line under its verdict (the line comes from core's result,
     which a Duel does not have); (1) decides what it shows.
   - Answer per item: build now on PR #93, schedule, or keep as it is.
+  - Answered 2026-11-14 in chat (DEC-250): "have a critic look at the open items; if they pass, put
+    them in", then "option b is better. also leaving a duel when the other user is still in said
+    duel counts as a loss." (1) to (4): the critic passed them and they are built on PR #93
+    (`selectResultsView`, the setup published at the first snapshot, `MatchEnding`,
+    `canRepeatSetup`). (5): scheduled with HC-S7. (6): option B, the run-on is built with the
+    Duel's own win rules (DEC-36); until then a finished Duel goes to the results at once. A
+    finished Duel keeps no status line.
+  - Still open: after the opponent leaves, does the player who stayed see VICTORY? The leaver
+    takes a loss (DEC-250 (4)); the screen for the player who stayed shows no verdict until the
+    owner says.
+  - Critic notes on the built delta (2026-11-14), for the HC-S7 work: `createMatch` still asks
+    `duel.status === 'started'` while `canRepeatMatchSetup` reads `setup.mode`, so the strategy
+    should key on `setup.mode`; `MatchSetupDraft` could be a union by `mode`, so that "a Duel has
+    no rosters" is a type fact. For doc-gardening: the folder table of architecture 02 has no row
+    for `game/duel/` and `game/engine/net/`, which import `@eternalus/protocol` (#97).
 - [ ] **HC-Q42 — Where do Legends spawn at tick 0: all at their Citadel (DEC-80), or as built (match-director critic).** DEC-80 says "All Legends spawn at their Citadel at tick 0." As built (architecture 18 §8, MS-20), each bot laner spawns at its team's end of its assigned lane, and only the Rovers (the bot Rover and the human's Legend, DEC-173) spawn at their team's Stronghold. Keep the as-built lane start for laners and narrow DEC-80 to respawns, or spawn every Legend at its Citadel and let laners walk to their lanes?
 - [ ] **HC-S7 — Scheduled: split `Simulation.ts` and `SessionController.ts` below the ~300-line
       guide (PR #68 review, follow-up 3).** `Simulation.ts` (461 lines) holds start-up helpers
@@ -2139,6 +2156,9 @@ Reply inline (`Decision: …`).
     `planLanes`, `humanSlotOf`, `controllerOf`, `spawnSlot`, `strongholdOf`, `legendRefusal`)
     are one responsibility: the split is a `RosterSpawner` class. #56, #57, #58, #66 and #67 have
     merged; open PRs #64 and #32 still edit the file. `SessionController.ts` is 326 lines.
+  - 2026-11-14 (HC-Q48 (5), DEC-250 (2)): the `SessionController` split also takes the match-mode
+    strategy: `LocalMatchStart` and `DuelMatchStart` in a `Record<MatchMode, …>` registry, keyed
+    by the setup's `mode`, so that `createMatch` and `canRepeatMatchSetup` hold no Duel branch.
 - [ ] **HC-S8 — Scheduled with GL-3: filter the timeline rules by action kind (match-director
       critic).** `validateGameConfig` reads every timeline entry as `enter-phase`: the rules "at
       least one `enter-phase` entry" and "the first `enter-phase` entry ends the countdown" count
