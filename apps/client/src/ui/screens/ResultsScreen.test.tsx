@@ -124,13 +124,16 @@ describe('ResultsScreen', () => {
     },
   );
 
-  it('names the opponent leaving, and no verdict, after a Duel the other player left', () => {
-    const html = renderDuel({ winner: null, reason: 'opponent-left' });
-    expect(heading(html)).toBe(STRINGS.results.title);
-    expect(html).toMatch(
-      new RegExp(`<p [^>]*role="status"[^>]*>${STRINGS.results.opponentLeft}</p>`),
-    );
-  });
+  it.each([null, 'dark'] as const)(
+    'names the opponent leaving, and no verdict, after a Duel the other player left (winner %s)',
+    (winner) => {
+      const html = renderDuel({ winner, reason: 'opponent-left' });
+      expect(heading(html)).toBe(STRINGS.results.title);
+      expect(html).toMatch(
+        new RegExp(`<p [^>]*role="status"[^>]*>${STRINGS.results.opponentLeft}</p>`),
+      );
+    },
+  );
 
   it('offers no rematch after an online Duel, which has no setup to repeat', () => {
     const html = renderDuel({ winner: 'dark', reason: 'finished' });

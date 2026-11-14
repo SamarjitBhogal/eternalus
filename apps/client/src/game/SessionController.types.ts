@@ -107,7 +107,15 @@ export interface SessionContext {
   transition(to: SessionPhase, reason?: SessionReason): void;
   /** Draws a new seed and team, builds both rosters, themes the page and publishes the setup. */
   newMatchSetup(): void;
-  /** Publishes the current setup again, unchanged (a rematch, architecture 13 §2). */
+  /**
+   * Whether there is a setup a rematch can repeat: a local match's. An online Duel leaves none (its
+   * setup has no rosters, and a Duel that ended while loading has no setup at all).
+   */
+  canRepeatMatchSetup(): boolean;
+  /**
+   * Publishes the current setup again, unchanged (a rematch, architecture 13 §2).
+   * @throws Without a setup; ask `canRepeatMatchSetup` first.
+   */
   repeatMatchSetup(): void;
   /**
    * Joins the online Duel queue (ADR 0016): connects to the server and sends `queue-join`. When an
@@ -140,7 +148,7 @@ export interface SessionContext {
   /**
    * Builds and starts the match on `viewport` from the setup with the rosters LOCK IN filled, the
    * selection and the world, or the online Duel (ADR 0016) while one is started; `observer` hears
-   * it crash or end (`MatchRequest.observer`).
+   * it crash or (a local match) end (`MatchRequest.observer`); the server ends a Duel.
    * @throws When one of them is missing or the factory fails.
    */
   createMatch(viewport: MatchViewport, observer: MatchObserver): RunningMatch;

@@ -57,6 +57,7 @@ describe('FakeSessionContext', () => {
     expect(context.calls).toEqual({
       transition: [['menu'], ['menu', 'load-failed']],
       newMatchSetup: [[]],
+      canRepeatMatchSetup: [],
       repeatMatchSetup: [[]],
       clearMatchSetup: [[]],
       selection: [],

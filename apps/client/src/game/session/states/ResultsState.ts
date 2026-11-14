@@ -47,7 +47,7 @@ export class ResultsState implements SessionState {
 
   /**
    * `continue` → as the countdown's end; `navigate` → `menu` at that route; `start-match` →
-   * `loading` with the same setup.
+   * `loading` with the same setup, ignored when there is none to repeat (after an online Duel).
    */
   public handleIntent(intent: UiIntent, context: SessionContext): void {
     if (intent.kind === 'continue') {
@@ -55,7 +55,7 @@ export class ResultsState implements SessionState {
     } else if (intent.kind === 'navigate') {
       context.transition('menu');
       context.bus.emit('menu-route', { route: intent.route });
-    } else if (intent.kind === 'start-match') {
+    } else if (intent.kind === 'start-match' && context.canRepeatMatchSetup()) {
       context.repeatMatchSetup();
       context.transition('loading');
     }

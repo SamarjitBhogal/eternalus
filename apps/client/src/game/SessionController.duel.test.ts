@@ -168,6 +168,32 @@ describe('SessionController, online Duel (ADR 0016)', () => {
     expect(session.store.getState().session.reason).toBeNull();
   });
 
+  it('keeps the results on start-match after a Duel: there is no setup to repeat', async () => {
+    const loaded = await setUp();
+    await loaded.startDuel();
+    loaded.controller.attachViewport(VIEWPORT);
+    loaded.transport().receive({ type: 'match-ended', reason: 'finished', winner: 'dark' });
+    // A Duel that ended while loading never published a setup at all.
+    const loading = await setUp();
+    loading.intent({ kind: 'start-duel' });
+    loading.transport().receive({
+      type: 'match-found',
+      matchId: 'm',
+      seed: 1234,
+      team: 'dark',
+      legendId: 'entity-7',
+    });
+    loading.transport().receive({ type: 'state', snapshot: snapshotAtTick(1), ackSeq: 0 });
+    loading.transport().receive({ type: 'match-ended', reason: 'opponent-left', winner: 'dark' });
+
+    for (const session of [loaded, loading]) {
+      expect(() => {
+        session.intent({ kind: 'start-match' });
+      }).not.toThrow();
+      expect(session.controller.phase).toBe('results');
+    }
+  });
+
   it('shows home when the opponent leaves between pairing and the first snapshot', async () => {
     const session = await setUp();
     session.intent({ kind: 'start-duel' });

@@ -87,6 +87,7 @@ export class SessionController {
       newMatchSetup: () => {
         this.newMatchSetup();
       },
+      canRepeatMatchSetup: () => this.setup !== null && this.setup.allies.length > 0,
       repeatMatchSetup: () => {
         if (this.setup === null) throw new Error('No match setup to repeat');
         this.publishSetup(this.setup);

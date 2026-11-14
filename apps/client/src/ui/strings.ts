@@ -99,7 +99,7 @@ export const STRINGS = {
   results: {
     /**
      * The banner without a verdict: a Duel the other player left, or no result (results follow
-     * `match-ended`, so only a bug shows that).
+     * `match-ended` or `duel-ended`, so only a bug shows that).
      */
     title: 'Match results',
     noResult: 'No result recorded.',

@@ -20,6 +20,16 @@ const verdictOf = (winner: PlayableTeam | null | 'no-result', team: PlayableTeam
     matchSetup: { ...matchSetupSlice.getInitialState(), playerTeam: team },
   });
 
+/** The store after `duel-ended` for a player on dark, the setup's team being `team`. */
+const duelVerdictOf = (winner: PlayableTeam | null, team: PlayableTeam | null) =>
+  selectMatchVerdict({
+    match: {
+      ...matchSlice.getInitialState(),
+      duel: { winner, reason: 'finished', ownTeam: 'dark' },
+    },
+    matchSetup: { ...matchSetupSlice.getInitialState(), playerTeam: team },
+  });
+
 describe('selectMatchVerdict', () => {
   it.each([
     ['light', 'light', 'victory'],
@@ -36,4 +46,18 @@ describe('selectMatchVerdict', () => {
     expect(verdictOf('no-result', 'light')).toBeNull();
     expect(verdictOf('light', null)).toBeNull();
   });
+
+  it.each([
+    ['dark', null, 'victory'],
+    ['light', null, 'defeat'],
+    [null, null, 'draw'],
+    // A Duel's own team decides, not the setup's.
+    ['dark', 'light', 'victory'],
+    ['light', 'light', 'defeat'],
+  ] as const)(
+    "a Duel won by %s with the setup team %s is %s for the Duel's own team, dark",
+    (winner, team, verdict) => {
+      expect(duelVerdictOf(winner, team)).toBe(verdict);
+    },
+  );
 });
