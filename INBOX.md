@@ -16,6 +16,20 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **The Cathedral gem's look (Aryan Walanj, 2026-11-14).** `feat/cathedral-gem` draws the
+      gem at the Cathedral's centre as a `TUNE` diamond, 10 × 16 sketch units
+      (`buildingGeometry.ts`), in pale crystal blue `#9fd3e3` (`map1Scenery.ts`). No reference
+      gives its size or colour. Keep both, or which size and colour? Its look over time is
+      settled by DEC-83 (`docs/reference/game-design/13-owner-decisions-log.md`): for the MVP the
+      gem looks the same until it erupts; the changing look comes later, view-only. It is interior
+      scenery, so players see it only when the roof is cut away (DEC-143); should it also show
+      from outside?
+- [ ] **Better than design: split the Cathedral interior builder (Aryan Walanj, 2026-11-14,
+      critic on `feat/cathedral-gem`).** `MapBuildingInteriorBuilder.ts` is past the ~300-line
+      guide (335 lines). The Cathedral furnishing (`cathedral*`, `apseWall`, the gem) could move to
+      its own `MapDecorationBuilder` subclass picked by the per-kind interior registry (06). OK
+      to do as a separate refactor PR?
+
 - [x] **BUG-2: interior wall health (2026-11-12, PR #96, SCRUM-435).** Every `'wall'` map object
       uses the WallSegment value from balancing.md (`content/maps/mapObjectDefinitions.ts`): the
       Stronghold's wall ring and the `'wall'` features inside it alike. The playtest called the

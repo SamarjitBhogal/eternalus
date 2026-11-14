@@ -6419,3 +6419,29 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   passed (1883)"; server "Tests 79 passed (79)"; "Documentation check passed."
 - Next step: merge PR #96. PR #110 drops or ticks its BUG-2/BUG-3 INBOX questions (answered by
   DEC-247/248). The open fix PRs update their rows. BUG-2 and BUG-3 need a plan item.
+
+### 2026-11-14 — Phase 3 / sprint 3 work: the Cathedral gem — feat/cathedral-gem — Aryan Walanj + Claude Code
+
+- What was done: the Cathedral gem (DISC-11) is drawn at the Cathedral's centre as interior
+  scenery, presentation only: `cathedralGem()` in `MapBuildingInteriorBuilder` draws the
+  `cathedral-interior-gem` diamond from `BUILDING_GEOMETRY.cathedral.gem` (`TUNE` 5 × 8 half
+  extents) in `MAP_PALETTE.gemCrystal` (`TUNE` `#9fd3e3`). No entity, collider or map object, so
+  nothing can damage it. 07 Implementation status records the interim stand-in and what is not built yet (the
+  Cathedral structure and `Spawner`, lightning on attackers, the look over time, the
+  summon-greater-boss action). `INBOX.md` asks Sam about the gem's size, colour and visibility,
+  and offers the critic's better-than-design split of the Cathedral interior builder.
+- Tests: `MapBuildingInteriorBuilder.test.ts` "puts the gem at the centre of the Cathedral,
+  inside its roof, as scenery no unit can hit". Broken once by removing the `cathedralGem()`
+  call: "AssertionError: expected [] to have a length of 1 but got +0"; passes with it restored.
+- Pre-PR gate: critic (`architecture-reviewer`) approved, no blockers; its doc follow-ups are
+  applied (07 removal clause, two INBOX items). `/ponytail-review`: no cuts.
+- Checks run: npm run check on Aryan's laptop (Node 24.21.0): one run → EXIT=0, "Documentation
+  check passed." (count lines lost from scrollback). A second run failed only on timeouts on the
+  low-memory laptop: core "Tests 3 failed | 1334 passed (1337)" (Simulation.flowFields.test.ts
+  x2, diagnostics/replay.test.ts x1), client "Tests 1 failed | 1882 passed (1883)"
+  (createBrowserMatch.replay.test.ts), all "Test timed out", none in files this change touches.
+  The same code change on Linux (Node 24.22.3): EXIT=0, core "Tests 1337 passed (1337)",
+  protocol "Tests 18 passed (18)", client "Tests 1883 passed (1883)", server "Tests 79 passed
+  (79)".
+- Next step: Sam answers the gem INBOX item; the Cathedral structure carries the gem as its
+  `Spawner` (07 §1, phase 3) and the scenery piece is removed.

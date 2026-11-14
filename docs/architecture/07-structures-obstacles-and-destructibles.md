@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-05
+last-reviewed: 2026-11-14
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -450,6 +450,13 @@ so a replay or a match without map objects rebuilds the same zones. Interim diff
   does not follow the owner yet (the minimap entity markers, SCRUM-151).
 - The density numbers on the HUD arrive with the HUD work (`feat/hud-and-character-select`, its
   capture tracker); this PR publishes the presence and draws the split bar in the world.
+
+**2026-11-14 (`feat/cathedral-gem`).** The Cathedral gem is interior scenery
+(`MapBuildingInteriorBuilder`, size in `buildingGeometry.ts`, colour in `map1Scenery.ts`),
+presentation only, so nothing can damage it. Not built yet: the Cathedral structure and its
+`Spawner` (§1, §6), lightning on attackers, the change of look over time and the
+summon-greater-boss action. When the Cathedral structure and its view land, the
+`cathedral-interior-gem` scenery piece is removed so the gem is drawn once.
 
 ## Related
 
