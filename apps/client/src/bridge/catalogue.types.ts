@@ -3,7 +3,13 @@
  * `content-catalogue` carries a `DisplayCatalogue`; `contentSlice` stores it. Types only: imports
  * no slice and not events.ts. A type is exported once a file outside this one reads it (knip).
  */
-import type { BotRosterDefinition, LegendName, MapFeatureKind, RoleRatings } from '@eternalus/core';
+import type {
+  AbilityDisplay,
+  BotRosterDefinition,
+  LegendName,
+  MapFeatureKind,
+  RoleRatings,
+} from '@eternalus/core';
 
 import type { HudSlotId } from './Binding.types';
 import type { LegendClassId, PlayableTeam, Team } from './domain.types';
@@ -31,12 +37,38 @@ type CardPlates = Readonly<Partial<Record<CardLook, AssetId>>>;
  */
 export type DetailSlot =
   'signature' | 'proficiency' | 'specialty' | 'ultimate' | 'ability-1' | 'ability-2' | 'ability-3';
+/**
+ * What a kit ability costs to cast: aether, or the ultimate's charge meter (DEC-202: an ultimate's
+ * content cost is 0 because the meter gates it, so it is never shown as "0 aether").
+ */
+export type KitCost =
+  { readonly kind: 'aether'; readonly amount: number } | { readonly kind: 'charge' };
+
+/**
+ * One ability of a Legend's kit as the kit rows and the HUD show it (DEC-199), built from content
+ * by `game/content/kitRows.ts`. `slot` is the bar slot (and so the key): abilities 1 to 3 and the
+ * ultimate on `ability-4`.
+ */
+export type KitRow = {
+  readonly slot: Extract<HudSlotId, 'ability-1' | 'ability-2' | 'ability-3' | 'ability-4'>;
+  readonly abilityId: string;
+  readonly displayName: string;
+  readonly description: string;
+  readonly cost: KitCost;
+  /** Seconds; `null` for a charge-based ultimate, which has no cooldown. */
+  readonly cooldownSeconds: number | null;
+  /** `false`: in the kit but not built yet, so it cannot be cast. */
+  readonly isAvailable: boolean;
+};
+
 /** One icon-and-name row of a class or Legend detail list (72:757, 56:47). */
 export type DetailRow = {
   readonly slot: DetailSlot;
-  /** From core `detailNames`; `null` renders the designed placeholder row. */
+  /** From core `detailNames`, or a Legend's kit; `null` renders the designed placeholder row. */
   readonly displayName: string | null;
   readonly iconAssetId: AssetId | null;
+  /** The kit ability this row shows (a Legend's ultimate and abilities 1 to 3); absent on class rows. */
+  readonly kit?: KitRow;
 };
 
 /**
@@ -132,7 +164,7 @@ export type LegendSpecCard = {
   readonly status: SelectionStatus;
   readonly accentToken: ColourToken;
   readonly ratings: RoleRatings | null;
-  /** Signature, specialty, ultimate (58:271). */
+  /** Ultimate, then abilities 1 to 3: names and details from the Legend's kit (58:271, DEC-199). */
   readonly details: readonly DetailRow[];
   readonly art: LegendSpecArt;
   /** The HUD weapon art of this Legend's start weapon; `null` keeps the class kit's (DEC-114). */
@@ -273,4 +305,6 @@ export type DisplayCatalogue = {
   readonly teamNames: Readonly<Record<PlayableTeam, string>>;
   /** Who the bots are (core content, DEC-61, DEC-102); the session builds the rosters from it. */
   readonly botRoster: BotRosterDefinition;
+  /** Every ability's display data (core content): the match's range overlay draws from it. */
+  readonly abilities: readonly AbilityDisplay[];
 };

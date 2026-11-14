@@ -54,6 +54,18 @@ describe('SettingsRepository', () => {
     expect(await repository.load('p1')).toEqual(SETTINGS);
   });
 
+  it('round-trips the cast mode, and loads an old record without it as having none', async () => {
+    const { adapter, repository } = await setup();
+    const withMode: PersistedSettings = { ...SETTINGS, gameplay: { castMode: 'aim-then-click' } };
+
+    await repository.save('p1', withMode);
+    expect(await repository.load('p1')).toEqual(withMode);
+
+    await repository.save('p2', SETTINGS);
+    expect(await repository.load('p2')).toEqual(SETTINGS);
+    expect(await readRaw(adapter, SETTINGS_STORE, 'p2')).not.toHaveProperty('gameplay');
+  });
+
   it('stores a versioned record keyed by profile', async () => {
     const { adapter, repository } = await setup();
 

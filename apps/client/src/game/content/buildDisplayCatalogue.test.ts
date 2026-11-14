@@ -67,6 +67,51 @@ const without = (id: string): ReadonlySet<string> => new Set([...KNOWN].filter((
 const omit = <T>(record: Readonly<Record<string, T>>, key: string): Record<string, T> =>
   Object.fromEntries(Object.entries(record).filter(([candidate]) => candidate !== key));
 
+describe('buildDisplayCatalogue kits', () => {
+  const oracleOf = (cards: readonly LegendClassCard[]) =>
+    classCard(cards, 'magus').specs.find((spec) => spec.specId === 'oracle');
+
+  it("gives a Legend with no kit of its own its class's default kit, from content (DEC-199)", () => {
+    const rows = oracleOf(build().legendClasses)?.details.map((row) => row.kit);
+    expect(rows?.map((kit) => [kit?.slot, kit?.displayName])).toEqual([
+      ['ability-4', 'Death Ray'],
+      ['ability-1', 'Shockwave'],
+      ['ability-2', 'Sanctuary'],
+      ['ability-3', 'Imbue'],
+    ]);
+    expect(rows?.[1]).toMatchObject({ cost: { kind: 'aether', amount: 50 }, cooldownSeconds: 14 });
+  });
+
+  it("uses a Legend's own kit instead, with no change outside content", () => {
+    const specs = CONTENT.specs.map((spec) =>
+      spec.id === 'oracle'
+        ? {
+            ...spec,
+            kit: { abilities: ['imbue', 'sanctuary', 'shockwave'], ultimate: 'death-ray' } as const,
+          }
+        : spec,
+    );
+    const names = oracleOf(build({ content: { specs } }).legendClasses)?.details.map(
+      (row) => row.displayName,
+    );
+    expect(names).toEqual(['Death Ray', 'Imbue', 'Sanctuary', 'Shockwave']);
+  });
+
+  it('marks an ability not built yet, and shows the ultimate as charge-based', () => {
+    const [ultimate, slam] = oracleOf(build().legendClasses)?.details.map((row) => row.kit) ?? [];
+    expect(ultimate).toMatchObject({
+      isAvailable: false,
+      cost: { kind: 'charge' },
+      cooldownSeconds: null,
+    });
+    expect(slam).toMatchObject({ abilityId: 'shockwave', isAvailable: true });
+  });
+
+  it('carries every ability for the match overlay', () => {
+    expect(build().abilities).toBe(CONTENT.abilities);
+  });
+});
+
 describe('buildDisplayCatalogue', () => {
   it('joins core detail names with presentation icons in slot order', () => {
     const magusPresentation = CLASS_PRESENTATION.magus;
@@ -105,18 +150,16 @@ describe('buildDisplayCatalogue', () => {
     ]);
     expect(magus.layoutOverrides.alternate?.details?.[2]?.displayName).toBe('Arcane Intellect');
     expect(magus.layoutOverrides.alternate?.description).toMatch(/^The masters of Aether/);
-    // The Legend whose detail rows core names; presentation gives them icons. Ultimate on top,
-    // then abilities 1 to 3, no Aetheric Recall (DEC-65); Unison Ward is ability 1 (DEC-103).
-    const detailed = CONTENT.specs.find((spec) => spec.detailNames.ultimate !== null);
-    expect(magus.specs.find((spec) => spec.specId === detailed?.id)?.details).toEqual([
-      {
-        slot: 'ultimate',
-        displayName: 'Severed Accord',
-        iconAssetId: 'oracle-detail-severed-accord',
-      },
-      { slot: 'ability-1', displayName: 'Unison Ward', iconAssetId: 'oracle-detail-unison-ward' },
-      { slot: 'ability-2', displayName: null, iconAssetId: null },
-      { slot: 'ability-3', displayName: null, iconAssetId: null },
+    // A Legend's rows are its kit's (DEC-199), under the presentation's icons: the Oracle has no
+    // kit of its own, so these are the Magus kit, not its old "Severed Accord" / "Unison Ward".
+    const oracle = magus.specs.find((spec) => spec.specId === 'oracle');
+    expect(
+      oracle?.details.map(({ slot, displayName, iconAssetId }) => [slot, displayName, iconAssetId]),
+    ).toEqual([
+      ['ultimate', 'Death Ray', 'oracle-detail-severed-accord'],
+      ['ability-1', 'Shockwave', 'oracle-detail-unison-ward'],
+      ['ability-2', 'Sanctuary', null],
+      ['ability-3', 'Imbue', null],
     ]);
     expect(classCard(build().legendClasses, 'warrior').details).toEqual([
       { slot: 'signature', displayName: null, iconAssetId: null },

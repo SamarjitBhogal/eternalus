@@ -27,6 +27,7 @@ const CATALOGUE: DisplayCatalogue = {
     enemyRover: 'mirror-player',
     difficulties: { laner: 'normal', rover: 'rover' },
   },
+  abilities: [],
 };
 
 const {

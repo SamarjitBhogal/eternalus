@@ -42,7 +42,7 @@ function setUp(canvas = new FakeViewportCanvas(), sinks: readonly LogSink[] = []
     document,
     gameConfig: CONFIG,
     bus,
-    settings: { bindings: null },
+    settings: { bindings: null, castMode: null },
     clock: new FakeSessionClock(),
     sinks,
   });
@@ -63,6 +63,7 @@ function setUp(canvas = new FakeViewportCanvas(), sinks: readonly LogSink[] = []
     world,
     captureKinds: ['capture-point', 'cathedral'],
     roster: [PLAYER_SLOT],
+    abilities: [],
     onCrash,
   });
   /** Every listener on the window, the document and the canvas. */

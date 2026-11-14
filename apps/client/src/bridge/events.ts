@@ -3,7 +3,7 @@
  * `catalogue.types.ts` and `hud.types.ts`. `game/` emits game → UI events; `ui/` emits only
  * `ui-intent`. `connectBusToStore` copies every game → UI event into its slice.
  */
-import type { InputAction, InputChord } from './Binding.types';
+import type { HudSlotId, InputAction, InputChord } from './Binding.types';
 import type { AssetId, DisplayCatalogue, RasterBox } from './catalogue.types';
 import type { CrashReportState } from './CrashReport.types';
 import type { LegendClassId, PlayableTeam } from './domain.types';
@@ -60,6 +60,8 @@ export type UiIntent =
   /** `action: null` resets every binding. */
   | { readonly kind: 'reset-bindings'; readonly action: InputAction | null }
   | { readonly kind: 'update-settings'; readonly patch: SettingsPatch }
+  /** Esc while an ability is selected for aiming: drops the selection (not the pause menu). */
+  | { readonly kind: 'cancel-aim' }
   /** A screen threw while rendering (`ErrorBoundary`, ADR 0025 §5); all plain strings. */
   | {
       readonly kind: 'report-screen-crash';
@@ -186,6 +188,11 @@ export type BridgeEventMap = {
   'match-clock': MatchClock;
   /** The human Legend for the HUD, every 6 ticks (13 §5); `null` before it spawns. */
   'hud-state': { readonly player: PlayerHudSnapshot | null };
+  /**
+   * The ability slot being aimed, published the moment it changes (not throttled); `null` when
+   * none is.
+   */
+  'aiming-slot': { readonly slot: HudSlotId | null };
   /** Team structures, at match start and every 30 ticks (13 §9 recipe). */
   'structure-state': { readonly structures: readonly StructureStatus[] };
   /** Capture points in lane order, at match start and every 30 ticks (13 §5). */

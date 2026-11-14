@@ -21,6 +21,7 @@ const initialState: DisplayCatalogue = {
     enemyRover: 'mirror-player',
     difficulties: { laner: '', rover: '' },
   },
+  abilities: [],
 };
 
 /** Display-ready content, projected once at boot from the catalogue source. */

@@ -9,6 +9,7 @@ import {
 import { MODIFIER_FLAGS } from '../input/InputMapper.constants';
 import { DEFAULT_CHORDS, PRESETS } from '../input/keybindings';
 import { applySettingsIntent, settingsWithDefaults } from './settingsState';
+import type { SavedSettings } from './settingsState.types';
 
 const UP_ARROW = { device: 'keyboard', code: 'ArrowUp', label: '↑' } as const;
 
@@ -34,6 +35,35 @@ describe('settingsWithDefaults', () => {
     expect(settings.bindings.find((binding) => binding.action === 'move-down')?.chords).toEqual(
       DEFAULT_CHORDS['move-down'],
     );
+  });
+});
+
+describe('cast mode setting', () => {
+  it('defaults to quick cast, and an old save without it keeps that default', () => {
+    const { audio, video, accessibility } = settingsSlice.getInitialState();
+    const oldSave: SavedSettings = { audio, video, accessibility, bindings: [] };
+
+    expect(settingsWithDefaults(null).gameplay).toEqual({ castMode: 'quick' });
+    expect(settingsWithDefaults(oldSave).gameplay).toEqual({
+      castMode: 'quick',
+    });
+  });
+
+  it('keeps a saved cast mode and changes it with an update-settings intent', () => {
+    const saved = settingsWithDefaults({
+      ...settingsSlice.getInitialState(),
+      gameplay: { castMode: 'aim-then-click' },
+      bindings: [],
+    });
+    expect(saved.gameplay.castMode).toBe('aim-then-click');
+
+    const next = applySettingsIntent(saved, {
+      kind: 'update-settings',
+      patch: { gameplay: { castMode: 'quick' } },
+    });
+
+    expect(next.gameplay).toEqual({ castMode: 'quick' });
+    expect(next.audio).toEqual(saved.audio);
   });
 });
 

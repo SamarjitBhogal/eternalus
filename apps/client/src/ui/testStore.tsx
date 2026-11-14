@@ -214,6 +214,7 @@ export const TEST_CONTENT: DisplayCatalogue = {
     enemyRover: 'mirror-player',
     difficulties: { laner: 'normal', rover: 'rover' },
   },
+  abilities: [],
 };
 
 /** Session slice state at `phase`, optionally on a menu route with a reason. */

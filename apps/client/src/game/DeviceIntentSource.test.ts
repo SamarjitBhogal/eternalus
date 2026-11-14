@@ -105,6 +105,7 @@ describe('Player scenario: walking with the keyboard', () => {
       camera: new Camera({ x: 0, y: 0 }, 64, 36),
       input,
       logger: new MemoryLogger(),
+      abilities: [],
       onCrash: () => undefined,
       bridge: {
         bus: new TypedEventBus<BridgeEventMap>(),

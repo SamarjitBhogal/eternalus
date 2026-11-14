@@ -238,6 +238,7 @@ export class SessionController {
         setup: { ...setup, ...rosters },
         world,
         captureKinds: this.context.catalogue.hud.objectiveKinds.map(({ kind }) => kind),
+        abilities: this.context.catalogue.abilities,
         roster: rosterSlots(rosters, this.context.catalogue.botRoster.difficulties),
         onCrash,
       },

@@ -77,6 +77,13 @@
   opacity: 0.4;
 }
 
+/* The slot selected for aiming (aim-then-click, DEC-209 (3)): a cream outline around the frame,
+   so the choice shows without colour alone (the slot's name is not changed). */
+.isAiming {
+  outline: calc(2 * var(--hud-u)) solid var(--hud-cream-bright);
+  outline-offset: calc(3 * var(--hud-u));
+}
+
 /* The key glyph box (65:657/659/663 at the abilities, 65:666 at the ultimate; the gadgets' 5 px
    under the slot, CD-01). */
 .glyph {

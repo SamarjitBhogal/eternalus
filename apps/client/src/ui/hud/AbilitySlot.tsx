@@ -33,7 +33,8 @@ const LOOK_STATE: Readonly<Record<HudSlotLook, (reason: HudBlockReason | null) =
  * gold glow when ready, the red vertical gradient while cooling down, filled from the bottom by
  * the share of the cooldown still to run (the cooldown sweep 13 §3 asks for, as a vertical fill),
  * the plain frame when blocked (icon dimmed), the hatch before any data. The icon comes from the
- * class kit and every slot shows the `KeyGlyph` of its action (FR-081). `className` places it.
+ * class kit and every slot shows the `KeyGlyph` of its action (FR-081). The slot selected for aiming is outlined
+ * (`isAiming`); a slot with no effects yet reads `Not yet available`. `className` places it.
  */
 export function AbilitySlot({
   slot,
@@ -57,10 +58,12 @@ export function AbilitySlot({
       )}
       data-slot={slot}
       data-look={view.look}
+      data-aiming={view.isAiming}
       className={classNames(
         styles.slot,
         APPEARANCE_CLASS[appearance],
         isBlocked && styles.isBlocked,
+        view.isAiming && styles.isAiming,
         className,
       )}
     >

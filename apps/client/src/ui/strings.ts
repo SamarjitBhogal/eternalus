@@ -2,6 +2,7 @@ import type { InputAction } from '../bridge/Binding.types';
 import type { DetailSlot, RoleRatingAxis } from '../bridge/catalogue.types';
 import type { MenuRoute, SessionPhase, SessionReason } from '../bridge/events';
 import type { HudAllegiance, HudBlockReason } from '../bridge/hud.types';
+import type { CastMode } from '../bridge/slices/settingsSlice';
 
 /**
  * Banner text per `session.reason`: every `SessionReason` but the popup ones has one (a missing
@@ -123,7 +124,13 @@ export const STRINGS = {
   settings: {
     title: 'Settings',
     tablist: 'Settings sections',
-    tabs: { controls: 'Controls', audio: 'Audio', video: 'Video', accessibility: 'Accessibility' },
+    tabs: {
+      controls: 'Controls',
+      gameplay: 'Gameplay',
+      audio: 'Audio',
+      video: 'Video',
+      accessibility: 'Accessibility',
+    },
     listening: 'Press a key or mouse button…',
     confirm: 'Enter to save, Esc to cancel',
     conflict: (chord: string, owner: string) => `${chord} is already bound to ${owner}.`,
@@ -139,6 +146,11 @@ export const STRINGS = {
     renderScale: 'Render scale',
     reduceMotion: 'Reduce motion',
     colourBlindMode: 'Colour-blind mode',
+    castMode: 'Ability cast',
+    castModes: {
+      quick: 'Quick cast (the key casts at once)',
+      'aim-then-click': 'Aim, then click (the key selects, a click casts)',
+    } satisfies Record<CastMode, string>,
   },
   pause: { title: 'Paused', resume: 'Resume', settings: 'Settings', leave: 'Leave match' },
   /** The match viewport; the explorer labels show only with the developer flag (13 §4, DEC-32). */
@@ -186,6 +198,15 @@ export const STRINGS = {
       'ability-2': 'Ability 2',
       'ability-3': 'Ability 3',
     } satisfies Record<DetailSlot, string>,
+    /** A kit ability's cost and cooldown lines on the Legend panel and View Details (DEC-199). */
+    kit: {
+      aetherCost: (amount: number): string => `${String(amount)} aether`,
+      /** The ultimate: no aether and no cooldown, a charge meter gates it (DEC-202). */
+      chargeCost: 'Charge meter',
+      cooldown: (seconds: number): string => `${String(seconds)} s cooldown`,
+      /** An ability in the kit that is not built yet. */
+      unavailable: 'Not yet available',
+    },
     previousClass: 'Previous class',
     nextClass: 'Next class',
     // Cinzel draws lower case as small capitals (58:276, 58:326).
@@ -257,6 +278,7 @@ export const STRINGS = {
       'cannot-cast': 'Cannot cast',
       'no-target': 'No target',
       restricted: 'Restricted',
+      unavailable: 'Not yet available',
     } satisfies Record<HudBlockReason, string>,
   },
 } as const;

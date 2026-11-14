@@ -7,7 +7,7 @@ import { UltimateChargeBar } from './UltimateChargeBar';
 describe('UltimateChargeBar', () => {
   it('shows the ultimate charge 5/6 as a meter at 83 %', () => {
     const html = renderWithStore(<UltimateChargeBar />, {
-      hud: { player: FIGMA_HUD_PLAYER, announcements: [] },
+      hud: { player: FIGMA_HUD_PLAYER, announcements: [], aimingSlot: null },
     });
     expect(html).toContain('aria-valuenow="83"');
     expect(html).toContain('style="--segmented-bar-fill:50%"');

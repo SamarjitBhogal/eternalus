@@ -174,7 +174,13 @@ describe('SessionController match lifetime', () => {
     // read from the catalogue, not from the helper alone.
     const roster = request?.roster ?? [];
     expect(roster.filter(({ pilot }) => pilot === 'human')).toEqual([
-      { pilot: 'human', team: request?.setup.playerTeam, definitionId: 'magus', role: 'rover' },
+      {
+        pilot: 'human',
+        team: request?.setup.playerTeam,
+        definitionId: 'magus',
+        role: 'rover',
+        specId: request?.setup.allies.find(({ isPlayer }) => isPlayer)?.specId,
+      },
     ]);
     const bots = roster.flatMap((slot) => (slot.pilot === 'bot' ? [slot] : []));
     expect(bots).toHaveLength(roster.length - 1);

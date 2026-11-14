@@ -1,4 +1,5 @@
 import {
+  type AbilitySlotSnapshot,
   createDefaultGameConfig,
   type EntitySnapshot,
   type MapFeatureKind,
@@ -31,6 +32,7 @@ const PLAYER: EntitySnapshot = {
 const snapshotAt = (tick: number, entities: readonly EntitySnapshot[] = []): Snapshot => ({
   tick,
   match: { phase: 'early-game', phaseEnteredTick: 0, upcoming: [], humanLegendId: null },
+  player: null,
   entities,
   hordes: [],
   teams: {
@@ -249,5 +251,82 @@ describe('MatchBridge', () => {
     const [firstPoints, secondPoints] = captures;
     expect(second?.structures).toBe(first?.structures);
     expect(secondPoints?.points).toBe(firstPoints?.points);
+  });
+
+  describe('ability slots', () => {
+    const slot = (changes: Partial<AbilitySlotSnapshot>): AbilitySlotSnapshot => ({
+      slot: 'ability-1',
+      abilityId: 'slam',
+      cooldownRemainingTicks: 90,
+      cooldownTicks: 480,
+      aetherCost: 50,
+      charge: null,
+      isReady: false,
+      blockedBy: 'on-cooldown',
+      ...changes,
+    });
+    const withPlayer = (slots: readonly AbilitySlotSnapshot[]): Snapshot => ({
+      ...snapshotAt(0, [PLAYER]),
+      player: { entityId: 'player-1', slots },
+    });
+
+    it("fills the slots from the snapshot's player: cooldown, cost and why it is blocked", () => {
+      const { bridge, huds } = setUp();
+      bridge.publishAll(withPlayer([slot({})]), 'player-1');
+
+      expect(huds[0]?.player?.slots).toEqual([
+        {
+          slot: 'ability-1',
+          abilityId: 'slam',
+          cooldownRemainingTicks: 90,
+          cooldownTicks: 480,
+          aetherCost: 50,
+          charge: null,
+          isReady: false,
+          blockedBy: 'on-cooldown',
+        },
+      ]);
+    });
+
+    it('has no slots while the snapshot has no player, or for another Legend', () => {
+      const { bridge, huds } = setUp();
+      bridge.publishAll(snapshotAt(0, [PLAYER]), 'player-1');
+      bridge.publishAll(
+        { ...withPlayer([slot({})]), player: { entityId: 'other', slots: [slot({})] } },
+        'player-1',
+      );
+
+      expect(huds.map((hud) => hud.player?.slots)).toEqual([[], []]);
+    });
+
+    it('maps an ability not built yet to unavailable and the ultimate to not-charged with no meter', () => {
+      const { bridge, huds } = setUp();
+      bridge.publishAll(
+        withPlayer([
+          slot({ slot: 'ability-2', blockedBy: 'unavailable', cooldownRemainingTicks: 0 }),
+          slot({ slot: 'ability-4', blockedBy: 'not-charged', aetherCost: 0, cooldownTicks: 0 }),
+        ]),
+        'player-1',
+      );
+
+      expect(
+        huds[0]?.player?.slots.map(({ slot: id, blockedBy, isReady, charge }) => [
+          id,
+          blockedBy,
+          isReady,
+          charge,
+        ]),
+      ).toEqual([
+        ['ability-2', 'unavailable', false, null],
+        ['ability-4', 'not-charged', false, null],
+      ]);
+    });
+
+    it('leaves the default action out: it has no HUD slot', () => {
+      const { bridge, huds } = setUp();
+      bridge.publishAll(withPlayer([slot({}), slot({ slot: 'default-action' })]), 'player-1');
+
+      expect(huds[0]?.player?.slots.map(({ slot: id }) => id)).toEqual(['ability-1']);
+    });
   });
 });

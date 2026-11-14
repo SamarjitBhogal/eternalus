@@ -1,6 +1,18 @@
-import type { CaptureSnapshot, EntityId, MapDefinition, Snapshot, Vec2 } from '@eternalus/core';
+import type {
+  AbilitySlotSnapshot,
+  CaptureSnapshot,
+  EntityId,
+  MapDefinition,
+  Snapshot,
+  Vec2,
+} from '@eternalus/core';
 
-import type { CapturePointStatus, PlayerHudSnapshot, StructureStatus } from '../bridge/hud.types';
+import type {
+  AbilitySlotStatus,
+  CapturePointStatus,
+  PlayerHudSnapshot,
+  StructureStatus,
+} from '../bridge/hud.types';
 import { ROSTER_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import type { CaptureSite, MatchBridgeDeps } from './MatchBridge.types';
 
@@ -99,8 +111,9 @@ export class MatchBridge {
 
   /**
    * The player's HUD values, joined from the Legend's entity groups by id (05 §15, DEC-232): health,
-   * aether, level and XP. The slots stay `[]` until core fills `Snapshot.player`, and the rest is
-   * `null` until core publishes it (13 §10).
+   * aether, level and XP, and its ability slots from `Snapshot.player` (none while that is `null`).
+   * The rest is `null` until core publishes it (13 §10). Names and icons are not joined here: the
+   * HUD's kit selector joins them by slot from the catalogue.
    */
   private static playerOf(snapshot: Snapshot, playerId: EntityId | null): PlayerHudSnapshot | null {
     const entity = snapshot.entities.find((candidate) => candidate.id === playerId);
@@ -119,8 +132,16 @@ export class MatchBridge {
       xpToNext: entity.progression?.xpToNext ?? null,
       weaponProgress: null,
       ultimatePips: null,
-      slots: [],
+      slots:
+        snapshot.player?.entityId === entity.id ? MatchBridge.slotsOf(snapshot.player.slots) : [],
     };
+  }
+
+  /** The bar slots the HUD draws: `default-action` has no HUD slot. */
+  private static slotsOf(slots: readonly AbilitySlotSnapshot[]): readonly AbilitySlotStatus[] {
+    return slots.flatMap(({ slot, ...rest }) =>
+      slot === 'default-action' ? [] : [{ slot, ...rest }],
+    );
   }
 
   /** Every team-owned feature is a team structure (07 §1); camps, objectives and scenery are neutral. */

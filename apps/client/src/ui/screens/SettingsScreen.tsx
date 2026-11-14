@@ -11,12 +11,12 @@ import { SettingsScreenControls } from './SettingsScreenControls';
 import { SettingsScreenOptions } from './SettingsScreenOptions';
 
 /** The sections, in tab order. */
-const TABS = ['controls', 'audio', 'video', 'accessibility'] as const;
+const TABS = ['controls', 'gameplay', 'audio', 'video', 'accessibility'] as const;
 
 type SettingsTab = (typeof TABS)[number];
 
 /**
- * Settings: Controls (press-to-bind), Audio, Video and Accessibility tabs. The menu shows it as a
+ * Settings: Controls (press-to-bind), Gameplay, Audio, Video and Accessibility tabs. The menu shows it as a
  * screen; the pause overlay embeds it (`isOverlay`), and Back then returns to the pause menu.
  */
 export function SettingsScreen({

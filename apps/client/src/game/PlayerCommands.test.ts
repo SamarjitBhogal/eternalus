@@ -1,4 +1,5 @@
 import type {
+  AbilitySlot,
   Command,
   EntitySnapshot,
   Team,
@@ -10,6 +11,7 @@ import type {
 } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
 
+import { AbilityCasts } from './AbilityCasts';
 import type { IntentSource } from './Match.types';
 import { PlayerCommands } from './PlayerCommands';
 
@@ -24,8 +26,15 @@ class ScriptedIntent implements IntentSource {
 
   public aim: Vec2 | null = null;
 
+  public triggered: readonly AbilitySlot[] = [];
+
   public read(): InputIntent {
-    return { move: this.move, isAttacking: this.isAttacking, aim: this.aim, triggered: [] };
+    return {
+      move: this.move,
+      isAttacking: this.isAttacking,
+      aim: this.aim,
+      triggered: this.triggered,
+    };
   }
 }
 
@@ -73,18 +82,20 @@ const snapshotOf = (
 const setUp = () => {
   const input = new ScriptedIntent();
   const enqueueCommand = vi.fn<Simulation['enqueueCommand']>();
+  const casts = new AbilityCasts({ enqueueCommand }, vi.fn());
   const commands = new PlayerCommands(
     input,
     { enqueueCommand },
     { screenToWorld: (point) => point },
     [HOUSE],
+    casts,
   );
   const queued = (type: Command['type']): number =>
     enqueueCommand.mock.calls.filter(([command]) => command.type === type).length;
   const tick = (entities: readonly EntitySnapshot[] = [PLAYER]): boolean => {
     return commands.apply(ACTOR, snapshotOf(entities));
   };
-  return { input, commands, enqueueCommand, queued, tick };
+  return { input, commands, casts, enqueueCommand, queued, tick };
 };
 
 describe('PlayerCommands', () => {
@@ -112,6 +123,71 @@ describe('PlayerCommands', () => {
     tick();
     tick();
     expect(queued('attack-target')).toBe(3);
+  });
+
+  it('queues a cast-ability for each pressed slot in quick cast, aimed at the pointer', () => {
+    const { input, queued, tick, enqueueCommand } = setUp();
+    input.aim = { x: 12, y: 3 };
+    input.triggered = ['ability-3'];
+
+    tick();
+    input.triggered = [];
+    tick();
+
+    expect(queued('cast-ability')).toBe(1);
+    expect(enqueueCommand).toHaveBeenCalledWith({
+      type: 'cast-ability',
+      actorId: ACTOR,
+      slot: 'ability-3',
+      aim: { point: { x: 12, y: 3 }, targetId: null },
+    });
+  });
+
+  it('in aim-then-click, the confirming click casts and does not also attack', () => {
+    const { input, casts, queued, tick, enqueueCommand } = setUp();
+    casts.setCastMode('aim-then-click');
+    input.aim = { x: 2, y: 2 };
+
+    input.triggered = ['ability-1'];
+    tick([PLAYER, ENEMY]);
+    input.triggered = [];
+    input.isAttacking = true;
+    tick([PLAYER, ENEMY]);
+    tick([PLAYER, ENEMY]);
+
+    expect(queued('cast-ability')).toBe(1);
+    expect(queued('attack-target')).toBe(0);
+    expect(enqueueCommand).toHaveBeenCalledWith({
+      type: 'cast-ability',
+      actorId: ACTOR,
+      slot: 'ability-1',
+      aim: { point: { x: 2, y: 2 }, targetId: null },
+    });
+    input.isAttacking = false;
+    tick([PLAYER, ENEMY]);
+    input.isAttacking = true;
+    tick([PLAYER, ENEMY]);
+    expect(queued('attack-target')).toBe(1);
+  });
+
+  it('in aim-then-click, a held attack pauses while a slot is selected and resumes on cancel', () => {
+    const { input, casts, queued, tick } = setUp();
+    casts.setCastMode('aim-then-click');
+    input.aim = { x: 2, y: 2 };
+    input.isAttacking = true;
+    tick([PLAYER, ENEMY]);
+    expect(queued('attack-target')).toBe(1);
+
+    input.triggered = ['ability-2'];
+    tick([PLAYER, ENEMY]);
+    input.triggered = [];
+    tick([PLAYER, ENEMY]);
+    expect(queued('attack-target')).toBe(1);
+    casts.cancel();
+    tick([PLAYER, ENEMY]);
+
+    expect(queued('attack-target')).toBe(2);
+    expect(queued('cast-ability')).toBe(0);
   });
 
   it('queues no attack while the canvas gestures own the press (minimap or explorer)', () => {

@@ -7,7 +7,7 @@ import styles from './ChargePips.module.css';
 
 const render = (ultimatePips: typeof FIGMA_HUD_PLAYER.ultimatePips) =>
   renderWithStore(<ChargePips />, {
-    hud: { player: { ...FIGMA_HUD_PLAYER, ultimatePips }, announcements: [] },
+    hud: { player: { ...FIGMA_HUD_PLAYER, ultimatePips }, announcements: [], aimingSlot: null },
   });
 
 const fillTops = (html: string) =>

@@ -1,0 +1,40 @@
+/* A kit ability's key, cost, cooldown and description, placed by the row's custom properties
+   (InfoPanelDetails.module.css). Cinzel white like the row names, at the body-copy sizes. */
+.meta,
+.description {
+  position: absolute;
+  left: 0;
+  top: 0;
+  margin: 0;
+  color: var(--selection-text);
+  font-weight: 400;
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+}
+
+.meta {
+  font-family: var(--font-game);
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  white-space: nowrap;
+  color: var(--selection-text-soft);
+  font-size: max(14px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-14) * 1px);
+  transform: translate(var(--name-x), calc(var(--name-y) + var(--meta-dy)));
+}
+
+.description {
+  font-family: var(--font-game);
+  width: var(--text-w);
+  color: var(--selection-text-dim);
+  font-size: max(13px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: 15px;
+  transform: translate(var(--text-x), calc(var(--name-y) + var(--text-dy)));
+}
+
+/* An ability that is not built yet: dimmed, like a blocked HUD slot. */
+.meta[data-available='false'],
+.description[data-available='false'] {
+  opacity: 0.5;
+}

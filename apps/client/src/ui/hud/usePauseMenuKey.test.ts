@@ -29,6 +29,41 @@ describe('pauseMenuKeyIntent', () => {
   });
 });
 
+describe('pressPauseMenuKey while aiming', () => {
+  const marker: Marker = { name: 'canvas' };
+
+  it('cancels the aim and neither opens the pause menu nor stores the opener', () => {
+    const openerRef: { current: Marker | null } = { current: null };
+    const { seen, off } = recordIntents(openerRef);
+    stop = off;
+
+    pressPauseMenuKey(null, openerRef, { activeElement: marker }, true);
+
+    expect(seen).toEqual([{ intent: { kind: 'cancel-aim' }, opener: null }]);
+  });
+
+  it('still pauses on the next press, once the aim is cancelled', () => {
+    const openerRef: { current: Marker | null } = { current: null };
+    const { seen, off } = recordIntents(openerRef);
+    stop = off;
+
+    pressPauseMenuKey(null, openerRef, { activeElement: marker }, true);
+    pressPauseMenuKey(null, openerRef, { activeElement: marker }, false);
+
+    expect(seen.map(({ intent }) => intent.kind)).toEqual(['cancel-aim', 'open-overlay']);
+  });
+
+  it('closes an open overlay as before, aim or not', () => {
+    const openerRef: { current: Marker | null } = { current: null };
+    const { seen, off } = recordIntents(openerRef);
+    stop = off;
+
+    pressPauseMenuKey('pause', openerRef, { activeElement: marker }, true);
+
+    expect(seen.map(({ intent }) => intent.kind)).toEqual(['close-overlay']);
+  });
+});
+
 describe('pressPauseMenuKey', () => {
   const marker: Marker = { name: 'focused button' };
 
@@ -36,7 +71,7 @@ describe('pressPauseMenuKey', () => {
     const openerRef: { current: Marker | null } = { current: null };
     const { seen, off } = recordIntents(openerRef);
     stop = off;
-    pressPauseMenuKey(null, openerRef, { activeElement: marker });
+    pressPauseMenuKey(null, openerRef, { activeElement: marker }, false);
     expect(seen).toEqual([{ intent: { kind: 'open-overlay', overlay: 'pause' }, opener: marker }]);
   });
 
@@ -45,8 +80,8 @@ describe('pressPauseMenuKey', () => {
     const openerRef: { current: Marker | null } = { current: before };
     const { seen, off } = recordIntents(openerRef);
     stop = off;
-    pressPauseMenuKey('pause', openerRef, { activeElement: marker });
-    pressPauseMenuKey('settings', openerRef, { activeElement: marker });
+    pressPauseMenuKey('pause', openerRef, { activeElement: marker }, false);
+    pressPauseMenuKey('settings', openerRef, { activeElement: marker }, false);
     expect(openerRef.current).toBe(before);
     expect(seen.map(({ intent }) => intent.kind)).toEqual(['close-overlay', 'open-overlay']);
   });

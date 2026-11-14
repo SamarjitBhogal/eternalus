@@ -27,7 +27,7 @@ function render(slot: HudSlotId, changes: Partial<AbilitySlotStatus> | null = {}
   });
   return renderWithStore(<AbilitySlot slot={slot} appearance="ability" />, {
     ...store,
-    hud: { player: { ...FIGMA_HUD_PLAYER, slots }, announcements: [] },
+    hud: { player: { ...FIGMA_HUD_PLAYER, slots }, announcements: [], aimingSlot: null },
   });
 }
 

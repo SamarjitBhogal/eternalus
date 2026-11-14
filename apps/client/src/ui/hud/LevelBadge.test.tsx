@@ -9,7 +9,7 @@ import css from './LevelBadge.module.css?raw';
 
 const render = (player: typeof FIGMA_HUD_PLAYER | null, classId = 'warrior') =>
   renderWithStore(<LevelBadge />, {
-    hud: { player, announcements: [] },
+    hud: { player, announcements: [], aimingSlot: null },
     matchSetup: { ...FIGMA_MATCH_SETUP, selection: { classId, specId: null } },
   });
 

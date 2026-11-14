@@ -52,6 +52,7 @@ const setUp = () => {
     camera: new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT),
     input: IDLE,
     logger: new NullLogger(),
+    abilities: [],
     onCrash: () => undefined,
     bridge: {
       bus: new TypedEventBus<BridgeEventMap>(),

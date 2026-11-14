@@ -24,6 +24,12 @@ export type PersistedSettings = {
   readonly audio: { readonly master: number; readonly music: number; readonly effects: number };
   readonly video: { readonly fullscreen: boolean; readonly renderScale: number };
   readonly accessibility: { readonly reduceMotion: boolean; readonly colourBlindMode: boolean };
+  /**
+   * Optional, so records saved before the cast mode (DEC-200) still read as version 1; the
+   * `castMode` values are `bridge/slices/settingsSlice.ts` `CastMode`. No `schemaVersion` bump
+   * (DEC-125).
+   */
+  readonly gameplay?: { readonly castMode: 'quick' | 'aim-then-click' };
 };
 
 /** The `settings` store record, one per profile (architecture 14 §7). */
@@ -34,6 +40,7 @@ export type SettingsDtoV1 = PersistedSettings & {
 
 type FieldCheck = (value: unknown) => boolean;
 
+const CAST_MODES: readonly unknown[] = ['quick', 'aim-then-click'];
 const CHORD_DEVICES: readonly unknown[] = ['keyboard', 'mouse', 'gamepad'];
 const isBoolean: FieldCheck = (value) => typeof value === 'boolean';
 const isVolume: FieldCheck = (value) => typeof value === 'number' && value >= 0 && value <= 1;
@@ -69,6 +76,12 @@ function groupProblem(
   }
   const bad = Object.entries(fields).find(([field, check]) => !check(value[field]));
   return bad === undefined ? null : `${name}.${bad[0]}: invalid value`;
+}
+
+function gameplayProblem(value: unknown): string | null {
+  return value === undefined
+    ? null
+    : groupProblem('gameplay', value, { castMode: (mode) => CAST_MODES.includes(mode) });
 }
 
 function bindingsProblem(value: unknown, knownActions: ReadonlySet<string>): string | null {
@@ -107,7 +120,8 @@ function settingsProblem(value: unknown, knownActions: ReadonlySet<string>): str
     groupProblem('accessibility', value.accessibility, {
       reduceMotion: isBoolean,
       colourBlindMode: isBoolean,
-    })
+    }) ??
+    gameplayProblem(value.gameplay)
   );
 }
 

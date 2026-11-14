@@ -1,6 +1,8 @@
 import { type EntityId, type EntitySnapshot, makeLogRecord, type Snapshot } from '@eternalus/core';
 
+import type { CastMode } from '../bridge/slices/settingsSlice';
 import { isDead } from '../bridge/selectors/isDead';
+import { AbilityCasts } from './AbilityCasts';
 import { BuildingRoofs } from './BuildingRoofs';
 import { GameLoop } from './engine/loop/GameLoop';
 import { HealthBarVisibility } from './HealthBarVisibility';
@@ -19,6 +21,7 @@ import { MatchViewControls } from './MatchViewControls';
 import { PlayerCommands } from './PlayerCommands';
 import { createDefaultViewRegistry } from './views/defaultViewRegistry';
 import { EntityLayer } from './views/EntityLayer';
+import { AimOverlayView } from './views/AimOverlayView';
 import { MapView } from './views/MapView';
 import { MiniMapView } from './views/MiniMapView';
 import { SceneryView } from './views/SceneryView';
@@ -58,6 +61,12 @@ export class Match implements LoopTarget {
 
   private readonly commands: PlayerCommands;
 
+  /** The ability keys and the aim-then-click selection (`aiming-slot` goes out when it changes). */
+  private readonly casts: AbilityCasts;
+
+  /** The range overlay of the ability selected for aiming, drawn over the units. */
+  private readonly aimOverlay: AimOverlayView;
+
   private readonly bridge: MatchBridge;
 
   private previous: Snapshot | null = null;
@@ -78,6 +87,9 @@ export class Match implements LoopTarget {
     const { simulation, world, tickRate, scheduler, camera, logger, bridge, input } = deps;
     const { map, presentation, mapObjects } = world;
     this.healthBars = new HealthBarVisibility(simulation);
+    this.current = simulation.snapshot();
+    this.healthBars.observe(this.current);
+    this.playerId = this.current.match.humanLegendId;
     this.entities = new EntityLayer(
       createDefaultViewRegistry((kind) => {
         logger.log(
@@ -92,18 +104,27 @@ export class Match implements LoopTarget {
       this.healthBars.healthBarOf,
     );
     this.camera = new MatchCamera(camera, map);
-    this.commands = new PlayerCommands(input, simulation, this.camera, mapObjects);
+    this.casts = new AbilityCasts(simulation, (slot) => {
+      bridge.bus.emit('aiming-slot', { slot });
+    });
+    this.commands = new PlayerCommands(input, simulation, this.camera, mapObjects, this.casts);
     const { scenery, buildings } = presentation;
     this.roofs = new BuildingRoofs(buildings);
     const { hidden: hiddenRoofs } = this.roofs;
     const shown = (): WorldRect => this.camera.visibleArea();
     this.objects = new WorldObjectsView(mapObjects, hiddenRoofs, shown);
     const { isDestroyed } = this.objects;
+    this.aimOverlay = new AimOverlayView(
+      deps.abilities,
+      this.playerId,
+      (from, direction, distance) => simulation.dashReach(from, direction, distance),
+    );
     const scene = new SceneView([
       new MapView(map, scenery, hiddenRoofs, shown, buildings, isDestroyed),
       new SceneryView(scenery, 'detail', hiddenRoofs, shown, isDestroyed),
       this.objects,
       this.entities,
+      this.aimOverlay,
     ]);
     const centre = (): WorldPoint => this.miniMapCentre();
     this.world = { scene, miniMap: new MiniMapView(map, scene, HUD_MINIMAP_RING, centre) };
@@ -113,9 +134,6 @@ export class Match implements LoopTarget {
       maxFrameMs: MAX_TICKS_PER_FRAME * tickMs,
     });
     this.bridge = new MatchBridge({ ...bridge, tickRate, map });
-    this.current = simulation.snapshot();
-    this.healthBars.observe(this.current);
-    this.playerId = this.current.match.humanLegendId;
     this.controls = new MatchViewControls({
       camera: this.camera,
       roofs: this.roofs,
@@ -149,10 +167,21 @@ export class Match implements LoopTarget {
    */
   public setPaused(isPaused: boolean): void {
     if (isPaused) {
+      this.casts.cancel();
       this.loop.stop();
     } else {
       this.loop.start();
     }
+  }
+
+  /** Sets how the ability keys cast (the `gameplay.castMode` setting). */
+  public setCastMode(mode: CastMode): void {
+    this.casts.setCastMode(mode);
+  }
+
+  /** Drops the ability selected for aiming (Esc, `cancel-aim`). */
+  public cancelAim(): void {
+    this.casts.cancel();
   }
 
   /** Sets the drawing area in device pixels; call on mount and on every resize. */
@@ -192,6 +221,7 @@ export class Match implements LoopTarget {
     renderer.showWorldArea(view);
     this.entities.show(this.previous, this.current, alpha, this.playerId);
     this.objects.show(this.current.mapObjects ?? []);
+    this.aimOverlay.show(this.current, this.casts.aimingSlot, this.casts.aimPoint);
     scene.draw(renderer);
     miniMap.draw(renderer, this.camera.screenWidth, this.camera.screenHeight);
   }

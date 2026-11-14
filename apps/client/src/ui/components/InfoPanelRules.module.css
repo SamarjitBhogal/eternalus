@@ -91,9 +91,15 @@
   width: 414px;
 }
 
-.rules[data-layout='class-alternate'] [data-rule='divider-0'],
-.rules[data-layout='legend'] [data-rule='divider-0'] {
+.rules[data-layout='class-alternate'] [data-rule='divider-0'] {
   y: 423px;
+}
+
+/* The Legend rows show each kit ability's text (InfoPanelKit), so the ultimate's band runs 16 px
+   longer and each ability band is 108 px: dividers at 439, 547 and 655. Recommendation, like the
+   rows: no frame draws the kit text. */
+.rules[data-layout='legend'] [data-rule='divider-0'] {
+  y: 439px;
 }
 
 .rules[data-layout='class-alternate'] [data-rule='divider-1'] {
@@ -108,10 +114,14 @@
   x: 4px;
 }
 
-.rules[data-layout='class-alternate'] [data-rule='accent-0'],
-.rules[data-layout='legend'] [data-rule='accent-0'] {
+.rules[data-layout='class-alternate'] [data-rule='accent-0'] {
   y: 308px;
   height: 95px;
+}
+
+.rules[data-layout='legend'] [data-rule='accent-0'] {
+  y: 308px;
+  height: 127px;
 }
 
 .rules[data-layout='class-alternate'] [data-rule='accent-1'] {
@@ -124,29 +134,29 @@
   height: 93px;
 }
 
-/* DEC-65's three ability rows (InfoPanelDetails' 60 px bands at 427, 495 and 563): a 52 px accent
-   4 px into each band, a divider 4 px above each. Recommendation, like the rows. */
+/* DEC-65's three ability rows (InfoPanelDetails' 108 px bands at 443, 551 and 659): a 100 px
+   accent 4 px into each band, a divider 4 px above each. Recommendation, like the rows. */
 .rules[data-layout='legend'] [data-rule='divider-1'] {
-  y: 491px;
+  y: 547px;
 }
 
 .rules[data-layout='legend'] [data-rule='divider-2'] {
-  y: 559px;
+  y: 655px;
 }
 
 .rules[data-layout='legend'] [data-rule='accent-1'] {
-  y: 431px;
-  height: 52px;
+  y: 447px;
+  height: 100px;
 }
 
 .rules[data-layout='legend'] [data-rule='accent-2'] {
-  y: 499px;
-  height: 52px;
+  y: 555px;
+  height: 100px;
 }
 
 .rules[data-layout='legend'] [data-rule='accent-3'] {
-  y: 567px;
-  height: 52px;
+  y: 663px;
+  height: 100px;
 }
 
 /* View Details (145:2): no accents; 1 px cyan dividers 781 wide from x 1015 (145:84, 148:184 at

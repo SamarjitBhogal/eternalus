@@ -73,6 +73,7 @@ function matchDeps(
     camera: new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT),
     input: { read: () => STILL },
     logger: new NullLogger(),
+    abilities: [],
     onCrash: vi.fn<MatchDeps['onCrash']>(),
     bridge: { bus, publishEveryTicks: HUD_PUBLISH_EVERY_TICKS, captureKinds: [] },
   };

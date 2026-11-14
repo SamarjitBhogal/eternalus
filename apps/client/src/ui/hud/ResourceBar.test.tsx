@@ -6,7 +6,7 @@ import { resourceNumeral as numeral } from './hudTestSupport';
 import { ResourceBar } from './ResourceBar';
 import css from './ResourceBar.module.css?raw';
 
-const withFigmaPlayer = { hud: { player: FIGMA_HUD_PLAYER, announcements: [] } };
+const withFigmaPlayer = { hud: { player: FIGMA_HUD_PLAYER, announcements: [], aimingSlot: null } };
 
 describe('ResourceBar', () => {
   it('shows the Figma health 1850 of 2220 as a meter at 83 % with its numeral', () => {
@@ -38,7 +38,7 @@ describe('ResourceBar', () => {
 
   it('rounds a fractional value and draws no shield overlay', () => {
     const html = renderWithStore(<ResourceBar resource="aether" />, {
-      hud: { player: { ...FIGMA_HUD_PLAYER, aether: 4699.6 }, announcements: [] },
+      hud: { player: { ...FIGMA_HUD_PLAYER, aether: 4699.6 }, announcements: [], aimingSlot: null },
     });
     expect(numeral(html)).toBe('4700');
     expect(html).not.toMatch(/shield/i);

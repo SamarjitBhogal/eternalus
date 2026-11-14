@@ -9,7 +9,7 @@ import styles from './ResourceBar.module.css';
 describe('HealthBar', () => {
   it('shows the Figma health 1850 of 2220 as the Health meter with its numeral', () => {
     const html = renderWithStore(<HealthBar className="placed" />, {
-      hud: { player: FIGMA_HUD_PLAYER, announcements: [] },
+      hud: { player: FIGMA_HUD_PLAYER, announcements: [], aimingSlot: null },
     });
     expect(numeral(html)).toBe('1850');
     expect(html).toContain('aria-valuetext="1850 of 2220"');

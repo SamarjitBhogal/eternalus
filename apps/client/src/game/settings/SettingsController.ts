@@ -2,7 +2,7 @@ import { makeLogRecord } from '@eternalus/core';
 
 import type { Binding } from '../../bridge/Binding.types';
 import type { UiIntent } from '../../bridge/events';
-import type { SettingsSliceState } from '../../bridge/slices/settingsSlice';
+import type { CastMode, SettingsSliceState } from '../../bridge/slices/settingsSlice';
 import { ownPlatformChordsFirst } from '../input/bindingEdits';
 import type { SettingsControllerDeps } from './SettingsController.types';
 import { applySettingsIntent, settingsWithDefaults } from './settingsState';
@@ -39,6 +39,11 @@ export class SettingsController {
   /** The current bindings, or `null` before `start()` has published the settings. */
   public get bindings(): readonly Binding[] | null {
     return this.settings?.bindings ?? null;
+  }
+
+  /** The current cast mode, or `null` before `start()` has published the settings. */
+  public get castMode(): CastMode | null {
+    return this.settings?.gameplay.castMode ?? null;
   }
 
   /** Stops handling intents. */

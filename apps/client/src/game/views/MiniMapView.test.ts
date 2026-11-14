@@ -345,6 +345,7 @@ describe('MiniMapView unit markers (DEC-187)', () => {
     const snapshot: Snapshot = {
       tick: 1,
       match: { phase: 'countdown', phaseEnteredTick: 0, upcoming: [], humanLegendId: null },
+      player: null,
       entities: [minion],
       hordes: [],
       teams: { light: counters, dark: counters },

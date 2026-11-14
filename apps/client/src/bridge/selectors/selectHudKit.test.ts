@@ -54,4 +54,45 @@ describe('selectHudKit', () => {
       selectHudKit(stateWith('warrior', 'juggernaut')),
     );
   });
+
+  it("names the slots after the picked Legend's kit, keeping the class's icons (DEC-199)", () => {
+    const kitRow = (slot: 'ability-1' | 'ability-4', displayName: string) => ({
+      slot: slot === 'ability-4' ? ('ultimate' as const) : slot,
+      displayName,
+      iconAssetId: null,
+      kit: {
+        slot,
+        abilityId: displayName.toLowerCase(),
+        displayName,
+        description: '',
+        cost: { kind: 'charge' as const },
+        cooldownSeconds: null,
+        isAvailable: true,
+      },
+    });
+    const classes = [
+      classCardFixture({
+        classId: 'warrior',
+        hud: {
+          ...WARRIOR_KIT,
+          slots: [
+            { slot: 'ability-1', displayName: null, iconAssetId: 'icon-1' },
+            { slot: 'ability-2', displayName: 'Old', iconAssetId: 'icon-2' },
+            { slot: 'ability-4', displayName: null, iconAssetId: 'icon-4' },
+          ],
+        },
+        specs: [
+          specCardFixture({
+            specId: 'knight',
+            details: [kitRow('ability-4', 'Fury'), kitRow('ability-1', 'Blade Runner')],
+          }),
+        ],
+      }),
+    ];
+    expect(selectHudKit(pickedClassState(classes, 'warrior', 'knight'))?.slots).toEqual([
+      { slot: 'ability-1', displayName: 'Blade Runner', iconAssetId: 'icon-1' },
+      { slot: 'ability-2', displayName: 'Old', iconAssetId: 'icon-2' },
+      { slot: 'ability-4', displayName: 'Fury', iconAssetId: 'icon-4' },
+    ]);
+  });
 });

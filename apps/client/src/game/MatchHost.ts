@@ -1,4 +1,5 @@
 import type { InputAction } from '../bridge/Binding.types';
+import type { CastMode } from '../bridge/slices/settingsSlice';
 import type { MatchEvidence } from '../data/logging/ErrorReport.types';
 import { CanvasPointerControls } from './CanvasPointerControls';
 import type { MatchHostDeps } from './MatchHost.types';
@@ -16,6 +17,8 @@ export class MatchHost implements RunningMatch {
   private readonly pointer: CanvasPointerControls;
 
   private stopSettings = (): void => undefined;
+
+  private stopIntents = (): void => undefined;
 
   private isDestroyed = false;
 
@@ -55,14 +58,25 @@ export class MatchHost implements RunningMatch {
       keyboard.attach(window);
       mouse.attach(viewport.canvas);
       this.pointer.attach();
-      this.stopSettings = bus.on('settings', ({ bindings }) => {
+      this.stopSettings = bus.on('settings', ({ bindings, gameplay }) => {
         mapper.setBindings(bindings);
+        match.setCastMode(gameplay.castMode);
+      });
+      this.stopIntents = bus.on('ui-intent', (intent) => {
+        if (intent.kind === 'cancel-aim') {
+          match.cancelAim();
+        }
       });
       match.start();
     } catch (error) {
       this.destroy();
       throw error;
     }
+  }
+
+  /** Sets how the ability keys cast; later changes arrive as `settings` events. */
+  public setCastMode(mode: CastMode): void {
+    this.deps.match.setCastMode(mode);
   }
 
   /**
@@ -101,6 +115,7 @@ export class MatchHost implements RunningMatch {
     mouse.detach();
     this.pointer.detach();
     this.stopSettings();
+    this.stopIntents();
     match.destroy();
     for (const adapter of adapters) {
       adapter.destroy();

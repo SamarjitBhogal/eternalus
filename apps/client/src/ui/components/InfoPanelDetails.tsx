@@ -6,6 +6,7 @@ import { AssetImage } from './AssetImage';
 import { INFO_PANEL_ICON_RENDITIONS, INFO_PANEL_ROW_COUNT } from './InfoPanelDetails.constants';
 import type { InfoPanelLayout } from './InfoPanel.types';
 import styles from './InfoPanelDetails.module.css';
+import { InfoPanelKit } from './InfoPanelKit';
 import { InfoPanelRules } from './InfoPanelRules';
 
 /** Row labels by slot (View Details); `undefined` draws none. */
@@ -36,6 +37,7 @@ function detailRow(
       )}
       {label !== undefined && <span className={styles.label}>{label}</span>}
       <span className={styles.name}>{row?.displayName ?? STRINGS.characterSelect.missingName}</span>
+      {row?.kit !== undefined && <InfoPanelKit row={row.kit} />}
     </li>
   );
 }
@@ -45,7 +47,8 @@ function detailRow(
  * (`InfoPanelRules`) and the layout's icon-and-name rows (`INFO_PANEL_ROW_COUNT`: the Figma's
  * three, or the Legend's four, DEC-65), positioned in the enclosing panel's px by `layout`.
  * Extra rows are not shown, a missing row or icon shows the placeholder box, a missing name a
- * dash (CD-13). View Details (DEC-103) has no header (`null`) and labels each row (`rowLabels`).
+ * dash (CD-13). A row with a `kit` also shows its ability's key, cost, cooldown and description
+ * (DEC-199). View Details (DEC-103) has no header (`null`) and labels each row (`rowLabels`).
  */
 export function InfoPanelDetails({
   layout,

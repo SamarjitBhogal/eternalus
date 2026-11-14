@@ -1,4 +1,5 @@
 import type {
+  AbilityDisplay,
   InputIntent,
   Logger,
   MapDefinition,
@@ -63,6 +64,8 @@ export type MatchDeps = {
   readonly input: IntentSource;
   /** Where client-side problems are reported (e.g. a kind drawn with the default view). */
   readonly logger: Logger;
+  /** Every ability's display data (`DisplayCatalogue.abilities`): the range overlay draws from it. */
+  readonly abilities: readonly AbilityDisplay[];
   /** Called once when the game loop stops because a tick or a frame threw (DEC-106). */
   readonly onCrash: (crash: MatchCrash) => void;
   /** Where the match's `MatchBridge` publishes, and what (architecture 08 §7). */
