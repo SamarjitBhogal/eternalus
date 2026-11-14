@@ -6255,6 +6255,214 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   check passed.". This entry was added after it.
 - Next step: push; PR #86 merges this head.
 
+### 2026-11-05 — Phase 3 / out-of-combat healing, owner answers DEC-215 — feat/out-of-combat-heal — sholtzman + Claude Code
+
+- What was done: the owner-approved merge of `fix/minion-stack-followups` (`ebedddb`) into this
+  branch (`e3903e0`; one conflict, the `DefaultSystemPipeline` TSDoc: both sides' system lists
+  kept), then DEC-215 (amends DEC-188) built on what `322df60` built:
+  - `07d0dd0`: `systems/HealingZones.ts`, one strategy per `HealingZoneShape`. `fort-box` is the
+    box round a lane tower's fort walls (its `Footprint` box), court and gateways in (4).
+    `stronghold-interior` is what the shield arc and the cliffs enclose less the ground of the
+    shield's wall segments, gates and turrets: on the wall, on a turret and the turret tips past
+    the ends of the arc are outside (2), (5). No overlap rule: a test over the generated maps for
+    1, 3, 5 and 7 lanes checks that no two zones overlap (1); the "largest bonus counts" test
+    went with the rule. Only hits on the Stronghold itself count as an attack on it (2), and a
+    unit is in a zone by its centre point (3): each has a test. Zone shapes renamed
+    (`fort-outline` → `fort-box`, `shield-enclosure` → `stronghold-interior`); DEC-215 (2) cited
+    at `structureQuietSeconds`.
+  - `5f4c76e`: architecture 04 §5 (healing content, zone shapes, no-overlap property), 18 §3.2
+    (`OutOfCombatHealingSystem` in the pipeline), `balancing.md` (healing values and zones) and
+    the minion plan §3 stand-in "nothing heals a retreated bot" (built).
+- Fail-first: each new test was seen red with its rule broken on purpose, then restored: the
+  322df60 Stronghold zone (shield ground in) → the walls, gates and turrets tests (both teams)
+  and the on-the-wall system test red; a fort box 400 m wider → the overlap test red for 1, 3, 5
+  and 7 lanes; the court only (box less the wall thickness) → the gateway tests red; any hit on
+  the structure's team counted → the shield-hit test red; the body's edge counted (+0.4 m) → the
+  centre-point test red.
+- Found, not built: the generated map overlaps the forts of two towers of one kind on a lane
+  (`spawnTowersPerLane` or `buffTowersPerLane` ≥ 2: boxes 32 m wide, towers 28 to 38 m apart);
+  the default (1 + 1) is clear. No Legend heal source exists in core yet, so DEC-215 (1)
+  stacking is "nothing blocks it": this heal only adds to health and heals do not reset combat.
+- Checks run: `npm run check` at `5f4c76e` → exit 0: "All matched files use Prettier code
+  style!"; core "Tests 1191 passed (1191)"; client "Tests 1754 passed (1754)"; "✓ built in
+  259ms"; "Documentation check passed.". This entry was added after that run (docs-only);
+  `prettier --check` and `docs:check` were re-run on it.
+- Next step: owner answers to the open questions (blocked hits on an unbreakable structure;
+  gates of the Stronghold shield), then the critic and ponytail gate, then the PR.
+
+### 2026-11-06 — Phase 3 / out-of-combat healing, merge of fix/minion-stack-followups (r2 fixes, phase/3 PR #71) — feat/out-of-combat-heal — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` at `e10bcb9d` (fix/minion-stack-followups (r2 fixes, phase/3 PR #71)). Only `docs/plan/PROGRESS.md` conflicted
+  (both sides appended entries); every entry is kept, the merged-in side's first. No line of either
+  side was removed (`git diff` against both parents shows only additions).
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-06/out-of-combat-heal.check.log`): EXIT=0, core
+  1191 passed, client 1754 passed, docs check passed.
+- Next step: push.
+
+### 2026-11-07 — Phase 3 / out-of-combat healing, merge of fix/minion-stack-followups (critic r3 fixes, PR #85) — feat/out-of-combat-heal — sholtzman + Claude Code
+
+- What was done: merged `8c9b99f2` at `8c9b99f2` (fix/minion-stack-followups (critic r3 fixes, PR #85)). Only `docs/plan/PROGRESS.md` conflicted
+  (both sides appended entries); every entry is kept, the merged-in side's first. No line of either
+  side was removed (`git diff` against both parents shows only additions).
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-07/out-of-combat-heal.8c9b99f2.check.log`): EXIT=0, core
+  1191 passed, client 1754 passed, docs check passed.
+- Next step: push.
+
+### 2026-11-07 — Phase 3 / out-of-combat healing, critic r1 fixes — sholtzman + Claude Code
+
+- Branch: `feat/out-of-combat-heal`, from `568298b`. Critic r1 report:
+  `eternalus-agent-work/playtest-2026-11-04/critic-heal-r1.md` (1 blocker, 3 should-fix, 6 nits).
+- Not recorded before (critic nit): DEC-188 r1 `2855104` (2 % of max health a second after 10 s
+  without dealing or taking damage; +10 points near a quiet friendly spawner or buff tower) and
+  r2 `322df60` (Stronghold +15 points; one zone strategy per shape; `map/strongholdEnclosure.ts`
+  and `outerFace` in `map/wallRing.ts`).
+- What was done:
+  - `595b80e` (blocker): the combat clocks leave the system's private Maps for a new `CombatClock`
+    component (last tick the entity dealt or took damage, last tick it took damage). The
+    `damage-applied` handler adds it lazily (as `StuckSystem` adds `ChaseWatch`): target both
+    ticks, attacker the active tick. `StateHasher` appends `combat-clock` only when present. The
+    `entity-removed` listener went: `Entity.retire` clears every component, and each
+    `EntityStore.add` caller adds a new entity from `EntityFactory.create` with a fresh id.
+  - `66a7922`: two INBOX items, the heal rules Q-D to Q-H and the critic's better-than-design
+    items (2) to (6), for owner sign-off (DEC-139).
+  - `76eee31`: architecture 04 `paths:` cover `OutOfCombatHealingSystem*` and `HealingZones*`.
+  - `498c816`: `spawnMapStructures` gives a `Footprint` where `Simulation.spawnStructures` does
+    (`hasMapFootprint`); new Simulation test on a generated map: a hurt unit in its own fort's
+    gateway heals at the base plus fort-box rate, both read from content.
+  - `907ecb7`: `structureBonuses` keyed by `StructureKind`, looked up only for `Structure`
+    entities; `Simulation.healing.test` reads `config.tickRate` and `NORMAL_BOT`; the shield-hit
+    `WorldObjectStore` setup moved to the fixture `state/__fixtures__/spawnWorldObjects.ts`.
+  - `b09bae3`: 06 shield-arc section names `strongholdEnclosure` and `outerFace`; the phase 3
+    plan's bot-heal remark points to DEC-188 and `OutOfCombatHealingSystem`.
+- Fail-first (each break restored after; red test, then its message):
+  - clock hash line cut to `['combat-clock']` → "StateHasher > changes with a combat clock and
+    with each of its ticks (DEC-188)": "expected 3782004600 not to be 3782004600".
+  - attacker's `recordDealt` call dropped → "OutOfCombatHealingSystem > restarts the delay when
+    the unit deals damage": "expected 0.09999999999999432 to be +0".
+  - `recordHurt` no longer sets the hurt tick → 5 red, among them "CombatClock > moves both clocks
+    when the entity takes damage" ("expected +0 to be 40") and "OutOfCombatHealingSystem > keeps
+    each fight in a CombatClock: …" ("expected [ 7, +0 ] to deeply equal [ 7, 7 ]").
+  - `fort-box` `contains` always false → "Simulation with out-of-combat healing (DEC-188) > heals
+    a hurt unit in its own team's fort box at the fort-box rate (generated map, DEC-215 (4))":
+    "expected 0.06666666666666998 to be close to 0.4000000000000001".
+- Goldens: no recorded hash changed. `diagnostics/replay.test.ts` (`WANDER_SEED_7`) and
+  `map/MapGenerator.test.ts` pass unchanged.
+- Checks run: `npm run check:quick` → exit 0 (also on every commit hook). `npx vitest run` on 18
+  touched and neighbouring core files → "Tests 187 passed (187)"; `MapGenerator` and
+  `CombatClock` → "Tests 64 passed (64)". `npm run docs:check` → "Documentation check passed.".
+  `npx prettier --check` on changed files → "All matched files use Prettier code style!". The full
+  `npm run check` was not run here (the orchestrator runs it).
+- Open for the owner: Q-D to Q-H (INBOX, each stays as built until answered) and the critic's
+  better-than-design items (2) to (6).
+- Not done: `phase/3` moved to `ed101458` (#80 merged) and conflicts with this branch in
+  `WorldObjectStore` and `geometry.ts`; not merged here, by instruction.
+- Next step: critic r2.
+
+### 2026-11-07 — Phase 3 / out-of-combat healing, critic r2, phase/3 merge, gate — sholtzman + Claude Code
+
+- Branch: `feat/out-of-combat-heal`. Critic r2 on `git diff 568298b ee1cf34`:
+  `eternalus-agent-work/playtest-2026-11-04/critic-heal-r2.md`: APPROVE, 0 blockers, 1
+  should-fix, 5 nits. Its own run of every `npm run check` step at `ee1cf34`: exit 0, core "Tests
+  1197 passed (1197)", client "Tests 1754 passed (1754)".
+- What was done:
+  - `e9ed6f4`: the 124-character TSDoc line rewrapped; braces on the two-line attacker `if`; the
+    generated-map fort-box test steps past both the heal delay and the structure quiet time; the
+    `spawnWorldObjects` TSDoc says it passes no `owners` (a fort object is its own entity there).
+  - `dfce925`: architecture 04 names `CombatClock` (the should-fix); `last-reviewed` 2026-11-07 on
+    04, 06 and the phase 3 plan; INBOX heal better-than-design item gains critic r2 items (7) to
+    (10).
+  - `3e8466b`: merge of `fix/minion-stack-followups` at `a5cf4e5` (phase/3 `ed10145`, #80, with
+    the reviewed resolution), no conflicts.
+- Fail-first (fort-box test): with `structureQuietSeconds` set to 20 on purpose, the old test was
+  red ("expected 0.06666666666666998 to be close to 0.4000000000000001") and the new one passed;
+  the value was restored.
+- Ponytail r2 on `git diff 568298b dfce925`
+  (`eternalus-agent-work/playtest-2026-11-04/ponytail-heal-r2.md`): no cuts. Ponytail r1's one
+  candidate (`HealingZone.outline`, read only by the zone-overlap test) is kept: that test checks
+  the DEC-215 (1) no-overlap property and reads it.
+- Checks run: `npm run check` at `3e8466b` → `EXIT=0`: core "Tests 1199 passed (1199)", client
+  "Tests 1754 passed (1754)", "Documentation check passed." This entry was added after that run
+  (docs-only).
+- Next step: open the PR (base `fix/minion-stack-followups` until #85 merges, then
+  `phase/3-sprint-3-work`); owner answers Q-D to Q-H and items (2) to (10).
+
+### 2026-11-08 — Phase 3 / out-of-combat healing, merge of fix/minion-stack-followups (phase/3 PRs #75, #74, #78) — feat/out-of-combat-heal — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` at `3962ff8b` (it carries phase/3
+  `85b67816`) in `8b26d77b`. `DefaultSystemPipeline` keeps both new systems: out-of-combat
+  healing, death, the match director, then invariants. The minion plan's §3 loses the "nothing
+  heals a retreated bot" stand-in, as #75 asked for when this branch merges, and the "last leg"
+  row (#85). `Simulation.healing.test` slots take `pilot: 'bot'` (#74's `RosterSlot`). Doc 18's
+  pipeline positions name `MatchDirectorSystem` after `DeathSystem`, as the code runs it (#74 did
+  not add it there).
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-07/out-of-combat-heal.3962ff8b.check.log`):
+  EXIT=0, core "Tests 1361 passed (1361)", client "Tests 1769 passed (1769)", "Documentation check
+  passed.".
+- Next step: critic, then push after #85; retarget #86 to phase/3 once #85 merges.
+
+### 2026-11-08 — Phase 3 / out-of-combat healing, merge of fix/minion-stack-followups (phase/3 PR #64) — feat/out-of-combat-heal — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` at `8c5febc4` (it carries phase/3
+  `b02ef47e`, #64 capture points) in `835b6cc5`. `DefaultSystemPipeline`'s TSDoc lists out-of-combat
+  healing, death, capture points, the match director, then invariants, as the array runs them;
+  PROGRESS keeps every entry. Doc 18's pipeline positions add `CaptureSystem` after
+  `DeathSystem`.
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-07/out-of-combat-heal.8c5febc4.check.log`):
+  EXIT=0, core "Tests 1414 passed (1414)", client "Tests 1778 passed (1778)", "Documentation check
+  passed.".
+- Next step: critic, push after #85; retarget #86 to phase/3 once #85 merges.
+
+### 2026-11-08 — Phase 3 / out-of-combat healing, critic on the #64 merge — feat/out-of-combat-heal — sholtzman + Claude Code
+
+- What was done: critic on `835b6cc5` + `57a68305`: APPROVE, 0 blockers, 0 should-fix
+  (`eternalus-agent-work/playtest-2026-11-04/critic-heal-merge-8c5febc4.md`). Nit applied:
+  `HealingZones`' Stronghold interior uses #64's `isPointInAnyPolygon` (same expression). The
+  better-than-design item (one fort geometry for the heal `fort-box` and the capture court) is
+  INBOX item (11) under the heal branch's list, for the owner.
+- Checks run: `npm run check` (log
+  `merge-2026-11-07/out-of-combat-heal.anypolygon.check.log`): EXIT=0, core "Tests 1414 passed
+  (1414)", client "Tests 1778 passed (1778)", "Documentation check passed.".
+- Next step: push after #85; retarget #86 to phase/3 once #85 merges.
+
+### 2026-11-08 — Phase 3 / out-of-combat healing, merge of fix/minion-stack-followups (phase/3 after #76 and #77) — feat/out-of-combat-heal — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` at `13a6cbbb` (phase/3 `120653b2`, PRs #76
+  and #77) in `d1c7177d`. Conflicts: 04 and 06 (`last-reviewed` only). PROGRESS, INBOX, 04 and
+  06 auto-merged: phase/3's minimap text and this branch's heal text are in different hunks. No
+  code file changed on both sides. Then merged #85's progress entry `3fd51ab6` in `96867f11` (only
+  this file; every line of both sides kept).
+- Critic: `architecture-reviewer` on `git show --remerge-diff d1c7177d` (report
+  `eternalus-agent-work/playtest-2026-11-04/critic-85-86-merge-120653b2.md`): APPROVE, no
+  findings.
+- Checks run: `npm run check` at `d1c7177d` (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-07/out-of-combat-heal.120653b2.check.log`):
+  EXIT=0; core "Tests 1416 passed (1416)"; client "Tests 1799 passed (1799)"; "Documentation
+  check passed.". `96867f11` and this entry change only this file.
+- Next step: push; retarget PR #86 to phase/3 after #85 merges.
+
+### 2026-11-09 — Phase 3 / out-of-combat healing, owner answers (DEC-225) — feat/out-of-combat-heal — sholtzman + Claude Code
+
+- What was done: the owner's answers on decision page 2 and in the question dialog (verbatim in
+  `eternalus-agent-work/playtest-2026-11-04/OWNER-ANSWERS-2026-11-09.md`) are recorded as the
+  batch DEC-225 to DEC-227 in the owner decisions log. The same batch text goes on #79 and on
+  `feat/tower-ruins-and-routes`, so the merges stay clean. DEC-225: Q-D, Q-F, Q-G and Q-H stay as built. Q-E
+  ("only the area inside the stronghold ... at least half the entity, as other areas are also
+  done") is the centre-point rule that every zone and capture use, so the code does not change.
+  Heal tidy items (2) to (11) are approved for the tidy PR; (11) is the "One source" fort
+  geometry. DEC-225 is cited in the `HealingZones`, `OutOfCombatHealingSystem` and
+  `outOfCombatHealing.types` TSDoc, in architecture 04 (heal paragraph) and 06 (Stronghold
+  enclosure), and in `balancing.md`. The two heal INBOX items are ticked with their answers.
+  Only comments and docs change.
+- Checks run: `npm run check` (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-07/out-of-combat-heal.dec225.check.log`):
+  EXIT=0; core "Tests 1416 passed (1416)"; client "Tests 1799 passed (1799)"; "Documentation
+  check passed.".
+- Next step: push after #85; retarget PR #86 to phase/3 after #85 merges.
+
 ### 2026-11-09 — Phase 3 / minion-stack follow-ups, PR #85 review: a chaser inside an outline holds (DEC-234) — fix/minion-stack-followups — sholtzman + Claude Code
 
 - What was done: Gurshaan's change request on #85 ("Minions already inside a building's attackable
@@ -6277,6 +6485,19 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `feat/unit-facing-chevron` (#79, where `facingPointOf` reads the `'inside'` tag); reply on #85,
   #86 and #79.
 
+### 2026-11-09 — Phase 3 / out-of-combat healing, merge of fix/minion-stack-followups (PR #85 review fix, DEC-234) — feat/out-of-combat-heal — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` at `a049db6d` (the #85 review fix: a chaser
+  inside its target's outline holds; `EntityStore.aimPointOf` returns an `AimedAt` tag; DEC-234).
+  Code merged cleanly. Only PROGRESS and the decisions log conflicted (both sides appended); both
+  sides kept, the DEC-234 batch first in the log (newest batch first). `git diff` against both
+  parents shows no removed line in either file.
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-86-merge.log`): EXIT=0, core "Tests 1417
+  passed (1417)", client "Tests 1799 passed (1799)", "Documentation check passed.". This entry
+  was added after that run (docs-only); `prettier --check` and `docs:check` were re-run on it.
+- Next step: push; reply on #86.
+
 ### 2026-11-10 — Phase 3 / minion-stack follow-ups, critic on the DEC-234 follow-ups; owner confirms DEC-234 — fix/minion-stack-followups — sholtzman + Claude Code
 
 - What was done: `architecture-reviewer` on `9b776ed5..a049db6d`: APPROVE, one should-fix and four
@@ -6293,6 +6514,16 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Next step: merge into `feat/out-of-combat-heal` (#86) and `feat/unit-facing-chevron` (#79);
   push; reply on #85, #86 and #79.
 
+### 2026-11-10 — Phase 3 / out-of-combat healing, merge of fix/minion-stack-followups (DEC-234 confirmed) — feat/out-of-combat-heal — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` at `ceb79a2e` (the owner confirms DEC-234;
+  `AimedAt` drops `null`; 07, 18 and the DEC-234 row edits). Only PROGRESS conflicted: both sides
+  kept; `git diff` against both parents shows no removed line.
+- Checks run: `npm run check` with this entry in place (log
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-86-merge-2.log`): EXIT=0, core "Tests 1417
+  passed (1417)", client "Tests 1799 passed (1799)", "Documentation check passed.".
+- Next step: push; reply on #86.
+
 ### 2026-11-10 — Phase 3 / minion-stack follow-ups, merge of phase/3 (#73, main) — fix/minion-stack-followups — sholtzman + Claude Code
 
 - What was done: PR #85 showed "conflicting" against `phase/3-sprint-3-work`, so GitHub ran no CI
@@ -6305,6 +6536,17 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `eternalus-agent-work/pr-review-2026-10-29/pr85/check-85-4.log`): EXIT=0, core "Tests 1379
   passed (1379)", client "Tests 1800 passed (1800)", "Documentation check passed.".
 - Next step: merge into #86 and #79; push; reply on #85, #86 and #79 when CI is green.
+
+### 2026-11-10 — Phase 3 / out-of-combat healing, merge of fix/minion-stack-followups (phase/3 with #73 and main) — feat/out-of-combat-heal — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` at `2f100e87`, which merges
+  `phase/3-sprint-3-work` at `8d2404c8` (#73, `main`). Only the decisions log (this branch's
+  DEC-225 to DEC-227 batch above phase/3's DEC-224 batch, newest first) and PROGRESS conflicted;
+  both sides kept, and `git diff` against both parents shows no removed line.
+- Checks run: `npm run check` with this entry in place (log
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-86-merge-3.log`): EXIT=0, core "Tests
+  1421 passed (1421)", client "Tests 1800 passed (1800)", "Documentation check passed.".
+- Next step: push; reply on #86 when CI is green.
 
 ### 2026-11-09 — Phase 3 / combat sprint: world health bars (DEC-195) — feat/combat-health-bars — sholtzman + Claude Code
 
@@ -6658,3 +6900,61 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: full `npm run check` exit 0
   (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-85-10.log`).
 - Next step: push; merge the new head into #86 and #79.
+
+### 2026-11-11 — Phase 3 / out-of-combat healing, merge of fix/minion-stack-followups (phase/3 with #89) — feat/out-of-combat-heal — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` at `f08d0a39`, which merges
+  `phase/3-sprint-3-work` at `c560b578` (#89, world health bars). Only PROGRESS conflicted; both
+  sides kept. The decisions log merged without a conflict; its batches stay newest first
+  (DEC-234, DEC-225 to DEC-227, DEC-224, DEC-195).
+- Checks run: `npm run check` with this entry in place (log
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-86-merge-4.log`): EXIT=0, core "Tests
+  1421 passed (1421)", client "Tests 1817 passed (1817)", "Documentation check passed.".
+- Next step: push; tell the reviewer on #86 the head moved when CI is green.
+
+### 2026-11-11 — Phase 3 / out-of-combat healing: merge of fix/minion-stack-followups (phase/3 with #92) — feat/out-of-combat-heal — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` at `65c4d436`, which merges phase/3
+  `1b25f586` (#92) and fixes the CodeRabbit findings on #85. PROGRESS and the decisions log
+  conflicted; both sides kept, batches newest first (DEC-234, DEC-232, DEC-230, DEC-225 to
+  DEC-227, DEC-224). No code conflict.
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-86-merge-5.log`).
+- Next step: push; owner sign-off comment (DEC-225 to DEC-227); merge after #85.
+
+### 2026-11-12 — Phase 3 / out-of-combat healing: merge of fix/minion-stack-followups (c09507f6) — feat/out-of-combat-heal — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` at `c09507f6` (the last two test casts in
+  `GuardRoster.test.ts`). Only PROGRESS conflicted; both sides kept. No code conflict.
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-86-merge-6.log`).
+- Next step: push; merge after #85.
+
+### 2026-11-12 — Phase 3 / out-of-combat healing: merge of fix/minion-stack-followups (phase/3 with #51, #52) — feat/out-of-combat-heal — sholtzman + Claude Code
+
+- What was done: merged the local head of `fix/minion-stack-followups` (`18c50e9d`), which
+  merges phase/3 at `3dc9e908` (#51 object pool, #52 status polarity and control class). Only
+  PROGRESS conflicted; both sides kept. No code conflict.
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-86-merge-7.log`).
+- Next step: push; merge after #85.
+
+### 2026-11-13 — Phase 3 / out-of-combat healing: merge of fix/minion-stack-followups (phase/3 with #97) — feat/out-of-combat-heal — sholtzman + Claude Code
+
+- What was done: merged the local head of `fix/minion-stack-followups` (`9c7194d0`), which
+  merges phase/3 at `9e2516cf` (#97 duel server). Only PROGRESS conflicted; both sides kept. No
+  code conflict.
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-86-merge-8.log`).
+- Next step: push; merge after #85.
+
+### 2026-11-13 — Phase 3 / out-of-combat healing: merge of fix/minion-stack-followups (phase/3 with #81) — feat/out-of-combat-heal — sholtzman + Claude Code
+
+- What was done: merged the local head of `fix/minion-stack-followups` (`2e8df5bc`), which
+  merges phase/3 at `76d1007d` (#81 minion plan MVP gaps, docs only). PROGRESS and
+  `minion-system-plan.md` conflicted. The plan keeps the merged text; this branch's one edit
+  stays on top: the stand-in row "Nothing heals a retreated bot" is removed, as the row itself
+  asks ("remove this row when it merges"). No code conflict.
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-86-merge-9.log`).
+- Next step: push; merge after #85.

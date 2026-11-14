@@ -2374,6 +2374,57 @@ Reply inline (`Decision: …`).
   - Decision (2026-10-31): (1) "C1: INBOX + post on #56 (Recommended)": the comment goes on PR
     #56. (3) "Yes, match 12 (Recommended)": DEC-136, which also covers 07 §11's event list.
     **Open:** Samarjit's answer on #56. Tick this item when it is recorded here.
+- [x] **Out-of-combat healing — five rules DEC-188 and DEC-215 leave open (2026-11-07,
+      `feat/out-of-combat-heal`, critic r1).** Each stays as built until you answer. Reply per
+      question (`Q-D: A`).
+  - **Q-D:** A blocked or zero-damage hit on a structure (an unbreakable gate or Stronghold):
+    does it mark that structure as under attack, which stops its heal bonus? (A) only hits that
+    deal damage **[built, recommended]**; (B) any attack.
+  - **Q-E:** The band in front of a Stronghold gate: (A) outside the heal zone **[built,
+    recommended]**; (B) inside it.
+  - **Q-F:** A human who hits an unbreakable gate or Stronghold deals no damage, so stays out of
+    combat and heals while attacking (bots and minions skip such targets). (A) keep as built
+    **[built]**; (B) any attack swing puts the attacker in combat.
+  - **Q-G:** Is a hit on the `stronghold` palace map object (its own entity, 10000 health) a hit
+    on "the Stronghold itself" (DEC-215 (2))? (A) no **[built]**; (B) yes.
+  - **Q-H:** The heal zone is read once from the map, so the ground of a destroyed shield wall
+    stays outside the zone. (A) keep **[built]**; (B) the ground joins the zone when the wall
+    falls.
+  - **Answered 2026-11-09 by DEC-225** (decision page 2): Q-D, Q-F, Q-G and Q-H (A), as built.
+    Q-E: "only the area inside the stronghold. doors/gates not included. must be inside the
+    structure (at least half the entity, as other areas are also done)": the centre-point rule
+    of every zone, as built; no code change.
+- [x] **Out-of-combat healing — better than the design, not built, for sign-off (DEC-139;
+      2026-11-07, `feat/out-of-combat-heal`, critic r1 items (2) to (6)).** Approve each to
+      schedule it, or say no.
+  - (2) Inject `HealingZones` (or its shape strategies) from `DefaultSystemPipeline`; today
+    `OutOfCombatHealingSystem` builds it in its constructor.
+  - (3) Compute the fort boxes once and share them with `PathingSystem` (`fortBoxesOf`; INBOX
+    C1/H1 on PR #75, `docs/playtest-rulings`): `MatchWorld` keeps a box per structure id, and
+    `fort-box` stops building its outline each tick.
+  - (4) One structure-spawn function for `Simulation.spawnStructures` and the test fixture
+    `spawnMapStructures` (they already drifted once).
+  - (5) One list of shield kinds in `map/` (`HealingZones.SHIELD_KINDS` and the
+    `strongholdEnclosure` filter); take the rear edge from the cliff geometry
+    (`strongholdCliffs`) or a side helper, not `x < width/2`.
+  - (6) `zoneOf(shape, structure, team)`: the team comes from the structure; key the Stronghold
+    interiors by feature id.
+  - Critic r2 (2026-11-07) adds: (7) `CombatClock.isQuietFor(tick, ticks)`, so the
+    out-of-combat test is written once (the system computes it twice; a bot Survive check, a HUD
+    cue or aether regen would copy it). (8) A `state/` tally that writes the clock, as
+    `AllyDamageTally` does, so "last fought" is a match fact and the heal system only reads it;
+    today the clock exists only when the heal system runs. (9) `Entity.ensureComponent(type,
+create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySystem`,
+    `OutOfCombatHealingSystem`). (10) One production map-object factory for `Simulation` and the
+    test fixtures (extends (4)).
+  - Critic on the #64 merge (2026-11-08) adds: (11) One fort geometry for heal and capture. The
+    heal `fort-box` zone is the tower's `Footprint` box (walls and gateways, DEC-215 (4)); the
+    capture zone's `zoneAreaOf` rebuilds the fort court from `BUILDING_GEOMETRY.fort` (court
+    only, DEC-145 (a)). The extents differ on purpose, but a fort size change in one place would
+    not reach the other; derive the capture court as an inset of the same fort box.
+  - **Answered 2026-11-09 by DEC-225:** (2) to (10) approved for the tidy PR (decision page 2);
+    (11) approved, "One source" (question dialog): the capture court comes from the capture
+    fort's drawn wall box, inset by the wall thickness, in the tidy PR.
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 

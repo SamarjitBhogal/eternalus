@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { cos, sin } from '../utils/deterministicMath';
 import { distance } from '../utils/geometry';
-import { buildWallRing } from './wallRing';
+import { buildWallRing, outerFace, shieldReach } from './wallRing';
 
 const RING = {
   radius: 100,
@@ -15,6 +15,8 @@ const RING = {
   frontArc: { verticalScale: 1.5, curveStepDegrees: 6 },
 };
 const CENTRE = { x: 0, y: 0 };
+/** A missing point: any distance to it is NaN, so an assertion on it fails. */
+const NOWHERE = { x: Number.NaN, y: Number.NaN };
 
 describe('buildWallRing', () => {
   it.each([1, 3, 5, 7])(
@@ -94,5 +96,23 @@ describe('buildWallRing', () => {
     // each spans 0.08 rad (not 24 degrees) and the two cannot overlap.
     expect(gates).toHaveLength(2);
     for (const gate of gates) expect(gate.width).toBeCloseTo(2 * RING.radius * sin(0.04));
+  });
+
+  it('gives each piece an outer face from its start to its end, chained tip to tip', () => {
+    const faces = buildWallRing(CENTRE, [-1, 0, 1], RING).pieces.map((piece) =>
+      outerFace(piece.footprint),
+    );
+    const outer = RING.radius + RING.thickness / 2;
+
+    expect(faces[0]?.[0]?.x).toBeCloseTo(0);
+    expect(faces[0]?.[0]?.y).toBeCloseTo(-shieldReach(RING));
+    expect(faces.at(-1)?.at(-1)?.y).toBeCloseTo(shieldReach(RING));
+    faces.slice(1).forEach((face, index) => {
+      expect(distance(face[0] ?? NOWHERE, faces[index]?.at(-1) ?? NOWHERE)).toBeCloseTo(0, 9);
+    });
+    // Inside the exit arc the face keeps the outer radius; the tips stretch only in y.
+    const front = faces.flat().filter(({ y }) => Math.abs(y) < outer / 2);
+    expect(front.length).toBeGreaterThan(0);
+    for (const point of front) expect(distance(point, CENTRE)).toBeCloseTo(outer, 9);
   });
 });
