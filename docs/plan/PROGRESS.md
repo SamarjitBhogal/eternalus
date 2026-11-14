@@ -7189,14 +7189,14 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   approve, 0 blockers, 0 major; its minors M2 to M5 and nits N1, N3, N4 are applied. Critic on
   that fix delta: approve, 0 blockers, 0 major; its three minors (`repeatMatchSetup` throws without
   a repeatable setup, the `match` row's lost-connection exit, the rematch rule held twice, which
-  is INBOX HC-Q48 (4)) and its nits are applied or in HC-Q48. N2 and the better-than-design items
-  of both critics wait for the owner (INBOX HC-Q48).
+  is INBOX HC-Q57 (4)) and its nits are applied or in HC-Q57. N2 and the better-than-design items
+  of both critics wait for the owner (INBOX HC-Q57).
 - Next step: the owner answers the open items (the `scoreBook` field, the event name, INBOX
-  HC-Q48); claudiodh re-reviews PR #93; then GL-16 merges the new phase branch.
+  HC-Q57); claudiodh re-reviews PR #93; then GL-16 merges the new phase branch.
 
-### 2026-11-14 — Phase 3 / GL-4, the Duel in the results flow (INBOX HC-Q48) — feat/match-scoring (PR #93) — sholtzman + Claude Code
+### 2026-11-14 — Phase 3 / GL-4, the Duel in the results flow (INBOX HC-Q57) — feat/match-scoring (PR #93) — sholtzman + Claude Code
 
-- What changed: the owner's answers to INBOX HC-Q48 (DEC-250). Built, after a critic passed
+- What changed: the owner's answers to INBOX HC-Q57 (DEC-250). Built, after a critic passed
   items (1) to (4): `MatchEnding` in `@eternalus/protocol` is the one type of the server's
   `match-ended` message, `DuelSession`'s `ended` handler and the bus event `duel-ended` (the
   client's `DuelOutcome` and `DuelResult` are gone); the match setup has a `mode` (`'local'` or
@@ -7205,7 +7205,7 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   rematch rule; `selectMatchVerdict` gives no verdict for a Duel the other player left and takes
   the team from the setup only; `ResultsScreen` reads the new `selectResultsView`. One visible
   change: a Duel that ends while loading now shows its results in the seat's team theme, as a
-  Duel that ended in the match does. Also a test from the #89 merge review, not part of HC-Q48:
+  Duel that ended in the match does. Also a test from the #89 merge review, not part of HC-Q57:
   `Match.healthBars.test.ts` covers a hit on the first tick (the constructor's `observe` call).
   Scheduled, not built: the match-mode strategy (HC-S7), the Duel's run-on and the loss for a
   player who leaves (with the Duel's own win rules, DEC-36). Docs: architecture 13 §2, §3, §5,
@@ -7216,7 +7216,7 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   to S3 and nits N1 to N7 applied (N4 in part: the selector keeps the name `selectDuelOutcome`),
   N8 to INBOX; correctness: no bug, its findings 1 to 7 applied; ponytail: findings 3 (the test
   cast) applied through the correctness critic's cast-free form, 1, 2, 4, 5, 6 rejected (the
-  rematch case tests the selector's wiring; HC-Q48 (4) asks for the rule in `bridge/` as
+  rematch case tests the selector's wiring; HC-Q57 (4) asks for the rule in `bridge/` as
   `selectionRules.ts` is; the spawn block belongs to a merged test; the union and the two
   `opponent-left` checks are separate concerns).
 - Checks run: `npm run check` → `EXIT=0` on `9c441d7a` (the branch with `phase/3-sprint-3-work`

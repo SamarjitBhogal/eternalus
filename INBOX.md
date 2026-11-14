@@ -2119,7 +2119,7 @@ Reply inline (`Decision: …`).
       keep it as it is.
   - Answered 2026-11-08 in chat (DEC-222): "(b) Build it in GL-16". To build: in GL-16 (game-loop
     plan §7), with its own unit test, the length-change branch included.
-- [ ] **HC-Q48 — The online Duel in the results flow: five better-than-design items and one rule
+- [ ] **HC-Q57 — The online Duel in the results flow: five better-than-design items and one rule
       question (critics on the #97 merge into GL-4, PR #93; DEC-139).** The merge keeps GL-5's
       results flow for a Duel (`duel-ended`, `selectMatchVerdict`, `ResultsScreen`). Both critics
       approved it and proposed:
@@ -2141,6 +2141,8 @@ Reply inline (`Decision: …`).
   - Also a finished Duel has no status line under its verdict (the line comes from core's result,
     which a Duel does not have); (1) decides what it shows.
   - Answer per item: build now on PR #93, schedule, or keep as it is.
+  - Renumbered 2026-11-14 from HC-Q48: the ability framework (`feat/ability-framework`, ADR 0026)
+    took HC-Q48 first.
   - Answered 2026-11-14 in chat (DEC-250): "have a critic look at the open items; if they pass, put
     them in", then "option b is better. also leaving a duel when the other user is still in said
     duel counts as a loss." (1) to (4): the critic passed them and they are built on PR #93
@@ -2170,7 +2172,7 @@ Reply inline (`Decision: …`).
     `planLanes`, `humanSlotOf`, `controllerOf`, `spawnSlot`, `strongholdOf`, `legendRefusal`)
     are one responsibility: the split is a `RosterSpawner` class. #56, #57, #58, #66 and #67 have
     merged; open PRs #64 and #32 still edit the file. `SessionController.ts` is 326 lines.
-  - 2026-11-14 (HC-Q48 (5), DEC-250 (2)): the `SessionController` split also takes the match-mode
+  - 2026-11-14 (HC-Q57 (5), DEC-250 (2)): the `SessionController` split also takes the match-mode
     strategy: `LocalMatchStart` and `DuelMatchStart` in a `Record<MatchMode, …>` registry, keyed
     by the setup's `mode`, so that `createMatch` and `canRepeatMatchSetup` hold no Duel branch.
 - [ ] **HC-S8 — Scheduled with GL-3: filter the timeline rules by action kind (match-director

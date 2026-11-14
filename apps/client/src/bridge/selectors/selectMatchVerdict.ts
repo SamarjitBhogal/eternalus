@@ -15,7 +15,7 @@ export function selectMatchVerdict(
 ): MatchVerdict | null {
   const duel = matchSlice.selectors.selectDuelOutcome(state);
   // A Duel the other player left has no verdict yet: what the player who stayed gets waits for
-  // the Duel's own win rules (INBOX HC-Q48 (1), DEC-250).
+  // the Duel's own win rules (INBOX HC-Q57 (1), DEC-250).
   if (duel?.reason === 'opponent-left') return null;
   const ended = matchSlice.selectors.selectMatchResult(state) ?? duel;
   const team = matchSetupSlice.selectors.selectPlayerTeam(state);
