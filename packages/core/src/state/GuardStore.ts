@@ -34,8 +34,8 @@ export class GuardStore {
     this.replace(index, { guardId });
   }
 
-  /** Empties post `index`; it may be filled again from `respawnAtTick`. */
-  public vacate(index: number, respawnAtTick: number): void {
+  /** Empties post `index`; it may be filled again from `respawnAtTick` (`null`: not yet set). */
+  public vacate(index: number, respawnAtTick: number | null): void {
     this.replace(index, { guardId: null, respawnAtTick });
   }
 

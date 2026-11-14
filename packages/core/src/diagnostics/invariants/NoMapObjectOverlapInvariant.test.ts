@@ -26,8 +26,8 @@ describe('NoMapObjectOverlapInvariant', () => {
       undefined,
       loadWeapons(config.tickRate),
     );
-    state.worldObjects = new WorldObjectStore(
-      [
+    state.worldObjects = new WorldObjectStore({
+      objects: [
         {
           id: 'wall',
           kind: 'wall',
@@ -43,9 +43,9 @@ describe('NoMapObjectOverlapInvariant', () => {
         },
       ],
       factory,
-      state.entities,
-      MAP_OBJECT_DEFINITIONS,
-    );
+      entities: state.entities,
+      definitions: MAP_OBJECT_DEFINITIONS,
+    });
     const unit = factory.create('warrior', 'warrior', { team: 'light', position: { x: 0, y: 5 } });
     state.entities.add(unit);
     const invariant = new NoMapObjectOverlapInvariant();

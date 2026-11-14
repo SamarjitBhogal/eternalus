@@ -40,12 +40,12 @@ describe('WorldObjectStore', () => {
         return definition;
       },
     });
-    const world = new WorldObjectStore(
-      [{ id: 'house', kind: 'house', isBlocking: true, footprints: [[{ x: 0, y: 0 }]] }],
+    const world = new WorldObjectStore({
+      objects: [{ id: 'house', kind: 'house', isBlocking: true, footprints: [[{ x: 0, y: 0 }]] }],
       factory,
-      new EntityStore(),
+      entities: new EntityStore(),
       definitions,
-    );
+    });
     expect(world.snapshot()[0]?.health).toEqual({ current: 275, max: 275 });
   });
 
@@ -65,12 +65,12 @@ describe('WorldObjectStore', () => {
         ],
       ],
     };
-    const world = new WorldObjectStore(
-      [object, { ...object, id: 'mountain', kind: 'terrain' }],
+    const world = new WorldObjectStore({
+      objects: [object, { ...object, id: 'mountain', kind: 'terrain' }],
       factory,
       entities,
-      MAP_OBJECT_DEFINITIONS,
-    );
+      definitions: MAP_OBJECT_DEFINITIONS,
+    });
     const house = world.snapshot()[0];
     expect(house?.health).toEqual({ current: 100, max: 100 });
     expect(world.snapshot()[1]?.health).toBeNull();
@@ -90,6 +90,58 @@ describe('WorldObjectStore', () => {
     expect(world.destroyedIds.has('house')).toBe(true);
   });
 
+  it("makes a structure's own map object (a lane tower's fort) share its health, and leaves it standing with none once the structure is gone (DEC-185 B)", () => {
+    const factory = fixtureFactory();
+    const entities = new EntityStore();
+    const tower = factory.create('obstacle', MAP_OBJECT_DEFINITIONS.rock.id, {
+      position: { x: 5, y: 5 },
+    });
+    entities.add(tower);
+    const fort: MapObject = {
+      id: 'fort',
+      kind: 'spawner-tower',
+      isBlocking: true,
+      footprints: [
+        [
+          { x: 0, y: 0 },
+          { x: 10, y: 0 },
+          { x: 10, y: 10 },
+        ],
+      ],
+    };
+    const world = new WorldObjectStore({
+      objects: [fort],
+      factory,
+      entities,
+      definitions: MAP_OBJECT_DEFINITIONS,
+      owners: new Map([['fort', tower.id]]),
+    });
+
+    // No entity of its own: the fort's record is the tower and its pool.
+    expect(entities.size).toBe(1);
+    tower.getComponent(Health).applyDamage(40);
+    expect(world.snapshot()[0]).toEqual({
+      id: 'fort',
+      entityId: tower.id,
+      health: { current: 60, max: 100 },
+      isDestroyed: false,
+    });
+    expect(world.objectFor(tower.id)).toBeUndefined();
+    // The tower dies: until it is retired, and after, its fort still blocks.
+    tower.getComponent(Health).applyDamage(60);
+    expect(world.blockingAt({ x: 7, y: 2 }, 0.5)).toBe('fort');
+    entities.remove(tower.id, 'died');
+    world.removed(tower.id);
+    expect(world.snapshot()[0]).toEqual({
+      id: 'fort',
+      entityId: null,
+      health: null,
+      isDestroyed: false,
+    });
+    expect(world.blockingAt({ x: 7, y: 2 }, 0.5)).toBe('fort');
+    expect(world.destroyedIds.has('fort')).toBe(false);
+  });
+
   it('skips an object whose footprint box misses the circle, without testing its shape', () => {
     let reads = 0;
     const corner = (x: number, y: number): Vec2 => ({
@@ -102,9 +154,8 @@ describe('WorldObjectStore', () => {
         return y;
       },
     });
-    const factory = fixtureFactory();
-    const world = new WorldObjectStore(
-      [
+    const world = new WorldObjectStore({
+      objects: [
         {
           id: 'rock',
           kind: 'terrain',
@@ -112,10 +163,10 @@ describe('WorldObjectStore', () => {
           footprints: [[corner(0, 0), corner(4, 0), corner(4, 4)]],
         },
       ],
-      factory,
-      new EntityStore(),
-      MAP_OBJECT_DEFINITIONS,
-    );
+      factory: fixtureFactory(),
+      entities: new EntityStore(),
+      definitions: MAP_OBJECT_DEFINITIONS,
+    });
     expect(world.blockingAt({ x: 2.5, y: 1 }, 0.5)).toBe('rock');
     // Centre outside the box, circle across its edge: the box test counts the radius.
     expect(world.blockingAt({ x: 2, y: -0.4 }, 0.5)).toBe('rock');

@@ -510,7 +510,9 @@ new status is content only, a new stacking mode is one union member and one `cas
 `blind`, `enraged`, `crushed`) is authored in `content/status-effects/` as `AuthoredStatusEffect`
 (seconds; `enraged.maxStacks: 'structures-per-lane'`) and loaded by `loadStatusEffects` into
 `StatusEffectDefinition` (`durationTicks`, `everyTicks`, every cap resolved from config), which
-validates at load. Modifiers are `op: 'mul'`, `value` once per stack. `StatusEffectRuntime` sits in
+validates at load. Modifiers are `op: 'mul'`, whose stacks compound, or `op: 'add'`, whose stacks
+add (the `veteran` damage bonus, DEC-164); `value` counts once per stack, and a stat is (1 + every
+`add`) × every `mul`. `StatusEffectRuntime` sits in
 `components/` next to `StatusEffects`, which holds and pools it (`components/` may not import
 `combat/`); its stacking switch is `reapply`, with `refresh` and `intensity` so far, and periodic
 ticks count from the first application. Every unit gets `StatusEffects`; anything without it

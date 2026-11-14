@@ -68,11 +68,22 @@ export class Health {
 
   /**
    * Raises full health by `amount` (finite, ≥ 0). Only the cap: whoever raises it decides whether to
-   * heal too (a level-up heals a living Legend by the raise, O3/O4).
+   * heal too; a level-up uses `raiseMaxAndHeal`.
    */
   public raiseMax(amount: number): void {
     Health.checkAmount(amount, 'max raise');
     this.maxValue += amount;
+  }
+
+  /**
+   * A level-up's health step, shared by Legend and minion levels: raises full health by `amount`
+   * and heals by the same, but only while alive, so a level never revives (O3/O4).
+   */
+  public raiseMaxAndHeal(amount: number): void {
+    this.raiseMax(amount);
+    if (!this.isDead) {
+      this.heal(amount);
+    }
   }
 
   /** Restores up to `amount` health (never above `max`) and returns how much. */

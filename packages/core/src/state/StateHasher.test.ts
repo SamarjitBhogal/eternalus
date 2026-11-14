@@ -5,6 +5,7 @@ import { Capturable } from '../components/Capturable';
 import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
+import { ChaseWatch } from '../components/ChaseWatch';
 import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
@@ -126,9 +127,22 @@ describe('StateHasher', () => {
     soldier.addComponent(veterancy);
     const before = hasher.hash(state);
 
-    veterancy.recordKill(2, 3);
+    veterancy.recordKill(2);
 
     expect(hasher.hash(state)).not.toBe(before);
+  });
+
+  it('changes with a chase watch and with its detour waypoint (DEC-193)', () => {
+    const { state, soldier } = stateWithSoldier();
+    const watch = new ChaseWatch();
+    const bare = hasher.hash(state);
+    soldier.addComponent(watch);
+    const watched = hasher.hash(state);
+
+    watch.headFor(5, 6, 2, 0);
+
+    expect(watched).not.toBe(bare);
+    expect(hasher.hash(state)).not.toBe(watched);
   });
 
   it('differs between seeds', () => {
