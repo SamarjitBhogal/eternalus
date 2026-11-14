@@ -47,7 +47,7 @@ export class ResultsState implements SessionState {
 
   /**
    * `continue` → as the countdown's end; `navigate` → `menu` at that route; `start-match` →
-   * `loading` with the same setup, ignored when there is none to repeat (after an online Duel).
+   * `loading` with the same setup, ignored when the setup is not repeatable (after an online Duel).
    */
   public handleIntent(intent: UiIntent, context: SessionContext): void {
     if (intent.kind === 'continue') {

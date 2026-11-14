@@ -20,6 +20,7 @@ const entry = (legendId: string, isPlayer: boolean): RosterEntry => ({
 });
 
 const DRAFT: MatchSetupDraft = {
+  mode: 'local',
   seed: 7,
   playerTeam: 'dark',
   allies: [entry('dark-1', true)],
@@ -108,6 +109,7 @@ describe('connectBusToStore', () => {
     bus.emit('countdown', { kind: 'reveal', remainingMs: 9_000 });
     bus.emit('countdown', { kind: 'results', remainingMs: 29_000 });
     expect(store.getState().matchSetup).toEqual({
+      mode: 'local',
       seed: 7,
       playerTeam: 'dark',
       selection: { classId: 'magus', specId: null },
@@ -118,7 +120,21 @@ describe('connectBusToStore', () => {
     });
     bus.emit('match-setup', null);
     expect(store.getState().matchSetup.playerTeam).toBeNull();
+    expect(store.getState().matchSetup.mode).toBeNull();
     expect(store.getState().matchSetup.allies).toEqual([]);
+  });
+
+  it("keeps an online Duel's mode from its setup", () => {
+    const { bus, store } = connected();
+    bus.emit('match-setup', {
+      mode: 'duel',
+      seed: 9,
+      playerTeam: 'light',
+      allies: [],
+      enemies: [],
+    });
+    expect(store.getState().matchSetup.mode).toBe('duel');
+    expect(store.getState().matchSetup.playerTeam).toBe('light');
   });
 
   it('locks the pick and takes the filled rosters on selection-locked; a new setup unlocks', () => {
@@ -148,7 +164,7 @@ describe('connectBusToStore', () => {
 
   it("copies a Duel's outcome", () => {
     const { bus, store } = connected();
-    const outcome = { winner: 'light', ownTeam: 'dark', reason: 'finished' } as const;
+    const outcome = { winner: 'light', reason: 'finished' } as const;
     bus.emit('duel-ended', outcome);
     expect(store.getState().match.duel).toEqual(outcome);
   });

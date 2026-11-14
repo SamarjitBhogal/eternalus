@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { matchResultFixture } from '../../bridge/__fixtures__/matchResultFixtures';
-import type { PlayableTeam } from '../../bridge/domain.types';
-import type { DuelOutcome } from '../../bridge/events';
+import type { MatchEnding, PlayableTeam } from '../../bridge/domain.types';
 import { matchSetupSlice } from '../../bridge/slices/matchSetupSlice';
 import { matchSlice } from '../../bridge/slices/matchSlice';
 import selectionStageStyles from '../components/SelectionStage.module.css';
@@ -26,6 +25,7 @@ const CONTENT = {
 /** A local match's setup: its allies are what a rematch repeats. */
 const LOCAL_SETUP = {
   ...matchSetupSlice.getInitialState(),
+  mode: 'local',
   playerTeam: 'light',
   allies: [
     {
@@ -54,13 +54,14 @@ const render = (winner: PlayableTeam | null | 'none', resultsMs = 30_000): strin
   });
 
 /**
- * The screen after an online Duel played for dark that the server ended: no setup (a Duel has no
- * rosters, and one that ends while loading has published none).
+ * The screen after an online Duel played for dark that the server ended: its setup has no rosters
+ * (the session publishes it when the first snapshot arrives).
  */
-const renderDuel = (duel: Omit<DuelOutcome, 'ownTeam'>): string =>
+const renderDuel = (duel: MatchEnding): string =>
   renderWithStore(<ResultsScreen />, {
     content: CONTENT,
-    match: { ...matchSlice.getInitialState(), duel: { ...duel, ownTeam: 'dark' } },
+    match: { ...matchSlice.getInitialState(), duel },
+    matchSetup: { ...matchSetupSlice.getInitialState(), mode: 'duel', playerTeam: 'dark' },
   });
 
 const heading = (html: string): string | undefined => /<h1[^>]*>([^<]*)<\/h1>/.exec(html)?.[1];
@@ -99,7 +100,7 @@ describe('ResultsScreen', () => {
   it('says so, and names no verdict, without a result', () => {
     const html = render('none');
     expect(heading(html)).toBe(STRINGS.results.title);
-    expect(html).toContain(STRINGS.results.noResult);
+    expect(html).toContain(STRINGS.results.statuses['no-result']);
     expect(html).not.toContain('Match length');
   });
 
@@ -130,12 +131,12 @@ describe('ResultsScreen', () => {
       const html = renderDuel({ winner, reason: 'opponent-left' });
       expect(heading(html)).toBe(STRINGS.results.title);
       expect(html).toMatch(
-        new RegExp(`<p [^>]*role="status"[^>]*>${STRINGS.results.opponentLeft}</p>`),
+        new RegExp(`<p [^>]*role="status"[^>]*>${STRINGS.results.statuses['opponent-left']}</p>`),
       );
     },
   );
 
-  it('offers no rematch after an online Duel, which has no setup to repeat', () => {
+  it('offers no rematch after an online Duel, whose setup is not repeatable', () => {
     const html = renderDuel({ winner: 'dark', reason: 'finished' });
     expect(buttonNames(html)).toEqual([STRINGS.results.continue, STRINGS.results.mainMenu]);
   });

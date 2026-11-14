@@ -68,7 +68,7 @@ function setUp(canvas = new FakeViewportCanvas(), sinks: readonly LogSink[] = []
     world: PreparedWorld = prepareMatchWorld(CONFIG, SEED),
     observer: MatchObserver = { crashed: () => undefined, ended: () => undefined },
   ): MatchRequest => ({
-    setup: { seed: SEED, playerTeam: 'dark', allies: [], enemies: [] },
+    setup: { mode: 'local', seed: SEED, playerTeam: 'dark', allies: [], enemies: [] },
     world,
     captureKinds: ['capture-point', 'cathedral'],
     roster: [PLAYER_SLOT],

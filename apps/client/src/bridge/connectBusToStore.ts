@@ -40,7 +40,7 @@ export function connectBusToStore(
       dispatch(hudSlice.actions.reset());
       dispatch(match.reset());
       if (draft === null) return;
-      dispatch(setup.setTeam({ seed: draft.seed, playerTeam: draft.playerTeam }));
+      dispatch(setup.setTeam({ mode: draft.mode, seed: draft.seed, playerTeam: draft.playerTeam }));
       dispatch(setup.setRosters({ allies: draft.allies, enemies: draft.enemies }));
     }),
     bus.on('class-selection', (selection) => dispatch(setup.select(selection))),

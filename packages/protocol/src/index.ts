@@ -2,4 +2,10 @@
 export { ClientMessageParser } from './ClientMessageParser';
 export type { ParseResult } from './ClientMessageParser.types';
 export { MAX_CLIENT_MESSAGE_LENGTH } from './ClientMessageParser.constants';
-export type { ClientMessage, MatchEndReason, RejectReason, ServerMessage } from './messages.types';
+export type {
+  ClientMessage,
+  MatchEndReason,
+  MatchEnding,
+  RejectReason,
+  ServerMessage,
+} from './messages.types';

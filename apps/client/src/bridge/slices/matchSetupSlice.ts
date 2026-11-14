@@ -1,10 +1,18 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import type { LegendClassId, PlayableTeam } from '../domain.types';
-import type { ClassSelection, CountdownKind, FilledRosters, RosterEntry } from '../events';
+import type {
+  ClassSelection,
+  CountdownKind,
+  FilledRosters,
+  MatchMode,
+  RosterEntry,
+} from '../events';
 
 /** The match being set up, as the selection and loading screens show it. */
 type MatchSetupSliceState = {
+  /** Where the match runs; `null` until a setup is published. */
+  readonly mode: MatchMode | null;
   readonly seed: number;
   readonly playerTeam: PlayableTeam | null;
   readonly selection: { readonly classId: LegendClassId | null; readonly specId: string | null };
@@ -23,6 +31,7 @@ type MatchSetupSliceState = {
 const MS_PER_SECOND = 1000;
 
 const initialState: MatchSetupSliceState = {
+  mode: null,
   seed: 0,
   playerTeam: null,
   selection: { classId: null, specId: null },
@@ -44,8 +53,13 @@ export const matchSetupSlice = createSlice({
   reducers: {
     setTeam(
       state,
-      action: PayloadAction<{ readonly seed: number; readonly playerTeam: PlayableTeam }>,
+      action: PayloadAction<{
+        readonly mode: MatchMode;
+        readonly seed: number;
+        readonly playerTeam: PlayableTeam;
+      }>,
     ) {
+      state.mode = action.payload.mode;
       state.seed = action.payload.seed;
       state.playerTeam = action.payload.playerTeam;
     },
@@ -81,6 +95,7 @@ export const matchSetupSlice = createSlice({
   selectors: {
     selectSelection: (state) => state.selection,
     selectPlayerTeam: (state) => state.playerTeam,
+    selectMode: (state) => state.mode,
     selectAllies: (state) => state.allies,
     selectIsLockedIn: (state) => state.isLockedIn,
     /** One countdown's whole seconds left, rounded up, as it shows them (42000 → 42, 41001 → 42). */

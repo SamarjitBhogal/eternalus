@@ -3,6 +3,7 @@ import type { DetailSlot, RoleRatingAxis } from '../bridge/catalogue.types';
 import type { MatchVerdict } from '../bridge/domain.types';
 import type { MenuRoute, SessionPhase, SessionReason } from '../bridge/events';
 import type { HudAllegiance, HudBlockReason } from '../bridge/hud.types';
+import type { ResultsStatus } from '../bridge/selectors/selectResultsView';
 
 /**
  * Banner text per `session.reason`: every `SessionReason` but the popup ones has one (a missing
@@ -102,19 +103,25 @@ export const STRINGS = {
      * `match-ended` or `duel-ended`, so only a bug shows that).
      */
     title: 'Match results',
-    noResult: 'No result recorded.',
     /** The banner per verdict: the owner's "VICTORY or DEFEAT" (2026-10-27); a draw (DEC-77). */
     verdicts: { victory: 'VICTORY', defeat: 'DEFEAT', draw: 'DRAW' } satisfies Record<
       MatchVerdict,
       string
     >,
+    /**
+     * The status line when there is no verdict line from content: an online Duel the other player
+     * left (ADR 0016), or no result (results follow `match-ended` or `duel-ended`, so only a bug
+     * shows that).
+     */
+    statuses: {
+      'opponent-left': 'Opponent left.',
+      'no-result': 'No result recorded.',
+    } satisfies Record<Exclude<ResultsStatus['kind'], 'verdict-line'>, string>,
     /** The ended match's length, `mm:ss` (`selectMatchDurationText`). */
     duration: (time: string): string => `Match length ${time}`,
     countdownLabel: 'Time left before the main menu',
     // DEC-78: "A Continue control skips the wait."
     continue: 'Continue',
-    /** An online Duel the other player left (ADR 0016). */
-    opponentLeft: 'Opponent left.',
     playAgain: 'Play again',
     mainMenu: 'Main menu',
   },

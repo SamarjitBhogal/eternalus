@@ -141,12 +141,11 @@ export class DuelSession implements DuelLink {
    * server's own close is not a lost connection and no intent goes out), then tells the owner.
    */
   private finish(winner: PlayableTeam | null, reason: MatchEndReason): void {
-    if ((this.state !== 'matched' && this.state !== 'started') || this.ownTeam === null) return;
-    const team = this.ownTeam;
+    if (this.state !== 'matched' && this.state !== 'started') return;
     this.state = 'ended';
     this.transport?.close();
     this.transport = null;
-    this.deps.handlers.ended({ winner, reason, team });
+    this.deps.handlers.ended({ winner, reason });
   }
 
   /** The connection ended: a Duel not yet over is lost; one already over just resets. */

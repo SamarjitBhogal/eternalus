@@ -1,7 +1,8 @@
 import type { MatchResult } from '@eternalus/core';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
-import type { BridgeEventMap, DuelOutcome, MatchClock } from '../events';
+import type { MatchEnding } from '../domain.types';
+import type { BridgeEventMap, MatchClock } from '../events';
 import type { CapturePointStatus, StructureStatus } from '../hud.types';
 
 /** Match clock, structure and capture rosters, and the result. */
@@ -15,7 +16,7 @@ type MatchSliceState = {
   /** The ended match's length in match seconds; `null` until `match-ended`. */
   readonly durationSeconds: number | null;
   /** How the server ended an online Duel (ADR 0016), `null` until `duel-ended`. */
-  readonly duel: DuelOutcome | null;
+  readonly duel: MatchEnding | null;
 };
 
 const initialState: MatchSliceState = {
@@ -53,7 +54,7 @@ export const matchSlice = createSlice({
       result: action.payload.result,
       durationSeconds: action.payload.durationSeconds,
     }),
-    duelEnded: (state, action: PayloadAction<DuelOutcome>) => ({
+    duelEnded: (state, action: PayloadAction<MatchEnding>) => ({
       ...state,
       duel: action.payload,
     }),

@@ -65,7 +65,7 @@ function storeWith(
   store.dispatch(
     contentSlice.actions.catalogueLoaded({ ...contentSlice.getInitialState(), legendClasses }),
   );
-  store.dispatch(matchSetupSlice.actions.setTeam({ seed: 1, playerTeam: team }));
+  store.dispatch(matchSetupSlice.actions.setTeam({ mode: 'local', seed: 1, playerTeam: team }));
   store.dispatch(matchSetupSlice.actions.select(selection));
   return store;
 }

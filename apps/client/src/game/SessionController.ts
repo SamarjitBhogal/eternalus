@@ -1,5 +1,7 @@
 import { type LogAttributes, makeLogRecord } from '@eternalus/core';
 
+import type { MatchEnding } from '../bridge/domain.types';
+import { canRepeatSetup } from '../bridge/matchSetupRules';
 import type {
   AssetGroup,
   ClassSelection,
@@ -20,7 +22,6 @@ import type {
   SessionState,
 } from './SessionController.types';
 import { DuelSession } from './duel/DuelSession';
-import type { DuelResult } from './duel/DuelSession.types';
 import { rosterSlots } from './session/rosterSlots';
 import { buildMatchSetup } from './session/buildMatchSetup';
 import { fillRosters } from './session/fillRosters';
@@ -58,10 +59,19 @@ export class SessionController {
       logger: deps.logger,
       handlers: {
         started: () => {
+          // The HUD reads the seat from the setup, as in a solo match; a Duel has no rosters. The
+          // setup goes first: match-loading may prepare the world as soon as it is entered.
+          this.publishSetup({
+            mode: 'duel',
+            seed: this.duel.mapSeed,
+            playerTeam: this.duel.team,
+            allies: [],
+            enemies: [],
+          });
           this.transition('match-loading', null);
         },
-        ended: (result) => {
-          this.endDuel(result);
+        ended: (ending) => {
+          this.endDuel(ending);
         },
         lost: () => {
           this.loseDuel();
@@ -112,17 +122,6 @@ export class SessionController {
         this.lockIn();
       },
       prepareWorld: () => {
-        if (this.duel.status === 'started') {
-          // The HUD reads the seat from the setup, as in a solo match; a Duel has no rosters.
-          this.publishSetup({
-            seed: this.duel.mapSeed,
-            playerTeam: this.duel.team,
-            allies: [],
-            enemies: [],
-          });
-          this.world = deps.prepareWorld(this.duel.mapSeed);
-          return;
-        }
         if (this.setup === null) throw new Error('No match setup to prepare a world for');
         this.world = deps.prepareWorld(this.setup.seed);
       },
@@ -299,9 +298,9 @@ export class SessionController {
     );
   }
 
-  /** `SessionContext.canRepeatMatchSetup`: a setup with rosters, which only a local match has. */
+  /** `SessionContext.canRepeatMatchSetup`: the one rematch rule, `canRepeatSetup`. */
   private canRepeatMatchSetup(): boolean {
-    return this.setup !== null && this.setup.allies.length > 0;
+    return canRepeatSetup(this.setup?.mode ?? null);
   }
 
   /**
@@ -309,12 +308,12 @@ export class SessionController {
    * shows the results screen; from the queue (the opponent left before the first snapshot) it
    * shows the home screen. Not a lost connection, so nothing is logged as an error.
    */
-  private endDuel({ winner, reason, team }: DuelResult): void {
+  private endDuel(ending: MatchEnding): void {
     if (this.current?.phase === 'menu') {
       this.deps.bus.emit('menu-route', { route: 'home' });
       return;
     }
-    this.deps.bus.emit('duel-ended', { winner, reason, ownTeam: team });
+    this.deps.bus.emit('duel-ended', ending);
     this.transition('results', null);
   }
 

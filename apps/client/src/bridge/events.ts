@@ -8,7 +8,7 @@ import type { MatchResult } from '@eternalus/core';
 import type { InputAction, InputChord } from './Binding.types';
 import type { AssetId, DisplayCatalogue, RasterBox } from './catalogue.types';
 import type { CrashReportState } from './CrashReport.types';
-import type { LegendClassId, MatchEndReason, PlayableTeam } from './domain.types';
+import type { LegendClassId, MatchEnding, PlayableTeam } from './domain.types';
 import type {
   Announcement,
   CapturePointStatus,
@@ -16,19 +16,6 @@ import type {
   StructureStatus,
 } from './hud.types';
 import type { SettingsPatch, SettingsSliceState } from './slices/settingsSlice';
-
-/** How the server ended an online Duel, for the results screen (ADR 0016). */
-export type DuelOutcome = {
-  /** The winning team; `null` for a draw. */
-  readonly winner: PlayableTeam | null;
-  /**
-   * The viewing player's own team, from the server's `match-found`: a Duel can end before its
-   * setup is published (during `match-loading`), so the verdict cannot read the setup's team.
-   */
-  readonly ownTeam: PlayableTeam;
-  /** Why the server ended the match. */
-  readonly reason: MatchEndReason;
-};
 
 /** Every session phase, in flow order (architecture 13 §2). */
 export const SESSION_PHASES = [
@@ -175,8 +162,15 @@ export type LoadingProgress = {
   readonly status: 'loading' | 'ready' | 'failed';
 };
 
-/** The match being set up: seed, the player's team and both rosters (allies include the player). */
+/** Where a match runs: in this browser against bots, or an online Duel on the server (ADR 0016). */
+export type MatchMode = 'local' | 'duel';
+
+/**
+ * The match being set up: where it runs, the seed, the player's team and both rosters (allies
+ * include the player).
+ */
 export type MatchSetupDraft = {
+  readonly mode: MatchMode;
   readonly seed: number;
   readonly playerTeam: PlayableTeam;
   readonly allies: readonly RosterEntry[];
@@ -226,7 +220,7 @@ export type BridgeEventMap = {
    * The server ended an online Duel (ADR 0016): no simulation event reaches the client, so the
    * session publishes this in place of `match-ended`.
    */
-  'duel-ended': DuelOutcome;
+  'duel-ended': MatchEnding;
   /** The human Legend for the HUD, every 6 ticks (13 §5); `null` before it spawns. */
   'hud-state': { readonly player: PlayerHudSnapshot | null };
   /** Team structures, at match start and every 30 ticks (13 §9 recipe). */

@@ -28,8 +28,9 @@ function mount(): { readonly container: HTMLElement; readonly intents: UiIntent[
     match: { ...matchSlice.getInitialState(), result: matchResultFixture(), durationSeconds: 60 },
     matchSetup: {
       ...matchSetupSlice.getInitialState(),
+      mode: 'local',
       playerTeam: 'light',
-      // A local match's rosters: what Play again repeats (an online Duel has none).
+      // A local match's rosters: what Play again repeats (an online Duel's setup is never repeated).
       allies: [
         {
           legendId: 'light-1',

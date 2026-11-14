@@ -108,8 +108,8 @@ export interface SessionContext {
   /** Draws a new seed and team, builds both rosters, themes the page and publishes the setup. */
   newMatchSetup(): void;
   /**
-   * Whether there is a setup a rematch can repeat: a local match's. An online Duel leaves none (its
-   * setup has no rosters, and a Duel that ended while loading has no setup at all).
+   * Whether there is a setup a rematch can repeat: a local match's. An online Duel's setup is the
+   * server's seat and seed, so it is never repeated.
    */
   canRepeatMatchSetup(): boolean;
   /**
@@ -140,9 +140,9 @@ export interface SessionContext {
    */
   lockIn(): void;
   /**
-   * Builds the world for the current setup's seed (06 §1: the generator runs before `Simulation`),
-   * or for the Duel's map seed while a Duel is started.
-   * @throws Without a setup (and no Duel), or when generation fails.
+   * Builds the world for the current setup's seed (06 §1: the generator runs before `Simulation`);
+   * a Duel's setup carries the server's map seed.
+   * @throws Without a setup, or when generation fails.
    */
   prepareWorld(): void;
   /**
