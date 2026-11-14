@@ -1,11 +1,7 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
-import type { PlayableTeam } from '../domain.types';
-import type { MatchClock } from '../events';
+import type { MatchClock, MatchResultSummary } from '../events';
 import type { CapturePointStatus, StructureStatus } from '../hud.types';
-
-/** How a match ended, as the results screen shows it. */
-type MatchResultSummary = { readonly winner: PlayableTeam | null };
 
 /** Match clock, structure and capture rosters, and the result. */
 type MatchSliceState = {
@@ -40,6 +36,10 @@ export const matchSlice = createSlice({
     capturePointsChanged: (state, action: PayloadAction<readonly CapturePointStatus[]>) => ({
       ...state,
       capturePoints: action.payload,
+    }),
+    resultChanged: (state, action: PayloadAction<MatchResultSummary>) => ({
+      ...state,
+      result: action.payload,
     }),
     reset: () => initialState,
   },
