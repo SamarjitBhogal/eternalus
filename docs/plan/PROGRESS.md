@@ -4,7 +4,7 @@ description: The running, append-only log of what was done, which checks ran and
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-05
+last-reviewed: 2026-11-12
 tags: [plan, progress, log]
 related: ['docs/plan/README.md', 'docs/agents/running-agents.md', 'docs/agents/checklists.md']
 ---
@@ -6788,6 +6788,48 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 1336 passed (1336)"; protocol "Tests 18 passed (18)"; server "Tests 79 passed (79)"; client "Tests 1883 passed (1883)"; "Documentation check passed."
 - Next step: reviewer approval; the team merges.
 
+### 2026-11-06 — Phase 3 / minion plan MVP gaps — docs/minion-plan-mvp-gaps — SamarjitBhogal + Claude Code
+
+- What was done: audited `phase/3-sprint-3-work` and the open pull requests against the MVP scope
+  for the minion system. Minion plan: new §1.2 (the gaps before the MVP, each with who builds it,
+  its blocker and the next action); new phase M10 (zone level-up, designed in 07 §7 but scheduled
+  nowhere); M6's pull request split into M6 (camps, merged) and M6b (checkpoint defenders, after PR #64); §3
+  drops the built "straight-line bots" row and points the Rover and strength-by-distance rows at
+  what now unblocks them. `INBOX.md`: one item (zone level-up numbers and OQ-47, the M6 defender
+  sign-off, and pushing the unpushed follow-up branches). Stacked on `docs/playtest-rulings`
+  (PR #75), which edits the same plan.
+- Checks run: `npm run check` passed (format, no-js, lint, typecheck, knip, coverage, build,
+  docs:check): core `Tests  1079 passed (1079)`, client `Tests  1754 passed (1754)`,
+  `Documentation check passed.` Critic (`architecture-reviewer`): approve, 0 blockers; its three
+  minor items and four nits are applied.
+- Next step: the owner answers the `INBOX.md` item; M6b and M10 start when PR #64 merges; the
+  unit-cap performance check can start now.
+
+### 2026-11-12 — Phase 3 / minion plan MVP gaps (review round) — docs/minion-plan-mvp-gaps — SamarjitBhogal + Claude Code
+
+- What was done: answered claudiodh's review of PR #81. Merged `phase/3-sprint-3-work` (conflicts
+  in `INBOX.md` and this file; both sides kept, this branch's entries last). The 2026-11-06 entry
+  above is superseded where it says M6b and M10 wait for PR #64 and that the follow-up branches
+  are not on `origin`: #64 merged on 2026-11-08, and the branches are PRs #85 and #86 (#83 is the
+  perf check). Minion plan §1.2, §3 and the phase table now say so; the push request is dropped;
+  the INBOX item is split into three questions; the "Minion M6" item no longer says #64 is open.
+  CodeRabbit: the M10 row no longer states the ownership-event handler, same-tick removal and
+  DEC-168 superseding 07 §7 as settled; they are INBOX question (1) (c). Merged phase/3 again
+  (#52; PROGRESS only).
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code style!";
+  core "Tests 1314 passed (1314)"; client "Tests 1818 passed (1818)"; "✓ built in 322ms";
+  "Documentation check passed."
+- Next step: the owner answers the three INBOX items; M6b starts on the defenders sign-off.
+
+### 2026-11-13 — Phase 3 / sync — docs/minion-plan-mvp-gaps (PR #81) — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (`9e2516cf`, with #97) into PR #81, which was
+  CONFLICTING again. Only this file conflicted; both sides kept, this branch's entries last.
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code
+  style!"; core "Tests 1336 passed (1336)"; protocol "Tests 18 passed (18)"; client "Tests 1883
+  passed (1883)"; server "Tests 79 passed (79)"; "Documentation check passed."
+- Next step: review and merge; then sync the stacked drafts #82, #83 and #84.
+
 ### 2026-11-11 — Phase 3 / minion follow-ups: merge phase/3 (#92) and the CodeRabbit fixes — fix/minion-stack-followups — sholtzman + Claude Code
 
 - What was done: merged phase/3 `1b25f586` (#89, #92). Fixes from the CodeRabbit review of
@@ -6830,6 +6872,18 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `controlClass`, this branch's DEC-165 comment).
 - Checks run: full `npm run check` exit 0
   (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-85-9.log`).
+- Next step: push; merge the new head into #86 and #79.
+
+### 2026-11-13 — Phase 3 / minion follow-ups: merge phase/3 (#81) — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: phase/3 moved to `76d1007d` (#81 minion plan MVP gaps, docs only) while the
+  `9e2516cf` merge was checked. Merged it. PROGRESS and `minion-system-plan.md` conflicted. The
+  plan keeps #81's text with this branch's three edits on top: camps spawn "when the match
+  countdown ends (DEC-167)", camps are inert "until the match countdown ends", and the stand-in
+  row "A bot's last leg to a structure goes straight at it" stays removed. For the checkpoint
+  defenders row and `last-reviewed`, #81's newer wording is kept.
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-85-10.log`).
 - Next step: push; merge the new head into #86 and #79.
 
 ### 2026-11-11 — Phase 3 / unit facing chevron, merge of fix/minion-stack-followups (phase/3 with #89) — feat/unit-facing-chevron — sholtzman + Claude Code
@@ -6885,4 +6939,13 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `check-79-merge-8.run1-tsc-fail.log`); the fixture now gives a facing.
 - Checks run: full `npm run check` exit 0
   (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-79-merge-8.log`).
+- Next step: push; merge after #85.
+
+### 2026-11-13 — Phase 3 / unit facing chevron: merge of fix/minion-stack-followups (phase/3 with #81) — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: merged the local head of `fix/minion-stack-followups` (`2e8df5bc`), which
+  merges phase/3 at `76d1007d` (#81 minion plan MVP gaps, docs only). Only PROGRESS conflicted;
+  both sides kept. No code conflict.
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-79-merge-9.log`).
 - Next step: push; merge after #85.
