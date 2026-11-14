@@ -48,6 +48,25 @@ export const CAPTURE_CHECKPOINT_MARK_COLOR = '#ffffff';
 export const CAPTURE_CHECKPOINT_MARK_WIDTH = 1;
 
 /**
+ * The facing chevron in front of every Legend and mob (DEC-192), main view only: two arms from a
+ * `tip` back to a base arc around the unit's centre. `base` and `tip` are distances from the centre
+ * along the facing, `halfWidth` across it, all in unit radii, so the chevron sits outside the
+ * outlines (`LEGEND_OUTLINE_SCALE`, `MOB_OUTLINE_SCALE`) and inside the focus ring
+ * (`FOCUS_RING_SCALE`); `arcSegments` straight pieces draw the arc; `lineWidth` is in screen pixels.
+ * The chevron is gold for every unit, whatever its team (DEC-192). The hex value is the palette's
+ * gold, `--team-light-primary` in `styles/global.css` (canvas views cannot read CSS tokens).
+ */
+// TUNE: owner 2026-11-05 (DEC-192): a very small gold chevron at the front; sizes provisional
+export const FACING_CHEVRON = {
+  base: 1.4,
+  tip: 1.75,
+  halfWidth: 0.4,
+  arcSegments: 4,
+  color: '#d9a93a',
+  lineWidth: 1.5,
+} as const;
+
+/**
  * Marker of a living mob (lane minion, tower guard, camp mob) on the mini map, in CSS pixels.
  * Its colour is the team's (`TEAM_COLORS`, `NEUTRAL_ENTITY_COLOR`).
  */

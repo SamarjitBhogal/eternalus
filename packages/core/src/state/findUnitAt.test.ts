@@ -17,7 +17,7 @@ const entity = (
   family,
   definitionId: family,
   team,
-  transform: { x, y, radius },
+  transform: { x, y, radius, facing: { x: 1, y: 0 } },
   health: { current: 5, max: 5 },
   progression: null,
   aether: null,
@@ -62,7 +62,7 @@ describe('findUnitAt', () => {
     const noHealth = { ...entity('no-health', 'mob', 'dark', 0), health: null };
     const noPosition = { ...entity('no-position', 'mob', 'dark', 0), transform: null };
     const units = [
-      { ...PLAYER, transform: { x: 0, y: 0, radius: 2 } },
+      { ...PLAYER, transform: { x: 0, y: 0, radius: 2, facing: { x: 1, y: 0 } } },
       entity('tower', 'structure', 'dark', 0),
       entity('ally', 'mob', 'light', 0),
       dead,

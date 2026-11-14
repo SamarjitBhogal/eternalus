@@ -63,10 +63,11 @@ describe('Simulation: the human slot of the roster', () => {
       expect(sim.tick).toBe(0);
       expect(legends).toHaveLength(1);
       expect(sim.snapshot().match.humanLegendId).toBe(legends[0]?.id);
+      // It faces the enemy (light) Stronghold at (10, 30), as every roster Legend does (DEC-216 (6)).
       expect(legends[0]).toMatchObject({
         kind: 'warrior',
         team: 'dark',
-        transform: DARK_STRONGHOLD,
+        transform: { ...DARK_STRONGHOLD, facing: { x: -1, y: 0 } },
       });
     },
   );

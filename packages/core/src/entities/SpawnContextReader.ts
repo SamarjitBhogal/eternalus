@@ -42,15 +42,17 @@ export class SpawnContextReader {
   }
 
   /**
-   * Reads a context with a definition, a position and a team.
+   * Reads a context with a definition, a position and a team, and its controller and start facing
+   * when it gives them.
    *
-   * @throws Error when `positioned` would, or the team is not light, dark or neutral.
+   * @throws Error when `positioned` would, the team is not light, dark or neutral, or the context
+   *   gives a facing that is not a finite vector.
    */
   public placed<Definition extends DefinitionRef>(
     context: unknown,
   ): PlacedSpawnContext<Definition> {
     const positioned = this.positioned<Definition>(context);
-    const { team: candidate } = SpawnContextReader.fields(context);
+    const { team: candidate, facing } = SpawnContextReader.fields(context);
     const team = SPAWNABLE_TEAMS.find((spawnable) => spawnable === candidate);
 
     if (team === undefined) {
@@ -58,9 +60,19 @@ export class SpawnContextReader {
         `Entity "${this.entity.id}" needs a spawn context with a team (light, dark or neutral).`,
       );
     }
+    if (facing !== undefined && !SpawnContextReader.isFiniteVector(facing)) {
+      throw new Error(
+        `Entity "${this.entity.id}" was given a spawn facing that is not a finite vector.`,
+      );
+    }
 
     const controller = this.controllerOf(SpawnContextReader.fields(context).controller);
-    return controller === undefined ? { ...positioned, team } : { ...positioned, team, controller };
+    return {
+      ...positioned,
+      team,
+      ...(controller !== undefined && { controller }),
+      ...(facing !== undefined && { facing }),
+    };
   }
 
   /**
@@ -133,5 +145,15 @@ export class SpawnContextReader {
 
   private static isObject(value: unknown): value is Readonly<Record<string, unknown>> {
     return typeof value === 'object' && value !== null;
+  }
+
+  private static isFiniteVector(value: unknown): value is Vec2 {
+    return (
+      SpawnContextReader.isObject(value) &&
+      typeof value.x === 'number' &&
+      typeof value.y === 'number' &&
+      Number.isFinite(value.x) &&
+      Number.isFinite(value.y)
+    );
   }
 }

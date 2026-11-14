@@ -23,7 +23,7 @@ describe('StructureView', () => {
         family: 'structure',
         definitionId: 'gate',
         team: 'light' as const,
-        transform: { x: 0, y: 0, radius: 3 },
+        transform: { x: 0, y: 0, radius: 3, facing: { x: 1, y: 0 } },
         health: { current: 3000, max: 3000 },
         progression: null,
         aether: null,
@@ -31,6 +31,7 @@ describe('StructureView', () => {
         capture: null,
       },
       position: { x: 0, y: 0 },
+      facing: { x: 1, y: 0 },
       isFocused: false,
     };
 

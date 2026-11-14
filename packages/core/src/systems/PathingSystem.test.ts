@@ -126,7 +126,9 @@ describe('PathingSystem', () => {
       });
       indexAll(space, state);
 
-      new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius, fields).update({
+      new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius, {
+        flowFields: fields,
+      }).update({
         state,
         logger,
       });
@@ -397,12 +399,9 @@ describe('PathingSystem', () => {
     const grid = WorldMap.fromDefinition(TWO_LANE_MAP, config.map.navCellSize, () => false);
     const fields = new LaneFlowFields(grid, TWO_LANE_MAP, config.map.flowFieldCorridorHalfWidth);
     const field = fields.fields[0];
-    const system = new PathingSystem(
-      STRATEGIES,
-      FORMATIONS,
-      HORDE_STEERING.slotArrivalRadius,
-      fields,
-    );
+    const system = new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius, {
+      flowFields: fields,
+    });
     const state = new GameState(config, 1, matchWorldOf(TWO_LANE_MAP));
     fields.markDirty([field?.goal ?? 0]);
     const serving = field?.integration;

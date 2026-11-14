@@ -188,7 +188,7 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 | `entity-died`                       | `{ entityId, killer: DamageSource }`                   | `DeathResolver`                                                 | `DeathSystem`, `ProgressionSystem`, `Scoring`, `ObjectiveLostCondition` |
 | `structure-destroyed`               | `{ entityId, kind, team, lane }`                       | `StructureSystem`                                               | `EnragedSystem` (enraged lane), `StructureSystem` (walls, shields)      |
 | `structure-breakability-changed`    | `{ entityId, isBreakable, lane }`                      | `StructureSystem`                                               | `HordeSystem` (gate holding), views                                     |
-| `camp-cleared`                      | `{ entityId }`                                         | `SpawnSystem`                                                   | `ProgressionSystem` (camp reward), `MatchDirector`                      |
+| `camp-cleared`                      | `{ entityId, team, killerId }`                         | `SpawnSystem`                                                   | `ProgressionSystem` (camp reward), `MatchDirector`                      |
 | `shield-bars-changed`               | `{ entityId, bars }`                                   | `StructureSystem`                                               | HUD, views                                                              |
 | `capture-progress`                  | `{ pointId, team, progress, checkpoint }`              | `CaptureSystem`                                                 | HUD, `MinimapView`                                                      |
 | `checkpoint-reached`                | `{ pointId, team, checkpoint }`                        | `CaptureSystem`                                                 | checkpoint spawners (Phase 3)                                           |
@@ -243,7 +243,7 @@ export type EntitySnapshot = {
     readonly x: number;
     readonly y: number;
     readonly radius: number;
-    readonly facing: number;
+    readonly facing: { readonly x: number; readonly y: number }; // unit vector (10 §10)
   } | null;
   readonly health: {
     readonly current: number;
@@ -270,7 +270,7 @@ class and the `EntitySnapshot` type, never `GameState` (DEC-232).
 
 `Match` keeps the two latest snapshots (`previous`, `current`); `SceneView.draw(previous, current,
 alpha)` pairs the entities of both by id (both arrays are in store order; an entity spawned or
-removed between them is in one only) and lerps positions (the research's "two positions per
+removed between them is in one only) and lerps positions and facings (the research's "two positions per
 entity, stored in the snapshot, never in the entity"). `mapRevision` lets `TerrainView` and
 `MinimapView` rebuild their cached layers only when terrain changed (Dirty Flag).
 
@@ -474,9 +474,9 @@ each closed by the session or phase named:
   `SnapshotSystem` exists; `Snapshot` carries
   `tick`, `match`, `entities`, `hordes` and `teams` (the team counters, since minion plan M1),
   and `EntitySnapshot` its identity, `team`, `transform`
-  (`x`, `y`, `radius`), `health` (`current`, `max`), `progression` (a Legend's `level`, the `xp`
-  inside that level and its `xpToNext`, `null` at the cap; `snapshot(curves)` takes the level
-  curves `ProgressionSystem` uses), `aether` (a Legend's `current` and `max` aether, DEC-230),
+  (`x`, `y`, `radius`, `facing`), `health` (`current`, `max`), `progression` (a Legend's `level`,
+  the `xp` inside that level and its `xpToNext`, `null` at the cap; `snapshot(curves)` takes the
+  level curves `ProgressionSystem` uses), `aether` (a Legend's `current` and `max` aether, DEC-230),
   `area` (a zone's polygons) and `capture` (a capture point's state and presence) groups only.
   `MatchPhase` lives in `config/matchPhases.ts`; the match director is built (12 §13).
 - `GameState.world` is a `MatchWorld` (the generated definition, its lane `routes` and the

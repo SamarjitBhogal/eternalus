@@ -5998,6 +5998,59 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Next step: push; tell eternalus-121 the new head (#79 merges it); PR #77 merges after #76
   once Samarjit re-approves.
 
+### 2026-11-05 — Phase 3 / playtest fixes: unit facing chevron — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: units keep a facing and show it with a gold chevron (DEC-192), main view only.
+  Commit `3f4bd38`: `Transform.facing` (a unit vector), `MovementSystem` turns along the velocity,
+  `CombatSystem` turns to a target in reach, the snapshot carries the facing, the views draw the
+  chevron, `EntityLayer` blends it between ticks. Critic round 1 fixes (this round, uncommitted):
+  `Transform.lookAt(point)` replaces the scratch vector in `CombatSystem`; `isInReach` no longer
+  allocates for a unit target; `finite-transforms` also checks the facing (unit length, tolerance in
+  `FiniteTransformsInvariant.constants.ts`); new tests for `lookAt`, a steered attacker, a
+  `cannot-attack` unit and a map-object target, each seen red first. Docs: architecture 03, 04 §3
+  (the facing rules), 06 §8, 08 §8 and 10 §10 follow the code. INBOX has one open item with two
+  owner questions (start facing, ring colour).
+- Checks run: `npm run check` → `exit 0`: "All matched files use Prettier code style!"; core
+  "Tests 1096 passed (1096)"; client "Tests 1771 passed (1771)"; "✓ built in 283ms";
+  "Documentation check passed." This entry was added after that run (docs-only).
+- Next step: critic round 2, then ponytail review, then the PR after #77.
+
+### 2026-11-05 — Phase 3 / unit facing chevron, critic round 2 — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: critic round 2 approved (0 blockers). Its fixes: `isInReach` uses
+  `geometry.distance` and its TSDoc names the missing-`Transform` case (`f5f0aaf`); the
+  `EntityLayer.turn` TSDoc and 08 §8 say opposite facings snap at the midpoint (`a9601db`,
+  `5643c3b`); 15 §3 names the facing length check, 10 cites DEC-192 and no longer limits the turn
+  lerp to the client, 04 §3 names the `cannot-attack` exception, and the open INBOX item has (3) the
+  `UnitView` better-than-design item (`5643c3b`). Correction to the entry above: the round 1 fixes
+  it calls uncommitted are commit `6043999`.
+- Checks run: `npm run check` on HEAD `5643c3b` (clean tree) → `exit 0`: "All matched files use
+  Prettier code style!"; core "Tests 1096 passed (1096)"; client "Tests 1771 passed (1771)"; "✓
+  built in 275ms"; "Documentation check passed." This entry was added after that run (docs-only).
+- Next step: ponytail review, then the PR after #77 merges.
+
+### 2026-11-05 — Phase 3 / unit start facing (DEC-216 (6)) — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: before its first move or attack, a unit faces toward the enemy Stronghold, and a
+  guard faces out from the centre of its home (DEC-216 (6)). The spawn gives the facing in
+  `Placement.facing`; `SpawnContextReader.placed` reads it and `Unit` turns its new `Transform` to
+  it. `MatchWorld.startFacing(team, position)` is the one place that decides "toward the enemy
+  Stronghold"; `Simulation.spawnBot` (roster laners and Rovers), `DevSpawnHandler` (the player and
+  developer spawns) and `SpawnSystem.spawnHorde` (lane minions, opening and developer hordes) use
+  it; `GuardRoster` faces each guard (tower, Stronghold and camp posts) along post minus home.
+  `INITIAL_FACING` stays as the fallback for a unit given no start facing (neutral non-guard, no
+  map) and for structures; its `TUNE` note is gone. Verified as built, no change: (7) turn to a
+  target in reach also between hits, a stunned unit does not turn (new `MovementSystem` test pins
+  the movement half); (8) the base arc; (9) one gold `#d9a93a` for every unit; (10) disc and ring.
+  New tests, each seen red first by a deliberate break: `MatchWorld`, `SpawnContextReader`,
+  `Unit`, `DevSpawnHandler`, `SpawnSystem`, `GuardRoster`, `Simulation.bots` (with a same-hash
+  check), `MovementSystem`. Docs: 04 §3 states the start facing; INBOX's chevron item is answered.
+  (11) is not built.
+- Checks run: `npm run check` → `exit 0`: "All matched files use Prettier code style!"; core
+  "Tests 1105 passed (1105)"; client "Tests 1771 passed (1771)"; "✓ built in 251ms";
+  "Documentation check passed." This entry was added after that run (docs-only).
+- Next step: (11) face the hit spot after fix/minion-stack-followups lands its aim helper.
+
 ### 2026-11-04 — Phase 3 / sprint 3.1 — chore/coderabbit-config — SamarjitBhogal + Claude Code
 
 - What was done: fixed the `.coderabbit.yaml` parse error ("An override must specify teams,
@@ -6093,6 +6146,393 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "Tests 1800 passed (1800)"; "✓ built in 477ms"; "Documentation check passed."
 - Next step: push; the product owner approves; merge when CI is green.
 
+### 2026-11-05 — Phase 3 / minion-stack follow-ups and tower access — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done (one line per commit, then this docs step):
+  - `8f47858`: same-seed hash tests for minion levels, camp clear and respawn, and guard posts.
+  - `72fcf70`: additive veteran damage (DEC-164), tower guards level up (DEC-165), one minion
+    level with two sources (DEC-168 B3), guard and camp-mob stat blocks built from the lane-minion
+    blocks (B5).
+  - `09ed81d`: guard respawn rules as strategies (`each`, `group`; DEC-168 B4); `camp-cleared`
+    names the killer of the last mob and its team.
+  - `27675c5`: one leash decision both controllers call (`ai/decideLeashed.ts`, DEC-168 B1);
+    split aggro profile types (B2); the anchor stays fixed per target (DEC-160); units fight back
+    at camp mobs that attack them (DEC-166); leash durations in seconds.
+  - `16ddf25`: owner round-2 answers: guards are rallied and a guard kill counts (DEC-165),
+    guard refills counted (DEC-169), escaped-enemy take-back only inside the old leash (DEC-160
+    G2), guard leash tolerance widened (DEC-181).
+  - `37f47da`: structure definitions from one injected source (B8), breakability registry (B7),
+    ally-damage listener `state/AllyDamageTally.ts` (B6), one steering helper in `PathingSystem`
+    (B9 part 1).
+  - `67fb042`: bots stop oscillating at towers (`approach`), siege to the footprint edge, no
+    repeated halt (B9 part 2).
+  - `5ebfab1`: a camp-mob kill counts toward minion veterancy (DEC-165).
+  - `a83bf85`: minions reach a tower's fort walls (`Footprint`); a chase closes on its target's
+    own blocked ground; bots follow an enemy into a tower (DEC-185, DEC-189).
+  - `7352ddd`: stuck chasers path round (`StuckSystem`, `ChaseWatch`); one tower health pool;
+    Stronghold `Footprint`; lane minion leash +15 % (DEC-185, DEC-193).
+  - Docs step (uncommitted): architecture 18 (status note, MS-36 field names, §3.2 pipeline,
+    §3.3, §3.4, §5.2, §6.1, §7, §7.1, §9), 11 (§3, §4.2, §4.3, §6, §10), 07 (§1, §3, §6, §13),
+    03 (`camp-cleared` payload), 05 (`add` modifiers), 10 (§9) and 12 (§2, camps) brought in line
+    with the code, with the DEC rows of PR #75 cited. The minion plan is left for after #75,
+    which rewrites the same table lines (M6 row: camps wake at the countdown's end, DEC-167; §3:
+    this branch removes the bot last-leg stand-in).
+- Checks run: `npm run check` → exit 0 (log `check-followups-docs.log` in the audit's
+  runner-reports): "All matched files use Prettier code style!"; core "Tests 1147 passed (1147)";
+  client "Tests 1754 passed (1754)"; "✓ built in 273ms"; "Documentation check passed."; "exit 0".
+  This line was filled in after that run (docs-only); `prettier --check` and `docs:check` were
+  re-run on it.
+- Next step: architecture critic, ponytail, then the PR into phase/3 after #75 merges.
+
+### 2026-11-05 — Phase 3 / minion-stack follow-ups, critic round 1 fixes — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: every should-fix and nit of the two round-1 critics (critic A on the minion-stack
+  follow-ups, critic B on the tower-access commits), with the owner rulings DEC-217 (13), (14),
+  (16) and DEC-219 (b), (c) cited at the values. The previous entry's "Docs step (uncommitted)" is
+  commit `e3eb9dc`. One line per commit:
+  - `9d566c6`: `VeterancySystem.gainLevels` is private and the one way kills level a minion
+    (DEC-168); `Veterancy.recordKill` only counts. Veterancy test titles and victims fixed.
+  - `89eb9aa`: `BUFF_TOWER_KIND` in `StructureSystem.constants.ts`; `passes` TSDoc.
+  - `97a0f30`: bot navigation split out of `BotLeaves` into `ai/BotMovement.ts`.
+  - `77b44d7`: the leash decision parts are built once per controller (critic A BTD 4).
+  - `707ae2e`: `StuckWindow` in `ChaseWatch.types.ts`; options objects for `ChaseWatch.observe`
+    and `WorldObjectStore`.
+  - `adc71d7`: one outline rule (`EntityStore.outlineOf`) and one aim rule
+    (`EntityStore.aimPointOf`) for reach, stuck detection and the chase; a chase of a map object
+    now aims at its outline, where reach is measured (critic B BTD 1).
+  - `52850de`: fort boxes read once when the match is built and injected into `PathingSystem`
+    (`PathingWorld`), so a tower that falls before the first chase keeps its box.
+  - `eb8f844`: comment lines over 100 characters re-wrapped.
+  - `93dbe93`: `STUCK_DETECTION.maxPlansPerTick` (8, TUNE: a cost cap) caps the stuck A\* plans a
+    tick (11 §6); a unit past it keeps a plan due (`ChaseWatch.isPlanDue`).
+  - `6be1094`: the B8 test checks breakability comes from the given definitions; a test pins
+    veteran × rallied at ×1.365 (DEC-219 (c)).
+  - `4444ed0`: DEC-217 (13), (16) and DEC-219 (b), (c) cited in code; `Footprint` TSDoc.
+  - `df98c17`: architecture 02, 07, 10, 11 and 18 brought in line with the code.
+- Left out on purpose (the orchestrator sends them to `INBOX.md`): one health pool decided by the
+  body's `isBlocking` (critic B BTD 3), the dead-fort nav-cell test (DEC-217 (12) changes it), and
+  the other better-than-design items. DEC-217 (12), (15), (17) are for a later branch.
+- Checks run: `npm run check` at `df98c17` → exit 0 (log `check-followups-r1fix.log` in the
+  audit's runner-reports): "All matched files use Prettier code style!"; core "Tests 1155 passed
+  (1155)"; client "Tests 1754 passed (1754)"; "✓ built in 253ms"; "Documentation check passed.";
+  "exit 0". Each new test was seen red with its fix broken on purpose. This line was filled in
+  after that run (docs-only); `prettier --check` and `docs:check` were re-run on it.
+- Next step: critic re-check of this round, ponytail, then the PR into phase/3 after #75 merges.
+
+## 2026-11-05 · Phase 3 · fix/minion-stack-followups · critic r2 + ponytail r2 fixes
+
+- What: 11 §6 says `StuckSystem` is a second A\* consumer outside the decision budget (cap
+  `STUCK_DETECTION.maxPlansPerTick`, upgrade path a round-robin cursor); 11 §4.3 notes
+  `ghostFirstWaveTicks` is already in ticks; 18 lists a map object's cells as ground that never
+  holds a chase; stuck-detection comment says "progress toward what it heads for" (DEC-217 (14));
+  `Veterancy` TSDoc and its cap test comment say other level sources go through `VeterancySystem`;
+  "critic A BTD 4" became "DEC-219 (d)"; `EntityStore.aimPointOf` returns the outline, `'centre'`
+  or `null`, so `isInReach` and `PathingSystem` do not look the outline up twice; one shared
+  `Fort` test stand-in in `systems/__fixtures__/Fort.ts`; `BotMovement.approach` inlined into
+  `moveTo`.
+- Checks: `npm run check` after the last edit → exit 0: core "Tests 1155 passed (1155)"; client "Tests 1754 passed (1754)"; "✓ built in 299ms"; "Documentation check passed.". Two earlier runs hit 60 s test timeouts while the host load average was 35 (other agents' test runs); the same files passed alone and in the third full run.
+- Next step: critic r3 on this diff, then PR.
+
+### 2026-11-06 — Phase 3 / minion-stack follow-ups, merge of phase/3 (PR #71) — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` at `2dc2b35` (phase/3 (PR #71)). Only `docs/plan/PROGRESS.md` conflicted
+  (both sides appended entries); every entry is kept, the merged-in side's first. No line of either
+  side was removed (`git diff` against both parents shows only additions).
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-06/minion-stack-followups.check.log`): EXIT=0, core
+  1155 passed, client 1754 passed, docs check passed.
+- Next step: push.
+
+### 2026-11-06 — Phase 3 / minion-stack follow-ups, critic round 3 fixes — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: critic round 3 (the owner's last loop) on `ebedddb..7bc53a9`: APPROVE, 0
+  blockers, 2 should-fix, 7 nits (`critic-followups-r3.md` in the audit's runner-reports). All
+  fixed in `53c2bd6` and `c01edc8`: 11 §10 names `BotMovement.moveTo`; `edgeOf`'s TSDoc says it
+  returns `to` with no grid; 11 §4.3 and §5 wording; the r2 entry points to 11 §4.3; `isInReach`
+  checks before it aims; `StuckSystem` tests `aimPointOf` against `null`; the Fort fixture's
+  context type uses `Vec2` and `Polygon`; long comment lines re-wrapped. A test now pins what
+  `aimPointOf` returns; two breaks turned it red (a copied outline; `[]` for `'centre'`).
+- Checks run: `npm run check` at `c01edc8` (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-06/minion-stack-followups.check2.log`):
+  EXIT=0, core 1155 passed, client 1754 passed, docs check passed.
+- Next step: open the PR into phase/3 after #75; merge this head into the heal, chevron and
+  tower-ruins branches.
+
+### 2026-11-05 — Phase 3 / face the hit spot (DEC-216 (11)) — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` (`ebedddb`, owner-approved) as `d56980f`,
+  which brings `EntityStore.outlineOf` and `aimPointOf`. Conflicts: `EntityStore.ts` (kept the
+  aim rule, with this branch's allocation-free `distance` and its "no `Transform`" TSDoc case),
+  `StateHasher.test.ts` (kept both new tests), the `DefaultSystemPipeline` TSDoc (both sentences),
+  this file (every entry); a duplicate `Transform` import in `DefaultSystemPipeline.test.ts`
+  was dropped. Then `925c08d`: `CombatSystem` turns an attacker in reach toward `aimPointOf`,
+  so a unit attacking a building faces the outline point nearest it, not the centre, and a unit
+  target's centre as before (DEC-216 (11)); one aim rule serves reach, chase and facing. The
+  map-object facing test now attacks a long wall off-centre, and a new test attacks a fort
+  `Footprint`; both were red (facing `(0.991, -0.132)` and `(0.981, -0.196)`, the centre
+  directions) with the old centre `lookAt` put back, green when restored. Architecture 04 §3
+  states the rule.
+- Checks run: `npm run check` → `exit 0`: "All matched files use Prettier code style!"; core
+  "Tests 1182 passed (1182)"; client "Tests 1771 passed (1771)"; "✓ built in 238ms";
+  "Documentation check passed." This entry was added after that run (docs-only).
+- Next step: critic and ponytail on PR #79, then push.
+
+### 2026-11-06 — Phase 3 / unit facing chevron, DEC-220 — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` at `7bc53a9` as `8ce35b0`
+  (`aimPointOf` returns the outline, `'centre'` or `null`). Conflicts: `EntityStore.isInReach`
+  (the `'centre'` branch with this branch's allocation-free `distance`),
+  `DefaultSystemPipeline.test.ts` (the shared `Fort` fixture, this branch's `Transform` import),
+  this file (both entries, the merged side first). Then the owner's answers of 2026-11-06:
+  `e1bc618` `EntityStore.facingPointOf`: an attacker inside a building's outline faces its
+  centre, else the aim point; reach and chase keep `aimPointOf` (DEC-220 (1)); the
+  inside-footprint `CombatSystem` test from before `925c08d` is back with the centre expectation.
+  `92ff77e`, `999bd86`: `GuardRoster`, 04 §3 and `INBOX.md` cite DEC-216 (6) for tower guards
+  and DEC-220 (2) for camp mobs; 04 §3 rewrapped. `7da91f1`: `PathingSystem` turns a guard at
+  its post with nothing to chase to face outward again (DEC-220 (3)); `state/guardOutward.ts`
+  holds the one outward rule that `GuardRoster` also uses. `a72561f`, `a380b19`: ponytail cuts
+  (shorter `INITIAL_FACING` doc, flat ternary in `MatchWorld.startFacing`; `SpawnContextReader`
+  checks a finite numeric `x` and `y` and drops the cast). `8716c98`: 04 §3 states DEC-220 (1)
+  and (3). Each new or changed behaviour test was red with the production code broken on purpose
+  and green when restored.
+- Checks run: `npm run check` at `8716c98` → `EXIT=0` (log `check-chevron-dec220.log` in
+  `eternalus-agent-work/playtest-2026-11-04/`): "All matched files use Prettier code style!";
+  core "Tests 1185 passed (1185)"; client "Tests 1771 passed (1771)"; "✓ built in 304ms";
+  "Documentation check passed." This entry was added after that run (docs-only); `prettier` and
+  `docs:check` were re-run on it.
+- Next step: critic and ponytail re-check of this round on PR #79; DEC-220 (4) (start-facing
+  port in `EntityFactory`, guard-plan `facesOutward` data) goes to a later tidy PR.
+
+### 2026-11-07 — Phase 3 / unit facing chevron, merge of fix/minion-stack-followups (critic r3 fixes, PR #85) — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: merged `8c9b99f2` at `8c9b99f2` (fix/minion-stack-followups (critic r3 fixes, PR #85)). Only `docs/plan/PROGRESS.md` conflicted
+  (both sides appended entries); every entry is kept, the merged-in side's first. No line of either
+  side was removed (`git diff` against both parents shows only additions).
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-07/unit-facing-chevron.8c9b99f2.check.log`): EXIT=0, core
+  1185 passed, client 1771 passed, docs check passed.
+- Next step: push.
+
+### 2026-11-07 — Phase 3 / unit facing chevron, merge of feat/local-minimap (PR #79 base) — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: merged `feat/local-minimap` at `1b5ca57c` (its phase/3 PR #71 merge, the base of
+  PR #79). Only `docs/plan/PROGRESS.md` conflicted: git aligned two merge entries of the same shape,
+  so it was resolved by hand. The one entry only the local-minimap side had is placed first in the
+  block; no line of either side is lost (`git diff` against both parents shows only additions).
+- Checks run: the merge changes only this file against `e4a5fca5`, whose `npm run check` passed
+  (log `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-07/unit-facing-chevron.8c9b99f2.check.log`:
+  EXIT=0, core 1185 passed, client 1771 passed). `prettier --check` and `docs:check` passed here.
+- Next step: critic on the DEC-220 work, then push.
+
+### 2026-11-07 — Phase 3 / unit facing chevron, DEC-220 critic r1 fixes — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: the critic on the DEC-220 work (`git diff 8ce35b0 a83268c`, a new review cycle
+  for the new owner ruling; report `eternalus-agent-work/playtest-2026-11-04/critic-chevron-dec220-r1.md`)
+  gave CHANGES NEEDED, 0 blockers, 2 should-fix, 4 nits. Fixed in `2e47594`: a stunned guard
+  (`cannot-move`) at its post no longer turns outward (DEC-216 (7)); a test pins that a guard at
+  its post that chases keeps its facing; `guardOutward` has its co-located test. `d9834dd`: 04 §3
+  (stunned guard keeps its facing), 18 §7 (one line: `PathingSystem` turns a guard outward at its
+  post, pointing to 04 §3; doc 18's owner is told in the PR), INBOX item: does a fort's court
+  count as inside the building (DEC-220 (1))?, plus the critic's better-than-design items. Not
+  done: the `fix(core)` scope of `a380b19` (it would rewrite history).
+- Fail-first: dropping the `cannot-move` check turned "does not turn a stunned guard at its post
+  (DEC-216 (7))" red; dropping `!context.isChasing` turned "does not turn a guard outward at its
+  post while it chases a target" red; reversing `guardOutward` turned its test and the DEC-220 (3)
+  test red (each "expected … to deeply equal …"). Restored after each.
+- Checks run: `npm run check` at `d9834dd` (log
+  `eternalus-agent-work/playtest-2026-11-04/check-chevron-dec220-r1fix.log`): "All matched files
+  use Prettier code style!"; core "Tests 1188 passed (1188)"; client "Tests 1771 passed (1771)";
+  "✓ built in 245ms"; "Documentation check passed."; EXIT=0. This entry was added after it.
+- Next step: merge phase/3 `ed101458` (PR #80; conflicts in `WorldObjectStore` and `geometry.ts`)
+  through the follow-ups, then push; retarget PR #79 to phase/3 after #77 and #85 merge.
+
+### 2026-11-08 — Phase 3 / unit facing chevron, merge of feat/local-minimap after #64 (PR #79 base) — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: merged `feat/local-minimap` at `bf4a53ae` (PR #77 with #76 `f2574a90`, which
+  carries phase/3 `b02ef47e` with PR #64 capture points) in `d760cb16`. Conflicts kept both sides:
+  `EntityFactory.types` (`facing` and `area`), `StateHasher` (Capturable and ChaseWatch imports),
+  `DefaultSystemPipeline` (imports; class TSDoc lists stuck detection, capture points and the
+  DEC-192 note in array order), 03 (snapshot transform with `facing`, `area`, `capture`), 04
+  (facing rules; #64's re-laid entity table with this branch's Transform row), this file (every
+  entry of both sides). Test fixtures take `facing` and `area`/`capture`: `MatchBridge.test`,
+  `CapturePointView.test`, `facingChevron.test`.
+- Critic: `architecture-reviewer` on `git show --remerge-diff d760cb16` (report
+  `eternalus-agent-work/playtest-2026-11-04/critic-chevron-merge-bf4a53ae.md`): APPROVE, no findings.
+- Checks run: `npm run check` at `d760cb16` (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-07/unit-facing-chevron.bf4a53ae.check.log`):
+  EXIT=0; core "Tests 1407 passed (1407)"; client "Tests 1806 passed (1806)"; "Documentation
+  check passed.". This entry was added after it.
+- Next step: push; retarget PR #79 to phase/3 after #77 merges.
+
+### 2026-11-09 — Phase 3 / unit facing chevron, owner answers (DEC-226) — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: the owner's answers on decision page 2 and in the question dialog (verbatim in
+  `eternalus-agent-work/playtest-2026-11-04/OWNER-ANSWERS-2026-11-09.md`) are recorded as the
+  batch DEC-225 to DEC-227 in the owner decisions log. The batch text is the same as on #86 and
+  `feat/tower-ruins-and-routes`. DEC-226: Q-I (A), keep as built: a fort's court is outside every
+  outline, so a unit there faces the spot it damages. The chevron critic's items (2) to (4) are
+  approved for the tidy PR. DEC-226 is cited in architecture 04 §3 and in the
+  `EntityStore.facingPointOf` TSDoc. The chevron INBOX item is ticked with its answer. Only
+  comments and docs change.
+- Checks run: `npm run check` (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-07/unit-facing-chevron.dec226.check.log`):
+  EXIT=0; core "Tests 1407 passed (1407)"; client "Tests 1806 passed (1806)"; "Documentation
+  check passed.".
+- Next step: push (script); merge after #85, then rebase-free merge of phase/3 if it moves.
+
+### 2026-11-08 — Phase 3 / minion-stack follow-ups, merge of phase/3 (PRs #75, #74, #78) — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` at `85b67816` (#75, #74, #78) in
+  `33037572`, resolved as the chevron merge `f115e35b` was (critic APPROVE): one countdown-end
+  helper, `config/countdownTicks` (DEC-170), so `state/countdownEndTick` and its test go and their
+  assertions move to `countdownTicks.test.ts`; `GameState` keeps #74's phase listener plus
+  `AllyDamageTally` (DEC-171); `DefaultSystemPipeline` and `Simulation` take #74's options object
+  plus this branch's injected `structures`; PROGRESS keeps every entry of both sides. With #75 on
+  the branch, two doc edits the follow-ups report left for later:
+  `minion-system-plan.md` M6 row says camps spawn and wake when the match countdown ends
+  (DEC-167, no camp cooldown of their own), and its §3 stand-in "a bot's last leg to a structure
+  goes straight at it" is removed (bots take A\* to the footprint edge since `67fb042`/`a83bf85`).
+  02, 17 and the glossary name the pipeline file `DefaultSystemPipeline.ts`, as it is spelled.
+- Checks run: `npm run check` on `33037572` (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-07/minion-stack-followups.85b67816.check.log`):
+  EXIT=0, core 1319 passed, client 1769 passed. After the doc edits (log
+  `merge-2026-11-07/minion-stack-followups.docs-2026-11-08.check.log`): EXIT=0, core
+  "Tests 1319 passed (1319)", client "Tests 1769 passed (1769)", "Documentation check passed.".
+- Next step: critic on the merge and the doc commit, then push; merge the new head into
+  `feat/out-of-combat-heal` (#86).
+
+### 2026-11-08 — Phase 3 / minion-stack follow-ups, merge of phase/3 (PR #64) — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` at `b02ef47e` (#64 capture points) in
+  `42463596`. Conflicts kept both sides: `StateHasher` hashes `Capturable` and `ChaseWatch`;
+  `DefaultSystemPipeline` imports the fort-box types and `CaptureSystem`, and its TSDoc names stuck
+  detection and capture points (after death, before the match director); PROGRESS keeps every
+  entry. Doc 18 §3 and the minion plan's §3 stand-in no longer say `CaptureSystem` is off the phase
+  branch; checkpoint defenders are still not built.
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-07/minion-stack-followups.b02ef47e.check.log`):
+  EXIT=0, core "Tests 1372 passed (1372)", client "Tests 1778 passed (1778)", "Documentation check
+  passed.".
+- Next step: critic, push; merge this head into `feat/out-of-combat-heal` (#86).
+
+### 2026-11-08 — Phase 3 / minion-stack follow-ups, merge of phase/3 after #76 and #77 — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: merged phase/3 at `120653b2` (PR #76 as `6c1c3272`, PR #77 as `120653b2`) in
+  `13a6cbbb`. Conflicts: 17 (`last-reviewed` only) and this file (phase/3's file plus this
+  branch's appended entries; no-loss guard: no line of either side or the base missing). 07
+  auto-merged. No code file changed on both sides.
+- Critic: `architecture-reviewer` on `git show --remerge-diff 13a6cbbb` (report
+  `eternalus-agent-work/playtest-2026-11-04/critic-85-86-merge-120653b2.md`): APPROVE, no
+  blocker or should-fix; one nit on phase/3's own text, left as is.
+- Checks run: `npm run check` at `13a6cbbb` (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-07/minion-stack-followups.120653b2.check.log`):
+  EXIT=0; core "Tests 1374 passed (1374)"; client "Tests 1799 passed (1799)"; "Documentation
+  check passed.". This entry was added after it.
+- Next step: push; PR #86 merges this head.
+
+### 2026-11-09 — Phase 3 / minion-stack follow-ups, PR #85 review: a chaser inside an outline holds (DEC-234) — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: Gurshaan's change request on #85 ("Minions already inside a building's attackable
+  outline keep walking toward its boundary, although combat considers them in reach.") was real:
+  `isInReach` counted an attacker inside the outline as in reach, but `PathingSystem`'s chase
+  aimed at the nearest edge. `EntityStore.aimPointOf` now gives the attacker's own position when
+  it stands inside the outline and returns what it aimed at as a tag (`AimedAt`), so the inside
+  test runs once and reach, chase and stuck detection read one point. New test in
+  `PathingSystem.chase.test.ts` ("holds a chaser that stands inside its target's outline …"); it
+  failed before the fix with heading `{ x: -1, y: 0 }`. `EntityStore.test.ts` pins the inside aim
+  and the tags. Doc 18 §5, `PathingSystem` and `Footprint` TSDoc state the hold; DEC-234 records
+  it.
+- Critic: `architecture-reviewer` on `9b776ed5`: APPROVE, no blocker; two should-fix (this entry;
+  an `aimPointOf` unit test) and four nits, all applied; its better-than-design item (the `AimedAt`
+  tag) built here under the owner's no-tech-debt rule (DEC-223), recorded as DEC-234.
+- Checks run: `npm run check` with this entry in place (log
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-85-2.log`): EXIT=0, core "Tests 1375 passed
+  (1375)", client "Tests 1799 passed (1799)", "Documentation check passed.".
+- Next step: push; merge this head into `feat/out-of-combat-heal` (#86) and
+  `feat/unit-facing-chevron` (#79, where `facingPointOf` reads the `'inside'` tag); reply on #85,
+  #86 and #79.
+
+### 2026-11-09 — Phase 3 / unit facing chevron, merge of fix/minion-stack-followups (PR #85 review fix, DEC-234) — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` at `a049db6d` (the #85 review fix: a chaser
+  inside its target's outline holds; `EntityStore.aimPointOf` returns an `AimedAt` tag; DEC-234).
+  Conflicts: the `aimPointOf` TSDoc (#85's text, naming `facingPointOf`), the
+  `DefaultSystemPipeline` TSDoc (this branch's DEC-192 sentence kept), architecture 02 (#85's
+  side: `DefaultSystemPipeline.ts`), 18 (`last-reviewed`), PROGRESS and the decisions log (both
+  sides kept; the DEC-234 batch first, newest batch first). `facingPointOf` now reads the
+  `'inside'` tag instead of testing the outline itself. Its TSDoc and architecture 04 §3 say an
+  inside attacker's aim point is where it stands (DEC-234); 04 no longer says that reach and chase
+  measure to the outline edge from inside.
+- Fail-first: with the `'inside'` branch of `facingPointOf` turned off, `EntityStore.test.ts`
+  "faces the aim point from outside an outline and the centre from inside it (DEC-220 (1))"
+  failed with `expected { x: 11, y: 4 } to deeply equal { x: 15, y: +0 }`; restored, green.
+- Checks run: `npm run check` with this entry in place (log
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-79-merge.log`): EXIT=0, core "Tests 1408
+  passed (1408)", client "Tests 1806 passed (1806)", "Documentation check passed.". The first run
+  failed on Prettier (one doubled blank line from the conflict resolution), fixed before this run.
+- Next step: critic on the merge (`git show --remerge-diff`); push; reply on #79.
+
+### 2026-11-10 — Phase 3 / minion-stack follow-ups, critic on the DEC-234 follow-ups; owner confirms DEC-234 — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: `architecture-reviewer` on `9b776ed5..a049db6d`: APPROVE, one should-fix and four
+  nits. Should-fix: DEC-234 reads the owner's DEC-220 (1) words, and only he can settle that. He
+  confirmed the reading through the question dialog on 2026-11-10 ("Yes, hold inside"); the
+  DEC-234 row cites it. Nits applied: `AimedAt` drops `null` and `aimPointOf` returns
+  `AimedAt | null`, as the other queries do; 18 §5.2 no longer cites itself; the row cites
+  DEC-219 (d). From the critic of the #79 merge: 07's status note says a chase holds inside the
+  outlines (DEC-234). Rejected: naming `feat/capture-scoring` next to the DEC-223 citation (a DEC
+  ID is stable, and a branch name in a dated record ages).
+- Checks run: `npm run check` with this entry in place (log
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-85-3.log`): EXIT=0, core "Tests 1375
+  passed (1375)", client "Tests 1799 passed (1799)", "Documentation check passed.".
+- Next step: merge into `feat/out-of-combat-heal` (#86) and `feat/unit-facing-chevron` (#79);
+  push; reply on #85, #86 and #79.
+
+### 2026-11-10 — Phase 3 / unit facing chevron, merge of fix/minion-stack-followups (DEC-234 confirmed) and critic of the merge — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: `architecture-reviewer` on the merge `34165a18`: APPROVE, no blocker
+  (`facingPointOf` gives #79's result for every `AimedAt` value; every hunk keeps both sides; its
+  mutations turned two tests red). Applied: its should-fix, an `INBOX.md` line under the DEC-226
+  answer that DEC-234 already did DEC-226 (2), so the tidy PR builds no helper; its nits, 04 §3
+  splits the inside-facing and inside-holding sentences and is re-wrapped to 100 columns. Then
+  merged `fix/minion-stack-followups` at `ceb79a2e` (the owner confirms DEC-234; `AimedAt` drops
+  `null`; 07, 18 and the DEC-234 row edits). Only PROGRESS conflicted: both sides kept.
+- Checks run: `npm run check` with this entry in place (log
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-79-merge-2.log`): EXIT=0, core "Tests 1408
+  passed (1408)", client "Tests 1806 passed (1806)", "Documentation check passed.".
+- Next step: push; reply on #79.
+
+### 2026-11-10 — Phase 3 / minion-stack follow-ups, merge of phase/3 (#73, main) — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: PR #85 showed "conflicting" against `phase/3-sprint-3-work`, so GitHub ran no CI
+  on `ceb79a2e`. Merged `origin/phase/3-sprint-3-work` at `8d2404c8` (#73 CodeRabbit config, and
+  `main` with #32). Conflicts: architecture 03 and the decisions log (`last-reviewed`; the later
+  date kept), the decisions log batches (the DEC-234 batch above phase/3's DEC-224 batch, newest
+  batch first) and PROGRESS (both sides kept, phase/3's entries first). `git diff` against both
+  parents shows no removed line except the older `last-reviewed` date.
+- Checks run: `npm run check` with this entry in place (log
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-85-4.log`): EXIT=0, core "Tests 1379
+  passed (1379)", client "Tests 1800 passed (1800)", "Documentation check passed.".
+- Next step: merge into #86 and #79; push; reply on #85, #86 and #79 when CI is green.
+
+### 2026-11-10 — Phase 3 / unit facing chevron, merge of fix/minion-stack-followups (phase/3 with #73 and main) — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: PR #79 showed "conflicting" against `phase/3-sprint-3-work`, so GitHub ran no CI
+  on `e9001c76`. Merged `fix/minion-stack-followups` at `2f100e87`, which merges phase/3 at
+  `8d2404c8` (#73, `main`, and #87/#88 before them). Conflicts: architecture 03 (the
+  `EntitySnapshot` groups: this branch's `facing` and phase/3's `progression` both kept),
+  `INBOX.md` (this branch's chevron items and phase/3's #69 critic item both kept), the decisions
+  log (this branch's DEC-225 to DEC-227 batch above phase/3's DEC-224 batch, newest first) and
+  PROGRESS (both sides kept). Against #85's side the merge differs only by this branch's own edits
+  to 03 (facing as a unit vector, facings lerped). The first check run failed on `tsc -b`: three
+  tests of this branch predate phase/3's #88 (`GameState.snapshot` takes the level curves,
+  `EntitySnapshot` has `progression`). `DevSpawnHandler.test.ts` and `GameState.test.ts` now pass
+  the curves as their neighbouring tests do; `facingChevron.test.ts` gives `progression: null`.
+- Checks run: `npm run check` with this entry in place (log
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-79-merge-3.log`): EXIT=0, core "Tests
+  1412 passed (1412)", client "Tests 1807 passed (1807)", "Documentation check passed.".
+- Next step: push; reply on #79 when CI is green.
+
 ### 2026-11-09 — Phase 3 / combat sprint: world health bars (DEC-195) — feat/combat-health-bars — sholtzman + Claude Code
 
 - What was done: a unit's world health bar is hidden from its spawn until the unit takes damage
@@ -6176,6 +6616,18 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   exit 0: core `Tests 1302 passed (1302)`, client `Tests 1817 passed (1817)`, `Documentation check
 passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Next step: push, then merge #89 into phase/3 once CI is green.
+
+### 2026-11-11 — Phase 3 / minion-stack follow-ups, merge of phase/3 (#89) — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: #89 (world health bars) merged into `phase/3-sprint-3-work` as `c560b578`, so
+  PR #85 showed "conflicting" again and GitHub ran no CI on `2f100e87`. Merged
+  `origin/phase/3-sprint-3-work` at `c560b578`. One conflict: PROGRESS (both sides kept, this
+  branch's entries first). The decisions log merged without a conflict; its batches stay newest
+  first (DEC-234, DEC-224, DEC-195).
+- Checks run: `npm run check` with this entry in place (log
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-85-5.log`): EXIT=0, core "Tests 1379
+  passed (1379)", client "Tests 1817 passed (1817)", "Documentation check passed.".
+- Next step: merge into #86 and #79; push; reply on #85, #86 and #79 when CI is green.
 
 ### 2026-11-09 — Phase 3 / combat sprint: live HUD aether bar (DEC-230) — feat/hud-aether-bar — sholtzman + Claude Code
 
@@ -6377,3 +6829,123 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   style!"; core "Tests 1336 passed (1336)"; protocol "Tests 18 passed (18)"; client "Tests 1883
   passed (1883)"; server "Tests 79 passed (79)"; "Documentation check passed."
 - Next step: review and merge; then sync the stacked drafts #82, #83 and #84.
+
+### 2026-11-11 — Phase 3 / minion follow-ups: merge phase/3 (#92) and the CodeRabbit fixes — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: merged phase/3 `1b25f586` (#89, #92). Fixes from the CodeRabbit review of
+  `2f100e87`: `StuckSystem` judges a new target's first gap to that target, not to the old
+  waypoint; `camp-cleared` names no killer when the killer's team cannot be read (it left the
+  store); two test casts removed (`MinionController.test.ts`, `GuardRoster.test.ts`); 10 §8 says
+  `CollisionSystem` runs before `PathingSystem`, as the pipeline and §9 do; the 07 status note
+  cites DEC-219 (d) for the fort ruins. Both behaviour tests failed before their fix.
+- Rejected: `op` validation in `loadStatusEffects` (the `'mul' | 'add'` union already rejects
+  other values in typed content).
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-85-6.log`).
+- Next step: push; owner sign-off comment (DEC-234, `AimedAt`); merge the new head into #86, #79.
+
+### 2026-11-12 — Phase 3 / minion follow-ups: the last two test casts — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: the review of 2026-11-12 names two more `as string[]` casts in
+  `GuardRoster.test.ts` (lines 71 and 83). Both now narrow with a throw, like line 186.
+- Rejected again: `op` validation in `loadStatusEffects`. The modifier type allows only `'mul'`
+  and `'add'`, so the check can never be true (`no-unnecessary-condition` fails the lint), and a
+  test for it needs a cast.
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-85-7.log`).
+- Next step: push; merge the new head into #86 and #79.
+
+### 2026-11-12 — Phase 3 / minion follow-ups: merge phase/3 (#51, #52) — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: phase/3 moved to `3dc9e908` (#51 object pool, #52 status polarity and control
+  class) and left this PR conflicting. Merged it. `rallied.ts` keeps #52's `polarity` and
+  `controlClass` and this branch's DEC-165 comment. PROGRESS: both sides kept.
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-85-8.log`).
+- Next step: push; merge the new head into #86 and #79.
+
+### 2026-11-13 — Phase 3 / minion follow-ups: merge phase/3 (#97) — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: phase/3 moved to `9e2516cf` (#97 duel server) before the `3dc9e908` merge was
+  pushed, and the PR conflicted again. Merged it. Only PROGRESS conflicted; both sides kept. The
+  `rallied.ts` conflict was resolved in the merge before this one (#52's `polarity` and
+  `controlClass`, this branch's DEC-165 comment).
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-85-9.log`).
+- Next step: push; merge the new head into #86 and #79.
+
+### 2026-11-13 — Phase 3 / minion follow-ups: merge phase/3 (#81) — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: phase/3 moved to `76d1007d` (#81 minion plan MVP gaps, docs only) while the
+  `9e2516cf` merge was checked. Merged it. PROGRESS and `minion-system-plan.md` conflicted. The
+  plan keeps #81's text with this branch's three edits on top: camps spawn "when the match
+  countdown ends (DEC-167)", camps are inert "until the match countdown ends", and the stand-in
+  row "A bot's last leg to a structure goes straight at it" stays removed. For the checkpoint
+  defenders row and `last-reviewed`, #81's newer wording is kept.
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-85-10.log`).
+- Next step: push; merge the new head into #86 and #79.
+
+### 2026-11-11 — Phase 3 / unit facing chevron, merge of fix/minion-stack-followups (phase/3 with #89) — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: #89 (world health bars) merged into `phase/3-sprint-3-work` as `c560b578`, so PR
+  #79 showed "conflicting" again and GitHub ran no CI on `f09b8099`. Merged
+  `fix/minion-stack-followups` at `f08d0a39`, which merges `phase/3-sprint-3-work` at `c560b578`.
+  Conflicts: architecture 08 §8 (this branch's facing interpolation text kept, #89's health bar
+  bullet after it) and PROGRESS (both sides kept). #89 merged first, so this merge gives #89's test
+  literals the `facing` that this branch makes required (`HealthBarView.test.ts`,
+  `HealthBarVisibility.test.ts`, one in `EntityLayer.test.ts`), and this branch's two facing tests
+  in `EntityLayer.test.ts` pass #89's third constructor argument (`() => null`, no health bars, as
+  the tests beside them do); `tsc -b` failed on all of them before.
+- Checks run: `npm run check` with this entry in place (log
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-79-merge-4.log`): EXIT=0, core "Tests
+  1412 passed (1412)", client "Tests 1824 passed (1824)", "Documentation check passed.".
+- Next step: push; tell the reviewer on #79 the head moved when CI is green.
+
+### 2026-11-11 — Phase 3 / unit facing chevron: merge of fix/minion-stack-followups (phase/3 with #92) — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` at `65c4d436`, which merges phase/3
+  `1b25f586` (#92) and fixes the CodeRabbit findings on #85. #92 moved snapshot building out
+  of `GameState` (DEC-232), so the `facing` field now sits in `EntitySnapshotter`; 03 §5
+  lists `facing` and `aether`. `facingChevron.test.ts` gains `aether: null` (`tsc -b`
+  failed before). PROGRESS and the decisions log: both sides kept, batches newest first.
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-79-merge-5.log`).
+- Next step: push; owner sign-off comment (DEC-225 to DEC-227, DEC-226 Q-I); merge after #86.
+
+### 2026-11-12 — Phase 3 / unit facing chevron: merge of fix/minion-stack-followups (c09507f6) — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` at `c09507f6` (the last two test casts in
+  `GuardRoster.test.ts`). Only PROGRESS conflicted; both sides kept. No code conflict.
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-79-merge-6.log`).
+- Next step: push; merge after #85.
+
+### 2026-11-12 — Phase 3 / unit facing chevron: merge of fix/minion-stack-followups (phase/3 with #51, #52) — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: merged the local head of `fix/minion-stack-followups` (`18c50e9d`), which
+  merges phase/3 at `3dc9e908` (#51 object pool, #52 status polarity and control class). Only
+  PROGRESS conflicted; both sides kept. No code conflict.
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-79-merge-7.log`).
+- Next step: push; merge after #85.
+
+### 2026-11-13 — Phase 3 / unit facing chevron: merge of fix/minion-stack-followups (phase/3 with #97) — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: merged the local head of `fix/minion-stack-followups` (`9c7194d0`), which
+  merges phase/3 at `9e2516cf` (#97 duel server). Only PROGRESS conflicted; both sides kept. One
+  code fix: #97's `apps/server/src/match/SeatCommands.test.ts` builds an `EntitySnapshot` with no
+  `facing`, the field this branch adds, so the typecheck failed (TS2741,
+  `check-79-merge-8.run1-tsc-fail.log`); the fixture now gives a facing.
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-79-merge-8.log`).
+- Next step: push; merge after #85.
+
+### 2026-11-13 — Phase 3 / unit facing chevron: merge of fix/minion-stack-followups (phase/3 with #81) — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: merged the local head of `fix/minion-stack-followups` (`2e8df5bc`), which
+  merges phase/3 at `76d1007d` (#81 minion plan MVP gaps, docs only). Only PROGRESS conflicted;
+  both sides kept. No code conflict.
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-79-merge-9.log`).
+- Next step: push; merge after #85.

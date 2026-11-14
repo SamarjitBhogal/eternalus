@@ -1,3 +1,5 @@
+import type { ContentCatalogue } from '../content/ContentCatalogue';
+import type { StructureDefinition } from '../content/structures/structures.types';
 import type { InvariantRunner } from '../diagnostics/InvariantRunner';
 import type { EntityFactory } from '../entities/EntityFactory';
 import type { MatchDirector } from '../match/MatchDirector';
@@ -31,4 +33,10 @@ export type DefaultSystemPipelineOptions = {
     readonly decide: readonly System[];
     readonly collisions?: readonly System[];
   };
+  /**
+   * Where each structure's definition, and so its breakability rule, is looked up;
+   * `STRUCTURE_DEFINITIONS` when omitted. `Simulation` injects the one set it builds the
+   * structures from.
+   */
+  readonly structures?: Pick<ContentCatalogue<StructureDefinition>, 'get'>;
 };

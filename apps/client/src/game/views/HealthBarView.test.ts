@@ -11,13 +11,15 @@ import {
   HEALTH_BAR_WIDTH_SCALE,
 } from './HealthBarView.constants';
 
+const EAST = { x: 1, y: 0 };
+
 const unit: EntitySnapshot = {
   id: 'foe',
   kind: 'light-mob',
   family: 'mob',
   definitionId: 'training-dummy',
   team: 'dark',
-  transform: { x: 0, y: 0, radius: 0.5 },
+  transform: { x: 0, y: 0, radius: 0.5, facing: EAST },
   health: { current: 5, max: 10 },
   progression: null,
   aether: null,
@@ -29,7 +31,7 @@ const unit: EntitySnapshot = {
 const fills = (entity: EntitySnapshot): unknown[] => {
   const renderer = new RecordingRenderer();
   new HealthBarView().draw(
-    { entity, position: { x: 0, y: 0 }, isFocused: false },
+    { entity, position: { x: 0, y: 0 }, facing: EAST, isFocused: false },
     'enemy',
     renderer,
   );
@@ -46,7 +48,7 @@ describe('HealthBarView', () => {
     const renderer = new RecordingRenderer();
     const foe = { ...unit, health: { current: 3, max: 10 } };
     new HealthBarView().draw(
-      { entity: foe, position: { x: 10, y: 20 }, isFocused: false },
+      { entity: foe, position: { x: 10, y: 20 }, facing: EAST, isFocused: false },
       'enemy',
       renderer,
     );

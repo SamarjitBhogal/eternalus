@@ -224,6 +224,28 @@ describe('Simulation with bot laners (minion plan M3)', () => {
     expect(runs[0]?.hash).toBe(runs[1]?.hash);
   });
 
+  it('faces every bot Legend toward the enemy Stronghold at spawn, the same way twice (DEC-216 (6))', () => {
+    const roster: RosterSlot[] = [
+      ...laners('light', 2),
+      ...laners('dark', 2),
+      { team: 'light', definitionId: 'warrior', role: 'rover', pilot: 'bot', difficulty: 'rover' },
+    ];
+    // The Strongholds of the two-lane map stand at (10, 30), light, and (190, 30), dark.
+    const enemyStronghold = { light: { x: 190, y: 30 }, dark: { x: 10, y: 30 } };
+    const first = match(roster);
+
+    const legends = first.snapshot().entities.filter(({ kind }) => kind === 'warrior');
+    expect(legends).toHaveLength(5);
+    for (const { team, transform } of legends) {
+      const target = enemyStronghold[team === 'dark' ? 'dark' : 'light'];
+      const dx = target.x - (transform?.x ?? 0);
+      const dy = target.y - (transform?.y ?? 0);
+      expect(transform?.facing.x).toBeCloseTo(dx / Math.hypot(dx, dy), 9);
+      expect(transform?.facing.y).toBeCloseTo(dy / Math.hypot(dx, dy), 9);
+    }
+    expect(first.hash()).toBe(match(roster).hash());
+  });
+
   it('spawns a roster Legend by its definition’s kind when the id differs from it', () => {
     const defaults = loadDefaultContent(30);
     const veteran = { ...defaults.get('warrior'), id: 'warrior-veteran' };

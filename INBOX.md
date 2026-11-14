@@ -16,6 +16,49 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [x] **Unit facing chevron (DEC-192, feat/unit-facing-chevron, 2026-11-05) — two questions, one
+      better-than-design item.**
+      (1) Start facing: a unit faces east (`INITIAL_FACING` in `Transform.constants.ts`) until it
+      first moves or attacks. Guards, camp mobs and Legends in the countdown show east, and ability
+      cones will use this facing (architecture 05). Options: east for all; toward the enemy
+      Stronghold; along the lane; per definition (a value in `content/`).
+      (2) Ring colour: DEC-192 says the team shows in the ring. The build keeps the team colour in
+      the disc, and the ring is white (Legends) or near-black (mobs). It differs from your
+      reference image (grey disc, team-coloured ring). Options: restyle now, restyle later, or keep.
+      (3) Better than the design (critic, not built): `LegendView` and `MobView` each draw the
+      chevron. An abstract `UnitView extends DefaultEntityView` with an abstract outline, or a
+      `FacingChevronView` decorator, would hold it once. Recommendation: build it in one tidy PR
+      after the playtest PRs merge. Approve, or say no.
+  - Answered 2026-11-05 (the decision page, DEC-216 and DEC-218): (1) toward the enemy
+    Stronghold; a tower guard (the Stronghold's too) faces out from the centre of its home
+    (DEC-216 (6)); a camp mob faces out from the camp centre (DEC-220 (2), answered 2026-11-06).
+    Built on `feat/unit-facing-chevron`: the spawn's `Placement.facing`, from
+    `MatchWorld.startFacing` and the guard roster; `INITIAL_FACING` stays as the fallback for a
+    unit given none. (2) Keep the
+    disc and ring as built (DEC-216 (10)). (3) Approved; built in the tidy PR after the playtest
+    PRs merge (DEC-218 B5).
+
+- [x] **Unit facing chevron, DEC-220 critic (2026-11-07, `feat/unit-facing-chevron`) — one
+      question, three better-than-design items.**
+      (1) Fort court: a fort's outline is its walls and its keep, so its court is outside every
+      outline. A unit in the court that attacks the tower faces the nearest wall, which can be
+      behind it. DEC-220 (1) fixes this for a unit inside a building's outline (the palace). Does
+      the court count as "inside the building"? Options: (A) no, keep as built (the ruling's
+      words); (B) yes, a unit in the court faces the tower's centre.
+      Better than the design (critic, not built): (2) `EntityStore.isInReach` and
+      `facingPointOf` run the same "attacker inside the outline" test; one private helper would
+      hold it. (3) `EntityStore` keeps gaining target-geometry queries (`outlineOf`, `aimPointOf`,
+      `isInReach`, `facingPointOf`); a separate target-geometry query object would leave the store
+      a store. (4) `SpawnContextReader` checks the spawn facing with `isFiniteVector`; the position
+      could use the same check, and its last cast goes. The critic's fourth item (a guard's rest
+      facing as data, so `PathingSystem` writes no facing) joins the DEC-220 (4) tidy-PR item.
+      Approve each for the tidy PR (DEC-218), or say no.
+  - **Answered 2026-11-09 by DEC-226** (decision page 2): (1) (A), keep as built: the court is
+    not inside the building; (2) to (4) approved for the tidy PR (DEC-218).
+  - **(2) done by DEC-234** (#85, 2026-11-09): the inside test runs once, in `aimPointOf`, which
+    returns an `AimedAt` tag; `isInReach` and `facingPointOf` read it. The tidy PR builds no
+    helper for it.
+
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on
       every map feature, so `map/strongholdRing.ts` checks at run time that a Stronghold has it

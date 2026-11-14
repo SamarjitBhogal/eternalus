@@ -16,13 +16,14 @@ import type { Controller, Decision, DecisionInput } from './Controller.types';
  * 2. `Fight`: an enemy inside `engageRadius` → the `UtilityScorer` picks one by closeness and
  *    weakness; it attacks it (casting when the roll allows) and closes in until it is in reach.
  * 3. `Push`: once it has come up to its lane's next enemy structure (a gate only when it can be
- *    broken), it attacks it: to the point hordes gather at, then in reach of it. Before that it
- *    walks with the most advanced allied horde on its lane, at that horde's anchor.
+ *    broken), it attacks it: to the edge of its footprint on the bot's side, then in reach of it.
+ *    Before that it walks with the most advanced allied horde on its lane, at that horde's anchor.
  * 4. `Regroup`: with no allied horde on its lane, it returns to the nearest point of its lane.
  *
  * Every step is a `move`, `attack-target`, `cast-ability` or `stop` command for the next tick,
- * routed around obstacles by A\*. Stateless: its lane, retreat flag, target and cast timer live in
- * the brain it returns, and its rolls advance the brain's own RNG stream.
+ * routed around obstacles by A\*; a bot already standing sends no new halt. Stateless: its lane,
+ * retreat flag, target, cast timer and halt live in the brain it returns, and its rolls advance
+ * the brain's own RNG stream.
  *
  * @remarks ponytail: casts go nowhere until abilities land (Phase 4); nothing heals a retreated
  * bot yet, so it rejoins only once something restores its health.

@@ -47,9 +47,15 @@ export class DevSpawnHandler implements CommandHandler<'dev-spawn'> {
     ) {
       return 'cap-exceeded';
     }
+    // A unit faces the enemy Stronghold until it first moves or attacks (DEC-216 (6)).
+    const facing = state.world?.startFacing(team, at);
     // TODO(sholtzman): hand spawns to SpawnSystem (03 §8 deferral) once it exists.
     for (let spawned = 0; spawned < count; spawned += 1) {
-      const entity = factory.create(kind, definitionId, { team, position: at });
+      const entity = factory.create(kind, definitionId, {
+        team,
+        position: at,
+        ...(facing !== undefined && { facing }),
+      });
       state.entities.add(entity);
       state.events.emit('entity-spawned', { entityId: entity.id, kind, team });
     }

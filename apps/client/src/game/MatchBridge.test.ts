@@ -20,7 +20,7 @@ const PLAYER: EntitySnapshot = {
   family: 'legend',
   definitionId: 'magus',
   team: 'light',
-  transform: { x: 1, y: 2, radius: 0.5 },
+  transform: { x: 1, y: 2, radius: 0.5, facing: { x: 1, y: 0 } },
   health: { current: 600, max: 600 },
   progression: { level: 3, xp: 40, xpToNext: 114 },
   aether: { current: 95, max: 160 },
@@ -191,7 +191,7 @@ describe('MatchBridge', () => {
       family: 'zone',
       definitionId: 'capture-point',
       team: 'neutral',
-      transform: { ...first.position, radius: 0 },
+      transform: { ...first.position, radius: 0, facing: { x: 1, y: 0 } },
       health: null,
       area: [],
       capture: {

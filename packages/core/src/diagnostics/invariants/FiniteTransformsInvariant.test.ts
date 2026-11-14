@@ -77,4 +77,21 @@ describe('FiniteTransformsInvariant', () => {
       'Entity "entity-1" has a velocity above top speed (2.3, 0).',
     ]);
   });
+
+  it('flags a facing that is not a unit vector, and allows float rounding (injected)', () => {
+    const { state, runner } = setUp();
+    const facing = runner.getComponent(Transform).facing;
+
+    Reflect.set(facing, 'x', 1 + 1e-12);
+    expect(new FiniteTransformsInvariant().check(state)).toEqual([]);
+
+    Reflect.set(facing, 'x', 0);
+    Reflect.set(facing, 'y', 0);
+    expect(new FiniteTransformsInvariant().check(state).map((v) => v.message)).toEqual([
+      'Entity "entity-1" has a facing that is not a unit vector (0, 0).',
+    ]);
+
+    Reflect.set(facing, 'x', Number.NaN);
+    expect(new FiniteTransformsInvariant().check(state)).toHaveLength(1);
+  });
 });

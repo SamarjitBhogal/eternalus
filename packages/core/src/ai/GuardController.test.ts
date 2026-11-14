@@ -13,6 +13,7 @@ import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import type { AiMemory } from '../state/AiState.types';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { GameState } from '../state/GameState';
+import type { Team } from '../teams/teams.types';
 import { GuardController } from './GuardController';
 import { Perception } from './perception/Perception';
 
@@ -33,7 +34,7 @@ const setUp = () => {
   );
   const perception = new Perception(state);
   const add = (
-    team: 'light' | 'dark',
+    team: Team,
     x: number,
     definitionId = 'light-minion',
     kind = 'light-mob',
@@ -123,7 +124,8 @@ describe('GuardController', () => {
         fsm: 'holding',
         targetId: null,
         breakAtTick: 0,
-        cooldownUntilTick: state.tick + TOWER_GUARD_AGGRO.aggroCooldownTicks,
+        cooldownUntilTick:
+          state.tick + TOWER_GUARD_AGGRO.aggroCooldownSeconds * state.config.tickRate,
         escapedId: enemy,
       },
     });
@@ -217,6 +219,16 @@ describe('GuardController', () => {
     expect(decide().commands).toEqual([]);
   });
 
+  it('fights back against a neutral camp mob that attacks it, and leaves alone one that does not (DEC-166)', () => {
+    const { state, guard, add, decide } = setUp();
+    const camp = add('neutral', 64, 'light-camp-mob'); // inside its circle
+
+    expect(decide().commands).toEqual([]);
+
+    state.entities.setAttackTarget(camp, guard);
+    expect(decide().commands).toEqual([{ type: 'attack-target', actorId: guard, targetId: camp }]);
+  });
+
   it('does nothing for an entity on no post, and knows its profiles', () => {
     const { state, add } = setUp();
     const stray = add('light', 30);
@@ -234,7 +246,10 @@ describe('GuardController', () => {
 
     expect(decision.commands).toEqual([]);
     expect(controller.hasProfile('tower-guard')).toBe(true);
+    expect(controller.hasProfile('camp-mob')).toBe(true);
     expect(controller.hasProfile('nope')).toBe(false);
+    // Only its own profiles (AI56-F9): a guard naming a minion's fails validation.
+    expect(controller.hasProfile('lane-minion')).toBe(false);
   });
 
   it('throws on an aggro profile that does not exist', () => {

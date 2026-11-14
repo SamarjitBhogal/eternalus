@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-04
+last-reviewed: 2026-11-11
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -201,7 +201,7 @@ Overlap tests are therefore not enough:
 
 ## 8. `CollisionResolver` ordering and iteration count
 
-`CollisionSystem` runs after `PathingSystem` and calls the resolver once per tick:
+`CollisionSystem` runs before `PathingSystem` (§9) and calls the resolver once per tick:
 
 1. **Swept vs unbreakable statics** for every mover flagged in §7 (walls, closed gates, bounds,
    unbreakable obstacles). Positions are corrected to the time of impact first so nothing below
@@ -225,7 +225,8 @@ Breakability changes at runtime through `StructureSystem` (`07` §3), never in p
 
 ## 9. Steering and pathing interplay
 
-Order in `SystemPipeline`: `MovementSystem` → `PathingSystem` → `CollisionSystem`.
+Order in `SystemPipeline`: `MovementSystem` → `CollisionSystem` → `SpaceSystem` → `StuckSystem` →
+`PathingSystem` (DEC-121 (c): every later reader sees resolved positions).
 
 - `PathingSystem` computes **next tick's** `desiredVelocity` from the positions just integrated:
   flow-field follow (bilinear interpolation of the four surrounding field vectors × `maxSpeed`),
@@ -233,7 +234,10 @@ Order in `SystemPipeline`: `MovementSystem` → `PathingSystem` → `CollisionSy
   the goal, combined by priority (wall avoidance, then separation, then a horde member's
   formation slot ([18](18-minion-system.md) §5), then flow) and truncated to
   `maxSpeed`. Legends (bots and click-to-move) use A* with an octile heuristic and string pulling
-  on the same `WorldMap` grid; camp guards use seek/arrival inside their leash.
+  on the same `WorldMap` grid; camp guards use seek/arrival inside their leash. A mob or bot
+  Legend whose chase of its target is stuck follows A\* waypoints on that grid round the
+  obstacle; `StuckSystem` finds it stuck and plans the waypoints ([18](18-minion-system.md) §5.2,
+  DEC-193).
 - The one-tick latency between deciding and integrating is deliberate: it removes any ordering
   dependency between steering and integration (both read last tick's state), matches the "commands
   apply next tick" rule, and is invisible at 30 ticks/s.
@@ -253,6 +257,8 @@ Order in `SystemPipeline`: `MovementSystem` → `PathingSystem` → `CollisionSy
   `packages/core`).
 - Steering and aiming work with vectors, never angles: facing is a unit vector, rotation is a
   2 × 2 multiply, "turn toward" is a normalised lerp. `atan2` is for display only (client side).
+  Facing turns at once in core (DEC-192: facing is the movement direction; `Transform.face`,
+  `Transform.lookAt`); the client draws a normalised lerp between ticks ([08](08-game-engine.md) §8).
 - Fixed iteration order everywhere: entities in store (creation) order (DEC-20), hash query results
   sorted by id, pairs `(a < b)`, comparators that tie-break by id, no `Map` iteration in hot paths.
 - No `Math.random` in physics; the only randomness (jitter for coincident

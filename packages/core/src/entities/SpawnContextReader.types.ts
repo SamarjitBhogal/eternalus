@@ -21,4 +21,6 @@ export type PlacedSpawnContext<Definition extends DefinitionRef> =
     readonly team: Team;
     /** The spawn's own controller, when it gives one (`Placement.controller`). */
     readonly controller?: ControllerSpawn;
+    /** The spawn's start facing, when it gives one (`Placement.facing`). */
+    readonly facing?: Vec2;
   };
