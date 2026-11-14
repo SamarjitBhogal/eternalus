@@ -17,7 +17,9 @@ const BLADE_RUNNER: KitRow = {
 };
 
 const render = (row: KitRow): string =>
-  renderWithStore(<InfoPanelKit row={row} />, { settings: settingsWith(HUD_BINDINGS) });
+  renderWithStore(<InfoPanelKit row={row} hasDescription />, {
+    settings: settingsWith(HUD_BINDINGS),
+  });
 
 describe('InfoPanelKit', () => {
   it('shows the key, the aether cost, the cooldown and the description', () => {
@@ -32,10 +34,22 @@ describe('InfoPanelKit', () => {
     expect(html).toContain('data-available="true"');
   });
 
-  it('shows the key the ability is bound to now', () => {
-    const html = renderWithStore(<InfoPanelKit row={{ ...BLADE_RUNNER, slot: 'ability-4' }} />, {
+  it('leaves the description out where the layout has no room for it (the Legend panel)', () => {
+    const html = renderWithStore(<InfoPanelKit row={BLADE_RUNNER} hasDescription={false} />, {
       settings: settingsWith(HUD_BINDINGS),
     });
+
+    expect(html).toContain('<span>35 aether</span>');
+    expect(html).not.toContain('Dash forward at incredible speed.');
+  });
+
+  it('shows the key the ability is bound to now', () => {
+    const html = renderWithStore(
+      <InfoPanelKit row={{ ...BLADE_RUNNER, slot: 'ability-4' }} hasDescription />,
+      {
+        settings: settingsWith(HUD_BINDINGS),
+      },
+    );
 
     expect(html).toContain('>4</kbd>');
   });

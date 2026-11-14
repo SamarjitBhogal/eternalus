@@ -20,11 +20,18 @@ function facts(row: KitRow): readonly string[] {
 
 /**
  * The text of one kit ability under its name (DEC-199): the key it is bound to, its cost and its
- * cooldown on one line, then its description. A charge-based ultimate shows the meter instead of an
+ * cooldown on one line, then its description where the layout has room for it (`hasDescription`:
+ * View Details; the Legend panel's rows are too short). A charge-based ultimate shows the meter instead of an
  * aether cost; an ability that is not built yet shows "Not yet available" and the dimmed look. The
  * enclosing row places it (`--meta-dy`, `--text-dy`, `--text-x`, `--text-w`).
  */
-export function InfoPanelKit({ row }: { readonly row: KitRow }): ReactElement {
+export function InfoPanelKit({
+  row,
+  hasDescription,
+}: {
+  readonly row: KitRow;
+  readonly hasDescription: boolean;
+}): ReactElement {
   return (
     <>
       <p className={styles.meta} data-available={row.isAvailable}>
@@ -33,9 +40,11 @@ export function InfoPanelKit({ row }: { readonly row: KitRow }): ReactElement {
           <span key={fact}>{fact}</span>
         ))}
       </p>
-      <p className={styles.description} data-available={row.isAvailable}>
-        {row.description}
-      </p>
+      {hasDescription && (
+        <p className={styles.description} data-available={row.isAvailable}>
+          {row.description}
+        </p>
+      )}
     </>
   );
 }

@@ -102,13 +102,14 @@ describe('LegendDetailsPanel', () => {
       });
 
     it.each(['panel', 'view-details'] as const)(
-      'shows each ability’s name, description, cost and cooldown on the %s',
+      'shows each ability’s name, cost and cooldown on the %s, and its description only in View Details',
       (view) => {
         const html = render(view);
 
         for (const name of ['Death Ray', 'Shockwave', 'Sanctuary', 'Imbue']) {
           expect(html).toContain(`>${name}</span>`);
-          expect(html).toContain(`${name} description.`);
+          // The Legend panel's 60 px rows have no room for the description.
+          expect(html.includes(`${name} description.`)).toBe(view === 'view-details');
         }
         expect(html).toContain('<span>50 aether</span>');
         expect(html).toContain('<span>14 s cooldown</span>');
@@ -124,7 +125,8 @@ describe('LegendDetailsPanel', () => {
 
         // Death Ray (ultimate) and Sanctuary are not available; their costs are not shown.
         expect(html.match(/<span>Not yet available<\/span>/g)).toHaveLength(2);
-        expect(html.match(/data-available="false"/g)).toHaveLength(4);
+        // The cost line of each, and in View Details its description too.
+        expect(html.match(/data-available="false"/g)).toHaveLength(view === 'panel' ? 2 : 4);
         expect(html).not.toContain('Charge meter');
       },
     );

@@ -191,9 +191,8 @@
 }
 
 /* 58:271 with DEC-65's four rows, "Ultimate / Abilities": the Ultimate on top in the larger row
-   (56:63's row band, 296–414; name at 56:63's (243, 467)), then abilities 1 to 3 in three 108 px
-   bands below divider-0 (443, 551, 659: room for each kit ability's text), clear of the rating bars
-   at 766. Each icon box is its
+   (56:63's row band, 296–414; name at 56:63's (243, 467)), then abilities 1 to 3 in three 60 px
+   bands below divider-0 (427, 495, 563), clear of the rating bars at 766. Each icon box is its
    detail-legend rendition's own size (I-45): the Ultimate the severed accord's 51 × 56 centred
    where 56:62 was, the abilities the unison ward's 72 × 56. Recommendation: the four-row geometry
    (the owner's "adjust sizing", DEC-65; no frame draws it). */
@@ -208,29 +207,29 @@
 
 .details[data-layout='legend'] [data-row='1'] {
   --icon-x: 80px;
-  --icon-y: 445px;
+  --icon-y: 429px;
   --icon-w: 72px;
   --icon-h: 56px;
   --name-x: 192px;
-  --name-y: 457px;
+  --name-y: 441px;
 }
 
 .details[data-layout='legend'] [data-row='2'] {
   --icon-x: 80px;
-  --icon-y: 553px;
+  --icon-y: 497px;
   --icon-w: 72px;
   --icon-h: 56px;
   --name-x: 192px;
-  --name-y: 565px;
+  --name-y: 509px;
 }
 
 .details[data-layout='legend'] [data-row='3'] {
   --icon-x: 80px;
-  --icon-y: 661px;
+  --icon-y: 565px;
   --icon-w: 72px;
   --icon-h: 56px;
   --name-x: 192px;
-  --name-y: 673px;
+  --name-y: 577px;
 }
 
 /* View Details (145:2, DEC-103), in the panel's px from (116, 254): the right column's rows at
@@ -325,16 +324,11 @@
   --name-y: 531px;
 }
 
-/* A kit ability's text (InfoPanelKit): the key, cost and cooldown under the name, the description
-   under both. Recommendation: no frame draws it; sizes follow the 16 px body copy (reference 15). */
+/* A kit ability's text (InfoPanelKit). The Legend panel's 60 px bands hold the key, cost and
+   cooldown under the name; View Details also has room for the description under both.
+   Recommendation: no frame draws it; sizes follow the 16 px body copy (reference 15). */
 .details[data-layout='legend'] {
-  --meta-dy: 30px;
-  --text-dy: 50px;
-  --text-w: 330px;
-}
-
-.details[data-layout='legend'] [data-row] {
-  --text-x: var(--icon-x);
+  --meta-dy: 26px;
 }
 
 .details[data-layout='legend-details'] {
