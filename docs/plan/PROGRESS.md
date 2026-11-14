@@ -6658,3 +6658,39 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: full `npm run check` exit 0
   (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-85-10.log`).
 - Next step: push; merge the new head into #86 and #79.
+
+### 2026-11-13 — Phase 3 / PR #98 split: the geometry helpers — refactor/fort-geometry-helpers — sholtzman + Claude Code
+
+- What was done: split from PR #98 by DEC-242; PR base is `fix/minion-stack-followups` (#85).
+  `map/fortInWorld.ts` (`fortInWorld`, byte-identical to #98 without its nav-cell check) now
+  serves `map/zoneArea.ts`; `utils/geometry.isPointInRect` serves `PathingSystem.isInsideFort`
+  and `doesPolygonOverlapRect`; new `doRectsOverlap` (critic BTD4) serves `MapSceneryBuilder` and
+  `StaticCollisionIndex.query`. No rule changes; the capture-zone court is bit-identical at the
+  default world size and within one unit in the last place of a float at other sizes (critic
+  finding 1). DEC-244. INBOX H1 notes the part built.
+- Red-first: one deliberate break per helper turned its tests red, then restored green
+  (`eternalus-agent-work/tower-ruins-and-routes/fort-geometry-helpers/red-first.md`).
+- Checks run: full `npm run check` on the tree before the critic's fixes (log
+  `eternalus-agent-work/tower-ruins-and-routes/fort-geometry-helpers/check-3.log`): EXIT=0, core
+  "Tests 1388 passed (1388)", client "Tests 1818 passed (1818)", "Documentation check passed.".
+  Two earlier runs (`check-1.log`, `check-2.log`) failed on test timeouts only, while several
+  worktrees ran checks at once. The run after the fixes and the merge of #85 is in the next entry.
+- Next step: PR into #85; `assertFortWallsResolve` and `assertLaneFortsApart` stay on #98.
+
+### 2026-11-13 — Phase 3 / geometry helpers: pre-PR gate and merge of #85 — refactor/fort-geometry-helpers — sholtzman + Claude Code
+
+- What was done: the pre-PR gate (ADR 0010). Critic (architecture-reviewer) on the tree over
+  `c09507f6`: approve, 0 blockers. Fixed before the commits `d21feb88` and `314f80eb`:
+  `PathingSystem.isInsideFort` passes its point on and builds no object per fort; the DEC-244
+  row and the entry above say what is bit-identical and what is within one unit in the last
+  place; the decisions log's `last-reviewed`. Its two better-than-design items (the ring boxes
+  in `MapSceneryBuilder`; one `fortWall(side)`) are one INBOX item for the tidy PR (DEC-218), not
+  built. Ponytail: nothing to cut
+  (`eternalus-agent-work/tower-ruins-and-routes/fort-geometry-helpers/ponytail-review-r1.md`).
+  Then this branch merged #85's `2e8df5bc` (phase/3 `76d1007d` with #97 and #81); one conflict,
+  in this file, both sides kept.
+- Checks run: full `npm run check` with the fixes and the merge in place, before this entry (log
+  `eternalus-agent-work/tower-ruins-and-routes/fort-geometry-helpers/check-4.log`): EXIT=0, core
+  "Tests 1419 passed (1419)", protocol "Tests 18 passed (18)", client "Tests 1883 passed
+  (1883)", server "Tests 79 passed (79)", "Documentation check passed.".
+- Next step: push; PR against `fix/minion-stack-followups` (#85, head `2e8df5bc`).

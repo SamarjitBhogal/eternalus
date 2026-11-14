@@ -16,6 +16,13 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **`refactor/fort-geometry-helpers` critic (2026-11-13), better than the design — two items
+      for the tidy PR (DEC-218), sign-off per item.** Not built: the branch is a split from
+      PR #98 and stays small. (F1) `MapSceneryBuilder` still grows each ring feature's box by
+      hand, with 5 and 10 as literals; use `boundsOf`, a `growRect(rect, pad)` helper and a
+      constant in `MapSceneryBuilder.constants.ts`. (F2) "wall = side / `wallDivisor`" is in
+      `MapFortificationBuilder` (sketch units) and in `fortInWorld` (world units); one
+      `fortWall(side)` serves both.
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on
       every map feature, so `map/strongholdRing.ts` checks at run time that a Stronghold has it
@@ -98,6 +105,10 @@ Reply inline (`Decision: …`).
       `partOf` (stays as ruins); (T2) `WorldObjectStore.spawn` gets only the definition id: pass
       what it needs explicitly. Heal (DEC-215): (H1) one point-in-box helper instead of three
       copies (`PathingSystem.isInsideFort`, `geometry.doesPolygonOverlapRect`, `HealingZones`).
+      (H1 is built in part on `refactor/fort-geometry-helpers` (DEC-244, split from PR #98):
+      `utils/geometry.isPointInRect` replaces `PathingSystem.isInsideFort`'s test and the copy in
+      `doesPolygonOverlapRect`. `HealingZones` is only on `feat/out-of-combat-heal`, not merged:
+      it uses `isPointInRect` once both branches meet.)
       Full findings: `eternalus-agent-work/minion-stack-audit/reports/runner-reports/critic-followups-r2.md`,
       `eternalus-agent-work/playtest-2026-11-04/critic-chevron-r3.md` and
       `eternalus-agent-work/playtest-2026-11-04/session-2383bba1-reports.md`. Approve all,

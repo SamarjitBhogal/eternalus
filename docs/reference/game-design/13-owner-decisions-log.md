@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-10
+last-reviewed: 2026-11-13
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,17 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-13 (PR #98 split: the geometry helpers)
+
+A teammate's review of PR #98 asked for a smaller scope. The owner answered "Split it" (DEC-242,
+on #98) and, on the critic's better-than-design item BTD4, "A: follow-up branch now" (2026-11-13;
+kept in `eternalus-agent-work/tower-ruins-and-routes/OWNER-ANSWERS-2026-11-13.md`). DEC-244 is
+this batch.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DEC-244 | **The critic's BTD4 is built: one `doRectsOverlap` in `utils/geometry`, with the fort-world and point-in-rect helpers split out of PR #98** (by the owner's ruling DEC-242 on #98; source rows DEC-235 (B5) and DEC-239 (D4) are on #98). `map/fortInWorld.ts` (`fortInWorld`), `utils/geometry` `isPointInRect` and `doRectsOverlap` change no rule. The capture-zone court is bit-identical at the default world size and within one unit in the last place of a float at other sizes. |
 
 ## Batch 2026-11-09 (PR #85 review: a chaser inside an outline holds)
 
