@@ -180,6 +180,20 @@ Reply inline (`Decision: …`).
       beside the new kit names); (g) the aether cost on the HUD bar (the snapshot carries it); (h)
       a check in the browser of the Legend panels, whose ability bands changed size.
 
+- [x] **BUG-2: interior wall health (2026-11-12, PR #96, SCRUM-435).** Every `'wall'` map object
+      uses the WallSegment value from balancing.md (`content/maps/mapObjectDefinitions.ts`): the
+      Stronghold's wall ring and the `'wall'` features inside it alike. The playtest called the
+      inner walls "interior walls" and reported "player attack is weak" because they take long to
+      break. No spec gives the inner walls their own value. Should the `'wall'` features inside the
+      Stronghold ring keep the WallSegment value, or get their own (which number)?
+  - **Answered 2026-11-13 by DEC-247** (chat, PR #96). Not built yet (BUG-2).
+
+- [x] **BUG-3: minions attack obstacles (2026-11-12, PR #96, SCRUM-436).** Today a stuck unit
+      paths around an obstacle (DEC-193); minions never attack obstacles or props. The playtest
+      asked for minions to attack them. Keep DEC-193, or should minions attack obstacles (and
+      which ones: props only, or blocking obstacles too)?
+  - **Answered 2026-11-13 by DEC-248** (chat, PR #96). Not built yet (BUG-3).
+
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on
       every map feature, so `map/strongholdRing.ts` checks at run time that a Stronghold has it
