@@ -5,6 +5,7 @@ import {
   SKETCH_HEIGHT,
   SKETCH_WIDTH,
 } from '../content/maps/map1Scenery';
+import { boundsOf, doRectsOverlap } from '../utils/geometry';
 import { strongholdRing } from './strongholdRing';
 import { BUILDING_GEOMETRY as G } from '../content/maps/buildingGeometry';
 import { CAMP_KINDS, FORTIFIED_KINDS } from './MapSceneryBuilder.constants';
@@ -81,19 +82,8 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
         };
       });
     const underRing = scenery.map((piece) => {
-      const xs = piece.shape.map((p) => p.x);
-      const ys = piece.shape.map((p) => p.y);
-      const left = Math.min(...xs);
-      const right = Math.max(...xs);
-      const top = Math.min(...ys);
-      const bottom = Math.max(...ys);
-      const overlaps = ring.some(
-        (bounds) =>
-          left <= bounds.x + bounds.width &&
-          right >= bounds.x &&
-          top <= bounds.y + bounds.height &&
-          bottom >= bounds.y,
-      );
+      const pieceBounds = boundsOf(piece.shape);
+      const overlaps = ring.some((bounds) => doRectsOverlap(pieceBounds, bounds));
       return overlaps ? { ...piece, layer: 'ground' as const } : piece;
     });
     return [
