@@ -6892,3 +6892,33 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   uncommitted): EXIT=0, core "Tests 1486 passed (1486)", protocol "Tests 18 passed (18)", client
   "Tests 1883 passed (1883)", server "Tests 79 passed (79)", "Documentation check passed.".
 - Next step: critic r2 on the changed lines, then the PR after #98.
+
+### 2026-11-14 — Phase 3 / tower-ruins follow-ups: critic round 2 — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: critic round 2 (architecture-reviewer) on `22dfd48d..48c5d74f`: request changes,
+  2 blockers. (1) A kind with no tower used its configured band, so 108 probed configs that
+  generate on `f3f649db` were refused (for example the default world, 3 lanes, 0 SpawnerTowers
+  and 8 BuffTowers). Now a kind with no tower has no band, and `brokenLaneBandRules` skips a rule
+  about a missing band (`LaneBands` in `map/laneBandRules.ts`). (2) The DEC-245 row and a test
+  comment said the neighbouring-lane fort test had to move; with the rule on tower positions its
+  old config gives the old error again. The test is restored exactly as on `f3f649db`. Also: the
+  row's title says "placed towers", not "widened bands"; `laneTowerSpecs` computes the two
+  position lists first (no dead fallback). Rejected nit: the message names `laneBands.*`; one
+  rule set has one message, and the text before it says the placed towers broke it. The
+  correction line above (2026-11-14, under the first entry of this branch) said the
+  neighbouring-lane test moved: it did not, in the end.
+- Red-first: "generates a lane with no SpawnerTower" and "applies the order rule only when both
+  bands are given" failed (2 failed, 77 passed) on `48c5d74f`'s code
+  (`eternalus-agent-work/tower-ruins-and-routes/tower-ruins-followups/red-first.md`, section 5).
+- Probe: the critic's two scripts (copied to
+  `eternalus-agent-work/tower-ruins-and-routes/tower-ruins-followups/probe/`), base `f3f649db`
+  against this tree. Counts 0 to 16 with one kind at 0: 1584 configs, 654 accepted at both, 0
+  changed either way, 0 hash differences. Counts 1 to 6 by 1 to 16: 4800 configs, 1156 accepted
+  at both, 0 changed either way, 0 hash differences.
+- Checks run: full `npm run check` on this tree, before the commit (log
+  `eternalus-agent-work/tower-ruins-and-routes/tower-ruins-followups/check-3.log`): EXIT=0, core
+  "Tests 1488 passed (1488)", protocol "Tests 18 passed (18)", client "Tests 1883 passed
+  (1883)", server "Tests 79 passed (79)", "Documentation check passed.". This line was added
+  after the run; prettier and `docs:check` pass on it.
+- Next step: critic round 3 (the last) on this delta; then push and a PR on
+  `feat/tower-ruins-and-routes`.

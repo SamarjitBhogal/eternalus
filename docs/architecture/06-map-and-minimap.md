@@ -134,7 +134,8 @@ flowchart LR
    refuses, naming the lane, the tower counts and the world size, a config whose placed towers
    break a lane band rule, checked on the ground each kind occupies (first to last tower): a
    tower off the lane, or the first SpawnerTower not ahead of the last BuffTower. A band that
-   widens without a tower passing the other kind's is accepted. That rule set
+   widens without a tower passing the other kind's is accepted, and a lane with no tower of a
+   kind has no order to break. That rule set
    (`map/laneBandRules.ts`) is the one `validateMapLayout` applies to the configured bands.
 4. **raiseWalls**: one `gate` centred on each lane's exit; `wall-segment`s fill the rest of the
    ring, split so that none spans more than a maximum arc; a `turret` sits on every ring corner.

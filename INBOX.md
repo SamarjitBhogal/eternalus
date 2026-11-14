@@ -183,7 +183,7 @@ Reply inline (`Decision: …`).
       follow-up branch builds all four. Decision: …
   - **Answered 2026-11-14** (question dialog, 2026-11-13 answer 3: "A: follow-up branch now"):
     BTD3 and BTD5 built on `refactor/tower-ruins-followups` (**DEC-245**), with the layout band
-    rules on the widened bands ("Build now"). BTD1 = DEC-243 on `refactor/astar-search-area`;
+    rules on the placed towers ("Build now"). BTD1 = DEC-243 on `refactor/astar-search-area`;
     BTD4 = DEC-244 on `refactor/fort-geometry-helpers`.
 
 - [x] **Minion M4 done-when, read for objectives (2026-11-02, `chore/minion-full-march-test`) — sign-off.**
