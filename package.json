@@ -28,6 +28,7 @@
     "knip": "knip",
     "docs:check": "node scripts/docs/check-docs.mjs",
     "docs:index": "node scripts/docs/check-docs.mjs --write",
+    "duel:bots": "npm run bots -w @eternalus/server --",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
