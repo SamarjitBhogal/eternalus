@@ -1,5 +1,6 @@
 import type { MapDefinition } from '../content/maps/maps.types';
 import type { WorldMap } from '../map/WorldMap';
+import { isPlayableTeam, opponentOf } from '../teams/playableTeams';
 import type { Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
 import { LaneRoutes } from './LaneRoutes';
@@ -33,12 +34,14 @@ export class MatchWorld {
 
   /**
    * The direction a unit of `team` placed at `position` faces until it first moves or attacks
-   * (DEC-216 (6)): toward the enemy Stronghold, of any length (`Placement.facing`). `undefined`
-   * for a neutral unit or a map without that Stronghold; a guard is faced by its post instead.
+   * (DEC-216 (6)): toward the enemy Stronghold, of any length. It comes as the `facing` part of a
+   * `Placement`, for a spawn site to spread into the placement it builds; the part is empty for a
+   * neutral unit or a map without that Stronghold. A guard is faced by its post instead.
    */
-  public startFacing(team: Team, position: Vec2): Vec2 | undefined {
-    const target =
-      team === 'neutral' ? undefined : this.strongholds.get(team === 'light' ? 'dark' : 'light');
-    return target && { x: target.x - position.x, y: target.y - position.y };
+  public startFacing(team: Team, position: Vec2): { readonly facing?: Vec2 } {
+    const target = isPlayableTeam(team) ? this.strongholds.get(opponentOf(team)) : undefined;
+    return target === undefined
+      ? {}
+      : { facing: { x: target.x - position.x, y: target.y - position.y } };
   }
 }

@@ -21,9 +21,9 @@ describe('MatchWorld', () => {
     const world = new MatchWorld(TWO_LANE_MAP, grid);
 
     // The Strongholds stand at (10, 30), light, and (190, 30), dark.
-    expect(world.startFacing('light', { x: 60, y: 20 })).toEqual({ x: 130, y: 10 });
-    expect(world.startFacing('dark', { x: 140, y: 20 })).toEqual({ x: -130, y: 10 });
-    expect(world.startFacing('neutral', { x: 100, y: 30 })).toBeUndefined();
+    expect(world.startFacing('light', { x: 60, y: 20 })).toEqual({ facing: { x: 130, y: 10 } });
+    expect(world.startFacing('dark', { x: 140, y: 20 })).toEqual({ facing: { x: -130, y: 10 } });
+    expect(world.startFacing('neutral', { x: 100, y: 30 })).toEqual({});
   });
 
   it('gives no start facing on a map without the enemy Stronghold', () => {
@@ -36,7 +36,7 @@ describe('MatchWorld', () => {
       WorldMap.fromDefinition(map, 2, () => false),
     );
 
-    expect(world.startFacing('light', { x: 60, y: 20 })).toBeUndefined();
-    expect(world.startFacing('dark', { x: 140, y: 20 })).toEqual({ x: -130, y: 10 });
+    expect(world.startFacing('light', { x: 60, y: 20 })).toEqual({});
+    expect(world.startFacing('dark', { x: 140, y: 20 })).toEqual({ facing: { x: -130, y: 10 } });
   });
 });

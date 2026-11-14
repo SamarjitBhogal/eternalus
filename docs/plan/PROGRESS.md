@@ -6949,3 +6949,19 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: full `npm run check` exit 0
   (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-79-merge-9.log`).
 - Next step: push; merge after #85.
+
+### 2026-11-14 — Phase 3 / unit facing chevron: the two review nits on start facing — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: the owner asked for both optional nits of SamarjitBhogal's approval (review of
+  2026-11-14). (1) `MatchWorld.startFacing` now returns the `facing` part of a `Placement`
+  (empty when there is none), so the three spawn sites (`Simulation.spawnSlot`, `SpawnSystem`,
+  `DevSpawnHandler`) spread it and the repeated `...(facing !== undefined && { facing })` is
+  gone. Not moved into `EntityFactory`: the factory builds structures and guards too and does
+  not know the match world, so a default there would reach spawns that must not get this
+  facing. (2) The enemy team comes from `opponentOf` and `isPlayableTeam`
+  (`teams/playableTeams`, DEC-171 (C1)) instead of a second `'light'`/`'dark'` test. No behaviour
+  change. The existing tests cover all three sites: with the result inverted on purpose, 7 tests
+  failed (`MatchWorld`, `SpawnSystem`, `DevSpawnHandler`, `Simulation.bots`, `Simulation.human`).
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-79-merge-10.log`).
+- Next step: push; merge after #85.

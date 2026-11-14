@@ -578,7 +578,6 @@ export class Simulation {
     memory: AiMemory,
   ): void {
     const { kind } = factory.definitions.get(slot.definitionId);
-    const facing = state.world?.startFacing(slot.team, position);
     const entity = factory.create(kind, slot.definitionId, {
       position,
       team: slot.team,
@@ -589,7 +588,7 @@ export class Simulation {
           memory,
         },
       }),
-      ...(facing !== undefined && { facing }),
+      ...state.world?.startFacing(slot.team, position),
     });
     state.entities.add(entity);
     state.events.emit('entity-spawned', {
