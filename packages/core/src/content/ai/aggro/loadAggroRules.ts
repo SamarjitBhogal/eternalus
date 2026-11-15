@@ -1,5 +1,5 @@
 import { TickRate } from '../../../utils/TickRate';
-import { assertValidSeconds } from '../../assertValidSeconds';
+import { assertNonNegativeFinite } from '../../assertNonNegativeFinite';
 import type { AggroProfileDefinition, AuthoredAggroProfile } from '../ai.types';
 import { AGGRO_RULES } from './aggroRules';
 
@@ -17,7 +17,7 @@ export const loadAggroRules = (
   tickRate: number,
   authored: Readonly<Record<string, AuthoredAggroProfile>> = AGGRO_RULES,
 ): Readonly<Record<string, AggroProfileDefinition>> => {
-  assertValidSeconds(
+  assertNonNegativeFinite(
     'aggro rules',
     Object.entries(authored).flatMap(([id, rule]) => [
       [`${id} leashGraceSeconds`, rule.leashGraceSeconds] as const,

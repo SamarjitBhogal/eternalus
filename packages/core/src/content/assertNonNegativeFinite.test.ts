@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { assertValidSeconds } from './assertValidSeconds';
+import { assertNonNegativeFinite } from './assertNonNegativeFinite';
 import { ContentValidationError } from './ContentValidationError';
 
-describe('assertValidSeconds', () => {
+describe('assertNonNegativeFinite', () => {
   it('accepts 0 and positive finite times', () => {
     expect(() => {
-      assertValidSeconds('things', [
+      assertNonNegativeFinite('things', [
         ['a', 0],
         ['b', 0.5],
         ['c', 120],
@@ -16,7 +16,7 @@ describe('assertValidSeconds', () => {
 
   it('names every time that is negative or not finite', () => {
     expect(() => {
-      assertValidSeconds('things', [
+      assertNonNegativeFinite('things', [
         ['a x', -1],
         ['b x', 3],
         ['c x', Number.NaN],
@@ -29,7 +29,7 @@ describe('assertValidSeconds', () => {
 
   it('prints the unit it is given, for a rate per second', () => {
     expect(() => {
-      assertValidSeconds('rates', [['a x', -0.5]], 'per s');
+      assertNonNegativeFinite('rates', [['a x', -0.5]], 'per s');
     }).toThrow(new ContentValidationError('Invalid rates: a x is -0.5 per s'));
   });
 });

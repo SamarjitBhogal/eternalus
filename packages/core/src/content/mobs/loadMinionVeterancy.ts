@@ -1,5 +1,5 @@
 import { TickRate } from '../../utils/TickRate';
-import { assertValidSeconds } from '../assertValidSeconds';
+import { assertNonNegativeFinite } from '../assertNonNegativeFinite';
 import { MINION_VETERANCY } from './minionVeterancy';
 import type { AuthoredMinionVeterancy, MinionVeterancyDefinition } from './mobs.types';
 
@@ -16,7 +16,7 @@ export const loadMinionVeterancy = (
   authored: AuthoredMinionVeterancy = MINION_VETERANCY,
 ): MinionVeterancyDefinition => {
   const { everySeconds, ...aura } = authored.aura;
-  assertValidSeconds('minion veterancy', [['aura everySeconds', everySeconds]]);
+  assertNonNegativeFinite('minion veterancy', [['aura everySeconds', everySeconds]]);
   return {
     ...authored,
     aura: { ...aura, everyTicks: new TickRate(tickRate).toTicks(everySeconds) },

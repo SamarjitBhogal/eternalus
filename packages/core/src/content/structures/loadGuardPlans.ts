@@ -1,5 +1,5 @@
 import { TickRate } from '../../utils/TickRate';
-import { assertValidSeconds } from '../assertValidSeconds';
+import { assertNonNegativeFinite } from '../assertNonNegativeFinite';
 import { GUARD_PLANS } from './guardPlans';
 import type { AuthoredGuardPlan, GuardPlanDefinition } from './structures.types';
 
@@ -16,7 +16,7 @@ export const loadGuardPlans = (
   tickRate: number,
   authored: Readonly<Record<string, AuthoredGuardPlan>> = GUARD_PLANS,
 ): Readonly<Record<string, GuardPlanDefinition>> => {
-  assertValidSeconds(
+  assertNonNegativeFinite(
     'guard plans',
     Object.entries(authored).map(([id, plan]) => [`${id} respawnSeconds`, plan.respawnSeconds]),
   );

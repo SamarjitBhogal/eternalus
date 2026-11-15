@@ -7137,3 +7137,21 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-9.log`); then
   `prettier --check` and `npm run docs:check` on this file.
 - Next step: critic re-check on this change, then open the PR (base phase/3).
+
+### 2026-11-14 — Phase 3 / content durations at load (DEC-241): critic round 2, unit-free check and `TickRate.perTick` — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: the critic re-read `55b3861e..3eb2b4f9`: no blockers, three nits, one
+  better-than-design item. Built: the check takes any unit, so `assertValidSeconds` is renamed
+  `assertNonNegativeFinite` (its parameters are `values` and `value`; the function and its six
+  callers are new on this branch); the rate formula is `TickRate.perTick`, next to the time
+  formulas, and `loadOutOfCombatHealing` uses it (the same division, so no value changes); the
+  DEC-241 row cites `loadDefaultContent` (speed and acceleration) as the precedent for rates per
+  tick. Kept: the healing loader checks its times and its rates in two calls, so a bad time hides
+  a bad rate in the message (the critic accepted this). Not changed: `loadDefaultContent` still
+  divides speed and acceleration by the tick rate itself (outside this branch's diff). Fail-first
+  break, restored after (`cmp`): `perTick` divides by one tick more (14 red). `INBOX.md` item
+  extended with (3).
+- Checks run: full `npm run check` exit 0 before this entry was added (core 255 files / 1482 tests, client 285 / 1883, server 20 / 79, protocol 1 / 18;
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-10.log`); then
+  `prettier --check` and `npm run docs:check` on this file.
+- Next step: critic round 3 on this change (last of three), then open the PR (base phase/3).

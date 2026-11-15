@@ -1,4 +1,7 @@
-/** Converts authored times to simulation ticks at one tick rate; the formulas every content loader uses. */
+/**
+ * Converts authored times to ticks and authored rates per second to per tick, at one tick rate; the
+ * formulas every content loader uses.
+ */
 export class TickRate {
   /** @param ticksPerSecond - `GameConfig.tickRate`. */
   public constructor(private readonly ticksPerSecond: number) {}
@@ -14,5 +17,10 @@ export class TickRate {
    */
   public roundToTicks(seconds: number): number {
     return Math.round(seconds * this.ticksPerSecond);
+  }
+
+  /** A rate per second (a fraction of max health per second, say) as a rate per tick. */
+  public perTick(perSecond: number): number {
+    return perSecond / this.ticksPerSecond;
   }
 }

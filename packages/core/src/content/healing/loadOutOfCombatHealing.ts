@@ -1,5 +1,5 @@
 import { TickRate } from '../../utils/TickRate';
-import { assertValidSeconds } from '../assertValidSeconds';
+import { assertNonNegativeFinite } from '../assertNonNegativeFinite';
 import { OUT_OF_COMBAT_HEALING } from './outOfCombatHealing';
 import type { AuthoredOutOfCombatHealing, OutOfCombatHealing } from './outOfCombatHealing.types';
 
@@ -19,11 +19,11 @@ export const loadOutOfCombatHealing = (
   const { delaySeconds, healthFractionPerSecond, structureQuietSeconds, structureBonuses } =
     authored;
   const bonuses = Object.entries(structureBonuses);
-  assertValidSeconds('out-of-combat healing', [
+  assertNonNegativeFinite('out-of-combat healing', [
     ['delaySeconds', delaySeconds],
     ['structureQuietSeconds', structureQuietSeconds],
   ]);
-  assertValidSeconds(
+  assertNonNegativeFinite(
     'out-of-combat healing',
     [
       ['healthFractionPerSecond', healthFractionPerSecond],
@@ -36,12 +36,12 @@ export const loadOutOfCombatHealing = (
   const rate = new TickRate(tickRate);
   return {
     delayTicks: rate.roundToTicks(delaySeconds),
-    healthFractionPerTick: healthFractionPerSecond / tickRate,
+    healthFractionPerTick: rate.perTick(healthFractionPerSecond),
     structureQuietTicks: rate.roundToTicks(structureQuietSeconds),
     structureBonuses: Object.fromEntries(
       bonuses.map(([kind, { fractionPerSecond, zone }]) => [
         kind,
-        { fractionPerTick: fractionPerSecond / tickRate, zone },
+        { fractionPerTick: rate.perTick(fractionPerSecond), zone },
       ]),
     ),
   };

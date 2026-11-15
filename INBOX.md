@@ -37,8 +37,10 @@ Reply inline (`Decision: …`).
       values at load, next to the two durations (DEC-241), so the system sees only ticks
       (architecture 03 §10, `packages/core/AGENTS.md` "Time is measured only in ticks", as
       `loadDefaultContent` already does for speed and acceleration). Same values, so no behaviour
-      change. (2) Built: the same loader rejects a rate that is negative or not finite. Approve,
-      or say which to undo.
+      change. (2) Built: the same loader rejects a rate that is negative or not finite. (3) Built
+      (critic round 2): the check is unit-free, so it is renamed `assertNonNegativeFinite`, and the
+      rate formula is `TickRate.perTick`, next to the time formulas. Approve, or say which to
+      undo.
 
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on

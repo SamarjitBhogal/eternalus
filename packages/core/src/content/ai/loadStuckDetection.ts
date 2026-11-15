@@ -1,5 +1,5 @@
 import { TickRate } from '../../utils/TickRate';
-import { assertValidSeconds } from '../assertValidSeconds';
+import { assertNonNegativeFinite } from '../assertNonNegativeFinite';
 import type { AuthoredStuckDetectionRule, StuckDetectionRule } from './ai.types';
 import { STUCK_DETECTION } from './stuckDetection';
 
@@ -16,6 +16,6 @@ export const loadStuckDetection = (
   authored: AuthoredStuckDetectionRule = STUCK_DETECTION,
 ): StuckDetectionRule => {
   const { windowSeconds, ...rest } = authored;
-  assertValidSeconds('stuck detection', [['windowSeconds', windowSeconds]]);
+  assertNonNegativeFinite('stuck detection', [['windowSeconds', windowSeconds]]);
   return { ...rest, windowTicks: new TickRate(tickRate).roundToTicks(windowSeconds) };
 };
