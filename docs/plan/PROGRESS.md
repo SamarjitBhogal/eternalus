@@ -7320,3 +7320,29 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   finding) and that file re-run: passed. Round-2 critic on the fixes, the records and the merge:
   pass.
 - Next step: the owner runs the push script; claudiodh re-reviews PR #93; then GL-16.
+
+### 2026-11-14 — Phase 3 / GL-16, merge of GL-4 (PR #93) — refactor/map-feature-link — sholtzman + Claude Code
+
+- What changed: merged PR #93's head `f14e2661` (GL-4 with GL-5 and GL-15, and
+  `phase/3-sprint-3-work` up to `a99c3129`) into GL-16 as `4f28255a`, so that the hard merge is
+  done before #93 lands; once it does, the phase branch adds nothing new here. Resolution:
+  `GameState.ts` and `GameState.test.ts` take #93's side whole (#92 moved the snapshot to
+  `EntitySnapshotter`); GL-16's change moved with it: `EntitySnapshotter.ts` reads
+  `MapFeatureLink` (no `instanceof Structure`, the import is gone) and GL-16's zone test for the
+  linked entity is ported to `EntitySnapshotter.test.ts` (the structure case was already there).
+  `MatchBridge.test.ts`: the zone fixture gains `aether: null` (a semantic conflict: #92 added the
+  field; typecheck caught it). `MatchBridge.ts` merged on its own and keeps both sides (GL-16's
+  `byFeature` and `PublishedRoster`, #92's aether in `playerOf`). Docs keep both sides: INBOX,
+  PROGRESS, the decisions log (newest batch first); architecture 13 §10 takes GL-16's text with
+  "aether and abilities" now "abilities" (aether is live since #92); the game-loop plan has #93's
+  table with GL-16's own row (files under `state/EntitySnapshotter.ts`; "PR opens after GL-4
+  (#93) merges").
+- Fail-first: in `EntitySnapshotter.ts`, the condition `link !== undefined && entity.family ===
+"structure"` was broken; the ported test went red ("expected undefined to be
+  'capture-point-lane-1'"), then the line was restored (diff against the index clean).
+- Checks run: `npm run check` → `EXIT=0` on `4f28255a` (log
+  `eternalus-agent-work/game-loop-plan/gl16-merge-93-check-2026-11-15.log`): core "Tests 1433
+  passed (1433)"; protocol "Tests 18 passed (18)"; client "Tests 1978 passed (1978)"; server
+  "Tests 79 passed (79)"; "Documentation check passed.".
+- Next step: pre-PR gate on the GL-16 delta against `f14e2661` (critic, ponytail); the PR opens
+  after #93 merges into `phase/3-sprint-3-work`.
