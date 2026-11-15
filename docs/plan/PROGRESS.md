@@ -7155,3 +7155,15 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-10.log`); then
   `prettier --check` and `npm run docs:check` on this file.
 - Next step: critic round 3 on this change (last of three), then open the PR (base phase/3).
+
+### 2026-11-14 — Phase 3 / content durations at load (DEC-241): critic round 3, wording — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: the critic re-read `3eb2b4f9..de41218b` (round 3, the last of three): approve,
+  no blockers, two wording nits, both applied. The `TickRate` class TSDoc says "the formulas the
+  content loaders share" (not every loader uses it yet: `loadDefaultContent` divides by the tick
+  rate itself); two `assertNonNegativeFinite` test titles say "values", not "times". No code
+  change, so no fail-first break.
+- Checks run: full `npm run check` exit 0 before this entry was added (core 255 files / 1482 tests, client 285 / 1883, server 20 / 79, protocol 1 / 18;
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-11.log`); then
+  `prettier --check` and `npm run docs:check` on this file.
+- Next step: the owner pushes the branch and opens the PR (base phase/3).

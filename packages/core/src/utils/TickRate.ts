@@ -1,6 +1,6 @@
 /**
  * Converts authored times to ticks and authored rates per second to per tick, at one tick rate; the
- * formulas every content loader uses.
+ * formulas the content loaders share.
  */
 export class TickRate {
   /** @param ticksPerSecond - `GameConfig.tickRate`. */

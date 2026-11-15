@@ -4,7 +4,7 @@ import { assertNonNegativeFinite } from './assertNonNegativeFinite';
 import { ContentValidationError } from './ContentValidationError';
 
 describe('assertNonNegativeFinite', () => {
-  it('accepts 0 and positive finite times', () => {
+  it('accepts 0 and positive finite values', () => {
     expect(() => {
       assertNonNegativeFinite('things', [
         ['a', 0],
@@ -14,7 +14,7 @@ describe('assertNonNegativeFinite', () => {
     }).not.toThrow();
   });
 
-  it('names every time that is negative or not finite', () => {
+  it('names every value that is negative or not finite', () => {
     expect(() => {
       assertNonNegativeFinite('things', [
         ['a x', -1],
