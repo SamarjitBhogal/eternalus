@@ -4,7 +4,7 @@ description: How a match unfolds over time - the MatchDirector state machine ove
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-05
+last-reviewed: 2026-11-15
 tags: [architecture, match, timeline, phases, scoring, story, lore]
 paths:
   [
@@ -426,10 +426,22 @@ data and can be stale (ADR 0023). A second human slot, or a human slot off `play
 a bad bot slot does. The roster's size check and the Unit-cap check count the human slot, even a
 refused one.
 
+The gem eruption is built without the boss (`feat/cathedral-gem-eruption`): the
+`summon-greater-boss` action (`actions/SummonGreaterBossAction.ts`) runs from the `gem-eruption`
+timeline entry, at the same fraction as `mid-game` and right after it (DEC-81). It calls
+`MatchRecord.eruptGem(bossId)`, which sets `MatchState.isGemErupted` once (a second call throws),
+emits `greater-boss-summoned { bossId }` and is hashed from then on; `Snapshot.match.isGemErupted`
+carries it to the client, whose scenery view stops drawing the gem (DEC-83), and
+`CathedralGemSystem` strikes no more. No boss spawns, so `boss-summoned` is not emitted yet.
+`bossId` is checked only as a non-empty string: there is no boss catalogue to look it up in. The
+timeline's phase rules read only its `enter-phase` entries. What the erupted gem leaves behind is
+open in `INBOX.md` (the gem eruption item).
+
 Not built yet: `atmosphere` and `scoring` in `MatchState`; an entity that carries `WinObjective` (the
 sovereign); `MatchResult.legends` and `teams` (with `Scoring`), `timeline` and `achievements`
 (with their producers); a condition for `forfeit` or `aborted` (the ids exist); the timeline
-actions other than `enter-phase`; `dev-set-phase`; the announcer; the other invariants of §12.
+actions other than `enter-phase` and `summon-greater-boss` (`spawn-mini-bosses`, `announce`),
+and the greater boss's spawn; `dev-set-phase`; the announcer; the other invariants of §12.
 
 ## Related
 

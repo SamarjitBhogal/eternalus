@@ -69,6 +69,13 @@ const defaultTimeline = (countdownTicks: number): readonly MatchTimelineEntry[] 
   },
   // TUNE: game doc, the gem explodes mid-game
   { id: 'mid-game', at: { atFraction: 0.5 }, action: { kind: 'enter-phase', phase: 'mid-game' } },
+  // Right after `mid-game` (12 §3): the gem erupts. TUNE: `greater-boss` is doc 12's id; no boss
+  // catalogue checks it yet (INBOX.md, the gem eruption item).
+  {
+    id: 'gem-eruption',
+    at: { atFraction: 0.5 },
+    action: { kind: 'summon-greater-boss', bossId: 'greater-boss' },
+  },
   // TUNE: the owner's ruling, DEC-175 (no reference doc gives a fraction)
   { id: 'end-game', at: { atFraction: 0.75 }, action: { kind: 'enter-phase', phase: 'end-game' } },
 ];

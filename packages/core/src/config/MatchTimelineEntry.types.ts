@@ -6,6 +6,8 @@ export type TimelineMark = { readonly atTick: number } | { readonly atFraction: 
 /** Each timeline action's fields, by kind. A new kind is one line here and one handler class. */
 type TimelineActionPayloads = {
   readonly 'enter-phase': { readonly phase: MatchPhase };
+  /** The gem erupts and summons `bossId` (12 §3); the boss itself spawns in a later change. */
+  readonly 'summon-greater-boss': { readonly bossId: string };
 };
 
 /** The kind of a timeline action, e.g. `enter-phase`. */

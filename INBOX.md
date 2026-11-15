@@ -29,6 +29,27 @@ Reply inline (`Decision: …`).
       guide (335 lines). The Cathedral furnishing (`cathedral*`, `apseWall`, the gem) could move to
       its own `MapDecorationBuilder` subclass picked by the per-kind interior registry (06). OK
       to do as a separate refactor PR?
+- [ ] **The gem eruption: what is left (Aryan Walanj, 2026-11-15,
+      `feat/cathedral-gem-eruption`).** At mid-game (DEC-81, 15 min) the `summon-greater-boss`
+      timeline action erupts the gem: `greater-boss-summoned { bossId: 'greater-boss' }` fires
+      once, the gem's drawing is hidden and it strikes no more; no boss spawns yet. No doc says
+      what remains, so for now the Cathedral structure stays where the gem was: still solid (units
+      walk around an invisible diamond), still targetable and unbreakable. (1) Should the erupted
+      gem stop blocking movement and stop being a target (and stop showing a selection ring or
+      health bar, if it has one)? (2) Should anything be drawn in its place
+      (rubble, a crater), or nothing until the boss stands there? (3) `greater-boss` is doc 12's
+      id; there is no boss catalogue to check it against yet. Keep that id?
+- [ ] **Better than design: where the gem's eruption lives (Aryan Walanj, 2026-11-15, critic on
+      `feat/cathedral-gem-eruption`).** For sign-off before the PR. (a) The flag is
+      `MatchState.isGemErupted` (snapshot `match.isGemErupted`); docs 07 and 12 put the gem on the
+      Cathedral entity as its `Spawner`, so it could instead be a component on the Cathedral,
+      hashed and snapshotted with it. (b) The client hides the gem with a kind check
+      (`piece.object?.kind === 'cathedral'`) and an extra `SceneryView` predicate; core could
+      instead report the gem's map object as gone in `MapObjectSnapshot`, so the existing
+      `isDestroyed` path hides it (it must not hide the Cathedral building, whose id is the same
+      today). (c) The new event `greater-boss-summoned { bossId }` is not in doc 12 §2 or §8, which
+      design only `boss-summoned` from the spawn; keep it, rename it `gem-erupted`, or fold it into
+      `boss-summoned` when the boss spawns? Which to adopt (now or with the boss PR)?
 
 - [ ] **The gem's lightning on attackers: 11 open rules (Aryan Walanj, 2026-11-15,
       `feat/cathedral-gem-hittable`).** DISC-11 (`13-owner-decisions-log.md`) says the gem

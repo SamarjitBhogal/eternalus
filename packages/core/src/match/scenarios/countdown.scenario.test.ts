@@ -127,6 +127,7 @@ describe('the countdown (scenario)', () => {
     const later = [
       { entryId: 'quarter-mark', tick: 13_500 },
       { entryId: 'mid-game', tick: 27_000 },
+      { entryId: 'gem-eruption', tick: 27_000 },
       { entryId: 'end-game', tick: 40_500 },
     ];
 
@@ -135,6 +136,7 @@ describe('the countdown (scenario)', () => {
       phaseEnteredTick: 0,
       upcoming: [{ entryId: 'countdown-over', tick: COUNTDOWN_TICKS }, ...later],
       humanLegendId: null,
+      isGemErupted: false,
     });
     stepTo(sim, COUNTDOWN_TICKS + 1);
     expect(sim.snapshot().match).toEqual({
@@ -142,6 +144,7 @@ describe('the countdown (scenario)', () => {
       phaseEnteredTick: COUNTDOWN_TICKS,
       upcoming: later,
       humanLegendId: null,
+      isGemErupted: false,
     });
   });
 

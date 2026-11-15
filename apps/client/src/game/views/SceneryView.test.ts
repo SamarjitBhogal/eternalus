@@ -26,6 +26,31 @@ describe('SceneryView roof cutaways', () => {
     for (const piece of owned) expect(fill).not.toHaveBeenCalledWith(piece.shape, piece.color);
     expect(fill).toHaveBeenCalled();
   });
+  it('stops drawing the gem once it has erupted, and nothing else of the Cathedral', () => {
+    const gem = PRESENTATION.scenery.find((p) => p.id === 'cathedral-interior-gem');
+    const altar = PRESENTATION.scenery.find((p) => p.id === 'cathedral-interior-altar');
+    if (gem === undefined || altar === undefined) throw new Error('Missing gem or altar');
+    const renderer = new RecordingRenderer();
+    const fill = vi.spyOn(renderer, 'fillPolygon');
+    let isErupted = false;
+    const view = new SceneryView(
+      PRESENTATION.scenery,
+      'detail',
+      new Set(['cathedral-lane-1']),
+      undefined,
+      () => false,
+      () => isErupted,
+    );
+
+    view.draw(renderer);
+    expect(fill).toHaveBeenCalledWith(gem.shape, gem.color);
+    fill.mockClear();
+    isErupted = true;
+    view.draw(renderer);
+
+    expect(fill).not.toHaveBeenCalledWith(gem.shape, gem.color);
+    expect(fill).toHaveBeenCalledWith(altar.shape, altar.color);
+  });
   it('swaps only the selected building roof for its interior and restores it on a second click', () => {
     const renderer = new RecordingRenderer();
     const fill = vi.spyOn(renderer, 'fillPolygon');

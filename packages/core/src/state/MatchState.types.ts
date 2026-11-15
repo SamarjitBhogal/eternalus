@@ -28,6 +28,11 @@ export interface MatchState {
    * `MovementSystem`, `CombatSystem` and `HordeSystem`.
    */
   readonly isIdleHeld: boolean;
+  /**
+   * Whether the Cathedral gem has erupted (DEC-83: it looks the same until then): the gem is gone
+   * and strikes no more. Set once, only through `MatchRecord.eruptGem`, by `summon-greater-boss`.
+   */
+  readonly isGemErupted: boolean;
   /** The team the match is played (or spectated) for, from `config.match.playerTeam`. */
   readonly playerTeam: PlayableTeam;
   /**

@@ -14,6 +14,7 @@ const fieldsOf = (match: MatchState): MatchState => ({
   timelineCursor: match.timelineCursor,
   schedule: match.schedule,
   isIdleHeld: match.isIdleHeld,
+  isGemErupted: match.isGemErupted,
   playerTeam: match.playerTeam,
   humanLegendId: match.humanLegendId,
   result: match.result,

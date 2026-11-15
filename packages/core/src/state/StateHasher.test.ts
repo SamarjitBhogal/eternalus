@@ -191,6 +191,16 @@ describe('StateHasher', () => {
     expect(hasher.hash(state)).not.toBe(added);
   });
 
+  it('changes once the gem erupts, and not before', () => {
+    const { state } = stateWithSoldier();
+    const before = hasher.hash(state);
+    expect(hasher.hash(state)).toBe(before);
+
+    state.match.eruptGem('greater-boss');
+
+    expect(hasher.hash(state)).not.toBe(before);
+  });
+
   it('differs between seeds', () => {
     expect(hasher.hash(stateWithSoldier(1).state)).not.toBe(hasher.hash(stateWithSoldier(2).state));
   });

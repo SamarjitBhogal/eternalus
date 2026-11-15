@@ -55,6 +55,12 @@ const COUNTDOWN_END_RULE =
 /** The default 10 s countdown at 30 ticks/s: the tick the first enter-phase entry must be at. */
 const COUNTDOWN_TICKS = 300;
 
+const SUMMON_AT_COUNTDOWN = {
+  id: 'gem-eruption',
+  at: { atTick: COUNTDOWN_TICKS },
+  action: { kind: 'summon-greater-boss', bossId: 'greater-boss' },
+};
+
 const withoutKey = (record: object, key: string): object =>
   Object.fromEntries(Object.entries(record).filter(([name]) => name !== key));
 
@@ -184,6 +190,15 @@ describe('validateGameConfig', () => {
       ).toBeNull();
     });
 
+    it('reads only enter-phase entries for the phase rules: a summon before them is fine', () => {
+      expect(
+        timelineFailure([
+          { ...SUMMON_AT_COUNTDOWN, at: { atTick: 0 } },
+          enterAt({ atTick: COUNTDOWN_TICKS }, 'early-game'),
+        ]),
+      ).toBeNull();
+    });
+
     it('accepts a countdown that ends on a fraction mark: the mark is resolved to a tick first', () => {
       // 450 s is a quarter of the planned 1800 s, so `atFraction: 0.25` is tick 13,500 = 450 * 30.
       const config = createDefaultGameConfig({
@@ -239,9 +254,23 @@ describe('validateGameConfig', () => {
       ['two marks at once', [enterAt({ atTick: 1, atFraction: 0.5 }, 'early-game')], MARK_RULE],
       ['no mark', [enterAt({}, 'early-game')], MARK_RULE],
       [
-        'an unknown action kind',
+        'a summon-greater-boss without a bossId',
         [{ id: 'boss', at: { atTick: 1 }, action: { kind: 'summon-greater-boss' } }],
         ACTION_RULE,
+      ],
+      [
+        'only a summon-greater-boss (no enter-phase entry ends the countdown)',
+        [SUMMON_AT_COUNTDOWN],
+        HAS_PHASE_ENTRY_RULE,
+      ],
+      [
+        'two summon-greater-boss entries (the gem erupts once)',
+        [
+          enterAt({ atTick: COUNTDOWN_TICKS }, 'early-game'),
+          SUMMON_AT_COUNTDOWN,
+          { ...SUMMON_AT_COUNTDOWN, id: 'second-eruption' },
+        ],
+        'must have at most one summon-greater-boss entry: the gem erupts once (DEC-83)',
       ],
       [
         'an action kind inherited from Object',

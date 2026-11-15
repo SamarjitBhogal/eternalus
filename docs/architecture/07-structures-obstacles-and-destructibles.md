@@ -514,6 +514,13 @@ the object shares the Cathedral's health pool, as a lane tower's fort does (DEC-
 it is a blocked hit on the Cathedral. The Cathedral's floor is no map object any more: it had no
 health and blocked nothing.
 
+**2026-11-15 (`feat/cathedral-gem-eruption`).** The gem erupts at mid-game, without the boss
+(12 §13): once `MatchState.isGemErupted` is set, `CathedralGemSystem` strikes no more and the
+client's scenery view stops drawing the gem's art (the art of the `cathedral` map object; DEC-83:
+it looks the same until then). The Cathedral structure stays, unbreakable, and so does its solid
+gem footprint, invisible from then on; whether it should stop blocking and stop being a target is
+open in `INBOX.md` (the gem eruption item). The gem's `Spawner` and the boss come later.
+
 ## Related
 
 - [04 Entity architecture](./04-entity-architecture.md)

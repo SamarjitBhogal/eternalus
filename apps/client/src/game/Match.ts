@@ -106,7 +106,14 @@ export class Match implements LoopTarget {
     const { isDestroyed } = this.objects;
     const scene = new SceneView([
       new MapView(map, scenery, hiddenRoofs, shown, buildings, isDestroyed),
-      new SceneryView(scenery, 'detail', hiddenRoofs, shown, isDestroyed),
+      new SceneryView(
+        scenery,
+        'detail',
+        hiddenRoofs,
+        shown,
+        isDestroyed,
+        () => this.current.match.isGemErupted,
+      ),
       this.objects,
       this.entities,
     ]);

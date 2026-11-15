@@ -46,8 +46,15 @@ export class CathedralGemSystem implements System {
     });
   }
 
-  /** Strikes back each queued hit, in hit order, while its gem is off cooldown. */
+  /**
+   * Strikes back each queued hit, in hit order, while its gem is off cooldown; an erupted gem
+   * (`state.match.isGemErupted`) is gone and strikes nothing.
+   */
   public update({ state }: SystemContext): void {
+    if (state.match.isGemErupted) {
+      this.hits.length = 0;
+      return;
+    }
     for (const { gemId, attackerId } of this.hits) {
       const gem = state.entities.get(gemId);
       const attacker = state.entities.get(attackerId);

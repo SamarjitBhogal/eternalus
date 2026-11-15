@@ -7491,3 +7491,40 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   clean.
 - Next step: DEC-217 (13) says only towers share a pool; the Cathedral now does too (harmless: it
   never takes damage). For the critic and Sam to confirm before the PR.
+
+### 2026-11-15 — Phase 3 / sprint 3 work: the Cathedral gem erupts at mid-game — feat/cathedral-gem-eruption — Aryan Walanj + Claude Code
+
+- What was done: the `summon-greater-boss` timeline action (`SummonGreaterBossAction`, registered
+  in `defaultTimelineActions.ts`; payload `bossId` per doc 12 §3) and a `gem-eruption` entry right
+  after `mid-game` at the same fraction 0.5 (DEC-81: 15 min of the 30-minute plan). It calls
+  `MatchRecord.eruptGem(bossId)`: sets `MatchState.isGemErupted` once (a second call throws) and
+  emits the new `greater-boss-summoned { bossId }` event. No boss spawns. The flag is hashed once
+  set (older hashes and replay checkpoints unchanged), carried in `Snapshot.match.isGemErupted`,
+  stops `CathedralGemSystem`, and the client's detail `SceneryView` stops drawing the gem's art
+  (`Match.ts` passes the snapshot flag). `validateGameConfig`: the new action's field rule
+  (`bossId` a non-empty string; no boss catalogue yet, `ponytail:` note) and the phase rules now
+  read only `enter-phase` entries (the old `ponytail:` upgrade path). Docs: 03 event table, 12 §13
+  and 07 Implementation status; one INBOX question (what the erupted gem leaves).
+- Tests: `gemEruption.scenario.test.ts` (fires once at the config-derived tick and not before; no
+  strike after it while the attacker still hits the gem), `SceneryView.test.ts` (gem hidden after
+  it, the altar still drawn), `MatchRecord.test.ts` (once, then throws), `StateHasher.test.ts`,
+  `validateGameConfig.test.ts` (a summon without `bossId`; a summon-only timeline; a summon
+  before the first `enter-phase`); default-timeline expectations gain `gem-eruption`. Broken once
+  each: no `gem-eruption` entry → both scenario tests fail; strike ignores the eruption →
+  "expected [ 337, 400 ] to deeply equal []"; view ignores the eruption → "expected
+  "fillPolygon" to not be called with arguments: [ [ { x: 800, y: 442 }, …(3) ], …(1) ]"; phase
+  rules read every entry → 12 tests fail ("expected 'match.timeline' to be null"); eruption not
+  hashed → "expected 1485472869 not to be 1485472869".
+- Pre-PR gate: critic (`architecture-reviewer`) approved with no blockers. Applied: a validation
+  rule for at most one `summon-greater-boss` entry (a second one would throw mid-match; test,
+  broken once → "expected null to be 'must have at most one summon-greater-…'"), the early return
+  in `CathedralGemSystem`, and a ring/health-bar sub-question in the INBOX item. Not applied, put
+  to the human as one better-than-design INBOX item: the flag on the Cathedral instead of
+  `MatchState`, the gem hidden through `MapObjectSnapshot` instead of a kind check, and the new
+  event's name. `/ponytail-review`: no findings, so `/ponytail` applied nothing.
+- Checks run: one `npm run check`, exit 0. core "Test Files 253 passed (253)", "Tests 1513 passed
+  (1513)"; protocol "Test Files 1 passed (1)", "Tests 18 passed (18)"; client "Test Files 286 passed
+  (286)", "Tests 1892 passed (1892)"; server "Test Files 20 passed (20)", "Tests 79 passed (79)";
+  "Documentation check passed."
+- Next step: Sam answers the gem eruption item; the boss spawn (`BossDefinition`, the Cathedral
+  `Spawner`, `boss-summoned`) follows.

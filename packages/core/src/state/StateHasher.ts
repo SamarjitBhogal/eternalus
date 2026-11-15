@@ -69,6 +69,10 @@ export class StateHasher {
       });
       parts.push(['hordes', ...hordes]);
     }
+    // Appended only once the gem erupts, for the same reason.
+    if (match.isGemErupted) {
+      parts.push(['gem-erupted']);
+    }
     // Guard posts are appended only once one exists, for the same reason.
     if (state.guards.size > 0) {
       const posts: unknown[] = [];

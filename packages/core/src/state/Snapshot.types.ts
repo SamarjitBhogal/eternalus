@@ -70,6 +70,8 @@ export type MatchSnapshot = {
   readonly upcoming: readonly ScheduledMark[];
   /** The human's Legend; `null` in sim mode, or when the human slot names no Legend definition. */
   readonly humanLegendId: EntityId | null;
+  /** Whether the Cathedral gem has erupted: the view stops drawing it (DEC-83). */
+  readonly isGemErupted: boolean;
 };
 
 /** A lane horde as the client sees it (architecture 18 §4): the store's plain fields, copied. */

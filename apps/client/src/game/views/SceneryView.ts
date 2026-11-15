@@ -8,13 +8,18 @@ import type { WorldRect } from '../engine/render/Renderer.types';
 export class SceneryView implements WorldLayer {
   private readonly pieces: readonly MapDecoration[];
 
-  /** Keeps only the pieces on `layer`; scenery never changes gameplay state. */
+  /**
+   * Keeps only the pieces on `layer`; scenery never changes gameplay state. `isGemErupted` reads
+   * the latest snapshot's `match.isGemErupted`: once true, the gem (the art of the `cathedral`
+   * object) is gone (DEC-83).
+   */
   public constructor(
     scenery: readonly MapDecoration[],
     layer: MapDecorationLayer,
     private readonly hiddenRoofs: ReadonlySet<string> = new Set(),
     _detailArea?: () => WorldRect,
     private readonly isDestroyed: (id: string) => boolean = () => false,
+    private readonly isGemErupted: () => boolean = () => false,
   ) {
     this.pieces = scenery.filter((piece) => piece.layer === layer);
   }
@@ -25,8 +30,10 @@ export class SceneryView implements WorldLayer {
   }
 
   private paint(renderer: Renderer): void {
+    const isGemGone = this.isGemErupted();
     for (const piece of this.pieces) {
       if (
+        (isGemGone && piece.object?.kind === 'cathedral') ||
         (piece.object !== undefined && this.isDestroyed(piece.object.id)) ||
         (piece.buildingId !== undefined && this.isDestroyed(piece.buildingId))
       )
