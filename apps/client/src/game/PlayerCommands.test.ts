@@ -196,6 +196,30 @@ describe('PlayerCommands', () => {
     ]);
   });
 
+  it('the held attack targets the Cathedral gem under the cursor; a unit on it wins', () => {
+    const { input, enqueueCommand, tick } = setUp();
+    const cathedral: EntitySnapshot = {
+      ...unit('cathedral-1', 'light', 10, 10),
+      kind: 'cathedral',
+      family: 'structure',
+      team: null,
+      transform: { x: 10, y: 10, radius: 2, facing: { x: 1, y: 0 } },
+    };
+    input.isAttacking = true;
+    input.aim = { x: 11, y: 11 };
+
+    tick([PLAYER, cathedral]);
+    input.aim = { x: 13, y: 13 };
+    tick([PLAYER, cathedral]);
+    input.aim = { x: 10, y: 10 };
+    tick([PLAYER, cathedral, unit('enemy-2', 'dark', 10, 10)]);
+
+    expect(enqueueCommand.mock.calls.map(([command]) => command)).toEqual([
+      { type: 'attack-target', actorId: ACTOR, targetId: 'cathedral-1' },
+      { type: 'attack-target', actorId: ACTOR, targetId: 'enemy-2' },
+    ]);
+  });
+
   it('queues move or stop only when the axes change; returns whether the player moves', () => {
     const { input, enqueueCommand, tick } = setUp();
     expect(tick()).toBe(false);

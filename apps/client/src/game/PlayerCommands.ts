@@ -119,11 +119,26 @@ export class PlayerCommands implements PlayerActions {
     this.attackTargetId = targetId;
   }
 
-  /** The unit under `point`, else the map object there: a unit is drawn on top of a building. */
+  /**
+   * The unit under `point`, else the map object there, else the Cathedral whose gem disc holds
+   * it: a unit is drawn on top of a building.
+   */
   private targetAt(actorId: EntityId, point: Vec2, snapshot: TargetSnapshot): EntityId | null {
     return (
       findUnitAt(snapshot.entities, actorId, point) ??
-      findMapObjectAt(this.mapObjects, snapshot.mapObjects ?? [], point)
+      findMapObjectAt(this.mapObjects, snapshot.mapObjects ?? [], point) ??
+      this.cathedralAt(snapshot.entities, point)
     );
+  }
+
+  /** The Cathedral (the gem's structure, DISC-11) whose disc holds `point`, or `null`. */
+  private cathedralAt(entities: TargetSnapshot['entities'], point: Vec2): EntityId | null {
+    const cathedral = entities.find(({ kind, transform }) => {
+      if (kind !== 'cathedral' || transform === null) return false;
+      const dx = transform.x - point.x;
+      const dy = transform.y - point.y;
+      return dx * dx + dy * dy <= transform.radius * transform.radius;
+    });
+    return cathedral?.id ?? null;
   }
 }

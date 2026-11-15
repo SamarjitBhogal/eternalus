@@ -7454,3 +7454,14 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   "Tests 79 passed (79)"; "Documentation check passed."
 - Next step: Sam answers the lightning item and the retaliation item; visuals for
   `structure-struck` come with the Cathedral view.
+
+### 2026-11-15 — Phase 3 / sprint 3 work: the player can target the Cathedral gem — feat/cathedral-gem-strike — Aryan Walanj + Claude Code
+
+- What was done: `PlayerCommands.targetAt` falls back to the Cathedral (kind `cathedral`) whose
+  snapshot disc holds the held attack's point, after units and map objects, so a unit standing
+  on the gem still wins. No new core import.
+- Tests: one `PlayerCommands.test.ts` case (gem hit, outside the disc, unit on the gem). Broken
+  once (fallback removed) → "expected [ { type: 'attack-target', …(2) } ] to deeply equal [ …(2) ]".
+- Checks run (as asked, no `npm run check`): `vitest run src/game/PlayerCommands.test.ts`
+  "Tests 9 passed (9)"; `eslint --max-warnings 0` on both files exit 0; Prettier clean.
+- Next step: the full `npm run check` before the PR.
