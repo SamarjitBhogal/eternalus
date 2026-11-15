@@ -32,6 +32,7 @@ export const spawnMapStructures = (
       const structure = factory.create(kind, definitionId, {
         position,
         team,
+        mapFeatureId: id,
         ...(laneId !== undefined && { laneId }),
       });
       const body =

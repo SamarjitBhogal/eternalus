@@ -151,7 +151,9 @@ describe('selectClassPanel', () => {
     const magus = selectClassPanel(store.getState(), 'magus');
 
     selectClassPanel(store.getState(), 'warrior');
-    store.dispatch(matchSetupSlice.actions.setCountdown(41_000));
+    store.dispatch(
+      matchSetupSlice.actions.countdownChanged({ kind: 'select', remainingMs: 41_000 }),
+    );
 
     expect(selectClassPanel(store.getState(), 'magus')).toBe(magus);
   });

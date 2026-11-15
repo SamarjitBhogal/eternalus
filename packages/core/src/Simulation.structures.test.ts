@@ -14,6 +14,30 @@ import { isMinion, match, run, STRONGHOLDS_ONLY } from './__fixtures__/hordeMatc
 import { countdownTicks } from './config/countdownTicks';
 
 describe('Simulation structures', () => {
+  it('builds one structure per feature with a structure definition, carrying its feature id', () => {
+    const config = createDefaultGameConfig();
+    const map = new MapGenerator().generate(config, 1);
+    const simulation = new Simulation({ config, seed: 1, logger: new MemoryLogger(), map });
+    const structures = simulation
+      .snapshot()
+      .entities.filter(({ family }) => family === 'structure');
+    const features = new Map(map.features.map((feature) => [feature.id, feature]));
+
+    expect(structures.map(({ mapFeatureId }) => mapFeatureId).sort()).toEqual(
+      map.features
+        .filter(({ definitionId }) => STRUCTURE_DEFINITIONS.has(definitionId))
+        .map(({ id }) => id)
+        .sort(),
+    );
+    for (const { mapFeatureId, definitionId, team } of structures) {
+      const feature = features.get(mapFeatureId ?? '');
+      expect({ definitionId, team }).toEqual({
+        definitionId: feature?.definitionId,
+        team: feature?.team,
+      });
+    }
+  });
+
   it('fills the generated map’s forest camps when the countdown ends (18 §7.1)', () => {
     const config = createDefaultGameConfig({ match: { countdownSeconds: 1 } });
     const map = new MapGenerator().generate(config, 1);
