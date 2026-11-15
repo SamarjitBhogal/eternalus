@@ -7465,3 +7465,29 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run (as asked, no `npm run check`): `vitest run src/game/PlayerCommands.test.ts`
   "Tests 9 passed (9)"; `eslint --max-warnings 0` on both files exit 0; Prettier clean.
 - Next step: the full `npm run check` before the PR.
+
+### 2026-11-15 — Phase 3 / sprint 3 work: the Cathedral gem blocks movement — feat/cathedral-gem-strike — Aryan Walanj + Claude Code
+
+- What was done: players walked through the gem. Solid things block through a map object with
+  `isBlocking` (from a `blockPolygon` scenery piece or a feature), read by `CollisionSystem` and
+  the pathfinder. The gem's diamond is now drawn with `blockPolygon` as the `cathedral` feature's
+  map object (`MapBuildingInteriorBuilder`), and `MapObjectBuilder` no longer overwrites that object
+  with the Cathedral's non-blocking floor. The Cathedral's definition gets `hasMapFootprint`, so reach
+  is measured to the diamond (without it a Warrior stopped at the gem's north tip is 3 units out of
+  reach) and the object shares the Cathedral's unbreakable health pool. Client (local simulation)
+  and Duel server both build map objects with core's `MapObjectBuilder` and resolve movement in
+  core's `CollisionSystem`; the online client does not predict movement, so the one change covers
+  both. Docs: 07 Implementation status, the `Simulation.spawnStructures` comment.
+- Tests: `Cathedral.test.ts` "blocks a Legend walking into the gem like a wall, and a hit from its
+  tip still reaches it" (its fixture now builds map objects, as the client and server do). Broken
+  once each: gem drawn with `polygon` → "expected 453.699999999999 to be less than or equal to
+  441.500001"; no `hasMapFootprint` → "expected 0 to be greater than 0". Updated for the new
+  behaviour: `MapBuildingInteriorBuilder.test.ts` (the gem is now the Cathedral's solid object) and
+  `cathedralEntrances.test.ts` (the straight lane line moves from y 455, through the gem, to y 463,
+  still through both doors).
+- Checks run (no `npm run check`): core "Test Files 252 passed (252)", "Tests 1506 passed (1506)";
+  server "Test Files 20 passed (20)", "Tests 79 passed (79)"; client "Test Files 286 passed
+  (286)", "Tests 1891 passed (1891)"; `eslint --max-warnings 0` and Prettier on the changed files
+  clean.
+- Next step: DEC-217 (13) says only towers share a pool; the Cathedral now does too (harmless: it
+  never takes damage). For the critic and Sam to confirm before the PR.

@@ -505,6 +505,15 @@ blocked as friendly fire and spends no cooldown; a strike can kill, with the kil
 gem, which pays no XP; strikes go on while the Cathedral stands; damage only, no status. No
 visuals.
 
+**2026-11-15 (`feat/cathedral-gem-strike`, solid gem).** The gem blocks movement like a wall: its
+drawn diamond (`MapBuildingInteriorBuilder`) is the `cathedral` feature's blocking map object, so
+collision and pathing treat it as any solid footprint, on the local simulation and the Duel server
+alike (both build map objects with `MapObjectBuilder`). The Cathedral's definition has
+`hasMapFootprint`, so attack reach is measured to the diamond (melee at its tips is in reach) and
+the object shares the Cathedral's health pool, as a lane tower's fort does (DEC-185 B), so a hit on
+it is a blocked hit on the Cathedral. The Cathedral's floor is no map object any more: it had no
+health and blocked nothing.
+
 ## Related
 
 - [04 Entity architecture](./04-entity-architecture.md)

@@ -88,7 +88,7 @@ describe('MapBuildingInteriorBuilder', () => {
         true,
       );
   });
-  it('puts the gem at the centre of the Cathedral, inside its roof, as scenery no unit can hit', () => {
+  it('puts the gem at the centre of the Cathedral, inside its roof, as the Cathedral’s solid object', () => {
     const { scenery } = new MapPresentationBuilder().build(MAP_1);
     const cathedral = MAP_1.features.find((feature) => feature.kind === 'cathedral');
     const gems = scenery.filter((piece) => piece.id === 'cathedral-interior-gem');
@@ -96,7 +96,7 @@ describe('MapBuildingInteriorBuilder', () => {
     const [gem] = gems;
     expect(gem?.buildingId).toBe(cathedral?.id);
     expect(gem?.visibility).toBe('interior');
-    expect(gem?.object).toBeUndefined();
+    expect(gem?.object).toEqual({ id: cathedral?.id, kind: 'cathedral', isFootprint: true });
     const xs = gem?.shape.map((p) => p.x) ?? [];
     const ys = gem?.shape.map((p) => p.y) ?? [];
     expect((Math.min(...xs) + Math.max(...xs)) / 2).toBe(G.cathedral.x);

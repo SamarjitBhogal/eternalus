@@ -49,7 +49,8 @@ describe('cathedral lane entrances', () => {
         ).toBe(false);
       }
       for (let x = G.westDoor.x; x <= G.eastDoor.x + G.eastDoor.width; x += 2) {
-        const point = { x: (x * width) / 1600, y: (455 * height) / 900 };
+        // Below the solid gem (y 442–458), still inside both doors (y 437.5–467.5).
+        const point = { x: (x * width) / 1600, y: (463 * height) / 900 };
         expect(
           objects
             .filter((o) => o.buildingId === building?.id && o.isBlocking)

@@ -296,12 +296,13 @@ export class MapBuildingInteriorBuilder extends MapDecorationBuilder {
   }
 
   /**
-   * Draws the gem at the Cathedral's centre. Presentation only until the Cathedral structure
-   * carries the gem as its Spawner (architecture 07 §1, phase 3).
+   * Draws the gem at the Cathedral's centre as the Cathedral feature's solid map object: units
+   * walk around it, and it is the Cathedral structure's body (`hasMapFootprint`, one pool).
    */
   private cathedralGem(): void {
     const { x, y, gem } = G.cathedral;
-    this.polygon(
+    this.beginObject(this.buildingId ?? 'cathedral', 'cathedral');
+    this.blockPolygon(
       'cathedral-interior-gem',
       [
         { x, y: y - gem.halfHeight },
@@ -311,6 +312,7 @@ export class MapBuildingInteriorBuilder extends MapDecorationBuilder {
       ],
       P.gemCrystal,
     );
+    this.endObject();
   }
 
   private apseWall(id: string, start: number, end: number): void {

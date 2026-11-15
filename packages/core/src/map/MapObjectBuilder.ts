@@ -47,11 +47,8 @@ export class MapObjectBuilder {
       }
     }
     for (const feature of map.features) {
-      if (
-        feature.kind === 'gate' ||
-        feature.kind === 'stronghold' ||
-        feature.kind === 'cathedral'
-      ) {
+      // The Cathedral's object is its solid gem, authored with the interior (MapBuildingInteriorBuilder).
+      if (feature.kind === 'gate' || feature.kind === 'stronghold') {
         const building = presentation.buildings.find((b) => b.id === feature.id);
         const footprints =
           building?.footprint ?? (feature.footprint === undefined ? [] : [feature.footprint]);

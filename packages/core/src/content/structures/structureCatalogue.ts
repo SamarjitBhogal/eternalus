@@ -93,5 +93,6 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       // no reference value (INBOX.md, the gem's lightning item)
       footprintRadius: BUILDING_GEOMETRY.cathedral.gem.halfWidth,
       breakability: { kind: 'never' },
+      hasMapFootprint: true, // the solid gem: melee at its tips is in reach; one pool
     },
   ]);

@@ -5,10 +5,12 @@ import type { DamageResult } from '../../combat/DamagePipeline.types';
 import { Collider } from '../../components/Collider';
 import { Health } from '../../components/Health';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
+import { BUILDING_GEOMETRY } from '../../content/maps/buildingGeometry';
 import { STRUCTURE_DEFINITIONS } from '../../content/structures/structureCatalogue';
 import { TEST_DEBUG_CONFIG } from '../../diagnostics/InvariantRunner.constants';
 import { MemoryLogger } from '../../diagnostics/MemoryLogger';
 import { MapGenerator } from '../../map/MapGenerator';
+import { MapObjectBuilder } from '../../map/MapObjectBuilder';
 import { MapPresentationBuilder } from '../../map/MapPresentationBuilder';
 import { Simulation } from '../../Simulation';
 import type { RosterSlot } from '../../Simulation.types';
@@ -39,6 +41,7 @@ const match = (roster: readonly RosterSlot[] = []) => {
     logger,
     debug: TEST_DEBUG_CONFIG,
     map,
+    mapObjects: new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map)),
     roster,
   });
   const feature = map.features.find(({ definitionId }) => definitionId === 'cathedral');
@@ -133,6 +136,45 @@ describe('Cathedral (07 §1, DISC-11)', () => {
     };
 
     expect(run()).toBe(run());
+  });
+
+  it('blocks a Legend walking into the gem like a wall, and a hit from its tip still reaches it', () => {
+    const { simulation, config, feature, cathedral } = match();
+    const { halfHeight } = BUILDING_GEOMETRY.cathedral.gem;
+    simulation.enqueueCommand({
+      type: 'dev-spawn',
+      kind: 'warrior',
+      definitionId: 'warrior',
+      team: 'light',
+      at: { x: feature.position.x, y: feature.position.y - halfHeight - 6 },
+      count: 1,
+    });
+    simulation.step();
+    const warrior = simulation.snapshot().entities.find(({ kind }) => kind === 'warrior');
+    if (warrior?.transform == null) throw new Error('No warrior');
+    simulation.enqueueCommand({ type: 'move', actorId: warrior.id, direction: { x: 0, y: 1 } });
+
+    steps(simulation, 3 * config.tickRate);
+
+    const after = simulation.snapshot().entities.find(({ id }) => id === warrior.id);
+    // Stopped at the gem's north tip, its disc touching it: never inside the diamond.
+    expect(after?.transform?.y).toBeLessThanOrEqual(
+      feature.position.y - halfHeight - warrior.transform.radius + 1e-6,
+    );
+    expect(after?.transform?.y).toBeGreaterThan(feature.position.y - halfHeight - 2);
+    const apply = vi.spyOn(DamagePipeline.prototype, 'apply');
+    simulation.enqueueCommand({ type: 'stop', actorId: warrior.id });
+    simulation.enqueueCommand({
+      type: 'attack-target',
+      actorId: warrior.id,
+      targetId: cathedral.id,
+    });
+
+    steps(simulation, 3 * config.tickRate);
+
+    expect(
+      apply.mock.calls.filter(([, targetId]) => targetId === cathedral.id).length,
+    ).toBeGreaterThan(0);
   });
 
   // Minions only: no bot Legend reaches the centre this early, and none can be placed there until
