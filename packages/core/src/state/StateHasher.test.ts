@@ -10,6 +10,7 @@ import { CombatClock } from '../components/CombatClock';
 import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
+import { INITIAL_FACING } from '../components/Transform.constants';
 import { Veterancy } from '../components/Veterancy';
 import { Vision } from '../components/Vision';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
@@ -131,6 +132,20 @@ describe('StateHasher', () => {
     veterancy.recordKill(2);
 
     expect(hasher.hash(state)).not.toBe(before);
+  });
+
+  it('changes when an entity turns, and changes back when it turns back (DEC-192)', () => {
+    const { state, soldier } = stateWithSoldier();
+    const before = hasher.hash(state);
+
+    soldier.getComponent(Transform).face({ x: 0, y: 1 });
+    const turned = hasher.hash(state);
+    soldier.getComponent(Transform).face({ x: -1, y: 0 });
+
+    expect(turned).not.toBe(before);
+    expect(hasher.hash(state)).not.toBe(turned);
+    soldier.getComponent(Transform).face(INITIAL_FACING);
+    expect(hasher.hash(state)).toBe(before);
   });
 
   it('changes with a chase watch and with its detour waypoint (DEC-193)', () => {

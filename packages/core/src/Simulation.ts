@@ -580,9 +580,9 @@ export class Simulation {
   }
 
   /**
-   * Spawns one roster slot's Legend at `position` on its team and announces it: a bot with its
-   * controller (whose brain starts with `memory`), the human with none, recorded as the human's
-   * Legend (DEC-172).
+   * Spawns one roster slot's Legend at `position` on its team, facing the enemy Stronghold
+   * (DEC-216 (6)), and announces it: a bot with its controller (whose brain starts with `memory`),
+   * the human with none, recorded as the human's Legend (DEC-172).
    */
   private static spawnSlot(
     state: GameState,
@@ -602,6 +602,7 @@ export class Simulation {
           memory,
         },
       }),
+      ...state.world?.startFacing(slot.team, position),
     });
     state.entities.add(entity);
     state.events.emit('entity-spawned', {
