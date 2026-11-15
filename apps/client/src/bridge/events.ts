@@ -8,7 +8,7 @@ import type { MatchResult } from '@eternalus/core';
 import type { InputAction, InputChord } from './Binding.types';
 import type { AssetId, DisplayCatalogue, RasterBox } from './catalogue.types';
 import type { CrashReportState } from './CrashReport.types';
-import type { LegendClassId, PlayableTeam } from './domain.types';
+import type { LegendClassId, MatchEnding, PlayableTeam } from './domain.types';
 import type {
   Announcement,
   CapturePointStatus,
@@ -33,7 +33,14 @@ export const SESSION_PHASES = [
 export type SessionPhase = (typeof SESSION_PHASES)[number];
 
 /** Sub-screens of the menu phase (a store value, not a session phase). */
-export type MenuRoute = 'home' | 'loadouts' | 'profile' | 'settings' | 'about';
+export type MenuRoute =
+  | 'home'
+  | 'loadouts'
+  | 'profile'
+  | 'settings'
+  | 'about'
+  /** The online Duel's waiting screen: searching for an opponent (ADR 0016). */
+  | 'duel-queue';
 
 /** Overlays that can open over the match. */
 export type Overlay = 'pause' | 'settings';
@@ -41,6 +48,10 @@ export type Overlay = 'pause' | 'settings';
 /** Everything the UI can ask the game to do. Components emit these and never write the store. */
 export type UiIntent =
   | { readonly kind: 'start-match' }
+  /** Join the online Duel queue (ADR 0016); the menu shows the waiting screen. */
+  | { readonly kind: 'start-duel' }
+  /** Leave the Duel queue and return to the home screen. */
+  | { readonly kind: 'cancel-duel' }
   | { readonly kind: 'navigate'; readonly route: MenuRoute }
   | { readonly kind: 'select-class'; readonly classId: LegendClassId; readonly specId?: string }
   | { readonly kind: 'confirm-selection' }
@@ -100,7 +111,9 @@ export type SessionReason =
   | 'match-failed'
   | 'match-crashed'
   | 'screen-crashed'
-  | 'load-failed';
+  | 'load-failed'
+  /** The connection to the Duel server ended before the Duel did. */
+  | 'duel-unavailable';
 
 /**
  * When assets load (13 §2): `selection` holds what both class layouts and the Legend step show, the
@@ -149,8 +162,15 @@ export type LoadingProgress = {
   readonly status: 'loading' | 'ready' | 'failed';
 };
 
-/** The match being set up: seed, the player's team and both rosters (allies include the player). */
+/** Where a match runs: in this browser against bots, or an online Duel on the server (ADR 0016). */
+export type MatchMode = 'local' | 'duel';
+
+/**
+ * The match being set up: where it runs, the seed, the player's team and both rosters (allies
+ * include the player).
+ */
 export type MatchSetupDraft = {
+  readonly mode: MatchMode;
   readonly seed: number;
   readonly playerTeam: PlayableTeam;
   readonly allies: readonly RosterEntry[];
@@ -196,6 +216,11 @@ export type BridgeEventMap = {
    * bridge knows the tick rate, the UI does not; DEC-129 (1)).
    */
   'match-ended': { readonly result: MatchResult; readonly durationSeconds: number };
+  /**
+   * The server ended an online Duel (ADR 0016): no simulation event reaches the client, so the
+   * session publishes this in place of `match-ended`.
+   */
+  'duel-ended': MatchEnding;
   /** The human Legend for the HUD, every 6 ticks (13 §5); `null` before it spawns. */
   'hud-state': { readonly player: PlayerHudSnapshot | null };
   /** Team structures, at match start and every 30 ticks (13 §9 recipe). */

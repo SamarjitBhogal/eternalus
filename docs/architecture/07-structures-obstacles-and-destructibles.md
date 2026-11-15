@@ -269,7 +269,9 @@ export class Capturable {
 - **Checkpoints.** A side's push on a zone it does not own announces each checkpoint it passes
   (`checkpoint-reached`), once per side until the zone changes owner (DEC-145 (b), (g)): a capture
   that reverts and is pushed again announces only the checkpoints that side had not reached, so
-  the assist mobs cannot be farmed for XP. A drain, a revert and an owner refilling its own zone
+  the assist mobs cannot be farmed for XP. Each announcement names that side's living Legends whose
+  centre is on the zone, from the same pass that weighs the sides (`presentLegendIds`, DEC-223
+  (4a)): the Legends that win the checkpoint. A drain, a revert and an owner refilling its own zone
   announce none. `capture-progress` reports every checkpoint the progress crosses, either way.
 - **Density.** Each side's presence is published with the zone's state, and the client shows each
   side's share of the total (DEC-145 (c)): in the world under the progress bar, and on the HUD
@@ -449,8 +451,9 @@ feature's `MapFeatureLink` (DEC-231), so the client binds a HUD capture point to
 snapshot's `mapFeatureId`, not by position. Interim differences:
 
 - `lockedBy` is always `null`: the mini-boss lock arrives in Phase 3 sprint 3.6.
-- Scheduled later, through the two capture events: holding buffs (Phase 3 sprint 3.3), score
-  (sprint 3.5), checkpoint defender spawns (Phase 3) and checkpoint XP (Phase 4). The minimap glyph
+- Scheduled later, through the two capture events: holding buffs (Phase 3 sprint 3.3), checkpoint
+  defender spawns (Phase 3) and checkpoint XP (Phase 4). Capture scoring is built (12 §5): from
+  `checkpoint-reached` and from each zone's `Capturable` owner at the director's fold. The minimap glyph
   does not follow the owner yet (the minimap entity markers, SCRUM-151).
 - The density numbers on the HUD arrive with the HUD work (`feat/hud-and-character-select`, its
   capture tracker); this PR publishes the presence and draws the split bar in the world.

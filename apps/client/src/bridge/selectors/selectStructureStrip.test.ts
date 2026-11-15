@@ -20,7 +20,8 @@ function storeWith(team: PlayableTeam | null, structures: readonly StructureStat
       hud: TEST_HUD_CATALOGUE,
     }),
   );
-  if (team !== null) store.dispatch(matchSetupSlice.actions.setTeam({ seed: 1, playerTeam: team }));
+  if (team !== null)
+    store.dispatch(matchSetupSlice.actions.setTeam({ mode: 'local', seed: 1, playerTeam: team }));
   store.dispatch(matchSlice.actions.structuresChanged(structures));
   return store;
 }

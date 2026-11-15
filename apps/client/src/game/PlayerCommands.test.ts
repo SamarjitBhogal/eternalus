@@ -56,6 +56,7 @@ const unit = (id: string, team: Team, x: number, y: number): EntitySnapshot => (
   transform: { x, y, radius: 1 },
   health: { current: 10, max: 10 },
   progression: null,
+  aether: null,
   area: null,
   capture: null,
 });

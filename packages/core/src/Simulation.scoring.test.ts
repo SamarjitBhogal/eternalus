@@ -4,6 +4,7 @@ import type { Command } from './commands/Command.types';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { NullLogger } from './diagnostics/NullLogger';
 import { recordReplay, runReplay } from './diagnostics/replay';
+import { MapGenerator } from './map/MapGenerator';
 import { Scoring } from './match/Scoring';
 import { TWO_LANE_MAP } from './state/__fixtures__/twoLaneMap';
 import type { GameState } from './state/GameState';
@@ -98,6 +99,7 @@ describe('Simulation: scoring', () => {
         minionKills: 0,
         neutralKills: 0,
         structureDamage: 0,
+        checkpointsWon: 0,
         score: 0,
       },
     ]);
@@ -146,8 +148,8 @@ describe('Simulation: scoring', () => {
     expect(dummies).toEqual([]);
     expect(foldedState().match.scoring.legends[0]).toMatchObject({ minionKills: 1, score: 1 });
     expect(foldedState().match.scoring.teams).toEqual({
-      light: { score: 1, structuresDestroyed: 0 },
-      dark: { score: 0, structuresDestroyed: 0 },
+      light: { score: 1, structuresDestroyed: 0, capturesHeldTicks: 0, checkpointsReached: 0 },
+      dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0, checkpointsReached: 0 },
     });
   });
 
@@ -176,5 +178,75 @@ describe('Simulation: scoring', () => {
     expect(row).toBeDefined();
     expect(foldedState().match.scoring.legends[0]?.score).toBe(2);
     expect(sim.hash()).not.toBe(before);
+  });
+});
+
+/** A long countdown keeps the waves away; the timeline needs the planned length past it. */
+const CAPTURE_CONFIG = createDefaultGameConfig({
+  match: { countdownSeconds: 600, plannedMatchSeconds: 3600 },
+});
+const CAPTURE_MAP = new MapGenerator().generate(CAPTURE_CONFIG, 1);
+const CAPTURE_SETUP: ReplaySetup = { config: CAPTURE_CONFIG, seed: 1, map: CAPTURE_MAP };
+/** Long enough for one Legend to take the Cathedral and hold it a while. */
+const CAPTURE_TICKS = 150;
+/** A dark Legend stands in the Cathedral from tick 0: it takes it alone. */
+const takeCathedral = (tick: number): readonly Command[] =>
+  tick === 0
+    ? [
+        {
+          type: 'dev-spawn',
+          kind: 'warrior',
+          definitionId: 'warrior',
+          team: 'dark',
+          at: CAPTURE_MAP.features.find(({ kind }) => kind === 'cathedral')?.position ?? {
+            x: 0,
+            y: 0,
+          },
+          count: 1,
+        },
+      ]
+    : [];
+
+describe('Simulation: capture scoring (DEC-214)', () => {
+  it('scores a capture through full steps: checkpoint points, checkpoints won, held ticks', () => {
+    const fold = vi.spyOn(Scoring.prototype, 'fold');
+    const sim = createTarget(CAPTURE_SETUP);
+    const capturedOn: number[] = [];
+    sim.on('capture-point-owner-changed', () => {
+      capturedOn.push(sim.tick);
+    });
+    while (sim.tick < CAPTURE_TICKS) {
+      for (const command of takeCathedral(sim.tick)) {
+        sim.enqueueCommand(command);
+      }
+      sim.step();
+    }
+
+    const scoring = fold.mock.calls[0]?.[0].state.match.scoring;
+    expect(capturedOn).toHaveLength(1);
+    expect(scoring?.legends).toEqual([
+      expect.objectContaining({ team: 'dark', checkpointsWon: 3, score: 0 }),
+    ]);
+    expect(scoring?.teams.dark).toEqual({
+      score: 3 * 3,
+      structuresDestroyed: 0,
+      capturesHeldTicks: CAPTURE_TICKS - (capturedOn[0] ?? CAPTURE_TICKS),
+      checkpointsReached: 3,
+    });
+    const owners = sim
+      .snapshot()
+      .entities.flatMap(({ capture }) => (capture === null ? [] : [capture.owner]));
+    expect(owners.filter((owner) => owner === 'dark')).toHaveLength(1);
+    expect(owners).not.toContain('light');
+  });
+
+  it('is deterministic with a capture scored: a replay reproduces every checkpoint hash', () => {
+    const replay = recordReplay(
+      CAPTURE_SETUP,
+      { ticks: CAPTURE_TICKS, checkpointEvery: 10, commandsFor: takeCathedral },
+      createTarget,
+    );
+
+    expect(runReplay(replay, createTarget).firstDivergence).toBeNull();
   });
 });

@@ -21,12 +21,29 @@ import { ResultsScreen } from './ResultsScreen';
 let root: Root | undefined;
 let stop = (): void => undefined;
 
-/** Mounts the screen after a light win and records every intent it emits. */
+/** Mounts the screen after a light win of a local match and records every intent it emits. */
 function mount(): { readonly container: HTMLElement; readonly intents: UiIntent[] } {
   const store = createAppStore({
     content: TEST_CONTENT,
     match: { ...matchSlice.getInitialState(), result: matchResultFixture(), durationSeconds: 60 },
-    matchSetup: { ...matchSetupSlice.getInitialState(), playerTeam: 'light' },
+    matchSetup: {
+      ...matchSetupSlice.getInitialState(),
+      mode: 'local',
+      playerTeam: 'light',
+      // A local match's rosters: what Play again repeats (an online Duel's setup is never repeated).
+      allies: [
+        {
+          legendId: 'light-1',
+          displayName: 'Tester',
+          classId: 'sentinel',
+          specId: null,
+          isBot: false,
+          isPlayer: true,
+          isRover: true,
+          team: 'light',
+        },
+      ],
+    },
   });
   const intents: UiIntent[] = [];
   stop = eventBus.on('ui-intent', (intent) => intents.push(intent));

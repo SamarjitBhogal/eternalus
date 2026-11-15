@@ -15,6 +15,7 @@ const entity = (kind: string, family: string): EntitySnapshot => ({
   transform: null,
   health: null,
   progression: null,
+  aether: null,
   area: null,
   capture: null,
 });

@@ -4,7 +4,7 @@ description: One recipe per kind of addition, from a Legend class to a port and 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-08
+last-reviewed: 2026-11-09
 tags: [architecture, recipes, extension-points, ocp, registries]
 paths:
   [
@@ -116,9 +116,11 @@ R14 "new view" and R16 "new command".
   so it fails to compile without one) and, only if lifecycle differs,
   `core/entities/mobs/<Name>.ts` + `.test.ts`. Scoring needs no code: the mob family's death rule
   scores every `MobKind` by its weight. A new scoring rule (another victim family, such as team
-  boss kills, or a new counter) is one entry in a rule registry in `core/match/Scoring.ts` plus, for
-  a new counter, a `TeamStats` or `LegendStats` field and its counter name; a `ScoreBook` writer
-  only if the rule is not a plain award (DEC-211; 12 §5).
+  boss kills, another event, or a score for each tick) is a rule class in `core/match/rules/` that
+  implements one of `HitRule`, `DeathRule`, `ScoringListener` or `TickScorer`
+  (`core/match/ScoringRule.types.ts`), and one line in `core/match/defaultScoringRules.ts`; a new
+  counter is one `TeamStats` or `LegendStats` field and its 0; a `ScoreBook` writer only if the
+  rule is not a plain award (DEC-211, DEC-221; 12 §5).
 - **Registry line:** none for a flavour; `defaultEntityRegistry.ts` for a class.
 - **Tests:** content validation; a `SpawnSystem` scenario spawns a horde of it at the configured
   size; a `MinionController` scenario (attacks within N ticks); determinism.

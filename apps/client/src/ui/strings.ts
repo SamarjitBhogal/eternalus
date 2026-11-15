@@ -3,6 +3,7 @@ import type { DetailSlot, RoleRatingAxis } from '../bridge/catalogue.types';
 import type { MatchVerdict } from '../bridge/domain.types';
 import type { MenuRoute, SessionPhase, SessionReason } from '../bridge/events';
 import type { HudAllegiance, HudBlockReason } from '../bridge/hud.types';
+import type { ResultsStatus } from '../bridge/selectors/selectResultsView';
 
 /**
  * Banner text per `session.reason`: every `SessionReason` but the popup ones has one (a missing
@@ -14,6 +15,7 @@ const REASON_BANNERS: Readonly<Record<string, string>> = {
   cancelled: 'Match cancelled.',
   'match-failed': 'Match could not start.',
   'load-failed': 'Loading failed.',
+  'duel-unavailable': 'Connection to the Duel server was lost.',
 } satisfies Record<
   Exclude<SessionReason, 'select-timeout' | 'match-crashed' | 'screen-crashed'>,
   string
@@ -32,6 +34,7 @@ export const STRINGS = {
   menu: {
     navLabel: 'Main menu',
     startMatch: 'Start match',
+    duelOnline: 'Duel online',
     loadouts: 'Loadouts',
     settings: 'Settings',
     about: 'About / credits',
@@ -85,19 +88,35 @@ export const STRINGS = {
   },
   loadouts: { title: 'Loadouts', classesTitle: 'Classes' },
   profile: { history: 'Match history and achievements appear here.' },
+  duelQueue: {
+    title: 'Duel online',
+    searching: 'Searching for an opponent…',
+    cancel: 'Cancel',
+  },
   /**
    * The win/lose screen, wording kept as built (DEC-134 (1)); its verdict line is core content
    * (`selectVerdictLine`, DEC-83).
    */
   results: {
-    /** The banner without a result (results follow `match-ended`, so only a bug shows it). */
+    /**
+     * The banner without a verdict: a Duel the other player left, or no result (results follow
+     * `match-ended` or `duel-ended`, so only a bug shows that).
+     */
     title: 'Match results',
-    noResult: 'No result recorded.',
     /** The banner per verdict: the owner's "VICTORY or DEFEAT" (2026-10-27); a draw (DEC-77). */
     verdicts: { victory: 'VICTORY', defeat: 'DEFEAT', draw: 'DRAW' } satisfies Record<
       MatchVerdict,
       string
     >,
+    /**
+     * The status line when there is no verdict line from content: an online Duel the other player
+     * left (ADR 0016), or no result (results follow `match-ended` or `duel-ended`, so only a bug
+     * shows that).
+     */
+    statuses: {
+      'opponent-left': 'Opponent left.',
+      'no-result': 'No result recorded.',
+    } satisfies Record<Exclude<ResultsStatus['kind'], 'verdict-line'>, string>,
     /** The ended match's length, `mm:ss` (`selectMatchDurationText`). */
     duration: (time: string): string => `Match length ${time}`,
     countdownLabel: 'Time left before the main menu',
@@ -124,6 +143,7 @@ export const STRINGS = {
       profile: 'Profile',
       settings: 'Settings',
       about: 'About',
+      'duel-queue': 'Duel queue',
     } satisfies Record<MenuRoute, string>,
   },
   /** Shown where an action has no binding (`KeyGlyph`, the settings list). */

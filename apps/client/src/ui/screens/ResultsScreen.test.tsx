@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { matchResultFixture } from '../../bridge/__fixtures__/matchResultFixtures';
-import type { PlayableTeam } from '../../bridge/domain.types';
+import type { MatchEnding, PlayableTeam } from '../../bridge/domain.types';
 import { matchSetupSlice } from '../../bridge/slices/matchSetupSlice';
 import { matchSlice } from '../../bridge/slices/matchSlice';
 import selectionStageStyles from '../components/SelectionStage.module.css';
@@ -22,6 +22,25 @@ const CONTENT = {
   sovereignNames: { light: 'Queen', dark: 'Tyrant' },
 };
 
+/** A local match's setup: its allies are what a rematch repeats. */
+const LOCAL_SETUP = {
+  ...matchSetupSlice.getInitialState(),
+  mode: 'local',
+  playerTeam: 'light',
+  allies: [
+    {
+      legendId: 'light-1',
+      displayName: 'Tester',
+      classId: 'sentinel',
+      specId: null,
+      isBot: false,
+      isPlayer: true,
+      isRover: true,
+      team: 'light',
+    },
+  ],
+} as const;
+
 /** The screen after a match `winner` won (`null`: a draw; `'none'`: no result) for light. */
 const render = (winner: PlayableTeam | null | 'none', resultsMs = 30_000): string =>
   renderWithStore(<ResultsScreen />, {
@@ -31,11 +50,18 @@ const render = (winner: PlayableTeam | null | 'none', resultsMs = 30_000): strin
       result: winner === 'none' ? null : matchResultFixture({ winner }),
       durationSeconds: winner === 'none' ? null : 872,
     },
-    matchSetup: {
-      ...matchSetupSlice.getInitialState(),
-      playerTeam: 'light',
-      countdownsMs: { select: 0, reveal: 0, results: resultsMs },
-    },
+    matchSetup: { ...LOCAL_SETUP, countdownsMs: { select: 0, reveal: 0, results: resultsMs } },
+  });
+
+/**
+ * The screen after an online Duel played for dark that the server ended: its setup has no rosters
+ * (the session publishes it when the first snapshot arrives).
+ */
+const renderDuel = (duel: MatchEnding): string =>
+  renderWithStore(<ResultsScreen />, {
+    content: CONTENT,
+    match: { ...matchSlice.getInitialState(), duel },
+    matchSetup: { ...matchSetupSlice.getInitialState(), mode: 'duel', playerTeam: 'dark' },
   });
 
 const heading = (html: string): string | undefined => /<h1[^>]*>([^<]*)<\/h1>/.exec(html)?.[1];
@@ -74,7 +100,7 @@ describe('ResultsScreen', () => {
   it('says so, and names no verdict, without a result', () => {
     const html = render('none');
     expect(heading(html)).toBe(STRINGS.results.title);
-    expect(html).toContain(STRINGS.results.noResult);
+    expect(html).toContain(STRINGS.results.statuses['no-result']);
     expect(html).not.toContain('Match length');
   });
 
@@ -86,5 +112,32 @@ describe('ResultsScreen', () => {
       'bottom',
     ]);
     expect(html).toContain(STRINGS.characterSelect.teamBadge(TEST_CONTENT.teamNames.light));
+  });
+
+  it.each([
+    ['dark', 'VICTORY'],
+    ['light', 'DEFEAT'],
+    [null, 'DRAW'],
+  ] as const)(
+    "shows a finished Duel's verdict for winner %s from the player's own team",
+    (winner, title) => {
+      expect(heading(renderDuel({ winner, reason: 'finished' }))).toBe(title);
+    },
+  );
+
+  it.each([null, 'dark'] as const)(
+    'names the opponent leaving, and no verdict, after a Duel the other player left (winner %s)',
+    (winner) => {
+      const html = renderDuel({ winner, reason: 'opponent-left' });
+      expect(heading(html)).toBe(STRINGS.results.title);
+      expect(html).toMatch(
+        new RegExp(`<p [^>]*role="status"[^>]*>${STRINGS.results.statuses['opponent-left']}</p>`),
+      );
+    },
+  );
+
+  it('offers no rematch after an online Duel, whose setup is not repeatable', () => {
+    const html = renderDuel({ winner: 'dark', reason: 'finished' });
+    expect(buttonNames(html)).toEqual([STRINGS.results.continue, STRINGS.results.mainMenu]);
   });
 });

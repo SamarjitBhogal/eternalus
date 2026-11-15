@@ -16,6 +16,20 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [x] **BUG-2: interior wall health (2026-11-12, PR #96, SCRUM-435).** Every `'wall'` map object
+      uses the WallSegment value from balancing.md (`content/maps/mapObjectDefinitions.ts`): the
+      Stronghold's wall ring and the `'wall'` features inside it alike. The playtest called the
+      inner walls "interior walls" and reported "player attack is weak" because they take long to
+      break. No spec gives the inner walls their own value. Should the `'wall'` features inside the
+      Stronghold ring keep the WallSegment value, or get their own (which number)?
+  - **Answered 2026-11-13 by DEC-247** (chat, PR #96). Not built yet (BUG-2).
+
+- [x] **BUG-3: minions attack obstacles (2026-11-12, PR #96, SCRUM-436).** Today a stuck unit
+      paths around an obstacle (DEC-193); minions never attack obstacles or props. The playtest
+      asked for minions to attack them. Keep DEC-193, or should minions attack obstacles (and
+      which ones: props only, or blocking obstacles too)?
+  - **Answered 2026-11-13 by DEC-248** (chat, PR #96). Not built yet (BUG-3).
+
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on
       every map feature, so `map/strongholdRing.ts` checks at run time that a Stronghold has it
@@ -34,6 +48,27 @@ Reply inline (`Decision: …`).
       `map/WorldMap.ts` (a follow-up PR; no drive-by refactor here). (3) Doc 15's invariant
       catalogue does not list `NoMapObjectOverlapInvariant` (`no-map-object-overlap`); a
       doc-gardening fix. Approve which to schedule, or drop them.
+
+- [ ] **Minion plan MVP gaps (1): zone level-up numbers (2026-11-06, refreshed 2026-11-12,
+      PR #81).** Zone level-up (reference 02, MVP) is designed in architecture 07 §7 and now
+      scheduled as minion plan phase M10; `CaptureSystem` is on the phase branch (PR #64), so
+      only your answers block it. (a) Which zones count: the Cathedral only, or all three central
+      zones (OQ-47)? (b) The numbers: `balancing.md`'s `Recommendation:` is +1 minion level for
+      that lane's newly spawned minions after 90 s of continuous ownership, at most 3, all lost
+      with the zone. Approve, or give others. (c) How it is built (CodeRabbit on PR #81): the
+      plan proposes applying the level from content by a handler of `CaptureSystem`'s ownership
+      events instead of 07 §7's status effect (one minion level with two sources, DEC-168 B3),
+      and removing it on the same tick the zone is lost. Approve both, or keep 07 §7's status
+      effect and say when the level is removed.
+
+- [ ] **Minion plan MVP gaps (2): checkpoint defenders sign-off (2026-11-06, refreshed
+      2026-11-12, PR #81).** M6b (checkpoint defenders) no longer waits for PR #64, which merged
+      on 2026-11-08. Sign off the recommendations of the "Minion M6" item (1) below (the leash is
+      the zone's radius; defenders at an unowned point are neutral), and M6b can start.
+
+- [ ] **Minion plan MVP gaps (3): who owns the zone cooldown reduction (2026-11-06, PR #81).**
+      The zone's cooldown reduction (FR-041, 07 §7) is Legend-side, not minion work, and no plan
+      schedules it. Who owns it?
 
 - [ ] **Minion follow-ups: 12 better-than-design items for the tidy PR (critics A and B on
       `fix/minion-stack-followups`, 2026-11-05; DEC-219 (d)) — sign-off per item.** Built on that
@@ -102,11 +137,10 @@ Reply inline (`Decision: …`).
     objective" check is approved.
 
 - [ ] **Minion M6 (`feat/minion-m6-camps-defenders`, overnight 2026-10-30) — camps built,
-      checkpoint defenders blocked.** (1) **Blocked:** checkpoint defenders need `CaptureSystem`,
-      which is only on PR #64 (`feat/capture-points-v2`, open; #49 was closed), not yet on the
-      phase branch. Once #64 is on the phase branch,
-      defenders are a guard plan per checkpoint asked for by `CaptureSystem`. Recommendations
-      ready for then: the leash is the zone's radius; defenders at an unowned point are neutral
+      checkpoint defenders wait on your sign-off.** (1) **Sign-off needed:** checkpoint defenders
+      need `CaptureSystem`, which is on the phase branch since PR #64 merged (2026-11-08; #49 was
+      closed). Defenders are a guard plan per checkpoint asked for by `CaptureSystem`.
+      Recommendations: the leash is the zone's radius; defenders at an unowned point are neutral
       (doc 18 §10, item 4). (2) **Camps as built:** inactive until the countdown ends; light 4
       light, medium 2 medium + 2 light, heavy 1 heavy + 2 medium (balancing.md); 6 m leash; the
       whole group respawns 120 s after its last mob dies, and `camp-cleared` fires then. A camp
@@ -205,6 +239,31 @@ Reply inline (`Decision: …`).
       `docs/decisions/0016-multiplayer-server-authoritative-duel.md` (draft): accept, change or
       reject it. The consolidated questions about the Duel mode and the server are in
       `docs/plan/multiplayer-and-scalability-plan.md` §9; answer them there or inline here.
+  - 2026-11-10 (claudiodh, `feat/duel-server`): because of the 2026-11-13 deadline, claudiodh chose
+    to build the Duel along this draft before acceptance, and approved `ws` 8.22.2 and `@types/ws`
+    8.18.2 (server only). The PR is the ADR's spike: accept, change or reject the ADR on it. Built:
+    `packages/protocol`, `apps/server` (one Node process, `ws` gateway, Duel queue, match host),
+    the client's `game/engine/net/` port and `game/duel/`, a "Duel online" menu entry, and core
+    seating one human per team (`Simulation.humanLegendIdOf`). Left for you: (1) the doc edits the
+    ADR lists as the owner's (`AGENTS.md` "no server", README, requirements, architecture 02/03,
+    the ADR's status). (2) Interim choices to confirm or change, each marked `ponytail:` in code:
+    sides by arrival order (plan §9 question 45); both players are Warriors; no first-to-10-kills
+    rule, the match ends on core's normal verdict; no per-seat visibility filter yet (one shared
+    snapshot); a snapshot every tick, no interpolation or prediction. (3) Core's `intent` command
+    is still a stub (sprint 1.5 PlayerController), so the server translates intents into
+    `move`/`stop`/`attack-target` (`SeatCommands`, ported from the client's `PlayerCommands`);
+    once `intent` is applied in core, `SeatCommands` goes. (4) Map desync risk: the client
+    regenerates the map from `match-found.seed` with its own default `GameConfig`; a config drift
+    between the two builds, or an engine-level Math difference (03 §8), would draw a world that is
+    not the server's. Send the map (or a config hash) on the wire, or accept the risk while both
+    run the same build? (5) Before the Duel is reachable beyond the team's tailnet, the per-seat
+    snapshot with the visibility filter (ADR point 1) is needed: today both seats see everything.
+    (6) Guardrail change for your sign-off: `eslint.config.js` gains import-boundary blocks
+    (protocol imports only core's types; the server never imports the client and only
+    `transport/WsListener.ts` imports `ws`; the client never imports the server or `ws`; core
+    never imports protocol or the server). They only add rules. (7) Architecture 02's folder and
+    may-import tables do not list `apps/server` and `packages/protocol` yet (your edit, with the
+    ADR); their package `AGENTS.md` files hold the rules meanwhile.
 - [ ] **DEC-11 — still open after your answer** (the approvals are recorded as DEC-11 in
       `docs/reference/game-design/13-owner-decisions-log.md`, 2026-10-10; your chat clarifications
       of 2026-10-10 answered the former (1) and (2), see Done). (3) Your Roar row says Legends only
@@ -597,6 +656,19 @@ Reply inline (`Decision: …`).
     there is no next level, and the ring shows full ("Full ring (Recommended)"); the per-Legend
     level and XP become the design ("Adopt it (Recommended)", the critic's better-than-design
     item). Recorded in DEC-224. Nothing waits.
+  - Since `feat/hud-aether-bar` (2026-11-09), the entity snapshot also carries a Legend's aether
+    (left and full), so the HUD's aether bar is live. Answered 2026-11-09 (question dialog): the
+    bar only, no regeneration until the first ability spends aether ("Bar only, no regen
+    (Recommended)"; OQ-56 stays open); the owner left the data path to the session ("choose the
+    best long-term design with the least tech-debt"), which made the per-Legend aether group the
+    design. Recorded in DEC-230. Nothing waits.
+  - The aether bar's critic (2026-11-09) found two designs better than the docs: (A) the player
+    snapshot should hold only what the player alone has (the ability slots) while the bridge joins
+    the Legend's health, aether, level and XP from its entity snapshot, so each value is in the
+    snapshot once; (B) one class should build each entity's snapshot, so a new group no longer
+    changes `GameState`. Answered 2026-11-09 (chat): "A only if there is an assurance that B will
+    be done in the near-future. no tech-debt if possible, when possible." No plan schedules
+    either, so both were built on `feat/hud-aether-bar`. Recorded in DEC-232. Nothing waits.
   - Answered 2026-10-28 (the non-blocking decision page, in chat): "Keep", with: "Keep. Empty frames
     for abilities that do not yet exist. Wuuthrad was used as weapon reference, so that artwork
     exists, as well as some ability artwork (not associated with real abilities yet). Empty frames,
@@ -2035,6 +2107,8 @@ Reply inline (`Decision: …`).
 - [ ] **HC-Q46 — Only the match code can reach the match writers (match-director critic round 3, better than the design; DEC-139).** `GameState.match` is a `MatchRecord` (DEC-177), so every system, command handler and bot controller that holds `GameState` can call `endMatch`, `holdIdle` and the other writers. Only review keeps DEC-172's "one caller each" (today the calls are only in `match/` and `Simulation.ts`). Options: (a) type the public `GameState.match` as the read-only `MatchState` and give the `MatchRecord` only to `DirectorContext` and `Simulation` (the compiler stops other callers; changes the 03 §2 sketch); (b) an ESLint `no-restricted-syntax` rule that refuses `.match.<writer>(` outside `match/`, `Simulation.ts` and tests; (c) leave it to review. Agent's recommendation: (a), in its own PR with the HC-S7 split, not in the match-director PR (its critic rounds are used up, and round 2 had the same exposure).
   - Answered 2026-11-05 in chat (DEC-210): "(a) Read-only type". To build: its own PR from the phase
     branch after the match-director PR (#74) merges, with the HC-S7 split.
+  - 2026-11-14: the build also covers `MatchRecord.scoreBook` (DEC-211), which GL-4 (PR #93) added
+    as a writer-reachable field (DEC-250 (1)).
 - [x] **HC-Q47 — One small roster type for the HUD's "re-send if unchanged" rule (GL-5 targeted critic
       after DEC-221, better than the design; DEC-139).** `MatchBridge.keepUnchanged` keeps each
       unchanged HUD roster item and the last array (DEC-221 (3), B2). The critic proposes moving it
@@ -2045,6 +2119,45 @@ Reply inline (`Decision: …`).
       keep it as it is.
   - Answered 2026-11-08 in chat (DEC-222): "(b) Build it in GL-16". To build: in GL-16 (game-loop
     plan §7), with its own unit test, the length-change branch included.
+- [ ] **HC-Q57 — The online Duel in the results flow: five better-than-design items and one rule
+      question (critics on the #97 merge into GL-4, PR #93; DEC-139).** The merge keeps GL-5's
+      results flow for a Duel (`duel-ended`, `selectMatchVerdict`, `ResultsScreen`). Both critics
+      approved it and proposed:
+  - (1) `selectMatchVerdict` returns no verdict for a Duel the other player left. Today it says
+    `draw`, and only `ResultsScreen` overrides it; a later reader (post-game GL-10, match history)
+    would count a draw. Or one bridge selector that holds all the results screen's rules.
+  - (2) Publish the Duel's setup when the Duel starts, not in `prepareWorld`. The setup's team
+    then always exists, and `DuelOutcome.ownTeam` with its fallback branch goes away.
+  - (3) `DuelResult` (`DuelSession.types.ts`) and `DuelOutcome` (`bridge/events.ts`) hold the same
+    data; make them one type.
+  - (4) One rematch rule shared by the session (`canRepeatMatchSetup`) and `ResultsScreen`, in
+    `bridge/` as `canConfirmSelection` is, and stated as "not after a Duel" instead of "the setup
+    has rosters".
+  - (5) A match-mode strategy (local, Duel) for `SessionController`, which now asks "is this a
+    Duel" in `prepareWorld`, `createMatch` and `canRepeatMatchSetup`.
+  - (6) Rule question: after a match ends the world runs on for 5 s (DEC-92). A Duel goes to the
+    results at once, as #97 built it (the server closes the connection). Keep, or give a Duel the
+    run-on (it needs the server to keep sending snapshots)?
+  - Also a finished Duel has no status line under its verdict (the line comes from core's result,
+    which a Duel does not have); (1) decides what it shows.
+  - Answer per item: build now on PR #93, schedule, or keep as it is.
+  - Renumbered 2026-11-14 from HC-Q48: the ability framework (`feat/ability-framework`, ADR 0026)
+    took HC-Q48 first.
+  - Answered 2026-11-14 in chat (DEC-250): "have a critic look at the open items; if they pass, put
+    them in", then "option b is better. also leaving a duel when the other user is still in said
+    duel counts as a loss." (1) to (4): the critic passed them and they are built on PR #93
+    (`selectResultsView`, the setup published at the first snapshot, `MatchEnding`,
+    `canRepeatSetup`). (5): scheduled with HC-S7. (6): option B, the run-on is built with the
+    Duel's own win rules (DEC-36); until then a finished Duel goes to the results at once. A
+    finished Duel keeps no status line.
+  - Still open: after the opponent leaves, does the player who stayed see VICTORY? The leaver
+    takes a loss (DEC-250 (4)); the screen for the player who stayed shows no verdict until the
+    owner says.
+  - Critic notes on the built delta (2026-11-14), for the HC-S7 work: `createMatch` still asks
+    `duel.status === 'started'` while `canRepeatMatchSetup` reads `setup.mode`, so the strategy
+    should key on `setup.mode`; `MatchSetupDraft` could be a union by `mode`, so that "a Duel has
+    no rosters" is a type fact. For doc-gardening: the folder table of architecture 02 has no row
+    for `game/duel/` and `game/engine/net/`, which import `@eternalus/protocol` (#97).
 - [ ] **HC-Q42 — Where do Legends spawn at tick 0: all at their Citadel (DEC-80), or as built (match-director critic).** DEC-80 says "All Legends spawn at their Citadel at tick 0." As built (architecture 18 §8, MS-20), each bot laner spawns at its team's end of its assigned lane, and only the Rovers (the bot Rover and the human's Legend, DEC-173) spawn at their team's Stronghold. Keep the as-built lane start for laners and narrow DEC-80 to respawns, or spawn every Legend at its Citadel and let laners walk to their lanes?
 - [ ] **HC-S7 — Scheduled: split `Simulation.ts` and `SessionController.ts` below the ~300-line
       guide (PR #68 review, follow-up 3).** `Simulation.ts` (461 lines) holds start-up helpers
@@ -2059,6 +2172,9 @@ Reply inline (`Decision: …`).
     `planLanes`, `humanSlotOf`, `controllerOf`, `spawnSlot`, `strongholdOf`, `legendRefusal`)
     are one responsibility: the split is a `RosterSpawner` class. #56, #57, #58, #66 and #67 have
     merged; open PRs #64 and #32 still edit the file. `SessionController.ts` is 326 lines.
+  - 2026-11-14 (HC-Q57 (5), DEC-250 (2)): the `SessionController` split also takes the match-mode
+    strategy: `LocalMatchStart` and `DuelMatchStart` in a `Record<MatchMode, …>` registry, keyed
+    by the setup's `mode`, so that `createMatch` and `canRepeatMatchSetup` hold no Duel branch.
 - [ ] **HC-S8 — Scheduled with GL-3: filter the timeline rules by action kind (match-director
       critic).** `validateGameConfig` reads every timeline entry as `enter-phase`: the rules "at
       least one `enter-phase` entry" and "the first `enter-phase` entry ends the countdown" count
@@ -2209,6 +2325,19 @@ Reply inline (`Decision: …`).
       `control-immune` (stun-lock risk once a producer reapplies stun), `onExpire` (crushed →
       slowed), bleed ignoring shields, concussion's aether cost, blind's vision cut, a max-health
       stat for the FR-029 aura. Confirm or correct.
+      (6) 2026-10-29 (`feat/status-control-immune`): `polarity`, `controlClass`, `onExpire` and
+      `control-immune` are built from 05 §8 and more-abilities §7. Kinds mapped to `controlClass`:
+      hard control → `hard` (stun, crushed), control-lite → `soft` (concussion, blind), the rest
+      `none`. `control-immune` refuses every `hard` status, so it also blocks `crushed`, which §7's
+      kind calls hard control but its immunity list (stun, knockup, pulled, taunted) leaves out;
+      and no `control-immune` follows `crushed`. Confirm or correct.
+      Answered 2026-10-30 (DEC-99 (a)): `crushed` is hard control; `control-immune` blocks it. It
+      also follows it (derived from more-abilities §7, not asked).
+      (7) Still open after (6): a `stun` refreshed before it runs out (`refresh` restarts its
+      timer) never expires, so `control-immune` never follows; a producer that reapplies every
+      second keeps a 2 s stun up forever. What guarantees the recovery window: a hard status
+      cannot be refreshed while active, a cap on total stun time, or something else?
+      Answered 2026-10-30 (DEC-99 (b)): refresh stays; a re-applied stun restarts its timer.
   - Decision: DEC-40 to DEC-42 (`docs/reference/game-design/13-owner-decisions-log.md`,
     2026-10-16, PR #36). DEC-42's open questions are their own item (PR #36).
 - [ ] **MS-28 — plan every AI-driven enemy in the minion plan (changes DEC-47's split).**
@@ -2244,6 +2373,22 @@ Reply inline (`Decision: …`).
       `onHit`, heavy and parry wait for the ability framework (4.2). SCRUM-287's "validation
       rejects a class-locked weapon in the wrong loadout" waits for `WeaponAllowedRule`
       (SCRUM-290).
+- [x] **ObjectPool — pooled `GameEvents` payloads (SCRUM-427, branch `feat/object-pool`).** The
+      `ObjectPool` base is built in `utils/` (phase 1 plan, sprint 1.2: "pool resets fields on
+      acquire and nulls references on release"). The item's "done when" (high-frequency
+      `GameEvents` payloads come from the pool) is **not wired**, because it clashes with how
+      events work today: `GameEvents.emit` keeps every payload in the recent-events ring buffer
+      (diagnostic reports), and handlers (`GameState`, `ProgressionSystem`, the client via
+      `Simulation.on`) may keep a payload after `emit` returns. A recycled payload would silently
+      change those records. Options: (1) pool only projectiles first (04 §11), and keep event
+      payloads unpooled until profiling shows GC pauses (NFR-023 soak); (2) pool payloads and copy
+      them into the ring buffer, with a rule that handlers never keep a payload. Which one?
+      Option (1) also means updating 02-coding-principles (Object Pool row) and the phase 1 plan
+      item, which list event payloads as pooled; 04 §11 already names only projectiles.
+      Option (2) also needs a snapshot rule: payloads hold nested references (`DamageSource`,
+      `memberIds`, `bars`), so the ring buffer would need a deep or immutable copy, not a shallow one.
+  - Answered 2026-10-30 (DEC-94): option (1), pool projectiles only; payloads stay unpooled until
+    profiling shows GC pauses.
 - [ ] **PR #30 — schedule occupancy-driven cutaways** (owner: Gurshaan). A building's roof opens
       today only when it is clicked; no plan item has the roof open while a unit is inside it.
       The PR #30 notes said "Phase 2 sprints 2.1 and 2.4", but those sprints are the Structure
@@ -2340,6 +2485,13 @@ Reply inline (`Decision: …`).
       Its critic round 1 better-than-design items (one feature may back several entities; one
       `MatchBridge.byFeature` helper) were answered 2026-11-09 (DEC-233): "A: build both
       (Recommended)", built in GL-16.
+- [ ] **GL-17 entity component query (DEC-229; GL-15 critic round 2, better than the design)** —
+      Owner: sholtzman, `refactor/entity-component-query` (base: the phase branch after #79 and
+      #85 merge; they change `EntityStore`). A read-only query port on `EntityStore` for the
+      entities that carry a given component, beside `SpaceQuery` and `PathQuery`.
+      `CaptureHoldRule` takes it instead of the whole `GameState`, and the capture-point lookups
+      of `CaptureHoldRule`, `CaptureProgressBoundsInvariant` and `CaptureSystem` move to it. Close
+      this item when its PR merges.
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
       `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`

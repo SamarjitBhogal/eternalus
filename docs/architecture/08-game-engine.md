@@ -4,13 +4,14 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-08
+last-reviewed: 2026-11-09
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
     'apps/client/src/game/engine/**',
     'apps/client/src/game/views/**',
     'apps/client/src/game/Match.ts',
+    'apps/client/src/game/HealthBarVisibility.ts',
   ]
 related:
   [
@@ -247,6 +248,11 @@ flowchart LR
   only and never mutate state (rule 6).
 - Interpolation: views draw `prev + (current - prev) × alpha` for position and facing; entities
   that appeared this tick draw at `current` (no ghost from the origin).
+- World health bars: `EntityLayer` has `HealthBarView` draw a unit's bar after every entity of
+  its layer, so no entity hides it. Which units show one, and on which side, is decided in `game/`
+  by `HealthBarVisibility` (DEC-195), which reads `damage-applied` and `entity-removed` through
+  `Simulation.on`, as §6 designs `SoundView`; `Match` injects its rule into the layer, because
+  views read only snapshots.
 - `MinimapView` runs at a lower cadence into the `'minimap'` layer (`06-map-and-minimap.md` §8).
 
 ## 9. Performance budget and how it is measured

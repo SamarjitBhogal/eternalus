@@ -1,7 +1,6 @@
 import type { CaptureSnapshot, Team } from '@eternalus/core';
 
 import type { Renderer } from '../engine/render/Renderer';
-import type { WorldPoint } from '../engine/render/Renderer.types';
 import { DefaultEntityView } from './DefaultEntityView';
 import type { EntityDrawState } from './EntityView.types';
 import {
@@ -14,6 +13,7 @@ import {
   CAPTURE_OUTLINE_WIDTH,
   CAPTURE_PRESENCE_BAR_HEIGHT,
 } from './entityViews.constants';
+import { rectangle } from './rectangle';
 
 /** The sides of the presence bar, left to right. */
 const PRESENCE_ORDER: readonly Team[] = ['light', 'neutral', 'dark'];
@@ -57,16 +57,13 @@ export class CapturePointView extends DefaultEntityView {
   ): void {
     const bottom = top + CAPTURE_BAR_HEIGHT;
     renderer.fillPolygon(
-      CapturePointView.rectangle(left, top, CAPTURE_BAR_WIDTH, CAPTURE_BAR_HEIGHT),
+      rectangle(left, top, CAPTURE_BAR_WIDTH, CAPTURE_BAR_HEIGHT),
       CAPTURE_BAR_BACKGROUND_COLOR,
     );
     const filled = CAPTURE_BAR_WIDTH * Math.abs(capture.progress);
     if (filled > 0) {
       const leaning = capture.progress > 0 ? 'light' : 'dark';
-      renderer.fillPolygon(
-        CapturePointView.rectangle(left, top, filled, CAPTURE_BAR_HEIGHT),
-        this.colorOf(leaning),
-      );
+      renderer.fillPolygon(rectangle(left, top, filled, CAPTURE_BAR_HEIGHT), this.colorOf(leaning));
     }
     for (let mark = 1; mark < capture.checkpoints; mark += 1) {
       const x = left + (CAPTURE_BAR_WIDTH * mark) / capture.checkpoints;
@@ -89,7 +86,7 @@ export class CapturePointView extends DefaultEntityView {
     renderer: Renderer,
   ): void {
     renderer.fillPolygon(
-      CapturePointView.rectangle(left, top, CAPTURE_BAR_WIDTH, CAPTURE_PRESENCE_BAR_HEIGHT),
+      rectangle(left, top, CAPTURE_BAR_WIDTH, CAPTURE_PRESENCE_BAR_HEIGHT),
       CAPTURE_BAR_BACKGROUND_COLOR,
     );
     const total = PRESENCE_ORDER.reduce((sum, team) => sum + presence[team], 0);
@@ -98,21 +95,11 @@ export class CapturePointView extends DefaultEntityView {
       const width = (CAPTURE_BAR_WIDTH * presence[team]) / total;
       if (width > 0) {
         renderer.fillPolygon(
-          CapturePointView.rectangle(x, top, width, CAPTURE_PRESENCE_BAR_HEIGHT),
+          rectangle(x, top, width, CAPTURE_PRESENCE_BAR_HEIGHT),
           this.colorOf(team),
         );
       }
       x += width;
     }
-  }
-
-  /** The four corners of a rectangle, clockwise from its top-left corner. */
-  private static rectangle(x: number, y: number, width: number, height: number): WorldPoint[] {
-    return [
-      { x, y },
-      { x: x + width, y },
-      { x: x + width, y: y + height },
-      { x, y: y + height },
-    ];
   }
 }

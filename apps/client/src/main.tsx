@@ -24,10 +24,13 @@ import { UiImageLoader } from './data/resources/loaders/UiImageLoader';
 import { ResourceController } from './data/resources/ResourceController';
 import { createCoreCatalogue } from './game/content/coreCatalogue';
 import { PLACEHOLDER_PLAYER_NAME } from './game/content/placeholderSetup';
-import { createBrowserMatch } from './game/createBrowserMatch';
+import { createBrowserDuelMatch } from './game/createBrowserDuelMatch';
+import { createBrowserMatch, type BrowserMatchDeps } from './game/createBrowserMatch';
 import { createMatchSeed } from './game/createMatchSeed';
 import { readDeveloperFlags } from './game/developerFlags';
 import { isAppleUserAgent } from './game/isAppleUserAgent';
+import { DEFAULT_DUEL_SERVER_URL } from './game/engine/net/DuelServer.constants';
+import { WebSocketTransport } from './game/engine/net/WebSocketTransport';
 import { PerformanceSessionClock } from './game/engine/time/PerformanceSessionClock';
 import { GameCanvas } from './game/GameCanvas';
 import { INPUT_ACTIONS } from './game/input/keybindings';
@@ -123,6 +126,17 @@ const catalogue = createCoreCatalogue({
   knownAssetIds: new Set(ASSET_MANIFEST.assets.map((entry) => entry.id)),
   overrides: developer.displayOverrides,
 }).load();
+// The Duel server's address (ADR 0016): read here only, like every other build-time setting.
+const duelServerUrl: unknown = import.meta.env.VITE_DUEL_SERVER_URL;
+const browserMatchDeps: BrowserMatchDeps = {
+  window,
+  document,
+  gameConfig,
+  bus: eventBus,
+  settings,
+  clock: sessionClock,
+  sinks: pageSinks,
+};
 const session = new SessionController({
   bus: eventBus,
   clock: sessionClock,
@@ -135,15 +149,14 @@ const session = new SessionController({
   createRosterRng,
   themeRoot: document.documentElement,
   prepareWorld: (seed) => prepareMatchWorld(gameConfig, seed),
-  createMatch: createBrowserMatch({
-    window,
-    document,
-    gameConfig,
-    bus: eventBus,
-    settings,
-    clock: sessionClock,
-    sinks: pageSinks,
-  }),
+  createMatch: createBrowserMatch(browserMatchDeps),
+  createDuelMatch: createBrowserDuelMatch(browserMatchDeps),
+  createDuelTransport: () =>
+    new WebSocketTransport(
+      typeof duelServerUrl === 'string' && duelServerUrl !== ''
+        ? duelServerUrl
+        : DEFAULT_DUEL_SERVER_URL,
+    ),
   logger,
   resources,
   credits: describeCredits(ASSET_MANIFEST.assets, ASSET_LICENCES),

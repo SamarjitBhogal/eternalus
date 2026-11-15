@@ -87,6 +87,11 @@ export type GameEventMap = {
     readonly pointId: string;
     readonly team: Team;
     readonly checkpoint: number;
+    /**
+     * The reaching team's living Legends whose centre is on the zone's area when the checkpoint is
+     * reached (DEC-145 (a), DEC-223 (4a)), in store order: the Legends that win it.
+     */
+    readonly presentLegendIds: readonly EntityId[];
   };
   readonly 'capture-point-owner-changed': {
     readonly pointId: string;

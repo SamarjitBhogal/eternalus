@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { matchResultFixture } from '../__fixtures__/matchResultFixtures';
-import type { PlayableTeam } from '../domain.types';
+import type { MatchEndReason, PlayableTeam } from '../domain.types';
 import { matchSetupSlice } from '../slices/matchSetupSlice';
 import { matchSlice } from '../slices/matchSlice';
 import { selectMatchVerdict } from './selectMatchVerdict';
@@ -17,6 +17,17 @@ const verdictOf = (winner: PlayableTeam | null | 'no-result', team: PlayableTeam
           ? null
           : matchResultFixture({ winner, playerTeam: team === 'light' ? 'dark' : 'light' }),
     },
+    matchSetup: { ...matchSetupSlice.getInitialState(), playerTeam: team },
+  });
+
+/** The store after `duel-ended` with `winner` and `reason`, the setup's team being `team`. */
+const duelVerdictOf = (
+  winner: PlayableTeam | null,
+  team: PlayableTeam | null,
+  reason: MatchEndReason = 'finished',
+) =>
+  selectMatchVerdict({
+    match: { ...matchSlice.getInitialState(), duel: { winner, reason } },
     matchSetup: { ...matchSetupSlice.getInitialState(), playerTeam: team },
   });
 
@@ -36,4 +47,23 @@ describe('selectMatchVerdict', () => {
     expect(verdictOf('no-result', 'light')).toBeNull();
     expect(verdictOf('light', null)).toBeNull();
   });
+
+  it.each([
+    ['dark', 'victory'],
+    ['light', 'defeat'],
+    [null, 'draw'],
+  ] as const)('a Duel won by %s for the setup team dark is %s', (winner, verdict) => {
+    expect(duelVerdictOf(winner, 'dark')).toBe(verdict);
+  });
+
+  it('is null for a Duel without a setup team', () => {
+    expect(duelVerdictOf('dark', null)).toBeNull();
+  });
+
+  it.each([null, 'dark', 'light'] as const)(
+    'gives no verdict for a Duel the opponent left (winner %s)',
+    (winner) => {
+      expect(duelVerdictOf(winner, 'dark', 'opponent-left')).toBeNull();
+    },
+  );
 });

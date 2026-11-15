@@ -7,6 +7,8 @@ import type { AuthoredStatusEffect } from './statusEffects.types';
 export const CONCUSSION = {
   id: 'concussion',
   displayName: 'Concussed',
+  polarity: 'debuff',
+  controlClass: 'soft',
   durationSeconds: 3,
   stacking: 'refresh',
   maxStacks: 1,
@@ -16,4 +18,5 @@ export const CONCUSSION = {
   ],
   flags: [],
   periodic: null,
+  onExpire: [],
 } as const satisfies AuthoredStatusEffect;

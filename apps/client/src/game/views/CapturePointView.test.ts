@@ -33,6 +33,7 @@ const zone = (
   transform: { x: AT.x, y: AT.y, radius: 28 },
   health: null,
   progression: null,
+  aether: null,
   area,
   capture,
 });

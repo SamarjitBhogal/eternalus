@@ -4,7 +4,12 @@
  */
 import type { MatchResult } from '@eternalus/core';
 
-const NO_SCORE = { score: 0, structuresDestroyed: 0 } as const;
+const NO_SCORE = {
+  score: 0,
+  structuresDestroyed: 0,
+  capturesHeldTicks: 0,
+  checkpointsReached: 0,
+} as const;
 
 /** A light win by `objective-lost` after 2 minutes (3600 ticks at 30 TPS), no Legends scored. */
 export function matchResultFixture(overrides: Partial<MatchResult> = {}): MatchResult {
