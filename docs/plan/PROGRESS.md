@@ -7879,3 +7879,18 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   "Tests 79 passed (79)"; "Documentation check passed.".
 - Next step: the PR, after #93 merges into `phase/3-sprint-3-work` (merge the phase branch in
   first).
+
+### 2026-11-14 — Phase 3 / DEC-251: merge the new head of feat/match-scoring (#93 with phase/3 at 88f5afd8) — feat/duel-leave-victory — sholtzman + Claude Code
+
+- What was done: merged `a74ecc20` (PR #93's local head: `feat/match-scoring` with
+  `phase/3-sprint-3-work` at `88f5afd8`, #85 minion follow-ups, #86 out-of-combat heal) into
+  this branch as `98edd1bc`. Conflict: this file only (#93's merge entry, then this branch's
+  DEC-251 entry). The other files merged without conflict; outside this file the diff against
+  `a74ecc20` has the same changed lines as `f14e2661..6107cb17`.
+- Checks run: `npm run check` → `EXIT=0` on `98edd1bc` before this entry was added
+  (`eternalus-agent-work/game-loop-plan/duel-merge-a74ecc20-check-2026-11-14.log`): core "Tests
+  1549 passed (1549)"; protocol "Tests 18 passed (18)"; client "Tests 1969 passed (1969)"; server
+  "Tests 79 passed (79)"; "Documentation check passed.". Then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the PR, after #93 merges into `phase/3-sprint-3-work` (merge the phase branch in
+  first).
