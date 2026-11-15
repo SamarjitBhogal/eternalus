@@ -40,16 +40,15 @@ export function connectBusToStore(
       dispatch(hudSlice.actions.reset());
       dispatch(match.reset());
       if (draft === null) return;
-      dispatch(setup.setTeam({ seed: draft.seed, playerTeam: draft.playerTeam }));
+      dispatch(setup.setTeam({ mode: draft.mode, seed: draft.seed, playerTeam: draft.playerTeam }));
       dispatch(setup.setRosters({ allies: draft.allies, enemies: draft.enemies }));
     }),
     bus.on('class-selection', (selection) => dispatch(setup.select(selection))),
     bus.on('selection-locked', (rosters) => dispatch(setup.lockIn(rosters))),
-    bus.on('countdown', ({ kind, remainingMs }) =>
-      dispatch(kind === 'select' ? setup.setCountdown(remainingMs) : setup.setReveal(remainingMs)),
-    ),
-    bus.on('match-result', (result) => dispatch(match.resultChanged(result))),
+    bus.on('countdown', (countdown) => dispatch(setup.countdownChanged(countdown))),
     bus.on('match-clock', (clock) => dispatch(match.clockChanged(clock))),
+    bus.on('match-ended', (event) => dispatch(match.ended(event))),
+    bus.on('duel-ended', (outcome) => dispatch(match.duelEnded(outcome))),
     bus.on('hud-state', ({ player }) => dispatch(hudSlice.actions.hudStateChanged(player))),
     bus.on('structure-state', ({ structures }) => dispatch(match.structuresChanged(structures))),
     bus.on('capture-state', ({ points }) => dispatch(match.capturePointsChanged(points))),

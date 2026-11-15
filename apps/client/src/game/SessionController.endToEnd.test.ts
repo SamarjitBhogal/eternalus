@@ -91,7 +91,7 @@ describe('SessionController with the real match, end to end', () => {
         camera,
         input: new DeviceIntentSource([keyboard, mouse], mapper),
         logger: new NullLogger(),
-        onCrash: request.onCrash,
+        observer: request.observer,
         bridge: {
           bus,
           publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,
@@ -248,15 +248,15 @@ describe('SessionController with the real match, end to end', () => {
 
     expect(first?.scheduler.hasPendingFrame).toBe(false);
     expect(session.listeners(first, firstCanvas)).toBe(0);
-    // The match's only simulation subscriptions are the health bars' two (damage-applied,
-    // entity-removed, DEC-195); its teardown drops each exactly once.
-    expect(first?.unsubscribed).toEqual([1, 1]);
+    // The match's simulation subscriptions: the health bars' two (damage-applied, entity-removed,
+    // DEC-195) and the bridge's `match-ended`; its teardown drops each exactly once.
+    expect(first?.unsubscribed).toEqual([1, 1, 1]);
     expect(session.bus.listenerCount()).toBe(busWithOne);
 
     session.intent({ kind: 'leave-match' });
     expect(second?.scheduler.hasPendingFrame).toBe(false);
     expect(session.listeners(second, secondCanvas)).toBe(0);
-    expect(second?.unsubscribed).toEqual([1, 1]);
+    expect(second?.unsubscribed).toEqual([1, 1, 1]);
     expect(session.bus.listenerCount()).toBe(busBefore);
   });
 

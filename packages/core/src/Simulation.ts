@@ -12,6 +12,7 @@ import { createDefaultCommandHandlers } from './commands/defaultCommandHandlers'
 import { Footprint } from './components/Footprint';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from './config/matchPhases';
 import { validateGameConfig } from './config/validateGameConfig';
+import { SCORING } from './content/match/scoring';
 import { DefaultInvariantRunner } from './diagnostics/DefaultInvariantRunner';
 import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import type { LogContext, Logger } from './diagnostics/Logger.types';
@@ -191,7 +192,15 @@ export class Simulation {
     }
     this.systemContext = { state: this.state, logger };
     if (systems === undefined) {
-      const director = createDefaultMatchDirector({ state: this.state, timeline, debug, logger });
+      // Before any Legend spawns (`spawnRoster`), so `Scoring` hears each one's `entity-spawned`
+      // and gives it a row.
+      const director = createDefaultMatchDirector({
+        state: this.state,
+        timeline,
+        debug,
+        logger,
+        scoring: SCORING,
+      });
       this.pipeline = new DefaultSystemPipeline({
         invariants: new DefaultInvariantRunner({
           debug,
@@ -338,7 +347,12 @@ export class Simulation {
     for (const { id, definitionId, position, team, laneId } of features) {
       if (structures.has(definitionId)) {
         const { kind, hasMapFootprint } = structures.get(definitionId);
-        const placement = { position, team, ...(laneId !== undefined && { laneId }) };
+        const placement = {
+          position,
+          team,
+          mapFeatureId: id,
+          ...(laneId !== undefined && { laneId }),
+        };
         const structure = factory.create(kind, definitionId, placement);
         const body =
           hasMapFootprint === true
