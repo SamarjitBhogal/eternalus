@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-14
+last-reviewed: 2026-11-15
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,20 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-15 (GL-16 critic rounds 4 and 5, better than the design)
+
+The owner's answers of 2026-11-15, in chat and in the question dialog, to the better-than-design
+items of the GL-16 pre-PR critic (rounds 4 and 5, after the merge of GL-4, PR #93). The words are
+kept verbatim outside the repository, in `eternalus-agent-work/game-loop-plan/`
+(`owner-answers-2026-11-15-gl16-r4.md`, `owner-answers-2026-11-15-gl16-r5.md`). DEC-255 and DEC-256
+are this batch (DEC-253 counts as taken: `chore/ci-timeout` names DEC-250 to DEC-253 as other
+sessions'; DEC-254 is on that branch).
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Docs changed                                                                                                 |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| DEC-255 | **The bridge reads by map feature only a group core checks** (GL-16 critic round 4, better-than-design item; amends DEC-233 (2) and DEC-252 (1); DEC-139). `MapFeatureGroupsUniqueInvariant.constants.ts` lists the groups `map-feature-groups-unique` checks, and `MatchBridge.byFeature` took any closure, so the two were copies that could drift: the bridge could read by feature a group the invariant does not check. Core now exports a type `FeatureKeyedGroup` (a type-only API addition; proposed as `keyof typeof FEATURE_GROUPS`, DEC-256 moves it into the snapshot contract), and `byFeature(snapshot, group)` takes a `FeatureKeyedGroup`, so reading another group does not compile. Owner: "build it" (it takes a fifth critic pass, past the three-loop limit).                                                                                                                                                                       | `refactor/map-feature-link`: architecture 13 §10, 15 §3; game-loop plan §7 (GL-16); `INBOX.md` HC-Q59        |
+| DEC-256 | **The feature-keyed groups are part of the snapshot contract** (GL-16 critic round 5, better-than-design item; amends DEC-255; DEC-139). `FeatureKeyedGroup` is declared in `state/Snapshot.types.ts` beside `EntitySnapshot.mapFeatureId` (`keyof Pick<EntitySnapshot, 'health' \| 'capture'>`), not in the invariant's companion file, so the client depends on the snapshot contract, not on a diagnostic. The invariant's `FEATURE_GROUPS` stays in `MapFeatureGroupsUniqueInvariant.constants.ts` (which component backs each group is the invariant's detail) and `satisfies Record<FeatureKeyedGroup, unknown>`, so a missing or an extra group does not compile. Owner: "Type in snapshot (Recommended)", noting "do whichever YOU assess is better"; the session kept that option over the critic's (move `FEATURE_GROUPS` into `state/` too), which would put in `state/` a runtime constant nothing there uses. It takes a sixth critic pass. | `refactor/map-feature-link`: architecture 03 §5, 13 §10, 15 §3; game-loop plan §7 (GL-16); `INBOX.md` HC-Q60 |
 
 ## Batch 2026-11-14, later (GL-16 critic round 3, better than the design)
 

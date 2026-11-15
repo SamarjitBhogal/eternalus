@@ -8381,3 +8381,35 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `npm run docs:check` on this file.
 - Next step: the owner answers the critic round 4 better-than-design item (one exported type for
   the feature-keyed groups); then the PR against `phase/3-sprint-3-work`.
+
+### 2026-11-15 — Phase 3 / GL-16: the feature-keyed groups as one typed contract (DEC-255, DEC-256) — refactor/map-feature-link — sholtzman + Claude Code
+
+- What changed: the owner's answers to the critic round 4 and round 5 better-than-design items
+  (INBOX HC-Q59, HC-Q60; DEC-255, DEC-256). Core exports the type `FeatureKeyedGroup`, declared
+  in `state/Snapshot.types.ts` beside `EntitySnapshot.mapFeatureId` (`keyof Pick<EntitySnapshot,
+'health' | 'capture'>`). The invariant's `FEATURE_GROUPS` stays in
+  `MapFeatureGroupsUniqueInvariant.constants.ts` and `satisfies Record<FeatureKeyedGroup,
+unknown>`, so a missing or an extra group does not compile. `MatchBridge.byFeature(snapshot,
+group)` takes a `FeatureKeyedGroup` instead of a closure, so the client cannot read by feature a
+  group the invariant does not check; `boundMaxHealth` becomes `boundHealth` (only `max` is
+  read). Docs: architecture 03 §5, 13 §10, 15 §3, the game-loop plan's GL-16 row, the decisions
+  log, INBOX HC-Q59 and HC-Q60. Owner words: `eternalus-agent-work/game-loop-plan/`
+  `owner-answers-2026-11-15-gl16-r4.md` ("build it") and `-r5.md` ("Type in snapshot
+  (Recommended)", with "do whichever YOU assess is better"; the session kept that option over the
+  critic's, which also moved the list into `state/`).
+- Fail-first (`eternalus-agent-work/game-loop-plan/gl16-dec255-breaks.md`, three sets as the test
+  changed form; final set): dropping `capture` from `FEATURE_GROUPS` → TS1360 and the test red;
+  adding `aether` → TS2353 and the test red; growing the type alone → TS1360; growing the type
+  and loosening `satisfies` to `Partial` → only the test's `expectTypeOf` (TS2344); the bridge
+  reading `byFeature(snapshot, 'aether')` → TS2345 in `MatchBridge.ts`. Each restored; `cmp`
+  against the saved copies clean.
+- Critic (`architecture-reviewer`): round 5 on the DEC-255 delta approve, 0 blockers; applied the
+  decisions-log wording on DEC-253, this entry, the `expectTypeOf` test, the `boundHealth` TSDoc;
+  its better-than-design item became DEC-256. Round 6 on DEC-256: approve, 0 blockers, 3 nits (two doc nits applied: the plan row names the `index.ts` type export, the 15 §3 source column names DEC-256; the third, the runtime `toEqual`, kept as the test's only runtime assertion). Ponytail on both
+  deltas: no cuts.
+- Checks run: `npm run check` → `EXIT=0` on the DEC-256 tree before this entry was added
+  (`eternalus-agent-work/game-loop-plan/gl16-dec256-check-2026-11-15.log`): core "Tests 1589
+  passed (1589)"; protocol "Tests 18 passed (18)"; client "Tests 1985 passed (1985)"; server
+  "Tests 79 passed (79)"; "Documentation check passed.". Then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the PR against `phase/3-sprint-3-work` (Sam runs the push-and-open script).

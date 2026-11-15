@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-14
+last-reviewed: 2026-11-15
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -710,7 +710,9 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   back several entities (the Cathedral's zone and its planned structure), so the bridge indexes
   the snapshot by feature id through the group each roster reads: health for a tile, capture for
   a point (DEC-233); at most one entity of a feature carries each group, which core checks
-  (`map-feature-groups-unique`, [15](15-diagnostics-and-runtime-testing.md) §3). For either roster, the bridge re-sends each unchanged tile or point, and the
+  (`map-feature-groups-unique`, [15](15-diagnostics-and-runtime-testing.md) §3), and the bridge
+  names the group by core's `FeatureKeyedGroup` (the snapshot's feature-keyed groups), so it reads
+  by feature only a group that check covers (DEC-255, DEC-256). For either roster, the bridge re-sends each unchanged tile or point, and the
   last array while nothing in it changes, so the roster selectors return the same value
   (DEC-221 (3)); one `PublishedRoster` (`game/PublishedRoster.ts`) per roster holds the last array
   and that rule (DEC-222). Each other field becomes live when core publishes it: abilities

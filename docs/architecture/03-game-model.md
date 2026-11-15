@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-09
+last-reviewed: 2026-11-15
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -267,6 +267,10 @@ export type EntitySnapshot = {
   readonly anim: AnimState;
 };
 ```
+
+The groups a consumer may read by `mapFeatureId` are core's `FeatureKeyedGroup`, declared beside
+`EntitySnapshot`: at most one entity of a feature carries each, which `map-feature-groups-unique`
+checks ([15](15-diagnostics-and-runtime-testing.md) §3; DEC-233, DEC-256).
 
 `SnapshotSystem` builds each `EntitySnapshot` through `EntitySnapshotter`
 (`state/EntitySnapshotter.ts`), one group per component, so a new component group changes that

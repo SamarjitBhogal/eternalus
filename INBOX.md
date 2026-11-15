@@ -2201,6 +2201,24 @@ Reply inline (`Decision: …`).
     should key on `setup.mode`; `MatchSetupDraft` could be a union by `mode`, so that "a Duel has
     no rosters" is a type fact. For doc-gardening: the folder table of architecture 02 has no row
     for `game/duel/` and `game/engine/net/`, which import `@eternalus/protocol` (#97).
+- [x] **HC-Q60 — GL-16 critic round 5: one better-than-design item (`refactor/map-feature-link`;
+      DEC-139).** The critic approved the DEC-255 build. `FeatureKeyedGroup` lived in the
+      invariant's companion file, so the client depended on a diagnostic, not on the snapshot
+      contract. Move only the type to `state/Snapshot.types.ts` beside `mapFeatureId` (the list
+      stays in the invariant and is checked against it), move the list into `state/` too (the
+      critic's version), or keep it as it is.
+  - Answered 2026-11-15 in the question dialog (DEC-256): "Type in snapshot (Recommended)", noting
+    "do whichever YOU assess is better"; the session kept that option. Built on GL-16: the type in
+    `state/Snapshot.types.ts`, `FEATURE_GROUPS` `satisfies Record<FeatureKeyedGroup, unknown>`.
+- [x] **HC-Q59 — GL-16 critic round 4: one better-than-design item (`refactor/map-feature-link`;
+      DEC-139).** The groups `map-feature-groups-unique` checks (`FEATURE_GROUPS`) and the
+      closures `MatchBridge.byFeature` takes are two copies, so the bridge could read by feature a
+      group the invariant does not check. Export
+      `type FeatureKeyedGroup = keyof typeof FEATURE_GROUPS` from `@eternalus/core` and type
+      `byFeature(snapshot, group)` with it. Cost: one core API export, 3 bridge call sites, a fifth
+      critic pass. Build now on GL-16, or keep as it is.
+  - Answered 2026-11-15 in chat (DEC-255): "build it". Built on GL-16: `FeatureKeyedGroup`
+    (exported as a type; where it lives: HC-Q60) and the typed `MatchBridge.byFeature`.
 - [x] **HC-Q58 — GL-16 critic round 3: two better-than-design items (`refactor/map-feature-link`;
       DEC-139).** The critic approved GL-16 after the merge of GL-4 (#93). (1) Nothing in core
       checks DEC-233's rule that at most one entity of a map feature carries each group a consumer
