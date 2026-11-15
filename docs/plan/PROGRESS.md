@@ -7999,3 +7999,19 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `npm run docs:check` on this file.
 - Next step: the owner answers the critic's better-than-design item; GL-16 merges the new head of
   `feat/match-scoring` (phase/3 at `88f5afd8`); its PR opens after #93 merges.
+
+### 2026-11-14 — Phase 3 / GL-16: merge the new head of feat/match-scoring (#93 with phase/3 at 88f5afd8) — refactor/map-feature-link — sholtzman + Claude Code
+
+- What was done: merged `a74ecc20` (PR #93's local head: `feat/match-scoring` with
+  `phase/3-sprint-3-work` at `88f5afd8`, #85 minion follow-ups, #86 out-of-combat heal) into
+  this branch as `32d305b2`. Conflicts: `StateHasher.test.ts` keeps the tests of both sides;
+  architecture 02 has the rows of both sides, 04 the later `last-reviewed`; the decisions log has
+  the DEC-234 batch above the DEC-233 and DEC-231 batches (newest first, no DEC number twice);
+  this file has #93's entry, then GL-16's.
+- Checks run: `npm run check` → `EXIT=0` on `32d305b2` before this entry was added
+  (`eternalus-agent-work/game-loop-plan/gl16-merge-a74ecc20-check-2026-11-14.log`): core "Tests
+  1555 passed (1555)"; protocol "Tests 18 passed (18)"; client "Tests 1978 passed (1978)"; server
+  "Tests 79 passed (79)"; "Documentation check passed.". Then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the owner answers the critic round 4 better-than-design item (one exported type for
+  the feature-keyed groups); the PR opens after #93 merges into `phase/3-sprint-3-work`.
