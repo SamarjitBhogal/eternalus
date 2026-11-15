@@ -178,6 +178,38 @@ describe('LaneFollowMovementStrategy', () => {
     expect(strategy.desiredVelocity(0, chase)).toEqual({ x: 1, y: 0 });
   });
 
+  it('closes on a chased tower through its own blocked ground, checking only up to where that ground begins (DEC-185)', () => {
+    // Ground past x 50 is the tower's own: its fort's nav cells, which reach 6 m out from the
+    // outline point the chase aims at (x 56). Attack reach is 1.9 m from that point.
+    const fortFrom50 = {
+      isLineClear: (
+        fromX: number,
+        fromY: number,
+        toX: number,
+        toY: number,
+        maxDistance: number,
+      ) => {
+        const span = Math.hypot(toX - fromX, toY - fromY);
+        const reach = Math.min(span, maxDistance);
+        // As `WorldMap.isLineClear`: no sample past the start, so a zero-long probe is clear.
+        return reach <= 0 || fromX + ((toX - fromX) * reach) / span <= 50;
+      },
+      directionAt: () => false,
+      isWalkableAt: (x: number) => x <= 50,
+    };
+    const chaseFrom = (x: number) => ({
+      ...contextOf([[x, 10]], { x: 56, y: 10 }),
+      isChasing: true,
+      arrivalRadius: 1.9,
+      targetBlockedDepth: 6,
+      flow: fortFrom50,
+    });
+
+    // In front of the fort's cells, and inside them (where no open ground is left between).
+    expect(strategy.desiredVelocity(0, chaseFrom(46))).toEqual({ x: 1, y: 0 });
+    expect(strategy.desiredVelocity(0, chaseFrom(52))).toEqual({ x: 1, y: 0 });
+  });
+
   it('leads a march or a chase on blocked ground out along the field, such as one spawned in a footprint (MS-31)', () => {
     // Ground west of x 50 is blocked, so no line from the mob at x 10 is clear. The field there
     // leads north-east, out of the footprint (10 §9); the target is due east.
