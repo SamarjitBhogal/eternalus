@@ -8196,3 +8196,18 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   and `npm run docs:check` on this file.
 - Next step: the owner runs the push script, then the merge script; GL-16 and
   `feat/duel-leave-victory` merge phase/3 after #93 merges.
+
+### 2026-11-15 — Phase 3 / bug tracker — docs/bug-citadel-side-entrances — SamarjitBhogal + Claude Code
+
+- What was done: logged BUG-8 as Task SCRUM-443 under SCRUM-433 (label `bug`, screenshot
+  attached): units spawned inside the Citadel cannot reach its side gates and walk into walls
+  until they find the middle exit. Cause not confirmed: the palace walls leave a gap toward each
+  gate. The row names the related plan item, M4 Flow fields (Stronghold-to-gate ground).
+- Pre-PR gate: critic (`architecture-reviewer`) request-changes, no blockers; its three
+  should-fix rows (last-reviewed bump, M4 wording, this checks line) and one nit applied.
+  Ponytail: nothing to cut (one table row).
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code
+  style!"; "Tests 1582 passed (1582)"; client "Tests 1979 passed (1979)"; "✓ built in 350ms";
+  "Documentation check passed." Under Node 22 the client test `WebSocketTransport` fails on
+  `CloseEvent is not defined` (outside this diff; the repo requires Node 24).
+- Next step: assign SCRUM-443; find the blocker between the palace and the side gates.
