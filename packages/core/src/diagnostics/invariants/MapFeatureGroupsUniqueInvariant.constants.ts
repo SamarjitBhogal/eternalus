@@ -1,12 +1,12 @@
 import { Capturable } from '../../components/Capturable';
 import { Health } from '../../components/Health';
-import type { EntitySnapshot } from '../../state/Snapshot.types';
+import type { FeatureKeyedGroup } from '../../state/Snapshot.types';
 
 /**
- * The snapshot groups a consumer reads by map feature id (the HUD's structure health and capture
- * points, DEC-233), each with the component behind it.
+ * Each snapshot group a consumer reads by map feature id (`FeatureKeyedGroup`: the HUD's structure
+ * health and capture points, DEC-233), with the component behind it; exactly those groups (DEC-256).
  */
 export const FEATURE_GROUPS = {
   health: Health,
   capture: Capturable,
-} as const satisfies Partial<Record<keyof EntitySnapshot, unknown>>;
+} as const satisfies Record<FeatureKeyedGroup, unknown>;

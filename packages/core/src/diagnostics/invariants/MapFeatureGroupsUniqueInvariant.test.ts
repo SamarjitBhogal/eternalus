@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import { Capturable } from '../../components/Capturable';
 import { Health } from '../../components/Health';
@@ -6,7 +6,9 @@ import { MapFeatureLink } from '../../components/MapFeatureLink';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { Entity } from '../../entities/Entity';
 import { GameState } from '../../state/GameState';
+import type { FeatureKeyedGroup } from '../../state/Snapshot.types';
 import { MapFeatureGroupsUniqueInvariant } from './MapFeatureGroupsUniqueInvariant';
+import { FEATURE_GROUPS } from './MapFeatureGroupsUniqueInvariant.constants';
 
 class Bare extends Entity {
   public readonly kind = 'bare';
@@ -69,5 +71,10 @@ describe('MapFeatureGroupsUniqueInvariant', () => {
         details: { featureId: 'cathedral', group: 'health', entityIds: 'entity-1,entity-2' },
       },
     ]);
+  });
+
+  it('checks exactly the groups a consumer may read by feature (FeatureKeyedGroup, DEC-255, DEC-256)', () => {
+    expectTypeOf<keyof typeof FEATURE_GROUPS>().toEqualTypeOf<FeatureKeyedGroup>();
+    expect(Object.keys(FEATURE_GROUPS)).toEqual(['health', 'capture']);
   });
 });

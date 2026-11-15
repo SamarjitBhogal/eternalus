@@ -1,6 +1,7 @@
 import type {
   EntityId,
   EntitySnapshot,
+  FeatureKeyedGroup,
   MapDefinition,
   MatchResult,
   Simulation,
@@ -31,8 +32,11 @@ import { PublishedRoster } from './PublishedRoster';
 export class MatchBridge {
   private readonly structures: readonly StructureStatus[];
   private readonly structureRoster: PublishedRoster<StructureStatus>;
-  /** The max health of each structure tile bound to a structure at match start, by feature id. */
-  private readonly boundMaxHealth: ReadonlyMap<string, number>;
+  /**
+   * The health of each structure tile bound to a structure at match start, by feature id; only
+   * `max` is read: the full bar of a structure that is gone.
+   */
+  private readonly boundHealth: ReadonlyMap<string, NonNullable<EntitySnapshot['health']>>;
   /** Each capture point's status while no zone names its feature: neutral, no progress. */
   private readonly pointsWithoutZone: readonly CapturePointStatus[];
   private readonly captureRoster: PublishedRoster<CapturePointStatus>;
@@ -51,10 +55,7 @@ export class MatchBridge {
       (last, next) =>
         last.health?.current === next.health?.current && last.health?.max === next.health?.max,
     );
-    this.boundMaxHealth = MatchBridge.byFeature(
-      deps.firstSnapshot,
-      ({ health }) => health?.max ?? null,
-    );
+    this.boundHealth = MatchBridge.byFeature(deps.firstSnapshot, 'health');
     const features = deps.map.features.filter((feature) =>
       deps.captureKinds.includes(feature.kind),
     );
@@ -137,11 +138,12 @@ export class MatchBridge {
    * and turrets, 07 §13) keeps `null`: the HUD shows "no data", never a made-up value.
    */
   private structuresAt(snapshot: Snapshot): readonly StructureStatus[] {
-    const live = MatchBridge.byFeature(snapshot, ({ health }) => health);
+    const live = MatchBridge.byFeature(snapshot, 'health');
     return this.structures.map((structure) => {
-      const max = this.boundMaxHealth.get(structure.structureId);
-      if (max === undefined) return structure;
-      return { ...structure, health: live.get(structure.structureId) ?? { current: 0, max } };
+      const bound = this.boundHealth.get(structure.structureId);
+      if (bound === undefined) return structure;
+      const health = live.get(structure.structureId) ?? { current: 0, max: bound.max };
+      return { ...structure, health };
     });
   }
 
@@ -151,7 +153,7 @@ export class MatchBridge {
    * point with no zone shows no capture (neutral, no progress).
    */
   private liveCapturePoints(snapshot: Snapshot): readonly CapturePointStatus[] {
-    const zones = MatchBridge.byFeature(snapshot, ({ capture }) => capture);
+    const zones = MatchBridge.byFeature(snapshot, 'capture');
     return this.pointsWithoutZone.map((point) => {
       const capture = zones.get(point.pointId);
       return capture === undefined
@@ -161,21 +163,21 @@ export class MatchBridge {
   }
 
   /**
-   * What `pick` reads from each entity in `snapshot` that names its map feature, by feature id.
-   * One feature may back several entities (the Cathedral's zone and its structure, DEC-233), so
-   * `pick` returns `null` for an entity without the group it reads, and that entity adds nothing.
-   * At most one entity per feature carries each group, so no value hides another (core checks it:
-   * `map-feature-groups-unique`, architecture 15 §3).
+   * `group` of each entity in `snapshot` that names its map feature, by feature id. One feature may
+   * back several entities (the Cathedral's zone and its structure, DEC-233), so an entity without
+   * `group` adds nothing. `group` is one core checks (`FeatureKeyedGroup`, DEC-255): at most one
+   * entity per feature carries it, so no value hides another (`map-feature-groups-unique`,
+   * architecture 15 §3).
    */
-  private static byFeature<T>(
+  private static byFeature<G extends FeatureKeyedGroup>(
     snapshot: Snapshot,
-    pick: (entity: EntitySnapshot) => T | null,
-  ): ReadonlyMap<string, T> {
-    const found = new Map<string, T>();
+    group: G,
+  ): ReadonlyMap<string, NonNullable<EntitySnapshot[G]>> {
+    const found = new Map<string, NonNullable<EntitySnapshot[G]>>();
     for (const entity of snapshot.entities) {
-      if (entity.mapFeatureId === undefined) continue;
-      const value = pick(entity);
-      if (value !== null) found.set(entity.mapFeatureId, value);
+      const value = entity[group];
+      if (entity.mapFeatureId !== undefined && value !== null)
+        found.set(entity.mapFeatureId, value);
     }
     return found;
   }
