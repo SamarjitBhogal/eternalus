@@ -16,7 +16,13 @@ const AIM = { point: { x: 5, y: 0 }, targetId: null };
 /** A turn for the Warrior (`entity-1`, four filled slots) whose RNG starts from `seed`. */
 const turnWith = (seed: number): BotTurn => {
   const { state, caster } = casterState();
-  const memory = { lane: '', isRetreating: false, targetId: null, nextCastTick: 0 };
+  const memory = {
+    lane: '',
+    isRetreating: false,
+    targetId: null,
+    nextCastTick: 0,
+    isHalted: false,
+  };
   return {
     state,
     id: caster.id,

@@ -7,7 +7,9 @@ import { ABILITY_CASTS_PLAN } from './abilityCastsPlan';
  * 2026-11-13 (a 10 s countdown), the default systems on no map, and `ABILITY_CASTS_PLAN` for 450
  * ticks: a cast refused during the countdown (DEC-88), then Slam, Shockwave and Blade Runner cast
  * into enemy Legends, a concussed counter-cast and a cast refused on cooldown. If it stops reproducing, either a determinism bug crept in or the
- * rules changed on purpose; only the second may regenerate it.
+ * rules changed on purpose; only the second may regenerate it. Regenerated 2026-11-14 for
+ * out-of-combat healing (DEC-188, merged from phase/3): checkpoints 0 to 300 and the commands were
+ * unchanged, and without `OutOfCombatHealingSystem` the old hashes still reproduced.
  */
 export const ABILITY_CASTS_SEED_11: ReplayOf<{
   readonly seed: number;
@@ -134,15 +136,15 @@ export const ABILITY_CASTS_SEED_11: ReplayOf<{
     },
     {
       tick: 350,
-      hash: 1639628759,
+      hash: 687310265,
     },
     {
       tick: 400,
-      hash: 3981001228,
+      hash: 718563563,
     },
     {
       tick: 450,
-      hash: 1192763010,
+      hash: 729276591,
     },
   ],
 };

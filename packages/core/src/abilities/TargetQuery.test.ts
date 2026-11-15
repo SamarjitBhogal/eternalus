@@ -64,7 +64,12 @@ const withHouse = (house: MapObject) => {
   const state = new GameState(createDefaultGameConfig(), 1);
   const caster = factory.create('warrior', 'warrior', { position: { x: 0, y: 0 }, team: 'light' });
   state.entities.add(caster);
-  const world = new WorldObjectStore([house], factory, state.entities, MAP_OBJECT_DEFINITIONS);
+  const world = new WorldObjectStore({
+    objects: [house],
+    factory,
+    entities: state.entities,
+    definitions: MAP_OBJECT_DEFINITIONS,
+  });
   const houseId = world.snapshot()[0]?.entityId;
   const query = new TargetQuery(testAbilityRegistry([]));
   const hits = (shape: EffectShape, from: Vec2, to: Vec2) =>
