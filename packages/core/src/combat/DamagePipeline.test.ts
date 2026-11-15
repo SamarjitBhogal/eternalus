@@ -90,6 +90,17 @@ describe('DamagePipeline', () => {
     expect(healthOf(state).current).toBe(healthOf(state).max);
   });
 
+  it('announces a blocked hit with its target and source, and nothing else', () => {
+    const state = setUp();
+    const ally = { attackerId: 'entity-1', kind: 'weapon', definitionId: 'sword' } as const;
+
+    new DamagePipeline().apply(state, 'entity-1', 15, ally);
+
+    expect(state.events.recentEvents().map(({ type, payload }) => ({ type, payload }))).toEqual([
+      { type: 'damage-blocked', payload: { targetId: 'entity-1', source: ally } },
+    ]);
+  });
+
   it('applies nothing for a zero-damage hit', () => {
     const state = setUp();
 

@@ -8,6 +8,7 @@ import { Movement } from '../components/Movement';
 import { ChaseWatch } from '../components/ChaseWatch';
 import { CombatClock } from '../components/CombatClock';
 import { Progression } from '../components/Progression';
+import { StrikeCooldown } from '../components/StrikeCooldown';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { INITIAL_FACING } from '../components/Transform.constants';
@@ -175,6 +176,19 @@ describe('StateHasher', () => {
     expect(clocked).not.toBe(bare);
     expect(dealt).not.toBe(clocked);
     expect(hasher.hash(state)).not.toBe(dealt);
+  });
+
+  it('changes with a strike cooldown and with its ready tick (DISC-11)', () => {
+    const { state, soldier } = stateWithSoldier();
+    const cooldown = new StrikeCooldown();
+    const bare = hasher.hash(state);
+    soldier.addComponent(cooldown);
+    const added = hasher.hash(state);
+
+    cooldown.recordStrike(5, 60);
+
+    expect(added).not.toBe(bare);
+    expect(hasher.hash(state)).not.toBe(added);
   });
 
   it('differs between seeds', () => {

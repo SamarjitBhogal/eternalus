@@ -9,6 +9,7 @@ import { Movement } from '../components/Movement';
 import { Progression } from '../components/Progression';
 import { Veterancy } from '../components/Veterancy';
 import { StatusEffects } from '../components/StatusEffects';
+import { StrikeCooldown } from '../components/StrikeCooldown';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { INITIAL_FACING } from '../components/Transform.constants';
@@ -200,6 +201,10 @@ export class StateHasher {
     const clock = entity.findComponent(CombatClock);
     if (clock !== undefined) {
       fields.push(['combat-clock', ...clock.fields]);
+    }
+    const strike = entity.findComponent(StrikeCooldown);
+    if (strike !== undefined) {
+      fields.push(['strike-cooldown', ...strike.fields]);
     }
     return fields;
   }

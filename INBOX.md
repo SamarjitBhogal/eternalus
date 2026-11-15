@@ -65,6 +65,9 @@ Reply inline (`Decision: …`).
       pipeline to announce a blocked hit (a new `damage-blocked` event), since a hit on an
       unbreakable target emits nothing today. Recommendation: (a), with doc 07 §1 and §11 updated in
       the same PR. Approve (a), choose (b), or say no.
+  - Interim (Aryan Walanj, 2026-11-15): (b) is built on `feat/cathedral-gem-strike` as the
+    smallest version, at Aryan's instruction; (a) still waits for your decision, and would replace
+    `CathedralGemSystem` (its `StrikeCooldown` component would carry over).
 - [ ] **Better than design: one shared "never damaged" structure entry (Aryan Walanj, 2026-11-15,
       critic on `feat/cathedral-gem-hittable`).** The three forest camps and the Cathedral each
       repeat `baseHealth: 1` and `breakability: never` in `structureCatalogue.ts`. One shared spread

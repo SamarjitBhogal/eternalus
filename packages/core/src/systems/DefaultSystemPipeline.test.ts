@@ -131,6 +131,8 @@ describe('DefaultSystemPipeline', () => {
       'stuck',
       'pathing',
       'combat',
+      // Strikes back this tick's direct hits on the gem, before kill XP is awarded (DISC-11).
+      'cathedral-gem',
       'map-destruction',
       'progression',
       'veterancy',

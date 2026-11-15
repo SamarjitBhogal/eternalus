@@ -7421,3 +7421,36 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   "Tests 79 passed (79)"; "Documentation check passed." Then `prettier --check` and
   `npm run docs:check` on this file after this line was filled in.
 - Next step: Sam answers the lightning item; the gem strike follows on `feat/cathedral-gem-strike`.
+
+### 2026-11-15 — Phase 3 / sprint 3 work: the Cathedral gem strikes direct attackers — feat/cathedral-gem-strike — Aryan Walanj + Claude Code
+
+- What was done: the gem's lightning (DISC-11), gem-only (option (b) of the retaliation item in
+  `INBOX.md`, which stays open for Sam). `DamagePipeline` emits `damage-blocked { targetId, source }`
+  for a hit a step takes to 0. `CathedralGemSystem` (right after `CombatSystem`) queues each weapon
+  or ability hit on the gem and, on its next update, strikes the attacker through the pipeline as a
+  `structure` source, at most once per cooldown and within range; a strike that lands emits
+  `structure-struck` and starts the gem's `StrikeCooldown` component (hashed by `StateHasher`). A
+  dead or out-of-range attacker, splash beside the gem, damage over time and hits from structures
+  or the environment are not struck. Damage, damage type (carried, unread), cooldown and range
+  are `TUNE` in `content/structures/cathedralGemStrike.ts`, pointing at the INBOX lightning item.
+  Docs: 03 event table, 05 §9 and 07 Implementation status (interim rules: questions 4 to 8).
+- Tests: `CathedralGemSystem.test.ts` (7), `StrikeCooldown.test.ts`, a `StateHasher` case, a
+  `DamagePipeline` case; the pipeline order test lists `cathedral-gem`. Broken once each: no
+  cooldown → "expected [ 'entity-1', 'entity-1', …(13) ] to deeply equal [ 'entity-1', 'entity-1',
+  'entity-1' ]"; no range check → "expected [ 'entity-2' ] to deeply equal []"; any blocked hit
+  counts → "expected 'entity-1002' to be 'entity-1001'"; every hit kind counts → "expected [
+  'entity-1' ] to deeply equal []" (splash/DoT and no-attacker tests); random strike damage → the
+  same-hash test "expected 2802214909 to be 215071775"; no `damage-blocked` emit → three tests
+  fail; cooldown not hashed → "expected 1485472869 not to be 1485472869"; event and cooldown on a
+  blocked strike → "expected [ 'entity-1002' ] to deeply equal []". Removing only the dead-attacker
+  check is not caught on its own: the landed-strike check also covers it (both removed → caught).
+- Pre-PR gate: critic (`architecture-reviewer`) first asked for rework (Prettier; the cooldown
+  outside game state), then approved on re-check with no blockers; its follow-ups are applied.
+  Not applied: a shared `Cooldown` value object for `Combat` and `StrikeCooldown` (a drive-by
+  refactor; left for the human). `/ponytail-review`: no cuts, so `/ponytail` applied nothing.
+- Checks run: `npm run check` (run by Aryan) exit 0. core "Test Files 252 passed (252)",
+  "Tests 1505 passed (1505)"; protocol "Test Files 1 passed (1)", "Tests 18 passed (18)"; client
+  "Test Files 286 passed (286)", "Tests 1890 passed (1890)"; server "Test Files 20 passed (20)",
+  "Tests 79 passed (79)"; "Documentation check passed."
+- Next step: Sam answers the lightning item and the retaliation item; visuals for
+  `structure-struck` come with the Cathedral view.

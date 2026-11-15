@@ -15,7 +15,9 @@ import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStr
 import { LaneFlowFields } from '../map/LaneFlowFields';
 import type { GameState } from '../state/GameState';
 import type { Rect } from '../utils/geometry.types';
+import { CATHEDRAL_GEM_STRIKE } from '../content/structures/cathedralGemStrike';
 import { CaptureSystem } from './CaptureSystem';
+import { CathedralGemSystem } from './CathedralGemSystem';
 import { CombatSystem } from './CombatSystem';
 import { MapDestructionSystem } from './MapDestructionSystem';
 import { DeathSystem } from './DeathSystem';
@@ -42,8 +44,9 @@ import { SystemPipeline } from './SystemPipeline';
 /**
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
  * progress, statuses, movement, collision (DEC-121 (c): every later reader sees resolved
- * positions), the neighbour index, stuck detection (DEC-193), steering, combat, map destruction,
- * progression (kill XP), minion veterancy, structure losses and breakability, spawning, enraging,
+ * positions), the neighbour index, stuck detection (DEC-193), steering, combat, the Cathedral
+ * gem's lightning on this tick's direct hits (DISC-11), map destruction, progression (kill XP),
+ * minion veterancy, structure losses and breakability, spawning, enraging,
  * out-of-combat healing (DEC-188), death, capture points, the match director, then invariants
  * last. Combat runs after movement, so a unit with a target in reach faces it, not its own way
  * (DEC-192). This is the one place a system is added, at its position in the tick (architecture
@@ -112,6 +115,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
             ),
           ]),
       new CombatSystem(damage),
+      new CathedralGemSystem(state, damage, CATHEDRAL_GEM_STRIKE),
       ...(state.worldObjects === undefined ? [] : [new MapDestructionSystem(state, damage)]),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
       new ProgressionSystem(state, progression),

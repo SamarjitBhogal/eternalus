@@ -10,8 +10,8 @@ paths:
   [
     'packages/core/src/entities/structures/**',
     'packages/core/src/entities/Obstacle*',
-    'packages/core/src/components/{Health,Spawner,Capturable,Carry}*',
-    'packages/core/src/systems/{Structure,Spawn,Capture}System*',
+    'packages/core/src/components/{Health,Spawner,Capturable,Carry,StrikeCooldown}*',
+    'packages/core/src/systems/{Structure,Spawn,Capture,CathedralGem}System*',
     'packages/core/src/content/{structures,obstacles}/**',
   ]
 related:
@@ -485,6 +485,25 @@ sees only units, skips neutrals that are not attacking, and aggro ranks no struc
 scenery piece stays the only drawing until the Cathedral's view lands. Still not built: the
 `Spawner` and `Aura` (§1, §6), lightning on attackers (its numbers and rules are open in
 `INBOX.md`), the look over time and the summon-greater-boss action.
+
+**2026-11-15 (`feat/cathedral-gem-strike`).** The gem strikes direct attackers, gem-only
+(`CathedralGemSystem`, right after `CombatSystem`; option (b) of the retaliation item in
+`INBOX.md`, chosen by the human). `DamagePipeline` announces each blocked hit as
+`damage-blocked`; a weapon or ability hit whose target is the gem is queued and struck back on
+the system's next update through the damage pipeline, as a `structure` source. A strike that
+lands is announced as `structure-struck` and starts the gem's `StrikeCooldown` component (game
+state, in the state hash); an attacker already dead or out of range is not struck and spends no
+cooldown. One cooldown serves the gem, whoever hit it. Damage over time and hits from structures
+or the environment never count. Splash beside the gem never names the gem; an area hit that
+catches the gem itself will count until `DamageSource` tells area hits from direct ones (no area
+ability exists yet). Every number (damage, damage type, cooldown, range) is a `TUNE` placeholder
+in `content/structures/cathedralGemStrike.ts`; the damage type is carried but not read, since the
+pipeline has no damage types yet. Interim rules, pending the lightning item in `INBOX.md`
+(questions 4 to 8): a direct hit is a weapon or ability hit on the gem; anyone of either playable
+team that hits it directly is struck, Legends and mobs alike, while a neutral attacker's strike is
+blocked as friendly fire and spends no cooldown; a strike can kill, with the kill credited to the
+gem, which pays no XP; strikes go on while the Cathedral stands; damage only, no status. No
+visuals.
 
 ## Related
 

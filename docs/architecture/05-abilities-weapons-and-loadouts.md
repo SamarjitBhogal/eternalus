@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-09
+last-reviewed: 2026-11-15
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -585,7 +585,9 @@ tower the enemy has lost there, DISC-24; [18](18-minion-system.md) MS-16). Inter
 `apply` with the first resistance); the pipeline itself emits `entity-died` with the killer, so
 `DeathResolver` is not a separate class yet. `GameState.killerOf` keeps this tick's killers, so
 `DeathSystem` removes with the cause `died` and puts the killer on `entity-removed`;
-`no-death-without-killer` (15) flags a death without one.
+`no-death-without-killer` (15) flags a death without one. A hit a step takes to 0 emits
+`damage-blocked { targetId, source }` (2026-11-15), which the Cathedral gem's lightning reads
+(07 Implementation status).
 `DefaultSystemPipeline` builds the match's one `DamagePipeline` and injects it into every system
 that deals damage. `CombatSystem` (after movement, before death) runs each unit's `Combat` target
 through its `AttackStrategy` (melee only) when in reach (edge to edge) and off cooldown;

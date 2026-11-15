@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-09
+last-reviewed: 2026-11-15
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -185,9 +185,11 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 | `entity-spawned`                    | `{ entityId, kind, team }`                             | `EntityFactory` via `SpawnSystem`, or `Simulation` for a roster | `SnapshotSystem`, views                                                 |
 | `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`           | `DeathSystem` only                                              | `HordeSystem`, `ProjectilePool`, invariants                             |
 | `damage-applied`                    | `{ targetId, amount, absorbed, source: DamageSource }` | `DamagePipeline`                                                | `ProgressionSystem` (assists), `AiSystem` (aggro)                       |
+| `damage-blocked`                    | `{ targetId, source: DamageSource }`                   | `DamagePipeline` (a step took the hit to 0)                     | `CathedralGemSystem` (the gem's lightning, DISC-11)                     |
 | `entity-died`                       | `{ entityId, killer: DamageSource }`                   | `DeathResolver`                                                 | `DeathSystem`, `ProgressionSystem`, `Scoring`, `ObjectiveLostCondition` |
 | `structure-destroyed`               | `{ entityId, kind, team, lane }`                       | `StructureSystem`                                               | `EnragedSystem` (enraged lane), `StructureSystem` (walls, shields)      |
 | `structure-breakability-changed`    | `{ entityId, isBreakable, lane }`                      | `StructureSystem`                                               | `HordeSystem` (gate holding), views                                     |
+| `structure-struck`                  | `{ structureId, targetId }`                            | `CathedralGemSystem`                                            | views (lightning art, later)                                            |
 | `camp-cleared`                      | `{ entityId, team, killerId }`                         | `SpawnSystem`                                                   | `ProgressionSystem` (camp reward), `MatchDirector`                      |
 | `shield-bars-changed`               | `{ entityId, bars }`                                   | `StructureSystem`                                               | HUD, views                                                              |
 | `capture-progress`                  | `{ pointId, team, progress, checkpoint }`              | `CaptureSystem`                                                 | HUD, `MinimapView`                                                      |

@@ -54,7 +54,11 @@ export type GameEventMap = {
     readonly absorbed: number;
     readonly source: DamageSource;
   };
+  /** A hit a damage step took to 0 (an unbreakable target, friendly fire): nothing was dealt. */
+  readonly 'damage-blocked': { readonly targetId: EntityId; readonly source: DamageSource };
   readonly 'entity-died': { readonly entityId: EntityId; readonly killer: DamageSource };
+  /** A structure struck `targetId` back for hitting it (the Cathedral gem's lightning, DISC-11). */
+  readonly 'structure-struck': { readonly structureId: EntityId; readonly targetId: EntityId };
   readonly 'structure-destroyed': {
     readonly entityId: EntityId;
     readonly kind: string;
