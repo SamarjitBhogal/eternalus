@@ -8373,3 +8373,17 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   kept): full `npm run check` exit 0 (`eternalus-agent-work/tower-ruins-and-routes/astar-search-area/check-merge-phase3-fcc48a7b.log`): core "Tests 1586 passed (1586)",
   protocol 18, client 1979, server 79, docs passed. #93 adds no A* call site either.
 - Next step: push.
+
+### 2026-11-15 — Phase 3 / A\* search area: merge #126 (phase/3 with #127) — refactor/astar-search-area — sholtzman + Claude Code
+
+- What was done: merged PR #126's head `4a72b5f7` (`feat/duel-leave-victory` with phase/3 at
+  `80e0ea13`, #127 CI job limit) into this branch as `0a176430`. Conflict: this file only (#127's
+  and #126's entries, then this branch's). Second link of the stacked merge chain
+  #126 → #121 → #120 → #119: this PR merges into phase/3 without conflict right after #126, with
+  merge commits.
+- Checks run: `npm run check` → `EXIT=0` on `0a176430` before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-stack-121.log`): core "Tests 1586 passed
+  (1586)"; protocol "Tests 18 passed (18)"; client "Tests 1976 passed (1976)"; server "Tests 79
+  passed (79)"; "Documentation check passed.". Then `prettier --check` and `npm run docs:check` on
+  this file.
+- Next step: #120 merges this head; the owner runs the push script; #121 merges after #126.
