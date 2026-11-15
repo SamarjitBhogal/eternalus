@@ -21,6 +21,17 @@ overridden by the product owner. Decisions arrive through `INBOX.md`; once imple
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
 
+## Batch 2026-11-14 (chat: the CI job time limit)
+
+The owner's answer of 2026-11-14, in the question dialog (session 3ef229eb), to the open item of
+the PR #98 split work: the time limit of the CI job. The owner's words are kept verbatim outside
+the repository in `eternalus-agent-work/tower-ruins-and-routes/owner-answer-2026-11-14-ci-timeout.md`.
+DEC-254 is this batch (DEC-250 to DEC-253 are other sessions').
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| DEC-254 | **The CI job may run for 25 minutes, not 15.** The `check` job in `.github/workflows/ci.yml` has `timeout-minutes: 25`. On one commit of PR #98 (`16c7fe2d`, run 43646563122) the windows-latest job was cancelled at the 15-minute limit, and its re-run passed in 9.5 minutes: runner variance, not a slow test. The cost: a job that really hangs fails 10 minutes later. Owner's pick: "Raise to 25 (Recommended)", over 20 and over leaving 15 and re-running each cancelled job. Built in its own PR (scope `ci`). |
+
 ## Batch 2026-11-14 (chat: the player who stays in a Duel, INBOX HC-Q57)
 
 The owner's answer of 2026-11-14, in chat (the successor session of GAME-LOOP-AND-POST-GAME-31),

@@ -8197,6 +8197,23 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Next step: the owner runs the push script, then the merge script; GL-16 and
   `feat/duel-leave-victory` merge phase/3 after #93 merges.
 
+### 2026-11-14 — Phase 3 / CI: job time limit 25 minutes (DEC-254) — chore/ci-timeout — sholtzman + Claude Code
+
+- What was done: the `check` job in `.github/workflows/ci.yml` has `timeout-minutes: 25`
+  (was 15), with a comment citing DEC-254. The owner made the `ci.yml` edit himself, because
+  `.claude/settings.json` denies agent edits to `.github/workflows/**`. DEC-254 is added to the
+  owner decisions log: on one commit of PR #98 the windows-latest job was cancelled at 15
+  minutes and its re-run passed in 9.5.
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/tower-ruins-and-routes/ci-timeout-check-1.log`); then
+  `prettier --check` and `npm run docs:check` on this file. After merging phase/3 at
+  `8dc7d962` (#79; only this file conflicted, both sides kept): full `npm run check` exit 0
+  (`eternalus-agent-work/tower-ruins-and-routes/ci-timeout-check-merge-8dc7d962.log`). After
+  merging phase/3 at `fcc48a7b` (#93; this file and the owner decisions log conflicted, both
+  sides kept, this batch above #93's as the log is newest first): full `npm run check` exit 0
+  (`eternalus-agent-work/tower-ruins-and-routes/ci-timeout-check-merge-fcc48a7b.log`).
+- Next step: a PR into `phase/3-sprint-3-work`.
+
 ### 2026-11-14 — Phase 3 / the player who stays in a Duel wins (DEC-251) — feat/duel-leave-victory — sholtzman + Claude Code
 
 - What changed: the owner's answer to the open part of INBOX HC-Q57 (DEC-251, "A) yes"). When a
