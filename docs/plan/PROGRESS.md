@@ -7390,3 +7390,34 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   the two resolved files "All matched files use Prettier code style!"; `npm run docs:check`
   "Documentation check passed."
 - Next step: push the branch and open the gem PR into `phase/3-sprint-3-work`.
+
+### 2026-11-15 — Phase 3 / sprint 3 work: the Cathedral gem is hittable but unbreakable — feat/cathedral-gem-hittable — Aryan Walanj + Claude Code
+
+- What was done: a neutral `Cathedral` structure stands on the gem (DISC-11): a `cathedral`
+  entry in `structureCatalogue.ts` (Camp pattern: `baseHealth` 1, breakability `never`,
+  `footprintRadius` `TUNE`, the drawn gem's half-width), `entities/structures/Cathedral.ts` and its
+  registry line. A Legend can target it; `BreakabilityStep` blocks every hit from its first tick.
+  The `cathedral-interior-gem` scenery stays the only drawing. No lightning, events or new
+  system. 07 Implementation status records it; `INBOX.md` holds the 11 lightning questions for
+  Sam, the general-vs-gem-only retaliation choice and the critic's catalogue DRY item. The
+  structure-list test now lists the Cathedral (`entity-3`).
+- Separate commit `6237a6e5` (test only): `Simulation.modifiers.test.ts` (Sam Holtzman's, from
+  `855684e0`) waited for a tower to fall with its team's minions on the lane, which depended on
+  entity id order: one extra entity (a training dummy, or the Cathedral) made it fail at 900 s
+  with every loss at 0 members. Its setup now sends a defending horde to each lane structure under
+  a quarter of its health; every assertion is unchanged. It passes on the base code, on the base
+  code with one extra entity, and with the Cathedral. Broken once (no enrage on a loss):
+  "AssertionError: expected [] to deeply equal [ 'entity-333', 'entity-334', …(6) ]".
+- Tests: `Cathedral.test.ts` (unbreakable from construction; on the drawn gem; a Legend's hits
+  are all blocked, same hash twice; enemy minions fighting on it never target it). Broken once
+  each: unbreakable only for `allied-buff-towers-down` → "expected false to be true"; the
+  registry line removed → all 4 fail; the three AI guards removed (unit-only index, neutral
+  filter, aggro rank) → "expected [ [ 'entity-44', 'entity-1' ], …(15) ] to deeply equal []".
+- Pre-PR gate: critic (`architecture-reviewer`) approved, no blockers; its three test nits are
+  applied and its better-than-design items are in `INBOX.md`. `/ponytail-review`: no cuts, so
+  `/ponytail` applied nothing.
+- Checks run: one `npm run check` → EXIT=0: core "Test Files 250 passed (250)", "Tests 1495
+  passed (1495)"; protocol "Tests 18 passed (18)"; client "Tests 1890 passed (1890)"; server
+  "Tests 79 passed (79)"; "Documentation check passed." Then `prettier --check` and
+  `npm run docs:check` on this file after this line was filled in.
+- Next step: Sam answers the lightning item; the gem strike follows on `feat/cathedral-gem-strike`.

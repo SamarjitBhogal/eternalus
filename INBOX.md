@@ -30,6 +30,47 @@ Reply inline (`Decision: …`).
       its own `MapDecorationBuilder` subclass picked by the per-kind interior registry (06). OK
       to do as a separate refactor PR?
 
+- [ ] **The gem's lightning on attackers: 11 open rules (Aryan Walanj, 2026-11-15,
+      `feat/cathedral-gem-hittable`).** DISC-11 (`13-owner-decisions-log.md`) says the gem
+      "strikes attackers with lightning when hit directly". No doc gives a number or a rule for it
+      (reference 04, balancing.md and architecture 07 are silent). This branch only makes the gem
+      hittable: a neutral `Cathedral` structure on the gem whose rule is `never`, so every hit is
+      blocked. The lightning waits for these answers:
+      (1) Damage per strike, and its type (physical or magical)?
+      (2) Cooldown between strikes, and is it per attacker or one for the gem?
+      (3) Range: is an attacker struck wherever it is (a ranged attacker 30 m away), or only
+      within a maximum range?
+      (4) What counts as "hit directly": basic attacks, abilities, projectiles, damage over time,
+      splash or area damage?
+      (5) Who is struck: Legends only, or mobs and camp units too? Both teams alike? Is the team
+      that holds the Cathedral exempt?
+      (6) Can the lightning kill? If so, who gets the kill credit and XP?
+      (7) Does a strike also stun or blind (as Lightbringer's lightning does), or only damage?
+      (8) After the eruption the gem is gone: does the Cathedral keep striking, or does it stop?
+      (9) The gem's body: the hittable circle is `TUNE` radius 5, the drawn diamond's half-width
+      (`buildingGeometry.ts`, `structureCatalogue.ts`), and it does not block movement. Keep both?
+      The critic adds two better-than-design points here: the `Cathedral` entity's only body is
+      the gem, so "hit the Cathedral" means "hit the gem" (doc 07 §1 could say so, or the gem
+      could become its own component before the building gets walls to hit); and the hit radius
+      follows the drawn size, so the hitbox could get its own content value instead.
+      (10) Bots: should bots ever attack the gem, or keep away? Today no bot or minion targets it.
+      (11) What do the lightning and its sound look and sound like? Until answered a strike would
+      be an event only, with no art.
+- [ ] **Better than design: a general retaliation rule vs a gem-only one (Aryan Walanj,
+      2026-11-15, `feat/cathedral-gem-hittable` plan).** For the lightning, either (a) a general
+      `Retaliation` component on `StructureDefinition` (damage, cooldown, range, all `TUNE`) with a
+      `RetaliationSystem` that answers any hit on its owner, which any later structure can reuse
+      from data (architecture 07 §1: behaviour by component, chosen from data), or (b) a
+      `CathedralGemSystem` for the gem alone, which is less code now. Both need the damage
+      pipeline to announce a blocked hit (a new `damage-blocked` event), since a hit on an
+      unbreakable target emits nothing today. Recommendation: (a), with doc 07 §1 and §11 updated in
+      the same PR. Approve (a), choose (b), or say no.
+- [ ] **Better than design: one shared "never damaged" structure entry (Aryan Walanj, 2026-11-15,
+      critic on `feat/cathedral-gem-hittable`).** The three forest camps and the Cathedral each
+      repeat `baseHealth: 1` and `breakability: never` in `structureCatalogue.ts`. One shared spread
+      (like the existing `AFTER_BUFF_TOWERS`) would hold it once. It touches the camp lines, so it
+      would be its own small refactor PR. OK, or leave as is?
+
 - [x] **BUG-2: interior wall health (2026-11-12, PR #96, SCRUM-435).** Every `'wall'` map object
       uses the WallSegment value from balancing.md (`content/maps/mapObjectDefinitions.ts`): the
       Stronghold's wall ring and the `'wall'` features inside it alike. The playtest called the
