@@ -17,15 +17,18 @@ class Bare extends Entity {
   }
 }
 
-/** An entity linked to `featureId`, carrying `components`. */
-const linked = (id: string, featureId: string, ...components: object[]): Bare => {
+/** An entity with no map feature, carrying `components`. */
+const unlinked = (id: string, ...components: object[]): Bare => {
   const entity = new Bare(id, 'bare');
-  entity.addComponent(new MapFeatureLink(featureId));
   components.forEach((component) => {
     entity.addComponent(component);
   });
   return entity;
 };
+
+/** An entity linked to `featureId`, carrying `components`. */
+const linked = (id: string, featureId: string, ...components: object[]): Bare =>
+  unlinked(id, new MapFeatureLink(featureId), ...components);
 
 const stateWith = (...entities: Entity[]): GameState => {
   const state = new GameState(createDefaultGameConfig(), 1);
@@ -43,7 +46,8 @@ describe('MapFeatureGroupsUniqueInvariant', () => {
       linked('entity-1', 'cathedral', new Capturable()),
       linked('entity-2', 'cathedral', new Health(100)),
       linked('entity-3', 'light-gate-lane-0', new Health(50)),
-      new Bare('entity-4', 'bare'),
+      unlinked('entity-4', new Health(10)),
+      unlinked('entity-5', new Health(10)),
     );
 
     expect(invariant.check(state)).toEqual([]);

@@ -164,7 +164,8 @@ export class MatchBridge {
    * What `pick` reads from each entity in `snapshot` that names its map feature, by feature id.
    * One feature may back several entities (the Cathedral's zone and its structure, DEC-233), so
    * `pick` returns `null` for an entity without the group it reads, and that entity adds nothing.
-   * At most one entity per feature carries each group, so no value hides another.
+   * At most one entity per feature carries each group, so no value hides another (core checks it:
+   * `map-feature-groups-unique`, architecture 15 §3).
    */
   private static byFeature<T>(
     snapshot: Snapshot,

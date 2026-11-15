@@ -4,9 +4,11 @@
  * `EntitySnapshot.mapFeatureId`, so the client binds a HUD tile or capture point to its entity by
  * identity, never by position (DEC-221 (3), DEC-231). An entity built from no feature has none.
  * One feature may back several entities (the Cathedral's capture zone and its planned structure,
- * DEC-233), so a consumer selects by feature id and by the group it reads.
+ * DEC-233), so a consumer selects by feature id and by the group it reads; that at most one of
+ * them carries each group is checked by `map-feature-groups-unique` (DEC-252).
  *
- * @remarks Set once at spawn and never changed. It comes from the map, which a replay carries, so
+ * @remarks Set once, by `EntityFactory` when it spawns an entity from a map feature (DEC-252),
+ * and never changed. It comes from the map, which a replay carries, so
  * `StateHasher` has nothing to add for it and recorded checkpoint hashes stay valid.
  */
 export class MapFeatureLink {

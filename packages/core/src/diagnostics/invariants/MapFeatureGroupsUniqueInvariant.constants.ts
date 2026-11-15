@@ -1,6 +1,5 @@
 import { Capturable } from '../../components/Capturable';
 import { Health } from '../../components/Health';
-import type { ComponentType } from '../../entities/Entity.types';
 import type { EntitySnapshot } from '../../state/Snapshot.types';
 
 /**
@@ -10,4 +9,4 @@ import type { EntitySnapshot } from '../../state/Snapshot.types';
 export const FEATURE_GROUPS = {
   health: Health,
   capture: Capturable,
-} as const satisfies Partial<Record<keyof EntitySnapshot, ComponentType>>;
+} as const satisfies Partial<Record<keyof EntitySnapshot, unknown>>;
