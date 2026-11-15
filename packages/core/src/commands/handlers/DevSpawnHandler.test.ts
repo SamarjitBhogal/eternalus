@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { TeamMembership } from '../../components/TeamMembership';
 import { Transform } from '../../components/Transform';
+import { INITIAL_FACING } from '../../components/Transform.constants';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { validateGameConfig } from '../../config/validateGameConfig';
 import type { Team } from '../../teams/teams.types';
@@ -12,6 +13,10 @@ import { EntityFactory } from '../../entities/EntityFactory';
 import { EntityRegistry } from '../../entities/EntityRegistry';
 import { Legend } from '../../entities/Legend';
 import { Unit } from '../../entities/Unit';
+import { createDefaultEntityRegistry } from '../../entities/defaultEntityRegistry';
+import { loadDefaultContent } from '../../content/loadDefaultContent';
+import { TWO_LANE_MAP } from '../../state/__fixtures__/twoLaneMap';
+import { matchWorldOf } from '../../state/__fixtures__/matchWorld';
 import { GameState } from '../../state/GameState';
 import type { Vec2 } from '../../utils/geometry.types';
 import type { Command } from '../Command.types';
@@ -106,8 +111,8 @@ describe('DevSpawnHandler', () => {
         .snapshot(LEVEL_CURVE_CATALOGUE)
         .entities.map(({ team, transform }) => ({ team, transform })),
     ).toEqual([
-      { team: 'dark', transform: { x: 10, y: 20, radius: 0.5 } },
-      { team: 'dark', transform: { x: 10, y: 20, radius: 0.5 } },
+      { team: 'dark', transform: { x: 10, y: 20, radius: 0.5, facing: INITIAL_FACING } },
+      { team: 'dark', transform: { x: 10, y: 20, radius: 0.5, facing: INITIAL_FACING } },
     ]);
   });
 
@@ -150,5 +155,32 @@ describe('DevSpawnHandler', () => {
     const context = contextWithDummy({ maxUnitsPerTeam: 1, maxLegendsPerTeam: 1 });
     expect(new DevSpawnHandler().handle(spawn({ count: 5 }), context)).toBeNull();
     expect(new DevSpawnHandler().handle(spawn({ kind: 'grunt', count: 1 }), context)).toBeNull();
+  });
+
+  it('faces each unit it spawns on a map toward the enemy Stronghold (DEC-216 (6))', () => {
+    const context: CommandContext = {
+      state: new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP)),
+      factory: new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30)),
+    };
+    const dummy = spawn({ kind: 'light-mob', definitionId: 'training-dummy' });
+
+    // The dark Stronghold stands at (190, 30), the light one at (10, 30).
+    expect(
+      new DevSpawnHandler().handle({ ...dummy, team: 'light', at: { x: 150, y: 0 } }, context),
+    ).toBeNull();
+    expect(
+      new DevSpawnHandler().handle({ ...dummy, team: 'dark', at: { x: 50, y: 0 } }, context),
+    ).toBeNull();
+
+    expect(
+      context.state
+        .snapshot(LEVEL_CURVE_CATALOGUE)
+        .entities.map(({ transform }) => transform?.facing),
+    ).toEqual([
+      { x: 0.8, y: 0.6 },
+      { x: 0.8, y: 0.6 },
+      { x: -0.8, y: 0.6 },
+      { x: -0.8, y: 0.6 },
+    ]);
   });
 });

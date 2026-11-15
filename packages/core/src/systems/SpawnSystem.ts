@@ -245,7 +245,12 @@ export class SpawnSystem implements System {
         x: origin.x + ((member % columns) - (columns - 1) / 2) * spawnSpacing,
         y: origin.y + (Math.floor(member / columns) - (rows - 1) / 2) * spawnSpacing,
       };
-      const entity = this.factory.create(kind, mobId, { team, position });
+      // Each member faces the enemy Stronghold until it first moves or attacks (DEC-216 (6)).
+      const entity = this.factory.create(kind, mobId, {
+        team,
+        position,
+        ...state.world?.startFacing(team, position),
+      });
       state.entities.add(entity);
       members.push(entity);
     }
