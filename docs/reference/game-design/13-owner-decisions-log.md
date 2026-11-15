@@ -21,6 +21,15 @@ overridden by the product owner. Decisions arrive through `INBOX.md`; once imple
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
 
+## Batch 2026-11-14 (chat: the player who stays in a Duel, INBOX HC-Q57)
+
+The owner's answer of 2026-11-14, in chat (the successor session of GAME-LOOP-AND-POST-GAME-31),
+to the part of `INBOX.md` HC-Q57 that DEC-250 (4) left open: "A) yes". DEC-251 is this batch.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Affects                                                                                                                                                                                                                                              |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DEC-251 | **The player who stays in a Duel the other player left wins** (answers the open part of `INBOX.md` HC-Q57; DEC-250 (4)). The results screen shows VICTORY with "Opponent left." under it. The server decides it: `DuelMatch.leave` sends the player who stayed `match-ended` with the reason `opponent-left` and that player's team as the winner, so the client's verdict rule (`selectMatchVerdict`) has no Duel branch. Recording the loss for the player who left stays scheduled with the Duel's own win rules (DEC-36, DEC-250 (4)). | `apps/server/src/match/DuelMatch.ts`; `packages/protocol/src/messages.types.ts`; `apps/client/src/bridge/selectors/selectMatchVerdict.ts`, `bridge/selectors/selectResultsView.ts`; architecture 13 §3; `INBOX.md` HC-Q57; decisions DEC-36, DEC-250 |
+
 ## Batch 2026-11-14 (chat: the online Duel in the results flow, INBOX HC-Q57)
 
 The owner's answers of 2026-11-14, in chat (session GAME-LOOP-AND-POST-GAME-30 and its successor), to
