@@ -27,8 +27,9 @@ export type ResultsView = {
 };
 
 /**
- * The results screen's view model (DEC-250). A Duel the other player left has no verdict and says so; no
- * verdict otherwise means no result was recorded; else the verdict line from content, if any.
+ * The results screen's view model (DEC-250). A Duel the other player left says so under its
+ * verdict (DEC-251); no verdict means no result was recorded; else the verdict line from content,
+ * if any.
  * Memoised on its inputs, so a countdown tick keeps the same object.
  */
 export const selectResultsView = createSelector(

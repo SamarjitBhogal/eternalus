@@ -8251,6 +8251,97 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Next step: the owner runs the push script, then the merge script; GL-16 and
   `feat/duel-leave-victory` merge phase/3 after #93 merges.
 
+### 2026-11-14 — Phase 3 / CI: job time limit 25 minutes (DEC-254) — chore/ci-timeout — sholtzman + Claude Code
+
+- What was done: the `check` job in `.github/workflows/ci.yml` has `timeout-minutes: 25`
+  (was 15), with a comment citing DEC-254. The owner made the `ci.yml` edit himself, because
+  `.claude/settings.json` denies agent edits to `.github/workflows/**`. DEC-254 is added to the
+  owner decisions log: on one commit of PR #98 the windows-latest job was cancelled at 15
+  minutes and its re-run passed in 9.5.
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/tower-ruins-and-routes/ci-timeout-check-1.log`); then
+  `prettier --check` and `npm run docs:check` on this file. After merging phase/3 at
+  `8dc7d962` (#79; only this file conflicted, both sides kept): full `npm run check` exit 0
+  (`eternalus-agent-work/tower-ruins-and-routes/ci-timeout-check-merge-8dc7d962.log`). After
+  merging phase/3 at `fcc48a7b` (#93; this file and the owner decisions log conflicted, both
+  sides kept, this batch above #93's as the log is newest first): full `npm run check` exit 0
+  (`eternalus-agent-work/tower-ruins-and-routes/ci-timeout-check-merge-fcc48a7b.log`).
+- Next step: a PR into `phase/3-sprint-3-work`.
+
+### 2026-11-14 — Phase 3 / the player who stays in a Duel wins (DEC-251) — feat/duel-leave-victory — sholtzman + Claude Code
+
+- What changed: the owner's answer to the open part of INBOX HC-Q57 (DEC-251, "A) yes"). When a
+  player leaves a live Duel, the server's `DuelMatch.leave` sends the player who stayed
+  `match-ended` with `opponent-left` and that player's team as the winner (it sent `null`).
+  `selectMatchVerdict` drops its `opponent-left` branch, so the results screen shows VICTORY with
+  "Opponent left." under it (`selectResultsView` keeps the status line). The `MatchEnding.winner`
+  TSDoc in `@eternalus/protocol` names the rule. Docs: architecture 13 §3 (screens table), the
+  decisions log (DEC-251), INBOX HC-Q57 (ticked). Branch from PR #93's head `f14e2661`; its PR
+  opens after #93 merges.
+- Fail-first: the four changed tests (`DuelMatch.test.ts`, `selectMatchVerdict.test.ts`,
+  `selectResultsView.test.ts`, `ResultsScreen.test.tsx`) were run before the production change and
+  were red: "expected { type: 'match-ended', …(2) } to deeply equal …", "expected null to be
+  'victory'", "expected { verdict: null, …(2) } to deeply equal { verdict: 'victory', …(2) }",
+  "expected 'Match results' to be 'VICTORY'". After the change: server `src/match` 15 passed,
+  client bridge, results screen and Duel session tests 229 passed.
+- Pre-PR gate: critic (`architecture-reviewer`) approve, 0 blockers; where the rule lives (the
+  server names the winner, so `MatchEnding.winner` means one thing for both reasons) confirmed;
+  its nit on `matchSlice.test.ts` applied (the `opponent-left` fixture now has the winner the
+  server sends); its other nits: the check line is this one, and doc 13 already has
+  `last-reviewed: 2026-11-14`. Ponytail: one finding applied, `DuelMatch.leave` uses core's
+  `opponentOf` instead of its own ternary.
+- Checks run: `npm run check` → `EXIT=0` on `f14e2661` plus this change (diff sha256 prefix
+  `b0dcfe0770f077b1`, before this line was written; log
+  `eternalus-agent-work/game-loop-plan/duel-leave-victory-check2-2026-11-14.log`): core "Tests
+  1428 passed (1428)"; protocol "Tests 18 passed (18)"; client "Tests 1969 passed (1969)" (3
+  fewer than #93: two `it.each` blocks for the old no-verdict rule became one test each); server
+  "Tests 79 passed (79)"; "Documentation check passed.".
+- Next step: the PR, after #93 merges into `phase/3-sprint-3-work` (merge the phase branch in
+  first).
+
+### 2026-11-14 — Phase 3 / DEC-251: merge the new head of feat/match-scoring (#93 with phase/3 at 88f5afd8) — feat/duel-leave-victory — sholtzman + Claude Code
+
+- What was done: merged `a74ecc20` (PR #93's local head: `feat/match-scoring` with
+  `phase/3-sprint-3-work` at `88f5afd8`, #85 minion follow-ups, #86 out-of-combat heal) into
+  this branch as `98edd1bc`. Conflict: this file only (#93's merge entry, then this branch's
+  DEC-251 entry). The other files merged without conflict; outside this file the diff against
+  `a74ecc20` has the same changed lines as `f14e2661..6107cb17`.
+- Checks run: `npm run check` → `EXIT=0` on `98edd1bc` before this entry was added
+  (`eternalus-agent-work/game-loop-plan/duel-merge-a74ecc20-check-2026-11-14.log`): core "Tests
+  1549 passed (1549)"; protocol "Tests 18 passed (18)"; client "Tests 1969 passed (1969)"; server
+  "Tests 79 passed (79)"; "Documentation check passed.". Then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the PR, after #93 merges into `phase/3-sprint-3-work` (merge the phase branch in
+  first).
+
+### 2026-11-15 — Phase 3 / DEC-251: merge phase/3 (#93 merged, #79) — feat/duel-leave-victory — sholtzman + Claude Code
+
+- What was done: PR #93 merged into `phase/3-sprint-3-work` as `fcc48a7b` (after #79, unit facing
+  chevron, at `8dc7d962`). Merged it into this branch as `c5aaf39a`. Conflict: this file only
+  (phase/3's #79-merge entry, then this branch's entries). The diff against phase/3 is the
+  DEC-251 change and this file's entries only.
+- Checks run: `npm run check` → `EXIT=0` on `c5aaf39a` before this entry was added
+  (`eternalus-agent-work/game-loop-plan/duel-merge-fcc48a7b-check-2026-11-15.log`): core "Tests
+  1582 passed (1582)"; protocol "Tests 18 passed (18)"; client "Tests 1976 passed (1976)"; server
+  "Tests 79 passed (79)"; "Documentation check passed.". Then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the owner runs the push script; the PR opens against `phase/3-sprint-3-work`.
+
+### 2026-11-15 — Phase 3 / DEC-251: merge phase/3 (#127 merged) — feat/duel-leave-victory — sholtzman + Claude Code
+
+- What was done: PR #127 (CI job limit, DEC-254) merged into `phase/3-sprint-3-work` as
+  `80e0ea13`. Merged it into this branch as `708c9422`. Conflicts: this file (#127's entry, then
+  this branch's entries) and the owner decisions log (DEC-254's batch above DEC-251's, newest
+  first). First link of the stacked merge chain #126 → #121 → #120 → #119: each later branch merges
+  the previous one's head, so each PR merges into phase/3 without conflict when they land in that
+  order with merge commits.
+- Checks run: `npm run check` → `EXIT=0` on `708c9422` before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-stack-126-708c9422.log`): core "Tests 1582
+  passed (1582)"; protocol "Tests 18 passed (18)"; client "Tests 1976 passed (1976)"; server
+  "Tests 79 passed (79)"; "Documentation check passed.". Then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the owner runs the push script; #126 merges into phase/3 after CI, then #121.
+
 ### 2026-11-14 — Phase 3 / A\* search area: merge phase/3 (#85, #86) — refactor/astar-search-area — sholtzman + Claude Code
 
 - What was done: merged phase/3 `88f5afd8` (#85 and #86). #85 added four uses of the old cap
