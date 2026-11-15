@@ -1,6 +1,5 @@
 import { Collider } from '../../components/Collider';
 import { Health } from '../../components/Health';
-import { MapFeatureLink } from '../../components/MapFeatureLink';
 import { TeamMembership } from '../../components/TeamMembership';
 import { Transform } from '../../components/Transform';
 import type { StructureDefinition, StructureKind } from '../../content/structures/structures.types';
@@ -11,8 +10,8 @@ import { SpawnContextReader } from '../SpawnContextReader';
 /**
  * Abstract base for static things with health: buildings, walls, gates, turrets, camps and the
  * Cathedral. Installs `Transform`, `Health`, `TeamMembership` and a static `Collider` from a
- * `StructureDefinition`, and a `MapFeatureLink` when it is built from a map feature. Concrete
- * structures and their extra components arrive in Phase 2.
+ * `StructureDefinition`; `EntityFactory` adds a `MapFeatureLink` when it is built from a map
+ * feature. Concrete structures and their extra components arrive in Phase 2.
  *
  * @see docs/architecture/07-structures-obstacles-and-destructibles.md (The Structure family)
  */
@@ -63,7 +62,5 @@ export abstract class Structure extends Entity {
     // Walls and gates start the match unbreakable; `StructureSystem` flips it when the rule passes.
     collider.setUnbreakable(definition.breakability.kind !== 'always');
     this.addComponent(collider);
-    const feature = reader.mapFeatureId(context);
-    if (feature !== null) this.addComponent(new MapFeatureLink(feature));
   }
 }

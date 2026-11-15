@@ -68,8 +68,8 @@ describe('EntitySnapshotter', () => {
       definition: STRUCTURE_DEFINITIONS.get('stronghold'),
       position: { x: 5, y: 6 },
       team: 'light',
-      mapFeatureId: 'light-stronghold',
     });
+    built.addComponent(new MapFeatureLink('light-stronghold'));
     const loose = new Stronghold('entity-2', 'stronghold');
     loose.spawn({
       definition: STRUCTURE_DEFINITIONS.get('stronghold'),
@@ -94,8 +94,8 @@ describe('EntitySnapshotter', () => {
         position: { x: 5, y: 5 },
         team: 'neutral',
         area: [SQUARE],
-        ...(mapFeatureId !== undefined && { mapFeatureId }),
       });
+      if (mapFeatureId !== undefined) zone.addComponent(new MapFeatureLink(mapFeatureId));
       return zone;
     };
     const linked = new Bare('entity-3', 'bare');
