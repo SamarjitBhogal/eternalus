@@ -7022,3 +7022,15 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-86-merge-10.log`); then
   `prettier --check` and `npm run docs:check` on this file.
 - Next step: push; merge after #85.
+
+### 2026-11-14 — Phase 3 / CI: job time limit 25 minutes (DEC-254) — chore/ci-timeout — sholtzman + Claude Code
+
+- What was done: the `check` job in `.github/workflows/ci.yml` has `timeout-minutes: 25`
+  (was 15), with a comment citing DEC-254. The owner made the `ci.yml` edit himself, because
+  `.claude/settings.json` denies agent edits to `.github/workflows/**`. DEC-254 is added to the
+  owner decisions log: on one commit of PR #98 the windows-latest job was cancelled at 15
+  minutes and its re-run passed in 9.5.
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/tower-ruins-and-routes/ci-timeout-check-1.log`); then
+  `prettier --check` and `npm run docs:check` on this file.
+- Next step: pre-PR gate, then a PR into `phase/3-sprint-3-work`.
