@@ -73,7 +73,7 @@ function render(
       ...matchSetupSlice.getInitialState(),
       playerTeam: team,
       selection: selection ?? { classId: null, specId: null },
-      countdownMs: 31_000,
+      countdownsMs: { select: 31_000, reveal: 0, results: 0 },
     },
   });
 }

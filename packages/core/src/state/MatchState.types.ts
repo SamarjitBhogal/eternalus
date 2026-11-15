@@ -2,6 +2,7 @@ import type { MatchPhase } from '../config/matchPhases';
 import type { PlayableTeam } from '../teams/teams.types';
 import type { EntityId } from './EntityStore.types';
 import type { MatchResult } from './MatchResult.types';
+import type { ScoringState } from './ScoringState.types';
 
 /** One timeline entry's resolved tick, kept as plain data so the snapshot can list it (12 §3). */
 export type ScheduledMark = {
@@ -37,6 +38,11 @@ export interface MatchState {
    * built. A Duel (ADR 0016) seats one human per team: `Simulation.humanLegendIdOf` reads either.
    */
   readonly humanLegendId: EntityId | null;
+  /**
+   * The Legends' counters and points, and the teams' totals (12 §5), read-only at every depth.
+   * Written only through the `ScoreBook` that `MatchRecord` holds, by `Scoring` (DEC-211).
+   */
+  readonly scoring: ScoringState;
   /**
    * How the match ended; `null` until a verdict. Set once, only through `MatchRecord.endMatch`, by the
    * `MatchDirector`, which does nothing after it. Not hashed: the terminal phase it comes with
