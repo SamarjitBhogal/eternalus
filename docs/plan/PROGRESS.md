@@ -8242,3 +8242,16 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `npm run docs:check` on this file.
 - Next step: the PR, after #93 merges into `phase/3-sprint-3-work` (merge the phase branch in
   first).
+
+### 2026-11-15 — Phase 3 / DEC-251: merge phase/3 (#93 merged, #79) — feat/duel-leave-victory — sholtzman + Claude Code
+
+- What was done: PR #93 merged into `phase/3-sprint-3-work` as `fcc48a7b` (after #79, unit facing
+  chevron, at `8dc7d962`). Merged it into this branch as `c5aaf39a`. Conflict: this file only
+  (phase/3's #79-merge entry, then this branch's entries). The diff against phase/3 is the
+  DEC-251 change and this file's entries only.
+- Checks run: `npm run check` → `EXIT=0` on `c5aaf39a` before this entry was added
+  (`eternalus-agent-work/game-loop-plan/duel-merge-fcc48a7b-check-2026-11-15.log`): core "Tests
+  1582 passed (1582)"; protocol "Tests 18 passed (18)"; client "Tests 1976 passed (1976)"; server
+  "Tests 79 passed (79)"; "Documentation check passed.". Then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the owner runs the push script; the PR opens against `phase/3-sprint-3-work`.
