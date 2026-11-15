@@ -21,6 +21,26 @@ overridden by the product owner. Decisions arrive through `INBOX.md`; once imple
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
 
+## Batch 2026-11-14 (chat: the CI job time limit)
+
+The owner's answer of 2026-11-14, in the question dialog (session 3ef229eb), to the open item of
+the PR #98 split work: the time limit of the CI job. The owner's words are kept verbatim outside
+the repository in `eternalus-agent-work/tower-ruins-and-routes/owner-answer-2026-11-14-ci-timeout.md`.
+DEC-254 is this batch (DEC-250 to DEC-253 are other sessions').
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| DEC-254 | **The CI job may run for 25 minutes, not 15.** The `check` job in `.github/workflows/ci.yml` has `timeout-minutes: 25`. On one commit of PR #98 (`16c7fe2d`, run 43646563122) the windows-latest job was cancelled at the 15-minute limit, and its re-run passed in 9.5 minutes: runner variance, not a slow test. The cost: a job that really hangs fails 10 minutes later. Owner's pick: "Raise to 25 (Recommended)", over 20 and over leaving 15 and re-running each cancelled job. Built in its own PR (scope `ci`). |
+
+## Batch 2026-11-14 (chat: the player who stays in a Duel, INBOX HC-Q57)
+
+The owner's answer of 2026-11-14, in chat (the successor session of GAME-LOOP-AND-POST-GAME-31),
+to the part of `INBOX.md` HC-Q57 that DEC-250 (4) left open: "A) yes". DEC-251 is this batch.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Affects                                                                                                                                                                                                                                              |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DEC-251 | **The player who stays in a Duel the other player left wins** (answers the open part of `INBOX.md` HC-Q57; DEC-250 (4)). The results screen shows VICTORY with "Opponent left." under it. The server decides it: `DuelMatch.leave` sends the player who stayed `match-ended` with the reason `opponent-left` and that player's team as the winner, so the client's verdict rule (`selectMatchVerdict`) has no Duel branch. Recording the loss for the player who left stays scheduled with the Duel's own win rules (DEC-36, DEC-250 (4)). | `apps/server/src/match/DuelMatch.ts`; `packages/protocol/src/messages.types.ts`; `apps/client/src/bridge/selectors/selectMatchVerdict.ts`, `bridge/selectors/selectResultsView.ts`; architecture 13 §3; `INBOX.md` HC-Q57; decisions DEC-36, DEC-250 |
+
 ## Batch 2026-11-14 (chat: the online Duel in the results flow, INBOX HC-Q57)
 
 The owner's answers of 2026-11-14, in chat (session GAME-LOOP-AND-POST-GAME-30 and its successor), to
@@ -58,6 +78,21 @@ this batch.
 | ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | DEC-244 | **The critic's BTD4 is built: one `doRectsOverlap` in `utils/geometry`, with the fort-world and point-in-rect helpers split out of PR #98** (by the owner's ruling DEC-242 on #98; source rows DEC-235 (B5) and DEC-239 (D4) are on #98). `map/fortInWorld.ts` (`fortInWorld`), `utils/geometry` `isPointInRect` and `doRectsOverlap` change no rule. The capture-zone court is bit-identical at the default world size and within one unit in the last place of a float at other sizes. |
+
+## Batch 2026-11-13 (question dialog: the A\* search cap as an area)
+
+The owner's answer of 2026-11-13 (session eternalus-132), through the question dialog, on when to
+build the follow-ups the critic's round 3 on PR #98 (`feat/tower-ruins-and-routes`) found better
+than the design: "A: follow-up branch now (Recommended)". By his split ruling on #98, DEC-242
+("Split it"), this item is built on its own branch, `refactor/astar-search-area`. The owner's
+words are kept verbatim outside the repository in
+`eternalus-agent-work/tower-ruins-and-routes/OWNER-ANSWERS-2026-11-13.md`. DEC-243 is this batch
+(DEC-240 and DEC-242 are rows on #98 and arrive with it). The option the owner chose read "One
+new branch off #98 with all four"; after DEC-242 this item is alone on a branch off phase/3.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| DEC-243 | **One A\* search is capped by an area of ground, not a count of cells** (critic round 3 on #98, better-than-design item BTD1). `GameConfig.map.pathMaxSearchArea` (m², `config/defaultGameConfig.ts`) replaces `pathMaxExpansions`. `AStarPathfinder` divides the area by its grid's cell area, so the next change of `navCellSize` cannot shrink the ground a search covers, and `validateGameConfig` refuses an area smaller than one cell. The default, 150000 m², is 6000 cells of 5 m, so the 5 m grid behaves as before. On #98's 2.5 m cells it gives 24000 cells, the number DEC-240 chose, so DEC-240's outcome stands without a number of its own. |
 
 ## Batch 2026-11-09 (PR #85 review: a chaser inside an outline holds)
 

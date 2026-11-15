@@ -23,6 +23,13 @@ Reply inline (`Decision: …`).
       constant in `MapSceneryBuilder.constants.ts`. (F2) "wall = side / `wallDivisor`" is in
       `MapFortificationBuilder` (sketch units) and in `fortInWorld` (world units); one
       `fortWall(side)` serves both.
+
+- [ ] **`refactor/astar-search-area` critic (2026-11-13), better than the design — one item,
+      sign-off.** Not built. `GameConfig.map.pathSnapCells` (12) is counted in cells, like the
+      old A\* cap: its comment says it "covers a Stronghold footprint on 5 m cells" (60 m), and on
+      PR #98's 2.5 m cells it reaches 30 m. Proposed: `pathSnapDistance` in world units, with the
+      rings derived as `ceil(distance / cellSize)`. Whether 30 m still covers a Stronghold is a
+      live question on #98.
 - [x] **BUG-2: interior wall health (2026-11-12, PR #96, SCRUM-435).** Every `'wall'` map object
       uses the WallSegment value from balancing.md (`content/maps/mapObjectDefinitions.ts`): the
       Stronghold's wall ring and the `'wall'` features inside it alike. The playtest called the
@@ -486,7 +493,8 @@ Reply inline (`Decision: …`).
       `MovementStrategy`", but bots steer by `move`
       commands, so A\* is a `PathQuery` the bot leaves call (doc 11 §10). Its cost then sits in
       the AI decision budget, not in `PathingSystem` as 11 §6 puts heavy work: each blocked
-      decision searches again (capped by `GameConfig.map.pathMaxExpansions`). If accepted,
+      decision searches again (capped by `GameConfig.map.pathMaxExpansions`; since 2026-11-13
+      `pathMaxSearchArea`, DEC-243). If accepted,
       sprint 3.2's line changes, and a path cache in the brain is the next step if profiling
       shows the cost.
   - Decision (SamarjitBhogal, chat, 2026-10-27): (2) accepted; doc 11 §6 and sprint 3.2's
@@ -2173,7 +2181,7 @@ Reply inline (`Decision: …`).
       keep it as it is.
   - Answered 2026-11-08 in chat (DEC-222): "(b) Build it in GL-16". To build: in GL-16 (game-loop
     plan §7), with its own unit test, the length-change branch included.
-- [ ] **HC-Q57 — The online Duel in the results flow: five better-than-design items and one rule
+- [x] **HC-Q57 — The online Duel in the results flow: five better-than-design items and one rule
       question (critics on the #97 merge into GL-4, PR #93; DEC-139).** The merge keeps GL-5's
       results flow for a Duel (`duel-ended`, `selectMatchVerdict`, `ResultsScreen`). Both critics
       approved it and proposed:
@@ -2204,9 +2212,12 @@ Reply inline (`Decision: …`).
     `canRepeatSetup`). (5): scheduled with HC-S7. (6): option B, the run-on is built with the
     Duel's own win rules (DEC-36); until then a finished Duel goes to the results at once. A
     finished Duel keeps no status line.
-  - Still open: after the opponent leaves, does the player who stayed see VICTORY? The leaver
-    takes a loss (DEC-250 (4)); the screen for the player who stayed shows no verdict until the
-    owner says.
+  - Open until DEC-251: after the opponent leaves, does the player who stayed see VICTORY? The
+    leaver takes a loss (DEC-250 (4)); the screen for the player who stayed shows no verdict until
+    the owner says.
+  - Answered 2026-11-14 in chat (DEC-251): "A) yes". The player who stayed sees VICTORY, with
+    "Opponent left." under it. The server names that player's team as the winner of the
+    `opponent-left` ending, so `selectMatchVerdict` has no Duel branch (`feat/duel-leave-victory`).
   - Critic notes on the built delta (2026-11-14), for the HC-S7 work: `createMatch` still asks
     `duel.status === 'started'` while `canRepeatMatchSetup` reads `setup.mode`, so the strategy
     should key on `setup.mode`; `MatchSetupDraft` could be a union by `mode`, so that "a Duel has

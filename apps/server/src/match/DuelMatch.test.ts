@@ -74,14 +74,14 @@ describe('DuelMatch', () => {
     expect([light.isClosed, dark.isClosed]).toEqual([true, true]);
   });
 
-  it('ends with opponent-left for the one who stays', () => {
+  it('ends with opponent-left for the one who stays, who wins (DEC-251)', () => {
     const { light, dark, scheduler, ended, match } = setup();
     match.leave(light);
     match.leave(dark);
     expect(dark.sent.at(-1)).toEqual({
       type: 'match-ended',
       reason: 'opponent-left',
-      winner: null,
+      winner: 'dark',
     });
     expect(light.sentOfType('match-ended')).toEqual([]);
     expect(scheduler.activeCount).toBe(0);
