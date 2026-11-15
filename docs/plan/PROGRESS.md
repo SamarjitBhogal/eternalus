@@ -7095,3 +7095,20 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Next step: the PR into `phase/3-sprint-3-work`; the owner's answers to HC-Q48, HC-B5, HC-B6
   and HC-Q54..Q56; a browser check of the aim overlay; then the per-class PRs, the Vanguard
   first.
+
+### 2026-11-14 — Phase 4 / sprints 4.2–4.3 and 4.7: ability framework, merge of phase/3 (#85, #86) — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (#85, #86) into PR #123 (`ba5e34aa`; conflict
+  notes in its commit message). Correction to the round 3 entry: `WorldObjectStore.destroyedIds`
+  is kept, not removed, because a new phase/3 owner test reads it. Merge breaks fixed in
+  `TargetQuery`, `DefaultSystemPipeline` and `pickReadySlot` tests. The ability replay
+  `abilityCastsSeed11.replay.ts` was regenerated: it diverged at tick 350 only because of DEC-188
+  out-of-combat healing (without `OutOfCombatHealingSystem` the old hashes passed 2/2);
+  checkpoints 0-300 and the commands are unchanged. No critic reviewed the r3 fixes or the merges
+  (three rounds is the owner's maximum).
+- Checks run: `npm run check` → `EXIT=0`: core "Test Files 287 passed (287)", "Tests 1711
+  passed (1711)"; protocol "Tests 18 passed (18)"; client "Test Files 290 passed (290)", "Tests
+  1965 passed (1965)"; server "Tests 79 passed (79)"; "All matched files use Prettier code
+  style!"; "Documentation check passed."
+- Next step: push and update the PR #123 body (owner); the owner's answers to HC-Q48, HC-B5,
+  HC-B6 and HC-Q49..Q56; a browser check of the aim overlay; then the Vanguard PR.
