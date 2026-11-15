@@ -6671,6 +6671,48 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   passed (1883)"; server "Tests 79 passed (79)"; "Documentation check passed."
 - Next step: review and merge; then sync the stacked drafts #82, #83 and #84.
 
+### 2026-11-09 — Phase 3 / bug tracker — docs/bug-tracker — SamarjitBhogal + Claude Code
+
+- What was done: added the bug tracker (now `docs/plan/bugs.md`), the bug overview linked to the Jira epic
+  SCRUM-433 (Epic 11 – Bugs). Logged BUG-1 to BUG-7 as Tasks SCRUM-434 to SCRUM-440, each
+  checked against the spec and decisions first: unit health bars missing; interior walls on
+  wall-segment health; minions not attacking props (a design change request, DEC-193); developer
+  menu missing (FR-096 to FR-099); bound key actions with no handler; no Legend respawn
+  (FR-051); structure health bars (open, deferred to the structure-views task, DEC-195 (4)).
+- Checks run: superseded by the 2026-11-12 entry below (the first local run failed on Node 22).
+- Next step: see the 2026-11-12 entry.
+
+### 2026-11-12 — Phase 3 / bug tracker (review round) — docs/bug-tracker — SamarjitBhogal + Claude Code
+
+- What was done: answered the PR #96 reviews (swholtzman, claudiodh, CodeRabbit) and the pre-PR
+  critic. Merged `phase/3-sprint-3-work` twice (PROGRESS only; both sides kept). Moved the
+  tracker to `docs/plan/bugs.md`. BUG-7 is open, deferred to Phase 2 sprint 2.8 (DEC-195 (4));
+  no owner ruling said structures have no health. BUG-1 fixed by #89. BUG-4, BUG-5 and BUG-6 name
+  the plan items that schedule them. BUG-2 and BUG-3 got `INBOX.md` questions. How to add a
+  bug: name the plan item, Jira status first, a Jira status mapping.
+- Pre-PR gate: critic (`architecture-reviewer`) request-changes with 2 blockers (this file's
+  stale entry, a new conflict) and should-fix rows; all applied except B1 (a `Scheduled`
+  status), which is the owner's call. Ponytail: two cuts applied (a repeated rule, a duplicate
+  key note).
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code
+  style!"; core "Tests 1321 passed (1321)"; client "Tests 1818 passed (1818)"; "✓ built in
+  314ms"; "Documentation check passed."
+- Next step: reviewers re-review; the owner answers the BUG-2 and BUG-3 INBOX items.
+
+### 2026-11-14 — Phase 3 / bug tracker (owner answers) — docs/bug-tracker — sholtzman + Claude Code
+
+- What was done: recorded the owner's answers to PR #96 as DEC-247 (BUG-2), DEC-248 (BUG-3,
+  amends DEC-193) and DEC-249 (critic B1, a `Scheduled` status); ticked the two `INBOX.md` items.
+  `bugs.md`: BUG-4, BUG-6 and BUG-7 are `Scheduled`; BUG-2 and BUG-3 cite their rulings; BUG-4,
+  BUG-5 and BUG-6 name the open fix PRs (#100, #101, #107, #109, #112); BUG-5's sprint note names
+  the Sentinel's Wrecking Run.
+- Pre-PR gate: critic (`architecture-reviewer`) and ponytail on this change; see the PR comment.
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code
+  style!"; core "Tests 1336 passed (1336)"; protocol "Tests 18 passed (18)"; client "Tests 1883
+  passed (1883)"; server "Tests 79 passed (79)"; "Documentation check passed."
+- Next step: merge PR #96. PR #110 drops or ticks its BUG-2/BUG-3 INBOX questions (answered by
+  DEC-247/248). The open fix PRs update their rows. BUG-2 and BUG-3 need a plan item.
+
 ### 2026-11-11 — Phase 3 / minion follow-ups: merge phase/3 (#92) and the CodeRabbit fixes — fix/minion-stack-followups — sholtzman + Claude Code
 
 - What was done: merged phase/3 `1b25f586` (#89, #92). Fixes from the CodeRabbit review of
@@ -6937,3 +6979,38 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   EXIT=0); the commits after it change docs only. `npx prettier --check` and `npm run
 docs:check` pass on this entry.
 - Next step: push after `feat/tower-ruins-and-routes` (`f3f649db`) is on origin; PR against it.
+
+### 2026-11-14 — Phase 3 / minion follow-ups: merge phase/3 (#96) — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: merged phase/3 `a99c3129` (#96 bug tracker, docs only). This file and the
+  owner decisions log conflicted; both sides are kept (the log has the DEC-247 to DEC-249 batch
+  above the DEC-234 batch, no DEC number is used twice). No code change.
+- Checks run: full `npm run check` exit 0 before this entry was added
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-85-11.log`): core "Tests 1415 passed
+  (1415)", protocol "Tests 18 passed (18)", client "Tests 1883 passed (1883)", server "Tests 79
+  passed (79)", "Documentation check passed."; then `prettier --check` and `npm run docs:check`
+  on this file.
+- Next step: push; merge the new head into #86, #79, #98, #119 and #120.
+
+### 2026-11-14 — Phase 3 / tower ruins: merge #85's #96 head — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` `2129a73e` (PR #85; it adds only the
+  merge of phase/3 `a99c3129`, the #96 bug tracker, docs only). This file and the owner decisions log (the DEC-247 to DEC-249 batch sits between the DEC-246 and the DEC-242 batch, by date) conflicted; both sides are
+  kept. No code change.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-merge85-r7.log`): core "Tests 1480 passed (1480)", protocol
+  "Tests 18 passed (18)", client "Tests 1883 passed (1883)", server "Tests 79 passed (79)",
+  "Documentation check passed."; then `prettier --check` and `npm run docs:check` with this
+  entry.
+- Next step: push.
+
+### 2026-11-14 — Phase 3 / tower-ruins follow-ups: merge #98's #96 head — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: merged `feat/tower-ruins-and-routes` `16c7fe2d` (PR #98) (it adds only the #96 bug tracker, docs only). This file and `INBOX.md` conflicted;
+  both sides are kept. No code change.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/tower-ruins-followups/check-merge98.log`): core "Tests 1488 passed (1488)", protocol
+  "Tests 18 passed (18)", client "Tests 1883 passed (1883)", server "Tests 79 passed (79)",
+  "Documentation check passed."; then `prettier --check` and `npm run docs:check` with this
+  entry.
+- Next step: push.
