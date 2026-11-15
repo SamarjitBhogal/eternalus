@@ -17,7 +17,8 @@ import type { BasicAttack } from './Unit.types';
  * (architecture 04 §1): `Transform`, `Health`, `Movement`, `TeamMembership`, a circle `Collider`
  * on the unit layer, `Vision` and `StatusEffects`, from a definition, a position and a team; plus
  * `Combat` when the definition has an attack and a `ControllerBinding` when the spawn or the
- * definition names a controller (the spawn's wins).
+ * definition names a controller (the spawn's wins). It faces the spawn's start facing when the
+ * spawn gives one (`Placement.facing`, DEC-216 (6)).
  */
 export abstract class Unit extends Entity {
   /** Always `'unit'`. */
@@ -43,11 +44,15 @@ export abstract class Unit extends Entity {
    * @throws Error when the context has no definition, position or team.
    */
   protected override installComponents(context: unknown): void {
-    const { definition, position, team, controller } = new SpawnContextReader(
+    const { definition, position, team, controller, facing } = new SpawnContextReader(
       this,
     ).placed<UnitDefinition>(context);
 
-    this.addComponent(new Transform(position, definition.footprintRadius));
+    const transform = new Transform(position, definition.footprintRadius);
+    if (facing !== undefined) {
+      transform.face(facing);
+    }
+    this.addComponent(transform);
     this.addComponent(new Health(definition.baseHealth));
     this.addComponent(new Movement(definition.movementProfile, definition.movementStrategy));
     this.addComponent(new TeamMembership(team));
