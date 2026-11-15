@@ -8,6 +8,8 @@ export type EntityDrawState = {
   readonly entity: EntitySnapshot;
   /** Interpolated between the last two ticks, in world units. */
   readonly position: WorldPoint;
+  /** The way the entity faces: a unit vector, interpolated like `position` (DEC-192). */
+  readonly facing: WorldPoint;
   /** True for the entity the player controls (highlighted). */
   readonly isFocused: boolean;
 };
