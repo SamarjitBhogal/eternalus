@@ -30,6 +30,16 @@ Reply inline (`Decision: …`).
       which ones: props only, or blocking obstacles too)?
   - **Answered 2026-11-13 by DEC-248** (chat, PR #96). Not built yet (BUG-3).
 
+- [ ] **`refactor/durations-at-load` critic (2026-11-14), better than the design — built, sign-off
+      asked; no decision blocks the PR.** #86's healing system divided its two rates
+      (`healthFractionPerSecond`, a structure bonus's `fractionPerSecond`) by the tick rate itself,
+      every tick for the bonus. (1) Built: `loadOutOfCombatHealing` turns the rates into per-tick
+      values at load, next to the two durations (DEC-241), so the system sees only ticks
+      (architecture 03 §10, `packages/core/AGENTS.md` "Time is measured only in ticks", as
+      `loadDefaultContent` already does for speed and acceleration). Same values, so no behaviour
+      change. (2) Built: the same loader rejects a rate that is negative or not finite. Approve,
+      or say which to undo.
+
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on
       every map feature, so `map/strongholdRing.ts` checks at run time that a Stronghold has it

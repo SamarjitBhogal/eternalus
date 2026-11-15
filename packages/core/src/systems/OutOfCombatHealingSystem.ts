@@ -27,25 +27,22 @@ import type { System, SystemContext } from './System.types';
  * damage and before `DeathSystem`, so a unit killed this tick stays dead.
  *
  * The rate is one flat number for every unit (owner, MVP). A per-class rate would replace
- * `content.healthFractionPerSecond` with a lookup keyed by the unit's definition id in `update`.
+ * `content.healthFractionPerTick` with a lookup keyed by the unit's definition id in `update`.
  */
 export class OutOfCombatHealingSystem implements System {
   public readonly name = 'out-of-combat-healing';
-  private readonly perTick: number;
-  private readonly tickRate: number;
   private readonly zones: HealingZones;
 
   /**
-   * @param state - The match whose events this system listens to; its config sets the tick rate
-   *   and its map the Strongholds' zones.
-   * @param content - The rates, delays and structure bonuses, loaded (`loadOutOfCombatHealing`).
+   * @param state - The match whose events this system listens to; its map sets the Strongholds'
+   *   zones.
+   * @param content - The rates, delays and structure bonuses, loaded (`loadOutOfCombatHealing`):
+   *   ticks and rates per tick.
    */
   public constructor(
     state: GameState,
     private readonly content: OutOfCombatHealing,
   ) {
-    this.tickRate = state.config.tickRate;
-    this.perTick = content.healthFractionPerSecond / this.tickRate;
     this.zones = new HealingZones(state.world?.definition);
     state.events.on('damage-applied', ({ targetId, source }) => {
       const target = state.entities.get(targetId);
@@ -81,7 +78,7 @@ export class OutOfCombatHealingSystem implements System {
           ? 0
           : (zones.find((zone) => zone.team === team && zone.zone.contains(position))
               ?.bonusPerTick ?? 0);
-      health.heal(health.max * (this.perTick + bonus));
+      health.heal(health.max * (this.content.healthFractionPerTick + bonus));
     });
   }
 
@@ -102,7 +99,7 @@ export class OutOfCombatHealingSystem implements System {
       const team = state.entities.teamOf(entity.id);
       const zone = this.zones.zoneOf(bonus.zone, entity, team);
       if (zone !== undefined) {
-        zones.push({ team, bonusPerTick: bonus.fractionPerSecond / this.tickRate, zone });
+        zones.push({ team, bonusPerTick: bonus.fractionPerTick, zone });
       }
     });
     return zones;

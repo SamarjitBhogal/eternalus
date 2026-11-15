@@ -7116,3 +7116,24 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-8.log`); then
   `prettier --check` and `npm run docs:check` on this file.
 - Next step: critic re-check on this change, then open the PR (base phase/3).
+
+### 2026-11-14 — Phase 3 / content durations at load (DEC-241): critic on the healing change, rates per tick — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: the `architecture-reviewer` critic read `e67bcc08..55b3861e`: no blockers, three
+  nits, two better-than-design items; all five are built. (1) `loadOutOfCombatHealing` also turns
+  the two healing rates (`healthFractionPerSecond`, a bonus's `fractionPerSecond`) into per-tick
+  values, so `OutOfCombatHealingSystem` keeps no tick rate and sees only ticks (architecture 03
+  §10, `packages/core/AGENTS.md`). The division is the same, so no value changes. This replaces
+  the previous entry's "the rates stay per second". (2) The loader rejects a rate that is
+  negative or not finite; `assertValidSeconds` takes the unit its message prints (`s` or
+  `per s`). Nits: a delay of 0 s loads as 0 ticks (test); the DEC-241 row says #86 added the
+  sixth reader after the owner's answer; the row no longer reads as a ruling that rates stay per
+  second. The loader test now uses its own authored record, not the tuned numbers. `INBOX.md`
+  asks the owner to sign off (1) and (2). Ponytail on the delta: nothing to cut. Fail-first
+  breaks, each restored after (`cmp`): base rate not divided (14 red), bonus not divided (10),
+  delay with the one-tick floor (1), validator ignores NaN and Infinity (3), unit ignored (2),
+  rate check removed (1), system base rate doubled (12), system ignores the bonus (8).
+- Checks run: full `npm run check` exit 0 before this entry was added (core 255 files / 1481 tests, client 285 / 1883, server 20 / 79, protocol 1 / 18;
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-9.log`); then
+  `prettier --check` and `npm run docs:check` on this file.
+- Next step: critic re-check on this change, then open the PR (base phase/3).

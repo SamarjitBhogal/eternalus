@@ -26,4 +26,10 @@ describe('assertValidSeconds', () => {
       new ContentValidationError('Invalid things: a x is -1 s; c x is NaN s; d x is Infinity s'),
     );
   });
+
+  it('prints the unit it is given, for a rate per second', () => {
+    expect(() => {
+      assertValidSeconds('rates', [['a x', -0.5]], 'per s');
+    }).toThrow(new ContentValidationError('Invalid rates: a x is -0.5 per s'));
+  });
 });
