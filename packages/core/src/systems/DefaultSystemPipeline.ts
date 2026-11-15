@@ -4,7 +4,7 @@ import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
 import { loadStuckDetection } from '../content/ai/loadStuckDetection';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
-import { OUT_OF_COMBAT_HEALING } from '../content/healing/outOfCombatHealing';
+import { loadOutOfCombatHealing } from '../content/healing/loadOutOfCombatHealing';
 import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import { FORMATIONS } from '../content/mobs/formations/formations';
 import { ENRAGING_STRUCTURES } from '../content/mobs/minionModifiers';
@@ -131,7 +131,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
             }),
             new EnragedSystem(state, statuses, ENRAGING_STRUCTURES),
           ]),
-      new OutOfCombatHealingSystem(state, OUT_OF_COMBAT_HEALING),
+      new OutOfCombatHealingSystem(state, loadOutOfCombatHealing(tickRate)),
       new DeathSystem(),
       new CaptureSystem(state.config.match.capturePoints, tickRate),
       // After death, so an objective lost this tick can end the match this tick (12 §1).

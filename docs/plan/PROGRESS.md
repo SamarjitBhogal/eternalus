@@ -7099,3 +7099,20 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: the full `npm run check` ran on this merge together with the next entry's change,
   not on the merge alone (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-8.log`).
 - Next step: the healing durations at load (next entry).
+
+### 2026-11-14 — Phase 3 / content durations at load (DEC-241): out-of-combat healing durations at load — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: #86 converts the healing delay and the structure quiet time from seconds to
+  ticks in `OutOfCombatHealingSystem`'s constructor, a sixth reader that DEC-241 covers. The
+  content type splits into `AuthoredOutOfCombatHealing` (seconds) and `OutOfCombatHealing`
+  (ticks); the new `loadOutOfCombatHealing` converts both once with `roundToTicks` (the same
+  rounding #86 used, so no tick value changes) and rejects a negative or non-finite time
+  (`assertValidSeconds`). The system reads only ticks. The rates stay per second: DEC-241 covers
+  durations only. The DEC-241 row and the healing paragraph of architecture 04 say so. Fail-first
+  breaks, each restored after: loader without rounding (1 test red), system delay compared with
+  `< 0` (3 red), quiet time `* 3` (4 red).
+- Checks run: full `npm run check` exit 0 before this entry was added (core 255 files / 1478
+  tests, client 285 / 1883, server 20 / 79, protocol 1 / 18;
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-8.log`); then
+  `prettier --check` and `npm run docs:check` on this file.
+- Next step: critic re-check on this change, then open the PR (base phase/3).

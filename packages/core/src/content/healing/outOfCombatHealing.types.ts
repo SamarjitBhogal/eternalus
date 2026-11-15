@@ -15,12 +15,21 @@ type StructureHealingBonus = {
   readonly zone: HealingZoneShape;
 };
 
-/** Out-of-combat healing for every Legend and mob (DEC-188). */
-export type OutOfCombatHealing = {
-  /** Seconds without dealing or taking damage before healing starts. */
-  readonly delaySeconds: number;
+/** The parts of out-of-combat healing that are the same as authored and as loaded. */
+type OutOfCombatHealingBase = {
   /** The base rate, a fraction of max health per second, flat for every unit. */
   readonly healthFractionPerSecond: number;
+  /**
+   * Keyed by structure kind; a kind without an entry gives no bonus. Two zones never overlap
+   * (DEC-215 (1)), so a unit is in one zone at most.
+   */
+  readonly structureBonuses: Readonly<Partial<Record<StructureKind, StructureHealingBonus>>>;
+};
+
+/** Out-of-combat healing for every Legend and mob (DEC-188), as authored: times in seconds. */
+export type AuthoredOutOfCombatHealing = OutOfCombatHealingBase & {
+  /** Seconds without dealing or taking damage before healing starts. */
+  readonly delaySeconds: number;
   /**
    * A structure is under attack until it has taken no damage for this many seconds. Only hits on
    * the structure itself count: a hit on a Stronghold's walls, gates, turrets or palace map object
@@ -28,9 +37,15 @@ export type OutOfCombatHealing = {
    * tower's fort walls are the tower (one pool, DEC-185 B).
    */
   readonly structureQuietSeconds: number;
-  /**
-   * Keyed by structure kind; a kind without an entry gives no bonus. Two zones never overlap
-   * (DEC-215 (1)), so a unit is in one zone at most.
-   */
-  readonly structureBonuses: Readonly<Partial<Record<StructureKind, StructureHealingBonus>>>;
+};
+
+/**
+ * Out-of-combat healing as loaded (`loadOutOfCombatHealing`): its two times in ticks, converted
+ * once (DEC-241).
+ */
+export type OutOfCombatHealing = OutOfCombatHealingBase & {
+  /** Ticks without dealing or taking damage before healing starts. */
+  readonly delayTicks: number;
+  /** A structure is under attack until it has taken no damage for this many ticks. */
+  readonly structureQuietTicks: number;
 };
