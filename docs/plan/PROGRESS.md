@@ -8363,3 +8363,21 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `npm run docs:check` on this file.
 - Next step: the owner answers the critic round 4 better-than-design item (one exported type for
   the feature-keyed groups); the PR opens after #93 merges into `phase/3-sprint-3-work`.
+
+### 2026-11-15 — Phase 3 / GL-16: merge phase/3 (#93 merged, #79) — refactor/map-feature-link — sholtzman + Claude Code
+
+- What was done: PR #93 merged into `phase/3-sprint-3-work` as `fcc48a7b` (after #79, unit facing
+  chevron, at `8dc7d962`). Merged it into this branch as `3a03c7ce`. Conflicts:
+  `StateHasher.test.ts` keeps both sides' tests (the map-feature link, the turn); in
+  `MatchBridge.test.ts` this branch's `zoneSnapshot` helper replaces the zone literal, so the
+  helper gets the `facing` that #79 makes required; architecture 04 takes #79's facing paragraph
+  and its `Transform` invariant ("facing is a unit vector") into this branch's re-padded §3
+  table, and the later `last-reviewed`; 15 the later `last-reviewed`; this file phase/3's entry,
+  then this branch's.
+- Checks run: `npm run check` → `EXIT=0` on `3a03c7ce` before this entry was added
+  (`eternalus-agent-work/game-loop-plan/gl16-merge-fcc48a7b-check-2026-11-15.log`): core "Tests
+  1588 passed (1588)"; protocol "Tests 18 passed (18)"; client "Tests 1985 passed (1985)"; server
+  "Tests 79 passed (79)"; "Documentation check passed.". Then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the owner answers the critic round 4 better-than-design item (one exported type for
+  the feature-keyed groups); then the PR against `phase/3-sprint-3-work`.
