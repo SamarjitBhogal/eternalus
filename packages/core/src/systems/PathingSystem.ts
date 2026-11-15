@@ -2,6 +2,7 @@ import { ChaseWatch } from '../components/ChaseWatch';
 import { Combat } from '../components/Combat';
 import { Deploying } from '../components/Deploying';
 import { Movement } from '../components/Movement';
+import { StatusEffects } from '../components/StatusEffects';
 import { Transform } from '../components/Transform';
 import type { FormationDefinition } from '../content/mobs/formations/formations.types';
 import type { StrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
@@ -13,6 +14,8 @@ import type {
 import type { LaneFlowFields } from '../map/LaneFlowFields';
 import type { WorldMap } from '../map/WorldMap';
 import { formationSlot } from '../state/formationSlot';
+import { guardOutward } from '../state/guardOutward';
+import type { SpaceQuery } from '../state/SpaceQuery.types';
 import { isPointInRect } from '../utils/geometry';
 import type { Rect, Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
@@ -39,6 +42,8 @@ import type { System, SystemContext } from './System.types';
  * (DEC-217 (15)): it heads for its `ChaseWatch` waypoint, or else for
  * `AStarPathfinder.exitWaypoint`, and steers by no lane field, whose blocked cells point through
  * the nearest wall (MS-31). Other blocked ground in a fort box (the palace's) is not a court.
+ *
+ * A guard back at its post with nothing to chase faces outward again, on guard (DEC-220 (3)).
  */
 export class PathingSystem implements System {
   public readonly name = 'pathing';
@@ -46,6 +51,8 @@ export class PathingSystem implements System {
   private readonly out: MutableVec2 = { x: 0, y: 0 };
   private readonly forward: MutableVec2 = { x: 0, y: 0 };
   private readonly anchor: MutableVec2 = { x: 0, y: 0 };
+  /** Scratch for the way a guard at its post faces (`guardOutward`). */
+  private readonly outward: MutableVec2 = { x: 0, y: 0 };
   /** The last `chase`'s target blocked depth (`chase`). */
   private depth = 0;
   private found = new Int32Array(0);
@@ -281,25 +288,49 @@ export class PathingSystem implements System {
         this.steer(state, memberId, index, movement, strategy, context);
       }
     });
-    // Guards (18 §7): the unit they chase, or their post; never a lane field.
     context.flow = null;
-    state.guards.forEach(({ guardId, postX, postY }) => {
+    this.steerGuards(state, space, context);
+  }
+
+  /**
+   * Steers every guard (18 §7) toward the unit it chases, or its post; never along a lane field.
+   * A guard at its post with nothing to chase turns to face outward, on guard again after a chase
+   * or a leash return (DEC-220 (3)): at its post as the strategy's arrival counts it. A guard that
+   * cannot move (stunned) does not turn (DEC-216 (7)).
+   */
+  private steerGuards(
+    state: SystemContext['state'],
+    space: SpaceQuery,
+    context: { flow: FlowQuery | null } & Omit<MovementContext, 'flow'>,
+  ): void {
+    const { positions } = context;
+    state.guards.forEach((post) => {
+      const { guardId } = post;
       const index = guardId === null ? undefined : space.indexOf(guardId);
-      const movement =
-        guardId === null ? undefined : state.entities.get(guardId)?.findComponent(Movement);
+      const guard = guardId === null ? undefined : state.entities.get(guardId);
+      const movement = guard?.findComponent(Movement);
       const strategyId = movement?.strategyId;
       const strategy = strategyId === undefined ? undefined : this.strategies[strategyId];
       if (
-        guardId === null ||
+        guard === undefined ||
         index === undefined ||
         movement === undefined ||
         strategy === undefined
       ) {
         return;
       }
-      this.target.x = postX;
-      this.target.y = postY;
-      this.steer(state, guardId, index, movement, strategy, context);
+      this.target.x = post.postX;
+      this.target.y = post.postY;
+      this.steer(state, guard.id, index, movement, strategy, context);
+      const dx = (positions[2 * index] ?? 0) - post.postX;
+      const dy = (positions[2 * index + 1] ?? 0) - post.postY;
+      if (
+        !context.isChasing &&
+        dx * dx + dy * dy <= this.slotArrivalRadius ** 2 &&
+        guard.findComponent(StatusEffects)?.has('cannot-move') !== true
+      ) {
+        guard.findComponent(Transform)?.face(guardOutward(post, this.outward));
+      }
     });
   }
 }

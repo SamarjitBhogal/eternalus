@@ -7,6 +7,7 @@ import { Unit } from '../entities/Unit';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { GuardSlot } from '../state/GuardStore.types';
+import { guardOutward } from '../state/guardOutward';
 import { compareById } from '../utils/compareById';
 import { cos, sin } from '../utils/deterministicMath';
 import type { Vec2 } from '../utils/geometry.types';
@@ -133,9 +134,13 @@ export class GuardRoster {
         return;
       }
       const { kind } = this.definitions.get(slot.mobId);
+      // On guard, until it first moves or attacks: a tower guard (the Stronghold's too, doc 18's
+      // entity legend) faces out from its home's centre (DEC-216 (6)), a camp mob out from the
+      // camp centre (DEC-220 (2)).
       const guard = this.factory.create(kind, slot.mobId, {
         team: slot.team,
         position: { x: slot.postX, y: slot.postY },
+        facing: guardOutward(slot, { x: 0, y: 0 }),
       });
       state.entities.add(guard);
       state.guards.fill(index, guard.id);
