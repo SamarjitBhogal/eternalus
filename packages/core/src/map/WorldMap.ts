@@ -97,6 +97,27 @@ export class WorldMap {
     return true;
   }
 
+  /**
+   * How far the blocked ground under `(fromX, fromY)` reaches toward `(towardX, towardY)`: the
+   * distance to the first walkable point of the straight line, sampled as `isLineClear` samples.
+   * 0 when `from` is walkable; the whole span when nothing walkable lies between.
+   */
+  public blockedRun(fromX: number, fromY: number, towardX: number, towardY: number): number {
+    const dx = towardX - fromX;
+    const dy = towardY - fromY;
+    const span = sqrt(dx * dx + dy * dy);
+    const stride = this.cellSize * LINE_STEP_FRACTION;
+    const steps = Math.ceil(span / stride);
+    for (let step = 0; step <= steps; step += 1) {
+      const along = Math.min(step * stride, span);
+      const t = span === 0 ? 0 : along / span;
+      if (this.isWalkableAt(fromX + dx * t, fromY + dy * t)) {
+        return along;
+      }
+    }
+    return span;
+  }
+
   /** The cell under a world position, or `null` outside the world. */
   public cellAt(point: Vec2): { readonly col: number; readonly row: number } | null {
     const col = Math.floor(point.x / this.cellSize);
