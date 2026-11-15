@@ -47,6 +47,13 @@ export type MovementContext = {
    * lane field, which leads to the lane's end, not to the target; blocked ground stops it instead.
    */
   isChasing: boolean;
+  /**
+   * How far the blocked nav ground under a chased target reaches back toward the unit along the
+   * straight line: a lane tower's own fort cells (DEC-185). A chase never holds at that ground or
+   * turns along it; the collision system stops the unit at the target's outline. 0 (or absent)
+   * otherwise. Writable, like `arrivalRadius`.
+   */
+  targetBlockedDepth?: number;
   /** Scratch the strategy writes its answer into and returns, so nothing allocates. */
   readonly out: MutableVec2;
 };

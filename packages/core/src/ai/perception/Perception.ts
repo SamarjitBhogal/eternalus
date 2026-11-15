@@ -68,7 +68,10 @@ export class Perception {
     return space.queryCircle(center.x, center.y, radius, this.found);
   }
 
-  private passes(id: EntityId, { hostileTo, kinds, aliveOnly }: UnitFilter): boolean {
+  private passes(
+    id: EntityId,
+    { hostileTo, neutralAttackersOf, kinds, aliveOnly }: UnitFilter,
+  ): boolean {
     const { entities } = this.state;
     const entity = entities.get(id);
     if (entity === undefined) {
@@ -77,7 +80,11 @@ export class Perception {
     const team = entities.teamOf(id);
     return (
       (hostileTo === undefined ||
-        (team !== undefined && team !== 'neutral' && team !== hostileTo)) &&
+        (team !== undefined &&
+          team !== hostileTo &&
+          (team !== 'neutral' ||
+            (neutralAttackersOf !== undefined &&
+              entities.attackTargetOf(id) === neutralAttackersOf)))) &&
       (kinds === undefined || kinds.includes(entity.kind)) &&
       (aliveOnly !== true || entities.isAlive(id))
     );

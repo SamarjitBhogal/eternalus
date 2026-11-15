@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Health } from '../components/Health';
+import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import type { Entity } from '../entities/Entity';
 import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
@@ -14,7 +15,9 @@ import { EntityFactory } from '../entities/EntityFactory';
 import { spawnMapStructures } from '../state/__fixtures__/spawnMapStructures';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
+import type { GameEventMap } from '../state/GameEvents.types';
 import { GameState } from '../state/GameState';
+import { StateHasher } from '../state/StateHasher';
 import type { MapDefinition } from '../content/maps/maps.types';
 import { GuardRoster } from './GuardRoster';
 
@@ -65,7 +68,10 @@ describe('GuardRoster', () => {
   it('respawns a dead guard after the respawn time, only while its structure stands', () => {
     const { state, step, guardsOf } = guarded();
     step();
-    const [first = ''] = guardsOf('spawner-tower', 'light') as string[];
+    const first = guardsOf('spawner-tower', 'light')[0];
+    if (first === null || first === undefined) {
+      throw new Error('The first spawner-tower post holds no guard.');
+    }
     state.entities.get(first)?.getComponent(Health).applyDamage(1e6);
     step();
     expect(guardsOf('spawner-tower', 'light')[0]).toBeNull();
@@ -77,7 +83,10 @@ describe('GuardRoster', () => {
     step();
     expect(guardsOf('spawner-tower', 'light')[0]).not.toBeNull();
 
-    const [second = ''] = guardsOf('spawner-tower', 'light') as string[];
+    const second = guardsOf('spawner-tower', 'light')[0];
+    if (second === null || second === undefined) {
+      throw new Error('The first spawner-tower post was not refilled.');
+    }
     state.entities.forEach((entity) => {
       if (entity.kind === 'spawner-tower' && state.entities.teamOf(entity.id) === 'light') {
         entity.getComponent(Health).applyDamage(1e6);
@@ -108,6 +117,104 @@ describe('GuardRoster', () => {
     expect(guardsOf('stronghold', 'light').filter((id) => id !== null)).toHaveLength(6);
   });
 
+  it('hashes a guard post change: filling and vacating a post each change the hash', () => {
+    const hasher = new StateHasher();
+    const { state, step } = guarded();
+    step();
+    const filled = hasher.hash(state);
+    expect(state.guards.size).toBeGreaterThan(0);
+    let isFirstFilled = false;
+    state.guards.forEach(({ guardId }, index) => {
+      if (index === 0) isFirstFilled = guardId !== null;
+    });
+    expect(isFirstFilled).toBe(true);
+
+    state.guards.vacate(0, state.tick + 100);
+    const vacated = hasher.hash(state);
+    state.guards.vacate(0, state.tick + 200);
+    const later = hasher.hash(state);
+    state.guards.fill(0, 'someone-else');
+    const refilled = hasher.hash(state);
+
+    expect(new Set([filled, vacated, later, refilled]).size).toBe(4);
+  });
+
+  it('counts every refill: a blocked one once, when its post comes due, not on every tick it waits, and each one that succeeds (DEC-169)', () => {
+    const cap = 5;
+    const { state, step } = guarded({ limits: { maxUnitsPerTeam: cap } });
+    let lightPosts = 0;
+    state.guards.forEach(({ team }) => {
+      lightPosts += team === 'light' ? 1 : 0;
+    });
+    const blocked = lightPosts - cap;
+    // DEC-169: the `cap` refills that fit are requests met in full, so they count as requested
+    // with nothing suppressed; `later` is the refills after the first tick, `again` those blocked.
+    const asked = (later: number, again: number) => ({
+      unitsRequested: lightPosts + later,
+      unitsSuppressed: blocked + again,
+    });
+    const counters = () => {
+      const { unitsRequested, unitsSuppressed } = state.teams.light;
+      return { unitsRequested, unitsSuppressed };
+    };
+
+    step();
+    expect(blocked).toBeGreaterThan(0);
+    expect(counters()).toEqual(asked(0, 0));
+    for (let tick = 0; tick < 100; tick += 1) {
+      step();
+    }
+    expect(counters()).toEqual(asked(0, 0));
+
+    // A dead guard frees one place, which a waiting post takes at once; when the dead guard's own
+    // post comes due 120 s later, the cap is full again and that refill is counted, once.
+    let fallen = '';
+    state.guards.forEach(({ team, guardId }) => {
+      fallen ||= team === 'light' && guardId !== null ? guardId : '';
+    });
+    expect(state.entities.get(fallen)).toBeDefined();
+    state.entities.get(fallen)?.getComponent(Health).applyDamage(1e6);
+    for (let tick = 0; tick < 120 * TICK_RATE; tick += 1) {
+      step();
+    }
+    expect(counters()).toEqual(asked(1, 0));
+    step();
+    expect(counters()).toEqual(asked(2, 1));
+    for (let tick = 0; tick < 100; tick += 1) {
+      step();
+    }
+    expect(counters()).toEqual(asked(2, 1));
+  });
+
+  it('empties the post of a guard that changes team, and refills it after the respawn time', () => {
+    const { state, step, guardsOf } = guarded();
+    step();
+    const turned = guardsOf('spawner-tower', 'light')[0];
+    if (turned === null || turned === undefined) {
+      throw new Error('The first spawner-tower post holds no guard.');
+    }
+    const from = state.entities.get(turned)?.getComponent(TeamMembership).setTeam('dark');
+    state.events.emit('team-changed', {
+      entityId: turned,
+      from: from ?? 'light',
+      to: 'dark',
+      cause: 'conversion',
+    });
+
+    step();
+    expect(guardsOf('spawner-tower', 'light')[0]).toBeNull();
+    expect(state.guards.slotOf(turned)).toBeUndefined();
+    expect(state.entities.isAlive(turned)).toBe(true);
+
+    for (let tick = 0; tick < 120 * TICK_RATE; tick += 1) {
+      step();
+    }
+    const [refilled] = guardsOf('spawner-tower', 'light');
+    expect(refilled).not.toBeNull();
+    expect(refilled).not.toBe(turned);
+    expect(state.entities.teamOf(refilled ?? '')).toBe('light');
+  });
+
   describe('forest camps (18 §7.1)', () => {
     /** The two-lane map with one neutral medium forest camp; countdown 2 s (60 ticks). */
     const camped = () => {
@@ -136,6 +243,8 @@ describe('GuardRoster', () => {
       roster.layOut(state);
       const cleared: string[] = [];
       state.events.on('camp-cleared', ({ entityId }) => cleared.push(entityId));
+      const payloads: GameEventMap['camp-cleared'][] = [];
+      state.events.on('camp-cleared', (payload) => payloads.push(payload));
       const step = (ticks = 1) => {
         for (let tick = 0; tick < ticks; tick += 1) {
           roster.update(state);
@@ -161,7 +270,7 @@ describe('GuardRoster', () => {
               .applyDamage(1e6),
           );
       };
-      return { state, step, campMobs, killCamp, cleared };
+      return { state, step, campMobs, killCamp, cleared, payloads };
     };
 
     it('stays empty until the countdown ends, then spawns its whole group', () => {
@@ -194,6 +303,130 @@ describe('GuardRoster', () => {
       expect(campMobs().every((id) => id !== null)).toBe(true);
       expect(cleared).toHaveLength(1);
     });
+
+    it('hashes a cleared and respawned camp the same in two runs, and a later clear differently', () => {
+      const hasher = new StateHasher();
+      // Clears the camp `delay` ticks after the countdown, then stops at one fixed tick.
+      const play = (delay: number) => {
+        const { state, step, campMobs, killCamp, cleared } = camped();
+        step(61);
+        const filled = hasher.hash(state);
+        expect(campMobs().every((id) => id !== null)).toBe(true);
+        step(delay);
+        killCamp(4);
+        step();
+        expect(cleared).toHaveLength(1);
+        const waiting = hasher.hash(state);
+        step(120 * TICK_RATE);
+        expect(campMobs().every((id) => id !== null)).toBe(true);
+        return { filled, waiting, respawned: hasher.hash(state) };
+      };
+
+      const first = play(0);
+      const second = play(0);
+      expect(second).toEqual(first);
+      expect(new Set([first.filled, first.waiting, first.respawned]).size).toBe(3);
+
+      // Clearing one tick later ends at another tick, so compare the waiting hash at one tick.
+      const waitingAt = (delay: number) => {
+        const { state, step, killCamp } = camped();
+        step(61 + delay);
+        killCamp(4);
+        step();
+        step(65 - state.tick);
+        return hasher.hash(state);
+      };
+      expect(waitingAt(0)).toBe(waitingAt(0));
+      expect(waitingAt(0)).not.toBe(waitingAt(1));
+    });
+
+    it('gives an emptied post no respawn time while its group stands, then times all from the last loss', () => {
+      const { state, step, killCamp } = camped();
+      const respawnTicks = () => {
+        const ticks: (number | null)[] = [];
+        state.guards.forEach((post) => {
+          if (post.team === 'neutral') {
+            ticks.push(post.respawnAtTick);
+          }
+        });
+        return ticks;
+      };
+      step(61);
+
+      killCamp(3);
+      step();
+      // The group filled when the countdown ended (tick 60); the living mob's post keeps that tick.
+      expect(respawnTicks()).toEqual([null, null, null, 60]);
+
+      killCamp(4);
+      const lastLoss = state.tick;
+      step();
+      const back = lastLoss + 120 * TICK_RATE;
+      expect(respawnTicks()).toEqual([back, back, back, back]);
+    });
+
+    it('names who killed the last mob, and their team, in camp-cleared', () => {
+      const { state, step, campMobs, payloads } = camped();
+      step(61);
+      const guardOn = (team: 'light' | 'dark') => {
+        let found = '';
+        state.guards.forEach(({ team: postTeam, guardId }) => {
+          if (postTeam === team && guardId !== null) {
+            found ||= guardId;
+          }
+        });
+        return found;
+      };
+      const [light, dark] = [guardOn('light'), guardOn('dark')];
+      const killBy = (victimId: string, attackerId: string) => {
+        state.entities.get(victimId)?.getComponent(Health).applyDamage(1e6);
+        state.events.emit('entity-died', {
+          entityId: victimId,
+          killer: { attackerId, kind: 'weapon', definitionId: 'test-blade' },
+        });
+      };
+      const mobs = campMobs().map((id) => id ?? '');
+      let camp = '';
+      state.guards.forEach(({ team, homeId }) => {
+        camp = team === 'neutral' ? homeId : camp;
+      });
+
+      // Dark kills three, Light the last: the last kill names who cleared the camp.
+      mobs.slice(0, 3).forEach((id) => {
+        killBy(id, dark);
+      });
+      step();
+      killBy(mobs[3] ?? '', light);
+      step();
+
+      expect(payloads).toEqual([{ entityId: camp, team: 'light', killerId: light }]);
+    });
+
+    it('names no killer or team in camp-cleared when the killer is no longer in the store', () => {
+      const { state, step, campMobs, payloads } = camped();
+      step(61);
+      const mobs = campMobs().map((id) => id ?? '');
+      mobs.forEach((id) => {
+        state.entities.get(id)?.getComponent(Health).applyDamage(1e6);
+        state.events.emit('entity-died', {
+          entityId: id,
+          killer: { attackerId: 'removed-killer', kind: 'weapon', definitionId: 'test-blade' },
+        });
+      });
+      step();
+
+      expect(payloads).toMatchObject([{ team: null, killerId: null }]);
+    });
+
+    it('names no killer or team in camp-cleared when the last mob died outside the damage pipeline', () => {
+      const { step, killCamp, payloads } = camped();
+      step(61);
+
+      killCamp(4);
+      step();
+
+      expect(payloads).toMatchObject([{ team: null, killerId: null }]);
+    });
   });
 
   it('finds clear ground for a blocked post when its leash span is shorter than a nav cell', () => {
@@ -225,12 +458,12 @@ describe('GuardRoster', () => {
       { x: position.x + half, y: position.y + half },
       { x: position.x - half, y: position.y + half },
     ];
-    state.worldObjects = new WorldObjectStore(
-      [{ id: 'block', kind: 'furniture', isBlocking: true, footprints: [square] }],
+    state.worldObjects = new WorldObjectStore({
+      objects: [{ id: 'block', kind: 'furniture', isBlocking: true, footprints: [square] }],
       factory,
-      state.entities,
-      MAP_OBJECT_DEFINITIONS,
-    );
+      entities: state.entities,
+      definitions: MAP_OBJECT_DEFINITIONS,
+    });
     const base = GUARD_PLANS['spawner-tower'];
     if (base === undefined) {
       throw new Error('no spawner-tower guard plan');
@@ -277,12 +510,14 @@ describe('GuardRoster', () => {
     // The object covers the posts; the grid is blocked out past the leash edge, as a footprint
     // stamped onto coarse cells is.
     state.world?.grid.stampFootprint(square(radius + 10));
-    state.worldObjects = new WorldObjectStore(
-      [{ id: 'block', kind: 'furniture', isBlocking: true, footprints: [square(radius + 3)] }],
+    state.worldObjects = new WorldObjectStore({
+      objects: [
+        { id: 'block', kind: 'furniture', isBlocking: true, footprints: [square(radius + 3)] },
+      ],
       factory,
-      state.entities,
-      MAP_OBJECT_DEFINITIONS,
-    );
+      entities: state.entities,
+      definitions: MAP_OBJECT_DEFINITIONS,
+    });
     const base = GUARD_PLANS['spawner-tower'];
     if (base === undefined) {
       throw new Error('no spawner-tower guard plan');
