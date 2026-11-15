@@ -4,6 +4,7 @@ import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
 import { STUCK_DETECTION } from '../content/ai/stuckDetection';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
+import { OUT_OF_COMBAT_HEALING } from '../content/healing/outOfCombatHealing';
 import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import { FORMATIONS } from '../content/mobs/formations/formations';
 import { ENRAGING_STRUCTURES } from '../content/mobs/minionModifiers';
@@ -24,6 +25,7 @@ import { HordeSystem } from './HordeSystem';
 import { InvariantSystem } from './InvariantSystem';
 import { MatchDirectorSystem } from './MatchDirectorSystem';
 import { MovementSystem } from './MovementSystem';
+import { OutOfCombatHealingSystem } from './OutOfCombatHealingSystem';
 import { PathingSystem } from './PathingSystem';
 import { ProgressionSystem } from './ProgressionSystem';
 import { SpaceSystem } from './SpaceSystem';
@@ -42,11 +44,11 @@ import { SystemPipeline } from './SystemPipeline';
  * progress, statuses, movement, collision (DEC-121 (c): every later reader sees resolved
  * positions), the neighbour index, stuck detection (DEC-193), steering, combat, map destruction,
  * progression (kill XP), minion veterancy, structure losses and breakability, spawning, enraging,
- * death, capture points, the match director, then invariants last. This is the one place a system
- * is added, at its position in the tick (architecture 02 §9). It builds the match's one
- * `DamagePipeline` and one `StatusEffectApplier` (with the status effects loaded for this match's
- * config) and hands them to the systems that need them, so a damage step applies to every hit and
- * every status event comes from one place.
+ * out-of-combat healing (DEC-188), death, capture points, the match director, then invariants
+ * last. This is the one place a system is added, at its position in the tick (architecture 02 §9).
+ * It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the status effects
+ * loaded for this match's config) and hands them to the systems that need them, so a damage step
+ * applies to every hit and every status event comes from one place.
  */
 export class DefaultSystemPipeline extends SystemPipeline {
   /** Creates the pipeline from its injected parts (`DefaultSystemPipelineOptions`). */
@@ -128,6 +130,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
             }),
             new EnragedSystem(state, statuses, ENRAGING_STRUCTURES),
           ]),
+      new OutOfCombatHealingSystem(state, OUT_OF_COMBAT_HEALING),
       new DeathSystem(),
       new CaptureSystem(state.config.match.capturePoints, tickRate),
       // After death, so an objective lost this tick can end the match this tick (12 §1).
