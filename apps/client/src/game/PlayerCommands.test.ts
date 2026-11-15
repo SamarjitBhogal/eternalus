@@ -53,7 +53,7 @@ const unit = (id: string, team: Team, x: number, y: number): EntitySnapshot => (
   family: 'mob',
   definitionId: 'minion',
   team,
-  transform: { x, y, radius: 1 },
+  transform: { x, y, radius: 1, facing: { x: 1, y: 0 } },
   health: { current: 10, max: 10 },
   progression: null,
   aether: null,
