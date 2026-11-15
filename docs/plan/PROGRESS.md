@@ -7346,3 +7346,34 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   "Tests 79 passed (79)"; "Documentation check passed.".
 - Next step: pre-PR gate on the GL-16 delta against `f14e2661` (critic, ponytail); the PR opens
   after #93 merges into `phase/3-sprint-3-work`.
+
+### 2026-11-14 — Phase 3 / GL-16, the map-feature invariant and the shared install (DEC-252) — refactor/map-feature-link — sholtzman + Claude Code
+
+- What changed: the owner's answers to the critic round 3 better-than-design items (INBOX HC-Q58,
+  DEC-252). `MapFeatureGroupsUniqueInvariant` (`map-feature-groups-unique`, periodic, error)
+  flags two entities of one map feature that carry the same group a consumer reads by feature;
+  the groups are listed in `MapFeatureGroupsUniqueInvariant.constants.ts`. `EntityFactory.create`
+  adds `MapFeatureLink` after `spawn` for any placement with a map feature; `Structure` and
+  `Zone` no longer install it, and `SpawnContextReader.mapFeatureId` is gone. Docs: architecture
+  04 §3, §6, §13, 15 §3, 13 §10, the game-loop plan's GL-16 row, the decisions log, INBOX
+  HC-Q58. Architecture 02 and `packages/core/AGENTS.md`: `diagnostics/` may import
+  `components/`, as ten invariants already did.
+- Fail-first: (1) the factory's condition set to `=== "never"`: red "Missing component
+  \"MapFeatureLink\"" (`EntityFactory.test.ts`) and "expected [ undefined, undefined, undefined ]
+  to deeply equal [ 'capture-point-lane-0', …(2) ]" (`Simulation.capture.test.ts`); (2) the
+  invariant's `entityIds.length < 2` set to `< 3`: red "expected [] to deeply equal [ { …(5) } ]";
+  (3) the invariant bucketing unlinked entities under one feature id: red "expected [ { …(5) } ]
+  to deeply equal []". Each restored; `cmp` against the saved copy clean.
+- Critic (`architecture-reviewer`, round 4, on `b07c3608..`): approve, 0 blockers. Applied: the
+  minor (the constants no longer import `entities/` types) and the nits (unlinked entities with
+  a group in the test, the `MapFeatureLink` and `Placement` comments, the `MatchBridge` comment
+  and 13 §10 name the check, the plan row's docs list). Its better-than-design item (one exported
+  type for the feature-keyed groups, so the bridge can read only the groups the invariant checks)
+  waits for the owner. Ponytail on the same delta: no cuts.
+- Checks run: `npm run check` → `EXIT=0` before this entry was added
+  (`eternalus-agent-work/game-loop-plan/gl16-dec252-check-2026-11-14.log`): core "Tests 1434
+  passed (1434)"; protocol "Tests 18 passed (18)"; client "Tests 1978 passed (1978)"; server
+  "Tests 79 passed (79)"; "Documentation check passed.". Then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the owner answers the critic's better-than-design item; GL-16 merges the new head of
+  `feat/match-scoring` (phase/3 at `88f5afd8`); its PR opens after #93 merges.

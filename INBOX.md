@@ -2158,6 +2158,16 @@ Reply inline (`Decision: …`).
     should key on `setup.mode`; `MatchSetupDraft` could be a union by `mode`, so that "a Duel has
     no rosters" is a type fact. For doc-gardening: the folder table of architecture 02 has no row
     for `game/duel/` and `game/engine/net/`, which import `@eternalus/protocol` (#97).
+- [x] **HC-Q58 — GL-16 critic round 3: two better-than-design items (`refactor/map-feature-link`;
+      DEC-139).** The critic approved GL-16 after the merge of GL-4 (#93). (1) Nothing in core
+      checks DEC-233's rule that at most one entity of a map feature carries each group a consumer
+      reads by feature id: add an invariant. (2) `Structure` and `Zone` each install
+      `MapFeatureLink` from the placement with the same lines: install it once, in
+      `EntityFactory`. Answer per item: build now on GL-16, or keep as it is.
+  - Answered 2026-11-14 in the question dialog (DEC-252): "Add the core check (Recommended)" and
+    "Build the shared install". Built on GL-16: `MapFeatureGroupsUniqueInvariant`
+    (`map-feature-groups-unique`) and the install in `EntityFactory.create`. The core check takes
+    a fourth critic pass, past the three-loop limit; the owner chose it.
 - [ ] **HC-Q42 — Where do Legends spawn at tick 0: all at their Citadel (DEC-80), or as built (match-director critic).** DEC-80 says "All Legends spawn at their Citadel at tick 0." As built (architecture 18 §8, MS-20), each bot laner spawns at its team's end of its assigned lane, and only the Rovers (the bot Rover and the human's Legend, DEC-173) spawn at their team's Stronghold. Keep the as-built lane start for laners and narrow DEC-80 to respawns, or spawn every Legend at its Citadel and let laners walk to their lanes?
 - [ ] **HC-S7 — Scheduled: split `Simulation.ts` and `SessionController.ts` below the ~300-line
       guide (PR #68 review, follow-up 3).** `Simulation.ts` (461 lines) holds start-up helpers
