@@ -29,6 +29,7 @@ export class FakeSessionContext implements SessionContext {
   public readonly calls: SessionContextCalls = {
     transition: [],
     newMatchSetup: [],
+    canRepeatMatchSetup: [],
     repeatMatchSetup: [],
     clearMatchSetup: [],
     selection: [],
@@ -48,6 +49,8 @@ export class FakeSessionContext implements SessionContext {
   public readonly cancelledLoads: number[] = [];
   /** Every match `createMatch` built, in order. */
   public readonly matches: FakeRunningMatch[] = [];
+  /** What `canRepeatMatchSetup` answers. */
+  public canRepeat = true;
   /** When set, `prepareWorld` throws it. */
   public prepareWorldError: Error | null = null;
   /** When set, `createMatch` throws it. */
@@ -69,6 +72,12 @@ export class FakeSessionContext implements SessionContext {
   /** Records the call. */
   public newMatchSetup(): void {
     this.record('newMatchSetup', []);
+  }
+
+  /** Records the call; answers `canRepeat`. */
+  public canRepeatMatchSetup(): boolean {
+    this.record('canRepeatMatchSetup', []);
+    return this.canRepeat;
   }
 
   /** Records the call. */

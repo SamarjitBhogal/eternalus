@@ -130,8 +130,11 @@ describe('SessionController asset groups', () => {
     await session.resolveLoads();
 
     const calls = load.mock.calls.map(([group]) => group);
+    // `selection` also loads for the win/lose screen in between (game-loop plan §4.5, §8).
     for (const group of SELECTION_GROUPS) {
-      expect(calls.filter((called) => called === group)).toHaveLength(2);
+      expect(calls.filter((called) => called === group)).toHaveLength(
+        group === 'selection' ? 3 : 2,
+      );
     }
     expect(calls).not.toContain('selection-alternate');
     expect(session.controller.phase).toBe('character-select');
@@ -176,6 +179,28 @@ describe('SessionController asset groups', () => {
 
     expect(session.controller.phase).toBe('menu');
     expect(session.emptied.filter(({ group }) => group === 'match')).toHaveLength(1);
+  });
+
+  it('shows the selection group on the win/lose screen and empties it on the way to the menu', async () => {
+    const session = sessionWithResults();
+    session.controller.start();
+    await session.resolveLoads();
+    await session.toMatch();
+
+    session.toResults();
+    await session.resolveLoads();
+    const atResults = assetsSlice.selectors.selectAssetUrl(
+      session.store.getState(),
+      'test-selection',
+    );
+    session.intent({ kind: 'continue' });
+
+    expect(atResults).toBe('/test/selection.webp');
+    expect(session.controller.phase).toBe('menu');
+    expect(
+      assetsSlice.selectors.selectAssetUrl(session.store.getState(), 'test-selection'),
+    ).toBeNull();
+    expect(session.emptied.map(({ group }) => group).slice(-1)).toEqual(['selection']);
   });
 
   it("marks the catalogue's colour set on the theme root while the session runs", () => {
