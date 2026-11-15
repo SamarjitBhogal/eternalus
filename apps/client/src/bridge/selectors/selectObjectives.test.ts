@@ -18,7 +18,8 @@ function storeWith(team: PlayableTeam | null, points: readonly CapturePointStatu
       hud: TEST_HUD_CATALOGUE,
     }),
   );
-  if (team !== null) store.dispatch(matchSetupSlice.actions.setTeam({ seed: 1, playerTeam: team }));
+  if (team !== null)
+    store.dispatch(matchSetupSlice.actions.setTeam({ mode: 'local', seed: 1, playerTeam: team }));
   store.dispatch(matchSlice.actions.capturePointsChanged(points));
   return store;
 }

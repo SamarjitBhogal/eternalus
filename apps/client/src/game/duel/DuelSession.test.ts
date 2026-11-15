@@ -1,17 +1,18 @@
 import { MemoryLogger } from '@eternalus/core';
+import type { MatchEnding } from '@eternalus/protocol';
 import { describe, expect, it } from 'vitest';
 
 import { FakeMessageTransport } from '../engine/net/FakeMessageTransport';
 import { snapshotAtTick } from './__fixtures__/snapshots';
 import { DuelSession } from './DuelSession';
-import type { DuelResult, DuelSessionHandlers } from './DuelSession.types';
+import type { DuelSessionHandlers } from './DuelSession.types';
 
 const INTENT = { move: { x: 1, y: 0 }, aim: null, triggered: [] };
 
 function setUp() {
   const transports: FakeMessageTransport[] = [];
   const calls: string[] = [];
-  const results: DuelResult[] = [];
+  const results: MatchEnding[] = [];
   const handlers: DuelSessionHandlers = {
     started: () => calls.push('started'),
     ended: (result) => {
@@ -121,7 +122,7 @@ describe('DuelSession', () => {
     session.sendIntent(INTENT);
 
     expect(calls).toEqual(['started', 'ended']);
-    expect(results).toEqual([{ winner: 'dark', reason: 'finished', team: 'dark' }]);
+    expect(results).toEqual([{ winner: 'dark', reason: 'finished' }]);
     expect(session.status).toBe('ended');
     expect(transport().hasEnded).toBe(true);
     expect(transport().sent).toEqual([{ type: 'queue-join' }]);
@@ -142,7 +143,7 @@ describe('DuelSession', () => {
     transport().receive({ type: 'state', snapshot: snapshotAtTick(1), ackSeq: 0 });
 
     expect(calls).toEqual(['ended']);
-    expect(results).toEqual([{ winner: 'light', reason: 'opponent-left', team: 'light' }]);
+    expect(results).toEqual([{ winner: 'light', reason: 'opponent-left' }]);
     expect(session.status).toBe('ended');
     expect(transport().hasEnded).toBe(true);
   });

@@ -21,6 +21,8 @@ const initialState: DisplayCatalogue = {
     enemyRover: 'mirror-player',
     difficulties: { laner: '', rover: '' },
   },
+  verdictLines: {},
+  sovereignNames: { light: '', dark: '' },
 };
 
 /** Display-ready content, projected once at boot from the catalogue source. */
@@ -42,5 +44,7 @@ export const contentSlice = createSlice({
     selectLockInChromeAssetId: (state) => state.lockInChromeAssetId,
     selectHudCatalogue: (state) => state.hud,
     selectTeamNames: (state) => state.teamNames,
+    selectVerdictLines: (state) => state.verdictLines,
+    selectSovereignNames: (state) => state.sovereignNames,
   },
 });
