@@ -9,6 +9,7 @@ import type {
   LegendName,
   MapFeatureKind,
   RoleRatings,
+  VerdictLines,
 } from '@eternalus/core';
 
 import type { HudSlotId } from './Binding.types';
@@ -307,4 +308,8 @@ export type DisplayCatalogue = {
   readonly botRoster: BotRosterDefinition;
   /** Every ability's display data (core content): the match's range overlay draws from it. */
   readonly abilities: readonly AbilityDisplay[];
+  /** The win/lose screen's line under the verdict, per victory condition and side (core, 12 §9). */
+  readonly verdictLines: VerdictLines;
+  /** Each team's sovereign display name (core content, DEC-74); fills a verdict line's `{name}`. */
+  readonly sovereignNames: Readonly<Record<PlayableTeam, string>>;
 };

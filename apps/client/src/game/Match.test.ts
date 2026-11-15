@@ -136,7 +136,7 @@ const setUp = (content?: Content, withMapObjects = false) => {
     // The port as `createBrowserMatch` binds it.
     dashReach: (origin, direction, distance, radius) =>
       simulation.dashReach(origin, direction, distance, radius),
-    onCrash: () => undefined,
+    observer: { crashed: () => undefined, ended: () => undefined },
     // A bus only the tests listen to, at the shipped cadence.
     bridge: {
       bus,

@@ -9,7 +9,10 @@ import { ABILITY_CASTS_PLAN } from './abilityCastsPlan';
  * into enemy Legends, a concussed counter-cast and a cast refused on cooldown. If it stops reproducing, either a determinism bug crept in or the
  * rules changed on purpose; only the second may regenerate it. Regenerated 2026-11-14 for
  * out-of-combat healing (DEC-188, merged from phase/3): checkpoints 0 to 300 and the commands were
- * unchanged, and without `OutOfCombatHealingSystem` the old hashes still reproduced.
+ * unchanged, and without `OutOfCombatHealingSystem` the old hashes still reproduced. Regenerated
+ * 2026-11-15 when phase/3 began hashing facing (DEC-192) and the scoring state (#93): the
+ * commands and checkpoint 0 were unchanged, and with those two hash fields left out the old hashes
+ * still reproduced.
  */
 export const ABILITY_CASTS_SEED_11: ReplayOf<{
   readonly seed: number;
@@ -112,39 +115,39 @@ export const ABILITY_CASTS_SEED_11: ReplayOf<{
     },
     {
       tick: 50,
-      hash: 1524902526,
+      hash: 2184706502,
     },
     {
       tick: 100,
-      hash: 957597168,
+      hash: 2141419056,
     },
     {
       tick: 150,
-      hash: 1966690527,
+      hash: 3366307571,
     },
     {
       tick: 200,
-      hash: 2808255539,
+      hash: 2910192951,
     },
     {
       tick: 250,
-      hash: 992041804,
+      hash: 3333785740,
     },
     {
       tick: 300,
-      hash: 2023768330,
+      hash: 2323298770,
     },
     {
       tick: 350,
-      hash: 687310265,
+      hash: 1133167808,
     },
     {
       tick: 400,
-      hash: 718563563,
+      hash: 985238859,
     },
     {
       tick: 450,
-      hash: 729276591,
+      hash: 4259116751,
     },
   ],
 };

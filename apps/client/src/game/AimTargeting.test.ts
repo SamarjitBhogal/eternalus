@@ -17,7 +17,7 @@ const CASTER: EntitySnapshot = {
   family: 'legend',
   definitionId: 'warrior',
   team: 'light',
-  transform: { x: 10, y: 20, radius: 0.5 },
+  transform: { x: 10, y: 20, radius: 0.5, facing: { x: 1, y: 0 } },
   health: { current: 1, max: 1 },
   progression: null,
   aether: null,

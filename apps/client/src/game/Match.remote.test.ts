@@ -60,7 +60,7 @@ function setUp() {
     input: scripted,
     logger: new MemoryLogger(),
     abilities: [],
-    onCrash: () => undefined,
+    observer: { crashed: () => undefined, ended: () => undefined },
     bridge: {
       bus: new TypedEventBus<BridgeEventMap>(),
       publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,

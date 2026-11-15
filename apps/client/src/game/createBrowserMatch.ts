@@ -118,7 +118,7 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
         abilities: request.abilities,
         dashReach: (origin, direction, distance, radius) =>
           simulation.dashReach(origin, direction, distance, radius),
-        onCrash: request.onCrash,
+        observer: request.observer,
         bridge: {
           bus: deps.bus,
           publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,

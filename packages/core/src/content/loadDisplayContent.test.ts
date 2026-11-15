@@ -16,6 +16,7 @@ import { WARRIOR } from './legends/warrior';
 import type { AbilityStepDescriber, DisplayCatalogues } from './loadDisplayContent';
 import { loadDisplayContent } from './loadDisplayContent';
 import { MAP_FEATURE_DEFINITIONS } from './maps/mapFeatureDefinitions';
+import { VERDICT_LINES } from './narrative/verdictLines';
 import { BOT_ROSTER } from './teams/botRoster';
 
 /** The shipped Legends plus one whose class is the reserved, unplayable `harbinger`. */
@@ -118,6 +119,17 @@ describe('loadDisplayContent', () => {
 
   it('names the profile screen', () => {
     expect(load().profileDisplayName).toBe('Chronicle');
+  });
+
+  it('returns the verdict lines, one set for the only condition that ends a match today', () => {
+    const { verdictLines } = load();
+
+    expect(verdictLines).toBe(VERDICT_LINES);
+    expect(Object.keys(verdictLines)).toEqual(['objective-lost']);
+  });
+
+  it("names each team's sovereign Emperor by default (DEC-74)", () => {
+    expect(load().sovereignNames).toEqual({ light: 'Emperor', dark: 'Emperor' });
   });
 
   it('returns the shipped bot roster (DEC-61, DEC-102)', () => {

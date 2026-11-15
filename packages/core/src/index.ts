@@ -65,6 +65,7 @@ export type {
   MinimapGlyph,
   MinimapGlyphShape,
 } from './content/maps/maps.types';
+export type { VerdictLines } from './content/narrative/verdictLines.types';
 export type { BotRole, BotRosterDefinition, EnemyRoverRule } from './content/teams/botRoster.types';
 export type {
   DiagnosticEvent,
@@ -99,6 +100,7 @@ export type {
 } from './state/GameEvents.types';
 export type { MatchResult, Verdict } from './state/MatchResult.types';
 export type { ScheduledMark } from './state/MatchState.types';
+export type { LegendStats, TeamStats } from './state/ScoringState.types';
 export type {
   AbilitySlotSnapshot,
   CaptureSnapshot,

@@ -14,7 +14,6 @@ import type { AbilitySlot } from '../content/abilities/AbilityDefinition.types';
 import type { Team } from '../teams/teams.types';
 import { distance, isPointInAnyPolygon, nearestPointOnPolygons } from '../utils/geometry';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
-import { length, sub } from '../utils/vec2';
 import type { MutableVec2 } from '../utils/vec2.types';
 import type { Entity } from '../entities/Entity';
 import type {
@@ -140,8 +139,8 @@ export class EntityStore {
    * Whether `targetId` is within `attackerId`'s attack reach, measured edge to edge between the
    * two footprints (architecture 05 §10) to the point `aimPointOf` gives: on the target's outline
    * when it has one (`outlineOf`: a map object, or a lane tower's fort, DEC-185), standing inside
-   * an outline counting as in reach; else to its collider circle. `false` when either is unknown
-   * or the attacker cannot attack.
+   * an outline counting as in reach; else to its collider circle. `false` when either is unknown,
+   * either has no `Transform`, or the attacker cannot attack.
    */
   public isInReach(attackerId: EntityId, targetId: EntityId): boolean {
     const attacker = this.entities.get(attackerId);
@@ -156,7 +155,7 @@ export class EntityStore {
       return false;
     }
     if (aimed === 'centre') {
-      const gap = length(sub(this.aim, from.position));
+      const gap = distance(from.position, this.aim);
       return gap - from.radius - to.radius <= combat.attack.reach;
     }
     return distance(from.position, this.aim) <= from.radius + combat.attack.reach;
@@ -180,8 +179,8 @@ export class EntityStore {
    * chase heads for (`StuckSystem`, `PathingSystem`): `from` itself when it stands inside the
    * target's outline (`outlineOf`), so it is in reach and a chase holds there (DEC-234); else the
    * point of the outline nearest `from`; else the target's centre (reach then also spans its
-   * collider radius). A unit that damages a building from outside its outline can face this point
-   * (DEC-216 (11)). Returns what it aimed at (`AimedAt`), so the inside test runs only here, or
+   * collider radius). An attacker outside the outline faces this point (`facingPointOf`, DEC-216
+   * (11)). Returns what it aimed at (`AimedAt`), so the inside test runs only here, or
    * `null`, leaving `out` as it was, when the target is unknown, has no position, or its outline
    * has no corners.
    */
@@ -204,6 +203,28 @@ export class EntityStore {
     out.x = at.x;
     out.y = at.y;
     return 'centre';
+  }
+
+  /**
+   * Writes into `out` the point `attackerId` faces while it attacks `targetId`: the aim point
+   * (`aimPointOf`, DEC-216 (11)), except that an attacker standing inside the target's outline,
+   * whose aim point is where it stands (DEC-234), faces the target's centre (DEC-220 (1)). A
+   * fort's court is outside its outline, so a unit there faces the aim point (DEC-226). Reach and
+   * chase keep `aimPointOf`. `false`, leaving `out` as it was, when either has no position or the
+   * target has no aim point.
+   */
+  public facingPointOf(attackerId: EntityId, targetId: EntityId, out: MutableVec2): boolean {
+    const from = this.entities.get(attackerId)?.findComponent(Transform)?.position;
+    const centre = this.entities.get(targetId)?.findComponent(Transform)?.position;
+    if (from === undefined || centre === undefined) {
+      return false;
+    }
+    const aimed = this.aimPointOf(targetId, from, out);
+    if (aimed === 'inside') {
+      out.x = centre.x;
+      out.y = centre.y;
+    }
+    return aimed !== null;
   }
 
   /** The entity's attack target, or `null` when it has none, cannot attack or is unknown. */

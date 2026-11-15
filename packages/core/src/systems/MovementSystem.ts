@@ -9,11 +9,13 @@ import type { System, SystemContext } from './System.types';
  * Moves every entity that has `Movement` and `Transform`, in store order: one tick of
  * acceleration toward its heading (or of slowing down without one), then the velocity plus this
  * tick's forced motion (dashes and knock-backs, `Movement.push`) is added to the position in one
- * move, so `CollisionSystem` sweeps both against walls and world bounds alike. Statuses scale the
- * top speed (`moveSpeed`) or hold the entity's own walking (`cannot-move`); forced motion still
- * moves a stunned or airborne entity (Slam knocks back and up at once). While the match holds
- * units idle (`state.match.isIdleHeld`, the countdown) every entity is held, forced motion
- * included, which waits for the hold to end. Allocates nothing per entity (architecture 10 §2).
+ * move, so `CollisionSystem` sweeps both against walls and world bounds alike. The entity faces
+ * the way it walked, its own velocity (DEC-192): a still entity keeps its facing, and forced motion
+ * does not turn it. Statuses scale the top speed (`moveSpeed`) or hold the entity's own walking
+ * (`cannot-move`); forced motion still moves a stunned or airborne entity (Slam knocks back and up
+ * at once). While the match holds units idle (`state.match.isIdleHeld`, the countdown) every
+ * entity is held, forced motion included, which waits for the hold to end. Allocates nothing per
+ * entity (architecture 10 §2).
  */
 export class MovementSystem implements System {
   public readonly name = 'movement';
@@ -39,6 +41,7 @@ export class MovementSystem implements System {
         } else {
           transform.moveBy(addInto(this.step, movement.velocity, movement.takeForcedStep()));
         }
+        transform.face(movement.velocity);
       }
     });
   }

@@ -306,6 +306,8 @@ export function buildDisplayCatalogue(inputs: {
     teamNames: content.teamNames,
     botRoster: content.botRoster,
     abilities: content.abilities,
+    verdictLines: content.verdictLines,
+    sovereignNames: content.sovereignNames,
   };
   checkNoLeftoverPresentation(content, presentation);
   const unknown = catalogueAssetIds(full).find((id) => !knownAssetIds.has(id));

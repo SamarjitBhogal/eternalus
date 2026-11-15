@@ -114,6 +114,46 @@ describe('MovementSystem', () => {
     expect(movement.speed).toBeLessThan(fullSpeed);
   });
 
+  it('faces the way it moves (DEC-192)', () => {
+    const { context, dummy } = setUp();
+    dummy.getComponent(Movement).steer({ x: 0, y: -1 });
+
+    new MovementSystem().update(context);
+
+    expect(dummy.getComponent(Transform).facing).toEqual({ x: 0, y: -1 });
+  });
+
+  it('keeps its facing once it has stopped (DEC-192)', () => {
+    const { context, dummy } = setUp();
+    const movement = dummy.getComponent(Movement);
+    const system = new MovementSystem();
+    movement.steer({ x: 0, y: -1 });
+    system.update(context);
+
+    movement.stop();
+    system.update(context);
+
+    expect(movement.speed).toBe(0);
+    expect(dummy.getComponent(Transform).facing).toEqual({ x: 0, y: -1 });
+  });
+
+  it('does not turn a stunned unit that is steered, nor one stunned while moving (DEC-216 (7))', () => {
+    const { context, dummy } = setUp();
+    const movement = dummy.getComponent(Movement);
+    const transform = dummy.getComponent(Transform);
+    const system = new MovementSystem();
+    movement.steer({ x: 0, y: -1 });
+    system.update(context);
+    const stun = loadStatusEffects(createDefaultGameConfig().tickRate, 2).get('stun');
+
+    dummy.getComponent(StatusEffects).apply(stun, null, 0);
+    movement.steer({ x: -1, y: 0 });
+    system.update(context);
+
+    expect(movement.speed).toBe(0);
+    expect(transform.facing).toEqual({ x: 0, y: -1 });
+  });
+
   it('leaves entities without Movement where they are', () => {
     const { context } = setUp();
     const statue = new Statue('statue-1', 'statue');
@@ -192,6 +232,19 @@ describe('MovementSystem', () => {
     system.update(context);
     system.update(context);
     expect(transform.position.x).toBe(2);
+  });
+
+  it('keeps its facing while pushed: forced motion does not turn it (DEC-192)', () => {
+    const { context, dummy } = setUp();
+    const transform = dummy.getComponent(Transform);
+    const before = { ...transform.facing };
+    dummy.getComponent(Movement).push({ x: 0, y: 2 }, 2);
+
+    new MovementSystem().update(context);
+
+    expect(transform.position.y).toBe(1);
+    expect(transform.facing).toEqual(before);
+    expect(before).not.toEqual({ x: 0, y: 1 });
   });
 
   it('stops forced motion at a wall and at the world edge, as walking stops (with CollisionSystem)', () => {

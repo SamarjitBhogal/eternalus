@@ -1,5 +1,5 @@
 import { createDefaultGameConfig, NullLogger, Simulation } from '@eternalus/core';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { BridgeEventMap } from '../bridge/events';
 import { TypedEventBus } from '../bridge/TypedEventBus';
@@ -11,6 +11,7 @@ import { FakeSessionClock } from './engine/time/FakeSessionClock';
 import { FakeBrowserTarget } from './FakeBrowserTarget';
 import { FakeViewportCanvas } from './FakeViewportCanvas';
 import { MS_PER_SECOND } from './Match.constants';
+import type { MatchObserver } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
 import { prepareMatchWorld } from './prepareMatchWorld';
 import type { DuelMatchRequest } from './SessionController.types';
@@ -51,7 +52,7 @@ function setUp(canvas = new FakeViewportCanvas()) {
     world,
     captureKinds: ['capture-point', 'cathedral'],
     link,
-    onCrash: () => undefined,
+    observer: { crashed: () => undefined, ended: () => undefined },
   };
   const listeners = (): number =>
     window.listenerCount() + document.listenerCount() + canvas.listenerCount();
@@ -79,6 +80,24 @@ describe('createBrowserDuelMatch', () => {
     expect(() => factory(request, viewport)).toThrow('cannot draw on a 2D canvas');
 
     expect(listeners()).toBe(0);
+    expect(window.pendingFrames).toBe(0);
+  });
+
+  it("hands a crash of the Duel's loop to the request's observer", () => {
+    const { window, factory, viewport, request, link } = setUp();
+    const crashed = vi.fn<MatchObserver['crashed']>();
+    const error = new Error('no snapshot');
+    factory({ ...request, observer: { crashed, ended: () => undefined } }, viewport);
+    window.runFrame(0);
+    window.runFrame(MS_PER_SECOND / CONFIG.tickRate);
+    vi.spyOn(link, 'latestSnapshot').mockImplementation(() => {
+      throw error;
+    });
+
+    window.runFrame((2 * MS_PER_SECOND) / CONFIG.tickRate);
+
+    expect(crashed).toHaveBeenCalledTimes(1);
+    expect(crashed.mock.calls[0]?.[0].error).toBe(error);
     expect(window.pendingFrames).toBe(0);
   });
 
