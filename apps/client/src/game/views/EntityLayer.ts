@@ -11,9 +11,9 @@ import type { ViewRegistry } from './ViewRegistry';
 /**
  * The scene layer that draws every entity of the latest snapshot through the `ViewRegistry`
  * (architecture 08 §8), in the main view and on the mini map (06 §8). In the main view positions
- * are interpolated between the previous and current snapshot by `alpha`; an entity that appeared
- * this tick draws where it is (no ghost from the origin). It draws back to front by `y`. A mini map
- * dot sits at the snapshot position (DEC-187 (C)).
+ * and facings are interpolated between the previous and current snapshot by `alpha`; an entity
+ * that appeared this tick draws where it is (no ghost from the origin). It draws back to front by
+ * `y`. A mini map dot sits at the snapshot position (DEC-187 (C)).
  */
 export class EntityLayer implements WorldLayer {
   private states: readonly EntityDrawState[] = [];
@@ -47,9 +47,12 @@ export class EntityLayer implements WorldLayer {
   ): void {
     const before = new Map(previous?.entities.map((entity) => [entity.id, entity]) ?? []);
     this.states = current.entities.flatMap((entity) => {
-      if (entity.mapObjectId !== undefined) return [];
-      const position = EntityLayer.positionOf(entity, before.get(entity.id), alpha);
-      return position === null ? [] : [{ entity, position, isFocused: entity.id === focusId }];
+      const now = entity.transform;
+      if (entity.mapObjectId !== undefined || now === null) return [];
+      const then = before.get(entity.id)?.transform ?? now;
+      const position = EntityLayer.lerp(then, now, alpha);
+      const facing = EntityLayer.turn(then.facing, now.facing, alpha);
+      return [{ entity, position, facing, isFocused: entity.id === focusId }];
     });
   }
 
@@ -88,16 +91,17 @@ export class EntityLayer implements WorldLayer {
     }
   }
 
-  private static positionOf(
-    entity: EntitySnapshot,
-    before: EntitySnapshot | undefined,
-    alpha: number,
-  ): WorldPoint | null {
-    const now = entity.transform;
-    if (now === null) {
-      return null;
-    }
-    const then = before?.transform ?? now;
-    return { x: then.x + (now.x - then.x) * alpha, y: then.y + (now.y - then.y) * alpha };
+  private static lerp(from: WorldPoint, to: WorldPoint, alpha: number): WorldPoint {
+    return { x: from.x + (to.x - from.x) * alpha, y: from.y + (to.y - from.y) * alpha };
+  }
+
+  /**
+   * The facing `alpha` of the way from `from` to `to`, kept a unit vector. Opposite facings snap at
+   * the midpoint (a zero blend takes `to`).
+   */
+  private static turn(from: WorldPoint, to: WorldPoint, alpha: number): WorldPoint {
+    const { x, y } = EntityLayer.lerp(from, to, alpha);
+    const size = Math.hypot(x, y);
+    return size === 0 ? to : { x: x / size, y: y / size };
   }
 }
