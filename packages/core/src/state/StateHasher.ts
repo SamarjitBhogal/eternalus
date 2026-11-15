@@ -11,6 +11,7 @@ import { Veterancy } from '../components/Veterancy';
 import { StatusEffects } from '../components/StatusEffects';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
+import { INITIAL_FACING } from '../components/Transform.constants';
 import { Vision } from '../components/Vision';
 import type { Entity } from '../entities/Entity';
 import { fnv1a } from '../utils/fnv1a';
@@ -133,6 +134,14 @@ export class StateHasher {
         'shields',
         ...health.shields.flatMap((bar) => [bar.sourceId, bar.current, bar.max]),
       ]);
+    }
+    // Only a facing other than INITIAL_FACING is added (a turn, DEC-192, or a start facing,
+    // DEC-216 (6)), so entities that keep it hash as before.
+    if (
+      transform !== undefined &&
+      (transform.facing.x !== INITIAL_FACING.x || transform.facing.y !== INITIAL_FACING.y)
+    ) {
+      fields.push(['facing', transform.facing.x, transform.facing.y]);
     }
     if (movement !== undefined && (movement.heading.x !== 0 || movement.heading.y !== 0)) {
       fields.push(['heading', movement.heading.x, movement.heading.y]);

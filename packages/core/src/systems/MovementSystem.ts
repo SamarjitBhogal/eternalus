@@ -6,7 +6,8 @@ import type { System, SystemContext } from './System.types';
 /**
  * Moves every entity that has `Movement` and `Transform`, in store order: one tick of
  * acceleration toward its heading (or of slowing down without one), then the velocity is added
- * to the position. Statuses scale the top speed (`moveSpeed`) or hold the entity in place
+ * to the position and the entity faces the way it moved (DEC-192; a still entity keeps its
+ * facing). Statuses scale the top speed (`moveSpeed`) or hold the entity in place
  * (`cannot-move`); while the match holds units idle (`state.match.isIdleHeld`, the countdown)
  * every entity is held the same way. Allocates nothing per entity (architecture 10 §2).
  */
@@ -28,6 +29,7 @@ export class MovementSystem implements System {
             : (statuses?.multiplier('moveSpeed') ?? 1);
         movement.advance(speedScale);
         transform.moveBy(movement.velocity);
+        transform.face(movement.velocity);
       }
     });
   }
