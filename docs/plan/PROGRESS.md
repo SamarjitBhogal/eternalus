@@ -8179,3 +8179,20 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   and `npm run docs:check` on this file.
 - Next step: the owner runs the push script, then the merge script; GL-16 and
   `feat/duel-leave-victory` merge the new head.
+
+### 2026-11-14 — Phase 3 / GL-4: merge phase/3 (#79) — feat/match-scoring (PR #93) — sholtzman + Claude Code
+
+- What was done: phase/3 moved to `8dc7d962` (#79 unit facing chevron) and left PR #93
+  conflicting again. Merged it as `edb00119`. Conflict: this file only (in both regions
+  phase/3's entries, then this branch's). Merge fix: `EntitySnapshot.transform.facing` is
+  required since #79, so the two snapshot literals this branch added in `MatchBridge.test.ts`
+  get `facing: { x: 1, y: 0 }`, as phase/3's own literals in that file do (`tsc -b` named both).
+  In `EntitySnapshotter`, `Snapshot.types`, `StateHasher`, `SpawnContextReader` and `Placement`,
+  #79's facing and this branch's `mapFeatureId` and scoring merged side by side.
+- Checks run: `npm run check` → `EXIT=0` on `edb00119` before this entry was added
+  (`eternalus-agent-work/game-loop-plan/gl4-merge-phase3-8dc7d962-check-2026-11-14.log`): core
+  "Tests 1582 passed (1582)"; protocol "Tests 18 passed (18)"; client "Tests 1979 passed
+  (1979)"; server "Tests 79 passed (79)"; "Documentation check passed.". Then `prettier --check`
+  and `npm run docs:check` on this file.
+- Next step: the owner runs the push script, then the merge script; GL-16 and
+  `feat/duel-leave-victory` merge phase/3 after #93 merges.
