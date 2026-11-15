@@ -19,7 +19,7 @@ import type { DuelLink } from './duel/DuelLink.types';
 import type { CatalogueSource } from './content/CatalogueSource.types';
 import type { MessageTransport } from './engine/net/MessageTransport';
 import type { SessionClock } from './engine/time/SessionClock.types';
-import type { MatchCrash, PreparedWorld } from './Match.types';
+import type { MatchCrash, MatchObserver, PreparedWorld } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
 import type { Rng } from './session/Rng.types';
 
@@ -36,8 +36,12 @@ export type MatchRequest = {
    * over the catalogue's difficulties.
    */
   readonly roster: readonly RosterSlot[];
-  /** Called once if the match's game loop stops because a tick or a frame threw (DEC-106). */
-  readonly onCrash: (crash: MatchCrash) => void;
+  /**
+   * Hears the match: `crashed` if its game loop stops because a tick or a frame threw (DEC-106),
+   * `ended` once after the tick that ended it (`match-ended`; game-loop plan A8); the match runs on
+   * until the session destroys it (DEC-92).
+   */
+  readonly observer: MatchObserver;
 };
 
 /** What the session hands the Duel match factory (ADR 0016): no roster, the server owns the match. */
@@ -47,8 +51,11 @@ export type DuelMatchRequest = {
   readonly captureKinds: readonly MapFeatureKind[];
   /** The started Duel: this player's Legend, the server's snapshots and the intent's way out. */
   readonly link: DuelLink;
-  /** Called once if the match's game loop stops because a tick or a frame threw (DEC-106). */
-  readonly onCrash: (crash: MatchCrash) => void;
+  /**
+   * Hears the match as `MatchRequest.observer` does. A Duel's `ended` is never called: the
+   * server's `match-ended` message ends it (`DuelSession`).
+   */
+  readonly observer: MatchObserver;
 };
 
 /** A match that is running in `match`; only `MatchState` holds one. */
@@ -100,7 +107,15 @@ export interface SessionContext {
   transition(to: SessionPhase, reason?: SessionReason): void;
   /** Draws a new seed and team, builds both rosters, themes the page and publishes the setup. */
   newMatchSetup(): void;
-  /** Publishes the current setup again, unchanged (a rematch, architecture 13 §2). */
+  /**
+   * Whether there is a setup a rematch can repeat: a local match's. An online Duel's setup is the
+   * server's seat and seed, so it is never repeated.
+   */
+  canRepeatMatchSetup(): boolean;
+  /**
+   * Publishes the current setup again, unchanged (a rematch, architecture 13 §2).
+   * @throws Without a setup a rematch can repeat; ask `canRepeatMatchSetup` first.
+   */
   repeatMatchSetup(): void;
   /**
    * Joins the online Duel queue (ADR 0016): connects to the server and sends `queue-join`. When an
@@ -125,18 +140,18 @@ export interface SessionContext {
    */
   lockIn(): void;
   /**
-   * Builds the world for the current setup's seed (06 §1: the generator runs before `Simulation`),
-   * or for the Duel's map seed while a Duel is started.
-   * @throws Without a setup (and no Duel), or when generation fails.
+   * Builds the world for the current setup's seed (06 §1: the generator runs before `Simulation`);
+   * a Duel's setup carries the server's map seed.
+   * @throws Without a setup, or when generation fails.
    */
   prepareWorld(): void;
   /**
    * Builds and starts the match on `viewport` from the setup with the rosters LOCK IN filled, the
-   * selection and the world, or the online Duel (ADR 0016) while one is started; `onCrash` is
-   * called if its game loop later stops on a throw.
+   * selection and the world, or the online Duel (ADR 0016) while one is started; `observer` hears
+   * it crash or (a local match) end (`MatchRequest.observer`); the server ends a Duel.
    * @throws When one of them is missing or the factory fails.
    */
-  createMatch(viewport: MatchViewport, onCrash: (crash: MatchCrash) => void): RunningMatch;
+  createMatch(viewport: MatchViewport, observer: MatchObserver): RunningMatch;
   /** Drops the prepared world (the match is over). */
   dropWorld(): void;
   /** Logs why the match could not start and returns to `menu` with reason `'match-failed'` (13 §2). */

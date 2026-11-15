@@ -1,5 +1,5 @@
-import type { Logger, PlayableTeam } from '@eternalus/core';
-import type { MatchEndReason } from '@eternalus/protocol';
+import type { Logger } from '@eternalus/core';
+import type { MatchEnding } from '@eternalus/protocol';
 
 import type { MessageTransport } from '../engine/net/MessageTransport';
 
@@ -9,22 +9,12 @@ import type { MessageTransport } from '../engine/net/MessageTransport';
  */
 export type DuelStatus = 'idle' | 'queued' | 'matched' | 'started' | 'ended';
 
-/** How the server ended a Duel, as this player sees it. */
-export type DuelResult = {
-  /** The winning team; `null` for a draw. */
-  readonly winner: PlayableTeam | null;
-  /** Why the match ended. */
-  readonly reason: MatchEndReason;
-  /** This player's own team, from `match-found`. */
-  readonly team: PlayableTeam;
-};
-
 /** What `DuelSession` tells its owner; each is called at most once per Duel. */
 export type DuelSessionHandlers = {
   /** Paired with an opponent and the first snapshot arrived: the match can be built. */
   readonly started: () => void;
   /** The server ended the match, before or after the first snapshot. */
-  readonly ended: (result: DuelResult) => void;
+  readonly ended: (ending: MatchEnding) => void;
   /** The connection ended before the match did. */
   readonly lost: () => void;
 };
