@@ -11,7 +11,7 @@ import styles from './DuelHud.module.css';
  * a Duel.
  */
 export function DuelHud(): ReactElement | null {
-  const duel = useAppSelector(matchSlice.selectors.selectDuel);
+  const duel = useAppSelector(matchSlice.selectors.selectDuelHud);
   if (duel === null) return null;
   const { ownKills, opponentKills, killTarget, countdown } = duel;
   return (

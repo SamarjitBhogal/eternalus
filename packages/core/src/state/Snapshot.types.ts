@@ -15,12 +15,23 @@ import type { Polygon } from '../utils/geometry.types';
  */
 export type EntitySnapshot = {
   readonly mapObjectId?: string;
+  /**
+   * A structure built from a map feature: the feature's id (`MapFeature.id`), so a HUD tile binds
+   * to its structure by identity, never by position.
+   */
+  readonly mapFeatureId?: string;
   readonly id: EntityId;
   readonly kind: string;
   readonly family: string;
   readonly definitionId: string;
   readonly team: Team | null;
-  readonly transform: { readonly x: number; readonly y: number; readonly radius: number } | null;
+  /** `facing` is a unit vector (DEC-192); the client interpolates it like the position. */
+  readonly transform: {
+    readonly x: number;
+    readonly y: number;
+    readonly radius: number;
+    readonly facing: { readonly x: number; readonly y: number };
+  } | null;
   readonly health: { readonly current: number; readonly max: number } | null;
   /** A Legend's level and XP (`Progression`, DEC-224); `null` for every entity that does not level. */
   readonly progression: ProgressionSnapshot | null;

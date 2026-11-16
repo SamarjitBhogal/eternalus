@@ -65,7 +65,7 @@ function storeWith(
   store.dispatch(
     contentSlice.actions.catalogueLoaded({ ...contentSlice.getInitialState(), legendClasses }),
   );
-  store.dispatch(matchSetupSlice.actions.setTeam({ seed: 1, playerTeam: team }));
+  store.dispatch(matchSetupSlice.actions.setTeam({ mode: 'local', seed: 1, playerTeam: team }));
   store.dispatch(matchSetupSlice.actions.select(selection));
   return store;
 }
@@ -159,7 +159,9 @@ describe('selectLegendStepView', () => {
     const store = storeWith({ classId: 'magus', specId: 'catalyst' });
     const before = selectLegendStepView(store.getState());
 
-    store.dispatch(matchSetupSlice.actions.setCountdown(41_000));
+    store.dispatch(
+      matchSetupSlice.actions.countdownChanged({ kind: 'select', remainingMs: 41_000 }),
+    );
     expect(selectLegendStepView(store.getState())).toBe(before);
 
     store.dispatch(matchSetupSlice.actions.select({ classId: 'magus', specId: 'oracle' }));

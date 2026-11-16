@@ -7,6 +7,7 @@ import { Condition } from './bt/Condition';
 import { Sequence } from './bt/Sequence';
 import type { BotTurn } from './BotLegendController.types';
 import { BotLeaves } from './BotLeaves';
+import { BotMovement } from './BotMovement';
 import type { Controller, Decision, DecisionInput } from './Controller.types';
 import type { RoverControllerContent } from './RoverController.types';
 import { share } from './utility/considerations';
@@ -98,7 +99,7 @@ export class RoverController implements Controller {
   private chooseLane(turn: BotTurn): boolean {
     const { state } = turn;
     const human = this.humanNear(turn, this.content.tactics.senseRadius);
-    const humanAt = human === null ? undefined : BotLeaves.positionOf(state, human);
+    const humanAt = human === null ? undefined : BotMovement.positionOf(state, human);
     const humanLane =
       humanAt === undefined ? undefined : state.world?.routes.nearestLane(humanAt)?.id;
     const scores = laneScores(state, turn.team, this.content.laneWeights);
@@ -139,9 +140,10 @@ export class RoverController implements Controller {
     let best: EntityId | null = null;
     let bestGap = Number.POSITIVE_INFINITY;
     for (const id of legends) {
-      const at = BotLeaves.positionOf(state, id);
+      const at = BotMovement.positionOf(state, id);
       const isHuman = state.ai.get(id) === undefined;
-      const gap = at === undefined ? Number.POSITIVE_INFINITY : BotLeaves.gapSquared(position, at);
+      const gap =
+        at === undefined ? Number.POSITIVE_INFINITY : BotMovement.gapSquared(position, at);
       // Candidates come in id order, so a strict comparison keeps the lower id on a tie.
       if (isHuman && gap < bestGap) {
         best = id;

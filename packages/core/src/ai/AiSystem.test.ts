@@ -145,6 +145,35 @@ describe('AiSystem', () => {
     expect(asked.slice(3, 3 + Math.min(3, deferred.length))).toEqual(deferred.slice(0, 3));
   });
 
+  it('makes a due brain wait at most floor((brains - 1) / budget) ticks, since the deferred go first, in order (AI56-F2)', () => {
+    // 40 brains due every 5 ticks is 8 a tick against a budget of 7: the queue never empties.
+    const brains = 40;
+    const budget = 7;
+    const { state, ids, asked, step } = setUp(brains, budget);
+    const dueSince = new Map<EntityId, number>();
+    let worst = 0;
+    for (let tick = 0; tick < 300; tick += 1) {
+      const now = state.tick;
+      for (const id of ids) {
+        if (!dueSince.has(id) && (now + fnv1a(id)) % EVERY === 0) {
+          dueSince.set(id, now);
+        }
+      }
+      asked.length = 0;
+      step();
+      for (const id of asked) {
+        dueSince.delete(id);
+      }
+      // Every brain still waiting has waited this long so far, decided or not.
+      for (const since of dueSince.values()) {
+        worst = Math.max(worst, now + 1 - since);
+      }
+    }
+
+    expect(worst).toBeGreaterThan(0);
+    expect(worst).toBeLessThanOrEqual(Math.floor((brains - 1) / budget));
+  });
+
   it('starts a brain with the memory its spawn gave it', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
     const factory = new EntityFactory(
