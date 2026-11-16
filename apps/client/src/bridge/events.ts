@@ -12,6 +12,8 @@ import type { LegendClassId, MatchEnding, PlayableTeam } from './domain.types';
 import type {
   Announcement,
   CapturePointStatus,
+  DuelHudState,
+  DuelVersus,
   PlayerHudSnapshot,
   StructureStatus,
 } from './hud.types';
@@ -39,8 +41,12 @@ export type MenuRoute =
   | 'profile'
   | 'settings'
   | 'about'
+  /** The online Duel's name entry (ADR 0016). */
+  | 'duel-name'
   /** The online Duel's waiting screen: searching for an opponent (ADR 0016). */
-  | 'duel-queue';
+  | 'duel-queue'
+  /** "NAME VS NAME", shown from the pairing until the match starts. */
+  | 'duel-versus';
 
 /** Overlays that can open over the match. */
 export type Overlay = 'pause' | 'settings';
@@ -49,7 +55,7 @@ export type Overlay = 'pause' | 'settings';
 export type UiIntent =
   | { readonly kind: 'start-match' }
   /** Join the online Duel queue (ADR 0016); the menu shows the waiting screen. */
-  | { readonly kind: 'start-duel' }
+  | { readonly kind: 'start-duel'; readonly name: string }
   /** Leave the Duel queue and return to the home screen. */
   | { readonly kind: 'cancel-duel' }
   | { readonly kind: 'navigate'; readonly route: MenuRoute }
@@ -211,6 +217,10 @@ export type BridgeEventMap = {
   /** Remaining session time of one countdown. */
   countdown: { readonly kind: CountdownKind; readonly remainingMs: number };
   'match-clock': MatchClock;
+  /** The two players' names, when the server pairs them (the VERSUS screen). */
+  'duel-versus': DuelVersus;
+  /** The Duel's scoreboard and countdown, on the HUD cadence; only in a Duel. */
+  'duel-state': DuelHudState;
   /**
    * The match ended, once per match (13 §5): core's result, and its length in match seconds (the
    * bridge knows the tick rate, the UI does not; DEC-129 (1)).
