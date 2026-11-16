@@ -88,18 +88,18 @@ export const GUARD_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
  * + 4 light), on the assist mobs (DEC-260).
  * Checkpoint 3's one massive mob is MVP-if-time (reference 02 "Assist mobs") and has no row yet.
  */
+const DEFENDERS = { postGap: GUARD_LEASH.checkpointPostRing, leashTolerance: TOLERANCE } as const;
+
 export const CHECKPOINT_DEFENDERS: Readonly<Record<number, CheckpointDefenderPlanDefinition>> = {
   1: {
+    ...DEFENDERS,
     table: [{ mobId: 'medium-assist-mob', count: 4 }], // TUNE: balancing.md 4 medium
-    postGap: GUARD_LEASH.checkpointPostRing,
-    leashTolerance: TOLERANCE,
   },
   2: {
+    ...DEFENDERS,
     table: [
       { mobId: 'heavy-assist-mob', count: 2 }, // TUNE: balancing.md 2 heavy
       { mobId: 'light-assist-mob', count: 4 }, // TUNE: balancing.md 4 light
     ],
-    postGap: GUARD_LEASH.checkpointPostRing,
-    leashTolerance: TOLERANCE,
   },
 };

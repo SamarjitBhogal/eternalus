@@ -291,7 +291,7 @@ Reaching a checkpoint (`checkpoint-reached`) with a Legend of the reaching side 
 heavy plus light assist mobs; 3: one massive "Balrog-type" mob; DEC-260), held by
 `GuardController` with the zone as home, leashed to the zone's reach and fighting for the team
 that owns the point, or neutral while no team does ([18](18-minion-system.md) MS-28, §7.1;
-DEC-257). They never respawn, and a change of owner despawns the ones still alive (DEC-261) and, when cleared, awards XP shared among nearby allies biased toward the top
+DEC-257). They never respawn, and a change of owner despawns the ones still alive (DEC-261). A cleared checkpoint awards XP shared among nearby allies biased toward the top
 damage dealer (`ProgressionSystem` listens to `checkpoint-cleared`). Holding a zone applies
 `StatusEffects` from content: ability/ultimate cooldown reduction and, after `levelUpAfterTicks`,
 a level-up for that side's lane minions; both are removed on loss. Mini-bosses at the quarter mark

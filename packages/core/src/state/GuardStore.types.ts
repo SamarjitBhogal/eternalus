@@ -2,8 +2,8 @@ import type { Team } from '../teams/teams.types';
 import type { EntityId } from './EntityStore.types';
 
 /**
- * One guard post of a structure, camp or capture point (architecture 18 §7, §7.1): where the guard stands, how far it may
- * chase, and who holds the post now. `SpawnSystem` fills and refills posts; `GuardController`,
+ * One guard post of a structure, camp or capture point (architecture 18 §7, §7.1): where the
+ * guard stands, how far it may chase, and who holds the post now. `SpawnSystem` fills and refills posts; `GuardController`,
  * `PathingSystem` and `GuardWithinLeashInvariant` read them.
  */
 export type GuardSlot = {

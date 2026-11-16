@@ -120,14 +120,18 @@ export class GuardRoster {
 
   /**
    * Despawns the living defenders of capture point `pointId`, whose owner changed (DEC-261): no
-   * kill, no XP. Their posts empty on the next `update` and never refill.
+   * kill, no XP. Every post of the point empties for good, those still waiting to fill too.
    */
   public dismiss(state: GameState, pointId: EntityId): void {
-    state.guards.forEach(({ homeId, guardId }) => {
-      if (homeId === pointId && guardId !== null && state.entities.has(guardId)) {
+    state.guards.forEach(({ homeId, guardId }, index) => {
+      if (homeId !== pointId) {
+        return;
+      }
+      if (guardId !== null && state.entities.has(guardId)) {
         state.entities.remove(guardId, 'despawned');
         state.events.emit('entity-removed', { entityId: guardId, cause: 'despawned' });
       }
+      state.guards.vacate(index, null);
     });
   }
 
