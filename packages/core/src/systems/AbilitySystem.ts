@@ -82,6 +82,7 @@ export class AbilitySystem implements System {
     runtime.recordCast(state.tick, ability.definition.cooldownTicks);
     state.events.emit('ability-cast', { casterId: caster.id, abilityId, slot });
     const { position } = caster.getComponent(Transform);
+    // ponytail: one CastInstance per cast, fine while casts are rare; pool it if bots cast every tick.
     new CastInstance(
       {
         casterId: caster.id,

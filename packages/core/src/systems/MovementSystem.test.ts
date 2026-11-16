@@ -247,6 +247,20 @@ describe('MovementSystem', () => {
     expect(before).not.toEqual({ x: 0, y: 1 });
   });
 
+  it('faces its own walking while pushed, not the sum with the push (DEC-192)', () => {
+    const { context, dummy } = setUp();
+    const transform = dummy.getComponent(Transform);
+    const before = { ...transform.facing };
+    const movement = dummy.getComponent(Movement);
+    movement.steer({ x: -1, y: 0 });
+    movement.push({ x: 0, y: 2 }, 2);
+
+    new MovementSystem().update(context);
+
+    expect(transform.facing).toEqual({ x: -1, y: 0 });
+    expect(before).not.toEqual({ x: -1, y: 0 });
+  });
+
   it('stops forced motion at a wall and at the world edge, as walking stops (with CollisionSystem)', () => {
     const context = {
       state: new GameState(createDefaultGameConfig(), 1),

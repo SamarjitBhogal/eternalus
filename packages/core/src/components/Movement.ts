@@ -194,6 +194,11 @@ export class Movement {
     return this.forcedStep;
   }
 
+  /** Ends every push under way (a dash or knock-back), for a reset that puts the entity somewhere new. */
+  public endPushes(): void {
+    this.pushes.length = 0;
+  }
+
   /** Stops at once and drops the heading. A push under way goes on: it is not the entity's will. */
   public stop(): void {
     this.currentSpeed = 0;

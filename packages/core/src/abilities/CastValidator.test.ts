@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
 import { applyCommand } from '../commands/applyCommand';
-import type { AbilitySlot, Aim, Command } from '../commands/Command.types';
+import type { Command } from '../commands/Command.types';
+import type { Aim } from '../components/AbilitySlotRuntime.types';
 import { createDefaultCommandHandlers } from '../commands/defaultCommandHandlers';
 import { Abilities } from '../components/Abilities';
 import { Aether } from '../components/Aether';
 import { Health } from '../components/Health';
 import { StatusEffects } from '../components/StatusEffects';
-import type { AbilityKit } from '../content/abilities/AbilityDefinition.types';
+import type { AbilityKit, AbilitySlot } from '../content/abilities/AbilityDefinition.types';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { casterState, TEST_KIT } from './__fixtures__/casterState';
 import { RecordingEffect } from './__fixtures__/RecordingEffect';

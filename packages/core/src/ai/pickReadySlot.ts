@@ -1,4 +1,4 @@
-import type { Aim } from '../commands/Command.types';
+import type { Aim } from '../components/AbilitySlotRuntime.types';
 import type { AbilitySlot } from '../content/abilities/AbilityDefinition.types';
 import type { SlotReadiness } from '../state/SlotReadiness.types';
 import type { BotTurn } from './BotLegendController.types';

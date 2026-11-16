@@ -1,4 +1,4 @@
-import type { AbilitySlot } from '../../commands/Command.types';
+import type { AbilitySlot } from '../../content/abilities/AbilityDefinition.types';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import type { MapObject } from '../../content/maps/mapObjects.types';
 import type { MapDefinition } from '../../content/maps/maps.types';
