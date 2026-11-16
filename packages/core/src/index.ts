@@ -41,6 +41,7 @@ export type {
   LegendSpecDefinition,
   RoleRatings,
 } from './content/legends/specs/legendSpecs.types';
+export { DUEL_RULES } from './content/duel/duelRules';
 export { loadDisplayContent } from './content/loadDisplayContent';
 export type { DisplayContent } from './content/loadDisplayContent';
 export { DEFAULT_MAP_CONFIG } from './content/maps/defaultMapConfig';

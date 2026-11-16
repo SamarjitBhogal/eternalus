@@ -20,6 +20,7 @@ import { CombatSystem } from './CombatSystem';
 import { MapDestructionSystem } from './MapDestructionSystem';
 import { DeathSystem } from './DeathSystem';
 import type { DefaultSystemPipelineOptions } from './DefaultSystemPipeline.types';
+import { DuelRoundSystem } from './DuelRoundSystem';
 import { EnragedSystem } from './EnragedSystem';
 import { HordeSystem } from './HordeSystem';
 import { InvariantSystem } from './InvariantSystem';
@@ -58,6 +59,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
     state,
     progression,
     director,
+    duelStarts,
     hordes,
     structures = STRUCTURE_DEFINITIONS,
   }: DefaultSystemPipelineOptions) {
@@ -131,6 +133,8 @@ export class DefaultSystemPipeline extends SystemPipeline {
             }),
             new EnragedSystem(state, statuses, ENRAGING_STRUCTURES),
           ]),
+      // Before death, so a fallen Duel Legend is healed and moved instead of removed.
+      ...(duelStarts === undefined ? [] : [new DuelRoundSystem(duelStarts)]),
       new OutOfCombatHealingSystem(state, OUT_OF_COMBAT_HEALING),
       new DeathSystem(),
       new CaptureSystem(state.config.match.capturePoints, tickRate),
