@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-14
+last-reviewed: 2026-11-15
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,18 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-15 (chat: checkpoint defenders and zone level-up)
+
+The owner's answers of 2026-11-15, in the question dialog, to `INBOX.md` "Minion plan MVP gaps"
+(1) and (2) and "Minion M6" (1). DEC-257 to DEC-259 are this batch (DEC-255 and DEC-256 are other
+sessions').
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Changes                                                                               |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| DEC-257 | **Checkpoint defenders: the leash is the zone's reach; defenders at an unowned point are neutral** (answers 18 §10 item 4). Owner's pick: "Approve both (Recommended)". A defender may chase as far from the capture point's centre as the zone reaches, so a capture cannot be dragged away from its defenders; a checkpoint reached on a point no team owns spawns neutral defenders. Built as minion plan phase M6b.                                                                                                                                                                                                                                                         | architecture 18 §7.1, §10; 07 §7; minion plan M6b; `content/structures/guardPlans.ts` |
+| DEC-259 | **Only a push with a Legend on the zone wakes a checkpoint's defenders.** Found while building M6b: lane minions count toward capture (07 §7), so a horde marching through an outer capture point reached its checkpoints and woke neutral defenders, which held the horde (the siege soak lost every tower fall in 900 s). Owner's pick: "Only Legends trigger them (Recommended)", over keeping it as built and over taking defenders out of capture presence. A checkpoint whose `checkpoint-reached` lists no present Legend spawns no defenders; it still scores (`CheckpointRule`). Defenders still count as presence, so a lone Legend must kill them to keep capturing. | architecture 18 §7.1; `systems/SpawnSystem.ts`                                        |
+| DEC-258 | **Zone level-up: all three central zones count; balancing.md's numbers; applied by a `CaptureSystem` ownership-event handler** (answers OQ-47 and `INBOX.md` "Minion plan MVP gaps (1)"). Owner's pick: "All 3 central zones". The numbers are balancing.md's `Recommendation:`: +1 minion level for that lane's newly spawned minions after 90 s of continuous ownership, at most 3, all lost with the zone. The level is applied from content by a handler of `CaptureSystem`'s ownership events (one minion level with two sources, DEC-168 B3) instead of 07 §7's status effect, and removed on the same tick the zone is lost. Unblocks minion plan phase M10.             | architecture 07 §7; minion plan M10; reference 12 OQ-47                               |
 
 ## Batch 2026-11-14 (chat: the CI job time limit)
 

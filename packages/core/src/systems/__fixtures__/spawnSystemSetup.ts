@@ -23,7 +23,7 @@ export const TICK_RATE = 30;
 export const newSystem = (
   state: GameState,
   factory: EntityFactory,
-  plan: Partial<Pick<SpawnPlan, 'openingWave' | 'waves' | 'guards'>> = {},
+  plan: Partial<Pick<SpawnPlan, 'openingWave' | 'waves' | 'guards' | 'defenders'>> = {},
 ) =>
   new SpawnSystem(state, factory, {
     definitions: loadDefaultContent(TICK_RATE),
@@ -33,6 +33,7 @@ export const newSystem = (
     weights: LANE_ASSESSMENT_WEIGHTS,
     formationId: 'ranks',
     guards: plan.guards ?? {},
+    defenders: plan.defenders ?? {},
   });
 
 /** The opening wave sent by a structure kind the test map does not have, so no opening hordes. */

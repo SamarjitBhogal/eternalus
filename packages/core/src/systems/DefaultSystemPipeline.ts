@@ -35,7 +35,7 @@ import { StuckSystem } from './StuckSystem';
 import { VeterancySystem } from './VeterancySystem';
 import { MINION_VETERANCY } from '../content/mobs/minionVeterancy';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
-import { GUARD_PLANS } from '../content/structures/guardPlans';
+import { CHECKPOINT_DEFENDERS, GUARD_PLANS } from '../content/structures/guardPlans';
 import { StatusEffectSystem } from './StatusEffectSystem';
 import { SystemPipeline } from './SystemPipeline';
 
@@ -128,6 +128,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
               weights: LANE_ASSESSMENT_WEIGHTS,
               formationId: RANKS_FORMATION.id,
               guards: GUARD_PLANS,
+              defenders: CHECKPOINT_DEFENDERS,
             }),
             new EnragedSystem(state, statuses, ENRAGING_STRUCTURES),
           ]),

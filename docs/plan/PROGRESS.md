@@ -8213,3 +8213,25 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   sides kept, this batch above #93's as the log is newest first): full `npm run check` exit 0
   (`eternalus-agent-work/tower-ruins-and-routes/ci-timeout-check-merge-fcc48a7b.log`).
 - Next step: a PR into `phase/3-sprint-3-work`.
+
+### 2026-11-15 — Phase 3 / minion plan M6b: checkpoint defenders (DEC-257, DEC-259) — feat/minion-m6b-checkpoint-defenders — SamarjitBhogal + Claude Code
+
+- What was done: the owner answered `INBOX.md` "Minion plan MVP gaps" (1) and (2) in chat
+  (DEC-257: leash = the zone's reach, neutral defenders at an unowned point; DEC-258: zone
+  level-up counts all three central zones, with balancing.md's numbers and the event-handler
+  approach, which unblocks M10). M6b is built: `CHECKPOINT_DEFENDERS` in
+  `content/structures/guardPlans.ts` (checkpoint 1: 4 medium; 2: 2 heavy + 4 light, on the tower
+  guards' mobs; checkpoint 3's massive mob is MVP-if-time). `SpawnSystem` hears
+  `checkpoint-reached` and `GuardRoster.defend` adds the posts, filled on the next tick for the
+  point's owner, leashed to the zone's reach and never refilled. While building it, lane hordes
+  were found to wake neutral defenders at outer capture points, so the siege soak saw no tower
+  fall. The owner ruled that only a push with a Legend present wakes them (DEC-259). The
+  capture, capture-scoring and healing soaks remove the defenders as they spawn
+  (`__fixtures__/clearCheckpointDefenders.ts`), since those soaks test other rules. Docs: 18 §7.1
+  and §10, the minion plan's gap rows, the decisions log, `INBOX.md`.
+- Checks run: `npm run check` exit 1. Core "Tests 1589 passed (1589)", protocol 18/18, server
+  79/79. Client "Tests 1 failed | 1978 passed (1979)": `WebSocketTransport.test.ts` "ReferenceError:
+  CloseEvent is not defined". That test also fails on the unchanged phase/3 code here: local
+  Node v22.19.0 has no global `CloseEvent`. No client file is changed.
+- Next step: the pre-PR gate (critic, ponytail), then a draft PR into `phase/3-sprint-3-work`;
+  then M10 (zone level-up).

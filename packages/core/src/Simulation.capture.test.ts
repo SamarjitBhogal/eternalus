@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { clearCheckpointDefenders } from './__fixtures__/clearCheckpointDefenders';
 
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
@@ -73,6 +74,7 @@ describe('Simulation capture points', () => {
       map: MAP,
       mapObjects: objects,
     });
+    clearCheckpointDefenders(simulation);
     const cathedral = MAP.features.find(({ kind }) => kind === 'cathedral')?.position;
     const fort = MAP.features.find(({ kind }) => kind === 'capture-point')?.position;
     // The map is sketch-sized (scale 1). Both spots are off the old radius-35 circle: the west
@@ -129,6 +131,7 @@ describe('Simulation capture points', () => {
     const cathedral = MAP.features.find(({ kind }) => kind === 'cathedral');
     const play = () => {
       const simulation = match();
+      clearCheckpointDefenders(simulation);
       simulation.enqueueCommand({
         type: 'dev-spawn',
         kind: 'warrior',

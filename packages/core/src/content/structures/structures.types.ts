@@ -62,7 +62,7 @@ export type OpeningWaveDefinition = Pick<SpawnWaveDefinition, 'mobId' | 'weightC
 };
 
 /** One row of a guard plan: which guard, how many, and how a lost SpawnerTower shrinks it. */
-type GuardTableEntry = {
+export type GuardTableEntry = {
   readonly mobId: string;
   readonly count: number;
   /**
@@ -96,4 +96,18 @@ export type GuardPlanDefinition = {
    * announced cleared (`camp-cleared`, camps).
    */
   readonly respawn: 'each' | 'group';
+};
+
+/**
+ * The defenders one capture-point checkpoint spawns (architecture 07 §7, 18 §7.1): held by
+ * `GuardController` with the capture point as home, for the team that owns the point when the
+ * checkpoint is reached (`neutral` while no team does). Their leash is the zone's reach (owner,
+ * 18 §10 item 4), so it is not content; they never respawn.
+ */
+export type CheckpointDefenderPlanDefinition = {
+  readonly table: readonly Omit<GuardTableEntry, 'shrink'>[];
+  /** Posts stand on a ring this far from the zone's centre. */
+  readonly postGap: number;
+  /** As `GuardPlanDefinition.leashTolerance`. */
+  readonly leashTolerance: number;
 };

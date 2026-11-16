@@ -92,7 +92,7 @@ Reply inline (`Decision: …`).
       catalogue does not list `NoMapObjectOverlapInvariant` (`no-map-object-overlap`); a
       doc-gardening fix. Approve which to schedule, or drop them.
 
-- [ ] **Minion plan MVP gaps (1): zone level-up numbers (2026-11-06, refreshed 2026-11-12,
+- [x] **Minion plan MVP gaps (1): zone level-up numbers (2026-11-06, refreshed 2026-11-12,
       PR #81).** Zone level-up (reference 02, MVP) is designed in architecture 07 §7 and now
       scheduled as minion plan phase M10; `CaptureSystem` is on the phase branch (PR #64), so
       only your answers block it. (a) Which zones count: the Cathedral only, or all three central
@@ -103,11 +103,15 @@ Reply inline (`Decision: …`).
       events instead of 07 §7's status effect (one minion level with two sources, DEC-168 B3),
       and removing it on the same tick the zone is lost. Approve both, or keep 07 §7's status
       effect and say when the level is removed.
+  - **Answered 2026-11-15 by DEC-258** (chat): (a) all three central zones; (b) and (c)
+    approved as written. M10 is unblocked; not built yet.
 
-- [ ] **Minion plan MVP gaps (2): checkpoint defenders sign-off (2026-11-06, refreshed
+- [x] **Minion plan MVP gaps (2): checkpoint defenders sign-off (2026-11-06, refreshed
       2026-11-12, PR #81).** M6b (checkpoint defenders) no longer waits for PR #64, which merged
       on 2026-11-08. Sign off the recommendations of the "Minion M6" item (1) below (the leash is
       the zone's radius; defenders at an unowned point are neutral), and M6b can start.
+  - **Answered 2026-11-15 by DEC-257** (chat): both recommendations approved. Built on
+    `feat/minion-m6b-checkpoint-defenders`.
 
 - [ ] **Minion plan MVP gaps (3): who owns the zone cooldown reduction (2026-11-06, PR #81).**
       The zone's cooldown reduction (FR-041, 07 §7) is Legend-side, not minion work, and no plan
@@ -179,7 +183,7 @@ Reply inline (`Decision: …`).
   - **Answered 2026-11-04 by DEC-167** (chat, B66-F5): the restored march test's "first enemy
     objective" check is approved.
 
-- [ ] **Minion M6 (`feat/minion-m6-camps-defenders`, overnight 2026-10-30) — camps built,
+- [x] **Minion M6 (`feat/minion-m6-camps-defenders`, overnight 2026-10-30) — camps built,
       checkpoint defenders wait on your sign-off.** (1) **Sign-off needed:** checkpoint defenders
       need `CaptureSystem`, which is on the phase branch since PR #64 merged (2026-11-08; #49 was
       closed). Defenders are a guard plan per checkpoint asked for by `CaptureSystem`.
@@ -199,6 +203,8 @@ Reply inline (`Decision: …`).
     (2) by DEC-167: camps wake when the match countdown ends (no separate camp cooldown setting);
     camp mobs keep the lane-minion stats and XP as tuning defaults. Camp-mob kills count toward
     minion veterancy (DEC-165, amended 2026-11-04 evening).
+  - **Item (1) answered 2026-11-15 by DEC-257** (chat): the leash is the zone's reach;
+    defenders at an unowned point are neutral. Built on `feat/minion-m6b-checkpoint-defenders`.
 
 - [ ] **Minion M5b (`feat/minion-m5b-if-time`, overnight 2026-10-30) — built two of three, one
       blocked.** (1) **Tower Guardians are not built:** they need ranged attacks (no projectile

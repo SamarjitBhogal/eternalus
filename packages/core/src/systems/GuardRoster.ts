@@ -1,5 +1,10 @@
 import { Transform } from '../components/Transform';
-import type { GuardPlanDefinition } from '../content/structures/structures.types';
+import { Capturable } from '../components/Capturable';
+import { Health } from '../components/Health';
+import type {
+  CheckpointDefenderPlanDefinition,
+  GuardPlanDefinition,
+} from '../content/structures/structures.types';
 import type { DefinitionSource } from '../entities/EntityFactory.types';
 import type { EntityFactory } from '../entities/EntityFactory';
 import { Structure } from '../entities/structures/Structure';
@@ -13,7 +18,7 @@ import { cos, sin } from '../utils/deterministicMath';
 import type { Vec2 } from '../utils/geometry.types';
 import { EachGuardRespawn } from './EachGuardRespawn';
 import { GroupGuardRespawn } from './GroupGuardRespawn';
-import type { GuardRespawnRule } from './GuardRoster.types';
+import type { GuardRespawnRule, PostLayout } from './GuardRoster.types';
 import { countdownTicks } from '../config/countdownTicks';
 
 /**
@@ -37,11 +42,13 @@ export class GuardRoster {
    * @param factory - Builds the guards.
    * @param definitions - Where each guard's mob definition, and so its kind, is looked up.
    * @param plans - Each structure's guard plan, keyed by structure definition id (content).
+   * @param defenders - Each capture-point checkpoint's defenders, keyed by checkpoint (content).
    */
   public constructor(
     private readonly factory: EntityFactory,
     private readonly definitions: DefinitionSource,
     private readonly plans: Readonly<Record<string, GuardPlanDefinition>>,
+    private readonly defenders: Readonly<Record<number, CheckpointDefenderPlanDefinition>> = {},
   ) {}
 
   /** Lays out one post per guard of every standing structure's plan, in structure id order. */
@@ -64,37 +71,87 @@ export class GuardRoster {
         plan.activation === 'countdown-end'
           ? countdownTicks(countdownSeconds, state.config.tickRate)
           : 0;
-      const total = plan.table.reduce((sum, row) => sum + row.count, 0);
-      const ring = transform.radius + plan.postGap;
-      const edge = transform.radius + plan.leashRadius;
-      let post = 0;
-      plan.table.forEach((row, rowIndex) => {
-        const body = this.bodyRadius(row.mobId);
-        for (let indexInRow = 0; indexInRow < row.count; indexInRow += 1, post += 1) {
-          const turn = (2 * Math.PI * post) / total;
-          const at = GuardRoster.clearPost(state, transform.position, turn, ring, edge, body);
-          state.guards.add(
-            {
-              id: `${home.id}:${String(post)}`,
-              homeId: home.id,
-              team,
-              mobId: row.mobId,
-              row: rowIndex,
-              indexInRow,
-              postX: at.x,
-              postY: at.y,
-              homeX: transform.position.x,
-              homeY: transform.position.y,
-              homeRadius: transform.radius,
-              leashRadius: plan.leashRadius,
-              leashTolerance: plan.leashTolerance,
-              respawnTicks: Math.round(plan.respawnSeconds * state.config.tickRate),
-            },
-            firstTick,
-          );
-        }
+      this.addPosts(state, {
+        home,
+        team,
+        table: plan.table,
+        ring: transform.radius + plan.postGap,
+        homeRadius: transform.radius,
+        leashRadius: plan.leashRadius,
+        leashTolerance: plan.leashTolerance,
+        respawnTicks: Math.round(plan.respawnSeconds * state.config.tickRate),
+        firstTick,
       });
     }
+  }
+
+  /**
+   * Adds the posts of `checkpoint`'s defenders around capture point `pointId` (07 §7, 18 §7.1),
+   * first filled on the next tick, for the team that owns the point now (`neutral` while no team
+   * does). The leash is the zone's reach from its centre (18 §10 item 4). A checkpoint with no
+   * defender row adds nothing.
+   */
+  public defend(state: GameState, pointId: EntityId, checkpoint: number): void {
+    const plan = this.defenders[checkpoint];
+    const home = state.entities.get(pointId);
+    const transform = home?.findComponent(Transform);
+    const capturable = home?.findComponent(Capturable);
+    if (
+      plan === undefined ||
+      home === undefined ||
+      transform === undefined ||
+      capturable === undefined
+    ) {
+      return;
+    }
+    this.addPosts(state, {
+      home,
+      team: capturable.owner,
+      table: plan.table,
+      ring: plan.postGap,
+      homeRadius: 0,
+      leashRadius: transform.radius,
+      leashTolerance: plan.leashTolerance,
+      respawnTicks: 0,
+      firstTick: state.tick + 1,
+      idPrefix: `${home.id}:checkpoint-${String(checkpoint)}`,
+    });
+  }
+
+  /** Lays out one post per row entry of `posts.table` on a ring around `posts.home`. */
+  private addPosts(state: GameState, posts: PostLayout): void {
+    const { home, team, table, ring, homeRadius, leashRadius, firstTick } = posts;
+    const center = home.getComponent(Transform).position;
+    const total = table.reduce((sum, row) => sum + row.count, 0);
+    const edge = homeRadius + leashRadius;
+    const prefix = posts.idPrefix ?? home.id;
+    let post = 0;
+    table.forEach((row, rowIndex) => {
+      const body = this.bodyRadius(row.mobId);
+      for (let indexInRow = 0; indexInRow < row.count; indexInRow += 1, post += 1) {
+        const turn = (2 * Math.PI * post) / total;
+        const at = GuardRoster.clearPost(state, center, turn, ring, edge, body);
+        state.guards.add(
+          {
+            id: `${prefix}:${String(post)}`,
+            homeId: home.id,
+            team,
+            mobId: row.mobId,
+            row: rowIndex,
+            indexInRow,
+            postX: at.x,
+            postY: at.y,
+            homeX: center.x,
+            homeY: center.y,
+            homeRadius,
+            leashRadius,
+            leashTolerance: posts.leashTolerance,
+            respawnTicks: posts.respawnTicks,
+          },
+          firstTick,
+        );
+      }
+    });
   }
 
   /**
@@ -104,8 +161,13 @@ export class GuardRoster {
   public update(state: GameState): void {
     state.guards.forEach((slot, index) => {
       if (slot.guardId !== null && GuardRoster.isLost(state, slot.guardId, slot)) {
-        // A post whose home is gone has no plan to look up; `each` releases it, never to refill.
-        this.respawns[this.planOf(state, slot)?.respawn ?? 'each'].release(state, index, slot);
+        // A post with no plan (its home is gone, or it is a checkpoint defender's) never refills.
+        const plan = this.planOf(state, slot);
+        if (plan === undefined) {
+          state.guards.vacate(index, null);
+        } else {
+          this.respawns[plan.respawn].release(state, index, slot);
+        }
       }
     });
     state.guards.forEach((slot, index) => {
@@ -115,7 +177,7 @@ export class GuardRoster {
         state.tick < slot.respawnAtTick ||
         // DEC-162: a fallen structure's posts are not refilled; its living guards stay at their
         // posts until killed and still count against the unit cap.
-        !state.entities.isAlive(slot.homeId) ||
+        !GuardRoster.isHomeStanding(state, slot.homeId) ||
         !this.isPostKept(state, slot)
       ) {
         return;
@@ -158,6 +220,15 @@ export class GuardRoster {
    */
   private static isLost(state: GameState, guardId: EntityId, slot: GuardSlot): boolean {
     return !state.entities.isAlive(guardId) || state.entities.teamOf(guardId) !== slot.team;
+  }
+
+  /**
+   * Whether `homeId` still stands: a structure while it lives, a capture point (no `Health`)
+   * while it is in the store.
+   */
+  private static isHomeStanding(state: GameState, homeId: EntityId): boolean {
+    const home = state.entities.get(homeId);
+    return home !== undefined && home.findComponent(Health)?.isDead !== true;
   }
 
   private planOf(state: GameState, slot: GuardSlot): GuardPlanDefinition | undefined {

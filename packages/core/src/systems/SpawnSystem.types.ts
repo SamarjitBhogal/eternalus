@@ -1,5 +1,6 @@
 import type { HordeSteeringProfile, LaneAssessmentWeights } from '../content/ai/ai.types';
 import type {
+  CheckpointDefenderPlanDefinition,
   GuardPlanDefinition,
   OpeningWaveDefinition,
   SpawnWaveDefinition,
@@ -24,6 +25,8 @@ export type SpawnPlan = {
   readonly formationId: string;
   /** Each structure's guard plan, keyed by structure definition id (18 §7). */
   readonly guards: Readonly<Record<string, GuardPlanDefinition>>;
+  /** Each capture-point checkpoint's defenders, keyed by checkpoint (07 §7, 18 §7.1). */
+  readonly defenders: Readonly<Record<number, CheckpointDefenderPlanDefinition>>;
 };
 
 /** One spawner's repeating wave, with its times converted to ticks once (architecture 03 §10). */

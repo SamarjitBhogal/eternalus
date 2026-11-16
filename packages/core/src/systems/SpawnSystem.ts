@@ -5,6 +5,7 @@ import type { OpeningWaveDefinition } from '../content/structures/structures.typ
 import type { Entity } from '../entities/Entity';
 import type { EntityFactory } from '../entities/EntityFactory';
 import { Structure } from '../entities/structures/Structure';
+import { CapturePoint } from '../entities/zones/CapturePoint';
 import { Unit } from '../entities/Unit';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
@@ -37,7 +38,9 @@ import { isPlayableTeam } from '../teams/playableTeams';
  * The spawners are the structure entities standing at construction; a destroyed one stops. The
  * schedule's times are converted to ticks once, so the system keeps no schedule state of its own.
  *
- * It also runs every structure's guard plan (18 §7, 07 §6) through its `GuardRoster`.
+ * It also runs every structure's guard plan (18 §7, 07 §6) through its `GuardRoster`, and adds a
+ * capture point's defenders when `checkpoint-reached` names it with a Legend present (07 §7, 18
+ * §7.1, DEC-259).
  */
 export class SpawnSystem implements System {
   public readonly name = 'spawn';
@@ -51,7 +54,7 @@ export class SpawnSystem implements System {
    * @param plan - The waves, the opening wave, the guards, the definitions and the spawn layout.
    * @throws ContentValidationError when a wave this map can spawn names an unknown mob or a mob of
    *   another weight class, starts before the countdown ends, or repeats more often than once a
-   *   tick, or a guard plan names an unknown mob, so bad content fails when the match is built,
+   *   tick, or a guard plan or checkpoint defender row names an unknown mob, so bad content fails when the match is built,
    *   not when the wave is due.
    */
   public constructor(
@@ -63,10 +66,12 @@ export class SpawnSystem implements System {
     const spawners: Structure[] = [];
     // The definition ids of every structure on this map, whose guard plans are checked.
     const homes = new Set<string>();
+    let hasCapturePoints = false;
     state.entities.forEach((entity) => {
       if (entity instanceof Structure) {
         homes.add(entity.definitionId);
       }
+      hasCapturePoints ||= entity instanceof CapturePoint;
       const team = state.entities.teamOf(entity.id);
       if (
         entity instanceof Structure &&
@@ -87,20 +92,26 @@ export class SpawnSystem implements System {
         everyTicks: Math.round(wave.everySeconds * tickRate),
       })),
     );
-    this.validate(homes);
-    this.guards = new GuardRoster(factory, plan.definitions, plan.guards);
+    this.validate(homes, hasCapturePoints);
+    this.guards = new GuardRoster(factory, plan.definitions, plan.guards, plan.defenders);
     this.guards.layOut(state);
+    // DEC-259: only a push with a Legend on the zone wakes the defenders, so passing hordes do not.
+    state.events.on('checkpoint-reached', ({ pointId, checkpoint, presentLegendIds }) => {
+      if (presentLegendIds.length > 0) {
+        this.guards.defend(state, pointId, checkpoint);
+      }
+    });
   }
 
   /**
    * Rejects a plan whose waves name an unknown mob or a mob of another weight class, start before
    * the countdown ends, or repeat more often than once a tick, or whose guard plans name an
    * unknown mob. Only the waves this map's spawners can send and the guard plans of the structures
-   * on it (`homes`, by definition id, whether or not they spawn hordes) are checked, so a match
-   * without hordes needs no minions.
+   * on it (`homes`, by definition id, whether or not they spawn hordes) are checked, and the
+   * checkpoint defenders when it has capture points, so a match without hordes needs no minions.
    */
-  private validate(homes: ReadonlySet<string>): void {
-    const { openingWave, definitions, guards } = this.plan;
+  private validate(homes: ReadonlySet<string>, hasCapturePoints: boolean): void {
+    const { openingWave, definitions, guards, defenders } = this.plan;
     const kinds = new Set(this.spawners.map(({ kind }) => kind));
     const waves = [
       ...(kinds.has(openingWave.source) ? [['opening', openingWave] as const] : []),
@@ -111,6 +122,15 @@ export class SpawnSystem implements System {
       (guards[id]?.table ?? []).flatMap(({ mobId }) =>
         definitions.has(mobId) ? [] : [`${id} guard plan names unknown mob "${mobId}"`],
       ),
+    );
+    // Only on a map with capture points, so a match without them needs no defender content.
+    const defenderProblems = Object.entries(hasCapturePoints ? defenders : {}).flatMap(
+      ([checkpoint, { table }]) =>
+        table.flatMap(({ mobId }) =>
+          definitions.has(mobId)
+            ? []
+            : [`checkpoint ${checkpoint} defenders name unknown mob "${mobId}"`],
+        ),
     );
     const mobProblems = waves.flatMap(([source, { mobId, weightClass }]) => {
       if (!definitions.has(mobId)) {
@@ -129,7 +149,9 @@ export class SpawnSystem implements System {
         ? []
         : [`${spawner.kind} wave starts ${String(wave.firstAtSeconds)} s after the countdown`]),
     ]);
-    const problems = [...new Set([...guardProblems, ...mobProblems, ...timingProblems])];
+    const problems = [
+      ...new Set([...guardProblems, ...defenderProblems, ...mobProblems, ...timingProblems]),
+    ];
     if (problems.length > 0) {
       throw new ContentValidationError(`Invalid spawn plan: ${problems.join('; ')}`);
     }

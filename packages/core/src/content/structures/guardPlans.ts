@@ -1,5 +1,5 @@
 import { GUARD_LEASH } from './guardLeash';
-import type { GuardPlanDefinition } from './structures.types';
+import type { CheckpointDefenderPlanDefinition, GuardPlanDefinition } from './structures.types';
 
 const RESPAWN = 120; // TUNE: game doc "respawn every 2 minutes"
 // TUNE: owner 2026-11-02 (DEC-144): one decision's walk (10 ticks at up to 3.5 m/s) plus the
@@ -80,4 +80,26 @@ export const GUARD_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
     respawn: 'each',
   },
   ...CAMP_PLANS,
+};
+
+/**
+ * Each capture-point checkpoint's defenders, keyed by checkpoint (architecture 07 §7, 18 §7.1).
+ * Compositions are balancing.md's `Recommendation:` (checkpoint 1: 4 medium; checkpoint 2: 2 heavy
+ * + 4 light), on the tower guards' mobs, since no reference gives assist mobs stats of their own.
+ * Checkpoint 3's one massive mob is MVP-if-time (reference 02 "Assist mobs") and has no row yet.
+ */
+export const CHECKPOINT_DEFENDERS: Readonly<Record<number, CheckpointDefenderPlanDefinition>> = {
+  1: {
+    table: [{ mobId: 'medium-guard', count: 4 }],
+    postGap: GUARD_LEASH.postGap,
+    leashTolerance: TOLERANCE,
+  },
+  2: {
+    table: [
+      { mobId: 'heavy-guard', count: 2 },
+      { mobId: 'light-guard', count: 4 },
+    ],
+    postGap: GUARD_LEASH.postGap,
+    leashTolerance: TOLERANCE,
+  },
 };

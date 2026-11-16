@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-11-10
+last-reviewed: 2026-11-15
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
@@ -127,8 +127,10 @@ get no aura (DEC-165). Pull request M6 adds the forest camps: a `Camp`
 structure per camp feature, the camp groups in `content/structures/guardPlans.ts` (a `group` plan
 activated when the countdown ends), camp mobs held by `GuardController`, and `camp-cleared`
 emitted by `SpawnSystem`'s `GuardRoster`; `GuardWithinLeashInvariant` covers camp mobs, since it
-checks every post. Checkpoint defenders are not built yet, though `CaptureSystem` (PR #64) is
-merged. The minion-stack follow-ups (`fix/minion-stack-followups`) add the shared leash decision
+checks every post. Pull request M6b adds the checkpoint defenders: `CHECKPOINT_DEFENDERS` in
+`content/structures/guardPlans.ts` (checkpoint 1 and 2; checkpoint 3's massive mob is
+MVP-if-time), on the tower guards' mobs, laid out by `GuardRoster.defend` on
+`checkpoint-reached`. The minion-stack follow-ups (`fix/minion-stack-followups`) add the shared leash decision
 `ai/decideLeashed.ts` (DEC-168 B1), the guard respawn rules `systems/EachGuardRespawn.ts` and
 `GroupGuardRespawn.ts` (B4), the ally-damage listener `state/AllyDamageTally.ts` (B6), and
 `StuckSystem` with its `ChaseWatch` component (§5.2, DEC-193). A unit that chases a lane tower or
@@ -580,16 +582,20 @@ without a new controller. Only the home changes, and it is data on the spawning 
   camp's spawner. It names who killed the last mob and that killer's team. Its rewards belong to
   `ProgressionSystem`, not to AI. A minion, a guard or a bot Legend on a team fights back against
   a camp mob that attacks it, but does not seek one out (§6.1, 11 §4.2; DEC-166).
-- **Zone defenders (checkpoint assist spawns).** `CaptureSystem` asks for a checkpoint's table (07 §7) and
-  `SpawnSystem` fulfils it like any other spawn. The home is the `CapturePoint`. Defenders fight
-  for the team that owns the capture point (owner, 2026-10-27). Their leash radius is open (§10,
-  item 4); `Recommendation:` the leash is the zone's radius, so a capture cannot be dragged away
-  from its defenders.
+- **Zone defenders (checkpoint assist spawns).** `CaptureSystem` announces `checkpoint-reached`,
+  and `SpawnSystem`'s `GuardRoster` adds that checkpoint's posts from its defender table
+  (`CHECKPOINT_DEFENDERS`, 07 §7), filled on the next tick like any other post. Only a push with
+  a Legend on the zone wakes them (the event's `presentLegendIds`, DEC-259), so a horde marching
+  through a capture point does not. The home is the
+  `CapturePoint`. Defenders fight for the team that owns the capture point when the checkpoint is
+  reached (owner, 2026-10-27), and are neutral at a point no team owns (DEC-257). Their leash is
+  the zone's reach from its centre (DEC-257), so a capture cannot be dragged away from its
+  defenders. A defender never respawns: a checkpoint is reached once per side per owner (07 §7).
 - Neither kind joins a horde (MS-25 covers lane minions only). A mob on a team counts against that
   team's unit cap (§3.4).
 - `GuardWithinLeashInvariant` (15 §3) is defined for tower guards, measured from the structure's
   `GuardPlan.leashRadius`. Covering camp mobs and checkpoint defenders changes that definition and
-  its tests (M6); defenders stay uncovered until their leash radius is decided (§10, item 4).
+  its tests (M6). It checks every post, so it covers defenders too (M6b).
 
 ## 8. Bot Legends: lane assignment (MS-20)
 
@@ -653,6 +659,7 @@ Per doc 11 §8, plus:
 4. **Checkpoint defenders' leash (§7.1).** Does a defender's leash follow the capture zone (its
    radius), or a radius of its own in the checkpoint table? And a point no team owns yet: are its
    defenders neutral (`Recommendation:`)? MS-28 itself and the defenders' team are decided.
+   Answered on 2026-11-15 by DEC-257: the zone's reach, and neutral (§7.1).
 
 ## Related
 
