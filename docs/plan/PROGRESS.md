@@ -8442,3 +8442,15 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   passed (79)"; "Documentation check passed.". Then `prettier --check` and `npm run docs:check` on
   this file.
 - Next step: #120 merges this head; the owner runs the push script; #121 merges after #126.
+
+### 2026-11-16 — Phase 3 / A\* search area: merge #126 again (phase/3 with #113, #102) — refactor/astar-search-area — sholtzman + Claude Code
+
+- What was done: PR #113 and PR #102 merged into phase/3 (`330e969a`) after the stacked chain was
+  pushed, so #126 merged phase/3 again (`9dfcadda`). Merged that head into this branch as
+  `2abf6414`. Conflict: this file only (#126's new entry, then this branch's).
+- Checks run: `npm ci` (#113 changed dependencies), then `npm run check` → `EXIT=0` on `2abf6414`
+  before this entry was added (`eternalus-agent-work/tower-ruins-and-routes/check-stack-121-r2.log`):
+  core "Tests 1606 passed (1606)"; protocol "Tests 29 passed (29)"; client "Tests 2002 passed
+  (2002)"; server "Tests 84 passed (84)"; "Documentation check passed.". Then `prettier --check`
+  and `npm run docs:check` on this file.
+- Next step: #120 merges this head; the owner runs the push script; #121 merges after #126.
