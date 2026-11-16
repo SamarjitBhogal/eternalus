@@ -44,7 +44,7 @@ export class ZoneLevelUpSystem implements System {
     for (const pointId of this.changed) {
       state.entities.forEach((entity) => {
         const granted = entity.findComponent(Veterancy);
-        if (granted?.grantedBy === pointId) {
+        if (granted?.grantedBy === pointId && state.entities.isAlive(entity.id)) {
           const levels = -granted.granted;
           state.events.emit('minion-levels-granted', {
             entityId: entity.id,
@@ -56,7 +56,8 @@ export class ZoneLevelUpSystem implements System {
     }
     for (const hordeId of this.spawned) {
       const horde = state.hordes.get(hordeId);
-      const sourceId = horde && this.heldPoint(state, horde.team, horde.lane);
+      const sourceId =
+        horde === undefined ? undefined : this.heldPoint(state, horde.team, horde.lane);
       if (horde === undefined || sourceId === undefined) {
         continue;
       }
