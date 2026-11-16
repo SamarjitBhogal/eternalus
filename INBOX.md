@@ -30,7 +30,7 @@ Reply inline (`Decision: …`).
       which ones: props only, or blocking obstacles too)?
   - **Answered 2026-11-13 by DEC-248** (chat, PR #96). Not built yet (BUG-3).
 
-- [ ] **`refactor/durations-at-load` critic (2026-11-14), better than the design — built, sign-off
+- [x] **`refactor/durations-at-load` critic (2026-11-14), better than the design — built, sign-off
       asked; no decision blocks the PR.** #86's healing system divided its two rates
       (`healthFractionPerSecond`, a structure bonus's `fractionPerSecond`) by the tick rate itself,
       every tick for the bonus. (1) Built: `loadOutOfCombatHealing` turns the rates into per-tick
@@ -41,6 +41,9 @@ Reply inline (`Decision: …`).
       (critic round 2): the check is unit-free, so it is renamed `assertNonNegativeFinite`, and the
       rate formula is `TickRate.perTick`, next to the time formulas. Approve, or say which to
       undo.
+  - **Answered 2026-11-16 by DEC-262** (question dialog, PR #125): (1) to (3) approved. Also
+    signed off: the time check in the aggro, stuck, veterancy and guard loaders (the 2026-11-12
+    critic) and #86's healing times as DEC-241's sixth reader.
 
 - [x] **Unit facing chevron (DEC-192, feat/unit-facing-chevron, 2026-11-05) — two questions, one
       better-than-design item.**

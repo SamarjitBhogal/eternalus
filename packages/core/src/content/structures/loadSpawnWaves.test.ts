@@ -53,4 +53,10 @@ describe('loadSpawnWaves', () => {
       /spawner-tower wave repeats every 0\.01 s; buff-tower wave starts -1 s after the countdown/,
     );
   });
+
+  it('checks every authored wave, also one of a structure kind that no map builds', () => {
+    expect(() =>
+      loadSpawnWaves(30, { 'unbuilt-tower': [{ ...LIGHT_WAVE, everySeconds: 0 }] }),
+    ).toThrow(/unbuilt-tower wave repeats every 0 s/);
+  });
 });

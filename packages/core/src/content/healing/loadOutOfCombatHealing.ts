@@ -6,7 +6,7 @@ import type { AuthoredOutOfCombatHealing, OutOfCombatHealing } from './outOfComb
 /**
  * Loads out-of-combat healing once (architecture 03 §8, DEC-241): its delay and its structure quiet
  * time from seconds to ticks, rounded with no one-tick floor, and its rates from per second to per
- * tick, so the system sees only ticks.
+ * tick, so the system sees only ticks (DEC-262).
  *
  * @param tickRate - Ticks per second (`GameConfig.tickRate`).
  * @param authored - The record to load; the shipped one by default.

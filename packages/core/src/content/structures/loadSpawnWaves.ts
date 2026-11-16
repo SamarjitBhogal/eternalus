@@ -11,7 +11,8 @@ import type { AuthoredSpawnWave, SpawnWaveDefinition } from './structures.types'
  * @param tickRate - Ticks per second (`GameConfig.tickRate`).
  * @param authored - Each spawning structure kind's waves; the shipped set by default.
  * @throws ContentValidationError when a wave starts before the countdown ends or repeats more
- *   often than once a tick, naming every such wave.
+ *   often than once a tick, naming every such wave. Every authored wave is checked, also one of a
+ *   structure kind that a map does not build (DEC-241).
  */
 export const loadSpawnWaves = (
   tickRate: number,
@@ -25,6 +26,7 @@ export const loadSpawnWaves = (
         kind,
         waves.map(({ firstAtSeconds, everySeconds, ...rest }) => {
           const everyTicks = rate.roundToTicks(everySeconds);
+          // Not `assertNonNegativeFinite`: an interval must also be at least one tick.
           if (!(Number.isFinite(everyTicks) && everyTicks >= 1)) {
             problems.push(`${kind} wave repeats every ${String(everySeconds)} s`);
           }

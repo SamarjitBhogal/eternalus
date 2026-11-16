@@ -2,7 +2,7 @@ import { ContentValidationError } from './ContentValidationError';
 
 /**
  * Checks authored values before a loader converts them (a time to ticks, a rate per second to per
- * tick): each one is a finite number, 0 or more, so a loaded value is always usable.
+ * tick): each one is a finite number, 0 or more, so a loaded value is always usable (DEC-262).
  *
  * @param what - The content the message names ("aggro rules").
  * @param values - Each value as its label (definition id and field) and its authored value.

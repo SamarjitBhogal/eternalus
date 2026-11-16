@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-14
+last-reviewed: 2026-11-16
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -242,7 +242,7 @@ Definitions are Flyweights: shared, immutable, referenced by id from state
 `content/healing/`, holds the flat base rate for every Legend and mob, the delay before healing
 starts and the structure bonuses, keyed by structure kind. Its two times, the delay and the
 structure quiet time, are seconds in content and its rates are per second; `loadOutOfCombatHealing`
-turns them into ticks and rates per tick once, at load (DEC-241), so the system sees only ticks. The last tick an entity fought lives in
+turns them into ticks and rates per tick once, at load (DEC-241, DEC-262), so the system sees only ticks. The last tick an entity fought lives in
 its `CombatClock` component: the system adds it on the entity's first `damage-applied`, as attacker
 or target, and `StateHasher` hashes it only when it is present. Each bonus names a zone shape
 (`HealingZoneShape`); `systems/HealingZones.ts` resolves it with one strategy per shape: `fort-box`,

@@ -19,7 +19,7 @@ export class TickRate {
     return Math.round(seconds * this.ticksPerSecond);
   }
 
-  /** A rate per second (a fraction of max health per second, say) as a rate per tick. */
+  /** A rate per second (a fraction of max health per second, say) as a rate per tick (DEC-262). */
   public perTick(perSecond: number): number {
     return perSecond / this.ticksPerSecond;
   }
