@@ -8548,3 +8548,21 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   kept): full `npm run check` exit 0 (`eternalus-agent-work/tower-ruins-and-routes/gate-reach/check-merge-phase3-fcc48a7b.log`): core "Tests 1584 passed (1584)",
   protocol 18, client 1979, server 79, docs passed.
 - Next step: push.
+
+### 2026-11-15 — Phase 3 / gate reach: merge #120 (with #121, #126, phase/3 with #127) — feat/gate-reach — sholtzman + Claude Code
+
+- What was done: merged PR #120's head `813823ac` (`refactor/fort-geometry-helpers` with #121,
+  #126 and phase/3 at `80e0ea13`) into this branch as `f2623841`. Conflicts, all add-add, both
+  sides kept as whole entries: this file at three places (#120's entries before this branch's;
+  the last place resolved as one span with
+  `eternalus-agent-work/tower-ruins-and-routes/resolve-span-both.py`, as git split it through
+  shared lines) and `INBOX.md` (this branch's critic item on top). Entry headings: 438 at
+  phase/3 `fcc48a7b`, 5 more on this branch, 17 more on #120's head, 460 after the merge. Last
+  link of the stacked merge chain #126 → #121 → #120 → #119.
+- Checks run: `npm run check` → `EXIT=0` on `f2623841` before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-stack-119.log`): core "Tests 1592 passed
+  (1592)"; protocol "Tests 18 passed (18)"; client "Tests 1976 passed (1976)"; server "Tests 79
+  passed (79)"; "Documentation check passed.". Then `prettier --check` and `npm run docs:check` on
+  this file.
+- Next step: the owner runs the push script; after CI, #126, #121, #120 and #119 merge into
+  phase/3 in that order with merge commits.
