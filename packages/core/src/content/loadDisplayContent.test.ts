@@ -121,11 +121,11 @@ describe('loadDisplayContent', () => {
     expect(load().profileDisplayName).toBe('Chronicle');
   });
 
-  it('returns the verdict lines, one set for the only condition that ends a match today', () => {
+  it('returns the verdict lines, one set for each condition that ends a match', () => {
     const { verdictLines } = load();
 
     expect(verdictLines).toBe(VERDICT_LINES);
-    expect(Object.keys(verdictLines)).toEqual(['objective-lost']);
+    expect(Object.keys(verdictLines)).toEqual(['objective-lost', 'kill-count']);
   });
 
   it("names each team's sovereign Emperor by default (DEC-74)", () => {

@@ -44,6 +44,7 @@ export type {
   LegendSpecDefinition,
   RoleRatings,
 } from './content/legends/specs/legendSpecs.types';
+export { DUEL_RULES } from './content/duel/duelRules';
 // The display loader with the shipped effect strategies describing each ability's steps.
 export { loadShippedDisplayContent as loadDisplayContent } from './abilities/loadShippedDisplayContent';
 export type {

@@ -45,6 +45,10 @@ export class StateHasher {
     if (matchFields.some((value) => value !== 0 && value !== false)) {
       parts.push(['match', ...matchFields]);
     }
+    // A Duel's score, only in a Duel, so every other match hashes as before.
+    if (match.duel !== null) {
+      parts.push(['duel', match.duel.kills.light, match.duel.kills.dark]);
+    }
     // Scoring joins by the same rule, once it differs from the empty state: one serialisation
     // feeds both the check and the hash, so a new scoring field cannot be left out of either.
     const scoring = JSON.stringify(match.scoring);

@@ -9,6 +9,7 @@ describe('@eternalus/core public API', () => {
       'AStarPathfinder',
       'ConfigValidationError',
       'DEFAULT_MAP_CONFIG',
+      'DUEL_RULES',
       'MapGenerator',
       'MapObjectBuilder',
       'MapPresentationBuilder',

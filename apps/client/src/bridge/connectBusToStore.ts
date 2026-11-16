@@ -49,6 +49,8 @@ export function connectBusToStore(
     bus.on('match-clock', (clock) => dispatch(match.clockChanged(clock))),
     bus.on('match-ended', (event) => dispatch(match.ended(event))),
     bus.on('duel-ended', (outcome) => dispatch(match.duelEnded(outcome))),
+    bus.on('duel-versus', (names) => dispatch(match.versusChanged(names))),
+    bus.on('duel-state', (state) => dispatch(match.duelHudChanged(state))),
     bus.on('hud-state', ({ player }) => dispatch(hudSlice.actions.hudStateChanged(player))),
     bus.on('aiming-slot', ({ slot }) => dispatch(hudSlice.actions.aimingSlotChanged(slot))),
     bus.on('structure-state', ({ structures }) => dispatch(match.structuresChanged(structures))),
