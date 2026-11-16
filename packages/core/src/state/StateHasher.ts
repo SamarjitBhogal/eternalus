@@ -192,11 +192,20 @@ export class StateHasher {
         capture.reachedBy('light'),
         capture.reachedBy('dark'),
         capture.reachedBy('neutral'),
+        // The zone level-up's clock (DEC-258).
+        capture.ownedSinceTick,
       ]);
     }
     const veterancy = entity.findComponent(Veterancy);
     if (veterancy !== undefined) {
-      fields.push(['veterancy', veterancy.kills, veterancy.level]);
+      fields.push([
+        'veterancy',
+        veterancy.kills,
+        veterancy.level,
+        veterancy.earned,
+        veterancy.granted,
+        veterancy.grantedBy,
+      ]);
     }
     const progression = entity.findComponent(Progression);
     if (progression !== undefined) {

@@ -109,6 +109,16 @@ Reply inline (`Decision: …`).
       on 2026-11-08. Sign off the recommendations of the "Minion M6" item (1) below (the leash is
       the zone's radius; defenders at an unowned point are neutral), and M6b can start.
 
+- [ ] **Minion M10 better-than-design items (`feat/minion-m10-zone-level-up`, 2026-11-15,
+      critic; DEC-139) — sign-off per item.** (a) A `MinionLevelSystem` after
+      `ZoneLevelUpSystem` that owns every minion level change: `VeterancySystem` would announce
+      kill levels by event too, so no listener changes state inside a handler (it removes 03 §4's
+      one exception). (b) `StatusEffects.removeStacks(id, n)` through the applier, so a lost level
+      emits one event, not a `status-expired` plus one `status-applied` per remaining level.
+      (c) The zone level-up's hold time and levels as fields of each capture-point
+      `ZoneDefinition`, looked up by id (balancing.md's knob table), not one global constant.
+      Approve any, or leave as built.
+
 - [ ] **Minion plan MVP gaps (3): who owns the zone cooldown reduction (2026-11-06, PR #81).**
       The zone's cooldown reduction (FR-041, 07 §7) is Legend-side, not minion work, and no plan
       schedules it. Who owns it?

@@ -13,6 +13,7 @@ export class Capturable {
   private checkpointValue = 0;
   private presenceValue: Readonly<Record<Team, number>> = ZERO_PER_SIDE;
   private reachedValue: Record<Team, number> = { ...ZERO_PER_SIDE };
+  private ownedSinceValue = 0;
 
   /** The living mini-boss that blocks capture, or `null` (set in Phase 3 sprint 3.6). */
   public readonly lockedBy: string | null = null;
@@ -20,6 +21,11 @@ export class Capturable {
   /** Who holds the zone; `'neutral'` at match start. */
   public get owner(): Team {
     return this.ownerValue;
+  }
+
+  /** The tick `owner` took the zone; 0 at match start (the zone level-up's clock, DEC-258). */
+  public get ownedSinceTick(): number {
+    return this.ownedSinceValue;
   }
 
   /** -1 (fully Dark) to +1 (fully Light); 0 is neutral. */
@@ -86,12 +92,13 @@ export class Capturable {
   }
 
   /**
-   * Hands the zone to `owner` (a capture reached its locking state) and clears every side's
-   * reached checkpoints; returns the previous owner.
+   * Hands the zone to `owner` on `tick` (a capture reached its locking state) and clears every
+   * side's reached checkpoints; returns the previous owner.
    */
-  public setOwner(owner: Team): Team {
+  public setOwner(owner: Team, tick: number): Team {
     const previous = this.ownerValue;
     this.ownerValue = owner;
+    this.ownedSinceValue = tick;
     this.reachedValue = { ...ZERO_PER_SIDE };
     return previous;
   }

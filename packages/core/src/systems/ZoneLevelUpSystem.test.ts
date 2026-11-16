@@ -61,7 +61,7 @@ const setUp = () => {
     }
   };
   const own = (to: Team) => {
-    const from = point.getComponent(Capturable).setOwner(to);
+    const from = point.getComponent(Capturable).setOwner(to, state.tick);
     state.events.emit('capture-point-owner-changed', { pointId: point.id, from, to });
   };
   /** Spawns a one-minion horde of `team` on `lane` and announces it, as `SpawnSystem` does. */
@@ -89,8 +89,9 @@ const setUp = () => {
   const veteranStacks = (entity: Entity) =>
     entity
       .getComponent(StatusEffects)
-      .active.filter(({ definition }) => definition.id === MINION_VETERANCY.statusId).length;
-  return { state, own, spawn, run, levelOf, veteranStacks };
+      .active.filter(({ definition }) => definition.id === MINION_VETERANCY.statusId)
+      .reduce((sum, { stacks }) => sum + stacks, 0);
+  return { state, own, spawn, run, levelOf, veteranStacks, point };
 };
 
 describe('ZoneLevelUpSystem (07 §7, DEC-258)', () => {

@@ -179,7 +179,9 @@ export class GameEvents {
 
 Events are synchronous, emitted during the tick and delivered to listeners in subscription order;
 listeners that need to change state defer the change to their own system's pass (Nystrom's Observer
-plus a deferred queue, research §2). `GameEvents` keeps the most recent events in a `RingBuffer`
+plus a deferred queue, research §2). One exception: `VeterancySystem` applies
+`minion-levels-granted` as it is announced, because its sender runs after it and a lost zone takes
+its levels back on the same tick (DEC-258). `GameEvents` keeps the most recent events in a `RingBuffer`
 (`recentEvents()`, capacity in `GameEvents.constants.ts`) for invariant reports. Payload objects for
 high-frequency events (`damage-applied`) may be pooled (Recommendation, profile first).
 

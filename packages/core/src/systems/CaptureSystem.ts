@@ -125,7 +125,7 @@ export class CaptureSystem implements System {
     }
     // A capture completes when its leader brings the zone to that leader's locking state.
     if (leader !== null && progress === move.target && leader !== capturable.owner) {
-      const from = capturable.setOwner(leader);
+      const from = capturable.setOwner(leader, state.tick);
       state.events.emit('capture-point-owner-changed', {
         pointId: zone.entity.id,
         from,

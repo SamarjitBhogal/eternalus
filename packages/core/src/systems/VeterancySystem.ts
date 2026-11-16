@@ -40,16 +40,14 @@ export class VeterancySystem implements System {
         this.kills.push({ killerId: killer.attackerId, victimId: entityId });
       }
     });
-    // Applied as it is announced: its senders (`ZoneLevelUpSystem`) run after this system.
-    state.events.on('minion-levels-granted', ({ entityId, levels }) => {
+    // Applied as it is announced (an exception 03 §4 records): its sender, `ZoneLevelUpSystem`,
+    // runs after this system, and a lost zone takes its levels back on the same tick (DEC-258).
+    state.events.on('minion-levels-granted', ({ entityId, levels, sourceId }) => {
       const entity = state.entities.get(entityId);
       if (entity !== undefined && state.entities.isAlive(entityId)) {
         const veterancy = VeterancySystem.veterancyOf(entity);
-        this.applyLevelChange(
-          state,
-          entity,
-          veterancy.grantLevels(levels, this.veterancy.maxLevel),
-        );
+        const { maxLevel } = this.veterancy;
+        this.applyLevelChange(state, entity, veterancy.grantLevels(levels, maxLevel, sourceId));
       }
     });
   }

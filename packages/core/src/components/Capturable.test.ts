@@ -29,10 +29,10 @@ describe('Capturable', () => {
   it('changes owner and reports the previous one; the locking state follows the owner', () => {
     const zone = new Capturable();
 
-    expect(zone.setOwner('dark')).toBe('neutral');
+    expect(zone.setOwner('dark', 0)).toBe('neutral');
     expect(zone.owner).toBe('dark');
     expect(zone.lockingProgress).toBe(-1);
-    expect(zone.setOwner('light')).toBe('dark');
+    expect(zone.setOwner('light', 0)).toBe('dark');
     expect(zone.lockingProgress).toBe(1);
   });
 
@@ -54,7 +54,7 @@ describe('Capturable', () => {
       2, 1, 0,
     ]);
 
-    zone.setOwner('light');
+    zone.setOwner('light', 0);
     expect([zone.reachedBy('light'), zone.reachedBy('dark')]).toEqual([0, 0]);
   });
 

@@ -134,6 +134,19 @@ describe('StateHasher', () => {
     expect(hasher.hash(state)).not.toBe(before);
   });
 
+  it('changes when only a granted minion level differs, the level capped (DEC-258)', () => {
+    const { state, soldier } = stateWithSoldier();
+    const veterancy = new Veterancy();
+    soldier.addComponent(veterancy);
+    veterancy.gainLevels(3, 3);
+    const before = hasher.hash(state);
+
+    veterancy.grantLevels(1, 3, 'zone-1');
+
+    expect(veterancy.level).toBe(3);
+    expect(hasher.hash(state)).not.toBe(before);
+  });
+
   it('changes when an entity turns, and changes back when it turns back (DEC-192)', () => {
     const { state, soldier } = stateWithSoldier();
     const before = hasher.hash(state);
@@ -557,7 +570,7 @@ describe('StateHasher', () => {
     const checkpoint = hasher.hash(state);
     zone.markReached('light', 2);
     const reached = hasher.hash(state);
-    zone.setOwner('light');
+    zone.setOwner('light', 0);
     const owned = hasher.hash(state);
 
     expect(new Set([untouched, progressed, checkpoint, reached, owned]).size).toBe(5);

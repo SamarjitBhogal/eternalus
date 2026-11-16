@@ -15,9 +15,26 @@ export class Veterancy {
 
   private grantedValue = 0;
 
+  private grantedByValue: string | null = null;
+
   /** Mob kills so far. */
   public get kills(): number {
     return this.killsValue;
+  }
+
+  /** Levels earned by kills, past the cap too. */
+  public get earned(): number {
+    return this.earnedValue;
+  }
+
+  /** Levels granted by another source and not yet taken back, past the cap too. */
+  public get granted(): number {
+    return this.grantedValue;
+  }
+
+  /** The entity whose levels are granted (a capture point), or `null` while none are. */
+  public get grantedBy(): string | null {
+    return this.grantedByValue;
   }
 
   /** Levels gained from every source, from 0 to the cap. */
@@ -41,11 +58,12 @@ export class Veterancy {
   }
 
   /**
-   * Adds `levels` granted levels, or takes some back when negative (never below none granted);
-   * returns how much the level changed, which the cap may make less than `levels`.
+   * Adds `levels` levels granted by `sourceId`, or takes some back when negative (never below none
+   * granted); returns how much the level changed, which the cap may make less than `levels`.
    */
-  public grantLevels(levels: number, maxLevel: number): number {
+  public grantLevels(levels: number, maxLevel: number, sourceId: string): number {
     this.grantedValue = Math.max(0, this.grantedValue + levels);
+    this.grantedByValue = this.grantedValue > 0 ? sourceId : null;
     return this.settle(maxLevel);
   }
 

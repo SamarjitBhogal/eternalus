@@ -26,21 +26,21 @@ describe('Veterancy', () => {
 
   it('keeps granted levels apart from earned ones, so taking them back never costs a kill level', () => {
     const veterancy = new Veterancy();
-    expect(veterancy.grantLevels(1, 3)).toBe(1);
+    expect(veterancy.grantLevels(1, 3, 'zone-1')).toBe(1);
     expect(veterancy.gainLevels(2, 3)).toBe(2);
     expect(veterancy.gainLevels(1, 3)).toBe(0);
     expect(veterancy.level).toBe(3);
     // The earned levels (3) fill the cap without the granted one.
-    expect(veterancy.grantLevels(-1, 3)).toBe(0);
+    expect(veterancy.grantLevels(-1, 3, 'zone-1')).toBe(0);
     expect(veterancy.level).toBe(3);
-    expect(veterancy.grantLevels(-1, 3)).toBe(0);
+    expect(veterancy.grantLevels(-1, 3, 'zone-1')).toBe(0);
   });
 
   it('takes back a granted level when the kills alone stay under the cap', () => {
     const veterancy = new Veterancy();
     veterancy.gainLevels(1, 3);
-    veterancy.grantLevels(1, 3);
-    expect(veterancy.grantLevels(-1, 3)).toBe(-1);
+    veterancy.grantLevels(1, 3, 'zone-1');
+    expect(veterancy.grantLevels(-1, 3, 'zone-1')).toBe(-1);
     expect(veterancy.level).toBe(1);
   });
 });

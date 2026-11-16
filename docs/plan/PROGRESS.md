@@ -8230,3 +8230,20 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   79/79. Client "Tests 1 failed | 1978 passed (1979)": `WebSocketTransport.test.ts` "CloseEvent is
   not defined" (local Node v22.19.0, as on M6b; no client file changed).
 - Next step: the pre-PR gate, then a draft PR that merges after M6b's (#130).
+
+### 2026-11-15 — Phase 3 / minion plan M10: critic rework — feat/minion-m10-zone-level-up — SamarjitBhogal + Claude Code
+
+- What was done: the pre-PR critic (base `80e0ea13`) found one blocker, now fixed: `Veterancy`'s
+  earned and granted levels were not hashed. All the zone level-up's lasting state now lives in
+  hashed match state: the hold clock is `Capturable.ownedSinceTick` (set by `setOwner(owner,
+tick)`), and a minion records the point that granted its levels (`Veterancy.grantedBy`;
+  `minion-levels-granted` carries `sourceId`). `ZoneLevelUpSystem` keeps only per-tick queues,
+  and on a loss it takes back each granted minion's `granted` levels. 03 §4 records the one
+  handler that changes state (`VeterancySystem` on `minion-levels-granted`). New tests: the hash
+  over a granted level at the cap; `VeterancySystem` going from level 3 back to 2 with its stacks
+  and health; the stack-counting helper now sums stacks; a full-pipeline scenario
+  (`Simulation.zoneLevelUp.test.ts`: capture, hold, a dev horde levelled, loss on the same tick,
+  the same hash twice). Three better-than-design items went to `INBOX.md`.
+- Checks run: `npm run check` exit 1: core "Tests 1595 passed (1595)", protocol 18/18, server 79/79,
+  client "Tests 1 failed | 1978 passed (1979)" (the same local-Node `CloseEvent` failure).
+- Next step: the critic re-checks, ponytail, then a draft PR after #130.
