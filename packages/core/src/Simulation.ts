@@ -47,6 +47,8 @@ import { loadWeapons } from './content/weapons/loadWeapons';
 import { ZONE_DEFINITIONS, ZONE_PLACEMENTS } from './content/zones/zoneCatalogue';
 import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
+import { DUEL_RULES } from './content/duel/duelRules';
+import { duelStartPoints } from './match/duelStartPoints';
 import { createDefaultMatchDirector } from './match/defaultMatchDirector';
 import { MatchTimeline } from './match/MatchTimeline';
 import type { DefinitionSource, WeaponSource } from './entities/EntityFactory.types';
@@ -127,6 +129,7 @@ export class Simulation {
     levelCurves,
     roster = [],
     weapons,
+    duel,
     structures = STRUCTURE_DEFINITIONS,
   }: SimulationOptions) {
     const validConfig = validateGameConfig(config);
@@ -137,11 +140,15 @@ export class Simulation {
       ...(map === undefined ? {} : { map }),
       ...(mapObjects === undefined ? {} : { mapObjects }),
       ...(roster.length === 0 ? {} : { roster }),
+      ...(duel === undefined ? {} : { duel }),
     };
     const { space, world, paths } = Simulation.buildWorld(map, validConfig, mapObjects);
     // Without the default pipeline no director runs, so no mark would ever fire: list none.
     const schedule = systems === undefined ? timeline.schedule() : [];
     this.state = new GameState(validConfig, seed, world, { space, paths }, schedule);
+    const duelStarts =
+      duel === undefined ? undefined : duelStartPoints(map, DUEL_RULES.startOffset);
+    if (duel !== undefined) this.state.match.startDuel(duel.killTarget);
     const { tickRate } = this.state.config;
     const curves = levelCurves ?? loadLevelCurves();
     this.curves = curves;
@@ -204,6 +211,7 @@ export class Simulation {
         state: this.state,
         progression: { units, curves, xpSources: XP_SOURCES },
         director,
+        ...(duelStarts === undefined ? {} : { duelStarts }),
         hordes: {
           factory,
           space,
@@ -223,7 +231,7 @@ export class Simulation {
     } else {
       this.pipeline = new SystemPipeline(systems);
     }
-    Simulation.spawnRoster(this.state, factory, roster, controllers, logger);
+    Simulation.spawnRoster(this.state, factory, roster, controllers, logger, duelStarts);
     Simulation.spawnZones(this.state, factory);
     this.state.events.on('command-rejected', ({ command, reason }) => {
       logger.log(
@@ -404,6 +412,7 @@ export class Simulation {
     roster: readonly RosterSlot[],
     controllers: ControllerRegistry,
     logger: Logger,
+    duelStarts?: Readonly<Record<PlayableTeam, Vec2>>,
   ): void {
     if (roster.length === 0) {
       return;
@@ -476,7 +485,8 @@ export class Simulation {
     }
     for (const slot of spawning.filter(({ role }) => role === 'rover')) {
       const forWhom = slot.pilot === 'human' ? "the human's Legend" : `the ${slot.team} Rover`;
-      const position = Simulation.strongholdOf(state, slot.team, forWhom);
+      const position =
+        duelStarts?.[slot.team] ?? Simulation.strongholdOf(state, slot.team, forWhom);
       Simulation.spawnSlot(state, factory, slot, position, {});
     }
   }

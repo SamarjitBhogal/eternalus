@@ -23,8 +23,11 @@ export class DuelMatch {
   };
   private cancelTicks: CancelTask | null = null;
   private hasEnded = false;
+  private versusTicksLeft: number;
 
-  public constructor(private readonly options: DuelMatchOptions) {}
+  public constructor(private readonly options: DuelMatchOptions) {
+    this.versusTicksLeft = Math.ceil(options.versusMs / options.tickIntervalMs);
+  }
 
   /** The match's id, sent in `match-found`. */
   public get id(): string {
@@ -36,7 +39,7 @@ export class DuelMatch {
     return PLAYABLE_TEAMS.map((team) => this.options.seats[team]);
   }
 
-  /** Tells each player their seat, then starts ticking. */
+  /** Tells each player their seat and opponent, then starts ticking (stepping waits out the VERSUS screen). */
   public start(): void {
     const { seats, simulation, scheduler, tickIntervalMs, id } = this.options;
     for (const team of PLAYABLE_TEAMS) {
@@ -46,6 +49,7 @@ export class DuelMatch {
         seed: simulation.seed,
         team,
         legendId: simulation.legendOf(team),
+        opponentName: this.options.names[opponentOf(team)],
       });
     }
     this.cancelTicks = scheduler.every(tickIntervalMs, () => {
@@ -76,6 +80,10 @@ export class DuelMatch {
   }
 
   private tick(): void {
+    if (this.versusTicksLeft > 0) {
+      this.versusTicksLeft -= 1;
+      return;
+    }
     const { simulation } = this.options;
     try {
       simulation.step();
