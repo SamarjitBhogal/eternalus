@@ -184,6 +184,19 @@ describe('MatchHost', () => {
     expect(match.controls.zoomBy.mock.calls).toEqual([[KEY_ZOOM_STEP], [1 / KEY_ZOOM_STEP]]);
   });
 
+  it('runs no one-shot action for a key typed into a text field', () => {
+    const { host, window, match } = setUp();
+    host.start();
+    const typed = fakeKeyEvent('keydown', 'Minus', { target: { tagName: 'INPUT' } });
+
+    window.dispatchEvent(typed);
+    window.dispatchEvent(fakeKeyEvent('keydown', 'KeyM', { target: { tagName: 'TEXTAREA' } }));
+
+    expect(typed.defaultPrevented).toBe(false);
+    expect(match.controls.zoomBy).not.toHaveBeenCalled();
+    expect(match.controls.toggleMiniMap).not.toHaveBeenCalled();
+  });
+
   it('toggles the minimap on M, not on a held repeat', () => {
     const { host, window, match } = setUp();
     host.start();

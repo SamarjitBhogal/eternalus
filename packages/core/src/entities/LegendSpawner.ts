@@ -40,6 +40,7 @@ export class LegendSpawner {
     const entity = this.factory.create(kind, definitionId, {
       position,
       team,
+      ...state.world?.startFacing(team, position),
       ...(controller !== undefined && { controller }),
     });
     state.entities.add(entity);

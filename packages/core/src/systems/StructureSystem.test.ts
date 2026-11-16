@@ -30,6 +30,7 @@ const setUp = () => {
   );
   const spawner = spawn('spawner-tower', 'light', 'lane-1');
   spawn('stronghold', 'dark');
+  state.indexStructures();
   const destroyed: GameEventMap['structure-destroyed'][] = [];
   const changed: GameEventMap['structure-breakability-changed'][] = [];
   state.events.on('structure-destroyed', (event) => destroyed.push(event));
