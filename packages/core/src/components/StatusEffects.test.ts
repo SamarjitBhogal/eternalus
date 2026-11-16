@@ -39,6 +39,24 @@ describe('StatusEffects', () => {
     expect(statuses.multiplier('moveSpeed')).toBeCloseTo(1.1 * 1.1 * 0.7 * 0.6);
   });
 
+  it('adds `add` modifiers once per stack, then multiplies by the `mul` ones', () => {
+    const statuses = new StatusEffects();
+    const veteran = LOADED.get('veteran'); // +0.1 damage dealt per stack, additive (DEC-164)
+    const multipliers = [1, 2, 3].map((stack) => {
+      statuses.apply(veteran, 'a', stack);
+      return statuses.multiplier('damageDealt');
+    });
+    expect(multipliers.map((value) => value.toFixed(6))).toEqual([
+      '1.100000',
+      '1.200000',
+      '1.300000',
+    ]);
+
+    statuses.apply(ENRAGED, 'b', 4);
+    expect(statuses.multiplier('damageDealt')).toBeCloseTo(1.3 * 1.15);
+    expect(statuses.multiplier('moveSpeed')).toBeCloseTo(1.1);
+  });
+
   it('never reaches 0 by stacking slows', () => {
     const statuses = new StatusEffects();
     statuses.apply(LOADED.get('concussion'), 'a', 0);

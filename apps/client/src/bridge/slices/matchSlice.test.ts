@@ -1,12 +1,19 @@
 import { describe, expect, it } from 'vitest';
 
 import { figmaHudState } from '../__fixtures__/hudFixtures';
+import { matchResultFixture } from '../__fixtures__/matchResultFixtures';
 import { matchSlice } from './matchSlice';
 
-const { clockChanged, structuresChanged, capturePointsChanged, resultChanged, reset } =
+const { clockChanged, structuresChanged, capturePointsChanged, ended, duelEnded, reset } =
   matchSlice.actions;
-const { selectMatchClock, selectStructures, selectCapturePoints, selectMatchResult } =
-  matchSlice.selectors;
+const {
+  selectMatchClock,
+  selectStructures,
+  selectCapturePoints,
+  selectMatchResult,
+  selectMatchDurationSeconds,
+  selectDuelOutcome,
+} = matchSlice.selectors;
 
 describe('matchSlice', () => {
   it('has no clock, rosters or result before the match publishes', () => {
@@ -15,6 +22,17 @@ describe('matchSlice', () => {
     expect(selectStructures(state)).toEqual([]);
     expect(selectCapturePoints(state)).toEqual([]);
     expect(selectMatchResult(state)).toBeNull();
+    expect(selectMatchDurationSeconds(state)).toBeNull();
+  });
+
+  it("stores the ended match's result as given and its length, keeping the clock", () => {
+    const result = matchResultFixture();
+    const clock = { tick: 3610, seconds: 3610 / 30 };
+    let match = matchSlice.reducer(undefined, clockChanged(clock));
+    match = matchSlice.reducer(match, ended({ result, durationSeconds: 120 }));
+    expect(selectMatchResult({ match })).toBe(result);
+    expect(selectMatchDurationSeconds({ match })).toBe(120);
+    expect(selectMatchClock({ match })).toBe(clock);
   });
 
   it('stores each payload as given', () => {
@@ -30,48 +48,44 @@ describe('matchSlice', () => {
 
   it('stores the Duel names and scoreboard, and has none outside a Duel', () => {
     expect(matchSlice.selectors.selectVersus({ match: matchSlice.getInitialState() })).toBeNull();
-    expect(matchSlice.selectors.selectDuel({ match: matchSlice.getInitialState() })).toBeNull();
+    expect(matchSlice.selectors.selectDuelHud({ match: matchSlice.getInitialState() })).toBeNull();
     const duel = { ownKills: 2, opponentKills: 0, killTarget: 10, countdown: 3 };
     let match = matchSlice.reducer(
       undefined,
       matchSlice.actions.versusChanged({ own: 'A', opponent: 'B' }),
     );
-    match = matchSlice.reducer(match, matchSlice.actions.duelChanged(duel));
+    match = matchSlice.reducer(match, matchSlice.actions.duelHudChanged(duel));
     expect(matchSlice.selectors.selectVersus({ match })).toEqual({ own: 'A', opponent: 'B' });
-    expect(matchSlice.selectors.selectDuel({ match })).toBe(duel);
+    expect(matchSlice.selectors.selectDuelHud({ match })).toBe(duel);
   });
 
-  it('stores the result, a draw included', () => {
-    const won = matchSlice.reducer(
-      undefined,
-      resultChanged({ winner: 'dark', ownTeam: 'light', reason: 'finished' }),
-    );
-    expect(selectMatchResult({ match: won })).toEqual({
+  it("stores a Duel's outcome, a draw included", () => {
+    const won = matchSlice.reducer(undefined, duelEnded({ winner: 'dark', reason: 'finished' }));
+    expect(selectDuelOutcome({ match: won })).toEqual({
       winner: 'dark',
-      ownTeam: 'light',
       reason: 'finished',
     });
-    const drawn = matchSlice.reducer(
-      won,
-      resultChanged({ winner: null, ownTeam: 'light', reason: 'finished' }),
-    );
-    expect(selectMatchResult({ match: drawn })).toEqual({
+    const drawn = matchSlice.reducer(won, duelEnded({ winner: null, reason: 'finished' }));
+    expect(selectDuelOutcome({ match: drawn })).toEqual({
       winner: null,
-      ownTeam: 'light',
       reason: 'finished',
     });
   });
 
   it('resets to the initial state', () => {
     const { structures } = figmaHudState().match;
-    const match = matchSlice.reducer(undefined, structuresChanged(structures));
+    let match = matchSlice.reducer(undefined, structuresChanged(structures));
+    match = matchSlice.reducer(match, ended({ result: matchResultFixture(), durationSeconds: 9 }));
+    match = matchSlice.reducer(match, duelEnded({ winner: null, reason: 'opponent-left' }));
     expect(matchSlice.reducer(match, reset())).toEqual({
       clock: null,
       structures: [],
       capturePoints: [],
       result: null,
+      durationSeconds: null,
       versus: null,
       duel: null,
+      duelHud: null,
     });
   });
 });

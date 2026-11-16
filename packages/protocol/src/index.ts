@@ -7,4 +7,10 @@ export {
   MAX_PLAYER_NAME_LENGTH,
   PLAYER_NAME_PATTERN,
 } from './ClientMessageParser.constants';
-export type { ClientMessage, MatchEndReason, RejectReason, ServerMessage } from './messages.types';
+export type {
+  ClientMessage,
+  MatchEndReason,
+  MatchEnding,
+  RejectReason,
+  ServerMessage,
+} from './messages.types';

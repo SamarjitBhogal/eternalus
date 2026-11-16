@@ -8,7 +8,7 @@ import { DuelHud } from './DuelHud';
 const withDuel = (countdown: number | null) => ({
   match: {
     ...matchSlice.getInitialState(),
-    duel: { ownKills: 3, opponentKills: 1, killTarget: 10, countdown },
+    duelHud: { ownKills: 3, opponentKills: 1, killTarget: 10, countdown },
   },
 });
 
