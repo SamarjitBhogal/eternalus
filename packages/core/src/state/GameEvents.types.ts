@@ -67,8 +67,16 @@ export type GameEventMap = {
     readonly isBreakable: boolean;
     readonly lane: string | null;
   };
-  /** A camp's whole group is dead (18 §7.1); the group comes back after its respawn time. */
-  readonly 'camp-cleared': { readonly entityId: EntityId };
+  /**
+   * A camp's whole group is dead (18 §7.1); the group comes back after its respawn time.
+   * `killerId` dealt the last mob's lethal hit and `team` is its team; both `null` when no killer
+   * is known (a death outside the damage pipeline, or a killer that left the store).
+   */
+  readonly 'camp-cleared': {
+    readonly entityId: EntityId;
+    readonly team: Team | null;
+    readonly killerId: EntityId | null;
+  };
   readonly 'shield-bars-changed': {
     readonly entityId: EntityId;
     readonly bars: readonly ShieldBar[];
@@ -87,6 +95,11 @@ export type GameEventMap = {
     readonly pointId: string;
     readonly team: Team;
     readonly checkpoint: number;
+    /**
+     * The reaching team's living Legends whose centre is on the zone's area when the checkpoint is
+     * reached (DEC-145 (a), DEC-223 (4a)), in store order: the Legends that win it.
+     */
+    readonly presentLegendIds: readonly EntityId[];
   };
   readonly 'capture-point-owner-changed': {
     readonly pointId: string;

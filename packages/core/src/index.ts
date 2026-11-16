@@ -41,6 +41,7 @@ export type {
   LegendSpecDefinition,
   RoleRatings,
 } from './content/legends/specs/legendSpecs.types';
+export { DUEL_RULES } from './content/duel/duelRules';
 export { loadDisplayContent } from './content/loadDisplayContent';
 export type { DisplayContent } from './content/loadDisplayContent';
 export { DEFAULT_MAP_CONFIG } from './content/maps/defaultMapConfig';
@@ -57,6 +58,7 @@ export type {
   MinimapGlyph,
   MinimapGlyphShape,
 } from './content/maps/maps.types';
+export type { VerdictLines } from './content/narrative/verdictLines.types';
 export type { BotRole, BotRosterDefinition, EnemyRoverRule } from './content/teams/botRoster.types';
 export type {
   DiagnosticEvent,
@@ -91,6 +93,7 @@ export type {
 } from './state/GameEvents.types';
 export type { MatchResult, Verdict } from './state/MatchResult.types';
 export type { ScheduledMark } from './state/MatchState.types';
+export type { LegendStats, TeamStats } from './state/ScoringState.types';
 export type {
   CaptureSnapshot,
   EntitySnapshot,

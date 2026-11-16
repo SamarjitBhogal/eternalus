@@ -7,7 +7,9 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { PlaceholderScreen } from './components/PlaceholderScreen';
 import { AboutScreen } from './screens/AboutScreen';
 import { CharacterSelectScreen } from './screens/CharacterSelectScreen';
+import { DuelNameScreen } from './screens/DuelNameScreen';
 import { DuelQueueScreen } from './screens/DuelQueueScreen';
+import { DuelVersusScreen } from './screens/DuelVersusScreen';
 import { CrashReportNotice } from './screens/CrashReportNotice';
 import { LoadoutScreen } from './screens/LoadoutScreen';
 import { MainMenuScreen } from './screens/MainMenuScreen';
@@ -36,7 +38,9 @@ const MENU_SCREENS: Readonly<Record<MenuRoute, ComponentType<ScreenProps>>> = {
   profile: ProfileScreen,
   settings: SettingsScreen,
   about: AboutScreen,
+  'duel-name': DuelNameScreen,
   'duel-queue': DuelQueueScreen,
+  'duel-versus': DuelVersusScreen,
 };
 
 /**

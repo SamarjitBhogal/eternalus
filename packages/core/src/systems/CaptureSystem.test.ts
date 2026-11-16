@@ -122,7 +122,7 @@ const setUp = (rules: CapturePointsConfig = RULES) => {
       system.update({ state, logger });
     }
   };
-  return { state, zone, events, reached, legend, minions, leave, run };
+  return { state, zone, events, reached, add, legend, minions, leave, run };
 };
 
 describe('CaptureSystem', () => {
@@ -199,16 +199,39 @@ describe('CaptureSystem', () => {
     run(300);
 
     expect(zone.progress).toBe(-1);
+    const pushes = [
+      ['light', 1, light],
+      ['light', 2, light],
+      ['light', 3, light],
+      ['dark', 1, dark],
+      ['dark', 2, dark],
+      ['dark', 3, dark],
+    ] as const;
     expect(reached).toEqual(
-      [
-        ['light', 1],
-        ['light', 2],
-        ['light', 3],
-        ['dark', 1],
-        ['dark', 2],
-        ['dark', 3],
-      ].map(([team, checkpoint]) => ({ pointId: 'zone-1', team, checkpoint })),
+      pushes.map(([team, checkpoint, pusher]) => ({
+        pointId: 'zone-1',
+        team,
+        checkpoint,
+        presentLegendIds: [pusher.id],
+      })),
     );
+  });
+
+  it("lists the reaching team's living Legends on the zone, and no other unit (DEC-223 (4a))", () => {
+    const { reached, add, legend, minions, run } = setUp();
+    const inside = legend('light');
+    add('warrior', 'light', OUTSIDE);
+    legend('dark');
+    const dead = legend('light').getComponent(Health);
+    dead.applyDamage(dead.total);
+    // Light 10 + 4 minions against Dark's 10: margin 4, capped at 3, so 40 ticks a checkpoint.
+    minions('light', 4);
+
+    run(40);
+
+    expect(reached).toEqual([
+      { pointId: 'zone-1', team: 'light', checkpoint: 1, presentLegendIds: [inside.id] },
+    ]);
   });
 
   it('reaches each checkpoint once per side until the zone changes owner (DEC-145 (g))', () => {

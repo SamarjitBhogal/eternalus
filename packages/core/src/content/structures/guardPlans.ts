@@ -1,20 +1,21 @@
 import { CAPTURE_POINT_COURT } from '../zones/capturePointCourt';
+import { GUARD_LEASH } from './guardLeash';
 import type { GuardPlanDefinition } from './structures.types';
 
-const LEASH = 8; // TUNE: balancing.md "leash radius 8 m"
 const RESPAWN = 120; // TUNE: game doc "respawn every 2 minutes"
-const POST_GAP = 2; // TUNE: no reference value; just outside the footprint
 // TUNE: owner 2026-11-02 (DEC-144): per guard, one decision's walk (10 ticks at its own top
 // speed) plus the farthest it stands from a target in reach (its radius + the largest target's
 // radius + its reach). The tightest is the capture point boss against a Sentinel: walk
-// 10 × 2.8 / 30 ≈ 0.93 m plus stance 1.2 + 1.25 + 1.5 = 3.95 m, so 4.88 m and about 0.1 m of
-// margin: a larger or faster guard needs a larger tolerance.
-// guardPlans.test.ts checks the sum against every guard and target in content.
-const TOLERANCE = 5;
+// 10 × 2.8 / 30 ≈ 0.93 m plus stance 1.2 + 1.25 + 1.5 = 3.95 m, so 4.88 m. DEC-181 (H2): widened
+// from 5 m to 5.5 m, since at the 300-unit cap a brain can wait up to 6 ticks more for its turn
+// (`AI_CADENCE.maxDecisionsPerTick`): for the boss 16 × 2.8 / 30 ≈ 1.49 m of walk, so 5.44 m and
+// about 0.06 m of margin; a larger or faster guard needs a larger tolerance.
+// guardPlans.test.ts checks both sums against every guard and target in content.
+const TOLERANCE = 5.5;
 
 const CAMP = {
-  leashRadius: 6, // TUNE: balancing.md camp leash
-  postGap: POST_GAP,
+  leashRadius: GUARD_LEASH.camp,
+  postGap: GUARD_LEASH.postGap,
   leashTolerance: TOLERANCE,
   // requirements doc: camps are inactive until the countdown ends
   activation: { at: 'countdown-end', delaySeconds: 0 },
@@ -49,22 +50,22 @@ const CAMP_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
  * Each structure's guards, keyed by structure definition id (architecture 07 §6, 18 §7). Counts are balancing.md's
  * `Recommendation:` (SpawnerTower 4 light, BuffTower 6 medium, Stronghold 6 light ranged + 2 heavy
  * melee, minus 2 light per lost SpawnerTower). Ranged attacks wait for projectiles (sprint 2.3),
- * so the Stronghold's light guards fight in melee for now. Camps and the outer capture points'
- * mini-boss follow.
+ * so the Stronghold's light guards fight in melee for now. The forest camps' groups and the outer
+ * capture points' mini-boss follow.
  */
 export const GUARD_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
   'spawner-tower': {
     table: [{ mobId: 'light-guard', count: 4 }],
-    leashRadius: LEASH,
-    postGap: POST_GAP,
+    leashRadius: GUARD_LEASH.tower,
+    postGap: GUARD_LEASH.postGap,
     leashTolerance: TOLERANCE,
     activation: { at: 'match-start' },
     respawn: { kind: 'each', seconds: RESPAWN },
   },
   'buff-tower': {
     table: [{ mobId: 'medium-guard', count: 6 }],
-    leashRadius: LEASH,
-    postGap: POST_GAP,
+    leashRadius: GUARD_LEASH.tower,
+    postGap: GUARD_LEASH.postGap,
     leashTolerance: TOLERANCE,
     activation: { at: 'match-start' },
     respawn: { kind: 'each', seconds: RESPAWN },
@@ -74,8 +75,8 @@ export const GUARD_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
       { mobId: 'light-guard', count: 6, shrink: { perLost: 'spawner-tower', count: 2 } },
       { mobId: 'heavy-guard', count: 2 },
     ],
-    leashRadius: LEASH,
-    postGap: POST_GAP,
+    leashRadius: GUARD_LEASH.tower,
+    postGap: GUARD_LEASH.postGap,
     leashTolerance: TOLERANCE,
     activation: { at: 'match-start' },
     respawn: { kind: 'each', seconds: RESPAWN },
@@ -89,8 +90,8 @@ export const GUARD_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
       { mobId: 'capture-point-boss', count: 1 },
       // TUNE: no reference count for the support mobs; balancing.md's checkpoint-2 capture point
       // guard set (2 heavy + 4 light), the heavies being the "high-power" mobs.
-      { mobId: 'heavy-guard', count: 2 },
-      { mobId: 'light-guard', count: 4 },
+      { mobId: 'capture-point-heavy-guard', count: 2 },
+      { mobId: 'capture-point-light-guard', count: 4 },
     ],
     leashRadius: CAPTURE_POINT_COURT.leashRadius,
     postGap: CAPTURE_POINT_COURT.postGap,

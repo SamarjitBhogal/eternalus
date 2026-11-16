@@ -7,6 +7,7 @@ import { firstAvailableSpecId, shippedCatalogue } from './content/__fixtures__/s
 import { FakeRunningMatch } from './FakeRunningMatch';
 import { FakeSessionContext } from './FakeSessionContext';
 import { FakeViewportCanvas } from './FakeViewportCanvas';
+import type { MatchObserver } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
 
 const VIEWPORT: MatchViewport = {
@@ -18,7 +19,7 @@ const VIEWPORT: MatchViewport = {
   },
   isExplorerShown: false,
 };
-const ON_CRASH = (): void => undefined;
+const OBSERVER: MatchObserver = { crashed: () => undefined, ended: () => undefined };
 
 describe('FakeSessionContext', () => {
   it('carries a real bus and clock, the shipped catalogue and the shipped credits', () => {
@@ -44,7 +45,7 @@ describe('FakeSessionContext', () => {
     context.newMatchSetup();
     context.repeatMatchSetup();
     context.clearMatchSetup();
-    context.joinDuelQueue();
+    context.joinDuelQueue('Ana');
     context.leaveDuelQueue();
     context.lockIn();
     context.prepareWorld();
@@ -56,11 +57,12 @@ describe('FakeSessionContext', () => {
     expect(context.calls).toEqual({
       transition: [['menu'], ['menu', 'load-failed']],
       newMatchSetup: [[]],
+      canRepeatMatchSetup: [],
       repeatMatchSetup: [[]],
       clearMatchSetup: [[]],
       selection: [],
       recordSelection: [],
-      joinDuelQueue: [[]],
+      joinDuelQueue: [['Ana']],
       leaveDuelQueue: [[]],
       lockIn: [[]],
       prepareWorld: [[]],
@@ -138,16 +140,16 @@ describe('FakeSessionContext', () => {
   it('builds a new FakeRunningMatch per createMatch and keeps each in order', () => {
     const context = new FakeSessionContext();
 
-    const first = context.createMatch(VIEWPORT, ON_CRASH);
-    const second = context.createMatch(VIEWPORT, ON_CRASH);
+    const first = context.createMatch(VIEWPORT, OBSERVER);
+    const second = context.createMatch(VIEWPORT, OBSERVER);
 
     expect(first).toBeInstanceOf(FakeRunningMatch);
     expect(second).not.toBe(first);
     expect(context.matches).toEqual([first, second]);
     expect(context.matches[1]).toBe(second);
     expect(context.calls.createMatch).toEqual([
-      [VIEWPORT, ON_CRASH],
-      [VIEWPORT, ON_CRASH],
+      [VIEWPORT, OBSERVER],
+      [VIEWPORT, OBSERVER],
     ]);
   });
 
@@ -158,7 +160,7 @@ describe('FakeSessionContext', () => {
     context.createMatchError = matchError;
     context.prepareWorldError = worldError;
 
-    expect(() => context.createMatch(VIEWPORT, ON_CRASH)).toThrow(matchError);
+    expect(() => context.createMatch(VIEWPORT, OBSERVER)).toThrow(matchError);
     expect(() => {
       context.prepareWorld();
     }).toThrow(worldError);

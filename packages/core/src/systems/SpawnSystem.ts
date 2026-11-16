@@ -44,8 +44,6 @@ export class SpawnSystem implements System {
   private readonly spawners: readonly Structure[];
   private readonly scheduled: readonly ScheduledWave[];
   private readonly guards: GuardRoster;
-  /** The definition ids of the structures and zones on this map, whose guard plans are checked. */
-  private readonly homes = new Set<string>();
 
   /**
    * @param state - The match; its structure entities, already spawned, are the spawn points, and
@@ -65,9 +63,11 @@ export class SpawnSystem implements System {
   ) {
     // The opening source sends the opening hordes even when it has no recurring waves.
     const spawners: Structure[] = [];
+    // The definition ids of every structure and zone on this map, whose guard plans are checked.
+    const homes = new Set<string>();
     state.entities.forEach((entity) => {
       if (GuardRoster.isHome(entity)) {
-        this.homes.add(entity.definitionId);
+        homes.add(entity.definitionId);
       }
       const team = state.entities.teamOf(entity.id);
       if (
@@ -89,7 +89,7 @@ export class SpawnSystem implements System {
         everyTicks: Math.round(wave.everySeconds * tickRate),
       })),
     );
-    this.validate();
+    this.validate(homes);
     this.guards = new GuardRoster(factory, plan.definitions, plan.guards);
     this.guards.layOut(state);
   }
@@ -98,10 +98,11 @@ export class SpawnSystem implements System {
    * Rejects a plan whose waves name an unknown mob or a mob of another weight class, start before
    * the countdown ends, or repeat more often than once a tick, or whose guard plans name an
    * unknown mob or activate a negative or non-finite number of seconds after the countdown. Only
-   * the waves and guards this map's spawners and homes can have are checked, so a match without
+   * the waves this map's spawners can send and the guard plans of the structures and zones on it
+   * (`homes`, by definition id, whether or not they spawn hordes) are checked, so a match without
    * hordes needs no minions.
    */
-  private validate(): void {
+  private validate(homes: ReadonlySet<string>): void {
     const { openingWave, definitions, guards } = this.plan;
     const kinds = new Set(this.spawners.map(({ kind }) => kind));
     const waves = [
@@ -110,7 +111,7 @@ export class SpawnSystem implements System {
     ];
     // Only the plans of structures and zones on this map, so a match without them needs no guard
     // content.
-    const guardProblems = [...this.homes].flatMap((id) => {
+    const guardProblems = [...homes].flatMap((id) => {
       const plan = guards[id];
       if (plan === undefined) {
         return [];
@@ -259,7 +260,12 @@ export class SpawnSystem implements System {
         x: origin.x + ((member % columns) - (columns - 1) / 2) * spawnSpacing,
         y: origin.y + (Math.floor(member / columns) - (rows - 1) / 2) * spawnSpacing,
       };
-      const entity = this.factory.create(kind, mobId, { team, position });
+      // Each member faces the enemy Stronghold until it first moves or attacks (DEC-216 (6)).
+      const entity = this.factory.create(kind, mobId, {
+        team,
+        position,
+        ...state.world?.startFacing(team, position),
+      });
       state.entities.add(entity);
       members.push(entity);
     }
