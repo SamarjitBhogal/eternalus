@@ -1,5 +1,8 @@
 import { ContentCatalogue } from '../ContentCatalogue';
+import { HEAVY_ASSIST_MOB } from './heavyAssistMob';
 import { HEAVY_CAMP_MOB } from './heavyCampMob';
+import { LIGHT_ASSIST_MOB } from './lightAssistMob';
+import { MEDIUM_ASSIST_MOB } from './mediumAssistMob';
 import { HEAVY_GUARD } from './heavyGuard';
 import { LIGHT_CAMP_MOB } from './lightCampMob';
 import { MEDIUM_CAMP_MOB } from './mediumCampMob';
@@ -11,7 +14,7 @@ import { MEDIUM_MINION } from './mediumMinion';
 import type { MobDefinition } from './mobs.types';
 import { TRAINING_DUMMY } from './trainingDummy';
 
-/** Every mob definition: the training dummy, the three lane minions, the three tower guards and the three camp mobs. */
+/** Every mob definition: the training dummy, the three lane minions, the three tower guards, the three camp mobs and the three assist mobs. */
 export const MOB_DEFINITIONS = new ContentCatalogue<MobDefinition>([
   TRAINING_DUMMY,
   LIGHT_MINION,
@@ -23,4 +26,7 @@ export const MOB_DEFINITIONS = new ContentCatalogue<MobDefinition>([
   LIGHT_CAMP_MOB,
   MEDIUM_CAMP_MOB,
   HEAVY_CAMP_MOB,
+  LIGHT_ASSIST_MOB,
+  MEDIUM_ASSIST_MOB,
+  HEAVY_ASSIST_MOB,
 ]);

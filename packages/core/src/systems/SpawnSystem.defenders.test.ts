@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { Capturable } from '../components/Capturable';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { ContentValidationError } from '../content/ContentValidationError';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { CHECKPOINT_DEFENDERS } from '../content/structures/guardPlans';
 import { CATHEDRAL_CAPTURE_POINT } from '../content/zones/cathedralCapturePoint';
 import { NullLogger } from '../diagnostics/NullLogger';
-import { GuardWithinLeashInvariant } from '../diagnostics/invariants/GuardWithinLeashInvariant';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import { CapturePoint } from '../entities/zones/CapturePoint';
@@ -62,20 +62,25 @@ const setUp = (owner: Team) => {
     });
     state.advanceTick();
   };
+  const changeOwner = (to: Team) => {
+    const from = point.getComponent(Capturable).setOwner(to);
+    state.events.emit('capture-point-owner-changed', { pointId: point.id, from, to });
+    state.advanceTick();
+  };
   const posts = () => {
     const all: GuardSlot[] = [];
     state.guards.forEach((slot) => all.push(slot));
     return all;
   };
-  return { state, point, step, reach, posts };
+  return { state, point, factory, step, reach, changeOwner, posts };
 };
 
 describe('SpawnSystem', () => {
   describe('checkpoint defenders (07 §7, 18 §7.1)', () => {
-    it("spawns each checkpoint's listed composition on the next tick", () => {
+    it("spawns each checkpoint's listed composition on its next pass", () => {
       const { state, step, reach, posts } = setUp('dark');
       reach(1);
-      expect(posts().every(({ respawnAtTick }) => respawnAtTick === state.tick)).toBe(true);
+      expect(state.guards.size).toBe(0);
       step();
       reach(2);
       step();
@@ -86,19 +91,19 @@ describe('SpawnSystem', () => {
       });
       expect(mobs.sort()).toEqual(
         [
-          ...Array<string>(4).fill('medium-guard'),
-          ...Array<string>(2).fill('heavy-guard'),
-          ...Array<string>(4).fill('light-guard'),
+          ...Array<string>(4).fill('medium-assist-mob'),
+          ...Array<string>(2).fill('heavy-assist-mob'),
+          ...Array<string>(4).fill('light-assist-mob'),
         ].sort(),
       );
-      expect(state.guards.size).toBe(10);
     });
 
-    it('defends for the owner, and a point no team owns has neutral defenders', () => {
+    it('defends for the owner, and a point no team owns has neutral defenders (DEC-257)', () => {
       for (const owner of ['dark', 'neutral'] as const) {
         const { state, step, reach, posts } = setUp(owner);
         reach(1);
         step();
+        expect(posts()).not.toHaveLength(0);
         for (const { team, guardId } of posts()) {
           expect(team).toBe(owner);
           expect(state.entities.teamOf(guardId ?? '')).toBe(owner);
@@ -132,6 +137,39 @@ describe('SpawnSystem', () => {
       expect(after?.respawnAtTick).toBeNull();
     });
 
+    it('despawns the living defenders when the point changes owner (DEC-261)', () => {
+      const { state, step, reach, changeOwner, posts } = setUp('neutral');
+      const removed: string[] = [];
+      state.events.on('entity-removed', ({ entityId, cause }) =>
+        removed.push(`${entityId} ${cause}`),
+      );
+      reach(1);
+      step();
+      const ids = posts().map(({ guardId }) => guardId ?? '');
+      changeOwner('light');
+      step();
+      step();
+
+      expect(ids.every((id) => !state.entities.has(id))).toBe(true);
+      expect(removed.sort()).toEqual(ids.map((id) => `${id} despawned`).sort());
+      expect(
+        posts().every(({ guardId, respawnAtTick }) => guardId === null && respawnAtTick === null),
+      ).toBe(true);
+    });
+
+    it('gives each reach of a checkpoint its own posts, so ids never repeat', () => {
+      const { step, reach, changeOwner, posts } = setUp('neutral');
+      reach(1);
+      step();
+      changeOwner('light');
+      step();
+      reach(1);
+      step();
+      const ids = posts().map(({ id }) => id);
+      expect(ids).toHaveLength(8);
+      expect(new Set(ids).size).toBe(ids.length);
+    });
+
     it('adds nothing for a push with no Legend on the zone, such as a passing horde (DEC-259)', () => {
       const { state, step, reach } = setUp('neutral');
       reach(1, []);
@@ -146,11 +184,31 @@ describe('SpawnSystem', () => {
       expect(state.guards.size).toBe(0);
     });
 
-    it('keeps defenders inside their leash (GuardWithinLeashInvariant)', () => {
-      const { state, step, reach } = setUp('light');
-      reach(1);
-      step();
-      expect(new GuardWithinLeashInvariant().check(state)).toEqual([]);
+    it('rejects a defender row that names an unknown mob on a map with capture points', () => {
+      const { state, factory } = setUp('light');
+      const defenders = { 1: { ...CHECKPOINT_DEFENDERS[1], table: [{ mobId: 'nope', count: 1 }] } };
+      const build = () =>
+        newSystem(state, factory, {
+          openingWave: NO_OPENING,
+          defenders: defenders as typeof CHECKPOINT_DEFENDERS,
+        });
+      expect(build).toThrow(ContentValidationError);
+      expect(build).toThrow(/checkpoint 1 defenders name unknown mob "nope"/);
+    });
+
+    it('does not check the defender rows on a map without capture points', () => {
+      const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP));
+      const factory = new EntityFactory(
+        createDefaultEntityRegistry(),
+        loadDefaultContent(TICK_RATE),
+      );
+      const defenders = { 1: { ...CHECKPOINT_DEFENDERS[1], table: [{ mobId: 'nope', count: 1 }] } };
+      expect(() =>
+        newSystem(state, factory, {
+          openingWave: NO_OPENING,
+          defenders: defenders as typeof CHECKPOINT_DEFENDERS,
+        }),
+      ).not.toThrow();
     });
   });
 });

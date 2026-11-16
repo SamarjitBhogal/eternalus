@@ -37,3 +37,9 @@ export type ScheduledWave = {
   readonly firstTick: number;
   readonly everyTicks: number;
 };
+
+/**
+ * A capture point's change `SpawnSystem` handles on its pass: a `checkpoint` reached (its
+ * defenders spawn), or, with `checkpoint` `null`, a new owner (its defenders leave).
+ */
+export type ZoneEvent = { readonly pointId: string; readonly checkpoint: number | null };

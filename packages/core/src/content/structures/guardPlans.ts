@@ -85,21 +85,21 @@ export const GUARD_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
 /**
  * Each capture-point checkpoint's defenders, keyed by checkpoint (architecture 07 §7, 18 §7.1).
  * Compositions are balancing.md's `Recommendation:` (checkpoint 1: 4 medium; checkpoint 2: 2 heavy
- * + 4 light), on the tower guards' mobs, since no reference gives assist mobs stats of their own.
+ * + 4 light), on the assist mobs (DEC-260).
  * Checkpoint 3's one massive mob is MVP-if-time (reference 02 "Assist mobs") and has no row yet.
  */
 export const CHECKPOINT_DEFENDERS: Readonly<Record<number, CheckpointDefenderPlanDefinition>> = {
   1: {
-    table: [{ mobId: 'medium-guard', count: 4 }],
-    postGap: GUARD_LEASH.postGap,
+    table: [{ mobId: 'medium-assist-mob', count: 4 }], // TUNE: balancing.md 4 medium
+    postGap: GUARD_LEASH.checkpointPostRing,
     leashTolerance: TOLERANCE,
   },
   2: {
     table: [
-      { mobId: 'heavy-guard', count: 2 },
-      { mobId: 'light-guard', count: 4 },
+      { mobId: 'heavy-assist-mob', count: 2 }, // TUNE: balancing.md 2 heavy
+      { mobId: 'light-assist-mob', count: 4 }, // TUNE: balancing.md 4 light
     ],
-    postGap: GUARD_LEASH.postGap,
+    postGap: GUARD_LEASH.checkpointPostRing,
     leashTolerance: TOLERANCE,
   },
 };

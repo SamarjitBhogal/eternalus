@@ -48,7 +48,7 @@ export class GuardRoster {
     private readonly factory: EntityFactory,
     private readonly definitions: DefinitionSource,
     private readonly plans: Readonly<Record<string, GuardPlanDefinition>>,
-    private readonly defenders: Readonly<Record<number, CheckpointDefenderPlanDefinition>> = {},
+    private readonly defenders: Readonly<Record<number, CheckpointDefenderPlanDefinition>>,
   ) {}
 
   /** Lays out one post per guard of every standing structure's plan, in structure id order. */
@@ -87,9 +87,9 @@ export class GuardRoster {
 
   /**
    * Adds the posts of `checkpoint`'s defenders around capture point `pointId` (07 §7, 18 §7.1),
-   * first filled on the next tick, for the team that owns the point now (`neutral` while no team
-   * does). The leash is the zone's reach from its centre (18 §10 item 4). A checkpoint with no
-   * defender row adds nothing.
+   * filled on this pass, for the team that owns the point now (`neutral` while no team does,
+   * DEC-257). The leash is the zone's reach from its centre (DEC-257). A checkpoint with no
+   * defender row adds nothing. Post ids carry the tick, as a checkpoint can be reached again.
    */
   public defend(state: GameState, pointId: EntityId, checkpoint: number): void {
     const plan = this.defenders[checkpoint];
@@ -113,8 +113,21 @@ export class GuardRoster {
       leashRadius: transform.radius,
       leashTolerance: plan.leashTolerance,
       respawnTicks: 0,
-      firstTick: state.tick + 1,
-      idPrefix: `${home.id}:checkpoint-${String(checkpoint)}`,
+      firstTick: state.tick,
+      idPrefix: `${home.id}:${String(state.tick)}:checkpoint-${String(checkpoint)}`,
+    });
+  }
+
+  /**
+   * Despawns the living defenders of capture point `pointId`, whose owner changed (DEC-261): no
+   * kill, no XP. Their posts empty on the next `update` and never refill.
+   */
+  public dismiss(state: GameState, pointId: EntityId): void {
+    state.guards.forEach(({ homeId, guardId }) => {
+      if (homeId === pointId && guardId !== null && state.entities.has(guardId)) {
+        state.entities.remove(guardId, 'despawned');
+        state.events.emit('entity-removed', { entityId: guardId, cause: 'despawned' });
+      }
     });
   }
 
@@ -161,12 +174,13 @@ export class GuardRoster {
   public update(state: GameState): void {
     state.guards.forEach((slot, index) => {
       if (slot.guardId !== null && GuardRoster.isLost(state, slot.guardId, slot)) {
-        // A post with no plan (its home is gone, or it is a checkpoint defender's) never refills.
+        // A checkpoint defender's post (a home that stands with no plan) never refills; a post
+        // whose home is gone has no plan either, and `each` releases it, never to refill.
         const plan = this.planOf(state, slot);
-        if (plan === undefined) {
+        if (plan === undefined && state.entities.has(slot.homeId)) {
           state.guards.vacate(index, null);
         } else {
-          this.respawns[plan.respawn].release(state, index, slot);
+          this.respawns[plan?.respawn ?? 'each'].release(state, index, slot);
         }
       }
     });

@@ -8235,3 +8235,31 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   Node v22.19.0 has no global `CloseEvent`. No client file is changed.
 - Next step: the pre-PR gate (critic, ponytail), then a draft PR into `phase/3-sprint-3-work`;
   then M10 (zone level-up).
+
+### 2026-11-15 — Phase 3 / minion plan M6b: critic rework (DEC-260, DEC-261) — feat/minion-m6b-checkpoint-defenders — SamarjitBhogal + Claude Code
+
+- What was done: the pre-PR critic (`architecture-reviewer`, base `80e0ea13`) found no blockers and
+  listed 18 should-fix items and nits. Two of them went to the owner, who ruled: defenders are
+  assist mobs of their own (DEC-260: light, medium and heavy assist mobs, with the
+  `checkpoint-defender` aggro profile, which takes any enemy inside the leash through
+  `LeashRules.acquisitionRadius`), and a point's living defenders despawn when it changes owner
+  (DEC-261, `GuardRoster.dismiss`). Also fixed:
+  - `SpawnSystem` queues the zone events and handles them on its own pass (03 §4).
+  - Defender post ids carry the tick.
+  - Posts whose home is gone release through `each` again.
+  - Guards are mates only on the same home and team.
+  - `TUNE` markers, and a named `GUARD_LEASH.checkpointPostRing`.
+  - The roster takes the defenders without a default.
+  - `GuardStore` TSDoc.
+  - Docs: 07 §7, 03, 18 §7.1, the plan's gap rows (checkpoint-cleared XP, stage gating), the
+    decisions log.
+  - Tests: validation, despawn, unique ids, the two `GuardController` cases, and a Cathedral soak
+    with defenders alive (invariants on, same hash twice).
+  - The test fixture now matches the assist mobs by definition id.
+  - `INBOX.md` "Minion M6b follow-ups" asks about checkpoint-cleared XP and stage gating, and puts
+    two better-than-design items to the owner (a `never` respawn rule; tables keyed by
+    capture-point definition).
+- Checks run: `npm run check` exit 1. Core "Tests 1595 passed (1595)", protocol 18/18, server
+  79/79. Client "Tests 1 failed | 1978 passed (1979)": the same `WebSocketTransport.test.ts`
+  `CloseEvent is not defined` failure under local Node v22.19.0. No client file is changed.
+- Next step: the critic re-checks, ponytail, then a draft PR.

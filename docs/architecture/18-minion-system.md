@@ -590,12 +590,15 @@ without a new controller. Only the home changes, and it is data on the spawning 
   `CapturePoint`. Defenders fight for the team that owns the capture point when the checkpoint is
   reached (owner, 2026-10-27), and are neutral at a point no team owns (DEC-257). Their leash is
   the zone's reach from its centre (DEC-257), so a capture cannot be dragged away from its
-  defenders. A defender never respawns: a checkpoint is reached once per side per owner (07 §7).
+  defenders. They are the assist mobs: minion stats, with an aggro profile that takes any enemy
+  inside the leash (DEC-260). A defender never respawns: a checkpoint is reached once per side per
+  owner (07 §7). When the point changes owner, its living defenders are despawned (DEC-261). A
+  defender post the unit cap blocks waits, as any post does (§3.4).
 - Neither kind joins a horde (MS-25 covers lane minions only). A mob on a team counts against that
   team's unit cap (§3.4).
 - `GuardWithinLeashInvariant` (15 §3) is defined for tower guards, measured from the structure's
   `GuardPlan.leashRadius`. Covering camp mobs and checkpoint defenders changes that definition and
-  its tests (M6). It checks every post, so it covers defenders too (M6b).
+  its tests (M6). It checks every post, so it covers defenders too.
 
 ## 8. Bot Legends: lane assignment (MS-20)
 

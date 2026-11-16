@@ -17,7 +17,7 @@ import type { PlayableTeam } from '../teams/teams.types';
 import { compareById } from '../utils/compareById';
 import type { Vec2 } from '../utils/geometry.types';
 import { GuardRoster } from './GuardRoster';
-import type { ScheduledWave, SpawnPlan } from './SpawnSystem.types';
+import type { ScheduledWave, SpawnPlan, ZoneEvent } from './SpawnSystem.types';
 import type { System, SystemContext } from './System.types';
 import { countdownTicks } from '../config/countdownTicks';
 import { isPlayableTeam } from '../teams/playableTeams';
@@ -39,14 +39,16 @@ import { isPlayableTeam } from '../teams/playableTeams';
  * schedule's times are converted to ticks once, so the system keeps no schedule state of its own.
  *
  * It also runs every structure's guard plan (18 §7, 07 §6) through its `GuardRoster`, and adds a
- * capture point's defenders when `checkpoint-reached` names it with a Legend present (07 §7, 18
- * §7.1, DEC-259).
+ * capture point's defenders when `checkpoint-reached` names it with a Legend present, and
+ * despawns them when the point changes owner (07 §7, 18 §7.1, DEC-259, DEC-261).
  */
 export class SpawnSystem implements System {
   public readonly name = 'spawn';
   private readonly spawners: readonly Structure[];
   private readonly scheduled: readonly ScheduledWave[];
   private readonly guards: GuardRoster;
+  /** The checkpoints reached and the owner changes since the last pass, in order. */
+  private readonly zoneEvents: ZoneEvent[] = [];
 
   /**
    * @param state - The match; its structure entities, already spawned, are the spawn points.
@@ -95,11 +97,15 @@ export class SpawnSystem implements System {
     this.validate(homes, hasCapturePoints);
     this.guards = new GuardRoster(factory, plan.definitions, plan.guards, plan.defenders);
     this.guards.layOut(state);
-    // DEC-259: only a push with a Legend on the zone wakes the defenders, so passing hordes do not.
+    // Queued for this system's pass (03 §4). DEC-259: only a push with a Legend on the zone wakes
+    // the defenders, so passing hordes do not.
     state.events.on('checkpoint-reached', ({ pointId, checkpoint, presentLegendIds }) => {
       if (presentLegendIds.length > 0) {
-        this.guards.defend(state, pointId, checkpoint);
+        this.zoneEvents.push({ pointId, checkpoint });
       }
+    });
+    state.events.on('capture-point-owner-changed', ({ pointId }) => {
+      this.zoneEvents.push({ pointId, checkpoint: null });
     });
   }
 
@@ -170,6 +176,13 @@ export class SpawnSystem implements System {
     const opening = state.tick === 0 ? this.openingHordes(state, routes) : [];
     for (const request of [...opening, ...this.dueWaves(state)]) {
       this.spawnHorde(state, routes, request);
+    }
+    for (const { pointId, checkpoint } of this.zoneEvents.splice(0)) {
+      if (checkpoint === null) {
+        this.guards.dismiss(state, pointId);
+      } else {
+        this.guards.defend(state, pointId, checkpoint);
+      }
     }
     this.guards.update(state);
   }

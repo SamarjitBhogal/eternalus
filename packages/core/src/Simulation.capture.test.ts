@@ -153,4 +153,42 @@ describe('Simulation capture points', () => {
     expect(zone?.capture).toMatchObject({ owner: 'dark', progress: -1, checkpoint: 3 });
     expect(play().hash()).toBe(first.hash());
   });
+
+  it('wakes the Cathedral defenders against a lone Legend, keeps them in their leash, the same way every run (M6b)', () => {
+    const cathedral = MAP.features.find(({ kind }) => kind === 'cathedral');
+    const play = () => {
+      const logger = new MemoryLogger();
+      const simulation = new Simulation({
+        config: CONFIG,
+        seed: 1,
+        logger,
+        debug: TEST_DEBUG_CONFIG,
+        map: MAP,
+      });
+      let defenders = 0;
+      simulation.on('entity-spawned', ({ entityId }) => {
+        const spawned = simulation.snapshot().entities.find(({ id }) => id === entityId);
+        defenders += spawned?.definitionId.endsWith('-assist-mob') === true ? 1 : 0;
+      });
+      simulation.enqueueCommand({
+        type: 'dev-spawn',
+        kind: 'warrior',
+        definitionId: 'warrior',
+        team: 'dark',
+        at: cathedral?.position ?? { x: 0, y: 0 },
+        count: 1,
+      });
+      // 20 s: checkpoint 1 falls, its defenders wake and fight the Legend.
+      for (let tick = 0; tick < 20 * CONFIG.tickRate; tick += 1) {
+        simulation.step();
+      }
+      return { simulation, logger, defenders };
+    };
+    const first = play();
+
+    expect(first.defenders).toBeGreaterThan(0);
+    // The invariants (`guard-within-leash` among them) log anything above INFO.
+    expect(first.logger.records.filter(({ severityText }) => severityText !== 'INFO')).toEqual([]);
+    expect(play().simulation.hash()).toBe(first.simulation.hash());
+  });
 });

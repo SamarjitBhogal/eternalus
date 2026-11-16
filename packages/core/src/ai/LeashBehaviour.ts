@@ -219,11 +219,12 @@ export class LeashBehaviour {
     rules: LeashRules<Idle, Rule>,
     escapingId: EntityId | null,
   ): LeashCandidate | null {
-    const { state, id, team, position, rule, perception } = situation;
+    const { state, id, team, position, perception } = situation;
     const here = { ...memory, leashX: position.x, leashY: position.y };
     const escapedId = state.tick < memory.cooldownUntilTick ? memory.escapedId : null;
-    const reach = rule.acquisitionRadius * rule.acquisitionRadius;
-    const radius = Math.max(rule.acquisitionRadius, rules.helpRadius(situation));
+    const acquisition = rules.acquisitionRadius(situation);
+    const reach = acquisition * acquisition;
+    const radius = Math.max(acquisition, rules.helpRadius(situation));
     let best = rules.extra(situation);
     const candidates = perception.unitsWithin(position, radius, {
       hostileTo: team,

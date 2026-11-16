@@ -113,6 +113,18 @@ Reply inline (`Decision: …`).
   - **Answered 2026-11-15 by DEC-257** (chat): both recommendations approved. Built on
     `feat/minion-m6b-checkpoint-defenders`.
 
+- [ ] **Minion M6b follow-ups (`feat/minion-m6b-checkpoint-defenders`, 2026-11-15, critic).**
+      (1) `checkpoint-cleared` is never emitted, so killing a checkpoint's defenders gives no
+      checkpoint XP (07 §7, balancing.md 60 / 150 / 400). Who builds it? `Recommendation:` the
+      guard roster emits it as it emits `camp-cleared`, and `ProgressionSystem` pays it, in its
+      own PR. (2) balancing.md recommends that a checkpoint's defenders must be dead before the
+      next stage counts; 07 §7 does not adopt it and nothing enforces it. Adopt it, or drop it?
+      (3) **Better than the design (DEC-139), sign-off asked:** (a) a `never` guard respawn rule
+      (a third strategy beside `each` and `group`) for defender posts, instead of the inline
+      branch for a standing home with no plan; (b) key the defender tables by capture-point
+      definition id, then checkpoint, so the Cathedral and the outer forts can differ (DISC-11:
+      major and lesser zones are reward tables). Approve either, or leave as built.
+
 - [ ] **Minion plan MVP gaps (3): who owns the zone cooldown reduction (2026-11-06, PR #81).**
       The zone's cooldown reduction (FR-041, 07 §7) is Legend-side, not minion work, and no plan
       schedules it. Who owns it?

@@ -1,5 +1,6 @@
 import type { AggroProfileDefinition } from '../ai.types';
 import { CAMP_MOB_AGGRO } from './campMob';
+import { CHECKPOINT_DEFENDER_AGGRO } from './checkpointDefender';
 import { LANE_MINION_AGGRO } from './laneMinion';
 import { TOWER_GUARD_AGGRO } from './towerGuard';
 
@@ -11,4 +12,5 @@ export const AGGRO_RULES: Readonly<Record<string, AggroProfileDefinition>> = {
   [LANE_MINION_AGGRO.id]: LANE_MINION_AGGRO,
   [TOWER_GUARD_AGGRO.id]: TOWER_GUARD_AGGRO,
   [CAMP_MOB_AGGRO.id]: CAMP_MOB_AGGRO,
+  [CHECKPOINT_DEFENDER_AGGRO.id]: CHECKPOINT_DEFENDER_AGGRO,
 };
