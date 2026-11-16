@@ -27,7 +27,8 @@ const DEFAULT_GAME_CONFIG: Omit<GameConfig, 'match'> & {
     // diagonal lane (DEC-121 (d)).
     flowFieldCorridorHalfWidth: 30,
     flowFieldCellBudget: 2000, // TUNE: Recommendation (sprint 3.2): rebuild cost well under 1 ms
-    pathMaxExpansions: 6000, // TUNE: a cost cap for A* (10 §9), not a gameplay number
+    // TUNE: a cost cap for A* (10 §9), not a gameplay number; 6000 cells of 5 m (DEC-243)
+    pathMaxSearchArea: 150_000,
     pathSnapCells: 12, // TUNE: covers a Stronghold footprint on 5 m cells
     presetId: 'map-1',
   },

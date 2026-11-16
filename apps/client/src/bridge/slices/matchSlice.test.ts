@@ -63,7 +63,7 @@ describe('matchSlice', () => {
     const { structures } = figmaHudState().match;
     let match = matchSlice.reducer(undefined, structuresChanged(structures));
     match = matchSlice.reducer(match, ended({ result: matchResultFixture(), durationSeconds: 9 }));
-    match = matchSlice.reducer(match, duelEnded({ winner: null, reason: 'opponent-left' }));
+    match = matchSlice.reducer(match, duelEnded({ winner: 'dark', reason: 'opponent-left' }));
     expect(matchSlice.reducer(match, reset())).toEqual({
       clock: null,
       structures: [],
