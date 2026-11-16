@@ -1,5 +1,5 @@
 import type { ClientConnection } from '../transport/ClientConnection.types';
-import { MS_PER_SECOND } from '../limits/TokenBucket.constants';
+import { MS_PER_SECOND } from '../time/time.constants';
 import {
   BASE_RATING_GAP,
   GAP_WIDENING_PER_SECOND,
@@ -66,7 +66,7 @@ export class DuelQueue {
     }
   }
 
-  // ponytail: scans every pair, O(n^2) per check; fine for hundreds of waiters, sort by rating beyond that.
+  // ponytail: scans every pair, O(n^2) per call, and pairUp calls it once per pair, so O(n^3) per sweep; fine for hundreds of waiters, sort by rating beyond that.
   private closestAllowed(now: number): readonly [Waiter, Waiter] | null {
     let best: readonly [Waiter, Waiter] | null = null;
     let bestGap = Infinity;

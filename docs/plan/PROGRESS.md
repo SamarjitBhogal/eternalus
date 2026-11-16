@@ -8307,3 +8307,9 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - What was done: merged `feat/duel-rules` (50f26d06, now synced with `phase/3-sprint-3-work`) into this branch. Only `INBOX.md` conflicted; both sides' items are kept. No feature code changed. No force push.
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 1602 passed (1602)"; protocol "Tests 29 passed (29)"; client "Tests 2005 passed (2005)"; server "Tests 113 passed (113)"; "Documentation check passed."
 - Next step: reviewer approval; the team merges in stack order.
+
+### 2026-11-15 — Phase 3 / sync and review nits — feat/mm-guest-identity (PR #104) — claudiodh + Claude Code
+
+- What was done: merged `feat/mm-queue-load` (b632a80d) into this branch (conflicts in `INBOX.md`, `domain.types.ts` and `DuelSession.test.ts`: both sides kept). Review nits on #104: `MS_PER_SECOND` now lives once in `apps/server/src/time/time.constants.ts` (the queue, the token bucket, `main.ts` and the bots no longer import it from a sibling's constants); the Dockerfile pins `node:24.21.0-slim` (the root `engines` minimum); the `ponytail:` note on `closestAllowed` says `pairUp` calls it once per pair, so a sweep is O(n^3). No behaviour change. No force push.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1602 passed (1602)"; protocol "Tests 31 passed (31)"; client "Tests 2013 passed (2013)"; server "Tests 141 passed (141)"; "Documentation check passed."
+- Next step: reviewer re-check; the team merges in stack order.
