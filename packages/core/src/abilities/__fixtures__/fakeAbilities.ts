@@ -1,14 +1,24 @@
+import { KNOCKBACK } from '../../content/abilities/knockback';
 import { ContentCatalogue } from '../../content/ContentCatalogue';
 import { loadAbilities } from '../../content/abilities/loadAbilities';
 import type { AbilityEffect } from '../AbilityEffect.types';
 import { AbilityRegistry } from '../AbilityRegistry';
+import { KnockbackEffect } from '../effects/KnockbackEffect';
 import type { ComposableAbility } from '../AbilityRegistry.types';
 import { MinLevelRestriction } from '../restrictions/MinLevelRestriction';
 import { CircleShape } from '../shapes/CircleShape';
+import { HitShape } from '../shapes/HitShape';
 import { PathShape } from '../shapes/PathShape';
 
-/** The effect kinds the shipped abilities name (S1 content). */
-export const SHIPPED_EFFECT_KINDS = ['damage', 'knockback', 'debuff', 'dash'] as const;
+/** The effect kinds the shipped abilities name (S1 content, then Fury's `buff`). */
+export const SHIPPED_EFFECT_KINDS = ['damage', 'knockback', 'debuff', 'dash', 'buff'] as const;
+
+/**
+ * The effects the shipped statuses' `onHit` steps name (Fury's knock-back): a match checks them
+ * against its registry at boot (`checkStatusLinks`), so a test registry a `Simulation` boots on
+ * needs them beside its own.
+ */
+export const statusOnHitEffects = (): readonly AbilityEffect[] => [new KnockbackEffect(KNOCKBACK)];
 
 /** A Warrior ability for tests: 30 aether, a 90-tick cooldown, one `fake-strike` step around the caster. */
 export const fakeAbility = (
@@ -66,6 +76,7 @@ export const testAbilityRegistry = (
   const registry = new AbilityRegistry(abilities);
   registry.registerShape(new CircleShape());
   registry.registerShape(new PathShape());
+  registry.registerShape(new HitShape());
   registry.registerRestriction(new MinLevelRestriction());
   for (const effect of effects) {
     registry.registerEffect(effect);

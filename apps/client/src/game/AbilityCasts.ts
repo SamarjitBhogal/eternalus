@@ -84,7 +84,10 @@ export class AbilityCasts {
       return false;
     }
     for (const slot of input.triggered) {
-      if (slot !== 'default-action') {
+      if (slot === 'granted') {
+        // A status-granted ability (Fury's dash) aims itself (DEC-270): it casts at once.
+        this.queueCast(actorId, slot, input.aim);
+      } else if (slot !== 'default-action') {
         this.select(slot);
       }
     }

@@ -110,6 +110,25 @@ describe('AbilityRegistry', () => {
     }).toThrow(ContentValidationError);
   });
 
+  it('checks steps outside an ability under their owner’s name, nested ones included (a status’s onHit)', () => {
+    const registry = testAbilityRegistry([
+      new RecordingEffect('fake-strike'),
+      new RecordingEffect('dash'),
+    ]);
+    const dash = {
+      kind: 'dash',
+      distance: 3,
+      durationTicks: 9,
+      onPath: [],
+      onEnd: [{ kind: 'knockback', distance: 1, shape: { kind: 'cone' } }],
+    } as const;
+
+    expect(registry.checkSteps('Status "fury" onHit', [{ kind: 'fake-strike' }])).toEqual([]);
+    expect(registry.checkSteps('Status "fury" onHit', [dash])).toEqual([
+      'Status "fury" onHit names effect "knockback", shape "cone" with no registered strategy (defaultAbilityRegistry.ts).',
+    ]);
+  });
+
   it('rejects an unknown ability id', () => {
     expect(() => testAbilityRegistry([]).resolve('fireball')).toThrow(UnknownDefinitionError);
   });

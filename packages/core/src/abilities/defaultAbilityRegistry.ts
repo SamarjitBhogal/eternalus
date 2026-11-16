@@ -2,12 +2,14 @@ import { KNOCKBACK } from '../content/abilities/knockback';
 import { STATUS_EFFECTS } from '../content/status-effects/statusEffectCatalogue';
 import { AbilityRegistry } from './AbilityRegistry';
 import type { AbilitySource } from './AbilityRegistry.types';
+import { BuffEffect } from './effects/BuffEffect';
 import { DamageEffect } from './effects/DamageEffect';
 import { DashEffect } from './effects/DashEffect';
 import { DebuffEffect } from './effects/DebuffEffect';
 import { KnockbackEffect } from './effects/KnockbackEffect';
 import { MinLevelRestriction } from './restrictions/MinLevelRestriction';
 import { CircleShape } from './shapes/CircleShape';
+import { HitShape } from './shapes/HitShape';
 import { PathShape } from './shapes/PathShape';
 
 /**
@@ -17,7 +19,7 @@ import { PathShape } from './shapes/PathShape';
  * returns, so a missing strategy or a step its strategy refuses fails at boot.
  *
  * @param abilities - The loaded abilities (`loadAbilities`).
- * @param statuses - The statuses a debuff may name; the shipped ones by default.
+ * @param statuses - The statuses a debuff or a buff may name; the shipped ones by default.
  * @throws ContentValidationError listing every ability that names a kind with no line here or has
  *   a step or shape its strategy refuses.
  */
@@ -30,8 +32,10 @@ export const createDefaultAbilityRegistry = (
   registry.registerEffect(new DebuffEffect(statuses));
   registry.registerEffect(new KnockbackEffect(KNOCKBACK));
   registry.registerEffect(new DashEffect());
+  registry.registerEffect(new BuffEffect(statuses));
   registry.registerShape(new CircleShape());
   registry.registerShape(new PathShape());
+  registry.registerShape(new HitShape());
   registry.registerRestriction(new MinLevelRestriction());
   registry.resolveAll();
   return registry;

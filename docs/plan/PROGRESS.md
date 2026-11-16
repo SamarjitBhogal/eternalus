@@ -8441,3 +8441,46 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   "Documentation check passed." (`eternalus-agent-work/abilities/check-meter.log`).
 - Next step: Fury (Vanguard PR 2a commit 3: `buff` effect, `fury` status with on-hit knock-back,
   the status-granted `granted` slot and `fury-dash`), then the pre-PR gate.
+
+### 2026-11-16 — Phase 4 / Vanguard PR 2a: Fury (DEC-270, DEC-271) — feat/vanguard-kit — sholtzman + Claude Code
+
+- What was done: Fury, the Vanguard's ultimate. Content: `content/abilities/fury.ts` (self, one
+  `buff` step), the status `content/status-effects/fury.ts` (8 s, `refresh`, attack speed × 3,
+  damage × 1.5, `onHit` knock-back 1 m, `grants: 'fury-dash'`; `TUNE`, balancing.md:185) and
+  `content/abilities/furyDash.ts` (3 m, 0.3 s, 1 s cooldown, targeting `heading`). Core: the
+  `buff` effect (`abilities/effects/BuffEffect.ts`, caster only); status fields `onHit` and
+  `grants` (`onHit` loaded in ticks); `abilities/HitEffects.ts` runs the attacker's statuses'
+  `onHit` steps after each landed basic attack (`CombatSystem`); the `hit` shape
+  (`abilities/shapes/HitShape.ts`); the eighth slot `granted` (slot kind `granted`), filled and
+  emptied by `StatusEffectApplier`, through `AbilitySlotRuntime.hold` (a change ends the
+  cooldown); `LastCast.abilityId`, read by `no-cast-while-not-ready`; `heading` aim in
+  `AbilitySystem`; `abilities/checkStatusLinks.ts` and `AbilityRegistry.checkSteps`, run at boot
+  by `DefaultSystemPipeline`. Protocol and client: `'granted'` in the parser's slot set,
+  `InputAction` (Space, "Fury dash"), `CAST_SLOTS`; `AbilityCasts` casts it at once;
+  `MatchBridge` and `HudSlotId` leave it out of the HUD; the aim overlay draws nothing for `hit`.
+  Docs: 05 §18 (new "Fury" bullet; pointers in the framework and meter bullets and §8's status),
+  13 §10 (Fury's dash; the stale "until its meter is built" line); `INBOX.md` HC-B8 (five
+  better-than-design items). The design text of 05 §3, §6, §8 and §15 is not changed.
+- Tests: `abilities/scenarios/fury.test.ts` (7, real `Simulation`, every invariant on: meter and
+  `not-charged`, 8 s, ×3 and ×1.5, push 1 m and 1/6 m with `staggered`, dash by facing and by
+  heading, `empty-slot` and `on-cooldown`, a dash in Fury's last tick, same hash);
+  `effects/BuffEffect.test.ts` (5), `checkStatusLinks.test.ts` (4), `HitEffects.test.ts` (3),
+  `shapes/HitShape.test.ts` (4); new cases in `AbilityRegistry.test.ts` (`checkSteps`),
+  `StatusEffectApplier.test.ts` (4: fill, empty on remove and on expiry, another ability kept,
+  no ability bar), `loadStatusEffects.test.ts` (`onHit` in ticks, its time check),
+  `AbilitySlotRuntime.test.ts` (`hold`), `pickReadySlot.test.ts` (a filled `granted` slot);
+  `packages/protocol` `ClientMessageParser.test.ts` (the too-many-slots boundary follows
+  `ABILITY_SLOTS.size + 1`; new case "accepts every slot once, the status-granted slot
+  included"); list updates in the catalogue, display, registry, `Legend`, `Abilities` and
+  snapshot tests. Each new test failed first under a deliberate break (24 breaks: 23 in core, 1
+  in protocol; each source restored and compared; log
+  `eternalus-agent-work/abilities/fury-breaks.log`). The golden replay did not change.
+- Fixes found by the full check: knip "Unused exported types: CastSource", so `CastSource` is
+  now file-local in `CastInstance.types.ts`; the protocol test "refuses too many slots as
+  malformed" sent 8 slots, which is now legal (fixed as above).
+- Checks run: `npm run check` (log `eternalus-agent-work/abilities/check-fury-3.log`): EXIT=0;
+  core "Tests 1909 passed (1909)"; protocol "Tests 30 passed (30)"; client "Tests 2087 passed
+  (2087)"; server "Tests 84 passed (84)"; "All matched files use Prettier code style!";
+  "Documentation check passed.".
+- Next step: commit, then the pre-PR gate (critic against base `ecac47ac`, ponytail review,
+  re-check), then the PR on `feat/ability-framework` (stacked, DEC-275).

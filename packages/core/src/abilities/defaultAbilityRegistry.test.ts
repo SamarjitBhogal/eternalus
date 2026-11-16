@@ -20,6 +20,7 @@ describe('createDefaultAbilityRegistry', () => {
     expect(abilities.ids.map((id) => registry.resolve(id).id)).toEqual(abilities.ids);
     expect(registry.shapeFor('circle').kind).toBe('circle');
     expect(registry.shapeFor('path').kind).toBe('path');
+    expect(registry.shapeFor('hit').kind).toBe('hit');
   });
 
   it('makes every shipped ability with effects available: every effect kind it names is registered', () => {
@@ -28,6 +29,8 @@ describe('createDefaultAbilityRegistry', () => {
 
     expect(abilities.ids.filter((id) => registry.resolve(id).isAvailable)).toEqual([
       'blade-runner',
+      'fury',
+      'fury-dash',
       'slam',
       'shockwave',
     ]);

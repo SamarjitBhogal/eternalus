@@ -7,7 +7,8 @@ import type { ShapePlacement } from './shapes/AreaShape.types';
  * One cast in progress (architecture 05 §4): the caster, the aim and the bound steps. `run` fires
  * the steps in list order through their strategies. No shipped step has a delay or a channel yet,
  * so every step fires at cast and the instance is done after `run`; due ticks join with the first
- * delayed step (05 §4, Nova).
+ * delayed step (05 §4, Nova). A status's `onHit` steps run as a cast too (`HitEffects`), placed
+ * from the attacker to the struck body.
  */
 export class CastInstance {
   /** @param facts - The cast. @param services - What its effects work with. */
@@ -16,10 +17,15 @@ export class CastInstance {
     private readonly services: CastServices,
   ) {}
 
-  /** Fires every step of the ability, in order, on the caster. */
-  public run(): void {
+  /**
+   * Fires every step of the ability, in order, at `placement`: on the caster unless given.
+   *
+   * @param placement - Where the steps' shapes sit; `HitEffects` places them from the attacker to
+   *   the struck body.
+   */
+  public run(placement?: ShapePlacement): void {
     const { origin, ability } = this.facts;
-    const context = this.contextAt({ from: origin, to: origin });
+    const context = this.contextAt(placement ?? { from: origin, to: origin });
     for (const { effect, spec } of ability.steps) {
       effect.apply(spec, context);
     }

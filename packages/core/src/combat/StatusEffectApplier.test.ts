@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { casterState } from '../abilities/__fixtures__/casterState';
+import { Abilities } from '../components/Abilities';
 import { Health } from '../components/Health';
 import { StatusEffects } from '../components/StatusEffects';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
@@ -195,5 +197,59 @@ describe('StatusEffectApplier', () => {
     applier.expire(state, dummy.id);
 
     expect(applier.apply(state, dummy.id, 'stun', 'entity-9')).toBe(true);
+  });
+
+  describe('a status that grants an ability (Fury’s dash, DEC-270)', () => {
+    const setUpLegend = () => {
+      const { state, caster } = casterState();
+      const applier = new StatusEffectApplier(loadStatusEffects(CONFIG.tickRate, 2));
+      return { state, caster, applier, slot: caster.getComponent(Abilities).slot('granted') };
+    };
+
+    it('fills the holder’s granted slot while it lasts and empties it when removed', () => {
+      const { state, caster, applier, slot } = setUpLegend();
+
+      applier.apply(state, caster.id, 'fury', caster.id);
+
+      expect(slot?.abilityId).toBe('fury-dash');
+
+      applier.remove(state, caster.id, 'fury');
+
+      expect(slot?.abilityId).toBeNull();
+    });
+
+    it('empties the slot when the status runs out', () => {
+      const { state, caster, applier, slot } = setUpLegend();
+      applier.apply(state, caster.id, 'fury', caster.id);
+
+      for (let tick = 0; tick < 239; tick += 1) state.advanceTick();
+      applier.expire(state, caster.id);
+
+      expect(slot?.abilityId).toBe('fury-dash');
+
+      state.advanceTick();
+      applier.expire(state, caster.id);
+
+      expect(slot?.abilityId).toBeNull();
+    });
+
+    it('leaves the slot alone when it holds another ability, or the status grants none', () => {
+      const { state, caster, applier, slot } = setUpLegend();
+      applier.apply(state, caster.id, 'fury', caster.id);
+      applier.apply(state, caster.id, 'stun', null);
+      slot?.hold('other-dash');
+
+      applier.remove(state, caster.id, 'stun');
+      applier.remove(state, caster.id, 'fury');
+
+      expect(slot?.abilityId).toBe('other-dash');
+    });
+
+    it('lands on a unit with no ability bar', () => {
+      const { state, dummy, applier } = setUp();
+
+      expect(applier.apply(state, dummy.id, 'fury', null)).toBe(true);
+      expect(applier.remove(state, dummy.id, 'fury')).toBe(true);
+    });
   });
 });

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { casterState } from '../abilities/__fixtures__/casterState';
 import { CastValidator } from '../abilities/CastValidator';
+import { Abilities } from '../components/Abilities';
 import { createDefaultAbilityRegistry } from '../abilities/defaultAbilityRegistry';
 import { loadAbilities } from '../content/abilities/loadAbilities';
 import { Perception } from './perception/Perception';
@@ -53,6 +54,17 @@ describe('pickReadySlot (DEC-205)', () => {
       const slot = pickReadySlot(turnWith(seed), allReady, AIM);
       expect(['ability-1', 'ability-2', 'ability-3', 'ability-4']).toContain(slot);
     }
+  });
+
+  it('may pick the granted slot while a status fills it (a bot dashes in Fury)', () => {
+    const turn = turnWith(1);
+    const granted = turn.state.entities.get(turn.id)?.findComponent(Abilities)?.slot('granted');
+
+    expect(pickReadySlot(turn, onlyReady('granted'), AIM)).toBeNull();
+
+    granted?.hold('fury-dash');
+
+    expect(pickReadySlot(turn, onlyReady('granted'), AIM)).toBe('granted');
   });
 
   it('reaches every ready slot over many seeds', () => {

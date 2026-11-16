@@ -11,6 +11,7 @@ export const CAST_SLOTS: readonly (InputAction & AbilitySlot)[] = [
   'ability-4',
   'gadget-1',
   'gadget-2',
+  'granted',
 ];
 
 /** Each chord modifier and the `KeyPress` flag that says it is held. */

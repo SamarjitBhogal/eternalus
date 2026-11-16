@@ -1,6 +1,7 @@
 /**
- * An ability bar slot (architecture 05 §6); `ability-4` is the ultimate. Content owns it because
- * a kit names abilities by slot order; `commands/Command.types.ts` re-exports it.
+ * An ability bar slot (architecture 05 §6); `ability-4` is the ultimate. `granted` holds the ability
+ * an active status grants (Fury's dash, DEC-270) and is empty otherwise. Content owns it because a
+ * kit names abilities by slot order; `commands/Command.types.ts` re-exports it.
  */
 export type AbilitySlot =
   | 'ability-1'
@@ -9,7 +10,8 @@ export type AbilitySlot =
   | 'ability-4'
   | 'gadget-1'
   | 'gadget-2'
-  | 'default-action';
+  | 'default-action'
+  | 'granted';
 
 /**
  * Why a cast was refused (05 §6). `unavailable`: the ability has no effects yet (`effects: []`),
@@ -28,25 +30,30 @@ export type AbilityRejectReason =
   | 'unavailable';
 
 /**
- * Which kind of slot an ability fills (05 §2). `gadget`, `default-action` and `passive` join when
- * the first ability of that kind is built.
+ * Which kind of slot an ability fills (05 §2). `granted`: only a status grants it, for as long as
+ * it lasts (the `granted` slot; a kit may not name it). `gadget`, `default-action` and `passive`
+ * join when the first ability of that kind is built.
  */
-type AbilitySlotKind = 'ability' | 'ultimate';
+type AbilitySlotKind = 'ability' | 'ultimate' | 'granted';
 
 /**
  * How a cast is aimed (05 §2): `self` acts around the caster; `directional` follows the aim vector
- * with no range (dashes). `aimed` and `target-unit` join with their first ability.
+ * with no range (dashes); `heading` ignores the aim and goes the way the caster moves, or the way it
+ * faces when still (Fury's dash, DEC-270). `aimed` and `target-unit` join with their first ability.
  */
-type AbilityTargeting = { readonly kind: 'self' } | { readonly kind: 'directional' };
+type AbilityTargeting =
+  { readonly kind: 'self' } | { readonly kind: 'directional' } | { readonly kind: 'heading' };
 
 /**
  * The area an effect step covers (05 §3). `circle` is centred on the caster, or on the dash's end
  * for a dash's `onEnd` step; `path` is the capsule a dash sweeps, `width` metres across (its length
- * is the dash's `distance`). `cone` joins with Rip & Tear (DEC-206).
+ * is the dash's `distance`); `hit` is the body a basic attack just struck, for a status's `onHit`
+ * steps (Fury). `cone` joins with Rip & Tear (DEC-206).
  */
 export type EffectShape =
   | { readonly kind: 'circle'; readonly radius: number }
-  | { readonly kind: 'path'; readonly width: number };
+  | { readonly kind: 'path'; readonly width: number }
+  | { readonly kind: 'hit' };
 
 /** What kind of damage a hit deals (`balancing.md` ability table). */
 type DamageType = 'physical' | 'magical';
@@ -115,6 +122,21 @@ export type WithoutTimes<T> = T extends readonly (infer Item)[]
 /** A loaded debuff: the duration override in ticks. */
 export type DebuffSpec = InTicks<AuthoredDebuffSpec>;
 
+/**
+ * Applies a status to the caster itself (05 §3 `BuffEffect`); seconds as authored. No `shape`:
+ * every buff built so far is on self (Fury; Veil, Berserk and Imbue to come). The ally shape
+ * joins with the first ally buff.
+ */
+type AuthoredBuffSpec = {
+  readonly kind: 'buff';
+  readonly statusId: string;
+  /** Overrides the status's own duration; absent = the status's duration. */
+  readonly durationSeconds?: number;
+};
+
+/** A loaded buff: the duration override in ticks. */
+export type BuffSpec = InTicks<AuthoredBuffSpec>;
+
 /** An effect that acts on the targets in its `shape`, as authored. */
 type AuthoredShapedEffectSpec = DamageSpec | KnockbackSpec | AuthoredDebuffSpec;
 
@@ -133,8 +155,11 @@ type AuthoredDashSpec = {
 /** A loaded dash: its duration in ticks. */
 export type DashSpec = InTicks<AuthoredDashSpec>;
 
-/** One step of an ability's cast timeline as authored (05 §3); one effect strategy per `kind`. */
-type AuthoredEffectSpec = AuthoredShapedEffectSpec | AuthoredDashSpec;
+/**
+ * One step of an ability's cast timeline as authored (05 §3); one effect strategy per `kind`. A
+ * status's `onHit` steps are authored the same way.
+ */
+export type AuthoredEffectSpec = AuthoredShapedEffectSpec | AuthoredDashSpec | AuthoredBuffSpec;
 
 /** One loaded step of an ability's cast timeline: every time in ticks. */
 export type AbilityEffectSpec = InTicks<AuthoredEffectSpec>;

@@ -17,6 +17,7 @@ describe('Abilities', () => {
       ['gadget-1', null],
       ['gadget-2', null],
       ['default-action', null],
+      ['granted', null],
     ]);
   });
 

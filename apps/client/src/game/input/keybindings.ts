@@ -21,6 +21,7 @@ export const DEFAULT_CHORDS: Readonly<Record<InputAction, readonly InputChord[]>
   'ability-4': [key('Digit4', '4')], // the ultimate
   'gadget-1': [key('KeyZ', 'Z')],
   'gadget-2': [key('KeyC', 'C')],
+  granted: [key('Space', 'Space')], // Fury's dash, DEC-270
   sprint: [key('ShiftLeft', 'Shift')], // Recommendation (09-controls)
   interact: [key('KeyE', 'E')], // Recommendation (09-controls)
   'turret-toggle-control': [key('KeyP', 'P')],

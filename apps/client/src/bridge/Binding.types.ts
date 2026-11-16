@@ -18,6 +18,7 @@ export type InputAction =
   | 'ability-4'
   | 'gadget-1'
   | 'gadget-2'
+  | 'granted'
   | 'sprint'
   | 'interact'
   | 'turret-toggle-control'
@@ -58,9 +59,10 @@ export type InputChord = {
 
 /**
  * The `InputAction`s that are also HUD slots (05 §15, 17 R21): core's `AbilitySlot` without
- * `default-action`, so `<KeyGlyph action={slot} />` needs no mapping table.
+ * `default-action` and `granted` (Fury's dash has no HUD slot), so `<KeyGlyph action={slot} />`
+ * needs no mapping table.
  */
-export type HudSlotId = Extract<InputAction, Exclude<AbilitySlot, 'default-action'>>;
+export type HudSlotId = Extract<InputAction, Exclude<AbilitySlot, 'default-action' | 'granted'>>;
 
 /** The chords bound to one action. Any chord of any device triggers it. */
 export type Binding = { readonly action: InputAction; readonly chords: readonly InputChord[] };

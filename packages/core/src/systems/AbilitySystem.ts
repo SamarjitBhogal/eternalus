@@ -6,13 +6,16 @@ import type { Command } from '../commands/Command.types';
 import type { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { Abilities } from '../components/Abilities';
 import type { AbilitySlotRuntime } from '../components/AbilitySlotRuntime';
+import type { Aim } from '../components/AbilitySlotRuntime.types';
 import { Aether } from '../components/Aether';
+import { Movement } from '../components/Movement';
 import { Progression } from '../components/Progression';
 import { Transform } from '../components/Transform';
 import type { Entity } from '../entities/Entity';
 import type { GameState } from '../state/GameState';
 import type { SlotReadiness } from '../state/SlotReadiness.types';
 import { compareById } from '../utils/compareById';
+import type { Vec2 } from '../utils/geometry.types';
 import type { System, SystemContext } from './System.types';
 
 /**
@@ -82,14 +85,18 @@ export class AbilitySystem implements System {
     runtime.recordCast(state.tick, ability.definition.cooldownTicks);
     state.events.emit('ability-cast', { casterId: caster.id, abilityId, slot });
     const { position } = caster.getComponent(Transform);
+    const origin = { x: position.x, y: position.y };
     // ponytail: one CastInstance per cast, fine while casts are rare; pool it if bots cast every tick.
     new CastInstance(
       {
         casterId: caster.id,
         ability,
         slot,
-        aim,
-        origin: { x: position.x, y: position.y },
+        aim:
+          ability.definition.targeting?.kind === 'heading'
+            ? AbilitySystem.headingAim(caster, origin)
+            : aim,
+        origin,
         casterLevel: caster.findComponent(Progression)?.level ?? 1,
         tick: state.tick,
       },
@@ -101,5 +108,18 @@ export class AbilitySystem implements System {
         statuses: this.statuses,
       },
     ).run();
+  }
+
+  /**
+   * The aim of a `heading` cast (DEC-270): one metre the way the caster moves, or the way it faces
+   * when it does not move (`Transform.facing` is always a unit vector).
+   */
+  private static headingAim(caster: Entity, origin: Vec2): Aim {
+    const heading = caster.findComponent(Movement)?.heading;
+    const way =
+      heading !== undefined && (heading.x !== 0 || heading.y !== 0)
+        ? heading
+        : caster.getComponent(Transform).facing;
+    return { point: { x: origin.x + way.x, y: origin.y + way.y }, targetId: null };
   }
 }

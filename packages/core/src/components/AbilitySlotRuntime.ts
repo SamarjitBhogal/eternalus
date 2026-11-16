@@ -3,7 +3,8 @@ import type { Aim, LastCast } from './AbilitySlotRuntime.types';
 
 /**
  * One ability bar slot's runtime state (architecture 05 §6, `AbilityRuntime`): which ability it
- * holds, when its cooldown ends, the ultimate's charge and the cast waiting for `AbilitySystem`.
+ * holds (fixed by the kit, except the `granted` slot, which a status fills and empties through
+ * `hold`), when its cooldown ends, the ultimate's charge and the cast waiting for `AbilitySystem`.
  * `Abilities` owns one per slot. Lives in `components/` like `StatusEffectRuntime` (plan arch call
  * 3); the cast rules are `abilities/CastValidator`'s, not this class's.
  */
@@ -20,12 +21,30 @@ export class AbilitySlotRuntime {
 
   /**
    * @param slot - The bar slot.
-   * @param abilityId - The ability it holds (a kit entry), or `null` for an empty slot.
+   * @param held - The ability it holds (a kit entry), or `null` for an empty slot.
    */
   public constructor(
     public readonly slot: AbilitySlot,
-    public readonly abilityId: string | null,
+    private held: string | null,
   ) {}
+
+  /** The ability the slot holds, or `null` when it is empty. */
+  public get abilityId(): string | null {
+    return this.held;
+  }
+
+  /**
+   * Puts `abilityId` in the slot, or empties it (`null`): a status granting an ability while it
+   * lasts (`StatusEffectApplier`). Holding the ability already held changes nothing (a refreshed
+   * status keeps the cooldown). Any other change also ends the cooldown: it belonged to the ability
+   * that left, and an empty slot never cools down (`cooldown-and-aether-bounds`).
+   */
+  public hold(abilityId: string | null): void {
+    if (abilityId !== this.held) {
+      this.held = abilityId;
+      this.cooldownUntilTick = 0;
+    }
+  }
 
   /** The accepted cast waiting for `AbilitySystem` this tick, or `null`. */
   public get pendingCast(): Aim | null {
@@ -61,12 +80,13 @@ export class AbilitySlotRuntime {
 
   /**
    * Starts a cast at `tick`: the cooldown runs from now for `cooldownTicks` (cooldowns start at
-   * cast, 05 §7) and the charge empties (an ultimate's meter; always 0 elsewhere). The values
-   * before the cast are kept in `lastCast`.
+   * cast, 05 §7) and the charge empties (an ultimate's meter; always 0 elsewhere). The ability
+   * cast and the values before the cast are kept in `lastCast`.
    */
   public recordCast(tick: number, cooldownTicks: number): void {
     this.last = {
       tick,
+      abilityId: this.held,
       cooldownUntilTickBefore: this.cooldownUntilTick,
       chargeBefore: this.charge,
     };

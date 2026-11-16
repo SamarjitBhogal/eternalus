@@ -344,6 +344,7 @@ export const ACTION_LABELS: Readonly<Record<InputAction, string>> = {
   'ability-4': 'Ultimate',
   'gadget-1': 'Gadget 1',
   'gadget-2': 'Gadget 2',
+  granted: 'Fury dash',
   sprint: 'Sprint',
   interact: 'Interact',
   'turret-toggle-control': 'Turret: take or leave control',

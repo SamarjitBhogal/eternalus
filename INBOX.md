@@ -129,6 +129,35 @@ Reply inline (`Decision: …`).
       `AllyDamageTally` keeps ally damage. Better: the invariant stays pure, and the ledger is
       not hashed (it repeats `charge`).
       Approve all, approve some, or say no; a "no" reworks the code.
+- [ ] **HC-B8 — Better than the design, for sign-off: five parts of Fury
+      (`feat/vanguard-kit`, 2026-11-16; DEC-270, DEC-271) — sign-off per item.** All five are
+      built, under your 2026-11-09 rule "pick the best architectural outcome, build it now";
+      architecture 05 §18 ("Fury") describes them. The design text of 05 §3, §6, §8 and §15 is not
+      changed.
+      (1) **A status can carry on-hit steps.** 05 §8 has no on-hit field; 05 §10 plans `onHit`
+      for weapons only. Built: a status's optional `onHit` (effect steps, as an ability's), run
+      by one class, `abilities/HitEffects`, after each basic attack lands, and a new shape `hit`
+      (the struck body only, pushed away from the attacker). Better: Fury's knock-back is the
+      shipped `knockback` effect unchanged (mass rule, stagger); no Fury code in `CombatSystem`;
+      a weapon's `onHit` can use the same class.
+      (2) **A status can grant an ability, in its own slot.** 05 §10 plans weapons that grant
+      statuses, not statuses that grant actions. Built: an eighth bar slot, `granted` (Space),
+      and a slot kind of the same name. The `fury` status fills the slot with `fury-dash` while
+      it lasts and empties it when it ends. Outside Fury the slot is empty, so a cast is refused
+      as `empty-slot` and no new restriction is needed; the 1 s between dashes is the slot's
+      cooldown, which ends when the slot changes. Better: the dash is an ordinary ability (cost,
+      cooldown, checks, bots) and not special Fury code; the next ability a status grants is
+      content only.
+      (3) **A `buff` step has no area.** 05 §3 lists `shape` for `buff`. Built: a buff goes on
+      the caster only. Better: every MVP buff (Veil, Fury, Berserk, Imbue) is on self; the ally
+      shape joins with the first ally buff, so no field is unused now.
+      (4) **A new targeting kind, `heading`.** Built: `fury-dash` aims itself, one metre the way
+      the Legend moves, or the way it faces when it stands still (DEC-270); the pointer is
+      ignored. Better: the rule is in one place in core, so bots and players dash alike.
+      (5) **The granted ability is not in the state hash.** Built: `StateHasher` hashes the
+      slot's cooldown, not which ability it holds. Better: the `fury` status, which is hashed,
+      decides that ability, so hashing it again adds nothing.
+      Approve all, approve some, or say no; a "no" reworks the code.
 - [ ] **HC-Q54 — Derive each class's ability pool from the abilities' `classId`?
       (`feat/ability-framework`; changes DEC-198's shape, not built).** Today `abilityPool` on
       the class lists every ability, and each ability also names its `classId`: two sources, and

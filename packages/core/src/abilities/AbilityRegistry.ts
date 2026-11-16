@@ -142,19 +142,39 @@ export class AbilityRegistry {
   }
 
   /**
-   * Everything wrong with `definition`: kinds with no strategy, then each step's and each shape's
-   * own `validate` problems, every step nested in another included.
+   * Everything wrong with `steps` of `owner` (as `Status "fury" onHit`), every step nested in them
+   * included: kinds with no strategy, then each step's and each shape's own `validate` problems.
+   * The check composing an ability runs on its effects; `checkStatusLinks` runs it at boot on each
+   * status's `onHit` steps.
    */
+  public checkSteps(owner: string, steps: readonly EffectStep[]): string[] {
+    return this.problemsIn(owner, steps, []);
+  }
+
+  /** Everything wrong with `definition`: its steps' problems and its restrictions with no rule. */
   private problemsOf(definition: ComposableAbility): string[] {
-    const steps = flattenSteps(definition.effects).map((step) => ({ step, shape: shapeOf(step) }));
+    const missingRules = definition.restrictions
+      .filter(({ kind }) => !this.restrictionRules.has(kind))
+      .map(({ kind }) => `restriction "${kind}"`);
+    return this.problemsIn(`Ability "${definition.id}"`, definition.effects, missingRules);
+  }
+
+  /**
+   * The problems of `owner`'s `steps` (see `checkSteps`), with `missingElsewhere` (kinds of
+   * another sort with no strategy) named among the missing.
+   */
+  private problemsIn(
+    owner: string,
+    ownSteps: readonly EffectStep[],
+    missingElsewhere: readonly string[],
+  ): string[] {
+    const steps = flattenSteps(ownSteps).map((step) => ({ step, shape: shapeOf(step) }));
     const missing = [
       ...steps.flatMap(({ step, shape }) => [
         ...(this.effects.has(step.kind) ? [] : [`effect "${step.kind}"`]),
         ...(shape === undefined || this.shapes.has(shape.kind) ? [] : [`shape "${shape.kind}"`]),
       ]),
-      ...definition.restrictions
-        .filter(({ kind }) => !this.restrictionRules.has(kind))
-        .map(({ kind }) => `restriction "${kind}"`),
+      ...missingElsewhere,
     ];
     const invalid = steps.flatMap(({ step, shape }) => [
       ...(this.effects.get(step.kind)?.validate(step) ?? []),
@@ -163,10 +183,10 @@ export class AbilityRegistry {
     return [
       ...(missing.length > 0
         ? [
-            `Ability "${definition.id}" names ${missing.join(', ')} with no registered strategy (defaultAbilityRegistry.ts).`,
+            `${owner} names ${missing.join(', ')} with no registered strategy (defaultAbilityRegistry.ts).`,
           ]
         : []),
-      ...invalid.map((problem) => `Ability "${definition.id}": ${problem}.`),
+      ...invalid.map((problem) => `${owner}: ${problem}.`),
     ];
   }
 

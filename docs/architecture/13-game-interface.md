@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-14
+last-reviewed: 2026-11-16
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -788,7 +788,14 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
     `default-action`. A slot also carries `aetherCost` (after status modifiers), which the bar
     does not show yet (`INBOX.md` HC-S12). `HudBlockReason` is core's `AbilityRejectReason`, no
     longer a copy, so it gains `unavailable` (an ability in the kit that is not built yet;
-    HC-B5). The ultimate shows `not-charged` until its meter is built (the Vanguard PR).
+    HC-B5). The ultimate shows `not-charged` until its meter is full (the meter is built since
+    `feat/vanguard-kit`, [05](05-abilities-weapons-and-loadouts.md) §18).
+  - **Fury's dash (`feat/vanguard-kit`, 2026-11-16; DEC-270).** The `InputAction` `granted`
+    (Space, label "Fury dash") casts the status-granted slot. `game/AbilityCasts.ts` casts it at
+    once in both cast modes and never selects it for aiming (core aims it from the Legend's
+    heading). `MatchBridge` leaves the slot out of `PlayerHudSnapshot.slots`, as it does
+    `default-action` (`HudSlotId` excludes both), so the HUD draws no slot for it; the aim
+    overlay draws nothing for the `hit` shape.
   - **Two cast modes.** `settings.gameplay.castMode` (`'quick' | 'aim-then-click'`, quick by
     default) is on a new Gameplay tab of `SettingsScreen` (`selectGameplay`); a save without it
     loads with the default. `game/AbilityCasts.ts` turns the slot keys into `cast-ability`:

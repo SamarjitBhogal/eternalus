@@ -1,3 +1,4 @@
+import { Abilities } from '../components/Abilities';
 import { Health } from '../components/Health';
 import { StatusEffects } from '../components/StatusEffects';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
@@ -11,8 +12,10 @@ import type { GameState } from '../state/GameState';
 /**
  * The one way a status reaches or leaves an entity (architecture 05 section 8): abilities, weapons,
  * projectiles and structures call `apply`, auras and holds call `remove`, `StatusEffectSystem`
- * calls `expire`. It emits every `status-applied` and `status-expired`. `DefaultSystemPipeline`
- * builds the match's one instance and hands it to the systems that need it.
+ * calls `expire`. It emits every `status-applied` and `status-expired`, and fills the holder's
+ * `granted` slot with a status's `grants` ability while the status lasts (Fury's dash, DEC-270),
+ * so the slot changes in the same call as the status. `DefaultSystemPipeline` builds the match's
+ * one instance and hands it to the systems that need it.
  */
 export class StatusEffectApplier {
   /** @param statuses - The loaded status effects (`loadStatusEffects`). */
@@ -52,6 +55,9 @@ export class StatusEffectApplier {
       return false;
     }
     statuses.apply(definition, sourceId, state.tick, durationTicks);
+    if (definition.grants !== undefined) {
+      target.findComponent(Abilities)?.slot('granted')?.hold(definition.grants);
+    }
     state.events.emit('status-applied', { entityId: targetId, statusId, sourceId });
     return true;
   }
@@ -61,11 +67,15 @@ export class StatusEffectApplier {
    * `status-expired`. Returns whether it was active.
    */
   public remove(state: GameState, targetId: EntityId, statusId: string): boolean {
-    const statuses = state.entities.get(targetId)?.findComponent(StatusEffects);
-    const sourceId = statuses?.active.find((status) => status.definition.id === statusId)?.sourceId;
-    if (statuses === undefined || sourceId === undefined || !statuses.remove(statusId)) {
+    const target = state.entities.get(targetId);
+    const statuses = target?.findComponent(StatusEffects);
+    const active = statuses?.active.find((status) => status.definition.id === statusId);
+    if (target === undefined || statuses === undefined || active === undefined) {
       return false;
     }
+    const { sourceId, definition } = active;
+    statuses.remove(statusId);
+    StatusEffectApplier.takeGrant(target.findComponent(Abilities), definition);
     state.events.emit('status-expired', { entityId: targetId, statusId, sourceId });
     return true;
   }
@@ -76,8 +86,9 @@ export class StatusEffectApplier {
    * source.
    */
   public expire(state: GameState, targetId: EntityId): void {
-    const statuses = state.entities.get(targetId)?.findComponent(StatusEffects);
-    if (statuses === undefined) {
+    const target = state.entities.get(targetId);
+    const statuses = target?.findComponent(StatusEffects);
+    if (target === undefined || statuses === undefined) {
       return;
     }
     // Allocated only when a status with an onExpire times out, never per tick (NFR-023).
@@ -89,6 +100,7 @@ export class StatusEffectApplier {
           statusId: status.definition.id,
           sourceId: status.sourceId,
         });
+        StatusEffectApplier.takeGrant(target.findComponent(Abilities), status.definition);
         for (const spec of status.definition.onExpire) {
           (followUps ??= []).push([spec, status.sourceId]);
         }
@@ -100,6 +112,17 @@ export class StatusEffectApplier {
     }
     for (const [spec, sourceId] of followUps) {
       this.apply(state, targetId, spec.statusId, sourceId);
+    }
+  }
+
+  /** Empties the holder's `granted` slot when it holds the ability `definition` grants. */
+  private static takeGrant(
+    abilities: Abilities | undefined,
+    definition: StatusEffectDefinition,
+  ): void {
+    const slot = abilities?.slot('granted');
+    if (definition.grants !== undefined && slot?.abilityId === definition.grants) {
+      slot.hold(null);
     }
   }
 }

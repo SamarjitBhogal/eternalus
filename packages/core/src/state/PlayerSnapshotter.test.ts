@@ -48,6 +48,7 @@ describe('PlayerSnapshotter', () => {
       'gadget-1',
       'gadget-2',
       'default-action',
+      'granted',
     ]);
   });
 
@@ -165,6 +166,6 @@ describe('GameState.snapshot player', () => {
     const { player } = state.snapshot(CURVES, READINESS);
 
     expect(player?.entityId).toBe(caster.id);
-    expect(player?.slots).toHaveLength(7);
+    expect(player?.slots).toHaveLength(8);
   });
 });

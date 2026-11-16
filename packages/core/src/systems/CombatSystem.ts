@@ -2,6 +2,7 @@ import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
 import { StatusEffects } from '../components/StatusEffects';
 import { Transform } from '../components/Transform';
+import type { HitEffects } from '../abilities/HitEffects';
 import type { DamagePipeline } from '../combat/DamagePipeline';
 import type { StrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
@@ -15,7 +16,8 @@ import type { System, SystemContext } from './System.types';
  * (DEC-192): it faces `EntityStore.facingPointOf`, a building's outline point nearest it or a
  * unit's centre (DEC-216 (11)), or a building's centre from inside its outline (DEC-220 (1)). A
  * dead or removed target clears. Statuses stop attacks (`cannot-attack`) and scale the cooldown
- * (`attackSpeed`). While the match holds units idle (`state.match.isIdleHeld`, the countdown) no
+ * (`attackSpeed`). Each landed attack then runs the attacker's statuses' `onHit` steps
+ * (`HitEffects`: Fury's knock-back). While the match holds units idle (`state.match.isIdleHeld`, the countdown) no
  * attack lands, no unit turns to its target, and targets are kept for after. Getting into reach is
  * the controller's job (moving), not this system's.
  */
@@ -26,10 +28,13 @@ export class CombatSystem implements System {
 
   /**
    * @param damage - The match's one damage pipeline, shared with every system that deals damage.
+   * @param hits - Runs the attacker's statuses' `onHit` steps after each landed attack; `null`
+   *   runs none.
    * @param strategies - The strategy registry; attacks use `strategies.attack`.
    */
   public constructor(
     private readonly damage: DamagePipeline,
+    private readonly hits: Pick<HitEffects, 'afterHit'> | null = null,
     private readonly strategies: StrategyRegistry = createDefaultStrategyRegistry(),
   ) {}
 
@@ -67,6 +72,7 @@ export class CombatSystem implements System {
         state,
         damage: this.damage,
       });
+      this.hits?.afterHit(state, attacker, target.id);
       combat.beginAttack(state.tick, statuses?.multiplier('attackSpeed') ?? 1);
     });
   }

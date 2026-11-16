@@ -547,7 +547,7 @@ timer by owner ruling (DEC-99), so `control-immune` follows only when it runs ou
 that re-applies a stun before it ends can hold a target until it stops.
 Not built yet: `controlResistance` (bosses, Eternal), `appliesTo` (the component is the gate), the `duration`,
 `independent` and `permanent` modes, and a max-health stat (the FR-029 aura). `StatusEffectSystem`
-runs before movement.
+runs before movement. Fury adds two optional status fields, `onHit` and `grants` (§18, "Fury").
 
 ## 9. Combat pipeline (`combat/`)
 
@@ -966,7 +966,8 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   owner's reading of the XP ring (2026-10-18).
 - **Ability framework (`feat/ability-framework`, 2026-11-13; DEC-196 to DEC-209, ADR 0026).**
   The framework and one ability for each class are built (DEC-196); the per-class PRs build the
-  rest. Where the code differs from the sketches above:
+  rest. Fury (the last bullet) adds a slot, a slot kind, a targeting kind, the `buff` effect and
+  the `hit` shape to what this bullet lists. Where the code differs from the sketches above:
   - **Content.** `content/abilities/` holds the types (`AuthoredAbility` in seconds,
     `AbilityDefinition` in ticks, `AbilityKit`, `AbilitySlot`, `AbilityRejectReason`), one file
     per ability, `abilityCatalogue.ts` and `loadAbilities`, which knows no effect or shape kind:
@@ -1062,8 +1063,45 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
     state and never listens.
   - **Snapshot.** `Snapshot.player` reports `charge` on the ultimate slot and `null` on the
     others, so the HUD's ultimate bar is live.
-  - Not built: the effects of every ultimate (each is still `unavailable`), so no ultimate is
-    cast yet.
+  - Not built: the effects of every ultimate but Fury (the bullet below); each other one is
+    still `unavailable`.
+- **Fury (`feat/vanguard-kit`, 2026-11-16; DEC-270, DEC-271).** The Vanguard's ultimate is the
+  first one built. `content/abilities/fury.ts` (targeting `self`, one `buff` step) puts the status
+  `content/status-effects/fury.ts` on the caster: 8 s, `refresh`, `attackSpeed` × 3 and
+  `damageDealt` × 1.5, a 1 m knock-back on each basic hit, and the dash
+  `content/abilities/furyDash.ts` on Space while it lasts (numbers `TUNE`, `balancing.md`). It
+  ends at death (the fallen Legend is removed). Where the code differs from §3, §6, §8 and §15
+  (better-than-design items for sign-off: `INBOX.md` HC-B8):
+  - **`buff` effect.** `BuffEffect` applies its status to the caster only, credited to the
+    caster. It has no `shape` (§3 lists one): every MVP buff is on self, and the ally shape joins
+    with the first ally buff. A step's `durationSeconds` overrides the status's own time, as a
+    debuff's does.
+  - **On-hit steps on a status.** A status has two optional fields §8 does not have: `onHit`
+    (effect steps, loaded in ticks as an ability's are) and `grants` (an ability id).
+    `abilities/HitEffects` runs the attacker's statuses' `onHit` steps after each basic attack
+    lands (`CombatSystem` calls it), as one cast through the registry's strategies: credited to
+    the attacker under the status's id, from the `default-action` slot, placed from the attacker
+    to the struck body. The shape `hit` (`abilities/shapes/HitShape`) holds the struck body only
+    and pushes away from the attacker, so Fury's knock-back is `KnockbackEffect` unchanged (mass
+    rule, `staggered`). A weapon's `onHit` (§10) can run through `HitEffects` too.
+  - **Status-granted slot.** An eighth slot, `granted` (Space), comes last in bar order, and
+    `granted` is a slot kind. `StatusEffectApplier` fills the slot with the status's `grants`
+    ability on `apply`, and empties it on `remove` and `expire` when it still holds that ability.
+    `AbilitySlotRuntime.hold` changes the ability a slot holds and ends its cooldown on a change
+    (an empty slot never cools down). Outside Fury the slot is empty and a cast is `empty-slot`,
+    so no restriction kind is needed; the 1 s between dashes is the slot's cooldown. `LastCast`
+    keeps the ability cast, so `no-cast-while-not-ready` holds for a dash in Fury's last tick,
+    which empties the slot. `StateHasher` does not hash the held ability: the status that grants
+    it is hashed. A granted ability is in no class pool or kit; `abilities/checkStatusLinks`
+    checks at boot, where `DefaultSystemPipeline` loads the statuses, that each `grants` names an
+    ability of slot kind `granted` and that each `onHit` step passes the registry's step check
+    (`AbilityRegistry.checkSteps`).
+  - **`heading` targeting.** `fury-dash` targets `heading`: `AbilitySystem` replaces the aim with
+    one metre the way the caster moves, or the way it faces when it stands still (DEC-270).
+  - **Snapshot, bots and client.** `Snapshot.player` reports the eight slots; the bridge leaves
+    out `granted`, as it does `default-action`, so the HUD draws no slot for the dash
+    ([13](13-game-interface.md) §10). The client casts it at once in both cast modes and never
+    selects it for aiming. A bot may cast a filled `granted` slot (`pickReadySlot`).
 
 ## Related
 
