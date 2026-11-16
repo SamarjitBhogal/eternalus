@@ -8430,3 +8430,18 @@ group)` takes a `FeatureKeyedGroup` instead of a closure, so the client cannot r
   "Tests 79 passed (79)"; "Documentation check passed.". Then `prettier --check` and
   `npm run docs:check` on this file.
 - Next step: the PR against `phase/3-sprint-3-work` (Sam runs the push-and-open script).
+
+### 2026-11-16 — Phase 3 / GL-16: merge phase/3 (#127 merged) — refactor/map-feature-link — sholtzman + Claude Code
+
+- What was done: PR #129's review (request-changes, head `bf024289`) found the branch conflicting
+  with `phase/3-sprint-3-work` after #127 (CI time limit, DEC-254) merged as `80e0ea13`. Merged it
+  into this branch as `113030be`. Conflicts: this file (phase/3's #127 entry, then this branch's
+  entries) and the owner decisions log (both sides kept; newest batch first: DEC-255/256, DEC-254,
+  DEC-252, DEC-250). Against either side, both files only gain lines. The worktree needed
+  `npm ci` first (its `node_modules` predated the server workspace).
+- Checks run: `npm run check` → `EXIT=0` on `113030be` before this entry was added
+  (`eternalus-agent-work/game-loop-plan/gl16-merge-80e0ea13-check-2026-11-16.log`): core "Tests
+  1589 passed (1589)"; protocol "Tests 18 passed (18)"; client "Tests 1985 passed (1985)"; server
+  "Tests 79 passed (79)"; "Documentation check passed.". Then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the owner pushes; PR #129's body names the new base, head and check.
