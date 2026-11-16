@@ -1,10 +1,10 @@
 ---
 title: 0026. Ability framework build decisions
-description: Proposed record of seven decisions the ability framework PR (DEC-196 to DEC-209) took beyond architecture 05, 04 and 10 - kits from a class pool with an optional kit per Legend read through RosterSlot.specId (amends ADR 0018 point 2); one CastValidator for the handler, snapshot and bots; unbuilt abilities are unavailable, a missing strategy fails at boot; forced motion for dashes and knock-backs; aether refill in its own system; where both run; area shapes behind a registry; read this before changing the cast path, kits, knock-back, aether refill or effect areas.
+description: Record of seven decisions the ability framework PR (DEC-196 to DEC-209) took beyond architecture 05, 04 and 10 - kits from a class pool with an optional kit per Legend read through RosterSlot.specId (amends ADR 0018 point 2); one CastValidator for the handler, snapshot and bots; unbuilt abilities are unavailable, a missing strategy fails at boot; forced motion for dashes and knock-backs; aether refill in its own system; where both run; area shapes behind a registry; read this before changing the cast path, kits, knock-back, aether refill or effect areas.
 audience: [humans, agents]
-status: draft
+status: active
 owner: sholtzman
-last-reviewed: 2026-11-14
+last-reviewed: 2026-11-16
 tags: [adr, abilities, kits, physics, aether, content]
 related:
   - 'docs/architecture/05-abilities-weapons-and-loadouts.md'
@@ -18,9 +18,8 @@ related:
 
 # 0026. Ability framework build decisions
 
-- Status: proposed (drafted 2026-11-13 for the ability framework PR, `feat/ability-framework`;
-  the code is built on that branch and waits for the product owner's acceptance, `INBOX.md`
-  HC-Q48)
+- Status: accepted 2026-11-16 by the product owner (DEC-263, `INBOX.md` HC-Q48); drafted
+  2026-11-13 for the ability framework PR, `feat/ability-framework`
 - Date: 2026-11-13
 
 ## Context
@@ -148,6 +147,8 @@ do not import `abilities/`.
 - **Alternatives rejected.** Impulses as designed: they need a velocity model that keeps
   momentum (10 §2's friction and acceleration clamp), which `Movement` does not have. Moving the
   `Transform` directly: skips collision. The last push wins: contradicts DEC-208 (3).
+  Forced motion does not turn the entity: it faces its own walking velocity
+  ([04](../architecture/04-entity-architecture.md) §3, DEC-264).
 - **Consequences.** 10 §2's knock-back paragraph and 05 §3's `knockback` row change. Impulses
   stay the design for throwing a carried unit (10 §3), which is not built. Boss masses (DEC-208)
   need no code change. The dash's hit path ends where its motion ends: a dash aimed away from a
@@ -223,8 +224,8 @@ do not import `abilities/`.
   built code and to DEC-198, DEC-201 and DEC-208, each change cited. The rest of 05's sketch
   (varieties, cast and channel times, delayed steps, the ultimate meter, zones, projectiles)
   stays the intent; 05 §18 lists what is built.
-- The better-than-design parts (decisions 1, 2, 4 and 5, and the client's `HudBlockReason`) are
-  in `INBOX.md` HC-B5 for the owner's sign-off.
+- The better-than-design parts (decisions 1, 2, 4 and 5, and the client's `HudBlockReason`;
+  `INBOX.md` HC-B5) and the seven of critic round 1 (HC-B6) are signed off by the owner (DEC-263).
 - `abilities/` imports what [02](../architecture/02-code-structure.md) §2 allows (`combat/`,
   `components/`, `content/`, `state/`, `utils/`) plus one module, `entities/unitFamilies`
   (`DamageEffect` scales damage on a target that is not a unit). `packages/core/AGENTS.md`'s

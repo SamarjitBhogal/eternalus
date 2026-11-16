@@ -4,7 +4,7 @@ description: Sprint checklists for the three Legend classes, the ability framewo
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-16
 tags: [plan, phase-4, legends, abilities, loadouts, progression, hud]
 paths:
   ['packages/core/src/abilities/**', 'packages/core/src/loadout/**', 'apps/client/src/ui/hud/**']
@@ -101,7 +101,7 @@ cast check shared by the command handler, `AbilitySystem`, the HUD snapshot and 
 kits from a class pool with an optional kit per Legend (DEC-198, DEC-199, DEC-209 (2)). The
 effect kinds follow architecture 05 §3, not the list above. Bots cast any ready ability on the
 existing timer and chance (DEC-205); situational casting is a follow-up PR. The decisions beyond
-architecture 05 are ADR 0026 (proposed); what is built is in 05 §18. The boxes stay open until the
+architecture 05 are ADR 0026 (accepted 2026-11-16, DEC-263); what is built is in 05 §18. The boxes stay open until the
 per-class PRs close them.
 
 **Success metric:** the framework tests prove the litmus test — adding "Fake Bolt" in a test

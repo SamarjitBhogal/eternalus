@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-16
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -147,7 +147,9 @@ back at its post with nothing to chase, after a chase or a leash return, turns t
 again, on guard (DEC-220 (3), `PathingSystem`); a stunned guard does not turn (DEC-216 (7)).
 An entity given no start facing (a neutral unit that
 is no guard, a match without a map, a structure) starts as `INITIAL_FACING`
-(`Transform.constants.ts`). The facing follows the direction of the velocity (`MovementSystem`). A
+(`Transform.constants.ts`). The facing follows the direction of the velocity (`MovementSystem`):
+the unit's own walking. Forced motion (a dash or a knock-back) moves it and does not turn it
+(DEC-264). A
 unit with an attack target in reach faces the target instead, as `CombatSystem` runs after
 `MovementSystem`, unless a status stops its attacks (`cannot-attack`). It faces the spot where it
 deals damage: the point attack reach is measured to (`EntityStore.aimPointOf`), which is the point

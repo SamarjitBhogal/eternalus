@@ -8376,3 +8376,35 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   (`eternalus-agent-work/abilities/check-merge-127-113-102.log`).
 - Next step: the critic on the merge changes; push (owner); the owner's sign-off of ADR 0026,
   HC-B5 and HC-B6 on PR #123; a browser check of the aim overlay and quick cast.
+
+### 2026-11-16 — Phase 4 / sprints 4.2–4.3 and 4.7: ability framework, merge critic fixes and the owner's sign-offs (DEC-263 to DEC-265) — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: (1) The critic on the merge of phase/3 (`architecture-reviewer`,
+  `ba5e34aa..c53dec60`) approved it with no blockers. Its findings, fixed in `e8870548`:
+  `DuelRoundSystem` ends a dash or knock-back under way when a round resets
+  (`Movement.endPushes()`); a `MovementSystem` test that a pushed unit faces its own walking;
+  a `ponytail:` note on `CastInstance`; three new-code imports of `AbilitySlot` and `Aim` from
+  their source paths. Not fixed: #102's TSDoc order in `DefaultSystemPipeline.types.ts` (not
+  this branch's code). Its better-than-design idea, a list of reset steps for the Duel round,
+  is added to `INBOX.md` HC-Q55. (2) A browser pass of the aim overlay and quick cast (Blade
+  Runner, Slam, Shockwave, Esc, the wall clamp, a clean console): all 7 checks pass
+  (`eternalus-agent-work/abilities/browser-pass/`). (3) The owner answered group A of the
+  Vanguard kit page (owner decisions log, batch 2026-11-16): ADR 0026 accepted, HC-B5 and HC-B6
+  signed off, the two `packages/core/AGENTS.md` rows approved (DEC-263); a dash or knock-back
+  does not turn the unit (DEC-264, as built); the stop hook waits 600 s for `check:quick`
+  (DEC-265: `scripts/hooks/stop-check.mjs` 600 s, `.claude/settings.json` `Stop` timeout 620 s).
+  Docs: ADR 0026 Status accepted and decision 4 names DEC-264; ADR 0018's Status line names the
+  amendment of point 2; 04 §3 (forced motion does not turn), 16 (hook timeout), the phase 4 plan;
+  `INBOX.md` HC-Q48, HC-B5 and HC-B6 answered.
+- Tests: `DuelRoundSystem` (a reset ends a push; failed first: "expected true to be false");
+  `MovementSystem` "faces its own walking while pushed" (failed first under a never-turn-while-
+  pushed break: "expected { x: 1, y: +0 } to deeply equal { x: -1, y: +0 }").
+- Checks run: on `e8870548`, `npm run check` → `EXIT=0`: core "Tests 1859 passed (1859)";
+  protocol "Tests 29 passed (29)"; client "Tests 2087 passed (2087)"; server "Tests 84 passed
+  (84)"; Prettier and the docs check pass
+  (`eternalus-agent-work/abilities/check-critic-merge-fixes.log`). On the records tree (this
+  entry's commit, before this line was added): `npm run check` → `EXIT=0`, the same four test
+  counts, "All matched files use Prettier code style!", "Documentation check passed."
+  (`eternalus-agent-work/abilities/check-records-dec-263.log`).
+- Next step: push (owner); the owner's sign-off comment on PR #123 and the updated PR body; the
+  reviewers re-check. Then the Vanguard PRs (DEC-266 on; meter and Fury first).

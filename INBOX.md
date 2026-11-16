@@ -16,7 +16,7 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
-- [ ] **HC-Q48 — Accept ADR 0026, the ability framework's build decisions
+- [x] **HC-Q48 — Accept ADR 0026, the ability framework's build decisions
       (`feat/ability-framework`, 2026-11-13).** `docs/decisions/0026-ability-framework.md`
       (proposed) records seven decisions
       the framework PR took beyond or against architecture 05, 04 and 10: (1) kits from a class
@@ -28,7 +28,9 @@ Reply inline (`Decision: …`).
       system, with exact amounts; (6) where the two new systems run in the tick; (7) area shapes
       behind a registry, shared with the aim overlay. The code is built on the branch. Accept, or
       name the decisions to change. On acceptance, ADR 0018's Status line gets "amended by 0026".
-- [ ] **HC-B5 — Better than the design, for sign-off: five parts of the ability framework
+  - Answered 2026-11-16 (DEC-263): "Accept all seven" (A1a). Done on `feat/ability-framework`:
+    ADR 0026 accepted; ADR 0018's Status line names the amendment.
+- [x] **HC-B5 — Better than the design, for sign-off: five parts of the ability framework
       (`feat/ability-framework`, 2026-11-13) — sign-off per item.** All five are built.
       (1) **Aether regeneration is its own system.** Design (05 §6): `AbilitySystem` adds
       `aetherRegenPerTick`, a field on `Abilities`. Built: `AetherRegenSystem` refills every
@@ -60,7 +62,9 @@ Reply inline (`Decision: …`).
       Where DEC-198, DEC-201 or DEC-208 require it, 04 §5, 05 §2, §3, §6, §7 and 10 §2 already
       say this (each change cites its ruling). Approve all, approve some, or say no; a "no" reworks the
       code and those lines.
-- [ ] **HC-B6 — Better than the design, for sign-off: seven more parts of the ability framework,
+  - Answered 2026-11-16 (DEC-263): "Approve all five" (A2a). All five are built on
+    `feat/ability-framework`; the design text already says them.
+- [x] **HC-B6 — Better than the design, for sign-off: seven more parts of the ability framework,
       from critic round 1 (`feat/ability-framework`, 2026-11-14) — sign-off per item.** All seven
       are built, under your 2026-11-09 rule "pick the best architectural outcome, build it now".
       (1) **A dash stops where walking stops.** First built: the dash was clamped on the 5 m nav
@@ -94,6 +98,8 @@ Reply inline (`Decision: …`).
       (7) **Ability areas hit buildings by their footprints,** with the geometry basic attacks
       use, not a 0.5 m circle at the centre (DEC-209 (1) now holds for houses, forts and towers).
       Approve all, approve some, or say no; a "no" reworks the code.
+  - Answered 2026-11-16 (DEC-263): "Approve all seven" (A3a). All seven are built on
+    `feat/ability-framework`; the two `packages/core/AGENTS.md` rows are approved too (A4a).
 - [ ] **HC-Q54 — Derive each class's ability pool from the abilities' `classId`?
       (`feat/ability-framework`; changes DEC-198's shape, not built).** Today `abilityPool` on
       the class lists every ability, and each ability also names its `classId`: two sources, and
@@ -105,7 +111,14 @@ Reply inline (`Decision: …`).
       still sees its ability slots as ready; the other seat sees none
       (`GameState.snapshot` fills `player` for one Legend only). Hiding `player` in a Duel also
       hides that seat's aether and level data. Options: hide the ability bar in a Duel; send
-      `player` per seat once Duels cast abilities; or leave it until then.
+      `player` per seat once Duels cast abilities; or leave it until then. **Added 2026-11-16
+      (critic on the phase/3 merge, which met #102's round reset):** when Duels cast, the round
+      reset (`DuelRoundSystem`) must also apply FR-117 (every non-ultimate ability ready; the
+      ultimate waits on your answer to plan §9 question 36) and decide aether and shields. It now
+      ends a dash or knock-back under way (built, with a test). Better-than-design idea from the
+      critic: a list of reset steps (like the scoring rules) instead of one hand-written reset, so
+      a new component joins the reset without editing `DuelRoundSystem`. Say whether to build it
+      with Duel casting.
 - [ ] **HC-Q56 — Four ideas from critic round 2 and one from round 3, not built: your call
       (`feat/ability-framework`, 2026-11-14).** (1) **Name and home of the display loader.**
       `abilities/loadShippedDisplayContent` is exported as `loadDisplayContent` and wraps
