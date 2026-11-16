@@ -7,7 +7,7 @@ import { FakeDuelSimulation } from './FakeDuelSimulation';
 
 const INTENT = { move: { x: 1, y: 0 }, aim: null, triggered: [] };
 
-function setup() {
+function setup(versusMs = 0) {
   const light = new FakeConnection();
   const dark = new FakeConnection();
   const simulation = new FakeDuelSimulation();
@@ -20,6 +20,8 @@ function setup() {
     simulation,
     scheduler,
     tickIntervalMs: 33,
+    versusMs,
+    names: { light: 'Ana', dark: 'Ben' },
     logger,
     onEnded: (m) => ended.push(m),
   });
@@ -37,10 +39,25 @@ describe('DuelMatch', () => {
         seed: 7,
         team: 'light',
         legendId: 'legend-light',
+        opponentName: 'Ben',
       },
     ]);
-    expect(dark.sent[0]).toMatchObject({ team: 'dark', legendId: 'legend-dark' });
+    expect(dark.sent[0]).toMatchObject({
+      team: 'dark',
+      legendId: 'legend-dark',
+      opponentName: 'Ana',
+    });
     expect(scheduler.intervals).toEqual([33]);
+  });
+
+  it('waits out the VERSUS screen before the first step', () => {
+    const { simulation, scheduler, light } = setup(66);
+    scheduler.tick();
+    scheduler.tick();
+    expect(simulation.steps).toBe(0);
+    expect(light.sentOfType('state')).toHaveLength(0);
+    scheduler.tick();
+    expect(simulation.steps).toBe(1);
   });
 
   it('steps and sends every seat the state with its own ackSeq', () => {
