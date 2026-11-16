@@ -14,6 +14,7 @@ import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../config/matchPhases';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { loadLevelCurves } from '../content/progression/loadLevelCurves';
+import { ULTIMATE_CHARGE } from '../content/progression/ultimateCharge';
 import { XP_SOURCES } from '../content/progression/xpSources';
 import { DefaultInvariantRunner } from '../diagnostics/DefaultInvariantRunner';
 import { MemoryLogger } from '../diagnostics/MemoryLogger';
@@ -43,7 +44,12 @@ const newFactory = (): EntityFactory =>
     undefined,
     loadWeapons(createDefaultGameConfig().tickRate),
   );
-const PROGRESSION = { units: UNIT_DEFINITIONS, curves: loadLevelCurves(), xpSources: XP_SOURCES };
+const PROGRESSION = {
+  units: UNIT_DEFINITIONS,
+  curves: loadLevelCurves(),
+  xpSources: XP_SOURCES,
+  ultimateCharge: ULTIMATE_CHARGE,
+};
 /** A director that leaves the match as it is, for the tests about the other systems. */
 const IDLE_DIRECTOR = { update: () => undefined };
 

@@ -1,4 +1,5 @@
 import { Abilities } from '../components/Abilities';
+import { ULTIMATE_SLOT } from '../components/Abilities.constants';
 import type { Entity } from '../entities/Entity';
 import type { GameState } from './GameState';
 import type { AbilitySlotSnapshot, PlayerSnapshot } from './Snapshot.types';
@@ -29,8 +30,7 @@ export class PlayerSnapshotter {
         cooldownRemainingTicks: runtime.cooldownRemaining(state.tick),
         cooldownTicks: abilityId === null ? 0 : this.readiness.cooldownTicksOf(abilityId),
         aetherCost: abilityId === null ? 0 : this.readiness.priceOf(state, legend.id, abilityId),
-        // ponytail: the ultimate meter is built with Fury (phase 4); until then no slot reports one.
-        charge: null,
+        charge: slot === ULTIMATE_SLOT ? runtime.charge : null,
         isReady: blockedBy === null,
         blockedBy,
       };

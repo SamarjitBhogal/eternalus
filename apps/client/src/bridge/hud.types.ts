@@ -16,7 +16,7 @@ export type Announcement = { readonly id: string; readonly text: string };
 
 /**
  * Why a slot cannot cast now: core's `AbilityRejectReason` (05 §6). `unavailable` is an ability in
- * the kit that is not built yet; `not-charged` is the ultimate while its meter is not built or full.
+ * the kit that is not built yet; `not-charged` is the ultimate while its meter is not full.
  */
 export type HudBlockReason = AbilityRejectReason;
 

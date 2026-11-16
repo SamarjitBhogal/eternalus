@@ -11,6 +11,7 @@ import { NoMapObjectOverlapInvariant } from './invariants/NoMapObjectOverlapInva
 import { NoRemovalWithoutCauseInvariant } from './invariants/NoRemovalWithoutCauseInvariant';
 import { PhaseMonotonicInvariant } from './invariants/PhaseMonotonicInvariant';
 import { StatusStacksWithinMaxInvariant } from './invariants/StatusStacksWithinMaxInvariant';
+import { UltimateNeverFillsPassivelyInvariant } from './invariants/UltimateNeverFillsPassivelyInvariant';
 import type { DefaultInvariantRunnerOptions } from './DefaultInvariantRunner.types';
 import { InvariantRunner } from './InvariantRunner';
 
@@ -38,6 +39,7 @@ export class DefaultInvariantRunner extends InvariantRunner {
         new StatusStacksWithinMaxInvariant(),
         new CooldownAndAetherBoundsInvariant(abilities),
         new NoCastWhileNotReadyInvariant(),
+        new UltimateNeverFillsPassivelyInvariant(),
         new CaptureProgressBoundsInvariant(),
         new PhaseMonotonicInvariant(phaseOrder, terminalPhases),
       ],

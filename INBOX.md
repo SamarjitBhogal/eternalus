@@ -100,6 +100,35 @@ Reply inline (`Decision: …`).
       Approve all, approve some, or say no; a "no" reworks the code.
   - Answered 2026-11-16 (DEC-263): "Approve all seven" (A3a). All seven are built on
     `feat/ability-framework`; the two `packages/core/AGENTS.md` rows are approved too (A4a).
+- [ ] **HC-B7 — Better than the design, for sign-off: four parts of the ultimate meter
+      (`feat/vanguard-kit`, 2026-11-16; DEC-272, DEC-273) — sign-off per item.** All four are
+      built, under your 2026-11-09 rule "pick the best architectural outcome, build it now";
+      architecture 05 §18 ("Ultimate meter") describes them. The design text of 05 §6, §13 and
+      §16 is not changed.
+      (1) **The meter's numbers are one record, not a list of rules.** 05 §6 sketches
+      `UltimateChargeRule`, a union of `{ on, gain }` rules. Built: one typed record,
+      `content/progression/ultimateCharge.ts` (Legend kill, assist, a mob kill per weight class,
+      structure damage per 1%, checkpoint, death loss, full meter). Better: each source has one
+      named, typed number; the compiler finds a missing one; no code looks a rule up by `on`.
+      A new source adds one field and one listener either way.
+      (2) **A helper class owned by `ProgressionSystem`.** The meter lives in
+      `systems/UltimateCharge.ts`, which `ProgressionSystem` builds and calls after the XP
+      (`pay`), as `HealingZones` and `GuardRoster` are helpers of their systems. Better:
+      `ProgressionSystem` stays the only writer of `charge` (05 §6) and stays short; the meter's
+      rules test alone.
+      (3) **Scoring announces assists; the meter does not count them again.** 05 §13 has
+      `ProgressionSystem` read `damage-applied` for an assist window. Built: `LegendDeathRule`
+      emits a new event, `assist-earned { legendId, victimId }`, for each assist it awards (DEC-79),
+      and the meter pays that. Better: one assist rule (DRY); the score table and the meter cannot
+      disagree on who assisted. The same edit uses the real event name `checkpoint-reached`
+      (05 §13 says `checkpoint-cleared`).
+      (4) **The invariant's ledger lives in the match state.** `ultimate-never-fills-passively`
+      (05 §16) must compare each meter with its announced changes, but an invariant's `check`
+      only reads the state. Built: `state/ChargeLedger` (`GameState.charges`) keeps the charge
+      last announced for each entity (from `ultimate-charged` and the ultimate's cast), as
+      `AllyDamageTally` keeps ally damage. Better: the invariant stays pure, and the ledger is
+      not hashed (it repeats `charge`).
+      Approve all, approve some, or say no; a "no" reworks the code.
 - [ ] **HC-Q54 — Derive each class's ability pool from the abilities' `classId`?
       (`feat/ability-framework`; changes DEC-198's shape, not built).** Today `abilityPool` on
       the class lists every ability, and each ability also names its `classId`: two sources, and

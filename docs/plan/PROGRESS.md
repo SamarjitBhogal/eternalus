@@ -8408,3 +8408,36 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   (`eternalus-agent-work/abilities/check-records-dec-263.log`).
 - Next step: push (owner); the owner's sign-off comment on PR #123 and the updated PR body; the
   reviewers re-check. Then the Vanguard PRs (DEC-266 on; meter and Fury first).
+
+### 2026-11-16 — Phase 4 / Vanguard PR 2a: the ultimate meter (DEC-272, DEC-273) — feat/vanguard-kit — sholtzman + Claude Code
+
+- What was done: (1) `6c65d0a6` records the owner's Vanguard kit calls (DEC-266 to DEC-275, the
+  readings paragraph, OQ-18 and the Fury dash row of `09-controls.md`). (2) The ultimate meter:
+  the table `content/progression/ultimateCharge.ts` (a record, `UltimateChargeDefinition`), the
+  helper `systems/UltimateCharge.ts` that `ProgressionSystem` owns and pays after the XP (Legend
+  kill, assist, mob kill by weight class, structure damage per 1%, checkpoint, death loss with
+  floor 0; no gain for a dead Legend; clamp to 1), the events `ultimate-charged` and
+  `assist-earned` (emitted by `LegendDeathRule`, so assists stay scoring's), the ledger
+  `state/ChargeLedger.ts` (`GameState.charges`) and the periodic invariant
+  `ultimate-never-fills-passively`; `Snapshot.player` reports `charge` on the ultimate slot, so
+  the HUD's ultimate bar is live. `abilityMatch` takes an optional invariant config; the meter
+  scenario runs with `TEST_DEBUG_CONFIG`. Docs: 05 §18 (new "Ultimate meter" bullet; the ability
+  framework bullet's ultimate line), 03 §4 (the two events, `checkpoint-reached` listener);
+  `INBOX.md` HC-B7 (four better-than-design items: the record, the helper class, `assist-earned`,
+  the ledger). 05 §6, §13 and §16 design text is not changed.
+- Tests: `systems/UltimateCharge.test.ts` (9), `state/ChargeLedger.test.ts` (3),
+  `UltimateNeverFillsPassivelyInvariant.test.ts` (3), `abilities/scenarios/ultimateMeter.test.ts`
+  (2, real `Simulation`, every invariant on), an assist test in `match/Scoring.test.ts`, the
+  ultimate slot in `PlayerSnapshotter.test.ts`. Each failed first under a deliberate break (13
+  breaks, each restored and checked with `cmp`; log
+  `eternalus-agent-work/abilities/meter-breaks.log`): no team check on a kill (2 red), no dead
+  check (1), no clamp to 1 (1), no floor at 0 (3), absorbed damage dropped (1), no
+  `assist-earned` listener (1), no `assist-earned` emit (1), no ledger reset on an ultimate cast
+  (2), invariant compared with 0 (1 unit; 2 scenario), ledger not fed by `ultimate-charged` (2
+  scenario), snapshot `charge: null` (1), no `pay` call (2). The golden replay did not change.
+- Checks run: on the tree of this commit (before this line was added), `npm run check` →
+  `EXIT=0`: core "Tests 1877 passed (1877)"; protocol "Tests 29 passed (29)"; client "Tests 2087
+  passed (2087)"; server "Tests 84 passed (84)"; "All matched files use Prettier code style!";
+  "Documentation check passed." (`eternalus-agent-work/abilities/check-meter.log`).
+- Next step: Fury (Vanguard PR 2a commit 3: `buff` effect, `fury` status with on-hit knock-back,
+  the status-granted `granted` slot and `fury-dash`), then the pre-PR gate.

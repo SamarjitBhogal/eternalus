@@ -1,19 +1,22 @@
 import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type {
   LevelCurveDefinition,
+  UltimateChargeDefinition,
   XpSourcesDefinition,
 } from '../content/progression/progression.types';
 import type { DefinitionSource } from '../entities/EntityFactory.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { PlayableTeam, Team } from '../teams/teams.types';
 
-/** The content `ProgressionSystem` prices kills and levels with, injected (AGENTS rule 11). */
+/** The content `ProgressionSystem` prices kills, levels and meters with, injected (AGENTS rule 11). */
 export type ProgressionContent = {
   /** Entity definitions by id: a mob's `xpValue`, a Legend's `baseHealth` and `levelScaling`. */
   readonly units: DefinitionSource;
   /** Level curves by id (`Progression.curveId`). */
   readonly curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'get'>;
   readonly xpSources: XpSourcesDefinition;
+  /** The ultimate meter's fill table (`content/progression/ultimateCharge.ts`). */
+  readonly ultimateCharge: UltimateChargeDefinition;
 };
 
 /** One kill waiting for this system's pass. */

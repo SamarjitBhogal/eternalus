@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-16
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -1012,8 +1012,9 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
     `AbilitySlotRuntime`s in bar order (`slot(slot)`, `slots`, `hasPendingCast`); a runtime has
     no `varietyId`, no `reset` and no cast rule. `Aether` stays its own component and keeps its
     `base` (the class's starting capacity). `AetherRegenSystem` refills it (DEC-201; ADR 0026
-    decisions 5 and 6). Ultimates are content only: the meter is built with Fury in the Vanguard
-    PR, so the ultimate slot reports `not-charged` and `charge: null`.
+    decisions 5 and 6). Ultimates are content only. Since `feat/vanguard-kit` the meter is built
+    (the ultimate meter bullet below): the ultimate slot reports its `charge` and stays
+    `not-charged` until the meter is full.
   - **Motion and statuses.** Dashes and knock-backs are forced motion (`Movement.push`; ADR 0026
     decision 4); a knock-back's base mass and travel time are in
     `content/abilities/knockback.ts`. Every knock-back target gets `staggered` (cannot cast);
@@ -1033,6 +1034,36 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
     `cooldown-and-aether-bounds` and `no-cast-while-not-ready`.
   - **Client.** Kit rows from content on the Legend panels, the HUD slots, the two cast modes
     and the range overlay: [13](13-game-interface.md) §10.
+- **Ultimate meter (`feat/vanguard-kit`, 2026-11-16; DEC-272, DEC-273).** `ProgressionSystem`
+  stays the only writer of `charge`: it owns the helper `systems/UltimateCharge`, which buffers
+  each change and pays it in the system's pass, after the XP. Where the code differs from §6, §13
+  and §16 (better-than-design items for sign-off: `INBOX.md`):
+  - **Content.** The table is one record, `content/progression/ultimateCharge.ts` (type
+    `UltimateChargeDefinition`), not §6's `UltimateChargeRule` union: the points of each source,
+    the death loss and the full meter in points; `charge` stays 0 to 1 (points over the full
+    meter). A mob kill pays by the mob's weight class, as scoring's `minionKill` does; camp mobs
+    pay too (DEC-273). There is no boss damage (it joins with bosses, DEC-272) and no
+    `class-switch` (post-MVP). `ProgressionContent` injects it.
+  - **Sources.** `entity-died`: a killer on another team than the victim gains the Legend or mob
+    kill; the victim loses the death loss whoever killed it, never below 0. `damage-applied` on a
+    structure by an attacker of another team pays per 1% of the structure's max health, absorbed
+    damage included (as scoring counts it, DEC-123). `checkpoint-reached` (§13 names it
+    `checkpoint-cleared`) pays each Legend in `presentLegendIds` (DEC-273). Assists are scoring's
+    alone: `LegendDeathRule` emits `assist-earned { legendId, victimId }` for each assist it
+    awards (DEC-79's window), and the meter pays that; it keeps no assist window of its own.
+    Checkpoints and assists pay on the next tick, because their emitters run after
+    `ProgressionSystem`. A dead Legend gains nothing until it respawns (a reading the owner kept
+    on 2026-11-16, recorded after DEC-275); a full meter stops at 1. Each change that moves the
+    meter is announced as `ultimate-charged { entityId, amount, charge, cause }`
+    ([03 §4](03-game-model.md#4-gameevents-the-typed-channel)).
+  - **Invariant.** `ultimate-never-fills-passively` (periodic) compares each meter with the
+    charge last announced for it. `state/ChargeLedger` (`GameState.charges`) keeps that from
+    `ultimate-charged` and the ultimate's `ability-cast`, because an invariant's check reads the
+    state and never listens.
+  - **Snapshot.** `Snapshot.player` reports `charge` on the ultimate slot and `null` on the
+    others, so the HUD's ultimate bar is live.
+  - Not built: the effects of every ultimate (each is still `unavailable`), so no ultimate is
+    cast yet.
 
 ## Related
 

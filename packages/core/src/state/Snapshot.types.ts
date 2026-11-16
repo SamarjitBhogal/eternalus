@@ -84,7 +84,7 @@ export type AbilitySlotSnapshot = {
   readonly cooldownTicks: number;
   /** The aether the cast costs now, after status modifiers. */
   readonly aetherCost: number;
-  /** The ultimate's meter 0..1; `null` on every slot until the meter is built (a later PR). */
+  /** The ultimate's meter 0..1 on the ultimate slot; `null` on every other slot. */
   readonly charge: number | null;
   /** Whether a cast would be accepted now. */
   readonly isReady: boolean;
