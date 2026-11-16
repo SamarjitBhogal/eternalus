@@ -8326,3 +8326,19 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   "Tests 79 passed (79)"; "Documentation check passed.". Then `prettier --check` and
   `npm run docs:check` on this file.
 - Next step: the owner runs the push script; #126 merges into phase/3 after CI, then #121.
+
+### 2026-11-16 — Phase 3 / DEC-251: merge phase/3 (#113, #102 merged) — feat/duel-leave-victory — sholtzman + Claude Code
+
+- What was done: PR #113 (vite/vitest) and PR #102 (duel rules) merged into
+  `phase/3-sprint-3-work` (now `330e969a`) after this branch was pushed at `4a72b5f7`. Merged it
+  into this branch as `9d106972`. Conflicts: `apps/server/src/match/DuelMatch.ts` (`leave`) and
+  this file. `leave` keeps this branch's DEC-251 rule (the player who stays wins): #102 changed the
+  same lines only to use core's `opponentOf`, which this branch already uses; #102's `winner: null`
+  was the rule DEC-251 replaced. This file: #102's and #113's entries, then this branch's.
+  Rebuilds the first link of the stacked merge chain #126 → #121 → #120 → #119.
+- Checks run: `npm ci` (#113 changed dependencies), then `npm run check` → `EXIT=0` on `9d106972`
+  before this entry was added (`eternalus-agent-work/tower-ruins-and-routes/check-stack-126-r2.log`):
+  core "Tests 1602 passed (1602)"; protocol "Tests 29 passed (29)"; client "Tests 2002 passed
+  (2002)"; server "Tests 84 passed (84)"; "Documentation check passed.". Then `prettier --check`
+  and `npm run docs:check` on this file.
+- Next step: the owner runs the push script; #126 merges into phase/3 after CI, then #121.
