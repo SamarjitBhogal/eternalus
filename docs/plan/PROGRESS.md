@@ -8484,3 +8484,24 @@ group)` takes a `FeatureKeyedGroup` instead of a closure, so the client cannot r
   "Tests 79 passed (79)"; "Documentation check passed.". Then `prettier --check` and
   `npm run docs:check` on this file.
 - Next step: the owner pushes; PR #129's body names the new base, head and check.
+
+### 2026-11-16 — Phase 3 / GL-16: merge phase/3 (#113, #102 merged) — refactor/map-feature-link — sholtzman + Claude Code
+
+- What was done: before the merge of `80e0ea13` was pushed, phase/3 moved to `330e969a` (#113,
+  the Vite and Vitest bump; #102, the Duel rules). Merged it into this branch as `f37cb073`.
+  Conflicts: `apps/client/src/game/MatchBridge.ts`, imports only (this branch's
+  `FeatureKeyedGroup`, `EntitySnapshot` and `PublishedRoster`, plus #102's `opponentOf`,
+  `DuelHudState` and countdown constants; the position-lookup imports this branch removed stay
+  removed), and this file (phase/3's entries, then this branch's). `npm ci` for #113's lock file.
+  The critic (`architecture-reviewer`) on the merge: approve; the PR's diff against phase/3 is
+  GL-16's diff, and nothing #102 adds relies on what GL-16 removed (#102's Duel builds structures
+  and zones through `EntityFactory.create`, so they carry `MapFeatureLink`). Its one should-fix
+  predates this merge: merge `3a03c7ce` had dropped DEC-192's Transform key methods from
+  architecture 04's component table; restored (`moveBy`, `moveTo`, `face(direction)`,
+  `lookAt(point)`), a docs-only commit.
+- Checks run: `npm run check:quick` → exit 0 after `npm ci`. `npm run check` → `EXIT=0` on
+  `f37cb073` (`eternalus-agent-work/game-loop-plan/gl16-merge-330e969a-check-2026-11-16.log`):
+  core "Tests 1609 passed (1609)"; protocol "Tests 29 passed (29)"; client "Tests 2011 passed
+  (2011)"; server "Tests 84 passed (84)"; "Documentation check passed.". After it only docs
+  changed (architecture 04 row, this entry): `prettier --check` and `npm run docs:check` on them.
+- Next step: the owner pushes; PR #129's body names the new base, head and check.
