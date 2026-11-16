@@ -11,3 +11,20 @@ export type BreakabilityRule =
       /** Breakable once `ceil(fraction × the team's BuffTowers at match start)` are down. */
       readonly fraction: number;
     };
+
+/**
+ * What a rule is judged on: the defending team's BuffTower counts. `lost` is how many have fallen
+ * since match start (`LaneStructures.lostCount`); `total` is `numLanes × buffTowersPerLane`.
+ */
+export type BreakabilityFacts = {
+  readonly lost: number;
+  readonly total: number;
+};
+
+/** One evaluator per rule kind: whether a structure with that rule may take damage (07 §3). */
+export type BreakabilityEvaluators = {
+  readonly [K in BreakabilityRule['kind']]: (
+    rule: Extract<BreakabilityRule, { readonly kind: K }>,
+    facts: BreakabilityFacts,
+  ) => boolean;
+};

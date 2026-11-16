@@ -9,6 +9,8 @@ const AFTER_RESET_TICKS = 10;
 const COUNTDOWN_TICKS = 120;
 /** Ticks the light seat walks before it aims at the dark Legend. */
 const WALK_TICKS = 100;
+/** Gap, in world units, at which the light seat stops walking and fights from where it stands. */
+const CLOSE_ENOUGH = 2;
 /** A kill takes about a thousand real ticks, slower than vitest's default under coverage. */
 const TEST_TIMEOUT_MS = 30_000;
 
@@ -33,9 +35,12 @@ describe('CoreDuelSimulation', () => {
 
       for (let tick = 0; tick < MAX_TICKS && kills() === 0; tick += 1) {
         const isAttacking = tick >= WALK_TICKS;
+        const dark = transformOf('dark');
+        // Walks to the dark Legend and stops beside it, so the hits keep landing.
+        const isClosing = (dark?.x ?? 0) - (transformOf('light')?.x ?? 0) > CLOSE_ENOUGH;
         duel.enqueueIntent('light', {
-          move: { x: 1, y: 0 },
-          aim: isAttacking ? transformOf('dark') : null,
+          move: { x: isClosing ? 1 : 0, y: 0 },
+          aim: isAttacking ? dark : null,
           isAttacking,
           triggered: [],
         });

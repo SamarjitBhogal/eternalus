@@ -71,6 +71,22 @@ describe('Structure', () => {
     expect(gate.getComponent(Collider).isUnbreakable).toBe(true);
   });
 
+  it('keeps the map feature it was built from, and none without one', () => {
+    const tower = new FakeTower('entity-1', 'fake-buff-tower');
+    const spawned = new FakeTower('entity-2', 'fake-buff-tower');
+
+    tower.spawn({
+      definition: DEFINITION,
+      position: { x: 0, y: 0 },
+      team: 'dark',
+      mapFeatureId: 'dark-buff-tower-lane-2',
+    });
+    spawned.spawn({ definition: DEFINITION, position: { x: 0, y: 0 }, team: 'dark' });
+
+    expect(tower.mapFeatureId).toBe('dark-buff-tower-lane-2');
+    expect(spawned.mapFeatureId).toBeNull();
+  });
+
   it('needs a team', () => {
     const tower = new FakeTower('entity-1', 'fake-buff-tower');
 

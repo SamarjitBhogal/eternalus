@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import { createDefaultGameConfig } from './config/defaultGameConfig';
+import { ContentCatalogue } from './content/ContentCatalogue';
 import { GUARD_PLANS } from './content/structures/guardPlans';
+import { STRUCTURE_DEFINITIONS } from './content/structures/structureCatalogue';
+import type { StructureDefinition } from './content/structures/structures.types';
 import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { MemoryLogger } from './diagnostics/MemoryLogger';
 import { MapGenerator } from './map/MapGenerator';
@@ -11,6 +14,30 @@ import { isMinion, match, run, STRONGHOLDS_ONLY } from './__fixtures__/hordeMatc
 import { countdownTicks } from './config/countdownTicks';
 
 describe('Simulation structures', () => {
+  it('builds one structure per feature with a structure definition, carrying its feature id', () => {
+    const config = createDefaultGameConfig();
+    const map = new MapGenerator().generate(config, 1);
+    const simulation = new Simulation({ config, seed: 1, logger: new MemoryLogger(), map });
+    const structures = simulation
+      .snapshot()
+      .entities.filter(({ family }) => family === 'structure');
+    const features = new Map(map.features.map((feature) => [feature.id, feature]));
+
+    expect(structures.map(({ mapFeatureId }) => mapFeatureId).sort()).toEqual(
+      map.features
+        .filter(({ definitionId }) => STRUCTURE_DEFINITIONS.has(definitionId))
+        .map(({ id }) => id)
+        .sort(),
+    );
+    for (const { mapFeatureId, definitionId, team } of structures) {
+      const feature = features.get(mapFeatureId ?? '');
+      expect({ definitionId, team }).toEqual({
+        definitionId: feature?.definitionId,
+        team: feature?.team,
+      });
+    }
+  });
+
   it('fills the generated map’s forest camps when the countdown ends (18 §7.1)', () => {
     const config = createDefaultGameConfig({ match: { countdownSeconds: 1 } });
     const map = new MapGenerator().generate(config, 1);
@@ -126,5 +153,38 @@ describe('Simulation structures', () => {
       { id: 'entity-5', kind: 'stronghold', team: 'dark' },
       { id: 'entity-6', kind: 'stronghold', team: 'light' },
     ]);
+  });
+
+  it('builds the structures and judges their breakability from the definitions it is given, not a fixed set (B8)', () => {
+    // The Stronghold here is never breakable (the default: always).
+    const catalogue = new ContentCatalogue<StructureDefinition>(
+      STRUCTURE_DEFINITIONS.all().map((definition) =>
+        definition.id === 'stronghold'
+          ? { ...definition, baseHealth: 123, breakability: { kind: 'never' as const } }
+          : definition,
+      ),
+    );
+    const simulation = new Simulation({
+      config: createDefaultGameConfig(),
+      seed: 1,
+      logger: new MemoryLogger(),
+      debug: TEST_DEBUG_CONFIG,
+      map: TWO_LANE_MAP,
+      structures: catalogue,
+    });
+
+    const changes: { readonly entityId: string; readonly isBreakable: boolean }[] = [];
+    simulation.on('structure-breakability-changed', ({ entityId, isBreakable }) => {
+      changes.push({ entityId, isBreakable });
+    });
+    simulation.step();
+
+    const strongholds = simulation.snapshot().entities.filter(({ kind }) => kind === 'stronghold');
+
+    expect(strongholds).toHaveLength(2);
+    expect(strongholds.every(({ health }) => health?.max === 123)).toBe(true);
+    // Spawned unbreakable from `never`; `StructureSystem` reads the same rule, so nothing flips.
+    // With the default definitions it would make both Strongholds breakable on the first tick.
+    expect(changes).toEqual([]);
   });
 });

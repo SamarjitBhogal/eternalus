@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
+import { Transform } from '../components/Transform';
+import { INITIAL_FACING } from '../components/Transform.constants';
+import { MOB_DEFINITIONS } from '../content/mobs/mobCatalogue';
+import type { Vec2 } from '../utils/geometry.types';
 import { Legend } from './Legend';
 import { Mob } from './Mob';
+import { LightMob } from './mobs/LightMob';
 import { Unit } from './Unit';
 
 class Marker {
@@ -55,5 +60,22 @@ describe('Unit family hierarchy', () => {
     expect(mob.family).toBe('mob');
     expect(legend).toBeInstanceOf(Unit);
     expect(mob).toBeInstanceOf(Unit);
+  });
+
+  it('starts facing the spawn’s facing as a unit vector, else INITIAL_FACING (DEC-216 (6))', () => {
+    const facingAfterSpawn = (facing?: Vec2): Vec2 => {
+      const mob = new LightMob('mob-3', 'training-dummy');
+      mob.spawn({
+        definition: MOB_DEFINITIONS.get('training-dummy'),
+        position: { x: 5, y: 5 },
+        team: 'light',
+        ...(facing !== undefined && { facing }),
+      });
+      return mob.getComponent(Transform).facing;
+    };
+
+    expect(facingAfterSpawn({ x: 0, y: -3 })).toEqual({ x: 0, y: -1 });
+    expect(facingAfterSpawn()).toEqual(INITIAL_FACING);
+    expect(facingAfterSpawn({ x: 0, y: 0 })).toEqual(INITIAL_FACING);
   });
 });

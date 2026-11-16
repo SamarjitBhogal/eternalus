@@ -9,12 +9,13 @@ import { ZoneArea } from '../components/ZoneArea';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import type { Entity } from '../entities/Entity';
+import { Structure } from '../entities/structures/Structure';
 import type { EntitySnapshot } from './Snapshot.types';
 
 /**
  * Projects one entity into its `EntitySnapshot` (architecture 03 §5): one group per component,
- * `null` when the entity has no such component (DEC-17); `mapObjectId` is left out instead. A new component group is added here,
- * never in `GameState` (DEC-232).
+ * `null` when the entity has no such component (DEC-17); `mapObjectId` and `mapFeatureId` are
+ * left out instead. A new component group is added here, never in `GameState` (DEC-232).
  */
 export class EntitySnapshotter {
   /**
@@ -42,11 +43,18 @@ export class EntitySnapshotter {
       ...(entity.findComponent(MapObjectBody) === undefined
         ? {}
         : { mapObjectId: entity.getComponent(MapObjectBody).object.id }),
+      ...(entity instanceof Structure &&
+        entity.mapFeatureId !== null && { mapFeatureId: entity.mapFeatureId }),
       team: entity.findComponent(TeamMembership)?.team ?? null,
       transform:
         transform === undefined
           ? null
-          : { x: transform.position.x, y: transform.position.y, radius: transform.radius },
+          : {
+              x: transform.position.x,
+              y: transform.position.y,
+              radius: transform.radius,
+              facing: { x: transform.facing.x, y: transform.facing.y },
+            },
       health: health === undefined ? null : { current: health.current, max: health.max },
       progression:
         progression === undefined
