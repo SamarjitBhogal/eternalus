@@ -12,6 +12,7 @@ import { createDefaultCommandHandlers } from './commands/defaultCommandHandlers'
 import { Footprint } from './components/Footprint';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from './config/matchPhases';
 import { validateGameConfig } from './config/validateGameConfig';
+import { SCORING } from './content/match/scoring';
 import { DefaultInvariantRunner } from './diagnostics/DefaultInvariantRunner';
 import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import type { LogContext, Logger } from './diagnostics/Logger.types';
@@ -46,6 +47,8 @@ import { loadWeapons } from './content/weapons/loadWeapons';
 import { ZONE_DEFINITIONS, ZONE_PLACEMENTS } from './content/zones/zoneCatalogue';
 import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
+import { DUEL_RULES } from './content/duel/duelRules';
+import { duelStartPoints } from './match/duelStartPoints';
 import { createDefaultMatchDirector } from './match/defaultMatchDirector';
 import { MatchTimeline } from './match/MatchTimeline';
 import type { DefinitionSource, WeaponSource } from './entities/EntityFactory.types';
@@ -126,6 +129,7 @@ export class Simulation {
     levelCurves,
     roster = [],
     weapons,
+    duel,
     structures = STRUCTURE_DEFINITIONS,
   }: SimulationOptions) {
     const validConfig = validateGameConfig(config);
@@ -136,11 +140,15 @@ export class Simulation {
       ...(map === undefined ? {} : { map }),
       ...(mapObjects === undefined ? {} : { mapObjects }),
       ...(roster.length === 0 ? {} : { roster }),
+      ...(duel === undefined ? {} : { duel }),
     };
     const { space, world, paths } = Simulation.buildWorld(map, validConfig, mapObjects);
     // Without the default pipeline no director runs, so no mark would ever fire: list none.
     const schedule = systems === undefined ? timeline.schedule() : [];
     this.state = new GameState(validConfig, seed, world, { space, paths }, schedule);
+    const duelStarts =
+      duel === undefined ? undefined : duelStartPoints(map, DUEL_RULES.startOffset);
+    if (duel !== undefined) this.state.match.startDuel(duel.killTarget);
     const { tickRate } = this.state.config;
     const curves = levelCurves ?? loadLevelCurves();
     this.curves = curves;
@@ -183,7 +191,15 @@ export class Simulation {
     }
     this.systemContext = { state: this.state, logger };
     if (systems === undefined) {
-      const director = createDefaultMatchDirector({ state: this.state, timeline, debug, logger });
+      // Before any Legend spawns (`spawnRoster`), so `Scoring` hears each one's `entity-spawned`
+      // and gives it a row.
+      const director = createDefaultMatchDirector({
+        state: this.state,
+        timeline,
+        debug,
+        logger,
+        scoring: SCORING,
+      });
       this.pipeline = new DefaultSystemPipeline({
         invariants: new DefaultInvariantRunner({
           debug,
@@ -195,6 +211,7 @@ export class Simulation {
         state: this.state,
         progression: { units, curves, xpSources: XP_SOURCES },
         director,
+        ...(duelStarts === undefined ? {} : { duelStarts }),
         hordes: {
           factory,
           space,
@@ -214,7 +231,7 @@ export class Simulation {
     } else {
       this.pipeline = new SystemPipeline(systems);
     }
-    Simulation.spawnRoster(this.state, factory, roster, controllers, logger);
+    Simulation.spawnRoster(this.state, factory, roster, controllers, logger, duelStarts);
     Simulation.spawnZones(this.state, factory);
     this.state.events.on('command-rejected', ({ command, reason }) => {
       logger.log(
@@ -328,7 +345,12 @@ export class Simulation {
     for (const { id, definitionId, position, team, laneId } of features) {
       if (structures.has(definitionId)) {
         const { kind, hasMapFootprint } = structures.get(definitionId);
-        const placement = { position, team, ...(laneId !== undefined && { laneId }) };
+        const placement = {
+          position,
+          team,
+          mapFeatureId: id,
+          ...(laneId !== undefined && { laneId }),
+        };
         const structure = factory.create(kind, definitionId, placement);
         const body = hasMapFootprint === true ? bodies.get(id) : undefined;
         if (body !== undefined) structure.addComponent(new Footprint(body.footprints));
@@ -389,6 +411,7 @@ export class Simulation {
     roster: readonly RosterSlot[],
     controllers: ControllerRegistry,
     logger: Logger,
+    duelStarts?: Readonly<Record<PlayableTeam, Vec2>>,
   ): void {
     if (roster.length === 0) {
       return;
@@ -461,7 +484,8 @@ export class Simulation {
     }
     for (const slot of spawning.filter(({ role }) => role === 'rover')) {
       const forWhom = slot.pilot === 'human' ? "the human's Legend" : `the ${slot.team} Rover`;
-      const position = Simulation.strongholdOf(state, slot.team, forWhom);
+      const position =
+        duelStarts?.[slot.team] ?? Simulation.strongholdOf(state, slot.team, forWhom);
       Simulation.spawnSlot(state, factory, slot, position, {});
     }
   }

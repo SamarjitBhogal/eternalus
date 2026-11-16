@@ -101,7 +101,7 @@ function render(
     matchSetup: {
       ...matchSetupSlice.getInitialState(),
       playerTeam: team,
-      countdownMs: 42_000,
+      countdownsMs: { select: 42_000, reveal: 0, results: 0 },
       allies: ALLIES_62_125,
     },
   });
