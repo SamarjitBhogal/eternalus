@@ -13,6 +13,9 @@ export class WorldObjectStore {
   private readonly entityObjects = new Map<string, MapObject>();
   private readonly destroyed = new Set<string>();
 
+  /** Standing objects that no longer block movement (`openBodyOf`). */
+  private readonly opened = new Set<string>();
+
   /** A standing structure's id → the index of the record of the map object that is its body. */
   private readonly owned = new Map<string, number>();
 
@@ -81,6 +84,22 @@ export class WorldObjectStore {
     }
   }
 
+  /**
+   * Stops the map object that is `structureId`'s body blocking movement (the erupted Cathedral
+   * gem, INBOX: the gem's lightning item, 9). It stays standing, drawn by the client's own rule,
+   * and still takes the structure's hits.
+   *
+   * @returns That map object the first time, so its grid cells are cleared once; `undefined` when
+   * the structure has no body or it is already open.
+   */
+  public openBodyOf(structureId: string): MapObject | undefined {
+    const index = this.owned.get(structureId);
+    const object = index === undefined ? undefined : this.records[index]?.object;
+    if (object === undefined || this.opened.has(object.id)) return undefined;
+    this.opened.add(object.id);
+    return object;
+  }
+
   /** Exact map object for a live or retired entity. */
   public objectFor(entityId: string): MapObject | undefined {
     return this.entityObjects.get(entityId);
@@ -98,6 +117,11 @@ export class WorldObjectStore {
     return this.destroyed;
   }
 
+  /** Standing objects that no longer block movement (`openBodyOf`). */
+  public get openedIds(): ReadonlySet<string> {
+    return this.opened;
+  }
+
   /** Independent diagnostic check against live solids and authored bridge openings. */
   public blockingAt(point: Vec2, radius: number): string | null {
     for (const { object, entityId, health, bounds } of this.records) {
@@ -108,6 +132,7 @@ export class WorldObjectStore {
         point.y - radius > bounds.y + bounds.height ||
         !object.isBlocking ||
         this.destroyed.has(object.id) ||
+        this.opened.has(object.id) ||
         // A structure's fort outlives the structure (`removed`), so only an object's own death
         // counts.
         (health?.isDead === true && !this.owned.has(entityId ?? '')) ||

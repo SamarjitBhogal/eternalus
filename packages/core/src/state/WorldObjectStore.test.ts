@@ -142,6 +142,42 @@ describe('WorldObjectStore', () => {
     expect(world.destroyedIds.has('fort')).toBe(false);
   });
 
+  it("opens a structure's body once: it stops blocking but keeps the structure's pool", () => {
+    const factory = fixtureFactory();
+    const entities = new EntityStore();
+    const gem = factory.create('obstacle', MAP_OBJECT_DEFINITIONS.rock.id, {
+      position: { x: 5, y: 5 },
+    });
+    entities.add(gem);
+    const body: MapObject = {
+      id: 'gem',
+      kind: 'cathedral',
+      isBlocking: true,
+      footprints: [
+        [
+          { x: 0, y: 0 },
+          { x: 10, y: 0 },
+          { x: 10, y: 10 },
+        ],
+      ],
+    };
+    const world = new WorldObjectStore({
+      objects: [body],
+      factory,
+      entities,
+      definitions: MAP_OBJECT_DEFINITIONS,
+      owners: new Map([['gem', gem.id]]),
+    });
+
+    expect(world.openBodyOf('no-such-structure')).toBeUndefined();
+    expect(world.blockingAt({ x: 7, y: 2 }, 0.5)).toBe('gem');
+    expect(world.openBodyOf(gem.id)).toBe(body);
+    expect(world.openBodyOf(gem.id)).toBeUndefined();
+    expect(world.blockingAt({ x: 7, y: 2 }, 0.5)).toBeNull();
+    expect([...world.openedIds]).toEqual(['gem']);
+    expect(world.snapshot()[0]).toMatchObject({ entityId: gem.id, isDestroyed: false });
+  });
+
   it('skips an object whose footprint box misses the circle, without testing its shape', () => {
     let reads = 0;
     const corner = (x: number, y: number): Vec2 => ({

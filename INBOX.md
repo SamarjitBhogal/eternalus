@@ -33,10 +33,10 @@ Reply inline (`Decision: …`).
       `feat/cathedral-gem-eruption`).** At mid-game (DEC-81, 15 min) the `summon-greater-boss`
       timeline action erupts the gem: `greater-boss-summoned { bossId: 'greater-boss' }` fires
       once, the gem's drawing is hidden and it strikes no more; no boss spawns yet. No doc says
-      what remains, so for now the Cathedral structure stays where the gem was: still solid (units
-      walk around an invisible diamond), still targetable and unbreakable. (1) Should the erupted
-      gem stop blocking movement and stop being a target (and stop showing a selection ring or
-      health bar, if it has one)? (2) Should anything be drawn in its place
+      what remains, so for now the Cathedral structure stays where the gem was: no longer solid
+      (Aryan's choice, `fix(core): the erupted gem stops blocking movement`), still targetable and
+      unbreakable. (1) Should the erupted gem also stop being a target (and stop showing a
+      selection ring or health bar, if it has one)? (2) Should anything be drawn in its place
       (rubble, a crater), or nothing until the boss stands there? (3) `greater-boss` is doc 12's
       id; there is no boss catalogue to check it against yet. Keep that id?
 - [ ] **Better than design: where the gem's eruption lives (Aryan Walanj, 2026-11-15, critic on
@@ -50,6 +50,24 @@ Reply inline (`Decision: …`).
       today). (c) The new event `greater-boss-summoned { bossId }` is not in doc 12 §2 or §8, which
       design only `boss-summoned` from the spawn; keep it, rename it `gem-erupted`, or fold it into
       `boss-summoned` when the boss spawns? Which to adopt (now or with the boss PR)?
+
+- [ ] **Better than design: one handler that reopens blocking objects (Aryan Walanj, 2026-11-15,
+      critic on `fix(core): the erupted gem stops blocking movement`).** The erupted gem and a
+      destroyed wall now share a `reopen` closure inside `DefaultSystemPipeline`'s constructor,
+      wired to two unrelated events, with an `instanceof Cathedral` scan for the gem. (A) Doc 07
+      §10 already designs a `terrain-changed` event: `WorldObjectStore.removed`/`openBodyOf`
+      could emit it, and one small class would stamp or clear the grid and mark the lane fields
+      dirty (the planned gate open/close would reuse it). (B) If the eruption event named the
+      Cathedral's id, the handler would not scan every entity (fits the event-rename question
+      above). Adopt now, with the boss PR, or leave?
+- [ ] **DEC-217 (13) vs the solid gem: the Cathedral shares a health pool (Aryan Walanj,
+      2026-11-15, `feat/cathedral-gem-strike`).** DEC-217 (13) says only towers share one pool
+      with their map object. The solid gem (`c8dba3e9`) makes the gem's map object the Cathedral's
+      body, so it shares the Cathedral's pool too (harmless: the gem is never damaged). Undoing it
+      is not small: the shared pool is what makes a hit on the gem's map object a hit on the
+      Cathedral, the client's click targets the gem through it, and the eruption opens the gem
+      through it (`WorldObjectStore.openBodyOf`). Amend DEC-217 (13) to "towers and the Cathedral",
+      or should the gem get a separate link to its structure?
 
 - [ ] **The gem's lightning on attackers: 11 open rules (Aryan Walanj, 2026-11-15,
       `feat/cathedral-gem-hittable`).** DISC-11 (`13-owner-decisions-log.md`) says the gem
@@ -70,6 +88,7 @@ Reply inline (`Decision: …`).
       (8) After the eruption the gem is gone: does the Cathedral keep striking, or does it stop?
       (9) The gem's body: the hittable circle is `TUNE` radius 5, the drawn diamond's half-width
       (`buildingGeometry.ts`, `structureCatalogue.ts`), and it does not block movement. Keep both?
+      Aryan's choice: the gem is solid (blocks movement) until it erupts; Sam to confirm.
       The critic adds two better-than-design points here: the `Cathedral` entity's only body is
       the gem, so "hit the Cathedral" means "hit the gem" (doc 07 §1 could say so, or the gem
       could become its own component before the building gets walls to hit); and the hit radius

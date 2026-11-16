@@ -434,8 +434,9 @@ emits `greater-boss-summoned { bossId }` and is hashed from then on; `Snapshot.m
 carries it to the client, whose scenery view stops drawing the gem (DEC-83), and
 `CathedralGemSystem` strikes no more. No boss spawns, so `boss-summoned` is not emitted yet.
 `bossId` is checked only as a non-empty string: there is no boss catalogue to look it up in. The
-timeline's phase rules read only its `enter-phase` entries. What the erupted gem leaves behind is
-open in `INBOX.md` (the gem eruption item).
+timeline's phase rules read only its `enter-phase` entries. The erupted gem stops blocking
+movement (07's Implementation status); the rest of what it leaves behind is open in `INBOX.md`
+(the gem eruption item).
 
 Not built yet: `atmosphere` and `scoring` in `MatchState`; an entity that carries `WinObjective` (the
 sovereign); `MatchResult.legends` and `teams` (with `Scoring`), `timeline` and `achievements`

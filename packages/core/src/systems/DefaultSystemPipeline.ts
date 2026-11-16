@@ -11,6 +11,8 @@ import { ENRAGING_STRUCTURES } from '../content/mobs/minionModifiers';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { OPENING_WAVE, SPAWN_WAVES } from '../content/structures/spawnWaves';
+import type { MapObject } from '../content/maps/mapObjects.types';
+import { Cathedral } from '../entities/structures/Cathedral';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { LaneFlowFields } from '../map/LaneFlowFields';
 import type { GameState } from '../state/GameState';
@@ -80,9 +82,9 @@ export class DefaultSystemPipeline extends SystemPipeline {
     const world = state.world?.grid ?? null;
     const features = state.world?.definition.features ?? [];
     if (world !== null && state.worldObjects !== undefined) {
-      // A destroyed blocking map object reopens its cells and the lane fields over them (07 §10).
-      state.events.on('entity-removed', ({ entityId }) => {
-        const object = state.worldObjects?.objectFor(entityId);
+      // A blocking map object that stops blocking reopens its cells and the lane fields over them
+      // (07 §10): a destroyed one, or the erupted Cathedral gem.
+      const reopen = (object: MapObject | undefined): void => {
         if (object?.isBlocking !== true) return;
         const cells = object.footprints.flatMap((footprint) =>
           world.clearFootprint(footprint, object.passages),
@@ -95,6 +97,15 @@ export class DefaultSystemPipeline extends SystemPipeline {
         )?.footprint;
         if (backing !== undefined) cells.push(...world.clearFootprint(backing));
         flowFields?.markDirty(cells);
+      };
+      state.events.on('entity-removed', ({ entityId }) => {
+        reopen(state.worldObjects?.objectFor(entityId));
+      });
+      // The erupted gem stops blocking (INBOX: the gem's lightning item, 9); it stays a target.
+      state.events.on('greater-boss-summoned', () => {
+        state.entities.forEach((entity) => {
+          if (entity instanceof Cathedral) reopen(state.worldObjects?.openBodyOf(entity.id));
+        });
       });
     }
     super([

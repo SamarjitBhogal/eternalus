@@ -517,9 +517,12 @@ health and blocked nothing.
 **2026-11-15 (`feat/cathedral-gem-eruption`).** The gem erupts at mid-game, without the boss
 (12 §13): once `MatchState.isGemErupted` is set, `CathedralGemSystem` strikes no more and the
 client's scenery view stops drawing the gem's art (the art of the `cathedral` map object; DEC-83:
-it looks the same until then). The Cathedral structure stays, unbreakable, and so does its solid
-gem footprint, invisible from then on; whether it should stop blocking and stop being a target is
-open in `INBOX.md` (the gem eruption item). The gem's `Spawner` and the boss come later.
+it looks the same until then). The Cathedral structure stays, unbreakable and targetable; whether
+it should stop being a target is open in `INBOX.md` (the gem eruption item). The gem's `Spawner`
+and the boss come later.
+Aryan's choice: the gem is solid (blocks movement) until it erupts; Sam to confirm. On
+`greater-boss-summoned`, `WorldObjectStore.openBodyOf` takes the Cathedral's body out of collision
+and the overlap invariant, and its grid cells and lane fields reopen as a destroyed wall's do.
 
 ## Related
 

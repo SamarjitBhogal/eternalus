@@ -7528,3 +7528,38 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   "Documentation check passed."
 - Next step: Sam answers the gem eruption item; the boss spawn (`BossDefinition`, the Cathedral
   `Spawner`, `boss-summoned`) follows.
+
+### 2026-11-15 — Phase 3 / sprint 3 work: the erupted gem stops blocking movement — feat/cathedral-gem-eruption — Aryan Walanj + Claude Code
+
+- What was done: on `greater-boss-summoned`, `DefaultSystemPipeline` calls the new
+  `WorldObjectStore.openBodyOf(cathedralId)`. That object leaves `CollisionSystem`'s index (the
+  new `openedIds`, next to `destroyedIds`) and `blockingAt` (the overlap invariant), and its grid
+  cells and lane fields reopen through the same handler a destroyed wall uses (now a shared
+  `reopen`). The Cathedral stays targetable and unbreakable; the snapshot and hash are unchanged
+  (the event is derived from the already-hashed `isGemErupted`). DEC-217 (13) left as is: undoing
+  the shared pool is not small (targeting and the eruption go through it), new INBOX item.
+  `PlayerCommands.cathedralAt` kept: `targetAt` still calls it, and its disc (radius 5) reaches
+  the diamond's diagonal edges that the map object does not. INBOX lightning question 9 and doc
+  07's status note record Aryan's choice: solid until it erupts, Sam to confirm.
+- Tests: `gemEruption.scenario.test.ts` "blocks a unit walking into the gem before the eruption,
+  and lets it walk through after". Broken once (`openBodyOf` records nothing) → "expected
+  441.4999999999997 to be greater than 458"; with `blockingAt` ignoring the opened set →
+  "InvariantViolationError: … no-map-object-overlap: Unit overlaps a surviving map object.". The
+  same test checks the gem's grid cell is unwalkable before and walkable after; broken once (the
+  listener opens the store but skips `reopen`) → "expected false to be true".
+  `WorldObjectStore.test.ts` "opens a structure's body once: it stops blocking but keeps the
+  structure's pool" (`openBodyOf` returns the object once, then `undefined`).
+- Pre-PR gate: critic (`architecture-reviewer`) approved, no blockers. Applied: the grid
+  assertion and the `openBodyOf` unit test, `openBodyOf` idempotent (a second call would clear
+  the grid stamps twice), doc 03's consumer column and doc 12's status line. Better than design,
+  to INBOX: one `terrain-changed` reopener instead of the closure in `DefaultSystemPipeline`, and
+  the Cathedral id in the eruption event.
+- Checks run: one `npm run check`, exit 1. core "Test Files 1 failed | 252 passed (253)", "Tests
+  2 failed | 1513 passed (1515)": `Simulation.flowFields.test.ts` "brings every opening mob to its
+  first enemy objective with none stuck: 5 lanes" ("Test timed out in 120000ms", 130397ms) and
+  "gives the same hash on the generated map for the same seed, tick for tick" ("Test timed out in
+  60000ms"). protocol "Tests 18 passed (18)"; client "Tests 1892 passed (1892)"; server "Tests 79
+  passed (79)". The stop hook's `check:quick` (whole-project lint) ran at the same time. That file
+  alone afterwards: "Test Files 1 passed (1)", "Tests 5 passed (5)" (125 s); neither test reaches
+  the eruption. Not committed: the plan allowed one check and it failed.
+- Next step: Sam confirms the solid-until-eruption choice and answers the DEC-217 item.

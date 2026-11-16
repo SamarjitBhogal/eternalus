@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest';
 
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { timelineMarkTick } from '../../config/timelineMarkTick';
+import { BUILDING_GEOMETRY } from '../../content/maps/buildingGeometry';
 import { TEST_DEBUG_CONFIG } from '../../diagnostics/InvariantRunner.constants';
 import { MemoryLogger } from '../../diagnostics/MemoryLogger';
 import { MapGenerator } from '../../map/MapGenerator';
 import { MapObjectBuilder } from '../../map/MapObjectBuilder';
 import { MapPresentationBuilder } from '../../map/MapPresentationBuilder';
 import { Simulation } from '../../Simulation';
+import type { GameState } from '../../state/GameState';
 
 /** A 20 s planned match with no countdown, so mid-game comes after 10 s. */
 const match = () => {
@@ -90,5 +92,39 @@ describe('the gem eruption (scenario, 12 §3, DEC-83)', () => {
     expect(struck.filter((tick) => tick < eruptionTick).length).toBeGreaterThan(0);
     expect(struck.filter((tick) => tick >= eruptionTick)).toEqual([]);
     expect(blocked.filter((tick) => tick >= eruptionTick).length).toBeGreaterThan(1);
+  });
+
+  it('blocks a unit walking into the gem before the eruption, and lets it walk through after', () => {
+    const { simulation, config, eruptionTick, feature } = match();
+    const { halfHeight } = BUILDING_GEOMETRY.cathedral.gem;
+    stepTo(simulation, eruptionTick - 3 * config.tickRate);
+    simulation.enqueueCommand({
+      type: 'dev-spawn',
+      kind: 'warrior',
+      definitionId: 'warrior',
+      team: 'light',
+      at: { x: feature.position.x, y: feature.position.y - halfHeight - 6 },
+      count: 1,
+    });
+    simulation.step();
+    const warrior = simulation.snapshot().entities.find(({ kind }) => kind === 'warrior');
+    if (warrior?.transform == null) throw new Error('No warrior');
+    simulation.enqueueCommand({ type: 'move', actorId: warrior.id, direction: { x: 0, y: 1 } });
+    const yOf = () =>
+      simulation.snapshot().entities.find(({ id }) => id === warrior.id)?.transform?.y ?? NaN;
+
+    const grid = (simulation as unknown as { readonly state: GameState }).state.world?.grid;
+    const isGemCellOpen = () => grid?.isWalkableAt(feature.position.x, feature.position.y);
+
+    stepTo(simulation, eruptionTick - 1);
+    expect(isGemCellOpen()).toBe(false);
+    expect(yOf()).toBeLessThanOrEqual(
+      feature.position.y - halfHeight - warrior.transform.radius + 1e-6,
+    );
+
+    stepTo(simulation, eruptionTick + 4 * config.tickRate);
+    expect(yOf()).toBeGreaterThan(feature.position.y + halfHeight);
+    // The pathfinder's grid reopens too, not only collision.
+    expect(isGemCellOpen()).toBe(true);
   });
 });

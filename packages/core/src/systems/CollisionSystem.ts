@@ -38,6 +38,7 @@ export class CollisionSystem implements System {
   /** Sweeps from the pre-movement position, including the unit radius, then clamps world bounds. */
   public update({ state }: SystemContext): void {
     for (const id of state.worldObjects?.destroyedIds ?? []) this.index.remove(id);
+    for (const id of state.worldObjects?.openedIds ?? []) this.index.remove(id);
     state.entities.forEach((entity) => {
       const transform = entity.findComponent(Transform);
       const collider = entity.findComponent(Collider);
