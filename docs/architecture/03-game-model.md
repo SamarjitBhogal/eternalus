@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-09
+last-reviewed: 2026-11-15
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -195,7 +195,8 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 | `shield-bars-changed`               | `{ entityId, bars }`                                   | `StructureSystem`                                               | HUD, views                                                                               |
 | `capture-progress`                  | `{ pointId, team, progress, checkpoint }`              | `CaptureSystem`                                                 | HUD, `MinimapView`                                                                       |
 | `checkpoint-reached`                | `{ pointId, team, checkpoint, presentLegendIds }`      | `CaptureSystem`                                                 | `Scoring` (DEC-214, DEC-223), checkpoint spawners (Phase 3)                              |
-| `capture-point-owner-changed`       | `{ pointId, from, to }`                                | `CaptureSystem`                                                 | `MatchDirector`, `StatusEffectSystem`                                                    |
+| `capture-point-owner-changed`       | `{ pointId, from, to }`                                | `CaptureSystem`                                                 | `MatchDirector`, `StatusEffectSystem`, `ZoneLevelUpSystem` (DEC-258)                     |
+| `minion-levels-granted`             | `{ entityId, levels }`                                 | `ZoneLevelUpSystem` (07 §7, DEC-258)                            | `VeterancySystem` (one minion level, DEC-168)                                            |
 | `phase-changed`                     | `{ from, to }`                                         | `MatchRecord.setPhase` (called by `MatchDirector`)              | `Announcer`                                                                              |
 | `match-ended`                       | `{ result: MatchResult }`                              | `MatchDirector`                                                 | client `MatchBridge` (the results flow)                                                  |
 | `ability-cast`                      | `{ casterId, abilityId, slot }`                        | `AbilitySystem`                                                 | views (VFX), `Announcer`                                                                 |

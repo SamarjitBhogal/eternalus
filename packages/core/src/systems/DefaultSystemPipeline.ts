@@ -16,6 +16,8 @@ import { LaneFlowFields } from '../map/LaneFlowFields';
 import type { GameState } from '../state/GameState';
 import type { Rect } from '../utils/geometry.types';
 import { CaptureSystem } from './CaptureSystem';
+import { ZoneLevelUpSystem } from './ZoneLevelUpSystem';
+import { ZONE_LEVEL_UP } from '../content/zones/zoneLevelUp';
 import { CombatSystem } from './CombatSystem';
 import { MapDestructionSystem } from './MapDestructionSystem';
 import { DeathSystem } from './DeathSystem';
@@ -134,6 +136,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
       new OutOfCombatHealingSystem(state, OUT_OF_COMBAT_HEALING),
       new DeathSystem(),
       new CaptureSystem(state.config.match.capturePoints, tickRate),
+      ...(hordes === undefined ? [] : [new ZoneLevelUpSystem(state, ZONE_LEVEL_UP)]),
       // After death, so an objective lost this tick can end the match this tick (12 §1).
       new MatchDirectorSystem(director),
       new InvariantSystem(invariants),

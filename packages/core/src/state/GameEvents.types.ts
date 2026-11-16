@@ -106,6 +106,11 @@ export type GameEventMap = {
     readonly from: Team;
     readonly to: Team;
   };
+  /**
+   * A level source other than kills grants a minion `levels` minion levels, or takes them back
+   * when negative (a held capture zone, 07 §7, DEC-258); `VeterancySystem` applies them.
+   */
+  readonly 'minion-levels-granted': { readonly entityId: EntityId; readonly levels: number };
   readonly 'phase-changed': { readonly from: MatchPhase; readonly to: MatchPhase };
   /** Once per match, when a verdict ends it; `result` is the one stored in `state.match.result`. */
   readonly 'match-ended': { readonly result: MatchResult };

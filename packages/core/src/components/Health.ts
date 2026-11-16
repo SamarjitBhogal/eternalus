@@ -76,6 +76,16 @@ export class Health {
   }
 
   /**
+   * Lowers full health by `amount` (finite, ≥ 0, never below 1 max), and current health with it
+   * when it would pass the new cap: a lost level's health step (07 §7, DEC-258).
+   */
+  public lowerMax(amount: number): void {
+    Health.checkAmount(amount, 'max lowering');
+    this.maxValue = Math.max(1, this.maxValue - amount);
+    this.currentValue = Math.min(this.currentValue, this.maxValue);
+  }
+
+  /**
    * A level-up's health step, shared by Legend and minion levels: raises full health by `amount`
    * and heals by the same, but only while alive, so a level never revives (O3/O4).
    */

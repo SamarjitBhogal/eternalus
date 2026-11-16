@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-11-10
+last-reviewed: 2026-11-15
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
@@ -128,7 +128,9 @@ structure per camp feature, the camp groups in `content/structures/guardPlans.ts
 activated when the countdown ends), camp mobs held by `GuardController`, and `camp-cleared`
 emitted by `SpawnSystem`'s `GuardRoster`; `GuardWithinLeashInvariant` covers camp mobs, since it
 checks every post. Checkpoint defenders are not built yet, though `CaptureSystem` (PR #64) is
-merged. The minion-stack follow-ups (`fix/minion-stack-followups`) add the shared leash decision
+merged. Pull request M10 adds the zone level-up (07 §7, DEC-258): `ZoneLevelUpSystem` and
+`minion-levels-granted`, applied by `VeterancySystem`; `Veterancy` keeps the levels kills earned
+apart from the levels a zone granted. The minion-stack follow-ups (`fix/minion-stack-followups`) add the shared leash decision
 `ai/decideLeashed.ts` (DEC-168 B1), the guard respawn rules `systems/EachGuardRespawn.ts` and
 `GroupGuardRespawn.ts` (B4), the ally-damage listener `state/AllyDamageTally.ts` (B6), and
 `StuckSystem` with its `ChaseWatch` component (§5.2, DEC-193). A unit that chases a lane tower or

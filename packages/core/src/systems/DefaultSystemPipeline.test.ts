@@ -140,6 +140,7 @@ describe('DefaultSystemPipeline', () => {
       'out-of-combat-healing',
       'death',
       'capture',
+      'zone-level-up',
       'match-director',
       'invariants',
     ]);

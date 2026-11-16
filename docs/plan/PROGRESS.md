@@ -8213,3 +8213,20 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   sides kept, this batch above #93's as the log is newest first): full `npm run check` exit 0
   (`eternalus-agent-work/tower-ruins-and-routes/ci-timeout-check-merge-fcc48a7b.log`).
 - Next step: a PR into `phase/3-sprint-3-work`.
+
+### 2026-11-15 — Phase 3 / minion plan M10: zone level-up (DEC-258) — feat/minion-m10-zone-level-up — SamarjitBhogal + Claude Code
+
+- What was done: the owner's answer DEC-258 (recorded on `feat/minion-m6b-checkpoint-defenders`,
+  which merges first): every capture point counts, using balancing.md's numbers, applied by an
+  ownership-event handler. `content/zones/zoneLevelUp.ts` holds the hold time and the levels.
+  `CapturePoint` now carries its lane (from the map feature). `ZoneLevelUpSystem`, which runs after
+  `CaptureSystem`, emits `minion-levels-granted` for the owner's hordes spawned on the point's lane
+  once the point has been held for the hold time. It takes those levels back on the tick the point
+  changes owner, then restarts the clock. `VeterancySystem` applies the event: `Veterancy` keeps
+  earned and granted levels apart, a lost level lowers max health (`Health.lowerMax`) and keeps
+  one veteran stack per remaining level. Docs: 03 event catalogue, 07 §7, 18 implementation
+  status, minion plan gap row.
+- Checks run: `npm run check` exit 1. Core "Tests 1591 passed (1591)", protocol 18/18, server
+  79/79. Client "Tests 1 failed | 1978 passed (1979)": `WebSocketTransport.test.ts` "CloseEvent is
+  not defined" (local Node v22.19.0, as on M6b; no client file changed).
+- Next step: the pre-PR gate, then a draft PR that merges after M6b's (#130).

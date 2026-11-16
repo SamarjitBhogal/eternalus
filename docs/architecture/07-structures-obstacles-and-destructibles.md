@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-11
+last-reviewed: 2026-11-15
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -290,8 +290,13 @@ Reaching a checkpoint (`checkpoint-reached`) spawns that checkpoint's defenders 
 for the team that owns the point, [18](18-minion-system.md) MS-28, §7.1) through a `Spawner` table (1: medium assist mobs; 2: heavy plus light assist mobs; 3: one massive
 "Balrog-type" mob) and, when cleared, awards XP shared among nearby allies biased toward the top
 damage dealer (`ProgressionSystem` listens to `checkpoint-cleared`). Holding a zone applies
-`StatusEffects` from content: ability/ultimate cooldown reduction and, after `levelUpAfterTicks`,
-a level-up for that side's lane minions; both are removed on loss. Mini-bosses at the quarter mark
+`StatusEffects` from content: ability/ultimate cooldown reduction, removed on loss. Every capture
+point has a zone level-up (DEC-258): once a side has held it for the hold time without a break,
+that side's hordes spawned on its lane gain minion levels, and losing the point takes them back on
+the same tick. `ZoneLevelUpSystem` hears `CaptureSystem`'s ownership events and announces the levels
+with `minion-levels-granted`; `VeterancySystem` applies them as the one minion level of its two
+sources (DEC-168), so a lost zone never costs a level the kills earned. The hold time and the
+levels are `content/zones/zoneLevelUp.ts`; the cap is the minion level cap. Mini-bosses at the quarter mark
 lock the outer zones (`lockedBy`) until they die (`MatchDirector` timeline).
 
 ## 8. Structure destruction effects

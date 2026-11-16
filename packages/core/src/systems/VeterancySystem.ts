@@ -40,6 +40,18 @@ export class VeterancySystem implements System {
         this.kills.push({ killerId: killer.attackerId, victimId: entityId });
       }
     });
+    // Applied as it is announced: its senders (`ZoneLevelUpSystem`) run after this system.
+    state.events.on('minion-levels-granted', ({ entityId, levels }) => {
+      const entity = state.entities.get(entityId);
+      if (entity !== undefined && state.entities.isAlive(entityId)) {
+        const veterancy = VeterancySystem.veterancyOf(entity);
+        this.applyLevelChange(
+          state,
+          entity,
+          veterancy.grantLevels(levels, this.veterancy.maxLevel),
+        );
+      }
+    });
   }
 
   /** Counts this tick's kills, then refreshes the aura on its cadence. */
@@ -71,23 +83,39 @@ export class VeterancySystem implements System {
     }
   }
 
-  /**
-   * Gives `entity` up to `levels` minion levels, never past the cap, each with its effects: max
-   * health `healthPerLevel` of base health higher (healed by the same) and a veteran stack. The one
-   * way in for every level source (DEC-168): this system's kills now; the zone level-up
-   * (balancing.md "+1 minion level (max 3)") is to reach it through a typed event once capture
-   * points emit one, never by calling this system.
-   */
+  /** Gives `entity` up to `levels` minion levels earned by kills, never past the cap. */
   private gainLevels(state: GameState, entity: Entity, levels: number): void {
     const gained = VeterancySystem.veterancyOf(entity).gainLevels(levels, this.veterancy.maxLevel);
+    this.applyLevelChange(state, entity, gained);
+  }
+
+  /**
+   * The effects of `entity`'s level moving by `change` (DEC-168: one level, every source): each
+   * level raises max health by `healthPerLevel` of base health (healed by the same) and adds a
+   * veteran stack; each level lost lowers max health by the same and leaves one stack per level.
+   * Kills reach it from this system; other sources through `minion-levels-granted` (07 §7).
+   */
+  private applyLevelChange(state: GameState, entity: Entity, change: number): void {
     const definition = this.units.get(entity.definitionId);
     const health = entity.findComponent(Health);
-    if (!MOB_KINDS.has(definition) || health === undefined) {
+    if (change === 0 || !MOB_KINDS.has(definition) || health === undefined) {
       return;
     }
-    for (let level = 0; level < gained; level += 1) {
-      health.raiseMaxAndHeal(definition.baseHealth * this.veterancy.healthPerLevel);
-      this.statuses.apply(state, entity.id, this.veterancy.statusId, entity.id);
+    const step = definition.baseHealth * this.veterancy.healthPerLevel;
+    const { statusId } = this.veterancy;
+    if (change > 0) {
+      for (let level = 0; level < change; level += 1) {
+        health.raiseMaxAndHeal(step);
+        this.statuses.apply(state, entity.id, statusId, entity.id);
+      }
+      return;
+    }
+    health.lowerMax(-change * step);
+    // A status ends whole, so the stacks of the levels kept are put back.
+    this.statuses.remove(state, entity.id, statusId);
+    const { level } = VeterancySystem.veterancyOf(entity);
+    for (let stack = 0; stack < level; stack += 1) {
+      this.statuses.apply(state, entity.id, statusId, entity.id);
     }
   }
 
