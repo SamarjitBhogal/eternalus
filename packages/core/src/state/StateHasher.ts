@@ -1,7 +1,9 @@
 import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
+import { ChaseWatch } from '../components/ChaseWatch';
 import { Collider } from '../components/Collider';
 import { Combat } from '../components/Combat';
+import { CombatClock } from '../components/CombatClock';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { Progression } from '../components/Progression';
@@ -9,9 +11,11 @@ import { Veterancy } from '../components/Veterancy';
 import { StatusEffects } from '../components/StatusEffects';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
+import { INITIAL_FACING } from '../components/Transform.constants';
 import { Vision } from '../components/Vision';
 import type { Entity } from '../entities/Entity';
 import { fnv1a } from '../utils/fnv1a';
+import { createEmptyScoringState } from './emptyScoringState';
 import type { GameState } from './GameState';
 import { PLAYABLE_TEAMS } from '../teams/playableTeams';
 
@@ -39,6 +43,12 @@ export class StateHasher {
     const matchFields = [match.phaseEnteredTick, match.timelineCursor, match.isIdleHeld];
     if (matchFields.some((value) => value !== 0 && value !== false)) {
       parts.push(['match', ...matchFields]);
+    }
+    // Scoring joins by the same rule, once it differs from the empty state: one serialisation
+    // feeds both the check and the hash, so a new scoring field cannot be left out of either.
+    const scoring = JSON.stringify(match.scoring);
+    if (scoring !== StateHasher.EMPTY_SCORING) {
+      parts.push(['scoring', scoring]);
     }
     // Hordes and the spawn counters are appended only once a horde was asked for, for the same
     // reason.
@@ -102,6 +112,8 @@ export class StateHasher {
     return fnv1a(JSON.stringify(parts));
   }
 
+  private static readonly EMPTY_SCORING = JSON.stringify(createEmptyScoringState());
+
   private static fieldsOf(entity: Entity): unknown[] {
     const transform = entity.findComponent(Transform);
     const health = entity.findComponent(Health);
@@ -122,6 +134,14 @@ export class StateHasher {
         'shields',
         ...health.shields.flatMap((bar) => [bar.sourceId, bar.current, bar.max]),
       ]);
+    }
+    // Only a facing other than INITIAL_FACING is added (a turn, DEC-192, or a start facing,
+    // DEC-216 (6)), so entities that keep it hash as before.
+    if (
+      transform !== undefined &&
+      (transform.facing.x !== INITIAL_FACING.x || transform.facing.y !== INITIAL_FACING.y)
+    ) {
+      fields.push(['facing', transform.facing.x, transform.facing.y]);
     }
     if (movement !== undefined && (movement.heading.x !== 0 || movement.heading.y !== 0)) {
       fields.push(['heading', movement.heading.x, movement.heading.y]);
@@ -181,6 +201,14 @@ export class StateHasher {
     const progression = entity.findComponent(Progression);
     if (progression !== undefined) {
       fields.push(['progression', progression.xp, progression.level]);
+    }
+    const watch = entity.findComponent(ChaseWatch);
+    if (watch !== undefined) {
+      fields.push(['chase', ...watch.fields]);
+    }
+    const clock = entity.findComponent(CombatClock);
+    if (clock !== undefined) {
+      fields.push(['combat-clock', ...clock.fields]);
     }
     return fields;
   }

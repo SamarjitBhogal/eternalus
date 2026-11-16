@@ -1,21 +1,28 @@
 import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
 import { StatusEffects } from '../components/StatusEffects';
+import { Transform } from '../components/Transform';
 import type { DamagePipeline } from '../combat/DamagePipeline';
 import type { StrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
+import type { MutableVec2 } from '../utils/vec2.types';
 import type { System, SystemContext } from './System.types';
 
 /**
  * Lands the attacks of every unit with a target (architecture 05 §10): when the target is in reach
- * and the attack is off cooldown, the attack's strategy hits it through the damage pipeline. A dead
- * or removed target clears. Statuses stop attacks (`cannot-attack`) and scale the cooldown
+ * and the attack is off cooldown, the attack's strategy hits it through the damage pipeline. A unit
+ * with a target in reach faces it every tick, after `MovementSystem`, so attacking outranks moving
+ * (DEC-192): it faces `EntityStore.facingPointOf`, a building's outline point nearest it or a
+ * unit's centre (DEC-216 (11)), or a building's centre from inside its outline (DEC-220 (1)). A
+ * dead or removed target clears. Statuses stop attacks (`cannot-attack`) and scale the cooldown
  * (`attackSpeed`). While the match holds units idle (`state.match.isIdleHeld`, the countdown) no
- * attack lands and targets are kept for after. Getting into reach is the controller's job
- * (moving), not this system's.
+ * attack lands, no unit turns to its target, and targets are kept for after. Getting into reach is
+ * the controller's job (moving), not this system's.
  */
 export class CombatSystem implements System {
   public readonly name = 'combat';
+  /** Scratch for the point the attacker faces. */
+  private readonly aim: MutableVec2 = { x: 0, y: 0 };
 
   /**
    * @param damage - The match's one damage pipeline, shared with every system that deals damage.
@@ -46,7 +53,13 @@ export class CombatSystem implements System {
       if (statuses?.has('cannot-attack') === true) {
         return;
       }
-      if (!combat.canAttack(state.tick) || !state.entities.isInReach(attacker.id, target.id)) {
+      if (!state.entities.isInReach(attacker.id, target.id)) {
+        return;
+      }
+      if (state.entities.facingPointOf(attacker.id, target.id, this.aim)) {
+        attacker.getComponent(Transform).lookAt(this.aim);
+      }
+      if (!combat.canAttack(state.tick)) {
         return;
       }
 

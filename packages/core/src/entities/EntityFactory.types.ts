@@ -32,8 +32,15 @@ export type Placement = {
   readonly team?: Team;
   /** The lane a lane structure stands on (`MapLane.id`). */
   readonly laneId?: string;
+  /** The map feature a structure is built from (`MapFeature.id`). */
+  readonly mapFeatureId?: string;
   /** A controller for this entity alone, in place of its definition's (a bot Legend). */
   readonly controller?: ControllerSpawn;
+  /**
+   * The direction a unit faces until it first moves or attacks, of any length (DEC-216 (6)). A
+   * unit given none, or a zero one, starts at `INITIAL_FACING`.
+   */
+  readonly facing?: Vec2;
   /** The ground a zone covers, as polygons in world units (zones only, `ZoneArea`). */
   readonly area?: readonly Polygon[];
 };
