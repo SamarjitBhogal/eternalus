@@ -53,7 +53,9 @@ describe('selectAllyCountsByClass', () => {
     const store = storeWith(ALLIES);
     const before = selectAllyCountsByClass(store.getState());
 
-    store.dispatch(matchSetupSlice.actions.setCountdown(41_000));
+    store.dispatch(
+      matchSetupSlice.actions.countdownChanged({ kind: 'select', remainingMs: 41_000 }),
+    );
 
     expect(selectAllyCountsByClass(store.getState())).toBe(before);
   });

@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-05
+last-reviewed: 2026-11-07
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -338,6 +338,7 @@ the middle shows the centre. Everything is clipped to the HUD ring. The owner se
   near-black for Dark, grey for neutral, 1.5 px (DEC-187, owner-accepted 2026-11-05). A unit up to
   about 6 world units past the radius shows at the ring edge. The dot sizes are TUNE values in
   `entityViews.constants.ts`.
+- The facing chevron (DEC-192) is drawn in the main view only. The minimap never shows it.
 - Feature glyphs stay on the definition: every structure and obstacle definition may declare a
   `minimapGlyph`, and the map layers draw it. Team colour comes from the entity's `team`, not from
   the glyph.
@@ -609,6 +610,9 @@ Each segment remains an independent wall object with the same health and destruc
 Physical footprints follow the visible curve; gate positions and lane starts share the same
 profile while preserving the original lane and tower anchors. Generated strongholds carry copied `MapFeature.wallBoundary` dimensions, which palace
 placement reads instead of mistaking the taller shield's extent for a larger palace radius.
+`strongholdEnclosure` (`map/strongholdEnclosure.ts`) closes the arc with the cliffs into the
+ground they enclose, along the outer face of each wall segment and gate (`outerFace` in
+`map/wallRing.ts`); the Stronghold's heal zone is that ground less the shield's own (DEC-215, DEC-225).
 
 `MapShieldBuilder` dresses those exact polygons with translucent blue panels, luminous edges,
 seams, runes and emitter artwork for the existing turret features. `MapDecoration.replacesFeature`
