@@ -30,7 +30,7 @@ const zone = (
   family: 'zone',
   definitionId: 'capture-point',
   team: 'neutral',
-  transform: { x: AT.x, y: AT.y, radius: 28 },
+  transform: { x: AT.x, y: AT.y, radius: 28, facing: { x: 1, y: 0 } },
   health: null,
   progression: null,
   aether: null,
@@ -50,7 +50,10 @@ const capture = (overrides: Partial<CaptureSnapshot> = {}): CaptureSnapshot => (
 
 const draw = (entity: EntitySnapshot): RecordingRenderer => {
   const renderer = new RecordingRenderer();
-  new CapturePointView().draw({ entity, position: AT, isFocused: false }, renderer);
+  new CapturePointView().draw(
+    { entity, position: AT, facing: { x: 1, y: 0 }, isFocused: false },
+    renderer,
+  );
   return renderer;
 };
 

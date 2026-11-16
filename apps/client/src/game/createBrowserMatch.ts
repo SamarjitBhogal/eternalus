@@ -116,7 +116,7 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
         camera,
         input,
         logger,
-        onCrash: request.onCrash,
+        observer: request.observer,
         isDeveloperMenuEnabled: deps.isDeveloperMenuEnabled === true,
         bridge: {
           bus: deps.bus,

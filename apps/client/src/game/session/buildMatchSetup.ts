@@ -60,6 +60,7 @@ export function buildMatchSetup(inputs: {
     });
   const playerTeam: PlayableTeam = rng.nextInt(2) === 0 ? 'light' : 'dark';
   return {
+    mode: 'local',
     seed,
     playerTeam,
     allies: roster(playerTeam, true),

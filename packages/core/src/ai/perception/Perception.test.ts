@@ -10,13 +10,14 @@ import { SpaceIndex } from '../../physics/SpaceIndex';
 import { TWO_LANE_MAP } from '../../state/__fixtures__/twoLaneMap';
 import { GameState } from '../../state/GameState';
 import { matchWorldOf } from '../../state/__fixtures__/matchWorld';
+import type { Team } from '../../teams/teams.types';
 import { Perception } from './Perception';
 
 const setUp = () => {
   const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
   const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP), { space });
   const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
-  const add = (team: 'light' | 'dark', x: number, kind = 'light-mob', id = 'light-minion') => {
+  const add = (team: Team, x: number, kind = 'light-mob', id = 'light-minion') => {
     const entity = factory.create(kind, id, { team, position: { x, y: 10 } });
     state.entities.add(entity);
     return entity;
@@ -53,6 +54,28 @@ describe('Perception', () => {
     expect(perception.unitsWithin(center, 5, { kinds: ['heavy-mob'] })).toEqual([heavy.id]);
     expect(perception.nearest(center, 5, { hostileTo: 'light', aliveOnly: true })).toBe(heavy.id);
     expect(perception.nearest(center, 0.5, { hostileTo: 'dark' })).toBeNull();
+  });
+
+  it('keeps a neutral unit only while it attacks the unit `neutralAttackersOf` names (DEC-166)', () => {
+    const { state, add, index } = setUp();
+    const self = add('light', 10);
+    const ally = add('light', 9);
+    const camp = add('neutral', 12, 'light-mob', 'light-camp-mob');
+    const other = add('neutral', 11, 'light-mob', 'light-camp-mob');
+    state.entities.setAttackTarget(other.id, ally.id);
+    index();
+    const perception = new Perception(state);
+    const center = { x: 10, y: 10 };
+    const fightingBack = { hostileTo: 'light', neutralAttackersOf: self.id } as const;
+
+    expect(perception.unitsWithin(center, 5, fightingBack)).toEqual([]);
+
+    state.entities.setAttackTarget(camp.id, self.id);
+    expect(perception.unitsWithin(center, 5, fightingBack)).toEqual([camp.id]);
+    expect(perception.unitsWithin(center, 5, { hostileTo: 'light' })).toEqual([]);
+    // A neutral querier never sees another neutral unit as hostile.
+    const asCamp = { hostileTo: 'neutral', neutralAttackersOf: camp.id } as const;
+    expect(perception.unitsWithin(center, 5, asCamp)).toEqual([self.id, ally.id]);
   });
 
   it('returns ids in string order, and breaks a nearest tie toward the lower id', () => {

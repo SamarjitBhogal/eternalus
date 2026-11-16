@@ -66,6 +66,63 @@ Reply inline (`Decision: …`).
       yet, because the one-shot table has no mouse path (the canvas gestures own the mouse).
       Decide whether to add one, or to make the bindings screen accept only keys for these
       actions.
+- [x] **BUG-2: interior wall health (2026-11-12, PR #96, SCRUM-435).** Every `'wall'` map object
+      uses the WallSegment value from balancing.md (`content/maps/mapObjectDefinitions.ts`): the
+      Stronghold's wall ring and the `'wall'` features inside it alike. The playtest called the
+      inner walls "interior walls" and reported "player attack is weak" because they take long to
+      break. No spec gives the inner walls their own value. Should the `'wall'` features inside the
+      Stronghold ring keep the WallSegment value, or get their own (which number)?
+  - **Answered 2026-11-13 by DEC-247** (chat, PR #96). Not built yet (BUG-2).
+
+- [x] **BUG-3: minions attack obstacles (2026-11-12, PR #96, SCRUM-436).** Today a stuck unit
+      paths around an obstacle (DEC-193); minions never attack obstacles or props. The playtest
+      asked for minions to attack them. Keep DEC-193, or should minions attack obstacles (and
+      which ones: props only, or blocking obstacles too)?
+  - **Answered 2026-11-13 by DEC-248** (chat, PR #96). Not built yet (BUG-3).
+
+- [x] **Unit facing chevron (DEC-192, feat/unit-facing-chevron, 2026-11-05) — two questions, one
+      better-than-design item.**
+      (1) Start facing: a unit faces east (`INITIAL_FACING` in `Transform.constants.ts`) until it
+      first moves or attacks. Guards, camp mobs and Legends in the countdown show east, and ability
+      cones will use this facing (architecture 05). Options: east for all; toward the enemy
+      Stronghold; along the lane; per definition (a value in `content/`).
+      (2) Ring colour: DEC-192 says the team shows in the ring. The build keeps the team colour in
+      the disc, and the ring is white (Legends) or near-black (mobs). It differs from your
+      reference image (grey disc, team-coloured ring). Options: restyle now, restyle later, or keep.
+      (3) Better than the design (critic, not built): `LegendView` and `MobView` each draw the
+      chevron. An abstract `UnitView extends DefaultEntityView` with an abstract outline, or a
+      `FacingChevronView` decorator, would hold it once. Recommendation: build it in one tidy PR
+      after the playtest PRs merge. Approve, or say no.
+  - Answered 2026-11-05 (the decision page, DEC-216 and DEC-218): (1) toward the enemy
+    Stronghold; a tower guard (the Stronghold's too) faces out from the centre of its home
+    (DEC-216 (6)); a camp mob faces out from the camp centre (DEC-220 (2), answered 2026-11-06).
+    Built on `feat/unit-facing-chevron`: the spawn's `Placement.facing`, from
+    `MatchWorld.startFacing` and the guard roster; `INITIAL_FACING` stays as the fallback for a
+    unit given none. (2) Keep the
+    disc and ring as built (DEC-216 (10)). (3) Approved; built in the tidy PR after the playtest
+    PRs merge (DEC-218 B5).
+
+- [x] **Unit facing chevron, DEC-220 critic (2026-11-07, `feat/unit-facing-chevron`) — one
+      question, three better-than-design items.**
+      (1) Fort court: a fort's outline is its walls and its keep, so its court is outside every
+      outline. A unit in the court that attacks the tower faces the nearest wall, which can be
+      behind it. DEC-220 (1) fixes this for a unit inside a building's outline (the palace). Does
+      the court count as "inside the building"? Options: (A) no, keep as built (the ruling's
+      words); (B) yes, a unit in the court faces the tower's centre.
+      Better than the design (critic, not built): (2) `EntityStore.isInReach` and
+      `facingPointOf` run the same "attacker inside the outline" test; one private helper would
+      hold it. (3) `EntityStore` keeps gaining target-geometry queries (`outlineOf`, `aimPointOf`,
+      `isInReach`, `facingPointOf`); a separate target-geometry query object would leave the store
+      a store. (4) `SpawnContextReader` checks the spawn facing with `isFiniteVector`; the position
+      could use the same check, and its last cast goes. The critic's fourth item (a guard's rest
+      facing as data, so `PathingSystem` writes no facing) joins the DEC-220 (4) tidy-PR item.
+      Approve each for the tidy PR (DEC-218), or say no.
+  - **Answered 2026-11-09 by DEC-226** (decision page 2): (1) (A), keep as built: the court is
+    not inside the building; (2) to (4) approved for the tidy PR (DEC-218).
+  - **(2) done by DEC-234** (#85, 2026-11-09): the inside test runs once, in `aimPointOf`, which
+    returns an `AimedAt` tag; `isInReach` and `facingPointOf` read it. The tidy PR builds no
+    helper for it.
+
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on
       every map feature, so `map/strongholdRing.ts` checks at run time that a Stronghold has it
@@ -84,6 +141,27 @@ Reply inline (`Decision: …`).
       `map/WorldMap.ts` (a follow-up PR; no drive-by refactor here). (3) Doc 15's invariant
       catalogue does not list `NoMapObjectOverlapInvariant` (`no-map-object-overlap`); a
       doc-gardening fix. Approve which to schedule, or drop them.
+
+- [ ] **Minion plan MVP gaps (1): zone level-up numbers (2026-11-06, refreshed 2026-11-12,
+      PR #81).** Zone level-up (reference 02, MVP) is designed in architecture 07 §7 and now
+      scheduled as minion plan phase M10; `CaptureSystem` is on the phase branch (PR #64), so
+      only your answers block it. (a) Which zones count: the Cathedral only, or all three central
+      zones (OQ-47)? (b) The numbers: `balancing.md`'s `Recommendation:` is +1 minion level for
+      that lane's newly spawned minions after 90 s of continuous ownership, at most 3, all lost
+      with the zone. Approve, or give others. (c) How it is built (CodeRabbit on PR #81): the
+      plan proposes applying the level from content by a handler of `CaptureSystem`'s ownership
+      events instead of 07 §7's status effect (one minion level with two sources, DEC-168 B3),
+      and removing it on the same tick the zone is lost. Approve both, or keep 07 §7's status
+      effect and say when the level is removed.
+
+- [ ] **Minion plan MVP gaps (2): checkpoint defenders sign-off (2026-11-06, refreshed
+      2026-11-12, PR #81).** M6b (checkpoint defenders) no longer waits for PR #64, which merged
+      on 2026-11-08. Sign off the recommendations of the "Minion M6" item (1) below (the leash is
+      the zone's radius; defenders at an unowned point are neutral), and M6b can start.
+
+- [ ] **Minion plan MVP gaps (3): who owns the zone cooldown reduction (2026-11-06, PR #81).**
+      The zone's cooldown reduction (FR-041, 07 §7) is Legend-side, not minion work, and no plan
+      schedules it. Who owns it?
 
 - [ ] **Minion follow-ups: 12 better-than-design items for the tidy PR (critics A and B on
       `fix/minion-stack-followups`, 2026-11-05; DEC-219 (d)) — sign-off per item.** Built on that
@@ -152,11 +230,10 @@ Reply inline (`Decision: …`).
     objective" check is approved.
 
 - [ ] **Minion M6 (`feat/minion-m6-camps-defenders`, overnight 2026-10-30) — camps built,
-      checkpoint defenders blocked.** (1) **Blocked:** checkpoint defenders need `CaptureSystem`,
-      which is only on PR #64 (`feat/capture-points-v2`, open; #49 was closed), not yet on the
-      phase branch. Once #64 is on the phase branch,
-      defenders are a guard plan per checkpoint asked for by `CaptureSystem`. Recommendations
-      ready for then: the leash is the zone's radius; defenders at an unowned point are neutral
+      checkpoint defenders wait on your sign-off.** (1) **Sign-off needed:** checkpoint defenders
+      need `CaptureSystem`, which is on the phase branch since PR #64 merged (2026-11-08; #49 was
+      closed). Defenders are a guard plan per checkpoint asked for by `CaptureSystem`.
+      Recommendations: the leash is the zone's radius; defenders at an unowned point are neutral
       (doc 18 §10, item 4). (2) **Camps as built:** inactive until the countdown ends; light 4
       light, medium 2 medium + 2 light, heavy 1 heavy + 2 medium (balancing.md); 6 m leash; the
       whole group respawns 120 s after its last mob dies, and `camp-cleared` fires then. A camp
@@ -2123,6 +2200,57 @@ Reply inline (`Decision: …`).
 - [ ] **HC-Q46 — Only the match code can reach the match writers (match-director critic round 3, better than the design; DEC-139).** `GameState.match` is a `MatchRecord` (DEC-177), so every system, command handler and bot controller that holds `GameState` can call `endMatch`, `holdIdle` and the other writers. Only review keeps DEC-172's "one caller each" (today the calls are only in `match/` and `Simulation.ts`). Options: (a) type the public `GameState.match` as the read-only `MatchState` and give the `MatchRecord` only to `DirectorContext` and `Simulation` (the compiler stops other callers; changes the 03 §2 sketch); (b) an ESLint `no-restricted-syntax` rule that refuses `.match.<writer>(` outside `match/`, `Simulation.ts` and tests; (c) leave it to review. Agent's recommendation: (a), in its own PR with the HC-S7 split, not in the match-director PR (its critic rounds are used up, and round 2 had the same exposure).
   - Answered 2026-11-05 in chat (DEC-210): "(a) Read-only type". To build: its own PR from the phase
     branch after the match-director PR (#74) merges, with the HC-S7 split.
+  - 2026-11-14: the build also covers `MatchRecord.scoreBook` (DEC-211), which GL-4 (PR #93) added
+    as a writer-reachable field (DEC-250 (1)).
+- [x] **HC-Q47 — One small roster type for the HUD's "re-send if unchanged" rule (GL-5 targeted critic
+      after DEC-221, better than the design; DEC-139).** `MatchBridge.keepUnchanged` keeps each
+      unchanged HUD roster item and the last array (DEC-221 (3), B2). The critic proposes moving it
+      out of `MatchBridge` to `game/keepUnchanged.ts` (a function), or to a small `PublishedRoster`
+      class that holds the last array and the check, with its own unit test, the length-change
+      branch included. `MatchBridge` (257 lines) would then only publish, and GL-16 and GL-7 add to
+      it. The critic called today's form acceptable. Answer: build it (in GL-16, or now on GL-5), or
+      keep it as it is.
+  - Answered 2026-11-08 in chat (DEC-222): "(b) Build it in GL-16". To build: in GL-16 (game-loop
+    plan §7), with its own unit test, the length-change branch included.
+- [ ] **HC-Q57 — The online Duel in the results flow: five better-than-design items and one rule
+      question (critics on the #97 merge into GL-4, PR #93; DEC-139).** The merge keeps GL-5's
+      results flow for a Duel (`duel-ended`, `selectMatchVerdict`, `ResultsScreen`). Both critics
+      approved it and proposed:
+  - (1) `selectMatchVerdict` returns no verdict for a Duel the other player left. Today it says
+    `draw`, and only `ResultsScreen` overrides it; a later reader (post-game GL-10, match history)
+    would count a draw. Or one bridge selector that holds all the results screen's rules.
+  - (2) Publish the Duel's setup when the Duel starts, not in `prepareWorld`. The setup's team
+    then always exists, and `DuelOutcome.ownTeam` with its fallback branch goes away.
+  - (3) `DuelResult` (`DuelSession.types.ts`) and `DuelOutcome` (`bridge/events.ts`) hold the same
+    data; make them one type.
+  - (4) One rematch rule shared by the session (`canRepeatMatchSetup`) and `ResultsScreen`, in
+    `bridge/` as `canConfirmSelection` is, and stated as "not after a Duel" instead of "the setup
+    has rosters".
+  - (5) A match-mode strategy (local, Duel) for `SessionController`, which now asks "is this a
+    Duel" in `prepareWorld`, `createMatch` and `canRepeatMatchSetup`.
+  - (6) Rule question: after a match ends the world runs on for 5 s (DEC-92). A Duel goes to the
+    results at once, as #97 built it (the server closes the connection). Keep, or give a Duel the
+    run-on (it needs the server to keep sending snapshots)?
+  - Also a finished Duel has no status line under its verdict (the line comes from core's result,
+    which a Duel does not have); (1) decides what it shows.
+  - Answer per item: build now on PR #93, schedule, or keep as it is.
+  - Renumbered 2026-11-14 from HC-Q48: the ability framework (`feat/ability-framework`, ADR 0026)
+    took HC-Q48 first.
+  - Answered 2026-11-14 in chat (DEC-250): "have a critic look at the open items; if they pass, put
+    them in", then "option b is better. also leaving a duel when the other user is still in said
+    duel counts as a loss." (1) to (4): the critic passed them and they are built on PR #93
+    (`selectResultsView`, the setup published at the first snapshot, `MatchEnding`,
+    `canRepeatSetup`). (5): scheduled with HC-S7. (6): option B, the run-on is built with the
+    Duel's own win rules (DEC-36); until then a finished Duel goes to the results at once. A
+    finished Duel keeps no status line.
+  - Still open: after the opponent leaves, does the player who stayed see VICTORY? The leaver
+    takes a loss (DEC-250 (4)); the screen for the player who stayed shows no verdict until the
+    owner says.
+  - Critic notes on the built delta (2026-11-14), for the HC-S7 work: `createMatch` still asks
+    `duel.status === 'started'` while `canRepeatMatchSetup` reads `setup.mode`, so the strategy
+    should key on `setup.mode`; `MatchSetupDraft` could be a union by `mode`, so that "a Duel has
+    no rosters" is a type fact. For doc-gardening: the folder table of architecture 02 has no row
+    for `game/duel/` and `game/engine/net/`, which import `@eternalus/protocol` (#97).
 - [ ] **HC-Q42 — Where do Legends spawn at tick 0: all at their Citadel (DEC-80), or as built (match-director critic).** DEC-80 says "All Legends spawn at their Citadel at tick 0." As built (architecture 18 §8, MS-20), each bot laner spawns at its team's end of its assigned lane, and only the Rovers (the bot Rover and the human's Legend, DEC-173) spawn at their team's Stronghold. Keep the as-built lane start for laners and narrow DEC-80 to respawns, or spawn every Legend at its Citadel and let laners walk to their lanes?
 - [ ] **HC-S7 — Scheduled: split `Simulation.ts` and `SessionController.ts` below the ~300-line
       guide (PR #68 review, follow-up 3).** `Simulation.ts` (461 lines) holds start-up helpers
@@ -2137,6 +2265,9 @@ Reply inline (`Decision: …`).
     `planLanes`, `humanSlotOf`, `controllerOf`, `spawnSlot`, `strongholdOf`, `legendRefusal`)
     are one responsibility: the split is a `RosterSpawner` class. #56, #57, #58, #66 and #67 have
     merged; open PRs #64 and #32 still edit the file. `SessionController.ts` is 326 lines.
+  - 2026-11-14 (HC-Q57 (5), DEC-250 (2)): the `SessionController` split also takes the match-mode
+    strategy: `LocalMatchStart` and `DuelMatchStart` in a `Record<MatchMode, …>` registry, keyed
+    by the setup's `mode`, so that `createMatch` and `canRepeatMatchSetup` hold no Duel branch.
 - [ ] **HC-S8 — Scheduled with GL-3: filter the timeline rules by action kind (match-director
       critic).** `validateGameConfig` reads every timeline entry as `enter-phase`: the rules "at
       least one `enter-phase` entry" and "the first `enter-phase` entry ends the countdown" count
@@ -2152,6 +2283,10 @@ Reply inline (`Decision: …`).
       and a `MatchResult` at tick T, no further commands") runs on a test entity with
       `WinObjective` today, because no shipped kind has the component. Add the test through
       `Simulation` when GL-3 gives the sovereign the component. Nothing to answer.
+- [ ] **HC-S11 — Not chosen for GL-5: keep the `selection` assets on a rematch (GL-5 critic round
+      2, B4; DEC-213).** On a rematch, `ResultsState.exit` releases `selection` and `loading`
+      loads it again at once. Releasing it only on the routes to `menu` saves one reload; plan
+      §4.5 step 5 would change by one line. Low value. Nothing to answer unless you want it.
 - [ ] **HC-S1 — Suggestion, not built: countdown urgency.** At 10 s or less, a stronger glow, a
       1 Hz pulse and screen-reader lines at 10 and 5 s. If you want it, it comes back as a
       `creative` row: a data-selectable variant with your static original kept live (DEC-53).
@@ -2404,6 +2539,57 @@ Reply inline (`Decision: …`).
   - Decision (2026-10-31): (1) "C1: INBOX + post on #56 (Recommended)": the comment goes on PR
     #56. (3) "Yes, match 12 (Recommended)": DEC-136, which also covers 07 §11's event list.
     **Open:** Samarjit's answer on #56. Tick this item when it is recorded here.
+- [x] **Out-of-combat healing — five rules DEC-188 and DEC-215 leave open (2026-11-07,
+      `feat/out-of-combat-heal`, critic r1).** Each stays as built until you answer. Reply per
+      question (`Q-D: A`).
+  - **Q-D:** A blocked or zero-damage hit on a structure (an unbreakable gate or Stronghold):
+    does it mark that structure as under attack, which stops its heal bonus? (A) only hits that
+    deal damage **[built, recommended]**; (B) any attack.
+  - **Q-E:** The band in front of a Stronghold gate: (A) outside the heal zone **[built,
+    recommended]**; (B) inside it.
+  - **Q-F:** A human who hits an unbreakable gate or Stronghold deals no damage, so stays out of
+    combat and heals while attacking (bots and minions skip such targets). (A) keep as built
+    **[built]**; (B) any attack swing puts the attacker in combat.
+  - **Q-G:** Is a hit on the `stronghold` palace map object (its own entity, 10000 health) a hit
+    on "the Stronghold itself" (DEC-215 (2))? (A) no **[built]**; (B) yes.
+  - **Q-H:** The heal zone is read once from the map, so the ground of a destroyed shield wall
+    stays outside the zone. (A) keep **[built]**; (B) the ground joins the zone when the wall
+    falls.
+  - **Answered 2026-11-09 by DEC-225** (decision page 2): Q-D, Q-F, Q-G and Q-H (A), as built.
+    Q-E: "only the area inside the stronghold. doors/gates not included. must be inside the
+    structure (at least half the entity, as other areas are also done)": the centre-point rule
+    of every zone, as built; no code change.
+- [x] **Out-of-combat healing — better than the design, not built, for sign-off (DEC-139;
+      2026-11-07, `feat/out-of-combat-heal`, critic r1 items (2) to (6)).** Approve each to
+      schedule it, or say no.
+  - (2) Inject `HealingZones` (or its shape strategies) from `DefaultSystemPipeline`; today
+    `OutOfCombatHealingSystem` builds it in its constructor.
+  - (3) Compute the fort boxes once and share them with `PathingSystem` (`fortBoxesOf`; INBOX
+    C1/H1 on PR #75, `docs/playtest-rulings`): `MatchWorld` keeps a box per structure id, and
+    `fort-box` stops building its outline each tick.
+  - (4) One structure-spawn function for `Simulation.spawnStructures` and the test fixture
+    `spawnMapStructures` (they already drifted once).
+  - (5) One list of shield kinds in `map/` (`HealingZones.SHIELD_KINDS` and the
+    `strongholdEnclosure` filter); take the rear edge from the cliff geometry
+    (`strongholdCliffs`) or a side helper, not `x < width/2`.
+  - (6) `zoneOf(shape, structure, team)`: the team comes from the structure; key the Stronghold
+    interiors by feature id.
+  - Critic r2 (2026-11-07) adds: (7) `CombatClock.isQuietFor(tick, ticks)`, so the
+    out-of-combat test is written once (the system computes it twice; a bot Survive check, a HUD
+    cue or aether regen would copy it). (8) A `state/` tally that writes the clock, as
+    `AllyDamageTally` does, so "last fought" is a match fact and the heal system only reads it;
+    today the clock exists only when the heal system runs. (9) `Entity.ensureComponent(type,
+create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySystem`,
+    `OutOfCombatHealingSystem`). (10) One production map-object factory for `Simulation` and the
+    test fixtures (extends (4)).
+  - Critic on the #64 merge (2026-11-08) adds: (11) One fort geometry for heal and capture. The
+    heal `fort-box` zone is the tower's `Footprint` box (walls and gateways, DEC-215 (4)); the
+    capture zone's `zoneAreaOf` rebuilds the fort court from `BUILDING_GEOMETRY.fort` (court
+    only, DEC-145 (a)). The extents differ on purpose, but a fort size change in one place would
+    not reach the other; derive the capture court as an inset of the same fort box.
+  - **Answered 2026-11-09 by DEC-225:** (2) to (10) approved for the tidy PR (decision page 2);
+    (11) approved, "One source" (question dialog): the capture court comes from the capture
+    fort's drawn wall box, inset by the wall thickness, in the tidy PR.
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
@@ -2427,6 +2613,24 @@ Reply inline (`Decision: …`).
       `findBuildingAt` itself: a zone asks whether a point is on its own floor, and `find` returns
       only the first of two overlapping footprints. (2026-11-03: done on #64 after the HUD PR
       merged into it: `isPointInAnyPolygon` in `utils/geometry.ts`. The density % part is open.)
+- [ ] **GL-15 capture and hold points (DEC-214)** — Owner: sholtzman, `feat/capture-scoring`
+      (base `feat/match-scoring`). FR-007's capture points (3 team-only points per checkpoint a
+      team's push reaches) and hold points (1 team-only point per full minute of pooled held
+      time) at DEC-131's values; present Legends' `checkpointsWon`. The owner approved a separate
+      PR only if it is assured to happen: its PR opens after GL-4's and merges right after it.
+      Close this item when that PR merges.
+- [ ] **GL-16 map-feature link (DEC-221 (3); GL-5 critic round 3, B1)** — Owner: sholtzman,
+      `refactor/map-feature-link` (base: the phase branch after GL-5 merges). A `MapFeatureLink`
+      component, set from a placement's map feature id, on structures and capture zones. The
+      snapshots read it instead of `instanceof Structure`, and `MatchBridge` binds a capture site
+      to its zone by that id, not by position. Close this item when its PR merges.
+- [ ] **GL-17 entity component query (DEC-229; GL-15 critic round 2, better than the design)** —
+      Owner: sholtzman, `refactor/entity-component-query` (base: the phase branch after #79 and
+      #85 merge; they change `EntityStore`). A read-only query port on `EntityStore` for the
+      entities that carry a given component, beside `SpaceQuery` and `PathQuery`.
+      `CaptureHoldRule` takes it instead of the whole `GameState`, and the capture-point lookups
+      of `CaptureHoldRule`, `CaptureProgressBoundsInvariant` and `CaptureSystem` move to it. Close
+      this item when its PR merges.
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
       `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`

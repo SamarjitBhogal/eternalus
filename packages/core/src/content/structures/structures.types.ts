@@ -25,6 +25,12 @@ export type StructureDefinition = EntityDefinitionBase & {
   readonly footprintRadius: number;
   /** When it may take damage (07 §3). */
   readonly breakability: BreakabilityRule;
+  /**
+   * Whether its map object of the same id (a lane tower's fort, the Stronghold's palace) is its
+   * outline: attack reach and chases measure to that object's footprints, not the collider circle
+   * (`Footprint`, DEC-185). A blocking such object is also its body, with no health of its own.
+   */
+  readonly hasMapFootprint?: true;
 };
 
 /** Which lane a spawner's horde takes: the spawner's own lane, or the team's worst lane. */
