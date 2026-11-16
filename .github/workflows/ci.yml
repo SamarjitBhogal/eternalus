@@ -24,7 +24,8 @@ jobs:
   check:
     name: npm run check (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
+    # 25, not 15: on one commit the Windows job was cancelled at 15 minutes, then passed in 9.5 (DEC-254).
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
