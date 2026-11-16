@@ -26,6 +26,9 @@ export type GuardSlot = {
   readonly respawnTicks: number;
   /** The guard holding the post, or `null` while it waits to respawn. */
   readonly guardId: EntityId | null;
-  /** The first tick an empty post may be filled. */
-  readonly respawnAtTick: number;
+  /**
+   * The first tick an empty post may be filled; `null` while it waits for the rest of its group
+   * (a `group` plan, 18 §7.1), whose last loss sets it.
+   */
+  readonly respawnAtTick: number | null;
 };

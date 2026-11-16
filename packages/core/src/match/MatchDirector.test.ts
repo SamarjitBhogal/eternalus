@@ -8,6 +8,7 @@ import { MemoryLogger } from '../diagnostics/MemoryLogger';
 import type { GameEventMap } from '../state/GameEvents.types';
 import { GameState } from '../state/GameState';
 import type { Verdict } from '../state/MatchResult.types';
+import type { LegendStats } from '../state/ScoringState.types';
 import { StateHasher } from '../state/StateHasher';
 import { createDefaultTimelineActions } from './defaultTimelineActions';
 import type { DirectorContext } from './DirectorContext.types';
@@ -16,6 +17,7 @@ import type { MatchPhaseRegistry, MatchPhaseState } from './MatchPhaseState.type
 import type { MatchDirectorOptions } from './MatchDirector.types';
 import { MatchTimeline } from './MatchTimeline';
 import type { ResolvedTimelineEntry } from './MatchTimeline.types';
+import type { ScoreKeeper } from './ScoreKeeper.types';
 import type { VictoryCondition } from './VictoryCondition.types';
 
 /** A phase double: records every call as `"<call> <phase>"`. */
@@ -77,11 +79,14 @@ const setUp = (
   {
     conditions = [],
     config = createDefaultGameConfig(),
+    scoring = () => ({ fold: () => undefined }),
     hasher = new StateHasher(),
     terminal = TERMINAL_MATCH_PHASES,
   }: {
     readonly conditions?: readonly VictoryCondition[];
     readonly config?: GameConfig;
+    /** Builds the scoring double from the phase log. */
+    readonly scoring?: (log: string[]) => ScoreKeeper;
     readonly hasher?: MatchDirectorOptions['hasher'];
     readonly terminal?: readonly MatchPhase[];
   } = {},
@@ -110,6 +115,7 @@ const setUp = (
     debug: { throwOnViolation },
     logger,
     conditions,
+    scoring: scoring(log),
   });
   const changes: string[] = [];
   state.events.on('phase-changed', ({ from, to }) => {
@@ -286,11 +292,93 @@ describe('MatchDirector', () => {
         durationTicks: 13,
         seed: 1,
         configHash: expect.any(Number) as number,
+        legends: [],
+        teams: {
+          light: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0, checkpointsReached: 0 },
+          dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0, checkpointsReached: 0 },
+        },
         finalHash: condition.hashAtVerdict,
       });
       // Taken before the result is stored and the terminal phase entered: the hash moved since.
       expect(state.match.result?.finalHash).not.toBe(new StateHasher().hash(state));
       expect(state.match.result?.durationTicks).toBe(state.tick);
+    });
+
+    it('folds the scoring after the phase update and before it ends the match, once per tick', () => {
+      const { log, stepTo } = setUp(FAKE_TIMELINE, true, {
+        conditions: [new ScriptedCondition(LIGHT_WINS)],
+        scoring: (phaseLog) => ({
+          fold: () => {
+            phaseLog.push('fold');
+          },
+        }),
+      });
+
+      stepTo(12);
+
+      expect(log.filter((entry) => entry === 'fold')).toHaveLength(13);
+      expect(log.slice(-4)).toEqual([
+        'update early-game',
+        'fold',
+        'exit early-game',
+        'enter victory',
+      ]);
+    });
+
+    it("puts copies of the scoring rows and team totals in the result, the ending tick's fold included", () => {
+      const row: LegendStats = {
+        entityId: 'entity-1',
+        team: 'light',
+        classId: 'warrior',
+        controller: 'bot',
+        kills: 1,
+        deaths: 0,
+        assists: 0,
+        minionKills: 0,
+        neutralKills: 0,
+        structureDamage: 0,
+        checkpointsWon: 0,
+        score: 15,
+      };
+      const { state, stepTo } = setUp(FAKE_TIMELINE, true, {
+        conditions: [new ScriptedCondition(LIGHT_WINS)],
+        scoring: () => ({
+          fold: ({ state: folded }) => {
+            if (folded.tick === 12) {
+              const book = folded.match.scoreBook;
+              book.addRow({
+                entityId: 'entity-1',
+                team: 'light',
+                classId: 'warrior',
+                controller: 'bot',
+              });
+              book.award('entity-1', { counter: 'kills', by: 1, points: 15 });
+              book.awardTeam('light', { counter: 'structuresDestroyed', by: 1, points: 5 });
+            }
+          },
+        }),
+      });
+
+      stepTo(12);
+      state.match.scoreBook.award('entity-1', { counter: 'kills', by: 8, points: 84 });
+      state.match.scoreBook.awardTeam('light', {
+        counter: 'structuresDestroyed',
+        by: 1,
+        points: 5,
+      });
+
+      expect(state.match.scoring.legends).toEqual([{ ...row, kills: 9, score: 99 }]);
+      expect(state.match.scoring.teams.light).toEqual({
+        score: 109,
+        structuresDestroyed: 2,
+        capturesHeldTicks: 0,
+        checkpointsReached: 0,
+      });
+      expect(state.match.result?.legends).toEqual([row]);
+      expect(state.match.result?.teams).toEqual({
+        light: { score: 20, structuresDestroyed: 1, capturesHeldTicks: 0, checkpointsReached: 0 },
+        dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0, checkpointsReached: 0 },
+      });
     });
 
     it('takes finalHash from the injected hasher', () => {
