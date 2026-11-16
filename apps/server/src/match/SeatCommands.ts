@@ -47,6 +47,15 @@ export class SeatCommands {
     this.lastMove = move;
   }
 
+  /**
+   * Forgets the last movement and target, for when the simulation cleared the Legend's own (a
+   * Duel round reset), so a key still held queues its command again next intent.
+   */
+  public reset(): void {
+    this.lastMove = { x: 0, y: 0 };
+    this.attackTargetId = null;
+  }
+
   private applyAttack(aim: Vec2 | null, snapshot: TargetSnapshot): void {
     const targetId = aim === null ? null : this.targetAt(aim, snapshot);
     if (targetId !== null && targetId !== this.attackTargetId) {

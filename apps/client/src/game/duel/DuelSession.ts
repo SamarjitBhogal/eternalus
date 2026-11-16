@@ -64,8 +64,8 @@ export class DuelSession implements DuelLink {
     return this.latest;
   }
 
-  /** Connects and joins the queue; does nothing while a Duel is in progress. */
-  public join(): void {
+  /** Connects and joins the queue as `name` (the session owner keeps it); does nothing while a Duel is in progress. */
+  public join(name: string): void {
     if (this.transport !== null) return;
     const transport = this.deps.createTransport();
     this.transport = transport;
@@ -78,7 +78,7 @@ export class DuelSession implements DuelLink {
         this.lose();
       },
     });
-    transport.send({ type: 'queue-join' });
+    transport.send({ type: 'queue-join', name });
   }
 
   /** Leaves the queue (`queue-leave`) and closes the connection; the Duel resets. */
@@ -115,6 +115,7 @@ export class DuelSession implements DuelLink {
         this.ownMapSeed = message.seed;
         this.ownTeam = message.team;
         this.state = 'matched';
+        this.deps.handlers.matched(message.opponentName);
         break;
       case 'state':
         this.latest = message.snapshot;
