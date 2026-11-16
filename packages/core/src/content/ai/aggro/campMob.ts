@@ -1,23 +1,14 @@
-import type { AggroRuleDefinition } from '../ai.types';
+import { GUARD_LEASH } from '../../structures/guardLeash';
+import type { GuardAggroRuleDefinition } from '../ai.types';
+import { TOWER_GUARD_AGGRO } from './towerGuard';
 
 /**
  * The forest-camp mob's aggro rules (architecture 18 §7.1): the tower guard's, with a radius that
- * stays inside the camp's 6 m leash measured from the mob's post.
+ * stays inside the camp's leash measured from the mob's post. Its leash is its camp's guard plan.
  */
 export const CAMP_MOB_AGGRO = {
+  ...TOWER_GUARD_AGGRO,
   id: 'camp-mob',
-  // TUNE: balancing.md's 6 m camp leash less the 2 m post gap.
-  acquisitionRadius: 4,
-  priority: [
-    'legend-attacking-ally-legend',
-    'minion-attacking-ally-legend',
-    'minion-attacking-ally-minion',
-    'closest-minion',
-    'closest-legend',
-  ],
-  leashRadius: 6, // TUNE: balancing.md camp leash (the guard plan's is the one camp mobs read)
-  leashGraceTicks: 0, // as the tower guard (DEC-144 E): never chases past its circle
-  aggroCooldownTicks: 0, // as the tower guard (DEC-144): no rest
-  ghostFirstWaveTicks: 0, // camps never ghost
-  callForHelpRadius: 0, // unused: guard-post mobs answer a fellow anywhere in their circle
-} as const satisfies AggroRuleDefinition;
+  // TUNE: the camp leash less the post gap.
+  acquisitionRadius: GUARD_LEASH.camp - GUARD_LEASH.postGap,
+} as const satisfies GuardAggroRuleDefinition;

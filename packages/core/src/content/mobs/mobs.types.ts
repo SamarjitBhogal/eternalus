@@ -1,18 +1,23 @@
 import type { UnitDefinition } from '../units/units.types';
 
+/** A mob weight class, which is also the entity class that builds the mob. */
+export type MobKind = 'light-mob' | 'medium-mob' | 'heavy-mob';
+
 /** A mob (minion or camp unit). Targeting, aggro and rewards are added in Phase 3. */
 export type MobDefinition = UnitDefinition & {
   /** The mob weight class, which is also the entity class that builds it. */
-  readonly kind: 'light-mob' | 'medium-mob' | 'heavy-mob';
+  readonly kind: MobKind;
   /** XP a Legend earns for killing this mob (04 §5). Required, so every mob states it. */
   readonly xpValue: number;
 };
 
 /**
- * How lane minions grow from kills (game doc "Minion XP", MVP-if-time; balancing.md): a level per
- * `killsPerLevel` mob kills up to `maxLevel`, each raising max health by `healthPerLevel` of base
- * health and adding a stack of `statusId`; a minion with a level gives `aura.statusId` to the
- * friendly minions within `aura.radius`, every `aura.everySeconds`.
+ * How lane minions and tower guards (DEC-165) grow (game doc "Minion XP", MVP-if-time;
+ * balancing.md): a level per `killsPerLevel` (a whole number) kills of lane minions, tower guards
+ * or camp mobs, or from another source (DEC-168), up to `maxLevel`, each raising max health by
+ * `healthPerLevel` of base health and adding a stack of `statusId`; a unit with a level gives
+ * `aura.statusId` to the friendly lane minions and tower guards within `aura.radius`, every
+ * `aura.everySeconds`.
  */
 export type MinionVeterancyDefinition = {
   readonly killsPerLevel: number;
