@@ -6,11 +6,12 @@ import { ZoneArea } from '../components/ZoneArea';
 import type { CapturePointsConfig } from '../config/GameConfig.types';
 import { Legend } from '../entities/Legend';
 import { Unit } from '../entities/Unit';
+import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { Team } from '../teams/teams.types';
 import { TickRate } from '../utils/TickRate';
 import { CAPTURE_SIDES, PROGRESS_EPSILON } from './CaptureSystem.constants';
-import type { CaptureMove, CaptureZone, SideWeights } from './CaptureSystem.types';
+import type { CaptureMove, CaptureZone, SideWeights, ZonePresence } from './CaptureSystem.types';
 import type { System, SystemContext } from './System.types';
 
 /**
@@ -25,8 +26,8 @@ import type { System, SystemContext } from './System.types';
  *
  * Emits `capture-progress` when a zone passes a checkpoint (either way), `checkpoint-reached`
  * when a side's push on a zone it does not own passes one for the first time since the zone last
- * changed owner (FR-031, DEC-145 (b), (g)), then `capture-point-owner-changed` when a capture
- * completes.
+ * changed owner (FR-031, DEC-145 (b), (g)), with that side's Legends on the zone from the same
+ * presence pass (DEC-223 (4a)), then `capture-point-owner-changed` when a capture completes.
  * Only living units count: it runs after `DeathSystem`, and a dead Legend the store keeps for its
  * respawn is skipped.
  */
@@ -62,39 +63,43 @@ export class CaptureSystem implements System {
       }
     });
     for (const zone of zones) {
-      this.advance(state, zone, this.weightsInside(zone, units));
+      this.advance(state, zone, this.presenceInside(zone, units));
     }
   }
 
   /**
-   * The summed weight of each side's units whose centre is on `zone`'s area.
+   * The summed weight of each side's units whose centre is on `zone`'s area, and each side's
+   * Legends among them.
    *
    * @remarks ponytail: every unit is tested against every zone (O(zones × units)). That is fine up
    * to 5 lanes (the config sweep in `balancing.md`) and the unit cap. If profiling puts
    * `CaptureSystem` in the tick budget, ask `state.space` for the units near each zone; the index
    * then misses units spawned that tick.
    */
-  private weightsInside(zone: CaptureZone, units: readonly Unit[]): SideWeights {
+  private presenceInside(zone: CaptureZone, units: readonly Unit[]): ZonePresence {
     const weights: SideWeights = { light: 0, dark: 0, neutral: 0 };
+    const legendIds: Record<Team, EntityId[]> = { light: [], dark: [], neutral: [] };
     for (const unit of units) {
       const position = unit.findComponent(Transform)?.position;
       const team = unit.findComponent(TeamMembership)?.team;
-      if (position === undefined || team === undefined) {
+      if (position === undefined || team === undefined || !zone.area.contains(position)) {
         continue;
       }
-      if (zone.area.contains(position)) {
-        weights[team] +=
-          unit instanceof Legend ? this.rules.weights.legend : this.rules.weights.unit;
+      if (unit instanceof Legend) {
+        weights[team] += this.rules.weights.legend;
+        legendIds[team].push(unit.id);
+      } else {
+        weights[team] += this.rules.weights.unit;
       }
     }
-    return weights;
+    return { weights, legendIds };
   }
 
   /** Moves one zone and emits its events. */
-  private advance(state: GameState, zone: CaptureZone, weights: SideWeights): void {
+  private advance(state: GameState, zone: CaptureZone, presence: ZonePresence): void {
     const { capturable } = zone;
-    capturable.setPresence(weights);
-    const move = this.moveFor(capturable, weights);
+    capturable.setPresence(presence.weights);
+    const move = this.moveFor(capturable, presence.weights);
     if (move === null) {
       return;
     }
@@ -116,7 +121,7 @@ export class CaptureSystem implements System {
     }
     const { leader } = move;
     if (leader !== null) {
-      this.reachCheckpoints(state, zone, leader);
+      this.reachCheckpoints(state, zone, leader, presence.legendIds[leader]);
     }
     // A capture completes when its leader brings the zone to that leader's locking state.
     if (leader !== null && progress === move.target && leader !== capturable.owner) {
@@ -133,12 +138,14 @@ export class CaptureSystem implements System {
    * Announces the checkpoints `leader`'s push passed this tick. Only a push on a zone the leader
    * does not own, with the progress on the leader's side, counts: a drain lowers the other side's
    * checkpoint, a revert has no side, and an owner refilling its own zone reaches nothing. Each
-   * side reaches a checkpoint once until the zone changes owner (DEC-145 (g)).
+   * side reaches a checkpoint once until the zone changes owner (DEC-145 (g)). Each event carries
+   * `presentLegendIds`, the leader's Legends on the zone this tick (DEC-223 (4a)).
    */
   private reachCheckpoints(
     state: GameState,
     { entity, capturable }: CaptureZone,
     leader: Team,
+    presentLegendIds: readonly EntityId[],
   ): void {
     if (leader === capturable.owner || leader !== capturable.progressTeam) {
       return;
@@ -148,6 +155,7 @@ export class CaptureSystem implements System {
         pointId: entity.id,
         team: leader,
         checkpoint: passed,
+        presentLegendIds,
       });
     }
     capturable.markReached(leader, capturable.checkpoint);

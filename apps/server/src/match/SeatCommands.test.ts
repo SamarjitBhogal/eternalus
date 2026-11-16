@@ -16,7 +16,7 @@ const unit = (
   family: 'mob',
   definitionId: 'minion',
   team,
-  transform: { x, y, radius: 1 },
+  transform: { x, y, radius: 1, facing: { x: 1, y: 0 } },
   health: { current: hp, max: 10 },
   progression: null,
   aether: null,

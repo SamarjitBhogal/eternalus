@@ -6,7 +6,7 @@
 # TLS is the platform's job (a reverse proxy in front of the container terminates it).
 
 # --- Build: bundle the server with its workspace packages (core, protocol) into one file.
-FROM node:24-slim AS build
+FROM node:24.21.0-slim AS build
 WORKDIR /repo
 COPY package.json package-lock.json tsconfig.base.json tsconfig.json ./
 COPY packages/core/package.json packages/core/package.json
@@ -19,7 +19,7 @@ RUN npm run build -w @eternalus/server
 
 # --- Run: the bundle plus the one runtime dependency it leaves external (ws, the version the
 # lockfile pins: copied from the build stage's `npm ci`, nothing is fetched from the registry).
-FROM node:24-slim
+FROM node:24.21.0-slim
 WORKDIR /app
 COPY --from=build /repo/node_modules/ws ./node_modules/ws
 COPY --from=build /repo/apps/server/dist/main.js ./main.js

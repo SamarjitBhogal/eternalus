@@ -3,10 +3,12 @@
  * `catalogue.types.ts` and `hud.types.ts`. `game/` emits game → UI events; `ui/` emits only
  * `ui-intent`. `connectBusToStore` copies every game → UI event into its slice.
  */
+import type { MatchResult } from '@eternalus/core';
+
 import type { InputAction, InputChord } from './Binding.types';
 import type { AssetId, DisplayCatalogue, RasterBox } from './catalogue.types';
 import type { CrashReportState } from './CrashReport.types';
-import type { LegendClassId, MatchEndReason, PlayableTeam } from './domain.types';
+import type { LegendClassId, MatchEnding, PlayableTeam } from './domain.types';
 import type {
   Announcement,
   CapturePointStatus,
@@ -16,16 +18,6 @@ import type {
   StructureStatus,
 } from './hud.types';
 import type { SettingsPatch, SettingsSliceState } from './slices/settingsSlice';
-
-/** How a match ended, for the results screen. */
-export type MatchResultSummary = {
-  /** The winning team; `null` for a draw. */
-  readonly winner: PlayableTeam | null;
-  /** The viewing player's own team. */
-  readonly ownTeam: PlayableTeam;
-  /** Why the server ended the match. */
-  readonly reason: MatchEndReason;
-};
 
 /** Every session phase, in flow order (architecture 13 §2). */
 export const SESSION_PHASES = [
@@ -77,6 +69,8 @@ export type UiIntent =
   | { readonly kind: 'leave-match' }
   /** Forfeit the online Duel in progress (the opponent wins) and return to the main menu. */
   | { readonly kind: 'forfeit-duel' }
+  /** Leaves the win/lose screen before its countdown ends (DEC-78). */
+  | { readonly kind: 'continue' }
   | { readonly kind: 'open-overlay'; readonly overlay: Overlay }
   | { readonly kind: 'close-overlay' }
   | {
@@ -176,8 +170,15 @@ export type LoadingProgress = {
   readonly status: 'loading' | 'ready' | 'failed';
 };
 
-/** The match being set up: seed, the player's team and both rosters (allies include the player). */
+/** Where a match runs: in this browser against bots, or an online Duel on the server (ADR 0016). */
+export type MatchMode = 'local' | 'duel';
+
+/**
+ * The match being set up: where it runs, the seed, the player's team and both rosters (allies
+ * include the player).
+ */
 export type MatchSetupDraft = {
+  readonly mode: MatchMode;
   readonly seed: number;
   readonly playerTeam: PlayableTeam;
   readonly allies: readonly RosterEntry[];
@@ -189,6 +190,9 @@ export type ClassSelection = { readonly classId: LegendClassId; readonly specId:
 
 /** Both rosters once LOCK IN has filled them: every bot with its Legend, the enemy Rover mirrored. */
 export type FilledRosters = Pick<MatchSetupDraft, 'allies' | 'enemies'>;
+
+/** The session countdowns: character select (60 s), the reveal (10 s), the win/lose screen (30 s). */
+export type CountdownKind = 'select' | 'reveal' | 'results';
 
 /** Simulation time for the match clock. */
 export type MatchClock = { readonly tick: number; readonly seconds: number };
@@ -212,8 +216,8 @@ export type BridgeEventMap = {
    * bot's Legend and the enemy Rover's mirror of the pick (DEC-61).
    */
   'selection-locked': FilledRosters;
-  /** Remaining session time of the select (60 s) or reveal (10 s) countdown. */
-  countdown: { readonly kind: 'select' | 'reveal'; readonly remainingMs: number };
+  /** Remaining session time of one countdown. */
+  countdown: { readonly kind: CountdownKind; readonly remainingMs: number };
   'match-clock': MatchClock;
   /** The two players' names, when the server pairs them (the VERSUS screen). */
   'duel-versus': DuelVersus;
@@ -221,8 +225,16 @@ export type BridgeEventMap = {
   'duel-state': DuelHudState;
   /** The Duel opponent's connection: `graceMs` is the reconnect window while they are away, `null` once connected. */
   'duel-opponent-presence': { readonly graceMs: number | null };
-  /** How a match ended, for the results screen. */
-  'match-result': MatchResultSummary;
+  /**
+   * The match ended, once per match (13 §5): core's result, and its length in match seconds (the
+   * bridge knows the tick rate, the UI does not; DEC-129 (1)).
+   */
+  'match-ended': { readonly result: MatchResult; readonly durationSeconds: number };
+  /**
+   * The server ended an online Duel (ADR 0016): no simulation event reaches the client, so the
+   * session publishes this in place of `match-ended`.
+   */
+  'duel-ended': MatchEnding;
   /** The human Legend for the HUD, every 6 ticks (13 §5); `null` before it spawns. */
   'hud-state': { readonly player: PlayerHudSnapshot | null };
   /** Team structures, at match start and every 30 ticks (13 §9 recipe). */
