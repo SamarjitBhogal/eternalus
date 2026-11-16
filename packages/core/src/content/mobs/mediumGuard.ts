@@ -1,25 +1,17 @@
+import { MEDIUM_MINION } from './mediumMinion';
 import type { MobDefinition } from './mobs.types';
 
 /**
  * The medium tower guard (architecture 18 §7): a medium minion that holds its structure instead of
- * marching. Stats are the medium minion's (balancing.md); guard counts, leash and respawn are the
- * structure's guard plan (`content/structures/guardPlans.ts`).
+ * marching. Stats are the medium minion's, spread from it so a tuning change is one edit (DEC-168,
+ * B5); guard counts, leash and respawn are the structure's guard plan
+ * (`content/structures/guardPlans.ts`). No `xpValue` row of its own in balancing.md.
  */
 export const MEDIUM_GUARD = {
+  ...MEDIUM_MINION,
   id: 'medium-guard',
-  kind: 'medium-mob',
   displayName: 'Medium Guard',
-  baseHealth: 400, // TUNE: balancing.md medium minion
-  footprintRadius: 0.5, // TUNE: balancing.md medium minion
-  visionRadius: 10, // TUNE:
   movementStrategy: 'leashed-chase',
   controller: 'guard',
   aiProfile: 'tower-guard',
-  attack: { strategy: 'melee', damage: 28, reach: 1.5, interval: 1.2 }, // TUNE: balancing.md medium minion
-  xpValue: 45, // TUNE: balancing.md "XP sources" (medium minion kill); guards have no row of their own
-  movementProfile: {
-    maxSpeed: 3.2, // TUNE: m/s, balancing.md medium minion
-    acceleration: 16, // TUNE: m/s², top speed after 0.2 s
-    mass: 1.125, // TUNE: as the medium minion
-  },
 } as const satisfies MobDefinition;

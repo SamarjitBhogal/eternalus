@@ -10,8 +10,8 @@ import type { ErrorBoundaryProps, ErrorBoundaryState } from './ErrorBoundary.typ
  * imports `game/` or `data/`. The session reports the crash and returns to the menu. A boundary
  * that has crashed keeps its fallback, which never renders the screen again, so it cannot report
  * twice or loop; `App` keys it by screen, so it resets when the screen changes. A throw from the
- * game loop, an event handler or async code is not seen here (the game loop's `onCrash` and the
- * `window` listeners take those).
+ * game loop, an event handler or async code is not seen here (the match observer's `crashed` and
+ * the `window` listeners take those).
  */
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   public override state: ErrorBoundaryState = { hasCrashed: false };
