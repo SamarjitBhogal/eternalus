@@ -49,6 +49,7 @@ Reply inline (`Decision: …`).
       (8) After the eruption the gem is gone: does the Cathedral keep striking, or does it stop?
       (9) The gem's body: the hittable circle is `TUNE` radius 5, the drawn diamond's half-width
       (`buildingGeometry.ts`, `structureCatalogue.ts`), and it does not block movement. Keep both?
+      Aryan's choice: the gem is solid (blocks movement) until it erupts; Sam to confirm.
       The critic adds two better-than-design points here: the `Cathedral` entity's only body is
       the gem, so "hit the Cathedral" means "hit the gem" (doc 07 §1 could say so, or the gem
       could become its own component before the building gets walls to hit); and the hit radius
