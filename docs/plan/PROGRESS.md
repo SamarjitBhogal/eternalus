@@ -7563,3 +7563,20 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   alone afterwards: "Test Files 1 passed (1)", "Tests 5 passed (5)" (125 s); neither test reaches
   the eruption. Not committed: the plan allowed one check and it failed.
 - Next step: Sam confirms the solid-until-eruption choice and answers the DEC-217 item.
+
+### 2026-11-16 — Phase 3 / sprint 3 work: stack audit fixes for the gem eruption — feat/cathedral-gem-eruption — Aryan Walanj + Claude Code
+
+- What was done: an audit of the branch against checklists §2 and the PR template (the
+  `CHECKLIST.md` root note, not committed). `e78ef947` had turned validateGameConfig's
+  "an unknown action kind" case into the `bossId` case, which left no plain unknown kind covered;
+  `0bf8b1c8` restores it (kind `summon-dragon`). Broken once (unknown kinds accepted) → "×
+  rejects an unknown action kind". Merged from below: `21fc1d5e` (`feat/cathedral-gem-strike`:
+  the solid gem recorded as Aryan's interim in INBOX lightning question (9) and doc 07, the
+  critic's blocker on `c7320ab9..c8dba3e9`). `/ponytail-review` on `28a2bda0`: no findings, so
+  `/ponytail` applied nothing.
+- Checks run: one `npm run check`, exit 0. format:check, check:no-js, lint, typecheck and knip
+  passed (knip printed one configuration hint). core "Test Files 253 passed (253)", "Tests 1516
+  passed (1516)"; protocol "Test Files 1 passed (1)", "Tests 18 passed (18)"; client "Test Files
+  286 passed (286)", "Tests 1892 passed (1892)"; server "Test Files 20 passed (20)", "Tests 79
+  passed (79)"; "Checked 128 Markdown files under docs/." "Documentation check passed."
+- Next step: the same audit on `feat/cathedral-boss-spawn`.
