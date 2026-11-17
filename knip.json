@@ -11,6 +11,13 @@
     "apps/client": {
       "project": ["src/**/*.{ts,tsx}"],
       "ignoreDependencies": ["@eternalus/core"]
+    },
+    "packages/protocol": {
+      "project": ["src/**/*.ts"]
+    },
+    "apps/server": {
+      "entry": ["src/main.ts", "src/bots/main.ts"],
+      "project": ["src/**/*.ts"]
     }
   },
   "ignoreExportsUsedInFile": false,

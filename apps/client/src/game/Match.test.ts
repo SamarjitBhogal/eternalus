@@ -93,7 +93,7 @@ const CONTENT_WITH_A_ROCK: Content = (() => {
  * mobs the map's structures spawn, it plays in sim mode instead: no map, so no roster (a roster
  * needs the map).
  */
-const setUp = (content?: Content, withMapObjects = false, playerSpecId?: string) => {
+const setUp = (content?: Content, withMapObjects = false) => {
   // No countdown: core's countdown holds all movement, and these tests walk from the start.
   const config = createDefaultGameConfig({ match: { countdownSeconds: 0 } });
   const world = prepareMatchWorld(config, SEED);
@@ -106,15 +106,12 @@ const setUp = (content?: Content, withMapObjects = false, playerSpecId?: string)
       : { config, content }),
     ...(withMapObjects ? { mapObjects: world.mapObjects } : {}),
   });
-  // A prepared match may have advanced its opening director tick before views are attached.
-  if (playerSpecId !== undefined) simulation.step();
   const scheduler = new FakeFrameScheduler();
   const renderer = new RecordingRenderer();
   const camera = new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT);
   const input = new ScriptedIntent();
   const logger = new MemoryLogger();
   const match = new Match({
-    ...(playerSpecId === undefined ? {} : { playerSpecId }),
     simulation,
     world,
     tickRate: config.tickRate,
@@ -123,7 +120,7 @@ const setUp = (content?: Content, withMapObjects = false, playerSpecId?: string)
     camera,
     input,
     logger,
-    onCrash: () => undefined,
+    observer: { crashed: () => undefined, ended: () => undefined },
     // A bus nobody listens to, at the shipped cadence.
     bridge: {
       bus: new TypedEventBus<BridgeEventMap>(),
@@ -171,27 +168,6 @@ const lastMinimap = (renderer: RecordingRenderer) => {
 };
 
 describe('Match', () => {
-  it('anchors an immediate first-tick cast at the spawn rather than the world origin', () => {
-    const { match, simulation, renderer } = setUp(undefined, false, 'knight');
-    const origin = { x: playerX(match), y: playerY(match) };
-    expect(origin.x).toBeGreaterThan(0);
-    const actorId = match.playerEntityId;
-    if (actorId === null) throw new Error('No test player');
-    simulation.enqueueCommand({
-      type: 'cast-ability',
-      actorId,
-      slot: 'ability-2',
-      aim: { point: origin, targetId: null },
-    });
-    match.tick();
-    match.render(0);
-    const trail = renderer.calls.filter(
-      (call) => call.op === 'drawWorldGlyph' && call.args[2] === '#ff681c52',
-    );
-    expect(trail.length).toBeGreaterThan(0);
-    expect(trail[0]?.args[1]).toEqual(origin);
-    match.destroy();
-  });
   it('updates the main scene and minimap when a map object is destroyed', () => {
     const { match, simulation, renderer, map } = setUp(undefined, true);
     const house = new MapPresentationBuilder()

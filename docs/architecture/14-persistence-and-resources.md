@@ -4,13 +4,11 @@ description: The "single access with a controller in front" design for local dat
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-02
 tags: [architecture, persistence, indexeddb, repositories, dto, migrations, resources, assets]
 paths: ['apps/client/src/data/**']
 related:
   [
-    'docs/decisions/0027-additional-legend-asset-budget.md',
-    'docs/decisions/0028-user-attachment-art-provenance.md',
     'docs/architecture/03-game-model.md',
     'docs/architecture/09-hardware-abstraction.md',
     'docs/architecture/12-game-story-and-match-director.md',
@@ -585,42 +583,6 @@ detail:
   and no `assets/manifest.json` is generated. `AboutScreen` lists the manifest's credits, each
   with its licence text (the `credits` event into `assetsSlice`), so the OFL and MIT notices ship
   in the built game.
-
-### 2026-11-11 — PR #90 integration
-
-The unregistered golden-knight atlas and its URL-based loader were removed because the source reference licence was not established. The phase branch's manifest-based ResourceController remains the single asset facade; SessionController owns group loading and release. DEC-238 approves stand-in art, subject to the asset policy above.
-
-### Magus atlas resources
-
-Atlas imports must use isolated poses with transparent cell gutters; renderer cropping cannot
-repair pixels from an adjacent pose already baked into a cell. Replacements retain manifest
-integrity and provenance checks and must stay within their human-approved byte allowance.
-
-The unregistered golden-knight atlas remains removed. `SpriteAtlasLoader` now decodes uniform
-world atlases through an injected bitmap decoder; `ResourceController.atlases()` exposes owned
-handles to the match factory and closes them on group release. `SessionController` still owns
-group loading and release. The generated Magus sheets use owner-licensed selection references;
-their match manifest registration uses the human-approved byte allowance recorded in ADR 0026. DEC-238
-approves stand-in art, subject to the asset policy above.
-
-### Additional character resources
-
-The five additional Legend atlases and their selection portraits use the same manifest,
-ResourceController and group lifetimes as the existing art. ADR 0027 records the human-approved
-additional byte allowance. `legend-sprite-provenance.md` records confirmed character mapping,
-permission, reference hashes and conversion. ZIP references remain inspiration only.
-
-### Contributor attachment provenance
-
-An asset may name a public source URL or a Figma node, or reference an approved local attachment
-through `attachmentReferenceId` (ADR 0028). `attachmentReferences.ts` is the single registry of
-original filenames, SHA-256 hashes, permission scope, confirmer, confirmation date and provenance
-record path. Each derived portrait or atlas identifies the same source record. The manifest gate
-uses `hasAssetProvenance` to reject unknown IDs, malformed fields, missing permission or a
-filename/hash/confirmation absent from the checked-in provenance document. A filename alone is
-never enough. A supplied attachment ID must validate even when a public URL is also present.
-Licence, encoded-file integrity, exact byte budgets and per-Legend ownership remain separate
-checks. Permission records document the contributor's confirmation, not independent verification.
 
 ## Related
 

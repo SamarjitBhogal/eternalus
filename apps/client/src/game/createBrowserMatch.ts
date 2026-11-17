@@ -23,11 +23,9 @@ import type { HostDocument, HostWindow } from './MatchHost.types';
 import { withPlayerTeam } from './withPlayerTeam';
 import type { SettingsController } from './settings/SettingsController';
 import type { MatchFactory } from './SessionController.types';
-import type { ResourceController } from '../data/resources/ResourceController';
 
 /** What the browser match factory is built from; `main.tsx` passes window, document and the page singletons. */
 export type BrowserMatchDeps = {
-  readonly resources?: Pick<ResourceController, 'atlases'>;
   /** The frame scheduler (`RafFrameScheduler`) is built on it, so the type names rAF. */
   readonly window: HostWindow & Pick<Window, 'requestAnimationFrame' | 'cancelAnimationFrame'>;
   readonly document: HostDocument;
@@ -48,7 +46,7 @@ export type BrowserMatchDeps = {
  * A match's logger: everything to its own TRACE ring buffer first, so a report a page sink makes
  * already holds the record (ADR 0025 §3), then WARN and worse to the page's sinks.
  */
-function createMatchLogger(deps: BrowserMatchDeps, ring: RingBufferSink): SinkLogger {
+export function createMatchLogger(deps: BrowserMatchDeps, ring: RingBufferSink): SinkLogger {
   return new SinkLogger(
     () => deps.clock.now(),
     [
@@ -82,7 +80,7 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
     // Core spawns the roster's human slot, the player's Rover, at the team's Stronghold: a map
     // without one throws in `Simulation`, below.
     const config = withPlayerTeam(gameConfig, request.setup.playerTeam);
-    const renderer = Canvas2dRenderer.fromCanvas(viewport.canvas, deps.resources?.atlases('match'));
+    const renderer = Canvas2dRenderer.fromCanvas(viewport.canvas);
     if (renderer === null) {
       throw new Error('This browser cannot draw on a 2D canvas.');
     }
@@ -108,7 +106,6 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
         roster: request.roster,
       });
       match = new Match({
-        playerSpecId: request.setup.allies.find((entry) => entry.isPlayer)?.specId ?? null,
         simulation,
         world: request.world,
         tickRate: gameConfig.tickRate,
@@ -117,7 +114,7 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
         camera,
         input,
         logger,
-        onCrash: request.onCrash,
+        observer: request.observer,
         bridge: {
           bus: deps.bus,
           publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,

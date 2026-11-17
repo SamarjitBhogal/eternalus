@@ -17,7 +17,6 @@ export type HudSlotLook = 'ready' | 'cooldown' | 'idle' | 'no-data';
 
 /** One HUD slot: the kit's name and icon joined with the slot's runtime state. */
 export type HudSlotView = {
-  readonly lastCastTick?: number | null;
   /** From the class kit; `null` until abilities exist (the action label names the slot). */
   readonly displayName: string | null;
   readonly iconAssetId: AssetId | null;
@@ -58,7 +57,6 @@ export const selectHudSlotView = createSelector(
     const display = kit?.slots.find((entry) => entry.slot === slot);
     const look = lookOf(status);
     return {
-      ...(status?.lastCastTick === undefined ? {} : { lastCastTick: status.lastCastTick }),
       displayName: display?.displayName ?? null,
       iconAssetId: display?.iconAssetId ?? null,
       look,

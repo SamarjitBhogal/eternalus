@@ -18,7 +18,6 @@ const HOUSE_ENTITY = 'house-entity';
 
 /** An intent source the test steers by hand. */
 class ScriptedIntent implements IntentSource {
-  public triggered: InputIntent['triggered'] = [];
   public move: Vec2 = { x: 0, y: 0 };
 
   public isAttacking = false;
@@ -26,12 +25,7 @@ class ScriptedIntent implements IntentSource {
   public aim: Vec2 | null = null;
 
   public read(): InputIntent {
-    return {
-      move: this.move,
-      isAttacking: this.isAttacking,
-      aim: this.aim,
-      triggered: this.triggered,
-    };
+    return { move: this.move, isAttacking: this.isAttacking, aim: this.aim, triggered: [] };
   }
 }
 
@@ -59,7 +53,7 @@ const unit = (id: string, team: Team, x: number, y: number): EntitySnapshot => (
   family: 'mob',
   definitionId: 'minion',
   team,
-  transform: { x, y, radius: 1 },
+  transform: { x, y, radius: 1, facing: { x: 1, y: 0 } },
   health: { current: 10, max: 10 },
   progression: null,
   aether: null,
@@ -94,27 +88,6 @@ const setUp = () => {
 };
 
 describe('PlayerCommands', () => {
-  it('queues bound ability slots with the pointer aim or the actor position', () => {
-    const { input, enqueueCommand, tick } = setUp();
-    input.triggered = ['ability-2'];
-    input.aim = { x: 4, y: 7 };
-    tick();
-    expect(enqueueCommand).toHaveBeenCalledWith({
-      type: 'cast-ability',
-      actorId: ACTOR,
-      slot: 'ability-2',
-      aim: { point: { x: 4, y: 7 }, targetId: null },
-    });
-    input.triggered = ['ability-3'];
-    input.aim = null;
-    tick();
-    expect(enqueueCommand).toHaveBeenCalledWith({
-      type: 'cast-ability',
-      actorId: ACTOR,
-      slot: 'ability-3',
-      aim: { point: { x: 20, y: 20 }, targetId: null },
-    });
-  });
   it('queues one attack per target while held, and again after a release or a stop', () => {
     const { input, queued, tick, enqueueCommand } = setUp();
     input.isAttacking = true;

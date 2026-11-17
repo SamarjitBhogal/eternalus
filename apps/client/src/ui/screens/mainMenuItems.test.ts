@@ -11,17 +11,18 @@ describe('mainMenuItems', () => {
     seen.length = 0;
   });
 
-  it('emits start-match and one navigate per sub-screen, in menu order', () => {
+  it('emits start-match, one navigate to the Duel name entry and one navigate per sub-screen, in menu order', () => {
     const items = mainMenuItems('Chronicle');
     for (const item of items) item.onSelect();
     expect(seen).toEqual([
       { kind: 'start-match' },
+      { kind: 'navigate', route: 'duel-name' },
       { kind: 'navigate', route: 'loadouts' },
       { kind: 'navigate', route: 'profile' },
       { kind: 'navigate', route: 'settings' },
       { kind: 'navigate', route: 'about' },
     ]);
-    expect(items[2]?.label).toBe('Chronicle');
+    expect(items[3]?.label).toBe('Chronicle');
     stop();
   });
 });

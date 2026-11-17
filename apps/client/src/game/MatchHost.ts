@@ -1,6 +1,7 @@
 import type { InputAction } from '../bridge/Binding.types';
 import type { MatchEvidence } from '../data/logging/ErrorReport.types';
 import { CanvasPointerControls } from './CanvasPointerControls';
+import { KEY_ZOOM_STEP } from './MatchHost.constants';
 import type { MatchHostDeps } from './MatchHost.types';
 import type { RunningMatch } from './SessionController.types';
 
@@ -8,9 +9,9 @@ import type { RunningMatch } from './SessionController.types';
  * Hosts one match in the page: sizes the canvas to its device pixels, attaches the keyboard to
  * the window and the mouse and pointer controls to the canvas, follows the player's bindings,
  * releases held input on focus loss, a hidden tab or pause, runs the client-only one-shot actions
- * on their key press (DEC-117; the developer explorer's hotkey, DEC-105, every build), and tears
- * all of it down again, leaving 0 listeners and 0 frames (13 §2). It owns the match and the
- * adapters it is given.
+ * on their key press (DEC-117; the developer explorer's hotkey, DEC-105, every build; the zoom
+ * keys; the minimap key, DEC-147), and tears all of it down again, leaving 0 listeners and 0
+ * frames (13 §2). It owns the match and the adapters it is given.
  */
 export class MatchHost implements RunningMatch {
   private readonly pointer: CanvasPointerControls;
@@ -28,6 +29,24 @@ export class MatchHost implements RunningMatch {
       'toggle-developer-camera',
       () => {
         this.pointer.toggleExplorer();
+      },
+    ],
+    [
+      'camera-zoom-in',
+      () => {
+        this.deps.match.controls.zoomBy(KEY_ZOOM_STEP);
+      },
+    ],
+    [
+      'camera-zoom-out',
+      () => {
+        this.deps.match.controls.zoomBy(1 / KEY_ZOOM_STEP);
+      },
+    ],
+    [
+      'toggle-minimap',
+      () => {
+        this.deps.match.controls.toggleMiniMap();
       },
     ],
   ];
@@ -77,7 +96,7 @@ export class MatchHost implements RunningMatch {
   }
 
   /** What an error report needs from the match (ADR 0025 §3), as `createBrowserMatch` reads it. */
-  public evidence(): MatchEvidence {
+  public evidence(): MatchEvidence | null {
     return this.deps.evidence();
   }
 

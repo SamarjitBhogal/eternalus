@@ -1,4 +1,3 @@
-import { EffectZone } from './zones/EffectZone';
 import { EntityRegistry } from './EntityRegistry';
 import { Magus } from './legends/Magus';
 import { Sentinel } from './legends/Sentinel';
@@ -29,7 +28,6 @@ export const createDefaultEntityRegistry = (): EntityRegistry => {
   registry.register('heavy-mob', HeavyMob);
   registry.register('obstacle', Obstacle);
   registry.register('projectile', Projectile);
-  registry.register('effect-zone', EffectZone);
   registry.register('stronghold', Stronghold);
   registry.register('spawner-tower', SpawnerTower);
   registry.register('buff-tower', BuffTower);

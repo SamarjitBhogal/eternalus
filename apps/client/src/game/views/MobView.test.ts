@@ -7,6 +7,7 @@ import {
   MINI_MAP_OUTLINE_COLORS,
   MINI_MAP_OUTLINE_WIDTH,
   MOB_OUTLINE_COLOR,
+  FACING_CHEVRON,
   MOB_OUTLINE_SCALE,
   MOB_VISUAL_SCALE,
   NEUTRAL_ENTITY_COLOR,
@@ -20,7 +21,7 @@ const MINION: EntitySnapshot = {
   family: 'mob',
   definitionId: 'light-minion',
   team: 'light',
-  transform: { x: 0, y: 0, radius: 0.4 },
+  transform: { facing: { x: 1, y: 0 }, x: 0, y: 0, radius: 0.4 },
   health: { current: 150, max: 150 },
   progression: null,
   aether: null,
@@ -36,12 +37,19 @@ describe('MobView', () => {
   it('draws a dark outline under the team disc, so mobs show on their own Stronghold', () => {
     const renderer = new RecordingRenderer();
 
-    new MobView().draw({ entity: MINION, position: AT, isFocused: false }, renderer);
+    new MobView().draw(
+      { facing: { x: 1, y: 0 }, entity: MINION, position: AT, isFocused: false },
+      renderer,
+    );
 
     expect(renderer.calls).toEqual([
       {
         op: 'drawWorldGlyph',
         args: [{ shape: 'dot', size: DIAMETER * MOB_OUTLINE_SCALE }, AT, MOB_OUTLINE_COLOR],
+      },
+      {
+        op: 'strokePath',
+        args: [expect.any(Array), FACING_CHEVRON.color, FACING_CHEVRON.lineWidth],
       },
       { op: 'drawWorldGlyph', args: [{ shape: 'dot', size: DIAMETER }, AT, TEAM_COLORS.light] },
     ]);
@@ -51,6 +59,7 @@ describe('MobView', () => {
     const renderer = new RecordingRenderer();
     const view = new MobView();
     const at = (team: 'light' | 'dark' | 'neutral') => ({
+      facing: { x: 1, y: 0 },
       entity: { ...MINION, team },
       position: AT,
       isFocused: false,

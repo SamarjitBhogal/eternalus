@@ -11,7 +11,7 @@ import type { CommandHandlers } from './CommandHandler.types';
 import { createDefaultCommandHandlers } from './defaultCommandHandlers';
 import { UnsupportedCommandHandler } from './handlers/UnsupportedCommandHandler';
 
-const REJECTED_COMMANDS: readonly Command[] = [
+const NOT_YET_SUPPORTED: readonly Command[] = [
   {
     type: 'cast-ability',
     actorId: 'entity-1',
@@ -27,8 +27,8 @@ const REJECTED_COMMANDS: readonly Command[] = [
 ];
 
 describe('createDefaultCommandHandlers', () => {
-  it.each(REJECTED_COMMANDS)(
-    'rejects $type with an unknown actor or an unimplemented handler',
+  it.each(NOT_YET_SUPPORTED)(
+    'rejects $type as not supported until its system exists',
     (command) => {
       const state = new GameState(createDefaultGameConfig(), 1);
       const reasons: string[] = [];
@@ -37,9 +37,7 @@ describe('createDefaultCommandHandlers', () => {
         state,
         factory: new EntityFactory(new EntityRegistry(), new ContentCatalogue([])),
       });
-      expect(reasons).toEqual([
-        command.type === 'cast-ability' ? 'unknown-entity' : 'not-supported',
-      ]);
+      expect(reasons).toEqual(['not-supported']);
     },
   );
 

@@ -1,4 +1,3 @@
-import { RangedAttackStrategy } from './RangedAttackStrategy';
 import { HORDE_STEERING } from '../../content/ai/hordeSteering';
 import type { AttackStrategyId, MovementStrategyId } from '../../content/units/units.types';
 import type { AttackStrategy } from './AttackStrategy.types';
@@ -24,6 +23,5 @@ export const createDefaultStrategyRegistry = (): StrategyRegistry => ({
   },
   attack: {
     melee: new MeleeAttackStrategy(),
-    ranged: new RangedAttackStrategy(),
   },
 });

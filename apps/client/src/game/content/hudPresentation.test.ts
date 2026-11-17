@@ -31,7 +31,7 @@ describe('HUD presentation', () => {
     expect(catalogue.legendClasses.find((card) => card.classId === 'harbinger')?.hud).toBeNull();
   });
 
-  it('shows documented class actions and only the art that fits the Legend (DEC-101, DEC-114)', () => {
+  it('shows an empty kit in a live match except the art that fits the Legend (DEC-101, DEC-114)', () => {
     const available = catalogue.legendClasses.filter(isSelectableClass);
     expect(
       available.map((card) => [
@@ -48,29 +48,7 @@ describe('HUD presentation', () => {
       ['magus', null, 'magus-weapon-staff', []],
     ]);
     for (const card of available) {
-      expect(card.hud?.slots.map((slot) => slot.displayName)).toEqual(
-        (
-          {
-            magus: ['Imbue', 'Shockwave', 'Sanctuary', 'Nova (animation preview)', null, null],
-            warrior: [
-              'Veil (animation preview)',
-              'Blade Runner (animation preview)',
-              'Hamstring (animation preview)',
-              'Fury (animation preview)',
-              null,
-              null,
-            ],
-            sentinel: [
-              'Shield Wall (animation preview)',
-              'Sunder (animation preview)',
-              'Colossus Roar (animation preview)',
-              'Meteor Fall (animation preview)',
-              null,
-              null,
-            ],
-          } as const
-        )[card.classId as 'magus' | 'warrior' | 'sentinel'],
-      );
+      expect(card.hud?.slots.map((slot) => slot.displayName)).toEqual(SLOT_ORDER.map(() => null));
     }
     const specWeapons = available
       .flatMap((card) => card.specs)

@@ -510,7 +510,9 @@ new status is content only, a new stacking mode is one union member and one `cas
 `blind`, `enraged`, `crushed`) is authored in `content/status-effects/` as `AuthoredStatusEffect`
 (seconds; `enraged.maxStacks: 'structures-per-lane'`) and loaded by `loadStatusEffects` into
 `StatusEffectDefinition` (`durationTicks`, `everyTicks`, every cap resolved from config), which
-validates at load. Modifiers are `op: 'mul'`, `value` once per stack. `StatusEffectRuntime` sits in
+validates at load. Modifiers are `op: 'mul'`, whose stacks compound, or `op: 'add'`, whose stacks
+add (the `veteran` damage bonus, DEC-164); `value` counts once per stack, and a stat is (1 + every
+`add`) × every `mul`. `StatusEffectRuntime` sits in
 `components/` next to `StatusEffects`, which holds and pools it (`components/` may not import
 `combat/`); its stacking switch is `reapply`, with `refresh` and `intensity` so far, and periodic
 ticks count from the first application. Every unit gets `StatusEffects`; anything without it
@@ -529,9 +531,14 @@ the applier. Readers: `MovementSystem` (`moveSpeed`, `cannot-move`), `CombatSyst
 (`cannot-attack`; `attackSpeed`, fixed when a hit lands), `StatusModifierStep` (`damageDealt`, `damageTaken`); `cannot-cast` waits for
 `AbilitySystem`. Whether the applier's `remove` / `expire` (and so `status-expired`) are covered by
 DEC-41 is still open. `blind` has no hard miss (DEC-42): its aim wobble and the client vignette are
-follow-ups. `StatusStacksWithinMaxInvariant` runs every tick. Not built yet: `polarity`,
-`controlClass` and `control-immune` (so a producer that reapplies `stun` before `onExpire` exists
-can stun-lock), `onExpire`, `appliesTo` (the component is the gate), the `duration`,
+follow-ups. `StatusStacksWithinMaxInvariant` runs every tick. `polarity`, `controlClass` and
+`onExpire` (`apply-status` specs, run by the applier's `expire` on time-out only, credited to the
+same source, ids checked at load) are built: `stun` is followed by `control-immune` (0.5 s), and the
+applier refuses `hard` control on a `control-immune` target (SCRUM-228, `feat/status-control-immune`).
+`stun` and `crushed` are both followed by `control-immune`; re-applying an active stun restarts its
+timer by owner ruling (DEC-99), so `control-immune` follows only when it runs out, and a producer
+that re-applies a stun before it ends can hold a target until it stops.
+Not built yet: `controlResistance` (bosses, Eternal), `appliesTo` (the component is the gate), the `duration`,
 `independent` and `permanent` modes, and a max-health stat (the FR-029 aura). `StatusEffectSystem`
 runs before movement.
 
@@ -572,11 +579,17 @@ source)` is built and is the only caller of `Health.applyDamage`. Each modifier 
 `combat/defaultDamageSteps.ts`**; shields-then-base stays inside `Health`. The steps today are
 `BreakabilityStep` (first: an unbreakable wall or gate rejects the hit before any multiplier,
 which gives the same result as §9's late check; 07 §3), `FriendlyFireStep` (no damage between same-team entities; awaiting the owner's sign-off in
-`INBOX.md`), `StatusModifierStep` (`damageDealt` / `damageTaken`; 05 §8) and `MinionStrengthStep`
+`INBOX.md`), `StatusModifierStep` (`damageDealt` / `damageTaken`; 05 §8), `MinionStrengthStep`
 (the minion strength-by-distance curve, its base-stat point moved toward the enemy for each lane
-tower the enemy has lost there, DISC-24; [18](18-minion-system.md) MS-16). Interim differences: no `DamageType` yet (nothing reads it; it joins `DamageHit` and
+tower the enemy has lost there, DISC-24; [18](18-minion-system.md) MS-16) and
+`BossMinionDamageStep` (a boss takes only its share of a lane minion's hit, balancing.md; the
+shares are `BOSS_MINION_DAMAGE_TAKEN` in `content/mobs/minionModifiers.ts`). Interim differences:
+no `DamageType` yet (nothing reads it; it joins `DamageHit` and
 `apply` with the first resistance); the pipeline itself emits `entity-died` with the killer, so
-`DeathResolver` is not a separate class yet. `GameState.killerOf` keeps this tick's killers, so
+`DeathResolver` is not a separate class yet. `BossMinionDamageStep` stands in for the target's
+`damageMultipliers` keyed by the attacker's `damageClass` above: mobs have neither field yet, so
+the step keys its own table by boss id and finds a lane minion by horde membership; a
+`damageClass` on lane minions and `damageMultipliers` on the boss replace it. `GameState.killerOf` keeps this tick's killers, so
 `DeathSystem` removes with the cause `died` and puts the killer on `entity-removed`;
 `no-death-without-killer` (15) flags a death without one.
 `DefaultSystemPipeline` builds the match's one `DamagePipeline` and injects it into every system
@@ -907,14 +920,6 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
 
 ## 18. Implementation status
 
-- **Magus starter slice.** The user approved Imbue, Shockwave, Sanctuary and Nova
-  from the balancing reference, with temporary staff bolt speed in `content/projectiles/`.
-  `AbilityRuntime`, effect strategies and tick systems currently implement the first three;
-  Nova is explicitly an animation preview, approved by the user; it emits a separate preview event without damage, resource spending or a real cast. Staff hits use
-  travelling projectiles through the shared damage pipeline. Player slots expose real aether
-  and cooldown eligibility; successful casts drive character animation and HUD CSS feedback.
-  This slice does not implement undefined subclass abilities or the full Phase 4 loadout system.
-
 - **Progression (PR #31, SCRUM-426).** Legends install `Aether` (own component, O1) and
   `Progression` (`xp`, `level`, `curveId`). Level curves are a catalogue
   (`content/progression/levelCurveCatalogue.ts`), shape-checked at load (`loadLevelCurves`) and
@@ -925,8 +930,13 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   self or ally kill (O5), and in its own pass emits `xp-gained` and gives the XP to the killer
   only. A level-up raises max health by the class's share of base health and max aether, and heals
   and refills by the raise only while the Legend is alive (O3, O4). Structure XP is built (DEC-186: every
-  Legend on the destroying team; a dead Legend is skipped until respawn, GL-12). Not built yet:
-  the share radius and damage bias, assists, checkpoint, camp and boss XP (their systems do not exist),
+  Legend on the destroying team; a dead Legend is skipped until respawn, GL-12). Team-kill XP is
+  built for the capture point boss (DEC-237): a mob in `XP_SOURCES.teamKills` pays every Legend of
+  its killer's playable team, not the killer alone, and each Legend gets at most the XP that lifts
+  it `maxLevels` levels (`Progression.xpToReach`); `level-matches-xp` checks that the killer is on
+  the recipient's team (`cause: 'team-kill'`). It listens to `entity-died` itself, not 12's
+  `xp-granted` reward path. Not built yet: the share radius and damage bias, assists, checkpoint and
+  camp XP, the Eternal's flat 5 levels (DEC-237) (their systems do not exist),
   basic-attack and ability potency per level, `upgradeIds`, the ultimate charge rules, and keeping
   dead Legends in the store until respawn (FR-051), which O4's posthumous XP needs. Numbers are
   `TUNE`; the curve and the Legend kill and structure XP follow DEC-190 (not final; the
@@ -956,15 +966,6 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   (DEC-101, DEC-114). The `xp` and `xpToNext` comments of the `progression` group in
   [03 §5](03-game-model.md#5-snapshot) (in §15's `PlayerSnapshot` until DEC-232) record the
   owner's reading of the XP ring (2026-10-18).
-
-### Animation-only class previews
-
-Warrior and Sentinel expose documented class-pool actions as explicitly labelled animation
-previews through the existing command and preview-event path. Their content definitions have
-no effects, costs or cooldowns; they never announce a real ability cast. Preview-only kits
-receive no resource regeneration or ultimate rewards. Successful previews record activation
-ticks for HUD feedback. This is presentation support while those mechanics await implementation,
-not a gameplay loadout or a new subclass power. Existing Magus effects remain unchanged.
 
 ## Related
 

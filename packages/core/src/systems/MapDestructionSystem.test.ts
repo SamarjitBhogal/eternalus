@@ -37,12 +37,15 @@ describe('MapDestructionSystem', () => {
         ],
       ],
     };
-    state.worldObjects = new WorldObjectStore(
-      [parent, { ...parent, id: 'wall', kind: 'wall', isBlocking: true, buildingId: 'palace' }],
+    state.worldObjects = new WorldObjectStore({
+      objects: [
+        parent,
+        { ...parent, id: 'wall', kind: 'wall', isBlocking: true, buildingId: 'palace' },
+      ],
       factory,
-      state.entities,
-      MAP_OBJECT_DEFINITIONS,
-    );
+      entities: state.entities,
+      definitions: MAP_OBJECT_DEFINITIONS,
+    });
     state.events.on('entity-removed', ({ entityId }) => state.worldObjects?.removed(entityId));
     const damage = new DamagePipeline();
     const collapse = new MapDestructionSystem(state, damage);

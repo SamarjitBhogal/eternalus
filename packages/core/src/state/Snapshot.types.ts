@@ -1,12 +1,10 @@
-import type { Flight } from '../components/ProjectileFlight.types';
-import type { SpellSlot } from '../components/AbilityRuntime.types';
 import type { LevelProgress } from '../components/Progression.types';
 import type { MatchPhase } from '../config/matchPhases';
 import type { PlayableTeam, Team } from '../teams/teams.types';
 import type { EntityId } from './EntityStore.types';
 import type { TeamState } from './GameState.types';
 import type { Horde } from './Horde.types';
-import type { ScheduledMark } from './MatchState.types';
+import type { DuelScore, ScheduledMark } from './MatchState.types';
 import type { MapObjectSnapshot } from '../content/maps/mapObjects.types';
 import type { Polygon } from '../utils/geometry.types';
 
@@ -16,19 +14,24 @@ import type { Polygon } from '../utils/geometry.types';
  * `Capturable`), never a made-up default.
  */
 export type EntitySnapshot = {
-  readonly spellZone?: {
-    readonly abilityId: string;
-    readonly startedTick: number;
-    readonly radius: number;
-  };
-  readonly projectile?: Flight;
   readonly mapObjectId?: string;
+  /**
+   * A structure built from a map feature: the feature's id (`MapFeature.id`), so a HUD tile binds
+   * to its structure by identity, never by position.
+   */
+  readonly mapFeatureId?: string;
   readonly id: EntityId;
   readonly kind: string;
   readonly family: string;
   readonly definitionId: string;
   readonly team: Team | null;
-  readonly transform: { readonly x: number; readonly y: number; readonly radius: number } | null;
+  /** `facing` is a unit vector (DEC-192); the client interpolates it like the position. */
+  readonly transform: {
+    readonly x: number;
+    readonly y: number;
+    readonly radius: number;
+    readonly facing: { readonly x: number; readonly y: number };
+  } | null;
   readonly health: { readonly current: number; readonly max: number } | null;
   /** A Legend's level and XP (`Progression`, DEC-224); `null` for every entity that does not level. */
   readonly progression: ProgressionSnapshot | null;
@@ -72,6 +75,8 @@ export type MatchSnapshot = {
   readonly upcoming: readonly ScheduledMark[];
   /** The human's Legend; `null` in sim mode, or when the human slot names no Legend definition. */
   readonly humanLegendId: EntityId | null;
+  /** The Duel's score and kill target (ADR 0016); present only in a Duel. */
+  readonly duel?: DuelScore;
 };
 
 /** A lane horde as the client sees it (architecture 18 §4): the store's plain fields, copied. */
@@ -86,7 +91,6 @@ type TeamSnapshot = TeamState;
  * the previous and the current snapshot and interpolates between them (architecture 03 §5).
  */
 export type Snapshot = {
-  readonly player?: { readonly entityId: string; readonly slots: readonly SpellSlot[] };
   readonly mapObjects?: readonly MapObjectSnapshot[];
   readonly tick: number;
   readonly match: MatchSnapshot;

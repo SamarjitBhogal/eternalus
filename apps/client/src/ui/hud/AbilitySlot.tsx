@@ -3,7 +3,6 @@ import type { ReactElement } from 'react';
 import type { HudSlotId } from '../../bridge/Binding.types';
 import type { HudBlockReason } from '../../bridge/hud.types';
 import { shallowEqual, useAppSelector } from '../../bridge/hooks';
-import { matchSetupSlice } from '../../bridge/slices/matchSetupSlice';
 import { type HudSlotLook, selectHudSlotView } from '../../bridge/selectors/selectHudSlotView';
 import { AssetImage } from '../components/AssetImage';
 import { classNames } from '../components/classNames';
@@ -46,7 +45,6 @@ export function AbilitySlot({
   readonly className?: string | undefined;
 }): ReactElement {
   const view = useAppSelector((state) => selectHudSlotView(state, slot), shallowEqual);
-  const specId = useAppSelector((state) => matchSetupSlice.selectors.selectSelection(state).specId);
   const isBlocked =
     view.look === 'idle' && view.blockedBy !== null && view.blockedBy !== 'empty-slot';
   return (
@@ -58,7 +56,6 @@ export function AbilitySlot({
         LOOK_STATE[view.look](view.blockedBy),
       )}
       data-slot={slot}
-      data-skin={specId ?? undefined}
       data-look={view.look}
       className={classNames(
         styles.slot,
@@ -68,9 +65,6 @@ export function AbilitySlot({
       )}
     >
       <AbilitySlotFrame slot={slot} look={view.look} cooldownFraction={view.cooldownFraction} />
-      {view.lastCastTick !== undefined && view.lastCastTick !== null && (
-        <span key={view.lastCastTick} className={styles.castFlash} aria-hidden="true" />
-      )}
       {view.look === 'no-data' && <div className={styles.hatch} aria-hidden="true" />}
       <AssetImage assetId={view.iconAssetId} className={styles.icon} />
       <span className={styles.glyph}>

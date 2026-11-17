@@ -37,25 +37,6 @@ type StatusPayload = {
  * Ids of things that have no type yet (lanes, hordes, statuses, abilities) are plain strings.
  */
 export type GameEventMap = {
-  /** An explicit visual preview; no gameplay cast is announced. */
-  readonly 'ability-previewed': { readonly casterId: EntityId; readonly abilityId: string };
-  readonly 'projectile-requested': {
-    readonly attackerId: EntityId;
-    readonly targetId: EntityId;
-    readonly origin: Vec2;
-    readonly destination: Vec2;
-    readonly damage: number;
-    readonly weaponId: string;
-  };
-  readonly 'projectile-fired': {
-    readonly entityId: EntityId;
-    readonly attackerId: EntityId;
-    readonly targetId: EntityId;
-    readonly origin: Vec2;
-    readonly destination: Vec2;
-    readonly damage: number;
-    readonly weaponId: string;
-  };
   readonly 'entity-spawned': {
     readonly entityId: EntityId;
     readonly kind: string;
@@ -86,8 +67,16 @@ export type GameEventMap = {
     readonly isBreakable: boolean;
     readonly lane: string | null;
   };
-  /** A camp's whole group is dead (18 §7.1); the group comes back after its respawn time. */
-  readonly 'camp-cleared': { readonly entityId: EntityId };
+  /**
+   * A camp's whole group is dead (18 §7.1); the group comes back after its respawn time.
+   * `killerId` dealt the last mob's lethal hit and `team` is its team; both `null` when no killer
+   * is known (a death outside the damage pipeline, or a killer that left the store).
+   */
+  readonly 'camp-cleared': {
+    readonly entityId: EntityId;
+    readonly team: Team | null;
+    readonly killerId: EntityId | null;
+  };
   readonly 'shield-bars-changed': {
     readonly entityId: EntityId;
     readonly bars: readonly ShieldBar[];
@@ -106,6 +95,11 @@ export type GameEventMap = {
     readonly pointId: string;
     readonly team: Team;
     readonly checkpoint: number;
+    /**
+     * The reaching team's living Legends whose centre is on the zone's area when the checkpoint is
+     * reached (DEC-145 (a), DEC-223 (4a)), in store order: the Legends that win it.
+     */
+    readonly presentLegendIds: readonly EntityId[];
   };
   readonly 'capture-point-owner-changed': {
     readonly pointId: string;
@@ -128,14 +122,15 @@ export type GameEventMap = {
   readonly 'level-up': { readonly entityId: EntityId; readonly level: number };
   /**
    * XP reaching a Legend; one per award, so the invariant can audit every award. A kill pays its
-   * killer; `cause: 'structure-destroyed'` pays a Legend of the team that destroyed `victimId`.
+   * killer; `cause: 'structure-destroyed'` pays a Legend of the team that destroyed `victimId`, and
+   * `cause: 'team-kill'` a Legend of the team whose unit killed boss `victimId` (DEC-237).
    */
   readonly 'xp-gained': {
     readonly entityId: EntityId;
     readonly amount: number;
     readonly victimId: EntityId;
     readonly victimTeam: Team;
-    readonly cause: 'kill' | 'structure-destroyed';
+    readonly cause: 'kill' | 'structure-destroyed' | 'team-kill';
   };
   readonly 'team-changed': {
     readonly entityId: EntityId;

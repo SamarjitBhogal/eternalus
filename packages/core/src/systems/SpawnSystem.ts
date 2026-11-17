@@ -37,24 +37,24 @@ import { isPlayableTeam } from '../teams/playableTeams';
  * The spawners are the structure entities standing at construction; a destroyed one stops. The
  * schedule's times are converted to ticks once, so the system keeps no schedule state of its own.
  *
- * It also runs every structure's guard plan (18 §7, 07 §6) through its `GuardRoster`.
+ * It also runs every structure's and zone's guard plan (18 §7, 07 §6) through its `GuardRoster`.
  */
 export class SpawnSystem implements System {
   public readonly name = 'spawn';
   private readonly spawners: readonly Structure[];
   private readonly scheduled: readonly ScheduledWave[];
   private readonly guards: GuardRoster;
-  /** The definition ids of the structures on this map, whose guard plans are checked. */
-  private readonly homes = new Set<string>();
 
   /**
-   * @param state - The match; its structure entities, already spawned, are the spawn points.
+   * @param state - The match; its structure entities, already spawned, are the spawn points, and
+   *   its structures and zones, already spawned, the guard homes.
    * @param factory - Builds the minions.
    * @param plan - The waves, the opening wave, the guards, the definitions and the spawn layout.
    * @throws ContentValidationError when a wave this map can spawn names an unknown mob or a mob of
    *   another weight class, starts before the countdown ends, or repeats more often than once a
    *   tick, or a guard plan names an unknown mob, so bad content fails when the match is built,
-   *   not when the wave is due.
+   *   not when the wave is due. A guard plan that activates a negative or non-finite number of
+   *   seconds after the countdown is rejected too.
    */
   public constructor(
     state: GameState,
@@ -63,9 +63,11 @@ export class SpawnSystem implements System {
   ) {
     // The opening source sends the opening hordes even when it has no recurring waves.
     const spawners: Structure[] = [];
+    // The definition ids of every structure and zone on this map, whose guard plans are checked.
+    const homes = new Set<string>();
     state.entities.forEach((entity) => {
-      if (entity instanceof Structure) {
-        this.homes.add(entity.definitionId);
+      if (GuardRoster.isHome(entity)) {
+        homes.add(entity.definitionId);
       }
       const team = state.entities.teamOf(entity.id);
       if (
@@ -87,7 +89,7 @@ export class SpawnSystem implements System {
         everyTicks: Math.round(wave.everySeconds * tickRate),
       })),
     );
-    this.validate();
+    this.validate(homes);
     this.guards = new GuardRoster(factory, plan.definitions, plan.guards);
     this.guards.layOut(state);
   }
@@ -95,22 +97,36 @@ export class SpawnSystem implements System {
   /**
    * Rejects a plan whose waves name an unknown mob or a mob of another weight class, start before
    * the countdown ends, or repeat more often than once a tick, or whose guard plans name an
-   * unknown mob. Only the waves and guards this map's spawners can have are checked, so a match
-   * without hordes needs no minions.
+   * unknown mob or activate a negative or non-finite number of seconds after the countdown. Only
+   * the waves this map's spawners can send and the guard plans of the structures and zones on it
+   * (`homes`, by definition id, whether or not they spawn hordes) are checked, so a match without
+   * hordes needs no minions.
    */
-  private validate(): void {
+  private validate(homes: ReadonlySet<string>): void {
     const { openingWave, definitions, guards } = this.plan;
     const kinds = new Set(this.spawners.map(({ kind }) => kind));
     const waves = [
       ...(kinds.has(openingWave.source) ? [['opening', openingWave] as const] : []),
       ...this.scheduled.map(({ spawner, wave }) => [spawner.kind, wave] as const),
     ];
-    // Only the plans of structures on this map, so a match without them needs no guard content.
-    const guardProblems = [...this.homes].flatMap((id) =>
-      (guards[id]?.table ?? []).flatMap(({ mobId }) =>
-        definitions.has(mobId) ? [] : [`${id} guard plan names unknown mob "${mobId}"`],
-      ),
-    );
+    // Only the plans of structures and zones on this map, so a match without them needs no guard
+    // content.
+    const guardProblems = [...homes].flatMap((id) => {
+      const plan = guards[id];
+      if (plan === undefined) {
+        return [];
+      }
+      const { activation } = plan;
+      const delay = activation.at === 'countdown-end' ? activation.delaySeconds : 0;
+      return [
+        ...plan.table.flatMap(({ mobId }) =>
+          definitions.has(mobId) ? [] : [`${id} guard plan names unknown mob "${mobId}"`],
+        ),
+        ...(Number.isFinite(delay) && delay >= 0
+          ? []
+          : [`${id} guard plan activates ${String(delay)} s after the countdown`]),
+      ];
+    });
     const mobProblems = waves.flatMap(([source, { mobId, weightClass }]) => {
       if (!definitions.has(mobId)) {
         return [`${source} wave names unknown mob "${mobId}"`];
@@ -244,7 +260,12 @@ export class SpawnSystem implements System {
         x: origin.x + ((member % columns) - (columns - 1) / 2) * spawnSpacing,
         y: origin.y + (Math.floor(member / columns) - (rows - 1) / 2) * spawnSpacing,
       };
-      const entity = this.factory.create(kind, mobId, { team, position });
+      // Each member faces the enemy Stronghold until it first moves or attacks (DEC-216 (6)).
+      const entity = this.factory.create(kind, mobId, {
+        team,
+        position,
+        ...state.world?.startFacing(team, position),
+      });
       state.entities.add(entity);
       members.push(entity);
     }

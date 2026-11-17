@@ -8,7 +8,6 @@ import { LegendView } from './LegendView';
 import { MobView } from './MobView';
 import { StructureView } from './StructureView';
 import { ViewRegistry } from './ViewRegistry';
-import { StaffBoltView } from './StaffBoltView';
 
 const entity = (kind: string, family: string): EntitySnapshot => ({
   id: 'entity-1',
@@ -16,7 +15,7 @@ const entity = (kind: string, family: string): EntitySnapshot => ({
   family,
   definitionId: kind,
   team: 'light',
-  transform: { x: 0, y: 0, radius: 0.5 },
+  transform: { x: 0, y: 0, radius: 0.5, facing: { x: 1, y: 0 } },
   health: null,
   progression: null,
   aether: null,
@@ -25,12 +24,6 @@ const entity = (kind: string, family: string): EntitySnapshot => ({
 });
 
 describe('createDefaultViewRegistry', () => {
-  it('installs a selected sprite view once for all Legend classes without duplicate registration', () => {
-    const selected = new LegendView();
-    const registry = createDefaultViewRegistry(undefined, selected);
-    for (const kind of ['warrior', 'sentinel', 'magus'])
-      expect(registry.viewFor(entity(kind, 'legend'))).toBe(selected);
-  });
   it('draws Legends, mobs and structures with their own views, and the rest by default', () => {
     const registry = createDefaultViewRegistry();
 
@@ -43,16 +36,15 @@ describe('createDefaultViewRegistry', () => {
     expect(registry.viewFor(entity('pillar', 'obstacle'))).toBeInstanceOf(DefaultEntityView);
     expect(registry.viewFor(entity('pillar', 'obstacle'))).not.toBeInstanceOf(MobView);
     expect(registry.viewFor(entity('capture-point', 'zone'))).toBeInstanceOf(CapturePointView);
-    expect(registry.viewFor(entity('projectile', 'projectile'))).toBeInstanceOf(StaffBoltView);
   });
 
   it('passes unknown kinds to the reporter it is given', () => {
     const unknown: string[] = [];
 
     createDefaultViewRegistry((kind) => unknown.push(kind)).viewFor(
-      entity('unregistered-kind', 'unregistered-family'),
+      entity('projectile', 'projectile'),
     );
 
-    expect(unknown).toEqual(['unregistered-kind']);
+    expect(unknown).toEqual(['projectile']);
   });
 });

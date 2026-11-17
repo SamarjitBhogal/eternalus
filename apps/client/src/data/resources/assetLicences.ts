@@ -17,13 +17,6 @@ import type { AssetLicence, LicenceId } from './AssetManifest.types';
  * b5b1f1da112d18ea2147decfd48ddc1bf2b5aeb6c265381579340e95b15a2bb2).
  */
 export const ASSET_LICENCES: Readonly<Record<LicenceId, AssetLicence>> = {
-  'user-authorised-art': {
-    work: 'Contributor-supplied character references and generated sprites',
-    licenceName: 'Use and adaptation permission confirmed by contributor',
-    notice:
-      'Gurshaan supplied the character references and confirmed permission to use and adapt them on 2026-11-12. Sprites generated with Codex image generation. Original credits remain with their creators; the Bulwark reference credits Arackhan Wars / Nothing But Dreams (2021), with the artist link artstation.com/jsraphael. See the individual asset provenance records. This confirmation is not a transfer of copyright.',
-    text: null,
-  },
   owner: {
     work: 'Eternalus artwork',
     licenceName: 'Owner-made for Eternalus',

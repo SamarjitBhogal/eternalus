@@ -1,6 +1,9 @@
 import type { MapDecoration } from '../content/maps/maps.types';
 import type { Vec2 } from '../utils/geometry.types';
-/** Places camp polygons, preserving exact floating-point reflection across the map for deterministic symmetry. */
+/**
+ * Places camp polygons with an explicit flip flag. `mirrorWidth` retains canonical reflection
+ * arithmetic: simplifying it to origin.x - dx changes floating-point coordinates and hashes.
+ */
 export const placeLocalArt = (
   pieces: readonly MapDecoration[],
   origin: Vec2,

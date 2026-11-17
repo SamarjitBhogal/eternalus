@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-16
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -246,8 +246,10 @@ flowchart LR
 - `ViewRegistry` (Registry pattern) maps entity `kind` → `EntityView`; `DefaultEntityView` draws
   a definition sprite for kinds without a bespoke view. Views read snapshots through `import type`
   only and never mutate state (rule 6).
-- Interpolation: views draw `prev + (current - prev) × alpha` for position and facing; entities
-  that appeared this tick draw at `current` (no ghost from the origin).
+- Interpolation: views draw `prev + (current - prev) × alpha` for position. The facing uses the
+  same blend, scaled back to length 1 (`EntityLayer.turn`), and snaps at the midpoint when the two
+  facings are opposite (a zero blend takes `current`). Entities that appeared this tick draw at `current` (no ghost from the
+  origin).
 - World health bars: `EntityLayer` has `HealthBarView` draw a unit's bar after every entity of
   its layer, so no entity hides it. Which units show one, and on which side, is decided in `game/`
   by `HealthBarVisibility` (DEC-195), which reads `damage-applied` and `entity-removed` through
@@ -322,6 +324,11 @@ HUD and character select (`feat/hud-and-character-select`, 2026-10-26; DEC-50):
   roster's human slot (DEC-173, [12](12-game-story-and-match-director.md) §13). `Match` no longer
   adopts the first spawn of the player's class and team.
 
+Game-loop plan GL-5 (`feat/results-flow`): `Match.tick` calls the match observer's `ended` once,
+after the tick on which `MatchBridge` publishes `match-ended`; the world keeps running (DEC-92)
+until `MatchState` leaves the phase ([13](13-game-interface.md) §2). A pause overlay still pauses
+the loop, but not the timer that leaves the phase (DEC-134).
+
 **2026-11-11 — DEC-238 visual stand-ins.**
 
 [DEC-238](../reference/game-design/13-owner-decisions-log.md#batch-2026-11-10-pr-90-review-visuals) approves these provisional visuals.
@@ -360,36 +367,14 @@ inside that biome. Free/overview views suppress local weather, and the minimap r
 atmospheric overlay. Effects use a bounded particle count from the view's companion constants,
 create no gameplay entities and use no timers or gameplay RNG.
 
-The controlled hero retains LegendView while the golden-knight reference licence is unresolved. The raw-image sprite renderer extension and input-only animation previews have been removed; future atlas work must use the existing manifest and the SpriteRef contract above.
+### 2026-11-16 — Clean Phase 3 presentation follow-up
 
-### Magus character presentation
-
-The golden-knight reference remains unused. The Magus presentation slice adds generated sheets
-based on the owner's existing Catalyst, Oracle and Heretic selection art. `LegendAnimation`
-observes successful simulation events and displacement; `LegendSpriteView` requests `SpriteRef`s and
-retains the Legend fallback when an atlas is unavailable. `Canvas2dRenderer` receives decoded
-atlases by constructor injection and caches frame sizes for unscaled copies. The sheets load through the match manifest under the human-approved allowance recorded in ADR 0026. Nova uses a separately labelled, presentation-only preview event.
-
-### Additional character presentation
-
-`LegendAnimation` and `LegendSpriteView` serve every selected playable Legend. Skin IDs map
-stable spec IDs to manifest atlases; bot and missing-atlas paths retain the Legend fallback.
-Melee weapon damage starts the attack row, including hits on destructible scenery; staff attacks
-start on projectile release. Preview events drive the documented class-pool action rows. Motion
-uses observed displacement, and all animation phases use interpolated simulation ticks.
-Magus cast ornaments use bounded fire motes, radiant rays or violet orbits through Renderer.
-Selection art and the five additional sheets use the approved allowance in ADR 0027.
-
-Combat atlas packing must isolate each source pose before composing uniform runtime cells:
-generated art is not assumed to have exact cell spacing. Preserve aspect ratio, a common ground
-baseline and transparent gutters at both densities. Manifest hashes pin the inspected assets.
-Oversized effects belong in renderer strategies, where they can extend beyond a sprite cell.
-Combat playback durations live in `LegendAnimation.constants.ts`; they do not control gameplay.
-An active combat cast has presentation priority over weapon-hit feedback. `LegendAnimation`
-owns bounded tick-derived cast history, capturing the ground origin and observed facing at cast
-time. Renderer strategies add directional trails, projectiles, shields, shockwaves and fading
-ground cracks. These scars are cosmetic: they create no terrain, colliders, damage or entities.
-Magus playback and ornaments retain their separate existing path.
+The follow-up is based directly on Phase 3. Code-drawn unit figures and the display hierarchy
+retain the phase-facing chevrons; biome weather remains a renderer-only layer. Generated
+character atlases and their resource-budget extensions, and the parallel ability prototype,
+are deferred to preserved feature work outside this branch. No independent ability stack or
+new raster-art loading path is registered here. The PR gate and requested owner confirmation
+remain explicit handoff items; this status note grants neither.
 
 ## Related
 

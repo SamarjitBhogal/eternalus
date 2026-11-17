@@ -1,3 +1,4 @@
+import { drawFacingChevron } from './facingChevron';
 import type { Renderer } from '../engine/render/Renderer';
 import { DefaultEntityView } from './DefaultEntityView';
 import type { EntityDrawState } from './EntityView.types';
@@ -31,6 +32,7 @@ export class LegendView extends DefaultEntityView {
       state.position,
       LEGEND_OUTLINE_COLOR,
     );
+    drawFacingChevron(visual, renderer);
     super.draw({ ...visual, isFocused: false }, renderer);
     if (state.isFocused)
       renderer.drawWorldGlyph(

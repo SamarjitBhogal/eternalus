@@ -1,5 +1,3 @@
-import { ProjectileFlight } from '../components/ProjectileFlight';
-import { SpellZoneRuntime } from '../components/SpellZoneRuntime';
 import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
 import { Health } from '../components/Health';
@@ -11,12 +9,13 @@ import { ZoneArea } from '../components/ZoneArea';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import type { Entity } from '../entities/Entity';
+import { Structure } from '../entities/structures/Structure';
 import type { EntitySnapshot } from './Snapshot.types';
 
 /**
  * Projects one entity into its `EntitySnapshot` (architecture 03 §5): one group per component,
- * `null` when the entity has no such component (DEC-17); `mapObjectId` is left out instead. A new component group is added here,
- * never in `GameState` (DEC-232).
+ * `null` when the entity has no such component (DEC-17); `mapObjectId` and `mapFeatureId` are
+ * left out instead. A new component group is added here, never in `GameState` (DEC-232).
  */
 export class EntitySnapshotter {
   /**
@@ -36,32 +35,26 @@ export class EntitySnapshotter {
     const progression = entity.findComponent(Progression);
     const aether = entity.findComponent(Aether);
     const capture = entity.findComponent(Capturable);
-    const spellZone = entity.findComponent(SpellZoneRuntime);
     return {
       id: entity.id,
-      ...(spellZone === undefined
-        ? {}
-        : {
-            spellZone: {
-              abilityId: spellZone.abilityId,
-              startedTick: spellZone.startedTick,
-              radius: spellZone.spec.radius,
-            },
-          }),
-      ...(entity.findComponent(ProjectileFlight) === undefined
-        ? {}
-        : { projectile: entity.getComponent(ProjectileFlight).shot }),
       kind: entity.kind,
       family: entity.family,
       definitionId: entity.definitionId,
       ...(entity.findComponent(MapObjectBody) === undefined
         ? {}
         : { mapObjectId: entity.getComponent(MapObjectBody).object.id }),
+      ...(entity instanceof Structure &&
+        entity.mapFeatureId !== null && { mapFeatureId: entity.mapFeatureId }),
       team: entity.findComponent(TeamMembership)?.team ?? null,
       transform:
         transform === undefined
           ? null
-          : { x: transform.position.x, y: transform.position.y, radius: transform.radius },
+          : {
+              x: transform.position.x,
+              y: transform.position.y,
+              radius: transform.radius,
+              facing: { x: transform.facing.x, y: transform.facing.y },
+            },
       health: health === undefined ? null : { current: health.current, max: health.max },
       progression:
         progression === undefined

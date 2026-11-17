@@ -5,6 +5,7 @@ import { RecordingRenderer } from '../engine/render/RecordingRenderer';
 import type { EntityView } from './EntityView.types';
 import {
   FOCUS_RING_COLOR,
+  FACING_CHEVRON,
   LEGEND_OUTLINE_COLOR,
   LEGEND_OUTLINE_SCALE,
   LEGEND_VISUAL_DIAMETER,
@@ -23,7 +24,7 @@ const WARRIOR: EntitySnapshot = {
   family: 'legend',
   definitionId: 'warrior',
   team: 'light',
-  transform: { x: 0, y: 0, radius: 0.5 },
+  transform: { facing: { x: 1, y: 0 }, x: 0, y: 0, radius: 0.5 },
   health: { current: 600, max: 600 },
   progression: null,
   aether: null,
@@ -45,10 +46,20 @@ describe('LegendView', () => {
           kind: `${weight}-mob`,
           family: 'mob',
           definitionId: `${weight}-minion`,
-          transform: { x: 0, y: 0, radius: { light: 0.4, medium: 0.5, heavy: 0.8 }[weight] },
+          transform: {
+            facing: { x: 1, y: 0 },
+            x: 0,
+            y: 0,
+            radius: { light: 0.4, medium: 0.5, heavy: 0.8 }[weight],
+          },
         };
         const renderer = new RecordingRenderer();
-        registry.viewFor(troop).draw({ entity: troop, position: AT, isFocused: false }, renderer);
+        registry
+          .viewFor(troop)
+          .draw(
+            { facing: { x: 1, y: 0 }, entity: troop, position: AT, isFocused: false },
+            renderer,
+          );
         const points = renderer.calls.flatMap((call) =>
           call.op === 'fillPolygon' ? call.args[0] : [],
         );
@@ -69,12 +80,16 @@ describe('LegendView', () => {
           team,
           kind,
           definitionId: kind,
-          transform: { x: 0, y: 0, radius },
+          transform: { facing: { x: 1, y: 0 }, x: 0, y: 0, radius },
         };
         const before = structuredClone(hero);
         const renderer = new RecordingRenderer();
-        registry.viewFor(hero).draw({ entity: hero, position: AT, isFocused: false }, renderer);
-        const disc = renderer.calls[1];
+        registry
+          .viewFor(hero)
+          .draw({ facing: { x: 1, y: 0 }, entity: hero, position: AT, isFocused: false }, renderer);
+        const disc = renderer.calls.find(
+          (call) => call.op === 'drawWorldGlyph' && call.args[2] === TEAM_COLORS[team],
+        );
         if (disc?.op !== 'drawWorldGlyph') throw new Error('Missing hero body');
         expect(disc.args[0].size).toBeGreaterThan(largestTroop);
         expect(disc.args[0].size).toBeLessThan(largestTroop * 1.25);
@@ -87,7 +102,12 @@ describe('LegendView', () => {
   it('does not invent a visible body when the snapshot has no transform', () => {
     const renderer = new RecordingRenderer();
     new LegendView().draw(
-      { entity: { ...WARRIOR, transform: null }, position: AT, isFocused: false },
+      {
+        facing: { x: 1, y: 0 },
+        entity: { ...WARRIOR, transform: null },
+        position: AT,
+        isFocused: false,
+      },
       renderer,
     );
     expect(
@@ -98,7 +118,10 @@ describe('LegendView', () => {
   it('draws a white outline under the team disc, so players stand out from mobs', () => {
     const renderer = new RecordingRenderer();
 
-    new LegendView().draw({ entity: WARRIOR, position: AT, isFocused: false }, renderer);
+    new LegendView().draw(
+      { facing: { x: 1, y: 0 }, entity: WARRIOR, position: AT, isFocused: false },
+      renderer,
+    );
 
     expect(renderer.calls).toEqual([
       {
@@ -110,6 +133,10 @@ describe('LegendView', () => {
         ],
       },
       {
+        op: 'strokePath',
+        args: [expect.any(Array), FACING_CHEVRON.color, FACING_CHEVRON.lineWidth],
+      },
+      {
         op: 'drawWorldGlyph',
         args: [{ shape: 'dot', size: LEGEND_VISUAL_DIAMETER }, AT, TEAM_COLORS.light],
       },
@@ -119,7 +146,10 @@ describe('LegendView', () => {
   it("adds the focus ring on top when it is the player's Legend", () => {
     const renderer = new RecordingRenderer();
 
-    new LegendView().draw({ entity: WARRIOR, position: AT, isFocused: true }, renderer);
+    new LegendView().draw(
+      { facing: { x: 1, y: 0 }, entity: WARRIOR, position: AT, isFocused: true },
+      renderer,
+    );
 
     expect(renderer.calls.at(-1)).toMatchObject({
       args: [{ shape: 'ring' }, AT, FOCUS_RING_COLOR],
@@ -130,7 +160,10 @@ describe('LegendView', () => {
     const renderer = new RecordingRenderer();
     const view = new LegendView();
 
-    view.drawMinimap({ entity: WARRIOR, position: AT, isFocused: false }, renderer);
+    view.drawMinimap(
+      { facing: { x: 1, y: 0 }, entity: WARRIOR, position: AT, isFocused: false },
+      renderer,
+    );
 
     expect(renderer.calls).toEqual([
       { op: 'drawGlyph', args: [expect.anything(), AT, MINI_MAP_OUTLINE_COLORS.light] },

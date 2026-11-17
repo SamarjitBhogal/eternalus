@@ -3,12 +3,26 @@ import type { BiomeKind, MapDecoration } from '../content/maps/maps.types';
 import type { Vec2 } from '../utils/geometry.types';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
 import { BIOME_PALETTES, BIOME_PROFILES } from '../content/maps/biomeScenery';
+import { BIOME_MOUNTAIN_ART } from '../content/maps/biomeGroundArt';
 import { sceneryBiomeAt } from './sceneryBiome';
 /** Builds overlapping, individually shaped mountain masses around the battlefield. */
 export class MapMountainBuilder extends MapDecorationBuilder {
   /** Returns varied peaks, foothills and rocky slopes without changing collision. */
   public build(seed = 0): readonly MapDecoration[] {
     this.isMirrored = true;
+    this.borders(seed);
+    this.corners(seed);
+    this.hills(seed);
+    return this.pieces.map((piece) => ({
+      ...piece,
+      shape: piece.shape.map((p) => ({
+        x: Math.max(0, Math.min(1600, p.x)),
+        y: Math.max(0, Math.min(900, p.y)),
+      })),
+    }));
+  }
+
+  private borders(seed: number): void {
     for (let x = 0; x <= 1640;) {
       const n = this.variation(x + seed, 17);
       const width = 42 + (n % 44);
@@ -45,6 +59,9 @@ export class MapMountainBuilder extends MapDecorationBuilder {
       );
       y += 48 + (n % 27);
     }
+  }
+
+  private corners(seed: number): void {
     for (let y = 38; y < 310; y += 48) {
       for (let x = 38; x < 235 - y * 0.35; x += 55) {
         const n = this.variation(x + seed, y);
@@ -66,6 +83,9 @@ export class MapMountainBuilder extends MapDecorationBuilder {
         }
       }
     }
+  }
+
+  private hills(seed: number): void {
     for (const [i, x, y, size] of [
       [0, 245, 180, 48],
       [1, 1360, 180, 52],
@@ -82,13 +102,6 @@ export class MapMountainBuilder extends MapDecorationBuilder {
         size * 0.7,
         this.variation(seed, i),
       );
-    return this.pieces.map((piece) => ({
-      ...piece,
-      shape: piece.shape.map((p) => ({
-        x: Math.max(0, Math.min(1600, p.x)),
-        y: Math.max(0, Math.min(900, p.y)),
-      })),
-    }));
   }
   private mountain(
     id: string,
@@ -153,7 +166,6 @@ export class MapMountainBuilder extends MapDecorationBuilder {
     ry: number,
     biome: BiomeKind | undefined,
   ): void {
-    const profile = biome === undefined ? undefined : BIOME_PROFILES[biome];
     this.polygon(
       `${id}-sun-face`,
       [point(-1, 0.55), point(-0.55, -0.4), peak, point(-0.1, 0.1), point(-0.32, 0.66)],
@@ -174,7 +186,19 @@ export class MapMountainBuilder extends MapDecorationBuilder {
       [peak, point(-0.1, 0.1), point(-0.32, 0.66), point(-0.19, 0.25), point(-0.26, -0.14)],
       colors.mountainRidge,
     );
-    if (profile?.mountainSnow ?? ry > 45)
+    this.weathering(id, point, peak, colors, ry, biome);
+  }
+
+  private weathering(
+    id: string,
+    point: (dx: number, dy: number) => Vec2,
+    peak: Vec2,
+    colors: Record<keyof typeof P, string>,
+    ry: number,
+    biome: BiomeKind | undefined,
+  ): void {
+    const profile = biome === undefined ? undefined : BIOME_PROFILES[biome];
+    if (profile?.mountainSnow ?? ry > BIOME_MOUNTAIN_ART.naturalSnowHeight)
       this.polygon(
         `${id}-snow`,
         [peak, point(-0.36, -0.43), point(-0.16, -0.51), point(0.05, -0.38), point(0.17, -0.5)],
@@ -185,12 +209,12 @@ export class MapMountainBuilder extends MapDecorationBuilder {
       [point(-0.64, 0.35), point(-0.32, 0.1), point(-0.42, 0.52), point(-0.76, 0.63)],
       colors.mountainScree,
     );
-    if (profile?.mountainFissure === true)
+    if (biome !== undefined && BIOME_PROFILES[biome].mountainFissure)
       this.ribbon(
         `${id}-volcanic-fissure`,
         [peak, point(-0.12, -0.22), point(0.04, 0.12), point(-0.2, 0.4)],
-        1.1,
-        BIOME_PALETTES.lava.accent,
+        BIOME_MOUNTAIN_ART.fissureWidth,
+        BIOME_PALETTES[biome].accent,
         'detail',
       );
   }

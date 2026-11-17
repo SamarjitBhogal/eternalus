@@ -149,15 +149,7 @@ function toClassCard(
     specs: content.specs
       .filter((spec) => spec.classId === legend.id)
       .map((spec) => toSpecCard(spec, presentation)),
-    hud: {
-      ...shown.hud,
-      slots: shown.hud.slots.map((entry) => {
-        const ability = content.abilityKits?.[legend.id]?.find(
-          (ability) => ability.slot === entry.slot,
-        );
-        return ability === undefined ? entry : { ...entry, displayName: ability.displayName };
-      }),
-    },
+    hud: shown.hud,
     layoutOverrides: layoutOverrides(legend, shown),
   };
 }
@@ -316,6 +308,8 @@ export function buildDisplayCatalogue(inputs: {
     hud: hudCatalogue(content.mapFeatures, presentation.hud),
     teamNames: content.teamNames,
     botRoster: content.botRoster,
+    verdictLines: content.verdictLines,
+    sovereignNames: content.sovereignNames,
   };
   checkNoLeftoverPresentation(content, presentation);
   const unknown = catalogueAssetIds(full).find((id) => !knownAssetIds.has(id));

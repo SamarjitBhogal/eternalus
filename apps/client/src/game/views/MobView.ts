@@ -1,3 +1,4 @@
+import { drawFacingChevron } from './facingChevron';
 import type { Renderer } from '../engine/render/Renderer';
 import { DefaultEntityView } from './DefaultEntityView';
 import type { EntityDrawState } from './EntityView.types';
@@ -25,6 +26,7 @@ export class MobView extends DefaultEntityView {
       state.position,
       MOB_OUTLINE_COLOR,
     );
+    drawFacingChevron(visual, renderer);
     super.draw(visual, renderer);
   }
 }

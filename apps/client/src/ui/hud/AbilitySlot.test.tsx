@@ -34,28 +34,6 @@ function render(slot: HudSlotId, changes: Partial<AbilitySlotStatus> | null = {}
 const names = (html: string) => accessibleNames(html, '[role=group]');
 
 describe('AbilitySlot', () => {
-  it.each([
-    'catalyst',
-    'oracle',
-    'necromancer',
-    'assassin',
-    'knight',
-    'paladin',
-    'colossus',
-    'juggernaut',
-  ])('routes the selected %s skin to its CSS spell motif', (specId) => {
-    const store = withHudSetup(figmaHudState());
-    const html = renderWithStore(<AbilitySlot slot="ability-1" appearance="ability" />, {
-      ...store,
-      matchSetup: { ...FIGMA_MATCH_SETUP, selection: { classId: 'magus', specId } },
-    });
-    expect(html).toContain(`data-skin="${specId}"`);
-    expect(cssRule(css, `.slot[data-skin='${specId}'] .castFlash`)).toContain('--castGlow:');
-  });
-  it('adds a CSS flash only when a successful cast tick is published', () => {
-    expect(render('ability-1', { lastCastTick: 10 })).toContain(String(styles.castFlash));
-    expect(render('ability-1', { lastCastTick: null })).not.toContain(String(styles.castFlash));
-  });
   it('fills the whole box red while a cooldown has just started (OD-9, the Figma state)', () => {
     const html = render('ability-1');
     expect(html).toContain('data-look="cooldown"');
