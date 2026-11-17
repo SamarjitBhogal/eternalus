@@ -254,6 +254,11 @@ describe('validateGameConfig', () => {
       ['two marks at once', [enterAt({ atTick: 1, atFraction: 0.5 }, 'early-game')], MARK_RULE],
       ['no mark', [enterAt({}, 'early-game')], MARK_RULE],
       [
+        'an unknown action kind',
+        [{ id: 'boss', at: { atTick: 1 }, action: { kind: 'summon-dragon' } }],
+        ACTION_RULE,
+      ],
+      [
         'a summon-greater-boss without a bossId',
         [{ id: 'boss', at: { atTick: 1 }, action: { kind: 'summon-greater-boss' } }],
         ACTION_RULE,
