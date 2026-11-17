@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-17
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -56,16 +56,16 @@ export abstract class Structure extends Entity {
 }
 ```
 
-| Class          | Extra components                     | Responsibility                                                                      | MVP status                          |
-| -------------- | ------------------------------------ | ----------------------------------------------------------------------------------- | ----------------------------------- |
-| `Stronghold`   | `Spawner`, `Aura`                    | Capital; its death ends the match; spawns initial hordes and later waves            | MVP                                 |
-| `SpawnerTower` | `Spawner`, `Combat` (self-defence)   | Front line; spawns light hordes every 60 s after the countdown; guards              | MVP                                 |
-| `BuffTower`    | `Spawner`, `Aura`, `Combat`          | Second line; team buffs, enemy debuff aura (10% health/damage, TUNE); shield source | MVP                                 |
-| `WallSegment`  | none                                 | Ring collider; unbreakable until the rule in §3 passes                              | MVP                                 |
-| `Gate`         | `GateState`, `Combat` (fire defence) | Opens for allies/hordes, closes otherwise; burns enemies passing through            | MVP (fire: MVP-if-time)             |
-| `Turret`       | `TurretState`, `Combat`              | Auto-fires bolts; Warrior Legends may take manual control                           | MVP (manual: MVP-if-time)           |
-| `Camp`         | `Spawner`                            | Neutral spawner for forest/corner camps; activates after cooldown                   | MVP (corner: MVP-if-time)           |
-| `Cathedral`    | `Spawner` (gem), `Aura`              | Middle capture point's building; summons the `GreaterBoss` mid-match                | MVP (boss summon: per plan phase 3) |
+| Class          | Extra components                     | Responsibility                                                                             | MVP status                          |
+| -------------- | ------------------------------------ | ------------------------------------------------------------------------------------------ | ----------------------------------- |
+| `Stronghold`   | `Spawner`, `Aura`                    | Capital; its death ends the match; spawns initial hordes and later waves                   | MVP                                 |
+| `SpawnerTower` | `Spawner`, `Combat` (self-defence)   | Front line; spawns light hordes every 60 s after the countdown; guards                     | MVP                                 |
+| `BuffTower`    | `Spawner`, `Aura`, `Combat`          | Second line; team buffs, enemy debuff aura (10% health/damage, TUNE); shield source        | MVP                                 |
+| `WallSegment`  | none                                 | Ring collider; unbreakable until the rule in §3 passes                                     | MVP                                 |
+| `Gate`         | `GateState`, `Combat` (fire defence) | Opens for allies/hordes, closes otherwise; burns enemies passing through                   | MVP (fire: MVP-if-time)             |
+| `Turret`       | `TurretState`, `Combat`              | Auto-fires bolts; Warrior Legends may take manual control                                  | MVP (manual: MVP-if-time)           |
+| `Camp`         | `Spawner`                            | Neutral spawner for forest/corner camps; activates when the match countdown ends (DEC-167) | MVP (corner: MVP-if-time)           |
+| `Cathedral`    | `Spawner` (gem), `Aura`              | Middle capture point's building; summons the `GreaterBoss` mid-match                       | MVP (boss summon: per plan phase 3) |
 
 Not a structure: `CapturePoint` is a `Zone` (no collider, §7). Anti-air buildings and form-change
 stations (Ascendance/Enchantment) are **post-MVP** (§14).
@@ -122,12 +122,16 @@ export type BreakabilityRule =
   | { readonly kind: 'all-of'; readonly rules: readonly BreakabilityRule[] };
 ```
 
-`StructureSystem.isBreakable(structure)` evaluates the rule each tick against `GameState`:
+`StructureSystem` evaluates each structure's rule each tick against `GameState`
+(`updateBreakability`, through `isBreakableUnder`):
 threshold = `ceil(fraction × buffTowersPerTeam)` (2 of 3 today; 4 of 5 with five lanes). The result
 sets `Collider.isUnbreakable` and is emitted as `structure-breakability-changed`, so the
 `DamagePipeline` rejects damage to unbreakable targets and `CollisionSystem` runs swept tests
-against them (`10-physics.md` §7). New rules are new union members plus one `case` in the
-evaluator (OCP).
+against them (`10-physics.md` §7). New rules are new union members plus one evaluator in the
+breakability registry, `BREAKABILITY_EVALUATORS` in `content/structures/breakability.ts`, not a
+branch in `StructureSystem` (OCP; DEC-168 B7). The evaluators judge a rule on facts the system
+gathers once per team per tick (how many of the team's BuffTowers are lost,
+`LaneStructures.lostCount`).
 
 **Sentinel sprint-through** (MVP-if-time): a Sentinel at full speed (`Movement.speed >=
 maxSpeed × sprintThrough.fullSpeedFraction`, TUNE 1.0; the doc says up to 1 minute of straight
@@ -210,7 +214,7 @@ batch is fulfilled in one step together with its horde record ([18](18-minion-sy
 | `Stronghold`    | 3 light hordes of 16 at match start (48 units); later light swarms and heavy mobs       | ranged + melee guards, leash to the walls | MVP         |
 | `SpawnerTower`  | 1 light horde every 60 s after the 60 s countdown (TUNE)                                | light mob guards                          | MVP         |
 | `BuffTower`     | light and medium swarms (TUNE cadence)                                                  | numerous medium guards                    | MVP         |
-| `Camp` (forest) | none; a fixed group after the activation cooldown (TUNE)                                | the group itself, leashed to the camp     | MVP         |
+| `Camp` (forest) | none; a fixed group once the match countdown ends (DEC-167)                             | the group itself, leashed to the camp     | MVP         |
 | `Camp` (corner) | a `MiniBoss` + support every 5 min after its death (TUNE); crystal is `never` breakable | boss guards                               | MVP-if-time |
 | `Cathedral`     | the gem summons the `GreaterBoss` mid-match via `MatchTimeline`                         | none                                      | phase 3     |
 
@@ -225,7 +229,10 @@ The values live in `content/structures/spawnWaves.ts`; a wave there carries `fir
 update.
 
 Guards use `GuardController` with `leashRadius` ("don't leave the tower's perimeter") and respawn
-after `respawnTicks` (TUNE: 2 minutes = 3600 ticks). Horde sizes are
+after `respawnTicks` (TUNE: 2 minutes = 3600 ticks). A zone (§7) can be a guard home too: its
+plan is keyed by the zone's definition id, posts and leash are measured from its anchor, and it
+always stands ([18](18-minion-system.md) §7.1). A plan may activate a set time after the countdown
+ends and may never respawn (a once-per-match guard). Horde sizes are
 `GameConfig.match.hordeSizes` (FR-037) and cadences are spawner data (DISC-10); the owner may move
 either ([18-minion-system](18-minion-system.md) §10), and the `Stronghold` and `BuffTower` rows
 above follow that answer.
@@ -269,7 +276,9 @@ export class Capturable {
 - **Checkpoints.** A side's push on a zone it does not own announces each checkpoint it passes
   (`checkpoint-reached`), once per side until the zone changes owner (DEC-145 (b), (g)): a capture
   that reverts and is pushed again announces only the checkpoints that side had not reached, so
-  the assist mobs cannot be farmed for XP. A drain, a revert and an owner refilling its own zone
+  the assist mobs cannot be farmed for XP. Each announcement names that side's living Legends whose
+  centre is on the zone, from the same pass that weighs the sides (`presentLegendIds`, DEC-223
+  (4a)): the Legends that win the checkpoint. A drain, a revert and an owner refilling its own zone
   announce none. `capture-progress` reports every checkpoint the progress crosses, either way.
 - **Density.** Each side's presence is published with the zone's state, and the client shows each
   side's share of the total (DEC-145 (c)): in the world under the progress bar, and on the HUD
@@ -408,7 +417,9 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   `Stronghold`, `SpawnerTower`, `BuffTower` and `Gate`, with `content/structures/structureCatalogue.ts`
   (base health from `balancing.md`) and their registry lines. `Simulation` builds one per map
   feature with a structure definition, in feature id order, carrying the feature's lane
-  (`Structure.laneId`). `BreakabilityRule` (§3, without `all-of`) is evaluated by `StructureSystem`,
+  (`Structure.laneId`) and id (`Structure.mapFeatureId`, which the snapshot carries as
+  `EntitySnapshot.mapFeatureId`, so the HUD structure strip binds each tile to its structure,
+  DEC-212). `BreakabilityRule` (§3, without `all-of`) is evaluated by `StructureSystem`,
   which also emits `structure-destroyed`; `BreakabilityStep` blocks damage to unbreakable targets.
   The BuffTower total is `numLanes × buffTowersPerLane` from config. Not built yet: shield bars
   from BuffTowers, the `all-of` rule, the §11 invariants (`BreakabilityMatchesRuleInvariant`,
@@ -417,6 +428,20 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   `WorldMap`; the main view draws structures from the map layer (`StructureView` draws nothing).
   Minion plan M6 adds `Camp` (forest camps, rule `never`, circle radius 1 `TUNE`, since camp
   features have no footprint); its group is a guard plan (18 §7.1), not a `Spawner` component yet.
+- **Minion follow-ups (`fix/minion-stack-followups`, 2026-11-05).** Lane towers and the
+  Stronghold also carry a `Footprint` component: the polygons of their map object of the same id
+  (a tower's fort, the Stronghold's palace outline), which `Simulation` copies for a definition
+  with `hasMapFootprint`. Attack reach to the structure is measured to those outlines, and a chase
+  aims at their nearest point, or holds inside them (DEC-234), so a hit on a fort wall is a hit on the tower and melee at the
+  palace wall reaches the Stronghold (DEC-185, DEC-185 (D)). The circle `Collider` stays. A lane
+  tower's fort map object, which blocks, is the tower's body: it has no health of its own, so
+  damage to the fort goes to the tower (one pool, DEC-185 (B)). After the tower falls, its fort
+  stays standing as scenery with no health on this branch: the ruins with half-health walls
+  (DEC-217 (12), DEC-219 (a)) are built on a later branch (DEC-219 (d)). Only towers share one pool with their fort
+  (DEC-217 (13)): the Stronghold's palace map object does not block, and a gate's definition has
+  no `hasMapFootprint`, so both keep their own health. `Simulation` takes the structure
+  definitions from one injected source (`SimulationOptions.structures`, default
+  `STRUCTURE_DEFINITIONS`) for the structures it builds and for `StructureSystem` (DEC-168 B8).
 - `ObstacleDefinition` keeps `kind: 'obstacle'` (the entity class) and moves tree/rock/bridge to
   `obstacleType`; `fell` and `minimapGlyph` arrive with felling and the minimap work.
 
@@ -444,22 +469,43 @@ and a `Capturable` component, one per `capture-point` and `cathedral` map featur
 (`map/zoneArea.ts`) instead of taking it as an explicit placement (06): zones come from the map,
 so a replay or a match without map objects rebuilds the same zones. Interim differences:
 
-- `lockedBy` is always `null`: the mini-boss lock arrives in Phase 3 sprint 3.6.
-- Scheduled later, through the two capture events: holding buffs (Phase 3 sprint 3.3), score
-  (sprint 3.5), checkpoint defender spawns (Phase 3) and checkpoint XP (Phase 4). The minimap glyph
+- **Zone lock (2026-11-12).** `CaptureSystem` sets `lockedBy` every tick from the zone's guard
+  posts: a living guard of a mob in `content/zones/zoneLocks.ts` (the capture point boss) locks
+  the zone, and a locked zone publishes its presence but its progress does not move, so it is
+  neither captured, drained nor reverted. 12 clears the lock on the boss's `entity-died`; reading
+  the posts each tick needs no listener and unlocks in the same tick. `LockedZoneOwnerInvariant`
+  (15 §3) is not built.
+- **Capture point mini-boss (`feat/capture-point-boss`, 2026-11-11).** The `MiniBoss` is not an
+  entity class yet: each outer capture point (definition `capture-point`; the Cathedral has none)
+  keeps one `capture-point-boss` through its zone guard plan (§6 status, 18 §7.1), a `heavy-mob`
+  with `GuardController` and balancing.md's MiniBoss health and hit. It appears at the
+  default timeline's quarter mark through its guard plan's delay after the countdown (not yet the
+  `MatchDirector`'s timeline, `INBOX.md` interim (a)), sees and attacks an enemy anywhere in the
+  court, and never respawns. Its leash, post gap and aggro range come from the fort's geometry
+  (`content/zones/capturePointCourt.ts`). Its kill pays balancing.md's 500 XP to the killer's
+  team, at most 2 levels each (DEC-237, 05 §13 status). Its support mobs (the `capture-point` plan's table in
+  `content/structures/guardPlans.ts`, `INBOX.md` interim (e)) share its plan, activation and
+  `never` respawn, with the court's own aggro profile (`capture-point-guard`: the court's leash less
+  its post gap, AI56-F4; the boss is exempt from that rule, `INBOX.md`), and it takes only its share of a lane minion's hit (`BossMinionDamageStep`,
+  shares in `content/mobs/minionModifiers.ts`). Its moves, regeneration and permanent team buff come
+  later.
+- Scheduled later, through the two capture events: holding buffs (Phase 3 sprint 3.3), checkpoint
+  defender spawns (Phase 3) and checkpoint XP (Phase 4). Capture scoring is built (12 §5): from
+  `checkpoint-reached` and from each zone's `Capturable` owner at the director's fold. The minimap glyph
   does not follow the owner yet (the minimap entity markers, SCRUM-151).
 - The density numbers on the HUD arrive with the HUD work (`feat/hud-and-character-select`, its
   capture tracker); this PR publishes the presence and draws the split bar in the world.
 
-**2026-11-09 (`feat/bosses-p3`, corner camp boss, interim; updated 2026-11-13).** DEC-236
+**2026-11-09 (`feat/bosses-p3`, corner camp boss, interim; updated 2026-11-17).** DEC-236
 approves corner camps for Phase 3, with the corner boss on `GuardController` as an interim
 stand-in until it moves to the `Boss` family with `BossController` in Phase 3 sprint 3.6.
 `corner-camp` is a `Camp` structure definition like the forest camps (rule `never`, circle radius
 1 `TUNE`), and its guard plan `corner-camp` (`content/structures/guardPlans.ts`) spawns one
 `corner-boss` at match start: a `heavy-mob` with the MiniBoss row's stats from `balancing.md`,
 held over the camp's ring by `GuardController` and respawned 5 minutes after it dies (DEC-12).
-Not built yet: the `MiniBoss` entity and its `BossController` moves, the MiniBoss row's 5%/s
-regeneration and its 25% cut to damage from minions, the support units, the team-wide reward, the
+Its kill pays every Legend of the killer's team, at most 2 levels each (DEC-237,
+`XP_SOURCES.teamKills`). Not built yet: the `MiniBoss` entity and its `BossController` moves, the
+MiniBoss row's 5%/s regeneration and its 25% cut to damage from minions, the support units, the
 crystal, the heavy side wave on a kill and the GreaterBoss buffs. The camp's ring is core content
 (`CORNER_CAMP_RING`, `content/structures/cornerCampRing.ts`): the guard plan's leash and post gap,
 the boss's acquisition and vision radius and the ring the client draws all derive from it.

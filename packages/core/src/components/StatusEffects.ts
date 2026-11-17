@@ -6,18 +6,22 @@ import type {
 import { StatusEffectRuntime } from './StatusEffectRuntime';
 
 /**
- * The statuses on an entity (architecture 05 section 8) and what they add up to: one multiplier
- * per stat (each modifier's `value` once per stack) and the set of flags, recomputed whenever the
- * list changes, so every reader asks one question per tick. An entity without this component is
- * immune to statuses (structures). Ids are plain strings (`components/` may not import `state/`).
+ * The statuses on an entity (architecture 05 section 8) and what they add up to: one multiplier per
+ * stat (each modifier's `value` once per stack, `StatModifier`) and the set of flags, recomputed
+ * whenever the list changes, so every reader asks one question per tick. An entity without this
+ * component is immune to statuses (structures). Ids are plain strings (`components/` may not import
+ * `state/`).
  */
 export class StatusEffects {
   private readonly activeList: StatusEffectRuntime[] = [];
 
   private readonly spare: StatusEffectRuntime[] = [];
 
-  /** Per stat, the product of every active modifier's `value` raised to its stacks. */
+  /** Per stat, (1 + its `add` bonus) × every active `mul` modifier's `value` raised to its stacks. */
   private readonly multipliers = new Map<StatusStat, number>();
+
+  /** Per stat, the sum of every active `add` modifier's `value` × its stacks; folded in above. */
+  private readonly bonuses = new Map<StatusStat, number>();
 
   private readonly flags = new Set<StatusFlag>();
 
@@ -43,8 +47,8 @@ export class StatusEffects {
 
   /**
    * Removes the status `statusId` now, whatever its timer (an aura left, a hold released). Returns
-   * whether it was active. Use `combat/StatusEffectApplier.remove`, which also emits the event.
-   * Not from inside a loop over `active` (a listener during `StatusEffectSystem`'s pass): it splices.
+   * whether it was active. Use `combat/StatusEffectApplier.remove`, which also emits the event. Not
+   * from inside a loop over `active` (a listener during `StatusEffectSystem`'s pass): it splices.
    */
   public remove(statusId: string): boolean {
     const status = this.find(statusId);
@@ -95,9 +99,14 @@ export class StatusEffects {
 
   private recompute(): void {
     this.multipliers.clear();
+    this.bonuses.clear();
     this.flags.clear();
     for (const { definition, stacks } of this.activeList) {
-      for (const { stat, value } of definition.modifiers) {
+      for (const { stat, op, value } of definition.modifiers) {
+        if (op === 'add') {
+          this.bonuses.set(stat, (this.bonuses.get(stat) ?? 0) + value * stacks);
+          continue;
+        }
         let product = this.multipliers.get(stat) ?? 1;
         // Repeated multiplication, not Math.pow, which core avoids (ADR 0012).
         for (let stack = 0; stack < stacks; stack += 1) {
@@ -109,5 +118,8 @@ export class StatusEffects {
         this.flags.add(flag);
       }
     }
+    this.bonuses.forEach((bonus, stat) => {
+      this.multipliers.set(stat, (1 + bonus) * (this.multipliers.get(stat) ?? 1));
+    });
   }
 }

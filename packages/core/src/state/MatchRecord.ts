@@ -4,22 +4,32 @@ import { deepFreeze } from '../utils/deepFreeze';
 import type { EntityId } from './EntityStore.types';
 import type { GameEvents } from './GameEvents';
 import type { MatchResult } from './MatchResult.types';
-import type { MatchState, ScheduledMark } from './MatchState.types';
+import type { DuelScore, MatchState, ScheduledMark } from './MatchState.types';
+import { ScoreBook } from './ScoreBook';
+import type { ScoringState } from './ScoringState.types';
 
 /**
  * The match director's memory (architecture 12 §4), kept as `GameState.match` (DEC-177): the
  * read-only `MatchState` fields and the only writers that change them (DEC-172). Each writer has
- * one caller, named on it; the set-once writers throw on a second call.
+ * one caller, named on it; the set-once writers throw on a second call. The scoring data has its
+ * own writers: the `ScoreBook` this record holds (DEC-211).
  */
 export class MatchRecord implements MatchState {
   /** Every timeline entry's tick in firing order, frozen when the match is built. */
   public readonly schedule: readonly ScheduledMark[];
+  /**
+   * The scoring data's only writer (DEC-211, 12 §5). Written by `Scoring` only, in its fold;
+   * everyone else reads `scoring`.
+   */
+  public readonly scoreBook = new ScoreBook();
   private currentPhase: MatchPhase = 'countdown';
   private enteredTick = 0;
   private cursor = 0;
   private isHeld = false;
   private readonly seats = new Map<PlayableTeam, EntityId>();
   private verdict: MatchResult | null = null;
+  private duelKills: Record<PlayableTeam, number> | null = null;
+  private duelKillTarget = 0;
 
   /**
    * @param playerTeam - The team the match is played (or spectated) for.
@@ -69,9 +79,41 @@ export class MatchRecord implements MatchState {
     return this.seats.get(team) ?? null;
   }
 
+  /** The Legends' rows and the teams' totals, read-only at every depth: the `ScoreBook`'s view. */
+  public get scoring(): ScoringState {
+    return this.scoreBook.view;
+  }
+
   /** How the match ended; `null` until a verdict. */
   public get result(): MatchResult | null {
     return this.verdict;
+  }
+
+  /** The Duel's score; `null` outside a Duel. */
+  public get duel(): DuelScore | null {
+    return this.duelKills === null
+      ? null
+      : { kills: { ...this.duelKills }, killTarget: this.duelKillTarget };
+  }
+
+  /**
+   * Makes this match a Duel won at `killTarget` kills, both teams at 0. Called by `Simulation`
+   * only, once, when the match is built; a second call throws.
+   */
+  public startDuel(killTarget: number): void {
+    if (this.duelKills !== null) {
+      throw new Error('The Duel has already started: its target is set once.');
+    }
+    this.duelKills = { light: 0, dark: 0 };
+    this.duelKillTarget = killTarget;
+  }
+
+  /** Counts a kill for `team`. Called by `DuelRoundSystem` only; throws outside a Duel. */
+  public recordDuelKill(team: PlayableTeam): void {
+    if (this.duelKills === null) {
+      throw new Error('There is no Duel to record a kill in.');
+    }
+    this.duelKills[team] += 1;
   }
 
   /**

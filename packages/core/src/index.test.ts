@@ -10,6 +10,7 @@ describe('@eternalus/core public API', () => {
       'CORNER_CAMP_RING',
       'ConfigValidationError',
       'DEFAULT_MAP_CONFIG',
+      'DUEL_RULES',
       'MapGenerator',
       'MapObjectBuilder',
       'MapPresentationBuilder',

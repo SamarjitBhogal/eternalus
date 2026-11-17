@@ -1,12 +1,15 @@
 import { createDefaultGameConfig } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
+import type { BridgeEventMap } from '../bridge/events';
+import { TypedEventBus } from '../bridge/TypedEventBus';
+
 import { snapshotAtTick } from './duel/__fixtures__/snapshots';
 import { FakeMessageTransport } from './engine/net/FakeMessageTransport';
 import { FakeRunningMatch } from './FakeRunningMatch';
 import { FakeViewportCanvas } from './FakeViewportCanvas';
 import { prepareMatchWorld } from './prepareMatchWorld';
-import type { DuelMatchRequest } from './SessionController.types';
+import type { DuelMatchRequest, SessionControllerDeps } from './SessionController.types';
 import { testSession } from './testSessionDeps';
 
 const CONFIG = createDefaultGameConfig();
@@ -22,12 +25,13 @@ const VIEWPORT = {
 } as const;
 
 /** A session in `menu` whose Duel transports and Duel matches are recorded. */
-async function setUp() {
+async function setUp(overrides: Partial<SessionControllerDeps> = {}) {
   const transports: FakeMessageTransport[] = [];
   const requests: DuelMatchRequest[] = [];
   const matches: FakeRunningMatch[] = [];
   const seeds: number[] = [];
   const session = testSession({
+    ...overrides,
     prepareWorld: (seed) => {
       seeds.push(seed);
       return prepareMatchWorld(CONFIG, seed);
@@ -53,9 +57,10 @@ async function setUp() {
   };
   /** The server pairs the player and sends the first snapshot; the assets then load. */
   const startDuel = async (): Promise<void> => {
-    session.intent({ kind: 'start-duel' });
+    session.intent({ kind: 'start-duel', name: 'Ana' });
     transport().receive({
       type: 'match-found',
+      opponentName: 'Rival',
       matchId: 'm',
       seed: 1234,
       team: 'dark',
@@ -74,20 +79,23 @@ describe('SessionController, online Duel (ADR 0016)', () => {
   it('joins the queue and shows the waiting screen on start-duel, staying in the menu', async () => {
     const session = await setUp();
 
-    session.intent({ kind: 'start-duel' });
+    session.intent({ kind: 'start-duel', name: 'Ana' });
 
-    expect(session.transport().sent).toEqual([{ type: 'queue-join' }]);
+    expect(session.transport().sent).toEqual([{ type: 'queue-join', name: 'Ana' }]);
     expect(route(session)).toBe('duel-queue');
     expect(session.controller.phase).toBe('menu');
   });
 
   it('leaves the queue on cancel-duel and shows home', async () => {
     const session = await setUp();
-    session.intent({ kind: 'start-duel' });
+    session.intent({ kind: 'start-duel', name: 'Ana' });
 
     session.intent({ kind: 'cancel-duel' });
 
-    expect(session.transport().sent).toEqual([{ type: 'queue-join' }, { type: 'queue-leave' }]);
+    expect(session.transport().sent).toEqual([
+      { type: 'queue-join', name: 'Ana' },
+      { type: 'queue-leave' },
+    ]);
     expect(session.transport().hasEnded).toBe(true);
     expect(route(session)).toBe('home');
   });
@@ -105,12 +113,59 @@ describe('SessionController, online Duel (ADR 0016)', () => {
     expect(request?.world.map).toBeDefined();
   });
 
+  it('shows VERSUS with both names when paired, then loads the match on the first snapshot', async () => {
+    const session = await setUp();
+    session.intent({ kind: 'start-duel', name: 'Ana' });
+
+    session.transport().receive({
+      type: 'match-found',
+      opponentName: 'Rival',
+      matchId: 'm',
+      seed: 1234,
+      team: 'dark',
+      legendId: 'entity-7',
+    });
+
+    expect(route(session)).toBe('duel-versus');
+    expect(session.store.getState().match.versus).toEqual({ own: 'Ana', opponent: 'Rival' });
+    expect(session.controller.phase).toBe('menu');
+    session.transport().receive({ type: 'state', snapshot: snapshotAtTick(1), ackSeq: 0 });
+    expect(session.controller.phase).toBe('match-loading');
+  });
+
   it('publishes the seat as the setup team so the HUD selectors work in a Duel', async () => {
     const session = await setUp();
 
     await session.startDuel();
 
     expect(session.store.getState().matchSetup.playerTeam).toBe('dark');
+  });
+
+  it('publishes the setup before match-loading, while the match group is still loading', async () => {
+    const bus = new TypedEventBus<BridgeEventMap>();
+    const order: string[] = [];
+    bus.on('match-setup', () => order.push('match-setup'));
+    bus.on('session-phase', ({ phase }) => order.push(phase));
+    const session = await setUp({ bus });
+    order.length = 0;
+    session.intent({ kind: 'start-duel', name: 'Ana' });
+    session.transport().receive({
+      type: 'match-found',
+      matchId: 'm',
+      seed: 1234,
+      team: 'dark',
+      legendId: 'entity-7',
+      opponentName: 'Bo',
+    });
+
+    session.transport().receive({ type: 'state', snapshot: snapshotAtTick(1), ackSeq: 0 });
+
+    expect(order).toEqual(['match-setup', 'match-loading']);
+    expect(session.store.getState().matchSetup.playerTeam).toBe('dark');
+    expect(session.store.getState().matchSetup.mode).toBe('duel');
+    expect(session.seeds).toEqual([]);
+    await session.resolveLoads();
+    expect(session.seeds).toEqual([1234]);
   });
 
   it('shows the results from the own team when the server ends the match, then returns to the menu', async () => {
@@ -121,10 +176,9 @@ describe('SessionController, online Duel (ADR 0016)', () => {
     session.transport().receive({ type: 'match-ended', reason: 'finished', winner: 'dark' });
 
     expect(session.controller.phase).toBe('results');
-    expect(session.store.getState().match.result).toEqual({
+    expect(session.store.getState().match.duel).toEqual({
       winner: 'dark',
       reason: 'finished',
-      ownTeam: 'dark',
     });
     session.intent({ kind: 'navigate', route: 'home' });
     expect(session.controller.phase).toBe('menu');
@@ -146,9 +200,10 @@ describe('SessionController, online Duel (ADR 0016)', () => {
 
   it('ends the match with its result when match-ended arrives during match-loading', async () => {
     const session = await setUp();
-    session.intent({ kind: 'start-duel' });
+    session.intent({ kind: 'start-duel', name: 'Ana' });
     session.transport().receive({
       type: 'match-found',
+      opponentName: 'Rival',
       matchId: 'm',
       seed: 1234,
       team: 'dark',
@@ -160,19 +215,50 @@ describe('SessionController, online Duel (ADR 0016)', () => {
     session.transport().receive({ type: 'match-ended', reason: 'opponent-left', winner: 'dark' });
 
     expect(session.controller.phase).toBe('results');
-    expect(session.store.getState().match.result).toEqual({
+    expect(session.store.getState().match.duel).toEqual({
       winner: 'dark',
       reason: 'opponent-left',
-      ownTeam: 'dark',
     });
     expect(session.store.getState().session.reason).toBeNull();
   });
 
-  it('shows home when the opponent leaves between pairing and the first snapshot', async () => {
+  it("keeps the results on start-match after a Duel: its setup is the server's and not repeatable", async () => {
     const session = await setUp();
-    session.intent({ kind: 'start-duel' });
+    await session.startDuel();
+    session.controller.attachViewport(VIEWPORT);
+    session.transport().receive({ type: 'match-ended', reason: 'finished', winner: 'dark' });
+
+    session.intent({ kind: 'start-match' });
+
+    expect(session.controller.phase).toBe('results');
+  });
+
+  it("keeps the results on start-match after a Duel that ended while loading: its setup is a Duel's and not repeatable", async () => {
+    const session = await setUp();
+    session.intent({ kind: 'start-duel', name: 'Ana' });
     session.transport().receive({
       type: 'match-found',
+      matchId: 'm',
+      seed: 1234,
+      team: 'dark',
+      legendId: 'entity-7',
+      opponentName: 'Bo',
+    });
+    session.transport().receive({ type: 'state', snapshot: snapshotAtTick(1), ackSeq: 0 });
+    session.transport().receive({ type: 'match-ended', reason: 'opponent-left', winner: 'dark' });
+
+    expect(() => {
+      session.intent({ kind: 'start-match' });
+    }).not.toThrow();
+    expect(session.controller.phase).toBe('results');
+  });
+
+  it('shows home when the opponent leaves between pairing and the first snapshot', async () => {
+    const session = await setUp();
+    session.intent({ kind: 'start-duel', name: 'Ana' });
+    session.transport().receive({
+      type: 'match-found',
+      opponentName: 'Rival',
       matchId: 'm',
       seed: 1234,
       team: 'dark',
@@ -200,7 +286,7 @@ describe('SessionController, online Duel (ADR 0016)', () => {
 
   it('shows home again when the connection drops in the queue', async () => {
     const session = await setUp();
-    session.intent({ kind: 'start-duel' });
+    session.intent({ kind: 'start-duel', name: 'Ana' });
 
     session.transport().drop();
 

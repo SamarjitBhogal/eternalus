@@ -6,10 +6,15 @@ import type { DebugConfig } from './diagnostics/InvariantRunner.types';
 import type { Logger } from './diagnostics/Logger.types';
 import type { ReplayOf, ReplayTargetFactoryOf } from './diagnostics/Replay.types';
 import type { ContentCatalogue } from './content/ContentCatalogue';
+import type { GuardPlanDefinition } from './content/structures/structures.types';
 import type { LevelCurveDefinition } from './content/progression/progression.types';
 import type { DefinitionSource, WeaponSource } from './entities/EntityFactory.types';
+import type { StructureDefinition } from './content/structures/structures.types';
 import type { System } from './systems/System.types';
 import type { PlayableTeam } from './teams/teams.types';
+
+/** Where structure definitions are found by id (architecture 07 §1). */
+export type StructureSource = Pick<ContentCatalogue<StructureDefinition>, 'has' | 'get'>;
 
 /** Everything a `Simulation` is built from (architecture 03 §6). Only the first three are required. */
 export type SimulationOptions = {
@@ -27,6 +32,8 @@ export type SimulationOptions = {
   readonly debug?: DebugConfig;
   /** Where entity definitions are found by id; `loadDefaultContent(config.tickRate)` when omitted. */
   readonly content?: DefinitionSource;
+  /** Where structure definitions are found by id; `STRUCTURE_DEFINITIONS` when omitted. */
+  readonly structures?: StructureSource;
   /**
    * The generated map; its lanes and structures drive the lane hordes (architecture 18). Without
    * one, nothing spawns on lanes, and a `roster` throws.
@@ -42,7 +49,21 @@ export type SimulationOptions = {
   readonly roster?: readonly RosterSlot[];
   /** Where Legends find their weapons by id; `loadWeapons(config.tickRate)` when omitted. */
   readonly weapons?: WeaponSource;
+  /**
+   * Each guard home's plan by definition id; `GUARD_PLANS` when omitted. Tests and tools only: it
+   * is not recorded in `ReplaySetup`, so a match built with other plans replays only through a
+   * target factory that passes the same plans (architecture 15 §7).
+   */
+  readonly guardPlans?: Readonly<Record<string, GuardPlanDefinition>>;
+  /**
+   * Makes the match a Duel (ADR 0016, DEC-36): both humans start in the Cathedral, each kill
+   * resets both Legends, and `killTarget` kills win. Needs `map` and the default pipeline.
+   */
+  readonly duel?: DuelOptions;
 };
+
+/** A Duel's rules; `DUEL_RULES.killTarget` is the shipped target. */
+export type DuelOptions = { readonly killTarget: number };
 
 /** What every roster slot names: who, for which team, in which role (architecture 18 §8). */
 type RosterSlotBase = {
@@ -74,7 +95,7 @@ export type RosterSlot =
  */
 export type ReplaySetup = Pick<
   SimulationOptions,
-  'seed' | 'config' | 'map' | 'mapObjects' | 'roster'
+  'seed' | 'config' | 'map' | 'mapObjects' | 'roster' | 'duel'
 >;
 
 /** A recorded match: its `ReplaySetup`, the commands and the checkpoint hashes. */

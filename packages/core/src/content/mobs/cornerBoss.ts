@@ -4,8 +4,9 @@ import type { MobDefinition } from './mobs.types';
 /**
  * The corner camp boss (game doc "Outer (Corner) Camps"): one per corner camp, held at its camp
  * by `GuardController`. Interim (DEC-236, until the `Boss` family in sprint 3.6): a heavy mob
- * with the MiniBoss's stats and no moves, support or team-wide reward yet. Leash and the 5-minute
- * respawn are the corner camp's guard plan (`content/structures/guardPlans.ts`).
+ * with the MiniBoss's stats and no moves or support yet. Leash and the 5-minute respawn are the
+ * corner camp's guard plan (`content/structures/guardPlans.ts`). Its kill pays the killer's whole
+ * team, capped (`XP_SOURCES.teamKills`, DEC-237).
  */
 export const CORNER_BOSS = {
   id: 'corner-boss',
@@ -21,9 +22,7 @@ export const CORNER_BOSS = {
   aiProfile: 'corner-boss',
   // TUNE: balancing.md MiniBoss row: 0.25 × refHealth ≈ 205 per hit, 1.5 s interval.
   attack: { strategy: 'melee', damage: 205, reach: 2, interval: 1.5 },
-  // TUNE: balancing.md MiniBoss row's 500 XP. The row pays it team-wide; until the boss reward
-  // lands it goes through the ordinary kill path.
-  xpValue: 500,
+  xpValue: 0, // the killer earns nothing alone: its 500 XP is team-wide (XP_SOURCES.teamKills)
   movementProfile: {
     maxSpeed: 2.5, // TUNE: m/s, a bit slower than a heavy camp mob
     acceleration: 8, // TUNE: m/s², slow to get going

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { countdownTicks } from './config/countdownTicks';
 import { CORNER_BOSS_AGGRO } from './content/ai/aggro/cornerBoss';
 import type { MapDefinition } from './content/maps/maps.types';
+import { XP_SOURCES } from './content/progression/xpSources';
 import { GUARD_PLANS } from './content/structures/guardPlans';
 import { STRUCTURE_DEFINITIONS } from './content/structures/structureCatalogue';
 import { match, run, STRONGHOLDS_ONLY } from './__fixtures__/hordeMatches';
@@ -92,27 +93,81 @@ describe('Simulation corner camp boss (DEC-236)', () => {
     expect(entity(legendId)?.health?.current).toBe(fullHealth);
   });
 
-  it('fires camp-cleared when the boss is removed and respawns it at its post 300 s later (DEC-12)', () => {
-    const { config, simulation, boss, post } = cornerMatch();
-    const cleared: { readonly entityId: string; readonly tick: number }[] = [];
-    simulation.on('camp-cleared', ({ entityId }) => {
-      cleared.push({ entityId, tick: simulation.tick });
-    });
+  it("a real kill pays every Legend of the killer's team at most 2 levels, fires camp-cleared and respawns it 300 s later (DEC-237, DEC-12)", () => {
+    const { config, simulation, logger, boss, post } = cornerMatch();
+    const bossId = boss()?.id ?? '';
     const homeId =
       simulation.snapshot().entities.find(({ definitionId }) => definitionId === 'corner-camp')
         ?.id ?? '';
+    const spawned: string[] = [];
+    const cleared: { readonly entityId: string; readonly tick: number }[] = [];
+    const killers: (string | null)[] = [];
+    const teamKillXp: { readonly entityId: string; readonly amount: number }[] = [];
+    simulation.on('entity-spawned', ({ entityId }) => spawned.push(entityId));
+    simulation.on('camp-cleared', ({ entityId }) => {
+      cleared.push({ entityId, tick: simulation.tick });
+    });
+    simulation.on('entity-died', ({ entityId, killer }) => {
+      if (entityId === bossId) killers.push(killer.attackerId);
+    });
+    simulation.on('xp-gained', ({ entityId, amount, victimId, cause }) => {
+      if (victimId === bossId && cause === 'team-kill') teamKillXp.push({ entityId, amount });
+    });
+    const legendAt = (team: 'light' | 'dark', at: { readonly x: number; readonly y: number }) => {
+      simulation.enqueueCommand({
+        type: 'dev-spawn',
+        kind: 'warrior',
+        definitionId: 'warrior',
+        team,
+        at,
+        count: 1,
+      });
+    };
+    // A dark Legend outside the ring and the boss's sight: the other team, paid nothing.
+    legendAt('dark', { x: HOME.x, y: HOME.y + 30 });
+    run(simulation, 1);
+    const darkId = spawned.at(-1) ?? '';
 
-    simulation.enqueueCommand({ type: 'dev-remove-entity', entityId: boss()?.id ?? '' });
-    run(simulation, 2);
+    // Light warriors at the boss's feet, sent in waves until one lands the killing hit.
+    for (let second = 0; second < 120 && boss()?.id === bossId; second += 1) {
+      const before = spawned.length;
+      for (const dy of [-2, 0, 2]) legendAt('light', { x: post.x, y: post.y + dy });
+      run(simulation, 1);
+      for (const actorId of spawned.slice(before)) {
+        simulation.enqueueCommand({ type: 'attack-target', actorId, targetId: bossId });
+      }
+      run(simulation, config.tickRate - 1);
+    }
+
+    expect(killers).toHaveLength(1);
+    expect(killers[0] ?? null).not.toBeNull();
     expect(cleared.map(({ entityId }) => entityId)).toEqual([homeId]);
-    expect(boss()).toBeUndefined();
+    // Every light Legend standing when it fell is paid, the killer only as one of them; each goes
+    // up exactly the 2 levels the reward allows (500 XP is more than 2 levels from level 1).
+    const lights = simulation
+      .snapshot()
+      .entities.filter(({ family, team }) => family === 'legend' && team === 'light');
+    expect(lights.length).toBeGreaterThan(1);
+    expect(teamKillXp.map(({ entityId }) => entityId).sort()).toEqual(
+      lights.map(({ id }) => id).sort(),
+    );
+    expect(
+      teamKillXp.every(({ amount }) => amount < (XP_SOURCES.teamKills['corner-boss']?.xp ?? 0)),
+    ).toBe(true);
+    // DEC-237: "killing mini-bosses can go up 2 levels at most"; every Legend starts at level 1.
+    expect(lights.map(({ progression }) => progression?.level)).toEqual(lights.map(() => 3));
+    expect(teamKillXp.some(({ entityId }) => entityId === darkId)).toBe(false);
 
-    const respawnTicks = (PLAN?.respawnSeconds ?? 0) * config.tickRate;
+    const respawnTicks =
+      PLAN?.respawn.kind === 'group' ? PLAN.respawn.seconds * config.tickRate : 0;
     expect(respawnTicks).toBe(300 * config.tickRate);
     run(simulation, (cleared[0]?.tick ?? 0) + respawnTicks - simulation.tick - 1);
-    expect(boss()).toBeUndefined();
+    expect(
+      simulation.snapshot().entities.some(({ definitionId }) => definitionId === 'corner-boss'),
+    ).toBe(false);
     run(simulation, 2);
     expect(boss()?.transform).toEqual(post);
     expect(cleared).toHaveLength(1);
-  });
+    expect(logger.records.filter(({ severityText }) => severityText === 'ERROR')).toEqual([]);
+  }, 120_000); // a real 8,200 HP kill takes several seconds of test time
 });

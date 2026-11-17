@@ -16,7 +16,9 @@ const fieldsOf = (match: MatchState): MatchState => ({
   isIdleHeld: match.isIdleHeld,
   playerTeam: match.playerTeam,
   humanLegendId: match.humanLegendId,
+  scoring: match.scoring,
   result: match.result,
+  duel: match.duel,
 });
 
 describe('createDefaultMatchPhases', () => {
