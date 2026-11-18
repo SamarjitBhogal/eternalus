@@ -30,6 +30,136 @@ Reply inline (`Decision: …`).
       its own `MapDecorationBuilder` subclass picked by the per-kind interior registry (06). OK
       to do as a separate refactor PR?
 
+- [ ] **Teammate's boss spec (Aryan Walanj, 2026-11-11): amend reference 04?** A teammate's spec
+      differs from `docs/reference/game-design/04-objectives-capture-points-and-bosses.md` in
+      four places. Nothing is built for any of them until you answer; no Cathedral or middle-boss
+      work is started. For each, reply amend 04 (and a DEC row in 13) or keep 04:
+      (1) **Capture weight instead of the zone lock**: a mini-boss counts 5 and the big boss 20
+      toward zone presence, so a boss weighs in on the capture but the zone stays capturable;
+      04 "Mini-bosses at the quarter mark" says the zone cannot be captured while it lives.
+      (2) **Eternal boss respawns after 10 minutes**; 04 gives the central boss no respawn (only
+      the corner-camp crystal's 5-minute respawn, DEC-12).
+      (3) **The killer gets a flag instead of becoming an Eternal**; 04 says the player who lands
+      the final hit becomes an Eternal (the one non-yellow Form change row). What the flag does
+      is not in the spec.
+      (4) **Regen after 30 s out of combat**; `docs/reference/suggestions/balancing.md` (boss
+      table, MiniBoss row) says 5%/s after 10 s with no enemy inside its zone. Is the 30 s a
+      replacement for the 10 s trigger, does "out of combat" replace "no enemy in the zone", and
+      is the 5%/s rate kept?
+
+- [ ] **Capture point mini-boss: five interim stand-ins (Aryan Walanj, assigned owner, 2026-11-09;
+      `feat/zone-guard-homes` critic finding 1; (c) and (d) `feat/capture-point-boss` critic
+      findings 1 and 2, 2026-11-11) — (a) due before the `MatchTimeline` boss spawn, (b) built,
+      (c) needs Sam's sign-off now and is replaced by phase-3 sprint 3.6's `BossController`, (d)
+      partly built, (e) awaits the owner and Sam.** (a) The boss
+      spawns at the default timeline's quarter mark (440 s after the countdown ends, 2026-11-12;
+      `guardPlans.test.ts` derives it from `createDefaultGameConfig`'s `quarter-mark` entry), but
+      through its guard plan's `delaySeconds`, not `MatchTimeline`: a match with another
+      `plannedMatchSeconds` or countdown keeps 440 s. Reference 04 and 07 §7 schedule it from the
+      match timeline; only that mechanism is still interim. (b) **Built 2026-11-12 (PR #99 review
+      F8):** while the boss lives its zone cannot be captured, as reference 04 says:
+      `CaptureSystem` sets `lockedBy` from the zone's guard posts (`content/zones/zoneLocks.ts`)
+      and a locked zone's progress does not move, so the boss no longer drains a held point as
+      neutral presence. Still open: `LockedZoneOwnerInvariant` (15 §3). (c) **Sam: please sign
+      off this interim (PR #99 review F3, 2026-11-12).** The boss is a `heavy-mob`
+      (`capture-point-boss`) held by `GuardController`, a minion-system controller, against 18's
+      "the minion system never controls a boss"; 18 (MS-28), 11 §4.6 and 04 give it a `MiniBoss`
+      class and `BossController` (moves, roaming, damage-dealer bias), scheduled for sprint 3.6.
+      DEC-236 approved the same stand-in for the corner boss only. Recorded in 18's implementation
+      status note. Reply approve until sprint 3.6, or say what to change. (d) **XP built
+      2026-11-12 (PR #99 review F1):** its 500 XP (balancing.md "500 XP team-wide") goes to every
+      Legend of the killer's team, each paid at most what lifts it 2 levels (DEC-237,
+      `XP_SOURCES.teamKills`); the killer gets nothing on its own. Still open: its kill gives no
+      permanent team buff (reference 04), and the reward comes from `ProgressionSystem`'s own
+      `entity-died` listener, not 12's `xp-granted` reward path; sprint 3.6 replaces both. Known
+      limit (PR #99 critic finding 2): the rewarded team is read from the killer in the store, so
+      a boss killed by a hit from a Legend already removed pays nobody, until `DamageSource`
+      carries the attacker's team. (Its 25% damage from minions, balancing.md, is
+      built since 2026-11-12: `combat/BossMinionDamageStep.ts`.) (e) Its support mobs
+      (`feat/capture-point-boss-guards`, 2026-11-12): reference 04 gives no count, so the plan
+      borrows balancing.md's checkpoint-2 set, 2 `heavy-guard` + 4 `light-guard`, on the boss's
+      ring; like the boss they never respawn, since respawning them needs Sam's sign-off. Approve
+      the count and whether they respawn, or correct them.
+
+- [ ] **Capture point boss size: sign off 1.2 m? (Aryan Walanj, 2026-11-12; `feat/capture-point-boss`
+      critic finding 2) — before the PR merges.** The `capture-point-boss` footprint radius went
+      from 0.8 m to 1.2 m (`content/mobs/capturePointBoss.ts`, `TUNE`): 1.5× the heavy minion so it
+      reads as a boss. No reference or requirement gives a boss size, and 1.2 m is slightly
+      smaller than the Sentinel Legend (1.25 m, DEC-06). Above about 1.3 m the `capture-point`
+      plan's `leashTolerance` must grow (DEC-144; `guardPlans.test.ts` fails otherwise). Reply
+      keep 1.2 m, or give a size.
+
+- [ ] **Guard leash and acquisition radii derived, not hand-copied (`feat/capture-point-boss`
+      critic finding 6, 2026-11-11) — better than the design; capture point part built
+      2026-11-12 (PR #99 review F6), tower guard and camp part optional.** Built: the capture
+      point plan's leash and post gap and its boss's acquisition and vision radii now come from
+      the fort in `buildingGeometry.ts` through `content/zones/capturePointCourt.ts` (the post gap
+      is now midway between the keep's corners and the court's walls, about 29 m, instead of a
+      hand-picked 25 m). Still open: the tower guard and camp mob aggro rules' `acquisitionRadius`
+      is still their plan's leash less its post gap, worked out by hand. Approve a follow-up that
+      derives them from `leashRadius − postGap`, or drop it. The court is in sketch units, which
+      are metres on the default 1600 × 900 world; on another world size `map/zoneArea.ts`
+      stretches the floor and the leash does not follow.
+
+- [ ] AI56-F4 exemption for boss rows; claudiodh/Sam to confirm (asked on #99).
+
+- [ ] **Capture point boss: four better-than-design items (PR #99 critic, 2026-11-12) — Sam and
+      the owner: approve or drop; no code change until then.** (1) **Zone lock read from state,
+      not an event listener.** 12 §7 says `CaptureSystem` clears `lockedBy` on its own
+      `entity-died` listener; the build sets it every tick from the zone's guard posts (no scratch
+      state, nothing to desync on replay, unlocks in the death tick). Approve, and 12 §7 is
+      amended to match; note that a sprint 3.6 `BossController` boss is not a guard post, so the
+      lock's source moves then. (2) **One boss traits block.** `XP_SOURCES.teamKills`,
+      `ZONE_LOCKING_MOBS` and the boss's `xpValue: 0` all key `capture-point-boss` and only tests
+      keep them aligned; one interim block on the mob, shaped like 04's planned
+      `BossDefinition.rewards`, would make sprint 3.6 a move. (3) **The XP cap in its own type.** A
+      `TeamKillAward` with a required `maxLevels` (or `Progression.cappedXp`) instead of the
+      optional field `ProgressionSystem.grant` branches on. (4) **A `GuardStore` query**
+      (`postsOf(homeId)`) instead of `CaptureSystem.lockOf`'s hand-rolled scan of every post.
+
+- [ ] **A named `GuardPlanSource` type (`feat/capture-point-boss` critic round 2 finding 8,
+      2026-11-11) — better than the design, optional follow-up, no code change yet.**
+      `Readonly<Record<string, GuardPlanDefinition>>` is spelled out in six places
+      (`Simulation.types.ts`, `DefaultSystemPipeline.types.ts`, `SpawnSystem.types.ts`,
+      `GuardRoster.ts`, twice in `content/structures/guardPlans.ts`). Approve: a type-only
+      follow-up adds `GuardPlanSource` to `content/structures/structures.types.ts`, as
+      `WeaponSource` and `DefinitionSource` are named, and uses it in all six. Or drop it.
+
+- [ ] **One shared guard-post target priority (`feat/capture-point-boss` critic finding 7,
+      2026-11-11) — better than the design, optional follow-up, no code change yet.** The tower
+      guard, camp mob and capture point boss aggro rules (`content/ai/aggro/`) each repeat the same
+      five-entry priority list. Approve: a follow-up adds one shared `GUARD_POST_PRIORITY` constant
+      in `content/ai/aggro/`. Or drop it.
+
+- [ ] **Timed guard spawns beside `MatchTimeline` (`feat/zone-guard-homes` critic finding 2,
+      2026-11-09) — accepted as interim.** Guard plans now activate `delaySeconds` after the
+      countdown ends (`GuardPlanDefinition.activation`, `content/structures/structures.types.ts`), and the
+      mini-boss (PR A2) uses it. The design schedules mini-boss spawns from `MatchTimeline` /
+      `MatchDirector` (07 §7, 12; phase-3 sprints 3.5–3.6), so timed match spawns now have two
+      paths and no doc says which owns boss timing. Due before the zone-lock PR: pick one owner
+      and update 07 §7 and 12 so only one mechanism is named.
+
+- [ ] **One guard plan per home, mates by `homeId` (`feat/zone-guard-homes` critic finding 3,
+      2026-11-09) — accepted as interim.** `GuardRoster` looks plans up by the home's definition
+      id, so a home has one plan, and `GuardController` (`ai/GuardController.ts`, `isMate`)
+      treats every guard on a home as a mate. 18 §7.1 makes the capture point the home of the
+      team checkpoint defenders too: a neutral mini-boss and a team's defenders on one zone
+      cannot both be plans, and on one `homeId` they would count as mates across teams. 18 §7.1
+      now records the limit. Due before checkpoint defenders get posts: key mates by plan or by
+      team as well as home, and allow more than one plan per home if both must coexist.
+- [ ] **BUG-5 / SCRUM-438 (2026-11-12, `fix/bound-key-actions`) — two owner questions.** (1) Bound
+      but unhandled actions: `toggle-developer-menu` (BUG-4, a feature), `sprint`, `interact`,
+      `turret-toggle-control`, `turret-switch-ammo` (gameplay not built) and `toggle-perf-overlay`
+      (no overlay exists) are in `InputAction`, bound in `keybindings.ts` and shown as rebindable
+      in settings, yet nothing handles them. Decide whether to hide them from the bindings screen
+      until their features exist. (2) `toggle-minimap` (M) now hides and shows the minimap for the
+      current match only (DEC-147); it is not persisted. Decide whether the choice should persist
+      across matches and sessions (a settings field and a migration).
+      (3) Known limit (PR #101 review): the zoom and minimap actions run only from a key press.
+      The bindings screen also accepts a mouse button for them, and such a binding does nothing
+      yet, because the one-shot table has no mouse path (the canvas gestures own the mouse).
+      Decide whether to add one, or to make the bindings screen accept only keys for these
+      actions.
 - [x] **BUG-2: interior wall health (2026-11-12, PR #96, SCRUM-435).** Every `'wall'` map object
       uses the WallSegment value from balancing.md (`content/maps/mapObjectDefinitions.ts`): the
       Stronghold's wall ring and the `'wall'` features inside it alike. The playtest called the
@@ -321,6 +451,24 @@ Reply inline (`Decision: …`).
     never imports protocol or the server). They only add rules. (7) Architecture 02's folder and
     may-import tables do not list `apps/server` and `packages/protocol` yet (your edit, with the
     ADR); their package `AGENTS.md` files hold the rules meanwhile.
+  - 2026-11-12 (claudiodh, `feat/duel-rules`): Duel rules and the organic start flow built on top
+    of the server PR. Decisions I took, each to confirm or change: (1) spawn points: Cathedral
+    centre, light 50 world units west, dark 50 east (`DUEL_RULES.startOffset`), in the transept
+    clear of the capture floor. (2) A kill is any death of a seat's Legend, whoever dealt it (a
+    mob counts for the other team); FR-115's "no mobs, inert structures" is not built, the rest of
+    the map runs as generated. (3) First to 10 (`DUEL_RULES.killTarget`); both teams reaching it
+    on one tick is a draw. (4) Names: 1 to 16 letters, digits, `_` or `-`, single spaces between
+    words, none at the ends (`PLAYER_NAME_PATTERN` in `packages/protocol`); no profanity filter,
+    no uniqueness check, two players may share a name. (5) The server holds the match 4 s
+    (`DUEL_VERSUS_MS`) for the VERSUS screen and the countdown is 3 s (`DUEL_RULES.countdownSeconds`);
+    the client's match loading runs while the countdown ticks, so a slow load can start it at 2.
+    (6) The countdown numbers come from the existing `countdown` phase; the announcer store has
+    no producer or screen, so it was not reused. (7) XP still flows from Legend kills, so a
+    Legend's level can rise during a Duel.
+    (8) The reset after a kill drops status effects and the attack target but keeps, on purpose,
+    shield bars and anything else on the Legend (no ability cooldowns exist yet to reset).
+    (9) `DUEL_RULES.startOffset` is read from live content, not the replay setup, so retuning it
+    changes old Duel replays.
 - [ ] **DEC-11 — still open after your answer** (the approvals are recorded as DEC-11 in
       `docs/reference/game-design/13-owner-decisions-log.md`, 2026-10-10; your chat clarifications
       of 2026-10-10 answered the former (1) and (2), see Done). (3) Your Roar row says Legends only
@@ -2164,6 +2312,57 @@ Reply inline (`Decision: …`).
 - [ ] **HC-Q46 — Only the match code can reach the match writers (match-director critic round 3, better than the design; DEC-139).** `GameState.match` is a `MatchRecord` (DEC-177), so every system, command handler and bot controller that holds `GameState` can call `endMatch`, `holdIdle` and the other writers. Only review keeps DEC-172's "one caller each" (today the calls are only in `match/` and `Simulation.ts`). Options: (a) type the public `GameState.match` as the read-only `MatchState` and give the `MatchRecord` only to `DirectorContext` and `Simulation` (the compiler stops other callers; changes the 03 §2 sketch); (b) an ESLint `no-restricted-syntax` rule that refuses `.match.<writer>(` outside `match/`, `Simulation.ts` and tests; (c) leave it to review. Agent's recommendation: (a), in its own PR with the HC-S7 split, not in the match-director PR (its critic rounds are used up, and round 2 had the same exposure).
   - Answered 2026-11-05 in chat (DEC-210): "(a) Read-only type". To build: its own PR from the phase
     branch after the match-director PR (#74) merges, with the HC-S7 split.
+  - 2026-11-14: the build also covers `MatchRecord.scoreBook` (DEC-211), which GL-4 (PR #93) added
+    as a writer-reachable field (DEC-250 (1)).
+- [x] **HC-Q47 — One small roster type for the HUD's "re-send if unchanged" rule (GL-5 targeted critic
+      after DEC-221, better than the design; DEC-139).** `MatchBridge.keepUnchanged` keeps each
+      unchanged HUD roster item and the last array (DEC-221 (3), B2). The critic proposes moving it
+      out of `MatchBridge` to `game/keepUnchanged.ts` (a function), or to a small `PublishedRoster`
+      class that holds the last array and the check, with its own unit test, the length-change
+      branch included. `MatchBridge` (257 lines) would then only publish, and GL-16 and GL-7 add to
+      it. The critic called today's form acceptable. Answer: build it (in GL-16, or now on GL-5), or
+      keep it as it is.
+  - Answered 2026-11-08 in chat (DEC-222): "(b) Build it in GL-16". To build: in GL-16 (game-loop
+    plan §7), with its own unit test, the length-change branch included.
+- [ ] **HC-Q57 — The online Duel in the results flow: five better-than-design items and one rule
+      question (critics on the #97 merge into GL-4, PR #93; DEC-139).** The merge keeps GL-5's
+      results flow for a Duel (`duel-ended`, `selectMatchVerdict`, `ResultsScreen`). Both critics
+      approved it and proposed:
+  - (1) `selectMatchVerdict` returns no verdict for a Duel the other player left. Today it says
+    `draw`, and only `ResultsScreen` overrides it; a later reader (post-game GL-10, match history)
+    would count a draw. Or one bridge selector that holds all the results screen's rules.
+  - (2) Publish the Duel's setup when the Duel starts, not in `prepareWorld`. The setup's team
+    then always exists, and `DuelOutcome.ownTeam` with its fallback branch goes away.
+  - (3) `DuelResult` (`DuelSession.types.ts`) and `DuelOutcome` (`bridge/events.ts`) hold the same
+    data; make them one type.
+  - (4) One rematch rule shared by the session (`canRepeatMatchSetup`) and `ResultsScreen`, in
+    `bridge/` as `canConfirmSelection` is, and stated as "not after a Duel" instead of "the setup
+    has rosters".
+  - (5) A match-mode strategy (local, Duel) for `SessionController`, which now asks "is this a
+    Duel" in `prepareWorld`, `createMatch` and `canRepeatMatchSetup`.
+  - (6) Rule question: after a match ends the world runs on for 5 s (DEC-92). A Duel goes to the
+    results at once, as #97 built it (the server closes the connection). Keep, or give a Duel the
+    run-on (it needs the server to keep sending snapshots)?
+  - Also a finished Duel has no status line under its verdict (the line comes from core's result,
+    which a Duel does not have); (1) decides what it shows.
+  - Answer per item: build now on PR #93, schedule, or keep as it is.
+  - Renumbered 2026-11-14 from HC-Q48: the ability framework (`feat/ability-framework`, ADR 0026)
+    took HC-Q48 first.
+  - Answered 2026-11-14 in chat (DEC-250): "have a critic look at the open items; if they pass, put
+    them in", then "option b is better. also leaving a duel when the other user is still in said
+    duel counts as a loss." (1) to (4): the critic passed them and they are built on PR #93
+    (`selectResultsView`, the setup published at the first snapshot, `MatchEnding`,
+    `canRepeatSetup`). (5): scheduled with HC-S7. (6): option B, the run-on is built with the
+    Duel's own win rules (DEC-36); until then a finished Duel goes to the results at once. A
+    finished Duel keeps no status line.
+  - Still open: after the opponent leaves, does the player who stayed see VICTORY? The leaver
+    takes a loss (DEC-250 (4)); the screen for the player who stayed shows no verdict until the
+    owner says.
+  - Critic notes on the built delta (2026-11-14), for the HC-S7 work: `createMatch` still asks
+    `duel.status === 'started'` while `canRepeatMatchSetup` reads `setup.mode`, so the strategy
+    should key on `setup.mode`; `MatchSetupDraft` could be a union by `mode`, so that "a Duel has
+    no rosters" is a type fact. For doc-gardening: the folder table of architecture 02 has no row
+    for `game/duel/` and `game/engine/net/`, which import `@eternalus/protocol` (#97).
 - [ ] **HC-Q42 — Where do Legends spawn at tick 0: all at their Citadel (DEC-80), or as built (match-director critic).** DEC-80 says "All Legends spawn at their Citadel at tick 0." As built (architecture 18 §8, MS-20), each bot laner spawns at its team's end of its assigned lane, and only the Rovers (the bot Rover and the human's Legend, DEC-173) spawn at their team's Stronghold. Keep the as-built lane start for laners and narrow DEC-80 to respawns, or spawn every Legend at its Citadel and let laners walk to their lanes?
 - [ ] **HC-S7 — Scheduled: split `Simulation.ts` and `SessionController.ts` below the ~300-line
       guide (PR #68 review, follow-up 3).** `Simulation.ts` (461 lines) holds start-up helpers
@@ -2178,6 +2377,9 @@ Reply inline (`Decision: …`).
     `planLanes`, `humanSlotOf`, `controllerOf`, `spawnSlot`, `strongholdOf`, `legendRefusal`)
     are one responsibility: the split is a `RosterSpawner` class. #56, #57, #58, #66 and #67 have
     merged; open PRs #64 and #32 still edit the file. `SessionController.ts` is 326 lines.
+  - 2026-11-14 (HC-Q57 (5), DEC-250 (2)): the `SessionController` split also takes the match-mode
+    strategy: `LocalMatchStart` and `DuelMatchStart` in a `Record<MatchMode, …>` registry, keyed
+    by the setup's `mode`, so that `createMatch` and `canRepeatMatchSetup` hold no Duel branch.
 - [ ] **HC-S8 — Scheduled with GL-3: filter the timeline rules by action kind (match-director
       critic).** `validateGameConfig` reads every timeline entry as `enter-phase`: the rules "at
       least one `enter-phase` entry" and "the first `enter-phase` entry ends the countdown" count
@@ -2193,6 +2395,10 @@ Reply inline (`Decision: …`).
       and a `MatchResult` at tick T, no further commands") runs on a test entity with
       `WinObjective` today, because no shipped kind has the component. Add the test through
       `Simulation` when GL-3 gives the sovereign the component. Nothing to answer.
+- [ ] **HC-S11 — Not chosen for GL-5: keep the `selection` assets on a rematch (GL-5 critic round
+      2, B4; DEC-213).** On a rematch, `ResultsState.exit` releases `selection` and `loading`
+      loads it again at once. Releasing it only on the routes to `menu` saves one reload; plan
+      §4.5 step 5 would change by one line. Low value. Nothing to answer unless you want it.
 - [ ] **HC-S1 — Suggestion, not built: countdown urgency.** At 10 s or less, a stronger glow, a
       1 Hz pulse and screen-reader lines at 10 and 5 s. If you want it, it comes back as a
       `creative` row: a data-selectable variant with your static original kept live (DEC-53).
@@ -2519,6 +2725,24 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
       `findBuildingAt` itself: a zone asks whether a point is on its own floor, and `find` returns
       only the first of two overlapping footprints. (2026-11-03: done on #64 after the HUD PR
       merged into it: `isPointInAnyPolygon` in `utils/geometry.ts`. The density % part is open.)
+- [ ] **GL-15 capture and hold points (DEC-214)** — Owner: sholtzman, `feat/capture-scoring`
+      (base `feat/match-scoring`). FR-007's capture points (3 team-only points per checkpoint a
+      team's push reaches) and hold points (1 team-only point per full minute of pooled held
+      time) at DEC-131's values; present Legends' `checkpointsWon`. The owner approved a separate
+      PR only if it is assured to happen: its PR opens after GL-4's and merges right after it.
+      Close this item when that PR merges.
+- [ ] **GL-16 map-feature link (DEC-221 (3); GL-5 critic round 3, B1)** — Owner: sholtzman,
+      `refactor/map-feature-link` (base: the phase branch after GL-5 merges). A `MapFeatureLink`
+      component, set from a placement's map feature id, on structures and capture zones. The
+      snapshots read it instead of `instanceof Structure`, and `MatchBridge` binds a capture site
+      to its zone by that id, not by position. Close this item when its PR merges.
+- [ ] **GL-17 entity component query (DEC-229; GL-15 critic round 2, better than the design)** —
+      Owner: sholtzman, `refactor/entity-component-query` (base: the phase branch after #79 and
+      #85 merge; they change `EntityStore`). A read-only query port on `EntityStore` for the
+      entities that carry a given component, beside `SpaceQuery` and `PathQuery`.
+      `CaptureHoldRule` takes it instead of the whole `GameState`, and the capture-point lookups
+      of `CaptureHoldRule`, `CaptureProgressBoundsInvariant` and `CaptureSystem` move to it. Close
+      this item when its PR merges.
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
       `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`

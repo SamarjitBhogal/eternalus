@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
+import { countdownTicks } from '../../config/countdownTicks';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
+import { timelineMarkTick } from '../../config/timelineMarkTick';
+import { AGGRO_RULES } from '../ai/aggro/aggroRules';
 import { AI_CADENCE } from '../ai/cadence';
 import { LEGEND_CLASSES } from '../legends/legendCatalogue';
 import { MOB_DEFINITIONS } from '../mobs/mobCatalogue';
 import { GUARD_PLANS } from './guardPlans';
+import { ZONE_DEFINITIONS } from '../zones/zoneCatalogue';
 import { STRUCTURE_DEFINITIONS } from './structureCatalogue';
 
 describe('GUARD_PLANS', () => {
@@ -25,6 +29,32 @@ describe('GUARD_PLANS', () => {
         });
       }
     }
+  });
+
+  it('gives the capture point boss an aggro range that reaches across its court from its post', () => {
+    const plan = GUARD_PLANS['capture-point'];
+    const aggro = AGGRO_RULES[MOB_DEFINITIONS.get('capture-point-boss').aiProfile ?? ''];
+
+    expect(plan?.table.some(({ mobId }) => mobId === 'capture-point-boss')).toBe(true);
+    expect(aggro?.acquisitionRadius ?? 0).toBeGreaterThanOrEqual(
+      (plan?.leashRadius ?? Number.POSITIVE_INFINITY) + (plan?.postGap ?? 0),
+    );
+  });
+
+  it('activates the capture point boss on the default timeline quarter mark (reference 04)', () => {
+    const { tickRate, match } = createDefaultGameConfig();
+    const quarter = match.timeline.find(({ id }) => id === 'quarter-mark');
+    const activation = GUARD_PLANS['capture-point']?.activation;
+    // The timeline counts from match start (tick 0); the guard plan from the countdown's end.
+    const quarterTick =
+      quarter === undefined
+        ? -1
+        : timelineMarkTick(quarter.at, tickRate, match.plannedMatchSeconds);
+    const delayTicks =
+      activation?.at === 'countdown-end' ? Math.round(activation.delaySeconds * tickRate) : 0;
+
+    expect(activation?.at).toBe('countdown-end');
+    expect(countdownTicks(match.countdownSeconds, tickRate) + delayTicks).toBe(quarterTick);
   });
 
   it('covers a guard whose decision waits its turn at the unit cap, 16 ticks apart not 10 (DEC-181)', () => {
@@ -51,8 +81,10 @@ describe('GUARD_PLANS', () => {
     }
   });
 
-  it('keys every plan by a structure definition id, so no plan is silently left unused', () => {
-    const unknown = Object.keys(GUARD_PLANS).filter((id) => !STRUCTURE_DEFINITIONS.has(id));
+  it('keys every plan by a structure or zone definition id, so no plan is silently left unused', () => {
+    const unknown = Object.keys(GUARD_PLANS).filter(
+      (id) => !STRUCTURE_DEFINITIONS.has(id) && !ZONE_DEFINITIONS.has(id),
+    );
 
     expect(unknown).toEqual([]);
   });

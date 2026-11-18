@@ -65,7 +65,16 @@ export class MapFortificationBuilder extends MapDecorationBuilder {
         stone,
       );
     }
-    this.blockRect(`${id}-fort-keep`, x - size / 6, y - size / 5, size / 3, size / 2.5, stone);
+    const keepWidth = size / G.fort.keepWidthDivisor;
+    const keepHeight = size / G.fort.keepHeightDivisor;
+    this.blockRect(
+      `${id}-fort-keep`,
+      x - keepWidth / 2,
+      y - keepHeight / 2,
+      keepWidth,
+      keepHeight,
+      stone,
+    );
     this.rect(`${id}-fort-keep-roof`, x - size / 7, y - size / 6, size / 3.5, size / 3, roof);
     this.rect(`${id}-fort-banner`, x - 3, y - 3, 6, 6, accent);
     this.rect(`${id}-fort-gate`, x - size / 12, y + size / 3, size / 6, size / 6, P.shadow);

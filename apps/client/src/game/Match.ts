@@ -117,15 +117,28 @@ export class Match implements LoopTarget {
       tickMs,
       maxFrameMs: MAX_TICKS_PER_FRAME * tickMs,
     });
-    this.bridge = new MatchBridge({ ...bridge, tickRate, map });
     this.current = simulation.snapshot();
     this.playerId = deps.remote?.legendId ?? this.current.match.humanLegendId;
     this.healthBars.observe(this.current, this.playerId);
+    this.bridge = new MatchBridge({
+      ...bridge,
+      tickRate,
+      map,
+      events: simulation,
+      firstSnapshot: this.current,
+    });
     this.controls = new MatchViewControls({
       camera: this.camera,
       roofs: this.roofs,
       commands: this.commands,
       miniMap: this.world.miniMap,
+      onMiniMapShownChanged: (isShown) => {
+        bridge.bus.emit('minimap-visibility', { isShown });
+        // The loop is stopped while paused, so nothing else would repaint the canvas.
+        if (!this.loop.isRunning) {
+          this.render(1);
+        }
+      },
       playerId: this.playerId,
       snapshot: () => this.current,
     });
@@ -142,9 +155,13 @@ export class Match implements LoopTarget {
     return this.current;
   }
 
-  /** Publishes everything the HUD shows once, then starts the game loop. */
+  /**
+   * Publishes everything the HUD shows once (the minimap's visibility too: a new match starts with
+   * it shown, whatever the last one left in the store), then starts the game loop.
+   */
   public start(): void {
     this.bridge.publishAll(this.current, this.playerId);
+    this.deps.bridge.bus.emit('minimap-visibility', { isShown: this.world.miniMap.isVisible });
     this.loop.start();
   }
 
@@ -170,7 +187,8 @@ export class Match implements LoopTarget {
    * One tick: the player's intent becomes commands (and moving input sends the camera back to
    * following), the simulation steps, and the roof of the building the player's Legend now stands
    * in opens. A dead Legend (`isDead`, or gone from the snapshot) stands in no building, so its
-   * roof closes (DEC-143, DEC-149).
+   * roof closes (DEC-143, DEC-149). After the tick that ended the match, tells the observer once
+   * (`ended`).
    */
   public tick(): void {
     if (this.playerId !== null) {
@@ -184,7 +202,9 @@ export class Match implements LoopTarget {
     this.current = this.deps.simulation.snapshot();
     this.healthBars.observe(this.current, this.playerId);
     this.roofs.playerAt(this.livingPlayerAt());
-    this.bridge.afterTick(this.current, this.playerId);
+    if (this.bridge.afterTick(this.current, this.playerId)) {
+      this.deps.observer.ended();
+    }
   }
 
   /** One frame: the camera follows the player, then the scene and the minimap are drawn. */
@@ -203,19 +223,20 @@ export class Match implements LoopTarget {
 
   /**
    * The game loop stopped because a tick or a frame threw: hands the error and the tick to the
-   * match's owner (`onCrash`), which ends the match (DEC-106).
+   * observer (`crashed`), whose owner ends the match (DEC-106).
    */
   public crashed(error: unknown): void {
-    this.deps.onCrash({ error, tick: this.deps.simulation.tick });
+    this.deps.observer.crashed({ error, tick: this.deps.simulation.tick });
   }
 
   /**
-   * Stops the loop and the health bars' event listeners. The renderer and camera are injected, so
-   * their owner (`MatchHost`) destroys them.
+   * Stops the loop, the health bars' event listeners and the bridge's listener. The renderer and
+   * camera are injected, so their owner (`MatchHost`) destroys them.
    */
   public destroy(): void {
     this.loop.destroy();
     this.healthBars.destroy();
+    this.bridge.destroy();
   }
 
   /**
