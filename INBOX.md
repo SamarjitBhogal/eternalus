@@ -74,6 +74,33 @@ Reply inline (`Decision: …`).
       repeat `baseHealth: 1` and `breakability: never` in `structureCatalogue.ts`. One shared spread
       (like the existing `AFTER_BUFF_TOWERS`) would hold it once. It touches the camp lines, so it
       would be its own small refactor PR. OK, or leave as is?
+- [ ] **DEC-217 (13) vs the solid gem: the Cathedral shares a health pool (Aryan Walanj,
+      2026-11-15, `feat/cathedral-gem-strike`).** DEC-217 (13) says only towers share one pool
+      with their map object. The solid gem (`c8dba3e9`) makes the gem's map object the Cathedral's
+      body, so it shares the Cathedral's pool too (harmless: the gem is never damaged). This is
+      Aryan's interim choice, not covered by DEC-217; the `Simulation.ts` comment, the
+      `WorldObjectStore` TSDoc and doc 07 §13 say so. Undoing it is not small: the shared pool is
+      what makes a hit on the gem's map object a hit on the Cathedral, and the client's click
+      targets the gem through it. Amend DEC-217 (13) to "towers and the Cathedral", or should the
+      gem get a separate link to its structure?
+- [ ] **The solid gem: three open critic findings (Aryan Walanj, 2026-11-18, critic on
+      `feat/cathedral-gem-strike`, majors #4, #8, #9).** (1) `PlayerCommands.cathedralAt` (the
+      client's fallback that picks the Cathedral by the gem's disc) is redundant now that the gem
+      is a map object, which `findMapObjectAt` already hits; the critic notes doc 06's targeting
+      text (around line 482) is not updated for it. Delete the fallback and update doc 06, or keep
+      it? (2) `MapBuildingInteriorBuilder.cathedralGem` falls back to the literal object id
+      `cathedral` when it has no building id (`this.buildingId ?? 'cathedral'`), which may not
+      match the feature id, so no structure would own it and the gem would be a plain wall.
+      Should a missing id throw instead? (3) The solid-gem test in `Cathedral.test.ts` checks
+      blocking and reach but not determinism; add a same-seed, same-hash check for a unit pressed
+      against the gem? OK to do these as one small follow-up?
+- [ ] **Better than design: an explicit `sharesPoolWithBody` flag (Aryan Walanj, 2026-11-18,
+      critic on `feat/cathedral-gem-strike`).** Today a structure shares its health pool with its
+      map object when its definition has `hasMapFootprint` and the object blocks (a tower's fort,
+      the solid gem); the palace does not because its object does not block. A `sharesPoolWithBody`
+      field on `StructureDefinition` would say it in data, so a pool change would not ride on
+      whether an outline blocks movement. Adopt (a content field and one check in `Simulation`), or
+      leave as is?
 
 - [ ] **Teammate's boss spec (Aryan Walanj, 2026-11-11): amend reference 04?** A teammate's spec
       differs from `docs/reference/game-design/04-objectives-capture-points-and-bosses.md` in
