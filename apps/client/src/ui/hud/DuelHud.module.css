@@ -1,0 +1,22 @@
+.score {
+  position: absolute;
+  left: 50%;
+  top: calc(200 * var(--hud-u));
+  margin: 0;
+  transform: translateX(-50%);
+  color: var(--hud-text);
+  font-family: var(--font-game);
+  font-size: max(calc(28 * var(--hud-u)), var(--text-min));
+  white-space: nowrap;
+}
+
+.countdown {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin: 0;
+  transform: translate(-50%, -50%);
+  color: var(--hud-text);
+  font-family: var(--font-game);
+  font-size: max(calc(160 * var(--hud-u)), var(--text-min));
+}
