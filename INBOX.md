@@ -93,6 +93,9 @@ Reply inline (`Decision: …`).
       not block in a Duel; (b) the Duel start points move off the gem's line (a content change);
       (c) the gem is not solid at all (undo `c8dba3e9`); (d) the Duel tests walk around the gem?
       The stack above `feat/cathedral-gem-hittable` is not pushed until this is answered.
+  - 2026-11-18: Aryan chose (a); Sam to confirm. Built on `feat/cathedral-gem-strike`: in a
+    Duel the gem neither blocks movement nor strikes; in other matches it stays solid until the
+    eruption.
 - [ ] **The solid gem: three open critic findings (Aryan Walanj, 2026-11-18, critic on
       `feat/cathedral-gem-strike`, majors #4, #8, #9).** (1) `PlayerCommands.cathedralAt` (the
       client's fallback that picks the Cathedral by the gem's disc) is redundant now that the gem

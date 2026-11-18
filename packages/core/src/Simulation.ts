@@ -130,7 +130,7 @@ export class Simulation {
     debug = RELEASE_DEBUG_CONFIG,
     content,
     map,
-    mapObjects,
+    mapObjects: authoredObjects,
     levelCurves,
     roster = [],
     weapons,
@@ -144,10 +144,15 @@ export class Simulation {
       seed,
       config: validConfig,
       ...(map === undefined ? {} : { map }),
-      ...(mapObjects === undefined ? {} : { mapObjects }),
+      ...(authoredObjects === undefined ? {} : { mapObjects: authoredObjects }),
       ...(roster.length === 0 ? {} : { roster }),
       ...(duel === undefined ? {} : { duel }),
     };
+    // Aryan's choice (a), INBOX: in a Duel the gem neither blocks nor is the Cathedral's body.
+    const mapObjects =
+      duel === undefined
+        ? authoredObjects
+        : authoredObjects?.map((o) => (o.kind === 'cathedral' ? { ...o, isBlocking: false } : o));
     const { space, world, paths } = Simulation.buildWorld(map, validConfig, mapObjects);
     // Without the default pipeline no director runs, so no mark would ever fire: list none.
     const schedule = systems === undefined ? timeline.schedule() : [];

@@ -118,7 +118,10 @@ export class DefaultSystemPipeline extends SystemPipeline {
             ),
           ]),
       new CombatSystem(damage),
-      new CathedralGemSystem(state, damage, CATHEDRAL_GEM_STRIKE),
+      // A Duel's gem does not strike back (Aryan's choice (a), INBOX).
+      ...(duelStarts === undefined
+        ? [new CathedralGemSystem(state, damage, CATHEDRAL_GEM_STRIKE)]
+        : []),
       ...(state.worldObjects === undefined ? [] : [new MapDestructionSystem(state, damage)]),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
       new ProgressionSystem(state, progression),
