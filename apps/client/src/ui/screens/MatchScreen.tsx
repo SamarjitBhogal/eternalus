@@ -4,6 +4,7 @@ import { useAppSelector } from '../../bridge/hooks';
 import { AbilityBar } from '../hud/AbilityBar';
 import { AetherBar } from '../hud/AetherBar';
 import { DeveloperMenu } from '../hud/DeveloperMenu';
+import { DuelHud } from '../hud/DuelHud';
 import { CrystalStatus } from '../hud/CrystalStatus';
 import { GadgetBar } from '../hud/GadgetBar';
 import { HealthBar } from '../hud/HealthBar';
@@ -40,6 +41,7 @@ export function MatchScreen({ viewport }: ScreenProps): ReactElement {
       </div>
       <section className={styles.hud} aria-label={STRINGS.hud.label} inert={isInert}>
         <HudFilters />
+        <DuelHud />
         <div className={styles.abilities} data-hud-region="abilities">
           <AbilityBar />
         </div>
