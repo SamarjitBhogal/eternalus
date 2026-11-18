@@ -3,6 +3,7 @@ import { assetsSlice } from './slices/assetsSlice';
 import { contentSlice } from './slices/contentSlice';
 import { hudSlice } from './slices/hudSlice';
 import { loadingSlice } from './slices/loadingSlice';
+import { loadoutsSlice } from './slices/loadoutsSlice';
 import { matchSetupSlice } from './slices/matchSetupSlice';
 import { matchSlice } from './slices/matchSlice';
 import { sessionSlice } from './slices/sessionSlice';
@@ -61,6 +62,7 @@ export function connectBusToStore(
       dispatch(viewSlice.actions.minimapShownChanged(isShown)),
     ),
     bus.on('settings', (settings) => dispatch(settingsSlice.actions.settingsChanged(settings))),
+    bus.on('loadouts', (loadouts) => dispatch(loadoutsSlice.actions.loadoutsChanged(loadouts))),
   ];
   return () => {
     for (const unsubscribe of unsubscribers) unsubscribe();
