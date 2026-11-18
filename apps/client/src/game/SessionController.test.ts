@@ -73,9 +73,9 @@ describe('SessionController with the default states', () => {
     await resolveLoads();
     expect(controller.phase).toBe('character-select');
     expect(store.getState().loading.status).toBe('ready');
-    expect(store.getState().matchSetup.countdownMs).toBe(SELECT_COUNTDOWN_MS);
+    expect(store.getState().matchSetup.countdownsMs.select).toBe(SELECT_COUNTDOWN_MS);
     clock.advance(1_000);
-    expect(store.getState().matchSetup.countdownMs).toBe(SELECT_COUNTDOWN_MS - 1_000);
+    expect(store.getState().matchSetup.countdownsMs.select).toBe(SELECT_COUNTDOWN_MS - 1_000);
 
     intent({ kind: 'select-class', classId: 'sentinel' });
     expect(store.getState().matchSetup.selection).toEqual({ classId: 'sentinel', specId: null });
@@ -85,7 +85,7 @@ describe('SessionController with the default states', () => {
     expect(store.getState().matchSetup.isLockedIn).toBe(true);
     clock.advance(SELECT_COUNTDOWN_MS - 1_000);
     expect(controller.phase).toBe('pre-launch');
-    expect(store.getState().matchSetup.revealMs).toBe(REVEAL_COUNTDOWN_MS);
+    expect(store.getState().matchSetup.countdownsMs.reveal).toBe(REVEAL_COUNTDOWN_MS);
 
     clock.advance(REVEAL_COUNTDOWN_MS);
     expect(controller.phase).toBe('match-loading');
@@ -122,7 +122,7 @@ describe('SessionController with the default states', () => {
     clock.advance(1);
     expect(controller.phase).toBe('menu');
     expect(store.getState().session.reason).toBe('select-timeout');
-    expect(store.getState().matchSetup.countdownMs).toBe(0);
+    expect(store.getState().matchSetup.countdownsMs.select).toBe(0);
   });
 
   it('starts character select with nothing selected, and the countdown ends in the menu', async () => {

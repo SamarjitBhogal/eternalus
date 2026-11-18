@@ -1,5 +1,7 @@
 import { type LogAttributes, makeLogRecord } from '@eternalus/core';
 
+import type { MatchEnding } from '../bridge/domain.types';
+import { canRepeatSetup } from '../bridge/matchSetupRules';
 import type {
   AssetGroup,
   ClassSelection,
@@ -10,7 +12,7 @@ import type {
   SessionReason,
 } from '../bridge/events';
 import type { MatchEvidence } from '../data/logging/ErrorReport.types';
-import type { MatchCrash, PreparedWorld } from './Match.types';
+import type { MatchObserver, PreparedWorld } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
 import { SESSION_TRANSITIONS } from './SessionController.constants';
 import type {
@@ -20,7 +22,6 @@ import type {
   SessionState,
 } from './SessionController.types';
 import { DuelSession } from './duel/DuelSession';
-import type { DuelResult } from './duel/DuelSession.types';
 import { rosterSlots } from './session/rosterSlots';
 import { buildMatchSetup } from './session/buildMatchSetup';
 import { fillRosters } from './session/fillRosters';
@@ -50,6 +51,8 @@ export class SessionController {
   private readonly context: SessionContext;
   private readonly crashes: SessionCrashes;
   private readonly duel: DuelSession;
+  /** The name this player joined the Duel queue with, for the VERSUS screen. */
+  private duelName = '';
 
   /** Loads the content catalogue; nothing runs until `start()`. */
   public constructor(private readonly deps: SessionControllerDeps) {
@@ -57,11 +60,24 @@ export class SessionController {
       createTransport: deps.createDuelTransport,
       logger: deps.logger,
       handlers: {
+        matched: (opponent) => {
+          deps.bus.emit('duel-versus', { own: this.duelName, opponent });
+          deps.bus.emit('menu-route', { route: 'duel-versus' });
+        },
         started: () => {
+          // The HUD reads the seat from the setup, as in a solo match; a Duel has no rosters. The
+          // setup goes first: match-loading may prepare the world as soon as it is entered.
+          this.publishSetup({
+            mode: 'duel',
+            seed: this.duel.mapSeed,
+            playerTeam: this.duel.team,
+            allies: [],
+            enemies: [],
+          });
           this.transition('match-loading', null);
         },
-        ended: (result) => {
-          this.endDuel(result);
+        ended: (ending) => {
+          this.endDuel(ending);
         },
         lost: () => {
           this.loseDuel();
@@ -87,8 +103,11 @@ export class SessionController {
       newMatchSetup: () => {
         this.newMatchSetup();
       },
+      canRepeatMatchSetup: () => this.canRepeatMatchSetup(),
       repeatMatchSetup: () => {
-        if (this.setup === null) throw new Error('No match setup to repeat');
+        if (this.setup === null || !this.canRepeatMatchSetup()) {
+          throw new Error('No match setup to repeat');
+        }
         this.publishSetup(this.setup);
       },
       clearMatchSetup: () => {
@@ -99,8 +118,9 @@ export class SessionController {
         this.selection = selection;
         deps.bus.emit('class-selection', selection);
       },
-      joinDuelQueue: () => {
-        this.duel.join();
+      joinDuelQueue: (name) => {
+        this.duelName = name;
+        this.duel.join(name);
       },
       leaveDuelQueue: () => {
         this.duel.leave();
@@ -109,21 +129,10 @@ export class SessionController {
         this.lockIn();
       },
       prepareWorld: () => {
-        if (this.duel.status === 'started') {
-          // The HUD reads the seat from the setup, as in a solo match; a Duel has no rosters.
-          this.publishSetup({
-            seed: this.duel.mapSeed,
-            playerTeam: this.duel.team,
-            allies: [],
-            enemies: [],
-          });
-          this.world = deps.prepareWorld(this.duel.mapSeed);
-          return;
-        }
         if (this.setup === null) throw new Error('No match setup to prepare a world for');
         this.world = deps.prepareWorld(this.setup.seed);
       },
-      createMatch: (viewport, onCrash) => this.createMatch(viewport, onCrash),
+      createMatch: (viewport, observer) => this.createMatch(viewport, observer),
       dropWorld: () => {
         this.world = null;
       },
@@ -267,7 +276,7 @@ export class SessionController {
     this.deps.bus.emit('selection-locked', this.rosters);
   }
 
-  private createMatch(viewport: MatchViewport, onCrash: (crash: MatchCrash) => void): RunningMatch {
+  private createMatch(viewport: MatchViewport, observer: MatchObserver): RunningMatch {
     const { setup, selection, rosters, world } = this;
     if (this.duel.status === 'started') {
       if (world === null) throw new Error('A Duel needs a prepared world');
@@ -276,7 +285,7 @@ export class SessionController {
           world,
           captureKinds: this.context.catalogue.hud.objectiveKinds.map(({ kind }) => kind),
           link: this.duel,
-          onCrash,
+          observer,
         },
         viewport,
       );
@@ -290,10 +299,15 @@ export class SessionController {
         world,
         captureKinds: this.context.catalogue.hud.objectiveKinds.map(({ kind }) => kind),
         roster: rosterSlots(rosters, this.context.catalogue.botRoster.difficulties),
-        onCrash,
+        observer,
       },
       viewport,
     );
+  }
+
+  /** `SessionContext.canRepeatMatchSetup`: the one rematch rule, `canRepeatSetup`. */
+  private canRepeatMatchSetup(): boolean {
+    return canRepeatSetup(this.setup?.mode ?? null);
   }
 
   /**
@@ -301,12 +315,12 @@ export class SessionController {
    * shows the results screen; from the queue (the opponent left before the first snapshot) it
    * shows the home screen. Not a lost connection, so nothing is logged as an error.
    */
-  private endDuel({ winner, reason, team }: DuelResult): void {
+  private endDuel(ending: MatchEnding): void {
     if (this.current?.phase === 'menu') {
       this.deps.bus.emit('menu-route', { route: 'home' });
       return;
     }
-    this.deps.bus.emit('match-result', { winner, reason, ownTeam: team });
+    this.deps.bus.emit('duel-ended', ending);
     this.transition('results', null);
   }
 

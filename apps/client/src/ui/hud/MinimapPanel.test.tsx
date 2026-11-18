@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { MINI_MAP_RING } from '../../bridge/minimapRing';
+import { viewSlice } from '../../bridge/slices/viewSlice';
 import { renderWithStore } from '../testStore';
 import { cssRule } from './hudTestSupport';
 import { MinimapPanel } from './MinimapPanel';
@@ -18,6 +19,11 @@ describe('MinimapPanel', () => {
     const html = renderWithStore(<MinimapPanel />);
     expect(html).toContain('aria-hidden="true"');
     expect(html).toContain('src="/assets/test/minimap-frame.webp"');
+  });
+
+  it('renders nothing while the player has hidden the minimap', () => {
+    const view = viewSlice.reducer(undefined, viewSlice.actions.minimapShownChanged(false));
+    expect(renderWithStore(<MinimapPanel />, { view })).toBe('');
   });
 
   it('states the same ring box as MINI_MAP_RING, which the canvas minimap draws in', () => {

@@ -26,6 +26,7 @@ const run = async (players: number, pairUp: boolean) => {
           links.handlers.slice(0, 2).forEach((handlers, index) => {
             handlers.onMessage({
               type: 'match-found',
+              opponentName: 'Rival',
               matchId: 'm1',
               seed: 1,
               team: index === 0 ? 'light' : 'dark',

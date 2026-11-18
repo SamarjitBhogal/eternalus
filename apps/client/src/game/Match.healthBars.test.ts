@@ -1,9 +1,13 @@
 import {
   createDefaultGameConfig,
   type EntitySnapshot,
+  type GameEventHandler,
+  type GameEventMap,
+  type GameEventType,
   type InputIntent,
   NullLogger,
   Simulation,
+  type Unsubscribe,
 } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
@@ -15,7 +19,7 @@ import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
 import { RecordingRenderer } from './engine/render/RecordingRenderer';
 import { Match } from './Match';
 import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH } from './Match.constants';
-import type { IntentSource } from './Match.types';
+import type { IntentSource, MatchSimulation } from './Match.types';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
 import { HEALTH_BAR_FILL_COLORS } from './views/HealthBarView.constants';
@@ -33,7 +37,7 @@ const IDLE: IntentSource = {
 };
 
 /** A match on seed 1's world, no countdown, whose player is a Light Warrior. */
-const setUp = () => {
+const setUp = (wrap: (simulation: Simulation) => MatchSimulation = (simulation) => simulation) => {
   const config = createDefaultGameConfig({ match: { countdownSeconds: 0 } });
   const world = prepareMatchWorld(config, SEED);
   const simulation = new Simulation({
@@ -44,7 +48,7 @@ const setUp = () => {
   });
   const renderer = new RecordingRenderer();
   const match = new Match({
-    simulation,
+    simulation: wrap(simulation),
     world,
     tickRate: config.tickRate,
     scheduler: new FakeFrameScheduler(),
@@ -52,7 +56,7 @@ const setUp = () => {
     camera: new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT),
     input: IDLE,
     logger: new NullLogger(),
-    onCrash: () => undefined,
+    observer: { crashed: () => undefined, ended: () => undefined },
     bridge: {
       bus: new TypedEventBus<BridgeEventMap>(),
       publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,
@@ -68,6 +72,45 @@ const barsDrawn = (renderer: RecordingRenderer, side: HealthBarSide): number =>
   renderer.calls.filter(
     (call) => call.op === 'fillPolygon' && call.args[1] === HEALTH_BAR_FILL_COLORS[side],
   ).length;
+
+/**
+ * `simulation` with one made-up `damage-applied` event: after its first `step()`, the first dark
+ * Legend hits the player. The event reaches the listeners `on` registered, as a real hit would.
+ */
+const withFirstTickHit = (simulation: Simulation): MatchSimulation => {
+  const injected = new TypedEventBus<GameEventMap>();
+  let hasHit = false;
+  return {
+    get tick() {
+      return simulation.tick;
+    },
+    step: () => {
+      simulation.step();
+      const { entities, match } = simulation.snapshot();
+      const attacker = entities.find(({ team, family }) => team === 'dark' && family === 'legend');
+      if (hasHit || attacker === undefined || match.humanLegendId === null) return;
+      hasHit = true;
+      injected.emit('damage-applied', {
+        targetId: match.humanLegendId,
+        amount: 1,
+        absorbed: 0,
+        source: { attackerId: attacker.id, kind: 'weapon', definitionId: 'test-weapon' },
+      });
+    },
+    snapshot: () => simulation.snapshot(),
+    enqueueCommand: (command) => {
+      simulation.enqueueCommand(command);
+    },
+    on: <K extends GameEventType>(type: K, handler: GameEventHandler<K>): Unsubscribe => {
+      const offInjected = injected.on(type, handler);
+      const offSimulation = simulation.on(type, handler);
+      return () => {
+        offInjected();
+        offSimulation();
+      };
+    },
+  };
+};
 
 describe('Match health bars (DEC-195)', () => {
   it("shows an enemy Legend's bar once the player's attack hurts it, never the player's own", () => {
@@ -106,6 +149,28 @@ describe('Match health bars (DEC-195)', () => {
     match.render(0);
     expect(barsDrawn(renderer, 'enemy')).toBe(1);
     // The player fought too (its hit landed on a unit), but the HUD shows its health, not a bar.
+    expect(barsDrawn(renderer, 'ally')).toBe(0);
+    match.destroy();
+  });
+
+  it("gives a unit that hits on the very first tick its bar, because the first snapshot's units count", () => {
+    const { match, simulation, renderer } = setUp(withFirstTickHit);
+    const at = match.snapshot.entities.find(({ id }) => id === match.playerEntityId)?.transform;
+    if (at === null || at === undefined) throw new Error('No player');
+    simulation.enqueueCommand({
+      type: 'dev-spawn',
+      kind: 'warrior',
+      definitionId: 'warrior',
+      team: 'dark',
+      at: { x: at.x + at.radius + 0.5, y: at.y },
+      count: 1,
+    });
+
+    match.tick();
+    match.render(0);
+
+    // The hit's target is the player, whose own bar never shows; the bar is the attacker's.
+    expect(barsDrawn(renderer, 'enemy')).toBe(1);
     expect(barsDrawn(renderer, 'ally')).toBe(0);
     match.destroy();
   });

@@ -95,6 +95,11 @@ export type GameEventMap = {
     readonly pointId: string;
     readonly team: Team;
     readonly checkpoint: number;
+    /**
+     * The reaching team's living Legends whose centre is on the zone's area when the checkpoint is
+     * reached (DEC-145 (a), DEC-223 (4a)), in store order: the Legends that win it.
+     */
+    readonly presentLegendIds: readonly EntityId[];
   };
   readonly 'capture-point-owner-changed': {
     readonly pointId: string;
@@ -117,14 +122,15 @@ export type GameEventMap = {
   readonly 'level-up': { readonly entityId: EntityId; readonly level: number };
   /**
    * XP reaching a Legend; one per award, so the invariant can audit every award. A kill pays its
-   * killer; `cause: 'structure-destroyed'` pays a Legend of the team that destroyed `victimId`.
+   * killer; `cause: 'structure-destroyed'` pays a Legend of the team that destroyed `victimId`, and
+   * `cause: 'team-kill'` a Legend of the team whose unit killed boss `victimId` (DEC-237).
    */
   readonly 'xp-gained': {
     readonly entityId: EntityId;
     readonly amount: number;
     readonly victimId: EntityId;
     readonly victimTeam: Team;
-    readonly cause: 'kill' | 'structure-destroyed';
+    readonly cause: 'kill' | 'structure-destroyed' | 'team-kill';
   };
   readonly 'team-changed': {
     readonly entityId: EntityId;

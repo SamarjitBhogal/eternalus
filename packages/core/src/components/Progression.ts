@@ -55,6 +55,14 @@ export class Progression {
     };
   }
 
+  /**
+   * The XP that would bring this entity to the start of `level` on `curve` (the cap at most), or 0
+   * when it is already there.
+   */
+  public xpToReach(level: number, curve: LevelCurveDefinition): number {
+    return Math.max(0, Progression.xpForLevel(curve, Math.min(level, curve.cap)) - this.xpValue);
+  }
+
   /** Total XP needed to reach `level` on `curve`. */
   private static xpForLevel(curve: LevelCurveDefinition, level: number): number {
     return curve.xpToNext.slice(0, level - 1).reduce((sum, step) => sum + step, 0);
