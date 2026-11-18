@@ -49,11 +49,18 @@ import { loadWeapons } from './content/weapons/loadWeapons';
 import { ZONE_DEFINITIONS, ZONE_PLACEMENTS } from './content/zones/zoneCatalogue';
 import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
+import { DUEL_RULES } from './content/duel/duelRules';
+import { duelStartPoints } from './match/duelStartPoints';
 import { createDefaultMatchDirector } from './match/defaultMatchDirector';
 import { MatchTimeline } from './match/MatchTimeline';
 import type { DefinitionSource, WeaponSource } from './entities/EntityFactory.types';
 import { Unit } from './entities/Unit';
-import type { GameEventHandler, GameEventType, Unsubscribe } from './state/GameEvents.types';
+import type {
+  GameEventHandler,
+  GameEventMap,
+  GameEventType,
+  Unsubscribe,
+} from './state/GameEvents.types';
 import { GameState } from './state/GameState';
 import { MatchWorld } from './state/MatchWorld';
 import type { Snapshot } from './state/Snapshot.types';
@@ -132,6 +139,8 @@ export class Simulation {
     levelCurves,
     roster = [],
     weapons,
+    guardPlans,
+    duel,
     structures = STRUCTURE_DEFINITIONS,
   }: SimulationOptions) {
     const validConfig = validateGameConfig(config);
@@ -142,11 +151,15 @@ export class Simulation {
       ...(map === undefined ? {} : { map }),
       ...(mapObjects === undefined ? {} : { mapObjects }),
       ...(roster.length === 0 ? {} : { roster }),
+      ...(duel === undefined ? {} : { duel }),
     };
     const { space, world, paths } = Simulation.buildWorld(map, validConfig, mapObjects);
     // Without the default pipeline no director runs, so no mark would ever fire: list none.
     const schedule = systems === undefined ? timeline.schedule() : [];
     this.state = new GameState(validConfig, seed, world, { space, paths }, schedule);
+    const duelStarts =
+      duel === undefined ? undefined : duelStartPoints(map, DUEL_RULES.startOffset);
+    if (duel !== undefined) this.state.match.startDuel(duel.killTarget);
     const { tickRate } = this.state.config;
     const curves = levelCurves ?? loadLevelCurves();
     this.curves = curves;
@@ -172,6 +185,8 @@ export class Simulation {
     );
     const owners = Simulation.spawnStructures(this.state, factory, structures, mapObjects);
     this.state.indexStructures();
+    // Before the pipeline: zones can be guard homes, which SpawnSystem finds when it is built.
+    const zones = Simulation.spawnZones(this.state, factory);
     this.commandContext = { state: this.state, factory };
     if (mapObjects !== undefined && map === undefined)
       throw new Error('Map objects require a generated map');
@@ -209,9 +224,11 @@ export class Simulation {
         state: this.state,
         progression: { units, curves, xpSources: XP_SOURCES },
         director,
+        ...(duelStarts === undefined ? {} : { duelStarts }),
         hordes: {
           factory,
           space,
+          ...(guardPlans === undefined ? {} : { guards: guardPlans }),
           collisions:
             map === undefined || mapObjects === undefined
               ? []
@@ -228,8 +245,11 @@ export class Simulation {
     } else {
       this.pipeline = new SystemPipeline(systems);
     }
-    Simulation.spawnRoster(this.state, factory, roster, controllers, logger);
-    Simulation.spawnZones(this.state, factory);
+    Simulation.spawnRoster(this.state, factory, roster, controllers, logger, duelStarts);
+    // Announced only now, so the director and the systems hear every spawn (plan §4.4).
+    for (const zone of zones) {
+      this.state.events.emit('entity-spawned', zone);
+    }
     this.state.events.on('command-rejected', ({ command, reason }) => {
       logger.log(
         makeLogRecord('INFO', 'core.commands', `Rejected ${command.type}: ${reason}`, {
@@ -408,6 +428,7 @@ export class Simulation {
     roster: readonly RosterSlot[],
     controllers: ControllerRegistry,
     logger: Logger,
+    duelStarts?: Readonly<Record<PlayableTeam, Vec2>>,
   ): void {
     if (roster.length === 0) {
       return;
@@ -479,7 +500,8 @@ export class Simulation {
     }
     for (const slot of spawning.filter(({ role }) => role === 'rover')) {
       const forWhom = slot.pilot === 'human' ? "the human's Legend" : `the ${slot.team} Rover`;
-      const position = Simulation.strongholdOf(state, slot.team, forWhom);
+      const position =
+        duelStarts?.[slot.team] ?? Simulation.strongholdOf(state, slot.team, forWhom);
       Simulation.spawnSlot(state, legends, slot, position, {});
     }
   }
@@ -555,12 +577,20 @@ export class Simulation {
    * Spawns one zone per map feature that places one (`ZONE_PLACEMENTS`): a capture point where
    * each lane crosses the centre line, the middle one in the Cathedral (architecture 07 §7), each
    * covering its building's floor (DEC-145 (a)). They come from the map alone, so a replay (seed,
-   * config and commands) rebuilds them.
+   * config and commands) rebuilds them. They spawn right after the structures, before the system
+   * pipeline is built, since a zone can be a guard home (18 §7); the caller announces them once the
+   * pipeline listens.
+   *
+   * @returns Each zone's `entity-spawned` payload, in spawn order.
    */
-  private static spawnZones(state: GameState, factory: EntityFactory): void {
+  private static spawnZones(
+    state: GameState,
+    factory: EntityFactory,
+  ): GameEventMap['entity-spawned'][] {
+    const spawned: GameEventMap['entity-spawned'][] = [];
     const map = state.world?.definition;
     if (map === undefined) {
-      return;
+      return spawned;
     }
     for (const feature of map.features) {
       const definitionId = ZONE_PLACEMENTS[feature.kind];
@@ -574,8 +604,9 @@ export class Simulation {
         area: zoneAreaOf(map, feature),
       });
       state.entities.add(entity);
-      state.events.emit('entity-spawned', { entityId: entity.id, kind, team: feature.team });
+      spawned.push({ entityId: entity.id, kind, team: feature.team });
     }
+    return spawned;
   }
 
   /** The controller a bot of `slot`'s role plays with: a Rover's or a lane bot's. */

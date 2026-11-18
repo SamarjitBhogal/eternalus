@@ -90,7 +90,7 @@ const setUp = (rules: CapturePointsConfig = RULES) => {
   });
   state.entities.add(point);
   const zone = point.getComponent(Capturable);
-  const system = new CaptureSystem(rules, TICK_RATE);
+  const system = new CaptureSystem(rules, TICK_RATE, []);
   const events: CaptureEvent[] = [];
   state.events.on('capture-progress', (payload) => {
     events.push({ type: 'capture-progress', payload });

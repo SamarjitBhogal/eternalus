@@ -1,5 +1,5 @@
 import type { ClientConnection } from '../transport/ClientConnection.types';
-import type { MatchStarter } from './DuelQueue.types';
+import type { DuelPlayer, MatchStarter } from './DuelQueue.types';
 
 /**
  * The Duel queue (ADR 0016 point 2, DEC-36): the first player waits, the next one is paired with
@@ -7,26 +7,26 @@ import type { MatchStarter } from './DuelQueue.types';
  * tells both players `match-found` once the Duel exists.
  */
 export class DuelQueue {
-  private waiting: ClientConnection | null = null;
+  private waiting: DuelPlayer | null = null;
 
   public constructor(private readonly starter: MatchStarter) {}
 
-  /** Queues `connection`: it waits, or is paired with the waiting player. Joining twice does nothing. */
-  public join(connection: ClientConnection): void {
-    if (this.waiting === connection) return;
+  /** Queues `connection` as `name`: it waits, or is paired with the waiting player. Joining twice does nothing. */
+  public join(connection: ClientConnection, name: string): void {
+    if (this.waiting?.connection === connection) return;
     const first = this.waiting;
     if (first === null) {
-      this.waiting = connection;
+      this.waiting = { connection, name };
       connection.send({ type: 'queue-waiting' });
       return;
     }
     this.waiting = null;
     // ponytail: sides go by arrival order; the owner's answer to plan question 45 may change it.
-    this.starter.start(first, connection);
+    this.starter.start(first, { connection, name });
   }
 
   /** Removes `connection` if it waits; used by `queue-leave` and on disconnect. */
   public leave(connection: ClientConnection): void {
-    if (this.waiting === connection) this.waiting = null;
+    if (this.waiting?.connection === connection) this.waiting = null;
   }
 }
