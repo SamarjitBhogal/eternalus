@@ -3,6 +3,9 @@ import type { StorageSchema } from '../StorageAdapter.types';
 /** Per-profile settings and keybindings, one record per profile. */
 export const SETTINGS_STORE = 'settings';
 
+/** Saved loadouts, one record per profile and class (architecture 14 §7). */
+export const LOADOUT_STORE = 'loadouts';
+
 /** Records that failed validation on read, kept for bug reports (architecture 14 §8). */
 export const QUARANTINE_STORE = 'quarantine';
 
@@ -18,6 +21,7 @@ export const STORAGE_SCHEMA: StorageSchema = {
       version: 1,
       createStores: [
         { name: SETTINGS_STORE, keyPath: 'profileId' },
+        { name: LOADOUT_STORE, keyPath: 'id' },
         { name: QUARANTINE_STORE, keyPath: 'id', autoIncrement: true },
       ],
     },

@@ -8604,3 +8604,9 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   (2005)"; server "Test Files 21 passed (21)", "Tests 84 passed (84)"; "✓ built in 3.09s";
   "Documentation check passed."
 - Next step: push `feat/capture-point-boss` and update the PR #99 body.
+
+### 2026-11-17 — Phase 5 / sprint 5.3 — feat/loadout-persistence — claudiodh + Claude Code
+
+- What was done: the persistence half of the `LoadoutScreen` (SCRUM-31, SCRUM-311) that does not wait for the Phase 4 `Loadout` model. `LoadoutDtoV1` (`schemaVersion`, `id`, `profileId`, `classId`, `primaryWeaponId`) and `validateLoadoutDto` (weapon ids checked against an injected set); `LoadoutRepository` (`load`, `loadAll`, `save`; one record per profile and class; reads go through `readOrQuarantine`); the `loadouts` store in the v1 schema. Secondary weapon, passive, artifacts, abilities and the ultimate join with sprint 4.5 as optional fields (DEC-125). Not wired into `PersistenceController` yet: that needs `main.tsx` to inject the weapon ids. The storage port has no scan, so `loadAll` takes the class ids.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1637 passed (1637)"; protocol "Tests 29 passed (29)"; client "Tests 2029 passed (2029)"; server "Tests 84 passed (84)"; "Documentation check passed."
+- Next step: the `LoadoutScreen` on `feat/loadout-screen`; wire the repository into `PersistenceController` and `main.tsx`; sprint 4.5 (`Loadout` model, `validateLoadout`, `autoBuild`) is the owner's.
