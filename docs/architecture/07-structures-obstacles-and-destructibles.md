@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-15
+last-reviewed: 2026-11-16
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -229,7 +229,10 @@ The values live in `content/structures/spawnWaves.ts`; a wave there carries `fir
 update.
 
 Guards use `GuardController` with `leashRadius` ("don't leave the tower's perimeter") and respawn
-after `respawnTicks` (TUNE: 2 minutes = 3600 ticks). Horde sizes are
+after `respawnTicks` (TUNE: 2 minutes = 3600 ticks). A zone (§7) can be a guard home too: its
+plan is keyed by the zone's definition id, posts and leash are measured from its anchor, and it
+always stands ([18](18-minion-system.md) §7.1). A plan may activate a set time after the countdown
+ends and may never respawn (a once-per-match guard). Horde sizes are
 `GameConfig.match.hordeSizes` (FR-037) and cadences are spawner data (DISC-10); the owner may move
 either ([18-minion-system](18-minion-system.md) §10), and the `Stronghold` and `BuffTower` rows
 above follow that answer.
@@ -273,7 +276,9 @@ export class Capturable {
 - **Checkpoints.** A side's push on a zone it does not own announces each checkpoint it passes
   (`checkpoint-reached`), once per side until the zone changes owner (DEC-145 (b), (g)): a capture
   that reverts and is pushed again announces only the checkpoints that side had not reached, so
-  the assist mobs cannot be farmed for XP. A drain, a revert and an owner refilling its own zone
+  the assist mobs cannot be farmed for XP. Each announcement names that side's living Legends whose
+  centre is on the zone, from the same pass that weighs the sides (`presentLegendIds`, DEC-223
+  (4a)): the Legends that win the checkpoint. A drain, a revert and an owner refilling its own zone
   announce none. `capture-progress` reports every checkpoint the progress crosses, either way.
 - **Density.** Each side's presence is published with the zone's state, and the client shows each
   side's share of the total (DEC-145 (c)): in the world under the progress bar, and on the HUD
@@ -412,7 +417,9 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   `Stronghold`, `SpawnerTower`, `BuffTower` and `Gate`, with `content/structures/structureCatalogue.ts`
   (base health from `balancing.md`) and their registry lines. `Simulation` builds one per map
   feature with a structure definition, in feature id order, carrying the feature's lane
-  (`Structure.laneId`). `BreakabilityRule` (§3, without `all-of`) is evaluated by `StructureSystem`,
+  (`Structure.laneId`) and id (`Structure.mapFeatureId`, which the snapshot carries as
+  `EntitySnapshot.mapFeatureId`, so the HUD structure strip binds each tile to its structure,
+  DEC-212). `BreakabilityRule` (§3, without `all-of`) is evaluated by `StructureSystem`,
   which also emits `structure-destroyed`; `BreakabilityStep` blocks damage to unbreakable targets.
   The BuffTower total is `numLanes × buffTowersPerLane` from config. Not built yet: shield bars
   from BuffTowers, the `all-of` rule, the §11 invariants (`BreakabilityMatchesRuleInvariant`,
@@ -462,9 +469,29 @@ and a `Capturable` component, one per `capture-point` and `cathedral` map featur
 (`map/zoneArea.ts`) instead of taking it as an explicit placement (06): zones come from the map,
 so a replay or a match without map objects rebuilds the same zones. Interim differences:
 
-- `lockedBy` is always `null`: the mini-boss lock arrives in Phase 3 sprint 3.6.
-- Scheduled later, through the two capture events: holding buffs (Phase 3 sprint 3.3), score
-  (sprint 3.5), checkpoint defender spawns (Phase 3) and checkpoint XP (Phase 4). The minimap glyph
+- **Zone lock (2026-11-12).** `CaptureSystem` sets `lockedBy` every tick from the zone's guard
+  posts: a living guard of a mob in `content/zones/zoneLocks.ts` (the capture point boss) locks
+  the zone, and a locked zone publishes its presence but its progress does not move, so it is
+  neither captured, drained nor reverted. 12 clears the lock on the boss's `entity-died`; reading
+  the posts each tick needs no listener and unlocks in the same tick. `LockedZoneOwnerInvariant`
+  (15 §3) is not built.
+- **Capture point mini-boss (`feat/capture-point-boss`, 2026-11-11).** The `MiniBoss` is not an
+  entity class yet: each outer capture point (definition `capture-point`; the Cathedral has none)
+  keeps one `capture-point-boss` through its zone guard plan (§6 status, 18 §7.1), a `heavy-mob`
+  with `GuardController` and balancing.md's MiniBoss health and hit. It appears at the
+  default timeline's quarter mark through its guard plan's delay after the countdown (not yet the
+  `MatchDirector`'s timeline, `INBOX.md` interim (a)), sees and attacks an enemy anywhere in the
+  court, and never respawns. Its leash, post gap and aggro range come from the fort's geometry
+  (`content/zones/capturePointCourt.ts`). Its kill pays balancing.md's 500 XP to the killer's
+  team, at most 2 levels each (DEC-237, 05 §13 status). Its support mobs (the `capture-point` plan's table in
+  `content/structures/guardPlans.ts`, `INBOX.md` interim (e)) share its plan, activation and
+  `never` respawn, with the court's own aggro profile (`capture-point-guard`: the court's leash less
+  its post gap, AI56-F4; the boss is exempt from that rule, `INBOX.md`), and it takes only its share of a lane minion's hit (`BossMinionDamageStep`,
+  shares in `content/mobs/minionModifiers.ts`). Its moves, regeneration and permanent team buff come
+  later.
+- Scheduled later, through the two capture events: holding buffs (Phase 3 sprint 3.3), checkpoint
+  defender spawns (Phase 3) and checkpoint XP (Phase 4). Capture scoring is built (12 §5): from
+  `checkpoint-reached` and from each zone's `Capturable` owner at the director's fold. The minimap glyph
   does not follow the owner yet (the minimap entity markers, SCRUM-151).
 - The density numbers on the HUD arrive with the HUD work (`feat/hud-and-character-select`, its
   capture tracker); this PR publishes the presence and draws the split bar in the world.

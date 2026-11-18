@@ -50,7 +50,7 @@ export class DuelGateway {
       case 'queue-join':
         if (this.host.isInMatch(connection))
           connection.send({ type: 'rejected', reason: 'in-match' });
-        else this.queue.join(connection);
+        else this.queue.join(connection, message.name);
         return;
       case 'queue-leave':
         if (this.host.isInMatch(connection))

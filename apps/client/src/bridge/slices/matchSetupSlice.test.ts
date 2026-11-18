@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { ClassSelection } from '../events';
 import { matchSetupSlice } from './matchSetupSlice';
 
-const { lockIn, reset, select, setCountdown } = matchSetupSlice.actions;
+const { countdownChanged, lockIn, reset, select } = matchSetupSlice.actions;
 const {
   selectSelection,
   selectCountdownSeconds,
@@ -23,12 +23,41 @@ describe('matchSetupSlice', () => {
 
   it('shows the countdown in whole seconds, rounded up', () => {
     const seconds = (remainingMs: number) =>
-      selectCountdownSeconds({
-        matchSetup: matchSetupSlice.reducer(undefined, setCountdown(remainingMs)),
-      });
+      selectCountdownSeconds(
+        {
+          matchSetup: matchSetupSlice.reducer(
+            undefined,
+            countdownChanged({ kind: 'select', remainingMs }),
+          ),
+        },
+        'select',
+      );
     expect(seconds(42_000)).toBe(42);
     expect(seconds(41_001)).toBe(42);
     expect(seconds(0)).toBe(0);
+  });
+
+  it('keeps each countdown kind apart, each in whole seconds rounded up', () => {
+    let matchSetup = matchSetupSlice.reducer(
+      undefined,
+      countdownChanged({ kind: 'select', remainingMs: 5_000 }),
+    );
+    matchSetup = matchSetupSlice.reducer(
+      matchSetup,
+      countdownChanged({ kind: 'reveal', remainingMs: 8_500 }),
+    );
+    const seconds = (remainingMs: number) => {
+      matchSetup = matchSetupSlice.reducer(
+        matchSetup,
+        countdownChanged({ kind: 'results', remainingMs }),
+      );
+      return selectCountdownSeconds({ matchSetup }, 'results');
+    };
+    expect(seconds(30_000)).toBe(30);
+    expect(seconds(29_001)).toBe(30);
+    expect(seconds(0)).toBe(0);
+    expect(selectCountdownSeconds({ matchSetup }, 'select')).toBe(5);
+    expect(selectCountdownSeconds({ matchSetup }, 'reveal')).toBe(9);
   });
 
   it('has no team and no allies before a setup', () => {
