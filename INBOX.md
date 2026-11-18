@@ -75,14 +75,24 @@ Reply inline (`Decision: …`).
       (like the existing `AFTER_BUFF_TOWERS`) would hold it once. It touches the camp lines, so it
       would be its own small refactor PR. OK, or leave as is?
 - [ ] **DEC-217 (13) vs the solid gem: the Cathedral shares a health pool (Aryan Walanj,
-      2026-11-15, `feat/cathedral-gem-strike`).** DEC-217 (13) says only towers share one pool
-      with their map object. The solid gem (`c8dba3e9`) makes the gem's map object the Cathedral's
+      2026-11-15, `feat/cathedral-gem-strike`).** DEC-217 (13) says "Only towers share one health
+      pool with their fort". The solid gem (`c8dba3e9`) makes the gem's map object the Cathedral's
       body, so it shares the Cathedral's pool too (harmless: the gem is never damaged). This is
       Aryan's interim choice, not covered by DEC-217; the `Simulation.ts` comment, the
       `WorldObjectStore` TSDoc and doc 07 §13 say so. Undoing it is not small: the shared pool is
       what makes a hit on the gem's map object a hit on the Cathedral, and the client's click
       targets the gem through it. Amend DEC-217 (13) to "towers and the Cathedral", or should the
       gem get a separate link to its structure?
+- [ ] **The solid gem blocks the Duel (Aryan Walanj, 2026-11-18, `feat/cathedral-gem-strike`
+      merged with phase/3).** The Duel's arena is the Cathedral: both Legends start
+      `DUEL_RULES.startOffset` (50 m) either side of its centre on one line (`duelStartPoints.ts`,
+      FR-115). The solid gem (`c8dba3e9`) stands on that line, so a Legend walking straight at the
+      other is stopped by it. `npm run check` fails on it: `Simulation.duel.test.ts` (no kill
+      counted, the replay test times out) and the server's `CoreDuelSimulation.test.ts` "keeps
+      moving a seat that holds its direction across a kill". Which do you want: (a) the gem does
+      not block in a Duel; (b) the Duel start points move off the gem's line (a content change);
+      (c) the gem is not solid at all (undo `c8dba3e9`); (d) the Duel tests walk around the gem?
+      The stack above `feat/cathedral-gem-hittable` is not pushed until this is answered.
 - [ ] **The solid gem: three open critic findings (Aryan Walanj, 2026-11-18, critic on
       `feat/cathedral-gem-strike`, majors #4, #8, #9).** (1) `PlayerCommands.cathedralAt` (the
       client's fallback that picks the Cathedral by the gem's disc) is redundant now that the gem
