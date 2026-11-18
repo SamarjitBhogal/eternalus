@@ -86,7 +86,31 @@ export const STRINGS = {
     licencesTitle: 'Software licences',
     licences: ['React (MIT)', 'Redux Toolkit (MIT)', 'React Redux (MIT)', 'Vite (MIT)'],
   },
-  loadouts: { title: 'Loadouts', classesTitle: 'Classes' },
+  loadouts: {
+    title: 'Loadouts',
+    classGroup: 'Class',
+    weaponGroup: 'Primary weapon',
+    /** Shown when content has not published the weapons a class may take. */
+    weaponsUnavailable: 'The weapons of this class are not available yet.',
+    /** Prefix of the start weapon shown while the choices are unavailable, e.g. "Starts with X". */
+    startsWith: 'Starts with',
+    /** The default replaced a saved weapon content no longer has (08 "Saved to the profile"). */
+    repaired: 'The saved weapon is no longer available, so the default is shown.',
+    save: 'Save loadout',
+    pendingTitle: 'Coming with the loadout rules',
+    pendingNote: 'Not available yet',
+    /** The slots of 08 "Loadout slots" that wait for the Phase 4 loadout model, in slot order. */
+    pendingSlots: [
+      'Secondary weapon',
+      'Passive',
+      'Artifact 1',
+      'Artifact 2',
+      'Ability 1',
+      'Ability 2',
+      'Ability 3',
+      'Ultimate',
+    ],
+  },
   profile: { history: 'Match history and achievements appear here.' },
   duelName: {
     title: 'Duel online',
