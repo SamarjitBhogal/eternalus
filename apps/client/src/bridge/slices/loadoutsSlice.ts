@@ -1,7 +1,7 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 /** One weapon a class may carry as its primary weapon, as the Loadout screen lists it. */
-export type LoadoutWeaponOption = { readonly id: string; readonly displayName: string };
+type LoadoutWeaponOption = { readonly id: string; readonly displayName: string };
 
 /** The primary weapons of one class and the one auto-build picks (08 "Pre-game configuration"). */
 export type ClassLoadoutOptions = {
