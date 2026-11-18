@@ -1,4 +1,10 @@
-import { createDefaultGameConfig, type Logger, makeLogRecord, SEVERITY } from '@eternalus/core';
+import {
+  createDefaultGameConfig,
+  loadDisplayContent,
+  type Logger,
+  makeLogRecord,
+  SEVERITY,
+} from '@eternalus/core';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
@@ -92,9 +98,15 @@ logWindowErrors(window, logger);
 const developer = readDeveloperFlags(window.location.search);
 
 connectBusToStore(eventBus, store.dispatch);
+// The weapon ids saved loadouts may name. Core publishes only each Legend's starting weapon so far
+// (every weapon is unique to its class today), so that is the set; it grows with the weapon list.
+const knownWeapons = new Set(
+  loadDisplayContent().legends.map((legend) => legend.defaultLoadout.primaryWeaponId),
+);
 const persistence = new PersistenceController({
   adapter: new MemoryStorageAdapter(),
   knownActions: new Set(INPUT_ACTIONS),
+  knownWeapons,
   now: () => Date.now(),
   warn: (body, attributes) => {
     logger.log(makeLogRecord('WARN', 'client.persistence', body, { attributes }));

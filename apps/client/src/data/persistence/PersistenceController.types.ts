@@ -7,6 +7,8 @@ export type PersistenceControllerDeps = {
   readonly adapter: StorageAdapter;
   /** Every `InputAction` id, from `game/input/keybindings.ts`, to validate stored bindings. */
   readonly knownActions: ReadonlySet<string>;
+  /** Every weapon id content has, to validate stored loadouts. */
+  readonly knownWeapons: ReadonlySet<string>;
   /** Wall-clock milliseconds, for dating quarantined records. */
   readonly now: () => number;
   /** Reports a quarantined record at WARN. */

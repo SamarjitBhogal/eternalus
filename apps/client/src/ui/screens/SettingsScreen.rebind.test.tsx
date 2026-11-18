@@ -37,6 +37,7 @@ describe('rebinding move-up from W to ArrowUp', () => {
     const persistence = new PersistenceController({
       adapter,
       knownActions: new Set(INPUT_ACTIONS),
+      knownWeapons: new Set<string>(),
       now: () => 0,
       warn: () => undefined,
     });

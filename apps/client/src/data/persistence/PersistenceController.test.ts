@@ -15,6 +15,7 @@ function controller(adapter = new MemoryStorageAdapter()): PersistenceController
   return new PersistenceController({
     adapter,
     knownActions: new Set(['attack']),
+    knownWeapons: new Set(['raptor-talons']),
     now: () => 0,
     warn: () => undefined,
   });
@@ -39,5 +40,27 @@ describe('PersistenceController', () => {
     await second.open();
 
     expect(await second.loadSettings()).toEqual(SETTINGS);
+  });
+
+  it('has no loadout before the first save', async () => {
+    const persistence = controller();
+    await persistence.open();
+
+    expect(await persistence.loadLoadouts(['warrior'])).toEqual(new Map());
+  });
+
+  it('keeps a saved loadout per class across a close and reopen', async () => {
+    const adapter = new MemoryStorageAdapter();
+    const first = controller(adapter);
+    await first.open();
+    await first.saveLoadout('warrior', { primaryWeaponId: 'raptor-talons' });
+    first.close();
+
+    const second = controller(adapter);
+    await second.open();
+
+    expect(await second.loadLoadouts(['warrior', 'magus'])).toEqual(
+      new Map([['warrior', { primaryWeaponId: 'raptor-talons' }]]),
+    );
   });
 });
