@@ -88,6 +88,7 @@ export class MapBuildingInteriorBuilder extends MapDecorationBuilder {
     this.ellipse('cathedral-interior-capture-border', G.cathedral.x, 450, 35, 35, P.doorInlay);
     this.ellipse('cathedral-interior-capture-floor', G.cathedral.x, 450, 31, 31, P.captureFloor);
     this.ellipse('cathedral-interior-capture-inlay', G.cathedral.x, 450, 11, 11, P.ivoryStone);
+    this.cathedralGem();
     this.blockRect('cathedral-interior-altar', 785, 340, 30, 14, P.ivoryStone);
     for (const x of [712, 856]) {
       this.rect(`cathedral-interior-chapel-${String(x)}`, x, 428, 32, 49, P.chapelFloor);
@@ -292,6 +293,24 @@ export class MapBuildingInteriorBuilder extends MapDecorationBuilder {
     this.rect('cathedral-interior-altar-inlay', 790, 343, 20, 3, P.carpetBorder);
     this.endObject();
     this.blockRect('cathedral-interior-sacristy-cabinet', 824, 349, 10, 9, P.furnitureWood);
+  }
+
+  /**
+   * Draws the gem at the Cathedral's centre. Presentation only until the Cathedral structure
+   * carries the gem as its Spawner (architecture 07 §1, phase 3).
+   */
+  private cathedralGem(): void {
+    const { x, y, gem } = G.cathedral;
+    this.polygon(
+      'cathedral-interior-gem',
+      [
+        { x, y: y - gem.halfHeight },
+        { x: x + gem.halfWidth, y },
+        { x, y: y + gem.halfHeight },
+        { x: x - gem.halfWidth, y },
+      ],
+      P.gemCrystal,
+    );
   }
 
   private apseWall(id: string, start: number, end: number): void {
