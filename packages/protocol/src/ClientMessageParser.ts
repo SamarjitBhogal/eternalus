@@ -3,6 +3,8 @@ import {
   ABILITY_SLOTS,
   MAX_CLIENT_MESSAGE_LENGTH,
   MAX_INTENT_SEQ,
+  MAX_PLAYER_NAME_LENGTH,
+  PLAYER_NAME_PATTERN,
 } from './ClientMessageParser.constants';
 import type { ParseResult } from './ClientMessageParser.types';
 import type { ClientMessage } from './messages.types';
@@ -30,7 +32,7 @@ export class ClientMessageParser {
     if (!ClientMessageParser.isRecord(data)) return undefined;
     switch (data.type) {
       case 'queue-join':
-        return { type: 'queue-join' };
+        return ClientMessageParser.toJoinMessage(data);
       case 'queue-leave':
         return { type: 'queue-leave' };
       case 'intent':
@@ -38,6 +40,15 @@ export class ClientMessageParser {
       default:
         return undefined;
     }
+  }
+
+  private static toJoinMessage(data: Readonly<Record<string, unknown>>): ClientMessage | undefined {
+    const { name } = data;
+    return typeof name === 'string' &&
+      name.length <= MAX_PLAYER_NAME_LENGTH &&
+      PLAYER_NAME_PATTERN.test(name)
+      ? { type: 'queue-join', name }
+      : undefined;
   }
 
   private toIntentMessage(data: Readonly<Record<string, unknown>>): ClientMessage | undefined {
