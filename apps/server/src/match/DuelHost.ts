@@ -1,5 +1,5 @@
 import { type InputIntent, makeLogRecord } from '@eternalus/core';
-import type { MatchStarter } from '../queue/DuelQueue.types';
+import type { DuelPlayer, MatchStarter } from '../queue/DuelQueue.types';
 import type { ClientConnection } from '../transport/ClientConnection.types';
 import { DuelMatch } from './DuelMatch';
 import { HOST_LOG_SCOPE } from './DuelHost.constants';
@@ -16,8 +16,10 @@ export class DuelHost implements MatchStarter {
   public constructor(private readonly options: DuelHostOptions) {}
 
   /** Starts a Duel between the two players; if it cannot be built, closes both connections. */
-  public start(light: ClientConnection, dark: ClientConnection): void {
-    const { factory, scheduler, tickIntervalMs, logger } = this.options;
+  public start(lightPlayer: DuelPlayer, darkPlayer: DuelPlayer): void {
+    const { factory, scheduler, tickIntervalMs, versusMs, logger } = this.options;
+    const light = lightPlayer.connection;
+    const dark = darkPlayer.connection;
     const id = `duel-${String(this.nextId)}`;
     this.nextId += 1;
     let match: DuelMatch;
@@ -25,9 +27,11 @@ export class DuelHost implements MatchStarter {
       match = new DuelMatch({
         id,
         seats: { light, dark },
+        names: { light: lightPlayer.name, dark: darkPlayer.name },
         simulation: factory.create(),
         scheduler,
         tickIntervalMs,
+        versusMs,
         logger,
         onEnded: (ended) => {
           this.forget(ended);

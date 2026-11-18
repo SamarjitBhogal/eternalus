@@ -16,7 +16,7 @@ export class MenuState implements SessionState {
   }
 
   /**
-   * `start-match` → `loading` with a new setup; `start-duel` joins the Duel queue and shows its
+   * `start-match` → `loading` with a new setup; `start-duel` joins the Duel queue under the entered name and shows its
    * waiting screen (the session moves on when the server pairs the player); `cancel-duel` leaves
    * the queue and shows home; `navigate` changes the menu route.
    */
@@ -25,7 +25,7 @@ export class MenuState implements SessionState {
       context.newMatchSetup();
       context.transition('loading');
     } else if (intent.kind === 'start-duel') {
-      context.joinDuelQueue();
+      context.joinDuelQueue(intent.name);
       context.bus.emit('menu-route', { route: 'duel-queue' });
     } else if (intent.kind === 'cancel-duel') {
       context.leaveDuelQueue();

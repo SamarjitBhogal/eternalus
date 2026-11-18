@@ -235,7 +235,7 @@ export class GameState {
     this.entities.forEach((entity) => {
       entities.push(snapshotter.snapshotOf(entity));
     });
-    const { phase, phaseEnteredTick, timelineCursor, schedule, humanLegendId } = this.match;
+    const { phase, phaseEnteredTick, timelineCursor, schedule, humanLegendId, duel } = this.match;
     const hordes: HordeSnapshot[] = [];
     this.hordes.forEach((horde) => {
       hordes.push({ ...horde });
@@ -248,6 +248,7 @@ export class GameState {
         phaseEnteredTick,
         upcoming: schedule.slice(timelineCursor),
         humanLegendId,
+        ...(duel !== null && { duel }),
       },
       entities,
       hordes,
