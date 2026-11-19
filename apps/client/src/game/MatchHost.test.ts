@@ -34,6 +34,8 @@ function setUp(options: { readonly isStartThrowing?: boolean } = {}) {
     destroy: vi.fn(() => log.push('match.destroy')),
     resize: vi.fn(),
     setPaused: vi.fn(),
+    setCastMode: vi.fn(),
+    cancelAim: vi.fn(),
     controls: {
       lookAtMinimapPoint: vi.fn(() => false),
       panBy: vi.fn(),
@@ -103,7 +105,8 @@ describe('MatchHost', () => {
     expect(match.start).toHaveBeenCalledTimes(1);
     expect(atStart.windowListeners).toBeGreaterThan(0);
     expect(atStart.canvasListeners).toBeGreaterThan(0);
-    expect(atStart.busListeners).toBe(busBefore + 1);
+    // The settings follower and the `cancel-aim` intent follower.
+    expect(atStart.busListeners).toBe(busBefore + 2);
   });
 
   it('attaches the keyboard and the developer hotkey to the window and the mouse to the canvas', () => {
@@ -140,6 +143,32 @@ describe('MatchHost', () => {
     const settings = { ...settingsWithDefaults(null), bindings: PRESETS.arrows };
     bus.emit('settings', settings);
     expect(mapper.setBindings).toHaveBeenCalledWith(PRESETS.arrows);
+  });
+
+  it('sets the cast mode from the settings event and cancels the aim on cancel-aim', () => {
+    const { host, bus, match } = setUp();
+    host.start();
+
+    bus.emit('settings', {
+      ...settingsWithDefaults(null),
+      gameplay: { castMode: 'aim-then-click' },
+    });
+    bus.emit('ui-intent', { kind: 'close-overlay' });
+    expect(match.cancelAim).not.toHaveBeenCalled();
+    bus.emit('ui-intent', { kind: 'cancel-aim' });
+
+    expect(match.setCastMode.mock.calls).toEqual([['aim-then-click']]);
+    expect(match.cancelAim).toHaveBeenCalledTimes(1);
+  });
+
+  it('stops following cancel-aim once destroyed', () => {
+    const { host, bus, match } = setUp();
+    host.start();
+    host.destroy();
+
+    bus.emit('ui-intent', { kind: 'cancel-aim' });
+
+    expect(match.cancelAim).not.toHaveBeenCalled();
   });
 
   it('shows, then hides the developer explorer on Ctrl+Shift+F3 and Cmd+Shift+F3 (DEC-105)', () => {

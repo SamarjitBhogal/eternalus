@@ -21,16 +21,18 @@ const specs = (classId: string): readonly LegendSpecCard[] => classCard(classId)
 const allSpecs = catalogue.legendClasses.flatMap((card) => card.specs);
 
 /**
- * Legend-specific art fields (DEC-49): each id has one owning spec, except the one stand-in.
+ * Legend-specific art fields (DEC-49): each distinct asset id has one owning spec.
  */
 const legendArt = (spec: LegendSpecCard): string[] =>
-  [spec.art.card, spec.art.refraction, spec.art.portrait, spec.art.mini, spec.art.rowPlate].filter(
-    (id) => id !== null,
-  );
-const SHARED_LEGEND_ART = {
-  id: 'warrior-legend-portrait',
-  specIds: ['assassin', 'knight', 'paladin'],
-};
+  [
+    ...new Set([
+      spec.art.card,
+      spec.art.refraction,
+      spec.art.portrait,
+      spec.art.mini,
+      spec.art.rowPlate,
+    ]),
+  ].filter((id) => id !== null);
 
 /** Every custom property `global.css` declares (a test-only text read of the stylesheet). */
 const DECLARED_TOKENS = new Set([...globalCss.matchAll(/(--[\w-]+)\s*:/g)].map(([, name]) => name));
@@ -125,10 +127,9 @@ describe('coreCatalogue', () => {
     for (const spec of allSpecs) {
       for (const id of legendArt(spec)) owners.set(id, [...(owners.get(id) ?? []), spec.specId]);
     }
-    expect(owners.get(SHARED_LEGEND_ART.id)).toEqual(SHARED_LEGEND_ART.specIds);
-    const others = [...owners].filter(([id]) => id !== SHARED_LEGEND_ART.id);
-    expect(others).toHaveLength(11);
-    expect(others.filter(([, owner]) => owner.length !== 1)).toEqual([]);
+    expect(owners.has('warrior-legend-portrait')).toBe(false);
+    expect(owners.size).toBe(16);
+    expect([...owners].filter(([, owner]) => owner.length !== 1)).toEqual([]);
   });
 
   it('gives a row plate only to the Figma state it was exported from (I-69)', () => {

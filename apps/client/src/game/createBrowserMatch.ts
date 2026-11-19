@@ -1,6 +1,7 @@
 import { type GameConfig, makeLogRecord, SEVERITY, Simulation } from '@eternalus/core';
 
 import type { BridgeEventMap } from '../bridge/events';
+import { settingsSlice } from '../bridge/slices/settingsSlice';
 import type { TypedEventBus } from '../bridge/TypedEventBus';
 import type { MatchEvidence } from '../data/logging/ErrorReport.types';
 import type { LogSink } from '../data/logging/LogSink.types';
@@ -16,6 +17,7 @@ import type { SessionClock } from './engine/time/SessionClock.types';
 import { InputMapper } from './input/InputMapper';
 import { PRESETS } from './input/keybindings';
 import { Match } from './Match';
+import type { ResourceController } from '../data/resources/ResourceController';
 import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH, LOG_RING_CAPACITY } from './Match.constants';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { MatchHost } from './MatchHost';
@@ -26,13 +28,14 @@ import type { MatchFactory } from './SessionController.types';
 
 /** What the browser match factory is built from; `main.tsx` passes window, document and the page singletons. */
 export type BrowserMatchDeps = {
+  readonly resources?: Pick<ResourceController, 'atlases'>;
   /** The frame scheduler (`RafFrameScheduler`) is built on it, so the type names rAF. */
   readonly window: HostWindow & Pick<Window, 'requestAnimationFrame' | 'cancelAnimationFrame'>;
   readonly document: HostDocument;
   readonly gameConfig: GameConfig;
   readonly bus: TypedEventBus<BridgeEventMap>;
   /** The player's bindings when the match starts; later changes arrive as `settings` events. */
-  readonly settings: Pick<SettingsController, 'bindings'>;
+  readonly settings: Pick<SettingsController, 'bindings' | 'castMode'>;
   /** Stamps the match's log records (the engine clock; core never reads time). */
   readonly clock: SessionClock;
   /**
@@ -80,7 +83,7 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
     // Core spawns the roster's human slot, the player's Rover, at the team's Stronghold: a map
     // without one throws in `Simulation`, below.
     const config = withPlayerTeam(gameConfig, request.setup.playerTeam);
-    const renderer = Canvas2dRenderer.fromCanvas(viewport.canvas);
+    const renderer = Canvas2dRenderer.fromCanvas(viewport.canvas, deps.resources?.atlases('match'));
     if (renderer === null) {
       throw new Error('This browser cannot draw on a 2D canvas.');
     }
@@ -106,6 +109,7 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
         roster: request.roster,
       });
       match = new Match({
+        playerSpecId: request.setup.allies.find((entry) => entry.isPlayer)?.specId ?? null,
         simulation,
         world: request.world,
         tickRate: gameConfig.tickRate,
@@ -114,6 +118,9 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
         camera,
         input,
         logger,
+        abilities: request.abilities,
+        dashReach: (origin, direction, distance, radius) =>
+          simulation.dashReach(origin, direction, distance, radius),
         observer: request.observer,
         bridge: {
           bus: deps.bus,
@@ -141,6 +148,7 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
       evidence: () => readEvidence(simulation, ring),
       currentTick: () => simulation.tick,
     });
+    match.setCastMode(settings.castMode ?? settingsSlice.getInitialState().gameplay.castMode);
     // A throw here has already been undone by the host (every listener, the match, the adapters).
     host.start();
     return host;

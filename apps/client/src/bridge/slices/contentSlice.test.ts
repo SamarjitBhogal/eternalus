@@ -27,6 +27,7 @@ const CATALOGUE: DisplayCatalogue = {
     enemyRover: 'mirror-player',
     difficulties: { laner: 'normal', rover: 'rover' },
   },
+  abilities: [],
   verdictLines: {
     'objective-lost': { victory: 'Won: {name}.', defeat: 'Lost: {name}.', draw: 'Even: {name}.' },
   },

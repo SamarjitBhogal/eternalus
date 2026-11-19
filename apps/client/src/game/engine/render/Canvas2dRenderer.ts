@@ -6,7 +6,15 @@ import type {
   GlyphTracer,
 } from './Canvas2dRenderer.types';
 import type { Renderer } from './Renderer';
-import type { GlyphShape, GlyphSpec, ScreenRect, WorldPoint, WorldRect } from './Renderer.types';
+import type {
+  GlyphShape,
+  GlyphSpec,
+  ScreenRect,
+  SpriteAtlas,
+  SpriteRef,
+  WorldPoint,
+  WorldRect,
+} from './Renderer.types';
 
 /**
  * The Canvas 2D implementation of the `Renderer` port and the only class that touches
@@ -15,6 +23,7 @@ import type { GlyphShape, GlyphSpec, ScreenRect, WorldPoint, WorldRect } from '.
  * more of the world's height without showing more of its width.
  */
 export class Canvas2dRenderer implements Renderer {
+  private readonly frames = new Map<string, OffscreenCanvas>();
   private readonly context: DrawContext;
   private screenWidth = 0;
   private screenHeight = 0;
@@ -27,7 +36,10 @@ export class Canvas2dRenderer implements Renderer {
   private readonly glyphTracers: Readonly<Record<GlyphShape, GlyphTracer>>;
 
   /** Creates a renderer that draws through the given context. */
-  public constructor(context: DrawContext) {
+  public constructor(
+    context: DrawContext,
+    private readonly atlases: Readonly<Record<string, SpriteAtlas>> = {},
+  ) {
     this.context = context;
     const ellipse: GlyphTracer = (center, halfWidth, halfHeight) => {
       context.ellipse(center.x, center.y, halfWidth, halfHeight, 0, 0, FULL_TURN);
@@ -49,9 +61,56 @@ export class Canvas2dRenderer implements Renderer {
   }
 
   /** Creates a renderer for a canvas, or returns `null` if 2D drawing is unavailable. */
-  public static fromCanvas(canvas: DrawSurface): Canvas2dRenderer | null {
+  public static fromCanvas(
+    canvas: DrawSurface,
+    atlases: Readonly<Record<string, SpriteAtlas>> = {},
+  ): Canvas2dRenderer | null {
     const context = canvas.getContext('2d');
-    return context === null ? null : new Canvas2dRenderer(context);
+    return context === null ? null : new Canvas2dRenderer(context, atlases);
+  }
+
+  /** Prepares each size once, then copies 1:1 without resampling during animation draws. */
+  public drawSprite(sprite: SpriteRef, feet: WorldPoint, size: number): boolean {
+    const atlas = this.atlases[sprite.atlasId];
+    if (
+      atlas === undefined ||
+      this.context.drawImage === undefined ||
+      !Number.isInteger(sprite.frame) ||
+      sprite.frame < 0 ||
+      sprite.frame >= atlas.columns * atlas.rows ||
+      size <= 0
+    )
+      return false;
+    const width = Math.max(1, Math.round(size * this.scaleX));
+    const height = Math.max(1, Math.round(size * this.scaleY));
+    const key = `${sprite.atlasId}:${String(sprite.frame)}:${String(width)}:${String(height)}`;
+    let frame = this.frames.get(key);
+    if (frame === undefined) {
+      frame = new OffscreenCanvas(width, height);
+      const context = frame.getContext('2d');
+      if (context === null) return false;
+      context.imageSmoothingEnabled = false;
+      const cellWidth = atlas.image.width / atlas.columns;
+      const cellHeight = atlas.image.height / atlas.rows;
+      context.drawImage(
+        atlas.image,
+        (sprite.frame % atlas.columns) * cellWidth,
+        Math.floor(sprite.frame / atlas.columns) * cellHeight,
+        cellWidth,
+        cellHeight,
+        0,
+        0,
+        width,
+        height,
+      );
+      // Bound zoom/resizing variants; evicting prepared frames never releases the source atlas.
+      if (this.frames.size >= 360) this.frames.clear();
+      this.frames.set(key, frame);
+    }
+    const at = this.toScreen(feet);
+    this.context.imageSmoothingEnabled = false;
+    this.context.drawImage(frame, Math.round(at.x - width / 2), Math.round(at.y - height));
+    return true;
   }
 
   /** Sets the drawing area in device pixels and how many device pixels make one CSS pixel. */
@@ -159,8 +218,9 @@ export class Canvas2dRenderer implements Renderer {
     };
   }
 
-  /** Releases the renderer. It holds no resources yet, but owners must still call this. */
+  /** Releases prepared frames; the resource controller owns the source bitmaps. */
   public destroy(): void {
+    this.frames.clear();
     this.screenWidth = 0;
     this.screenHeight = 0;
   }

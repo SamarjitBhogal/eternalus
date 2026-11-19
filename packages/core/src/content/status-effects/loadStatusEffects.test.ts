@@ -14,6 +14,24 @@ describe('loadStatusEffects', () => {
     expect(loadStatusEffects(1, 2).get('blind').durationTicks).toBe(2);
   });
 
+  it('loads the knock-back statuses: airborne locks a unit for 0.8 s, staggered only its casts for 0.3 s', () => {
+    const loaded = loadStatusEffects(30, 2);
+
+    expect(loaded.get('knockup')).toMatchObject({
+      durationTicks: 24,
+      flags: ['cannot-move', 'cannot-attack', 'cannot-cast'],
+    });
+    expect(loaded.get('staggered')).toMatchObject({ durationTicks: 9, flags: ['cannot-cast'] });
+  });
+
+  it('makes a concussed unit pay 25% more aether per cast, next to its slows', () => {
+    expect(loadStatusEffects(30, 2).get('concussion').modifiers).toEqual([
+      { stat: 'moveSpeed', op: 'mul', value: 0.7 },
+      { stat: 'attackSpeed', op: 'mul', value: 0.7 },
+      { stat: 'aetherCost', op: 'mul', value: 1.25 },
+    ]);
+  });
+
   it('takes the enraged cap from the lane structure count, not a literal', () => {
     expect(loadStatusEffects(30, 2).get('enraged').maxStacks).toBe(2);
     expect(loadStatusEffects(30, 3).get('enraged').maxStacks).toBe(3);

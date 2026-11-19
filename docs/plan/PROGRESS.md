@@ -8604,3 +8604,124 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   (2005)"; server "Test Files 21 passed (21)", "Tests 84 passed (84)"; "✓ built in 3.09s";
   "Documentation check passed."
 - Next step: push `feat/capture-point-boss` and update the PR #99 body.
+
+### 2026-11-13 — Phase 4 / sprints 4.2–4.3 and 4.7: ability framework (PR 1) — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: the owner's rulings DEC-196 to DEC-209 (framework first, then one PR per class;
+  `balancing.md` numbers as `TUNE`; class pool and a kit per Legend; the kits; two cast modes;
+  aether refill; one ultimate meter; Fear; Rip & Tear; bots cast any ready ability; knock-back
+  mass and stacking; structure multipliers, slot order and the range overlay). Built in six
+  slices: (S1) ability content, twelve kit abilities, `knockup` and `staggered`, kit rules; (S2)
+  `Abilities` slots, `AbilityRegistry`, `CastValidator`, `CastAbilityHandler`, `AbilitySystem`,
+  `AetherRegenSystem`, two invariants; (S3) `damage`, `debuff`, `knockback` and `dash` effects,
+  forced motion on `Movement`, status duration override, Blade Runner, Slam and Shockwave with
+  scenario tests and a golden replay; (S4) `Snapshot.player`, the `SlotReadiness` port, bots
+  pick any ready slot; (S5) quick and aim-then-click casting, Esc cancels an aim (Gameplay
+  settings tab); (S6) kit rows from content, live HUD slots, the range overlay. Integration:
+  casts refused during the countdown (DEC-88), a re-applied status keeps the longer time, the
+  overlay cuts a dash where the cast does. Decisions beyond 05: ADR 0026 (proposed, HC-Q48);
+  INBOX HC-B5, HC-Q49 to HC-Q53, HC-S12. Docs: 05, 04, 10, 13, 11, 03, 02, reference 09 and 12,
+  `more-abilities.md`, `balancing.md`, backlog, phase-4 plan.
+- Checks run: `npm run check` → exit 0 on the tree merged with phase/3 `9e2516cf`: core "Tests
+  1542 passed (1542)"; protocol "Tests 18 passed (18)"; client "Tests 1958 passed (1958)";
+  server "Tests 79 passed (79)"; "Documentation check passed." Docs pass: `npm run docs:check` →
+  `Documentation check passed.`; `npx prettier --check docs INBOX.md` →
+  `All matched files use Prettier code style!`
+- Next step: critic and ponytail gate, then the PR; next the per-class PRs, the Vanguard first
+  with the ultimate meter and Fury (DEC-202), then the Sentinel (Rip & Tear, Fear) and the Magus.
+
+### 2026-11-14 — Phase 4 / sprints 4.2–4.3 and 4.7: ability framework, critic rounds 1 and 2 — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` `76d1007d` (#81; only this file conflicted, both
+  sides kept). Fixed critic round 1 (4 blockers): a dash stops where walking stops, through the
+  `CollisionQuery` port and the match's one `CollisionResolver` (it was clamped on the nav grid,
+  so a Blade Runner beside a wall moved 0 m and was paid for); forced motion is in `StateHasher`;
+  one `Aim` type, so `state/` no longer imports `commands/`; effect and shape strategies
+  `validate` and `describe` themselves, so `loadAbilities` and `loadDisplayContent` name no kind.
+  Also: ability areas hit map objects by their footprints; one `CastValidator` per match, which
+  is the `SlotReadiness` port (`CastCheck` and `CastReadiness` removed); `kitOf` and an injected
+  Legend spec source; a `DashReach` port for the client, and the aim overlay view gets a finished
+  target; the ponytail cuts. Critic round 2 (no blockers): a destroyed map object leaves the
+  collision index at once (a dash in the next tick was still cut by it); the map-bounds rule
+  lives in the resolver; the `collisions` port is on `GameState`; the dash's overlay row carries
+  only its distance and the display step `kind` is open (the litmus proves the overlay row too).
+  `packages/core/AGENTS.md`: the `abilities/` and `commands/` import rows. INBOX: HC-B6, HC-Q54,
+  HC-Q55, HC-Q56 added; HC-Q51 and HC-Q52 corrected. ADR 0026 (proposed) decisions 1, 2, 4 and 7
+  follow the code. Not changed: critic finding C6 (HC-Q55); a dash that starts inside a wall
+  (precondition stated on `CollisionQuery.reach`).
+- Checks run: `npm run check` → `EXIT=0`: core "Test Files 277 passed (277)", "Tests 1589
+  passed (1589)"; protocol "Tests 18 passed (18)"; client "Test Files 290 passed (290)", "Tests
+  1965 passed (1965)"; server "Tests 79 passed (79)"; "All matched files use Prettier code
+  style!"; "Documentation check passed."
+- Next step: critic round 3 on the round 2 fixes, then the PR into `phase/3-sprint-3-work`; the
+  owner's answers to HC-Q48, HC-B5 and HC-B6; then the per-class PRs, the Vanguard first.
+
+### 2026-11-14 — Phase 4 / sprints 4.2–4.3 and 4.7: ability framework, critic round 3 — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: critic round 3 (the last) on the round 2 fixes: the architecture reviewer
+  approved; the correctness critic found no blocker and no should-fix. Fixed its nits: a dash
+  throws for a caster with no `Movement` (it skipped the motion and still ran the path and end
+  steps); `Simulation` holds the map-object store and the collision index in locals for the
+  `entity-removed` handler, with no optional chaining; a test that the dash's overlay row gets a
+  `null` shape; `WorldObjectStore.destroyedIds` removed (no caller; the test keeps its check
+  through `snapshot().isDestroyed`); the two status entries in architecture 10 and 02 marked
+  "updated 2026-11-14"; comment wording. Built better-than-design item H: `WithoutTimes` now
+  sits beside `InTicks` in `content/abilities/AbilityDefinition.types.ts`. INBOX HC-Q56: item
+  (4) corrected, item (5) added (one subscriber for a retired map object, not built). Both new
+  tests failed first: the dash test before the fix ("expected [Function] to throw an error"),
+  the overlay test with `shape ?? null` changed to `shape` ("expected undefined to be null").
+- Checks run: `npm run check` → `EXIT=0`: core "Test Files 277 passed (277)", "Tests 1590
+  passed (1590)"; protocol "Tests 18 passed (18)"; client "Test Files 290 passed (290)", "Tests
+  1965 passed (1965)"; server "Tests 79 passed (79)"; "All matched files use Prettier code
+  style!"; "Documentation check passed."
+- Next step: the PR into `phase/3-sprint-3-work`; the owner's answers to HC-Q48, HC-B5, HC-B6
+  and HC-Q54..Q56; a browser check of the aim overlay; then the per-class PRs, the Vanguard
+  first.
+
+### 2026-11-14 — Phase 4 / sprints 4.2–4.3 and 4.7: ability framework, merge of phase/3 (#85, #86) — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (#85, #86) into PR #123 (`ba5e34aa`; conflict
+  notes in its commit message). Correction to the round 3 entry: `WorldObjectStore.destroyedIds`
+  is kept, not removed, because a new phase/3 owner test reads it. Merge breaks fixed in
+  `TargetQuery`, `DefaultSystemPipeline` and `pickReadySlot` tests. The ability replay
+  `abilityCastsSeed11.replay.ts` was regenerated: it diverged at tick 350 only because of DEC-188
+  out-of-combat healing (without `OutOfCombatHealingSystem` the old hashes passed 2/2);
+  checkpoints 0-300 and the commands are unchanged. No critic reviewed the r3 fixes or the merges
+  (three rounds is the owner's maximum).
+- Checks run: `npm run check` → `EXIT=0`: core "Test Files 287 passed (287)", "Tests 1711
+  passed (1711)"; protocol "Tests 18 passed (18)"; client "Test Files 290 passed (290)", "Tests
+  1965 passed (1965)"; server "Tests 79 passed (79)"; "All matched files use Prettier code
+  style!"; "Documentation check passed."
+- Next step: push and update the PR #123 body (owner); the owner's answers to HC-Q48, HC-B5,
+  HC-B6 and HC-Q49..Q56; a browser check of the aim overlay; then the Vanguard PR.
+
+### 2026-11-15 — Phase 4 / sprints 4.2–4.3 and 4.7: ability framework, merge of phase/3 (#79, #93) — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` `fcc48a7b` (#79, #93) into PR #123; 38 files
+  conflicted, both sides kept (notes in the merge commit). `MovementSystem` keeps forced motion
+  and faces the entity's own velocity (DEC-192), so a push does not turn it (new test; it failed
+  first with facing on the whole step: "expected { x: +0, y: 1 } to deeply equal { x: 1, y: +0 }").
+  Merge breaks fixed in five core and client tests. The ability replay was regenerated: phase/3
+  now hashes facing and the scoring state; with those two fields left out the old hashes passed
+  2/2, and the commands and checkpoint 0 are unchanged. The INBOX clash is gone: #93's item is
+  HC-Q57. No critic reviewed the merge.
+- Checks run: `npm run check` → `EXIT=0`: core "Test Files 295 passed (295)", "Tests 1837
+  passed (1837)"; protocol "Tests 18 passed (18)"; client "Test Files 299 passed (299)", "Tests
+  2061 passed (2061)"; server "Tests 79 passed (79)"; "All matched files use Prettier code
+  style!"; "Documentation check passed."
+- Next step: push and update the PR #123 body (owner); a teammate's review; the owner's answers
+  to HC-Q48, HC-B5, HC-B6 and HC-Q49..Q56; a browser check of the aim overlay.
+
+### 2026-11-17 — Phase 3 / sprint 3.1 — feat/character-sprites — Gurshaan + Codex
+
+- What was done: restored all eight repaired character atlases (both resolutions) and five
+  selection portrait sets from `2a53e882` onto Phase 3 `af54fe96`, at the user's explicit request.
+  Restored the resource-facade loader, renderer, subclass mappings and cast effects; adapted
+  animations to existing Phase 3 events without restoring the parallel core ability stack.
+  Recorded outstanding PR #90 owner/licence concerns; restoration is not owner sign-off.
+- Checks run: `npm run check` passed (exit 0): 1,637 core, 2,072 client, 29 protocol and 84 server
+  tests, coverage, static checks and builds. Verbatim tail: `Checked 133 Markdown files under docs/.`
+  `Documentation check passed.` Focused sprite/wiring tests: 98 + 50 passed. Initial non-null
+  assertion and optional-property errors in new test fixtures were corrected before the passing run.
+- Next step: review this separate presentation branch and resolve the outstanding asset proposals
+  with the owner before PR approval. No commit or push made; core gameplay and dependencies unchanged.

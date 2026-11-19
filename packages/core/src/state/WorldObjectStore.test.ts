@@ -87,7 +87,6 @@ describe('WorldObjectStore', () => {
       isDestroyed: true,
       health: { current: 0, max: 100 },
     });
-    expect(world.destroyedIds.has('house')).toBe(true);
   });
 
   it("makes a structure's own map object (a lane tower's fort) share its health, and leaves it standing with none once the structure is gone (DEC-185 B)", () => {

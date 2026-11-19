@@ -1,6 +1,10 @@
+import { CastValidator } from '../abilities/CastValidator';
+import { createDefaultAbilityRegistry } from '../abilities/defaultAbilityRegistry';
 import { DamagePipeline } from '../combat/DamagePipeline';
 import { Footprint } from '../components/Footprint';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
+import { AETHER_REGEN } from '../content/abilities/aetherRegen';
+import { loadAbilities } from '../content/abilities/loadAbilities';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
 import { STUCK_DETECTION } from '../content/ai/stuckDetection';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
@@ -13,6 +17,8 @@ import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { OPENING_WAVE, SPAWN_WAVES } from '../content/structures/spawnWaves';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { LaneFlowFields } from '../map/LaneFlowFields';
+import { AbilitySystem } from './AbilitySystem';
+import { AetherRegenSystem } from './AetherRegenSystem';
 import type { GameState } from '../state/GameState';
 import type { Rect } from '../utils/geometry.types';
 import { CaptureSystem } from './CaptureSystem';
@@ -43,15 +49,16 @@ import { SystemPipeline } from './SystemPipeline';
 
 /**
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
- * progress, statuses, movement, collision (DEC-121 (c): every later reader sees resolved
- * positions), the neighbour index, stuck detection (DEC-193), steering, combat, map destruction,
- * progression (kill XP), minion veterancy, structure losses and breakability, spawning, enraging,
- * out-of-combat healing (DEC-188), death, capture points, the match director, then invariants
- * last. Combat runs after movement, so a unit with a target in reach faces it, not its own way
- * (DEC-192). This is the one place a system is added, at its position in the tick (architecture
- * 02 §9). It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the
- * status effects loaded for this match's config) and hands them to the systems that need them, so
- * a damage step applies to every hit and every status event comes from one place.
+ * progress, the queued casts, aether regeneration, statuses, movement, collision (DEC-121 (c):
+ * every later reader sees resolved positions), the neighbour index, stuck detection (DEC-193),
+ * steering, combat, map destruction, progression (kill XP), minion veterancy, structure losses and
+ * breakability, spawning, enraging, out-of-combat healing (DEC-188), death, capture points, the
+ * match director, then invariants last. Combat runs after movement, so a unit with a target in
+ * reach faces it, not its own way (DEC-192). This is the one place a system is added, at its
+ * position in the tick (architecture 02 §9).
+ * It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the status effects
+ * loaded for this match's config) and hands them to the systems that need them, so a damage step
+ * applies to every hit and every status event comes from one place.
  */
 export class DefaultSystemPipeline extends SystemPipeline {
   /** Creates the pipeline from its injected parts (`DefaultSystemPipelineOptions`). */
@@ -62,6 +69,8 @@ export class DefaultSystemPipeline extends SystemPipeline {
     director,
     duelStarts,
     hordes,
+    abilities = createDefaultAbilityRegistry(loadAbilities(state.config.tickRate)),
+    validator = new CastValidator(abilities),
     structures = STRUCTURE_DEFINITIONS,
   }: DefaultSystemPipelineOptions) {
     const { tickRate, map } = state.config;
@@ -99,6 +108,9 @@ export class DefaultSystemPipeline extends SystemPipeline {
     }
     super([
       ...(hordes === undefined ? [] : [...hordes.decide, new HordeSystem(state, HORDE_STEERING)]),
+      new AbilitySystem(abilities, validator, damage, statuses),
+      // After the casts, so a cast spends before the tick's regeneration (plan arch call 13).
+      new AetherRegenSystem(AETHER_REGEN, tickRate),
       new StatusEffectSystem(damage, statuses),
       new MovementSystem(),
       ...(hordes?.collisions ?? []),

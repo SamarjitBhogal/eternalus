@@ -21,6 +21,7 @@ const initialState: DisplayCatalogue = {
     enemyRover: 'mirror-player',
     difficulties: { laner: '', rover: '' },
   },
+  abilities: [],
   verdictLines: {},
   sovereignNames: { light: '', dark: '' },
 };

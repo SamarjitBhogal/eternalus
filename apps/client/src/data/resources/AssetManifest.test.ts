@@ -2,6 +2,9 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import { ASSET_LICENCES } from './assetLicences';
 import { ASSET_MANIFEST } from './AssetManifest';
+import { ATTACHMENT_REFERENCES } from './attachmentReferences';
+import { hasAssetProvenance } from './assetProvenance';
+import legendProvenance from '../../../../../docs/reference/legend-sprite-provenance.md?raw';
 import type {
   AssetFile,
   AssetGroup,
@@ -149,9 +152,16 @@ describe('ASSET_MANIFEST', () => {
     expect(files.filter((file) => !/^[0-9a-f]{64}$/.test(file.hash))).toEqual([]);
   });
 
-  it('licenses every entry and names its Figma node or download in its source', () => {
+  it('licenses every entry and verifies URL/Figma or documented attachment provenance (ADR 0028)', () => {
     expect(assets.filter((entry) => !(entry.licence in ASSET_LICENCES))).toEqual([]);
-    expect(assets.filter((entry) => !/\b\d+:\d+\b|https:\/\//.test(entry.source))).toEqual([]);
+    expect(
+      assets.filter(
+        (entry) =>
+          !hasAssetProvenance(entry, ATTACHMENT_REFERENCES, {
+            'docs/reference/legend-sprite-provenance.md': legendProvenance,
+          }),
+      ),
+    ).toEqual([]);
   });
 
   it('names both the owner and Phosphor in the source of the arcane intellect icon', () => {

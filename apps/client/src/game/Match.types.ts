@@ -1,4 +1,5 @@
 import type {
+  AbilityDisplay,
   EntityId,
   InputIntent,
   Logger,
@@ -7,6 +8,7 @@ import type {
   MapObject,
   MapPresentation,
   Simulation,
+  Vec2,
 } from '@eternalus/core';
 
 import type { BridgeEventMap } from '../bridge/events';
@@ -77,6 +79,14 @@ export type MatchSimulation = Pick<
   'tick' | 'step' | 'snapshot' | 'enqueueCommand' | 'on'
 >;
 
+/**
+ * How far a dash of up to `distance` metres by a caster of `radius` from `origin` along the unit
+ * `direction` may go before a wall or the map's edge stops it: the simulation's own rule
+ * (`Simulation.dashReach`, the one `DashEffect` casts with), so the range overlay never draws a
+ * dash the game will not give.
+ */
+export type DashReach = (origin: Vec2, direction: Vec2, distance: number, radius: number) => number;
+
 /** How an online Duel differs from a local match for `Match` (ADR 0016 point 1). */
 type RemotePlayer = {
   /** The player's Legend from the server's `match-found`; never `snapshot.match.humanLegendId`. */
@@ -87,6 +97,7 @@ type RemotePlayer = {
 
 /** Everything a `Match` is wired from (architecture 08 §7). */
 export type MatchDeps = {
+  readonly playerSpecId?: string | null;
   readonly simulation: MatchSimulation;
   /** Set for an online Duel: replaces the local `PlayerCommands` and the snapshot's human Legend. */
   readonly remote?: RemotePlayer;
@@ -100,6 +111,16 @@ export type MatchDeps = {
   readonly input: IntentSource;
   /** Where client-side problems are reported (e.g. a kind drawn with the default view). */
   readonly logger: Logger;
+  /** Every ability's display data (`DisplayCatalogue.abilities`): the range overlay draws from it. */
+  readonly abilities: readonly AbilityDisplay[];
+  /**
+   * How far the player's dash really goes, for the range overlay: the local simulation's
+   * `dashReach`. Absent online, where a Duel shows no range overlay (it casts no abilities yet,
+   * ADR 0016); a dash is then drawn its whole distance.
+   * ponytail: when the server reads the intent's `triggered` slots, the overlay needs the wall
+   * clamp from the server or a client-side copy of the walls.
+   */
+  readonly dashReach?: DashReach;
   /** Hears the match crash or end (the request's observer). */
   readonly observer: MatchObserver;
   /** Where the match's `MatchBridge` publishes, and what (architecture 08 §7). */

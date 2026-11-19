@@ -19,15 +19,24 @@ Abilities are data composed from `AbilityEffect` strategies. Follow
    `artifacts/`, `status-effects/`) with an immutable definition: display name, slot, cooldown
    ticks, aether cost, targeting, `effects[]`, `varieties[]`, `restrictions[]`. Every number is
    `// TUNE:` until balanced.
-3. Effect: only if no existing `AbilityEffect` (damage, heal, buff, debuff, dash, knockback,
-   zone, projectile, summon, reveal) fits, add
-   `packages/core/src/abilities/effects/<Name>Effect.ts` implementing `AbilityEffect`, and one
-   registration line in `AbilityRegistry`.
+3. Effect or shape: only if no registered `AbilityEffect` (`defaultAbilityRegistry.ts` lists
+   them) fits, add `packages/core/src/abilities/effects/<Name>Effect.ts` implementing
+   `AbilityEffect`: `validate(spec)` (its own fields; "a typo fails at boot"),
+   `describe(spec, nested)` (its aim-overlay rows) and `apply(spec, cast)`. A new area kind is
+   `abilities/shapes/<Name>Shape.ts` implementing `AreaShape` (`validate`, `overlaps`,
+   `overlapsPolygon`, `centreFor`) plus a painter in the client's `aimShapePainters.ts`. Add the
+   spec type to the union in `content/abilities/AbilityDefinition.types.ts`, then one
+   `registerEffect` / `registerShape` line in `defaultAbilityRegistry.ts`, injecting any content
+   the class reads. Never edit `loadAbilities` or `loadDisplayContent` for a kind: the loader
+   converts every `<name>Seconds` field to `<name>Ticks` and the registry runs each strategy's
+   `validate` in `resolveAll` at boot.
 4. Restrictions: add an `AbilityRestriction` predicate only if a new kind of rule is needed
    ("only near a BuffTower", "not while carrying"); otherwise reuse and configure in content.
 5. Tests: a scenario test that casts the ability in a minimal `GameState` and asserts the
-   effects, cooldown and aether accounting over ticks; a determinism check; for weapons, an
-   `AttackStrategy` test with the on-hit effects.
+   effects, cooldown and aether accounting over ticks; a determinism check; for a new effect or
+   shape class, its `validate` and `describe` (or `overlapsPolygon`) in its own test and the
+   boot failure in `defaultAbilityRegistry.test.ts`; for weapons, an `AttackStrategy` test with
+   the on-hit effects.
 6. HUD: nothing to change - `AbilityBar` reads slots and `<KeyGlyph action="ability-n"/>`
    shows the current binding. If you think the HUD must change, stop and explain.
 7. Append to `docs/plan/PROGRESS.md`; run `npm run check`; report verbatim. No commits unless

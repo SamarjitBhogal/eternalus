@@ -4,7 +4,7 @@ description: The "single access with a controller in front" design for local dat
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-17
 tags: [architecture, persistence, indexeddb, repositories, dto, migrations, resources, assets]
 paths: ['apps/client/src/data/**']
 related:
@@ -583,6 +583,10 @@ detail:
   and no `assets/manifest.json` is generated. `AboutScreen` lists the manifest's credits, each
   with its licence text (the `credits` event into `assetsSlice`), so the OFL and MIT notices ship
   in the built game.
+
+### Character sprite restoration — implementation status (2026-11-17)
+
+Character sprite atlases load through the existing ResourceController manifest, SpriteAtlasLoader and match group. Selection portraits use the existing selection group and rendition path. Renderer receives prepared atlas handles; views never fetch or decode files. The restored provenance and budget proposals remain subject to the outstanding PR 90 owner/licence review; restoration is not evidence of owner approval.
 
 ## Related
 

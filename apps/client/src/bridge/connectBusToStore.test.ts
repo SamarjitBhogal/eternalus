@@ -34,6 +34,18 @@ function connected() {
   return { bus, store, disconnect };
 }
 
+describe('connectBusToStore aiming slot', () => {
+  it('copies aiming-slot into the HUD slice at once, and a new match clears it', () => {
+    const { bus, store } = connected();
+
+    bus.emit('aiming-slot', { slot: 'ability-3' });
+    expect(store.getState().hud.aimingSlot).toBe('ability-3');
+    bus.emit('match-setup', DRAFT);
+
+    expect(store.getState().hud.aimingSlot).toBeNull();
+  });
+});
+
 describe('connectBusToStore', () => {
   it('copies minimap-visibility into the view slice', () => {
     const { bus, store } = connected();
@@ -90,6 +102,7 @@ describe('connectBusToStore', () => {
         enemyRover: 'mirror-player',
         difficulties: { laner: 'normal', rover: 'rover' },
       },
+      abilities: [],
       verdictLines: {},
       sovereignNames: { light: 'Queen', dark: 'Tyrant' },
     };

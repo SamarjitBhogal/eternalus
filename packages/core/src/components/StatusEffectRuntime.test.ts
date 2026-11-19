@@ -57,4 +57,40 @@ describe('StatusEffectRuntime', () => {
     expect(new StatusEffectRuntime(stun).start(stun, null, 0).hasExpired(60)).toBe(true);
     expect(new StatusEffectRuntime(enraged).start(enraged, null, 0).hasExpired(1e9)).toBe(false);
   });
+
+  it('lasts a source’s own duration when it overrides the definition’s', () => {
+    const stun = LOADED.get('stun'); // 2 s = 60 ticks by default
+
+    const runtime = new StatusEffectRuntime(stun).start(stun, 'a', 10, 15);
+    expect(runtime.expiresTick).toBe(25);
+
+    runtime.reapply('b', 20, 45);
+    expect(runtime.expiresTick).toBe(65);
+
+    runtime.reapply('b', 30);
+    expect(runtime.expiresTick).toBe(30 + 60);
+  });
+
+  it('never shortens the time left when reapplied for less: the later expiry wins', () => {
+    const stun = LOADED.get('stun');
+
+    // 2 s (60 ticks) of stun left, then a 0.5 s (15 tick) Blade Runner stun: 2 s stay.
+    const long = new StatusEffectRuntime(stun).start(stun, 'a', 100);
+    long.reapply('b', 100, 15);
+    expect(long.expiresTick).toBe(160);
+
+    // 0.2 s (6 ticks) left, then the same 0.5 s stun: 0.5 s from now.
+    const short = new StatusEffectRuntime(stun).start(stun, 'a', 100, 6);
+    short.reapply('b', 100, 15);
+    expect(short.expiresTick).toBe(115);
+  });
+
+  it('stays permanent when a permanent status is reapplied with an override', () => {
+    const enraged = LOADED.get('enraged');
+    const runtime = new StatusEffectRuntime(enraged).start(enraged, 'a', 0);
+
+    runtime.reapply('a', 5, 30);
+
+    expect(runtime.expiresTick).toBeNull();
+  });
 });

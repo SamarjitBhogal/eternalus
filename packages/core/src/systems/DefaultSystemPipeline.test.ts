@@ -1,4 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { loadAbilities } from '../content/abilities/loadAbilities';
+import { CastValidator } from '../abilities/CastValidator';
+import { createDefaultAbilityRegistry } from '../abilities/defaultAbilityRegistry';
 
 import { TEST_DEBUG_CONFIG } from '../diagnostics/InvariantRunner.constants';
 
@@ -52,6 +55,7 @@ describe('DefaultSystemPipeline', () => {
       invariants: new DefaultInvariantRunner({
         debug: TEST_DEBUG_CONFIG,
         logger,
+        abilities: loadAbilities(30),
         curves: PROGRESSION.curves,
         phaseOrder: MATCH_PHASES,
         terminalPhases: TERMINAL_MATCH_PHASES,
@@ -86,7 +90,43 @@ describe('DefaultSystemPipeline', () => {
     expect(logger.records).toEqual([]);
   });
 
-  it('runs the horde systems in the order of architecture 10 §9, 11 §3 and 18 §3.2, collision right after movement (DEC-121 (c)), stuck detection before steering (DEC-193)', () => {
+  it('checks each queued cast with the validator it is given: one CastValidator per match', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const abilities = createDefaultAbilityRegistry(loadAbilities(30));
+    const validator = new CastValidator(abilities);
+    const blockedBy = vi.spyOn(validator, 'blockedBy').mockReturnValue('restricted');
+    const pipeline = new DefaultSystemPipeline({
+      invariants: new DefaultInvariantRunner({
+        debug: TEST_DEBUG_CONFIG,
+        logger: new MemoryLogger(),
+        abilities: loadAbilities(30),
+        curves: PROGRESSION.curves,
+        phaseOrder: MATCH_PHASES,
+        terminalPhases: TERMINAL_MATCH_PHASES,
+      }),
+      state,
+      progression: PROGRESSION,
+      director: IDLE_DIRECTOR,
+      abilities,
+      validator,
+    });
+    const warrior = newFactory().create('warrior', 'warrior', {
+      position: { x: 0, y: 0 },
+      team: 'light',
+    });
+    state.entities.add(warrior);
+    state.entities.queueCast(warrior.id, 'ability-1', { point: { x: 5, y: 0 }, targetId: null });
+    const rejected: string[] = [];
+    state.events.on('command-rejected', ({ reason }) => rejected.push(reason));
+
+    pipeline.run({ state, logger: new MemoryLogger() });
+
+    expect(blockedBy).toHaveBeenCalledOnce();
+    expect(rejected).toEqual(['restricted']);
+    blockedBy.mockRestore();
+  });
+
+  it('runs the horde systems in the order of architecture 10 §9, 11 §3 and 18 §3.2, collision right after movement (DEC-121 (c)), the casts and aether regeneration before statuses (plan arch call 13), stuck detection before steering (DEC-193)', () => {
     const logger = new MemoryLogger();
     const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
     const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP), {
@@ -104,6 +144,7 @@ describe('DefaultSystemPipeline', () => {
       invariants: new DefaultInvariantRunner({
         debug: TEST_DEBUG_CONFIG,
         logger,
+        abilities: loadAbilities(30),
         curves: PROGRESSION.curves,
         phaseOrder: MATCH_PHASES,
         terminalPhases: TERMINAL_MATCH_PHASES,
@@ -124,6 +165,8 @@ describe('DefaultSystemPipeline', () => {
     expect(pipeline.names).toEqual([
       'ai',
       'hordes',
+      'abilities',
+      'aether-regen',
       'status-effects',
       'movement',
       'collision',
@@ -152,6 +195,7 @@ describe('DefaultSystemPipeline', () => {
       invariants: new DefaultInvariantRunner({
         debug: TEST_DEBUG_CONFIG,
         logger,
+        abilities: loadAbilities(30),
         curves: PROGRESSION.curves,
         phaseOrder: MATCH_PHASES,
         terminalPhases: TERMINAL_MATCH_PHASES,
@@ -188,6 +232,7 @@ describe('DefaultSystemPipeline', () => {
       invariants: new DefaultInvariantRunner({
         debug: TEST_DEBUG_CONFIG,
         logger,
+        abilities: loadAbilities(30),
         curves: PROGRESSION.curves,
         phaseOrder: MATCH_PHASES,
         terminalPhases: TERMINAL_MATCH_PHASES,
@@ -224,6 +269,7 @@ describe('DefaultSystemPipeline', () => {
       invariants: new DefaultInvariantRunner({
         debug: TEST_DEBUG_CONFIG,
         logger,
+        abilities: loadAbilities(30),
         curves: PROGRESSION.curves,
         phaseOrder: MATCH_PHASES,
         terminalPhases: TERMINAL_MATCH_PHASES,
@@ -261,6 +307,7 @@ describe('DefaultSystemPipeline', () => {
       invariants: new DefaultInvariantRunner({
         debug: TEST_DEBUG_CONFIG,
         logger,
+        abilities: loadAbilities(30),
         curves: PROGRESSION.curves,
         phaseOrder: MATCH_PHASES,
         terminalPhases: TERMINAL_MATCH_PHASES,
@@ -329,6 +376,7 @@ describe('DefaultSystemPipeline', () => {
       invariants: new DefaultInvariantRunner({
         debug: TEST_DEBUG_CONFIG,
         logger,
+        abilities: loadAbilities(30),
         curves: PROGRESSION.curves,
         phaseOrder: MATCH_PHASES,
         terminalPhases: TERMINAL_MATCH_PHASES,
@@ -357,6 +405,7 @@ describe('DefaultSystemPipeline', () => {
       invariants: new DefaultInvariantRunner({
         debug: TEST_DEBUG_CONFIG,
         logger,
+        abilities: loadAbilities(30),
         curves: PROGRESSION.curves,
         phaseOrder: MATCH_PHASES,
         terminalPhases: TERMINAL_MATCH_PHASES,
@@ -462,6 +511,7 @@ describe('DefaultSystemPipeline', () => {
         invariants: new DefaultInvariantRunner({
           debug: TEST_DEBUG_CONFIG,
           logger: new MemoryLogger(),
+          abilities: loadAbilities(30),
           curves: PROGRESSION.curves,
           phaseOrder: MATCH_PHASES,
           terminalPhases: TERMINAL_MATCH_PHASES,
@@ -518,6 +568,7 @@ describe('DefaultSystemPipeline', () => {
       invariants: new DefaultInvariantRunner({
         debug: TEST_DEBUG_CONFIG,
         logger,
+        abilities: loadAbilities(30),
         curves: PROGRESSION.curves,
         phaseOrder: MATCH_PHASES,
         terminalPhases: TERMINAL_MATCH_PHASES,
