@@ -5,7 +5,7 @@ import type { GuardRespawnRule } from './GuardRoster.types';
 /**
  * The `group` respawn (forest camps, 18 §7.1): an emptied post has no respawn time while another
  * post of its home still holds a guard. When the home's last guard is lost, every post of the home
- * comes back `respawnSeconds` later, together, and the home is announced with `camp-cleared`,
+ * comes back `respawn.seconds` later, together, and the home is announced with `camp-cleared`,
  * naming whoever killed that last guard and their team.
  */
 export class GroupGuardRespawn implements GuardRespawnRule {

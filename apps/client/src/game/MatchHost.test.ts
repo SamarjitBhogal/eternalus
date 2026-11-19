@@ -11,6 +11,7 @@ import { FakeViewportCanvas } from './FakeViewportCanvas';
 import { InputMapper } from './input/InputMapper';
 import { PRESETS } from './input/keybindings';
 import { MatchHost } from './MatchHost';
+import { KEY_ZOOM_STEP } from './MatchHost.constants';
 import { settingsWithDefaults } from './settings/settingsState';
 
 /** A host over fakes, with a stub match and adapters that log their calls in order. */
@@ -37,6 +38,7 @@ function setUp(options: { readonly isStartThrowing?: boolean } = {}) {
       lookAtMinimapPoint: vi.fn(() => false),
       panBy: vi.fn(),
       zoomBy: vi.fn(),
+      toggleMiniMap: vi.fn(),
       clickAt: vi.fn(() => false),
       hasDeveloperRoofs: false,
       overview: vi.fn(),
@@ -152,6 +154,29 @@ describe('MatchHost', () => {
     expect(ctrlShiftF3.defaultPrevented).toBe(true);
     expect(chrome.onExplorerChanged.mock.calls).toEqual([[true], [false]]);
     expect(canvas.listenerCount('wheel')).toBe(0);
+  });
+
+  it('zooms one step in on =, and one step out on -, through the match controls', () => {
+    const { host, window, match } = setUp();
+    host.start();
+
+    const zoomIn = fakeKeyEvent('keydown', 'Equal');
+    window.dispatchEvent(zoomIn);
+    window.dispatchEvent(fakeKeyEvent('keydown', 'Minus'));
+    window.dispatchEvent(fakeKeyEvent('keydown', 'Equal', { repeat: true }));
+
+    expect(zoomIn.defaultPrevented).toBe(true);
+    expect(match.controls.zoomBy.mock.calls).toEqual([[KEY_ZOOM_STEP], [1 / KEY_ZOOM_STEP]]);
+  });
+
+  it('toggles the minimap on M, not on a held repeat', () => {
+    const { host, window, match } = setUp();
+    host.start();
+
+    window.dispatchEvent(fakeKeyEvent('keydown', 'KeyM'));
+    window.dispatchEvent(fakeKeyEvent('keydown', 'KeyM', { repeat: true }));
+
+    expect(match.controls.toggleMiniMap).toHaveBeenCalledTimes(1);
   });
 
   it('ignores F3 without both modifiers, with an extra one, and a held repeat (DEC-105)', () => {

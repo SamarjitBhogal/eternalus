@@ -33,6 +33,18 @@ export class MiniMapView {
     private readonly centre: () => WorldPoint,
   ) {}
 
+  private isShown = true;
+
+  /** Whether the player has the minimap on (DEC-147); hidden, it draws nothing and takes no click. */
+  public get isVisible(): boolean {
+    return this.isShown;
+  }
+
+  /** Shows the minimap if hidden, hides it if shown (the player's own setting, DEC-147). */
+  public toggle(): void {
+    this.isShown = !this.isShown;
+  }
+
   /** The ring's ellipse box on a screen of the given size, in screen pixels. */
   public areaFor(screenWidth: number, screenHeight: number): ScreenRect {
     const { box } = this.ring;
@@ -74,6 +86,9 @@ export class MiniMapView {
     screenWidth: number,
     screenHeight: number,
   ): WorldPoint | null {
+    if (!this.isShown) {
+      return null;
+    }
     const area = this.areaFor(screenWidth, screenHeight);
     const radiusX = area.width / 2;
     const radiusY = area.height / 2;
@@ -94,6 +109,9 @@ export class MiniMapView {
    * the scene within `MINI_MAP_VIEW_RADIUS` of the centre (north up), then a marker at the middle.
    */
   public draw(renderer: Renderer, screenWidth: number, screenHeight: number): void {
+    if (!this.isShown) {
+      return;
+    }
     const area = this.areaFor(screenWidth, screenHeight);
     const projection = this.projectionFor(screenWidth, screenHeight);
     renderer.clipToEllipse(area, () => {

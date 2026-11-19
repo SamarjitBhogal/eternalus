@@ -38,6 +38,7 @@ import { StuckSystem } from './StuckSystem';
 import { VeterancySystem } from './VeterancySystem';
 import { MINION_VETERANCY } from '../content/mobs/minionVeterancy';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
+import { ZONE_LOCKING_MOBS } from '../content/zones/zoneLocks';
 import { GUARD_PLANS } from '../content/structures/guardPlans';
 import { StatusEffectSystem } from './StatusEffectSystem';
 import { SystemPipeline } from './SystemPipeline';
@@ -131,7 +132,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
               steering: HORDE_STEERING,
               weights: LANE_ASSESSMENT_WEIGHTS,
               formationId: RANKS_FORMATION.id,
-              guards: GUARD_PLANS,
+              guards: hordes.guards ?? GUARD_PLANS,
             }),
             new EnragedSystem(state, statuses, ENRAGING_STRUCTURES),
           ]),
@@ -139,7 +140,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
       ...(duelStarts === undefined ? [] : [new DuelRoundSystem(duelStarts)]),
       new OutOfCombatHealingSystem(state, OUT_OF_COMBAT_HEALING),
       new DeathSystem(),
-      new CaptureSystem(state.config.match.capturePoints, tickRate),
+      new CaptureSystem(state.config.match.capturePoints, tickRate, ZONE_LOCKING_MOBS),
       // After death, so an objective lost this tick can end the match this tick (12 §1).
       new MatchDirectorSystem(director),
       new InvariantSystem(invariants),
