@@ -9458,3 +9458,24 @@ docs:check` pass on this entry.
   `prettier --check` and `npm run docs:check` with this entry.
 - Next step: push; claudiodh re-reviews #98; merge this head into `refactor/tower-ruins-followups`
   (#122).
+
+### 2026-11-19 — Phase 3 / tower ruins follow-ups: merge #98's head (phase/3 `d85bc2f5`) — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: merged `feat/tower-ruins-and-routes` at `86d70353` (its merge of phase/3
+  `d85bc2f5`: the DEC-242 split PRs #119, #120, #121 and #99, #101, #102, #113, #126, #127) as
+  `3293d7c6`. Three files conflicted, all docs; in each both sides added text at the same place:
+  `INBOX.md` keeps this branch's BT2 item, then #98's new items; `03-game-model.md` takes the
+  later `last-reviewed` (2026-11-14); this file keeps both sides, oldest first. No code
+  conflicts. This branch's required `DefaultSystemPipelineOptions.ruinWall` (BTD3) and its
+  one-grid `MatchWorld` hold at phase/3's new call sites: every `new DefaultSystemPipeline`
+  passes `ruinWall` and every `new MatchWorld` takes one `MatchGrid`. This branch's own diff
+  over its base is unchanged by the merge (sorted added and removed lines of `d8d89bf7..c671628b`
+  and `86d70353..3293d7c6` compared: only doc 03's base `last-reviewed` and one blank line after
+  the BT2 item in `INBOX.md` differ).
+- Checks run: `npm ci`, then full `npm run check` exit 0 on the merged tree `1639473a` before
+  this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-122-merge-86d70353.log`): core "Tests 1715
+  passed (1715)", protocol "Tests 29 passed (29)", client "Tests 2011 passed (2011)", server
+  "Tests 84 passed (84)", "Documentation check passed."; then `prettier --check` and
+  `npm run docs:check` with this entry.
+- Next step: push after #98's head `86d70353` is on origin; claudiodh re-reviews #98, then #122.
