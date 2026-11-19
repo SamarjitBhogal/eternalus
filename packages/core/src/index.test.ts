@@ -74,6 +74,7 @@ describe('@eternalus/core public API', () => {
           { entryId: 'mid-game', tick: 27_000 },
           { entryId: 'end-game', tick: 40_500 },
         ],
+        countdownEndTick: 300,
         humanLegendId: null,
       },
       entities: [],

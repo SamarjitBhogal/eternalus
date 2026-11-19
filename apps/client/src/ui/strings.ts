@@ -261,8 +261,8 @@ export const STRINGS = {
     duelScore: 'Duel score',
     /** "3 - 1" with the target beside it: "first to 10". */
     duelFirstTo: (target: number): string => `first to ${String(target)}`,
-    duelCountdown: 'Match start',
-    duelStart: 'START',
+    matchCountdown: 'Match start',
+    countdownStart: 'START',
     health: 'Health',
     aether: 'Aether',
     level: 'Level',

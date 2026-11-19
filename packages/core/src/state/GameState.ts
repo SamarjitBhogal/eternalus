@@ -1,5 +1,6 @@
 import { Health } from '../components/Health';
 import { TeamMembership } from '../components/TeamMembership';
+import { countdownTicks } from '../config/countdownTicks';
 import type { GameConfig } from '../config/GameConfig.types';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
@@ -244,6 +245,7 @@ export class GameState {
         phase,
         phaseEnteredTick,
         upcoming: schedule.slice(timelineCursor),
+        countdownEndTick: countdownTicks(this.config.match.countdownSeconds, this.config.tickRate),
         humanLegendId,
         ...(duel !== null && { duel }),
       },

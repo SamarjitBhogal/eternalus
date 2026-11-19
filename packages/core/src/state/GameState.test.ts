@@ -145,7 +145,13 @@ describe('GameState', () => {
     state.advanceTick();
     expect(state.snapshot(CURVES)).toEqual({
       tick: 1,
-      match: { phase: 'countdown', phaseEnteredTick: 0, upcoming: [], humanLegendId: null },
+      match: {
+        phase: 'countdown',
+        phaseEnteredTick: 0,
+        upcoming: [],
+        countdownEndTick: 300,
+        humanLegendId: null,
+      },
       entities: [
         {
           id: 'entity-1',
@@ -342,6 +348,7 @@ describe('GameState', () => {
         phase: 'early-game',
         phaseEnteredTick: 0,
         upcoming: [{ entryId: 'mid-game', tick: 900 }],
+        countdownEndTick: 300,
         humanLegendId: null,
       });
     });

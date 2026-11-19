@@ -122,7 +122,7 @@ describe('the countdown (scenario)', () => {
     expect(changes).toEqual([{ tick: 300, from: 'countdown', to: 'early-game' }]);
   });
 
-  it('lists the unfired timeline marks in the snapshot, before and after the countdown ends', () => {
+  it("lists the unfired timeline marks and the countdown's end tick in the snapshot, before and after the countdown ends (DEC-278)", () => {
     const sim = newMatch();
     const later = [
       { entryId: 'quarter-mark', tick: 13_500 },
@@ -134,6 +134,7 @@ describe('the countdown (scenario)', () => {
       phase: 'countdown',
       phaseEnteredTick: 0,
       upcoming: [{ entryId: 'countdown-over', tick: COUNTDOWN_TICKS }, ...later],
+      countdownEndTick: COUNTDOWN_TICKS,
       humanLegendId: null,
     });
     stepTo(sim, COUNTDOWN_TICKS + 1);
@@ -141,6 +142,7 @@ describe('the countdown (scenario)', () => {
       phase: 'early-game',
       phaseEnteredTick: COUNTDOWN_TICKS,
       upcoming: later,
+      countdownEndTick: COUNTDOWN_TICKS,
       humanLegendId: null,
     });
   });
