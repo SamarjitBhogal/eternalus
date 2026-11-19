@@ -4,7 +4,7 @@ description: The coding-agent harness as it exists in the repository (instructio
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-29
+last-reviewed: 2026-11-19
 tags: [architecture, agents, harness, hooks, skills, verification]
 paths: ['.claude/**', '.agents/**', 'scripts/hooks/**', 'docs/agents/**']
 related:
@@ -51,7 +51,7 @@ flowchart LR
   C --> D[Edit with tests]
   D --> E[PostToolUse hook: prettier and eslint on the file]
   E -->|exit 2| D
-  D --> F[Stop hook: npm run check:quick]
+  D --> F[Stop hook: checks on changed files]
   F -->|exit 2, once| D
   F --> G[verify skill: npm run check, PROGRESS entry]
   G --> G2[pre-PR gate, ADR 0010: critic, ponytail, npm run check again]
@@ -73,7 +73,7 @@ flowchart LR
 | `scripts/hooks/hookInput.mjs`                                                  | Shared helpers: parse the JSON on stdin (never throw), resolve the repo root and the edited file, `run()` with timeout and `CI=1`, `tail()` for short output                                       | infra   |
 | `scripts/hooks/session-start.mjs`                                              | `SessionStart`: branch (warns on `main`), the reading order, open `INBOX.md` items, the last `PROGRESS.md` entry, the done-when reminder                                                           | guide   |
 | `scripts/hooks/post-edit.mjs`                                                  | `PostToolUse` on `Edit\|Write`: Prettier, then ESLint with zero warnings on the touched file; exit 2 surfaces findings                                                                             | sensor  |
-| `scripts/hooks/stop-check.mjs`                                                 | `Stop`: `npm run check:quick`; exit 2 blocks the stop once; `stop_hook_active` loop guard                                                                                                          | sensor  |
+| `scripts/hooks/stop-check.mjs`                                                 | `Stop`: checks only the changed files (skips when none; full `check:quick` when a lint or type config changed); exit 2 blocks the stop once; `stop_hook_active` loop guard                         | sensor  |
 | `.claude/skills/<name>/SKILL.md` (nine)                                        | The procedures of §5: `new-entity`, `new-system`, `new-ability`, `new-screen`, `new-content`, `pr-review`, `doc-gardening`, `verify`, `adr`                                                        | guide   |
 | `.agents/README.md`, `.agents/skills/<name>/SKILL.md`                          | Pointer stubs so Codex, Gemini CLI, Antigravity and Cursor discover the same nine skills; the procedure lives only in `.claude/skills/`                                                            | pointer |
 | `.claude/agents/architecture-reviewer.md`, `test-writer.md`, `doc-gardener.md` | The subagents of §6: a read-only evaluator, a tests-only writer, a docs maintainer                                                                                                                 | sensor  |
@@ -140,7 +140,7 @@ last lines rather than a wall of text.
 | ----------------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | `SessionStart`                | `session-start.mjs` (30 s) | Prints the branch and warns on `main`; the reading order (`AGENTS.md`, the package `AGENTS.md`, the architecture doc whose `paths` matches, the phase doc); the number of open `- [ ]` items in `INBOX.md`; the last `###` heading of `PROGRESS.md`; the done-when reminder | Always 0; stdout becomes context                                                                                   |
 | `PostToolUse` (`Edit\|Write`) | `post-edit.mjs` (120 s)    | `prettier --write` on `.ts .tsx .js .mjs .cjs .json .md .css .yml .yaml`, then `eslint --max-warnings 0` on `.ts .tsx .js .mjs .cjs`; only for files inside the repo                                                                                                        | 0 when clean; Prettier trouble is reported on stderr and never blocks; an ESLint failure exits 2 with the findings |
-| `Stop`                        | `stop-check.mjs` (300 s)   | `npm run check:quick` (typecheck + lint, the same command as the git hooks)                                                                                                                                                                                                 | 0 on pass; 2 with the failure tail; 0 immediately when `stop_hook_active` is `true`                                |
+| `Stop`                        | `stop-check.mjs` (300 s)   | Changed files only (DEC-276): none lintable → skip; a lint or type config changed → `npm run check:quick`; else no-JS check, `tsc -b`, ESLint on the changed files. A timeout exits 2 with its own message, not as a failure. Git hooks and CI still run the whole repo     | 0 on pass; 2 with the failure tail; 0 immediately when `stop_hook_active` is `true`                                |
 
 **Exit-code semantics.** Claude Code treats exit code 2 as the only blocking code; any other
 non-zero code is a non-blocking error (research §2), and what "block" means depends on the

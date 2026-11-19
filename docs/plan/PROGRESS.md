@@ -8604,3 +8604,10 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   (2005)"; server "Test Files 21 passed (21)", "Tests 84 passed (84)"; "✓ built in 3.09s";
   "Documentation check passed."
 - Next step: push `feat/capture-point-boss` and update the PR #99 body.
+
+### 2026-11-19 — Phase 3 / harness — chore/stop-hook-changed-files — Claude Code
+
+- What was done: the Stop hook now checks only changed files (DEC-276, owner "B: fix it"). New `scripts/hooks/changedFiles.mjs` (`git status --porcelain -z` parser and check planner) and `changedFiles.test.mjs` (`node --test`, like `scripts/coderabbit/`); `stop-check.mjs` skips on no lintable change, runs full `check:quick` on a lint/type config change, else no-JS + `tsc -b` + ESLint on the changed files; `run()` in `hookInput.mjs` reports `timedOut`, and a timeout exits 2 with its own message. Docs: 16, guardrails, tool-setup, decisions log.
+- Test break: removing `.mjs` from the lintable set turned "planChecks lints only the changed source files" red (pass 3, fail 1); restored, pass 4.
+- Checks run: `npm run check:quick` (2026-11-19, load average 44, took about 20 min) printed no findings after `> eslint --max-warnings 0 .`, exit 0; `node --test scripts/hooks/changedFiles.test.mjs` → pass 4, fail 0; `npm run docs:check` → "Documentation check passed."; prettier --check → "All matched files use Prettier code style!". Full `npm run check` did not complete under this load: CI is pending.
+- Next step: push; add `node --test scripts/hooks/changedFiles.test.mjs` to CI if wanted (not wired here).

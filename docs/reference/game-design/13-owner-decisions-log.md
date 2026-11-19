@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-14
+last-reviewed: 2026-11-19
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,14 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-19 (chat: harness fixes)
+
+The owner's answer of 2026-11-19, in chat, to the stop hook timing out under parallel load.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Docs changed                                                                                         |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| DEC-276 | **The Stop hook checks only the files this working tree changed.** With 5 to 11 sessions running ESLint at once, `npm run check:quick` took about 292 s and the 290 s timeout killed it, so the hook printed "Checks failing" with no error although a direct run exited 0. Options offered: raise the timeout, lint only changed files, leave it. Owner's pick: "B: fix it" (lint only changed files). Built: `scripts/hooks/stop-check.mjs` skips when no lintable source changed; runs the full `check:quick` when `package.json`, `tsconfig*.json` or `eslint.config.js` changed; else runs the no-JS check, `tsc -b` and ESLint on the changed files. A timeout still exits 2 but says it is a timeout, not a check failure. Why this option: a longer timeout only moves the cliff and every idle session still pays it. Cost: a change that breaks a file you did not touch is found by the git hooks and CI, not by this hook. | `docs/architecture/16-agentic-harness.md`, `docs/process/guardrails.md`, `docs/agents/tool-setup.md` |
 
 ## Batch 2026-11-14 (chat: the CI job time limit)
 
