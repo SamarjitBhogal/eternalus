@@ -175,6 +175,21 @@ Reply inline (`Decision: …`).
     signed off: the time check in the aggro, stuck, veterancy and guard loaders (the 2026-11-12
     critic) and #86's healing times as DEC-241's sixth reader.
 
+- [ ] **HC-B9 — Better than the design, not built, sign-off asked: two older times not read once at
+      load (`refactor/durations-at-load` merge critic, 2026-11-19); no decision blocks the PR.**
+      Both are older than PR #125 and keep their values.
+      (1) **One countdown-end tick.** Three readers each compute the tick the countdown ends with
+      `countdownTicks(countdownSeconds, tickRate)`: `SpawnSystem` (first waves),
+      `GuardRoster.firstTick` (guard activation) and `LeashBehaviour.rankOf` (the
+      `ghostFirstWaveTicks` window). `validateGameConfig` already checks that the match timeline's
+      first mark falls on that tick. Proposal: the three read that one tick from one place, so a
+      change to when the countdown ends changes one line.
+      (2) **Assist window at load.** `assistWindowSeconds` (`content/match/scoring.ts`, DEC-79)
+      becomes ticks in `defaultScoringRules`, outside a loader, unlike the DEC-241 durations.
+      Proposal: a scoring loader turns it into ticks and rejects a negative or non-finite value,
+      as `loadGuardPlans` does.
+      Build both in PR #125, build them in a later PR, or keep the code as it is?
+
 - [x] **Unit facing chevron (DEC-192, feat/unit-facing-chevron, 2026-11-05) — two questions, one
       better-than-design item.**
       (1) Start facing: a unit faces east (`INITIAL_FACING` in `Transform.constants.ts`) until it

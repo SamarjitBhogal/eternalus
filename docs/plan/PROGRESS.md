@@ -8806,3 +8806,14 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   then `prettier --check` and `npm run docs:check` on this file.
 - Next step: the owner pushes the merge after the stacked chain #126 → #121 → #120 → #119 lands;
   then phase/3 merges into this branch again before PR #125 merges.
+
+### 2026-11-19 — Phase 3 / content durations at load (DEC-241): merge committed, HC-B9 asked — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: committed the merge of phase/3 `af54fe96` (`e04e1a27`; the first try was killed
+  for low memory). `INBOX.md` HC-B9 asks the owner to sign off the merge critic's two
+  better-than-design items, both older than this PR and not built: one source for the
+  countdown-end tick (`SpawnSystem`, `GuardRoster`, `LeashBehaviour`) and `assistWindowSeconds`
+  turned into ticks by a loader.
+- Checks run: the pre-commit `check:quick` on `e04e1a27`: exit 0; `prettier --check` and
+  `npm run docs:check` on this file and `INBOX.md`.
+- Next step: as the entry above; HC-B9 waits for the owner.
