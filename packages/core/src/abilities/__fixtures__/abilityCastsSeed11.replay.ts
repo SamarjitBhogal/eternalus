@@ -12,7 +12,9 @@ import { ABILITY_CASTS_PLAN } from './abilityCastsPlan';
  * unchanged, and without `OutOfCombatHealingSystem` the old hashes still reproduced. Regenerated
  * 2026-11-15 when phase/3 began hashing facing (DEC-192) and the scoring state (#93): the
  * commands and checkpoint 0 were unchanged, and with those two hash fields left out the old hashes
- * still reproduced.
+ * still reproduced. `config.map.pathMaxExpansions: 6000` became `pathMaxSearchArea: 150000` on
+ * 2026-11-19 with the phase/3 merge of DEC-243: the same 6000 cells on this config's 5 m cells; it
+ * is not hashed, and every checkpoint reproduced unchanged.
  */
 export const ABILITY_CASTS_SEED_11: ReplayOf<{
   readonly seed: number;
@@ -32,7 +34,7 @@ export const ABILITY_CASTS_SEED_11: ReplayOf<{
       navCellSize: 5,
       flowFieldCorridorHalfWidth: 30,
       flowFieldCellBudget: 2000,
-      pathMaxExpansions: 6000,
+      pathMaxSearchArea: 150000,
       pathSnapCells: 12,
       presetId: 'map-1',
     },
