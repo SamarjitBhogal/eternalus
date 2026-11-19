@@ -56,17 +56,35 @@ test(
       cwd: here,
       stdio: 'ignore',
     });
+    // The fixture's pid is its process group (`run()` starts it detached); the grandchild is in it.
+    let group = 0;
     let grandchild = 0;
-    for (let i = 0; i < 50 && grandchild === 0; i += 1) {
-      await delay(100);
-      grandchild = existsSync(pidFile) ? Number(readFileSync(pidFile, 'utf8')) : 0;
+    try {
+      for (let i = 0; i < 50 && grandchild === 0; i += 1) {
+        await delay(100);
+        if (existsSync(pidFile)) {
+          [group = 0, grandchild = 0] = readFileSync(pidFile, 'utf8').split(' ').map(Number);
+        }
+      }
+      assert.ok(grandchild > 0, 'the fixture wrote no pid');
+      const exited = once(hook, 'exit');
+      hook.kill('SIGTERM');
+      await exited;
+      await delay(500);
+      assert.equal(isAlive(grandchild), false, `grandchild ${grandchild} still runs`);
+    } finally {
+      // A red run must not leave the tree running for 60 s.
+      if (hook.exitCode === null && hook.signalCode === null) {
+        hook.kill('SIGKILL');
+      }
+      if (group > 0) {
+        try {
+          process.kill(-group, 'SIGKILL');
+        } catch {
+          // The group is already gone: the test passed.
+        }
+      }
+      rmSync(dir, { recursive: true, force: true });
     }
-    assert.ok(grandchild > 0, 'the fixture wrote no pid');
-    const exited = once(hook, 'exit');
-    hook.kill('SIGTERM');
-    await exited;
-    await delay(500);
-    rmSync(dir, { recursive: true, force: true });
-    assert.equal(isAlive(grandchild), false, `grandchild ${grandchild} still runs`);
   },
 );
