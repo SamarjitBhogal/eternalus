@@ -16,6 +16,31 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
+      PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
+      small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`
+      without `hasMapFootprint` is legal and does nothing. One field (for example
+      `mapFootprint?: 'reach' | 'fort'`) makes that state impossible; it changes the same field
+      as item (B3) below, so do both together. (G2) `DefaultSystemPipeline.fortBoxesOf` looks up
+      each entity's definition again; record the fort-box fact where the `Footprint` is made
+      (`Simulation.spawnStructures`), so the pipeline needs no catalogue. Same code as item (C1)
+      below.
+
+- [ ] **`refactor/fort-geometry-helpers` critic (2026-11-13), better than the design — two items
+      for the tidy PR (DEC-218), sign-off per item.** Not built: the branch is a split from
+      PR #98 and stays small. (F1) `MapSceneryBuilder` still grows each ring feature's box by
+      hand, with 5 and 10 as literals; use `boundsOf`, a `growRect(rect, pad)` helper and a
+      constant in `MapSceneryBuilder.constants.ts`. (F2) "wall = side / `wallDivisor`" is in
+      `MapFortificationBuilder` (sketch units) and in `fortInWorld` (world units); one
+      `fortWall(side)` serves both.
+
+- [ ] **`refactor/astar-search-area` critic (2026-11-13), better than the design — one item,
+      sign-off.** Not built. `GameConfig.map.pathSnapCells` (12) is counted in cells, like the
+      old A\* cap: its comment says it "covers a Stronghold footprint on 5 m cells" (60 m), and on
+      PR #98's 2.5 m cells it reaches 30 m. Proposed: `pathSnapDistance` in world units, with the
+      rings derived as `ceil(distance / cellSize)`. Whether 30 m still covers a Stronghold is a
+      live question on #98.
+
 - [ ] **Corner camp boss: new `TUNE` values, its display name, and better-than-design items B2
       and N4 (Aryan Walanj, 2026-11-12; PR #91 `feat/bosses-p3`, your review S2, S3 and nit 3;
       DEC-236).** (1) The values with no reference source, all `TUNE` in
@@ -319,6 +344,10 @@ Reply inline (`Decision: …`).
       `partOf` (stays as ruins); (T2) `WorldObjectStore.spawn` gets only the definition id: pass
       what it needs explicitly. Heal (DEC-215): (H1) one point-in-box helper instead of three
       copies (`PathingSystem.isInsideFort`, `geometry.doesPolygonOverlapRect`, `HealingZones`).
+      (H1 is built in part on `refactor/fort-geometry-helpers` (DEC-244, split from PR #98):
+      `utils/geometry.isPointInRect` replaces `PathingSystem.isInsideFort`'s test and the copy in
+      `doesPolygonOverlapRect`. `HealingZones` is only on `feat/out-of-combat-heal`, not merged:
+      it uses `isPointInRect` once both branches meet.)
       Full findings: `eternalus-agent-work/minion-stack-audit/reports/runner-reports/critic-followups-r2.md`,
       `eternalus-agent-work/playtest-2026-11-04/critic-chevron-r3.md` and
       `eternalus-agent-work/playtest-2026-11-04/session-2383bba1-reports.md`. Approve all,
@@ -657,7 +686,8 @@ Reply inline (`Decision: …`).
       `MovementStrategy`", but bots steer by `move`
       commands, so A\* is a `PathQuery` the bot leaves call (doc 11 §10). Its cost then sits in
       the AI decision budget, not in `PathingSystem` as 11 §6 puts heavy work: each blocked
-      decision searches again (capped by `GameConfig.map.pathMaxExpansions`). If accepted,
+      decision searches again (capped by `GameConfig.map.pathMaxExpansions`; since 2026-11-13
+      `pathMaxSearchArea`, DEC-243). If accepted,
       sprint 3.2's line changes, and a path cache in the brain is the next step if profiling
       shows the cost.
   - Decision (SamarjitBhogal, chat, 2026-10-27): (2) accepted; doc 11 §6 and sprint 3.2's
@@ -2344,7 +2374,7 @@ Reply inline (`Decision: …`).
       keep it as it is.
   - Answered 2026-11-08 in chat (DEC-222): "(b) Build it in GL-16". To build: in GL-16 (game-loop
     plan §7), with its own unit test, the length-change branch included.
-- [ ] **HC-Q57 — The online Duel in the results flow: five better-than-design items and one rule
+- [x] **HC-Q57 — The online Duel in the results flow: five better-than-design items and one rule
       question (critics on the #97 merge into GL-4, PR #93; DEC-139).** The merge keeps GL-5's
       results flow for a Duel (`duel-ended`, `selectMatchVerdict`, `ResultsScreen`). Both critics
       approved it and proposed:
@@ -2375,9 +2405,12 @@ Reply inline (`Decision: …`).
     `canRepeatSetup`). (5): scheduled with HC-S7. (6): option B, the run-on is built with the
     Duel's own win rules (DEC-36); until then a finished Duel goes to the results at once. A
     finished Duel keeps no status line.
-  - Still open: after the opponent leaves, does the player who stayed see VICTORY? The leaver
-    takes a loss (DEC-250 (4)); the screen for the player who stayed shows no verdict until the
-    owner says.
+  - Open until DEC-251: after the opponent leaves, does the player who stayed see VICTORY? The
+    leaver takes a loss (DEC-250 (4)); the screen for the player who stayed shows no verdict until
+    the owner says.
+  - Answered 2026-11-14 in chat (DEC-251): "A) yes". The player who stayed sees VICTORY, with
+    "Opponent left." under it. The server names that player's team as the winner of the
+    `opponent-left` ending, so `selectMatchVerdict` has no Duel branch (`feat/duel-leave-victory`).
   - Critic notes on the built delta (2026-11-14), for the HC-S7 work: `createMatch` still asks
     `duel.status === 'started'` while `canRepeatMatchSetup` reads `setup.mode`, so the strategy
     should key on `setup.mode`; `MatchSetupDraft` could be a union by `mode`, so that "a Duel has

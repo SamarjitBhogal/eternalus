@@ -1,4 +1,4 @@
-import { boundsOf } from '../utils/geometry';
+import { boundsOf, doRectsOverlap } from '../utils/geometry';
 import type { Rect } from '../utils/geometry.types';
 import { STATIC_BUCKET_SIZE } from './StaticCollisionIndex.constants';
 import type { IndexedPolygon, StaticCollisionShape } from './StaticCollisionIndex.types';
@@ -32,13 +32,7 @@ export class StaticCollisionIndex {
     this.result.clear();
     this.cells(bounds, (key) => {
       for (const entry of this.buckets.get(key) ?? []) {
-        if (
-          !this.removed.has(entry.id) &&
-          entry.bounds.x <= bounds.x + bounds.width &&
-          entry.bounds.x + entry.bounds.width >= bounds.x &&
-          entry.bounds.y <= bounds.y + bounds.height &&
-          entry.bounds.y + entry.bounds.height >= bounds.y
-        )
+        if (!this.removed.has(entry.id) && doRectsOverlap(entry.bounds, bounds))
           this.result.add(entry);
       }
     });
