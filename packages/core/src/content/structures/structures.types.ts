@@ -31,6 +31,12 @@ export type StructureDefinition = EntityDefinitionBase & {
    * (`Footprint`, DEC-185). A blocking such object is also its body, with no health of its own.
    */
   readonly hasMapFootprint?: true;
+  /**
+   * Whether the box round its `Footprint` is a fort box (`PathingWorld.forts`): a chase of a unit
+   * standing inside it closes in over the blocked ground there (DEC-185; the Stronghold's palace,
+   * DEC-217 (16)). A gate's outline is for reach only (DEC-217 (17)).
+   */
+  readonly hasFortBox?: true;
 };
 
 /** Which lane a spawner's horde takes: the spawner's own lane, or the team's worst lane. */

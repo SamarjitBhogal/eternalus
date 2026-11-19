@@ -39,7 +39,7 @@ const riftChase = (systems: (state: GameState) => readonly System[]) => {
   const state = new GameState(config, 1, world, {
     space,
     paths: new AStarPathfinder(world.grid, {
-      maxExpansions: config.map.pathMaxExpansions,
+      maxSearchArea: config.map.pathMaxSearchArea,
       snapCells: config.map.pathSnapCells,
     }),
   });

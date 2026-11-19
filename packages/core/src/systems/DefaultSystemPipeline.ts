@@ -12,6 +12,8 @@ import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { loadSpawnWaves } from '../content/structures/loadSpawnWaves';
 import { OPENING_WAVE } from '../content/structures/spawnWaves';
+import type { ContentCatalogue } from '../content/ContentCatalogue';
+import type { StructureDefinition } from '../content/structures/structures.types';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { LaneFlowFields } from '../map/LaneFlowFields';
 import type { GameState } from '../state/GameState';
@@ -112,7 +114,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
               createDefaultStrategyRegistry().movement,
               FORMATIONS,
               HORDE_STEERING.slotArrivalRadius,
-              { flowFields, forts: DefaultSystemPipeline.fortBoxesOf(state) },
+              { flowFields, forts: DefaultSystemPipeline.fortBoxesOf(state, structures) },
             ),
           ]),
       new CombatSystem(damage),
@@ -147,14 +149,20 @@ export class DefaultSystemPipeline extends SystemPipeline {
   }
 
   /**
-   * The box of every structure's `Footprint` (`PathingWorld.forts`). `Simulation` builds the
-   * structures before the pipeline, so they are read here once, while every one still stands.
+   * The box of the `Footprint` of every structure whose definition `hasFortBox`
+   * (`PathingWorld.forts`; not a gate's, DEC-217 (17)). `Simulation` builds the structures before
+   * the pipeline, so they are read here once, while every one still stands.
    */
-  private static fortBoxesOf(state: GameState): readonly Rect[] {
+  private static fortBoxesOf(
+    state: GameState,
+    structures: Pick<ContentCatalogue<StructureDefinition>, 'get'>,
+  ): readonly Rect[] {
     const forts: Rect[] = [];
     state.entities.forEach((entity) => {
       const box = entity.findComponent(Footprint)?.bounds;
-      if (box !== undefined) forts.push(box);
+      if (box !== undefined && structures.get(entity.definitionId).hasFortBox === true) {
+        forts.push(box);
+      }
     });
     return forts;
   }
