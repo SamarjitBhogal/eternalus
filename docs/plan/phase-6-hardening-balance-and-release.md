@@ -51,7 +51,7 @@ and the budget split of [Phase 3 sprint 3.8](phase-3-minions-hordes-and-ai.md#sp
       browser; `performance.mark/measure` around tick and render; the long-animation-frame
       observer from `PerfOverlay`). Owner: _. Test: the bench prints p50/p95 per system and
       flags budget misses locally (CI runs it without time assertions). Done when: the top three
-      hotspots are named in [PROGRESS.md](PROGRESS.md) with before/after numbers.
+      hotspots are named in [progress log](progress/README.md) with before/after numbers.
 - [ ] **Pooling and allocation audit** (projectiles, particles, floating damage numbers,
       `GameEvents` payloads and mobs pooled; scratch vectors in steering; fields reset on
       acquire, references nulled on release). Owner: _. Test: a test-only allocation counter
@@ -245,7 +245,7 @@ PROGRESS.
 
 ## Exit criteria
 
-1. All sprint metrics pass and are recorded in [PROGRESS.md](PROGRESS.md) with the machines and
+1. All sprint metrics pass and are recorded in [progress log](progress/README.md) with the machines and
    browsers used.
 2. `v0.1.0-mvp` is tagged from green `main` by SamarjitBhogal and its release notes are
    published.
@@ -284,7 +284,7 @@ PROGRESS.
 - [README.md](README.md)
 - [phase-5-meta-ui-and-persistence.md](phase-5-meta-ui-and-persistence.md)
 - [backlog-post-mvp.md](backlog-post-mvp.md)
-- [PROGRESS.md](PROGRESS.md)
+- [progress log](progress/README.md)
 - [../architecture/15-diagnostics-and-runtime-testing.md](../architecture/15-diagnostics-and-runtime-testing.md)
 - [../reference/suggestions/balancing.md](../reference/suggestions/balancing.md)
 - [../reference/game-design/10-art-and-lore.md](../reference/game-design/10-art-and-lore.md)

@@ -1,28 +1,33 @@
 ---
 title: Progress log
-description: The running, append-only log of what was done, which checks ran and what comes next, written by humans and agents after every work session; read the last few entries to know where the project is before starting a task.
+description: The archive of progress entries from 2026-09-30 to 2026-11-18, kept as written; new entries go one file each in docs/plan/progress/ since 2026-11-19.
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-12
+last-reviewed: 2026-11-19
 tags: [plan, progress, log]
-related: ['docs/plan/README.md', 'docs/agents/running-agents.md', 'docs/agents/checklists.md']
+related:
+  [
+    'docs/plan/progress/README.md',
+    'docs/plan/README.md',
+    'docs/agents/running-agents.md',
+    'docs/agents/checklists.md',
+  ]
 ---
 
 # Progress log
 
 ## Purpose
 
-Read the last three entries before you start any task: they tell you which phase and sprint is
-active, which branch it lives on, what the last `npm run check` said and what the next step is.
-Append an entry when you finish a session (humans and agents alike, per
-[README.md §1](README.md#1-how-phases-sprints-and-tasks-work) and
-[running-agents.md](../agents/running-agents.md)). The phase docs hold the checklists; this file
-holds the history, the measured numbers and the decisions that changed the plan. Sprint metrics
-are recorded here with the machine they were measured on, so the roadmap's metrics dashboard
-can point at an entry instead of a memory.
+**Archive.** Since 2026-11-19 (DEC-277) new entries go one file each in
+[progress/](progress/README.md), so that two sessions never edit the same file. This file holds
+the earlier entries (2026-09-30 to 2026-11-18) exactly as written. It is no longer appended.
+Read the newest files in `progress/` first; read this archive for earlier history. Sprint metrics
+measured before 2026-11-19 are recorded here with the machine they were measured on.
 
-## Format rules
+## Format rules (until 2026-11-18)
+
+These rules applied to the entries below. The current rules are in [progress/README.md](progress/README.md).
 
 - **Append-only, newest at the bottom.** Never rewrite, reorder or delete an earlier entry; to
   correct one, append a new entry that says what was wrong. The only allowed edit to an old

@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-14
+last-reviewed: 2026-11-19
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,16 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-19 (chat: harness fixes)
+
+The owner's answer of 2026-11-19 in chat, to the offer to end the `docs/plan/PROGRESS.md` merge
+conflicts. The options offered: (a) one file per progress entry, (b) leave it. DEC-277 is this
+batch.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DEC-277 | **Each progress entry is its own file in `docs/plan/progress/`.** Owner: "C: fix them". Built option (a): one file per entry, named `YYYY-MM-DD-HHMM-<branch-slug>.md`, so two sessions never edit the same file. Before this, every session appended to the end of one 8,600-line `docs/plan/PROGRESS.md`, and each PR merged into `phase/3-sprint-3-work` made every other open PR conflict on it. `PROGRESS.md` stays as the archive of the entries to 2026-11-18, unedited except its intro. The session-start hook and the live instructions (`AGENTS.md`, `CONTRIBUTING.md`, the skills, the agents, `docs/agents/`) point to the folder. Rejected: (b) leave it. Built on `chore/progress-entry-files`. |
 
 ## Batch 2026-11-14 (chat: the CI job time limit)
 

@@ -53,7 +53,7 @@ flowchart LR
   E -->|exit 2| D
   D --> F[Stop hook: npm run check:quick]
   F -->|exit 2, once| D
-  F --> G[verify skill: npm run check, PROGRESS entry]
+  F --> G[verify skill: npm run check, progress entry file]
   G --> G2[pre-PR gate, ADR 0010: critic, ponytail, npm run check again]
   G2 --> H[PR into the phase branch]
   H --> I[pr-review or architecture-reviewer, then a human]
@@ -71,20 +71,20 @@ flowchart LR
 | `.github/copilot-instructions.md`                                              | The six most-broken rules restated for Copilot's agent and code review; `.github/instructions/` is intentionally unused                                                                            | guide   |
 | `.claude/settings.json`                                                        | `permissions.allow` / `permissions.deny` and the three hooks (§4); committed, so every clone gets the same gates                                                                                   | sensor  |
 | `scripts/hooks/hookInput.mjs`                                                  | Shared helpers: parse the JSON on stdin (never throw), resolve the repo root and the edited file, `run()` with timeout and `CI=1`, `tail()` for short output                                       | infra   |
-| `scripts/hooks/session-start.mjs`                                              | `SessionStart`: branch (warns on `main`), the reading order, open `INBOX.md` items, the last `PROGRESS.md` entry, the done-when reminder                                                           | guide   |
+| `scripts/hooks/session-start.mjs`                                              | `SessionStart`: branch (warns on `main`), the reading order, open `INBOX.md` items, the newest file in `docs/plan/progress/`, the done-when reminder                                               | guide   |
 | `scripts/hooks/post-edit.mjs`                                                  | `PostToolUse` on `Edit\|Write`: Prettier, then ESLint with zero warnings on the touched file; exit 2 surfaces findings                                                                             | sensor  |
 | `scripts/hooks/stop-check.mjs`                                                 | `Stop`: `npm run check:quick`; exit 2 blocks the stop once; `stop_hook_active` loop guard                                                                                                          | sensor  |
 | `.claude/skills/<name>/SKILL.md` (nine)                                        | The procedures of §5: `new-entity`, `new-system`, `new-ability`, `new-screen`, `new-content`, `pr-review`, `doc-gardening`, `verify`, `adr`                                                        | guide   |
 | `.agents/README.md`, `.agents/skills/<name>/SKILL.md`                          | Pointer stubs so Codex, Gemini CLI, Antigravity and Cursor discover the same nine skills; the procedure lives only in `.claude/skills/`                                                            | pointer |
 | `.claude/agents/architecture-reviewer.md`, `test-writer.md`, `doc-gardener.md` | The subagents of §6: a read-only evaluator, a tests-only writer, a docs maintainer                                                                                                                 | sensor  |
 | `docs/agents/README.md`                                                        | Entry points per tool, the reading order, the task loop, enforced-by-tooling versus review                                                                                                         | guide   |
-| `docs/agents/running-agents.md`                                                | For humans: scoping, branches and worktrees, INBOX and PROGRESS, reviewing an AI PR, recovering from a bad change                                                                                  | guide   |
+| `docs/agents/running-agents.md`                                                | For humans: scoping, branches and worktrees, INBOX and progress entries, reviewing an AI PR, recovering from a bad change                                                                          | guide   |
 | `docs/agents/tool-setup.md`                                                    | Line-by-line meaning of every committed config key per tool, and the commands that prove a hook runs (its `paths` covers `.claude/**`, `.agents/**`, `.gemini/**`, `scripts/hooks/**`)             | guide   |
 | `docs/agents/task-brief-template.md`, `.github/ISSUE_TEMPLATE/task-brief.md`   | The brief (§9) as a prompt and as an issue, with a worked example                                                                                                                                  | guide   |
 | `.github/ISSUE_TEMPLATE/bug-report.md`, `.github/pull_request_template.md`     | A defect with a deterministic reproduction (seed, replay, command log); the PR checklist (`npm run check`, tests, no guardrail change without an ADR, no dependency without approval, scope, docs) | guide   |
 | `docs/agents/checklists.md`                                                    | Definition of Done, the AI-PR review checklist, the architecture review checklist, the phase exit checklist                                                                                        | sensor  |
 | `INBOX.md`                                                                     | The product owner's queue: decisions needed, requests, feedback, done (§7)                                                                                                                         | memory  |
-| `docs/plan/PROGRESS.md`                                                        | The append-only session log (§7)                                                                                                                                                                   | memory  |
+| `docs/plan/progress/`                                                          | The append-only session log (§7)                                                                                                                                                                   | memory  |
 | `docs/plan/phase-<n>-*.md`                                                     | The sprint checklists: the feature list with pass/fail (§7)                                                                                                                                        | memory  |
 | `.githooks/pre-commit`, `.githooks/pre-push`                                   | `npm run check:quick` for every human and every tool, hooks or not (`core.hooksPath`)                                                                                                              | sensor  |
 | `.github/workflows/ci.yml`                                                     | `npm run check` as named steps on Ubuntu and Windows (§8)                                                                                                                                          | sensor  |
@@ -136,11 +136,11 @@ never throws on empty or malformed input, runs commands with `CI=1` and `FORCE_C
 shell only on Windows so `npm.cmd` resolves, and trims output with `tail()` so the model sees the
 last lines rather than a wall of text.
 
-| Event (matcher)               | Script (timeout)           | Does                                                                                                                                                                                                                                                                        | Exit codes                                                                                                         |
-| ----------------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `SessionStart`                | `session-start.mjs` (30 s) | Prints the branch and warns on `main`; the reading order (`AGENTS.md`, the package `AGENTS.md`, the architecture doc whose `paths` matches, the phase doc); the number of open `- [ ]` items in `INBOX.md`; the last `###` heading of `PROGRESS.md`; the done-when reminder | Always 0; stdout becomes context                                                                                   |
-| `PostToolUse` (`Edit\|Write`) | `post-edit.mjs` (120 s)    | `prettier --write` on `.ts .tsx .js .mjs .cjs .json .md .css .yml .yaml`, then `eslint --max-warnings 0` on `.ts .tsx .js .mjs .cjs`; only for files inside the repo                                                                                                        | 0 when clean; Prettier trouble is reported on stderr and never blocks; an ESLint failure exits 2 with the findings |
-| `Stop`                        | `stop-check.mjs` (300 s)   | `npm run check:quick` (typecheck + lint, the same command as the git hooks)                                                                                                                                                                                                 | 0 on pass; 2 with the failure tail; 0 immediately when `stop_hook_active` is `true`                                |
+| Event (matcher)               | Script (timeout)           | Does                                                                                                                                                                                                                                                                                                                                                              | Exit codes                                                                                                         |
+| ----------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `SessionStart`                | `session-start.mjs` (30 s) | Prints the branch and warns on `main`; the reading order (`AGENTS.md`, the package `AGENTS.md`, the architecture doc whose `paths` matches, the phase doc); the number of open `- [ ]` items in `INBOX.md`; the first heading of the newest file in `docs/plan/progress/` (fallback: the last `###` heading of the archive `PROGRESS.md`); the done-when reminder | Always 0; stdout becomes context                                                                                   |
+| `PostToolUse` (`Edit\|Write`) | `post-edit.mjs` (120 s)    | `prettier --write` on `.ts .tsx .js .mjs .cjs .json .md .css .yml .yaml`, then `eslint --max-warnings 0` on `.ts .tsx .js .mjs .cjs`; only for files inside the repo                                                                                                                                                                                              | 0 when clean; Prettier trouble is reported on stderr and never blocks; an ESLint failure exits 2 with the findings |
+| `Stop`                        | `stop-check.mjs` (300 s)   | `npm run check:quick` (typecheck + lint, the same command as the git hooks)                                                                                                                                                                                                                                                                                       | 0 on pass; 2 with the failure tail; 0 immediately when `stop_hook_active` is `true`                                |
 
 **Exit-code semantics.** Claude Code treats exit code 2 as the only blocking code; any other
 non-zero code is a non-blocking error (research §2), and what "block" means depends on the
@@ -165,7 +165,7 @@ docs so an agent and a teammate follow the same steps. Frontmatter uses only the
 under the Agent Skills spec too (research §7); `.agents/skills/<name>/SKILL.md` are stubs that
 point at the canonical file so Codex, Gemini/Antigravity and Cursor discover the same set.
 Skills auto-trigger on their `description`, or `/name` invokes them; every one ends with
-`npm run check`, a `PROGRESS.md` entry and "no commits unless asked".
+`npm run check`, a new progress entry file and "no commits unless asked".
 
 | Skill           | Encodes                                                                                                                                                     | Follows                     | Recipes in 17                 |
 | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- | ----------------------------- |
@@ -176,7 +176,7 @@ Skills auto-trigger on their `description`, or `/name` invokes them; every one e
 | `new-content`   | Definitions and `GameConfig` values only; ids never renamed once a save or a release stores them; `TUNE`; validation tests; the `numLanes` litmus test      | 03 §10, 04 §5               | R2, R3, R6, R15, R26          |
 | `pr-review`     | The AI-PR and architecture checklists as findings by severity with a verdict; `allowed-tools` limits it to reading, `git diff/log/show` and `npm run check` | checklists, 01, 02, 03      | "what else changed?"          |
 | `doc-gardening` | `npm run docs:check`, stale `last-reviewed`, the single-place-of-change claims, `AGENTS.md` length, `npm run docs:index`                                    | frontmatter schema, 02      | the Docs line                 |
-| `verify`        | `git status --short`, `npm run check`, the verbatim tail per failing step, then the PROGRESS entry; read-only `allowed-tools`                               | `AGENTS.md`                 | the last step of every recipe |
+| `verify`        | `git status --short`, `npm run check`, the verbatim tail per failing step, then the progress entry file; read-only `allowed-tools`                          | `AGENTS.md`                 | the last step of every recipe |
 | `adr`           | Next number, template copy, `proposed` status, the guardrails table row; `disable-model-invocation: true`, so only a human runs `/adr`                      | guardrails §4               | a fourth kind of change       |
 
 ## 6. Subagents: the evaluator pattern
@@ -211,9 +211,9 @@ in-context while running effectively doesn't exist", research §4). Three files 
   (`DEC-nn`), requests, feedback, done. Saying "file updated" tells the agent to
   treat the open items as its prompt, in order; an item leaves only when implemented and
   confirmed. The session-start hook prints the open count.
-- `docs/plan/PROGRESS.md` is the append-only log: one `###` entry per session or PR (date,
+- `docs/plan/progress/` is the log: one file per session or PR, named `YYYY-MM-DD-HHMM-<branch-slug>.md`, so two sessions never edit the same file (the earlier `###` entries are archived in `docs/plan/progress entries`). Each entry has (date,
   phase/sprint, branch, who plus tool) with exactly three bullets: what was done, checks run
-  verbatim, next step. The hook prints the last heading; the `verify` skill appends the entry.
+  verbatim, next step. The hook prints the title of the newest file; the `verify` skill writes the entry file.
 - The phase docs' sprint checklists are the feature list with pass/fail: every task line has an
   owner, a test and a done-when, and an agent ticks a box only for work it verified with a
   passing check in that session (AI-12).
@@ -221,7 +221,7 @@ in-context while running effectively doesn't exist", research §4). Three files 
 | Anthropic's long-running-agent pattern (research §3) | Here                                                                                                                          |
 | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | A feature list with `passes: false` entries (JSON)   | The `- [ ]` lines of `docs/plan/phase-<n>-*.md`; `Recommendation:` a `docs/plan/<task>.json` for long unattended runs (AI-12) |
-| A progress file plus the git log                     | `docs/plan/PROGRESS.md`; task branches; `git log` is the reviewer's first step                                                |
+| A progress log plus the git log                      | `docs/plan/progress/`; task branches; `git log` is the reviewer's first step                                                  |
 | An `init.sh` run at session start                    | `scripts/hooks/session-start.mjs`, plus `npm ci` per checkout                                                                 |
 | One feature per session                              | One concern per task, one task per branch and worktree (§9)                                                                   |
 | Self-verification with real tooling                  | The ladder in §8; tests are the oracle because the core is deterministic and headless                                         |
@@ -232,7 +232,7 @@ OpenAI's harness-engineering patterns (research §4) map the same way: `AGENTS.m
 contents (§3); `docs/` as the system of record, navigable by the frontmatter `paths` that name
 the code each doc governs and by the index in `docs/README.md`; architecture enforced by linters
 whose messages contain the fix (`core must be deterministic: use a seeded RNG` today, the
-per-folder boundaries of §10 next); plans as versioned artifacts (the phase docs and PROGRESS);
+per-folder boundaries of §10 next); plans as versioned artifacts (the phase docs and the progress entries);
 and a recurring doc-gardening agent (`doc-gardener`, `npm run docs:check`). Making the app
 legible to the agent is covered for the core (headless `Simulation`, replays) and the views
 (`RecordingRenderer`) and not yet for the browser (no MCP, §10).
@@ -262,7 +262,7 @@ its final message and in the PR (AI-11). What the ladder enforces and what revie
 | Strict TypeScript, no `any`, no ts-comments, zero warnings, no `console`                                   | Placement in the right layer and folder; SOLID and DRY; a strategy instead of a `switch` |
 | Core purity: no React, Redux or client imports, no `Math.random` (ESLint); no DOM or Node types (tsconfig) | Determinism beyond the lint rules: iteration order, comparator-less sorts, wall clock    |
 | Test integrity (`.only`/`.skip` banned, every test asserts); coverage thresholds                           | Tests assert behaviour, not lines; no product decision made by an agent                  |
-| knip, Prettier, LF endings, lockfile sync, exact versions, the docs check                                  | Docs and frontmatter updated; the PROGRESS entry; scope discipline                       |
+| knip, Prettier, LF endings, lockfile sync, exact versions, the docs check                                  | Docs and frontmatter updated; the progress entry file; scope discipline                  |
 | Per-file lint after edits; `check:quick` before stopping and on commit and push                            | Commit messages, the PR description, an ADR when a guardrail changes                     |
 
 ## 9. Parallel agents and prompt hygiene
@@ -283,7 +283,7 @@ task it reviews; a feature that spans core and client is a stack of two PRs on t
 per [02](02-code-structure.md); the source (FR-/NFR- ids, a reference section, an ADR; no
 product decisions inside the task); acceptance criteria a reviewer can check; tests; docs;
 **out of scope** (what not to touch, which is what stops drive-by refactors); and **done when**
-(`npm run check` passes, a PR into the phase branch, a PROGRESS entry). Bugs use
+(`npm run check` passes, a PR into the phase branch, a progress entry file). Bugs use
 `bug-report.md`, which demands a deterministic reproduction (seed, replay id, command log).
 Agents read three documents, not everything (AI-06), and start a fresh context between unrelated
 tasks; a design or product question is answered in `INBOX.md` or an ADR before the task is

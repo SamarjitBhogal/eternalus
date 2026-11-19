@@ -200,7 +200,7 @@ Owner: _ (sim lane B). Week 8.
       strategy id with no implementation.
 
 **Success metric:** `Revive` scenario tests pass; pick-up/throw either passes its tests or is
-recorded as cut in [PROGRESS.md](PROGRESS.md).
+recorded as cut in [progress log](progress/README.md).
 
 ## Sprint 4.7 — HUD ability bar and dynamic glyphs
 
@@ -234,7 +234,7 @@ the next render, verified by a test and by a reviewer in the browser.
 
 ## Exit criteria
 
-1. All sprint metrics pass and are recorded in [PROGRESS.md](PROGRESS.md).
+1. All sprint metrics pass and are recorded in [progress log](progress/README.md).
 2. Demo: pick each class, cast all abilities and the ultimate, level up from a camp clear, see
    the glyphs change after rebinding `ability-1`.
 3. Architecture doc 05 and reference docs 01, 06, 07 and 08 match the code, or an ADR records
@@ -257,7 +257,7 @@ the next render, verified by a test and by a reviewer in the browser.
 - [README.md](README.md)
 - [phase-3-minions-hordes-and-ai.md](phase-3-minions-hordes-and-ai.md)
 - [phase-5-meta-ui-and-persistence.md](phase-5-meta-ui-and-persistence.md)
-- [PROGRESS.md](PROGRESS.md)
+- [progress log](progress/README.md)
 - [backlog-post-mvp.md](backlog-post-mvp.md)
 - [../architecture/05-abilities-weapons-and-loadouts.md](../architecture/05-abilities-weapons-and-loadouts.md)
 - [../architecture/13-game-interface.md](../architecture/13-game-interface.md)

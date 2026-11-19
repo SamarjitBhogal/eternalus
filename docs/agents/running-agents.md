@@ -1,6 +1,6 @@
 ---
 title: Running AI agents on this repo
-description: For humans who run coding agents (Claude Code, Codex, Gemini/Antigravity, Copilot, Cursor) - how to scope a task, branch and worktree conventions, the INBOX and PROGRESS files, reviewing an AI-generated PR and recovering from a bad change; read this before delegating work to an agent.
+description: For humans who run coding agents (Claude Code, Codex, Gemini/Antigravity, Copilot, Cursor) - how to scope a task, branch and worktree conventions, the INBOX file and the progress entries, reviewing an AI-generated PR and recovering from a bad change; read this before delegating work to an agent.
 audience: [humans]
 status: active
 owner: sholtzman
@@ -34,9 +34,9 @@ A good prompt:
 > Add a `Health` component in `packages/core/src/components/` with `current` and `max`, clamped
 > to `[0, max]`, following `AGENTS.md` and `docs/architecture/04-entity-architecture.md` §3. Put
 > the default `maxHealth` in `content/`. Out of scope: damage, UI. Done when `npm run check`
-> passes and `docs/plan/PROGRESS.md` has an entry.
+> passes and `docs/plan/progress/` has a new entry file.
 
-## 2. Branches, INBOX and PROGRESS
+## 2. Branches, INBOX and progress entries
 
 - Work happens on a task branch off the current phase branch:
   `git switch -c feat/<task> phase/<n>-<name>` (naming and the stacked-PR flow are in
@@ -46,8 +46,7 @@ A good prompt:
 - `INBOX.md` (repo root) is the product owner's queue: requests, feedback and decisions. Saying
   "file updated" in chat tells the agent to read it and treat open items as the prompt. Items
   leave the file only when implemented and confirmed.
-- `docs/plan/PROGRESS.md` is the append-only log every task ends with (date, phase/sprint,
-  branch, what, verbatim checks, next step). It is the shared memory between sessions and tools.
+- `docs/plan/progress/` holds the log every task ends with: one new file per task or PR, named `YYYY-MM-DD-HHMM-<branch-slug>.md` (what, verbatim checks, next step); two sessions never edit the same file. The earlier entries are archived in `docs/plan/progress entries`. It is the shared memory between sessions and tools.
 
 ## 3. Running agents in parallel
 
@@ -86,7 +85,7 @@ their own work generously, so never let the author agent be the only reviewer. W
 - [ ] **Placement:** is the code in the layer and folder `docs/architecture/02-code-structure.md` says?
 - [ ] **Invented APIs:** does it call library functions that don't exist in our versions?
 - [ ] **Product decisions:** did the agent pick gameplay numbers or behaviour nobody asked for?
-- [ ] **Docs and PROGRESS:** updated, with `last-reviewed` bumped?
+- [ ] **Docs and progress entry:** updated, with `last-reviewed` bumped?
 
 ## 5. Recovering from a bad agent change
 

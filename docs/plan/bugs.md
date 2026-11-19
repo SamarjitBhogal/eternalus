@@ -8,7 +8,7 @@ last-reviewed: 2026-11-14
 tags: [plan, bugs, jira]
 related:
   [
-    'docs/plan/PROGRESS.md',
+    'docs/plan/progress/README.md',
     'docs/plan/README.md',
     'INBOX.md',
     'docs/reference/game-design/13-owner-decisions-log.md',
