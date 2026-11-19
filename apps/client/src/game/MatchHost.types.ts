@@ -5,6 +5,7 @@ import type { CanvasPointerControlsDeps } from './CanvasPointerControls.types';
 import type { InputDevice } from './engine/input/InputDevice.types';
 import type { InputMapper } from './input/InputMapper';
 import type { Match } from './Match';
+import type { MatchViewControls } from './MatchViewControls';
 import type { MatchViewport } from './MatchViewport.types';
 
 /** The page's window as the host uses it (resize, focus loss, pixel ratio). */
@@ -17,7 +18,8 @@ export type HostDocument = EventTarget & { readonly hidden: boolean };
 export type MatchHostDeps = {
   /** The parts of `Match` the host and its pointer controls drive. */
   readonly match: Pick<Match, 'start' | 'destroy' | 'resize' | 'setPaused'> & {
-    readonly controls: CanvasPointerControlsDeps['controls'];
+    readonly controls: CanvasPointerControlsDeps['controls'] &
+      Pick<MatchViewControls, 'toggleMiniMap'>;
   };
   /** The canvas, its chrome and the developer flag, as `GameCanvas` attached them. */
   readonly viewport: MatchViewport;
