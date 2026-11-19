@@ -496,6 +496,23 @@ so a replay or a match without map objects rebuilds the same zones. Interim diff
 - The density numbers on the HUD arrive with the HUD work (`feat/hud-and-character-select`, its
   capture tracker); this PR publishes the presence and draws the split bar in the world.
 
+**2026-11-14 (`feat/cathedral-gem`).** The Cathedral gem is interior scenery
+(`MapBuildingInteriorBuilder`, size in `buildingGeometry.ts`, colour in `map1Scenery.ts`),
+presentation only, so nothing can damage it. Not built yet: the Cathedral structure and its
+`Spawner` (§1, §6), lightning on attackers, the change of look over time and the
+summon-greater-boss action. When the Cathedral structure and its view land, the
+`cathedral-interior-gem` scenery piece is removed so the gem is drawn once.
+
+**2026-11-15 (`feat/cathedral-gem-hittable`).** The gem is hittable but unbreakable (DISC-11):
+`Cathedral` is a structure built on the `cathedral` map feature (the gem's position), neutral,
+with the `never` breakability rule, so `BreakabilityStep` blocks every hit from its first tick.
+Its circle collider (`TUNE` radius, the drawn gem's half-width) is for reach and targeting only;
+like every structure circle it blocks no movement. Bots and minions never target it: perception
+sees only units, skips neutrals that are not attacking, and aggro ranks no structure kind. The
+scenery piece stays the only drawing until the Cathedral's view lands. Still not built: the
+`Spawner` and `Aura` (§1, §6), lightning on attackers (its numbers and rules are open in
+`INBOX.md`), the look over time and the summon-greater-boss action.
+
 ## Related
 
 - [04 Entity architecture](./04-entity-architecture.md)

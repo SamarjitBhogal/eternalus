@@ -20,6 +20,11 @@ export const BUILDING_GEOMETRY = {
     transept: { x: 703, y: 420, width: 194, height: 65 },
     apse: { x: 800, y: 344, radiusX: 44, radiusY: 26 },
     precinct: { radiusX: 270, radiusY: 210 },
+    /**
+     * The gem at the Cathedral's centre (DISC-11: present from match start), drawn as a diamond
+     * with these half extents. TUNE: no reference size; it fits inside the capture inlay.
+     */
+    gem: { halfWidth: 5, halfHeight: 8 },
   },
   palace: {
     x: 0,

@@ -1,4 +1,5 @@
 import { ContentCatalogue } from '../ContentCatalogue';
+import { BUILDING_GEOMETRY } from '../maps/buildingGeometry';
 import { MAP_FEATURE_DEFINITIONS } from '../maps/mapFeatureDefinitions';
 import type { StructureDefinition } from './structures.types';
 
@@ -81,6 +82,16 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       displayName: 'Forest Camp (heavy)',
       baseHealth: 1, // never damaged: a camp is only its group's home
       footprintRadius: 1, // TUNE: no reference value; the map gives camps no footprint
+      breakability: { kind: 'never' },
+    },
+    {
+      id: 'cathedral',
+      kind: 'cathedral',
+      displayName: 'Cathedral',
+      baseHealth: 1, // never damaged: the gem is unbreakable (DISC-11)
+      // TUNE: the drawn gem's half-width (sketch units equal world units at the default map size);
+      // no reference value (INBOX.md, the gem's lightning item)
+      footprintRadius: BUILDING_GEOMETRY.cathedral.gem.halfWidth,
       breakability: { kind: 'never' },
     },
   ]);

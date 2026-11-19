@@ -62,6 +62,8 @@ export const MAP_PALETTE = {
   interiorWall: '#c5bda5',
   westGlass: '#76abb6',
   eastGlass: '#b38b9f',
+  // TUNE: no reference colour for the Cathedral gem
+  gemCrystal: '#9fd3e3',
   candleMetal: '#b49558',
   candleLight: '#f1d99a',
   chapelCarpet: '#6c707b',
