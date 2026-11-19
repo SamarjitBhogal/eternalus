@@ -28,8 +28,10 @@ yourself (`AGENTS.md`, "Never make product or game-design decisions").
 - **DEC-11:** each class gets more approved abilities and one alternate ultimate (§2), all MVP,
   on top of its game-doc kit, which stays MVP. Each class's set is a **pool**: "a player chooses
   3 abilities and 1 ultimate from the set of abilities and ultimates that are available to their
-  class when selecting/creating their loadout" (owner, confirmed in chat 2026-10-10). Colossus
-  Roar **fears** instead of taunting. An enemy Sentinel's **Sunder shatters Sanctuary**.
+  class when selecting/creating their loadout" (owner, confirmed in chat 2026-10-10). The loadout
+  also includes a **weapon** under the existing rules: every non-unique weapon is shared across all
+  classes; a class-specific weapon is usable only by that class and its subclasses (`07`, `08`).
+  Colossus Roar **fears** instead of taunting. An enemy Sentinel's **Sunder shatters Sanctuary**.
 - **DEC-12:** a new debuff, **`insanity`** (the owner's name), applied by volatile corner-camp
   crystals. Description and icon only for now.
 - **DEC-36 (Duel mode):** the ultimate's cooldown persists through death; the other abilities

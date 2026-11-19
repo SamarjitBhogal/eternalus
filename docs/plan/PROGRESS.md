@@ -8604,3 +8604,23 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   (2005)"; server "Test Files 21 passed (21)", "Tests 84 passed (84)"; "✓ built in 3.09s";
   "Documentation check passed."
 - Next step: push `feat/capture-point-boss` and update the PR #99 body.
+
+### 2026-11-19 — Phase 3 / sprint 3 work: land DEC-38 and the DEC-11 weapon clarification — docs/land-dec-38 (from `af54fe96`) — sholtzman + Claude Code
+
+- What was done: the owner asked to land commit `f27a1a17` (2026-10-10, on
+  `docs/sprint-2-requirements-and-planning`), which was never pushed: PR #27 merged its parent
+  `d971f391`. Its content, re-applied by hand on phase/3 because the decisions table has grown:
+  - `13-owner-decisions-log.md`: the DEC-11 row gains the owner's 2026-10-10 chat clarification
+    that a loadout also includes a weapon under the existing rules; new row DEC-38 (changeable
+    team-based Legend skins, a full-game stretch goal), the number that the log already reserved
+    for it ("DEC-38 (Legend skins, `docs/sprint-2-requirements-and-planning`)").
+  - `08-loadout.md` pool rule and the Legend team brief: the same weapon sentence.
+  - `backlog-post-mvp.md`: a DEC-38 skins row (Jira SCRUM-411).
+  - The 2026-10-10 Jira work that `f27a1a17`'s own entry recorded: epics SCRUM-390 (Duel) and
+    SCRUM-391 (server and scalability); tasks SCRUM-392…SCRUM-411 and ability subtasks
+    SCRUM-412…SCRUM-423, labelled `planning-2026-10-10` (SCRUM-406 is the volatile-crystal
+    subtask of SCRUM-178); SCRUM-347/348/349 moved to Done with comments; comments on SCRUM-164,
+    SCRUM-290 and SCRUM-160.
+- Checks run: `npm run check` (2026-11-19) → exit 0: "All matched files use Prettier code style!"; core "Test Files 267 passed (267)", "Tests 1637 passed (1637)"; protocol "Tests 29 passed (29)"; client "Test Files 298 passed (298)", "Tests 2014 passed (2014)"; server "Test Files 21 passed (21)", "Tests 84 passed (84)"; "✓ built in 431ms"; "Documentation check passed." Critic (architecture-reviewer): PASS WITH NOTES, its three notes fixed (DEC-38 provenance note, this check line, the full Jira record). Ponytail: no cuts.
+- Next step: push `docs/land-dec-38`, open the PR into phase/3; it merges after one teammate
+  approval and green CI.
