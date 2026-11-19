@@ -9308,3 +9308,22 @@ group)` takes a `FeatureKeyedGroup` instead of a closure, so the client cannot r
 - Next step: the owner runs the push script, then the merge script. It merges #126, #121, #120
   and #119 into phase/3 in that order with merge commits, each only with green CI, and stops if
   another PR merges into phase/3 in between.
+
+### 2026-11-19 — Phase 3 / GL-16: merge phase/3 (#126, #121, #120, #119 merged) — refactor/map-feature-link — sholtzman + Claude Code
+
+- What was done: PR #129 became conflicting again when the stacked chain #126 → #121 → #120 →
+  #119 merged into phase/3 as `d85bc2f5`. Merged it into this branch as `93f8de91`. Conflicts, all
+  in docs: architecture 03 (`last-reviewed`: the newer date kept), the owner decisions log (both
+  2026-11-14 batches kept, DEC-252 then DEC-251) and this file (this branch's entries, then
+  phase/3's). No code file conflicted and `package-lock.json` did not change, so no critic ran on
+  the merge (the gate asks for one only when code conflicts).
+- Checks run: pre-commit `npm run check:quick` on `93f8de91` → passed. `npm run check` → `EXIT=0`
+  on `93f8de91` (`eternalus-agent-work/game-loop-plan/check-gl16-merge-d85bc2f5.log`): core
+  "Tests 1654 passed (1654)"; protocol "Tests 29 passed (29)"; client "Tests 2017 passed (2017)";
+  server "Tests 84 passed (84)"; "Documentation check passed.". Then `prettier --check` and
+  `npm run docs:check` on this file. Client tests fell from 2020 (`1ad75212`) to 2017: on phase/3
+  itself (`af54fe96..d85bc2f5`), #126 (DEC-251) replaced three parametrised tests (3, 1 and 2
+  cases) with one test each; the merge removed none (`git diff 6076ea40 93f8de91` on the client
+  test files shows only those three).
+- Next step: the owner pushes with `push-gl16-merge-d85bc2f5.sh`; PR #129's body (v6) names the
+  new base, head and check.
