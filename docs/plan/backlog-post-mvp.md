@@ -4,7 +4,7 @@ description: Everything deliberately outside the MVP (post-MVP decisions, ideas 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-28
+last-reviewed: 2026-11-19
 tags: [plan, backlog, post-mvp, extension-points]
 related:
   [

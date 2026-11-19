@@ -4,7 +4,7 @@ description: For humans who run coding agents (Claude Code, Codex, Gemini/Antigr
 audience: [humans]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-08
+last-reviewed: 2026-11-19
 tags: [agents, process, review, git]
 related: ['docs/agents/README.md', 'docs/agents/checklists.md', 'docs/process/git-workflow.md']
 ---
@@ -46,7 +46,7 @@ A good prompt:
 - `INBOX.md` (repo root) is the product owner's queue: requests, feedback and decisions. Saying
   "file updated" in chat tells the agent to read it and treat open items as the prompt. Items
   leave the file only when implemented and confirmed.
-- `docs/plan/progress/` holds the log every task ends with: one new file per task or PR, named `YYYY-MM-DD-HHMM-<branch-slug>.md` (what, verbatim checks, next step); two sessions never edit the same file. The earlier entries are archived in `docs/plan/progress entries`. It is the shared memory between sessions and tools.
+- `docs/plan/progress/` holds the log every task ends with: one new file per task or PR, named `YYYY-MM-DD-HHMM-<branch-slug>.md` (what, verbatim checks, next step); two sessions never edit the same file. The earlier entries are archived in `docs/plan/PROGRESS.md`. It is the shared memory between sessions and tools.
 
 ## 3. Running agents in parallel
 

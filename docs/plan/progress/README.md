@@ -15,8 +15,9 @@ related: ['docs/plan/PROGRESS.md', 'docs/plan/README.md', 'docs/agents/running-a
 
 Every work session or PR ends with one new file in this folder. Two sessions never edit the same
 file, so merging a PR no longer makes the other open PRs conflict on one shared log (DEC-277,
-owner ruling 2026-11-19). The earlier entries (2026-09-30 to 2026-11-18) stay in the archive
-[PROGRESS.md](../PROGRESS.md); it is no longer appended.
+owner ruling 2026-11-19). The earlier entries stay in the archive [PROGRESS.md](../PROGRESS.md).
+New entries go in this folder. A branch that started before DEC-277 merged may still append its
+entry to PROGRESS.md; the next session that touches it may move it here.
 
 ## Read the latest
 
@@ -24,13 +25,14 @@ Read the newest three files before you start a task: they tell you which phase a
 active, which branch it lives on, what the last `npm run check` said and what the next step is.
 
 ```sh
-ls docs/plan/progress | tail -3
+ls docs/plan/progress/2*.md | tail -3
 ```
 
 ## Naming rule
 
-`YYYY-MM-DD-HHMM-<branch-slug>.md`: the local date, the 24-hour local time, and the git branch
-with every `/` changed to `-` (for example `2026-11-19-1430-chore-progress-entry-files.md`).
+`YYYY-MM-DD-HHMM-<branch-slug>.md`: the date and the 24-hour time at the moment you create the
+file (`date +%Y-%m-%d-%H%M`), and the git branch with every `/` changed to `-` (for example
+`2026-11-19-1430-chore-progress-entry-files.md`).
 Name order is time order. Do not rename or reorder files.
 
 ## Format rules
@@ -51,8 +53,7 @@ Name order is time order. Do not rename or reorder files.
   decisions and actions.
 - Never log secrets, tokens or personal data; the files are committed.
 - Agents write the file; they never commit or push it unless asked (`AGENTS.md`).
-- `docs/README.md` lists every file here in its generated index. Run `npm run docs:index` after
-  you add yours.
+- Entry files are checked by `npm run docs:check` but are not listed in `docs/README.md`.
 
 ## Entry template
 
@@ -86,6 +87,6 @@ Phase 1 / sprint 1.1 · feat/core-seeded-random · sholtzman + Claude Code
 
 ## Related
 
-- [PROGRESS.md](../PROGRESS.md) (archive, 2026-09-30 to 2026-11-18)
+- [PROGRESS.md](../PROGRESS.md) (archive)
 - [Delivery plan](../README.md)
 - [Running AI agents on this repo](../../agents/running-agents.md)

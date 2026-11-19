@@ -4,7 +4,7 @@ description: The Definition of Done for agent tasks, the AI-PR review checklist,
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-19
 tags: [agents, process, review, checklist]
 related:
   [

@@ -4,7 +4,7 @@ description: Specification of the follow-up pull request that adds data-selectab
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-19
 tags: [plan, ui, hud, character-select, accessibility, motion, follow-up]
 related:
   - 'docs/reference/game-design/15-figma-frames-and-creative-decisions.md'

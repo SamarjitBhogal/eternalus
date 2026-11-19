@@ -4,7 +4,7 @@ description: The Eternalus MVP roadmap; read this to know which phase we are in,
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-29
+last-reviewed: 2026-11-19
 tags: [plan, roadmap, sprints, metrics]
 related:
   [

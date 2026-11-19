@@ -4,7 +4,7 @@ description: How the repository and its documentation are organised and why (OG-
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-06
+last-reviewed: 2026-11-19
 tags: [requirements, organization, docs, repo-layout]
 paths: ['docs/**', 'packages/**', 'apps/**']
 related:

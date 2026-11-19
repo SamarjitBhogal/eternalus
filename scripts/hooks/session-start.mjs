@@ -7,6 +7,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
+import { PROGRESS_ENTRY_NAME } from '../docs/progressEntry.mjs';
 import { readHookInput, repoRoot, run } from './hookInput.mjs';
 
 const input = await readHookInput();
@@ -44,13 +45,14 @@ const progressDir = path.join(root, 'docs', 'plan', 'progress');
 const progressPath = path.join(root, 'docs', 'plan', 'PROGRESS.md');
 const newestEntry = existsSync(progressDir)
   ? readdirSync(progressDir)
-      .filter((name) => /^\d{4}-\d{2}-\d{2}-\d{4}-.+\.md$/.test(name))
+      .filter((name) => PROGRESS_ENTRY_NAME.test(name))
       .sort()
       .pop()
   : undefined;
 if (newestEntry !== undefined) {
   const text = readFileSync(path.join(progressDir, newestEntry), 'utf8');
-  const heading = text.split(/\r?\n/).find((line) => /^#{1,2} /.test(line));
+  const body = text.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '');
+  const heading = body.split(/\r?\n/).find((line) => /^#{1,2} /.test(line));
   lines.push(
     `[session-start] Last progress entry: ${heading === undefined ? newestEntry : heading.replace(/^#+ /, '')} (docs/plan/progress/${newestEntry})`,
   );

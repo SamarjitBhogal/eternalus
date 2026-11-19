@@ -4,7 +4,7 @@ description: The build plan for the minion system of architecture doc 18 and eve
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-11-12
+last-reviewed: 2026-11-19
 tags: [plan, minions, hordes, guards, camps, bots, spawning, ai]
 related:
   - docs/architecture/18-minion-system.md

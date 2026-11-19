@@ -4,7 +4,7 @@ description: Agent-agnostic requirements AI-01 to AI-12 for work done by coding 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-11-19
 tags: [requirements, agents, harness, verification]
 paths:
   [

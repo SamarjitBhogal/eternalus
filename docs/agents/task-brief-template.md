@@ -4,7 +4,7 @@ description: The copy-paste brief for handing one concern to a teammate or a cod
 audience: [humans]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-11-19
 tags: [agents, process, template]
 related: ['docs/agents/running-agents.md', 'docs/agents/checklists.md']
 ---

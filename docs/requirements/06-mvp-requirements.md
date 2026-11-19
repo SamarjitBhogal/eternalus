@@ -4,7 +4,7 @@ description: The normalised catalogue of functional (FR-nnn) and non-functional 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-04
+last-reviewed: 2026-11-19
 tags: [requirements, mvp, functional, non-functional, traceability, acceptance-criteria]
 paths: ['packages/**', 'apps/**']
 related:

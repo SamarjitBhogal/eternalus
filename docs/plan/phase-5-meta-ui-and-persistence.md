@@ -4,7 +4,7 @@ description: Sprint checklists for the persistence layer (IndexedDB behind Persi
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-19
 tags: [plan, phase-5, persistence, resources, ui, settings, keybindings, developer-menu]
 paths: ['apps/client/src/data/**', 'apps/client/src/ui/**', 'apps/client/src/game/input/**']
 related:

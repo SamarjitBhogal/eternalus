@@ -4,7 +4,7 @@ description: The coding-agent harness as it exists in the repository (instructio
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-29
+last-reviewed: 2026-11-19
 tags: [architecture, agents, harness, hooks, skills, verification]
 paths: ['.claude/**', '.agents/**', 'scripts/hooks/**', 'docs/agents/**']
 related:
@@ -211,7 +211,7 @@ in-context while running effectively doesn't exist", research §4). Three files 
   (`DEC-nn`), requests, feedback, done. Saying "file updated" tells the agent to
   treat the open items as its prompt, in order; an item leaves only when implemented and
   confirmed. The session-start hook prints the open count.
-- `docs/plan/progress/` is the log: one file per session or PR, named `YYYY-MM-DD-HHMM-<branch-slug>.md`, so two sessions never edit the same file (the earlier `###` entries are archived in `docs/plan/progress entries`). Each entry has (date,
+- `docs/plan/progress/` is the log: one file per session or PR, named `YYYY-MM-DD-HHMM-<branch-slug>.md`, so two sessions never edit the same file (the earlier `###` entries are archived in `docs/plan/PROGRESS.md`). Each entry has (date,
   phase/sprint, branch, who plus tool) with exactly three bullets: what was done, checks run
   verbatim, next step. The hook prints the title of the newest file; the `verify` skill writes the entry file.
 - The phase docs' sprint checklists are the feature list with pass/fail: every task line has an

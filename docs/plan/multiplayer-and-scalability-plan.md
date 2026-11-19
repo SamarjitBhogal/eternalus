@@ -4,7 +4,7 @@ description: Draft plan for the two Sprint 3 requirements the course instructor 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-10
+last-reviewed: 2026-11-19
 tags: [plan, multiplayer, duel, server, scalability, sprint-2, sprint-3]
 related:
   - 'docs/plan/README.md'

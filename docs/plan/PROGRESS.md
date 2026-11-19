@@ -1,6 +1,6 @@
 ---
 title: Progress log
-description: The archive of progress entries from 2026-09-30 to 2026-11-18, kept as written; new entries go one file each in docs/plan/progress/ since 2026-11-19.
+description: The archive of progress entries from 2026-09-30, kept as written; new entries go one file each in docs/plan/progress/ since 2026-11-19.
 audience: [humans, agents]
 status: active
 owner: sholtzman
@@ -21,11 +21,12 @@ related:
 
 **Archive.** Since 2026-11-19 (DEC-277) new entries go one file each in
 [progress/](progress/README.md), so that two sessions never edit the same file. This file holds
-the earlier entries (2026-09-30 to 2026-11-18) exactly as written. It is no longer appended.
+the earlier entries exactly as written. A branch that started before DEC-277 merged may still
+append its entry here; the next session that touches it may move it to `progress/`.
 Read the newest files in `progress/` first; read this archive for earlier history. Sprint metrics
 measured before 2026-11-19 are recorded here with the machine they were measured on.
 
-## Format rules (until 2026-11-18)
+## Format rules (for the entries in this file)
 
 These rules applied to the entries below. The current rules are in [progress/README.md](progress/README.md).
 

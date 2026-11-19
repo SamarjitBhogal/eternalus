@@ -4,7 +4,7 @@ description: Sprint checklists for the performance pass against budgets, the hea
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-19
 tags: [plan, phase-6, performance, balance, art, audio, reliability, release]
 paths: ['packages/core/src/content/**', 'packages/core/src/diagnostics/**', 'apps/client/assets/**']
 related:
@@ -71,7 +71,7 @@ and the budget split of [Phase 3 sprint 3.8](phase-3-minions-hordes-and-ai.md#sp
       `measureUserAgentSpecificMemory()` where available; the same match on the oldest teammate
       laptop, `Recommendation:` tick ≤ 12 ms p95 and median frame ≤ 33 ms there). Owner: _.
       Test: counters show no monotonic growth over 54,000 ticks. Done when: both machines are
-      named in PROGRESS with their numbers.
+      named in a progress entry with their numbers.
 
 **Success metric:** tick p95 ≤ 8 ms at 144 units per team + 20 Legends and 60 fps (median frame
 ≤ 16.7 ms, no frame > 50 ms) over a 60 s segment of the busiest match state on the reference
@@ -101,7 +101,7 @@ and [research C3](../research/persistence-input-diagnostics-research.md#c3-testi
 - [ ] **Class matrix + config sweeps** (3 × 3 class swaps: a swap moving the win rate more than
       10 points is the first tuning target; `numLanes` 1, 3 and 5 with `buffTowersPerLane` 1
       and 2 all playable, the D7 regression). Owner: _. Test: the grid. Done when: the results
-      table is in PROGRESS.
+      table is in a progress entry.
 - [ ] **balancing.md proposals evaluated** (every `Recommendation:` in
       [balancing.md](../reference/suggestions/balancing.md) becomes accepted, rejected or
       amended with the metric that decided it; product-level choices go to INBOX; accepted values
@@ -169,7 +169,7 @@ Owner: _ (sim lane lead + persistence owner). Week 10; the CI job lands in week 
 - [ ] **100 seeded full matches at `heavy`** (sim mode, default content, invariants at `heavy`
       every 30 ticks; every bug found adds a replay fixture). Owner: _. Test: the batch on the
       nightly job. Done when: 0 invariant violations and 0 unhandled exceptions, seeds recorded
-      in PROGRESS.
+      in a progress entry.
 - [ ] **Error boundaries and loop safety** (a React error boundary per screen and around the
       HUD; an exception in `Simulation.step()` stops `GameLoop`, logs the repro payload (seed,
       tick, last 32 commands) through `Logger` and ends the match, returning the player to the menu
@@ -187,7 +187,7 @@ Owner: _ (sim lane lead + persistence owner). Week 10; the CI job lands in week 
       `visibilitychange`; a tab hidden five minutes resumes without a tick burst; a manual matrix
       of Chrome, Firefox and Safari on macOS, Windows and Linux for persistence, input including
       side buttons and the `code` fallback, and audio). Owner: _. Test: fake `visibilitychange`
-      events; the matrix table with browser versions. Done when: the matrix is in PROGRESS with 0
+      events; the matrix table with browser versions. Done when: the matrix is in a progress entry with 0
       open blockers.
 
 **Success metric:** 0 invariant violations and 0 unhandled exceptions over 100 seeded matches at
@@ -220,12 +220,12 @@ Owner: sholtzman (docs, report), SamarjitBhogal (release), everyone (deliverable
       `v0.1.0-mvp` on green `main` — humans tag, agents never do — and publishes release notes
       from the changelog; the team holds a retrospective: what worked, what did not, metrics
       against targets; leftovers triaged into [backlog-post-mvp.md](backlog-post-mvp.md); minutes
-      in PROGRESS). Owner: _. Test: CI is green on the tag. Done when: every backlog row has a
+      in a progress entry). Owner: _. Test: CI is green on the tag. Done when: every backlog row has a
       trigger and an owner.
 
 **Success metric:** docs check 0 errors; quick start verified on 3 OSes; `v0.1.0-mvp` on green
 `main`; report, presentation and demo delivered before the deadline; retrospective minutes in
-PROGRESS.
+a progress entry.
 
 ## Success metrics (phase level)
 
