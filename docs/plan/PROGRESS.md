@@ -8544,3 +8544,23 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   "Documentation check passed." (`eternalus-agent-work/abilities/check-fury-r2.log`).
 - Next step: commit, critic round 3 (the last) on this delta, then merge the new
   `feat/ability-framework` (phase/3 `af54fe96`) into this branch.
+
+### 2026-11-19 — Phase 4 / Vanguard PR 2a: critic round 3 — feat/vanguard-kit — sholtzman + Claude Code
+
+- What was done: the fixes from the pre-PR gate's round 3 (the last) on `67ebf01e` (architecture
+  reviewer APPROVE, correctness critic two Low, ponytail no cuts; table in
+  `eternalus-agent-work/abilities/critic-pr2a-r3-findings.md`):
+  - C3-1: two `StatusEffectApplier` tests pin both conditions of the `expire` skip: the slot
+    empties when the `onExpire` follow-up does not land (dead holder) and when it lands but grants
+    no ability (`control-immune`).
+  - R3-1: the follow-up fixture uses a fixed 8 s Fury, so the "follow-up's grant wins" test does
+    not depend on Fury's `TUNE` duration. C3-2: the class TSDoc says "an ended status's
+    `onExpire`". R3-2 (a helper for the one-line slot rule) rejected: no second caller.
+- Tests: breaks B4 and B5 turn the two new tests red, and B2, re-run on the new fixture, is still
+  red (source restored, SHA-256 matched; `eternalus-agent-work/abilities/fury-r3-breaks.log`).
+- Checks run: on the tree of this commit (before this line), `npm run check` → `EXIT=0`: core
+  "Tests 1935 passed (1935)"; protocol "Tests 30 passed (30)"; client "Tests 2091 passed
+  (2091)"; server "Tests 84 passed (84)"; "All matched files use Prettier code style!";
+  "Documentation check passed." (`eternalus-agent-work/abilities/check-fury-r3.log`).
+- Next step: merge the new `feat/ability-framework` (phase/3 `d85bc2f5`) into this branch, then
+  ponytail on the branch diff, re-check and the stacked PR (base `feat/ability-framework`).

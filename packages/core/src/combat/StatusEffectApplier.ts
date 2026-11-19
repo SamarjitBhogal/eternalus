@@ -17,7 +17,7 @@ import type { GameState } from '../state/GameState';
  * `granted` slot with a status's `grants` ability while the status lasts (Fury's dash, DEC-270),
  * so the slot changes in the same call as the status. When the status whose ability the slot holds
  * ends, the slot takes the ability of the last status still active (oldest first) that grants
- * one, or empties, unless the ended status's `onExpire` lands a grant (`expire`).
+ * one, or empties, unless an ended status's `onExpire` lands a grant (`expire`).
  * `DefaultSystemPipeline` builds the match's one instance and hands it to the systems that need it.
  */
 export class StatusEffectApplier {

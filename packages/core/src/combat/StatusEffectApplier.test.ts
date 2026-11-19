@@ -282,20 +282,24 @@ describe('StatusEffectApplier', () => {
 
     describe('when the status that ends applies a granting status (onExpire)', () => {
       const shipped = loadStatusEffects(CONFIG.tickRate, 2);
-      /** `rage` grants `granted` for 2 s (tick 60), then applies Fury; `frenzy` grants `leap`. */
-      const withFollowUp = (granted: string) => {
+      /**
+       * `rage` grants `granted` for 2 s (tick 60), then applies `then`; `frenzy` grants `leap`.
+       * Fury lasts a fixed 8 s (tick 240) here, not its TUNE value, so it always outlasts `rage`.
+       */
+      const withFollowUp = (granted: string, then = 'fury') => {
         const { state, caster } = casterState();
-        const fury = shipped.get('fury');
+        const fury = { ...shipped.get('fury'), durationTicks: 240 };
         const rage = {
           ...fury,
           id: 'rage',
           durationTicks: 60,
           grants: granted,
-          onExpire: [{ kind: 'apply-status', statusId: 'fury' }] as const,
+          onExpire: [{ kind: 'apply-status', statusId: then }] as const,
         };
         const frenzy = { ...fury, id: 'frenzy', grants: 'leap' };
+        const others = [...shipped.all()].filter(({ id }) => id !== 'fury');
         const applier = new StatusEffectApplier(
-          new ContentCatalogue([...shipped.all(), rage, frenzy]),
+          new ContentCatalogue([...others, fury, rage, frenzy]),
         );
         return { state, caster, applier, slot: caster.getComponent(Abilities).slot('granted') };
       };
@@ -322,6 +326,28 @@ describe('StatusEffectApplier', () => {
         applier.expire(state, caster.id);
 
         expect(slot?.abilityId).toBe('fury-dash');
+      });
+
+      it('empties the slot when the follow-up does not land', () => {
+        const { state, caster, applier, slot } = withFollowUp('fury-dash');
+        applier.apply(state, caster.id, 'rage', caster.id);
+        caster.getComponent(Health).applyDamage(1_000_000);
+
+        for (let tick = 0; tick < 60; tick += 1) state.advanceTick();
+        applier.expire(state, caster.id);
+
+        expect(slot?.abilityId).toBeNull();
+      });
+
+      it('empties the slot when the follow-up grants no ability', () => {
+        const { state, caster, applier, slot } = withFollowUp('fury-dash', 'control-immune');
+        applier.apply(state, caster.id, 'rage', caster.id);
+
+        for (let tick = 0; tick < 60; tick += 1) state.advanceTick();
+        applier.expire(state, caster.id);
+
+        expect(caster.getComponent(StatusEffects).has('control-immune')).toBe(true);
+        expect(slot?.abilityId).toBeNull();
       });
     });
 
