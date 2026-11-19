@@ -20,8 +20,8 @@ Reply inline (`Decision: …`).
       and N4 (Aryan Walanj, 2026-11-12; PR #91 `feat/bosses-p3`, your review S2, S3 and nit 3;
       DEC-236).** (1) The values with no reference source, all `TUNE` in
       `content/mobs/cornerBoss.ts`: footprint radius 1.5 m (about twice a heavy camp mob), attack
-      reach 2 m, max speed 2.5 m/s, acceleration 8 m/s², mass 12, vision radius 25.5 m (its aggro
-      radius, from `CORNER_CAMP_RING`). Its health (8,200), damage (205 per hit every 1.5 s) and team-wide XP (500,
+      reach 2 m, max speed 2.5 m/s, acceleration 8 m/s², mass 12, vision radius 45 m (its aggro
+      radius, the ring's diameter, from `CORNER_CAMP_RING`). Its health (8,200), damage (205 per hit every 1.5 s) and team-wide XP (500,
       DEC-237) are `balancing.md`'s MiniBoss row, sized for level-4 Legends, though this boss exists from
       t = 0. Also `TUNE` (2026-11-17, PR #91 critic): the corner camp plan's leash tolerance
       7 m (`content/structures/guardPlans.ts`), above DEC-181's 5.5 m, since this boss is bigger,
@@ -37,8 +37,8 @@ Reply inline (`Decision: …`).
 - [ ] **PR #91 critic (2026-11-13), better than the design: the ring size on the map feature
       (Aryan Walanj, `feat/bosses-p3`, claudiodh's B4).** The corner camp's ring is now core
       content (`CORNER_CAMP_RING`, `content/structures/cornerCampRing.ts`, radius 22.5 m; the
-      boss's vision and acquisition radius follow it: 25.5 m, no longer the 26 m in item (1)
-      above). The client draws it because core exports the constant and `Match` passes the size
+      boss's vision and acquisition radius follow it: 45 m, the ring's diameter, since PR #91
+      B6, so the boss sees the whole ring from any post). The client draws it because core exports the constant and `Match` passes the size
       into `MapView` (`featureSizes`). The critic proposes instead an optional ring radius on
       `MapFeatureDefinition` (`content/maps/mapFeatureDefinitions.ts`), copied onto `MapFeature`
       by the generator, which `MapView` draws from the map data it already gets. That drops the

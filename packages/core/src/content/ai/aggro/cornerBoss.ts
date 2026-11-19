@@ -10,6 +10,6 @@ import { CAMP_MOB_AGGRO } from './campMob';
 export const CORNER_BOSS_AGGRO = {
   ...CAMP_MOB_AGGRO,
   id: 'corner-boss',
-  // From its post it reaches the far side of the ring (`CORNER_CAMP_RING`).
+  // The ring's diameter (`CORNER_CAMP_RING`): from any post it reaches every point of the ring.
   acquisitionRadius: CORNER_CAMP_RING.acquisitionRadius,
 } as const satisfies GuardAggroRuleDefinition;

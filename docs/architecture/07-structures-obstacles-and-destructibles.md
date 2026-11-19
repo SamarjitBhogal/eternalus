@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-17
+last-reviewed: 2026-11-19
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -508,7 +508,10 @@ Its kill pays every Legend of the killer's team, at most 2 levels each (DEC-237,
 MiniBoss row's 5%/s regeneration and its 25% cut to damage from minions, the support units, the
 crystal, the heavy side wave on a kill and the GreaterBoss buffs. The camp's ring is core content
 (`CORNER_CAMP_RING`, `content/structures/cornerCampRing.ts`): the guard plan's leash and post gap,
-the boss's acquisition and vision radius and the ring the client draws all derive from it.
+the boss's acquisition and vision radius (the ring's diameter, so from any post it sees an enemy
+anywhere in the ring) and the ring the client draws all derive from it. Gap until sprint 3.6: the
+boss sees the whole ring but cannot always reach it. Its `leashed-chase` movement steers straight
+and stops on the camp's own objects, so a Legend standing behind the camp is safe.
 
 ## Related
 

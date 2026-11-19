@@ -16,7 +16,7 @@ describe('CORNER_CAMP_RING', () => {
     expect(footprint + postGap + CORNER_BOSS.footprintRadius).toBeLessThan(radius);
   });
 
-  it("reaches the ring's far side from the post", () => {
-    expect(acquisitionRadius).toBe(radius + footprint + postGap);
+  it('reaches every point of the ring from any post: its diameter', () => {
+    expect(acquisitionRadius).toBe(2 * radius);
   });
 });

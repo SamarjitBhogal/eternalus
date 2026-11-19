@@ -17,6 +17,9 @@ export const CORNER_CAMP_RING = {
   /** The ring less the camp's footprint: the boss never chases out of the ring. */
   leashRadius: RADIUS - CAMP_FOOTPRINT,
   postGap: POST_GAP,
-  /** From the boss's post, as far as the ring's far side: it sees an enemy anywhere inside. */
-  acquisitionRadius: RADIUS + CAMP_FOOTPRINT + POST_GAP,
+  /**
+   * The ring's diameter: `GuardController` only takes targets inside the leash from home, so from
+   * any post the boss sees an enemy anywhere inside the ring and still ignores everyone outside.
+   */
+  acquisitionRadius: 2 * RADIUS,
 } as const;

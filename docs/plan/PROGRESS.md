@@ -8746,3 +8746,25 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   Files 21 passed (21)", "Tests 84 passed (84)"; "✓ built in 3.14s"; "Documentation check
   passed." This entry was added after that run (docs only).
 - Next step: push `feat/bosses-p3`, update the PR #91 body, re-request review.
+
+### 2026-11-19 — Phase 3 / corner camp boss (interim), PR #91 B6 (SamarjitBhogal) — feat/bosses-p3 — Aryan Walanj + Claude Code
+
+- What was done: B6, the corner boss now sees its whole ring. On a generated map the camp's own
+  objects push the boss's post away from the camp, so the old acquisition radius (ring radius +
+  camp footprint + post gap, 25.5 m) missed an intruder inside the ring on the far side.
+  `CORNER_CAMP_RING.acquisitionRadius` is now the ring's diameter (`2 * RADIUS`, 45 m);
+  `GuardController` still only takes targets inside the leash from home, so the boss ignores
+  everyone outside the ring. New `Simulation.cornerBossRing.test.ts` puts an enemy Legend inside
+  the ring straight across the camp from the post on a generated map and checks the boss leaves
+  its post; `cornerCampRing.test.ts` pins the diameter. `Match.test.ts` checks every corner
+  camp's ring is drawn at `2 × CORNER_CAMP_RING.radius` (S1). `structureCatalogue.ts` shares one
+  `CAMP_BODY` across the forest and corner camp rows. Docs 07, the phase 3 plan's sprint 3.6
+  boss item (the gap: `leashed-chase` steers straight and stops on the camp's objects) and
+  `INBOX.md` (45 m vision) updated.
+- Checks run: `npm run check` (2026-11-19, run by the human) → exit 1 only on two timeouts in
+  files this change does not touch: core "Tests 2 failed | 1644 passed (1646)",
+  `Simulation.duel.test.ts` "Test timed out in 60000ms" and `Simulation.flowFields.test.ts`
+  "Test timed out in 120000ms"; client "Tests 2016 passed (2016)"; server "Tests 84 passed
+  (84)". Both files then passed alone: "Test Files 2 passed (2)", "Tests 11 passed (11)". Not
+  re-run; CI runs it on push.
+- Next step: watch CI on `feat/bosses-p3`, post the B6 reply to Sam, update the PR #91 body.
