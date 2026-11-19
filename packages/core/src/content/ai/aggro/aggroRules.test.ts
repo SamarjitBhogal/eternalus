@@ -5,10 +5,14 @@ import { GUARD_PLANS } from '../../structures/guardPlans';
 import { AGGRO_RULES } from './aggroRules';
 import { LANE_MINION_AGGRO } from './laneMinion';
 
+// A plan's boss row is exempt: reference 04 "they fight anyone inside their zone", so a boss
+// acquires across its whole court (guardPlans.test.ts checks that radius instead).
+const BOSS_MOBS: ReadonlySet<string> = new Set(['capture-point-boss']);
+
 describe('AGGRO_RULES', () => {
-  it('gives each guard plan’s mobs an acquisition radius of the plan’s leash less its post gap (AI56-F4)', () => {
+  it('gives each guard plan’s ordinary guards an acquisition radius of the plan’s leash less its post gap (AI56-F4)', () => {
     for (const plan of Object.values(GUARD_PLANS)) {
-      for (const { mobId } of plan.table) {
+      for (const { mobId } of plan.table.filter((row) => !BOSS_MOBS.has(row.mobId))) {
         const profile = AGGRO_RULES[MOB_DEFINITIONS.get(mobId).aiProfile ?? ''];
 
         expect({ mobId, radius: profile?.acquisitionRadius }).toEqual({
