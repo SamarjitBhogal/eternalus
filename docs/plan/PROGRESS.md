@@ -9036,3 +9036,28 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Next step: the owner runs the push script, then the merge script. It merges #126, #121, #120
   and #119 into phase/3 in that order with merge commits, each only with green CI, and stops if
   another PR merges into phase/3 in between.
+
+### 2026-11-19 — Phase 3 / the match-start countdown overlay (DEC-278) — feat/match-start-countdown — sholtzman + Claude Code
+
+- What was done: built the owner's ruling of 2026-11-19 (DEC-278, written as its own batch in the
+  owner decisions log). Core `MatchSnapshot` gains `countdownEndTick` (from config, set in
+  `GameState.snapshot()`), so the countdown holds after its `countdown-over` mark has left
+  `upcoming`. `MatchBridge` derives the countdown for both modes into `match-clock`
+  (`countdown`: 10 to 1 locally, 3 to 1 and START in a Duel, else `null`) and counts match time
+  and `match-ended.durationSeconds` from the countdown's end (core's `durationTicks` unchanged).
+  New `ui/hud/MatchCountdown` draws it over the whole match screen: a tinted veil, the character
+  select's red Cinzel numerals and glow, each number struck in (`--motion-medium`, off under
+  reduced motion), no pointer events (DEC-88). `DuelHud` keeps only the score; its countdown
+  tests moved to `MatchCountdown.test.tsx`. Architecture 13 §3 and §5 and 03 §12 updated.
+  Fail-first: core countdown scenario (`countdownEndTick` missing), 15 `MatchBridge` tests and
+  the missing `MatchCountdown` module failed before the build; the first full check then failed
+  `motionTokens.test.ts` on the overlay's literal `1s` animation, fixed with the token.
+- Checks run: `npm run check` → `EXIT=1` on the first run (client "1 failed | 2020 passed",
+  `motionTokens.test.ts`; `eternalus-agent-work/game-loop-plan/check-countdown-2026-11-19.log`).
+  After the fix, `npm run check` → `EXIT=0` before this entry was added
+  (`eternalus-agent-work/game-loop-plan/check-countdown-2026-11-19-r2.log`): core "Tests 1647
+  passed (1647)"; protocol "Tests 29 passed (29)"; client "Tests 2021 passed (2021)"; server
+  "Tests 84 passed (84)"; "Documentation check passed.". Then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: commit, then the pre-PR gate (critic, ponytail, re-check) and the PR on base
+  `phase/3-sprint-3-work`.

@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-14
+last-reviewed: 2026-11-19
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,22 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-19 (chat and question dialog: the match-start countdown)
+
+The owner's words of 2026-11-19, relayed in chat by the PR review coordinator: "during the initial
+10-second hold, the system counts DOWN from 10 with dramatic effect, not starting the timer at 0
+and counting UP to 10. initial 10 seconds do not count toward the game time; this is simply to
+allow the game to catch up with the spawning and let players have some suspense before the game
+starts. the screen should be covered by a tinted overlay with the countdown in the middle in red
+numbering with the same details and effects as the pre-game match countdown." The scope answer of
+the same day, in the question dialog: "Both, same look". Both are kept verbatim outside the
+repository in `eternalus-agent-work/game-loop-plan/owner-words-2026-11-19-countdown.md`. DEC-278
+is this batch (DEC-276, DEC-277, DEC-279 and DEC-280 are other sessions').
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Affects                                                                                                                                                                                                                                                              |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DEC-278 | **The match starts with a countdown over the whole screen, and the countdown is not match time** (amends DEC-88; DEC-87, DEC-129 (1)). (1) The local match's 10 s hold counts down from 10 in the middle of the screen, over a tinted veil, in the red numerals of the character select's countdown (its colour, Cinzel Bold and glow), each number struck in. (2) "Both, same look": the Duel keeps its 3 s countdown and draws its 3, 2, 1 and START with the same overlay. (3) The countdown is not game time: the HUD's match clock starts at 00:00 when the countdown ends, and the results screen's match length leaves it out. Core's `MatchResult.durationTicks` stays the ticks the match ran, a replay fact. (4) So that the clock and the countdown hold after the `countdown-over` mark has fired (a Duel joined late), core's `MatchSnapshot` carries the countdown's end tick, from config. Defaults taken in the build, not the owner's words: a local match shows no START (its veil goes when the countdown ends); START shows for the Duel's first second after the countdown, over the same veil; the numbers do not move under `prefers-reduced-motion`; the overlay takes no pointer events, so the player can turn during the hold (DEC-88). | `packages/core/src/state/Snapshot.types.ts`, `state/GameState.ts`; `apps/client/src/game/MatchBridge.ts`; `bridge/events.ts` (`MatchClock`); `ui/hud/MatchCountdown.tsx`, `ui/hud/DuelHud.tsx`; architecture 03 §12, 13 §3 and §5; decisions DEC-87, DEC-88, DEC-129 |
 
 ## Batch 2026-11-14 (chat: the CI job time limit)
 
