@@ -31,9 +31,16 @@ export const BUILDING_GEOMETRY = {
   },
   /**
    * A fort: an outer capture point's square side and a lane tower's, walls included (sketch
-   * units), and what every fort's side is divided by to give its wall thickness.
+   * units), what every fort's side is divided by to give its wall thickness, and its central
+   * keep's width and height.
    */
-  fort: { capturePointSize: 88, laneTowerSize: 32, wallDivisor: 10 },
+  fort: {
+    capturePointSize: 88,
+    laneTowerSize: 32,
+    wallDivisor: 10,
+    keepWidthDivisor: 3,
+    keepHeightDivisor: 2.5,
+  },
   northDoor: { x: 788, y: 320, width: 24, height: 12 },
   southDoor: { x: 785, y: 541, width: 30, height: 12 },
   westDoor: { x: 700, y: 437.5, width: 9, height: 30 },

@@ -111,4 +111,14 @@ describe('SeatCommands', () => {
     seat.apply(attack, snapshot);
     expect(commands.map((c) => c.type)).toEqual(['attack-target', 'move', 'stop', 'attack-target']);
   });
+
+  it('queues a held movement and attack again after reset', () => {
+    const { seat, commands } = setup();
+    const snapshot = { entities: [unit('foe', 'dark', 5, 5)] };
+    const held = intent({ move: { x: 1, y: 0 }, isAttacking: true, aim: { x: 5, y: 5 } });
+    seat.apply(held, snapshot);
+    seat.reset();
+    seat.apply(held, snapshot);
+    expect(commands.map((c) => c.type)).toEqual(['attack-target', 'move', 'attack-target', 'move']);
+  });
 });
