@@ -7,6 +7,7 @@ import type { DebugConfig } from './diagnostics/InvariantRunner.types';
 import type { Logger } from './diagnostics/Logger.types';
 import type { ReplayOf, ReplayTargetFactoryOf } from './diagnostics/Replay.types';
 import type { ContentCatalogue } from './content/ContentCatalogue';
+import type { GuardPlanDefinition } from './content/structures/structures.types';
 import type { LevelCurveDefinition } from './content/progression/progression.types';
 import type { DefinitionSource, WeaponSource } from './entities/EntityFactory.types';
 import type { StructureDefinition } from './content/structures/structures.types';
@@ -54,6 +55,12 @@ export type SimulationOptions = {
    * when omitted. Every kit id a Legend equips must resolve in it.
    */
   readonly abilities?: AbilityRegistry;
+  /**
+   * Each guard home's plan by definition id; `GUARD_PLANS` when omitted. Tests and tools only: it
+   * is not recorded in `ReplaySetup`, so a match built with other plans replays only through a
+   * target factory that passes the same plans (architecture 15 §7).
+   */
+  readonly guardPlans?: Readonly<Record<string, GuardPlanDefinition>>;
   /**
    * Makes the match a Duel (ADR 0016, DEC-36): both humans start in the Cathedral, each kill
    * resets both Legends, and `killTarget` kills win. Needs `map` and the default pipeline.
