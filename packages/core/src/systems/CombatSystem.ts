@@ -16,8 +16,8 @@ import type { System, SystemContext } from './System.types';
  * (DEC-192): it faces `EntityStore.facingPointOf`, a building's outline point nearest it or a
  * unit's centre (DEC-216 (11)), or a building's centre from inside its outline (DEC-220 (1)). A
  * dead or removed target clears. Statuses stop attacks (`cannot-attack`) and scale the cooldown
- * (`attackSpeed`). Each landed attack then runs the attacker's statuses' `onHit` steps
- * (`HitEffects`: Fury's knock-back). While the match holds units idle (`state.match.isIdleHeld`, the countdown) no
+ * (`attackSpeed`). The attack strategy runs the attacker's statuses' `onHit` steps where the hit
+ * lands (`HitEffects`: Fury's knock-back). While the match holds units idle (`state.match.isIdleHeld`, the countdown) no
  * attack lands, no unit turns to its target, and targets are kept for after. Getting into reach is
  * the controller's job (moving), not this system's.
  */
@@ -28,8 +28,8 @@ export class CombatSystem implements System {
 
   /**
    * @param damage - The match's one damage pipeline, shared with every system that deals damage.
-   * @param hits - Runs the attacker's statuses' `onHit` steps after each landed attack; `null`
-   *   runs none.
+   * @param hits - Runs the attacker's statuses' `onHit` steps when an attack lands, handed to the
+   *   attack strategy; `null` runs none.
    * @param strategies - The strategy registry; attacks use `strategies.attack`.
    */
   public constructor(
@@ -71,8 +71,8 @@ export class CombatSystem implements System {
       this.strategies.attack[combat.attack.strategy].attack(attacker, target.id, combat.attack, {
         state,
         damage: this.damage,
+        hits: this.hits,
       });
-      this.hits?.afterHit(state, attacker, target.id);
       combat.beginAttack(state.tick, statuses?.multiplier('attackSpeed') ?? 1);
     });
   }

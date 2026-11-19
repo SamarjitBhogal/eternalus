@@ -8484,3 +8484,39 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   "Documentation check passed.".
 - Next step: commit, then the pre-PR gate (critic against base `ecac47ac`, ponytail review,
   re-check), then the PR on `feat/ability-framework` (stacked, DEC-275).
+
+### 2026-11-18 — Phase 4 / Vanguard PR 2a: critic round 1 — feat/vanguard-kit — sholtzman + Claude Code
+
+- What was done: the pre-PR gate's round 1 on `62c4387a` (base `ecac47ac`; architecture
+  reviewer REWORK with one blocker, correctness critic eight findings, ponytail minor; table and
+  dispositions in `eternalus-agent-work/abilities/critic-pr2a-r1-findings.md`). Fixed:
+  - Granted slot: `DuelRoundSystem` ends each status through the match's `StatusEffectApplier`
+    (a Duel round reset left Fury's dash in the slot); the applier gives the slot the ability of
+    the last remaining granting status on `remove` and `expire`; `StateHasher` hashes the held
+    ability when it differs from `AbilitySlotRuntime.builtWith` (03 §9); new invariant
+    `granted-slot-matches-status` (tick, `error`); a pipeline test proves the boot status-link
+    check runs; `hold` TSDoc.
+  - Targeting: `abilities/targeting/` (`SelfTargeting`, `DirectionalTargeting`,
+    `HeadingTargeting`, contract `CastTargeting`), registered with `registerTargeting` and bound
+    per ability; `CastValidator` and `AbilitySystem` no longer branch on the kind (rule 12).
+  - Client: a `granted` press casts at once in both cast modes with the latest pointer point.
+  - Meter: `charge` rounds to a grid of a millionth (`UltimateCharge.constants.ts`), so whole
+    points worth a full meter make exactly 1; `KindSet.hasKind` is a type predicate, used for
+    mob kinds; a test for the death loss of a victim already at 0 health.
+  - On-hit: `HitEffects.afterHit(state, attackerId, targetId)` (no `Entity` import, no
+    allocation when there is no `onHit`), called by `MeleeAttackStrategy` through
+    `AttackContext.hits` (05 §10).
+  - Docs: 05 §18 (meter, Fury: Duel reset, refill, hash, invariant, targeting strategies,
+    client), 12 §13 implementation status (`assist-earned`), 13 §10, `fury.ts` TSDoc;
+    `INBOX.md` HC-B7 (3), HC-B8 rewritten (four sign-off items and two notes; new (6): the
+    `abilities/` row of `packages/core/AGENTS.md` needs "targeting", not changed), new HC-Q61
+    (three Fury questions) and HC-Q62 (how the client knows a cast needs no pointer).
+- Tests: each new or changed test failed first under a deliberate break (26 breaks: 23 core, 3
+  client; each source restored and its bytes compared, tree hash the same before and after;
+  log `eternalus-agent-work/abilities/fury-r1-breaks.log`). The golden replays did not change.
+- Checks run: on the tree of this commit (before this entry), `npm run check` → `EXIT=0`: core
+  "Tests 1931 passed (1931)"; protocol "Tests 30 passed (30)"; client "Tests 2090 passed
+  (2090)"; server "Tests 84 passed (84)"; "All matched files use Prettier code style!";
+  "Documentation check passed." (`eternalus-agent-work/abilities/check-fury-r1.log`).
+- Next step: critic round 2 on the round 1 delta, then ponytail, re-check and the PR (stacked
+  on `feat/ability-framework`, DEC-275), after PR #123 takes phase/3 (#99, #101).

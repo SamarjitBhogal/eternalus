@@ -45,7 +45,7 @@ describe('HitEffects', () => {
   it('runs the attacker’s onHit steps on the struck body only, credited to the attacker', () => {
     const { state, caster, struck, neighbour, applied, hits } = setUp('fury');
 
-    hits.afterHit(state, caster, struck.id);
+    hits.afterHit(state, caster.id, struck.id);
 
     expect(applied).toEqual([{ entityId: struck.id, statusId: 'staggered', sourceId: caster.id }]);
     expect(pushOf(struck).x).toBeCloseTo(0);
@@ -56,7 +56,7 @@ describe('HitEffects', () => {
   it('runs nothing for an attacker whose statuses have no onHit steps', () => {
     const { state, caster, struck, applied, hits } = setUp('rallied');
 
-    hits.afterHit(state, caster, struck.id);
+    hits.afterHit(state, caster.id, struck.id);
 
     expect(applied).toEqual([]);
     expect(pushOf(struck)).toEqual({ x: 0, y: 0 });
@@ -66,7 +66,7 @@ describe('HitEffects', () => {
     const { state, caster, struck, applied, hits } = setUp('fury');
     state.entities.remove(struck.id, 'died');
 
-    hits.afterHit(state, caster, struck.id);
+    hits.afterHit(state, caster.id, struck.id);
 
     expect(applied).toEqual([]);
   });

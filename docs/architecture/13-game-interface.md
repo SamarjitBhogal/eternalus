@@ -792,8 +792,9 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
     `feat/vanguard-kit`, [05](05-abilities-weapons-and-loadouts.md) §18).
   - **Fury's dash (`feat/vanguard-kit`, 2026-11-16; DEC-270).** The `InputAction` `granted`
     (Space, label "Fury dash") casts the status-granted slot. `game/AbilityCasts.ts` casts it at
-    once in both cast modes and never selects it for aiming (core aims it from the Legend's
-    heading). `MatchBridge` leaves the slot out of `PlayerHudSnapshot.slots`, as it does
+    once in both cast modes, with the latest pointer point, and never selects it for aiming (core
+    ignores that aim and aims it from the Legend's heading). The client knows this by the slot;
+    `AbilityDisplay` carries no targeting kind (`INBOX.md` HC-Q62). `MatchBridge` leaves the slot out of `PlayerHudSnapshot.slots`, as it does
     `default-action` (`HudSlotId` excludes both), so the HUD draws no slot for it; the aim
     overlay draws nothing for the `hit` shape.
   - **Two cast modes.** `settings.gameplay.castMode` (`'quick' | 'aim-then-click'`, quick by

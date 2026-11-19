@@ -1042,7 +1042,9 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   - **Content.** The table is one record, `content/progression/ultimateCharge.ts` (type
     `UltimateChargeDefinition`), not §6's `UltimateChargeRule` union: the points of each source,
     the death loss and the full meter in points; `charge` stays 0 to 1 (points over the full
-    meter). A mob kill pays by the mob's weight class, as scoring's `minionKill` does; camp mobs
+    meter), rounded at each change to a grid of a millionth of the meter
+    (`systems/UltimateCharge.constants.ts`), so whole points worth a full meter make exactly 1
+    (a plain sum of 12/100 and 5/100 steps can stop at 0.9999999999999999). A mob kill pays by the mob's weight class, as scoring's `minionKill` does; camp mobs
     pay too (DEC-273). There is no boss damage (it joins with bosses, DEC-272) and no
     `class-switch` (post-MVP). `ProgressionContent` injects it.
   - **Sources.** `entity-died`: a killer on another team than the victim gains the Legend or mob
@@ -1054,7 +1056,9 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
     awards (DEC-79's window), and the meter pays that; it keeps no assist window of its own.
     Checkpoints and assists pay on the next tick, because their emitters run after
     `ProgressionSystem`. A dead Legend gains nothing until it respawns (a reading the owner kept
-    on 2026-11-16, recorded after DEC-275); a full meter stops at 1. Each change that moves the
+    on 2026-11-16, recorded after DEC-275); a full meter stops at 1. Once the match has a
+    result, scoring counts nothing, so no assist pays; kills and structure damage still pay
+    while the world runs on (DEC-92). Each change that moves the
     meter is announced as `ultimate-charged { entityId, amount, charge, cause }`
     ([03 §4](03-game-model.md#4-gameevents-the-typed-channel)).
   - **Invariant.** `ultimate-never-fills-passively` (periodic) compares each meter with the
@@ -1070,38 +1074,57 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   `content/status-effects/fury.ts` on the caster: 8 s, `refresh`, `attackSpeed` × 3 and
   `damageDealt` × 1.5, a 1 m knock-back on each basic hit, and the dash
   `content/abilities/furyDash.ts` on Space while it lasts (numbers `TUNE`, `balancing.md`). It
-  ends at death (the fallen Legend is removed). Where the code differs from §3, §6, §8 and §15
+  ends at death (the fallen Legend is removed) or at a Duel round reset, where `DuelRoundSystem`
+  ends each status through the match's `StatusEffectApplier`. Where the code differs from §3, §6, §8 and §15
   (better-than-design items for sign-off: `INBOX.md` HC-B8):
   - **`buff` effect.** `BuffEffect` applies its status to the caster only, credited to the
-    caster. It has no `shape` (§3 lists one): every MVP buff is on self, and the ally shape joins
-    with the first ally buff. A step's `durationSeconds` overrides the status's own time, as a
+    caster. It has no `shape` yet (§3 lists one): every buff built so far is on self. Imbue's
+    Support variety buffs allies (`balancing.md`), so the ally shape joins with it in the Magus PR
+    (DEC-196). A step's `durationSeconds` overrides the status's own time, as a
     debuff's does.
   - **On-hit steps on a status.** A status has two optional fields §8 does not have: `onHit`
     (effect steps, loaded in ticks as an ability's are) and `grants` (an ability id).
-    `abilities/HitEffects` runs the attacker's statuses' `onHit` steps after each basic attack
-    lands (`CombatSystem` calls it), as one cast through the registry's strategies: credited to
+    `abilities/HitEffects` runs the attacker's statuses' `onHit` steps where each basic attack
+    lands: the attack strategy calls it (`MeleeAttackStrategy` in the tick, after the damage, as
+    §10 plans for a weapon's `onHit`; `CombatSystem` hands it over in the attack context), as one cast through the registry's strategies: credited to
     the attacker under the status's id, from the `default-action` slot, placed from the attacker
     to the struck body. The shape `hit` (`abilities/shapes/HitShape`) holds the struck body only
     and pushes away from the attacker, so Fury's knock-back is `KnockbackEffect` unchanged (mass
     rule, `staggered`). A weapon's `onHit` (§10) can run through `HitEffects` too.
   - **Status-granted slot.** An eighth slot, `granted` (Space), comes last in bar order, and
     `granted` is a slot kind. `StatusEffectApplier` fills the slot with the status's `grants`
-    ability on `apply`, and empties it on `remove` and `expire` when it still holds that ability.
+    ability on `apply`. On `remove` and `expire`, when the slot holds that status's ability, it
+    gives the slot the ability of the last remaining active status that grants one, or empties it.
     `AbilitySlotRuntime.hold` changes the ability a slot holds and ends its cooldown on a change
     (an empty slot never cools down). Outside Fury the slot is empty and a cast is `empty-slot`,
     so no restriction kind is needed; the 1 s between dashes is the slot's cooldown. `LastCast`
     keeps the ability cast, so `no-cast-while-not-ready` holds for a dash in Fury's last tick,
-    which empties the slot. `StateHasher` does not hash the held ability: the status that grants
-    it is hashed. A granted ability is in no class pool or kit; `abilities/checkStatusLinks`
+    which empties the slot. `StateHasher` hashes the held ability when it differs from the one
+    the slot was built with (`AbilitySlotRuntime.builtWith`), as
+    [03 §9](03-game-model.md#9-statehasher-and-replays) asks; a kit slot hashes as before. The
+    invariant `granted-slot-matches-status` (each tick, `error`;
+    `diagnostics/invariants/GrantedSlotMatchesStatusInvariant`) checks that the slot holds an
+    ability only while an active status grants that ability, and is empty while none grants one;
+    §16 does not list it. A granted ability is in no class pool or kit; `abilities/checkStatusLinks`
     checks at boot, where `DefaultSystemPipeline` loads the statuses, that each `grants` names an
     ability of slot kind `granted` and that each `onHit` step passes the registry's step check
     (`AbilityRegistry.checkSteps`).
-  - **`heading` targeting.** `fury-dash` targets `heading`: `AbilitySystem` replaces the aim with
-    one metre the way the caster moves, or the way it faces when it stands still (DEC-270).
+  - **`heading` targeting.** `fury-dash` targets `heading`: its aim is one metre the way the
+    caster moves, or the way it faces when it stands still (DEC-270). Each targeting kind is a
+    strategy in `abilities/targeting/` (`SelfTargeting`, `DirectionalTargeting`,
+    `HeadingTargeting`; contract `CastTargeting`), registered with `registerTargeting` and bound
+    to each ability by the registry, as a restriction is. `CastValidator` asks the bound strategy
+    whether the aim blocks the cast (the check "a directional cast has a direction", ADR 0026,
+    now lives in `DirectionalTargeting`) and `AbilitySystem` asks it for the aim the cast runs
+    with, so no code branches on the targeting kind. The registry refuses at boot an ability
+    whose targeting kind has no strategy. §14's recipe and sketch do not list targeting
+    strategies yet.
   - **Snapshot, bots and client.** `Snapshot.player` reports the eight slots; the bridge leaves
     out `granted`, as it does `default-action`, so the HUD draws no slot for the dash
-    ([13](13-game-interface.md) §10). The client casts it at once in both cast modes and never
-    selects it for aiming. A bot may cast a filled `granted` slot (`pickReadySlot`).
+    ([13](13-game-interface.md) §10). The client casts it at once in both cast modes, with the
+    latest pointer point (core ignores that aim), and never selects it for aiming. The client
+    knows this by the slot, not by the targeting kind: `AbilityDisplay` carries no targeting kind
+    (`INBOX.md` HC-Q62). A bot may cast a filled `granted` slot (`pickReadySlot`).
 
 ## Related
 

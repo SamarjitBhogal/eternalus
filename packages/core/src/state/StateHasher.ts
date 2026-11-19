@@ -181,19 +181,21 @@ export class StateHasher {
       fields.push(['aether', aether.current, aether.max]);
     }
     // Ability slots add a field only once one leaves its initial state (no cooldown, no charge,
-    // nothing queued), so a match where nobody cast hashes as before.
+    // nothing queued, the ability it was built with), so a match where nobody cast hashes as
+    // before. A slot holding another ability (the `granted` slot during Fury) also adds its id.
     const slots = (entity.findComponent(Abilities)?.slots ?? []).filter(
-      ({ cooldownUntilTick, charge, pendingCast }) =>
-        cooldownUntilTick !== 0 || charge !== 0 || pendingCast !== null,
+      ({ abilityId, builtWith, cooldownUntilTick, charge, pendingCast }) =>
+        abilityId !== builtWith || cooldownUntilTick !== 0 || charge !== 0 || pendingCast !== null,
     );
     if (slots.length > 0) {
       fields.push([
         'abilities',
-        ...slots.map(({ slot, cooldownUntilTick, charge, pendingCast }) => [
+        ...slots.map(({ slot, abilityId, builtWith, cooldownUntilTick, charge, pendingCast }) => [
           slot,
           cooldownUntilTick,
           charge,
           pendingCast && [pendingCast.point.x, pendingCast.point.y, pendingCast.targetId],
+          ...(abilityId === builtWith ? [] : [abilityId]),
         ]),
       ]);
     }

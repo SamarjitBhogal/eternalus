@@ -400,6 +400,16 @@ describe('MatchBridge', () => {
 
       expect(huds[0]?.player?.slots.map(({ slot: id }) => id)).toEqual(['ability-1']);
     });
+
+    it('leaves the granted slot (Fury’s dash) out: it has no HUD slot', () => {
+      const { bridge, huds } = setUp();
+      bridge.publishAll(
+        withPlayer([slot({}), slot({ slot: 'granted', abilityId: 'fury-dash' })]),
+        'player-1',
+      );
+
+      expect(huds[0]?.player?.slots.map(({ slot: id }) => id)).toEqual(['ability-1']);
+    });
   });
 
   it('re-sends the same structure array while no health changed, and keeps each unchanged tile (DEC-221)', () => {

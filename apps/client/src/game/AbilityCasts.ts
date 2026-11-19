@@ -14,6 +14,12 @@ import type { CastInput } from './AbilityCasts.types';
  *   click; `cancel` drops the selection (Esc). The selection is reported through `onAimingChanged`
  *   the moment it changes, so the store knows it before the next frame.
  *
+ * In both modes the `granted` slot (Fury's dash, Space) queues its cast at once and leaves the
+ * selection alone: the ability a status grants aims itself (the dash goes the way the Legend
+ * moves, DEC-270; core ignores the aim). It needs no pointer either: the cast goes out aimed at the
+ * pointer's latest world point (`aimPoint`), so the dash still fires while the pointer is off the
+ * canvas or over the HUD. Only before the pointer has had any world point does it queue nothing.
+ *
  * `apply` returns whether the main button is consumed: while a slot is selected, and until the
  * confirming press is released, it is no basic attack.
  */
@@ -22,7 +28,10 @@ export class AbilityCasts {
 
   private aiming: HudSlotId | null = null;
 
-  /** The latest world point under the pointer, for the range overlay; `null` before any. */
+  /**
+   * The latest world point under the pointer, for the range overlay and the `granted` slot's cast;
+   * `null` before any.
+   */
   private lastAim: CastInput['aim'] = null;
 
   /** Whether the main button was held on the previous tick, to find the press edge. */
@@ -77,19 +86,18 @@ export class AbilityCasts {
     if (!input.isAttacking) {
       this.isConfirmHeld = false;
     }
-    if (this.castMode === 'quick') {
-      for (const slot of input.triggered) {
-        this.queueCast(actorId, slot, input.aim);
-      }
-      return false;
-    }
     for (const slot of input.triggered) {
       if (slot === 'granted') {
-        // A status-granted ability (Fury's dash) aims itself (DEC-270): it casts at once.
+        // It aims itself (see the class doc): the latest pointer point, even with none this tick.
+        this.queueCast(actorId, slot, this.lastAim);
+      } else if (this.castMode === 'quick') {
         this.queueCast(actorId, slot, input.aim);
       } else if (slot !== 'default-action') {
         this.select(slot);
       }
+    }
+    if (this.castMode === 'quick') {
+      return false;
     }
     if (this.aiming !== null && isPress && input.aim !== null) {
       this.queueCast(actorId, this.aiming, input.aim);

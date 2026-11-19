@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { unitsWithWarriorKit } from './abilities/__fixtures__/casterState';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { DUEL_RULES } from './content/duel/duelRules';
 import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
@@ -10,6 +11,7 @@ import { MapObjectBuilder } from './map/MapObjectBuilder';
 import { MapPresentationBuilder } from './map/MapPresentationBuilder';
 import { Simulation } from './Simulation';
 import type { DuelOptions, RosterSlot } from './Simulation.types';
+import type { DefinitionSource } from './entities/EntityFactory.types';
 import type { Snapshot } from './state/Snapshot.types';
 import type { PlayableTeam } from './teams/teams.types';
 
@@ -56,6 +58,26 @@ const fightUntil = (sim: Simulation, done: (snapshot: Snapshot) => boolean, limi
     sim.step();
   }
   return sim.snapshot();
+};
+
+/** Steps both Legends at each other, without attacking, until they are `distance` apart or less. */
+const walkUpTo = (sim: Simulation, distance: number, limit = 6000) => {
+  const light = sim.humanLegendIdOf('light') ?? '';
+  const dark = sim.humanLegendIdOf('dark') ?? '';
+  const gap = () => {
+    const snapshot = sim.snapshot();
+    const from = legendOf(sim, snapshot, 'light').legend.transform;
+    const to = legendOf(sim, snapshot, 'dark').legend.transform;
+    return (to?.x ?? 0) - (from?.x ?? 0);
+  };
+  for (let i = 0, x = gap(); i < limit && Math.abs(x) > distance; i += 1, x = gap()) {
+    sim.enqueueCommand({ type: 'move', actorId: light, direction: { x: Math.sign(x), y: 0 } });
+    sim.enqueueCommand({ type: 'move', actorId: dark, direction: { x: -Math.sign(x), y: 0 } });
+    sim.step();
+  }
+  sim.enqueueCommand({ type: 'stop', actorId: light });
+  sim.enqueueCommand({ type: 'stop', actorId: dark });
+  sim.step();
 };
 
 describe('Simulation: a Duel', () => {
@@ -122,6 +144,61 @@ describe('Simulation: a Duel', () => {
       runReplay(replay, (setup) => new Simulation({ ...setup, logger: new NullLogger() }))
         .firstDivergence,
     ).toBeNull();
+  });
+
+  it('ends Fury at the round reset, so its dash leaves the granted slot (every invariant checked)', () => {
+    // A Vanguard against a one-health Magus: each hit is a kill, and four kills fill the meter
+    // (a Legend kill gives 25, DEC-272).
+    const shipped = unitsWithWarriorKit();
+    const content: DefinitionSource = {
+      has: (id) => shipped.has(id),
+      get: (id) => (id === 'magus' ? { ...shipped.get(id), baseHealth: 1 } : shipped.get(id)),
+    };
+    const sim = new Simulation({
+      config,
+      seed: 7,
+      logger: new NullLogger(),
+      debug: TEST_DEBUG_CONFIG,
+      map,
+      mapObjects,
+      roster: ROSTER.map((slot) =>
+        slot.team === 'dark' ? { ...slot, definitionId: 'magus' } : slot,
+      ),
+      duel: { killTarget: 10 },
+      content,
+    });
+    const vanguard = sim.humanLegendIdOf('light') ?? '';
+    const log: string[] = [];
+    sim.on('status-applied', ({ entityId, statusId }) => log.push(`${statusId} on ${entityId}`));
+    sim.on('status-expired', ({ entityId, statusId }) => log.push(`${statusId} off ${entityId}`));
+    sim.on('command-rejected', ({ reason }) => log.push(`rejected ${reason}`));
+    const kills = (snapshot: Snapshot) => snapshot.match.duel?.kills.light ?? 0;
+    const castSlot = (slot: 'ability-4' | 'granted') => {
+      sim.enqueueCommand({
+        type: 'cast-ability',
+        actorId: vanguard,
+        slot,
+        aim: { point: { x: 0, y: 0 }, targetId: null },
+      });
+      sim.step();
+    };
+
+    for (let kill = 1; kill <= 4; kill += 1) {
+      walkUpTo(sim, 3);
+      fightUntil(sim, (snapshot) => kills(snapshot) >= kill, 60);
+    }
+    walkUpTo(sim, 3);
+    castSlot('ability-4');
+    const furyOn = log.length;
+    fightUntil(sim, (snapshot) => kills(snapshot) >= 5, 60); // the reset falls inside Fury's 8 s
+    castSlot('granted');
+
+    expect(kills(sim.snapshot())).toBe(5);
+    expect(log.slice(furyOn - 1)).toEqual([
+      `fury on ${vanguard}`,
+      `fury off ${vanguard}`,
+      'rejected empty-slot',
+    ]);
   });
 
   it('refuses a Duel without a map', () => {

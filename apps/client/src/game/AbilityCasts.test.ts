@@ -19,7 +19,7 @@ const setUp = () => {
   return { casts, changes, queued, press };
 };
 
-const cast = (slot: HudSlotId, point: Vec2): Command => ({
+const cast = (slot: Command<'cast-ability'>['slot'], point: Vec2): Command => ({
   type: 'cast-ability',
   actorId: ACTOR,
   slot,
@@ -38,6 +38,16 @@ describe('AbilityCasts in quick cast', () => {
       cast('ability-1', CLICK),
       cast('gadget-1', CLICK),
     ]);
+    expect(casts.aimingSlot).toBeNull();
+  });
+
+  it('casts the granted slot (Fury’s dash) at once, aimed at the latest pointer point even with none now', () => {
+    const { casts, queued, press } = setUp();
+
+    press({ triggered: ['granted'] });
+    press({ triggered: ['granted'], aim: null });
+
+    expect(queued()).toEqual([cast('granted', HERE), cast('granted', HERE)]);
     expect(casts.aimingSlot).toBeNull();
   });
 
@@ -70,6 +80,21 @@ describe('AbilityCasts in aim-then-click', () => {
     expect(queued()).toEqual([cast('ability-1', CLICK)]);
     expect(casts.aimingSlot).toBeNull();
     expect(changes).toEqual(['ability-1', null]);
+  });
+
+  it('casts the granted slot (Fury’s dash) at once and keeps the selection, even with no pointer point', () => {
+    const { casts, changes, queued, press } = aimMode();
+
+    press({ triggered: ['granted'] });
+    expect(queued()).toEqual([cast('granted', HERE)]);
+    expect(casts.aimingSlot).toBeNull();
+
+    press({ triggered: ['ability-1'], aim: CLICK });
+    press({ triggered: ['granted'], aim: null });
+
+    expect(queued()).toEqual([cast('granted', HERE), cast('granted', CLICK)]);
+    expect(casts.aimingSlot).toBe('ability-1');
+    expect(changes).toEqual(['ability-1']);
   });
 
   it('selects a slot the same way for an ability centred on the caster (slot 3 and the ultimate)', () => {

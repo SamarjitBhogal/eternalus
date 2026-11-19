@@ -12,10 +12,23 @@ type DamageDealer = {
   apply(state: GameState, targetId: EntityId, amount: number, source: DamageSource): unknown;
 };
 
-/** What an attack may use: the state and the one damage pipeline. */
+/**
+ * Whatever runs the effects of a landed hit (a status's `onHit`, 05 §8 and §10).
+ * `abilities/HitEffects` satisfies it; the port exists because `entities/` may not import
+ * `abilities/`.
+ */
+type HitRunner = {
+  afterHit(state: GameState, attackerId: EntityId, targetId: EntityId): void;
+};
+
+/**
+ * What an attack may use: the state, the one damage pipeline and what runs a landed hit's effects
+ * (`null`: none run).
+ */
 export type AttackContext = {
   readonly state: GameState;
   readonly damage: DamageDealer;
+  readonly hits: HitRunner | null;
 };
 
 /**

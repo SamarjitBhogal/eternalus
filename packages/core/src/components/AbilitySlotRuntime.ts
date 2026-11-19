@@ -15,18 +15,22 @@ export class AbilitySlotRuntime {
   /** The ultimate meter, 0 to 1 (DEC-202); filled by the charge rules, emptied by a cast. */
   public charge = 0;
 
+  private held: string | null;
+
   private pending: Aim | null = null;
 
   private last: LastCast | null = null;
 
   /**
    * @param slot - The bar slot.
-   * @param held - The ability it holds (a kit entry), or `null` for an empty slot.
+   * @param builtWith - The ability it holds at first (a kit entry), or `null` for an empty slot.
    */
   public constructor(
     public readonly slot: AbilitySlot,
-    private held: string | null,
-  ) {}
+    public readonly builtWith: string | null,
+  ) {
+    this.held = builtWith;
+  }
 
   /** The ability the slot holds, or `null` when it is empty. */
   public get abilityId(): string | null {
@@ -34,10 +38,12 @@ export class AbilitySlotRuntime {
   }
 
   /**
-   * Puts `abilityId` in the slot, or empties it (`null`): a status granting an ability while it
-   * lasts (`StatusEffectApplier`). Holding the ability already held changes nothing (a refreshed
-   * status keeps the cooldown). Any other change also ends the cooldown: it belonged to the ability
-   * that left, and an empty slot never cools down (`cooldown-and-aether-bounds`).
+   * Puts `abilityId` in the `granted` slot, or empties it (`null`): a status fills it with the
+   * ability it grants while it lasts (`StatusEffectApplier`). A loadout change is not this method's
+   * job: it uses `reset`, which starts the full cooldown (architecture 05 §6). Holding the ability
+   * already held changes nothing (a refreshed status keeps the cooldown). Any other change also
+   * ends the cooldown: it belonged to the ability that left, and an empty slot never cools down
+   * (`cooldown-and-aether-bounds`).
    */
   public hold(abilityId: string | null): void {
     if (abilityId !== this.held) {

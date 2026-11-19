@@ -1,3 +1,4 @@
+import type { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
@@ -12,14 +13,22 @@ import type { System, SystemContext } from './System.types';
  * A Duel's round rule (DEC-36): when a seat's Legend dies, the other team scores a kill and both
  * Legends return to their start points at full health at once, with no respawn timer. The reset also drops every status effect,
  * the attack target and any dash or knock-back under way, so a damage over time cannot kill a
- * Legend the tick after and a push cannot slide it off its start point. It runs
- * before `DeathSystem`, so the dead Legend is healed before it would be removed.
+ * Legend the tick after and a push cannot slide it off its start point. Each status ends through
+ * the match's `StatusEffectApplier`, oldest first, so each one emits `status-expired` and an ability
+ * it granted leaves the `granted` slot with it (Fury's dash). It runs before `DeathSystem`, so the
+ * dead Legend is healed before it would be removed.
  */
 export class DuelRoundSystem implements System {
   public readonly name = 'duel-round';
 
-  /** @param starts - Where each team's Legend starts and returns to. */
-  public constructor(private readonly starts: Readonly<Record<PlayableTeam, Vec2>>) {}
+  /**
+   * @param starts - Where each team's Legend starts and returns to.
+   * @param statuses - The match's one status applier; it ends the reset Legends' statuses.
+   */
+  public constructor(
+    private readonly starts: Readonly<Record<PlayableTeam, Vec2>>,
+    private readonly statuses: StatusEffectApplier,
+  ) {}
 
   /** Scores this tick's fallen Legends, then resets both seats if anyone fell. */
   public update({ state }: SystemContext): void {
@@ -42,9 +51,12 @@ export class DuelRoundSystem implements System {
       movement?.stop();
       movement?.endPushes();
       legend.findComponent(Combat)?.setTarget(null);
-      const statuses = legend.findComponent(StatusEffects);
-      for (const { definition } of [...(statuses?.active ?? [])]) {
-        statuses?.remove(definition.id);
+      // Ids first: each removal changes the list.
+      const ids = (legend.findComponent(StatusEffects)?.active ?? []).map(
+        ({ definition }) => definition.id,
+      );
+      for (const statusId of ids) {
+        this.statuses.remove(state, legend.id, statusId);
       }
       legend.getComponent(Transform).moveTo(this.starts[team]);
     }

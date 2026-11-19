@@ -1,6 +1,7 @@
 import { CaptureProgressBoundsInvariant } from './invariants/CaptureProgressBoundsInvariant';
 import { CooldownAndAetherBoundsInvariant } from './invariants/CooldownAndAetherBoundsInvariant';
 import { FiniteTransformsInvariant } from './invariants/FiniteTransformsInvariant';
+import { GrantedSlotMatchesStatusInvariant } from './invariants/GrantedSlotMatchesStatusInvariant';
 import { HealthWithinBoundsInvariant } from './invariants/HealthWithinBoundsInvariant';
 import { GuardWithinLeashInvariant } from './invariants/GuardWithinLeashInvariant';
 import { HordeMembershipConsistentInvariant } from './invariants/HordeMembershipConsistentInvariant';
@@ -40,6 +41,7 @@ export class DefaultInvariantRunner extends InvariantRunner {
         new CooldownAndAetherBoundsInvariant(abilities),
         new NoCastWhileNotReadyInvariant(),
         new UltimateNeverFillsPassivelyInvariant(),
+        new GrantedSlotMatchesStatusInvariant(),
         new CaptureProgressBoundsInvariant(),
         new PhaseMonotonicInvariant(phaseOrder, terminalPhases),
       ],

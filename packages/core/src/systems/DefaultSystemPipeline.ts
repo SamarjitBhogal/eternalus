@@ -152,7 +152,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
             new EnragedSystem(state, statuses, ENRAGING_STRUCTURES),
           ]),
       // Before death, so a fallen Duel Legend is healed and moved instead of removed.
-      ...(duelStarts === undefined ? [] : [new DuelRoundSystem(duelStarts)]),
+      ...(duelStarts === undefined ? [] : [new DuelRoundSystem(duelStarts, statuses)]),
       new OutOfCombatHealingSystem(state, OUT_OF_COMBAT_HEALING),
       new DeathSystem(),
       new CaptureSystem(state.config.match.capturePoints, tickRate),

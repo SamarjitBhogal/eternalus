@@ -1,4 +1,5 @@
 import { Abilities } from '../components/Abilities';
+import type { AbilitySlotRuntime } from '../components/AbilitySlotRuntime';
 import { Health } from '../components/Health';
 import { StatusEffects } from '../components/StatusEffects';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
@@ -14,7 +15,9 @@ import type { GameState } from '../state/GameState';
  * projectiles and structures call `apply`, auras and holds call `remove`, `StatusEffectSystem`
  * calls `expire`. It emits every `status-applied` and `status-expired`, and fills the holder's
  * `granted` slot with a status's `grants` ability while the status lasts (Fury's dash, DEC-270),
- * so the slot changes in the same call as the status. `DefaultSystemPipeline` builds the match's
+ * so the slot changes in the same call as the status. When the status whose ability the slot holds
+ * ends, the slot takes the ability of the last status still active (oldest first) that grants
+ * one, or empties. `DefaultSystemPipeline` builds the match's
  * one instance and hands it to the systems that need it.
  */
 export class StatusEffectApplier {
@@ -74,8 +77,11 @@ export class StatusEffectApplier {
       return false;
     }
     const { sourceId, definition } = active;
+    const slot = target.findComponent(Abilities)?.slot('granted');
     statuses.remove(statusId);
-    StatusEffectApplier.takeGrant(target.findComponent(Abilities), definition);
+    if (StatusEffectApplier.holdsGrantOf(slot, definition)) {
+      StatusEffectApplier.regrant(slot, statuses);
+    }
     state.events.emit('status-expired', { entityId: targetId, statusId, sourceId });
     return true;
   }
@@ -91,6 +97,8 @@ export class StatusEffectApplier {
     if (target === undefined || statuses === undefined) {
       return;
     }
+    const slot = target.findComponent(Abilities)?.slot('granted');
+    let hasGrantEnded = false;
     // Allocated only when a status with an onExpire times out, never per tick (NFR-023).
     let followUps: [StatusExpireSpec, EntityId | null][] | undefined;
     for (const status of statuses.active) {
@@ -100,13 +108,16 @@ export class StatusEffectApplier {
           statusId: status.definition.id,
           sourceId: status.sourceId,
         });
-        StatusEffectApplier.takeGrant(target.findComponent(Abilities), status.definition);
+        hasGrantEnded ||= StatusEffectApplier.holdsGrantOf(slot, status.definition);
         for (const spec of status.definition.onExpire) {
           (followUps ??= []).push([spec, status.sourceId]);
         }
       }
     }
     statuses.expire(state.tick);
+    if (hasGrantEnded) {
+      StatusEffectApplier.regrant(slot, statuses);
+    }
     if (followUps === undefined) {
       return;
     }
@@ -115,14 +126,20 @@ export class StatusEffectApplier {
     }
   }
 
-  /** Empties the holder's `granted` slot when it holds the ability `definition` grants. */
-  private static takeGrant(
-    abilities: Abilities | undefined,
+  /** Whether `slot` (the holder's `granted` slot) holds the ability `definition` grants. */
+  private static holdsGrantOf(
+    slot: AbilitySlotRuntime | undefined,
     definition: StatusEffectDefinition,
-  ): void {
-    const slot = abilities?.slot('granted');
-    if (definition.grants !== undefined && slot?.abilityId === definition.grants) {
-      slot.hold(null);
-    }
+  ): boolean {
+    return definition.grants !== undefined && slot?.abilityId === definition.grants;
+  }
+
+  /**
+   * Fills `slot` from `statuses` once the status whose ability it held has left them: the grant of
+   * the last active status (oldest first) that has one, or nothing.
+   */
+  private static regrant(slot: AbilitySlotRuntime | undefined, statuses: StatusEffects): void {
+    const granting = statuses.active.findLast(({ definition }) => definition.grants !== undefined);
+    slot?.hold(granting?.definition.grants ?? null);
   }
 }

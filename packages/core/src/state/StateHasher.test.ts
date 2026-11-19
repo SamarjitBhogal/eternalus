@@ -148,6 +148,27 @@ describe('StateHasher', () => {
     expect(hashes.size).toBe(4);
   });
 
+  it('hashes the granted slot while it holds an ability, and the ability it holds', () => {
+    const { state, soldier } = stateWithSoldier();
+    const bar = new Abilities({
+      abilities: ['slam', 'rip-and-tear', 'shield-wall'],
+      ultimate: 'berserk',
+    });
+    soldier.addComponent(bar);
+    const empty = hasher.hash(state);
+    const granted = bar.slot('granted');
+
+    granted?.hold('fury-dash');
+    const furyDash = hasher.hash(state);
+    granted?.hold('leap');
+    const leap = hasher.hash(state);
+    granted?.hold(null);
+
+    expect(new Set([empty, furyDash, leap]).size).toBe(3);
+    // Empty again, the bar hashes as one never granted anything: the golden replays stay valid.
+    expect(hasher.hash(state)).toBe(empty);
+  });
+
   it('hashes forced motion only while a push is under way, then each push field', () => {
     const { state, soldier } = stateWithSoldier();
     const before = hasher.hash(state);

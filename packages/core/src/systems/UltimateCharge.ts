@@ -1,12 +1,13 @@
 import { Abilities } from '../components/Abilities';
 import { ULTIMATE_SLOT } from '../components/Abilities.constants';
 import { Health } from '../components/Health';
-import type { MobKind } from '../content/mobs/mobs.types';
+import { MOB_KINDS } from '../content/mobs/mobKinds';
 import type { UltimateChargeDefinition } from '../content/progression/progression.types';
 import type { AbilitySlotRuntime } from '../components/AbilitySlotRuntime';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameEventMap, UltimateChargeCause } from '../state/GameEvents.types';
 import type { GameState } from '../state/GameState';
+import { CHARGE_STEPS } from './UltimateCharge.constants';
 import type { ChargeChange } from './UltimateCharge.types';
 
 /**
@@ -28,7 +29,8 @@ import type { ChargeChange } from './UltimateCharge.types';
  *
  * Only an entity with an ultimate slot has a meter. A dead Legend gains nothing until it
  * respawns (the owner's reading of 2026-11-16, as for structure XP); a death still takes points.
- * The meter stays from 0 to 1, and an unchanged meter announces nothing.
+ * The meter stays from 0 to 1, on a grid of `CHARGE_STEPS` steps (so whole points worth a full
+ * meter make exactly 1), and an unchanged meter announces nothing.
  */
 export class UltimateCharge {
   private readonly pending: ChargeChange[] = [];
@@ -70,7 +72,8 @@ export class UltimateCharge {
       ) {
         continue;
       }
-      const charge = Math.min(1, Math.max(0, meter.charge + points / this.table.fullMeter));
+      const exact = Math.min(1, Math.max(0, meter.charge + points / this.table.fullMeter));
+      const charge = Math.round(exact * CHARGE_STEPS) / CHARGE_STEPS;
       if (charge !== meter.charge) {
         const amount = charge - meter.charge;
         meter.charge = charge;
@@ -91,7 +94,7 @@ export class UltimateCharge {
     }
     if (victim.family === 'legend') {
       this.queue(state, killerId, this.table.legendKill, 'legend-kill');
-    } else if (this.isMobKind(victim.kind)) {
+    } else if (MOB_KINDS.hasKind(victim.kind)) {
       this.queue(state, killerId, this.table.mobKill[victim.kind], 'mob-kill');
     }
   }
@@ -129,10 +132,6 @@ export class UltimateCharge {
     if (points !== 0 && UltimateCharge.meterOf(state, recipientId) !== undefined) {
       this.pending.push({ recipientId, points, cause });
     }
-  }
-
-  private isMobKind(kind: string): kind is MobKind {
-    return Object.hasOwn(this.table.mobKill, kind);
   }
 
   private static meterOf(state: GameState, entityId: EntityId): AbilitySlotRuntime | undefined {

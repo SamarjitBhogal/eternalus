@@ -5,6 +5,7 @@ import { Abilities } from '../components/Abilities';
 import { Health } from '../components/Health';
 import { StatusEffects } from '../components/StatusEffects';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { ContentCatalogue } from '../content/ContentCatalogue';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { UnknownDefinitionError } from '../content/UnknownDefinitionError';
@@ -243,6 +244,40 @@ describe('StatusEffectApplier', () => {
       applier.remove(state, caster.id, 'fury');
 
       expect(slot?.abilityId).toBe('other-dash');
+    });
+
+    describe('while two statuses grant an ability', () => {
+      const shipped = loadStatusEffects(CONFIG.tickRate, 2);
+      /** Fury, and a test status that grants another dash for 2 s (tick 60). */
+      const twoGranting = () => {
+        const { state, caster } = casterState();
+        const frenzy = { ...shipped.get('fury'), id: 'frenzy', durationTicks: 60, grants: 'leap' };
+        const applier = new StatusEffectApplier(new ContentCatalogue([...shipped.all(), frenzy]));
+        return { state, caster, applier, slot: caster.getComponent(Abilities).slot('granted') };
+      };
+
+      it('gives the slot back to the other status’s ability when the one it holds is removed', () => {
+        const { state, caster, applier, slot } = twoGranting();
+        applier.apply(state, caster.id, 'fury', caster.id);
+        applier.apply(state, caster.id, 'frenzy', caster.id);
+
+        expect(slot?.abilityId).toBe('leap');
+
+        applier.remove(state, caster.id, 'frenzy');
+
+        expect(slot?.abilityId).toBe('fury-dash');
+      });
+
+      it('gives the slot back to the other status’s ability when the one it holds runs out', () => {
+        const { state, caster, applier, slot } = twoGranting();
+        applier.apply(state, caster.id, 'fury', caster.id);
+        applier.apply(state, caster.id, 'frenzy', caster.id);
+
+        for (let tick = 0; tick < 60; tick += 1) state.advanceTick();
+        applier.expire(state, caster.id);
+
+        expect(slot?.abilityId).toBe('fury-dash');
+      });
     });
 
     it('lands on a unit with no ability bar', () => {

@@ -111,6 +111,19 @@ describe('UltimateCharge', () => {
     });
   });
 
+  it('takes the death loss from a victim already at 0 health, as it is when it dies in play', () => {
+    const { legend, spawn, meterOf, chargeOf, kill, pay } = setUp();
+    const enemy = spawn('warrior', 'warrior', 'dark');
+    const victimMeter = meterOf(enemy);
+    if (victimMeter !== undefined) victimMeter.charge = 0.4;
+    enemy.getComponent(Health).applyDamage(enemy.getComponent(Health).max);
+
+    kill(legend, enemy);
+    pay();
+
+    expect(chargeOf(enemy)).toBe(0.25);
+  });
+
   it('gives a dead Legend no gain until it respawns', () => {
     const { legend, spawn, chargeOf, kill, pay } = setUp();
     legend.getComponent(Health).applyDamage(legend.getComponent(Health).max);
@@ -169,6 +182,29 @@ describe('UltimateCharge', () => {
     expect(chargeOf(legend)).toBe(0.05);
     expect(chargeOf(ally)).toBeCloseTo(0.17);
     expect(announced().map(({ cause }) => cause)).toEqual(['checkpoint', 'checkpoint', 'assist']);
+  });
+
+  it('makes exactly a full meter from whole points worth 100, in any order', () => {
+    const { state, legend, chargeOf, pay } = setUp();
+    const assist = () => {
+      state.events.emit('assist-earned', { legendId: legend.id, victimId: 'entity-gone' });
+    };
+    // 12 + 8 × 5 + 4 × 12 = 100; summed as fractions of 100 this order ends at 0.9999999999999999.
+    assist();
+    for (let checkpoint = 0; checkpoint < 8; checkpoint += 1) {
+      state.events.emit('checkpoint-reached', {
+        pointId: 'point-1',
+        team: 'light',
+        checkpoint: 1,
+        presentLegendIds: [legend.id],
+      });
+    }
+    for (let count = 0; count < 4; count += 1) {
+      assist();
+    }
+    pay();
+
+    expect(chargeOf(legend)).toBe(1);
   });
 
   it('never fills on its own: a thousand passes with no event change nothing', () => {

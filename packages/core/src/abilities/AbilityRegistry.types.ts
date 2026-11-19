@@ -1,15 +1,20 @@
 import type { AbilityDefinition } from '../content/abilities/AbilityDefinition.types';
 import type { AbilityEffect, EffectStep } from './AbilityEffect.types';
 import type { AbilityRestriction, RestrictionSpec } from './AbilityRestriction.types';
+import type { CastTargeting, TargetingSpec } from './targeting/CastTargeting.types';
 
 /**
- * An ability definition as the registry composes it: the loaded `AbilityDefinition` with its steps
- * and restrictions read by kind only, so a test may compose an ability from a kind the shipped
- * union does not list (the Fake Bolt litmus, 05 §16).
+ * An ability definition as the registry composes it: the loaded `AbilityDefinition` with its steps,
+ * restrictions and targeting read by kind only, so a test may compose an ability from a kind the
+ * shipped union does not list (the Fake Bolt litmus, 05 §16).
  */
-export type ComposableAbility = Omit<AbilityDefinition, 'effects' | 'restrictions'> & {
+export type ComposableAbility = Omit<
+  AbilityDefinition,
+  'effects' | 'restrictions' | 'targeting'
+> & {
   readonly effects: readonly EffectStep[];
   readonly restrictions: readonly RestrictionSpec[];
+  readonly targeting: TargetingSpec | null;
 };
 
 /** Where the registry finds an ability by id; a `ContentCatalogue<AbilityDefinition>` satisfies it. */
@@ -33,6 +38,12 @@ export type BoundRestriction = {
   readonly spec: RestrictionSpec;
 };
 
+/** An ability's targeting bound to its strategy. */
+export type BoundTargeting = {
+  readonly strategy: CastTargeting;
+  readonly spec: TargetingSpec;
+};
+
 /**
  * A castable composition of one ability (05 §14): its definition with each effect step and
  * restriction bound to its strategy. `ComposedAbility` is the only implementation; the interface
@@ -44,6 +55,11 @@ export interface Ability {
   /** The cast timeline in order; empty when the ability is not available (no effects). */
   readonly steps: readonly CastStep[];
   readonly restrictions: readonly BoundRestriction[];
+  /**
+   * How a cast aims, bound to its strategy; `null` for an ability with no targeting (only one with
+   * no effects has none, `loadAbilities`): its cast runs with the aim as sent, with no aim check.
+   */
+  readonly targeting: BoundTargeting | null;
   /**
    * Whether it can be cast at all: it has effects (`effects: []` marks an ability in a kit that is
    * not built yet). A missing strategy never makes it unavailable: `resolve` throws instead.

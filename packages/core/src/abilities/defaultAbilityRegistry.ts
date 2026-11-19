@@ -11,10 +11,13 @@ import { MinLevelRestriction } from './restrictions/MinLevelRestriction';
 import { CircleShape } from './shapes/CircleShape';
 import { HitShape } from './shapes/HitShape';
 import { PathShape } from './shapes/PathShape';
+import { DirectionalTargeting } from './targeting/DirectionalTargeting';
+import { HeadingTargeting } from './targeting/HeadingTargeting';
+import { SelfTargeting } from './targeting/SelfTargeting';
 
 /**
  * The ability registry with every built-in strategy (architecture 05 §14): the ONLY file that
- * names effect, restriction and shape classes, and the place their content is injected (rule 11).
+ * names effect, restriction, shape and targeting classes, and the place their content is injected (rule 11).
  * A new kind is one class and one line here. Every ability is checked and resolved before this
  * returns, so a missing strategy or a step its strategy refuses fails at boot.
  *
@@ -36,6 +39,9 @@ export const createDefaultAbilityRegistry = (
   registry.registerShape(new CircleShape());
   registry.registerShape(new PathShape());
   registry.registerShape(new HitShape());
+  registry.registerTargeting(new SelfTargeting());
+  registry.registerTargeting(new DirectionalTargeting());
+  registry.registerTargeting(new HeadingTargeting());
   registry.registerRestriction(new MinLevelRestriction());
   registry.resolveAll();
   return registry;

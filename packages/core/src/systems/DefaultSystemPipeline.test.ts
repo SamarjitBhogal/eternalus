@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { loadAbilities } from '../content/abilities/loadAbilities';
 import { CastValidator } from '../abilities/CastValidator';
 import { createDefaultAbilityRegistry } from '../abilities/defaultAbilityRegistry';
+import { testAbilityRegistry } from '../abilities/__fixtures__/fakeAbilities';
 
 import { TEST_DEBUG_CONFIG } from '../diagnostics/InvariantRunner.constants';
 
@@ -12,6 +13,7 @@ import { Transform } from '../components/Transform';
 import { Progression } from '../components/Progression';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../config/matchPhases';
+import { ContentValidationError } from '../content/ContentValidationError';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { loadLevelCurves } from '../content/progression/loadLevelCurves';
 import { ULTIMATE_CHARGE } from '../content/progression/ultimateCharge';
@@ -621,5 +623,28 @@ describe('DefaultSystemPipeline', () => {
 
     // Inside the fort's box the chase closes in over the court's blocked ground (owner 2026-11-04).
     expect(minion.getComponent(Movement).heading).toEqual({ x: 1, y: 0 });
+  });
+
+  it('refuses to boot when a status names an effect its ability registry lacks (Fury’s knock-back)', () => {
+    const build = () =>
+      new DefaultSystemPipeline({
+        invariants: new DefaultInvariantRunner({
+          debug: TEST_DEBUG_CONFIG,
+          logger: new MemoryLogger(),
+          abilities: loadAbilities(30),
+          curves: PROGRESSION.curves,
+          phaseOrder: MATCH_PHASES,
+          terminalPhases: TERMINAL_MATCH_PHASES,
+        }),
+        state: new GameState(createDefaultGameConfig(), 1),
+        progression: PROGRESSION,
+        director: IDLE_DIRECTOR,
+        abilities: testAbilityRegistry([]), // no effect strategies, so no knock-back
+      });
+
+    expect(build).toThrow(ContentValidationError);
+    expect(build).toThrow(
+      'Status "fury" onHit names effect "knockback" with no registered strategy',
+    );
   });
 });

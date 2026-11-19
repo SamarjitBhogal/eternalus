@@ -13,7 +13,7 @@ export class KindSet<Definition extends EntityDefinitionBase> {
   }
 
   /** Whether `kind` is one of this family's kinds. */
-  public hasKind(kind: string): boolean {
+  public hasKind(kind: string): kind is Definition['kind'] {
     return this.kinds.has(kind);
   }
 

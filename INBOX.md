@@ -121,7 +121,8 @@ Reply inline (`Decision: …`).
       emits a new event, `assist-earned { legendId, victimId }`, for each assist it awards (DEC-79),
       and the meter pays that. Better: one assist rule (DRY); the score table and the meter cannot
       disagree on who assisted. The same edit uses the real event name `checkpoint-reached`
-      (05 §13 says `checkpoint-cleared`).
+      (05 §13 says `checkpoint-cleared`). Cost: the Legend death rule now gets the event bus and
+      has a second role, which 12 §5 does not plan; 12 §13's implementation status records it.
       (4) **The invariant's ledger lives in the match state.** `ultimate-never-fills-passively`
       (05 §16) must compare each meter with its announced changes, but an invariant's `check`
       only reads the state. Built: `state/ChargeLedger` (`GameState.charges`) keeps the charge
@@ -129,35 +130,68 @@ Reply inline (`Decision: …`).
       `AllyDamageTally` keeps ally damage. Better: the invariant stays pure, and the ledger is
       not hashed (it repeats `charge`).
       Approve all, approve some, or say no; a "no" reworks the code.
-- [ ] **HC-B8 — Better than the design, for sign-off: five parts of Fury
-      (`feat/vanguard-kit`, 2026-11-16; DEC-270, DEC-271) — sign-off per item.** All five are
+- [ ] **HC-B8 — Better than the design, for sign-off: four parts of Fury, and two notes
+      (`feat/vanguard-kit`, 2026-11-16; DEC-270, DEC-271) — sign-off per item.** All six are
       built, under your 2026-11-09 rule "pick the best architectural outcome, build it now";
       architecture 05 §18 ("Fury") describes them. The design text of 05 §3, §6, §8 and §15 is not
       changed.
       (1) **A status can carry on-hit steps.** 05 §8 has no on-hit field; 05 §10 plans `onHit`
       for weapons only. Built: a status's optional `onHit` (effect steps, as an ability's), run
-      by one class, `abilities/HitEffects`, after each basic attack lands, and a new shape `hit`
+      by one class, `abilities/HitEffects`, which the attack strategy calls where each basic
+      attack lands (as 05 §10 plans for a weapon's `onHit`), and a new shape `hit`
       (the struck body only, pushed away from the attacker). Better: Fury's knock-back is the
       shipped `knockback` effect unchanged (mass rule, stagger); no Fury code in `CombatSystem`;
       a weapon's `onHit` can use the same class.
       (2) **A status can grant an ability, in its own slot.** 05 §10 plans weapons that grant
       statuses, not statuses that grant actions. Built: an eighth bar slot, `granted` (Space),
       and a slot kind of the same name. The `fury` status fills the slot with `fury-dash` while
-      it lasts and empties it when it ends. Outside Fury the slot is empty, so a cast is refused
+      it lasts. When it ends, the slot takes the ability of another active status that grants
+      one, or is empty; an invariant, `granted-slot-matches-status`, checks each tick that the
+      slot and the statuses agree. Outside Fury the slot is empty, so a cast is refused
       as `empty-slot` and no new restriction is needed; the 1 s between dashes is the slot's
       cooldown, which ends when the slot changes. Better: the dash is an ordinary ability (cost,
       cooldown, checks, bots) and not special Fury code; the next ability a status grants is
       content only.
-      (3) **A `buff` step has no area.** 05 §3 lists `shape` for `buff`. Built: a buff goes on
-      the caster only. Better: every MVP buff (Veil, Fury, Berserk, Imbue) is on self; the ally
-      shape joins with the first ally buff, so no field is unused now.
+      (3) **A `buff` step has no area yet (an interim, for your information; no sign-off
+      needed).** 05 §3 lists `shape` for `buff`. Built: a buff goes on the caster only. This is
+      not better than the design: Imbue's Support variety buffs allies within 6 m
+      (`balancing.md`), so the ally shape joins with Imbue in the Magus PR (DEC-196). Every buff
+      built before then is on self.
       (4) **A new targeting kind, `heading`.** Built: `fury-dash` aims itself, one metre the way
       the Legend moves, or the way it faces when it stands still (DEC-270); the pointer is
-      ignored. Better: the rule is in one place in core, so bots and players dash alike.
-      (5) **The granted ability is not in the state hash.** Built: `StateHasher` hashes the
-      slot's cooldown, not which ability it holds. Better: the `fury` status, which is hashed,
-      decides that ability, so hashing it again adds nothing.
+      ignored. Each targeting kind (`self`, `directional`, `heading`) is now a strategy in
+      `abilities/targeting/`, which the registry binds to each ability, so no code branches on
+      the kind (architecture rule 12). Better: the rule is in one place in core, so bots and
+      players dash alike, and the next targeting kind is one class plus one registry line.
+      (5) **The granted ability is in the state hash (for your information; no sign-off
+      needed).** Built: `StateHasher` hashes the ability a slot holds when it differs from the
+      one the slot was built with, as architecture 03 §9 asks. This follows the design.
+      (6) **The `abilities/` folder holds targeting strategies too.** `packages/core/AGENTS.md`
+      describes `abilities/` as "effect, restriction and shape strategies"; the new
+      `abilities/targeting/` folder needs "targeting" added to that row. A change to an AGENTS
+      row needs your sign-off (DEC-263 (4)); the row is not changed yet.
       Approve all, approve some, or say no; a "no" reworks the code.
+- [ ] **HC-Q61 — Three Fury questions the documents do not answer (`feat/vanguard-kit`,
+      2026-11-16; DEC-270, DEC-271).** Each is built one way now, so nothing waits on the answer.
+      (1) **How long does Fury's dash take?** Built: 0.3 s (`content/abilities/furyDash.ts`,
+      `TUNE`), Blade Runner's time. Fury's row in `balancing.md` gives no time, and the game doc
+      says "Press [button] to dash instantly in any direction". Keep 0.3 s, make it instant (one
+      tick), or another time?
+      (2) **Does Fury's damage × 1.5 also raise ability damage?** Built: yes. Fury raises the
+      Legend's `damageDealt`, which scales all its damage, abilities included; the knock-back
+      comes with basic attacks only. The game doc says "Attacks do Nx damage during Fury and apply
+      knock-back". Keep (all damage), or basic attacks only?
+      (3) **Should the HUD show that Space dashes during Fury?** Built: no. The HUD has no slot
+      for the dash (as for the default action); the controls screen lists Space as "Fury dash".
+      Add a prompt while Fury lasts, or leave it?
+- [ ] **HC-Q62 — How does the client know a cast needs no pointer? (`feat/vanguard-kit`,
+      2026-11-16; critic round 1).** Built (B1): the client decides by the slot. A press of Space
+      (the `granted` slot) casts at once in both cast modes with the latest pointer point, which
+      core ignores (`fury-dash` aims by the Legend's heading). Option B2, not built: add the
+      targeting kind to `AbilityDisplay` (a public API change), so the client decides "needs a
+      pointer" by kind; a future granted ability that does need a pointer, or a kit ability that
+      does not (a `self` cast), would then behave correctly with no client change. The reviewer
+      names B2 the stronger design. Keep B1 for now, or build B2 in this PR?
 - [ ] **HC-Q54 — Derive each class's ability pool from the abilities' `classId`?
       (`feat/ability-framework`; changes DEC-198's shape, not built).** Today `abilityPool` on
       the class lists every ability, and each ability also names its `classId`: two sources, and
