@@ -39,7 +39,7 @@ const courtMatch = () => {
   stampWalledCourt(world.grid);
   world.grid.stampFootprint(FURNITURE);
   const flowFields = new LaneFlowFields(world.grid, map, config.map.flowFieldCorridorHalfWidth);
-  const paths = new AStarPathfinder(world.grid, { maxExpansions: 10_000, snapCells: 6 });
+  const paths = new AStarPathfinder(world.grid, { maxSearchArea: 40_000, snapCells: 6 });
   const space = new SpaceIndex(map.width, map.height, 2);
   const state = new GameState(config, 1, world, { space, paths });
   const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));

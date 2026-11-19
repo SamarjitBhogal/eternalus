@@ -7,6 +7,7 @@ import { matchSetupSlice } from './slices/matchSetupSlice';
 import { matchSlice } from './slices/matchSlice';
 import { sessionSlice } from './slices/sessionSlice';
 import { settingsSlice } from './slices/settingsSlice';
+import { viewSlice } from './slices/viewSlice';
 import type { AppDispatch } from './store';
 import type { TypedEventBus } from './TypedEventBus';
 
@@ -39,6 +40,7 @@ export function connectBusToStore(
       dispatch(setup.reset());
       dispatch(hudSlice.actions.reset());
       dispatch(match.reset());
+      dispatch(viewSlice.actions.reset());
       if (draft === null) return;
       dispatch(setup.setTeam({ mode: draft.mode, seed: draft.seed, playerTeam: draft.playerTeam }));
       dispatch(setup.setRosters({ allies: draft.allies, enemies: draft.enemies }));
@@ -49,10 +51,15 @@ export function connectBusToStore(
     bus.on('match-clock', (clock) => dispatch(match.clockChanged(clock))),
     bus.on('match-ended', (event) => dispatch(match.ended(event))),
     bus.on('duel-ended', (outcome) => dispatch(match.duelEnded(outcome))),
+    bus.on('duel-versus', (names) => dispatch(match.versusChanged(names))),
+    bus.on('duel-state', (state) => dispatch(match.duelHudChanged(state))),
     bus.on('hud-state', ({ player }) => dispatch(hudSlice.actions.hudStateChanged(player))),
     bus.on('structure-state', ({ structures }) => dispatch(match.structuresChanged(structures))),
     bus.on('capture-state', ({ points }) => dispatch(match.capturePointsChanged(points))),
     bus.on('announcement', (line) => dispatch(hudSlice.actions.announced(line))),
+    bus.on('minimap-visibility', ({ isShown }) =>
+      dispatch(viewSlice.actions.minimapShownChanged(isShown)),
+    ),
     bus.on('settings', (settings) => dispatch(settingsSlice.actions.settingsChanged(settings))),
   ];
   return () => {

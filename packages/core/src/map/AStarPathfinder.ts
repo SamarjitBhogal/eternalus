@@ -18,9 +18,10 @@ import type { WorldMap } from './WorldMap';
  * index; then string pulling, so the answer is the farthest cell of the path the bot can walk to
  * in a straight line. When the straight line to the goal is already clear it answers the goal
  * without searching. A start or goal on blocked ground (inside a footprint) moves to the nearest
- * open cell within `snapCells`. A search stops after `maxExpansions` cells and answers "no way"
- * rather than flood the whole grid. Allocation-free after construction: a search stamps the cells
- * it touches instead of clearing whole-grid buffers.
+ * open cell within `snapCells`. A search stops after it settles `maxSearchArea` of ground (that
+ * area over the cell area, in cells) and answers "no way" rather than flood the whole grid, so a
+ * finer grid searches the same ground. Allocation-free after construction: a search stamps the
+ * cells it touches instead of clearing whole-grid buffers.
  *
  * Court cells (`WorldMap.isCourt`: a lane tower's fort court) are open to a search, so a way from
  * or to a unit inside a court runs through its doorways, never through its walls (DEC-185 (A),
@@ -38,6 +39,8 @@ export class AStarPathfinder {
   private readonly heap: CellHeap;
   private readonly path: Int32Array;
   private readonly exits: CourtExitField;
+  /** The most cells one search settles: `limits.maxSearchArea` over the grid's cell area. */
+  private readonly maxExpansions: number;
   private search = 0;
   private foundCost = -1;
   /** The cell the search under way heads for; -1 in an `exitWaypoint` search, which has none. */
@@ -47,12 +50,13 @@ export class AStarPathfinder {
 
   /**
    * @param grid - The walkability grid every search runs over.
-   * @param limits - How many cells a search may settle and how far it snaps a blocked end.
+   * @param limits - How much ground a search may settle and how far it snaps a blocked end.
    */
   public constructor(
     private readonly grid: WorldMap,
     private readonly limits: AStarLimits,
   ) {
+    this.maxExpansions = Math.floor(limits.maxSearchArea / grid.cellSize ** 2);
     const cells = grid.cols * grid.rows;
     this.cost = new Uint32Array(cells);
     this.from = new Int32Array(cells);
@@ -96,7 +100,7 @@ export class AStarPathfinder {
    * beside one) should head next to leave it by the nearest doorway: the farthest cell of the way
    * through court cells to open ground it can walk to in a straight line, or the first one (DEC-217
    * (15)). Returns `false`, leaving `out` as it was, on open ground or when no way is found within
-   * `maxExpansions`. The answer for each cell is kept until the grid changes (`CourtExitField`).
+   * `maxSearchArea`. The answer for each cell is kept until the grid changes (`CourtExitField`).
    */
   public exitWaypoint(start: Vec2, out: MutableVec2): boolean {
     return this.exits.waypoint(start, out);
@@ -163,11 +167,7 @@ export class AStarPathfinder {
     this.goalRow = (goalCell - this.goalCol) / cols;
     this.heap.clear();
     this.reach(startCell, 0, -1);
-    for (
-      let expanded = 0;
-      expanded < this.limits.maxExpansions && this.heap.size > 0;
-      expanded += 1
-    ) {
+    for (let expanded = 0; expanded < this.maxExpansions && this.heap.size > 0; expanded += 1) {
       const cell = this.heap.pop();
       if (this.isEnd(cell, startCell)) {
         this.foundCost = this.cost[cell] ?? -1;

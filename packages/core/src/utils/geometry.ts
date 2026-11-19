@@ -55,6 +55,10 @@ export const isPointInPolygon = (point: Vec2, polygon: Polygon): boolean => {
 export const isPointInRect = ({ x, y }: Vec2, rect: Rect): boolean =>
   x >= rect.x && x <= rect.x + rect.width && y >= rect.y && y <= rect.y + rect.height;
 
+/** Whether two upright rectangles overlap or touch, edges included. */
+export const doRectsOverlap = (a: Rect, b: Rect): boolean =>
+  a.x <= b.x + b.width && a.x + a.width >= b.x && a.y <= b.y + b.height && a.y + a.height >= b.y;
+
 /**
  * Whether `point` lies inside any of `polygons`: the one point-in-footprint test shared by a
  * capture zone's floor (`ZoneArea.contains`) and the building at a point (`findBuildingAt`).

@@ -149,7 +149,7 @@ describe('PathingSystem', () => {
       const space = new SpaceIndex(map.width, map.height, 2);
       const world = matchWorldOf(map, 2);
       stampWalledCourt(world.grid);
-      const paths = new AStarPathfinder(world.grid, { maxExpansions: 10_000, snapCells: 6 });
+      const paths = new AStarPathfinder(world.grid, { maxSearchArea: 40_000, snapCells: 6 });
       const state = new GameState(createDefaultGameConfig(), 1, world, { space, paths });
       const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
       const add = (team: 'light' | 'dark', at: { x: number; y: number }) => {
