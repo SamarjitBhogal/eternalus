@@ -8857,3 +8857,22 @@ group)` takes a `FeatureKeyedGroup` instead of a closure, so the client cannot r
   (2011)"; server "Tests 84 passed (84)"; "Documentation check passed.". After it only docs
   changed (architecture 04 row, this entry): `prettier --check` and `npm run docs:check` on them.
 - Next step: the owner pushes; PR #129's body names the new base, head and check.
+
+### 2026-11-18 — Phase 3 / GL-16: merge phase/3 (#101, #99 merged) — refactor/map-feature-link — sholtzman + Claude Code
+
+- What was done: PR #129 became conflicting again when #101 (zoom and minimap keys) and #99 (the
+  capture point mini-boss) merged into phase/3 as `af54fe96`. Merged it into this branch as
+  `1ad75212`. Conflicts: `packages/core/src/Simulation.ts` (the `spawnZones` TSDoc only: this
+  branch's `MapFeatureLink` sentence plus #99's guard-home and `@returns` text), architecture 04
+  and 15 (`last-reviewed`: the newer date kept) and this file (phase/3's entries, then this
+  branch's). The critic (`architecture-reviewer`) on the merge: approve, no blocker; #99 joins a
+  boss and its guards to their zone by the guard post's home entity id, never by position or by a
+  map feature, and its guards and boss carry no `MapFeatureLink`, so `map-feature-groups-unique`
+  cannot fire from them; the conflict resolution keeps both sides' changes exactly.
+- Checks run: `npm run check:quick` → exit 0. `npm run check` → `EXIT=0` on `1ad75212`
+  (`eternalus-agent-work/game-loop-plan/gl16-merge-af54fe96-check-2026-11-18.log`): core "Tests
+  1644 passed (1644)"; protocol "Tests 29 passed (29)"; client "Tests 2020 passed (2020)"; server
+  "Tests 84 passed (84)"; "Documentation check passed.". Then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the owner pushes (one more phase/3 merge is expected first: the #126 → #121 → #120 →
+  #119 chain); PR #129's body names the new base, head and check.
