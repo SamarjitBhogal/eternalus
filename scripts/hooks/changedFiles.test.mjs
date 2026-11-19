@@ -9,7 +9,7 @@ import { parsePorcelainZ, planChecks } from './changedFiles.mjs';
 
 const z = (...entries) => `${entries.join('\0')}\0`;
 
-test('parsePorcelainZ keeps modified and untracked files, drops deleted ones, follows renames', () => {
+test('parsePorcelainZ keeps every path, deleted ones and rename sources included', () => {
   const out = z(
     ' M a/b.ts',
     '?? c d.tsx',
@@ -18,7 +18,18 @@ test('parsePorcelainZ keeps modified and untracked files, drops deleted ones, fo
     'R  new.ts',
     'old.ts',
   );
-  assert.deepEqual(parsePorcelainZ(out), ['a/b.ts', 'c d.tsx', 'new.ts']);
+  assert.deepEqual(parsePorcelainZ(out), [
+    'a/b.ts',
+    'c d.tsx',
+    'gone.ts',
+    'staged-gone.ts',
+    'new.ts',
+    'old.ts',
+  ]);
+});
+
+test('deleting a source file still runs the typecheck', () => {
+  assert.equal(planChecks(parsePorcelainZ(z(' D packages/core/src/a.ts'))).kind, 'changed');
 });
 
 test('planChecks skips when only docs or assets changed', () => {
@@ -40,6 +51,7 @@ test('planChecks runs the full check when a lint or type config changed', () => 
     'tsconfig.base.json',
     'apps/client/tsconfig.json',
     'eslint.config.js',
+    'package-lock.json',
   ]) {
     assert.equal(planChecks(['a.ts', file]).kind, 'full', file);
   }

@@ -144,7 +144,7 @@ node -e "const s=require('./.claude/settings.json');console.log(Object.keys(s.ho
 ```
 
 Expected: exit code 0 for the first and third commands; the second exits 2 only if
-`npm run check:quick` fails. If a hook prints nothing, check that Node 24 is active (`.nvmrc`).
+a check on the changed files fails or times out. If a hook prints nothing, check that Node 24 is active (`.nvmrc`).
 
 ## 7. CodeRabbit
 

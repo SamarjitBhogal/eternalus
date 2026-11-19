@@ -15,6 +15,9 @@
  * this hook; then we exit 0 so a genuinely unfixable failure cannot trap the agent forever
  * (the human sees the failure in the transcript and in CI).
  */
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+
 import { planChecks, parsePorcelainZ } from './changedFiles.mjs';
 import { readHookInput, repoRoot, run, tail } from './hookInput.mjs';
 
@@ -26,8 +29,14 @@ if (input.stop_hook_active === true) {
   process.exit(0);
 }
 
-const root = repoRoot(input);
-const status = run('git', ['status', '--porcelain', '-z', '-uall'], {
+const startedAt = Date.now();
+// Porcelain paths are relative to the top level, and the session cwd can be a subfolder.
+const topLevel = await run('git', ['rev-parse', '--show-toplevel'], {
+  cwd: repoRoot(input),
+  timeoutMs: 30_000,
+});
+const root = topLevel.status === 0 ? topLevel.output.trim() : repoRoot(input);
+const status = await run('git', ['--no-optional-locks', 'status', '--porcelain', '-z', '-uall'], {
   cwd: root,
   timeoutMs: 30_000,
 });
@@ -39,30 +48,38 @@ if (plan.kind === 'skip') {
   process.exit(0);
 }
 
+// Deleted files still trigger the typecheck (their importers may break), but ESLint skips them.
+const lintFiles = plan.files.filter((file) => existsSync(path.join(root, file)));
 const steps =
   plan.kind === 'full'
     ? [['npm', ['run', 'check:quick']]]
-    : [
+    : // The steps of the `check:quick` script in package.json, with ESLint narrowed to the changed
+      // files: a new step there belongs here too.
+      [
         ['npm', ['run', 'check:no-js']],
         ['npm', ['run', 'typecheck']],
-        [
-          'npx',
-          [
-            '--no-install',
-            'eslint',
-            '--max-warnings',
-            '0',
-            '--no-warn-ignored',
-            '--',
-            ...plan.files,
-          ],
-        ],
+        // ESLint with no file arguments would lint the whole repo.
+        ...(lintFiles.length === 0
+          ? []
+          : [
+              [
+                'npx',
+                [
+                  '--no-install',
+                  'eslint',
+                  '--max-warnings',
+                  '0',
+                  '--no-warn-ignored',
+                  '--',
+                  ...lintFiles,
+                ],
+              ],
+            ]),
       ];
 
-const startedAt = Date.now();
 for (const [command, args] of steps) {
   const remaining = TIMEOUT_MS - (Date.now() - startedAt);
-  const result = run(command, args, { cwd: root, timeoutMs: Math.max(remaining, 1_000) });
+  const result = await run(command, args, { cwd: root, timeoutMs: Math.max(remaining, 1_000) });
   if (result.timedOut) {
     process.stderr.write(
       `[stop-check] Timed out after ${Math.round(TIMEOUT_MS / 1000)} s (machine under load). This is not a check failure. Run \`npm run check:quick\` directly.\n${tail(result.output, 20)}\n`,
