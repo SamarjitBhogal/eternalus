@@ -22,7 +22,10 @@ export type SpawnPlan = {
   readonly weights: LaneAssessmentWeights;
   /** The formation every horde marches in. */
   readonly formationId: string;
-  /** Each structure's guard plan by structure definition id (18 §7), in ticks (`loadGuardPlans`). */
+  /**
+   * Each home's guard plan by structure or zone definition id (18 §7), in ticks
+   * (`loadGuardPlans`).
+   */
   readonly guards: Readonly<Record<string, GuardPlanDefinition>>;
 };
 

@@ -86,30 +86,53 @@ type GuardTableEntry = {
 /** The fields of a guard plan that are the same as authored and as loaded. */
 type GuardPlanBase = {
   readonly table: readonly GuardTableEntry[];
-  /** How far past the structure's edge a guard may chase ("don't leave the tower's perimeter"). */
+  /** How far past the home's edge a guard may chase ("don't leave the tower's perimeter"). */
   readonly leashRadius: number;
-  /** Posts stand on a ring this far outside the structure's edge. */
+  /** Posts stand on a ring this far outside the home's edge. */
   readonly postGap: number;
   /**
    * How far past its leash a guard may stand (`GuardWithinLeashInvariant`): the distance it covers
    * between two decisions plus the farthest it stands from a target in reach.
    */
   readonly leashTolerance: number;
-  /** When the posts are first filled: the match's first tick, or when the countdown ends (camps). */
-  readonly activation: 'match-start' | 'countdown-end';
-  /**
-   * `each`: a guard comes back one respawn time after it dies (tower guards). `group`: the posts
-   * wait until every guard is dead, then all come back one respawn time later and the home is
-   * announced cleared (`camp-cleared`, camps).
-   */
-  readonly respawn: 'each' | 'group';
 };
 
 /**
- * The guards a structure keeps (architecture 07 §6, 18 §7.1): tower guards, or a camp's group,
- * as authored. Posts are filled while the structure stands.
+ * The guards a structure or zone keeps (architecture 07 §6, 18 §7.1): tower guards, a camp's
+ * group, or a zone's guards, as authored. Posts are filled while the home stands (a zone always
+ * stands). Distances are measured from the home's edge; a zone's edge is its anchor (radius 0).
  */
-export type AuthoredGuardPlan = GuardPlanBase & { readonly respawnSeconds: number };
+export type AuthoredGuardPlan = GuardPlanBase & {
+  readonly activation: AuthoredGuardActivation;
+  readonly respawn: AuthoredGuardRespawn;
+};
 
-/** A guard plan as loaded (`loadGuardPlans`): its respawn time in ticks, converted once. */
-export type GuardPlanDefinition = GuardPlanBase & { readonly respawnTicks: number };
+/** A guard plan as loaded (`loadGuardPlans`): its activation delay and respawn time in ticks. */
+export type GuardPlanDefinition = GuardPlanBase & {
+  readonly activation: GuardActivation;
+  readonly respawn: GuardRespawn;
+};
+
+/**
+ * When a guard plan's posts are first filled (architecture 18 §7.1), as authored: the match's
+ * first tick, or `delaySeconds` after the countdown ends (0 for camps).
+ */
+type AuthoredGuardActivation =
+  { readonly at: 'match-start' } | { readonly at: 'countdown-end'; readonly delaySeconds: number };
+
+/** `AuthoredGuardActivation` as loaded: the delay in ticks. */
+type GuardActivation =
+  { readonly at: 'match-start' } | { readonly at: 'countdown-end'; readonly delayTicks: number };
+
+/**
+ * How a guard plan's posts refill (architecture 18 §7.1), as authored. `each`: a guard comes back
+ * `seconds` after it dies (tower guards). `group`: the posts wait until every guard is dead, then
+ * all come back `seconds` later and the home is announced cleared (`camp-cleared`, camps).
+ * `never`: a dead guard's post stays empty for the rest of the match.
+ */
+type AuthoredGuardRespawn =
+  { readonly kind: 'each' | 'group'; readonly seconds: number } | { readonly kind: 'never' };
+
+/** `AuthoredGuardRespawn` as loaded: the respawn time in ticks. */
+type GuardRespawn =
+  { readonly kind: 'each' | 'group'; readonly ticks: number } | { readonly kind: 'never' };

@@ -38,7 +38,7 @@ import { isPlayableTeam } from '../teams/playableTeams';
  * schedule's times come in ticks, converted once at load (`loadSpawnWaves`), so the system keeps
  * no schedule state of its own.
  *
- * It also runs every structure's guard plan (18 §7, 07 §6) through its `GuardRoster`.
+ * It also runs every structure's and zone's guard plan (18 §7, 07 §6) through its `GuardRoster`.
  */
 export class SpawnSystem implements System {
   public readonly name = 'spawn';
@@ -47,13 +47,15 @@ export class SpawnSystem implements System {
   private readonly guards: GuardRoster;
 
   /**
-   * @param state - The match; its structure entities, already spawned, are the spawn points.
+   * @param state - The match; its structure entities, already spawned, are the spawn points, and
+   *   its structures and zones, already spawned, the guard homes.
    * @param factory - Builds the minions.
    * @param plan - The waves and the guards (loaded in ticks), the opening wave, the definitions and
    *   the spawn layout.
    * @throws ContentValidationError when a wave this map can spawn names an unknown mob or a mob of
    *   another weight class, or a guard plan names an unknown mob, so bad content fails when the
-   *   match is built, not when the wave is due. Wave times are checked at load (`loadSpawnWaves`).
+   *   match is built, not when the wave is due. Wave and guard times are checked at load
+   *   (`loadSpawnWaves`, `loadGuardPlans`).
    */
   public constructor(
     state: GameState,
@@ -62,10 +64,10 @@ export class SpawnSystem implements System {
   ) {
     // The opening source sends the opening hordes even when it has no recurring waves.
     const spawners: Structure[] = [];
-    // The definition ids of every structure on this map, whose guard plans are checked.
+    // The definition ids of every structure and zone on this map, whose guard plans are checked.
     const homes = new Set<string>();
     state.entities.forEach((entity) => {
-      if (entity instanceof Structure) {
+      if (GuardRoster.isHome(entity)) {
         homes.add(entity.definitionId);
       }
       const team = state.entities.teamOf(entity.id);
@@ -94,8 +96,8 @@ export class SpawnSystem implements System {
   /**
    * Rejects a plan whose waves name an unknown mob or a mob of another weight class, or whose
    * guard plans name an unknown mob. Only the waves this map's spawners can send and the guard
-   * plans of the structures on it (`homes`, by definition id, whether or not they spawn hordes)
-   * are checked, so a match without hordes needs no minions.
+   * plans of the structures and zones on it (`homes`, by definition id, whether or not they spawn
+   * hordes) are checked, so a match without hordes needs no minions.
    */
   private validate(homes: ReadonlySet<string>): void {
     const { openingWave, definitions, guards } = this.plan;
@@ -104,7 +106,8 @@ export class SpawnSystem implements System {
       ...(kinds.has(openingWave.source) ? [['opening', openingWave] as const] : []),
       ...this.scheduled.map(({ spawner, wave }) => [spawner.kind, wave] as const),
     ];
-    // Only the plans of structures on this map, so a match without them needs no guard content.
+    // Only the plans of structures and zones on this map, so a match without them needs no guard
+    // content.
     const guardProblems = [...homes].flatMap((id) =>
       (guards[id]?.table ?? []).flatMap(({ mobId }) =>
         definitions.has(mobId) ? [] : [`${id} guard plan names unknown mob "${mobId}"`],
