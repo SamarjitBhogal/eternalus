@@ -19,7 +19,7 @@ import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from '
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { PROGRESS_ENTRY_NAME } from './progressEntry.mjs';
+import { PROGRESS_DIR, PROGRESS_ENTRY_NAME } from './progressEntry.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const DOCS_DIR = path.join(ROOT, 'docs');
@@ -294,7 +294,7 @@ function validateLinks(file, relative, text, slugCache) {
 /** Progress entry files are validated but not indexed; docs/plan/progress/README.md is. */
 function isProgressEntry(relative) {
   return (
-    relative.startsWith('docs/plan/progress/') && PROGRESS_ENTRY_NAME.test(path.basename(relative))
+    relative.startsWith(`${PROGRESS_DIR}/`) && PROGRESS_ENTRY_NAME.test(path.basename(relative))
   );
 }
 

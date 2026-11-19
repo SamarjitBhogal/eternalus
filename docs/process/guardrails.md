@@ -4,7 +4,7 @@ description: Every automated guardrail in the repository (TypeScript, ESLint, kn
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-19
 tags: [process, guardrails, ci, tooling]
 paths:
   [

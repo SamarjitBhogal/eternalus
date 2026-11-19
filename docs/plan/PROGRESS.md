@@ -22,7 +22,7 @@ related:
 **Archive.** Since 2026-11-19 (DEC-277) new entries go one file each in
 [progress/](progress/README.md), so that two sessions never edit the same file. This file holds
 the earlier entries exactly as written. A branch that started before DEC-277 merged may still
-append its entry here; the next session that touches it may move it to `progress/`.
+append its entry here.
 Read the newest files in `progress/` first; read this archive for earlier history. Sprint metrics
 measured before 2026-11-19 are recorded here with the machine they were measured on.
 

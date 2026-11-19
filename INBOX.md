@@ -2951,8 +2951,10 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
       `chore/progress-entry-files` merges. A check in `npm run check` that fails when a commit
       edits an entry file in `docs/plan/progress/` that already exists on the base branch (new
       files pass), plus a `.coderabbit.yaml` path rule for `docs/plan/progress/**` that says
-      entries are append-only records. Update the docs check row in `docs/process/guardrails.md`.
-      Close this item when its PR merges.
+      entries are append-only records. The same check fails on any file in `docs/plan/progress/`
+      other than `README.md` whose name does not match the entry pattern (critic round 2, owner
+      sign-off pending). Update the docs check row in `docs/process/guardrails.md`. Close this
+      item when its PR merges.
 
 ## Feedback
 

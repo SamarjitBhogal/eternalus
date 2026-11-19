@@ -17,7 +17,7 @@ Every work session or PR ends with one new file in this folder. Two sessions nev
 file, so merging a PR no longer makes the other open PRs conflict on one shared log (DEC-277,
 owner ruling 2026-11-19). The earlier entries stay in the archive [PROGRESS.md](../PROGRESS.md).
 New entries go in this folder. A branch that started before DEC-277 merged may still append its
-entry to PROGRESS.md; the next session that touches it may move it here.
+entry to PROGRESS.md.
 
 ## Read the latest
 
