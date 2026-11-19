@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import type { MapDefinition } from '../content/maps/maps.types';
 import type { Polygon } from '../utils/geometry.types';
 import { BLOCKED_LANE_MAP } from './__fixtures__/blockedLaneMap';
 import { AStarPathfinder } from './AStarPathfinder';
@@ -10,7 +11,8 @@ const openGrid = () =>
   WorldMap.fromDefinition({ ...BLOCKED_LANE_MAP, terrain: [] }, 2, () => false);
 /** The blocked-lane map on 2 m cells: a rift fills x 50..70, y 10..30. */
 const riftGrid = () => WorldMap.fromDefinition(BLOCKED_LANE_MAP, 2, () => false);
-const LIMITS = { maxExpansions: 10_000, snapCells: 0 };
+/** 10000 cells of 2 m. */
+const LIMITS = { maxSearchArea: 40_000, snapCells: 0 };
 /** A wall across y 20 from x 50 to 54, reaching 14 m up but only 6 m down: below is shorter. */
 const OFF_CENTRE_WALL: Polygon = [
   { x: 50, y: 6 },
@@ -18,13 +20,34 @@ const OFF_CENTRE_WALL: Polygon = [
   { x: 54, y: 26 },
   { x: 50, y: 26 },
 ];
+/**
+ * A 400 x 300 map (120000 m²) with a wall across x 190..200 from y 0 to 280: the only way past it
+ * is the 20 m gap at the bottom.
+ */
+const GAP_MAP: MapDefinition = {
+  ...BLOCKED_LANE_MAP,
+  width: 400,
+  height: 300,
+  terrain: [
+    {
+      id: 'wall',
+      kind: 'rift',
+      shape: [
+        { x: 190, y: 0 },
+        { x: 200, y: 0 },
+        { x: 200, y: 280 },
+        { x: 190, y: 280 },
+      ],
+    },
+  ],
+};
 
 describe('AStarPathfinder (A* for Legends, 10 §9)', () => {
   it('answers the goal itself when the straight line to it is clear, without searching', () => {
     const out = { x: 0, y: 0 };
 
     expect(
-      new AStarPathfinder(openGrid(), { maxExpansions: 0, snapCells: 0 }).waypoint(
+      new AStarPathfinder(openGrid(), { maxSearchArea: 0, snapCells: 0 }).waypoint(
         { x: 10, y: 20 },
         { x: 40, y: 20 },
         out,
@@ -74,7 +97,7 @@ describe('AStarPathfinder (A* for Legends, 10 §9)', () => {
   });
 
   it('steps out of blocked ground and reaches a blocked goal’s edge within its snap distance', () => {
-    const finder = new AStarPathfinder(riftGrid(), { maxExpansions: 10_000, snapCells: 6 });
+    const finder = new AStarPathfinder(riftGrid(), { ...LIMITS, snapCells: 6 });
     const out = { x: 0, y: 0 };
 
     // From inside the rift: its first move is to the nearest open cell, out of the rift.
@@ -91,9 +114,33 @@ describe('AStarPathfinder (A* for Legends, 10 §9)', () => {
     expect(finder.waypoint({ x: 40, y: 20 }, { x: 60, y: 20 }, out)).toBe(false);
     expect(finder.waypoint({ x: 40, y: 20 }, { x: 500, y: 20 }, out)).toBe(false);
     expect(
-      new AStarPathfinder(riftGrid(), { maxExpansions: 5, snapCells: 0 }).waypoint(
+      new AStarPathfinder(riftGrid(), { maxSearchArea: 20, snapCells: 0 }).waypoint(
         { x: 40, y: 20 },
         { x: 80, y: 20 },
+        out,
+      ),
+    ).toBe(false);
+  });
+
+  it('caps a search by ground, not cells: a finer grid reaches as far (DEC-243)', () => {
+    const out = { x: 0, y: 0 };
+    const finer = WorldMap.fromDefinition(GAP_MAP, 2.5, () => false);
+
+    // 150000 m² is 6000 cells of 5 m and covers the whole map; on 2.5 m cells it is 24000.
+    expect(
+      new AStarPathfinder(finer, { maxSearchArea: 150_000, snapCells: 0 }).waypoint(
+        { x: 20, y: 20 },
+        { x: 380, y: 20 },
+        out,
+      ),
+    ).toBe(true);
+    // Toward the gap at the bottom.
+    expect(out.y).toBeGreaterThan(20);
+    // The route needs more than 6000 cells of 2.5 m: a fixed 6000-cell cap misses it.
+    expect(
+      new AStarPathfinder(finer, { maxSearchArea: 6000 * 2.5 ** 2, snapCells: 0 }).waypoint(
+        { x: 20, y: 20 },
+        { x: 380, y: 20 },
         out,
       ),
     ).toBe(false);

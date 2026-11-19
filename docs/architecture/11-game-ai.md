@@ -313,9 +313,9 @@ the guard leash tolerance covers the wait instead (DEC-181, 18 §7). A decision 
 cheap: radius-bounded queries, no allocation in hot paths, scratch vectors reused. A bot's A\* is
 the exception: bots steer by `move` commands, so A\* is a `PathQuery` (`state.paths`) its leaves
 call when the straight line is blocked. Its cost is inside the decision budget, and
-`GameConfig.map.pathMaxExpansions` caps each search (a path cache in the brain is the next step if
-profiling shows the cost). `StuckSystem` is a second A\* consumer, outside the decision budget:
-`STUCK_DETECTION.maxPlansPerTick` caps its plans a tick, and `pathMaxExpansions` caps each plan.
+`GameConfig.map.pathMaxSearchArea` (DEC-243) caps each search (a path cache in the brain is the
+next step if profiling shows the cost). `StuckSystem` is a second A\* consumer, outside the decision budget:
+`STUCK_DETECTION.maxPlansPerTick` caps its plans a tick, and `pathMaxSearchArea` caps each plan.
 Requests over the cap wait (`ChaseWatch.isPlanDue`), served in store order; the upgrade path is a
 round-robin cursor. Other heavy work (flow
 fields) belongs to `PathingSystem`, which time-slices its rebuilds
