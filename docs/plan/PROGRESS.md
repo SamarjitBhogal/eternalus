@@ -9010,3 +9010,29 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   and `npm run docs:check` on this file.
 - Next step: the owner runs the push script; after CI, #126, #121, #120 and #119 merge into
   phase/3 in that order with merge commits, with no other merge into phase/3 in between.
+
+### 2026-11-19 — Phase 3 / gate reach: stacked chain round 3 on phase/3 af54fe96 (#101, #99) — feat/gate-reach — sholtzman + Claude Code
+
+- What was done: PR #101 and PR #99 merged into phase/3 (`af54fe96`) after round 2 was built.
+  Round 3 rebuilds the stacked merge chain #126 → #121 → #120 → #119; each link merges the
+  previous link's new head:
+  - #126 `feat/duel-leave-victory`: phase/3 `af54fe96` into `9dfcadda` as `c49e2f45`. Conflict:
+    this file only (#101's and #99's entries first).
+  - #121 `refactor/astar-search-area`: `c49e2f45` into `05cf3d4e` as `49404432`. Conflicts:
+    `INBOX.md` and the owner decisions log (add-add, both sides kept, #121's item and batch
+    first) and doc 11 `last-reviewed` (later date kept).
+  - #120 `refactor/fort-geometry-helpers`: `49404432` into `09566db4` as `0ede127d`. No conflict.
+  - #119 (this branch): `0ede127d` into `6c0fd810` as `882a7421`. Conflicts: docs 07 and 18
+    `last-reviewed` (later date kept); doc 18's status paragraph merged with both sides' text.
+  - Each link's own diff over the previous link is the same as in round 2 (sorted diff lines
+    compared), except the `last-reviewed` lines.
+- Checks run: the pre-commit `check:quick` passed on each merge commit. The owner chose one full
+  check on this branch's tree, which holds all four PRs' code, plus green CI on each head before
+  its merge (machine load). `npm run check` → `EXIT=0` on `882a7421` before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-stack-119-r3.log`): core "Tests 1647 passed
+  (1647)"; protocol "Tests 29 passed (29)"; client "Tests 2011 passed (2011)"; server "Tests 84
+  passed (84)"; "Documentation check passed.". Then `prettier --check` and `npm run docs:check` on
+  this file.
+- Next step: the owner runs the push script, then the merge script. It merges #126, #121, #120
+  and #119 into phase/3 in that order with merge commits, each only with green CI, and stops if
+  another PR merges into phase/3 in between.
