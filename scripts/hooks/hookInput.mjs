@@ -60,7 +60,9 @@ export function isInside(root, filePath) {
 }
 
 /**
- * Runs an npm/npx command synchronously with a timeout and returns `{ status, output }`.
+ * Runs an npm/npx command synchronously with a timeout and returns `{ status, output, timedOut }`.
+ * `timedOut` is true when the timeout killed the process, so callers can tell "too slow" from
+ * "failed".
  * `shell: true` is required on Windows so that `npm.cmd`/`npx.cmd` shims resolve.
  */
 export function run(command, args, options = {}) {
@@ -72,7 +74,8 @@ export function run(command, args, options = {}) {
     env: { ...process.env, CI: process.env.CI ?? '1', FORCE_COLOR: '0' },
   });
   const output = `${result.stdout ?? ''}${result.stderr ?? ''}`;
-  return { status: result.status ?? 1, output };
+  const timedOut = result.error?.code === 'ETIMEDOUT';
+  return { status: result.status ?? 1, output, timedOut };
 }
 
 /** Returns the last `lines` lines of `text` (keeps hook output short and readable). */
