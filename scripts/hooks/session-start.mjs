@@ -4,7 +4,7 @@
  * `main` (never work there), and points at the three files every session must read first.
  * Always exits 0; its output is informational.
  */
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { readHookInput, repoRoot, run } from './hookInput.mjs';
@@ -40,8 +40,21 @@ if (existsSync(inboxPath)) {
   }
 }
 
+const progressDir = path.join(root, 'docs', 'plan', 'progress');
 const progressPath = path.join(root, 'docs', 'plan', 'PROGRESS.md');
-if (existsSync(progressPath)) {
+const newestEntry = existsSync(progressDir)
+  ? readdirSync(progressDir)
+      .filter((name) => /^\d{4}-\d{2}-\d{2}-\d{4}-.+\.md$/.test(name))
+      .sort()
+      .pop()
+  : undefined;
+if (newestEntry !== undefined) {
+  const text = readFileSync(path.join(progressDir, newestEntry), 'utf8');
+  const heading = text.split(/\r?\n/).find((line) => /^#{1,2} /.test(line));
+  lines.push(
+    `[session-start] Last progress entry: ${heading === undefined ? newestEntry : heading.replace(/^#+ /, '')} (docs/plan/progress/${newestEntry})`,
+  );
+} else if (existsSync(progressPath)) {
   const progress = readFileSync(progressPath, 'utf8').trimEnd().split(/\r?\n/);
   const lastHeading = [...progress].reverse().find((line) => line.startsWith('### '));
   if (lastHeading !== undefined) {
@@ -50,7 +63,7 @@ if (existsSync(progressPath)) {
 }
 
 lines.push(
-  '[session-start] Before stopping: `npm run check` must pass and docs/plan/PROGRESS.md gets an entry.',
+  '[session-start] Before stopping: `npm run check` must pass and a new entry file goes in docs/plan/progress/.',
 );
 
 process.stdout.write(`${lines.join('\n')}\n`);
