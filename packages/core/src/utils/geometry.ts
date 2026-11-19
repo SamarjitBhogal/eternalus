@@ -51,6 +51,14 @@ export const isPointInPolygon = (point: Vec2, polygon: Polygon): boolean => {
   return isInside;
 };
 
+/** Whether `point` lies in the upright rectangle `rect`, edges included. */
+export const isPointInRect = ({ x, y }: Vec2, rect: Rect): boolean =>
+  x >= rect.x && x <= rect.x + rect.width && y >= rect.y && y <= rect.y + rect.height;
+
+/** Whether two upright rectangles overlap or touch, edges included. */
+export const doRectsOverlap = (a: Rect, b: Rect): boolean =>
+  a.x <= b.x + b.width && a.x + a.width >= b.x && a.y <= b.y + b.height && a.y + a.height >= b.y;
+
 /**
  * Whether `point` lies inside any of `polygons`: the one point-in-footprint test shared by a
  * capture zone's floor (`ZoneArea.contains`) and the building at a point (`findBuildingAt`).
@@ -171,12 +179,10 @@ const rectCorners = (rect: Rect): Polygon => [
  */
 export const doesPolygonOverlapRect = (polygon: Polygon, rect: Rect): boolean => {
   const corners = rectCorners(rect);
-  const isInsideRect = (point: Vec2): boolean =>
-    point.x >= rect.x &&
-    point.x <= rect.x + rect.width &&
-    point.y >= rect.y &&
-    point.y <= rect.y + rect.height;
-  if (polygon.some(isInsideRect) || corners.some((corner) => isPointInPolygon(corner, polygon))) {
+  if (
+    polygon.some((point) => isPointInRect(point, rect)) ||
+    corners.some((corner) => isPointInPolygon(corner, polygon))
+  ) {
     return true;
   }
   return polygon.some((start, index) => {

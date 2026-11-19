@@ -8223,6 +8223,49 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   passed (1883)"; server "Tests 79 passed (79)"; "Documentation check passed."
 - Next step: review and merge; then sync the stacked drafts #82, #83 and #84.
 
+### 2026-11-13 — Phase 3 / A\* search area (DEC-243) — refactor/astar-search-area — Sam Holtzman + Claude Code
+
+- What was done: one A\* search is capped by an area of ground, not a count of cells (critic
+  BTD1 on PR #98; the owner's "A: follow-up branch now", split from #98 by DEC-242).
+  `GameConfig.map.pathMaxSearchArea` (m², default 150000 = 6000 cells of 5 m) replaces
+  `pathMaxExpansions`; `AStarLimits.maxSearchArea` replaces `maxExpansions`, and
+  `AStarPathfinder` turns it into cells of its own grid once, at construction.
+  `validateGameConfig` refuses an area that is not finite or is under one nav cell. The golden
+  replay `wanderSeed7` carries the equal area (header notes it; config is not hashed). Docs: 03
+  §10 table, 10 §9, 11 §6, DEC-243.
+- Red-first: a fixed 5 m cell area in the pathfinder turned the new 2.5 m route test red; the
+  validator without the one-cell rule, without the finite check, or with `>` for `>=` turned one
+  validation case red each; the factory passing area 0 and the fixture holding 0 turned the
+  factory and golden replay tests red. Each restored green
+  (`eternalus-agent-work/tower-ruins-and-routes/astar-search-area/red-first.md`).
+- Checks run: `npm run check` (Node 24.21.0) on a421db26 plus these docs → `EXIT=0`: "All matched
+  files use Prettier code style!"; core "Tests 1340 passed (1340)"; protocol "Tests 18 passed
+  (18)"; client "Tests 1883 passed (1883)"; server "Tests 79 passed (79)"; "Documentation check
+  passed." (`eternalus-agent-work/tower-ruins-and-routes/astar-search-area/check-1.log`).
+- Next step: critic and ponytail on the branch; then a PR into `phase/3-sprint-3-work`. When it
+  merges and #98 takes phase/3, #98 drops its 24000 and renames its callers of
+  `pathMaxExpansions`/`maxExpansions`.
+
+### 2026-11-14 — Phase 3 / A\* search area: pre-PR gate — refactor/astar-search-area — sholtzman + Claude Code
+
+- What was done: the pre-PR gate (ADR 0010). Critic (architecture-reviewer) on
+  `76d1007d..0581a90e`: approve, 0 blockers. Fixed in `c8e7ed3d`: the "Safe:" comment on the
+  validator's cast, the `MapConfig` TSDoc (the area fixes the reach, not the cost), the DEC-243
+  batch clause. Its better-than-design item (`pathSnapCells` is counted in cells too) is an INBOX
+  item for the tidy PR (DEC-218), not built. Its nit N3 (a string case for the validator) is
+  rejected: the typed case table refuses a string. Ponytail: nothing to cut
+  (`eternalus-agent-work/tower-ruins-and-routes/astar-search-area/ponytail-review-r1.md`). The
+  subject of `0581a90e` ("docs: ...") has no scope; it is not the tip, and a rebase is not
+  allowed here, so it stays.
+- Checks run: full `npm run check` on `c8e7ed3d`, before this entry (log
+  `eternalus-agent-work/tower-ruins-and-routes/astar-search-area/check-2.log`): EXIT=0, "All
+  matched files use Prettier code style!", core "Tests 1340 passed (1340)", protocol "Tests 18
+  passed (18)", client "Tests 1883 passed (1883)", server "Tests 79 passed (79)",
+  "Documentation check passed.".
+- Next step: push; PR against `phase/3-sprint-3-work` (head `76d1007d`). When it merges and #98
+  takes phase/3, #98 drops its 24000 and renames its callers of
+  `pathMaxExpansions`/`maxExpansions`.
+
 ### 2026-11-09 — Phase 3 / bug tracker — docs/bug-tracker — SamarjitBhogal + Claude Code
 
 - What was done: added the bug tracker (now `docs/plan/bugs.md`), the bug overview linked to the Jira epic
@@ -8264,6 +8307,17 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   passed (1883)"; server "Tests 79 passed (79)"; "Documentation check passed."
 - Next step: merge PR #96. PR #110 drops or ticks its BUG-2/BUG-3 INBOX questions (answered by
   DEC-247/248). The open fix PRs update their rows. BUG-2 and BUG-3 need a plan item.
+
+### 2026-11-14 — Phase 3 / A\* search area: merge phase/3 (#96) — refactor/astar-search-area — sholtzman + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` `a99c3129` (it adds only the #96 bug tracker, docs only). This file, `INBOX.md` and the owner decisions log (the DEC-247 to DEC-249 batch sits above the DEC-243 batch) conflicted;
+  both sides are kept. No code change.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/astar-search-area/check-merge-phase3.log`): core "Tests 1340 passed (1340)", protocol
+  "Tests 18 passed (18)", client "Tests 1883 passed (1883)", server "Tests 79 passed (79)",
+  "Documentation check passed."; then `prettier --check` and `npm run docs:check` with this
+  entry.
+- Next step: push.
 
 ### 2026-11-11 — Phase 3 / minion follow-ups: merge phase/3 (#92) and the CodeRabbit fixes — fix/minion-stack-followups — sholtzman + Claude Code
 
@@ -8321,6 +8375,74 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-85-10.log`).
 - Next step: push; merge the new head into #86 and #79.
 
+### 2026-11-13 — Phase 3 / PR #98 split: the geometry helpers — refactor/fort-geometry-helpers — sholtzman + Claude Code
+
+- What was done: split from PR #98 by DEC-242; PR base is `fix/minion-stack-followups` (#85).
+  `map/fortInWorld.ts` (`fortInWorld`, byte-identical to #98 without its nav-cell check) now
+  serves `map/zoneArea.ts`; `utils/geometry.isPointInRect` serves `PathingSystem.isInsideFort`
+  and `doesPolygonOverlapRect`; new `doRectsOverlap` (critic BTD4) serves `MapSceneryBuilder` and
+  `StaticCollisionIndex.query`. No rule changes; the capture-zone court is bit-identical at the
+  default world size and within one unit in the last place of a float at other sizes (critic
+  finding 1). DEC-244. INBOX H1 notes the part built.
+- Red-first: one deliberate break per helper turned its tests red, then restored green
+  (`eternalus-agent-work/tower-ruins-and-routes/fort-geometry-helpers/red-first.md`).
+- Checks run: full `npm run check` on the tree before the critic's fixes (log
+  `eternalus-agent-work/tower-ruins-and-routes/fort-geometry-helpers/check-3.log`): EXIT=0, core
+  "Tests 1388 passed (1388)", client "Tests 1818 passed (1818)", "Documentation check passed.".
+  Two earlier runs (`check-1.log`, `check-2.log`) failed on test timeouts only, while several
+  worktrees ran checks at once. The run after the fixes and the merge of #85 is in the next entry.
+- Next step: PR into #85; `assertFortWallsResolve` and `assertLaneFortsApart` stay on #98.
+
+### 2026-11-13 — Phase 3 / geometry helpers: pre-PR gate and merge of #85 — refactor/fort-geometry-helpers — sholtzman + Claude Code
+
+- What was done: the pre-PR gate (ADR 0010). Critic (architecture-reviewer) on the tree over
+  `c09507f6`: approve, 0 blockers. Fixed before the commits `d21feb88` and `314f80eb`:
+  `PathingSystem.isInsideFort` passes its point on and builds no object per fort; the DEC-244
+  row and the entry above say what is bit-identical and what is within one unit in the last
+  place; the decisions log's `last-reviewed`. Its two better-than-design items (the ring boxes
+  in `MapSceneryBuilder`; one `fortWall(side)`) are one INBOX item for the tidy PR (DEC-218), not
+  built. Ponytail: nothing to cut
+  (`eternalus-agent-work/tower-ruins-and-routes/fort-geometry-helpers/ponytail-review-r1.md`).
+  Then this branch merged #85's `2e8df5bc` (phase/3 `76d1007d` with #97 and #81); one conflict,
+  in this file, both sides kept.
+- Checks run: full `npm run check` with the fixes and the merge in place, before this entry (log
+  `eternalus-agent-work/tower-ruins-and-routes/fort-geometry-helpers/check-4.log`): EXIT=0, core
+  "Tests 1419 passed (1419)", protocol "Tests 18 passed (18)", client "Tests 1883 passed
+  (1883)", server "Tests 79 passed (79)", "Documentation check passed.".
+
+### 2026-11-13 — Phase 3 / gate reach — feat/gate-reach — sholtzman + Claude Code
+
+- What was done: split from PR #98 (`feat/tower-ruins-and-routes`) by the owner's ruling DEC-242
+  (row on #98). The PR base is `fix/minion-stack-followups` (#85), as #98's. It builds DEC-217
+  (16) and (17), whose rows are on phase/3: a gate's definition has `hasMapFootprint`, so reach to
+  a gate is measured to its polygon, and `hasFortBox` keeps a gate's box out of the chase rule's
+  fort boxes. Cherry-picked from #98's `af76b908`; the conflict in
+  `DefaultSystemPipeline.test.ts` was resolved with #98's version of the gate test, without its
+  ruin parts. Architecture 07 and 18 carry the gate text only.
+- Red-first: dropping `hasMapFootprint` from the gate definition turned 2 tests in
+  `Simulation.mapObjects.test.ts` red (gate Footprint count; melee reach at a gate). Counting every
+  structure as a fort box turned the gate case of the fort-boxes test in
+  `DefaultSystemPipeline.test.ts` red (`red-first.md`).
+- Checks run: see `eternalus-agent-work/tower-ruins-and-routes/gate-reach/check-1.log`.
+- Next step: push; PR against `fix/minion-stack-followups`.
+
+### 2026-11-13 — Phase 3 / gate reach: pre-PR gate and merge of #85 — feat/gate-reach — sholtzman + Claude Code
+
+- What was done: the pre-PR gate (ADR 0010). Critic (architecture-reviewer) on
+  `c09507f6..f3ccc334`: approve, 0 blockers. Fixed in `edab6521`: the `Footprint` and
+  `EntityStore.outlineOf` TSDoc name the gate; the fort-box test title covers both rows. Its two
+  better-than-design items (one field for `hasMapFootprint` and `hasFortBox`; the fort-box fact
+  recorded where the `Footprint` is made) are one INBOX item for the tidy PR (DEC-218), not built.
+  Ponytail: nothing to cut
+  (`eternalus-agent-work/tower-ruins-and-routes/gate-reach/ponytail-review-r1.md`). Then this
+  branch merged #85's `2e8df5bc` (phase/3 `76d1007d` with #97 and #81); one conflict, in this
+  file, both sides kept.
+- Checks run: full `npm run check` with the merge in place, before this entry (log
+  `eternalus-agent-work/tower-ruins-and-routes/gate-reach/check-3.log`): EXIT=0, core "Tests
+  1417 passed (1417)", protocol "Tests 18 passed (18)", client "Tests 1883 passed (1883)",
+  server "Tests 79 passed (79)", "Documentation check passed.".
+- Next step: push; PR against `fix/minion-stack-followups` (#85, head `2e8df5bc`).
+
 ### 2026-11-14 — Phase 3 / minion follow-ups: merge phase/3 (#96) — fix/minion-stack-followups — sholtzman + Claude Code
 
 - What was done: merged phase/3 `a99c3129` (#96 bug tracker, docs only). This file and the
@@ -8332,6 +8454,26 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   passed (79)", "Documentation check passed."; then `prettier --check` and `npm run docs:check`
   on this file.
 - Next step: push; merge the new head into #86, #79, #98, #119 and #120.
+
+### 2026-11-14 — Phase 3 / geometry helpers: merge #85's #96 head — refactor/fort-geometry-helpers — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` `2129a73e` (PR #85; it adds only the
+  merge of phase/3 `a99c3129`, the #96 bug tracker, docs only). This file, `INBOX.md` and the owner decisions log (the DEC-247 to DEC-249 batch sits above the DEC-244 batch) conflicted; both sides are
+  kept. No code change.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/fort-geometry-helpers/check-merge85-2.log`): core "Tests 1419 passed (1419)", protocol
+
+### 2026-11-14 — Phase 3 / gate reach: merge #85's #96 head — feat/gate-reach — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` `2129a73e` (PR #85; it adds only the
+  merge of phase/3 `a99c3129`, the #96 bug tracker, docs only). This file and `INBOX.md` conflicted; both sides are
+  kept. No code change.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/gate-reach/check-merge85-2.log`): core "Tests 1417 passed (1417)", protocol
+  "Tests 18 passed (18)", client "Tests 1883 passed (1883)", server "Tests 79 passed (79)",
+  "Documentation check passed."; then `prettier --check` and `npm run docs:check` with this
+  entry.
+- Next step: push.
 
 ### 2026-11-11 — Phase 3 / out-of-combat healing, merge of fix/minion-stack-followups (phase/3 with #89) — feat/out-of-combat-heal — sholtzman + Claude Code
 
@@ -8876,3 +9018,293 @@ group)` takes a `FeatureKeyedGroup` instead of a closure, so the client cannot r
   `npm run docs:check` on this file.
 - Next step: the owner pushes (one more phase/3 merge is expected first: the #126 → #121 → #120 →
   #119 chain); PR #129's body names the new base, head and check.
+
+### 2026-11-14 — Phase 3 / the player who stays in a Duel wins (DEC-251) — feat/duel-leave-victory — sholtzman + Claude Code
+
+- What changed: the owner's answer to the open part of INBOX HC-Q57 (DEC-251, "A) yes"). When a
+  player leaves a live Duel, the server's `DuelMatch.leave` sends the player who stayed
+  `match-ended` with `opponent-left` and that player's team as the winner (it sent `null`).
+  `selectMatchVerdict` drops its `opponent-left` branch, so the results screen shows VICTORY with
+  "Opponent left." under it (`selectResultsView` keeps the status line). The `MatchEnding.winner`
+  TSDoc in `@eternalus/protocol` names the rule. Docs: architecture 13 §3 (screens table), the
+  decisions log (DEC-251), INBOX HC-Q57 (ticked). Branch from PR #93's head `f14e2661`; its PR
+  opens after #93 merges.
+- Fail-first: the four changed tests (`DuelMatch.test.ts`, `selectMatchVerdict.test.ts`,
+  `selectResultsView.test.ts`, `ResultsScreen.test.tsx`) were run before the production change and
+  were red: "expected { type: 'match-ended', …(2) } to deeply equal …", "expected null to be
+  'victory'", "expected { verdict: null, …(2) } to deeply equal { verdict: 'victory', …(2) }",
+  "expected 'Match results' to be 'VICTORY'". After the change: server `src/match` 15 passed,
+  client bridge, results screen and Duel session tests 229 passed.
+- Pre-PR gate: critic (`architecture-reviewer`) approve, 0 blockers; where the rule lives (the
+  server names the winner, so `MatchEnding.winner` means one thing for both reasons) confirmed;
+  its nit on `matchSlice.test.ts` applied (the `opponent-left` fixture now has the winner the
+  server sends); its other nits: the check line is this one, and doc 13 already has
+  `last-reviewed: 2026-11-14`. Ponytail: one finding applied, `DuelMatch.leave` uses core's
+  `opponentOf` instead of its own ternary.
+- Checks run: `npm run check` → `EXIT=0` on `f14e2661` plus this change (diff sha256 prefix
+  `b0dcfe0770f077b1`, before this line was written; log
+  `eternalus-agent-work/game-loop-plan/duel-leave-victory-check2-2026-11-14.log`): core "Tests
+  1428 passed (1428)"; protocol "Tests 18 passed (18)"; client "Tests 1969 passed (1969)" (3
+  fewer than #93: two `it.each` blocks for the old no-verdict rule became one test each); server
+  "Tests 79 passed (79)"; "Documentation check passed.".
+- Next step: the PR, after #93 merges into `phase/3-sprint-3-work` (merge the phase branch in
+  first).
+
+### 2026-11-14 — Phase 3 / DEC-251: merge the new head of feat/match-scoring (#93 with phase/3 at 88f5afd8) — feat/duel-leave-victory — sholtzman + Claude Code
+
+- What was done: merged `a74ecc20` (PR #93's local head: `feat/match-scoring` with
+  `phase/3-sprint-3-work` at `88f5afd8`, #85 minion follow-ups, #86 out-of-combat heal) into
+  this branch as `98edd1bc`. Conflict: this file only (#93's merge entry, then this branch's
+  DEC-251 entry). The other files merged without conflict; outside this file the diff against
+  `a74ecc20` has the same changed lines as `f14e2661..6107cb17`.
+- Checks run: `npm run check` → `EXIT=0` on `98edd1bc` before this entry was added
+  (`eternalus-agent-work/game-loop-plan/duel-merge-a74ecc20-check-2026-11-14.log`): core "Tests
+  1549 passed (1549)"; protocol "Tests 18 passed (18)"; client "Tests 1969 passed (1969)"; server
+  "Tests 79 passed (79)"; "Documentation check passed.". Then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the PR, after #93 merges into `phase/3-sprint-3-work` (merge the phase branch in
+  first).
+
+### 2026-11-15 — Phase 3 / DEC-251: merge phase/3 (#93 merged, #79) — feat/duel-leave-victory — sholtzman + Claude Code
+
+- What was done: PR #93 merged into `phase/3-sprint-3-work` as `fcc48a7b` (after #79, unit facing
+  chevron, at `8dc7d962`). Merged it into this branch as `c5aaf39a`. Conflict: this file only
+  (phase/3's #79-merge entry, then this branch's entries). The diff against phase/3 is the
+  DEC-251 change and this file's entries only.
+- Checks run: `npm run check` → `EXIT=0` on `c5aaf39a` before this entry was added
+  (`eternalus-agent-work/game-loop-plan/duel-merge-fcc48a7b-check-2026-11-15.log`): core "Tests
+  1582 passed (1582)"; protocol "Tests 18 passed (18)"; client "Tests 1976 passed (1976)"; server
+  "Tests 79 passed (79)"; "Documentation check passed.". Then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the owner runs the push script; the PR opens against `phase/3-sprint-3-work`.
+
+### 2026-11-15 — Phase 3 / DEC-251: merge phase/3 (#127 merged) — feat/duel-leave-victory — sholtzman + Claude Code
+
+- What was done: PR #127 (CI job limit, DEC-254) merged into `phase/3-sprint-3-work` as
+  `80e0ea13`. Merged it into this branch as `708c9422`. Conflicts: this file (#127's entry, then
+  this branch's entries) and the owner decisions log (DEC-254's batch above DEC-251's, newest
+  first). First link of the stacked merge chain #126 → #121 → #120 → #119: each later branch merges
+  the previous one's head, so each PR merges into phase/3 without conflict when they land in that
+  order with merge commits.
+- Checks run: `npm run check` → `EXIT=0` on `708c9422` before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-stack-126-708c9422.log`): core "Tests 1582
+  passed (1582)"; protocol "Tests 18 passed (18)"; client "Tests 1976 passed (1976)"; server
+  "Tests 79 passed (79)"; "Documentation check passed.". Then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the owner runs the push script; #126 merges into phase/3 after CI, then #121.
+
+### 2026-11-16 — Phase 3 / DEC-251: merge phase/3 (#113, #102 merged) — feat/duel-leave-victory — sholtzman + Claude Code
+
+- What was done: PR #113 (vite/vitest) and PR #102 (duel rules) merged into
+  `phase/3-sprint-3-work` (now `330e969a`) after this branch was pushed at `4a72b5f7`. Merged it
+  into this branch as `9d106972`. Conflicts: `apps/server/src/match/DuelMatch.ts` (`leave`) and
+  this file. `leave` keeps this branch's DEC-251 rule (the player who stays wins): #102 changed the
+  same lines only to use core's `opponentOf`, which this branch already uses; #102's `winner: null`
+  was the rule DEC-251 replaced. This file: #102's and #113's entries, then this branch's.
+  Rebuilds the first link of the stacked merge chain #126 → #121 → #120 → #119.
+- Checks run: `npm ci` (#113 changed dependencies), then `npm run check` → `EXIT=0` on `9d106972`
+  before this entry was added (`eternalus-agent-work/tower-ruins-and-routes/check-stack-126-r2.log`):
+  core "Tests 1602 passed (1602)"; protocol "Tests 29 passed (29)"; client "Tests 2002 passed
+  (2002)"; server "Tests 84 passed (84)"; "Documentation check passed.". Then `prettier --check`
+  and `npm run docs:check` on this file.
+- Next step: the owner runs the push script; #126 merges into phase/3 after CI, then #121.
+
+### 2026-11-14 — Phase 3 / A\* search area: merge phase/3 (#85, #86) — refactor/astar-search-area — sholtzman + Claude Code
+
+- What was done: merged phase/3 `88f5afd8` (#85 and #86). #85 added four uses of the old cap
+  name, now `pathMaxSearchArea` / `maxSearchArea`: `ai/BotLeaves.test.ts` (two),
+  `ai/BotLegendController.test.ts`, `systems/StuckSystem.test.ts`, and the comment in
+  `content/ai/stuckDetection.ts`. Their grids use `navCellSize` 5, so the cap stays 6000 cells.
+  Conflicts, both sides kept: architecture 10 §6 (#85's stuck-chase sentence, then the search
+  area) and 11 §6 (#85's unit-cap and `StuckSystem` text, with `pathMaxSearchArea` for
+  `pathMaxExpansions`), the owner decisions log (the DEC-243 batch above the DEC-234 batch) and
+  this file.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/astar-search-area/check-merge-phase3-88f5afd8.log`):
+  core "Tests 1461 passed (1461)", protocol "Tests 18 passed (18)", client "Tests 1883 passed
+  (1883)", server "Tests 79 passed (79)", "Documentation check passed."; then `prettier --check`
+  and `npm run docs:check` with this entry.
+- Next step: push.
+
+### 2026-11-14 — Phase 3 / A* search area: merge phase/3 (#79, #93) — refactor/astar-search-area — sholtzman + Claude Code
+
+- What was done: merged phase/3 at `8dc7d962` (#79 unit facing chevron). Only this file
+  conflicted; both sides are kept. #79 adds no A* call site, so no new `pathMaxExpansions` or
+  `maxExpansions` site needed renaming. No code change on this branch.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/astar-search-area/check-merge-phase3-8dc7d962.log`):
+  core "Tests 1494 passed (1494)", protocol "Tests 18 passed (18)", client "Tests 1890 passed
+  (1890)", server "Tests 79 passed (79)", "Documentation check passed."; then
+  `prettier --check` and `npm run docs:check` with this entry.
+  Then merged phase/3 at `fcc48a7b` (#93 match scoring; only this file conflicted, both sides
+  kept): full `npm run check` exit 0 (`eternalus-agent-work/tower-ruins-and-routes/astar-search-area/check-merge-phase3-fcc48a7b.log`): core "Tests 1586 passed (1586)",
+  protocol 18, client 1979, server 79, docs passed. #93 adds no A* call site either.
+- Next step: push.
+
+### 2026-11-15 — Phase 3 / A\* search area: merge #126 (phase/3 with #127) — refactor/astar-search-area — sholtzman + Claude Code
+
+- What was done: merged PR #126's head `4a72b5f7` (`feat/duel-leave-victory` with phase/3 at
+  `80e0ea13`, #127 CI job limit) into this branch as `0a176430`. Conflict: this file only (#127's
+  and #126's entries, then this branch's). Second link of the stacked merge chain
+  #126 → #121 → #120 → #119: this PR merges into phase/3 without conflict right after #126, with
+  merge commits.
+- Checks run: `npm run check` → `EXIT=0` on `0a176430` before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-stack-121.log`): core "Tests 1586 passed
+  (1586)"; protocol "Tests 18 passed (18)"; client "Tests 1976 passed (1976)"; server "Tests 79
+  passed (79)"; "Documentation check passed.". Then `prettier --check` and `npm run docs:check` on
+  this file.
+- Next step: #120 merges this head; the owner runs the push script; #121 merges after #126.
+
+### 2026-11-16 — Phase 3 / A\* search area: merge #126 again (phase/3 with #113, #102) — refactor/astar-search-area — sholtzman + Claude Code
+
+- What was done: PR #113 and PR #102 merged into phase/3 (`330e969a`) after the stacked chain was
+  pushed, so #126 merged phase/3 again (`9dfcadda`). Merged that head into this branch as
+  `2abf6414`. Conflict: this file only (#126's new entry, then this branch's).
+- Checks run: `npm ci` (#113 changed dependencies), then `npm run check` → `EXIT=0` on `2abf6414`
+  before this entry was added (`eternalus-agent-work/tower-ruins-and-routes/check-stack-121-r2.log`):
+  core "Tests 1606 passed (1606)"; protocol "Tests 29 passed (29)"; client "Tests 2002 passed
+  (2002)"; server "Tests 84 passed (84)"; "Documentation check passed.". Then `prettier --check`
+  and `npm run docs:check` on this file.
+- Next step: #120 merges this head; the owner runs the push script; #121 merges after #126.
+
+### 2026-11-14 — Phase 3 / geometry helpers: merge phase/3 (#85, #86) and retarget — refactor/fort-geometry-helpers — sholtzman + Claude Code
+
+- What was done: #85 and #86 merged into phase/3 (`88f5afd8`), so this PR's base moved from
+  `fix/minion-stack-followups` to `phase/3-sprint-3-work` (`gh pr edit --base`) and phase/3
+  was merged in. It brings #86 (out-of-combat healing). Only this file conflicted; both sides are
+  kept. No code change on this branch.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/fort-geometry-helpers/check-merge-phase3-88f5afd8.log`): core "Tests 1461 passed (1461)", protocol
+  "Tests 18 passed (18)", client "Tests 1883 passed (1883)", server "Tests 79 passed (79)",
+  "Documentation check passed."; then `prettier --check` and `npm run docs:check` with this
+  entry.
+- Next step: push.
+
+### 2026-11-14 — Phase 3 / fort geometry helpers: merge phase/3 (#79, #93) — refactor/fort-geometry-helpers — sholtzman + Claude Code
+
+- What was done: merged phase/3 at `8dc7d962` (#79 unit facing chevron). This file and the
+  imports of `PathingSystem.ts` conflicted: both sides are kept (#79's `guardOutward` and
+  `SpaceQuery`, this branch's `isPointInRect`). #79's new guard-facing code checks a distance,
+  not a rectangle, so none of this branch's helpers apply to it.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/fort-geometry-helpers/check-merge-phase3-8dc7d962.log`):
+  core "Tests 1494 passed (1494)", protocol "Tests 18 passed (18)", client "Tests 1890 passed
+  (1890)", server "Tests 79 passed (79)", "Documentation check passed."; then
+  `prettier --check` and `npm run docs:check` with this entry.
+  Then merged phase/3 at `fcc48a7b` (#93 match scoring; only this file conflicted, both sides
+  kept): full `npm run check` exit 0 (`eternalus-agent-work/tower-ruins-and-routes/fort-geometry-helpers/check-merge-phase3-fcc48a7b.log`): core "Tests 1586 passed (1586)",
+  protocol 18, client 1979, server 79, docs passed. #93 adds no inline rectangle or fort-box test.
+- Next step: push.
+
+### 2026-11-15 — Phase 3 / fort geometry helpers: merge #121 (with #126, phase/3 with #127) — refactor/fort-geometry-helpers — sholtzman + Claude Code
+
+- What was done: merged PR #121's head `3181b19c` (`refactor/astar-search-area` with #126 and
+  phase/3 at `80e0ea13`) into this branch as `2f8e5f8d`. Conflicts, all add-add, both sides kept
+  as whole entries: this file (#127's, #126's and #121's entries, then this branch's), `INBOX.md`
+  and the owner decisions log (this branch's critic item and DEC-244 batch on top, newest first).
+  Git split this file's conflict through shared lines of two entries, so it was resolved as one
+  span (`eternalus-agent-work/tower-ruins-and-routes/resolve-span-both.py`); against each side the
+  result removes no lines except the other side's own edits. Third link of the stacked merge chain
+  #126 → #121 → #120 → #119.
+- Checks run: `npm run check` → `EXIT=0` on `2f8e5f8d` before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-stack-120.log`): core "Tests 1590 passed
+  (1590)"; protocol "Tests 18 passed (18)"; client "Tests 1976 passed (1976)"; server "Tests 79
+  passed (79)"; "Documentation check passed.". Then `prettier --check` and `npm run docs:check` on
+  this file.
+- Next step: #119 merges this head; the owner runs the push script; #120 merges after #121.
+
+### 2026-11-16 — Phase 3 / fort geometry helpers: merge #121 again (#126, phase/3 with #113, #102) — refactor/fort-geometry-helpers — sholtzman + Claude Code
+
+- What was done: PR #113 and PR #102 merged into phase/3 (`330e969a`) after the stacked chain was
+  pushed; #126 and #121 merged it again. Merged #121's new head `05cf3d4e` into this branch as
+  `b221906f`. Conflict: this file only (#121's new entry, then this branch's).
+- Checks run: `npm ci` (#113 changed dependencies), then `npm run check` → `EXIT=0` on `b221906f`
+  before this entry was added (`eternalus-agent-work/tower-ruins-and-routes/check-stack-120-r2.log`):
+  core "Tests 1610 passed (1610)"; protocol "Tests 29 passed (29)"; client "Tests 2002 passed
+  (2002)"; server "Tests 84 passed (84)"; "Documentation check passed.". Then `prettier --check`
+  and `npm run docs:check` on this file.
+- Next step: #119 merges this head; the owner runs the push script; #120 merges after #121.
+
+### 2026-11-14 — Phase 3 / gate reach: merge phase/3 (#85, #86) and retarget — feat/gate-reach — sholtzman + Claude Code
+
+- What was done: #85 and #86 merged into phase/3 (`88f5afd8`), so this PR's base moved from
+  `fix/minion-stack-followups` to `phase/3-sprint-3-work` (`gh pr edit --base`) and phase/3
+  was merged in. It brings #86 (out-of-combat healing). Only this file conflicted; both sides are
+  kept. No code change on this branch.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/gate-reach/check-merge-phase3-88f5afd8.log`): core "Tests 1459 passed (1459)", protocol
+  "Tests 18 passed (18)", client "Tests 1883 passed (1883)", server "Tests 79 passed (79)",
+  "Documentation check passed."; then `prettier --check` and `npm run docs:check` with this
+  entry.
+- Next step: push.
+
+### 2026-11-14 — Phase 3 / gate reach: merge phase/3 (#79, #93) — feat/gate-reach — sholtzman + Claude Code
+
+- What was done: merged phase/3 at `8dc7d962` (#79 unit facing chevron). Only this file
+  conflicted; both sides are kept. No code change on this branch.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/gate-reach/check-merge-phase3-8dc7d962.log`):
+  core "Tests 1492 passed (1492)", protocol "Tests 18 passed (18)", client "Tests 1890 passed
+  (1890)", server "Tests 79 passed (79)", "Documentation check passed."; then
+  `prettier --check` and `npm run docs:check` with this entry.
+  Then merged phase/3 at `fcc48a7b` (#93 match scoring; only this file conflicted, both sides
+  kept): full `npm run check` exit 0 (`eternalus-agent-work/tower-ruins-and-routes/gate-reach/check-merge-phase3-fcc48a7b.log`): core "Tests 1584 passed (1584)",
+  protocol 18, client 1979, server 79, docs passed.
+- Next step: push.
+
+### 2026-11-15 — Phase 3 / gate reach: merge #120 (with #121, #126, phase/3 with #127) — feat/gate-reach — sholtzman + Claude Code
+
+- What was done: merged PR #120's head `813823ac` (`refactor/fort-geometry-helpers` with #121,
+  #126 and phase/3 at `80e0ea13`) into this branch as `f2623841`. Conflicts, all add-add, both
+  sides kept as whole entries: this file at three places (#120's entries before this branch's;
+  the last place resolved as one span with
+  `eternalus-agent-work/tower-ruins-and-routes/resolve-span-both.py`, as git split it through
+  shared lines) and `INBOX.md` (this branch's critic item on top). Entry headings: 438 at
+  phase/3 `fcc48a7b`, 5 more on this branch, 17 more on #120's head, 460 after the merge. Last
+  link of the stacked merge chain #126 → #121 → #120 → #119.
+- Checks run: `npm run check` → `EXIT=0` on `f2623841` before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-stack-119.log`): core "Tests 1592 passed
+  (1592)"; protocol "Tests 18 passed (18)"; client "Tests 1976 passed (1976)"; server "Tests 79
+  passed (79)"; "Documentation check passed.". Then `prettier --check` and `npm run docs:check` on
+  this file.
+- Next step: the owner runs the push script; after CI, #126, #121, #120 and #119 merge into
+  phase/3 in that order with merge commits.
+
+### 2026-11-16 — Phase 3 / gate reach: merge #120 again (#121, #126, phase/3 with #113, #102) — feat/gate-reach — sholtzman + Claude Code
+
+- What was done: PR #113 and PR #102 merged into phase/3 (`330e969a`) after the stacked chain was
+  pushed; #126, #121 and #120 merged it again. Merged #120's new head `09566db4` into this branch
+  as `c0aa9895`. Conflict: this file only (#120's new entry, then this branch's).
+- Checks run: `npm ci` (#113 changed dependencies), then `npm run check` → `EXIT=0` on `c0aa9895`
+  before this entry was added (`eternalus-agent-work/tower-ruins-and-routes/check-stack-119-r2.log`):
+  core "Tests 1612 passed (1612)"; protocol "Tests 29 passed (29)"; client "Tests 2002 passed
+  (2002)"; server "Tests 84 passed (84)"; "Documentation check passed.". Then `prettier --check`
+  and `npm run docs:check` on this file.
+- Next step: the owner runs the push script; after CI, #126, #121, #120 and #119 merge into
+  phase/3 in that order with merge commits, with no other merge into phase/3 in between.
+
+### 2026-11-19 — Phase 3 / gate reach: stacked chain round 3 on phase/3 af54fe96 (#101, #99) — feat/gate-reach — sholtzman + Claude Code
+
+- What was done: PR #101 and PR #99 merged into phase/3 (`af54fe96`) after round 2 was built.
+  Round 3 rebuilds the stacked merge chain #126 → #121 → #120 → #119; each link merges the
+  previous link's new head:
+  - #126 `feat/duel-leave-victory`: phase/3 `af54fe96` into `9dfcadda` as `c49e2f45`. Conflict:
+    this file only (#101's and #99's entries first).
+  - #121 `refactor/astar-search-area`: `c49e2f45` into `05cf3d4e` as `49404432`. Conflicts:
+    `INBOX.md` and the owner decisions log (add-add, both sides kept, #121's item and batch
+    first) and doc 11 `last-reviewed` (later date kept).
+  - #120 `refactor/fort-geometry-helpers`: `49404432` into `09566db4` as `0ede127d`. No conflict.
+  - #119 (this branch): `0ede127d` into `6c0fd810` as `882a7421`. Conflicts: docs 07 and 18
+    `last-reviewed` (later date kept); doc 18's status paragraph merged with both sides' text.
+  - Each link's own diff over the previous link is the same as in round 2 (sorted diff lines
+    compared), except the `last-reviewed` lines.
+- Checks run: the pre-commit `check:quick` passed on each merge commit. The owner chose one full
+  check on this branch's tree, which holds all four PRs' code, plus green CI on each head before
+  its merge (machine load). `npm run check` → `EXIT=0` on `882a7421` before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-stack-119-r3.log`): core "Tests 1647 passed
+  (1647)"; protocol "Tests 29 passed (29)"; client "Tests 2011 passed (2011)"; server "Tests 84
+  passed (84)"; "Documentation check passed.". Then `prettier --check` and `npm run docs:check` on
+  this file.
+- Next step: the owner runs the push script, then the merge script. It merges #126, #121, #120
+  and #119 into phase/3 in that order with merge commits, each only with green CI, and stops if
+  another PR merges into phase/3 in between.
