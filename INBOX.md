@@ -192,6 +192,32 @@ Reply inline (`Decision: …`).
       which have none, and new Oracle icons (its Legend panel still shows the old preview icons
       beside the new kit names); (g) the aether cost on the HUD bar (the snapshot carries it); (h)
       a check in the browser of the Legend panels, whose ability bands changed size.
+      **Added 2026-11-19 (critic on the phase/3 merge of #99), to (d):** the boss content is now
+      here without its weight. `content/mobs/capturePointBoss.ts` has `mass: 3.125` ("as the heavy
+      minion"), so a Slam moves the capture point boss about 0.96 m and a Sentinel (mass 6,
+      `content/legends/sentinel.ts`) 0.5 m: the mini-boss is lighter than the class DEC-208 (2)
+      says it matches. Your "10-12" is on another scale than this repo's (Warrior 1, Sentinel 6).
+      Set the mini-boss mass to the Sentinel's (6), to 10-12 on this scale, or to another value?
+      The merge does not change it: it is a game-design number, in Aryan Walanj's boss content.
+
+- [ ] **HC-Q63 — What may `guard-within-leash` allow after a knock-back?
+      (`feat/ability-framework`, 2026-11-19; critic on the phase/3 merge, finding 2; reasoning,
+      not reproduced).** The invariant (`diagnostics/invariants/GuardWithinLeashInvariant.ts`;
+      architecture 15 §3, 18 §7) allows a guard its leash plus `leashTolerance` (5.5 m,
+      `content/structures/guardPlans.ts`): one decision's walk plus its farthest stance (DEC-144,
+      DEC-181 (H2)), with about 0.06 m of margin for the capture point boss. Forced motion is not
+      in that sum. Slam pushes a light guard (mass 0.5, at or under the base mass 1) 3 m and
+      Shockwave 2.5 m, and knock-backs on one target in the same tick add up (DEC-208 (3)), so a
+      push can move a guard near its limit past it. The match then logs an ERROR (release setting) or throws (test setting,
+      `InvariantRunner.constants.ts`). No test or golden replay reaches it today. The gap came with
+      the ability framework's knock-back; #99 adds zone guards to it. A larger fixed tolerance does
+      not close it, because pushes add up and chain. Options: (A) **recommended:** the guard's post
+      keeps how far a push left it past its limit, and the invariant allows that extra distance
+      until the guard is back inside (the extra can only shrink as the guard walks home); (B) the
+      invariant skips a guard while a push moves it and while it walks home (diagnostics would
+      need the controller's state); (C) leave it, and accept false errors after pushes. Doc 18 is
+      SamarjitBhogal's. A, B or C? A or B is a follow-up PR (this track takes no new work before
+      the freeze).
 
 - [ ] **Teammate's boss spec (Aryan Walanj, 2026-11-11): amend reference 04?** A teammate's spec
       differs from `docs/reference/game-design/04-objectives-capture-points-and-bosses.md` in

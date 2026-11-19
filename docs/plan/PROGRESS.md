@@ -8778,3 +8778,24 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   check passed." (`eternalus-agent-work/abilities/check-merge-99-101.log`).
 - Next step: a critic on the merge delta, then push and the owner's sign-off comment on PR #123;
   one more phase/3 merge is expected before #123 merges (#126, #121, #120, #119 first).
+
+### 2026-11-19 — Phase 4 / sprints 4.2–4.3 and 4.7: ability framework, critic on the phase/3 merge — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: an `architecture-reviewer` critic (opus) on the merge delta `ecac47ac..abf40772`
+  (docs as at each parent): APPROVE, no blockers. It checked all ten conflict resolutions (both
+  sides kept; `collisions === null` exactly where #99's map objects were absent), the pipeline
+  order, `StateHasher` coverage of `Capturable.lockedBy`, the input path (no new `InputAction`,
+  no chord clash, bridge events wired once) and the ids (no duplicate DEC or HC rows). Its two
+  should-fix items are owner questions, so they go to `INBOX.md` and no code changes:
+  - HC-S12 (d): #99's capture point boss has `mass: 3.125`, lighter than the Sentinel (6) that
+    DEC-208 (2) says mini-bosses match.
+  - New HC-Q63: a knock-back can push a guard past the `guard-within-leash` tolerance (walk plus
+    stance only; knock-backs add up, DEC-208 (3)), so a fixed tolerance cannot close it; options A
+    (a post keeps the extra distance a push left), B (skip while pushed and walking home), C
+    (leave it).
+  - Its nit (the order of two 13 §10 bullets) is left as is.
+- Checks run: `npm run docs:check` and Prettier on the changed files (results in the next commit's
+  hook log, `eternalus-agent-work/abilities/commit-merge-critic.log`); the code is unchanged since
+  the merge check (EXIT=0, core 1894, protocol 29, client 2096, server 84).
+- Next step: hold the push (PR-REVIEW-COORDINATION-2: wait for #126, #121, #120, #119 to reach
+  phase/3), then merge phase/3 again, check, and give Sam the push, sign-off and body lines.
