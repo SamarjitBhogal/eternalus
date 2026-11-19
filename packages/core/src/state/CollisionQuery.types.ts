@@ -1,4 +1,4 @@
-import type { Vec2 } from '../utils/geometry.types';
+import type { Vec2, Polygon } from '../utils/geometry.types';
 
 /**
  * The match's collision rule on the state (architecture 10 §7), beside `space` and `paths`:
@@ -8,6 +8,12 @@ import type { Vec2 } from '../utils/geometry.types';
  * import `physics/`; a dash is cut with it (`abilities/dashReach.ts`).
  */
 export interface CollisionQuery {
+  /** Whether a body can occupy a position without overlapping solid geometry or world bounds. */
+  canFit?(position: Vec2, radius: number): boolean;
+  /** Installs a temporary blocker in worlds with a physical collision index. */
+  addObstacle?(id: string, polygon: Polygon): void;
+  /** Removes a temporary blocker when destroyed or expired. */
+  removeObstacle?(id: string): void;
   /**
    * How far, up to `distance` metres, a circle of `radius` moves from `from` along `direction` (a
    * unit vector) in a straight line before it first touches a wall or the map's edge, kept as far

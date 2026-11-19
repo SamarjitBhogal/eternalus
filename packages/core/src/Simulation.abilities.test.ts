@@ -12,6 +12,7 @@ import { NullLogger } from './diagnostics/NullLogger';
 import { Simulation } from './Simulation';
 import type { RosterSlot } from './Simulation.types';
 import { TWO_LANE_MAP } from './state/__fixtures__/twoLaneMap';
+import type { GameState } from './state/GameState';
 
 const SPAWN: readonly Command[] = [
   {
@@ -74,6 +75,41 @@ const play = (
 };
 
 describe('Simulation: casting', () => {
+  it('reopens temporary wall navigation in a headless map without scenery ownership', () => {
+    const sim = new Simulation({
+      config: createDefaultGameConfig({ match: { countdownSeconds: 0 } }),
+      seed: 1,
+      logger: new NullLogger(),
+      map: TWO_LANE_MAP,
+    });
+    const { state } = sim as unknown as { readonly state: GameState };
+    sim.enqueueCommand({
+      type: 'dev-spawn',
+      kind: 'sentinel',
+      definitionId: 'sentinel',
+      team: 'light',
+      at: { x: 100, y: 50 },
+      count: 1,
+    });
+    sim.step();
+    const hero = sim.snapshot().entities.find((entity) => entity.kind === 'sentinel');
+    if (hero === undefined || state.world === null) throw new Error('Missing fixture world');
+    expect(state.worldObjects).toBeUndefined();
+    expect(state.world.grid.isWalkableAt(102, 50)).toBe(true);
+    sim.enqueueCommand({
+      type: 'cast-ability',
+      actorId: hero.id,
+      slot: 'ability-3',
+      aim: { point: { x: 110, y: 50 }, targetId: null },
+    });
+    sim.step();
+    expect(state.world.grid.isWalkableAt(102, 50)).toBe(false);
+    for (let tick = 0; tick < 180; tick++) sim.step();
+    expect(state.world.grid.isWalkableAt(102, 50)).toBe(true);
+    expect(
+      sim.snapshot().entities.some((entity) => entity.definitionId === 'ability-shield-wall'),
+    ).toBe(false);
+  });
   it('casts through the real command path, then blocks the slot until its cooldown ends', () => {
     const { sim, events } = castingMatch();
 
@@ -131,9 +167,9 @@ describe('Simulation: casting', () => {
 
     play(sim, 1, { 0: [castBy('entity-1'), castBy('entity-1', 'ability-3')] });
 
-    // Hamstring (effects: []) stays unavailable, refused as its command applies; Blade Runner casts
+    // Only one cast can wait per Legend: Hamstring is refused while Blade Runner is queued; Blade Runner casts
     // later in the tick, in AbilitySystem.
-    expect(events).toEqual(['rejected unavailable', 'cast blade-runner']);
+    expect(events).toEqual(['rejected casting', 'cast blade-runner']);
   });
 });
 

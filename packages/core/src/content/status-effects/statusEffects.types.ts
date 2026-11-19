@@ -1,12 +1,26 @@
 /** A number a status scales: each reader asks `StatusEffects.multiplier(stat)` for one value. `aetherCost` multiplies what a cast costs (read by the cast path in the next slice). */
-export type StatusStat = 'moveSpeed' | 'attackSpeed' | 'damageDealt' | 'damageTaken' | 'aetherCost';
+export type StatusStat =
+  | 'moveSpeed'
+  | 'attackSpeed'
+  | 'damageDealt'
+  | 'damageTaken'
+  | 'aetherCost'
+  | 'size'
+  | 'weaponDamageDealt';
 
 /**
  * A yes/no rule a status imposes. `cannot-cast` waits for `AbilitySystem` (phase 4);
  * `cannot-move` and `cannot-attack` are read by `MovementSystem` and `CombatSystem`;
  * `control-immune` is read by `StatusEffectApplier`, which then refuses hard control.
  */
-export type StatusFlag = 'cannot-move' | 'cannot-attack' | 'cannot-cast' | 'control-immune';
+export type StatusFlag =
+  | 'cannot-move'
+  | 'cannot-attack'
+  | 'cannot-cast'
+  | 'control-immune'
+  | 'invisible'
+  | 'break-on-attack'
+  | 'break-on-damage';
 
 /** Whether a status helps, hurts or transforms its target (architecture 05 section 8). */
 type StatusPolarity = 'buff' | 'debuff' | 'form';

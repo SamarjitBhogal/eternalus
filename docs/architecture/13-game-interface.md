@@ -824,7 +824,6 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
     bullet's missing descriptions for a Legend's abilities. Spec `detailNames` ability rows are
     no longer read by the client (`INBOX.md` HC-Q52). No check in a browser yet: the panels'
     ability bands changed size, so a long description may wrap tight.
-origin/feat/ability-framework
 
 ## Related
 

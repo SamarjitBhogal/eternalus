@@ -10,7 +10,7 @@ import { fakeAbility, SHIPPED_EFFECT_KINDS } from './__fixtures__/fakeAbilities'
 import { createDefaultAbilityRegistry } from './defaultAbilityRegistry';
 
 /** A damage step with a shape kind the default registry has no line for. */
-const CONE_DAMAGE = { kind: 'damage', shape: { kind: 'cone' } } as const;
+const CONE_DAMAGE = { kind: 'damage', shape: { kind: 'unregistered-cone' } } as const;
 
 describe('createDefaultAbilityRegistry', () => {
   it('composes every shipped ability at build: every shape and restriction kind is registered', () => {
@@ -26,11 +26,7 @@ describe('createDefaultAbilityRegistry', () => {
     const abilities = loadAbilities(30);
     const registry = createDefaultAbilityRegistry(abilities);
 
-    expect(abilities.ids.filter((id) => registry.resolve(id).isAvailable)).toEqual([
-      'blade-runner',
-      'slam',
-      'shockwave',
-    ]);
+    expect(abilities.ids.filter((id) => registry.resolve(id).isAvailable)).toEqual(abilities.ids);
     expect(SHIPPED_EFFECT_KINDS.map((kind) => registry.effectFor(kind).kind)).toEqual(
       SHIPPED_EFFECT_KINDS,
     );

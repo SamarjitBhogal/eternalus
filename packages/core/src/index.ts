@@ -52,7 +52,6 @@ export type {
   AbilityDisplayStep,
   DisplayContent,
 } from './content/loadDisplayContent';
-origin/feat/ability-framework
 export { DEFAULT_MAP_CONFIG } from './content/maps/defaultMapConfig';
 export type {
   MapDecoration,

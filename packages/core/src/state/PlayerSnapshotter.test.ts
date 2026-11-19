@@ -19,7 +19,7 @@ const READINESS = new CastValidator(testAbilityRegistry([new RecordingEffect('fa
 /** A Warrior with the test kit: strike, unbuilt veil, dash, ultimate, then three empty slots. */
 const setUp = () => {
   const { state, caster } = casterState({
-    abilities: ['fake-strike', 'veil', 'fake-dash'],
+    abilities: ['fake-strike', 'fake-unbuilt', 'fake-dash'],
     ultimate: 'fake-ultimate',
   });
   const snapshot = () => {
@@ -97,7 +97,7 @@ describe('PlayerSnapshotter', () => {
 
   it('reports an ability with no effects as unavailable', () => {
     expect(setUp().slot('ability-2')).toMatchObject({
-      abilityId: 'veil',
+      abilityId: 'fake-unbuilt',
       isReady: false,
       blockedBy: 'unavailable',
     });
@@ -120,9 +120,9 @@ describe('PlayerSnapshotter', () => {
     });
   });
 
-  it('reports the ultimate as not charged and sends no meter yet', () => {
+  it('reports the actual ultimate meter, initially empty', () => {
     expect(setUp().slot('ability-4')).toMatchObject({
-      charge: null,
+      charge: 0,
       isReady: false,
       blockedBy: 'not-charged',
     });

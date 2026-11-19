@@ -22,6 +22,20 @@ function paint(corners: readonly Vec2[], renderer: Renderer): void {
  * circle centre, a path as the rectangle the dash sweeps (the dash's length by the path's width).
  */
 export const AIM_SHAPE_PAINTERS: ShapePainters = {
+  cone: ({ radius, angleDegrees }, { origin, direction }, renderer) => {
+    const middle = Math.atan2(direction.y, direction.x);
+    const span = (angleDegrees * Math.PI) / 180;
+    paint(
+      [
+        origin,
+        ...Array.from({ length: AIM_CIRCLE_SEGMENTS + 1 }, (_, index) => {
+          const angle = middle - span / 2 + (span * index) / AIM_CIRCLE_SEGMENTS;
+          return { x: origin.x + radius * Math.cos(angle), y: origin.y + radius * Math.sin(angle) };
+        }),
+      ],
+      renderer,
+    );
+  },
   circle: ({ radius }, { circleCentre }, renderer) => {
     paint(
       Array.from({ length: AIM_CIRCLE_SEGMENTS }, (_, corner) => {

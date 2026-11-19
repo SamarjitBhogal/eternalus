@@ -8725,3 +8725,30 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   assertion and optional-property errors in new test fixtures were corrected before the passing run.
 - Next step: review this separate presentation branch and resolve the outstanding asset proposals
   with the owner before PR approval. No commit or push made; core gameplay and dependencies unchanged.
+
+### 2026-11-18 — Phase 4 / starter kits — feat/character-sprites — Gurshaan + Codex
+
+- What was done: merged PR #123's shared framework (`2216cd0c`) into the Phase 3-based sprite
+  branch with the user's permission, resolving the framework and sprite conflicts. Implemented
+  the twelve documented starters through its strategy registry: Warrior's Blade Runner, Veil,
+  Hamstring and Fury; Sentinel's Slam, Rip & Tear, Shield Wall and Berserk; Magus's Shockwave,
+  Sanctuary, Imbue and Death Ray. Added combat-earned ultimate charge, repeat Fury dashes,
+  swept blades, persistent healing/channel fields, temporary destructible collision walls,
+  stealth acquisition rules and physical form scaling. Kept the restored character assets and
+  attached sprite/VFX playback to successful simulation events and snapshots. Provisional values
+  and controls were approved by Gurshaan in the task and remain marked in content.
+- Checks run: `npm run check` passed, exit 0: 1,926 core, 2,161 client, 29 protocol and 84 server
+  tests (4,200 total), coverage thresholds, formatting, lint, type checking, unused-code checks
+  and production builds. Verbatim tail: `Checked 134 Markdown files under docs/.`
+  `Documentation check passed.` `EXIT=0`. The earlier quick check's seven lint findings were
+  corrected and the four affected files passed targeted lint before the full passing gate.
+  Replay regeneration was isolated to new ultimate contribution state: disabling only its reaction
+  system reproduced every old checkpoint; commands and checkpoints through tick 300 stayed fixed.
+  Browser smoke check confirmed the selected Colossus atlas and correct starter-kit HUD with no
+  captured runtime warnings/errors; synthetic browser key presses did not verify live casts, which
+  are covered by deterministic command-path scenarios. Initial root diagnostic files that failed
+  formatting were moved to ignored scratch before the passing gate.
+- Next step: review the uncommitted merge and gameplay changes, then complete the repository's
+  pre-PR critic/ponytail gate and outstanding asset proposals before requesting approval. No commit
+  or push made. The framework's shared starter kits are implemented; alternate ability varieties
+  and the larger ability pools remain planned.

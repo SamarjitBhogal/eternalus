@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-14
+last-reviewed: 2026-11-18
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -505,6 +505,10 @@ each closed by the session or phase named:
 - `Replay` has no `versions` yet (they arrive with the content catalogue).
 - `map/` still reads its own `MapConfig`, `DEFAULT_MAP_CONFIG`, `MapRandom` and
   `validateMapConfig` until session A swaps to `GameConfig` and `SeededRandom` (06 §10).
+
+### Starter effects — implementation status (2026-11-18)
+
+Persistent spell state is held by entity components and hashed with the match: field lifetimes and polygons, projectile travel, pulse cadence, channel links, bounded ultimate contributions and repeat-cast timers. `ability-recast` announces a successful repeat action without counting a second ultimate activation; `terrain-changed` invalidates navigation after a temporary barrier is installed.
 
 ## Related
 

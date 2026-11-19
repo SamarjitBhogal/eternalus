@@ -97,10 +97,10 @@ describe('buildDisplayCatalogue kits', () => {
     expect(names).toEqual(['Death Ray', 'Imbue', 'Sanctuary', 'Shockwave']);
   });
 
-  it('marks an ability not built yet, and shows the ultimate as charge-based', () => {
+  it('marks the implemented ultimate available and charge-based', () => {
     const [ultimate, slam] = oracleOf(build().legendClasses)?.details.map((row) => row.kit) ?? [];
     expect(ultimate).toMatchObject({
-      isAvailable: false,
+      isAvailable: true,
       cost: { kind: 'charge' },
       cooldownSeconds: null,
     });

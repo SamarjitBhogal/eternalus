@@ -5,10 +5,13 @@ import type { DamagePipeline } from '../combat/DamagePipeline';
 import type { Command } from '../commands/Command.types';
 import type { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { Abilities } from '../components/Abilities';
+import { ULTIMATE_CHARGE } from '../content/abilities/starterTuning';
+import { TickRate } from '../utils/TickRate';
 import type { AbilitySlotRuntime } from '../components/AbilitySlotRuntime';
 import { Aether } from '../components/Aether';
 import { Progression } from '../components/Progression';
 import { Transform } from '../components/Transform';
+import { StatusEffects } from '../components/StatusEffects';
 import type { Entity } from '../entities/Entity';
 import type { GameState } from '../state/GameState';
 import type { SlotReadiness } from '../state/SlotReadiness.types';
@@ -79,8 +82,18 @@ export class AbilitySystem implements System {
     }
     const ability = this.registry.resolve(abilityId);
     caster.getComponent(Aether).spend(this.validator.priceOf(state, caster.id, abilityId));
-    runtime.recordCast(state.tick, ability.definition.cooldownTicks);
-    state.events.emit('ability-cast', { casterId: caster.id, abilityId, slot });
+    const isRecast = runtime.isRecastActive(state.tick, caster.findComponent(StatusEffects));
+    if (!isRecast) {
+      runtime.recordCast(state.tick, ability.definition.cooldownTicks);
+      if (ability.definition.slot === 'ultimate')
+        runtime.meterLockedUntilTick =
+          state.tick + new TickRate(state.config.tickRate).toTicks(ULTIMATE_CHARGE.lockoutSeconds);
+    }
+    state.events.emit(isRecast ? 'ability-recast' : 'ability-cast', {
+      casterId: caster.id,
+      abilityId,
+      slot,
+    });
     const { position } = caster.getComponent(Transform);
     new CastInstance(
       {

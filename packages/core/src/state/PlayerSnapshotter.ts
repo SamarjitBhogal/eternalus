@@ -1,4 +1,6 @@
 import { Abilities } from '../components/Abilities';
+import { StatusEffects } from '../components/StatusEffects';
+import { ULTIMATE_SLOT } from '../components/Abilities.constants';
 import type { Entity } from '../entities/Entity';
 import type { GameState } from './GameState';
 import type { AbilitySlotSnapshot, PlayerSnapshot } from './Snapshot.types';
@@ -23,14 +25,17 @@ export class PlayerSnapshotter {
       const { abilityId, slot } = runtime;
       // The slot's own state decides readiness; the aim is the cast's, not the slot's.
       const blockedBy = this.readiness.slotBlockedBy(state, legend.id, slot);
+      const isRecast = runtime.isRecastActive(state.tick, legend.findComponent(StatusEffects));
+      const cooldown = abilityId === null ? 0 : this.readiness.cooldownTicksOf(abilityId);
       return {
         slot,
         abilityId,
-        cooldownRemainingTicks: runtime.cooldownRemaining(state.tick),
-        cooldownTicks: abilityId === null ? 0 : this.readiness.cooldownTicksOf(abilityId),
+        cooldownRemainingTicks: isRecast
+          ? runtime.cooldownRemaining(state.tick)
+          : Math.max(0, runtime.cooldownUntilTick - state.tick),
+        cooldownTicks: isRecast ? Math.max(cooldown, runtime.recastCooldownTicks) : cooldown,
         aetherCost: abilityId === null ? 0 : this.readiness.priceOf(state, legend.id, abilityId),
-        // ponytail: the ultimate meter is built with Fury (phase 4); until then no slot reports one.
-        charge: null,
+        charge: slot === ULTIMATE_SLOT ? runtime.charge : null,
         isReady: blockedBy === null,
         blockedBy,
       };

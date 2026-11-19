@@ -29,6 +29,8 @@ export class CastInstance {
     const { casterId, ability, slot, aim, origin, casterLevel, tick } = this.facts;
     const { state, effects, targets, damage, statuses } = this.services;
     const toAim = { x: aim.point.x - origin.x, y: aim.point.y - origin.y };
+    const direction = toAim.x === 0 && toAim.y === 0 ? { x: 0, y: 0 } : normalize(toAim);
+    const aimedPlacement = { ...placement, direction };
     const { scaling } = ability.definition;
     return {
       casterId,
@@ -37,13 +39,14 @@ export class CastInstance {
       tick,
       state,
       aim,
-      direction: toAim.x === 0 && toAim.y === 0 ? { x: 0, y: 0 } : normalize(toAim),
-      placement,
+      direction,
+      placement: aimedPlacement,
       scaled: (field, value) => value * (1 + (scaling[field]?.perLevel ?? 0) * (casterLevel - 1)),
       damage,
       statuses,
-      targets: (shape, filter) => targets.find(state, casterId, shape, placement, filter),
-      centreFor: (shape, point) => effects.shapeFor(shape.kind).centreFor(shape, placement, point),
+      targets: (shape, filter) => targets.find(state, casterId, shape, aimedPlacement, filter),
+      centreFor: (shape, point) =>
+        effects.shapeFor(shape.kind).centreFor(shape, aimedPlacement, point),
       run: (step: EffectStep, at: ShapePlacement) => {
         effects.effectFor(step.kind).apply(step, this.contextAt(at));
       },

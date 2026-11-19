@@ -1,4 +1,5 @@
 import { Abilities } from '../components/Abilities';
+import { Channeling } from '../components/Channeling';
 import type { Aim } from '../components/AbilitySlotRuntime.types';
 import { Aether } from '../components/Aether';
 import { Health } from '../components/Health';
@@ -89,7 +90,7 @@ export class CastValidator implements SlotReadiness {
     if (!ability.isAvailable) {
       return 'unavailable';
     }
-    if (abilities.hasPendingCast) {
+    if (abilities.hasPendingCast || caster.hasComponent(Channeling)) {
       return 'casting';
     }
     if (
@@ -101,7 +102,15 @@ export class CastValidator implements SlotReadiness {
     if (runtime.isCoolingDown(state.tick)) {
       return 'on-cooldown';
     }
-    if (definition.slot === 'ultimate' && runtime.charge < 1) {
+    const isRecast = runtime.isRecastActive(state.tick, caster.findComponent(StatusEffects));
+    if (
+      isRecast &&
+      aim !== null &&
+      !CastValidator.hasDirection(caster.findComponent(Transform), aim)
+    )
+      return 'no-target';
+    if (isRecast && state.tick < runtime.nextRecastTick) return 'on-cooldown';
+    if (definition.slot === 'ultimate' && !isRecast && runtime.charge < 1) {
       return 'not-charged';
     }
     if (caster.findComponent(Aether)?.canAfford(this.price(state, actorId, ability)) !== true) {
@@ -115,7 +124,7 @@ export class CastValidator implements SlotReadiness {
       return 'no-target';
     }
     for (const { rule, spec } of ability.restrictions) {
-      const reason = rule.check(spec, actorId, state);
+      const reason = rule.check(spec, actorId, state, aim);
       if (reason !== null) {
         return reason;
       }

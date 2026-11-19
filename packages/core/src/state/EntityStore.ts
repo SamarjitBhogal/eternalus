@@ -1,4 +1,5 @@
 import { Abilities } from '../components/Abilities';
+import { StatusEffects } from '../components/StatusEffects';
 import type { Aim } from '../components/AbilitySlotRuntime.types';
 import { ChaseWatch } from '../components/ChaseWatch';
 import { Combat } from '../components/Combat';
@@ -30,6 +31,13 @@ import type {
  * The only way out is `remove(id, cause)`.
  */
 export class EntityStore {
+  /** Allies remain visible to one another; cloaked enemies cannot be acquired as targets. */
+  public isVisibleToTeam(team: Team | undefined, targetId: EntityId): boolean {
+    return (
+      (team !== undefined && team === this.teamOf(targetId)) ||
+      this.get(targetId)?.findComponent(StatusEffects)?.has('invisible') !== true
+    );
+  }
   private readonly entities = new Map<EntityId, Entity>();
   private readonly removals: RemovalRecord[] = [];
   private added = 0;

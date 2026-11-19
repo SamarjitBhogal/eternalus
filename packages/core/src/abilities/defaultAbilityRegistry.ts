@@ -3,10 +3,21 @@ import { STATUS_EFFECTS } from '../content/status-effects/statusEffectCatalogue'
 import { AbilityRegistry } from './AbilityRegistry';
 import type { AbilitySource } from './AbilityRegistry.types';
 import { DamageEffect } from './effects/DamageEffect';
+import { BuffEffect } from './effects/BuffEffect';
+import { HealingFieldEffect } from './effects/HealingFieldEffect';
+import { BladeEffect } from './effects/BladeEffect';
+import { BeamEffect } from './effects/BeamEffect';
+import { BarrierEffect } from './effects/BarrierEffect';
+import { RendEffect } from './effects/RendEffect';
+import { FuryEffect } from './effects/FuryEffect';
+import { ConeShape } from './shapes/ConeShape';
+import type { AbilitySpawn } from '../state/AbilitySpawn.types';
 import { DashEffect } from './effects/DashEffect';
 import { DebuffEffect } from './effects/DebuffEffect';
 import { KnockbackEffect } from './effects/KnockbackEffect';
 import { MinLevelRestriction } from './restrictions/MinLevelRestriction';
+import { RoomForFormRestriction } from './restrictions/RoomForFormRestriction';
+import { RoomForWallRestriction } from './restrictions/RoomForWallRestriction';
 import { CircleShape } from './shapes/CircleShape';
 import { PathShape } from './shapes/PathShape';
 
@@ -24,15 +35,28 @@ import { PathShape } from './shapes/PathShape';
 export const createDefaultAbilityRegistry = (
   abilities: AbilitySource,
   statuses: { has(id: string): boolean } = STATUS_EFFECTS,
+  spawn: AbilitySpawn = () => {
+    throw new Error('This effect requires the match entity factory');
+  },
 ): AbilityRegistry => {
   const registry = new AbilityRegistry(abilities);
+  registry.registerEffect(new BuffEffect(statuses));
+  registry.registerEffect(new HealingFieldEffect(spawn));
+  registry.registerEffect(new BladeEffect(spawn, statuses));
+  registry.registerEffect(new BeamEffect(spawn));
+  registry.registerEffect(new BarrierEffect(spawn));
+  registry.registerEffect(new RendEffect(statuses));
+  registry.registerEffect(new FuryEffect(statuses));
   registry.registerEffect(new DamageEffect());
   registry.registerEffect(new DebuffEffect(statuses));
   registry.registerEffect(new KnockbackEffect(KNOCKBACK));
   registry.registerEffect(new DashEffect());
   registry.registerShape(new CircleShape());
+  registry.registerShape(new ConeShape());
   registry.registerShape(new PathShape());
   registry.registerRestriction(new MinLevelRestriction());
+  registry.registerRestriction(new RoomForFormRestriction());
+  registry.registerRestriction(new RoomForWallRestriction());
   registry.resolveAll();
   return registry;
 };

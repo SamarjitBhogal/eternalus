@@ -163,16 +163,22 @@ describe('DefaultSystemPipeline', () => {
     // Collision resolves positions before the index, steering, combat and next tick's AI read them.
     // Combat runs after movement, so a unit with a target in reach faces it, not its own way (DEC-192).
     expect(pipeline.names).toEqual([
+      'ability-reactions',
       'ai',
       'hordes',
       'abilities',
+      'ability-lifetimes',
+      'healing-fields',
       'aether-regen',
       'status-effects',
+      'ability-forms',
       'movement',
       'collision',
       'space',
       'stuck',
       'pathing',
+      'ability-projectiles',
+      'beam-channels',
       'combat',
       'map-destruction',
       'progression',

@@ -1,4 +1,5 @@
 import { Health } from '../components/Health';
+import type { Entity } from '../entities/Entity';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { TeamMembership } from '../components/TeamMembership';
 import type { MapObject, MapObjectSnapshot } from '../content/maps/mapObjects.types';
@@ -9,6 +10,16 @@ import { boundsOf } from '../utils/geometry';
 
 /** Owns placed-object identity and persistent destroyed state after DeathSystem retires entities. */
 export class WorldObjectStore {
+  /** Registers an ability wall so targeting, destruction and rubble state use its one health pool. */
+  public add(object: MapObject, entity: Entity): void {
+    this.entityObjects.set(entity.id, object);
+    this.records.push({
+      object,
+      entityId: entity.id,
+      health: entity.getComponent(Health),
+      bounds: boundsOf(object.footprints.flat()),
+    });
+  }
   private readonly records: WorldObjectRecord[] = [];
   private readonly entityObjects = new Map<string, MapObject>();
   private readonly destroyed = new Set<string>();

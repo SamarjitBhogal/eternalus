@@ -43,6 +43,8 @@ export type AbilityDisplayStep = {
   readonly shape?: EffectShape;
   /** A dash's length in metres; absent on every other step. */
   readonly distance?: number;
+  /** Collision radius of a ranged line; absent uses the caster's body (a dash). */
+  readonly collisionRadius?: number;
 };
 
 /**

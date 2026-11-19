@@ -18,6 +18,10 @@ import type { Polygon } from '../utils/geometry.types';
  * `Capturable`), never a made-up default.
  */
 export type EntitySnapshot = {
+  /** Present while an active status hides this entity from enemies. */
+  readonly isInvisible?: true;
+  /** Present for temporary form changes, relative to the definition's normal artwork. */
+  readonly visualScale?: number;
   readonly mapObjectId?: string;
   /**
    * A structure built from a map feature: the feature's id (`MapFeature.id`), so a HUD tile binds
@@ -84,7 +88,7 @@ export type AbilitySlotSnapshot = {
   readonly cooldownTicks: number;
   /** The aether the cast costs now, after status modifiers. */
   readonly aetherCost: number;
-  /** The ultimate's meter 0..1; `null` on every slot until the meter is built (a later PR). */
+  /** The ultimate's actual meter 0..1; `null` for non-ultimate slots. */
   readonly charge: number | null;
   /** Whether a cast would be accepted now. */
   readonly isReady: boolean;

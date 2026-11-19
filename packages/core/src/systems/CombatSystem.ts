@@ -43,6 +43,10 @@ export class CombatSystem implements System {
       if (combat?.targetId == null) {
         return;
       }
+      if (!state.entities.isVisibleToTeam(state.entities.teamOf(attacker.id), combat.targetId)) {
+        combat.setTarget(null);
+        return;
+      }
 
       const target = state.entities.get(combat.targetId);
       if (target === undefined || target.findComponent(Health)?.isDead !== false) {

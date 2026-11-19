@@ -7,7 +7,7 @@ import type { AuthoredAbility } from './AbilityDefinition.types';
 import { loadAbilities } from './loadAbilities';
 
 /** Cost and cooldown of the nine abilities with no effects yet: balancing.md "Aether costs and cooldowns" (0 / 0 for an ultimate: the meter gates it). */
-const UNBUILT = {
+const STARTER_PRICES = {
   veil: { cooldownSeconds: 20, aetherCost: 40, slot: 'ability' },
   hamstring: { cooldownSeconds: 9, aetherCost: 25, slot: 'ability' },
   fury: { cooldownSeconds: 0, aetherCost: 0, slot: 'ultimate' },
@@ -20,7 +20,19 @@ const UNBUILT = {
 } as const;
 
 /** Every effect kind the framework builds in PR 1 (05 §3); a new kind is added here with its effect class. */
-const BUILT_EFFECT_KINDS = ['damage', 'debuff', 'dash', 'knockback'];
+const BUILT_EFFECT_KINDS = [
+  'damage',
+  'debuff',
+  'dash',
+  'knockback',
+  'buff',
+  'blade',
+  'beam',
+  'barrier',
+  'rend',
+  'fury',
+  'healing-field',
+];
 
 describe('ABILITIES', () => {
   it('lists the twelve kit abilities in class order, abilities before the ultimate', () => {
@@ -119,12 +131,14 @@ describe('ABILITIES', () => {
     expect(['blade-runner', 'slam', 'shockwave'].map(structureMultiplierOf)).toEqual([0.3, 2, 1]);
   });
 
-  it('prices the nine abilities not built yet from balancing.md and gives them no effects', () => {
+  it('prices and implements all nine formerly unbuilt starter abilities', () => {
     const unbuilt = ABILITIES.all().filter((ability) => ability.effects.length === 0);
 
-    expect(unbuilt.map((ability) => ability.id)).toEqual(Object.keys(UNBUILT));
-    for (const [id, expected] of Object.entries(UNBUILT)) {
-      expect(ABILITIES.get(id)).toMatchObject({ ...expected, targeting: null });
+    expect(unbuilt).toEqual([]);
+    for (const [id, expected] of Object.entries(STARTER_PRICES)) {
+      expect(ABILITIES.get(id)).toMatchObject(expected);
+      expect(ABILITIES.get(id).effects.length).toBeGreaterThan(0);
+      expect(ABILITIES.get(id).targeting).not.toBeNull();
     }
   });
 

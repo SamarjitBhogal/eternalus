@@ -44,12 +44,12 @@ export class AimTargeting {
       length === 0
         ? { x: 0, y: 0 }
         : { x: (aim.x - origin.x) / length, y: (aim.y - origin.y) / length };
-    const steps = ability.steps.map(({ shape, distance }) => ({
+    const steps = ability.steps.map(({ shape, distance, collisionRadius }) => ({
       shape: shape ?? null,
       reach:
         distance === undefined
           ? null
-          : (this.dashReach?.(origin, direction, distance, radius) ?? distance),
+          : (this.dashReach?.(origin, direction, distance, collisionRadius ?? radius) ?? distance),
     }));
     return { origin: { x: origin.x, y: origin.y }, direction, steps };
   }

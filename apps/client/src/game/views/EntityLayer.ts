@@ -46,9 +46,12 @@ export class EntityLayer implements WorldLayer {
     focusId: string | null,
   ): void {
     const before = new Map(previous?.entities.map((entity) => [entity.id, entity]) ?? []);
+    const focusTeam = current.entities.find((entity) => entity.id === focusId)?.team;
     this.states = current.entities.flatMap((entity) => {
       const now = entity.transform;
-      if (entity.mapObjectId !== undefined || now === null) return [];
+      if ((entity.mapObjectId !== undefined && entity.area === null) || now === null) return [];
+      if (entity.isInvisible === true && entity.id !== focusId && entity.team !== focusTeam)
+        return [];
       const then = before.get(entity.id)?.transform ?? now;
       const position = EntityLayer.lerp(then, now, alpha);
       const facing = EntityLayer.turn(then.facing, now.facing, alpha);

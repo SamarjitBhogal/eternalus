@@ -13,6 +13,21 @@ const rect = (x: number, y: number, width: number, height: number) => [
 ];
 
 describe('CollisionResolver', () => {
+  it('checks enlarged bodies against bounds and bridge passages, including temporary walls', () => {
+    const resolver = new CollisionResolver(
+      new StaticCollisionIndex([
+        { id: 'lava', polygon: rect(5, -20, 5, 40), passages: [rect(3, -2, 9, 4)] },
+      ]),
+      OPEN,
+    );
+    expect(resolver.canFit({ x: 7, y: 0 }, 1)).toBe(true);
+    expect(resolver.canFit({ x: 7, y: 0 }, 3)).toBe(false);
+    expect(resolver.canFit({ x: -1000, y: 0 }, 1)).toBe(false);
+    resolver.addObstacle('shield', rect(0, 0, 1, 4));
+    expect(resolver.canFit({ x: 0.5, y: 1 }, 0.1)).toBe(false);
+    resolver.removeObstacle('shield');
+    expect(resolver.canFit({ x: 0.5, y: 1 }, 0.1)).toBe(true);
+  });
   it('allows bridge crossings but prevents stepping sideways off the deck into lava', () => {
     const resolver = new CollisionResolver(
       new StaticCollisionIndex([

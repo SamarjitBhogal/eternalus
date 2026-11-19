@@ -6,6 +6,12 @@ describe('STATUS_EFFECTS', () => {
   it('holds the MVP set, the minion veterancy statuses and the knock-back statuses', () => {
     expect(STATUS_EFFECTS.ids).toEqual([
       'bleed',
+      'imbued',
+      'veiled',
+      'fury',
+      'berserk',
+      'hamstrung',
+      'channeling',
       'concussion',
       'stun',
       'blind',

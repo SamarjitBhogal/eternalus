@@ -15,7 +15,7 @@ import { MinLevelRestriction } from './restrictions/MinLevelRestriction';
 import { CircleShape } from './shapes/CircleShape';
 
 /** A step with a shape kind no registry line covers. */
-const CONE_STRIKE_STEP = { kind: 'fake-strike', shape: { kind: 'cone' } } as const;
+const CONE_STRIKE_STEP = { kind: 'fake-strike', shape: { kind: 'unregistered-cone' } } as const;
 
 describe('AbilityRegistry', () => {
   it('binds each effect step to its strategy, in order, and each restriction to its rule', () => {
@@ -69,7 +69,7 @@ describe('AbilityRegistry', () => {
   });
 
   it('makes an ability with no effects (not built, S1) unavailable', () => {
-    const veil = testAbilityRegistry([]).resolve('veil');
+    const veil = testAbilityRegistry([]).resolve('fake-unbuilt');
     expect(veil).toMatchObject({ isAvailable: false, steps: [] });
   });
 
@@ -103,7 +103,7 @@ describe('AbilityRegistry', () => {
     const registry = testAbilityRegistry([new RecordingEffect('fake-strike')], abilities);
 
     expect(() => registry.resolve('cone-strike')).toThrow(ContentValidationError);
-    expect(() => registry.resolve('cone-strike')).toThrow('shape "cone"');
+    expect(() => registry.resolve('cone-strike')).toThrow('shape "unregistered-cone"');
     expect(() => registry.resolve('carry-strike')).toThrow('restriction "not-while-carrying"');
     expect(() => {
       registry.resolveAll();
@@ -138,6 +138,6 @@ describe('AbilityRegistry', () => {
     expect(registry.effectFor('fake-strike')).toBe(strike);
     expect(registry.shapeFor('path').kind).toBe('path');
     expect(() => registry.effectFor('fake-bolt')).toThrow('No effect strategy');
-    expect(() => registry.shapeFor('cone')).toThrow('No shape strategy');
+    expect(() => registry.shapeFor('unregistered-cone')).toThrow('No shape strategy');
   });
 });

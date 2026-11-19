@@ -1,7 +1,7 @@
 import type { AuthoredAbility } from './AbilityDefinition.types';
 
 /**
- * Veil: in the Vanguard's kit, not built yet (`effects: []`, so it cannot be cast). Cost and cooldown: balancing.md:180.
+ * Veil: in the Vanguard's kit, not built yet (`effects: [{ kind: 'buff', statusId: 'veiled' }]`, so it cannot be cast). Cost and cooldown: balancing.md:180.
  */
 export const VEIL = {
   id: 'veil',
@@ -11,8 +11,8 @@ export const VEIL = {
   slot: 'ability',
   cooldownSeconds: 20, // TUNE: balancing.md:180
   aetherCost: 40, // TUNE: balancing.md:180
-  targeting: null,
-  effects: [],
+  targeting: { kind: 'self' },
+  effects: [{ kind: 'buff', statusId: 'veiled' }],
   restrictions: [],
   scaling: {},
 } as const satisfies AuthoredAbility;

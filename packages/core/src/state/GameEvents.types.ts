@@ -37,6 +37,14 @@ type StatusPayload = {
  * Ids of things that have no type yet (lanes, hordes, statuses, abilities) are plain strings.
  */
 export type GameEventMap = {
+  /** Dynamic ability geometry changed the world's navigable cells. */
+  readonly 'terrain-changed': { readonly cells: readonly number[] };
+  /** A repeat action inside an already-active ability, without spending a second ultimate. */
+  readonly 'ability-recast': {
+    readonly casterId: EntityId;
+    readonly abilityId: string;
+    readonly slot: string;
+  };
   readonly 'entity-spawned': {
     readonly entityId: EntityId;
     readonly kind: string;

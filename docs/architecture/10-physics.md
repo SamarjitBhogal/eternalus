@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-14
+last-reviewed: 2026-11-18
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -326,6 +326,10 @@ bounds clamp lives once, inside it, and hands it to `abilities/` as `GameState.c
 `CollisionQuery` port, beside `space` and `paths`). A destroyed object leaves the index when its
 entity is removed, so walking and a dash stop seeing it at once. The dash's motion goes through
 `MovementSystem` and `CollisionSystem` like walking.
+
+### Starter effects — implementation status (2026-11-18)
+
+Temporary Shield Walls enter the same StaticCollisionIndex used by walking and dash sweeps, and leave it on normal entity removal. Their nav stamps invalidate lane fields on insertion and removal. Form-growth validation checks the enlarged circle against that index, open passages and world bounds before payment. Wall placement rejects overlap with live moving colliders. Hamstring sweeps its point trajectory against target bodies and map footprints rather than relying on discrete frame overlap.
 
 ## Related
 

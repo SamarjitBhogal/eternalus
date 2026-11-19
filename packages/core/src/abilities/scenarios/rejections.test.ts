@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import { unitsWithWarriorKit } from '../__fixtures__/casterState';
 import { abilityMatch } from '../__fixtures__/abilityMatch';
+import { ContentCatalogue } from '../../content/ContentCatalogue';
+import { loadAbilities } from '../../content/abilities/loadAbilities';
+import { createDefaultAbilityRegistry } from '../defaultAbilityRegistry';
 
 /** What the cast path said, without the statuses. */
 const castLines = (log: readonly string[]) =>
@@ -81,10 +84,18 @@ describe('the shipped abilities refuse a cast with the right reason (scenario)',
     ]);
   });
 
-  it('unavailable: an ability in the kit that is not built yet (Veil, effects: [])', () => {
-    const { ids, cast, run, log } = abilityMatch([
-      { kind: 'warrior', team: 'light', at: { x: 50, y: 50 } },
-    ]);
+  it('unavailable: a genuinely unbuilt injected ability still cannot be cast', () => {
+    const source = new ContentCatalogue(
+      loadAbilities(30)
+        .all()
+        .map((ability) =>
+          ability.id === 'veil' ? { ...ability, effects: [], targeting: null } : ability,
+        ),
+    );
+    const { ids, cast, run, log } = abilityMatch(
+      [{ kind: 'warrior', team: 'light', at: { x: 50, y: 50 } }],
+      { abilities: createDefaultAbilityRegistry(source) },
+    );
     const id = ids[0] ?? '';
 
     cast(id, 'ability-2', { x: 60, y: 50 });

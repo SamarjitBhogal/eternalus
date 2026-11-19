@@ -9,6 +9,7 @@ import type { EntityId } from '../../state/EntityStore.types';
 import type { Team } from '../../teams/teams.types';
 import type { Vec2 } from '../../utils/geometry.types';
 import { stepPastCountdown } from './stepPastCountdown';
+import type { AbilityRegistry } from '../AbilityRegistry';
 
 /** One entity to place before the first tick: a dev-spawn of `kind` (and definition `kind` by default). */
 export type ScenarioSpawn = {
@@ -32,10 +33,12 @@ export const abilityMatch = (
     seed = 1,
     content,
     world,
+    abilities,
   }: {
     readonly seed?: number;
     readonly content?: DefinitionSource;
     readonly world?: { readonly map: MapDefinition; readonly mapObjects: readonly MapObject[] };
+    readonly abilities?: AbilityRegistry;
   } = {},
 ) => {
   const sim = new Simulation({
@@ -44,6 +47,7 @@ export const abilityMatch = (
     logger: new NullLogger(),
     ...(content === undefined ? {} : { content }),
     ...world,
+    ...(abilities === undefined ? {} : { abilities }),
   });
   const ids: EntityId[] = [];
   const log: string[] = [];

@@ -17,6 +17,21 @@ const setUp = () => {
 };
 
 describe('NoCastWhileNotReadyInvariant', () => {
+  it('flags repeat actions outside their window or internal cooldown', () => {
+    const { state, ultimate, check } = setUp();
+    if (ultimate === undefined) throw new Error('Missing ultimate');
+    ultimate.recordRecast(state.tick);
+    expect(check()).toEqual([
+      expect.objectContaining({ details: { slot: 'ability-4', problem: 'repeat-not-ready' } }),
+    ]);
+    ultimate.recastUntilTick = 100;
+    ultimate.nextRecastTick = 10;
+    ultimate.recordRecast(state.tick);
+    expect(check()).toHaveLength(1);
+    ultimate.nextRecastTick = state.tick;
+    ultimate.recordRecast(state.tick);
+    expect(check()).toEqual([]);
+  });
   it('holds for a cast on a ready slot, and for a full ultimate', () => {
     const { state, strike, ultimate, check } = setUp();
     strike?.recordCast(state.tick, 90);

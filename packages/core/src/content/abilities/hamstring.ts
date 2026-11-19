@@ -1,7 +1,8 @@
+import { STARTER_TUNING } from './starterTuning';
 import type { AuthoredAbility } from './AbilityDefinition.types';
 
 /**
- * Hamstring: in the Vanguard's kit, not built yet (`effects: []`). Cost and cooldown: balancing.md:182.
+ * Hamstring: in the Vanguard's kit, implemented through shared effect strategies. Cost and cooldown: balancing.md:182.
  */
 export const HAMSTRING = {
   id: 'hamstring',
@@ -11,8 +12,16 @@ export const HAMSTRING = {
   slot: 'ability',
   cooldownSeconds: 9, // TUNE: balancing.md:182
   aetherCost: 25, // TUNE: balancing.md:182
-  targeting: null,
-  effects: [],
+  targeting: { kind: 'directional' },
+  effects: [
+    {
+      kind: 'blade',
+      range: 12,
+      speed: STARTER_TUNING.bladeSpeed,
+      damage: 80,
+      statusIds: ['bleed', 'hamstrung'],
+    },
+  ],
   restrictions: [],
-  scaling: {},
+  scaling: { damage: { perLevel: 0.04 } }, // TUNE: balancing.md, +4% ability potency per level
 } as const satisfies AuthoredAbility;

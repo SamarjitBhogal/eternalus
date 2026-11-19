@@ -21,8 +21,8 @@ export type MatchHostDeps = {
     Match,
     'start' | 'destroy' | 'resize' | 'setPaused' | 'setCastMode' | 'cancelAim'
   > & {
-    readonly controls: CanvasPointerControlsDeps['controls'] & Pick<MatchViewControls, 'toggleMiniMap'>;
-origin/feat/ability-framework
+    readonly controls: CanvasPointerControlsDeps['controls'] &
+      Pick<MatchViewControls, 'toggleMiniMap'>;
   };
   /** The canvas, its chrome and the developer flag, as `GameCanvas` attached them. */
   readonly viewport: MatchViewport;

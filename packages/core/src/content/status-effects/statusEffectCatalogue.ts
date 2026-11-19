@@ -1,3 +1,9 @@
+import { IMBUED } from './imbued';
+import { VEILED } from './veiled';
+import { FURY } from './fury';
+import { BERSERK } from './berserk';
+import { HAMSTRUNG } from './hamstrung';
+import { CHANNELING } from './channeling';
 import { ContentCatalogue } from '../ContentCatalogue';
 import { BLEED } from './bleed';
 import { BLIND } from './blind';
@@ -15,6 +21,13 @@ import { VETERAN } from './veteran';
 /** Every status effect as authored (the MVP set of phase 2 sprint 2.2, then the knock-back statuses of the ability framework). A new status is a file and a line here; `loadStatusEffects` turns them into definitions. */
 export const STATUS_EFFECTS = new ContentCatalogue<AuthoredStatusEffect>([
   BLEED,
+  IMBUED,
+  VEILED,
+  FURY,
+  BERSERK,
+  HAMSTRUNG,
+  CHANNELING,
+
   CONCUSSION,
   STUN,
   BLIND,

@@ -1,5 +1,6 @@
 import type { AbilitySlot } from '../content/abilities/AbilityDefinition.types';
-import type { Aim, LastCast } from './AbilitySlotRuntime.types';
+import type { Aim, LastCast, LastRecast } from './AbilitySlotRuntime.types';
+import type { StatusEffects } from './StatusEffects';
 
 /**
  * One ability bar slot's runtime state (architecture 05 §6, `AbilityRuntime`): which ability it
@@ -13,10 +14,52 @@ export class AbilitySlotRuntime {
 
   /** The ultimate meter, 0 to 1 (DEC-202); filled by the charge rules, emptied by a cast. */
   public charge = 0;
+  /** Optional repeat-cast window and its internal cooldown (Fury dash). */
+  public recastUntilTick = 0;
+  public nextRecastTick = 0;
+  public recastCooldownTicks = 0;
+  public recastStatusId: string | null = null;
+  /** Ultimate charge cannot build during the post-cast lockout. */
+  public meterLockedUntilTick = 0;
 
   private pending: Aim | null = null;
 
   private last: LastCast | null = null;
+  private repeat: LastRecast | null = null;
+
+  /** The repeat action's readiness record, separate from spending the ultimate. */
+  public get lastRecast(): LastRecast | null {
+    return this.repeat;
+  }
+
+  /** A removed/expired buff immediately closes its repeat action, including Duel resets. */
+  public isRecastActive(
+    tick: number,
+    statuses: Pick<StatusEffects, 'hasStatus'> | undefined,
+  ): boolean {
+    return (
+      this.recastUntilTick > tick &&
+      (this.recastStatusId === null || statuses?.hasStatus(this.recastStatusId) === true)
+    );
+  }
+
+  /** Releases inactive repeat timers without changing the ultimate's actual cooldown/charge. */
+  public endRecastWindow(): void {
+    this.recastUntilTick = 0;
+    this.nextRecastTick = 0;
+    this.recastCooldownTicks = 0;
+    this.recastStatusId = null;
+  }
+
+  /** Records a repeat action without resetting charge or overwriting the initial cast record. */
+  public recordRecast(tick: number): void {
+    this.repeat = {
+      tick,
+      cooldownUntilTickBefore: this.nextRecastTick,
+      recastUntilTick: this.recastUntilTick,
+    };
+    this.nextRecastTick = tick + this.recastCooldownTicks;
+  }
 
   /**
    * @param slot - The bar slot.
@@ -44,7 +87,11 @@ export class AbilitySlotRuntime {
 
   /** Ticks left on the cooldown at `tick`; 0 when ready. */
   public cooldownRemaining(tick: number): number {
-    return Math.max(0, this.cooldownUntilTick - tick);
+    return Math.max(
+      0,
+      this.cooldownUntilTick - tick,
+      this.recastUntilTick > tick ? this.nextRecastTick - tick : 0,
+    );
   }
 
   /** Records an accepted `cast-ability` aimed at `aim`; `AbilitySystem` takes it this tick. */

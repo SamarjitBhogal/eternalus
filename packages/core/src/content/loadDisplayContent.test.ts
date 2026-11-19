@@ -123,7 +123,6 @@ describe('loadDisplayContent', () => {
 
   it('returns the verdict lines, one set for each condition that ends a match', () => {
     const { verdictLines } = load();
-origin/feat/ability-framework
 
     expect(verdictLines).toBe(VERDICT_LINES);
     expect(Object.keys(verdictLines)).toEqual(['objective-lost', 'kill-count']);
@@ -173,11 +172,11 @@ origin/feat/ability-framework
     );
   });
 
-  it('marks exactly the three built abilities available; the others have no steps', () => {
+  it('marks every documented starter ability available', () => {
     const { abilities } = load();
 
     expect(abilities.filter((ability) => ability.isAvailable).map((ability) => ability.id)).toEqual(
-      ['blade-runner', 'slam', 'shockwave'],
+      abilities.map((ability) => ability.id),
     );
     for (const ability of abilities.filter((entry) => !entry.isAvailable)) {
       expect(ability.steps).toEqual([]);

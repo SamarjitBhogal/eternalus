@@ -5,7 +5,6 @@ audience: [humans, agents]
 status: draft
 owner: sholtzman
 last-reviewed: 2026-11-16
-origin/feat/ability-framework
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:

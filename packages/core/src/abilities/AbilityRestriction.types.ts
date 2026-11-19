@@ -1,6 +1,7 @@
 import type { AbilityRejectReason } from '../content/abilities/AbilityDefinition.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
+import type { Aim } from '../components/AbilitySlotRuntime.types';
 
 /** The part of a restriction spec the registry reads: its kind, the key of its `AbilityRestriction`. */
 export type RestrictionSpec = { readonly kind: string };
@@ -13,5 +14,10 @@ export interface AbilityRestriction<S extends RestrictionSpec = RestrictionSpec>
   /** The registry key, e.g. `min-level`. */
   readonly kind: S['kind'];
   /** Why `casterId` may not cast under `spec` now, or `null` when it may. */
-  check(spec: S, casterId: EntityId, state: GameState): AbilityRejectReason | null;
+  check(
+    spec: S,
+    casterId: EntityId,
+    state: GameState,
+    aim?: Aim | null,
+  ): AbilityRejectReason | null;
 }

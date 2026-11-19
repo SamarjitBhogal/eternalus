@@ -12,7 +12,9 @@ import { ABILITY_CASTS_PLAN } from './abilityCastsPlan';
  * unchanged, and without `OutOfCombatHealingSystem` the old hashes still reproduced. Regenerated
  * 2026-11-15 when phase/3 began hashing facing (DEC-192) and the scoring state (#93): the
  * commands and checkpoint 0 were unchanged, and with those two hash fields left out the old hashes
- * still reproduced.
+ * still reproduced. Regenerated 2026-11-18 for ultimate contribution ledgers: all commands and
+ * checkpoints through tick 300 are unchanged. Disabling only AbilityReactionSystem reproduces
+ * every previous checkpoint; the later hashes now include its bounded contribution state.
  */
 export const ABILITY_CASTS_SEED_11: ReplayOf<{
   readonly seed: number;
@@ -139,15 +141,15 @@ export const ABILITY_CASTS_SEED_11: ReplayOf<{
     },
     {
       tick: 350,
-      hash: 1133167808,
+      hash: 3883878347,
     },
     {
       tick: 400,
-      hash: 985238859,
+      hash: 4148739545,
     },
     {
       tick: 450,
-      hash: 4259116751,
+      hash: 3514729239,
     },
   ],
 };

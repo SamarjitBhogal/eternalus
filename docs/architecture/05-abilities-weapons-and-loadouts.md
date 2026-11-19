@@ -4,8 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-13
-origin/feat/ability-framework
+last-reviewed: 2026-11-18
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -946,7 +945,7 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   the recipient's team (`cause: 'team-kill'`). It listens to `entity-died` itself, not 12's
   `xp-granted` reward path. Not built yet: the share radius and damage bias, assists, checkpoint and
   camp XP, the Eternal's flat 5 levels (DEC-237) (their systems do not exist),
-  basic-attack and ability potency per level, `upgradeIds`, the ultimate charge rules, and keeping
+  basic-attack potency per level, `upgradeIds`, and keeping
   dead Legends in the store until respawn (FR-051), which O4's posthumous XP needs. Numbers are
   `TUNE`; the curve and the Legend kill and structure XP follow DEC-190 (not final; the
   soak metric can change them) and live in `content/progression/`.
@@ -976,75 +975,46 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   (DEC-101, DEC-114). The `xp` and `xpToNext` comments of the `progression` group in
   [03 §5](03-game-model.md#5-snapshot) (in §15's `PlayerSnapshot` until DEC-232) record the
   owner's reading of the XP ring (2026-10-18).
-- **Ability framework (`feat/ability-framework`, 2026-11-13; DEC-196 to DEC-209, ADR 0026).**
-  The framework and one ability for each class are built (DEC-196); the per-class PRs build the
-  rest. Where the code differs from the sketches above:
-  - **Content.** `content/abilities/` holds the types (`AuthoredAbility` in seconds,
-    `AbilityDefinition` in ticks, `AbilityKit`, `AbilitySlot`, `AbilityRejectReason`), one file
-    per ability, `abilityCatalogue.ts` and `loadAbilities`, which knows no effect or shape kind:
-    it checks the ability's own fields and that every time is 0 or more, and turns every
-    `<name>Seconds` field of a step into `<name>Ticks`. §3's `validate` is built as
-    `validate(spec)` on each effect and shape strategy (a strategy that reads content gets it in
-    its constructor, as `DebuffEffect` gets the statuses); `AbilityRegistry.resolveAll` runs it
-    for every step at boot. A definition also has a `description` for
-    the kit rows. It has no `castTicks`, `channelTicks`, `interruptedBy`, `varieties` or `icon`
-    yet; `targeting` is `self` or `directional` (`null` while the ability has no effects); the
-    slot kinds are `ability` and `ultimate`; the one restriction kind is `min-level`. Every kit
-    ability is content (DEC-199, DEC-209 (2)). Blade Runner (its Physical variety only), Slam and
-    Shockwave have effects; the other nine have `effects: []` and are `unavailable` (ADR 0026
-    decision 3). Each Legend class has `abilityPool` and `defaultKit`, each spec a `kit`, `null`
-    in every shipped spec (ADR 0026 decision 1); `content/legends/specs/kitOf.ts` picks the kit
-    for the simulation and the client's kit rows. The numbers are `TUNE` from `balancing.md`
-    (DEC-197) and DEC-209 (1).
-  - **Effects and shapes.** `damage`, `debuff`, `knockback` and `dash` (`abilities/effects/`);
-    the other kinds of §3 are not built. A knock-back's spec field is `distance` in metres; the
-    §4 sketches' `impulse` values predate ADR 0026 decision 4. A debuff's `durationSeconds`
-    overrides the status's own duration. `structureMultiplier` applies to every target that is
-    not a unit (structures, obstacles, map objects; DEC-209 (1)). The shapes are `circle` (on the
-    caster, or on a dash's end for its `onEnd` steps) and `path` (with a `width`), one
-    `AreaShape` class each in `abilities/shapes/` (ADR 0026 decision 7); `self`, `cone` and
-    `line` are not built (the cone comes with Rip & Tear, DEC-206). A map object
-    (`MapObjectBody`) is hit by its footprints, as a basic attack reaches it; any other body by
-    its circle. `TargetFilter` has `team` and `includeSelf` only. `CastContext` has `placement`, `direction`, `scaled(field, value)`
-    (the level growth that §13 calls `potency`), `targets`, `centreFor` and `run` (a dash's
-    nested steps) in place of `origin`, `facing`, `potency`, `rng` and `factory`. The pipeline
-    still takes no `DamageType` (§9).
-  - **Registry and cast.** `AbilityRegistry.resolve(abilityId)` takes no variety or upgrade yet;
-    `createDefaultAbilityRegistry` also registers the shapes and checks and resolves every ability
-    at boot. A new effect kind also needs its spec type in the `AuthoredEffectSpec` union, beyond
-    §14's one class and one line; the aim overlay's rows come from its `describe`
-    (`AbilityRegistry.describe`, bound into core's `loadDisplayContent`). `CastAbilityHandler` checks
-    with `CastValidator`, and `AbilitySystem` checks again (ADR 0026 decision 2). A cast is refused
-    with `cannot-cast` while the match holds units idle (the countdown, DEC-88). `casting` means
-    another cast of the same Legend waits this tick; a directional cast aimed at the caster is
-    `no-target`. `CastInstance` runs every step at cast: there are no due ticks, wind-up, channels
-    or `EffectZone`s yet. A dash's path and its hits are resolved at cast, and its `onEnd` steps run
-    then at the path's end while the caster is still on the way (ADR 0026 decision 4).
-  - **Slots, aether and the ultimate.** `components/Abilities` holds seven
-    `AbilitySlotRuntime`s in bar order (`slot(slot)`, `slots`, `hasPendingCast`); a runtime has
-    no `varietyId`, no `reset` and no cast rule. `Aether` stays its own component and keeps its
-    `base` (the class's starting capacity). `AetherRegenSystem` refills it (DEC-201; ADR 0026
-    decisions 5 and 6). Ultimates are content only: the meter is built with Fury in the Vanguard
-    PR, so the ultimate slot reports `not-charged` and `charge: null`.
-  - **Motion and statuses.** Dashes and knock-backs are forced motion (`Movement.push`; ADR 0026
-    decision 4); a knock-back's base mass and travel time are in
-    `content/abilities/knockback.ts`. Every knock-back target gets `staggered` (cannot cast);
-    `knockup` (shown as "Airborne") stops moving, attacking and casting. An airborne target can
-    still be pushed: DEC-208's stacking is kept over `more-abilities.md` §7's "cannot be pushed
-    further" (`INBOX.md` HC-Q53). The 0.2 s landing stagger and `control-immune` wait for status
-    `onExpire` (§8). A status applied again keeps the longer of its remaining time and the new
-    duration. Concussion's `aetherCost` modifier is read by `CastValidator.priceOf`.
-  - **Snapshot, bots and checks.** `state/PlayerSnapshotter` fills `Snapshot.player` (§15) with
-    all seven slots through the `SlotReadiness` port; a slot has `aetherCost` (after status
-    modifiers) and no `varietyId`, and is judged without an aim (`slotBlockedBy`: every check
-    but `no-target`). `CastValidator` implements the port; `Simulation` builds one per match.
-    Bots cast any ready slot (`ai/pickReadySlot.ts`, DEC-205). `StateHasher` adds a slot only
-    once it leaves its first state. Built: the scenario tests of the three abilities, every
-    reject reason, the litmus `FakeBolt`, the determinism test and the golden replay
-    `abilities/__fixtures__/abilityCastsSeed11.replay.ts`, and the invariants
-    `cooldown-and-aether-bounds` and `no-cast-while-not-ready`.
-  - **Client.** Kit rows from content on the Legend panels, the HUD slots, the two cast modes
-    and the range overlay: [13](13-game-interface.md) §10.
+- **Shared ability framework and starter kits (`feat/character-sprites`, 2026-11-18; ADR 0026).**
+  Every shipped starter ability now resolves to an effect strategy. The Warrior equips Blade
+  Runner, Veil, Hamstring and Fury; Sentinel equips Slam, Rip & Tear, Shield Wall and Berserk;
+  Magus equips Shockwave, Sanctuary, Imbue and Death Ray. Subclasses retain the shared class kit
+  unless content supplies an override. Alternate varieties and the larger ability pools remain
+  planned; Imbue uses its damage variety and Sanctuary its healing variety.
+  - `AbilityRegistry` composes and validates content at boot. `CastAbilityHandler` and
+    `AbilitySystem` use the same validator. Missing strategies are errors; deliberately empty
+    definitions remain unavailable. Effects receive a factory port through `state/AbilitySpawn.types`;
+    no second ability runtime or input-driven gameplay stack exists.
+  - Buffs use `StatusEffects`; Veil hides hostile acquisition and breaks on attacking or damage.
+    Berserk scales the physical body from its base radius, with a clearance restriction before
+    payment. Its outgoing/incoming damage and speed modifiers use the shared status pipeline.
+    Imbue modifies weapon damage separately from spell damage.
+  - Hamstring is a swept, first-contact projectile with stable team allegiance after caster
+    removal. Rip & Tear uses the registered cone shape and pre-hit health for its execution
+    multiplier and pull. Both use the existing damage and status pipelines.
+  - Sanctuary and Death Ray are factory-created `ability-field` entities. Components hold
+    lifetime, healing, beam cadence and the caster's channel link; dedicated systems advance
+    them on fixed ticks. Sanctuary stays where cast. Death Ray clips to solid terrain, blocks
+    movement/basic attacks/casting while channelled, and ends on interruption, death or expiry.
+    Opposing beams that both hit the other caster extend symmetrically within the content limit.
+  - Shield Wall has one obstacle health pool, exact polygon collision and nav-grid stamps.
+    Placement cannot enclose a live moving body. Destruction or lifetime expiry clears collision
+    and navigation through the normal removal event path.
+  - Ultimate charge comes only from combat contributions. Its sources, assist window, death
+    penalty and post-cast lockout live in `content/abilities/starterTuning.ts`, traced to
+    `balancing.md`. Contribution ledgers and every projectile/field/channel/recast timer are
+    simulation state included by `StateHasher`; no hidden system timer affects gameplay.
+    `PlayerSnapshotter` reports the actual meter. During Fury, pressing slot 4 again dashes toward
+    aim using its internal cooldown without paying or resetting the ultimate a second time.
+    Successful repeats emit `ability-recast`, separately from the initial `ability-cast`.
+  - Provisional Hamstring speed/slow, cone angle, wall thickness and the Fury/beam-lock controls
+    were approved in the task. They stay marked in content; this does not approve asset licences
+    or the separate draft asset-budget ADRs.
+  - Sprite poses use successful simulation events. Persistent field, wall and projectile views
+    read snapshots and draw through `Renderer`; effect art never changes hit geometry. Regression
+    scenarios cover all starters and repeatability, including the pinned replay's contribution
+    ledger hash migration. The original healing/rejoin scenario keeps its original three-ability
+    combat loadout so elimination timing cannot replace its healing assertion.
 
 ## Related
 

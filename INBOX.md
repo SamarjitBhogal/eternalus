@@ -311,7 +311,6 @@ Reply inline (`Decision: …`).
       beside the new kit names); (g) the aether cost on the HUD bar (the snapshot carries it); (h)
       a check in the browser of the Legend panels, whose ability bands changed size.
 
-origin/feat/ability-framework
 - [x] **BUG-2: interior wall health (2026-11-12, PR #96, SCRUM-435).** Every `'wall'` map object
       uses the WallSegment value from balancing.md (`content/maps/mapObjectDefinitions.ts`): the
       Stronghold's wall ring and the `'wall'` features inside it alike. The playtest called the

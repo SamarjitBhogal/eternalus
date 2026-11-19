@@ -4,8 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-13
-origin/feat/ability-framework
+last-reviewed: 2026-11-18
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -400,6 +399,10 @@ session or phase named:
 - `Boss` and `MiniBoss` are not built (Phase 3 sprint 3.6). The capture point mini-boss is a
   `heavy-mob` until then; the interim is recorded in
   [18's implementation status note](18-minion-system.md#minion-system).
+
+### Starter effects — implementation status (2026-11-18)
+
+Starter effects add the `ability-field` zone entity via the existing factory/registry. `AbilityLifetime`, `HealingField`, `BladeFlight`, `BeamChannel`, `Channeling` and `UltimateLedger` hold runtime state; systems advance it. Temporary barriers reuse `Obstacle`, `Health`, `MapObjectBody` and `ZoneArea`. `Transform` derives its radius from a validated size multiplier and immutable base radius.
 
 ## Related
 

@@ -46,6 +46,14 @@ const snapshotWith = (abilityId: string | null): Snapshot =>
   }) as unknown as Snapshot;
 
 describe('AimTargeting', () => {
+  it('clips a blade using its point trajectory rather than the caster body radius', () => {
+    const asked: unknown[] = [];
+    new AimTargeting(ABILITIES, CASTER.id, (origin, direction, distance, radius) => {
+      asked.push([origin, direction, distance, radius]);
+      return distance;
+    }).targetOf(snapshotWith('hamstring'), 'ability-1', { x: 100, y: 20 }, DRAWN_AT);
+    expect(asked).toEqual([[DRAWN_AT, { x: 1, y: 0 }, 12, Number.EPSILON]]);
+  });
   it('aims the selected dash from where the Legend is drawn, as far as the simulation says', () => {
     const asked: unknown[] = [];
     const reach: DashReach = (origin, direction, distance, radius) => {

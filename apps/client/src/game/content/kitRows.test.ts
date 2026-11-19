@@ -46,7 +46,13 @@ describe('kitRows', () => {
   });
 
   it('marks an ability with no effects as not available', () => {
-    expect(rows[1]).toMatchObject({ abilityId: 'veil', isAvailable: false });
+    const unavailable = CONTENT.abilities.map((ability) =>
+      ability.id === 'veil' ? { ...ability, isAvailable: false } : ability,
+    );
+    expect(kitRows(legend('warrior').defaultKit, unavailable)[1]).toMatchObject({
+      abilityId: 'veil',
+      isAvailable: false,
+    });
   });
 
   it('shows the ultimate as charge-based, never as 0 aether or a 0 s cooldown', () => {

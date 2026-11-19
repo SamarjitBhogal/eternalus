@@ -22,6 +22,21 @@ export class NoCastWhileNotReadyInvariant implements Invariant {
     const violations: Violation[] = [];
     state.entities.forEach((entity) => {
       for (const runtime of entity.findComponent(Abilities)?.slots ?? []) {
+        const repeat = runtime.lastRecast;
+        if (
+          repeat?.tick === state.tick &&
+          (runtime.abilityId === null ||
+            repeat.cooldownUntilTickBefore > repeat.tick ||
+            repeat.recastUntilTick <= repeat.tick)
+        ) {
+          violations.push({
+            invariantId: this.id,
+            severity: this.severity,
+            message: `Entity "${entity.id}" repeated slot ${runtime.slot} outside its ready window.`,
+            entityId: entity.id,
+            details: { slot: runtime.slot, problem: 'repeat-not-ready' },
+          });
+        }
         const cast = runtime.lastCast;
         if (cast?.tick !== state.tick) {
           continue;

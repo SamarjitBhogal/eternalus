@@ -23,7 +23,6 @@ import {
   POST_COUNTDOWN_PHASE,
   ROSTER_PUBLISH_EVERY_TICKS,
 } from './MatchBridge.constants';
-origin/feat/ability-framework
 import type { CaptureSite, MatchBridgeDeps } from './MatchBridge.types';
 
 /**

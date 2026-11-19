@@ -46,6 +46,7 @@ type AbilityTargeting = { readonly kind: 'self' } | { readonly kind: 'directiona
  */
 export type EffectShape =
   | { readonly kind: 'circle'; readonly radius: number }
+  | { readonly kind: 'cone'; readonly radius: number; readonly angleDegrees: number }
   | { readonly kind: 'path'; readonly width: number };
 
 /** What kind of damage a hit deals (`balancing.md` ability table). */
@@ -134,7 +135,76 @@ type AuthoredDashSpec = {
 export type DashSpec = InTicks<AuthoredDashSpec>;
 
 /** One step of an ability's cast timeline as authored (05 §3); one effect strategy per `kind`. */
-type AuthoredEffectSpec = AuthoredShapedEffectSpec | AuthoredDashSpec;
+type AuthoredEffectSpec =
+  | AuthoredShapedEffectSpec
+  | AuthoredDashSpec
+  | BuffSpec
+  | AuthoredHealingFieldSpec
+  | AuthoredBladeSpec
+  | AuthoredBeamSpec
+  | AuthoredBarrierSpec
+  | RendSpec
+  | AuthoredFurySpec;
+
+/** A beneficial status applied to the caster. */
+export type BuffSpec = { readonly kind: 'buff'; readonly statusId: string };
+
+/** Sanctuary's stationary healing area, as authored. */
+type AuthoredHealingFieldSpec = {
+  readonly kind: 'healing-field';
+  readonly radius: number;
+  readonly durationSeconds: number;
+  readonly fractionPerSecond: number;
+};
+/** A point blade stopped by the first enemy or wall. */
+type AuthoredBladeSpec = {
+  readonly kind: 'blade';
+  readonly range: number;
+  readonly speed: number;
+  readonly damage: number;
+  readonly statusIds: readonly string[];
+};
+/** A bounded channel with periodic beam damage and opposing-beam extension. */
+type AuthoredBeamSpec = {
+  readonly kind: 'beam';
+  readonly range: number;
+  readonly width: number;
+  readonly durationSeconds: number;
+  readonly extensionSeconds: number;
+  readonly pulseSeconds: number;
+  readonly damage: number;
+};
+/** A temporary, destructible wall in front of the caster. */
+type AuthoredBarrierSpec = {
+  readonly kind: 'barrier';
+  readonly width: number;
+  readonly thickness: number;
+  readonly durationSeconds: number;
+};
+/** Rip & Tear's low-health execution and pull. */
+export type RendSpec = {
+  readonly kind: 'rend';
+  readonly shape: Extract<EffectShape, { kind: 'cone' }>;
+  readonly damage: number;
+  readonly threshold: number;
+  readonly multiplier: number;
+  readonly pull: number;
+  readonly statusId: string;
+};
+/** Fury's buff and repeat-ultimate-key dash. */
+type AuthoredFurySpec = {
+  readonly kind: 'fury';
+  readonly statusId: string;
+  readonly durationSeconds: number;
+  readonly dashDistance: number;
+  readonly dashSeconds: number;
+  readonly internalCooldownSeconds: number;
+};
+export type HealingFieldSpec = InTicks<AuthoredHealingFieldSpec>;
+export type BladeSpec = AuthoredBladeSpec;
+export type BeamSpec = InTicks<AuthoredBeamSpec>;
+export type BarrierSpec = InTicks<AuthoredBarrierSpec>;
+export type FurySpec = InTicks<AuthoredFurySpec>;
 
 /** One loaded step of an ability's cast timeline: every time in ticks. */
 export type AbilityEffectSpec = InTicks<AuthoredEffectSpec>;
@@ -150,7 +220,10 @@ export type AuthoredStep = { readonly kind: string };
  * A cast precondition as data (05 §5); one `AbilityRestriction` class per `kind`. The other kinds
  * of 05 §5 join with their first use.
  */
-export type AbilityRestrictionSpec = { readonly kind: 'min-level'; readonly level: number };
+export type AbilityRestrictionSpec =
+  | { readonly kind: 'min-level'; readonly level: number }
+  | { readonly kind: 'room-for-form'; readonly sizeMultiplier: number }
+  | { readonly kind: 'room-for-wall'; readonly width: number; readonly thickness: number };
 
 /** What every ability has, authored or loaded. */
 export type AbilityBase = {

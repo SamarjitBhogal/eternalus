@@ -158,7 +158,7 @@ describe('CastValidator through the cast-ability command', () => {
   it('rejects a cast a restriction forbids (min-level 5 at level 1) as restricted', () => {
     const { cast, rejected } = setUp({
       ...TEST_KIT,
-      abilities: ['fake-gated', 'veil', 'fake-dash'],
+      abilities: ['fake-gated', 'fake-unbuilt', 'fake-dash'],
     });
     cast('ability-1');
     expect(rejected).toEqual(['restricted']);

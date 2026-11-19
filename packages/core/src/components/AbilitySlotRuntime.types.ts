@@ -16,3 +16,9 @@ export type LastCast = {
   readonly cooldownUntilTickBefore: number;
   readonly chargeBefore: number;
 };
+/** Diagnostic record of a repeat action's own cooldown and active window. */
+export type LastRecast = {
+  readonly tick: number;
+  readonly cooldownUntilTickBefore: number;
+  readonly recastUntilTick: number;
+};

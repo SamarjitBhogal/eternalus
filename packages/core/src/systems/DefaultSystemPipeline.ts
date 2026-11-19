@@ -18,6 +18,12 @@ import { OPENING_WAVE, SPAWN_WAVES } from '../content/structures/spawnWaves';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { LaneFlowFields } from '../map/LaneFlowFields';
 import { AbilitySystem } from './AbilitySystem';
+import { AbilityLifetimeSystem } from './AbilityLifetimeSystem';
+import { AbilityReactionSystem } from './AbilityReactionSystem';
+import { AbilityFormSystem } from './AbilityFormSystem';
+import { HealingFieldSystem } from './HealingFieldSystem';
+import { BladeSystem } from './BladeSystem';
+import { BeamSystem } from './BeamSystem';
 import { AetherRegenSystem } from './AetherRegenSystem';
 import type { GameState } from '../state/GameState';
 import type { Rect } from '../utils/geometry.types';
@@ -87,6 +93,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
             map.flowFieldCorridorHalfWidth,
           );
     const world = state.world?.grid ?? null;
+    state.events.on('terrain-changed', ({ cells }) => flowFields?.markDirty(cells));
     const features = state.world?.definition.features ?? [];
     if (world !== null && state.worldObjects !== undefined) {
       // A destroyed blocking map object reopens its cells and the lane fields over them (07 §10).
@@ -107,11 +114,15 @@ export class DefaultSystemPipeline extends SystemPipeline {
       });
     }
     super([
+      new AbilityReactionSystem(state, statuses),
       ...(hordes === undefined ? [] : [...hordes.decide, new HordeSystem(state, HORDE_STEERING)]),
       new AbilitySystem(abilities, validator, damage, statuses),
+      new AbilityLifetimeSystem(),
+      new HealingFieldSystem(),
       // After the casts, so a cast spends before the tick's regeneration (plan arch call 13).
       new AetherRegenSystem(AETHER_REGEN, tickRate),
       new StatusEffectSystem(damage, statuses),
+      new AbilityFormSystem(),
       new MovementSystem(),
       ...(hordes?.collisions ?? []),
       ...(hordes === undefined
@@ -126,6 +137,8 @@ export class DefaultSystemPipeline extends SystemPipeline {
               { flowFields, forts: DefaultSystemPipeline.fortBoxesOf(state) },
             ),
           ]),
+      new BladeSystem(abilities, damage, statuses),
+      new BeamSystem(abilities, damage, statuses),
       new CombatSystem(damage),
       ...(state.worldObjects === undefined ? [] : [new MapDestructionSystem(state, damage)]),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.

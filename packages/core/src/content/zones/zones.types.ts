@@ -2,7 +2,7 @@ import type { EntityDefinitionBase } from '../EntityDefinition.types';
 import type { MapFeatureKind, MinimapGlyph } from '../maps/maps.types';
 
 /** The zone kinds: areas that can be held but not hit. */
-export type ZoneKind = 'capture-point';
+export type ZoneKind = 'capture-point' | 'ability-field';
 
 /**
  * An area on the map with an owner and no collider. Its ground is the floor of the building its

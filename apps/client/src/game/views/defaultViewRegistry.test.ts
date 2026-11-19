@@ -42,9 +42,9 @@ describe('createDefaultViewRegistry', () => {
     const unknown: string[] = [];
 
     createDefaultViewRegistry((kind) => unknown.push(kind)).viewFor(
-      entity('projectile', 'projectile'),
+      entity('unregistered-projectile', 'projectile'),
     );
 
-    expect(unknown).toEqual(['projectile']);
+    expect(unknown).toEqual(['unregistered-projectile']);
   });
 });

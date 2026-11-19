@@ -1,3 +1,5 @@
+import { STARTER_ENTITIES } from './content/abilities/starterEntities';
+import type { EntityDefinitionBase } from './content/EntityDefinition.types';
 import { CastValidator } from './abilities/CastValidator';
 import { dashReach } from './abilities/dashReach';
 import { createDefaultAbilityRegistry } from './abilities/defaultAbilityRegistry';
@@ -148,7 +150,6 @@ export class Simulation {
     guardPlans,
     duel,
     abilities,
-origin/feat/ability-framework
     structures = STRUCTURE_DEFINITIONS,
   }: SimulationOptions) {
     const validConfig = validateGameConfig(config);
@@ -172,12 +173,27 @@ origin/feat/ability-framework
     const duelStarts =
       duel === undefined ? undefined : duelStartPoints(map, DUEL_RULES.startOffset);
     if (duel !== undefined) this.state.match.startDuel(duel.killTarget);
-origin/feat/ability-framework
     const { tickRate } = this.state.config;
     const curves = levelCurves ?? loadLevelCurves();
     this.curves = curves;
     const weaponSource = weapons ?? loadWeapons(tickRate);
-    const registry = abilities ?? createDefaultAbilityRegistry(loadAbilities(tickRate));
+    const registry =
+      abilities ??
+      createDefaultAbilityRegistry(
+        loadAbilities(tickRate),
+        undefined,
+        (definitionId, placement) => {
+          const definition = factory.definitions.get(definitionId);
+          const entity = factory.create(definition.kind, definitionId, placement);
+          this.state.entities.add(entity);
+          this.state.events.emit('entity-spawned', {
+            entityId: entity.id,
+            kind: entity.kind,
+            team: placement.team ?? 'neutral',
+          });
+          return entity;
+        },
+      );
     // One cast rule per match: the handler, `AbilitySystem`, the snapshot and the bots share it.
     const validator = new CastValidator(registry);
     this.handlers = createDefaultCommandHandlers(validator);
@@ -187,10 +203,14 @@ origin/feat/ability-framework
     const objectsById = new Map(
       Object.values(MAP_OBJECT_DEFINITIONS).map((definition) => [definition.id, definition]),
     );
+    const abilityEntities = new Map<string, EntityDefinitionBase>(
+      STARTER_ENTITIES.map((definition) => [definition.id, definition]),
+    );
     const definitions = {
       has: (id: string): boolean =>
-        objectsById.has(id) || ZONE_DEFINITIONS.has(id) || units.has(id),
+        abilityEntities.has(id) || objectsById.has(id) || ZONE_DEFINITIONS.has(id) || units.has(id),
       get: (id: string) =>
+        abilityEntities.get(id) ??
         objectsById.get(id) ??
         (ZONE_DEFINITIONS.has(id) ? ZONE_DEFINITIONS.get(id) : units.get(id)),
     };
@@ -259,7 +279,6 @@ origin/feat/ability-framework
           space,
           ...(guardPlans === undefined ? {} : { guards: guardPlans }),
           collisions: collisions === null ? [] : [new CollisionSystem(collisions)],
-origin/feat/ability-framework
           decide: [
             new AiSystem(this.state, controllers, AI_CADENCE, (command) => {
               this.botQueue.enqueue(command);

@@ -66,7 +66,6 @@ export type SimulationOptions = {
    * when omitted. Every kit id a Legend equips must resolve in it.
    */
   readonly abilities?: AbilityRegistry;
-origin/feat/ability-framework
 };
 
 /** A Duel's rules; `DUEL_RULES.killTarget` is the shipped target. */

@@ -6,9 +6,22 @@ import type { ComposableAbility } from '../AbilityRegistry.types';
 import { MinLevelRestriction } from '../restrictions/MinLevelRestriction';
 import { CircleShape } from '../shapes/CircleShape';
 import { PathShape } from '../shapes/PathShape';
+import { ConeShape } from '../shapes/ConeShape';
 
 /** The effect kinds the shipped abilities name (S1 content). */
-export const SHIPPED_EFFECT_KINDS = ['damage', 'knockback', 'debuff', 'dash'] as const;
+export const SHIPPED_EFFECT_KINDS = [
+  'damage',
+  'knockback',
+  'debuff',
+  'dash',
+  'buff',
+  'blade',
+  'beam',
+  'barrier',
+  'rend',
+  'fury',
+  'healing-field',
+] as const;
 
 /** A Warrior ability for tests: 30 aether, a 90-tick cooldown, one `fake-strike` step around the caster. */
 export const fakeAbility = (
@@ -49,6 +62,7 @@ const FAKE_GATED = fakeAbility({ id: 'fake-gated', restrictions: [MIN_LEVEL_5] }
 /** The shipped abilities (at 30 ticks per second) plus the fakes above. */
 export const ABILITIES_WITH_FAKES = new ContentCatalogue<ComposableAbility>([
   ...loadAbilities(30).all(),
+  fakeAbility({ id: 'fake-unbuilt', effects: [], targeting: null }),
   FAKE_STRIKE,
   FAKE_DASH,
   FAKE_ULTIMATE,
@@ -66,6 +80,7 @@ export const testAbilityRegistry = (
   const registry = new AbilityRegistry(abilities);
   registry.registerShape(new CircleShape());
   registry.registerShape(new PathShape());
+  registry.registerShape(new ConeShape());
   registry.registerRestriction(new MinLevelRestriction());
   for (const effect of effects) {
     registry.registerEffect(effect);

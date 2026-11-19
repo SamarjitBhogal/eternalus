@@ -8,7 +8,7 @@ export type ShapeSpec = { readonly kind: string };
  * caster (`from` = `to`); a dash runs its `onPath` steps on its sweep and its `onEnd` steps where
  * it stops (S1 `EffectShape`).
  */
-export type ShapePlacement = { readonly from: Vec2; readonly to: Vec2 };
+export type ShapePlacement = { readonly from: Vec2; readonly to: Vec2; readonly direction?: Vec2 };
 
 /**
  * One kind of effect area (plan arch call 12): answers whether a body overlaps it. Stateless; one

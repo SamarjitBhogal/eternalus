@@ -1,7 +1,7 @@
 import type { AuthoredAbility } from './AbilityDefinition.types';
 
 /**
- * Imbue: in the Magus's kit, not built yet (`effects: []`). Cost and cooldown: balancing.md:189.
+ * Imbue: in the Magus's kit, implemented through shared effect strategies. Cost and cooldown: balancing.md:189.
  */
 export const IMBUE = {
   id: 'imbue',
@@ -12,8 +12,8 @@ export const IMBUE = {
   slot: 'ability',
   cooldownSeconds: 20, // TUNE: balancing.md:189
   aetherCost: 45, // TUNE: balancing.md:189
-  targeting: null,
-  effects: [],
+  targeting: { kind: 'self' },
+  effects: [{ kind: 'buff', statusId: 'imbued' }],
   restrictions: [],
   scaling: {},
 } as const satisfies AuthoredAbility;

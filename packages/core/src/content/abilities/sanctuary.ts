@@ -1,7 +1,7 @@
 import type { AuthoredAbility } from './AbilityDefinition.types';
 
 /**
- * Sanctuary: in the Magus's kit, not built yet (`effects: []`). Cost and cooldown: balancing.md:191.
+ * Sanctuary: in the Magus's kit, implemented through shared effect strategies. Cost and cooldown: balancing.md:191.
  */
 export const SANCTUARY = {
   id: 'sanctuary',
@@ -11,8 +11,8 @@ export const SANCTUARY = {
   slot: 'ability',
   cooldownSeconds: 22, // TUNE: balancing.md:191
   aetherCost: 60, // TUNE: balancing.md:191
-  targeting: null,
-  effects: [],
+  targeting: { kind: 'self' },
+  effects: [{ kind: 'healing-field', radius: 4, durationSeconds: 5, fractionPerSecond: 0.04 }],
   restrictions: [],
-  scaling: {},
+  scaling: { fractionPerSecond: { perLevel: 0.04 } }, // TUNE: balancing.md, +4% ability potency per level
 } as const satisfies AuthoredAbility;

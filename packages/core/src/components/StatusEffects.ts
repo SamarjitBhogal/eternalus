@@ -95,6 +95,11 @@ export class StatusEffects {
     return this.flags.has(flag);
   }
 
+  /** Whether a particular authored status is currently active. */
+  public hasStatus(statusId: string): boolean {
+    return this.find(statusId) !== undefined;
+  }
+
   private find(statusId: string): StatusEffectRuntime | undefined {
     for (const status of this.activeList) {
       if (status.definition.id === statusId) {

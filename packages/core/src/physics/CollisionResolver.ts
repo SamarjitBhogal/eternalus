@@ -5,7 +5,11 @@ import type { IndexedPolygon } from './StaticCollisionIndex.types';
 import { sweepCircle } from './sweepCircle';
 import type { SweepContact } from './sweepCircle.types';
 import { isPointInPolygon } from '../utils/geometry';
-import { circlePenetration, isCircleInsidePolygon } from '../utils/circlePolygon';
+import {
+  circlePenetration,
+  isCircleInsidePolygon,
+  doesCircleOverlapPolygon,
+} from '../utils/circlePolygon';
 import { CONTACT_EPSILON } from '../utils/circlePolygon.constants';
 
 /**
@@ -22,6 +26,38 @@ import { CONTACT_EPSILON } from '../utils/circlePolygon.constants';
  * that precondition. Upgrade path: sweep the exit leg once something places units inside walls.
  */
 export class CollisionResolver {
+  /** Form growth must not create a body overlapping a wall or outside the world. */
+  public canFit(position: Vec2, radius: number): boolean {
+    if (
+      position.x - radius < this.bounds.x ||
+      position.y - radius < this.bounds.y ||
+      position.x + radius > this.bounds.x + this.bounds.width ||
+      position.y + radius > this.bounds.y + this.bounds.height
+    )
+      return false;
+    for (const entry of this.index.query({
+      x: position.x - radius,
+      y: position.y - radius,
+      width: radius * 2,
+      height: radius * 2,
+    })) {
+      if (
+        entry.passages?.some((passage) => isCircleInsidePolygon(position, radius, passage)) === true
+      )
+        continue;
+      if (doesCircleOverlapPolygon(position, radius, entry.polygon)) return false;
+    }
+    return true;
+  }
+  /** Temporary ability walls share the world's exact swept collision rule. */
+  public addObstacle(id: string, polygon: import('../utils/geometry.types').Polygon): void {
+    this.index.add({ id, polygon });
+  }
+
+  /** Immediately retires an ability wall's collision shape. */
+  public removeObstacle(id: string): void {
+    this.index.remove(id);
+  }
   /**
    * @param index - The match's static polygons (`staticCollisionIndexOf`), shared by every mover.
    * @param bounds - The world: a circle's centre stays its radius inside it on each axis.

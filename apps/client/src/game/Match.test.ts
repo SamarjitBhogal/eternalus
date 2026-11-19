@@ -532,6 +532,17 @@ describe('Match', () => {
 
   it('logs once for each kind it has to draw with the default view', () => {
     const { match, simulation, logger } = setUp(CONTENT_WITH_A_ROCK);
+    // Obstacle now has the Shield Wall view. An unknown snapshot kind still tests the warning.
+    const snapshotOf = simulation.snapshot.bind(simulation);
+    vi.spyOn(simulation, 'snapshot').mockImplementation(() => {
+      const snapshot = snapshotOf();
+      return {
+        ...snapshot,
+        entities: snapshot.entities.map((entity) =>
+          entity.kind === 'obstacle' ? { ...entity, kind: 'unregistered-rock' } : entity,
+        ),
+      };
+    });
     simulation.enqueueCommand({
       type: 'dev-spawn',
       kind: 'obstacle',
@@ -547,7 +558,9 @@ describe('Match', () => {
 
     expect(
       logger.records.map(({ severityText, scope, body }) => [severityText, scope, body]),
-    ).toEqual([['WARN', 'client.views', 'No view for kind "obstacle"; drawing the default view.']]);
+    ).toEqual([
+      ['WARN', 'client.views', 'No view for kind "unregistered-rock"; drawing the default view.'],
+    ]);
   });
 
   it('draws the lane hordes and other mobs with their own view, logging no default-view warning', () => {

@@ -13,6 +13,7 @@ import { Gate } from './structures/Gate';
 import { SpawnerTower } from './structures/SpawnerTower';
 import { Stronghold } from './structures/Stronghold';
 import { CapturePoint } from './zones/CapturePoint';
+import { AbilityField } from './zones/AbilityField';
 
 /**
  * The registry of every shipped entity kind (architecture 04 §6). The ONLY file that names
@@ -34,5 +35,6 @@ export const createDefaultEntityRegistry = (): EntityRegistry => {
   registry.register('gate', Gate);
   registry.register('camp', Camp);
   registry.register('capture-point', CapturePoint);
+  registry.register('ability-field', AbilityField);
   return registry;
 };

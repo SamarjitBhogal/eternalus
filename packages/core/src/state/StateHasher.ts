@@ -17,6 +17,7 @@ import { Vision } from '../components/Vision';
 import type { Entity } from '../entities/Entity';
 import { fnv1a } from '../utils/fnv1a';
 import { createEmptyScoringState } from './emptyScoringState';
+import { abilityStateFields } from './abilityStateFields';
 import type { GameState } from './GameState';
 import { PLAYABLE_TEAMS } from '../teams/playableTeams';
 
@@ -240,6 +241,6 @@ export class StateHasher {
     if (clock !== undefined) {
       fields.push(['combat-clock', ...clock.fields]);
     }
-    return fields;
+    return [...fields, ...abilityStateFields(entity)];
   }
 }
