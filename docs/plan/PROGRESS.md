@@ -9276,3 +9276,39 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   (`eternalus-agent-work/tower-ruins-and-routes/check-merge-phase3-fcc48a7b.log`): core
   "Tests 1647 passed (1647)", protocol 18, client 1979, server 79, docs passed.
 - Next step: push; then merge this head into `refactor/tower-ruins-followups` (#122).
+
+### 2026-11-19 — Phase 3 / tower ruins and routes: merge phase/3 (the DEC-242 split PRs #121, #120, #119 and #127, #113, #102, #101, #99, #126) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: merged phase/3 at `d85bc2f5`. 21 files conflicted (15 code, 6 docs). Rule: this
+  branch still held its own copies of the code that DEC-242 split into #119 (gate reach), #120
+  (fort geometry helpers) and #121 (A\* search area); for those hunks phase/3's reviewed version
+  wins, and this branch's own content (ruins, court routes, 2.5 m cells, fort spacing) stays.
+  Code: `fortInWorld.ts` and its test (add/add) keep this branch's version, which is #120's plus
+  `assertFortWallsResolve`; `utils/geometry.ts` and its test take #120's (with
+  `doRectsOverlap`); `PathingSystem.ts` keeps this branch's `courtMove`/`fortAt`, which already
+  use `isPointInRect`; `AStarPathfinder.ts` keeps this branch's `CourtExitField` and #121's cap
+  from `maxSearchArea`, and its tests keep both sides; `DefaultSystemPipeline` keeps this
+  branch's `ruinWall` (import, `requireRuinWall`, its test) with #99's `GuardPlanDefinition`
+  import and #119's test name; the `Simulation.spawnStructures` and `Footprint` TSDoc keep the
+  `partOf` objects with #119's gate outline wording; `buildingGeometry.ts` keeps
+  `laneTowerSize` (this branch) and #99's keep divisors (the same keep size as before, so the
+  golden map hash 4_128_499_639 is unchanged). DEC-243 rename on this branch's own sites:
+  `MatchPathfinderFactory`, the two default-config tests and the `LIMITS` tests in
+  `AStarPathfinder.test.ts`, and `PathingSystem.court`/`.guards` tests (`maxSearchArea: 40_000`,
+  10000 cells of 2 m); `config.map.pathMaxSearchArea` is 150000 m², 24000 cells of 2.5 m, so
+  DEC-240's own 24000 is gone (the 2.5 m `pathSnapCells` comment stays). Docs: `INBOX.md` (H1
+  note) takes phase/3's DEC-244 text; 03 takes the `pathMaxSearchArea` row (DEC-243) and the later
+  `last-reviewed`; the 07 status note has #119's gate-reach bullet, this branch's ruins bullet
+  without its gate sentence, and the court-routes bullet; the 18 status note keeps this branch's
+  court text and phase/3's A1/A2 and boss interim text; the owner decisions log keeps every
+  batch, newest date first and the higher DEC first within a date (244, 243, 242; 240, 239, 237,
+  235); this file keeps both sides (one region that git split through shared lines keeps the
+  shared tail under each side's last entry). A line count shows this file and the decisions log
+  keep every line of both sides.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-merge-phase3-d85bc2f5.log`): core
+  "Tests 1707 passed (1707)", protocol "Tests 29 passed (29)", client "Tests 2011 passed
+  (2011)", server "Tests 84 passed (84)", "Documentation check passed."; then
+  `prettier --check` and `npm run docs:check` with this entry.
+- Next step: push; claudiodh re-reviews #98; merge this head into `refactor/tower-ruins-followups`
+  (#122).
