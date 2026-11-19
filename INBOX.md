@@ -185,13 +185,25 @@ Reply inline (`Decision: …`).
       for the dash (as for the default action); the controls screen lists Space as "Fury dash".
       Add a prompt while Fury lasts, or leave it?
 - [ ] **HC-Q62 — How does the client know a cast needs no pointer? (`feat/vanguard-kit`,
-      2026-11-16; critic round 1).** Built (B1): the client decides by the slot. A press of Space
-      (the `granted` slot) casts at once in both cast modes with the latest pointer point, which
-      core ignores (`fury-dash` aims by the Legend's heading). Option B2, not built: add the
-      targeting kind to `AbilityDisplay` (a public API change), so the client decides "needs a
-      pointer" by kind; a future granted ability that does need a pointer, or a kit ability that
-      does not (a `self` cast), would then behave correctly with no client change. The reviewer
-      names B2 the stronger design. Keep B1 for now, or build B2 in this PR?
+      2026-11-16; critic rounds 1 and 2).** (1) Built (B1): the client decides by the slot. A
+      press of Space (the `granted` slot) casts at once in both cast modes with the latest pointer
+      point, which core ignores (`fury-dash` aims by the Legend's heading). Before the pointer has
+      had any world point (the match just started, the pointer never on the canvas), Space queues
+      nothing. Option B2, not built: add the targeting kind to `AbilityDisplay` (a public API
+      change), so the client decides "needs a pointer" by kind; a future granted ability that
+      does need a pointer, or a kit ability that does not (a `self` cast), would then behave
+      correctly with no client change. Option B3, not built, **recommended** (round 2): each
+      ability's targeting states `usesAim` (false for the heading-aimed dash), published per slot
+      in `AbilityDisplay` (also a public API change). The client casts at once when the ability
+      does not use the aim, with no slot or kind check, and needs no pointer point. B3 gives the
+      client only the one fact it needs, where B2 gives it the whole kind. What `usesAim` decides
+      depends on your answer to (2). Keep B1, or build B2 or B3 in this PR?
+      (2) **In aim-then-click, does Space show the dash's range overlay first?** Built: no. Space
+      dashes at once in both modes (DEC-270: "Space; the direction comes from WASD"). DEC-209 (3)
+      says aim-then-click "still shows the range overlay on self-targeted abilities", and the
+      reviewer reads that as covering the dash too. If yes, the dash waits for a click in
+      aim-then-click, and `usesAim` (B3) only decides what quick cast does with no pointer point.
+      Dash at once in both modes (built), or overlay first in aim-then-click?
 - [ ] **HC-Q54 — Derive each class's ability pool from the abilities' `classId`?
       (`feat/ability-framework`; changes DEC-198's shape, not built).** Today `abilityPool` on
       the class lists every ability, and each ability also names its `classId`: two sources, and

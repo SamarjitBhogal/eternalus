@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-16
+last-reviewed: 2026-11-19
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -1095,6 +1095,9 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
     `granted` is a slot kind. `StatusEffectApplier` fills the slot with the status's `grants`
     ability on `apply`. On `remove` and `expire`, when the slot holds that status's ability, it
     gives the slot the ability of the last remaining active status that grants one, or empties it.
+    On `expire`, when an ended status's `onExpire` lands a status that grants an ability, that
+    later `apply` fills the slot and the step above is skipped, so a follow-up that grants the
+    same ability keeps the cooldown.
     `AbilitySlotRuntime.hold` changes the ability a slot holds and ends its cooldown on a change
     (an empty slot never cools down). Outside Fury the slot is empty and a cast is `empty-slot`,
     so no restriction kind is needed; the 1 s between dashes is the slot's cooldown. `LastCast`

@@ -8520,3 +8520,27 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   "Documentation check passed." (`eternalus-agent-work/abilities/check-fury-r1.log`).
 - Next step: critic round 2 on the round 1 delta, then ponytail, re-check and the PR (stacked
   on `feat/ability-framework`, DEC-275), after PR #123 takes phase/3 (#99, #101).
+
+### 2026-11-19 — Phase 4 / Vanguard PR 2a: critic round 2 — feat/vanguard-kit — sholtzman + Claude Code
+
+- What was done: the fixes from the pre-PR gate's round 2 on `4396178b` (architecture reviewer
+  APPROVE, correctness critic three Low, ponytail one cut rejected; table and dispositions in
+  `eternalus-agent-work/abilities/critic-pr2a-r2-findings.md`):
+  - C2-2: `StatusEffectApplier.expire` skips the regrant when an `onExpire` follow-up lands a
+    grant of its own, so a follow-up that grants the same ability keeps the cooldown (it went
+    to `null` and back). The critic's proposal (regrant after the follow-ups) was not used: when
+    the follow-up refreshes a status in place and a later status grants another ability, the
+    regrant would replace the follow-up's later `apply`. 05 §18 notes the rule.
+  - N1/C2-1: `AbilitySlotRuntime.hold` TSDoc says `reset` is planned (05 §6), not built.
+  - N2/C2-3: a client test pins that Space queues nothing before the pointer has had any world
+    point.
+  - S1 and BTD1: `INBOX.md` HC-Q62 now has (1) with option B3 (`usesAim` per slot,
+    recommended) and (2) whether Space in aim-then-click shows the overlay first (DEC-209 (3)).
+- Tests: each new test failed first under a deliberate break (3 breaks: 2 core, 1 client; each
+  source restored; log `eternalus-agent-work/abilities/fury-r2-breaks.log`).
+- Checks run: on the tree of this commit (before this line), `npm run check` → `EXIT=0`: core
+  "Tests 1933 passed (1933)"; protocol "Tests 30 passed (30)"; client "Tests 2091 passed
+  (2091)"; server "Tests 84 passed (84)"; "All matched files use Prettier code style!";
+  "Documentation check passed." (`eternalus-agent-work/abilities/check-fury-r2.log`).
+- Next step: commit, critic round 3 (the last) on this delta, then merge the new
+  `feat/ability-framework` (phase/3 `af54fe96`) into this branch.

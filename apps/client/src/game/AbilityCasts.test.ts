@@ -51,6 +51,14 @@ describe('AbilityCasts in quick cast', () => {
     expect(casts.aimingSlot).toBeNull();
   });
 
+  it('queues no granted cast before the pointer has had any world point', () => {
+    const { queued, press } = setUp();
+
+    press({ triggered: ['granted'], aim: null });
+
+    expect(queued()).toEqual([]);
+  });
+
   it('queues nothing while the pointer has no world point, and never takes the attack', () => {
     const { queued, press } = setUp();
 

@@ -40,10 +40,10 @@ export class AbilitySlotRuntime {
   /**
    * Puts `abilityId` in the `granted` slot, or empties it (`null`): a status fills it with the
    * ability it grants while it lasts (`StatusEffectApplier`). A loadout change is not this method's
-   * job: it uses `reset`, which starts the full cooldown (architecture 05 §6). Holding the ability
-   * already held changes nothing (a refreshed status keeps the cooldown). Any other change also
-   * ends the cooldown: it belonged to the ability that left, and an empty slot never cools down
-   * (`cooldown-and-aether-bounds`).
+   * job: architecture 05 §6 plans `reset` for it, which starts the full cooldown (not built yet,
+   * 05 §18). Holding the ability already held changes nothing (a refreshed status keeps the
+   * cooldown). Any other change also ends the cooldown: it belonged to the ability that left, and an
+   * empty slot never cools down (`cooldown-and-aether-bounds`).
    */
   public hold(abilityId: string | null): void {
     if (abilityId !== this.held) {

@@ -280,6 +280,51 @@ describe('StatusEffectApplier', () => {
       });
     });
 
+    describe('when the status that ends applies a granting status (onExpire)', () => {
+      const shipped = loadStatusEffects(CONFIG.tickRate, 2);
+      /** `rage` grants `granted` for 2 s (tick 60), then applies Fury; `frenzy` grants `leap`. */
+      const withFollowUp = (granted: string) => {
+        const { state, caster } = casterState();
+        const fury = shipped.get('fury');
+        const rage = {
+          ...fury,
+          id: 'rage',
+          durationTicks: 60,
+          grants: granted,
+          onExpire: [{ kind: 'apply-status', statusId: 'fury' }] as const,
+        };
+        const frenzy = { ...fury, id: 'frenzy', grants: 'leap' };
+        const applier = new StatusEffectApplier(
+          new ContentCatalogue([...shipped.all(), rage, frenzy]),
+        );
+        return { state, caster, applier, slot: caster.getComponent(Abilities).slot('granted') };
+      };
+
+      it('keeps the cooldown when the follow-up grants the same ability', () => {
+        const { state, caster, applier, slot } = withFollowUp('fury-dash');
+        applier.apply(state, caster.id, 'rage', caster.id);
+        slot?.recordCast(state.tick, 1000);
+
+        for (let tick = 0; tick < 60; tick += 1) state.advanceTick();
+        applier.expire(state, caster.id);
+
+        expect(slot?.abilityId).toBe('fury-dash');
+        expect(slot?.cooldownRemaining(state.tick)).toBe(940);
+      });
+
+      it('gives the slot to the follow-up’s grant, even when a later status grants another', () => {
+        const { state, caster, applier, slot } = withFollowUp('charge');
+        applier.apply(state, caster.id, 'fury', caster.id);
+        applier.apply(state, caster.id, 'frenzy', caster.id);
+        applier.apply(state, caster.id, 'rage', caster.id);
+
+        for (let tick = 0; tick < 60; tick += 1) state.advanceTick();
+        applier.expire(state, caster.id);
+
+        expect(slot?.abilityId).toBe('fury-dash');
+      });
+    });
+
     it('lands on a unit with no ability bar', () => {
       const { state, dummy, applier } = setUp();
 
