@@ -871,7 +871,7 @@ The example below is fenced so it is not read as a real entry.
 
 - What was done: replaced PR #25's approach, at sholtzman's request. #25 turned the
   character-select timeout off; now the timeout is back to the design's behaviour and character
-  select starts with the Warrior selected (``npm run check`→`EXIT=0`: core "Tests 1340 passed (1340)"; client "Tests 1819 passed (1819)"; "Documentation check passed."_PRESELECTED_CLASS_ID` in
+  select starts with the Warrior selected (`PLACEHOLDER_PRESELECTED_CLASS_ID` in
   `game/content/placeholderSetup.ts`, `TODO(sam)`), so the 60 s countdown leads into
   `pre-launch` and the match instead of cancelling. `CharacterSelectState` takes
   `preselectedClassId` (selected on entry through the normal `select-class` path, so it is
