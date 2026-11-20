@@ -170,7 +170,7 @@ describe('DuelGateway', () => {
     b.receive(JOIN);
     a.close();
     expect(b.sentOfType('match-ended')).toEqual([
-      { type: 'match-ended', reason: 'opponent-left', winner: null },
+      { type: 'match-ended', reason: 'opponent-left', winner: 'dark' },
     ]);
     expect(b.isClosed).toBe(true);
     expect(scheduler.activeCount).toBe(0);

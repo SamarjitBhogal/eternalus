@@ -96,7 +96,7 @@ describe('DuelHost', () => {
       host.leave(a);
     });
     host.start({ connection: a, name: 'Ana' }, { connection: b, name: 'Ben' });
-    expect(b.sent).toEqual([{ type: 'match-ended', reason: 'opponent-left', winner: null }]);
+    expect(b.sent).toEqual([{ type: 'match-ended', reason: 'opponent-left', winner: 'dark' }]);
     expect([host.isInMatch(a), host.isInMatch(b)]).toEqual([false, false]);
     expect(scheduler.activeCount).toBe(0);
   });
