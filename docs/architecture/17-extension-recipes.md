@@ -4,7 +4,7 @@ description: One recipe per kind of addition, from a Legend class to a port and 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-20
 tags: [architecture, recipes, extension-points, ocp, registries]
 paths:
   [
@@ -13,6 +13,7 @@ paths:
     'packages/core/src/commands/Command.types.ts',
     'packages/core/src/state/GameEvents.types.ts',
     'apps/client/src/game/views/defaultViewRegistry.ts',
+    'apps/client/src/game/views/defaultStatusCueRegistry.ts',
     'apps/client/src/game/views/SceneView.ts',
     'apps/client/src/game/input/keybindings.ts',
     'apps/client/src/bridge/store.ts',
@@ -234,6 +235,9 @@ AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `
   in `StatusEffectRuntime.reapply` (the one closed switch, 05 §8); a new **flag** or modifier
   **stat** is one union member read by the component that owns the stat. Producers apply it
   through the match's one `StatusEffectApplier` (DEC-41), never `StatusEffects` directly.
+- **Seen on the canvas (if it has a cue):** one `StatusCueView` in `client/game/views/` and one
+  `defaultStatusCueRegistry.ts` line ([08 §8](08-game-engine.md#8-render-pipeline)); the boot
+  check refuses a cue for a status core does not publish.
 - **Tests:** content validation (ids resolve); the table-driven stacking test if a mode was
   added; a scenario: apply, modifier table, `status-applied` / `status-expired`.
 - **Docs:** the status table in `../reference/suggestions/more-abilities.md` §7; reference 06.

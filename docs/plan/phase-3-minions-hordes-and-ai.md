@@ -4,7 +4,7 @@ description: Sprint checklists for the Mob family, the Horde composite, flow-fie
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-07
+last-reviewed: 2026-11-20
 tags: [plan, phase-3, minions, hordes, ai, pathing, match-director]
 paths: ['packages/core/src/ai/**', 'packages/core/src/match/**', 'packages/core/src/map/**']
 related:
@@ -173,7 +173,10 @@ Owner: _ (sim lane A). Week 7. Depends on 3.3 and 3.5.
 - [ ] **`Boss` abstract + `MiniBoss` + `GreaterBoss`** with `BossController` (multi-move FSM
       from content: move list, cooldowns, zone restriction; fights anyone from either team).
       Owner: _. Test: a boss never leaves its zone; move selection is seeded-random and
-      replayable. Done when: a new boss is a definition with a move table.
+      replayable. Done when: a new boss is a definition with a move table, and one boss record
+      on it replaces the five boss-by-id lists (`INBOX.md` HC-B12, DEC-283 (2)):
+      `XP_SOURCES.teamKills`, `BOSS_MINION_DAMAGE_TAKEN`, `ZONE_LOCKING_MOBS` and the meter's
+      `bossDamagePerPercent` and `bossKill`.
 - [ ] **Mini-boss rules** (`TUNE`: spawn at the quarter mark on the outer lanes with support
       mobs; its capture point cannot be captured while it lives; on defeat the team gets a
       permanent buff and ability XP). The final-hit consumable is an open question (INBOX).

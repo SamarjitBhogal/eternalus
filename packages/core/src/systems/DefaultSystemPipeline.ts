@@ -1,5 +1,7 @@
 import { CastValidator } from '../abilities/CastValidator';
+import { checkStatusLinks } from '../abilities/checkStatusLinks';
 import { createDefaultAbilityRegistry } from '../abilities/defaultAbilityRegistry';
+import { HitEffects } from '../abilities/HitEffects';
 import { DamagePipeline } from '../combat/DamagePipeline';
 import { Footprint } from '../components/Footprint';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
@@ -60,8 +62,9 @@ import { SystemPipeline } from './SystemPipeline';
  * reach faces it, not its own way (DEC-192). This is the one place a system is added, at its
  * position in the tick (architecture 02 §9).
  * It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the status effects
- * loaded for this match's config) and hands them to the systems that need them, so a damage step
- * applies to every hit and every status event comes from one place.
+ * loaded for this match's config, checked against the ability registry: `checkStatusLinks`) and
+ * hands them to the systems that need them, so a damage step applies to every hit and every status
+ * event comes from one place.
  */
 export class DefaultSystemPipeline extends SystemPipeline {
   /** Creates the pipeline from its injected parts (`DefaultSystemPipelineOptions`). */
@@ -81,9 +84,12 @@ export class DefaultSystemPipeline extends SystemPipeline {
   }: DefaultSystemPipelineOptions) {
     const { tickRate, map } = state.config;
     const damage = new DamagePipeline();
-    const statuses = new StatusEffectApplier(
-      loadStatusEffects(tickRate, map.spawnTowersPerLane + map.buffTowersPerLane),
+    const statusEffects = loadStatusEffects(
+      tickRate,
+      map.spawnTowersPerLane + map.buffTowersPerLane,
     );
+    checkStatusLinks(abilities, statusEffects.all());
+    const statuses = new StatusEffectApplier(statusEffects);
     const flowFields =
       hordes === undefined || state.world === null
         ? null
@@ -132,7 +138,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
               { flowFields, forts: DefaultSystemPipeline.fortBoxesOf(state, structures) },
             ),
           ]),
-      new CombatSystem(damage),
+      new CombatSystem(damage, new HitEffects(abilities, damage, statuses)),
       ...(state.worldObjects === undefined ? [] : [new MapDestructionSystem(state, damage)]),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
       new ProgressionSystem(state, progression),
@@ -153,7 +159,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
             new EnragedSystem(state, statuses, ENRAGING_STRUCTURES),
           ]),
       // Before death, so a fallen Duel Legend is healed and moved instead of removed.
-      ...(duelStarts === undefined ? [] : [new DuelRoundSystem(duelStarts)]),
+      ...(duelStarts === undefined ? [] : [new DuelRoundSystem(duelStarts, statuses)]),
       new OutOfCombatHealingSystem(state, loadOutOfCombatHealing(tickRate)),
       new DeathSystem(),
       new CaptureSystem(state.config.match.capturePoints, tickRate, ZONE_LOCKING_MOBS),

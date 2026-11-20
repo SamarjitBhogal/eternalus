@@ -38,6 +38,7 @@ import type { MatchViewport } from './game/MatchViewport.types';
 import { prepareMatchWorld } from './game/prepareMatchWorld';
 import { SettingsController } from './game/settings/SettingsController';
 import { SessionController } from './game/SessionController';
+import { createDefaultStatusCueRegistry } from './game/views/defaultStatusCueRegistry';
 import { createRosterRng } from './game/session/createRosterRng';
 import { createDefaultSessionStates } from './game/session/defaultSessionStates';
 import { LcgRng } from './game/session/LcgRng';
@@ -125,6 +126,7 @@ const resources = new ResourceController({
 const catalogue = createCoreCatalogue({
   tickRate: gameConfig.tickRate,
   knownAssetIds: new Set(ASSET_MANIFEST.assets.map((entry) => entry.id)),
+  drawnStatusIds: createDefaultStatusCueRegistry().statusIds,
   overrides: developer.displayOverrides,
 }).load();
 // The Duel server's address (ADR 0016): read here only, like every other build-time setting.

@@ -1,3 +1,5 @@
+import type { AbilityEffectSpec, AuthoredEffectSpec } from '../abilities/AbilityDefinition.types';
+
 /** A number a status scales: each reader asks `StatusEffects.multiplier(stat)` for one value. `aetherCost` multiplies what a cast costs (read by the cast path in the next slice). */
 export type StatusStat = 'moveSpeed' | 'attackSpeed' | 'damageDealt' | 'damageTaken' | 'aetherCost';
 
@@ -65,6 +67,11 @@ type StatusEffectBase = {
   readonly flags: readonly StatusFlag[];
   /** Run when the status times out (`StatusEffectApplier.expire`), not when it is removed early. */
   readonly onExpire: readonly StatusExpireSpec[];
+  /**
+   * The id of an ability of slot kind `granted` the status puts in its holder's `granted` slot
+   * while it lasts (Fury's dash, DEC-270); absent = none.
+   */
+  readonly grants?: string;
 };
 
 /**
@@ -80,6 +87,12 @@ export type AuthoredStatusEffect = StatusEffectBase & {
     readonly everySeconds: number;
     readonly effects: readonly StatusTickSpec[];
   } | null;
+  /**
+   * Effect steps run each time a basic attack of the holder lands, as an ability's steps are run
+   * (Fury's knock-back): placed from the attacker to the struck body (the `hit` shape). Absent =
+   * none.
+   */
+  readonly onHit?: readonly AuthoredEffectSpec[];
 };
 
 /**
@@ -94,4 +107,6 @@ export type StatusEffectDefinition = StatusEffectBase & {
     readonly everyTicks: number;
     readonly effects: readonly StatusTickSpec[];
   } | null;
+  /** The on-hit steps, every time in ticks; absent = none. */
+  readonly onHit?: readonly AbilityEffectSpec[];
 };

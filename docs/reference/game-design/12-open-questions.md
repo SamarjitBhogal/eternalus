@@ -4,7 +4,7 @@ description: Every open question and naming to-do from the game doc and the requ
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-16
 tags: [reference, game-design, open-questions, naming, decisions]
 related:
   - 'docs/reference/source/game-project-eternalus-v2.md'
@@ -53,7 +53,7 @@ comment.
 | OQ-15 | A better, themed name for the "Profile" menu section.                                                                                                | requirements: boot menu                                           | open                                             |       |          |
 | OQ-16 | Adopt "blessings" as the in-fiction name for abilities/ability upgrades?                                                                             | game doc: Ability Progression (teal); requirements "(blessings?)" | idea-pending                                     |       |          |
 | OQ-17 | Define the summoner held by the capital. Does it do anything?                                                                                        | game doc: Design; Buildings                                       | open                                             |       |          |
-| OQ-18 | Fury's dash "[button]", sprint and pick-up/throw have no default binding named.                                                                      | game doc: Ultimates; Passives; Interactives                       | open                                             |       |          |
+| OQ-18 | Default bindings for Fury's dash "[button]", sprint and pick-up/throw. **Fury dash decided 2026-11-16: Space, aimed by WASD (DEC-270).**             | game doc: Ultimates; Passives; Interactives                       | partly decided (DEC-270); sprint, interact open  |       |          |
 
 ## Design questions from the game doc
 

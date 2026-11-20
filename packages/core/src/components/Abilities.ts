@@ -1,13 +1,17 @@
 import type { AbilityKit, AbilitySlot } from '../content/abilities/AbilityDefinition.types';
 import { ABILITY_SLOTS, ULTIMATE_SLOT } from './Abilities.constants';
+import type { CastInProgress } from './Abilities.types';
 import { AbilitySlotRuntime } from './AbilitySlotRuntime';
 
 /**
- * A Legend's ability bar (architecture 05 §6): one `AbilitySlotRuntime` per slot, in bar order.
- * Aether is its own component (`Aether`, plan arch call 3); this one holds the slots only.
+ * A Legend's ability bar (architecture 05 §6): one `AbilitySlotRuntime` per slot, in bar order,
+ * and the casts whose later steps still wait (05 §4), so they leave the match with the Legend.
+ * Aether is its own component (`Aether`, plan arch call 3).
  */
 export class Abilities {
   private readonly bySlot: ReadonlyMap<AbilitySlot, AbilitySlotRuntime>;
+
+  private readonly casts: CastInProgress[] = [];
 
   /**
    * Builds the bar from `kit` (DEC-198, DEC-209 (2)): its three abilities on `ability-1` to
@@ -39,5 +43,23 @@ export class Abilities {
   /** Whether a cast already waits for `AbilitySystem` on any slot (one cast per Legend per tick). */
   public get hasPendingCast(): boolean {
     return this.slots.some((runtime) => runtime.pendingCast !== null);
+  }
+
+  /** The casts whose later steps wait for their due tick (05 §4), oldest first. */
+  public get castsInProgress(): readonly CastInProgress[] {
+    return this.casts;
+  }
+
+  /** Keeps `cast`, whose later steps wait for their due tick, after the others. */
+  public keepCast(cast: CastInProgress): void {
+    this.casts.push(cast);
+  }
+
+  /**
+   * Ends every cast in progress and returns them, oldest first: `AbilitySystem` fires their due
+   * steps and keeps again those with steps left; a reset (a Duel round) drops them.
+   */
+  public endCasts(): readonly CastInProgress[] {
+    return this.casts.splice(0);
   }
 }

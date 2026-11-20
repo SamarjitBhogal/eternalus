@@ -54,6 +54,7 @@ const setUp = (assistWindowSeconds: number = SCORING.assistWindowSeconds) => {
     createDefaultScoringRules(
       { weights: SCORING.weights, assistWindowSeconds },
       state.config.tickRate,
+      state.events,
     ),
   );
   const damage = new DamagePipeline();
@@ -230,6 +231,23 @@ describe('Scoring', () => {
       expect(rowOf(early)).toMatchObject({ assists: 1, kills: 0, score: 7 });
       expect(rowOf(late)).toMatchObject({ assists: 1, kills: 0, score: 7 });
       expect(rowOf(killer)).toMatchObject({ assists: 0, kills: 1, score: 15 });
+    });
+
+    it("announces each assist as assist-earned, for the helper's ultimate meter (DEC-272)", () => {
+      const { state, legend, hit, kill, endTick } = setUp();
+      const killer = legend('light');
+      const helper = legend('light');
+      const victim = legend('dark');
+      hit(helper, victim);
+      hit(killer, victim);
+      kill(killer, victim);
+      endTick();
+
+      const assists = state.events
+        .recentEvents()
+        .filter(({ type }) => type === 'assist-earned')
+        .map(({ payload }) => payload);
+      expect(assists).toEqual([{ legendId: helper, victimId: victim }]);
     });
 
     it('gives no assist for a hit older than the window', () => {

@@ -412,26 +412,29 @@ Stronghold's bonus shrinks with the share of its team's BuffTowers that have fal
 the bonus and the aura radius live in `content/abilities/aetherRegen.ts`. The ultimate uses
 `charge` instead: it fills from kills, assists and objective damage, never passively, and loses
 a small `N%` on death
-(`TUNE`, game doc). The rules are data in `content/progression/ultimateCharge.ts`, evaluated by
-`ProgressionSystem`, the only writer of `charge`:
+(`TUNE`, game doc). The numbers are one typed record in `content/progression/ultimateCharge.ts`
+(its type in `content/progression/progression.types.ts`), priced by the `UltimateCharge` helper
+that `ProgressionSystem` owns, the only writer of `charge` (DEC-283 (3), HC-B7):
 
 ```ts
-export type UltimateChargeRule =
-  | {
-      readonly on: 'legend-kill' | 'assist' | 'minion-kill' | 'checkpoint-cleared';
-      readonly gain: number;
-    }
-  | {
-      readonly on: 'structure-damage' | 'boss-damage';
-      readonly gainPerPercentOfTargetHealth: number;
-    }
-  | { readonly on: 'death'; readonly loss: number } // TUNE: "a small N%" (game doc); Recommendation 15
-  | { readonly on: 'class-switch'; readonly cooldownFraction: readonly [number, number] }; // post-MVP: TUNE 50–100%, never reduces
+// Sketch: packages/core/src/content/progression/progression.types.ts
+export type UltimateChargeDefinition = {
+  readonly fullMeter: number;
+  readonly legendKill: number;
+  readonly assist: number; // paid on `assist-earned`, scoring's own window (DEC-79)
+  readonly mobKill: Readonly<Record<MobKind, number>>; // by weight class
+  readonly structureDamagePerPercent: number;
+  readonly bossDamagePerPercent: Readonly<Record<string, number>>; // by mob definition id
+  readonly bossKill: Readonly<Record<string, number>>; // by mob definition id, in place of mobKill
+  readonly checkpointReached: number; // each Legend present
+  readonly deathLoss: number; // TUNE: "a small N%" (game doc)
+};
 ```
 
-`class-switch` exists so the rule object is ready when mid-match class switching arrives
-(**post-MVP**, "needs work" in the game doc); the MVP class is fixed for the match, so nothing
-evaluates it yet. Ultimate Plus (**MVP-if-time**) is a variety with `unlockLevel`, not a second
+A new source of charge is one field here and one listener in `UltimateCharge`. Mid-match class
+switching (**post-MVP**; its ultimate setback on a switch is in
+[06-abilities-and-progression.md](../reference/game-design/06-abilities-and-progression.md)
+"Ultimates", marked "needs work") adds its own field when it arrives; the MVP class is fixed for the match. Ultimate Plus (**MVP-if-time**) is a variety with `unlockLevel`, not a second
 ability.
 
 ## 7. Cast lifecycle: `applyCommand` and `AbilitySystem`
@@ -456,6 +459,12 @@ casterId, abilityId, slot }`; then it advances every live `CastInstance` (wind-u
    a cast pays before the tick's refill (ADR 0026 decision 6).
 4. Effects mutate components and the pipeline; deaths resolve in `DeathSystem`; nothing here calls
    another system.
+
+Each targeting strategy in `abilities/targeting/` states `usesAim`: whether the cast reads the
+aim the player gives it (false for a cast that aims itself, such as Fury's dash). The registry
+binds it to each ability and `loadDisplayContent` publishes it as `AbilityDisplay.usesAim`
+(§15), so the client decides "cast at once, no pointer needed" from the ability in the slot,
+never from the slot or the targeting kind (DEC-283 (8), `INBOX.md` HC-Q62 (1)).
 
 Passives (`slot: 'passive'`: Wrecking Run, Studious (name pending), Necromancy) are applied once
 by `Legend.onSpawn` as permanent `buff` effects, so they are ordinary statuses with modifiers.
@@ -547,7 +556,7 @@ timer by owner ruling (DEC-99), so `control-immune` follows only when it runs ou
 that re-applies a stun before it ends can hold a target until it stops.
 Not built yet: `controlResistance` (bosses, Eternal), `appliesTo` (the component is the gate), the `duration`,
 `independent` and `permanent` modes, and a max-health stat (the FR-029 aura). `StatusEffectSystem`
-runs before movement.
+runs before movement. Fury adds two optional status fields, `onHit` and `grants` (§18, "Fury").
 
 ## 9. Combat pipeline (`combat/`)
 
@@ -784,12 +793,14 @@ export type LevelScalingDefinition = {
 }; // TUNE
 ```
 
-`ProgressionSystem` listens to `entity-died`, `damage-applied` (assist window, objective damage),
-`structure-destroyed` and `checkpoint-cleared`, defers the awards to its own pass, applies XP from
+`ProgressionSystem` listens to `entity-died` and `structure-destroyed`, and its `UltimateCharge`
+helper to `entity-died`, `damage-applied` (objective damage), `checkpoint-reached` and
+`assist-earned` (scoring's assist window, so the meter keeps no window of its own; DEC-283 (3),
+HC-B7). It defers the awards to its own pass, applies XP from
 `content/progression/xpSources.ts` (per-source amounts, share radius, damage bias;
 `Recommendation:` balancing.md), emits `level-up { entityId, level }`, raises the `Health` base
-max and `Abilities.maxAether` by the class's `LevelScalingDefinition`, and applies the
-`UltimateChargeRule`s (§6). Ability potency is read at cast time (`CastContext.potency`), so
+max and `Abilities.maxAether` by the class's `LevelScalingDefinition`, and pays the ultimate
+meter from the `UltimateChargeDefinition` record (§6). Ability potency is read at cast time (`CastContext.potency`), so
 `AbilitySystem` needs no listener. The **ability tree** (post-MVP, D12) is an extension point,
 not a design: an `AbilityUpgradeDefinition` (`{ id, abilityId, tier, unlockLevel, patches }`) is
 applied by `AbilityRegistry.resolve` exactly like a variety, `Progression.upgradeIds` records the
@@ -861,7 +872,7 @@ export type AbilitySlotSnapshot = {
 };
 export type PlayerSnapshot = {
   readonly entityId: EntityId; // the Legend's EntitySnapshot, which holds everything else (DEC-232)
-  readonly slots: readonly AbilitySlotSnapshot[]; // ability-1..4, gadget-1, gadget-2, default-action, in that order
+  readonly slots: readonly AbilitySlotSnapshot[]; // ability-1..4, gadget-1, gadget-2, default-action, granted, in that order
 };
 ```
 
@@ -875,6 +886,13 @@ glyph needs no mapping table and a rebinding updates every prompt with no code c
 Display names and icons come from the display catalogue the client builds at boot (core's
 `loadDisplayContent()` and the client's own presentation data), joined with the player's selection
 by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event.
+`AbilityDisplay` also carries `usesAim`, taken from the targeting strategy the registry binds to
+the ability (§7): `false` for a cast that aims itself (Fury's dash). The client's `AbilityCasts`
+casts such an ability at once in both cast modes, needing no pointer point, and sends the
+Legend's own position when the pointer has had none (core ignores the aim). `PlayerHudSnapshot`
+carries `grantedAbilityId` (the ability in the `granted` slot, `null` while none), and the
+`GrantedPrompt` HUD element shows the key bound to `granted` beside that ability's display name
+while it is set (DEC-283 (7), HC-Q61 (3)).
 `AetherBar` and `HealthBar` read the same record; `LoadoutScreen` edits a `Loadout` value and calls
 `validateLoadout` through the public API.
 
@@ -945,8 +963,8 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   the recipient's team (`cause: 'team-kill'`). It listens to `entity-died` itself, not 12's
   `xp-granted` reward path. Not built yet: the share radius and damage bias, assists, checkpoint and
   camp XP, the Eternal's flat 5 levels (DEC-237) (their systems do not exist),
-  basic-attack and ability potency per level, `upgradeIds`, the ultimate charge rules, and keeping
-  dead Legends in the store until respawn (FR-051), which O4's posthumous XP needs. Numbers are
+  basic-attack and ability potency per level, `upgradeIds`, and keeping dead Legends in the store
+  until respawn (FR-051), which O4's posthumous XP needs. Numbers are
   `TUNE`; the curve and the Legend kill and structure XP follow DEC-190 (not final; the
   soak metric can change them) and live in `content/progression/`.
 - **HUD (`feat/hud-and-character-select`, 2026-10-24).** The client's `MatchBridge` joins the
@@ -977,7 +995,8 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   owner's reading of the XP ring (2026-10-18).
 - **Ability framework (`feat/ability-framework`, 2026-11-13; DEC-196 to DEC-209, ADR 0026).**
   The framework and one ability for each class are built (DEC-196); the per-class PRs build the
-  rest. Where the code differs from the sketches above:
+  rest. Fury (the last bullet) adds a slot, a slot kind, a targeting kind, the `buff` effect and
+  the `hit` shape to what this bullet lists. Where the code differs from the sketches above:
   - **Content.** `content/abilities/` holds the types (`AuthoredAbility` in seconds,
     `AbilityDefinition` in ticks, `AbilityKit`, `AbilitySlot`, `AbilityRejectReason`), one file
     per ability, `abilityCatalogue.ts` and `loadAbilities`, which knows no effect or shape kind:
@@ -1017,15 +1036,17 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
     with `CastValidator`, and `AbilitySystem` checks again (ADR 0026 decision 2). A cast is refused
     with `cannot-cast` while the match holds units idle (the countdown, DEC-88). `casting` means
     another cast of the same Legend waits this tick; a directional cast aimed at the caster is
-    `no-target`. `CastInstance` runs every step at cast: there are no due ticks, wind-up, channels
-    or `EffectZone`s yet. A dash's path and its hits are resolved at cast, and its `onEnd` steps run
-    then at the path's end while the caster is still on the way (ADR 0026 decision 4).
+    `no-target`. Due ticks are built (the delayed steps bullet below); `castTicks`, channels and
+    `EffectZone`s are not. A dash's path and its hits are resolved when its step fires, and its
+    `onEnd` steps run then at the path's end while the caster is still on the way (ADR 0026
+    decision 4).
   - **Slots, aether and the ultimate.** `components/Abilities` holds seven
     `AbilitySlotRuntime`s in bar order (`slot(slot)`, `slots`, `hasPendingCast`); a runtime has
     no `varietyId`, no `reset` and no cast rule. `Aether` stays its own component and keeps its
     `base` (the class's starting capacity). `AetherRegenSystem` refills it (DEC-201; ADR 0026
-    decisions 5 and 6). Ultimates are content only: the meter is built with Fury in the Vanguard
-    PR, so the ultimate slot reports `not-charged` and `charge: null`.
+    decisions 5 and 6). Ultimates are content only. Since `feat/vanguard-kit` the meter is built
+    (the ultimate meter bullet below): the ultimate slot reports its `charge` and stays
+    `not-charged` until the meter is full.
   - **Motion and statuses.** Dashes and knock-backs are forced motion (`Movement.push`; ADR 0026
     decision 4); a knock-back's base mass and travel time are in
     `content/abilities/knockback.ts`, and `loadKnockback` converts the travel time to ticks at load
@@ -1046,6 +1067,148 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
     `cooldown-and-aether-bounds` and `no-cast-while-not-ready`.
   - **Client.** Kit rows from content on the Legend panels, the HUD slots, the two cast modes
     and the range overlay: [13](13-game-interface.md) §10.
+- **Delayed steps (`feat/pr2a-windup`, 2026-11-20; DEC-283 (5)).** §4's due ticks are built: a step
+  of an ability's own list may carry `delaySeconds`, which `loadAbilities` checks (0 or more,
+  finite) and loads as `delayTicks` like every other time (DEC-241). Where the code differs from
+  §3 and §4:
+  - **Which steps wait.** Only an ability's top-level steps (`Delayed<Step>` in
+    `content/abilities/AbilityDefinition.types.ts`); a dash's `onPath` and `onEnd` steps and a
+    status's `onHit` steps run where their parent places them and carry no delay (§3 says every
+    spec may). `loadAbilities` refuses delays that decrease along the list, so "on its due tick"
+    and "in list order" agree. The registry binds each step with its `delayTicks` (`CastStep`).
+  - **What the state keeps.** Not the `CastInstance`, which holds strategies and services: a cast
+    with steps left is kept as plain data, `CastInProgress` (`components/Abilities.types.ts`: the
+    ability id, slot, aim, origin, caster level, cast tick and the first step not fired), on the
+    caster's `Abilities` component, so it is hashed with the caster (`StateHasher` adds `casts`
+    only while one waits, so other matches hash as before) and leaves the match with it.
+    `AbilitySystem` fires the steps due at the cast, keeps the cast while steps are left, and each
+    tick, after that tick's new casts, looks at each kept cast (casters in id order): one with no
+    step due stays as it is, and for one with a step due it builds a `CastInstance` and fires the
+    steps now due through `CastInstance.run(placement, from)`. `CastInstance.isDue` is the one due
+    rule both ask.
+  - **Where a later step runs.** On the caster where it is at the step (§3's `origin` "at the
+    step"), while the cast's direction stays the one fixed at the cast (from where the caster stood
+    to the aim). The context's `tick` stays the cast's tick.
+  - **What drops a cast.** A caster that died drops its casts in progress (no step fires after its
+    death); one removed from the store took them along. A Duel round reset drops them
+    (`DuelRoundSystem`, with the statuses and pushes). Nothing else does: a later step needs no
+    second cast check, so a status that ends during the wait (Fury) or a stun does not stop it
+    (`interruptedBy` is not built).
+- **Ultimate meter (`feat/vanguard-kit`, 2026-11-16; DEC-272, DEC-273).** `ProgressionSystem`
+  stays the only writer of `charge`: it owns the helper `systems/UltimateCharge`, which buffers
+  each change and pays it in the system's pass, after the XP. §6 and §13 show the record and the
+  events the owner signed off (DEC-283 (3)); the details, and where the code differs from §16:
+  - **Content.** The table is one record, `content/progression/ultimateCharge.ts` (type
+    `UltimateChargeDefinition`): the points of each source,
+    the death loss and the full meter in points; `charge` stays 0 to 1 (points over the full
+    meter), rounded at each change to a grid of a millionth of the meter
+    (`systems/UltimateCharge.constants.ts`), so whole points worth a full meter make exactly 1
+    (a plain sum of 12/100 and 5/100 steps can stop at 0.9999999999999999). A mob kill pays by the mob's weight class, as scoring's `minionKill` does; camp mobs
+    pay too (DEC-273). Boss damage pays each boss's own rate per 1% of its max health, by mob
+    id (`bossDamagePerPercent`; the capture point boss, DEC-272); a boss kill pays its own number
+    to the killer, by mob id (`bossKill`; the capture point boss fills the meter, DEC-283 (1)), in
+    place of its weight class, and is announced with the cause `boss-kill`. There is no `class-switch` (post-MVP). `ProgressionContent`
+    injects it.
+  - **Sources.** `entity-died`: a killer on another team than the victim gains the Legend or mob
+    kill; the victim loses the death loss whoever killed it, never below 0. `damage-applied` on a
+    structure or a listed boss by an attacker of another team pays per 1% of the target's max
+    health, absorbed damage included (as scoring counts it, DEC-123). `checkpoint-reached` pays each
+    Legend in `presentLegendIds` (DEC-273). Assists are scoring's
+    alone: `LegendDeathRule` emits `assist-earned { legendId, victimId }` for each assist it
+    awards (DEC-79's window), and the meter pays that; it keeps no assist window of its own.
+    Checkpoints and assists pay on the next tick, because their emitters run after
+    `ProgressionSystem`. A dead Legend gains nothing until it respawns (a reading the owner kept
+    on 2026-11-16, recorded after DEC-275); a full meter stops at 1. Once the match has a
+    result, scoring counts nothing, so no assist pays; kills and structure damage still pay
+    while the world runs on (DEC-92). Each change that moves the
+    meter is announced as `ultimate-charged { entityId, amount, charge, cause }`
+    ([03 §4](03-game-model.md#4-gameevents-the-typed-channel)).
+  - **Invariant.** `ultimate-never-fills-passively` (periodic) compares each meter with the
+    charge last announced for it. `state/ChargeLedger` (`GameState.charges`) keeps that from
+    `ultimate-charged` and the ultimate's `ability-cast`, because an invariant's check reads the
+    state and never listens.
+  - **Snapshot.** `Snapshot.player` reports `charge` on the ultimate slot and `null` on the
+    others, so the HUD's ultimate bar is live.
+  - Not built: the effects of every ultimate but Fury (the bullet below); each other one is
+    still `unavailable`.
+- **Fury (`feat/vanguard-kit`, 2026-11-16; DEC-270, DEC-271).** The Vanguard's ultimate is the
+  first one built. `content/abilities/fury.ts` (targeting `self`, one `buff` step) puts the status
+  `content/status-effects/fury.ts` on the caster: 8 s, `refresh`, `attackSpeed` × 3 and
+  `damageDealt` × 1.5, a 1 m knock-back on each basic hit, and the dash
+  `content/abilities/furyDash.ts` on Space while it lasts (numbers `TUNE`, `balancing.md`). It
+  ends at death (the fallen Legend is removed) or at a Duel round reset, where `DuelRoundSystem`
+  ends each status through the match's `StatusEffectApplier`. Where the code differs from §3, §6, §8 and §15
+  (better-than-design items the owner signed off, DEC-283 (4)):
+  - **`buff` effect.** `BuffEffect` applies its status to the caster only, credited to the
+    caster. It has no `shape` yet (§3 lists one): every buff built so far is on self. Imbue's
+    Support variety buffs allies (`balancing.md`), so the ally shape joins with it in the Magus PR
+    (DEC-196). A step's `durationSeconds` overrides the status's own time, as a
+    debuff's does.
+  - **On-hit steps on a status.** A status has two optional fields §8 does not have: `onHit`
+    (effect steps, loaded in ticks as an ability's are) and `grants` (an ability id).
+    `abilities/HitEffects` runs the attacker's statuses' `onHit` steps where each basic attack
+    lands: the attack strategy calls it (`MeleeAttackStrategy` in the tick, after the damage, as
+    §10 plans for a weapon's `onHit`; `CombatSystem` hands it over in the attack context), as one cast through the registry's strategies: credited to
+    the attacker under the status's id, from the `default-action` slot, placed from the attacker
+    to the struck body. The shape `hit` (`abilities/shapes/HitShape`) holds the struck body only
+    and pushes away from the attacker, so Fury's knock-back is `KnockbackEffect` unchanged (mass
+    rule, `staggered`). A weapon's `onHit` (§10) can run through `HitEffects` too.
+  - **Status-granted slot.** An eighth slot, `granted` (Space), comes last in bar order, and
+    `granted` is a slot kind. `StatusEffectApplier` fills the slot with the status's `grants`
+    ability on `apply`. On `remove` and `expire`, when the slot holds that status's ability, it
+    gives the slot the ability of the last remaining active status that grants one, or empties it.
+    On `expire`, when an ended status's `onExpire` lands a status that grants an ability, that
+    later `apply` fills the slot and the step above is skipped, so a follow-up that grants the
+    same ability keeps the cooldown.
+    `AbilitySlotRuntime.hold` changes the ability a slot holds and ends its cooldown on a change
+    (an empty slot never cools down). Outside Fury the slot is empty and a cast is `empty-slot`,
+    so no restriction kind is needed; the 1 s between dashes is the slot's cooldown. `LastCast`
+    keeps the ability cast, so `no-cast-while-not-ready` holds for a dash in Fury's last tick,
+    which empties the slot. `StateHasher` hashes the held ability when it differs from the one
+    the slot was built with (`AbilitySlotRuntime.builtWith`), as
+    [03 §9](03-game-model.md#9-statehasher-and-replays) asks; a kit slot hashes as before. The
+    invariant `granted-slot-matches-status` (each tick, `error`;
+    `diagnostics/invariants/GrantedSlotMatchesStatusInvariant`) checks that the slot holds an
+    ability only while an active status grants that ability, and is empty while none grants one;
+    §16 does not list it. A granted ability is in no class pool or kit; `abilities/checkStatusLinks`
+    checks at boot, where `DefaultSystemPipeline` loads the statuses, that each `grants` names an
+    ability of slot kind `granted` and that each `onHit` step passes the registry's step check
+    (`AbilityRegistry.checkSteps`).
+  - **Wind-up (DEC-283 (5); readings in `INBOX.md` HC-Q66).** Space first puts `content/status-effects/furyWindup.ts`
+    (`fury-windup`, 0.3 s, `cannot-move` only, no control class) on the Vanguard with a `buff`
+    step, and the `dash` step waits `delaySeconds: 0.3`, so the Vanguard stands still 0.3 s, then
+    dashes the 3 m in 0.3 s (0.6 s from Space to the end of the dash). The way is fixed at the
+    press (the targeting's aim at the cast); the Vanguard can still attack and cast during the
+    wind-up, and a push still moves it, so the dash starts from where it then stands. Fury ending
+    during the wind-up does not cancel the dash (the delayed steps bullet above), and the 1 s
+    cooldown counts from the press. The client draws orange rings that close in on the Legend
+    over the wind-up (`game/views/WindupRingsView`, a status cue, [08](08-game-engine.md) §8) from a new
+    snapshot group, `EntitySnapshot.statuses` (each active status's `id`, `ticksActive` and
+    `ticksLeft`; `null` without `StatusEffects`; [03](03-game-model.md) §5). The rings' status id
+    is a client constant, the key of the rings in the client's `StatusCueRegistry`;
+    `loadDisplayContent()` publishes every status's id and display name
+    (`DisplayContent.statuses`), and `buildDisplayCatalogue` refuses at boot any status the
+    registry draws that core does not have (`main.tsx` passes the registry's ids; ADR 0023: a
+    missed rename fails the checks).
+  - **`heading` targeting.** `fury-dash` targets `heading`: its aim is one metre the way the
+    caster moves, or the way it faces when it stands still (DEC-270). Each targeting kind is a
+    strategy in `abilities/targeting/` (`SelfTargeting`, `DirectionalTargeting`,
+    `HeadingTargeting`; contract `CastTargeting`), registered with `registerTargeting` and bound
+    to each ability by the registry, as a restriction is. `CastValidator` asks the bound strategy
+    whether the aim blocks the cast (the check "a directional cast has a direction", ADR 0026,
+    now lives in `DirectionalTargeting`) and `AbilitySystem` asks it for the aim the cast runs
+    with, so no code branches on the targeting kind. The registry refuses at boot an ability
+    whose targeting kind has no strategy. §14's recipe and sketch do not list targeting
+    strategies yet.
+  - **Snapshot, bots and client.** `Snapshot.player` reports the eight slots; the bridge leaves
+    out `granted`, as it does `default-action`, so the HUD draws no slot for the dash
+    ([13](13-game-interface.md) §10). The client casts it at once in both cast modes (DEC-283
+    (9): no range overlay first) and never selects it for aiming. It knows this from the ability
+    now in the slot: `AbilityDisplay.usesAim` is `false` for `fury-dash`, published from the
+    `heading` strategy's `usesAim` (DEC-283 (8)), so it needs no pointer point either and the
+    client checks neither the slot nor the targeting kind. The HUD shows a prompt (key and name)
+    while the slot holds an ability (DEC-283 (7)). A bot may cast a filled `granted` slot
+    (`pickReadySlot`).
 
 ## Related
 

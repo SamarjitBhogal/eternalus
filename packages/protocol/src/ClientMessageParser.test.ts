@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { ClientMessageParser } from './ClientMessageParser';
-import { MAX_CLIENT_MESSAGE_LENGTH, MAX_PLAYER_NAME_LENGTH } from './ClientMessageParser.constants';
+import {
+  ABILITY_SLOTS,
+  MAX_CLIENT_MESSAGE_LENGTH,
+  MAX_PLAYER_NAME_LENGTH,
+} from './ClientMessageParser.constants';
 
 const parser = new ClientMessageParser();
 const intent = { move: { x: 1, y: 0 }, aim: { x: 5, y: 6 }, triggered: ['ability-1'] };
@@ -47,6 +51,17 @@ describe('ClientMessageParser', () => {
     expect(parser.parse(raw)).toEqual({ ok: true, message: { type: 'intent', seq: 3, intent } });
   });
 
+  it('accepts every slot once, the status-granted slot included (Fury’s dash)', () => {
+    const everySlot = { ...intent, triggered: [...ABILITY_SLOTS] };
+    const raw = JSON.stringify({ type: 'intent', seq: 2, intent: everySlot });
+
+    expect(everySlot.triggered).toContain('granted');
+    expect(parser.parse(raw)).toEqual({
+      ok: true,
+      message: { type: 'intent', seq: 2, intent: everySlot },
+    });
+  });
+
   it('keeps isAttacking and a null aim', () => {
     const raw = JSON.stringify({
       type: 'intent',
@@ -91,7 +106,7 @@ describe('ClientMessageParser', () => {
       JSON.stringify({
         type: 'intent',
         seq: 1,
-        intent: { ...intent, triggered: Array(8).fill('ability-1') },
+        intent: { ...intent, triggered: Array(ABILITY_SLOTS.size + 1).fill('ability-1') },
       }),
     ],
     [

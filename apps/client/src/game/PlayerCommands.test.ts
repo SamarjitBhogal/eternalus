@@ -68,6 +68,7 @@ const unit = (id: string, team: Team, x: number, y: number): EntitySnapshot => (
   aether: null,
   area: null,
   capture: null,
+  statuses: null,
 });
 const PLAYER: EntitySnapshot = { ...unit(ACTOR, 'light', 20, 20), family: 'legend' };
 /** A dark-team minion standing on the house, so the house and the unit overlap. */
@@ -82,7 +83,10 @@ const snapshotOf = (
 const setUp = () => {
   const input = new ScriptedIntent();
   const enqueueCommand = vi.fn<Simulation['enqueueCommand']>();
-  const casts = new AbilityCasts({ enqueueCommand }, vi.fn());
+  const casts = new AbilityCasts({ enqueueCommand }, vi.fn(), {
+    usesAim: () => true,
+    legendAt: () => null,
+  });
   const commands = new PlayerCommands(
     input,
     { enqueueCommand },

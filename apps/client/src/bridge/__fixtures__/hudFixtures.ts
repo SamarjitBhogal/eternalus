@@ -67,6 +67,7 @@ export const FIGMA_HUD_PLAYER: PlayerHudSnapshot = {
     figmaSlot('gadget-1', FIGMA_COOLING),
     figmaSlot('gadget-2'),
   ],
+  grantedAbilityId: null,
 };
 
 /** The Figma clock, 14:32. */

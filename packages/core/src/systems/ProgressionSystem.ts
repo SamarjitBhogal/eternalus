@@ -11,6 +11,7 @@ import type { GameState } from '../state/GameState';
 import { isPlayableTeam, opponentOf } from '../teams/playableTeams';
 import type { System, SystemContext } from './System.types';
 import type { Award, ProgressionContent } from './ProgressionSystem.types';
+import { UltimateCharge } from './UltimateCharge';
 
 /**
  * Turns kills into XP and levels (architecture 05 §13). It listens to `entity-died`, prices the kill
@@ -20,21 +21,27 @@ import type { Award, ProgressionContent } from './ProgressionSystem.types';
  * team instead of the killer, lifting none more than the reward's `maxLevels` (DEC-237); a Legend
  * the cap leaves nothing to pay gets no award. Self-kills and ally kills pay nothing (O5). Each
  * level gained raises max health by the class's share of its base health (O3) and max aether,
- * heals and refills by the raise only while the Legend is alive (O4), and emits `level-up`.
+ * heals and refills by the raise only while the Legend is alive (O4), and emits `level-up`. It also
+ * fills the ultimate meters through the `UltimateCharge` it owns (05 §6), after the XP: the only
+ * writer of `charge`.
  */
 export class ProgressionSystem implements System {
   public readonly name = 'progression';
 
   private readonly pending: Award[] = [];
 
+  private readonly charges: UltimateCharge;
+
   /**
    * @param state - The match whose `entity-died` events this system listens to.
-   * @param content - The unit definitions, level curves and XP sources it prices and levels with.
+   * @param content - The unit definitions, level curves, XP sources and ultimate meter table it
+   *   prices and levels with.
    */
   public constructor(
     state: GameState,
     private readonly content: ProgressionContent,
   ) {
+    this.charges = new UltimateCharge(state, content.ultimateCharge);
     state.events.on('entity-died', ({ entityId, killer }) => {
       const victim = state.entities.get(entityId);
       const killerId = killer.attackerId;
@@ -85,7 +92,10 @@ export class ProgressionSystem implements System {
     });
   }
 
-  /** Gives this tick's XP, in the order it was earned, and applies each level gained. */
+  /**
+   * Gives this tick's XP, in the order it was earned, and applies each level gained; then fills
+   * the ultimate meters.
+   */
   public update({ state }: SystemContext): void {
     for (const award of this.pending.splice(0)) {
       if (award.kind === 'kill') {
@@ -110,6 +120,7 @@ export class ProgressionSystem implements System {
         }
       });
     }
+    this.charges.pay(state);
   }
 
   /** Awards `recipient` its XP and applies each level it gains; a non-leveller keeps the XP only. */

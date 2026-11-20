@@ -1,4 +1,5 @@
 import type { ScoringWeights } from '../../content/match/scoring.types';
+import type { GameEvents } from '../../state/GameEvents';
 import type { ScoreBook } from '../../state/ScoreBook';
 import type { DeathRule, ScoredDeath } from '../ScoringRule.types';
 
@@ -10,16 +11,20 @@ import type { DeathRule, ScoredDeath } from '../ScoringRule.types';
  *   attacker (05 §9), so a projectile's kill counts for the Legend that fired it, even after that
  *   Legend died. Killing a Legend of its own team, itself included, counts for nothing (DEC-130).
  * - Assists: every other Legend that hit the victim inside the window earns one, also when a
- *   non-Legend landed the last hit. The victim's recent hits go at its death.
+ *   non-Legend landed the last hit. The victim's recent hits go at its death. Each assist is
+ *   announced as `assist-earned`, which fills the helper's ultimate meter (DEC-272): the window
+ *   and the recent hits stay scoring's alone.
  */
 export class LegendDeathRule implements DeathRule {
   /**
    * @param weights - The points for a death, a kill and an assist.
    * @param assistWindowTicks - How long a hit still earns an assist, in ticks.
+   * @param events - The channel each assist is announced on.
    */
   public constructor(
     private readonly weights: Pick<ScoringWeights, 'death' | 'legendKill' | 'legendKillAssist'>,
     private readonly assistWindowTicks: number,
+    private readonly events: GameEvents,
   ) {}
 
   /** Awards the victim's death, the killer's kill on an enemy and the other hitters' assists. */
@@ -35,6 +40,7 @@ export class LegendDeathRule implements DeathRule {
     for (const helperId of book.takeAssists(victimId, tick, this.assistWindowTicks)) {
       if (helperId !== killerId) {
         book.award(helperId, { counter: 'assists', by: 1, points: weights.legendKillAssist });
+        this.events.emit('assist-earned', { legendId: helperId, victimId });
       }
     }
   }

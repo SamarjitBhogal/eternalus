@@ -1,6 +1,7 @@
 import { TickRate } from '../../utils/TickRate';
 import { ContentCatalogue } from '../ContentCatalogue';
 import { ContentValidationError } from '../ContentValidationError';
+import { stepInTicks, timeProblems } from '../abilities/loadAbilities';
 import { STATUS_EFFECTS } from './statusEffectCatalogue';
 import type { AuthoredStatusEffect, StatusEffectDefinition } from './statusEffects.types';
 
@@ -33,6 +34,7 @@ const problemsOf = (authored: AuthoredStatusEffect, status: StatusEffectDefiniti
     problems.push('modifier values must be positive');
   }
   if (status.periodic?.effects.length === 0) problems.push('periodic needs at least one effect');
+  problems.push(...timeProblems(authored.onHit ?? [], 'onHit'));
   return problems.map((problem) => `Status "${status.id}": ${problem}.`);
 };
 
@@ -41,7 +43,7 @@ const load = (
   rate: TickRate,
   structuresPerLane: number,
 ): StatusEffectDefinition => {
-  const { durationSeconds, maxStacks, periodic, ...rest } = status;
+  const { durationSeconds, maxStacks, periodic, onHit, ...rest } = status;
   return {
     ...rest,
     durationTicks: durationSeconds === null ? null : rate.toTicks(durationSeconds),
@@ -50,12 +52,15 @@ const load = (
       everyTicks: rate.toTicks(periodic.everySeconds),
       effects: periodic.effects,
     },
+    ...(onHit === undefined ? {} : { onHit: onHit.map((step) => stepInTicks(step, rate)) }),
   };
 };
 
 /**
- * Loads the status effects: times from seconds to ticks (architecture 03 §11, as
- * `loadDefaultContent` does for units), config-derived caps resolved, then validated once.
+ * Loads the status effects: times from seconds to ticks (architecture 03 §8, DEC-241, as
+ * `loadDefaultContent` does for units; an `onHit` step's as `loadAbilities` converts them),
+ * config-derived caps resolved, then validated once. An `onHit` step's other fields and a `grants`
+ * id are checked against the ability registry at boot (`abilities/checkStatusLinks`).
  *
  * @param tickRate - Ticks per second (`GameConfig.tickRate`).
  * @param structuresPerLane - `map.spawnTowersPerLane + map.buffTowersPerLane`.

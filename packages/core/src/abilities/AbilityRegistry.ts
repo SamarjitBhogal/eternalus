@@ -11,14 +11,16 @@ import type {
 import { ComposedAbility } from './ComposedAbility';
 import { flattenSteps, shapeOf } from './effectSteps';
 import type { AreaShape } from './shapes/AreaShape.types';
+import type { CastTargeting, TargetingSpec } from './targeting/CastTargeting.types';
 
 /**
- * The single place abilities are composed (architecture 05 §14): effect, restriction and shape
- * strategies are registered by kind (`defaultAbilityRegistry.ts` names every class), and
- * `resolve` binds an ability's steps and restrictions to them once, cached as a Flyweight.
+ * The single place abilities are composed (architecture 05 §14): effect, restriction, shape and
+ * targeting strategies are registered by kind (`defaultAbilityRegistry.ts` names every class), and
+ * `resolve` binds an ability's steps, restrictions and targeting to them once, cached as a
+ * Flyweight.
  *
- * Composing an ability also checks it: every effect, shape and restriction kind it names needs a
- * strategy, and each step and shape must pass its strategy's `validate`. `resolveAll` at boot
+ * Composing an ability also checks it: every effect, shape, restriction and targeting kind it names
+ * needs a strategy, and each step and shape must pass its strategy's `validate`. `resolveAll` at boot
  * reports every problem of every ability at once, so content fails loudly before a match starts.
  * Only an ability with no effects at all (`effects: []`, in a kit but not built yet) composes as
  * unavailable (`unavailable` at cast).
@@ -29,6 +31,8 @@ export class AbilityRegistry {
   private readonly restrictionRules = new Map<string, AbilityRestriction>();
 
   private readonly shapes = new Map<string, AreaShape>();
+
+  private readonly targetings = new Map<string, CastTargeting>();
 
   private readonly resolved = new Map<string, Ability>();
 
@@ -63,6 +67,15 @@ export class AbilityRegistry {
   }
 
   /**
+   * Registers the strategy for one targeting kind.
+   *
+   * @throws Error when the kind already has one.
+   */
+  public registerTargeting(targeting: CastTargeting): void {
+    AbilityRegistry.add(this.targetings, targeting, 'targeting');
+  }
+
+  /**
    * The strategy of effect kind `kind` (a dash runs its nested steps through it).
    *
    * @throws Error when none is registered.
@@ -84,8 +97,8 @@ export class AbilityRegistry {
    * The composed ability `abilityId`, built and checked once and cached (05 §14).
    *
    * @throws UnknownDefinitionError when no ability has the id.
-   * @throws ContentValidationError when it names an effect, shape or restriction kind with no
-   *   strategy, or a step or shape fails its strategy's `validate`.
+   * @throws ContentValidationError when it names an effect, shape, restriction or targeting kind
+   *   with no strategy, or a step or shape fails its strategy's `validate`.
    */
   public resolve(abilityId: string): Ability {
     const cached = this.resolved.get(abilityId);
@@ -126,15 +139,40 @@ export class AbilityRegistry {
     );
   }
 
+  /**
+   * Whether a cast of an ability with `targeting` reads the player's aim (`AbilityDisplay.usesAim`,
+   * 05 §15): its strategy's `usesAim`. An ability with no targeting (not built yet) counts as
+   * aimed, so the client treats it as any other until it has effects.
+   *
+   * @throws Error when `targeting` names a kind with no strategy.
+   */
+  public usesAim(targeting: TargetingSpec | null): boolean {
+    return (
+      targeting === null ||
+      AbilityRegistry.required(this.targetings, targeting.kind, 'targeting').usesAim
+    );
+  }
+
   /** Composes `definition`, already checked, and caches it. */
   private compose(definition: ComposableAbility): Ability {
+    const { targeting } = definition;
     const ability = new ComposedAbility(
       definition,
-      definition.effects.map((spec) => ({ effect: this.effectFor(spec.kind), spec })),
+      definition.effects.map((spec) => ({
+        effect: this.effectFor(spec.kind),
+        spec,
+        delayTicks: spec.delayTicks ?? 0,
+      })),
       definition.restrictions.map((spec): BoundRestriction => ({
         rule: AbilityRegistry.required(this.restrictionRules, spec.kind, 'restriction'),
         spec,
       })),
+      targeting === null
+        ? null
+        : {
+            strategy: AbilityRegistry.required(this.targetings, targeting.kind, 'targeting'),
+            spec: targeting,
+          },
       definition.effects.length > 0,
     );
     this.resolved.set(definition.id, ability);
@@ -142,19 +180,50 @@ export class AbilityRegistry {
   }
 
   /**
-   * Everything wrong with `definition`: kinds with no strategy, then each step's and each shape's
-   * own `validate` problems, every step nested in another included.
+   * Everything wrong with `steps` of `owner` (as `Status "fury" onHit`), every step nested in them
+   * included: kinds with no strategy, then each step's and each shape's own `validate` problems.
+   * The check composing an ability runs on its effects; `checkStatusLinks` runs it at boot on each
+   * status's `onHit` steps.
+   */
+  public checkSteps(owner: string, steps: readonly EffectStep[]): string[] {
+    return this.problemsIn(owner, steps, []);
+  }
+
+  /**
+   * Everything wrong with `definition`: its steps' problems, its restrictions with no rule and its
+   * targeting with no strategy.
    */
   private problemsOf(definition: ComposableAbility): string[] {
-    const steps = flattenSteps(definition.effects).map((step) => ({ step, shape: shapeOf(step) }));
+    const { targeting } = definition;
+    const missingRules = definition.restrictions
+      .filter(({ kind }) => !this.restrictionRules.has(kind))
+      .map(({ kind }) => `restriction "${kind}"`);
+    const missingTargeting =
+      targeting === null || this.targetings.has(targeting.kind)
+        ? []
+        : [`targeting "${targeting.kind}"`];
+    return this.problemsIn(`Ability "${definition.id}"`, definition.effects, [
+      ...missingRules,
+      ...missingTargeting,
+    ]);
+  }
+
+  /**
+   * The problems of `owner`'s `steps` (see `checkSteps`), with `missingElsewhere` (kinds of
+   * another sort with no strategy) named among the missing.
+   */
+  private problemsIn(
+    owner: string,
+    ownSteps: readonly EffectStep[],
+    missingElsewhere: readonly string[],
+  ): string[] {
+    const steps = flattenSteps(ownSteps).map((step) => ({ step, shape: shapeOf(step) }));
     const missing = [
       ...steps.flatMap(({ step, shape }) => [
         ...(this.effects.has(step.kind) ? [] : [`effect "${step.kind}"`]),
         ...(shape === undefined || this.shapes.has(shape.kind) ? [] : [`shape "${shape.kind}"`]),
       ]),
-      ...definition.restrictions
-        .filter(({ kind }) => !this.restrictionRules.has(kind))
-        .map(({ kind }) => `restriction "${kind}"`),
+      ...missingElsewhere,
     ];
     const invalid = steps.flatMap(({ step, shape }) => [
       ...(this.effects.get(step.kind)?.validate(step) ?? []),
@@ -163,10 +232,10 @@ export class AbilityRegistry {
     return [
       ...(missing.length > 0
         ? [
-            `Ability "${definition.id}" names ${missing.join(', ')} with no registered strategy (defaultAbilityRegistry.ts).`,
+            `${owner} names ${missing.join(', ')} with no registered strategy (defaultAbilityRegistry.ts).`,
           ]
         : []),
-      ...invalid.map((problem) => `Ability "${definition.id}": ${problem}.`),
+      ...invalid.map((problem) => `${owner}: ${problem}.`),
     ];
   }
 

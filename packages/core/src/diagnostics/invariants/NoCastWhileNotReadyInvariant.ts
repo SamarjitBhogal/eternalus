@@ -6,7 +6,8 @@ import type { Invariant, Violation } from '../Invariant.types';
 /**
  * `no-cast-while-not-ready` (architecture 05 §16, light): every cast that began this tick did so
  * on a ready slot, read from the slot's own record of the cast (`AbilitySlotRuntime.lastCast`):
- * the slot held an ability, its cooldown had ended, and an ultimate's meter was full. A cast that
+ * the slot held an ability when the cast began (a status's `granted` slot may empty later in the
+ * tick), its cooldown had ended, and an ultimate's meter was full. A cast that
  * skipped `CastValidator` shows here. Aether is not re-checked: `Aether.spend` throws on a cast
  * the pool cannot afford.
  */
@@ -27,7 +28,7 @@ export class NoCastWhileNotReadyInvariant implements Invariant {
           continue;
         }
         const problem =
-          runtime.abilityId === null
+          cast.abilityId === null
             ? 'the slot is empty'
             : cast.cooldownUntilTickBefore > cast.tick
               ? `its cooldown ran until tick ${String(cast.cooldownUntilTickBefore)}`

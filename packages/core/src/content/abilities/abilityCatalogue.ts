@@ -4,6 +4,7 @@ import { BERSERK } from './berserk';
 import { BLADE_RUNNER } from './bladeRunner';
 import { DEATH_RAY } from './deathRay';
 import { FURY } from './fury';
+import { FURY_DASH } from './furyDash';
 import { HAMSTRING } from './hamstring';
 import { IMBUE } from './imbue';
 import { RIP_AND_TEAR } from './ripAndTear';
@@ -15,14 +16,16 @@ import { VEIL } from './veil';
 
 /**
  * Every ability as authored, in class order (Vanguard, Sentinel, Magus), each class's abilities
- * then its ultimate. A new ability is a file and a line here; `loadAbilities` turns them into
- * definitions. The class pools in `content/legends/` name them by id.
+ * then its ultimate, then the abilities its statuses grant (Fury's dash). A new ability is a file
+ * and a line here; `loadAbilities` turns them into definitions. The class pools in
+ * `content/legends/` name them by id (a granted ability is in no pool).
  */
 export const ABILITIES = new ContentCatalogue<AuthoredAbility>([
   BLADE_RUNNER,
   VEIL,
   HAMSTRING,
   FURY,
+  FURY_DASH,
   SLAM,
   RIP_AND_TEAR,
   SHIELD_WALL,

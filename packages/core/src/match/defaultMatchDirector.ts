@@ -46,5 +46,8 @@ export const createDefaultMatchDirector = ({
     debug,
     logger,
     conditions: createDefaultVictoryConditions(state),
-    scoring: new Scoring(state, createDefaultScoringRules(scoring, state.config.tickRate)),
+    scoring: new Scoring(
+      state,
+      createDefaultScoringRules(scoring, state.config.tickRate, state.events),
+    ),
   });

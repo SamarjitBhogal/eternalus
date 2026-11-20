@@ -12,6 +12,7 @@ import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../config/matchPhases';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { loadLevelCurves } from '../content/progression/loadLevelCurves';
+import { ULTIMATE_CHARGE } from '../content/progression/ultimateCharge';
 import { XP_SOURCES } from '../content/progression/xpSources';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { DefaultInvariantRunner } from '../diagnostics/DefaultInvariantRunner';
@@ -90,6 +91,7 @@ const tickPipeline = (state: GameState): System => {
       units: loadDefaultContent(CONFIG.tickRate),
       curves: loadLevelCurves(),
       xpSources: XP_SOURCES,
+      ultimateCharge: ULTIMATE_CHARGE,
     },
     // Statuses are the subject here, not the match: no director moves the phase.
     director: { update: () => undefined },

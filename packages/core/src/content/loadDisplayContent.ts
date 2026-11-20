@@ -23,6 +23,7 @@ import { MAP_FEATURE_DEFINITIONS } from './maps/mapFeatureDefinitions';
 import type { MapFeatureKind } from './maps/maps.types';
 import { VERDICT_LINES } from './narrative/verdictLines';
 import type { VerdictLines } from './narrative/verdictLines.types';
+import { STATUS_EFFECTS } from './status-effects/statusEffectCatalogue';
 import { PROFILE_DISPLAY_NAME } from './profile/profileDisplayName';
 import { SOVEREIGN_DISPLAY_NAMES } from './sovereigns/sovereignDisplayNames';
 import { BOT_ROSTER } from './teams/botRoster';
@@ -60,6 +61,11 @@ export type AbilityDisplay = {
   readonly isAvailable: boolean;
   /** Every effect step's area, in cast order. */
   readonly steps: readonly AbilityDisplayStep[];
+  /**
+   * Whether a cast reads the aim the player gives it (the targeting strategy's `usesAim`). False
+   * for a cast that aims itself (Fury's dash): the client casts it at once, with no pointer.
+   */
+  readonly usesAim: boolean;
 };
 
 /**
@@ -77,6 +83,15 @@ export type DisplayContent = {
     readonly id: string;
     readonly kind: MapFeatureKind;
     readonly displayName: string | null;
+  }[];
+  /**
+   * Every status effect's id and display name, in catalogue order. The client keys its status
+   * visuals (the wind-up rings) by these ids, and checks at boot that each id it uses is here
+   * (ADR 0023), so a renamed status fails the checks rather than drawing nothing.
+   */
+  readonly statuses: readonly {
+    readonly id: string;
+    readonly displayName: string;
   }[];
   /** Each playable team's display name (the team badge and the roster labels). */
   readonly teamNames: Readonly<Record<PlayableTeam, string>>;
@@ -100,6 +115,17 @@ export type AbilityStepDescriber = (
   effects: readonly AuthoredStep[],
 ) => readonly AbilityDisplayStep[];
 
+/**
+ * What the effect and targeting strategies tell the display loader about an ability. Injected as
+ * the step describer is, because `content/` does not import `abilities/`.
+ */
+export type AbilityDescriber = {
+  /** An ability's overlay rows (`AbilityRegistry.describe`). */
+  readonly describeSteps: AbilityStepDescriber;
+  /** Whether a cast with this targeting reads the aim (`AbilityRegistry.usesAim`). */
+  readonly usesAim: (targeting: { readonly kind: string } | null) => boolean;
+};
+
 /** The catalogues `loadDisplayContent` validates and returns; each defaults to the shipped one. */
 export type DisplayCatalogues = {
   readonly legends?: ContentCatalogue<LegendDefinition>;
@@ -112,7 +138,7 @@ export type DisplayCatalogues = {
 
 const toAbilityDisplay = (
   ability: AuthoredAbilityWith<AuthoredStep>,
-  describeSteps: AbilityStepDescriber,
+  describer: AbilityDescriber,
 ): AbilityDisplay => ({
   id: ability.id,
   displayName: ability.displayName,
@@ -121,7 +147,8 @@ const toAbilityDisplay = (
   aetherCost: ability.aetherCost,
   cooldownSeconds: ability.cooldownSeconds,
   isAvailable: ability.effects.length > 0,
-  steps: describeSteps(ability.effects),
+  steps: describer.describeSteps(ability.effects),
+  usesAim: describer.usesAim(ability.targeting),
 });
 
 /**
@@ -132,7 +159,7 @@ const toAbilityDisplay = (
  * through a `ContentValidator` (04 §5, DEC-22). The display sibling of `loadDefaultContent`
  * (02 §6).
  *
- * @param describeSteps - Each ability's overlay rows: the effect strategies' descriptions. Core
+ * @param describer - Each ability's overlay rows and aim use: the strategies' answers. Core
  *   exports this loader with the shipped strategies bound (`loadShippedDisplayContent`).
  * @param catalogues - The catalogues (and the bot roster) to load; each one left out is the
  *   shipped one.
@@ -141,7 +168,7 @@ const toAbilityDisplay = (
  *   fails).
  */
 export const loadDisplayContent = (
-  describeSteps: AbilityStepDescriber,
+  describer: AbilityDescriber,
   {
     legends = LEGEND_CLASSES,
     specs = LEGEND_SPECS,
@@ -158,7 +185,7 @@ export const loadDisplayContent = (
   new ContentValidator(createBotRosterRules(legends)).validate(new ContentCatalogue([botRoster]));
 
   return {
-    abilities: abilities.all().map((ability) => toAbilityDisplay(ability, describeSteps)),
+    abilities: abilities.all().map((ability) => toAbilityDisplay(ability, describer)),
     legends: legends.all(),
     specs: specs.all(),
     lockedClasses: lockedClasses.all(),
@@ -167,6 +194,7 @@ export const loadDisplayContent = (
       kind,
       displayName,
     })),
+    statuses: STATUS_EFFECTS.all().map(({ id, displayName }) => ({ id, displayName })),
     teamNames: TEAM_DISPLAY_NAMES,
     profileDisplayName: PROFILE_DISPLAY_NAME,
     botRoster,

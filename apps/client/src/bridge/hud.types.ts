@@ -16,7 +16,7 @@ export type Announcement = { readonly id: string; readonly text: string };
 
 /**
  * Why a slot cannot cast now: core's `AbilityRejectReason` (05 §6). `unavailable` is an ability in
- * the kit that is not built yet; `not-charged` is the ultimate while its meter is not built or full.
+ * the kit that is not built yet; `not-charged` is the ultimate while its meter is not full.
  */
 export type HudBlockReason = AbilityRejectReason;
 
@@ -64,6 +64,11 @@ export type PlayerHudSnapshot = {
   readonly ultimatePips: { readonly filled: number; readonly total: number } | null;
   /** ability-1..4, gadget-1, gadget-2 (05 §15 order); `[]` while core has no `Snapshot.player`. */
   readonly slots: readonly AbilitySlotStatus[];
+  /**
+   * The ability a status grants the Legend now (the `granted` slot: Fury's dash), which has no HUD
+   * slot; `null` while none is granted. The HUD prompt names it by id from the catalogue.
+   */
+  readonly grantedAbilityId: string | null;
 };
 
 /**

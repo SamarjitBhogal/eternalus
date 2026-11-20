@@ -21,9 +21,10 @@ const isNonNegative = (value: number): boolean => value >= 0 && Number.isFinite(
 /**
  * Every `<name>Seconds` field in `value` (at any depth) that is not a finite time of 0 or more,
  * named after the nearest step kind around it. The one rule the loader checks inside a step: its
- * other fields are its strategy's to check (`AbilityEffect.validate`).
+ * other fields are its strategy's to check (`AbilityEffect.validate`). `loadStatusEffects` checks a
+ * status's `onHit` steps with it too.
  */
-const timeProblems = (value: unknown, kind: string): string[] => {
+export const timeProblems = (value: unknown, kind: string): string[] => {
   if (Array.isArray(value)) {
     return value.flatMap((item: unknown) => timeProblems(item, kind));
   }
@@ -39,6 +40,13 @@ const timeProblems = (value: unknown, kind: string): string[] => {
       : timeProblems(field, owner),
   );
 };
+
+/** Whether no step waits less after the cast than the step before it (05 §4; absent = 0). */
+const hasDelaysInOrder = (steps: readonly { readonly delaySeconds?: number }[]): boolean =>
+  steps.every(
+    (step, index) =>
+      index === 0 || (step.delaySeconds ?? 0) >= (steps[index - 1]?.delaySeconds ?? 0),
+  );
 
 /** What is wrong with `ability` as authored, or nothing. */
 const problemsOf = (ability: AuthoredAbilityWith<AuthoredStep>): string[] => {
@@ -58,6 +66,9 @@ const problemsOf = (ability: AuthoredAbilityWith<AuthoredStep>): string[] => {
     problems.push('an ability with no effects has no targeting yet');
   }
   problems.push(...timeProblems(ability.effects, 'effect'));
+  if (!hasDelaysInOrder(ability.effects)) {
+    problems.push('step delays must not decrease along the list (the steps fire in list order)');
+  }
   return problems.map((problem) => `Ability "${ability.id}": ${problem}.`);
 };
 
@@ -85,8 +96,11 @@ const inTicks = (value: unknown, rate: TickRate): unknown => {
   );
 };
 
-/** One effect step with its times in ticks, whatever its kind. */
-const stepInTicks = <Step extends AuthoredStep>(step: Step, rate: TickRate): InTicks<Step> =>
+/**
+ * One effect step with its times in ticks, whatever its kind; `loadStatusEffects` converts a
+ * status's `onHit` steps with it too.
+ */
+export const stepInTicks = <Step extends AuthoredStep>(step: Step, rate: TickRate): InTicks<Step> =>
   // `inTicks` renames exactly the fields `InTicks` renames; TypeScript cannot follow a key rename.
   inTicks(step, rate) as InTicks<Step>;
 

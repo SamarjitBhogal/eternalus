@@ -12,7 +12,9 @@ import { DamagePipeline } from '../combat/DamagePipeline';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { Abilities } from '../components/Abilities';
 import { Aether } from '../components/Aether';
+import { Health } from '../components/Health';
 import { StatusEffects } from '../components/StatusEffects';
+import { Transform } from '../components/Transform';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { NullLogger } from '../diagnostics/NullLogger';
@@ -26,7 +28,7 @@ const AIM = { point: { x: 0, y: 5 }, targetId: null };
 const setUp = () => {
   const { state, factory, caster } = casterState({
     ...TEST_KIT,
-    abilities: ['fake-strike', 'fake-two-step', 'fake-dash'],
+    abilities: ['fake-strike', 'fake-two-step', 'fake-later'],
   });
   const strike = new RecordingEffect('fake-strike');
   const blast = new RecordingEffect('fake-blast', strike.log);
@@ -35,6 +37,11 @@ const setUp = () => {
     fakeAbility({
       id: 'fake-two-step',
       effects: [{ kind: 'fake-blast' }, { kind: 'fake-strike' }],
+    }),
+    fakeAbility({
+      id: 'fake-later',
+      targeting: { kind: 'directional' },
+      effects: [{ kind: 'fake-strike' }, { kind: 'fake-blast', delayTicks: 3 }],
     }),
   ]);
   const registry = testAbilityRegistry([strike, blast], abilities);
@@ -52,7 +59,12 @@ const setUp = () => {
   const run = (s: GameState = state): void => {
     system.update({ state: s, logger: new NullLogger() });
   };
-  return { state, factory, caster, log: strike.log, events, run };
+  /** Advances the state one tick and runs the system in it. */
+  const next = (): void => {
+    state.advanceTick();
+    run();
+  };
+  return { state, factory, caster, log: strike.log, events, run, next };
 };
 
 describe('AbilitySystem', () => {
@@ -137,5 +149,85 @@ describe('AbilitySystem', () => {
       'cast entity-2 fake-strike ability-1',
       'cast entity-3 fake-strike ability-1',
     ]);
+  });
+
+  it('fires a later step on its due tick where the caster then is, and drops the cast after it', () => {
+    const { state, caster, log, events, run, next } = setUp();
+    const bar = caster.getComponent(Abilities);
+    bar.slot('ability-3')?.queue(AIM);
+
+    run();
+    const kept = bar.castsInProgress.map(
+      ({ abilityId, nextStep }) => `${abilityId} ${String(nextStep)}`,
+    );
+    next();
+    next();
+    const beforeDue = log.length;
+    caster.getComponent(Transform).moveTo({ x: 2, y: 1 });
+    next();
+
+    expect(events).toEqual(['cast entity-1 fake-later ability-3']);
+    expect(kept).toEqual(['fake-later 1']);
+    expect(beforeDue).toBe(1);
+    expect(log.map(({ spec, cast }) => `${spec.kind} ${String(cast.tick)}`)).toEqual([
+      'fake-strike 0',
+      'fake-blast 0',
+    ]);
+    expect(state.tick).toBe(3);
+    expect(log[1]?.cast).toMatchObject({
+      placement: { from: { x: 2, y: 1 }, to: { x: 2, y: 1 } },
+      direction: { x: 0, y: 1 }, // fixed at the cast, from where the caster stood then
+      aim: AIM,
+    });
+    expect(bar.castsInProgress).toEqual([]);
+  });
+
+  it('keeps a waiting cast as the same object on a tick with no due step', () => {
+    const { caster, run, next } = setUp();
+    const bar = caster.getComponent(Abilities);
+    bar.slot('ability-3')?.queue(AIM);
+    run();
+    const [waiting] = bar.castsInProgress;
+    next();
+    next();
+
+    expect(waiting).toBeDefined();
+    expect(bar.castsInProgress).toHaveLength(1);
+    expect(bar.castsInProgress[0]).toBe(waiting);
+  });
+
+  it('fires the tick’s new casts before the later steps of older casts', () => {
+    const { caster, log, run, next } = setUp();
+    const bar = caster.getComponent(Abilities);
+    bar.slot('ability-3')?.queue(AIM);
+    run();
+    next();
+    next();
+
+    bar.slot('ability-2')?.queue(AIM);
+    next();
+
+    expect(log.map(({ spec, cast }) => `${spec.kind} ${cast.abilityId}`)).toEqual([
+      'fake-strike fake-later',
+      'fake-blast fake-two-step',
+      'fake-strike fake-two-step',
+      'fake-blast fake-later',
+    ]);
+  });
+
+  it('drops the steps still to come of a caster that died before they were due', () => {
+    const { caster, log, run, next } = setUp();
+    const bar = caster.getComponent(Abilities);
+    bar.slot('ability-3')?.queue(AIM);
+    run();
+
+    const health = caster.getComponent(Health);
+    health.applyDamage(health.max);
+    next();
+    next();
+    next();
+
+    expect(log.map(({ spec }) => spec.kind)).toEqual(['fake-strike']);
+    expect(bar.castsInProgress).toEqual([]);
   });
 });

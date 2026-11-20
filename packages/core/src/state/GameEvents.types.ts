@@ -31,6 +31,17 @@ type StatusPayload = {
   readonly sourceId: EntityId | null;
 };
 
+/** What changed a Legend's ultimate meter (`ultimate-charged`, DEC-272, DEC-273). */
+export type UltimateChargeCause =
+  | 'legend-kill'
+  | 'assist'
+  | 'mob-kill'
+  | 'structure-damage'
+  | 'boss-damage'
+  | 'boss-kill'
+  | 'checkpoint'
+  | 'death';
+
 /**
  * Every event the simulation can emit, by name (architecture 03 §4). The single place of change
  * for events: an emitter adds its line here. Emitting a name that is not listed does not compile.
@@ -132,6 +143,19 @@ export type GameEventMap = {
     readonly victimTeam: Team;
     readonly cause: 'kill' | 'structure-destroyed' | 'team-kill';
   };
+  /**
+   * A change of a Legend's ultimate meter (architecture 05 §6), one per change, so the invariant
+   * can audit every write: `amount` is the signed change applied (after the 0..1 clamp), `charge`
+   * the meter after it.
+   */
+  readonly 'ultimate-charged': {
+    readonly entityId: EntityId;
+    readonly amount: number;
+    readonly charge: number;
+    readonly cause: UltimateChargeCause;
+  };
+  /** `legendId` earned an assist on the death of the Legend `victimId` (DEC-79). */
+  readonly 'assist-earned': { readonly legendId: EntityId; readonly victimId: EntityId };
   readonly 'team-changed': {
     readonly entityId: EntityId;
     readonly from: Team;

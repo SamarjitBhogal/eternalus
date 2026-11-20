@@ -9,6 +9,7 @@ import { SeededRandom } from '../utils/SeededRandom';
 import { AiState } from './AiState';
 import { AllyDamageStore } from './AllyDamageStore';
 import { AllyDamageTally } from './AllyDamageTally';
+import { ChargeLedger } from './ChargeLedger';
 import { EntitySnapshotter } from './EntitySnapshotter';
 import { EntityStore } from './EntityStore';
 import type { EntityId, RemovalRecord } from './EntityStore.types';
@@ -106,6 +107,9 @@ export class GameState {
   private readonly phaseChanges: GameEventMap['phase-changed'][] = [];
   private readonly killers = new Map<EntityId, DamageSource>();
 
+  /** The ultimate charge each entity was last announced to hold (for the invariant, 05 §16). */
+  public readonly charges: ChargeLedger;
+
   /**
    * @param config - A config that passed `validateGameConfig()`.
    * @param seed - The match seed (a whole number from 0 to 2^32 - 1).
@@ -148,6 +152,7 @@ export class GameState {
       this.phaseChanges.push(change);
     });
     new AllyDamageTally(this.events, this.entities, this.world, this.allyDamage);
+    this.charges = new ChargeLedger(this.events);
   }
 
   /** The lane structures as they stood at match start (architecture 18 §6.2); empty until indexed. */
@@ -243,7 +248,11 @@ export class GameState {
     readiness: SlotReadiness,
   ): Snapshot {
     const entities: EntitySnapshot[] = [];
-    const snapshotter = new EntitySnapshotter(this.config.match.capturePoints.checkpoints, curves);
+    const snapshotter = new EntitySnapshotter(
+      this.config.match.capturePoints.checkpoints,
+      curves,
+      this.currentTick,
+    );
     this.entities.forEach((entity) => {
       entities.push(snapshotter.snapshotOf(entity));
     });

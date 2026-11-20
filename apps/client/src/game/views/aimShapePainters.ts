@@ -20,8 +20,10 @@ function paint(corners: readonly Vec2[], renderer: Renderer): void {
 /**
  * The painters of the range overlay, one per shape kind (05 §3, §15): a circle on the frame's
  * circle centre, a path as the rectangle the dash sweeps (the dash's length by the path's width).
+ * A `hit` shape (a status's on-hit step, Fury) is never aimed, so it draws nothing.
  */
 export const AIM_SHAPE_PAINTERS: ShapePainters = {
+  hit: () => undefined,
   circle: ({ radius }, { circleCentre }, renderer) => {
     paint(
       Array.from({ length: AIM_CIRCLE_SEGMENTS }, (_, corner) => {

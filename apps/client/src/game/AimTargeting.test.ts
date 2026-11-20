@@ -24,6 +24,7 @@ const CASTER: EntitySnapshot = {
   aether: null,
   area: null,
   capture: null,
+  statuses: null,
 };
 /** Where the Legend is drawn this frame: between snapshots, so not its snapshot position. */
 const DRAWN_AT = { x: 9, y: 20 };
@@ -116,5 +117,25 @@ describe('AimTargeting', () => {
     expect(
       new AimTargeting(ABILITIES, null).targetOf(snapshotWith('slam'), 'ability-1', aim, DRAWN_AT),
     ).toBeNull();
+  });
+
+  it('says whether the ability in a slot uses the aim, from the display data', () => {
+    const aiming = new AimTargeting(ABILITIES, CASTER.id);
+    const granted = {
+      ...snapshotWith(null),
+      player: {
+        entityId: CASTER.id,
+        slots: [
+          slot('ability-1', 'blade-runner'),
+          { ...slot('ability-1', 'fury-dash'), slot: 'granted' },
+        ],
+      },
+    } as unknown as Snapshot;
+
+    expect(aiming.usesAim(granted, 'ability-1')).toBe(true);
+    expect(aiming.usesAim(granted, 'granted')).toBe(false);
+    // No ability in the slot, or none the display data knows: the usual aimed paths.
+    expect(aiming.usesAim(granted, 'ability-3')).toBe(true);
+    expect(aiming.usesAim(snapshotWith(null), 'ability-1')).toBe(true);
   });
 });

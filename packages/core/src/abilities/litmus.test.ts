@@ -16,7 +16,7 @@ import type { AbilityEffect, CastContext } from './AbilityEffect.types';
 import type { ComposableAbility } from './AbilityRegistry.types';
 import { createDefaultAbilityRegistry } from './defaultAbilityRegistry';
 import { unitsWithWarriorKit } from './__fixtures__/casterState';
-import { testAbilityRegistry } from './__fixtures__/fakeAbilities';
+import { statusOnHitEffects, testAbilityRegistry } from './__fixtures__/fakeAbilities';
 
 /** The throwaway effect kind: damages every enemy in a circle. */
 type FakeBoltSpec = {
@@ -70,9 +70,10 @@ describe('the ability framework litmus (architecture 05 §16, Phase 4.2 metric)'
   // The content: Fake Bolt authored as every ability is and loaded with the shipped ones by the
   // unchanged `loadAbilities`. The one registry line: the registry's own strategies plus
   // `FakeBoltEffect` (`createDefaultAbilityRegistry` would refuse Fake Bolt at boot, since its kind
-  // has no line in `defaultAbilityRegistry.ts`).
+  // has no line in `defaultAbilityRegistry.ts`), beside the effects the shipped statuses' on-hit
+  // steps name (every match checks those at boot, whatever its kits).
   const abilities = loadAbilities(30, [...ABILITIES.all(), FAKE_BOLT]);
-  const registry = testAbilityRegistry([new FakeBoltEffect()], abilities);
+  const registry = testAbilityRegistry([new FakeBoltEffect(), ...statusOnHitEffects()], abilities);
 
   it('casts a new ability added as content plus one registry line, with no other change', () => {
     // A Warrior kit that holds it.
@@ -137,9 +138,13 @@ describe('the ability framework litmus (architecture 05 §16, Phase 4.2 metric)'
       30,
     );
     strategies.registerEffect(new FakeBoltEffect());
-    const display = loadDisplayContent((effects) => strategies.describe(effects), {
-      abilities: new ContentCatalogue([...ABILITIES.all(), FAKE_BOLT]),
-    });
+    const display = loadDisplayContent(
+      {
+        describeSteps: (effects) => strategies.describe(effects),
+        usesAim: (targeting) => strategies.usesAim(targeting),
+      },
+      { abilities: new ContentCatalogue([...ABILITIES.all(), FAKE_BOLT]) },
+    );
 
     expect(display.abilities.find(({ id }) => id === 'fake-bolt')).toMatchObject({
       displayName: 'Fake Bolt',

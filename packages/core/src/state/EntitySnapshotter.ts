@@ -3,6 +3,7 @@ import { Capturable } from '../components/Capturable';
 import { Health } from '../components/Health';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { Progression } from '../components/Progression';
+import { StatusEffects } from '../components/StatusEffects';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { ZoneArea } from '../components/ZoneArea';
@@ -10,7 +11,7 @@ import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import type { Entity } from '../entities/Entity';
 import { Structure } from '../entities/structures/Structure';
-import type { EntitySnapshot } from './Snapshot.types';
+import type { EntitySnapshot, StatusSnapshot } from './Snapshot.types';
 
 /**
  * Projects one entity into its `EntitySnapshot` (architecture 03 §5): one group per component,
@@ -22,10 +23,12 @@ export class EntitySnapshotter {
    * @param checkpoints - How many checkpoints a full capture passes (`GameConfig.match.capturePoints`).
    * @param curves - The level curves a `Progression` levels along (the catalogue
    *   `ProgressionSystem` uses), to report the XP inside each level.
+   * @param tick - The tick the snapshot shows (`GameState.tick`), to time the statuses.
    */
   public constructor(
     private readonly checkpoints: number,
     private readonly curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'get'>,
+    private readonly tick: number,
   ) {}
 
   /** The entity as plain, structured-clone-safe data. */
@@ -76,6 +79,25 @@ export class EntitySnapshotter {
               lockedBy: capture.lockedBy,
               presence: capture.presence,
             },
+      statuses: this.statusesOf(entity.findComponent(StatusEffects)),
     };
   }
+
+  /** The active statuses as plain data; one shared empty list for none, so most allocate none. */
+  private statusesOf(statuses: StatusEffects | undefined): readonly StatusSnapshot[] | null {
+    const { tick } = this;
+    if (statuses === undefined) {
+      return null;
+    }
+    const { active } = statuses;
+    return active.length === 0
+      ? NO_STATUSES
+      : active.map(({ definition, periodAnchorTick, expiresTick }) => ({
+          id: definition.id,
+          ticksActive: tick - periodAnchorTick,
+          ticksLeft: expiresTick === null ? null : expiresTick - tick,
+        }));
+  }
 }
+
+const NO_STATUSES: readonly StatusSnapshot[] = [];

@@ -64,4 +64,12 @@ describe('loadShippedDisplayContent', () => {
     }
     expect(content.specs).toEqual(LEGEND_SPECS.all());
   });
+
+  it('publishes usesAim from each ability’s targeting strategy: only the Fury dash aims itself', () => {
+    const { abilities } = loadShippedDisplayContent(30);
+
+    expect(abilities.find(({ id }) => id === 'fury-dash')?.usesAim).toBe(false);
+    expect(abilities.find(({ id }) => id === 'blade-runner')?.usesAim).toBe(true);
+    expect(abilities.filter(({ usesAim }) => !usesAim).map(({ id }) => id)).toEqual(['fury-dash']);
+  });
 });

@@ -21,4 +21,5 @@ export const ABILITY_SLOTS: ReadonlySet<AbilitySlot> = new Set<AbilitySlot>([
   'gadget-1',
   'gadget-2',
   'default-action',
+  'granted',
 ]);

@@ -14,8 +14,8 @@ import type { Polygon } from '../utils/geometry.types';
 
 /**
  * One entity as the client sees it. A field is `null` when the entity has no component behind it
- * (no `Transform`, `Health`, `Progression`, `Aether`, `TeamMembership`, `ZoneArea` or
- * `Capturable`), never a made-up default.
+ * (no `Transform`, `Health`, `Progression`, `Aether`, `TeamMembership`, `ZoneArea`, `Capturable`
+ * or `StatusEffects`), never a made-up default.
  */
 export type EntitySnapshot = {
   readonly mapObjectId?: string;
@@ -45,6 +45,20 @@ export type EntitySnapshot = {
   readonly area: readonly Polygon[] | null;
   /** A capture point's state (`Capturable`, architecture 07 §7); `null` for every other entity. */
   readonly capture: CaptureSnapshot | null;
+  /**
+   * The statuses active on the entity (`StatusEffects`), oldest first; `null` for an entity that
+   * takes none (a structure). The client draws Fury's wind-up from it (DEC-283).
+   */
+  readonly statuses: readonly StatusSnapshot[] | null;
+};
+
+/** One active status as the client sees it: its id and how far through its time it is. */
+export type StatusSnapshot = {
+  readonly id: string;
+  /** Ticks since it was first applied (a reapplication keeps counting). */
+  readonly ticksActive: number;
+  /** Ticks until it ends; `null` for a status that lasts until removed. */
+  readonly ticksLeft: number | null;
 };
 
 /** A Legend's level and XP as the client sees it (architecture 03 §5, the HUD's XP ring). */
@@ -84,7 +98,7 @@ export type AbilitySlotSnapshot = {
   readonly cooldownTicks: number;
   /** The aether the cast costs now, after status modifiers. */
   readonly aetherCost: number;
-  /** The ultimate's meter 0..1; `null` on every slot until the meter is built (a later PR). */
+  /** The ultimate's meter 0..1 on the ultimate slot; `null` on every other slot. */
   readonly charge: number | null;
   /** Whether a cast would be accepted now. */
   readonly isReady: boolean;

@@ -9,10 +9,12 @@ export type Aim = { readonly point: Vec2; readonly targetId: string | null };
 
 /**
  * The slot's last cast as it began (diagnostics: `no-cast-while-not-ready` audits it): the tick,
- * and the cooldown and charge the slot had just before the cast changed them.
+ * the ability the slot held (a granted slot may empty later in the same tick), and the cooldown and
+ * charge the slot had just before the cast changed them.
  */
 export type LastCast = {
   readonly tick: number;
+  readonly abilityId: string | null;
   readonly cooldownUntilTickBefore: number;
   readonly chargeBefore: number;
 };

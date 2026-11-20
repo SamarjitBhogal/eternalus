@@ -3,14 +3,13 @@ import { describe, expect, it } from 'vitest';
 import { LEGEND_CLASSES } from '../legends/legendCatalogue';
 import { STATUS_EFFECTS } from '../status-effects/statusEffectCatalogue';
 import { ABILITIES } from './abilityCatalogue';
-import type { AuthoredAbility } from './AbilityDefinition.types';
+import type { AuthoredAbility, AuthoredEffectSpec } from './AbilityDefinition.types';
 import { loadAbilities } from './loadAbilities';
 
-/** Cost and cooldown of the nine abilities with no effects yet: balancing.md "Aether costs and cooldowns" (0 / 0 for an ultimate: the meter gates it). */
+/** Cost and cooldown of the eight abilities with no effects yet: balancing.md "Aether costs and cooldowns" (0 / 0 for an ultimate: the meter gates it). */
 const UNBUILT = {
   veil: { cooldownSeconds: 20, aetherCost: 40, slot: 'ability' },
   hamstring: { cooldownSeconds: 9, aetherCost: 25, slot: 'ability' },
-  fury: { cooldownSeconds: 0, aetherCost: 0, slot: 'ultimate' },
   'rip-and-tear': { cooldownSeconds: 10, aetherCost: 30, slot: 'ability' },
   'shield-wall': { cooldownSeconds: 18, aetherCost: 40, slot: 'ability' },
   berserk: { cooldownSeconds: 0, aetherCost: 0, slot: 'ultimate' },
@@ -19,16 +18,17 @@ const UNBUILT = {
   'death-ray': { cooldownSeconds: 0, aetherCost: 0, slot: 'ultimate' },
 } as const;
 
-/** Every effect kind the framework builds in PR 1 (05 §3); a new kind is added here with its effect class. */
-const BUILT_EFFECT_KINDS = ['damage', 'debuff', 'dash', 'knockback'];
+/** Every effect kind the framework builds (05 §3): PR 1's, then Fury's `buff`; a new kind is added here with its effect class. */
+const BUILT_EFFECT_KINDS = ['damage', 'debuff', 'dash', 'knockback', 'buff'];
 
 describe('ABILITIES', () => {
-  it('lists the twelve kit abilities in class order, abilities before the ultimate', () => {
+  it('lists the twelve kit abilities in class order, abilities before the ultimate, then what the ultimate grants', () => {
     expect(ABILITIES.ids).toEqual([
       'blade-runner',
       'veil',
       'hamstring',
       'fury',
+      'fury-dash',
       'slam',
       'rip-and-tear',
       'shield-wall',
@@ -119,7 +119,7 @@ describe('ABILITIES', () => {
     expect(['blade-runner', 'slam', 'shockwave'].map(structureMultiplierOf)).toEqual([0.3, 2, 1]);
   });
 
-  it('prices the nine abilities not built yet from balancing.md and gives them no effects', () => {
+  it('prices the eight abilities not built yet from balancing.md and gives them no effects', () => {
     const unbuilt = ABILITIES.all().filter((ability) => ability.effects.length === 0);
 
     expect(unbuilt.map((ability) => ability.id)).toEqual(Object.keys(UNBUILT));
@@ -128,7 +128,7 @@ describe('ABILITIES', () => {
     }
   });
 
-  it('gives every ability a description and builds only the effect kinds PR 1 implements', () => {
+  it('gives every ability a description and builds only the effect kinds the framework implements', () => {
     const kinds = ABILITIES.all().flatMap((ability) =>
       ability.effects.map((effect) => effect.kind),
     );
@@ -140,7 +140,7 @@ describe('ABILITIES', () => {
   it('names a real debuff status in every debuff step, dash children included', () => {
     const debuffIds = (ability: AuthoredAbility): string[] =>
       ability.effects
-        .flatMap((effect) =>
+        .flatMap((effect): readonly AuthoredEffectSpec[] =>
           effect.kind === 'dash' ? [...effect.onPath, ...effect.onEnd] : [effect],
         )
         .flatMap((effect) => (effect.kind === 'debuff' ? [effect.statusId] : []));
@@ -151,13 +151,21 @@ describe('ABILITIES', () => {
     }
   });
 
-  it("puts every ability in its class's pool and every pool entry in the catalogue", () => {
+  it("puts every kit ability in its class's pool and every pool entry in the catalogue", () => {
     for (const legend of LEGEND_CLASSES.all()) {
       const ofClass = ABILITIES.all()
-        .filter((ability) => ability.classId === legend.id)
+        .filter((ability) => ability.classId === legend.id && ability.slot !== 'granted')
         .map((ability) => ability.id);
 
       expect(legend.abilityPool).toEqual(ofClass);
     }
+  });
+
+  it('leaves a granted ability out of every pool: only a status grants it (DEC-270)', () => {
+    const granted = ABILITIES.all().filter((ability) => ability.slot === 'granted');
+
+    expect(granted.map((ability) => ability.id)).toEqual(['fury-dash']);
+    expect(STATUS_EFFECTS.get('fury').grants).toBe('fury-dash');
+    expect(LEGEND_CLASSES.all().flatMap((legend) => legend.abilityPool)).not.toContain('fury-dash');
   });
 });

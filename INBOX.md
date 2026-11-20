@@ -104,6 +104,123 @@ Reply inline (`Decision: …`).
     the destructible map objects that are entities of their own (`WorldObjectStore`), not for
     towers. A tower owns its fort's map object and has only a structure `Footprint`, so an ability
     area hits it by its collider circle. The question is HC-Q64.
+- [x] **HC-B7 — Better than the design, for sign-off: four parts of the ultimate meter
+      (`feat/vanguard-kit`, 2026-11-16; DEC-272, DEC-273) — sign-off per item.** All four are
+      built, under your 2026-11-09 rule "pick the best architectural outcome, build it now";
+      architecture 05 §18 ("Ultimate meter") describes them. The design text of 05 §6, §13 and
+      §16 is not changed.
+      (1) **The meter's numbers are one record, not a list of rules.** 05 §6 sketches
+      `UltimateChargeRule`, a union of `{ on, gain }` rules. Built: one typed record,
+      `content/progression/ultimateCharge.ts` (Legend kill, assist, a mob kill per weight class,
+      structure damage per 1%, checkpoint, death loss, full meter). Better: each source has one
+      named, typed number; the compiler finds a missing one; no code looks a rule up by `on`.
+      A new source adds one field and one listener either way.
+      (2) **A helper class owned by `ProgressionSystem`.** The meter lives in
+      `systems/UltimateCharge.ts`, which `ProgressionSystem` builds and calls after the XP
+      (`pay`), as `HealingZones` and `GuardRoster` are helpers of their systems. Better:
+      `ProgressionSystem` stays the only writer of `charge` (05 §6) and stays short; the meter's
+      rules test alone.
+      (3) **Scoring announces assists; the meter does not count them again.** 05 §13 has
+      `ProgressionSystem` read `damage-applied` for an assist window. Built: `LegendDeathRule`
+      emits a new event, `assist-earned { legendId, victimId }`, for each assist it awards (DEC-79),
+      and the meter pays that. Better: one assist rule (DRY); the score table and the meter cannot
+      disagree on who assisted. The same edit uses the real event name `checkpoint-reached`
+      (05 §13 says `checkpoint-cleared`). Cost: the Legend death rule now gets the event bus and
+      has a second role, which 12 §5 does not plan; 12 §13's implementation status records it.
+      (4) **The invariant's ledger lives in the match state.** `ultimate-never-fills-passively`
+      (05 §16) must compare each meter with its announced changes, but an invariant's `check`
+      only reads the state. Built: `state/ChargeLedger` (`GameState.charges`) keeps the charge
+      last announced for each entity (from `ultimate-charged` and the ultimate's cast), as
+      `AllyDamageTally` keeps ally damage. Better: the invariant stays pure, and the ledger is
+      not hashed (it repeats `charge`).
+      Approve all, approve some, or say no; a "no" reworks the code.
+  - Answered 2026-11-20 (DEC-283): "Approve all four". All four are built on `feat/vanguard-kit`;
+    05 §18 says them.
+- [x] **HC-B8 — Better than the design, for sign-off: four parts of Fury, and two notes
+      (`feat/vanguard-kit`, 2026-11-16; DEC-270, DEC-271) — sign-off per item.** All six are
+      built, under your 2026-11-09 rule "pick the best architectural outcome, build it now";
+      architecture 05 §18 ("Fury") describes them. The design text of 05 §3, §6, §8 and §15 is not
+      changed.
+      (1) **A status can carry on-hit steps.** 05 §8 has no on-hit field; 05 §10 plans `onHit`
+      for weapons only. Built: a status's optional `onHit` (effect steps, as an ability's), run
+      by one class, `abilities/HitEffects`, which the attack strategy calls where each basic
+      attack lands (as 05 §10 plans for a weapon's `onHit`), and a new shape `hit`
+      (the struck body only, pushed away from the attacker). Better: Fury's knock-back is the
+      shipped `knockback` effect unchanged (mass rule, stagger); no Fury code in `CombatSystem`;
+      a weapon's `onHit` can use the same class.
+      (2) **A status can grant an ability, in its own slot.** 05 §10 plans weapons that grant
+      statuses, not statuses that grant actions. Built: an eighth bar slot, `granted` (Space),
+      and a slot kind of the same name. The `fury` status fills the slot with `fury-dash` while
+      it lasts. When it ends, the slot takes the ability of another active status that grants
+      one, or is empty; an invariant, `granted-slot-matches-status`, checks each tick that the
+      slot and the statuses agree. Outside Fury the slot is empty, so a cast is refused
+      as `empty-slot` and no new restriction is needed; the 1 s between dashes is the slot's
+      cooldown, which ends when the slot changes. Better: the dash is an ordinary ability (cost,
+      cooldown, checks, bots) and not special Fury code; the next ability a status grants is
+      content only.
+      (3) **A `buff` step has no area yet (an interim, for your information; no sign-off
+      needed).** 05 §3 lists `shape` for `buff`. Built: a buff goes on the caster only. This is
+      not better than the design: Imbue's Support variety buffs allies within 6 m
+      (`balancing.md`), so the ally shape joins with Imbue in the Magus PR (DEC-196). Every buff
+      built before then is on self.
+      (4) **A new targeting kind, `heading`.** Built: `fury-dash` aims itself, one metre the way
+      the Legend moves, or the way it faces when it stands still (DEC-270); the pointer is
+      ignored. Each targeting kind (`self`, `directional`, `heading`) is now a strategy in
+      `abilities/targeting/`, which the registry binds to each ability, so no code branches on
+      the kind (architecture rule 12). Better: the rule is in one place in core, so bots and
+      players dash alike, and the next targeting kind is one class plus one registry line.
+      (5) **The granted ability is in the state hash (for your information; no sign-off
+      needed).** Built: `StateHasher` hashes the ability a slot holds when it differs from the
+      one the slot was built with, as architecture 03 §9 asks. This follows the design.
+      (6) **The `abilities/` folder holds targeting strategies too.** `packages/core/AGENTS.md`
+      describes `abilities/` as "effect, restriction and shape strategies"; the new
+      `abilities/targeting/` folder needs "targeting" added to that row. A change to an AGENTS
+      row needs your sign-off (DEC-263 (4)); the row is not changed yet.
+      Approve all, approve some, or say no; a "no" reworks the code.
+  - Answered 2026-11-20 (DEC-283): "Approve all four, with the AGENTS row". (1), (2) and (4) are
+    built on `feat/vanguard-kit`; (6): the `abilities/` row of `packages/core/AGENTS.md` names
+    targeting strategies.
+- [x] **HC-Q61 — Three Fury questions the documents do not answer (`feat/vanguard-kit`,
+      2026-11-16; DEC-270, DEC-271).** Each is built one way now, so nothing waits on the answer.
+      (1) **How long does Fury's dash take?** Built: 0.3 s (`content/abilities/furyDash.ts`,
+      `TUNE`), Blade Runner's time. Fury's row in `balancing.md` gives no time, and the game doc
+      says "Press [button] to dash instantly in any direction". Keep 0.3 s, make it instant (one
+      tick), or another time?
+      (2) **Does Fury's damage × 1.5 also raise ability damage?** Built: yes. Fury raises the
+      Legend's `damageDealt`, which scales all its damage, abilities included; the knock-back
+      comes with basic attacks only. The game doc says "Attacks do Nx damage during Fury and apply
+      knock-back". Keep (all damage), or basic attacks only?
+      (3) **Should the HUD show that Space dashes during Fury?** Built: no. The HUD has no slot
+      for the dash (as for the default action); the controls screen lists Space as "Fury dash".
+      Add a prompt while Fury lasts, or leave it?
+  - Answered 2026-11-20 (DEC-283): (1) "Keep 0.3 s (built)" with a note, settled on the notes page
+    as "0.3 s wind-up, then the dash as built", built "Now, in PR 2a, before the freeze": the
+    Legend stands still 0.3 s while orange rings close in, then dashes 3 m in 0.3 s. (2) "All
+    damage (built)". (3) "Add a prompt while Fury lasts": the HUD shows the bound key and the
+    granted ability's name while the `granted` slot holds one.
+- [x] **HC-Q62 — How does the client know a cast needs no pointer? (`feat/vanguard-kit`,
+      2026-11-16; critic rounds 1 and 2).** (1) Built (B1): the client decides by the slot. A
+      press of Space (the `granted` slot) casts at once in both cast modes with the latest pointer
+      point, which core ignores (`fury-dash` aims by the Legend's heading). Before the pointer has
+      had any world point (the match just started, the pointer never on the canvas), Space queues
+      nothing. Option B2, not built: add the targeting kind to `AbilityDisplay` (a public API
+      change), so the client decides "needs a pointer" by kind; a future granted ability that
+      does need a pointer, or a kit ability that does not (a `self` cast), would then behave
+      correctly with no client change. Option B3, not built, **recommended** (round 2): each
+      ability's targeting states `usesAim` (false for the heading-aimed dash), published per slot
+      in `AbilityDisplay` (also a public API change). The client casts at once when the ability
+      does not use the aim, with no slot or kind check, and needs no pointer point. B3 gives the
+      client only the one fact it needs, where B2 gives it the whole kind. What `usesAim` decides
+      depends on your answer to (2). Keep B1, or build B2 or B3 in this PR?
+      (2) **In aim-then-click, does Space show the dash's range overlay first?** Built: no. Space
+      dashes at once in both modes (DEC-270: "Space; the direction comes from WASD"). DEC-209 (3)
+      says aim-then-click "still shows the range overlay on self-targeted abilities", and the
+      reviewer reads that as covering the dash too. If yes, the dash waits for a click in
+      aim-then-click, and `usesAim` (B3) only decides what quick cast does with no pointer point.
+      Dash at once in both modes (built), or overlay first in aim-then-click?
+  - Answered 2026-11-20 (DEC-283): (1) "Publish usesAim per slot" (B3): each targeting strategy
+    states `usesAim`, published per slot in `AbilityDisplay`; the client casts at once when it is
+    false. (2) "Dash at once in both modes (built)".
 - [ ] **HC-Q54 — Derive each class's ability pool from the abilities' `classId`?
       (`feat/ability-framework`; changes DEC-198's shape, not built).** Today `abilityPool` on
       the class lists every ability, and each ability also names its `classId`: two sources, and
@@ -230,6 +347,12 @@ Reply inline (`Decision: …`).
       need the controller's state); (C) leave it, and accept false errors after pushes. Doc 18 is
       SamarjitBhogal's. A, B or C? A or B is a follow-up PR (this track takes no new work before
       the freeze).
+  - Note 2026-11-19 (`feat/vanguard-kit`, merge critic on the framework merge, finding S2;
+    reasoning, not reproduced): Fury makes this gap part of normal play. Its knock-back
+    (`content/status-effects/fury.ts`, 1 m at base mass) lands on every basic hit, three hits a
+    second for 8 s: 1 m on a light guard, 0.32 m on the capture point boss (mass 3.125), whose
+    margin is about 0.06 m. A Vanguard hitting a guard from its home side can push it past its
+    leash plus tolerance. With Fury, option C means errors in ordinary matches, not rare ones.
   - Answered 2026-11-20 (DEC-284): (A) "The post keeps the extra distance". Not built; a
     follow-up PR after the freeze.
 - [x] **HC-Q64 — Should an ability area hit a structure by its outline, as a basic attack does?
@@ -253,6 +376,76 @@ Reply inline (`Decision: …`).
   - Answered 2026-11-20 (DEC-284): (A) "Outline; one cast may damage both". Not built; a
     follow-up PR after the freeze, which can also make `isInReach` and `doesDiscReachPolygon` one
     function.
+- [x] **HC-Q65 — What does killing the capture point boss give the killer's ultimate meter?
+      (`feat/vanguard-kit`, 2026-11-19; merge critic on the framework merge, finding S1).** The
+      merge brought the capture point boss (#99) to the meter. Built: damage to it pays 1 point
+      for each 1% of its health (DEC-272 "Boss damage (1 for each 1%) comes with the bosses";
+      balancing.md's boss table names the MiniBoss and the Greater Boss), so one Legend that
+      deals all of its health fills a full meter. Its kill also pays 1 point, because it is a
+      heavy mob and DEC-273 pays a mob kill by weight class. No document prices a boss kill.
+      Options: (A) keep the 1 point (built); (B) a boss kill pays nothing, and the boss pays by
+      damage only, as a structure does; (C) a boss kill pays its own number (say it). A, B or C?
+      B or C is one content line and a test.
+  - Answered 2026-11-20 (DEC-283): "Keep 1 point (built)" with the note "killing a boss fills your
+    ultimate meter", settled on the notes page as "Yes: the last hit fills the killer's meter".
+    Built on `feat/vanguard-kit`: `UltimateChargeDefinition.bossKill` (the capture point boss
+    100, `TUNE`), cause `boss-kill`; a heavy lane minion still pays its weight class.
+- [x] **HC-B12 — Better than the design, for sign-off: one "is a boss" marker
+      (`feat/vanguard-kit`, 2026-11-19; merge critic on the framework merge, idea BTD1; not
+      built).** Four lists now name the bosses by mob id: `XP_SOURCES.teamKills` (team-wide XP,
+      DEC-237), `BOSS_MINION_DAMAGE_TAKEN` (`content/mobs/minionModifiers.ts`),
+      `ZONE_LOCKING_MOBS` (`content/zones/zoneLocks.ts`) and the meter's `bossDamagePerPercent`
+      (HC-Q65). A new boss must be added to each, and nothing checks that it is. Better: one boss
+      record on the mob's definition (its team XP, minion damage share, zone lock and meter rate),
+      or the planned `MiniBoss` and `GreaterBoss` classes (Phase 3 sprint 3.6), which all four
+      read. It changes #99's content and the base branch, so it is a follow-up PR, not this one.
+      Approve for a follow-up, or keep the lists?
+  - Answered 2026-11-20 (DEC-283): "Approve, as a follow-up PR". Not built; one boss record that
+    all four lists read, in a follow-up PR.
+  - Note 2026-11-20 (PR 2a critic round 4): the meter's `bossKill` (DEC-283 (1)) is a fifth list
+    by mob id; the follow-up reads it too. Scheduled with the `Boss` item of Phase 3 sprint 3.6.
+- [ ] **HC-Q66 — Fury's dash wind-up: five readings your answer did not settle
+      (`feat/vanguard-kit`, 2026-11-20; DEC-283 (5)).** Built one way and tested; nothing waits on
+      the answer. You picked "The Legend stands still 0.3 s while the rings close in, then dashes
+      the 3 m in 0.3 s." Built: (1) the dash's way is fixed when Space is pressed (WASD after the
+      press does not steer it); (2) "stands still" stops walking only: the Vanguard can still
+      attack and cast during the wind-up, and a push (a knock-back) still moves it, so the dash
+      starts from where it then stands; (3) Fury ending during the wind-up does not cancel the
+      dash; (4) a stun during the wind-up does not cancel it either (no ability can be interrupted
+      yet); (5) the 1 s between dashes counts from the press, not from the end of the dash. A death
+      or a Duel round reset drops the waiting dash. Keep all five, or name the ones to change?
+- [ ] **HC-B14 — Better than the design, built under your standing rule (DEC-223), sign-off
+      asked: six parts of the Fury wind-up build (`feat/vanguard-kit`, 2026-11-20; critic round 4
+      on PR 2a, S4 and S1; its re-check, R1 and R2).** Nothing waits on the answer; each part is
+      built and tested.
+      (a) **The wind-up is a status plus a delayed step, not `castTicks`.** 05 §2 plans `castTicks`
+      ("wind-up before the first step"). Fury's dash instead puts a `fury-windup` status
+      (`cannot-move`) on the Legend with a `buff` step and delays the `dash` step by the same
+      0.3 s (one number, `FURY_WINDUP_SECONDS` in `content/abilities/furyDash.ts`). Stand-still
+      reuses `cannot-move`, and the status is already hashed and snapshotted. Once `castTicks` is
+      built there are two ways to wind up: keep `castTicks` in §2, or drop it for this pattern?
+      (b) **A waiting cast is plain data.** 05 §4 and §7 keep a live `CastInstance`; the build keeps
+      `CastInProgress` (ability id, slot, aim, origin, caster level, cast tick, next step) on the
+      caster's `Abilities`, so it is hashed and leaves the match with the caster, and state holds
+      no strategies. `AbilitySystem` builds a `CastInstance` only on a tick a step is due.
+      (c) **Delays may not decrease along an ability's step list** (a load rule), so list order is
+      time order and one index (`nextStep`) is the whole wait state.
+      (d) **`EntitySnapshot.statuses` in place of 03 §5's `statusIds`:** each active status's id,
+      `ticksActive` and `ticksLeft` (`null` for an entity without `StatusEffects`, DEC-17), because
+      the closing rings need the time. 03 §5 now shows it.
+      (e) **`DisplayContent.statuses`** (each status's id and display name) is published by
+      `loadDisplayContent()`, and the client refuses at boot a status it draws that core does not
+      have (ADR 0023: a missed rename fails the checks). A public API addition; HC-Q51's texts can
+      use the names.
+      (f) **A status-cue registry in the client.** 08 §8 had `EntityLayer` draw `WindupRingsView`
+      itself. The build adds `StatusCueRegistry` (status id → `StatusCueView`, filled in
+      `game/views/defaultStatusCueRegistry.ts`): `EntityLayer` draws, for each status an entity
+      has, the cue registered for it, and `main.tsx` passes the registry's `statusIds` to the boot
+      check of (e), so `game/content/` imports no view (02 §3). The next cue is one view and one
+      line. 02 §9 and 08 §8 now name it; they revert with the code if you reject (f).
+      Also noted, acceptable: only an ability's top-level steps may wait (05 §3 says every spec
+      may); no content needs nested delays, and the `Delayed<Step>` type refuses them.
+      Keep all six, or name the ones to change?
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
@@ -477,8 +670,8 @@ Reply inline (`Decision: …`).
       `loadDisplayContent(tickRate)` takes a rate that no description reads. Proposal: one
       `loadAbilityContent(tickRate)` gives `{ abilities, knockback }` and the factory only
       composes. The built design is correct; this is a tidy.
-      (5) **One step-time module** (merge critic of `feat/vanguard-kit` after this branch's
-      `7a952b48`, 2026-11-20). The code is on `feat/vanguard-kit` (PR #136), not on this branch:
+      (5) **One step-time module** (merge critic of `feat/vanguard-kit` after #123's `7a952b48`,
+      2026-11-20). The code came with `feat/vanguard-kit` (PR #136), not with PR #123:
       `content/abilities/loadStatusEffects.ts` imports `timeProblems` and `stepInTicks` from
       `loadAbilities.ts`, so `loadAbilities.ts` is a step-time library for two loaders. Proposal:
       move `timeProblems`, `stepInTicks`, `inTicks`, `ticksOf` and `isNonNegative` into one module

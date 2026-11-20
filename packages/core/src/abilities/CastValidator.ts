@@ -3,7 +3,6 @@ import type { Aim } from '../components/AbilitySlotRuntime.types';
 import { Aether } from '../components/Aether';
 import { Health } from '../components/Health';
 import { StatusEffects } from '../components/StatusEffects';
-import { Transform } from '../components/Transform';
 import type {
   AbilityRejectReason,
   AbilitySlot,
@@ -23,8 +22,9 @@ import type { CastRejectReason } from './CastValidator.types';
  * slot holds an ability, the ability is built (`unavailable`), no other cast of the caster waits
  * (`casting`), the match does not hold units idle and no status forbids casting (`cannot-cast`:
  * the countdown is a freeze, DEC-88), the cooldown is over, an ultimate's meter is full
- * (`not-charged`), the aether covers the price, a directional cast has a direction (`no-target`),
- * then each restriction in content order. `slotBlockedBy` runs the same checks without the aim's.
+ * (`not-charged`), the aether covers the price, the aim suits the ability's targeting (its
+ * `CastTargeting` strategy: a directional cast needs a direction, `no-target`), then each
+ * restriction in content order. `slotBlockedBy` runs the same checks without the aim's.
  * A refused cast spends nothing and starts no cooldown.
  */
 export class CastValidator implements SlotReadiness {
@@ -107,12 +107,13 @@ export class CastValidator implements SlotReadiness {
     if (caster.findComponent(Aether)?.canAfford(this.price(state, actorId, ability)) !== true) {
       return 'not-enough-aether';
     }
-    if (
-      aim !== null &&
-      definition.targeting?.kind === 'directional' &&
-      !CastValidator.hasDirection(caster.findComponent(Transform), aim)
-    ) {
-      return 'no-target';
+    const { targeting } = ability;
+    const aimReason =
+      aim === null || targeting === null
+        ? null
+        : targeting.strategy.aimBlockedBy(targeting.spec, aim, actorId, state);
+    if (aimReason !== null) {
+      return aimReason;
     }
     for (const { rule, spec } of ability.restrictions) {
       const reason = rule.check(spec, actorId, state);
@@ -128,15 +129,5 @@ export class CastValidator implements SlotReadiness {
     const multiplier =
       state.entities.get(actorId)?.findComponent(StatusEffects)?.multiplier('aetherCost') ?? 1;
     return ability.definition.aetherCost * multiplier;
-  }
-
-  /** Whether the aim point lies a finite, non-zero distance from the caster. */
-  private static hasDirection(transform: Transform | undefined, { point }: Aim): boolean {
-    if (transform === undefined) {
-      return false;
-    }
-    const dx = point.x - transform.position.x;
-    const dy = point.y - transform.position.y;
-    return Number.isFinite(dx) && Number.isFinite(dy) && (dx !== 0 || dy !== 0);
   }
 }

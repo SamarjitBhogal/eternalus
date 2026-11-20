@@ -8,6 +8,7 @@ import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../../config/matchPhases';
 import { loadDefaultContent } from '../../content/loadDefaultContent';
 import { SCORING } from '../../content/match/scoring';
 import { loadLevelCurves } from '../../content/progression/loadLevelCurves';
+import { ULTIMATE_CHARGE } from '../../content/progression/ultimateCharge';
 import { XP_SOURCES } from '../../content/progression/xpSources';
 import { loadWeapons } from '../../content/weapons/loadWeapons';
 import { DefaultInvariantRunner } from '../../diagnostics/DefaultInvariantRunner';
@@ -55,7 +56,12 @@ const playOut = (prepare: (state: GameState) => void = () => undefined) => {
       terminalPhases: TERMINAL_MATCH_PHASES,
     }),
     state,
-    progression: { units: UNITS, curves: CURVES, xpSources: XP_SOURCES },
+    progression: {
+      units: UNITS,
+      curves: CURVES,
+      xpSources: XP_SOURCES,
+      ultimateCharge: ULTIMATE_CHARGE,
+    },
     director,
   });
   director.start(state);

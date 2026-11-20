@@ -1,0 +1,19 @@
+/*
+ * The granted-ability prompt (no Figma node): the key glyph (25 x 25) and the ability's name in a
+ * row, stacked above the ability bar in its region.
+ */
+.prompt {
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--hud-u));
+  margin-bottom: calc(8 * var(--hud-u));
+  white-space: nowrap;
+}
+
+.name {
+  color: var(--hud-text);
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(calc(20 * var(--hud-u)), var(--text-min));
+  line-height: 1.2;
+}

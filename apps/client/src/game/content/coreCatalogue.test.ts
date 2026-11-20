@@ -184,9 +184,21 @@ describe('coreCatalogue', () => {
     const catalogue = createCoreCatalogue({
       tickRate: createDefaultGameConfig().tickRate,
       knownAssetIds: new Set(),
+      drawnStatusIds: [],
       overrides: NO_DISPLAY_OVERRIDES,
     });
 
     expect(() => catalogue.load()).toThrow('is not in the asset manifest');
+  });
+
+  it('checks the drawn statuses the composition root gives it against core', () => {
+    const catalogue = createCoreCatalogue({
+      tickRate: createDefaultGameConfig().tickRate,
+      knownAssetIds: new Set(ASSET_MANIFEST.assets.map((entry) => entry.id)),
+      drawnStatusIds: ['no-such-status'],
+      overrides: NO_DISPLAY_OVERRIDES,
+    });
+
+    expect(() => catalogue.load()).toThrow('status "no-such-status" is not in the core');
   });
 });

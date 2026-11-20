@@ -48,6 +48,7 @@ describe('PlayerSnapshotter', () => {
       'gadget-1',
       'gadget-2',
       'default-action',
+      'granted',
     ]);
   });
 
@@ -120,12 +121,19 @@ describe('PlayerSnapshotter', () => {
     });
   });
 
-  it('reports the ultimate as not charged and sends no meter yet', () => {
-    expect(setUp().slot('ability-4')).toMatchObject({
-      charge: null,
+  it('reports the ultimate meter on the ultimate slot only: not charged while it is not full', () => {
+    const { caster, slot } = setUp();
+    expect(slot('ability-4')).toMatchObject({
+      charge: 0,
       isReady: false,
       blockedBy: 'not-charged',
     });
+
+    const meter = caster.getComponent(Abilities).slot('ability-4');
+    if (meter !== undefined) meter.charge = 0.6;
+
+    expect(slot('ability-4')).toMatchObject({ charge: 0.6, blockedBy: 'not-charged' });
+    expect(slot('ability-1')?.charge).toBeNull();
   });
 
   it('is null for an entity with no ability bar', () => {
@@ -158,6 +166,6 @@ describe('GameState.snapshot player', () => {
     const { player } = state.snapshot(CURVES, READINESS);
 
     expect(player?.entityId).toBe(caster.id);
-    expect(player?.slots).toHaveLength(7);
+    expect(player?.slots).toHaveLength(8);
   });
 });

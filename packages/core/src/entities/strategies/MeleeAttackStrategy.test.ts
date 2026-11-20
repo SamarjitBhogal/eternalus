@@ -21,27 +21,36 @@ const WEAPONS = loadWeapons(30, [
 ]);
 const WARRIOR = loadDefaultContent(30).get('warrior');
 
-/** Hits `entity-2` once with a Warrior spawned from `definition`; returns the damage calls. */
-const hitWith = (definition: typeof WARRIOR): [string, number, DamageSource][] => {
+/**
+ * Hits `entity-2` once with a Warrior spawned from `definition`; returns the damage calls and the
+ * hit-effect calls, in the order they came.
+ */
+const hitWith = (definition: typeof WARRIOR): (string | number | DamageSource)[][] => {
   const state = new GameState(createDefaultGameConfig(), 1);
-  const calls: [string, number, DamageSource][] = [];
+  const calls: (string | number | DamageSource)[][] = [];
   const damage = {
     apply: (_: GameState, targetId: string, amount: number, source: DamageSource) =>
       calls.push([targetId, amount, source]),
   };
+  const hits = {
+    afterHit: (_: GameState, attackerId: string, targetId: string) => {
+      calls.push(['after-hit', attackerId, targetId]);
+    },
+  };
   const attacker = new Warrior('entity-1', definition.id);
   attacker.spawn({ definition, position: { x: 0, y: 0 }, team: 'light', weapons: WEAPONS });
 
-  new MeleeAttackStrategy().attack(attacker, 'entity-2', ATTACK, { state, damage });
+  new MeleeAttackStrategy().attack(attacker, 'entity-2', ATTACK, { state, damage, hits });
   return calls;
 };
 
 describe('MeleeAttackStrategy', () => {
-  it('deals the weapon damage at once, naming the attacker and its weapon as the source', () => {
+  it('deals the weapon damage at once, naming the attacker and its weapon, then runs the hit effects (05 §10)', () => {
     const armed = { ...WARRIOR, defaultLoadout: { primaryWeaponId: 'test-talons' } };
 
     expect(hitWith(armed)).toEqual([
       ['entity-2', 40, { attackerId: 'entity-1', kind: 'weapon', definitionId: 'test-talons' }],
+      ['after-hit', 'entity-1', 'entity-2'],
     ]);
   });
 });
