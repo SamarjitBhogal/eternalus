@@ -31,18 +31,18 @@ export class CastInstance {
    * Fires the steps from `from` on that are due by `state.tick`, in list order, and stops at the
    * first one that is not: the steps' delays never decrease along the list (`loadAbilities`).
    *
-   * @param placement - Where the steps' shapes sit: on the caster's position at the cast unless
-   *   given. `AbilitySystem` places a later step on the caster where it is then; `HitEffects`
-   *   places the steps from the attacker to the struck body.
+   * @param placement - Where the steps' shapes sit. `AbilitySystem` places each step on the caster
+   *   where it is on the tick the step fires (05 §18); `HitEffects` places the steps from the
+   *   attacker to the struck body.
    * @param from - The index of the first step not fired yet (0 at the cast).
    * @returns The index of the first step still waiting; the step count once every step fired.
    */
-  public run(placement?: ShapePlacement, from = 0): number {
-    const { origin, ability, tick } = this.facts;
+  public run(placement: ShapePlacement, from = 0): number {
+    const { ability, tick } = this.facts;
     const { steps } = ability;
     const now = this.services.state.tick;
     let next = from;
-    const context = this.contextAt(placement ?? { from: origin, to: origin });
+    const context = this.contextAt(placement);
     for (let step = steps[next]; step !== undefined && CastInstance.isDue(tick, step, now);) {
       step.effect.apply(step.spec, context);
       next += 1;

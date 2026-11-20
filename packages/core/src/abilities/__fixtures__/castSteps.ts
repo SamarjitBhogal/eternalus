@@ -69,5 +69,5 @@ export const castSteps = (
       damage,
       statuses: new StatusEffectApplier(loadStatusEffects(state.config.tickRate, 2)),
     },
-  ).run();
+  ).run({ from: origin, to: origin });
 };

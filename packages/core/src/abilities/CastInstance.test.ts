@@ -14,6 +14,8 @@ import { TargetQuery } from './TargetQuery';
 
 const DISC = { kind: 'circle', radius: 3 } as const;
 const END = { from: { x: 6, y: 0 }, to: { x: 6, y: 0 } };
+/** Placed on the caster at the cast (its `origin`), as `AbilitySystem` places a new cast. */
+const AT_ORIGIN = { from: { x: 0, y: 0 }, to: { x: 0, y: 0 } };
 const STATUSES = loadStatusEffects(30, 2);
 
 /**
@@ -114,7 +116,7 @@ describe('CastInstance', () => {
         damage: new DamagePipeline(),
         statuses: new StatusEffectApplier(loadStatusEffects(30, 2)),
       },
-    ).run();
+    ).run(AT_ORIGIN);
 
     const [nested] = strike.log;
     expect(nested?.cast).toMatchObject({
@@ -149,7 +151,7 @@ describe('CastInstance', () => {
         damage: new DamagePipeline(),
         statuses: new StatusEffectApplier(loadStatusEffects(30, 2)),
       },
-    ).run();
+    ).run(AT_ORIGIN);
 
     expect(strike.log[0]?.cast.direction).toEqual({ x: 0, y: 0 });
   });
@@ -164,15 +166,15 @@ describe('CastInstance', () => {
   it('fires only the steps due by now, in list order, and returns the first one still waiting', () => {
     const { cast, at, fired } = timeline();
 
-    const atCast = cast.run();
+    const atCast = cast.run(AT_ORIGIN);
     at(1);
-    const tickOne = cast.run(undefined, atCast);
+    const tickOne = cast.run(AT_ORIGIN, atCast);
     at(2);
-    const tickTwo = cast.run(undefined, tickOne);
+    const tickTwo = cast.run(AT_ORIGIN, tickOne);
     at(4);
-    const tickFour = cast.run(undefined, tickTwo);
+    const tickFour = cast.run(AT_ORIGIN, tickTwo);
     at(5);
-    const tickFive = cast.run(undefined, tickFour);
+    const tickFive = cast.run(AT_ORIGIN, tickFour);
 
     expect([atCast, tickOne, tickTwo, tickFour, tickFive]).toEqual([1, 1, 3, 3, 4]);
     expect(fired()).toEqual(['fake-strike', 'fake-blast', 'fake-strike', 'fake-blast']);
@@ -182,7 +184,7 @@ describe('CastInstance', () => {
     const { cast, log, at } = timeline();
     const later = { from: { x: 3, y: 3 }, to: { x: 3, y: 3 } };
 
-    cast.run();
+    cast.run(AT_ORIGIN);
     at(2);
     cast.run(later, 1);
 

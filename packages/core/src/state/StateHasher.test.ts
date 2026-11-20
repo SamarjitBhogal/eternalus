@@ -198,8 +198,10 @@ describe('StateHasher', () => {
       hashWith(),
       hashWith({ abilityId: 'blade-runner' }),
       hashWith({ slot: 'ability-1' }),
+      hashWith({ aim: { point: { x: 5, y: 4 }, targetId: null } }),
       hashWith({ aim: { point: { x: 4, y: 5 }, targetId: null } }),
       hashWith({ aim: { point: { x: 4, y: 4 }, targetId: 'entity-9' } }),
+      hashWith({ origin: { x: 2, y: 4 } }),
       hashWith({ origin: { x: 3, y: 5 } }),
       hashWith({ casterLevel: 3 }),
       hashWith({ tick: 6 }),
@@ -207,7 +209,7 @@ describe('StateHasher', () => {
     ];
     bar.endCasts();
 
-    expect(new Set([before, ...hashes]).size).toBe(10);
+    expect(new Set([before, ...hashes]).size).toBe(12);
     // With none left, the bar hashes as one that never waited: the golden replays stay valid.
     expect(hasher.hash(state)).toBe(before);
   });

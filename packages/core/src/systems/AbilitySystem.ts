@@ -114,7 +114,8 @@ export class AbilitySystem implements System {
   /** Fires the due steps of each cast `caster` has in progress; drops them all once it died. */
   private advance(state: GameState, caster: Entity): void {
     const casts = caster.getComponent(Abilities).endCasts();
-    // One check per caster: no step can kill its own caster in this pass.
+    // One check per caster: a step never hurts its own caster (effects query enemies only and
+    // `FriendlyFireStep` zeroes a hit on the attacker's own team).
     if (caster.findComponent(Health)?.isDead === true) {
       return;
     }
