@@ -17,6 +17,7 @@ const TABLE: UltimateChargeDefinition = {
   mobKill: { 'light-mob': 1, 'medium-mob': 2, 'heavy-mob': 3 },
   structureDamagePerPercent: 0.5,
   bossDamagePerPercent: { 'capture-point-boss': 2 },
+  bossKill: { 'capture-point-boss': 100 },
   checkpointReached: 5,
   deathLoss: 15,
 };
@@ -186,6 +187,26 @@ describe('UltimateCharge', () => {
 
     expect(chargeOf(legend)).toBeCloseTo(0.06);
     expect(announced().map(({ cause }) => cause)).toEqual(['boss-damage']);
+  });
+
+  it("fills the boss killer's meter, whoever dealt the damage (DEC-283)", () => {
+    const { legend, spawn, chargeOf, kill, announced, pay } = setUp();
+
+    kill(legend, spawn('heavy-mob', 'capture-point-boss', 'neutral'));
+    pay();
+
+    expect(chargeOf(legend)).toBe(1);
+    expect(announced().map(({ cause }) => cause)).toEqual(['boss-kill']);
+  });
+
+  it("pays a heavy lane minion's kill its weight class only, never a full meter", () => {
+    const { legend, spawn, chargeOf, kill, announced, pay } = setUp();
+
+    kill(legend, spawn('heavy-mob', 'heavy-minion', 'dark'));
+    pay();
+
+    expect(chargeOf(legend)).toBeCloseTo(0.03);
+    expect(announced().map(({ cause }) => cause)).toEqual(['mob-kill']);
   });
 
   it('pays each Legend present at a reached checkpoint, and each assist', () => {

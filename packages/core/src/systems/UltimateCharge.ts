@@ -17,8 +17,9 @@ import type { ChargeChange } from './UltimateCharge.types';
  * passively: every change comes from one of these events and is announced as `ultimate-charged`.
  *
  * - `entity-died`: the victim loses `deathLoss`, whoever killed it. A killer on another team than
- *   the victim gains `legendKill` for a Legend and its weight class's `mobKill` for a mob (O5:
- *   self-kills and ally kills pay nothing; neutral camp mobs pay).
+ *   the victim gains `legendKill` for a Legend, `bossKill` for a boss listed there (DEC-283: the
+ *   last hit fills the meter) and its weight class's `mobKill` for any other mob (O5: self-kills
+ *   and ally kills pay nothing; neutral camp mobs pay).
  * - `damage-applied`: an attacker on another team than a structure gains `structureDamagePerPercent`
  *   for each 1% of the structure's max health dealt, absorbed damage included (as scoring counts
  *   it, DEC-123); a boss in `bossDamagePerPercent` pays its own rate the same way.
@@ -92,8 +93,11 @@ export class UltimateCharge {
     if (killerId === null || state.entities.teamOf(killerId) === state.entities.teamOf(entityId)) {
       return;
     }
+    const bossKill = this.table.bossKill[victim.definitionId];
     if (victim.family === 'legend') {
       this.queue(state, killerId, this.table.legendKill, 'legend-kill');
+    } else if (bossKill !== undefined) {
+      this.queue(state, killerId, bossKill, 'boss-kill');
     } else if (MOB_KINDS.hasKind(victim.kind)) {
       this.queue(state, killerId, this.table.mobKill[victim.kind], 'mob-kill');
     }

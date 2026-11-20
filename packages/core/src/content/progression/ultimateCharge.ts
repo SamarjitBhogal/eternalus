@@ -15,6 +15,8 @@ export const ULTIMATE_CHARGE: UltimateChargeDefinition = {
   structureDamagePerPercent: 0.5, // TUNE: DEC-272 (1 point for each 2% of base health)
   // TUNE: DEC-272 and balancing.md "boss damage +1 per 1%"; the MiniBoss of the outer capture points
   bossDamagePerPercent: { 'capture-point-boss': 1 },
+  // TUNE: DEC-283 ("killing a boss fills your ultimate meter"): a full meter
+  bossKill: { 'capture-point-boss': 100 },
   checkpointReached: 5, // TUNE: DEC-273 (5% to each Legend present)
   deathLoss: 15, // TUNE: DEC-272
 };

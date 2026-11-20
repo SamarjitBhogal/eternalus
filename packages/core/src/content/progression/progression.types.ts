@@ -64,6 +64,11 @@ export type UltimateChargeDefinition = {
    * included), by mob definition id; a mob not listed pays no damage charge.
    */
   readonly bossDamagePerPercent: Readonly<Record<string, number>>;
+  /**
+   * For the last hit on a boss, by mob definition id, in place of its weight class's `mobKill`;
+   * a boss's kill fills the killer's meter (DEC-283), whoever dealt the damage.
+   */
+  readonly bossKill: Readonly<Record<string, number>>;
   /** For each Legend present when its team's push reaches a capture checkpoint (DEC-273). */
   readonly checkpointReached: number;
   /** Taken from the Legend's own meter at its death, whoever killed it; not below 0. */

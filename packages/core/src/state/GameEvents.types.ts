@@ -38,6 +38,7 @@ export type UltimateChargeCause =
   | 'mob-kill'
   | 'structure-damage'
   | 'boss-damage'
+  | 'boss-kill'
   | 'checkpoint'
   | 'death';
 
