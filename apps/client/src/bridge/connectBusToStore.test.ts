@@ -251,6 +251,7 @@ describe('connectBusToStore', () => {
         durationSeconds: null,
         versus: null,
         duel: null,
+        opponentGraceMs: null,
         duelHud: null,
       });
     }
@@ -265,6 +266,14 @@ describe('connectBusToStore', () => {
     expect(store.getState().match.duelHud).toEqual(duel);
     bus.emit('match-setup', null);
     expect(store.getState().match.duelHud).toBeNull();
+  });
+
+  it('copies the Duel opponent presence', () => {
+    const { bus, store } = connected();
+    bus.emit('duel-opponent-presence', { graceMs: 10_000 });
+    expect(store.getState().match.opponentGraceMs).toBe(10_000);
+    bus.emit('duel-opponent-presence', { graceMs: null });
+    expect(store.getState().match.opponentGraceMs).toBeNull();
   });
 
   it('copies the settings state', () => {

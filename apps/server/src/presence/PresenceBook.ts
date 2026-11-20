@@ -68,6 +68,12 @@ export class PresenceBook {
       // The one who left first, while the other was still in the Duel, takes the loss (DEC-250 (4)).
       this.drop(other);
       this.drop(guest);
+    } else {
+      rival?.send({
+        type: 'opponent-presence',
+        status: 'disconnected',
+        graceMs: this.options.reconnectWindowMs,
+      });
     }
   }
 
@@ -90,6 +96,7 @@ export class PresenceBook {
     const guest = this.byId.get(guestId);
     if (guest === undefined || guest.isConnected) return false;
     const previous = guest.connection;
+    const rival = this.options.host.rivalOf(previous);
     guest.cancelDrop?.();
     guest.cancelDrop = null;
     this.remove(own);
@@ -100,6 +107,7 @@ export class PresenceBook {
     connection.send({ type: 'welcome', guestId: guest.id });
     this.options.host.replace(previous, connection);
     this.options.queue.replace(previous, connection);
+    rival?.send({ type: 'opponent-presence', status: 'reconnected' });
     return this.stateOf(guest) !== 'online';
   }
 
