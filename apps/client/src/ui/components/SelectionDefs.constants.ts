@@ -217,6 +217,9 @@ export const TEXT_GLOW_FILTERS: readonly TextGlowDef[] = [
       textShadow(0, -6, 3.4, 0.15),
     ],
     flood: 'countdown',
+    // The match-start overlay (CD-49) uses it too but is not listed: its box is in HUD units, so
+    // no fixed box can be checked here. The region holds these shadows for any box at least
+    // 32.4 px a side ((6 px offset + 3σ) / 0.5); the overlay's shots (INBOX HC-C1) show it.
     users: [{ node: '62:135 / 58:281 countdown', width: 118, height: 83, bleed: 0 }],
   },
   {
@@ -231,6 +234,7 @@ export const TEXT_GLOW_FILTERS: readonly TextGlowDef[] = [
       textShadow(0, -6, 3.4, 0.3),
     ],
     flood: 'countdown',
+    // Not listed for the overlay, as above.
     users: [{ node: '62:135 / 58:281 countdown', width: 118, height: 83, bleed: 0 }],
   },
 ];
