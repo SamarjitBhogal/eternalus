@@ -264,6 +264,18 @@ Reply inline (`Decision: …`).
       replacing it, a remote client can pick its own address and defeat the per-address cap (the
       load bots do exactly this on purpose). Decide: take the LAST trusted hop, or verify what
       `tailscale serve` does with the header.
+- [ ] **Duel creation cost and the 400-bot failure (SCRUM-432, PR #103 review S3, 2026-11-20) —
+      owner.** (1) The queue-load runs (`multiplayer-and-scalability-plan.md` §7, "Implementation
+      status: matchmaking under load") started about 8 Duels per second in one process (500
+      matches in 62.6 s). A one-off timing gave about 135 ms (132 to 147 ms) of synchronous work
+      per `CoreDuelSimulationFactory.create()`, probably map generation; not confirmed, the
+      timing file was not kept. ADR 0016 point 2 keeps Duels on the main thread until a measured
+      metric breaks the scalability research's ladder. Decide: (A) move Duel creation to a worker,
+      (B) pre-build Duels before pairs need them, or (C) accept it for now and re-measure in MP-5.
+      (2) 400 bots failed (2 to 8 joins never answered, two runs). The cause is unconfirmed: maybe
+      the `MAX_CONNECTIONS = 500` cap. DEC-37 asks for "hundreds or thousands" of players. Approve
+      a follow-up that finds the cause: an `onClose` handler in the bots, or a refusal counter in
+      the server.
 
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on
