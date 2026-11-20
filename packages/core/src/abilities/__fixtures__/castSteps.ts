@@ -2,7 +2,7 @@ import { DamagePipeline } from '../../combat/DamagePipeline';
 import { StatusEffectApplier } from '../../combat/StatusEffectApplier';
 import { Transform } from '../../components/Transform';
 import type { AbilityEffectSpec } from '../../content/abilities/AbilityDefinition.types';
-import { KNOCKBACK } from '../../content/abilities/knockback';
+import { loadKnockback } from '../../content/abilities/loadKnockback';
 import { ContentCatalogue } from '../../content/ContentCatalogue';
 import { loadStatusEffects } from '../../content/status-effects/loadStatusEffects';
 import { STATUS_EFFECTS } from '../../content/status-effects/statusEffectCatalogue';
@@ -44,7 +44,7 @@ export const castSteps = (
     [
       new DamageEffect(),
       new DebuffEffect(STATUS_EFFECTS),
-      new KnockbackEffect(KNOCKBACK),
+      new KnockbackEffect(loadKnockback(state.config.tickRate)),
       new DashEffect(),
       new BuffEffect(STATUS_EFFECTS),
     ],

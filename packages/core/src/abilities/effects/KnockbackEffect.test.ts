@@ -2,17 +2,17 @@ import { describe, expect, it } from 'vitest';
 
 import { Movement } from '../../components/Movement';
 import { StatusEffects } from '../../components/StatusEffects';
-import { KNOCKBACK } from '../../content/abilities/knockback';
+import { loadKnockback } from '../../content/abilities/loadKnockback';
 import type { Entity } from '../../entities/Entity';
-import { TickRate } from '../../utils/TickRate';
 import { casterState } from '../__fixtures__/casterState';
 import { castSteps } from '../__fixtures__/castSteps';
 import { KnockbackEffect } from './KnockbackEffect';
 
 const AREA = { kind: 'circle', radius: 4 } as const;
 const PUSH = { kind: 'knockback', distance: 3, shape: AREA } as const;
-/** 0.25 s at 30 ticks per second, rounded: 8 ticks. */
-const TRAVEL_TICKS = new TickRate(30).toTicks(KNOCKBACK.travelSeconds);
+/** The shipped knock-back at 30 ticks per second: 0.25 s, rounded, is 8 ticks. */
+const TUNING = loadKnockback(30);
+const TRAVEL_TICKS = TUNING.travelTicks;
 
 const setUp = () => {
   const { state, factory, caster } = casterState();
@@ -44,12 +44,12 @@ const statusesOf = (entity: Entity) =>
 
 describe('KnockbackEffect', () => {
   it('has the kind it is registered under', () => {
-    expect(new KnockbackEffect(KNOCKBACK).kind).toBe('knockback');
+    expect(new KnockbackEffect(TUNING).kind).toBe('knockback');
   });
 
   it('pushes a base-mass target the full distance away from the centre, over the travel time', () => {
     const { state, caster, spawn } = setUp();
-    const warrior = spawn('warrior', 0, 2); // mass 1 = KNOCKBACK.baseMass
+    const warrior = spawn('warrior', 0, 2); // mass 1 = TUNING.baseMass
 
     castSteps(state, caster.id, [PUSH]);
 
@@ -122,7 +122,7 @@ describe('KnockbackEffect', () => {
   });
 
   it('checks its own fields: a positive distance', () => {
-    const knockback = new KnockbackEffect(KNOCKBACK);
+    const knockback = new KnockbackEffect(TUNING);
 
     expect(knockback.validate(PUSH)).toEqual([]);
     expect(knockback.validate({ ...PUSH, distance: 0 })).toEqual([
@@ -131,7 +131,7 @@ describe('KnockbackEffect', () => {
   });
 
   it('shows its area on the aim overlay', () => {
-    expect(new KnockbackEffect(KNOCKBACK).describe(PUSH)).toEqual([
+    expect(new KnockbackEffect(TUNING).describe(PUSH)).toEqual([
       { kind: 'knockback', shape: AREA },
     ]);
   });

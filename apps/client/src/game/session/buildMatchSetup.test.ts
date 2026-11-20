@@ -1,4 +1,8 @@
-import { type BotRosterDefinition, loadDisplayContent } from '@eternalus/core';
+import {
+  type BotRosterDefinition,
+  createDefaultGameConfig,
+  loadDisplayContent,
+} from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import { classCardFixture } from '../../bridge/__fixtures__/catalogueFixtures';
@@ -10,7 +14,7 @@ const card = (classId: string) => classCardFixture({ classId, displayName: class
 const CLASSES = [card('warrior'), card('sentinel'), card('magus')];
 const fixedRng = (value: number): Rng => ({ nextInt: () => value });
 /** The shipped roster: three of each class, grouped (DEC-61, DEC-102). */
-const SHIPPED_ROSTER = loadDisplayContent().botRoster;
+const SHIPPED_ROSTER = loadDisplayContent(createDefaultGameConfig().tickRate).botRoster;
 
 function build(
   rng: Rng = new LcgRng(1),

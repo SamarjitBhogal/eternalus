@@ -1,4 +1,4 @@
-import { KNOCKBACK } from '../content/abilities/knockback';
+import { loadKnockback } from '../content/abilities/loadKnockback';
 import { STATUS_EFFECTS } from '../content/status-effects/statusEffectCatalogue';
 import { AbilityRegistry } from './AbilityRegistry';
 import type { AbilitySource } from './AbilityRegistry.types';
@@ -22,18 +22,22 @@ import { SelfTargeting } from './targeting/SelfTargeting';
  * returns, so a missing strategy or a step its strategy refuses fails at boot.
  *
  * @param abilities - The loaded abilities (`loadAbilities`).
+ * @param tickRate - Ticks per second (`GameConfig.tickRate`), for the knock-back's travel time
+ *   (`loadKnockback`).
  * @param statuses - The statuses a debuff or a buff may name; the shipped ones by default.
- * @throws ContentValidationError listing every ability that names a kind with no line here or has
- *   a step or shape its strategy refuses.
+ * @throws ContentValidationError when the knock-back tuning is invalid (`loadKnockback`), or
+ *   listing every ability that names a kind with no line here or has a step or shape its strategy
+ *   refuses.
  */
 export const createDefaultAbilityRegistry = (
   abilities: AbilitySource,
+  tickRate: number,
   statuses: { has(id: string): boolean } = STATUS_EFFECTS,
 ): AbilityRegistry => {
   const registry = new AbilityRegistry(abilities);
   registry.registerEffect(new DamageEffect());
   registry.registerEffect(new DebuffEffect(statuses));
-  registry.registerEffect(new KnockbackEffect(KNOCKBACK));
+  registry.registerEffect(new KnockbackEffect(loadKnockback(tickRate)));
   registry.registerEffect(new DashEffect());
   registry.registerEffect(new BuffEffect(statuses));
   registry.registerShape(new CircleShape());

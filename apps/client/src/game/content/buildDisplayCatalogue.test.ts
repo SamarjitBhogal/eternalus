@@ -1,4 +1,4 @@
-import { loadDisplayContent } from '@eternalus/core';
+import { createDefaultGameConfig, loadDisplayContent } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import type { EffectsRenderer, LegendClassCard } from '../../bridge/catalogue.types';
@@ -9,7 +9,7 @@ import { CLASS_PRESENTATION } from './classPresentation';
 import { HUD_PRESENTATION } from './hudPresentation';
 import { CATALOGUE_PRESENTATION } from './screenPresentation';
 
-const CONTENT = loadDisplayContent();
+const CONTENT = loadDisplayContent(createDefaultGameConfig().tickRate);
 const KNOWN = new Set(ASSET_MANIFEST.assets.map((entry) => entry.id));
 const NONE: DisplayOverrides = { effectsRenderer: null };
 

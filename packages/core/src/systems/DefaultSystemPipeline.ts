@@ -75,7 +75,10 @@ export class DefaultSystemPipeline extends SystemPipeline {
     director,
     duelStarts,
     hordes,
-    abilities = createDefaultAbilityRegistry(loadAbilities(state.config.tickRate)),
+    abilities = createDefaultAbilityRegistry(
+      loadAbilities(state.config.tickRate),
+      state.config.tickRate,
+    ),
     validator = new CastValidator(abilities),
     structures = STRUCTURE_DEFINITIONS,
   }: DefaultSystemPipelineOptions) {

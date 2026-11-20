@@ -3,7 +3,6 @@ import type { KnockbackDefinition } from '../../content/abilities/knockback';
 import { Movement } from '../../components/Movement';
 import { Transform } from '../../components/Transform';
 import type { Vec2 } from '../../utils/geometry.types';
-import { TickRate } from '../../utils/TickRate';
 import { normalize } from '../../utils/vec2';
 import type { AbilityDisplayStep } from '../../content/loadDisplayContent';
 import type { AbilityEffect, CastContext } from '../AbilityEffect.types';
@@ -22,7 +21,7 @@ import { mustBePositive } from '../specChecks';
 export class KnockbackEffect implements AbilityEffect<KnockbackSpec> {
   public readonly kind = 'knockback';
 
-  /** @param tuning - Base mass, travel time and the follow-up statuses (`content/abilities/knockback.ts`). */
+  /** @param tuning - Base mass, travel ticks and the follow-up statuses (`loadKnockback`). */
   public constructor(private readonly tuning: KnockbackDefinition) {}
 
   /** A knock-back needs a positive distance. */
@@ -38,8 +37,7 @@ export class KnockbackEffect implements AbilityEffect<KnockbackSpec> {
   /** Pushes and staggers every enemy in the step's shape, in id order. */
   public apply(spec: KnockbackSpec, cast: CastContext): void {
     const { state } = cast;
-    const { baseMass, travelSeconds, staggerStatusId, knockupStatusId } = this.tuning;
-    const travelTicks = new TickRate(state.config.tickRate).toTicks(travelSeconds);
+    const { baseMass, travelTicks, staggerStatusId, knockupStatusId } = this.tuning;
     for (const targetId of cast.targets(spec.shape, { team: 'enemies' })) {
       const target = state.entities.get(targetId);
       const movement = target?.findComponent(Movement);

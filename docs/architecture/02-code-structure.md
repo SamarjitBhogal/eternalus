@@ -4,7 +4,7 @@ description: The planned folder tree of packages/core and apps/client with one l
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-14
+last-reviewed: 2026-11-20
 tags: [architecture, code-structure, conventions, registries]
 paths: ['packages/core/src/**', 'apps/client/src/**', 'eslint.config.js', 'knip.json']
 related:
@@ -339,10 +339,11 @@ text since 2026-10-28 (the owner approved them, `INBOX.md` HC-T1):
   `bridge/selectors/` folder and the new `assetsSlice` ([13](13-game-interface.md) §10).
 - **Game.** `game/content/` builds the display catalogue the UI reads from core's display content
   (`coreCatalogue.ts`, `buildDisplayCatalogue.ts` and the presentation files) in place of
-  `placeholderCatalogue.ts`. `main.tsx` calls `createCoreCatalogue` with the manifest's asset ids
-  and the developer overrides, so no `game/content/` module reads `data/`; the shipped catalogue for
-  tests is `game/content/__fixtures__/shippedCatalogue.ts`. `game/session/` gains
-  `selectionAssetGroups.ts`, `fillRosters.ts` (LOCK IN's roster fill, DEC-61) and
+  `placeholderCatalogue.ts`. `main.tsx` calls `createCoreCatalogue` with its config's tick rate,
+  the manifest's asset ids and the developer overrides, so no `game/content/` module reads
+  `data/`; the shipped catalogue for tests is `game/content/__fixtures__/shippedCatalogue.ts`.
+  `game/session/` gains `selectionAssetGroups.ts`, `fillRosters.ts` (LOCK IN's roster fill,
+  DEC-61) and
   `createRosterRng.ts` (its random stream, injected as `SessionControllerDeps.createRosterRng`) and
   loses `runPlaceholderLoad.ts`; new are `game/MatchBridge.ts`,
   `game/MatchHost.ts`, `game/createBrowserMatch.ts` and `game/prepareMatchWorld.ts`;
@@ -351,8 +352,9 @@ text since 2026-10-28 (the owner approved them, `INBOX.md` HC-T1):
   display data, the locked class cards (DEC-48), the team display names and the bot roster (DEC-61,
   DEC-102), each validated through the content rules, the map features' display names (DEC-49;
   ADR 0018) and the profile screen's display name; core also exports the types `LegendClassId`,
-  `BotRosterDefinition` and `EnemyRoverRule`. It takes optional catalogues, each defaulting to the
-  shipped one. The specs live in `packages/core/src/content/legends/specs/` (each says whether it
+  `BotRosterDefinition` and `EnemyRoverRule`. It takes the tick rate (`GameConfig.tickRate`, for
+  the ability strategies' own tuning) and optional catalogues, each defaulting to the shipped one.
+  The specs live in `packages/core/src/content/legends/specs/` (each says whether it
   can be picked, `isSelectable`, which gates LOCK IN; the client adds only art, accents and icons),
   the locked cards in `content/legends/locked/`, the team names in
   `content/teams/teamDisplayNames.ts`, the bot roster in `content/teams/botRoster.ts` (checked by
@@ -379,7 +381,7 @@ Ability framework (`feat/ability-framework`, 2026-11-13, updated 2026-11-14; ADR
   `restrictions/` and `shapes/`. The slot state is `components/Abilities.ts` and
   `components/AbilitySlotRuntime.ts`, not an `AbilityRuntime` in `abilities/`, because
   `components/` may not import `abilities/`. `content/abilities/` holds the ability files, the
-  catalogue, `loadAbilities.ts`, `aetherRegen.ts` and `knockback.ts`. Also new:
+  catalogue, `loadAbilities.ts`, `aetherRegen.ts`, `knockback.ts` and `loadKnockback.ts`. Also new:
   `commands/handlers/CastAbilityHandler.ts`, `systems/AbilitySystem.ts`,
   `systems/AetherRegenSystem.ts`, `state/SlotReadiness.types.ts`, `state/PlayerSnapshotter.ts`,
   `ai/pickReadySlot.ts` and the two invariants in `diagnostics/invariants/`. `abilities/` imports

@@ -51,8 +51,9 @@ export type SimulationOptions = {
   /** Where Legends find their weapons by id; `loadWeapons(config.tickRate)` when omitted. */
   readonly weapons?: WeaponSource;
   /**
-   * The abilities and their strategies; `createDefaultAbilityRegistry(loadAbilities(config.tickRate))`
-   * when omitted. Every kit id a Legend equips must resolve in it.
+   * The abilities and their strategies;
+   * `createDefaultAbilityRegistry(loadAbilities(config.tickRate), config.tickRate)` when omitted.
+   * Every kit id a Legend equips must resolve in it.
    */
   readonly abilities?: AbilityRegistry;
   /**

@@ -9,7 +9,7 @@ import { createDefaultAbilityRegistry } from './defaultAbilityRegistry';
 
 const STATUSES = loadStatusEffects(30, 2);
 const FURY = STATUSES.get('fury');
-const registry = createDefaultAbilityRegistry(loadAbilities(30));
+const registry = createDefaultAbilityRegistry(loadAbilities(30), 30);
 const KNOCKBACK_ON_HIT = { kind: 'knockback', distance: 1, shape: { kind: 'hit' } } as const;
 
 describe('checkStatusLinks', () => {

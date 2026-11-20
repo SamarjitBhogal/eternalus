@@ -133,7 +133,10 @@ describe('the ability framework litmus (architecture 05 §16, Phase 4.2 metric)'
   it('shows the new ability in the display content with its overlay row, with no other change', () => {
     // The unchanged display loader, its steps described as core's `loadShippedDisplayContent`
     // describes them (the shipped strategies) plus the one registry line for Fake Bolt.
-    const strategies = createDefaultAbilityRegistry(new ContentCatalogue<ComposableAbility>([]));
+    const strategies = createDefaultAbilityRegistry(
+      new ContentCatalogue<ComposableAbility>([]),
+      30,
+    );
     strategies.registerEffect(new FakeBoltEffect());
     const display = loadDisplayContent((effects) => strategies.describe(effects), {
       abilities: new ContentCatalogue([...ABILITIES.all(), FAKE_BOLT]),

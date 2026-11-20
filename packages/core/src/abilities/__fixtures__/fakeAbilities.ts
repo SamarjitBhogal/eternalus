@@ -1,6 +1,6 @@
-import { KNOCKBACK } from '../../content/abilities/knockback';
 import { ContentCatalogue } from '../../content/ContentCatalogue';
 import { loadAbilities } from '../../content/abilities/loadAbilities';
+import { loadKnockback } from '../../content/abilities/loadKnockback';
 import type { AbilityEffect } from '../AbilityEffect.types';
 import { AbilityRegistry } from '../AbilityRegistry';
 import { KnockbackEffect } from '../effects/KnockbackEffect';
@@ -19,9 +19,12 @@ export const SHIPPED_EFFECT_KINDS = ['damage', 'knockback', 'debuff', 'dash', 'b
 /**
  * The effects the shipped statuses' `onHit` steps name (Fury's knock-back): a match checks them
  * against its registry at boot (`checkStatusLinks`), so a test registry a `Simulation` boots on
- * needs them beside its own.
+ * needs them beside its own. The knock-back is loaded at 30 ticks per second, the default config's
+ * rate.
  */
-export const statusOnHitEffects = (): readonly AbilityEffect[] => [new KnockbackEffect(KNOCKBACK)];
+export const statusOnHitEffects = (): readonly AbilityEffect[] => [
+  new KnockbackEffect(loadKnockback(30)),
+];
 
 /** A Warrior ability for tests: 30 aether, a 90-tick cooldown, one `fake-strike` step around the caster. */
 export const fakeAbility = (

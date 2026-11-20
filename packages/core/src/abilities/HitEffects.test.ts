@@ -12,7 +12,7 @@ import { createDefaultAbilityRegistry } from './defaultAbilityRegistry';
 import { HitEffects } from './HitEffects';
 
 const STATUSES = loadStatusEffects(30, 2);
-const REGISTRY = createDefaultAbilityRegistry(loadAbilities(30));
+const REGISTRY = createDefaultAbilityRegistry(loadAbilities(30), 30);
 
 /** A light Vanguard at the origin, a dark Vanguard it struck 1 m north, and one beside that. */
 const setUp = (statusId: string) => {
