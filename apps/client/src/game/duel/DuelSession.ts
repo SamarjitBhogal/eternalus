@@ -32,8 +32,23 @@ export class DuelSession implements DuelLink {
 
   private nextSeq = 0;
 
-  /** Creates an idle session; nothing connects until `join()`. */
-  public constructor(private readonly deps: DuelSessionDeps) {}
+  /** The guest id the server issued, kept across Duels and sent on every join (so a reconnect is recognised). */
+  private guestId: string | null = null;
+
+  /**
+   * Creates an idle session; nothing connects until `join()`. The saved guest id loads in the
+   * background; if storage fails or is slow, the first join simply gets a new guest id.
+   */
+  public constructor(private readonly deps: DuelSessionDeps) {
+    deps.guestIds
+      .load()
+      .then((id) => {
+        this.guestId ??= id;
+      })
+      .catch((error: unknown) => {
+        this.warn('The saved guest id could not be read.', error);
+      });
+  }
 
   /** Where the Duel is. */
   public get status(): DuelStatus {
@@ -78,7 +93,11 @@ export class DuelSession implements DuelLink {
         this.lose();
       },
     });
-    transport.send({ type: 'queue-join', name });
+    transport.send(
+      this.guestId === null
+        ? { type: 'queue-join', name }
+        : { type: 'queue-join', name, guestId: this.guestId },
+    );
   }
 
   /** Leaves the queue (`queue-leave`) and closes the connection; the Duel resets. */
@@ -108,6 +127,9 @@ export class DuelSession implements DuelLink {
 
   private receive(message: ServerMessage): void {
     switch (message.type) {
+      case 'welcome':
+        this.keep(message.guestId);
+        break;
       case 'queue-waiting':
         break;
       case 'match-found':
@@ -135,6 +157,20 @@ export class DuelSession implements DuelLink {
         );
         break;
     }
+  }
+
+  private keep(guestId: string): void {
+    if (this.guestId === guestId) return;
+    this.guestId = guestId;
+    this.deps.guestIds.save(guestId).catch((error: unknown) => {
+      this.warn('The guest id could not be saved.', error);
+    });
+  }
+
+  private warn(body: string, error: unknown): void {
+    this.deps.logger.log(
+      makeLogRecord('WARN', 'client.duel', body, { attributes: { error: String(error) } }),
+    );
   }
 
   /**

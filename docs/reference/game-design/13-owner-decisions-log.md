@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-16
+last-reviewed: 2026-11-20
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,17 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-20 (Owner Calls page: the PR #104 review, B2)
+
+The owner's answers of 2026-11-20, on the Owner Calls page, to the open product questions of the
+2026-11-19 review of PR #104 (B2) and to the `INBOX.md` items SCRUM-430 and SCRUM-431. They were
+posted on PR #104 for the owner by the coordinator sessions PR-REVIEW-COORDINATION-7 (items 1 and
+2, and item 3 left pending) and PR-REVIEW-COORDINATION-9 (item 3). The owner's words are quoted.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Changes                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| DEC-297 | **The Duel's reconnect window, the `forfeit` message and the interim rating pairing are approved** (PR #104, SCRUM-430, SCRUM-431). (1) Reconnect window: "Approve 10 s; a timed-out drop is a leave and a loss (DEC-250 (4)), stayer wins after 10 s". `RECONNECT_WINDOW_MS` stays 10 s as a `// TUNE:` value; a queued or in-match guest that disconnects keeps its slot or seat for the window, and when the window runs out the guest has left (a loss), and the player who stayed wins (DEC-251). (2) The `forfeit` message: "Approve `forfeit` as built (sender's own match only)". (3) Rating-gated pairing: "Accept as interim and schedule the database (note when)", and when: "Next sprint (sprint 4)". The in-memory Glicko-2 pairing (`PlayerRatings`, `DuelQueue`) is an interim until sprint 4; FR-118 (ratings kept in a database) is scheduled for sprint 4. Plan question 35 (which database) must be answered before sprint 4 starts. | `apps/server/src/presence/PresenceBook.constants.ts` (`RECONNECT_WINDOW_MS`), `presence/PresenceBook.ts`; `packages/protocol/src/messages.types.ts` (`forfeit`), `apps/server/src/gateway/DuelGateway.ts`; `apps/server/src/queue/DuelQueue.ts` (`ponytail:` naming FR-118 and sprint 4); requirements 06 FR-118 (schedule: sprint 4); `multiplayer-and-scalability-plan.md` §7 implementation status notes; `INBOX.md` SCRUM-430, SCRUM-431; decisions DEC-250, DEC-251 |
 
 ## Batch 2026-11-16 (question dialog: PR #125 sign-off)
 
