@@ -2,11 +2,11 @@ import type { EntitySnapshot, StatusSnapshot } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
+import { LEGEND_OUTLINE_SCALE } from './entityViews.constants';
 import { WindupRingsView } from './WindupRingsView';
 import {
   WINDUP_RING_COLOR,
   WINDUP_RING_COUNT,
-  WINDUP_RING_END_SCALE,
   WINDUP_RING_SPACING,
   WINDUP_RING_START_SCALE,
 } from './WindupRingsView.constants';
@@ -55,7 +55,7 @@ const rings = (entity: EntitySnapshot): unknown[][] =>
 const sizesAt = (passed: number): number[] =>
   Array.from({ length: WINDUP_RING_COUNT }, (_, ring) => {
     const start = WINDUP_RING_START_SCALE + ring * WINDUP_RING_SPACING;
-    return start + (WINDUP_RING_END_SCALE - start) * passed;
+    return start + (LEGEND_OUTLINE_SCALE - start) * passed;
   });
 
 describe('WindupRingsView', () => {
@@ -68,7 +68,7 @@ describe('WindupRingsView', () => {
         WINDUP_RING_COLOR,
       ]),
     );
-    expect(sizesAt(0)[0]).toBeGreaterThan(WINDUP_RING_END_SCALE);
+    expect(sizesAt(0)[0]).toBeGreaterThan(LEGEND_OUTLINE_SCALE);
   });
 
   it('closes the rings in on the Legend as the wind-up passes', () => {

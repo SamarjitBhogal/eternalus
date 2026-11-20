@@ -118,7 +118,10 @@ export class Match implements LoopTarget {
       },
       {
         usesAim: (slot) => this.aiming.usesAim(this.current, slot),
-        legendAt: () => this.playerEntity()?.transform ?? null,
+        legendAt: () => {
+          const at = this.playerEntity()?.transform ?? null;
+          return at === null ? null : { x: at.x, y: at.y };
+        },
       },
     );
     this.commands =

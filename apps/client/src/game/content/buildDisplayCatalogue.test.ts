@@ -268,6 +268,13 @@ describe('buildDisplayCatalogue', () => {
     expect(() => build({ known: without('selection-backdrop') })).toThrow('"selection-backdrop"');
   });
 
+  it('throws when core has no status for the wind-up rings', () => {
+    const statuses = CONTENT.statuses.filter((status) => status.id !== 'fury-windup');
+    expect(() => build({ content: { statuses } })).toThrow(
+      'status "fury-windup" is not in the core status effects',
+    );
+  });
+
   it('lists core classes in order with their specs in core order, then the locked classes', () => {
     const catalogue = build({ content: { specs: [...CONTENT.specs].reverse() } });
     expect(catalogue.legendClasses.map((card) => card.classId)).toEqual([

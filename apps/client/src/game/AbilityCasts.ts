@@ -17,10 +17,12 @@ import type { CastInput, CastSlots } from './AbilityCasts.types';
  * In both modes a slot whose ability does not use the aim (`AbilityDisplay.usesAim` false: Fury's
  * dash in the `granted` slot, Space) queues its cast at once and leaves the selection alone: it
  * aims itself (the dash goes the way the Legend moves, DEC-270, DEC-283; core ignores the aim).
- * The client checks the ability now in the slot, never the slot or the targeting kind. It needs no
- * pointer: the cast goes out aimed at the pointer's latest world point (`aimPoint`), else at the
+ * The client checks the ability now in the slot, never the targeting kind. Such a cast needs no
+ * pointer: it goes out aimed at the pointer's latest world point (`aimPoint`), else at the
  * Legend's own position, so the dash still fires while the pointer is off the canvas or over the
- * HUD, or has had no point yet. Every other ability takes the paths above.
+ * HUD, or has had no point yet. One path is bound to the slot: `granted` has no HUD slot to
+ * select, so an ability there that does use the aim casts at the pointer even in aim-then-click.
+ * Every other ability takes the paths above.
  *
  * `apply` returns whether the main button is consumed: while a slot is selected, and until the
  * confirming press is released, it is no basic attack.

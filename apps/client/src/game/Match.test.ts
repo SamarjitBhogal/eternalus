@@ -203,6 +203,72 @@ describe('Match ability casts', () => {
     match.destroy();
   });
 
+  describe('with Fury granted the dash (DEC-283)', () => {
+    /** A match whose snapshots hold `fury-dash` in the player's `granted` slot. */
+    const withGrantedDash = () => {
+      const made = setUp();
+      const real = made.simulation.snapshot.bind(made.simulation);
+      vi.spyOn(made.simulation, 'snapshot').mockImplementation(() => {
+        const snapshot = real();
+        return {
+          ...snapshot,
+          player: {
+            ...snapshot.player,
+            slots: (snapshot.player?.slots ?? []).map((entry) =>
+              entry.slot === 'granted' ? { ...entry, abilityId: 'fury-dash' } : entry,
+            ),
+          },
+        } as unknown as typeof snapshot;
+      });
+      made.match.tick();
+      return made;
+    };
+
+    it('casts at once with the pointer off the canvas, aimed at the Legend as a plain point', () => {
+      const { match, simulation, input } = withGrantedDash();
+      const enqueue = vi.spyOn(simulation, 'enqueueCommand');
+      const here = { x: playerX(match), y: playerY(match) };
+      input.aim = null;
+      input.triggered = ['granted'];
+      match.tick();
+
+      const casts = enqueue.mock.calls
+        .map(([command]) => command)
+        .filter((command) => command.type === 'cast-ability');
+      expect(casts).toEqual([
+        {
+          type: 'cast-ability',
+          actorId: match.playerEntityId,
+          slot: 'granted',
+          aim: { point: here, targetId: null },
+        },
+      ]);
+      // Only x and y: the commandLog and replays must not carry radius or facing.
+      expect(Object.keys(casts[0]?.type === 'cast-ability' ? casts[0].aim.point : {})).toEqual([
+        'x',
+        'y',
+      ]);
+      match.destroy();
+    });
+
+    it('casts at once in aim-then-click too, without selecting the slot', () => {
+      const { match, bus, simulation, input } = withGrantedDash();
+      const enqueue = vi.spyOn(simulation, 'enqueueCommand');
+      const slots: (string | null)[] = [];
+      bus.on('aiming-slot', ({ slot }) => slots.push(slot));
+      match.setCastMode('aim-then-click');
+      input.aim = null;
+      input.triggered = ['granted'];
+
+      match.tick();
+
+      const casts = enqueue.mock.calls.filter(([command]) => command.type === 'cast-ability');
+      expect(casts).toHaveLength(1);
+      expect(slots).toEqual([]);
+      match.destroy();
+    });
+  });
+
   it('publishes aiming-slot at once as a slot is selected, cancelled, and when paused', () => {
     const { match, bus, input } = setUp();
     const slots: (string | null)[] = [];

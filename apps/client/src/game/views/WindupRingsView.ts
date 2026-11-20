@@ -1,9 +1,9 @@
 import type { Renderer } from '../engine/render/Renderer';
 import type { EntityDrawState } from './EntityView.types';
+import { LEGEND_OUTLINE_SCALE } from './entityViews.constants';
 import {
   WINDUP_RING_COLOR,
   WINDUP_RING_COUNT,
-  WINDUP_RING_END_SCALE,
   WINDUP_RING_SPACING,
   WINDUP_RING_START_SCALE,
   WINDUP_STATUS_ID,
@@ -29,7 +29,7 @@ export class WindupRingsView {
     const passed = length <= 0 ? 1 : windup.ticksActive / length;
     for (let ring = 0; ring < WINDUP_RING_COUNT; ring += 1) {
       const start = WINDUP_RING_START_SCALE + ring * WINDUP_RING_SPACING;
-      const scale = start + (WINDUP_RING_END_SCALE - start) * passed;
+      const scale = start + (LEGEND_OUTLINE_SCALE - start) * passed;
       renderer.drawWorldGlyph(
         { shape: 'ring', size: radius * 2 * scale },
         position,

@@ -20,12 +20,6 @@ export const WINDUP_RING_START_SCALE = 2.2;
 // TUNE: placeholder look
 export const WINDUP_RING_SPACING = 0.6;
 
-/**
- * The size every ring closes in to by the end of the wind-up, as a multiple of the Legend's
- * diameter: the Legend's white outline (`LEGEND_OUTLINE_SCALE`), so the rings "fall in" on it.
- */
-export { LEGEND_OUTLINE_SCALE as WINDUP_RING_END_SCALE } from './entityViews.constants';
-
 /** Colour of the rings (DEC-283: "orange"). */
 // TUNE: placeholder look
 export const WINDUP_RING_COLOR = '#ff8a1f';

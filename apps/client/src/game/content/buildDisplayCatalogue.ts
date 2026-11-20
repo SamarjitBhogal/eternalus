@@ -24,6 +24,7 @@ import type {
   DisplayOverrides,
   HudPresentation,
 } from './CataloguePresentation.types';
+import { WINDUP_STATUS_ID } from '../views/WindupRingsView.constants';
 import { kitDetailRows, kitRows } from './kitRows';
 
 /**
@@ -310,6 +311,9 @@ export function buildDisplayCatalogue(inputs: {
     sovereignNames: content.sovereignNames,
   };
   checkNoLeftoverPresentation(content, presentation);
+  if (!content.statuses.some((status) => status.id === WINDUP_STATUS_ID)) {
+    fail(`status "${WINDUP_STATUS_ID}" is not in the core status effects`);
+  }
   const unknown = catalogueAssetIds(full).find((id) => !knownAssetIds.has(id));
   if (unknown !== undefined) fail(`asset "${unknown}" is not in the asset manifest`);
   return RENDERER_VIEWS[effectsRenderer](full);
