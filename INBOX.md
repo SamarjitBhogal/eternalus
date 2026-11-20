@@ -356,6 +356,13 @@ Reply inline (`Decision: …`).
       says an overlap is a bug. The default (one tower of each kind per lane) has no overlap, and
       the heal-zone overlap test covers only the default. Fix the generator now (towers of one
       kind at least one fort box apart), or with the map work? Decision: …
+- [ ] **Map work has no plan entry (2026-11-20, DEC-311).** Owner rulings send items to "the map
+      work": bigger forts (DEC-185 (A), "bigger forts (b) come when map work resumes") and a
+      walkable inside for houses (DEC-311); the item "Generated forts overlap when a lane has two
+      or more towers of one kind" asks whether the fort-overlap fix goes there too. No phase doc
+      or sprint in `docs/plan/` names the map work, so none of these is scheduled. Which phase or
+      sprint gets the map work? Agents then add its tasks (bigger forts, house insides, and the
+      overlap fix if it goes there) to that phase doc, citing DEC-185 and DEC-311. Decision: …
 
 - [x] **Minion M4 done-when, read for objectives (2026-11-02, `chore/minion-full-march-test`) — sign-off.**
       The plan's M4 check "hordes reach the enemy end with 0 stuck units for `numLanes` 3 and 5"

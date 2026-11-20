@@ -9282,3 +9282,20 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   then `prettier --check` and `npm run docs:check` on this file.
 - Next step: push the branch and open its PR into `phase/3-sprint-3-work`. BUG-2 is still not
   scheduled.
+
+### 2026-11-20 — Phase 3 / DEC-311: houses get an inside with the map work — docs/dec-288-interior-bonus-buildings — sholtzman + Claude Code
+
+- What was done: recorded the owner's answer of 2026-11-20 (Owner Calls page) to the DEC-288
+  follow-up as DEC-311, in the same batch of the decisions log; the DEC-288 row points to it.
+  The map work has no plan entry, so `INBOX.md` gains the open item "Map work has no plan entry"
+  (bigger forts of DEC-185 (A) and DEC-311 wait for it) instead of a plan item that would pick
+  its phase. Docs only.
+  Critic (`architecture-reviewer`, delta on `85227ab8`): request-changes, no blockers; 3
+  should-fix items (an exact DEC-185 (A) quote, "the inside is not built before the map work",
+  this check line) and 5 nits, all applied. Ponytail: 1 cut (DEC-311 no longer repeats the DEC-288 clause), applied.
+- Checks run: full `npm run check` exit 0 before the critic fixes (core 275 files / 1674 tests,
+  protocol 1 / 29, client 298 / 2011, server 21 / 84, "Documentation check passed.";
+  `eternalus-agent-work/dec-288/check-3.log`); after the fixes, which touch Markdown only,
+  `prettier --check` and `npm run docs:check` on the four files.
+- Next step: the owner pushes the branch (DEC-288 and DEC-311) and answers "Map work has no plan
+  entry".
