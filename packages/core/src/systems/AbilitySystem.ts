@@ -1,7 +1,6 @@
 import type { AbilityRegistry } from '../abilities/AbilityRegistry';
 import { CastInstance } from '../abilities/CastInstance';
 import { TargetQuery } from '../abilities/TargetQuery';
-import type { ShapePlacement } from '../abilities/shapes/AreaShape.types';
 import type { DamagePipeline } from '../combat/DamagePipeline';
 import type { Command } from '../commands/Command.types';
 import type { StatusEffectApplier } from '../combat/StatusEffectApplier';
@@ -114,36 +113,30 @@ export class AbilitySystem implements System {
 
   /** Fires the due steps of each cast `caster` has in progress; drops them all once it died. */
   private advance(state: GameState, caster: Entity): void {
-    const bar = caster.getComponent(Abilities);
-    const casts = bar.endCasts();
-    // Checked once: no step of a cast hurts its own caster (effects hit enemies only), so it cannot
-    // die between two of its casts here.
+    const casts = caster.getComponent(Abilities).endCasts();
+    // One check per caster: no step can kill its own caster in this pass.
     if (caster.findComponent(Health)?.isDead === true) {
       return;
     }
     for (const cast of casts) {
-      const { position } = caster.getComponent(Transform);
-      const here = { x: position.x, y: position.y };
-      this.fireDue(state, caster, cast, { from: here, to: here });
+      this.fireDue(state, caster, cast);
     }
   }
 
   /**
-   * Fires the due steps of `cast` (at `placement`, else where the cast began) and keeps it on
-   * `caster` while steps are left.
+   * Fires the due steps of `cast` on `caster` where it is now (at the cast, where the cast began)
+   * and keeps it on `caster` while steps are left. A cast with no step due is kept as it is, and
+   * nothing is built for it.
    */
-  private fireDue(
-    state: GameState,
-    caster: Entity,
-    cast: CastInProgress,
-    placement?: ShapePlacement,
-  ): void {
+  private fireDue(state: GameState, caster: Entity, cast: CastInProgress): void {
     const ability = this.registry.resolve(cast.abilityId);
     const waiting = ability.steps[cast.nextStep];
-    if (waiting !== undefined && cast.tick + waiting.delayTicks > state.tick) {
+    if (waiting !== undefined && !CastInstance.isDue(cast.tick, waiting, state.tick)) {
       caster.getComponent(Abilities).keepCast(cast);
       return;
     }
+    const { position } = caster.getComponent(Transform);
+    const here = { x: position.x, y: position.y };
     // ponytail: one CastInstance per cast per due tick, fine while casts are rare; pool it if bots
     // cast every tick.
     const next = new CastInstance(
@@ -155,7 +148,7 @@ export class AbilitySystem implements System {
         damage: this.damage,
         statuses: this.statuses,
       },
-    ).run(placement, cast.nextStep);
+    ).run({ from: here, to: here }, cast.nextStep);
     if (next < ability.steps.length) {
       caster.getComponent(Abilities).keepCast({ ...cast, nextStep: next });
     }

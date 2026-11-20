@@ -1,5 +1,6 @@
 import { normalize } from '../utils/vec2';
 import type { CastContext, EffectStep } from './AbilityEffect.types';
+import type { CastStep } from './AbilityRegistry.types';
 import type { CastFacts, CastServices } from './CastInstance.types';
 import type { ShapePlacement } from './shapes/AreaShape.types';
 
@@ -7,9 +8,9 @@ import type { ShapePlacement } from './shapes/AreaShape.types';
  * One cast in progress (architecture 05 §4): the caster, the aim and the bound steps. `run` fires
  * the steps that are due, in list order, through their strategies: a step is due `delayTicks`
  * after the cast tick, so a step with no delay fires at the cast. `AbilitySystem` keeps a cast with
- * steps left on the caster (`CastInProgress`) and runs it again each tick from the first step
- * left. A status's `onHit` steps run as a cast too (`HitEffects`), placed from the attacker to the
- * struck body; they never wait.
+ * steps left on the caster (`CastInProgress`) and, on each tick a step is due, builds it again and
+ * runs it from the first step left. A status's `onHit` steps run as a cast too (`HitEffects`),
+ * placed from the attacker to the struck body; they never wait.
  */
 export class CastInstance {
   /** @param facts - The cast. @param services - What its effects work with. */
@@ -17,6 +18,14 @@ export class CastInstance {
     private readonly facts: CastFacts,
     private readonly services: CastServices,
   ) {}
+
+  /**
+   * Whether `step` of a cast made on `castTick` is due by `now`: `delayTicks` after the cast tick.
+   * The one due rule; `AbilitySystem` asks it before it builds a `CastInstance`.
+   */
+  public static isDue(castTick: number, step: Pick<CastStep, 'delayTicks'>, now: number): boolean {
+    return castTick + step.delayTicks <= now;
+  }
 
   /**
    * Fires the steps from `from` on that are due by `state.tick`, in list order, and stops at the
@@ -34,7 +43,7 @@ export class CastInstance {
     const now = this.services.state.tick;
     let next = from;
     const context = this.contextAt(placement ?? { from: origin, to: origin });
-    for (let step = steps[next]; step !== undefined && tick + step.delayTicks <= now;) {
+    for (let step = steps[next]; step !== undefined && CastInstance.isDue(tick, step, now);) {
       step.effect.apply(step.spec, context);
       next += 1;
       step = steps[next];

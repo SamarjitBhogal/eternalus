@@ -154,6 +154,13 @@ describe('CastInstance', () => {
     expect(strike.log[0]?.cast.direction).toEqual({ x: 0, y: 0 });
   });
 
+  it('calls a step due from delayTicks after the cast tick on, not a tick before', () => {
+    const step = { delayTicks: 3 };
+
+    expect([9, 10, 11].map((now) => CastInstance.isDue(7, step, now))).toEqual([false, true, true]);
+    expect(CastInstance.isDue(7, { delayTicks: 0 }, 7)).toBe(true);
+  });
+
   it('fires only the steps due by now, in list order, and returns the first one still waiting', () => {
     const { cast, at, fired } = timeline();
 
