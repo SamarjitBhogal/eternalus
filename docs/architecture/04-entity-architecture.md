@@ -241,7 +241,9 @@ Definitions are Flyweights: shared, immutable, referenced by id from state
 
 **Out-of-combat healing (DEC-188, DEC-215, DEC-225).** One content record, `OUT_OF_COMBAT_HEALING` in
 `content/healing/`, holds the flat base rate for every Legend and mob, the delay before healing
-starts and the structure bonuses, keyed by structure kind. The last tick an entity fought lives in
+starts and the structure bonuses, keyed by structure kind. Its two times, the delay and the
+structure quiet time, are seconds in content and its rates are per second; `loadOutOfCombatHealing`
+turns them into ticks and rates per tick once, at load (DEC-241, DEC-262), so the system sees only ticks. The last tick an entity fought lives in
 its `CombatClock` component: the system adds it on the entity's first `damage-applied`, as attacker
 or target, and `StateHasher` hashes it only when it is present. Each bonus names a zone shape
 (`HealingZoneShape`); `systems/HealingZones.ts` resolves it with one strategy per shape: `fort-box`,
