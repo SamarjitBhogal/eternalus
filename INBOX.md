@@ -16,6 +16,248 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
+      PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
+      small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`
+      without `hasMapFootprint` is legal and does nothing. One field (for example
+      `mapFootprint?: 'reach' | 'fort'`) makes that state impossible; it changes the same field
+      as item (B3) below, so do both together. (G2) `DefaultSystemPipeline.fortBoxesOf` looks up
+      each entity's definition again; record the fort-box fact where the `Footprint` is made
+      (`Simulation.spawnStructures`), so the pipeline needs no catalogue. Same code as item (C1)
+      below.
+
+- [ ] **`refactor/fort-geometry-helpers` critic (2026-11-13), better than the design — two items
+      for the tidy PR (DEC-218), sign-off per item.** Not built: the branch is a split from
+      PR #98 and stays small. (F1) `MapSceneryBuilder` still grows each ring feature's box by
+      hand, with 5 and 10 as literals; use `boundsOf`, a `growRect(rect, pad)` helper and a
+      constant in `MapSceneryBuilder.constants.ts`. (F2) "wall = side / `wallDivisor`" is in
+      `MapFortificationBuilder` (sketch units) and in `fortInWorld` (world units); one
+      `fortWall(side)` serves both.
+
+- [ ] **`refactor/astar-search-area` critic (2026-11-13), better than the design — one item,
+      sign-off.** Not built. `GameConfig.map.pathSnapCells` (12) is counted in cells, like the
+      old A\* cap: its comment says it "covers a Stronghold footprint on 5 m cells" (60 m), and on
+      PR #98's 2.5 m cells it reaches 30 m. Proposed: `pathSnapDistance` in world units, with the
+      rings derived as `ceil(distance / cellSize)`. Whether 30 m still covers a Stronghold is a
+      live question on #98.
+
+- [ ] **Teammate's boss spec (Aryan Walanj, 2026-11-11): amend reference 04?** A teammate's spec
+      differs from `docs/reference/game-design/04-objectives-capture-points-and-bosses.md` in
+      four places. Nothing is built for any of them until you answer; no Cathedral or middle-boss
+      work is started. For each, reply amend 04 (and a DEC row in 13) or keep 04:
+      (1) **Capture weight instead of the zone lock**: a mini-boss counts 5 and the big boss 20
+      toward zone presence, so a boss weighs in on the capture but the zone stays capturable;
+      04 "Mini-bosses at the quarter mark" says the zone cannot be captured while it lives.
+      (2) **Eternal boss respawns after 10 minutes**; 04 gives the central boss no respawn (only
+      the corner-camp crystal's 5-minute respawn, DEC-12).
+      (3) **The killer gets a flag instead of becoming an Eternal**; 04 says the player who lands
+      the final hit becomes an Eternal (the one non-yellow Form change row). What the flag does
+      is not in the spec.
+      (4) **Regen after 30 s out of combat**; `docs/reference/suggestions/balancing.md` (boss
+      table, MiniBoss row) says 5%/s after 10 s with no enemy inside its zone. Is the 30 s a
+      replacement for the 10 s trigger, does "out of combat" replace "no enemy in the zone", and
+      is the 5%/s rate kept?
+
+- [ ] **Capture point mini-boss: five interim stand-ins (Aryan Walanj, assigned owner, 2026-11-09;
+      `feat/zone-guard-homes` critic finding 1; (c) and (d) `feat/capture-point-boss` critic
+      findings 1 and 2, 2026-11-11) — (a) due before the `MatchTimeline` boss spawn, (b) built,
+      (c) needs Sam's sign-off now and is replaced by phase-3 sprint 3.6's `BossController`, (d)
+      partly built, (e) awaits the owner and Sam.** (a) The boss
+      spawns at the default timeline's quarter mark (440 s after the countdown ends, 2026-11-12;
+      `guardPlans.test.ts` derives it from `createDefaultGameConfig`'s `quarter-mark` entry), but
+      through its guard plan's `delaySeconds`, not `MatchTimeline`: a match with another
+      `plannedMatchSeconds` or countdown keeps 440 s. Reference 04 and 07 §7 schedule it from the
+      match timeline; only that mechanism is still interim. (b) **Built 2026-11-12 (PR #99 review
+      F8):** while the boss lives its zone cannot be captured, as reference 04 says:
+      `CaptureSystem` sets `lockedBy` from the zone's guard posts (`content/zones/zoneLocks.ts`)
+      and a locked zone's progress does not move, so the boss no longer drains a held point as
+      neutral presence. Still open: `LockedZoneOwnerInvariant` (15 §3). (c) **Sam: please sign
+      off this interim (PR #99 review F3, 2026-11-12).** The boss is a `heavy-mob`
+      (`capture-point-boss`) held by `GuardController`, a minion-system controller, against 18's
+      "the minion system never controls a boss"; 18 (MS-28), 11 §4.6 and 04 give it a `MiniBoss`
+      class and `BossController` (moves, roaming, damage-dealer bias), scheduled for sprint 3.6.
+      DEC-236 approved the same stand-in for the corner boss only. Recorded in 18's implementation
+      status note. Reply approve until sprint 3.6, or say what to change. (d) **XP built
+      2026-11-12 (PR #99 review F1):** its 500 XP (balancing.md "500 XP team-wide") goes to every
+      Legend of the killer's team, each paid at most what lifts it 2 levels (DEC-237,
+      `XP_SOURCES.teamKills`); the killer gets nothing on its own. Still open: its kill gives no
+      permanent team buff (reference 04), and the reward comes from `ProgressionSystem`'s own
+      `entity-died` listener, not 12's `xp-granted` reward path; sprint 3.6 replaces both. Known
+      limit (PR #99 critic finding 2): the rewarded team is read from the killer in the store, so
+      a boss killed by a hit from a Legend already removed pays nobody, until `DamageSource`
+      carries the attacker's team. (Its 25% damage from minions, balancing.md, is
+      built since 2026-11-12: `combat/BossMinionDamageStep.ts`.) (e) Its support mobs
+      (`feat/capture-point-boss-guards`, 2026-11-12): reference 04 gives no count, so the plan
+      borrows balancing.md's checkpoint-2 set, 2 `heavy-guard` + 4 `light-guard`, on the boss's
+      ring; like the boss they never respawn, since respawning them needs Sam's sign-off. Approve
+      the count and whether they respawn, or correct them.
+
+- [ ] **Capture point boss size: sign off 1.2 m? (Aryan Walanj, 2026-11-12; `feat/capture-point-boss`
+      critic finding 2) — before the PR merges.** The `capture-point-boss` footprint radius went
+      from 0.8 m to 1.2 m (`content/mobs/capturePointBoss.ts`, `TUNE`): 1.5× the heavy minion so it
+      reads as a boss. No reference or requirement gives a boss size, and 1.2 m is slightly
+      smaller than the Sentinel Legend (1.25 m, DEC-06). Above about 1.3 m the `capture-point`
+      plan's `leashTolerance` must grow (DEC-144; `guardPlans.test.ts` fails otherwise). Reply
+      keep 1.2 m, or give a size.
+
+- [ ] **Guard leash and acquisition radii derived, not hand-copied (`feat/capture-point-boss`
+      critic finding 6, 2026-11-11) — better than the design; capture point part built
+      2026-11-12 (PR #99 review F6), tower guard and camp part optional.** Built: the capture
+      point plan's leash and post gap and its boss's acquisition and vision radii now come from
+      the fort in `buildingGeometry.ts` through `content/zones/capturePointCourt.ts` (the post gap
+      is now midway between the keep's corners and the court's walls, about 29 m, instead of a
+      hand-picked 25 m). Still open: the tower guard and camp mob aggro rules' `acquisitionRadius`
+      is still their plan's leash less its post gap, worked out by hand. Approve a follow-up that
+      derives them from `leashRadius − postGap`, or drop it. The court is in sketch units, which
+      are metres on the default 1600 × 900 world; on another world size `map/zoneArea.ts`
+      stretches the floor and the leash does not follow.
+
+- [ ] AI56-F4 exemption for boss rows; claudiodh/Sam to confirm (asked on #99).
+
+- [ ] **Capture point boss: four better-than-design items (PR #99 critic, 2026-11-12) — Sam and
+      the owner: approve or drop; no code change until then.** (1) **Zone lock read from state,
+      not an event listener.** 12 §7 says `CaptureSystem` clears `lockedBy` on its own
+      `entity-died` listener; the build sets it every tick from the zone's guard posts (no scratch
+      state, nothing to desync on replay, unlocks in the death tick). Approve, and 12 §7 is
+      amended to match; note that a sprint 3.6 `BossController` boss is not a guard post, so the
+      lock's source moves then. (2) **One boss traits block.** `XP_SOURCES.teamKills`,
+      `ZONE_LOCKING_MOBS` and the boss's `xpValue: 0` all key `capture-point-boss` and only tests
+      keep them aligned; one interim block on the mob, shaped like 04's planned
+      `BossDefinition.rewards`, would make sprint 3.6 a move. (3) **The XP cap in its own type.** A
+      `TeamKillAward` with a required `maxLevels` (or `Progression.cappedXp`) instead of the
+      optional field `ProgressionSystem.grant` branches on. (4) **A `GuardStore` query**
+      (`postsOf(homeId)`) instead of `CaptureSystem.lockOf`'s hand-rolled scan of every post.
+
+- [ ] **A named `GuardPlanSource` type (`feat/capture-point-boss` critic round 2 finding 8,
+      2026-11-11) — better than the design, optional follow-up, no code change yet.**
+      `Readonly<Record<string, GuardPlanDefinition>>` is spelled out in six places
+      (`Simulation.types.ts`, `DefaultSystemPipeline.types.ts`, `SpawnSystem.types.ts`,
+      `GuardRoster.ts`, twice in `content/structures/guardPlans.ts`). Approve: a type-only
+      follow-up adds `GuardPlanSource` to `content/structures/structures.types.ts`, as
+      `WeaponSource` and `DefinitionSource` are named, and uses it in all six. Or drop it.
+
+- [ ] **One shared guard-post target priority (`feat/capture-point-boss` critic finding 7,
+      2026-11-11) — better than the design, optional follow-up, no code change yet.** The tower
+      guard, camp mob and capture point boss aggro rules (`content/ai/aggro/`) each repeat the same
+      five-entry priority list. Approve: a follow-up adds one shared `GUARD_POST_PRIORITY` constant
+      in `content/ai/aggro/`. Or drop it.
+
+- [ ] **Timed guard spawns beside `MatchTimeline` (`feat/zone-guard-homes` critic finding 2,
+      2026-11-09) — accepted as interim.** Guard plans now activate `delaySeconds` after the
+      countdown ends (`AuthoredGuardPlan.activation`, `content/structures/structures.types.ts`), and the
+      mini-boss (PR A2) uses it. The design schedules mini-boss spawns from `MatchTimeline` /
+      `MatchDirector` (07 §7, 12; phase-3 sprints 3.5–3.6), so timed match spawns now have two
+      paths and no doc says which owns boss timing. Due before the zone-lock PR: pick one owner
+      and update 07 §7 and 12 so only one mechanism is named.
+
+- [ ] **One guard plan per home, mates by `homeId` (`feat/zone-guard-homes` critic finding 3,
+      2026-11-09) — accepted as interim.** `GuardRoster` looks plans up by the home's definition
+      id, so a home has one plan, and `GuardController` (`ai/GuardController.ts`, `isMate`)
+      treats every guard on a home as a mate. 18 §7.1 makes the capture point the home of the
+      team checkpoint defenders too: a neutral mini-boss and a team's defenders on one zone
+      cannot both be plans, and on one `homeId` they would count as mates across teams. 18 §7.1
+      now records the limit. Due before checkpoint defenders get posts: key mates by plan or by
+      team as well as home, and allow more than one plan per home if both must coexist.
+- [ ] **BUG-5 / SCRUM-438 (2026-11-12, `fix/bound-key-actions`) — two owner questions.** (1) Bound
+      but unhandled actions: `toggle-developer-menu` (BUG-4, a feature), `sprint`, `interact`,
+      `turret-toggle-control`, `turret-switch-ammo` (gameplay not built) and `toggle-perf-overlay`
+      (no overlay exists) are in `InputAction`, bound in `keybindings.ts` and shown as rebindable
+      in settings, yet nothing handles them. Decide whether to hide them from the bindings screen
+      until their features exist. (2) `toggle-minimap` (M) now hides and shows the minimap for the
+      current match only (DEC-147); it is not persisted. Decide whether the choice should persist
+      across matches and sessions (a settings field and a migration).
+      (3) Known limit (PR #101 review): the zoom and minimap actions run only from a key press.
+      The bindings screen also accepts a mouse button for them, and such a binding does nothing
+      yet, because the one-shot table has no mouse path (the canvas gestures own the mouse).
+      Decide whether to add one, or to make the bindings screen accept only keys for these
+      actions.
+- [x] **BUG-2: interior wall health (2026-11-12, PR #96, SCRUM-435).** Every `'wall'` map object
+      uses the WallSegment value from balancing.md (`content/maps/mapObjectDefinitions.ts`): the
+      Stronghold's wall ring and the `'wall'` features inside it alike. The playtest called the
+      inner walls "interior walls" and reported "player attack is weak" because they take long to
+      break. No spec gives the inner walls their own value. Should the `'wall'` features inside the
+      Stronghold ring keep the WallSegment value, or get their own (which number)?
+  - **Answered 2026-11-13 by DEC-247** (chat, PR #96). Not built yet (BUG-2).
+
+- [x] **BUG-3: minions attack obstacles (2026-11-12, PR #96, SCRUM-436).** Today a stuck unit
+      paths around an obstacle (DEC-193); minions never attack obstacles or props. The playtest
+      asked for minions to attack them. Keep DEC-193, or should minions attack obstacles (and
+      which ones: props only, or blocking obstacles too)?
+  - **Answered 2026-11-13 by DEC-248** (chat, PR #96). Not built yet (BUG-3).
+
+- [x] **`refactor/durations-at-load` critic (2026-11-14), better than the design — built, sign-off
+      asked; no decision blocks the PR.** #86's healing system divided its two rates
+      (`healthFractionPerSecond`, a structure bonus's `fractionPerSecond`) by the tick rate itself,
+      every tick for the bonus. (1) Built: `loadOutOfCombatHealing` turns the rates into per-tick
+      values at load, next to the two durations (DEC-241), so the system sees only ticks
+      (architecture 03 §10, `packages/core/AGENTS.md` "Time is measured only in ticks", as
+      `loadDefaultContent` already does for speed and acceleration). Same values, so no behaviour
+      change. (2) Built: the same loader rejects a rate that is negative or not finite. (3) Built
+      (critic round 2): the check is unit-free, so it is renamed `assertNonNegativeFinite`, and the
+      rate formula is `TickRate.perTick`, next to the time formulas. Approve, or say which to
+      undo.
+  - **Answered 2026-11-16 by DEC-262** (question dialog, PR #125): (1) to (3) approved. Also
+    signed off: the time check in the aggro, stuck, veterancy and guard loaders (the 2026-11-12
+    critic) and #86's healing times as DEC-241's sixth reader.
+
+- [ ] **HC-B9 — Better than the design, not built, sign-off asked: two older times not read once at
+      load (`refactor/durations-at-load` merge critic, 2026-11-19); no decision blocks the PR.**
+      Both are older than PR #125 and keep their values.
+      (1) **One countdown-end tick.** Three readers each compute the tick the countdown ends with
+      `countdownTicks(countdownSeconds, tickRate)`: `SpawnSystem` (first waves),
+      `GuardRoster.firstTick` (guard activation) and `LeashBehaviour.rankOf` (the
+      `ghostFirstWaveTicks` window). `validateGameConfig` already checks that the match timeline's
+      first mark falls on that tick. Proposal: the three read that one tick from one place, so a
+      change to when the countdown ends changes one line.
+      (2) **Assist window at load.** `assistWindowSeconds` (`content/match/scoring.ts`, DEC-79)
+      becomes ticks in `defaultScoringRules`, outside a loader, unlike the DEC-241 durations.
+      Proposal: a scoring loader turns it into ticks and rejects a negative or non-finite value,
+      as `loadGuardPlans` does.
+      Build both in PR #125, build them in a later PR, or keep the code as it is?
+
+- [x] **Unit facing chevron (DEC-192, feat/unit-facing-chevron, 2026-11-05) — two questions, one
+      better-than-design item.**
+      (1) Start facing: a unit faces east (`INITIAL_FACING` in `Transform.constants.ts`) until it
+      first moves or attacks. Guards, camp mobs and Legends in the countdown show east, and ability
+      cones will use this facing (architecture 05). Options: east for all; toward the enemy
+      Stronghold; along the lane; per definition (a value in `content/`).
+      (2) Ring colour: DEC-192 says the team shows in the ring. The build keeps the team colour in
+      the disc, and the ring is white (Legends) or near-black (mobs). It differs from your
+      reference image (grey disc, team-coloured ring). Options: restyle now, restyle later, or keep.
+      (3) Better than the design (critic, not built): `LegendView` and `MobView` each draw the
+      chevron. An abstract `UnitView extends DefaultEntityView` with an abstract outline, or a
+      `FacingChevronView` decorator, would hold it once. Recommendation: build it in one tidy PR
+      after the playtest PRs merge. Approve, or say no.
+  - Answered 2026-11-05 (the decision page, DEC-216 and DEC-218): (1) toward the enemy
+    Stronghold; a tower guard (the Stronghold's too) faces out from the centre of its home
+    (DEC-216 (6)); a camp mob faces out from the camp centre (DEC-220 (2), answered 2026-11-06).
+    Built on `feat/unit-facing-chevron`: the spawn's `Placement.facing`, from
+    `MatchWorld.startFacing` and the guard roster; `INITIAL_FACING` stays as the fallback for a
+    unit given none. (2) Keep the
+    disc and ring as built (DEC-216 (10)). (3) Approved; built in the tidy PR after the playtest
+    PRs merge (DEC-218 B5).
+
+- [x] **Unit facing chevron, DEC-220 critic (2026-11-07, `feat/unit-facing-chevron`) — one
+      question, three better-than-design items.**
+      (1) Fort court: a fort's outline is its walls and its keep, so its court is outside every
+      outline. A unit in the court that attacks the tower faces the nearest wall, which can be
+      behind it. DEC-220 (1) fixes this for a unit inside a building's outline (the palace). Does
+      the court count as "inside the building"? Options: (A) no, keep as built (the ruling's
+      words); (B) yes, a unit in the court faces the tower's centre.
+      Better than the design (critic, not built): (2) `EntityStore.isInReach` and
+      `facingPointOf` run the same "attacker inside the outline" test; one private helper would
+      hold it. (3) `EntityStore` keeps gaining target-geometry queries (`outlineOf`, `aimPointOf`,
+      `isInReach`, `facingPointOf`); a separate target-geometry query object would leave the store
+      a store. (4) `SpawnContextReader` checks the spawn facing with `isFiniteVector`; the position
+      could use the same check, and its last cast goes. The critic's fourth item (a guard's rest
+      facing as data, so `PathingSystem` writes no facing) joins the DEC-220 (4) tidy-PR item.
+      Approve each for the tidy PR (DEC-218), or say no.
+  - **Answered 2026-11-09 by DEC-226** (decision page 2): (1) (A), keep as built: the court is
+    not inside the building; (2) to (4) approved for the tidy PR (DEC-218).
+  - **(2) done by DEC-234** (#85, 2026-11-09): the inside test runs once, in `aimPointOf`, which
+    returns an `AimedAt` tag; `isInReach` and `facingPointOf` read it. The tidy PR builds no
+    helper for it.
+
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on
       every map feature, so `map/strongholdRing.ts` checks at run time that a Stronghold has it
@@ -98,6 +340,10 @@ Reply inline (`Decision: …`).
       `partOf` (stays as ruins); (T2) `WorldObjectStore.spawn` gets only the definition id: pass
       what it needs explicitly. Heal (DEC-215): (H1) one point-in-box helper instead of three
       copies (`PathingSystem.isInsideFort`, `geometry.doesPolygonOverlapRect`, `HealingZones`).
+      (H1 is built in part on `refactor/fort-geometry-helpers` (DEC-244, split from PR #98):
+      `utils/geometry.isPointInRect` replaces `PathingSystem.isInsideFort`'s test and the copy in
+      `doesPolygonOverlapRect`. `HealingZones` is only on `feat/out-of-combat-heal`, not merged:
+      it uses `isPointInRect` once both branches meet.)
       Full findings: `eternalus-agent-work/minion-stack-audit/reports/runner-reports/critic-followups-r2.md`,
       `eternalus-agent-work/playtest-2026-11-04/critic-chevron-r3.md` and
       `eternalus-agent-work/playtest-2026-11-04/session-2383bba1-reports.md`. Approve all,
@@ -225,6 +471,49 @@ Reply inline (`Decision: …`).
       `docs/decisions/0016-multiplayer-server-authoritative-duel.md` (draft): accept, change or
       reject it. The consolidated questions about the Duel mode and the server are in
       `docs/plan/multiplayer-and-scalability-plan.md` §9; answer them there or inline here.
+  - 2026-11-10 (claudiodh, `feat/duel-server`): because of the 2026-11-13 deadline, claudiodh chose
+    to build the Duel along this draft before acceptance, and approved `ws` 8.22.2 and `@types/ws`
+    8.18.2 (server only). The PR is the ADR's spike: accept, change or reject the ADR on it. Built:
+    `packages/protocol`, `apps/server` (one Node process, `ws` gateway, Duel queue, match host),
+    the client's `game/engine/net/` port and `game/duel/`, a "Duel online" menu entry, and core
+    seating one human per team (`Simulation.humanLegendIdOf`). Left for you: (1) the doc edits the
+    ADR lists as the owner's (`AGENTS.md` "no server", README, requirements, architecture 02/03,
+    the ADR's status). (2) Interim choices to confirm or change, each marked `ponytail:` in code:
+    sides by arrival order (plan §9 question 45); both players are Warriors; no first-to-10-kills
+    rule, the match ends on core's normal verdict; no per-seat visibility filter yet (one shared
+    snapshot); a snapshot every tick, no interpolation or prediction. (3) Core's `intent` command
+    is still a stub (sprint 1.5 PlayerController), so the server translates intents into
+    `move`/`stop`/`attack-target` (`SeatCommands`, ported from the client's `PlayerCommands`);
+    once `intent` is applied in core, `SeatCommands` goes. (4) Map desync risk: the client
+    regenerates the map from `match-found.seed` with its own default `GameConfig`; a config drift
+    between the two builds, or an engine-level Math difference (03 §8), would draw a world that is
+    not the server's. Send the map (or a config hash) on the wire, or accept the risk while both
+    run the same build? (5) Before the Duel is reachable beyond the team's tailnet, the per-seat
+    snapshot with the visibility filter (ADR point 1) is needed: today both seats see everything.
+    (6) Guardrail change for your sign-off: `eslint.config.js` gains import-boundary blocks
+    (protocol imports only core's types; the server never imports the client and only
+    `transport/WsListener.ts` imports `ws`; the client never imports the server or `ws`; core
+    never imports protocol or the server). They only add rules. (7) Architecture 02's folder and
+    may-import tables do not list `apps/server` and `packages/protocol` yet (your edit, with the
+    ADR); their package `AGENTS.md` files hold the rules meanwhile.
+  - 2026-11-12 (claudiodh, `feat/duel-rules`): Duel rules and the organic start flow built on top
+    of the server PR. Decisions I took, each to confirm or change: (1) spawn points: Cathedral
+    centre, light 50 world units west, dark 50 east (`DUEL_RULES.startOffset`), in the transept
+    clear of the capture floor. (2) A kill is any death of a seat's Legend, whoever dealt it (a
+    mob counts for the other team); FR-115's "no mobs, inert structures" is not built, the rest of
+    the map runs as generated. (3) First to 10 (`DUEL_RULES.killTarget`); both teams reaching it
+    on one tick is a draw. (4) Names: 1 to 16 letters, digits, `_` or `-`, single spaces between
+    words, none at the ends (`PLAYER_NAME_PATTERN` in `packages/protocol`); no profanity filter,
+    no uniqueness check, two players may share a name. (5) The server holds the match 4 s
+    (`DUEL_VERSUS_MS`) for the VERSUS screen and the countdown is 3 s (`DUEL_RULES.countdownSeconds`);
+    the client's match loading runs while the countdown ticks, so a slow load can start it at 2.
+    (6) The countdown numbers come from the existing `countdown` phase; the announcer store has
+    no producer or screen, so it was not reused. (7) XP still flows from Legend kills, so a
+    Legend's level can rise during a Duel.
+    (8) The reset after a kill drops status effects and the attack target but keeps, on purpose,
+    shield bars and anything else on the Legend (no ability cooldowns exist yet to reset).
+    (9) `DUEL_RULES.startOffset` is read from live content, not the replay setup, so retuning it
+    changes old Duel replays.
 - [ ] **DEC-11 — still open after your answer** (the approvals are recorded as DEC-11 in
       `docs/reference/game-design/13-owner-decisions-log.md`, 2026-10-10; your chat clarifications
       of 2026-10-10 answered the former (1) and (2), see Done). (3) Your Roar row says Legends only
@@ -393,12 +682,15 @@ Reply inline (`Decision: …`).
       `MovementStrategy`", but bots steer by `move`
       commands, so A\* is a `PathQuery` the bot leaves call (doc 11 §10). Its cost then sits in
       the AI decision budget, not in `PathingSystem` as 11 §6 puts heavy work: each blocked
-      decision searches again (capped by `GameConfig.map.pathMaxExpansions`). If accepted,
+      decision searches again (capped by `GameConfig.map.pathMaxExpansions`; since 2026-11-13
+      `pathMaxSearchArea`, DEC-243). If accepted,
       sprint 3.2's line changes, and a path cache in the brain is the next step if profiling
       shows the cost.
   - Decision (SamarjitBhogal, chat, 2026-10-27): (2) accepted; doc 11 §6 and sprint 3.2's
     line say A\* is a `PathQuery` (PR #47). (1) Numbers from the design docs, else the agent's
     judgement, which the owner may correct later, so they stay as built.
+  - Update 2026-11-20 (PR #84): a blocked decision no longer always searches again; the brain
+    caches one waypoint and reuses it while it serves the destination (doc 11 §6).
 - [ ] **Minion M8 — exact line checks wait for wall avoidance (FYI, CodeRabbit on PR #47).**
       `WorldMap.isLineClear` samples a quarter cell apart, so a line can clip a blocked cell's
       corner unseen. An exact cell walk (DDA) catches it, but then minions hold at rift corners
@@ -2068,6 +2360,60 @@ Reply inline (`Decision: …`).
 - [ ] **HC-Q46 — Only the match code can reach the match writers (match-director critic round 3, better than the design; DEC-139).** `GameState.match` is a `MatchRecord` (DEC-177), so every system, command handler and bot controller that holds `GameState` can call `endMatch`, `holdIdle` and the other writers. Only review keeps DEC-172's "one caller each" (today the calls are only in `match/` and `Simulation.ts`). Options: (a) type the public `GameState.match` as the read-only `MatchState` and give the `MatchRecord` only to `DirectorContext` and `Simulation` (the compiler stops other callers; changes the 03 §2 sketch); (b) an ESLint `no-restricted-syntax` rule that refuses `.match.<writer>(` outside `match/`, `Simulation.ts` and tests; (c) leave it to review. Agent's recommendation: (a), in its own PR with the HC-S7 split, not in the match-director PR (its critic rounds are used up, and round 2 had the same exposure).
   - Answered 2026-11-05 in chat (DEC-210): "(a) Read-only type". To build: its own PR from the phase
     branch after the match-director PR (#74) merges, with the HC-S7 split.
+  - 2026-11-14: the build also covers `MatchRecord.scoreBook` (DEC-211), which GL-4 (PR #93) added
+    as a writer-reachable field (DEC-250 (1)).
+- [x] **HC-Q47 — One small roster type for the HUD's "re-send if unchanged" rule (GL-5 targeted critic
+      after DEC-221, better than the design; DEC-139).** `MatchBridge.keepUnchanged` keeps each
+      unchanged HUD roster item and the last array (DEC-221 (3), B2). The critic proposes moving it
+      out of `MatchBridge` to `game/keepUnchanged.ts` (a function), or to a small `PublishedRoster`
+      class that holds the last array and the check, with its own unit test, the length-change
+      branch included. `MatchBridge` (257 lines) would then only publish, and GL-16 and GL-7 add to
+      it. The critic called today's form acceptable. Answer: build it (in GL-16, or now on GL-5), or
+      keep it as it is.
+  - Answered 2026-11-08 in chat (DEC-222): "(b) Build it in GL-16". To build: in GL-16 (game-loop
+    plan §7), with its own unit test, the length-change branch included.
+- [x] **HC-Q57 — The online Duel in the results flow: five better-than-design items and one rule
+      question (critics on the #97 merge into GL-4, PR #93; DEC-139).** The merge keeps GL-5's
+      results flow for a Duel (`duel-ended`, `selectMatchVerdict`, `ResultsScreen`). Both critics
+      approved it and proposed:
+  - (1) `selectMatchVerdict` returns no verdict for a Duel the other player left. Today it says
+    `draw`, and only `ResultsScreen` overrides it; a later reader (post-game GL-10, match history)
+    would count a draw. Or one bridge selector that holds all the results screen's rules.
+  - (2) Publish the Duel's setup when the Duel starts, not in `prepareWorld`. The setup's team
+    then always exists, and `DuelOutcome.ownTeam` with its fallback branch goes away.
+  - (3) `DuelResult` (`DuelSession.types.ts`) and `DuelOutcome` (`bridge/events.ts`) hold the same
+    data; make them one type.
+  - (4) One rematch rule shared by the session (`canRepeatMatchSetup`) and `ResultsScreen`, in
+    `bridge/` as `canConfirmSelection` is, and stated as "not after a Duel" instead of "the setup
+    has rosters".
+  - (5) A match-mode strategy (local, Duel) for `SessionController`, which now asks "is this a
+    Duel" in `prepareWorld`, `createMatch` and `canRepeatMatchSetup`.
+  - (6) Rule question: after a match ends the world runs on for 5 s (DEC-92). A Duel goes to the
+    results at once, as #97 built it (the server closes the connection). Keep, or give a Duel the
+    run-on (it needs the server to keep sending snapshots)?
+  - Also a finished Duel has no status line under its verdict (the line comes from core's result,
+    which a Duel does not have); (1) decides what it shows.
+  - Answer per item: build now on PR #93, schedule, or keep as it is.
+  - Renumbered 2026-11-14 from HC-Q48: the ability framework (`feat/ability-framework`, ADR 0026)
+    took HC-Q48 first.
+  - Answered 2026-11-14 in chat (DEC-250): "have a critic look at the open items; if they pass, put
+    them in", then "option b is better. also leaving a duel when the other user is still in said
+    duel counts as a loss." (1) to (4): the critic passed them and they are built on PR #93
+    (`selectResultsView`, the setup published at the first snapshot, `MatchEnding`,
+    `canRepeatSetup`). (5): scheduled with HC-S7. (6): option B, the run-on is built with the
+    Duel's own win rules (DEC-36); until then a finished Duel goes to the results at once. A
+    finished Duel keeps no status line.
+  - Open until DEC-251: after the opponent leaves, does the player who stayed see VICTORY? The
+    leaver takes a loss (DEC-250 (4)); the screen for the player who stayed shows no verdict until
+    the owner says.
+  - Answered 2026-11-14 in chat (DEC-251): "A) yes". The player who stayed sees VICTORY, with
+    "Opponent left." under it. The server names that player's team as the winner of the
+    `opponent-left` ending, so `selectMatchVerdict` has no Duel branch (`feat/duel-leave-victory`).
+  - Critic notes on the built delta (2026-11-14), for the HC-S7 work: `createMatch` still asks
+    `duel.status === 'started'` while `canRepeatMatchSetup` reads `setup.mode`, so the strategy
+    should key on `setup.mode`; `MatchSetupDraft` could be a union by `mode`, so that "a Duel has
+    no rosters" is a type fact. For doc-gardening: the folder table of architecture 02 has no row
+    for `game/duel/` and `game/engine/net/`, which import `@eternalus/protocol` (#97).
 - [ ] **HC-Q42 — Where do Legends spawn at tick 0: all at their Citadel (DEC-80), or as built (match-director critic).** DEC-80 says "All Legends spawn at their Citadel at tick 0." As built (architecture 18 §8, MS-20), each bot laner spawns at its team's end of its assigned lane, and only the Rovers (the bot Rover and the human's Legend, DEC-173) spawn at their team's Stronghold. Keep the as-built lane start for laners and narrow DEC-80 to respawns, or spawn every Legend at its Citadel and let laners walk to their lanes?
 - [ ] **HC-S7 — Scheduled: split `Simulation.ts` and `SessionController.ts` below the ~300-line
       guide (PR #68 review, follow-up 3).** `Simulation.ts` (461 lines) holds start-up helpers
@@ -2082,6 +2428,9 @@ Reply inline (`Decision: …`).
     `planLanes`, `humanSlotOf`, `controllerOf`, `spawnSlot`, `strongholdOf`, `legendRefusal`)
     are one responsibility: the split is a `RosterSpawner` class. #56, #57, #58, #66 and #67 have
     merged; open PRs #64 and #32 still edit the file. `SessionController.ts` is 326 lines.
+  - 2026-11-14 (HC-Q57 (5), DEC-250 (2)): the `SessionController` split also takes the match-mode
+    strategy: `LocalMatchStart` and `DuelMatchStart` in a `Record<MatchMode, …>` registry, keyed
+    by the setup's `mode`, so that `createMatch` and `canRepeatMatchSetup` hold no Duel branch.
 - [ ] **HC-S8 — Scheduled with GL-3: filter the timeline rules by action kind (match-director
       critic).** `validateGameConfig` reads every timeline entry as `enter-phase`: the rules "at
       least one `enter-phase` entry" and "the first `enter-phase` entry ends the countdown" count
@@ -2097,6 +2446,10 @@ Reply inline (`Decision: …`).
       and a `MatchResult` at tick T, no further commands") runs on a test entity with
       `WinObjective` today, because no shipped kind has the component. Add the test through
       `Simulation` when GL-3 gives the sovereign the component. Nothing to answer.
+- [ ] **HC-S11 — Not chosen for GL-5: keep the `selection` assets on a rematch (GL-5 critic round
+      2, B4; DEC-213).** On a rematch, `ResultsState.exit` releases `selection` and `loading`
+      loads it again at once. Releasing it only on the routes to `menu` saves one reload; plan
+      §4.5 step 5 would change by one line. Low value. Nothing to answer unless you want it.
 - [ ] **HC-S1 — Suggestion, not built: countdown urgency.** At 10 s or less, a stronger glow, a
       1 Hz pulse and screen-reader lines at 10 and 5 s. If you want it, it comes back as a
       `creative` row: a data-selectable variant with your static original kept live (DEC-53).
@@ -2349,6 +2702,57 @@ Reply inline (`Decision: …`).
   - Decision (2026-10-31): (1) "C1: INBOX + post on #56 (Recommended)": the comment goes on PR
     #56. (3) "Yes, match 12 (Recommended)": DEC-136, which also covers 07 §11's event list.
     **Open:** Samarjit's answer on #56. Tick this item when it is recorded here.
+- [x] **Out-of-combat healing — five rules DEC-188 and DEC-215 leave open (2026-11-07,
+      `feat/out-of-combat-heal`, critic r1).** Each stays as built until you answer. Reply per
+      question (`Q-D: A`).
+  - **Q-D:** A blocked or zero-damage hit on a structure (an unbreakable gate or Stronghold):
+    does it mark that structure as under attack, which stops its heal bonus? (A) only hits that
+    deal damage **[built, recommended]**; (B) any attack.
+  - **Q-E:** The band in front of a Stronghold gate: (A) outside the heal zone **[built,
+    recommended]**; (B) inside it.
+  - **Q-F:** A human who hits an unbreakable gate or Stronghold deals no damage, so stays out of
+    combat and heals while attacking (bots and minions skip such targets). (A) keep as built
+    **[built]**; (B) any attack swing puts the attacker in combat.
+  - **Q-G:** Is a hit on the `stronghold` palace map object (its own entity, 10000 health) a hit
+    on "the Stronghold itself" (DEC-215 (2))? (A) no **[built]**; (B) yes.
+  - **Q-H:** The heal zone is read once from the map, so the ground of a destroyed shield wall
+    stays outside the zone. (A) keep **[built]**; (B) the ground joins the zone when the wall
+    falls.
+  - **Answered 2026-11-09 by DEC-225** (decision page 2): Q-D, Q-F, Q-G and Q-H (A), as built.
+    Q-E: "only the area inside the stronghold. doors/gates not included. must be inside the
+    structure (at least half the entity, as other areas are also done)": the centre-point rule
+    of every zone, as built; no code change.
+- [x] **Out-of-combat healing — better than the design, not built, for sign-off (DEC-139;
+      2026-11-07, `feat/out-of-combat-heal`, critic r1 items (2) to (6)).** Approve each to
+      schedule it, or say no.
+  - (2) Inject `HealingZones` (or its shape strategies) from `DefaultSystemPipeline`; today
+    `OutOfCombatHealingSystem` builds it in its constructor.
+  - (3) Compute the fort boxes once and share them with `PathingSystem` (`fortBoxesOf`; INBOX
+    C1/H1 on PR #75, `docs/playtest-rulings`): `MatchWorld` keeps a box per structure id, and
+    `fort-box` stops building its outline each tick.
+  - (4) One structure-spawn function for `Simulation.spawnStructures` and the test fixture
+    `spawnMapStructures` (they already drifted once).
+  - (5) One list of shield kinds in `map/` (`HealingZones.SHIELD_KINDS` and the
+    `strongholdEnclosure` filter); take the rear edge from the cliff geometry
+    (`strongholdCliffs`) or a side helper, not `x < width/2`.
+  - (6) `zoneOf(shape, structure, team)`: the team comes from the structure; key the Stronghold
+    interiors by feature id.
+  - Critic r2 (2026-11-07) adds: (7) `CombatClock.isQuietFor(tick, ticks)`, so the
+    out-of-combat test is written once (the system computes it twice; a bot Survive check, a HUD
+    cue or aether regen would copy it). (8) A `state/` tally that writes the clock, as
+    `AllyDamageTally` does, so "last fought" is a match fact and the heal system only reads it;
+    today the clock exists only when the heal system runs. (9) `Entity.ensureComponent(type,
+create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySystem`,
+    `OutOfCombatHealingSystem`). (10) One production map-object factory for `Simulation` and the
+    test fixtures (extends (4)).
+  - Critic on the #64 merge (2026-11-08) adds: (11) One fort geometry for heal and capture. The
+    heal `fort-box` zone is the tower's `Footprint` box (walls and gateways, DEC-215 (4)); the
+    capture zone's `zoneAreaOf` rebuilds the fort court from `BUILDING_GEOMETRY.fort` (court
+    only, DEC-145 (a)). The extents differ on purpose, but a fort size change in one place would
+    not reach the other; derive the capture court as an inset of the same fort box.
+  - **Answered 2026-11-09 by DEC-225:** (2) to (10) approved for the tidy PR (decision page 2);
+    (11) approved, "One source" (question dialog): the capture court comes from the capture
+    fort's drawn wall box, inset by the wall thickness, in the tidy PR.
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
@@ -2372,6 +2776,24 @@ Reply inline (`Decision: …`).
       `findBuildingAt` itself: a zone asks whether a point is on its own floor, and `find` returns
       only the first of two overlapping footprints. (2026-11-03: done on #64 after the HUD PR
       merged into it: `isPointInAnyPolygon` in `utils/geometry.ts`. The density % part is open.)
+- [ ] **GL-15 capture and hold points (DEC-214)** — Owner: sholtzman, `feat/capture-scoring`
+      (base `feat/match-scoring`). FR-007's capture points (3 team-only points per checkpoint a
+      team's push reaches) and hold points (1 team-only point per full minute of pooled held
+      time) at DEC-131's values; present Legends' `checkpointsWon`. The owner approved a separate
+      PR only if it is assured to happen: its PR opens after GL-4's and merges right after it.
+      Close this item when that PR merges.
+- [ ] **GL-16 map-feature link (DEC-221 (3); GL-5 critic round 3, B1)** — Owner: sholtzman,
+      `refactor/map-feature-link` (base: the phase branch after GL-5 merges). A `MapFeatureLink`
+      component, set from a placement's map feature id, on structures and capture zones. The
+      snapshots read it instead of `instanceof Structure`, and `MatchBridge` binds a capture site
+      to its zone by that id, not by position. Close this item when its PR merges.
+- [ ] **GL-17 entity component query (DEC-229; GL-15 critic round 2, better than the design)** —
+      Owner: sholtzman, `refactor/entity-component-query` (base: the phase branch after #79 and
+      #85 merge; they change `EntityStore`). A read-only query port on `EntityStore` for the
+      entities that carry a given component, beside `SpaceQuery` and `PathQuery`.
+      `CaptureHoldRule` takes it instead of the whole `GameState`, and the capture-point lookups
+      of `CaptureHoldRule`, `CaptureProgressBoundsInvariant` and `CaptureSystem` move to it. Close
+      this item when its PR merges.
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
       `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`

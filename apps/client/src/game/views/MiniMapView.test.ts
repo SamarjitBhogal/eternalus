@@ -158,6 +158,19 @@ describe('MiniMapView', () => {
     expect(held.calls).toEqual([]);
   });
 
+  it('draws nothing while hidden, and draws again once shown (DEC-147)', () => {
+    const renderer = new RecordingRenderer();
+    const miniMap = createMiniMap();
+
+    miniMap.toggle();
+    miniMap.draw(renderer, 1920, 1080);
+    expect(renderer.calls).toEqual([]);
+
+    miniMap.toggle();
+    miniMap.draw(renderer, 1920, 1080);
+    expect(renderer.calls.map((call) => call.op)).toContain('clipToEllipse');
+  });
+
   it('clips and fits to whichever ring it is given', () => {
     const other: MiniMapRing = {
       frame: { width: 1920, height: 1080 },
@@ -334,7 +347,7 @@ describe('MiniMapView unit markers (DEC-187)', () => {
       family: 'mob',
       definitionId: 'light-minion',
       team: 'light',
-      transform: { x: CENTRE.x + 10, y: CENTRE.y, radius: 0.4 },
+      transform: { x: CENTRE.x + 10, y: CENTRE.y, radius: 0.4, facing: { x: 1, y: 0 } },
       health: { current: 150, max: 150 },
       progression: null,
       aether: null,

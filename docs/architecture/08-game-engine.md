@@ -246,8 +246,10 @@ flowchart LR
 - `ViewRegistry` (Registry pattern) maps entity `kind` → `EntityView`; `DefaultEntityView` draws
   a definition sprite for kinds without a bespoke view. Views read snapshots through `import type`
   only and never mutate state (rule 6).
-- Interpolation: views draw `prev + (current - prev) × alpha` for position and facing; entities
-  that appeared this tick draw at `current` (no ghost from the origin).
+- Interpolation: views draw `prev + (current - prev) × alpha` for position. The facing uses the
+  same blend, scaled back to length 1 (`EntityLayer.turn`), and snaps at the midpoint when the two
+  facings are opposite (a zero blend takes `current`). Entities that appeared this tick draw at `current` (no ghost from the
+  origin).
 - World health bars: `EntityLayer` has `HealthBarView` draw a unit's bar after every entity of
   its layer, so no entity hides it. Which units show one, and on which side, is decided in `game/`
   by `HealthBarVisibility` (DEC-195), which reads `damage-applied` and `entity-removed` through
@@ -321,6 +323,11 @@ HUD and character select (`feat/hud-and-character-select`, 2026-10-26; DEC-50):
   player's Legend comes from `Snapshot.match.humanLegendId`, which core sets when it spawns the
   roster's human slot (DEC-173, [12](12-game-story-and-match-director.md) §13). `Match` no longer
   adopts the first spawn of the player's class and team.
+
+Game-loop plan GL-5 (`feat/results-flow`): `Match.tick` calls the match observer's `ended` once,
+after the tick on which `MatchBridge` publishes `match-ended`; the world keeps running (DEC-92)
+until `MatchState` leaves the phase ([13](13-game-interface.md) §2). A pause overlay still pauses
+the loop, but not the timer that leaves the phase (DEC-134).
 
 ## Related
 

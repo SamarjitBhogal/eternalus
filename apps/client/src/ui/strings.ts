@@ -1,7 +1,9 @@
 import type { InputAction } from '../bridge/Binding.types';
 import type { DetailSlot, RoleRatingAxis } from '../bridge/catalogue.types';
+import type { MatchVerdict } from '../bridge/domain.types';
 import type { MenuRoute, SessionPhase, SessionReason } from '../bridge/events';
 import type { HudAllegiance, HudBlockReason } from '../bridge/hud.types';
+import type { ResultsStatus } from '../bridge/selectors/selectResultsView';
 
 /**
  * Banner text per `session.reason`: every `SessionReason` but the popup ones has one (a missing
@@ -13,6 +15,7 @@ const REASON_BANNERS: Readonly<Record<string, string>> = {
   cancelled: 'Match cancelled.',
   'match-failed': 'Match could not start.',
   'load-failed': 'Loading failed.',
+  'duel-unavailable': 'Connection to the Duel server was lost.',
 } satisfies Record<
   Exclude<SessionReason, 'select-timeout' | 'match-crashed' | 'screen-crashed'>,
   string
@@ -31,6 +34,7 @@ export const STRINGS = {
   menu: {
     navLabel: 'Main menu',
     startMatch: 'Start match',
+    duelOnline: 'Duel online',
     loadouts: 'Loadouts',
     settings: 'Settings',
     about: 'About / credits',
@@ -84,13 +88,49 @@ export const STRINGS = {
   },
   loadouts: { title: 'Loadouts', classesTitle: 'Classes' },
   profile: { history: 'Match history and achievements appear here.' },
+  duelName: {
+    title: 'Duel online',
+    nameLabel: 'Your name',
+    find: 'Find opponent',
+    back: 'Back',
+    /** The name the field starts with. */
+    defaultName: 'Player',
+  },
+  duelVersus: { title: 'Duel online', versus: 'VS' },
+  duelQueue: {
+    title: 'Duel online',
+    searching: 'Searching for an opponent…',
+    cancel: 'Cancel',
+  },
+  /**
+   * The win/lose screen, wording kept as built (DEC-134 (1)); its verdict line is core content
+   * (`selectVerdictLine`, DEC-83).
+   */
   results: {
+    /**
+     * The banner without a verdict: a Duel the other player left, or no result (results follow
+     * `match-ended` or `duel-ended`, so only a bug shows that).
+     */
     title: 'Match results',
-    // TODO(sam): verdict lines are core content (content/narrative/, selectVerdictLine) once it exists.
-    noResult: 'No result recorded.',
-    draw: 'Draw.',
-    /** The winning team's name is content (`contentSlice.selectors.selectTeamNames`). */
-    winner: (teamName: string): string => `${teamName} wins.`,
+    /** The banner per verdict: the owner's "VICTORY or DEFEAT" (2026-10-27); a draw (DEC-77). */
+    verdicts: { victory: 'VICTORY', defeat: 'DEFEAT', draw: 'DRAW' } satisfies Record<
+      MatchVerdict,
+      string
+    >,
+    /**
+     * The status line when there is no verdict line from content: an online Duel the other player
+     * left (ADR 0016), or no result (results follow `match-ended` or `duel-ended`, so only a bug
+     * shows that).
+     */
+    statuses: {
+      'opponent-left': 'Opponent left.',
+      'no-result': 'No result recorded.',
+    } satisfies Record<Exclude<ResultsStatus['kind'], 'verdict-line'>, string>,
+    /** The ended match's length, `mm:ss` (`selectMatchDurationText`). */
+    duration: (time: string): string => `Match length ${time}`,
+    countdownLabel: 'Time left before the main menu',
+    // DEC-78: "A Continue control skips the wait."
+    continue: 'Continue',
     playAgain: 'Play again',
     mainMenu: 'Main menu',
   },
@@ -112,6 +152,9 @@ export const STRINGS = {
       profile: 'Profile',
       settings: 'Settings',
       about: 'About',
+      'duel-name': 'Duel name',
+      'duel-queue': 'Duel queue',
+      'duel-versus': 'Duel versus',
     } satisfies Record<MenuRoute, string>,
   },
   /** Shown where an action has no binding (`KeyGlyph`, the settings list). */
@@ -215,6 +258,11 @@ export const STRINGS = {
   /** The match HUD (62:231); slot names reuse `ACTION_LABELS`, gameplay names are content. */
   hud: {
     label: 'Match HUD',
+    duelScore: 'Duel score',
+    /** "3 - 1" with the target beside it: "first to 10". */
+    duelFirstTo: (target: number): string => `first to ${String(target)}`,
+    duelCountdown: 'Match start',
+    duelStart: 'START',
     health: 'Health',
     aether: 'Aether',
     level: 'Level',

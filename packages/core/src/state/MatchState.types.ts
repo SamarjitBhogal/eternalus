@@ -2,11 +2,18 @@ import type { MatchPhase } from '../config/matchPhases';
 import type { PlayableTeam } from '../teams/teams.types';
 import type { EntityId } from './EntityStore.types';
 import type { MatchResult } from './MatchResult.types';
+import type { ScoringState } from './ScoringState.types';
 
 /** One timeline entry's resolved tick, kept as plain data so the snapshot can list it (12 §3). */
 export type ScheduledMark = {
   readonly entryId: string;
   readonly tick: number;
+};
+
+/** A Duel's score: the kills each team has made and the count that wins (ADR 0016, DEC-36). */
+export type DuelScore = {
+  readonly kills: Readonly<Record<PlayableTeam, number>>;
+  readonly killTarget: number;
 };
 
 /**
@@ -31,15 +38,26 @@ export interface MatchState {
   /** The team the match is played (or spectated) for, from `config.match.playerTeam`. */
   readonly playerTeam: PlayableTeam;
   /**
-   * The human's Legend; `null` in sim mode (11 §7: no human slot in the roster), and when the
-   * human slot names no Legend definition. Set once, only through `MatchRecord.seatHuman`, by
-   * `Simulation` from the roster's human slot, when the match is built.
+   * The Legend of the human on `playerTeam`; `null` in sim mode (11 §7: no human slot in the
+   * roster), and when the human slot names no Legend definition. Set once, only through
+   * `MatchRecord.seatHuman`, by `Simulation` from the roster's human slot, when the match is
+   * built. A Duel (ADR 0016) seats one human per team: `Simulation.humanLegendIdOf` reads either.
    */
   readonly humanLegendId: EntityId | null;
+  /**
+   * The Legends' counters and points, and the teams' totals (12 §5), read-only at every depth.
+   * Written only through the `ScoreBook` that `MatchRecord` holds, by `Scoring` (DEC-211).
+   */
+  readonly scoring: ScoringState;
   /**
    * How the match ended; `null` until a verdict. Set once, only through `MatchRecord.endMatch`, by the
    * `MatchDirector`, which does nothing after it. Not hashed: the terminal phase it comes with
    * already is.
    */
   readonly result: MatchResult | null;
+  /**
+   * The Duel's score; `null` outside a Duel. Started once by `Simulation` (`startDuel`) and
+   * counted only through `MatchRecord.recordDuelKill`, by `DuelRoundSystem`.
+   */
+  readonly duel: DuelScore | null;
 }
