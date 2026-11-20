@@ -178,6 +178,7 @@ Reply inline (`Decision: …`).
       break. No spec gives the inner walls their own value. Should the `'wall'` features inside the
       Stronghold ring keep the WallSegment value, or get their own (which number)?
   - **Answered 2026-11-13 by DEC-247** (chat, PR #96). Not built yet (BUG-2).
+  - **(3) answered 2026-11-20 by DEC-288** (Owner Calls page). Not built yet (BUG-2).
 
 - [x] **BUG-3: minions attack obstacles (2026-11-12, PR #96, SCRUM-436).** Today a stuck unit
       paths around an obstacle (DEC-193); minions never attack obstacles or props. The playtest

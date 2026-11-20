@@ -9264,3 +9264,21 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   passed."; `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-15.log`); then
   `prettier --check` and `npm run docs:check` on this file.
 - Next step: the owner pushes the branch (`push-125-r3.sh`), then merges PR #125.
+
+### 2026-11-20 — Phase 3 / DEC-288: the inside bonus covers forts and houses (DEC-247 (3)) — docs/dec-288-interior-bonus-buildings — sholtzman + Claude Code
+
+- What was done: recorded the owner's answer of 2026-11-20 (Owner Calls page) to DEC-247 (3) as
+  DEC-288, in a new top batch of the decisions log (`last-reviewed` 2026-11-20). The DEC-247 row
+  keeps its text and gains a closing pointer "(3) answered
+  2026-11-20 by DEC-288", as DEC-193 got "Amended 2026-11-13 by DEC-248" (`44fb45fc`).
+  `INBOX.md` BUG-2 gains a pointer line; the BUG-2 row of `docs/plan/bugs.md` cites DEC-288
+  (`last-reviewed` 2026-11-20). Docs only. Critic (`architecture-reviewer`): request-changes, 2
+  should-fix items (this entry's check line, `last-reviewed` on `bugs.md`) and 5 nits; all
+  applied. Ponytail: 3 wording cuts (no repeated building list in the DEC-247 pointer), applied.
+- Checks run: full `npm run check` exit 0 before the critic fixes
+  (`eternalus-agent-work/dec-288/check-1.log`) and again after the critic and ponytail fixes,
+  before this line was edited (core 275 files / 1674 tests, protocol 1 / 29, client 298 / 2011,
+  server 21 / 84, "Documentation check passed."; `eternalus-agent-work/dec-288/check-2.log`);
+  then `prettier --check` and `npm run docs:check` on this file.
+- Next step: push the branch and open its PR into `phase/3-sprint-3-work`. BUG-2 is still not
+  scheduled.
