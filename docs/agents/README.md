@@ -4,7 +4,7 @@ description: How AI coding agents (Claude Code, Codex/ChatGPT, Gemini/Antigravit
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-03
+last-reviewed: 2026-11-19
 tags: [agents, harness, process]
 related: ['docs/architecture/16-agentic-harness.md', 'docs/requirements/04-agentic-instructions.md']
 ---
@@ -39,8 +39,7 @@ Per-tool details and verification steps: [`tool-setup.md`](tool-setup.md).
 3. The architecture doc whose `paths:` frontmatter matches those files
    (`grep -l "paths:" docs/architecture/*.md`), starting with
    [`../architecture/02-code-structure.md`](../architecture/02-code-structure.md).
-4. The current phase doc in [`../plan/`](../plan/README.md) and the last entry of
-   [`../plan/PROGRESS.md`](../plan/PROGRESS.md).
+4. The current phase doc in [`../plan/`](../plan/README.md) and the newest entries in [`../plan/progress/`](../plan/progress/README.md).
 5. The task brief (issue or [`task-brief-template.md`](task-brief-template.md)) and, if the
    product owner left items, [`../../INBOX.md`](../../INBOX.md).
 
@@ -54,7 +53,7 @@ flowchart LR
   B --> C[Implement with tests]
   C --> D[npm run check]
   D -->|fail| C
-  D -->|pass| E[PROGRESS.md entry]
+  D -->|pass| E[progress entry file]
   E --> F[PR into the phase branch]
   F --> G[Independent review: pr-review skill or architecture-reviewer + human]
   G -->|changes| C
@@ -75,7 +74,7 @@ flowchart LR
 | Strict TypeScript, no `any`, banned ts-comments, zero lint warnings, no `console` | Placement in the right layer/folder; SOLID and DRY; strategies instead of switches |
 | Core purity (no DOM/Node types, no React/Redux imports, no `Math.random`)         | Determinism beyond the lint rules (iteration order, sort comparators, wall clock)  |
 | Test integrity (`.only`/`.skip` banned, every test asserts), coverage thresholds  | Tests assert behaviour, not coverage; product decisions were not made by an agent  |
-| knip (dead code), Prettier, LF endings, lockfile sync, exact versions, docs check | Docs and frontmatter updated; PROGRESS entry; scope discipline                     |
+| knip (dead code), Prettier, LF endings, lockfile sync, exact versions, docs check | Docs and frontmatter updated; progress entry file; scope discipline                |
 | Claude Code hooks: per-file lint after edits, `check:quick` gate before stopping  | Commit messages, PR description, ADR when a guardrail changes                      |
 
 ## 5. Files in this folder

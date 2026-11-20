@@ -4,7 +4,7 @@ description: Specification of the follow-up pull request that adds data-selectab
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-19
 tags: [plan, ui, hud, character-select, accessibility, motion, follow-up]
 related:
   - 'docs/reference/game-design/15-figma-frames-and-creative-decisions.md'
@@ -140,7 +140,7 @@ Sources in brackets are listed in §5.
 **Done when:** `npm run check` passes; each built enhancement has its unit tests, its visual
 scenario reviewed by the owner and its `creative` row; every Figma scenario with an empty
 `uiEnhancements` is byte-identical to the shots of the merged `feat/hud-and-character-select`;
-rule 7's performance check is recorded in `PROGRESS.md`. The visual tests run on the audit
+rule 7's performance check is recorded in `docs/plan/progress/`. The visual tests run on the audit
 toolchain kept outside the repository (the harness, `shoot.ts` and `vdiff.py` of the HUD and
 character-select work); the pull request quotes their results.
 
