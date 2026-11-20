@@ -6,4 +6,9 @@ export const DUEL_RULES = {
   countdownSeconds: 3, // TUNE: the owner's 3, 2, 1, START
   /** How far each Legend starts from the Cathedral's centre, light west, dark east, in world units. */
   startOffset: 50, // TUNE: inside the transept, outside the capture floor (radius 31)
+  /**
+   * Every Legend enters a Duel at its level curve's cap (SCRUM-444). Minions and other mobs keep
+   * their normal level and veterancy.
+   */
+  legendsStartAtMaxLevel: true,
 } as const;

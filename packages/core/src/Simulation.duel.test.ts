@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { DUEL_RULES } from './content/duel/duelRules';
+import { MOB_DEFINITIONS } from './content/mobs/mobCatalogue';
+import { LEGEND_LEVEL_CURVE } from './content/progression/levelCurves';
 import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { NullLogger } from './diagnostics/NullLogger';
 import { runReplay } from './diagnostics/replay';
@@ -36,6 +38,9 @@ const build = (duel: DuelOptions = { killTarget: 2 }) =>
     roster: ROSTER,
     duel,
   });
+
+/** A fight between two max-level Legends (SCRUM-444) runs thousands of ticks, longer under coverage. */
+const FIGHT_TIMEOUT_MS = 180_000;
 
 const legendOf = (sim: Simulation, snapshot: Snapshot, team: PlayableTeam) => {
   const id = sim.humanLegendIdOf(team);
@@ -75,54 +80,102 @@ describe('Simulation: a Duel', () => {
     expect(snapshot.match.duel).toEqual({ kills: { light: 0, dark: 0 }, killTarget: 2 });
   });
 
+  it('starts both Legends at max level and spawns minions at their normal level (SCRUM-444)', () => {
+    const duel = build();
+    const ordinary = new Simulation({
+      config,
+      seed: 7,
+      logger: new NullLogger(),
+      debug: TEST_DEBUG_CONFIG,
+      map,
+      mapObjects,
+      roster: ROSTER,
+    });
+    const isMinion = (entity: Snapshot['entities'][number]) =>
+      entity.definitionId.endsWith('-minion');
+    for (const sim of [duel, ordinary]) {
+      for (let i = 0; i < 300 && !sim.snapshot().entities.some(isMinion); i += 1) sim.step();
+    }
+    const duelSnapshot = duel.snapshot();
+    const ordinarySnapshot = ordinary.snapshot();
+
+    for (const team of ['light', 'dark'] as const) {
+      const { legend } = legendOf(duel, duelSnapshot, team);
+      const usual = legendOf(ordinary, ordinarySnapshot, team).legend;
+      expect(legend.progression).toMatchObject({ level: LEGEND_LEVEL_CURVE.cap, xpToNext: null });
+      expect(usual.progression?.level).toBe(1);
+      expect(legend.health?.max).toBeGreaterThan(usual.health?.max ?? Infinity);
+      expect(legend.health?.current).toBe(legend.health?.max);
+      expect(legend.aether?.max).toBeGreaterThan(usual.aether?.max ?? Infinity);
+    }
+    const minions = duelSnapshot.entities.filter(isMinion);
+    expect(minions.length).toBeGreaterThan(0);
+    for (const minion of minions) {
+      expect(minion.progression).toBeNull();
+      expect(minion.health?.max).toBe(MOB_DEFINITIONS.get(minion.definitionId).baseHealth);
+    }
+  });
+
   it('has no duel in the snapshot of an ordinary match', () => {
     const sim = new Simulation({ config, seed: 7, logger: new NullLogger(), map, mapObjects });
 
     expect(sim.snapshot().match.duel).toBeUndefined();
   });
 
-  it('counts a kill and resets both Legends to their start points at full health', () => {
-    const sim = build();
-    const before = sim.snapshot();
-    const after = fightUntil(sim, (snapshot) => (snapshot.match.duel?.kills.light ?? 0) > 0);
+  it(
+    'counts a kill and resets both Legends to their start points at full health',
+    () => {
+      const sim = build();
+      const before = sim.snapshot();
+      const after = fightUntil(sim, (snapshot) => (snapshot.match.duel?.kills.light ?? 0) > 0);
 
-    expect(after.match.duel?.kills).toEqual({ light: 1, dark: 0 });
-    expect(after.match.phase).not.toBe('victory');
-    for (const team of ['light', 'dark'] as const) {
-      const { legend } = legendOf(sim, after, team);
-      expect(legend.health?.current).toBe(legend.health?.max);
-      expect(legend.transform).toMatchObject({
-        x: legendOf(sim, before, team).legend.transform?.x,
-        y: legendOf(sim, before, team).legend.transform?.y,
+      expect(after.match.duel?.kills).toEqual({ light: 1, dark: 0 });
+      expect(after.match.phase).not.toBe('victory');
+      for (const team of ['light', 'dark'] as const) {
+        const { legend } = legendOf(sim, after, team);
+        expect(legend.health?.current).toBe(legend.health?.max);
+        expect(legend.transform).toMatchObject({
+          x: legendOf(sim, before, team).legend.transform?.x,
+          y: legendOf(sim, before, team).legend.transform?.y,
+        });
+      }
+    },
+    FIGHT_TIMEOUT_MS,
+  );
+
+  it(
+    'ends the match for the first team to reach the kill target',
+    () => {
+      const sim = build({ killTarget: 2 });
+      let result: { winner: PlayableTeam | null; condition: string } | null = null;
+      sim.on('match-ended', (event) => {
+        result = event.result;
       });
-    }
-  });
 
-  it('ends the match for the first team to reach the kill target', () => {
-    const sim = build({ killTarget: 2 });
-    let result: { winner: PlayableTeam | null; condition: string } | null = null;
-    sim.on('match-ended', (event) => {
-      result = event.result;
-    });
+      const after = fightUntil(sim, () => result !== null);
 
-    const after = fightUntil(sim, () => result !== null);
+      expect(after.match.duel?.kills.light).toBe(2);
+      expect(result).toMatchObject({ winner: 'light', condition: 'kill-count' });
+    },
+    FIGHT_TIMEOUT_MS,
+  );
 
-    expect(after.match.duel?.kills.light).toBe(2);
-    expect(result).toMatchObject({ winner: 'light', condition: 'kill-count' });
-  });
+  it(
+    'replays to the same hashes from its setup and commands',
+    () => {
+      const sim = build({ killTarget: 1 });
+      fightUntil(sim, (snapshot) => snapshot.match.duel?.kills.light === 1);
 
-  it('replays to the same hashes from its setup and commands', () => {
-    const sim = build({ killTarget: 1 });
-    fightUntil(sim, (snapshot) => snapshot.match.duel?.kills.light === 1);
+      const replay = sim.exportReplay();
 
-    const replay = sim.exportReplay();
-
-    expect(replay.duel).toEqual({ killTarget: 1 });
-    expect(
-      runReplay(replay, (setup) => new Simulation({ ...setup, logger: new NullLogger() }))
-        .firstDivergence,
-    ).toBeNull();
-  });
+      expect(replay.duel).toEqual({ killTarget: 1 });
+      expect(
+        runReplay(replay, (setup) => new Simulation({ ...setup, logger: new NullLogger() }))
+          .firstDivergence,
+      ).toBeNull();
+    },
+    FIGHT_TIMEOUT_MS,
+  );
 
   it('refuses a Duel without a map', () => {
     expect(
