@@ -1,8 +1,10 @@
+import { drawFacingChevron } from './facingChevron';
 import type { Renderer } from '../engine/render/Renderer';
 import { DefaultEntityView } from './DefaultEntityView';
 import type { EntityDrawState } from './EntityView.types';
-import { drawFacingChevron } from './facingChevron';
-import { MINI_MAP_MOB_GLYPH, MOB_OUTLINE_COLOR, MOB_OUTLINE_SCALE } from './entityViews.constants';
+import { MOB_OUTLINE_COLOR, MOB_OUTLINE_SCALE, MOB_VISUAL_SCALE } from './entityViews.constants';
+import { withVisualRadius } from './entityVisualState';
+import { MINI_MAP_MOB_GLYPH } from './entityViews.constants';
 
 /**
  * The placeholder look for mobs (minions, camp units): the default disc on a dark outline, so a
@@ -12,15 +14,19 @@ import { MINI_MAP_MOB_GLYPH, MOB_OUTLINE_COLOR, MOB_OUTLINE_SCALE } from './enti
 export class MobView extends DefaultEntityView {
   protected override readonly minimapGlyph = MINI_MAP_MOB_GLYPH;
 
-  /** Draws the dark outline and the facing chevron, then the team disc and focus ring on top. */
+  /** Draws the dark outline, then the team disc and focus ring on top. */
   public override draw(state: EntityDrawState, renderer: Renderer): void {
-    const diameter = (state.entity.transform?.radius ?? 0) * 2;
+    const visual = withVisualRadius(
+      state,
+      (state.entity.transform?.radius ?? 0) * MOB_VISUAL_SCALE,
+    );
+    const diameter = (visual.entity.transform?.radius ?? 0) * 2;
     renderer.drawWorldGlyph(
       { shape: 'dot', size: diameter * MOB_OUTLINE_SCALE },
       state.position,
       MOB_OUTLINE_COLOR,
     );
-    drawFacingChevron(state, renderer);
-    super.draw(state, renderer);
+    drawFacingChevron(visual, renderer);
+    super.draw(visual, renderer);
   }
 }

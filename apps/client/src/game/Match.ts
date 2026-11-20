@@ -2,6 +2,7 @@ import { type EntityId, type EntitySnapshot, makeLogRecord, type Snapshot } from
 
 import { isDead } from '../bridge/selectors/isDead';
 import { BuildingRoofs } from './BuildingRoofs';
+import { BiomeAtmosphereView } from './views/BiomeAtmosphereView';
 import { GameLoop } from './engine/loop/GameLoop';
 import { HealthBarVisibility } from './HealthBarVisibility';
 import type { LoopTarget } from './engine/loop/GameLoop.types';
@@ -52,6 +53,7 @@ export class Match implements LoopTarget {
 
   /** The map objects (walls, furniture, doors) and their destroyed state, drawn in the scene. */
   private readonly objects: WorldObjectsView;
+  private readonly atmosphere: BiomeAtmosphereView;
 
   private readonly world: { readonly scene: SceneView; readonly miniMap: MiniMapView };
 
@@ -104,11 +106,13 @@ export class Match implements LoopTarget {
     const shown = (): WorldRect => this.camera.visibleArea();
     this.objects = new WorldObjectsView(mapObjects, hiddenRoofs, shown);
     const { isDestroyed } = this.objects;
+    this.atmosphere = new BiomeAtmosphereView(scenery, shown);
     const scene = new SceneView([
       new MapView(map, scenery, hiddenRoofs, shown, buildings, isDestroyed),
       new SceneryView(scenery, 'detail', hiddenRoofs, shown, isDestroyed),
       this.objects,
       this.entities,
+      this.atmosphere,
     ]);
     const centre = (): WorldPoint => this.miniMapCentre();
     this.world = { scene, miniMap: new MiniMapView(map, scene, HUD_MINIMAP_RING, centre) };
@@ -217,6 +221,11 @@ export class Match implements LoopTarget {
     renderer.showWorldArea(view);
     this.entities.show(this.previous, this.current, alpha, this.playerId);
     this.objects.show(this.current.mapObjects ?? []);
+    this.atmosphere.show(
+      this.livingPlayerAt(),
+      (this.current.tick + alpha) / this.deps.tickRate,
+      this.camera.isPlayerFollowing,
+    );
     scene.draw(renderer);
     miniMap.draw(renderer, this.camera.screenWidth, this.camera.screenHeight);
   }

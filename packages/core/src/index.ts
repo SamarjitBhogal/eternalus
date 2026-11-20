@@ -57,6 +57,7 @@ export type {
   MinimapColourRole,
   MinimapGlyph,
   MinimapGlyphShape,
+  BiomeKind,
 } from './content/maps/maps.types';
 export type { VerdictLines } from './content/narrative/verdictLines.types';
 export type { BotRole, BotRosterDefinition, EnemyRoverRule } from './content/teams/botRoster.types';

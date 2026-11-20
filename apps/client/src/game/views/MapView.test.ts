@@ -27,6 +27,29 @@ const drawMain = (): RecordingRenderer => {
 };
 
 describe('MapView', () => {
+  it('replaces dressed camp placeholders only in the main view, retaining minimap markers', () => {
+    const feature = MAP.features.find((entry) => entry.kind === 'corner-camp');
+    if (feature === undefined) throw new Error('Missing camp');
+    const art: MapDecoration = {
+      id: 'shrine',
+      replacesFeature: feature.id,
+      color: 'stone',
+      layer: 'detail',
+      shape: [],
+    };
+    const renderer = new RecordingRenderer();
+    new MapView(MAP, [art]).draw(renderer);
+    expect(
+      renderer.calls
+        .filter((call) => call.op === 'drawWorldGlyph')
+        .some((call) => call.args[1] === feature.position),
+    ).toBe(false);
+    const minimap = new RecordingRenderer();
+    new MapView(MAP, [art]).drawMinimap(minimap);
+    expect(minimap.calls.filter((call) => call.op === 'drawGlyph')).toHaveLength(
+      MAP.features.length,
+    );
+  });
   it('hides main-view building markers with roofs closed as well as open', () => {
     const building = MAP.features.find((feature) => feature.kind === 'cathedral');
     if (building === undefined) throw new Error('Missing building');

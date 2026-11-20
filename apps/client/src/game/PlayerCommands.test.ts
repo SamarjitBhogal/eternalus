@@ -88,6 +88,22 @@ const setUp = () => {
 };
 
 describe('PlayerCommands', () => {
+  it.each([
+    ['legend', { x: 0.1, y: 2 }],
+    ['mob', { x: 0.7, y: 2 }],
+  ] as const)('targets the visible edge of an enemy %s over a building', (family, aim) => {
+    const { input, commands, enqueueCommand, tick } = setUp();
+    const enemy = { ...ENEMY, family };
+    expect(commands.attackUnitAt(ACTOR, aim, snapshotOf([PLAYER, enemy]))).toBe(true);
+
+    input.isAttacking = true;
+    input.aim = aim;
+    tick([PLAYER, enemy]);
+
+    const expected = { type: 'attack-target', actorId: ACTOR, targetId: enemy.id };
+    expect(enqueueCommand.mock.calls).toEqual([[expected], [expected]]);
+  });
+
   it('queues one attack per target while held, and again after a release or a stop', () => {
     const { input, queued, tick, enqueueCommand } = setUp();
     input.isAttacking = true;

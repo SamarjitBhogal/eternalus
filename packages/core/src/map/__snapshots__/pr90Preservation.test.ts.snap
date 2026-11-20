@@ -1,0 +1,34 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Map scenery and collision preservation > pins scenery and all collision, including tower and camp footprints, for seed 1 1`] = `
+{
+  "campCount": 16,
+  "camps": 1046433,
+  "collision": 1104505433,
+  "scenery": 1321863722,
+  "towerCount": 12,
+  "towers": 4007111981,
+}
+`;
+
+exports[`Map scenery and collision preservation > pins scenery and all collision, including tower and camp footprints, for seed 2 1`] = `
+{
+  "campCount": 16,
+  "camps": 1526505567,
+  "collision": 265610347,
+  "scenery": 4031810838,
+  "towerCount": 12,
+  "towers": 4007111981,
+}
+`;
+
+exports[`Map scenery and collision preservation > pins scenery and all collision, including tower and camp footprints, for seed 42 1`] = `
+{
+  "campCount": 16,
+  "camps": 3798105403,
+  "collision": 3705938810,
+  "scenery": 2264793848,
+  "towerCount": 12,
+  "towers": 4007111981,
+}
+`;

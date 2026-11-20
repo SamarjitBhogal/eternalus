@@ -158,6 +158,15 @@ Reply inline (`Decision: …`).
       cannot both be plans, and on one `homeId` they would count as mates across teams. 18 §7.1
       now records the limit. Due before checkpoint defenders get posts: key mates by plan or by
       team as well as home, and allow more than one plan per home if both must coexist.
+
+- [ ] **PR #90 stand-in confirmation (2026-11-16).** Later reviews request the owner's
+      confirmation of DEC-238. Its source is the owner's own
+      [PR #90 review](https://github.com/SamarjitBhogal/eternalus/pull/90#pullrequestreview-5852980286).
+      Please confirm that ruling for the retained code-drawn map/camp/minion art, unit display
+      sizes, follow-camera view and weather. The clean follow-up excludes the disputed image
+      assets, author-approved asset/provenance ADRs and parallel ability stack; this question
+      asserts no approval of those deferred items.
+
 - [ ] **BUG-5 / SCRUM-438 (2026-11-12, `fix/bound-key-actions`) — two owner questions.** (1) Bound
       but unhandled actions: `toggle-developer-menu` (BUG-4, a feature), `sprint`, `interact`,
       `turret-toggle-control`, `turret-switch-ammo` (gameplay not built) and `toggle-perf-overlay`

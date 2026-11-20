@@ -221,13 +221,17 @@ export type MapDecoration = {
   readonly isMirrored?: true;
   /** Optional authored identity for the reflected artwork. */
   readonly mirrorId?: string;
+  /** Authored artwork replaces this feature's placeholder in the main view only. */
+  readonly replacesFeature?: string;
+  /** Presentation region polygon that supplies local atmospheric effects. */
+  readonly ambientBiome?: BiomeKind;
+  /** Cosmetic shimmer follows this authored lava surface, without changing its collider. */
+  readonly sceneryAnimation?: 'lava-flow';
   readonly object?: MapObjectArt;
   /** A bridge deck cuts a walkable corridor through otherwise solid decorative terrain. */
   readonly isPassage?: true;
   /** Authored lane surface replaces the main view's schematic screen-width lane line. */
   readonly isLaneSurface?: true;
-  /** This artwork supplies the main-view drawing of a generated feature, without changing it. */
-  readonly replacesFeature?: string;
 };
 
 /** A selectable same-world building, derived from its interior floor and door polygons. */
@@ -241,3 +245,8 @@ export type MapPresentation = {
   readonly scenery: readonly MapDecoration[];
   readonly buildings: readonly MapBuilding[];
 };
+
+/** Shared presentation biome vocabulary (DEC-238). */
+export type BiomeKind = 'snow' | 'lava';
+/** Shrine equipment themes, independent of gameplay weights (DEC-238). */
+export type CampTheme = 'corner' | 'heavy' | 'medium' | 'light';
