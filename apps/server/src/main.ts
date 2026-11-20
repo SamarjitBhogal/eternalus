@@ -14,7 +14,11 @@ import { CoreDuelSimulationFactory } from './match/CoreDuelSimulationFactory';
 import { DuelHost } from './match/DuelHost';
 import { DUEL_VERSUS_MS } from './match/DuelHost.constants';
 import { PresenceBook } from './presence/PresenceBook';
-import { MAX_HELD_GUESTS, RECONNECT_WINDOW_MS } from './presence/PresenceBook.constants';
+import {
+  MAX_HELD_GUESTS,
+  MAX_KNOWN_GUESTS,
+  RECONNECT_WINDOW_MS,
+} from './presence/PresenceBook.constants';
 import { PlayerRatings } from './rating/PlayerRatings';
 import { DuelQueue } from './queue/DuelQueue';
 import { IntervalTickScheduler } from './time/IntervalTickScheduler';
@@ -42,6 +46,7 @@ const host = new DuelHost({
   ratings,
 });
 const queue = new DuelQueue({ starter: host, ratings, clock, scheduler });
+const stopQueueSweep = queue.start();
 const presence = new PresenceBook({
   queue,
   host,
@@ -49,6 +54,7 @@ const presence = new PresenceBook({
   scheduler,
   reconnectWindowMs: RECONNECT_WINDOW_MS,
   maxHeldGuests: MAX_HELD_GUESTS,
+  maxKnownGuests: MAX_KNOWN_GUESTS,
   newGuestId: randomUUID,
 });
 const gateway = new DuelGateway({
@@ -83,10 +89,11 @@ ops.listen(opsListener.port, opsListener.host);
 
 logger.log(makeLogRecord('INFO', 'server.main', 'Duel server started.'));
 
-// Graceful shutdown: stop the heartbeat, refuse new clients, close the open ones, then exit.
+// Graceful shutdown: stop the heartbeat and the queue sweep, refuse new clients, close the open ones, then exit.
 const shutdown = (): void => {
   logger.log(makeLogRecord('INFO', 'server.main', 'Duel server shutting down.'));
   stopHeartbeat();
+  stopQueueSweep();
   const opsClosed = new Promise<void>((resolve) => {
     ops.close(() => {
       resolve();

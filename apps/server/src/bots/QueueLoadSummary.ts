@@ -1,11 +1,7 @@
 import { Percentile } from './Percentile';
 import type { QueueLoadBot } from './QueueLoadBot';
+import { QUEUE_LOAD_HEADER } from './QueueLoadSummary.constants';
 import type { QueueLoadStats } from './QueueLoadSummary.types';
-
-const HEADER =
-  'bots  rounds  joins  paired  matches  timeouts  lost  dupes  ttm p50 (ms)  ttm p99 (ms)  ttm max (ms)  queue max  queue mean  run (s)';
-
-const text = (value: number | null): string => (value === null ? '-' : value.toFixed(1));
 
 /** Counts a queue-load run's joins and prints them as a header and one row. */
 export class QueueLoadSummary {
@@ -54,13 +50,17 @@ export class QueueLoadSummary {
       String(stats.timeouts).padStart(9),
       String(stats.lost).padStart(5),
       String(stats.duplicates).padStart(6),
-      text(stats.timeToMatchP50Ms).padStart(13),
-      text(stats.timeToMatchP99Ms).padStart(13),
-      text(stats.timeToMatchMaxMs).padStart(13),
+      this.text(stats.timeToMatchP50Ms).padStart(13),
+      this.text(stats.timeToMatchP99Ms).padStart(13),
+      this.text(stats.timeToMatchMaxMs).padStart(13),
       String(stats.queueMax).padStart(10),
       stats.queueMean.toFixed(1).padStart(11),
       stats.seconds.toFixed(1).padStart(8),
     ].join(' ');
-    return [HEADER, row];
+    return [QUEUE_LOAD_HEADER, row];
+  }
+
+  private text(value: number | null): string {
+    return value === null ? '-' : value.toFixed(1);
   }
 }

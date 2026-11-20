@@ -26,7 +26,7 @@ export type ClientMessage =
    */
   | { readonly type: 'queue-join'; readonly name: string; readonly guestId?: string }
   | { readonly type: 'queue-leave' }
-  /** Gives up the Duel in progress; the opponent is told `opponent-left` at once. */
+  /** Gives up the sender's own Duel in progress (DEC-297 (2)); the opponent is told `opponent-left` at once and wins (DEC-251). */
   | { readonly type: 'forfeit' }
   /** The player's per-tick input; `seq` rises by one per message and is echoed in `state`. */
   | { readonly type: 'intent'; readonly seq: number; readonly intent: InputIntent };

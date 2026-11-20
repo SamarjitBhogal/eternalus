@@ -290,6 +290,15 @@ Reply inline (`Decision: …`).
       pairing does not use them yet (DEC-36 groundwork). (10) Plan question 47 (how long a player
       waits) is answered by the 30 s timeout, pending your confirmation. (11) A held (disconnected)
       queued guest can still be paired, and the sweeps make that likelier.
+  - **Answered in part 2026-11-20 by DEC-297 (3)**: the in-memory pairing is accepted as an
+    interim until sprint 4; FR-118 (ratings in a database) is scheduled for sprint 4; question 35
+    must be answered before sprint 4 starts. Still open: (2), (5), (6), (7), (10).
+  - **Changed by the PR #104 review fixes (2026-11-20)**: (1) a guest id and its rating now also
+    survive the end of a Duel and a new connection (every match end closes both sockets, which
+    used to forget them), for the newest `MAX_KNOWN_GUESTS` (10 000, `// TUNE:`, a memory bound)
+    gone guests, until a server restart. (8) When both seats end up held, the guest who left first
+    takes the loss (DEC-250 (4)); a forfeit-then-return now keeps the lower rating. (11) A held
+    queued guest is never paired; it keeps its place and wait time.
 
 - [ ] **Guest identity, presence and reconnect (SCRUM-430, 2026-11-13) — interim choices, owner to
       confirm or change.** (1) Id: `randomUUID` (122 random bits), sent as `welcome`, a bearer token
@@ -307,6 +316,12 @@ Reply inline (`Decision: …`).
       store), which is in memory until IndexedDB lands, so it survives a reconnect but not a page
       reload yet. (7) The client still ends the Duel as lost on a dropped socket; automatic rejoin
       is a follow-up.
+  - **Answered in part 2026-11-20 by DEC-297 (1), (2)**: (2) the 10 s window is approved, and a
+    timed-out drop is a leave and a loss (DEC-250 (4)): the player who stayed wins after 10 s.
+    (5) `forfeit` is approved as built (the sender's own match only). Still open: (1), (3), (6),
+    (7), and the rest of plan question 44 (forfeit stats, deploys).
+  - **Changed by the PR #104 review fixes (2026-11-20)**: (4) a queued guest whose slot is held
+    is no longer paired; on a resume `welcome` comes before `queue-waiting` or `match-found`.
 
 - [ ] **Per-address connection cap and `X-Forwarded-For` (SCRUM-432 critic, 2026-11-12) — owner /
       security, not introduced by this branch.** `ClientAddress.resolve` (`apps/server/src/transport/`)
@@ -315,6 +330,18 @@ Reply inline (`Decision: …`).
       replacing it, a remote client can pick its own address and defeat the per-address cap (the
       load bots do exactly this on purpose). Decide: take the LAST trusted hop, or verify what
       `tailscale serve` does with the header.
+- [ ] **Duel creation cost and the 400-bot failure (SCRUM-432, PR #103 review S3, 2026-11-20) —
+      owner.** (1) The queue-load runs (`multiplayer-and-scalability-plan.md` §7, "Implementation
+      status: matchmaking under load") started about 8 Duels per second in one process (500
+      matches in 62.6 s). A one-off timing gave about 135 ms (132 to 147 ms) of synchronous work
+      per `CoreDuelSimulationFactory.create()`, probably map generation; not confirmed, the
+      timing file was not kept. ADR 0016 point 2 keeps Duels on the main thread until a measured
+      metric breaks the scalability research's ladder. Decide: (A) move Duel creation to a worker,
+      (B) pre-build Duels before pairs need them, or (C) accept it for now and re-measure in MP-5.
+      (2) 400 bots failed (2 to 8 joins never answered, two runs). The cause is unconfirmed: maybe
+      the `MAX_CONNECTIONS = 500` cap. DEC-37 asks for "hundreds or thousands" of players. Approve
+      a follow-up that finds the cause: an `onClose` handler in the bots, or a refusal counter in
+      the server.
 
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on

@@ -24,6 +24,7 @@ export class ServerConfig {
 
   /**
    * Where the loopback `/health` server listens; `OPS_PORT` lets a second instance run beside one.
+   * A plain HTTP server, not a WebSocket one: it reuses `WsListenerOptions` only for its host and port.
    * @throws Error when `OPS_PORT` is not a whole number from 1 to 65535.
    */
   public opsListener(): WsListenerOptions {

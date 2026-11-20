@@ -18,13 +18,15 @@ export type PresenceCounts = {
 export type PresenceBookOptions = {
   readonly queue: DuelQueue;
   readonly host: DuelHost;
-  /** Forgets a guest's rating when the guest is forgotten. */
+  /** Forgets a guest's rating when the guest is forgotten (no longer among the remembered). */
   readonly ratings: PlayerRatings;
   /** Times the reconnect window (a one-shot task on a repeating scheduler). */
   readonly scheduler: TickScheduler;
   readonly reconnectWindowMs: number;
   /** Beyond this many held guests a disconnect drops at once, so held sockets stay bounded. */
   readonly maxHeldGuests: number;
+  /** How many gone guests keep their id and rating for a later connection; the oldest go first. */
+  readonly maxKnownGuests: number;
   /** Makes a new, unguessable guest id (`randomUUID` in production). */
   readonly newGuestId: () => string;
 };

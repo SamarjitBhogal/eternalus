@@ -54,6 +54,7 @@ export class DuelGateway {
         else queue.leave(connection);
         return;
       case 'forfeit':
+        // Ends only the sender's own match (DEC-297 (2)).
         if (host.isInMatch(connection)) host.leave(connection);
         else connection.send({ type: 'rejected', reason: 'not-in-match' });
         return;

@@ -1,29 +1,21 @@
 import { MemoryLogger } from '@eternalus/core';
-import { ClientMessageParser, type ClientMessage, type ServerMessage } from '@eternalus/protocol';
+import { ClientMessageParser, type ClientMessage } from '@eternalus/protocol';
 import { DuelGateway } from '../gateway/DuelGateway';
 import { TokenBucket } from '../limits/TokenBucket';
 import { DuelHost } from '../match/DuelHost';
 import { FakeDuelSimulation } from '../match/FakeDuelSimulation';
 import { PresenceBook } from '../presence/PresenceBook';
-import { MAX_HELD_GUESTS, RECONNECT_WINDOW_MS } from '../presence/PresenceBook.constants';
+import {
+  MAX_HELD_GUESTS,
+  MAX_KNOWN_GUESTS,
+  RECONNECT_WINDOW_MS,
+} from '../presence/PresenceBook.constants';
 import { DuelQueue } from '../queue/DuelQueue';
 import { PlayerRatings } from '../rating/PlayerRatings';
 import { FakeClock } from '../time/FakeClock';
 import { FakeTickScheduler } from '../time/FakeTickScheduler';
-import { FakeConnection } from '../transport/FakeConnection';
 import type { BotLink, BotLinkFactory, BotLinkHandlers } from './BotLink.types';
-
-/** A server-side connection that hands what it is sent to a bot, later, when the test pumps. */
-class LoopbackConnection extends FakeConnection {
-  public constructor(private readonly deliver: (message: ServerMessage) => void) {
-    super();
-  }
-
-  public override send(message: ServerMessage): void {
-    super.send(message);
-    this.deliver(message);
-  }
-}
+import { LoopbackConnection } from './LoopbackConnection.fixture';
 
 /**
  * A `BotLinkFactory` wired to a real gateway, queue and host (with a fake simulation), so a bot
@@ -64,6 +56,7 @@ export class LoopbackBotLinks implements BotLinkFactory {
         scheduler,
         reconnectWindowMs: RECONNECT_WINDOW_MS,
         maxHeldGuests: MAX_HELD_GUESTS,
+        maxKnownGuests: MAX_KNOWN_GUESTS,
         newGuestId: () => `00000000-0000-4000-8000-${String((guests += 1)).padStart(12, '0')}`,
       }),
       newLimiter: () => new TokenBucket(clock, 1000, 1),

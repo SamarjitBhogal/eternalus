@@ -3,6 +3,9 @@
 **/dist
 **/coverage
 **/*.tsbuildinfo
+# Local secrets never enter the build context; the committed example may.
+**/.env*
+!**/.env.example
 .git
 .worktrees
 docs

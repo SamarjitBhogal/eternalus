@@ -5,7 +5,11 @@ import { TokenBucket } from '../limits/TokenBucket';
 import { FakeDuelSimulation } from '../match/FakeDuelSimulation';
 import { DuelHost } from '../match/DuelHost';
 import { PresenceBook } from '../presence/PresenceBook';
-import { MAX_HELD_GUESTS, RECONNECT_WINDOW_MS } from '../presence/PresenceBook.constants';
+import {
+  MAX_HELD_GUESTS,
+  MAX_KNOWN_GUESTS,
+  RECONNECT_WINDOW_MS,
+} from '../presence/PresenceBook.constants';
 import { DuelQueue } from '../queue/DuelQueue';
 import { PlayerRatings } from '../rating/PlayerRatings';
 import { FakeClock } from '../time/FakeClock';
@@ -49,6 +53,7 @@ function setup(burst = 100) {
     scheduler,
     reconnectWindowMs: RECONNECT_WINDOW_MS,
     maxHeldGuests: MAX_HELD_GUESTS,
+    maxKnownGuests: MAX_KNOWN_GUESTS,
     newGuestId: () => `00000000-0000-4000-8000-${String((guests += 1)).padStart(12, '0')}`,
   });
   const gateway = new DuelGateway({
@@ -191,7 +196,19 @@ describe('DuelGateway', () => {
     expect(b.sentOfType('match-found')).toHaveLength(1);
   });
 
-  it('never pairs a player who disconnected while queued', () => {
+  it('never pairs a player who disconnected while queued, inside the reconnect window', () => {
+    const { connect } = setup();
+    const [a, b, c] = [connect(), connect(), connect()];
+    a.receive(JOIN);
+    a.close();
+    b.receive(JOIN);
+    expect(b.sent).toEqual([{ type: 'queue-waiting' }]);
+    c.receive(JOIN);
+    expect(a.sentOfType('match-found')).toHaveLength(0);
+    expect(c.sentOfType('match-found')).toHaveLength(1);
+  });
+
+  it('never pairs a player who disconnected while queued, after the window', () => {
     const { connect, drop } = setup();
     const [a, b, c] = [connect(), connect(), connect()];
     a.receive(JOIN);

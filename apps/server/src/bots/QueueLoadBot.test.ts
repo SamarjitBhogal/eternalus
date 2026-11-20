@@ -62,10 +62,17 @@ describe('QueueLoadBot', () => {
     expect(bot.phase).toBe('in-match');
   });
 
-  it('records a rejection and a socket error', () => {
+  it('keeps the first of a socket error and a later rejection', () => {
     const { links, bot } = setup();
     links.lastHandlers().onError();
     links.lastHandlers().onMessage({ type: 'rejected', reason: 'in-match' });
     expect(bot.error).toBe('socket error');
+  });
+
+  it('records a rejection with its reason, and keeps it over a later socket error', () => {
+    const { links, bot } = setup();
+    links.lastHandlers().onMessage({ type: 'rejected', reason: 'in-match' });
+    links.lastHandlers().onError();
+    expect(bot.error).toBe('rejected: in-match');
   });
 });
