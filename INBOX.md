@@ -214,6 +214,14 @@ Reply inline (`Decision: …`).
       Proposal: a scoring loader turns it into ticks and rejects a negative or non-finite value,
       as `loadGuardPlans` does.
       Build both in PR #125, build them in a later PR, or keep the code as it is?
+  - (2) **Built** 2026-11-20 on `refactor/scoring-at-load` (DEC-285 (2), the owner's "Approve
+    both: (1) in the DEC-278 countdown PR, which already touches every reader; (2) in a follow-up
+    PR"): `content/match/loadScoring.ts` turns `assistWindowSeconds` into `assistWindowTicks` once
+    and rejects a negative or non-finite window; `Simulation` passes the loaded value, and the
+    scoring rules see only ticks. Same conversion as before (30 s = 900 ticks). With it, under the
+    standing rule, the critic's two better-than-design items (DEC-287): the loader also turns the
+    held minute into ticks, so `createDefaultScoringRules` takes no tick rate, and the authored and
+    loaded scoring types share one `weights` base.
 
 - [x] **Unit facing chevron (DEC-192, feat/unit-facing-chevron, 2026-11-05) — two questions, one
       better-than-design item.**

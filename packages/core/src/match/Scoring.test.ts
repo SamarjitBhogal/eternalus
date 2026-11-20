@@ -4,6 +4,7 @@ import { DamagePipeline } from '../combat/DamagePipeline';
 import { Health } from '../components/Health';
 import { TeamMembership } from '../components/TeamMembership';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { loadScoring } from '../content/match/loadScoring';
 import { SCORING } from '../content/match/scoring';
 import { NullLogger } from '../diagnostics/NullLogger';
 import { Entity } from '../entities/Entity';
@@ -52,8 +53,7 @@ const setUp = (assistWindowSeconds: number = SCORING.assistWindowSeconds) => {
   const scoring = new Scoring(
     state,
     createDefaultScoringRules(
-      { weights: SCORING.weights, assistWindowSeconds },
-      state.config.tickRate,
+      loadScoring(state.config.tickRate, { weights: SCORING.weights, assistWindowSeconds }),
     ),
   );
   const damage = new DamagePipeline();

@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-16
+last-reviewed: 2026-11-20
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,17 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-20 (the scoring loader critic's better-than-design items)
+
+The architecture critic's round 1 on `refactor/scoring-at-load` (DEC-285 (2)) found two
+better-than-design items (DEC-139). No plan schedules them, so they are built in that branch under
+the owner's standing rule for such items (2026-11-09, DEC-223 and DEC-232): "do not allow tech debt
+where we can eliminate it" and "no tech-debt if possible, when possible". DEC-287 is this batch.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Changes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DEC-287 | **The scoring loader turns every scoring time into ticks, so the scoring rules' factory takes one value** (critic round 1 BTD-1, BTD-2). (1) `loadScoring` also loads the minute that hold points count in (`ScoringOptions.minuteTicks`, DEC-214 (A2)), beside the assist window (DEC-285 (2)); `createDefaultScoringRules` takes only the loaded `ScoringOptions` and no tick rate, so no caller passes the tick rate twice and two values that must agree cannot differ. (2) `AuthoredScoringOptions` and `ScoringOptions` share one `weights` field through a private `ScoringBase` type, the pattern of `StuckDetectionBase`. Defaults taken in the build, not the owner's words: the same conversion as before (`TickRate.toTicks`, 60 s = 1800 ticks at 30 ticks a second), so no value changes. | `packages/core/src/content/match/loadScoring.ts` and its test, `content/match/scoring.types.ts`, `content/match/scoring.ts`, `match/defaultScoringRules.ts`, `match/defaultMatchDirector.ts`, `Simulation.ts`, and the `match/` tests that build the rules (`Scoring.test.ts`, `defaultScoringRules.test.ts`, `rules/CaptureHoldRule.test.ts`, `rules/CheckpointRule.test.ts`, `scenarios/objectiveLost.scenario.test.ts`); architecture 12 §5 and §13; `INBOX.md` HC-B9; decisions DEC-285 |
 
 ## Batch 2026-11-16 (question dialog: PR #125 sign-off)
 
