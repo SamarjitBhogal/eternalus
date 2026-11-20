@@ -6,13 +6,17 @@ import * as core from './index';
 describe('@eternalus/core public API', () => {
   it('exports exactly the documented runtime values', () => {
     expect(Object.keys(core).sort()).toEqual([
+      'AStarPathfinder',
       'ConfigValidationError',
       'DEFAULT_MAP_CONFIG',
+      'DUEL_RULES',
       'MapGenerator',
       'MapObjectBuilder',
       'MapPresentationBuilder',
+      'MatchPathfinderFactory',
       'MemoryLogger',
       'NullLogger',
+      'PLAYABLE_TEAMS',
       'SEVERITY',
       'SeededRandom',
       'Simulation',
@@ -20,6 +24,8 @@ describe('@eternalus/core public API', () => {
       'createDefaultGameConfig',
       'findBuildingAt',
       'findMapObjectAt',
+      'findUnitAt',
+      'isPlayableTeam',
       'isPointInPolygon',
       'isUnitFamily',
       'loadDisplayContent',

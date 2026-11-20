@@ -1,15 +1,16 @@
 import {
   type EntityId,
   findMapObjectAt,
+  findUnitAt,
   type MapObject,
   type Simulation,
   type Snapshot,
   type Vec2,
 } from '@eternalus/core';
 
-import { findUnitAt } from './findUnitAt';
 import type { Projection } from './engine/input/Projection.types';
 import type { IntentSource } from './Match.types';
+import type { PlayerActions } from './PlayerActions';
 
 /** The parts of a snapshot an attack target is picked from: its units and map objects. */
 type TargetSnapshot = Pick<Snapshot, 'entities' | 'mapObjects'>;
@@ -24,7 +25,7 @@ type TargetSnapshot = Pick<Snapshot, 'entities' | 'mapObjects'>;
  * into commands: `apply` tells `Match` whether the player moves, and `Match` tells the camera
  * (DEC-151).
  */
-export class PlayerCommands {
+export class PlayerCommands implements PlayerActions {
   private lastMove: Vec2 = { x: 0, y: 0 };
 
   /** The unit or map object the held attack targeted last; `null` once released or stopped. */

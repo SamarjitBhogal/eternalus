@@ -15,12 +15,12 @@ import { spawnMapStructures } from '../state/__fixtures__/spawnMapStructures';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { Unit } from '../entities/Unit';
 import type { Vec2 } from '../utils/geometry.types';
-import type { SpawnPlan } from './SpawnSystem.types';
 import {
   newSystem,
   NO_OPENING,
   setUp,
   summary,
+  type SpawnPlanOverrides,
   LIGHT,
   MEDIUM,
   HEAVY,
@@ -107,6 +107,27 @@ describe('SpawnSystem', () => {
       state.entities.countOnTeam('light', Unit) + state.entities.countOnTeam('dark', Unit),
     ).toBe(64);
     expect(orphans).toEqual([]);
+  });
+
+  it('faces every member toward the enemy Stronghold until it first moves (DEC-216 (6))', () => {
+    const { state, runTo } = setUp();
+    const strongholds: Record<string, Vec2> = { light: { x: 190, y: 30 }, dark: { x: 10, y: 30 } };
+    let members = 0;
+
+    runTo(0);
+
+    state.entities.forEach((entity) => {
+      const team = state.entities.teamOf(entity.id);
+      if (!(entity instanceof Unit) || team === undefined) return;
+      const { position, facing } = entity.getComponent(Transform);
+      const target = strongholds[team];
+      if (target === undefined) throw new Error(`no enemy Stronghold for ${team}`);
+      const length = Math.hypot(target.x - position.x, target.y - position.y);
+      expect(facing.x).toBeCloseTo((target.x - position.x) / length, 9);
+      expect(facing.y).toBeCloseTo((target.y - position.y) / length, 9);
+      members += 1;
+    });
+    expect(members).toBe(64);
   });
 
   it('starts each horde’s anchor at the lane point nearest its spawn point, never behind it', () => {
@@ -223,7 +244,7 @@ describe('SpawnSystem', () => {
     expect(state.hordes.size).toBe(4);
   });
 
-  it.each<[string, Partial<Pick<SpawnPlan, 'openingWave' | 'waves'>>, RegExp]>([
+  it.each<[string, Omit<SpawnPlanOverrides, 'guards'>, RegExp]>([
     [
       'an unknown mob',
       {

@@ -5,9 +5,12 @@ import { Capturable } from '../components/Capturable';
 import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
+import { ChaseWatch } from '../components/ChaseWatch';
+import { CombatClock } from '../components/CombatClock';
 import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
+import { INITIAL_FACING } from '../components/Transform.constants';
 import { Veterancy } from '../components/Veterancy';
 import { Vision } from '../components/Vision';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
@@ -126,9 +129,52 @@ describe('StateHasher', () => {
     soldier.addComponent(veterancy);
     const before = hasher.hash(state);
 
-    veterancy.recordKill(2, 3);
+    veterancy.recordKill(2);
 
     expect(hasher.hash(state)).not.toBe(before);
+  });
+
+  it('changes when an entity turns, and changes back when it turns back (DEC-192)', () => {
+    const { state, soldier } = stateWithSoldier();
+    const before = hasher.hash(state);
+
+    soldier.getComponent(Transform).face({ x: 0, y: 1 });
+    const turned = hasher.hash(state);
+    soldier.getComponent(Transform).face({ x: -1, y: 0 });
+
+    expect(turned).not.toBe(before);
+    expect(hasher.hash(state)).not.toBe(turned);
+    soldier.getComponent(Transform).face(INITIAL_FACING);
+    expect(hasher.hash(state)).toBe(before);
+  });
+
+  it('changes with a chase watch and with its detour waypoint (DEC-193)', () => {
+    const { state, soldier } = stateWithSoldier();
+    const watch = new ChaseWatch();
+    const bare = hasher.hash(state);
+    soldier.addComponent(watch);
+    const watched = hasher.hash(state);
+
+    watch.headFor(5, 6, 2, 0);
+
+    expect(watched).not.toBe(bare);
+    expect(hasher.hash(state)).not.toBe(watched);
+  });
+
+  it('changes with a combat clock and with each of its ticks (DEC-188)', () => {
+    const { state, soldier } = stateWithSoldier();
+    const clock = new CombatClock();
+    const bare = hasher.hash(state);
+    soldier.addComponent(clock);
+    const clocked = hasher.hash(state);
+    clock.recordDealt(5);
+    const dealt = hasher.hash(state);
+
+    clock.recordHurt(5);
+
+    expect(clocked).not.toBe(bare);
+    expect(dealt).not.toBe(clocked);
+    expect(hasher.hash(state)).not.toBe(dealt);
   });
 
   it('differs between seeds', () => {
@@ -219,6 +265,63 @@ describe('StateHasher', () => {
       'the idle hold',
       (state) => {
         state.match.holdIdle(true);
+      },
+    ],
+    [
+      'the scoring (a Legend row)',
+      (state) => {
+        state.match.scoreBook.addRow({
+          entityId: 'entity-1',
+          team: 'light',
+          classId: 'warrior',
+          controller: 'bot',
+        });
+      },
+    ],
+    [
+      'the scoring (a team total)',
+      (state) => {
+        state.match.scoreBook.awardTeam('dark', {
+          counter: 'structuresDestroyed',
+          by: 0,
+          points: 4,
+        });
+      },
+    ],
+    [
+      'the scoring (a team counter)',
+      (state) => {
+        state.match.scoreBook.awardTeam('dark', {
+          counter: 'structuresDestroyed',
+          by: 1,
+          points: 0,
+        });
+      },
+    ],
+    [
+      'the scoring (a recent hit)',
+      (state) => {
+        state.match.scoreBook.recordHit('entity-2', 'entity-1', 0);
+      },
+    ],
+    [
+      'the scoring (a reached checkpoint)',
+      (state) => {
+        state.match.scoreBook.awardTeam('light', {
+          counter: 'checkpointsReached',
+          by: 1,
+          points: 0,
+        });
+      },
+    ],
+    [
+      'the scoring (held ticks)',
+      (state) => {
+        state.match.scoreBook.awardTeam('light', {
+          counter: 'capturesHeldTicks',
+          by: 1,
+          points: 0,
+        });
       },
     ],
   ])('changes when %s of the match changes', (_, change) => {

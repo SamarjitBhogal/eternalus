@@ -46,7 +46,7 @@ export type BrowserMatchDeps = {
  * A match's logger: everything to its own TRACE ring buffer first, so a report a page sink makes
  * already holds the record (ADR 0025 §3), then WARN and worse to the page's sinks.
  */
-function createMatchLogger(deps: BrowserMatchDeps, ring: RingBufferSink): SinkLogger {
+export function createMatchLogger(deps: BrowserMatchDeps, ring: RingBufferSink): SinkLogger {
   return new SinkLogger(
     () => deps.clock.now(),
     [
@@ -114,7 +114,7 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
         camera,
         input,
         logger,
-        onCrash: request.onCrash,
+        observer: request.observer,
         bridge: {
           bus: deps.bus,
           publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,

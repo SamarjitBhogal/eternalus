@@ -5,6 +5,7 @@ import { Health } from '../components/Health';
 import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
+import { INITIAL_FACING } from '../components/Transform.constants';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import type { MapDefinition } from '../content/maps/maps.types';
@@ -125,6 +126,18 @@ describe('GameState', () => {
     expect(state.events.recentEvents()[0]?.tick).toBe(1);
   });
 
+  it("snapshots an entity's facing as a plain copy (DEC-192)", () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const soldier = spawned(new Soldier('entity-1', 'soldier-definition'));
+    state.entities.add(soldier);
+    soldier.getComponent(Transform).face({ x: 0, y: 2 });
+
+    const facing = state.snapshot(CURVES).entities[0]?.transform?.facing;
+
+    expect(facing).toEqual({ x: 0, y: 1 });
+    expect(facing).not.toBe(soldier.getComponent(Transform).facing);
+  });
+
   it('snapshots entities with their components and null for missing ones', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
     state.entities.add(spawned(new Soldier('entity-1', 'soldier-definition')));
@@ -140,7 +153,7 @@ describe('GameState', () => {
           family: 'test',
           definitionId: 'soldier-definition',
           team: 'light',
-          transform: { x: 3, y: 4, radius: 0.5 },
+          transform: { x: 3, y: 4, radius: 0.5, facing: INITIAL_FACING },
           health: { current: 100, max: 100 },
           progression: null,
           aether: null,

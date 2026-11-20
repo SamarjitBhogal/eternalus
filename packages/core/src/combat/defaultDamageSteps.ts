@@ -1,6 +1,8 @@
 import type { DamageStep } from './DamageStep.types';
 import { BreakabilityStep } from './BreakabilityStep';
-import { MINION_STRENGTH } from '../content/mobs/minionModifiers';
+import { BOSS_MINION_DAMAGE_TAKEN, MINION_STRENGTH } from '../content/mobs/minionModifiers';
+import { MOB_DEFINITIONS } from '../content/mobs/mobCatalogue';
+import { BossMinionDamageStep } from './BossMinionDamageStep';
 import { FriendlyFireStep } from './FriendlyFireStep';
 import { MinionStrengthStep } from './MinionStrengthStep';
 import type { LaneProgressOf } from './MinionStrengthStep.types';
@@ -20,4 +22,5 @@ export const createDefaultDamageSteps = (
   new FriendlyFireStep(),
   new StatusModifierStep(),
   new MinionStrengthStep(MINION_STRENGTH, progressOf),
+  new BossMinionDamageStep(BOSS_MINION_DAMAGE_TAKEN, MOB_DEFINITIONS.ids),
 ];

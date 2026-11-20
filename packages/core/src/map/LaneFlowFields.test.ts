@@ -32,6 +32,29 @@ const world = (numLanes: number) => {
   return { config, map, grid, fields };
 };
 
+/**
+ * The match grid as `Simulation.buildWorld` makes it, with its fields: walkable map objects
+ * unstamped, blocking ones stamped.
+ */
+const stampedWorld = (numLanes: number, seed: number) => {
+  const config = createDefaultGameConfig({ map: { numLanes } });
+  const map = new MapGenerator().generate(config, seed);
+  const objects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+  const walkable = new Set(objects.filter((object) => !object.isBlocking).map(({ id }) => id));
+  const grid = WorldMap.fromDefinition(
+    { ...map, features: map.features.filter(({ id }) => !walkable.has(id)) },
+    config.map.navCellSize,
+    isBlocking,
+  );
+  for (const object of objects.filter((candidate) => candidate.isBlocking)) {
+    for (const footprint of object.footprints) {
+      grid.stampFootprint(footprint, object.passages);
+    }
+  }
+  const fields = new LaneFlowFields(grid, map, config.map.flowFieldCorridorHalfWidth);
+  return { config, map, grid, fields };
+};
+
 const THREE = world(3);
 const FIVE = world(5);
 
@@ -267,22 +290,7 @@ describe('LaneFlowFields', () => {
   it.each([1, 2])(
     'reaches every walkable lane point from both ends with the map objects stamped (seed %i, DEC-121 (d))',
     (seed) => {
-      const config = createDefaultGameConfig();
-      const map = new MapGenerator().generate(config, seed);
-      const objects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
-      // The grid as Simulation.buildWorld makes it: walkable objects unstamped, blocking ones stamped.
-      const walkable = new Set(objects.filter((object) => !object.isBlocking).map(({ id }) => id));
-      const grid = WorldMap.fromDefinition(
-        { ...map, features: map.features.filter(({ id }) => !walkable.has(id)) },
-        config.map.navCellSize,
-        isBlocking,
-      );
-      for (const object of objects.filter((candidate) => candidate.isBlocking)) {
-        for (const footprint of object.footprints) {
-          grid.stampFootprint(footprint, object.passages);
-        }
-      }
-      const fields = new LaneFlowFields(grid, map, config.map.flowFieldCorridorHalfWidth);
+      const { map, grid, fields } = stampedWorld(createDefaultGameConfig().map.numLanes, seed);
 
       const stranded = map.lanes.flatMap((lane) =>
         lane.path.flatMap((point) => {
@@ -349,11 +357,14 @@ describe('LaneFlowFields.progress', () => {
   const { map, fields } = THREE;
   /** One diagonal step's cost over the lane's cost: the most a cell boundary can move `t`. */
   const oneStep = (field: FlowField): number => stepCost(4) / (field.integration[field.start] ?? 1);
-  /** The largest gaps measured between field and polyline `t`: 1.4% (3 lanes), 1.6% (5 lanes). */
+  /**
+   * The largest gaps measured between field and polyline `t`: 1.4% (3 lanes), 1.6% (5 lanes) on
+   * the bare grid; 1.95% on the match grid with the map objects stamped.
+   */
   const POLYLINE_AGREEMENT = 0.02;
 
   /** Points along `path`, eight per segment, with the polyline's own `t` for each. */
-  const samples = (world: typeof THREE, laneId: string, team: 'light' | 'dark') => {
+  const samples = (world: Pick<typeof THREE, 'map'>, laneId: string, team: 'light' | 'dark') => {
     const routes = new LaneRoutes(world.map);
     const length = routes.length(laneId);
     const lane = world.map.lanes.find(({ id }) => id === laneId);
@@ -393,10 +404,12 @@ describe('LaneFlowFields.progress', () => {
   });
 
   it.each([
-    [3, THREE],
-    [5, FIVE],
+    ['3 lanes', THREE],
+    ['5 lanes', FIVE],
+    ['3 lanes, match grid', stampedWorld(3, 1)],
+    ['5 lanes, match grid', stampedWorld(5, 1)],
   ] as const)(
-    'agrees with the lane polyline within 2%% wherever the field can say: %i lanes',
+    'agrees with the lane polyline within 2%% wherever the field can say: %s',
     (_, world) => {
       let largest = 0;
       for (const lane of world.map.lanes) {

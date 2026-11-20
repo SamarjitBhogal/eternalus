@@ -4,13 +4,14 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-05
+last-reviewed: 2026-11-16
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
     'packages/core/src/entities/**',
     'packages/core/src/components/**',
     'packages/core/src/content/**',
+    'packages/core/src/systems/{OutOfCombatHealing,HealingZones}*',
   ]
 related:
   [
@@ -135,9 +136,33 @@ registries. Components are looked up by class (`entity.get(Health)`), never by s
 Components are classes with private state and methods; systems call the methods, never poke the
 fields. Each component guards its own invariants so a bug shows up where it happens.
 
+`Transform` also owns the facing rules (DEC-192). The facing is a unit vector. Until its first move
+or attack, a unit faces toward the enemy Stronghold, and a tower guard (the Stronghold's too, doc
+[18](18-minion-system.md)'s entity legend) faces out from the centre of its home, on guard
+(DEC-216 (6)). A camp mob faces out from the camp centre (DEC-220 (2)). The spawn gives this start
+facing in its `Placement` (`facing`): `MatchWorld.startFacing` decides "toward the enemy Stronghold"
+for every spawn path, and the guard roster faces each guard along its post (`guardOutward`). A guard
+back at its post with nothing to chase, after a chase or a leash return, turns to face outward
+again, on guard (DEC-220 (3), `PathingSystem`); a stunned guard does not turn (DEC-216 (7)).
+An entity given no start facing (a neutral unit that
+is no guard, a match without a map, a structure) starts as `INITIAL_FACING`
+(`Transform.constants.ts`). The facing follows the direction of the velocity (`MovementSystem`). A
+unit with an attack target in reach faces the target instead, as `CombatSystem` runs after
+`MovementSystem`, unless a status stops its attacks (`cannot-attack`). It faces the spot where it
+deals damage: the point attack reach is measured to (`EntityStore.aimPointOf`), which is the point
+of a building's outline nearest the unit, not the building's centre, and a unit target's centre
+(DEC-216 (11)). A unit inside a building's outline faces the building's centre instead (DEC-220
+(1)). Its aim point is where it stands: it is in reach, and a chase holds there (DEC-234). A
+fort's court is outside every outline (its walls and keep), so a unit in the court faces the spot
+it damages (DEC-226). `EntityStore.facingPointOf` holds this facing rule on top of the one aim
+rule that reach and chase share. A zero direction, and a point equal to the unit's own position, keep the facing. Core
+turns at once. The client blends the facing between two ticks ([08 §8](08-game-engine.md)). The
+invariant `finite-transforms` checks the position and the facing
+([15 §3](15-diagnostics-and-runtime-testing.md)).
+
 | Component       | Encapsulated state                                                                        | Invariants it guards                                                                                            | Key methods                                                                                        |
 | --------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `Transform`     | `position: Vec2`, `facing`, `radius`                                                      | position finite                                                                                                 | `moveBy`, `lookAt`                                                                                 |
+| `Transform`     | `position: Vec2`, `facing`, `radius`                                                      | position finite; facing is a unit vector                                                                        | `moveBy`, `moveTo`, `face(direction)`, `lookAt(point)`                                             |
 | `Health`        | `base`, `current`, `shieldBars: ShieldBar[]` (one per living allied `BuffTower`)          | `0 <= current <= base`; bars drain before base; bar count ≤ towers alive                                        | `applyDamage(amount, source)`, `heal`, `addShieldBar(sourceId, max)`, `removeShieldBar(sourceId)`  |
 | `Movement`      | `speed`, `maxSpeed`, `acceleration`, `mass`, `velocity: Vec2`                             | `0 <= speed <= maxSpeed`; mass > 0                                                                              | `accelerateToward`, `applyImpulse` (knockback), `stop`                                             |
 | `Combat`        | `weaponId`, `attackStrategy`, `targetingStrategy`, `targetId`, `cooldownTicks`            | cooldown never negative                                                                                         | `canAttack(tick)`, `setTarget`, `beginAttack`                                                      |
@@ -212,6 +237,20 @@ export type LegendDefinition = EntityDefinitionBase & {
 
 Definitions are Flyweights: shared, immutable, referenced by id from state
 ([03-game-model.md](03-game-model.md) §11).
+
+**Out-of-combat healing (DEC-188, DEC-215, DEC-225).** One content record, `OUT_OF_COMBAT_HEALING` in
+`content/healing/`, holds the flat base rate for every Legend and mob, the delay before healing
+starts and the structure bonuses, keyed by structure kind. Its two times, the delay and the
+structure quiet time, are seconds in content and its rates are per second; `loadOutOfCombatHealing`
+turns them into ticks and rates per tick once, at load (DEC-241, DEC-262), so the system sees only ticks. The last tick an entity fought lives in
+its `CombatClock` component: the system adds it on the entity's first `damage-applied`, as attacker
+or target, and `StateHasher` hashes it only when it is present. Each bonus names a zone shape
+(`HealingZoneShape`); `systems/HealingZones.ts` resolves it with one strategy per shape: `fort-box`,
+the box round a lane tower's fort walls, and `stronghold-interior`, the ground inside the team's
+shield without the shield's own walls, gates and turrets. A unit is in a zone when its centre point
+is, the same rule as the capture zones (DEC-225). Two zones never overlap: that is a property of the generated maps, checked by a test over them,
+not a case the code resolves. A new zone shape is a union member and one strategy; a per-class rate
+replaces the flat rate with a lookup by definition id.
 
 **Validation (DEC-22).** `loadDefaultContent()` builds the catalogues and runs `ContentValidator`
 once, at load, never at import time. The validator knows no rule in particular: each rule is a
@@ -348,6 +387,9 @@ session or phase named:
   `light-mob` (the training dummy only),
   `obstacle`, `projectile` and `capture-point` (PR #64). Other mobs are SCRUM-59; structures get
   concrete kinds in Phase 2 and 3.
+- `Boss` and `MiniBoss` are not built (Phase 3 sprint 3.6). The capture point mini-boss is a
+  `heavy-mob` until then; the interim is recorded in
+  [18's implementation status note](18-minion-system.md#minion-system).
 
 ## Related
 

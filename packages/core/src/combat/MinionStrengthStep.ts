@@ -14,7 +14,8 @@ import { opponentOf } from '../teams/playableTeams';
  * each lane tower the enemy has lost on that lane (DISC-24), up to `maxBasePoint`. Health never
  * rescales, so a health bar never jumps. Anything outside a horde (Legends included) is 1.
  *
- * `t` is measured by path cost on the lane's flow field (`balancing.md`), gate to gate, through
+ * `t` is measured by path cost on the lane's flow field (`balancing.md`), from the home gate (0)
+ * to the enemy gate (1) (DEC-280), through
  * the injected `LaneProgressOf`; where the field cannot say (no field, or a unit off its corridor),
  * `t` falls back to the nearest point of the lane polyline.
  */
@@ -53,6 +54,7 @@ export class MinionStrengthStep implements DamageStep {
       return 1;
     }
     const length = routes.length(horde.lane);
+    // `t` runs home gate (0) to enemy gate (1), DEC-280.
     const t =
       this.progressOf?.(horde.lane, horde.team, position) ??
       (length > 0 ? routes.distanceAlong(horde.lane, horde.team, position) / length : 0);

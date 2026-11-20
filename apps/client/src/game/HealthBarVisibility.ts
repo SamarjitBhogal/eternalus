@@ -51,13 +51,18 @@ export class HealthBarVisibility {
    * Reads the latest snapshot: which entities are units, and the player. Call it for the first
    * snapshot and after each step, so the next step's hits see this snapshot's units. The player's
    * team is kept from the first snapshot that has the player: it never changes, and a dead player
-   * is no longer in the snapshot.
+   * is no longer in the snapshot. `playerId` defaults to the snapshot's human; an online Duel
+   * passes its own Legend from `match-found`, because `match.humanLegendId` is only the
+   * `playerTeam` seat there (ADR 0016).
    */
-  public observe(snapshot: Snapshot): void {
+  public observe(
+    snapshot: Snapshot,
+    playerId: EntityId | null = snapshot.match.humanLegendId,
+  ): void {
     this.units = new Set(
       snapshot.entities.filter((entity) => isUnitFamily(entity.family)).map(({ id }) => id),
     );
-    this.playerId = snapshot.match.humanLegendId;
+    this.playerId = playerId;
     this.playerTeam ??= snapshot.entities.find(({ id }) => id === this.playerId)?.team ?? null;
   }
 

@@ -16,6 +16,7 @@ import type { MatchDeps } from './Match.types';
 import { MatchBridge } from './MatchBridge';
 import { MatchCamera } from './MatchCamera';
 import { MatchViewControls } from './MatchViewControls';
+import type { PlayerActions } from './PlayerActions';
 import { PlayerCommands } from './PlayerCommands';
 import { createDefaultViewRegistry } from './views/defaultViewRegistry';
 import { EntityLayer } from './views/EntityLayer';
@@ -31,7 +32,9 @@ import { WorldObjectsView } from './views/WorldObjectsView';
  * turns the player's intent into commands (`PlayerCommands`), steps the simulation and keeps the
  * last two snapshots; each frame follows the player with the camera and draws the scene and the
  * minimap (inside the HUD ring). The player's Legend is the simulation's, spawned at its team's
- * Stronghold by core from the roster's human slot. Which part of the world is shown (the following
+ * Stronghold by core from the roster's human slot. In an online Duel (`deps.remote`) the simulation
+ * is the server's latest snapshot and the tick sends the intent instead of queueing commands; the
+ * Legend is the one the server named (ADR 0016). Which part of the world is shown (the following
  * camera, or the free view that dragging and the overview switch to) is `MatchCamera`'s. Buildings
  * stay in the same world scene: `BuildingRoofs` cuts away the roof of the building the player's
  * Legend stands in (DEC-143) and those the developer explorer opens, and the views draw those
@@ -56,7 +59,7 @@ export class Match implements LoopTarget {
 
   private readonly roofs: BuildingRoofs;
 
-  private readonly commands: PlayerCommands;
+  private readonly commands: PlayerActions;
 
   private readonly bridge: MatchBridge;
 
@@ -92,7 +95,9 @@ export class Match implements LoopTarget {
       this.healthBars.healthBarOf,
     );
     this.camera = new MatchCamera(camera, map);
-    this.commands = new PlayerCommands(input, simulation, this.camera, mapObjects);
+    this.commands =
+      deps.remote?.createActions(this.camera) ??
+      new PlayerCommands(input, simulation, this.camera, mapObjects);
     const { scenery, buildings } = presentation;
     this.roofs = new BuildingRoofs(buildings);
     const { hidden: hiddenRoofs } = this.roofs;
@@ -112,15 +117,28 @@ export class Match implements LoopTarget {
       tickMs,
       maxFrameMs: MAX_TICKS_PER_FRAME * tickMs,
     });
-    this.bridge = new MatchBridge({ ...bridge, tickRate, map });
     this.current = simulation.snapshot();
-    this.healthBars.observe(this.current);
-    this.playerId = this.current.match.humanLegendId;
+    this.playerId = deps.remote?.legendId ?? this.current.match.humanLegendId;
+    this.healthBars.observe(this.current, this.playerId);
+    this.bridge = new MatchBridge({
+      ...bridge,
+      tickRate,
+      map,
+      events: simulation,
+      firstSnapshot: this.current,
+    });
     this.controls = new MatchViewControls({
       camera: this.camera,
       roofs: this.roofs,
       commands: this.commands,
       miniMap: this.world.miniMap,
+      onMiniMapShownChanged: (isShown) => {
+        bridge.bus.emit('minimap-visibility', { isShown });
+        // The loop is stopped while paused, so nothing else would repaint the canvas.
+        if (!this.loop.isRunning) {
+          this.render(1);
+        }
+      },
       playerId: this.playerId,
       snapshot: () => this.current,
     });
@@ -137,9 +155,13 @@ export class Match implements LoopTarget {
     return this.current;
   }
 
-  /** Publishes everything the HUD shows once, then starts the game loop. */
+  /**
+   * Publishes everything the HUD shows once (the minimap's visibility too: a new match starts with
+   * it shown, whatever the last one left in the store), then starts the game loop.
+   */
   public start(): void {
     this.bridge.publishAll(this.current, this.playerId);
+    this.deps.bridge.bus.emit('minimap-visibility', { isShown: this.world.miniMap.isVisible });
     this.loop.start();
   }
 
@@ -165,7 +187,8 @@ export class Match implements LoopTarget {
    * One tick: the player's intent becomes commands (and moving input sends the camera back to
    * following), the simulation steps, and the roof of the building the player's Legend now stands
    * in opens. A dead Legend (`isDead`, or gone from the snapshot) stands in no building, so its
-   * roof closes (DEC-143, DEC-149).
+   * roof closes (DEC-143, DEC-149). After the tick that ended the match, tells the observer once
+   * (`ended`).
    */
   public tick(): void {
     if (this.playerId !== null) {
@@ -177,9 +200,11 @@ export class Match implements LoopTarget {
     this.deps.simulation.step();
     this.previous = this.current;
     this.current = this.deps.simulation.snapshot();
-    this.healthBars.observe(this.current);
+    this.healthBars.observe(this.current, this.playerId);
     this.roofs.playerAt(this.livingPlayerAt());
-    this.bridge.afterTick(this.current, this.playerId);
+    if (this.bridge.afterTick(this.current, this.playerId)) {
+      this.deps.observer.ended();
+    }
   }
 
   /** One frame: the camera follows the player, then the scene and the minimap are drawn. */
@@ -198,19 +223,20 @@ export class Match implements LoopTarget {
 
   /**
    * The game loop stopped because a tick or a frame threw: hands the error and the tick to the
-   * match's owner (`onCrash`), which ends the match (DEC-106).
+   * observer (`crashed`), whose owner ends the match (DEC-106).
    */
   public crashed(error: unknown): void {
-    this.deps.onCrash({ error, tick: this.deps.simulation.tick });
+    this.deps.observer.crashed({ error, tick: this.deps.simulation.tick });
   }
 
   /**
-   * Stops the loop and the health bars' event listeners. The renderer and camera are injected, so
-   * their owner (`MatchHost`) destroys them.
+   * Stops the loop, the health bars' event listeners and the bridge's listener. The renderer and
+   * camera are injected, so their owner (`MatchHost`) destroys them.
    */
   public destroy(): void {
     this.loop.destroy();
     this.healthBars.destroy();
+    this.bridge.destroy();
   }
 
   /**

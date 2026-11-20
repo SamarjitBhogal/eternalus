@@ -32,7 +32,7 @@ export class FlowField {
     public readonly team: PlayableTeam,
     public readonly mask: Uint8Array,
     public readonly goal: number,
-    public readonly start = -1,
+    public readonly start: number,
   ) {
     this.cells = mask.reduce((sum, cell) => sum + cell, 0);
     this.integrationCells = new Uint16Array(mask.length).fill(UNREACHED);
@@ -55,7 +55,7 @@ export class FlowField {
   }
 
   /** Path cost to the goal of the cell under `point` (`UNREACHED` outside the world or the fill). */
-  public costAt(point: Vec2): number {
+  private costAt(point: Vec2): number {
     const { cellSize, cols, rows } = this.grid;
     const col = Math.floor(point.x / cellSize);
     const row = Math.floor(point.y / cellSize);
@@ -68,8 +68,8 @@ export class FlowField {
   /**
    * How far `point` lies along the lane by path cost: 0 at the lane's own end (`start`, and
    * anywhere costlier, such as inside the team's Stronghold), 1 at the enemy end. Measured gate to
-   * gate, the lane's ends, as the lane polyline was before it, not Stronghold to Stronghold as
-   * `balancing.md` words it, so the strength curve's base-stat points keep their meaning. `null`
+   * gate, the lane's ends, as the lane polyline was before it (DEC-280), so the strength curve's
+   * base-stat points keep their meaning. `null`
    * where the field cannot say: the point or `start` outside the fill, or a zero-cost start.
    */
   public progressAt(point: Vec2): number | null {
