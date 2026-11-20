@@ -6,7 +6,7 @@ import { accessibleNames, renderWithStore, TEST_CONTENT } from '../testStore';
 import { Countdown } from './Countdown';
 import styles from './Countdown.module.css';
 import countdownCss from './Countdown.module.css?raw';
-import { SELECTION_DEF_IDS } from './SelectionDefs.constants';
+import { SELECTION_DEF_IDS, TEXT_GLOW_FILTERS } from './SelectionDefs.constants';
 
 /** The switch of ui-enhancements-plan §2 rule 1 holding UE-01's id. */
 const URGENCY_ON = { content: { ...TEST_CONTENT, uiEnhancements: ['countdown-urgency'] as const } };
@@ -79,6 +79,9 @@ describe('Countdown', () => {
 });
 
 describe('Countdown urgency (UE-01, DEC-100, DEC-282)', () => {
+  /** The select numeral's font size in artboard px (62:135, Cinzel Bold 64), from `.countdown`. */
+  const fontPx = Number(/font-size: max\((\d+)px, /.exec(ruleOf('.countdown'))?.[1]);
+
   // The Figma original where UE-01 does not apply: a countdown that does not take part (the
   // win/lose screen's), even with the switch on.
   it.each([10, 5])('leaves a countdown that does not take part static at %i s', (seconds) => {
@@ -182,16 +185,37 @@ describe('Countdown urgency (UE-01, DEC-100, DEC-282)', () => {
     expect(inGame).toMatch(/--motion-tick: 0ms;/);
   });
 
-  // DEC-278, DEC-282: the pre-match overlay draws the same numeral at its own size.
-  it('draws the match size in HUD units and shows the zero text in place of 0', () => {
+  // DEC-278, DEC-282: the pre-match overlay draws the same numeral at its own size. DEC-299 (2):
+  // at the select's font size, where the glow def's px are sized, enlarged by `scale`, so the
+  // glow grows with the numeral; a 216 artboard px font size (a recommendation, CD-49: "slightly
+  // smaller" than 240).
+  it('draws the match size by scaling the select-size numeral and shows the zero text for 0', () => {
     const html = renderWithStore(
       <Countdown remainingSeconds={0} label="Match start" size="match" zeroText="START" />,
     );
+    const match = ruleOf('.match');
 
     expect(html).toContain(`class="${String(styles.countdown)} ${String(styles.match)}"`);
     expect(html).toMatch(/role="timer"[^>]*>START<\/p>$/);
-    expect(ruleOf('.match')).toMatch(
-      /font-size: max\(calc\(240 \* var\(--hud-u\)\), var\(--text-min\)\);\s*line-height: 1;/,
+    expect(match).not.toMatch(/font-size|transform:|translate:/);
+    expect(match).toContain(`scale: calc(216 / ${String(fontPx)});`);
+    expect(match).toMatch(
+      /position: absolute;\s*inset: 0;\s*width: fit-content;\s*height: fit-content;[\s\S]*margin: auto;/,
     );
+    expect(ruleOf('.countdown')).toMatch(/font-size: max\(64px, /);
+  });
+
+  // DEC-299 (2): the glow defs check their region against the overlay numeral's narrowest box, so
+  // that box is read from the CSS that makes it: the select font size × `.match`'s line height,
+  // at least `.match`'s min-width.
+  it('gives the overlay numeral the box its glow defs are checked with', () => {
+    const overlay = TEXT_GLOW_FILTERS.find(
+      (def) => def.id === SELECTION_DEF_IDS.glowCountdown,
+    )?.users.find((user) => user.node.includes('match-start overlay'));
+    const match = ruleOf('.match');
+    const lineHeight = Number(/line-height: ([\d.]+);/.exec(match)?.[1]);
+
+    expect(match).toContain(`min-width: ${String(overlay?.width)}px;`);
+    expect(overlay?.height).toBe(fontPx * lineHeight);
   });
 });

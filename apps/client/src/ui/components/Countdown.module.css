@@ -32,15 +32,30 @@
   justify-content: center;
 }
 
-/* DEC-278: the pre-match overlay's numeral, in HUD units, centred by its veil. */
+/* DEC-278: the pre-match overlay's numeral, centred on the selection artboard its overlay draws.
+   DEC-299 (2): the select numeral itself (the font size above, in artboard px, where the glow
+   def's px are sized), enlarged by `scale` about its centre, so the glow grows with it: a 216 px
+   font size (Recommendation, CD-49: the owner's "slightly smaller" read as 10 % below the first
+   240). `scale` composes with UE-01's `transform` keyframes. Centred by its auto margins: no
+   `translate` on Cinzel text (I-88, which keeps it for a measured ink offset). At least the select
+   box's width, so a narrow "1" still gives the glow region the box the def's overlay user is
+   checked with (SelectionDefs.constants.ts). */
 .match {
-  font-size: max(calc(240 * var(--hud-u)), var(--text-min));
+  position: absolute;
+  inset: 0;
+  width: fit-content;
+  height: fit-content;
+  min-width: 118px;
+  margin: auto;
+  text-align: center;
+  scale: calc(216 / 64);
   line-height: 1;
 }
 
 /* UE-01 countdown urgency (ui-enhancements-plan §3.2, DEC-100, DEC-282), only while the switch
    holds its id: one tick per second change from 10 s (the numeral is keyed on its value, so 1 Hz);
-   from 5 s a larger pulse and the urgent glow (the countdown glow at 30 %). The Figma red stays. */
+   from 5 s a larger pulse and the urgent glow (the countdown glow at 30 %). Tick 1.08, pulse 1.12
+   and the 30 % glow are kept by the owner (DEC-299 (1)). The Figma red stays. */
 :root[data-ui-enhancements~='countdown-urgency'] .countdown[data-urgent] {
   animation: tick var(--motion-tick) ease-out;
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { matchSlice } from '../../bridge/slices/matchSlice';
 import countdownStyles from '../components/Countdown.module.css';
+import stageStyles from '../components/SelectionStage.module.css';
 import { STRINGS } from '../strings';
 import { accessibleNames, renderWithStore, TEST_CONTENT } from '../testStore';
 import { MatchCountdown } from './MatchCountdown';
@@ -49,6 +50,14 @@ describe('MatchCountdown', () => {
     );
     expect(overlayCss).not.toMatch(/@keyframes|animation|filter|color:|font-/);
     expect(/\n\.veil \{([^}]*)\}/.exec(overlayCss)?.[1]).toContain('pointer-events: none;');
+  });
+
+  // DEC-299 (2): the numeral sits in the character select's own artboard, so it and its glow are
+  // in the px the glow def is sized for, and the artboard's fit scale enlarges both together.
+  it("draws the numeral on the character select's artboard, fitted to the window", () => {
+    expect(renderWithStore(<MatchCountdown />, withCountdown(7))).toContain(
+      `<div class="${String(stageStyles.artboard)}" style="--stage-scale:1"><p class="${String(countdownStyles.countdown)} ${String(countdownStyles.match)}"`,
+    );
   });
 
   it.each([10, 5, 0])('stays static at %i with the switch off: no urgency, no live region', (n) => {

@@ -98,8 +98,8 @@
   --selection-tile-idle: rgb(255 255 255 / 40%);
   --selection-countdown: #ff1a00;
   --selection-countdown-glow: rgb(255 26 0 / 15%);
-  /* UE-01: the countdown glow from 5 s down, its flood at 30 % instead of 15 % (the
-     sel-glow-countdown-urgent def's opacity mirrors it). */
+  /* UE-01: the countdown glow from 5 s down, its flood at 30 % instead of 15 % (kept by the owner,
+     DEC-299 (1); the sel-glow-countdown-urgent def's opacity mirrors it). */
   --selection-countdown-urgent-glow: rgb(255 26 0 / 30%);
   /* DEC-59: the lock cursor over a locked class card (LockGlyph's padlock, parchment on ink). */
   --selection-cursor-locked:
