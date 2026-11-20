@@ -1,6 +1,7 @@
 import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
 import { Health } from '../components/Health';
+import { MapFeatureLink } from '../components/MapFeatureLink';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
@@ -9,7 +10,6 @@ import { ZoneArea } from '../components/ZoneArea';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import type { Entity } from '../entities/Entity';
-import { Structure } from '../entities/structures/Structure';
 import type { EntitySnapshot } from './Snapshot.types';
 
 /**
@@ -35,6 +35,7 @@ export class EntitySnapshotter {
     const progression = entity.findComponent(Progression);
     const aether = entity.findComponent(Aether);
     const capture = entity.findComponent(Capturable);
+    const link = entity.findComponent(MapFeatureLink);
     return {
       id: entity.id,
       kind: entity.kind,
@@ -43,8 +44,7 @@ export class EntitySnapshotter {
       ...(entity.findComponent(MapObjectBody) === undefined
         ? {}
         : { mapObjectId: entity.getComponent(MapObjectBody).object.id }),
-      ...(entity instanceof Structure &&
-        entity.mapFeatureId !== null && { mapFeatureId: entity.mapFeatureId }),
+      ...(link !== undefined && { mapFeatureId: link.featureId }),
       team: entity.findComponent(TeamMembership)?.team ?? null,
       transform:
         transform === undefined

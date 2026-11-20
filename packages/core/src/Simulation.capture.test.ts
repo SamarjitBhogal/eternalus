@@ -102,6 +102,37 @@ describe('Simulation capture points', () => {
     expect([ownerAt(cathedral), ownerAt(fort)]).toEqual(['dark', 'light']);
   });
 
+  it('links each capture point to its feature, the same way every run (DEC-231)', () => {
+    const features = MAP.features.filter(
+      ({ kind }) => kind === 'capture-point' || kind === 'cathedral',
+    );
+    const play = () => {
+      const simulation = match();
+      simulation.enqueueCommand({
+        type: 'dev-spawn',
+        kind: 'warrior',
+        definitionId: 'warrior',
+        team: 'light',
+        at: features[0]?.position ?? { x: 0, y: 0 },
+        count: 1,
+      });
+      for (let tick = 0; tick < 30; tick += 1) {
+        simulation.step();
+      }
+      return simulation;
+    };
+    const linksOf = (simulation: Simulation) =>
+      zonesOf(simulation).map(({ id, mapFeatureId }) => ({ id, mapFeatureId }));
+    const first = play();
+    const second = play();
+
+    expect(zonesOf(first).map(({ mapFeatureId }) => mapFeatureId)).toEqual(
+      features.map(({ id }) => id),
+    );
+    expect(linksOf(second)).toEqual(linksOf(first));
+    expect(second.hash()).toBe(first.hash());
+  });
+
   it('has no capture points without a map', () => {
     expect(zonesOf(match(false))).toEqual([]);
   });

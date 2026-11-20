@@ -16,8 +16,11 @@ import type { Polygon } from '../utils/geometry.types';
 export type EntitySnapshot = {
   readonly mapObjectId?: string;
   /**
-   * A structure built from a map feature: the feature's id (`MapFeature.id`), so a HUD tile binds
-   * to its structure by identity, never by position.
+   * An entity built from a map feature (a structure or a capture zone): the feature's id
+   * (`MapFeatureLink`), so a HUD tile or capture point binds to its entity by identity, never by
+   * position. Absent for an entity built from no feature. One feature may back several entities
+   * (the Cathedral's zone and its planned structure, DEC-233), so a consumer selects by this id
+   * and by the group it reads (`FeatureKeyedGroup`).
    */
   readonly mapFeatureId?: string;
   readonly id: EntityId;
@@ -42,6 +45,13 @@ export type EntitySnapshot = {
   /** A capture point's state (`Capturable`, architecture 07 §7); `null` for every other entity. */
   readonly capture: CaptureSnapshot | null;
 };
+
+/**
+ * A group a consumer may read by `EntitySnapshot.mapFeatureId`: at most one entity of a feature
+ * carries it, which core checks (`map-feature-groups-unique`), so the lookup finds one value and
+ * never hides another (DEC-233, DEC-255, DEC-256).
+ */
+export type FeatureKeyedGroup = keyof Pick<EntitySnapshot, 'health' | 'capture'>;
 
 /** A Legend's level and XP as the client sees it (architecture 03 §5, the HUD's XP ring). */
 type ProgressionSnapshot = LevelProgress & {

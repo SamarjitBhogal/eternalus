@@ -97,6 +97,7 @@ export type { LegendStats, TeamStats } from './state/ScoringState.types';
 export type {
   CaptureSnapshot,
   EntitySnapshot,
+  FeatureKeyedGroup,
   MatchSnapshot,
   Snapshot,
 } from './state/Snapshot.types';
