@@ -320,8 +320,16 @@ Reply inline (`Decision: …`).
       says it matches. Your "10-12" is on another scale than this repo's (Warrior 1, Sentinel 6).
       Set the mini-boss mass to the Sentinel's (6), to 10-12 on this scale, or to another value?
       The merge does not change it: it is a game-design number, in Aryan Walanj's boss content.
+  - Answered 2026-11-20 (DEC-284): (d) "The Sentinel's mass: 6", with the note "middle boss is
+    heavier. 10-12. Outer bosses are comparable to Sentinels.", settled on the notes page as "Yes:
+    the outer boss gets the Sentinel's mass (6)". The capture point boss gets mass 6 in a
+    follow-up PR after the freeze; the middle boss gets its mass in the PR that builds it. (e) to
+    (h): "Schedule all four after the freeze", one small PR each or one PR for (f) to (h); the
+    `control-immune` part of (e) shipped (94e3c0f1), the 0.2 s landing stagger is still to build.
+    Every part of this item is now scheduled (phase 4 plan, sprint 4.2 status of 2026-11-20); it
+    stays open until the PRs are built.
 
-- [ ] **HC-Q63 — What may `guard-within-leash` allow after a knock-back?
+- [x] **HC-Q63 — What may `guard-within-leash` allow after a knock-back?
       (`feat/ability-framework`, 2026-11-19; critic on the phase/3 merge, finding 2; reasoning,
       not reproduced).** The invariant (`diagnostics/invariants/GuardWithinLeashInvariant.ts`;
       architecture 15 §3, 18 §7) allows a guard its leash plus `leashTolerance` (5.5 m,
@@ -345,7 +353,9 @@ Reply inline (`Decision: …`).
     second for 8 s: 1 m on a light guard, 0.32 m on the capture point boss (mass 3.125), whose
     margin is about 0.06 m. A Vanguard hitting a guard from its home side can push it past its
     leash plus tolerance. With Fury, option C means errors in ordinary matches, not rare ones.
-- [ ] **HC-Q64 — Should an ability area hit a structure by its outline, as a basic attack does?
+  - Answered 2026-11-20 (DEC-284): (A) "The post keeps the extra distance". Not built; a
+    follow-up PR after the freeze.
+- [x] **HC-Q64 — Should an ability area hit a structure by its outline, as a basic attack does?
       (`feat/ability-framework`, 2026-11-19; critic on the phase/3 merge of #126, #121, #120,
       #119, finding S1; not built).** A basic attack measures reach to the target's outline: its
       map object's footprints, else its structure `Footprint` (a lane tower's fort and the
@@ -363,6 +373,9 @@ Reply inline (`Decision: …`).
       or B, `EntityStore.isInReach` and `utils/circlePolygon.doesDiscReachPolygon` (the same rule
       in two places today) can also become one function (the critic's second idea). A or B is a
       follow-up PR (this track takes no new work before the freeze).
+  - Answered 2026-11-20 (DEC-284): (A) "Outline; one cast may damage both". Not built; a
+    follow-up PR after the freeze, which can also make `isInReach` and `doesDiscReachPolygon` one
+    function.
 - [x] **HC-Q65 — What does killing the capture point boss give the killer's ultimate meter?
       (`feat/vanguard-kit`, 2026-11-19; merge critic on the framework merge, finding S1).** The
       merge brought the capture point boss (#99) to the meter. Built: damage to it pays 1 point
@@ -657,9 +670,15 @@ Reply inline (`Decision: …`).
       `loadDisplayContent(tickRate)` takes a rate that no description reads. Proposal: one
       `loadAbilityContent(tickRate)` gives `{ abilities, knockback }` and the factory only
       composes. The built design is correct; this is a tidy.
+      (5) **One step-time module** (merge critic of `feat/vanguard-kit` after #123's `7a952b48`,
+      2026-11-20). The code came with `feat/vanguard-kit` (PR #136), not with PR #123:
+      `content/abilities/loadStatusEffects.ts` imports `timeProblems` and `stepInTicks` from
+      `loadAbilities.ts`, so `loadAbilities.ts` is a step-time library for two loaders. Proposal:
+      move `timeProblems`, `stepInTicks`, `inTicks`, `ticksOf` and `isNonNegative` into one module
+      (for example `content/abilities/loadEffectSteps.ts`). It goes with (2) and (3).
       Also seen (not in this branch's diff, same class as HC-B9): `CaptureSystem` converts
       `captureSeconds` and `revertSeconds` to ticks in its constructor.
-      Build (1) to (4) in PR #123, in a later PR, or keep the code as it is?
+      Build (1) to (4) in PR #123 and (5) in PR #136, in a later PR, or keep the code as it is?
 
 - [x] **Unit facing chevron (DEC-192, feat/unit-facing-chevron, 2026-11-05) — two questions, one
       better-than-design item.**

@@ -9769,3 +9769,32 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   "Documentation check passed." (`check-pr2a-loop3-fixes.log`).
 - Next step: the owner runs `push-vanguard-pr2a.sh` (push, open the stacked PR on #123); then
   DEC-284 on `feat/ability-framework` (#123).
+
+### 2026-11-20 — Phase 4 / sprint 4.2: DEC-284, the owner's follow-up calls for the ability framework — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: recorded the owner's group B answers of 2026-11-20 (Combat Track Calls page,
+  signed COMBAT-WEAPONS-ABILITIES-26, and its notes page, signed COMBAT-WEAPONS-ABILITIES-29) as
+  DEC-284, docs only. Decisions log: batch 2026-11-20 (the heading DEC-283 has on
+  `feat/vanguard-kit`) with the DEC-284 row. `INBOX.md`: HC-Q63 (A) and HC-Q64 (A) answered;
+  HC-S12 (d) (outer boss mass 6, the middle boss's mass when it is built) and (e) to (h)
+  ("Schedule all four after the freeze") answered, the item stays open until built; HC-B13 (5),
+  the step-time module the merge critic found on `feat/vanguard-kit`. Phase 4 plan: sprint 4.2
+  status of 2026-11-20 schedules the follow-ups after the freeze. 05 §18: one line, areas are to
+  reach a structure by its outline (not built). No code: every group B card is "after the
+  freeze".
+- Checks run: `npm run docs:check` and `npx prettier --check` on the five changed files.
+- Next step: the owner pushes PR #123; `feat/vanguard-kit` (PR #136) merges this head, keeping one
+  2026-11-20 batch heading with both rows, DEC-283 and DEC-284.
+
+### 2026-11-20 — Phase 4 / Vanguard PR 2a: merge of feat/ability-framework `04e86aaf` (DEC-284) — feat/vanguard-kit — sholtzman + Claude Code
+
+- What was done: merged the DEC-284 docs commit of PR #123 (`04e86aaf`) into `feat/vanguard-kit`
+  for PR #136. Three files conflicted, all by design: the decisions log keeps one 2026-11-20
+  batch heading with both rows, DEC-283 and DEC-284, and the paragraph under the table now says
+  "the build of DEC-283 (5)", since the table has two rows; `INBOX.md` keeps the 2026-11-19 Fury
+  note under HC-Q63 and then its DEC-284 answer, and the HC-Q64 answer before this branch's new
+  items; this file keeps both sides. HC-B13 (5) now says its code came with PR #136, not with
+  PR #123 (#123's "not on this branch" is false here). The merge changes only `INBOX.md` and
+  `docs/` (no code).
+- Checks run: `npm run docs:check`, Prettier on the five files, and `npm run check`.
+- Next step: the owner pushes PR #123, then PR #136.
