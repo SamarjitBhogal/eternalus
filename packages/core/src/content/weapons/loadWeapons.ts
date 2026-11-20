@@ -28,6 +28,19 @@ const problemsOf = (weapon: WeaponDefinition): string[] => {
 };
 
 /**
+ * Checks the weapons as authored, every rule at once (the shared half of `loadWeapons`, also run
+ * by `loadDisplayContent`, which needs no tick rate).
+ *
+ * @throws ContentValidationError listing every broken rule.
+ */
+export const validateWeapons = (authored: readonly WeaponDefinition[]): void => {
+  const problems = authored.flatMap(problemsOf);
+  if (problems.length > 0) {
+    throw new ContentValidationError(problems.join('\n'));
+  }
+};
+
+/**
  * Loads the weapons: attack intervals from seconds to ticks (architecture 03 §11, as
  * `loadDefaultContent` does for units), validated once.
  *
@@ -39,10 +52,7 @@ export const loadWeapons = (
   tickRate: number,
   authored: readonly WeaponDefinition[] = WEAPONS.all(),
 ): ContentCatalogue<WeaponDefinition> => {
-  const problems = authored.flatMap(problemsOf);
-  if (problems.length > 0) {
-    throw new ContentValidationError(problems.join('\n'));
-  }
+  validateWeapons(authored);
   const rate = new TickRate(tickRate);
   return new ContentCatalogue(
     authored.map((weapon) => ({

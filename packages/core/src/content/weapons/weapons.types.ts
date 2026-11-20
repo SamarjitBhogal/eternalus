@@ -21,3 +21,9 @@ export type WeaponDefinition = {
   /** The class this weapon is unique to, or `null`. */
   readonly uniqueTo: LegendKind | null;
 };
+
+/** What the selection and Loadout screens show of a weapon, and whom it is for (no numbers). */
+export type WeaponDisplay = Pick<
+  WeaponDefinition,
+  'id' | 'displayName' | 'allowedClasses' | 'uniqueTo'
+>;
