@@ -78,16 +78,16 @@ export class DuelMatch {
     this.options.simulation.enqueueIntent(team, intent);
   }
 
-  /** `connection` left: the other player is told and the match ends. */
+  /** `connection` left: the player who stayed is told they won (DEC-251) and the match ends. */
   public leave(connection: ClientConnection): void {
     const team = this.seatOf(connection);
     if (team === null) return;
-    const opponent = this.seats[opponentOf(team)];
-    // The protocol reports no winner; the rating counts the leaver as the loser.
+    const stayer = opponentOf(team);
+    // The player who stayed wins (DEC-251); the rating counts the leaver as the loser.
     this.end(
-      { type: 'match-ended', reason: 'opponent-left', winner: null },
-      opponentOf(team),
-      opponent,
+      { type: 'match-ended', reason: 'opponent-left', winner: stayer },
+      stayer,
+      this.seats[stayer],
     );
   }
 

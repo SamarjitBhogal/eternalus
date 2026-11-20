@@ -152,7 +152,7 @@ describe('DuelHost', () => {
       { connection: a, name: 'Ana', guestId: 'ga' },
       { connection: b, name: 'Ben', guestId: 'gb' },
     );
-    expect(b.sent).toEqual([{ type: 'match-ended', reason: 'opponent-left', winner: null }]);
+    expect(b.sent).toEqual([{ type: 'match-ended', reason: 'opponent-left', winner: 'dark' }]);
     expect([host.isInMatch(a), host.isInMatch(b)]).toEqual([false, false]);
     expect(scheduler.activeCount).toBe(0);
   });
