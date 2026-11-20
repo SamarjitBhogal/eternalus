@@ -1,9 +1,6 @@
 import type { ServerMessage } from '@eternalus/protocol';
-import {
-  BYTE_RANGE,
-  FORWARDED_FOR_HEADER,
-  SPREAD_ADDRESS_PREFIX,
-} from './WebSocketBotLinkFactory.constants';
+import { FORWARDED_FOR_HEADER } from '../transport/ClientAddress.constants';
+import { BYTE_RANGE, SPREAD_ADDRESS_PREFIX } from './WebSocketBotLinkFactory.constants';
 import type { BotLink, BotLinkFactory, BotLinkHandlers } from './BotLink.types';
 
 /**
@@ -16,8 +13,8 @@ export class WebSocketBotLinkFactory implements BotLinkFactory {
   /** Opens a socket to `url`; messages that are not JSON are dropped. */
   public open(url: string, handlers: BotLinkHandlers): BotLink {
     this.opened += 1;
-    // Every socket gets its own made-up address: for loopback runs only, the server trusts
-    // X-Forwarded-For from a loopback peer alone, and this stops the per-address cap.
+    // Every socket gets its own made-up address, in every mode and to any URL. The server trusts
+    // X-Forwarded-For only from a loopback peer, so it spreads the per-address cap only there.
     const socket = new WebSocket(url, {
       headers: { [FORWARDED_FOR_HEADER]: this.addressOf(this.opened) },
     });
