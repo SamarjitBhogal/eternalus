@@ -4,7 +4,7 @@ description: How a match unfolds over time - the MatchDirector state machine ove
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-12
+last-reviewed: 2026-11-20
 tags: [architecture, match, timeline, phases, scoring, story, lore]
 paths:
   [
@@ -465,7 +465,9 @@ a Duel: both human Legends start in the Cathedral (`match/duelStartPoints.ts`), 
 Legends to their start points at full health at once, and `KillCountCondition` (`kill-count`) ends
 the match at the target. The score is `state.match.duel` and `Snapshot.match.duel`. The shipped
 numbers (target, countdown, start offset) are `DUEL_RULES` in `content/duel/duelRules.ts`. Mobs and
-structures still run as generated; FR-115's inert world is not built.
+structures still run as generated; FR-115's inert world is not built. Every Legend enters a Duel at
+its level curve's cap (`DUEL_RULES.legendsStartAtMaxLevel`, SCRUM-444; `ProgressionSystem` raises
+it when it spawns); minions keep their normal level and veterancy.
 
 The human's Legend works like this (DEC-173): it is the roster's `human` slot (`RosterSlot.pilot`),
 at most one per roster and on `playerTeam`; a roster without one is sim mode. The client gives it
