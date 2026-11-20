@@ -1,7 +1,7 @@
 import { Transform } from '../../components/Transform';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import type { GameConfig } from '../../config/GameConfig.types';
-import { AGGRO_RULES } from '../../content/ai/aggro/aggroRules';
+import { loadAggroRules } from '../../content/ai/aggro/loadAggroRules';
 import { loadDefaultContent } from '../../content/loadDefaultContent';
 import { STRUCTURE_DEFINITIONS } from '../../content/structures/structureCatalogue';
 import { loadWeapons } from '../../content/weapons/loadWeapons';
@@ -21,9 +21,9 @@ import { Perception } from '../perception/Perception';
 export const CLASS_OF = (kind: string) =>
   kind === 'warrior' ? ('legend' as const) : kind.endsWith('-mob') ? ('minion' as const) : null;
 
-/** A lane-minion controller over the default aggro content. */
+/** A lane-minion controller over the default aggro content, loaded at the default tick rate. */
 export const controller = new MinionController({
-  aggro: AGGRO_RULES,
+  aggro: loadAggroRules(createDefaultGameConfig().tickRate),
   classOf: CLASS_OF,
 });
 

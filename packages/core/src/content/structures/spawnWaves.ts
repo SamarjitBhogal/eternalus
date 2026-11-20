@@ -1,4 +1,4 @@
-import type { OpeningWaveDefinition, SpawnWaveDefinition } from './structures.types';
+import type { AuthoredSpawnWave, OpeningWaveDefinition } from './structures.types';
 
 /**
  * The opening hordes: at load-in (tick 0, before the countdown) each team's Stronghold sends one
@@ -16,7 +16,7 @@ export const OPENING_WAVE = {
  * centre, so they reinforce them; mediums 30 s after each light wave; heavies down the worst lane.
  * The opening hordes are separate (`OPENING_WAVE`).
  */
-export const SPAWN_WAVES: Readonly<Record<string, readonly SpawnWaveDefinition[]>> = {
+export const SPAWN_WAVES: Readonly<Record<string, readonly AuthoredSpawnWave[]>> = {
   'spawner-tower': [
     {
       mobId: 'light-minion',
