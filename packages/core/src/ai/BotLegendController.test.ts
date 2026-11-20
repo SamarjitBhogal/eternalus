@@ -95,7 +95,7 @@ const setUp = (at = { x: 60, y: 20 }, map = TWO_LANE_MAP, withPaths = false) => 
   const world = matchWorldOf(map);
   const paths = withPaths
     ? new AStarPathfinder(world.grid, {
-        maxExpansions: config.map.pathMaxExpansions,
+        maxSearchArea: config.map.pathMaxSearchArea,
         snapCells: config.map.pathSnapCells,
       })
     : null;
