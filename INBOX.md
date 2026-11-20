@@ -16,45 +16,23 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
-- [ ] **Dependency audit (2026-11-13): approve an upgrade PR, and say whether to enable Dependabot
-      alerts.** `npm audit` on `phase/3-sprint-3-work` reports 17 findings (14 moderate, 3 high, none
-      critical), all in dev tooling or transitive packages. High: `vite` (launch-editor escaping and
-      editor CLI flag misinterpretation on Windows, and dev-server file-serving issues; fix is vite
-      8.3.8, not a major bump), `source-map-js` (event-loop DoS through crafted source maps;
-      transitive), `zod` (memory exhaustion on oversized constrained collections; transitive).
-      Moderate: `vitest` and `@vitest/*` (code injection through unauthenticated manual mock
-      registration; Windows backslash traversal bypass; fix vitest 5.1.0, not a major bump),
-      `eslint`, `typescript-eslint` and `minimatch` (glob DoS). For those three npm suggests eslint
-      9.39.5 and typescript-eslint 8.36.0, which are downgrades from the installed 10.11.0 and
-      8.70.1, so they need a closer look and not a blind `npm audit fix`. None of them ships in the
-      browser build or runs in the Duel server. AGENTS.md says no new or upgraded dependencies
-      without explicit human approval, and the lockfile is never hand-edited. Approve: one
-      dependency-upgrade PR (run by `npm`, with `npm run check`). Also: Dependabot alerts could not
-      be read (the GitHub API answers 403 to our token: they may be disabled, or the token may lack
-      permission); enable them, or keep relying on a manual `npm audit`?
-
-- [ ] **BUG-2 (SCRUM-435): interior walls use the palace wall-segment health of 2,000 HP. Should
-      they break at all?** Reported as "player attack is weak, damaging simple walls takes
-      forever". The attack numbers match the spec: a prop has 100 HP (DEC-121 (b)), about 3 Warrior
-      hits. The slow walls are interior walls built with the `wall` map-object kind
-      (`MapBuildingInteriorBuilder.ts`: cathedral partitions, chapel and apse walls;
-      `MapPalaceRoomsBuilder.ts`: palace room walls). They get the palace WallSegment health in
-      `content/maps/mapObjectDefinitions.ts` (`wall: 2000`), while the cathedral itself is
-      indestructible (`cathedral: null`). One more cause can look like "takes forever": DEC-121 (a),
-      a side's own pieces refuse its attacks (`FriendlyFireStep`). Decide, for the Duel arena
-      (FR-115): (a) interior walls do not break at all, so they become indestructible (`null`); or
-      (b) they break, with scenery health (100) or their own content kind and a value you pick.
-      Agent's suggestion: (a) if the walls are only the arena's shell, since a 100 HP partition
-      would open the Cathedral in seconds; otherwise (b) with their own kind.
-
-- [ ] **BUG-3 (SCRUM-436): minions do not attack obstacles or props. This is a design change
-      request, not a defect.** Today minions path around obstacles (DEC-193), and the aggro rules
-      (`content/ai/aggro/laneMinion.ts`, `ai/aggroRank.ts`) rank only Legends, minions, turrets and
-      the lane objective; no rule targets a prop or an obstacle. (DEC-193's stuck detection and
-      path-around is on `fix/minion-stack-followups`; it is not in this base's `systems/`.) Decide:
-      keep DEC-193 (minions path around), or change it so minions attack props or obstacles that
-      block them. If changed: which obstacles (props only, or walls and gates too), and note the
-      effect on the lane flow fields, which assume obstacles are fixed until they are destroyed.
+- [ ] **Dependency audit (re-run 2026-11-20): approve one upgrade PR for the `eslint` family and
+      `zod`, and say whether to turn on Dependabot alerts.** PR #113 already moved `vite` to 8.3.8
+      and `vitest` to 5.1.0. `npm audit` on `phase/3-sprint-3-work` (`5a7cc8dc`) now reports 10
+      findings (9 moderate, 1 high, none critical), all in dev tooling, none in the browser build or
+      the Duel server. High: `zod` 4.6.5 (memory exhaustion on oversized constrained collections,
+      GHSA-mrhx-c7xc-m3w5; fixed in 4.6.6), transitive through `knip` and
+      `eslint-plugin-react-hooks`. Moderate: `minimatch` 10.2.6 (glob DoS, GHSA-g3hv-75wg-m249),
+      reached through `eslint` 10.11.0 and `typescript-eslint` 8.70.1 and the
+      `@typescript-eslint/*` packages; the other 8 moderate findings are those packages. On
+      2026-11-13 npm proposed downgrades for this family; it now proposes upgrades (`eslint`
+      10.15.0, `typescript-eslint` 8.73.0, not semver-major, but past the exact versions pinned in
+      `package.json`, so `npm audit fix --force`), and `zod` 4.6.6 is a patch.
+      AGENTS.md says no new or upgraded dependencies without explicit human approval, and the
+      lockfile is never hand-edited. Approve: one dependency-upgrade PR for these (run by `npm`,
+      with `npm run check`)? Also: GitHub answers "Dependabot alerts are disabled for this
+      repository" (HTTP 403). Turn them on (repository settings, owner), or keep relying on a manual
+      `npm audit`?
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
@@ -218,12 +196,20 @@ Reply inline (`Decision: …`).
       break. No spec gives the inner walls their own value. Should the `'wall'` features inside the
       Stronghold ring keep the WallSegment value, or get their own (which number)?
   - **Answered 2026-11-13 by DEC-247** (chat, PR #96). Not built yet (BUG-2).
+  - Where it lives: the inner walls are `'wall'` map objects built by
+    `packages/core/src/map/MapBuildingInteriorBuilder.ts` (cathedral partitions, chapel and apse
+    walls) and `packages/core/src/map/MapPalaceRoomsBuilder.ts` (palace room walls); their health
+    is the `wall` entry of `packages/core/src/content/maps/mapObjectDefinitions.ts`. A side's own
+    pieces refusing its attacks (DEC-121 (a), `combat/FriendlyFireStep.ts`) can also look slow.
 
 - [x] **BUG-3: minions attack obstacles (2026-11-12, PR #96, SCRUM-436).** Today a stuck unit
       paths around an obstacle (DEC-193); minions never attack obstacles or props. The playtest
       asked for minions to attack them. Keep DEC-193, or should minions attack obstacles (and
       which ones: props only, or blocking obstacles too)?
   - **Answered 2026-11-13 by DEC-248** (chat, PR #96). Not built yet (BUG-3).
+  - Where it lives: the lane minion's aggro rules (`content/ai/aggro/laneMinion.ts`) and
+    `ai/aggroRank.ts` rank only Legends, minions, turrets and the lane objective today; no rule
+    targets a prop or an obstacle.
 
 - [x] **`refactor/durations-at-load` critic (2026-11-14), better than the design — built, sign-off
       asked; no decision blocks the PR.** #86's healing system divided its two rates
