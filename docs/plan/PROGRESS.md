@@ -9308,3 +9308,25 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Next step: full check, critic round 2, ponytail, re-check, PR on base `phase/3-sprint-3-work`.
   Three owner calls are open on the "Countdown PR Calls" page (win/lose urgency, the overlay's
   10 s line, the UE visual shots and performance check), and HC-B9 (1) on the Owner Calls page.
+
+### 2026-11-20 — Phase 3 / the match-start countdown: live region at the app root (M1), HC-B9 (1), critic round 2 minors — feat/match-start-countdown — sholtzman + Claude Code
+
+- What was done: `94f3aaf8` first fix for DEC-282 (7); `50e0aca2` critic round 2 M1: one polite
+  live region at the app root (`ui/components/LiveRegion.tsx`), mounted by `App` outside the
+  screen switch, and each countdown portals its line into it (no VoiceOver check yet).
+  `61928f1e` HC-B9 (1), DEC-285: core keeps the countdown's end tick once as
+  `MatchState.countdownEndTick`; `SpawnSystem`, `GuardRoster`, `LeashBehaviour`, `MatchDirector`
+  and the snapshot read it. Critic BTD4 with it: `timelineMarkTick` takes a named `TimelineFrame`.
+  Fail-first: the stored tick + 30 turned 35 core tests red across all five readers
+  (`eternalus-agent-work/game-loop-plan/hcb9-breaks-2026-11-20.md`). `fe0a08d9` and `dee5850d`:
+  critic round 2 m2 (reference 15 CD-49, the overlay), m3 (HC-C1 lists the shots), m5 (INBOX
+  450 s), n1, n2, n5, n6. BTD2 and BTD3 are not built (owner call).
+- Checks: `npm run check` on `94f3aaf8` → `EXIT=0` (core "Tests 1678 passed (1678)", protocol
+  "Tests 29 passed (29)", client "Tests 2065 passed (2065)", server "Tests 84 passed (84)").
+  `npm run check` on `dee5850d` → `EXIT=0`
+  (`eternalus-agent-work/game-loop-plan/check-countdown-2026-11-20-r2.log`): core "Tests 1679
+  passed (1679)"; protocol "Tests 29 passed (29)"; client "Tests 2067 passed (2067)"; server
+  "Tests 84 passed (84)"; "Documentation check passed.".
+- Next step: the UE shots and the rule-7 performance check on a quiet machine
+  (`ue-shots-2026-11-20/run.sh`), shots to the owner on the "Countdown PR Calls" page, critic
+  round 3, ponytail, re-check, PR on base `phase/3-sprint-3-work`.
