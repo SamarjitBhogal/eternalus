@@ -1017,9 +1017,10 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
     with `CastValidator`, and `AbilitySystem` checks again (ADR 0026 decision 2). A cast is refused
     with `cannot-cast` while the match holds units idle (the countdown, DEC-88). `casting` means
     another cast of the same Legend waits this tick; a directional cast aimed at the caster is
-    `no-target`. `CastInstance` runs every step at cast: there are no due ticks, wind-up, channels
-    or `EffectZone`s yet. A dash's path and its hits are resolved at cast, and its `onEnd` steps run
-    then at the path's end while the caster is still on the way (ADR 0026 decision 4).
+    `no-target`. Due ticks are built (the delayed steps bullet below); `castTicks`, channels and
+    `EffectZone`s are not. A dash's path and its hits are resolved when its step fires, and its
+    `onEnd` steps run then at the path's end while the caster is still on the way (ADR 0026
+    decision 4).
   - **Slots, aether and the ultimate.** `components/Abilities` holds seven
     `AbilitySlotRuntime`s in bar order (`slot(slot)`, `slots`, `hasPendingCast`); a runtime has
     no `varietyId`, no `reset` and no cast rule. `Aether` stays its own component and keeps its
@@ -1047,6 +1048,31 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
     `cooldown-and-aether-bounds` and `no-cast-while-not-ready`.
   - **Client.** Kit rows from content on the Legend panels, the HUD slots, the two cast modes
     and the range overlay: [13](13-game-interface.md) §10.
+- **Delayed steps (`feat/pr2a-windup`, 2026-11-20; DEC-283).** §4's due ticks are built: a step
+  of an ability's own list may carry `delaySeconds`, which `loadAbilities` checks (0 or more,
+  finite) and loads as `delayTicks` like every other time (DEC-241). Where the code differs from
+  §3 and §4:
+  - **Which steps wait.** Only an ability's top-level steps (`Delayed<Step>` in
+    `content/abilities/AbilityDefinition.types.ts`); a dash's `onPath` and `onEnd` steps and a
+    status's `onHit` steps run where their parent places them and carry no delay (§3 says every
+    spec may). `loadAbilities` refuses delays that decrease along the list, so "on its due tick"
+    and "in list order" agree. The registry binds each step with its `delayTicks` (`CastStep`).
+  - **What the state keeps.** Not the `CastInstance`, which holds strategies and services: a cast
+    with steps left is kept as plain data, `CastInProgress` (`components/Abilities.types.ts`: the
+    ability id, slot, aim, origin, caster level, cast tick and the first step not fired), on the
+    caster's `Abilities` component, so it is hashed with the caster (`StateHasher` adds `casts`
+    only while one waits, so other matches hash as before) and leaves the match with it.
+    `AbilitySystem` fires the steps due at the cast, keeps the cast while steps are left, and each
+    tick, after that tick's new casts, rebuilds the `CastInstance` of each kept cast (casters in id
+    order) and fires the steps now due through `CastInstance.run(placement, from)`.
+  - **Where a later step runs.** On the caster where it is at the step (§3's `origin` "at the
+    step"), while the cast's direction stays the one fixed at the cast (from where the caster stood
+    to the aim). The context's `tick` stays the cast's tick.
+  - **What drops a cast.** A caster that died drops its casts in progress (no step fires after its
+    death); one removed from the store took them along. A Duel round reset drops them
+    (`DuelRoundSystem`, with the statuses and pushes). Nothing else does: a later step needs no
+    second cast check, so a status that ends during the wait (Fury) or a stun does not stop it
+    (`interruptedBy` is not built).
 - **Ultimate meter (`feat/vanguard-kit`, 2026-11-16; DEC-272, DEC-273).** `ProgressionSystem`
   stays the only writer of `charge`: it owns the helper `systems/UltimateCharge`, which buffers
   each change and pays it in the system's pass, after the XP. Where the code differs from §6, §13
@@ -1126,6 +1152,17 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
     checks at boot, where `DefaultSystemPipeline` loads the statuses, that each `grants` names an
     ability of slot kind `granted` and that each `onHit` step passes the registry's step check
     (`AbilityRegistry.checkSteps`).
+  - **Wind-up (DEC-283).** Space first puts `content/status-effects/furyWindup.ts`
+    (`fury-windup`, 0.3 s, `cannot-move` only, no control class) on the Vanguard with a `buff`
+    step, and the `dash` step waits `delaySeconds: 0.3`, so the Vanguard stands still 0.3 s, then
+    dashes the 3 m in 0.3 s (0.6 s from Space to the end of the dash). The way is fixed at the
+    press (the targeting's aim at the cast); the Vanguard can still attack and cast during the
+    wind-up, and a push still moves it, so the dash starts from where it then stands. Fury ending
+    during the wind-up does not cancel the dash (the delayed steps bullet above), and the 1 s
+    cooldown counts from the press. The client draws orange rings that close in on the Legend
+    over the wind-up (`game/views/WindupRingsView`, [08](08-game-engine.md) §8) from a new
+    snapshot group, `EntitySnapshot.statuses` (each active status's `id`, `ticksActive` and
+    `ticksLeft`; `null` without `StatusEffects`), which stands where 03 §5 sketches `statusIds`.
   - **`heading` targeting.** `fury-dash` targets `heading`: its aim is one metre the way the
     caster moves, or the way it faces when it stands still (DEC-270). Each targeting kind is a
     strategy in `abilities/targeting/` (`SelfTargeting`, `DirectionalTargeting`,
