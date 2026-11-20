@@ -16,27 +16,6 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
-- [ ] **Legend respawn, interim (`fix/legend-respawn`, GL-12, 2026-11-11) — three open points
-      for the product owner.** (1) A respawned Legend comes back with **full health and full
-      aether** (its level, XP and raised caps are kept); FR-051 only says "full health and the
-      retained ultimate charge". Confirm refilling aether, or say what it should keep. (2) A
-      **bot Legend keeps its controller, profile and lane memory** (its brain restarts from the
-      lane it was spawned with); confirm, or say that a bot should re-plan on return. (3) The
-      **10 s delay is interim** (`LEGEND_RESPAWN_SECONDS`, DEC-80) until claudiodh's
-      momentum-scaling timer lands; DEC-186's "pay on respawn" (structure XP for a Legend dead at
-      that moment) is not built and the `ProgressionSystem` TODO and ponytail comments stay.
-      Critic items for sign-off: (a) `EntityFactory.createWithId` and `MatchWorld.strongholdOf`
-      are additions not in the 04 factory contract (better than the design, doc update on
-      approval); (b) FR-051's "retained ultimate charge" is **not implemented** (no charge state
-      exists yet); (c) loadout, cooldowns and weapon reset to the class default on return; (d)
-      `RespawnSystem` is registered only when the horde options exist, though it only needs a
-      factory (decouple later); (e) it polls `Health.isDead` instead of subscribing to
-      `entity-died` (interim).
-      (4) PR #100 review: a returning Legend **ignores the unit caps** (they gate new spawns
-      only), so its team can briefly hold one Unit over `limits.maxUnitsPerTeam` until a unit
-      dies; nothing reserves its slot during the 10 s. Confirm, or say that the slot must be
-      reserved (horde, guard and developer spawns would count the waiting Legends).
-
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
       small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`
@@ -3022,6 +3001,15 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-11-20 — **Legend respawn, interim (`fix/legend-respawn`, PR #100, GL-12).** Answered by
+  DEC-295 (owner, 2026-11-20): the same Legend object waits and returns reset (full health and
+  aether; ultimate charge kept apart), a bot laner re-plans its lane by the current threat, a
+  returning Legend ignores every cap, and a fallen Legend's body stays on the map greyed out. Built
+  in PR #100, with DEC-186's "pay on respawn". Critic items (a) `createWithId` and (d) the
+  factory coupling are gone with the redesign; (b) the ultimate charge waits for #123, which the
+  kept Legend object carries through death; (c) loadout and cooldowns now survive death; (e)
+  polling just before `DeathSystem` stays (it also keeps XP earned later in the same tick).
 
 - 2026-11-03 — **PR #56 — the `returning` state (DEC-144 G).** Decision (SamarjitBhogal,
   2026-11-03, recorded as DEC-155): (b) merge it into the resting state. `LeashBehaviour`, `MinionController` and

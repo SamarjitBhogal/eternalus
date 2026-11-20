@@ -8046,6 +8046,7 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 
 - What was done: merged `phase/3-sprint-3-work` (3dc9e908, after #51 and #52) into this branch because #97 was CONFLICTING. Only `docs/plan/PROGRESS.md` conflicted; both sides' entries are kept. No feature code changed. No force push.
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 1336 passed (1336)"; protocol "Tests 18 passed (18)"; server "Tests 79 passed (79)"; client "Tests 1883 passed (1883)"; "Documentation check passed."
+- Next step: reviewer approval; the team merges.
 
 ### 2026-11-11 — Phase 3 / sprint 3: interim Legend respawn (BUG-6, SCRUM-439, plan task GL-12) — fix/legend-respawn — Claude Code
 
@@ -8078,6 +8079,12 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - What was done: three Copilot comments, all valid. (1) Unit cap: a returning Legend is not counted while it waits, so spawns can fill its slot. Decision (simplest, in `INBOX.md`): a returning Legend ignores the caps, which gate new spawns only; documented on `RespawnSystem`, pinned by a new test (it passes before and after, since it records the behaviour). (2) Client: `PlayerCommands` kept `lastMove` and `attackTargetId` while the rebuilt Legend had no movement or target, so held input stayed idle; it now resets both when the Legend reappears in the snapshot (new test fails without it). (3) The hash test now compares two states at the same tick with the same entities, only the queue differs (fails when the queue is left out of `StateHasher`).
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 1340 passed (1340)"; client "Tests 1819 passed (1819)"; "Documentation check passed."
 - Next step: reviewer approval; the team merges.
+
+### 2026-11-20 — Phase 3 / sprint 3: respawn review round 3 and DEC-295 — fix/legend-respawn (PR #100) — claudiodh + Claude Code
+
+- What was done: answered swholtzman's CHANGES_REQUESTED review and the owner's DEC-295. A dead Legend now waits as itself: `DeathSystem` withdraws it (`EntityStore.withdraw`, not retired), `RespawnQueue` holds the same object and `StateHasher` hashes its fields; on return it gets full health and aether, no statuses, movement or target, faces the enemy Stronghold (S1), and a bot laner re-plans its lane (`assessLanes`). `createWithId` and `Progression.restore` are gone. DEC-186 "pay on respawn" (B1): a waiting Legend is owed its team's structure and boss XP and late kill XP, paid on `legend-respawned` with cause `respawn`, which `level-matches-xp` accepts only for a Legend back this tick. `RespawnSystem` is registered in every match, after the Duel round (a Duel test pins it, S4). Client: `LegendBodies` and `LegendBodyLayer` leave a greyed body where a Legend fell. Docs: DEC-295 row, BUG-6 `Fixed`, the INBOX item moved to Done, this file's #97 entry made whole again (B2). Not done: the design-doc updates of review S3 and N4.
+- Checks run: see the final `npm run check` of this round in the PR reply.
+- Next step: reviewer re-review; S3 and N4 doc updates.
 
 ### 2026-11-12 — Phase 3 / combat sprint: bound key actions, part 1 (BUG-5 / SCRUM-438) — fix/bound-key-actions — Claude Code
 
