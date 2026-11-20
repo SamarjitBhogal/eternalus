@@ -1,6 +1,6 @@
 /**
  * Test support: the shipped catalogue as `main.tsx` builds it, its asset ids checked against
- * `ASSET_MANIFEST`. Imported only by tests and the visual harness, never by a module `main.tsx`
+ * `ASSET_MANIFEST` and its drawn statuses taken from the shipped status cue registry. Imported only by tests and the visual harness, never by a module `main.tsx`
  * reaches (the composition root passes the manifest's ids itself).
  */
 import { createDefaultGameConfig, loadDisplayContent } from '@eternalus/core';
@@ -8,6 +8,7 @@ import { createDefaultGameConfig, loadDisplayContent } from '@eternalus/core';
 import type { DisplayCatalogue } from '../../../bridge/catalogue.types';
 import { isSelectableSpec } from '../../../bridge/selectionRules';
 import { ASSET_MANIFEST } from '../../../data/resources/AssetManifest';
+import { createDefaultStatusCueRegistry } from '../../views/defaultStatusCueRegistry';
 import { buildDisplayCatalogue } from '../buildDisplayCatalogue';
 import type { CatalogueSource } from '../CatalogueSource.types';
 import type { DisplayOverrides } from '../CataloguePresentation.types';
@@ -21,6 +22,7 @@ export function shippedCatalogue(
   return createCoreCatalogue({
     tickRate: createDefaultGameConfig().tickRate,
     knownAssetIds: new Set(ASSET_MANIFEST.assets.map((entry) => entry.id)),
+    drawnStatusIds: createDefaultStatusCueRegistry().statusIds,
     overrides,
   });
 }
@@ -64,6 +66,7 @@ export function catalogueWithUnselectableLegend(): {
     content: { ...content, specs },
     presentation: CATALOGUE_PRESENTATION,
     knownAssetIds: new Set(ASSET_MANIFEST.assets.map((entry) => entry.id)),
+    drawnStatusIds: createDefaultStatusCueRegistry().statusIds,
     overrides: NO_DISPLAY_OVERRIDES,
   });
   return { catalogue, classId: sealed.classId, specId: sealed.id };

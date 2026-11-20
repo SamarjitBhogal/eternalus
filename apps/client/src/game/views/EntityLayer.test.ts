@@ -1,13 +1,16 @@
-import type { EntitySnapshot, Snapshot } from '@eternalus/core';
+import type { EntitySnapshot, Snapshot, StatusSnapshot } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
+import { createDefaultStatusCueRegistry } from './defaultStatusCueRegistry';
 import { createDefaultViewRegistry } from './defaultViewRegistry';
 import { EntityLayer } from './EntityLayer';
 import type { HealthBarSide } from './HealthBarView.types';
 import { MINI_MAP_LEGEND_GLYPH, MINI_MAP_MOB_GLYPH } from './entityViews.constants';
 import { HEALTH_BAR_FILL_COLORS, HEALTH_BAR_TRACK_COLOR } from './HealthBarView.constants';
 import type { WorldLayer } from './SceneView.types';
+import { StatusCueRegistry } from './StatusCueRegistry';
+import type { StatusCueView } from './StatusCueRegistry.types';
 import type { EntityDrawState, EntityView } from './EntityView.types';
 import { ViewRegistry } from './ViewRegistry';
 import { WINDUP_RING_COLOR, WINDUP_RING_COUNT } from './WindupRingsView.constants';
@@ -85,6 +88,7 @@ describe('EntityLayer', () => {
     const spy = new SpyView();
     const layer = new EntityLayer(
       new ViewRegistry(spy),
+      new StatusCueRegistry(),
       () => false,
       () => null,
     );
@@ -98,6 +102,7 @@ describe('EntityLayer', () => {
   it('tells where it draws an entity (the interpolated position), and null for one it does not', () => {
     const layer = new EntityLayer(
       new ViewRegistry(new SpyView()),
+      new StatusCueRegistry(),
       () => false,
       () => null,
     );
@@ -120,6 +125,7 @@ describe('EntityLayer', () => {
     const spy = new SpyView();
     const layer = new EntityLayer(
       new ViewRegistry(spy),
+      new StatusCueRegistry(),
       () => false,
       () => null,
     );
@@ -135,6 +141,7 @@ describe('EntityLayer', () => {
     const spy = new SpyView();
     const layer = new EntityLayer(
       new ViewRegistry(spy),
+      new StatusCueRegistry(),
       () => false,
       () => null,
     );
@@ -155,6 +162,7 @@ describe('EntityLayer', () => {
     const spy = new SpyView();
     const layer = new EntityLayer(
       new ViewRegistry(spy),
+      new StatusCueRegistry(),
       () => false,
       () => null,
     );
@@ -169,6 +177,7 @@ describe('EntityLayer', () => {
     const spy = new SpyView();
     const layer = new EntityLayer(
       new ViewRegistry(spy),
+      new StatusCueRegistry(),
       () => false,
       () => null,
     );
@@ -187,6 +196,7 @@ describe('EntityLayer', () => {
     // DEC-187 (C): "a dot sits at the snapshot position", not the interpolated one.
     const layer = new EntityLayer(
       createDefaultViewRegistry(),
+      new StatusCueRegistry(),
       () => false,
       () => null,
     );
@@ -212,6 +222,7 @@ describe('EntityLayer', () => {
     // The injected rule, not one of the layer's own: here 7 health counts as dead.
     const layer = new EntityLayer(
       createDefaultViewRegistry(),
+      new StatusCueRegistry(),
       (health) => health?.current === 7,
       () => null,
     );
@@ -236,6 +247,7 @@ describe('EntityLayer', () => {
     const sides: Readonly<Record<string, HealthBarSide>> = { foe: 'enemy', pal: 'ally' };
     const layer = new EntityLayer(
       createDefaultViewRegistry(),
+      new StatusCueRegistry(),
       () => false,
       (entity) => sides[entity.id] ?? null,
     );
@@ -273,6 +285,7 @@ describe('EntityLayer', () => {
     // 'vanguard' winds up (WindupRingsView.test checks the rings), 'foe' shows a bar.
     const layer = new EntityLayer(
       createDefaultViewRegistry(),
+      createDefaultStatusCueRegistry(),
       () => false,
       (entity) => (entity.id === 'foe' ? 'enemy' : null),
     );
@@ -295,5 +308,38 @@ describe('EntityLayer', () => {
 
     expect(ringAt).toHaveLength(WINDUP_RING_COUNT);
     expect(ringAt.every((index) => index > lastUnitCall && index < firstBarCall)).toBe(true);
+  });
+
+  it('draws each status cue the registry has, with its status, and nothing for a status without one', () => {
+    const cued: [string, StatusSnapshot][] = [];
+    const cue: StatusCueView = {
+      draw: (state, status) => {
+        cued.push([state.entity.id, status]);
+      },
+    };
+    const cues = new StatusCueRegistry();
+    cues.register('stun', cue);
+    const layer = new EntityLayer(
+      new ViewRegistry(new SpyView()),
+      cues,
+      () => false,
+      () => null,
+    );
+    const stun = { id: 'stun', ticksActive: 1, ticksLeft: 4 };
+    const slow = { id: 'slow', ticksActive: 2, ticksLeft: null };
+
+    layer.show(
+      null,
+      snapshot(1, [
+        { ...unit('a', 0, 0), statuses: [slow, stun] },
+        { ...unit('b', 0, 5), statuses: [slow] },
+        { ...unit('c', 0, 9), statuses: null },
+      ]),
+      0,
+      null,
+    );
+    layer.draw(new RecordingRenderer());
+
+    expect(cued).toEqual([['a', stun]]);
   });
 });

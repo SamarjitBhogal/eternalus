@@ -14,6 +14,7 @@ import { RecordingRenderer } from '../engine/render/RecordingRenderer';
 import type { DrawContext } from '../engine/render/Canvas2dRenderer.types';
 import type { ScreenRect, WorldPoint } from '../engine/render/Renderer.types';
 import { createDefaultViewRegistry } from './defaultViewRegistry';
+import { StatusCueRegistry } from './StatusCueRegistry';
 import { EntityLayer } from './EntityLayer';
 import { MINI_MAP_MOB_GLYPH } from './entityViews.constants';
 import { MapView } from './MapView';
@@ -366,6 +367,7 @@ describe('MiniMapView unit markers (DEC-187)', () => {
     };
     const units = new EntityLayer(
       createDefaultViewRegistry(),
+      new StatusCueRegistry(),
       () => false,
       () => null,
     );

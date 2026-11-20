@@ -14,8 +14,8 @@ import {
 const EAST = { x: 1, y: 0 };
 const DRAWN_AT = { x: 10, y: 20 };
 
-/** A Legend 0.5 in radius with `statuses`. */
-const legend = (statuses: readonly StatusSnapshot[] | null): EntitySnapshot => ({
+/** A Legend 0.5 in radius. */
+const LEGEND: EntitySnapshot = {
   id: 'entity-1',
   kind: 'warrior',
   family: 'legend',
@@ -27,8 +27,8 @@ const legend = (statuses: readonly StatusSnapshot[] | null): EntitySnapshot => (
   aether: null,
   area: null,
   capture: null,
-  statuses,
-});
+  statuses: null,
+};
 
 /** The wind-up `ticksActive` ticks in, of the 9 it lasts. */
 const windup = (ticksActive: number): StatusSnapshot => ({
@@ -37,19 +37,20 @@ const windup = (ticksActive: number): StatusSnapshot => ({
   ticksLeft: 9 - ticksActive,
 });
 
-/** What `WindupRingsView` draws for `entity` at `DRAWN_AT`, in order. */
-const draw = (entity: EntitySnapshot): RecordingRenderer => {
+/** What `WindupRingsView` draws for `status` on `entity` at `DRAWN_AT`, in order. */
+const draw = (status: StatusSnapshot, entity = LEGEND): RecordingRenderer => {
   const renderer = new RecordingRenderer();
   new WindupRingsView().draw(
     { entity, position: DRAWN_AT, facing: EAST, isFocused: false },
+    status,
     renderer,
   );
   return renderer;
 };
 
-/** Each call `WindupRingsView` makes for `entity`: its name and arguments. */
-const rings = (entity: EntitySnapshot): unknown[][] =>
-  draw(entity).calls.map((call) => [call.op, ...call.args]);
+/** Each call `WindupRingsView` makes for `status` on `entity`: its name and arguments. */
+const rings = (status: StatusSnapshot, entity = LEGEND): unknown[][] =>
+  draw(status, entity).calls.map((call) => [call.op, ...call.args]);
 
 /** The ring sizes for a wind-up `passed` of the way through: diameter 1 times each ring's scale. */
 const sizesAt = (passed: number): number[] =>
@@ -60,7 +61,7 @@ const sizesAt = (passed: number): number[] =>
 
 describe('WindupRingsView', () => {
   it('draws the orange rings around the Legend, a short way out as the wind-up starts', () => {
-    expect(rings(legend([windup(0)]))).toEqual(
+    expect(rings(windup(0))).toEqual(
       sizesAt(0).map((size) => [
         'drawWorldGlyph',
         { shape: 'ring', size },
@@ -73,9 +74,9 @@ describe('WindupRingsView', () => {
 
   it('closes the rings in on the Legend as the wind-up passes', () => {
     const sizes = (ticksActive: number): number[] =>
-      draw(
-        legend([{ id: 'stun', ticksActive: 1, ticksLeft: 5 }, windup(ticksActive)]),
-      ).calls.flatMap((call) => (call.op === 'drawWorldGlyph' ? [call.args[0].size] : []));
+      draw(windup(ticksActive)).calls.flatMap((call) =>
+        call.op === 'drawWorldGlyph' ? [call.args[0].size] : [],
+      );
 
     const [start, third, last] = [sizes(0), sizes(3), sizes(8)];
 
@@ -87,10 +88,8 @@ describe('WindupRingsView', () => {
     }
   });
 
-  it('draws nothing without the wind-up, without statuses or without a place', () => {
-    expect(rings(legend(null))).toEqual([]);
-    expect(rings(legend([]))).toEqual([]);
-    expect(rings(legend([{ id: 'fury', ticksActive: 4, ticksLeft: 236 }]))).toEqual([]);
-    expect(rings({ ...legend([windup(2)]), transform: null })).toEqual([]);
+  it('draws nothing for a wind-up with no end or on a Legend with no place', () => {
+    expect(rings({ ...windup(2), ticksLeft: null })).toEqual([]);
+    expect(rings(windup(2), { ...LEGEND, transform: null })).toEqual([]);
   });
 });

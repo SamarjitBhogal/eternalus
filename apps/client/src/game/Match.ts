@@ -21,6 +21,7 @@ import { MatchCamera } from './MatchCamera';
 import { MatchViewControls } from './MatchViewControls';
 import type { PlayerActions } from './PlayerActions';
 import { PlayerCommands } from './PlayerCommands';
+import { createDefaultStatusCueRegistry } from './views/defaultStatusCueRegistry';
 import { createDefaultViewRegistry } from './views/defaultViewRegistry';
 import { EntityLayer } from './views/EntityLayer';
 import { AimOverlayView } from './views/AimOverlayView';
@@ -107,6 +108,7 @@ export class Match implements LoopTarget {
           ),
         );
       }),
+      createDefaultStatusCueRegistry(),
       isDead,
       this.healthBars.healthBarOf,
     );

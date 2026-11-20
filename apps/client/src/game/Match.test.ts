@@ -26,6 +26,7 @@ import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
 import { AIM_OVERLAY_FILL_COLOR } from './views/AimOverlayView.constants';
 import { FOCUS_RING_COLOR } from './views/entityViews.constants';
+import { WINDUP_RING_COLOR, WINDUP_RING_COUNT } from './views/WindupRingsView.constants';
 
 const SEED = 1;
 const ABILITIES = loadDisplayContent(createDefaultGameConfig().tickRate).abilities;
@@ -210,15 +211,19 @@ describe('Match ability casts', () => {
       const real = made.simulation.snapshot.bind(made.simulation);
       vi.spyOn(made.simulation, 'snapshot').mockImplementation(() => {
         const snapshot = real();
+        const { player } = snapshot;
         return {
           ...snapshot,
-          player: {
-            ...snapshot.player,
-            slots: (snapshot.player?.slots ?? []).map((entry) =>
-              entry.slot === 'granted' ? { ...entry, abilityId: 'fury-dash' } : entry,
-            ),
-          },
-        } as unknown as typeof snapshot;
+          player:
+            player === null
+              ? null
+              : {
+                  ...player,
+                  slots: player.slots.map((entry) =>
+                    entry.slot === 'granted' ? { ...entry, abilityId: 'fury-dash' } : entry,
+                  ),
+                },
+        };
       });
       made.match.tick();
       return made;
@@ -235,6 +240,7 @@ describe('Match ability casts', () => {
       const casts = enqueue.mock.calls
         .map(([command]) => command)
         .filter((command) => command.type === 'cast-ability');
+      // A plain point: `toEqual` fails on a radius or facing, which the commandLog must not carry.
       expect(casts).toEqual([
         {
           type: 'cast-ability',
@@ -242,11 +248,6 @@ describe('Match ability casts', () => {
           slot: 'granted',
           aim: { point: here, targetId: null },
         },
-      ]);
-      // Only x and y: the commandLog and replays must not carry radius or facing.
-      expect(Object.keys(casts[0]?.type === 'cast-ability' ? casts[0].aim.point : {})).toEqual([
-        'x',
-        'y',
       ]);
       match.destroy();
     });
@@ -530,6 +531,31 @@ describe('Match', () => {
     expect(
       camera.contains(lightStronghold?.position ?? { x: -1, y: -1 }, map.width, map.height),
     ).toBe(true);
+  });
+
+  it("draws a status's cue through the shipped status cues: the wind-up rings (DEC-283)", () => {
+    const { match, renderer, simulation } = setUp();
+    const real = simulation.snapshot.bind(simulation);
+    vi.spyOn(simulation, 'snapshot').mockImplementation(() => {
+      const snapshot = real();
+      return {
+        ...snapshot,
+        entities: snapshot.entities.map((entity) =>
+          entity.id === match.playerEntityId
+            ? { ...entity, statuses: [{ id: 'fury-windup', ticksActive: 2, ticksLeft: 7 }] }
+            : entity,
+        ),
+      };
+    });
+    match.tick();
+
+    match.render(0);
+
+    const rings = renderer.calls.filter(
+      (call) => call.op === 'drawWorldGlyph' && call.args[2] === WINDUP_RING_COLOR,
+    );
+    expect(rings).toHaveLength(WINDUP_RING_COUNT);
+    match.destroy();
   });
 
   it('centres the minimap on the player and keeps it there as the player moves (DEC-182)', () => {
