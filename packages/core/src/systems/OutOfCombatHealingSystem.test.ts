@@ -5,6 +5,7 @@ import { CombatClock } from '../components/CombatClock';
 import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { loadOutOfCombatHealing } from '../content/healing/loadOutOfCombatHealing';
 import { OUT_OF_COMBAT_HEALING } from '../content/healing/outOfCombatHealing';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import type { MapObjectKind } from '../content/maps/mapObjects.types';
@@ -65,7 +66,7 @@ const SHIELD_OBJECTS: readonly MapObjectKind[] = ['wall', 'gate', 'turret'];
 const setUp = () => {
   const state = new GameState(CONFIG, 1, matchWorldOf(MAP));
   spawnMapStructures(state, MAP_OBJECTS);
-  const system = new OutOfCombatHealingSystem(state, OUT_OF_COMBAT_HEALING);
+  const system = new OutOfCombatHealingSystem(state, loadOutOfCombatHealing(TICK_RATE));
   const definitions = loadDefaultContent(TICK_RATE);
   const factory = new EntityFactory(
     createDefaultEntityRegistry(),

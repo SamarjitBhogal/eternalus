@@ -4,6 +4,7 @@ import { Collider } from '../components/Collider';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { LANE_MINION_AGGRO } from '../content/ai/aggro/laneMinion';
+import { loadAggroRules } from '../content/ai/aggro/loadAggroRules';
 import type { SpaceIndex } from '../physics/SpaceIndex';
 import { GameState } from '../state/GameState';
 import { AiSystem } from './AiSystem';
@@ -13,7 +14,9 @@ import { Perception } from './perception/Perception';
 
 /** A lane minion whose first wave ghosts for 30 ticks. */
 const ghosting = new MinionController({
-  aggro: { ghost: { ...LANE_MINION_AGGRO, id: 'ghost', ghostFirstWaveTicks: 30 } },
+  aggro: loadAggroRules(createDefaultGameConfig().tickRate, {
+    ghost: { ...LANE_MINION_AGGRO, id: 'ghost', ghostFirstWaveTicks: 30 },
+  }),
   classOf: CLASS_OF,
 });
 

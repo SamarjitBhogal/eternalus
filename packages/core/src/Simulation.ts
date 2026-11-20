@@ -19,7 +19,7 @@ import type { LogContext, Logger } from './diagnostics/Logger.types';
 import { makeLogRecord } from './diagnostics/makeLogRecord';
 import { recentContext } from './diagnostics/recentContext';
 import { REPLAY_CHECKPOINT_EVERY } from './diagnostics/Replay.constants';
-import { AGGRO_RULES } from './content/ai/aggro/aggroRules';
+import { loadAggroRules } from './content/ai/aggro/loadAggroRules';
 import { AI_CADENCE } from './content/ai/cadence';
 import { LANE_ASSESSMENT_WEIGHTS } from './content/ai/laneAssessmentWeights';
 import { ROVER_TACTICS } from './content/ai/rover';
@@ -159,7 +159,7 @@ export class Simulation {
     const curves = levelCurves ?? loadLevelCurves();
     this.curves = curves;
     const weaponSource = weapons ?? loadWeapons(tickRate);
-    const controllers = Simulation.createControllers();
+    const controllers = Simulation.createControllers(tickRate);
     const units = content ?? Simulation.defaultContent(tickRate, curves, controllers, weaponSource);
     const objectsById = new Map(
       Object.values(MAP_OBJECT_DEFINITIONS).map((definition) => [definition.id, definition]),
@@ -337,9 +337,10 @@ export class Simulation {
    * and lane. Features without a structure definition (walls, turrets, corner camps) stay map data.
    * A structure whose definition `hasMapFootprint` takes the footprints of its feature's map object
    * of the same id as its `Footprint` (a lane tower's fort, DEC-185; the Stronghold's palace,
-   * DEC-185 D). A blocking such object (a fort) is the structure's body: it has no health of its
-   * own (one pool, DEC-185 B). Only towers share one pool (DEC-217 (13)): the palace's object does
-   * not block, and a gate's definition has no `hasMapFootprint`, so both keep their own health.
+   * DEC-185 D; a gate's own outline, DEC-217 (17)). A blocking such object (a fort) is the
+   * structure's body: it has no health of its own (one pool, DEC-185 B). Only towers share one
+   * pool (DEC-217 (13)): the palace's and the gates' objects do not block, so they keep their own
+   * health.
    *
    * @returns Map object id → the id of the structure it is the body of.
    */
@@ -706,11 +707,14 @@ export class Simulation {
     };
   }
 
-  /** Every controller, with the shipped content it reads (architecture 11 §2). */
-  private static createControllers(): ControllerRegistry {
+  /**
+   * Every controller, with the shipped content it reads (architecture 11 §2); the aggro profiles
+   * are loaded at `tickRate`.
+   */
+  private static createControllers(tickRate: number): ControllerRegistry {
     const bots = { difficulties: BOT_DIFFICULTIES, retreatTo: RETREAT_STRUCTURES };
     return createDefaultControllerRegistry({
-      leash: { aggro: AGGRO_RULES, classOf: unitClassOf },
+      leash: { aggro: loadAggroRules(tickRate), classOf: unitClassOf },
       botLegend: bots,
       rover: {
         ...bots,
