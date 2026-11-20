@@ -9330,3 +9330,27 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Next step: the UE shots and the rule-7 performance check on a quiet machine
   (`ue-shots-2026-11-20/run.sh`), shots to the owner on the "Countdown PR Calls" page, critic
   round 3, ponytail, re-check, PR on base `phase/3-sprint-3-work`.
+
+### 2026-11-20 — Phase 3 / the match-start countdown: DEC-286, critic round 3 minors, ponytail cut — feat/match-start-countdown — sholtzman + Claude Code
+
+- What was done: `6766cc0c` critic round 2 BTD2 and BTD3, DEC-286 (1) and (2): `UI_ENHANCEMENT_IDS`
+  is tied to `UiEnhancementId` by `expectTypeOf`, and the urgent countdown glow spreads the
+  countdown glow. This corrects the last entry's "BTD2 and BTD3 are not built (owner call)": they
+  were built under the owner's standing rule on better-than-design items (DEC-223, DEC-232).
+  Fail-first: `eternalus-agent-work/game-loop-plan/btd23-breaks-2026-11-20.md`. Critic round 3
+  approved with no blockers or majors. `177d1ac7` m7 and BTD6, DEC-286 (3): one
+  `config/timelineFrameOf` builds the `TimelineFrame`, and `Simulation` hands its
+  `countdownEndTick` to `GameState` in a named `GameStateTiming`, so `state/` imports only types
+  from `config/` (architecture 02 §3); with it m8 (DEC-285 citations) and n9 (the hasher names
+  `countdownEndTick`). `3ad7c70e` m10: `LiveRegion.test.tsx`. `729310b3` m9 (the DEC-286 table
+  header), n10, n11 (INBOX Done line) and BTD5, DEC-286 (4): the one-live-region rule in
+  architecture 13 §7. Fail-first for m7 and m10: `m7-m10-breaks-2026-11-20.md` (4 breaks red,
+  restored). `0494a89e` the one ponytail cut (`ponytail-review-countdown-2026-11-20.md`):
+  `MatchBridge.matchSeconds` inlined into `clockOf`.
+- Checks: `npm run check` on `0494a89e` → `EXIT=0`
+  (`eternalus-agent-work/game-loop-plan/check-countdown-2026-11-20-r3.log`): core "Tests 1679
+  passed (1679)"; protocol "Tests 29 passed (29)"; client "Tests 2072 passed (2072)"; server
+  "Tests 84 passed (84)"; "Documentation check passed.".
+- Next step: the UE shots and the rule-7 performance check on a quiet machine
+  (`ue-shots-2026-11-20/run.sh`), the screen-reader check (critic A10), the shots to the owner on
+  the "Countdown PR Calls" page, then the PR on base `phase/3-sprint-3-work`.
