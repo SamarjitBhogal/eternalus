@@ -55,4 +55,8 @@ describe('HeadingTargeting', () => {
       'no entity "entity-404"',
     );
   });
+
+  it('does not use the aim: the dash aims itself by the caster’s heading', () => {
+    expect(new HeadingTargeting().usesAim).toBe(false);
+  });
 });

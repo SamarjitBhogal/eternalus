@@ -42,7 +42,8 @@ const NAMED_FEATURES = {
 const describeKinds: AbilityStepDescriber = (effects) =>
   effects.map(({ kind }) => ({ kind, shape: { kind: 'circle', radius: 0 } }));
 
-const load = (catalogues?: DisplayCatalogues) => loadDisplayContent(describeKinds, catalogues);
+const load = (catalogues?: DisplayCatalogues) =>
+  loadDisplayContent({ describeSteps: describeKinds, usesAim: () => true }, catalogues);
 
 describe('loadDisplayContent', () => {
   it('returns the validated Legend classes and Legends, in catalogue order', () => {

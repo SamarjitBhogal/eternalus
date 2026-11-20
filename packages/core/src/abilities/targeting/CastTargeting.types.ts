@@ -15,6 +15,11 @@ export type TargetingSpec = { readonly kind: string };
 export interface CastTargeting<S extends TargetingSpec = TargetingSpec> {
   /** The registry key, e.g. `directional`. */
   readonly kind: S['kind'];
+  /**
+   * Whether the cast reads the aim the player gives it: `false` when the cast aims itself (the
+   * heading-aimed dash), so the client casts at once and needs no pointer (05 §7).
+   */
+  readonly usesAim: boolean;
   /** Why `aim` will not do for a cast of `casterId` now (`no-target`), or `null` when it will. */
   aimBlockedBy(spec: S, aim: Aim, casterId: EntityId, state: GameState): AbilityRejectReason | null;
   /** The aim a cast of `casterId` sent with `aim` runs with, read at the moment it runs. */

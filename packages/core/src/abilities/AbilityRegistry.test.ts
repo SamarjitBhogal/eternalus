@@ -196,4 +196,13 @@ describe('AbilityRegistry', () => {
     expect(() => registry.effectFor('fake-bolt')).toThrow('No effect strategy');
     expect(() => registry.shapeFor('cone')).toThrow('No shape strategy');
   });
+
+  it('tells from the bound targeting strategy whether a cast uses the aim', () => {
+    const registry = testAbilityRegistry([]);
+
+    expect(registry.usesAim({ kind: 'heading' })).toBe(false);
+    expect(registry.usesAim({ kind: 'directional' })).toBe(true);
+    expect(registry.usesAim(null)).toBe(true);
+    expect(() => registry.usesAim({ kind: 'beam' })).toThrow('No targeting strategy');
+  });
 });

@@ -38,4 +38,8 @@ describe('DirectionalTargeting', () => {
 
     expect(targeting.aimFor(DIRECTIONAL, aim, caster.id, state)).toBe(aim);
   });
+
+  it('uses the aim it is sent: the player aims the cast', () => {
+    expect(new DirectionalTargeting().usesAim).toBe(true);
+  });
 });

@@ -17,4 +17,8 @@ describe('SelfTargeting', () => {
     expect(targeting.aimFor(SELF, onCaster, caster.id, state)).toBe(onCaster);
     expect(targeting.aimFor(SELF, east, caster.id, state)).toBe(east);
   });
+
+  it('uses the aim: a self cast still shows its range overlay first (DEC-209 (3))', () => {
+    expect(new SelfTargeting().usesAim).toBe(true);
+  });
 });

@@ -12,6 +12,8 @@ import type { CastTargeting, TargetingSpec } from './CastTargeting.types';
 export class DirectionalTargeting implements CastTargeting {
   public readonly kind = 'directional';
 
+  public readonly usesAim = true;
+
   /** `no-target` unless the aim point lies a finite, non-zero distance from the caster. */
   public aimBlockedBy(
     _spec: TargetingSpec,

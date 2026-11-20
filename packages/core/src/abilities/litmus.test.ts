@@ -138,9 +138,13 @@ describe('the ability framework litmus (architecture 05 §16, Phase 4.2 metric)'
       30,
     );
     strategies.registerEffect(new FakeBoltEffect());
-    const display = loadDisplayContent((effects) => strategies.describe(effects), {
-      abilities: new ContentCatalogue([...ABILITIES.all(), FAKE_BOLT]),
-    });
+    const display = loadDisplayContent(
+      {
+        describeSteps: (effects) => strategies.describe(effects),
+        usesAim: (targeting) => strategies.usesAim(targeting),
+      },
+      { abilities: new ContentCatalogue([...ABILITIES.all(), FAKE_BOLT]) },
+    );
 
     expect(display.abilities.find(({ id }) => id === 'fake-bolt')).toMatchObject({
       displayName: 'Fake Bolt',
