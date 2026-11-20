@@ -30,7 +30,7 @@ export type DefaultSystemPipelineOptions = {
   readonly director: Pick<MatchDirector, 'update'>;
   /**
    * The match's ability registry, shared with the `cast-ability` handler; the shipped abilities
-   * (`createDefaultAbilityRegistry(loadAbilities(tickRate))`) when omitted.
+   * (`createDefaultAbilityRegistry(loadAbilities(tickRate), tickRate)`) when omitted.
    */
   readonly abilities?: AbilityRegistry;
   /**

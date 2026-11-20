@@ -40,7 +40,7 @@ describe('@eternalus/core public API', () => {
   it('keeps the raw content catalogues internal: display content comes from loadDisplayContent', () => {
     expect(Object.keys(core)).not.toContain('LEGEND_CLASSES');
     expect(Object.keys(core)).not.toContain('LEGEND_SPECS');
-    expect(core.loadDisplayContent().specs).toEqual(LEGEND_SPECS.all());
+    expect(core.loadDisplayContent(30).specs).toEqual(LEGEND_SPECS.all());
   });
 
   it('generates the default map-1 from the default config', () => {

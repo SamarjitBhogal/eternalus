@@ -92,7 +92,7 @@ describe('DefaultSystemPipeline', () => {
 
   it('checks each queued cast with the validator it is given: one CastValidator per match', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
-    const abilities = createDefaultAbilityRegistry(loadAbilities(30));
+    const abilities = createDefaultAbilityRegistry(loadAbilities(30), 30);
     const validator = new CastValidator(abilities);
     const blockedBy = vi.spyOn(validator, 'blockedBy').mockReturnValue('restricted');
     const pipeline = new DefaultSystemPipeline({

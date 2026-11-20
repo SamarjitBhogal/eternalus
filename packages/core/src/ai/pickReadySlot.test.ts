@@ -78,7 +78,7 @@ describe('pickReadySlot (DEC-205)', () => {
   });
 
   it('picks nothing while the match holds units idle (DEC-88), so a bot sends no cast then', () => {
-    const readiness = new CastValidator(createDefaultAbilityRegistry(loadAbilities(30)));
+    const readiness = new CastValidator(createDefaultAbilityRegistry(loadAbilities(30), 30));
     const turn = turnWith(1);
 
     expect(pickReadySlot(turn, readiness, AIM)).toBe('ability-1'); // Blade Runner, the one built

@@ -9482,3 +9482,32 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   passed."; `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-15.log`); then
   `prettier --check` and `npm run docs:check` on this file.
 - Next step: the owner pushes the branch (`push-125-r3.sh`), then merges PR #125.
+
+### 2026-11-20 — Phase 4 / sprints 4.2–4.3 and 4.7: ability framework, merge of phase/3 (#125) and the merge critic's knock-back fix — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` at `5a7cc8dc` (#125, content durations
+  at load, DEC-241) into `feat/ability-framework` for PR #123 (`ed7be614`). Four files
+  conflicted: `Simulation.ts` passes `validator, tickRate` to `createControllers`;
+  `Simulation.types.ts` keeps `abilities` beside #125's "as authored" wording; this file and the
+  decisions log keep both sides.
+- Merge critic (`architecture-reviewer`): REQUEST CHANGES, one blocker, fixed here.
+  `KnockbackEffect` converted `KNOCKBACK.travelSeconds` to ticks on every cast, and nothing
+  checked the value (03 §8, DEC-241). New `loadKnockback(tickRate)` checks it with
+  `assertNonNegativeFinite` and gives `travelTicks`; `createDefaultAbilityRegistry` and core's
+  `loadDisplayContent` take the tick rate (the client's `main.tsx` passes `gameConfig.tickRate`).
+  No value change: 0.25 s is 8 ticks. The new test was red with the check removed ("expected
+  function to throw an error, but it didn't"). Nit N1: two citations now name 03 §8 and DEC-241.
+  Nit N2 (the loader's message wording) is not changed: `feat/vanguard-kit` tests match it. The
+  three better-than-design items are `INBOX.md` HC-B13 (1)-(3). Docs 02, 05 and 10 name
+  `loadKnockback`. Re-check of the fix: APPROVE, no blockers; its nits are applied (doc 02 names
+  the tick rate `main.tsx` passes, three lines rewrapped, the test's loaded tuning is `TUNING`)
+  and its one better-than-design item is HC-B13 (4).
+- Checks run: on the merge (`ed7be614`), `npm run check` → `EXIT=0`, core 1931 tests
+  (`eternalus-agent-work/abilities/check-merge-5a7cc8dc.log`). On the fix, before the re-check
+  nits and this entry, `npm run check` → `EXIT=0`: core "Tests 1934 passed (1934)"; protocol
+  "Tests 29 passed (29)"; client "Tests 2093 passed (2093)"; server "Tests 84 passed (84)"; "All
+  matched files use Prettier code style!"; "Documentation check passed."
+  (`eternalus-agent-work/abilities/check-b1-knockback.log`). After the nits: `check:quick`,
+  `format:check`, `docs:check` and the knock-back tests.
+- Next step: the owner pushes PR #123 (no new sign-off comment; the body gets this merge and the
+  checks); `feat/vanguard-kit` merges this head; the owner answers HC-B13.

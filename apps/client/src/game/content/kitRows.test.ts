@@ -1,9 +1,9 @@
-import { kitOf, loadDisplayContent } from '@eternalus/core';
+import { createDefaultGameConfig, kitOf, loadDisplayContent } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import { kitDetailRows, kitRows } from './kitRows';
 
-const CONTENT = loadDisplayContent();
+const CONTENT = loadDisplayContent(createDefaultGameConfig().tickRate);
 const legend = (id: string) => {
   const found = CONTENT.legends.find((candidate) => candidate.id === id);
   if (found === undefined) throw new Error(`no class ${id}`);

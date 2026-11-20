@@ -15,7 +15,7 @@ const CONE_DAMAGE = { kind: 'damage', shape: { kind: 'cone' } } as const;
 describe('createDefaultAbilityRegistry', () => {
   it('composes every shipped ability at build: every shape and restriction kind is registered', () => {
     const abilities = loadAbilities(30);
-    const registry = createDefaultAbilityRegistry(abilities);
+    const registry = createDefaultAbilityRegistry(abilities, 30);
 
     expect(abilities.ids.map((id) => registry.resolve(id).id)).toEqual(abilities.ids);
     expect(registry.shapeFor('circle').kind).toBe('circle');
@@ -24,7 +24,7 @@ describe('createDefaultAbilityRegistry', () => {
 
   it('makes every shipped ability with effects available: every effect kind it names is registered', () => {
     const abilities = loadAbilities(30);
-    const registry = createDefaultAbilityRegistry(abilities);
+    const registry = createDefaultAbilityRegistry(abilities, 30);
 
     expect(abilities.ids.filter((id) => registry.resolve(id).isAvailable)).toEqual([
       'blade-runner',
@@ -41,7 +41,7 @@ describe('createDefaultAbilityRegistry', () => {
       fakeAbility({ id: 'cone-strike', effects: [CONE_DAMAGE] }),
     ]);
 
-    expect(() => createDefaultAbilityRegistry(abilities)).toThrow(ContentValidationError);
+    expect(() => createDefaultAbilityRegistry(abilities, 30)).toThrow(ContentValidationError);
   });
 
   it('fails at build, not at cast, when an ability names an effect kind it has no line for', () => {
@@ -49,8 +49,8 @@ describe('createDefaultAbilityRegistry', () => {
       fakeAbility({ id: 'bolt', effects: [{ kind: 'zone' }] }),
     ]);
 
-    expect(() => createDefaultAbilityRegistry(abilities)).toThrow(ContentValidationError);
-    expect(() => createDefaultAbilityRegistry(abilities)).toThrow('effect "zone"');
+    expect(() => createDefaultAbilityRegistry(abilities, 30)).toThrow(ContentValidationError);
+    expect(() => createDefaultAbilityRegistry(abilities, 30)).toThrow('effect "zone"');
   });
 
   it('fails at build on every step and shape its strategy refuses, nested ones included', () => {
@@ -97,8 +97,8 @@ describe('createDefaultAbilityRegistry', () => {
       },
     ]);
 
-    expect(() => createDefaultAbilityRegistry(abilities)).toThrow(ContentValidationError);
-    expect(() => createDefaultAbilityRegistry(abilities)).toThrow(
+    expect(() => createDefaultAbilityRegistry(abilities, 30)).toThrow(ContentValidationError);
+    expect(() => createDefaultAbilityRegistry(abilities, 30)).toThrow(
       new ContentValidationError(
         [
           'Ability "ghost": debuff status "frozen" is unknown.',
@@ -117,7 +117,7 @@ describe('createDefaultAbilityRegistry', () => {
   });
 
   it('checks a debuff against the statuses it is given', () => {
-    expect(() => createDefaultAbilityRegistry(loadAbilities(30), { has: () => false })).toThrow(
+    expect(() => createDefaultAbilityRegistry(loadAbilities(30), 30, { has: () => false })).toThrow(
       'Ability "shockwave": debuff status "concussion" is unknown.',
     );
   });

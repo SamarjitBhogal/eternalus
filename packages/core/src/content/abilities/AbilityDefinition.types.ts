@@ -83,7 +83,7 @@ type AuthoredDebuffSpec = {
 };
 
 /**
- * `T` as loaded (architecture 03 §11): every `<name>Seconds` field, at any depth, becomes
+ * `T` as loaded (architecture 03 §8, DEC-241): every `<name>Seconds` field, at any depth, becomes
  * `<name>Ticks`. `loadAbilities` converts every authored time this way, whatever the step's kind,
  * so a new effect kind needs no loader change.
  */

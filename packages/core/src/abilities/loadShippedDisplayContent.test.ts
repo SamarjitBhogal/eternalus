@@ -12,7 +12,7 @@ const area = (radius: number) => ({ kind: 'circle', radius }) as const;
 describe('loadShippedDisplayContent', () => {
   it("carries each effect step's area from its strategy, a dash's steps after the dash itself", () => {
     const steps = (id: string) =>
-      loadShippedDisplayContent().abilities.find((ability) => ability.id === id)?.steps;
+      loadShippedDisplayContent(30).abilities.find((ability) => ability.id === id)?.steps;
 
     expect(steps('blade-runner')).toEqual([
       { kind: 'dash', distance: 8 },
@@ -46,7 +46,7 @@ describe('loadShippedDisplayContent', () => {
       ],
     } as const;
 
-    const [display] = loadShippedDisplayContent({
+    const [display] = loadShippedDisplayContent(30, {
       abilities: new ContentCatalogue<AuthoredAbility>([...ABILITIES.all(), blink]),
     }).abilities.filter(({ id }) => id === 'blink');
 
@@ -57,7 +57,7 @@ describe('loadShippedDisplayContent', () => {
   });
 
   it('gives an ability with no effects (not built) no steps, and the rest of the display content', () => {
-    const content = loadShippedDisplayContent();
+    const content = loadShippedDisplayContent(30);
 
     for (const ability of content.abilities.filter((entry) => !entry.isAvailable)) {
       expect(ability.steps).toEqual([]);

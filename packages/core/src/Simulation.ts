@@ -175,7 +175,7 @@ export class Simulation {
     const curves = levelCurves ?? loadLevelCurves();
     this.curves = curves;
     const weaponSource = weapons ?? loadWeapons(tickRate);
-    const registry = abilities ?? createDefaultAbilityRegistry(loadAbilities(tickRate));
+    const registry = abilities ?? createDefaultAbilityRegistry(loadAbilities(tickRate), tickRate);
     // One cast rule per match: the handler, `AbilitySystem`, the snapshot and the bots share it.
     const validator = new CastValidator(registry);
     this.handlers = createDefaultCommandHandlers(validator);

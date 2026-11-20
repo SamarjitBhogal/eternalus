@@ -103,11 +103,12 @@ const load = <Step extends AuthoredStep>(
 };
 
 /**
- * Loads the shipped abilities: every authored time from seconds to ticks (architecture 03 §11, as
- * `loadWeapons` does), validated once. The loader knows no effect or shape kind: it checks the
- * ability's own fields and that every time is 0 or more, and converts every `<name>Seconds` field
- * of a step to `<name>Ticks`; each step's other fields are checked by its strategy when
- * `createDefaultAbilityRegistry` resolves every ability at boot (`AbilityEffect.validate`).
+ * Loads the shipped abilities: every authored time from seconds to ticks (architecture 03 §8,
+ * DEC-241, as `loadWeapons` does), validated once. The loader knows no effect or shape kind: it
+ * checks the ability's own fields and that every time is 0 or more, and converts every
+ * `<name>Seconds` field of a step to `<name>Ticks`; each step's other fields are checked by its
+ * strategy when `createDefaultAbilityRegistry` resolves every ability at boot
+ * (`AbilityEffect.validate`).
  *
  * @param tickRate - Ticks per second (`GameConfig.tickRate`).
  * @throws ContentValidationError listing every broken rule.

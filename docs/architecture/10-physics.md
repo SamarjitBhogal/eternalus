@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-14
+last-reviewed: 2026-11-20
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -320,7 +320,8 @@ Unit-to-unit momentum, SAT and the remaining physics described above are still p
 `takeForcedStep` for dashes and knock-backs; it has no `pendingImpulse` or `desiredVelocity` (a
 heading set by `steer`). Forced motion moves an entity that `cannot-move` (Slam knocks back and up
 at once) and waits while the match holds units idle. The knock-back's base mass and travel time are
-in `content/abilities/knockback.ts` (`TUNE`). A dash's hit path is cut at cast where the caster's
+in `content/abilities/knockback.ts` (`TUNE`); `loadKnockback` converts the travel time to ticks at
+load (03 §8, DEC-241). A dash's hit path is cut at cast where the caster's
 circle first touches a wall or the map's edge (`abilities/dashReach.ts`): one straight sweep
 (`CollisionResolver.reach`, §7's swept test without the slide, cut at the map's bounds) by the
 same `CollisionResolver` `CollisionSystem` moves units with. `Simulation` builds one per match on

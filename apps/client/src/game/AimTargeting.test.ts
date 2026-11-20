@@ -1,5 +1,6 @@
 import {
   type AbilitySlotSnapshot,
+  createDefaultGameConfig,
   type EntitySnapshot,
   loadDisplayContent,
   type Snapshot,
@@ -10,7 +11,7 @@ import type { HudSlotId } from '../bridge/Binding.types';
 import { AimTargeting } from './AimTargeting';
 import type { DashReach } from './Match.types';
 
-const ABILITIES = loadDisplayContent().abilities;
+const ABILITIES = loadDisplayContent(createDefaultGameConfig().tickRate).abilities;
 const CASTER: EntitySnapshot = {
   id: 'legend-1',
   kind: 'warrior',

@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-20
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -1027,7 +1027,8 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
     PR, so the ultimate slot reports `not-charged` and `charge: null`.
   - **Motion and statuses.** Dashes and knock-backs are forced motion (`Movement.push`; ADR 0026
     decision 4); a knock-back's base mass and travel time are in
-    `content/abilities/knockback.ts`. Every knock-back target gets `staggered` (cannot cast);
+    `content/abilities/knockback.ts`, and `loadKnockback` converts the travel time to ticks at load
+    (03 §8, DEC-241). Every knock-back target gets `staggered` (cannot cast);
     `knockup` (shown as "Airborne") stops moving, attacking and casting. An airborne target can
     still be pushed: DEC-208's stacking is kept over `more-abilities.md` §7's "cannot be pushed
     further" (`INBOX.md` HC-Q53). The 0.2 s landing stagger and `control-immune` wait for status

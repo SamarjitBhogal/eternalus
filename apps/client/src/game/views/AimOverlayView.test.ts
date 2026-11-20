@@ -1,4 +1,4 @@
-import { loadDisplayContent } from '@eternalus/core';
+import { createDefaultGameConfig, loadDisplayContent } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
@@ -11,7 +11,7 @@ import { AimOverlayView } from './AimOverlayView';
 import type { AimStep, AimTarget, ShapePainters } from './AimOverlayView.types';
 import { AIM_SHAPE_PAINTERS } from './aimShapePainters';
 
-const ABILITIES = loadDisplayContent().abilities;
+const ABILITIES = loadDisplayContent(createDefaultGameConfig().tickRate).abilities;
 const ORIGIN = { x: 10, y: 20 };
 
 /**

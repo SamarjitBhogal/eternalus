@@ -440,6 +440,34 @@ Reply inline (`Decision: …`).
       as `loadGuardPlans` does.
       Build both in PR #125, build them in a later PR, or keep the code as it is?
 
+- [ ] **HC-B13 — Better than the design, not built, sign-off asked: three ability-loader tidies
+      (`feat/ability-framework` merge critic after PR #125, 2026-11-20); no decision blocks PR
+      #123.** The critic's one blocker is fixed on the branch: the knock-back's travel time is now
+      ticks from `loadKnockback`, not converted on each cast (03 §8, DEC-241).
+      (1) **Aether rate per tick at load.** `AetherRegenSystem` divides
+      `AETHER_REGEN.perSecondAtBase` by the tick rate on each tick. That is not a DEC-241
+      violation (DEC-241 is about times; DEC-262 (1) moved only the healing rates). Proposal:
+      `loadAetherRegen(tickRate)` gives `perTickAtBase`, checked with `assertNonNegativeFinite`
+      (`per s`), and the system keeps no tick rate. Cost: the new order of operations changes 520
+      of 6.2 million per-tick amounts by one 2^-16 step, so a replay hash can change; the seed-11
+      replay needs a re-run, and ADR 0026 decision 5 needs a new DEC (an accepted ADR is not
+      rewritten).
+      (2) **One rounding rule in `TickRate`.** `ticksOf` in `loadAbilities.ts` (0 stays 0, any other
+      time is at least one tick) is a third rounding rule outside `TickRate`. Proposal: move it
+      into `TickRate` as a named method with its test, as DEC-262 (3) did for `perTick`.
+      (3) **One finite check.** `isNonNegative` in `loadAbilities.ts` repeats the test inside
+      `assertNonNegativeFinite`. Proposal: export one `isNonNegativeFinite` next to the assert and
+      use it in both.
+      (4) **One tick rate for the ability content** (fix re-check critic). Each caller now writes
+      `createDefaultAbilityRegistry(loadAbilities(tickRate), tickRate)`: the same rate twice, and
+      the factory loads the knock-back while it is given the abilities and statuses. Core's
+      `loadDisplayContent(tickRate)` takes a rate that no description reads. Proposal: one
+      `loadAbilityContent(tickRate)` gives `{ abilities, knockback }` and the factory only
+      composes. The built design is correct; this is a tidy.
+      Also seen (not in this branch's diff, same class as HC-B9): `CaptureSystem` converts
+      `captureSeconds` and `revertSeconds` to ticks in its constructor.
+      Build (1) to (4) in PR #123, in a later PR, or keep the code as it is?
+
 - [x] **Unit facing chevron (DEC-192, feat/unit-facing-chevron, 2026-11-05) — two questions, one
       better-than-design item.**
       (1) Start facing: a unit faces east (`INITIAL_FACING` in `Transform.constants.ts`) until it

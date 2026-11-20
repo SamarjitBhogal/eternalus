@@ -28,7 +28,7 @@ import { AIM_OVERLAY_FILL_COLOR } from './views/AimOverlayView.constants';
 import { FOCUS_RING_COLOR } from './views/entityViews.constants';
 
 const SEED = 1;
-const ABILITIES = loadDisplayContent().abilities;
+const ABILITIES = loadDisplayContent(createDefaultGameConfig().tickRate).abilities;
 const PLAYER: PlayerChoice = { legend: 'warrior', team: 'light' };
 
 /**
