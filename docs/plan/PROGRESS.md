@@ -8048,6 +8048,12 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 1336 passed (1336)"; protocol "Tests 18 passed (18)"; server "Tests 79 passed (79)"; client "Tests 1883 passed (1883)"; "Documentation check passed."
 - Next step: reviewer approval; the team merges.
 
+### 2026-11-13 — Phase 3 — fix/session-e2e-test-isolation — Claude Code
+
+- What was done: fixed a test-order dependency in `apps/client/src/game/SessionController.endToEnd.test.ts`. The "tick throws" test spies on `Simulation.prototype.step`; the config's `restoreMocks` does not undo it, so when it ran before "screen crashed" every tick threw, the match ended as `match-crashed` first, and the screen-crash intent then reported `screen-crashed`. Fix: `afterEach(() => vi.restoreAllMocks())` in that describe. No assertion changed; no production code changed.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1321 passed (1321)"; client "Tests 1818 passed (1818)"; "Documentation check passed."; the file passes alone (3 runs) and in the suite.
+- Next step: review; the team merges.
+
 ### 2026-11-12 — Phase 3 / combat sprint: bound key actions, part 1 (BUG-5 / SCRUM-438) — fix/bound-key-actions — Claude Code
 
 - What was done: `camera-zoom-in`, `camera-zoom-out` and `toggle-minimap` now work as `MatchHost`
@@ -8667,6 +8673,12 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   sides kept, this batch above #93's as the log is newest first): full `npm run check` exit 0
   (`eternalus-agent-work/tower-ruins-and-routes/ci-timeout-check-merge-fcc48a7b.log`).
 - Next step: a PR into `phase/3-sprint-3-work`.
+
+### 2026-11-15 — Phase 3 / sync — fix/session-e2e-test-isolation (PR #111) — claudiodh + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (80e0ea13) into this branch because #111 was CONFLICTING. Conflict: `PROGRESS.md` (both sides kept).
+- Checks run: `npm run check` → `EXIT=0`.
+- Next step: reviewer approval; the team merges.
 
 ### 2026-11-12 — Phase 3 / online Duel — feat/duel-rules (stacked on #97) — claudiodh + Claude Code
 
