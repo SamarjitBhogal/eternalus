@@ -4,7 +4,7 @@ description: Decision for DEC-49 and DEC-56, accepted with the owner's correctio
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-25
+last-reviewed: 2026-11-16
 tags: [adr, entities, content, character-select, sub-classes]
 related:
   - 'docs/decisions/0006-entity-model-inheritance-plus-composition.md'
@@ -19,7 +19,8 @@ related:
 
 - Status: accepted (product owner decision in chat: accepted 2026-10-24, corrected 2026-10-25
   before it was applied, DEC-56; drafted 2026-10-17 as "MVP Legend pick as setup data" for
-  DEC-49; the file keeps its first name so that earlier records still resolve)
+  DEC-49; the file keeps its first name so that earlier records still resolve); point 2 amended
+  by ADR 0026 (the simulation reads the spec id for the kit), 2026-11-16, DEC-263
 - Date: 2026-10-17
 
 ## Context

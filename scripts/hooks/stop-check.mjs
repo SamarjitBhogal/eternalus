@@ -17,7 +17,7 @@ if (input.stop_hook_active === true) {
 }
 
 const root = repoRoot(input);
-const check = run('npm', ['run', 'check:quick'], { cwd: root, timeoutMs: 290_000 });
+const check = run('npm', ['run', 'check:quick'], { cwd: root, timeoutMs: 600_000 });
 
 if (check.status !== 0) {
   process.stderr.write(

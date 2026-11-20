@@ -10,8 +10,9 @@ import type { System, SystemContext } from './System.types';
 
 /**
  * A Duel's round rule (DEC-36): when a seat's Legend dies, the other team scores a kill and both
- * Legends return to their start points at full health at once, with no respawn timer. The reset also drops every status effect and the
- * attack target, so a damage over time cannot kill a Legend the tick after. It runs
+ * Legends return to their start points at full health at once, with no respawn timer. The reset also drops every status effect,
+ * the attack target and any dash or knock-back under way, so a damage over time cannot kill a
+ * Legend the tick after and a push cannot slide it off its start point. It runs
  * before `DeathSystem`, so the dead Legend is healed before it would be removed.
  */
 export class DuelRoundSystem implements System {
@@ -37,7 +38,9 @@ export class DuelRoundSystem implements System {
     for (const { team, legend } of seats) {
       const health = legend.getComponent(Health);
       health.heal(health.max);
-      legend.findComponent(Movement)?.stop();
+      const movement = legend.findComponent(Movement);
+      movement?.stop();
+      movement?.endPushes();
       legend.findComponent(Combat)?.setTarget(null);
       const statuses = legend.findComponent(StatusEffects);
       for (const { definition } of [...(statuses?.active ?? [])]) {

@@ -8651,6 +8651,113 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Next step: the owner runs the push script, then the merge script; GL-16 and
   `feat/duel-leave-victory` merge phase/3 after #93 merges.
 
+### 2026-11-13 — Phase 4 / sprints 4.2–4.3 and 4.7: ability framework (PR 1) — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: the owner's rulings DEC-196 to DEC-209 (framework first, then one PR per class;
+  `balancing.md` numbers as `TUNE`; class pool and a kit per Legend; the kits; two cast modes;
+  aether refill; one ultimate meter; Fear; Rip & Tear; bots cast any ready ability; knock-back
+  mass and stacking; structure multipliers, slot order and the range overlay). Built in six
+  slices: (S1) ability content, twelve kit abilities, `knockup` and `staggered`, kit rules; (S2)
+  `Abilities` slots, `AbilityRegistry`, `CastValidator`, `CastAbilityHandler`, `AbilitySystem`,
+  `AetherRegenSystem`, two invariants; (S3) `damage`, `debuff`, `knockback` and `dash` effects,
+  forced motion on `Movement`, status duration override, Blade Runner, Slam and Shockwave with
+  scenario tests and a golden replay; (S4) `Snapshot.player`, the `SlotReadiness` port, bots
+  pick any ready slot; (S5) quick and aim-then-click casting, Esc cancels an aim (Gameplay
+  settings tab); (S6) kit rows from content, live HUD slots, the range overlay. Integration:
+  casts refused during the countdown (DEC-88), a re-applied status keeps the longer time, the
+  overlay cuts a dash where the cast does. Decisions beyond 05: ADR 0026 (proposed, HC-Q48);
+  INBOX HC-B5, HC-Q49 to HC-Q53, HC-S12. Docs: 05, 04, 10, 13, 11, 03, 02, reference 09 and 12,
+  `more-abilities.md`, `balancing.md`, backlog, phase-4 plan.
+- Checks run: `npm run check` → exit 0 on the tree merged with phase/3 `9e2516cf`: core "Tests
+  1542 passed (1542)"; protocol "Tests 18 passed (18)"; client "Tests 1958 passed (1958)";
+  server "Tests 79 passed (79)"; "Documentation check passed." Docs pass: `npm run docs:check` →
+  `Documentation check passed.`; `npx prettier --check docs INBOX.md` →
+  `All matched files use Prettier code style!`
+- Next step: critic and ponytail gate, then the PR; next the per-class PRs, the Vanguard first
+  with the ultimate meter and Fury (DEC-202), then the Sentinel (Rip & Tear, Fear) and the Magus.
+
+### 2026-11-14 — Phase 4 / sprints 4.2–4.3 and 4.7: ability framework, critic rounds 1 and 2 — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` `76d1007d` (#81; only this file conflicted, both
+  sides kept). Fixed critic round 1 (4 blockers): a dash stops where walking stops, through the
+  `CollisionQuery` port and the match's one `CollisionResolver` (it was clamped on the nav grid,
+  so a Blade Runner beside a wall moved 0 m and was paid for); forced motion is in `StateHasher`;
+  one `Aim` type, so `state/` no longer imports `commands/`; effect and shape strategies
+  `validate` and `describe` themselves, so `loadAbilities` and `loadDisplayContent` name no kind.
+  Also: ability areas hit map objects by their footprints; one `CastValidator` per match, which
+  is the `SlotReadiness` port (`CastCheck` and `CastReadiness` removed); `kitOf` and an injected
+  Legend spec source; a `DashReach` port for the client, and the aim overlay view gets a finished
+  target; the ponytail cuts. Critic round 2 (no blockers): a destroyed map object leaves the
+  collision index at once (a dash in the next tick was still cut by it); the map-bounds rule
+  lives in the resolver; the `collisions` port is on `GameState`; the dash's overlay row carries
+  only its distance and the display step `kind` is open (the litmus proves the overlay row too).
+  `packages/core/AGENTS.md`: the `abilities/` and `commands/` import rows. INBOX: HC-B6, HC-Q54,
+  HC-Q55, HC-Q56 added; HC-Q51 and HC-Q52 corrected. ADR 0026 (proposed) decisions 1, 2, 4 and 7
+  follow the code. Not changed: critic finding C6 (HC-Q55); a dash that starts inside a wall
+  (precondition stated on `CollisionQuery.reach`).
+- Checks run: `npm run check` → `EXIT=0`: core "Test Files 277 passed (277)", "Tests 1589
+  passed (1589)"; protocol "Tests 18 passed (18)"; client "Test Files 290 passed (290)", "Tests
+  1965 passed (1965)"; server "Tests 79 passed (79)"; "All matched files use Prettier code
+  style!"; "Documentation check passed."
+- Next step: critic round 3 on the round 2 fixes, then the PR into `phase/3-sprint-3-work`; the
+  owner's answers to HC-Q48, HC-B5 and HC-B6; then the per-class PRs, the Vanguard first.
+
+### 2026-11-14 — Phase 4 / sprints 4.2–4.3 and 4.7: ability framework, critic round 3 — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: critic round 3 (the last) on the round 2 fixes: the architecture reviewer
+  approved; the correctness critic found no blocker and no should-fix. Fixed its nits: a dash
+  throws for a caster with no `Movement` (it skipped the motion and still ran the path and end
+  steps); `Simulation` holds the map-object store and the collision index in locals for the
+  `entity-removed` handler, with no optional chaining; a test that the dash's overlay row gets a
+  `null` shape; `WorldObjectStore.destroyedIds` removed (no caller; the test keeps its check
+  through `snapshot().isDestroyed`); the two status entries in architecture 10 and 02 marked
+  "updated 2026-11-14"; comment wording. Built better-than-design item H: `WithoutTimes` now
+  sits beside `InTicks` in `content/abilities/AbilityDefinition.types.ts`. INBOX HC-Q56: item
+  (4) corrected, item (5) added (one subscriber for a retired map object, not built). Both new
+  tests failed first: the dash test before the fix ("expected [Function] to throw an error"),
+  the overlay test with `shape ?? null` changed to `shape` ("expected undefined to be null").
+- Checks run: `npm run check` → `EXIT=0`: core "Test Files 277 passed (277)", "Tests 1590
+  passed (1590)"; protocol "Tests 18 passed (18)"; client "Test Files 290 passed (290)", "Tests
+  1965 passed (1965)"; server "Tests 79 passed (79)"; "All matched files use Prettier code
+  style!"; "Documentation check passed."
+- Next step: the PR into `phase/3-sprint-3-work`; the owner's answers to HC-Q48, HC-B5, HC-B6
+  and HC-Q54..Q56; a browser check of the aim overlay; then the per-class PRs, the Vanguard
+  first.
+
+### 2026-11-14 — Phase 4 / sprints 4.2–4.3 and 4.7: ability framework, merge of phase/3 (#85, #86) — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (#85, #86) into PR #123 (`ba5e34aa`; conflict
+  notes in its commit message). Correction to the round 3 entry: `WorldObjectStore.destroyedIds`
+  is kept, not removed, because a new phase/3 owner test reads it. Merge breaks fixed in
+  `TargetQuery`, `DefaultSystemPipeline` and `pickReadySlot` tests. The ability replay
+  `abilityCastsSeed11.replay.ts` was regenerated: it diverged at tick 350 only because of DEC-188
+  out-of-combat healing (without `OutOfCombatHealingSystem` the old hashes passed 2/2);
+  checkpoints 0-300 and the commands are unchanged. No critic reviewed the r3 fixes or the merges
+  (three rounds is the owner's maximum).
+- Checks run: `npm run check` → `EXIT=0`: core "Test Files 287 passed (287)", "Tests 1711
+  passed (1711)"; protocol "Tests 18 passed (18)"; client "Test Files 290 passed (290)", "Tests
+  1965 passed (1965)"; server "Tests 79 passed (79)"; "All matched files use Prettier code
+  style!"; "Documentation check passed."
+- Next step: push and update the PR #123 body (owner); the owner's answers to HC-Q48, HC-B5,
+  HC-B6 and HC-Q49..Q56; a browser check of the aim overlay; then the Vanguard PR.
+
+### 2026-11-15 — Phase 4 / sprints 4.2–4.3 and 4.7: ability framework, merge of phase/3 (#79, #93) — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` `fcc48a7b` (#79, #93) into PR #123; 38 files
+  conflicted, both sides kept (notes in the merge commit). `MovementSystem` keeps forced motion
+  and faces the entity's own velocity (DEC-192), so a push does not turn it (new test; it failed
+  first with facing on the whole step: "expected { x: +0, y: 1 } to deeply equal { x: 1, y: +0 }").
+  Merge breaks fixed in five core and client tests. The ability replay was regenerated: phase/3
+  now hashes facing and the scoring state; with those two fields left out the old hashes passed
+  2/2, and the commands and checkpoint 0 are unchanged. The INBOX clash is gone: #93's item is
+  HC-Q57. No critic reviewed the merge.
+- Checks run: `npm run check` → `EXIT=0`: core "Test Files 295 passed (295)", "Tests 1837
+  passed (1837)"; protocol "Tests 18 passed (18)"; client "Test Files 299 passed (299)", "Tests
+  2061 passed (2061)"; server "Tests 79 passed (79)"; "All matched files use Prettier code
+  style!"; "Documentation check passed."
+- Next step: push and update the PR #123 body (owner); a teammate's review; the owner's answers
+  to HC-Q48, HC-B5, HC-B6 and HC-Q49..Q56; a browser check of the aim overlay.
+
 ### 2026-11-14 — Phase 3 / CI: job time limit 25 minutes (DEC-254) — chore/ci-timeout — sholtzman + Claude Code
 
 - What was done: the `check` job in `.github/workflows/ci.yml` has `timeout-minutes: 25`
@@ -8700,6 +8807,55 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: `npm run check` → `EXIT=0`.
 - Next step: reviewer approval; the team merges.
 
+### 2026-11-16 — Phase 4 / sprints 4.2–4.3 and 4.7: ability framework, merge of phase/3 (#127, #113, #102) — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` `330e969a` (#127 CI timeout, #113 vite 8.3.8 /
+  vitest 5.1.0, #102 Duel rules) into PR #123, because the PR was CONFLICTING (a reviewer
+  blocker). Conflicts, both sides kept: `Simulation.ts` (options `abilities` and `duel`; the
+  pipeline gets `abilities`, `validator` and `duelStarts`), `Simulation.types.ts`, core
+  `index.ts` (`DUEL_RULES` and the display loader), `loadDisplayContent.test.ts`, the
+  `MatchBridge.ts` imports and this file. `npm ci` after the dependency change. The ability
+  replay did not change. No critic has reviewed the merge yet.
+- Checks run: `npm run check` → `EXIT=0`: core "Test Files 299 passed (299)", "Tests 1857
+  passed (1857)"; protocol "Tests 29 passed (29)"; client "Test Files 302 passed (302)", "Tests
+  2087 passed (2087)"; server "Tests 84 passed (84)"; "All matched files use Prettier code
+  style!"; "Documentation check passed."
+  (`eternalus-agent-work/abilities/check-merge-127-113-102.log`).
+- Next step: the critic on the merge changes; push (owner); the owner's sign-off of ADR 0026,
+  HC-B5 and HC-B6 on PR #123; a browser check of the aim overlay and quick cast.
+
+### 2026-11-16 — Phase 4 / sprints 4.2–4.3 and 4.7: ability framework, merge critic fixes and the owner's sign-offs (DEC-263 to DEC-265) — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: (1) The critic on the merge of phase/3 (`architecture-reviewer`,
+  `ba5e34aa..c53dec60`) approved it with no blockers. Its findings, fixed in `e8870548`:
+  `DuelRoundSystem` ends a dash or knock-back under way when a round resets
+  (`Movement.endPushes()`); a `MovementSystem` test that a pushed unit faces its own walking;
+  a `ponytail:` note on `CastInstance`; three new-code imports of `AbilitySlot` and `Aim` from
+  their source paths. Not fixed: #102's TSDoc order in `DefaultSystemPipeline.types.ts` (not
+  this branch's code). Its better-than-design idea, a list of reset steps for the Duel round,
+  is added to `INBOX.md` HC-Q55. (2) A browser pass of the aim overlay and quick cast (Blade
+  Runner, Slam, Shockwave, Esc, the wall clamp, a clean console): all 7 checks pass
+  (`eternalus-agent-work/abilities/browser-pass/`). (3) The owner answered group A of the
+  Vanguard kit page (owner decisions log, batch 2026-11-16): ADR 0026 accepted, HC-B5 and HC-B6
+  signed off, the two `packages/core/AGENTS.md` rows approved (DEC-263); a dash or knock-back
+  does not turn the unit (DEC-264, as built); the stop hook waits 600 s for `check:quick`
+  (DEC-265: `scripts/hooks/stop-check.mjs` 600 s, `.claude/settings.json` `Stop` timeout 620 s).
+  Docs: ADR 0026 Status accepted and decision 4 names DEC-264; ADR 0018's Status line names the
+  amendment of point 2; 04 §3 (forced motion does not turn), 16 (hook timeout), the phase 4 plan;
+  `INBOX.md` HC-Q48, HC-B5 and HC-B6 answered.
+- Tests: `DuelRoundSystem` (a reset ends a push; failed first: "expected true to be false");
+  `MovementSystem` "faces its own walking while pushed" (failed first under a never-turn-while-
+  pushed break: "expected { x: 1, y: +0 } to deeply equal { x: -1, y: +0 }").
+- Checks run: on `e8870548`, `npm run check` → `EXIT=0`: core "Tests 1859 passed (1859)";
+  protocol "Tests 29 passed (29)"; client "Tests 2087 passed (2087)"; server "Tests 84 passed
+  (84)"; Prettier and the docs check pass
+  (`eternalus-agent-work/abilities/check-critic-merge-fixes.log`). On the records tree (this
+  entry's commit, before this line was added): `npm run check` → `EXIT=0`, the same four test
+  counts, "All matched files use Prettier code style!", "Documentation check passed."
+  (`eternalus-agent-work/abilities/check-records-dec-263.log`).
+- Next step: push (owner); the owner's sign-off comment on PR #123 and the updated PR body; the
+  reviewers re-check. Then the Vanguard PRs (DEC-266 on; meter and Fury first).
+
 ### 2026-11-16 — Phase 3 / sprint 3 work: merge phase/3 (`330e969a`) into feat/capture-point-boss (PR #99) — feat/capture-point-boss-merge (local, from `d3dd9822`) — Aryan Walanj + Claude Code
 
 - What was done: claudiodh's re-review of `d3dd9822` asked for the current phase branch to be
@@ -8746,6 +8902,45 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   (2005)"; server "Test Files 21 passed (21)", "Tests 84 passed (84)"; "✓ built in 3.09s";
   "Documentation check passed."
 - Next step: push `feat/capture-point-boss` and update the PR #99 body.
+
+### 2026-11-18 — Phase 4 / sprints 4.2–4.3 and 4.7: ability framework, merge of phase/3 (#101, #99) — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` at `af54fe96` (#101 bound key actions,
+  #99 capture point boss) into `feat/ability-framework` for PR #123 (reviewers' blocker:
+  CONFLICTING). Ten files conflicted; each keeps both sides. `Simulation.ts` and
+  `Simulation.types.ts`: the `abilities` option and #99's `guardPlans` both stay, and the
+  pipeline gets `guards` beside the shared-resolver `CollisionSystem` (HC-B6 (1)).
+  `MatchHost.types.ts`: the match pick keeps `setCastMode` and `cancelAim`, and its controls gain
+  #101's `toggleMiniMap`. 13 §10: both bullets. `INBOX.md`, this file and the decisions log: both
+  sides' items, entries and batches (the 2026-11-11 abilities batch above the 2026-11-10 boss
+  rewards batch). 04, 05 and 11 frontmatter: the later `last-reviewed`.
+- Checks run: on the merge result (before this entry), `npm run check` → `EXIT=0`: core "Tests
+  1894 passed (1894)"; protocol "Tests 29 passed (29)"; client "Tests 2096 passed (2096)";
+  server "Tests 84 passed (84)"; "All matched files use Prettier code style!"; "Documentation
+  check passed." (`eternalus-agent-work/abilities/check-merge-99-101.log`).
+- Next step: a critic on the merge delta, then push and the owner's sign-off comment on PR #123;
+  one more phase/3 merge is expected before #123 merges (#126, #121, #120, #119 first).
+
+### 2026-11-19 — Phase 4 / sprints 4.2–4.3 and 4.7: ability framework, critic on the phase/3 merge — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: an `architecture-reviewer` critic (opus) on the merge delta `ecac47ac..abf40772`
+  (docs as at each parent): APPROVE, no blockers. It checked all ten conflict resolutions (both
+  sides kept; `collisions === null` exactly where #99's map objects were absent), the pipeline
+  order, `StateHasher` coverage of `Capturable.lockedBy`, the input path (no new `InputAction`,
+  no chord clash, bridge events wired once) and the ids (no duplicate DEC or HC rows). Its two
+  should-fix items are owner questions, so they go to `INBOX.md` and no code changes:
+  - HC-S12 (d): #99's capture point boss has `mass: 3.125`, lighter than the Sentinel (6) that
+    DEC-208 (2) says mini-bosses match.
+  - New HC-Q63: a knock-back can push a guard past the `guard-within-leash` tolerance (walk plus
+    stance only; knock-backs add up, DEC-208 (3)), so a fixed tolerance cannot close it; options A
+    (a post keeps the extra distance a push left), B (skip while pushed and walking home), C
+    (leave it).
+  - Its nit (the order of two 13 §10 bullets) is left as is.
+- Checks run: `npm run docs:check` and Prettier on the changed files (results in the next commit's
+  hook log, `eternalus-agent-work/abilities/commit-merge-critic.log`); the code is unchanged since
+  the merge check (EXIT=0, core 1894, protocol 29, client 2096, server 84).
+- Next step: hold the push (PR-REVIEW-COORDINATION-2: wait for #126, #121, #120, #119 to reach
+  phase/3), then merge phase/3 again, check, and give Sam the push, sign-off and body lines.
 
 ### 2026-11-14 — Phase 3 / the player who stays in a Duel wins (DEC-251) — feat/duel-leave-victory — sholtzman + Claude Code
 
@@ -9037,6 +9232,29 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   and #119 into phase/3 in that order with merge commits, each only with green CI, and stops if
   another PR merges into phase/3 in between.
 
+### 2026-11-19 — Phase 4 / sprints 4.2–4.3 and 4.7: ability framework, merge of phase/3 (#126, #121, #120, #119) — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` at `d85bc2f5` (#126 Duel leave victory,
+  #121 A\* search area, #120 fort geometry helpers, #119 gate reach) into
+  `feat/ability-framework` for PR #123. Six files conflicted: `DefaultSystemPipeline.test.ts`
+  takes phase/3's re-indented fort-box test with this branch's `abilities` on its invariant
+  runner; `INBOX.md`, this file and the decisions log keep both sides; 03 and 10 keep the later
+  `last-reviewed`.
+- Merge critic (`architecture-reviewer`): REQUEST CHANGES, one blocker, fixed here: the golden
+  ability replay named #121's removed `pathMaxExpansions`; it now has `pathMaxSearchArea: 150000`
+  (the same 6000 cells on 5 m cells, not hashed; every checkpoint reproduces). Its should-fix is
+  `INBOX.md` HC-Q64 (an ability area hits a structure by its circle, a basic attack by its
+  outline; the fix changes damage, DEC-217 (13)), with a dated correction under HC-B6 (7). The
+  `doesDiscReachPolygon` TSDoc no longer says `isInReach` calls it. Re-check of the fixes:
+  APPROVE, no findings.
+- Checks run: on the merge result (before this entry), `npm run check` → `EXIT=0`: core "Tests
+  1904 passed (1904)"; protocol "Tests 29 passed (29)"; client "Tests 2093 passed (2093)" (#126
+  turned two `it.each` blocks into one test each: 2096 − 3); server "Tests 84 passed (84)"; "All
+  matched files use Prettier code style!"; "Documentation check passed."
+  (`eternalus-agent-work/abilities/check-merge-d85bc2f5.log`).
+- Next step: the owner pushes PR #123, posts the sign-off comment and updates the body; then
+  `feat/vanguard-kit` merges this branch.
+
 ### 2026-11-12 — Phase 3 / minion follow-ups: content durations become ticks at load (DEC-241) — refactor/durations-at-load — sholtzman + Claude Code
 
 - What was done: five loaders (`loadAggroRules`, `loadStuckDetection`, `loadMinionVeterancy`,
@@ -9264,3 +9482,48 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   passed."; `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-15.log`); then
   `prettier --check` and `npm run docs:check` on this file.
 - Next step: the owner pushes the branch (`push-125-r3.sh`), then merges PR #125.
+
+### 2026-11-20 — Phase 4 / sprints 4.2–4.3 and 4.7: ability framework, merge of phase/3 (#125) and the merge critic's knock-back fix — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` at `5a7cc8dc` (#125, content durations
+  at load, DEC-241) into `feat/ability-framework` for PR #123 (`ed7be614`). Four files
+  conflicted: `Simulation.ts` passes `validator, tickRate` to `createControllers`;
+  `Simulation.types.ts` keeps `abilities` beside #125's "as authored" wording; this file and the
+  decisions log keep both sides.
+- Merge critic (`architecture-reviewer`): REQUEST CHANGES, one blocker, fixed here.
+  `KnockbackEffect` converted `KNOCKBACK.travelSeconds` to ticks on every cast, and nothing
+  checked the value (03 §8, DEC-241). New `loadKnockback(tickRate)` checks it with
+  `assertNonNegativeFinite` and gives `travelTicks`; `createDefaultAbilityRegistry` and core's
+  `loadDisplayContent` take the tick rate (the client's `main.tsx` passes `gameConfig.tickRate`).
+  No value change: 0.25 s is 8 ticks. The new test was red with the check removed ("expected
+  function to throw an error, but it didn't"). Nit N1: two citations now name 03 §8 and DEC-241.
+  Nit N2 (the loader's message wording) is not changed: `feat/vanguard-kit` tests match it. The
+  three better-than-design items are `INBOX.md` HC-B13 (1)-(3). Docs 02, 05 and 10 name
+  `loadKnockback`. Re-check of the fix: APPROVE, no blockers; its nits are applied (doc 02 names
+  the tick rate `main.tsx` passes, three lines rewrapped, the test's loaded tuning is `TUNING`)
+  and its one better-than-design item is HC-B13 (4).
+- Checks run: on the merge (`ed7be614`), `npm run check` → `EXIT=0`, core 1931 tests
+  (`eternalus-agent-work/abilities/check-merge-5a7cc8dc.log`). On the fix, before the re-check
+  nits and this entry, `npm run check` → `EXIT=0`: core "Tests 1934 passed (1934)"; protocol
+  "Tests 29 passed (29)"; client "Tests 2093 passed (2093)"; server "Tests 84 passed (84)"; "All
+  matched files use Prettier code style!"; "Documentation check passed."
+  (`eternalus-agent-work/abilities/check-b1-knockback.log`). After the nits: `check:quick`,
+  `format:check`, `docs:check` and the knock-back tests.
+- Next step: the owner pushes PR #123 (no new sign-off comment; the body gets this merge and the
+  checks); `feat/vanguard-kit` merges this head; the owner answers HC-B13.
+
+### 2026-11-20 — Phase 4 / sprint 4.2: DEC-284, the owner's follow-up calls for the ability framework — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: recorded the owner's group B answers of 2026-11-20 (Combat Track Calls page,
+  signed COMBAT-WEAPONS-ABILITIES-26, and its notes page, signed COMBAT-WEAPONS-ABILITIES-29) as
+  DEC-284, docs only. Decisions log: batch 2026-11-20 (the heading DEC-283 has on
+  `feat/vanguard-kit`) with the DEC-284 row. `INBOX.md`: HC-Q63 (A) and HC-Q64 (A) answered;
+  HC-S12 (d) (outer boss mass 6, the middle boss's mass when it is built) and (e) to (h)
+  ("Schedule all four after the freeze") answered, the item stays open until built; HC-B13 (5),
+  the step-time module the merge critic found on `feat/vanguard-kit`. Phase 4 plan: sprint 4.2
+  status of 2026-11-20 schedules the follow-ups after the freeze. 05 §18: one line, areas are to
+  reach a structure by its outline (not built). No code: every group B card is "after the
+  freeze".
+- Checks run: `npm run docs:check` and `npx prettier --check` on the five changed files.
+- Next step: the owner pushes PR #123; `feat/vanguard-kit` (PR #136) merges this head, keeping one
+  2026-11-20 batch heading with both rows, DEC-283 and DEC-284.

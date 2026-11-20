@@ -32,6 +32,7 @@ const unit = (id: string, x: number, y: number, facing = EAST): EntitySnapshot =
 const snapshot = (tick: number, entities: EntitySnapshot[]): Snapshot => ({
   tick,
   match: { phase: 'countdown', phaseEnteredTick: 0, upcoming: [], humanLegendId: null },
+  player: null,
   entities,
   hordes: [],
   teams: {
@@ -90,6 +91,27 @@ describe('EntityLayer', () => {
     layer.draw(new RecordingRenderer());
 
     expect(spy.drawn.map((state) => state.position)).toEqual([{ x: 2.5, y: 1 }]);
+  });
+
+  it('tells where it draws an entity (the interpolated position), and null for one it does not', () => {
+    const layer = new EntityLayer(
+      new ViewRegistry(new SpyView()),
+      () => false,
+      () => null,
+    );
+    const placeless = { ...unit('ghost', 0, 0), transform: null };
+
+    layer.show(
+      snapshot(1, [unit('a', 0, 0)]),
+      snapshot(2, [unit('a', 10, 4), placeless]),
+      0.25,
+      null,
+    );
+
+    expect(layer.drawnAt('a')).toEqual({ x: 2.5, y: 1 });
+    expect(layer.drawnAt('ghost')).toBeNull();
+    expect(layer.drawnAt('missing')).toBeNull();
+    expect(layer.drawnAt(null)).toBeNull();
   });
 
   it('turns the facing between the last two snapshots by alpha, as a unit vector (08 §8)', () => {

@@ -18,6 +18,7 @@ describe('MapPalaceWallsBuilder', () => {
       .filter((piece) => piece.object?.kind === 'wall' && piece.object.isFootprint);
     const resolver = new CollisionResolver(
       new StaticCollisionIndex(walls.map((piece) => ({ id: piece.id, polygon: piece.shape }))),
+      { x: 0, y: 0, width: map.width, height: map.height },
     );
     expect(resolver.move({ x: 800, y: 310 }, { x: 0, y: 25 }, 0.5).y).toBe(335);
     expect(resolver.move({ x: 800, y: 560 }, { x: 0, y: -20 }, 0.5).y).toBe(540);
@@ -36,6 +37,7 @@ describe('MapPalaceWallsBuilder', () => {
       const walls = new MapPalaceWallsBuilder().build(feature, map, DEFAULT_MAP_LAYOUT.wallRing);
       const resolver = new CollisionResolver(
         new StaticCollisionIndex(walls.map((p) => ({ id: p.id, polygon: p.shape }))),
+        { x: 0, y: 0, width: map.width, height: map.height },
       );
       for (const gate of map.features.filter((f) => f.kind === 'gate' && f.team === feature.team)) {
         const dx = gate.position.x - feature.position.x;

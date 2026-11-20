@@ -121,4 +121,25 @@ describe('EntityFactory', () => {
       weapons,
     });
   });
+
+  it('forwards its Legend spec source in the spawn context', () => {
+    const registry = new EntityRegistry();
+    registry.register('factory-entity', FactoryEntity);
+    const specs = new ContentCatalogue([]);
+    const factory = new EntityFactory(
+      registry,
+      new ContentCatalogue([DEFINITION]),
+      undefined,
+      null,
+      specs,
+    );
+
+    const entity = factory.create('factory-entity', 'factory-definition', PLACEMENT);
+
+    expect((entity as FactoryEntity).spawnPayload).toEqual({
+      ...PLACEMENT,
+      definition: DEFINITION,
+      specs,
+    });
+  });
 });

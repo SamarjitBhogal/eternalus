@@ -8,6 +8,7 @@ import {
   type Vec2,
 } from '@eternalus/core';
 
+import type { AbilityCasts } from './AbilityCasts';
 import type { Projection } from './engine/input/Projection.types';
 import type { IntentSource } from './Match.types';
 import type { PlayerActions } from './PlayerActions';
@@ -22,7 +23,8 @@ type TargetSnapshot = Pick<Snapshot, 'entities' | 'mapObjects'>;
  * press the canvas gestures own is no held attack (`setPointerClaimed`; 06 §10, attack and roof
  * input arbitration): with the developer explorer shown that is every press, and a plain click
  * attacks once on its release instead (`MatchViewControls.clickAt`, DEC-150). It only turns input
- * into commands: `apply` tells `Match` whether the player moves, and `Match` tells the camera
+ * into commands (ability keys go through `AbilityCasts`, which also says when aiming has taken
+ * the main button from the attack): `apply` tells `Match` whether the player moves, and `Match` tells the camera
  * (DEC-151).
  */
 export class PlayerCommands implements PlayerActions {
@@ -42,6 +44,7 @@ export class PlayerCommands implements PlayerActions {
     private readonly simulation: Pick<Simulation, 'enqueueCommand'>,
     private readonly camera: Projection,
     private readonly mapObjects: readonly MapObject[],
+    private readonly casts: AbilityCasts,
   ) {}
 
   /**
@@ -61,8 +64,10 @@ export class PlayerCommands implements PlayerActions {
    * @returns Whether the player's movement input is non-zero this tick.
    */
   public apply(actorId: EntityId, snapshot: TargetSnapshot): boolean {
-    const { move, isAttacking, aim } = this.input.read(this.camera);
-    const attackAim = isAttacking === true && !this.isPointerClaimed ? aim : null;
+    const { move, isAttacking, aim, triggered } = this.input.read(this.camera);
+    const isHeld = isAttacking === true && !this.isPointerClaimed;
+    const isConsumed = this.casts.apply(actorId, { triggered, aim, isAttacking: isHeld });
+    const attackAim = isHeld && !isConsumed ? aim : null;
     this.applyAttack(actorId, attackAim, snapshot);
     const isMoving = move.x !== 0 || move.y !== 0;
     if (move.x === this.lastMove.x && move.y === this.lastMove.y) {

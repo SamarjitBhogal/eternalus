@@ -6,7 +6,7 @@
  * imports no slice and not events.ts (events.ts imports this file). A type is exported once a file
  * outside this one reads it (knip).
  */
-import type { MapFeatureKind } from '@eternalus/core';
+import type { AbilityRejectReason, MapFeatureKind } from '@eternalus/core';
 
 import type { HudSlotId } from './Binding.types';
 import type { PlayableTeam, Team } from './domain.types';
@@ -14,17 +14,11 @@ import type { PlayableTeam, Team } from './domain.types';
 /** One announcer line. */
 export type Announcement = { readonly id: string; readonly text: string };
 
-/** Why a slot cannot cast now: 05 §6 `AbilityRejectReason`, restated until core exports it. */
-export type HudBlockReason =
-  | 'empty-slot'
-  | 'dead'
-  | 'on-cooldown'
-  | 'not-enough-aether'
-  | 'not-charged'
-  | 'casting'
-  | 'cannot-cast'
-  | 'no-target'
-  | 'restricted';
+/**
+ * Why a slot cannot cast now: core's `AbilityRejectReason` (05 §6). `unavailable` is an ability in
+ * the kit that is not built yet; `not-charged` is the ultimate while its meter is not built or full.
+ */
+export type HudBlockReason = AbilityRejectReason;
 
 /**
  * One slot at runtime (05 §15 `AbilitySlotSnapshot`); a slot without an entry has no data yet.
@@ -35,6 +29,8 @@ export type AbilitySlotStatus = {
   readonly abilityId: string | null;
   readonly cooldownRemainingTicks: number;
   readonly cooldownTicks: number;
+  /** Aether the cast costs now, after status modifiers (0 for the ultimate: the meter gates it). */
+  readonly aetherCost: number;
   /** Ultimate meter 0..1 (`ability-4` only); `null` on the other slots. */
   readonly charge: number | null;
   readonly isReady: boolean;
@@ -45,7 +41,7 @@ export type AbilitySlotStatus = {
  * The human Legend as the HUD shows it: `MatchBridge` joins the Legend's `EntitySnapshot` groups
  * (definition, health, aether, progression) with core's `Snapshot.player` (the slots) by
  * `entityId` (05 §15, DEC-232). A value is `null` while core has no group for it; the slots stay
- * `[]` until core has `Snapshot.player`. `statusIds`, shield bars and the slots' `varietyId` are
+ * `[]` while core has no `Snapshot.player`. `statusIds`, shield bars and the slots' `varietyId` are
  * added here with their first reader; `weaponProgress`/`ultimatePips` exist only here.
  */
 export type PlayerHudSnapshot = {
@@ -66,7 +62,7 @@ export type PlayerHudSnapshot = {
   readonly weaponProgress: number | null;
   /** Ultimate charge indicators (Figma 62:250): no rule defines them (OQ-64); always `null` live. */
   readonly ultimatePips: { readonly filled: number; readonly total: number } | null;
-  /** ability-1..4, gadget-1, gadget-2 (05 §15 order); `[]` until slots have runtimes. */
+  /** ability-1..4, gadget-1, gadget-2 (05 §15 order); `[]` while core has no `Snapshot.player`. */
   readonly slots: readonly AbilitySlotStatus[];
 };
 

@@ -21,6 +21,11 @@ export const SENTINEL = {
   weaponBias: 'heavy',
   damageFocus: 'physical',
   pickUp: 'grab',
+  abilityPool: ['slam', 'rip-and-tear', 'shield-wall', 'berserk'], // DEC-198: every ability and ultimate of the class
+  defaultKit: {
+    abilities: ['slam', 'rip-and-tear', 'shield-wall'], // DEC-209 (2): keys 1-3, similar effects share a key
+    ultimate: 'berserk', // DEC-209 (2): key 4
+  },
   passiveOptions: ['wrecking-run'],
   defaultAction: null,
   referenceHeight: 4.6, // TUNE: ~15 ft (an elephant)

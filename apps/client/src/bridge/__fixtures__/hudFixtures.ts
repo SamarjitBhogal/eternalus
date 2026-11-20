@@ -24,6 +24,7 @@ const figmaSlot = (
   abilityId: null,
   cooldownRemainingTicks: 0,
   cooldownTicks: 0,
+  aetherCost: 0,
   charge: null,
   isReady: true,
   blockedBy: null,
@@ -146,7 +147,7 @@ const FIGMA_CAPTURE_POINTS: readonly CapturePointStatus[] = [
 /** The HUD and match slices as 62:231 shows them; a fresh copy per call. */
 export function figmaHudState(): Pick<RootState, 'hud' | 'match'> {
   return {
-    hud: { player: FIGMA_HUD_PLAYER, announcements: [] },
+    hud: { player: FIGMA_HUD_PLAYER, announcements: [], aimingSlot: null },
     match: {
       clock: FIGMA_CLOCK,
       structures: [...figmaStructures('light'), ...figmaStructures('dark')],

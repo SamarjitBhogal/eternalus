@@ -151,4 +151,25 @@ describe('LEGEND_CLASSES', () => {
       expect(legend.visionRadius).toBeGreaterThan(legend.footprintRadius);
     }
   });
+
+  it('gives each class its ability pool and default kit: keys 1-3 abilities, key 4 the ultimate (DEC-209 (2))', () => {
+    const kits = Object.fromEntries(
+      LEGEND_CLASSES.all().map((legend) => [legend.id, [legend.abilityPool, legend.defaultKit]]),
+    );
+
+    expect(kits).toEqual({
+      warrior: [
+        ['blade-runner', 'veil', 'hamstring', 'fury'],
+        { abilities: ['blade-runner', 'veil', 'hamstring'], ultimate: 'fury' },
+      ],
+      sentinel: [
+        ['slam', 'rip-and-tear', 'shield-wall', 'berserk'],
+        { abilities: ['slam', 'rip-and-tear', 'shield-wall'], ultimate: 'berserk' },
+      ],
+      magus: [
+        ['shockwave', 'sanctuary', 'imbue', 'death-ray'],
+        { abilities: ['shockwave', 'sanctuary', 'imbue'], ultimate: 'death-ray' },
+      ],
+    });
+  });
 });

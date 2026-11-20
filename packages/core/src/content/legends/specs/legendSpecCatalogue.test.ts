@@ -141,4 +141,8 @@ describe('LEGEND_SPECS', () => {
       expect(LEGEND_SPECS.has(id)).toBe(false);
     }
   });
+
+  it("gives no Legend a kit of its own yet, so each equips its class's default (DEC-209 (2))", () => {
+    expect(LEGEND_SPECS.all().map((spec) => spec.kit)).toEqual(Array<null>(8).fill(null));
+  });
 });
