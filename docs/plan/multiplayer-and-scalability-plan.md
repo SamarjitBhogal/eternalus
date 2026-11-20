@@ -4,7 +4,7 @@ description: Draft plan for the two Sprint 3 requirements the course instructor 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-20
 tags: [plan, multiplayer, duel, server, scalability, sprint-2, sprint-3]
 related:
   - 'docs/plan/README.md'
@@ -243,10 +243,13 @@ owner's matchmaking factors must be explicit inputs (question 49).
 The server issues each connection an opaque guest id (`welcome`) and the client keeps it through
 `PersistenceController` (in memory until IndexedDB lands). `PresenceBook` (`apps/server/src/presence/`)
 reads each guest's state from the queue and the host. A queued or in-match guest that disconnects
-keeps its queue slot or seat for the reconnect window (`RECONNECT_WINDOW_MS`); presenting the same
-id on `queue-join` inside it takes the slot over, after it the guest leaves the queue or forfeits
-(question 44 is still open). The client does not rejoin on its own yet; it only stores and sends
-the id.
+keeps its queue slot or seat for the reconnect window (`RECONNECT_WINDOW_MS`, 10 s, DEC-297 (1));
+a held queued guest is never paired. Presenting the same id on `queue-join` inside the window
+takes the slot over; after it the guest leaves the queue or forfeits, and a timed-out drop is a
+leave and a loss (DEC-250 (4)): the player who stayed wins once the window runs out. A guest whose
+connection is gone keeps its id and rating for a later `queue-join` (the newest
+`MAX_KNOWN_GUESTS`; the oldest is forgotten). The `forfeit` message ends only the sender's own
+match (DEC-297 (2)). The client does not rejoin on its own yet; it only stores and sends the id.
 
 ### Implementation status: Glicko-2 rating and skill-based pairing (2026-11-13, SCRUM-431)
 
@@ -254,8 +257,10 @@ the id.
 volatility, wins, losses, streak and matches, and `DuelHost` updates both players with `Glicko2`
 when a match ends (each match is one rating period; a leaver loses; a draw scores 0.5). `DuelQueue`
 now holds several waiters and pairs the closest ratings first, within a gap that widens with the
-wait until a timeout lifts it (numbers in `DuelQueue.constants.ts`). A server restart forgets the
-ratings; the database decision (question 35) is still open. The "queue holds at most one player"
+wait until a timeout lifts it (numbers in `DuelQueue.constants.ts`). In memory, this is an interim
+until sprint 4 (DEC-297 (3)): a server restart forgets the ratings, and FR-118 (ratings kept in a
+database) is scheduled for sprint 4; the database decision (question 35) is still open and must be
+answered before sprint 4 starts. The "queue holds at most one player"
 note in the load section below dates from before this change.
 
 ### Implementation status: matchmaking under load (2026-11-12, SCRUM-432)
