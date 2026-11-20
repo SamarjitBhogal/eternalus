@@ -9540,3 +9540,20 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `prettier --check` and `npm run docs:check` with this entry.
 - Next step: push; claudiodh re-reviews #98; merge this head into `refactor/tower-ruins-followups`
   (#122).
+
+### 2026-11-20 — Phase 3 / tower ruins and routes: merge phase/3 (#125, content durations at load) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: merged phase/3 at `5a7cc8dc` (#125, DEC-241) as `5502dc94`. Three files
+  conflicted. `DefaultSystemPipeline.ts`, imports only: this branch drops the unused
+  `MAP_FEATURE_DEFINITIONS` import and phase/3 renames the healing import to
+  `loadOutOfCombatHealing`, which the merged file calls; the merged file keeps that one import.
+  The owner decisions log keeps every batch, newest date first (DEC-242 2026-11-13, DEC-241
+  2026-11-11, DEC-240 and DEC-239 2026-11-10), with phase/3's later `last-reviewed`
+  (2026-11-16). This file keeps both sides, phase/3's entries first. A line comparison shows
+  both files keep every line of both sides except this branch's older `last-reviewed`.
+- Checks run: full `npm run check` exit 0 on the merge commit before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-98-merge-5a7cc8dc.log`): core "Tests 1734
+  passed (1734)", protocol "Tests 29 passed (29)", client "Tests 2011 passed (2011)", server
+  "Tests 84 passed (84)", "Documentation check passed."; then `prettier --check` and
+  `npm run docs:check` with this entry.
+- Next step: push; claudiodh re-reviews #98; then #122 takes this head.
