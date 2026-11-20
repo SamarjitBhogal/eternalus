@@ -144,12 +144,7 @@ export class MatchBridge {
     } else if (match.duel !== undefined && sinceEnd >= 0 && sinceEnd < tickRate) {
       countdown = 0;
     }
-    return { tick, seconds: MatchBridge.matchSeconds(tick, snapshot, tickRate), countdown };
-  }
-
-  /** Match seconds at `tick`: from the countdown's end, which is not game time (DEC-278). */
-  private static matchSeconds(tick: number, snapshot: Snapshot, tickRate: number): number {
-    return Math.max(0, tick - snapshot.match.countdownEndTick) / tickRate;
+    return { tick, seconds: Math.max(0, sinceEnd) / tickRate, countdown };
   }
 
   /** The Duel's score from the player's side. */
