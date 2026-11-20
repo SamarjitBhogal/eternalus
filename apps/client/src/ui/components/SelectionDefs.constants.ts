@@ -171,6 +171,25 @@ const textShadow = (
   opacity = 1,
 ): TextGlowDef['shadows'][number] => ({ dx, dy, sigma, opacity });
 
+/** The countdown glow; UE-01's urgent glow is this def at another alpha (DEC-286). */
+const COUNTDOWN_GLOW: TextGlowDef = {
+  id: SELECTION_DEF_IDS.glowCountdown,
+  region: { x: -0.5, y: -0.5, width: 2, height: 2 },
+  // 62:135 / 58:281: the countdown red at 15 % (the --selection-countdown-glow alpha) at
+  // (6, 0), (−6, 0), (0, 6), (0, −6), radius 8; measured σ 3.4 (OD-27).
+  shadows: [
+    textShadow(6, 0, 3.4, 0.15),
+    textShadow(-6, 0, 3.4, 0.15),
+    textShadow(0, 6, 3.4, 0.15),
+    textShadow(0, -6, 3.4, 0.15),
+  ],
+  flood: 'countdown',
+  // The match-start overlay (CD-49) uses it too but is not listed: its box is in HUD units, so
+  // no fixed box can be checked here. The region holds these shadows for any box at least
+  // 32.4 px a side ((6 px offset + 3σ) / 0.5); the overlay's shots (INBOX HC-C1) show it.
+  users: [{ node: '62:135 / 58:281 countdown', width: 118, height: 83, bleed: 0 }],
+};
+
 /**
  * The text glows (regions as above), built as the two experiments of the visual audit of 62:125
  * and pixel-identical to them in Chrome 155 (probe over black and white). CSS
@@ -205,36 +224,12 @@ export const TEXT_GLOW_FILTERS: readonly TextGlowDef[] = [
       { node: '58:276 LOCK IN label', width: 314, height: 48, bleed: 0 },
     ],
   },
+  COUNTDOWN_GLOW,
   {
-    id: SELECTION_DEF_IDS.glowCountdown,
-    region: { x: -0.5, y: -0.5, width: 2, height: 2 },
-    // 62:135 / 58:281: the countdown red at 15 % (the --selection-countdown-glow alpha) at
-    // (6, 0), (−6, 0), (0, 6), (0, −6), radius 8; measured σ 3.4 (OD-27).
-    shadows: [
-      textShadow(6, 0, 3.4, 0.15),
-      textShadow(-6, 0, 3.4, 0.15),
-      textShadow(0, 6, 3.4, 0.15),
-      textShadow(0, -6, 3.4, 0.15),
-    ],
-    flood: 'countdown',
-    // The match-start overlay (CD-49) uses it too but is not listed: its box is in HUD units, so
-    // no fixed box can be checked here. The region holds these shadows for any box at least
-    // 32.4 px a side ((6 px offset + 3σ) / 0.5); the overlay's shots (INBOX HC-C1) show it.
-    users: [{ node: '62:135 / 58:281 countdown', width: 118, height: 83, bleed: 0 }],
-  },
-  {
+    ...COUNTDOWN_GLOW,
     id: SELECTION_DEF_IDS.glowCountdownUrgent,
-    region: { x: -0.5, y: -0.5, width: 2, height: 2 },
-    // UE-01 (ui-enhancements-plan §3.2): the countdown glow above at 30 % instead of 15 % (the
+    // UE-01 (ui-enhancements-plan §3.2): the countdown glow at 30 % instead of 15 % (the
     // --selection-countdown-urgent-glow alpha), from 5 s down.
-    shadows: [
-      textShadow(6, 0, 3.4, 0.3),
-      textShadow(-6, 0, 3.4, 0.3),
-      textShadow(0, 6, 3.4, 0.3),
-      textShadow(0, -6, 3.4, 0.3),
-    ],
-    flood: 'countdown',
-    // Not listed for the overlay, as above.
-    users: [{ node: '62:135 / 58:281 countdown', width: 118, height: 83, bleed: 0 }],
+    shadows: COUNTDOWN_GLOW.shadows.map((shadow) => ({ ...shadow, opacity: 0.3 })),
   },
 ];

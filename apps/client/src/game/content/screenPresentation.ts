@@ -34,8 +34,13 @@ const BACKGROUND_SETS: readonly BackgroundSet[] = [
   },
 ];
 
-/** Every built UI enhancement (ui-enhancements-plan §3); the developer's `ui=` picks among them. */
-export const UI_ENHANCEMENT_IDS: readonly UiEnhancementId[] = ['countdown-urgency'];
+/**
+ * Every built UI enhancement (ui-enhancements-plan §3); the developer's `ui=` picks among them.
+ * Its test fails `tsc` when a `UiEnhancementId` is not listed (DEC-286).
+ */
+export const UI_ENHANCEMENT_IDS = [
+  'countdown-urgency',
+] as const satisfies readonly UiEnhancementId[];
 
 /** Everything the client adds to core display content. */
 export const CATALOGUE_PRESENTATION: CataloguePresentation = {

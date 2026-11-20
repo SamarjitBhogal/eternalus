@@ -21,6 +21,17 @@ overridden by the product owner. Decisions arrive through `INBOX.md`; once imple
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
 
+## Batch 2026-11-20 (the countdown critic's better-than-design items)
+
+The architecture critic's round 2 on `feat/match-start-countdown` found two better-than-design
+items (BTD2, BTD3; DEC-139). No plan schedules them, so they are built in that branch under the
+owner's standing rule for such items (2026-11-09, DEC-223 and DEC-232): "do not allow tech debt
+where we can eliminate it" and "no tech-debt if possible, when possible". DEC-286 is this batch.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DEC-286 | **A UI enhancement id that is typed but not listed fails the type check, and the urgent countdown glow is the countdown glow at another alpha** (BTD2, BTD3). (1) `UI_ENHANCEMENT_IDS` keeps its literal ids (`as const satisfies readonly UiEnhancementId[]`), and its test asserts with `expectTypeOf` that they are every `UiEnhancementId`, so a new member of the type that the list misses fails `tsc` (the pattern of `assetVocabulary.test.ts`). (2) The urgent glow def spreads the countdown glow def and maps its shadows to 30 %, so a change to the countdown glow's region, σ or offsets edits one place. | `apps/client/src/game/content/screenPresentation.ts` and its test, `apps/client/src/ui/components/SelectionDefs.constants.ts` |
+
 ## Batch 2026-11-20 (Owner Calls page: HC-B9)
 
 The owner's answer of 2026-11-20 to `INBOX.md` HC-B9 on the coordinator's Owner Calls page, pasted
