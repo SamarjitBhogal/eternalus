@@ -3,6 +3,7 @@ import {
   createDefaultGameConfig,
   type MapFeature,
   type MapFeatureKind,
+  loadDisplayContent,
   NullLogger,
   Simulation,
 } from '@eternalus/core';
@@ -12,7 +13,6 @@ import type { BridgeEventMap } from '../bridge/events';
 import { TypedEventBus } from '../bridge/TypedEventBus';
 import { withPlayer } from './__fixtures__/withPlayer';
 import { DeveloperMenuController } from './DeveloperMenuController';
-import { DEVELOPER_MOBS } from './DeveloperMenuController.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
 
 const SPAWN: Command<'dev-spawn-mobs'> = {
@@ -70,22 +70,22 @@ describe('DeveloperMenuController', () => {
     expect(enqueueCommand).not.toHaveBeenCalled();
   });
 
-  it('toggles open and closed, publishing the mobs and only the structures on a lane', () => {
+  it('toggles open and closed, publishing only the structures on a lane', () => {
     const { controller, states } = setUp(true);
     controller.toggle();
     controller.toggle();
     expect(states.map((state) => state.isOpen)).toEqual([true, false]);
-    expect(states[0]?.mobs).toEqual(DEVELOPER_MOBS);
     expect(states[0]?.origins).toEqual([{ id: 'gate-a', label: 'gate-a (gate)' }]);
   });
 
   it('does not open, and publishes nothing, while the menu is not enabled', () => {
     const { controller, states } = setUp(false);
     controller.toggle();
+    controller.publish();
     expect(states).toEqual([]);
   });
 
-  it('offers mobs and origins the real simulation accepts', () => {
+  it('offers origins the real simulation accepts for every lane minion of the display content', () => {
     const config = createDefaultGameConfig({ match: { countdownSeconds: 0 } });
     const { map } = prepareMatchWorld(config, 1);
     const simulation = new Simulation({
@@ -103,7 +103,9 @@ describe('DeveloperMenuController', () => {
     expect(origin).toBeDefined();
     const rejected: string[] = [];
     simulation.on('command-rejected', ({ reason }) => rejected.push(reason));
-    for (const { id } of DEVELOPER_MOBS) {
+    const { laneMinions } = loadDisplayContent();
+    expect(laneMinions.length).toBeGreaterThan(0);
+    for (const { id } of laneMinions) {
       bus.emit('ui-intent', {
         kind: 'dev-command',
         command: {

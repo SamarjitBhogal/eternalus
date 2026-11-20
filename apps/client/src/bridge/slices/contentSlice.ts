@@ -14,6 +14,7 @@ const initialState: DisplayCatalogue = {
   effectsRenderer: 'figma-raster',
   contrastMode: 'figma',
   hud: { structureKinds: [], objectiveKinds: [], chrome: null },
+  laneMinions: [],
   teamNames: { light: '', dark: '' },
   botRoster: {
     id: '',
@@ -43,6 +44,7 @@ export const contentSlice = createSlice({
     selectSelectClassChromeAssetId: (state) => state.selectClassChromeAssetId,
     selectLockInChromeAssetId: (state) => state.lockInChromeAssetId,
     selectHudCatalogue: (state) => state.hud,
+    selectLaneMinions: (state) => state.laneMinions,
     selectTeamNames: (state) => state.teamNames,
     selectVerdictLines: (state) => state.verdictLines,
     selectSovereignNames: (state) => state.sovereignNames,

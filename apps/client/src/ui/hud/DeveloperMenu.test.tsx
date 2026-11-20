@@ -7,7 +7,6 @@ import { DeveloperMenu } from './DeveloperMenu';
 
 const STATE: DeveloperMenuState = {
   isOpen: true,
-  mobs: [{ id: 'light-minion', label: 'Light Minion' }],
   origins: [{ id: 'gate-a', label: 'gate-a (gate)' }],
 };
 

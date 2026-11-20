@@ -16,6 +16,7 @@ import { shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
 import { createBrowserMatch } from './createBrowserMatch';
 import { FakeSessionClock } from './engine/time/FakeSessionClock';
 import { FakeBrowserTarget } from './FakeBrowserTarget';
+import { fakeKeyEvent } from './engine/input/fakeKeyEvent';
 import { FakeViewportCanvas } from './FakeViewportCanvas';
 import { MS_PER_SECOND } from './Match.constants';
 import type { MatchObserver, PreparedWorld } from './Match.types';
@@ -42,7 +43,11 @@ function evidenceOf(running: RunningMatch): MatchEvidence {
   return evidence;
 }
 
-function setUp(canvas = new FakeViewportCanvas(), sinks: readonly LogSink[] = []) {
+function setUp(
+  canvas = new FakeViewportCanvas(),
+  sinks: readonly LogSink[] = [],
+  isDeveloperMenuEnabled = false,
+) {
   const window = new FakeBrowserTarget();
   const document = new FakeBrowserTarget();
   const bus = new TypedEventBus<BridgeEventMap>();
@@ -50,7 +55,7 @@ function setUp(canvas = new FakeViewportCanvas(), sinks: readonly LogSink[] = []
     window,
     document,
     gameConfig: CONFIG,
-    isDeveloperMenuEnabled: false,
+    isDeveloperMenuEnabled,
     bus,
     settings: { bindings: null },
     clock: new FakeSessionClock(),
@@ -82,6 +87,26 @@ function setUp(canvas = new FakeViewportCanvas(), sinks: readonly LogSink[] = []
 }
 
 describe('createBrowserMatch', () => {
+  it.each([
+    { isDeveloperMenuEnabled: true, opened: [true] },
+    { isDeveloperMenuEnabled: false, opened: [] },
+  ])(
+    'passes ?dev=1 to the match: F1 opens the developer menu only when it is enabled ($isDeveloperMenuEnabled)',
+    ({ isDeveloperMenuEnabled, opened }) => {
+      const { window, bus, factory, viewport, request } = setUp(
+        undefined,
+        [],
+        isDeveloperMenuEnabled,
+      );
+      const states: boolean[] = [];
+      bus.on('developer-menu', ({ isOpen }) => states.push(isOpen));
+      const running = factory(request(), viewport);
+      window.dispatchEvent(fakeKeyEvent('keydown', 'F1'));
+      expect(states.filter((isOpen) => isOpen)).toEqual(opened);
+      running.destroy();
+    },
+  );
+
   it('throws for a canvas without a 2D context and leaves nothing behind', () => {
     const { window, factory, viewport, request, listeners } = setUp(
       new FakeViewportCanvas(1280, 720, null),

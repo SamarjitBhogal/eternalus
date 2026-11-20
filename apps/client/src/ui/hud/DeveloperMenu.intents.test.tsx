@@ -23,10 +23,6 @@ function mount() {
     developerMenu: {
       ...developerMenuSlice.getInitialState(),
       isOpen: true,
-      mobs: [
-        { id: 'light-minion', label: 'Light Minion' },
-        { id: 'heavy-minion', label: 'Heavy Minion' },
-      ],
       origins: [
         { id: 'gate-a', label: 'gate-a' },
         { id: 'gate-b', label: 'gate-b' },

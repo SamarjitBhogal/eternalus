@@ -342,7 +342,13 @@ describe('Match', () => {
   it('centres the minimap on the camera once the player is gone, and maps clicks around it', () => {
     const { match, renderer, simulation, camera, map } = setUp();
     match.tick();
-    simulation.enqueueCommand({ type: 'dev-remove-entity', entityId: match.playerEntityId ?? '' });
+    // Core refuses to remove the human's Legend outside sim mode (13 §4), so the snapshot drops it.
+    const playerId = match.playerEntityId;
+    const snapshot = simulation.snapshot.bind(simulation);
+    vi.spyOn(simulation, 'snapshot').mockImplementation(() => {
+      const real = snapshot();
+      return { ...real, entities: real.entities.filter(({ id }) => id !== playerId) };
+    });
     match.tick();
     expect(playerX(match)).toBeNaN();
     match.render(0);

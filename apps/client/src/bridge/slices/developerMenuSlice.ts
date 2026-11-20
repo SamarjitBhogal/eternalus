@@ -2,7 +2,7 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import type { DeveloperMenuState } from '../developerMenu.types';
 
-const initialState: DeveloperMenuState = { isOpen: false, mobs: [], origins: [] };
+const initialState: DeveloperMenuState = { isOpen: false, origins: [] };
 
 /** The developer menu's state, fed by `developer-menu`; reset by every `match-setup`. */
 export const developerMenuSlice = createSlice({
