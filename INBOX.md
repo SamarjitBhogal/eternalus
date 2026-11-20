@@ -53,6 +53,32 @@ Reply inline (`Decision: …`).
       (online Duel) match must always keep the menu disabled (`Match.isDeveloperMenuEnabled` is
       optional and off by default, and the online match factory must not pass it), otherwise dev
       commands would be a cheat path.
+
+- [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
+      PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
+      small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`
+      without `hasMapFootprint` is legal and does nothing. One field (for example
+      `mapFootprint?: 'reach' | 'fort'`) makes that state impossible; it changes the same field
+      as item (B3) below, so do both together. (G2) `DefaultSystemPipeline.fortBoxesOf` looks up
+      each entity's definition again; record the fort-box fact where the `Footprint` is made
+      (`Simulation.spawnStructures`), so the pipeline needs no catalogue. Same code as item (C1)
+      below.
+
+- [ ] **`refactor/fort-geometry-helpers` critic (2026-11-13), better than the design — two items
+      for the tidy PR (DEC-218), sign-off per item.** Not built: the branch is a split from
+      PR #98 and stays small. (F1) `MapSceneryBuilder` still grows each ring feature's box by
+      hand, with 5 and 10 as literals; use `boundsOf`, a `growRect(rect, pad)` helper and a
+      constant in `MapSceneryBuilder.constants.ts`. (F2) "wall = side / `wallDivisor`" is in
+      `MapFortificationBuilder` (sketch units) and in `fortInWorld` (world units); one
+      `fortWall(side)` serves both.
+
+- [ ] **`refactor/astar-search-area` critic (2026-11-13), better than the design — one item,
+      sign-off.** Not built. `GameConfig.map.pathSnapCells` (12) is counted in cells, like the
+      old A\* cap: its comment says it "covers a Stronghold footprint on 5 m cells" (60 m), and on
+      PR #98's 2.5 m cells it reaches 30 m. Proposed: `pathSnapDistance` in world units, with the
+      rings derived as `ceil(distance / cellSize)`. Whether 30 m still covers a Stronghold is a
+      live question on #98.
+
 - [ ] **Teammate's boss spec (Aryan Walanj, 2026-11-11): amend reference 04?** A teammate's spec
       differs from `docs/reference/game-design/04-objectives-capture-points-and-bosses.md` in
       four places. Nothing is built for any of them until you answer; no Cathedral or middle-boss
@@ -156,7 +182,7 @@ Reply inline (`Decision: …`).
 
 - [ ] **Timed guard spawns beside `MatchTimeline` (`feat/zone-guard-homes` critic finding 2,
       2026-11-09) — accepted as interim.** Guard plans now activate `delaySeconds` after the
-      countdown ends (`GuardPlanDefinition.activation`, `content/structures/structures.types.ts`), and the
+      countdown ends (`AuthoredGuardPlan.activation`, `content/structures/structures.types.ts`), and the
       mini-boss (PR A2) uses it. The design schedules mini-boss spawns from `MatchTimeline` /
       `MatchDirector` (07 §7, 12; phase-3 sprints 3.5–3.6), so timed match spawns now have two
       paths and no doc says which owns boss timing. Due before the zone-lock PR: pick one owner
@@ -196,6 +222,36 @@ Reply inline (`Decision: …`).
       asked for minions to attack them. Keep DEC-193, or should minions attack obstacles (and
       which ones: props only, or blocking obstacles too)?
   - **Answered 2026-11-13 by DEC-248** (chat, PR #96). Not built yet (BUG-3).
+
+- [x] **`refactor/durations-at-load` critic (2026-11-14), better than the design — built, sign-off
+      asked; no decision blocks the PR.** #86's healing system divided its two rates
+      (`healthFractionPerSecond`, a structure bonus's `fractionPerSecond`) by the tick rate itself,
+      every tick for the bonus. (1) Built: `loadOutOfCombatHealing` turns the rates into per-tick
+      values at load, next to the two durations (DEC-241), so the system sees only ticks
+      (architecture 03 §10, `packages/core/AGENTS.md` "Time is measured only in ticks", as
+      `loadDefaultContent` already does for speed and acceleration). Same values, so no behaviour
+      change. (2) Built: the same loader rejects a rate that is negative or not finite. (3) Built
+      (critic round 2): the check is unit-free, so it is renamed `assertNonNegativeFinite`, and the
+      rate formula is `TickRate.perTick`, next to the time formulas. Approve, or say which to
+      undo.
+  - **Answered 2026-11-16 by DEC-262** (question dialog, PR #125): (1) to (3) approved. Also
+    signed off: the time check in the aggro, stuck, veterancy and guard loaders (the 2026-11-12
+    critic) and #86's healing times as DEC-241's sixth reader.
+
+- [ ] **HC-B9 — Better than the design, not built, sign-off asked: two older times not read once at
+      load (`refactor/durations-at-load` merge critic, 2026-11-19); no decision blocks the PR.**
+      Both are older than PR #125 and keep their values.
+      (1) **One countdown-end tick.** Three readers each compute the tick the countdown ends with
+      `countdownTicks(countdownSeconds, tickRate)`: `SpawnSystem` (first waves),
+      `GuardRoster.firstTick` (guard activation) and `LeashBehaviour.rankOf` (the
+      `ghostFirstWaveTicks` window). `validateGameConfig` already checks that the match timeline's
+      first mark falls on that tick. Proposal: the three read that one tick from one place, so a
+      change to when the countdown ends changes one line.
+      (2) **Assist window at load.** `assistWindowSeconds` (`content/match/scoring.ts`, DEC-79)
+      becomes ticks in `defaultScoringRules`, outside a loader, unlike the DEC-241 durations.
+      Proposal: a scoring loader turns it into ticks and rejects a negative or non-finite value,
+      as `loadGuardPlans` does.
+      Build both in PR #125, build them in a later PR, or keep the code as it is?
 
 - [x] **Unit facing chevron (DEC-192, feat/unit-facing-chevron, 2026-11-05) — two questions, one
       better-than-design item.**
@@ -322,6 +378,10 @@ Reply inline (`Decision: …`).
       `partOf` (stays as ruins); (T2) `WorldObjectStore.spawn` gets only the definition id: pass
       what it needs explicitly. Heal (DEC-215): (H1) one point-in-box helper instead of three
       copies (`PathingSystem.isInsideFort`, `geometry.doesPolygonOverlapRect`, `HealingZones`).
+      (H1 is built in part on `refactor/fort-geometry-helpers` (DEC-244, split from PR #98):
+      `utils/geometry.isPointInRect` replaces `PathingSystem.isInsideFort`'s test and the copy in
+      `doesPolygonOverlapRect`. `HealingZones` is only on `feat/out-of-combat-heal`, not merged:
+      it uses `isPointInRect` once both branches meet.)
       Full findings: `eternalus-agent-work/minion-stack-audit/reports/runner-reports/critic-followups-r2.md`,
       `eternalus-agent-work/playtest-2026-11-04/critic-chevron-r3.md` and
       `eternalus-agent-work/playtest-2026-11-04/session-2383bba1-reports.md`. Approve all,
@@ -660,7 +720,8 @@ Reply inline (`Decision: …`).
       `MovementStrategy`", but bots steer by `move`
       commands, so A\* is a `PathQuery` the bot leaves call (doc 11 §10). Its cost then sits in
       the AI decision budget, not in `PathingSystem` as 11 §6 puts heavy work: each blocked
-      decision searches again (capped by `GameConfig.map.pathMaxExpansions`). If accepted,
+      decision searches again (capped by `GameConfig.map.pathMaxExpansions`; since 2026-11-13
+      `pathMaxSearchArea`, DEC-243). If accepted,
       sprint 3.2's line changes, and a path cache in the brain is the next step if profiling
       shows the cost.
   - Decision (SamarjitBhogal, chat, 2026-10-27): (2) accepted; doc 11 §6 and sprint 3.2's
@@ -2347,7 +2408,7 @@ Reply inline (`Decision: …`).
       keep it as it is.
   - Answered 2026-11-08 in chat (DEC-222): "(b) Build it in GL-16". To build: in GL-16 (game-loop
     plan §7), with its own unit test, the length-change branch included.
-- [ ] **HC-Q57 — The online Duel in the results flow: five better-than-design items and one rule
+- [x] **HC-Q57 — The online Duel in the results flow: five better-than-design items and one rule
       question (critics on the #97 merge into GL-4, PR #93; DEC-139).** The merge keeps GL-5's
       results flow for a Duel (`duel-ended`, `selectMatchVerdict`, `ResultsScreen`). Both critics
       approved it and proposed:
@@ -2378,9 +2439,12 @@ Reply inline (`Decision: …`).
     `canRepeatSetup`). (5): scheduled with HC-S7. (6): option B, the run-on is built with the
     Duel's own win rules (DEC-36); until then a finished Duel goes to the results at once. A
     finished Duel keeps no status line.
-  - Still open: after the opponent leaves, does the player who stayed see VICTORY? The leaver
-    takes a loss (DEC-250 (4)); the screen for the player who stayed shows no verdict until the
-    owner says.
+  - Open until DEC-251: after the opponent leaves, does the player who stayed see VICTORY? The
+    leaver takes a loss (DEC-250 (4)); the screen for the player who stayed shows no verdict until
+    the owner says.
+  - Answered 2026-11-14 in chat (DEC-251): "A) yes". The player who stayed sees VICTORY, with
+    "Opponent left." under it. The server names that player's team as the winner of the
+    `opponent-left` ending, so `selectMatchVerdict` has no Duel branch (`feat/duel-leave-victory`).
   - Critic notes on the built delta (2026-11-14), for the HC-S7 work: `createMatch` still asks
     `duel.status === 'started'` while `canRepeatMatchSetup` reads `setup.mode`, so the strategy
     should key on `setup.mode`; `MatchSetupDraft` could be a union by `mode`, so that "a Duel has
