@@ -144,15 +144,12 @@ export class DefaultSystemPipeline extends SystemPipeline {
       // Before death, so a fallen Duel Legend is healed and moved instead of removed.
       ...(duelStarts === undefined ? [] : [new DuelRoundSystem(duelStarts)]),
       new OutOfCombatHealingSystem(state, loadOutOfCombatHealing(tickRate)),
-      ...(hordes === undefined
-        ? []
-        : [
-            new RespawnSystem(
-              hordes.factory,
-              new TickRate(tickRate).toTicks(LEGEND_RESPAWN_SECONDS),
-            ),
-          ]),
-      // Queues the Legends that died this tick before `DeathSystem` removes them.
+      // After the Duel round, which heals a fallen Duel Legend, so it is never queued; queues the
+      // Legends that died this tick before `DeathSystem` withdraws them.
+      new RespawnSystem(
+        new TickRate(tickRate).toTicks(LEGEND_RESPAWN_SECONDS),
+        LANE_ASSESSMENT_WEIGHTS,
+      ),
       new DeathSystem(),
       new CaptureSystem(state.config.match.capturePoints, tickRate, ZONE_LOCKING_MOBS),
       // After death, so an objective lost this tick can end the match this tick (12 §1).

@@ -31,7 +31,7 @@ export class PlayerCommands implements PlayerActions {
   /** The unit or map object the held attack targeted last; `null` once released or stopped. */
   private attackTargetId: EntityId | null = null;
 
-  /** Whether the Legend was in the last snapshot: a Legend that comes back is a new entity. */
+  /** Whether the Legend was in the last snapshot: a Legend back from a respawn returns stopped. */
   private wasPlayerPresent = false;
 
   /** Whether the canvas gestures own the main button's press (`setPointerClaimed`). */

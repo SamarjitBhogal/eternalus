@@ -87,21 +87,23 @@ export class StateHasher {
       });
       parts.push(['guards', ...posts]);
     }
-    // Dead Legends waiting to respawn are appended only while some wait, for the same reason.
+    // Dead Legends waiting to respawn (DEC-295) are appended only while some wait, for the same
+    // reason: each one's team, return tick and owed XP, then the waiting Legend's own fields, as
+    // an entity in the store hashes them, since it is out of the store meanwhile.
     if (state.respawns.size > 0) {
       const waiting: unknown[] = [];
-      state.respawns.forEach((entry) => {
+      state.respawns.forEach(({ legend, team, returnsAtTick, owedXp }) => {
         waiting.push([
-          entry.entityId,
-          entry.kind,
-          entry.definitionId,
-          entry.team,
-          entry.controller ?? null,
-          entry.xp,
-          entry.level,
-          entry.healthMax,
-          entry.aetherMax,
-          entry.returnsAtTick,
+          team,
+          returnsAtTick,
+          owedXp.map(({ cause, victimId, victimTeam, xp, maxLevels }) => [
+            cause,
+            victimId,
+            victimTeam,
+            xp,
+            maxLevels ?? null,
+          ]),
+          StateHasher.fieldsOf(legend),
         ]);
       });
       parts.push(['respawns', ...waiting]);

@@ -1,12 +1,19 @@
+import type { Legend } from '../entities/Legend';
+import type { PlayableTeam } from '../teams/teams.types';
 import type { EntityId } from './EntityStore.types';
-import type { RespawnEntry } from './RespawnQueue.types';
+import type { OwedXp, RespawnEntry } from './RespawnQueue.types';
+
+/** A queued entry, with its owed XP growing in place. */
+type Waiting = Omit<RespawnEntry, 'owedXp'> & { readonly owedXp: OwedXp[] };
 
 /**
- * Dead Legends waiting to respawn, in the order they died (FR-051). Plain data in `GameState`,
- * hashed by `StateHasher`. `RespawnSystem` is the only writer.
+ * Dead Legends waiting to respawn, in the order they died (FR-051, DEC-295): each one the same
+ * `Legend` object the store withdrew, with the XP it is owed. In `GameState`, hashed by
+ * `StateHasher` (the waiting Legend's fields too). `RespawnSystem` queues and returns them;
+ * `ProgressionSystem` adds what they are owed.
  */
 export class RespawnQueue {
-  private entries: RespawnEntry[] = [];
+  private entries: Waiting[] = [];
 
   /** How many Legends are waiting. */
   public get size(): number {
@@ -15,19 +22,37 @@ export class RespawnQueue {
 
   /** Whether the Legend `entityId` is waiting. */
   public has(entityId: EntityId): boolean {
-    return this.entries.some((entry) => entry.entityId === entityId);
+    return this.legendOf(entityId) !== undefined;
+  }
+
+  /** The waiting Legend `entityId`, or `undefined` when it is not waiting. */
+  public legendOf(entityId: EntityId): Legend | undefined {
+    return this.entries.find((entry) => entry.legend.id === entityId)?.legend;
   }
 
   /**
-   * Queues a dead Legend.
+   * Queues a dead Legend of `team` to return at `returnsAtTick`.
    *
    * @throws Error when that Legend is already waiting.
    */
-  public add(entry: RespawnEntry): void {
-    if (this.has(entry.entityId)) {
-      throw new Error(`Legend "${entry.entityId}" is already waiting to respawn.`);
+  public add(legend: Legend, team: PlayableTeam, returnsAtTick: number): void {
+    if (this.has(legend.id)) {
+      throw new Error(`Legend "${legend.id}" is already waiting to respawn.`);
     }
-    this.entries.push(entry);
+    this.entries.push({ legend, team, returnsAtTick, owedXp: [] });
+  }
+
+  /**
+   * Records XP the waiting Legend `entityId` gets when it returns.
+   *
+   * @throws Error when that Legend is not waiting.
+   */
+  public owe(entityId: EntityId, owed: OwedXp): void {
+    const entry = this.entries.find((waiting) => waiting.legend.id === entityId);
+    if (entry === undefined) {
+      throw new Error(`Legend "${entityId}" is not waiting to respawn.`);
+    }
+    entry.owedXp.push(owed);
   }
 
   /** Removes and returns the entries due at `tick` (`returnsAtTick <= tick`), in death order. */

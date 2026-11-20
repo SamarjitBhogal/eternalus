@@ -1,34 +1,42 @@
 import { describe, expect, it } from 'vitest';
 
 import { Aether } from '../components/Aether';
+import { Combat } from '../components/Combat';
+import { Movement } from '../components/Movement';
+import { StatusEffects } from '../components/StatusEffects';
+import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { ControllerBinding } from '../components/ControllerBinding';
 import { Health } from '../components/Health';
 import { Progression } from '../components/Progression';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
 import { LEGEND_RESPAWN_SECONDS } from '../content/progression/legendRespawn';
+import { LEGEND_LEVEL_CURVE } from '../content/progression/levelCurves';
 import { loadWeapons } from '../content/weapons/loadWeapons';
 import { NullLogger } from '../diagnostics/NullLogger';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
+import { Legend } from '../entities/Legend';
 import { Unit } from '../entities/Unit';
 import { WorldMap } from '../map/WorldMap';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { GameState } from '../state/GameState';
 import { MatchWorld } from '../state/MatchWorld';
 import { StateHasher } from '../state/StateHasher';
+import { TickRate } from '../utils/TickRate';
 import { DeathSystem } from './DeathSystem';
 import { RespawnSystem } from './RespawnSystem';
 
 const CONFIG = createDefaultGameConfig();
-const DELAY = Math.round(LEGEND_RESPAWN_SECONDS * CONFIG.tickRate);
+const DELAY = new TickRate(CONFIG.tickRate).toTicks(LEGEND_RESPAWN_SECONDS);
 const DARK_STRONGHOLD = { x: 190, y: 30 };
 const LIGHT_STRONGHOLD = { x: 10, y: 30 };
 const BOT = {
   controllerId: 'bot-legend',
   profileId: 'normal',
-  memory: { lane: 'lane-1' },
+  memory: { lane: 'lane-0' },
 } as const;
 
 const setUp = (isWithMap = true) => {
@@ -46,7 +54,7 @@ const setUp = (isWithMap = true) => {
     undefined,
     weapons,
   );
-  const respawn = new RespawnSystem(factory, DELAY);
+  const respawn = new RespawnSystem(DELAY, LANE_ASSESSMENT_WEIGHTS);
   const death = new DeathSystem();
   const context = { state, logger: new NullLogger() };
   /** One tick as the pipeline runs it: respawn, then death, then the tick counts. */
@@ -66,7 +74,7 @@ const addLegend = ({ state, factory }: ReturnType<typeof setUp>, hasController =
     ...(hasController && { controller: BOT }),
   });
   state.entities.add(legend);
-  legend.getComponent(Progression).restore(250, 3);
+  legend.getComponent(Progression).addXp(250, LEGEND_LEVEL_CURVE);
   legend.getComponent(Health).raiseMax(40);
   legend.getComponent(Aether).raiseMax(15);
   return legend;
@@ -78,7 +86,7 @@ const kill = ({ state }: ReturnType<typeof setUp>, id: string): void => {
 };
 
 describe('RespawnSystem', () => {
-  it('removes a dead Legend, keeps it away for the whole delay and brings it back at its Stronghold', () => {
+  it('withdraws a dead Legend, keeps it away for the whole delay and brings the same object back at its Stronghold', () => {
     const match = setUp();
     const legend = addLegend(match);
     const { state, step } = match;
@@ -97,7 +105,7 @@ describe('RespawnSystem', () => {
     step();
 
     const back = state.entities.get(legend.id);
-    expect(back?.kind).toBe('warrior');
+    expect(back).toBe(legend);
     expect(back?.getComponent(Transform).position).toEqual(DARK_STRONGHOLD);
     expect(back?.getComponent(Progression).xp).toBe(250);
     expect(back?.getComponent(Progression).level).toBe(3);
@@ -105,10 +113,12 @@ describe('RespawnSystem', () => {
     expect(back?.getComponent(Health).max).toBe(healthMax);
     expect(back?.getComponent(Aether).current).toBe(aetherMax);
     expect(back?.getComponent(Aether).max).toBe(aetherMax);
+    // A bot laner picks its lane again by the current threat (DEC-295 (2)): with no damage and
+    // no hordes anywhere, the middle lane (`assessLanes`), not the lane it spawned with.
     expect(back?.getComponent(ControllerBinding)).toMatchObject({
       controllerId: BOT.controllerId,
       profileId: BOT.profileId,
-      initialMemory: BOT.memory,
+      initialMemory: { lane: 'lane-1' },
     });
     expect(state.respawns.size).toBe(0);
   });
@@ -127,7 +137,10 @@ describe('RespawnSystem', () => {
     }
 
     expect(returned).toEqual([
-      [diedAtTick + DELAY, { entityId: legend.id, team: 'dark', position: DARK_STRONGHOLD }],
+      [
+        diedAtTick + DELAY,
+        { entityId: legend.id, team: 'dark', position: DARK_STRONGHOLD, owedXp: [] },
+      ],
     ]);
   });
 
@@ -214,19 +227,68 @@ describe('RespawnSystem', () => {
 
   it('hashes the waiting queue: the same tick and entities, only the queue differs', () => {
     const [empty, waiting] = [setUp(), setUp()];
-    waiting.state.respawns.add({
-      entityId: 'entity-1',
-      kind: 'warrior',
-      definitionId: 'warrior',
+    const legend = waiting.factory.create('warrior', 'warrior', {
+      position: { x: 100, y: 10 },
       team: 'dark',
-      xp: 0,
-      level: 1,
-      healthMax: 100,
-      aetherMax: 50,
-      returnsAtTick: DELAY,
     });
+    if (!(legend instanceof Legend)) throw new Error('A warrior is a Legend.');
+    waiting.state.respawns.add(legend, 'dark', DELAY);
+    const hasher = new StateHasher();
+    const queued = hasher.hash(waiting.state);
 
-    expect(new StateHasher().hash(waiting.state)).not.toBe(new StateHasher().hash(empty.state));
+    expect(queued).not.toBe(hasher.hash(empty.state));
+    // The waiting Legend's own fields are hashed too, though it is out of the store (DEC-295).
+    legend.getComponent(Progression).addXp(10, LEGEND_LEVEL_CURVE);
+    expect(hasher.hash(waiting.state)).not.toBe(queued);
+  });
+
+  it('gives the same hash in two runs through a death and a return (determinism)', () => {
+    const run = (): number[] => {
+      const match = setUp();
+      const legend = addLegend(match);
+      kill(match, legend.id);
+      const hashes: number[] = [];
+      for (let tick = 0; tick <= DELAY + 2; tick += 1) {
+        match.step();
+        if (tick % 50 === 0 || tick >= DELAY) hashes.push(new StateHasher().hash(match.state));
+      }
+      return hashes;
+    };
+
+    expect(run()).toEqual(run());
+  });
+
+  it('faces a returning dark Legend toward the enemy Stronghold (DEC-216 (6))', () => {
+    const match = setUp();
+    const legend = addLegend(match);
+    legend.getComponent(Transform).face({ x: 0, y: 1 });
+    kill(match, legend.id);
+
+    for (let tick = 0; tick <= DELAY; tick += 1) match.step();
+
+    // From (190, 30) to the light Stronghold at (10, 30).
+    expect(legend.getComponent(Transform).facing).toEqual({ x: -1, y: 0 });
+  });
+
+  it('resets health, aether, statuses, movement and target on return, and keeps what it earned', () => {
+    const match = setUp();
+    const legend = addLegend(match);
+    const aether = legend.getComponent(Aether);
+    aether.spend(aether.current);
+    legend
+      .getComponent(StatusEffects)
+      .apply(loadStatusEffects(CONFIG.tickRate, 2).get('bleed'), null, 0);
+    legend.getComponent(Movement).steer({ x: 1, y: 0 });
+    legend.getComponent(Combat).setTarget('entity-99');
+    kill(match, legend.id);
+
+    for (let tick = 0; tick <= DELAY; tick += 1) match.step();
+
+    expect(aether.current).toBe(aether.max);
+    expect(legend.getComponent(StatusEffects).active).toEqual([]);
+    expect(legend.getComponent(Movement).velocity).toEqual({ x: 0, y: 0 });
+    expect(legend.getComponent(Combat).targetId).toBeNull();
+    expect(legend.getComponent(Progression)).toMatchObject({ xp: 250, level: 3 });
   });
 
   it('brings a Legend back even when its team filled the unit cap meanwhile', () => {
