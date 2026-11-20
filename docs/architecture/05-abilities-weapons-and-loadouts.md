@@ -1050,7 +1050,7 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
 - **Ultimate meter (`feat/vanguard-kit`, 2026-11-16; DEC-272, DEC-273).** `ProgressionSystem`
   stays the only writer of `charge`: it owns the helper `systems/UltimateCharge`, which buffers
   each change and pays it in the system's pass, after the XP. Where the code differs from §6, §13
-  and §16 (better-than-design items for sign-off: `INBOX.md`):
+  and §16 (better-than-design items the owner signed off, DEC-283 (3)):
   - **Content.** The table is one record, `content/progression/ultimateCharge.ts` (type
     `UltimateChargeDefinition`), not §6's `UltimateChargeRule` union: the points of each source,
     the death loss and the full meter in points; `charge` stays 0 to 1 (points over the full
@@ -1058,8 +1058,9 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
     (`systems/UltimateCharge.constants.ts`), so whole points worth a full meter make exactly 1
     (a plain sum of 12/100 and 5/100 steps can stop at 0.9999999999999999). A mob kill pays by the mob's weight class, as scoring's `minionKill` does; camp mobs
     pay too (DEC-273). Boss damage pays each boss's own rate per 1% of its max health, by mob
-    id (`bossDamagePerPercent`; the capture point boss, DEC-272); a boss kill pays its weight
-    class like any mob (HC-Q65). There is no `class-switch` (post-MVP). `ProgressionContent`
+    id (`bossDamagePerPercent`; the capture point boss, DEC-272); a boss kill pays its own number
+    to the killer, by mob id (`bossKill`; the capture point boss fills the meter, DEC-283 (1)), in
+    place of its weight class, and is announced with the cause `boss-kill`. There is no `class-switch` (post-MVP). `ProgressionContent`
     injects it.
   - **Sources.** `entity-died`: a killer on another team than the victim gains the Legend or mob
     kill; the victim loses the death loss whoever killed it, never below 0. `damage-applied` on a
@@ -1090,7 +1091,7 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   `content/abilities/furyDash.ts` on Space while it lasts (numbers `TUNE`, `balancing.md`). It
   ends at death (the fallen Legend is removed) or at a Duel round reset, where `DuelRoundSystem`
   ends each status through the match's `StatusEffectApplier`. Where the code differs from §3, §6, §8 and §15
-  (better-than-design items for sign-off: `INBOX.md` HC-B8):
+  (better-than-design items the owner signed off, DEC-283 (4)):
   - **`buff` effect.** `BuffEffect` applies its status to the caster only, credited to the
     caster. It has no `shape` yet (§3 lists one): every buff built so far is on self. Imbue's
     Support variety buffs allies (`balancing.md`), so the ally shape joins with it in the Magus PR

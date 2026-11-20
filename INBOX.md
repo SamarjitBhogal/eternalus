@@ -104,7 +104,7 @@ Reply inline (`Decision: …`).
     the destructible map objects that are entities of their own (`WorldObjectStore`), not for
     towers. A tower owns its fort's map object and has only a structure `Footprint`, so an ability
     area hits it by its collider circle. The question is HC-Q64.
-- [ ] **HC-B7 — Better than the design, for sign-off: four parts of the ultimate meter
+- [x] **HC-B7 — Better than the design, for sign-off: four parts of the ultimate meter
       (`feat/vanguard-kit`, 2026-11-16; DEC-272, DEC-273) — sign-off per item.** All four are
       built, under your 2026-11-09 rule "pick the best architectural outcome, build it now";
       architecture 05 §18 ("Ultimate meter") describes them. The design text of 05 §6, §13 and
@@ -134,7 +134,9 @@ Reply inline (`Decision: …`).
       `AllyDamageTally` keeps ally damage. Better: the invariant stays pure, and the ledger is
       not hashed (it repeats `charge`).
       Approve all, approve some, or say no; a "no" reworks the code.
-- [ ] **HC-B8 — Better than the design, for sign-off: four parts of Fury, and two notes
+  - Answered 2026-11-20 (DEC-283): "Approve all four". All four are built on `feat/vanguard-kit`;
+    05 §18 says them.
+- [x] **HC-B8 — Better than the design, for sign-off: four parts of Fury, and two notes
       (`feat/vanguard-kit`, 2026-11-16; DEC-270, DEC-271) — sign-off per item.** All six are
       built, under your 2026-11-09 rule "pick the best architectural outcome, build it now";
       architecture 05 §18 ("Fury") describes them. The design text of 05 §3, §6, §8 and §15 is not
@@ -175,7 +177,10 @@ Reply inline (`Decision: …`).
       `abilities/targeting/` folder needs "targeting" added to that row. A change to an AGENTS
       row needs your sign-off (DEC-263 (4)); the row is not changed yet.
       Approve all, approve some, or say no; a "no" reworks the code.
-- [ ] **HC-Q61 — Three Fury questions the documents do not answer (`feat/vanguard-kit`,
+  - Answered 2026-11-20 (DEC-283): "Approve all four, with the AGENTS row". (1), (2) and (4) are
+    built on `feat/vanguard-kit`; (6): the `abilities/` row of `packages/core/AGENTS.md` names
+    targeting strategies.
+- [x] **HC-Q61 — Three Fury questions the documents do not answer (`feat/vanguard-kit`,
       2026-11-16; DEC-270, DEC-271).** Each is built one way now, so nothing waits on the answer.
       (1) **How long does Fury's dash take?** Built: 0.3 s (`content/abilities/furyDash.ts`,
       `TUNE`), Blade Runner's time. Fury's row in `balancing.md` gives no time, and the game doc
@@ -188,7 +193,12 @@ Reply inline (`Decision: …`).
       (3) **Should the HUD show that Space dashes during Fury?** Built: no. The HUD has no slot
       for the dash (as for the default action); the controls screen lists Space as "Fury dash".
       Add a prompt while Fury lasts, or leave it?
-- [ ] **HC-Q62 — How does the client know a cast needs no pointer? (`feat/vanguard-kit`,
+  - Answered 2026-11-20 (DEC-283): (1) "Keep 0.3 s (built)" with a note, settled on the notes page
+    as "0.3 s wind-up, then the dash as built", built "Now, in PR 2a, before the freeze": the
+    Legend stands still 0.3 s while orange rings close in, then dashes 3 m in 0.3 s. (2) "All
+    damage (built)". (3) "Add a prompt while Fury lasts": the HUD shows the bound key and the
+    granted ability's name while the `granted` slot holds one.
+- [x] **HC-Q62 — How does the client know a cast needs no pointer? (`feat/vanguard-kit`,
       2026-11-16; critic rounds 1 and 2).** (1) Built (B1): the client decides by the slot. A
       press of Space (the `granted` slot) casts at once in both cast modes with the latest pointer
       point, which core ignores (`fury-dash` aims by the Legend's heading). Before the pointer has
@@ -208,6 +218,9 @@ Reply inline (`Decision: …`).
       reviewer reads that as covering the dash too. If yes, the dash waits for a click in
       aim-then-click, and `usesAim` (B3) only decides what quick cast does with no pointer point.
       Dash at once in both modes (built), or overlay first in aim-then-click?
+  - Answered 2026-11-20 (DEC-283): (1) "Publish usesAim per slot" (B3): each targeting strategy
+    states `usesAim`, published per slot in `AbilityDisplay`; the client casts at once when it is
+    false. (2) "Dash at once in both modes (built)".
 - [ ] **HC-Q54 — Derive each class's ability pool from the abilities' `classId`?
       (`feat/ability-framework`; changes DEC-198's shape, not built).** Today `abilityPool` on
       the class lists every ability, and each ability also names its `classId`: two sources, and
@@ -350,7 +363,7 @@ Reply inline (`Decision: …`).
       or B, `EntityStore.isInReach` and `utils/circlePolygon.doesDiscReachPolygon` (the same rule
       in two places today) can also become one function (the critic's second idea). A or B is a
       follow-up PR (this track takes no new work before the freeze).
-- [ ] **HC-Q65 — What does killing the capture point boss give the killer's ultimate meter?
+- [x] **HC-Q65 — What does killing the capture point boss give the killer's ultimate meter?
       (`feat/vanguard-kit`, 2026-11-19; merge critic on the framework merge, finding S1).** The
       merge brought the capture point boss (#99) to the meter. Built: damage to it pays 1 point
       for each 1% of its health (DEC-272 "Boss damage (1 for each 1%) comes with the bosses";
@@ -360,7 +373,11 @@ Reply inline (`Decision: …`).
       Options: (A) keep the 1 point (built); (B) a boss kill pays nothing, and the boss pays by
       damage only, as a structure does; (C) a boss kill pays its own number (say it). A, B or C?
       B or C is one content line and a test.
-- [ ] **HC-B12 — Better than the design, for sign-off: one "is a boss" marker
+  - Answered 2026-11-20 (DEC-283): "Keep 1 point (built)" with the note "killing a boss fills your
+    ultimate meter", settled on the notes page as "Yes: the last hit fills the killer's meter".
+    Built on `feat/vanguard-kit`: `UltimateChargeDefinition.bossKill` (the capture point boss
+    100, `TUNE`), cause `boss-kill`; a heavy lane minion still pays its weight class.
+- [x] **HC-B12 — Better than the design, for sign-off: one "is a boss" marker
       (`feat/vanguard-kit`, 2026-11-19; merge critic on the framework merge, idea BTD1; not
       built).** Four lists now name the bosses by mob id: `XP_SOURCES.teamKills` (team-wide XP,
       DEC-237), `BOSS_MINION_DAMAGE_TAKEN` (`content/mobs/minionModifiers.ts`),
@@ -370,6 +387,8 @@ Reply inline (`Decision: …`).
       or the planned `MiniBoss` and `GreaterBoss` classes (Phase 3 sprint 3.6), which all four
       read. It changes #99's content and the base branch, so it is a follow-up PR, not this one.
       Approve for a follow-up, or keep the lists?
+  - Answered 2026-11-20 (DEC-283): "Approve, as a follow-up PR". Not built; one boss record that
+    all four lists read, in a follow-up PR.
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays

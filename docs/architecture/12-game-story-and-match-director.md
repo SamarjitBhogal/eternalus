@@ -4,7 +4,7 @@ description: How a match unfolds over time - the MatchDirector state machine ove
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-16
+last-reviewed: 2026-11-20
 tags: [architecture, match, timeline, phases, scoring, story, lore]
 paths:
   [
@@ -500,8 +500,8 @@ structure points (DEC-212) and capture and hold points (GL-15, DEC-214, DEC-223)
 scorer), and `checkpoint-reached` carries `presentLegendIds`. The other §5 counters join with the
 work that fills them.
 
-Implementation status, 2026-11-16 (branch `feat/vanguard-kit`, DEC-272; `INBOX.md` HC-B7 (3), for
-sign-off): `LegendDeathRule` also announces each assist it awards as `assist-earned { legendId,
+Implementation status, 2026-11-16 (branch `feat/vanguard-kit`, DEC-272; `INBOX.md` HC-B7 (3),
+signed off by DEC-283 (3)): `LegendDeathRule` also announces each assist it awards as `assist-earned { legendId,
 victimId }`, which fills the helper's ultimate meter
 ([05](05-abilities-weapons-and-loadouts.md) §18), so scoring's assist window is the only one. The
 rule therefore gets the event bus as well as its points by constructor
