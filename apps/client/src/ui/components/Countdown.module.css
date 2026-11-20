@@ -1,19 +1,10 @@
 /* 62:135 / 58:281 "Countdown (from 60)": Cinzel Bold 64, centred in the box (901, 104) 118 × 83;
    four 15 % glows at (±6, 0) and (0, ±6), Figma radius 8, as the sel-glow-countdown def at σ 4
    (as a text-shadow they left an orange ring around the numerals that Figma does not draw).
-   Chrome draws the numerals 1 px above Figma's in the same 83 px box: at the Figma 104 px the glyph
-   rows (R−G > 150) were 118–163 on 62:125's "42" (Figma 119–164) and 118–166 on 58:271's "31"
-   (Figma 119–167); 105 px gives zero shift on 62:125, 62:70 and 58:271 (the visual audit). */
+   The look of every countdown numeral: the pre-match overlay draws it at its own size (.match,
+   DEC-278, DEC-282). */
 .countdown {
-  position: absolute;
-  left: 901px;
-  top: 105px;
-  width: 118px;
-  height: 83px;
   margin: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   color: var(--selection-countdown);
   font-family: var(--font-game);
   font-weight: 700;
@@ -24,4 +15,71 @@
   white-space: nowrap;
   filter: url(#sel-glow-countdown);
   pointer-events: none;
+}
+
+/* On the selection artboard. Chrome draws the numerals 1 px above Figma's in the same 83 px box:
+   at the Figma 104 px the glyph rows (R−G > 150) were 118–163 on 62:125's "42" (Figma 119–164) and
+   118–166 on 58:271's "31" (Figma 119–167); 105 px gives zero shift on 62:125, 62:70 and 58:271
+   (the visual audit). */
+.artboard {
+  position: absolute;
+  left: 901px;
+  top: 105px;
+  width: 118px;
+  height: 83px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* DEC-278: the pre-match overlay's numeral, in HUD units, centred by its veil. */
+.match {
+  font-size: max(calc(240 * var(--hud-u)), var(--text-min));
+  line-height: 1;
+}
+
+/* UE-01's screen-reader line (DEC-100): read, never seen. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* UE-01 countdown urgency (ui-enhancements-plan §3.2, DEC-100, DEC-282), only while the switch
+   holds its id: one tick per second change from 10 s (the numeral is keyed on its value, so 1 Hz);
+   from 5 s a larger pulse and the urgent glow (the countdown glow at 30 %). The Figma red stays. */
+:root[data-ui-enhancements~='countdown-urgency'] .countdown[data-urgent] {
+  animation: tick var(--motion-tick) ease-out;
+}
+
+:root[data-ui-enhancements~='countdown-urgency'] .countdown[data-urgent='final'] {
+  animation: pulse var(--motion-tick) ease-out;
+  filter: url(#sel-glow-countdown-urgent);
+}
+
+@keyframes tick {
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes pulse {
+  50% {
+    transform: scale(1.12);
+  }
+}
+
+/* Reduced motion: no tick and no pulse; the urgent glow and the lines stay. */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-ui-enhancements~='countdown-urgency'] .countdown[data-urgent] {
+    animation: none;
+  }
+}
+
+/* UE-03: the in-game reduce-motion setting, the same as the OS query. */
+:root[data-reduce-motion][data-ui-enhancements~='countdown-urgency'] .countdown[data-urgent] {
+  animation: none;
 }

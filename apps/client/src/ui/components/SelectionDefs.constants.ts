@@ -25,8 +25,10 @@ export const SELECTION_DEF_IDS = {
   glowInner: 'sel-glow-inner',
   /** Select Class and LOCK IN labels (62:228, 58:276: the same six sky shadows). */
   glowLabel: 'sel-glow-label',
-  /** The character-select countdown (62:135, 58:281). */
+  /** The character-select countdown (62:135, 58:281) and the pre-match overlay's (DEC-278). */
   glowCountdown: 'sel-glow-countdown',
+  /** Either countdown from 5 s down while UE-01 is on: the same glow at 30 % (DEC-100). */
+  glowCountdownUrgent: 'sel-glow-countdown-urgent',
   /** GLASS light rim, −45° at intensity 0.8 (the CSS glass approximation, CD-15). */
   glassRim: 'sel-glass-rim',
 } as const;
@@ -213,6 +215,20 @@ export const TEXT_GLOW_FILTERS: readonly TextGlowDef[] = [
       textShadow(-6, 0, 3.4, 0.15),
       textShadow(0, 6, 3.4, 0.15),
       textShadow(0, -6, 3.4, 0.15),
+    ],
+    flood: 'countdown',
+    users: [{ node: '62:135 / 58:281 countdown', width: 118, height: 83, bleed: 0 }],
+  },
+  {
+    id: SELECTION_DEF_IDS.glowCountdownUrgent,
+    region: { x: -0.5, y: -0.5, width: 2, height: 2 },
+    // UE-01 (ui-enhancements-plan §3.2): the countdown glow above at 30 % instead of 15 % (the
+    // --selection-countdown-urgent-glow alpha), from 5 s down.
+    shadows: [
+      textShadow(6, 0, 3.4, 0.3),
+      textShadow(-6, 0, 3.4, 0.3),
+      textShadow(0, 6, 3.4, 0.3),
+      textShadow(0, -6, 3.4, 0.3),
     ],
     flood: 'countdown',
     users: [{ node: '62:135 / 58:281 countdown', width: 118, height: 83, bleed: 0 }],

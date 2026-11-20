@@ -1,6 +1,6 @@
 /* DEC-278: the pre-match countdown over the whole screen, a tinted veil with the number in the
-   middle, in the character select's countdown look (Countdown.module.css: the countdown red,
-   Cinzel Bold, the sel-glow-countdown glow), sized for the match screen in HUD units. */
+   middle. The numeral is the character select's Countdown at its match size
+   (components/Countdown.module.css: the look and UE-01's urgency, one source, DEC-282). */
 .veil {
   position: absolute;
   inset: 0;
@@ -8,35 +8,4 @@
   place-items: center;
   background: var(--selection-ink-veil);
   pointer-events: none;
-}
-
-.number {
-  margin: 0;
-  color: var(--selection-countdown);
-  font-family: var(--font-game);
-  font-weight: 700;
-  font-size: max(calc(240 * var(--hud-u)), var(--text-min));
-  line-height: 1;
-  white-space: nowrap;
-  filter: url(#sel-glow-countdown);
-  animation: strike var(--motion-medium) ease-out both;
-}
-
-/* Each number (keyed, so it restarts every second) strikes in large and lands. */
-@keyframes strike {
-  from {
-    opacity: 0;
-    transform: scale(1.8);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .number {
-    animation: none;
-  }
 }

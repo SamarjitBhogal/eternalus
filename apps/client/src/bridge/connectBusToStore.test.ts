@@ -82,6 +82,7 @@ describe('connectBusToStore', () => {
       lockInChromeAssetId: 'lock-in-chrome',
       effectsRenderer: 'css',
       contrastMode: 'minimums',
+      uiEnhancements: [],
       hud: TEST_HUD_CATALOGUE,
       teamNames: { light: 'Lux', dark: 'Umbra' },
       botRoster: {

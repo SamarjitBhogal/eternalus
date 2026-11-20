@@ -54,6 +54,8 @@
   --motion-fast: 120ms;
   --motion-medium: 240ms;
   --motion-ambient: 24s;
+  /* UE-01 (ui-enhancements-plan §3.2): one countdown tick or pulse, once per second change. */
+  --motion-tick: 300ms;
 
   /* Game screens (Figma z5Udjg41B9Vtcb9IJHHyTs 62:125, 62:70, 58:271, 62:231); the frames bind no
      Figma variables, so each value is the frame's literal and the name says its role. */
@@ -96,6 +98,9 @@
   --selection-tile-idle: rgb(255 255 255 / 40%);
   --selection-countdown: #ff1a00;
   --selection-countdown-glow: rgb(255 26 0 / 15%);
+  /* UE-01: the countdown glow from 5 s down, its flood at 30 % instead of 15 % (the
+     sel-glow-countdown-urgent def's opacity mirrors it). */
+  --selection-countdown-urgent-glow: rgb(255 26 0 / 30%);
   /* DEC-59: the lock cursor over a locked class card (LockGlyph's padlock, parchment on ink). */
   --selection-cursor-locked:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='30' viewBox='-1 -1 18 22'%3E%3Cpath d='M 4 9 V 6 A 4 4 0 0 1 12 6 V 9' fill='none' stroke='%23131313' stroke-width='4'/%3E%3Cpath d='M 4 9 V 6 A 4 4 0 0 1 12 6 V 9' fill='none' stroke='%23f9e0c7' stroke-width='2'/%3E%3Crect x='1' y='9' width='14' height='11' rx='2' fill='%23f9e0c7' stroke='%23131313'/%3E%3C/svg%3E")
@@ -258,7 +263,18 @@
   :root {
     --motion-fast: 0ms;
     --motion-medium: 0ms;
+    --motion-tick: 0ms;
   }
+}
+
+/* UE-03: the in-game "Reduce motion" setting (SettingsController marks <html> with
+   data-reduce-motion) applies every reduced-motion rule as the OS query does: each
+   prefers-reduced-motion rule, here and in every ui module stylesheet, has a
+   :root[data-reduce-motion] twin with the same declarations (ui/motionTokens.test.ts). */
+:root[data-reduce-motion] {
+  --motion-fast: 0ms;
+  --motion-medium: 0ms;
+  --motion-tick: 0ms;
 }
 
 /* DEC-55: tokens of the pairs below 13 §7's minimums (CD-21), and only those. The Figma values in
