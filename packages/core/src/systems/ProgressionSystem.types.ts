@@ -38,5 +38,21 @@ type TeamAward = {
   readonly maxLevels?: number;
 };
 
-/** One award waiting for this system's pass. */
-export type Award = KillAward | TeamAward;
+/**
+ * XP a Legend was owed while it waited to respawn, paid to it as it returns (DEC-186 "pay on
+ * respawn"); `maxLevels` is the owed team-kill's cap, applied then.
+ */
+type RespawnAward = {
+  readonly kind: 'respawn';
+  readonly recipientId: EntityId;
+  readonly victimId: EntityId;
+  readonly victimTeam: Team;
+  readonly xp: number;
+  readonly maxLevels?: number;
+};
+
+/** One award waiting for this system's pass (a respawn award is paid at once instead). */
+export type PassAward = KillAward | TeamAward;
+
+/** One award this system gives. */
+export type Award = KillAward | TeamAward | RespawnAward;

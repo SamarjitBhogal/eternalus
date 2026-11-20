@@ -97,6 +97,7 @@ export class GameState {
 
   private readonly xpAwards: GameEventMap['xp-gained'][] = [];
   private readonly phaseChanges: GameEventMap['phase-changed'][] = [];
+  private readonly respawned: EntityId[] = [];
   private readonly killers = new Map<EntityId, DamageSource>();
 
   /**
@@ -139,6 +140,9 @@ export class GameState {
     this.events.on('phase-changed', (change) => {
       this.phaseChanges.push(change);
     });
+    this.events.on('legend-respawned', ({ entityId }) => {
+      this.respawned.push(entityId);
+    });
     new AllyDamageTally(this.events, this.entities, this.world, this.allyDamage);
   }
 
@@ -165,6 +169,7 @@ export class GameState {
     this.killers.clear();
     this.xpAwards.length = 0;
     this.phaseChanges.length = 0;
+    this.respawned.length = 0;
   }
 
   /**
@@ -188,6 +193,11 @@ export class GameState {
   /** Every `phase-changed` event of the current tick, in order (whatever the ring buffer keeps). */
   public phaseChangesThisTick(): readonly GameEventMap['phase-changed'][] {
     return [...this.phaseChanges];
+  }
+
+  /** The Legends that came back this tick (`legend-respawned`), in order. */
+  public respawnedThisTick(): readonly EntityId[] {
+    return [...this.respawned];
   }
 
   /** Records a command applied this tick, for diagnostic reports. Called by `Simulation.step()`. */
