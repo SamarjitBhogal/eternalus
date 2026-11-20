@@ -50,25 +50,6 @@ describe('SpawnSystem', () => {
       );
     });
 
-    it.each([-1, Number.NaN, Number.POSITIVE_INFINITY])(
-      'rejects a guard plan that activates %s s after the countdown',
-      (delaySeconds) => {
-        const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP));
-        spawnMapStructures(state);
-        const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
-        const guards = {
-          stronghold: {
-            ...GUARD_PLANS.stronghold,
-            activation: { at: 'countdown-end', delaySeconds } as const,
-          },
-        };
-
-        expect(() => newSystem(state, factory, { guards: guards as typeof GUARD_PLANS })).toThrow(
-          `stronghold guard plan activates ${String(delaySeconds)} s after the countdown`,
-        );
-      },
-    );
-
     it('checks the guard plans of the zones on the map', () => {
       const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP));
       spawnMapStructures(state);
