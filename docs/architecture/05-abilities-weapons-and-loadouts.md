@@ -432,8 +432,9 @@ export type UltimateChargeDefinition = {
 ```
 
 A new source of charge is one field here and one listener in `UltimateCharge`. Mid-match class
-switching (**post-MVP**, "needs work" in the game doc; the game doc's 50–100% cooldown on a
-switch) adds its own field when it arrives; the MVP class is fixed for the match. Ultimate Plus (**MVP-if-time**) is a variety with `unlockLevel`, not a second
+switching (**post-MVP**; its ultimate setback on a switch is in
+[06-abilities-and-progression.md](../reference/game-design/06-abilities-and-progression.md)
+"Ultimates", marked "needs work") adds its own field when it arrives; the MVP class is fixed for the match. Ultimate Plus (**MVP-if-time**) is a variety with `unlockLevel`, not a second
 ability.
 
 ## 7. Cast lifecycle: `applyCommand` and `AbilitySystem`
@@ -1080,8 +1081,10 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     caster's `Abilities` component, so it is hashed with the caster (`StateHasher` adds `casts`
     only while one waits, so other matches hash as before) and leaves the match with it.
     `AbilitySystem` fires the steps due at the cast, keeps the cast while steps are left, and each
-    tick, after that tick's new casts, rebuilds the `CastInstance` of each kept cast (casters in id
-    order) and fires the steps now due through `CastInstance.run(placement, from)`.
+    tick, after that tick's new casts, looks at each kept cast (casters in id order): one with no
+    step due stays as it is, and for one with a step due it builds a `CastInstance` and fires the
+    steps now due through `CastInstance.run(placement, from)`. `CastInstance.isDue` is the one due
+    rule both ask.
   - **Where a later step runs.** On the caster where it is at the step (§3's `origin` "at the
     step"), while the cast's direction stays the one fixed at the cast (from where the caster stood
     to the aim). The context's `tick` stays the cast's tick.
@@ -1178,12 +1181,14 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     wind-up, and a push still moves it, so the dash starts from where it then stands. Fury ending
     during the wind-up does not cancel the dash (the delayed steps bullet above), and the 1 s
     cooldown counts from the press. The client draws orange rings that close in on the Legend
-    over the wind-up (`game/views/WindupRingsView`, [08](08-game-engine.md) §8) from a new
+    over the wind-up (`game/views/WindupRingsView`, a status cue, [08](08-game-engine.md) §8) from a new
     snapshot group, `EntitySnapshot.statuses` (each active status's `id`, `ticksActive` and
     `ticksLeft`; `null` without `StatusEffects`; [03](03-game-model.md) §5). The rings' status id
-    is a client constant; `loadDisplayContent()` publishes every status's id and display name
-    (`DisplayContent.statuses`), and `buildDisplayCatalogue` refuses at boot a ring status that
-    core does not have (ADR 0023: a missed rename fails the checks).
+    is a client constant, the key of the rings in the client's `StatusCueRegistry`;
+    `loadDisplayContent()` publishes every status's id and display name
+    (`DisplayContent.statuses`), and `buildDisplayCatalogue` refuses at boot any status the
+    registry draws that core does not have (`main.tsx` passes the registry's ids; ADR 0023: a
+    missed rename fails the checks).
   - **`heading` targeting.** `fury-dash` targets `heading`: its aim is one metre the way the
     caster moves, or the way it faces when it stands still (DEC-270). Each targeting kind is a
     strategy in `abilities/targeting/` (`SelfTargeting`, `DirectionalTargeting`,

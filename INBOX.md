@@ -402,8 +402,9 @@ Reply inline (`Decision: …`).
       yet); (5) the 1 s between dashes counts from the press, not from the end of the dash. A death
       or a Duel round reset drops the waiting dash. Keep all five, or name the ones to change?
 - [ ] **HC-B14 — Better than the design, built under your standing rule (DEC-223), sign-off
-      asked: five parts of the Fury wind-up build (`feat/vanguard-kit`, 2026-11-20; critic round 4
-      on PR 2a, S4 and S1).** Nothing waits on the answer; each part is built and tested.
+      asked: six parts of the Fury wind-up build (`feat/vanguard-kit`, 2026-11-20; critic round 4
+      on PR 2a, S4 and S1; its re-check, R1 and R2).** Nothing waits on the answer; each part is
+      built and tested.
       (a) **The wind-up is a status plus a delayed step, not `castTicks`.** 05 §2 plans `castTicks`
       ("wind-up before the first step"). Fury's dash instead puts a `fury-windup` status
       (`cannot-move`) on the Legend with a `buff` step and delays the `dash` step by the same
@@ -420,12 +421,18 @@ Reply inline (`Decision: …`).
       `ticksActive` and `ticksLeft` (`null` for an entity without `StatusEffects`, DEC-17), because
       the closing rings need the time. 03 §5 now shows it.
       (e) **`DisplayContent.statuses`** (each status's id and display name) is published by
-      `loadDisplayContent()`, and the client refuses at boot a ring status that core does not have
-      (ADR 0023: a missed rename fails the checks). A public API addition; HC-Q51's texts can use
-      the names.
+      `loadDisplayContent()`, and the client refuses at boot a status it draws that core does not
+      have (ADR 0023: a missed rename fails the checks). A public API addition; HC-Q51's texts can
+      use the names.
+      (f) **A status-cue registry in the client.** 08 §8 had `EntityLayer` draw `WindupRingsView`
+      itself. The build adds `StatusCueRegistry` (status id → `StatusCueView`, filled in
+      `game/views/defaultStatusCueRegistry.ts`): `EntityLayer` draws, for each status an entity
+      has, the cue registered for it, and `main.tsx` passes the registry's `statusIds` to the boot
+      check of (e), so `game/content/` imports no view (02 §3). The next cue is one view and one
+      line. 02 §9 and 08 §8 now name it; they revert with the code if you reject (f).
       Also noted, acceptable: only an ability's top-level steps may wait (05 §3 says every spec
       may); no content needs nested delays, and the `Delayed<Step>` type refuses them.
-      Keep all five, or name the ones to change?
+      Keep all six, or name the ones to change?
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
