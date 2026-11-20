@@ -97,10 +97,10 @@ export const GUARD_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
     postGap: CAPTURE_POINT_COURT.postGap,
     leashTolerance: TOLERANCE,
     // TUNE: reference 04 "Mini-bosses at the quarter mark": the default timeline's quarter-mark
-    // entry (0.25 × plannedMatchSeconds 1800, from match start: 450 s) less the 10 s countdown,
-    // since this delay counts from the countdown's end. guardPlans.test.ts derives it from the
-    // config; content may not import config/, so the number is written here.
-    activation: { at: 'countdown-end', delaySeconds: 440 },
+    // entry (0.25 × plannedMatchSeconds 1800 = 450 s) counted from the countdown's end, as this
+    // delay is (DEC-282). guardPlans.test.ts derives it from the config; content may not import
+    // config/, so the number is written here.
+    activation: { at: 'countdown-end', delaySeconds: 450 },
     // reference 04: one mini-boss per match; its support mobs do not come back either until
     // respawning guards is signed off (INBOX.md)
     respawn: { kind: 'never' },

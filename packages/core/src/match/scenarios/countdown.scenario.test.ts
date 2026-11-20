@@ -124,10 +124,11 @@ describe('the countdown (scenario)', () => {
 
   it("lists the unfired timeline marks and the countdown's end tick in the snapshot, before and after the countdown ends (DEC-278)", () => {
     const sim = newMatch();
+    // The scenario's 2 s countdown is 60 ticks; fraction marks count from its end (DEC-282).
     const later = [
-      { entryId: 'quarter-mark', tick: 13_500 },
-      { entryId: 'mid-game', tick: 27_000 },
-      { entryId: 'end-game', tick: 40_500 },
+      { entryId: 'quarter-mark', tick: 13_560 },
+      { entryId: 'mid-game', tick: 27_060 },
+      { entryId: 'end-game', tick: 40_560 },
     ];
 
     expect(sim.snapshot().match).toEqual({

@@ -104,6 +104,7 @@ describe('losing the last win objective (scenario)', () => {
       playerTeam: 'light',
       hadHuman: false,
       durationTicks: 2,
+      matchTicks: 2, // no countdown in this config
       seed: 7,
     });
     expect(logger.records).toEqual([]);

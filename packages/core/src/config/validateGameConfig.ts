@@ -215,9 +215,13 @@ const RULES: readonly Rule[] = [
       // Safe: both fields passed their own rules above.
       const tickRate = valueAt(config, 'tickRate') as number;
       const planned = valueAt(config, 'match.plannedMatchSeconds') as number;
+      const countdownEnd = countdownTicks(
+        valueAt(config, 'match.countdownSeconds') as number,
+        tickRate,
+      );
       let previous = 0;
       return timelineOf(config).every(({ at }) => {
-        const tick = timelineMarkTick(at, tickRate, planned);
+        const tick = timelineMarkTick(at, tickRate, planned, countdownEnd);
         const isInOrder = tick >= previous;
         previous = tick;
         return isInOrder;
@@ -252,10 +256,11 @@ const RULES: readonly Rule[] = [
       const tickRate = valueAt(config, 'tickRate') as number;
       const planned = valueAt(config, 'match.plannedMatchSeconds') as number;
       const countdownSeconds = valueAt(config, 'match.countdownSeconds') as number;
+      const countdownEnd = countdownTicks(countdownSeconds, tickRate);
       const [first] = timelineOf(config);
       return (
         first !== undefined &&
-        timelineMarkTick(first.at, tickRate, planned) === countdownTicks(countdownSeconds, tickRate)
+        timelineMarkTick(first.at, tickRate, planned, countdownEnd) === countdownEnd
       );
     },
   },

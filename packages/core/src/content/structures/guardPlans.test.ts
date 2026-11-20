@@ -45,11 +45,16 @@ describe('GUARD_PLANS', () => {
     const { tickRate, match } = createDefaultGameConfig();
     const quarter = match.timeline.find(({ id }) => id === 'quarter-mark');
     const activation = GUARD_PLANS['capture-point']?.activation;
-    // The timeline counts from match start (tick 0); the guard plan from the countdown's end.
+    // Timeline fractions and the guard plan both count from the countdown's end (DEC-282).
     const quarterTick =
       quarter === undefined
         ? -1
-        : timelineMarkTick(quarter.at, tickRate, match.plannedMatchSeconds);
+        : timelineMarkTick(
+            quarter.at,
+            tickRate,
+            match.plannedMatchSeconds,
+            countdownTicks(match.countdownSeconds, tickRate),
+          );
     const delayTicks =
       activation?.at === 'countdown-end' ? Math.round(activation.delaySeconds * tickRate) : 0;
 

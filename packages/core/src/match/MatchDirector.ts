@@ -1,3 +1,4 @@
+import { countdownTicks } from '../config/countdownTicks';
 import type { TimelineAction, TimelineActionKind } from '../config/MatchTimelineEntry.types';
 import type { MatchPhase } from '../config/matchPhases';
 import { makeLogRecord } from '../diagnostics/makeLogRecord';
@@ -72,6 +73,8 @@ export class MatchDirector {
    *   entered. It is not `ReplayOutcome.finalHash` (the hash after a replay's last tick).
    * - `durationTicks` is `state.tick + 1`: the ticks the match ran from tick 0, the countdown and
    *   the ending tick included, so it equals `Simulation.tick` right after the step that ended it.
+   * - `matchTicks` is `durationTicks` less the countdown's ticks, never below 0: the match time,
+   *   which does not include the countdown (DEC-278, DEC-282).
    * - `configHash` is FNV-1a over the canonical config (keys sorted at every depth).
    * - `legends` and `teams` are copies of `state.match.scoring`, this tick's fold included.
    */
@@ -79,12 +82,17 @@ export class MatchDirector {
     const { state } = context;
     const { match } = state;
     const { legends, teams } = match.scoring;
+    const countdownEndTick = countdownTicks(
+      state.config.match.countdownSeconds,
+      state.config.tickRate,
+    );
     const result: MatchResult = {
       winner: verdict.winner,
       condition: verdict.condition,
       playerTeam: match.playerTeam,
       hadHuman: match.humanLegendId !== null,
       durationTicks: state.tick + 1,
+      matchTicks: Math.max(0, state.tick + 1 - countdownEndTick),
       seed: state.seed,
       configHash: fnv1a(canonicalJson(state.config)),
       legends: legends.map((row) => ({ ...row })),

@@ -97,7 +97,7 @@ export class MatchBridge {
     const { result } = this;
     this.deps.bus.emit('match-ended', {
       result,
-      durationSeconds: MatchBridge.matchSeconds(result.durationTicks, snapshot, this.deps.tickRate),
+      durationSeconds: result.matchTicks / this.deps.tickRate,
     });
     return true;
   }

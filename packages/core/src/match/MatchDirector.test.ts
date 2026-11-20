@@ -290,6 +290,7 @@ describe('MatchDirector', () => {
         playerTeam: 'light',
         hadHuman: false,
         durationTicks: 13,
+        matchTicks: 0,
         seed: 1,
         configHash: expect.any(Number) as number,
         legends: [],
@@ -302,6 +303,19 @@ describe('MatchDirector', () => {
       // Taken before the result is stored and the terminal phase entered: the hash moved since.
       expect(state.match.result?.finalHash).not.toBe(new StateHasher().hash(state));
       expect(state.match.result?.durationTicks).toBe(state.tick);
+    });
+
+    it('counts the match time from the countdown end; 0 when it ends during the countdown (DEC-278, DEC-282)', () => {
+      const config = createDefaultGameConfig({ match: { countdownSeconds: 0.1 } }); // 3 ticks
+      const { state, stepTo } = setUp(FAKE_TIMELINE, true, {
+        conditions: [new ScriptedCondition(LIGHT_WINS)],
+        config,
+      });
+
+      stepTo(12);
+
+      expect(state.match.result?.durationTicks).toBe(13);
+      expect(state.match.result?.matchTicks).toBe(10);
     });
 
     it('folds the scoring after the phase update and before it ends the match, once per tick', () => {

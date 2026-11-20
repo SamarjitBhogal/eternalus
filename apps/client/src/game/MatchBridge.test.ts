@@ -422,7 +422,7 @@ describe('MatchBridge', () => {
 
   it("publishes match-ended once, after the ending tick's other events, with its length", () => {
     const { bridge, order, endings, simulation } = setUp();
-    const result = matchResultFixture({ durationTicks: 3600 });
+    const result = matchResultFixture({ durationTicks: 3600, matchTicks: 3600 });
     expect(bridge.afterTick(snapshotAt(5), null)).toBe(false);
 
     simulation.emit('match-ended', { result });
@@ -500,11 +500,12 @@ describe('MatchBridge: the countdown (DEC-278)', () => {
 
   it('publishes the match length without the countdown', () => {
     const { bridge, endings, simulation } = setUp();
-    const result = matchResultFixture({ durationTicks: 3600 });
+    const result = matchResultFixture({ durationTicks: 3600, matchTicks: 3000 });
     simulation.emit('match-ended', { result });
     bridge.afterTick(countdownSnapshot(3600, 'early-game'), null);
 
-    expect(endings).toEqual([{ result, durationSeconds: 110 }]);
+    // The length is the result's match time (DEC-278, DEC-282), not derived from the snapshot.
+    expect(endings).toEqual([{ result, durationSeconds: 100 }]);
   });
 });
 
