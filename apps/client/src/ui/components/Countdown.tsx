@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import { type ReactElement, useEffect, useRef } from 'react';
 
 import { useAppSelector } from '../../bridge/hooks';
 import { contentSlice } from '../../bridge/slices/contentSlice';
@@ -23,8 +23,10 @@ const urgencyOf = (seconds: number): 'tick' | 'final' | undefined => {
  * With `hasUrgency` and the `countdown-urgency` enhancement on (UE-01, DEC-100, DEC-282), the
  * numeral is keyed on its value and marked `data-urgent` (`tick` from 10 s, `final` from 5 s),
  * which its CSS turns into one tick, or a larger pulse and the urgent glow, per second change; a
- * polite live region beside it says `STRINGS.countdownAlert` at 10 and 5 s. Otherwise it is the
- * Figma's static numeral, with no mark and no live region.
+ * polite live region beside it says `STRINGS.countdownAlert` at 10 and 5 s. The region renders
+ * empty and its line is written after the commit, so a countdown that mounts at 10 s (the
+ * match-start overlay) still says it as a change (the owner's answer of 2026-11-20). Otherwise it
+ * is the Figma's static numeral, with no mark and no live region.
  */
 export function Countdown({
   remainingSeconds,
@@ -58,16 +60,19 @@ export function Countdown({
       {remainingSeconds === 0 && zeroText !== undefined ? zeroText : remainingSeconds}
     </p>
   );
-  if (!isUrgencyOn) return numeral;
+  const region = useRef<HTMLSpanElement>(null);
   const isLineSaid =
     remainingSeconds === COUNTDOWN_URGENCY.tickFrom ||
     remainingSeconds === COUNTDOWN_URGENCY.finalFrom;
+  const line = isLineSaid ? STRINGS.countdownAlert(remainingSeconds) : '';
+  useEffect(() => {
+    if (region.current !== null) region.current.textContent = line;
+  }, [line, isUrgencyOn]);
+  if (!isUrgencyOn) return numeral;
   return (
     <>
       {numeral}
-      <span className={styles.srOnly} aria-live="polite">
-        {isLineSaid ? STRINGS.countdownAlert(remainingSeconds) : ''}
-      </span>
+      <span ref={region} className={styles.srOnly} aria-live="polite" />
     </>
   );
 }

@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import type { UiEnhancementId } from '../../bridge/catalogue.types';
 import { createAppStore } from '../../bridge/store';
+import { STRINGS } from '../strings';
 import { TEST_CONTENT } from '../testStore';
 import { Countdown } from './Countdown';
 
@@ -59,5 +60,64 @@ describe('Countdown tick (UE-01)', () => {
 
     expect(after?.textContent).toBe('6');
     expect(after).toBe(before);
+  });
+});
+
+/** Mounts the countdown with the switch on at each of `seconds` in turn, on one root. */
+function mountAcross(seconds: readonly number[]): {
+  readonly lines: readonly (string | null)[];
+  readonly regionChanges: readonly string[];
+} {
+  const store = createAppStore({
+    content: { ...TEST_CONTENT, uiEnhancements: ['countdown-urgency'] },
+  });
+  const container = document.createElement('div');
+  document.body.append(container);
+  root = createRoot(container);
+  const observer = new MutationObserver(() => undefined);
+  observer.observe(container, { childList: true, subtree: true, characterData: true });
+  const lines = seconds.map((value) => {
+    act(() => {
+      root?.render(
+        <Provider store={store}>
+          <Countdown remainingSeconds={value} label="Time left" hasUrgency />
+        </Provider>,
+      );
+    });
+    return container.querySelector('[aria-live="polite"]')?.textContent ?? null;
+  });
+  // A change a screen reader hears: text that reaches the region once the region is in the page.
+  const regionChanges = observer
+    .takeRecords()
+    .filter((record) => record.target instanceof Element && record.target.matches('[aria-live]'))
+    .map((record) => record.target.textContent ?? '');
+  observer.disconnect();
+  return { lines, regionChanges };
+}
+
+// The owner's answer of 2026-11-20 ("Countdown PR Calls", overlay-10s-line): the match-start
+// overlay mounts at 10 s, and a live region that mounts already holding its line may never be
+// read. The region is in the page empty first, so "10 seconds left" arrives as a change.
+describe('Countdown screen-reader line (UE-01)', () => {
+  it('says the line as a change when the countdown mounts at 10 s', () => {
+    const { lines, regionChanges } = mountAcross([10]);
+
+    expect(lines).toEqual([STRINGS.countdownAlert(10)]);
+    expect(regionChanges).toEqual([STRINGS.countdownAlert(10)]);
+  });
+
+  it('says the line only at 10 and 5 s, in one region kept across the seconds', () => {
+    const { lines } = mountAcross([42, 11, 10, 9, 6, 5, 4, 0]);
+
+    expect(lines).toEqual([
+      '',
+      '',
+      STRINGS.countdownAlert(10),
+      '',
+      '',
+      STRINGS.countdownAlert(5),
+      '',
+      '',
+    ]);
   });
 });

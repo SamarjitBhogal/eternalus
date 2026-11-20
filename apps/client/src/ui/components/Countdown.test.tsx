@@ -124,14 +124,16 @@ describe('Countdown urgency (UE-01, DEC-100, DEC-282)', () => {
     expect(urgent(5)).toMatch(/^<p [^>]*role="timer"[^>]*>5<\/p>/);
   });
 
-  it('says the line only at 10 and 5 s, in a polite live region kept while the switch is on', () => {
+  // The line is written after the commit, so a first render (this one) holds an empty region at
+  // every second; Countdown.tick.test.tsx asserts the lines at 10 and 5 s on a mounted tree.
+  it('renders a polite live region, empty at first, at every second while the switch is on', () => {
     expect([42, 11, 10, 9, 6, 5, 4, 0].map((seconds) => alertOf(urgent(seconds)))).toEqual([
       '',
       '',
-      STRINGS.countdownAlert(10),
       '',
       '',
-      STRINGS.countdownAlert(5),
+      '',
+      '',
       '',
       '',
     ]);
