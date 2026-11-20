@@ -752,7 +752,9 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   every reduced-motion rule has its `:root[data-reduce-motion]` twin (`ui/motionTokens.test.ts`
   checks); View Details' own reading is gone. `SessionController` writes `data-ui-enhancements`
   (`?dev=1&ui=` overrides it). UE-01 runs on the character select's and the match-start
-  countdowns; the win/lose screen's countdown stays static.
+  countdowns; the win/lose screen's countdown stays static. Their screen-reader line goes into the
+  app's one polite live region, `ui/components/LiveRegion.tsx`, which `App` mounts outside the
+  screen switch, so it is in the page before any countdown (DEC-282 (7)).
 - **Character select, known gaps (2026-10-30).** Content has no description of a class's default
   ability, proficiency or specialty, or of a Legend's abilities, so View Details' rows show a
   label and a name only, and several Legends have no lore paragraph yet (register CD-41). View

@@ -20,8 +20,6 @@ const urgent = (seconds: number): string =>
   );
 const urgencyOf = (html: string): string | null =>
   /<p [^>]*data-urgent="(\w+)"/.exec(html)?.[1] ?? null;
-const alertOf = (html: string): string | null =>
-  /<span [^>]*aria-live="polite"[^>]*>([^<]*)<\/span>/.exec(html)?.[1] ?? null;
 /** The declarations of the rule whose selector is exactly `selector` (outside any at-rule). */
 const ruleOf = (selector: string): string =>
   new RegExp(`\\n${selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\{([^}]*)\\}`).exec(
@@ -124,21 +122,14 @@ describe('Countdown urgency (UE-01, DEC-100, DEC-282)', () => {
     expect(urgent(5)).toMatch(/^<p [^>]*role="timer"[^>]*>5<\/p>/);
   });
 
-  // The line is written after the commit, so a first render (this one) holds an empty region at
-  // every second; Countdown.tick.test.tsx asserts the lines at 10 and 5 s on a mounted tree.
-  it('renders a polite live region, empty at first, at every second while the switch is on', () => {
-    expect([42, 11, 10, 9, 6, 5, 4, 0].map((seconds) => alertOf(urgent(seconds)))).toEqual([
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-    ]);
+  // DEC-282 (7): the line goes into the app's one region (`LiveRegion`), never a region of the
+  // countdown's own; Countdown.tick.test.tsx and MatchCountdown.line.test.tsx assert the lines at
+  // 10 and 5 s on a mounted tree, in the region that was there first.
+  it('draws no live region of its own at any second while the switch is on', () => {
+    expect(
+      [42, 11, 10, 9, 6, 5, 4, 0].filter((seconds) => urgent(seconds).includes('aria-live')),
+    ).toEqual([]);
     expect(STRINGS.countdownAlert(10)).toBe('10 seconds left');
-    expect(urgent(10)).toContain(`<span class="${String(styles.srOnly)}" aria-live="polite">`);
   });
 
   it('ticks once per second change (scale 1.08 over --motion-tick) only under the id scope', () => {

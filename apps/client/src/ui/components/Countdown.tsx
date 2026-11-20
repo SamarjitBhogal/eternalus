@@ -1,10 +1,12 @@
-import { type ReactElement, useEffect, useRef } from 'react';
+import type { ReactElement } from 'react';
+import { createPortal } from 'react-dom';
 
 import { useAppSelector } from '../../bridge/hooks';
 import { contentSlice } from '../../bridge/slices/contentSlice';
 import { STRINGS } from '../strings';
 import { COUNTDOWN_URGENCY } from './Countdown.constants';
 import styles from './Countdown.module.css';
+import { useLiveRegion } from './useLiveRegion';
 
 /** UE-01's state of a numeral, `undefined` above the tick threshold. */
 const urgencyOf = (seconds: number): 'tick' | 'final' | undefined => {
@@ -22,11 +24,10 @@ const urgencyOf = (seconds: number): 'tick' | 'final' | undefined => {
  *
  * With `hasUrgency` and the `countdown-urgency` enhancement on (UE-01, DEC-100, DEC-282), the
  * numeral is keyed on its value and marked `data-urgent` (`tick` from 10 s, `final` from 5 s),
- * which its CSS turns into one tick, or a larger pulse and the urgent glow, per second change; a
- * polite live region beside it says `STRINGS.countdownAlert` at 10 and 5 s. The region renders
- * empty and its line is written after the commit, so a countdown that mounts at 10 s (the
- * match-start overlay) still says it as a change (the owner's answer of 2026-11-20). Otherwise it
- * is the Figma's static numeral, with no mark and no live region.
+ * which its CSS turns into one tick, or a larger pulse and the urgent glow, per second change; at
+ * 10 and 5 s it says `STRINGS.countdownAlert` in the app's polite live region (`LiveRegion`,
+ * DEC-282 (7)), which is in the page before any countdown, so the overlay, which appears at 10 s,
+ * is heard too. Otherwise it is the Figma's static numeral, with no mark and no line.
  */
 export function Countdown({
   remainingSeconds,
@@ -49,6 +50,7 @@ export function Countdown({
     useAppSelector((state) =>
       contentSlice.selectors.selectIsUiEnhancementOn(state, 'countdown-urgency'),
     ) && hasUrgency;
+  const region = useLiveRegion();
   const numeral = (
     <p
       key={isUrgencyOn ? remainingSeconds : undefined}
@@ -60,19 +62,16 @@ export function Countdown({
       {remainingSeconds === 0 && zeroText !== undefined ? zeroText : remainingSeconds}
     </p>
   );
-  const region = useRef<HTMLSpanElement>(null);
   const isLineSaid =
-    remainingSeconds === COUNTDOWN_URGENCY.tickFrom ||
-    remainingSeconds === COUNTDOWN_URGENCY.finalFrom;
-  const line = isLineSaid ? STRINGS.countdownAlert(remainingSeconds) : '';
-  useEffect(() => {
-    if (region.current !== null) region.current.textContent = line;
-  }, [line, isUrgencyOn]);
-  if (!isUrgencyOn) return numeral;
+    isUrgencyOn &&
+    (remainingSeconds === COUNTDOWN_URGENCY.tickFrom ||
+      remainingSeconds === COUNTDOWN_URGENCY.finalFrom);
   return (
     <>
       {numeral}
-      <span ref={region} className={styles.srOnly} aria-live="polite" />
+      {isLineSaid && region !== null
+        ? createPortal(STRINGS.countdownAlert(remainingSeconds), region)
+        : null}
     </>
   );
 }

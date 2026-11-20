@@ -11,6 +11,7 @@ import { createAppStore } from '../../bridge/store';
 import { STRINGS } from '../strings';
 import { TEST_CONTENT } from '../testStore';
 import { Countdown } from './Countdown';
+import { LiveRegion } from './LiveRegion';
 
 /** React's `act` expects this flag in a test page (react.dev, "act"). */
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -63,10 +64,14 @@ describe('Countdown tick (UE-01)', () => {
   });
 });
 
-/** Mounts the countdown with the switch on at each of `seconds` in turn, on one root. */
-function mountAcross(seconds: readonly number[]): {
-  readonly lines: readonly (string | null)[];
-  readonly regionChanges: readonly string[];
+/**
+ * Mounts the app's `LiveRegion` alone, then the countdown inside it at each of `seconds` in turn,
+ * the switch on: the region's text at each second, and whether every line went into the region
+ * that was in the page before the countdown, the only live region on the page.
+ */
+function sayAcross(seconds: readonly number[]): {
+  readonly lines: readonly string[];
+  readonly isOneEarlierRegion: boolean;
 } {
   const store = createAppStore({
     content: { ...TEST_CONTENT, uiEnhancements: ['countdown-urgency'] },
@@ -74,40 +79,48 @@ function mountAcross(seconds: readonly number[]): {
   const container = document.createElement('div');
   document.body.append(container);
   root = createRoot(container);
-  const observer = new MutationObserver(() => undefined);
-  observer.observe(container, { childList: true, subtree: true, characterData: true });
-  const lines = seconds.map((value) => {
+  const show = (value: number | null): void => {
     act(() => {
       root?.render(
         <Provider store={store}>
-          <Countdown remainingSeconds={value} label="Time left" hasUrgency />
+          <LiveRegion>
+            {value !== null && <Countdown remainingSeconds={value} label="Time left" hasUrgency />}
+          </LiveRegion>
         </Provider>,
       );
     });
-    return container.querySelector('[aria-live="polite"]')?.textContent ?? null;
+  };
+  show(null);
+  const earlier = container.querySelector('[aria-live="polite"]');
+  const wasEmptyBefore = earlier !== null && earlier.textContent === '';
+  const regions: Element[] = [];
+  const lines = seconds.map((value) => {
+    show(value);
+    regions.push(...container.querySelectorAll('[aria-live]'));
+    return earlier?.textContent ?? 'no region';
   });
-  // A change a screen reader hears: text that reaches the region once the region is in the page.
-  const regionChanges = observer
-    .takeRecords()
-    .filter((record) => record.target instanceof Element && record.target.matches('[aria-live]'))
-    .map((record) => record.target.textContent ?? '');
-  observer.disconnect();
-  return { lines, regionChanges };
+  return {
+    lines,
+    isOneEarlierRegion:
+      wasEmptyBefore &&
+      regions.length === seconds.length &&
+      regions.every((region) => region === earlier),
+  };
 }
 
-// The owner's answer of 2026-11-20 ("Countdown PR Calls", overlay-10s-line): the match-start
-// overlay mounts at 10 s, and a live region that mounts already holding its line may never be
-// read. The region is in the page empty first, so "10 seconds left" arrives as a change.
+// The owner's answer of 2026-11-20 ("Countdown PR Calls", overlay-10s-line, DEC-282 (7)): a
+// region that appears already holding its line may never be read. The line goes into the app's
+// region, which was in the page, empty, before the countdown appeared.
 describe('Countdown screen-reader line (UE-01)', () => {
-  it('says the line as a change when the countdown mounts at 10 s', () => {
-    const { lines, regionChanges } = mountAcross([10]);
+  it('says the line in the region that was there before, when the countdown appears at 10 s', () => {
+    const { lines, isOneEarlierRegion } = sayAcross([10]);
 
     expect(lines).toEqual([STRINGS.countdownAlert(10)]);
-    expect(regionChanges).toEqual([STRINGS.countdownAlert(10)]);
+    expect(isOneEarlierRegion).toBe(true);
   });
 
-  it('says the line only at 10 and 5 s, in one region kept across the seconds', () => {
-    const { lines } = mountAcross([42, 11, 10, 9, 6, 5, 4, 0]);
+  it('says the line only at 10 and 5 s, in that one region across the seconds', () => {
+    const { lines, isOneEarlierRegion } = sayAcross([42, 11, 10, 9, 6, 5, 4, 0]);
 
     expect(lines).toEqual([
       '',
@@ -119,5 +132,6 @@ describe('Countdown screen-reader line (UE-01)', () => {
       '',
       '',
     ]);
+    expect(isOneEarlierRegion).toBe(true);
   });
 });

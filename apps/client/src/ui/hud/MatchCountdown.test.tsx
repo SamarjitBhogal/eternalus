@@ -18,8 +18,6 @@ const urgent = (countdown: number): string =>
   });
 const urgencyOf = (html: string): string | null =>
   /<p [^>]*data-urgent="(\w+)"/.exec(html)?.[1] ?? null;
-const alertOf = (html: string): string | null =>
-  /<span [^>]*aria-live="polite"[^>]*>([^<]*)<\/span>/.exec(html)?.[1] ?? null;
 
 describe('MatchCountdown', () => {
   it.each([10, 3, 1])('shows the number %i over the match as a labelled timer', (number) => {
@@ -61,21 +59,18 @@ describe('MatchCountdown', () => {
   });
 
   // UE-01 on the overlay (DEC-282): the character select's thresholds; START counts as ≤ 5 s.
-  // The live region renders empty and its line arrives after the commit, so the overlay, which
-  // mounts at 10 s, still says it as a change; Countdown.tick.test.tsx asserts that on a mounted
-  // tree, the 10 s mount included.
-  it('ticks from 10, pulses with the urgent glow from 5 and at START, with a live region', () => {
-    expect(
-      [10, 9, 6, 5, 3, 1, 0].map((n) => [n, urgencyOf(urgent(n)), alertOf(urgent(n))]),
-    ).toEqual([
-      [10, 'tick', ''],
-      [9, 'tick', ''],
-      [6, 'tick', ''],
-      [5, 'final', ''],
-      [3, 'final', ''],
-      [1, 'final', ''],
-      [0, 'final', ''],
+  // Its lines at 10 and 5 s go into the app's region (DEC-282 (7)): MatchCountdown.line.test.tsx.
+  it('ticks from 10, pulses with the urgent glow from 5 and at START, with no region of its own', () => {
+    expect([10, 9, 6, 5, 3, 1, 0].map((n) => [n, urgencyOf(urgent(n))])).toEqual([
+      [10, 'tick'],
+      [9, 'tick'],
+      [6, 'tick'],
+      [5, 'final'],
+      [3, 'final'],
+      [1, 'final'],
+      [0, 'final'],
     ]);
+    expect(urgent(10)).not.toContain('aria-live');
     expect(urgent(0)).toMatch(new RegExp(`role="timer"[^>]*>${STRINGS.hud.countdownStart}<`));
     expect(accessibleNames(urgent(5), '[role=timer]')).toEqual([STRINGS.hud.matchCountdown]);
   });

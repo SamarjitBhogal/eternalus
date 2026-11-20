@@ -38,16 +38,6 @@
   line-height: 1;
 }
 
-/* UE-01's screen-reader line (DEC-100): read, never seen. */
-.srOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
 /* UE-01 countdown urgency (ui-enhancements-plan §3.2, DEC-100, DEC-282), only while the switch
    holds its id: one tick per second change from 10 s (the numeral is keyed on its value, so 1 Hz);
    from 5 s a larger pulse and the urgent glow (the countdown glow at 30 %). The Figma red stays. */
