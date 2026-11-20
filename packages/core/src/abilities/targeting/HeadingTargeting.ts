@@ -13,6 +13,9 @@ import type { CastTargeting, TargetingSpec } from './CastTargeting.types';
 export class HeadingTargeting implements CastTargeting {
   public readonly kind = 'heading';
 
+  /** False: the cast aims itself by the caster's heading. */
+  public readonly usesAim = false;
+
   /** Any aim will do: it is ignored. */
   public aimBlockedBy(): AbilityRejectReason | null {
     return null;

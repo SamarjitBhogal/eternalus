@@ -6,8 +6,8 @@ import { createDefaultAbilityRegistry } from './defaultAbilityRegistry';
 
 /**
  * The display content the client loads (`@eternalus/core` exports this as `loadDisplayContent`):
- * `content/loadDisplayContent` with each ability's overlay rows described by the shipped effect
- * strategies (`AbilityRegistry.describe`), so no loader knows an effect or shape kind. The
+ * `content/loadDisplayContent` with each ability's overlay rows and aim use told by the shipped
+ * strategies (`AbilityRegistry.describe`, `usesAim`), so no loader knows an effect or shape kind. The
  * registry holds no abilities: only its strategies' descriptions are used, and a describe reads no
  * time, so the authored steps need no tick rate. The registry's strategies still load their own
  * tuning (`createDefaultAbilityRegistry`), so the caller passes the match tick rate.
@@ -28,5 +28,11 @@ export const loadShippedDisplayContent = (
     new ContentCatalogue<ComposableAbility>([]),
     tickRate,
   );
-  return loadDisplayContent((effects) => strategies.describe(effects), catalogues);
+  return loadDisplayContent(
+    {
+      describeSteps: (effects) => strategies.describe(effects),
+      usesAim: (targeting) => strategies.usesAim(targeting),
+    },
+    catalogues,
+  );
 };

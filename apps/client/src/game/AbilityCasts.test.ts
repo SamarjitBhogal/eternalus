@@ -8,11 +8,16 @@ import type { CastInput } from './AbilityCasts.types';
 const ACTOR = 'legend-1';
 const HERE: Vec2 = { x: 5, y: 6 };
 const CLICK: Vec2 = { x: 9, y: 2 };
+const LEGEND: Vec2 = { x: 1, y: 1 };
 
-const setUp = () => {
+/** Stands in for the match: the slots in `selfAimed` hold an ability with `usesAim` false. */
+const setUp = (selfAimed: readonly CastInput['triggered'][number][] = ['granted']) => {
   const enqueueCommand = vi.fn<Simulation['enqueueCommand']>();
   const changes: (HudSlotId | null)[] = [];
-  const casts = new AbilityCasts({ enqueueCommand }, (slot) => changes.push(slot));
+  const casts = new AbilityCasts({ enqueueCommand }, (slot) => changes.push(slot), {
+    usesAim: (slot) => !selfAimed.includes(slot),
+    legendAt: () => LEGEND,
+  });
   const queued = (): Command[] => enqueueCommand.mock.calls.map(([command]) => command);
   const press = (input: Partial<CastInput> & { readonly aim?: Vec2 | null } = {}): boolean =>
     casts.apply(ACTOR, { triggered: [], aim: HERE, isAttacking: false, ...input });
@@ -41,7 +46,7 @@ describe('AbilityCasts in quick cast', () => {
     expect(casts.aimingSlot).toBeNull();
   });
 
-  it('casts the granted slot (Fury’s dash) at once, aimed at the latest pointer point even with none now', () => {
+  it('casts a slot whose ability does not use the aim at once, at the latest pointer point even with none now', () => {
     const { casts, queued, press } = setUp();
 
     press({ triggered: ['granted'] });
@@ -51,12 +56,22 @@ describe('AbilityCasts in quick cast', () => {
     expect(casts.aimingSlot).toBeNull();
   });
 
-  it('queues no granted cast before the pointer has had any world point', () => {
+  it('casts an ability that does not use the aim from the Legend before the pointer has had any point', () => {
     const { queued, press } = setUp();
 
     press({ triggered: ['granted'], aim: null });
 
-    expect(queued()).toEqual([]);
+    expect(queued()).toEqual([cast('granted', LEGEND)]);
+  });
+
+  it('decides by the ability in the slot, not by the slot: a self-aimed kit slot casts at once too', () => {
+    const { queued, press } = setUp(['ability-2']);
+
+    press({ triggered: ['ability-2', 'granted'], aim: null });
+    press({ triggered: ['ability-1'], aim: null });
+
+    // The granted slot now holds an aimed ability, so with no pointer point it queues nothing.
+    expect(queued()).toEqual([cast('ability-2', LEGEND)]);
   });
 
   it('queues nothing while the pointer has no world point, and never takes the attack', () => {
@@ -90,7 +105,7 @@ describe('AbilityCasts in aim-then-click', () => {
     expect(changes).toEqual(['ability-1', null]);
   });
 
-  it('casts the granted slot (Fury’s dash) at once and keeps the selection, even with no pointer point', () => {
+  it('casts an ability that does not use the aim at once and keeps the selection, with no pointer point', () => {
     const { casts, changes, queued, press } = aimMode();
 
     press({ triggered: ['granted'] });
@@ -103,6 +118,16 @@ describe('AbilityCasts in aim-then-click', () => {
     expect(queued()).toEqual([cast('granted', HERE), cast('granted', CLICK)]);
     expect(casts.aimingSlot).toBe('ability-1');
     expect(changes).toEqual(['ability-1']);
+  });
+
+  it('casts an aimed ability in the granted slot at the pointer: it has no HUD slot to select', () => {
+    const parts = setUp([]);
+    parts.casts.setCastMode('aim-then-click');
+
+    parts.press({ triggered: ['granted'], aim: CLICK });
+
+    expect(parts.queued()).toEqual([cast('granted', CLICK)]);
+    expect(parts.casts.aimingSlot).toBeNull();
   });
 
   it('selects a slot the same way for an ability centred on the caster (slot 3 and the ultimate)', () => {

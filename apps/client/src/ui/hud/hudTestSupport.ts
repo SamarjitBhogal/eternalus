@@ -14,7 +14,7 @@ const key = (action: InputAction, code: string, label: string): Binding => ({
   chords: [{ device: 'keyboard', code, label }],
 });
 
-/** The HUD's default keys (game/input/keybindings.ts, which ui/ may not import): 1–4, Z, C, Esc. */
+/** The HUD's default keys (game/input/keybindings.ts, which ui/ may not import): 1–4, Z, C, Space, Esc. */
 export const HUD_BINDINGS: readonly Binding[] = [
   key('ability-1', 'Digit1', '1'),
   key('ability-2', 'Digit2', '2'),
@@ -22,6 +22,7 @@ export const HUD_BINDINGS: readonly Binding[] = [
   key('ability-4', 'Digit4', '4'),
   key('gadget-1', 'KeyZ', 'Z'),
   key('gadget-2', 'KeyC', 'C'),
+  key('granted', 'Space', 'Space'),
   key('pause-menu', 'Escape', 'Esc'),
 ];
 

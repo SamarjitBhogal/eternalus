@@ -11,7 +11,7 @@ import type {
 import { ComposedAbility } from './ComposedAbility';
 import { flattenSteps, shapeOf } from './effectSteps';
 import type { AreaShape } from './shapes/AreaShape.types';
-import type { CastTargeting } from './targeting/CastTargeting.types';
+import type { CastTargeting, TargetingSpec } from './targeting/CastTargeting.types';
 
 /**
  * The single place abilities are composed (architecture 05 §14): effect, restriction, shape and
@@ -136,6 +136,20 @@ export class AbilityRegistry {
   public describe(steps: readonly EffectStep[]): readonly AbilityDisplayStep[] {
     return steps.flatMap((step) =>
       this.effectFor(step.kind).describe(step, (nested) => this.describe([nested])),
+    );
+  }
+
+  /**
+   * Whether a cast of an ability with `targeting` reads the player's aim (`AbilityDisplay.usesAim`,
+   * 05 §15): its strategy's `usesAim`. An ability with no targeting (not built yet) counts as
+   * aimed, so the client treats it as any other until it has effects.
+   *
+   * @throws Error when `targeting` names a kind with no strategy.
+   */
+  public usesAim(targeting: TargetingSpec | null): boolean {
+    return (
+      targeting === null ||
+      AbilityRegistry.required(this.targetings, targeting.kind, 'targeting').usesAim
     );
   }
 

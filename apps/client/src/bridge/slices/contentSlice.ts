@@ -47,5 +47,7 @@ export const contentSlice = createSlice({
     selectTeamNames: (state) => state.teamNames,
     selectVerdictLines: (state) => state.verdictLines,
     selectSovereignNames: (state) => state.sovereignNames,
+    /** The display data of ability `id`, or `undefined` before content loads or for an unknown id. */
+    selectAbility: (state, id: string) => state.abilities.find((ability) => ability.id === id),
   },
 });

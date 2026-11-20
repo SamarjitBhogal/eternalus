@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-16
+last-reviewed: 2026-11-20
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -156,6 +156,7 @@ show comes from content through the store (`contentSlice`, `matchSlice`), never 
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
 | `HealthBar`, `AetherBar`                              | `matchSlice.player` (from `hud-state`)                                                     | base bar plus one patterned segment per shield bar (never colour alone); `aether / maxAether`; level and XP in `LevelBadge`                                                                                                                                     | **MVP**                                     |
 | `AbilityBar`                                          | `selectAbilitySlots` ([05](05-abilities-weapons-and-loadouts.md) §15)                      | one slot per `AbilitySlotSnapshot`: icon, cooldown sweep (the owner's vertical fill, register CD-28), ultimate charge, `blockedBy` hint, `<KeyGlyph action={slot.slot} />`; the gadget slots use the same slot ([05](05-abilities-weapons-and-loadouts.md) §11) | **MVP**                                     |
+| `GrantedPrompt`                                       | `hudSlice.player.grantedAbilityId`, the catalogue's `abilities`                            | the key bound to `granted` (`<KeyGlyph action="granted" />`) and the ability's display name, above `AbilityBar`, while a status grants an ability (Fury's dash); nothing otherwise                                                                              | **MVP**                                     |
 | `LevelBadge`                                          | `matchSlice.player` (`level`, `xp`, `xpToNext`), the HUD kit (`selectHudKit`)              | the class emblem by asset id (an empty shield where the class has none), an XP ring (`xp / xpToNext`) and the level number, alike on every class (DEC-62)                                                                                                       | **MVP**                                     |
 | `WeaponPanel`                                         | the HUD kit                                                                                | the weapon art by asset id, or an empty container (DEC-57, DEC-62), and a weapon-level bar: weapons level up during each match, probably post-MVP (DEC-62; OQ-63)                                                                                               | **MVP**; level bar likely post-MVP (DEC-62) |
 | `UltimateChargeBar`, `ChargePips`                     | `matchSlice.player` (the ultimate slot)                                                    | the ultimate, an additional ability on its own key (DEC-62): its charge bar and pips, "no data" until OQ-64 rules them                                                                                                                                          | **MVP**; OQ-64                              |
@@ -792,11 +793,15 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
     `feat/vanguard-kit`, [05](05-abilities-weapons-and-loadouts.md) §18).
   - **Fury's dash (`feat/vanguard-kit`, 2026-11-16; DEC-270).** The `InputAction` `granted`
     (Space, label "Fury dash") casts the status-granted slot. `game/AbilityCasts.ts` casts it at
-    once in both cast modes, with the latest pointer point, and never selects it for aiming (core
-    ignores that aim and aims it from the Legend's heading). The client knows this by the slot;
-    `AbilityDisplay` carries no targeting kind (`INBOX.md` HC-Q62). `MatchBridge` leaves the slot out of `PlayerHudSnapshot.slots`, as it does
-    `default-action` (`HudSlotId` excludes both), so the HUD draws no slot for it; the aim
-    overlay draws nothing for the `hit` shape.
+    once in both cast modes and never selects it for aiming (core ignores the aim and aims it
+    from the Legend's heading). It knows this from the ability in the slot, not the slot:
+    `AbilityDisplay.usesAim` is `false` (DEC-283 (8)), and such a cast needs no pointer point (the
+    Legend's own position goes out when the pointer has had none). `MatchBridge` leaves the slot
+    out of `PlayerHudSnapshot.slots`, as it does `default-action` (`HudSlotId` excludes both),
+    so the HUD draws no slot for it; it publishes the granted ability's id as
+    `PlayerHudSnapshot.grantedAbilityId`, and `GrantedPrompt` (above the `AbilityBar`) shows
+    the bound key and the ability's name while it is set (DEC-283 (7)). The aim overlay draws
+    nothing for the `hit` shape.
   - **Two cast modes.** `settings.gameplay.castMode` (`'quick' | 'aim-then-click'`, quick by
     default) is on a new Gameplay tab of `SettingsScreen` (`selectGameplay`); a save without it
     loads with the default. `game/AbilityCasts.ts` turns the slot keys into `cast-ability`:

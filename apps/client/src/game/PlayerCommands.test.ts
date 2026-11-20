@@ -82,7 +82,10 @@ const snapshotOf = (
 const setUp = () => {
   const input = new ScriptedIntent();
   const enqueueCommand = vi.fn<Simulation['enqueueCommand']>();
-  const casts = new AbilityCasts({ enqueueCommand }, vi.fn());
+  const casts = new AbilityCasts({ enqueueCommand }, vi.fn(), {
+    usesAim: () => true,
+    legendAt: () => null,
+  });
   const commands = new PlayerCommands(
     input,
     { enqueueCommand },

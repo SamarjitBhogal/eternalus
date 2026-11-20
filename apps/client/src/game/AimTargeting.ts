@@ -1,4 +1,4 @@
-import type { AbilityDisplay, EntityId, Snapshot, Vec2 } from '@eternalus/core';
+import type { AbilityDisplay, AbilitySlot, EntityId, Snapshot, Vec2 } from '@eternalus/core';
 
 import type { HudSlotId } from '../bridge/Binding.types';
 import type { DashReach } from './Match.types';
@@ -8,7 +8,8 @@ import type { AimTarget } from './views/AimOverlayView.types';
  * Builds what the range overlay (`AimOverlayView`) draws each frame: the ability in the player's
  * selected slot, from the snapshot's slots and the display data, aimed from where the player's
  * Legend is drawn toward the pointer. It asks the simulation's rule how far each dash step really
- * goes (`DashReach`), so the view itself never calls the simulation (AGENTS.md rule 6).
+ * goes (`DashReach`), so the view itself never calls the simulation (AGENTS.md rule 6). It also
+ * says whether the ability in a slot uses the aim, for `AbilityCasts`.
  */
 export class AimTargeting {
   /**
@@ -33,8 +34,7 @@ export class AimTargeting {
     aim: Vec2 | null,
     origin: Vec2 | null,
   ): AimTarget | null {
-    const abilityId = snapshot.player?.slots.find((entry) => entry.slot === slot)?.abilityId;
-    const ability = this.abilities.find(({ id }) => id === abilityId);
+    const ability = this.abilityIn(snapshot, slot);
     const radius = snapshot.entities.find(({ id }) => id === this.playerId)?.transform?.radius;
     if (aim === null || origin === null || ability === undefined || radius === undefined) {
       return null;
@@ -52,5 +52,19 @@ export class AimTargeting {
           : (this.dashReach?.(origin, direction, distance, radius) ?? distance),
     }));
     return { origin: { x: origin.x, y: origin.y }, direction, steps };
+  }
+
+  /**
+   * Whether the ability now in `slot` reads the aim (`AbilityDisplay.usesAim`); `true` when the
+   * slot holds no ability the display data knows, so it takes the usual aimed paths.
+   */
+  public usesAim(snapshot: Snapshot, slot: AbilitySlot | null): boolean {
+    return this.abilityIn(snapshot, slot)?.usesAim ?? true;
+  }
+
+  /** The ability the player's `slot` holds in `snapshot`, or `undefined`. */
+  private abilityIn(snapshot: Snapshot, slot: AbilitySlot | null): AbilityDisplay | undefined {
+    const abilityId = snapshot.player?.slots.find((entry) => entry.slot === slot)?.abilityId;
+    return this.abilities.find(({ id }) => id === abilityId);
   }
 }
