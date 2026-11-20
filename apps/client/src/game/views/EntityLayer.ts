@@ -7,6 +7,7 @@ import type { EntityDrawState } from './EntityView.types';
 import { HealthBarView } from './HealthBarView';
 import type { WorldLayer } from './SceneView.types';
 import type { ViewRegistry } from './ViewRegistry';
+import { WindupRingsView } from './WindupRingsView';
 
 /**
  * The scene layer that draws every entity of the latest snapshot through the `ViewRegistry`
@@ -19,6 +20,8 @@ export class EntityLayer implements WorldLayer {
   private states: readonly EntityDrawState[] = [];
 
   private readonly healthBars = new HealthBarView();
+
+  private readonly windupRings = new WindupRingsView();
 
   /**
    * Creates the layer over a view registry. `isDead` is the one dead rule (DEC-151 (2)), injected
@@ -65,13 +68,17 @@ export class EntityLayer implements WorldLayer {
   }
 
   /**
-   * Draws every entity, back to front by `y`, so lower entities overlap higher ones. The health
-   * bars (`HealthBarView`) come after every entity of this layer, so no entity hides a bar.
+   * Draws every entity, back to front by `y`, so lower entities overlap higher ones. The wind-up
+   * rings (`WindupRingsView`, DEC-283) and then the health bars (`HealthBarView`) come after every
+   * entity of this layer, so no entity hides them.
    */
   public draw(renderer: Renderer): void {
     const ordered = [...this.states].sort((a, b) => a.position.y - b.position.y);
     for (const state of ordered) {
       this.views.viewFor(state.entity).draw(state, renderer);
+    }
+    for (const state of ordered) {
+      this.windupRings.draw(state, renderer);
     }
     for (const state of ordered) {
       const side = this.healthBarOf(state.entity);

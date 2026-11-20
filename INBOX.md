@@ -389,6 +389,16 @@ Reply inline (`Decision: …`).
       Approve for a follow-up, or keep the lists?
   - Answered 2026-11-20 (DEC-283): "Approve, as a follow-up PR". Not built; one boss record that
     all four lists read, in a follow-up PR.
+- [ ] **HC-Q66 — Fury's dash wind-up: five readings your answer did not settle
+      (`feat/vanguard-kit`, 2026-11-20; DEC-283 (5)).** Built one way and tested; nothing waits on
+      the answer. You picked "The Legend stands still 0.3 s while the rings close in, then dashes
+      the 3 m in 0.3 s." Built: (1) the dash's way is fixed when Space is pressed (WASD after the
+      press does not steer it); (2) "stands still" stops walking only: the Vanguard can still
+      attack and cast during the wind-up, and a push (a knock-back) still moves it, so the dash
+      starts from where it then stands; (3) Fury ending during the wind-up does not cancel the
+      dash; (4) a stun during the wind-up does not cancel it either (no ability can be interrupted
+      yet); (5) the 1 s between dashes counts from the press, not from the end of the dash. A death
+      or a Duel round reset drops the waiting dash. Keep all five, or name the ones to change?
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays

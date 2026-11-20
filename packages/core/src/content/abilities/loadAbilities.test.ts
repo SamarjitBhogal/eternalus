@@ -118,4 +118,56 @@ describe('loadAbilities', () => {
       /"lunge": dash durationSeconds must not be negative[\s\S]*"lunge": debuff durationSeconds must not be negative/,
     );
   });
+
+  it('loads a step delay as ticks and leaves a step with none without one (DEC-283)', () => {
+    const [windup, dash] = loadAbilities(30).get('fury-dash').effects;
+
+    expect(windup).toEqual({ kind: 'buff', statusId: 'fury-windup' });
+    expect(dash).toMatchObject({ kind: 'dash', delayTicks: 9, durationTicks: 9 });
+    expect(dash).not.toHaveProperty('delaySeconds');
+  });
+
+  it('refuses a step delay that is negative or not a finite time', () => {
+    const delayed = (id: string, delaySeconds: number) =>
+      ({
+        ...SLAM,
+        id,
+        effects: [{ ...SLAM.effects[0], delaySeconds }],
+      }) as const;
+
+    expect(() =>
+      loadAbilities(30, [
+        delayed('early', -0.1),
+        delayed('never', Number.POSITIVE_INFINITY),
+        delayed('unknown', Number.NaN),
+      ]),
+    ).toThrow(
+      /"early": damage delaySeconds must not be negative[\s\S]*"never": damage delaySeconds must not be negative[\s\S]*"unknown": damage delaySeconds must not be negative/,
+    );
+  });
+
+  it('refuses step delays that decrease along the list: the steps fire in list order', () => {
+    const [damage, knockback] = SLAM.effects;
+    const backwards = {
+      ...SLAM,
+      id: 'backwards',
+      effects: [
+        { ...damage, delaySeconds: 1 },
+        { ...knockback, delaySeconds: 0.5 },
+      ],
+    } as const;
+    const inOrder = {
+      ...SLAM,
+      id: 'in-order',
+      effects: [damage, { ...knockback, delaySeconds: 0.5 }, { ...damage, delaySeconds: 0.5 }],
+    } as const;
+
+    expect(() => loadAbilities(30, [backwards])).toThrow(
+      'Ability "backwards": step delays must not decrease along the list',
+    );
+    const delays = loadAbilities(30, [inOrder])
+      .get('in-order')
+      .effects.map((step) => ('delayTicks' in step ? step.delayTicks : 'none'));
+    expect(delays).toEqual(['none', 15, 15]);
+  });
 });

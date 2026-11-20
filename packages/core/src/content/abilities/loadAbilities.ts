@@ -41,6 +41,13 @@ export const timeProblems = (value: unknown, kind: string): string[] => {
   );
 };
 
+/** Whether no step waits less after the cast than the step before it (05 §4; absent = 0). */
+const hasDelaysInOrder = (steps: readonly { readonly delaySeconds?: number }[]): boolean =>
+  steps.every(
+    (step, index) =>
+      index === 0 || (step.delaySeconds ?? 0) >= (steps[index - 1]?.delaySeconds ?? 0),
+  );
+
 /** What is wrong with `ability` as authored, or nothing. */
 const problemsOf = (ability: AuthoredAbilityWith<AuthoredStep>): string[] => {
   const problems: string[] = [];
@@ -59,6 +66,9 @@ const problemsOf = (ability: AuthoredAbilityWith<AuthoredStep>): string[] => {
     problems.push('an ability with no effects has no targeting yet');
   }
   problems.push(...timeProblems(ability.effects, 'effect'));
+  if (!hasDelaysInOrder(ability.effects)) {
+    problems.push('step delays must not decrease along the list (the steps fire in list order)');
+  }
   return problems.map((problem) => `Ability "${ability.id}": ${problem}.`);
 };
 

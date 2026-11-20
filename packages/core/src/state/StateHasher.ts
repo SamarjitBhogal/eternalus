@@ -199,6 +199,26 @@ export class StateHasher {
         ]),
       ]);
     }
+    // A cast with steps still to come (05 §4) adds a field only while one waits, so a match where
+    // every step fired at its cast hashes as before.
+    const casts = entity.findComponent(Abilities)?.castsInProgress ?? [];
+    if (casts.length > 0) {
+      fields.push([
+        'casts',
+        ...casts.map(({ abilityId, slot, aim, origin, casterLevel, tick, nextStep }) => [
+          abilityId,
+          slot,
+          aim.point.x,
+          aim.point.y,
+          aim.targetId,
+          origin.x,
+          origin.y,
+          casterLevel,
+          tick,
+          nextStep,
+        ]),
+      ]);
+    }
     const statuses = entity.findComponent(StatusEffects);
     if (statuses !== undefined && statuses.active.length > 0) {
       fields.push([

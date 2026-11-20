@@ -248,7 +248,11 @@ export class GameState {
     readiness: SlotReadiness,
   ): Snapshot {
     const entities: EntitySnapshot[] = [];
-    const snapshotter = new EntitySnapshotter(this.config.match.capturePoints.checkpoints, curves);
+    const snapshotter = new EntitySnapshotter(
+      this.config.match.capturePoints.checkpoints,
+      curves,
+      this.currentTick,
+    );
     this.entities.forEach((entity) => {
       entities.push(snapshotter.snapshotOf(entity));
     });

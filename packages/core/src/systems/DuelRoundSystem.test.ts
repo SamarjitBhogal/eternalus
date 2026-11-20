@@ -184,6 +184,31 @@ describe('DuelRoundSystem', () => {
     expect(movement.isForced).toBe(false);
   });
 
+  it('drops the steps still to come of a reset Legend’s casts (Fury’s dash after its wind-up)', () => {
+    const { add, hit, run } = setUp();
+    const light = add('light', true);
+    const dark = add('dark', true);
+    const bar = new Abilities({
+      abilities: ['blade-runner', 'veil', 'hamstring'],
+      ultimate: 'fury',
+    });
+    bar.keepCast({
+      abilityId: 'fury-dash',
+      slot: 'granted',
+      aim: { point: { x: 100, y: 99 }, targetId: null },
+      origin: { x: 99, y: 99 },
+      casterLevel: 1,
+      tick: 0,
+      nextStep: 1,
+    });
+    light.addComponent(bar);
+    hit(dark, light);
+
+    run();
+
+    expect(bar.castsInProgress).toEqual([]);
+  });
+
   it('ends in a draw when both teams reach the target on one tick', () => {
     const { state, add, hit, run } = setUp(1);
     const light = add('light', true);

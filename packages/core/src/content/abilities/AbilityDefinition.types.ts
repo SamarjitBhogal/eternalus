@@ -161,8 +161,17 @@ export type DashSpec = InTicks<AuthoredDashSpec>;
  */
 export type AuthoredEffectSpec = AuthoredShapedEffectSpec | AuthoredDashSpec | AuthoredBuffSpec;
 
-/** One loaded step of an ability's cast timeline: every time in ticks. */
+/** One loaded effect step: every time in ticks. A status's `onHit` steps are loaded this way. */
 export type AbilityEffectSpec = InTicks<AuthoredEffectSpec>;
+
+/**
+ * A step of an ability's own cast timeline (05 §3, §4): `Step` plus an optional `delaySeconds`,
+ * the time from the cast to the step (absent = at the cast; loaded as `delayTicks`). Only an
+ * ability's top-level steps wait: a dash's `onPath` and `onEnd` steps and a status's `onHit`
+ * steps run when their parent places them. The delays never decrease along the list
+ * (`loadAbilities`), so the steps fire in list order.
+ */
+type Delayed<Step> = Step & { readonly delaySeconds?: number };
 
 /**
  * What `loadAbilities` reads of any effect step: its kind. The shipped steps are
@@ -200,7 +209,8 @@ export type AbilityBase = {
 export type AuthoredAbilityWith<Step extends AuthoredStep> = AbilityBase & {
   /** 0 for an ultimate: the meter gates it (DEC-202). */
   readonly cooldownSeconds: number;
-  readonly effects: readonly Step[];
+  /** The cast timeline, in order; each step may wait `delaySeconds` after the cast. */
+  readonly effects: readonly Delayed<Step>[];
 };
 
 /**
@@ -216,10 +226,10 @@ export type AbilityDefinitionWith<Step> = AbilityBase & {
 };
 
 /**
- * One loaded ability (05 §2): times in ticks. Shared, immutable and keyed by `id`; built only by
- * `loadAbilities`.
+ * One loaded ability (05 §2): times in ticks, a step's delay as `delayTicks`. Shared, immutable
+ * and keyed by `id`; built only by `loadAbilities`.
  */
-export type AbilityDefinition = AbilityDefinitionWith<AbilityEffectSpec>;
+export type AbilityDefinition = AbilityDefinitionWith<InTicks<Delayed<AuthoredEffectSpec>>>;
 
 /**
  * The abilities a Legend equips (DEC-198): three abilities for `ability-1` to `ability-3`, in

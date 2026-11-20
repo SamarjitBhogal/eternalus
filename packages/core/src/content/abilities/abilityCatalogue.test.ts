@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { LEGEND_CLASSES } from '../legends/legendCatalogue';
 import { STATUS_EFFECTS } from '../status-effects/statusEffectCatalogue';
 import { ABILITIES } from './abilityCatalogue';
-import type { AuthoredAbility } from './AbilityDefinition.types';
+import type { AuthoredAbility, AuthoredEffectSpec } from './AbilityDefinition.types';
 import { loadAbilities } from './loadAbilities';
 
 /** Cost and cooldown of the eight abilities with no effects yet: balancing.md "Aether costs and cooldowns" (0 / 0 for an ultimate: the meter gates it). */
@@ -140,7 +140,7 @@ describe('ABILITIES', () => {
   it('names a real debuff status in every debuff step, dash children included', () => {
     const debuffIds = (ability: AuthoredAbility): string[] =>
       ability.effects
-        .flatMap((effect) =>
+        .flatMap((effect): readonly AuthoredEffectSpec[] =>
           effect.kind === 'dash' ? [...effect.onPath, ...effect.onEnd] : [effect],
         )
         .flatMap((effect) => (effect.kind === 'debuff' ? [effect.statusId] : []));

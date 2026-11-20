@@ -158,7 +158,11 @@ export class AbilityRegistry {
     const { targeting } = definition;
     const ability = new ComposedAbility(
       definition,
-      definition.effects.map((spec) => ({ effect: this.effectFor(spec.kind), spec })),
+      definition.effects.map((spec) => ({
+        effect: this.effectFor(spec.kind),
+        spec,
+        delayTicks: spec.delayTicks ?? 0,
+      })),
       definition.restrictions.map((spec): BoundRestriction => ({
         rule: AbilityRegistry.required(this.restrictionRules, spec.kind, 'restriction'),
         spec,

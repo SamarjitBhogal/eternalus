@@ -10,6 +10,7 @@ import { HEALTH_BAR_FILL_COLORS, HEALTH_BAR_TRACK_COLOR } from './HealthBarView.
 import type { WorldLayer } from './SceneView.types';
 import type { EntityDrawState, EntityView } from './EntityView.types';
 import { ViewRegistry } from './ViewRegistry';
+import { WINDUP_RING_COLOR, WINDUP_RING_COUNT } from './WindupRingsView.constants';
 
 const EAST = { x: 1, y: 0 };
 
@@ -27,6 +28,7 @@ const unit = (id: string, x: number, y: number, facing = EAST): EntitySnapshot =
   aether: null,
   area: null,
   capture: null,
+  statuses: null,
 });
 
 const snapshot = (tick: number, entities: EntitySnapshot[]): Snapshot => ({
@@ -265,5 +267,33 @@ describe('EntityLayer', () => {
     expect(track?.[2]?.y).toBeLessThan(20);
     // The bars come after all three units, so no unit hides one.
     expect(calls.findIndex((call) => call.op === 'fillPolygon')).toBe(calls.length - 4);
+  });
+
+  it('draws the wind-up rings of a winding-up unit after every unit and before the bars (DEC-283)', () => {
+    // 'vanguard' winds up (WindupRingsView.test checks the rings), 'foe' shows a bar.
+    const layer = new EntityLayer(
+      createDefaultViewRegistry(),
+      () => false,
+      (entity) => (entity.id === 'foe' ? 'enemy' : null),
+    );
+    const vanguard = {
+      ...member('vanguard', 'mob', 10),
+      statuses: [{ id: 'fury-windup', ticksActive: 2, ticksLeft: 7 }],
+    };
+    layer.show(null, snapshot(1, [vanguard, member('foe', 'mob', 30)]), 0, null);
+    const renderer = new RecordingRenderer();
+    layer.draw(renderer);
+    const { calls } = renderer;
+
+    const ringAt = calls.flatMap((call, index) =>
+      call.op === 'drawWorldGlyph' && call.args[2] === WINDUP_RING_COLOR ? [index] : [],
+    );
+    const lastUnitCall = calls.findLastIndex(
+      (call) => call.op === 'drawWorldGlyph' && call.args[2] !== WINDUP_RING_COLOR,
+    );
+    const firstBarCall = calls.findIndex((call) => call.op === 'fillPolygon');
+
+    expect(ringAt).toHaveLength(WINDUP_RING_COUNT);
+    expect(ringAt.every((index) => index > lastUnitCall && index < firstBarCall)).toBe(true);
   });
 });

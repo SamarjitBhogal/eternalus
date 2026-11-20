@@ -12,7 +12,7 @@ export type ComposableAbility = Omit<
   AbilityDefinition,
   'effects' | 'restrictions' | 'targeting'
 > & {
-  readonly effects: readonly EffectStep[];
+  readonly effects: readonly TimelineStep[];
   readonly restrictions: readonly RestrictionSpec[];
   readonly targeting: TargetingSpec | null;
 };
@@ -29,8 +29,21 @@ export interface AbilitySource {
   get(id: string): ComposableAbility;
 }
 
-/** One step of a cast bound to its strategy (05 §14 `CastStep`). Every step fires at cast. */
-export type CastStep = { readonly effect: AbilityEffect; readonly spec: EffectStep };
+/**
+ * A step of an ability's cast timeline as loaded (05 §3, §4): any effect step, waiting
+ * `delayTicks` after the cast (absent = at the cast).
+ */
+type TimelineStep = EffectStep & { readonly delayTicks?: number };
+
+/**
+ * One step of a cast bound to its strategy (05 §14 `CastStep`): it fires `delayTicks` after the
+ * cast (0 = at the cast).
+ */
+export type CastStep = {
+  readonly effect: AbilityEffect;
+  readonly spec: EffectStep;
+  readonly delayTicks: number;
+};
 
 /** One restriction bound to its rule. */
 export type BoundRestriction = {

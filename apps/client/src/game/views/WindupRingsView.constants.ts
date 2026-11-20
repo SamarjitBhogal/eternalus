@@ -1,0 +1,31 @@
+/**
+ * The status the rings show (core's `content/status-effects/furyWindup.ts`): Fury's dash winds up
+ * while it lasts (DEC-283).
+ */
+export const WINDUP_STATUS_ID = 'fury-windup';
+
+/** How many rings close in on a Legend that winds up. */
+// TUNE: placeholder look (DEC-283: "orange rings"); no Figma frame draws the wind-up
+export const WINDUP_RING_COUNT = 3;
+
+/**
+ * Each ring's size at the start of the wind-up, as a multiple of the Legend's diameter: the
+ * innermost ring, then each next one `WINDUP_RING_SPACING` wider. They start a short way out from
+ * the Legend (DEC-283: "start at a small range").
+ */
+// TUNE: placeholder look
+export const WINDUP_RING_START_SCALE = 2.2;
+
+/** How much wider each ring starts than the one inside it, as a multiple of the diameter. */
+// TUNE: placeholder look
+export const WINDUP_RING_SPACING = 0.6;
+
+/**
+ * The size every ring closes in to by the end of the wind-up, as a multiple of the Legend's
+ * diameter: the Legend's white outline (`LEGEND_OUTLINE_SCALE`), so the rings "fall in" on it.
+ */
+export { LEGEND_OUTLINE_SCALE as WINDUP_RING_END_SCALE } from './entityViews.constants';
+
+/** Colour of the rings (DEC-283: "orange"). */
+// TUNE: placeholder look
+export const WINDUP_RING_COLOR = '#ff8a1f';

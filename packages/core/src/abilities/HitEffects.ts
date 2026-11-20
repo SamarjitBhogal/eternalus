@@ -72,6 +72,7 @@ export class HitEffects {
             steps: definition.onHit.map((spec) => ({
               effect: this.registry.effectFor(spec.kind),
               spec,
+              delayTicks: 0, // an on-hit step never waits: it runs where the hit lands
             })),
             definition: { scaling: {} },
           },

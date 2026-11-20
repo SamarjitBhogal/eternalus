@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Abilities } from '../components/Abilities';
+import type { CastInProgress } from '../components/Abilities.types';
 import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
 import { Collider } from '../components/Collider';
@@ -167,6 +168,48 @@ describe('StateHasher', () => {
     expect(new Set([empty, furyDash, leap]).size).toBe(3);
     // Empty again, the bar hashes as one never granted anything: the golden replays stay valid.
     expect(hasher.hash(state)).toBe(empty);
+  });
+
+  it('hashes a cast in progress only while one waits, then each of its fields (05 §4)', () => {
+    const { state, soldier } = stateWithSoldier();
+    const bar = new Abilities({
+      abilities: ['slam', 'rip-and-tear', 'shield-wall'],
+      ultimate: 'berserk',
+    });
+    soldier.addComponent(bar);
+    const before = hasher.hash(state);
+    const cast: CastInProgress = {
+      abilityId: 'fury-dash',
+      slot: 'granted',
+      aim: { point: { x: 4, y: 4 }, targetId: null },
+      origin: { x: 3, y: 4 },
+      casterLevel: 2,
+      tick: 5,
+      nextStep: 1,
+    };
+    /** The hash with one cast in progress: `cast` with `change` over it. */
+    const hashWith = (change: Partial<CastInProgress> = {}): number => {
+      bar.endCasts();
+      bar.keepCast({ ...cast, ...change });
+      return hasher.hash(state);
+    };
+
+    const hashes = [
+      hashWith(),
+      hashWith({ abilityId: 'blade-runner' }),
+      hashWith({ slot: 'ability-1' }),
+      hashWith({ aim: { point: { x: 4, y: 5 }, targetId: null } }),
+      hashWith({ aim: { point: { x: 4, y: 4 }, targetId: 'entity-9' } }),
+      hashWith({ origin: { x: 3, y: 5 } }),
+      hashWith({ casterLevel: 3 }),
+      hashWith({ tick: 6 }),
+      hashWith({ nextStep: 2 }),
+    ];
+    bar.endCasts();
+
+    expect(new Set([before, ...hashes]).size).toBe(10);
+    // With none left, the bar hashes as one that never waited: the golden replays stay valid.
+    expect(hasher.hash(state)).toBe(before);
   });
 
   it('hashes forced motion only while a push is under way, then each push field', () => {
