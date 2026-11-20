@@ -9264,3 +9264,27 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   passed."; `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-15.log`); then
   `prettier --check` and `npm run docs:check` on this file.
 - Next step: the owner pushes the branch (`push-125-r3.sh`), then merges PR #125.
+
+### 2026-11-20 — Phase 3 / assist window at load (HC-B9 (2), DEC-285 (2), DEC-287) — refactor/scoring-at-load — sholtzman + Claude Code
+
+- What was done: `content/match/loadScoring.ts` loads `SCORING` once (architecture 03 §8,
+  DEC-241): `assistWindowSeconds` becomes `assistWindowTicks` and a negative or non-finite window
+  is rejected (DEC-285 (2), the owner's "(2) in a follow-up PR"). `Simulation` passes the loaded
+  `ScoringOptions`; `AuthoredScoringOptions` is the seconds form `SCORING` satisfies. Critic round
+  1 found two better-than-design items, built under the standing rule as DEC-287: the loader also
+  loads the hold minute (`minuteTicks`), so `createDefaultScoringRules` takes no tick rate, and the
+  two option types share a private `ScoringBase`. Same conversion as before (`TickRate.toTicks`):
+  30 s = 900 ticks, 60 s = 1800 ticks. Docs: architecture 12 §5 and §13, `INBOX.md` HC-B9, the
+  DEC-287 row. The DEC-285 row comes with `feat/match-start-countdown`, so this branch merges after
+  that PR.
+- Checks run: fail-first, recorded: with the assert dropped and a plain `Math.round`, 2 of the 4
+  new loader tests red; with a 59 s minute, 4 of 13 (loader and `CaptureHoldRule`) red; each
+  restored, `cmp` identical, green. Critic (`architecture-reviewer`): round 1 approve (nits applied,
+  BTD-1/BTD-2 built), round 2 approve (nits applied; minor = merge order). `/ponytail-review`:
+  "Lean already. Ship." Full `npm run check` exit 0 on the final code before this entry (core 276
+  files / 1678 tests, protocol 1 / 29, client 298 / 2011, server 21 / 84, "Documentation check
+  passed."; `eternalus-agent-work/scoring-at-load/check-2.log`); then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the owner pushes and opens the PR to phase/3 after the DEC-278 countdown PR
+  (`feat/match-start-countdown`) is open; merge it after that one. HC-B9 is ticked when both are
+  on phase/3.

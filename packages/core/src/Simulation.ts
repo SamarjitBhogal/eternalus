@@ -12,7 +12,7 @@ import { createDefaultCommandHandlers } from './commands/defaultCommandHandlers'
 import { Footprint } from './components/Footprint';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from './config/matchPhases';
 import { validateGameConfig } from './config/validateGameConfig';
-import { SCORING } from './content/match/scoring';
+import { loadScoring } from './content/match/loadScoring';
 import { DefaultInvariantRunner } from './diagnostics/DefaultInvariantRunner';
 import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import type { LogContext, Logger } from './diagnostics/Logger.types';
@@ -206,7 +206,7 @@ export class Simulation {
         timeline,
         debug,
         logger,
-        scoring: SCORING,
+        scoring: loadScoring(tickRate),
       });
       this.pipeline = new DefaultSystemPipeline({
         invariants: new DefaultInvariantRunner({
