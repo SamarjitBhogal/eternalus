@@ -74,8 +74,8 @@ export type MatchSnapshot = {
   /** The unfired timeline entries in tick order; empty after the last one. */
   readonly upcoming: readonly ScheduledMark[];
   /**
-   * The tick the pre-match countdown ends (`countdownTicks`, from config), also once its
-   * `countdown-over` mark has left `upcoming`: the HUD counts the countdown down to it and the
+   * The tick the pre-match countdown ends (`MatchState.countdownEndTick`, from config), also once
+   * its `countdown-over` mark has left `upcoming`: the HUD counts the countdown down to it and the
    * match time up from it (DEC-278).
    */
   readonly countdownEndTick: number;

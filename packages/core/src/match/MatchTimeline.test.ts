@@ -23,7 +23,7 @@ describe('MatchTimeline', () => {
         entry('third', { atFraction: 1 / 3 }),
         entry('end', { atFraction: 1 }),
       ]).map(({ tick }) => tick),
-    ).toEqual([1050, 1300, 3300]); // 300 countdown ticks + 750, 1000, 3000;
+    ).toEqual([1050, 1300, 3300]); // 300 countdown ticks + 750, 1000, 3000
   });
 
   it('keeps an atTick mark as it is', () => {

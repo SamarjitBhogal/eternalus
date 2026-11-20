@@ -122,6 +122,7 @@ export class GameState {
     this.match = new MatchRecord(
       config.match.playerTeam,
       schedule,
+      countdownTicks(config.match.countdownSeconds, config.tickRate),
       this.events,
       () => this.currentTick,
     );
@@ -233,7 +234,15 @@ export class GameState {
     this.entities.forEach((entity) => {
       entities.push(snapshotter.snapshotOf(entity));
     });
-    const { phase, phaseEnteredTick, timelineCursor, schedule, humanLegendId, duel } = this.match;
+    const {
+      phase,
+      phaseEnteredTick,
+      timelineCursor,
+      schedule,
+      countdownEndTick,
+      humanLegendId,
+      duel,
+    } = this.match;
     const hordes: HordeSnapshot[] = [];
     this.hordes.forEach((horde) => {
       hordes.push({ ...horde });
@@ -245,7 +254,7 @@ export class GameState {
         phase,
         phaseEnteredTick,
         upcoming: schedule.slice(timelineCursor),
-        countdownEndTick: countdownTicks(this.config.match.countdownSeconds, this.config.tickRate),
+        countdownEndTick,
         humanLegendId,
         ...(duel !== null && { duel }),
       },

@@ -352,6 +352,13 @@ describe('GameState', () => {
         humanLegendId: null,
       });
     });
+
+    it("keeps the countdown's end tick from its config as match.countdownEndTick, which the snapshot reports (HC-B9 (1))", () => {
+      const state = new GameState(createDefaultGameConfig({ match: { countdownSeconds: 2.5 } }), 1);
+
+      expect(state.match.countdownEndTick).toBe(75);
+      expect(state.snapshot(CURVES).match.countdownEndTick).toBe(75);
+    });
   });
 
   it('counts spawn requests per team and rejects a spawned count outside 0..requested', () => {

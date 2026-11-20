@@ -12,14 +12,18 @@ export class MatchTimeline {
 
   /**
    * Resolves `config.match.timeline` once, at match construction: each mark becomes a tick
-   * (`atFraction` of `plannedMatchSeconds`, counted from the countdown's end: DEC-282), then entries are sorted by tick. The sort is
-   * stable, so entries on one tick keep their config order.
+   * (`atFraction` of `plannedMatchSeconds`, counted from the countdown's end: DEC-282), then
+   * entries are sorted by tick. The sort is stable, so entries on one tick keep their config order.
    */
   public static resolve({ tickRate, match }: GameConfig): MatchTimeline {
-    const countdownEnd = countdownTicks(match.countdownSeconds, tickRate);
+    const frame = {
+      tickRate,
+      plannedMatchSeconds: match.plannedMatchSeconds,
+      countdownEndTick: countdownTicks(match.countdownSeconds, tickRate),
+    };
     const entries = match.timeline.map(({ id, at, action }) => ({
       id,
-      tick: timelineMarkTick(at, tickRate, match.plannedMatchSeconds, countdownEnd),
+      tick: timelineMarkTick(at, frame),
       action,
     }));
     return new MatchTimeline(deepFreeze(entries.toSorted((a, b) => a.tick - b.tick)));

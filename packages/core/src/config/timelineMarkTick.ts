@@ -1,4 +1,4 @@
-import type { TimelineMark } from './MatchTimelineEntry.types';
+import type { TimelineFrame, TimelineMark } from './MatchTimelineEntry.types';
 
 /**
  * The tick a timeline mark resolves to: `atTick` as it is (absolute, from tick 0), `atFraction` of
@@ -9,9 +9,7 @@ import type { TimelineMark } from './MatchTimelineEntry.types';
  */
 export const timelineMarkTick = (
   mark: TimelineMark,
-  tickRate: number,
-  plannedMatchSeconds: number,
-  countdownEndTick: number,
+  { tickRate, plannedMatchSeconds, countdownEndTick }: TimelineFrame,
 ): number =>
   'atTick' in mark
     ? mark.atTick

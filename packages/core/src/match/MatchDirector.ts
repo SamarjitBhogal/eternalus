@@ -1,4 +1,3 @@
-import { countdownTicks } from '../config/countdownTicks';
 import type { TimelineAction, TimelineActionKind } from '../config/MatchTimelineEntry.types';
 import type { MatchPhase } from '../config/matchPhases';
 import { makeLogRecord } from '../diagnostics/makeLogRecord';
@@ -82,17 +81,13 @@ export class MatchDirector {
     const { state } = context;
     const { match } = state;
     const { legends, teams } = match.scoring;
-    const countdownEndTick = countdownTicks(
-      state.config.match.countdownSeconds,
-      state.config.tickRate,
-    );
     const result: MatchResult = {
       winner: verdict.winner,
       condition: verdict.condition,
       playerTeam: match.playerTeam,
       hadHuman: match.humanLegendId !== null,
       durationTicks: state.tick + 1,
-      matchTicks: Math.max(0, state.tick + 1 - countdownEndTick),
+      matchTicks: Math.max(0, state.tick + 1 - match.countdownEndTick),
       seed: state.seed,
       configHash: fnv1a(canonicalJson(state.config)),
       legends: legends.map((row) => ({ ...row })),

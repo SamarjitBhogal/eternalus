@@ -49,12 +49,11 @@ describe('GUARD_PLANS', () => {
     const quarterTick =
       quarter === undefined
         ? -1
-        : timelineMarkTick(
-            quarter.at,
+        : timelineMarkTick(quarter.at, {
             tickRate,
-            match.plannedMatchSeconds,
-            countdownTicks(match.countdownSeconds, tickRate),
-          );
+            plannedMatchSeconds: match.plannedMatchSeconds,
+            countdownEndTick: countdownTicks(match.countdownSeconds, tickRate),
+          });
     const delayTicks =
       activation?.at === 'countdown-end' ? Math.round(activation.delaySeconds * tickRate) : 0;
 

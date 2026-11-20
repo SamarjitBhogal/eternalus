@@ -201,6 +201,7 @@ export interface MatchState {
   readonly phaseEnteredTick: number;
   readonly timelineCursor: number; // index of the next unfired entry; written only by MatchRecord.advanceTimeline (DEC-172)
   readonly schedule: readonly { readonly entryId: string; readonly tick: number }[]; // every entry's resolved tick, in firing order; taken from config, so not hashed
+  readonly countdownEndTick: number; // the tick the countdown ends, set once at build; the one value every runtime reader reads (DEC-285); taken from config, so not hashed
   readonly isIdleHeld: boolean; // the countdown freeze: while true every unit is idle and can only turn (DEC-88); written only by MatchRecord.holdIdle
   readonly playerTeam: PlayableTeam; // chosen at match creation, also in sim mode
   readonly humanLegendId: EntityId | null; // null = sim mode (11-game-ai.md §7); the roster's human slot (DEC-173), set once by MatchRecord.seatHuman; spectatedLegendId beside it
@@ -453,8 +454,8 @@ Victory and the result (GL-2, core) are built: the `VictoryCondition` contract
 `state.match.result` is set, and no move leaves a terminal phase (the director rejects it,
 `phase-monotonic` flags it). `MatchResult` and `Verdict` live in `state/MatchResult.types.ts` and
 `VictoryConditionId` in `config/VictoryConditionId.types.ts`. `MatchConfig.playerTeam` is built.
-`MatchState` has `phase`, `phaseEnteredTick`, `timelineCursor`, `schedule`, `isIdleHeld`,
-`playerTeam`, `humanLegendId`, `scoring` and `result`. `MatchResult` has `winner`, `condition`,
+`MatchState` has `phase`, `phaseEnteredTick`, `timelineCursor`, `schedule`, `countdownEndTick`
+(DEC-285), `isIdleHeld`, `playerTeam`, `humanLegendId`, `scoring` and `result`. `MatchResult` has `winner`, `condition`,
 `playerTeam`, `hadHuman`, `durationTicks`, `matchTicks`, `seed`, `configHash`, `legends`, `teams` and
 `finalHash`; `timeline` and `achievements` come with the work that fills them.
 `match/defaultMatchDirector.ts` builds the director `Simulation` uses. Once `state.match.result` is set,

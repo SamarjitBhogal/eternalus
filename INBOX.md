@@ -215,6 +215,12 @@ Reply inline (`Decision: …`).
       Proposal: a scoring loader turns it into ticks and rejects a negative or non-finite value,
       as `loadGuardPlans` does.
       Build both in PR #125, build them in a later PR, or keep the code as it is?
+  - Answered 2026-11-20 (Owner Calls page, DEC-285): "Approve both: (1) in the DEC-278 countdown
+    PR, which already touches every reader; (2) in a follow-up PR". (1) **Built** on
+    `feat/match-start-countdown`: the tick is `MatchState.countdownEndTick`, set once when the
+    match is built; every runtime reader reads it (the three above, and `MatchDirector` and the
+    snapshot, which that branch added). Built with it, critic round 2's BTD4: `timelineMarkTick`
+    takes a named `TimelineFrame`. (2) is open for its follow-up pull request.
 
 - [x] **Unit facing chevron (DEC-192, feat/unit-facing-chevron, 2026-11-05) — two questions, one
       better-than-design item.**
