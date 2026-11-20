@@ -4,7 +4,7 @@ description: Specification of the follow-up pull request that adds data-selectab
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-20
 tags: [plan, ui, hud, character-select, accessibility, motion, follow-up]
 related:
   - 'docs/reference/game-design/15-figma-frames-and-creative-decisions.md'
@@ -40,7 +40,11 @@ information stay (§2 rule 3); his changes to UE-01, UE-07, UE-08 and UE-12 are 
   ruling OD-39). **Appended 2026-11-02:** the owner approved row T-152 (HC-T1, DEC-142), so the
   task line is in Phase 6, sprint 6.3: the work is scheduled.
 - **Branch:** one task branch, `feat/ui-enhancements`, one pull request. UE-03 lands first, because
-  every other enhancement relies on it.
+  every other enhancement relies on it. **Appended 2026-11-20 (DEC-282 (5)):** UE-03, the switch
+  of §2 rule 1 and UE-01 were built ahead of sprint 6.3, on `feat/match-start-countdown` (the
+  match-start countdown, DEC-278), not on this branch. UE-01 also runs on the match-start
+  overlay; its build defaults are in the DEC-282 row, and its register row is CD-48. The other
+  enhancements stay with this plan.
 - **Inputs:** owner decision DEC-53 (a creative change ships only beside a live original, through
   the same display-switch pattern as DEC-54 and DEC-55); `INBOX.md` HC-S1 to HC-S4, which this plan
   specifies; the register [reference

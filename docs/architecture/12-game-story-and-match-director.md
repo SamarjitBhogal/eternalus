@@ -4,7 +4,7 @@ description: How a match unfolds over time - the MatchDirector state machine ove
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-12
+last-reviewed: 2026-11-20
 tags: [architecture, match, timeline, phases, scoring, story, lore]
 paths:
   [
@@ -99,7 +99,7 @@ strictly forward; `victory` and `defeat` are terminal.
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
 | `countdown`          | tick 0                                                                                                                                                  | At load-in `SpawnSystem` spawns one light horde of `hordeSizes.light` per lane (`map.numLanes`) per team at the lane's base ([18](18-minion-system.md) §3.1, MS-30). No tower spawns (FR-003): every wave's clock starts when the countdown ends (`07` §6). `CountdownPhase` sets `MatchState.isIdleHeld`: every unit is idle and can only turn (no walking, attacks, casts); spawns go on, camps spawn (DEC-81, DEC-84, DEC-88). The director spawns nothing.       | **MVP**                             |
 | `early-game`         | `countdownSeconds` elapsed (the value lives in `config/defaultGameConfig.ts`)                                                                           | Towers spawn a horde every `hordeSpawnIntervalSeconds` (`TUNE` 60 s) and forest camps activate, with no cooldown of their own (DEC-167): both are `Spawner` data consumed by `SpawnSystem`, not director logic.                                                                                                                                                                                                                                                      | **MVP**                             |
-| `quarter-mark`       | fraction 0.25 of `plannedMatchSeconds` (game doc "quarter mark")                                                                                        | The `spawn-mini-bosses` action emits one `spawn-requested` per outer-lane `CapturePoint` with the mini-boss table (boss plus support mobs); `CaptureSystem` sets `Capturable.lockedBy` while the boss lives (`07` §7).                                                                                                                                                                                                                                               | **MVP** (mini-boss is MVP, DISC-63) |
+| `quarter-mark`       | fraction 0.25 of `plannedMatchSeconds`, counted from the countdown's end like every fraction (DEC-282) (game doc "quarter mark")                        | The `spawn-mini-bosses` action emits one `spawn-requested` per outer-lane `CapturePoint` with the mini-boss table (boss plus support mobs); `CaptureSystem` sets `Capturable.lockedBy` while the boss lives (`07` §7).                                                                                                                                                                                                                                               | **MVP** (mini-boss is MVP, DISC-63) |
 | `mid-game`           | fraction 0.5 (game doc "mid-game")                                                                                                                      | The `summon-greater-boss` action asks the `Cathedral` spawner for the `greater-boss`; `SpawnSystem` fulfils it and emits `boss-summoned`. `state.match.atmosphere` becomes `eternal` (views spread the change outward from the Cathedral by ticks elapsed). `StatusEffectSystem` applies `empowered` to camp units on `phase-changed`; corner camps' side waves start (`SpawnWave.afterPhase: 'mid-game'`, **Recommendation:** a new optional field on `07`'s type). | **MVP-if-time** (with the boss)     |
 | `end-game`           | fraction 0.75 (DEC-175), or the first `structure-breakability-changed` that makes a Stronghold wall breakable if sooner (**Recommendation:** no source) | Announcer and music only in the MVP; the extension point for late-game rules (score cap, reinforcement waves).                                                                                                                                                                                                                                                                                                                                                       | **MVP** (as a marker)               |
 | `victory` / `defeat` | a `VictoryCondition` returns a verdict (§6)                                                                                                             | Terminal. `state.match.result` is built, `match-ended { result }` is emitted, the director goes inert. `victory` when `result.winner === state.match.playerTeam`, otherwise `defeat`; a draw (`winner: null`) enters `defeat` and the results screen says so (**Recommendation:** a `draw` phase is one class and one literal if wanted).                                                                                                                            | **MVP**                             |
@@ -113,7 +113,7 @@ mode changes nothing: `playerTeam` is the spectated team, so a bot-versus-bot ma
 
 ```ts
 // Sketch: packages/core/src/config/MatchTimelineEntry.types.ts
-export type TimelineMark = { readonly atTick: number } | { readonly atFraction: number }; // fraction of plannedMatchSeconds
+export type TimelineMark = { readonly atTick: number } | { readonly atFraction: number }; // atTick from tick 0; atFraction of plannedMatchSeconds from the countdown's end
 
 export type TimelineAction =
   | { readonly kind: 'enter-phase'; readonly phase: MatchPhase }
@@ -132,18 +132,20 @@ export type MatchTimelineEntry = {
 };
 ```
 
-| Entry (default config, `TUNE`) | `at`                     | Action                                                     | Source                                      |
-| ------------------------------ | ------------------------ | ---------------------------------------------------------- | ------------------------------------------- |
-| `countdown-over`               | `atTick: countdownTicks` | `enter-phase early-game`                                   | requirements doc; DEC-81, DEC-84            |
-| `quarter-mark`                 | `atFraction: 0.25`       | `enter-phase quarter-mark`, then `spawn-mini-bosses outer` | game doc ("quarter mark of the game")       |
-| `mid-game`                     | `atFraction: 0.5`        | `enter-phase mid-game`, then `summon-greater-boss`         | game doc (gem explodes mid-game)            |
-| `end-game`                     | `atFraction: 0.75`       | `enter-phase end-game`                                     | the owner's ruling, DEC-175                 |
-| `plannedMatchSeconds`          | `defaultGameConfig.ts`   | the denominator of every fraction                          | DEC-13, DEC-81 (planning length, not a cap) |
+| Entry (default config, `TUNE`) | `at`                     | Action                                                     | Source                                               |
+| ------------------------------ | ------------------------ | ---------------------------------------------------------- | ---------------------------------------------------- |
+| `countdown-over`               | `atTick: countdownTicks` | `enter-phase early-game`                                   | requirements doc; DEC-81, DEC-84                     |
+| `quarter-mark`                 | `atFraction: 0.25`       | `enter-phase quarter-mark`, then `spawn-mini-bosses outer` | game doc ("quarter mark of the game")                |
+| `mid-game`                     | `atFraction: 0.5`        | `enter-phase mid-game`, then `summon-greater-boss`         | game doc (gem explodes mid-game)                     |
+| `end-game`                     | `atFraction: 0.75`       | `enter-phase end-game`                                     | the owner's ruling, DEC-175                          |
+| `plannedMatchSeconds`          | `defaultGameConfig.ts`   | the denominator of every fraction                          | DEC-13, DEC-81 (planning length, not a cap), DEC-282 |
 
 `GameConfig` gains `plannedMatchSeconds` (the reference doc calls it `matchLengthTicks`; seconds
 in config, ticks at runtime, per `03` §10). `MatchTimeline.resolve(config)` turns every mark into
-a tick once at construction and sorts entries by tick, then by config order. Both it and
-`validateGameConfig` use one formula for that tick (`config/timelineMarkTick.ts`), so the order
+a tick once at construction and sorts entries by tick, then by config order. An `atTick` mark counts
+from tick 0; an `atFraction` mark counts from the countdown's end, because the countdown is not match
+time (DEC-278, DEC-282 (1)): mid-game is 15:00 on the match clock, as DEC-87's wave clocks are. Both
+it and `validateGameConfig` use one formula for that tick (`config/timelineMarkTick.ts`), so the order
 validation checks is the order the match runs. `validateGameConfig`
 rejects fractions outside `[0, 1]`, unsorted entries, `enter-phase` entries out of phase order, a timeline with no `enter-phase` entry or
 whose first one is not at `round(countdownSeconds × tickRate)`, an `enter-phase` into `victory` or `defeat`, a
@@ -372,7 +374,8 @@ export type MatchResult = {
   readonly condition: VictoryConditionId;
   readonly playerTeam: PlayableTeam;
   readonly hadHuman: boolean; // false for a pure sim match (mechanics-ideas.md §6)
-  readonly durationTicks: number;
+  readonly durationTicks: number; // ticks from tick 0, the countdown included: the replay fact
+  readonly matchTicks: number; // ticks from the countdown's end: the match time (DEC-282 (2))
   readonly seed: number;
   readonly configHash: number; // FNV-1a of GameConfig, so a replay can refuse a mismatched config
   readonly legends: readonly LegendStats[]; // 20 rows: entityId, team, classId, controller, counters, score
@@ -411,7 +414,7 @@ it with the replay and the achievements in one unit of work.
 quarter-mark`), a stub `GameState` stepped to tick 25; assert the `phase-changed` sequence, the
   cursor, that no entry fires twice, that a backwards `enter-phase` throws, and that
   `dev-set-phase` replays the skipped entries in order.
-- `MatchTimeline.test.ts`: fractions resolve against `plannedMatchSeconds`; ties keep config order;
+- `MatchTimeline.test.ts`: fractions resolve against `plannedMatchSeconds`, from the countdown's end; ties keep config order;
   every invalid config from §3 is rejected by name. `Scoring.test.ts`: one test per §5 row that
   the hit, death and structure rules score, plus the assist window; `rules/CheckpointRule.test.ts`: the checkpoint row;
   `rules/CaptureHoldRule.test.ts`: the held-points row and the hold accrual;
@@ -452,7 +455,7 @@ Victory and the result (GL-2, core) are built: the `VictoryCondition` contract
 `VictoryConditionId` in `config/VictoryConditionId.types.ts`. `MatchConfig.playerTeam` is built.
 `MatchState` has `phase`, `phaseEnteredTick`, `timelineCursor`, `schedule`, `isIdleHeld`,
 `playerTeam`, `humanLegendId`, `scoring` and `result`. `MatchResult` has `winner`, `condition`,
-`playerTeam`, `hadHuman`, `durationTicks`, `seed`, `configHash`, `legends`, `teams` and
+`playerTeam`, `hadHuman`, `durationTicks`, `matchTicks`, `seed`, `configHash`, `legends`, `teams` and
 `finalHash`; `timeline` and `achievements` come with the work that fills them.
 `match/defaultMatchDirector.ts` builds the director `Simulation` uses. Once `state.match.result` is set,
 `applyCommand` refuses every command with `command-rejected` reason `match-ended` (FR-002); the

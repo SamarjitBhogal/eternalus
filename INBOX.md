@@ -64,6 +64,7 @@ Reply inline (`Decision: …`).
       (c) needs Sam's sign-off now and is replaced by phase-3 sprint 3.6's `BossController`, (d)
       partly built, (e) awaits the owner and Sam.** (a) The boss
       spawns at the default timeline's quarter mark (440 s after the countdown ends, 2026-11-12;
+      450 s since DEC-282 (1) counts the marks from the countdown's end, 2026-11-20;
       `guardPlans.test.ts` derives it from `createDefaultGameConfig`'s `quarter-mark` entry), but
       through its guard plan's `delaySeconds`, not `MatchTimeline`: a match with another
       `plannedMatchSeconds` or countdown keeps 440 s. Reference 04 and 07 §7 schedule it from the
@@ -2971,6 +2972,14 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-11-20 — **Your answers on the DEC-278 critic, round 1 (the match-start countdown)**
+  (`feat/match-start-countdown`): recorded as DEC-282 in
+  `docs/reference/game-design/13-owner-decisions-log.md`. The phase marks count from the
+  countdown's end; core's `MatchResult.matchTicks` is the match time; one shared countdown with
+  UE-01's urgency on the character select and the match-start overlay, with UE-03 and the
+  `uiEnhancements` switch built in the same PR; the bridge's countdown derivation is signed off.
+  Reference 15 registers UE-01 as CD-48.
 
 - 2026-11-03 — **PR #56 — the `returning` state (DEC-144 G).** Decision (SamarjitBhogal,
   2026-11-03, recorded as DEC-155): (b) merge it into the resting state. `LeashBehaviour`, `MinionController` and
