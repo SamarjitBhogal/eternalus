@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { Abilities } from '../../components/Abilities';
 import { TEST_DEBUG_CONFIG } from '../../diagnostics/InvariantRunner.constants';
 import type { DefinitionSource } from '../../entities/EntityFactory.types';
 import type { GameEventMap } from '../../state/GameEvents.types';
@@ -299,13 +300,20 @@ describe('Fury (scenario)', () => {
     expect(second.sim.hash()).toBe(first.sim.hash());
   });
 
-  it('gives the same hash for the same seed in the middle of a wind-up', () => {
-    const [first, second, idle] = [match(), match(), match()];
-    for (const scenario of [first, second, idle]) scenario.startFury();
+  it('hashes the cast waiting in the middle of a wind-up', () => {
+    const [first, second] = [match(), match()];
+    for (const scenario of [first, second]) scenario.startFury();
     for (const scenario of [first, second]) scenario.cast(scenario.vanguard, 'granted', SELF);
-    for (const scenario of [first, second, idle]) scenario.run(5);
-
+    for (const scenario of [first, second]) scenario.run(5);
     expect(second.sim.hash()).toBe(first.sim.hash());
-    expect(idle.sim.hash()).not.toBe(first.sim.hash());
+
+    // eslint-disable-next-line @typescript-eslint/dot-notation -- reads the private state to move one cast's step
+    const bar = second.sim['state'].entities.get(second.vanguard)?.getComponent(Abilities);
+    expect(bar?.castsInProgress).toHaveLength(1);
+    const [waiting] = bar?.endCasts() ?? [];
+    if (waiting === undefined) throw new Error('no cast waiting');
+    bar?.keepCast({ ...waiting, nextStep: waiting.nextStep + 1 });
+
+    expect(second.sim.hash()).not.toBe(first.sim.hash());
   });
 });

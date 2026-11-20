@@ -114,10 +114,14 @@ export class AbilitySystem implements System {
 
   /** Fires the due steps of each cast `caster` has in progress; drops them all once it died. */
   private advance(state: GameState, caster: Entity): void {
-    for (const cast of caster.getComponent(Abilities).endCasts()) {
-      if (caster.findComponent(Health)?.isDead === true) {
-        return;
-      }
+    const bar = caster.getComponent(Abilities);
+    const casts = bar.endCasts();
+    // Checked once: no step of a cast hurts its own caster (effects hit enemies only), so it cannot
+    // die between two of its casts here.
+    if (caster.findComponent(Health)?.isDead === true) {
+      return;
+    }
+    for (const cast of casts) {
       const { position } = caster.getComponent(Transform);
       const here = { x: position.x, y: position.y };
       this.fireDue(state, caster, cast, { from: here, to: here });
@@ -135,7 +139,12 @@ export class AbilitySystem implements System {
     placement?: ShapePlacement,
   ): void {
     const ability = this.registry.resolve(cast.abilityId);
-    // ponytail: one CastInstance per cast and due tick, fine while casts are rare; pool it if bots
+    const waiting = ability.steps[cast.nextStep];
+    if (waiting !== undefined && cast.tick + waiting.delayTicks > state.tick) {
+      caster.getComponent(Abilities).keepCast(cast);
+      return;
+    }
+    // ponytail: one CastInstance per cast per due tick, fine while casts are rare; pool it if bots
     // cast every tick.
     const next = new CastInstance(
       { ...cast, casterId: caster.id, ability },

@@ -1,3 +1,4 @@
+import { FURY_WINDUP_SECONDS } from '../abilities/furyDash';
 import type { AuthoredStatusEffect } from './statusEffects.types';
 
 /**
@@ -11,7 +12,7 @@ export const FURY_WINDUP = {
   displayName: 'Wind-up', // HC-Q51: text to come
   polarity: 'buff',
   controlClass: 'none',
-  durationSeconds: 0.3, // TUNE: DEC-283 ("0.3 to 'power up'")
+  durationSeconds: FURY_WINDUP_SECONDS,
   stacking: 'refresh',
   maxStacks: 1,
   modifiers: [],

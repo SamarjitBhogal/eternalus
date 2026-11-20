@@ -33,9 +33,6 @@ export class CastInstance {
     const { steps } = ability;
     const now = this.services.state.tick;
     let next = from;
-    if ((steps[next]?.delayTicks ?? 0) + tick > now) {
-      return next;
-    }
     const context = this.contextAt(placement ?? { from: origin, to: origin });
     for (let step = steps[next]; step !== undefined && tick + step.delayTicks <= now;) {
       step.effect.apply(step.spec, context);

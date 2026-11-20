@@ -1,5 +1,8 @@
 import type { AuthoredAbility } from './AbilityDefinition.types';
 
+/** Fury's dash wind-up, in seconds: the dash step's delay and the `fury-windup` status's length. */
+export const FURY_WINDUP_SECONDS = 0.3; // TUNE: DEC-283 ("0.3 to 'power up'")
+
 /**
  * Fury's dash (DEC-270): granted by the `fury` status while it lasts, on Space. The Vanguard first
  * winds up for 0.3 s, standing still (`fury-windup`, DEC-283), then dashes 3 m in 0.3 s the way it
@@ -21,7 +24,7 @@ export const FURY_DASH = {
     { kind: 'buff', statusId: 'fury-windup' }, // TUNE: DEC-283, the 0.3 s wind-up (its own time)
     {
       kind: 'dash',
-      delaySeconds: 0.3, // TUNE: DEC-283, the dash starts as the wind-up ends
+      delaySeconds: FURY_WINDUP_SECONDS, // the dash starts as the wind-up ends
       distance: 3, // TUNE: balancing.md:185, metres
       durationSeconds: 0.3, // TUNE: Blade Runner's (balancing.md:183); Fury's row has none
       onPath: [],

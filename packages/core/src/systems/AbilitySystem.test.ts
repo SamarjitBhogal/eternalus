@@ -182,6 +182,20 @@ describe('AbilitySystem', () => {
     expect(bar.castsInProgress).toEqual([]);
   });
 
+  it('keeps a waiting cast as the same object on a tick with no due step', () => {
+    const { caster, run, next } = setUp();
+    const bar = caster.getComponent(Abilities);
+    bar.slot('ability-3')?.queue(AIM);
+    run();
+    const [waiting] = bar.castsInProgress;
+    next();
+    next();
+
+    expect(waiting).toBeDefined();
+    expect(bar.castsInProgress).toHaveLength(1);
+    expect(bar.castsInProgress[0]).toBe(waiting);
+  });
+
   it('fires the tick’s new casts before the later steps of older casts', () => {
     const { caster, log, run, next } = setUp();
     const bar = caster.getComponent(Abilities);

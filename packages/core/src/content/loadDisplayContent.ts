@@ -23,6 +23,7 @@ import { MAP_FEATURE_DEFINITIONS } from './maps/mapFeatureDefinitions';
 import type { MapFeatureKind } from './maps/maps.types';
 import { VERDICT_LINES } from './narrative/verdictLines';
 import type { VerdictLines } from './narrative/verdictLines.types';
+import { STATUS_EFFECTS } from './status-effects/statusEffectCatalogue';
 import { PROFILE_DISPLAY_NAME } from './profile/profileDisplayName';
 import { SOVEREIGN_DISPLAY_NAMES } from './sovereigns/sovereignDisplayNames';
 import { BOT_ROSTER } from './teams/botRoster';
@@ -82,6 +83,15 @@ export type DisplayContent = {
     readonly id: string;
     readonly kind: MapFeatureKind;
     readonly displayName: string | null;
+  }[];
+  /**
+   * Every status effect's id and display name, in catalogue order. The client keys its status
+   * visuals (the wind-up rings) by these ids, and checks at boot that each id it uses is here
+   * (ADR 0023), so a renamed status fails the checks rather than drawing nothing.
+   */
+  readonly statuses: readonly {
+    readonly id: string;
+    readonly displayName: string;
   }[];
   /** Each playable team's display name (the team badge and the roster labels). */
   readonly teamNames: Readonly<Record<PlayableTeam, string>>;
@@ -184,6 +194,7 @@ export const loadDisplayContent = (
       kind,
       displayName,
     })),
+    statuses: STATUS_EFFECTS.all().map(({ id, displayName }) => ({ id, displayName })),
     teamNames: TEAM_DISPLAY_NAMES,
     profileDisplayName: PROFILE_DISPLAY_NAME,
     botRoster,
