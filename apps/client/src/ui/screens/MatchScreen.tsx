@@ -1,7 +1,7 @@
 import { type ReactElement, useRef } from 'react';
 
 import { useAppSelector } from '../../bridge/hooks';
-import { matchSlice } from '../../bridge/slices/matchSlice';
+import { selectIsDuel } from '../../bridge/selectors/selectIsDuel';
 import { AbilityBar } from '../hud/AbilityBar';
 import { AetherBar } from '../hud/AetherBar';
 import { DuelHud } from '../hud/DuelHud';
@@ -34,7 +34,7 @@ import type { ScreenProps } from './screen.types';
 export function MatchScreen({ viewport }: ScreenProps): ReactElement {
   const overlay = useAppSelector((state) => state.session.overlay);
   const openerRef: PauseOpenerRef = useRef<Element | null>(null);
-  const isDuel = useAppSelector(matchSlice.selectors.selectIsDuel);
+  const isDuel = useAppSelector(selectIsDuel);
   usePauseMenuKey(overlay, openerRef, isDuel);
   useDuelUnloadGuard(isDuel);
   const isInert = overlay !== null;

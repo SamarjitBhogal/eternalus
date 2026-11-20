@@ -90,11 +90,6 @@ export const matchSlice = createSlice({
     selectMatchClock: (state) => state.clock,
     selectStructures: (state) => state.structures,
     selectCapturePoints: (state) => state.capturePoints,
-    /**
-     * Whether this is an online Duel: from `match-found` (the VERSUS names) on, before the first
-     * `duel-state`, so Escape asks to leave the Duel instead of opening the pause menu.
-     */
-    selectIsDuel: (state) => state.versus !== null || state.duelHud !== null,
     selectOpponentGraceMs: (state) => state.opponentGraceMs,
   },
 });

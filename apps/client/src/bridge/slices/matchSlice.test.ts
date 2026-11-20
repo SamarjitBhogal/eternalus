@@ -59,27 +59,6 @@ describe('matchSlice', () => {
     expect(matchSlice.selectors.selectDuelHud({ match })).toBe(duel);
   });
 
-  it('knows a Duel from match-found on, before its first scoreboard', () => {
-    const outside = matchSlice.getInitialState();
-    const found = matchSlice.reducer(
-      undefined,
-      matchSlice.actions.versusChanged({ own: 'A', opponent: 'B' }),
-    );
-    const scored = matchSlice.reducer(
-      undefined,
-      matchSlice.actions.duelHudChanged({
-        ownKills: 0,
-        opponentKills: 0,
-        killTarget: 10,
-        countdown: 3,
-      }),
-    );
-
-    expect(matchSlice.selectors.selectIsDuel({ match: outside })).toBe(false);
-    expect(matchSlice.selectors.selectIsDuel({ match: found })).toBe(true);
-    expect(matchSlice.selectors.selectIsDuel({ match: scored })).toBe(true);
-  });
-
   it("stores a Duel's outcome, a draw included", () => {
     const won = matchSlice.reducer(undefined, duelEnded({ winner: 'dark', reason: 'finished' }));
     expect(selectDuelOutcome({ match: won })).toEqual({

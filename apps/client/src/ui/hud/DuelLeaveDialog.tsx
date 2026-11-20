@@ -1,4 +1,4 @@
-import { type ReactElement, useId } from 'react';
+import { type ReactElement, useId, useRef } from 'react';
 
 import { emitIntent } from '../../bridge/eventBus';
 import { useAppSelector } from '../../bridge/hooks';
@@ -13,22 +13,28 @@ const { duelLeave: text } = STRINGS;
  * The confirmation over an online Duel (the `pause-menu` key opens it): leaving forfeits the match
  * and the opponent wins, and the match does not pause (the server runs it). Stay, focused by
  * default, closes it; Leave forfeits and returns to the main menu. `MatchScreen` mounts it always;
- * it shows only while the `leave-duel` overlay is open, and then only Escape works (the player's
- * Legend stands still: `useModalKeyFilter`). The focus return to the opener is
+ * it shows only while the `leave-duel` overlay is open, and then only Escape, and Tab, Enter and
+ * Space on its two buttons, work (the player's Legend stands still: `useModalKeyFilter`). The focus return to the opener is
  * `PauseOverlay`'s (`usePauseOverlayFocus`).
  */
 export function DuelLeaveDialog(): ReactElement | null {
   const overlay = useAppSelector((state) => state.session.overlay);
   const titleId = useId();
   const textId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
   const isOpen = overlay === 'leave-duel';
-  useModalKeyFilter(isOpen, () => {
-    emitIntent({ kind: 'close-overlay' });
-  });
+  useModalKeyFilter(
+    isOpen,
+    () => {
+      emitIntent({ kind: 'close-overlay' });
+    },
+    dialogRef,
+  );
   if (!isOpen) return null;
   return (
     <div className={styles.scrim}>
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
