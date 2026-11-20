@@ -20,6 +20,7 @@ const CATALOGUE: DisplayCatalogue = {
   effectsRenderer: 'figma-raster',
   contrastMode: 'figma',
   hud: TEST_HUD_CATALOGUE,
+  laneMinions: [{ id: 'light-minion', displayName: 'Light Minion' }],
   teamNames: { light: 'Lux', dark: 'Umbra' },
   botRoster: {
     id: 'test',
@@ -85,6 +86,12 @@ describe('contentSlice', () => {
     expect(selectBackgroundSet(state, 'light')?.id).toBe('light-a');
     expect(selectBackgroundSet(state, 'neutral')?.id).toBe('menu');
     expect(selectBackgroundSet(state, 'dark')).toBeUndefined();
+  });
+
+  it('selects the lane minions, empty until the catalogue loads', () => {
+    const { selectLaneMinions } = contentSlice.selectors;
+    expect(selectLaneMinions({ content: contentSlice.getInitialState() })).toEqual([]);
+    expect(selectLaneMinions(loaded())).toBe(CATALOGUE.laneMinions);
   });
 
   it('selects the team names, empty until the catalogue loads', () => {

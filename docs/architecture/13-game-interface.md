@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-14
+last-reviewed: 2026-11-20
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -592,7 +592,10 @@ Developer menu (2026-11-13, slice 1): `DeveloperMenu` is enabled by `?dev=1` onl
 persisted `settings.developer.menuEnabled` needs settings persistence, which does not exist) and
 opened by `toggle-developer-menu` (F1). Built controls: spawn mobs (`dev-spawn-mobs`) and remove an
 entity by id (`dev-remove-entity`), each sent as a `dev-command` intent that `Match` enqueues. The
-mob picker is a short client list of the lane minions, not core content. Not built: sim mode, `dev-toggle`, invariant level, timeline jump, config overrides,
+mob picker lists the lane minions of core's display content (`DisplayContent.laneMinions`). Core
+refuses `dev-remove-entity` for a Legend in a human seat (`human-legend`): the human is removed
+only in sim mode (the "Add / remove a Legend" row above). Not built: sim mode, `dev-toggle`,
+invariant level, timeline jump, config overrides,
 and showing core's refusals in the UI. `bridge/events.ts` has no `dev-toggle` yet.
 
 HUD (2026-10-18): the `AbilityBar` cooldown sweep of §3 is the owner's Figma look, a vertical fill
@@ -799,8 +802,9 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   limits) and `toggle-minimap` (`MatchViewControls.toggleMiniMap`: the canvas minimap and the HUD
   ring hide, no click reaches a hidden minimap; the state reaches the UI by the
   `minimap-visibility` event into `viewSlice`; not persisted, an owner question in `INBOX.md`).
-  Still bound but unhandled: `toggle-perf-overlay` (no overlay exists), `toggle-developer-menu`,
-  `sprint`, `interact`, `turret-toggle-control`, `turret-switch-ammo` (`INBOX.md`).
+  Still bound but unhandled: `toggle-perf-overlay` (no overlay exists), `sprint`, `interact`,
+  `turret-toggle-control`, `turret-switch-ammo` (`INBOX.md`). `toggle-developer-menu` is handled
+  since the developer menu (#107): F1 opens it once `?dev=1` enabled it.
 
 ## Related
 

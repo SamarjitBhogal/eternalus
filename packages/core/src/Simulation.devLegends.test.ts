@@ -6,14 +6,20 @@ import { MemoryLogger } from './diagnostics/MemoryLogger';
 import { Simulation } from './Simulation';
 import { TWO_LANE_MAP } from './state/__fixtures__/twoLaneMap';
 
-const newMatch = (): Simulation => {
-  const config = createDefaultGameConfig({ match: { countdownSeconds: 0 } });
+/** A match on the two-lane map: in sim mode (no human) unless `withHuman` seats a dark one. */
+const newMatch = (withHuman = false): Simulation => {
+  const config = createDefaultGameConfig({
+    match: { countdownSeconds: 0, ...(withHuman ? { playerTeam: 'dark' as const } : {}) },
+  });
   return new Simulation({
     config,
     seed: 1,
     logger: new MemoryLogger(),
     debug: TEST_DEBUG_CONFIG,
     map: TWO_LANE_MAP,
+    ...(withHuman
+      ? { roster: [{ pilot: 'human', team: 'dark', definitionId: 'warrior', role: 'rover' }] }
+      : {}),
   });
 };
 
@@ -91,5 +97,27 @@ describe('Simulation with developer-menu Legends (FR-097)', () => {
     expect(first.hash).not.toBe(without.hash);
     expect(first.legends).toHaveLength(1);
     expect(first.legends[0]?.transform?.x).not.toBe(190);
+  });
+
+  it("removes a Legend by dev-remove-legend in sim mode, and refuses the human's Legend outside it (DEC-293)", () => {
+    const simMode = newMatch();
+    simMode.enqueueCommand({ type: 'dev-spawn-legend', team: 'dark', definitionId: 'warrior' });
+    simMode.step();
+    const [bot] = legendsOf(simMode, 'dark');
+    simMode.enqueueCommand({ type: 'dev-remove-legend', entityId: bot?.id ?? '' });
+    simMode.step();
+    expect(simMode.snapshot().match.humanLegendId).toBeNull();
+    expect(legendsOf(simMode, 'dark')).toHaveLength(0);
+
+    const withHuman = newMatch(true);
+    const humanId = withHuman.snapshot().match.humanLegendId;
+    const rejected: string[] = [];
+    withHuman.on('command-rejected', ({ reason }) => rejected.push(reason));
+    withHuman.enqueueCommand({ type: 'dev-remove-legend', entityId: humanId ?? '' });
+    withHuman.step();
+    expect(humanId).not.toBeNull();
+    expect(rejected).toEqual(['human-legend']);
+    expect(legendsOf(withHuman, 'dark').map(({ id }) => id)).toEqual([humanId]);
+    expect(withHuman.snapshot().match.humanLegendId).toBe(humanId);
   });
 });

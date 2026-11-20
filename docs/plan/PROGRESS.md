@@ -9321,3 +9321,15 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: `npm run check:quick` passed. `npm run check` → `EXIT=0`: core 1,637 tests,
   protocol 29, client 2,043, server 84; both builds and `Documentation check passed.`
 - Next step: reviewer re-review of the merged branch.
+
+### 2026-11-20 — Phase 3 / sprint 3 review fixes — feat/developer-menu (PR #107) — claudiodh + Claude Code
+
+- What was done: swholtzman's review of 2026-11-19. B1: core refuses `dev-remove-entity` for a
+  Legend in a human seat (`human-legend`; 13 §4, the human only in sim mode), with a handler test
+  and a menu-path test; two client tests that removed the player now drop it from the snapshot.
+  S1: the mob picker reads `DisplayContent.laneMinions` from the display catalogue (no client
+  list). S2: `DeveloperSpawnMobs` and `DeveloperRemoveEntity` split out of `DeveloperPanel`. S3:
+  `createBrowserMatch` test for `?dev=1` and F1. N1, N2, N3, N4, N6, N7 fixed; N5 (entity picker)
+  and S4 (CI approval) left open.
+- Checks run: `npm run check:quick` → exit 0; the touched core and client test files pass.
+- Next step: `npm run check`, then the stack merge into #109 and #112; reviewer re-review.

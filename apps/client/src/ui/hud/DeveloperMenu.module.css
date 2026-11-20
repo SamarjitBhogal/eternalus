@@ -1,7 +1,12 @@
+/* Right edge, under the minimap ring (its box ends 291 of the HUD's 1080 units down, 27 %) and
+   above the gadgets: clear of the explorer toolbar and the map legend, which share the top-left
+   corner and the ?dev=1 flag. The menu sits outside the HUD section, so it has no --hud-u. */
 .menu {
   position: absolute;
-  top: var(--space-4);
-  left: var(--space-4);
+  top: 29%;
+  right: var(--space-4);
+  max-height: 58%;
+  overflow-y: auto;
   display: grid;
   gap: var(--space-3);
   padding: var(--space-3);

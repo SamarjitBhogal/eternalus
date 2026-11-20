@@ -197,7 +197,7 @@ Reply inline (`Decision: …`).
       now records the limit. Due before checkpoint defenders get posts: key mates by plan or by
       team as well as home, and allow more than one plan per home if both must coexist.
 - [ ] **BUG-5 / SCRUM-438 (2026-11-12, `fix/bound-key-actions`) — two owner questions.** (1) Bound
-      but unhandled actions: `toggle-developer-menu` (BUG-4, a feature), `sprint`, `interact`,
+      but unhandled actions: `toggle-developer-menu` (handled since #107), `sprint`, `interact`,
       `turret-toggle-control`, `turret-switch-ammo` (gameplay not built) and `toggle-perf-overlay`
       (no overlay exists) are in `InputAction`, bound in `keybindings.ts` and shown as rebindable
       in settings, yet nothing handles them. Decide whether to hide them from the bindings screen

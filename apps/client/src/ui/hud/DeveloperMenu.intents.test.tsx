@@ -23,10 +23,6 @@ function mount() {
     developerMenu: {
       ...developerMenuSlice.getInitialState(),
       isOpen: true,
-      mobs: [
-        { id: 'light-minion', label: 'Light Minion' },
-        { id: 'heavy-minion', label: 'Heavy Minion' },
-      ],
       origins: [
         { id: 'gate-a', label: 'gate-a' },
         { id: 'gate-b', label: 'gate-b' },
@@ -186,6 +182,18 @@ describe('DeveloperMenu buttons', () => {
         kind: 'dev-command',
         command: { type: 'dev-spawn-legend', team: 'light', definitionId: 'warrior' },
       },
+    ]);
+  });
+
+  it('Remove Legend sends exactly one dev-remove-legend with the typed id, and nothing without one (DEC-293)', () => {
+    const { container, intents, stop } = mount();
+    click(container, 'Remove Legend');
+    expect(intents).toEqual([]);
+    type(container, 'Legend to remove', ' entity-7 ');
+    click(container, 'Remove Legend');
+    stop();
+    expect(intents).toEqual([
+      { kind: 'dev-command', command: { type: 'dev-remove-legend', entityId: 'entity-7' } },
     ]);
   });
 });

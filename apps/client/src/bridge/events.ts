@@ -247,7 +247,7 @@ export type BridgeEventMap = {
   announcement: Announcement;
   /** The player's minimap key showed (`true`) or hid (`false`) the minimap (DEC-147). */
   'minimap-visibility': { readonly isShown: boolean };
-  /** The developer menu's state: enabled, open, and its pickers (13 §4). */
+  /** The developer menu's state: open, and its pickers (13 §4). */
   'developer-menu': DeveloperMenuState;
   /** The whole settings state, published whenever it changes. */
   settings: SettingsSliceState;
