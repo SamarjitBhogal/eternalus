@@ -9354,3 +9354,26 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Next step: the UE shots and the rule-7 performance check on a quiet machine
   (`ue-shots-2026-11-20/run.sh`), the screen-reader check (critic A10), the shots to the owner on
   the "Countdown PR Calls" page, then the PR on base `phase/3-sprint-3-work`.
+
+### 2026-11-20 — Phase 3 / the match-start countdown: DEC-299 built, critic rounds 1 and 2 on it — feat/match-start-countdown — sholtzman + Claude Code
+
+- What was done: DEC-299 (owner answers on the "Countdown PR Calls" page): (1) UE-01's 1.08, 1.12
+  and 30 % glow kept; (2) the overlay draws the select numeral (64 px) on the select artboard
+  (`SelectionStage`) and enlarges it with `scale: calc(216 / 64)`, so the glow grows with it (216 =
+  "slightly smaller" read as 10 % below 240, a recommendation, CD-49); (3) rule 7 means one 60 Hz
+  frame; (4) the structural tests stand for a screen reader (none was run). Architecture 13 §3
+  MatchCountdown row edited (owner's design text). Critic r1 approved (M1, m1-m6, n1-n7 fixed;
+  BTD3 built; BTD2 rejected, which r2 accepted; BTD1 is `INBOX.md` HC-B15 with options a/b/c).
+  Critic r2 approved, no blockers or majors; R2-m1..m4 and R2-n1..n4 fixed. Rule 7 on the
+  DEC-299 tree (`ue-shots-2026-11-20/perf-dec299/`, ue-perf-soak, ui-on and ui-off, CPU ×1 and
+  ×4, 3 runs each, HeadlessChrome 158): p95 16.7-16.8 ms, max 16.8 ms, 0 intervals over 33.4 ms;
+  3 long tasks per ×4 run, all during page load, on 33bcdcf6 and with every enhancement off too
+  (INBOX "Rule 7 frame latency"). Re-shoot: no visible change (`overlay-glow-r2/`). Fail-first:
+  `eternalus-agent-work/game-loop-plan/dec299-breaks-2026-11-20.md` (6 breaks red, restored).
+  Ponytail: no cuts.
+- Checks run: `npm run check` → `EXIT=0`
+  (`eternalus-agent-work/game-loop-plan/check-countdown-2026-11-20-dec299.log`): core "Tests 1679
+  passed (1679)"; protocol "Tests 29 passed (29)"; client "Tests 2076 passed (2076)"; server
+  "Tests 84 passed (84)"; "Documentation check passed.". This check line was filled in after
+  that run (docs only).
+- Next step: push PR #138 (coordinator), owner review; HC-B15 on the Owner Calls page (Sam).

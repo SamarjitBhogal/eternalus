@@ -16,6 +16,31 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **`feat/match-start-countdown` critics on DEC-299 (2026-11-20), better than the design —
+      one item, pick one option (HC-B15).** The HUD's unit `--hud-u` (CSS container units of
+      `.hud`, architecture 13 §7) and the selection artboard's `--stage-scale` (`useStageScale`,
+      the window) compute the same fit, `min(width / 1920, height / 1080)`, from two inputs. They
+      agree today because the match screen fills the window. Since DEC-299 (2) the match-start
+      numeral sits on the artboard inside the HUD, so if the match screen were ever smaller than
+      the window (a docked panel), the numeral would no longer match the HUD. Not built in PR #138:
+      each option changes more than the countdown.
+      (a) One measurement (critic r1): the match screen measures itself once and sets
+      `--stage-scale`, and `--hud-u` becomes `calc(var(--stage-scale) * 1px)`. One fit source;
+      it changes how every HUD element is sized.
+      (b) Host fitting: `useStageScale` fits the artboard to its host element, not the window. It
+      changes the selection screens and the overlay, and no HUD element. Two computations of one
+      box stay (script for `--stage-scale`, container units for `--hud-u`), so it is not one fit
+      source; they agree because both measure the match screen.
+      (c) CSS typed arithmetic (critic r2): `.match { scale: calc(var(--hud-u) / 1px * 216 / 64) }`.
+      The numeral goes back into HUD units; `SelectionStage` and the window resize listener leave
+      the HUD; the veil's grid centres the numeral again (r1's placement item, for free); 13 §7
+      ("the HUD is sized by `--hud-u`") holds with no exception. `motionTokens.test.ts`
+      `FLOORED_FONT_SIZES` needs a third form. Precondition: Firefox and Safari support typed
+      arithmetic. Chromium does (the critic's probe in headless Chrome 158); Mozilla posted an
+      intent to ship for Firefox 158 and WebKit is not confirmed (a web search only, not checked).
+      Recommendation: (c) once WebKit support is confirmed, else (a); a follow-up pull request
+      either way, not PR #138.
+
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
       small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`
@@ -1637,6 +1662,10 @@ Reply inline (`Decision: …`).
     START; the plan's rule-7 performance check is recorded in `docs/plan/PROGRESS.md` and the
     pull request. CD-48's 1.08, 1.12 and 0.30 and CD-49's veil and size are recommendations: keep,
     change or reject them with the other rows.
+  - Answered, 2026-11-20 (DEC-299, Owner Calls page): you kept CD-48's 1.08, 1.12 and 0.30. CD-49's
+    glow now grows with the numeral, whose font size is 216 px, your "slightly smaller" read as
+    10 % below 240 (a recommendation); the new overlay shots are on the "Countdown PR Calls" page. CD-49's
+    veil tint stays a recommendation: keep, change or reject it with the other rows.
 - [ ] **HC-Q1 — The Legends (DEC-49), still open after your answer of 2026-10-17** (the answered
       part is in Done). (1) Do the game doc's Magus focuses carry over to the new Legends
       (reference 01's Necromancer "debuff focus", Druid's buffs, Mage's self focus), and what role
@@ -2807,6 +2836,22 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
       `CaptureHoldRule` takes it instead of the whole `GameState`, and the capture-point lookups
       of `CaptureHoldRule`, `CaptureProgressBoundsInvariant` and `CaptureSystem` move to it. Close
       this item when its PR merges.
+- [ ] **Rule 7 frame latency (DEC-299 (3))** — Owner: sholtzman, after PR #138 is pushed; it does
+      not block that merge. The match-start overlay's performance runs (ui-enhancements-plan §2
+      rule 7) read a frame-interval p95 of 16.7 to 16.8 ms and a maximum of 16.8 ms in every
+      condition, the controls with every enhancement off included, with no frame over 33 ms; the
+      12 rule-7 re-runs on the DEC-299 (2) tree read the same. One diagnostic re-run on that tree
+      (the ui-off control at CPU ×4, `perf-lt.mjs`) read one 33.3 ms interval, one dropped frame
+      (`over33` counts only intervals over 33.4 ms). The owner passed rule 7 and asked: "we
+      should find out why theres latency whenever we have time". Find why the intervals read
+      16.8 ms and not 16.7 (the browser's frame clock, the headless display, the measuring script
+      or the game) and record the answer in `docs/plan/PROGRESS.md` and here. With it: at CPU ×4
+      the re-runs count three long tasks of about 58 ms per run, all during page load before the
+      measured frames, on the commit before DEC-299 too and with every enhancement off, where the
+      first runs counted none with the same script; find what differs. The runs:
+      `eternalus-agent-work/game-loop-plan/ue-shots-2026-11-20/` (`run.sh` perf_run, `perf.mjs`,
+      `report.py`; the re-run: `perf-dec299.sh`, `perf-lt.mjs`, `perf-dec299/NOTE.md`; the
+      diagnostic runs: `perf-dec299-lt/`, `perf-33bcdcf6-lt/`).
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
       `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`
@@ -3016,6 +3061,13 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-11-20 — **Your answers on the countdown pull request #138** (`feat/match-start-countdown`):
+  recorded as DEC-299. UE-01's look stays as built. The match-start numeral is the character
+  select's numeral enlarged on the select artboard, so its glow grows with it, at a 216 px font
+  size (10 % smaller than 240). Rule 7's limit is one 60 Hz frame, so 16.8 ms passes; why frames read
+  16.8 ms is the request "Rule 7 frame latency". The structural tests stand for the screen-reader
+  lines, and the pull request says no screen reader was run. Reference 15 amends CD-48 and CD-49.
 
 - 2026-11-20 — **Built under your standing rule for better-than-design items (DEC-223, DEC-232)**
   (`feat/match-start-countdown`): the countdown critic's BTD2, BTD3, BTD5 and BTD6, recorded as
