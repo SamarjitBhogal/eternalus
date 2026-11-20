@@ -1,7 +1,7 @@
 import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type { ObstacleDefinition } from '../content/obstacles/obstacles.types';
 import type {
-  GuardPlanDefinition,
+  AuthoredGuardPlan,
   StructureDefinition,
 } from '../content/structures/structures.types';
 import type { InvariantRunner } from '../diagnostics/InvariantRunner';
@@ -40,8 +40,11 @@ export type DefaultSystemPipelineOptions = {
     /** Runs first: the AI, which `systems/` may not import, so `Simulation` composes it. */
     readonly decide: readonly System[];
     readonly collisions?: readonly System[];
-    /** Each guard home's plan by definition id; `GUARD_PLANS` when omitted. */
-    readonly guards?: Readonly<Record<string, GuardPlanDefinition>>;
+    /**
+     * Each guard home's plan by definition id, as authored (`loadGuardPlans` loads it);
+     * `GUARD_PLANS` when omitted.
+     */
+    readonly guards?: Readonly<Record<string, AuthoredGuardPlan>>;
   };
   /**
    * Where each structure's definition, and so its breakability rule, is looked up;

@@ -2,14 +2,15 @@ import { DamagePipeline } from '../combat/DamagePipeline';
 import { Footprint } from '../components/Footprint';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
-import { STUCK_DETECTION } from '../content/ai/stuckDetection';
+import { loadStuckDetection } from '../content/ai/loadStuckDetection';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
-import { OUT_OF_COMBAT_HEALING } from '../content/healing/outOfCombatHealing';
+import { loadOutOfCombatHealing } from '../content/healing/loadOutOfCombatHealing';
 import { FORMATIONS } from '../content/mobs/formations/formations';
 import { ENRAGING_STRUCTURES } from '../content/mobs/minionModifiers';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
-import { OPENING_WAVE, SPAWN_WAVES } from '../content/structures/spawnWaves';
+import { loadSpawnWaves } from '../content/structures/loadSpawnWaves';
+import { OPENING_WAVE } from '../content/structures/spawnWaves';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type { StructureDefinition } from '../content/structures/structures.types';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
@@ -35,10 +36,10 @@ import { SpawnSystem } from './SpawnSystem';
 import { StructureSystem } from './StructureSystem';
 import { StuckSystem } from './StuckSystem';
 import { VeterancySystem } from './VeterancySystem';
-import { MINION_VETERANCY } from '../content/mobs/minionVeterancy';
+import { loadMinionVeterancy } from '../content/mobs/loadMinionVeterancy';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { ZONE_LOCKING_MOBS } from '../content/zones/zoneLocks';
-import { GUARD_PLANS } from '../content/structures/guardPlans';
+import { loadGuardPlans } from '../content/structures/loadGuardPlans';
 import { StatusEffectSystem } from './StatusEffectSystem';
 import { SystemPipeline } from './SystemPipeline';
 
@@ -88,7 +89,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
         ? []
         : [
             ...(hordes.space === null ? [] : [new SpaceSystem(hordes.space)]),
-            new StuckSystem(STUCK_DETECTION),
+            new StuckSystem(loadStuckDetection(tickRate)),
             new PathingSystem(
               createDefaultStrategyRegistry().movement,
               FORMATIONS,
@@ -109,7 +110,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
           ]),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
       new ProgressionSystem(state, progression),
-      new VeterancySystem(state, statuses, progression.units, MINION_VETERANCY),
+      new VeterancySystem(state, statuses, progression.units, loadMinionVeterancy(tickRate)),
       new StructureSystem(structures),
       ...(hordes === undefined
         ? []
@@ -117,17 +118,17 @@ export class DefaultSystemPipeline extends SystemPipeline {
             new SpawnSystem(state, hordes.factory, {
               definitions: hordes.factory.definitions,
               openingWave: OPENING_WAVE,
-              waves: SPAWN_WAVES,
+              waves: loadSpawnWaves(tickRate),
               steering: HORDE_STEERING,
               weights: LANE_ASSESSMENT_WEIGHTS,
               formationId: RANKS_FORMATION.id,
-              guards: hordes.guards ?? GUARD_PLANS,
+              guards: loadGuardPlans(tickRate, hordes.guards),
             }),
             new EnragedSystem(state, statuses, ENRAGING_STRUCTURES),
           ]),
       // Before death, so a fallen Duel Legend is healed and moved instead of removed.
       ...(duelStarts === undefined ? [] : [new DuelRoundSystem(duelStarts)]),
-      new OutOfCombatHealingSystem(state, OUT_OF_COMBAT_HEALING),
+      new OutOfCombatHealingSystem(state, loadOutOfCombatHealing(tickRate)),
       new DeathSystem(),
       new CaptureSystem(state.config.match.capturePoints, tickRate, ZONE_LOCKING_MOBS),
       // After death, so an objective lost this tick can end the match this tick (12 §1).
