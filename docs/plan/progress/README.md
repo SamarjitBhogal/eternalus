@@ -4,7 +4,7 @@ description: The one-file-per-entry progress log since 2026-11-19; read the newe
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-19
+last-reviewed: 2026-11-20
 tags: [plan, progress, log]
 related: ['docs/plan/PROGRESS.md', 'docs/plan/README.md', 'docs/agents/running-agents.md']
 ---
@@ -16,8 +16,9 @@ related: ['docs/plan/PROGRESS.md', 'docs/plan/README.md', 'docs/agents/running-a
 Every work session or PR ends with one new file in this folder. Two sessions never edit the same
 file, so merging a PR no longer makes the other open PRs conflict on one shared log (DEC-277,
 owner ruling 2026-11-19). The earlier entries stay in the archive [PROGRESS.md](../PROGRESS.md).
-New entries go in this folder. A branch that started before DEC-277 merged may still append its
-entry to PROGRESS.md.
+New entries go in this folder. The cut-over is the merge (owner, 2026-11-20): entries that a
+branch wrote before it merged a `phase/3-sprint-3-work` that has DEC-277 stay in PROGRESS.md;
+every entry after that merge is a file here.
 
 ## Read the latest
 

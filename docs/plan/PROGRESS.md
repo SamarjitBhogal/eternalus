@@ -4,7 +4,7 @@ description: The archive of progress entries from 2026-09-30, kept as written; n
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-19
+last-reviewed: 2026-11-20
 tags: [plan, progress, log]
 related:
   [
@@ -21,8 +21,9 @@ related:
 
 **Archive.** Since 2026-11-19 (DEC-277) new entries go one file each in
 [progress/](progress/README.md), so that two sessions never edit the same file. This file holds
-the earlier entries exactly as written. A branch that started before DEC-277 merged may still
-append its entry here.
+the earlier entries exactly as written. The cut-over is the merge (owner, 2026-11-20):
+entries that a branch wrote before it merged a `phase/3-sprint-3-work` that has DEC-277 stay
+here; every entry after that merge is a file in `progress/`.
 Read the newest files in `progress/` first; read this archive for earlier history. Sprint metrics
 measured before 2026-11-19 are recorded here with the machine they were measured on.
 
