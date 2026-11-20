@@ -398,6 +398,9 @@ session or phase named:
   `light-mob` (the training dummy only),
   `obstacle`, `projectile` and `capture-point` (PR #64). Other mobs are SCRUM-59; structures get
   concrete kinds in Phase 2 and 3.
+- `Boss` and `MiniBoss` are not built (Phase 3 sprint 3.6). The capture point mini-boss is a
+  `heavy-mob` until then; the interim is recorded in
+  [18's implementation status note](18-minion-system.md#minion-system).
 
 ## Related
 

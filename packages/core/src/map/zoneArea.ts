@@ -1,7 +1,7 @@
 import { BUILDING_GEOMETRY as G } from '../content/maps/buildingGeometry';
-import { SKETCH_HEIGHT, SKETCH_WIDTH } from '../content/maps/map1Scenery';
 import type { MapDefinition, MapFeature, MapFeatureKind } from '../content/maps/maps.types';
 import type { Polygon } from '../utils/geometry.types';
+import { fortInWorld } from './fortInWorld';
 import { MapGenerationError } from './MapGenerationError';
 import { MapPresentationBuilder } from './MapPresentationBuilder';
 
@@ -16,9 +16,9 @@ type ZoneAreaOf = (map: MapDefinition, feature: MapFeature) => readonly Polygon[
 const ZONE_AREAS: Readonly<Partial<Record<MapFeatureKind, ZoneAreaOf>>> = {
   'capture-point': (map, { position }) => {
     // The fort is drawn in sketch units (MapFortificationBuilder) and stretched per axis.
-    const half = (G.fort.capturePointSize - (2 * G.fort.capturePointSize) / G.fort.wallDivisor) / 2;
-    const halfWidth = half * (map.width / SKETCH_WIDTH);
-    const halfHeight = half * (map.height / SKETCH_HEIGHT);
+    const fort = fortInWorld(G.fort.capturePointSize, map);
+    const halfWidth = (fort.width - 2 * fort.wallWidth) / 2;
+    const halfHeight = (fort.height - 2 * fort.wallHeight) / 2;
     const { x, y } = position;
     return [
       [

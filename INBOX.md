@@ -100,6 +100,10 @@ Reply inline (`Decision: …`).
       Approve all, approve some, or say no; a "no" reworks the code.
   - Answered 2026-11-16 (DEC-263): "Approve all seven" (A3a). All seven are built on
     `feat/ability-framework`; the two `packages/core/AGENTS.md` rows are approved too (A4a).
+  - Correction 2026-11-19 (critic on the phase/3 merge of #126, #121, #120, #119): (7) holds for
+    the destructible map objects that are entities of their own (`WorldObjectStore`), not for
+    towers. A tower owns its fort's map object and has only a structure `Footprint`, so an ability
+    area hits it by its collider circle. The question is HC-Q64.
 - [ ] **HC-B7 — Better than the design, for sign-off: four parts of the ultimate meter
       (`feat/vanguard-kit`, 2026-11-16; DEC-272, DEC-273) — sign-off per item.** All four are
       built, under your 2026-11-09 rule "pick the best architectural outcome, build it now";
@@ -296,7 +300,206 @@ Reply inline (`Decision: …`).
       which have none, and new Oracle icons (its Legend panel still shows the old preview icons
       beside the new kit names); (g) the aether cost on the HUD bar (the snapshot carries it); (h)
       a check in the browser of the Legend panels, whose ability bands changed size.
+      **Added 2026-11-19 (critic on the phase/3 merge of #99), to (d):** the boss content is now
+      here without its weight. `content/mobs/capturePointBoss.ts` has `mass: 3.125` ("as the heavy
+      minion"), so a Slam moves the capture point boss about 0.96 m and a Sentinel (mass 6,
+      `content/legends/sentinel.ts`) 0.5 m: the mini-boss is lighter than the class DEC-208 (2)
+      says it matches. Your "10-12" is on another scale than this repo's (Warrior 1, Sentinel 6).
+      Set the mini-boss mass to the Sentinel's (6), to 10-12 on this scale, or to another value?
+      The merge does not change it: it is a game-design number, in Aryan Walanj's boss content.
 
+- [ ] **HC-Q63 — What may `guard-within-leash` allow after a knock-back?
+      (`feat/ability-framework`, 2026-11-19; critic on the phase/3 merge, finding 2; reasoning,
+      not reproduced).** The invariant (`diagnostics/invariants/GuardWithinLeashInvariant.ts`;
+      architecture 15 §3, 18 §7) allows a guard its leash plus `leashTolerance` (5.5 m,
+      `content/structures/guardPlans.ts`): one decision's walk plus its farthest stance (DEC-144,
+      DEC-181 (H2)), with about 0.06 m of margin for the capture point boss. Forced motion is not
+      in that sum. Slam pushes a light guard (mass 0.5, at or under the base mass 1) 3 m and
+      Shockwave 2.5 m, and knock-backs on one target in the same tick add up (DEC-208 (3)), so a
+      push can move a guard near its limit past it. The match then logs an ERROR (release setting) or throws (test setting,
+      `InvariantRunner.constants.ts`). No test or golden replay reaches it today. The gap came with
+      the ability framework's knock-back; #99 adds zone guards to it. A larger fixed tolerance does
+      not close it, because pushes add up and chain. Options: (A) **recommended:** the guard's post
+      keeps how far a push left it past its limit, and the invariant allows that extra distance
+      until the guard is back inside (the extra can only shrink as the guard walks home); (B) the
+      invariant skips a guard while a push moves it and while it walks home (diagnostics would
+      need the controller's state); (C) leave it, and accept false errors after pushes. Doc 18 is
+      SamarjitBhogal's. A, B or C? A or B is a follow-up PR (this track takes no new work before
+      the freeze).
+- [ ] **HC-Q64 — Should an ability area hit a structure by its outline, as a basic attack does?
+      (`feat/ability-framework`, 2026-11-19; critic on the phase/3 merge of #126, #121, #120,
+      #119, finding S1; not built).** A basic attack measures reach to the target's outline: its
+      map object's footprints, else its structure `Footprint` (a lane tower's fort and the
+      Stronghold's palace, DEC-185; a gate's outline since #119, DEC-217 (17);
+      `EntityStore.outlineOf`). An ability area (`abilities/TargetQuery`) uses only map-object
+      footprints, and the collider circle for every other body (a gate structure's is 3 m). So a
+      melee Legend at a gate's far corner reaches the gate structure with a basic attack, but a
+      Slam (4 m) cast from the same point does not hit it. Towers and the Stronghold are the same
+      since the framework was built (see the HC-B6 correction). The code change is one line
+      (`TargetQuery` reads `outlineOf`), but it changes damage: by DEC-217 (13) "the Stronghold
+      palace and the gates keep their own health", so one area cast would then hit the map object
+      and the structure. Options: (A) areas use the outline, and one cast may damage both (the
+      critic's better-than-design idea: one outline rule for reach, chase and areas); (B) areas
+      use the outline, but a cast damages one of the two (say which); (C) keep it as built. With A
+      or B, `EntityStore.isInReach` and `utils/circlePolygon.doesDiscReachPolygon` (the same rule
+      in two places today) can also become one function (the critic's second idea). A or B is a
+      follow-up PR (this track takes no new work before the freeze).
+
+- [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
+      PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
+      small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`
+      without `hasMapFootprint` is legal and does nothing. One field (for example
+      `mapFootprint?: 'reach' | 'fort'`) makes that state impossible; it changes the same field
+      as item (B3) below, so do both together. (G2) `DefaultSystemPipeline.fortBoxesOf` looks up
+      each entity's definition again; record the fort-box fact where the `Footprint` is made
+      (`Simulation.spawnStructures`), so the pipeline needs no catalogue. Same code as item (C1)
+      below.
+
+- [ ] **`refactor/fort-geometry-helpers` critic (2026-11-13), better than the design — two items
+      for the tidy PR (DEC-218), sign-off per item.** Not built: the branch is a split from
+      PR #98 and stays small. (F1) `MapSceneryBuilder` still grows each ring feature's box by
+      hand, with 5 and 10 as literals; use `boundsOf`, a `growRect(rect, pad)` helper and a
+      constant in `MapSceneryBuilder.constants.ts`. (F2) "wall = side / `wallDivisor`" is in
+      `MapFortificationBuilder` (sketch units) and in `fortInWorld` (world units); one
+      `fortWall(side)` serves both.
+
+- [ ] **`refactor/astar-search-area` critic (2026-11-13), better than the design — one item,
+      sign-off.** Not built. `GameConfig.map.pathSnapCells` (12) is counted in cells, like the
+      old A\* cap: its comment says it "covers a Stronghold footprint on 5 m cells" (60 m), and on
+      PR #98's 2.5 m cells it reaches 30 m. Proposed: `pathSnapDistance` in world units, with the
+      rings derived as `ceil(distance / cellSize)`. Whether 30 m still covers a Stronghold is a
+      live question on #98.
+
+- [ ] **Teammate's boss spec (Aryan Walanj, 2026-11-11): amend reference 04?** A teammate's spec
+      differs from `docs/reference/game-design/04-objectives-capture-points-and-bosses.md` in
+      four places. Nothing is built for any of them until you answer; no Cathedral or middle-boss
+      work is started. For each, reply amend 04 (and a DEC row in 13) or keep 04:
+      (1) **Capture weight instead of the zone lock**: a mini-boss counts 5 and the big boss 20
+      toward zone presence, so a boss weighs in on the capture but the zone stays capturable;
+      04 "Mini-bosses at the quarter mark" says the zone cannot be captured while it lives.
+      (2) **Eternal boss respawns after 10 minutes**; 04 gives the central boss no respawn (only
+      the corner-camp crystal's 5-minute respawn, DEC-12).
+      (3) **The killer gets a flag instead of becoming an Eternal**; 04 says the player who lands
+      the final hit becomes an Eternal (the one non-yellow Form change row). What the flag does
+      is not in the spec.
+      (4) **Regen after 30 s out of combat**; `docs/reference/suggestions/balancing.md` (boss
+      table, MiniBoss row) says 5%/s after 10 s with no enemy inside its zone. Is the 30 s a
+      replacement for the 10 s trigger, does "out of combat" replace "no enemy in the zone", and
+      is the 5%/s rate kept?
+
+- [ ] **Capture point mini-boss: five interim stand-ins (Aryan Walanj, assigned owner, 2026-11-09;
+      `feat/zone-guard-homes` critic finding 1; (c) and (d) `feat/capture-point-boss` critic
+      findings 1 and 2, 2026-11-11) — (a) due before the `MatchTimeline` boss spawn, (b) built,
+      (c) needs Sam's sign-off now and is replaced by phase-3 sprint 3.6's `BossController`, (d)
+      partly built, (e) awaits the owner and Sam.** (a) The boss
+      spawns at the default timeline's quarter mark (440 s after the countdown ends, 2026-11-12;
+      `guardPlans.test.ts` derives it from `createDefaultGameConfig`'s `quarter-mark` entry), but
+      through its guard plan's `delaySeconds`, not `MatchTimeline`: a match with another
+      `plannedMatchSeconds` or countdown keeps 440 s. Reference 04 and 07 §7 schedule it from the
+      match timeline; only that mechanism is still interim. (b) **Built 2026-11-12 (PR #99 review
+      F8):** while the boss lives its zone cannot be captured, as reference 04 says:
+      `CaptureSystem` sets `lockedBy` from the zone's guard posts (`content/zones/zoneLocks.ts`)
+      and a locked zone's progress does not move, so the boss no longer drains a held point as
+      neutral presence. Still open: `LockedZoneOwnerInvariant` (15 §3). (c) **Sam: please sign
+      off this interim (PR #99 review F3, 2026-11-12).** The boss is a `heavy-mob`
+      (`capture-point-boss`) held by `GuardController`, a minion-system controller, against 18's
+      "the minion system never controls a boss"; 18 (MS-28), 11 §4.6 and 04 give it a `MiniBoss`
+      class and `BossController` (moves, roaming, damage-dealer bias), scheduled for sprint 3.6.
+      DEC-236 approved the same stand-in for the corner boss only. Recorded in 18's implementation
+      status note. Reply approve until sprint 3.6, or say what to change. (d) **XP built
+      2026-11-12 (PR #99 review F1):** its 500 XP (balancing.md "500 XP team-wide") goes to every
+      Legend of the killer's team, each paid at most what lifts it 2 levels (DEC-237,
+      `XP_SOURCES.teamKills`); the killer gets nothing on its own. Still open: its kill gives no
+      permanent team buff (reference 04), and the reward comes from `ProgressionSystem`'s own
+      `entity-died` listener, not 12's `xp-granted` reward path; sprint 3.6 replaces both. Known
+      limit (PR #99 critic finding 2): the rewarded team is read from the killer in the store, so
+      a boss killed by a hit from a Legend already removed pays nobody, until `DamageSource`
+      carries the attacker's team. (Its 25% damage from minions, balancing.md, is
+      built since 2026-11-12: `combat/BossMinionDamageStep.ts`.) (e) Its support mobs
+      (`feat/capture-point-boss-guards`, 2026-11-12): reference 04 gives no count, so the plan
+      borrows balancing.md's checkpoint-2 set, 2 `heavy-guard` + 4 `light-guard`, on the boss's
+      ring; like the boss they never respawn, since respawning them needs Sam's sign-off. Approve
+      the count and whether they respawn, or correct them.
+
+- [ ] **Capture point boss size: sign off 1.2 m? (Aryan Walanj, 2026-11-12; `feat/capture-point-boss`
+      critic finding 2) — before the PR merges.** The `capture-point-boss` footprint radius went
+      from 0.8 m to 1.2 m (`content/mobs/capturePointBoss.ts`, `TUNE`): 1.5× the heavy minion so it
+      reads as a boss. No reference or requirement gives a boss size, and 1.2 m is slightly
+      smaller than the Sentinel Legend (1.25 m, DEC-06). Above about 1.3 m the `capture-point`
+      plan's `leashTolerance` must grow (DEC-144; `guardPlans.test.ts` fails otherwise). Reply
+      keep 1.2 m, or give a size.
+
+- [ ] **Guard leash and acquisition radii derived, not hand-copied (`feat/capture-point-boss`
+      critic finding 6, 2026-11-11) — better than the design; capture point part built
+      2026-11-12 (PR #99 review F6), tower guard and camp part optional.** Built: the capture
+      point plan's leash and post gap and its boss's acquisition and vision radii now come from
+      the fort in `buildingGeometry.ts` through `content/zones/capturePointCourt.ts` (the post gap
+      is now midway between the keep's corners and the court's walls, about 29 m, instead of a
+      hand-picked 25 m). Still open: the tower guard and camp mob aggro rules' `acquisitionRadius`
+      is still their plan's leash less its post gap, worked out by hand. Approve a follow-up that
+      derives them from `leashRadius − postGap`, or drop it. The court is in sketch units, which
+      are metres on the default 1600 × 900 world; on another world size `map/zoneArea.ts`
+      stretches the floor and the leash does not follow.
+
+- [ ] AI56-F4 exemption for boss rows; claudiodh/Sam to confirm (asked on #99).
+
+- [ ] **Capture point boss: four better-than-design items (PR #99 critic, 2026-11-12) — Sam and
+      the owner: approve or drop; no code change until then.** (1) **Zone lock read from state,
+      not an event listener.** 12 §7 says `CaptureSystem` clears `lockedBy` on its own
+      `entity-died` listener; the build sets it every tick from the zone's guard posts (no scratch
+      state, nothing to desync on replay, unlocks in the death tick). Approve, and 12 §7 is
+      amended to match; note that a sprint 3.6 `BossController` boss is not a guard post, so the
+      lock's source moves then. (2) **One boss traits block.** `XP_SOURCES.teamKills`,
+      `ZONE_LOCKING_MOBS` and the boss's `xpValue: 0` all key `capture-point-boss` and only tests
+      keep them aligned; one interim block on the mob, shaped like 04's planned
+      `BossDefinition.rewards`, would make sprint 3.6 a move. (3) **The XP cap in its own type.** A
+      `TeamKillAward` with a required `maxLevels` (or `Progression.cappedXp`) instead of the
+      optional field `ProgressionSystem.grant` branches on. (4) **A `GuardStore` query**
+      (`postsOf(homeId)`) instead of `CaptureSystem.lockOf`'s hand-rolled scan of every post.
+
+- [ ] **A named `GuardPlanSource` type (`feat/capture-point-boss` critic round 2 finding 8,
+      2026-11-11) — better than the design, optional follow-up, no code change yet.**
+      `Readonly<Record<string, GuardPlanDefinition>>` is spelled out in six places
+      (`Simulation.types.ts`, `DefaultSystemPipeline.types.ts`, `SpawnSystem.types.ts`,
+      `GuardRoster.ts`, twice in `content/structures/guardPlans.ts`). Approve: a type-only
+      follow-up adds `GuardPlanSource` to `content/structures/structures.types.ts`, as
+      `WeaponSource` and `DefinitionSource` are named, and uses it in all six. Or drop it.
+
+- [ ] **One shared guard-post target priority (`feat/capture-point-boss` critic finding 7,
+      2026-11-11) — better than the design, optional follow-up, no code change yet.** The tower
+      guard, camp mob and capture point boss aggro rules (`content/ai/aggro/`) each repeat the same
+      five-entry priority list. Approve: a follow-up adds one shared `GUARD_POST_PRIORITY` constant
+      in `content/ai/aggro/`. Or drop it.
+
+- [ ] **Timed guard spawns beside `MatchTimeline` (`feat/zone-guard-homes` critic finding 2,
+      2026-11-09) — accepted as interim.** Guard plans now activate `delaySeconds` after the
+      countdown ends (`GuardPlanDefinition.activation`, `content/structures/structures.types.ts`), and the
+      mini-boss (PR A2) uses it. The design schedules mini-boss spawns from `MatchTimeline` /
+      `MatchDirector` (07 §7, 12; phase-3 sprints 3.5–3.6), so timed match spawns now have two
+      paths and no doc says which owns boss timing. Due before the zone-lock PR: pick one owner
+      and update 07 §7 and 12 so only one mechanism is named.
+
+- [ ] **One guard plan per home, mates by `homeId` (`feat/zone-guard-homes` critic finding 3,
+      2026-11-09) — accepted as interim.** `GuardRoster` looks plans up by the home's definition
+      id, so a home has one plan, and `GuardController` (`ai/GuardController.ts`, `isMate`)
+      treats every guard on a home as a mate. 18 §7.1 makes the capture point the home of the
+      team checkpoint defenders too: a neutral mini-boss and a team's defenders on one zone
+      cannot both be plans, and on one `homeId` they would count as mates across teams. 18 §7.1
+      now records the limit. Due before checkpoint defenders get posts: key mates by plan or by
+      team as well as home, and allow more than one plan per home if both must coexist.
+- [ ] **BUG-5 / SCRUM-438 (2026-11-12, `fix/bound-key-actions`) — two owner questions.** (1) Bound
+      but unhandled actions: `toggle-developer-menu` (BUG-4, a feature), `sprint`, `interact`,
+      `turret-toggle-control`, `turret-switch-ammo` (gameplay not built) and `toggle-perf-overlay`
+      (no overlay exists) are in `InputAction`, bound in `keybindings.ts` and shown as rebindable
+      in settings, yet nothing handles them. Decide whether to hide them from the bindings screen
+      until their features exist. (2) `toggle-minimap` (M) now hides and shows the minimap for the
+      current match only (DEC-147); it is not persisted. Decide whether the choice should persist
+      across matches and sessions (a settings field and a migration).
+      (3) Known limit (PR #101 review): the zoom and minimap actions run only from a key press.
+      The bindings screen also accepts a mouse button for them, and such a binding does nothing
+      yet, because the one-shot table has no mouse path (the canvas gestures own the mouse).
+      Decide whether to add one, or to make the bindings screen accept only keys for these
+      actions.
 - [x] **BUG-2: interior wall health (2026-11-12, PR #96, SCRUM-435).** Every `'wall'` map object
       uses the WallSegment value from balancing.md (`content/maps/mapObjectDefinitions.ts`): the
       Stronghold's wall ring and the `'wall'` features inside it alike. The playtest called the
@@ -436,6 +639,10 @@ Reply inline (`Decision: …`).
       `partOf` (stays as ruins); (T2) `WorldObjectStore.spawn` gets only the definition id: pass
       what it needs explicitly. Heal (DEC-215): (H1) one point-in-box helper instead of three
       copies (`PathingSystem.isInsideFort`, `geometry.doesPolygonOverlapRect`, `HealingZones`).
+      (H1 is built in part on `refactor/fort-geometry-helpers` (DEC-244, split from PR #98):
+      `utils/geometry.isPointInRect` replaces `PathingSystem.isInsideFort`'s test and the copy in
+      `doesPolygonOverlapRect`. `HealingZones` is only on `feat/out-of-combat-heal`, not merged:
+      it uses `isPointInRect` once both branches meet.)
       Full findings: `eternalus-agent-work/minion-stack-audit/reports/runner-reports/critic-followups-r2.md`,
       `eternalus-agent-work/playtest-2026-11-04/critic-chevron-r3.md` and
       `eternalus-agent-work/playtest-2026-11-04/session-2383bba1-reports.md`. Approve all,
@@ -774,7 +981,8 @@ Reply inline (`Decision: …`).
       `MovementStrategy`", but bots steer by `move`
       commands, so A\* is a `PathQuery` the bot leaves call (doc 11 §10). Its cost then sits in
       the AI decision budget, not in `PathingSystem` as 11 §6 puts heavy work: each blocked
-      decision searches again (capped by `GameConfig.map.pathMaxExpansions`). If accepted,
+      decision searches again (capped by `GameConfig.map.pathMaxExpansions`; since 2026-11-13
+      `pathMaxSearchArea`, DEC-243). If accepted,
       sprint 3.2's line changes, and a path cache in the brain is the next step if profiling
       shows the cost.
   - Decision (SamarjitBhogal, chat, 2026-10-27): (2) accepted; doc 11 §6 and sprint 3.2's
@@ -2461,7 +2669,7 @@ Reply inline (`Decision: …`).
       keep it as it is.
   - Answered 2026-11-08 in chat (DEC-222): "(b) Build it in GL-16". To build: in GL-16 (game-loop
     plan §7), with its own unit test, the length-change branch included.
-- [ ] **HC-Q57 — The online Duel in the results flow: five better-than-design items and one rule
+- [x] **HC-Q57 — The online Duel in the results flow: five better-than-design items and one rule
       question (critics on the #97 merge into GL-4, PR #93; DEC-139).** The merge keeps GL-5's
       results flow for a Duel (`duel-ended`, `selectMatchVerdict`, `ResultsScreen`). Both critics
       approved it and proposed:
@@ -2492,9 +2700,12 @@ Reply inline (`Decision: …`).
     `canRepeatSetup`). (5): scheduled with HC-S7. (6): option B, the run-on is built with the
     Duel's own win rules (DEC-36); until then a finished Duel goes to the results at once. A
     finished Duel keeps no status line.
-  - Still open: after the opponent leaves, does the player who stayed see VICTORY? The leaver
-    takes a loss (DEC-250 (4)); the screen for the player who stayed shows no verdict until the
-    owner says.
+  - Open until DEC-251: after the opponent leaves, does the player who stayed see VICTORY? The
+    leaver takes a loss (DEC-250 (4)); the screen for the player who stayed shows no verdict until
+    the owner says.
+  - Answered 2026-11-14 in chat (DEC-251): "A) yes". The player who stayed sees VICTORY, with
+    "Opponent left." under it. The server names that player's team as the winner of the
+    `opponent-left` ending, so `selectMatchVerdict` has no Duel branch (`feat/duel-leave-victory`).
   - Critic notes on the built delta (2026-11-14), for the HC-S7 work: `createMatch` still asks
     `duel.status === 'started'` while `canRepeatMatchSetup` reads `setup.mode`, so the strategy
     should key on `setup.mode`; `MatchSetupDraft` could be a union by `mode`, so that "a Duel has

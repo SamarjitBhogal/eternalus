@@ -8,7 +8,8 @@ import type { Invariant, Violation } from '../Invariant.types';
 /**
  * `level-matches-xp` (architecture 05 §16, 15 §3): (1) every `Progression`'s level is the one its XP
  * gives on its curve; and every `xp-gained` of this tick (2) is backed by an `entity-died` this tick
- * whose killer is the recipient (a structure award, DEC-186, instead needs the structure gone), (3)
+ * whose killer is the recipient (a structure award, DEC-186, instead needs the structure gone; a
+ * team-kill award, DEC-237, a killer on the recipient's team), (3)
  * is the only award for that kill, and (4) is not for a self-kill or an ally kill (O5). It keeps
  * no scratch: everything comes from the state and this tick's events.
  * Runs every tick, since rules 2–4 read this tick's events.
@@ -74,6 +75,19 @@ export class LevelMatchesXpInvariant implements Invariant {
             this.violation(
               entityId,
               `Entity "${entityId}" gained structure XP for "${victimId}", which is still standing.`,
+            ),
+          );
+        }
+      } else if (award.cause === 'team-kill') {
+        // The killer may be gone already (it died this tick too); then only the kill is checked.
+        const killerId = state.killerOf(victimId)?.attackerId ?? null;
+        const killer = killerId === null ? undefined : state.entities.get(killerId);
+        const killerTeam = killer?.findComponent(TeamMembership)?.team;
+        if (killerId === null || (killer !== undefined && killerTeam !== recipientTeam)) {
+          violations.push(
+            this.violation(
+              entityId,
+              `Entity "${entityId}" gained team XP for "${victimId}", which its team did not kill this tick.`,
             ),
           );
         }

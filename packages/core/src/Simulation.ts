@@ -61,7 +61,12 @@ import { MatchTimeline } from './match/MatchTimeline';
 import type { DefinitionSource, WeaponSource } from './entities/EntityFactory.types';
 import { Legend } from './entities/Legend';
 import { Unit } from './entities/Unit';
-import type { GameEventHandler, GameEventType, Unsubscribe } from './state/GameEvents.types';
+import type {
+  GameEventHandler,
+  GameEventMap,
+  GameEventType,
+  Unsubscribe,
+} from './state/GameEvents.types';
 import { GameState } from './state/GameState';
 import { MatchWorld } from './state/MatchWorld';
 import type { Snapshot } from './state/Snapshot.types';
@@ -142,6 +147,7 @@ export class Simulation {
     roster = [],
     weapons,
     abilities,
+    guardPlans,
     duel,
     structures = STRUCTURE_DEFINITIONS,
   }: SimulationOptions) {
@@ -197,6 +203,8 @@ export class Simulation {
     );
     const owners = Simulation.spawnStructures(this.state, factory, structures, mapObjects);
     this.state.indexStructures();
+    // Before the pipeline: zones can be guard homes, which SpawnSystem finds when it is built.
+    const zones = Simulation.spawnZones(this.state, factory);
     this.commandContext = { state: this.state, factory };
     if (mapObjects !== undefined && map === undefined)
       throw new Error('Map objects require a generated map');
@@ -248,6 +256,7 @@ export class Simulation {
         hordes: {
           factory,
           space,
+          ...(guardPlans === undefined ? {} : { guards: guardPlans }),
           collisions: collisions === null ? [] : [new CollisionSystem(collisions)],
           decide: [
             new AiSystem(this.state, controllers, AI_CADENCE, (command) => {
@@ -262,7 +271,10 @@ export class Simulation {
       this.pipeline = new SystemPipeline(systems);
     }
     Simulation.spawnRoster(this.state, factory, roster, controllers, logger, duelStarts);
-    Simulation.spawnZones(this.state, factory);
+    // Announced only now, so the director and the systems hear every spawn (plan §4.4).
+    for (const zone of zones) {
+      this.state.events.emit('entity-spawned', zone);
+    }
     this.state.events.on('command-rejected', ({ command, reason }) => {
       logger.log(
         makeLogRecord('INFO', 'core.commands', `Rejected ${command.type}: ${reason}`, {
@@ -364,9 +376,10 @@ export class Simulation {
    * and lane. Features without a structure definition (walls, turrets, corner camps) stay map data.
    * A structure whose definition `hasMapFootprint` takes the footprints of its feature's map object
    * of the same id as its `Footprint` (a lane tower's fort, DEC-185; the Stronghold's palace,
-   * DEC-185 D). A blocking such object (a fort) is the structure's body: it has no health of its
-   * own (one pool, DEC-185 B). Only towers share one pool (DEC-217 (13)): the palace's object does
-   * not block, and a gate's definition has no `hasMapFootprint`, so both keep their own health.
+   * DEC-185 D; a gate's own outline, DEC-217 (17)). A blocking such object (a fort) is the
+   * structure's body: it has no health of its own (one pool, DEC-185 B). Only towers share one
+   * pool (DEC-217 (13)): the palace's and the gates' objects do not block, so they keep their own
+   * health.
    *
    * @returns Map object id → the id of the structure it is the body of.
    */
@@ -600,12 +613,20 @@ export class Simulation {
    * Spawns one zone per map feature that places one (`ZONE_PLACEMENTS`): a capture point where
    * each lane crosses the centre line, the middle one in the Cathedral (architecture 07 §7), each
    * covering its building's floor (DEC-145 (a)). They come from the map alone, so a replay (seed,
-   * config and commands) rebuilds them.
+   * config and commands) rebuilds them. They spawn right after the structures, before the system
+   * pipeline is built, since a zone can be a guard home (18 §7); the caller announces them once the
+   * pipeline listens.
+   *
+   * @returns Each zone's `entity-spawned` payload, in spawn order.
    */
-  private static spawnZones(state: GameState, factory: EntityFactory): void {
+  private static spawnZones(
+    state: GameState,
+    factory: EntityFactory,
+  ): GameEventMap['entity-spawned'][] {
+    const spawned: GameEventMap['entity-spawned'][] = [];
     const map = state.world?.definition;
     if (map === undefined) {
-      return;
+      return spawned;
     }
     for (const feature of map.features) {
       const definitionId = ZONE_PLACEMENTS[feature.kind];
@@ -619,8 +640,9 @@ export class Simulation {
         area: zoneAreaOf(map, feature),
       });
       state.entities.add(entity);
-      state.events.emit('entity-spawned', { entityId: entity.id, kind, team: feature.team });
+      spawned.push({ entityId: entity.id, kind, team: feature.team });
     }
+    return spawned;
   }
 
   /** The controller a bot of `slot`'s role plays with: a Rover's or a lane bot's. */

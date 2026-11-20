@@ -17,6 +17,8 @@ import { ENRAGING_STRUCTURES } from '../content/mobs/minionModifiers';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { OPENING_WAVE, SPAWN_WAVES } from '../content/structures/spawnWaves';
+import type { ContentCatalogue } from '../content/ContentCatalogue';
+import type { StructureDefinition } from '../content/structures/structures.types';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { LaneFlowFields } from '../map/LaneFlowFields';
 import { AbilitySystem } from './AbilitySystem';
@@ -44,6 +46,7 @@ import { StuckSystem } from './StuckSystem';
 import { VeterancySystem } from './VeterancySystem';
 import { MINION_VETERANCY } from '../content/mobs/minionVeterancy';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
+import { ZONE_LOCKING_MOBS } from '../content/zones/zoneLocks';
 import { GUARD_PLANS } from '../content/structures/guardPlans';
 import { StatusEffectSystem } from './StatusEffectSystem';
 import { SystemPipeline } from './SystemPipeline';
@@ -128,7 +131,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
               createDefaultStrategyRegistry().movement,
               FORMATIONS,
               HORDE_STEERING.slotArrivalRadius,
-              { flowFields, forts: DefaultSystemPipeline.fortBoxesOf(state) },
+              { flowFields, forts: DefaultSystemPipeline.fortBoxesOf(state, structures) },
             ),
           ]),
       new CombatSystem(damage, new HitEffects(abilities, damage, statuses)),
@@ -147,7 +150,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
               steering: HORDE_STEERING,
               weights: LANE_ASSESSMENT_WEIGHTS,
               formationId: RANKS_FORMATION.id,
-              guards: GUARD_PLANS,
+              guards: hordes.guards ?? GUARD_PLANS,
             }),
             new EnragedSystem(state, statuses, ENRAGING_STRUCTURES),
           ]),
@@ -155,7 +158,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
       ...(duelStarts === undefined ? [] : [new DuelRoundSystem(duelStarts, statuses)]),
       new OutOfCombatHealingSystem(state, OUT_OF_COMBAT_HEALING),
       new DeathSystem(),
-      new CaptureSystem(state.config.match.capturePoints, tickRate),
+      new CaptureSystem(state.config.match.capturePoints, tickRate, ZONE_LOCKING_MOBS),
       // After death, so an objective lost this tick can end the match this tick (12 §1).
       new MatchDirectorSystem(director),
       new InvariantSystem(invariants),
@@ -163,14 +166,20 @@ export class DefaultSystemPipeline extends SystemPipeline {
   }
 
   /**
-   * The box of every structure's `Footprint` (`PathingWorld.forts`). `Simulation` builds the
-   * structures before the pipeline, so they are read here once, while every one still stands.
+   * The box of the `Footprint` of every structure whose definition `hasFortBox`
+   * (`PathingWorld.forts`; not a gate's, DEC-217 (17)). `Simulation` builds the structures before
+   * the pipeline, so they are read here once, while every one still stands.
    */
-  private static fortBoxesOf(state: GameState): readonly Rect[] {
+  private static fortBoxesOf(
+    state: GameState,
+    structures: Pick<ContentCatalogue<StructureDefinition>, 'get'>,
+  ): readonly Rect[] {
     const forts: Rect[] = [];
     state.entities.forEach((entity) => {
       const box = entity.findComponent(Footprint)?.bounds;
-      if (box !== undefined) forts.push(box);
+      if (box !== undefined && structures.get(entity.definitionId).hasFortBox === true) {
+        forts.push(box);
+      }
     });
     return forts;
   }

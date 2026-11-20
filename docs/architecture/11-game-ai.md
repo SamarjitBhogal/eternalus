@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-16
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -194,9 +194,9 @@ leaves alone only the enemy that escaped (DEC-144 F).
 
 Each aggro profile names the one controller that reads it (`controller`), and a controller
 accepts only its own profiles. The shared fields are `AggroRuleDefinition`; a horde minion's
-profile (`HordeAggroRuleDefinition`) adds `leashRadius` and `callForHelpRadius`, and a guard's or
-camp mob's (`GuardAggroRuleDefinition`) adds nothing, since its leash and its mates come from its
-post's guard plan (18 §7; DEC-168 B2). Durations are seconds in content and are turned into ticks
+profile (`HordeAggroRuleDefinition`) adds `leashRadius` and `callForHelpRadius`, and a guard's,
+camp mob's or guard-post boss's (`GuardAggroRuleDefinition`) adds nothing, since its leash and its
+mates come from its post's guard plan (18 §7; DEC-168 B2). Durations are seconds in content and are turned into ticks
 with the match's tick rate where they are read; `ghostFirstWaveTicks` is the exception, already in
 ticks.
 
@@ -313,9 +313,9 @@ the guard leash tolerance covers the wait instead (DEC-181, 18 §7). A decision 
 cheap: radius-bounded queries, no allocation in hot paths, scratch vectors reused. A bot's A\* is
 the exception: bots steer by `move` commands, so A\* is a `PathQuery` (`state.paths`) its leaves
 call when the straight line is blocked. Its cost is inside the decision budget, and
-`GameConfig.map.pathMaxExpansions` caps each search (a path cache in the brain is the next step if
-profiling shows the cost). `StuckSystem` is a second A\* consumer, outside the decision budget:
-`STUCK_DETECTION.maxPlansPerTick` caps its plans a tick, and `pathMaxExpansions` caps each plan.
+`GameConfig.map.pathMaxSearchArea` (DEC-243) caps each search (a path cache in the brain is the
+next step if profiling shows the cost). `StuckSystem` is a second A\* consumer, outside the decision budget:
+`STUCK_DETECTION.maxPlansPerTick` caps its plans a tick, and `pathMaxSearchArea` caps each plan.
 Requests over the cap wait (`ChaseWatch.isPlanDue`), served in store order; the upgrade path is a
 round-robin cursor. Other heavy work (flow
 fields) belongs to `PathingSystem`, which time-slices its rebuilds
@@ -372,6 +372,10 @@ and utility better
 
 Minion plan pull request M2a builds §1–§3, §5 and §6 with these differences, each closed by the
 work named:
+
+- §4.6 `BossController` is not built (Phase 3 sprint 3.6). Until then the capture point mini-boss
+  runs on `GuardController`; the interim is recorded in
+  [18's implementation status note](18-minion-system.md#minion-system).
 
 - `AiSystem` lives in `ai/` and fits the `System` contract by shape; `Simulation` puts it first in
   the pipeline, because `systems/` may not import `ai/` (where it lives is the owner's open
