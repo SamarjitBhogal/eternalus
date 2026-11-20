@@ -9724,3 +9724,19 @@ docs:check` pass on this entry.
   "Tests 84 passed (84)", "Documentation check passed."; then `prettier --check` and
   `npm run docs:check` with this entry.
 - Next step: push; claudiodh re-reviews #98; then #122 takes this head.
+
+### 2026-11-20 — Phase 3 / tower ruins follow-ups: merge #98's head (phase/3 `5a7cc8dc`) — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: merged `feat/tower-ruins-and-routes` at `5502dc94` (its merge of phase/3
+  `5a7cc8dc`, #125, DEC-241) as `56f68caf`, with no conflicts; then #98's PROGRESS entry
+  (`3bc24d27`) as `c3cc2dbf`, where this file keeps both sides, oldest first. This branch's own diff
+  over its base is unchanged (sorted added and removed lines of `86d70353..0e6bc844` and
+  `5502dc94..56f68caf` are identical), and #125 adds no `DefaultSystemPipeline` or
+  `MatchWorld` call site, so this branch's required `ruinWall` (BTD3) and one-grid
+  `MatchWorld` need no change.
+- Checks run: full `npm run check` exit 0 on `56f68caf`
+  (`eternalus-agent-work/tower-ruins-and-routes/check-122-merge-5502dc94.log`): core "Tests 1742
+  passed (1742)", protocol "Tests 29 passed (29)", client "Tests 2011 passed (2011)", server
+  "Tests 84 passed (84)", "Documentation check passed."; the later merge and this entry change
+  only this file: `prettier --check` and `npm run docs:check`.
+- Next step: push after #98's head `3bc24d27`; claudiodh re-reviews #98, then #122.
