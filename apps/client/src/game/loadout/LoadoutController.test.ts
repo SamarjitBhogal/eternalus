@@ -34,10 +34,9 @@ async function started(fake: Fake) {
   const controller = new LoadoutController({
     bus,
     logger,
-    profileId: 'p1',
     options: OPTIONS,
     persistence: {
-      loadAll: (_profileId, classIds) => {
+      loadLoadouts: (classIds) => {
         fake.asked.push([...classIds]);
         if (fake.failLoad) return Promise.reject(new Error('boom'));
         return Promise.resolve(
@@ -46,10 +45,9 @@ async function started(fake: Fake) {
           ),
         );
       },
-      save: (profileId, classId, loadout) => {
+      saveLoadout: (classId, loadout) => {
         if (fake.failSave) return Promise.reject(new Error('disk full'));
         fake.saved.push({ classId, primaryWeaponId: loadout.primaryWeaponId });
-        expect(profileId).toBe('p1');
         return Promise.resolve();
       },
     },

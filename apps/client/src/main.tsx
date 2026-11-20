@@ -35,6 +35,8 @@ import { createBrowserMatch, type BrowserMatchDeps } from './game/createBrowserM
 import { createMatchSeed } from './game/createMatchSeed';
 import { readDeveloperFlags } from './game/developerFlags';
 import { isAppleUserAgent } from './game/isAppleUserAgent';
+import { classLoadoutOptions } from './game/loadout/classLoadoutOptions';
+import { LoadoutController } from './game/loadout/LoadoutController';
 import { DEFAULT_DUEL_SERVER_URL } from './game/engine/net/DuelServer.constants';
 import { WebSocketTransport } from './game/engine/net/WebSocketTransport';
 import { PerformanceSessionClock } from './game/engine/time/PerformanceSessionClock';
@@ -98,11 +100,9 @@ logWindowErrors(window, logger);
 const developer = readDeveloperFlags(window.location.search);
 
 connectBusToStore(eventBus, store.dispatch);
-// The weapon ids saved loadouts may name. Core publishes only each Legend's starting weapon so far
-// (every weapon is unique to its class today), so that is the set; it grows with the weapon list.
-const knownWeapons = new Set(
-  loadDisplayContent().legends.map((legend) => legend.defaultLoadout.primaryWeaponId),
-);
+// What the Loadout screen offers per class, and every weapon id a saved loadout may name (08).
+const displayContent = loadDisplayContent();
+const knownWeapons = new Set(displayContent.weapons.map((weapon) => weapon.id));
 const persistence = new PersistenceController({
   adapter: new MemoryStorageAdapter(),
   knownActions: new Set(INPUT_ACTIONS),
@@ -117,6 +117,12 @@ const settings = new SettingsController({
   persistence,
   logger,
   isApplePlatform: isAppleUserAgent(window.navigator.userAgent),
+});
+const loadouts = new LoadoutController({
+  bus: eventBus,
+  persistence,
+  logger,
+  options: classLoadoutOptions(displayContent),
 });
 const resources = new ResourceController({
   manifest: ASSET_MANIFEST,
@@ -176,7 +182,8 @@ const session = new SessionController({
 });
 session.start();
 
-// Settings load in the background: the store has no bindings until the settings event arrives.
+// Settings and loadouts load in the background: the store has no bindings until the settings
+// event arrives, and the Loadout screen no choices until the loadouts event does.
 void persistence
   .open()
   .catch((error: unknown) => {
@@ -186,7 +193,7 @@ void persistence
       }),
     );
   })
-  .then(() => settings.start());
+  .then(() => Promise.all([settings.start(), loadouts.start()]));
 
 const attachViewport = (viewport: MatchViewport): (() => void) => session.attachViewport(viewport);
 createRoot(rootElement).render(

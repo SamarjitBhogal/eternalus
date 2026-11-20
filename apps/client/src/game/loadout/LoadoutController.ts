@@ -28,7 +28,7 @@ export class LoadoutController {
    */
   public async start(): Promise<void> {
     const records = await this.deps.persistence
-      .loadAll(this.deps.profileId, Object.keys(this.deps.options))
+      .loadLoadouts(Object.keys(this.deps.options))
       .catch((error: unknown) => {
         this.report('WARN', 'loadouts could not be loaded; using the defaults', { error });
         return new Map<string, SavedLoadout>();
@@ -65,11 +65,9 @@ export class LoadoutController {
       saved: { ...this.state.saved, [classId]: primaryWeaponId },
       repaired: this.state.repaired.filter((repairedClass) => repairedClass !== classId),
     });
-    this.deps.persistence
-      .save(this.deps.profileId, classId, { primaryWeaponId })
-      .catch((error: unknown) => {
-        this.report('ERROR', 'a loadout could not be saved', { classId, error });
-      });
+    this.deps.persistence.saveLoadout(classId, { primaryWeaponId }).catch((error: unknown) => {
+      this.report('ERROR', 'a loadout could not be saved', { classId, error });
+    });
   };
 
   private report(
