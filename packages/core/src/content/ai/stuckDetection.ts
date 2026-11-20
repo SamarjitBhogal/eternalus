@@ -1,4 +1,4 @@
-import type { StuckDetectionRule } from './ai.types';
+import type { AuthoredStuckDetectionRule } from './ai.types';
 
 /**
  * Stuck detection for chasing mobs and bot Legends (owner 2026-11-05, DEC-193: "if stuck, minions
@@ -18,4 +18,4 @@ export const STUCK_DETECTION = {
   // TUNE: a cost cap, not a gameplay number (like `map.pathMaxSearchArea`; 11 §6): half a light
   // horde (`match.hordeSizes.light`, 16) a tick, so a whole horde stuck at one wall plans in two.
   maxPlansPerTick: 8,
-} as const satisfies StuckDetectionRule;
+} as const satisfies AuthoredStuckDetectionRule;

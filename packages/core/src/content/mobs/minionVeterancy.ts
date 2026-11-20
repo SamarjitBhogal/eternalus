@@ -1,4 +1,4 @@
-import type { MinionVeterancyDefinition } from './mobs.types';
+import type { AuthoredMinionVeterancy } from './mobs.types';
 
 /**
  * Minion XP (game doc, MVP-if-time). TUNE: balancing.md `Recommendation:` ("minion level +1 per 2
@@ -15,4 +15,4 @@ export const MINION_VETERANCY = {
     radius: 4, // TUNE: balancing.md 4 m
     everySeconds: 0.5, // TUNE: no reference value; DEC-165: a tuning default
   },
-} as const satisfies MinionVeterancyDefinition;
+} as const satisfies AuthoredMinionVeterancy;
