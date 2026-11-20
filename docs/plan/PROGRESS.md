@@ -9689,3 +9689,28 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `format:check`, `docs:check` and the knock-back tests.
 - Next step: the owner pushes PR #123 (no new sign-off comment; the body gets this merge and the
   checks); `feat/vanguard-kit` merges this head; the owner answers HC-B13.
+
+### 2026-11-20 — Phase 4 / Vanguard PR 2a: merges of feat/ability-framework `ed7be614` and `7a952b48` — feat/vanguard-kit — sholtzman + Claude Code
+
+- What was done: merged PR #123's head twice. `d9137ed1` takes `ed7be614` (its merge of phase/3
+  `5a7cc8dc`, #125: content durations become ticks at load, DEC-241); two files conflicted:
+  `DefaultSystemPipeline.ts` keeps `DuelRoundSystem(duelStarts, statuses)` and #125's
+  `loadOutOfCombatHealing(tickRate)`, and this file keeps both sides. `614c1754` takes
+  `7a952b48` (#123's merge-critic fix: `loadKnockback(tickRate)`); `defaultAbilityRegistry.ts`
+  TSDoc keeps "a debuff or a buff" and gains the tick rate and the `loadKnockback` throw, and
+  doc 05's `last-reviewed` is 2026-11-20.
+- Merge critic (`architecture-reviewer`) on both merges: APPROVE, no blockers
+  (`eternalus-agent-work/abilities/critic-merge-7a952b48-findings.md`). Nits applied here: N1
+  `loadStatusEffects` cites 03 §8 and DEC-241; N2 the `statusOnHitEffects` fixture loads the
+  knock-back at the default config's tick rate (a `tickRate` parameter), not a literal 30; N3
+  three comment lines over 100 columns rewrapped. Its better-than-design item (one module for
+  the step-time helpers `loadAbilities.ts` and `loadStatusEffects.ts` share) belongs with
+  `INBOX.md` HC-B13 (2)/(3), written on `feat/ability-framework` after PR #123 is pushed.
+- Checks run: on `614c1754`, `npm run check` → `EXIT=0`: core "Tests 2012 passed (2012)";
+  protocol "Tests 30 passed (30)"; client "Tests 2097 passed (2097)"; server "Tests 84 passed
+  (84)"; "All matched files use Prettier code style!"; "Documentation check passed."
+  (`eternalus-agent-work/abilities/check-merge-7a952b48.log`). After the nits (before this
+  entry), `npm run check` → `EXIT=0` with the same counts (`check-merge-nits.log`).
+- Next step: the owner pushes PR #123, then this branch, and opens the stacked PR (base
+  `feat/ability-framework`); then DEC-283 and the group-A builds from the "Combat Track Calls"
+  page.

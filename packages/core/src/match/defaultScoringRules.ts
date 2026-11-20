@@ -16,8 +16,9 @@ const SECONDS_PER_MINUTE = 60;
 /**
  * The scoring rules (architecture 12 §5): the only file that names them. Each rule takes its
  * points from `options` (`content/match/scoring.ts`) by constructor, and its times in ticks at
- * `tickRate`; the Legend death rule announces assists on `events`. A new scored family, event or per-tick score is a rule file and one line here; the
- * listeners subscribe when `Scoring` is built, and the tick scorers fold in list order.
+ * `tickRate`; the Legend death rule announces assists on `events`. A new scored family, event or
+ * per-tick score is a rule file and one line here; the listeners subscribe when `Scoring` is
+ * built, and the tick scorers fold in list order.
  */
 export const createDefaultScoringRules = (
   { weights, assistWindowSeconds }: ScoringOptions,

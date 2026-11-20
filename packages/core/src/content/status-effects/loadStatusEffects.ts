@@ -57,7 +57,7 @@ const load = (
 };
 
 /**
- * Loads the status effects: times from seconds to ticks (architecture 03 §11, as
+ * Loads the status effects: times from seconds to ticks (architecture 03 §8, DEC-241, as
  * `loadDefaultContent` does for units; an `onHit` step's as `loadAbilities` converts them),
  * config-derived caps resolved, then validated once. An `onHit` step's other fields and a `grants`
  * id are checked against the ability registry at boot (`abilities/checkStatusLinks`).
