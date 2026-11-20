@@ -10,7 +10,7 @@ import { MINI_MAP_LEGEND_GLYPH, MINI_MAP_MOB_GLYPH } from './entityViews.constan
 import { HEALTH_BAR_FILL_COLORS, HEALTH_BAR_TRACK_COLOR } from './HealthBarView.constants';
 import type { WorldLayer } from './SceneView.types';
 import { StatusCueRegistry } from './StatusCueRegistry';
-import type { StatusCueView } from './StatusCueRegistry.types';
+import type { StatusCueView } from './StatusCueView.types';
 import type { EntityDrawState, EntityView } from './EntityView.types';
 import { ViewRegistry } from './ViewRegistry';
 import { WINDUP_RING_COLOR, WINDUP_RING_COUNT } from './WindupRingsView.constants';

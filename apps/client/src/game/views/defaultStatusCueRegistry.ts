@@ -1,6 +1,5 @@
 import { StatusCueRegistry } from './StatusCueRegistry';
 import { WindupRingsView } from './WindupRingsView';
-import { WINDUP_STATUS_ID } from './WindupRingsView.constants';
 
 /**
  * The registry with every shipped status cue (02 §4: `default<Registry>.ts` exporting
@@ -9,6 +8,7 @@ import { WINDUP_STATUS_ID } from './WindupRingsView.constants';
  */
 export const createDefaultStatusCueRegistry = (): StatusCueRegistry => {
   const registry = new StatusCueRegistry();
-  registry.register(WINDUP_STATUS_ID, new WindupRingsView());
+  // core's `content/status-effects/furyWindup.ts`: Fury's dash winds up while it lasts (DEC-283)
+  registry.register('fury-windup', new WindupRingsView());
   return registry;
 };

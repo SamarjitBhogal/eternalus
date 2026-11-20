@@ -1,7 +1,8 @@
 /**
  * Test support: the shipped catalogue as `main.tsx` builds it, its asset ids checked against
- * `ASSET_MANIFEST` and its drawn statuses taken from the shipped status cue registry. Imported only by tests and the visual harness, never by a module `main.tsx`
- * reaches (the composition root passes the manifest's ids itself).
+ * `ASSET_MANIFEST` and its drawn statuses taken from the shipped status cue registry. Imported
+ * only by tests and the visual harness, never by a module `main.tsx` reaches (the composition
+ * root passes the manifest's ids and the registry's status ids itself).
  */
 import { createDefaultGameConfig, loadDisplayContent } from '@eternalus/core';
 

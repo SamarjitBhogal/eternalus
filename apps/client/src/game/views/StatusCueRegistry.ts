@@ -1,4 +1,4 @@
-import type { StatusCueView } from './StatusCueRegistry.types';
+import type { StatusCueView } from './StatusCueView.types';
 
 /**
  * Finds the cue view of a status (Registry pattern, architecture 08 §8): `EntityLayer` draws, for

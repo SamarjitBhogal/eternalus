@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createDefaultStatusCueRegistry } from './defaultStatusCueRegistry';
 import { StatusCueRegistry } from './StatusCueRegistry';
-import type { StatusCueView } from './StatusCueRegistry.types';
+import type { StatusCueView } from './StatusCueView.types';
 import { WindupRingsView } from './WindupRingsView';
 
 const cue = (): StatusCueView => ({ draw: () => undefined });

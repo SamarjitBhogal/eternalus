@@ -3,7 +3,7 @@ import type { StatusSnapshot } from '@eternalus/core';
 import type { Renderer } from '../engine/render/Renderer';
 import type { EntityDrawState } from './EntityView.types';
 import { LEGEND_OUTLINE_SCALE } from './entityViews.constants';
-import type { StatusCueView } from './StatusCueRegistry.types';
+import type { StatusCueView } from './StatusCueView.types';
 import {
   WINDUP_RING_COLOR,
   WINDUP_RING_COUNT,
@@ -12,10 +12,10 @@ import {
 } from './WindupRingsView.constants';
 
 /**
- * The cue of the `fury-windup` status (registered for `WINDUP_STATUS_ID`): the orange rings of
- * Fury's dash wind-up (DEC-283) around a Legend. They start a short way out and close in ("fall
- * in") on the Legend as the wind-up passes, all reaching its outline as it ends and the dash
- * starts. How far the wind-up is comes from the status's ticks in the snapshot
+ * The cue of the `fury-windup` status (registered in `defaultStatusCueRegistry.ts`): the orange
+ * rings of Fury's dash wind-up (DEC-283) around a Legend. They start a short way out and close in
+ * ("fall in") on the Legend as the wind-up passes, all reaching its outline as it ends and the
+ * dash starts. How far the wind-up is comes from the status's ticks in the snapshot
  * (`EntitySnapshot.statuses`).
  */
 export class WindupRingsView implements StatusCueView {

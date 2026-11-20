@@ -1,9 +1,3 @@
-/**
- * The status the rings show (core's `content/status-effects/furyWindup.ts`): Fury's dash winds up
- * while it lasts (DEC-283).
- */
-export const WINDUP_STATUS_ID = 'fury-windup';
-
 /** How many rings close in on a Legend that winds up. */
 // TUNE: placeholder look (DEC-283: "orange rings"); no Figma frame draws the wind-up
 export const WINDUP_RING_COUNT = 3;
