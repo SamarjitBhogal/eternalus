@@ -9036,3 +9036,32 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Next step: the owner runs the push script, then the merge script. It merges #126, #121, #120
   and #119 into phase/3 in that order with merge commits, each only with green CI, and stops if
   another PR merges into phase/3 in between.
+
+### 2026-11-19 — Phase 3 / sprint 3 work: land DEC-38 and the DEC-11 weapon clarification — docs/land-dec-38 (from `af54fe96`) — sholtzman + Claude Code
+
+- What was done: the owner asked to land commit `f27a1a17` (2026-10-10, on
+  `docs/sprint-2-requirements-and-planning`), which was never pushed: PR #27 merged its parent
+  `d971f391`. Its content, re-applied by hand on phase/3 because the decisions table has grown:
+  - `13-owner-decisions-log.md`: the DEC-11 row gains the owner's 2026-10-10 chat clarification
+    that a loadout also includes a weapon under the existing rules; new row DEC-38 (changeable
+    team-based Legend skins, a full-game stretch goal), the number that the log already reserved
+    for it ("DEC-38 (Legend skins, `docs/sprint-2-requirements-and-planning`)").
+  - `08-loadout.md` pool rule and the Legend team brief: the same weapon sentence.
+  - `backlog-post-mvp.md`: a DEC-38 skins row (Jira SCRUM-411).
+  - The 2026-10-10 Jira work that `f27a1a17`'s own entry recorded: epics SCRUM-390 (Duel) and
+    SCRUM-391 (server and scalability); tasks SCRUM-392…SCRUM-411 and ability subtasks
+    SCRUM-412…SCRUM-423, labelled `planning-2026-10-10` (SCRUM-406 is the volatile-crystal
+    subtask of SCRUM-178); SCRUM-347/348/349 moved to Done with comments; comments on SCRUM-164,
+    SCRUM-290 and SCRUM-160.
+- Checks run: `npm run check` (2026-11-19) → exit 0: "All matched files use Prettier code style!"; core "Test Files 267 passed (267)", "Tests 1637 passed (1637)"; protocol "Tests 29 passed (29)"; client "Test Files 298 passed (298)", "Tests 2014 passed (2014)"; server "Test Files 21 passed (21)", "Tests 84 passed (84)"; "✓ built in 431ms"; "Documentation check passed." Critic (architecture-reviewer): PASS WITH NOTES, its three notes fixed (DEC-38 provenance note, this check line, the full Jira record). Ponytail: no cuts.
+- Next step: push `docs/land-dec-38`, open the PR into phase/3; it merges after one teammate
+  approval and green CI.
+
+### 2026-11-19 — Phase 3 / sprint 3 work: merge phase/3 (`d85bc2f5`) into docs/land-dec-38 (PR #133) — docs/land-dec-38 — sholtzman + Claude Code
+
+- What was done: PR #133 reported a conflict after phase/3 moved from `af54fe96` to `d85bc2f5`.
+  Merged `origin/phase/3-sprint-3-work` into the branch. The only conflict was this file; the
+  resolution keeps phase/3's entries and appends the DEC-38 entries. The decisions log merged
+  without a conflict and keeps one DEC-38 row.
+- Checks run: `npm run check` (2026-11-19) → exit 0: "All matched files use Prettier code style!"; core "Test Files 268 passed (268)", "Tests 1647 passed (1647)"; protocol "Tests 29 passed (29)"; client "Test Files 298 passed (298)", "Tests 2011 passed (2011)"; server "Test Files 21 passed (21)", "Tests 84 passed (84)"; "✓ built in 883ms"; "Documentation check passed."
+- Next step: push `docs/land-dec-38`; PR #133 merges after one teammate approval and green CI.
