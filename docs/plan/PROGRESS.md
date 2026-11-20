@@ -9271,3 +9271,10 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Test break: removing `.mjs` from the lintable set turned "planChecks lints only the changed source files" red (pass 3, fail 1); restored, pass 4.
 - Checks run: `npm run check:quick` (2026-11-19, load average 44, took about 20 min) printed no findings after `> eslint --max-warnings 0 .`, exit 0; `node --test scripts/hooks/changedFiles.test.mjs` → pass 4, fail 0; `npm run docs:check` → "Documentation check passed."; prettier --check → "All matched files use Prettier code style!". Full `npm run check` did not complete under this load: CI is pending.
 - Next step: push; add `node --test scripts/hooks/changedFiles.test.mjs` to CI if wanted (not wired here).
+
+### 2026-11-20 — Phase 3 / harness: review fixes, phase/3 merges and full check — chore/stop-hook-changed-files — Claude Code
+
+- What was done: review round 2 (`architecture-reviewer` r2 APPROVE; `routing:critic` correctness HOLDS). `163127d3`: `run()` in `hookInput.mjs` kills the whole process tree on a timeout and on SIGINT, SIGTERM or SIGHUP. `8c5e4356`: the signal test cleans up after a red run. Merged phase/3 twice: `69d96685` (d85bc2f5: #126, #121, #120, #119) and `6e170a2c` (5a7cc8dc: #125); the conflicts were docs only (decisions log, PROGRESS).
+- Test break: the signal loop returning `[]` turned the signal test red (pass 2, fail 1) with no orphan process and no temp dir left; restored (shasum cee992e2), 8/8.
+- Checks run: `node --test scripts/hooks/changedFiles.test.mjs scripts/hooks/hookInput.test.mjs` → 8/8. Full `npm run check` on `6e170a2c` → exit 0: core 1674 tests, protocol 29, client 2011, server 84 passed; build passed; "Documentation check passed." (knip printed one configuration hint, `Remove from ignoreDependencies`, and passed).
+- Next step: push and open the PR against phase/3-sprint-3-work. B and `chore/progress-entry-files` share 8 files: the second to merge needs one more phase/3 merge.
