@@ -9410,3 +9410,25 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   (`eternalus-agent-work/abilities/check-merge-d85bc2f5.log`).
 - Next step: the owner pushes PR #123, posts the sign-off comment and updates the body; then
   `feat/vanguard-kit` merges this branch.
+
+### 2026-11-20 — Phase 4 / Vanguard PR 2a: merge of feat/ability-framework and boss damage (DEC-272) — feat/vanguard-kit — sholtzman + Claude Code
+
+- What was done: merged `feat/ability-framework` `5ebe1021` (PR #123 with phase/3 `af54fe96`
+  and `d85bc2f5`: #101, #99, #126, #121, #120, #119). Four conflicts, both sides kept
+  (`ProgressionSystem` TSDoc, `DefaultSystemPipeline.test.ts`, `INBOX.md`, this file); the
+  framework's DEC-237 test now passes `ultimateCharge` (merge critic B1). The merge critic
+  (`architecture-reviewer`) asked for changes; fixed in the next commit: boss damage pays the meter
+  (S1: `bossDamagePerPercent`, `capture-point-boss` 1, `TUNE`, cause `boss-damage`; the kill price
+  is INBOX HC-Q65), the HC-Q63 Fury note (S2), 05 §18 (N1), HC-B12 one boss record for a
+  follow-up (BTD1), this entry (S3), and a content test that each boss id is a shipped mob (ADR
+  0023). Re-check: APPROVE. Ponytail on the branch against `5ebe1021`: no cuts.
+- Tests: breaks B6 (rate ignored), B7 (wrong cause) and B8 (misspelt boss id) turned the new tests
+  red; source restored, SHA-256 matched (`eternalus-agent-work/abilities/merge-5ebe1021-breaks.log`).
+- Checks run: on the tree of both commits (before this entry), `npm run check` → `EXIT=0`: core
+  "Tests 1982 passed (1982)"; protocol "Tests 30 passed (30)"; client "Tests 2097 passed
+  (2097)"; server "Tests 84 passed (84)"; "All matched files use Prettier code style!";
+  "Documentation check passed." (`check-merge-5ebe1021.log`). The merge commit alone: pre-commit
+  `check:quick` → passed (`EXIT=0`, `commit-merge-5ebe1021.log`); its two changed test files "Tests 31 passed (31)".
+- Next step: the owner pushes PR #123 and this branch and opens the stacked PR (base
+  `feat/ability-framework`); the owner answers HC-Q61 to HC-Q65, HC-B7, HC-B8, HC-B12 and HC-S12
+  on the "Combat Track Calls" page.

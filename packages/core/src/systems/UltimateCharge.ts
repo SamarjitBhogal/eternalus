@@ -21,7 +21,7 @@ import type { ChargeChange } from './UltimateCharge.types';
  *   self-kills and ally kills pay nothing; neutral camp mobs pay).
  * - `damage-applied`: an attacker on another team than a structure gains `structureDamagePerPercent`
  *   for each 1% of the structure's max health dealt, absorbed damage included (as scoring counts
- *   it, DEC-123).
+ *   it, DEC-123); a boss in `bossDamagePerPercent` pays its own rate the same way.
  * - `checkpoint-reached`: each Legend present gains `checkpointReached`. `CaptureSystem` runs
  *   after `ProgressionSystem`, so this pays on the next tick.
  * - `assist-earned`: the helper gains `assist`. Scoring emits it in the director's pass, so this
@@ -104,10 +104,16 @@ export class UltimateCharge {
     { targetId, amount, absorbed, source: { attackerId } }: GameEventMap['damage-applied'],
   ): void {
     const target = state.entities.get(targetId);
-    const max = target?.findComponent(Health)?.max ?? 0;
+    if (target === undefined || attackerId === null) {
+      return;
+    }
+    const isStructure = target.family === 'structure';
+    const perPercent = isStructure
+      ? this.table.structureDamagePerPercent
+      : this.table.bossDamagePerPercent[target.definitionId];
+    const max = target.findComponent(Health)?.max ?? 0;
     if (
-      target?.family !== 'structure' ||
-      attackerId === null ||
+      perPercent === undefined ||
       max <= 0 ||
       state.entities.teamOf(attackerId) === state.entities.teamOf(targetId)
     ) {
@@ -117,8 +123,8 @@ export class UltimateCharge {
     this.queue(
       state,
       attackerId,
-      this.table.structureDamagePerPercent * percent,
-      'structure-damage',
+      perPercent * percent,
+      isStructure ? 'structure-damage' : 'boss-damage',
     );
   }
 

@@ -945,8 +945,8 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   the recipient's team (`cause: 'team-kill'`). It listens to `entity-died` itself, not 12's
   `xp-granted` reward path. Not built yet: the share radius and damage bias, assists, checkpoint and
   camp XP, the Eternal's flat 5 levels (DEC-237) (their systems do not exist),
-  basic-attack and ability potency per level, `upgradeIds`, the ultimate charge rules, and keeping
-  dead Legends in the store until respawn (FR-051), which O4's posthumous XP needs. Numbers are
+  basic-attack and ability potency per level, `upgradeIds`, and keeping dead Legends in the store
+  until respawn (FR-051), which O4's posthumous XP needs. Numbers are
   `TUNE`; the curve and the Legend kill and structure XP follow DEC-190 (not final; the
   soak metric can change them) and live in `content/progression/`.
 - **HUD (`feat/hud-and-character-select`, 2026-10-24).** The client's `MatchBridge` joins the
@@ -1056,12 +1056,14 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
     meter), rounded at each change to a grid of a millionth of the meter
     (`systems/UltimateCharge.constants.ts`), so whole points worth a full meter make exactly 1
     (a plain sum of 12/100 and 5/100 steps can stop at 0.9999999999999999). A mob kill pays by the mob's weight class, as scoring's `minionKill` does; camp mobs
-    pay too (DEC-273). There is no boss damage (it joins with bosses, DEC-272) and no
-    `class-switch` (post-MVP). `ProgressionContent` injects it.
+    pay too (DEC-273). Boss damage pays each boss's own rate per 1% of its max health, by mob
+    id (`bossDamagePerPercent`; the capture point boss, DEC-272); a boss kill pays its weight
+    class like any mob (HC-Q65). There is no `class-switch` (post-MVP). `ProgressionContent`
+    injects it.
   - **Sources.** `entity-died`: a killer on another team than the victim gains the Legend or mob
     kill; the victim loses the death loss whoever killed it, never below 0. `damage-applied` on a
-    structure by an attacker of another team pays per 1% of the structure's max health, absorbed
-    damage included (as scoring counts it, DEC-123). `checkpoint-reached` (§13 names it
+    structure or a listed boss by an attacker of another team pays per 1% of the target's max
+    health, absorbed damage included (as scoring counts it, DEC-123). `checkpoint-reached` (§13 names it
     `checkpoint-cleared`) pays each Legend in `presentLegendIds` (DEC-273). Assists are scoring's
     alone: `LegendDeathRule` emits `assist-earned { legendId, victimId }` for each assist it
     awards (DEC-79's window), and the meter pays that; it keeps no assist window of its own.

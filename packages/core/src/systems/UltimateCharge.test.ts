@@ -16,6 +16,7 @@ const TABLE: UltimateChargeDefinition = {
   assist: 12,
   mobKill: { 'light-mob': 1, 'medium-mob': 2, 'heavy-mob': 3 },
   structureDamagePerPercent: 0.5,
+  bossDamagePerPercent: { 'capture-point-boss': 2 },
   checkpointReached: 5,
   deathLoss: 15,
 };
@@ -164,6 +165,27 @@ describe('UltimateCharge', () => {
     pay();
 
     expect(chargeOf(legend)).toBeCloseTo(0.02);
+  });
+
+  it("pays boss damage per 1% of the boss's max health at the boss's own rate (DEC-272)", () => {
+    const { state, legend, spawn, chargeOf, announced, pay } = setUp();
+    const boss = spawn('heavy-mob', 'capture-point-boss', 'neutral');
+    const max = boss.getComponent(Health).max;
+    const hit = (target: Entity, amount: number, absorbed: number) => {
+      state.events.emit('damage-applied', {
+        targetId: target.id,
+        amount,
+        absorbed,
+        source: { attackerId: legend.id, kind: 'weapon', definitionId: legend.definitionId },
+      });
+    };
+
+    hit(boss, max * 0.02, max * 0.01); // 3% at 2 per 1% -> 6 points
+    hit(spawn('heavy-mob', 'heavy-camp-mob', 'neutral'), 50, 0); // not a listed boss: nothing
+    pay();
+
+    expect(chargeOf(legend)).toBeCloseTo(0.06);
+    expect(announced().map(({ cause }) => cause)).toEqual(['boss-damage']);
   });
 
   it('pays each Legend present at a reached checkpoint, and each assist', () => {

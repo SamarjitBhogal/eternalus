@@ -326,6 +326,12 @@ Reply inline (`Decision: …`).
       need the controller's state); (C) leave it, and accept false errors after pushes. Doc 18 is
       SamarjitBhogal's. A, B or C? A or B is a follow-up PR (this track takes no new work before
       the freeze).
+  - Note 2026-11-19 (`feat/vanguard-kit`, merge critic on the framework merge, finding S2;
+    reasoning, not reproduced): Fury makes this gap part of normal play. Its knock-back
+    (`content/status-effects/fury.ts`, 1 m at base mass) lands on every basic hit, three hits a
+    second for 8 s: 1 m on a light guard, 0.32 m on the capture point boss (mass 3.125), whose
+    margin is about 0.06 m. A Vanguard hitting a guard from its home side can push it past its
+    leash plus tolerance. With Fury, option C means errors in ordinary matches, not rare ones.
 - [ ] **HC-Q64 — Should an ability area hit a structure by its outline, as a basic attack does?
       (`feat/ability-framework`, 2026-11-19; critic on the phase/3 merge of #126, #121, #120,
       #119, finding S1; not built).** A basic attack measures reach to the target's outline: its
@@ -344,6 +350,26 @@ Reply inline (`Decision: …`).
       or B, `EntityStore.isInReach` and `utils/circlePolygon.doesDiscReachPolygon` (the same rule
       in two places today) can also become one function (the critic's second idea). A or B is a
       follow-up PR (this track takes no new work before the freeze).
+- [ ] **HC-Q65 — What does killing the capture point boss give the killer's ultimate meter?
+      (`feat/vanguard-kit`, 2026-11-19; merge critic on the framework merge, finding S1).** The
+      merge brought the capture point boss (#99) to the meter. Built: damage to it pays 1 point
+      for each 1% of its health (DEC-272 "Boss damage (1 for each 1%) comes with the bosses";
+      balancing.md's boss table names the MiniBoss and the Greater Boss), so one Legend that
+      deals all of its health fills a full meter. Its kill also pays 1 point, because it is a
+      heavy mob and DEC-273 pays a mob kill by weight class. No document prices a boss kill.
+      Options: (A) keep the 1 point (built); (B) a boss kill pays nothing, and the boss pays by
+      damage only, as a structure does; (C) a boss kill pays its own number (say it). A, B or C?
+      B or C is one content line and a test.
+- [ ] **HC-B12 — Better than the design, for sign-off: one "is a boss" marker
+      (`feat/vanguard-kit`, 2026-11-19; merge critic on the framework merge, idea BTD1; not
+      built).** Four lists now name the bosses by mob id: `XP_SOURCES.teamKills` (team-wide XP,
+      DEC-237), `BOSS_MINION_DAMAGE_TAKEN` (`content/mobs/minionModifiers.ts`),
+      `ZONE_LOCKING_MOBS` (`content/zones/zoneLocks.ts`) and the meter's `bossDamagePerPercent`
+      (HC-Q65). A new boss must be added to each, and nothing checks that it is. Better: one boss
+      record on the mob's definition (its team XP, minion damage share, zone lock and meter rate),
+      or the planned `MiniBoss` and `GreaterBoss` classes (Phase 3 sprint 3.6), which all four
+      read. It changes #99's content and the base branch, so it is a follow-up PR, not this one.
+      Approve for a follow-up, or keep the lists?
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays

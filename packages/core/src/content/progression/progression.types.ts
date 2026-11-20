@@ -59,6 +59,11 @@ export type UltimateChargeDefinition = {
   readonly mobKill: Readonly<Record<MobKind, number>>;
   /** For each 1% of an enemy structure's max health dealt (absorbed damage included). */
   readonly structureDamagePerPercent: number;
+  /**
+   * For each 1% of a boss's max health dealt by a Legend not on the boss's team (absorbed damage
+   * included), by mob definition id; a mob not listed pays no damage charge.
+   */
+  readonly bossDamagePerPercent: Readonly<Record<string, number>>;
   /** For each Legend present when its team's push reaches a capture checkpoint (DEC-273). */
   readonly checkpointReached: number;
   /** Taken from the Legend's own meter at its death, whoever killed it; not below 0. */

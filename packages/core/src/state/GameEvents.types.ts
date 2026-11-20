@@ -33,7 +33,13 @@ type StatusPayload = {
 
 /** What changed a Legend's ultimate meter (`ultimate-charged`, DEC-272, DEC-273). */
 export type UltimateChargeCause =
-  'legend-kill' | 'assist' | 'mob-kill' | 'structure-damage' | 'checkpoint' | 'death';
+  | 'legend-kill'
+  | 'assist'
+  | 'mob-kill'
+  | 'structure-damage'
+  | 'boss-damage'
+  | 'checkpoint'
+  | 'death';
 
 /**
  * Every event the simulation can emit, by name (architecture 03 §4). The single place of change
