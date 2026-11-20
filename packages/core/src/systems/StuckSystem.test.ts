@@ -3,6 +3,7 @@ import { ChaseWatch } from '../components/ChaseWatch';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
+import { loadStuckDetection } from '../content/ai/loadStuckDetection';
 import { STUCK_DETECTION } from '../content/ai/stuckDetection';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
@@ -23,6 +24,8 @@ import { FORMATIONS, logger, STRATEGIES } from './__fixtures__/pathingSystemSetu
 
 const config = createDefaultGameConfig();
 const TICKS = 30 * config.tickRate;
+/** The shipped stuck-detection rule, loaded at the default tick rate. */
+const RULE = loadStuckDetection(config.tickRate);
 
 /**
  * The blocked-lane map's rift (x 50..70, y 10..30) between a light minion at (40, 20) and a dark
@@ -36,7 +39,7 @@ const riftChase = (systems: (state: GameState) => readonly System[]) => {
   const state = new GameState(config, 1, world, {
     space,
     paths: new AStarPathfinder(world.grid, {
-      maxExpansions: config.map.pathMaxExpansions,
+      maxSearchArea: config.map.pathMaxSearchArea,
       snapCells: config.map.pathSnapCells,
     }),
   });
@@ -94,7 +97,7 @@ const riftChase = (systems: (state: GameState) => readonly System[]) => {
 
 describe('StuckSystem', () => {
   it('sends a chase held in front of terrain round it along A* to its target (DEC-193)', () => {
-    const chase = riftChase(() => [new StuckSystem(STUCK_DETECTION)]);
+    const chase = riftChase(() => [new StuckSystem(RULE)]);
 
     chase.run(TICKS);
 
@@ -136,7 +139,7 @@ describe('StuckSystem', () => {
         respawnTicks: 1,
       });
       chase.state.guards.fill(0, chase.chaser.id);
-      const system = new StuckSystem(STUCK_DETECTION);
+      const system = new StuckSystem(RULE);
       let seen = 0;
       // It stands still in front of the rift: stuck once the window has passed.
       for (let tick = 0; tick <= 3 * config.tickRate; tick += 1) {
@@ -150,7 +153,7 @@ describe('StuckSystem', () => {
   );
 
   it('drops its watch once the unit has no target, and watches no unit without a brain', () => {
-    const chase = riftChase(() => [new StuckSystem(STUCK_DETECTION)]);
+    const chase = riftChase(() => [new StuckSystem(RULE)]);
     chase.run(1);
     expect(chase.chaser.hasComponent(ChaseWatch)).toBe(true);
     expect(chase.target.hasComponent(ChaseWatch)).toBe(false);
@@ -163,7 +166,7 @@ describe('StuckSystem', () => {
 
   it('judges the chase of a new target by the gap to it, not to the old detour waypoint', () => {
     const chase = riftChase(() => []);
-    const system = new StuckSystem(STUCK_DETECTION);
+    const system = new StuckSystem(RULE);
     const window = STUCK_DETECTION.windowSeconds * config.tickRate;
     const tick = () => {
       system.update({ state: chase.state, logger });
@@ -195,7 +198,7 @@ describe('StuckSystem', () => {
 
   it('is deterministic: the same chase hashes the same at every second, detours included', () => {
     const hashes = () => {
-      const chase = riftChase(() => [new StuckSystem(STUCK_DETECTION)]);
+      const chase = riftChase(() => [new StuckSystem(RULE)]);
       const hasher = new StateHasher();
       const seen: number[] = [];
       for (let second = 0; second < 30; second += 1) {
@@ -222,7 +225,7 @@ describe('StuckSystem', () => {
       return unit;
     });
     const chasers = [chase.chaser, ...others];
-    const system = new StuckSystem({ ...STUCK_DETECTION, maxPlansPerTick: 1 });
+    const system = new StuckSystem({ ...RULE, maxPlansPerTick: 1 });
     const window = STUCK_DETECTION.windowSeconds * config.tickRate;
     const detouring: number[] = [];
     const due: number[] = [];

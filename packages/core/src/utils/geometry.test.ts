@@ -3,11 +3,13 @@ import { describe, expect, it } from 'vitest';
 import {
   boundsOf,
   distance,
+  doRectsOverlap,
   doesPolygonOverlapRect,
   distanceToPath,
   distanceToSegment,
   isPointInAnyPolygon,
   isPointInPolygon,
+  isPointInRect,
   lerpPoint,
   nearestPointOnPolygons,
   polarPoint,
@@ -51,6 +53,31 @@ describe('geometry', () => {
     expect(isPointInPolygon({ x: 5, y: 5 }, SQUARE)).toBe(true);
     expect(isPointInPolygon({ x: 15, y: 5 }, SQUARE)).toBe(false);
     expect(isPointInPolygon({ x: 5, y: -1 }, SQUARE)).toBe(false);
+  });
+
+  it('tells whether a point is in an upright rectangle, edges included', () => {
+    const rect = { x: 10, y: 20, width: 30, height: 40 };
+    expect(isPointInRect({ x: 25, y: 40 }, rect)).toBe(true);
+    expect(isPointInRect({ x: 10, y: 20 }, rect)).toBe(true);
+    expect(isPointInRect({ x: 40, y: 60 }, rect)).toBe(true);
+    expect(isPointInRect({ x: 9.9, y: 40 }, rect)).toBe(false);
+    expect(isPointInRect({ x: 40.1, y: 40 }, rect)).toBe(false);
+    expect(isPointInRect({ x: 25, y: 19.9 }, rect)).toBe(false);
+    expect(isPointInRect({ x: 25, y: 60.1 }, rect)).toBe(false);
+  });
+
+  it('tells whether two upright rectangles overlap, touching edges included', () => {
+    const rect = { x: 10, y: 20, width: 30, height: 40 };
+    const small = (x: number, y: number) => ({ x, y, width: 5, height: 5 });
+    expect(doRectsOverlap(rect, small(20, 30))).toBe(true);
+    expect(doRectsOverlap(rect, { x: 0, y: 0, width: 100, height: 100 })).toBe(true);
+    expect(doRectsOverlap(rect, small(40, 60))).toBe(true);
+    expect(doRectsOverlap(rect, small(5, 20))).toBe(true);
+    expect(doRectsOverlap(rect, small(40.1, 30))).toBe(false);
+    expect(doRectsOverlap(rect, small(4.9, 30))).toBe(false);
+    expect(doRectsOverlap(rect, small(20, 60.1))).toBe(false);
+    expect(doRectsOverlap(rect, small(20, 14.9))).toBe(false);
+    expect(doRectsOverlap(boundsOf([]), rect)).toBe(false);
   });
 
   it('tells whether a point is inside any of several polygons', () => {
