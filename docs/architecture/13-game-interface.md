@@ -492,6 +492,11 @@ that button's release does not step the browser's history, DEC-112).
   colour alone (shape or outline too, on HUD and minimap glyphs); nothing flashes faster than
   3 Hz; the match pauses from `pause-menu`. Rebinding itself is "one of the best value
   accessibility features" ([research B2](../research/persistence-input-diagnostics-research.md#b2-rebinding-ux-and-data-representation)).
+- **Screen-reader lines** (DEC-282 (7), DEC-286 (4)). The app has one polite live region,
+  `ui/components/LiveRegion.tsx`, which `App` mounts outside the screen switch, so it is in the
+  page before any line arrives. Every line for a screen reader (a countdown's alert, the
+  `Announcer`, live achievements) goes into it through `useLiveRegion`. No component makes a live
+  region of its own: a region added in the same task as its line is not announced.
 - **React rules** (`apps/client/AGENTS.md`): function components only, except the one
   `ErrorBoundary` class (§3, ADR 0025); logic in co-located `useXxx.ts` hooks; one store, slices
   via `createSlice` registered in `combineSlices(...)`, never a second `configureStore`; typed

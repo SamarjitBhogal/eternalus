@@ -3017,6 +3017,12 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
 
 ## Done
 
+- 2026-11-20 — **Built under your standing rule for better-than-design items (DEC-223, DEC-232)**
+  (`feat/match-start-countdown`): the countdown critic's BTD2, BTD3, BTD5 and BTD6, recorded as
+  DEC-286, and BTD4, recorded inside DEC-285. BTD5 appends one bullet to your design text,
+  architecture 13 §7 "Screen-reader lines": one live region, and every screen-reader line goes in
+  through `useLiveRegion`.
+
 - 2026-11-20 — **Your answers on the DEC-278 critic, round 1 (the match-start countdown)**
   (`feat/match-start-countdown`): recorded as DEC-282 in
   `docs/reference/game-design/13-owner-decisions-log.md`. The phase marks count from the

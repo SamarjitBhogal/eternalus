@@ -455,9 +455,10 @@ Victory and the result (GL-2, core) are built: the `VictoryCondition` contract
 `phase-monotonic` flags it). `MatchResult` and `Verdict` live in `state/MatchResult.types.ts` and
 `VictoryConditionId` in `config/VictoryConditionId.types.ts`. `MatchConfig.playerTeam` is built.
 `MatchState` has `phase`, `phaseEnteredTick`, `timelineCursor`, `schedule`, `countdownEndTick`
-(DEC-285), `isIdleHeld`, `playerTeam`, `humanLegendId`, `scoring` and `result`. `MatchResult` has `winner`, `condition`,
-`playerTeam`, `hadHuman`, `durationTicks`, `matchTicks`, `seed`, `configHash`, `legends`, `teams` and
-`finalHash`; `timeline` and `achievements` come with the work that fills them.
+(DEC-285), `isIdleHeld`, `playerTeam`, `humanLegendId`, `scoring` and `result`. `MatchResult` has
+`winner`, `condition`, `playerTeam`, `hadHuman`, `durationTicks`, `matchTicks`, `seed`,
+`configHash`, `legends`, `teams` and `finalHash`; `timeline` and `achievements` come with the work
+that fills them.
 `match/defaultMatchDirector.ts` builds the director `Simulation` uses. Once `state.match.result` is set,
 `applyCommand` refuses every command with `command-rejected` reason `match-ended` (FR-002); the
 systems keep stepping.
