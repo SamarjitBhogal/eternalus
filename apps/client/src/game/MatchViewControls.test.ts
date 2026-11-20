@@ -118,7 +118,7 @@ const setUp = (
     { enqueueCommand },
     view,
     [HOUSE],
-    new AbilityCasts({ enqueueCommand }, vi.fn()),
+    new AbilityCasts({ enqueueCommand }, vi.fn(), { usesAim: () => true, legendAt: () => null }),
   );
   // No living Legend here, so the minimap centres on the camera's focus (DEC-182).
   const miniMap = new MiniMapView(MAP, new MapView(MAP), RING, () => look);

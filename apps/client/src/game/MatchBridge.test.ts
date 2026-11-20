@@ -189,6 +189,7 @@ describe('MatchBridge', () => {
           weaponProgress: null,
           ultimatePips: null,
           slots: [],
+          grantedAbilityId: null,
         },
       },
       { player: null },
@@ -409,6 +410,17 @@ describe('MatchBridge', () => {
       );
 
       expect(huds[0]?.player?.slots.map(({ slot: id }) => id)).toEqual(['ability-1']);
+    });
+
+    it('publishes the granted ability’s id, and null while none is granted', () => {
+      const { bridge, huds } = setUp();
+      bridge.publishAll(
+        withPlayer([slot({}), slot({ slot: 'granted', abilityId: 'fury-dash' })]),
+        'player-1',
+      );
+      bridge.publishAll(withPlayer([slot({})]), 'player-1');
+
+      expect(huds.map((hud) => hud.player?.grantedAbilityId)).toEqual(['fury-dash', null]);
     });
   });
 

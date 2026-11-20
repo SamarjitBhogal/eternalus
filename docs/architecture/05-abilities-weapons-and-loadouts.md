@@ -457,6 +457,12 @@ casterId, abilityId, slot }`; then it advances every live `CastInstance` (wind-u
 4. Effects mutate components and the pipeline; deaths resolve in `DeathSystem`; nothing here calls
    another system.
 
+Each targeting strategy states `usesAim`: whether the cast reads the aim the player gives it
+(`directional` and `self` true, `heading` false, because that cast aims itself). The registry
+binds it to each ability and `loadDisplayContent` publishes it as `AbilityDisplay.usesAim`
+(§15), so the client decides "cast at once, no pointer needed" from the ability in the slot,
+never from the slot or the targeting kind (DEC-283, `INBOX.md` HC-Q62 (1)).
+
 Passives (`slot: 'passive'`: Wrecking Run, Studious (name pending), Necromancy) are applied once
 by `Legend.onSpawn` as permanent `buff` effects, so they are ordinary statuses with modifiers.
 The Magus default action (Revive, **MVP**) sits in `default-action` with the `revive` effect and
@@ -875,6 +881,13 @@ glyph needs no mapping table and a rebinding updates every prompt with no code c
 Display names and icons come from the display catalogue the client builds at boot (core's
 `loadDisplayContent()` and the client's own presentation data), joined with the player's selection
 by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event.
+`AbilityDisplay` also carries `usesAim`, taken from the targeting strategy the registry binds to
+the ability (§7): `false` for a cast that aims itself (Fury's dash). The client's `AbilityCasts`
+casts such an ability at once in both cast modes, needing no pointer point, and sends the
+Legend's own position when the pointer has had none (core ignores the aim). `PlayerHudSnapshot`
+carries `grantedAbilityId` (the ability in the `granted` slot, `null` while none), and the
+`GrantedPrompt` HUD element shows the key bound to `granted` beside that ability's display name
+while it is set (DEC-283, HC-Q61 (3)).
 `AetherBar` and `HealthBar` read the same record; `LoadoutScreen` edits a `Loadout` value and calls
 `validateLoadout` through the public API.
 
@@ -1138,10 +1151,13 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
     strategies yet.
   - **Snapshot, bots and client.** `Snapshot.player` reports the eight slots; the bridge leaves
     out `granted`, as it does `default-action`, so the HUD draws no slot for the dash
-    ([13](13-game-interface.md) §10). The client casts it at once in both cast modes, with the
-    latest pointer point (core ignores that aim), and never selects it for aiming. The client
-    knows this by the slot, not by the targeting kind: `AbilityDisplay` carries no targeting kind
-    (`INBOX.md` HC-Q62). A bot may cast a filled `granted` slot (`pickReadySlot`).
+    ([13](13-game-interface.md) §10). The client casts it at once in both cast modes (DEC-283
+    (2): no range overlay first) and never selects it for aiming. It knows this from the ability
+    now in the slot: `AbilityDisplay.usesAim` is `false` for `fury-dash`, published from the
+    `heading` strategy's `usesAim` (DEC-283 (1)), so it needs no pointer point either and the
+    client checks neither the slot nor the targeting kind. The HUD shows a prompt (key and name)
+    while the slot holds an ability (DEC-283 (3)). A bot may cast a filled `granted` slot
+    (`pickReadySlot`).
 
 ## Related
 

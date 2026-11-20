@@ -294,6 +294,8 @@ export const STRINGS = {
     alliedStructures: 'Your structures',
     enemyStructures: 'Enemy structures',
     objectives: 'Capture points',
+    /** The prompt for the ability a status grants (Fury's dash): its accessible name. */
+    grantedPrompt: 'Granted ability',
     captureProgress: 'Capture progress',
     noData: '—',
     emptySlot: 'empty',

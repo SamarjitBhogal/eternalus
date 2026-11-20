@@ -111,9 +111,16 @@ export class Match implements LoopTarget {
       this.healthBars.healthBarOf,
     );
     this.camera = new MatchCamera(camera, map);
-    this.casts = new AbilityCasts(simulation, (slot) => {
-      bridge.bus.emit('aiming-slot', { slot });
-    });
+    this.casts = new AbilityCasts(
+      simulation,
+      (slot) => {
+        bridge.bus.emit('aiming-slot', { slot });
+      },
+      {
+        usesAim: (slot) => this.aiming.usesAim(this.current, slot),
+        legendAt: () => this.playerEntity()?.transform ?? null,
+      },
+    );
     this.commands =
       deps.remote?.createActions(this.camera) ??
       new PlayerCommands(input, simulation, this.camera, mapObjects, this.casts);

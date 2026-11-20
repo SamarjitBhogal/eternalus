@@ -70,6 +70,8 @@ export const hudSlice = createSlice({
     selectUltimatePips: (state) => state.player?.ultimatePips ?? null,
     /** The runtime entry of `slot`, or `null` while it has none. */
     selectSlotStatus: slotStatus,
+    /** The id of the ability a status grants the Legend now (Fury's dash), or `null`. */
+    selectGrantedAbilityId: (state) => state.player?.grantedAbilityId ?? null,
     /** The ultimate meter (`ability-4`'s `charge`), or `null`. */
     selectUltimateCharge: (state) => slotStatus(state, ULTIMATE_SLOT)?.charge ?? null,
   },

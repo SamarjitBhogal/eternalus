@@ -2,7 +2,7 @@ import type { EntityId, Simulation } from '@eternalus/core';
 
 import type { HudSlotId } from '../bridge/Binding.types';
 import type { CastMode } from '../bridge/slices/settingsSlice';
-import type { CastInput } from './AbilityCasts.types';
+import type { CastInput, CastSlots } from './AbilityCasts.types';
 
 /**
  * Turns the ability slots the player presses into `cast-ability` commands (architecture 05 §7;
@@ -14,11 +14,13 @@ import type { CastInput } from './AbilityCasts.types';
  *   click; `cancel` drops the selection (Esc). The selection is reported through `onAimingChanged`
  *   the moment it changes, so the store knows it before the next frame.
  *
- * In both modes the `granted` slot (Fury's dash, Space) queues its cast at once and leaves the
- * selection alone: the ability a status grants aims itself (the dash goes the way the Legend
- * moves, DEC-270; core ignores the aim). It needs no pointer either: the cast goes out aimed at the
- * pointer's latest world point (`aimPoint`), so the dash still fires while the pointer is off the
- * canvas or over the HUD. Only before the pointer has had any world point does it queue nothing.
+ * In both modes a slot whose ability does not use the aim (`AbilityDisplay.usesAim` false: Fury's
+ * dash in the `granted` slot, Space) queues its cast at once and leaves the selection alone: it
+ * aims itself (the dash goes the way the Legend moves, DEC-270, DEC-283; core ignores the aim).
+ * The client checks the ability now in the slot, never the slot or the targeting kind. It needs no
+ * pointer: the cast goes out aimed at the pointer's latest world point (`aimPoint`), else at the
+ * Legend's own position, so the dash still fires while the pointer is off the canvas or over the
+ * HUD, or has had no point yet. Every other ability takes the paths above.
  *
  * `apply` returns whether the main button is consumed: while a slot is selected, and until the
  * confirming press is released, it is no basic attack.
@@ -29,8 +31,8 @@ export class AbilityCasts {
   private aiming: HudSlotId | null = null;
 
   /**
-   * The latest world point under the pointer, for the range overlay and the `granted` slot's cast;
-   * `null` before any.
+   * The latest world point under the pointer, for the range overlay and the cast of an ability
+   * that does not use the aim; `null` before any.
    */
   private lastAim: CastInput['aim'] = null;
 
@@ -43,10 +45,12 @@ export class AbilityCasts {
   /**
    * @param simulation Where the `cast-ability` commands go.
    * @param onAimingChanged Called with the new selection each time it changes.
+   * @param slots The ability each slot holds now, and where the Legend stands.
    */
   public constructor(
     private readonly simulation: Pick<Simulation, 'enqueueCommand'>,
     private readonly onAimingChanged: (slot: HudSlotId | null) => void,
+    private readonly slots: CastSlots,
   ) {}
 
   /** The slot selected for aiming, or `null`. */
@@ -87,10 +91,11 @@ export class AbilityCasts {
       this.isConfirmHeld = false;
     }
     for (const slot of input.triggered) {
-      if (slot === 'granted') {
-        // It aims itself (see the class doc): the latest pointer point, even with none this tick.
-        this.queueCast(actorId, slot, this.lastAim);
-      } else if (this.castMode === 'quick') {
+      if (!this.slots.usesAim(slot)) {
+        // It aims itself (see the class doc): core ignores the point, so any point will do.
+        this.queueCast(actorId, slot, this.lastAim ?? this.slots.legendAt());
+      } else if (this.castMode === 'quick' || slot === 'granted') {
+        // The `granted` slot has no HUD slot to select, so an aimed one casts at the pointer.
         this.queueCast(actorId, slot, input.aim);
       } else if (slot !== 'default-action') {
         this.select(slot);

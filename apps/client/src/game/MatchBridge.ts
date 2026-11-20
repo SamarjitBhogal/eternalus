@@ -277,6 +277,10 @@ export class MatchBridge {
       ultimatePips: null,
       slots:
         snapshot.player?.entityId === entity.id ? MatchBridge.slotsOf(snapshot.player.slots) : [],
+      grantedAbilityId:
+        snapshot.player?.entityId === entity.id
+          ? (snapshot.player.slots.find(({ slot }) => slot === 'granted')?.abilityId ?? null)
+          : null,
     };
   }
 
