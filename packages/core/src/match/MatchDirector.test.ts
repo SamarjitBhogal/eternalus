@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { timelineFrameOf } from '../config/timelineFrameOf';
 import type { GameConfig } from '../config/GameConfig.types';
 import type { MatchPhase } from '../config/matchPhases';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../config/matchPhases';
@@ -103,7 +104,16 @@ const setUp = (
     defeat: record('defeat'),
   };
   const timeline = new MatchTimeline(entries);
-  const state = new GameState(config, 1, null, {}, timeline.schedule());
+  const state = new GameState(
+    config,
+    1,
+    null,
+    {},
+    {
+      schedule: timeline.schedule(),
+      countdownEndTick: timelineFrameOf(config).countdownEndTick,
+    },
+  );
   const logger = new MemoryLogger();
   const director = new MatchDirector({
     phases,

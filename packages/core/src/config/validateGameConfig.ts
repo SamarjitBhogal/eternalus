@@ -11,8 +11,8 @@ import type {
   TimelineActionKind,
   TimelineFrame,
 } from './MatchTimelineEntry.types';
+import { timelineFrameOf } from './timelineFrameOf';
 import { timelineMarkTick } from './timelineMarkTick';
-import { countdownTicks } from './countdownTicks';
 import { isPlayableTeam } from '../teams/playableTeams';
 
 type Rule = {
@@ -82,15 +82,15 @@ const timelineOf = (config: unknown): readonly MatchTimelineEntry[] =>
   valueAt(config, 'match.timeline') as readonly MatchTimelineEntry[];
 
 /** What the timeline's marks resolve against; only for rules after the three fields' own rules. */
-const frameOf = (config: unknown): TimelineFrame => {
+const frameOf = (config: unknown): TimelineFrame =>
   // Safe: all three fields passed their own rules before any rule that calls this.
-  const tickRate = valueAt(config, 'tickRate') as number;
-  return {
-    tickRate,
-    plannedMatchSeconds: valueAt(config, 'match.plannedMatchSeconds') as number,
-    countdownEndTick: countdownTicks(valueAt(config, 'match.countdownSeconds') as number, tickRate),
-  };
-};
+  timelineFrameOf({
+    tickRate: valueAt(config, 'tickRate') as number,
+    match: {
+      plannedMatchSeconds: valueAt(config, 'match.plannedMatchSeconds') as number,
+      countdownSeconds: valueAt(config, 'match.countdownSeconds') as number,
+    },
+  });
 
 /** Checked in order; cross-field rules come after the fields they read. */
 const RULES: readonly Rule[] = [

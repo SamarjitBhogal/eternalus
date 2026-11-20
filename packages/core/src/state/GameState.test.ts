@@ -149,7 +149,7 @@ describe('GameState', () => {
         phase: 'countdown',
         phaseEnteredTick: 0,
         upcoming: [],
-        countdownEndTick: 300,
+        countdownEndTick: 0,
         humanLegendId: null,
       },
       entities: [
@@ -312,7 +312,7 @@ describe('GameState', () => {
     ];
 
     it('builds its match record in the countdown, from the schedule it is given', () => {
-      const state = new GameState(createDefaultGameConfig(), 1, null, {}, SCHEDULE);
+      const state = new GameState(createDefaultGameConfig(), 1, null, {}, { schedule: SCHEDULE });
       expect(state.match.phase).toBe('countdown');
       expect(state.match.schedule).toEqual(SCHEDULE);
       expect(Object.isFrozen(state.match.schedule[0])).toBe(true);
@@ -340,7 +340,16 @@ describe('GameState', () => {
     });
 
     it('snapshots the phase and the unfired marks, from the timeline cursor on', () => {
-      const state = new GameState(createDefaultGameConfig(), 1, null, {}, SCHEDULE);
+      const state = new GameState(
+        createDefaultGameConfig(),
+        1,
+        null,
+        {},
+        {
+          schedule: SCHEDULE,
+          countdownEndTick: 60,
+        },
+      );
       state.match.advanceTimeline();
       state.match.setPhase('early-game');
 
@@ -348,13 +357,14 @@ describe('GameState', () => {
         phase: 'early-game',
         phaseEnteredTick: 0,
         upcoming: [{ entryId: 'mid-game', tick: 900 }],
-        countdownEndTick: 300,
+        countdownEndTick: 60,
         humanLegendId: null,
       });
     });
 
-    it("keeps the countdown's end tick from its config as match.countdownEndTick, which the snapshot reports (HC-B9 (1))", () => {
-      const state = new GameState(createDefaultGameConfig({ match: { countdownSeconds: 2.5 } }), 1);
+    it('keeps the countdown end tick it is given, not one from its config, as match.countdownEndTick, which the snapshot reports (HC-B9 (1), DEC-286)', () => {
+      // The default config's 10 s countdown would end on tick 300.
+      const state = new GameState(createDefaultGameConfig(), 1, null, {}, { countdownEndTick: 75 });
 
       expect(state.match.countdownEndTick).toBe(75);
       expect(state.snapshot(CURVES).match.countdownEndTick).toBe(75);

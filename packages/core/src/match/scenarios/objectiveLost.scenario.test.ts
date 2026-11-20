@@ -36,7 +36,7 @@ const MAX_TICKS = 30;
 const playOut = (prepare: (state: GameState) => void = () => undefined) => {
   const logger = new MemoryLogger();
   const timeline = MatchTimeline.resolve(CONFIG);
-  const state = new GameState(CONFIG, 7, null, {}, timeline.schedule());
+  const state = new GameState(CONFIG, 7, null, {}, { schedule: timeline.schedule() });
   const director = createDefaultMatchDirector({
     state,
     timeline,

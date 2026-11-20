@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { countdownTicks } from '../../config/countdownTicks';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
+import { timelineFrameOf } from '../../config/timelineFrameOf';
 import { timelineMarkTick } from '../../config/timelineMarkTick';
 import { AGGRO_RULES } from '../ai/aggro/aggroRules';
 import { AI_CADENCE } from '../ai/cadence';
@@ -42,23 +42,19 @@ describe('GUARD_PLANS', () => {
   });
 
   it('activates the capture point boss on the default timeline quarter mark (reference 04)', () => {
-    const { tickRate, match } = createDefaultGameConfig();
-    const quarter = match.timeline.find(({ id }) => id === 'quarter-mark');
+    const config = createDefaultGameConfig();
+    const frame = timelineFrameOf(config);
+    const quarter = config.match.timeline.find(({ id }) => id === 'quarter-mark');
     const activation = GUARD_PLANS['capture-point']?.activation;
     // Timeline fractions and the guard plan both count from the countdown's end (DEC-282).
-    const quarterTick =
-      quarter === undefined
-        ? -1
-        : timelineMarkTick(quarter.at, {
-            tickRate,
-            plannedMatchSeconds: match.plannedMatchSeconds,
-            countdownEndTick: countdownTicks(match.countdownSeconds, tickRate),
-          });
+    const quarterTick = quarter === undefined ? -1 : timelineMarkTick(quarter.at, frame);
     const delayTicks =
-      activation?.at === 'countdown-end' ? Math.round(activation.delaySeconds * tickRate) : 0;
+      activation?.at === 'countdown-end'
+        ? Math.round(activation.delaySeconds * config.tickRate)
+        : 0;
 
     expect(activation?.at).toBe('countdown-end');
-    expect(countdownTicks(match.countdownSeconds, tickRate) + delayTicks).toBe(quarterTick);
+    expect(frame.countdownEndTick + delayTicks).toBe(quarterTick);
   });
 
   it('covers a guard whose decision waits its turn at the unit cap, 16 ticks apart not 10 (DEC-181)', () => {
