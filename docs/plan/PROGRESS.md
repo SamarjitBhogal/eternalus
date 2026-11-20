@@ -8911,3 +8911,13 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   after that full run; this correction changes only the task record and branch location.
 - Next step: review and commit the pending merge/fixes on this original branch when requested;
   owner confirmation and the critic/Ponytail gate remain pending. No commit or push made.
+
+### 2026-11-19 — Phase 3 / sprint 3.1 — feat/visuals-and-design — Codex
+
+- Local attack input now picks Legends and mobs by their drawn body radius. The map snapshots
+  round decorative geometry and retain the exact tower, camp and overall collision hashes for
+  seeds 1, 2 and 42. Documented the existing camp collision change.
+- Checks: 22 focused tests passed. Two core determinism tests timed out on the initial full run,
+  then passed in isolation. The full `npm run check` retry with two Vitest workers passed.
+  `Checked 128 Markdown files under docs/.` `Documentation check passed.` `EXIT=0`
+- Next: confirm the rounded scenery snapshots on Apple Silicon during PR review.

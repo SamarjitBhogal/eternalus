@@ -5,7 +5,8 @@ import type { EntitySnapshot } from './Snapshot.types';
 
 /**
  * Selects the living enemy unit (Legend, mob or boss) drawn under `point` (world units): the
- * snapshot position and `radius` set its disc. Allies (the attacker included) and dead units are
+ * snapshot position and `radiusFor` set its disc. The default uses the collider radius.
+ * Allies (the attacker included) and dead units are
  * skipped. Where discs overlap the unit drawn on top wins: the largest `y`, the order of
  * the client's `EntityLayer.draw` (a later entity wins a tie as it is drawn later; DEC-183). Structures and map
  * objects are no units, so a click on a unit wins over the building behind it.
@@ -20,6 +21,7 @@ export const findUnitAt = (
   entities: readonly EntitySnapshot[],
   actorId: EntityId,
   point: Vec2,
+  radiusFor: (family: string, colliderRadius: number) => number = (_, radius) => radius,
 ): EntityId | null => {
   const actorTeam = entities.find((entity) => entity.id === actorId)?.team ?? null;
   let selected: EntityId | null = null;
@@ -37,7 +39,8 @@ export const findUnitAt = (
     const dx = transform.x - point.x;
     const dy = transform.y - point.y;
     // Squared distances: core keeps transcendental Math out (ADR 0012).
-    const isUnderPoint = dx * dx + dy * dy <= transform.radius * transform.radius;
+    const radius = radiusFor(family, transform.radius);
+    const isUnderPoint = dx * dx + dy * dy <= radius * radius;
     if (isUnderPoint && transform.y >= frontY) {
       selected = id;
       frontY = transform.y;

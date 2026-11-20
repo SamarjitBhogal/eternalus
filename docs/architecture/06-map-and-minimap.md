@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-16
+last-reviewed: 2026-11-19
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -485,7 +485,9 @@ approved them, `INBOX.md` HC-T1), and this note gives the detail:
   DEC-183): a living enemy unit there is attacked; else a click that toggles a roof is a roof
   click; else the click attacks the map object there. A drag does neither. When units overlap, the
   one drawn on top wins (DEC-183). The held attack button aims the same way: a unit first, else a
-  map object (`PlayerCommands`). A click on the building the player's Legend stands in toggles
+  map object (`PlayerCommands`). In local matches, both inputs pick Legends and mobs by the
+  radius of their drawn body. Movement collision and attack reach still use simulation geometry.
+  A click on the building the player's Legend stands in toggles
   nothing (its roof is already cut away), so it attacks (DEC-153). The owner selected "Allow attack"
   (option text: "A plain click on the world attacks even with the explorer shown; only drags and
   roof clicks are claimed."), DEC-150. This is the attack and roof input arbitration the
@@ -637,8 +639,10 @@ pillars, a pointed arch and a suspended orange crystal. Lane towers retain their
 language, with troop equipment identifying their visual rank by distance from their team's
 Stronghold: nearest heavy, second medium, any additional farther structures light. With the
 current two structures per lane per side, heavy and medium appear; the light design is available
-when map content includes a third. This is appearance only: counts, feature definitions, teams,
-positions, minion weights and spawning rules retain their existing sources of truth.
+when map content includes a third. Counts, feature definitions, teams, positions, minion weights
+and spawning rules retain their existing sources of truth. Camp dressing changes collision:
+each camp uses one blocking footprint in place of the two blocking tents and two blocking
+furniture pieces in the previous layout.
 
 Forest camps have a separate woodland design: mossy standing stones, a broken dolmen, roots,
 offerings and lanterns. `campScenery.ts` owns the materials and lane-theme order; dedicated

@@ -11,9 +11,15 @@ import {
 import type { Projection } from './engine/input/Projection.types';
 import type { IntentSource } from './Match.types';
 import type { PlayerActions } from './PlayerActions';
+import { LEGEND_VISUAL_DIAMETER, MOB_VISUAL_SCALE } from './views/entityViews.constants';
 
 /** The parts of a snapshot an attack target is picked from: its units and map objects. */
 type TargetSnapshot = Pick<Snapshot, 'entities' | 'mapObjects'>;
+
+const visualRadiusFor = (family: string, colliderRadius: number): number => {
+  if (family === 'legend') return LEGEND_VISUAL_DIAMETER / 2;
+  return family === 'mob' ? colliderRadius * MOB_VISUAL_SCALE : colliderRadius;
+};
 
 /**
  * Turns the player's intent into commands for the player's Legend, once a tick (`Match.tick`):
@@ -87,7 +93,7 @@ export class PlayerCommands implements PlayerActions {
    * @returns Whether a unit was under the point; it wins over a roof (`MatchViewControls.clickAt`).
    */
   public attackUnitAt(actorId: EntityId, point: Vec2, snapshot: TargetSnapshot): boolean {
-    const targetId = findUnitAt(snapshot.entities, actorId, point);
+    const targetId = findUnitAt(snapshot.entities, actorId, point, visualRadiusFor);
     if (targetId === null) {
       return false;
     }
@@ -122,7 +128,7 @@ export class PlayerCommands implements PlayerActions {
   /** The unit under `point`, else the map object there: a unit is drawn on top of a building. */
   private targetAt(actorId: EntityId, point: Vec2, snapshot: TargetSnapshot): EntityId | null {
     return (
-      findUnitAt(snapshot.entities, actorId, point) ??
+      findUnitAt(snapshot.entities, actorId, point, visualRadiusFor) ??
       findMapObjectAt(this.mapObjects, snapshot.mapObjects ?? [], point)
     );
   }
