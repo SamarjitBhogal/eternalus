@@ -18,6 +18,7 @@ const dummy = (team: EntitySnapshot['team']): EntitySnapshot => ({
   aether: null,
   area: null,
   capture: null,
+  statuses: null,
 });
 
 const AT = { x: 10, y: 20 };

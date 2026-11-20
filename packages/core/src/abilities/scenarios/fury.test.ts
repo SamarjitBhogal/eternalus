@@ -212,29 +212,64 @@ describe('Fury (scenario)', () => {
     ]);
   });
 
-  it('dashes the way it moves while it faces the Sentinel it attacks', () => {
-    /** Attacks the Sentinel (east) while walking south, dashing or not, from the same seed. */
-    const play = (shouldDash: boolean) => {
-      const scenario = match();
-      scenario.startFury();
-      scenario.attack(scenario.sentinel);
-      scenario.sim.enqueueCommand({
-        type: 'move',
-        actorId: scenario.vanguard,
-        direction: { x: 0, y: -1 },
-      });
-      scenario.run(1);
-      const facing = scenario.entity(scenario.vanguard)?.transform?.facing;
-      if (shouldDash) scenario.cast(scenario.vanguard, 'granted', SELF);
-      scenario.run(15);
-      return { at: scenario.at(scenario.vanguard), facing };
-    };
-    const walked = play(false);
-    const dashed = play(true);
+  it('winds up 0.3 s standing still and attacking, then dashes 3 m in 0.3 s the way it moved at the press (DEC-283)', () => {
+    const { vanguard, sentinel, sim, cast, run, at, entity, log, attack, stop, startFury, hitsOn } =
+      match();
+    startFury();
+    attack(sentinel); // east
+    sim.enqueueCommand({ type: 'move', actorId: vanguard, direction: { x: 0, y: -1 } });
+    run(1); // walking south while it attacks the Sentinel
+    const facing = entity(vanguard)?.transform?.facing;
+    const before = at(vanguard);
+    const hitsBefore = hitsOn(sentinel).length;
 
-    expect(dashed.facing?.x).toBeCloseTo(1, 2); // it faces the Sentinel, east
-    expect(dashed.at.x - walked.at.x).toBeCloseTo(0, 5);
-    expect(dashed.at.y - walked.at.y).toBeCloseTo(-3, 5);
+    cast(vanguard, 'granted', SELF);
+    run(1); // the press: the wind-up starts and the way is fixed
+    const pressTick = Number(log.find((line) => line.endsWith('fury-dash'))?.split(' ')[0]);
+    run(8); // the rest of the wind-up, still told to walk south
+    const woundUp = at(vanguard);
+    const hitsInWindup = hitsOn(sentinel).length - hitsBefore;
+    stop(); // no heading and no target from the dash's first tick: the dash keeps its way
+    run(1); // 9 ticks after the press, the dash starts
+    const firstStep = at(vanguard);
+    run(8);
+    const landed = at(vanguard);
+    run(5);
+
+    expect(facing?.x).toBeCloseTo(1, 2); // it faces the Sentinel, east
+    expect(woundUp.x).toBeCloseTo(before.x, 9);
+    expect(woundUp.y).toBeCloseTo(before.y, 9);
+    expect(hitsInWindup).toBeGreaterThan(0); // the wind-up holds the feet, not the weapon
+    expect(firstStep.x - woundUp.x).toBeCloseTo(0, 5);
+    expect(firstStep.y - woundUp.y).toBeCloseTo(-1 / 3, 5);
+    expect(landed.x - woundUp.x).toBeCloseTo(0, 5);
+    expect(landed.y - woundUp.y).toBeCloseTo(-3, 5);
+    expect(at(vanguard)).toEqual(landed);
+    expect(log.filter((line) => line.includes('fury-'))).toEqual([
+      `${String(pressTick)} cast ${vanguard} fury-dash`,
+      `${String(pressTick)} fury-windup on ${vanguard}`,
+      `${String(pressTick + 9)} fury-windup off ${vanguard}`,
+    ]);
+  });
+
+  it('dashes after its wind-up when Fury ends during it, the slot then empty', () => {
+    const { vanguard, cast, run, at, entity, log, startFury } = match();
+    startFury();
+    run(235);
+    const facing = entity(vanguard)?.transform?.facing ?? { x: Number.NaN, y: Number.NaN };
+    const from = at(vanguard);
+
+    cast(vanguard, 'granted', SELF); // 5 ticks before Fury ends
+    run(18);
+    cast(vanguard, 'granted', SELF);
+    run(1);
+
+    const furyOff = Number(log.find((line) => line.includes('fury off'))?.split(' ')[0]);
+    const windupOff = Number(log.find((line) => line.includes('fury-windup off'))?.split(' ')[0]);
+    expect(windupOff - furyOff).toBe(5);
+    expect(at(vanguard).x - from.x).toBeCloseTo(3 * facing.x, 5);
+    expect(at(vanguard).y - from.y).toBeCloseTo(3 * facing.y, 5);
+    expect(log.at(-1)).toMatch(new RegExp(`rejected ${vanguard} empty-slot$`));
   });
 
   it('holds every invariant for a dash in Fury’s last tick, which empties the slot it cast from', () => {
@@ -262,5 +297,15 @@ describe('Fury (scenario)', () => {
     expect(first.log.filter((line) => line.includes(' cast '))).toHaveLength(2); // Fury, the dash
     expect(first.hitsOn(first.sentinel).length).toBeGreaterThan(0);
     expect(second.sim.hash()).toBe(first.sim.hash());
+  });
+
+  it('gives the same hash for the same seed in the middle of a wind-up', () => {
+    const [first, second, idle] = [match(), match(), match()];
+    for (const scenario of [first, second, idle]) scenario.startFury();
+    for (const scenario of [first, second]) scenario.cast(scenario.vanguard, 'granted', SELF);
+    for (const scenario of [first, second, idle]) scenario.run(5);
+
+    expect(second.sim.hash()).toBe(first.sim.hash());
+    expect(idle.sim.hash()).not.toBe(first.sim.hash());
   });
 });

@@ -3,9 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
 import { MapObjectBody } from '../components/MapObjectBody';
+import { StatusEffects } from '../components/StatusEffects';
 import { ZoneArea } from '../components/ZoneArea';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
+import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { Entity } from '../entities/Entity';
 import { Stronghold } from '../entities/structures/Stronghold';
@@ -22,6 +24,7 @@ class Bare extends Entity {
 }
 
 const CURVES = new ContentCatalogue<LevelCurveDefinition>([]);
+const STATUSES = loadStatusEffects(30, 2);
 const SQUARE = [
   { x: 0, y: 0 },
   { x: 4, y: 0 },
@@ -36,7 +39,7 @@ describe('EntitySnapshotter', () => {
     zone.addComponent(area);
     zone.addComponent(new Capturable());
 
-    const snapshot = new EntitySnapshotter(4, CURVES).snapshotOf(zone);
+    const snapshot = new EntitySnapshotter(4, CURVES, 0).snapshotOf(zone);
 
     expect(snapshot.area).toBe(area.polygons);
     expect(snapshot.capture).toEqual({
@@ -54,7 +57,7 @@ describe('EntitySnapshotter', () => {
     house.addComponent(
       new MapObjectBody({ id: 'house-7', kind: 'house', isBlocking: true, footprints: [SQUARE] }),
     );
-    const snapshotter = new EntitySnapshotter(4, CURVES);
+    const snapshotter = new EntitySnapshotter(4, CURVES, 0);
 
     expect(snapshotter.snapshotOf(house).mapObjectId).toBe('house-7');
     expect(snapshotter.snapshotOf(new Bare('entity-2', 'bare'))).not.toHaveProperty('mapObjectId');
@@ -66,7 +69,7 @@ describe('EntitySnapshotter', () => {
     aether.spend(30);
     mage.addComponent(aether);
 
-    expect(new EntitySnapshotter(4, CURVES).snapshotOf(mage).aether).toEqual({
+    expect(new EntitySnapshotter(4, CURVES, 0).snapshotOf(mage).aether).toEqual({
       current: 50,
       max: 80,
     });
@@ -74,7 +77,7 @@ describe('EntitySnapshotter', () => {
 
   it('gives an entity without aether no aether group', () => {
     expect(
-      new EntitySnapshotter(4, CURVES).snapshotOf(new Bare('entity-1', 'bare')).aether,
+      new EntitySnapshotter(4, CURVES, 0).snapshotOf(new Bare('entity-1', 'bare')).aether,
     ).toBeNull();
   });
 
@@ -92,7 +95,7 @@ describe('EntitySnapshotter', () => {
       position: { x: 7, y: 8 },
       team: 'dark',
     });
-    const snapshotter = new EntitySnapshotter(4, CURVES);
+    const snapshotter = new EntitySnapshotter(4, CURVES, 0);
 
     const snapshot = snapshotter.snapshotOf(built);
 
@@ -100,5 +103,24 @@ describe('EntitySnapshotter', () => {
     expect(snapshotter.snapshotOf(loose)).not.toHaveProperty('mapFeatureId');
     expect(snapshotter.snapshotOf(new Bare('entity-3', 'bare'))).not.toHaveProperty('mapFeatureId');
     expect(structuredClone(snapshot)).toEqual(snapshot);
+  });
+
+  it('snapshots each active status with its ticks so far and left, null without the component', () => {
+    const vanguard = new Bare('entity-1', 'warrior');
+    const statuses = new StatusEffects();
+    statuses.apply(STATUSES.get('fury-windup'), vanguard.id, 10);
+    statuses.apply(STATUSES.get('enraged'), null, 4);
+    vanguard.addComponent(statuses);
+    const calm = new Bare('entity-2', 'warrior');
+    calm.addComponent(new StatusEffects());
+
+    const snapshotter = new EntitySnapshotter(4, CURVES, 13);
+
+    expect(snapshotter.snapshotOf(vanguard).statuses).toEqual([
+      { id: 'fury-windup', ticksActive: 3, ticksLeft: 6 },
+      { id: 'enraged', ticksActive: 9, ticksLeft: null },
+    ]);
+    expect(snapshotter.snapshotOf(calm).statuses).toEqual([]);
+    expect(snapshotter.snapshotOf(new Bare('entity-3', 'bare')).statuses).toBeNull();
   });
 });

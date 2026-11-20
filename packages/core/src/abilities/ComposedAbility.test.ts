@@ -8,7 +8,7 @@ import { SelfTargeting } from './targeting/SelfTargeting';
 describe('ComposedAbility', () => {
   it('takes its id from its definition and keeps what it was composed from', () => {
     const effect = new RecordingEffect('fake-strike');
-    const steps = [{ effect, spec: { kind: 'fake-strike' } }];
+    const steps = [{ effect, spec: { kind: 'fake-strike' }, delayTicks: 0 }];
     const targeting = { strategy: new SelfTargeting(), spec: { kind: 'self' } };
 
     const ability = new ComposedAbility(FAKE_STRIKE, steps, [], targeting, true);

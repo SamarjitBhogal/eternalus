@@ -14,6 +14,56 @@ import { TargetQuery } from './TargetQuery';
 
 const DISC = { kind: 'circle', radius: 3 } as const;
 const END = { from: { x: 6, y: 0 }, to: { x: 6, y: 0 } };
+const STATUSES = loadStatusEffects(30, 2);
+
+/**
+ * A cast at tick 0 of `fake-timeline`: a strike at the cast, a blast and a strike 2 ticks later and
+ * a blast 5 ticks later, all recorded in one log; aimed east from the origin.
+ */
+const timeline = () => {
+  const { state, caster } = casterState();
+  const strike = new RecordingEffect('fake-strike');
+  const blast = new RecordingEffect('fake-blast', strike.log);
+  const registry = testAbilityRegistry(
+    [strike, blast],
+    new ContentCatalogue([
+      fakeAbility({
+        id: 'fake-timeline',
+        effects: [
+          { kind: 'fake-strike' },
+          { kind: 'fake-blast', delayTicks: 2 },
+          { kind: 'fake-strike', delayTicks: 2 },
+          { kind: 'fake-blast', delayTicks: 5 },
+        ],
+      }),
+    ]),
+  );
+  const cast = new CastInstance(
+    {
+      casterId: caster.id,
+      ability: registry.resolve('fake-timeline'),
+      slot: 'ability-1',
+      aim: { point: { x: 4, y: 0 }, targetId: null },
+      origin: { x: 0, y: 0 },
+      casterLevel: 1,
+      tick: 0,
+    },
+    {
+      state,
+      effects: registry,
+      targets: new TargetQuery(registry),
+      damage: new DamagePipeline(),
+      statuses: new StatusEffectApplier(STATUSES),
+    },
+  );
+  /** Steps the state to `tick`. */
+  const at = (tick: number): void => {
+    while (state.tick < tick) state.advanceTick();
+  };
+  /** The kinds fired so far, in order. */
+  const fired = (): string[] => strike.log.map(({ spec }) => spec.kind);
+  return { cast, log: strike.log, at, fired };
+};
 
 /** A dash stand-in: runs its nested step at the dash's end, through the context. */
 class NestingEffect implements AbilityEffect {
@@ -45,6 +95,7 @@ describe('CastInstance', () => {
       [strike, new NestingEffect()],
       new ContentCatalogue([fakeAbility({ id: 'fake-nest', effects: [{ kind: 'fake-nest' }] })]),
     );
+    for (let tick = 0; tick < 7; tick += 1) state.advanceTick(); // the cast tick
 
     new CastInstance(
       {
@@ -101,5 +152,42 @@ describe('CastInstance', () => {
     ).run();
 
     expect(strike.log[0]?.cast.direction).toEqual({ x: 0, y: 0 });
+  });
+
+  it('fires only the steps due by now, in list order, and returns the first one still waiting', () => {
+    const { cast, at, fired } = timeline();
+
+    const atCast = cast.run();
+    at(1);
+    const tickOne = cast.run(undefined, atCast);
+    at(2);
+    const tickTwo = cast.run(undefined, tickOne);
+    at(4);
+    const tickFour = cast.run(undefined, tickTwo);
+    at(5);
+    const tickFive = cast.run(undefined, tickFour);
+
+    expect([atCast, tickOne, tickTwo, tickFour, tickFive]).toEqual([1, 1, 3, 3, 4]);
+    expect(fired()).toEqual(['fake-strike', 'fake-blast', 'fake-strike', 'fake-blast']);
+  });
+
+  it('places a later step where it is told, its direction still the one fixed at the cast', () => {
+    const { cast, log, at } = timeline();
+    const later = { from: { x: 3, y: 3 }, to: { x: 3, y: 3 } };
+
+    cast.run();
+    at(2);
+    cast.run(later, 1);
+
+    expect(log.map(({ cast: context }) => context.placement)).toEqual([
+      { from: { x: 0, y: 0 }, to: { x: 0, y: 0 } },
+      later,
+      later,
+    ]);
+    expect(log.map(({ cast: context }) => context.direction)).toEqual([
+      { x: 1, y: 0 },
+      { x: 1, y: 0 },
+      { x: 1, y: 0 },
+    ]);
   });
 });

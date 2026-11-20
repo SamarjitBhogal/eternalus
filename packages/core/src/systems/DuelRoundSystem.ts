@@ -1,4 +1,5 @@
 import type { StatusEffectApplier } from '../combat/StatusEffectApplier';
+import { Abilities } from '../components/Abilities';
 import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
@@ -12,8 +13,9 @@ import type { System, SystemContext } from './System.types';
 /**
  * A Duel's round rule (DEC-36): when a seat's Legend dies, the other team scores a kill and both
  * Legends return to their start points at full health at once, with no respawn timer. The reset also drops every status effect,
- * the attack target and any dash or knock-back under way, so a damage over time cannot kill a
- * Legend the tick after and a push cannot slide it off its start point. Each status ends through
+ * the attack target, any dash or knock-back under way and the steps of a cast still to come (Fury's
+ * dash after its wind-up), so a damage over time cannot kill a Legend the tick after and a push
+ * cannot slide it off its start point. Each status ends through
  * the match's `StatusEffectApplier`, oldest first, so each one emits `status-expired` and an ability
  * it granted leaves the `granted` slot with it (Fury's dash). It runs before `DeathSystem`, so the
  * dead Legend is healed before it would be removed.
@@ -50,6 +52,7 @@ export class DuelRoundSystem implements System {
       const movement = legend.findComponent(Movement);
       movement?.stop();
       movement?.endPushes();
+      legend.findComponent(Abilities)?.endCasts();
       legend.findComponent(Combat)?.setTarget(null);
       // Ids first: each removal changes the list.
       const ids = (legend.findComponent(StatusEffects)?.active ?? []).map(

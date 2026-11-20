@@ -1,12 +1,15 @@
 import type { AbilityRegistry } from '../abilities/AbilityRegistry';
 import { CastInstance } from '../abilities/CastInstance';
 import { TargetQuery } from '../abilities/TargetQuery';
+import type { ShapePlacement } from '../abilities/shapes/AreaShape.types';
 import type { DamagePipeline } from '../combat/DamagePipeline';
 import type { Command } from '../commands/Command.types';
 import type { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { Abilities } from '../components/Abilities';
 import type { AbilitySlotRuntime } from '../components/AbilitySlotRuntime';
+import type { CastInProgress } from '../components/Abilities.types';
 import { Aether } from '../components/Aether';
+import { Health } from '../components/Health';
 import { Progression } from '../components/Progression';
 import { Transform } from '../components/Transform';
 import type { Entity } from '../entities/Entity';
@@ -20,8 +23,12 @@ import type { System, SystemContext } from './System.types';
  * in id order. Each cast is checked again (the state may have moved since the command); a cast
  * that now fails is announced as `command-rejected` and dropped. Otherwise it pays the price in
  * aether, stamps the cooldown (cooldowns start at cast), emits `ability-cast` and fires the
- * ability's steps through their strategies. Runs after `HordeSystem` and before
- * `StatusEffectSystem` (plan arch call 13).
+ * ability's steps that are due at the cast through their strategies. A cast with later steps
+ * (`delayTicks`, 05 §4) is kept on the caster's `Abilities` as plain data; after this tick's new
+ * casts, each kept cast fires the steps that are now due, in list order, on the caster where it
+ * is then, and is dropped after its last step. Its aim stays the one fixed at the cast. A caster
+ * that died drops its casts; one that left the match took them along. Runs after `HordeSystem`
+ * and before `StatusEffectSystem` (plan arch call 13).
  */
 export class AbilitySystem implements System {
   public readonly name = 'abilities';
@@ -44,19 +51,28 @@ export class AbilitySystem implements System {
     this.targets = new TargetQuery(registry);
   }
 
-  /** Runs every queued cast of this tick, casters in id order. */
+  /** Runs every queued cast of this tick, then the due steps of every cast in progress. */
   public update({ state }: SystemContext): void {
     const queued: { readonly caster: Entity; readonly runtime: AbilitySlotRuntime }[] = [];
+    const inProgress: Entity[] = [];
     state.entities.forEach((caster) => {
-      for (const runtime of caster.findComponent(Abilities)?.slots ?? []) {
+      const abilities = caster.findComponent(Abilities);
+      for (const runtime of abilities?.slots ?? []) {
         if (runtime.pendingCast !== null) {
           queued.push({ caster, runtime });
         }
+      }
+      if ((abilities?.castsInProgress.length ?? 0) > 0) {
+        inProgress.push(caster);
       }
     });
     queued.sort((a, b) => compareById(a.caster.id, b.caster.id));
     for (const { caster, runtime } of queued) {
       this.cast(state, caster, runtime);
+    }
+    inProgress.sort((a, b) => compareById(a.id, b.id));
+    for (const caster of inProgress) {
+      this.advance(state, caster);
     }
   }
 
@@ -82,22 +98,47 @@ export class AbilitySystem implements System {
     runtime.recordCast(state.tick, ability.definition.cooldownTicks);
     state.events.emit('ability-cast', { casterId: caster.id, abilityId, slot });
     const { position } = caster.getComponent(Transform);
-    const origin = { x: position.x, y: position.y };
     const { targeting } = ability;
-    // ponytail: one CastInstance per cast, fine while casts are rare; pool it if bots cast every tick.
-    new CastInstance(
-      {
-        casterId: caster.id,
-        ability,
-        slot,
-        aim:
-          targeting === null
-            ? aim
-            : targeting.strategy.aimFor(targeting.spec, aim, caster.id, state),
-        origin,
-        casterLevel: caster.findComponent(Progression)?.level ?? 1,
-        tick: state.tick,
-      },
+    const cast: CastInProgress = {
+      abilityId,
+      slot,
+      aim:
+        targeting === null ? aim : targeting.strategy.aimFor(targeting.spec, aim, caster.id, state),
+      origin: { x: position.x, y: position.y },
+      casterLevel: caster.findComponent(Progression)?.level ?? 1,
+      tick: state.tick,
+      nextStep: 0,
+    };
+    this.fireDue(state, caster, cast);
+  }
+
+  /** Fires the due steps of each cast `caster` has in progress; drops them all once it died. */
+  private advance(state: GameState, caster: Entity): void {
+    for (const cast of caster.getComponent(Abilities).endCasts()) {
+      if (caster.findComponent(Health)?.isDead === true) {
+        return;
+      }
+      const { position } = caster.getComponent(Transform);
+      const here = { x: position.x, y: position.y };
+      this.fireDue(state, caster, cast, { from: here, to: here });
+    }
+  }
+
+  /**
+   * Fires the due steps of `cast` (at `placement`, else where the cast began) and keeps it on
+   * `caster` while steps are left.
+   */
+  private fireDue(
+    state: GameState,
+    caster: Entity,
+    cast: CastInProgress,
+    placement?: ShapePlacement,
+  ): void {
+    const ability = this.registry.resolve(cast.abilityId);
+    // ponytail: one CastInstance per cast and due tick, fine while casts are rare; pool it if bots
+    // cast every tick.
+    const next = new CastInstance(
+      { ...cast, casterId: caster.id, ability },
       {
         state,
         effects: this.registry,
@@ -105,6 +146,9 @@ export class AbilitySystem implements System {
         damage: this.damage,
         statuses: this.statuses,
       },
-    ).run();
+    ).run(placement, cast.nextStep);
+    if (next < ability.steps.length) {
+      caster.getComponent(Abilities).keepCast({ ...cast, nextStep: next });
+    }
   }
 }

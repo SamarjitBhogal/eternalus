@@ -27,7 +27,7 @@ describe('AbilityRegistry', () => {
     const gated = registry.resolve('fake-gated');
 
     expect(gated.isAvailable).toBe(true);
-    expect(gated.steps).toEqual([{ effect: strike, spec: { kind: 'fake-strike' } }]);
+    expect(gated.steps).toEqual([{ effect: strike, spec: { kind: 'fake-strike' }, delayTicks: 0 }]);
     expect(gated.restrictions.map(({ spec }) => spec)).toEqual([{ kind: 'min-level', level: 5 }]);
     expect(gated.restrictions[0]?.rule).toBeInstanceOf(MinLevelRestriction);
     expect(gated.definition).toBe(ABILITIES_WITH_FAKES.get('fake-gated'));
@@ -37,6 +37,7 @@ describe('AbilityRegistry', () => {
     const registry = testAbilityRegistry([
       new RecordingEffect('fake-strike'),
       new RecordingEffect('dash'),
+      new RecordingEffect('buff'),
     ]);
 
     const dash = registry.resolve('fake-dash').targeting;
@@ -47,6 +48,20 @@ describe('AbilityRegistry', () => {
     expect(furyDash?.strategy).toBeInstanceOf(HeadingTargeting);
     expect(furyDash?.spec).toEqual({ kind: 'heading' });
     expect(registry.resolve('veil').targeting).toBeNull();
+  });
+
+  it('binds each step with its delay after the cast, 0 for a step with none (05 §4)', () => {
+    const registry = testAbilityRegistry([
+      new RecordingEffect('dash'),
+      new RecordingEffect('buff'),
+    ]);
+
+    const steps = registry.resolve('fury-dash').steps;
+
+    expect(steps.map(({ spec, delayTicks }) => `${spec.kind} ${String(delayTicks)}`)).toEqual([
+      'buff 0',
+      'dash 9',
+    ]);
   });
 
   it('composes each ability once (a cached Flyweight), and a later registration changes none', () => {
@@ -60,7 +75,9 @@ describe('AbilityRegistry', () => {
     registry.registerEffect(new RecordingEffect('fake-other'));
 
     expect(registry.resolve('fake-strike')).toBe(before);
-    expect(before.steps).toEqual([{ effect: strike, spec: { kind: 'fake-strike' } }]);
+    expect(before.steps).toEqual([
+      { effect: strike, spec: { kind: 'fake-strike' }, delayTicks: 0 },
+    ]);
     expect(() => {
       registry.registerEffect(new RecordingEffect('fake-strike'));
     }).toThrow('effect kind "fake-strike" is already registered');
