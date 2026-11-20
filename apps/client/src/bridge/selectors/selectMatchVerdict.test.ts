@@ -60,10 +60,7 @@ describe('selectMatchVerdict', () => {
     expect(duelVerdictOf('dark', null)).toBeNull();
   });
 
-  it.each([null, 'dark', 'light'] as const)(
-    'gives no verdict for a Duel the opponent left (winner %s)',
-    (winner) => {
-      expect(duelVerdictOf(winner, 'dark', 'opponent-left')).toBeNull();
-    },
-  );
+  it('is a victory for the player who stayed in a Duel the opponent left (DEC-251)', () => {
+    expect(duelVerdictOf('dark', 'dark', 'opponent-left')).toBe('victory');
+  });
 });

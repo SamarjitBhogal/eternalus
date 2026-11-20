@@ -15,6 +15,8 @@ import { ABILITY_CASTS_PLAN } from './abilityCastsPlan';
  * still reproduced. Regenerated 2026-11-18 for ultimate contribution ledgers: all commands and
  * checkpoints through tick 300 are unchanged. Disabling only AbilityReactionSystem reproduces
  * every previous checkpoint; the later hashes now include its bounded contribution state.
+ * Phase 3's DEC-243 config migration expresses the same search budget as area instead of cells;
+ * the commands and pinned checkpoint hashes are unchanged.
  */
 export const ABILITY_CASTS_SEED_11: ReplayOf<{
   readonly seed: number;
@@ -34,7 +36,7 @@ export const ABILITY_CASTS_SEED_11: ReplayOf<{
       navCellSize: 5,
       flowFieldCorridorHalfWidth: 30,
       flowFieldCellBudget: 2000,
-      pathMaxExpansions: 6000,
+      pathMaxSearchArea: 150_000,
       pathSnapCells: 12,
       presetId: 'map-1',
     },

@@ -243,7 +243,10 @@ Order in `SystemPipeline`: `MovementSystem` → `CollisionSystem` → `SpaceSyst
   on the same `WorldMap` grid; camp guards use seek/arrival inside their leash. A mob or bot
   Legend whose chase of its target is stuck follows A\* waypoints on that grid round the
   obstacle; `StuckSystem` finds it stuck and plans the waypoints ([18](18-minion-system.md) §5.2,
-  DEC-193).
+  DEC-193). One search
+  settles at most `GameConfig.map.pathMaxSearchArea` of ground, an area in m², not a count of
+  cells: the pathfinder divides it by its grid's cell area, so a change of `navCellSize` keeps the
+  distance a search reaches (DEC-243).
 - The one-tick latency between deciding and integrating is deliberate: it removes any ordering
   dependency between steering and integration (both read last tick's state), matches the "commands
   apply next tick" rule, and is invisible at 30 ticks/s.

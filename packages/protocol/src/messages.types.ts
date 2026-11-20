@@ -8,7 +8,7 @@ export type MatchEndReason = 'finished' | 'opponent-left';
 
 /** How the server ended a match (ADR 0016 point 1): the winning team (`null`: none) and why. */
 export type MatchEnding = {
-  /** The winning team; `null` for a draw. */
+  /** The winning team; `null` for a draw. On `opponent-left`, the team that stayed (DEC-251). */
   readonly winner: PlayableTeam | null;
   /** Why the match ended. */
   readonly reason: MatchEndReason;

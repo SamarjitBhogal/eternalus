@@ -110,10 +110,10 @@ describe('BotLeaves.moveTo (A* for Legends, 10 §9)', () => {
     // The rift block (x 50..70, y 10..30) stands in for a tower footprint; its middle for the
     // tower's centre, the point a retreating bot is sent to.
     const world = matchWorldOf(BLOCKED_LANE_MAP);
-    const { pathMaxExpansions, pathSnapCells } = createDefaultGameConfig().map;
+    const { pathMaxSearchArea, pathSnapCells } = createDefaultGameConfig().map;
     const state = new GameState(createDefaultGameConfig(), 1, world, {
       paths: new AStarPathfinder(world.grid, {
-        maxExpansions: pathMaxExpansions,
+        maxSearchArea: pathMaxSearchArea,
         snapCells: pathSnapCells,
       }),
     });
@@ -151,7 +151,7 @@ describe('BotLeaves.moveTo (A* for Legends, 10 §9)', () => {
     // The rift block (x 50..70, y 10..30) stands in for a fort's court, which the nav grid blocks
     // though its doorways let a body in; the collision system stops the bot at real walls.
     const world = matchWorldOf(BLOCKED_LANE_MAP);
-    const { pathMaxExpansions, pathSnapCells } = createDefaultGameConfig().map;
+    const { pathMaxSearchArea, pathSnapCells } = createDefaultGameConfig().map;
     const space = new SpaceIndex(BLOCKED_LANE_MAP.width, BLOCKED_LANE_MAP.height, 2);
     space.begin(1);
     space.add('enemy', 55, 20);
@@ -159,7 +159,7 @@ describe('BotLeaves.moveTo (A* for Legends, 10 §9)', () => {
     const state = new GameState(createDefaultGameConfig(), 1, world, {
       space,
       paths: new AStarPathfinder(world.grid, {
-        maxExpansions: pathMaxExpansions,
+        maxSearchArea: pathMaxSearchArea,
         snapCells: pathSnapCells,
       }),
     });
