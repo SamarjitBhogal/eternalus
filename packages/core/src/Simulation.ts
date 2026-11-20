@@ -22,7 +22,7 @@ import type { LogContext, Logger } from './diagnostics/Logger.types';
 import { makeLogRecord } from './diagnostics/makeLogRecord';
 import { recentContext } from './diagnostics/recentContext';
 import { REPLAY_CHECKPOINT_EVERY } from './diagnostics/Replay.constants';
-import { AGGRO_RULES } from './content/ai/aggro/aggroRules';
+import { loadAggroRules } from './content/ai/aggro/loadAggroRules';
 import { AI_CADENCE } from './content/ai/cadence';
 import { LANE_ASSESSMENT_WEIGHTS } from './content/ai/laneAssessmentWeights';
 import { ROVER_TACTICS } from './content/ai/rover';
@@ -180,7 +180,7 @@ export class Simulation {
     const validator = new CastValidator(registry);
     this.handlers = createDefaultCommandHandlers(validator);
     this.readiness = validator;
-    const controllers = Simulation.createControllers(validator);
+    const controllers = Simulation.createControllers(validator, tickRate);
     const units = content ?? Simulation.defaultContent(tickRate, curves, controllers, weaponSource);
     const objectsById = new Map(
       Object.values(MAP_OBJECT_DEFINITIONS).map((definition) => [definition.id, definition]),
@@ -757,11 +757,14 @@ export class Simulation {
     };
   }
 
-  /** Every controller, with the shipped content it reads (architecture 11 §2). */
-  private static createControllers(readiness: SlotReadiness): ControllerRegistry {
+  /**
+   * Every controller, with the shipped content it reads (architecture 11 §2); the aggro profiles
+   * are loaded at `tickRate`.
+   */
+  private static createControllers(readiness: SlotReadiness, tickRate: number): ControllerRegistry {
     const bots = { difficulties: BOT_DIFFICULTIES, retreatTo: RETREAT_STRUCTURES, readiness };
     return createDefaultControllerRegistry({
-      leash: { aggro: AGGRO_RULES, classOf: unitClassOf },
+      leash: { aggro: loadAggroRules(tickRate), classOf: unitClassOf },
       botLegend: bots,
       rover: {
         ...bots,

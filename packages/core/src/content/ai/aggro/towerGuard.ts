@@ -1,5 +1,5 @@
 import { GUARD_LEASH } from '../../structures/guardLeash';
-import type { GuardAggroRuleDefinition } from '../ai.types';
+import type { AuthoredGuardAggroRule } from '../ai.types';
 
 /**
  * The tower guard's aggro rules (architecture 18 §7, 11 §4.4): the lane minion's priority list
@@ -23,4 +23,4 @@ export const TOWER_GUARD_AGGRO = {
   leashGraceSeconds: 0, // owner DEC-144 E: a guard never chases past its circle
   aggroCooldownSeconds: 0, // owner DEC-144: no rest; a guard fights any enemy in its circle at once
   ghostFirstWaveTicks: 0, // guards never ghost
-} as const satisfies GuardAggroRuleDefinition;
+} as const satisfies AuthoredGuardAggroRule;
