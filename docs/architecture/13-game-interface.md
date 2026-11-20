@@ -796,7 +796,9 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
     once in both cast modes and never selects it for aiming (core ignores the aim and aims it
     from the Legend's heading). It knows this from the ability in the slot, not the slot:
     `AbilityDisplay.usesAim` is `false` (DEC-283 (8)), and such a cast needs no pointer point (the
-    Legend's own position goes out when the pointer has had none). `MatchBridge` leaves the slot
+    Legend's own position goes out when the pointer has had none, as a plain `{ x, y }`). One path
+    is bound to the slot: `granted` has no HUD slot to select, so an ability there that does use
+    the aim casts at the pointer even in aim-then-click. `MatchBridge` leaves the slot
     out of `PlayerHudSnapshot.slots`, as it does `default-action` (`HudSlotId` excludes both),
     so the HUD draws no slot for it; it publishes the granted ability's id as
     `PlayerHudSnapshot.grantedAbilityId`, and `GrantedPrompt` (above the `AbilityBar`) shows

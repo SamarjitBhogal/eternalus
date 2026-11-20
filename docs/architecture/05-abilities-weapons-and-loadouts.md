@@ -412,26 +412,28 @@ Stronghold's bonus shrinks with the share of its team's BuffTowers that have fal
 the bonus and the aura radius live in `content/abilities/aetherRegen.ts`. The ultimate uses
 `charge` instead: it fills from kills, assists and objective damage, never passively, and loses
 a small `N%` on death
-(`TUNE`, game doc). The rules are data in `content/progression/ultimateCharge.ts`, evaluated by
-`ProgressionSystem`, the only writer of `charge`:
+(`TUNE`, game doc). The numbers are one typed record in `content/progression/ultimateCharge.ts`
+(its type in `content/progression/progression.types.ts`), priced by the `UltimateCharge` helper
+that `ProgressionSystem` owns, the only writer of `charge` (DEC-283 (3), HC-B7):
 
 ```ts
-export type UltimateChargeRule =
-  | {
-      readonly on: 'legend-kill' | 'assist' | 'minion-kill' | 'checkpoint-cleared';
-      readonly gain: number;
-    }
-  | {
-      readonly on: 'structure-damage' | 'boss-damage';
-      readonly gainPerPercentOfTargetHealth: number;
-    }
-  | { readonly on: 'death'; readonly loss: number } // TUNE: "a small N%" (game doc); Recommendation 15
-  | { readonly on: 'class-switch'; readonly cooldownFraction: readonly [number, number] }; // post-MVP: TUNE 50–100%, never reduces
+// Sketch: packages/core/src/content/progression/progression.types.ts
+export type UltimateChargeDefinition = {
+  readonly fullMeter: number;
+  readonly legendKill: number;
+  readonly assist: number; // paid on `assist-earned`, scoring's own window (DEC-79)
+  readonly mobKill: Readonly<Record<MobKind, number>>; // by weight class
+  readonly structureDamagePerPercent: number;
+  readonly bossDamagePerPercent: Readonly<Record<string, number>>; // by mob definition id
+  readonly bossKill: Readonly<Record<string, number>>; // by mob definition id, in place of mobKill
+  readonly checkpointReached: number; // each Legend present
+  readonly deathLoss: number; // TUNE: "a small N%" (game doc)
+};
 ```
 
-`class-switch` exists so the rule object is ready when mid-match class switching arrives
-(**post-MVP**, "needs work" in the game doc); the MVP class is fixed for the match, so nothing
-evaluates it yet. Ultimate Plus (**MVP-if-time**) is a variety with `unlockLevel`, not a second
+A new source of charge is one field here and one listener in `UltimateCharge`. Mid-match class
+switching (**post-MVP**, "needs work" in the game doc; the game doc's 50–100% cooldown on a
+switch) adds its own field when it arrives; the MVP class is fixed for the match. Ultimate Plus (**MVP-if-time**) is a variety with `unlockLevel`, not a second
 ability.
 
 ## 7. Cast lifecycle: `applyCommand` and `AbilitySystem`
@@ -457,8 +459,8 @@ casterId, abilityId, slot }`; then it advances every live `CastInstance` (wind-u
 4. Effects mutate components and the pipeline; deaths resolve in `DeathSystem`; nothing here calls
    another system.
 
-Each targeting strategy states `usesAim`: whether the cast reads the aim the player gives it
-(`directional` and `self` true, `heading` false, because that cast aims itself). The registry
+Each targeting strategy in `abilities/targeting/` states `usesAim`: whether the cast reads the
+aim the player gives it (false for a cast that aims itself, such as Fury's dash). The registry
 binds it to each ability and `loadDisplayContent` publishes it as `AbilityDisplay.usesAim`
 (§15), so the client decides "cast at once, no pointer needed" from the ability in the slot,
 never from the slot or the targeting kind (DEC-283 (8), `INBOX.md` HC-Q62 (1)).
@@ -790,12 +792,14 @@ export type LevelScalingDefinition = {
 }; // TUNE
 ```
 
-`ProgressionSystem` listens to `entity-died`, `damage-applied` (assist window, objective damage),
-`structure-destroyed` and `checkpoint-cleared`, defers the awards to its own pass, applies XP from
+`ProgressionSystem` listens to `entity-died` and `structure-destroyed`, and its `UltimateCharge`
+helper to `entity-died`, `damage-applied` (objective damage), `checkpoint-reached` and
+`assist-earned` (scoring's assist window, so the meter keeps no window of its own; DEC-283 (3),
+HC-B7). It defers the awards to its own pass, applies XP from
 `content/progression/xpSources.ts` (per-source amounts, share radius, damage bias;
 `Recommendation:` balancing.md), emits `level-up { entityId, level }`, raises the `Health` base
-max and `Abilities.maxAether` by the class's `LevelScalingDefinition`, and applies the
-`UltimateChargeRule`s (§6). Ability potency is read at cast time (`CastContext.potency`), so
+max and `Abilities.maxAether` by the class's `LevelScalingDefinition`, and pays the ultimate
+meter from the `UltimateChargeDefinition` record (§6). Ability potency is read at cast time (`CastContext.potency`), so
 `AbilitySystem` needs no listener. The **ability tree** (post-MVP, D12) is an extension point,
 not a design: an `AbilityUpgradeDefinition` (`{ id, abilityId, tier, unlockLevel, patches }`) is
 applied by `AbilityRegistry.resolve` exactly like a variety, `Progression.upgradeIds` records the
@@ -867,7 +871,7 @@ export type AbilitySlotSnapshot = {
 };
 export type PlayerSnapshot = {
   readonly entityId: EntityId; // the Legend's EntitySnapshot, which holds everything else (DEC-232)
-  readonly slots: readonly AbilitySlotSnapshot[]; // ability-1..4, gadget-1, gadget-2, default-action, in that order
+  readonly slots: readonly AbilitySlotSnapshot[]; // ability-1..4, gadget-1, gadget-2, default-action, granted, in that order
 };
 ```
 
@@ -1088,10 +1092,10 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     (`interruptedBy` is not built).
 - **Ultimate meter (`feat/vanguard-kit`, 2026-11-16; DEC-272, DEC-273).** `ProgressionSystem`
   stays the only writer of `charge`: it owns the helper `systems/UltimateCharge`, which buffers
-  each change and pays it in the system's pass, after the XP. Where the code differs from §6, §13
-  and §16 (better-than-design items the owner signed off, DEC-283 (3)):
+  each change and pays it in the system's pass, after the XP. §6 and §13 show the record and the
+  events the owner signed off (DEC-283 (3)); the details, and where the code differs from §16:
   - **Content.** The table is one record, `content/progression/ultimateCharge.ts` (type
-    `UltimateChargeDefinition`), not §6's `UltimateChargeRule` union: the points of each source,
+    `UltimateChargeDefinition`): the points of each source,
     the death loss and the full meter in points; `charge` stays 0 to 1 (points over the full
     meter), rounded at each change to a grid of a millionth of the meter
     (`systems/UltimateCharge.constants.ts`), so whole points worth a full meter make exactly 1
@@ -1104,8 +1108,8 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   - **Sources.** `entity-died`: a killer on another team than the victim gains the Legend or mob
     kill; the victim loses the death loss whoever killed it, never below 0. `damage-applied` on a
     structure or a listed boss by an attacker of another team pays per 1% of the target's max
-    health, absorbed damage included (as scoring counts it, DEC-123). `checkpoint-reached` (§13 names it
-    `checkpoint-cleared`) pays each Legend in `presentLegendIds` (DEC-273). Assists are scoring's
+    health, absorbed damage included (as scoring counts it, DEC-123). `checkpoint-reached` pays each
+    Legend in `presentLegendIds` (DEC-273). Assists are scoring's
     alone: `LegendDeathRule` emits `assist-earned { legendId, victimId }` for each assist it
     awards (DEC-79's window), and the meter pays that; it keeps no assist window of its own.
     Checkpoints and assists pay on the next tick, because their emitters run after
@@ -1176,7 +1180,10 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     cooldown counts from the press. The client draws orange rings that close in on the Legend
     over the wind-up (`game/views/WindupRingsView`, [08](08-game-engine.md) §8) from a new
     snapshot group, `EntitySnapshot.statuses` (each active status's `id`, `ticksActive` and
-    `ticksLeft`; `null` without `StatusEffects`), which stands where 03 §5 sketches `statusIds`.
+    `ticksLeft`; `null` without `StatusEffects`; [03](03-game-model.md) §5). The rings' status id
+    is a client constant; `loadDisplayContent()` publishes every status's id and display name
+    (`DisplayContent.statuses`), and `buildDisplayCatalogue` refuses at boot a ring status that
+    core does not have (ADR 0023: a missed rename fails the checks).
   - **`heading` targeting.** `fury-dash` targets `heading`: its aim is one metre the way the
     caster moves, or the way it faces when it stands still (DEC-270). Each targeting kind is a
     strategy in `abilities/targeting/` (`SelfTargeting`, `DirectionalTargeting`,

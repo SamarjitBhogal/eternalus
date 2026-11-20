@@ -389,6 +389,8 @@ Reply inline (`Decision: …`).
       Approve for a follow-up, or keep the lists?
   - Answered 2026-11-20 (DEC-283): "Approve, as a follow-up PR". Not built; one boss record that
     all four lists read, in a follow-up PR.
+  - Note 2026-11-20 (PR 2a critic round 4): the meter's `bossKill` (DEC-283 (1)) is a fifth list
+    by mob id; the follow-up reads it too. Scheduled with the `Boss` item of Phase 3 sprint 3.6.
 - [ ] **HC-Q66 — Fury's dash wind-up: five readings your answer did not settle
       (`feat/vanguard-kit`, 2026-11-20; DEC-283 (5)).** Built one way and tested; nothing waits on
       the answer. You picked "The Legend stands still 0.3 s while the rings close in, then dashes
@@ -399,6 +401,31 @@ Reply inline (`Decision: …`).
       dash; (4) a stun during the wind-up does not cancel it either (no ability can be interrupted
       yet); (5) the 1 s between dashes counts from the press, not from the end of the dash. A death
       or a Duel round reset drops the waiting dash. Keep all five, or name the ones to change?
+- [ ] **HC-B14 — Better than the design, built under your standing rule (DEC-223), sign-off
+      asked: five parts of the Fury wind-up build (`feat/vanguard-kit`, 2026-11-20; critic round 4
+      on PR 2a, S4 and S1).** Nothing waits on the answer; each part is built and tested.
+      (a) **The wind-up is a status plus a delayed step, not `castTicks`.** 05 §2 plans `castTicks`
+      ("wind-up before the first step"). Fury's dash instead puts a `fury-windup` status
+      (`cannot-move`) on the Legend with a `buff` step and delays the `dash` step by the same
+      0.3 s (one number, `FURY_WINDUP_SECONDS` in `content/abilities/furyDash.ts`). Stand-still
+      reuses `cannot-move`, and the status is already hashed and snapshotted. Once `castTicks` is
+      built there are two ways to wind up: keep `castTicks` in §2, or drop it for this pattern?
+      (b) **A waiting cast is plain data.** 05 §4 and §7 keep a live `CastInstance`; the build keeps
+      `CastInProgress` (ability id, slot, aim, origin, caster level, cast tick, next step) on the
+      caster's `Abilities`, so it is hashed and leaves the match with the caster, and state holds
+      no strategies. `AbilitySystem` builds a `CastInstance` only on a tick a step is due.
+      (c) **Delays may not decrease along an ability's step list** (a load rule), so list order is
+      time order and one index (`nextStep`) is the whole wait state.
+      (d) **`EntitySnapshot.statuses` in place of 03 §5's `statusIds`:** each active status's id,
+      `ticksActive` and `ticksLeft` (`null` for an entity without `StatusEffects`, DEC-17), because
+      the closing rings need the time. 03 §5 now shows it.
+      (e) **`DisplayContent.statuses`** (each status's id and display name) is published by
+      `loadDisplayContent()`, and the client refuses at boot a ring status that core does not have
+      (ADR 0023: a missed rename fails the checks). A public API addition; HC-Q51's texts can use
+      the names.
+      Also noted, acceptable: only an ability's top-level steps may wait (05 §3 says every spec
+      may); no content needs nested delays, and the `Delayed<Step>` type refuses them.
+      Keep all five, or name the ones to change?
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays

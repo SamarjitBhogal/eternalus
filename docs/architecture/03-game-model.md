@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-16
+last-reviewed: 2026-11-20
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -265,8 +265,13 @@ export type EntitySnapshot = {
     readonly current: number;
     readonly max: number;
   } | null; // any entity with an aether pool (every Legend), not only the player (DEC-230)
-  readonly statusIds: readonly StatusEffectId[];
+  readonly statuses: readonly StatusSnapshot[] | null; // oldest first; null without StatusEffects
   readonly anim: AnimState;
+};
+export type StatusSnapshot = {
+  readonly id: StatusEffectId;
+  readonly ticksActive: number; // since first applied; a reapplication keeps counting
+  readonly ticksLeft: number | null; // null for a status that lasts until removed
 };
 ```
 
@@ -491,7 +496,9 @@ each closed by the session or phase named:
   (`x`, `y`, `radius`, `facing`), `health` (`current`, `max`), `progression` (a Legend's `level`,
   the `xp` inside that level and its `xpToNext`, `null` at the cap; `snapshot(curves)` takes the
   level curves `ProgressionSystem` uses), `aether` (a Legend's `current` and `max` aether, DEC-230),
-  `area` (a zone's polygons) and `capture` (a capture point's state and presence) groups only.
+  `area` (a zone's polygons), `capture` (a capture point's state and presence) and `statuses`
+  (each active status's id and time, DEC-283 (5); `snapshot` takes the tick to time them) groups
+  only.
   `Snapshot.player` (05 §15) is built by `PlayerSnapshotter` from the cast rules
   `snapshot(curves, readiness)` takes (`feat/ability-framework`; the match's `CastValidator`); it
   is `null` without a human Legend.

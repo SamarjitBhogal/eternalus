@@ -9714,3 +9714,38 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Next step: the owner pushes PR #123, then this branch, and opens the stacked PR (base
   `feat/ability-framework`); then DEC-283 and the group-A builds from the "Combat Track Calls"
   page.
+
+### 2026-11-20 — Phase 4 / Vanguard PR 2a: DEC-283 builds, critic round 4 and its fixes — feat/vanguard-kit — sholtzman + Claude Code
+
+- What was done: the owner's PR 2a calls (DEC-283, row in `61201fba`). `1163c444`: the last hit
+  on a boss fills the killer's ultimate meter (`ULTIMATE_CHARGE.bossKill`, cause `boss-kill`).
+  `e2943aca` merges `feat/pr2a-aim-hud`: each targeting strategy states `usesAim`, published as
+  `AbilityDisplay.usesAim`, so the client casts Fury's dash at once in both cast modes, and the
+  `GrantedPrompt` HUD element shows the Space key and the ability's name while Fury lasts.
+  `87654528` merges `feat/pr2a-windup`: ability steps may wait (`delaySeconds`, top-level steps,
+  loaded as ticks), a cast with steps left stays on the caster as `CastInProgress` (hashed,
+  dropped by death and a Duel round reset), Fury's dash winds up 0.3 s (`fury-windup`,
+  `cannot-move`), and the client draws closing orange rings from `EntitySnapshot.statuses`.
+  INBOX HC-Q66 records five readings of the wind-up that the answer did not settle.
+- Critic round 4 on `87654528` (delta from `ca90c758`): `architecture-reviewer` APPROVE, no
+  blockers, S1-S5 should-fix, N1-N9; correctness one medium (M1, the `Match` wiring of `usesAim`
+  was untested), three low, three nits; ponytail four cuts. Dispositions:
+  `eternalus-agent-work/abilities/critic-pr2a-r4-dispositions.md`. Fixed: S1 (`DisplayContent.statuses`
+  and a boot check of the rings' status id, ADR 0023), M1 and L1 (two `Match` tests; a plain
+  `{ x, y }` aim point), L2 (a `CastInstance` only on a due tick; cuts 1 and 2), N1 (the Fury hash
+  test fails without cast hashing), N2 (`FURY_WINDUP_SECONDS`), arch N1, S2, S3 (03 §5/§12 and
+  05 §6/§13/§15 show the as-built and signed-off design), S4 (INBOX HC-B14, built under the
+  standing rule DEC-223), N8 (HC-B12 note; the phase 3 `Boss` item names the five boss lists),
+  N9. Rejected with reasons: L3 (matches the neighbouring lookups), ponytail cut 4, N3/N4, N6,
+  N7 (`Match.ts` 308 lines).
+- Tests failed first: every new test was red under a deliberate break and green after the restore
+  (SHA-256 checked): `boss-kill-breaks.log`, `aim-hud-breaks.log`, `windup-breaks.log`,
+  `r4-runner-a-breaks.log` (A1-A2), `r4-runner-b-breaks.log` (B1-B3), `r4-runner-c-breaks.log`
+  (C1-C2), all in `eternalus-agent-work/abilities/`.
+- Checks run: on `87654528`, `npm run check` → `EXIT=0` (core 2035, protocol 30, client 2111,
+  server 84; `check-pr2a-merged.log`). With the round 4 fixes (before this entry), `npm run check`
+  → `EXIT=0`: core "Tests 2037 passed (2037)"; protocol "Tests 30 passed (30)"; client "Tests
+  2114 passed (2114)"; server "Tests 84 passed (84)"; "All matched files use Prettier code
+  style!"; "Documentation check passed." (`check-pr2a-r4-fixes.log`).
+- Next step: the critic re-checks the fix diff; then the owner pushes this branch and opens the
+  stacked PR (base `feat/ability-framework`, #123); then DEC-284 on `feat/ability-framework`.
