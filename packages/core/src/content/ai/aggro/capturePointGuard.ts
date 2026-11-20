@@ -1,5 +1,5 @@
 import { CAPTURE_POINT_COURT } from '../../zones/capturePointCourt';
-import type { GuardAggroRuleDefinition } from '../ai.types';
+import type { AuthoredGuardAggroRule } from '../ai.types';
 import { TOWER_GUARD_AGGRO } from './towerGuard';
 
 /**
@@ -11,4 +11,4 @@ export const CAPTURE_POINT_GUARD_AGGRO = {
   ...TOWER_GUARD_AGGRO,
   id: 'capture-point-guard',
   acquisitionRadius: CAPTURE_POINT_COURT.leashRadius - CAPTURE_POINT_COURT.postGap,
-} as const satisfies GuardAggroRuleDefinition;
+} as const satisfies AuthoredGuardAggroRule;
