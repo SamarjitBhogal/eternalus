@@ -1,7 +1,7 @@
 import { Transform } from '../../components/Transform';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import type { GameConfig } from '../../config/GameConfig.types';
-import { AGGRO_RULES } from '../../content/ai/aggro/aggroRules';
+import { loadAggroRules } from '../../content/ai/aggro/loadAggroRules';
 import { loadDefaultContent } from '../../content/loadDefaultContent';
 import { STRUCTURE_DEFINITIONS } from '../../content/structures/structureCatalogue';
 import { loadWeapons } from '../../content/weapons/loadWeapons';
@@ -12,6 +12,7 @@ import { matchWorldOf } from '../../state/__fixtures__/matchWorld';
 import { TWO_LANE_MAP } from '../../state/__fixtures__/twoLaneMap';
 import type { AiMemory } from '../../state/AiState.types';
 import { GameState } from '../../state/GameState';
+import type { Team } from '../../teams/teams.types';
 import { IdGenerator } from '../../utils/IdGenerator';
 import { MinionController } from '../MinionController';
 import { Perception } from '../perception/Perception';
@@ -20,14 +21,14 @@ import { Perception } from '../perception/Perception';
 export const CLASS_OF = (kind: string) =>
   kind === 'warrior' ? ('legend' as const) : kind.endsWith('-mob') ? ('minion' as const) : null;
 
-/** A lane-minion controller over the default aggro content. */
+/** A lane-minion controller over the default aggro content, loaded at the default tick rate. */
 export const controller = new MinionController({
-  aggro: AGGRO_RULES,
+  aggro: loadAggroRules(createDefaultGameConfig().tickRate),
   classOf: CLASS_OF,
 });
 
 /**
- * A two-lane match with a space index: `add` places units, `decide` runs the controller for one
+ * A two-lane match (the default config unless given) with a space index: `add` places units, `decide` runs the controller for one
  * mob, `objective` gives a light horde a dark lane-0 structure to march on.
  */
 export const setUp = (config: GameConfig = createDefaultGameConfig()) => {
@@ -40,13 +41,7 @@ export const setUp = (config: GameConfig = createDefaultGameConfig()) => {
     loadWeapons(30),
   );
   const perception = new Perception(state);
-  const add = (
-    team: 'light' | 'dark',
-    x: number,
-    y = 20,
-    kind = 'light-mob',
-    id = 'light-minion',
-  ) => {
+  const add = (team: Team, x: number, y = 20, kind = 'light-mob', id = 'light-minion') => {
     const entity = factory.create(kind, id, { team, position: { x, y } });
     state.entities.add(entity);
     return entity.id;
@@ -108,7 +103,7 @@ export const setUp = (config: GameConfig = createDefaultGameConfig()) => {
     });
     return entity;
   };
-  return { state, add, decide, advance, moveTo, objective };
+  return { state, space, add, decide, advance, moveTo, objective };
 };
 
 /** A minion's memory while it fights `targetId`, its leash anchored at (50, 20). */

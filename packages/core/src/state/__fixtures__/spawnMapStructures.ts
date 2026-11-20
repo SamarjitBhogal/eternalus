@@ -1,3 +1,5 @@
+import { Footprint } from '../../components/Footprint';
+import type { MapObject } from '../../content/maps/mapObjects.types';
 import { STRUCTURE_DEFINITIONS } from '../../content/structures/structureCatalogue';
 import { createDefaultEntityRegistry } from '../../entities/defaultEntityRegistry';
 import { EntityFactory } from '../../entities/EntityFactory';
@@ -7,9 +9,14 @@ import type { GameState } from '../GameState';
 
 /**
  * Builds the map's structures the way `Simulation` does, with ids from 1001 up so the units a test
- * spawns keep `entity-1`, `entity-2`, …, then indexes them.
+ * spawns keep `entity-1`, `entity-2`, …, then indexes them. As in `Simulation.spawnStructures`, a
+ * structure whose definition `hasMapFootprint` gets the `Footprint` of its feature's map object of
+ * the same id in `mapObjects` (a lane tower's fort, the Stronghold's palace), blocking or not.
  */
-export const spawnMapStructures = (state: GameState): void => {
+export const spawnMapStructures = (
+  state: GameState,
+  mapObjects: readonly MapObject[] = [],
+): void => {
   const factory = new EntityFactory(
     createDefaultEntityRegistry(),
     STRUCTURE_DEFINITIONS,
@@ -18,16 +25,18 @@ export const spawnMapStructures = (state: GameState): void => {
   const features = [...(state.world?.definition.features ?? [])].sort((a, b) =>
     compareById(a.id, b.id),
   );
-  for (const { definitionId, position, team, laneId } of features) {
+  const bodies = new Map(mapObjects.map((object) => [object.id, object]));
+  for (const { id, definitionId, position, team, laneId } of features) {
     if (STRUCTURE_DEFINITIONS.has(definitionId)) {
-      const { kind } = STRUCTURE_DEFINITIONS.get(definitionId);
-      state.entities.add(
-        factory.create(kind, definitionId, {
-          position,
-          team,
-          ...(laneId !== undefined && { laneId }),
-        }),
-      );
+      const { kind, hasMapFootprint } = STRUCTURE_DEFINITIONS.get(definitionId);
+      const structure = factory.create(kind, definitionId, {
+        position,
+        team,
+        ...(laneId !== undefined && { laneId }),
+      });
+      const body = hasMapFootprint === true ? bodies.get(id) : undefined;
+      if (body !== undefined) structure.addComponent(new Footprint(body.footprints));
+      state.entities.add(structure);
     }
   }
   state.indexStructures();

@@ -18,6 +18,11 @@ export type BotMemory = {
   readonly targetId: string | null;
   /** The first tick it may cast again. */
   readonly nextCastTick: number;
+  /**
+   * Whether its last `move` or `stop` left it standing, so holding still needs no new command
+   * (B66-F2). Only its own commands steer a Legend, so this matches its heading.
+   */
+  readonly isHalted: boolean;
 };
 
 /** What the bot controllers read besides the state, injected so they hold no content. */

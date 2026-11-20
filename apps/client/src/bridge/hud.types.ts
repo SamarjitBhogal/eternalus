@@ -1,8 +1,8 @@
 /**
  * Display types of the match HUD (architecture 05 §15, 13 §3, §5): what `hud-state`,
  * `structure-state` and `capture-state` carry, and the view vocabulary several HUD files share.
- * A value the simulation cannot supply yet is `null` (core has no `Snapshot.player` yet, and
- * structure health is not simulated) and the HUD draws its "no data yet" state. Types only:
+ * A value the simulation cannot supply yet is `null` (core has no `Snapshot.player` yet, and walls
+ * and turrets are not structures yet) and the HUD draws its "no data yet" state. Types only:
  * imports no slice and not events.ts (events.ts imports this file). A type is exported once a file
  * outside this one reads it (knip).
  */
@@ -70,7 +70,10 @@ export type PlayerHudSnapshot = {
   readonly slots: readonly AbilitySlotStatus[];
 };
 
-/** A team structure for the HUD strip: a map feature until structure entities exist (07 §13). */
+/**
+ * A team structure for the HUD strip: a team-owned map feature (07 §1) with the live health of the
+ * structure core built from it, bound by `EntitySnapshot.mapFeatureId` (DEC-212).
+ */
 export type StructureStatus = {
   /** The map feature's id; a strip binds each bar to it, never to a screen position. */
   readonly structureId: string;
@@ -78,7 +81,10 @@ export type StructureStatus = {
   readonly team: PlayableTeam;
   /** The lane's `index`; `null` for structures without a lane (stronghold ring). */
   readonly laneIndex: number | null;
-  /** `null` until structures are simulated (Phase 2); `current` 0 is destroyed (DEC-69). */
+  /**
+   * The live structure's health; `current` 0 is destroyed (DEC-69). `null` while core builds no
+   * structure for the feature (walls and turrets, 07 §13).
+   */
   readonly health: { readonly current: number; readonly max: number } | null;
 };
 
@@ -87,9 +93,9 @@ export type CapturePointStatus = {
   readonly pointId: string;
   readonly kind: MapFeatureKind;
   readonly laneIndex: number | null;
-  /** `'neutral'` until a CaptureSystem runs (reference 04: nobody owns them at the start). */
+  /** `'neutral'` while no team owns it (reference 04: nobody owns them at the start). */
   readonly ownerTeam: Team;
-  /** −1 (Dark) … 1 (Light) (07 §7); `null` while capture is not simulated. */
+  /** −1 (Dark) … 1 (Light) (07 §7); `null` for a point with no zone. */
   readonly progress: number | null;
 };
 
@@ -97,3 +103,18 @@ export type CapturePointStatus = {
 export type HudSide = 'allied' | 'enemy';
 /** Who holds a capture point, seen from the player. */
 export type HudAllegiance = 'ours' | 'theirs' | 'neutral';
+
+/**
+ * The Duel's scoreboard and pre-match countdown, as the player sees them (from `snapshot.match`):
+ * kills of the player's own team and of the opponent, the kills that win, and the number the
+ * countdown shows (3, 2, 1; 0 is "START"; `null` once the match is running).
+ */
+export type DuelHudState = {
+  readonly ownKills: number;
+  readonly opponentKills: number;
+  readonly killTarget: number;
+  readonly countdown: number | null;
+};
+
+/** The two names of the VERSUS screen: this player and the opponent. */
+export type DuelVersus = { readonly own: string; readonly opponent: string };

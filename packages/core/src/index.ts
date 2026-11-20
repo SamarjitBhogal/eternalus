@@ -41,6 +41,7 @@ export type {
   LegendSpecDefinition,
   RoleRatings,
 } from './content/legends/specs/legendSpecs.types';
+export { DUEL_RULES } from './content/duel/duelRules';
 export { loadDisplayContent } from './content/loadDisplayContent';
 export type { DisplayContent } from './content/loadDisplayContent';
 export { DEFAULT_MAP_CONFIG } from './content/maps/defaultMapConfig';
@@ -57,6 +58,7 @@ export type {
   MinimapGlyph,
   MinimapGlyphShape,
 } from './content/maps/maps.types';
+export type { VerdictLines } from './content/narrative/verdictLines.types';
 export type { BotRole, BotRosterDefinition, EnemyRoverRule } from './content/teams/botRoster.types';
 export type {
   DiagnosticEvent,
@@ -91,6 +93,7 @@ export type {
 } from './state/GameEvents.types';
 export type { MatchResult, Verdict } from './state/MatchResult.types';
 export type { ScheduledMark } from './state/MatchState.types';
+export type { LegendStats, TeamStats } from './state/ScoringState.types';
 export type {
   CaptureSnapshot,
   EntitySnapshot,
@@ -99,7 +102,7 @@ export type {
 } from './state/Snapshot.types';
 export { StateHasher } from './state/StateHasher';
 // DEC-178: the client uses core's "other team" rule instead of a copy.
-export { opponentOf } from './teams/playableTeams';
+export { isPlayableTeam, opponentOf, PLAYABLE_TEAMS } from './teams/playableTeams';
 export type { PlayableTeam, Team } from './teams/teams.types';
 export { isPointInPolygon } from './utils/geometry';
 export type { Polygon, Rect, Vec2 } from './utils/geometry.types';
@@ -123,6 +126,10 @@ export type FeatureOwner = Team;
 export type { MapBuilding, MapPresentation } from './content/maps/maps.types';
 
 export { MapObjectBuilder } from './map/MapObjectBuilder';
+export { AStarPathfinder } from './map/AStarPathfinder';
+export { MatchPathfinderFactory } from './map/MatchPathfinderFactory';
+export type { MatchNavigation } from './map/MatchPathfinderFactory.types';
 export type { MapObject, MapObjectKind, MapObjectSnapshot } from './content/maps/mapObjects.types';
 export { findBuildingAt } from './map/findBuildingAt';
 export { findMapObjectAt } from './map/findMapObjectAt';
+export { findUnitAt } from './state/findUnitAt';
