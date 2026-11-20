@@ -27,6 +27,20 @@ describe('validateSettingsDto', () => {
     expect(validateSettingsDto(VALID, KNOWN_ACTIONS)).toEqual({ ok: true, dto: VALID });
   });
 
+  it('accepts a record with a cast mode, and an old record without the field (DEC-125)', () => {
+    const withMode = { ...VALID, gameplay: { castMode: 'aim-then-click' } };
+
+    expect(validateSettingsDto(withMode, KNOWN_ACTIONS)).toEqual({ ok: true, dto: withMode });
+    expect(validateSettingsDto(VALID, KNOWN_ACTIONS).ok).toBe(true);
+  });
+
+  it('rejects an unknown cast mode and a gameplay group that is not an object', () => {
+    expect(reasonFor({ ...VALID, gameplay: { castMode: 'auto' } })).toBe(
+      'gameplay.castMode: invalid value',
+    );
+    expect(reasonFor({ ...VALID, gameplay: 'quick' })).toBe('gameplay: not an object');
+  });
+
   it('accepts a keyboard chord with modifier keys (DEC-105)', () => {
     const chord = {
       device: 'keyboard',

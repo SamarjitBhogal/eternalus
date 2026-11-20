@@ -14,6 +14,7 @@ const spec = (classId: string): LegendSpecDefinition => ({
   description: null,
   roleRatings: null,
   detailNames: { ultimate: null, 'ability-1': null, 'ability-2': null, 'ability-3': null },
+  kit: null,
 });
 
 describe('SpecClassExistsRule', () => {

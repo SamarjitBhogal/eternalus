@@ -4,7 +4,7 @@ description: Sprint checklists for the three Legend classes, the ability framewo
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-05
+last-reviewed: 2026-11-13
 tags: [plan, phase-4, legends, abilities, loadouts, progression, hud]
 paths:
   ['packages/core/src/abilities/**', 'packages/core/src/loadout/**', 'apps/client/src/ui/hud/**']
@@ -92,6 +92,18 @@ Owner: _ (sim lane B). Week 7. Follows
       simple"). Owner: _. Test: a restriction added in content blocks a cast with a reason. Done
       when: no restriction is code.
 
+**Status (2026-11-13, `feat/ability-framework`):** the owner set the build order (DEC-196): the
+framework first, with one ability for each class (Blade Runner, Slam, Shockwave), then one PR for
+each class. PR 1 builds the framework: the `Abilities` component with one slot runtime per bar
+slot, aether regeneration in its own system (DEC-201), the `AbilityRegistry` with the `damage`,
+`debuff`, `knockback` and `dash` effects, area shapes and one restriction kind (`min-level`), the
+cast check shared by the command handler, `AbilitySystem`, the HUD snapshot and the bots, and
+kits from a class pool with an optional kit per Legend (DEC-198, DEC-199, DEC-209 (2)). The
+effect kinds follow architecture 05 §3, not the list above. Bots cast any ready ability on the
+existing timer and chance (DEC-205); situational casting is a follow-up PR. The decisions beyond
+architecture 05 are ADR 0026 (proposed); what is built is in 05 §18. The boxes stay open until the
+per-class PRs close them.
+
 **Success metric:** the framework tests prove the litmus test — adding "Fake Bolt" in a test
 touches three places — and abilities cost ≤ 0.5 ms per tick with 20 Legends casting
 (`Recommendation:` budget).
@@ -123,6 +135,15 @@ and Ultimate Abilities tables; N/X values are content placeholders until balance
 - [ ] **Interactions (MVP-if-time, `Recommendation:` skip unless slack)**: `Slam` + `Shockwave`
       explosion; opposing `Death Ray` lock. Owner: _. Test: only if implemented. Done when:
       documented as an `AbilityEffect` recipe either way.
+
+**Status (2026-11-13, `feat/ability-framework`):** the kits are content (DEC-199, DEC-209 (2)):
+Vanguard Blade Runner, Veil, Hamstring, ultimate Fury; Sentinel Slam, Rip & Tear, Shield Wall,
+ultimate Berserk; Magus Shockwave, Sanctuary, Imbue, ultimate Death Ray. PR 1 builds Blade Runner
+(Physical variety), Slam and Shockwave with scenario tests; the other nine are content with no
+effects and cannot be cast yet. Next: one PR for each class, the Vanguard first, with the ultimate
+meter and Fury, then the Sentinel (Rip & Tear: DEC-204, DEC-206; Fear: DEC-203, DEC-207) and the
+Magus. The seven abilities with no price in `balancing.md` get proposed numbers on a page for the
+owner before they ship (DEC-197).
 
 **Success metric:** 100% of MVP abilities and ultimates have a passing scenario test that
 asserts the documented effect, and the product owner signs off each ability's feel in the
@@ -216,6 +237,12 @@ Owner: _ (client lane). Weeks 7–8.
 - [ ] **Ability targeting overlay** (range rings and dash previews on the overlay layer through
       `Renderer`). Owner: _. Test: overlay draw calls with a fake context. Done when: `views/`
       still reads `Snapshot` only.
+
+**Status (2026-11-13, `feat/ability-framework`):** the HUD slots read core's `Snapshot.player`
+(cooldowns, aether cost, readiness); the charge stays `null` until the ultimate meter exists. The
+targeting overlay is built (`game/views/AimOverlayView.ts`): it shows each step's area from the
+display data in aim-then-click mode (DEC-200, DEC-209 (3)), tested through the
+`RecordingRenderer`. The two cast modes are a setting.
 
 **Success metric:** a rebinding in the settings store updates every ability glyph and prompt on
 the next render, verified by a test and by a reviewer in the browser.

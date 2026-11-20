@@ -46,14 +46,25 @@ export class EntityLayer implements WorldLayer {
     focusId: string | null,
   ): void {
     const before = new Map(previous?.entities.map((entity) => [entity.id, entity]) ?? []);
+    const focusTeam = current.entities.find((entity) => entity.id === focusId)?.team;
     this.states = current.entities.flatMap((entity) => {
       const now = entity.transform;
-      if (entity.mapObjectId !== undefined || now === null) return [];
+      if ((entity.mapObjectId !== undefined && entity.area === null) || now === null) return [];
+      if (entity.isInvisible === true && entity.id !== focusId && entity.team !== focusTeam)
+        return [];
       const then = before.get(entity.id)?.transform ?? now;
       const position = EntityLayer.lerp(then, now, alpha);
       const facing = EntityLayer.turn(then.facing, now.facing, alpha);
       return [{ entity, position, facing, isFocused: entity.id === focusId }];
     });
+  }
+
+  /**
+   * Where `id` is drawn in the main view since the last `show` (its interpolated position), so
+   * what is drawn around a unit sits on it; `null` when the layer does not draw it.
+   */
+  public drawnAt(id: string | null): WorldPoint | null {
+    return this.states.find(({ entity }) => entity.id === id)?.position ?? null;
   }
 
   /**

@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-09
+last-reviewed: 2026-11-18
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -328,6 +328,10 @@ Game-loop plan GL-5 (`feat/results-flow`): `Match.tick` calls the match observer
 after the tick on which `MatchBridge` publishes `match-ended`; the world keeps running (DEC-92)
 until `MatchState` leaves the phase ([13](13-game-interface.md) §2). A pause overlay still pauses
 the loop, but not the timer that leaves the phase (DEC-134).
+
+### Character sprite restoration — implementation status (2026-11-17)
+
+Character atlases are a presentation adapter: Match owns LegendAnimation, selects by the locked-in subclass, and releases its subscriptions with the match. Snapshot displacement drives walking; existing damage-applied, ability-cast and ability-recast events drive attacks and cast effects. Persistent spell fields, barriers and blades use dedicated snapshot views; Berserk uses the snapshot visual scale without moving its ground anchor. Unknown selections, other entities and unavailable atlases retain LegendView. No input action starts a successful-cast animation and no new simulation ability stack is introduced.
 
 ## Related
 

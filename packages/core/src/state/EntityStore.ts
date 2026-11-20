@@ -1,3 +1,6 @@
+import { Abilities } from '../components/Abilities';
+import { StatusEffects } from '../components/StatusEffects';
+import type { Aim } from '../components/AbilitySlotRuntime.types';
 import { ChaseWatch } from '../components/ChaseWatch';
 import { Combat } from '../components/Combat';
 import { ControllerBinding } from '../components/ControllerBinding';
@@ -8,6 +11,7 @@ import { MapObjectBody } from '../components/MapObjectBody';
 import { Movement } from '../components/Movement';
 import { Transform } from '../components/Transform';
 import { TeamMembership } from '../components/TeamMembership';
+import type { AbilitySlot } from '../content/abilities/AbilityDefinition.types';
 import type { Team } from '../teams/teams.types';
 import { distance, isPointInAnyPolygon, nearestPointOnPolygons } from '../utils/geometry';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
@@ -27,6 +31,13 @@ import type {
  * The only way out is `remove(id, cause)`.
  */
 export class EntityStore {
+  /** Allies remain visible to one another; cloaked enemies cannot be acquired as targets. */
+  public isVisibleToTeam(team: Team | undefined, targetId: EntityId): boolean {
+    return (
+      (team !== undefined && team === this.teamOf(targetId)) ||
+      this.get(targetId)?.findComponent(StatusEffects)?.has('invisible') !== true
+    );
+  }
   private readonly entities = new Map<EntityId, Entity>();
   private readonly removals: RemovalRecord[] = [];
   private added = 0;
@@ -279,6 +290,28 @@ export class EntityStore {
     }
     combat.setTarget(targetId);
     return true;
+  }
+
+  /**
+   * Queues a checked cast on the entity's ability slot for `AbilitySystem` (05 §7). Lets
+   * `commands/` queue a cast without importing `components/`, as `setAttackTarget` does.
+   *
+   * @returns `false` when the entity is unknown or has no such slot.
+   */
+  public queueCast(id: EntityId, slot: AbilitySlot, aim: Aim): boolean {
+    const runtime = this.entities.get(id)?.findComponent(Abilities)?.slot(slot);
+    if (runtime === undefined) {
+      return false;
+    }
+    runtime.queue(aim);
+    return true;
+  }
+
+  /** The slots of the entity's ability bar that hold an ability, in bar order; empty for an entity without a bar. */
+  public filledSlotsOf(id: EntityId): readonly AbilitySlot[] {
+    return (this.entities.get(id)?.findComponent(Abilities)?.slots ?? [])
+      .filter(({ abilityId }) => abilityId !== null)
+      .map(({ slot }) => slot);
   }
 
   /** Visits every entity in insertion order. Entities removed during the walk are skipped. */

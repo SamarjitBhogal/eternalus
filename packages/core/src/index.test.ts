@@ -28,6 +28,7 @@ describe('@eternalus/core public API', () => {
       'isPlayableTeam',
       'isPointInPolygon',
       'isUnitFamily',
+      'kitOf',
       'loadDisplayContent',
       'makeLogRecord',
       'opponentOf',
@@ -76,6 +77,7 @@ describe('@eternalus/core public API', () => {
         ],
         humanLegendId: null,
       },
+      player: null,
       entities: [],
       hordes: [],
       teams: {

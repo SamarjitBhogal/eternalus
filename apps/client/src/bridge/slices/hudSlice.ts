@@ -10,9 +10,15 @@ type HudSliceState = {
   /** `null` until the first `hud-state` of a match. */
   readonly player: PlayerHudSnapshot | null;
   readonly announcements: readonly Announcement[];
+  /**
+   * The ability slot the player selected and is aiming (aim-then-click cast mode), else `null`.
+   * Published at once by `aiming-slot`, not with the throttled `hud-state`: the Esc key reads it
+   * at keydown to decide between cancelling the aim and opening the pause menu.
+   */
+  readonly aimingSlot: HudSlotId | null;
 };
 
-const initialState: HudSliceState = { player: null, announcements: [] };
+const initialState: HudSliceState = { player: null, announcements: [], aimingSlot: null };
 
 /** The slot whose `charge` is the ultimate meter (05 §15). */
 const ULTIMATE_SLOT: HudSlotId = 'ability-4';
@@ -22,22 +28,27 @@ function slotStatus(state: HudSliceState, slot: HudSlotId): AbilitySlotStatus | 
   return state.player?.slots.find((entry) => entry.slot === slot) ?? null;
 }
 
-/** HUD state, fed by `hud-state` and `announcement`; reset by every `match-setup`. */
+/** HUD state, fed by `hud-state`, `aiming-slot` and `announcement`; reset by every `match-setup`. */
 export const hudSlice = createSlice({
   name: 'hud',
   initialState,
   reducers: {
     // The snapshot is readonly and stored as given, so the reducer returns new state.
     hudStateChanged: (state, action: PayloadAction<PlayerHudSnapshot | null>) => ({
+      ...state,
       player: action.payload,
-      announcements: state.announcements,
     }),
+    aimingSlotChanged(state, action: PayloadAction<HudSlotId | null>) {
+      state.aimingSlot = action.payload;
+    },
     announced(state, action: PayloadAction<Announcement>) {
       state.announcements.push(action.payload);
     },
     reset: () => initialState,
   },
   selectors: {
+    /** The slot being aimed (the range overlay and the slot highlight read it), or `null`. */
+    selectAimingSlot: (state) => state.aimingSlot,
     selectHealth: (state) => state.player?.health ?? null,
     selectMaxHealth: (state) => state.player?.maxHealth ?? null,
     selectAether: (state) => state.player?.aether ?? null,

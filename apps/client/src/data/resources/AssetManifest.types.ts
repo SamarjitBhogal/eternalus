@@ -9,7 +9,7 @@ export type AssetId = string;
  * How an asset is decoded; one loader per type (14 §11). `ui-image`: an image the React screens
  * draw, decoded with `HTMLImageElement.decode()`; `font`: a `FontFace`.
  */
-export type AssetType = 'ui-image' | 'font';
+export type AssetType = 'ui-image' | 'font' | 'sprite-atlas';
 
 /**
  * When an asset loads (13 §2; 14 §14): `boot` before the menu; the `selection` groups in `loading`
@@ -47,7 +47,7 @@ export type RenditionKey =
   | 'mirrored';
 
 /** Who licensed an asset; `ASSET_LICENCES` holds the text and notice. */
-export type LicenceId = 'owner' | 'ofl-cinzel' | 'mit-phosphor';
+export type LicenceId = 'owner' | 'user-authorised-art' | 'ofl-cinzel' | 'mit-phosphor';
 
 /** One file of an asset. `hash` is the lowercase hex SHA-256 of the file. */
 export type AssetFile = { readonly url: string; readonly bytes: number; readonly hash: string };
@@ -92,6 +92,8 @@ type EntryBase = {
    * paints removed, the holes and the crop).
    */
   readonly source: string;
+  /** ADR 0028: a registered, documented user attachment shared by derived assets. */
+  readonly attachmentReferenceId?: string;
 };
 
 /** An image the React screens and the HUD draw, with its per-use renditions (I-45). */
@@ -114,7 +116,14 @@ export type FontEntry = EntryBase & {
 };
 
 /** One asset of the manifest. */
-export type AssetManifestEntry = UiImageEntry | FontEntry;
+export type SpriteAtlasEntry = EntryBase & {
+  readonly type: 'sprite-atlas';
+  readonly columns: number;
+  readonly rows: number;
+};
+
+/** One asset of the manifest, including world animation atlases. */
+export type AssetManifestEntry = UiImageEntry | FontEntry | SpriteAtlasEntry;
 
 /** The asset list: the only one (02 §9, 14 §11). */
 export type AssetManifest = {

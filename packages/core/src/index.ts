@@ -12,6 +12,7 @@ export type {
   CommandType,
   InputIntent,
 } from './commands/Command.types';
+export type { AbilityRejectReason } from './content/abilities/AbilityDefinition.types';
 export { ConfigValidationError } from './config/ConfigValidationError';
 export { createDefaultGameConfig } from './config/defaultGameConfig';
 export type {
@@ -36,14 +37,21 @@ export type {
   LegendDefinition,
   LegendKind,
 } from './content/legends/legends.types';
+// The kit rule the client's kit rows share with the simulation (ADR 0026 decision 1).
+export { kitOf } from './content/legends/specs/kitOf';
 export type {
   LegendName,
   LegendSpecDefinition,
   RoleRatings,
 } from './content/legends/specs/legendSpecs.types';
 export { DUEL_RULES } from './content/duel/duelRules';
-export { loadDisplayContent } from './content/loadDisplayContent';
-export type { DisplayContent } from './content/loadDisplayContent';
+// The display loader with the shipped effect strategies describing each ability's steps.
+export { loadShippedDisplayContent as loadDisplayContent } from './abilities/loadShippedDisplayContent';
+export type {
+  AbilityDisplay,
+  AbilityDisplayStep,
+  DisplayContent,
+} from './content/loadDisplayContent';
 export { DEFAULT_MAP_CONFIG } from './content/maps/defaultMapConfig';
 export type {
   MapDecoration,
@@ -95,6 +103,7 @@ export type { MatchResult, Verdict } from './state/MatchResult.types';
 export type { ScheduledMark } from './state/MatchState.types';
 export type { LegendStats, TeamStats } from './state/ScoringState.types';
 export type {
+  AbilitySlotSnapshot,
   CaptureSnapshot,
   EntitySnapshot,
   MatchSnapshot,

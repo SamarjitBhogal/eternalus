@@ -214,6 +214,7 @@ export const TEST_CONTENT: DisplayCatalogue = {
     enemyRover: 'mirror-player',
     difficulties: { laner: 'normal', rover: 'rover' },
   },
+  abilities: [],
   verdictLines: {
     'objective-lost': {
       victory: 'The enemy {name} has fallen.',

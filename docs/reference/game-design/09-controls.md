@@ -4,7 +4,7 @@ description: The default MVP key bindings, the requirement that no binding is ha
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-13
 tags: [reference, game-design, controls, input, keybindings, settings]
 paths: ['apps/client/src/game/input/**', 'apps/client/src/ui/screens/SettingsScreen*']
 related:
@@ -30,7 +30,7 @@ Top-down, single-character control. Defaults from both sources (all **MVP**):
 | Move up / left / down / right   | W / A / S / D                  | `move-up`, `move-left`, `move-down`, `move-right` | requirements doc, game doc            |
 | Attack                          | Mouse click                    | `attack`                                          | game doc ("Click to attack")          |
 | Ability 1, 2, 3                 | 1, 2, 3                        | `ability-1`, `ability-2`, `ability-3`             | requirements doc, game doc            |
-| Ultimate (ability 4)            | 4                              | `ultimate`                                        | requirements doc ("4 being ultimate") |
+| Ultimate (ability 4)            | 4                              | `ability-4` (the id in `keybindings.ts`)          | requirements doc ("4 being ultimate") |
 | Gadget 1 / gadget 2 (artifacts) | Z / C                          | `gadget-1`, `gadget-2`                            | requirements doc, game doc            |
 | Sprint (Sentinel Wrecking Run)  | not specified                  | `sprint`                                          | game doc ("While holding sprint")     |
 | Pick up / throw                 | not specified                  | `interact`                                        | game doc (default interactives)       |
@@ -47,6 +47,23 @@ Z/C.
 
 The game doc's pitch calls the MVP "point-and-click" while both sources fix WASD movement; read
 it as WASD movement with mouse-click attacks and targeting.
+
+## Casting an ability (DEC-200, DEC-209 (3))
+
+An ability key casts in one of two modes. The player chooses the mode in the settings (Gameplay
+tab, "Ability cast"; **MVP**):
+
+- **Quick cast.** The key casts the ability at once, aimed at the pointer.
+- **Aim-then-click.** The key selects the ability and shows its range overlay. The overlay shows
+  also for an ability centred on the caster (Slam, Shockwave), as in Smite 2. A click casts it
+  at the pointer; that click is not an attack. Another ability key selects that ability instead.
+- **Esc while an ability is selected** cancels the selection and does not open the pause menu
+  (the owner: "just override the pause menu if an ability is selected and ready for casting").
+  With no ability selected, Esc opens the pause menu as before.
+
+The default mode is quick cast; no owner rule names one yet (`INBOX.md` HC-Q53). Whether a right
+click also cancels a selection is open (`INBOX.md` HC-Q50). The setting is saved with the other
+settings; the code is `apps/client/src/game/AbilityCasts.ts`.
 
 ## Nothing is hard-coded; everything is rebindable
 

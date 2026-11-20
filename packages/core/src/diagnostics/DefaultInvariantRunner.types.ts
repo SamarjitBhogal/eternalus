@@ -10,6 +10,8 @@ export type DefaultInvariantRunnerOptions = {
   readonly debug: DebugConfig;
   /** Where violations are reported when `debug.throwOnViolation` is off. */
   readonly logger: Logger;
+  /** The loaded abilities `cooldown-and-aether-bounds` reads cooldowns from, injected. */
+  readonly abilities: { get(id: string): { readonly cooldownTicks: number } };
   /** The level curves `level-matches-xp` checks against, injected. */
   readonly curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'get'>;
   /** The phase order `phase-monotonic` checks against (`MATCH_PHASES`), injected. */

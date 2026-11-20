@@ -12,6 +12,8 @@ export function settingsWithDefaults(saved: SavedSettings | null): SettingsSlice
   return {
     ...defaults,
     ...saved,
+    // An old save has no `gameplay` (DEC-125): keep the default for it.
+    gameplay: saved?.gameplay ?? defaults.gameplay,
     bindings: withDefaults(saved?.bindings ?? []),
   };
 }
@@ -35,6 +37,7 @@ export function applySettingsIntent(
         audio: { ...settings.audio, ...intent.patch.audio },
         video: { ...settings.video, ...intent.patch.video },
         accessibility: { ...settings.accessibility, ...intent.patch.accessibility },
+        gameplay: { ...settings.gameplay, ...intent.patch.gameplay },
       };
   }
 }

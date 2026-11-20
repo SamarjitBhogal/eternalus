@@ -1,4 +1,11 @@
 import type { PlayableTeam } from '../teams/teams.types';
+import { ABILITIES } from './abilities/abilityCatalogue';
+import type {
+  AuthoredAbility,
+  AuthoredAbilityWith,
+  AuthoredStep,
+  EffectShape,
+} from './abilities/AbilityDefinition.types';
 import { ContentCatalogue } from './ContentCatalogue';
 import {
   createBotRosterRules,
@@ -24,12 +31,48 @@ import { TEAM_DISPLAY_NAMES } from './teams/teamDisplayNames';
 import { ContentValidator } from './validation/ContentValidator';
 
 /**
+ * One step of an ability's effect list as the client draws it: what it does and the area it covers,
+ * for the range overlay. Each effect strategy describes its own steps (`AbilityEffect.describe`): a
+ * dash step is `{ kind: 'dash', distance }`, followed by its `onPath` and `onEnd` steps, whose
+ * areas the overlay places along and at the end of that distance.
+ */
+export type AbilityDisplayStep = {
+  /** The effect kind (`AbilityEffect.kind`): any string, so a new effect kind needs no edit here. */
+  readonly kind: string;
+  /** The area the step acts on; absent on a step that moves rather than hits (a dash). */
+  readonly shape?: EffectShape;
+  /** A dash's length in metres; absent on every other step. */
+  readonly distance?: number;
+  /** Collision radius of a ranged line; absent uses the caster's body (a dash). */
+  readonly collisionRadius?: number;
+};
+
+/**
+ * An ability as the kit rows, the HUD and the aim overlay show it (read-only; seconds, not ticks).
+ * An ability with no effects is `isAvailable: false`: it is in a kit but cannot be cast yet.
+ */
+export type AbilityDisplay = {
+  readonly id: string;
+  readonly displayName: string;
+  readonly description: string;
+  /** `ultimate` for the key-4 ability. */
+  readonly slot: AuthoredAbility['slot'];
+  readonly aetherCost: number;
+  readonly cooldownSeconds: number;
+  readonly isAvailable: boolean;
+  /** Every effect step's area, in cast order. */
+  readonly steps: readonly AbilityDisplayStep[];
+};
+
+/**
  * Display data the client's selection screens, HUD and results screen show (read-only
  * definitions): the results screen's verdict lines and each team's sovereign name among them.
  */
 export type DisplayContent = {
   readonly legends: readonly LegendDefinition[];
   readonly specs: readonly LegendSpecDefinition[];
+  /** Every ability, in catalogue order; kits name them by id (`LegendDefinition.defaultKit`). */
+  readonly abilities: readonly AbilityDisplay[];
   /** Shown after the playable classes as locked cards, never selectable (DEC-48). */
   readonly lockedClasses: readonly LockedClassDefinition[];
   readonly mapFeatures: readonly {
@@ -49,39 +92,75 @@ export type DisplayContent = {
   readonly sovereignNames: Readonly<Record<PlayableTeam, string>>;
 };
 
+/**
+ * Turns an ability's effect steps into its overlay rows (`AbilityDisplay.steps`). Each effect kind
+ * describes its own steps, so this is the effect strategies' job (`AbilityRegistry.describe`),
+ * injected because `content/` does not import `abilities/`. It reads a step by its kind only, so a
+ * new effect kind needs no edit here.
+ */
+export type AbilityStepDescriber = (
+  effects: readonly AuthoredStep[],
+) => readonly AbilityDisplayStep[];
+
 /** The catalogues `loadDisplayContent` validates and returns; each defaults to the shipped one. */
-type DisplayCatalogues = {
+export type DisplayCatalogues = {
   readonly legends?: ContentCatalogue<LegendDefinition>;
   readonly specs?: ContentCatalogue<LegendSpecDefinition>;
   readonly lockedClasses?: ContentCatalogue<LockedClassDefinition>;
   readonly botRoster?: BotRosterDefinition;
+  /** The abilities as authored, whatever their effect kinds (the shipped ones by default). */
+  readonly abilities?: ContentCatalogue<AuthoredAbilityWith<AuthoredStep>>;
 };
 
+const toAbilityDisplay = (
+  ability: AuthoredAbilityWith<AuthoredStep>,
+  describeSteps: AbilityStepDescriber,
+): AbilityDisplay => ({
+  id: ability.id,
+  displayName: ability.displayName,
+  description: ability.description,
+  slot: ability.slot,
+  aetherCost: ability.aetherCost,
+  cooldownSeconds: ability.cooldownSeconds,
+  isAvailable: ability.effects.length > 0,
+  steps: describeSteps(ability.effects),
+});
+
 /**
- * Loads the display content and validates it once: the legends with `createDefaultContentRules()`,
- * then the specs with `createLegendSpecRules(legends)`, then the locked classes with
+ * Loads the display content and validates it once: the legends with
+ * `createDefaultContentRules(undefined, undefined, abilities, legends)`, then the specs with
+ * `createLegendSpecRules(legends, abilities)`, then the locked classes with
  * `createLockedClassRules()`, then the bot roster with `createBotRosterRules(legends)`, each
  * through a `ContentValidator` (04 §5, DEC-22). The display sibling of `loadDefaultContent`
  * (02 §6).
  *
+ * @param describeSteps - Each ability's overlay rows: the effect strategies' descriptions. Core
+ *   exports this loader with the shipped strategies bound (`loadShippedDisplayContent`).
  * @param catalogues - The catalogues (and the bot roster) to load; each one left out is the
  *   shipped one.
  * @throws ContentValidationError listing every broken rule of the first catalogue that fails (each
  *   catalogue reports all its own problems at once; a catalogue is not checked while one before it
  *   fails).
  */
-export const loadDisplayContent = ({
-  legends = LEGEND_CLASSES,
-  specs = LEGEND_SPECS,
-  lockedClasses = LOCKED_CLASSES,
-  botRoster = BOT_ROSTER,
-}: DisplayCatalogues = {}): DisplayContent => {
-  new ContentValidator(createDefaultContentRules()).validate(legends);
-  new ContentValidator(createLegendSpecRules(legends)).validate(specs);
+export const loadDisplayContent = (
+  describeSteps: AbilityStepDescriber,
+  {
+    legends = LEGEND_CLASSES,
+    specs = LEGEND_SPECS,
+    lockedClasses = LOCKED_CLASSES,
+    botRoster = BOT_ROSTER,
+    abilities = ABILITIES,
+  }: DisplayCatalogues = {},
+): DisplayContent => {
+  new ContentValidator(
+    createDefaultContentRules(undefined, undefined, abilities, legends),
+  ).validate(legends);
+  new ContentValidator(createLegendSpecRules(legends, abilities)).validate(specs);
   new ContentValidator(createLockedClassRules()).validate(lockedClasses);
   new ContentValidator(createBotRosterRules(legends)).validate(new ContentCatalogue([botRoster]));
 
   return {
+    abilities: abilities.all().map((ability) => toAbilityDisplay(ability, describeSteps)),
     legends: legends.all(),
     specs: specs.all(),
     lockedClasses: lockedClasses.all(),

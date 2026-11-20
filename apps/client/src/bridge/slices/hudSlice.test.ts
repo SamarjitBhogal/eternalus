@@ -4,7 +4,7 @@ import { FIGMA_HUD_PLAYER } from '../__fixtures__/hudFixtures';
 import type { PlayerHudSnapshot } from '../hud.types';
 import { hudSlice } from './hudSlice';
 
-const { hudStateChanged, announced, reset } = hudSlice.actions;
+const { hudStateChanged, aimingSlotChanged, announced, reset } = hudSlice.actions;
 const {
   selectHealth,
   selectMaxHealth,
@@ -22,9 +22,28 @@ const withPlayer = (player: PlayerHudSnapshot | null) => ({
   hud: hudSlice.reducer(undefined, hudStateChanged(player)),
 });
 
+describe('hudSlice aiming slot', () => {
+  it('holds the slot being aimed at once, keeps it across HUD snapshots, and clears on reset', () => {
+    let hud = hudSlice.reducer(undefined, aimingSlotChanged('ability-2'));
+    expect(hudSlice.selectors.selectAimingSlot({ hud })).toBe('ability-2');
+
+    hud = hudSlice.reducer(hud, hudStateChanged(FIGMA_HUD_PLAYER));
+    expect(hudSlice.selectors.selectAimingSlot({ hud })).toBe('ability-2');
+
+    hud = hudSlice.reducer(hud, aimingSlotChanged(null));
+    expect(hudSlice.selectors.selectAimingSlot({ hud })).toBeNull();
+    hud = hudSlice.reducer(hud, aimingSlotChanged('gadget-1'));
+    expect(hudSlice.reducer(hud, reset()).aimingSlot).toBeNull();
+  });
+});
+
 describe('hudSlice', () => {
   it('starts with no player and no announcements', () => {
-    expect(hudSlice.getInitialState()).toEqual({ player: null, announcements: [] });
+    expect(hudSlice.getInitialState()).toEqual({
+      player: null,
+      announcements: [],
+      aimingSlot: null,
+    });
   });
 
   it('keeps the announcements when a new snapshot arrives, and resets to the initial state', () => {

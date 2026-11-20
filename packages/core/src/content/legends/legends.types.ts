@@ -1,3 +1,4 @@
+import type { AbilityKit } from '../abilities/AbilityDefinition.types';
 import type { LevelCurveId, LevelScalingDefinition } from '../progression/progression.types';
 import type { UnitDefinition } from '../units/units.types';
 
@@ -67,6 +68,16 @@ export type LegendDefinition = UnitDefinition & {
   readonly weaponBias: WeaponBias;
   readonly damageFocus: DamageFocus;
   readonly pickUp: PickUpStyle;
+  /**
+   * Every ability and ultimate this class may equip, by content id (DEC-198): a loadout picks three
+   * abilities and one ultimate from it. `KnownAbilityRefsRule` checks the ids.
+   */
+  readonly abilityPool: readonly string[];
+  /**
+   * The kit a Legend of this class equips unless its spec carries its own (`LegendSpecDefinition.kit`;
+   * DEC-198, DEC-199, DEC-209 (2)); `KitInPoolRule` checks it against `abilityPool`.
+   */
+  readonly defaultKit: AbilityKit;
   /** The passives this class may choose from; empty when it has none. */
   readonly passiveOptions: readonly PassiveId[];
   /** The always-available action, or `null` when the class has none. */

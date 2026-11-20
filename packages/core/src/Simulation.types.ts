@@ -1,3 +1,4 @@
+import type { AbilityRegistry } from './abilities/AbilityRegistry';
 import type { GameConfig } from './config/GameConfig.types';
 import type { MapObject } from './content/maps/mapObjects.types';
 import type { MapDefinition } from './content/maps/maps.types';
@@ -60,6 +61,11 @@ export type SimulationOptions = {
    * resets both Legends, and `killTarget` kills win. Needs `map` and the default pipeline.
    */
   readonly duel?: DuelOptions;
+  /**
+   * The abilities and their strategies; `createDefaultAbilityRegistry(loadAbilities(config.tickRate))`
+   * when omitted. Every kit id a Legend equips must resolve in it.
+   */
+  readonly abilities?: AbilityRegistry;
 };
 
 /** A Duel's rules; `DUEL_RULES.killTarget` is the shipped target. */
@@ -72,6 +78,11 @@ type RosterSlotBase = {
   readonly definitionId: string;
   /** A `laner` gets a lane at setup; the `rover` takes none and starts at its Stronghold (MS-20). */
   readonly role: BotRole;
+  /**
+   * The Legend (spec) of that class whose kit it equips (DEC-198, plan arch call 1, amending ADR
+   * 0018 point 2); absent = the class's `defaultKit`.
+   */
+  readonly specId?: string;
 };
 
 /**

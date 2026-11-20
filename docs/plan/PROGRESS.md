@@ -8747,6 +8747,154 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   "Documentation check passed."
 - Next step: push `feat/capture-point-boss` and update the PR #99 body.
 
+### 2026-11-13 — Phase 4 / sprints 4.2–4.3 and 4.7: ability framework (PR 1) — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: the owner's rulings DEC-196 to DEC-209 (framework first, then one PR per class;
+  `balancing.md` numbers as `TUNE`; class pool and a kit per Legend; the kits; two cast modes;
+  aether refill; one ultimate meter; Fear; Rip & Tear; bots cast any ready ability; knock-back
+  mass and stacking; structure multipliers, slot order and the range overlay). Built in six
+  slices: (S1) ability content, twelve kit abilities, `knockup` and `staggered`, kit rules; (S2)
+  `Abilities` slots, `AbilityRegistry`, `CastValidator`, `CastAbilityHandler`, `AbilitySystem`,
+  `AetherRegenSystem`, two invariants; (S3) `damage`, `debuff`, `knockback` and `dash` effects,
+  forced motion on `Movement`, status duration override, Blade Runner, Slam and Shockwave with
+  scenario tests and a golden replay; (S4) `Snapshot.player`, the `SlotReadiness` port, bots
+  pick any ready slot; (S5) quick and aim-then-click casting, Esc cancels an aim (Gameplay
+  settings tab); (S6) kit rows from content, live HUD slots, the range overlay. Integration:
+  casts refused during the countdown (DEC-88), a re-applied status keeps the longer time, the
+  overlay cuts a dash where the cast does. Decisions beyond 05: ADR 0026 (proposed, HC-Q48);
+  INBOX HC-B5, HC-Q49 to HC-Q53, HC-S12. Docs: 05, 04, 10, 13, 11, 03, 02, reference 09 and 12,
+  `more-abilities.md`, `balancing.md`, backlog, phase-4 plan.
+- Checks run: `npm run check` → exit 0 on the tree merged with phase/3 `9e2516cf`: core "Tests
+  1542 passed (1542)"; protocol "Tests 18 passed (18)"; client "Tests 1958 passed (1958)";
+  server "Tests 79 passed (79)"; "Documentation check passed." Docs pass: `npm run docs:check` →
+  `Documentation check passed.`; `npx prettier --check docs INBOX.md` →
+  `All matched files use Prettier code style!`
+- Next step: critic and ponytail gate, then the PR; next the per-class PRs, the Vanguard first
+  with the ultimate meter and Fury (DEC-202), then the Sentinel (Rip & Tear, Fear) and the Magus.
+
+### 2026-11-14 — Phase 4 / sprints 4.2–4.3 and 4.7: ability framework, critic rounds 1 and 2 — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` `76d1007d` (#81; only this file conflicted, both
+  sides kept). Fixed critic round 1 (4 blockers): a dash stops where walking stops, through the
+  `CollisionQuery` port and the match's one `CollisionResolver` (it was clamped on the nav grid,
+  so a Blade Runner beside a wall moved 0 m and was paid for); forced motion is in `StateHasher`;
+  one `Aim` type, so `state/` no longer imports `commands/`; effect and shape strategies
+  `validate` and `describe` themselves, so `loadAbilities` and `loadDisplayContent` name no kind.
+  Also: ability areas hit map objects by their footprints; one `CastValidator` per match, which
+  is the `SlotReadiness` port (`CastCheck` and `CastReadiness` removed); `kitOf` and an injected
+  Legend spec source; a `DashReach` port for the client, and the aim overlay view gets a finished
+  target; the ponytail cuts. Critic round 2 (no blockers): a destroyed map object leaves the
+  collision index at once (a dash in the next tick was still cut by it); the map-bounds rule
+  lives in the resolver; the `collisions` port is on `GameState`; the dash's overlay row carries
+  only its distance and the display step `kind` is open (the litmus proves the overlay row too).
+  `packages/core/AGENTS.md`: the `abilities/` and `commands/` import rows. INBOX: HC-B6, HC-Q54,
+  HC-Q55, HC-Q56 added; HC-Q51 and HC-Q52 corrected. ADR 0026 (proposed) decisions 1, 2, 4 and 7
+  follow the code. Not changed: critic finding C6 (HC-Q55); a dash that starts inside a wall
+  (precondition stated on `CollisionQuery.reach`).
+- Checks run: `npm run check` → `EXIT=0`: core "Test Files 277 passed (277)", "Tests 1589
+  passed (1589)"; protocol "Tests 18 passed (18)"; client "Test Files 290 passed (290)", "Tests
+  1965 passed (1965)"; server "Tests 79 passed (79)"; "All matched files use Prettier code
+  style!"; "Documentation check passed."
+- Next step: critic round 3 on the round 2 fixes, then the PR into `phase/3-sprint-3-work`; the
+  owner's answers to HC-Q48, HC-B5 and HC-B6; then the per-class PRs, the Vanguard first.
+
+### 2026-11-14 — Phase 4 / sprints 4.2–4.3 and 4.7: ability framework, critic round 3 — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: critic round 3 (the last) on the round 2 fixes: the architecture reviewer
+  approved; the correctness critic found no blocker and no should-fix. Fixed its nits: a dash
+  throws for a caster with no `Movement` (it skipped the motion and still ran the path and end
+  steps); `Simulation` holds the map-object store and the collision index in locals for the
+  `entity-removed` handler, with no optional chaining; a test that the dash's overlay row gets a
+  `null` shape; `WorldObjectStore.destroyedIds` removed (no caller; the test keeps its check
+  through `snapshot().isDestroyed`); the two status entries in architecture 10 and 02 marked
+  "updated 2026-11-14"; comment wording. Built better-than-design item H: `WithoutTimes` now
+  sits beside `InTicks` in `content/abilities/AbilityDefinition.types.ts`. INBOX HC-Q56: item
+  (4) corrected, item (5) added (one subscriber for a retired map object, not built). Both new
+  tests failed first: the dash test before the fix ("expected [Function] to throw an error"),
+  the overlay test with `shape ?? null` changed to `shape` ("expected undefined to be null").
+- Checks run: `npm run check` → `EXIT=0`: core "Test Files 277 passed (277)", "Tests 1590
+  passed (1590)"; protocol "Tests 18 passed (18)"; client "Test Files 290 passed (290)", "Tests
+  1965 passed (1965)"; server "Tests 79 passed (79)"; "All matched files use Prettier code
+  style!"; "Documentation check passed."
+- Next step: the PR into `phase/3-sprint-3-work`; the owner's answers to HC-Q48, HC-B5, HC-B6
+  and HC-Q54..Q56; a browser check of the aim overlay; then the per-class PRs, the Vanguard
+  first.
+
+### 2026-11-14 — Phase 4 / sprints 4.2–4.3 and 4.7: ability framework, merge of phase/3 (#85, #86) — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (#85, #86) into PR #123 (`ba5e34aa`; conflict
+  notes in its commit message). Correction to the round 3 entry: `WorldObjectStore.destroyedIds`
+  is kept, not removed, because a new phase/3 owner test reads it. Merge breaks fixed in
+  `TargetQuery`, `DefaultSystemPipeline` and `pickReadySlot` tests. The ability replay
+  `abilityCastsSeed11.replay.ts` was regenerated: it diverged at tick 350 only because of DEC-188
+  out-of-combat healing (without `OutOfCombatHealingSystem` the old hashes passed 2/2);
+  checkpoints 0-300 and the commands are unchanged. No critic reviewed the r3 fixes or the merges
+  (three rounds is the owner's maximum).
+- Checks run: `npm run check` → `EXIT=0`: core "Test Files 287 passed (287)", "Tests 1711
+  passed (1711)"; protocol "Tests 18 passed (18)"; client "Test Files 290 passed (290)", "Tests
+  1965 passed (1965)"; server "Tests 79 passed (79)"; "All matched files use Prettier code
+  style!"; "Documentation check passed."
+- Next step: push and update the PR #123 body (owner); the owner's answers to HC-Q48, HC-B5,
+  HC-B6 and HC-Q49..Q56; a browser check of the aim overlay; then the Vanguard PR.
+
+### 2026-11-15 — Phase 4 / sprints 4.2–4.3 and 4.7: ability framework, merge of phase/3 (#79, #93) — feat/ability-framework — sholtzman + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` `fcc48a7b` (#79, #93) into PR #123; 38 files
+  conflicted, both sides kept (notes in the merge commit). `MovementSystem` keeps forced motion
+  and faces the entity's own velocity (DEC-192), so a push does not turn it (new test; it failed
+  first with facing on the whole step: "expected { x: +0, y: 1 } to deeply equal { x: 1, y: +0 }").
+  Merge breaks fixed in five core and client tests. The ability replay was regenerated: phase/3
+  now hashes facing and the scoring state; with those two fields left out the old hashes passed
+  2/2, and the commands and checkpoint 0 are unchanged. The INBOX clash is gone: #93's item is
+  HC-Q57. No critic reviewed the merge.
+- Checks run: `npm run check` → `EXIT=0`: core "Test Files 295 passed (295)", "Tests 1837
+  passed (1837)"; protocol "Tests 18 passed (18)"; client "Test Files 299 passed (299)", "Tests
+  2061 passed (2061)"; server "Tests 79 passed (79)"; "All matched files use Prettier code
+  style!"; "Documentation check passed."
+- Next step: push and update the PR #123 body (owner); a teammate's review; the owner's answers
+  to HC-Q48, HC-B5, HC-B6 and HC-Q49..Q56; a browser check of the aim overlay.
+
+### 2026-11-17 — Phase 3 / sprint 3.1 — feat/character-sprites — Gurshaan + Codex
+
+- What was done: restored all eight repaired character atlases (both resolutions) and five
+  selection portrait sets from `2a53e882` onto Phase 3 `af54fe96`, at the user's explicit request.
+  Restored the resource-facade loader, renderer, subclass mappings and cast effects; adapted
+  animations to existing Phase 3 events without restoring the parallel core ability stack.
+  Recorded outstanding PR #90 owner/licence concerns; restoration is not owner sign-off.
+- Checks run: `npm run check` passed (exit 0): 1,637 core, 2,072 client, 29 protocol and 84 server
+  tests, coverage, static checks and builds. Verbatim tail: `Checked 133 Markdown files under docs/.`
+  `Documentation check passed.` Focused sprite/wiring tests: 98 + 50 passed. Initial non-null
+  assertion and optional-property errors in new test fixtures were corrected before the passing run.
+- Next step: review this separate presentation branch and resolve the outstanding asset proposals
+  with the owner before PR approval. No commit or push made; core gameplay and dependencies unchanged.
+
+### 2026-11-18 — Phase 4 / starter kits — feat/character-sprites — Gurshaan + Codex
+
+- What was done: merged PR #123's shared framework (`2216cd0c`) into the Phase 3-based sprite
+  branch with the user's permission, resolving the framework and sprite conflicts. Implemented
+  the twelve documented starters through its strategy registry: Warrior's Blade Runner, Veil,
+  Hamstring and Fury; Sentinel's Slam, Rip & Tear, Shield Wall and Berserk; Magus's Shockwave,
+  Sanctuary, Imbue and Death Ray. Added combat-earned ultimate charge, repeat Fury dashes,
+  swept blades, persistent healing/channel fields, temporary destructible collision walls,
+  stealth acquisition rules and physical form scaling. Kept the restored character assets and
+  attached sprite/VFX playback to successful simulation events and snapshots. Provisional values
+  and controls were approved by Gurshaan in the task and remain marked in content.
+- Checks run: `npm run check` passed, exit 0: 1,926 core, 2,161 client, 29 protocol and 84 server
+  tests (4,200 total), coverage thresholds, formatting, lint, type checking, unused-code checks
+  and production builds. Verbatim tail: `Checked 134 Markdown files under docs/.`
+  `Documentation check passed.` `EXIT=0`. The earlier quick check's seven lint findings were
+  corrected and the four affected files passed targeted lint before the full passing gate.
+  Replay regeneration was isolated to new ultimate contribution state: disabling only its reaction
+  system reproduced every old checkpoint; commands and checkpoints through tick 300 stayed fixed.
+  Browser smoke check confirmed the selected Colossus atlas and correct starter-kit HUD with no
+  captured runtime warnings/errors; synthetic browser key presses did not verify live casts, which
+  are covered by deterministic command-path scenarios. Initial root diagnostic files that failed
+  formatting were moved to ignored scratch before the passing gate.
+- Next step: review the uncommitted merge and gameplay changes, then complete the repository's
+  pre-PR critic/ponytail gate and outstanding asset proposals before requesting approval. No commit
+  or push made. The framework's shared starter kits are implemented; alternate ability varieties
+  and the larger ability pools remain planned.
+
 ### 2026-11-14 — Phase 3 / the player who stays in a Duel wins (DEC-251) — feat/duel-leave-victory — sholtzman + Claude Code
 
 - What changed: the owner's answer to the open part of INBOX HC-Q57 (DEC-251, "A) yes"). When a
@@ -9037,6 +9185,37 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   and #119 into phase/3 in that order with merge commits, each only with green CI, and stops if
   another PR merges into phase/3 in between.
 
+### 2026-11-19 — Phase 3 sync — feat/character-sprites — Gurshaan + Codex
+
+- What was done: fetched and merged `origin/phase/3-sprint-3-work` at `d85bc2f5` into the
+  character-sprites working tree at `1d2dd07e`, integrating all 54 missing commits. Resolved the
+  two documentation review-date conflicts, combined both branches' progress history without
+  deleting historical lines, and retained Phase 3's fort/gate pipeline tests with the ability
+  invariant configuration. Migrated the saved ability replay's pathfinding budget to DEC-243's
+  equivalent search-area setting; commands and every pinned checkpoint hash stayed unchanged.
+  Git comparisons confirm no changes to the character assets, animation mappings, sprite view,
+  ability effect implementations, starter definitions or statuses relative to the pre-merge head.
+  The visuals-and-design branch remains at `50f9a082` and was not merged or edited.
+- Checks run: `npm run check:quick` passed, exit 0. `npm run check` passed, exit 0: 1,936 core,
+  2,158 client, 29 protocol and 84 server tests (4,207 total), coverage thresholds, formatting,
+  lint, type checking, unused-code checks and production builds. Verbatim tail:
+  `Checked 134 Markdown files under docs/.` `Documentation check passed.` `EXIT=0`.
+  Focused ability/replay/geometry/pipeline regression tests passed 69/69. The initial quick and
+  focused checks caught the old replay config key; the equivalent schema migration fixed it.
+- Next step: review and finalize the resolved merge with a commit, then push to update PR #134
+  when authorized. No commit or push made in this sync. Update the visuals branch separately
+  when requested; the pre-PR review gate and asset proposals remain separate work.
+
+### 2026-11-20 — Phase 3 sync publication — feat/character-sprites — Gurshaan + Codex
+
+- What was done: Gurshaan explicitly approved committing and pushing the verified Phase 3 merge
+  on the character-sprites branch. The staged merge retains both parent histories, character
+  assets and starter abilities. The visuals branch is outside this publication.
+- Checks run: the preceding full check passed all 4,207 tests, coverage, builds and docs; the
+  staged code is unchanged from that verified tree. The publication entry gets formatting and
+  documentation validation; normal pre-commit and pre-push hooks remain enabled.
+- Next step: commit the merge, push character-sprites and confirm its remote head and PR status.
+
 ### 2026-11-12 — Phase 3 / minion follow-ups: content durations become ticks at load (DEC-241) — refactor/durations-at-load — sholtzman + Claude Code
 
 - What was done: five loaders (`loadAggroRules`, `loadStuckDetection`, `loadMinionVeterancy`,
@@ -9264,3 +9443,21 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   passed."; `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-15.log`); then
   `prettier --check` and `npm run docs:check` on this file.
 - Next step: the owner pushes the branch (`push-125-r3.sh`), then merges PR #125.
+
+### 2026-11-20 — Phase 3 / latest character-sprites sync — feat/character-sprites — Codex
+
+- What was done: retained the first Phase 3 merge (`a5184211`, through `d85bc2f5`) and
+  integrated the additional 20 commits through `5a7cc8dc`, which arrived during publication.
+  Resolved the entity-doc review date, additive progress history and Simulation composition
+  conflicts; the duration loaders now receive the simulation tick rate alongside the preserved
+  ability registry and bot cast-readiness contract. Character sprite assets, mappings and ability
+  implementations are unchanged. The replay config uses the equivalent DEC-243 search area;
+  its commands and pinned hashes are unchanged. The visuals branch remains untouched.
+- Checks run: `npm run check:quick` exit 0; complete core regression run 1,963 tests passed;
+  full `npm run check` exit 0 (core 1,963, protocol 29, client 2,158, server 84; 4,234 total).
+  Verbatim final result: "Checked 134 Markdown files under docs/.",
+  "Documentation check passed." Logs: `.phase3-sprites-latest-quick.log`,
+  `.phase3-sprites-latest-core.log`, `.phase3-sprites-latest-full.log`.
+- Next step: commit and push this merge as authorized by the user. The earlier push was
+  interrupted before publication; the remote character branch was still at `1d2dd07e`.
+  Review the visuals branch separately after this character sync is published.

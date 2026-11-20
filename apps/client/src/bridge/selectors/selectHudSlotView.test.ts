@@ -41,6 +41,7 @@ const status = (changes: Partial<AbilitySlotStatus>): AbilitySlotStatus => ({
   abilityId: null,
   cooldownRemainingTicks: 0,
   cooldownTicks: 0,
+  aetherCost: 0,
   charge: null,
   isReady: false,
   blockedBy: null,
@@ -56,6 +57,7 @@ describe('selectHudSlotView', () => {
       look: 'no-data',
       cooldownFraction: null,
       blockedBy: null,
+      isAiming: false,
     });
   });
 
@@ -118,5 +120,31 @@ describe('selectHudSlotView', () => {
     expect(before).toMatchObject({ displayName: null, iconAssetId: null });
     store.dispatch(matchSlice.actions.clockChanged({ tick: 30, seconds: 1 }));
     expect(selectHudSlotView(store.getState(), 'ability-2')).toBe(before);
+  });
+
+  it('marks the slot selected for aiming and no other (aim-then-click)', () => {
+    const store = storeWith([status({}), status({ slot: 'ability-2' })]);
+    store.dispatch(hudSlice.actions.aimingSlotChanged('ability-2'));
+    const state = store.getState();
+    expect(selectHudSlotView(state, 'ability-2').isAiming).toBe(true);
+    expect(selectHudSlotView(state, 'ability-1').isAiming).toBe(false);
+  });
+
+  it('shows an ability not built yet as idle with its reason, never ready', () => {
+    const state = storeWith([status({ blockedBy: 'unavailable' })]).getState();
+    expect(selectHudSlotView(state, 'ability-1')).toMatchObject({
+      look: 'idle',
+      blockedBy: 'unavailable',
+    });
+  });
+
+  it('shows the ultimate with no meter as idle and not charged, never ready', () => {
+    const state = storeWith([
+      status({ slot: 'ability-4', charge: null, blockedBy: 'not-charged' }),
+    ]).getState();
+    expect(selectHudSlotView(state, 'ability-4')).toMatchObject({
+      look: 'idle',
+      blockedBy: 'not-charged',
+    });
   });
 });

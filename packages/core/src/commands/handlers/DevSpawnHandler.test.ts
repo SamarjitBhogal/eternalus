@@ -13,6 +13,7 @@ import { EntityFactory } from '../../entities/EntityFactory';
 import { EntityRegistry } from '../../entities/EntityRegistry';
 import { Legend } from '../../entities/Legend';
 import { Unit } from '../../entities/Unit';
+import { allReady } from '../../state/__fixtures__/stubReadiness';
 import { createDefaultEntityRegistry } from '../../entities/defaultEntityRegistry';
 import { loadDefaultContent } from '../../content/loadDefaultContent';
 import { TWO_LANE_MAP } from '../../state/__fixtures__/twoLaneMap';
@@ -108,7 +109,7 @@ describe('DevSpawnHandler', () => {
     ]);
     expect(
       context.state
-        .snapshot(LEVEL_CURVE_CATALOGUE)
+        .snapshot(LEVEL_CURVE_CATALOGUE, allReady)
         .entities.map(({ team, transform }) => ({ team, transform })),
     ).toEqual([
       { team: 'dark', transform: { x: 10, y: 20, radius: 0.5, facing: INITIAL_FACING } },
@@ -174,7 +175,7 @@ describe('DevSpawnHandler', () => {
 
     expect(
       context.state
-        .snapshot(LEVEL_CURVE_CATALOGUE)
+        .snapshot(LEVEL_CURVE_CATALOGUE, allReady)
         .entities.map(({ transform }) => transform?.facing),
     ).toEqual([
       { x: 0.8, y: 0.6 },

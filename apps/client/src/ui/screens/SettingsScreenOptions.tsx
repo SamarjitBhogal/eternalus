@@ -2,11 +2,16 @@ import type { ReactElement } from 'react';
 
 import { emitIntent } from '../../bridge/eventBus';
 import { useAppSelector } from '../../bridge/hooks';
-import { type SettingsPatch, settingsSlice } from '../../bridge/slices/settingsSlice';
+import {
+  CAST_MODES,
+  type CastMode,
+  type SettingsPatch,
+  settingsSlice,
+} from '../../bridge/slices/settingsSlice';
 import { STRINGS } from '../strings';
 import styles from './SettingsScreenOptions.module.css';
 
-const { selectAccessibility, selectAudio, selectVideo } = settingsSlice.selectors;
+const { selectAccessibility, selectAudio, selectGameplay, selectVideo } = settingsSlice.selectors;
 const VOLUMES = ['master', 'music', 'effects'] as const;
 // TUNE: render-scale choices and the 5 % volume step (below) are provisional UI options.
 const RENDER_SCALES: readonly number[] = [0.5, 0.75, 1];
@@ -19,15 +24,39 @@ function update(patch: SettingsPatch): void {
   emitIntent({ kind: 'update-settings', patch });
 }
 
-/** The Audio, Video and Accessibility tabs: sliders and toggles bound to `settingsSlice`. */
+/** The Gameplay, Audio, Video and Accessibility tabs: sliders and toggles bound to `settingsSlice`. */
 export function SettingsScreenOptions({
   tab,
 }: {
-  readonly tab: 'audio' | 'video' | 'accessibility';
+  readonly tab: 'gameplay' | 'audio' | 'video' | 'accessibility';
 }): ReactElement {
   const audio = useAppSelector(selectAudio);
   const video = useAppSelector(selectVideo);
   const accessibility = useAppSelector(selectAccessibility);
+  const gameplay = useAppSelector(selectGameplay);
+
+  if (tab === 'gameplay') {
+    return (
+      <div className={styles.options}>
+        <label className={styles.field}>
+          <span>{STRINGS.settings.castMode}</span>
+          <select
+            value={gameplay.castMode}
+            onChange={(event) => {
+              // The options are CAST_MODES, so the value is one of them.
+              update({ gameplay: { castMode: event.currentTarget.value as CastMode } });
+            }}
+          >
+            {CAST_MODES.map((mode) => (
+              <option key={mode} value={mode}>
+                {STRINGS.settings.castModes[mode]}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+    );
+  }
 
   if (tab === 'audio') {
     return (

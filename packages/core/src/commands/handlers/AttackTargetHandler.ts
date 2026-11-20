@@ -17,7 +17,7 @@ export class AttackTargetHandler implements CommandHandler<'attack-target'> {
     }
     const actorTeam = entities.teamOf(actorId);
     const isAlly = actorTeam !== undefined && actorTeam === entities.teamOf(targetId);
-    if (isAlly || !entities.isAlive(targetId)) {
+    if (isAlly || !entities.isAlive(targetId) || !entities.isVisibleToTeam(actorTeam, targetId)) {
       return 'invalid-target';
     }
     return entities.setAttackTarget(actorId, targetId) ? null : 'cannot-attack';
