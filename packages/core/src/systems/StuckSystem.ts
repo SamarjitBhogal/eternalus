@@ -16,7 +16,7 @@ import type { System, SystemContext } from './System.types';
  * 2026-11-05, DEC-193): every mob and bot Legend with a target keeps a `ChaseWatch` of how close it
  * has come to what it heads for: the point of its target it aims at (`EntityStore.aimPointOf`, as
  * `PathingSystem` aims), or its detour waypoint. One that has not come
- * `minProgress` closer in `windowSeconds`, and is not in reach, is stuck: it heads for the A\*
+ * `minProgress` closer in `windowTicks`, and is not in reach, is stuck: it heads for the A\*
  * waypoint toward that point over the nav grid (`state.paths`), and asks again each time it comes
  * within `waypointRadius` of it or is stuck on the way. A clear straight line, no way, or (for a
  * guard or camp mob) a waypoint outside its leash circle gives it no waypoint, so it chases
@@ -36,15 +36,14 @@ export class StuckSystem implements System {
   private readonly aim: MutableVec2 = { x: 0, y: 0 };
   private readonly step: MutableVec2 = { x: 0, y: 0 };
 
-  /** @param rule - When a chase counts as stuck and how it goes round, from content. */
+  /** @param rule - When a chase counts as stuck and how it goes round, from content, in ticks. */
   public constructor(private readonly rule: StuckDetectionRule) {}
 
   /** Watches every AI unit with an attack target, in store order; drops the watch of the rest. */
   public update({ state }: SystemContext): void {
-    const { tickRate } = state.config;
     const window = {
       tick: state.tick,
-      windowTicks: Math.round(this.rule.windowSeconds * tickRate),
+      windowTicks: this.rule.windowTicks,
       minProgress: this.rule.minProgress,
     };
     let plans = this.rule.maxPlansPerTick;

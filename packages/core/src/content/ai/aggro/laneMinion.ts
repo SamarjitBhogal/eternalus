@@ -1,4 +1,4 @@
-import type { HordeAggroRuleDefinition } from '../ai.types';
+import type { AuthoredHordeAggroRule } from '../ai.types';
 
 // TUNE: 11 §4.3's 700 units, scaled like the radius (7.5 m); owner 2026-11-05, +15% lane minions
 // only (DEC-193).
@@ -28,4 +28,4 @@ export const LANE_MINION_AGGRO = {
   aggroCooldownSeconds: 3, // TUNE: Dota 3 s
   ghostFirstWaveTicks: 0, // TUNE: 11 §4.3 ships it off; League ghosts the first wave for 18–28 s
   callForHelpRadius: LEASH, // owner DEC-144 D: the leash, so a helper takes only what it may fight
-} as const satisfies HordeAggroRuleDefinition;
+} as const satisfies AuthoredHordeAggroRule;

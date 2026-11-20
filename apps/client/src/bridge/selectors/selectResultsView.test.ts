@@ -48,12 +48,12 @@ describe('selectResultsView', () => {
     });
   });
 
-  it('says the opponent left, with no verdict, after a Duel the other player left', () => {
+  it('shows a victory and says the opponent left, after a Duel they left (DEC-251)', () => {
     const store = storeFor('duel');
     store.dispatch(duelEnded({ winner: 'dark', reason: 'opponent-left' }));
 
     expect(selectResultsView(store.getState())).toEqual({
-      verdict: null,
+      verdict: 'victory',
       status: { kind: 'opponent-left' },
       canRematch: false,
     });
