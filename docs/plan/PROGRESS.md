@@ -9555,3 +9555,21 @@ group)` takes a `FeatureKeyedGroup` instead of a closure, so the client cannot r
   test files shows only those three).
 - Next step: the owner pushes with `push-gl16-merge-d85bc2f5.sh`; PR #129's body (v6) names the
   new base, head and check.
+
+### 2026-11-20 — Phase 3 / GL-16: merge phase/3 (#125 merged) — refactor/map-feature-link — sholtzman + Claude Code
+
+- What was done: PR #129 became conflicting again when #125 (DEC-241, content durations at load)
+  merged into phase/3 as `5a7cc8dc`. Merged it into this branch as `e34152f6`. Conflicts, all in
+  docs: architecture 04 and the owner decisions log (`last-reviewed`: the newer date kept), the
+  decisions log batches (both kept, newest first: 2026-11-16 DEC-262, then 2026-11-15 DEC-255 and
+  DEC-256) and this file (phase/3's entries, then this branch's). No code file conflicted and
+  `package-lock.json` did not change, so no critic ran on the merge (the gate asks for one only
+  when code conflicts).
+- Checks run: pre-commit `npm run check:quick` on `e34152f6` → passed. `npm run check` → `EXIT=0`
+  on `e34152f6` (`eternalus-agent-work/game-loop-plan/check-gl16-merge-5a7cc8dc-2026-11-20.log`):
+  core "Tests 1681 passed (1681)"; protocol "Tests 29 passed (29)"; client "Tests 2017 passed
+  (2017)"; server "Tests 84 passed (84)"; "Documentation check passed.". Core tests rose from 1654
+  (`93f8de91`) with #125's tests; the merge deleted no file
+  (`git diff --diff-filter=D 564fbf13 e34152f6` is empty).
+- Next step: the owner pushes with `push-gl16-merge-5a7cc8dc.sh`; PR #129's body (v7) names the
+  new base, head and check.
