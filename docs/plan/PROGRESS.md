@@ -9749,3 +9749,23 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   style!"; "Documentation check passed." (`check-pr2a-r4-fixes.log`).
 - Next step: the critic re-checks the fix diff; then the owner pushes this branch and opens the
   stacked PR (base `feat/ability-framework`, #123); then DEC-284 on `feat/ability-framework`.
+
+### 2026-11-20 — Phase 4 / Vanguard PR 2a: critic re-check fixes and loop 3 of 3 — feat/vanguard-kit — sholtzman + Claude Code
+
+- What was done: the re-check of the round 4 fixes (`critic-pr2a-r4-recheck-*.md`, architecture
+  APPROVE) asked for R1-R8; fixed in `1951f972`, `9df04b75`, `51614a38`: a client status-cue
+  registry (`defaultStatusCueRegistry.ts`, injected into `EntityLayer`; drawn status ids reach the
+  boot check from `main.tsx`; INBOX HC-B14 (f), built under DEC-223), `CastInstance.isDue` as the
+  one due rule, the Fury hash test without a private-state reach. Loop 3 of 3 on that diff:
+  architecture APPROVE (N1-N5), correctness 0 blockers (N1-N4, every fix claim held), ponytail one
+  cut rejected (it allocates per frame). All nits fixed in `2c1a4bf0`, `524028a7` and this
+  commit: `CastInstance.run` needs a placement, the status id lives in the registry,
+  `StatusCueView.types.ts`, 17 R9 and 02 §10/§12 name the registry, the cast hash test varies x.
+  Dispositions: `eternalus-agent-work/abilities/critic-pr2a-r4-recheck2-dispositions.md`.
+- Checks run: red first, SHA-256 restored: `r4-recheck-fix-breaks.log` (D1-D8),
+  `loop3-fix-breaks.log` (E1-E3). With every fix (before this entry), `npm run check` →
+  `EXIT=0`: core "Tests 2038 passed (2038)"; protocol "Tests 30 passed (30)"; client "Tests 2121
+  passed (2121)"; server "Tests 84 passed (84)"; "All matched files use Prettier code style!";
+  "Documentation check passed." (`check-pr2a-loop3-fixes.log`).
+- Next step: the owner runs `push-vanguard-pr2a.sh` (push, open the stacked PR on #123); then
+  DEC-284 on `feat/ability-framework` (#123).
