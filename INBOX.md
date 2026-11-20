@@ -67,7 +67,7 @@ Reply inline (`Decision: …`).
       450 s since DEC-282 (1) counts the marks from the countdown's end, 2026-11-20;
       `guardPlans.test.ts` derives it from `createDefaultGameConfig`'s `quarter-mark` entry), but
       through its guard plan's `delaySeconds`, not `MatchTimeline`: a match with another
-      `plannedMatchSeconds` or countdown keeps 440 s. Reference 04 and 07 §7 schedule it from the
+      `plannedMatchSeconds` keeps 450 s. Reference 04 and 07 §7 schedule it from the
       match timeline; only that mechanism is still interim. (b) **Built 2026-11-12 (PR #99 review
       F8):** while the boss lives its zone cannot be captured, as reference 04 says:
       `CaptureSystem` sets `lockedBy` from the zone's guard posts (`content/zones/zoneLocks.ts`)
@@ -1629,6 +1629,14 @@ Reply inline (`Decision: …`).
     for a class (`Recommendation:`). CD-45, the locked view, shows the locked Legend's panel on the
     left, where your DEC-60 says "the details of the class still shown on the left"
     (`Recommendation:`). Keep, change or reject them with the other rows.
+  - New rows, 2026-11-20 (`feat/match-start-countdown`, DEC-278, DEC-282): CD-48 (UE-01, the
+    countdown's urgency on the character select and the match-start overlay) and CD-49 (the
+    match-start overlay itself, which no frame draws). As you asked (DEC-282 (8)), the shots come
+    to you on the "Countdown PR Calls" page before the pull request opens: the character select at
+    9 s with UE-01 on, the Figma-unchanged scenes, and the overlay at 10 s, at 5 s and the Duel's
+    START; the plan's rule-7 performance check is recorded in `docs/plan/PROGRESS.md` and the
+    pull request. CD-48's 1.08, 1.12 and 0.30 and CD-49's veil and size are recommendations: keep,
+    change or reject them with the other rows.
 - [ ] **HC-Q1 — The Legends (DEC-49), still open after your answer of 2026-10-17** (the answered
       part is in Done). (1) Do the game doc's Magus focuses carry over to the new Legends
       (reference 01's Necromancer "debuff focus", Druid's buffs, Mage's self focus), and what role
