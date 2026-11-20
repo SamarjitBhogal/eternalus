@@ -4,7 +4,7 @@ description: Sprint checklists for the three Legend classes, the ability framewo
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-16
+last-reviewed: 2026-11-20
 tags: [plan, phase-4, legends, abilities, loadouts, progression, hud]
 paths:
   ['packages/core/src/abilities/**', 'packages/core/src/loadout/**', 'apps/client/src/ui/hud/**']
@@ -103,6 +103,16 @@ effect kinds follow architecture 05 §3, not the list above. Bots cast any ready
 existing timer and chance (DEC-205); situational casting is a follow-up PR. The decisions beyond
 architecture 05 are ADR 0026 (accepted 2026-11-16, DEC-263); what is built is in 05 §18. The boxes stay open until the
 per-class PRs close them.
+
+**Status (2026-11-20, `feat/ability-framework`):** the owner scheduled the framework's open
+follow-ups after the 2026-11-20 freeze (DEC-284), each a follow-up PR, none built: a guard's post
+keeps the extra distance a push gives it, and `guard-within-leash` allows it (`INBOX.md` HC-Q63);
+an ability area reaches a structure by its outline, and one cast may damage the map object and the
+structure (HC-Q64); the capture point boss gets the Sentinel's mass, and the middle boss gets its
+mass when it is built (HC-S12 (d)); the 0.2 s landing stagger after a knock-up, the kit and Oracle
+icons, the aether cost on the HUD bar and a browser check of the Legend panels, one small PR each
+or one PR for the last three (HC-S12 (e) to (h)). Situational bot casting (DEC-205) and the page
+of proposed prices (DEC-197) stay scheduled as before.
 
 **Success metric:** the framework tests prove the litmus test — adding "Fake Bolt" in a test
 touches three places — and abilities cost ≤ 0.5 ms per tick with 20 Legends casting

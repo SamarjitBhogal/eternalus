@@ -1004,7 +1004,8 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
     `AreaShape` class each in `abilities/shapes/` (ADR 0026 decision 7); `self`, `cone` and
     `line` are not built (the cone comes with Rip & Tear, DEC-206). A map object
     (`MapObjectBody`) is hit by its footprints, as a basic attack reaches it; any other body by
-    its circle. `TargetFilter` has `team` and `includeSelf` only. `CastContext` has `placement`, `direction`, `scaled(field, value)`
+    its circle. A structure is to be reached by its outline too, and one cast may then damage the
+    map object and the structure (DEC-284 (2), a follow-up PR after the freeze). `TargetFilter` has `team` and `includeSelf` only. `CastContext` has `placement`, `direction`, `scaled(field, value)`
     (the level growth that §13 calls `potency`), `targets`, `centreFor` and `run` (a dash's
     nested steps) in place of `origin`, `facing`, `potency`, `rng` and `factory`. The pipeline
     still takes no `DamageType` (§9).
