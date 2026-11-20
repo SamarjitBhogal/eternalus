@@ -25,14 +25,18 @@ type KillAward = {
   readonly xp: number;
 };
 
-/** One destroyed structure: `xp` for every Legend of `team`, the team that destroyed it. */
-type StructureAward = {
-  readonly kind: 'structure-destroyed';
+/**
+ * One team-wide award: `xp` for every Legend of `team`, for a structure it destroyed (DEC-186) or a
+ * boss its unit killed (`team-kill`, DEC-237). `maxLevels` caps how far it lifts each Legend.
+ */
+type TeamAward = {
+  readonly kind: 'structure-destroyed' | 'team-kill';
   readonly team: PlayableTeam;
   readonly victimId: EntityId;
-  readonly victimTeam: PlayableTeam;
+  readonly victimTeam: Team;
   readonly xp: number;
+  readonly maxLevels?: number;
 };
 
 /** One award waiting for this system's pass. */
-export type Award = KillAward | StructureAward;
+export type Award = KillAward | TeamAward;

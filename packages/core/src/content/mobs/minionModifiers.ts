@@ -19,3 +19,12 @@ export const MINION_STRENGTH = {
 
 /** The lost structures that enrage their lane's minions: one stack each (`balancing.md`). */
 export const ENRAGING_STRUCTURES: readonly StructureKind[] = ['spawner-tower', 'buff-tower'];
+
+/**
+ * The share of a lane minion's hit each boss takes, by mob definition id (`balancing.md` "bosses
+ * take full damage from Legends and 25% from minions", so it takes several players). A mob not
+ * listed takes full damage.
+ */
+export const BOSS_MINION_DAMAGE_TAKEN: Readonly<Record<string, number>> = {
+  'capture-point-boss': 0.25, // TUNE: balancing.md
+};

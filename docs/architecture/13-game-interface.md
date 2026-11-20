@@ -150,7 +150,7 @@ show comes from content through the store (`contentSlice`, `matchSlice`), never 
 | `AboutScreen`                                                                                                                                                                                                               | `selectCredits` (generated from the manifest's `licence` and `source` fields)                                                                                                                                                                 | none                                                                                        | **MVP**                                                                           |
 | `CharacterSelectScreen` (the class step, then the Legend step, DEC-49, then the locked view after LOCK IN, DEC-60; the class step's layout by data, DEC-52; View Details over the class and Legend steps, DEC-103, DEC-109) | `contentSlice` (classes, Legends, layout), `matchSetupSlice` (team, allies, selection, lock, countdown), `selectAllyTiles`, `assetsSlice` (art URLs)                                                                                          | `select-class`, `clear-class-selection`, `confirm-selection`                                | **MVP** (DEC-49)                                                                  |
 | `MatchScreen`                                                                                                                                                                                                               | the open overlay and the bindings (`usePauseMenuKey`); renders the `viewport` prop (the only screen that does, so no `Match` exists outside `match`, DEC-50), the HUD and the pause overlay                                                   | `open-overlay`, `close-overlay`; `leave-match` (from the pause overlay), `forfeit`          | **MVP**                                                                           |
-| `ResultsScreen`                                                                                                                                                                                                             | `selectResultsView` (verdict, status line, rematch: a Duel the other player left shows that, not a verdict; a rematch only after a local match), `selectMatchDurationText` (DEC-129), `selectCountdownSeconds('results')` (`matchSetupSlice`) | `continue` (DEC-78), `navigate`, `start-match` (rematch, after a local match)               | **MVP**                                                                           |
+| `ResultsScreen`                                                                                                                                                                                                             | `selectResultsView` (verdict, status line, rematch: a Duel the other player left is a victory, and says so; a rematch only after a local match), `selectMatchDurationText` (DEC-129), `selectCountdownSeconds('results')` (`matchSetupSlice`) | `continue` (DEC-78), `navigate`, `start-match` (rematch, after a local match)               | **MVP**                                                                           |
 
 | HUD element                                           | Source in the store                                                                        | Behaviour                                                                                                                                                                                                                                                       | Status                                      |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
@@ -725,9 +725,9 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   `MatchClock` shows no phase label until `match-clock` carries the phase (Phase 3, sprint 3.5).
   `MinimapPanel` is a frame only: there is no `minimap-click` intent (the canvas handles a click)
   and no `minimapVisible` setting, and the canvas draws the minimap inside the HUD's ring
-  ([06](06-map-and-minimap.md) §10). The `toggle-minimap` binding (M) has no handler, so the key
-  does nothing; the setting and the M handler are a Phase 5, sprint 5.4 task (DEC-147; `INBOX.md`
-  HC-Q19). Not built,
+  ([06](06-map-and-minimap.md) §10). The `toggle-minimap` binding (M) hides and shows the minimap
+  for the current match (see the note appended 2026-11-12 below); the persisted setting is a
+  Phase 5, sprint 5.4 task (DEC-147; `INBOX.md` HC-Q19). Not built,
   because the frames do not draw them, each with the plan entry that schedules it: `Scoreboard`
   (named for Phase 3, sprint 3.5 in [the Phase 2 architecture
   plan](../plan/phase-2-architecture.md), with no task line yet), `Announcer` (Phase 2, sprint 2.8,
@@ -782,6 +782,13 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   `INBOX.md` HC-T1 (T-196, T-202, T-209 to T-212). **Appended 2026-11-02:** step 12 replaced the
   banner with the crash popup and added the `ErrorBoundary` (the "Session" bullet above, §3), and
   the owner approved those rows (HC-T1, DEC-142), so §3, §6.1, §6.2, §9 and this note say it.
+- **More one-shot actions (2026-11-12).** The table in `MatchHost` now also holds
+  `camera-zoom-in` and `camera-zoom-out` (one `KEY_ZOOM_STEP` through the wheel's `zoomBy` and its
+  limits) and `toggle-minimap` (`MatchViewControls.toggleMiniMap`: the canvas minimap and the HUD
+  ring hide, no click reaches a hidden minimap; the state reaches the UI by the
+  `minimap-visibility` event into `viewSlice`; not persisted, an owner question in `INBOX.md`).
+  Still bound but unhandled: `toggle-perf-overlay` (no overlay exists), `toggle-developer-menu`,
+  `sprint`, `interact`, `turret-toggle-control`, `turret-switch-ammo` (`INBOX.md`).
 
 ## Related
 
