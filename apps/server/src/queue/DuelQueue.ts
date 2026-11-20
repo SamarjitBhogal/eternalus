@@ -1,4 +1,5 @@
 import type { ClientConnection } from '../transport/ClientConnection.types';
+import type { CancelTask } from '../time/TickScheduler.types';
 import { MS_PER_SECOND } from '../time/time.constants';
 import {
   BASE_RATING_GAP,
@@ -13,13 +14,21 @@ import type { DuelQueueOptions, Waiter } from './DuelQueue.types';
  * closest rating. Two players may pair when their rating gap is within the allowed gap of the
  * one who has waited longer: `BASE_RATING_GAP + GAP_WIDENING_PER_SECOND x seconds waited`, with
  * no limit after `QUEUE_TIMEOUT_MS`. The closest pair goes first. Matching runs on every join and
- * on a periodic sweep. A pair goes to a `MatchStarter`, which tells both `match-found`.
+ * on a periodic sweep (`start`). A pair goes to a `MatchStarter`, which tells both `match-found`.
+ * A held waiter (disconnected, inside the reconnect window) keeps its place and wait time but is
+ * never paired until it comes back.
+ *
+ * ponytail: ratings live in memory (`PlayerRatings`) as an interim (DEC-297 (3)); FR-118 (ratings
+ * kept in a database) is the upgrade, scheduled for sprint 4.
  */
 export class DuelQueue {
   private waiting: Waiter[] = [];
 
-  public constructor(private readonly options: DuelQueueOptions) {
-    options.scheduler.every(QUEUE_SWEEP_MS, () => {
+  public constructor(private readonly options: DuelQueueOptions) {}
+
+  /** Starts the periodic sweep that re-pairs as the allowed gaps widen. @returns Stops it. */
+  public start(): CancelTask {
+    return this.options.scheduler.every(QUEUE_SWEEP_MS, () => {
       this.pairUp();
     });
   }
@@ -31,6 +40,7 @@ export class DuelQueue {
       player: { connection, name, guestId },
       rating: this.options.ratings.get(guestId).rating,
       joinedAtMs: this.options.clock.nowMs(),
+      isHeld: false,
     });
     this.pairUp();
     if (this.isWaiting(connection)) connection.send({ type: 'queue-waiting' });
@@ -41,13 +51,29 @@ export class DuelQueue {
     return this.waiting.some((waiter) => waiter.player.connection === connection);
   }
 
-  /** Hands the waiting slot of `from` to `to` (a reconnect) and tells `to` it waits; does nothing if `from` is not waiting. */
+  /** `connection` disconnected but its slot is held: it keeps its place and is not paired. */
+  public hold(connection: ClientConnection): void {
+    const index = this.waiting.findIndex((waiter) => waiter.player.connection === connection);
+    const waiter = this.waiting[index];
+    if (waiter === undefined) return;
+    this.waiting[index] = { ...waiter, isHeld: true };
+  }
+
+  /**
+   * Hands the waiting slot of `from` to `to` (a reconnect), no longer held, and tells `to` it
+   * waits (or pairs it at once); does nothing if `from` is not waiting.
+   */
   public replace(from: ClientConnection, to: ClientConnection): void {
     const index = this.waiting.findIndex((waiter) => waiter.player.connection === from);
     const waiter = this.waiting[index];
     if (waiter === undefined) return;
-    this.waiting[index] = { ...waiter, player: { ...waiter.player, connection: to } };
-    to.send({ type: 'queue-waiting' });
+    this.waiting[index] = {
+      ...waiter,
+      player: { ...waiter.player, connection: to },
+      isHeld: false,
+    };
+    this.pairUp();
+    if (this.isWaiting(to)) to.send({ type: 'queue-waiting' });
   }
 
   /** Removes `connection` if it waits; used by `queue-leave` and on disconnect. */
@@ -70,8 +96,9 @@ export class DuelQueue {
   private closestAllowed(now: number): readonly [Waiter, Waiter] | null {
     let best: readonly [Waiter, Waiter] | null = null;
     let bestGap = Infinity;
-    for (const [index, first] of this.waiting.entries()) {
-      for (const second of this.waiting.slice(index + 1)) {
+    const pairable = this.waiting.filter((waiter) => !waiter.isHeld);
+    for (const [index, first] of pairable.entries()) {
+      for (const second of pairable.slice(index + 1)) {
         const gap = Math.abs(first.rating - second.rating);
         if (gap < bestGap && gap <= this.allowedGap(first, second, now)) {
           best = [first, second];

@@ -6,12 +6,13 @@ import { TokenBucket } from '../limits/TokenBucket';
 import { DuelHost } from '../match/DuelHost';
 import { FakeDuelSimulation } from '../match/FakeDuelSimulation';
 import { DuelQueue } from '../queue/DuelQueue';
+import { BASE_RATING_GAP } from '../queue/DuelQueue.constants';
 import { PlayerRatings } from '../rating/PlayerRatings';
 import { FakeClock } from '../time/FakeClock';
 import { FakeTickScheduler } from '../time/FakeTickScheduler';
 import { FakeConnection } from '../transport/FakeConnection';
 import { PresenceBook } from './PresenceBook';
-import { MAX_HELD_GUESTS, RECONNECT_WINDOW_MS } from './PresenceBook.constants';
+import { MAX_HELD_GUESTS, MAX_KNOWN_GUESTS, RECONNECT_WINDOW_MS } from './PresenceBook.constants';
 
 const join = (guestId?: string): string =>
   JSON.stringify({
@@ -20,11 +21,18 @@ const join = (guestId?: string): string =>
     ...(guestId === undefined ? {} : { guestId }),
   });
 
-function setup(maxHeldGuests = MAX_HELD_GUESTS) {
+function setup(maxHeldGuests = MAX_HELD_GUESTS, maxKnownGuests = MAX_KNOWN_GUESTS) {
   const scheduler = new FakeTickScheduler();
   const ratings = new PlayerRatings();
+  const simulations: FakeDuelSimulation[] = [];
   const host = new DuelHost({
-    factory: { create: () => new FakeDuelSimulation() },
+    factory: {
+      create: () => {
+        const simulation = new FakeDuelSimulation();
+        simulations.push(simulation);
+        return simulation;
+      },
+    },
     scheduler,
     tickIntervalMs: 33,
     versusMs: 0,
@@ -45,6 +53,7 @@ function setup(maxHeldGuests = MAX_HELD_GUESTS) {
     scheduler,
     reconnectWindowMs: RECONNECT_WINDOW_MS,
     maxHeldGuests,
+    maxKnownGuests,
     newGuestId: () => `00000000-0000-4000-8000-${String((issued += 1)).padStart(12, '0')}`,
   });
   const gateway = new DuelGateway({
@@ -61,7 +70,7 @@ function setup(maxHeldGuests = MAX_HELD_GUESTS) {
   };
   const guestIdOf = (connection: FakeConnection): string | undefined =>
     connection.sentOfType('welcome').at(-1)?.guestId;
-  return { presence, scheduler, connect, guestIdOf };
+  return { presence, scheduler, ratings, simulations, connect, guestIdOf };
 }
 
 describe('PresenceBook', () => {
@@ -115,7 +124,7 @@ describe('PresenceBook', () => {
     expect(a2.sentOfType('rejected')).toEqual([]);
   });
 
-  it('drops a queued guest after the window: the id is then unknown', () => {
+  it('drops a queued guest after the window: the slot is gone, the id comes back on a new join', () => {
     const { connect, guestIdOf, presence, scheduler } = setup();
     const a = connect();
     const id = guestIdOf(a);
@@ -125,9 +134,77 @@ describe('PresenceBook', () => {
     expect(presence.counts()).toEqual({ online: 0, queued: 0, inMatch: 0, held: 0 });
     const a2 = connect();
     a2.receive(join(id));
-    expect(guestIdOf(a2)).not.toBe(id);
+    expect(guestIdOf(a2)).toBe(id);
     expect(a2.sentOfType('queue-waiting')).toHaveLength(1);
     expect(presence.counts().queued).toBe(1);
+  });
+
+  it('keeps a rating across Duels: the next pairing sees the last result', () => {
+    const { connect, guestIdOf, ratings, simulations, scheduler } = setup();
+    const [a, b] = [connect(), connect()];
+    const [idA, idB] = [guestIdOf(a), guestIdOf(b)];
+    a.receive(join());
+    b.receive(join());
+    const [simulation] = simulations;
+    if (simulation === undefined || idA === undefined || idB === undefined)
+      throw new Error('no Duel');
+    simulation.result = { winner: 'light' };
+    scheduler.tick();
+    expect([a.isClosed, b.isClosed]).toEqual([true, true]);
+    const [a2, b2] = [connect(), connect()];
+    a2.receive(join(idA));
+    b2.receive(join(idB));
+    expect([guestIdOf(a2), guestIdOf(b2)]).toEqual([idA, idB]);
+    expect(ratings.get(idA)).toMatchObject({ matches: 1, wins: 1 });
+    expect(ratings.get(idB)).toMatchObject({ matches: 1, losses: 1 });
+    expect(ratings.get(idA).rating - ratings.get(idB).rating).toBeGreaterThan(BASE_RATING_GAP);
+    // The winner and the loser are now too far apart to pair at once.
+    expect(a2.sentOfType('match-found')).toEqual([]);
+    expect(b2.sentOfType('queue-waiting')).toHaveLength(1);
+  });
+
+  it('forgets the oldest gone guest beyond the cap, rating and all', () => {
+    const { connect, guestIdOf, ratings, simulations, scheduler } = setup(MAX_HELD_GUESTS, 2);
+    const [a, b] = [connect(), connect()];
+    const idA = guestIdOf(a);
+    a.receive(join());
+    b.receive(join());
+    const [simulation] = simulations;
+    if (simulation === undefined || idA === undefined) throw new Error('no Duel');
+    simulation.result = { winner: 'light' };
+    scheduler.tick();
+    expect(ratings.get(idA).matches).toBe(1);
+    connect().close(); // a third gone guest pushes the oldest, a, out
+    const a2 = connect();
+    a2.receive(join(idA));
+    expect(guestIdOf(a2)).not.toBe(idA);
+    expect(ratings.get(idA).matches).toBe(0);
+  });
+
+  it('never pairs a queued guest that is held: the next player waits', () => {
+    const { connect, presence, scheduler } = setup();
+    const ghost = connect();
+    ghost.receive(join());
+    ghost.close();
+    const real = connect();
+    real.receive(join());
+    expect(real.sentOfType('match-found')).toEqual([]);
+    expect(real.sentOfType('queue-waiting')).toHaveLength(1);
+    scheduler.tick();
+    expect(real.sentOfType('match-ended')).toEqual([]);
+    expect(presence.counts()).toEqual({ online: 0, queued: 1, inMatch: 0, held: 0 });
+  });
+
+  it('sends welcome before the seat is handed back on a resume', () => {
+    const { connect, guestIdOf } = setup();
+    const [a, b] = [connect(), connect()];
+    const id = guestIdOf(a);
+    a.receive(join());
+    b.receive(join());
+    a.close();
+    const a2 = connect();
+    a2.receive(join(id));
+    expect(a2.sent.map(({ type }) => type)).toEqual(['welcome', 'welcome', 'match-found']);
   });
 
   it('forfeits an in-match guest after the window', () => {
@@ -193,6 +270,19 @@ describe('PresenceBook', () => {
     b.close();
     expect(presence.counts()).toEqual({ online: 0, queued: 0, inMatch: 0, held: 0 });
     expect(scheduler.activeCount).toBe(0);
+  });
+
+  it('records the loss for the one who left first when both seats end up held', () => {
+    const { connect, guestIdOf, ratings } = setup();
+    const [a, b] = [connect(), connect()];
+    const [idA, idB] = [guestIdOf(a), guestIdOf(b)];
+    if (idA === undefined || idB === undefined) throw new Error('no ids');
+    a.receive(join());
+    b.receive(join());
+    a.close();
+    b.close();
+    expect(ratings.get(idA)).toMatchObject({ matches: 1, losses: 1 });
+    expect(ratings.get(idB)).toMatchObject({ matches: 1, wins: 1 });
   });
 
   it('drops at once beyond the cap on held guests', () => {

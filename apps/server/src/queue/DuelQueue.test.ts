@@ -20,6 +20,7 @@ function setup() {
     clock,
     scheduler,
   });
+  const stopSweep = queue.start();
   const connections = new Map<string, FakeConnection>();
   const join = (id: string, name = 'n'): FakeConnection => {
     const connection = connections.get(id) ?? new FakeConnection();
@@ -35,7 +36,7 @@ function setup() {
       scheduler.tick();
     }
   };
-  return { queue, started, ratings, join, wait, connections };
+  return { queue, started, ratings, join, wait, connections, scheduler, stopSweep };
 }
 
 /** Rates `id` far above or below 1500 by letting it win or lose against a throwaway player. */
@@ -87,6 +88,47 @@ describe('DuelQueue', () => {
     const b = join('b');
     expect(started).toEqual([]);
     expect(b.sent).toEqual([{ type: 'queue-waiting' }]);
+  });
+
+  it('lets a player join again right after leaving, and pairs them then', () => {
+    const { join, queue, connections, started } = setup();
+    const a = join('a');
+    queue.leave(a);
+    expect(queue.isWaiting(a)).toBe(false);
+    join('a');
+    expect(queue.isWaiting(a)).toBe(true);
+    join('b');
+    expect(started).toEqual([['a', 'b']]);
+    expect([...connections.values()].some((c) => queue.isWaiting(c))).toBe(false);
+  });
+
+  it('never pairs a held waiter, even after the timeout, and pairs it once it is back', () => {
+    const { join, queue, started, wait } = setup();
+    const a = join('a');
+    queue.hold(a);
+    const b = join('b');
+    wait(QUEUE_TIMEOUT_MS * 2);
+    expect(started).toEqual([]);
+    expect(b.sentOfType('match-found')).toEqual([]);
+    const back = new FakeConnection();
+    queue.replace(a, back);
+    expect(started).toEqual([['a', 'b']]);
+    expect(back.sent).toEqual([]);
+  });
+
+  it('pairs the next free waiter, not a held one that queued earlier', () => {
+    const { join, queue, started } = setup();
+    queue.hold(join('a'));
+    join('b');
+    join('c');
+    expect(started).toEqual([['b', 'c']]);
+  });
+
+  it('runs its sweep only between start and the returned stop', () => {
+    const { scheduler, stopSweep } = setup();
+    expect(scheduler.activeCount).toBe(1);
+    stopSweep();
+    expect(scheduler.activeCount).toBe(0);
   });
 
   it('ignores a leave by someone who is not waiting', () => {

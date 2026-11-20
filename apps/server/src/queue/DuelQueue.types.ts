@@ -16,11 +16,13 @@ export interface MatchStarter {
   start(light: DuelPlayer, dark: DuelPlayer): void;
 }
 
-/** A queued player with the rating they joined with and when they joined. */
+/** A queued player with the rating they joined with, when they joined and whether they are held. */
 export type Waiter = {
   readonly player: DuelPlayer;
   readonly rating: number;
   readonly joinedAtMs: number;
+  /** Disconnected inside the reconnect window: keeps its place, is not paired. */
+  readonly isHeld: boolean;
 };
 
 /** What a `DuelQueue` is built from. */
