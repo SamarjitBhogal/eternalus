@@ -1,5 +1,5 @@
 import { CAPTURE_POINT_COURT } from '../../zones/capturePointCourt';
-import type { GuardAggroRuleDefinition } from '../ai.types';
+import type { AuthoredGuardAggroRule } from '../ai.types';
 import { TOWER_GUARD_AGGRO } from './towerGuard';
 
 /**
@@ -14,4 +14,4 @@ export const CAPTURE_POINT_BOSS_AGGRO = {
   id: 'capture-point-boss',
   // From its post it reaches the far side of the court (guardPlans.test.ts checks it).
   acquisitionRadius: CAPTURE_POINT_COURT.acquisitionRadius,
-} as const satisfies GuardAggroRuleDefinition;
+} as const satisfies AuthoredGuardAggroRule;
