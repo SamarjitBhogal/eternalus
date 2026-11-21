@@ -9037,6 +9037,252 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   and #119 into phase/3 in that order with merge commits, each only with green CI, and stops if
   another PR merges into phase/3 in between.
 
+### 2026-11-12 — Phase 3 / minion follow-ups: content durations become ticks at load (DEC-241) — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: five loaders (`loadAggroRules`, `loadStuckDetection`, `loadMinionVeterancy`,
+  `loadSpawnWaves`, `loadGuardPlans`) turn seconds into ticks once; `LeashBehaviour`,
+  `StuckSystem`, `VeterancySystem`, `SpawnSystem` and `GuardRoster` read ticks.
+  `TickRate.roundToTicks` keeps 0 s at 0 ticks. Wave timing is checked in the loader, now for
+  every authored wave, not only for the spawners on the map. Branch cut from #85's head.
+- Critics: correctness PASS (a 9000-tick match hashes the same as the base for seeds 1 and 2);
+  its aura-cadence test gap is closed (the new assertion failed under a mutation). Ponytail: the
+  repeated `ScheduledWave.everyTicks` is removed.
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-2.log`).
+- Next step: open the PR after #85 merges into phase/3.
+
+### 2026-11-12 — Phase 3 / content durations at load (DEC-241): merge of fix/minion-stack-followups (phase/3 with #51, #52) — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: merged the local head of `fix/minion-stack-followups` (`18c50e9d`), which
+  merges phase/3 at `3dc9e908` (#51 object pool, #52 status polarity and control class). Only
+  PROGRESS conflicted; both sides kept. No code conflict.
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-3.log`).
+- Next step: pre-PR gate; open the PR after #85 merges into phase/3.
+
+### 2026-11-12 — Phase 3 / content durations at load (DEC-241): pre-PR critic — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: the `architecture-reviewer` critic read `18c50e9d..131f5008`: no blockers. Built
+  its better-than-design item 1: `loadAggroRules`, `loadStuckDetection`, `loadMinionVeterancy`
+  and `loadGuardPlans` now reject a time that is negative or not finite, through one helper
+  (`content/assertValidSeconds.ts`), as `loadSpawnWaves` already did for waves. The four new
+  tests failed first ("expected function to throw an error, but it didn't"). The loaders and
+  `ai.types.ts` now cite architecture 03 §8 (the rule) instead of §11. Rejected item 2 (derive
+  the loaded types with a mapped type): it hides the per-field TSDoc for about 60 lines saved.
+  Not changed: the same §11 citation in `loadStatusEffects`, `loadWeapons` and
+  `loadDefaultContent` (not in this branch's diff).
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-4.log`).
+- Next step: open the PR after #85 merges into phase/3.
+
+### 2026-11-13 — Phase 3 / content durations at load (DEC-241): merge of fix/minion-stack-followups (phase/3 with #97) — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: merged the local head of `fix/minion-stack-followups` (`9c7194d0`), which
+  merges phase/3 at `9e2516cf` (#97 duel server). Only PROGRESS conflicted; both sides kept. No
+  code conflict.
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-5.log`).
+- Next step: open the PR after #85 merges into phase/3.
+
+### 2026-11-13 — Phase 3 / content durations at load (DEC-241): merge of fix/minion-stack-followups (phase/3 with #81) — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: merged the local head of `fix/minion-stack-followups` (`2e8df5bc`), which
+  merges phase/3 at `76d1007d` (#81 minion plan MVP gaps, docs only). Only PROGRESS conflicted;
+  both sides kept. No code conflict.
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-6.log`).
+- Next step: open the PR after #85 merges into phase/3.
+
+### 2026-11-14 — Phase 3 / content durations at load (DEC-241): merge of fix/minion-stack-followups (phase/3 with #96) — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: merged the local head of `fix/minion-stack-followups` (`2129a73e`), which
+  merges phase/3 at `a99c3129` (#96 bug tracker, docs only). This file and the owner decisions
+  log conflicted; both sides are kept (the log has the DEC-247 to DEC-249 batch above the
+  DEC-241 batch, no DEC number is used twice). No code change.
+- Checks run: full `npm run check` exit 0 before this entry was added
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-7.log`); then
+  `prettier --check` and `npm run docs:check` on this file.
+- Next step: open the PR (base phase/3) when #85 merges.
+
+### 2026-11-14 — Phase 3 / content durations at load (DEC-241): merge of phase/3 (#85, #86) — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` at `88f5afd8` (#85 minion stack follow-ups and
+  #86 out-of-combat healing merged). Only this file conflicted; it is rebuilt from phase/3's copy
+  plus the entries only this branch has. No code conflict. #86 brings a sixth duration that a
+  system converts at read time; the next entry moves it to load.
+- Checks run: the full `npm run check` ran on this merge together with the next entry's change,
+  not on the merge alone (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-8.log`).
+- Next step: the healing durations at load (next entry).
+
+### 2026-11-14 — Phase 3 / content durations at load (DEC-241): out-of-combat healing durations at load — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: #86 converts the healing delay and the structure quiet time from seconds to
+  ticks in `OutOfCombatHealingSystem`'s constructor, a sixth reader that DEC-241 covers. The
+  content type splits into `AuthoredOutOfCombatHealing` (seconds) and `OutOfCombatHealing`
+  (ticks); the new `loadOutOfCombatHealing` converts both once with `roundToTicks` (the same
+  rounding #86 used, so no tick value changes) and rejects a negative or non-finite time
+  (`assertValidSeconds`). The system reads only ticks. The rates stay per second: DEC-241 covers
+  durations only. The DEC-241 row and the healing paragraph of architecture 04 say so. Fail-first
+  breaks, each restored after: loader without rounding (1 test red), system delay compared with
+  `< 0` (3 red), quiet time `* 3` (4 red).
+- Checks run: full `npm run check` exit 0 before this entry was added (core 255 files / 1478
+  tests, client 285 / 1883, server 20 / 79, protocol 1 / 18;
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-8.log`); then
+  `prettier --check` and `npm run docs:check` on this file.
+- Next step: critic re-check on this change, then open the PR (base phase/3).
+
+### 2026-11-14 — Phase 3 / content durations at load (DEC-241): critic on the healing change, rates per tick — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: the `architecture-reviewer` critic read `e67bcc08..55b3861e`: no blockers, three
+  nits, two better-than-design items; all five are built. (1) `loadOutOfCombatHealing` also turns
+  the two healing rates (`healthFractionPerSecond`, a bonus's `fractionPerSecond`) into per-tick
+  values, so `OutOfCombatHealingSystem` keeps no tick rate and sees only ticks (architecture 03
+  §10, `packages/core/AGENTS.md`). The division is the same, so no value changes. This replaces
+  the previous entry's "the rates stay per second". (2) The loader rejects a rate that is
+  negative or not finite; `assertValidSeconds` takes the unit its message prints (`s` or
+  `per s`). Nits: a delay of 0 s loads as 0 ticks (test); the DEC-241 row says #86 added the
+  sixth reader after the owner's answer; the row no longer reads as a ruling that rates stay per
+  second. The loader test now uses its own authored record, not the tuned numbers. `INBOX.md`
+  asks the owner to sign off (1) and (2). Ponytail on the delta: nothing to cut. Fail-first
+  breaks, each restored after (`cmp`): base rate not divided (14 red), bonus not divided (10),
+  delay with the one-tick floor (1), validator ignores NaN and Infinity (3), unit ignored (2),
+  rate check removed (1), system base rate doubled (12), system ignores the bonus (8).
+- Checks run: full `npm run check` exit 0 before this entry was added (core 255 files / 1481 tests, client 285 / 1883, server 20 / 79, protocol 1 / 18;
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-9.log`); then
+  `prettier --check` and `npm run docs:check` on this file.
+- Next step: critic re-check on this change, then open the PR (base phase/3).
+
+### 2026-11-14 — Phase 3 / content durations at load (DEC-241): critic round 2, unit-free check and `TickRate.perTick` — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: the critic re-read `55b3861e..3eb2b4f9`: no blockers, three nits, one
+  better-than-design item. Built: the check takes any unit, so `assertValidSeconds` is renamed
+  `assertNonNegativeFinite` (its parameters are `values` and `value`; the function and its six
+  callers are new on this branch); the rate formula is `TickRate.perTick`, next to the time
+  formulas, and `loadOutOfCombatHealing` uses it (the same division, so no value changes); the
+  DEC-241 row cites `loadDefaultContent` (speed and acceleration) as the precedent for rates per
+  tick. Kept: the healing loader checks its times and its rates in two calls, so a bad time hides
+  a bad rate in the message (the critic accepted this). Not changed: `loadDefaultContent` still
+  divides speed and acceleration by the tick rate itself (outside this branch's diff). Fail-first
+  break, restored after (`cmp`): `perTick` divides by one tick more (14 red). `INBOX.md` item
+  extended with (3).
+- Checks run: full `npm run check` exit 0 before this entry was added (core 255 files / 1482 tests, client 285 / 1883, server 20 / 79, protocol 1 / 18;
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-10.log`); then
+  `prettier --check` and `npm run docs:check` on this file.
+- Next step: critic round 3 on this change (last of three), then open the PR (base phase/3).
+
+### 2026-11-14 — Phase 3 / content durations at load (DEC-241): critic round 3, wording — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: the critic re-read `3eb2b4f9..de41218b` (round 3, the last of three): approve,
+  no blockers, two wording nits, both applied. The `TickRate` class TSDoc says "the formulas the
+  content loaders share" (not every loader uses it yet: `loadDefaultContent` divides by the tick
+  rate itself); two `assertNonNegativeFinite` test titles say "values", not "times". No code
+  change, so no fail-first break.
+- Checks run: full `npm run check` exit 0 before this entry was added (core 255 files / 1482 tests, client 285 / 1883, server 20 / 79, protocol 1 / 18;
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-11.log`); then
+  `prettier --check` and `npm run docs:check` on this file.
+- Next step: the owner pushes the branch and opens the PR (base phase/3).
+
+### 2026-11-14 — Phase 3 / content durations at load (DEC-241): merge of phase/3 (#79) — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` at `8dc7d962` (#79 unit facing chevron merged
+  after PR #125 opened, so #125 conflicted). Three docs conflicted: `INBOX.md` keeps both items;
+  architecture 04 keeps this branch's `last-reviewed` (2026-11-14); this file is rebuilt from
+  phase/3's copy plus the entries only this branch has. No code conflict: in `GuardRoster`,
+  `SpawnSystem`, `Simulation` and `DefaultSystemPipeline` #79 adds only the start facing and
+  TSDoc, which do not touch the durations.
+- Checks run: full `npm run check` exit 0 on this merge before this entry was added (core 256 files / 1515 tests, client 286 / 1890, server 20 / 79, protocol 1 / 18;
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-12.log`); then
+  `prettier --check` and `npm run docs:check` on this file.
+- Next step: the owner pushes the merge to PR #125.
+
+### 2026-11-16 — Phase 3 / content durations at load (DEC-241): merge of phase/3 (#93, #127, #113, #102), PR #125 review fixes, DEC-262 — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` at `330e969a` (#93 match scoring, #127 CI time
+  limit, #113 Vite and Vitest, #102 Duel rules merged after PR #125 opened). Two files conflicted:
+  this file (rebuilt from phase/3's copy plus the entries only this branch has) and
+  `DefaultSystemPipeline.ts`, which keeps #102's `DuelRoundSystem` line and this branch's
+  `loadOutOfCombatHealing(tickRate)`. #102 adds no duration read at run time (its countdown is
+  `GameConfig`, outside DEC-241). PR #125 reviews: claudiodh's should-fix, a `loadSpawnWaves`
+  test that a wave of a structure kind no map builds is still checked (failed first: with the
+  check limited to the shipped kinds, 1 red; restored, `cmp` identical); Samarjit's nit, a
+  comment on why `loadSpawnWaves` does not use `assertNonNegativeFinite`. The owner signed off
+  DEC-241's better-than-design items and its sixth reader (DEC-262, question dialog): the
+  decisions-log row, the DEC-241 row, architecture 04, `assertNonNegativeFinite`,
+  `TickRate.perTick` and `loadOutOfCombatHealing` cite it, and the `INBOX.md` item is closed.
+- Checks run: full `npm run check` exit 0 before this entry was added (core 267 files / 1628 tests, client 297 / 2005, server 21 / 84, protocol 1 / 29;
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-13.log`); then
+  `prettier --check` and `npm run docs:check` on this file.
+- Next step: the owner pushes the merge, posts the sign-off on PR #125 and asks claudiodh to
+  review again.
+
+### 2026-11-18 — Phase 3 / content durations at load (DEC-241): merge of phase/3 (#101, #99) — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` at `af54fe96` (#101 bound key actions and #99
+  capture point boss, merged after PR #125's last push). #99 changed the guard plan's
+  `activation` and `respawn` into tagged forms with two new times in seconds
+  (`activation.delaySeconds`, `respawn.seconds`) that `GuardRoster` turned into ticks at run time.
+  DEC-241 covers both: `AuthoredGuardPlan` holds the seconds, `loadGuardPlans` turns them into
+  `delayTicks` and `ticks` and rejects a negative or non-finite one, and `GuardRoster` reads only
+  ticks. #99's delay check moved from `SpawnSystem` to the loader, with its three cases
+  (`loadGuardPlans.test.ts`); the `guards` and `guardPlans` options (pipeline, `Simulation`) take
+  authored plans and the pipeline loads them; #99's two capture point aggro rules are typed
+  `AuthoredGuardAggroRule`. Conflicts: architecture 04 and 11 (`last-reviewed` 2026-11-16; 11
+  keeps #99's guard-post boss wording and this branch's load-time text), the decisions log
+  (DEC-241's batch above DEC-237's, newest first), this file (phase/3's copy plus the entries only
+  this branch has). The new loader tests failed first: with the delay neither converted nor
+  checked, 4 red; restored, `cmp` identical, 6 green. Critic (`architecture-reviewer`) on the
+  resolution: approve, no blockers; its two wording nits are applied (`SpawnSystem.types.ts`
+  `guards` TSDoc names zones; `INBOX.md` names `AuthoredGuardPlan.activation`).
+- Checks run: full `npm run check` exit 0 on this merge before this line was added (core 274 files / 1664 tests, protocol 1 / 29, client 298 / 2014, server 21 / 84,
+  "Documentation check passed."; `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-14.log`);
+  then `prettier --check` and `npm run docs:check` on this file.
+- Next step: the owner pushes the merge after the stacked chain #126 → #121 → #120 → #119 lands;
+  then phase/3 merges into this branch again before PR #125 merges.
+
+### 2026-11-19 — Phase 3 / content durations at load (DEC-241): merge committed, HC-B9 asked — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: committed the merge of phase/3 `af54fe96` (`e04e1a27`; the first try was killed
+  for low memory). `INBOX.md` HC-B9 asks the owner to sign off the merge critic's two
+  better-than-design items, both older than this PR and not built: one source for the
+  countdown-end tick (`SpawnSystem`, `GuardRoster`, `LeashBehaviour`) and `assistWindowSeconds`
+  turned into ticks by a loader.
+- Checks run: the pre-commit `check:quick` on `e04e1a27`: exit 0; `prettier --check` and
+  `npm run docs:check` on this file and `INBOX.md`.
+- Next step: as the entry above; HC-B9 waits for the owner.
+
+### 2026-11-19 — Phase 3 / content durations at load (DEC-241): merge of phase/3 (#126, #121, #120, #119) — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` at `d85bc2f5` (the stacked chain #126, #121,
+  #120, #119). Conflicts: `DefaultSystemPipeline`'s imports (this branch's `loadSpawnWaves`
+  beside #119's structure catalogue types; `SPAWN_WAVES` stays unused), the decisions log (the
+  two 2026-11-13 batches, DEC-244 and DEC-243, above DEC-241's, newest first) and this file
+  (phase/3's copy plus the entries only this branch has). The chain adds no time in seconds, so
+  no loader changes. The client has 3 fewer tests: #126 (DEC-251) turned two `it.each` tests
+  into one test each.
+- Checks run: full `npm run check` exit 0 on this merge before this entry was added (core 275
+  files / 1674 tests, protocol 1 / 29, client 298 / 2011, server 21 / 84, "Documentation check
+  passed."; `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-15.log`); then
+  `prettier --check` and `npm run docs:check` on this file.
+- Next step: the owner pushes the branch (`push-125-r3.sh`), then merges PR #125.
+
+### 2026-11-20 — Phase 3 / tower horde test time limit (DEC-289) — fix/horde-test-timeout — sholtzman + Claude Code
+
+- What was done: the owner's Owner Calls answer of 2026-11-20 ("Raise this one test's cap to
+  120 s and log an INBOX item to make the test faster") is DEC-289. `Simulation.mapObjects.test.ts`
+  gives its tower horde test ("walks every tower horde out of its tower and on up its lane within
+  10 seconds (DEC-133, seed %i)") its own time limit, `HORDE_WALK_TIMEOUT_MS` (120 s); core's
+  `testTimeout` (60 s, `packages/core/vitest.config.ts`) is unchanged. On PR #122 (run
+  44714237495, attempt 1) seed 1 timed out at 60 s on windows-latest. `INBOX.md` has the request
+  "Make the tower horde test faster"; the decisions log has the DEC-289 batch.
+- Checks run: a deliberate break (`HORDE_WALK_TIMEOUT_MS = 100`) made all three seeds fail with
+  "Test timed out in 100ms", so the argument reaches the test; restored to 120 s. Full
+  `npm run check` exit 0 before this entry was added
+  (`eternalus-agent-work/horde-test-timeout/check-1.log`): core "Tests 1674 passed (1674)",
+  protocol "Tests 29 passed (29)", client "Tests 2011 passed (2011)", server "Tests 84 passed
+  (84)", "Documentation check passed."; then `prettier --check` and `npm run docs:check` with this
+  entry. Critic (architecture-reviewer): PASS WITH NOTES, no violations, four nits not applied.
+- Next step: `/ponytail-review`, then push and open the PR into phase/3.
+
 ### 2026-11-19 — Phase 3 / sprint 3 work: land DEC-38 and the DEC-11 weapon clarification — docs/land-dec-38 (from `af54fe96`) — sholtzman + Claude Code
 
 - What was done: the owner asked to land commit `f27a1a17` (2026-10-10, on
