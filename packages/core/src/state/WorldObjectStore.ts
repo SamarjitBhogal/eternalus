@@ -6,7 +6,7 @@ import type { ObstacleDefinition } from '../content/obstacles/obstacles.types';
 import type { EntityFactory } from '../entities/EntityFactory';
 import type { EntityStore } from './EntityStore';
 import type { WorldObjectRecord, WorldObjectStoreOptions } from './WorldObjectStore.types';
-import type { Rect, Vec2 } from '../utils/geometry.types';
+import type { Polygon, Rect, Vec2 } from '../utils/geometry.types';
 import { doesCircleOverlapPolygon, isCircleInsidePolygon } from '../utils/circlePolygon';
 import { boundsOf } from '../utils/geometry';
 
@@ -110,6 +110,30 @@ export class WorldObjectStore {
     return this.records.flatMap((record) =>
       record.object.buildingId === buildingId && record.entityId !== null ? [record.entityId] : [],
     );
+  }
+
+  /**
+   * The ground inside the building `buildingId`, as polygons: the floor of its walkable map object
+   * of that id (the Stronghold, the Cathedral) and the box round the walls that are `partOf` it
+   * (a lane tower's fort court, DEC-185 B). Empty for an id that is neither. Pure data, no kind
+   * test: a building is whatever has a floor or walls under its id.
+   */
+  public interiorOf(buildingId: string): readonly Polygon[] {
+    const floors = this.records.flatMap(({ object }) =>
+      object.id === buildingId && !object.isBlocking ? object.footprints : [],
+    );
+    const walls = this.records.flatMap(({ object }) =>
+      object.partOf === buildingId ? object.footprints.flat() : [],
+    );
+    if (walls.length === 0) return floors;
+    const { x, y, width, height } = boundsOf(walls);
+    const court: Polygon = [
+      { x, y },
+      { x: x + width, y },
+      { x: x + width, y: y + height },
+      { x, y: y + height },
+    ];
+    return [...floors, court];
   }
 
   /** Persistent destroyed identifiers, including walkable rubble left by retired entities. */

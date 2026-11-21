@@ -1,10 +1,9 @@
 import { Transform } from '../components/Transform';
 import type { MapObject } from '../content/maps/mapObjects.types';
 import type { ObstacleDefinition } from '../content/obstacles/obstacles.types';
-import type { Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
-import { nearestPointOnPolygons } from '../utils/geometry';
 import type { EntityStore } from './EntityStore';
+import { wallHitFrom } from './wallHitFrom';
 import type { WorldObjectStore } from './WorldObjectStore';
 
 /**
@@ -45,7 +44,7 @@ export class StructureRuins {
     const body = this.objects.bodyOf(entityId);
     if (body.length === 0) return;
     const from = this.entities.get(attackerId ?? '')?.findComponent(Transform)?.position;
-    const wall = from === undefined ? undefined : this.wallHitFrom(body, from);
+    const wall = from === undefined ? undefined : wallHitFrom(body, from, this.aim);
     if (wall !== undefined) this.hits.set(entityId, wall.id);
   }
 
@@ -77,21 +76,5 @@ export class StructureRuins {
       if (fallen.has(object)) this.objects.destroy(object);
       else this.objects.standAlone(object, this.ruinWall);
     }
-  }
-
-  /**
-   * The fort wall of `body` nearest `from`, lower index on a tie, or `undefined` when a part of
-   * the body that is no wall (the keep) is nearer.
-   */
-  private wallHitFrom(body: readonly MapObject[], from: Vec2): MapObject | undefined {
-    let wall: MapObject | undefined;
-    let wallGap = Number.POSITIVE_INFINITY;
-    let ownGap = Number.POSITIVE_INFINITY;
-    for (const object of body) {
-      const gap = nearestPointOnPolygons(from, object.footprints, this.aim);
-      if (object.partOf === undefined) ownGap = Math.min(ownGap, gap);
-      else if (gap < wallGap) [wall, wallGap] = [object, gap];
-    }
-    return wallGap <= ownGap ? wall : undefined;
   }
 }
