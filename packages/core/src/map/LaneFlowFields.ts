@@ -58,6 +58,15 @@ export class LaneFlowFields {
   }
 
   /**
+   * How far `point` lies along lane `laneId` for `team` (`FlowField.progressAt`): 0 at the team's
+   * own end of the lane, 1 at the enemy end; `null` when there is no such lane or the field cannot
+   * say. Implements `combat/`'s `LaneProgressOf` port for minion strength (05 §9).
+   */
+  public progress(laneId: string, team: PlayableTeam, point: Vec2): number | null {
+    return this.field(laneId, team)?.progressAt(point) ?? null;
+  }
+
+  /**
    * Queues for a rebuild every field whose corridor holds one of `cells` (the changed cells
    * `WorldMap.stampFootprint` and `clearFootprint` return). A field already queued stays in its
    * place; one being rebuilt is queued again, since its fill may have read the old cells.
@@ -103,11 +112,17 @@ export class LaneFlowFields {
       (feature) => feature.kind === 'stronghold' && feature.team === team,
     )?.position;
     const mask = LaneFlowFields.corridorOf(grid, path, corridorHalfWidth, home, start);
-    // Nudged back along the lane, so an end on a cell edge picks the cell its mirror twin picks.
+    // Both ends nudged inward along the lane, so an end on a cell edge picks the cell its mirror
+    // twin picks.
     const before = path[path.length - 2] ?? end;
     const goal = grid.cellAt({
       x: end.x + (before.x - end.x) * CELL_EDGE_SLACK,
       y: end.y + (before.y - end.y) * CELL_EDGE_SLACK,
+    });
+    const after = path[1] ?? start;
+    const first = grid.cellAt({
+      x: start.x + (after.x - start.x) * CELL_EDGE_SLACK,
+      y: start.y + (after.y - start.y) * CELL_EDGE_SLACK,
     });
     return new FlowField(
       grid,
@@ -115,6 +130,7 @@ export class LaneFlowFields {
       team,
       mask,
       goal === null ? -1 : goal.row * grid.cols + goal.col,
+      first === null ? -1 : first.row * grid.cols + first.col,
     );
   }
 

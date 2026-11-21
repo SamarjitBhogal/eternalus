@@ -9282,3 +9282,53 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   (84)", "Documentation check passed."; then `prettier --check` and `npm run docs:check` with this
   entry. Critic (architecture-reviewer): PASS WITH NOTES, no violations, four nits not applied.
 - Next step: `/ponytail-review`, then push and open the PR into phase/3.
+
+### 2026-11-07 — Phase 3 / minion strength by flow-field distance (M5a stand-in) — feat/minion-strength-flow-field — SamarjitBhogal + Claude Code
+
+- What was done: `MinionStrengthStep` measures a horde member's lane progress `t` by path cost on
+  its lane's flow field, as `balancing.md` recommends, instead of along the lane polyline. The step
+  reads it through a `LaneProgressOf` port (`combat/` may not import `map/`, 02 §2);
+  `LaneFlowFields.progress` implements it through the new `FlowField.progressAt` and `costAt`, and
+  `DefaultSystemPipeline` wires it into the damage steps. `t` keeps the polyline's reference
+  points, gate to gate (0 at the team's own lane end, 1 at the enemy end), not Stronghold to
+  Stronghold as `balancing.md` words it, so the curve's base-stat points keep their meaning. Each
+  field stores its own start cell, nudged off cell edges like the goal, so Light and Dark read the
+  same progress at mirrored points (tested cell by cell). Off the corridor the step falls back to
+  the polyline. The field and the polyline agree within 2% along the generated lanes (largest
+  measured 1.4% with 3 lanes, 1.6% with 5; a test holds the bound for both), so the curve's
+  balance barely moves. Minion plan: the polyline stand-in row is removed; doc 18
+  Implementation status names the port.
+- Checks run: `npm run check` passed: core `Tests  1087 passed (1087)`, client
+  `Tests  1754 passed (1754)`, `Documentation check passed.`
+- Next step: the unit-cap performance check and the bot path cache, on their own branches.
+
+### 2026-11-12 — Phase 3 / sync — feat/minion-strength-flow-field — SamarjitBhogal + Claude Code
+
+- What was done: merged `docs/minion-plan-mvp-gaps` (PR #81, which now carries
+  `phase/3-sprint-3-work` at `3dc9e908`) into PR #82; it was 166 commits behind and conflicting.
+  Append-only logs: both sides kept, this branch's entries last. Code: `MinionStrengthStep.ts`
+  keeps both imports (`LaneProgressOf`, phase/3's `opponentOf`);
+  `DefaultSystemPipeline.strength.test.ts` moves to the options-object constructors phase/3
+  introduced (same assertions).
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code
+  style!"; core "Tests 1329 passed (1329)"; client "Tests 1818 passed (1818)"; "✓ built in
+  307ms"; "Documentation check passed."
+- Next step: review once PR #81 merges.
+
+### 2026-11-20 — Phase 3 / minion plan M5a follow-up — feat/minion-strength-flow-field (PR #82 review round) — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (`5a7cc8dc`); conflicts resolved as the review's
+  B1 trial merge: `defaultDamageSteps.ts` keeps `MinionStrengthStep(MINION_STRENGTH, progressOf)`
+  and phase/3's `BossMinionDamageStep`; `DefaultSystemPipeline.ts` keeps both imports; doc 18
+  `last-reviewed`; this file kept both sides. Owner ruling DEC-280 (gate to gate, as built)
+  recorded in the decisions log (batch 2026-11-20), `balancing.md`'s `t` definition and table
+  changed to home gate → enemy gate, and DEC-280 cited in `MinionStrengthStep.ts`, `FlowField.ts`
+  and doc 18 (S1). Review nits: `FlowField.start` is required and `costAt` private (N1, N2); the
+  2% polyline agreement test also runs on the match grid with the map objects stamped, through a
+  `stampedWorld` helper the DEC-121 (d) test now shares (N3); docs 05 and 06 point to the
+  progress injection (N4).
+- Checks run: `npm run check` (Node 24.21.0) on the merge, every step through `docs:check`
+  passed: "All matched files use Prettier code style!"; core "Tests 1684 passed (1684)"; protocol
+  "Tests 29 passed (29)"; client "Tests 2011 passed (2011)"; server "Tests 84 passed (84)"; "✓
+  built in 483ms"; "Documentation check passed."
+- Next step: re-request review on PR #82.
