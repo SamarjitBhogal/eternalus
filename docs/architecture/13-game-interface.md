@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-14
+last-reviewed: 2026-11-20
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -150,7 +150,7 @@ show comes from content through the store (`contentSlice`, `matchSlice`), never 
 | `AboutScreen`                                                                                                                                                                                                               | `selectCredits` (generated from the manifest's `licence` and `source` fields)                                                                                                                                                                 | none                                                                                        | **MVP**                                                                           |
 | `CharacterSelectScreen` (the class step, then the Legend step, DEC-49, then the locked view after LOCK IN, DEC-60; the class step's layout by data, DEC-52; View Details over the class and Legend steps, DEC-103, DEC-109) | `contentSlice` (classes, Legends, layout), `matchSetupSlice` (team, allies, selection, lock, countdown), `selectAllyTiles`, `assetsSlice` (art URLs)                                                                                          | `select-class`, `clear-class-selection`, `confirm-selection`                                | **MVP** (DEC-49)                                                                  |
 | `MatchScreen`                                                                                                                                                                                                               | the open overlay and the bindings (`usePauseMenuKey`); renders the `viewport` prop (the only screen that does, so no `Match` exists outside `match`, DEC-50), the HUD and the pause overlay                                                   | `open-overlay`, `close-overlay`; `leave-match` (from the pause overlay), `forfeit`          | **MVP**                                                                           |
-| `ResultsScreen`                                                                                                                                                                                                             | `selectResultsView` (verdict, status line, rematch: a Duel the other player left is a victory, and says so; a rematch only after a local match), `selectMatchDurationText` (DEC-129), `selectCountdownSeconds('results')` (`matchSetupSlice`) | `continue` (DEC-78), `navigate`, `start-match` (rematch, after a local match)               | **MVP**                                                                           |
+| `ResultsScreen`                                                                                                                                                                                                             | `selectResultsView` (verdict, status line, rematch, countdown, and Duel score; a Duel the other player left is a victory; a Duel: no countdown), `selectMatchDurationText` (DEC-129), `selectCountdownSeconds('results')` (`matchSetupSlice`) | `continue` (DEC-78), `navigate`, `start-match` (rematch, after a local match)               | **MVP**                                                                           |
 
 | HUD element                                           | Source in the store                                                                        | Behaviour                                                                                                                                                                                                                                                       | Status                                      |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
@@ -664,7 +664,12 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   its end (DEC-92), because the server closes the connection. The scheduled version keeps the
   server stepping and sending the world for the delay, refuses commands, then closes; the client
   uses the local match's delay path, and the delay value has one home that both read. A Duel the
-  other player left still goes to `results` at once. In the browser nothing ends a local match yet: the sovereign (plan task GL-3) is not
+  other player left still goes to `results` at once. A Duel's `results` has no countdown: it stays
+  until the player leaves it (`hasResultsCountdown` in `bridge/matchSetupRules.ts`, read by
+  `ResultsState` and `selectResultsView`), and it names both players with the final kill score:
+  before `duel-ended` the session publishes the names again (`duel-versus`; the Duel's setup cleared
+  them) and the score from the server's last snapshot (`duel-state`), not the HUD's throttled one
+  (SCRUM-449). In the browser nothing ends a local match yet: the sovereign (plan task GL-3) is not
   built. A throw from a tick or a frame during a match stops `GameLoop`, which calls
   `LoopTarget.crashed` once;
   `Match` passes the error and the tick to the request's observer (`crashed`), and the running
