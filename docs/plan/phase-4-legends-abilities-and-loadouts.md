@@ -177,6 +177,7 @@ built for the slots content can fill (class and primary weapon): `validateLoadou
 violation, `autoBuildLoadout` validates for all three classes, and `EntityFactory` runs the
 validator at spawn (architecture 05 §18). The other slots wait for their content, so the box
 stays open.
+
 **Status (2026-10-16, PR #31, Claudio):** `Progression` + `ProgressionSystem` started early (S2,
 SCRUM-426): level curve and per-level health and aether from content, kill XP to the killer. Shared,
 assist, checkpoint, camp and boss XP and potency scaling remain, so the box stays open.

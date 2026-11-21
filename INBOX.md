@@ -24,9 +24,12 @@ Reply inline (`Decision: …`).
       the Loadout screen learns which classes were repaired. Two smaller departures from the
       05 §12 sketch: a `LoadoutProblem` names a `field` (`'class'` or a slot) instead of a
       `slot`, and `EntityFactory` reports a rejected spawn loadout through an
-      `onLoadoutRejected` hook that `Simulation` logs at WARN, not as a `GameEvents` event.
-      Keep these (then 14 §8 and 05 §12 are updated to match) or move the repair into the
-      repository?
+      `SpawnLoadoutPolicy` that `Simulation` logs at WARN, not as a `GameEvents` event. Also, to
+      let `EntityFactory` run the validator (05 §12) without `entities/` importing `loadout/` at
+      runtime, the policy is injected through a `LoadoutResolver` port and `entities/` imports
+      only loadout types; the branch added `loadout/` (types) to the `entities/` may-import row
+      of 02 §2 and `packages/core/AGENTS.md`. Keep these (then 14 §8 and 05 §12 are updated to
+      match) or move the repair into the repository?
 
 - [ ] **`IndexedDbStorageAdapter` test fake — approve `fake-indexeddb`?** Saved settings and
       loadouts still live in `MemoryStorageAdapter` and are lost on reload. Phase 5's adapter
