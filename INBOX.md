@@ -3021,6 +3021,14 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
   - Decision (sholtzman, chat, 2026-10-30, Call 5): "fix and get the fighting / proceeding
     working"; the critic ruled this rule better than the design. Built as MS-33 on
     `fix/minion-m1-review`; doc 18 §1 and §4 and the minion plan §3 updated.
+- [ ] **HC-B10 hook tests in `npm run check` (DEC-276 critic; better than the design, owner
+      approved 2026-11-19)** — Owner: sholtzman, a `chore/` harness PR after
+      `chore/stop-hook-changed-files` merges. Run `node --test scripts/**/*.test.mjs` (the hook
+      tests and `scripts/coderabbit/`) from `npm run check`, so CI runs them on Linux and Windows.
+      First make them pass on Windows: with `shell: true`, cmd.exe drops the quotes in the first
+      test of `scripts/hooks/hookInput.test.mjs`; the signal test is POSIX-only and skips itself
+      on Windows. Update the CI gate row in `docs/process/guardrails.md` and doc 16. Close this
+      item when its PR merges.
 
 ## Feedback
 

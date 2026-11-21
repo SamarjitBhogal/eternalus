@@ -9470,6 +9470,67 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Next step: push #143 (the coordinator); after #138 merges, retarget #143 to
   `phase/3-sprint-3-work`.
 
+### 2026-11-19 — Phase 3 / harness — chore/stop-hook-changed-files — Claude Code
+
+- What was done: the Stop hook now checks only changed files (DEC-276, owner "B: fix it"). New `scripts/hooks/changedFiles.mjs` (`git status --porcelain -z` parser and check planner) and `changedFiles.test.mjs` (`node --test`, like `scripts/coderabbit/`); `stop-check.mjs` skips on no lintable change, runs full `check:quick` on a lint/type config change, else no-JS + `tsc -b` + ESLint on the changed files; `run()` in `hookInput.mjs` reports `timedOut`, and a timeout exits 2 with its own message. Docs: 16, guardrails, tool-setup, decisions log.
+- Test break: removing `.mjs` from the lintable set turned "planChecks lints only the changed source files" red (pass 3, fail 1); restored, pass 4.
+- Checks run: `npm run check:quick` (2026-11-19, load average 44, took about 20 min) printed no findings after `> eslint --max-warnings 0 .`, exit 0; `node --test scripts/hooks/changedFiles.test.mjs` → pass 4, fail 0; `npm run docs:check` → "Documentation check passed."; prettier --check → "All matched files use Prettier code style!". Full `npm run check` did not complete under this load: CI is pending.
+- Next step: push; add `node --test scripts/hooks/changedFiles.test.mjs` to CI if wanted (not wired here).
+
+### 2026-11-20 — Phase 3 / harness: review fixes, phase/3 merges and full check — chore/stop-hook-changed-files — Claude Code
+
+- What was done: review round 2 (`architecture-reviewer` r2 APPROVE; `routing:critic` correctness HOLDS). `163127d3`: `run()` in `hookInput.mjs` kills the whole process tree on a timeout and on SIGINT, SIGTERM or SIGHUP. `8c5e4356`: the signal test cleans up after a red run. Merged phase/3 twice: `69d96685` (d85bc2f5: #126, #121, #120, #119) and `6e170a2c` (5a7cc8dc: #125); the conflicts were docs only (decisions log, PROGRESS).
+- Test break: the signal loop returning `[]` turned the signal test red (pass 2, fail 1) with no orphan process and no temp dir left; restored (shasum cee992e2), 8/8.
+- Checks run: `node --test scripts/hooks/changedFiles.test.mjs scripts/hooks/hookInput.test.mjs` → 8/8. Full `npm run check` on `6e170a2c` → exit 0: core 1674 tests, protocol 29, client 2011, server 84 passed; build passed; "Documentation check passed." (knip printed one configuration hint, `Remove from ignoreDependencies`, and passed).
+- Next step: push and open the PR against phase/3-sprint-3-work. B and `chore/progress-entry-files` share 8 files: the second to merge needs one more phase/3 merge.
+
+### 2026-11-21 — Phase 3 / harness: merge phase/3 (a3550159, #140) — chore/stop-hook-changed-files — PR-REVIEW-COORDINATION-11 (Claude Code)
+
+- What was done: merged phase/3-sprint-3-work `a3550159` (#140, DEC-289) into PR #135 so it can
+  merge again (GitHub showed CONFLICTING). The merge brings only #140's `INBOX.md`, decisions-log
+  and `Simulation.mapObjects.test.ts` changes plus its PROGRESS entry. Conflicts were add/add in
+  `docs/plan/PROGRESS.md` and the decisions log; both sides kept, phase/3 first, so the log stays
+  newest batch first (DEC-289's 2026-11-20 batch above DEC-276's 2026-11-19 batch);
+  `last-reviewed` takes 2026-11-20. No hook code changed.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added, at load
+  average 25 to 30 (`eternalus-agent-work/stop-hook-merge/check-merge-a3550159.log`): core
+  "Tests 1674 passed (1674)", protocol "Tests 29 passed (29)", client "Tests 2011 passed (2011)",
+  server "Tests 84 passed (84)", "Documentation check passed."; the two hook test files
+  (`changedFiles.test.mjs`, `hookInput.test.mjs`) under `node --test`: pass 8, fail 0; then
+  `prettier --check` and `npm run docs:check` with this entry.
+- Next step: the owner pushes the branch, then merges PR #135; `chore/progress-entry-files`
+  (#137) then needs one more phase/3 merge (it shares 8 files with #135).
+
+### 2026-11-21 — Phase 3 / harness: merge phase/3 (34954a45, #138) — chore/stop-hook-changed-files — PR-REVIEW-COORDINATION-13 (Claude Code)
+
+- What was done: merged phase/3-sprint-3-work `34954a45` (#138, the match-start countdown) into
+  PR #135 so it can merge again (GitHub showed CONFLICTING). Conflicts were add/add in
+  `docs/plan/PROGRESS.md` and the decisions log; both sides kept, phase/3 first (the countdown's
+  2026-11-19 batch above DEC-276's 2026-11-19 batch). No line of either side was lost (a line
+  multiset check: 0 missing against each parent). `last-reviewed` stays 2026-11-20 on both
+  sides. No hook code changed.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/stop-hook-merge/check-merge-34954a45.log`): core "Tests 1679 passed
+  (1679)", protocol "Tests 29 passed (29)", client "Tests 2076 passed (2076)", server "Tests 84
+  passed (84)", "Documentation check passed."; the two hook test files under `node --test`: pass
+  8, fail 0; then `prettier --check` and `npm run docs:check` with this entry.
+- Next step: the owner pushes the branch, then merges PR #135; `chore/progress-entry-files`
+  (#137) then needs one more phase/3 merge (it shares 8 files with #135).
+
+### 2026-11-21 — Phase 3 / harness: merge phase/3 (2a5058f7, #143) — chore/stop-hook-changed-files — PR-REVIEW-COORDINATION-13 (Claude Code)
+
+- What was done: #143 merged into phase/3 (`2a5058f7`) before the merge of `34954a45` above was
+  pushed, so phase/3 is merged once more. The one conflict was add/add in this file; both sides
+  kept, phase/3 first. No line of either side was lost (line multiset check: 0 missing against
+  each parent). The decisions log (DEC-312, DEC-316) and the rest merged without conflict. No hook
+  code changed.
+- Checks run: full `npm run check` exit 0 on the merged tree before this check line was filled in
+  (`eternalus-agent-work/stop-hook-merge/check-merge-2a5058f7.log`): core "Tests 1679 passed
+  (1679)", protocol "Tests 29 passed (29)", client "Tests 2077 passed (2077)", server "Tests 84
+  passed (84)", "Documentation check passed."; the two hook test files under `node --test`: pass
+  8, fail 0; then `prettier --check` and `npm run docs:check` with this entry.
+- Next step: the owner pushes the branch, then merges PR #135; then #137 needs a phase/3 merge.
+
 ### 2026-11-19 — Phase 3 / sprint 3 work: land DEC-38 and the DEC-11 weapon clarification — docs/land-dec-38 (from `af54fe96`) — sholtzman + Claude Code
 
 - What was done: the owner asked to land commit `f27a1a17` (2026-10-10, on
@@ -9525,3 +9586,17 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   The decisions log merged without a conflict; the DEC-11 and DEC-38 rows are unchanged.
 - Checks run: `npm run check` (2026-11-21) → exit 0: "All matched files use Prettier code style!"; core "Test Files 276 passed (276)", "Tests 1679 passed (1679)"; protocol "Tests 29 passed (29)"; client "Test Files 303 passed (303)", "Tests 2077 passed (2077)"; server "Test Files 21 passed (21)", "Tests 84 passed (84)"; "✓ built in 484ms"; "Documentation check passed."
 - Next step: push with the review reply; claudiodh re-reviews.
+
+### 2026-11-21 — Phase 3 / sprint 3 work: merge phase/3 (`54615afa`, #135) into docs/land-dec-38 (PR #133) — docs/land-dec-38 — sholtzman + Claude Code
+
+- What was done: #135 merged into phase/3 (`54615afa`) before the round-1 push. Merged it into the
+  branch. The only conflict was this file: phase/3's entries kept, the DEC-38 entries appended. No
+  line of either side was lost (line multiset check: 0 missing against each parent). The decisions
+  log merged without a conflict; the DEC-11 and DEC-38 rows are unchanged.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/cleanup-2026-11-19/check-133-merge-54615afa.log`): "All matched files use
+  Prettier code style!"; core "Tests 1679 passed (1679)"; protocol "Tests 29 passed (29)"; client
+  "Tests 2077 passed (2077)"; server "Tests 84 passed (84)"; "Documentation check passed."; then
+  `prettier --check` and `npm run docs:check` with this entry.
+- Next step: push with the review reply; claudiodh re-reviews. After #137 (DEC-277) merges, one
+  more phase/3 merge moves these entries into `docs/plan/progress/`.
