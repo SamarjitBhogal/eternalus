@@ -31,7 +31,10 @@ Reply inline (`Decision: …`).
       (`cap-exceeded`, `not-a-legend`, `no-stronghold`) still reach only the log: the bridge has
       no diagnostic event. (g) Adding or removing the human Legend and sim mode
       (`dev-set-controller`, FR-099) stay for slice 3.
-      Decision:
+      Decision: DEC-293 (2026-11-20, Owner Calls page) answers (a) and (b): "Small spawn, plus
+      `dev-remove-legend` that refuses the human outside sim mode". Built in PR #109: the spawn
+      stays `{ team, definitionId }`; `dev-remove-legend { entityId }` refuses the human's Legend
+      outside sim mode (`human-legend`). (c) to (g) stay open.
 - [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu`) — developer menu, slice 1 built;
       the rest needs owner and core work.** Built: `?dev=1` enables the menu, F1
       (`toggle-developer-menu`) opens it, and it spawns a horde of lane minions at a map structure

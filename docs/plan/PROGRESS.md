@@ -9333,3 +9333,14 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   and S4 (CI approval) left open.
 - Checks run: `npm run check:quick` → exit 0; the touched core and client test files pass.
 - Next step: `npm run check`, then the stack merge into #109 and #112; reviewer re-review.
+
+### 2026-11-20 — Phase 3 / sprint 3 review fixes — feat/developer-menu-legends (PR #109) — claudiodh + Claude Code
+
+- What was done: swholtzman's review of 2026-11-19 and the owner ruling DEC-293 ("Small spawn,
+  plus `dev-remove-legend` that refuses the human outside sim mode"). `dev-spawn-legend` stays
+  `{ team, definitionId }`; `dev-remove-legend { entityId }` refuses a non-Legend and the human's
+  Legend outside sim mode (`0bf35c03`). This session: the DEC-293 row, 13 §4 and `mechanics-ideas`
+  §9 rows, the 03 and 13 status notes, the INBOX `Decision:` line. **FR-097 is partial**: refusals
+  reach only the log, and the removal cause is `dev-removed`, not `developer-menu` (INBOX (c), (f)).
+- Checks run: `npm run check` (result in the PR comment).
+- Next step: merge into `feat/developer-menu-sim-mode` (#112); reviewer re-review.

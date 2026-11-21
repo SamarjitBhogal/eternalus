@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-20
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -474,6 +474,8 @@ each closed by the session or phase named:
   `throw`, `interact` and `dev-set-assert-level` are not in the union yet.
 - `dev-spawn-legend` (2026-11-13) is built as `{ team, definitionId }` (a bot Legend at the
   Stronghold, Rover controller); it is in `Command.types.ts`; the union listing below does not show it yet.
+  `dev-remove-legend { entityId }` (2026-11-20, DEC-293) removes a Legend through
+  `DevRemoveEntityHandler`, which refuses a Legend in a human seat (`human-legend`).
 - `dev-spawn` and `dev-remove-entity` spawn and remove directly and emit `entity-spawned` /
   `entity-removed` themselves until `SpawnSystem` / `DeathSystem` exist (session C).
 - `GameState.snapshot()` builds the snapshot, each entity through `EntitySnapshotter`, until
