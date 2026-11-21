@@ -1,4 +1,5 @@
 import { Aether } from '../components/Aether';
+import { AuraEmitter } from '../components/AuraEmitter';
 import { Capturable } from '../components/Capturable';
 import { Health } from '../components/Health';
 import { MapObjectBody } from '../components/MapObjectBody';
@@ -35,6 +36,7 @@ export class EntitySnapshotter {
     const progression = entity.findComponent(Progression);
     const aether = entity.findComponent(Aether);
     const capture = entity.findComponent(Capturable);
+    const aura = entity.findComponent(AuraEmitter);
     return {
       id: entity.id,
       kind: entity.kind,
@@ -45,6 +47,7 @@ export class EntitySnapshotter {
         : { mapObjectId: entity.getComponent(MapObjectBody).object.id }),
       ...(entity instanceof Structure &&
         entity.mapFeatureId !== null && { mapFeatureId: entity.mapFeatureId }),
+      ...(aura === undefined ? {} : { auraRadius: aura.radius }),
       team: entity.findComponent(TeamMembership)?.team ?? null,
       transform:
         transform === undefined

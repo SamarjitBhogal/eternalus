@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-21
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -428,6 +428,18 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   `WorldMap`; the main view draws a lane tower's kind marker through `StructureView` (DEC-315) and the other structures from the map layer.
   Minion plan M6 adds `Camp` (forest camps, rule `never`, circle radius 1 `TUNE`, since camp
   features have no footprint); its group is a guard plan (18 §7.1), not a `Spawner` component yet.
+- **BuffTower aura (`feat/map-work-views`, DEC-315 (4), 2026-11-21).** A `StructureDefinition`
+  may carry `aura` (`radius`, `allyStatusId`, `enemyStatusId`); only `buff-tower` has one, radius
+  12 (`TUNE`, balancing.md 12 m). `StructureAuraSystem` (after `VeterancySystem`) runs every
+  `STRUCTURE_AURA_CADENCE.everySeconds` (loaded to ticks by `loadStructureAuraCadence`): each
+  living structure with an aura gives `tower-aura-buff` (allies deal +10 %) to units of its team
+  and `tower-aura-debuff` (enemies deal -10 % and take +10 %) to units of the other playable team
+  inside the radius, through the match's one `StatusEffectApplier`. Neutral camp mobs and bosses
+  are neither side and get nothing. A unit that was inside on the last pass and is not now, or
+  whose tower fell, has the status removed at once (`remove`; the one-second duration is the
+  backstop). Not built: a max-health change and a Stronghold aura (DEC-315 (4)). The `AuraEmitter`
+  component, added from the definition, puts `EntitySnapshot.auraRadius` in the snapshot, and
+  `StructureView` draws a faint ring of that radius in the team colour while the tower stands.
 - **Minion follow-ups (`fix/minion-stack-followups`, 2026-11-05).** Lane towers and the
   Stronghold also carry a `Footprint` component: the polygons of their map object of the same id
   (a tower's fort, the Stronghold's palace outline), which `Simulation` copies for a definition

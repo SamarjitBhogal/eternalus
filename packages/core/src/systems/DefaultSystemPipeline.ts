@@ -35,10 +35,12 @@ import { SpaceSystem } from './SpaceSystem';
 import { SpawnSystem } from './SpawnSystem';
 import { StructureSystem } from './StructureSystem';
 import { StuckSystem } from './StuckSystem';
+import { StructureAuraSystem } from './StructureAuraSystem';
 import { VeterancySystem } from './VeterancySystem';
 import { loadMinionVeterancy } from '../content/mobs/loadMinionVeterancy';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { ZONE_LOCKING_MOBS } from '../content/zones/zoneLocks';
+import { loadStructureAuraCadence } from '../content/structures/loadStructureAuraCadence';
 import { loadGuardPlans } from '../content/structures/loadGuardPlans';
 import { StatusEffectSystem } from './StatusEffectSystem';
 import { SystemPipeline } from './SystemPipeline';
@@ -47,7 +49,7 @@ import { SystemPipeline } from './SystemPipeline';
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
  * progress, statuses, movement, collision (DEC-121 (c): every later reader sees resolved
  * positions), the neighbour index, stuck detection (DEC-193), steering, combat, map destruction,
- * progression (kill XP), minion veterancy, structure losses and breakability, spawning, enraging,
+ * progression (kill XP), minion veterancy, structure auras (DEC-315), structure losses and breakability, spawning, enraging,
  * out-of-combat healing (DEC-188), death, capture points, the match director, then invariants
  * last. Combat runs after movement, so a unit with a target in reach faces it, not its own way
  * (DEC-192). This is the one place a system is added, at its position in the tick (architecture
@@ -111,6 +113,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
       new ProgressionSystem(state, progression),
       new VeterancySystem(state, statuses, progression.units, loadMinionVeterancy(tickRate)),
+      new StructureAuraSystem(statuses, structures, loadStructureAuraCadence(tickRate)),
       new StructureSystem(structures),
       ...(hordes === undefined
         ? []

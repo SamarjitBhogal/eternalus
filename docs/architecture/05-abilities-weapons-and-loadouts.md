@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-12
+last-reviewed: 2026-11-21
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -524,6 +524,10 @@ and `expire`, called by `StatusEffectSystem`, removes the timed-out ones, both w
 one applier, next to the one `DamagePipeline`, so later producers (turret concussion 2.3, gate
 fire 2.4, enraged 3.3) receive it there. Minion plan M5b adds `veteran` and `rallied` (minion XP,
 MS-16, `balancing.md`), applied by `VeterancySystem`.
+The BuffTower aura (DEC-315 (4)) adds `tower-aura-buff` (`damageDealt` ×1.1) and
+`tower-aura-debuff` (`damageDealt` ×0.9, `damageTaken` ×1.1), both `refresh`, one second, applied
+and ended through the same applier by `StructureAuraSystem` (07 §13); `StatusModifierStep` reads
+them like any other, so no damage step was added.
 `periodic.effects` are `StatusTickSpec`s shaped like `AbilityEffectSpec`, run by `StatusTickEffect`
 strategies (`combat/defaultStatusTickEffects.ts`, `DamageStatusTick`) until the `AbilityRegistry`
 lands; their damage goes through the match's one `DamagePipeline` with `kind: 'status'`, crediting

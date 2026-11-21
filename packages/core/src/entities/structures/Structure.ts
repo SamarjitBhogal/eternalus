@@ -1,3 +1,4 @@
+import { AuraEmitter } from '../../components/AuraEmitter';
 import { Collider } from '../../components/Collider';
 import { Health } from '../../components/Health';
 import { TeamMembership } from '../../components/TeamMembership';
@@ -72,5 +73,8 @@ export abstract class Structure extends Entity {
     // Walls and gates start the match unbreakable; `StructureSystem` flips it when the rule passes.
     collider.setUnbreakable(definition.breakability.kind !== 'always');
     this.addComponent(collider);
+    if (definition.aura !== undefined) {
+      this.addComponent(new AuraEmitter(definition.aura.radius));
+    }
   }
 }
