@@ -221,6 +221,15 @@ Reply inline (`Decision: …`).
       as `loadGuardPlans` does.
       Build both in PR #125, build them in a later PR, or keep the code as it is?
 
+- [ ] **HC-B23 — Better than the design, built under your standing rule, sign-off asked: map-work
+      critic round 2 (`feat/map-work-forts-towers`, 2026-11-21); no decision blocks the PR.**
+      Recorded as DEC-320 (owner decisions log). (1) A fallen lane tower's banner goes with its
+      own fort object, which is destroyed when the tower falls, so one rule hides all of a fallen
+      tower's art; the separate banner flag and its 2 tests are removed with that code. (2) `Match`
+      feeds each snapshot to the one fallen-structure rule (`RetiredFeatures`); the HUD bridge only
+      reads it. (3) Each fort wall carries a typed role, and the lane corridors pick a fort's wall
+      bands by that role, not by reading wall ids. Approve, or say which to undo.
+
 - [ ] **HC-B21 — Better than the design, built under your standing rule, sign-off asked: map-work
       critic round 1 (`feat/map-work-forts-towers`, 2026-11-21); no decision blocks the PR.**
       Recorded as DEC-318 (owner decisions log). (1) One `Aura` component holds a structure's
@@ -228,7 +237,10 @@ Reply inline (`Decision: …`).
       (2) The aura system keeps no state: each pass ends the aura statuses that no living tower
       covers now, unit by unit in store order. (3) One client rule finds a fallen structure
       (`RetiredFeatures`, fed by `MatchBridge`). (4) Map generation moves camps clear of the lane
-      forts, so a camp keeps all its pieces. (5) A building's interior is built once, and the lane
+      forts, so a camp keeps all its pieces. A camp that moves can change its weight class (its
+      class follows its new depth, DISC-42): 6 of 256 camps in 8 seeds on 3 and 5 lanes, all on
+      5-lane maps; card `camp-class-after-move` asks which position the class follows. (5) A
+      building's interior is built once, and the lane
       corridors read a fort's wall bands from its wall objects. (6) The tower-exit test checks the
       first tick at which every horde member is out. Approve, or say which to undo.
 

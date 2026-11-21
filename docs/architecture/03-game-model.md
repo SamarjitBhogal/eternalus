@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-14
+last-reviewed: 2026-11-21
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -481,7 +481,8 @@ each closed by the session or phase named:
   (`x`, `y`, `radius`, `facing`), `health` (`current`, `max`), `progression` (a Legend's `level`,
   the `xp` inside that level and its `xpToNext`, `null` at the cap; `snapshot(curves)` takes the
   level curves `ProgressionSystem` uses), `aether` (a Legend's `current` and `max` aether, DEC-230),
-  `area` (a zone's polygons) and `capture` (a capture point's state and presence) groups only.
+  `area` (a zone's polygons), `capture` (a capture point's state and presence) and `aura` (a
+  structure's aura `radius`, `null` without an `Aura`, DEC-315 (4)) groups only.
   `MatchPhase` lives in `config/matchPhases.ts`; the match director is built (12 §13).
 - `GameState.world` is a `MatchWorld` (the generated definition, its lane `routes` and the
   `WorldMap` grid, stamped and reopened by `map/MatchGrid`, which the composition root builds, so

@@ -9862,3 +9862,32 @@ docs:check` pass on this entry.
 - Next step: critic round 2 and ponytail on the delta from `3e9f7c9d`; the owner rules on the
   Owner Calls cards (fort-map-sizes, bot-defend-tower, aura-radius-origin, inside-bonus-scope)
   and on HC-B21.
+
+### 2026-11-21 — Phase 3 / map work: critic round 2 fixes — feat/map-work-forts-towers — sholtzman + Claude Code
+
+- What was done: critic round 2 (approve, 0 blockers) fixes on the delta from `3e9f7c9d`. Its three
+  better-than-design items are built (DEC-320, `INBOX.md` HC-B23): a fallen lane tower's banner
+  falls with its own fort object, so `MapDecoration.flagOf`, `flagLastOf` and `SceneryView`'s
+  `isRetired` check go, with their 2 tests (`SceneryView` "hides a fallen structure's banner and
+  keeps the rest of its fort"; `MapPresentationBuilder` "tags a structure fort banner as that
+  structure flag, and a capture point banner as no flag"); `Match` feeds `RetiredFeatures` and
+  `MatchBridge` only reads it; fort walls carry a typed role (`MapObject.fortWall`) that
+  `fortWallBands` reads. Also: `radiusOf` throws for an obstacle choice that is no feature
+  definition (R2-N6), `notOutNow` reads `Transform` (R2-N3), a test ties the camp art to
+  `CAMP_HALF_EXTENT` (R2-N2), ponytail r2 cuts 1, 2 and 4. Fail-first (R2-S2,
+  `eternalus-agent-work/dec-288/aura-breaks.log`): 8 breaks of the aura code each turned its
+  tests red (sources read from the neighbour index; dead sources kept; no removal; every status
+  stripped; covered aura statuses stripped; an unknown status id in the catalogue; any radius
+  accepted; no aura system in the pipeline), and 2 breaks turned the camp-extent test red (tents 1
+  unit wider apart; extent y 18 → 17); all green on restore. Docs: 06 §3 step 5 and a dated §10
+  section on fallen lane towers (R2-S1, R2-N4, R2-N5), the 03 `aura` group (R2-N7), the camp class
+  effect in DEC-318 (BTD4) and HC-B21 (4) (R2-S3), BUG-8 wording. Golden hash unchanged.
+- Checks run: full `npm run check` exit 1 (`eternalus-agent-work/dec-288/check-9.log`): format,
+  no-js, lint, typecheck and knip pass; core "Tests 2 failed | 1802 passed (1804)" (the same two:
+  "keeps every lane tower fort apart with 3 towers of each kind per lane" and "heals a bot that
+  retreated hurt back to the rejoin line, and it fights again"), protocol "Tests 29 passed (29)",
+  client "Tests 2024 passed (2024)", server "Tests 84 passed (84)"; build not reached. Run apart:
+  `npm run build` exit 0, `npm run docs:check` → "Documentation check passed.".
+- Next step: critic round 3 (the last loop) on `aa3c117a..HEAD`; the owner rules on the Owner
+  Calls cards (fort-map-sizes, bot-defend-tower, aura-radius-origin, inside-bonus-scope,
+  camp-class-after-move) and on HC-B21 and HC-B23.

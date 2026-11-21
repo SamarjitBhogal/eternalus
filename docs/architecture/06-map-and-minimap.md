@@ -147,7 +147,8 @@ flowchart LR
    follows its depth into the Unknown, lighter near a lane and heavier deeper (DISC-42).
    `cornerCamps` `corner-camp` features go in the map corners (MVP-if-time). A camp that would
    touch a lane tower fort or its clearance steps the shortest way clear of it
-   (`clearCampOfForts`), so the camp keeps all its pieces.
+   (`clearCampOfForts`), so the camp keeps all its pieces when a step can clear it; a camp that no
+   step can clear keeps its place and loses the pieces that would stand in a fort.
 6. **placeCapturePoints**: one `capture-point` at `t = 0.5` of each lane; the middle lane's is
    emitted as `cathedral`.
 7. **carveRiftAndBounds**: the rift runs along the symmetry axis, centred on it (a preset may vary
@@ -653,17 +654,20 @@ suppresses the main view's plain feature marker; explicit object ownership remov
 panel artwork when its wall segment dies. The minimap retains its generated feature markers.
 All decoration stays in the existing render layers and adds no new shield-immunity mechanic.
 
-Lane towers (DEC-315): the main view marks a standing tower through `StructureView`, which draws its
-kind's marker (`STRUCTURE_MARKERS`, a square for a SpawnerTower and a diamond for a BuffTower) in
-the team colour on the entity layer, above the fort's court, so the two look different. The map
-layer's style for those kinds is `entity`: `MapView` draws no glyph. A fallen structure has no
-entity, so no marker. `MapDecoration.flagOf` names a structure whose banner a piece is: `SceneryView`
-hides it once `RetiredFeatures` (read from the snapshots: a `mapFeatureId` seen standing and now
-gone) reports the structure fallen, while the rest of the fort stays as its ruins (07 §8). `MapView`
-also drops the feature of every fallen structure, not only a tower: a fallen gate, wall segment,
-turret or Stronghold loses its main-view marker or footprint fill and its minimap glyph, so the
-visuals match the logic (DEC-315 (5)). A fallen structure's map object is never destroyed, so
-`WorldObjectStore.removed` is unchanged.
+### 2026-11-21 — Lane tower markers and fallen structures (DEC-315, DEC-318)
+
+The main view marks a standing lane tower through `StructureView`, which draws its kind's marker
+(`STRUCTURE_MARKERS`, a square for a SpawnerTower and a diamond for a BuffTower) in the team colour
+on the entity layer, above the fort's court, so the two look different. The map layer's style for
+those kinds is `entity`: `MapView` draws no glyph. A fallen structure has no entity, so no marker.
+A lane tower's own fort object (its court, keep and banner art) falls with it: `StructureRuins`
+destroys that object, so its art goes through `isDestroyed` like that of any destroyed map object,
+and the fort's remaining wall pieces stand as its ruins (DEC-217 (12), 07 §13). `MapView` also drops
+the feature of every fallen structure, not only a tower (`isGone`), so the visuals match the logic
+(DEC-315 (5)): a fallen gate or Stronghold, whose feature is not a destroyed map object, through
+`RetiredFeatures` (a `mapFeatureId` seen standing in the snapshots and now gone); a fallen wall
+segment or turret, which has no structure entity, through its map object's `isDestroyed`. Each
+loses its main-view marker or footprint fill and its minimap glyph.
 
 ## Related
 
