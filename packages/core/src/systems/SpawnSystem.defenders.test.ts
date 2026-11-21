@@ -167,6 +167,18 @@ describe('SpawnSystem', () => {
       expect(new Set(ids).size).toBe(ids.length);
     });
 
+    it('defends for the owner when the checkpoint was reached, even if the same pass took the point (DEC-257)', () => {
+      const { state, step, reach, changeOwner, posts } = setUp('dark');
+      reach(1);
+      changeOwner('light');
+      step();
+      expect(posts()).not.toHaveLength(0);
+      for (const { team, guardId } of posts()) {
+        expect(team).toBe('dark');
+        expect(state.entities.teamOf(guardId ?? '')).toBe('dark');
+      }
+    });
+
     it('adds nothing for a push with no Legend on the zone, such as a passing horde (DEC-259)', () => {
       const { state, step, reach } = setUp('neutral');
       reach(1, []);

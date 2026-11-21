@@ -1,3 +1,4 @@
+import { Capturable } from '../components/Capturable';
 import { Deploying } from '../components/Deploying';
 import { Transform } from '../components/Transform';
 import { ContentValidationError } from '../content/ContentValidationError';
@@ -100,10 +101,12 @@ export class SpawnSystem implements System {
     this.guards = new GuardRoster(factory, plan.definitions, plan.guards, plan.defenders);
     this.guards.layOut(state);
     // Queued for this system's pass (03 §4). DEC-259: only a push with a Legend on the zone wakes
-    // the defenders, so passing hordes do not.
+    // the defenders, so passing hordes do not. The owner is read now: the same capture pass may
+    // complete the capture after this event, and the defenders are the old owner's (DEC-257).
     state.events.on('checkpoint-reached', ({ pointId, checkpoint, presentLegendIds }) => {
-      if (presentLegendIds.length > 0) {
-        this.checkpointsReached.push({ pointId, checkpoint });
+      const owner = state.entities.get(pointId)?.findComponent(Capturable)?.owner;
+      if (presentLegendIds.length > 0 && owner !== undefined) {
+        this.checkpointsReached.push({ pointId, checkpoint, owner });
       }
     });
   }
@@ -167,8 +170,8 @@ export class SpawnSystem implements System {
     for (const request of [...opening, ...this.dueWaves(state)]) {
       this.spawnHorde(state, routes, request);
     }
-    for (const { pointId, checkpoint } of this.checkpointsReached.splice(0)) {
-      this.guards.defend(state, pointId, checkpoint);
+    for (const { pointId, checkpoint, owner } of this.checkpointsReached.splice(0)) {
+      this.guards.defend(state, pointId, checkpoint, owner);
     }
     this.guards.update(state);
   }

@@ -1,4 +1,3 @@
-import { Capturable } from '../components/Capturable';
 import { Health } from '../components/Health';
 import { Transform } from '../components/Transform';
 import type {
@@ -14,6 +13,7 @@ import { Zone } from '../entities/Zone';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { GuardSlot } from '../state/GuardStore.types';
+import type { Team } from '../teams/teams.types';
 import { guardOutward } from '../state/guardOutward';
 import { compareById } from '../utils/compareById';
 import { cos, sin } from '../utils/deterministicMath';
@@ -99,27 +99,21 @@ export class GuardRoster {
 
   /**
    * Adds the posts of `checkpoint`'s defenders around capture point `pointId` (07 §7, 18 §7.1),
-   * filled on this pass, for the team that owns the point now (`neutral` while no team does,
-   * DEC-257). The leash is the zone's reach from its centre (DEC-257). The posts never refill and
+   * filled on this pass, for `team`: the point's owner when the checkpoint was reached (`neutral`
+   * while no team did, DEC-257). The leash is the zone's reach from its centre (DEC-257). The posts never refill and
    * outlive an owner change (DEC-261). A checkpoint with no defender row adds nothing. Post ids
    * carry the tick, as a checkpoint can be reached again.
    */
-  public defend(state: GameState, pointId: EntityId, checkpoint: number): void {
+  public defend(state: GameState, pointId: EntityId, checkpoint: number, team: Team): void {
     const plan = this.defenders[checkpoint];
     const home = state.entities.get(pointId);
     const transform = home?.findComponent(Transform);
-    const capturable = home?.findComponent(Capturable);
-    if (
-      plan === undefined ||
-      home === undefined ||
-      transform === undefined ||
-      capturable === undefined
-    ) {
+    if (plan === undefined || home === undefined || transform === undefined) {
       return;
     }
     this.addPosts(state, {
       home,
-      team: capturable.owner,
+      team,
       table: plan.table,
       ring: plan.postGap,
       homeRadius: 0,
