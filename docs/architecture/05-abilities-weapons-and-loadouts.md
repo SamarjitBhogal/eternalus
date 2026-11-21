@@ -669,10 +669,14 @@ A shot flies straight from the attacker's centre until it hits an enemy body or 
 its `ProjectileDefinition.range` (metres from the origin). It passes through allies, as the
 Hamstring blade does (DEC-269). A walk-on outline (a palace floor, a gate's passage) is ground units
 stand on, so a shot flies over it unless it was fired at that entity (DEC-314). A body that takes no
-damage now (its collider is unbreakable: a forest camp, a gate before its breakability rule passes)
-also lets a shot pass unless the shot was fired at it (DEC-317). `CombatSystem` fires a ranged
-attack only when its target has a clear line of fire (`LineOfFire`, DEC-317); else the unit faces
-the target and waits, and its controller moves it (a bot goes round, DEC-193). At its range it stops
+damage now (its collider is unbreakable) also lets a shot pass unless the shot was fired at it
+(DEC-317); in today's content that changes only the forest camps, because the other such bodies are
+walk-on or stand in a wall that stops the shot. `CombatSystem` fires a ranged attack only when its
+target has a clear line of fire (`LineOfFire`, DEC-317: the shot touches it within its `range` and
+before a wall); else the unit faces the target and waits, and its controller moves it (a bot goes
+round, DEC-193). A shot that touches its target and another body at the same point hits its target:
+at a Stronghold, the palace wall on the edge of its floor does not take a shot fired at the
+Stronghold (DEC-317 (8)). At its range it stops
 and ends: it hits nothing and stays for its `endDuration` (a bolt's mist fading, an arrow lying on
 the ground), then it is removed. `slowFrom` (at most `range`) is where the shot starts to ease to
 that stop; equal to `range`, the shot flies at full speed to the end. Its damage drops in a straight

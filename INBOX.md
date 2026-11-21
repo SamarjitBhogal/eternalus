@@ -605,8 +605,9 @@ Reply inline (`Decision: …`).
       that PR 2 replaces (scheduled, phase 4 sprint 4.4): the player fires only at a target under
       the cursor, not along the aim (DEC-184).
 - [ ] **HC-B20 — Better than the design, built under your standing rule (DEC-223), sign-off
-      asked: five more parts of the ranged attacks (`feat/ranged-attacks`, PR 1 critic round 2,
-      2026-11-20; COMBAT-WEAPONS-ABILITIES-44).** Built and tested; recorded as DEC-317. Nothing
+      asked: eight more parts of the ranged attacks (`feat/ranged-attacks`, PR 1 critic rounds 2
+      and 3, 2026-11-20/21; COMBAT-WEAPONS-ABILITIES-44 to -46).** Built and tested; recorded as
+      DEC-317. Nothing
       waits on you; name a part to change it. (1) One line-of-fire check tells whether a shot
       would reach its target now; bots and the combat system both use it, and it uses the same
       contact rule that lands shots, so a fort that is also its own wall reads clear. (2) One
@@ -614,11 +615,26 @@ Reply inline (`Decision: …`).
       attack mode it does not have (for example melee on a bow-only unit) refuses the command and
       changes nothing, with no quiet fallback to the basic attack. (4) A unit fires a ranged
       attack only with a clear line, every unit, the player's too (option A); without one it
-      faces the target and waits while its controller moves it. Not chosen: (B) bots only, which
-      needs a hold-fire command, or (C) leave shots going into walls and schedule the fix.
-      (5) A body that takes no damage now (a forest camp, a gate before its breakability rule
-      passes) stops only a shot fired at it, as a walk-on floor does; other shots fly on.
-      Alternative: only structures that can never be broken let shots pass.
+      faces the target and waits while its controller moves it. Your own Legend too: with its
+      target behind a wall it turns to the target and does not shoot, with no on-screen cue,
+      until you move it to a clear line. Not chosen: (B) bots only, which needs a hold-fire
+      command, or (C) leave shots going into walls and schedule the fix. (5) A body that takes
+      no damage now stops only a shot fired at it, as a walk-on floor does; other shots fly on.
+      Today this changes only the forest camps: the other such bodies are walk-on or stand in a
+      wall that stops the shot anyway. Alternative: only structures that can never be broken
+      let shots pass. Added by critic round 3: (6) the "a body just before the wall takes the
+      hit" test is one function, which landing and the line-of-fire check both call; (7) every
+      attack that fires a projectile gets the line-of-fire check and the content check, not
+      only today's ranged strategy; (8) at a Stronghold, each palace wall's outer face lies on
+      the edge of the palace floor. A shot fired at the Stronghold that touches the wall and the
+      floor at the same point hits the Stronghold, not the wall, as a hit on a fort wall counts
+      for its tower (DEC-185). Before, rounding picked one of the two, and a unit could spend
+      about 45 s of shots breaking the wall. Alternative: the line-of-fire check reads such a
+      wall as in the way, and the unit moves elsewhere or attacks the wall. Not built (reasons
+      in the PR body): the ending look as core
+      content data (BTD-B), one shared intent rule for the client and the Duel server (BTD-E),
+      one reusable "first source with the id" definition lookup for `Simulation` and about ten
+      tests (BTD-H).
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays

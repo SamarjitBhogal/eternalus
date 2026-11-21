@@ -342,11 +342,14 @@ runs from the previous to the current position. It finds the earliest contact wi
 body (`physics/sweepDisc` for circles, `sweepCircle` for outlines) and with a wall or the map edge
 (`state.collisions.reach`). A body up to `BODY_BEFORE_WALL_MARGIN`
 (`state/CollisionQuery.constants.ts`, which `LineOfFire` predicts shots by too) past where `reach`
-stops takes the hit (`reach` already stops `CONTACT_EPSILON` short of the wall). Bodies are
-gathered once a tick, in store order, and each move tests a body's box before its exact shape (the
-broad phase); a body
-spawned during the tick is seen from the next tick. A walk-on outline (a palace floor, a gate's
-passage: `Footprint.isWalkOn`, `MapObjectBody.isWalkOn`) is hit only by a shot fired at its entity.
+stops takes the hit (`reach` already stops `CONTACT_EPSILON` short of the wall;
+`state/isTouchedBeforeWall`, DEC-317 (6)). Two bodies touched at once go to the first in store
+order, but the shot's target takes a tie within the same margin, so a palace wall whose face is the
+Stronghold's edge does not take a shot fired at the Stronghold (DEC-317 (8)). Bodies are gathered
+once a tick, in store order, and each move tests a body's box before its exact shape (the broad
+phase); a body spawned during the tick is seen from the next tick. A walk-on outline (a palace
+floor, a gate's passage: `Footprint.isWalkOn`, `MapObjectBody.isWalkOn`) and a body whose
+collider is unbreakable (DEC-317 (5)) are hit only by a shot fired at their entity.
 `CollisionSystem` skips the `projectile` layer. A shot with nothing in its path is slowed by
 `Movement.limitSpeed` (`physics/flightSpeed`, from `slowFrom`) so it stops exactly at its `range`;
 it then ends and hits nothing until it is removed (`ProjectileFlight`, DEC-306).

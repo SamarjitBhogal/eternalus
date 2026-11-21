@@ -9878,3 +9878,27 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   red under a deliberate break first (`eternalus-agent-work/abilities/pr1-breaks.log`, r2 sections).
 - Next step: gate round 3 (last loop) on the round-2 delta, then the push and
   `gh pr create --base feat/vanguard-kit` for the owner.
+
+### 2026-11-21 — Phase 4 / combat lane A, PR 1 gate round 3: critic fixes, DEC-317 (6)-(8) — feat/ranged-attacks — sholtzman + Claude Code
+
+- What was done: fixed the round-3 findings of the pre-PR gate, the last loop (reports in
+  `eternalus-agent-work/abilities/pr1-gate/r3-*.md`: architecture pass with 12 nits, ponytail
+  pass, correctness 2 findings). Core: `state/isTouchedBeforeWall` is the one "body before the
+  wall" rule, which `ProjectileSystem` and `LineOfFire` both call (BTD-F, DEC-317 (6)). An attack
+  needs a line, and `KnownProjectileRule` checks it, when it has `projectile` (BTD-G, DEC-317 (7)).
+  `ProjectileSystem.firstBody` gives the shot's target a tie within the margin, so a palace wall
+  on the Stronghold floor's edge no longer takes a shot fired at the Stronghold (correctness
+  finding 1, DEC-317 (8)). `LineOfFire` reads a target past the shot's `range` as not clear
+  (R3-N5) and reads the target's radius with `getComponent` (finding 2). R3-N1, N9, N10, N11 and
+  the ponytail nit. Records: DEC-317 (6)-(8) and `INBOX.md` HC-B20 (4)-(8) and "Not built"
+  (BTD-B, BTD-E, BTD-H). Design text: 02 §2, 05 §10, 10 §12, 17 §1 and R27.
+- Not built: BTD-H (one shared definition lookup for `Simulation` and about 10 tests; it rewrites
+  test files outside this PR). No fourth critic loop (owner limit 3). The critic's own probes
+  were run again on the fix instead: 0 disagreements at all 10 structures of each team (was 114
+  and 205), 10 of 10 bolts on the Stronghold (was on palace wall `entity-782`).
+- Checks run: one full `npm run check` (2026-11-21 01:01:11 to 01:09:32 MST) exit 0: format,
+  no-js, lint, typecheck, knip, `test:coverage` (core 346 files / 2175 tests, protocol 1 / 31,
+  client 309 / 2136, server 21 / 85), build, `Documentation check passed.` Log
+  `eternalus-agent-work/abilities/pr1-gate/r4-pre-check.log`. Each new or changed test was seen red
+  first or under a deliberate break (`pr1-breaks.log`, Round 3).
+- Next step: the owner pushes `feat/ranged-attacks` and opens the PR on `feat/vanguard-kit`.

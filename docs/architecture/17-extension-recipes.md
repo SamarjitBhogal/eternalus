@@ -62,7 +62,7 @@ R14 "new view" and R16 "new command".
 | -------------------------------------------------------------- | ----------------------------------------- | ------------- |
 | [`new-entity`](../../.claude/skills/new-entity/SKILL.md)       | R1–R7, R14                                | 04, 06, 07    |
 | [`new-content`](../../.claude/skills/new-content/SKILL.md)     | R2, R3, R6, R15, R26 (display names)      | 03 §10, 04 §5 |
-| [`new-ability`](../../.claude/skills/new-ability/SKILL.md)     | R8, R9, R10                               | 05            |
+| [`new-ability`](../../.claude/skills/new-ability/SKILL.md)     | R8, R9, R10, R27                          | 05            |
 | [`new-system`](../../.claude/skills/new-system/SKILL.md)       | R11, R12, R13, R16, R17, R18, R23         | 03, 04, 11    |
 | [`new-screen`](../../.claude/skills/new-screen/SKILL.md)       | R19, R20, R21, R24                        | 09, 13        |
 | [`pr-review`](../../.claude/skills/pr-review/SKILL.md)         | asks "what else changed?" of every recipe | checklists    |
@@ -273,10 +273,12 @@ AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `
   `projectileCatalogue.ts`. A client ending look for it in
   `apps/client/src/game/views/ProjectileView.constants.ts` (`PROJECTILE_ENDING_LOOKS`); the view
   throws on an id with no entry. An impact kind: one entry in `ProjectileImpactDataByKind`
-  (`core/components/ProjectilePayload.types.ts`) and one class
-  `core/<folder>/<Name>Impact.ts` that implements `ProjectileImpact<'<kind>'>`
-  (`core/combat/ProjectileImpact.types.ts`); it gets its services (ability registry, damage,
-  statuses) by constructor, because `entities/` may not import `combat/` or `abilities/`.
+  (`core/components/ProjectilePayload.types.ts`) and one class that implements
+  `ProjectileImpact<'<kind>'>` (`core/combat/ProjectileImpact.types.ts`): `core/combat/<Name>Impact.ts`
+  for a weapon-like impact, `core/abilities/<Name>Impact.ts` for an ability's. It gets its services
+  (ability registry, damage, statuses) by constructor. The payload holds plain data because
+  `entities/` may not import `combat/` or `abilities/`; the list of kinds is in `systems/` because
+  `combat/` may not import `abilities/`.
 - **Registry line:** a projectile: the `projectileCatalogue.ts` line. An impact kind: one key in
   `core/systems/defaultProjectileImpacts.ts` (`createDefaultProjectileImpacts`, used by
   `DefaultSystemPipeline` and the test helpers). A missing key does not compile. The dispatch is
