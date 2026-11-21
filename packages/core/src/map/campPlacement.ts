@@ -83,14 +83,11 @@ export const placeCampSlots = (input: CampLayoutInput): readonly CampSlot[] =>
       const top = upper.yAtX(x);
       const bottom = lower.yAtX(x);
       const first = { x, y: top + ((index + 1) / (count + 1)) * (bottom - top) };
-      const position =
-        input.clearance === undefined
-          ? first
-          : clearCampOfForts(
-              first,
-              input.clearance,
-              (point) => upper.yAtX(point.x) < point.y && point.y < lower.yAtX(point.x),
-            );
+      const position = clearCampOfForts(
+        first,
+        input.clearance,
+        (point) => upper.yAtX(point.x) < point.y && point.y < lower.yAtX(point.x),
+      );
       const width = Math.abs(lower.yAtX(position.x) - upper.yAtX(position.x));
       const nearest = Math.min(...input.lanePaths.map((path) => distanceToPath(position, path)));
       return { corridorIndex, index, position, depth: nearest / (width / 2) };

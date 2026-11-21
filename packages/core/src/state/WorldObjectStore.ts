@@ -130,11 +130,6 @@ export class WorldObjectStore {
     return interior;
   }
 
-  /** Persistent destroyed identifiers, including walkable rubble left by retired entities. */
-  public get destroyedIds(): ReadonlySet<string> {
-    return this.destroyed;
-  }
-
   private buildInterior(buildingId: string): readonly Polygon[] {
     const floors = this.records.flatMap(({ object }) =>
       object.id === buildingId && !object.isBlocking ? object.footprints : [],
@@ -151,6 +146,11 @@ export class WorldObjectStore {
       { x, y: y + height },
     ];
     return [...floors, court];
+  }
+
+  /** Persistent destroyed identifiers, including walkable rubble left by retired entities. */
+  public get destroyedIds(): ReadonlySet<string> {
+    return this.destroyed;
   }
 
   /** Independent diagnostic check against live solids and authored bridge openings. */

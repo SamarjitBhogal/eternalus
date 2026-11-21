@@ -60,7 +60,7 @@ export type CampLayoutInput = {
   readonly band: readonly [number, number];
   readonly rng?: Rng;
   /** When set, camps step clear of these keep-outs (`clearCampOfForts`). */
-  readonly clearance?: CampClearance;
+  readonly clearance: CampClearance;
 };
 
 /** One piece of a Stronghold's wall ring on the Light side. */
