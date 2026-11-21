@@ -9834,3 +9834,31 @@ docs:check` pass on this entry.
   deliberate code break each. This entry: `prettier --check` and `npm run docs:check`.
 - Next step: the owner rules on the fort-capacity and healed-bot cards (forts runner report,
   `eternalus-agent-work/dec-288/reports/forts-runner.md`); then the pre-PR gate.
+
+### 2026-11-21 — Phase 3 / map work: critic round 1 fixes on the merged branch — feat/map-work-forts-towers — sholtzman + Claude Code
+
+- What was done: one entry for the whole merged branch (critic round 1, S5). Its parts: lane tower
+  forts are 56 m and hordes cross a court by its west and east doorways (`ec319dcf`, `1bbe97b3`);
+  an attacker inside a building deals ×1.25 to its walls (`4fa2c93e`, DEC-247 (2), DEC-288); a
+  fallen tower shows no marker, banner or minimap glyph, and the two tower kinds look different
+  (`51d906ed`, `8f005e94`); the BuffTower aura and its ring (`5181f61b`, `1adcc786`), all under
+  DEC-315. Critic round 1 (request-changes, 1 blocker) fixes: the aura never applied in a match,
+  because `SpaceSystem` indexes only units; `StructureAuraSystem` now reads the emitter's
+  `Transform`, with a whole-`Simulation` test (B1). Its six better-than-design items are built
+  (DEC-318, `INBOX.md` HC-B21): one `Aura` component and `EntitySnapshot.aura`, a stateless aura
+  system, one client `RetiredFeatures` rule fed by `MatchBridge`, camps moved clear of the lane
+  forts at generation, each building interior built once with fort wall bands read from the wall
+  objects, and a first-tick tower-exit test. Also: a load test of the aura status ids, scattered
+  rocks and trees kept off the forts, a gate fall test in `Match`, BUG-2 In progress and new BUG-8
+  (a tower horde on blocked ground) in `docs/plan/bugs.md`. Docs 05, 06, 07, 10, 18.
+  `MapGenerator` golden hash 3_073_897_995 → 2_379_214_471 (camps and obstacles moved).
+- Checks run: full `npm run check` exit 1
+  (`eternalus-agent-work/dec-288/check-8.log`): format, no-js, lint, typecheck and knip pass;
+  core "Tests 2 failed | 1801 passed (1803)" (the two of the entry before: "3 towers of each
+  kind" and the heal-and-rejoin test), protocol "Tests 29 passed (29)", client "Tests 2025 passed
+  (2025)", server "Tests 84 passed (84)"; build not reached. Run apart: `npm run build` exit 0,
+  `npm run docs:check` → "Documentation check passed.". The run before (`check-7.log`) failed on
+  Prettier only (one line wrap in `StructureAuraSystem.test.ts`).
+- Next step: critic round 2 and ponytail on the delta from `3e9f7c9d`; the owner rules on the
+  Owner Calls cards (fort-map-sizes, bot-defend-tower, aura-radius-origin, inside-bonus-scope)
+  and on HC-B21.

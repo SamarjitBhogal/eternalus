@@ -60,7 +60,7 @@ export abstract class Structure extends Entity {
 | -------------- | ------------------------------------ | ------------------------------------------------------------------------------------------ | ----------------------------------- |
 | `Stronghold`   | `Spawner`, `Aura`                    | Capital; its death ends the match; spawns initial hordes and later waves                   | MVP                                 |
 | `SpawnerTower` | `Spawner`, `Combat` (self-defence)   | Front line; spawns light hordes every 60 s after the countdown; guards                     | MVP                                 |
-| `BuffTower`    | `Spawner`, `Aura`, `Combat`          | Second line; team buffs, enemy debuff aura (10% health/damage, TUNE); shield source        | MVP                                 |
+| `BuffTower`    | `Spawner`, `Aura`, `Combat`          | Second line; damage aura for allies and against enemies (DEC-315 (4)); shield source       | MVP                                 |
 | `WallSegment`  | none                                 | Ring collider; unbreakable until the rule in §3 passes                                     | MVP                                 |
 | `Gate`         | `GateState`, `Combat` (fire defence) | Opens for allies/hordes, closes otherwise; burns enemies passing through                   | MVP (fire: MVP-if-time)             |
 | `Turret`       | `TurretState`, `Combat`              | Auto-fires bolts; Warrior Legends may take manual control                                  | MVP (manual: MVP-if-time)           |
@@ -428,18 +428,20 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   `WorldMap`; the main view draws a lane tower's kind marker through `StructureView` (DEC-315) and the other structures from the map layer.
   Minion plan M6 adds `Camp` (forest camps, rule `never`, circle radius 1 `TUNE`, since camp
   features have no footprint); its group is a guard plan (18 §7.1), not a `Spawner` component yet.
-- **BuffTower aura (`feat/map-work-views`, DEC-315 (4), 2026-11-21).** A `StructureDefinition`
-  may carry `aura` (`radius`, `allyStatusId`, `enemyStatusId`); only `buff-tower` has one, radius
-  12 (`TUNE`, balancing.md 12 m). `StructureAuraSystem` (after `VeterancySystem`) runs every
-  `STRUCTURE_AURA_CADENCE.everySeconds` (loaded to ticks by `loadStructureAuraCadence`): each
-  living structure with an aura gives `tower-aura-buff` (allies deal +10 %) to units of its team
-  and `tower-aura-debuff` (enemies deal -10 % and take +10 %) to units of the other playable team
-  inside the radius, through the match's one `StatusEffectApplier`. Neutral camp mobs and bosses
-  are neither side and get nothing. A unit that was inside on the last pass and is not now, or
-  whose tower fell, has the status removed at once (`remove`; the one-second duration is the
-  backstop). Not built: a max-health change and a Stronghold aura (DEC-315 (4)). The `AuraEmitter`
-  component, added from the definition, puts `EntitySnapshot.auraRadius` in the snapshot, and
-  `StructureView` draws a faint ring of that radius in the team colour while the tower stands.
+- **BuffTower aura (`feat/map-work-forts-towers`, DEC-315 (4), DEC-318, 2026-11-21).** A
+  `StructureDefinition` may carry `aura` (`radius`, `allyStatusId`, `enemyStatusId`); only
+  `buff-tower` has one (`content/structures/structureCatalogue.ts`). `Structure` adds an `Aura`
+  component that holds the whole definition. `StructureAuraSystem` (after `VeterancySystem`) runs
+  every `STRUCTURE_AURA_CADENCE.everySeconds` (loaded to ticks by `loadStructureAuraCadence`):
+  each living entity with an `Aura` on a playable team gives its ally status
+  (`content/status-effects/towerAuraBuff.ts`) to units of its team and its enemy status
+  (`towerAuraDebuff.ts`) to units of the other playable team inside the radius, measured from its
+  centre, through the match's one `StatusEffectApplier`. Neutral camp mobs and bosses are neither
+  side and get nothing. The system keeps no state: each pass ends, unit by unit in store order,
+  every aura status that no living source covers now (`remove`; the status's short duration is
+  the backstop). Not built: a max-health change and a Stronghold aura (DEC-315 (4)). The snapshot
+  carries `EntitySnapshot.aura` (`radius`; `null` without an `Aura`), and `StructureView` draws a
+  faint ring of that radius in the team colour while the tower stands.
 - **Minion follow-ups (`fix/minion-stack-followups`, 2026-11-05).** Lane towers and the
   Stronghold also carry a `Footprint` component: the polygons of their map object of the same id
   (a tower's fort, the Stronghold's palace outline), which `Simulation` copies for a definition
@@ -481,9 +483,12 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   option (b)), and the lane runs through each fort by its west and east doorways: court ground is
   routable for the lane flow fields as for A\*, and no lane corridor holds a fort's north or
   south wall band, so hordes march through the court round the keep (DEC-315, amending DEC-185
-  (A); 06 §6). A tower's footprint radius follows its fort (`LANE_TOWER_FOOTPRINT_RADIUS`), and no
-  blocking object of another building (a house, a camp's tent, a lake) stands in a lane fort's
-  box or its clearance (`laneFortKeepOuts` in `map/fortInWorld.ts`).
+  (A); 06 §6). At the default world a tower's footprint radius follows its fort
+  (`LANE_TOWER_FOOTPRINT_RADIUS`; a larger world stretches the fort, not the radius), and no
+  blocking object of another building (a house, a camp's tent, a lake, a scattered rock or tree)
+  stands in a lane fort's box or its clearance (`laneFortKeepOuts` in `map/fortInWorld.ts`).
+  Generation moves a camp clear of those boxes (`clearCampOfForts`, DEC-318 (BTD4)); the scenery
+  builder still drops a piece that overlaps one, for the one tested layout whose camp cannot move.
 - `ObstacleDefinition` keeps `kind: 'obstacle'` (the entity class) and moves tree/rock/bridge to
   `obstacleType`; `fell` and `minimapGlyph` arrive with felling and the minimap work.
 

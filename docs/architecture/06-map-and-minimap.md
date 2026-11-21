@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-21
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -145,7 +145,9 @@ flowchart LR
    lanes as evenly as possible, leftovers to the middle corridors (DEC-14). In a corridor, camps
    spread across the team's half and step from one lane towards the other; a camp's weight class
    follows its depth into the Unknown, lighter near a lane and heavier deeper (DISC-42).
-   `cornerCamps` `corner-camp` features go in the map corners (MVP-if-time).
+   `cornerCamps` `corner-camp` features go in the map corners (MVP-if-time). A camp that would
+   touch a lane tower fort or its clearance steps the shortest way clear of it
+   (`clearCampOfForts`), so the camp keeps all its pieces.
 6. **placeCapturePoints**: one `capture-point` at `t = 0.5` of each lane; the middle lane's is
    emitted as `cathedral`.
 7. **carveRiftAndBounds**: the rift runs along the symmetry axis, centred on it (a preset may vary
@@ -658,7 +660,9 @@ layer's style for those kinds is `entity`: `MapView` draws no glyph. A fallen st
 entity, so no marker. `MapDecoration.flagOf` names a structure whose banner a piece is: `SceneryView`
 hides it once `RetiredFeatures` (read from the snapshots: a `mapFeatureId` seen standing and now
 gone) reports the structure fallen, while the rest of the fort stays as its ruins (07 §8). `MapView`
-also drops a fallen structure's minimap glyph. A fallen structure's map object is never destroyed, so
+also drops the feature of every fallen structure, not only a tower: a fallen gate, wall segment,
+turret or Stronghold loses its main-view marker or footprint fill and its minimap glyph, so the
+visuals match the logic (DEC-315 (5)). A fallen structure's map object is never destroyed, so
 `WorldObjectStore.removed` is unchanged.
 
 ## Related

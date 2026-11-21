@@ -524,10 +524,6 @@ and `expire`, called by `StatusEffectSystem`, removes the timed-out ones, both w
 one applier, next to the one `DamagePipeline`, so later producers (turret concussion 2.3, gate
 fire 2.4, enraged 3.3) receive it there. Minion plan M5b adds `veteran` and `rallied` (minion XP,
 MS-16, `balancing.md`), applied by `VeterancySystem`.
-The BuffTower aura (DEC-315 (4)) adds `tower-aura-buff` (`damageDealt` ×1.1) and
-`tower-aura-debuff` (`damageDealt` ×0.9, `damageTaken` ×1.1), both `refresh`, one second, applied
-and ended through the same applier by `StructureAuraSystem` (07 §13); `StatusModifierStep` reads
-them like any other, so no damage step was added.
 `periodic.effects` are `StatusTickSpec`s shaped like `AbilityEffectSpec`, run by `StatusTickEffect`
 strategies (`combat/defaultStatusTickEffects.ts`, `DamageStatusTick`) until the `AbilityRegistry`
 lands; their damage goes through the match's one `DamagePipeline` with `kind: 'status'`, crediting
@@ -928,6 +924,11 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
 
 ## 18. Implementation status
 
+- **BuffTower aura statuses (`feat/map-work-forts-towers`, DEC-315 (4), 2026-11-21).**
+  `tower-aura-buff` and `tower-aura-debuff` are ordinary statuses
+  (`content/status-effects/towerAuraBuff.ts`, `towerAuraDebuff.ts` hold their modifiers and
+  duration), applied and ended through the match's one applier by `StructureAuraSystem`
+  (07 §13). `StatusModifierStep` reads them like any other status, so no damage step was added.
 - **Progression (PR #31, SCRUM-426).** Legends install `Aether` (own component, O1) and
   `Progression` (`xp`, `level`, `curveId`). Level curves are a catalogue
   (`content/progression/levelCurveCatalogue.ts`), shape-checked at load (`loadLevelCurves`) and

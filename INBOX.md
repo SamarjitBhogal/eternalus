@@ -221,6 +221,17 @@ Reply inline (`Decision: …`).
       as `loadGuardPlans` does.
       Build both in PR #125, build them in a later PR, or keep the code as it is?
 
+- [ ] **HC-B21 — Better than the design, built under your standing rule, sign-off asked: map-work
+      critic round 1 (`feat/map-work-forts-towers`, 2026-11-21); no decision blocks the PR.**
+      Recorded as DEC-318 (owner decisions log). (1) One `Aura` component holds a structure's
+      whole aura; the aura system and the snapshot (`EntitySnapshot.aura`) read only it.
+      (2) The aura system keeps no state: each pass ends the aura statuses that no living tower
+      covers now, unit by unit in store order. (3) One client rule finds a fallen structure
+      (`RetiredFeatures`, fed by `MatchBridge`). (4) Map generation moves camps clear of the lane
+      forts, so a camp keeps all its pieces. (5) A building's interior is built once, and the lane
+      corridors read a fort's wall bands from its wall objects. (6) The tower-exit test checks the
+      first tick at which every horde member is out. Approve, or say which to undo.
+
 - [x] **Unit facing chevron (DEC-192, feat/unit-facing-chevron, 2026-11-05) — two questions, one
       better-than-design item.**
       (1) Start facing: a unit faces east (`INITIAL_FACING` in `Transform.constants.ts`) until it

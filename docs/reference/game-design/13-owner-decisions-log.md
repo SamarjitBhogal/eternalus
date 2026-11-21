@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-21
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,19 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-21 (map-work critic round 1: better-than-design items, standing rule)
+
+Six better-than-design items from the first critic round on `feat/map-work-forts-towers`
+(DEC-315). The owner was not asked: his standing rule of 2026-11-09 ("do not allow tech debt where
+we can eliminate it and always choose the option with the best architectural outcome") applies,
+as for DEC-223 and DEC-239. Full findings:
+`eternalus-agent-work/dec-288/reports/map-work-critic-r1.md`. Sign-off card: `INBOX.md` HC-B21.
+DEC-318 is this batch.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DEC-318 | **Map-work critic round 1 items BTD1 to BTD6 are built** (follows DEC-315 (2), (4), (5); DEC-139). (BTD1) One `Aura` component (the name in architecture 07 §1) holds a structure's whole aura definition. `StructureAuraSystem` and the snapshot read only the component, and the snapshot carries it as `EntitySnapshot.aura` (`radius`; `null` without an `Aura`, as 03 §5 sets one group per component). (BTD2) `StructureAuraSystem` keeps no state: on each pass it ends, unit by unit in store order, every aura status that no living source covers now, so it holds after a state restore (03 §8). (BTD3) One client rule finds a fallen structure: `MatchBridge` feeds every snapshot to `RetiredFeatures` (`apps/client/src/game/RetiredFeatures.ts`) and reads it for a structure tile's 0 health, and `Match` gives the same instance to the map views. (BTD4) Map generation keeps camps clear of the lane forts' keep-outs (`clearCampOfForts` in `map/campPlacement.ts`), so a camp keeps all its pieces. The scenery builder still drops an overlapping piece, for the one tested layout whose camp cannot move (5 lanes, 2 + 3 towers per lane, 1600 × 900). (BTD5) `WorldObjectStore` builds each building's interior once, on first use, and the lane corridors take a fort's north and south wall bands from its own wall objects (`fortWallBands` in `map/fortInWorld.ts`), not from a second calculation of the wall thickness. (BTD6) The tower-exit test finds the first tick at which every horde member is out and compares that tick with the budget. |
 
 ## Batch 2026-11-20 (Owner Calls page: the tower horde test time limit)
 
