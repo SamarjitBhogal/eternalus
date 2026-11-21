@@ -29,10 +29,13 @@ function statusText(status: ResultsStatus): string {
  * verdict as the banner's title, the session's countdown, the verdict line from content, the
  * match's length, then Continue (skips the wait), a rematch and the main menu. Only a local match
  * offers the rematch (an online Duel's setup is the server's, ADR 0016); a Duel the other player
- * left names that, not a verdict. `selectResultsView` decides all of it.
+ * left names that under its verdict (DEC-251). A Duel's screen shows both players' names and final
+ * kills and no countdown: it stays until the player leaves (SCRUM-449). `selectResultsView`
+ * decides all of it.
  */
 export function ResultsScreen(): ReactElement {
-  const { verdict, status, canRematch } = useAppSelector(selectResultsView);
+  const { verdict, status, canRematch, hasCountdown, duelScore } =
+    useAppSelector(selectResultsView);
   const duration = useAppSelector(selectMatchDurationText);
   const team = useAppSelector(matchSetupSlice.selectors.selectPlayerTeam);
   const bannerAssetId = useAppSelector(contentSlice.selectors.selectSelectionBannerAssetId);
@@ -44,8 +47,13 @@ export function ResultsScreen(): ReactElement {
           title={verdict === null ? STRINGS.results.title : STRINGS.results.verdicts[verdict]}
           bannerAssetId={bannerAssetId}
         />
-        <SessionCountdown kind="results" label={STRINGS.results.countdownLabel} />
+        {hasCountdown && <SessionCountdown kind="results" label={STRINGS.results.countdownLabel} />}
         <div className={styles.summary}>
+          {duelScore !== null && (
+            <p className={styles.score}>
+              {STRINGS.results.duelScore(duelScore.own, duelScore.opponent)}
+            </p>
+          )}
           {status !== null && (
             <p className={styles.line} role="status">
               {statusText(status)}

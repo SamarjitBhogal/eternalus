@@ -57,11 +57,24 @@ const render = (winner: PlayableTeam | null | 'none', resultsMs = 30_000): strin
  * The screen after an online Duel played for dark that the server ended: its setup has no rosters
  * (the session publishes it when the first snapshot arrives).
  */
-const renderDuel = (duel: MatchEnding): string =>
+const renderDuel = (
+  duel: MatchEnding,
+  kills: readonly [own: number, opponent: number] = [0, 0],
+): string =>
   renderWithStore(<ResultsScreen />, {
     content: CONTENT,
-    match: { ...matchSlice.getInitialState(), duel },
-    matchSetup: { ...matchSetupSlice.getInitialState(), mode: 'duel', playerTeam: 'dark' },
+    match: {
+      ...matchSlice.getInitialState(),
+      duel,
+      versus: { own: 'Ana', opponent: 'Rival' },
+      duelHud: { ownKills: kills[0], opponentKills: kills[1], killTarget: 10, countdown: null },
+    },
+    matchSetup: {
+      ...matchSetupSlice.getInitialState(),
+      mode: 'duel',
+      playerTeam: 'dark',
+      countdownsMs: { select: 0, reveal: 0, results: 30_000 },
+    },
   });
 
 const heading = (html: string): string | undefined => /<h1[^>]*>([^<]*)<\/h1>/.exec(html)?.[1];
@@ -125,12 +138,26 @@ describe('ResultsScreen', () => {
     },
   );
 
-  it('shows VICTORY and names the opponent leaving a Duel (DEC-251)', () => {
-    const html = renderDuel({ winner: 'dark', reason: 'opponent-left' });
+  it('shows the Duel winner VICTORY with both names and final kills, and no countdown (SCRUM-449)', () => {
+    const html = renderDuel({ winner: 'dark', reason: 'finished' }, [10, 5]);
+    expect(heading(html)).toBe('VICTORY');
+    expect(html).toContain('Ana 10 – Rival 5');
+    expect(accessibleNames(html, '[role=timer]')).toEqual([]);
+  });
+
+  it('shows the Duel loser DEFEAT with both names and final kills (SCRUM-449)', () => {
+    const html = renderDuel({ winner: 'light', reason: 'finished' }, [4, 10]);
+    expect(heading(html)).toBe('DEFEAT');
+    expect(html).toContain('Ana 4 – Rival 10');
+  });
+
+  it('shows VICTORY and names the opponent leaving a Duel (DEC-251), with the score (SCRUM-449)', () => {
+    const html = renderDuel({ winner: 'dark', reason: 'opponent-left' }, [3, 7]);
     expect(heading(html)).toBe('VICTORY');
     expect(html).toMatch(
       new RegExp(`<p [^>]*role="status"[^>]*>${STRINGS.results.statuses['opponent-left']}</p>`),
     );
+    expect(html).toContain('Ana 3 – Rival 7');
   });
 
   it('offers no rematch after an online Duel, whose setup is not repeatable', () => {

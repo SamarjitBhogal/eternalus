@@ -58,6 +58,7 @@ describe('FakeSessionContext', () => {
       transition: [['menu'], ['menu', 'load-failed']],
       newMatchSetup: [[]],
       canRepeatMatchSetup: [],
+      hasResultsCountdown: [],
       repeatMatchSetup: [[]],
       clearMatchSetup: [[]],
       selection: [],
