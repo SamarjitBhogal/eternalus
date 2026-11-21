@@ -22,6 +22,7 @@ import type { HordeRequest } from './HordeRequest.types';
 import { GuardStore } from './GuardStore';
 import { HordeStore } from './HordeStore';
 import { LaneStructures } from './LaneStructures';
+import { RespawnQueue } from './RespawnQueue';
 import type { MatchWorld } from './MatchWorld';
 import type { PathQuery } from './PathQuery.types';
 import type { EntitySnapshot, HordeSnapshot, Snapshot } from './Snapshot.types';
@@ -60,6 +61,8 @@ export class GameState {
   public readonly hordes = new HordeStore();
   /** Every structure's guard posts (architecture 18 §7). */
   public readonly guards = new GuardStore();
+  /** Dead Legends waiting to return to their Stronghold (FR-051). */
+  public readonly respawns = new RespawnQueue();
   /** Each team's ally damage per lane since its last heavy wave (DEC-89, architecture 18 §3.3). */
   public readonly allyDamage = new AllyDamageStore();
   /** Hordes asked for this tick (developer menu), fulfilled by `SpawnSystem` in order. */
@@ -94,6 +97,7 @@ export class GameState {
 
   private readonly xpAwards: GameEventMap['xp-gained'][] = [];
   private readonly phaseChanges: GameEventMap['phase-changed'][] = [];
+  private readonly respawned: EntityId[] = [];
   private readonly killers = new Map<EntityId, DamageSource>();
 
   /**
@@ -136,6 +140,9 @@ export class GameState {
     this.events.on('phase-changed', (change) => {
       this.phaseChanges.push(change);
     });
+    this.events.on('legend-respawned', ({ entityId }) => {
+      this.respawned.push(entityId);
+    });
     new AllyDamageTally(this.events, this.entities, this.world, this.allyDamage);
   }
 
@@ -162,6 +169,7 @@ export class GameState {
     this.killers.clear();
     this.xpAwards.length = 0;
     this.phaseChanges.length = 0;
+    this.respawned.length = 0;
   }
 
   /**
@@ -185,6 +193,11 @@ export class GameState {
   /** Every `phase-changed` event of the current tick, in order (whatever the ring buffer keeps). */
   public phaseChangesThisTick(): readonly GameEventMap['phase-changed'][] {
     return [...this.phaseChanges];
+  }
+
+  /** The Legends that came back this tick (`legend-respawned`), in order. */
+  public respawnedThisTick(): readonly EntityId[] {
+    return [...this.respawned];
   }
 
   /** Records a command applied this tick, for diagnostic reports. Called by `Simulation.step()`. */

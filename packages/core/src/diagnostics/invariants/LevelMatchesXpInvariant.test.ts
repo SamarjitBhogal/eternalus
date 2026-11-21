@@ -158,6 +158,37 @@ describe('LevelMatchesXpInvariant', () => {
     ]);
   });
 
+  it('rule 2: passes owed XP paid to a Legend that respawned this tick, and flags it otherwise (DEC-186)', () => {
+    const { state, hero, spawn, check } = setUp();
+    const mate = spawn('entity-3', 'light');
+    const owed = (entityId: string) => {
+      state.events.emit('xp-gained', {
+        entityId,
+        amount: 120,
+        victimId: 'entity-77',
+        victimTeam: 'dark',
+        cause: 'respawn',
+      });
+    };
+    state.events.emit('legend-respawned', {
+      entityId: hero.id,
+      team: 'light',
+      position: { x: 0, y: 0 },
+      owedXp: [],
+    });
+    owed(hero.id);
+    owed(mate.id);
+
+    expect(check()).toEqual([
+      'Entity "entity-3" gained owed XP for "entity-77" without respawning this tick.',
+    ]);
+    state.advanceTick();
+    owed(hero.id);
+    expect(check()).toEqual([
+      'Entity "entity-1" gained owed XP for "entity-77" without respawning this tick.',
+    ]);
+  });
+
   it('rule 3: flags a second award for the same kill', () => {
     const { hero, enemy, died, gained, check } = setUp();
     died(enemy.id, hero.id);

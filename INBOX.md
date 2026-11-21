@@ -3012,6 +3012,15 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
 
 ## Done
 
+- 2026-11-20 — **Legend respawn, interim (`fix/legend-respawn`, PR #100, GL-12).** Answered by
+  DEC-295 (owner, 2026-11-20): the same Legend object waits and returns reset (full health and
+  aether; ultimate charge kept apart), a bot laner re-plans its lane by the current threat, a
+  returning Legend ignores every cap, and a fallen Legend's body stays on the map greyed out. Built
+  in PR #100, with DEC-186's "pay on respawn". Critic items (a) `createWithId` and (d) the
+  factory coupling are gone with the redesign; (b) the ultimate charge waits for #123, which the
+  kept Legend object carries through death; (c) loadout and cooldowns now survive death; (e)
+  polling just before `DeathSystem` stays (it also keeps XP earned later in the same tick).
+
 - 2026-11-03 — **PR #56 — the `returning` state (DEC-144 G).** Decision (SamarjitBhogal,
   2026-11-03, recorded as DEC-155): (b) merge it into the resting state. `LeashBehaviour`, `MinionController` and
   `GuardController` now run `marching ⇄ engaging` and `holding ⇄ engaging`; a leash break rests
