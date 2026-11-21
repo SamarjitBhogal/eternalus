@@ -21,6 +21,7 @@ const leaves = new BotLeaves({
   difficulties: { normal: NORMAL_BOT },
   retreatTo: RETREAT_STRUCTURES,
   readiness: allReady,
+  shotRadiusOf: () => 0,
 });
 
 /** A pathfinder stub: past x 50 it leads via (60, 34), otherwise straight to the goal. */

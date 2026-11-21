@@ -8,6 +8,9 @@ import { ProjectileFlight } from '../components/ProjectileFlight';
 import { ProjectilePayload } from '../components/ProjectilePayload';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
+import { DamagePipeline } from '../combat/DamagePipeline';
+import type { HitRunner } from '../state/HitRunner.types';
+import { WeaponImpact } from '../combat/WeaponImpact';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { MAGUS_BOLT } from '../content/projectiles/magusBolt';
 import { loadProjectiles } from '../content/projectiles/loadProjectiles';
@@ -21,9 +24,8 @@ import type { CollisionQuery } from '../state/CollisionQuery.types';
 import type { GameEventMap } from '../state/GameEvents.types';
 import type { Team } from '../teams/teams.types';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
-import { CombatSystem } from '../systems/CombatSystem';
-import { MovementSystem } from '../systems/MovementSystem';
-import { DamagePipeline } from './DamagePipeline';
+import { MovementSystem } from './MovementSystem';
+import { ProjectileSystem } from './ProjectileSystem';
 
 const CONFIG = createDefaultGameConfig();
 const ATTACK: RangedAttack = {
@@ -34,6 +36,10 @@ const ATTACK: RangedAttack = {
   projectile: { projectileId: 'magus-bolt', falloff: null },
 };
 const BOLT: ProjectileDefinition = { ...MAGUS_BOLT, range: 1000 };
+
+/** The system with the weapon impact on a fresh damage pipeline; `hits` runs on-hit effects. */
+const projectileSystem = (hits: HitRunner | null = null): ProjectileSystem =>
+  new ProjectileSystem({ weapon: new WeaponImpact(new DamagePipeline(), hits) });
 
 /** A body with health: a circle, or an outline when given polygons. */
 class Body extends Entity {
@@ -72,7 +78,7 @@ const setUp = (wallAtX: number | null = null) => {
   const state = new GameState(CONFIG, 1, null, collisions === null ? {} : { collisions });
   const events: GameEventMap['entity-removed'][] = [];
   state.events.on('entity-removed', (payload) => events.push(payload));
-  const system = new CombatSystem(new DamagePipeline());
+  const system = projectileSystem();
   const context = { state, logger: new NullLogger() };
   let counter = 0;
   const addBody = (at: Vec2, team: Team, radius = 1, outline?: readonly Polygon[]) => {
@@ -99,7 +105,8 @@ const setUp = (wallAtX: number | null = null) => {
         ownerId,
         team,
         source: { attackerId: ownerId, kind: 'weapon', definitionId: 'magus-staff' },
-        attack,
+        targetId: null,
+        impact: { kind: 'weapon', attack },
         origin,
       }),
     );
@@ -111,7 +118,7 @@ const setUp = (wallAtX: number | null = null) => {
   return { state, events, system, context, addBody, fire, healthOf };
 };
 
-describe('ProjectileLanding', () => {
+describe('ProjectileSystem', () => {
   it('lands on a circle body and removes the shot as consumed', () => {
     const { state, events, system, context, addBody, fire, healthOf } = setUp();
     const target = addBody({ x: 10, y: 0 }, 'dark');
@@ -455,7 +462,7 @@ describe('ProjectileLanding', () => {
     const { system, context, addBody, fire } = setUp();
     const target = addBody({ x: 10, y: 0 }, 'dark');
     const calls: string[] = [];
-    const hooked = new CombatSystem(new DamagePipeline(), {
+    const hooked = projectileSystem({
       afterHit: (_state, attackerId, targetId) => calls.push(`${attackerId}>${targetId}`),
     });
     fire({ x: 0, y: 0 }, 20);

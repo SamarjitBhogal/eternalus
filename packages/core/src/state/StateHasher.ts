@@ -153,6 +153,11 @@ export class StateHasher {
     if (movement !== undefined && (movement.heading.x !== 0 || movement.heading.y !== 0)) {
       fields.push(['heading', movement.heading.x, movement.heading.y]);
     }
+    // Only a set speed limit (a shot slowing to its end) adds a field, so states without one hash
+    // as before.
+    if (movement !== undefined && movement.speedLimit !== Number.POSITIVE_INFINITY) {
+      fields.push(['speed-limit', movement.speedLimit]);
+    }
     // Forced motion (a dash or knock-back, ADR 0026 decision 4) adds a field only while a push is
     // under way, so a match where nobody was pushed hashes as before.
     if (movement?.isForced === true) {
@@ -261,12 +266,23 @@ export class StateHasher {
     if (progression !== undefined) {
       fields.push(['progression', progression.xp, progression.level]);
     }
-    // A shot's owner and origin are fixed at firing but decide who it spares and how hard it hits;
-    // how long it has been ending (-1 while it flies) decides when it is removed.
+    // A shot's payload is fixed at firing but decides who it spares (owner), which walk-on outline
+    // it may hit (target), what it does there (impact kind, credited weapon or ability) and how
+    // hard it hits (origin); how long it has been ending (-1 while it flies) decides when it is
+    // removed.
     const shot = entity.findComponent(ProjectilePayload);
     if (shot !== undefined) {
       const endTicksLeft = entity.findComponent(ProjectileFlight)?.endTicksLeft ?? -1;
-      fields.push(['projectile', shot.ownerId, shot.origin.x, shot.origin.y, endTicksLeft]);
+      fields.push([
+        'projectile',
+        shot.ownerId,
+        shot.targetId,
+        shot.impact.kind,
+        shot.source.definitionId,
+        shot.origin.x,
+        shot.origin.y,
+        endTicksLeft,
+      ]);
     }
     const watch = entity.findComponent(ChaseWatch);
     if (watch !== undefined) {

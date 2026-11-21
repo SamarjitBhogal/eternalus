@@ -1,3 +1,5 @@
+import type { ProjectileEndingLook } from './ProjectileView.types';
+
 /** Size of a projectile's team-coloured dot, in world units. */
 // TUNE: placeholder look for ranged attacks (PR 1); close is enough
 export const PROJECTILE_DOT_SIZE = 0.5;
@@ -13,9 +15,6 @@ export const PROJECTILE_STREAK_LENGTH = 1.5;
 
 /** Width of the streak behind a projectile, in screen pixels. */
 export const PROJECTILE_STREAK_WIDTH = 2;
-
-/** How a shot looks when it ends: `'fizzle'` thins into a mist, `'drop'` falls to the ground. */
-export type ProjectileEndingLook = 'fizzle' | 'drop';
 
 /**
  * The ending look of each projectile definition id (DEC-306). A new projectile is one entry here;

@@ -114,6 +114,22 @@ describe('SeatCommands', () => {
     expect(commands.map((c) => c.type)).toEqual(['attack-target', 'move', 'stop', 'attack-target']);
   });
 
+  it('attacks in melee mode while the melee key is held, and re-queues on a change of mode (DEC-308)', () => {
+    const { seat, commands } = setup();
+    const snapshot = { entities: [unit('foe', 'dark', 5, 5)] };
+    const aim = { x: 5, y: 5 };
+    seat.apply(intent({ isAttacking: true, aim }), snapshot);
+    seat.apply(intent({ isAttacking: true, isMeleeAttacking: true, aim }), snapshot);
+    seat.apply(intent({ isAttacking: true, isMeleeAttacking: true, aim }), snapshot);
+    seat.apply(intent({ isMeleeAttacking: true, aim }), snapshot);
+    seat.apply(intent({ isAttacking: true, aim }), snapshot);
+    expect(commands).toEqual([
+      { type: 'attack-target', actorId: ACTOR, targetId: 'foe' },
+      { type: 'attack-target', actorId: ACTOR, targetId: 'foe', mode: 'melee' },
+      { type: 'attack-target', actorId: ACTOR, targetId: 'foe' },
+    ]);
+  });
+
   it('queues a held movement and attack again after reset', () => {
     const { seat, commands } = setup();
     const snapshot = { entities: [unit('foe', 'dark', 5, 5)] };

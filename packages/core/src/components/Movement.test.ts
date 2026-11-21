@@ -194,18 +194,16 @@ describe('Movement', () => {
     expect(movement.isForced).toBe(false);
   });
 
-  it('caps the speed by the limit the entity sets, and lifts the cap with null', () => {
+  it('caps the speed by the limit the entity sets, and has no limit until one is set', () => {
     const movement = new Movement({ maxSpeed: 3, acceleration: 3, mass: 2 });
     movement.steer({ x: 1, y: 0 });
+    expect(movement.speedLimit).toBe(Number.POSITIVE_INFINITY);
 
     movement.limitSpeed(1.5);
     movement.advance();
+    expect(movement.speedLimit).toBe(1.5);
     expect(movement.speed).toBe(1.5);
     expect(movement.topSpeed).toBe(1.5);
-
-    movement.limitSpeed(null);
-    movement.advance();
-    expect(movement.speed).toBe(3);
   });
 
   it('slows to the limit when it is lowered, and a limit above the status cap changes nothing', () => {

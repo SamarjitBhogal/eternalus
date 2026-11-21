@@ -1,4 +1,3 @@
-import { Combat } from '../../components/Combat';
 import { Movement } from '../../components/Movement';
 import { ProjectilePayload } from '../../components/ProjectilePayload';
 import { TeamMembership } from '../../components/TeamMembership';
@@ -9,19 +8,25 @@ import { normalizeInto } from '../../utils/vec2';
 import type { MutableVec2 } from '../../utils/vec2.types';
 import type { Entity } from '../Entity';
 import type { AttackContext, AttackStrategy } from './AttackStrategy.types';
+import { weaponSourceOf } from './weaponSourceOf';
 
 /**
- * Fires a projectile at the target (architecture 05 §10): it spawns at the attacker's edge, flies
- * straight along the line to the target's facing point (no lead) and carries a `ProjectilePayload`.
- * Landing is the combat system's job, in a later tick.
+ * Fires a projectile at the target (architecture 05 §10): it spawns at the attacker's centre, so
+ * its circle starts clear of every wall the attacker is kept out of, flies straight along the line
+ * to the target's facing point (no lead) and carries a `ProjectilePayload` with a weapon impact.
+ * It passes its owner by; `ProjectileSystem` flies and lands it, from the next tick.
  */
 export class RangedProjectileAttackStrategy implements AttackStrategy {
   /** Scratch for the point aimed at, then the aim direction. */
   private readonly aim: MutableVec2 = { x: 0, y: 0 };
 
   /**
-   * Spawns the shot. Does nothing for a melee attack, when the context has no factory, or when the
-   * attacker or target has no position. The source is the attacker and its weapon, as for melee.
+   * Spawns the shot. The source is the attacker and its weapon, as for melee (`weaponSourceOf`);
+   * fall-off is measured from the attacker's centre.
+   *
+   * @throws Error when handed an attack that is not ranged (a miswired registry), when the
+   *   attacker has no `Transform` or `TeamMembership`, or when the target has no point to aim at:
+   *   `CombatSystem` fires only at a target in reach, which has one.
    */
   public attack(
     attacker: Entity,
@@ -29,21 +34,15 @@ export class RangedProjectileAttackStrategy implements AttackStrategy {
     attack: UnitAttack,
     { state, factory }: AttackContext,
   ): void {
-    if (attack.strategy !== 'ranged-projectile' || factory === null) {
-      return;
+    if (attack.strategy !== 'ranged-projectile') {
+      throw new Error(`The ranged attack strategy cannot fire a "${attack.strategy}" attack.`);
     }
-    const team = attacker.findComponent(TeamMembership)?.team;
-    const body = attacker.findComponent(Transform);
-    if (
-      team === undefined ||
-      body === undefined ||
-      !state.entities.facingPointOf(attacker.id, targetId, this.aim)
-    ) {
-      return;
+    const { team } = attacker.getComponent(TeamMembership);
+    const origin = attacker.getComponent(Transform).position;
+    if (!state.entities.facingPointOf(attacker.id, targetId, this.aim)) {
+      throw new Error(`"${attacker.id}" has no point to aim at on "${targetId}".`);
     }
-    const { x, y } = body.position;
-    normalizeInto(this.aim, { x: this.aim.x - x, y: this.aim.y - y });
-    const origin = { x: x + this.aim.x * body.radius, y: y + this.aim.y * body.radius };
+    normalizeInto(this.aim, { x: this.aim.x - origin.x, y: this.aim.y - origin.y });
 
     const projectile = factory.create('projectile', attack.projectile.projectileId, {
       team,
@@ -53,12 +52,9 @@ export class RangedProjectileAttackStrategy implements AttackStrategy {
       new ProjectilePayload({
         ownerId: attacker.id,
         team,
-        source: {
-          attackerId: attacker.id,
-          kind: 'weapon',
-          definitionId: attacker.findComponent(Combat)?.weaponId ?? attacker.definitionId,
-        },
-        attack,
+        source: weaponSourceOf(attacker),
+        targetId,
+        impact: { kind: 'weapon', attack },
         origin,
       }),
     );

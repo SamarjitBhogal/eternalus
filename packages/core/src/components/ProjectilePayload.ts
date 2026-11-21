@@ -1,12 +1,15 @@
-import type { RangedAttack } from '../content/units/units.types';
 import type { Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
-import type { ProjectilePayloadData, ProjectileSource } from './ProjectilePayload.types';
+import type {
+  ProjectileImpactData,
+  ProjectilePayloadData,
+  ProjectileSource,
+} from './ProjectilePayload.types';
 
 /**
  * What a projectile carries from the shot to the hit (architecture 05 §10): who fired it, for which
- * team, who the damage is credited to, the attack that holds the damage and fall-off, and where it
- * was fired from. Fixed at firing; the flight reads it, nothing changes it.
+ * team and at whom, who the damage is credited to, what it does where it lands (its impact, by
+ * kind) and where it was fired from. Fixed at firing; the flight reads it, nothing changes it.
  */
 export class ProjectilePayload {
   /** The entity that fired it. */
@@ -18,8 +21,11 @@ export class ProjectilePayload {
   /** Who the hit is credited to. */
   public readonly source: ProjectileSource;
 
-  /** The attack that fired it. */
-  public readonly attack: RangedAttack;
+  /** The entity it was fired at; `null` for a shot fired at no one. */
+  public readonly targetId: string | null;
+
+  /** What it does where it lands. */
+  public readonly impact: ProjectileImpactData;
 
   /** Where it was fired from. */
   public readonly origin: Vec2;
@@ -29,7 +35,8 @@ export class ProjectilePayload {
     this.ownerId = data.ownerId;
     this.team = data.team;
     this.source = data.source;
-    this.attack = data.attack;
+    this.targetId = data.targetId;
+    this.impact = data.impact;
     this.origin = { x: data.origin.x, y: data.origin.y };
   }
 }

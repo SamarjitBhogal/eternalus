@@ -1,14 +1,14 @@
 import type { WeaponDefinition } from './weapons.types';
 
 /**
- * Obsidian Bow: a bow, ranged physical (reference 07, 05 §10). Any class may use it.
+ * Obsidian Bow: a bow, ranged magical (reference 07 "Named weapons", 05 §10 weapon table). Any class may use it.
  *
  * TUNE: damage, interval and firing reach accepted in DEC-310; fall-off in DEC-306. `onHit: sundered` joins when weapon
  * on-hit effects land, as Raptor Talons' bleed does.
  */
 export const OBSIDIAN_BOW = {
   id: 'obsidian-bow',
-  displayName: 'Obsidian Bow',
+  displayName: 'Obsidian Bow', // TUNE: placeholder, the name is pending (OQ-07)
   weaponClass: 'bow',
   attacks: [
     {

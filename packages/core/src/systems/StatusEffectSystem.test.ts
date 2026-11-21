@@ -87,6 +87,8 @@ const tickPipeline = (state: GameState): System => {
       terminalPhases: TERMINAL_MATCH_PHASES,
     }),
     state,
+    // A warrior fires no shot and nothing spawns here, so this factory builds nothing.
+    factory: new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(CONFIG.tickRate)),
     progression: {
       units: loadDefaultContent(CONFIG.tickRate),
       curves: loadLevelCurves(),

@@ -64,11 +64,13 @@ describe('AttackTargetHandler', () => {
     const archer = spawn('light-mob', 'training-dummy', 'light');
     archer.addComponent(
       new Combat({
-        strategy: 'ranged-projectile',
-        damage: 1,
-        reach: 10,
-        interval: 5,
-        projectile: { projectileId: 'magus-bolt', falloff: null },
+        basic: {
+          strategy: 'ranged-projectile',
+          damage: 1,
+          reach: 10,
+          interval: 5,
+          projectile: { projectileId: 'magus-bolt', falloff: null },
+        },
       }),
     );
 

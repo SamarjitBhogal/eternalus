@@ -30,7 +30,7 @@ export class Movement {
 
   private currentTopSpeed: number;
 
-  private speedLimit: number | null = null;
+  private currentSpeedLimit = Number.POSITIVE_INFINITY;
 
   private readonly currentVelocity: MutableVec2 = { x: 0, y: 0 };
 
@@ -103,18 +103,23 @@ export class Movement {
     this.currentHeading.y = length === 0 ? 0 : direction.y / length;
   }
 
+  /** The cap `limitSpeed` set; `Infinity` while none is set. */
+  public get speedLimit(): number {
+    return this.currentSpeedLimit;
+  }
+
   /**
    * Caps the speed from the next `advance` by the entity's own rules, on top of `maxSpeed` and the
    * status scale (a projectile slowing to its end). The limit stays until it is set again.
    *
-   * @param limit - The most speed in world units per tick; `null` lifts the limit.
+   * @param limit - The most speed in world units per tick.
    * @throws Error when `limit` is negative or not a number.
    */
-  public limitSpeed(limit: number | null): void {
-    if (limit !== null && !(limit >= 0)) {
+  public limitSpeed(limit: number): void {
+    if (!(limit >= 0)) {
       throw new Error(`Movement speed limit must be zero or more, got ${String(limit)}.`);
     }
-    this.speedLimit = limit;
+    this.currentSpeedLimit = limit;
   }
 
   /**
@@ -125,10 +130,7 @@ export class Movement {
    *   above 1 enraged). The speed limit (`limitSpeed`) still caps the result.
    */
   public advance(speedScale = 1): void {
-    const cap =
-      this.speedLimit === null
-        ? this.maxSpeed * speedScale
-        : Math.min(this.maxSpeed * speedScale, this.speedLimit);
+    const cap = Math.min(this.maxSpeed * speedScale, this.currentSpeedLimit);
     this.currentTopSpeed = cap;
     if (this.currentHeading.x !== 0 || this.currentHeading.y !== 0) {
       this.accelerateToward(this.currentHeading, cap);

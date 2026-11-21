@@ -34,6 +34,13 @@ export type BotLegendControllerContent = {
   readonly retreatTo: readonly string[];
   /** The cast rules a bot picks its ready abilities by (DEC-205). */
   readonly readiness: SlotReadiness;
+  /**
+   * The collider radius of the projectile `projectileId` names, in metres. A bot reads it to check
+   * its line of fire (`hasLineOfFire`); `Simulation` injects it from the projectile definitions
+   * because `ai/` may not import content values. Required, so a bot never treats a shot as a
+   * point by omission.
+   */
+  readonly shotRadiusOf: (projectileId: string) => number;
 };
 
 /** One bot's decision in the making: what the tree reads, and what its nodes write. */

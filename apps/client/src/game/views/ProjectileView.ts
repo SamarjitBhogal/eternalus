@@ -21,9 +21,7 @@ import {
   PROJECTILE_STREAK_LENGTH,
   PROJECTILE_STREAK_WIDTH,
 } from './ProjectileView.constants';
-import type { ProjectileEndingLook } from './ProjectileView.constants';
-
-type Point = EntityDrawState['position'];
+import type { Point, ProjectileEndingLook } from './ProjectileView.types';
 
 /**
  * The placeholder look for projectiles (arrows, bolts): a small dot in the shooter's team colour

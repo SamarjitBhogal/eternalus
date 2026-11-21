@@ -1,5 +1,6 @@
 import type { AiMemory, BotDifficultyDefinition } from '../content/ai/ai.types';
 import type { EntityId } from '../state/EntityStore.types';
+import { hasLineOfFire } from '../state/hasLineOfFire';
 import { compareById } from '../utils/compareById';
 import { sqrt } from '../utils/deterministicMath';
 import type { Vec2 } from '../utils/geometry.types';
@@ -144,7 +145,12 @@ export class BotLeaves {
     if (enemy === null || at === undefined) {
       return 'failure';
     }
-    const isHolding = BotLeaves.attackAndHold(turn, enemy, state.entities.isInReach(id, enemy));
+    const isHolding = BotLeaves.attackAndHold(
+      turn,
+      enemy,
+      state.entities.isInReach(id, enemy) &&
+        hasLineOfFire(state, id, enemy, this.content.shotRadiusOf),
+    );
     this.mayCast(turn, enemy, at);
     if (isHolding) {
       return 'running';

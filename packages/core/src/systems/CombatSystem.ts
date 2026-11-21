@@ -2,13 +2,13 @@ import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
 import { StatusEffects } from '../components/StatusEffects';
 import { Transform } from '../components/Transform';
-import type { HitEffects } from '../abilities/HitEffects';
 import type { DamagePipeline } from '../combat/DamagePipeline';
-import { ProjectileLanding } from '../combat/ProjectileLanding';
 import type { EntityFactory } from '../entities/EntityFactory';
 import type { StrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
+import type { HitRunner } from '../state/HitRunner.types';
 import type { MutableVec2 } from '../utils/vec2.types';
+import type { CombatSystemOptions } from './CombatSystem.types';
 import type { System, SystemContext } from './System.types';
 
 /**
@@ -21,31 +21,30 @@ import type { System, SystemContext } from './System.types';
  * (`attackSpeed`). The attack strategy runs the attacker's statuses' `onHit` steps where the hit
  * lands (`HitEffects`: Fury's knock-back). While the match holds units idle
  * (`state.match.isIdleHeld`, the countdown) no attack lands, no unit turns to its target, and
- * targets are kept for after. First each tick the projectiles in flight land (`ProjectileLanding`).
- * Getting into reach is the controller's job (moving), not this
- * system's.
+ * targets are kept for after. A ranged attack fires a shot (the match's one `EntityFactory` builds
+ * it); `ProjectileSystem`, right before this system, flies and lands the shots. Getting into reach
+ * is the controller's job (moving), not this system's.
  */
 export class CombatSystem implements System {
   public readonly name = 'combat';
   /** Scratch for the point the attacker faces. */
   private readonly aim: MutableVec2 = { x: 0, y: 0 };
-  /** Lands the projectiles in flight. */
-  private readonly landing: ProjectileLanding;
+  private readonly damage: DamagePipeline;
+  private readonly hits: HitRunner | null;
+  private readonly strategies: StrategyRegistry;
+  private readonly factory: EntityFactory;
 
-  /**
-   * @param damage - The match's one damage pipeline, shared with every system that deals damage.
-   * @param hits - Runs the attacker's statuses' `onHit` steps when an attack lands, handed to the
-   *   attack strategy; `null` runs none.
-   * @param strategies - The strategy registry; attacks use `strategies.attack`.
-   * @param factory - Builds the projectiles ranged attacks fire; `null`: ranged attacks cannot fire.
-   */
-  public constructor(
-    private readonly damage: DamagePipeline,
-    private readonly hits: Pick<HitEffects, 'afterHit'> | null = null,
-    private readonly strategies: StrategyRegistry = createDefaultStrategyRegistry(),
-    private readonly factory: EntityFactory | null = null,
-  ) {
-    this.landing = new ProjectileLanding(damage, hits);
+  /** Creates the system from its injected parts (`CombatSystemOptions`). */
+  public constructor({
+    damage,
+    factory,
+    hits = null,
+    strategies = createDefaultStrategyRegistry(),
+  }: CombatSystemOptions) {
+    this.damage = damage;
+    this.factory = factory;
+    this.hits = hits;
+    this.strategies = strategies;
   }
 
   /** Runs each attacker in store order. */
@@ -53,8 +52,6 @@ export class CombatSystem implements System {
     if (state.match.isIdleHeld) {
       return;
     }
-    // First the shots in the air, so a shot fired this tick flies a tick before it can land.
-    this.landing.land(state);
     state.entities.forEach((attacker) => {
       const combat = attacker.findComponent(Combat);
       if (combat?.targetId == null) {

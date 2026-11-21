@@ -37,6 +37,7 @@ const controllerWith = (readiness: SlotReadiness) =>
     },
     retreatTo: RETREAT_STRUCTURES,
     readiness,
+    shotRadiusOf: () => 0,
   });
 /** Only `ability-1` is ready, so the cast rule has one choice. */
 const controller = controllerWith(onlyReady('ability-1'));

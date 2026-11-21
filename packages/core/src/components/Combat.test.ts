@@ -4,7 +4,7 @@ import { Combat } from './Combat';
 
 describe('Combat', () => {
   it('starts idle and ready, then waits one interval after each hit', () => {
-    const combat = new Combat({ strategy: 'melee', damage: 10, reach: 1, interval: 5 });
+    const combat = new Combat({ basic: { strategy: 'melee', damage: 10, reach: 1, interval: 5 } });
 
     expect(combat.targetId).toBeNull();
     expect(combat.canAttack(0)).toBe(true);
@@ -14,7 +14,7 @@ describe('Combat', () => {
   });
 
   it('sets and clears its target', () => {
-    const combat = new Combat({ strategy: 'melee', damage: 10, reach: 1, interval: 5 });
+    const combat = new Combat({ basic: { strategy: 'melee', damage: 10, reach: 1, interval: 5 } });
 
     combat.setTarget('entity-2');
     expect(combat.targetId).toBe('entity-2');
@@ -23,7 +23,7 @@ describe('Combat', () => {
   });
 
   it('divides the cooldown by the attack speed, and never below one tick', () => {
-    const combat = new Combat({ strategy: 'melee', damage: 10, reach: 1, interval: 7 });
+    const combat = new Combat({ basic: { strategy: 'melee', damage: 10, reach: 1, interval: 7 } });
 
     combat.beginAttack(0, 0.7);
     expect(combat.readyAtTick).toBe(10);
@@ -34,8 +34,8 @@ describe('Combat', () => {
   it('names the equipped weapon, or null for a natural attack', () => {
     const attack = { strategy: 'melee', damage: 10, reach: 1, interval: 5 } as const;
 
-    expect(new Combat(attack, 'test-talons').weaponId).toBe('test-talons');
-    expect(new Combat(attack).weaponId).toBeNull();
+    expect(new Combat({ basic: attack }, 'test-talons').weaponId).toBe('test-talons');
+    expect(new Combat({ basic: attack }).weaponId).toBeNull();
   });
 
   describe('attack mode (DEC-308)', () => {
@@ -49,7 +49,7 @@ describe('Combat', () => {
     } as const;
 
     it('follows the mode: basic by default, melee after setTarget with melee', () => {
-      const combat = new Combat(ranged, 'staff', melee);
+      const combat = new Combat({ basic: ranged, melee }, 'staff');
 
       combat.setTarget('t');
       expect(combat.attack).toBe(ranged);
@@ -62,17 +62,19 @@ describe('Combat', () => {
     });
 
     it('uses the melee attack for the cooldown while in melee mode', () => {
-      const combat = new Combat(ranged, 'staff', { ...melee, interval: 9 });
+      const combat = new Combat({ basic: ranged, melee: { ...melee, interval: 9 } }, 'staff');
 
       combat.setTarget('t', 'melee');
       combat.beginAttack(10);
       expect(combat.readyAtTick).toBe(19);
     });
 
-    it('has no melee for a ranged-only attack, and takes a melee basic attack as its melee', () => {
-      expect(new Combat(ranged).melee).toBeNull();
-      expect(new Combat(melee).melee).toBe(melee);
-      const rangedOnly = new Combat(ranged);
+    it('reports which modes exist, and falls back to basic for a missing one', () => {
+      const rangedOnly = new Combat({ basic: ranged });
+
+      expect(rangedOnly.hasMode('basic')).toBe(true);
+      expect(rangedOnly.hasMode('melee')).toBe(false);
+      expect(new Combat({ basic: melee, melee }).hasMode('melee')).toBe(true);
       rangedOnly.setTarget('t', 'melee');
       expect(rangedOnly.attack).toBe(ranged);
     });

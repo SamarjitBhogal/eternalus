@@ -53,7 +53,7 @@ const setup = () => {
 };
 
 describe('RangedProjectileAttackStrategy', () => {
-  it('spawns a projectile at the attacker edge, aimed at the target, with its payload', () => {
+  it('spawns a projectile at the attacker centre, aimed at the target, with its payload', () => {
     const { state, attacker, factory, spawned } = setup();
 
     new RangedProjectileAttackStrategy().attack(attacker, 'entity-2', ATTACK, {
@@ -66,33 +66,49 @@ describe('RangedProjectileAttackStrategy', () => {
     const shot = state.entities.get('entity-3');
     expect(shot?.kind).toBe('projectile');
     expect(shot?.definitionId).toBe('magus-bolt');
-    const radius = attacker.getComponent(Transform).radius;
-    expect(shot?.getComponent(Transform).position.x).toBeCloseTo(radius);
-    expect(shot?.getComponent(Transform).position.y).toBeCloseTo(0);
+    // The centre, not the edge: the shot's circle starts clear of any wall the Magus is kept out of.
+    expect(shot?.getComponent(Transform).position).toEqual({ x: 0, y: 0 });
     expect(shot?.getComponent(Movement).heading).toEqual({ x: 1, y: 0 });
     const payload = shot?.getComponent(ProjectilePayload);
     expect(payload?.ownerId).toBe('entity-1');
     expect(payload?.team).toBe('light');
+    expect(payload?.targetId).toBe('entity-2');
     expect(payload?.source).toEqual({
       attackerId: 'entity-1',
       kind: 'weapon',
       definitionId: 'magus-staff',
     });
-    expect(payload?.attack).toBe(ATTACK);
-    expect(payload?.origin.x).toBeCloseTo(radius);
+    expect(payload?.impact).toEqual({ kind: 'weapon', attack: ATTACK });
+    expect(payload?.origin).toEqual({ x: 0, y: 0 });
     expect(spawned).toEqual([{ entityId: 'entity-3', kind: 'projectile', team: 'light' }]);
   });
 
-  it('fires nothing without a factory', () => {
-    const { state, attacker } = setup();
+  it('throws when handed a melee attack, which a miswired registry would do', () => {
+    const { state, attacker, factory } = setup();
+    const melee = { strategy: 'melee', damage: 40, reach: 1.5, interval: 24 } as const;
 
-    new RangedProjectileAttackStrategy().attack(attacker, 'entity-2', ATTACK, {
-      state,
-      damage: NO_DAMAGE,
-      hits: null,
-      factory: null,
-    });
+    expect(() => {
+      new RangedProjectileAttackStrategy().attack(attacker, 'entity-2', melee, {
+        state,
+        damage: NO_DAMAGE,
+        hits: null,
+        factory,
+      });
+    }).toThrow('cannot fire a "melee" attack');
+    expect(state.entities.has('entity-3')).toBe(false);
+  });
 
+  it('throws when the target has no point to aim at, rather than spend the attack on nothing', () => {
+    const { state, attacker, factory } = setup();
+
+    expect(() => {
+      new RangedProjectileAttackStrategy().attack(attacker, 'entity-404', ATTACK, {
+        state,
+        damage: NO_DAMAGE,
+        hits: null,
+        factory,
+      });
+    }).toThrow('no point to aim at on "entity-404"');
     expect(state.entities.has('entity-3')).toBe(false);
   });
 });

@@ -73,6 +73,11 @@ export type AttackMode = 'basic' | 'melee';
  */
 export type UnitAttack = MeleeAttack | RangedAttack;
 
+/** A unit's attacks by mode, resolved once at spawn (`attacksByMode`). Every unit has a basic attack. */
+export type UnitAttacks = Readonly<Partial<Record<AttackMode, UnitAttack>>> & {
+  readonly basic: UnitAttack;
+};
+
 /** What every unit definition (Legend or mob) has. Shared, immutable and keyed by `id`. */
 export type UnitDefinition = EntityDefinitionBase & {
   /** Full base health. */

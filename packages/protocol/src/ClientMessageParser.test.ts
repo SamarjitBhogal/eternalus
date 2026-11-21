@@ -74,6 +74,20 @@ describe('ClientMessageParser', () => {
     });
   });
 
+  it('keeps isMeleeAttacking, and refuses a non-boolean one', () => {
+    const withMelee = { ...intent, aim: null, isMeleeAttacking: true };
+
+    expect(parser.parse(JSON.stringify({ type: 'intent', seq: 0, intent: withMelee }))).toEqual({
+      ok: true,
+      message: { type: 'intent', seq: 0, intent: withMelee },
+    });
+    expect(
+      parser.parse(
+        JSON.stringify({ type: 'intent', seq: 0, intent: { ...intent, isMeleeAttacking: 'yes' } }),
+      ),
+    ).toEqual({ ok: false, reason: 'malformed' });
+  });
+
   it('refuses a message over the size limit before parsing it', () => {
     expect(parser.parse(' '.repeat(MAX_CLIENT_MESSAGE_LENGTH + 1))).toEqual({
       ok: false,

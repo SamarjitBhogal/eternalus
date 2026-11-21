@@ -2,34 +2,13 @@ import { TickRate } from '../../utils/TickRate';
 import { ContentCatalogue } from '../ContentCatalogue';
 import { ContentValidationError } from '../ContentValidationError';
 import { KEBAB_CASE } from '../validation/KebabCaseIdRule.constants';
+import { KnownProjectileRule } from '../validation/KnownProjectileRule';
 import { PROJECTILES } from '../projectiles/projectileCatalogue';
 import { WEAPONS } from './weaponCatalogue';
 import type { ProjectileDefinition } from '../projectiles/projectiles.types';
-import type { ProjectileLaunch } from '../units/units.types';
 import type { WeaponDefinition } from './weapons.types';
 
 const isPositive = (value: number): boolean => value > 0 && Number.isFinite(value);
-
-/** What is wrong with the shot an attack fires, or nothing. */
-const projectileProblems = (
-  { projectileId, falloff }: ProjectileLaunch,
-  projectiles: Pick<ContentCatalogue<ProjectileDefinition>, 'has'>,
-): string[] => {
-  const problems: string[] = [];
-  if (!projectiles.has(projectileId)) problems.push(`unknown projectile "${projectileId}"`);
-  if (falloff !== null) {
-    if (!(
-      falloff.fullTo > 0 &&
-      falloff.fullTo < falloff.floorAt &&
-      Number.isFinite(falloff.floorAt)
-    )) {
-      problems.push('falloff needs 0 < fullTo < floorAt');
-    }
-    if (!(falloff.floor > 0 && falloff.floor <= 1))
-      problems.push('falloff floor must be in (0, 1]');
-  }
-  return problems;
-};
 
 /** What is wrong with `weapon` as authored, or nothing. */
 const problemsOf = (
@@ -44,11 +23,7 @@ const problemsOf = (
       problems.push(`attack ${field} must be positive`);
     }
   }
-  for (const attack of weapon.attacks) {
-    if (attack.strategy === 'ranged-projectile') {
-      problems.push(...projectileProblems(attack.projectile, projectiles));
-    }
-  }
+  problems.push(...new KnownProjectileRule(projectiles).check(weapon));
   if (
     weapon.uniqueTo !== null &&
     weapon.allowedClasses !== 'any' &&

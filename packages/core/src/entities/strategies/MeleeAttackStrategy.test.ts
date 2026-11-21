@@ -5,6 +5,8 @@ import { loadDefaultContent } from '../../content/loadDefaultContent';
 import { loadWeapons } from '../../content/weapons/loadWeapons';
 import type { DamageSource } from '../../state/GameEvents.types';
 import { GameState } from '../../state/GameState';
+import { createDefaultEntityRegistry } from '../defaultEntityRegistry';
+import { EntityFactory } from '../EntityFactory';
 import { Warrior } from '../legends/Warrior';
 import { MeleeAttackStrategy } from './MeleeAttackStrategy';
 
@@ -44,7 +46,7 @@ const hitWith = (definition: typeof WARRIOR): (string | number | DamageSource)[]
     state,
     damage,
     hits,
-    factory: null,
+    factory: new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30)),
   });
   return calls;
 };

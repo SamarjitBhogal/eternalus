@@ -7,6 +7,7 @@ import { StatusEffects } from '../components/StatusEffects';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { Vision } from '../components/Vision';
+import { attacksByMode } from '../content/units/attacksByMode';
 import type { UnitDefinition } from '../content/units/units.types';
 import { Entity } from './Entity';
 import { SpawnContextReader } from './SpawnContextReader';
@@ -61,7 +62,7 @@ export abstract class Unit extends Entity {
     this.addComponent(new StatusEffects());
     const basic = this.basicAttack(context);
     if (basic !== undefined) {
-      this.addComponent(new Combat(basic.attack, basic.weaponId, basic.melee));
+      this.addComponent(new Combat(basic.attacks, basic.weaponId));
     }
     if (controller !== undefined) {
       this.addComponent(
@@ -80,6 +81,7 @@ export abstract class Unit extends Entity {
    */
   protected basicAttack(context: unknown): BasicAttack | undefined {
     const { definition } = new SpawnContextReader(this).placed<UnitDefinition>(context);
-    return definition.attack && { attack: definition.attack, weaponId: null };
+    const attacks = definition.attack && attacksByMode([definition.attack]);
+    return attacks && { attacks, weaponId: null };
   }
 }

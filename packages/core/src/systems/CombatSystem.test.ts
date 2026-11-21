@@ -46,15 +46,18 @@ const setUp = () => {
   const warrior = spawn('warrior', 'warrior', 0, 'light');
   const context: SystemContext = { state, logger: new NullLogger() };
   const attack = (target: Entity) => state.entities.setAttackTarget(warrior.id, target.id);
-  return { state, warrior, spawn, context, attack };
+  /** A combat system on a fresh damage pipeline, firing with this world's factory. */
+  const combatSystem = (): CombatSystem =>
+    new CombatSystem({ damage: new DamagePipeline(), factory });
+  return { state, warrior, spawn, context, attack, combatSystem };
 };
 
 describe('CombatSystem', () => {
   it('hits a target in reach once per attack interval', () => {
-    const { state, warrior, spawn, context, attack } = setUp();
+    const { state, warrior, spawn, context, attack, combatSystem } = setUp();
     const dummy = spawn('light-mob', 'training-dummy', 1, 'dark');
     const { damage, interval } = warrior.getComponent(Combat).attack;
-    const system = new CombatSystem(new DamagePipeline());
+    const system = combatSystem();
 
     expect(attack(dummy)).toBe(true);
     for (let tick = 0; tick <= interval; tick += 1) {
@@ -67,19 +70,19 @@ describe('CombatSystem', () => {
   });
 
   it('does not hit a target out of reach', () => {
-    const { spawn, context, attack } = setUp();
+    const { spawn, context, attack, combatSystem } = setUp();
     const dummy = spawn('light-mob', 'training-dummy', 50, 'dark');
 
     attack(dummy);
-    new CombatSystem(new DamagePipeline()).update(context);
+    combatSystem().update(context);
 
     expect(dummy.getComponent(Health).current).toBe(dummy.getComponent(Health).max);
   });
 
   it('turns to face a target in reach, also while the attack cools down (DEC-192)', () => {
-    const { state, warrior, spawn, context, attack } = setUp();
+    const { state, warrior, spawn, context, attack, combatSystem } = setUp();
     const facing = warrior.getComponent(Transform).facing;
-    const system = new CombatSystem(new DamagePipeline());
+    const system = combatSystem();
     attack(spawn('light-mob', 'training-dummy', -1, 'dark'));
 
     system.update(context);
@@ -94,19 +97,19 @@ describe('CombatSystem', () => {
   });
 
   it('does not turn while a status stops its attacks (cannot-attack)', () => {
-    const { warrior, spawn, context, attack } = setUp();
+    const { warrior, spawn, context, attack, combatSystem } = setUp();
     warrior
       .getComponent(StatusEffects)
       .apply(loadStatusEffects(CONFIG.tickRate, 2).get('stun'), null, 0);
 
     attack(spawn('light-mob', 'training-dummy', -1, 'dark'));
-    new CombatSystem(new DamagePipeline()).update(context);
+    combatSystem().update(context);
 
     expect(warrior.getComponent(Transform).facing).toEqual(INITIAL_FACING);
   });
 
   it('faces the nearest point of a long wall it attacks, not its centre (DEC-216 (11))', () => {
-    const { state, warrior, context, attack } = setUp();
+    const { state, warrior, context, attack, combatSystem } = setUp();
     const { house } = MAP_OBJECT_DEFINITIONS;
     const content = loadDefaultContent(CONFIG.tickRate);
     // Ids start after the Warrior's, so the object does not clash with it.
@@ -133,13 +136,13 @@ describe('CombatSystem', () => {
     state.entities.add(object);
 
     expect(attack(object)).toBe(true);
-    new CombatSystem(new DamagePipeline()).update(context);
+    combatSystem().update(context);
 
     expect(warrior.getComponent(Transform).facing).toEqual({ x: 0, y: -1 });
   });
 
   it('faces the centre of a map object it attacks from inside its footprint (DEC-220 (1))', () => {
-    const { state, warrior, context, attack } = setUp();
+    const { state, warrior, context, attack, combatSystem } = setUp();
     const { house } = MAP_OBJECT_DEFINITIONS;
     const content = loadDefaultContent(CONFIG.tickRate);
     // Ids start after the Warrior's, so the object does not clash with it.
@@ -166,13 +169,13 @@ describe('CombatSystem', () => {
     state.entities.add(object);
 
     expect(attack(object)).toBe(true);
-    new CombatSystem(new DamagePipeline()).update(context);
+    combatSystem().update(context);
 
     expect(warrior.getComponent(Transform).facing).toEqual({ x: 0, y: -1 });
   });
 
   it('faces the nearest point of a fort it attacks, not the tower at its centre (DEC-216 (11))', () => {
-    const { warrior, spawn, context, attack } = setUp();
+    const { warrior, spawn, context, attack, combatSystem } = setUp();
     // A tower stand-in at (30, 0) whose fort's west wall (x 1..4, y -16..16) is 1 m east of the
     // attacker: reach is measured to the wall, so the wall is what it faces.
     const tower = spawn('light-mob', 'training-dummy', 30, 'dark');
@@ -189,25 +192,25 @@ describe('CombatSystem', () => {
     warrior.getComponent(Transform).moveTo({ x: 0, y: 6 });
 
     attack(tower);
-    new CombatSystem(new DamagePipeline()).update(context);
+    combatSystem().update(context);
 
     expect(warrior.getComponent(Transform).facing).toEqual({ x: 1, y: 0 });
   });
 
   it('does not turn toward a target out of reach', () => {
-    const { warrior, spawn, context, attack } = setUp();
+    const { warrior, spawn, context, attack, combatSystem } = setUp();
 
     attack(spawn('light-mob', 'training-dummy', -50, 'dark'));
-    new CombatSystem(new DamagePipeline()).update(context);
+    combatSystem().update(context);
 
     expect(warrior.getComponent(Transform).facing).toEqual(INITIAL_FACING);
   });
 
   it('lands no attack while the match holds units idle, and keeps the target for after', () => {
-    const { state, warrior, spawn, context, attack } = setUp();
+    const { state, warrior, spawn, context, attack, combatSystem } = setUp();
     const dummy = spawn('light-mob', 'training-dummy', 1, 'dark');
     const health = dummy.getComponent(Health);
-    const system = new CombatSystem(new DamagePipeline());
+    const system = combatSystem();
     attack(dummy);
     state.match.holdIdle(true);
 
@@ -221,21 +224,21 @@ describe('CombatSystem', () => {
   });
 
   it('drops a target once it is dead', () => {
-    const { warrior, spawn, context, attack } = setUp();
+    const { warrior, spawn, context, attack, combatSystem } = setUp();
     const dummy = spawn('light-mob', 'training-dummy', 1, 'dark');
 
     attack(dummy);
     dummy.getComponent(Health).applyDamage(1_000_000);
-    new CombatSystem(new DamagePipeline()).update(context);
+    combatSystem().update(context);
 
     expect(warrior.getComponent(Combat).targetId).toBeNull();
   });
 
   it('gives the same hash for the same seed and attacks (determinism)', () => {
     const run = (): number => {
-      const { state, spawn, context, attack } = setUp();
+      const { state, spawn, context, attack, combatSystem } = setUp();
       attack(spawn('light-mob', 'training-dummy', 1, 'dark'));
-      const system = new CombatSystem(new DamagePipeline());
+      const system = combatSystem();
       for (let tick = 0; tick < 60; tick += 1) {
         system.update(context);
         state.advanceTick();
@@ -289,7 +292,10 @@ const firstHit = (kind: string, definitionId: string): { amount: number; source:
   state.events.on('damage-applied', ({ amount, source }) => hits.push({ amount, source }));
 
   state.entities.setAttackTarget(attacker.id, dummy.id);
-  new CombatSystem(new DamagePipeline()).update({ state, logger: new NullLogger() });
+  new CombatSystem({ damage: new DamagePipeline(), factory }).update({
+    state,
+    logger: new NullLogger(),
+  });
 
   const [hit] = hits;
   if (hit === undefined) {

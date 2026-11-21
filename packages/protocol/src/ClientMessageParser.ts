@@ -65,9 +65,10 @@ export class ClientMessageParser {
     const move = ClientMessageParser.toVec2(data.move);
     const aim = data.aim === null ? null : ClientMessageParser.toVec2(data.aim);
     const triggered = ClientMessageParser.toSlots(data.triggered);
-    const { isAttacking } = data;
+    const { isAttacking, isMeleeAttacking } = data;
     if (move === undefined || aim === undefined || triggered === undefined) return undefined;
     if (isAttacking !== undefined && typeof isAttacking !== 'boolean') return undefined;
+    if (isMeleeAttacking !== undefined && typeof isMeleeAttacking !== 'boolean') return undefined;
     // The movement axes are a normalised vector (Command.types `InputIntent`).
     if (Math.abs(move.x) > 1 || Math.abs(move.y) > 1) return undefined;
     return {
@@ -75,6 +76,7 @@ export class ClientMessageParser {
       aim,
       triggered,
       ...(isAttacking === undefined ? {} : { isAttacking }),
+      ...(isMeleeAttacking === undefined ? {} : { isMeleeAttacking }),
     };
   }
 

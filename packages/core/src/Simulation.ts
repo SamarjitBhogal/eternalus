@@ -85,6 +85,7 @@ import { MatchPathfinderFactory } from './map/MatchPathfinderFactory';
 import { staticCollisionIndexOf } from './map/staticCollisionIndexOf';
 import { zoneAreaOf } from './map/zoneArea';
 import { loadProjectiles } from './content/projectiles/loadProjectiles';
+import type { ProjectileDefinition } from './content/projectiles/projectiles.types';
 import { DefaultSystemPipeline } from './systems/DefaultSystemPipeline';
 import type { SystemContext } from './systems/System.types';
 import { SystemPipeline } from './systems/SystemPipeline';
@@ -182,12 +183,12 @@ export class Simulation {
     const validator = new CastValidator(registry);
     this.handlers = createDefaultCommandHandlers(validator);
     this.readiness = validator;
-    const controllers = Simulation.createControllers(validator, tickRate);
+    const projectiles = loadProjectiles(tickRate);
+    const controllers = Simulation.createControllers(validator, tickRate, projectiles);
     const units = content ?? Simulation.defaultContent(tickRate, curves, controllers, weaponSource);
     const objectsById = new Map(
       Object.values(MAP_OBJECT_DEFINITIONS).map((definition) => [definition.id, definition]),
     );
-    const projectiles = loadProjectiles(tickRate);
     const definitions = {
       has: (id: string): boolean =>
         objectsById.has(id) || ZONE_DEFINITIONS.has(id) || projectiles.has(id) || units.has(id),
@@ -254,13 +255,13 @@ export class Simulation {
           terminalPhases: TERMINAL_MATCH_PHASES,
         }),
         state: this.state,
+        factory,
         progression: { units, curves, xpSources: XP_SOURCES, ultimateCharge: ULTIMATE_CHARGE },
         director,
         abilities: registry,
         validator,
         ...(duelStarts === undefined ? {} : { duelStarts }),
         hordes: {
-          factory,
           space,
           ...(guardPlans === undefined ? {} : { guards: guardPlans }),
           collisions: collisions === null ? [] : [new CollisionSystem(collisions)],
@@ -385,7 +386,8 @@ export class Simulation {
    * DEC-185 D; a gate's own outline, DEC-217 (17)). A blocking such object (a fort) is the
    * structure's body: it has no health of its own (one pool, DEC-185 B). Only towers share one
    * pool (DEC-217 (13)): the palace's and the gates' objects do not block, so they keep their own
-   * health.
+   * health, and their outline is walked on (`Footprint.isWalkOn`): a shot flies over it unless it
+   * was fired at the structure.
    *
    * @returns Map object id → the id of the structure it is the body of.
    */
@@ -411,7 +413,9 @@ export class Simulation {
         };
         const structure = factory.create(kind, definitionId, placement);
         const body = hasMapFootprint === true ? bodies.get(id) : undefined;
-        if (body !== undefined) structure.addComponent(new Footprint(body.footprints));
+        if (body !== undefined) {
+          structure.addComponent(new Footprint(body.footprints, { isWalkOn: !body.isBlocking }));
+        }
         if (body?.isBlocking === true) owners.set(body.id, structure.id);
         state.entities.add(structure);
       }
@@ -766,10 +770,20 @@ export class Simulation {
 
   /**
    * Every controller, with the shipped content it reads (architecture 11 §2); the aggro profiles
-   * are loaded at `tickRate`.
+   * are loaded at `tickRate`. Bots read a shot's radius from `projectiles` to check their line of
+   * fire.
    */
-  private static createControllers(readiness: SlotReadiness, tickRate: number): ControllerRegistry {
-    const bots = { difficulties: BOT_DIFFICULTIES, retreatTo: RETREAT_STRUCTURES, readiness };
+  private static createControllers(
+    readiness: SlotReadiness,
+    tickRate: number,
+    projectiles: Pick<ContentCatalogue<ProjectileDefinition>, 'get'>,
+  ): ControllerRegistry {
+    const bots = {
+      difficulties: BOT_DIFFICULTIES,
+      retreatTo: RETREAT_STRUCTURES,
+      readiness,
+      shotRadiusOf: (projectileId: string): number => projectiles.get(projectileId).footprintRadius,
+    };
     return createDefaultControllerRegistry({
       leash: { aggro: loadAggroRules(tickRate), classOf: unitClassOf },
       botLegend: bots,

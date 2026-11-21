@@ -29,6 +29,7 @@ const controller = new RoverController({
   legendKinds: LEGEND_KIND_IDS,
   laneWeights: LANE_ASSESSMENT_WEIGHTS,
   readiness: allReady,
+  shotRadiusOf: () => 0,
 });
 
 /** A dark Rover on the two-lane map (lane-0 along y 20, lane-1 along y 40, x 20 to 180). */
