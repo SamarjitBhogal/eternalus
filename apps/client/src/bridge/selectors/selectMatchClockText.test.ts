@@ -7,7 +7,7 @@ const at = (seconds: number | null) =>
   selectMatchClockText({
     match: {
       ...matchSlice.getInitialState(),
-      clock: seconds === null ? null : { tick: Math.floor(seconds * 30), seconds },
+      clock: seconds === null ? null : { tick: Math.floor(seconds * 30), seconds, countdown: null },
     },
   });
 
