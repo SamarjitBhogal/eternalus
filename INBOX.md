@@ -2756,6 +2756,16 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
+- [ ] **Make the tower horde test faster (DEC-289, 2026-11-20).** Owner: to be assigned.
+      `Simulation.mapObjects.test.ts`, "walks every tower horde out of its tower and on up its
+      lane within 10 seconds (DEC-133, seed %i)", builds a whole map and match for each of its
+      three seeds (1, 2, 10), steps the countdown, then 10 s of play. One seed takes about 3 s
+      locally without coverage, but up to 65 s under coverage on the windows-latest CI runner
+      (PR #122, run 44714237495, 2026-11-20). DEC-289 gave this test its own 120 s time limit
+      (`HORDE_WALK_TIMEOUT_MS`) until it is faster. Where the time goes is not measured yet. Done
+      when the test runs well under 60 s on windows-latest CI and `HORDE_WALK_TIMEOUT_MS` is
+      removed, with every assertion and all three seeds kept (seed 10 covers critic round 3,
+      M-A).
 - [ ] **PR #30 renderer follow-up** — Owner: Gurshaan. Separate caching/batching and close-view
       material detail from the map PR; retain all renderer-specific tests with that change.
       Keep draw order inside SceneView, address renderer file length and the capture layer,
