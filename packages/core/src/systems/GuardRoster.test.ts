@@ -38,7 +38,7 @@ describe('GuardRoster', () => {
     const state = new GameState(config, 1, matchWorldOf(TWO_LANE_MAP));
     spawnMapStructures(state);
     const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(TICK_RATE));
-    const roster = new GuardRoster(factory, factory.definitions, GUARD_PLANS);
+    const roster = new GuardRoster(factory, factory.definitions, GUARD_PLANS, {});
     roster.layOut(state);
     const step = () => {
       roster.update(state);
@@ -264,7 +264,7 @@ describe('GuardRoster', () => {
         createDefaultEntityRegistry(),
         loadDefaultContent(TICK_RATE),
       );
-      const roster = new GuardRoster(factory, factory.definitions, GUARD_PLANS);
+      const roster = new GuardRoster(factory, factory.definitions, GUARD_PLANS, {});
       roster.layOut(state);
       const cleared: string[] = [];
       state.events.on('camp-cleared', ({ entityId }) => cleared.push(entityId));
@@ -494,7 +494,7 @@ describe('GuardRoster', () => {
       throw new Error('no spawner-tower guard plan');
     }
     const plan = { ...base, postGap: 2, leashRadius: 5 };
-    new GuardRoster(factory, factory.definitions, { 'spawner-tower': plan }).layOut(state);
+    new GuardRoster(factory, factory.definitions, { 'spawner-tower': plan }, {}).layOut(state);
 
     let posts = 0;
     state.guards.forEach((post) => {
@@ -547,7 +547,7 @@ describe('GuardRoster', () => {
     if (base === undefined) {
       throw new Error('no spawner-tower guard plan');
     }
-    new GuardRoster(factory, factory.definitions, { 'spawner-tower': base }).layOut(state);
+    new GuardRoster(factory, factory.definitions, { 'spawner-tower': base }, {}).layOut(state);
 
     let posts = 0;
     state.guards.forEach((post) => {
@@ -608,6 +608,7 @@ describe('GuardRoster', () => {
         factory,
         factory.definitions,
         loadGuardPlans(TICK_RATE, { 'capture-point': { ...ZONE_PLAN, ...plan } }),
+        {},
       );
       roster.layOut(state);
       const cleared: string[] = [];
