@@ -12,6 +12,7 @@ import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
+import { loadProjectiles } from '../content/projectiles/loadProjectiles';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { loadWeapons } from '../content/weapons/loadWeapons';
 import type { WeaponDefinition } from '../content/weapons/weapons.types';
@@ -26,15 +27,22 @@ import { GameState } from '../state/GameState';
 import { StateHasher } from '../state/StateHasher';
 import { CombatSystem } from './CombatSystem';
 import type { SystemContext } from './System.types';
+import { SHIPPED_LINE_OF_FIRE } from '../state/__fixtures__/shippedLineOfFire';
+import type { LineOfFireQuery } from '../state/LineOfFire.types';
 
 const CONFIG = createDefaultGameConfig();
 
 /** A Warrior (light) at the origin; `spawn` adds more units to the same world. */
 const setUp = () => {
   const state = new GameState(CONFIG, 1);
+  const units = loadDefaultContent(CONFIG.tickRate);
+  const projectiles = loadProjectiles(CONFIG.tickRate);
   const factory = new EntityFactory(
     createDefaultEntityRegistry(),
-    loadDefaultContent(CONFIG.tickRate),
+    {
+      has: (id) => projectiles.has(id) || units.has(id),
+      get: (id) => (projectiles.has(id) ? projectiles.get(id) : units.get(id)),
+    },
     undefined,
     loadWeapons(CONFIG.tickRate),
   );
@@ -46,15 +54,18 @@ const setUp = () => {
   const warrior = spawn('warrior', 'warrior', 0, 'light');
   const context: SystemContext = { state, logger: new NullLogger() };
   const attack = (target: Entity) => state.entities.setAttackTarget(warrior.id, target.id);
-  return { state, warrior, spawn, context, attack };
+  /** A combat system on a fresh damage pipeline, firing with this world's factory. */
+  const combatSystem = (lineOfFire: LineOfFireQuery = SHIPPED_LINE_OF_FIRE): CombatSystem =>
+    new CombatSystem({ damage: new DamagePipeline(), factory, lineOfFire });
+  return { state, warrior, spawn, context, attack, combatSystem };
 };
 
 describe('CombatSystem', () => {
   it('hits a target in reach once per attack interval', () => {
-    const { state, warrior, spawn, context, attack } = setUp();
+    const { state, warrior, spawn, context, attack, combatSystem } = setUp();
     const dummy = spawn('light-mob', 'training-dummy', 1, 'dark');
     const { damage, interval } = warrior.getComponent(Combat).attack;
-    const system = new CombatSystem(new DamagePipeline());
+    const system = combatSystem();
 
     expect(attack(dummy)).toBe(true);
     for (let tick = 0; tick <= interval; tick += 1) {
@@ -67,19 +78,19 @@ describe('CombatSystem', () => {
   });
 
   it('does not hit a target out of reach', () => {
-    const { spawn, context, attack } = setUp();
+    const { spawn, context, attack, combatSystem } = setUp();
     const dummy = spawn('light-mob', 'training-dummy', 50, 'dark');
 
     attack(dummy);
-    new CombatSystem(new DamagePipeline()).update(context);
+    combatSystem().update(context);
 
     expect(dummy.getComponent(Health).current).toBe(dummy.getComponent(Health).max);
   });
 
   it('turns to face a target in reach, also while the attack cools down (DEC-192)', () => {
-    const { state, warrior, spawn, context, attack } = setUp();
+    const { state, warrior, spawn, context, attack, combatSystem } = setUp();
     const facing = warrior.getComponent(Transform).facing;
-    const system = new CombatSystem(new DamagePipeline());
+    const system = combatSystem();
     attack(spawn('light-mob', 'training-dummy', -1, 'dark'));
 
     system.update(context);
@@ -94,19 +105,19 @@ describe('CombatSystem', () => {
   });
 
   it('does not turn while a status stops its attacks (cannot-attack)', () => {
-    const { warrior, spawn, context, attack } = setUp();
+    const { warrior, spawn, context, attack, combatSystem } = setUp();
     warrior
       .getComponent(StatusEffects)
       .apply(loadStatusEffects(CONFIG.tickRate, 2).get('stun'), null, 0);
 
     attack(spawn('light-mob', 'training-dummy', -1, 'dark'));
-    new CombatSystem(new DamagePipeline()).update(context);
+    combatSystem().update(context);
 
     expect(warrior.getComponent(Transform).facing).toEqual(INITIAL_FACING);
   });
 
   it('faces the nearest point of a long wall it attacks, not its centre (DEC-216 (11))', () => {
-    const { state, warrior, context, attack } = setUp();
+    const { state, warrior, context, attack, combatSystem } = setUp();
     const { house } = MAP_OBJECT_DEFINITIONS;
     const content = loadDefaultContent(CONFIG.tickRate);
     // Ids start after the Warrior's, so the object does not clash with it.
@@ -133,13 +144,13 @@ describe('CombatSystem', () => {
     state.entities.add(object);
 
     expect(attack(object)).toBe(true);
-    new CombatSystem(new DamagePipeline()).update(context);
+    combatSystem().update(context);
 
     expect(warrior.getComponent(Transform).facing).toEqual({ x: 0, y: -1 });
   });
 
   it('faces the centre of a map object it attacks from inside its footprint (DEC-220 (1))', () => {
-    const { state, warrior, context, attack } = setUp();
+    const { state, warrior, context, attack, combatSystem } = setUp();
     const { house } = MAP_OBJECT_DEFINITIONS;
     const content = loadDefaultContent(CONFIG.tickRate);
     // Ids start after the Warrior's, so the object does not clash with it.
@@ -166,13 +177,13 @@ describe('CombatSystem', () => {
     state.entities.add(object);
 
     expect(attack(object)).toBe(true);
-    new CombatSystem(new DamagePipeline()).update(context);
+    combatSystem().update(context);
 
     expect(warrior.getComponent(Transform).facing).toEqual({ x: 0, y: -1 });
   });
 
   it('faces the nearest point of a fort it attacks, not the tower at its centre (DEC-216 (11))', () => {
-    const { warrior, spawn, context, attack } = setUp();
+    const { warrior, spawn, context, attack, combatSystem } = setUp();
     // A tower stand-in at (30, 0) whose fort's west wall (x 1..4, y -16..16) is 1 m east of the
     // attacker: reach is measured to the wall, so the wall is what it faces.
     const tower = spawn('light-mob', 'training-dummy', 30, 'dark');
@@ -189,25 +200,60 @@ describe('CombatSystem', () => {
     warrior.getComponent(Transform).moveTo({ x: 0, y: 6 });
 
     attack(tower);
-    new CombatSystem(new DamagePipeline()).update(context);
+    combatSystem().update(context);
 
     expect(warrior.getComponent(Transform).facing).toEqual({ x: 1, y: 0 });
   });
 
   it('does not turn toward a target out of reach', () => {
-    const { warrior, spawn, context, attack } = setUp();
+    const { warrior, spawn, context, attack, combatSystem } = setUp();
 
     attack(spawn('light-mob', 'training-dummy', -50, 'dark'));
-    new CombatSystem(new DamagePipeline()).update(context);
+    combatSystem().update(context);
 
     expect(warrior.getComponent(Transform).facing).toEqual(INITIAL_FACING);
   });
 
+  it('fires a ranged attack only with a clear line, facing the target and staying ready (DEC-317)', () => {
+    const { state, spawn, context, combatSystem } = setUp();
+    const magus = spawn('magus', 'magus', 10, 'light');
+    const dummy = spawn('light-mob', 'training-dummy', 5, 'dark');
+    const asked: string[][] = [];
+    let isClear = false;
+    const system = combatSystem({
+      isClear: (_state, attackerId, targetId) => {
+        asked.push([attackerId, targetId]);
+        return isClear;
+      },
+    });
+    let shots = 0;
+    state.events.on('entity-spawned', ({ kind }) => {
+      if (kind === 'projectile') shots += 1;
+    });
+    expect(state.entities.setAttackTarget(magus.id, dummy.id)).toBe(true);
+
+    for (let tick = 0; tick < 60; tick += 1) {
+      system.update(context);
+      state.advanceTick();
+    }
+
+    expect(shots).toBe(0);
+    expect(asked[0]).toEqual([magus.id, dummy.id]);
+    expect(magus.getComponent(Transform).facing).toEqual({ x: -1, y: 0 });
+    expect(magus.getComponent(Combat).targetId).toBe(dummy.id);
+    expect(magus.getComponent(Combat).canAttack(state.tick)).toBe(true);
+
+    isClear = true;
+    system.update(context);
+
+    expect(shots).toBe(1);
+  });
+
   it('lands no attack while the match holds units idle, and keeps the target for after', () => {
-    const { state, warrior, spawn, context, attack } = setUp();
+    const { state, warrior, spawn, context, attack, combatSystem } = setUp();
     const dummy = spawn('light-mob', 'training-dummy', 1, 'dark');
     const health = dummy.getComponent(Health);
-    const system = new CombatSystem(new DamagePipeline());
+    const system = combatSystem();
     attack(dummy);
     state.match.holdIdle(true);
 
@@ -221,21 +267,21 @@ describe('CombatSystem', () => {
   });
 
   it('drops a target once it is dead', () => {
-    const { warrior, spawn, context, attack } = setUp();
+    const { warrior, spawn, context, attack, combatSystem } = setUp();
     const dummy = spawn('light-mob', 'training-dummy', 1, 'dark');
 
     attack(dummy);
     dummy.getComponent(Health).applyDamage(1_000_000);
-    new CombatSystem(new DamagePipeline()).update(context);
+    combatSystem().update(context);
 
     expect(warrior.getComponent(Combat).targetId).toBeNull();
   });
 
   it('keeps a target that turns untargetable (Veil, DEC-266) but does not hit it; hits it after', () => {
-    const { state, warrior, spawn, context, attack } = setUp();
+    const { state, warrior, spawn, context, attack, combatSystem } = setUp();
     const dummy = spawn('light-mob', 'training-dummy', 1, 'dark');
     const veil = loadStatusEffects(CONFIG.tickRate, 2).get('invisible');
-    const system = new CombatSystem(new DamagePipeline());
+    const system = combatSystem();
     const health = dummy.getComponent(Health);
 
     attack(dummy);
@@ -253,9 +299,9 @@ describe('CombatSystem', () => {
 
   it('gives the same hash for the same seed and attacks (determinism)', () => {
     const run = (): number => {
-      const { state, spawn, context, attack } = setUp();
+      const { state, spawn, context, attack, combatSystem } = setUp();
       attack(spawn('light-mob', 'training-dummy', 1, 'dark'));
-      const system = new CombatSystem(new DamagePipeline());
+      const system = combatSystem();
       for (let tick = 0; tick < 60; tick += 1) {
         system.update(context);
         state.advanceTick();
@@ -309,7 +355,14 @@ const firstHit = (kind: string, definitionId: string): { amount: number; source:
   state.events.on('damage-applied', ({ amount, source }) => hits.push({ amount, source }));
 
   state.entities.setAttackTarget(attacker.id, dummy.id);
-  new CombatSystem(new DamagePipeline()).update({ state, logger: new NullLogger() });
+  new CombatSystem({
+    damage: new DamagePipeline(),
+    factory,
+    lineOfFire: SHIPPED_LINE_OF_FIRE,
+  }).update({
+    state,
+    logger: new NullLogger(),
+  });
 
   const [hit] = hits;
   if (hit === undefined) {

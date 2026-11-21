@@ -29,6 +29,7 @@ import { DefaultSystemPipeline } from './DefaultSystemPipeline';
 import { StatusEffectSystem } from './StatusEffectSystem';
 import type { System, SystemContext } from './System.types';
 import { loadWeapons } from '../content/weapons/loadWeapons';
+import { SHIPPED_LINE_OF_FIRE } from '../state/__fixtures__/shippedLineOfFire';
 
 const CONFIG = createDefaultGameConfig();
 const statusSystem = (state: GameState, applier: StatusEffectApplier) =>
@@ -87,6 +88,9 @@ const tickPipeline = (state: GameState): System => {
       terminalPhases: TERMINAL_MATCH_PHASES,
     }),
     state,
+    // A warrior fires no shot and nothing spawns here, so this factory builds nothing.
+    factory: new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(CONFIG.tickRate)),
+    lineOfFire: SHIPPED_LINE_OF_FIRE,
     progression: {
       units: loadDefaultContent(CONFIG.tickRate),
       curves: loadLevelCurves(),

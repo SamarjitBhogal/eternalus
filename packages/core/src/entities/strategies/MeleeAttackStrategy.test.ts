@@ -5,6 +5,8 @@ import { loadDefaultContent } from '../../content/loadDefaultContent';
 import { loadWeapons } from '../../content/weapons/loadWeapons';
 import type { DamageSource } from '../../state/GameEvents.types';
 import { GameState } from '../../state/GameState';
+import { createDefaultEntityRegistry } from '../defaultEntityRegistry';
+import { EntityFactory } from '../EntityFactory';
 import { Warrior } from '../legends/Warrior';
 import { MeleeAttackStrategy } from './MeleeAttackStrategy';
 
@@ -40,7 +42,12 @@ const hitWith = (definition: typeof WARRIOR): (string | number | DamageSource)[]
   const attacker = new Warrior('entity-1', definition.id);
   attacker.spawn({ definition, position: { x: 0, y: 0 }, team: 'light', weapons: WEAPONS });
 
-  new MeleeAttackStrategy().attack(attacker, 'entity-2', ATTACK, { state, damage, hits });
+  new MeleeAttackStrategy().attack(attacker, 'entity-2', ATTACK, {
+    state,
+    damage,
+    hits,
+    factory: new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30)),
+  });
   return calls;
 };
 

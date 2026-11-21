@@ -1,7 +1,7 @@
-import type { UnitAttack } from '../content/units/units.types';
+import type { UnitAttacks } from '../content/units/units.types';
 
-/** The attack a unit's `Combat` uses, and the weapon it comes from (`null` for a unit's own attack). */
+/** The attacks a unit's `Combat` uses, and the weapon they come from (`null` for a unit's own attack). */
 export type BasicAttack = {
-  readonly attack: UnitAttack;
+  readonly attacks: UnitAttacks;
   readonly weaponId: string | null;
 };

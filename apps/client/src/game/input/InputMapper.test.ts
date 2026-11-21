@@ -60,6 +60,18 @@ describe('InputMapper', () => {
     expect([...third.released]).toEqual(['ability-1']);
   });
 
+  it('reports the melee key as isMeleeAttacking, apart from the attack click (DEC-308)', () => {
+    const mapper = new InputMapper(PRESETS.wasd);
+
+    const melee = intentFor(mapper, snapshotWith(['KeyF']));
+    const click = intentFor(mapper, snapshotWith([], [0]));
+
+    expect(melee.isMeleeAttacking).toBe(true);
+    expect(melee.isAttacking).toBeUndefined();
+    expect(click.isAttacking).toBe(true);
+    expect(click.isMeleeAttacking).toBeUndefined();
+  });
+
   it('triggers a slot only on the frame it is pressed', () => {
     const mapper = new InputMapper(PRESETS.wasd);
 

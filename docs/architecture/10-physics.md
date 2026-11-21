@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-21
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -71,6 +71,8 @@ export class Movement {
   readonly velocity: MutableVec2;
   readonly desiredVelocity: MutableVec2; // written by PathingSystem/controllers for the NEXT tick
   readonly pendingImpulse: MutableVec2; // accumulated by abilities/combat this tick
+  readonly speedLimit: number; // a cap below maxSpeed; Infinity while none is set
+  limitSpeed(limit: number): void; // a shot slowing to its range (§7, DEC-314)
 }
 ```
 
@@ -83,7 +85,7 @@ entity as `cannot-move`: the speed scale is 0 and no entity walks. Integration p
 2. `velocity += dv`; `velocity += pendingImpulse / mass`; clear `pendingImpulse`.
 3. If `desiredVelocity` is zero, apply friction: `velocity *= max(0, 1 − friction × dt)` (TUNE per
    definition; higher for units, lower for a sliding felled trunk).
-4. Clamp `|velocity|` to `maxSpeed` (impulses may exceed it briefly: knockback then decays through
+4. Clamp `|velocity|` to the lower of `maxSpeed` and `speedLimit` (impulses may exceed it briefly: knockback then decays through
    friction and the acceleration clamp toward the desired velocity).
 5. `previousPosition = position; position += velocity × dt; speed = |velocity|`.
 
@@ -194,6 +196,9 @@ Overlap tests are therefore not enough:
 
 - **Always swept**: projectiles and dashes (`Blade Runner`, `Meteor Fall` landing, Sentinel
   sprint). **Swept when fast**: any unit whose displacement this tick exceeds its radius.
+  Projectiles are swept by `ProjectileSystem`, not by the resolver's step 1: a shot is not pushed
+  or slid, it ends at the first body or wall it touches (05 §10, DEC-314). Walls still come from
+  the resolver's `CollisionQuery.reach`. The resolver's steps below are for units.
 - The test casts the segment `previousPosition → position` (expanded by the circle's radius, i.e.
   a capsule) against `StaticColliderIndex` entries flagged `isUnbreakable`, plus closed gates and
   map bounds; the earliest time of impact `t ∈ [0, 1]` wins; the mover is placed at
@@ -209,7 +214,7 @@ Overlap tests are therefore not enough:
 
 `CollisionSystem` runs before `PathingSystem` (§9) and calls the resolver once per tick:
 
-1. **Swept vs unbreakable statics** for every mover flagged in §7 (walls, closed gates, bounds,
+1. **Swept vs unbreakable statics** for every unit flagged in §7 (walls, closed gates, bounds,
    unbreakable obstacles). Positions are corrected to the time of impact first so nothing below
    can push a unit through a wall.
 2. **Push-out vs breakable statics** (structures, breakable obstacles, breakable walls) with SAT
@@ -330,6 +335,24 @@ bounds clamp lives once, inside it, and hands it to `abilities/` as `GameState.c
 `CollisionQuery` port, beside `space` and `paths`). A destroyed object leaves the index when its
 entity is removed, so walking and a dash stop seeing it at once. The dash's motion goes through
 `MovementSystem` and `CollisionSystem` like walking.
+
+**2026-11-20 (branch `feat/ranged-attacks`, PR 1; DEC-300, DEC-314).** Projectiles are swept every
+tick (§7) by `systems/ProjectileSystem`, which runs just before `CombatSystem`. The swept segment
+runs from the previous to the current position. It finds the earliest contact with a live enemy
+body (`physics/sweepDisc` for circles, `sweepCircle` for outlines) and with a wall or the map edge
+(`state.collisions.reach`). A body up to `BODY_BEFORE_WALL_MARGIN`
+(`state/CollisionQuery.constants.ts`, which `LineOfFire` predicts shots by too) past where `reach`
+stops takes the hit (`reach` already stops `CONTACT_EPSILON` short of the wall;
+`state/isTouchedBeforeWall`, DEC-317 (6)). Two bodies touched at once go to the first in store
+order, but the shot's target takes a tie within the same margin, so a palace wall whose face is the
+Stronghold's edge does not take a shot fired at the Stronghold (DEC-317 (8)). Bodies are gathered
+once a tick, in store order, and each move tests a body's box before its exact shape (the broad
+phase); a body spawned during the tick is seen from the next tick. A walk-on outline (a palace
+floor, a gate's passage: `Footprint.isWalkOn`, `MapObjectBody.isWalkOn`) and a body whose
+collider is unbreakable (DEC-317 (5)) are hit only by a shot fired at their entity.
+`CollisionSystem` skips the `projectile` layer. A shot with nothing in its path is slowed by
+`Movement.limitSpeed` (`physics/flightSpeed`, from `slowFrom`) so it stops exactly at its `range`;
+it then ends and hits nothing until it is removed (`ProjectileFlight`, DEC-306).
 
 ## Related
 

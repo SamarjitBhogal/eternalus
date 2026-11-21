@@ -22,20 +22,67 @@ export type MovementProfile = {
 export type MovementStrategyId = 'lane-follow' | 'leashed-chase';
 
 /** How an attack is carried out; one `AttackStrategy` per id in `entities/strategies/defaultStrategyRegistry.ts`. */
-export type AttackStrategyId = 'melee';
+export type AttackStrategyId = 'melee' | 'ranged-projectile';
 
 /**
- * A unit's basic attack (architecture 05 §10, `WeaponAttack`). All values must be positive.
- * A mob's attack lives on its definition; a Legend has none and attacks with its weapon (`Legend`).
+ * How a ranged shot loses damage with distance travelled (05 §10): full damage up to `fullTo`
+ * metres, then a straight fall to `floor` (a fraction of the damage) at `floorAt` metres, and
+ * `floor` beyond. `fullTo` must be positive and below `floorAt`; `floor` in (0, 1].
  */
-export type UnitAttack = {
-  readonly strategy: AttackStrategyId;
+export type ProjectileFalloff = {
+  readonly fullTo: number;
+  readonly floorAt: number;
+  readonly floor: number;
+};
+
+/**
+ * What a ranged attack fires: a projectile definition id and its damage fall-off (`null`: none).
+ */
+export type ProjectileLaunch = {
+  readonly projectileId: string;
+  readonly falloff: ProjectileFalloff | null;
+};
+
+/** The fields every basic attack has. All values must be positive. */
+type AttackBase = {
   /** Damage per hit, before damage steps. */
   readonly damage: number;
   /** Reach in metres, measured edge to edge between the two footprints. */
   readonly reach: number;
   /** Time between hits: seconds in content files, ticks once loaded. */
   readonly interval: number;
+};
+
+/** A hit that lands in the tick it is made. */
+export type MeleeAttack = AttackBase & { readonly strategy: 'melee' };
+
+/**
+ * A shot: spawns a projectile that lands later (05 §10). `reach` is the distance it is fired from.
+ */
+export type RangedAttack = AttackBase & {
+  readonly strategy: 'ranged-projectile';
+  readonly projectile: ProjectileLaunch;
+};
+
+/**
+ * Which of a unit's attacks an `attack-target` command uses: `'basic'` (the default, the first
+ * attack of its weapon) or `'melee'` (its melee attack, DEC-308). Architecture 05 §10 plans a
+ * later `'heavy'`.
+ */
+export type AttackMode = 'basic' | 'melee';
+
+/**
+ * A unit's basic attack (architecture 05 §10, `WeaponAttack`). A mob's attack lives on its
+ * definition; a Legend has none and attacks with its weapon (`Legend`).
+ */
+export type UnitAttack = MeleeAttack | RangedAttack;
+
+/**
+ * A unit's attacks by mode, resolved once at spawn (`attacksByMode`). Every unit has a basic
+ * attack.
+ */
+export type UnitAttacks = Readonly<Partial<Record<AttackMode, UnitAttack>>> & {
+  readonly basic: UnitAttack;
 };
 
 /** What every unit definition (Legend or mob) has. Shared, immutable and keyed by `id`. */

@@ -24,6 +24,8 @@ class ScriptedIntent implements IntentSource {
 
   public isAttacking = false;
 
+  public isMeleeAttacking = false;
+
   public aim: Vec2 | null = null;
 
   public triggered: readonly AbilitySlot[] = [];
@@ -32,6 +34,7 @@ class ScriptedIntent implements IntentSource {
     return {
       move: this.move,
       isAttacking: this.isAttacking,
+      isMeleeAttacking: this.isMeleeAttacking,
       aim: this.aim,
       triggered: this.triggered,
     };
@@ -69,6 +72,7 @@ const unit = (id: string, team: Team, x: number, y: number): EntitySnapshot => (
   area: null,
   capture: null,
   statuses: null,
+  projectile: null,
 });
 const PLAYER: EntitySnapshot = { ...unit(ACTOR, 'light', 20, 20), family: 'legend' };
 /** A dark-team minion standing on the house, so the house and the unit overlap. */
@@ -127,6 +131,34 @@ describe('PlayerCommands', () => {
     tick();
     tick();
     expect(queued('attack-target')).toBe(3);
+  });
+
+  it('queues attack-target with mode melee while the melee key is held, once per target and mode (DEC-308)', () => {
+    const { input, queued, tick, enqueueCommand } = setUp();
+    input.isMeleeAttacking = true;
+    input.aim = { x: 2, y: 2 };
+
+    for (let count = 0; count < 4; count += 1) tick();
+    expect(queued('attack-target')).toBe(1);
+    expect(enqueueCommand).toHaveBeenCalledWith({
+      type: 'attack-target',
+      actorId: ACTOR,
+      targetId: HOUSE_ENTITY,
+      mode: 'melee',
+    });
+    // Both held: melee wins, so nothing new is queued.
+    input.isAttacking = true;
+    tick();
+    expect(queued('attack-target')).toBe(1);
+    // Melee released, the click still held on the same target: a new basic command.
+    input.isMeleeAttacking = false;
+    tick();
+    expect(queued('attack-target')).toBe(2);
+    expect(enqueueCommand).toHaveBeenLastCalledWith({
+      type: 'attack-target',
+      actorId: ACTOR,
+      targetId: HOUSE_ENTITY,
+    });
   });
 
   it('queues a cast-ability for each pressed slot in quick cast, aimed at the pointer', () => {

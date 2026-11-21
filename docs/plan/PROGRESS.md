@@ -9893,3 +9893,107 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   passed).
 - Next step: push line for Sam (PR base `feat/vanguard-kit`), then Hamstring on lane A's
   `ProjectileImpact` (PR #148), then PR 6 (Sentinel).
+
+### 2026-11-20 — Phase 4 / combat lane A, PR 1: ranged attacks, shot endings (DEC-306), staff melee on F (DEC-308) — feat/ranged-attacks — sholtzman + Claude Code
+
+- What was done: built PR 1 of the combat plan (DEC-301) on `feat/ranged-attacks`, base
+  `feat/vanguard-kit` (PR #136, `e21692d6`). Core: the `ranged-projectile` attack strategy
+  (`RangedProjectileAttackStrategy`), projectile content (`content/projectiles/`: `magus-bolt`,
+  `arrow`, `loadProjectiles`), `ProjectilePayload`, `ProjectileLanding` (swept hits through
+  `physics/sweepDisc` and `sweepCircle`, walls through `state.collisions.reach`, damage times
+  `falloffMultiplier` through `DamagePipeline`, then `afterHit`), the Magus staff's ranged basic
+  attack and `obsidian-bow`. Shot endings (DEC-306): `ProjectileFlight`, `combat/flightSpeed`,
+  `Movement.limitSpeed`; a bolt fizzles at 100 m, an arrow slows from 80 m and drops at 100 m;
+  an ended shot hits nothing. `EntitySnapshot.projectile` (`speedShare`, `ending`). Staff melee
+  (DEC-308): `AttackMode` and an optional `attack-target` `mode`, `Combat` holds the melee
+  attack, `EntityStore.setAttackTarget` refuses `melee` without one. No projectile pool
+  (DEC-309). Client: `ProjectileView` (fizzle and drop looks, `colorWithAlpha`) and the
+  `melee-attack` action, default F. Records: DEC-301..310 and their `INBOX.md` answers;
+  design text for DEC-306, DEC-308 and DEC-309 in 05 §10, 04 §11, 03 §9, 02, 10 §12, the
+  glossary and the phase 2 and 4 plans; reference 09 controls (F row) and 13 §InputAction.
+- Checks run: `npm run check` exit 0 (core 337 files / 2123 tests, client 309 / 2134, server
+  21 / 84, docs check passed). Breaks in `eternalus-agent-work/abilities/pr1-breaks.log`.
+- Next step: pre-PR gate (architecture-reviewer, correctness and ponytail critics), then the
+  push and `gh pr create --base feat/vanguard-kit` for the owner; then lane A PR 2 (melee
+  sweeps, DEC-304 and DEC-305).
+
+### 2026-11-20 — Phase 4 / combat lane A, PR 1 gate round 1: critic fixes, DEC-314 (BTD-1 to BTD-5) — feat/ranged-attacks — sholtzman + Claude Code
+
+- What was done: fixed the round-1 findings of the pre-PR gate (architecture-reviewer, correctness
+  and ponytail critics; reports in `eternalus-agent-work/abilities/pr1-gate/r1-*.md`). Core:
+  `systems/ProjectileSystem` replaces `combat/ProjectileLanding` (flight, sweep and landing; runs
+  directly before `CombatSystem`; a broad phase per move; a body is hit just before the wall it
+  stands at), `combat/ProjectileImpact.types.ts` and `combat/WeaponImpact` (one landing class per
+  impact kind), `ProjectilePayload` carries `targetId` and plain `impact` data, a shot spawns at
+  the attacker's centre, `flightSpeed` moved to `physics/`, `Movement.limitSpeed` takes a number,
+  the hash adds `speed-limit` only when finite. `Combat` holds `UnitAttacks` by mode
+  (`content/units/attacksByMode`). `components/Outline.types.ts` (`Outline`, implemented by
+  `Footprint` and `MapObjectBody`; walk-on outlines are hit only by a shot aimed at their entity,
+  `Footprint.isWalkOn`). One `HitRunner` port (`state/HitRunner.types.ts`). `CombatSystem` takes
+  an options object with a required `factory`; `DefaultSystemPipelineOptions.factory` is required
+  at the top level (`hordes.factory` removed). `KnownProjectileRule` in the default content rules.
+  Bots hold only with a line of fire (`state/hasLineOfFire`); `Simulation` injects
+  `BotLegendControllerContent.shotRadiusOf`, now required. `entities/strategies/weaponSourceOf`.
+  Protocol and server: the Duel parses `isMeleeAttacking` and `SeatCommands` sends the melee mode.
+  Client: `ProjectileView` types file. Records: DEC-314 and `INBOX.md` HC-B18 (five
+  better-than-design items built under DEC-223). Design text: 02 (`combat/`, `physics/`,
+  `components/`, §9 "Projectile impacts"), 03 §4 and §12, 04 §3 and §12, 05 §3 and §10, 07 and 11
+  implementation status, 10 §2, §7, §8 and §12, 12 status, the glossary, the phase 2 plan.
+- Correction to the PR 1 entry above: its "03 §9" means 03 §4 and §12.
+- Open, not changed: a bot that loses its line of fire keeps its attack target, so it fires at the
+  wall while it closes in. Clearing the target needs a new command, and `StuckSystem` and
+  `PathingSystem` read the target to give the bot its detour (DEC-193). Noted in the PR body.
+- Checks run: `npm run check` (20:54-22:47, load 30-70): format, no-js, lint, typecheck passed;
+  knip failed on one unused export (`ProjectileImpactDataByKind`, now file-local). Then knip,
+  `test:coverage` (core 344 files / 2154 tests, protocol 1 / 31, client 309 / 2134, server
+  21 / 85), build and docs check passed (exit 0). `shotRadiusOf` break in
+  `eternalus-agent-work/abilities/pr1-breaks.log` (`tsc -b` TS2741 without the wiring).
+- Next step: gate round 2 (architecture-reviewer, correctness and ponytail critics), then the
+  push and `gh pr create --base feat/vanguard-kit` for the owner.
+
+### 2026-11-21 — Phase 4 / combat lane A, PR 1 gate round 2: critic fixes, DEC-317 — feat/ranged-attacks — sholtzman + Claude Code
+
+- What was done: fixed the round-2 findings of the pre-PR gate (reports in
+  `eternalus-agent-work/abilities/pr1-gate/r2-*.md`). Core: `state/LineOfFire` and its port
+  `LineOfFireQuery` replace `state/hasLineOfFire`; `Simulation` builds one and gives it to bots
+  (`fight` and `siege`) and `CombatSystem`, which fires a ranged attack only with a clear line
+  (F6, option A); it uses `ProjectileSystem`'s contact rule and `BODY_BEFORE_WALL_MARGIN`
+  (`state/CollisionQuery.constants.ts`). `systems/defaultProjectileImpacts.ts`. `Combat.setTarget`
+  refuses a mode the unit lacks. A body that takes no damage now stops only a shot fired at it
+  (C1). Zero-aim facing fallback (C6). Client: `RemoteIntentSender.withoutAttack` clears
+  `isMeleeAttacking` (C4); `ProjectileView` throws on a projectile id with no ending look and a
+  test checks its keys against `DisplayContent.projectileIds` (F1, ADR 0023). Records: DEC-317 and
+  `INBOX.md` HC-B20 (asked); HC-B18 reopened as "sign-off asked" and DEC-314 (6) (walk-on rule).
+  Design text: 02 §2 and §9, 03 §4, 04 §3, 05 §10, 10 §7 and §12, 11 status, 17 R10 and R27.
+- Correction to the round-1 entry above: its design-text list also includes 08 (pooling line,
+  DEC-309), and its check was a split run; this entry reports one full run.
+- Checks run: one full `npm run check` (2026-11-20 23:55 to 2026-11-21 00:04 MST) exit 0: format,
+  no-js, lint, typecheck, knip, `test:coverage` (core 345 files / 2170 tests, protocol 1 / 31,
+  client 309 / 2136, server 21 / 85), build, `Documentation check passed.` Every new test was seen
+  red under a deliberate break first (`eternalus-agent-work/abilities/pr1-breaks.log`, r2 sections).
+- Next step: gate round 3 (last loop) on the round-2 delta, then the push and
+  `gh pr create --base feat/vanguard-kit` for the owner.
+
+### 2026-11-21 — Phase 4 / combat lane A, PR 1 gate round 3: critic fixes, DEC-317 (6)-(8) — feat/ranged-attacks — sholtzman + Claude Code
+
+- What was done: fixed the round-3 findings of the pre-PR gate, the last loop (reports in
+  `eternalus-agent-work/abilities/pr1-gate/r3-*.md`: architecture pass with 12 nits, ponytail
+  pass, correctness 2 findings). Core: `state/isTouchedBeforeWall` is the one "body before the
+  wall" rule, which `ProjectileSystem` and `LineOfFire` both call (BTD-F, DEC-317 (6)). An attack
+  needs a line, and `KnownProjectileRule` checks it, when it has `projectile` (BTD-G, DEC-317 (7)).
+  `ProjectileSystem.firstBody` gives the shot's target a tie within the margin, so a palace wall
+  on the Stronghold floor's edge no longer takes a shot fired at the Stronghold (correctness
+  finding 1, DEC-317 (8)). `LineOfFire` reads a target past the shot's `range` as not clear
+  (R3-N5) and reads the target's radius with `getComponent` (finding 2). R3-N1, N9, N10, N11 and
+  the ponytail nit. Records: DEC-317 (6)-(8) and `INBOX.md` HC-B20 (4)-(8) and "Not built"
+  (BTD-B, BTD-E, BTD-H). Design text: 02 §2, 05 §10, 10 §12, 17 §1 and R27.
+- Not built: BTD-H (one shared definition lookup for `Simulation` and about 10 tests; it rewrites
+  test files outside this PR). No fourth critic loop (owner limit 3). The critic's own probes
+  were run again on the fix instead: 0 disagreements at all 10 structures of each team (was 114
+  and 205), 10 of 10 bolts on the Stronghold (was on palace wall `entity-782`).
+- Checks run: one full `npm run check` (2026-11-21 01:01:11 to 01:09:32 MST) exit 0: format,
+  no-js, lint, typecheck, knip, `test:coverage` (core 346 files / 2175 tests, protocol 1 / 31,
+  client 309 / 2136, server 21 / 85), build, `Documentation check passed.` Log
+  `eternalus-agent-work/abilities/pr1-gate/r4-pre-check.log`. Each new or changed test was seen red
+  first or under a deliberate break (`pr1-breaks.log`, Round 3).
+- Next step: the owner pushes `feat/ranged-attacks` and opens the PR on `feat/vanguard-kit`.

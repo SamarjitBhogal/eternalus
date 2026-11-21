@@ -1,5 +1,6 @@
 import { ContentCatalogue } from '../ContentCatalogue';
 import { MAGUS_STAFF } from './magusStaff';
+import { OBSIDIAN_BOW } from './obsidianBow';
 import { RAPTOR_TALONS } from './raptorTalons';
 import type { WeaponDefinition } from './weapons.types';
 import { WUUTHRAD } from './wuuthrad';
@@ -12,4 +13,5 @@ export const WEAPONS = new ContentCatalogue<WeaponDefinition>([
   RAPTOR_TALONS,
   WUUTHRAD,
   MAGUS_STAFF,
+  OBSIDIAN_BOW,
 ]);

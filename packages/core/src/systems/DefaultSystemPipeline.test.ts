@@ -37,6 +37,7 @@ import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
 import type { MapObject } from '../content/maps/mapObjects.types';
 import type { MapFeature } from '../content/maps/maps.types';
 import { WorldObjectStore } from '../state/WorldObjectStore';
+import { SHIPPED_LINE_OF_FIRE } from '../state/__fixtures__/shippedLineOfFire';
 
 const UNIT_DEFINITIONS = loadDefaultContent(createDefaultGameConfig().tickRate);
 const newFactory = (): EntityFactory =>
@@ -59,6 +60,7 @@ describe('DefaultSystemPipeline', () => {
   it('moves, then removes the dead, then checks invariants, in that order', () => {
     const logger = new MemoryLogger();
     const state = new GameState(createDefaultGameConfig(), 1);
+    const factory = newFactory();
     const pipeline = new DefaultSystemPipeline({
       invariants: new DefaultInvariantRunner({
         debug: TEST_DEBUG_CONFIG,
@@ -69,10 +71,11 @@ describe('DefaultSystemPipeline', () => {
         terminalPhases: TERMINAL_MATCH_PHASES,
       }),
       state,
+      factory,
+      lineOfFire: SHIPPED_LINE_OF_FIRE,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
     });
-    const factory = newFactory();
     const runner = factory.create('warrior', 'warrior', {
       position: { x: 0, y: 0 },
       team: 'light',
@@ -113,6 +116,8 @@ describe('DefaultSystemPipeline', () => {
         terminalPhases: TERMINAL_MATCH_PHASES,
       }),
       state,
+      factory: newFactory(),
+      lineOfFire: SHIPPED_LINE_OF_FIRE,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
       abilities,
@@ -158,10 +163,11 @@ describe('DefaultSystemPipeline', () => {
         terminalPhases: TERMINAL_MATCH_PHASES,
       }),
       state,
+      factory,
+      lineOfFire: SHIPPED_LINE_OF_FIRE,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
       hordes: {
-        factory,
         space,
         decide: [{ name: 'ai', update: () => undefined }],
         collisions: [{ name: 'collision', update: () => undefined }],
@@ -181,6 +187,7 @@ describe('DefaultSystemPipeline', () => {
       'space',
       'stuck',
       'pathing',
+      'projectiles',
       'combat',
       'map-destruction',
       'progression',
@@ -199,6 +206,7 @@ describe('DefaultSystemPipeline', () => {
   it('lands attacks after movement and before death, so a unit killed this tick leaves this tick', () => {
     const logger = new MemoryLogger();
     const state = new GameState(createDefaultGameConfig(), 1);
+    const factory = newFactory();
     const pipeline = new DefaultSystemPipeline({
       invariants: new DefaultInvariantRunner({
         debug: TEST_DEBUG_CONFIG,
@@ -209,10 +217,11 @@ describe('DefaultSystemPipeline', () => {
         terminalPhases: TERMINAL_MATCH_PHASES,
       }),
       state,
+      factory,
+      lineOfFire: SHIPPED_LINE_OF_FIRE,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
     });
-    const factory = newFactory();
     const warrior = factory.create('warrior', 'warrior', {
       position: { x: 0, y: 0 },
       team: 'light',
@@ -236,6 +245,7 @@ describe('DefaultSystemPipeline', () => {
   it('turns a steered attacker to its target in reach, not along its movement (DEC-192)', () => {
     const logger = new MemoryLogger();
     const state = new GameState(createDefaultGameConfig(), 1);
+    const factory = newFactory();
     const pipeline = new DefaultSystemPipeline({
       invariants: new DefaultInvariantRunner({
         debug: TEST_DEBUG_CONFIG,
@@ -246,10 +256,11 @@ describe('DefaultSystemPipeline', () => {
         terminalPhases: TERMINAL_MATCH_PHASES,
       }),
       state,
+      factory,
+      lineOfFire: SHIPPED_LINE_OF_FIRE,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
     });
-    const factory = newFactory();
     const warrior = factory.create('warrior', 'warrior', {
       position: { x: 0, y: 0 },
       team: 'light',
@@ -273,6 +284,7 @@ describe('DefaultSystemPipeline', () => {
   it('pays a combat kill in the same tick, before the dead are removed', () => {
     const logger = new MemoryLogger();
     const state = new GameState(createDefaultGameConfig(), 1);
+    const factory = newFactory();
     const pipeline = new DefaultSystemPipeline({
       invariants: new DefaultInvariantRunner({
         debug: TEST_DEBUG_CONFIG,
@@ -283,10 +295,11 @@ describe('DefaultSystemPipeline', () => {
         terminalPhases: TERMINAL_MATCH_PHASES,
       }),
       state,
+      factory,
+      lineOfFire: SHIPPED_LINE_OF_FIRE,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
     });
-    const factory = newFactory();
     const warrior = factory.create('warrior', 'warrior', {
       position: { x: 0, y: 0 },
       team: 'light',
@@ -311,6 +324,7 @@ describe('DefaultSystemPipeline', () => {
   it('pays a killer that also died this tick, so progression runs before death', () => {
     const logger = new MemoryLogger();
     const state = new GameState(createDefaultGameConfig(), 1);
+    const factory = newFactory();
     const pipeline = new DefaultSystemPipeline({
       invariants: new DefaultInvariantRunner({
         debug: TEST_DEBUG_CONFIG,
@@ -321,10 +335,11 @@ describe('DefaultSystemPipeline', () => {
         terminalPhases: TERMINAL_MATCH_PHASES,
       }),
       state,
+      factory,
+      lineOfFire: SHIPPED_LINE_OF_FIRE,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
     });
-    const factory = newFactory();
     const warrior = factory.create('warrior', 'warrior', {
       position: { x: 0, y: 0 },
       team: 'light',
@@ -390,6 +405,8 @@ describe('DefaultSystemPipeline', () => {
         terminalPhases: TERMINAL_MATCH_PHASES,
       }),
       state,
+      factory,
+      lineOfFire: SHIPPED_LINE_OF_FIRE,
       progression: PROGRESSION,
       director: {
         update: (directed) => {
@@ -409,19 +426,6 @@ describe('DefaultSystemPipeline', () => {
   it('pays a destroyed structure to every living Legend of the other team, once, a tick later (DEC-186)', () => {
     const logger = new MemoryLogger();
     const state = new GameState(createDefaultGameConfig(), 1);
-    const pipeline = new DefaultSystemPipeline({
-      invariants: new DefaultInvariantRunner({
-        debug: TEST_DEBUG_CONFIG,
-        logger,
-        abilities: loadAbilities(30),
-        curves: PROGRESSION.curves,
-        phaseOrder: MATCH_PHASES,
-        terminalPhases: TERMINAL_MATCH_PHASES,
-      }),
-      state,
-      progression: PROGRESSION,
-      director: IDLE_DIRECTOR,
-    });
     const factory = new EntityFactory(
       createDefaultEntityRegistry(),
       {
@@ -432,6 +436,21 @@ describe('DefaultSystemPipeline', () => {
       undefined,
       loadWeapons(createDefaultGameConfig().tickRate),
     );
+    const pipeline = new DefaultSystemPipeline({
+      invariants: new DefaultInvariantRunner({
+        debug: TEST_DEBUG_CONFIG,
+        logger,
+        abilities: loadAbilities(30),
+        curves: PROGRESSION.curves,
+        phaseOrder: MATCH_PHASES,
+        terminalPhases: TERMINAL_MATCH_PHASES,
+      }),
+      state,
+      factory,
+      lineOfFire: SHIPPED_LINE_OF_FIRE,
+      progression: PROGRESSION,
+      director: IDLE_DIRECTOR,
+    });
     const add = (kind: string, definitionId: string, team: 'light' | 'dark') => {
       const entity = factory.create(kind, definitionId, { position: { x: 0, y: 0 }, team });
       state.entities.add(entity);
@@ -525,9 +544,11 @@ describe('DefaultSystemPipeline', () => {
           terminalPhases: TERMINAL_MATCH_PHASES,
         }),
         state,
+        factory,
+        lineOfFire: SHIPPED_LINE_OF_FIRE,
         progression: PROGRESSION,
         director: IDLE_DIRECTOR,
-        ...(hasLanes ? { hordes: { factory, space: null, decide: [] } } : {}),
+        ...(hasLanes ? { hordes: { space: null, decide: [] } } : {}),
       });
       const entityId = state.worldObjects.snapshot()[0]?.entityId ?? '';
       expect(world?.isWalkable(9, 5)).toBe(false);
@@ -590,9 +611,11 @@ describe('DefaultSystemPipeline', () => {
           terminalPhases: TERMINAL_MATCH_PHASES,
         }),
         state,
+        factory,
+        lineOfFire: SHIPPED_LINE_OF_FIRE,
         progression: PROGRESSION,
         director: IDLE_DIRECTOR,
-        hordes: { factory, space, decide: [] },
+        hordes: { space, decide: [] },
       });
       // The tower falls before any chase; the grid still blocks the court (the rift, x 50..70).
       state.entities.remove(fort.id, 'died');
@@ -647,6 +670,8 @@ describe('DefaultSystemPipeline', () => {
           terminalPhases: TERMINAL_MATCH_PHASES,
         }),
         state: new GameState(createDefaultGameConfig(), 1),
+        factory: newFactory(),
+        lineOfFire: SHIPPED_LINE_OF_FIRE,
         progression: PROGRESSION,
         director: IDLE_DIRECTOR,
         abilities: testAbilityRegistry([]), // no effect strategies, so no knock-back

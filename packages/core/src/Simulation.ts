@@ -37,12 +37,15 @@ import { RETREAT_STRUCTURES } from './content/ai/botLaner';
 import { BOT_DIFFICULTIES } from './content/ai/difficulties/botDifficulties';
 import { RANKS_FORMATION } from './content/mobs/formations/ranks';
 import type { EntityId } from './state/EntityStore.types';
+import { LineOfFire } from './state/LineOfFire';
+import type { LineOfFireQuery } from './state/LineOfFire.types';
 import { assignLanes } from './state/assignLanes';
 import { formationSlot } from './state/formationSlot';
 import type { SlotReadiness } from './state/SlotReadiness.types';
 import { unitClassOf } from './content/ai/unitClasses';
 import { SPACE_CELL_SIZE } from './content/ai/hordeSteering';
-import type { ContentCatalogue } from './content/ContentCatalogue';
+import { ContentCatalogue } from './content/ContentCatalogue';
+import { UnknownDefinitionError } from './content/UnknownDefinitionError';
 import { loadDefaultContent } from './content/loadDefaultContent';
 import { STRUCTURE_DEFINITIONS } from './content/structures/structureCatalogue';
 import { compareById } from './utils/compareById';
@@ -84,6 +87,7 @@ import type { StaticCollisionIndex } from './physics/StaticCollisionIndex';
 import { MatchPathfinderFactory } from './map/MatchPathfinderFactory';
 import { staticCollisionIndexOf } from './map/staticCollisionIndexOf';
 import { zoneAreaOf } from './map/zoneArea';
+import { loadProjectiles } from './content/projectiles/loadProjectiles';
 import { DefaultSystemPipeline } from './systems/DefaultSystemPipeline';
 import type { SystemContext } from './systems/System.types';
 import { SystemPipeline } from './systems/SystemPipeline';
@@ -181,22 +185,21 @@ export class Simulation {
     const validator = new CastValidator(registry);
     this.handlers = createDefaultCommandHandlers(validator);
     this.readiness = validator;
-    const controllers = Simulation.createControllers(validator, tickRate);
+    const projectiles = loadProjectiles(tickRate);
+    // One line-of-fire query for the bots and `CombatSystem`, so they agree (DEC-317).
+    const lineOfFire = new LineOfFire(projectiles);
+    const controllers = Simulation.createControllers(validator, tickRate, lineOfFire);
     const units = content ?? Simulation.defaultContent(tickRate, curves, controllers, weaponSource);
-    const objectsById = new Map(
-      Object.values(MAP_OBJECT_DEFINITIONS).map((definition) => [definition.id, definition]),
-    );
-    const definitions = {
-      has: (id: string): boolean =>
-        objectsById.has(id) || ZONE_DEFINITIONS.has(id) || units.has(id),
-      get: (id: string) =>
-        objectsById.get(id) ??
-        (ZONE_DEFINITIONS.has(id) ? ZONE_DEFINITIONS.get(id) : units.get(id)),
-    };
     // One factory for commands and spawning, so entity ids come from one counter.
     const factory = new EntityFactory(
       createDefaultEntityRegistry(),
-      Simulation.withStructures(definitions, structures),
+      Simulation.firstOf([
+        new ContentCatalogue(Object.values(MAP_OBJECT_DEFINITIONS)),
+        ZONE_DEFINITIONS,
+        projectiles,
+        units,
+        structures,
+      ]),
       undefined,
       weaponSource,
       LEGEND_SPECS,
@@ -248,13 +251,14 @@ export class Simulation {
           terminalPhases: TERMINAL_MATCH_PHASES,
         }),
         state: this.state,
+        factory,
+        lineOfFire,
         progression: { units, curves, xpSources: XP_SOURCES, ultimateCharge: ULTIMATE_CHARGE },
         director,
         abilities: registry,
         validator,
         ...(duelStarts === undefined ? {} : { duelStarts }),
         hordes: {
-          factory,
           space,
           ...(guardPlans === undefined ? {} : { guards: guardPlans }),
           collisions: collisions === null ? [] : [new CollisionSystem(collisions)],
@@ -359,14 +363,22 @@ export class Simulation {
     return this.hasher.hash(this.state);
   }
 
-  /** `units` plus the structure definitions, so one factory builds both (architecture 04 §6). */
-  private static withStructures(
-    units: DefinitionSource,
-    structures: StructureSource,
-  ): DefinitionSource {
+  /**
+   * One definition source over `sources`, so one factory builds map objects, zones, shots, units
+   * and structures (architecture 04 §6): the first source that has an id answers for it.
+   */
+  private static firstOf(sources: readonly DefinitionSource[]): DefinitionSource {
+    const sourceOf = (id: string): DefinitionSource | undefined =>
+      sources.find((source) => source.has(id));
     return {
-      has: (id) => units.has(id) || structures.has(id),
-      get: (id) => (units.has(id) ? units.get(id) : structures.get(id)),
+      has: (id) => sourceOf(id) !== undefined,
+      get: (id) => {
+        const source = sourceOf(id);
+        if (source === undefined) {
+          throw new UnknownDefinitionError(id);
+        }
+        return source.get(id);
+      },
     };
   }
 
@@ -379,7 +391,8 @@ export class Simulation {
    * DEC-185 D; a gate's own outline, DEC-217 (17)). A blocking such object (a fort) is the
    * structure's body: it has no health of its own (one pool, DEC-185 B). Only towers share one
    * pool (DEC-217 (13)): the palace's and the gates' objects do not block, so they keep their own
-   * health.
+   * health, and their outline is walked on (`Footprint.isWalkOn`): a shot flies over it unless it
+   * was fired at the structure.
    *
    * @returns Map object id → the id of the structure it is the body of.
    */
@@ -405,7 +418,9 @@ export class Simulation {
         };
         const structure = factory.create(kind, definitionId, placement);
         const body = hasMapFootprint === true ? bodies.get(id) : undefined;
-        if (body !== undefined) structure.addComponent(new Footprint(body.footprints));
+        if (body !== undefined) {
+          structure.addComponent(new Footprint(body.footprints, { isWalkOn: !body.isBlocking }));
+        }
         if (body?.isBlocking === true) owners.set(body.id, structure.id);
         state.entities.add(structure);
       }
@@ -760,10 +775,19 @@ export class Simulation {
 
   /**
    * Every controller, with the shipped content it reads (architecture 11 §2); the aggro profiles
-   * are loaded at `tickRate`.
+   * are loaded at `tickRate`. Bots check their line of fire with `lineOfFire`.
    */
-  private static createControllers(readiness: SlotReadiness, tickRate: number): ControllerRegistry {
-    const bots = { difficulties: BOT_DIFFICULTIES, retreatTo: RETREAT_STRUCTURES, readiness };
+  private static createControllers(
+    readiness: SlotReadiness,
+    tickRate: number,
+    lineOfFire: LineOfFireQuery,
+  ): ControllerRegistry {
+    const bots = {
+      difficulties: BOT_DIFFICULTIES,
+      retreatTo: RETREAT_STRUCTURES,
+      readiness,
+      lineOfFire,
+    };
     return createDefaultControllerRegistry({
       leash: { aggro: loadAggroRules(tickRate), classOf: unitClassOf },
       botLegend: bots,

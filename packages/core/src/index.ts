@@ -13,6 +13,7 @@ export type {
   InputIntent,
 } from './commands/Command.types';
 export type { AbilityRejectReason } from './content/abilities/AbilityDefinition.types';
+export type { AttackMode } from './content/units/units.types';
 export { ConfigValidationError } from './config/ConfigValidationError';
 export { createDefaultGameConfig } from './config/defaultGameConfig';
 export type {
@@ -107,6 +108,7 @@ export type {
   CaptureSnapshot,
   EntitySnapshot,
   MatchSnapshot,
+  ProjectileSnapshot,
   Snapshot,
   StatusSnapshot,
 } from './state/Snapshot.types';

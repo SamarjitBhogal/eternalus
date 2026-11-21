@@ -9,12 +9,14 @@ import { Health } from '../components/Health';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { StatusEffects } from '../components/StatusEffects';
 import { Movement } from '../components/Movement';
+import type { Outline } from '../components/Outline.types';
 import { Transform } from '../components/Transform';
 import { TeamMembership } from '../components/TeamMembership';
 import type { AbilitySlot } from '../content/abilities/AbilityDefinition.types';
+import type { AttackMode } from '../content/units/units.types';
 import type { Team } from '../teams/teams.types';
 import { distance, isPointInAnyPolygon, nearestPointOnPolygons } from '../utils/geometry';
-import type { Polygon, Vec2 } from '../utils/geometry.types';
+import type { Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
 import type { Entity } from '../entities/Entity';
 import type {
@@ -163,17 +165,14 @@ export class EntityStore {
   }
 
   /**
-   * The outlines attack reach to `id` is measured to and a chase of it aims at: its map object's
-   * footprints, else its structure `Footprint`'s polygons (a lane tower's fort, the Stronghold's
-   * palace, DEC-185; a gate's outline, DEC-217 (17)). `undefined` for a body that is only its
-   * collider circle, or an unknown id.
+   * The outline attack reach to `id` is measured to, a chase of it aims at and a shot hits: its
+   * `MapObjectBody`, else its structure `Footprint` (a lane tower's fort, the Stronghold's palace,
+   * DEC-185; a gate's outline, DEC-217 (17)). `undefined` for a body that is only its collider
+   * circle, or an unknown id.
    */
-  public outlineOf(id: EntityId): readonly Polygon[] | undefined {
+  public outlineOf(id: EntityId): Outline | undefined {
     const entity = this.entities.get(id);
-    return (
-      entity?.findComponent(MapObjectBody)?.object.footprints ??
-      entity?.findComponent(Footprint)?.polygons
-    );
+    return entity?.findComponent(MapObjectBody) ?? entity?.findComponent(Footprint);
   }
 
   /**
@@ -187,7 +186,7 @@ export class EntityStore {
    * has no corners.
    */
   public aimPointOf(targetId: EntityId, from: Vec2, out: MutableVec2): AimedAt | null {
-    const outline = this.outlineOf(targetId);
+    const outline = this.outlineOf(targetId)?.polygons;
     if (outline !== undefined) {
       if (isPointInAnyPolygon(from, outline)) {
         out.x = from.x;
@@ -291,15 +290,11 @@ export class EntityStore {
    * Points the entity's `Combat` at `targetId`. Lets `commands/` set a
    * target without importing `components/`, as `steer` does for movement.
    *
-   * @returns `false` when the entity is unknown or cannot attack.
+   * @param mode - Which attack to use (`'melee'` needs a melee attack).
+   * @returns `false` when the entity is unknown or cannot attack (or has no melee for `'melee'`).
    */
-  public setAttackTarget(id: EntityId, targetId: EntityId): boolean {
-    const combat = this.entities.get(id)?.findComponent(Combat);
-    if (combat === undefined) {
-      return false;
-    }
-    combat.setTarget(targetId);
-    return true;
+  public setAttackTarget(id: EntityId, targetId: EntityId, mode: AttackMode = 'basic'): boolean {
+    return this.entities.get(id)?.findComponent(Combat)?.setTarget(targetId, mode) ?? false;
   }
 
   /**

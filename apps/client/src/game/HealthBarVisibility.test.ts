@@ -62,6 +62,7 @@ const entity = (
   area: null,
   capture: null,
   statuses: null,
+  projectile: null,
 });
 
 const PLAYER = entity('me', 'legend', 'light');

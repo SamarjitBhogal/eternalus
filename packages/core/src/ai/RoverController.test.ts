@@ -20,6 +20,7 @@ import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { allReady } from '../state/__fixtures__/stubReadiness';
 import { Perception } from './perception/Perception';
 import { RoverController } from './RoverController';
+import { SHIPPED_LINE_OF_FIRE } from '../state/__fixtures__/shippedLineOfFire';
 
 const RNG = { seed: 1, words: [1, 2, 3, 4] as const };
 const controller = new RoverController({
@@ -29,6 +30,7 @@ const controller = new RoverController({
   legendKinds: LEGEND_KIND_IDS,
   laneWeights: LANE_ASSESSMENT_WEIGHTS,
   readiness: allReady,
+  lineOfFire: SHIPPED_LINE_OF_FIRE,
 });
 
 /** A dark Rover on the two-lane map (lane-0 along y 20, lane-1 along y 40, x 20 to 180). */

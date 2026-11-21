@@ -426,6 +426,13 @@ work named:
   detection has a detour waypoint for it, a fighting or pushing bot heads there
   (`EntityStore.detourWaypointOf`, DEC-193). A bot that already stands still sends no new halt
   (`isHalted` in its memory).
+- A bot with a ranged attack holds, in `fight` and in `siege`, only when it is in reach and its
+  shot would reach the target before a wall stops it (`state/LineOfFire` on
+  `GameState.collisions`; branch `feat/ranged-attacks`, 2026-11-20, DEC-317). Else it keeps
+  closing in. `CombatSystem` fires a ranged attack only with that clear line, so a bot closing in
+  does not shoot into the wall. `Simulation` builds the one `LineOfFire` from the projectile
+  definitions and injects it (`BotLegendControllerContent.lineOfFire`, the `LineOfFireQuery` port,
+  required), because `ai/` may not import content values.
 - A brain's `profileId` names the controller's own content directly: an aggro profile
   (`content/ai/aggro/`) for `MinionController` and `GuardController`, each accepting only a profile
   whose `controller` names it, and a `BotDifficultyDefinition`

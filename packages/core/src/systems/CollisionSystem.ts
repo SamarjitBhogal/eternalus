@@ -27,6 +27,8 @@ export class CollisionSystem implements System {
         transform === undefined ||
         collider?.isEnabled !== true ||
         collider.isStatic ||
+        // A projectile stops at what it hits, it does not slide along it (`ProjectileSystem`).
+        collider.layer === 'projectile' ||
         // A mob walking out of the structure it spawned inside passes its walls (DEC-133).
         entity.hasComponent(Deploying)
       )

@@ -6,6 +6,7 @@ import { StatusEffects } from '../../components/StatusEffects';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { loadDefaultContent } from '../../content/loadDefaultContent';
 import { loadStatusEffects } from '../../content/status-effects/loadStatusEffects';
+import type { AttackMode } from '../../content/units/units.types';
 import { createDefaultEntityRegistry } from '../../entities/defaultEntityRegistry';
 import { EntityFactory } from '../../entities/EntityFactory';
 import { GameState } from '../../state/GameState';
@@ -28,9 +29,9 @@ const setUp = () => {
     state.entities.add(entity);
     return entity;
   };
-  const handle = (actorId: string, targetId: string) =>
+  const handle = (actorId: string, targetId: string, mode?: AttackMode) =>
     new AttackTargetHandler().handle(
-      { type: 'attack-target', actorId, targetId },
+      { type: 'attack-target', actorId, targetId, ...(mode && { mode }) },
       { state, factory },
     );
   return { spawn, handle };
@@ -55,6 +56,40 @@ describe('AttackTargetHandler', () => {
 
     expect(handle(warrior.id, enemy.id)).toBe('invalid-target');
     expect(warrior.getComponent(Combat).targetId).toBeNull();
+  });
+
+  it('sets the melee mode with the target, and treats an absent mode as basic (DEC-308)', () => {
+    const { spawn, handle } = setUp();
+    const magus = spawn('magus', 'magus', 'light');
+    const enemy = spawn('light-mob', 'training-dummy', 'dark');
+
+    expect(handle(magus.id, enemy.id, 'melee')).toBeNull();
+    expect(magus.getComponent(Combat).mode).toBe('melee');
+    expect(magus.getComponent(Combat).attack.strategy).toBe('melee');
+    expect(handle(magus.id, enemy.id)).toBeNull();
+    expect(magus.getComponent(Combat).mode).toBe('basic');
+    expect(magus.getComponent(Combat).attack.strategy).toBe('ranged-projectile');
+  });
+
+  it('rejects the melee mode for a unit with no melee attack', () => {
+    const { spawn, handle } = setUp();
+    const enemy = spawn('light-mob', 'training-dummy', 'dark');
+    const archer = spawn('light-mob', 'training-dummy', 'light');
+    archer.addComponent(
+      new Combat({
+        basic: {
+          strategy: 'ranged-projectile',
+          damage: 1,
+          reach: 10,
+          interval: 5,
+          projectile: { projectileId: 'magus-bolt', falloff: null },
+        },
+      }),
+    );
+
+    expect(handle(archer.id, enemy.id, 'melee')).toBe('cannot-attack');
+    expect(archer.getComponent(Combat).targetId).toBeNull();
+    expect(handle(archer.id, enemy.id)).toBeNull();
   });
 
   it.each([

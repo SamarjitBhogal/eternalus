@@ -22,6 +22,17 @@ describe('Footprint', () => {
     expect(footprint.bounds).toEqual({ x: -16, y: -16, width: 32, height: 36 });
   });
 
+  it('is solid unless it is built as a walk-on outline', () => {
+    const floor = [
+      { x: 0, y: 0 },
+      { x: 4, y: 0 },
+      { x: 4, y: 4 },
+    ];
+
+    expect(new Footprint([floor]).isWalkOn).toBe(false);
+    expect(new Footprint([floor], { isWalkOn: true }).isWalkOn).toBe(true);
+  });
+
   it('rejects no polygon, or one with fewer than 3 corners', () => {
     expect(() => new Footprint([])).toThrow(/at least one polygon/);
     expect(
