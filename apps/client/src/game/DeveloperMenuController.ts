@@ -3,7 +3,6 @@ import type { MapDefinition, Simulation } from '@eternalus/core';
 import type { DeveloperMenuOption } from '../bridge/developerMenu.types';
 import type { BridgeEventMap } from '../bridge/events';
 import type { TypedEventBus } from '../bridge/TypedEventBus';
-import { DEVELOPER_MOBS } from './DeveloperMenuController.constants';
 
 /** What the controller is built from (`Match` passes its own parts). */
 type DeveloperMenuControllerDeps = {
@@ -19,7 +18,8 @@ type DeveloperMenuControllerDeps = {
 /**
  * The game side of the developer menu (13 §4): whether it is open, the `developer-menu` state the
  * UI shows, and the one path from the menu's `dev-command` intent to `Simulation.enqueueCommand`
- * (core validates it and logs it for the replay). It does nothing while the menu is not enabled.
+ * (core validates it and logs it for the replay). While the menu is not enabled it forwards no
+ * command, does not open and publishes nothing.
  */
 export class DeveloperMenuController {
   private isOpen = false;
@@ -35,12 +35,12 @@ export class DeveloperMenuController {
     });
   }
 
-  /** Publishes the menu's state: its pickers, whether it is enabled and open. */
+  /** Publishes the menu's state: whether it is open, and its origin picker; nothing while disabled. */
   public publish(): void {
-    const { bus, map, humanLegendId } = this.deps;
+    const { bus, map, isEnabled, humanLegendId } = this.deps;
+    if (!isEnabled) return;
     bus.emit('developer-menu', {
       isOpen: this.isOpen,
-      mobs: DEVELOPER_MOBS,
       humanLegendId: humanLegendId(),
       origins: map.features.flatMap(({ id, kind, laneId }): DeveloperMenuOption[] =>
         laneId === undefined ? [] : [{ id, label: `${id} (${kind})` }],

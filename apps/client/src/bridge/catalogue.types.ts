@@ -275,6 +275,8 @@ export type DisplayCatalogue = {
   /** The colour set; `SessionController` writes it to `data-contrast` on the theme root. */
   readonly contrastMode: ContrastMode;
   readonly hud: HudCatalogue;
+  /** The lane minions by id and display name (core content): the developer menu's mob picker. */
+  readonly laneMinions: readonly { readonly id: string; readonly displayName: string }[];
   /** Each playable team's display name (core content): the team badge and the roster labels. */
   readonly teamNames: Readonly<Record<PlayableTeam, string>>;
   /** Who the bots are (core content, DEC-61, DEC-102); the session builds the rosters from it. */

@@ -1,7 +1,8 @@
-import type { ControllerSpawn } from '../entities/EntityFactory.types';
 import type { CommandHandlers } from './CommandHandler.types';
+import type { DefaultCommandHandlerDeps } from './defaultCommandHandlers.types';
 import { AttackTargetHandler } from './handlers/AttackTargetHandler';
 import { DevRemoveEntityHandler } from './handlers/DevRemoveEntityHandler';
+import { DevRemoveLegendHandler } from './handlers/DevRemoveLegendHandler';
 import { DevSetControllerHandler } from './handlers/DevSetControllerHandler';
 import { DevSpawnHandler } from './handlers/DevSpawnHandler';
 import { DevSpawnLegendHandler } from './handlers/DevSpawnLegendHandler';
@@ -13,11 +14,15 @@ import { UnsupportedCommandHandler } from './handlers/UnsupportedCommandHandler'
 /**
  * The command registry: one line per command type (architecture 02 §9).
  *
- * @param rover - The Rover controller `dev-spawn-legend` and `dev-set-controller` give a Legend;
- *   `Simulation` passes it in because `commands/` may not read `content/`.
+ * @param deps - What the handlers need from `content/`, which `commands/` may not read (the
+ *   Rover controller `dev-spawn-legend` and `dev-set-controller` give a Legend);
+ *   `Simulation` passes it in. One object, so a new dependency adds a field, not a parameter.
  */
-export const createDefaultCommandHandlers = (rover: ControllerSpawn): CommandHandlers => {
+export const createDefaultCommandHandlers = ({
+  rover,
+}: DefaultCommandHandlerDeps): CommandHandlers => {
   const unsupported = new UnsupportedCommandHandler();
+  const removeEntity = new DevRemoveEntityHandler();
   return {
     move: new MoveHandler(),
     stop: new StopHandler(),
@@ -27,7 +32,8 @@ export const createDefaultCommandHandlers = (rover: ControllerSpawn): CommandHan
     'dev-spawn': new DevSpawnHandler(),
     'dev-spawn-legend': new DevSpawnLegendHandler(rover),
     'dev-spawn-mobs': new DevSpawnMobsHandler(),
-    'dev-remove-entity': new DevRemoveEntityHandler(),
+    'dev-remove-entity': removeEntity,
+    'dev-remove-legend': new DevRemoveLegendHandler(removeEntity),
     'dev-set-controller': new DevSetControllerHandler(rover),
   };
 };

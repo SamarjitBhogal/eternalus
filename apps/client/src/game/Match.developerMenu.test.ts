@@ -41,7 +41,7 @@ const setUp = (isDeveloperMenuEnabled: boolean) => {
     isDeveloperMenuEnabled,
     bridge: { bus, publishEveryTicks: HUD_PUBLISH_EVERY_TICKS, captureKinds: [] },
   });
-  return { match, bus, enqueue, states, world };
+  return { match, bus, enqueue, states, world, simulation };
 };
 
 describe('Match developer menu', () => {
@@ -102,6 +102,24 @@ describe('Match developer menu', () => {
 
     expect(match.playerEntityId).toBeNull();
     expect(states.at(-1)?.humanLegendId).toBeNull();
+    match.destroy();
+  });
+
+  it("refuses to remove the human's Legend through the menu: it stays, and so does its seat", () => {
+    const { match, bus, simulation } = setUp(true);
+    const humanId = simulation.snapshot().match.humanLegendId;
+    if (humanId === null) throw new Error('The match seats a human');
+    const rejected: unknown[] = [];
+    simulation.on('command-rejected', ({ reason }) => rejected.push(reason));
+    bus.emit('ui-intent', {
+      kind: 'dev-command',
+      command: { type: 'dev-remove-entity', entityId: humanId },
+    });
+    simulation.step();
+    const snapshot = simulation.snapshot();
+    expect(rejected).toEqual(['human-legend']);
+    expect(snapshot.entities.some(({ id }) => id === humanId)).toBe(true);
+    expect(snapshot.match.humanLegendId).toBe(humanId);
     match.destroy();
   });
 });

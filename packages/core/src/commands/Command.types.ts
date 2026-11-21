@@ -72,8 +72,17 @@ type CommandPayloads = {
    * the Rover controller (it takes no lane). Refused at `maxLegendsPerTeam`.
    */
   readonly 'dev-spawn-legend': { readonly team: PlayableTeam; readonly definitionId: string };
-  /** Developer menu: remove an entity (cause `dev-removed`). */
+  /**
+   * Developer menu: remove an entity (cause `dev-removed`). A Legend a human plays is refused
+   * (`human-legend`): the human is removed only in sim mode (13 §4).
+   */
   readonly 'dev-remove-entity': { readonly entityId: EntityId };
+  /**
+   * Developer menu: remove a Legend (cause `dev-removed`; FR-097, DEC-293). Refused for an entity
+   * that is not a Legend (`not-a-legend`) and for the human's Legend unless the match is in sim
+   * mode, that is while a human seat holds it (`human-legend`).
+   */
+  readonly 'dev-remove-legend': { readonly entityId: EntityId };
   /**
    * Developer menu, sim mode: hand a Legend to a controller. `controllerId` is `human` (the Legend
    * becomes the human's) or the Rover's id (a bot plays it; on the human's Legend, no human is left).
@@ -111,4 +120,5 @@ export type CommandRejectReason =
   | 'cannot-attack'
   | 'invalid-target'
   | 'not-supported'
+  | 'human-legend'
   | 'match-ended';

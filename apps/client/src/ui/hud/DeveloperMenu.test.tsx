@@ -7,7 +7,6 @@ import { DeveloperMenu } from './DeveloperMenu';
 
 const STATE: DeveloperMenuState = {
   isOpen: true,
-  mobs: [{ id: 'light-minion', label: 'Light Minion' }],
   origins: [{ id: 'gate-a', label: 'gate-a (gate)' }],
   humanLegendId: 'entity-9',
 };
@@ -33,6 +32,13 @@ describe('DeveloperMenu', () => {
     expect(html).toContain('aria-label="Developer menu"');
     expect(html).toContain('Light Minion');
     expect(html).toContain('gate-a (gate)');
-    expect(buttonNames(html)).toEqual(['Spawn', 'Add', 'Remove', 'Remove human', 'Take control']);
+    expect(buttonNames(html)).toEqual([
+      'Spawn',
+      'Add',
+      'Remove Legend',
+      'Remove',
+      'Remove human',
+      'Take control',
+    ]);
   });
 });

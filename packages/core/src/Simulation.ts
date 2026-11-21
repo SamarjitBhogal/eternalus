@@ -98,9 +98,7 @@ export class Simulation {
   /** Commands from `enqueueCommand` (player, developer menu). Each one enters the replay log. */
   private readonly externalQueue = new CommandQueue();
   private readonly handlers: CommandHandlers = createDefaultCommandHandlers({
-    controllerId: 'rover',
-    profileId: ROVER_BOT.id,
-    memory: {},
+    rover: { controllerId: 'rover', profileId: ROVER_BOT.id, memory: {} },
   });
   private readonly commandContext: CommandContext;
   private readonly systemContext: SystemContext;

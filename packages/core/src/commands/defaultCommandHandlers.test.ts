@@ -34,7 +34,7 @@ describe('createDefaultCommandHandlers', () => {
       const state = new GameState(createDefaultGameConfig(), 1);
       const reasons: string[] = [];
       state.events.on('command-rejected', ({ reason }) => reasons.push(reason));
-      applyCommand(command, createDefaultCommandHandlers(TEST_CONTROLLER), {
+      applyCommand(command, createDefaultCommandHandlers({ rover: TEST_CONTROLLER }), {
         state,
         factory: new EntityFactory(new EntityRegistry(), new ContentCatalogue([])),
       });
@@ -52,6 +52,7 @@ describe('createDefaultCommandHandlers', () => {
       intent: unsupported,
       'dev-spawn': unsupported,
       'dev-remove-entity': unsupported,
+      'dev-remove-legend': unsupported,
       'dev-set-controller': unsupported,
     };
     expect(Object.keys(handlers)).not.toContain('move');
