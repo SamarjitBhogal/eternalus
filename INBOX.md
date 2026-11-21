@@ -514,6 +514,18 @@ Reply inline (`Decision: …`).
     shield bars and anything else on the Legend (no ability cooldowns exist yet to reset).
     (9) `DUEL_RULES.startOffset` is read from live content, not the replay setup, so retuning it
     changes old Duel replays.
+  - 2026-11-20 (claudiodh, `feat/duel-legend-max-level`, SCRUM-444): every Legend in a Duel
+    starts at its level curve's cap (`DUEL_RULES.legendsStartAtMaxLevel`); minions keep their
+    normal level and veterancy. Decisions I took, each to confirm or change: (1) the start is
+    no XP award and no level-up, so it emits no `xp-gained` and no `level-up` (a later level-up
+    sound or toast would otherwise fire 49 times at the start). (2) The rule applies to every
+    Legend that spawns in a Duel, bots included (a Duel roster has none today). (3) Like
+    `startOffset`, the rule is read from live content, not the replay setup, so changing it
+    changes old Duel replays. (4) Legends still earn XP in a Duel; at the cap it lifts nothing.
+    (5) Effect to check: level raises only health and aether (basic-attack scaling is not built),
+    so a max-level Legend has about 4.9 times its level-1 health against the same damage, and a
+    Duel kill takes about 2.5 to 3 times as long as before (the core Duel tests' fights went from
+    4–8 s to 12–18 s). Is that the Duel pace you want, or should `killTarget` or damage change?
 - [ ] **DEC-11 — still open after your answer** (the approvals are recorded as DEC-11 in
       `docs/reference/game-design/13-owner-decisions-log.md`, 2026-10-10; your chat clarifications
       of 2026-10-10 answered the former (1) and (2), see Done). (3) Your Roar row says Legends only

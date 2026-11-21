@@ -21,6 +21,9 @@ import type { Award, ProgressionContent } from './ProgressionSystem.types';
  * the cap leaves nothing to pay gets no award. Self-kills and ally kills pay nothing (O5). Each
  * level gained raises max health by the class's share of its base health (O3) and max aether,
  * heals and refills by the raise only while the Legend is alive (O4), and emits `level-up`.
+ * With `content.legendsStartAtMaxLevel` (a Duel, SCRUM-444) each Legend that spawns is raised to its
+ * curve's cap at once, with the same per-level raises; that start is no award, so it emits no
+ * `xp-gained` and no `level-up`.
  */
 export class ProgressionSystem implements System {
   public readonly name = 'progression';
@@ -83,6 +86,14 @@ export class ProgressionSystem implements System {
         });
       }
     });
+    if (content.legendsStartAtMaxLevel === true) {
+      state.events.on('entity-spawned', ({ entityId }) => {
+        const entity = state.entities.get(entityId);
+        if (entity !== undefined) {
+          this.startAtMaxLevel(entity);
+        }
+      });
+    }
   }
 
   /** Gives this tick's XP, in the order it was earned, and applies each level gained. */
@@ -142,7 +153,24 @@ export class ProgressionSystem implements System {
     }
   }
 
-  /** The one caller of `addXp`; it always announces the award, so none can bypass the invariant. */
+  /**
+   * Raises a freshly spawned Legend to its curve's cap with each level's raises (SCRUM-444); a mob
+   * or a structure is left as it is. The start is no award, so nothing is announced.
+   */
+  private startAtMaxLevel(entity: Entity): void {
+    const progression = entity.findComponent(Progression);
+    const definition = this.legendOf(entity);
+    if (progression === undefined || definition === undefined) {
+      return;
+    }
+    const curve = this.content.curves.get(progression.curveId);
+    const gained = progression.addXp(progression.xpToReach(curve.cap, curve), curve);
+    for (let step = 0; step < gained; step += 1) {
+      ProgressionSystem.levelUp(entity, definition.levelScaling, definition.baseHealth);
+    }
+  }
+
+  /** The one caller of `addXp` for awards; it always announces one, so none bypasses the invariant. */
   private award(
     recipient: Entity,
     progression: Progression,
