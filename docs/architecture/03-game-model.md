@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-20
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -179,7 +179,9 @@ export class GameEvents {
 
 Events are synchronous, emitted during the tick and delivered to listeners in subscription order;
 listeners that need to change state defer the change to their own system's pass (Nystrom's Observer
-plus a deferred queue, research §2). `GameEvents` keeps the most recent events in a `RingBuffer`
+plus a deferred queue, research §2). One exception: `VeterancySystem` applies
+`minion-levels-granted` as it is announced, because its sender runs after it and a lost zone takes
+its levels back on the same tick (DEC-258). `GameEvents` keeps the most recent events in a `RingBuffer`
 (`recentEvents()`, capacity in `GameEvents.constants.ts`) for invariant reports. Payload objects for
 high-frequency events (`damage-applied`) may be pooled (Recommendation, profile first).
 
@@ -195,7 +197,8 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 | `shield-bars-changed`               | `{ entityId, bars }`                                   | `StructureSystem`                                               | HUD, views                                                                               |
 | `capture-progress`                  | `{ pointId, team, progress, checkpoint }`              | `CaptureSystem`                                                 | HUD, `MinimapView`                                                                       |
 | `checkpoint-reached`                | `{ pointId, team, checkpoint, presentLegendIds }`      | `CaptureSystem`                                                 | `Scoring` (DEC-214, DEC-223), checkpoint spawners (Phase 3)                              |
-| `capture-point-owner-changed`       | `{ pointId, from, to }`                                | `CaptureSystem`                                                 | `MatchDirector`, `StatusEffectSystem`                                                    |
+| `capture-point-owner-changed`       | `{ pointId, from, to }`                                | `CaptureSystem`                                                 | `MatchDirector`, `StatusEffectSystem`, `ZoneLevelUpSystem` (DEC-258)                     |
+| `minion-levels-granted`             | `{ entityId, levels, sourceId }`                       | `ZoneLevelUpSystem` (07 §7, DEC-258)                            | `VeterancySystem` (one minion level, DEC-168)                                            |
 | `phase-changed`                     | `{ from, to }`                                         | `MatchRecord.setPhase` (called by `MatchDirector`)              | `Announcer`                                                                              |
 | `match-ended`                       | `{ result: MatchResult }`                              | `MatchDirector`                                                 | client `MatchBridge` (the results flow)                                                  |
 | `ability-cast`                      | `{ casterId, abilityId, slot }`                        | `AbilitySystem`                                                 | views (VFX), `Announcer`                                                                 |

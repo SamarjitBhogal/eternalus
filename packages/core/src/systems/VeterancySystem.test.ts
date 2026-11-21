@@ -132,6 +132,52 @@ describe('VeterancySystem', () => {
     expect(statusesOf(killer)).toContainEqual(['veteran', 1]);
   });
 
+  it('applies a granted level and takes it back with its effects, keeping the kill levels (DEC-258)', () => {
+    const { state, killer, kill, step } = setUp();
+    for (let count = 0; count < 4; count += 1) {
+      kill();
+      step();
+    }
+    expect(killer.getComponent(Veterancy).level).toBe(2);
+    const killMax = killer.getComponent(Health).max;
+
+    state.events.emit('minion-levels-granted', {
+      entityId: killer.id,
+      levels: 1,
+      sourceId: 'zone-1',
+    });
+    expect(killer.getComponent(Veterancy).level).toBe(3);
+    expect(killer.getComponent(Health).max).toBeCloseTo(165 + 30);
+    expect(statusesOf(killer)).toContainEqual(['veteran', 3]);
+    expect(killer.getComponent(Veterancy).grantedBy).toBe('zone-1');
+
+    state.events.emit('minion-levels-granted', {
+      entityId: killer.id,
+      levels: -1,
+      sourceId: 'zone-1',
+    });
+    expect(killer.getComponent(Veterancy).level).toBe(2);
+    expect(killer.getComponent(Health).max).toBeCloseTo(killMax);
+    expect(statusesOf(killer)).toContainEqual(['veteran', 2]);
+    expect(killer.getComponent(Veterancy).grantedBy).toBeNull();
+  });
+
+  it('ignores a granted level for a dead or unknown entity', () => {
+    const { state, killer } = setUp();
+    killer.getComponent(Health).applyDamage(1e6);
+    state.events.emit('minion-levels-granted', {
+      entityId: killer.id,
+      levels: 1,
+      sourceId: 'zone-1',
+    });
+    state.events.emit('minion-levels-granted', {
+      entityId: 'nobody',
+      levels: 1,
+      sourceId: 'zone-1',
+    });
+    expect(killer.findComponent(Veterancy)).toBeUndefined();
+  });
+
   it('rallies the friendly horde minions within the aura radius, and no one else', () => {
     const { killer, neighbour, far, enemy, kill, step } = setUp();
     kill();

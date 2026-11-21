@@ -134,6 +134,31 @@ describe('StateHasher', () => {
     expect(hasher.hash(state)).not.toBe(before);
   });
 
+  it('changes when only a granted minion level differs, the level capped (DEC-258)', () => {
+    const { state, soldier } = stateWithSoldier();
+    const veterancy = new Veterancy();
+    soldier.addComponent(veterancy);
+    veterancy.gainLevels(3, 3);
+    const before = hasher.hash(state);
+
+    veterancy.grantLevels(1, 3, 'zone-1');
+
+    expect(veterancy.level).toBe(3);
+    expect(hasher.hash(state)).not.toBe(before);
+  });
+
+  it('changes when only the zone that granted a minion level differs (DEC-258)', () => {
+    const hashGrantedBy = (sourceId: string): number => {
+      const { state, soldier } = stateWithSoldier();
+      const veterancy = new Veterancy();
+      soldier.addComponent(veterancy);
+      veterancy.grantLevels(1, 3, sourceId);
+      return hasher.hash(state);
+    };
+
+    expect(hashGrantedBy('zone-1')).not.toBe(hashGrantedBy('zone-2'));
+  });
+
   it('changes when an entity turns, and changes back when it turns back (DEC-192)', () => {
     const { state, soldier } = stateWithSoldier();
     const before = hasher.hash(state);
@@ -557,10 +582,34 @@ describe('StateHasher', () => {
     const checkpoint = hasher.hash(state);
     zone.markReached('light', 2);
     const reached = hasher.hash(state);
-    zone.setOwner('light');
+    zone.setOwner('light', 0);
     const owned = hasher.hash(state);
 
     expect(new Set([untouched, progressed, checkpoint, reached, owned]).size).toBe(5);
+  });
+
+  it('changes when only the tick a capture point was taken differs (DEC-258)', () => {
+    const hashOwnedSince = (tick: number): number => {
+      const state = new GameState(createDefaultGameConfig(), 1);
+      const point = new CapturePoint('entity-1', CAPTURE_POINT.id);
+      point.spawn({
+        definition: CAPTURE_POINT,
+        position: { x: 5, y: 5 },
+        team: 'neutral',
+        area: [
+          [
+            { x: 0, y: 0 },
+            { x: 10, y: 0 },
+            { x: 5, y: 10 },
+          ],
+        ],
+      });
+      state.entities.add(point);
+      point.getComponent(Capturable).setOwner('light', tick);
+      return hasher.hash(state);
+    };
+
+    expect(hashOwnedSince(0)).not.toBe(hashOwnedSince(5));
   });
 
   describe('ally damage (DEC-89)', () => {

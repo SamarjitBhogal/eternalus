@@ -20,3 +20,13 @@ export type ZoneDefinition = EntityDefinitionBase & {
  * R7), keyed by the feature's kind. A feature kind without an entry places no zone.
  */
 export type ZonePlacements = Readonly<Partial<Record<MapFeatureKind, string>>>;
+
+/**
+ * The zone level-up (architecture 07 §7, DEC-258): a capture point held this long without a break
+ * grants its owner's minions spawned on its lane `levels` minion levels, taken back when it is lost.
+ * The levels' cap is the minion level cap (`MinionVeterancyDefinition.maxLevel`).
+ */
+export type ZoneLevelUpDefinition = {
+  readonly holdSeconds: number;
+  readonly levels: number;
+};
