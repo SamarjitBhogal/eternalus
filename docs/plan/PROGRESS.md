@@ -9290,3 +9290,9 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Not done: abilities 1–3, the ultimate, artifacts and the passive (no core content), the secondary weapon (MVP-if-time), in-match loadout changes, and `IndexedDbStorageAdapter` (needs the INBOX fake decision; saved loadouts still last only for the page).
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 1700 passed (1700)"; protocol "Tests 29 passed (29)"; client "Tests 2068 passed (2068)"; server "Tests 84 passed (84)"; "Documentation check passed."
 - Next step: the pre-PR critic on the branch, then the owner's INBOX answers.
+
+### 2026-11-20 — Phase 4 sprint 4.5 / Phase 5 sprint 5.3 — feat/loadout-screen (pre-PR critic) — claudiodh + Claude Code
+
+- What was done: the pre-PR critic (an independent `architecture-reviewer` subagent, base `5a7cc8dc` docs) asked for changes. One blocker: `entities/` imported `loadout/` at runtime. Four should-fix items: no replay test for a saved loadout, `uniqueTo` not enforced, 02 and core AGENTS doc drift, and weapon choices bypassing `validateLoadout`. Fixed: the spawn decision is `loadout/SpawnLoadoutPolicy`, injected by `Simulation` through a private `LoadoutResolver` port; `WeaponAllowedRule` enforces `uniqueTo` (`isWeaponAllowedFor` removed); a replay test was added; the screen's choices come from `validateLoadout`; `LoadoutRadioGroup` has a test; and the docs were updated. Round 2: approve. Ponytail was not run (the plugin is not available in this session).
+- Checks run: `npm run check` on `34428df1` → `EXIT=0`: core "Tests 1704 passed (1704)"; protocol "Tests 29 passed (29)"; client "Tests 2072 passed (2072)"; server "Tests 84 passed (84)"; "Documentation check passed."
+- Next step: ponytail in a session with the plugin; the owner's INBOX answers (repair location and the `entities/` type import; the IndexedDB test fake).
