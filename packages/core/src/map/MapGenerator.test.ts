@@ -440,6 +440,20 @@ describe('MapGenerator', () => {
     }
   });
 
+  it('rejects an obstacle choice that is not a map feature definition, naming it', () => {
+    const layout: MapLayout = {
+      ...DEFAULT_MAP_LAYOUT,
+      obstacles: {
+        ...DEFAULT_MAP_LAYOUT.obstacles,
+        choices: [{ definitionId: 'no-such-obstacle', weight: 1 }],
+      },
+    };
+
+    expect(() => new MapGenerator({ layout }).generate({ map: DEFAULT_MAP_CONFIG }, SEED)).toThrow(
+      /obstacles\.choices names "no-such-obstacle"/,
+    );
+  });
+
   it('gives each feature its definition id and minimap glyph', () => {
     const map = generate();
     const tower = ofKind(map, 'spawner-tower')[0];

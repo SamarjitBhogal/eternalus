@@ -242,7 +242,15 @@ export class MapBuilder {
           width: config.worldWidth,
           height: config.worldHeight,
         }),
-        radiusOf: (definitionId) => this.input.definitions[definitionId]?.footprintRadius ?? 0,
+        radiusOf: (definitionId) => {
+          const definition = this.input.definitions[definitionId];
+          if (definition === undefined) {
+            throw new MapGenerationError(
+              `map layout obstacles.choices names "${definitionId}", which is not a map feature definition`,
+            );
+          }
+          return definition.footprintRadius;
+        },
       },
       layout.obstacles,
     );

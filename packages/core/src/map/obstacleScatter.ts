@@ -53,6 +53,7 @@ export const scatterObstacles = (
   for (let sample = 0; sample < samples; sample += 1) {
     const position = { x: rng.next() * halfWidth, y: rng.next() * area.height };
     const definitionId = pickChoice(rng.next(), rules.choices);
+    if (definitionId === undefined) continue;
     const isClear =
       position.x < halfWidth - rules.featureClearance &&
       !area.blocked.some((polygon) => isPointInPolygon(position, polygon)) &&
@@ -61,10 +62,8 @@ export const scatterObstacles = (
         (other) => distance(position, other) >= rules.featureClearance,
       ) &&
       distance(position, area.keepOut.centre) >= area.keepOut.radius &&
-      !isInLaneFortKeepOut(bodyBox(position, area.radiusOf(definitionId ?? '')), area.fortKeepOuts);
-    if (isClear && definitionId !== undefined) {
-      placed.push({ definitionId, position });
-    }
+      !isInLaneFortKeepOut(bodyBox(position, area.radiusOf(definitionId)), area.fortKeepOuts);
+    if (isClear) placed.push({ definitionId, position });
   }
   return placed;
 };
