@@ -448,7 +448,8 @@ Reply inline (`Decision: …`).
       Keep all six, or name the ones to change?
 - [ ] **HC-B19 — Better than the design, built under your standing rule (DEC-223), sign-off
       asked: five parts of the Veil build (`feat/vanguard-veil-hamstring`, 2026-11-21; pre-PR
-      critic round 1).** Nothing waits on the answer; each part is built and tested. The design
+      critic rounds 1 and 2), and one more not built.** Nothing waits on the answer; parts (1) to
+      (5) are built and tested. The design
       text of 03, 05, 08 and 11 changes only after your sign-off; until then each doc's
       "Implementation status" points to 05 §18, "Veil".
       (1) **A status may end on damage (`endsOnDamage`).** The 05 §8 sketch of a status definition
@@ -464,20 +465,28 @@ Reply inline (`Decision: …`).
       `untargetable`. Perception's hostile queries, the leashed mobs, `attack-target` and the bot
       memory use it, so `ai/` does not read components. `CombatSystem`, `PathingSystem` and
       `StuckSystem` read `isUntargetable` (the status part only): they keep a Veiled target but do
-      not hit or chase it. 11 §3 should say that a hostile query keeps only units an enemy may
-      pick (a dead unit is left out too).
+      not hit or chase it, and each AI controller drops it at its next decision (a bot with a
+      `stop`). 11 §3 should say that a hostile query keeps only units an enemy may pick (a dead
+      unit is left out too). Whether the human player's attack is kept is a separate question
+      (HC-Q75).
       (4) **A broken status stops at the hit.** Before, a status a hit broke stayed in force until
       the next tick's pass, so the Vanguard that hit stayed hidden and untargetable for one or two
       ticks. Now `StatusEffects` recomputes without a broken status at once (no flags, no
-      modifiers); only its removal and `status-expired` wait for the pass. `StateHasher` hashes
-      the pending break.
+      modifiers), and a broken status neither ticks nor runs out, so it always ends through the
+      break (no `onExpire`); only its removal and `status-expired` wait for the pass.
+      `StateHasher` hashes the pending break.
       (5) **`Viewer` decides what the player sees.** A small `Viewer` in `game/` keeps the
       player's Legend and team (also after the player dies) and gives each entity shown, faded or
       hidden; `Match` injects that rule into `EntityLayer` and `HealthBarVisibility` reads the same
       `Viewer`. Before, `HealthBarVisibility` (the health-bar rule) also held the viewer's team, and
       a team not known yet showed hidden enemies faded. With `Viewer`, an unknown team hides them,
       and the later per-seat filter (multiplayer plan W10) replaces one rule, not view code.
-      Keep all five, or name the ones to change?
+      (6) **Not built, my advice is no: one query for "the held target, while targetable".** The
+      round 2 critic noted that `CombatSystem`, `PathingSystem` and `StuckSystem` each check
+      `isUntargetable` on their held target, and one `EntityStore` query could hold the rule.
+      `CombatSystem` still needs its own dead-or-untargetable split (a dead target clears, a Veiled
+      one stays), so the query would serve two of three callers; build it when a fourth appears.
+      Keep all five, build (6) now, or name the ones to change?
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays

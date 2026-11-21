@@ -12,6 +12,7 @@ paths:
     'apps/client/src/game/views/**',
     'apps/client/src/game/Match.ts',
     'apps/client/src/game/HealthBarVisibility.ts',
+    'apps/client/src/game/Viewer.ts',
   ]
 related:
   [

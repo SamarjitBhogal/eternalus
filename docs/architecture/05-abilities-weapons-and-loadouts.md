@@ -1218,16 +1218,17 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     of the attacker as broken (`StatusEffects.breakOnDamage`); the end of its pass removes them
     (`StatusEffectApplier.removeBroken`: `status-expired`, no `onExpire`). The listener only
     marks, because a hit can land inside a loop over the holder's statuses. A broken status stops
-    counting at once (`StatusEffects` recomputes without it: no flags, no modifiers), so a Veil
-    ends at the hit; its removal and `status-expired` come in the same pass for a bleed tick and
-    in the next tick's pass for a hit from a later system (combat). Casting does not end it.
+    counting at once (`StatusEffects` recomputes without it: no flags, no modifiers) and neither
+    ticks nor runs out (`StatusEffectRuntime`), so a Veil ends at the hit; its removal and
+    `status-expired` come in the same pass for a bleed tick and in the next tick's pass for a hit
+    from a later system (combat). Casting does not end it.
   - **Untargetable.** `EntityStore.isTargetable(id)` (alive and not `isUntargetable`) is the one
     rule for every picker: perception's hostile queries, the leashed mobs (`LeashBehaviour`),
     `attack-target` (`invalid-target`) and the bot memory (`BotLeaves`). The systems that act on a
     held target (`CombatSystem`, `PathingSystem`, `StuckSystem`) keep an untargetable one
-    (`EntityStore.isUntargetable`) but neither hit nor chase it, so a controller that does not see
-    the Veil fights on after it; an AI controller drops it when it next decides. An area still
-    hits the holder.
+    (`EntityStore.isUntargetable`) but neither hit nor chase it. An AI controller drops it when it
+    next decides (a leashed mob or a bot with a `stop`); the human player's attack is kept and
+    resumes after Veil (owner question HC-Q75). An area still hits the holder.
   - **Hidden.** `EntitySnapshot.isHidden` is present, `true`, while a status sets `hidden`. The
     client's `Viewer` (the player's Legend and team, kept after the player dies) decides how each
     entity shows (`visibilityOf`: shown, faded or hidden), injected into `EntityLayer` as

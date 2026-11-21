@@ -9848,3 +9848,26 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   server 84/84, protocol 30/30, docs check passed).
 - Next step: critics round 2 on `git diff 59c8f4a3..HEAD`; then the push line for Sam, PR base
   `feat/vanguard-kit`; then Hamstring on lane A's `ProjectileImpact` (PR #148).
+
+### 2026-11-21 — Phase 4 / combat PR 5 (lane B, DEC-301): Veil pre-PR gate, round 2 fixes — feat/vanguard-veil-hamstring — sholtzman + Claude Code
+
+- What was done: critics round 2 on `59c8f4a3..9cf41171` (reports `architecture-r2.md`,
+  `ponytail-r2.md` in `eternalus-agent-work/abilities/veil-gate/`; correctness in chat). Fixed:
+  a bot Legend now drops a Veiled live attack with a `stop` at its next decision
+  (`BotLeaves.begin`, DEC-266); a broken status neither ticks nor runs out
+  (`StatusEffectRuntime`), so it always ends through the break (no `onExpire`);
+  `StatusEffectSystem` empties its broken set before removing, so a holder broken again by a
+  `status-expired` listener ends in the next pass; the scenario test for a held attack now holds
+  through 30 Veiled ticks; the Match test asserts the hidden enemy is not drawn. Ponytail cuts 1-4
+  (TSDoc), long comment lines, 08 `paths` gains `Viewer.ts`. 05 §18 "Veil" and `INBOX.md` HC-B19
+  updated ((6) added, not built). Owner question HC-Q75 "veil-held-attack" (the human player's
+  attack on a Veiled enemy: kept, as built, or dropped) is on Owner Calls v25. Tests red first:
+  B40 to B44 (`eternalus-agent-work/abilities/veil-breaks.log`). Rejected: ponytail cut 5
+  (`visibilityOf` per draw call is a cheap team check) and cut 6 (a private method grows
+  `Match.ts`).
+- Open: HC-Q75, HC-B19 sign-off, veil-own-bleed.
+- Checks run: `npm run check:quick` exit 0; Prettier clean; core vitest on `src/components`,
+  `src/systems`, `src/combat`, `src/abilities`, `src/state` (118 files, 832 tests) and `src/ai`
+  (16 files, 115 tests) pass; client `Match.healthBars.test.ts` passes. Full `npm run check` not
+  run yet on this commit.
+- Next step: full `npm run check`, then critics round 3 (the last) on the round 2 commits.
