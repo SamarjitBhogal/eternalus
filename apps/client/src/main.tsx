@@ -1,4 +1,11 @@
-import { createDefaultGameConfig, type Logger, makeLogRecord, SEVERITY } from '@eternalus/core';
+import {
+  createDefaultGameConfig,
+  loadDisplayContent,
+  loadoutContentOf,
+  type Logger,
+  makeLogRecord,
+  SEVERITY,
+} from '@eternalus/core';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
@@ -14,6 +21,7 @@ import { LOG_TAIL_RECORDS } from './data/logging/ErrorReporter.constants';
 import { logWindowErrors } from './data/logging/logWindowErrors';
 import { RingBufferSink } from './data/logging/RingBufferSink';
 import { SinkLogger } from './data/logging/SinkLogger';
+import { IndexedDbStorageAdapter } from './data/persistence/IndexedDbStorageAdapter';
 import { MemoryStorageAdapter } from './data/persistence/MemoryStorageAdapter';
 import { PersistenceController } from './data/persistence/PersistenceController';
 import { ASSET_LICENCES } from './data/resources/assetLicences';
@@ -29,6 +37,8 @@ import { createBrowserMatch, type BrowserMatchDeps } from './game/createBrowserM
 import { createMatchSeed } from './game/createMatchSeed';
 import { readDeveloperFlags } from './game/developerFlags';
 import { isAppleUserAgent } from './game/isAppleUserAgent';
+import { classLoadoutOptions } from './game/loadout/classLoadoutOptions';
+import { LoadoutController } from './game/loadout/LoadoutController';
 import { DEFAULT_DUEL_SERVER_URL } from './game/engine/net/DuelServer.constants';
 import { WebSocketTransport } from './game/engine/net/WebSocketTransport';
 import { PerformanceSessionClock } from './game/engine/time/PerformanceSessionClock';
@@ -92,8 +102,11 @@ logWindowErrors(window, logger);
 const developer = readDeveloperFlags(window.location.search);
 
 connectBusToStore(eventBus, store.dispatch);
+// What the Loadout screen offers per class, and the rules loadouts are checked and repaired by (08).
+const displayContent = loadDisplayContent();
 const persistence = new PersistenceController({
-  adapter: new MemoryStorageAdapter(),
+  adapter: IndexedDbStorageAdapter.inBrowser(),
+  fallback: () => new MemoryStorageAdapter(),
   knownActions: new Set(INPUT_ACTIONS),
   now: () => Date.now(),
   warn: (body, attributes) => {
@@ -105,6 +118,13 @@ const settings = new SettingsController({
   persistence,
   logger,
   isApplePlatform: isAppleUserAgent(window.navigator.userAgent),
+});
+const loadouts = new LoadoutController({
+  bus: eventBus,
+  persistence,
+  logger,
+  options: classLoadoutOptions(displayContent),
+  content: loadoutContentOf(displayContent),
 });
 const resources = new ResourceController({
   manifest: ASSET_MANIFEST,
@@ -144,6 +164,7 @@ const session = new SessionController({
   catalogue: { load: () => catalogue },
   matchConfig: gameConfig.match,
   playerName: PLACEHOLDER_PLAYER_NAME,
+  playerLoadout: (classId) => loadouts.loadoutOf(classId),
   seedSource: createMatchSeed,
   createRng: (seed) => new LcgRng(seed),
   createRosterRng,
@@ -164,7 +185,8 @@ const session = new SessionController({
 });
 session.start();
 
-// Settings load in the background: the store has no bindings until the settings event arrives.
+// Settings and loadouts load in the background: the store has no bindings until the settings
+// event arrives, and the Loadout screen no choices until the loadouts event does.
 void persistence
   .open()
   .catch((error: unknown) => {
@@ -174,7 +196,7 @@ void persistence
       }),
     );
   })
-  .then(() => settings.start());
+  .then(() => Promise.all([settings.start(), loadouts.start()]));
 
 const attachViewport = (viewport: MatchViewport): (() => void) => session.attachViewport(viewport);
 createRoot(rootElement).render(

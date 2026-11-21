@@ -16,6 +16,44 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **`feat/loadout-screen` (PR #141, SCRUM-311), where loadout repair runs — sign-off.**
+      Architecture 14 §8 has `LoadoutRepository` call core's `repairLoadout` for a content id that
+      no longer exists. The branch keeps the repository to shape checks (it no longer quarantines
+      an unknown weapon, and `knownWeapons` left `PersistenceController`), and
+      `LoadoutController` (game) repairs and logs instead, so `data/` holds no content rules and
+      the Loadout screen learns which classes were repaired. Two smaller departures from the
+      05 §12 sketch: a `LoadoutProblem` names a `field` (`'class'` or a slot) instead of a
+      `slot`, and `EntityFactory` reports a rejected spawn loadout through an
+      `SpawnLoadoutPolicy` that `Simulation` logs at WARN, not as a `GameEvents` event. Also, to
+      let `EntityFactory` run the validator (05 §12) without `entities/` importing `loadout/` at
+      runtime, the policy is injected through a `LoadoutResolver` port and `entities/` imports
+      only loadout types; the branch added `loadout/` (types) to the `entities/` may-import row
+      of 02 §2 and `packages/core/AGENTS.md`. Keep these (then 14 §8 and 05 §12 are updated to
+      match) or move the repair into the repository?
+
+- [ ] **`IndexedDbStorageAdapter` test fake — approve `fake-indexeddb`?** Saved settings and
+      loadouts still live in `MemoryStorageAdapter` and are lost on reload. Phase 5's adapter
+      item tests it with the contract suite against an IndexedDB fake: `fake-indexeddb` (a dev
+      dependency, which `AGENTS.md` says needs your approval) or a hand-written fake of the
+      subset the adapter uses. Which one?
+      _Agent note (2026-11-20, `feat/loadout-indexeddb`):_ the user chose neither for now: no new
+      dependency and no hand-written fake or contract run against IndexedDB; the adapter landed
+      with plain unit tests only (see the next item). The question stays open for when the
+      adapter gets real tests.
+
+- [ ] **`feat/loadout-indexeddb` (SCRUM-31, SCRUM-311), `IndexedDbStorageAdapter` — four points
+      the docs leave open.** (1) Wiring the adapter puts schema v1 on players' disks once it
+      reaches `main`. Architecture 14 §14 lists gaps "to settle before `IndexedDbStorageAdapter`
+      fixes v1 on disk" (settings keyed by `profileId`, not §7's `[profileId, group]`; no
+      `profiles`, `matches`, `replays`, `meta` stores; no indexes). Ship v1 as it is (later
+      changes become v2+ migrations), or settle the settings key path first? (2) The fallback to
+      `MemoryStorageAdapter` logs at WARN (the brief's wording, through the existing `warn`
+      callback); 14 §10's table says ERROR. Which? (3) 14 §10 says `blocked` "waits, then
+      fallback" but gives no wait; the branch falls back at once (the §4 `openDatabase` sketch)
+      and closes the connection if it opens later. Keep, or name a wait? (4) No `degraded`
+      status, `persistenceSlice` or "progress will not be saved" banner is built; the fallback
+      is only logged.
+
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
       small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`

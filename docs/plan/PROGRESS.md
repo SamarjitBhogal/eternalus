@@ -9282,3 +9282,42 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   (84)", "Documentation check passed."; then `prettier --check` and `npm run docs:check` with this
   entry. Critic (architecture-reviewer): PASS WITH NOTES, no violations, four nits not applied.
 - Next step: `/ponytail-review`, then push and open the PR into phase/3.
+
+### 2026-11-17 — Phase 5 / sprint 5.3 — feat/loadout-persistence — claudiodh + Claude Code
+
+- What was done: the persistence half of the `LoadoutScreen` (SCRUM-31, SCRUM-311) that does not wait for the Phase 4 `Loadout` model. `LoadoutDtoV1` (`schemaVersion`, `id`, `profileId`, `classId`, `primaryWeaponId`) and `validateLoadoutDto` (weapon ids checked against an injected set); `LoadoutRepository` (`load`, `loadAll`, `save`; one record per profile and class; reads go through `readOrQuarantine`); the `loadouts` store in the v1 schema. Secondary weapon, passive, artifacts, abilities and the ultimate join with sprint 4.5 as optional fields (DEC-125). Not wired into `PersistenceController` yet: that needs `main.tsx` to inject the weapon ids. The storage port has no scan, so `loadAll` takes the class ids.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1637 passed (1637)"; protocol "Tests 29 passed (29)"; client "Tests 2029 passed (2029)"; server "Tests 84 passed (84)"; "Documentation check passed."
+- Next step: the `LoadoutScreen` on `feat/loadout-screen`; wire the repository into `PersistenceController` and `main.tsx`; sprint 4.5 (`Loadout` model, `validateLoadout`, `autoBuild`) is the owner's.
+
+### 2026-11-17 — Phase 5 / sprint 5.3 — feat/loadout-screen — claudiodh + Claude Code
+
+- What was done: the `LoadoutScreen` (SCRUM-31, SCRUM-311) with what exists today, merged with `feat/loadout-persistence`. The screen has a class radio group and a primary-weapon radio group (roving focus, arrows, Home and End), Save and Back, and the slots that wait for the Phase 4 `Loadout` model (secondary weapon, passive, artifacts 1 and 2, abilities 1 to 3, ultimate) as disabled rows. Bridge: a `loadouts` slice, a `save-loadout` intent and a `loadouts` event. Game: `LoadoutController` loads the profile's loadouts through a storage port, repairs a weapon the class does not offer to the class default and reports it, then handles `save-loadout`; it is tested over the real `LoadoutRepository` on `MemoryStorageAdapter` (save, reload, identical loadout).
+- Not done: the controller is not wired into `main.tsx` or `SessionController`, and nothing publishes the class options yet. The client's display catalogue knows only each class's start weapon name (`hud.weapon.displayName`), not weapon ids or the weapons a class may take (`allowedClasses`, `uniqueTo` in core `WeaponDefinition`); core does not export them. Until it does, the screen shows "not available yet" and the start weapon, and Save stays disabled. `validateLoadout`, `autoBuild` and the other slots are sprint 4.5.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1637 passed (1637)"; protocol "Tests 29 passed (29)"; client "Tests 2058 passed (2058)"; server "Tests 84 passed (84)"; "Documentation check passed."
+- Next step: core exports the weapon options per class in `DisplayContent` (owner's call); `main.tsx` builds `LoadoutRepository` with the known weapon ids and starts `LoadoutController`; then sprint 4.5.
+
+### 2026-11-20 — Phase 5 / sprint 5.3 — feat/loadout-screen — claudiodh + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (`5a7cc8dc`; only this file conflicted, both sides kept). Core: `DisplayContent.weapons` and `isWeaponAllowedFor` (reference 07: non-unique weapons are usable by any class), so the client knows which weapons each class may carry. Client: `classLoadoutOptions` builds each class's options, and `main.tsx` starts `LoadoutController` after storage opens; the controller saves through the `PersistenceController` facade (`loadLoadouts`, `saveLoadout`). The Loadout screen now offers Raptor Talons and Wuuthrad to every class and the Staff to the Magus.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1679 passed (1679)"; protocol "Tests 29 passed (29)"; client "Tests 2060 passed (2060)"; server "Tests 84 passed (84)"; "Documentation check passed."
+- Next step: pass the saved loadout into the match setup so the player spawns with it; sprint 4.5 (`Loadout`, `validateLoadout`, `autoBuildLoadout`, run by `EntityFactory`); the IndexedDB adapter. The pre-PR gate (critic, ponytail) has not run.
+
+### 2026-11-20 — Phase 4 sprint 4.5 / Phase 5 sprint 5.3 — feat/loadout-screen (continued) — claudiodh + Claude Code
+
+- What was done: (1) the player spawns with the loadout saved for their class: a human `RosterSlot` carries a core `Loadout`, `SessionController` reads it through the new `playerLoadout` dep (`LoadoutController.loadoutOf`), and `Legend` arms the weapon it names. (2) Core `loadout/` (architecture 05 §12) for the slots content can fill: `LoadoutValidator` with `ContentExistsRule` and `WeaponAllowedRule`, and the public `validateLoadout` (every violation), `autoBuildLoadout`, `repairLoadout` and `loadoutContentOf`. `EntityFactory` takes a `LegendEquipment` and spawns every Legend with a validated loadout, the auto-build replacing an invalid one (logged by `Simulation`) and filling in for bots. (3) Client: `LoadoutController` saves only what `validateLoadout` accepts (logging every violation) and repairs saved loadouts with `repairLoadout` (logged, marked on the screen); the persistence DTO check is shape only. (4) An Auto-build button on the Loadout screen. INBOX: the repair location (sign-off) and the IndexedDB test fake.
+- Not done: abilities 1–3, the ultimate, artifacts and the passive (no core content), the secondary weapon (MVP-if-time), in-match loadout changes, and `IndexedDbStorageAdapter` (needs the INBOX fake decision; saved loadouts still last only for the page).
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1700 passed (1700)"; protocol "Tests 29 passed (29)"; client "Tests 2068 passed (2068)"; server "Tests 84 passed (84)"; "Documentation check passed."
+- Next step: the pre-PR critic on the branch, then the owner's INBOX answers.
+
+### 2026-11-20 — Phase 4 sprint 4.5 / Phase 5 sprint 5.3 — feat/loadout-screen (pre-PR critic) — claudiodh + Claude Code
+
+- What was done: the pre-PR critic (an independent `architecture-reviewer` subagent, base `5a7cc8dc` docs) asked for changes. One blocker: `entities/` imported `loadout/` at runtime. Four should-fix items: no replay test for a saved loadout, `uniqueTo` not enforced, 02 and core AGENTS doc drift, and weapon choices bypassing `validateLoadout`. Fixed: the spawn decision is `loadout/SpawnLoadoutPolicy`, injected by `Simulation` through a private `LoadoutResolver` port; `WeaponAllowedRule` enforces `uniqueTo` (`isWeaponAllowedFor` removed); a replay test was added; the screen's choices come from `validateLoadout`; `LoadoutRadioGroup` has a test; and the docs were updated. Round 2: approve. Ponytail was not run (the plugin is not available in this session).
+- Checks run: `npm run check` on `34428df1` → `EXIT=0`: core "Tests 1704 passed (1704)"; protocol "Tests 29 passed (29)"; client "Tests 2072 passed (2072)"; server "Tests 84 passed (84)"; "Documentation check passed."
+- Next step: ponytail in a session with the plugin; the owner's INBOX answers (repair location and the `entities/` type import; the IndexedDB test fake).
+
+### 2026-11-20 — Phase 5 / sprint 5.3 — feat/loadout-indexeddb — claudiodh + Claude Code
+
+- What was done: `IndexedDbStorageAdapter` (SCRUM-31, SCRUM-311) with `idbPromises.ts` and `StorageError`, so saved loadouts and settings survive a reload. `main.tsx` injects `IndexedDbStorageAdapter.inBrowser()` and a `MemoryStorageAdapter` fallback; `PersistenceController.open` warns and falls back when IndexedDB is missing, private, newer or blocked. Architecture 14 §14 updated; four owner questions in `INBOX.md`.
+- Not done (user's call): no IndexedDB fake and no contract-suite run against the adapter; 4 plain unit tests only (unavailable path, error mapping, fallback, no-fallback rejection).
+- Checks run: see the commit's check log (`npm run check`, EXIT recorded in the hand-off).
+- Next step: merge into `feat/loadout-screen`; the owner's INBOX answers (v1 on disk, WARN vs ERROR, blocked wait, degraded status).

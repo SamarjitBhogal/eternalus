@@ -19,7 +19,7 @@ const setUp = () => {
     createDefaultEntityRegistry(),
     loadDefaultContent(30),
     undefined,
-    loadWeapons(30),
+    { weapons: loadWeapons(30) },
   );
   const add = (kind: string, id: string, team: 'light' | 'dark' | 'neutral') => {
     const entity = factory.create(kind, id, { team, position: { x: 0, y: 0 } });

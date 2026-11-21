@@ -68,12 +68,9 @@ const setUp = () => {
   spawnMapStructures(state, MAP_OBJECTS);
   const system = new OutOfCombatHealingSystem(state, loadOutOfCombatHealing(TICK_RATE));
   const definitions = loadDefaultContent(TICK_RATE);
-  const factory = new EntityFactory(
-    createDefaultEntityRegistry(),
-    definitions,
-    undefined,
-    loadWeapons(TICK_RATE),
-  );
+  const factory = new EntityFactory(createDefaultEntityRegistry(), definitions, undefined, {
+    weapons: loadWeapons(TICK_RATE),
+  });
   const add = (kind: string, id: string, team: Team, position: Vec2 = FAR): Entity => {
     const entity = factory.create(kind, id, { position, team });
     state.entities.add(entity);

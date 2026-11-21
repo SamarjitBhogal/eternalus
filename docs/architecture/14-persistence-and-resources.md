@@ -4,7 +4,7 @@ description: The "single access with a controller in front" design for local dat
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-20
 tags: [architecture, persistence, indexeddb, repositories, dto, migrations, resources, assets]
 paths: ['apps/client/src/data/**']
 related:
@@ -508,6 +508,27 @@ export class ResourceController {
 | An asset or a storage backend | one line in its asset group's manifest file (concatenated into `ASSET_MANIFEST`) with `licence` and `source`; or `<Tech>StorageAdapter.ts` passing `describeStorageAdapter`                                                                                                         | nothing else (views ask by id); one line in `main.tsx`                                                                                                          |
 
 ## 14. Implementation status
+
+**Loadouts (`feat/loadout-screen`, 2026-11-20).** `PersistenceController` also has
+`loadLoadouts(classIds)` and `saveLoadout(classId, loadout)` over `LoadoutRepository`, one
+`LoadoutDtoV1` (`primaryWeaponId`) per profile and class in the v1 `loadouts` store (no `name`,
+`updatedAt` or nested `loadout` of §7's `SavedLoadoutDtoV1` yet). The DTO check is shape only.
+A weapon id content no longer has is not quarantined: the client's `LoadoutController` repairs
+it with core's `repairLoadout` and logs it, in place of §8's repository-side repair, so `data/`
+needs no content and the screen learns which classes were repaired.
+
+**IndexedDB (`feat/loadout-indexeddb`, 2026-11-20).** `IndexedDbStorageAdapter` (over
+`idbPromises.ts`, no dependency) is what `main.tsx` injects, built by `inBrowser()` from the
+page's `indexedDB`; it types against narrow `Idb*Api` interfaces
+(`IndexedDbStorageAdapter.types.ts`) that the browser's objects satisfy. `open` runs the
+`createStores` ladder inside `onupgradeneeded`; a `work` that throws aborts its transaction; on
+`versionchange` the connection closes. Open failures are a `StorageError` (`unavailable`,
+`version`, `blocked`; the other §10 kinds wait for a caller). `PersistenceController` takes an
+optional `fallback` and, when `open` fails, reports it through `warn` (WARN, not §10's ERROR;
+`INBOX.md`) and continues on `MemoryStorageAdapter`; `blocked` falls back at once. No `degraded`
+status yet. §12's contract run against an IndexedDB fake is not built (the user's call: no new
+dependency and no hand-written fake for now); the adapter has unit tests for the unavailable path
+and the error mapping only.
 
 Built in Sprint 1 (session F), settings only: `PersistenceController` with `open`,
 `loadSettings`, `saveSettings` and `close` (the Sprint 1 brief's facade, in place of §2's

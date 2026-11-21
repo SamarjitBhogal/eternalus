@@ -48,7 +48,7 @@ describe('CollisionSystem', () => {
       createDefaultEntityRegistry(),
       loadDefaultContent(config.tickRate),
       undefined,
-      loadWeapons(config.tickRate),
+      { weapons: loadWeapons(config.tickRate) },
     ).create('warrior', 'warrior', { team: 'light', position: { x: 1, y: 5 } });
     state.entities.add(unit);
     const transform = unit.getComponent(Transform);
@@ -71,7 +71,7 @@ describe('CollisionSystem', () => {
       createDefaultEntityRegistry(),
       loadDefaultContent(config.tickRate),
       undefined,
-      loadWeapons(config.tickRate),
+      { weapons: loadWeapons(config.tickRate) },
     );
     const collision = new CollisionSystem(
       EMPTY_MAP,

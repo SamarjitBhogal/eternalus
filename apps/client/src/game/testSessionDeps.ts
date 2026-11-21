@@ -102,6 +102,7 @@ export function testSessionDeps(
     catalogue: shippedCatalogue(),
     matchConfig: config.match,
     playerName: 'Tester',
+    playerLoadout: () => null,
     seedSource: () => ++seed,
     createRng: (value) => new LcgRng(value),
     createRosterRng,

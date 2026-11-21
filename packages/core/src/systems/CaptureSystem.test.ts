@@ -79,7 +79,7 @@ const setUp = (rules: CapturePointsConfig = RULES) => {
     createDefaultEntityRegistry(),
     loadDefaultContent(TICK_RATE),
     undefined,
-    loadWeapons(TICK_RATE),
+    { weapons: loadWeapons(TICK_RATE) },
   );
   const point = new CapturePoint('zone-1', CATHEDRAL_CAPTURE_POINT.id);
   point.spawn({

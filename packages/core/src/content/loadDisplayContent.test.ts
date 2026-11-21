@@ -16,6 +16,7 @@ import { loadDisplayContent } from './loadDisplayContent';
 import { MAP_FEATURE_DEFINITIONS } from './maps/mapFeatureDefinitions';
 import { VERDICT_LINES } from './narrative/verdictLines';
 import { BOT_ROSTER } from './teams/botRoster';
+import { WEAPONS } from './weapons/weaponCatalogue';
 
 /** The shipped Legends plus one whose class is the reserved, unplayable `harbinger`. */
 const SPECS_WITH_HARBINGER = new ContentCatalogue<LegendSpecDefinition>([
@@ -101,6 +102,26 @@ describe('loadDisplayContent', () => {
 
     expect(() => loadDisplayContent({ lockedClasses })).toThrow(
       new ContentValidationError('Invalid content: Harbinger: id must be kebab-case'),
+    );
+  });
+
+  it('lists every weapon with the classes that may carry it, and no numbers', () => {
+    const { weapons } = loadDisplayContent();
+
+    expect(weapons.map((weapon) => weapon.id)).toEqual(WEAPONS.ids);
+    expect(weapons.find((weapon) => weapon.id === 'magus-staff')).toEqual({
+      id: 'magus-staff',
+      displayName: 'Staff',
+      allowedClasses: ['magus'],
+      uniqueTo: 'magus',
+    });
+  });
+
+  it('rejects a weapon that breaks a weapon rule', () => {
+    const weapons = new ContentCatalogue([{ ...WEAPONS.get('wuuthrad'), attacks: [] }]);
+
+    expect(() => loadDisplayContent({ weapons })).toThrow(
+      /Weapon "wuuthrad": needs at least one attack/,
     );
   });
 

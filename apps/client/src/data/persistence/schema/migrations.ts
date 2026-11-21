@@ -3,12 +3,16 @@ import type { StorageSchema } from '../StorageAdapter.types';
 /** Per-profile settings and keybindings, one record per profile. */
 export const SETTINGS_STORE = 'settings';
 
+/** Saved loadouts, one record per profile and class (architecture 14 §7). */
+export const LOADOUT_STORE = 'loadouts';
+
 /** Records that failed validation on read, kept for bug reports (architecture 14 §8). */
 export const QUARANTINE_STORE = 'quarantine';
 
 /**
- * The database schema: the only place stores are created (architecture 14 §5). Nothing is on
- * disk before IndexedDB lands in S2, so v1 still grows with each record type until then.
+ * The database schema: the only place stores are created (architecture 14 §5). With
+ * `IndexedDbStorageAdapter` wired, v1 is on disk: whether it may still change before release
+ * waits for the owner (`INBOX.md`); after that, a store change is a new migration version.
  */
 export const STORAGE_SCHEMA: StorageSchema = {
   name: 'eternalus',
@@ -18,6 +22,7 @@ export const STORAGE_SCHEMA: StorageSchema = {
       version: 1,
       createStores: [
         { name: SETTINGS_STORE, keyPath: 'profileId' },
+        { name: LOADOUT_STORE, keyPath: 'id' },
         { name: QUARANTINE_STORE, keyPath: 'id', autoIncrement: true },
       ],
     },

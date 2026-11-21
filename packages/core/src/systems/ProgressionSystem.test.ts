@@ -33,12 +33,9 @@ const XP_SOURCES = {
 
 const setUp = () => {
   const state = new GameState(CONFIG, 1);
-  const factory = new EntityFactory(
-    createDefaultEntityRegistry(),
-    UNITS,
-    undefined,
-    loadWeapons(CONFIG.tickRate),
-  );
+  const factory = new EntityFactory(createDefaultEntityRegistry(), UNITS, undefined, {
+    weapons: loadWeapons(CONFIG.tickRate),
+  });
   const spawn = (kind: string, definitionId: string, team: Team): Entity => {
     const entity = factory.create(kind, definitionId, { position: { x: 0, y: 0 }, team });
     state.entities.add(entity);

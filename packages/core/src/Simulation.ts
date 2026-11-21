@@ -23,7 +23,9 @@ import { loadAggroRules } from './content/ai/aggro/loadAggroRules';
 import { AI_CADENCE } from './content/ai/cadence';
 import { LANE_ASSESSMENT_WEIGHTS } from './content/ai/laneAssessmentWeights';
 import { ROVER_TACTICS } from './content/ai/rover';
-import { LEGEND_KIND_IDS } from './content/legends/legendKinds';
+import { ContentValidationError } from './content/ContentValidationError';
+import { LEGEND_KIND_IDS, LEGEND_KINDS } from './content/legends/legendKinds';
+import type { LegendDefinition } from './content/legends/legends.types';
 import type { MapDefinition } from './content/maps/maps.types';
 import type { MapObject } from './content/maps/mapObjects.types';
 import type { GameConfig } from './config/GameConfig.types';
@@ -47,6 +49,9 @@ import { loadWeapons } from './content/weapons/loadWeapons';
 import { ZONE_DEFINITIONS, ZONE_PLACEMENTS } from './content/zones/zoneCatalogue';
 import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
+import { autoBuildLoadout, validateLoadout } from './loadout/loadoutApi';
+import type { LoadoutContent } from './loadout/LoadoutValidator.types';
+import { SpawnLoadoutPolicy } from './loadout/SpawnLoadoutPolicy';
 import { DUEL_RULES } from './content/duel/duelRules';
 import { duelStartPoints } from './match/duelStartPoints';
 import { createDefaultMatchDirector } from './match/defaultMatchDirector';
@@ -176,7 +181,7 @@ export class Simulation {
       createDefaultEntityRegistry(),
       Simulation.withStructures(definitions, structures),
       undefined,
-      weaponSource,
+      { weapons: weaponSource, loadouts: Simulation.loadoutPolicy(units, weaponSource, logger) },
     );
     const owners = Simulation.spawnStructures(this.state, factory, structures, mapObjects);
     this.state.indexStructures();
@@ -635,6 +640,7 @@ export class Simulation {
         },
       }),
       ...state.world?.startFacing(slot.team, position),
+      ...(slot.pilot === 'human' && slot.loadout !== undefined && { loadout: slot.loadout }),
     });
     state.entities.add(entity);
     state.events.emit('entity-spawned', {
@@ -723,6 +729,63 @@ export class Simulation {
         laneWeights: LANE_ASSESSMENT_WEIGHTS,
       },
     });
+  }
+
+  /**
+   * Every Legend class's own default loadout passes the loadout rules (reference 08 "Invariant":
+   * the auto-build is what an invalid or missing loadout falls back to, so it must be valid).
+   *
+   * @throws ContentValidationError listing every class whose default breaks a rule.
+   */
+  private static assertDefaultLoadoutsValid(content: LoadoutContent): void {
+    const problems = LEGEND_KIND_IDS.filter((id) => content.legends.has(id)).flatMap((id) =>
+      validateLoadout(autoBuildLoadout(id, content), content).map(
+        ({ message }) => `${id}: defaultLoadout: ${message}`,
+      ),
+    );
+    if (problems.length > 0) {
+      throw new ContentValidationError(`Invalid content: ${problems.join('; ')}`);
+    }
+  }
+
+  /**
+   * The match's `SpawnLoadoutPolicy` (05 §12): loadouts checked against its Legend classes (the
+   * `units` whose kind is a Legend class) and `weapons`, a rejection logged at WARN.
+   */
+  private static loadoutPolicy(
+    units: DefinitionSource,
+    weapons: WeaponSource,
+    logger: Logger,
+  ): SpawnLoadoutPolicy {
+    const legends = {
+      has: (id: string): boolean => units.has(id) && LEGEND_KINDS.has(units.get(id)),
+      get: (id: string): LegendDefinition => {
+        const definition = units.get(id);
+        if (!LEGEND_KINDS.has(definition)) throw new Error(`"${id}" is not a Legend class.`);
+        return definition;
+      },
+    };
+    Simulation.assertDefaultLoadoutsValid({ legends, weapons });
+    return new SpawnLoadoutPolicy(
+      { legends, weapons },
+      ({ definitionId, given, problems, used }) => {
+        logger.log(
+          makeLogRecord(
+            'WARN',
+            'core.loadout',
+            'a spawn loadout was invalid; using the auto-build',
+            {
+              attributes: {
+                definitionId,
+                givenWeaponId: given.primaryWeaponId,
+                usedWeaponId: used.primaryWeaponId,
+                problems: problems.map(({ message }) => message).join('; '),
+              },
+            },
+          ),
+        );
+      },
+    );
   }
 
   /** The shipped content, checked against the controllers before the match starts. */

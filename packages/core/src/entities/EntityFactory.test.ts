@@ -102,16 +102,44 @@ describe('EntityFactory', () => {
     );
   });
 
+  it('spawns with the loadout its resolver decides, from the placement loadout', () => {
+    const registry = new EntityRegistry();
+    registry.register('factory-entity', FactoryEntity);
+    const weapons = new ContentCatalogue([]);
+    const asked: unknown[] = [];
+    const decided = { classId: 'warrior', primaryWeaponId: 'raptor-talons' };
+    const factory = new EntityFactory(registry, new ContentCatalogue([DEFINITION]), undefined, {
+      weapons,
+      loadouts: {
+        loadoutFor: (definitionId, given) => {
+          asked.push([definitionId, given]);
+          return decided;
+        },
+      },
+    });
+    const given = { classId: 'warrior', primaryWeaponId: 'gone' };
+
+    const entity = factory.create('factory-entity', 'factory-definition', {
+      ...PLACEMENT,
+      loadout: given,
+    });
+
+    expect(asked).toEqual([['factory-definition', given]]);
+    expect((entity as FactoryEntity).spawnPayload).toEqual({
+      ...PLACEMENT,
+      definition: DEFINITION,
+      weapons,
+      loadout: decided,
+    });
+  });
+
   it('forwards its weapon source in the spawn context', () => {
     const registry = new EntityRegistry();
     registry.register('factory-entity', FactoryEntity);
     const weapons = new ContentCatalogue([]);
-    const factory = new EntityFactory(
-      registry,
-      new ContentCatalogue([DEFINITION]),
-      undefined,
+    const factory = new EntityFactory(registry, new ContentCatalogue([DEFINITION]), undefined, {
       weapons,
-    );
+    });
 
     const entity = factory.create('factory-entity', 'factory-definition', PLACEMENT);
 

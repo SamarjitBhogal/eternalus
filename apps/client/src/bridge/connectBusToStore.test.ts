@@ -277,6 +277,17 @@ describe('connectBusToStore', () => {
     expect(store.getState().settings).toEqual(settings);
   });
 
+  it('copies the loadouts state', () => {
+    const { bus, store } = connected();
+    const loadouts = {
+      options: { warrior: { defaultWeaponId: 'a', weapons: [{ id: 'a', displayName: 'A' }] } },
+      saved: { warrior: 'a' },
+      repaired: ['warrior'],
+    };
+    bus.emit('loadouts', loadouts);
+    expect(store.getState().loadouts).toEqual(loadouts);
+  });
+
   it('unsubscribes every handler on disconnect', () => {
     const { bus, store, disconnect } = connected();
     expect(bus.listenerCount()).toBeGreaterThan(0);

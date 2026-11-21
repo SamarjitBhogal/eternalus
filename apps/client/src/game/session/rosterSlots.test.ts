@@ -40,6 +40,30 @@ describe('rosterSlots', () => {
     ]);
   });
 
+  it("gives the human slot the player's loadout when it is for the player's class", () => {
+    const rosters = {
+      allies: [entry('light', 0, 'magus', true)],
+      enemies: [entry('dark', 0, 'magus')],
+    };
+    const staff = { classId: 'magus', primaryWeaponId: 'magus-staff' };
+
+    expect(rosterSlots(rosters, DIFFICULTIES, staff)[0]).toEqual({
+      pilot: 'human',
+      team: 'light',
+      definitionId: 'magus',
+      role: 'rover',
+      loadout: staff,
+    });
+    expect(rosterSlots(rosters, DIFFICULTIES, staff)[1]).not.toHaveProperty('loadout');
+  });
+
+  it('leaves the loadout out when it is for another class, so core spawns the class default', () => {
+    const rosters = { allies: [entry('light', 0, 'magus', true)], enemies: [] };
+    const talons = { classId: 'warrior', primaryWeaponId: 'raptor-talons' };
+
+    expect(rosterSlots(rosters, DIFFICULTIES, talons)[0]).not.toHaveProperty('loadout');
+  });
+
   it('takes the bots’ difficulties from its argument', () => {
     const slots = rosterSlots(
       { allies: [entry('light', 0, 'magus'), entry('light', 1, 'warrior')], enemies: [] },

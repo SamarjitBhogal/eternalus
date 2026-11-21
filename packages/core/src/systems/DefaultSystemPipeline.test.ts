@@ -34,12 +34,9 @@ import { WorldObjectStore } from '../state/WorldObjectStore';
 
 const UNIT_DEFINITIONS = loadDefaultContent(createDefaultGameConfig().tickRate);
 const newFactory = (): EntityFactory =>
-  new EntityFactory(
-    createDefaultEntityRegistry(),
-    UNIT_DEFINITIONS,
-    undefined,
-    loadWeapons(createDefaultGameConfig().tickRate),
-  );
+  new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS, undefined, {
+    weapons: loadWeapons(createDefaultGameConfig().tickRate),
+  });
 const PROGRESSION = { units: UNIT_DEFINITIONS, curves: loadLevelCurves(), xpSources: XP_SOURCES };
 /** A director that leaves the match as it is, for the tests about the other systems. */
 const IDLE_DIRECTOR = { update: () => undefined };
@@ -373,7 +370,7 @@ describe('DefaultSystemPipeline', () => {
           UNIT_DEFINITIONS.has(id) ? UNIT_DEFINITIONS.get(id) : STRUCTURE_DEFINITIONS.get(id),
       },
       undefined,
-      loadWeapons(createDefaultGameConfig().tickRate),
+      { weapons: loadWeapons(createDefaultGameConfig().tickRate) },
     );
     const add = (kind: string, definitionId: string, team: 'light' | 'dark') => {
       const entity = factory.create(kind, definitionId, { position: { x: 0, y: 0 }, team });
