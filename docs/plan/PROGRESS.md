@@ -9334,3 +9334,26 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   items?" reply moved out of the DEC row) and 4 nits, all applied except the BUG-2 part of one should-fix (does this PR build the bonus?), which goes to the owner in chat. Round 2: approve after 1 should-fix (name the `balancing.md` "Auras" recommendations) and 3 nits, all applied. Its round-1 claim that the tower glyphs already hide on death was checked and is wrong (`WorldObjectStore.removed` keeps a dead structure's fort); round 2 agrees. Ponytail: 1 cut (a repeated house clause in DEC-313), applied.
 - Checks run: full `npm run check` exit 0 after the round-1 fixes (core 275 files / 1674 tests, protocol 1 / 29, client 298 / 2011, server 21 / 84, "Documentation check passed."; `eternalus-agent-work/dec-288/check-4.log`); after the round-2 fixes, which touch Markdown only, `prettier --check .` and `npm run docs:check`.
 - Next step: the owner answers the open questions; then the forts and tower visuals are built.
+
+### 2026-11-21 — Phase 3 / DEC-315: the map-work answers — docs/dec-288-interior-bonus-buildings — sholtzman + Claude Code
+
+- What was done: merged phase/3 `a3550159` into this branch (`f4b94bea`; two append conflicts,
+  both sides kept). Recorded DEC-315 (the owner's answers of 2026-11-21 to the DEC-313 open
+  questions and the `BUG-2-build` card) as a new batch; details in the log row.
+  DEC-185 (A) and DEC-313 get amendment notes; the INBOX open-questions item is answered; BUG-2
+  is Scheduled. Correction to the DEC-313 entry above: the BUG-2 question did not stay in chat; it
+  went to the Owner Calls page as card `BUG-2-build` (the owner's rule: questions go on the page).
+  Docs only.
+- Checks run: full `npm run check` twice on the same tree. Run 1 (load ~28,
+  `eternalus-agent-work/dec-288/check-5.log`): exit 1; core "Tests 3 failed | 1671 passed
+  (1674)", all three "Test timed out" (`Simulation.duel.test.ts` ×2 at 60000 ms,
+  `diagnostics/replay.test.ts` at 20000 ms); protocol, client and server passed. Run 2 (load
+  14-18, `check-6.log`): exit 0; core "Tests 1674 passed (1674)", protocol "Tests 29 passed
+  (29)", client "Tests 2011 passed (2011)", server "Tests 84 passed (84)", "Documentation check
+  passed.". Critic (`architecture-reviewer`, DEC-315 delta): round 1 request-changes, 1 blocker
+  (the DEC-313 amendment sat in a third table cell), 3 should-fix items and 4 nits, all applied;
+  its proposed wording for the visuals reading could not be checked, so DEC-315 (5) says only
+  that no correction came. Round 2: approve, no findings. Ponytail: 2 wording cuts (the INBOX
+  answer and this entry point to the log row), applied. This check line changes only this file:
+  `prettier --check` and `npm run docs:check`.
+- Next step: push this branch and open its PR; build the map work on `feat/map-work-forts-towers`.
