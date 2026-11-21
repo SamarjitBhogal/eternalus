@@ -113,6 +113,17 @@ export class Canvas2dRenderer implements Renderer {
     }
   }
 
+  /** Runs `draw` with the context's opacity multiplied by `opacity`, then restores it. */
+  public withOpacity(opacity: number, draw: () => void): void {
+    this.context.save();
+    this.context.globalAlpha *= opacity;
+    try {
+      draw();
+    } finally {
+      this.context.restore();
+    }
+  }
+
   /** Fills a closed shape given in world units. Does nothing for an empty shape. */
   public fillPolygon(points: readonly WorldPoint[], color: string): void {
     if (!this.tracePath(points)) {

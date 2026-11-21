@@ -9798,3 +9798,29 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `docs/` (no code).
 - Checks run: `npm run docs:check`, Prettier on the five files, and `npm run check`.
 - Next step: the owner pushes PR #123, then PR #136.
+
+### 2026-11-20 — Phase 4 / combat PR 5 (lane B, DEC-301): Vanguard Veil — feat/vanguard-veil-hamstring — sholtzman + Claude Code
+
+- What was done: built Veil (DEC-266, DEC-267) in two commits on `feat/vanguard-kit` (`e21692d6`).
+  Core (`a6eca325`): the `invisible` status (5 s, `TUNE`) sets the flags `untargetable` and
+  `hidden` and has the new field `endsOnDamage`; `StatusEffectSystem` marks such a status broken
+  on `damage-applied` (holder or attacker) and removes it at the end of its pass;
+  `EntityStore.isTargetable` is the one targeting rule (perception's hostile queries, the leash,
+  `CombatSystem`, `attack-target`, the bot memory). Snapshot and client (this commit):
+  `EntitySnapshot.isHidden` (set only when `true`); `findUnitAt` skips hidden units;
+  `EntityLayer` leaves out a hidden unit of another team (body, status cues, health bar, minimap
+  dot) and draws one of the viewer's team faded through the new `Renderer.withOpacity`
+  (`HIDDEN_UNIT_OPACITY` 0.4, a look: DEC-266 says "faded" and names no value); the viewer's team
+  comes from `HealthBarVisibility.viewerTeam`, so it holds after the player dies. 05 §18 bullet
+  "Veil" and one pointer sentence in the §8 status note (implementation-status text only). Every
+  new test failed first on a deliberate break: B1 to B23 in
+  `eternalus-agent-work/abilities/veil-breaks.log`.
+- Open: the Owner Calls card "veil-own-bleed" (does a bleed the Vanguard applied before Veil end
+  Veil when it ticks?) is not answered; built as option 1 (yes).
+- Checks run: `npm run check`, exit 0 (core 2057/2057, client 2128/2128, server 84/84, protocol
+  30/30, docs check passed). An earlier run failed only on two duel-test timeouts under load
+  (core `Simulation.duel.test.ts` 61.6 s > 60 s, server `CoreDuelSimulation.test.ts`
+  31.7 s > 30 s). The core duel takes 1555 ticks on base `e21692d6` and on this branch (counted
+  side by side), so Veil does not make it longer.
+- Next step: pre-PR gate on Veil (branch against `e21692d6`); then Hamstring on lane A's
+  `ProjectileImpact` (DEC-314) once `feat/ranged-attacks` is committed.

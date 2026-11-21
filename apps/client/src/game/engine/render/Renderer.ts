@@ -21,6 +21,11 @@ export interface Renderer {
   strokeScreenRect(area: ScreenRect, color: string, width: number): void;
   /** Runs `draw` with every drawing limited to the ellipse that fills `area` (screen pixels). */
   clipToEllipse(area: ScreenRect, draw: () => void): void;
+  /**
+   * Runs `draw` with everything it draws see-through: `opacity` in [0, 1] multiplies the current
+   * opacity (0 draws nothing, 1 draws as usual).
+   */
+  withOpacity(opacity: number, draw: () => void): void;
   /** Fills a closed shape given in world units. Does nothing for an empty shape. */
   fillPolygon(points: readonly WorldPoint[], color: string): void;
   /** Draws a line through points given in world units. `width` is in screen pixels. */

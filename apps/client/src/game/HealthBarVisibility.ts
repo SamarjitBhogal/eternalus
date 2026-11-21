@@ -67,6 +67,15 @@ export class HealthBarVisibility {
   }
 
   /**
+   * The player's team, the side whose units are allies here; kept after the player dies (see
+   * `observe`). `null` with no player (sim mode). `EntityLayer` draws a hidden unit of this team
+   * faded and leaves out every other hidden unit (DEC-266).
+   */
+  public get viewerTeam(): Team | null {
+    return this.playerTeam;
+  }
+
+  /**
    * The side of `entity`'s health bar, or `null` when it draws none: a living unit that fought,
    * other than the player. With no player (sim mode), every unit is on the `enemy` side.
    */

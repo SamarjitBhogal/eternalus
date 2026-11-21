@@ -15,8 +15,9 @@ import type { EntitySnapshot, StatusSnapshot } from './Snapshot.types';
 
 /**
  * Projects one entity into its `EntitySnapshot` (architecture 03 §5): one group per component,
- * `null` when the entity has no such component (DEC-17); `mapObjectId` and `mapFeatureId` are
- * left out instead. A new component group is added here, never in `GameState` (DEC-232).
+ * `null` when the entity has no such component (DEC-17); `mapObjectId`, `mapFeatureId` and
+ * `isHidden` are left out instead. A new component group is added here, never in `GameState`
+ * (DEC-232).
  */
 export class EntitySnapshotter {
   /**
@@ -48,6 +49,7 @@ export class EntitySnapshotter {
         : { mapObjectId: entity.getComponent(MapObjectBody).object.id }),
       ...(entity instanceof Structure &&
         entity.mapFeatureId !== null && { mapFeatureId: entity.mapFeatureId }),
+      ...(entity.findComponent(StatusEffects)?.has('hidden') === true && { isHidden: true }),
       team: entity.findComponent(TeamMembership)?.team ?? null,
       transform:
         transform === undefined

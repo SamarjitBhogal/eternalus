@@ -13,6 +13,7 @@ export type DrawContext = Pick<
   | 'fill'
   | 'fillRect'
   | 'fillStyle'
+  | 'globalAlpha'
   | 'lineJoin'
   | 'lineTo'
   | 'lineWidth'

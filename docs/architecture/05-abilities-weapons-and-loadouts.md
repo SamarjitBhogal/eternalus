@@ -557,6 +557,7 @@ that re-applies a stun before it ends can hold a target until it stops.
 Not built yet: `controlResistance` (bosses, Eternal), `appliesTo` (the component is the gate), the `duration`,
 `independent` and `permanent` modes, and a max-health stat (the FR-029 aura). `StatusEffectSystem`
 runs before movement. Fury adds two optional status fields, `onHit` and `grants` (§18, "Fury").
+Veil adds a third, `endsOnDamage`, and the readers of `untargetable` and `hidden` (§18, "Veil").
 
 ## 9. Combat pipeline (`combat/`)
 
@@ -1209,6 +1210,29 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     client checks neither the slot nor the targeting kind. The HUD shows a prompt (key and name)
     while the slot holds an ability (DEC-283 (7)). A bot may cast a filled `granted` slot
     (`pickReadySlot`).
+- **Veil (`feat/vanguard-veil-hamstring`, 2026-11-20; DEC-266, DEC-267).** Veil targets `self` and
+  casts the `buff` effect with the status `invisible` (`content/status-effects/invisible.ts`),
+  which sets the flags `untargetable` and `hidden`. Where the code differs from §8:
+  - **Ends on damage.** A status has a third optional field §8 does not have: `endsOnDamage`.
+    `StatusEffectSystem` listens to `damage-applied` and marks each such status of the target and
+    of the attacker as broken (`StatusEffects.breakOnDamage`); the end of its pass removes them
+    (`StatusEffectApplier.removeBroken`: `status-expired`, no `onExpire`). The listener only
+    marks, because a hit can land inside a loop over the holder's statuses. A bleed tick ends it
+    in the same pass; a hit from a later system (combat) ends it in the next tick's pass. Casting
+    does not end it.
+  - **Untargetable.** `EntityStore.isTargetable(id)` (alive, and no status sets `untargetable`) is
+    the one rule for every picker: perception's hostile queries, the leashed mobs
+    (`LeashBehaviour`), `CombatSystem` (which drops such a target and does not hit it),
+    `attack-target` (`invalid-target`) and the bot memory (`BotLeaves`). An area still hits the
+    holder.
+  - **Hidden.** `EntitySnapshot.isHidden` is present, `true`, while a status sets `hidden`. The
+    client's `EntityLayer` leaves out a hidden unit of a team other than the viewer's (its body,
+    status cues, health bar and minimap dot) and draws one of the viewer's team faded
+    (`Renderer.withOpacity`); with no player (sim mode) it draws every hidden unit faded. The
+    viewer's team is the one `HealthBarVisibility` keeps (`viewerTeam`), so it holds after the
+    player dies. `findUnitAt` skips hidden units, so a click does not pick one. Every seat gets
+    the same snapshot (`Simulation.snapshot`); a per-seat filter waits for the Duel server
+    (ADR 0016).
 
 ## Related
 

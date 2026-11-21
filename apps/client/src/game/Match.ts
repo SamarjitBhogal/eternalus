@@ -256,7 +256,13 @@ export class Match implements LoopTarget {
     const { scene, miniMap } = this.world;
     renderer.clear(BACKGROUND_COLOR);
     renderer.showWorldArea(view);
-    this.entities.show(this.previous, this.current, alpha, this.playerId);
+    this.entities.show(
+      this.previous,
+      this.current,
+      alpha,
+      this.playerId,
+      this.healthBars.viewerTeam,
+    );
     this.objects.show(this.current.mapObjects ?? []);
     this.aimOverlay.show(
       this.aiming.targetOf(

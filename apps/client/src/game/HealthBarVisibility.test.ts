@@ -177,6 +177,16 @@ describe('HealthBarVisibility (DEC-195)', () => {
     expect(bars.healthBarOf(ALLY)).toBe('ally');
   });
 
+  it("names the player's team as the viewer's, also after the Legend dies; none in sim mode", () => {
+    const { bars } = setUp();
+    expect(bars.viewerTeam).toBe(PLAYER.team);
+
+    bars.observe(snapshotOf([ENEMY, ALLY]));
+
+    expect(bars.viewerTeam).toBe(PLAYER.team);
+    expect(setUp(undefined, null).bars.viewerTeam).toBeNull();
+  });
+
   it('forgets a unit removed for any cause', () => {
     const { events, bars, damage } = setUp();
     damage('pal', 'foe');

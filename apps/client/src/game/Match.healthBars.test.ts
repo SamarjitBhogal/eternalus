@@ -113,6 +113,58 @@ const withFirstTickHit = (simulation: Simulation): MatchSimulation => {
   };
 };
 
+/**
+ * `simulation` whose snapshots mark every Legend but the player hidden, as Veil would (DEC-266).
+ * Only the snapshot changes; the simulation plays on as it is.
+ */
+const withOthersHidden = (simulation: Simulation): MatchSimulation => ({
+  get tick() {
+    return simulation.tick;
+  },
+  step: () => {
+    simulation.step();
+  },
+  snapshot: () => {
+    const snapshot = simulation.snapshot();
+    const hide = (entity: EntitySnapshot): EntitySnapshot =>
+      entity.family === 'legend' && entity.id !== snapshot.match.humanLegendId
+        ? { ...entity, isHidden: true }
+        : entity;
+    return { ...snapshot, entities: snapshot.entities.map(hide) };
+  },
+  enqueueCommand: (command) => {
+    simulation.enqueueCommand(command);
+  },
+  on: (type, handler) => simulation.on(type, handler),
+});
+
+describe('Match hidden units: the viewer team the health bar rule keeps (DEC-266)', () => {
+  it("fades the player's hidden ally and leaves the hidden enemy out", () => {
+    const { match, simulation, renderer } = setUp(withOthersHidden);
+    const at = match.snapshot.entities.find(({ id }) => id === match.playerEntityId)?.transform;
+    if (at === null || at === undefined) throw new Error('No player');
+    for (const team of ['light', 'dark'] as const) {
+      simulation.enqueueCommand({
+        type: 'dev-spawn',
+        kind: 'warrior',
+        definitionId: 'warrior',
+        team,
+        at: { x: at.x, y: at.y + 3 },
+        count: 1,
+      });
+    }
+    match.tick();
+    const hidden = match.snapshot.entities.filter(({ isHidden }) => isHidden === true);
+    expect(hidden.map(({ team }) => team).sort()).toEqual(['dark', 'light']);
+
+    match.render(0);
+
+    // One faded body: the light ally's. The dark one is not drawn at all.
+    expect(renderer.calls.filter(({ op }) => op === 'withOpacity')).toHaveLength(1);
+    match.destroy();
+  });
+});
+
 describe('Match health bars (DEC-195)', () => {
   it("shows an enemy Legend's bar once the player's attack hurts it, never the player's own", () => {
     // A dark Warrior spawned next to the player (no controller, so it never attacks first).

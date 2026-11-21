@@ -32,6 +32,19 @@ describe('RecordingRenderer', () => {
     ]);
   });
 
+  it('records withOpacity, then the calls its drawing makes, in order', () => {
+    const renderer = new RecordingRenderer();
+    const draw = (): void => {
+      renderer.clear('#000000');
+    };
+    renderer.withOpacity(0.5, draw);
+
+    expect(renderer.calls).toEqual([
+      { op: 'withOpacity', args: [0.5, draw] },
+      { op: 'clear', args: ['#000000'] },
+    ]);
+  });
+
   it('returns world points unchanged from toScreen', () => {
     expect(new RecordingRenderer().toScreen({ x: 3, y: 4 })).toEqual({ x: 3, y: 4 });
   });

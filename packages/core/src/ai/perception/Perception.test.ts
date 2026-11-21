@@ -84,7 +84,9 @@ describe('Perception', () => {
     const { state, add, index } = setUp();
     const veiled = add('dark', 11);
     const seen = add('dark', 12);
-    veiled.getComponent(StatusEffects).apply(loadStatusEffects(30, 2).get('invisible'), null, state.tick);
+    veiled
+      .getComponent(StatusEffects)
+      .apply(loadStatusEffects(30, 2).get('invisible'), null, state.tick);
     index();
     const perception = new Perception(state);
     const center = { x: 10, y: 10 };

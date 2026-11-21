@@ -67,6 +67,7 @@ const createFakeContext = (): DrawContext => ({
   stroke: vi.fn(),
   strokeRect: vi.fn(),
   fillStyle: '',
+  globalAlpha: 1,
   strokeStyle: '',
   lineWidth: 1,
   lineJoin: 'miter',
@@ -371,7 +372,7 @@ describe('MiniMapView unit markers (DEC-187)', () => {
       () => false,
       () => null,
     );
-    units.show(null, snapshot, 0, null);
+    units.show(null, snapshot, 0, null, null);
     const renderer = new RecordingRenderer();
     new MiniMapView(MAP, new SceneView([units]), RING, () => CENTRE).draw(renderer, 1920, 1080);
     const glyphs = renderer.calls.flatMap((call) => (call.op === 'drawGlyph' ? [call.args] : []));

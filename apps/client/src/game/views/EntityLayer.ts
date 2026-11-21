@@ -1,9 +1,10 @@
-import type { EntitySnapshot, Snapshot } from '@eternalus/core';
+import type { EntitySnapshot, Snapshot, Team } from '@eternalus/core';
 
 import type { Renderer } from '../engine/render/Renderer';
 import type { WorldPoint } from '../engine/render/Renderer.types';
 import type { HealthBarRule } from './EntityLayer.types';
 import type { EntityDrawState } from './EntityView.types';
+import { HIDDEN_UNIT_OPACITY } from './entityViews.constants';
 import { HealthBarView } from './HealthBarView';
 import type { WorldLayer } from './SceneView.types';
 import type { StatusCueRegistry } from './StatusCueRegistry';
@@ -14,7 +15,9 @@ import type { ViewRegistry } from './ViewRegistry';
  * (architecture 08 §8), in the main view and on the mini map (06 §8). In the main view positions
  * and facings are interpolated between the previous and current snapshot by `alpha`; an entity
  * that appeared this tick draws where it is (no ghost from the origin). It draws back to front by
- * `y`. A mini map dot sits at the snapshot position (DEC-187 (C)).
+ * `y`. A mini map dot sits at the snapshot position (DEC-187 (C)). A hidden (Veiled) enemy of the
+ * viewer is not drawn at all: no body, cue, health bar or mini map dot; a hidden unit of the
+ * viewer's side is drawn faded (DEC-266).
  */
 export class EntityLayer implements WorldLayer {
   private states: readonly EntityDrawState[] = [];
@@ -41,17 +44,22 @@ export class EntityLayer implements WorldLayer {
    * @param current - The latest snapshot.
    * @param alpha - How far between `previous` and `current` this frame is, in [0, 1).
    * @param focusId - The id of the entity the player controls, or `null`.
+   * @param viewerTeam - The player's team, whose hidden units draw faded; every other team's
+   *   hidden units are left out. `null` (sim mode) draws every hidden unit faded.
    */
   public show(
     previous: Snapshot | null,
     current: Snapshot,
     alpha: number,
     focusId: string | null,
+    viewerTeam: Team | null,
   ): void {
     const before = new Map(previous?.entities.map((entity) => [entity.id, entity]) ?? []);
     this.states = current.entities.flatMap((entity) => {
       const now = entity.transform;
-      if (entity.mapObjectId !== undefined || now === null) return [];
+      const isHiddenFromViewer =
+        entity.isHidden === true && viewerTeam !== null && entity.team !== viewerTeam;
+      if (entity.mapObjectId !== undefined || now === null || isHiddenFromViewer) return [];
       const then = before.get(entity.id)?.transform ?? now;
       const position = EntityLayer.lerp(then, now, alpha);
       const facing = EntityLayer.turn(then.facing, now.facing, alpha);
@@ -71,12 +79,19 @@ export class EntityLayer implements WorldLayer {
    * Draws every entity, back to front by `y`, so lower entities overlap higher ones. The status
    * cues (each status's view in the `StatusCueRegistry`, such as the wind-up rings of DEC-283) and
    * then the health bars (`HealthBarView`) come after every entity of this layer, so no entity
-   * hides them.
+   * hides them. A hidden unit still shown (the viewer's side) draws its body faded.
    */
   public draw(renderer: Renderer): void {
     const ordered = [...this.states].sort((a, b) => a.position.y - b.position.y);
     for (const state of ordered) {
-      this.views.viewFor(state.entity).draw(state, renderer);
+      const view = this.views.viewFor(state.entity);
+      if (state.entity.isHidden === true) {
+        renderer.withOpacity(HIDDEN_UNIT_OPACITY, () => {
+          view.draw(state, renderer);
+        });
+      } else {
+        view.draw(state, renderer);
+      }
     }
     for (const state of ordered) {
       const { statuses } = state.entity;

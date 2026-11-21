@@ -123,4 +123,21 @@ describe('EntitySnapshotter', () => {
     expect(snapshotter.snapshotOf(calm).statuses).toEqual([]);
     expect(snapshotter.snapshotOf(new Bare('entity-3', 'bare')).statuses).toBeNull();
   });
+
+  it('marks an entity a `hidden` status holds (Veil, DEC-266), and leaves the key out otherwise', () => {
+    const veiled = new Bare('entity-1', 'warrior');
+    const statuses = new StatusEffects();
+    statuses.apply(STATUSES.get('invisible'), veiled.id, 0);
+    veiled.addComponent(statuses);
+    const furious = new Bare('entity-2', 'warrior');
+    const fury = new StatusEffects();
+    fury.apply(STATUSES.get('enraged'), null, 0);
+    furious.addComponent(fury);
+
+    const snapshotter = new EntitySnapshotter(4, CURVES, 1);
+
+    expect(snapshotter.snapshotOf(veiled).isHidden).toBe(true);
+    expect(snapshotter.snapshotOf(furious)).not.toHaveProperty('isHidden');
+    expect(snapshotter.snapshotOf(new Bare('entity-3', 'bare'))).not.toHaveProperty('isHidden');
+  });
 });

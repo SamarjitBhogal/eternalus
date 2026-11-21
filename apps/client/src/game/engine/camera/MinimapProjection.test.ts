@@ -26,6 +26,7 @@ const createFakeContext = (): DrawContext => ({
   stroke: vi.fn(),
   strokeRect: vi.fn(),
   fillStyle: '',
+  globalAlpha: 1,
   strokeStyle: '',
   lineWidth: 1,
   lineJoin: 'miter',

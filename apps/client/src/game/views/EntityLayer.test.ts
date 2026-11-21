@@ -2,11 +2,16 @@ import type { EntitySnapshot, Snapshot, StatusSnapshot } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
+import type { Renderer } from '../engine/render/Renderer';
 import { createDefaultStatusCueRegistry } from './defaultStatusCueRegistry';
 import { createDefaultViewRegistry } from './defaultViewRegistry';
 import { EntityLayer } from './EntityLayer';
 import type { HealthBarSide } from './HealthBarView.types';
-import { MINI_MAP_LEGEND_GLYPH, MINI_MAP_MOB_GLYPH } from './entityViews.constants';
+import {
+  HIDDEN_UNIT_OPACITY,
+  MINI_MAP_LEGEND_GLYPH,
+  MINI_MAP_MOB_GLYPH,
+} from './entityViews.constants';
 import { HEALTH_BAR_FILL_COLORS, HEALTH_BAR_TRACK_COLOR } from './HealthBarView.constants';
 import type { WorldLayer } from './SceneView.types';
 import { StatusCueRegistry } from './StatusCueRegistry';
@@ -59,6 +64,20 @@ class SpyView implements EntityView {
   }
 }
 
+/**
+ * A view that marks each draw on the renderer as a `clear` named after the entity (`minimap <id>`
+ * on the mini map), so a test reads the order of bodies and opacity changes from `calls`.
+ */
+class MarkView implements EntityView {
+  public draw(state: EntityDrawState, renderer: Renderer): void {
+    renderer.clear(state.entity.id);
+  }
+
+  public drawMinimap(state: EntityDrawState, renderer: Renderer): void {
+    renderer.clear(`minimap ${state.entity.id}`);
+  }
+}
+
 /** One entity of `family` at (x, 0) with `current` health. */
 const member = (id: string, family: string, x: number, current = 10): EntitySnapshot => ({
   ...unit(id, x, 0),
@@ -93,7 +112,7 @@ describe('EntityLayer', () => {
       () => null,
     );
 
-    layer.show(snapshot(1, [unit('a', 0, 0)]), snapshot(2, [unit('a', 10, 4)]), 0.25, null);
+    layer.show(snapshot(1, [unit('a', 0, 0)]), snapshot(2, [unit('a', 10, 4)]), 0.25, null, null);
     layer.draw(new RecordingRenderer());
 
     expect(spy.drawn.map((state) => state.position)).toEqual([{ x: 2.5, y: 1 }]);
@@ -113,6 +132,7 @@ describe('EntityLayer', () => {
       snapshot(2, [unit('a', 10, 4), placeless]),
       0.25,
       null,
+      null,
     );
 
     expect(layer.drawnAt('a')).toEqual({ x: 2.5, y: 1 });
@@ -130,7 +150,13 @@ describe('EntityLayer', () => {
       () => null,
     );
 
-    layer.show(snapshot(1, [unit('a', 0, 0)]), snapshot(2, [unit('a', 0, 0, SOUTH)]), 0.5, null);
+    layer.show(
+      snapshot(1, [unit('a', 0, 0)]),
+      snapshot(2, [unit('a', 0, 0, SOUTH)]),
+      0.5,
+      null,
+      null,
+    );
     layer.draw(new RecordingRenderer());
 
     expect(spy.drawn[0]?.facing.x).toBeCloseTo(Math.SQRT1_2);
@@ -152,6 +178,7 @@ describe('EntityLayer', () => {
       snapshot(2, [unit('turned', 0, 0, west), unit('new', 0, 1, SOUTH)]),
       0.5,
       null,
+      null,
     );
     layer.draw(new RecordingRenderer());
 
@@ -167,7 +194,7 @@ describe('EntityLayer', () => {
       () => null,
     );
 
-    layer.show(snapshot(1, []), snapshot(2, [unit('new', 50, 50)]), 0.5, null);
+    layer.show(snapshot(1, []), snapshot(2, [unit('new', 50, 50)]), 0.5, null, null);
     layer.draw(new RecordingRenderer());
 
     expect(spy.drawn[0]?.position).toEqual({ x: 50, y: 50 });
@@ -183,7 +210,13 @@ describe('EntityLayer', () => {
     );
     const placeless = { ...unit('ghost', 0, 0), transform: null };
 
-    layer.show(null, snapshot(1, [unit('low', 0, 9), unit('high', 0, 1), placeless]), 0, 'low');
+    layer.show(
+      null,
+      snapshot(1, [unit('low', 0, 9), unit('high', 0, 1), placeless]),
+      0,
+      'low',
+      null,
+    );
     layer.draw(new RecordingRenderer());
 
     expect(spy.drawn.map((state) => [state.entity.id, state.isFocused])).toEqual([
@@ -210,6 +243,7 @@ describe('EntityLayer', () => {
       ]),
       0.5,
       null,
+      null,
     );
 
     expect(minimapMarks(layer)).toEqual([
@@ -234,7 +268,7 @@ describe('EntityLayer', () => {
       member('alive', 'mob', 5, 0),
     ];
 
-    layer.show(null, snapshot(1, units), 0, 'me');
+    layer.show(null, snapshot(1, units), 0, 'me', null);
 
     expect(minimapMarks(layer)).toEqual([[MINI_MAP_MOB_GLYPH, 5]]);
     // Nothing else is drawn: only that mob's outline and dot.
@@ -259,6 +293,7 @@ describe('EntityLayer', () => {
       null,
       snapshot(1, [foe, member('pal', 'mob', 30), member('calm', 'mob', 50)]),
       0,
+      null,
       null,
     );
     const renderer = new RecordingRenderer();
@@ -293,7 +328,7 @@ describe('EntityLayer', () => {
       ...member('vanguard', 'mob', 10),
       statuses: [{ id: 'fury-windup', ticksActive: 2, ticksLeft: 7 }],
     };
-    layer.show(null, snapshot(1, [vanguard, member('foe', 'mob', 30)]), 0, null);
+    layer.show(null, snapshot(1, [vanguard, member('foe', 'mob', 30)]), 0, null, null);
     const renderer = new RecordingRenderer();
     layer.draw(renderer);
     const { calls } = renderer;
@@ -337,9 +372,99 @@ describe('EntityLayer', () => {
       ]),
       0,
       null,
+      null,
     );
     layer.draw(new RecordingRenderer());
 
     expect(cued).toEqual([['a', stun]]);
+  });
+
+  describe('hidden (Veiled) units (DEC-266)', () => {
+    const VEILED = [{ id: 'invisible', ticksActive: 1, ticksLeft: 100 }];
+
+    /** A hidden unit of `team` at (x, 0), with the Veil status (so a cue would draw for it). */
+    const veiled = (id: string, team: 'light' | 'dark', x: number): EntitySnapshot => ({
+      ...member(id, 'legend', x),
+      team,
+      isHidden: true,
+      statuses: VEILED,
+    });
+
+    /** A layer over `MarkView`, a cue for the Veil status, and a bar for every unit. */
+    const markLayer = (cued: string[]): EntityLayer => {
+      const cues = new StatusCueRegistry();
+      cues.register('invisible', {
+        draw: (state) => {
+          cued.push(state.entity.id);
+        },
+      });
+      return new EntityLayer(
+        new ViewRegistry(new MarkView()),
+        cues,
+        () => false,
+        () => 'enemy',
+      );
+    };
+
+    /** The marked bodies and opacity changes of `calls`, in order. */
+    const marks = (renderer: RecordingRenderer): unknown[] =>
+      renderer.calls.flatMap((call) =>
+        call.op === 'clear' || call.op === 'withOpacity' ? [[call.op, call.args[0]]] : [],
+      );
+
+    it("leaves out the viewer's hidden enemy everywhere and draws its own hidden unit faded", () => {
+      const cued: string[] = [];
+      const layer = markLayer(cued);
+      const units = [
+        veiled('veiled-foe', 'dark', 0),
+        veiled('veiled-pal', 'light', 10),
+        member('foe', 'mob', 20),
+      ];
+
+      layer.show(null, snapshot(1, units), 0, null, 'light');
+      const renderer = new RecordingRenderer();
+      layer.draw(renderer);
+      const minimap = new RecordingRenderer();
+      layer.drawMinimap(minimap);
+
+      // The ally's body inside the fade; the foe's body as usual; no body for the Veiled foe.
+      expect(marks(renderer)).toEqual([
+        ['withOpacity', HIDDEN_UNIT_OPACITY],
+        ['clear', 'veiled-pal'],
+        ['clear', 'foe'],
+      ]);
+      // No cue, no health bar and no mini map dot for the Veiled foe.
+      expect(cued).toEqual(['veiled-pal']);
+      const bars = renderer.calls.filter(
+        (call) => call.op === 'fillPolygon' && call.args[1] === HEALTH_BAR_TRACK_COLOR,
+      );
+      expect(bars).toHaveLength(2);
+      expect(marks(minimap)).toEqual([
+        ['clear', 'minimap veiled-pal'],
+        ['clear', 'minimap foe'],
+      ]);
+      expect(layer.drawnAt('veiled-foe')).toBeNull();
+    });
+
+    it('draws every hidden unit faded when there is no player (sim mode)', () => {
+      const layer = markLayer([]);
+
+      layer.show(
+        null,
+        snapshot(1, [veiled('dark-one', 'dark', 0), veiled('light-one', 'light', 10)]),
+        0,
+        null,
+        null,
+      );
+      const renderer = new RecordingRenderer();
+      layer.draw(renderer);
+
+      expect(marks(renderer)).toEqual([
+        ['withOpacity', HIDDEN_UNIT_OPACITY],
+        ['clear', 'dark-one'],
+        ['withOpacity', HIDDEN_UNIT_OPACITY],
+        ['clear', 'light-one'],
+      ]);
+    });
   });
 });

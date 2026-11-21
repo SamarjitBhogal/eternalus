@@ -24,6 +24,12 @@ export type EntitySnapshot = {
    * to its structure by identity, never by position.
    */
   readonly mapFeatureId?: string;
+  /**
+   * `true` while a status makes the entity `hidden` (Veil, DEC-266): an enemy's screen does not
+   * draw it and a click does not pick it; its own side draws it faded. Absent otherwise (set only
+   * when `true`, so no other snapshot changes).
+   */
+  readonly isHidden?: boolean;
   readonly id: EntityId;
   readonly kind: string;
   readonly family: string;
