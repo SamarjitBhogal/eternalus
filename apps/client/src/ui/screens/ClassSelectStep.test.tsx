@@ -305,7 +305,7 @@ describe('ClassSelectStep', () => {
     expect(accessibleNames(stepPart(html), 'button')).toContain('V View Details');
     expect(stepPart(html)).not.toMatch(/<section[^>]*inert/);
     expect(detailsPart(html)).toMatch(
-      /^role="dialog" aria-modal="true" aria-label="View Details" data-open="false" data-reduce-motion="false" inert=""/,
+      /^role="dialog" aria-modal="true" aria-label="View Details" data-open="false" inert=""/,
     );
   });
 

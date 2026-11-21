@@ -13,7 +13,7 @@ import { readHookInput, repoRoot, run } from './hookInput.mjs';
 const input = await readHookInput();
 const root = repoRoot(input);
 
-const branchResult = run('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
+const branchResult = await run('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
   cwd: root,
   timeoutMs: 10_000,
 });

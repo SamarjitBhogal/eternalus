@@ -13,13 +13,13 @@ type MatchSliceState = {
   readonly capturePoints: readonly CapturePointStatus[];
   /** Core's result (13 §5), `null` until `match-ended`; it outlives the match until the next setup. */
   readonly result: MatchResult | null;
-  /** The ended match's length in match seconds; `null` until `match-ended`. */
+  /** The ended match's length in match seconds, the countdown not counted (DEC-278); `null` until `match-ended`. */
   readonly durationSeconds: number | null;
   /** The Duel's names for the VERSUS screen; `null` outside a Duel. */
   readonly versus: DuelVersus | null;
   /** How the server ended an online Duel (ADR 0016), `null` until `duel-ended`. */
   readonly duel: MatchEnding | null;
-  /** The Duel's scoreboard and countdown; `null` outside a Duel. */
+  /** The Duel's scoreboard; `null` outside a Duel. */
   readonly duelHud: DuelHudState | null;
 };
 
@@ -81,6 +81,8 @@ export const matchSlice = createSlice({
     selectVersus: (state) => state.versus,
     selectDuelHud: (state) => state.duelHud,
     selectMatchClock: (state) => state.clock,
+    /** The pre-match countdown's number (0 is "START"); `null` before the first clock and after it. */
+    selectMatchCountdown: (state) => state.clock?.countdown ?? null,
     selectStructures: (state) => state.structures,
     selectCapturePoints: (state) => state.capturePoints,
   },
