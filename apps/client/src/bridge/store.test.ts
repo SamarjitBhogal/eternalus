@@ -4,9 +4,19 @@ import { sessionSlice } from './slices/sessionSlice';
 import { createAppStore, store } from './store';
 
 describe('store', () => {
-  it('registers the seven contract slices', () => {
+  it('registers the nine contract slices', () => {
     expect(Object.keys(store.getState()).sort()).toEqual(
-      ['content', 'hud', 'loading', 'match', 'matchSetup', 'session', 'settings'].sort(),
+      [
+        'assets',
+        'content',
+        'hud',
+        'loading',
+        'match',
+        'matchSetup',
+        'session',
+        'settings',
+        'view',
+      ].sort(),
     );
   });
 

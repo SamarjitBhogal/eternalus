@@ -57,7 +57,41 @@ describe('FiniteTransformsInvariant', () => {
     Reflect.set(velocity, 'x', 1.5);
     Reflect.set(velocity, 'y', 1.5);
     expect(new FiniteTransformsInvariant().check(state).map((v) => v.message)).toEqual([
-      'Entity "entity-1" has a velocity above maxSpeed (1.5, 1.5).',
+      'Entity "entity-1" has a velocity above top speed (1.5, 1.5).',
     ]);
+  });
+
+  it('measures against the top speed statuses allow this tick, above maxSpeed when enraged', () => {
+    const { state, runner } = setUp();
+    const movement = runner.getComponent(Movement);
+    movement.steer({ x: 1, y: 0 });
+    for (let tick = 0; tick < 3; tick += 1) {
+      movement.advance(1.1);
+    }
+
+    expect(movement.velocity.x).toBeCloseTo(2.2);
+    expect(new FiniteTransformsInvariant().check(state)).toEqual([]);
+
+    Reflect.set(movement.velocity, 'x', 2.3);
+    expect(new FiniteTransformsInvariant().check(state).map((v) => v.message)).toEqual([
+      'Entity "entity-1" has a velocity above top speed (2.3, 0).',
+    ]);
+  });
+
+  it('flags a facing that is not a unit vector, and allows float rounding (injected)', () => {
+    const { state, runner } = setUp();
+    const facing = runner.getComponent(Transform).facing;
+
+    Reflect.set(facing, 'x', 1 + 1e-12);
+    expect(new FiniteTransformsInvariant().check(state)).toEqual([]);
+
+    Reflect.set(facing, 'x', 0);
+    Reflect.set(facing, 'y', 0);
+    expect(new FiniteTransformsInvariant().check(state).map((v) => v.message)).toEqual([
+      'Entity "entity-1" has a facing that is not a unit vector (0, 0).',
+    ]);
+
+    Reflect.set(facing, 'x', Number.NaN);
+    expect(new FiniteTransformsInvariant().check(state)).toHaveLength(1);
   });
 });

@@ -10,7 +10,8 @@ import type { UnitFilter } from './Perception.types';
  * so they never depend on the grid layout (11 §5). One instance per `AiSystem`; its result array
  * is reused, so read a result before the next query.
  *
- * @remarks ponytail: no `structuresWithin` until structure entities exist (minion plan M2c).
+ * @remarks ponytail: no `structuresWithin` until a controller needs it; M2c reads lane objectives
+ * from `state.laneStructures`.
  */
 export class Perception {
   private found = new Int32Array(0);
@@ -67,7 +68,10 @@ export class Perception {
     return space.queryCircle(center.x, center.y, radius, this.found);
   }
 
-  private passes(id: EntityId, { hostileTo, kinds, aliveOnly }: UnitFilter): boolean {
+  private passes(
+    id: EntityId,
+    { hostileTo, neutralAttackersOf, kinds, aliveOnly }: UnitFilter,
+  ): boolean {
     const { entities } = this.state;
     const entity = entities.get(id);
     if (entity === undefined) {
@@ -76,7 +80,11 @@ export class Perception {
     const team = entities.teamOf(id);
     return (
       (hostileTo === undefined ||
-        (team !== undefined && team !== 'neutral' && team !== hostileTo)) &&
+        (team !== undefined &&
+          team !== hostileTo &&
+          (team !== 'neutral' ||
+            (neutralAttackersOf !== undefined &&
+              entities.attackTargetOf(id) === neutralAttackersOf)))) &&
       (kinds === undefined || kinds.includes(entity.kind)) &&
       (aliveOnly !== true || entities.isAlive(id))
     );

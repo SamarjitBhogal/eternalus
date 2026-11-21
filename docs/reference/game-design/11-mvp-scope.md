@@ -4,7 +4,7 @@ description: The MVP list from the requirements doc merged with the game doc's M
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-10
+last-reviewed: 2026-10-29
 tags: [reference, game-design, mvp, scope]
 related:
   - 'docs/requirements/06-mvp-requirements.md'
@@ -57,22 +57,23 @@ Numbers are quoted from the sources and are `TUNE` (they live in `GameConfig`/co
 
 ### Units
 
-| Item                                                                                                                      | Tag             | Source                                   |
-| ------------------------------------------------------------------------------------------------------------------------- | --------------- | ---------------------------------------- |
-| 10 v 10 Legends, all bots except 1 user-controlled Legend; 3 per lane + 1 Rover per team                                  | **MVP**         | requirements; game doc                   |
-| 2 teams (light, dark): allied team, enemy team, randomly chosen for the player; neutral camps/bosses                      | **MVP**         | requirements                             |
-| 3 classes: Warrior (formerly Assault), Sentinel, Magus                                                                    | **MVP**         | requirements; game doc                   |
-| Flying class, mounts, sub-classes                                                                                         | **post-MVP**    | game doc (orange); brief D11/D12         |
-| Minion hordes of 16 (light), 8 (medium), 4 (heavy)                                                                        | **MVP**         | requirements                             |
-| Minions spawn from towers every 1 minute; 48 units at match start from the Stronghold (3 hordes, 1 per lane)              | **MVP**         | requirements                             |
-| 1-minute countdown from match initiation: nothing spawns from towers, only the 3 Stronghold hordes                        | **MVP**         | requirements                             |
-| Minion strength scales with distance from home; enraged buff when a structure falls; zone level-up                        | **MVP**         | game doc                                 |
-| Minion XP after two kills; ascend on a player kill                                                                        | **MVP-if-time** | game doc                                 |
-| Guards per structure; respawn every 2 minutes; never leave the perimeter                                                  | **MVP**         | game doc                                 |
-| AI-controlled hordes, AI-controlled non-player units; enemy Rover as a hard bot                                           | **MVP**         | requirements; game doc                   |
-| Entity stat set: health, speed, maxSpeed, acceleration, mass (Sentinel: low base speed, high maxSpeed, slow acceleration) | **MVP**         | game doc ("included in MVP if possible") |
-| Class character sizes (Warrior ≈ medium minion, Magus ≈ heavy minion, Sentinel very large)                                | **MVP**         | game doc                                 |
-| Max 10 Legends per team; max 144 units per team without crashing; engineered for hundreds                                 | **MVP**         | requirements                             |
+| Item                                                                                                                         | Tag              | Source                                   |
+| ---------------------------------------------------------------------------------------------------------------------------- | ---------------- | ---------------------------------------- |
+| 10 v 10 Legends, all bots except 1 user-controlled Legend; 3 per lane + 1 Rover per team                                     | **MVP**          | requirements; game doc                   |
+| 2 teams (light, dark): allied team, enemy team, randomly chosen for the player; neutral camps/bosses                         | **MVP**          | requirements                             |
+| 3 classes (reference 01; the class files in `packages/core/src/content/legends/`)                                            | **MVP**          | requirements; game doc                   |
+| Flying class, mounts                                                                                                         | **post-MVP**     | game doc (orange); brief D12             |
+| Sub-classes (Legends): picked as setup data today (FR-119); the phase that builds their gameplay is open (`INBOX.md` HC-Q17) | **MVP** (DEC-56) | owner; brief D11                         |
+| Minion hordes of 16 (light), 8 (medium), 4 (heavy)                                                                           | **MVP**          | requirements                             |
+| Minions spawn from towers every 1 minute; 48 units at match start from the Stronghold (3 hordes, 1 per lane)                 | **MVP**          | requirements                             |
+| 1-minute countdown from match initiation: nothing spawns from towers, only the 3 Stronghold hordes                           | **MVP**          | requirements                             |
+| Minion strength scales with distance from home; enraged buff when a structure falls; zone level-up                           | **MVP**          | game doc                                 |
+| Minion XP after two kills; ascend on a player kill                                                                           | **MVP-if-time**  | game doc                                 |
+| Guards per structure; respawn every 2 minutes; never leave the perimeter                                                     | **MVP**          | game doc                                 |
+| AI-controlled hordes, AI-controlled non-player units; enemy Rover as a hard bot                                              | **MVP**          | requirements; game doc                   |
+| Entity stat set: health, speed, maxSpeed, acceleration, mass (Sentinel: low base speed, high maxSpeed, slow acceleration)    | **MVP**          | game doc ("included in MVP if possible") |
+| Class character sizes (Warrior ≈ medium minion, Magus ≈ heavy minion, Sentinel very large)                                   | **MVP**          | game doc                                 |
+| Max 10 Legends per team; max 144 units per team without crashing; engineered for hundreds                                    | **MVP**          | requirements                             |
 
 ### Legends, abilities, loadout
 
@@ -107,17 +108,17 @@ Open questions for both are consolidated in `../../plan/multiplayer-and-scalabil
 
 ### Controls, UI, presentation
 
-| Item                                                                                                                       | Tag          | Source                 |
-| -------------------------------------------------------------------------------------------------------------------------- | ------------ | ---------------------- |
-| Top-down; WASD default movement; 1, 2, 3, 4 for abilities with 4 the ultimate; Z and C for gadgets; click to attack        | **MVP**      | requirements; game doc |
-| No hard-coded controls; configurable via settings with press-to-bind; mouse side buttons; prompts reflect current bindings | **MVP**      | requirements           |
-| Controller support; first-person full game (third-person option)                                                           | **post-MVP** | requirements; game doc |
-| Low-poly or pixel art in-game                                                                                              | **MVP**      | game doc               |
-| High-quality character art on the selection screen                                                                         | **post-MVP** | game doc (yellow)      |
-| Simple loading screen                                                                                                      | **MVP**      | requirements           |
-| Simple game boot menu (structure below)                                                                                    | **MVP**      | requirements           |
-| Developer menu, enable/disable in-game (structure below)                                                                   | **MVP**      | requirements           |
-| Anti-air defence                                                                                                           | **post-MVP** | game doc (orange)      |
+| Item                                                                                                                       | Tag          | Source                                 |
+| -------------------------------------------------------------------------------------------------------------------------- | ------------ | -------------------------------------- |
+| Top-down; WASD default movement; 1, 2, 3, 4 for abilities with 4 the ultimate; Z and C for gadgets; click to attack        | **MVP**      | requirements; game doc                 |
+| No hard-coded controls; configurable via settings with press-to-bind; mouse side buttons; prompts reflect current bindings | **MVP**      | requirements                           |
+| Controller support; first-person full game (third-person option)                                                           | **post-MVP** | requirements; game doc                 |
+| Low-poly or pixel art in-game                                                                                              | **MVP**      | game doc                               |
+| High-quality character art on the selection screen (the owner's Figma art for now; DEC-51)                                 | **MVP**      | game doc (yellow); DEC-51 (2026-10-28) |
+| Simple loading screen                                                                                                      | **MVP**      | requirements                           |
+| Simple game boot menu (structure below)                                                                                    | **MVP**      | requirements                           |
+| Developer menu, enable/disable in-game (structure below)                                                                   | **MVP**      | requirements                           |
+| Anti-air defence                                                                                                           | **post-MVP** | game doc (orange)                      |
 
 ### Engineering constraints stated with the MVP
 
@@ -135,7 +136,8 @@ Open questions for both are consolidated in `../../plan/multiplayer-and-scalabil
 - All non-player characters are bots, including the enemy Rover. **MVP**
 - WASD and numbers for abilities; controller and first-person come later. **MVP** / **post-MVP**
 - Low-poly or pixel art in-game, with high-quality character art on the selection screen.
-  **MVP** / selection-screen art **post-MVP** (yellow)
+  **MVP**; selection-screen art **MVP** since 2026-10-28 (DEC-51: the owner's Figma art for now;
+  yellow in the game doc)
 - Ability upgrades on hold beyond basic level scaling. **MVP** decision (yellow: the hold itself
   is the thing needing planning)
 
@@ -152,7 +154,8 @@ From the requirements doc's "Long term goal" and the game doc, all **post-MVP**:
 - Full ability levelling (ability upgrade tree still undecided).
 - Game engine use (Unity, Unreal Engine, etc.) for development, with a language change: the
   logic and structure must translate to a new surface rather than restart from zero.
-- The aerial/Flying class (needs a new name), sub-classes, mounts, form changes.
+- The flying class (shown locked; display name decided, DEC-48, in `content/legends/locked/`),
+  mounts, form changes.
 - Anti-air defence; multiple maps; unique skins per team; the armour-set slot.
 - "Everything in the reference document + much more."
 

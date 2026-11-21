@@ -8,4 +8,16 @@ describe('Button', () => {
     const html = renderToStaticMarkup(<Button onClick={() => undefined}>Go</Button>);
     expect(html).toMatch(/^<button type="button"[^>]*>Go<\/button>$/);
   });
+
+  it('is disabled only when asked', () => {
+    const render = (isDisabled = false): string =>
+      renderToStaticMarkup(
+        <Button onClick={() => undefined} isDisabled={isDisabled}>
+          Go
+        </Button>,
+      );
+
+    expect(render()).not.toContain('disabled');
+    expect(render(true)).toContain('disabled=""');
+  });
 });

@@ -10,6 +10,8 @@ export class Collider {
 
   private isEnabledValue = true;
 
+  private isUnbreakableValue = false;
+
   /**
    * Creates an enabled collider with the given shape on a collision layer.
    *
@@ -42,6 +44,19 @@ export class Collider {
   /** Takes the collider out of collisions until `enable` is called. */
   public disable(): void {
     this.isEnabledValue = false;
+  }
+
+  /**
+   * Whether the owner takes no damage right now (architecture 07 §3): a wall or gate before its
+   * breakability rule passes. Set only by `StructureSystem`.
+   */
+  public get isUnbreakable(): boolean {
+    return this.isUnbreakableValue;
+  }
+
+  /** Marks the owner unbreakable (`true`) or breakable (`false`). */
+  public setUnbreakable(isUnbreakable: boolean): void {
+    this.isUnbreakableValue = isUnbreakable;
   }
 
   /** The axis-aligned box around the shape when its centre is at `center`. */

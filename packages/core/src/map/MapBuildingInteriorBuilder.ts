@@ -70,6 +70,21 @@ export class MapBuildingInteriorBuilder extends MapDecorationBuilder {
       P.doorInlay,
     );
     this.isFootprint = undefined;
+    for (const [side, door] of [
+      ['west', G.westDoor],
+      ['east', G.eastDoor],
+    ] as const) {
+      this.isFootprint = true;
+      this.rect(
+        `cathedral-interior-${side}-door`,
+        door.x,
+        door.y,
+        door.width,
+        door.height,
+        P.doorInlay,
+      );
+    }
+    this.isFootprint = undefined;
     this.ellipse('cathedral-interior-capture-border', G.cathedral.x, 450, 35, 35, P.doorInlay);
     this.ellipse('cathedral-interior-capture-floor', G.cathedral.x, 450, 31, 31, P.captureFloor);
     this.ellipse('cathedral-interior-capture-inlay', G.cathedral.x, 450, 11, 11, P.ivoryStone);

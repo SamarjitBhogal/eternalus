@@ -25,7 +25,11 @@ const UNITS = loadDefaultContent(CONFIG.tickRate);
 const CURVES = new ContentCatalogue<LevelCurveDefinition>([
   { id: 'legend', cap: 4, xpToNext: [100, 150, 200] },
 ]);
-const XP_SOURCES = { legendKill: { base: 150, perVictimLevel: 25 } };
+const XP_SOURCES = {
+  legendKill: { base: 150, perVictimLevel: 25 },
+  structureDestroyed: 300,
+  teamKills: { 'capture-point-boss': { xp: 500, maxLevels: 2 } },
+};
 
 const setUp = () => {
   const state = new GameState(CONFIG, 1);
@@ -63,7 +67,10 @@ const setUp = () => {
       .recentEvents()
       .filter((event) => event.type === type)
       .map((event) => event.payload);
-  return { state, spawn, kill, run, payloads };
+  const destroyStructure = (team: Team, kind = 'spawner-tower') => {
+    state.events.emit('structure-destroyed', { entityId: 'entity-gone', kind, team, lane: null });
+  };
+  return { state, spawn, kill, run, payloads, destroyStructure };
 };
 
 describe('ProgressionSystem', () => {
@@ -78,7 +85,13 @@ describe('ProgressionSystem', () => {
 
     expect(warrior.getComponent(Progression).xp).toBe(20);
     expect(payloads('xp-gained')).toEqual([
-      { entityId: warrior.id, amount: 20, victimId: minion.id, victimTeam: 'dark' },
+      {
+        entityId: warrior.id,
+        amount: 20,
+        victimId: minion.id,
+        victimTeam: 'dark',
+        cause: 'kill',
+      },
     ]);
   });
 
@@ -191,5 +204,161 @@ describe('ProgressionSystem', () => {
     };
 
     expect(hash()).toBe(hash());
+  });
+
+  describe('structure destroyed (DEC-186)', () => {
+    it('gives every Legend of the destroying team 300 XP, none to the other team', () => {
+      const { spawn, run, payloads, destroyStructure } = setUp();
+      const lights = [spawn('warrior', 'warrior', 'light'), spawn('magus', 'magus', 'light')];
+      const dark = spawn('warrior', 'warrior', 'dark');
+
+      destroyStructure('dark');
+      run();
+
+      expect(lights.map((l) => l.getComponent(Progression).xp)).toEqual([300, 300]);
+      expect(dark.getComponent(Progression).xp).toBe(0);
+      expect(payloads('xp-gained')).toEqual(
+        lights.map((l) => ({
+          entityId: l.id,
+          amount: 300,
+          victimId: 'entity-gone',
+          victimTeam: 'dark',
+          cause: 'structure-destroyed',
+        })),
+      );
+    });
+
+    it('pays a level-up from it, and skips minions and the destroyed side', () => {
+      const { spawn, run, payloads, destroyStructure } = setUp();
+      const warrior = spawn('warrior', 'warrior', 'light');
+      const minion = spawn('light-mob', 'light-minion', 'light');
+
+      destroyStructure('dark');
+      run();
+
+      // 300 XP on the test curve [100, 150, 200]: levels 2 (100) and 3 (250).
+      expect(warrior.getComponent(Progression)).toMatchObject({ xp: 300, level: 3 });
+      expect(minion.findComponent(Progression)).toBeUndefined();
+      expect(payloads('level-up')).toEqual([
+        { entityId: warrior.id, level: 2 },
+        { entityId: warrior.id, level: 3 },
+      ]);
+    });
+
+    it('pays nothing for a neutral structure', () => {
+      const { spawn, run, payloads, destroyStructure } = setUp();
+      const warrior = spawn('warrior', 'warrior', 'light');
+
+      destroyStructure('neutral', 'camp');
+      run();
+
+      expect(warrior.getComponent(Progression).xp).toBe(0);
+      expect(payloads('xp-gained')).toEqual([]);
+    });
+
+    it('pays nothing for a destroyed building (a map object emits no structure event)', () => {
+      const { spawn, kill, run, payloads } = setUp();
+      const warrior = spawn('warrior', 'warrior', 'light');
+
+      kill(warrior, spawn('light-mob', 'training-dummy', 'dark'));
+      run();
+
+      expect(warrior.getComponent(Progression).xp).toBe(0);
+      expect(payloads('xp-gained')).toEqual([]);
+    });
+  });
+
+  describe('team kill (DEC-237)', () => {
+    it("pays every Legend of the killer's team, capped at two levels, and none to the killer alone", () => {
+      const { spawn, kill, run, payloads } = setUp();
+      const killer = spawn('warrior', 'warrior', 'light');
+      const mate = spawn('magus', 'magus', 'light');
+      mate.getComponent(Progression).addXp(50, CURVES.get('legend'));
+      const dark = spawn('warrior', 'warrior', 'dark');
+      const boss = spawn('heavy-mob', 'capture-point-boss', 'neutral');
+
+      kill(killer, boss);
+      run();
+
+      // 500 XP, but two levels at most on the test curve [100, 150, 200]: the start of level 3 (250).
+      expect(killer.getComponent(Progression)).toMatchObject({ xp: 250, level: 3 });
+      expect(mate.getComponent(Progression)).toMatchObject({ xp: 250, level: 3 });
+      expect(dark.getComponent(Progression).xp).toBe(0);
+      expect(payloads('xp-gained')).toEqual([
+        {
+          entityId: killer.id,
+          amount: 250,
+          victimId: boss.id,
+          victimTeam: 'neutral',
+          cause: 'team-kill',
+        },
+        {
+          entityId: mate.id,
+          amount: 200,
+          victimId: boss.id,
+          victimTeam: 'neutral',
+          cause: 'team-kill',
+        },
+      ]);
+    });
+
+    it("pays the killing minion's team, and nothing for a death with no attacker", () => {
+      const { spawn, kill, run } = setUp();
+      const warrior = spawn('warrior', 'warrior', 'dark');
+
+      kill(
+        spawn('light-mob', 'light-minion', 'dark'),
+        spawn('heavy-mob', 'capture-point-boss', 'neutral'),
+      );
+      kill(null, spawn('heavy-mob', 'capture-point-boss', 'neutral'));
+      run();
+
+      expect(warrior.getComponent(Progression)).toMatchObject({ xp: 250, level: 3 });
+    });
+
+    it('caps two levels up from partway through level 2', () => {
+      const { spawn, kill, run } = setUp();
+      const warrior = spawn('warrior', 'warrior', 'light');
+      warrior.getComponent(Progression).addXp(100, CURVES.get('legend'));
+
+      kill(warrior, spawn('heavy-mob', 'capture-point-boss', 'neutral'));
+      run();
+
+      // From level 2 the cap is level 4 (450 XP), 350 away: less than 500, so capped there.
+      expect(warrior.getComponent(Progression)).toMatchObject({ xp: 450, level: 4 });
+    });
+
+    it('pays the full reward when two levels need more, and nothing at the level cap', () => {
+      // Its own system on a curve with big steps; setUp's system is never run here.
+      const { state, spawn, kill, payloads } = setUp();
+      const bigSteps = new ContentCatalogue<LevelCurveDefinition>([
+        { id: 'legend', cap: 4, xpToNext: [400, 400, 400] },
+      ]);
+      const system = new ProgressionSystem(state, {
+        units: UNITS,
+        curves: bigSteps,
+        xpSources: XP_SOURCES,
+      });
+      const fresh = spawn('warrior', 'warrior', 'light');
+      const capped = spawn('magus', 'magus', 'light');
+      capped.getComponent(Progression).addXp(1200, bigSteps.get('legend'));
+
+      const boss = spawn('heavy-mob', 'capture-point-boss', 'neutral');
+      kill(fresh, boss);
+      system.update({ state, logger: new NullLogger() });
+
+      // Two levels on this curve take 800 XP, more than the 500 the boss pays.
+      expect(fresh.getComponent(Progression)).toMatchObject({ xp: 500, level: 2 });
+      expect(capped.getComponent(Progression).xp).toBe(1200);
+      expect(payloads('xp-gained')).toEqual([
+        {
+          entityId: fresh.id,
+          amount: 500,
+          victimId: boss.id,
+          victimTeam: 'neutral',
+          cause: 'team-kill',
+        },
+      ]);
+    });
   });
 });

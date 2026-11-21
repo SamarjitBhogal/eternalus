@@ -1,15 +1,21 @@
 import type { LevelCurveDefinition } from './progression.types';
 
-/** XP for the first level-up. TUNE: derived from the income estimate in INBOX (O6). */
-const FIRST_STEP = 4;
-/** XP each further level-up adds; half the first step, as in balancing.md's curve. TUNE: same. */
+/** XP for the first level-up. TUNE: DEC-190 (owner 2026-11-05); the soak metric recalibrates it. */
+const FIRST_STEP = 110;
+/** XP each further level-up adds. TUNE: same. */
 const STEP_GROWTH = 2;
 
 /**
- * The Legend XP curve: `xpToNext(L) = 4 + 2 · (L − 1)` for L = 1 … 49, 2,548 XP to the cap.
- * balancing.md's shape (growth = half the first step), sized so an active Legend earning about
- * 135 XP/min (balancing.md: these sources reach 2,700 XP in 18–22 minutes) reaches the cap around
- * minute 19 of a 30-minute match.
+ * The Legend XP curve: `xpToNext(L) = 110 + 2 · (L − 1)` for L = 1 … 49, 7,742 XP to the cap.
+ *
+ * DEC-190 (owner 2026-11-05) target: a Legend with 10 Legend kills and 100 minion kills, on a team
+ * that has destroyed 4 towers, is about level 40 by minute 20, and no single kill or structure is
+ * worth several levels. Modelled on League of Legends, where one kill is a fraction of a level.
+ * Model result for that target: level 39 if the minion kills follow the horde mix (16 light,
+ * 8 medium, 4 heavy), level 32 if most are light.
+ *
+ * Not final (owner 2026-11-05): the sprint 3.8 soak metric "Legend level at 10 and 20 minutes"
+ * (balancing.md) recalibrates these numbers if levelling does not happen the way the owner wants.
  */
 export const LEGEND_LEVEL_CURVE: LevelCurveDefinition = {
   id: 'legend',

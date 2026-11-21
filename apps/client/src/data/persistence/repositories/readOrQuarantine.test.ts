@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { isReportedSilently } from '../../logging/__fixtures__/errorReports';
 import type { DtoCheck } from '../dto/DtoCheck.types';
 import { MemoryStorageAdapter } from '../MemoryStorageAdapter';
 import { QUARANTINE_STORE, SETTINGS_STORE, STORAGE_SCHEMA } from '../schema/migrations';
@@ -17,7 +18,7 @@ function validateCount(raw: unknown): DtoCheck<{ readonly count: number }> {
 async function readThrough(stored: unknown) {
   const adapter = new MemoryStorageAdapter();
   await adapter.open(STORAGE_SCHEMA);
-  const warnings: unknown[] = [];
+  const warnings: { body: string; attributes: unknown }[] = [];
   const stores = [SETTINGS_STORE, QUARANTINE_STORE];
   if (stored !== undefined) {
     await adapter.transaction(stores, 'readwrite', (tx) => tx.put(SETTINGS_STORE, stored));
@@ -61,6 +62,7 @@ describe('readOrQuarantine', () => {
       quarantinedAt: NOW,
       value: corrupt,
     });
+    expect(isReportedSilently('client.persistence', warnings[0]?.body ?? '')).toBe(true);
     expect(warnings).toEqual([
       {
         body: 'record quarantined',

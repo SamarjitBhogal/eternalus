@@ -1,0 +1,186 @@
+/* Rules in one svg at the integer origin (Chrome snaps fractional CSS boxes, not SVG geometry),
+   geometry from the Figma render boxes: white header line and dividers, 1.5 px accents at 40 %
+   red. The class layout's lines have round caps (rx 0.5); 62:70 and 58:271 butt caps. */
+.rules {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  overflow: visible;
+}
+
+.rule {
+  height: 1px;
+  fill: var(--selection-text);
+}
+
+.accent {
+  width: 1.5px;
+  fill: var(--selection-detail-accent);
+}
+
+/* 72:753 (428, 412) 38 × 1; 72:769 / 72:763 (45, 548 / 639.909) 417 × 1; 72:774 / 72:768 /
+   72:762 at x 45, y 434 h 95, 562.967 h 63, 650.909 h 93. */
+.rules[data-layout='class'] .rule {
+  rx: 0.5px;
+}
+
+.rules[data-layout='class'] [data-rule='header-line'] {
+  x: 383px;
+  y: 284px;
+  width: 38px;
+}
+
+.rules[data-layout='class'] [data-rule^='divider'] {
+  x: 0;
+  width: 417px;
+}
+
+.rules[data-layout='class'] [data-rule='divider-0'] {
+  y: 420px;
+}
+
+.rules[data-layout='class'] [data-rule='divider-1'] {
+  y: 511.909px;
+}
+
+.rules[data-layout='class'] [data-rule='accent-0'] {
+  x: 0;
+  y: 306px;
+  height: 95px;
+}
+
+.rules[data-layout='class'] [data-rule='accent-1'] {
+  x: 0;
+  y: 434.967px;
+  height: 63px;
+}
+
+.rules[data-layout='class'] [data-rule='accent-2'] {
+  x: 0;
+  y: 522.909px;
+  height: 93px;
+}
+
+/* 62:90 370 → 573 at row 413; 62:106 / 62:100 68 → 573 at rows 551 / 634; accents at x 65.
+   56:43 333 → 474 at row 413; 56:59 / 56:53 60 → 474 at rows 551 / 634; accents at x 57.
+   Both: accents y 436 h 95, 562 h 63, 645 h 93. The Legend layout keeps 56:43 and the first
+   divider and accent; its four rows (DEC-65) place the rest (below). */
+.rules[data-layout='class-alternate'] [data-rule='header-line'] {
+  x: 305px;
+  y: 285px;
+  width: 203px;
+}
+
+.rules[data-layout='class-alternate'] [data-rule^='divider'] {
+  x: 3px;
+  width: 505px;
+}
+
+/* Recommendation: 56:43 starts 11 px after the narrowed header box (InfoPanelDetails), still
+   ending at x 421. */
+.rules[data-layout='legend'] [data-rule='header-line'] {
+  x: 185px;
+  y: 285px;
+  width: 236px;
+}
+
+.rules[data-layout='legend'] [data-rule^='divider'] {
+  x: 7px;
+  width: 414px;
+}
+
+.rules[data-layout='class-alternate'] [data-rule='divider-0'],
+.rules[data-layout='legend'] [data-rule='divider-0'] {
+  y: 423px;
+}
+
+.rules[data-layout='class-alternate'] [data-rule='divider-1'] {
+  y: 506px;
+}
+
+.rules[data-layout='class-alternate'] [data-rule^='accent'] {
+  x: 0;
+}
+
+.rules[data-layout='legend'] [data-rule^='accent'] {
+  x: 4px;
+}
+
+.rules[data-layout='class-alternate'] [data-rule='accent-0'],
+.rules[data-layout='legend'] [data-rule='accent-0'] {
+  y: 308px;
+  height: 95px;
+}
+
+.rules[data-layout='class-alternate'] [data-rule='accent-1'] {
+  y: 434px;
+  height: 63px;
+}
+
+.rules[data-layout='class-alternate'] [data-rule='accent-2'] {
+  y: 517px;
+  height: 93px;
+}
+
+/* DEC-65's three ability rows (InfoPanelDetails' 60 px bands at 427, 495 and 563): a 52 px accent
+   4 px into each band, a divider 4 px above each. Recommendation, like the rows. */
+.rules[data-layout='legend'] [data-rule='divider-1'] {
+  y: 491px;
+}
+
+.rules[data-layout='legend'] [data-rule='divider-2'] {
+  y: 559px;
+}
+
+.rules[data-layout='legend'] [data-rule='accent-1'] {
+  y: 431px;
+  height: 52px;
+}
+
+.rules[data-layout='legend'] [data-rule='accent-2'] {
+  y: 499px;
+  height: 52px;
+}
+
+.rules[data-layout='legend'] [data-rule='accent-3'] {
+  y: 567px;
+  height: 52px;
+}
+
+/* View Details (145:2): no accents; 1 px cyan dividers 781 wide from x 1015 (145:84, 148:184 at
+   y 427.8 and 648.8; their 4 px slant is not drawn), round caps. The Legend's dividers sit between
+   its four rows (InfoPanelDetails), a Recommendation like them. */
+.rules[data-layout='class-details'] .accent,
+.rules[data-layout='legend-details'] .accent {
+  display: none;
+}
+
+.rules[data-layout='class-details'] [data-rule^='divider'],
+.rules[data-layout='legend-details'] [data-rule^='divider'] {
+  x: 899px;
+  width: 781px;
+  rx: 0.5px;
+  fill: var(--selection-detail-name);
+}
+
+.rules[data-layout='class-details'] [data-rule='divider-0'] {
+  y: 173.8px;
+}
+
+.rules[data-layout='class-details'] [data-rule='divider-1'] {
+  y: 394.8px;
+}
+
+.rules[data-layout='legend-details'] [data-rule='divider-0'] {
+  y: 156px;
+}
+
+.rules[data-layout='legend-details'] [data-rule='divider-1'] {
+  y: 316px;
+}
+
+.rules[data-layout='legend-details'] [data-rule='divider-2'] {
+  y: 476px;
+}

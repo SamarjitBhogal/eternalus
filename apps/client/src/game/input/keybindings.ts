@@ -29,8 +29,17 @@ export const DEFAULT_CHORDS: Readonly<Record<InputAction, readonly InputChord[]>
   'camera-zoom-out': [key('Minus', '-')],
   'toggle-minimap': [key('KeyM', 'M')],
   'pause-menu': [key('Escape', 'Esc')],
+  // DEC-103: V opens View Details on the selection steps (it replaces HC-F7's reused C there).
+  'view-details': [key('KeyV', 'V')],
   'toggle-developer-menu': [key('F1', 'F1')],
   'toggle-perf-overlay': [key('F9', 'F9')],
+  // DEC-105: Ctrl+Shift+F3 on Windows and Linux, Cmd+Shift+F3 on a Mac (Cmd+F3 is the Mac's Show
+  // Desktop). DEC-118: both chords on every platform; `SettingsController` lists this platform's
+  // own chord first (`ownPlatformChordsFirst`).
+  'toggle-developer-camera': [
+    { device: 'keyboard', code: 'F3', label: 'Ctrl+Shift+F3', modifiers: ['Control', 'Shift'] },
+    { device: 'keyboard', code: 'F3', label: 'Cmd+Shift+F3', modifiers: ['Meta', 'Shift'] },
+  ],
 };
 
 /** Every action, in the order the settings screen lists them. */

@@ -4,7 +4,7 @@ description: Sprint checklists for the Mob family, the Horde composite, flow-fie
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-29
+last-reviewed: 2026-11-07
 tags: [plan, phase-3, minions, hordes, ai, pathing, match-director]
 paths: ['packages/core/src/ai/**', 'packages/core/src/match/**', 'packages/core/src/map/**']
 related:
@@ -113,11 +113,12 @@ Owner: _ (sim lane B). Week 6. Follows [11-game-ai.md](../architecture/11-game-a
       by `entityId % cadence`; budget counter per tick). Owner: _. Test: 144 controllers with
       cadence 6 evaluate ≈ 24 per tick. Done when: `PlayerController` and bots implement the
       same interface.
-- [ ] **`MinionController` FSM** (`marching → engaging → returning`) with **aggro rules as
-      data** (`acquisitionRange`, `priorityOrder`, `aggroDurationTicks`, `aggroCooldownTicks`,
-      re-evaluate between attacks; nearest objective in lane when idle). Owner: _. Test: a
-      minion attacked by a Legend switches target per the priority list and returns to marching
-      after the aggro duration. Done when: changing priorities is a content edit.
+- [ ] **`MinionController` FSM** (`marching ⇄ engaging`; `returning` merged into marching,
+      DEC-155) with **aggro rules as data** (`acquisitionRange`, `priorityOrder`,
+      `leashGraceTicks`, `aggroCooldownTicks`, re-evaluate between attacks; nearest objective in
+      lane when idle). Owner: _. Test: a minion attacked by a Legend switches target per the
+      priority list and returns to marching once the target has been outside its leash for the
+      grace time (DEC-144). Done when: changing priorities is a content edit.
 - [ ] **Targeting queries** (perception via `SpatialHash`, ID-ordered results). Owner: _. Test:
       results equal brute force and are deterministic. Done when: no controller scans all
       entities.
@@ -159,7 +160,7 @@ Owner: _ (sim lane A). Weeks 6–7. Follows
       points for capture/hold, structures and kills, `TUNE`; `MatchResult` with per-Legend
       scores). Owner: _. Test: razing a Stronghold produces a `MatchResult` on the same tick;
       scores are deterministic. Done when: `MatchResult` is a plain DTO for Phase 5 history.
-- [ ] **Match clock and phase on the HUD** (`MatchClock`, `Announcer` messages per phase) via
+- [ ] _(feat/hud-and-character-select: `MatchClock` reads the clock through the bridge (`match-clock`, every 6 ticks); the phase label and the `Announcer` wait for the `MatchDirector`, sprint 3.5)_ **Match clock and phase on the HUD** (`MatchClock`, `Announcer` messages per phase) via
       the bridge. Owner: _. Test: throttled dispatch. Done when: the HUD reads the store only.
 
 **Success metric:** a scripted timeline test walks all phases and ends with a `MatchResult`;
@@ -195,7 +196,8 @@ Owner: _ (AI owner). Week 7. Depends on 3.3.
       later, ability choice; ticked at 5 Hz with `entityId % 6` stagger, per
       [research §7](../research/game-architecture-and-performance-research.md#7-game-ai-for-bots)).
       Owner: _. Test: a laner pushes its lane, retreats below a health threshold and returns to
-      base (healing there is outside the minion system for now; owner, 2026-10-27); 20 bots cost ≤ 1 ms per tick p95. Done when: leaves read snapshots and emit
+      base, where it heals once out of combat (DEC-188, `OutOfCombatHealingSystem`); 20 bots
+      cost ≤ 1 ms per tick p95. Done when: leaves read snapshots and emit
       `Command`s only.
 - [ ] **`RoverController`** (the "hard bot": reacts to structure health across lanes, mirrors
       or targets the human player). Owner: _. Test: the Rover moves to the lane with the lowest

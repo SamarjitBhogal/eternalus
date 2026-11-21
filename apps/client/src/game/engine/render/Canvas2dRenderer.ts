@@ -1,5 +1,10 @@
 import { FULL_TURN, GLYPH_OUTLINE_WIDTH, OUTLINED_GLYPHS } from './Canvas2dRenderer.constants';
-import type { DrawContext, GlyphHalfSize, GlyphTracer } from './Canvas2dRenderer.types';
+import type {
+  DrawContext,
+  DrawSurface,
+  GlyphHalfSize,
+  GlyphTracer,
+} from './Canvas2dRenderer.types';
 import type { Renderer } from './Renderer';
 import type { GlyphShape, GlyphSpec, ScreenRect, WorldPoint, WorldRect } from './Renderer.types';
 
@@ -44,7 +49,7 @@ export class Canvas2dRenderer implements Renderer {
   }
 
   /** Creates a renderer for a canvas, or returns `null` if 2D drawing is unavailable. */
-  public static fromCanvas(canvas: HTMLCanvasElement): Canvas2dRenderer | null {
+  public static fromCanvas(canvas: DrawSurface): Canvas2dRenderer | null {
     const context = canvas.getContext('2d');
     return context === null ? null : new Canvas2dRenderer(context);
   }
@@ -56,34 +61,19 @@ export class Canvas2dRenderer implements Renderer {
     this.pixelRatio = pixelRatio;
   }
 
-  /** Scales and centres a world of the given size so all of it is visible on screen. */
-  public fitWorld(worldWidth: number, worldHeight: number): void {
-    this.fitWorldInArea(worldWidth, worldHeight, {
-      x: 0,
-      y: 0,
-      width: this.screenWidth,
-      height: this.screenHeight,
-    });
-  }
-
-  /** Scales and centres a world of the given size inside one area of the screen. */
-  public fitWorldInArea(worldWidth: number, worldHeight: number, area: ScreenRect): void {
-    const scale = Math.min(area.width / worldWidth, area.height / worldHeight);
-    this.scaleX = scale;
-    this.scaleY = scale;
-    this.offsetX = area.x + (area.width - worldWidth * scale) / 2;
-    this.offsetY = area.y + (area.height - worldHeight * scale) / 2;
-  }
-
   /**
-   * Shows one part of the world across the whole screen, like a zoomed-in camera. If the area
-   * is not the same shape as the screen, the world is stretched or squashed to fill it.
+   * Shows one part of the world across the whole screen, or across `screenArea` when given,
+   * like a zoomed-in camera. If the area is not the same shape as the screen (or `screenArea`),
+   * the world is stretched or squashed to fill it.
    */
-  public showWorldArea(view: WorldRect): void {
-    this.scaleX = this.screenWidth / view.width;
-    this.scaleY = this.screenHeight / view.height;
-    this.offsetX = -view.x * this.scaleX;
-    this.offsetY = -view.y * this.scaleY;
+  public showWorldArea(
+    view: WorldRect,
+    screenArea: ScreenRect = { x: 0, y: 0, width: this.screenWidth, height: this.screenHeight },
+  ): void {
+    this.scaleX = screenArea.width / view.width;
+    this.scaleY = screenArea.height / view.height;
+    this.offsetX = screenArea.x - view.x * this.scaleX;
+    this.offsetY = screenArea.y - view.y * this.scaleY;
   }
 
   /** Fills the whole screen with one colour. */
@@ -103,6 +93,24 @@ export class Canvas2dRenderer implements Renderer {
     this.context.strokeStyle = color;
     this.context.lineWidth = width;
     this.context.strokeRect(area.x, area.y, area.width, area.height);
+  }
+
+  /**
+   * Runs `draw` with every drawing limited to the ellipse that fills `area` (screen pixels). The
+   * context is restored afterwards, also when `draw` throws.
+   */
+  public clipToEllipse(area: ScreenRect, draw: () => void): void {
+    const radiusX = area.width / 2;
+    const radiusY = area.height / 2;
+    this.context.save();
+    this.context.beginPath();
+    this.context.ellipse(area.x + radiusX, area.y + radiusY, radiusX, radiusY, 0, 0, FULL_TURN);
+    this.context.clip();
+    try {
+      draw();
+    } finally {
+      this.context.restore();
+    }
   }
 
   /** Fills a closed shape given in world units. Does nothing for an empty shape. */

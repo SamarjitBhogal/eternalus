@@ -62,7 +62,7 @@ describe('MapBuildingInteriorBuilder', () => {
               ? insideRect(nave) ||
                 insideRect(transept) ||
                 ((x - apse.x) / apse.radiusX) ** 2 + ((y - apse.y) / apse.radiusY) ** 2 <= 1.001 ||
-                insideRect(G.northDoor)
+                [G.northDoor, G.southDoor, G.westDoor, G.eastDoor].some(insideRect)
               : ((x - feature.position.x) / (G.palace.floorRadiusX * scale)) ** 2 +
                   ((y - feature.position.y) / (G.palace.floorRadiusY * scale)) ** 2 <=
                 1.001;
@@ -77,6 +77,8 @@ describe('MapBuildingInteriorBuilder', () => {
       'capture-floor',
       'north-door',
       'south-door',
+      'west-door',
+      'east-door',
     ])
       expect(
         map.scenery.some((piece) => piece.visibility === 'interior' && piece.id.includes(part)),

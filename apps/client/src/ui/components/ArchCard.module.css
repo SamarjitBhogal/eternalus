@@ -1,0 +1,101 @@
+/* The card root: its consumer (or the inline integer origin) places it; it takes no size, paints
+   nothing itself and carries no filter, opacity or transform, so a glass layer's backdrop-filter
+   sees the stage and a raster inside keeps its integer box (I-45). */
+.card {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+/* Vector layers (shadow plate, outlines, focus ring): the unit arch stretched to the layer box the
+   consumer sets; they carry the origin's sub-pixel remainder. Paths are unfilled until styled. */
+.vector,
+.coverArt,
+.glass,
+.box {
+  position: absolute;
+  left: 0;
+  top: 0;
+  translate: var(--arch-fx, 0px) var(--arch-fy, 0px);
+}
+
+.vector,
+.part,
+.strokes {
+  overflow: visible;
+}
+
+.vector path,
+.part path,
+.strokes path {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Glass panes take the arch shape (sel-arch-clip); the consumer sets the backdrop blur. */
+.glass {
+  clip-path: url(#sel-arch-clip);
+}
+
+/* Cover mode: the parts fill the art box, the master is clipped to the arch and covers it. */
+.part,
+.clip {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.clip {
+  clip-path: url(#sel-arch-clip);
+}
+
+.cover {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Image and plate modes: one raster at the integer box the consumer gives the art layer, at its
+   own pixel size (the box equals the file's size), never moved by a fraction (I-45). */
+.rasterArt {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.raster {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Plate mode (OD-1): an integer-placed svg in CSS px; each stroke path is moved and scaled to its
+   own Figma node by the consumer's `transform`, plus the origin's remainder. */
+.strokes {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.plateStroke {
+  translate: var(--arch-fx, 0px) var(--arch-fy, 0px);
+}
+
+/* CD-11: the arch focus ring shows only while the card's control has visible focus. */
+.focusRing {
+  opacity: 0;
+}
+
+.focusRing path {
+  stroke: var(--focus-ring);
+  stroke-width: 2px;
+}
+
+:focus-visible .focusRing {
+  opacity: 1;
+}

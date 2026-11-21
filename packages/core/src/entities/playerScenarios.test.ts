@@ -15,6 +15,9 @@ import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { LEGEND_CLASSES } from '../content/legends/legendCatalogue';
+import { MAGUS } from '../content/legends/magus';
+import { SENTINEL } from '../content/legends/sentinel';
+import { WARRIOR } from '../content/legends/warrior';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { NullLogger } from '../diagnostics/NullLogger';
 import { Simulation } from '../Simulation';
@@ -70,17 +73,16 @@ const ticksToRun = (unit: Entity, metres: number): number => {
 
 describe('Player scenarios', () => {
   describe('choosing a Legend on character select', () => {
-    it('shows Warrior, Sentinel and Magus, in that order, each with a one-line role', () => {
+    it('shows the warrior, sentinel and magus names, in that order, each with a one-line role', () => {
       const cards = LEGEND_CLASSES.all().map((legend) => ({
         name: legend.displayName,
         hasRole: legend.roleBlurb.length > 0,
       }));
 
-      expect(cards).toEqual([
-        { name: 'Warrior', hasRole: true },
-        { name: 'Sentinel', hasRole: true },
-        { name: 'Magus', hasRole: true },
-      ]);
+      // The names themselves are pinned once, in legendCatalogue.test.ts.
+      expect(cards).toEqual(
+        [WARRIOR, SENTINEL, MAGUS].map((legend) => ({ name: legend.displayName, hasRole: true })),
+      );
     });
 
     it('lets the player spawn whichever class they pick', () => {
@@ -246,7 +248,8 @@ describe('Player scenarios', () => {
   describe('playing a match through the simulation', () => {
     const newMatch = (seed = 1): Simulation =>
       new Simulation({
-        config: createDefaultGameConfig(),
+        // No countdown: the countdown holds all movement (match/phases/CountdownPhase.test.ts).
+        config: createDefaultGameConfig({ match: { countdownSeconds: 0 } }),
         seed,
         logger: new NullLogger(),
         debug: TEST_DEBUG_CONFIG,

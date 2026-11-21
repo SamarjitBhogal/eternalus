@@ -69,7 +69,13 @@ export const loadStatusEffects = (
 ): ContentCatalogue<StatusEffectDefinition> => {
   const rate = new TickRate(tickRate);
   const pairs = authored.map((status) => [status, load(status, rate, structuresPerLane)] as const);
-  const problems = pairs.flatMap(([status, loaded]) => problemsOf(status, loaded));
+  const ids = new Set(pairs.map(([status]) => status.id));
+  const problems = pairs.flatMap(([status, loaded]) => [
+    ...problemsOf(status, loaded),
+    ...status.onExpire
+      .filter(({ statusId }) => !ids.has(statusId))
+      .map(({ statusId }) => `Status "${status.id}": onExpire names unknown status "${statusId}".`),
+  ]);
   if (problems.length > 0) {
     throw new ContentValidationError(problems.join('\n'));
   }

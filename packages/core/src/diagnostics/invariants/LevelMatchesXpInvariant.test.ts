@@ -47,10 +47,38 @@ const setUp = () => {
     });
   };
   const gained = (entityId: string, victimId: string, victimTeam: Team) => {
-    state.events.emit('xp-gained', { entityId, amount: 10, victimId, victimTeam });
+    state.events.emit('xp-gained', { entityId, amount: 10, victimId, victimTeam, cause: 'kill' });
+  };
+  const gainedFromStructure = (entityId: string, victimId: string, victimTeam: Team) => {
+    state.events.emit('xp-gained', {
+      entityId,
+      amount: 300,
+      victimId,
+      victimTeam,
+      cause: 'structure-destroyed',
+    });
+  };
+  const gainedFromTeamKill = (entityId: string, victimId: string) => {
+    state.events.emit('xp-gained', {
+      entityId,
+      amount: 200,
+      victimId,
+      victimTeam: 'neutral',
+      cause: 'team-kill',
+    });
   };
   const check = () => new LevelMatchesXpInvariant(CURVES).check(state).map((v) => v.message);
-  return { state, hero, enemy, died, gained, check };
+  return {
+    state,
+    hero,
+    enemy,
+    spawn,
+    died,
+    gained,
+    gainedFromStructure,
+    gainedFromTeamKill,
+    check,
+  };
 };
 
 describe('LevelMatchesXpInvariant', () => {
@@ -79,6 +107,54 @@ describe('LevelMatchesXpInvariant', () => {
 
     expect(check()).toEqual([
       'Entity "entity-1" gained XP for "entity-2" without killing it this tick.',
+    ]);
+  });
+
+  it('rule 2: passes a team-wide structure award for a structure that is gone (DEC-186)', () => {
+    const { hero, gainedFromStructure, check } = setUp();
+    gainedFromStructure(hero.id, 'entity-77', 'dark');
+
+    expect(check()).toEqual([]);
+  });
+
+  it('rule 2: flags a structure award for a structure still standing', () => {
+    const { hero, enemy, gainedFromStructure, check } = setUp();
+    gainedFromStructure(hero.id, enemy.id, 'dark');
+
+    expect(check()).toEqual([
+      'Entity "entity-1" gained structure XP for "entity-2", which is still standing.',
+    ]);
+  });
+
+  it("rule 4: flags a structure award for the recipient's own structure", () => {
+    const { hero, gainedFromStructure, check } = setUp();
+    gainedFromStructure(hero.id, 'entity-77', 'light');
+
+    expect(check()).toEqual([
+      'Entity "entity-1" gained XP for killing itself or an ally ("entity-77").',
+    ]);
+  });
+
+  it("rule 2: passes a team-kill award when the recipient's teammate killed the boss (DEC-237)", () => {
+    const { hero, spawn, died, gainedFromTeamKill, check } = setUp();
+    const mate = spawn('entity-3', 'light');
+    const boss = spawn('entity-4', 'neutral');
+    died(boss.id, mate.id);
+    gainedFromTeamKill(hero.id, boss.id);
+
+    expect(check()).toEqual([]);
+  });
+
+  it('rule 2: flags a team-kill award when another team killed the boss, or nobody did', () => {
+    const { hero, enemy, spawn, died, gainedFromTeamKill, check } = setUp();
+    const boss = spawn('entity-4', 'neutral');
+    died(boss.id, enemy.id);
+    gainedFromTeamKill(hero.id, boss.id);
+    gainedFromTeamKill(hero.id, 'entity-never-died');
+
+    expect(check()).toEqual([
+      'Entity "entity-1" gained team XP for "entity-4", which its team did not kill this tick.',
+      'Entity "entity-1" gained team XP for "entity-never-died", which its team did not kill this tick.',
     ]);
   });
 

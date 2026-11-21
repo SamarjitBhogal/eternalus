@@ -1,13 +1,11 @@
 import { Health } from '../components/Health';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { TeamMembership } from '../components/TeamMembership';
-import type { MapObject, MapObjectKind, MapObjectSnapshot } from '../content/maps/mapObjects.types';
-import type { ObstacleDefinition } from '../content/obstacles/obstacles.types';
-import type { EntityFactory } from '../entities/EntityFactory';
-import type { EntityStore } from './EntityStore';
-import type { WorldObjectRecord } from './WorldObjectStore.types';
+import type { MapObject, MapObjectSnapshot } from '../content/maps/mapObjects.types';
+import type { WorldObjectRecord, WorldObjectStoreOptions } from './WorldObjectStore.types';
 import type { Vec2 } from '../utils/geometry.types';
 import { doesCircleOverlapPolygon, isCircleInsidePolygon } from '../utils/circlePolygon';
+import { boundsOf } from '../utils/geometry';
 
 /** Owns placed-object identity and persistent destroyed state after DeathSystem retires entities. */
 export class WorldObjectStore {
@@ -15,20 +13,39 @@ export class WorldObjectStore {
   private readonly entityObjects = new Map<string, MapObject>();
   private readonly destroyed = new Set<string>();
 
-  /** Spawns physical objects through the existing registry/factory; terrain has no health entity. */
-  public constructor(
-    objects: readonly MapObject[],
-    factory: EntityFactory,
-    entities: EntityStore,
-    definitions: Readonly<Record<MapObjectKind, ObstacleDefinition>>,
-  ) {
+  /** A standing structure's id → the index of the record of the map object that is its body. */
+  private readonly owned = new Map<string, number>();
+
+  /**
+   * Spawns physical objects through the existing registry/factory; terrain has no health entity.
+   * An object named in `owners` gets no entity of its own: its health is its structure's (one pool,
+   * DEC-185 B: a lane tower's fort map object; only towers, DEC-217 (13)), so a hit on it is a hit
+   * on the structure.
+   *
+   * @param options - The objects, how to spawn them, and the structures some of them are bodies of.
+   */
+  public constructor({
+    objects,
+    factory,
+    entities,
+    definitions,
+    owners = new Map(),
+  }: WorldObjectStoreOptions) {
     for (const object of objects) {
       const definition = definitions[object.kind];
-      if (definition.health === null) {
-        this.records.push({ object, entityId: null, health: null });
+      const points = object.footprints.flat();
+      const bounds = boundsOf(points);
+      const owner = entities.get(owners.get(object.id) ?? '');
+      const health = owner?.findComponent(Health);
+      if (owner !== undefined && health !== undefined) {
+        this.owned.set(owner.id, this.records.length);
+        this.records.push({ object, entityId: owner.id, health, bounds });
         continue;
       }
-      const points = object.footprints.flat();
+      if (definition.health === null) {
+        this.records.push({ object, entityId: null, health: null, bounds });
+        continue;
+      }
       const position = points.reduce(
         (sum, p) => ({ x: sum.x + p.x / points.length, y: sum.y + p.y / points.length }),
         { x: 0, y: 0 },
@@ -39,14 +56,29 @@ export class WorldObjectStore {
       if (object.team !== undefined) entity.addComponent(new TeamMembership(object.team));
       entities.add(entity);
       this.entityObjects.set(entity.id, object);
-      this.records.push({ object, entityId: entity.id, health: entity.getComponent(Health) });
+      this.records.push({
+        object,
+        entityId: entity.id,
+        health: entity.getComponent(Health),
+        bounds,
+      });
     }
   }
 
-  /** Marks only actual retired entities destroyed; a roof toggle never changes this state. */
+  /**
+   * Marks only actual retired entities destroyed; a roof toggle never changes this state. A
+   * retired structure's own map object (its fort) stays standing, as it did when it had a pool of
+   * its own, with no health left to take: it is scenery from then on.
+   */
   public removed(entityId: string): void {
     const object = this.entityObjects.get(entityId);
     if (object !== undefined) this.destroyed.add(object.id);
+    const index = this.owned.get(entityId);
+    const record = index === undefined ? undefined : this.records[index];
+    if (index !== undefined && record !== undefined) {
+      this.owned.delete(entityId);
+      this.records[index] = { ...record, entityId: null, health: null };
+    }
   }
 
   /** Exact map object for a live or retired entity. */
@@ -68,11 +100,17 @@ export class WorldObjectStore {
 
   /** Independent diagnostic check against live solids and authored bridge openings. */
   public blockingAt(point: Vec2, radius: number): string | null {
-    for (const { object, health } of this.records) {
+    for (const { object, entityId, health, bounds } of this.records) {
       if (
+        point.x + radius < bounds.x ||
+        point.x - radius > bounds.x + bounds.width ||
+        point.y + radius < bounds.y ||
+        point.y - radius > bounds.y + bounds.height ||
         !object.isBlocking ||
         this.destroyed.has(object.id) ||
-        health?.isDead === true ||
+        // A structure's fort outlives the structure (`removed`), so only an object's own death
+        // counts.
+        (health?.isDead === true && !this.owned.has(entityId ?? '')) ||
         object.passages?.some((shape) => isCircleInsidePolygon(point, radius, shape)) === true
       )
         continue;

@@ -1,0 +1,27 @@
+/* Charge Indicators 62:250: an integer-wide canvas (24 px) whose height follows the box count
+   (the SVG keeps the viewBox's aspect), so every box is drawn 1:1 at its Figma geometry. */
+.pips {
+  width: calc(24 * var(--hud-u));
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+/* 1 px inside stroke, no fill. */
+.box {
+  fill: none;
+  stroke: var(--hud-charge-pip-border);
+}
+
+.fill {
+  fill: var(--hud-charge-pip-fill);
+}
+
+/* No data yet (CD-13). */
+.hatch {
+  fill: var(--hud-no-data-hatch);
+}

@@ -4,7 +4,7 @@ description: What Eternalus is, how the game-design reference is organised, and 
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-11-04
 tags: [reference, game-design, overview, status-legend]
 related:
   - 'docs/reference/README.md'
@@ -25,7 +25,7 @@ catalogue says what the MVP **builds**; the plan says **when**.
 
 Eternalus is a team-based, class-driven objective game. Two teams, **Light** and **Dark**, each
 field ten **Legends** (player characters) across a destructible three-lane map. They capture
-points, destroy enemy structures and, ultimately, destroy the enemy **Stronghold** (the capital).
+points, destroy enemy structures and, ultimately, kill the enemy **King** (the sovereign).
 The product owner's shorthand: _Battle for Middle-earth meets League of Legends_.
 
 The MVP is a top-down, lane-based, single-player match in the browser: one human Legend, every
@@ -46,7 +46,7 @@ Key facts at a glance (all tuning values are quoted from the source docs and mar
 | Match start         | 60 s countdown `TUNE`; only 3 hordes of 16 from each Stronghold; towers spawn every 60 s `TUNE` after          | requirements doc           |
 | Resources           | Health, **aether** (mana), XP and level                                                                        | requirements doc           |
 | Caps                | Max 10 Legends per team, max 144 units per team `TUNE` (engineered for hundreds)                               | requirements doc           |
-| Win                 | Destroy the enemy Stronghold                                                                                   | game doc                   |
+| Win                 | Kill the enemy King                                                                                            | DEC-71, ADR 0021           |
 
 ## The status legend
 

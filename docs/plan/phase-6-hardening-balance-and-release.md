@@ -4,7 +4,7 @@ description: Sprint checklists for the performance pass against budgets, the hea
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-29
+last-reviewed: 2026-11-02
 tags: [plan, phase-6, performance, balance, art, audio, reliability, release]
 paths: ['packages/core/src/content/**', 'packages/core/src/diagnostics/**', 'apps/client/assets/**']
 related:
@@ -142,6 +142,15 @@ Owner: _ (art owner + client lane; product owner signs off). Week 9; anything no
       fallback in the `Announcer` HUD always on). Owner: _. Test: a fake `AudioOutput` receives
       one play per `GameEvents` type from a content table; muted buses play nothing. Done when:
       the event → sound mapping is a content table.
+- [ ] **UI enhancements on the owner's Figma screens** (the follow-up to
+      `feat/hud-and-character-select`, specified in [ui-enhancements-plan.md](ui-enhancements-plan.md):
+      the in-game reduce-motion setting applied to every reduced-motion rule (UE-03, INBOX HC-S3),
+      then the eleven enhancements the owner chose (DEC-100, INBOX HC-S5), each a data-selectable
+      variant with the Figma original kept live (DEC-53) and switched on by default (his answer of
+      2026-10-28); may start early once that branch has merged). Owner: _. Test: the plan's unit
+      and visual acceptance per enhancement; every Figma scenario is byte-identical with no
+      enhancement selected. Done when: each built enhancement has its `creative` row in
+      reference 15 and the owner's review of its scenario.
 
 **Success metric:** 100% of manifest entries carry a licence and a source; 100% of entity kinds
 have a sprite (registry walk); the announcer fires for every timeline event in a scripted match;
@@ -163,9 +172,10 @@ Owner: _ (sim lane lead + persistence owner). Week 10; the CI job lands in week 
       in PROGRESS.
 - [ ] **Error boundaries and loop safety** (a React error boundary per screen and around the
       HUD; an exception in `Simulation.step()` stops `GameLoop`, logs the repro payload (seed,
-      tick, last 32 commands) through `Logger` and moves the session to `results` with a
-      diagnostic; never a silent freeze or a blank page). Owner: _. Test: a fake system that
-      throws routes to the boundary, leaves 0 scheduled frames and shows "copy repro".
+      tick, last 32 commands) through `Logger` and ends the match, returning the player to the menu
+      with the crash popup, which saves an error report that holds the replay (DEC-106, ADR 0025);
+      never a silent freeze or a blank page). Owner: _. Test: a fake system that throws ends the
+      match through `LoopTarget.crashed`, leaves 0 scheduled frames and shows the crash popup.
       Done when: no failure path ends in a blank page.
 - [ ] **Persistence failure modes** (`versionchange` from another tab → close and reload
       prompt; quota exceeded → evict replays and warn; private window or open failure → runtime

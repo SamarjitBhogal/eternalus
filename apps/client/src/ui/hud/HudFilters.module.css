@@ -1,0 +1,20 @@
+/* The hidden defs holder: laid out (a display: none SVG would drop its filters), zero-sized. */
+.defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* The level number's shadows (65:656: blur 10 near, blur 15 black) and its grain colour. */
+.floodNear {
+  flood-color: var(--hud-level-shadow-near);
+}
+
+.floodFar {
+  flood-color: var(--hud-level-shadow-far);
+}
+
+.floodGrain {
+  flood-color: var(--hud-level-noise);
+}

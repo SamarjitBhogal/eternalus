@@ -4,7 +4,7 @@ description: CodeRabbit reviews every PR by the pr-review skill, fails one block
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-09
 tags: [adr, process, review, guardrail, agents]
 related:
   [
@@ -149,3 +149,9 @@ requests, and deletes the stored learning in the CodeRabbit app. GitHub runs sch
 workflows only from the default branch, so the learnings workflow starts when this change
 reaches `main` (at the phase 2 merge, or earlier as a hotfix PR if the admin chooses); until
 then, run `node scripts/coderabbit/collect-learnings.mjs` by hand.
+
+(2026-11-09, PR #73) CodeRabbit's validator now rejects an override that names neither `teams`
+nor `paths` ("An override must specify teams, paths, or both"), and it ignores a config that
+fails validation as a whole. So the never-approve override in `.coderabbit.yaml` lists paths that
+match every file, dotfiles included, in place of "without paths" in amendment item 2. The intent
+of item 2 is unchanged: CodeRabbit never approves.

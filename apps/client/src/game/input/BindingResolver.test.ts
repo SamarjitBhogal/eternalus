@@ -24,6 +24,21 @@ describe('BindingResolver', () => {
     expect(resolver.actionsFor({ device: 'mouse', code: '0' })).toEqual(['attack']);
   });
 
+  it('tells a modifier chord apart from its plain key, whatever order its modifiers come in', () => {
+    const resolver = new BindingResolver();
+    resolver.setBindings([
+      {
+        action: 'toggle-developer-camera',
+        chords: [{ device: 'keyboard', code: 'F3', label: 'F3', modifiers: ['Shift', 'Control'] }],
+      },
+    ]);
+
+    expect(resolver.actionsFor({ device: 'keyboard', code: 'F3' })).toEqual([]);
+    expect(
+      resolver.actionsFor({ device: 'keyboard', code: 'F3', modifiers: ['Control', 'Shift'] }),
+    ).toEqual(['toggle-developer-camera']);
+  });
+
   it('reports an input bound to two actions as a conflict', () => {
     const keyW = { device: 'keyboard', code: 'KeyW', label: 'W' } as const;
     const resolver = new BindingResolver();

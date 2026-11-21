@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import { Movement } from '../components/Movement';
+import { StatusEffects } from '../components/StatusEffects';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { NullLogger } from '../diagnostics/NullLogger';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { Entity } from '../entities/Entity';
@@ -78,6 +80,46 @@ describe('MovementSystem', () => {
     expect(movement.speed).toBeLessThan(fullSpeed);
   });
 
+  it('faces the way it moves (DEC-192)', () => {
+    const { context, dummy } = setUp();
+    dummy.getComponent(Movement).steer({ x: 0, y: -1 });
+
+    new MovementSystem().update(context);
+
+    expect(dummy.getComponent(Transform).facing).toEqual({ x: 0, y: -1 });
+  });
+
+  it('keeps its facing once it has stopped (DEC-192)', () => {
+    const { context, dummy } = setUp();
+    const movement = dummy.getComponent(Movement);
+    const system = new MovementSystem();
+    movement.steer({ x: 0, y: -1 });
+    system.update(context);
+
+    movement.stop();
+    system.update(context);
+
+    expect(movement.speed).toBe(0);
+    expect(dummy.getComponent(Transform).facing).toEqual({ x: 0, y: -1 });
+  });
+
+  it('does not turn a stunned unit that is steered, nor one stunned while moving (DEC-216 (7))', () => {
+    const { context, dummy } = setUp();
+    const movement = dummy.getComponent(Movement);
+    const transform = dummy.getComponent(Transform);
+    const system = new MovementSystem();
+    movement.steer({ x: 0, y: -1 });
+    system.update(context);
+    const stun = loadStatusEffects(createDefaultGameConfig().tickRate, 2).get('stun');
+
+    dummy.getComponent(StatusEffects).apply(stun, null, 0);
+    movement.steer({ x: -1, y: 0 });
+    system.update(context);
+
+    expect(movement.speed).toBe(0);
+    expect(transform.facing).toEqual({ x: 0, y: -1 });
+  });
+
   it('leaves entities without Movement where they are', () => {
     const { context } = setUp();
     const statue = new Statue('statue-1', 'statue');
@@ -102,5 +144,22 @@ describe('MovementSystem', () => {
     };
 
     expect(run()).toEqual(run());
+  });
+  it('holds every entity while the match holds units idle, and lets the kept heading go after', () => {
+    const { context, dummy } = setUp();
+    const movement = dummy.getComponent(Movement);
+    const transform = dummy.getComponent(Transform);
+    movement.steer({ x: 1, y: 0 });
+    context.state.match.holdIdle(true);
+    const system = new MovementSystem();
+
+    system.update(context);
+    system.update(context);
+    expect(movement.speed).toBe(0);
+    expect(transform.position).toEqual({ x: 0, y: 0 });
+
+    context.state.match.holdIdle(false);
+    system.update(context);
+    expect(transform.position.x).toBeGreaterThan(0);
   });
 });

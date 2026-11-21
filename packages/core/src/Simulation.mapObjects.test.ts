@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import { Deploying } from './components/Deploying';
+import { Footprint } from './components/Footprint';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { DEFAULT_MAP_LAYOUT } from './content/maps/defaultMapLayout';
 import type { MapObject } from './content/maps/mapObjects.types';
 import type { MapDefinition, MapFeature } from './content/maps/maps.types';
 import { SPAWN_WAVES } from './content/structures/spawnWaves';
+import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { NullLogger } from './diagnostics/NullLogger';
 import { MapGenerator } from './map/MapGenerator';
 import { MapObjectBuilder } from './map/MapObjectBuilder';
@@ -17,17 +19,25 @@ import { LaneRoutes } from './state/LaneRoutes';
 import type { PlayableTeam } from './teams/teams.types';
 import { isPointInPolygon } from './utils/geometry';
 import type { Vec2 } from './utils/geometry.types';
+import { countdownTicks } from './config/countdownTicks';
 
 /** Both teams' bots as the client composes them: laners plus a Rover that starts in its palace. */
 const roster = (legendsPerTeam: number): RosterSlot[] =>
   (['light', 'dark'] as const).flatMap((team) => [
     ...Array.from({ length: legendsPerTeam - 1 }, () => ({
+      pilot: 'bot' as const,
       team,
       definitionId: 'warrior',
       role: 'laner' as const,
       difficulty: 'normal',
     })),
-    { team, definitionId: 'warrior', role: 'rover' as const, difficulty: 'rover' },
+    {
+      pilot: 'bot' as const,
+      team,
+      definitionId: 'warrior',
+      role: 'rover' as const,
+      difficulty: 'rover',
+    },
   ]);
 
 /** A team's lane tower: a SpawnerTower or BuffTower on its own lane. */
@@ -64,6 +74,13 @@ const marchDirection = (routes: LaneRoutes, { laneId, team, position }: LaneTowe
   routes.pose(laneId, team, routes.distanceAlong(laneId, team, position), { x: 0, y: 0 }, forward);
   return forward;
 };
+
+/**
+ * The tower horde test's own time limit, twice the suite's 60 s `testTimeout` (DEC-289): one seed
+ * took about 3 s locally but 65 s under coverage on the windows-latest CI runner (2026-11-20).
+ * `INBOX.md` asks for the test to be made faster.
+ */
+const HORDE_WALK_TIMEOUT_MS = 120_000;
 
 describe('Simulation with a roster and map objects (as the client builds a match)', () => {
   it.each([1, 2])(
@@ -120,8 +137,12 @@ describe('Simulation with a roster and map objects (as the client builds a match
       });
       const routes = new LaneRoutes(map);
       const towers = laneTowers(map);
-      // The opening hordes leave at tick 0; every horde after it is one tower's.
-      simulation.step();
+      // The opening hordes leave at tick 0 and the countdown holds every unit (DEC-88); every
+      // horde after it is one tower's.
+      const countdownEnd = countdownTicks(config.match.countdownSeconds, config.tickRate);
+      for (let tick = 0; tick < countdownEnd; tick += 1) {
+        simulation.step();
+      }
       const sent: { readonly tower: LaneTower; readonly memberIds: readonly string[] }[] = [];
       simulation.on('horde-spawned', ({ memberIds }) => {
         const tower = towers[sent.length];
@@ -164,7 +185,212 @@ describe('Simulation with a roster and map objects (as the client builds a match
       expect(stillDeploying).toEqual([]);
       expect(notOut).toEqual([]);
     },
+    HORDE_WALK_TIMEOUT_MS,
   );
+
+  it("gives each lane tower its fort's footprint as its Footprint, the Stronghold its palace outline, and a gate its own outline (DEC-185, D; DEC-217 (17))", () => {
+    const config = createDefaultGameConfig();
+    const map = new MapGenerator().generate(config, 1);
+    const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+    const simulation = new Simulation({
+      config,
+      seed: 1,
+      logger: new NullLogger(),
+      map,
+      mapObjects,
+    });
+    const { entities } = (simulation as unknown as { readonly state: GameState }).state;
+    const shapes = new Map<string, number>();
+    entities.forEach((entity) => {
+      if (entity.family === 'structure') {
+        const polygons = entity.findComponent(Footprint)?.polygons.length ?? 0;
+        shapes.set(entity.kind, Math.max(shapes.get(entity.kind) ?? 0, polygons));
+      }
+    });
+
+    // A fort is 12 blocks: 4 walls cut by doorways into 6, 4 corner towers and the keep.
+    const fort = mapObjects.find(({ kind }) => kind === 'spawner-tower')?.footprints.length;
+    expect(fort).toBe(12);
+    expect(shapes.get('spawner-tower')).toBe(fort);
+    expect(shapes.get('buff-tower')).toBe(fort);
+    expect(shapes.get('stronghold')).toBe(
+      mapObjects.find(({ kind }) => kind === 'stronghold')?.footprints.length,
+    );
+    expect(shapes.get('stronghold')).toBeGreaterThan(0);
+    expect(shapes.get('gate')).toBe(
+      mapObjects.find(({ kind }) => kind === 'gate')?.footprints.length,
+    );
+    expect(shapes.get('gate')).toBeGreaterThan(0);
+  });
+
+  it('puts a melee Legend at the far end of a gate in reach of the gate, past its 3 m circle (DEC-217 (17))', () => {
+    const config = createDefaultGameConfig();
+    const map = new MapGenerator().generate(config, 1);
+    const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+    const simulation = new Simulation({
+      config,
+      seed: 1,
+      logger: new NullLogger(),
+      map,
+      mapObjects,
+    });
+    const gate = map.features.find(({ kind, team }) => kind === 'gate' && team === 'light');
+    const centre = gate?.position ?? { x: 0, y: 0 };
+    const outline = mapObjects.find(({ id }) => id === gate?.id)?.footprints[0] ?? [];
+    const gap = ({ x, y }: Vec2): number => Math.hypot(x - centre.x, y - centre.y);
+    // The legend stands on the gate's corner farthest from its centre.
+    const at = outline.reduce((far, point) => (gap(point) > gap(far) ? point : far));
+    simulation.enqueueCommand({
+      type: 'dev-spawn',
+      kind: 'warrior',
+      definitionId: 'warrior',
+      team: 'dark',
+      at,
+      count: 1,
+    });
+    simulation.step();
+    const { entities } = (simulation as unknown as { readonly state: GameState }).state;
+    const ids = simulation.snapshot().entities;
+    const legend = ids.find(({ definitionId }) => definitionId === 'warrior');
+    const structure = ids.find(
+      ({ kind, transform }) =>
+        kind === 'gate' && transform?.x === centre.x && transform.y === centre.y,
+    );
+    const legendAt = legend?.transform ?? { x: 0, y: 0 };
+
+    expect(structure).toBeDefined();
+    expect(gap(legendAt)).toBeGreaterThan((structure?.transform?.radius ?? 0) + 5);
+    expect(entities.isInReach(legend?.id ?? '', structure?.id ?? '')).toBe(true);
+  });
+
+  it('puts a melee Legend at the outside of the palace wall in reach of its Stronghold, past its 40 m circle (DEC-185 D)', () => {
+    const config = createDefaultGameConfig();
+    const map = new MapGenerator().generate(config, 1);
+    const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+    const simulation = new Simulation({
+      config,
+      seed: 1,
+      logger: new NullLogger(),
+      map,
+      mapObjects,
+    });
+    const centre = map.features.find(
+      ({ kind, team }) => kind === 'stronghold' && team === 'light',
+    )?.position;
+    const outline = mapObjects.find(({ id }) => id === 'light-stronghold')?.footprints[0] ?? [];
+    // The palace corner farthest from the centre, and a point 0.6 m out from it.
+    const gap = ({ x, y }: Vec2): number => Math.hypot(x - (centre?.x ?? 0), y - (centre?.y ?? 0));
+    const corner = outline.reduce((far, point) => (gap(point) > gap(far) ? point : far));
+    const out = 0.6 / gap(corner);
+    const at = {
+      x: corner.x + (corner.x - (centre?.x ?? 0)) * out,
+      y: corner.y + (corner.y - (centre?.y ?? 0)) * out,
+    };
+    simulation.enqueueCommand({
+      type: 'dev-spawn',
+      kind: 'warrior',
+      definitionId: 'warrior',
+      team: 'dark',
+      at,
+      count: 1,
+    });
+    simulation.step();
+    const { entities } = (simulation as unknown as { readonly state: GameState }).state;
+    const ids = simulation.snapshot().entities;
+    const legend = ids.find(({ definitionId }) => definitionId === 'warrior')?.id ?? '';
+    const stronghold = ids.find(({ kind, team }) => kind === 'stronghold' && team === 'light');
+
+    expect(gap(at)).toBeGreaterThan((stronghold?.transform?.radius ?? 0) + 5);
+    expect(entities.isInReach(legend, stronghold?.id ?? '')).toBe(true);
+  });
+
+  it("makes each lane tower's fort map object the tower's body: one health pool, no entity of its own (DEC-185 B)", () => {
+    const config = createDefaultGameConfig();
+    const map = new MapGenerator().generate(config, 1);
+    const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+    const simulation = new Simulation({
+      config,
+      seed: 1,
+      logger: new NullLogger(),
+      map,
+      mapObjects,
+    });
+    const snapshot = simulation.snapshot();
+    const towers = laneTowers(map);
+    const bodies = towers.map(({ id, position }) => {
+      const tower = snapshot.entities.find(
+        ({ family, transform }) =>
+          family === 'structure' && transform?.x === position.x && transform.y === position.y,
+      );
+      const fort = snapshot.mapObjects?.find((object) => object.id === id);
+      return { tower: tower?.id, health: tower?.health, fort };
+    });
+
+    expect(towers.length).toBeGreaterThan(0);
+    for (const { tower, health, fort } of bodies) {
+      expect(tower).toBeDefined();
+      expect(fort).toMatchObject({ entityId: tower, isDestroyed: false });
+      expect(fort?.health).toEqual({ current: health?.current, max: health?.max });
+    }
+    expect(
+      snapshot.entities.filter(({ definitionId }) =>
+        ['map-object-spawner-tower', 'map-object-buff-tower'].includes(definitionId),
+      ),
+    ).toEqual([]);
+  });
+
+  it('lets a light horde sent at an enemy spawner tower on the generated map hit it within a minute (DEC-185, playtest 2026-11-04)', () => {
+    const config = createDefaultGameConfig();
+    const map = new MapGenerator().generate(config, 1);
+    const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+    const simulation = new Simulation({
+      config,
+      seed: 1,
+      logger: new NullLogger(),
+      // Every invariant, the heavy ones once a second, so the minute stays quick on CI.
+      debug: { ...TEST_DEBUG_CONFIG, heavyEvery: config.tickRate },
+      map,
+      mapObjects,
+    });
+    const routes = new LaneRoutes(map);
+    const tower = laneTowers(map).find(
+      ({ kind, team, laneId }) =>
+        kind === 'spawner-tower' && team === 'dark' && laneId === 'lane-1',
+    );
+    const lane = tower?.laneId ?? 'lane-1';
+    const at = routes.distanceAlong(lane, 'light', tower?.position ?? { x: 0, y: 0 });
+    const towerId =
+      simulation
+        .snapshot()
+        .entities.find(
+          ({ kind, transform }) =>
+            kind === 'spawner-tower' &&
+            transform?.x === tower?.position.x &&
+            transform?.y === tower?.position.y,
+        )?.id ?? '';
+    const minions = new Set<string>();
+    simulation.on('entity-spawned', ({ entityId, kind }) => {
+      if (kind === 'light-mob') minions.add(entityId);
+    });
+    let hits = 0;
+    simulation.on('damage-applied', ({ targetId, source }) => {
+      if (targetId === towerId && minions.has(source.attackerId ?? '')) hits += 1;
+    });
+    // 40 m up-lane of the tower, past its guards' posts.
+    simulation.enqueueCommand({
+      type: 'dev-spawn-mobs',
+      team: 'light',
+      definitionId: 'light-minion',
+      count: config.match.hordeSizes.light,
+      origin: { kind: 'lane', lane, t: (at - 40) / routes.length(lane) },
+    });
+    for (let tick = 0; tick < 60 * config.tickRate && hits === 0; tick += 1) {
+      simulation.step();
+    }
+
+    expect(towerId).not.toBe('');
+    expect(hits).toBeGreaterThan(0);
+  });
 
   it('blocks the walking grid under a blocking map object no map feature stands under (07 §10)', () => {
     const config = createDefaultGameConfig();
@@ -281,4 +507,63 @@ describe('Simulation with a roster and map objects (as the client builds a match
       `${targets[1] ?? ''}:invalid-target`,
     ]);
   });
+
+  // Fort walls reach past a tower's collider, so the plain guard ring lands in them (seeds 1, 2:
+  // 35 guards); one spawner-tower post per team is blocked straight out to past its leash.
+  it.each([1, 2])(
+    'stands every tower guard clear of map objects and inside its leash (seed %i)',
+    (seed) => {
+      const config = createDefaultGameConfig();
+      const map = new MapGenerator().generate(config, seed);
+      const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+      const simulation = new Simulation({
+        config,
+        seed,
+        logger: new NullLogger(),
+        map,
+        mapObjects,
+        debug: TEST_DEBUG_CONFIG,
+      });
+
+      // Every invariant, every tick, throwing: `no-map-object-overlap` and `guard-within-leash`.
+      expect(() => {
+        for (let tick = 0; tick < 2; tick += 1) {
+          simulation.step();
+        }
+      }).not.toThrow();
+      const guards = simulation
+        .snapshot()
+        .entities.filter(({ definitionId }) => definitionId.endsWith('-guard'));
+      expect(guards.length).toBeGreaterThan(0);
+    },
+  );
+
+  // A camp's fire blocks its posts and, on the coarse nav grid, its whole leash (seed 1: two
+  // mirrored camps); the camp mobs must still stand clear of it.
+  it.each([1, 2])(
+    'stands every camp mob clear of map objects once camps fill (seed %i)',
+    (seed) => {
+      const config = createDefaultGameConfig({ match: { countdownSeconds: 1 } });
+      const map = new MapGenerator().generate(config, seed);
+      const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+      const simulation = new Simulation({
+        config,
+        seed,
+        logger: new NullLogger(),
+        map,
+        mapObjects,
+        debug: TEST_DEBUG_CONFIG,
+      });
+
+      expect(() => {
+        for (let tick = 0; tick < config.tickRate + 3; tick += 1) {
+          simulation.step();
+        }
+      }).not.toThrow();
+      const campMobs = simulation
+        .snapshot()
+        .entities.filter(({ definitionId }) => definitionId.endsWith('-camp-mob'));
+      expect(campMobs.length).toBeGreaterThan(0);
+    },
+  );
 });

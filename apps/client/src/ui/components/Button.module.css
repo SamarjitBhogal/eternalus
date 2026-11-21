@@ -16,8 +16,13 @@
     color var(--motion-fast) ease-out;
 }
 
-.button:hover,
+.button:hover:enabled,
 .button:focus-visible {
   background: var(--theme-primary);
   color: var(--theme-on-primary);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: default;
 }

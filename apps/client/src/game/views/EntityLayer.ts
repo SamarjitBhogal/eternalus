@@ -2,21 +2,34 @@ import type { EntitySnapshot, Snapshot } from '@eternalus/core';
 
 import type { Renderer } from '../engine/render/Renderer';
 import type { WorldPoint } from '../engine/render/Renderer.types';
+import type { HealthBarRule } from './EntityLayer.types';
 import type { EntityDrawState } from './EntityView.types';
+import { HealthBarView } from './HealthBarView';
 import type { WorldLayer } from './SceneView.types';
 import type { ViewRegistry } from './ViewRegistry';
 
 /**
  * The scene layer that draws every entity of the latest snapshot through the `ViewRegistry`
- * (architecture 08 §8). Positions are interpolated between the previous and current snapshot by
- * `alpha`; an entity that appeared this tick draws where it is (no ghost from the origin). It
- * draws back to front by `y`.
+ * (architecture 08 §8), in the main view and on the mini map (06 §8). In the main view positions
+ * and facings are interpolated between the previous and current snapshot by `alpha`; an entity
+ * that appeared this tick draws where it is (no ghost from the origin). It draws back to front by
+ * `y`. A mini map dot sits at the snapshot position (DEC-187 (C)).
  */
 export class EntityLayer implements WorldLayer {
   private states: readonly EntityDrawState[] = [];
 
-  /** Creates the layer over a view registry. */
-  public constructor(private readonly views: ViewRegistry) {}
+  private readonly healthBars = new HealthBarView();
+
+  /**
+   * Creates the layer over a view registry. `isDead` is the one dead rule (DEC-151 (2)), injected
+   * by `Match`, because views import nothing from `bridge/`. `healthBarOf` is the world health
+   * bar rule (`HealthBarVisibility`, DEC-195), injected because it reads the simulation's events.
+   */
+  public constructor(
+    private readonly views: ViewRegistry,
+    private readonly isDead: (health: EntitySnapshot['health']) => boolean,
+    private readonly healthBarOf: HealthBarRule,
+  ) {}
 
   /**
    * Sets what the next draw shows.
@@ -34,35 +47,61 @@ export class EntityLayer implements WorldLayer {
   ): void {
     const before = new Map(previous?.entities.map((entity) => [entity.id, entity]) ?? []);
     this.states = current.entities.flatMap((entity) => {
-      if (entity.mapObjectId !== undefined) return [];
-      const position = EntityLayer.positionOf(entity, before.get(entity.id), alpha);
-      return position === null ? [] : [{ entity, position, isFocused: entity.id === focusId }];
+      const now = entity.transform;
+      if (entity.mapObjectId !== undefined || now === null) return [];
+      const then = before.get(entity.id)?.transform ?? now;
+      const position = EntityLayer.lerp(then, now, alpha);
+      const facing = EntityLayer.turn(then.facing, now.facing, alpha);
+      return [{ entity, position, facing, isFocused: entity.id === focusId }];
     });
   }
 
-  /** Draws every entity, back to front by `y`, so lower entities overlap higher ones. */
+  /**
+   * Draws every entity, back to front by `y`, so lower entities overlap higher ones. The health
+   * bars (`HealthBarView`) come after every entity of this layer, so no entity hides a bar.
+   */
   public draw(renderer: Renderer): void {
     const ordered = [...this.states].sort((a, b) => a.position.y - b.position.y);
     for (const state of ordered) {
       this.views.viewFor(state.entity).draw(state, renderer);
     }
-  }
-
-  /** Draws nothing: entity markers on the minimap belong to the minimap work (SCRUM-151). */
-  public drawMinimap(): void {
-    // Intentionally empty; WorldLayer requires the method.
-  }
-
-  private static positionOf(
-    entity: EntitySnapshot,
-    before: EntitySnapshot | undefined,
-    alpha: number,
-  ): WorldPoint | null {
-    const now = entity.transform;
-    if (now === null) {
-      return null;
+    for (const state of ordered) {
+      const side = this.healthBarOf(state.entity);
+      if (side !== null) {
+        this.healthBars.draw(state, side, renderer);
+      }
     }
-    const then = before?.transform ?? now;
-    return { x: then.x + (now.x - then.x) * alpha, y: then.y + (now.y - then.y) * alpha };
+  }
+
+  /**
+   * Draws each living entity's mini map marker through its view at its snapshot position, not the
+   * interpolated one (DEC-187 (C)), except the player's own (the mini map's centre marker is the
+   * player, DEC-187). Views on a higher `minimapLayer` draw last.
+   */
+  public drawMinimap(renderer: Renderer): void {
+    const marked = this.states
+      .filter((state) => !state.isFocused && !this.isDead(state.entity.health))
+      .map((state) => ({ state, view: this.views.viewFor(state.entity) }))
+      .sort((a, b) => (a.view.minimapLayer ?? 0) - (b.view.minimapLayer ?? 0));
+    for (const { state, view } of marked) {
+      const at = state.entity.transform;
+      if (at !== null) {
+        view.drawMinimap({ ...state, position: { x: at.x, y: at.y } }, renderer);
+      }
+    }
+  }
+
+  private static lerp(from: WorldPoint, to: WorldPoint, alpha: number): WorldPoint {
+    return { x: from.x + (to.x - from.x) * alpha, y: from.y + (to.y - from.y) * alpha };
+  }
+
+  /**
+   * The facing `alpha` of the way from `from` to `to`, kept a unit vector. Opposite facings snap at
+   * the midpoint (a zero blend takes `to`).
+   */
+  private static turn(from: WorldPoint, to: WorldPoint, alpha: number): WorldPoint {
+    const { x, y } = EntityLayer.lerp(from, to, alpha);
+    const size = Math.hypot(x, y);
+    return size === 0 ? to : { x: x / size, y: y / size };
   }
 }

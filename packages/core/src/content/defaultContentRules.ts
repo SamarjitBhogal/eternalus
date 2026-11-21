@@ -1,13 +1,22 @@
+import { BOT_DIFFICULTIES } from './ai/difficulties/botDifficulties';
 import type { ContentCatalogue } from './ContentCatalogue';
+import type { LegendDefinition } from './legends/legends.types';
+import type { LockedClassDefinition } from './legends/locked/lockedClasses.types';
+import type { LegendSpecDefinition } from './legends/specs/legendSpecs.types';
 import { LEVEL_CURVE_CATALOGUE } from './progression/levelCurveCatalogue';
 import type { LevelCurveDefinition } from './progression/progression.types';
-import type { UnitDefinitionRule } from './validation/ContentValidator.types';
+import type { BotRosterDefinition } from './teams/botRoster.types';
+import { BotRosterClassRule } from './validation/BotRosterClassRule';
+import { BotRosterDifficultyRule } from './validation/BotRosterDifficultyRule';
+import type { ContentRule, UnitDefinitionRule } from './validation/ContentValidator.types';
 import { KebabCaseIdRule } from './validation/KebabCaseIdRule';
 import { KnownLevelCurveRule } from './validation/KnownLevelCurveRule';
 import { KnownWeaponRule } from './validation/KnownWeaponRule';
 import { LevelScalingRule } from './validation/LevelScalingRule';
 import { PositiveAetherRule } from './validation/PositiveAetherRule';
 import { PositiveStatsRule } from './validation/PositiveStatsRule';
+import { RoleRatingRangeRule } from './validation/RoleRatingRangeRule';
+import { SpecClassExistsRule } from './validation/SpecClassExistsRule';
 import { WEAPONS } from './weapons/weaponCatalogue';
 import type { WeaponDefinition } from './weapons/weapons.types';
 
@@ -27,4 +36,37 @@ export const createDefaultContentRules = (
   new KnownLevelCurveRule(curves),
   new LevelScalingRule(),
   new KnownWeaponRule(weapons),
+];
+
+/**
+ * Every shipped Legend-spec rule. A new spec rule is one line here.
+ *
+ * @param legends - The loaded Legend classes a spec's `classId` must name.
+ */
+export const createLegendSpecRules = (
+  legends: ContentCatalogue<LegendDefinition>,
+): readonly ContentRule<LegendSpecDefinition>[] => [
+  new KebabCaseIdRule(),
+  new SpecClassExistsRule(legends),
+  new RoleRatingRangeRule(),
+];
+
+/** Every shipped locked-class rule. A new locked-class rule is one line here. */
+export const createLockedClassRules = (): readonly ContentRule<LockedClassDefinition>[] => [
+  new KebabCaseIdRule(),
+];
+
+/**
+ * Every shipped bot-roster rule. A new bot-roster rule is one line here.
+ *
+ * @param legends - The loaded Legend classes every laner must name.
+ * @param difficulties - The loaded bot difficulties each role must name (DEC-149).
+ */
+export const createBotRosterRules = (
+  legends: ContentCatalogue<LegendDefinition>,
+  difficulties: Readonly<Record<string, unknown>> = BOT_DIFFICULTIES,
+): readonly ContentRule<BotRosterDefinition>[] => [
+  new KebabCaseIdRule(),
+  new BotRosterClassRule(legends),
+  new BotRosterDifficultyRule(difficulties),
 ];
