@@ -7,6 +7,7 @@ import type { EntityFactory } from '../entities/EntityFactory';
 import type { StrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import type { HitRunner } from '../state/HitRunner.types';
+import type { LineOfFireQuery } from '../state/LineOfFire.types';
 import type { MutableVec2 } from '../utils/vec2.types';
 import type { CombatSystemOptions } from './CombatSystem.types';
 import type { System, SystemContext } from './System.types';
@@ -22,7 +23,9 @@ import type { System, SystemContext } from './System.types';
  * lands (`HitEffects`: Fury's knock-back). While the match holds units idle
  * (`state.match.isIdleHeld`, the countdown) no attack lands, no unit turns to its target, and
  * targets are kept for after. A ranged attack fires a shot (the match's one `EntityFactory` builds
- * it); `ProjectileSystem`, right before this system, flies and lands the shots. Getting into reach
+ * it) only when the shot would reach the target (`LineOfFire`, DEC-317); else the unit faces the
+ * target, keeps it and stays ready, and its controller moves it. `ProjectileSystem`, right before
+ * this system, flies and lands the shots. Getting into reach
  * is the controller's job (moving), not this system's.
  */
 export class CombatSystem implements System {
@@ -33,16 +36,19 @@ export class CombatSystem implements System {
   private readonly hits: HitRunner | null;
   private readonly strategies: StrategyRegistry;
   private readonly factory: EntityFactory;
+  private readonly lineOfFire: LineOfFireQuery;
 
   /** Creates the system from its injected parts (`CombatSystemOptions`). */
   public constructor({
     damage,
     factory,
+    lineOfFire,
     hits = null,
     strategies = createDefaultStrategyRegistry(),
   }: CombatSystemOptions) {
     this.damage = damage;
     this.factory = factory;
+    this.lineOfFire = lineOfFire;
     this.hits = hits;
     this.strategies = strategies;
   }
@@ -73,7 +79,10 @@ export class CombatSystem implements System {
       if (state.entities.facingPointOf(attacker.id, target.id, this.aim)) {
         attacker.getComponent(Transform).lookAt(this.aim);
       }
-      if (!combat.canAttack(state.tick)) {
+      if (
+        !combat.canAttack(state.tick) ||
+        !this.lineOfFire.isClear(state, attacker.id, target.id)
+      ) {
         return;
       }
 

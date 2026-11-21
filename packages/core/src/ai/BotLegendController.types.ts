@@ -4,6 +4,7 @@ import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { SlotReadiness } from '../state/SlotReadiness.types';
 import type { LaneObjective } from '../state/LaneStructures.types';
+import type { LineOfFireQuery } from '../state/LineOfFire.types';
 import type { PlayableTeam } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
 import type { SeededRandom } from '../utils/SeededRandom';
@@ -35,12 +36,11 @@ export type BotLegendControllerContent = {
   /** The cast rules a bot picks its ready abilities by (DEC-205). */
   readonly readiness: SlotReadiness;
   /**
-   * The collider radius of the projectile `projectileId` names, in metres. A bot reads it to check
-   * its line of fire (`hasLineOfFire`); `Simulation` injects it from the projectile definitions
-   * because `ai/` may not import content values. Required, so a bot never treats a shot as a
-   * point by omission.
+   * Whether the bot's shot would reach its enemy or objective now: a ranged bot holds to shoot only
+   * with a clear line (DEC-317). `Simulation` injects the match's one `LineOfFire`. Required, so a
+   * bot never holds behind a wall by omission.
    */
-  readonly shotRadiusOf: (projectileId: string) => number;
+  readonly lineOfFire: LineOfFireQuery;
 };
 
 /** One bot's decision in the making: what the tree reads, and what its nodes write. */

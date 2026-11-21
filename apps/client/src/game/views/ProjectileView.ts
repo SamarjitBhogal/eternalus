@@ -3,7 +3,6 @@ import { colorWithAlpha } from './colorWithAlpha';
 import { DefaultEntityView } from './DefaultEntityView';
 import type { EntityDrawState } from './EntityView.types';
 import {
-  DEFAULT_PROJECTILE_ENDING_LOOK,
   PROJECTILE_CORE_COLOR,
   PROJECTILE_CORE_SIZE,
   PROJECTILE_DOT_SIZE,
@@ -60,8 +59,13 @@ export class ProjectileView extends DefaultEntityView {
     this.drawShot(state, this.colorOf(state.entity.team), renderer);
   }
 
+  /** The shot's ending look; throws for an id with none, which the content check rules out. */
   private lookOf({ entity }: EntityDrawState): ProjectileEndingLook {
-    return PROJECTILE_ENDING_LOOKS[entity.definitionId] ?? DEFAULT_PROJECTILE_ENDING_LOOK;
+    const look = PROJECTILE_ENDING_LOOKS[entity.definitionId];
+    if (look === undefined) {
+      throw new Error(`Projectile "${entity.definitionId}" has no ending look.`);
+    }
+    return look;
   }
 
   /** The streak, then the dot and its core on top. */

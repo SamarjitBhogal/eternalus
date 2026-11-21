@@ -83,6 +83,21 @@ describe('RangedProjectileAttackStrategy', () => {
     expect(spawned).toEqual([{ entityId: 'entity-3', kind: 'projectile', team: 'light' }]);
   });
 
+  it('fires along the attacker facing when the aim point is its own centre, so the shot moves', () => {
+    const { state, attacker, target, factory } = setup();
+    target.getComponent(Transform).moveTo({ x: 0, y: 0 });
+    attacker.getComponent(Transform).face({ x: 0, y: 1 });
+
+    new RangedProjectileAttackStrategy().attack(attacker, 'entity-2', ATTACK, {
+      state,
+      damage: NO_DAMAGE,
+      hits: null,
+      factory,
+    });
+
+    expect(state.entities.get('entity-3')?.getComponent(Movement).heading).toEqual({ x: 0, y: 1 });
+  });
+
   it('throws when handed a melee attack, which a miswired registry would do', () => {
     const { state, attacker, factory } = setup();
     const melee = { strategy: 'melee', damage: 40, reach: 1.5, interval: 24 } as const;

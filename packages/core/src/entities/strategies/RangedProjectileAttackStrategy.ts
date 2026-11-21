@@ -14,7 +14,8 @@ import { weaponSourceOf } from './weaponSourceOf';
  * Fires a projectile at the target (architecture 05 §10): it spawns at the attacker's centre, so
  * its circle starts clear of every wall the attacker is kept out of, flies straight along the line
  * to the target's facing point (no lead) and carries a `ProjectilePayload` with a weapon impact.
- * It passes its owner by; `ProjectileSystem` flies and lands it, from the next tick.
+ * An attacker that stands on that point (on a unit target's centre) fires along its facing, so a
+ * shot always moves. It passes its owner by; `ProjectileSystem` flies and lands it, from the next tick.
  */
 export class RangedProjectileAttackStrategy implements AttackStrategy {
   /** Scratch for the point aimed at, then the aim direction. */
@@ -38,11 +39,17 @@ export class RangedProjectileAttackStrategy implements AttackStrategy {
       throw new Error(`The ranged attack strategy cannot fire a "${attack.strategy}" attack.`);
     }
     const { team } = attacker.getComponent(TeamMembership);
-    const origin = attacker.getComponent(Transform).position;
+    const transform = attacker.getComponent(Transform);
+    const origin = transform.position;
     if (!state.entities.facingPointOf(attacker.id, targetId, this.aim)) {
       throw new Error(`"${attacker.id}" has no point to aim at on "${targetId}".`);
     }
-    normalizeInto(this.aim, { x: this.aim.x - origin.x, y: this.aim.y - origin.y });
+    if (this.aim.x === origin.x && this.aim.y === origin.y) {
+      this.aim.x = transform.facing.x;
+      this.aim.y = transform.facing.y;
+    } else {
+      normalizeInto(this.aim, { x: this.aim.x - origin.x, y: this.aim.y - origin.y });
+    }
 
     const projectile = factory.create('projectile', attack.projectile.projectileId, {
       team,

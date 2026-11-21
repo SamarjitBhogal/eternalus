@@ -276,15 +276,7 @@ export class EntityStore {
    * @returns `false` when the entity is unknown or cannot attack (or has no melee for `'melee'`).
    */
   public setAttackTarget(id: EntityId, targetId: EntityId, mode: AttackMode = 'basic'): boolean {
-    const combat = this.entities.get(id)?.findComponent(Combat);
-    if (combat === undefined) {
-      return false;
-    }
-    if (!combat.hasMode(mode)) {
-      return false;
-    }
-    combat.setTarget(targetId, mode);
-    return true;
+    return this.entities.get(id)?.findComponent(Combat)?.setTarget(targetId, mode) ?? false;
   }
 
   /**

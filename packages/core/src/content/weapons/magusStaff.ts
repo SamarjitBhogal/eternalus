@@ -5,8 +5,8 @@ import type { WeaponDefinition } from './weapons.types';
  * weapon. The ranged attack is first, so it is the default attack (DEC-308); the melee attack is
  * used on its own rebindable action, `attack-target` with `mode: 'melee'` (DEC-308).
  *
- * TUNE: damage, interval and firing reach accepted in DEC-310; fall-off in DEC-306. `grants: ['spell-potency']` joins with
- * its status.
+ * TUNE: damage, interval and firing reach accepted in DEC-310; fall-off in DEC-306. `grants:
+ * ['spell-potency']` joins with its status.
  */
 export const MAGUS_STAFF = {
   id: 'magus-staff',
@@ -16,7 +16,7 @@ export const MAGUS_STAFF = {
     {
       strategy: 'ranged-projectile',
       damage: 40, // TUNE: balancing.md Magus (40 / 0.9 s, magical); DEC-310
-      reach: 15, // TUNE: owner 2026-10-19 "damage fall-off after 15 m" (full damage up to 15 m, so bots close to full damage); DEC-310
+      reach: 15, // TUNE: owner 2026-10-19 "damage fall-off after 15 m" (bots close to it and deal about full damage, 98.8 %: fall-off runs from the shooter's centre); DEC-310
       interval: 0.9, // TUNE: balancing.md Magus (0.9 s); DEC-310
       projectile: {
         projectileId: 'magus-bolt',

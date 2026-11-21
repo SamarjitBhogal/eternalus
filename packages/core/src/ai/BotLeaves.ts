@@ -1,6 +1,5 @@
 import type { AiMemory, BotDifficultyDefinition } from '../content/ai/ai.types';
 import type { EntityId } from '../state/EntityStore.types';
-import { hasLineOfFire } from '../state/hasLineOfFire';
 import { compareById } from '../utils/compareById';
 import { sqrt } from '../utils/deterministicMath';
 import type { Vec2 } from '../utils/geometry.types';
@@ -134,7 +133,8 @@ export class BotLeaves {
   }
 
   /**
-   * Attacks `turn.enemy`, may cast at it, and closes in until it is in reach. An enemy on ground
+   * Attacks `turn.enemy`, may cast at it, and closes in until it is in reach with a clear line of
+   * fire (DEC-317). An enemy on ground
    * the nav grid blocks (inside a tower's fort court) is closed in on as a siege closes in, so the
    * bot follows it inside instead of waiting at the edge (DEC-189). A bot stuck on the way goes
    * round (`BotMovement.goRound`, DEC-193).
@@ -148,8 +148,7 @@ export class BotLeaves {
     const isHolding = BotLeaves.attackAndHold(
       turn,
       enemy,
-      state.entities.isInReach(id, enemy) &&
-        hasLineOfFire(state, id, enemy, this.content.shotRadiusOf),
+      state.entities.isInReach(id, enemy) && this.content.lineOfFire.isClear(state, id, enemy),
     );
     this.mayCast(turn, enemy, at);
     if (isHolding) {
@@ -189,17 +188,19 @@ export class BotLeaves {
   /**
    * Attacks `turn.objective` (11 §4.2 `Push`): A\* to the edge of its footprint on the bot's side
    * (from its collider radius), then straight at it for the last step, holding once it is in
-   * reach (B66-F1, `BotMovement.closeIn`). The edge faces the bot, so a Stronghold behind its wall
-   * ring is reached through the ring's gate instead of leaned on from outside. A bot stuck on the
-   * way goes round (`BotMovement.goRound`, DEC-193).
+   * reach with a clear line of fire (B66-F1, `BotMovement.closeIn`, DEC-317). The edge faces the
+   * bot, so a Stronghold behind its wall ring is reached through the ring's gate instead of leaned
+   * on from outside. A bot stuck on the way goes round (`BotMovement.goRound`, DEC-193).
    */
   public siege(turn: BotTurn): BtStatus {
     const { state, id, objective } = turn;
     if (objective === null) {
       return 'failure';
     }
-    const isInReach = state.entities.isInReach(id, objective.id);
-    if (BotLeaves.attackAndHold(turn, objective.id, isInReach) || BotMovement.goRound(turn)) {
+    const isHolding =
+      state.entities.isInReach(id, objective.id) &&
+      this.content.lineOfFire.isClear(state, id, objective.id);
+    if (BotLeaves.attackAndHold(turn, objective.id, isHolding) || BotMovement.goRound(turn)) {
       return 'running';
     }
     return this.movement.closeIn(turn, objective, objective.radius);

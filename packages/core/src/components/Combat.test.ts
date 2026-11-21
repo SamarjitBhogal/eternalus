@@ -69,14 +69,16 @@ describe('Combat', () => {
       expect(combat.readyAtTick).toBe(19);
     });
 
-    it('reports which modes exist, and falls back to basic for a missing one', () => {
+    it('refuses a mode it has no attack for and changes nothing', () => {
       const rangedOnly = new Combat({ basic: ranged });
+      rangedOnly.setTarget('t');
 
-      expect(rangedOnly.hasMode('basic')).toBe(true);
-      expect(rangedOnly.hasMode('melee')).toBe(false);
-      expect(new Combat({ basic: melee, melee }).hasMode('melee')).toBe(true);
-      rangedOnly.setTarget('t', 'melee');
+      expect(rangedOnly.setTarget('u', 'melee')).toBe(false);
+      expect(rangedOnly.targetId).toBe('t');
+      expect(rangedOnly.mode).toBe('basic');
       expect(rangedOnly.attack).toBe(ranged);
+      expect(new Combat({ basic: melee, melee }).setTarget('t', 'melee')).toBe(true);
+      expect(rangedOnly.setTarget(null)).toBe(true);
     });
   });
 });

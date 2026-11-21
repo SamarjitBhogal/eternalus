@@ -35,7 +35,9 @@ export type ProjectileFalloff = {
   readonly floor: number;
 };
 
-/** What a ranged attack fires: a projectile definition id and its damage fall-off (`null`: none). */
+/**
+ * What a ranged attack fires: a projectile definition id and its damage fall-off (`null`: none).
+ */
 export type ProjectileLaunch = {
   readonly projectileId: string;
   readonly falloff: ProjectileFalloff | null;
@@ -54,7 +56,9 @@ type AttackBase = {
 /** A hit that lands in the tick it is made. */
 export type MeleeAttack = AttackBase & { readonly strategy: 'melee' };
 
-/** A shot: spawns a projectile that lands later (05 §10). `reach` is the distance it is fired from. */
+/**
+ * A shot: spawns a projectile that lands later (05 §10). `reach` is the distance it is fired from.
+ */
 export type RangedAttack = AttackBase & {
   readonly strategy: 'ranged-projectile';
   readonly projectile: ProjectileLaunch;
@@ -73,7 +77,10 @@ export type AttackMode = 'basic' | 'melee';
  */
 export type UnitAttack = MeleeAttack | RangedAttack;
 
-/** A unit's attacks by mode, resolved once at spawn (`attacksByMode`). Every unit has a basic attack. */
+/**
+ * A unit's attacks by mode, resolved once at spawn (`attacksByMode`). Every unit has a basic
+ * attack.
+ */
 export type UnitAttacks = Readonly<Partial<Record<AttackMode, UnitAttack>>> & {
   readonly basic: UnitAttack;
 };

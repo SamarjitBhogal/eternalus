@@ -1,3 +1,4 @@
+import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { ProjectileFlight } from '../components/ProjectileFlight';
@@ -14,11 +15,11 @@ import type { Entity } from '../entities/Entity';
 import { flightSpeed } from '../physics/flightSpeed';
 import { sweepCircle } from '../physics/sweepCircle';
 import { sweepDisc } from '../physics/sweepDisc';
+import { BODY_BEFORE_WALL_MARGIN } from '../state/CollisionQuery.constants';
 import type { GameState } from '../state/GameState';
 import { CONTACT_EPSILON } from '../utils/circlePolygon.constants';
 import { distance, doRectsOverlap, isPointInAnyPolygon } from '../utils/geometry';
 import type { Rect, Vec2 } from '../utils/geometry.types';
-import { BODY_BEFORE_WALL_MARGIN } from './ProjectileSystem.constants';
 import type { ShotBody, ShotContact } from './ProjectileSystem.types';
 import type { System, SystemContext } from './System.types';
 
@@ -34,8 +35,10 @@ import type { System, SystemContext } from './System.types';
  *
  * Bodies are live things with `Health` other than the owner and its team (neutral bodies count as
  * enemies). A body with an outline (`Footprint`, `MapObjectBody`) is hit on that outline, at once
- * when the shot starts inside it; a walk-on outline (a palace floor, a gate's passage) only by a
- * shot fired at its entity, so a shot flies over the ground units stand on. A body is gathered
+ * when the shot starts inside it. A walk-on outline (a palace floor, a gate's passage) and a body
+ * that takes no damage now (`Collider.isUnbreakable`: a forest camp, a gate before its rule
+ * passes) are hit only by a shot fired at that entity, so a shot flies over the ground units stand
+ * on and past what it cannot hurt (DEC-317). A body is gathered
  * once a tick, and each move tests only those whose box it reaches. Ties go to the first body in
  * store order.
  *
@@ -154,6 +157,7 @@ export class ProjectileSystem implements System {
         transform,
         health,
         membership: entity.findComponent(TeamMembership),
+        collider: entity.findComponent(Collider),
         outline: state.entities.outlineOf(entity.id) ?? null,
       });
     });
@@ -203,18 +207,19 @@ export class ProjectileSystem implements System {
 
   /**
    * Whether the shot can hit the body now: alive and still in the world, not its owner, not on its
-   * team, and, for a walk-on outline, the entity it was fired at.
+   * team, and, for a walk-on outline or a body that takes no damage now, the entity it was fired at.
    */
   private static canHit(
     state: GameState,
     payload: ProjectilePayload,
-    { entity, health, membership, outline }: ShotBody,
+    { entity, health, membership, collider, outline }: ShotBody,
   ): boolean {
     return (
       !health.isDead &&
       entity.id !== payload.ownerId &&
       membership?.team !== payload.team &&
-      (outline?.isWalkOn !== true || entity.id === payload.targetId) &&
+      (entity.id === payload.targetId ||
+        (outline?.isWalkOn !== true && collider?.isUnbreakable !== true)) &&
       state.entities.has(entity.id)
     );
   }

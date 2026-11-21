@@ -17,13 +17,14 @@ import { SeededRandom } from '../utils/SeededRandom';
 import type { BotTurn } from './BotLegendController.types';
 import { BotLeaves } from './BotLeaves';
 import { Perception } from './perception/Perception';
+import { SHIPPED_LINE_OF_FIRE } from '../state/__fixtures__/shippedLineOfFire';
+import { CONTACT_EPSILON } from '../utils/circlePolygon.constants';
 
-const SHOT_RADIUS = 0.5;
 const leaves = new BotLeaves({
   difficulties: { normal: NORMAL_BOT },
   retreatTo: RETREAT_STRUCTURES,
   readiness: allReady,
-  shotRadiusOf: () => SHOT_RADIUS,
+  lineOfFire: SHIPPED_LINE_OF_FIRE,
 });
 
 const RANGED: UnitAttack = {
@@ -120,8 +121,10 @@ describe('BotLeaves.fight: line of fire for a ranged attack', () => {
   });
 
   it('holds when the shot stops only its own radius short of the aim point (the target touches it)', () => {
+    // A wall at the aim point (the enemy's centre, 10 m east), kept short of as the resolver does.
     const touching: CollisionQuery = {
-      reach: (_from, _direction, distance, radius) => distance - radius,
+      reach: (_from, _direction, distance, radius) =>
+        Math.min(distance, 10 - radius - CONTACT_EPSILON),
     };
     const turn = fightTurn(RANGED, touching);
 
@@ -140,6 +143,41 @@ describe('BotLeaves.fight: line of fire for a ranged attack', () => {
     const turn = fightTurn(MELEE, WALLED);
 
     expect(leaves.fight(turn)).toBe('running');
+    expect(headings(turn)).toEqual([{ x: 0, y: 0 }]);
+  });
+});
+
+/** A `siege` turn: the `fight` turn's enemy is instead the objective, a 1 m tower 10 m east. */
+const siegeTurn = (attack: UnitAttack, collisions: CollisionQuery | null): BotTurn => ({
+  ...fightTurn(attack, collisions),
+  enemy: null,
+  objective: {
+    id: 'enemy',
+    kind: 'spawner-tower',
+    team: 'dark',
+    lane: 'lane-0',
+    x: 50,
+    y: 20,
+    radius: 1,
+    startingHealth: 3000,
+    progress: 60,
+    frontProgress: 55,
+    isBreakable: true,
+  },
+});
+
+describe('BotLeaves.siege: line of fire for a ranged attack (DEC-317)', () => {
+  it('closes in on the edge of the objective instead of holding when a wall blocks the shot', () => {
+    const turn = siegeTurn(RANGED, WALLED);
+
+    expect(leaves.siege(turn)).toBe('running');
+    expect(headings(turn)).toEqual([{ x: 9, y: 0 }]);
+  });
+
+  it('holds when the line is clear', () => {
+    const turn = siegeTurn(RANGED, OPEN);
+
+    expect(leaves.siege(turn)).toBe('running');
     expect(headings(turn)).toEqual([{ x: 0, y: 0 }]);
   });
 });

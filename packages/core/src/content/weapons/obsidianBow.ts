@@ -1,10 +1,11 @@
 import type { WeaponDefinition } from './weapons.types';
 
 /**
- * Obsidian Bow: a bow, ranged magical (reference 07 "Named weapons", 05 §10 weapon table). Any class may use it.
+ * Obsidian Bow: a bow, ranged magical (reference 07 "Named weapons", 05 §10 weapon table). Any
+ * class may use it.
  *
- * TUNE: damage, interval and firing reach accepted in DEC-310; fall-off in DEC-306. `onHit: sundered` joins when weapon
- * on-hit effects land, as Raptor Talons' bleed does.
+ * TUNE: damage, interval and firing reach accepted in DEC-310; fall-off in DEC-306. `onHit:
+ * sundered` joins when weapon on-hit effects land, as Raptor Talons' bleed does.
  */
 export const OBSIDIAN_BOW = {
   id: 'obsidian-bow',
@@ -14,7 +15,7 @@ export const OBSIDIAN_BOW = {
     {
       strategy: 'ranged-projectile',
       damage: 45, // TUNE: the Warrior's basic attack from balancing.md (45 / 0.7 s) as the class-basic convention; no bow damage is documented; DEC-310
-      reach: 50, // TUNE: owner 2026-10-19 "Bows fall off after 50 m" (full damage up to 50 m, so bots close to full damage); DEC-310
+      reach: 50, // TUNE: owner 2026-10-19 "Bows fall off after 50 m" (bots close to it and deal about full damage, 98.8 %: fall-off runs from the shooter's centre); DEC-310
       interval: 0.7, // TUNE: balancing.md Warrior (0.7 s); DEC-310
       projectile: {
         projectileId: 'arrow',

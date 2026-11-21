@@ -1,4 +1,4 @@
-import type { EntitySnapshot } from '@eternalus/core';
+import { createDefaultGameConfig, type EntitySnapshot, loadDisplayContent } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
@@ -10,6 +10,7 @@ import {
   PROJECTILE_CORE_SIZE,
   PROJECTILE_DOT_SIZE,
   PROJECTILE_DROP_FADE_FROM,
+  PROJECTILE_ENDING_LOOKS,
   PROJECTILE_MIST_DOT_COUNT,
   PROJECTILE_MIST_DOT_SIZE,
   PROJECTILE_MIST_END_RADIUS,
@@ -159,10 +160,17 @@ describe('ProjectileView', () => {
     });
   });
 
-  it('fizzles an unknown projectile id', () => {
-    const calls = draw(ended({ ...BOLT, definitionId: 'unknown-shot' }, 0.2)).calls;
+  it('throws naming a projectile id with no ending look, never drawing a look by default', () => {
+    expect(() => draw(ended({ ...BOLT, definitionId: 'unknown-shot' }, 0.2))).toThrow(
+      'Projectile "unknown-shot" has no ending look.',
+    );
+    expect(() => draw({ ...BOLT, definitionId: 'unknown-shot' })).toThrow('unknown-shot');
+  });
 
-    expect(calls).toHaveLength(PROJECTILE_MIST_DOT_COUNT);
+  it('has an ending look for every core projectile id and for no other id (ADR 0023)', () => {
+    const coreIds = loadDisplayContent(createDefaultGameConfig().tickRate).projectileIds;
+
+    expect(Object.keys(PROJECTILE_ENDING_LOOKS).sort()).toEqual([...coreIds].sort());
   });
 
   it('lays an ended arrow still on its shadow, solid at first and gone at the end', () => {

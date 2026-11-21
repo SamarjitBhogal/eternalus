@@ -10,7 +10,6 @@ import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { DamagePipeline } from '../combat/DamagePipeline';
 import type { HitRunner } from '../state/HitRunner.types';
-import { WeaponImpact } from '../combat/WeaponImpact';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { MAGUS_BOLT } from '../content/projectiles/magusBolt';
 import { loadProjectiles } from '../content/projectiles/loadProjectiles';
@@ -25,6 +24,7 @@ import type { GameEventMap } from '../state/GameEvents.types';
 import type { Team } from '../teams/teams.types';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
 import { MovementSystem } from './MovementSystem';
+import { createDefaultProjectileImpacts } from './defaultProjectileImpacts';
 import { ProjectileSystem } from './ProjectileSystem';
 
 const CONFIG = createDefaultGameConfig();
@@ -39,7 +39,7 @@ const BOLT: ProjectileDefinition = { ...MAGUS_BOLT, range: 1000 };
 
 /** The system with the weapon impact on a fresh damage pipeline; `hits` runs on-hit effects. */
 const projectileSystem = (hits: HitRunner | null = null): ProjectileSystem =>
-  new ProjectileSystem({ weapon: new WeaponImpact(new DamagePipeline(), hits) });
+  new ProjectileSystem(createDefaultProjectileImpacts(new DamagePipeline(), hits));
 
 /** A body with health: a circle, or an outline when given polygons. */
 class Body extends Entity {
@@ -96,6 +96,7 @@ const setUp = (wallAtX: number | null = null) => {
     attack: RangedAttack = ATTACK,
     definition: ProjectileDefinition = BOLT,
     ownerId = 'owner',
+    targetId: string | null = null,
   ) => {
     counter += 1;
     const shot = new Projectile(`shot-${String(counter)}`, definition.id);
@@ -105,7 +106,7 @@ const setUp = (wallAtX: number | null = null) => {
         ownerId,
         team,
         source: { attackerId: ownerId, kind: 'weapon', definitionId: 'magus-staff' },
-        targetId: null,
+        targetId,
         impact: { kind: 'weapon', attack },
         origin,
       }),
@@ -252,6 +253,32 @@ describe('ProjectileSystem', () => {
     system.update(context);
 
     expect(state.entities.has(shot.id)).toBe(true);
+  });
+
+  it('passes a body that takes no damage now (a forest camp) and lands on the one behind it', () => {
+    const { state, system, context, addBody, fire, healthOf } = setUp();
+    const camp = addBody({ x: 10, y: 0 }, 'neutral');
+    camp.getComponent(Collider).setUnbreakable(true);
+    const target = addBody({ x: 15, y: 0 }, 'dark');
+    const shot = fire({ x: 0, y: 0 }, 20);
+
+    system.update(context);
+
+    expect(healthOf(target)).toBe(900);
+    expect(state.entities.has(shot.id)).toBe(false);
+  });
+
+  it('stops at a body that takes no damage now when it was fired at that body (a closed gate)', () => {
+    const { state, system, context, addBody, fire, healthOf } = setUp();
+    const gate = addBody({ x: 10, y: 0 }, 'dark');
+    gate.getComponent(Collider).setUnbreakable(true);
+    const behind = addBody({ x: 15, y: 0 }, 'dark');
+    const shot = fire({ x: 0, y: 0 }, 20, 'light', ATTACK, BOLT, 'owner', gate.id);
+
+    system.update(context);
+
+    expect(state.entities.has(shot.id)).toBe(false);
+    expect(healthOf(behind)).toBe(1000);
   });
 
   it('stops at a wall in front of a body, with no damage', () => {

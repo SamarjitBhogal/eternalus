@@ -17,17 +17,15 @@ export const PROJECTILE_STREAK_LENGTH = 1.5;
 export const PROJECTILE_STREAK_WIDTH = 2;
 
 /**
- * The ending look of each projectile definition id (DEC-306). A new projectile is one entry here;
- * an id not listed fizzles.
+ * The ending look of each projectile definition id (DEC-306). A new projectile is one entry here.
+ * `ProjectileView.test.ts` checks the keys against core's projectile ids
+ * (`DisplayContent.projectileIds`, ADR 0023), and `ProjectileView` throws on an id not listed.
  */
 // TUNE: placeholder looks (DEC-306): the bolt fizzles into a mist, the arrow drops
 export const PROJECTILE_ENDING_LOOKS: Readonly<Record<string, ProjectileEndingLook>> = {
   'magus-bolt': 'fizzle',
   arrow: 'drop',
 };
-
-/** The ending look of a projectile id with no entry in `PROJECTILE_ENDING_LOOKS`. */
-export const DEFAULT_PROJECTILE_ENDING_LOOK: ProjectileEndingLook = 'fizzle';
 
 /** Colour of the shadow under a dropping shot. */
 export const PROJECTILE_SHADOW_COLOR = '#000000';

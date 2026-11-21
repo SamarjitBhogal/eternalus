@@ -13,6 +13,8 @@ export class Combat {
 
   private readyAtTickValue = 0;
 
+  private attackValue: UnitAttack;
+
   /**
    * @param attacks - The attacks by mode, with `interval` already in ticks (`attacksByMode`).
    * @param weaponId - The equipped weapon the attacks come from (05 §10), or `null` for a unit's own
@@ -21,16 +23,13 @@ export class Combat {
   public constructor(
     private readonly attacks: UnitAttacks,
     public readonly weaponId: string | null = null,
-  ) {}
-
-  /** The attack in use: the current mode's attack, else the basic attack. */
-  public get attack(): UnitAttack {
-    return this.attacks[this.modeValue] ?? this.attacks.basic;
+  ) {
+    this.attackValue = attacks.basic;
   }
 
-  /** Whether the unit has an attack for `mode` (`attack-target` refuses a mode it lacks). */
-  public hasMode(mode: AttackMode): boolean {
-    return this.attacks[mode] !== undefined;
+  /** The attack in use: the current mode's (`setTarget` takes only a mode the unit has). */
+  public get attack(): UnitAttack {
+    return this.attackValue;
   }
 
   /** Which attack the current target is attacked with. */
@@ -48,10 +47,22 @@ export class Combat {
     return this.readyAtTickValue;
   }
 
-  /** Starts attacking `targetId` with `mode`, or stops with `null` (which resets the mode). */
-  public setTarget(targetId: string | null, mode: AttackMode = 'basic'): void {
+  /**
+   * Starts attacking `targetId` with `mode`, or stops with `null` (which resets the mode).
+   *
+   * @returns `false`, changing nothing, when the unit has no attack for `mode` (`attack-target`
+   *   then answers `cannot-attack`).
+   */
+  public setTarget(targetId: string | null, mode: AttackMode = 'basic'): boolean {
+    const nextMode = targetId === null ? 'basic' : mode;
+    const attack = this.attacks[nextMode];
+    if (attack === undefined) {
+      return false;
+    }
     this.targetIdValue = targetId;
-    this.modeValue = targetId === null ? 'basic' : mode;
+    this.modeValue = nextMode;
+    this.attackValue = attack;
+    return true;
   }
 
   /** Whether the attack is off cooldown at `tick`. */

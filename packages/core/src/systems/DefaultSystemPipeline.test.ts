@@ -37,6 +37,7 @@ import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
 import type { MapObject } from '../content/maps/mapObjects.types';
 import type { MapFeature } from '../content/maps/maps.types';
 import { WorldObjectStore } from '../state/WorldObjectStore';
+import { SHIPPED_LINE_OF_FIRE } from '../state/__fixtures__/shippedLineOfFire';
 
 const UNIT_DEFINITIONS = loadDefaultContent(createDefaultGameConfig().tickRate);
 const newFactory = (): EntityFactory =>
@@ -71,6 +72,7 @@ describe('DefaultSystemPipeline', () => {
       }),
       state,
       factory,
+      lineOfFire: SHIPPED_LINE_OF_FIRE,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
     });
@@ -115,6 +117,7 @@ describe('DefaultSystemPipeline', () => {
       }),
       state,
       factory: newFactory(),
+      lineOfFire: SHIPPED_LINE_OF_FIRE,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
       abilities,
@@ -161,6 +164,7 @@ describe('DefaultSystemPipeline', () => {
       }),
       state,
       factory,
+      lineOfFire: SHIPPED_LINE_OF_FIRE,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
       hordes: {
@@ -214,6 +218,7 @@ describe('DefaultSystemPipeline', () => {
       }),
       state,
       factory,
+      lineOfFire: SHIPPED_LINE_OF_FIRE,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
     });
@@ -252,6 +257,7 @@ describe('DefaultSystemPipeline', () => {
       }),
       state,
       factory,
+      lineOfFire: SHIPPED_LINE_OF_FIRE,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
     });
@@ -290,6 +296,7 @@ describe('DefaultSystemPipeline', () => {
       }),
       state,
       factory,
+      lineOfFire: SHIPPED_LINE_OF_FIRE,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
     });
@@ -329,6 +336,7 @@ describe('DefaultSystemPipeline', () => {
       }),
       state,
       factory,
+      lineOfFire: SHIPPED_LINE_OF_FIRE,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
     });
@@ -398,6 +406,7 @@ describe('DefaultSystemPipeline', () => {
       }),
       state,
       factory,
+      lineOfFire: SHIPPED_LINE_OF_FIRE,
       progression: PROGRESSION,
       director: {
         update: (directed) => {
@@ -438,6 +447,7 @@ describe('DefaultSystemPipeline', () => {
       }),
       state,
       factory,
+      lineOfFire: SHIPPED_LINE_OF_FIRE,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
     });
@@ -535,6 +545,7 @@ describe('DefaultSystemPipeline', () => {
         }),
         state,
         factory,
+        lineOfFire: SHIPPED_LINE_OF_FIRE,
         progression: PROGRESSION,
         director: IDLE_DIRECTOR,
         ...(hasLanes ? { hordes: { space: null, decide: [] } } : {}),
@@ -601,6 +612,7 @@ describe('DefaultSystemPipeline', () => {
         }),
         state,
         factory,
+        lineOfFire: SHIPPED_LINE_OF_FIRE,
         progression: PROGRESSION,
         director: IDLE_DIRECTOR,
         hordes: { space, decide: [] },
@@ -659,6 +671,7 @@ describe('DefaultSystemPipeline', () => {
         }),
         state: new GameState(createDefaultGameConfig(), 1),
         factory: newFactory(),
+        lineOfFire: SHIPPED_LINE_OF_FIRE,
         progression: PROGRESSION,
         director: IDLE_DIRECTOR,
         abilities: testAbilityRegistry([]), // no effect strategies, so no knock-back

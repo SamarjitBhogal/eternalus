@@ -12,6 +12,7 @@ import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
+import { loadProjectiles } from '../content/projectiles/loadProjectiles';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { loadWeapons } from '../content/weapons/loadWeapons';
 import type { WeaponDefinition } from '../content/weapons/weapons.types';
@@ -26,15 +27,22 @@ import { GameState } from '../state/GameState';
 import { StateHasher } from '../state/StateHasher';
 import { CombatSystem } from './CombatSystem';
 import type { SystemContext } from './System.types';
+import { SHIPPED_LINE_OF_FIRE } from '../state/__fixtures__/shippedLineOfFire';
+import type { LineOfFireQuery } from '../state/LineOfFire.types';
 
 const CONFIG = createDefaultGameConfig();
 
 /** A Warrior (light) at the origin; `spawn` adds more units to the same world. */
 const setUp = () => {
   const state = new GameState(CONFIG, 1);
+  const units = loadDefaultContent(CONFIG.tickRate);
+  const projectiles = loadProjectiles(CONFIG.tickRate);
   const factory = new EntityFactory(
     createDefaultEntityRegistry(),
-    loadDefaultContent(CONFIG.tickRate),
+    {
+      has: (id) => projectiles.has(id) || units.has(id),
+      get: (id) => (projectiles.has(id) ? projectiles.get(id) : units.get(id)),
+    },
     undefined,
     loadWeapons(CONFIG.tickRate),
   );
@@ -47,8 +55,8 @@ const setUp = () => {
   const context: SystemContext = { state, logger: new NullLogger() };
   const attack = (target: Entity) => state.entities.setAttackTarget(warrior.id, target.id);
   /** A combat system on a fresh damage pipeline, firing with this world's factory. */
-  const combatSystem = (): CombatSystem =>
-    new CombatSystem({ damage: new DamagePipeline(), factory });
+  const combatSystem = (lineOfFire: LineOfFireQuery = SHIPPED_LINE_OF_FIRE): CombatSystem =>
+    new CombatSystem({ damage: new DamagePipeline(), factory, lineOfFire });
   return { state, warrior, spawn, context, attack, combatSystem };
 };
 
@@ -206,6 +214,41 @@ describe('CombatSystem', () => {
     expect(warrior.getComponent(Transform).facing).toEqual(INITIAL_FACING);
   });
 
+  it('fires a ranged attack only with a clear line, facing the target and staying ready (DEC-317)', () => {
+    const { state, spawn, context, combatSystem } = setUp();
+    const magus = spawn('magus', 'magus', 10, 'light');
+    const dummy = spawn('light-mob', 'training-dummy', 5, 'dark');
+    const asked: string[][] = [];
+    let isClear = false;
+    const system = combatSystem({
+      isClear: (_state, attackerId, targetId) => {
+        asked.push([attackerId, targetId]);
+        return isClear;
+      },
+    });
+    let shots = 0;
+    state.events.on('entity-spawned', ({ kind }) => {
+      if (kind === 'projectile') shots += 1;
+    });
+    expect(state.entities.setAttackTarget(magus.id, dummy.id)).toBe(true);
+
+    for (let tick = 0; tick < 60; tick += 1) {
+      system.update(context);
+      state.advanceTick();
+    }
+
+    expect(shots).toBe(0);
+    expect(asked[0]).toEqual([magus.id, dummy.id]);
+    expect(magus.getComponent(Transform).facing).toEqual({ x: -1, y: 0 });
+    expect(magus.getComponent(Combat).targetId).toBe(dummy.id);
+    expect(magus.getComponent(Combat).canAttack(state.tick)).toBe(true);
+
+    isClear = true;
+    system.update(context);
+
+    expect(shots).toBe(1);
+  });
+
   it('lands no attack while the match holds units idle, and keeps the target for after', () => {
     const { state, warrior, spawn, context, attack, combatSystem } = setUp();
     const dummy = spawn('light-mob', 'training-dummy', 1, 'dark');
@@ -292,7 +335,11 @@ const firstHit = (kind: string, definitionId: string): { amount: number; source:
   state.events.on('damage-applied', ({ amount, source }) => hits.push({ amount, source }));
 
   state.entities.setAttackTarget(attacker.id, dummy.id);
-  new CombatSystem({ damage: new DamagePipeline(), factory }).update({
+  new CombatSystem({
+    damage: new DamagePipeline(),
+    factory,
+    lineOfFire: SHIPPED_LINE_OF_FIRE,
+  }).update({
     state,
     logger: new NullLogger(),
   });

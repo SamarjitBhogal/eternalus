@@ -27,7 +27,8 @@ const problemsOf = (projectile: ProjectileDefinition, tickRate: number): string[
 
 /**
  * Loads the projectiles: speeds from metres per second to metres per tick (architecture 03 §11,
- * DEC-241), and `endDuration` from seconds to ticks. A shot is at full speed in its first tick, so acceleration is the top speed.
+ * DEC-241), and `endDuration` from seconds to ticks. A shot is at full speed in its first tick, so
+ * acceleration is the top speed.
  *
  * @param tickRate - Ticks per second (`GameConfig.tickRate`).
  * @param authored - The projectiles to load; the shipped set by default.

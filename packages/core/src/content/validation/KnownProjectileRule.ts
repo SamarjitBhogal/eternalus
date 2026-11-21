@@ -16,7 +16,10 @@ export class KnownProjectileRule implements UnitDefinitionRule {
     private readonly projectiles: Pick<ContentCatalogue<ProjectileDefinition>, 'has'>,
   ) {}
 
-  /** Flags each unknown `projectileId` and each fall-off that is not `0 < fullTo < floorAt`, floor in (0, 1]. */
+  /**
+   * Flags each unknown `projectileId` and each fall-off that is not `0 < fullTo < floorAt`, floor
+   * in (0, 1].
+   */
   public check(definition: UnitDefinition | WeaponDefinition): readonly string[] {
     return KnownProjectileRule.attacksOf(definition).flatMap((attack) => this.problemsOf(attack));
   }

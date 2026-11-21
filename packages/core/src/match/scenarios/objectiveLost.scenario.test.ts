@@ -21,6 +21,7 @@ import { StateHasher } from '../../state/StateHasher';
 import { DefaultSystemPipeline } from '../../systems/DefaultSystemPipeline';
 import { createDefaultMatchDirector } from '../defaultMatchDirector';
 import { MatchTimeline } from '../MatchTimeline';
+import { SHIPPED_LINE_OF_FIRE } from '../../state/__fixtures__/shippedLineOfFire';
 
 /** A 0 s countdown: step 0 is held, so the first attack lands on step 1. */
 const CONFIG = createDefaultGameConfig({ match: { countdownSeconds: 0 } });
@@ -63,6 +64,7 @@ const playOut = (prepare: (state: GameState) => void = () => undefined) => {
     }),
     state,
     factory,
+    lineOfFire: SHIPPED_LINE_OF_FIRE,
     progression: {
       units: UNITS,
       curves: CURVES,
