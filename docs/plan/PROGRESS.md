@@ -9377,3 +9377,27 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   "Tests 84 passed (84)"; "Documentation check passed.". This check line was filled in after
   that run (docs only).
 - Next step: push PR #138 (coordinator), owner review; HC-B15 on the Owner Calls page (Sam).
+
+### 2026-11-21 — Phase 3 / the match-start countdown: DEC-312, the numeral in HUD units — refactor/countdown-hud-units — sholtzman + Claude Code
+
+- What was done: DEC-312 (owner pick on HC-B15). (1) Option (c), CSS typed arithmetic: `.match`
+  keeps the select numeral (64 px) and sets `scale: calc(var(--stage-scale) * 216 / 64)` with
+  `--stage-scale: calc(var(--hud-u) / 1px)`, so the numeral is in HUD units again and the HUD has
+  one fit source. `MatchCountdown` no longer draws `SelectionStage`; the veil's grid centres the
+  numeral. `SelectionStage` and `useStageScale` are as on `33bcdcf6`. (2) "Sure keep it": an
+  `@supports not (scale: calc(1px / 1px))` fallback draws a 216 HUD-unit font; there the glow stays
+  at the select size. Architecture 13 §3 MatchCountdown row edited (owner's design text);
+  reference 15 CD-49 amended; INBOX HC-B15 done. Critic r1 approved with fixes, no blockers or
+  majors (`eternalus-agent-work/game-loop-plan/arch-review-countdown-dec312-r1.md`): m1 (this
+  entry), m2 (shots) and n1-n6 fixed; A1-A4 acceptable; BTD-1 (a browser-support line in 13 §7)
+  is `INBOX.md` HC-B17. Fail-first: `dec312-breaks-2026-11-20.md` (3 tests red on the old code;
+  B1-B6 red, restored). Shots (`ue-shots-2026-11-20/overlay-dec312/`): 10 of 13 byte-identical to
+  `2e790fcd`, 3 differ by 1-2 px; the fallback, emulated in Chrome, draws the same glyph box.
+  Ponytail: one cut proposed (the fallback's `scale: none`), rejected (it guards a double scale).
+- Checks run: `npm run check` → `EXIT=0`
+  (`eternalus-agent-work/game-loop-plan/check-dec312-2026-11-21.log`): core "Tests 1679 passed
+  (1679)"; protocol "Tests 29 passed (29)"; client "Tests 2077 passed (2077)"; server "Tests 84
+  passed (84)"; "Documentation check passed.". This check line was filled in after that run (docs
+  only).
+- Next step: the PR on base `feat/match-start-countdown` (the coordinator pushes), retargeted to
+  `phase/3-sprint-3-work` after #138 merges; HC-B17 on the Owner Calls page (Sam).

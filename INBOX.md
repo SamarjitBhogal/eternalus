@@ -16,30 +16,16 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
-- [ ] **`feat/match-start-countdown` critics on DEC-299 (2026-11-20), better than the design —
-      one item, pick one option (HC-B15).** The HUD's unit `--hud-u` (CSS container units of
-      `.hud`, architecture 13 §7) and the selection artboard's `--stage-scale` (`useStageScale`,
-      the window) compute the same fit, `min(width / 1920, height / 1080)`, from two inputs. They
-      agree today because the match screen fills the window. Since DEC-299 (2) the match-start
-      numeral sits on the artboard inside the HUD, so if the match screen were ever smaller than
-      the window (a docked panel), the numeral would no longer match the HUD. Not built in PR #138:
-      each option changes more than the countdown.
-      (a) One measurement (critic r1): the match screen measures itself once and sets
-      `--stage-scale`, and `--hud-u` becomes `calc(var(--stage-scale) * 1px)`. One fit source;
-      it changes how every HUD element is sized.
-      (b) Host fitting: `useStageScale` fits the artboard to its host element, not the window. It
-      changes the selection screens and the overlay, and no HUD element. Two computations of one
-      box stay (script for `--stage-scale`, container units for `--hud-u`), so it is not one fit
-      source; they agree because both measure the match screen.
-      (c) CSS typed arithmetic (critic r2): `.match { scale: calc(var(--hud-u) / 1px * 216 / 64) }`.
-      The numeral goes back into HUD units; `SelectionStage` and the window resize listener leave
-      the HUD; the veil's grid centres the numeral again (r1's placement item, for free); 13 §7
-      ("the HUD is sized by `--hud-u`") holds with no exception. `motionTokens.test.ts`
-      `FLOORED_FONT_SIZES` needs a third form. Precondition: Firefox and Safari support typed
-      arithmetic. Chromium does (the critic's probe in headless Chrome 158); Mozilla posted an
-      intent to ship for Firefox 158 and WebKit is not confirmed (a web search only, not checked).
-      Recommendation: (c) once WebKit support is confirmed, else (a); a follow-up pull request
-      either way, not PR #138.
+- [ ] **`refactor/countdown-hud-units` critic on DEC-312 (2026-11-20), better than the design —
+      one item, pick one option (HC-B17).** The repo has no browser-support statement: no ADR,
+      nothing in architecture 13 §7, nothing in the requirements. DEC-312 is the first CSS that
+      needs a 2025–26 browser version (CSS typed arithmetic); it ships behind `@supports` with a
+      fallback (DEC-312 (2)).
+      (a) Add one line to architecture 13 §7 "Styling": a browser baseline, plus "newer CSS ships
+      behind `@supports` with a fallback, as DEC-312 does". The next author then knows when a
+      fallback is required. Recommended.
+      (b) No policy: each pull request decides.
+      The card is on the Owner Calls page (HC-B17).
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
@@ -3061,6 +3047,13 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-11-20 — **Your pick on HC-B15, one fit source for the HUD and the countdown**
+  (`refactor/countdown-hud-units`): recorded as DEC-312. (c) CSS typed arithmetic: the match-start
+  numeral is in HUD units again and off the select artboard, so the HUD has one fit source; its
+  glow still grows with it. Your "sure keep it" keeps a fallback for browsers without typed
+  arithmetic (Safari before 26, Firefox before 158): there the numeral is a 216 HUD-unit font and its
+  glow stays at the select size. Architecture 13 §3 and reference 15 CD-49 are amended.
 
 - 2026-11-20 — **Your answers on the countdown pull request #138** (`feat/match-start-countdown`):
   recorded as DEC-299. UE-01's look stays as built. The match-start numeral is the character
