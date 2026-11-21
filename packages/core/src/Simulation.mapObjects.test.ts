@@ -82,6 +82,13 @@ const marchDirection = (routes: LaneRoutes, { laneId, team, position }: LaneTowe
   return forward;
 };
 
+/**
+ * The tower horde test's own time limit, twice the suite's 60 s `testTimeout` (DEC-289): one seed
+ * took about 3 s locally but 65 s under coverage on the windows-latest CI runner (2026-11-20).
+ * `INBOX.md` asks for the test to be made faster.
+ */
+const HORDE_WALK_TIMEOUT_MS = 120_000;
+
 describe('Simulation with a roster and map objects (as the client builds a match)', () => {
   it.each([1, 2])(
     'every bot Legend leaves its Stronghold wall ring within 30 seconds (seed %i)',
@@ -185,6 +192,7 @@ describe('Simulation with a roster and map objects (as the client builds a match
       expect(stillDeploying).toEqual([]);
       expect(notOut).toEqual([]);
     },
+    HORDE_WALK_TIMEOUT_MS,
   );
 
   it("gives each lane tower its fort's footprint as its Footprint, the Stronghold its palace outline, and a gate its own outline (DEC-185, D; DEC-217 (17))", () => {

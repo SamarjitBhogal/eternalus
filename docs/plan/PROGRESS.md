@@ -9567,6 +9567,24 @@ docs:check` pass on this entry.
   `prettier --check` and `npm run docs:check` on this file.
 - Next step: the owner pushes the branch (`push-125-r3.sh`), then merges PR #125.
 
+### 2026-11-20 — Phase 3 / tower horde test time limit (DEC-289) — fix/horde-test-timeout — sholtzman + Claude Code
+
+- What was done: the owner's Owner Calls answer of 2026-11-20 ("Raise this one test's cap to
+  120 s and log an INBOX item to make the test faster") is DEC-289. `Simulation.mapObjects.test.ts`
+  gives its tower horde test ("walks every tower horde out of its tower and on up its lane within
+  10 seconds (DEC-133, seed %i)") its own time limit, `HORDE_WALK_TIMEOUT_MS` (120 s); core's
+  `testTimeout` (60 s, `packages/core/vitest.config.ts`) is unchanged. On PR #122 (run
+  44714237495, attempt 1) seed 1 timed out at 60 s on windows-latest. `INBOX.md` has the request
+  "Make the tower horde test faster"; the decisions log has the DEC-289 batch.
+- Checks run: a deliberate break (`HORDE_WALK_TIMEOUT_MS = 100`) made all three seeds fail with
+  "Test timed out in 100ms", so the argument reaches the test; restored to 120 s. Full
+  `npm run check` exit 0 before this entry was added
+  (`eternalus-agent-work/horde-test-timeout/check-1.log`): core "Tests 1674 passed (1674)",
+  protocol "Tests 29 passed (29)", client "Tests 2011 passed (2011)", server "Tests 84 passed
+  (84)", "Documentation check passed."; then `prettier --check` and `npm run docs:check` with this
+  entry. Critic (architecture-reviewer): PASS WITH NOTES, no violations, four nits not applied.
+- Next step: `/ponytail-review`, then push and open the PR into phase/3.
+
 ### 2026-11-14 — Phase 3 / tower ruins: merge phase/3 (#85, #86) and retarget — feat/tower-ruins-and-routes — sholtzman + Claude Code
 
 - What was done: #85 and #86 merged into phase/3 (`88f5afd8`), so this PR's base moved from
@@ -9740,3 +9758,37 @@ docs:check` pass on this entry.
   "Tests 84 passed (84)", "Documentation check passed."; the later merge and this entry change
   only this file: `prettier --check` and `npm run docs:check`.
 - Next step: push after #98's head `3bc24d27`; claudiodh re-reviews #98, then #122.
+
+### 2026-11-20 — Phase 3 / tower ruins and routes: merge phase/3 (#140, DEC-289) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: merged phase/3 at `a3550159` (#140, DEC-289, the tower horde test's own 120 s
+  time limit). Only this file conflicted: both sides appended entries; it keeps both, phase/3's
+  entry first. `Simulation.mapObjects.test.ts`, `INBOX.md` and the owner decisions log merged
+  without conflict: `HORDE_WALK_TIMEOUT_MS` is the horde `it.each` argument, and the DEC-289
+  batch (2026-11-20) is the newest. `git diff` against each parent shows no removed line in this
+  file. This entry is part of the merge commit.
+- Checks run: full `npm run check` exit 0 on the merge before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-98-merge-a3550159.log`): core "Tests 1734
+  passed (1734)", protocol "Tests 29 passed (29)", client "Tests 2011 passed (2011)", server
+  "Tests 84 passed (84)", "Documentation check passed."; then `prettier --check` and
+  `npm run docs:check` with this entry.
+- Next step: push; claudiodh re-reviews #98; #122 takes this head.
+
+### 2026-11-20 — Phase 3 / tower ruins follow-ups: merge #98's head (phase/3 `a3550159`, #140) — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: merged `feat/tower-ruins-and-routes` at `aa01127f` (its merge of phase/3
+  `a3550159`, #140, DEC-289). Only this file conflicted: both sides appended entries; it keeps
+  this branch's entry for the `5a7cc8dc` merge first, then #98's new entry. `INBOX.md`, the owner
+  decisions log and `Simulation.mapObjects.test.ts` merged without conflict. Against `56bcd64b`
+  the merge changes only those three files and this one, so no code under test changes. This
+  entry is part of the merge commit.
+- Checks run: full `npm run check` on the merge before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-122-merge-aa01127f.log`) under load average
+  27 to 29 (36 min): core "Tests 1742 passed (1742)", protocol "Tests 29 passed (29)", client
+  "Tests 2011 passed (2011)", server "Tests 2 failed | 82 passed (84)", EXIT=1. The two failures
+  are `CoreDuelSimulationFactory.test.ts` "Test timed out in 5000ms" (7.5 s and 9.2 s); a re-run
+  of the server tests failed the same way (6.8 s and 8.2 s), and the same file with
+  `--testTimeout=60000` passed "Tests 2 passed (2)". The server code is the same as on
+  `56bcd64b`, whose CI passed on ubuntu and windows. `prettier --check` and `npm run docs:check`
+  with this entry. CI on the pushed head is the full check.
+- Next step: push after #98's head `aa01127f`; claudiodh re-reviews #98, then #122.
