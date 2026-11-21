@@ -9740,3 +9740,19 @@ docs:check` pass on this entry.
   "Tests 84 passed (84)", "Documentation check passed."; the later merge and this entry change
   only this file: `prettier --check` and `npm run docs:check`.
 - Next step: push after #98's head `3bc24d27`; claudiodh re-reviews #98, then #122.
+
+### 2026-11-20 — Phase 3 / map work: DEC-315 forts and towers — feat/map-work-forts-towers — sholtzman + Claude Code
+
+- What was done: lane tower forts 32 → 56 m (DEC-315) with every way through a court 2 nav cells
+  wide; a tower's radius follows its fort (`LANE_TOWER_FOOTPRINT_RADIUS`). Court ground is routable
+  for lane fields as for A\* (`WorldMap.isRoutable`) and no corridor holds a fort's north or south
+  wall band, so hordes march through a court by its west and east doorways (`ec319dcf`). Houses,
+  camp pieces and lakes keep out of lane forts (`laneFortKeepOuts`, `1bbe97b3`). Docs 06, 07, 10, 18.
+- Checks run: full `npm run check` exit 1
+  (`eternalus-agent-work/dec-288/map-work-forts-check.log`): format, no-js, lint, typecheck and knip
+  pass; core "Tests 14 failed | 1738 passed (1752)", protocol "Tests 29 passed (29)", client "Tests
+  2011 passed (2011)", server "Tests 84 passed (84)"; build not reached; `npm run docs:check` →
+  "Documentation check passed.". The 14 need decisions: 56 m forts no longer fit 7 lanes (unless
+  3200 x 1400), 3 towers of a kind, or 1 + 5 and more buff towers (10 tests), and two time budgets
+  (10 s tower exit, 150 s heal and rejoin) are too short for a 56 m fort (4 tests).
+- Next step: the coordinator or the owner decides those configs and budgets; then the pre-PR gate.

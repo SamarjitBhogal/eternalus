@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-14
+last-reviewed: 2026-11-20
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -300,10 +300,17 @@ export type FlowField = { readonly integration: Uint16Array; readonly direction:
   footprint never re-opens a cell that another footprint or terrain still covers; every cell a
   shape touches is blocked, so a wall thinner than a cell leaves no gap (DEC-14).
 - A lane tower's court is stamped as **court ground** (`stampCourt`, for a feature whose
-  definition `isCourt`), not as a footprint. Its cells are blocked for walking, straight lines
-  and lane flow fields, so hordes never march through a court (DEC-185 (A)). A\* may step on a
-  court cell when no footprint holds the cell's centre, so routes into and out of a court use its
-  doorways (DEC-217 (15), `10-physics.md` §9). The centre rule is sound only while every fort
+  definition `isCourt`), not as a footprint. Its cells are blocked for walking and straight
+  lines, but routable: A\* and the lane flow fields share one rule, `WorldMap.isRoutable`
+  (walkable or court ground), so a route may step on a court cell when no footprint holds the
+  cell's centre, and routes into, out of and through a court use its doorways (DEC-217 (15),
+  `10-physics.md` §9). The lane runs through a lane tower's fort by its west and east doorways,
+  so hordes march through the court round the tower's keep (DEC-315, amending DEC-185 (A)): no
+  lane corridor holds a standing lane fort's north or south wall band (`fortWallBands` in
+  `map/fortInWorld.ts`), so a field never leaves by the south doorway, which stays open to
+  walking and A\*. Every way through a court, doorways included, is at least 2 nav cells wide on
+  the conservative raster; the fort's side (`BUILDING_GEOMETRY.fort.laneTowerSize`) is chosen for
+  that (DEC-315). The centre rule is sound only while every fort
   wall piece is an upright box thicker than a nav cell: a step across such a wall then always
   lands on a cell whose centre the wall holds. `config.map.navCellSize` is set to keep that true
   (DEC-227 (Q-A)), and a match that stamps a court refuses nav cells as thick as its thinnest

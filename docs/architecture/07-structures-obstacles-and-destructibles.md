@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-16
+last-reviewed: 2026-11-20
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -464,6 +464,14 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   5 m (DEC-227 (Q-A); the value is `config.map.navCellSize`). Lane towers of one kind stand at
   least a fort box's diagonal apart along their lane, so their forts do not overlap (DEC-227,
   06 §3).
+- **Bigger forts, lane through the court (`feat/map-work-forts-towers`, 2026-11-20).** Lane tower
+  forts grow so every way through a court is at least 2 nav cells wide (DEC-315, DEC-185 (A)
+  option (b)), and the lane runs through each fort by its west and east doorways: court ground is
+  routable for the lane flow fields as for A\*, and no lane corridor holds a fort's north or
+  south wall band, so hordes march through the court round the keep (DEC-315, amending DEC-185
+  (A); 06 §6). A tower's footprint radius follows its fort (`LANE_TOWER_FOOTPRINT_RADIUS`), and no
+  blocking object of another building (a house, a camp's tent, a lake) stands in a lane fort's
+  box or its clearance (`laneFortKeepOuts` in `map/fortInWorld.ts`).
 - `ObstacleDefinition` keeps `kind: 'obstacle'` (the entity class) and moves tree/rock/bridge to
   `obstacleType`; `fell` and `minimapGlyph` arrive with felling and the minimap work.
 
