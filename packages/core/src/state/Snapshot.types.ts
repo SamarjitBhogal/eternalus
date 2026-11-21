@@ -14,8 +14,8 @@ import type { Polygon } from '../utils/geometry.types';
 
 /**
  * One entity as the client sees it. A field is `null` when the entity has no component behind it
- * (no `Transform`, `Health`, `Progression`, `Aether`, `TeamMembership`, `ZoneArea`, `Capturable`
- * or `StatusEffects`), never a made-up default.
+ * (no `Transform`, `Health`, `Progression`, `Aether`, `TeamMembership`, `ZoneArea`, `Capturable`,
+ * `StatusEffects` or `ProjectileFlight`), never a made-up default.
  */
 export type EntitySnapshot = {
   readonly mapObjectId?: string;
@@ -50,6 +50,20 @@ export type EntitySnapshot = {
    * takes none (a structure). The client draws Fury's wind-up from it (DEC-283).
    */
   readonly statuses: readonly StatusSnapshot[] | null;
+  /**
+   * A shot in the air (`ProjectileFlight`, DEC-306): how fast it flies and how far through its
+   * ending it is, so the client can draw an arrow falling or a bolt fizzling; `null` for every
+   * other entity.
+   */
+  readonly projectile: ProjectileSnapshot | null;
+};
+
+/** A projectile's flight as the client sees it. */
+export type ProjectileSnapshot = {
+  /** `Movement.speed` over `Movement.maxSpeed`: 1 at full speed, 0 when stopped. */
+  readonly speedShare: number;
+  /** How far through its ending it is, 0 to 1 (`ProjectileFlight.endingShare`); `null` while it flies. */
+  readonly ending: number | null;
 };
 
 /** One active status as the client sees it: its id and how far through its time it is. */

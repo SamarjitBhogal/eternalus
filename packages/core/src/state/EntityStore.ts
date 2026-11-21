@@ -11,6 +11,7 @@ import { Movement } from '../components/Movement';
 import { Transform } from '../components/Transform';
 import { TeamMembership } from '../components/TeamMembership';
 import type { AbilitySlot } from '../content/abilities/AbilityDefinition.types';
+import type { AttackMode } from '../content/units/units.types';
 import type { Team } from '../teams/teams.types';
 import { distance, isPointInAnyPolygon, nearestPointOnPolygons } from '../utils/geometry';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
@@ -273,14 +274,18 @@ export class EntityStore {
    * Points the entity's `Combat` at `targetId`. Lets `commands/` set a
    * target without importing `components/`, as `steer` does for movement.
    *
-   * @returns `false` when the entity is unknown or cannot attack.
+   * @param mode - Which attack to use (`'melee'` needs a melee attack).
+   * @returns `false` when the entity is unknown or cannot attack (or has no melee for `'melee'`).
    */
-  public setAttackTarget(id: EntityId, targetId: EntityId): boolean {
+  public setAttackTarget(id: EntityId, targetId: EntityId, mode: AttackMode = 'basic'): boolean {
     const combat = this.entities.get(id)?.findComponent(Combat);
     if (combat === undefined) {
       return false;
     }
-    combat.setTarget(targetId);
+    if (mode === 'melee' && combat.melee === null) {
+      return false;
+    }
+    combat.setTarget(targetId, mode);
     return true;
   }
 

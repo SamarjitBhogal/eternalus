@@ -3,7 +3,8 @@ import type { SweepContact } from './sweepCircle.types';
 
 const dot = (a: Vec2, b: Vec2): number => a.x * b.x + a.y * b.y;
 
-const endpointContact = (
+/** First contact of a circle moving by `delta` with a point, or `null` (also when it starts inside). */
+export const endpointContact = (
   start: Vec2,
   delta: Vec2,
   radius: number,

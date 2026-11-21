@@ -94,6 +94,7 @@ export abstract class Legend extends Unit {
     if (attack === undefined) {
       throw new Error(`Legend "${this.id}": weapon "${weapon.id}" has no attacks.`);
     }
-    return { attack, weaponId: weapon.id };
+    const melee = weapon.attacks.find((candidate) => candidate.strategy === 'melee') ?? null;
+    return { attack, weaponId: weapon.id, melee };
   }
 }

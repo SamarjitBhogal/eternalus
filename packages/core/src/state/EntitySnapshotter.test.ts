@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
 import { MapObjectBody } from '../components/MapObjectBody';
+import { Movement } from '../components/Movement';
+import { ProjectileFlight } from '../components/ProjectileFlight';
 import { StatusEffects } from '../components/StatusEffects';
 import { ZoneArea } from '../components/ZoneArea';
 import { ContentCatalogue } from '../content/ContentCatalogue';
@@ -122,5 +124,25 @@ describe('EntitySnapshotter', () => {
     ]);
     expect(snapshotter.snapshotOf(calm).statuses).toEqual([]);
     expect(snapshotter.snapshotOf(new Bare('entity-3', 'bare')).statuses).toBeNull();
+  });
+
+  it('snapshots a shot as its speed share and ending, and anything else as null', () => {
+    const snapshotter = new EntitySnapshotter(3, CURVES, 0);
+    const shot = new Bare('shot-1', 'magus-bolt');
+    const movement = new Movement({ maxSpeed: 4, acceleration: 1, mass: 1 });
+    const flight = new ProjectileFlight(100, 80, 4);
+    shot.addComponent(movement);
+    shot.addComponent(flight);
+    movement.accelerateToward({ x: 1, y: 0 });
+    movement.accelerateToward({ x: 1, y: 0 });
+
+    const flying = snapshotter.snapshotOf(shot).projectile;
+    flight.end();
+    flight.tickEnding();
+    const ending = snapshotter.snapshotOf(shot).projectile;
+
+    expect(flying).toEqual({ speedShare: 0.5, ending: null });
+    expect(ending).toEqual({ speedShare: 0.5, ending: 0.25 });
+    expect(snapshotter.snapshotOf(new Bare('bare-1', 'x')).projectile).toBeNull();
   });
 });

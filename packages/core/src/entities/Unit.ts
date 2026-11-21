@@ -61,7 +61,7 @@ export abstract class Unit extends Entity {
     this.addComponent(new StatusEffects());
     const basic = this.basicAttack(context);
     if (basic !== undefined) {
-      this.addComponent(new Combat(basic.attack, basic.weaponId));
+      this.addComponent(new Combat(basic.attack, basic.weaponId, basic.melee));
     }
     if (controller !== undefined) {
       this.addComponent(

@@ -3,6 +3,7 @@ import type { EntityId } from '../../state/EntityStore.types';
 import type { DamageSource } from '../../state/GameEvents.types';
 import type { GameState } from '../../state/GameState';
 import type { Entity } from '../Entity';
+import type { EntityFactory } from '../EntityFactory';
 
 /**
  * Whatever applies damage. `combat/DamagePipeline` satisfies it; the port exists because
@@ -22,13 +23,14 @@ type HitRunner = {
 };
 
 /**
- * What an attack may use: the state, the one damage pipeline and what runs a landed hit's effects
- * (`null`: none run).
+ * What an attack may use: the state, the one damage pipeline, what runs a landed hit's effects
+ * (`null`: none run) and the factory that builds projectiles (`null`: this attack cannot fire).
  */
 export type AttackContext = {
   readonly state: GameState;
   readonly damage: DamageDealer;
   readonly hits: HitRunner | null;
+  readonly factory: EntityFactory | null;
 };
 
 /**

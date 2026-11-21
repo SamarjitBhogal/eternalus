@@ -84,6 +84,7 @@ import type { StaticCollisionIndex } from './physics/StaticCollisionIndex';
 import { MatchPathfinderFactory } from './map/MatchPathfinderFactory';
 import { staticCollisionIndexOf } from './map/staticCollisionIndexOf';
 import { zoneAreaOf } from './map/zoneArea';
+import { loadProjectiles } from './content/projectiles/loadProjectiles';
 import { DefaultSystemPipeline } from './systems/DefaultSystemPipeline';
 import type { SystemContext } from './systems/System.types';
 import { SystemPipeline } from './systems/SystemPipeline';
@@ -186,12 +187,17 @@ export class Simulation {
     const objectsById = new Map(
       Object.values(MAP_OBJECT_DEFINITIONS).map((definition) => [definition.id, definition]),
     );
+    const projectiles = loadProjectiles(tickRate);
     const definitions = {
       has: (id: string): boolean =>
-        objectsById.has(id) || ZONE_DEFINITIONS.has(id) || units.has(id),
+        objectsById.has(id) || ZONE_DEFINITIONS.has(id) || projectiles.has(id) || units.has(id),
       get: (id: string) =>
         objectsById.get(id) ??
-        (ZONE_DEFINITIONS.has(id) ? ZONE_DEFINITIONS.get(id) : units.get(id)),
+        (ZONE_DEFINITIONS.has(id)
+          ? ZONE_DEFINITIONS.get(id)
+          : projectiles.has(id)
+            ? projectiles.get(id)
+            : units.get(id)),
     };
     // One factory for commands and spawning, so entity ids come from one counter.
     const factory = new EntityFactory(

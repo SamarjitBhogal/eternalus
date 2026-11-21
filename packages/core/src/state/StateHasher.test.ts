@@ -9,6 +9,8 @@ import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { ChaseWatch } from '../components/ChaseWatch';
 import { CombatClock } from '../components/CombatClock';
+import { ProjectileFlight } from '../components/ProjectileFlight';
+import { ProjectilePayload } from '../components/ProjectilePayload';
 import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
@@ -243,6 +245,65 @@ describe('StateHasher', () => {
     veterancy.recordKill(2);
 
     expect(hasher.hash(state)).not.toBe(before);
+  });
+
+  it('changes with a shot owner and origin, which decide who it spares and how hard it hits', () => {
+    const payload = (ownerId: string, originX: number) =>
+      new ProjectilePayload({
+        ownerId,
+        team: 'light',
+        source: { attackerId: ownerId, kind: 'weapon', definitionId: 'magus-staff' },
+        attack: {
+          strategy: 'ranged-projectile',
+          damage: 1,
+          reach: 1,
+          interval: 1,
+          projectile: { projectileId: 'magus-bolt', falloff: null },
+        },
+        origin: { x: originX, y: 0 },
+      });
+    const hashWith = (shot: ProjectilePayload | null): number => {
+      const { state, soldier } = stateWithSoldier();
+      if (shot !== null) soldier.addComponent(shot);
+      return hasher.hash(state);
+    };
+    const plain = hashWith(null);
+    const base = hashWith(payload('a', 1));
+
+    expect(base).not.toBe(plain);
+    expect(hashWith(payload('a', 1))).toBe(base);
+    expect(hashWith(payload('b', 1))).not.toBe(base);
+    expect(hashWith(payload('a', 2))).not.toBe(base);
+  });
+
+  it('changes when a shot ends and as its ending counts down', () => {
+    const { state, soldier } = stateWithSoldier();
+    soldier.addComponent(
+      new ProjectilePayload({
+        ownerId: 'a',
+        team: 'light',
+        source: { attackerId: 'a', kind: 'weapon', definitionId: 'magus-staff' },
+        attack: {
+          strategy: 'ranged-projectile',
+          damage: 1,
+          reach: 1,
+          interval: 1,
+          projectile: { projectileId: 'magus-bolt', falloff: null },
+        },
+        origin: { x: 1, y: 0 },
+      }),
+    );
+    const flight = new ProjectileFlight(100, 80, 5);
+    soldier.addComponent(flight);
+    const flying = hasher.hash(state);
+
+    flight.end();
+    const ending = hasher.hash(state);
+    flight.tickEnding();
+    const later = hasher.hash(state);
+
+    expect(ending).not.toBe(flying);
+    expect(later).not.toBe(ending);
   });
 
   it('changes when an entity turns, and changes back when it turns back (DEC-192)', () => {

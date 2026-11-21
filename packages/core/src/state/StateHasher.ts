@@ -7,6 +7,8 @@ import { Combat } from '../components/Combat';
 import { CombatClock } from '../components/CombatClock';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
+import { ProjectileFlight } from '../components/ProjectileFlight';
+import { ProjectilePayload } from '../components/ProjectilePayload';
 import { Progression } from '../components/Progression';
 import { Veterancy } from '../components/Veterancy';
 import { StatusEffects } from '../components/StatusEffects';
@@ -170,7 +172,12 @@ export class StateHasher {
     }
     const combat = entity.findComponent(Combat);
     if (combat !== undefined && (combat.targetId !== null || combat.readyAtTick > 0)) {
-      fields.push(['combat', combat.targetId, combat.readyAtTick]);
+      // Only the melee mode adds a field, so runs that never use it hash as before (DEC-308).
+      fields.push(
+        combat.mode === 'melee'
+          ? ['combat', combat.targetId, combat.readyAtTick, 'melee']
+          : ['combat', combat.targetId, combat.readyAtTick],
+      );
     }
     const vision = entity.findComponent(Vision);
     if (vision !== undefined) {
@@ -253,6 +260,13 @@ export class StateHasher {
     const progression = entity.findComponent(Progression);
     if (progression !== undefined) {
       fields.push(['progression', progression.xp, progression.level]);
+    }
+    // A shot's owner and origin are fixed at firing but decide who it spares and how hard it hits;
+    // how long it has been ending (-1 while it flies) decides when it is removed.
+    const shot = entity.findComponent(ProjectilePayload);
+    if (shot !== undefined) {
+      const endTicksLeft = entity.findComponent(ProjectileFlight)?.endTicksLeft ?? -1;
+      fields.push(['projectile', shot.ownerId, shot.origin.x, shot.origin.y, endTicksLeft]);
     }
     const watch = entity.findComponent(ChaseWatch);
     if (watch !== undefined) {

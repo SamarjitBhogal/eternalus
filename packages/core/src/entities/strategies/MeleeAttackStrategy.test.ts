@@ -40,7 +40,12 @@ const hitWith = (definition: typeof WARRIOR): (string | number | DamageSource)[]
   const attacker = new Warrior('entity-1', definition.id);
   attacker.spawn({ definition, position: { x: 0, y: 0 }, team: 'light', weapons: WEAPONS });
 
-  new MeleeAttackStrategy().attack(attacker, 'entity-2', ATTACK, { state, damage, hits });
+  new MeleeAttackStrategy().attack(attacker, 'entity-2', ATTACK, {
+    state,
+    damage,
+    hits,
+    factory: null,
+  });
   return calls;
 };
 

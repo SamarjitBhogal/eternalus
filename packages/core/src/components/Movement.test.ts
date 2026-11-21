@@ -193,4 +193,38 @@ describe('Movement', () => {
     }).toThrow(/whole number/);
     expect(movement.isForced).toBe(false);
   });
+
+  it('caps the speed by the limit the entity sets, and lifts the cap with null', () => {
+    const movement = new Movement({ maxSpeed: 3, acceleration: 3, mass: 2 });
+    movement.steer({ x: 1, y: 0 });
+
+    movement.limitSpeed(1.5);
+    movement.advance();
+    expect(movement.speed).toBe(1.5);
+    expect(movement.topSpeed).toBe(1.5);
+
+    movement.limitSpeed(null);
+    movement.advance();
+    expect(movement.speed).toBe(3);
+  });
+
+  it('slows to the limit when it is lowered, and a limit above the status cap changes nothing', () => {
+    const movement = new Movement({ maxSpeed: 3, acceleration: 3, mass: 2 });
+    movement.steer({ x: 1, y: 0 });
+    movement.advance();
+
+    movement.limitSpeed(1);
+    movement.advance();
+    expect(movement.speed).toBe(1);
+
+    movement.limitSpeed(10);
+    movement.advance(0.5);
+    expect(movement.speed).toBe(1.5);
+  });
+
+  it('rejects a negative speed limit', () => {
+    expect(() => {
+      new Movement(STATS).limitSpeed(-1);
+    }).toThrow('speed limit');
+  });
 });

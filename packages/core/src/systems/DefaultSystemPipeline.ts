@@ -138,7 +138,12 @@ export class DefaultSystemPipeline extends SystemPipeline {
               { flowFields, forts: DefaultSystemPipeline.fortBoxesOf(state, structures) },
             ),
           ]),
-      new CombatSystem(damage, new HitEffects(abilities, damage, statuses)),
+      new CombatSystem(
+        damage,
+        new HitEffects(abilities, damage, statuses),
+        undefined,
+        hordes?.factory ?? null,
+      ),
       ...(state.worldObjects === undefined ? [] : [new MapDestructionSystem(state, damage)]),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
       new ProgressionSystem(state, progression),

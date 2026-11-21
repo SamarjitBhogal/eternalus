@@ -23,6 +23,7 @@ const unit = (
   area: null,
   capture: null,
   statuses: null,
+  projectile: null,
 });
 
 const intent = (over: Partial<InputIntent>): InputIntent => ({
