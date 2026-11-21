@@ -16,6 +16,24 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **`feat/loadout-screen` (PR #141, SCRUM-311), where loadout repair runs — sign-off.**
+      Architecture 14 §8 has `LoadoutRepository` call core's `repairLoadout` for a content id that
+      no longer exists. The branch keeps the repository to shape checks (it no longer quarantines
+      an unknown weapon, and `knownWeapons` left `PersistenceController`), and
+      `LoadoutController` (game) repairs and logs instead, so `data/` holds no content rules and
+      the Loadout screen learns which classes were repaired. Two smaller departures from the
+      05 §12 sketch: a `LoadoutProblem` names a `field` (`'class'` or a slot) instead of a
+      `slot`, and `EntityFactory` reports a rejected spawn loadout through an
+      `onLoadoutRejected` hook that `Simulation` logs at WARN, not as a `GameEvents` event.
+      Keep these (then 14 §8 and 05 §12 are updated to match) or move the repair into the
+      repository?
+
+- [ ] **`IndexedDbStorageAdapter` test fake — approve `fake-indexeddb`?** Saved settings and
+      loadouts still live in `MemoryStorageAdapter` and are lost on reload. Phase 5's adapter
+      item tests it with the contract suite against an IndexedDB fake: `fake-indexeddb` (a dev
+      dependency, which `AGENTS.md` says needs your approval) or a hand-written fake of the
+      subset the adapter uses. Which one?
+
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
       small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`

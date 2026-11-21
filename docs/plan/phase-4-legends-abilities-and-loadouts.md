@@ -172,6 +172,11 @@ Owner: _ (sim lane). Week 8.
       cooldown; requires visiting a BuffTower or the Stronghold, `TUNE`). Owner: _. Test: only if
       implemented. Done when: documented either way.
 
+**Status (2026-11-20, `feat/loadout-screen`, SCRUM-311):** the `Loadout` model and validation are
+built for the slots content can fill (class and primary weapon): `validateLoadout` reports every
+violation, `autoBuildLoadout` validates for all three classes, and `EntityFactory` runs the
+validator at spawn (architecture 05 §18). The other slots wait for their content, so the box
+stays open.
 **Status (2026-10-16, PR #31, Claudio):** `Progression` + `ProgressionSystem` started early (S2,
 SCRUM-426): level curve and per-level health and aether from content, kill XP to the killer. Shared,
 assist, checkpoint, camp and boss XP and potency scaling remain, so the box stays open.

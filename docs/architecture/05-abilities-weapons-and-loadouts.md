@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-12
+last-reviewed: 2026-11-20
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -670,8 +670,8 @@ and `Combat.weaponId` names it, so the `DamageSource` is the entity plus its wea
 their own `attack` and name their own definition (04 §5). Not built yet: ranged attacks and flex
 (projectiles, sprint 2.3), `onHit`, `heavyAttack`, `parry`, `grants` (ability framework, 4.2),
 `damageType`, `damageClass`, `damageMultipliers`, `sprite`, the `AttackStrategy` contract's
-`weapon` argument, and `allowedClasses` / `uniqueTo` enforcement in a loadout (`WeaponAllowedRule`,
-SCRUM-290).
+`weapon` argument. `allowedClasses` / `uniqueTo` enforcement in a loadout is built
+(`WeaponAllowedRule`, §18 "Loadout").
 
 ## 11. Artifacts (gadgets Z and C)
 
@@ -919,6 +919,23 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
 | Ability tree, class-switch penalty, Barricades, Eagle Eye, Firestorm, `reveal`, armour set, skins, weapon abilities (`WeaponDefinition.abilityIds` reuses `Ability`)       | **post-MVP**                                                                        |
 
 ## 18. Implementation status
+
+- **Loadout (`feat/loadout-screen`, SCRUM-311, 2026-11-20).** `packages/core/src/loadout/` holds
+  §12 for the slots content can fill: `Loadout` is `classId` and `primaryWeaponId`; the other
+  fields join when their content does (no ability, artifact or passive definitions exist, and
+  the secondary weapon is MVP-if-time). `LoadoutValidator` runs the injected rules
+  `ContentExistsRule` and `WeaponAllowedRule` (`createDefaultLoadoutRules`; the weapon check is
+  `isWeaponAllowedFor`, shared with the client's weapon choices) and reports every problem, with a
+  `field` (`'class'` or a slot) in place of the sketch's `slot`. `validateLoadout`,
+  `autoBuildLoadout` (from `defaultLoadout`), `repairLoadout` (auto-builds each broken slot) and
+  `loadoutContentOf` (the same rules over display content) are public. `EntityFactory` takes a
+  `LegendEquipment` (the weapon source and an `onLoadoutRejected` hook) and spawns every Legend
+  with a validated loadout: `Placement.loadout` when it passes for that class, else the
+  auto-build, which is also what a Legend given none (every bot) gets; `Simulation` logs a
+  rejection at WARN (`core.loadout`), not as a `GameEvents` diagnostic. The human `RosterSlot`
+  carries the player's saved loadout, so it is part of `ReplaySetup`. No `Loadout` component
+  yet: the Legend reads its weapon from the spawn context, and in-match changes (MVP-if-time)
+  are not built.
 
 - **Progression (PR #31, SCRUM-426).** Legends install `Aether` (own component, O1) and
   `Progression` (`xp`, `level`, `curveId`). Level curves are a catalogue
