@@ -16,6 +16,21 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **HC-B22 — Better than the design, not built, sign-off asked: how rule 7 measures
+      performance (`docs/rule7-frame-latency` critic, 2026-11-21); no decision blocks the PR.**
+      Rule 7 of the UI enhancements plan asks for a frame-interval p95 of 16.7 ms or less (16.8
+      passes, DEC-299 (3)); 16.8 is Chrome's 0.1 ms timestamp rounding, not latency (Done,
+      2026-11-21). A p95 ignores the worst 5 % of frames: about 21 of 420 frames could be missed
+      (33 ms each) and the p95 would still pass. The only slow frames on file are missed frames:
+      2 of 40 runs at CPU ×4 have one 33 ms interval, one of them in the control with every
+      enhancement off, and the script's count of intervals over 33.4 ms misses both. (a) Rule 7
+      becomes "a p95 within one 60 Hz frame, and no more missed frames (intervals over 25 ms) with
+      the enhancements on than in the control with them off"; the test page is served cross-origin
+      isolated, so frames read 16.66 to 16.67 ms and the 16.8 exception goes; the other 16.7 ms
+      frame targets (architecture 08 §9, the plan README §5, phases 1 and 6) read as "one 60 Hz
+      frame". (b) Keep rule 7 as it is. Agent's recommendation: (a); a missed frame is what a
+      player sees as a stutter.
+
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
       small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`
@@ -2821,22 +2836,6 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
       `CaptureHoldRule` takes it instead of the whole `GameState`, and the capture-point lookups
       of `CaptureHoldRule`, `CaptureProgressBoundsInvariant` and `CaptureSystem` move to it. Close
       this item when its PR merges.
-- [ ] **Rule 7 frame latency (DEC-299 (3))** — Owner: sholtzman, after PR #138 is pushed; it does
-      not block that merge. The match-start overlay's performance runs (ui-enhancements-plan §2
-      rule 7) read a frame-interval p95 of 16.7 to 16.8 ms and a maximum of 16.8 ms in every
-      condition, the controls with every enhancement off included, with no frame over 33 ms; the
-      12 rule-7 re-runs on the DEC-299 (2) tree read the same. One diagnostic re-run on that tree
-      (the ui-off control at CPU ×4, `perf-lt.mjs`) read one 33.3 ms interval, one dropped frame
-      (`over33` counts only intervals over 33.4 ms). The owner passed rule 7 and asked: "we
-      should find out why theres latency whenever we have time". Find why the intervals read
-      16.8 ms and not 16.7 (the browser's frame clock, the headless display, the measuring script
-      or the game) and record the answer in `docs/plan/PROGRESS.md` and here. With it: at CPU ×4
-      the re-runs count three long tasks of about 58 ms per run, all during page load before the
-      measured frames, on the commit before DEC-299 too and with every enhancement off, where the
-      first runs counted none with the same script; find what differs. The runs:
-      `eternalus-agent-work/game-loop-plan/ue-shots-2026-11-20/` (`run.sh` perf_run, `perf.mjs`,
-      `report.py`; the re-run: `perf-dec299.sh`, `perf-lt.mjs`, `perf-dec299/NOTE.md`; the
-      diagnostic runs: `perf-dec299-lt/`, `perf-33bcdcf6-lt/`).
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
       `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`
@@ -3046,6 +3045,22 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-11-21 — **Rule 7 frame latency, your question on DEC-299 (3)** (`docs/rule7-frame-latency`):
+  the 16.8 ms readings are not latency. Chrome rounds the timestamps of a page that is not
+  cross-origin isolated to 0.1 ms, with jitter, so a 60 Hz frame (16.67 ms) reads 16.5 to 16.8 ms.
+  A blank page with no game code reads the same spread as the HUD test page, and the mean interval
+  is 16.666 ms on both (one HUD run 16.71: one missed frame); a cross-origin-isolated blank page
+  (0.005 ms steps) reads 16.66 to 16.67 ms. Two of 40 runs at CPU ×4 missed one frame (33 ms), one
+  of them on the quiet machine in the control with every enhancement off: not explained. The three
+  long tasks at CPU ×4 are the test page loading, before any measured frame, so they do not touch
+  rule 7. Each is 11 to 14 ms at full speed and about 50 ms at ×4, the long-task limit, so a run
+  counts 2 or 3 of them (49.2 and 49.9 ms were not counted). Why the first runs counted none is not
+  found: replayed today in their order (warm-up on the HUD soak scene first), runs count 0, 1 or 2
+  (9 runs, one 0), against 2 or 3 when warmed up on the countdown scene, so the order changes the
+  count; how is not known. In the UI enhancements plan, rule 7 (your text) now gives the reason in place
+  of the pointer to this request. HC-B22 asks whether rule 7 should count missed frames. Details:
+  `docs/plan/PROGRESS.md`, 2026-11-21.
 
 - 2026-11-21 — **Your pick on HC-B17, a browser-support line** (`refactor/countdown-hud-units`):
   recorded as DEC-316. Architecture 13 §7 "Styling" now says, in your words: browser support is a

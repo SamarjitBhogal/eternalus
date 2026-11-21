@@ -4,7 +4,7 @@ description: Specification of the follow-up pull request that adds data-selectab
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-21
 tags: [plan, ui, hud, character-select, accessibility, motion, follow-up]
 related:
   - 'docs/reference/game-design/15-figma-frames-and-creative-decisions.md'
@@ -98,8 +98,9 @@ information stay (§2 rule 3); his changes to UE-01, UE-07, UE-08 and UE-12 are 
    covers the enhancement's scope.
 7. **Performance.** With every enhancement on, the HUD soak scenario keeps a frame-interval p95 of
    16.7 ms or less, also with Chrome's CPU slowed fourfold (HC-S2's paint check). The limit means
-   one 60 Hz frame as measured: a p95 of 16.8 ms passes (DEC-299 (3)); why it reads 16.8 is the
-   `INBOX.md` request "Rule 7 frame latency".
+   one 60 Hz frame as measured: a p95 of 16.8 ms passes (DEC-299 (3)). Chrome rounds the
+   timestamps of a page that is not cross-origin isolated to 0.1 ms, with jitter, so a 16.67 ms
+   frame reads 16.5 to 16.8 ms (`PROGRESS.md`, 2026-11-21, "Rule 7 frame latency").
 
 ## 3. The enhancements
 

@@ -9469,3 +9469,39 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   only).
 - Next step: push #143 (the coordinator); after #138 merges, retarget #143 to
   `phase/3-sprint-3-work`.
+
+### 2026-11-21 — Phase 3 / the match-start countdown: Rule 7 frame latency (DEC-299 (3)) — docs/rule7-frame-latency — sholtzman + Claude Code
+
+- What was done: answered the `INBOX.md` request "Rule 7 frame latency" (the owner's "we should
+  find out why theres latency"). Measured with the rule-7 `perf.mjs` code plus the raw frame
+  stamps, the timer's step and page-load traces (`perf-raw.mjs`); headless Chrome 158.0.8127.36,
+  Apple M4 Pro (10 performance and 4 efficiency cores), 24 GB.
+  - The 16.8 ms readings are not latency. Chrome rounds `performance.now()` and frame timestamps
+    to 0.1 ms, with jitter, in a page that is not cross-origin isolated (step read: 0.0999999 ms),
+    so a 16.67 ms frame reads 16.5 to 16.8 ms and the p95 reads 16.8 when more than 5 % land
+    there. A blank page with no app code (6 runs) and the HUD harness (`ue-perf-soak`, 12 runs,
+    tree `05b89ae3`) read the same spread; mean interval 16.6658 to 16.6663 ms (one HUD ×4 run
+    16.7055: one 33.2 ms interval, load 16.9 at its start and 41.3 just after). Cross-origin
+    isolated (step 0.005 ms) the blank page reads 16.660 to 16.670 ms. `over16_7` counts
+    floating-point noise (16.700000000000728 > 16.7).
+  - Missed frames: 2 of 40 ×4 runs on file have an interval over 25 ms (also 33.3 ms in the quiet
+    ui-off control, 2026-11-20). Not explained; HC-B22 (new) asks whether rule 7 counts them.
+  - Long tasks at ×4 (traces of 8 page loads): the harness entry module, React's first render
+    and the first-frame step (React's commit plus harness code), 11.1 to 14.4 ms each at ×1 and
+    49.2 to 99.0 ms at ×4, all before the harness is ready, so outside rule 7. On the 50 ms line:
+    49.2 and 49.9 ms were not counted. Why the 2026-11-20 06:11 runs counted none is not found:
+    the same Chrome build, script, harness, tree and dependencies, and a like load average (1.9
+    against 1.5 to 2.3). Replayed in their order (warm-up `hud-soak`, its runs first), 9 runs
+    count 0, 1 or 2 (one 0), against 2 or 3 in the 10 ×4 runs warmed up on `ue-perf-soak`: the
+    order changes the count; the mechanism is not found.
+  - Evidence and tables: `eternalus-agent-work/game-loop-plan/ue-shots-2026-11-20/frame-clock-2026-11-21/NOTE.md`.
+  - UI enhancements plan rule 7 (owner's text): the pointer to the request is replaced by the
+    reason, a fact found by measurement. `INBOX.md`: the request moves to Done.
+  - Critic r1 (`architecture-reviewer`): request changes, no blocker, 1 major (the 06:11 cause was
+    stated as found), 5 minor or nit wording fixes, all applied; BTD1 to BTD3 are HC-B22.
+- Checks run: `npm run check` → `EXIT=0`
+  (`eternalus-agent-work/game-loop-plan/check-rule7-final-2026-11-21.log`): core "Tests 1679
+  passed (1679)"; protocol "Tests 29 passed (29)"; client "Tests 2077 passed (2077)"; server
+  "Tests 84 passed (84)"; "Documentation check passed.". This check line was filled in after that
+  run (docs only).
+- Next step: push and open the pull request (the coordinator); HC-B22 waits on the owner.
