@@ -65,8 +65,10 @@ const click = (element: Element | undefined): void => {
   });
 };
 
+const button = (container: HTMLElement, name: string): HTMLButtonElement | undefined =>
+  [...container.querySelectorAll('button')].find((b) => b.textContent === name);
 const saveButton = (container: HTMLElement): HTMLButtonElement | undefined =>
-  [...container.querySelectorAll('button')].find((b) => b.textContent === STRINGS.loadouts.save);
+  button(container, STRINGS.loadouts.save);
 
 afterAll(stopListening);
 
@@ -98,6 +100,21 @@ describe('LoadoutScreen (page)', () => {
     expect(intents).toEqual([
       { kind: 'save-loadout', classId: 'warrior', primaryWeaponId: 'wuuthrad' },
     ]);
+  });
+
+  it('Auto-build picks the class auto-build weapon, which Save then sends', () => {
+    const container = mount();
+    const autoBuild = () => button(container, STRINGS.loadouts.autoBuild);
+    expect(autoBuild()?.disabled).toBe(true);
+    click(group(container, STRINGS.loadouts.weaponGroup)[1]);
+    expect(autoBuild()?.disabled).toBe(false);
+
+    click(autoBuild());
+
+    const weapons = group(container, STRINGS.loadouts.weaponGroup);
+    expect(weapons.map((radio) => radio.getAttribute('aria-checked'))).toEqual(['true', 'false']);
+    expect(autoBuild()?.disabled).toBe(true);
+    expect(saveButton(container)?.disabled).toBe(true);
   });
 
   it('moves the pick with the arrow keys and wraps at the ends', () => {

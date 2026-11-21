@@ -94,12 +94,14 @@ export const STRINGS = {
     weaponsUnavailable: 'The weapons of this class are not available yet.',
     /** Prefix of the start weapon shown while the choices are unavailable, e.g. "Starts with X". */
     startsWith: 'Starts with',
-    /** The default replaced a saved weapon content no longer has (08 "Saved to the profile"). */
-    repaired: 'The saved weapon is no longer available, so the default is shown.',
+    /** Auto-build replaced a saved weapon that broke the loadout rules (08 "Saved to the profile"). */
+    repaired: 'The saved weapon is no longer available, so auto-build replaced it.',
+    /** Fills every slot with the class's defaults (08 "Pre-game configuration and auto-build"). */
+    autoBuild: 'Auto-build',
     save: 'Save loadout',
-    pendingTitle: 'Coming with the loadout rules',
+    pendingTitle: 'Coming with their content',
     pendingNote: 'Not available yet',
-    /** The slots of 08 "Loadout slots" that wait for the Phase 4 loadout model, in slot order. */
+    /** The slots of 08 "Loadout slots" that wait for their content (abilities, artifacts), in slot order. */
     pendingSlots: [
       'Secondary weapon',
       'Passive',

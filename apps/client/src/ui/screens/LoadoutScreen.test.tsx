@@ -78,8 +78,12 @@ describe('LoadoutScreen', () => {
     );
   });
 
-  it('ends with the Save button, then the Back button', () => {
+  it('ends with the Auto-build button, then Save, then Back', () => {
     const names = buttonNames(renderWithStore(<LoadoutScreen />));
-    expect(names.slice(-2)).toEqual([STRINGS.loadouts.save, STRINGS.back]);
+    expect(names.slice(-3)).toEqual([
+      STRINGS.loadouts.autoBuild,
+      STRINGS.loadouts.save,
+      STRINGS.back,
+    ]);
   });
 });

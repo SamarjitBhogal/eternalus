@@ -12,8 +12,9 @@ import styles from './LoadoutScreen.module.css';
 import { useLoadoutDraft } from './useLoadoutDraft';
 
 /**
- * Loadouts (08, 14 §1): pick a class, then its primary weapon, and save it to the profile. The
- * slots that wait for the Phase 4 loadout model are listed but disabled, so the design is visible.
+ * Loadouts (08, 14 §1): pick a class, then its primary weapon (or Auto-build), and save it to the
+ * profile; the game checks it against the loadout rules. The slots content cannot fill yet are
+ * listed but disabled, so the design is visible.
  */
 export function LoadoutScreen(): ReactElement {
   const classes = useAppSelector(selectSelectableClasses);
@@ -62,6 +63,9 @@ export function LoadoutScreen(): ReactElement {
           ))}
         </ul>
         <div className={styles.actions}>
+          <Button onClick={draft.autoBuild} isDisabled={draft.isAutoBuilt}>
+            {STRINGS.loadouts.autoBuild}
+          </Button>
           <Button onClick={draft.save} isDisabled={!draft.isDirty}>
             {STRINGS.loadouts.save}
           </Button>
