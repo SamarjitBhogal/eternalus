@@ -24,6 +24,7 @@ import { MapDestructionSystem } from './MapDestructionSystem';
 import { DeathSystem } from './DeathSystem';
 import type { DefaultSystemPipelineOptions } from './DefaultSystemPipeline.types';
 import { DuelRoundSystem } from './DuelRoundSystem';
+import { DUEL_RULES } from '../content/duel/duelRules';
 import { EnragedSystem } from './EnragedSystem';
 import { HordeSystem } from './HordeSystem';
 import { InvariantSystem } from './InvariantSystem';
@@ -48,9 +49,9 @@ import { SystemPipeline } from './SystemPipeline';
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
  * progress, statuses, movement, collision (DEC-121 (c): every later reader sees resolved
  * positions), the neighbour index, stuck detection (DEC-193), steering, combat, map destruction,
- * progression (kill XP), minion veterancy, structure losses and breakability, spawning, enraging,
- * out-of-combat healing (DEC-188), death, capture points, the match director, then invariants
- * last. Combat runs after movement, so a unit with a target in reach faces it, not its own way
+ * progression (kill XP), minion veterancy, structure losses and breakability, spawning (none in a
+ * Duel, SCRUM-445), enraging, out-of-combat healing (DEC-188), death, capture points, the match
+ * director, then invariants last. Combat runs after movement, so a unit with a target in reach faces it, not its own way
  * (DEC-192). This is the one place a system is added, at its position in the tick (architecture
  * 02 §9). It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the
  * status effects loaded for this match's config) and hands them to the systems that need them, so
@@ -68,6 +69,8 @@ export class DefaultSystemPipeline extends SystemPipeline {
     structures = STRUCTURE_DEFINITIONS,
   }: DefaultSystemPipelineOptions) {
     const { tickRate, map } = state.config;
+    // A Duel spawns no mobs (DEC-36, SCRUM-445): without `SpawnSystem` none spawn or respawn.
+    const spawnsMobs = duelStarts === undefined || DUEL_RULES.arena.spawnsMobs;
     const damage = new DamagePipeline();
     const statuses = new StatusEffectApplier(
       loadStatusEffects(tickRate, map.spawnTowersPerLane + map.buffTowersPerLane),
@@ -126,15 +129,19 @@ export class DefaultSystemPipeline extends SystemPipeline {
       ...(hordes === undefined
         ? []
         : [
-            new SpawnSystem(state, hordes.factory, {
-              definitions: hordes.factory.definitions,
-              openingWave: OPENING_WAVE,
-              waves: loadSpawnWaves(tickRate),
-              steering: HORDE_STEERING,
-              weights: LANE_ASSESSMENT_WEIGHTS,
-              formationId: RANKS_FORMATION.id,
-              guards: loadGuardPlans(tickRate, hordes.guards),
-            }),
+            ...(spawnsMobs
+              ? [
+                  new SpawnSystem(state, hordes.factory, {
+                    definitions: hordes.factory.definitions,
+                    openingWave: OPENING_WAVE,
+                    waves: loadSpawnWaves(tickRate),
+                    steering: HORDE_STEERING,
+                    weights: LANE_ASSESSMENT_WEIGHTS,
+                    formationId: RANKS_FORMATION.id,
+                    guards: loadGuardPlans(tickRate, hordes.guards),
+                  }),
+                ]
+              : []),
             new EnragedSystem(state, statuses, ENRAGING_STRUCTURES),
           ]),
       // Before death, so a fallen Duel Legend is healed and moved instead of removed.

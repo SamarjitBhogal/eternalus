@@ -48,6 +48,7 @@ import { ZONE_DEFINITIONS, ZONE_PLACEMENTS } from './content/zones/zoneCatalogue
 import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
 import { DUEL_RULES } from './content/duel/duelRules';
+import { duelMapObjects } from './match/duelArena';
 import { duelStartPoints } from './match/duelStartPoints';
 import { createDefaultMatchDirector } from './match/defaultMatchDirector';
 import { MatchTimeline } from './match/MatchTimeline';
@@ -130,7 +131,7 @@ export class Simulation {
     debug = RELEASE_DEBUG_CONFIG,
     content,
     map,
-    mapObjects,
+    mapObjects: authoredObjects,
     levelCurves,
     roster = [],
     weapons,
@@ -144,10 +145,16 @@ export class Simulation {
       seed,
       config: validConfig,
       ...(map === undefined ? {} : { map }),
-      ...(mapObjects === undefined ? {} : { mapObjects }),
+      ...(authoredObjects === undefined ? {} : { mapObjects: authoredObjects }),
       ...(roster.length === 0 ? {} : { roster }),
       ...(duel === undefined ? {} : { duel }),
     };
+    // A Duel keeps only the arena (DEC-36; SCRUM-445 to SCRUM-447, SCRUM-450).
+    const arena = duel === undefined ? undefined : DUEL_RULES.arena;
+    const mapObjects =
+      authoredObjects === undefined || arena === undefined
+        ? authoredObjects
+        : duelMapObjects(authoredObjects, arena);
     const { space, world, paths } = Simulation.buildWorld(map, validConfig, mapObjects);
     // Without the default pipeline no director runs, so no mark would ever fire: list none.
     const schedule = systems === undefined ? timeline.schedule() : [];
@@ -178,10 +185,15 @@ export class Simulation {
       undefined,
       weaponSource,
     );
-    const owners = Simulation.spawnStructures(this.state, factory, structures, mapObjects);
+    const owners = Simulation.spawnStructures(this.state, factory, {
+      structures,
+      mapObjects,
+      hasCathedralGem: arena?.hasCathedralGem ?? true,
+    });
     this.state.indexStructures();
     // Before the pipeline: zones can be guard homes, which SpawnSystem finds when it is built.
-    const zones = Simulation.spawnZones(this.state, factory);
+    const zones =
+      arena?.hasCaptureObjectives === false ? [] : Simulation.spawnZones(this.state, factory);
     this.commandContext = { state: this.state, factory };
     if (mapObjects !== undefined && map === undefined)
       throw new Error('Map objects require a generated map');
@@ -340,15 +352,23 @@ export class Simulation {
    * DEC-185 D; a gate's own outline, DEC-217 (17)). A blocking such object (a fort) is the
    * structure's body: it has no health of its own (one pool, DEC-185 B). Only towers share one
    * pool (DEC-217 (13)): the palace's and the gates' objects do not block, so they keep their own
-   * health.
+   * health. Without `hasCathedralGem` (a Duel, SCRUM-447) the `cathedral` structure, the gem's
+   * body, is not built.
    *
    * @returns Map object id → the id of the structure it is the body of.
    */
   private static spawnStructures(
     state: GameState,
     factory: EntityFactory,
-    structures: StructureSource,
-    mapObjects: readonly MapObject[] = [],
+    {
+      structures,
+      mapObjects = [],
+      hasCathedralGem,
+    }: {
+      readonly structures: StructureSource;
+      readonly mapObjects?: readonly MapObject[] | undefined;
+      readonly hasCathedralGem: boolean;
+    },
   ): ReadonlyMap<string, string> {
     const features = [...(state.world?.definition.features ?? [])].sort((a, b) =>
       compareById(a.id, b.id),
@@ -358,6 +378,7 @@ export class Simulation {
     for (const { id, definitionId, position, team, laneId } of features) {
       if (structures.has(definitionId)) {
         const { kind, hasMapFootprint } = structures.get(definitionId);
+        if (kind === 'cathedral' && !hasCathedralGem) continue;
         const placement = {
           position,
           team,

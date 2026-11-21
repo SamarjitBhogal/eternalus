@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-07
+last-reviewed: 2026-11-20
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -619,6 +619,15 @@ seams, runes and emitter artwork for the existing turret features. `MapDecoratio
 suppresses the main view's plain feature marker; explicit object ownership removes the correct
 panel artwork when its wall segment dies. The minimap retains its generated feature markers.
 All decoration stays in the existing render layers and adds no new shield-immunity mechanic.
+
+**2026-11-20 (`feat/duel-arena-only-legends`, SCRUM-450).** The Cathedral's four entrances are
+Duel barriers: `MapBuildingInteriorBuilder` marks each doorway piece `MapDecoration.isDuelBarrier`,
+and `MapObjectBuilder` makes each an indestructible `cathedral`-kind `MapObject` with
+`isDuelBarrier` and `isBlocking: false`, so a normal match walks through as before. A Duel whose
+rules close the Cathedral (`DUEL_RULES.arena.isCathedralClosed`) makes them block
+(`match/duelArena.ts`) before `Simulation` builds the walk grid, the collision index and the world
+objects, so both Legends stay inside. The doorways look the same either way; a closed-door drawing
+is not built.
 
 ## Related
 

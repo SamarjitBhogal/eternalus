@@ -9282,3 +9282,31 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   (84)", "Documentation check passed."; then `prettier --check` and `npm run docs:check` with this
   entry. Critic (architecture-reviewer): PASS WITH NOTES, no violations, four nits not applied.
 - Next step: `/ponytail-review`, then push and open the PR into phase/3.
+
+### 2026-11-20 — Phase 3 / Duel arena: only the two Legends in a closed Cathedral (SCRUM-445, SCRUM-446, SCRUM-447, SCRUM-450) — feat/duel-arena-only-legends — claudiodh + Claude Code
+
+- What was done: the owner's feedback on the Duel demo of 2026-11-20 (run by claudiodh), recorded
+  as Jira SCRUM-445, SCRUM-446, SCRUM-447 and SCRUM-450 within DEC-36 ("the surrounding world is
+  deactivated in a Duel"). `DUEL_RULES.arena` (`DuelArenaRules`) holds four switches, each read
+  where that part of the world is built: `spawnsMobs` (`DefaultSystemPipeline` leaves out
+  `SpawnSystem` in a Duel: no minion, guard or camp unit spawns or respawns), `hasCaptureObjectives`
+  (`Simulation` spawns no zones; the client's `ObjectiveTracker` renders nothing in a Duel),
+  `hasCathedralGem` (`Simulation` builds no `cathedral` structure; the client's `CrystalStatus`
+  renders nothing in a Duel) and `isCathedralClosed` (`MapBuildingInteriorBuilder` marks the four
+  Cathedral doorways `isDuelBarrier`, `MapObjectBuilder` makes them walkable indestructible map
+  objects, and `match/duelArena.ts` makes them block in such a Duel). Normal matches are
+  unchanged. No gem exists on phase/3: open PRs #124 (gem scenery) and #132 (gem body, a
+  `cathedral` structure, which this skip already covers) must respect `hasCathedralGem`. Docs:
+  architecture 12 (Duel implementation status) and 06 §10.
+- Tests: `Simulation.duel.test.ts` "spawns no minions or other mobs, while an ordinary match does
+  (SCRUM-445)", "has no capture objectives, while an ordinary match does (SCRUM-446)", "keeps both
+  Legends inside the Cathedral, its side entrances closed (SCRUM-450)"; `CrystalStatus.test.tsx`
+  "draws no crystal in a Duel, which has no Cathedral crystal (SCRUM-447)". Broken once by setting
+  the three core switches to a normal match's values: all three core tests failed (217 mobs, 3
+  objectives, the light Legend at x 636.5 west of the west door at 700); passes restored.
+- Checks run: full `npm run check` exit 0 with this entry
+  (`/tmp/claude-1000/duel-world-check.log`).
+- Not done: the Cathedral's interior walls stay breakable (BUG-2), so a Legend could still break
+  out through a wall; the closed doorways look the same as open ones. Structures other than the
+  gem still run as generated.
+- Next step: the critic and ponytail gate (AGENTS.md), then push and open the PR into phase/3.
