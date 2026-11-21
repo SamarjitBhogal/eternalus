@@ -454,6 +454,24 @@ describe('MapGenerator', () => {
     );
   });
 
+  it('rejects an unknown obstacle choice that no seed samples, before generating', () => {
+    const layout: MapLayout = {
+      ...DEFAULT_MAP_LAYOUT,
+      obstacles: {
+        ...DEFAULT_MAP_LAYOUT.obstacles,
+        // So light a weight that no roll ever picks it: only an up-front check can see it.
+        choices: [
+          ...DEFAULT_MAP_LAYOUT.obstacles.choices,
+          { definitionId: 'never-sampled-obstacle', weight: Number.MIN_VALUE },
+        ],
+      },
+    };
+
+    expect(() => new MapGenerator({ layout }).generate({ map: DEFAULT_MAP_CONFIG }, SEED)).toThrow(
+      /obstacles\.choices names "never-sampled-obstacle"/,
+    );
+  });
+
   it('gives each feature its definition id and minimap glyph', () => {
     const map = generate();
     const tower = ofKind(map, 'spawner-tower')[0];
@@ -782,7 +800,12 @@ describe('MapGenerator', () => {
   });
 
   it('rejects a feature that names an unknown definition', () => {
-    const generator = new MapGenerator({ definitions: {} });
+    // Only the Stronghold's definition is missing, so the obstacle choices pass the up-front check
+    // and the feature itself is rejected (`createMapFeature`).
+    const definitions = Object.fromEntries(
+      Object.entries(MAP_FEATURE_DEFINITIONS).filter(([id]) => id !== 'stronghold'),
+    );
+    const generator = new MapGenerator({ definitions });
 
     expect(() => generator.generate({ map: DEFAULT_MAP_CONFIG }, SEED)).toThrow(
       /unknown definition/,

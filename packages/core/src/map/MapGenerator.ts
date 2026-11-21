@@ -30,6 +30,14 @@ export class MapGenerator {
   public generate(config: MapGeneratorConfig, seed: number): MapDefinition {
     validateMapConfig(config.map);
     validateMapLayout(this.deps.layout);
+    const unknownChoice = this.deps.layout.obstacles.choices.find(
+      ({ definitionId }) => this.deps.definitions[definitionId] === undefined,
+    );
+    if (unknownChoice !== undefined) {
+      throw new MapGenerationError(
+        `map layout obstacles.choices names "${unknownChoice.definitionId}", which is not a map feature definition`,
+      );
+    }
     if (!Number.isInteger(seed) || seed < 0 || seed > MAX_SEED) {
       throw new MapGenerationError(
         `The map seed must be a whole number from 0 to ${String(MAX_SEED)}, got ${String(seed)}`,

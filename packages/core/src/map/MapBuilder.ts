@@ -242,15 +242,8 @@ export class MapBuilder {
           width: config.worldWidth,
           height: config.worldHeight,
         }),
-        radiusOf: (definitionId) => {
-          const definition = this.input.definitions[definitionId];
-          if (definition === undefined) {
-            throw new MapGenerationError(
-              `map layout obstacles.choices names "${definitionId}", which is not a map feature definition`,
-            );
-          }
-          return definition.footprintRadius;
-        },
+        // `MapGenerator` rejects an unknown choice before building; `createMapFeature` backs it up.
+        radiusOf: (definitionId) => this.input.definitions[definitionId]?.footprintRadius ?? 0,
       },
       layout.obstacles,
     );
