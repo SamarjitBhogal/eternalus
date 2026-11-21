@@ -120,11 +120,10 @@ describe('BotLeaves.fight: line of fire for a ranged attack', () => {
     expect(headings(turn)).toEqual([{ x: 0, y: 0 }]);
   });
 
-  it('holds when the shot stops only its own radius short of the aim point (the target touches it)', () => {
-    // A wall at the aim point (the enemy's centre, 10 m east), kept short of as the resolver does.
+  it('holds when a wall touches the near edge of the enemy (the shot touches the enemy first)', () => {
+    // The resolver stops CONTACT_EPSILON short of a wall at the shot's contact with the enemy.
     const touching: CollisionQuery = {
-      reach: (_from, _direction, distance, radius) =>
-        Math.min(distance, 10 - radius - CONTACT_EPSILON),
+      reach: (_from, _direction, distance) => distance - CONTACT_EPSILON,
     };
     const turn = fightTurn(RANGED, touching);
 

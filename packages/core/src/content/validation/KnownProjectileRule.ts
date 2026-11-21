@@ -5,10 +5,10 @@ import type { WeaponDefinition } from '../weapons/weapons.types';
 import type { UnitDefinitionRule } from './ContentValidator.types';
 
 /**
- * Every ranged attack, of a unit definition (a mob's or turret's own attack) or of a weapon, must
- * name a loaded projectile (`projectileId`) and have a valid fall-off (05 §2): a typo fails at
- * load, not at the first shot. `loadWeapons` runs it over each weapon, so weapons and unit
- * definitions share these checks.
+ * Every attack that fires a projectile (it has `projectile`, whatever its strategy), of a unit
+ * definition (a mob's or turret's own attack) or of a weapon, must name a loaded projectile
+ * (`projectileId`) and have a valid fall-off (05 §2): a typo fails at load, not at the first
+ * shot. `loadWeapons` runs it over each weapon, so weapons and unit definitions share these checks.
  */
 export class KnownProjectileRule implements UnitDefinitionRule {
   /** @param projectiles - The projectiles a ranged attack may fire. */
@@ -25,7 +25,7 @@ export class KnownProjectileRule implements UnitDefinitionRule {
   }
 
   private problemsOf(attack: UnitAttack): string[] {
-    if (attack.strategy !== 'ranged-projectile') {
+    if (!('projectile' in attack)) {
       return [];
     }
     const { projectileId, falloff } = attack.projectile;

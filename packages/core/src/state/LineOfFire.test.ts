@@ -185,6 +185,18 @@ describe('LineOfFire', () => {
     expect(lineOfFire.isClear(state, from, fort)).toBe(true);
   });
 
+  it('is blocked past the range its shot flies, with nothing in the way', () => {
+    const shortShots = new LineOfFire({ get: (id) => ({ ...PROJECTILES.get(id), range: 8 }) });
+    const { state, add, shooter } = world([]);
+    const from = shooter({ x: 0, y: 0 });
+    // The shot touches the near unit 6.85 m out and the far one 8.85 m out (radius 1, shot 0.15).
+    const near = add({ at: { x: 8, y: 0 }, radius: 1 });
+    const far = add({ at: { x: 10, y: 0 }, radius: 1 });
+
+    expect(shortShots.isClear(state, from, near)).toBe(true);
+    expect(shortShots.isClear(state, from, far)).toBe(false);
+  });
+
   it('is clear for a melee attack, an unknown id, and a match with no collision rule', () => {
     const walled = world([box(5, -5, 0.5, 10)]);
     const melee = walled.shooter({ x: 0, y: 0 }, MELEE);

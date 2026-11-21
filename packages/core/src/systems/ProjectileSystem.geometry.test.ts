@@ -325,6 +325,22 @@ describe('ProjectileSystem on real geometry', () => {
       expect(scene.state.entities.has(atObject.id)).toBe(false);
     });
 
+    it('gives the shot to the floor it was fired at, not a palace wall on its edge (DEC-317 (8))', () => {
+      // A palace wall is both a wall and a body. Its face lies on the floor's edge, here a rounding
+      // step nearer the shooter. LineOfFire reads the floor as reached, so the shot lands on it.
+      const wallBlock = box(-1e-9, 2, 1, 6);
+      const scene = world([wallBlock]);
+      const { structure } = palace(scene);
+      const wall = scene.addBody({ at: { x: 0.5, y: 5 }, object: [wallBlock] });
+      const shot = scene.shoot({ x: -10, y: 5 }, { x: 1, y: 0 }, structure.id);
+
+      scene.fly(8);
+
+      expect(scene.healthOf(structure)).toBe(FULL_HEALTH - ATTACK.damage);
+      expect(scene.healthOf(wall)).toBe(FULL_HEALTH);
+      expect(scene.state.entities.has(shot.id)).toBe(false);
+    });
+
     it('flies over it with a shot fired at no one', () => {
       const scene = world([]);
       const { structure, object } = palace(scene);

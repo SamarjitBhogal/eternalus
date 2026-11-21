@@ -25,8 +25,8 @@ import type { System, SystemContext } from './System.types';
  * targets are kept for after. A ranged attack fires a shot (the match's one `EntityFactory` builds
  * it) only when the shot would reach the target (`LineOfFire`, DEC-317); else the unit faces the
  * target, keeps it and stays ready, and its controller moves it. `ProjectileSystem`, right before
- * this system, flies and lands the shots. Getting into reach
- * is the controller's job (moving), not this system's.
+ * this system, flies and lands the shots. Getting into reach is the controller's job (moving), not
+ * this system's.
  */
 export class CombatSystem implements System {
   public readonly name = 'combat';

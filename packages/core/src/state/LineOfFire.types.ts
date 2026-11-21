@@ -10,9 +10,11 @@ import type { GameState } from './GameState';
 export interface LineOfFireQuery {
   /**
    * Whether a shot that `attackerId`'s current attack fires now at `targetId` would touch the
-   * target before a wall or the map's edge stops it, by the contact rule `ProjectileSystem` lands
-   * shots by. `true` for a melee attack, an unknown attacker or target, and a match with no
-   * collision rule, so a melee unit is never held back by it.
+   * target within the shot's `range` and before a wall or the map's edge stops it, by the contact
+   * rule `ProjectileSystem` lands shots by. Units on the line are not read: they may move. `true`
+   * for an attack that fires no projectile (melee), an unknown attacker or target, a target with no
+   * point to aim at (`EntityStore.aimPointOf` gives `null`), and a match with no collision rule,
+   * so a melee unit is never held back by it.
    */
   isClear(state: GameState, attackerId: EntityId, targetId: EntityId): boolean;
 }

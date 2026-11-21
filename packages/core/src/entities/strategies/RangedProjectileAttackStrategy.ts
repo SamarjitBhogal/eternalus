@@ -15,7 +15,8 @@ import { weaponSourceOf } from './weaponSourceOf';
  * its circle starts clear of every wall the attacker is kept out of, flies straight along the line
  * to the target's facing point (no lead) and carries a `ProjectilePayload` with a weapon impact.
  * An attacker that stands on that point (on a unit target's centre) fires along its facing, so a
- * shot always moves. It passes its owner by; `ProjectileSystem` flies and lands it, from the next tick.
+ * shot always moves. It passes its owner by; `ProjectileSystem` flies and lands it, from the next
+ * tick.
  */
 export class RangedProjectileAttackStrategy implements AttackStrategy {
   /** Scratch for the point aimed at, then the aim direction. */

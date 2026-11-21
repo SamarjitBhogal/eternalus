@@ -15,8 +15,8 @@ import type { Entity } from '../entities/Entity';
 import { flightSpeed } from '../physics/flightSpeed';
 import { sweepCircle } from '../physics/sweepCircle';
 import { sweepDisc } from '../physics/sweepDisc';
-import { BODY_BEFORE_WALL_MARGIN } from '../state/CollisionQuery.constants';
 import type { GameState } from '../state/GameState';
+import { isTouchedBeforeWall } from '../state/isTouchedBeforeWall';
 import { CONTACT_EPSILON } from '../utils/circlePolygon.constants';
 import { distance, doRectsOverlap, isPointInAnyPolygon } from '../utils/geometry';
 import type { Rect, Vec2 } from '../utils/geometry.types';
@@ -27,20 +27,21 @@ import type { System, SystemContext } from './System.types';
  * Flies the shots in the air to their end (architecture 10 §7): each tick, every shot's move (an
  * entity with a `ProjectilePayload`) from `Transform.previousPosition` to `position` is swept as a
  * circle against the bodies it can hit and the walls, and the earliest contact ends it. A body
- * takes the hit when it is touched before the first wall, or up to `BODY_BEFORE_WALL_MARGIN` past
- * the point where `CollisionQuery.reach` stops (a fort is both a body and a wall); a wall or the
- * map's edge spends the shot with no damage. A landed hit goes to the `ProjectileImpact` of the
- * payload's impact kind (a weapon's: its damage, fallen off over the distance from the origin,
- * then the owner's on-hit effects), and the shot is removed as `consumed`.
+ * takes the hit when it is touched before the first wall (`isTouchedBeforeWall`: a fort is both a
+ * body and a wall); a wall or the map's edge spends the shot with no damage. A landed hit goes to
+ * the `ProjectileImpact` of the payload's impact kind (a weapon's: its damage, fallen off over the
+ * distance from the origin, then the owner's on-hit effects), and the shot is removed as
+ * `consumed`.
  *
  * Bodies are live things with `Health` other than the owner and its team (neutral bodies count as
  * enemies). A body with an outline (`Footprint`, `MapObjectBody`) is hit on that outline, at once
  * when the shot starts inside it. A walk-on outline (a palace floor, a gate's passage) and a body
- * that takes no damage now (`Collider.isUnbreakable`: a forest camp, a gate before its rule
- * passes) are hit only by a shot fired at that entity, so a shot flies over the ground units stand
- * on and past what it cannot hurt (DEC-317). A body is gathered
- * once a tick, and each move tests only those whose box it reaches. Ties go to the first body in
- * store order.
+ * that takes no damage now (`Collider.isUnbreakable`: a forest camp) are hit only by a shot fired
+ * at that entity, so a shot flies over the ground units stand on and past what it cannot hurt
+ * (DEC-317). A body is gathered once a tick, and each move tests only those whose box it reaches.
+ * Ties go to the first body in store order, except that the shot's target takes a near tie
+ * (`isTouchedBeforeWall` on the first body's contact): a palace wall whose face is the
+ * Stronghold's edge does not take a shot fired at the Stronghold (DEC-317 (8)).
  *
  * A shot that touches nothing flies to the end of its `range` (DEC-306): it slows from `slowFrom`
  * (`flightSpeed`, through `Movement.limitSpeed`) so it stops exactly at `range`, then ends. An
@@ -96,8 +97,8 @@ export class ProjectileSystem implements System {
     const length = distance(from, body.position);
 
     const wall = this.wallDistance(state, from, delta, length, body.radius);
-    const hit = this.firstBody(state, payload, from, delta, body.radius);
-    if (hit !== null && hit.time * length <= wall + BODY_BEFORE_WALL_MARGIN) {
+    const hit = this.firstBody(state, payload, from, delta, length, body.radius);
+    if (hit !== null && isTouchedBeforeWall(hit.time * length, wall)) {
       this.landOn(state, {
         impact: payload.impact,
         ownerId: payload.ownerId,
@@ -164,12 +165,16 @@ export class ProjectileSystem implements System {
     this.isGathered = true;
   }
 
-  /** The earliest body the move touches (ties go to the first in store order), or `null`. */
+  /**
+   * The earliest body the move touches, or `null`. Ties go to the first in store order; the
+   * shot's target takes a near tie, by the margin `LineOfFire` predicts it by (DEC-317 (8)).
+   */
   private firstBody(
     state: GameState,
     payload: ProjectilePayload,
     from: Vec2,
     delta: Vec2,
+    length: number,
     radius: number,
   ): ShotContact | null {
     // The box the moving circle sweeps, a contact's width wider so rounding never drops one.
@@ -181,16 +186,18 @@ export class ProjectileSystem implements System {
       height: Math.abs(delta.y) + 2 * reach,
     };
     let first: ShotContact | null = null;
+    let target: ShotContact | null = null;
     for (const body of this.bodies) {
       if (!ProjectileSystem.isNear(body, box) || !ProjectileSystem.canHit(state, payload, body)) {
         continue;
       }
       const time = ProjectileSystem.contactTime(body, from, delta, radius);
-      if (time !== null && (first === null || time < first.time)) {
-        first = { body, time };
-      }
+      if (time === null) continue;
+      if (body.entity.id === payload.targetId) target = { body, time };
+      if (first === null || time < first.time) first = { body, time };
     }
-    return first;
+    if (target === null || first === null) return first;
+    return isTouchedBeforeWall(target.time * length, first.time * length) ? target : first;
   }
 
   /** Whether the body's box (its outline's, or its collider circle's) meets `box`. */
@@ -206,8 +213,9 @@ export class ProjectileSystem implements System {
   }
 
   /**
-   * Whether the shot can hit the body now: alive and still in the world, not its owner, not on its
-   * team, and, for a walk-on outline or a body that takes no damage now, the entity it was fired at.
+   * Whether the shot can hit the body now: alive and still in the world, not its owner, not on
+   * its team, and, for a walk-on outline or a body that takes no damage now, the entity it was
+   * fired at.
    */
   private static canHit(
     state: GameState,

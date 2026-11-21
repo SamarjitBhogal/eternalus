@@ -45,6 +45,7 @@ import type { SlotReadiness } from './state/SlotReadiness.types';
 import { unitClassOf } from './content/ai/unitClasses';
 import { SPACE_CELL_SIZE } from './content/ai/hordeSteering';
 import { ContentCatalogue } from './content/ContentCatalogue';
+import { UnknownDefinitionError } from './content/UnknownDefinitionError';
 import { loadDefaultContent } from './content/loadDefaultContent';
 import { STRUCTURE_DEFINITIONS } from './content/structures/structureCatalogue';
 import { compareById } from './utils/compareById';
@@ -374,7 +375,7 @@ export class Simulation {
       get: (id) => {
         const source = sourceOf(id);
         if (source === undefined) {
-          throw new Error(`No definition has the id "${id}".`);
+          throw new UnknownDefinitionError(id);
         }
         return source.get(id);
       },

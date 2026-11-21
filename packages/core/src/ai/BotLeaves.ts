@@ -251,18 +251,19 @@ export class BotLeaves {
   }
 
   /**
-   * Points the bot's attack at `targetId` unless it already is, and holds it still while
-   * `isInReach`: the opening Fight and Push share (DEC-168, B9). Returns whether it holds.
+   * Points the bot's attack at `targetId` unless it already is, and holds it still when
+   * `shouldHold` (in reach, with a clear line for a ranged attack): the opening Fight and Push
+   * share (DEC-168, B9). Returns whether it holds.
    */
-  private static attackAndHold(turn: BotTurn, targetId: EntityId, isInReach: boolean): boolean {
+  private static attackAndHold(turn: BotTurn, targetId: EntityId, shouldHold: boolean): boolean {
     if (targetId !== turn.memory.targetId) {
       turn.commands.push({ type: 'attack-target', actorId: turn.id, targetId });
       turn.next = { ...turn.next, targetId };
     }
-    if (isInReach) {
+    if (shouldHold) {
       BotMovement.halt(turn);
     }
-    return isInReach;
+    return shouldHold;
   }
 
   /**
