@@ -8048,6 +8048,15 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 1336 passed (1336)"; protocol "Tests 18 passed (18)"; server "Tests 79 passed (79)"; client "Tests 1883 passed (1883)"; "Documentation check passed."
 - Next step: reviewer approval; the team merges.
 
+### 2026-11-13 — Phase 3 — docs/inbox-audit-and-bugs — Claude Code
+
+- What was done: added three items at the top of "Decisions needed from Sam" in `INBOX.md`: the
+  dependency audit (17 findings: 14 moderate, 3 high, none critical; Dependabot alerts unreadable),
+  BUG-2 (SCRUM-435, interior walls at 2,000 HP) and BUG-3 (SCRUM-436, minions and obstacles, a
+  design change request against DEC-193). Docs only; no code changed.
+- Checks run: `npm run docs:check`, `npm run format:check`, then `npm run check` → `EXIT=0`: core "Tests 1321 passed (1321)"; client "Tests 1818 passed (1818)"; "✓ built in 523ms"; "Documentation check passed."
+- Next step: Sam answers inline; the agent schedules the upgrade PR and the BUG-2/BUG-3 changes.
+
 ### 2026-11-12 — Phase 3 / combat sprint: bound key actions, part 1 (BUG-5 / SCRUM-438) — fix/bound-key-actions — Claude Code
 
 - What was done: `camera-zoom-in`, `camera-zoom-out` and `toggle-minimap` now work as `MatchHost`
@@ -8668,6 +8677,12 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   (`eternalus-agent-work/tower-ruins-and-routes/ci-timeout-check-merge-fcc48a7b.log`).
 - Next step: a PR into `phase/3-sprint-3-work`.
 
+### 2026-11-15 — Phase 3 / sync — docs/inbox-audit-and-bugs (PR #110) — claudiodh + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (80e0ea13) into this branch because #110 was CONFLICTING. Conflicts: `INBOX.md` and `PROGRESS.md` (both sides kept).
+- Checks run: `npm run check` → `EXIT=0`.
+- Next step: reviewer approval; the team merges.
+
 ### 2026-11-12 — Phase 3 / online Duel — feat/duel-rules (stacked on #97) — claudiodh + Claude Code
 
 - What was done: the Duel rules and the organic start flow. Core: `SimulationOptions.duel` (kept in the replay setup), both Legends start in the Cathedral, `DuelRoundSystem` counts a kill and resets both Legends to their start points at full health, `KillCountCondition` ends the match at 10 (`DUEL_RULES`, `// TUNE:`), score in `Snapshot.match.duel`. Protocol: `queue-join` carries a validated `name`, `match-found` carries `opponentName`. Server: the queue keeps names, the match waits 4 s for the VERSUS screen, the countdown is 3 s. Client: name entry screen, VERSUS screen, countdown 3, 2, 1, START and a "3 - 1 (first to 10)" scoreboard on the HUD (`duel-state`); results reuse the existing screen.
@@ -9282,3 +9297,15 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   (84)", "Documentation check passed."; then `prettier --check` and `npm run docs:check` with this
   entry. Critic (architecture-reviewer): PASS WITH NOTES, no violations, four nits not applied.
 - Next step: `/ponytail-review`, then push and open the PR into phase/3.
+
+### 2026-11-20 — Phase 3 / review fixes — docs/inbox-audit-and-bugs (PR #110) — claudiodh + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (`5a7cc8dc`) into this branch (conflict:
+  `INBOX.md`, both sides kept), then fixed the 2026-11-19 review. Corrects the 2026-11-13 entry of
+  this branch: BUG-2 and BUG-3 were already answered (DEC-247, DEC-248), so both open items are
+  dropped and their file pointers moved under the ticked BUG-2 and BUG-3 items. The dependency
+  audit item is rewritten to a fresh `npm audit`: 10 findings (9 moderate, 1 high), `zod` and the
+  `eslint` / `typescript-eslint` / `minimatch` family; vite and vitest were fixed by #113.
+- Checks run: `npm audit` → `10 vulnerabilities (9 moderate, 1 high)`; `npm run check` → `EXIT=0`.
+- Next step: Sam answers the dependency item (upgrade PR, Dependabot alerts); BUG-2 and BUG-3
+  are built from DEC-247 and DEC-248 when a plan item schedules them (`docs/plan/bugs.md`).
