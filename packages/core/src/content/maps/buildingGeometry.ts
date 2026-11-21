@@ -31,7 +31,8 @@ export const BUILDING_GEOMETRY = {
   },
   /**
    * A fort: an outer capture point's square side and a lane tower's, walls included (sketch
-   * units), how far inside its side a lane tower's circle stops (`LANE_TOWER_FOOTPRINT_RADIUS`),
+   * units), how far inside its side a lane tower's circle stops (`LANE_TOWER_FOOTPRINT_RADIUS`) and
+   * how much open ground other buildings leave round it (`laneFortKeepOuts`),
    * what every fort's side is divided by to give its wall thickness, and its central keep's width
    * and height.
    */
@@ -41,6 +42,9 @@ export const BUILDING_GEOMETRY = {
     // (doorway, round the keep) is at least 2 nav cells wide at `config.map.navCellSize` 2.5 m.
     laneTowerSize: 56,
     laneTowerInset: 2, // TUNE: a tower's circle stops 2 m inside its fort's side, as at 32 m (DEC-185)
+    // TUNE: open ground no other building's blocking object takes round a lane tower fort: two
+    // 2.5 m nav cells, so its walls and doorways stay reachable (DEC-315).
+    laneTowerClearance: 5,
     wallDivisor: 10,
     keepWidthDivisor: 3,
     keepHeightDivisor: 2.5,

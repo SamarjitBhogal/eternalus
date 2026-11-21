@@ -6,6 +6,11 @@ import { MapGenerator } from './MapGenerator';
 import { BUILDING_GEOMETRY as G } from '../content/maps/buildingGeometry';
 import { DEFAULT_MAP_LAYOUT } from '../content/maps/defaultMapLayout';
 import { MapSceneryBuilder } from './MapSceneryBuilder';
+import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
+import { doesPolygonOverlapRect } from '../utils/geometry';
+import { fortInWorld } from './fortInWorld';
+import { MapObjectBuilder } from './MapObjectBuilder';
+import { MapPresentationBuilder } from './MapPresentationBuilder';
 
 const generate = (): MapDefinition => new MapGenerator().generate(createDefaultGameConfig(), 1);
 
@@ -96,5 +101,38 @@ describe('MapSceneryBuilder', () => {
     const nave = (map: MapDefinition): number =>
       xSpan(new MapSceneryBuilder(map).build().find((p) => p.id === 'cathedral-nave')?.shape ?? []);
     expect(nave(big)).toBeCloseTo(nave(generate()) * 2);
+  });
+  it('keeps every blocking object of another building out of every lane tower fort box, 3 and 5 lanes, across seeds (DEC-315)', () => {
+    const config = createDefaultGameConfig();
+    const overlaps: string[] = [];
+    for (const numLanes of [3, 5]) {
+      for (const seed of [1, 1234, 7, 10, 42, 99, 2026]) {
+        const map = new MapGenerator().generate({ map: { ...config.map, numLanes } }, seed);
+        const objects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+        const fort = fortInWorld(G.fort.laneTowerSize, map);
+        const towers = map.features.filter(
+          ({ definitionId }) => MAP_FEATURE_DEFINITIONS[definitionId]?.isCourt === true,
+        );
+        for (const tower of towers) {
+          const box = {
+            x: tower.position.x - fort.width / 2,
+            y: tower.position.y - fort.height / 2,
+            width: fort.width,
+            height: fort.height,
+          };
+          for (const object of objects) {
+            const isOwn = object.id === tower.id || object.partOf === tower.id;
+            if (!object.isBlocking || isOwn) continue;
+            if (object.footprints.some((shape) => doesPolygonOverlapRect(shape, box))) {
+              overlaps.push(
+                `${String(numLanes)} lanes, seed ${String(seed)}: ${tower.id} ~ ${object.id}`,
+              );
+            }
+          }
+        }
+      }
+    }
+
+    expect(overlaps).toEqual([]);
   });
 });

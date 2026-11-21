@@ -1,5 +1,7 @@
 import { BUILDING_GEOMETRY as G } from '../content/maps/buildingGeometry';
+import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import { SKETCH_HEIGHT, SKETCH_WIDTH } from '../content/maps/map1Scenery';
+import type { MapFeature } from '../content/maps/maps.types';
 import type { Rect } from '../utils/geometry.types';
 import { MapGenerationError } from './MapGenerationError';
 
@@ -43,6 +45,24 @@ export const fortWallBands = (box: Rect, world: FortWorld): readonly Rect[] => {
     { x: box.x, y: box.y, width: box.width, height: wallHeight },
     { x: box.x, y: box.y + box.height - wallHeight, width: box.width, height: wallHeight },
   ];
+};
+
+/**
+ * The ground round every lane tower's fort that no blocking object of another building may take,
+ * in sketch units (the space scenery is placed in, `MapSceneryBuilder`): each fort's box grown by
+ * `fort.laneTowerClearance` on every side (DEC-315). A lane tower is a feature whose definition
+ * `isCourt`, as `MatchGrid` reads it.
+ */
+export const laneFortKeepOuts = (features: readonly MapFeature[]): readonly Rect[] => {
+  const side = G.fort.laneTowerSize + 2 * G.fort.laneTowerClearance;
+  return features
+    .filter(({ definitionId }) => MAP_FEATURE_DEFINITIONS[definitionId]?.isCourt === true)
+    .map(({ position: { x, y } }) => ({
+      x: x - side / 2,
+      y: y - side / 2,
+      width: side,
+      height: side,
+    }));
 };
 
 /**

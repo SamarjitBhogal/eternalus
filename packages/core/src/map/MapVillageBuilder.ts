@@ -1,13 +1,20 @@
 import type { MapDecoration, MapDefinition } from '../content/maps/maps.types';
+import { doRectsOverlap } from '../utils/geometry';
+import type { Rect } from '../utils/geometry.types';
 import { SeededRandom } from '../utils/SeededRandom';
+import { laneFortKeepOuts } from './fortInWorld';
 import { RANDOM_SCENERY_SETTINGS as S } from '../content/maps/map1Scenery';
 import { MAP_PALETTE as P } from '../content/maps/map1Scenery';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
 /** Arranges village clusters around winding streets and the cathedral precinct. */
 export class MapVillageBuilder extends MapDecorationBuilder {
+  /** The ground round each lane tower fort that no house may take (DEC-315). */
+  private readonly keepOuts: readonly Rect[];
+
   /** Receives the original landmarks so housing leaves their footprints clear. */
   public constructor(private readonly map: MapDefinition) {
     super();
+    this.keepOuts = laneFortKeepOuts(map.features);
   }
   /** Creates an irregular settlement rather than a rectangular housing grid. */
   public build(): readonly MapDecoration[] {
@@ -77,10 +84,13 @@ export class MapVillageBuilder extends MapDecorationBuilder {
     height: number,
     variation: number,
   ): void {
+    const walls = { x, y, width, height };
     if (
       this.map.features.some(
         (feature) => Math.hypot(feature.position.x - x, feature.position.y - y) < 38,
-      )
+      ) ||
+      // A house stays out of a lane tower's fort and its clearance (DEC-315).
+      this.keepOuts.some((box) => doRectsOverlap(walls, box))
     )
       return;
     this.beginObject(id, 'house');

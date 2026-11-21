@@ -22,6 +22,8 @@ import { LAVA_RIVERS } from '../content/maps/map1Landforms';
 import { distance, distanceToPath, isPointInPolygon } from '../utils/geometry';
 import { SeededRandom } from '../utils/SeededRandom';
 import { mirrorMovableScenery, placeSceneryLakes } from './sceneryPlacement';
+import { laneFortKeepOuts } from './fortInWorld';
+import type { Rect } from '../utils/geometry.types';
 import type { Vec2 } from '../utils/geometry.types';
 
 /**
@@ -36,6 +38,8 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
   private readonly scaleX: number;
   private readonly scaleY: number;
   private readonly lakes: ReturnType<typeof placeSceneryLakes>;
+  /** The ground round each lane tower fort that no camp piece may take (DEC-315), in sketch units. */
+  private readonly keepOuts: readonly Rect[];
 
   /** Creates a builder for one generated map. */
   public constructor(world: MapDefinition) {
@@ -59,6 +63,7 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
       })),
     };
     this.lakes = placeSceneryLakes(this.map);
+    this.keepOuts = laneFortKeepOuts(this.map.features);
   }
 
   /** Returns the landscape, forests, settlement, camps and dressed features, in world units. */
@@ -211,11 +216,19 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
     }
   }
 
+  /**
+   * A camp's clearing, tents, fire and supplies. A blocking piece that would stand in a lane tower's
+   * fort or its clearance (`laneFortKeepOuts`) is left out, so no camp object overlaps a fort
+   * (DEC-315); the camp itself stays where the generator put it.
+   */
   private camp(point: Vec2, id: string): void {
     this.endObject();
     this.rect(`${id}-clearing`, point.x - 23, point.y - 18, 46, 36, P.road, 'ground');
+    const isClear = (box: Rect): boolean =>
+      !this.keepOuts.some((keepOut) => doRectsOverlap(box, keepOut));
     for (const side of [-1, 1]) {
       const x = point.x + side * 15;
+      if (!isClear({ x: x - 9, y: point.y - 12, width: 18, height: 18 })) continue;
       this.beginObject(`${id}-tent-${String(side)}`, 'camp');
       this.blockPolygon(
         `${id}-tent-${String(side)}`,
@@ -237,10 +250,14 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
       );
     }
     this.endObject();
-    this.beginObject(`${id}-fire`, 'furniture');
-    this.blockRect(`${id}-fire-stone`, point.x - 4, point.y - 4, 8, 8, P.stoneDark);
-    this.rect(`${id}-fire`, point.x - 2, point.y - 2, 4, 4, P.lavaLight);
-    this.endObject();
-    this.blockRect(`${id}-supplies`, point.x - 7, point.y + 12, 7, 5, P.bark);
+    if (isClear({ x: point.x - 4, y: point.y - 4, width: 8, height: 8 })) {
+      this.beginObject(`${id}-fire`, 'furniture');
+      this.blockRect(`${id}-fire-stone`, point.x - 4, point.y - 4, 8, 8, P.stoneDark);
+      this.rect(`${id}-fire`, point.x - 2, point.y - 2, 4, 4, P.lavaLight);
+      this.endObject();
+    }
+    if (isClear({ x: point.x - 7, y: point.y + 12, width: 7, height: 5 })) {
+      this.blockRect(`${id}-supplies`, point.x - 7, point.y + 12, 7, 5, P.bark);
+    }
   }
 }
