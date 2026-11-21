@@ -221,6 +221,16 @@ Reply inline (`Decision: …`).
       as `loadGuardPlans` does.
       Build both in PR #125, build them in a later PR, or keep the code as it is?
 
+- [ ] **HC-B24 — Better than the design, built under your standing rule, sign-off asked: map-work
+      critic round 3 (`feat/map-work-forts-towers`, 2026-11-21); no decision blocks the PR.**
+      Recorded as DEC-321 (owner decisions log). Built after the last critic loop, so no critic
+      has reviewed them; each has a test that a deliberate break turned red. (1) A camp's art
+      sizes (clearing, tents, fire, supplies) live in one place in the building geometry content;
+      the camp art and the ground the generator keeps clear for a camp both read it, so they
+      cannot drift apart. No camp moves. (2) The map generator checks every obstacle choice
+      against the map feature definitions before it builds, so a wrong id fails for every seed,
+      not only for a seed that happens to pick it. Approve, or say which to undo.
+
 - [ ] **HC-B23 — Better than the design, built under your standing rule, sign-off asked: map-work
       critic round 2 (`feat/map-work-forts-towers`, 2026-11-21); no decision blocks the PR.**
       Recorded as DEC-320 (owner decisions log). (1) A fallen lane tower's banner goes with its

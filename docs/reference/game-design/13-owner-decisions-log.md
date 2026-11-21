@@ -21,6 +21,19 @@ overridden by the product owner. Decisions arrive through `INBOX.md`; once imple
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
 
+## Batch 2026-11-21 (map-work critic round 3: better-than-design items, standing rule)
+
+Two better-than-design items from the third and last critic round on `feat/map-work-forts-towers`
+(DEC-315, DEC-318, DEC-320). The owner was not asked: the owner's standing rule of 2026-11-09
+applies, as for DEC-318 and DEC-320. They were built after the last critic loop (the owner allows 3),
+so no critic has reviewed them; each has a recorded fail-first break. Full findings:
+`eternalus-agent-work/dec-288/reports/map-work-critic-r3.md`. Sign-off card: `INBOX.md` HC-B24.
+DEC-321 is this batch.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DEC-321 | **Map-work critic round 3 items BTD-r3-1 and BTD-r3-2 are built** (follows DEC-315, DEC-318 (BTD4), DEC-320; DEC-139). (BTD-r3-1) A camp's art geometry (clearing, tents, fire, supplies) has one entry, `BUILDING_GEOMETRY.camp` (`content/maps/buildingGeometry.ts`). `MapSceneryBuilder` draws the camp from it, and the box the generator keeps clear of the lane tower forts (`clearCampOfForts`) is derived from it (`camp.halfExtent`), so the numbers no longer live twice; `CAMP_HALF_EXTENT` is removed. Camps and their art do not move. (BTD-r3-2) `MapGenerator.generate` rejects an obstacle choice (`layout.obstacles.choices`) that is not a map feature definition before it builds the map, whatever the seed, with a `MapGenerationError` naming the id. The sample-time check in `radiusOf` is removed; `createMapFeature` stays the backstop. This replaces the sample-time throw of round-2 item R2-N6. |
+
 ## Batch 2026-11-21 (map-work critic round 2: better-than-design items, standing rule)
 
 Three better-than-design items from the second critic round on `feat/map-work-forts-towers`

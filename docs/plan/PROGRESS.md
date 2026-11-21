@@ -9891,3 +9891,33 @@ docs:check` pass on this entry.
 - Next step: critic round 3 (the last loop) on `aa3c117a..HEAD`; the owner rules on the Owner
   Calls cards (fort-map-sizes, bot-defend-tower, aura-radius-origin, inside-bonus-scope,
   camp-class-after-move) and on HC-B21 and HC-B23.
+
+### 2026-11-21 — Phase 3 / map work: critic round 3 nits and better-than-design items — feat/map-work-forts-towers — sholtzman + Claude Code
+
+- What was done: critic round 3 (the owner's last loop: approve, 0 blockers, 0 should-fix) follow-ups
+  on top of `f44a2ea2`. Nits: TSDoc of `CampLayoutInput.clearance` and `FortWall.role` (R3-N1,
+  R3-N2); `fortWallBands` selects by a typed `BAND_ROLES` (R3-N3); a `Match` test drops a gate
+  before the first tick and expects it not drawn, which guards the constructor's
+  `RetiredFeatures.observe` (R3-N4). Its two better-than-design items are built under the owner's
+  standing rule of 2026-11-09 (DEC-321, `INBOX.md` HC-B24): one camp geometry entry
+  (`BUILDING_GEOMETRY.camp`) that the camp art reads and the camp clearance box derives from
+  (`CAMP_HALF_EXTENT` removed); `MapGenerator.generate` rejects an unknown obstacle choice before
+  it builds, for every seed (`radiusOf` is a plain lookup again). The test "rejects a feature that
+  names an unknown definition" drops only the Stronghold's definition now, so it still reaches
+  `createMapFeature` (assertion unchanged). No 4th critic loop. Fail-first
+  (`eternalus-agent-work/dec-288/r3-breaks.log`): the constructor's `observe` removed (new `Match`
+  case red); a typo role (`tsc` TS2820); the new obstacle test red before the up-front check, and
+  both obstacle tests red with it removed; camp tents drawn 1 unit wider than the entry, and
+  `halfExtent.x` without the tents (camp tests red each time); all restored. A scratchpad probe
+  found map, scenery and map objects identical before and after the camp change at 18
+  configurations. Golden hash unchanged.
+- Checks run: full `npm run check` exit 1 (`eternalus-agent-work/dec-288/check-10.log`): format,
+  no-js, lint, typecheck and knip pass; core "Tests 2 failed | 1803 passed (1805)" (the same two
+  owner-card tests: "keeps every lane tower fort apart with 3 towers of each kind per lane" and
+  "heals a bot that retreated hurt back to the rejoin line, and it fights again"), protocol "Tests
+  29 passed (29)", client "Tests 2025 passed (2025)", server "Tests 84 passed (84)"; build not
+  reached. Run apart (`build-10.log`): `npm run build` exit 0, `npm run docs:check` →
+  "Documentation check passed.".
+- Next step: the owner rules on the Owner Calls cards (fort-map-sizes, bot-defend-tower,
+  aura-radius-origin, inside-bonus-scope, camp-class-after-move) and signs off HC-B21, HC-B23 and
+  HC-B24; then push and open the PR (stacked on #122, docs in #147).
