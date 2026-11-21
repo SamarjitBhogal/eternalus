@@ -66,7 +66,7 @@ export interface WeaponSource {
  * Decides the loadout a spawn gets from the one its placement gives (05 §12). Core's
  * `SpawnLoadoutPolicy` implements it; the factory depends on this port, not on `loadout/`.
  */
-export interface LoadoutResolver {
+interface LoadoutResolver {
   /** The loadout a `definitionId` spawn gets, given the placement's (or none). */
   loadoutFor(definitionId: string, given: Loadout | undefined): Loadout | undefined;
 }
