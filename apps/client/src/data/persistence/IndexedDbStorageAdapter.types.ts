@@ -5,7 +5,7 @@
 type BivariantHandler<E> = { handle(event: E): void }['handle'];
 
 /** The fields of a version-change event the adapter reads. */
-export type IdbVersionChange = { readonly oldVersion: number; readonly newVersion: number | null };
+type IdbVersionChange = { readonly oldVersion: number; readonly newVersion: number | null };
 
 /** The part of `IDBRequest` the adapter uses. */
 export interface IdbRequestApi<T> {
@@ -16,13 +16,13 @@ export interface IdbRequestApi<T> {
 }
 
 /** The part of `IDBOpenDBRequest` the adapter uses. */
-export interface IdbOpenRequestApi extends IdbRequestApi<IdbDatabaseApi> {
+interface IdbOpenRequestApi extends IdbRequestApi<IdbDatabaseApi> {
   onupgradeneeded: BivariantHandler<IdbVersionChange> | null;
   onblocked: BivariantHandler<IdbVersionChange> | null;
 }
 
 /** The part of `IDBObjectStore` the adapter uses. */
-export interface IdbObjectStoreApi {
+interface IdbObjectStoreApi {
   get(key: IDBValidKey): IdbRequestApi<unknown>;
   put(value: unknown): IdbRequestApi<unknown>;
   delete(key: IDBValidKey): IdbRequestApi<undefined>;
