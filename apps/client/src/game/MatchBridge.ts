@@ -56,7 +56,6 @@ export class MatchBridge {
   public constructor(private readonly deps: MatchBridgeDeps) {
     this.structures = MatchBridge.structuresOf(deps.map);
     this.publishedStructures = this.structures;
-    deps.retired.observe(deps.firstSnapshot);
     this.boundMaxHealth = new Map(
       [...MatchBridge.healthByFeature(deps.firstSnapshot)].map(([id, { max }]) => [id, max]),
     );
@@ -79,7 +78,6 @@ export class MatchBridge {
 
   /** Publishes both rosters, the clock and the HUD once, before the first tick. */
   public publishAll(snapshot: Snapshot, playerId: EntityId | null): void {
-    this.deps.retired.observe(snapshot);
     this.publishRosters(snapshot);
     this.publishFast(snapshot, playerId);
   }
@@ -89,7 +87,6 @@ export class MatchBridge {
    * Returns `true` only after the tick that ended the match, the once it publishes `match-ended`.
    */
   public afterTick(snapshot: Snapshot, playerId: EntityId | null): boolean {
-    this.deps.retired.observe(snapshot);
     if (snapshot.tick % this.deps.publishEveryTicks === 0) {
       this.publishFast(snapshot, playerId);
     }

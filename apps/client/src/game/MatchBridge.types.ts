@@ -27,11 +27,10 @@ export type MatchBridgeDeps = {
    */
   readonly firstSnapshot: Snapshot;
   /**
-   * Which structures have fallen: the bridge observes every snapshot into it (first the first
-   * snapshot, so a tile is bound to what stood then) and reads it for a tile's 0 health. `Match`
-   * shares the same instance with the views.
+   * Which structures have fallen, read for a tile's 0 health. `Match` owns it and observes every
+   * snapshot into it before the bridge reads it (first the first snapshot, then once per tick).
    */
-  readonly retired: RetiredFeatures;
+  readonly retired: Pick<RetiredFeatures, 'isRetired'>;
 };
 
 /** A capture point the HUD lists, and where its zone stands. */

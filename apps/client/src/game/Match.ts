@@ -53,7 +53,7 @@ export class Match implements LoopTarget {
 
   /** The map objects (walls, furniture, doors) and their destroyed state, drawn in the scene. */
   private readonly objects: WorldObjectsView;
-  /** Which structures have fallen; `MatchBridge` observes every snapshot into it. */
+  /** Which structures have fallen; `Match` observes every snapshot into it. */
   private readonly retired = new RetiredFeatures();
 
   private readonly world: { readonly scene: SceneView; readonly miniMap: MiniMapView };
@@ -110,7 +110,7 @@ export class Match implements LoopTarget {
     const { isRetired } = this.retired;
     const scene = new SceneView([
       new MapView(map, scenery, hiddenRoofs, shown, buildings, isDestroyed, isRetired),
-      new SceneryView(scenery, 'detail', hiddenRoofs, shown, isDestroyed, isRetired),
+      new SceneryView(scenery, 'detail', hiddenRoofs, shown, isDestroyed),
       this.objects,
       this.entities,
     ]);
@@ -124,6 +124,7 @@ export class Match implements LoopTarget {
     this.current = simulation.snapshot();
     this.playerId = deps.remote?.legendId ?? this.current.match.humanLegendId;
     this.healthBars.observe(this.current, this.playerId);
+    this.retired.observe(this.current);
     this.bridge = new MatchBridge({
       ...bridge,
       tickRate,
@@ -206,6 +207,7 @@ export class Match implements LoopTarget {
     this.previous = this.current;
     this.current = this.deps.simulation.snapshot();
     this.healthBars.observe(this.current, this.playerId);
+    this.retired.observe(this.current);
     this.roofs.playerAt(this.livingPlayerAt());
     if (this.bridge.afterTick(this.current, this.playerId)) {
       this.deps.observer.ended();

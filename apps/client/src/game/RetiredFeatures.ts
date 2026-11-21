@@ -3,10 +3,11 @@ import type { RetiredFeaturesSource } from './RetiredFeatures.types';
 /**
  * Which structures have fallen, read from the snapshots: a structure binds to its map feature by
  * `EntitySnapshot.mapFeatureId`, and core removes its entity when it dies. A feature is retired
- * once it has been seen standing and is gone. It is not the map object's `isDestroyed`, which a
- * fallen structure's fort never gets (its walls stay as ruins, DEC-217 (12)). This is the one
- * place that rule lives: `MatchBridge` (which observes every snapshot) reads it for a tile's 0
- * health, and `Match` hands it to the views that stop drawing a fallen structure's feature.
+ * once it has been seen standing and is gone. It serves structures whose feature is not their
+ * destroyed map object (gates, the Stronghold). A lane tower's own fort object (court, keep,
+ * banner art) falls with it and is hidden by `isDestroyed` (DEC-217 (12)). This is the one place
+ * that rule lives: `Match` observes every snapshot, `MatchBridge` reads it for a tile's 0 health,
+ * and `MapView.isGone` reads it for gates and the Stronghold.
  */
 export class RetiredFeatures {
   private readonly seen = new Set<string>();

@@ -196,7 +196,9 @@ describe('Match', () => {
       (entity) => entity.kind === 'buff-tower' && entity.mapFeatureId !== undefined,
     );
     const feature = map.features.find(({ id }) => id === tower?.mapFeatureId);
-    const banner = presentation.scenery.find((piece) => piece.flagOf === feature?.id);
+    const banner = presentation.scenery.find(
+      (piece) => piece.id === `${feature?.id ?? ''}-fort-banner`,
+    );
     if (tower === undefined || feature === undefined) throw new Error('Missing tower');
     if (banner === undefined) throw new Error('Missing banner');
     const glyphAt = () =>

@@ -79,32 +79,3 @@ describe('SceneryView roof cutaways', () => {
     expect(fill).not.toHaveBeenCalledWith(roof?.shape, roof?.color);
   });
 });
-
-describe('SceneryView structure flags', () => {
-  it("hides a fallen structure's banner and keeps the rest of its fort", () => {
-    const banner = PRESENTATION.scenery.find(
-      (piece) => piece.flagOf !== undefined && piece.layer === 'detail',
-    );
-    if (banner?.flagOf === undefined) throw new Error('Missing flag piece');
-    const fallen = banner.flagOf;
-    const court = PRESENTATION.scenery.find((piece) => piece.id === `${fallen}-fort-court`);
-    if (court === undefined) throw new Error('Missing court');
-    const renderer = new RecordingRenderer();
-    const fill = vi.spyOn(renderer, 'fillPolygon');
-    new SceneryView(
-      PRESENTATION.scenery,
-      'detail',
-      new Set(),
-      undefined,
-      () => false,
-      (id) => id === fallen,
-    ).draw(renderer);
-    expect(fill).not.toHaveBeenCalledWith(banner.shape, banner.color);
-    expect(fill).toHaveBeenCalledWith(court.shape, court.color);
-
-    const standing = new RecordingRenderer();
-    const fillStanding = vi.spyOn(standing, 'fillPolygon');
-    new SceneryView(PRESENTATION.scenery, 'detail').draw(standing);
-    expect(fillStanding).toHaveBeenCalledWith(banner.shape, banner.color);
-  });
-});
