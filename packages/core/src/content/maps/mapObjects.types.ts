@@ -40,6 +40,11 @@ export type MapObject = {
    * scenery (trees, rocks, houses, camps, forts), which anyone may break.
    */
   readonly team?: PlayableTeam;
+  /**
+   * A doorway that blocks only in a Duel whose rules close the Cathedral (SCRUM-450): `isBlocking`
+   * is `false` here, and `Simulation` makes it blocking for such a Duel.
+   */
+  readonly isDuelBarrier?: true;
 };
 
 /** Mutable object state projected from the simulation; geometry stays in the map definition. */

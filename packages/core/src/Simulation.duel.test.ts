@@ -124,6 +124,55 @@ describe('Simulation: a Duel', () => {
     ).toBeNull();
   });
 
+  it('spawns no minions or other mobs, while an ordinary match does (SCRUM-445)', () => {
+    const mobsAfter = (sim: Simulation, ticks: number) => {
+      for (let i = 0; i < ticks; i += 1) sim.step();
+      return sim.snapshot().entities.filter(({ kind }) => kind.endsWith('-mob'));
+    };
+    const ordinary = new Simulation({ config, seed: 7, logger: new NullLogger(), map, mapObjects });
+    const ticks = 10 * config.tickRate;
+
+    expect(mobsAfter(build(), ticks)).toEqual([]);
+    expect(mobsAfter(ordinary, ticks).length).toBeGreaterThan(0);
+  });
+
+  it('has no capture objectives, while an ordinary match does (SCRUM-446)', () => {
+    const objectives = (snapshot: Snapshot) => snapshot.entities.filter(({ capture }) => capture);
+    const ordinary = new Simulation({ config, seed: 7, logger: new NullLogger(), map, mapObjects });
+
+    expect(objectives(build().snapshot())).toEqual([]);
+    expect(objectives(ordinary.snapshot()).length).toBeGreaterThan(0);
+  });
+
+  it('keeps both Legends inside the Cathedral, its side entrances closed (SCRUM-450)', () => {
+    const doors = mapObjects.filter(({ isDuelBarrier }) => isDuelBarrier === true);
+    const xsOf = (id: string) =>
+      doors
+        .find((door) => door.id === id)
+        ?.footprints.flat()
+        .map(({ x }) => x) ?? [];
+    const sim = build();
+    for (let i = 0; i < 20 * config.tickRate; i += 1) {
+      for (const [team, x] of [
+        ['light', -1],
+        ['dark', 1],
+      ] as const) {
+        const actorId = legendOf(sim, sim.snapshot(), team).id;
+        sim.enqueueCommand({ type: 'move', actorId, direction: { x, y: 0 } });
+      }
+      sim.step();
+    }
+    const after = sim.snapshot();
+
+    expect(doors.map(({ isBlocking }) => isBlocking)).toEqual([false, false, false, false]);
+    expect(legendOf(sim, after, 'light').legend.transform?.x).toBeGreaterThan(
+      Math.min(...xsOf('cathedral-interior-west-door')),
+    );
+    expect(legendOf(sim, after, 'dark').legend.transform?.x).toBeLessThan(
+      Math.max(...xsOf('cathedral-interior-east-door')),
+    );
+  });
+
   it('refuses a Duel without a map', () => {
     expect(
       () => new Simulation({ config, seed: 1, logger: new NullLogger(), duel: { killTarget: 1 } }),
