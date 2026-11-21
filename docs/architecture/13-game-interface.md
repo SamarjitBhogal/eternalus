@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-21
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -484,6 +484,8 @@ that button's release does not step the browser's history, DEC-112).
   The selection screens are one 1920 × 1080 artboard scaled as a whole; the HUD is sized by its
   own unit `--hud-u` (1 px at 1920 × 1080); no text renders below `--text-min`, whose value
   `styles/global.css` sets (`Recommendation:`, the owner's Keep of 2026-10-28, INBOX HC-Q14).
+  Browser support is a baseline, plus newer CSS behind `@supports` with a fallback, as DEC-312
+  does (DEC-316).
 - **Accessibility minimums** (ES-11 and plan sprint 5.5, `Recommendation:` beyond the sources'
   remappable controls): every screen operable by keyboard alone with a visible focus ring; every
   interactive element has an accessible name; `prefers-reduced-motion` and the in-game Reduce motion

@@ -16,17 +16,6 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
-- [ ] **`refactor/countdown-hud-units` critic on DEC-312 (2026-11-20), better than the design —
-      one item, pick one option (HC-B17).** The repo has no browser-support statement: no ADR,
-      nothing in architecture 13 §7, nothing in the requirements. DEC-312 is the first CSS that
-      needs a 2025–26 browser version (CSS typed arithmetic); it ships behind `@supports` with a
-      fallback (DEC-312 (2)).
-      (a) Add one line to architecture 13 §7 "Styling": a browser baseline, plus "newer CSS ships
-      behind `@supports` with a fallback, as DEC-312 does". The next author then knows when a
-      fallback is required. Recommended.
-      (b) No policy: each pull request decides.
-      The card is on the Owner Calls page (HC-B17).
-
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
       small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`
@@ -3047,6 +3036,11 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-11-21 — **Your pick on HC-B17, a browser-support line** (`refactor/countdown-hud-units`):
+  recorded as DEC-316. Architecture 13 §7 "Styling" now says, in your words: browser support is a
+  baseline, plus newer CSS behind `@supports` with a fallback, as DEC-312 does. You named no
+  baseline, so no browser versions are listed.
 
 - 2026-11-20 — **Your pick on HC-B15, one fit source for the HUD and the countdown**
   (`refactor/countdown-hud-units`): recorded as DEC-312. (c) CSS typed arithmetic: the match-start

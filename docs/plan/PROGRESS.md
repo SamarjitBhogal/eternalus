@@ -9401,3 +9401,19 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   only).
 - Next step: the PR on base `feat/match-start-countdown` (the coordinator pushes), retargeted to
   `phase/3-sprint-3-work` after #138 merges; HC-B17 on the Owner Calls page (Sam).
+
+### 2026-11-21 — Phase 3 / the match-start countdown: DEC-316, the browser-support line — refactor/countdown-hud-units — sholtzman + Claude Code
+
+- What was done: DEC-316 (owner pick on HC-B17, the DEC-312 critic's better-than-design item
+  BTD-1): architecture 13 §7 "Styling" gains, in the owner's words, "Browser support is a
+  baseline, plus newer CSS behind `@supports` with a fallback, as DEC-312 does" (owner's design
+  text). No baseline was named, so no browser versions are listed. Decisions log DEC-316 batch;
+  INBOX HC-B17 done. PR #143 CI on `8e0a5ee9` (run 44852631311): ubuntu and windows success. No
+  critic run on this delta: one owner-dictated sentence in a doc, no code.
+- Checks run: `npm run check` → `EXIT=0`
+  (`eternalus-agent-work/game-loop-plan/check-dec316-2026-11-21.log`): core "Tests 1679 passed
+  (1679)"; protocol "Tests 29 passed (29)"; client "Tests 2077 passed (2077)"; server "Tests 84
+  passed (84)"; "Documentation check passed.". This check line was filled in after that run (docs
+  only).
+- Next step: push to PR #143 (the coordinator), refresh its body; retarget #143 to
+  `phase/3-sprint-3-work` after #138 merges.

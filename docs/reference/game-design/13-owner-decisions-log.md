@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-21
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,16 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-21 (Owner Calls page: the browser-support line)
+
+The owner's pick of 2026-11-21 on card HC-B17 of the coordinator's Owner Calls page (kept outside the repository in
+`eternalus-agent-work/owner-calls-2026-11-20/answers-v16/answers/HC-B17.json`). DEC-316 is this batch (DEC-313 to
+DEC-315 are other sessions').
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Docs changed                          |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| DEC-316 | **The game interface states a browser-support rule: a baseline, plus newer CSS behind `@supports` with a fallback** (closes `INBOX.md` HC-B17, the DEC-312 critic's better-than-design item BTD-1; architecture 13 §7 "Styling"). "Add the line "a baseline plus newer CSS behind @supports with a fallback, as DEC-312 does" to 13 §7", no note. The line goes into the Styling bullet in the owner's words. The owner named no baseline, so the doc lists no browser versions; DEC-312 (2)'s `@supports not (scale: calc(1px / 1px))` fallback is the pattern it points to. | architecture 13 §7; `INBOX.md` HC-B17 |
 
 ## Batch 2026-11-20 (Owner Calls page: the countdown's HUD units)
 
