@@ -1,7 +1,7 @@
 import { cos, sin } from '../utils/deterministicMath';
 import type { MapDecoration, MapDecorationLayer } from '../content/maps/maps.types';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
-import type { MapObjectArt, MapObjectKind } from '../content/maps/mapObjects.types';
+import type { FortWallRole, MapObjectArt, MapObjectKind } from '../content/maps/mapObjects.types';
 
 /** Shared polygon assembly for authored map scenery and interior architecture. */
 export abstract class MapDecorationBuilder {
@@ -15,10 +15,22 @@ export abstract class MapDecorationBuilder {
 
   /**
    * Assigns physical ownership explicitly while the object's art is authored; `partOf` names the
-   * feature whose structure the object is part of the body of (`MapObject.partOf`).
+   * feature whose structure the object is part of the body of (`MapObject.partOf`), and
+   * `fortWall` says which piece of that fort it is.
    */
-  protected beginObject(id: string, kind: MapObjectKind, partOf?: string): void {
-    this.object = { id, kind, isFootprint: false, ...(partOf === undefined ? {} : { partOf }) };
+  protected beginObject(
+    id: string,
+    kind: MapObjectKind,
+    partOf?: string,
+    fortWall?: FortWallRole,
+  ): void {
+    this.object = {
+      id,
+      kind,
+      isFootprint: false,
+      ...(partOf === undefined ? {} : { partOf }),
+      ...(fortWall === undefined ? {} : { fortWall }),
+    };
   }
 
   /** Subsequent ground marks belong to no physical object. */
@@ -43,12 +55,6 @@ export abstract class MapDecorationBuilder {
   protected markPassage(): void {
     const piece = this.pieces.at(-1);
     if (piece !== undefined) this.pieces[this.pieces.length - 1] = { ...piece, isPassage: true };
-  }
-
-  /** Makes the just-authored piece the flag of the structure built from feature `featureId`. */
-  protected flagLastOf(featureId: string): void {
-    const piece = this.pieces.at(-1);
-    if (piece !== undefined) this.pieces[this.pieces.length - 1] = { ...piece, flagOf: featureId };
   }
 
   /** Marks an exact solid footprint without treating shadows or roofs as collision shapes. */

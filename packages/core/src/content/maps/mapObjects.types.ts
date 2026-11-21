@@ -18,6 +18,20 @@ export type MapObjectKind =
   | 'turret'
   | 'gate';
 
+/**
+ * Which piece of a lane tower's fort a wall object is: the 7 walls by side (the lane gates split
+ * the west and east walls, the south gate splits the south wall) and the 4 corner towers.
+ */
+export type FortWallRole =
+  | 'top'
+  | 'left'
+  | 'left-lower'
+  | 'right'
+  | 'right-lower'
+  | 'bottom-left'
+  | 'bottom-right'
+  | 'corner-tower';
+
 /** Authored ownership: all art of one object changes together when that object is destroyed. */
 export type MapObjectArt = {
   readonly id: string;
@@ -25,6 +39,8 @@ export type MapObjectArt = {
   readonly isFootprint: boolean;
   /** The feature whose structure this object is part of the body of (`MapObject.partOf`). */
   readonly partOf?: string;
+  /** Which piece of the fort this wall is (`MapObject.fortWall`). */
+  readonly fortWall?: FortWallRole;
 };
 
 /** Exact world geometry shared by collision, targeting and destruction presentation. */
@@ -44,6 +60,8 @@ export type MapObject = {
    * DEC-219 (a)).
    */
   readonly partOf?: string;
+  /** Which piece of its tower's fort a wall that is `partOf` the tower is; read by `fortWallBands`. */
+  readonly fortWall?: FortWallRole;
   /**
    * The side that built it: its Stronghold and everything of that palace, its gates, wall
    * segments, turrets and lane towers. Only the other side may break it (DEC-121 (a)). Absent on

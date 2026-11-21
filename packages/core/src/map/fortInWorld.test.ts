@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { BUILDING_GEOMETRY as G } from '../content/maps/buildingGeometry';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
-import type { MapObject } from '../content/maps/mapObjects.types';
+import type { FortWallRole, MapObject } from '../content/maps/mapObjects.types';
 import { bodyObjectsOf, fortBox } from './__fixtures__/fortBody';
 import { assertFortWallsResolve, fortInWorld, fortWallBands } from './fortInWorld';
 import { MapGenerator } from './MapGenerator';
@@ -103,11 +103,11 @@ describe('fortWallBands', () => {
   );
 
   it('gives no band for a fort whose wall piece is gone, and ignores objects that are not its walls', () => {
-    const box = (id: string, partOf: string | undefined, y: number): MapObject => ({
+    const box = (id: string, fortWall: FortWallRole | undefined, y: number): MapObject => ({
       id,
       kind: 'wall',
       isBlocking: true,
-      ...(partOf === undefined ? {} : { partOf }),
+      ...(fortWall === undefined ? {} : { fortWall }),
       footprints: [
         [
           { x: 0, y },
@@ -120,7 +120,11 @@ describe('fortWallBands', () => {
 
     expect(fortWallBands([])).toEqual([]);
     expect(
-      fortWallBands([box('a-fort-wall-top', 'a', 0), box('a-fort-wall-left', 'a', 5)]),
+      fortWallBands([
+        box('a-fort-wall-top', 'top', 0),
+        box('a-fort-wall-left', 'left', 5),
+        box('rock', undefined, 7),
+      ]),
     ).toEqual([{ x: 0, y: 0, width: 10, height: 1 }]);
   });
 });

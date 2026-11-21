@@ -44,9 +44,9 @@ export const fortInWorld = (sketchSide: number, world: FortWorld): FortInWorld =
  * field. There is no second calculation of the wall thickness: the objects are the source.
  */
 export const fortWallBands = (walls: readonly MapObject[]): readonly Rect[] =>
-  [['top'], ['bottom-left', 'bottom-right']].flatMap((parts) => {
-    const pieces = walls.filter(({ id, partOf }) =>
-      parts.some((part) => id === `${partOf ?? ''}-fort-wall-${part}`),
+  [['top'], ['bottom-left', 'bottom-right']].flatMap((roles) => {
+    const pieces = walls.filter(
+      ({ fortWall }) => fortWall !== undefined && roles.includes(fortWall),
     );
     return pieces.length === 0
       ? []
