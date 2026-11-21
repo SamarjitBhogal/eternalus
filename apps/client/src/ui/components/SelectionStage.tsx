@@ -20,13 +20,11 @@ function artboardStyle(scale: number): CSSProperties {
 
 /**
  * The 1920 × 1080 artboard of the selection screens (13 §10), centred in its host and scaled to fit
- * the window (`useStageScale`), with the step's vignettes beneath its children. The match-start
- * overlay (`MatchCountdown`) also draws its numeral on it, so the glow scales with it
- * (DEC-299 (2)). Every selection module is written in Figma px of this artboard; at 1920 × 1080
- * the scale is identity and no transform is set, so rasters land 1:1 (I-45). It isolates its own
- * stacking context: the vignettes' negative z-indexes (top −3, bottom −1) stay above the backdrop
- * and below the step, and exposes `--stage-scale` so text floors at `--text-min` on screen below
- * 1080p (CD-23).
+ * the window (`useStageScale`), with the step's vignettes beneath its children. Every selection
+ * module is written in Figma px of this artboard; at 1920 × 1080 the scale is identity and no
+ * transform is set, so rasters land 1:1 (I-45). It isolates its own stacking context: the
+ * vignettes' negative z-indexes (top −3, bottom −1) stay above the backdrop and below the step,
+ * and exposes `--stage-scale` so text floors at `--text-min` on screen below 1080p (CD-23).
  */
 export function SelectionStage({
   vignettes,
