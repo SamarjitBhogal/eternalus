@@ -2,15 +2,17 @@ import { describe, expect, it } from 'vitest';
 
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
 import type { EntityDrawState } from './EntityView.types';
-import { STRUCTURE_MARKERS } from './entityViews.constants';
+import { STRUCTURE_AURA_RING_ALPHA, STRUCTURE_MARKERS } from './entityViews.constants';
 import { TEAM_COLORS } from './MapView.constants';
 import { StructureView } from './StructureView';
 
 const structure = (
   kind: string,
   health: { current: number; max: number } | null = { current: 3000, max: 3000 },
+  auraRadius?: number,
 ): EntityDrawState => ({
   entity: {
+    ...(auraRadius === undefined ? {} : { auraRadius }),
     id: 'entity-1',
     kind,
     family: 'structure',
@@ -35,6 +37,37 @@ describe('StructureView', () => {
     expect(renderer.calls).toEqual([
       { op: 'drawWorldGlyph', args: [STRUCTURE_MARKERS[kind], { x: 5, y: 6 }, TEAM_COLORS.light] },
     ]);
+  });
+
+  it('draws a faint ring at the aura radius in the team colour, under the marker (DEC-315 (4))', () => {
+    const renderer = new RecordingRenderer();
+    new StructureView().draw(structure('buff-tower', { current: 2500, max: 2500 }, 12), renderer);
+    expect(renderer.calls).toEqual([
+      {
+        op: 'drawWorldGlyph',
+        args: [
+          { shape: 'ring', size: 24 },
+          { x: 5, y: 6 },
+          `${TEAM_COLORS.light}${STRUCTURE_AURA_RING_ALPHA}`,
+        ],
+      },
+      {
+        op: 'drawWorldGlyph',
+        args: [STRUCTURE_MARKERS['buff-tower'], { x: 5, y: 6 }, TEAM_COLORS.light],
+      },
+    ]);
+  });
+
+  it('draws no ring for a tower without an aura radius, as a spawner tower', () => {
+    const renderer = new RecordingRenderer();
+    new StructureView().draw(structure('spawner-tower'), renderer);
+    expect(renderer.calls).toHaveLength(1);
+  });
+
+  it('draws no ring for a dead tower that still carries a radius', () => {
+    const renderer = new RecordingRenderer();
+    new StructureView().draw(structure('buff-tower', { current: 0, max: 2500 }, 12), renderer);
+    expect(renderer.calls).toEqual([]);
   });
 
   it('draws a spawner tower and a buff tower differently', () => {

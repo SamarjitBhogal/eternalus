@@ -107,3 +107,10 @@ export const STRUCTURE_MARKERS: Readonly<Record<string, GlyphSpec | undefined>> 
   'spawner-tower': { shape: 'square', size: 28 },
   'buff-tower': { shape: 'diamond', size: 28 },
 };
+
+/**
+ * The alpha, as two hex digits appended to a team colour, of the ring a structure draws at its
+ * aura's radius (DEC-315 (4)): faint, so the ground under it stays readable.
+ */
+// TUNE: DEC-315 (4); "a ring is drawn at 12 m", no reference look, close is enough
+export const STRUCTURE_AURA_RING_ALPHA = '66';
