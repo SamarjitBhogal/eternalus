@@ -228,6 +228,8 @@ export const STRINGS = {
   /** Both selection steps (62:125, 62:70, 58:271). Class, Legend and ability names are content. */
   characterSelect: {
     bannerTitle: 'Legend Selection',
+    /** The locked view's line naming the weapon the player spawns with (SCRUM-31, 08). */
+    weaponLine: (weaponName: string): string => `Weapon: ${weaponName}`,
     chooseClass: 'Choose Your Class',
     selectClass: 'Select Class',
     selectClassHint: 'Choose a class first.',
