@@ -71,7 +71,8 @@ export class StatusEffectSystem implements System {
 
   /** Marks `holderId`'s statuses that end on damage as broken, and remembers it if any were. */
   private breakOn(state: GameState, holderId: EntityId): void {
-    if (state.entities.get(holderId)?.findComponent(StatusEffects)?.breakOnDamage() === true) {
+    const statuses = state.entities.get(holderId)?.findComponent(StatusEffects);
+    if (statuses?.breakOnDamage(state.tick) === true) {
       this.broken.add(holderId);
     }
   }

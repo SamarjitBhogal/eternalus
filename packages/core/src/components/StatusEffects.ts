@@ -89,12 +89,13 @@ export class StatusEffects {
    * Marks every active status that `endsOnDamage` as broken (its holder dealt or took damage,
    * DEC-267) and returns whether any was. A broken status stops counting at once (no flags, no
    * modifiers), so a Veil ends at the hit; it stays listed, so this is safe inside a loop over
-   * `active`, until `StatusEffectApplier.removeBroken` removes it.
+   * `active`, until `StatusEffectApplier.removeBroken` removes it. One that has run out at `tick`
+   * does not break: it ends by expiry, so a hit inside its `status-expired` cannot end it twice.
    */
-  public breakOnDamage(): boolean {
+  public breakOnDamage(tick: number): boolean {
     let hasBroken = false;
     for (const status of this.activeList) {
-      if (status.definition.endsOnDamage === true) {
+      if (status.definition.endsOnDamage === true && !status.hasExpired(tick)) {
         status.isBroken = true;
         hasBroken = true;
       }

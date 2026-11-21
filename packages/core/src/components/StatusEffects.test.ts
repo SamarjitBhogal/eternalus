@@ -106,11 +106,11 @@ describe('StatusEffects', () => {
       },
     ]).get('brittle');
     statuses.apply(STUN, 'a', 0);
-    expect(statuses.breakOnDamage()).toBe(false);
+    expect(statuses.breakOnDamage(0)).toBe(false);
 
     statuses.apply(LOADED.get('invisible'), 'a', 0);
     statuses.apply(brittle, 'a', 0);
-    expect(statuses.breakOnDamage()).toBe(true);
+    expect(statuses.breakOnDamage(0)).toBe(true);
 
     expect(statuses.has('untargetable')).toBe(false);
     expect(statuses.has('hidden')).toBe(false);

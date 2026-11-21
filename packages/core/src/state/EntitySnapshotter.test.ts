@@ -140,4 +140,18 @@ describe('EntitySnapshotter', () => {
     expect(snapshotter.snapshotOf(furious)).not.toHaveProperty('isHidden');
     expect(snapshotter.snapshotOf(new Bare('entity-3', 'bare'))).not.toHaveProperty('isHidden');
   });
+
+  it('leaves a broken status out of the list at once, as it leaves isHidden out (DEC-267)', () => {
+    const veiled = new Bare('entity-1', 'warrior');
+    const statuses = new StatusEffects();
+    statuses.apply(STATUSES.get('invisible'), veiled.id, 0);
+    statuses.apply(STATUSES.get('enraged'), null, 0);
+    veiled.addComponent(statuses);
+
+    statuses.breakOnDamage(1);
+    const snapshot = new EntitySnapshotter(4, CURVES, 1).snapshotOf(veiled);
+
+    expect(snapshot.statuses?.map(({ id }) => id)).toEqual(['enraged']);
+    expect(snapshot).not.toHaveProperty('isHidden');
+  });
 });

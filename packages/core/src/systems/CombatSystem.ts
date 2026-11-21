@@ -18,8 +18,8 @@ import type { System, SystemContext } from './System.types';
  * nor hit. Statuses stop attacks (`cannot-attack`) and scale the cooldown (`attackSpeed`). The
  * attack strategy runs the attacker's statuses' `onHit` steps where the hit lands (`HitEffects`:
  * Fury's knock-back). While the match holds units idle (`state.match.isIdleHeld`, the countdown)
- * no attack lands, no unit turns to its target, and targets are kept for after. Getting into reach is the controller's job (moving), not this
- * system's.
+ * no attack lands, no unit turns to its target, and targets are kept for after. Getting into reach
+ * is the controller's job (moving), not this system's.
  */
 export class CombatSystem implements System {
   public readonly name = 'combat';

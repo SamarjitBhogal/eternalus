@@ -7,8 +7,9 @@ export type StatusStat = 'moveSpeed' | 'attackSpeed' | 'damageDealt' | 'damageTa
  * A yes/no rule a status imposes. `cannot-cast` waits for `AbilitySystem` (phase 4);
  * `cannot-move` and `cannot-attack` are read by `MovementSystem` and `CombatSystem`;
  * `control-immune` is read by `StatusEffectApplier`, which then refuses hard control.
- * `untargetable` keeps enemies from picking the holder as a target and from hitting or chasing it
- * while they hold it (`EntityStore.isTargetable`; Veil, DEC-266); an area still hits it.
+ * `untargetable` keeps enemies from picking the holder as a target (`EntityStore.isTargetable`)
+ * and from hitting or chasing it while they hold it (`EntityStore.isUntargetable`; Veil, DEC-266);
+ * an area still hits it.
  * `hidden` keeps the holder off its enemies' screens (`EntitySnapshot.isHidden`, DEC-266).
  */
 export type StatusFlag =

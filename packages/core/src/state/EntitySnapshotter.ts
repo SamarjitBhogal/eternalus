@@ -85,7 +85,10 @@ export class EntitySnapshotter {
     };
   }
 
-  /** The active statuses as plain data; one shared empty list for none, so most allocate none. */
+  /**
+   * The active statuses as plain data, less a broken one (it stopped counting at the hit, DEC-267);
+   * one shared empty list for none, so most allocate none.
+   */
   private statusesOf(statuses: StatusEffects | undefined): readonly StatusSnapshot[] | null {
     const { tick } = this;
     if (statuses === undefined) {
@@ -94,11 +97,13 @@ export class EntitySnapshotter {
     const { active } = statuses;
     return active.length === 0
       ? NO_STATUSES
-      : active.map(({ definition, periodAnchorTick, expiresTick }) => ({
-          id: definition.id,
-          ticksActive: tick - periodAnchorTick,
-          ticksLeft: expiresTick === null ? null : expiresTick - tick,
-        }));
+      : active
+          .filter(({ isBroken }) => !isBroken)
+          .map(({ definition, periodAnchorTick, expiresTick }) => ({
+            id: definition.id,
+            ticksActive: tick - periodAnchorTick,
+            ticksLeft: expiresTick === null ? null : expiresTick - tick,
+          }));
   }
 }
 

@@ -254,6 +254,20 @@ describe('StatusEffectSystem: statuses that end on damage (Veil, DEC-267)', () =
 
     expect(ticksOf('status-expired')).toEqual([150]);
   });
+
+  it('a Veil that runs out ends once, though its status-expired listener hurts the holder', () => {
+    const { state, applier, warrior, dummy, apply, run, ticksOf } = setUp();
+    apply(warrior, 'invisible');
+    state.events.on('status-expired', ({ statusId }) => {
+      if (statusId === 'invisible') {
+        new DamagePipeline().apply(state, warrior.id, 5, { ...HIT, attackerId: dummy.id });
+      }
+    });
+
+    run(statusSystem(state, applier), 152);
+
+    expect(ticksOf('status-expired')).toEqual([150]);
+  });
 });
 
 describe('statuses in the tick', () => {
