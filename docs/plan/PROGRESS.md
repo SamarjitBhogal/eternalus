@@ -9265,6 +9265,24 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `prettier --check` and `npm run docs:check` on this file.
 - Next step: the owner pushes the branch (`push-125-r3.sh`), then merges PR #125.
 
+### 2026-11-20 — Phase 3 / tower horde test time limit (DEC-289) — fix/horde-test-timeout — sholtzman + Claude Code
+
+- What was done: the owner's Owner Calls answer of 2026-11-20 ("Raise this one test's cap to
+  120 s and log an INBOX item to make the test faster") is DEC-289. `Simulation.mapObjects.test.ts`
+  gives its tower horde test ("walks every tower horde out of its tower and on up its lane within
+  10 seconds (DEC-133, seed %i)") its own time limit, `HORDE_WALK_TIMEOUT_MS` (120 s); core's
+  `testTimeout` (60 s, `packages/core/vitest.config.ts`) is unchanged. On PR #122 (run
+  44714237495, attempt 1) seed 1 timed out at 60 s on windows-latest. `INBOX.md` has the request
+  "Make the tower horde test faster"; the decisions log has the DEC-289 batch.
+- Checks run: a deliberate break (`HORDE_WALK_TIMEOUT_MS = 100`) made all three seeds fail with
+  "Test timed out in 100ms", so the argument reaches the test; restored to 120 s. Full
+  `npm run check` exit 0 before this entry was added
+  (`eternalus-agent-work/horde-test-timeout/check-1.log`): core "Tests 1674 passed (1674)",
+  protocol "Tests 29 passed (29)", client "Tests 2011 passed (2011)", server "Tests 84 passed
+  (84)", "Documentation check passed."; then `prettier --check` and `npm run docs:check` with this
+  entry. Critic (architecture-reviewer): PASS WITH NOTES, no violations, four nits not applied.
+- Next step: `/ponytail-review`, then push and open the PR into phase/3.
+
 ### 2026-11-15 — Phase 3 / bug tracker — docs/bug-citadel-side-entrances — SamarjitBhogal + Claude Code
 
 - What was done: logged BUG-8 as Task SCRUM-443 under SCRUM-433 (label `bug`, screenshot
