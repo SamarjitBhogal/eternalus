@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { Deploying } from './components/Deploying';
 import { Footprint } from './components/Footprint';
+import { Transform } from './components/Transform';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { DEFAULT_MAP_LAYOUT } from './content/maps/defaultMapLayout';
 import type { MapObject } from './content/maps/mapObjects.types';
@@ -164,14 +165,11 @@ describe('Simulation with a roster and map objects (as the client builds a match
       const { entities, world } = (simulation as unknown as { readonly state: GameState }).state;
       // The members still in or at their fort, not yet walking their lane, or on unwalkable ground.
       const notOutNow = (): readonly string[] => {
-        const at = new Map(
-          simulation.snapshot().entities.map(({ id, transform }) => [id, transform]),
-        );
         return sent.flatMap(({ tower, memberIds }) => {
           const { left, right, top, bottom } = wallBox(mapObjects, tower.id);
           const forward = marchDirection(routes, tower);
           return memberIds.flatMap((id) => {
-            const { x, y } = at.get(id) ?? tower.position;
+            const { x, y } = entities.get(id)?.getComponent(Transform).position ?? tower.position;
             const isInside = x > left && x < right && y > top && y < bottom;
             const ahead = (x - tower.position.x) * forward.x + (y - tower.position.y) * forward.y;
             return entities.get(id)?.hasComponent(Deploying) === true ||
