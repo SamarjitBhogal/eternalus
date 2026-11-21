@@ -80,6 +80,8 @@ export const matchSlice = createSlice({
     selectDuelOutcome: (state) => state.duel,
     selectVersus: (state) => state.versus,
     selectDuelHud: (state) => state.duelHud,
+    /** Whether the match is a Duel: it publishes a Duel HUD state (`duel-state`). */
+    selectIsDuel: (state) => state.duelHud !== null,
     selectMatchClock: (state) => state.clock,
     selectStructures: (state) => state.structures,
     selectCapturePoints: (state) => state.capturePoints,
