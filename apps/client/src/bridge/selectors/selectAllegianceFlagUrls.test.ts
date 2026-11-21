@@ -55,7 +55,7 @@ describe('selectAllegianceFlagUrls', () => {
   it('returns the same object after a match publish and after another group loads', () => {
     const store = storeWith(FLAG_URLS);
     const before = selectAllegianceFlagUrls(store.getState());
-    store.dispatch(matchSlice.actions.clockChanged({ tick: 30, seconds: 1 }));
+    store.dispatch(matchSlice.actions.clockChanged({ tick: 30, seconds: 1, countdown: null }));
     store.dispatch(
       assetsSlice.actions.groupUrlsChanged({
         group: 'selection',
