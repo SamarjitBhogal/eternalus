@@ -8,7 +8,7 @@ import { StatusEffectRuntime } from './StatusEffectRuntime';
 /**
  * The statuses on an entity (architecture 05 section 8) and what they add up to: one multiplier per
  * stat (each modifier's `value` once per stack, `StatModifier`) and the set of flags, recomputed
- * whenever the list changes, so every reader asks one question per tick. An entity without this
+ * whenever the list changes or a status breaks, so every reader asks one question per tick. An entity without this
  * component is immune to statuses (structures). Ids are plain strings (`components/` may not import
  * `state/`).
  */
@@ -87,8 +87,9 @@ export class StatusEffects {
 
   /**
    * Marks every active status that `endsOnDamage` as broken (its holder dealt or took damage,
-   * DEC-267) and returns whether any was. Removes nothing, so it is safe inside a loop over
-   * `active`; `StatusEffectApplier.removeBroken` removes them.
+   * DEC-267) and returns whether any was. A broken status stops counting at once (no flags, no
+   * modifiers), so a Veil ends at the hit; it stays listed, so this is safe inside a loop over
+   * `active`, until `StatusEffectApplier.removeBroken` removes it.
    */
   public breakOnDamage(): boolean {
     let hasBroken = false;
@@ -97,6 +98,9 @@ export class StatusEffects {
         status.isBroken = true;
         hasBroken = true;
       }
+    }
+    if (hasBroken) {
+      this.recompute();
     }
     return hasBroken;
   }
@@ -124,7 +128,10 @@ export class StatusEffects {
     this.multipliers.clear();
     this.bonuses.clear();
     this.flags.clear();
-    for (const { definition, stacks } of this.activeList) {
+    for (const { definition, stacks, isBroken } of this.activeList) {
+      if (isBroken) {
+        continue;
+      }
       for (const { stat, op, value } of definition.modifiers) {
         if (op === 'add') {
           this.bonuses.set(stat, (this.bonuses.get(stat) ?? 0) + value * stacks);

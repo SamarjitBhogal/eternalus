@@ -72,7 +72,7 @@ describe('ABILITIES', () => {
     });
   });
 
-  it('gives Veil its self-cast invisible buff, 40 aether and 20 s (balancing.md:180, DEC-266)', () => {
+  it('gives Veil its self-cast invisible buff, 40 aether and 20 s (balancing.md:182, DEC-266)', () => {
     expect(ABILITIES.get('veil')).toMatchObject({
       classId: 'warrior',
       slot: 'ability',

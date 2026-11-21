@@ -13,11 +13,11 @@ import type { GameState } from '../state/GameState';
 /**
  * The one way a status reaches or leaves an entity (architecture 05 section 8): abilities, weapons,
  * projectiles and structures call `apply`, auras and holds call `remove`, `StatusEffectSystem`
- * calls `expire` and `removeBroken`. It emits every `status-applied` and `status-expired`, and fills the holder's
- * `granted` slot with a status's `grants` ability while the status lasts (Fury's dash, DEC-270),
- * so the slot changes in the same call as the status. When the status whose ability the slot holds
- * ends, the slot takes the ability of the last status still active (oldest first) that grants
- * one, or empties, unless an ended status's `onExpire` lands a grant (`expire`).
+ * calls `expire` and `removeBroken`. It emits every `status-applied` and `status-expired`, and
+ * fills the holder's `granted` slot with a status's `grants` ability while the status lasts (Fury's
+ * dash, DEC-270), so the slot changes in the same call as the status. When the status whose ability
+ * the slot holds ends, the slot takes the ability of the last status still active (oldest first)
+ * that grants one, or empties, unless an ended status's `onExpire` lands a grant (`expire`).
  * `DefaultSystemPipeline` builds the match's one instance and hands it to the systems that need it.
  */
 export class StatusEffectApplier {

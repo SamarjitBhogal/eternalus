@@ -3,7 +3,7 @@ import type { AuthoredAbility } from './AbilityDefinition.types';
 /**
  * Veil: the Vanguard turns invisible. Casting it puts the `invisible` status on the caster, which
  * holds every effect (untargetable, hidden, ended by damage; DEC-266, DEC-267). Cost and
- * cooldown: balancing.md:180.
+ * cooldown: balancing.md:182.
  */
 export const VEIL = {
   id: 'veil',
@@ -11,8 +11,8 @@ export const VEIL = {
   description: 'Become invisible for 5 seconds. Attacking or taking damage ends it.',
   classId: 'warrior',
   slot: 'ability',
-  cooldownSeconds: 20, // TUNE: balancing.md:180
-  aetherCost: 40, // TUNE: balancing.md:180
+  cooldownSeconds: 20, // TUNE: balancing.md:182
+  aetherCost: 40, // TUNE: balancing.md:182
   targeting: { kind: 'self' },
   effects: [{ kind: 'buff', statusId: 'invisible' }],
   restrictions: [],

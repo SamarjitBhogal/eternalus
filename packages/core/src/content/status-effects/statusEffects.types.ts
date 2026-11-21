@@ -7,10 +7,10 @@ export type StatusStat = 'moveSpeed' | 'attackSpeed' | 'damageDealt' | 'damageTa
  * A yes/no rule a status imposes. `cannot-cast` waits for `AbilitySystem` (phase 4);
  * `cannot-move` and `cannot-attack` are read by `MovementSystem` and `CombatSystem`;
  * `control-immune` is read by `StatusEffectApplier`, which then refuses hard control.
- * `untargetable` keeps enemies from picking the holder as a target (`EntityStore.isTargetable`:
- * bots, guards, minions and camp mobs, attack commands; Veil, DEC-266); an area still hits it.
- * `hidden` keeps the holder off its enemies' screens and minimap (`EntitySnapshot.isHidden`);
- * its own side sees it faded (DEC-266).
+ * `untargetable` keeps enemies from picking the holder as a target (`EntityStore.isUntargetable`,
+ * which `isTargetable` reads for bots, guards, minions, camp mobs and attack commands; Veil,
+ * DEC-266) and from hitting or chasing it while they hold it; an area still hits it.
+ * `hidden` keeps the holder off its enemies' screens (`EntitySnapshot.isHidden`, DEC-266).
  */
 export type StatusFlag =
   'cannot-move' | 'cannot-attack' | 'cannot-cast' | 'control-immune' | 'untargetable' | 'hidden';

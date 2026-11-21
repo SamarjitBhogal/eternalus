@@ -10,12 +10,14 @@ import { Movement } from '../components/Movement';
 import { ChaseWatch } from '../components/ChaseWatch';
 import { CombatClock } from '../components/CombatClock';
 import { Progression } from '../components/Progression';
+import { StatusEffects } from '../components/StatusEffects';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { INITIAL_FACING } from '../components/Transform.constants';
 import { Veterancy } from '../components/Veterancy';
 import { Vision } from '../components/Vision';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { CAPTURE_POINT } from '../content/zones/capturePoint';
 import { Entity } from '../entities/Entity';
 import { CapturePoint } from '../entities/zones/CapturePoint';
@@ -123,6 +125,21 @@ describe('StateHasher', () => {
     collider.setUnbreakable(true);
 
     expect(hasher.hash(state)).not.toBe(before);
+  });
+
+  it('changes while a status is broken, and hashes as before once it is reapplied (DEC-267)', () => {
+    const { state, soldier } = stateWithSoldier();
+    const statuses = new StatusEffects();
+    soldier.addComponent(statuses);
+    const veil = loadStatusEffects(30, 2).get('invisible');
+    statuses.apply(veil, null, 0);
+    const whole = hasher.hash(state);
+
+    statuses.breakOnDamage();
+    expect(hasher.hash(state)).not.toBe(whole);
+
+    statuses.apply(veil, null, 0);
+    expect(hasher.hash(state)).toBe(whole);
   });
 
   it('hashes an ability bar only once a slot leaves its initial state, then each slot field', () => {

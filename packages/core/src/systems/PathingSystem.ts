@@ -72,7 +72,8 @@ export class PathingSystem implements System {
 
   /**
    * Points `target` at the unit `memberId` attacks (18 §5.2, engaging) and returns the distance
-   * from it at which the target is in reach; `undefined` when it attacks nothing. The target point
+   * from it at which the target is in reach; `undefined` when it attacks nothing or its target is
+   * untargetable (Veil, DEC-266: no chase after a unit it cannot pick). The target point
    * is `EntityStore.aimPointOf`'s, the one `isInReach` measures to: on the outline of a target that
    * has one (a map object; a lane tower's fort or the Stronghold's palace, DEC-185), or the unit's
    * own position when it stands inside that outline, so it holds there (DEC-234), else its
@@ -90,7 +91,13 @@ export class PathingSystem implements System {
     const other =
       targetId == null ? undefined : state.entities.get(targetId)?.findComponent(Transform);
     this.depth = 0;
-    if (combat === undefined || self === undefined || targetId == null || other === undefined) {
+    if (
+      combat === undefined ||
+      self === undefined ||
+      targetId == null ||
+      other === undefined ||
+      state.entities.isUntargetable(targetId)
+    ) {
       return undefined;
     }
     const way = attacker?.findComponent(ChaseWatch)?.waypoint;

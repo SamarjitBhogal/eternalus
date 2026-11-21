@@ -11,18 +11,17 @@ import type { System, SystemContext } from './System.types';
  * status's effect on its ticks, then removes the ones that are over (`status-expired`). Runs before
  * movement and combat, so both read this tick's multipliers and flags.
  *
- * It also owns the one end rule of a status that `endsOnDamage` (Veil, DEC-267): every
- * `damage-applied` marks such statuses on the target and on the attacker as broken
- * (`StatusEffects.breakOnDamage`), and the end of each pass removes them. The listener only marks,
- * because a hit can land inside a loop over a holder's statuses (a bleed tick here, an `onHit`
- * step in combat) and removing splices that list. A status broken by a bleed tick ends in the same
- * pass; one broken by a later system (combat) ends in the next tick's pass.
+ * It also ends a status that `endsOnDamage` (Veil, DEC-267): every `damage-applied` marks such
+ * statuses on the target and the attacker as broken (`StatusEffects.breakOnDamage`: they stop
+ * counting at once), and the end of a pass removes them: the same pass for a bleed tick, the next
+ * tick's for a combat hit. The listener only marks because a hit can land inside a loop over a
+ * holder's statuses (a bleed tick, an `onHit` step) and removal splices that list.
  */
 export class StatusEffectSystem implements System {
   public readonly name = 'status-effects';
 
-  /** The holders with a broken status since the last pass, in the order they were hit. */
-  private readonly broken: EntityId[] = [];
+  /** The holders with a broken status since the last pass, in the order they were first hit. */
+  private readonly broken = new Set<EntityId>();
 
   /**
    * @param state - The match whose `damage-applied` events break statuses.
@@ -62,15 +61,16 @@ export class StatusEffectSystem implements System {
       }
       this.statuses.expire(state, entity.id);
     });
-    for (const holderId of this.broken.splice(0)) {
+    for (const holderId of this.broken) {
       this.statuses.removeBroken(state, holderId);
     }
+    this.broken.clear();
   }
 
   /** Marks `holderId`'s statuses that end on damage as broken, and remembers it if any were. */
   private breakOn(state: GameState, holderId: EntityId): void {
     if (state.entities.get(holderId)?.findComponent(StatusEffects)?.breakOnDamage() === true) {
-      this.broken.push(holderId);
+      this.broken.add(holderId);
     }
   }
 }

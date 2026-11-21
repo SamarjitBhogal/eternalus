@@ -231,17 +231,24 @@ describe('CombatSystem', () => {
     expect(warrior.getComponent(Combat).targetId).toBeNull();
   });
 
-  it('drops a target that turns untargetable (Veil, DEC-266), without hitting it', () => {
+  it('keeps a target that turns untargetable (Veil, DEC-266) but does not hit it; hits it after', () => {
     const { state, warrior, spawn, context, attack } = setUp();
     const dummy = spawn('light-mob', 'training-dummy', 1, 'dark');
     const veil = loadStatusEffects(CONFIG.tickRate, 2).get('invisible');
+    const system = new CombatSystem(new DamagePipeline());
+    const health = dummy.getComponent(Health);
 
     attack(dummy);
     dummy.getComponent(StatusEffects).apply(veil, null, state.tick);
-    new CombatSystem(new DamagePipeline()).update(context);
+    system.update(context);
 
-    expect(warrior.getComponent(Combat).targetId).toBeNull();
-    expect(dummy.getComponent(Health).current).toBe(dummy.getComponent(Health).max);
+    expect(warrior.getComponent(Combat).targetId).toBe(dummy.id);
+    expect(health.current).toBe(health.max);
+
+    dummy.getComponent(StatusEffects).remove('invisible');
+    system.update(context);
+
+    expect(health.current).toBeLessThan(health.max);
   });
 
   it('gives the same hash for the same seed and attacks (determinism)', () => {

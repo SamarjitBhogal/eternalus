@@ -229,6 +229,7 @@ export class StateHasher {
           status.stacks,
           status.periodAnchorTick,
           status.expiresTick,
+          ...(status.isBroken ? ['broken'] : []),
         ]),
       ]);
     }

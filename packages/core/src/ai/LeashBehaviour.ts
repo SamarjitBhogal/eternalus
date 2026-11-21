@@ -27,11 +27,10 @@ import { countdownTicks } from '../config/countdownTicks';
  * post), and for `aggroCooldownTicks` it leaves alone the enemy that escaped (DEC-144 F) unless
  * that enemy attacks the mob or a mate while inside the old anchor's leash (DEC-160). A dead or
  * untargetable (Veiled, DEC-266) target with no enemy left in reach leaves it resting, with no
- * cooldown. It never takes a
- * candidate outside its leash, and `objective` ignores the leash, since a structure cannot drag a
- * mob away. During a ghosted first wave
- * (`ghostFirstWaveTicks`, 11 §4.3) Legends are never candidates. Controllers supply only what
- * differs (`LeashRules`). Pure, apart from one scratch point.
+ * cooldown. It never takes a candidate outside its leash, and `objective` ignores the leash, since
+ * a structure cannot drag a mob away. During a ghosted first wave (`ghostFirstWaveTicks`, 11 §4.3)
+ * Legends are never candidates. Controllers supply only what differs (`LeashRules`). Pure, apart
+ * from one scratch point.
  */
 export class LeashBehaviour {
   private readonly point: MutableVec2 = { x: 0, y: 0 };

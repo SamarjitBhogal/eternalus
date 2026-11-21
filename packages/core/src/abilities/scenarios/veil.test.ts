@@ -4,9 +4,9 @@ import { TEST_DEBUG_CONFIG } from '../../diagnostics/InvariantRunner.constants';
 import { abilityMatch } from '../__fixtures__/abilityMatch';
 
 /**
- * Veil (balancing.md:180, DEC-266, DEC-267): for 5 s (150 ticks) the Vanguard is `invisible`:
- * enemies cannot pick it as a target and drop it when it is theirs, an area still hits it, and
- * dealing or taking any damage ends it. The light Vanguard stands at (50, 50) with Veil on key 2;
+ * Veil (balancing.md:182, DEC-266, DEC-267): for 5 s (150 ticks) the Vanguard is `invisible`:
+ * enemies cannot pick it as a target and neither hit nor chase it when it is theirs (they keep it, so
+ * they fight on after Veil), an area still hits it, and dealing or taking any damage ends it. The light Vanguard stands at (50, 50) with Veil on key 2;
  * a dark Vanguard stands 1.2 m north, in reach both ways. Every invariant runs each tick and
  * throws.
  */
@@ -47,7 +47,7 @@ describe('Veil (scenario)', () => {
     expect(entity(vanguard)?.aether?.current).toBeLessThan(before);
   });
 
-  it('an enemy drops its attack on the Veiled Vanguard, and a new one is refused', () => {
+  it('an enemy stops hitting the Veiled Vanguard, and a new attack on it is refused', () => {
     const { vanguard, enemy, attack, veil, run, lost, log } = match();
     attack(enemy, vanguard);
     run(30);
@@ -64,10 +64,31 @@ describe('Veil (scenario)', () => {
     expect(log.some((line) => line.includes('invisible off'))).toBe(false);
   });
 
-  it('the Vanguard’s first hit ends Veil in the next tick', () => {
-    const { vanguard, enemy, attack, veil, run, lost, veilLog } = match();
+  it('an enemy that held its attack hits the Vanguard again once the Vanguard’s hit ends Veil', () => {
+    const { vanguard, enemy, attack, veil, run, lost } = match();
+    attack(enemy, vanguard);
+    run(30);
+
+    veil();
+    attack(vanguard, enemy);
+    run(1);
+    const hurt = lost(vanguard);
+    let ticks = 0;
+    while (lost(enemy) === 0 && ticks < 60) {
+      run(1);
+      ticks += 1;
+    }
+    run(60);
+
+    expect(lost(enemy)).toBeGreaterThan(0);
+    expect(lost(vanguard)).toBeGreaterThan(hurt);
+  });
+
+  it('the Vanguard’s first hit unhides it at once and ends Veil in the next tick', () => {
+    const { vanguard, enemy, attack, veil, run, lost, entity, veilLog } = match();
     veil();
     run(1);
+    expect(entity(vanguard)?.isHidden).toBe(true);
 
     attack(vanguard, enemy);
     let ticks = 0;
@@ -75,9 +96,11 @@ describe('Veil (scenario)', () => {
       run(1);
       ticks += 1;
     }
+    const isHiddenAtHit = entity(vanguard)?.isHidden;
     run(1);
 
     expect(lost(enemy)).toBeGreaterThan(0);
+    expect(isHiddenAtHit).toBeUndefined();
     expect(veilLog()).toEqual([
       `1 invisible on ${vanguard}`,
       `${String(ticks + 2)} invisible off ${vanguard}`,

@@ -39,7 +39,10 @@ export class StuckSystem implements System {
   /** @param rule - When a chase counts as stuck and how it goes round, from content, in ticks. */
   public constructor(private readonly rule: StuckDetectionRule) {}
 
-  /** Watches every AI unit with an attack target, in store order; drops the watch of the rest. */
+  /**
+   * Watches every AI unit with an attack target it may pick (not Veiled, DEC-266), in store order;
+   * drops the watch of the rest.
+   */
   public update({ state }: SystemContext): void {
     const window = {
       tick: state.tick,
@@ -52,6 +55,7 @@ export class StuckSystem implements System {
       const self = entity.findComponent(Transform);
       if (
         targetId === null ||
+        state.entities.isUntargetable(targetId) ||
         self === undefined ||
         !entity.hasComponent(ControllerBinding) ||
         entity.hasComponent(Deploying) ||

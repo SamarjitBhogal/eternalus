@@ -287,8 +287,8 @@ export class BotLeaves {
 
   /**
    * A bot's memory from its brain; anything it does not hold reads as a fresh bot's. A target it
-   * may no longer pick (dead, removed or Veiled, DEC-266) reads as none: `CombatSystem` has dropped
-   * it, so a later fight with it sends a new `attack-target`.
+   * may no longer pick (dead, removed or Veiled, DEC-266) reads as none, so a later fight with it
+   * sends a new `attack-target` (`CombatSystem` keeps a Veiled target but does not hit it).
    */
   private static read(memory: AiMemory, isTargetable: (id: EntityId) => boolean): BotMemory {
     return {

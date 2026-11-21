@@ -271,16 +271,21 @@ export class EntityStore {
   }
 
   /**
-   * Whether an enemy may pick the entity as a target: it is alive and no status makes it
-   * `untargetable` (Veil, DEC-266). The one rule for every picker: perception's hostile queries,
-   * the leashed mobs' memory, `CombatSystem` (which drops such a target) and `attack-target`. An
+   * Whether an enemy may pick the entity as a target: it is alive and not `isUntargetable`. The one
+   * rule for every picker: perception's hostile queries, the AI memories and `attack-target`. An
    * area still hits an untargetable entity; it only cannot be chosen.
    */
   public isTargetable(id: EntityId): boolean {
-    return (
-      this.isAlive(id) &&
-      this.entities.get(id)?.findComponent(StatusEffects)?.has('untargetable') !== true
-    );
+    return this.isAlive(id) && !this.isUntargetable(id);
+  }
+
+  /**
+   * Whether a status makes the entity `untargetable` (Veil, DEC-266). The systems that act on a
+   * held target (`CombatSystem`, `PathingSystem`, `StuckSystem`) keep such a target but neither
+   * hit nor chase it.
+   */
+  public isUntargetable(id: EntityId): boolean {
+    return this.entities.get(id)?.findComponent(StatusEffects)?.has('untargetable') === true;
   }
 
   /**

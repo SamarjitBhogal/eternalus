@@ -14,7 +14,9 @@ import type { System, SystemContext } from './System.types';
  * with a target in reach faces it every tick, after `MovementSystem`, so attacking outranks moving
  * (DEC-192): it faces `EntityStore.facingPointOf`, a building's outline point nearest it or a
  * unit's centre (DEC-216 (11)), or a building's centre from inside its outline (DEC-220 (1)). A
- * dead, removed or untargetable (Veiled, DEC-266) target clears. Statuses stop attacks (`cannot-attack`) and scale the cooldown
+ * dead or removed target clears. An untargetable one (Veil, DEC-266) is kept but neither faced
+ * nor hit, so a controller that does not see the Veil fights on after it, and an AI controller
+ * drops it when it next decides. Statuses stop attacks (`cannot-attack`) and scale the cooldown
  * (`attackSpeed`). The attack strategy runs the attacker's statuses' `onHit` steps where the hit
  * lands (`HitEffects`: Fury's knock-back). While the match holds units idle
  * (`state.match.isIdleHeld`, the countdown) no attack lands, no unit turns to its target, and
@@ -49,26 +51,29 @@ export class CombatSystem implements System {
         return;
       }
 
-      const target = state.entities.get(combat.targetId);
-      if (target === undefined || !state.entities.isTargetable(target.id)) {
+      const targetId = combat.targetId;
+      if (!state.entities.isAlive(targetId)) {
         combat.setTarget(null);
+        return;
+      }
+      if (state.entities.isUntargetable(targetId)) {
         return;
       }
       const statuses = attacker.findComponent(StatusEffects);
       if (statuses?.has('cannot-attack') === true) {
         return;
       }
-      if (!state.entities.isInReach(attacker.id, target.id)) {
+      if (!state.entities.isInReach(attacker.id, targetId)) {
         return;
       }
-      if (state.entities.facingPointOf(attacker.id, target.id, this.aim)) {
+      if (state.entities.facingPointOf(attacker.id, targetId, this.aim)) {
         attacker.getComponent(Transform).lookAt(this.aim);
       }
       if (!combat.canAttack(state.tick)) {
         return;
       }
 
-      this.strategies.attack[combat.attack.strategy].attack(attacker, target.id, combat.attack, {
+      this.strategies.attack[combat.attack.strategy].attack(attacker, targetId, combat.attack, {
         state,
         damage: this.damage,
         hits: this.hits,
