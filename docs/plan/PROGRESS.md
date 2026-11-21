@@ -9437,3 +9437,22 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   passed."; `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-15.log`); then
   `prettier --check` and `npm run docs:check` on this file.
 - Next step: the owner pushes the branch (`push-125-r3.sh`), then merges PR #125.
+
+### 2026-11-20 — Phase 3 / corner camp boss (interim), PR #91 round 3 (SamarjitBhogal) and DEC-296 — feat/bosses-p3 — Aryan + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` (with #125) into `feat/bosses-p3`;
+  conflicts in the decisions log (batch 2026-11-11 above batch 2026-11-10 corner camps) and in
+  this file (both entries kept). M1: `content/ai/aggro/cornerBoss.ts` satisfies
+  `AuthoredGuardAggroRule`, as #125 did for the other aggro rules (needed for the merge to
+  typecheck). DEC-296 (the owner's sign-off in Sam's two PR comments of 2026-11-20) recorded in the
+  decisions log and cited in place of the `TUNE` marks in `content/mobs/cornerBoss.ts`, the corner
+  camp `leashTolerance` 7 in `content/structures/guardPlans.ts` and the ring radius in
+  `content/structures/cornerCampRing.ts`; three `INBOX.md` items answered. The boss's mass (12)
+  keeps its `TUNE`: DEC-296 says it follows the HC-S12 (d) answer, and phase/3 has no row for it
+  yet (DEC-284 answers it on `feat/ability-framework`).
+- Follow-ups: B2 and N4 (health and damage as `refHealth` multiples, one shared MiniBoss row) go
+  in the HC-B12 PR; the ring radius moves to a `MapFeatureDefinition` field in a follow-up PR;
+  the mass follows HC-S12 (d) once its row reaches phase/3.
+- Checks run: `npm run check:quick` (pre-commit hook); `npx prettier --write` on the changed
+  files. npm run check: pending, run by Aryan.
+- Next step: Aryan runs `npm run check`, then pushes.

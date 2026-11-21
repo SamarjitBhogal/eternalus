@@ -11,21 +11,21 @@ import type { MobDefinition } from './mobs.types';
 export const CORNER_BOSS = {
   id: 'corner-boss',
   kind: 'heavy-mob',
-  displayName: 'Corner Camp Boss',
-  // TUNE: balancing.md "Mini-boss and Greater Boss relative to Legends", MiniBoss row:
+  displayName: 'Corner Camp Boss', // DEC-296 (2)
+  // DEC-296 (1): balancing.md "Mini-boss and Greater Boss relative to Legends", MiniBoss row:
   // 10 × refHealth ≈ 8,200 (refHealth ≈ 819 at the expected level 4).
   baseHealth: 8200,
-  footprintRadius: 1.5, // TUNE: about twice a heavy camp mob
+  footprintRadius: 1.5, // DEC-296 (1): about twice a heavy camp mob
   visionRadius: CORNER_CAMP_RING.acquisitionRadius, // as far as its aggro: the whole ring
   movementStrategy: 'leashed-chase',
   controller: 'guard',
   aiProfile: 'corner-boss',
-  // TUNE: balancing.md MiniBoss row: 0.25 × refHealth ≈ 205 per hit, 1.5 s interval.
+  // DEC-296 (1): balancing.md MiniBoss row: 0.25 × refHealth ≈ 205 per hit, 1.5 s interval.
   attack: { strategy: 'melee', damage: 205, reach: 2, interval: 1.5 },
   xpValue: 0, // the killer earns nothing alone: its 500 XP is team-wide (XP_SOURCES.teamKills)
   movementProfile: {
-    maxSpeed: 2.5, // TUNE: m/s, a bit slower than a heavy camp mob
-    acceleration: 8, // TUNE: m/s², slow to get going
+    maxSpeed: 2.5, // DEC-296 (1): m/s, a bit slower than a heavy camp mob
+    acceleration: 8, // DEC-296 (1): m/s², slow to get going
     mass: 12, // TUNE: hard to push
   },
 } as const satisfies MobDefinition;

@@ -3,7 +3,7 @@ import { STRUCTURE_DEFINITIONS } from './structureCatalogue';
 
 /** The camp's own circle: the leash and the boss's post are measured from its edge. */
 const CAMP_FOOTPRINT = STRUCTURE_DEFINITIONS.get('corner-camp').footprintRadius;
-// TUNE: no reference value; the 45 m ring the client has drawn around a corner camp since DEC-236.
+// DEC-296 (5): the 45 m ring the client has drawn around a corner camp since DEC-236.
 const RADIUS = 22.5;
 const POST_GAP = GUARD_LEASH.postGap; // as the forest camps': just outside the camp
 

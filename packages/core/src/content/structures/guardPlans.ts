@@ -50,11 +50,11 @@ const CAMP_PLANS: Readonly<Record<string, AuthoredGuardPlan>> = {
     table: [{ mobId: 'corner-boss', count: 1 }],
     leashRadius: CORNER_CAMP_RING.leashRadius, // the boss guards exactly the ring
     postGap: CORNER_CAMP_RING.postGap,
-    // TUNE: DEC-181's sum for the boss, which DEC-181's 5.5 m does not cover: 16 ticks (a
+    // DEC-296 (2): DEC-181's sum for the boss, which DEC-181's 5.5 m does not cover: 16 ticks (a
     // decision plus the wait at the unit cap) × 2.5 m/s / 30 ≈ 1.33 m of walk, plus its stance
     // 1.5 + 1.25 (a Sentinel, the largest unit it can target: it is neutral, so never another
     // neutral mob) + 2 reach = 4.75 m, so about 6.08 m; 7 m leaves about 0.9 m of margin.
-    // guardPlans.test.ts checks the sum. INBOX.md asks the owner to approve 7 m.
+    // guardPlans.test.ts checks the sum.
     leashTolerance: 7,
     activation: { at: 'match-start' }, // game doc: corner camps hold their bosses "from the start"
     // TUNE: DEC-12; game doc "spawns new bosses every 5 minutes". `group`, not `each`: with one
