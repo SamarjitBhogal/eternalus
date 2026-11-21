@@ -38,13 +38,15 @@ export abstract class Legend extends Unit {
   }
 
   /**
-   * The default weapon's attack (05 §10, §12): a Legend's damage comes from its weapon.
+   * The primary weapon's attack (05 §10, §12): a Legend's damage comes from its weapon, the one
+   * its spawn loadout names, else its class's default.
    *
    * @throws Error when the spawn context has no weapon source, or the weapon has no attacks.
    */
   protected override basicAttack(context: unknown): BasicAttack {
     const reader = new SpawnContextReader(this);
     const weaponId =
+      reader.loadout(context)?.primaryWeaponId ??
       reader.placed<LegendDefinition>(context).definition.defaultLoadout.primaryWeaponId;
     const weapons = reader.weapons(context);
     if (weapons === null) {

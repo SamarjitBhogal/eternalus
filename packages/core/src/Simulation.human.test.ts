@@ -8,9 +8,11 @@ import { MemoryLogger } from './diagnostics/MemoryLogger';
 import { NullLogger } from './diagnostics/NullLogger';
 import { recordReplay, runReplay } from './diagnostics/replay';
 import type { MapDefinition } from './content/maps/maps.types';
+import { Combat } from './components/Combat';
 import { Simulation } from './Simulation';
 import type { ReplaySetup, RosterSlot } from './Simulation.types';
 import { TWO_LANE_MAP } from './state/__fixtures__/twoLaneMap';
+import type { GameState } from './state/GameState';
 import type { PlayableTeam } from './teams/teams.types';
 
 /** The dark Stronghold of the two-lane map. */
@@ -71,6 +73,31 @@ describe('Simulation: the human slot of the roster', () => {
       });
     },
   );
+
+  it("arms the human's Legend with the weapon of the slot's loadout, and a bot with its default", () => {
+    const sim = build([
+      {
+        pilot: 'human',
+        team: 'dark',
+        definitionId: 'warrior',
+        role: 'rover',
+        loadout: { classId: 'warrior', primaryWeaponId: 'wuuthrad' },
+      },
+      laner('dark'),
+    ]);
+    // ponytail: reads the private state, as Simulation.healing.test.ts does; snapshots carry no weapon.
+    const { state } = sim as unknown as { readonly state: GameState };
+    const weapons = new Map<string, string | null>();
+    state.entities.forEach((entity) => {
+      if (entity.family === 'legend') weapons.set(entity.id, entity.getComponent(Combat).weaponId);
+    });
+
+    const humanId = sim.snapshot().match.humanLegendId ?? '';
+    expect(weapons.get(humanId)).toBe('wuuthrad');
+    expect([...weapons].filter(([id]) => id !== humanId).map(([, weapon]) => weapon)).toEqual([
+      'raptor-talons',
+    ]);
+  });
 
   it("snapshots the human Legend's level and XP from the Simulation's own level curves; structures have none", () => {
     const sim = new Simulation({

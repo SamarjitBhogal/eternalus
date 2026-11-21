@@ -635,6 +635,7 @@ export class Simulation {
         },
       }),
       ...state.world?.startFacing(slot.team, position),
+      ...(slot.pilot === 'human' && slot.loadout !== undefined && { loadout: slot.loadout }),
     });
     state.entities.add(entity);
     state.events.emit('entity-spawned', {

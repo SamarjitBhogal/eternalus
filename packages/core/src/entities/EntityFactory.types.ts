@@ -1,6 +1,7 @@
 import type { AiMemory, ControllerId } from '../content/ai/ai.types';
 import type { WeaponDefinition } from '../content/weapons/weapons.types';
 import type { EntityDefinitionBase } from '../content/EntityDefinition.types';
+import type { Loadout } from '../loadout/Loadout.types';
 import type { Team } from '../teams/teams.types';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
 
@@ -43,6 +44,11 @@ export type Placement = {
   readonly facing?: Vec2;
   /** The ground a zone covers, as polygons in world units (zones only, `ZoneArea`). */
   readonly area?: readonly Polygon[];
+  /**
+   * The loadout a Legend spawns with (Legends only; reference 08, 05 §12): the human's saved
+   * loadout. A Legend given none spawns with its class's default loadout.
+   */
+  readonly loadout?: Loadout;
 };
 
 /**
