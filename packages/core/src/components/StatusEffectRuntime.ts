@@ -77,18 +77,19 @@ export class StatusEffectRuntime {
       this.expiresTick === null || next === null ? null : Math.max(this.expiresTick, next);
   }
 
-  /** Whether `tick` is one of its periodic ticks (never the tick it was applied on). */
+  /** Whether `tick` is one of its periodic ticks (never its first tick, nor once broken). */
   public isPeriodicTick(tick: number): boolean {
     return (
+      !this.isBroken &&
       this.periodTicks !== null &&
       tick > this.periodAnchorTick &&
       (tick - this.periodAnchorTick) % this.periodTicks === 0
     );
   }
 
-  /** Whether it is over at `tick`. */
+  /** Whether it is over at `tick`; a broken one never is: its removal ends it (no `onExpire`). */
   public hasExpired(tick: number): boolean {
-    return this.expiresTick !== null && tick >= this.expiresTick;
+    return !this.isBroken && this.expiresTick !== null && tick >= this.expiresTick;
   }
 
   /** When an application at `tick` lasting `override` (else the definition's time) ends; `null` never. */

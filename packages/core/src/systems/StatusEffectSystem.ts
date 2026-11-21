@@ -61,10 +61,12 @@ export class StatusEffectSystem implements System {
       }
       this.statuses.expire(state, entity.id);
     });
-    for (const holderId of this.broken) {
+    // Emptied first: a holder broken again by a `status-expired` listener waits for the next pass.
+    const holders = [...this.broken];
+    this.broken.clear();
+    for (const holderId of holders) {
       this.statuses.removeBroken(state, holderId);
     }
-    this.broken.clear();
   }
 
   /** Marks `holderId`'s statuses that end on damage as broken, and remembers it if any were. */

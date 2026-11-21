@@ -281,8 +281,7 @@ export class EntityStore {
 
   /**
    * Whether a status makes the entity `untargetable` (Veil, DEC-266). The systems that act on a
-   * held target (`CombatSystem`, `PathingSystem`, `StuckSystem`) keep such a target but neither
-   * hit nor chase it.
+   * held target keep such a target but neither hit nor chase it.
    */
   public isUntargetable(id: EntityId): boolean {
     return this.entities.get(id)?.findComponent(StatusEffects)?.has('untargetable') === true;

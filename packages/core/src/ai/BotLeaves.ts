@@ -38,6 +38,8 @@ export class BotLeaves {
 
   /**
    * Gathers one decision's turn, or `null` when the bot cannot decide (not indexed or teamless).
+   * A live attack on an untargetable unit starts the turn with a `stop`: the bot drops it
+   * (DEC-266), as `CombatSystem` keeps it.
    *
    * @throws Error when the brain names a difficulty that does not exist (a content error).
    */
@@ -54,7 +56,7 @@ export class BotLeaves {
       return null;
     }
     const memory = BotLeaves.read(brain.memory, (id) => state.entities.isTargetable(id));
-    return {
+    const turn: BotTurn = {
       state,
       id: entityId,
       team,
@@ -69,6 +71,11 @@ export class BotLeaves {
       objective: null,
       destination: null,
     };
+    const lock = state.entities.attackTargetOf(entityId);
+    if (lock !== null && state.entities.isUntargetable(lock)) {
+      BotMovement.stop(turn);
+    }
+    return turn;
   }
 
   /** The decision a finished turn makes; an unplayable turn keeps its brain. */

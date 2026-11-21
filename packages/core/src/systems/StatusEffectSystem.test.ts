@@ -222,6 +222,30 @@ describe('StatusEffectSystem: statuses that end on damage (Veil, DEC-267)', () =
     expect(isVeiled(warrior)).toBe(true);
   });
 
+  it('a Veil broken again while the pass ends the first one ends in the next pass', () => {
+    const { state, applier, warrior, dummy, apply, run } = setUp();
+    const system = statusSystem(state, applier);
+    const hit = (): void => {
+      new DamagePipeline().apply(state, warrior.id, 5, { ...HIT, attackerId: dummy.id });
+    };
+    apply(warrior, 'invisible');
+    let isFirst = true;
+    state.events.on('status-expired', () => {
+      if (isFirst) {
+        isFirst = false;
+        apply(warrior, 'invisible');
+        hit();
+      }
+    });
+
+    hit();
+    run(system, 1);
+    expect(isVeiled(warrior)).toBe(true);
+    run(system, 1);
+
+    expect(isVeiled(warrior)).toBe(false);
+  });
+
   it('runs out after 5 s when nothing hits', () => {
     const { state, applier, warrior, apply, run, ticksOf } = setUp();
     apply(warrior, 'invisible');

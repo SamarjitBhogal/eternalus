@@ -5,9 +5,10 @@ import { abilityMatch } from '../__fixtures__/abilityMatch';
 
 /**
  * Veil (balancing.md:182, DEC-266, DEC-267): for 5 s (150 ticks) the Vanguard is `invisible`:
- * enemies cannot pick it as a target and neither hit nor chase it when it is theirs (they keep it, so
- * they fight on after Veil), an area still hits it, and dealing or taking any damage ends it. The light Vanguard stands at (50, 50) with Veil on key 2;
- * a dark Vanguard stands 1.2 m north, in reach both ways. Every invariant runs each tick and
+ * enemies cannot pick it as a target, and one that holds it neither hits nor chases it (a unit
+ * no controller drives keeps it and fights on after Veil); an area still hits it, and dealing or
+ * taking any damage ends it. The light Vanguard stands at (50, 50) with Veil on key 2; a dark
+ * Vanguard stands 1.2 m north, in reach both ways. Every invariant runs each tick and
  * throws.
  */
 const SELF = { x: 50, y: 50 };
@@ -65,14 +66,18 @@ describe('Veil (scenario)', () => {
   });
 
   it('an enemy that held its attack hits the Vanguard again once the Vanguard’s hit ends Veil', () => {
-    const { vanguard, enemy, attack, veil, run, lost } = match();
+    const { vanguard, enemy, attack, veil, run, lost, entity } = match();
     attack(enemy, vanguard);
     run(30);
 
     veil();
-    attack(vanguard, enemy);
     run(1);
     const hurt = lost(vanguard);
+    run(30);
+    expect(entity(vanguard)?.isHidden).toBe(true);
+    expect(lost(vanguard)).toBe(hurt);
+
+    attack(vanguard, enemy);
     let ticks = 0;
     while (lost(enemy) === 0 && ticks < 60) {
       run(1);

@@ -36,6 +36,17 @@ describe('StatusEffectRuntime', () => {
     expect(runtime.stacks).toBe(bleed.maxStacks);
   });
 
+  it('a broken status neither ticks nor runs out: only its removal ends it, so no onExpire (DEC-267)', () => {
+    const bleed = LOADED.get('bleed');
+    const runtime = new StatusEffectRuntime(bleed).start(bleed, 'a', 0);
+    const expiry = runtime.expiresTick ?? Number.NaN;
+    expect([runtime.isPeriodicTick(30), runtime.hasExpired(expiry)]).toEqual([true, true]);
+
+    runtime.isBroken = true;
+
+    expect([runtime.isPeriodicTick(30), runtime.hasExpired(expiry)]).toEqual([false, false]);
+  });
+
   it('ticks every period from the first application, never on it, and keeps the rhythm when reapplied', () => {
     const bleed = LOADED.get('bleed');
     const runtime = new StatusEffectRuntime(bleed).start(bleed, 'a', 5);

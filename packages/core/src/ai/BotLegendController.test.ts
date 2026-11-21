@@ -242,6 +242,22 @@ describe('BotLegendController (laner tree, 11 §4.2)', () => {
     });
   });
 
+  it('Fight: drops its live attack on a target that turned untargetable with a stop (Veil, DEC-266)', () => {
+    const { state, bot, add, decide } = setUp();
+    const enemy = add('dark', 61);
+    state.entities.setAttackTarget(bot, enemy);
+    const stop = { type: 'stop', actorId: bot };
+    expect(decide({ lane: 'lane-0', targetId: enemy }, 'never-casts').commands).not.toContainEqual(
+      stop,
+    );
+
+    const statuses = state.entities.get(enemy)?.getComponent(StatusEffects);
+    statuses?.apply(loadStatusEffects(30, 2).get('invisible'), null, state.tick);
+    const veiled = decide({ lane: 'lane-0', targetId: enemy }, 'never-casts');
+    expect(veiled.commands[0]).toEqual(stop);
+    expect(veiled.memory).toMatchObject({ targetId: null });
+  });
+
   it('holds still in reach, or at its destination, without re-sending an idle move every decision (B66-F2)', () => {
     const { state, bot, add, decide } = setUp();
     const enemy = add('dark', 61);

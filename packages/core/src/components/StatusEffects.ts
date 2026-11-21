@@ -8,9 +8,9 @@ import { StatusEffectRuntime } from './StatusEffectRuntime';
 /**
  * The statuses on an entity (architecture 05 section 8) and what they add up to: one multiplier per
  * stat (each modifier's `value` once per stack, `StatModifier`) and the set of flags, recomputed
- * whenever the list changes or a status breaks, so every reader asks one question per tick. An entity without this
- * component is immune to statuses (structures). Ids are plain strings (`components/` may not import
- * `state/`).
+ * whenever the list changes or a status breaks, so every reader asks one question per tick. An
+ * entity without this component is immune to statuses (structures). Ids are plain strings
+ * (`components/` may not import `state/`).
  */
 export class StatusEffects {
   private readonly activeList: StatusEffectRuntime[] = [];
