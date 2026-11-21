@@ -7,24 +7,17 @@ import type { QuarantineReport, WarnReporter } from './readOrQuarantine.types';
 
 /**
  * Reads and writes the loadout a profile keeps for each class. Every read goes through
- * `readOrQuarantine`: a corrupt record, or one naming a weapon that no longer exists, is
- * quarantined and reported as missing, so the caller falls back to the class default
- * (architecture 14 §8).
+ * `readOrQuarantine`: a corrupt record is quarantined and reported as missing, so the caller falls
+ * back to the class default (architecture 14 §8). A well-formed record naming a weapon content no
+ * longer has is returned as it is: `LoadoutController` repairs it with core's `repairLoadout`.
  */
 export class LoadoutRepository {
   private readonly adapter: StorageAdapter;
-  private readonly knownWeapons: ReadonlySet<string>;
   private readonly report: QuarantineReport;
 
   /** `now` is wall-clock milliseconds, used only to date quarantined records. */
-  public constructor(
-    adapter: StorageAdapter,
-    knownWeapons: ReadonlySet<string>,
-    now: () => number,
-    warn: WarnReporter,
-  ) {
+  public constructor(adapter: StorageAdapter, now: () => number, warn: WarnReporter) {
     this.adapter = adapter;
-    this.knownWeapons = knownWeapons;
     this.report = { now, warn };
   }
 
@@ -79,7 +72,7 @@ export class LoadoutRepository {
       {
         store: LOADOUT_STORE,
         key: loadoutKey(profileId, classId),
-        validate: (raw) => validateLoadoutDto(raw, this.knownWeapons),
+        validate: (raw) => validateLoadoutDto(raw),
       },
       this.report,
     );

@@ -23,7 +23,7 @@ describe('classLoadoutOptions', () => {
     expect(options.magus?.weapons[2]).toEqual({ id: 'magus-staff', displayName: 'Staff' });
   });
 
-  it('defaults each class to its content default weapon, which it may carry', () => {
+  it('defaults each class to the auto-build weapon, which it may carry', () => {
     for (const legend of loadDisplayContent().legends) {
       const classOptions = options[legend.id];
       expect(classOptions?.defaultWeaponId).toBe(legend.defaultLoadout.primaryWeaponId);

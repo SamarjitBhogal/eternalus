@@ -1,6 +1,7 @@
 import {
   createDefaultGameConfig,
   loadDisplayContent,
+  loadoutContentOf,
   type Logger,
   makeLogRecord,
   SEVERITY,
@@ -100,13 +101,11 @@ logWindowErrors(window, logger);
 const developer = readDeveloperFlags(window.location.search);
 
 connectBusToStore(eventBus, store.dispatch);
-// What the Loadout screen offers per class, and every weapon id a saved loadout may name (08).
+// What the Loadout screen offers per class, and the rules loadouts are checked and repaired by (08).
 const displayContent = loadDisplayContent();
-const knownWeapons = new Set(displayContent.weapons.map((weapon) => weapon.id));
 const persistence = new PersistenceController({
   adapter: new MemoryStorageAdapter(),
   knownActions: new Set(INPUT_ACTIONS),
-  knownWeapons,
   now: () => Date.now(),
   warn: (body, attributes) => {
     logger.log(makeLogRecord('WARN', 'client.persistence', body, { attributes }));
@@ -123,6 +122,7 @@ const loadouts = new LoadoutController({
   persistence,
   logger,
   options: classLoadoutOptions(displayContent),
+  content: loadoutContentOf(displayContent),
 });
 const resources = new ResourceController({
   manifest: ASSET_MANIFEST,

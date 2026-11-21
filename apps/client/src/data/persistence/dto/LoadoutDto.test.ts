@@ -2,8 +2,6 @@ import { describe, expect, it } from 'vitest';
 
 import { loadoutKey, validateLoadoutDto } from './LoadoutDto';
 
-const WEAPONS = new Set(['raptor-talons']);
-
 const VALID = {
   schemaVersion: 1,
   id: loadoutKey('local', 'warrior'),
@@ -14,7 +12,12 @@ const VALID = {
 
 describe('validateLoadoutDto', () => {
   it('accepts a well-formed record', () => {
-    expect(validateLoadoutDto(VALID, WEAPONS)).toEqual({ ok: true, dto: VALID });
+    expect(validateLoadoutDto(VALID)).toEqual({ ok: true, dto: VALID });
+  });
+
+  it("accepts a weapon id content may no longer have: repairing it is the caller's call", () => {
+    const renamed = { ...VALID, primaryWeaponId: 'gone' };
+    expect(validateLoadoutDto(renamed)).toEqual({ ok: true, dto: renamed });
   });
 
   it.each([
@@ -28,13 +31,9 @@ describe('validateLoadoutDto', () => {
       'id: does not match profileId and classId',
     ],
     ['a missing weapon', { ...VALID, primaryWeaponId: 4 }, 'primaryWeaponId: not a string'],
-    [
-      'an unknown weapon',
-      { ...VALID, primaryWeaponId: 'gone' },
-      'primaryWeaponId: unknown weapon "gone"',
-    ],
+    ['an empty weapon', { ...VALID, primaryWeaponId: '' }, 'primaryWeaponId: empty'],
   ])('rejects %s and names the field', (_name, value, reason) => {
-    expect(validateLoadoutDto(value, WEAPONS)).toEqual({ ok: false, reason });
+    expect(validateLoadoutDto(value)).toEqual({ ok: false, reason });
   });
 
   it('builds one key per profile and class', () => {

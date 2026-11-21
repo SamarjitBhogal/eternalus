@@ -15,7 +15,6 @@ function controller(adapter = new MemoryStorageAdapter()): PersistenceController
   return new PersistenceController({
     adapter,
     knownActions: new Set(['attack']),
-    knownWeapons: new Set(['raptor-talons']),
     now: () => 0,
     warn: () => undefined,
   });

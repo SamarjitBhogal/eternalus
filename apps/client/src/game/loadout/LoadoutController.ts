@@ -1,4 +1,4 @@
-import { type Loadout, makeLogRecord } from '@eternalus/core';
+import { type Loadout, makeLogRecord, validateLoadout } from '@eternalus/core';
 
 import type { UiIntent } from '../../bridge/events';
 import type { LoadoutsSliceState } from '../../bridge/slices/loadoutsSlice';
@@ -6,10 +6,11 @@ import type { LoadoutControllerDeps, SavedLoadout } from './LoadoutController.ty
 import { resolveSavedLoadouts } from './loadoutState';
 
 /**
- * The one writer of saved loadouts. Loads the profile's loadouts at start, repairing any weapon
- * content no longer has (08), publishes them with the choices each class offers, then turns each
- * `save-loadout` intent into a published change and a save. A failed load or save is reported,
- * never thrown.
+ * The one writer of saved loadouts. Loads the profile's loadouts at start, repairing every slot
+ * that breaks the loadout rules with the auto-build and logging it (08, core `repairLoadout`),
+ * publishes them with the choices each class offers, then turns each `save-loadout` intent that
+ * passes `validateLoadout` into a published change and a save; a refused one is logged with every
+ * problem. A failed load or save is reported, never thrown.
  */
 export class LoadoutController {
   private readonly deps: LoadoutControllerDeps;
@@ -33,11 +34,14 @@ export class LoadoutController {
         this.report('WARN', 'loadouts could not be loaded; using the defaults', { error });
         return new Map<string, SavedLoadout>();
       });
-    const { saved, repaired } = resolveSavedLoadouts(this.deps.options, records);
-    for (const classId of repaired) {
-      this.report('WARN', 'a saved weapon no longer exists; using the class default', { classId });
+    const { saved, repairs } = resolveSavedLoadouts(this.deps.content, records);
+    for (const [classId, slots] of repairs) {
+      this.report('WARN', 'a saved loadout broke the loadout rules; auto-build repaired it', {
+        classId,
+        slots: slots.join(', '),
+      });
     }
-    this.publish({ options: this.deps.options, saved, repaired });
+    this.publish({ options: this.deps.options, saved, repaired: [...repairs.keys()] });
     this.stopListening = this.deps.bus.on('ui-intent', this.onIntent);
   }
 
@@ -59,13 +63,12 @@ export class LoadoutController {
   private readonly onIntent = (intent: UiIntent): void => {
     if (intent.kind !== 'save-loadout') return;
     const { classId, primaryWeaponId } = intent;
-    const isOffered = this.state.options[classId]?.weapons.some(
-      (weapon) => weapon.id === primaryWeaponId,
-    );
-    if (isOffered !== true) {
-      this.report('WARN', 'a loadout was not saved: the class does not offer that weapon', {
+    const problems = validateLoadout({ classId, primaryWeaponId }, this.deps.content);
+    if (problems.length > 0) {
+      this.report('WARN', 'a loadout was not saved: it breaks the loadout rules', {
         classId,
         primaryWeaponId,
+        problems: problems.map(({ message }) => message).join('; '),
       });
       return;
     }

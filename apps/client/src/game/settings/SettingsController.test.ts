@@ -24,7 +24,6 @@ async function started(
   const persistence = new PersistenceController({
     adapter,
     knownActions: new Set(INPUT_ACTIONS),
-    knownWeapons: new Set<string>(),
     now: () => 0,
     warn: () => undefined,
   });
@@ -81,7 +80,6 @@ describe('SettingsController', () => {
     const persistence = new PersistenceController({
       adapter: new MemoryStorageAdapter(),
       knownActions: new Set(INPUT_ACTIONS),
-      knownWeapons: new Set<string>(),
       now: () => 0,
       warn: () => undefined,
     });

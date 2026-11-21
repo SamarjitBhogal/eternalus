@@ -1,4 +1,9 @@
-import { NullLogger } from '@eternalus/core';
+import {
+  type LoadoutContent,
+  loadDisplayContent,
+  loadoutContentOf,
+  MemoryLogger,
+} from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import type { BridgeEventMap } from '../../bridge/events';
@@ -18,8 +23,17 @@ const OPTIONS: LoadoutsSliceState['options'] = {
   },
 };
 
+const DISPLAY = loadDisplayContent();
+/** The shipped loadout content. */
+const SHIPPED = loadoutContentOf(DISPLAY);
+/** The shipped content after a release removed Wuuthrad. */
+const WITHOUT_WUUTHRAD = loadoutContentOf({
+  legends: DISPLAY.legends,
+  weapons: DISPLAY.weapons.filter((weapon) => weapon.id !== 'wuuthrad'),
+});
+
 /** A controller over the real facade on shared in-memory storage, as `main.tsx` builds it. */
-async function started(adapter: MemoryStorageAdapter, knownWeapons: ReadonlySet<string>) {
+async function started(adapter: MemoryStorageAdapter, content: LoadoutContent) {
   const bus = new TypedEventBus<BridgeEventMap>();
   const published: LoadoutsSliceState[] = [];
   bus.on('loadouts', (state) => published.push(state));
@@ -27,19 +41,14 @@ async function started(adapter: MemoryStorageAdapter, knownWeapons: ReadonlySet<
   const persistence = new PersistenceController({
     adapter,
     knownActions: new Set(),
-    knownWeapons,
     now: () => 0,
     warn: (text) => warnings.push(text),
   });
   await persistence.open();
-  const controller = new LoadoutController({
-    bus,
-    logger: new NullLogger(),
-    options: OPTIONS,
-    persistence,
-  });
+  const logger = new MemoryLogger();
+  const controller = new LoadoutController({ bus, logger, options: OPTIONS, content, persistence });
   await controller.start();
-  return { bus, controller, published, warnings };
+  return { bus, controller, published, warnings, logger };
 }
 
 const flush = async (): Promise<void> => {
@@ -49,8 +58,7 @@ const flush = async (): Promise<void> => {
 describe('LoadoutController over PersistenceController', () => {
   it('saves a loadout and loads the identical one in a fresh session', async () => {
     const adapter = new MemoryStorageAdapter(); // one page's storage; each session opens it again
-    const known = new Set(['raptor-talons', 'wuuthrad']);
-    const first = await started(adapter, known);
+    const first = await started(adapter, SHIPPED);
     first.bus.emit('ui-intent', {
       kind: 'save-loadout',
       classId: 'warrior',
@@ -59,14 +67,14 @@ describe('LoadoutController over PersistenceController', () => {
     await flush();
     first.controller.destroy();
 
-    const second = await started(adapter, known);
+    const second = await started(adapter, SHIPPED);
     expect(second.published[0]?.saved).toEqual({ warrior: 'wuuthrad' });
     expect(second.published[0]?.repaired).toEqual([]);
   });
 
-  it('starts from the class default when the saved weapon is no longer in content', async () => {
+  it('repairs a saved weapon a later release removed with the auto-build, and logs it', async () => {
     const adapter = new MemoryStorageAdapter(); // one page's storage; each session opens it again
-    const first = await started(adapter, new Set(['raptor-talons', 'wuuthrad']));
+    const first = await started(adapter, SHIPPED);
     first.bus.emit('ui-intent', {
       kind: 'save-loadout',
       classId: 'warrior',
@@ -75,8 +83,12 @@ describe('LoadoutController over PersistenceController', () => {
     await flush();
     first.controller.destroy();
 
-    const second = await started(adapter, new Set(['raptor-talons']));
-    expect(second.published[0]?.saved).toEqual({});
-    expect(second.warnings.length).toBeGreaterThan(0);
+    const second = await started(adapter, WITHOUT_WUUTHRAD);
+    expect(second.published[0]?.saved).toEqual({ warrior: 'raptor-talons' });
+    expect(second.published[0]?.repaired).toEqual(['warrior']);
+    expect(second.logger.records.map(({ body }) => body)).toEqual([
+      'a saved loadout broke the loadout rules; auto-build repaired it',
+    ]);
+    expect(second.warnings).toEqual([]);
   });
 });

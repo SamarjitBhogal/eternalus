@@ -1,4 +1,4 @@
-import { MemoryLogger } from '@eternalus/core';
+import { loadDisplayContent, loadoutContentOf, MemoryLogger } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import type { BridgeEventMap } from '../../bridge/events';
@@ -15,6 +15,9 @@ const OPTIONS: LoadoutsSliceState['options'] = {
     ],
   },
 };
+
+/** The shipped loadout rules: the Warrior may carry Raptor Talons or Wuuthrad, not the Staff. */
+const CONTENT = loadoutContentOf(loadDisplayContent());
 
 type Saved = { classId: string; primaryWeaponId: string };
 
@@ -35,6 +38,7 @@ async function started(fake: Fake) {
     bus,
     logger,
     options: OPTIONS,
+    content: CONTENT,
     persistence: {
       loadLoadouts: (classIds) => {
         fake.asked.push([...classIds]);
@@ -78,13 +82,19 @@ describe('LoadoutController', () => {
     expect(published).toEqual([{ options: OPTIONS, saved: { warrior: 'wuuthrad' }, repaired: [] }]);
   });
 
-  it('repairs a saved weapon the class does not offer to the default and reports it', async () => {
-    const { published, logger } = await started(fakeStore([warriorWith('magus-staff')]));
+  it('repairs a saved weapon content no longer has with the auto-build, and logs it', async () => {
+    const { published, logger } = await started(fakeStore([warriorWith('removed-sword')]));
     expect(published[0]?.saved).toEqual({ warrior: 'raptor-talons' });
     expect(published[0]?.repaired).toEqual(['warrior']);
     const warning = logger.records.find((record) => record.severityText === 'WARN');
-    expect(warning?.body).toContain('no longer exists');
-    expect(warning?.attributes).toMatchObject({ classId: 'warrior' });
+    expect(warning?.body).toBe('a saved loadout broke the loadout rules; auto-build repaired it');
+    expect(warning?.attributes).toEqual({ classId: 'warrior', slots: 'primary-weapon' });
+  });
+
+  it('repairs a saved weapon the class may not carry the same way', async () => {
+    const { published } = await started(fakeStore([warriorWith('magus-staff')]));
+    expect(published[0]?.saved).toEqual({ warrior: 'raptor-talons' });
+    expect(published[0]?.repaired).toEqual(['warrior']);
   });
 
   it('starts from the defaults and warns when storage cannot be read', async () => {
@@ -125,13 +135,32 @@ describe('LoadoutController', () => {
     });
   });
 
-  it('refuses a weapon the class does not offer: nothing is published or saved', async () => {
+  it('refuses a weapon the class may not carry: nothing is published or saved', async () => {
     const fake = fakeStore();
     const { bus, published, logger } = await started(fake);
-    bus.emit('ui-intent', { kind: 'save-loadout', classId: 'warrior', primaryWeaponId: 'nope' });
+    bus.emit('ui-intent', {
+      kind: 'save-loadout',
+      classId: 'warrior',
+      primaryWeaponId: 'magus-staff',
+    });
     expect(published).toHaveLength(1);
     expect(fake.saved).toEqual([]);
-    expect(logger.records.at(-1)?.severityText).toBe('WARN');
+    expect(logger.records.at(-1)).toMatchObject({
+      severityText: 'WARN',
+      attributes: { problems: 'class "warrior" may not carry weapon "magus-staff"' },
+    });
+  });
+
+  it('lists every violation validateLoadout finds when it refuses a pick', async () => {
+    const fake = fakeStore();
+    const { bus, logger } = await started(fake);
+    bus.emit('ui-intent', { kind: 'save-loadout', classId: 'harbinger', primaryWeaponId: 'nope' });
+    expect(fake.saved).toEqual([]);
+    expect(logger.records.at(-1)?.attributes).toEqual({
+      classId: 'harbinger',
+      primaryWeaponId: 'nope',
+      problems: 'class "harbinger" does not exist; weapon "nope" does not exist',
+    });
   });
 
   it('reports a failed save as an error and keeps the published choice', async () => {

@@ -18,7 +18,6 @@ async function setup(): Promise<{
   const warnings: string[] = [];
   const repository = new LoadoutRepository(
     adapter,
-    new Set(['raptor-talons', 'magus-staff']),
     () => NOW,
     (body, attributes) => {
       warnings.push(`${body}: ${String(attributes.reason)}`);
@@ -85,7 +84,7 @@ describe('LoadoutRepository', () => {
     });
   });
 
-  it('quarantines a loadout that names a weapon content no longer has', async () => {
+  it('returns a loadout naming a weapon content no longer has, for the caller to repair', async () => {
     const { adapter, repository, warnings } = await setup();
     const id = loadoutKey(PROFILE, 'warrior');
     await storeRaw(adapter, {
@@ -95,9 +94,7 @@ describe('LoadoutRepository', () => {
       classId: 'warrior',
       primaryWeaponId: 'removed-sword',
     });
-    expect(await repository.load(PROFILE, 'warrior')).toBeNull();
-    expect(warnings).toEqual([
-      'record quarantined: primaryWeaponId: unknown weapon "removed-sword"',
-    ]);
+    expect(await repository.load(PROFILE, 'warrior')).toEqual({ primaryWeaponId: 'removed-sword' });
+    expect(warnings).toEqual([]);
   });
 });

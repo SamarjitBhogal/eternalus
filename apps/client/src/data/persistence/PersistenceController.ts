@@ -21,7 +21,7 @@ export class PersistenceController {
   public constructor(deps: PersistenceControllerDeps) {
     this.adapter = deps.adapter;
     this.settings = new SettingsRepository(deps.adapter, deps.knownActions, deps.now, deps.warn);
-    this.loadouts = new LoadoutRepository(deps.adapter, deps.knownWeapons, deps.now, deps.warn);
+    this.loadouts = new LoadoutRepository(deps.adapter, deps.now, deps.warn);
   }
 
   /** Opens storage, migrating it to the current schema. */

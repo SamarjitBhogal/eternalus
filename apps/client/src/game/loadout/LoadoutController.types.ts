@@ -1,4 +1,4 @@
-import type { Logger } from '@eternalus/core';
+import type { LoadoutContent, Logger } from '@eternalus/core';
 
 import type { BridgeEventMap } from '../../bridge/events';
 import type { LoadoutsSliceState } from '../../bridge/slices/loadoutsSlice';
@@ -25,4 +25,6 @@ export type LoadoutControllerDeps = {
   readonly logger: Logger;
   /** What each class may take, from core content (read once by the composition root). */
   readonly options: LoadoutsSliceState['options'];
+  /** What loadouts are validated, repaired and auto-built against (`loadoutContentOf`). */
+  readonly content: LoadoutContent;
 };

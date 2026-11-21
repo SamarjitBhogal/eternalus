@@ -3,8 +3,9 @@ import type { DtoCheck } from './DtoCheck.types';
 /**
  * What a saved loadout holds today: the primary weapon. Secondary weapon, passive, artifacts,
  * abilities and the ultimate join with the `Loadout` model of Phase 4 sprint 4.5; each lands as an
- * optional field, which needs no `schemaVersion` bump (DEC-125). `data/` does not know the weapon
- * list, so a weapon is a plain id here, checked against the ids `main.tsx` injects.
+ * optional field, which needs no `schemaVersion` bump (DEC-125). A weapon is a plain id here: one
+ * content no longer has is repaired by core's `repairLoadout` after loading (reference 08), not
+ * quarantined.
  */
 export type PersistedLoadout = {
   readonly primaryWeaponId: string;
@@ -31,7 +32,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function loadoutProblem(value: unknown, knownWeapons: ReadonlySet<string>): string | null {
+function loadoutProblem(value: unknown): string | null {
   if (!isRecord(value)) {
     return 'not an object';
   }
@@ -50,21 +51,16 @@ function loadoutProblem(value: unknown, knownWeapons: ReadonlySet<string>): stri
   if (typeof value.primaryWeaponId !== 'string') {
     return 'primaryWeaponId: not a string';
   }
-  return knownWeapons.has(value.primaryWeaponId)
-    ? null
-    : `primaryWeaponId: unknown weapon "${value.primaryWeaponId}"`;
+  return value.primaryWeaponId === '' ? 'primaryWeaponId: empty' : null;
 }
 
 /**
- * Checks a stored loadout record before anything trusts it (architecture 14 §8). Weapons are
- * checked against `knownWeapons`, which `main.tsx` injects from the content catalogue. The reason
- * names the first bad field.
+ * Checks a stored loadout record's shape before anything trusts it (architecture 14 §8). The
+ * reason names the first bad field. Whether its ids still name content is the loadout rules'
+ * call (`repairLoadout`), made by the caller.
  */
-export function validateLoadoutDto(
-  value: unknown,
-  knownWeapons: ReadonlySet<string>,
-): DtoCheck<LoadoutDtoV1> {
-  const reason = loadoutProblem(value, knownWeapons);
+export function validateLoadoutDto(value: unknown): DtoCheck<LoadoutDtoV1> {
+  const reason = loadoutProblem(value);
   // Every field of LoadoutDtoV1 was checked above.
   return reason === null ? { ok: true, dto: value as LoadoutDtoV1 } : { ok: false, reason };
 }
