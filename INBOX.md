@@ -446,6 +446,38 @@ Reply inline (`Decision: …`).
       Also noted, acceptable: only an ability's top-level steps may wait (05 §3 says every spec
       may); no content needs nested delays, and the `Delayed<Step>` type refuses them.
       Keep all six, or name the ones to change?
+- [ ] **HC-B19 — Better than the design, built under your standing rule (DEC-223), sign-off
+      asked: five parts of the Veil build (`feat/vanguard-veil-hamstring`, 2026-11-21; pre-PR
+      critic round 1).** Nothing waits on the answer; each part is built and tested. The design
+      text of 03, 05, 08 and 11 changes only after your sign-off; until then each doc's
+      "Implementation status" points to 05 §18, "Veil".
+      (1) **A status may end on damage (`endsOnDamage`).** The 05 §8 sketch of a status definition
+      has no such field. DEC-267 asks for "one end rule in one place": the field is on the status,
+      and `StatusEffectSystem` holds the one rule (a hit marks the status, the system removes it:
+      `status-expired`, no `onExpire`). Rejected: an `ends-on-damage` flag, because flags are rules
+      on the holder, and this is the status's own life.
+      (2) **`EntitySnapshot.isHidden`.** One flag for every viewer, present only while a status
+      sets `hidden`, made in core. Rejected: the client reads `statuses` and a "hides" flag per
+      status, which puts a game rule in the client (ADR 0016 point 1: core owns visibility).
+      03 §5 does not list it yet.
+      (3) **`EntityStore.isTargetable` is the one targeting rule.** Alive, and no status sets
+      `untargetable`. Perception's hostile queries, the leashed mobs, `attack-target` and the bot
+      memory use it, so `ai/` does not read components. `CombatSystem`, `PathingSystem` and
+      `StuckSystem` read `isUntargetable` (the status part only): they keep a Veiled target but do
+      not hit or chase it. 11 §3 should say that a hostile query keeps only units an enemy may
+      pick (a dead unit is left out too).
+      (4) **A broken status stops at the hit.** Before, a status a hit broke stayed in force until
+      the next tick's pass, so the Vanguard that hit stayed hidden and untargetable for one or two
+      ticks. Now `StatusEffects` recomputes without a broken status at once (no flags, no
+      modifiers); only its removal and `status-expired` wait for the pass. `StateHasher` hashes
+      the pending break.
+      (5) **`Viewer` decides what the player sees.** A small `Viewer` in `game/` keeps the
+      player's Legend and team (also after the player dies) and gives each entity shown, faded or
+      hidden; `Match` injects that rule into `EntityLayer` and `HealthBarVisibility` reads the same
+      `Viewer`. Before, `HealthBarVisibility` (the health-bar rule) also held the viewer's team, and
+      a team not known yet showed hidden enemies faded. With `Viewer`, an unknown team hides them,
+      and the later per-seat filter (multiplayer plan W10) replaces one rule, not view code.
+      Keep all five, or name the ones to change?
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays

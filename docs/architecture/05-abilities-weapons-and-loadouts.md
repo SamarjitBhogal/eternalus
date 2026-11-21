@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-21
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -1217,22 +1217,26 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     `StatusEffectSystem` listens to `damage-applied` and marks each such status of the target and
     of the attacker as broken (`StatusEffects.breakOnDamage`); the end of its pass removes them
     (`StatusEffectApplier.removeBroken`: `status-expired`, no `onExpire`). The listener only
-    marks, because a hit can land inside a loop over the holder's statuses. A bleed tick ends it
-    in the same pass; a hit from a later system (combat) ends it in the next tick's pass. Casting
-    does not end it.
-  - **Untargetable.** `EntityStore.isTargetable(id)` (alive, and no status sets `untargetable`) is
-    the one rule for every picker: perception's hostile queries, the leashed mobs
-    (`LeashBehaviour`), `CombatSystem` (which drops such a target and does not hit it),
-    `attack-target` (`invalid-target`) and the bot memory (`BotLeaves`). An area still hits the
-    holder.
+    marks, because a hit can land inside a loop over the holder's statuses. A broken status stops
+    counting at once (`StatusEffects` recomputes without it: no flags, no modifiers), so a Veil
+    ends at the hit; its removal and `status-expired` come in the same pass for a bleed tick and
+    in the next tick's pass for a hit from a later system (combat). Casting does not end it.
+  - **Untargetable.** `EntityStore.isTargetable(id)` (alive and not `isUntargetable`) is the one
+    rule for every picker: perception's hostile queries, the leashed mobs (`LeashBehaviour`),
+    `attack-target` (`invalid-target`) and the bot memory (`BotLeaves`). The systems that act on a
+    held target (`CombatSystem`, `PathingSystem`, `StuckSystem`) keep an untargetable one
+    (`EntityStore.isUntargetable`) but neither hit nor chase it, so a controller that does not see
+    the Veil fights on after it; an AI controller drops it when it next decides. An area still
+    hits the holder.
   - **Hidden.** `EntitySnapshot.isHidden` is present, `true`, while a status sets `hidden`. The
-    client's `EntityLayer` leaves out a hidden unit of a team other than the viewer's (its body,
-    status cues, health bar and minimap dot) and draws one of the viewer's team faded
-    (`Renderer.withOpacity`); with no player (sim mode) it draws every hidden unit faded. The
-    viewer's team is the one `HealthBarVisibility` keeps (`viewerTeam`), so it holds after the
-    player dies. `findUnitAt` skips hidden units, so a click does not pick one. Every seat gets
-    the same snapshot (`Simulation.snapshot`); a per-seat filter waits for the Duel server
-    (ADR 0016).
+    client's `Viewer` (the player's Legend and team, kept after the player dies) decides how each
+    entity shows (`visibilityOf`: shown, faded or hidden), injected into `EntityLayer` as
+    `healthBarOf` is: a hidden unit of the viewer's team draws faded (body, status cues, health bar
+    and minimap dot, `Renderer.withOpacity`), every other hidden unit not at all, also while the
+    player's team is not known yet; with no player (sim mode) every hidden unit draws faded.
+    `HealthBarVisibility` reads the same `Viewer`. `findUnitAt` skips hidden units, so a click does
+    not pick one. Every seat gets the same snapshot (`Simulation.snapshot`); a per-seat filter
+    waits for plan W10 / ADR 0016 point 1.
 
 ## Related
 

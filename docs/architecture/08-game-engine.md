@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-21
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -335,6 +335,13 @@ Game-loop plan GL-5 (`feat/results-flow`): `Match.tick` calls the match observer
 after the tick on which `MatchBridge` publishes `match-ended`; the world keeps running (DEC-92)
 until `MatchState` leaves the phase ([13](13-game-interface.md) §2). A pause overlay still pauses
 the loop, but not the timer that leaves the phase (DEC-134).
+
+Veil (`feat/vanguard-veil-hamstring`, DEC-266): `Viewer` (`game/Viewer.ts`) keeps the player's
+Legend and team and decides how each entity shows (shown, faded or hidden); `Match` injects its
+`visibilityOf` into `EntityLayer`, which leaves out a hidden enemy and draws a hidden unit of the
+viewer's team faded (`Renderer.withOpacity`). `HealthBarVisibility` reads the same `Viewer`. §8
+does not list this yet (`INBOX.md` HC-B19); see
+[05 §18, "Veil"](05-abilities-weapons-and-loadouts.md#18-implementation-status).
 
 ## Related
 

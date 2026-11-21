@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-21
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -514,6 +514,10 @@ each closed by the session or phase named:
 - `Replay` has no `versions` yet (they arrive with the content catalogue).
 - `map/` still reads its own `MapConfig`, `DEFAULT_MAP_CONFIG`, `MapRandom` and
   `validateMapConfig` until session A swaps to `GameConfig` and `SeededRandom` (06 §10).
+- Veil (`feat/vanguard-veil-hamstring`, DEC-266): `EntitySnapshot.isHidden` (present, `true`,
+  while a status sets `hidden`), `EntityStore.isTargetable` and `isUntargetable` (the targeting
+  rule) and `findUnitAt` skipping hidden units are not in §5 yet (`INBOX.md` HC-B19); see
+  [05 §18, "Veil"](05-abilities-weapons-and-loadouts.md#18-implementation-status).
 
 ## Related
 

@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-16
+last-reviewed: 2026-11-21
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -436,6 +436,10 @@ work named:
   content) or the first tick `AiSystem` sees the entity (injected content).
 - `Perception` has `unitsWithin` and `nearest`; `structuresWithin` waits for a controller that
   needs it (M2c reads lane objectives from `state.laneStructures`).
+- `Perception`'s `hostileTo` queries, `LeashBehaviour` and the bot memory keep only units an
+  enemy may pick (`EntityStore.isTargetable`: alive, and no status sets `untargetable`; DEC-266),
+  so a Veiled or dead unit is left out. §3 does not say so yet (`INBOX.md` HC-B19); see
+  [05 §18, "Veil"](05-abilities-weapons-and-loadouts.md#18-implementation-status).
 
 ## Related
 

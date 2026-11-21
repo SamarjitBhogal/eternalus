@@ -9824,3 +9824,27 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   side by side), so Veil does not make it longer.
 - Next step: pre-PR gate on Veil (branch against `e21692d6`); then Hamstring on lane A's
   `ProjectileImpact` (DEC-314) once `feat/ranged-attacks` is committed.
+
+### 2026-11-21 — Phase 4 / combat PR 5 (lane B, DEC-301): Veil pre-PR gate, round 1 fixes — feat/vanguard-veil-hamstring — sholtzman + Claude Code
+
+- What was done: applied the round 1 findings of the three critics (architecture, correctness,
+  ponytail; reports in `eternalus-agent-work/abilities/veil-gate/`). Core: `CombatSystem`,
+  `PathingSystem` and `StuckSystem` keep an untargetable held target but neither hit nor chase it
+  (new `EntityStore.isUntargetable`, the status part of `isTargetable`, because `isAlive` needs
+  `Health`); a broken status stops counting at the hit (`StatusEffects.recompute` skips it,
+  BTD-4); `StateHasher` hashes a pending break (`'broken'`, only when set); a re-applied Veil
+  after the hit stays on (test). Client: `Viewer` (`game/Viewer.ts`, the player's Legend and
+  team, kept after death) gives each entity shown, faded or hidden; `Match` injects its rule into
+  `EntityLayer` (fades body, cues, bar and minimap dot) and `HealthBarVisibility` reads the same
+  `Viewer` (BTD-5); `HIDDEN_UNIT_OPACITY` moved to `EntityLayer.constants.ts`. Ponytail cuts and
+  TSDoc reflows; Veil cites balancing.md:182. Docs: 05 §18 "Veil" bullet rewritten; one pointer
+  line each in the implementation-status notes of 03, 08 and 11; `INBOX.md` HC-B19 (BTD-1..5,
+  built under DEC-223, sign-off asked). New tests failed first on breaks B25 to B39
+  (`eternalus-agent-work/abilities/veil-breaks.log`).
+- Open: Owner Calls card "veil-own-bleed" (Sam picked "Other" with an empty note; build stays as
+  option A until the note lands); HC-B19 sign-off.
+- Checks run: `npm run check:quick` exit 0; Prettier clean on every changed file;
+  `npm run docs:check` passed; full `npm run check` exit 0 (core 2062/2062, client 2131/2131,
+  server 84/84, protocol 30/30, docs check passed).
+- Next step: critics round 2 on `git diff 59c8f4a3..HEAD`; then the push line for Sam, PR base
+  `feat/vanguard-kit`; then Hamstring on lane A's `ProjectileImpact` (PR #148).
