@@ -36,6 +36,23 @@ Reply inline (`Decision: …`).
       item tests it with the contract suite against an IndexedDB fake: `fake-indexeddb` (a dev
       dependency, which `AGENTS.md` says needs your approval) or a hand-written fake of the
       subset the adapter uses. Which one?
+      _Agent note (2026-11-20, `feat/loadout-indexeddb`):_ the user chose neither for now: no new
+      dependency and no hand-written fake or contract run against IndexedDB; the adapter landed
+      with plain unit tests only (see the next item). The question stays open for when the
+      adapter gets real tests.
+
+- [ ] **`feat/loadout-indexeddb` (SCRUM-31, SCRUM-311), `IndexedDbStorageAdapter` — four points
+      the docs leave open.** (1) Wiring the adapter puts schema v1 on players' disks once it
+      reaches `main`. Architecture 14 §14 lists gaps "to settle before `IndexedDbStorageAdapter`
+      fixes v1 on disk" (settings keyed by `profileId`, not §7's `[profileId, group]`; no
+      `profiles`, `matches`, `replays`, `meta` stores; no indexes). Ship v1 as it is (later
+      changes become v2+ migrations), or settle the settings key path first? (2) The fallback to
+      `MemoryStorageAdapter` logs at WARN (the brief's wording, through the existing `warn`
+      callback); 14 §10's table says ERROR. Which? (3) 14 §10 says `blocked` "waits, then
+      fallback" but gives no wait; the branch falls back at once (the §4 `openDatabase` sketch)
+      and closes the connection if it opens later. Keep, or name a wait? (4) No `degraded`
+      status, `persistenceSlice` or "progress will not be saved" banner is built; the fallback
+      is only logged.
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
