@@ -242,6 +242,30 @@ describe('Match', () => {
     expect(drawn()).toBe(false);
     match.destroy();
   });
+  it('stops drawing a gate that falls on the first tick: the first snapshot counts as seen', () => {
+    const { match, simulation, renderer, map } = setUp(undefined, true);
+    const gate = match.snapshot.entities.find(
+      (entity) => entity.kind === 'gate' && entity.mapFeatureId !== undefined,
+    );
+    const feature = map.features.find(({ id }) => id === gate?.mapFeatureId);
+    if (gate === undefined || feature?.footprint === undefined) throw new Error('Missing gate');
+    const { footprint, position } = feature;
+    const drawn = () =>
+      renderer.calls.some(
+        (call) =>
+          (call.op === 'fillPolygon' && call.args[0] === footprint) ||
+          (call.op === 'drawGlyph' && call.args[1] === position),
+      );
+    match.render(0);
+    expect(drawn()).toBe(true);
+
+    simulation.enqueueCommand({ type: 'dev-remove-entity', entityId: gate.id });
+    match.tick();
+    renderer.calls.length = 0;
+    match.render(0);
+    expect(drawn()).toBe(false);
+    match.destroy();
+  });
   it('queues no attack while the canvas gestures own the press (a minimap click or the explorer)', () => {
     const { match, simulation, input, world } = setUp(undefined, true);
     const house = world.mapObjects.find((object) => object.kind === 'house');
