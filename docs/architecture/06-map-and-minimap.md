@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-14
+last-reviewed: 2026-11-20
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -643,6 +643,16 @@ seams, runes and emitter artwork for the existing turret features. `MapDecoratio
 suppresses the main view's plain feature marker; explicit object ownership removes the correct
 panel artwork when its wall segment dies. The minimap retains its generated feature markers.
 All decoration stays in the existing render layers and adds no new shield-immunity mechanic.
+
+Lane towers (DEC-315): the main view marks a standing tower through `StructureView`, which draws its
+kind's marker (`STRUCTURE_MARKERS`, a square for a SpawnerTower and a diamond for a BuffTower) in
+the team colour on the entity layer, above the fort's court, so the two look different. The map
+layer's style for those kinds is `entity`: `MapView` draws no glyph. A fallen structure has no
+entity, so no marker. `MapDecoration.flagOf` names a structure whose banner a piece is: `SceneryView`
+hides it once `RetiredFeatures` (read from the snapshots: a `mapFeatureId` seen standing and now
+gone) reports the structure fallen, while the rest of the fort stays as its ruins (07 §8). `MapView`
+also drops a fallen structure's minimap glyph. A fallen structure's map object is never destroyed, so
+`WorldObjectStore.removed` is unchanged.
 
 ## Related
 

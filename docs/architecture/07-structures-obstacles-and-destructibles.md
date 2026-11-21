@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-16
+last-reviewed: 2026-11-20
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -425,7 +425,7 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   from BuffTowers, the `all-of` rule, the §11 invariants (`BreakabilityMatchesRuleInvariant`,
   `NoPassThroughUnbreakableInvariant`), the gate state machine, damage multipliers, walls,
   turrets and the Cathedral as entities, and clearing a destroyed structure's footprint from
-  `WorldMap`; the main view draws structures from the map layer (`StructureView` draws nothing).
+  `WorldMap`; the main view draws a lane tower's kind marker through `StructureView` (DEC-315) and the other structures from the map layer.
   Minion plan M6 adds `Camp` (forest camps, rule `never`, circle radius 1 `TUNE`, since camp
   features have no footprint); its group is a guard plan (18 §7.1), not a `Spawner` component yet.
 - **Minion follow-ups (`fix/minion-stack-followups`, 2026-11-05).** Lane towers and the
