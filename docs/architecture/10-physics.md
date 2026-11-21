@@ -331,6 +331,15 @@ bounds clamp lives once, inside it, and hands it to `abilities/` as `GameState.c
 entity is removed, so walking and a dash stop seeing it at once. The dash's motion goes through
 `MovementSystem` and `CollisionSystem` like walking.
 
+**2026-11-20 (branch `feat/ranged-attacks`, PR 1; DEC-300).** Projectiles are swept every tick
+(§7), but in `combat/ProjectileLanding`, called by `CombatSystem`, not in `MovementSystem`. The
+swept segment runs from the previous to the current position. It finds the earliest contact with a
+live enemy body (`physics/sweepDisc` for circles, `sweepCircle` for outlines) and with a wall or
+the map edge (`state.collisions.reach`). A body within `CONTACT_EPSILON` of the wall takes the hit.
+`CollisionSystem` skips the `projectile` layer. A shot with nothing in its path is slowed by
+`Movement.limitSpeed` (`combat/flightSpeed`, from `slowFrom`) so it stops exactly at its `range`;
+it then ends and hits nothing until it is removed (`ProjectileFlight`, DEC-306).
+
 ## Related
 
 - [04 Entity architecture](./04-entity-architecture.md)

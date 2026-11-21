@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-16
+last-reviewed: 2026-11-20
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -336,11 +336,15 @@ test or the boot-time content validation), never silently.
 
 ## 11. Object pooling
 
-`ProjectilePool` (Object Pool, research §6) keeps fixed-size arrays of `Projectile` instances:
-`acquire()` resets every field and assigns a fresh `EntityId`, `release()` nulls references so a
-pooled object keeps nothing alive. Pooled projectiles still flow through `EntityFactory` and the
-`EntityStore`, so events, invariants and snapshots see them like any entity. Particles are
-client-side (views) and pooled there; mobs may be pooled later if profiling shows spawn churn.
+Projectiles are not pooled (DEC-309): each shot is a new `Projectile` made by `EntityFactory` and
+removed with cause `consumed` when it ends. Measure first, as DEC-94 did for event payloads: an
+`Entity` id cannot change, spawning rebuilds every component, and each shot makes event objects
+that stay unpooled, so a pool cannot make a shot garbage-free. Extension point: if the performance
+soak test (NFR-023) shows pauses from projectiles, a `ProjectilePool` (Object Pool, research §6)
+keeps fixed-size arrays of `Projectile` instances: `acquire()` resets every field and assigns a
+fresh `EntityId`, `release()` nulls references so a pooled object keeps nothing alive, and pooled
+projectiles still flow through `EntityFactory` and the `EntityStore`. Particles are client-side
+(views) and pooled there; mobs may be pooled later if profiling shows spawn churn.
 
 ## 12. Worked example: adding a fourth Legend class
 
@@ -403,6 +407,11 @@ session or phase named:
 - `Boss` and `MiniBoss` are not built (Phase 3 sprint 3.6). The capture point mini-boss is a
   `heavy-mob` until then; the interim is recorded in
   [18's implementation status note](18-minion-system.md#minion-system).
+
+**Implementation status, 2026-11-20 (branch `feat/ranged-attacks`, PR 1; DEC-300).** Projectiles
+spawn and land. `RangedProjectileAttackStrategy` creates each one through `EntityFactory`
+(`AttackContext.factory`), and `ProjectileLanding` removes it with cause `consumed`. Each shot is
+a new entity, with no pool (§11, signed off as DEC-309). Particles are unchanged.
 
 ## Related
 

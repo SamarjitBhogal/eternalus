@@ -446,6 +446,151 @@ Reply inline (`Decision: …`).
       Also noted, acceptable: only an ability's top-level steps may wait (05 §3 says every spec
       may); no content needs nested delays, and the `Delayed<Step>` type refuses them.
       Keep all six, or name the ones to change?
+- [x] **HC-Q67 — Combat gaps: build before the presentation (2026-11-27)? In which order?
+      (combat audit, COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls page).**
+      Your nine combat questions: 0 of 9 are true today. Evidence and the proposed PRs (two lanes,
+      PR 1 to PR 9): https://claude.ai/artifact/F6z1XMJ6ZsDC3EaZGNrXuQ. The feature freeze was
+      today (2026-11-20). The nine gaps are about nine PRs. With a critic round and a full check
+      per PR, the estimate is 3 to 5 PRs by 2026-11-26 with two sessions in parallel. PR 1 (ranged
+      attacks), PR 2 (melee sweeps) and PR 5 (Veil) can start on a branch without this answer;
+      nothing merges before it. Proposed order. Lane A (attacks): PR 1 ranged attacks and
+      projectiles (staff, bow), PR 2 melee sweeps, PR 3 a weapon per sub-class, PR 4 wall turrets.
+      Lane B (abilities): PR 5 Vanguard Veil and Hamstring, PR 6 Sentinel Rip & Tear, Shield Wall,
+      Berserk, PR 7 Magus Imbue, Sanctuary, Death Ray. Last: PR 8 passives, PR 9 second weapon and
+      swap. Options: (A) build now for combat, two sessions, the order above (recommended): what
+      lands by 2026-11-26 is in the demo; the rest continues after the presentation; (B) build
+      now, one session, the order above: fewer merge conflicts, about half the output; (C) keep
+      the freeze and build all of it after the presentation: the demo shows today's combat, which
+      is melee for every class and 4 abilities that cast; (D) other (note). A, B, C or D?
+  - Answered 2026-11-20 (DEC-301): "Build now for combat, two sessions, the order above". Lane A
+    (this session) builds PR 1 to PR 4; lane B (PR 5 to PR 7) needs its own session.
+- [x] **HC-Q68 — Tower orbs with splash damage: which towers shoot, and what? (combat audit,
+      COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls page).** No document has
+      tower orbs or splash damage. The documents have wall turrets: they fire bolts at one target
+      and lead it (MVP requirements FR-027, FR-073). The balancing suggestions give range 14 m,
+      150 damage every 5 s, heavy ammo 500 every 10 s against Sentinels, heavy minions and bosses.
+      Lane towers (spawner and buff towers) do not attack; their guards defend them. Today nothing
+      on the map shoots. The only orb in the design is the Magus artifact Soul Orb (its Cast
+      Forward mode is a small turret, after Destiny 2's Arc Soul). Options: (A) build the
+      documented wall turrets, with bolts at one target (recommended): MVP in the documents,
+      numbers exist, and it reuses PR 1's projectiles (PR 4); (B) lane towers also shoot orbs with
+      splash damage: new design, so put the radius, damage, fire rate and which towers in the
+      note; built after the turrets; (C) turret bolts deal splash damage: put the splash radius in
+      the note; (D) you meant the Magus Soul Orb: an artifact (sprint 4.4), not in this plan yet;
+      say in the note if it should be; (E) other (note). A, B, C, D or E?
+  - Answered 2026-11-20 (DEC-302): "Lane towers also shoot orbs with splash damage", with a note:
+    wall turrets keep their documented bolts (PR 4); lane towers defend themselves with splash orbs
+    from their new team-coloured gems, built after the turrets, before the new visuals land. The orb
+    numbers (splash radius, damage, fire rate, range) go on a page before the build.
+- [x] **HC-Q69 — Weapon swap: which Vanguard sub-classes get a second weapon, and which key
+      swaps? (combat audit, COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls
+      page).** Today each Legend has one weapon and no swap. Your start-weapon ruling (DEC-57)
+      gives a second weapon only to the Zealot: "Raptor talons are starter for Velite with a bow
+      as a secondary weapon" (Velite is now Zealot). The loadout document puts a second weapon at
+      MVP-if-time: "one weapon is enough for the MVP attack". Free keys today: Q, F, R, X, G (V
+      opens View Details). Options: (A) the Zealot only (talons and bow), Q swaps, built last
+      (PR 9) (recommended): matches DEC-57; a loadout with a primary and a secondary weapon, one
+      swap action, rebindable; (B) every Vanguard sub-class gets one: name the Templar's and the
+      Paladin's second weapon in the note; (C) every class can carry two weapons: name the weapons
+      in the note; (D) after the presentation (MVP-if-time); (E) other (note). A, B, C, D or E?
+  - Answered 2026-11-20 (DEC-303): "Zealot only (talons and bow), Q swaps; built last (PR 9)", with
+    a note: the swap is one of the Zealot's two gadget slots, not Q.
+- [x] **HC-Q70 — Melee sweep: how wide is each weapon's arc? (combat audit,
+      COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls page).** Your ruling
+      DEC-184: "A physical weapon (sword, axe) swipes the area in front of the user, with a range
+      set by the weapon's reach ... Everything the weapon's area reaches takes damage." Today a
+      melee hit damages one target. Each weapon already has its own reach; no arc width is set
+      anywhere. The numbers below are a proposal, not from a document. Options: (A) each weapon
+      has its own arc in content (recommended): proposed talons 90°, dual blades 100°, great sword
+      140°, Wuuthrad 160°, Bastions 70°, staff melee 90°; a bigger weapon sweeps wider and
+      further; marked `TUNE`; (B) one arc for every melee weapon (120°): only the reach changes
+      with the weapon; (C) other (note). A, B or C?
+  - Answered 2026-11-20 (DEC-304): "Each weapon has its own arc in content", with a note: mark
+    `TUNE`, test for feel; two arcs for dual-wield weapons is an idea to think about; single arcs
+    now. Built in PR 2.
+- [x] **HC-Q71 — Reach: the class's number plus the weapon's? (combat audit,
+      COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls page).** Your words in the
+      combat review on 2026-10-19 (not yet in the decisions log; PR 1 logs them as DEC-300):
+      "Reach depends on character + weapon type. Swords 2 m, short blades 1 m, etc.; Warriors
+      another 2 m, Sentinels 4 m, Magus 3 m." Open since then: do the two add up? Today reach is
+      per weapon: talons 1.5 m, Wuuthrad 1.8 m, staff 1.5 m. Reach counts from the edge of the
+      body, so a bigger body already reaches further (body radius: Warrior 0.5 m, Magus 0.75 m,
+      Sentinel 1.25 m). Talons, Wuuthrad, Bastions and staff melee have no number in your words;
+      the proposal is 1 m, 2 m, 1 m and 1 m. Options: (A) they add, class + weapon (recommended):
+      Zealot 3 m, Templar 3 m, Paladin 4 m, Bulwark 6 m, Colossus 5 m, Magus staff melee 4 m; this
+      is long, as the Paladin hits 8 body-radii away; (B) the weapon's number only: swords 2 m,
+      short blades 1 m for any class, and the class numbers are dropped; body size still adds;
+      (C) other (note). A, B or C?
+  - Answered 2026-11-20 (DEC-305): "They add: class + weapon", with a note: proposed distances go
+    ahead as `TUNE` and may need tuning after user testing (a standing rule). Built in PR 2.
+- [x] **HC-Q72 — Staff and bow: how does damage fall off with distance? (combat audit,
+      COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls page).** Your words
+      (2026-10-19): "Staff range is infinite (think gun) with damage fall-off after 15 m. Bows
+      fall off after 50 m." The balancing suggestions give the Magus staff 8 m; your words win
+      over them (DEC-300). Open: how fast damage drops and its floor. A shot must also end
+      somewhere. The numbers below are a proposal. Options: (A) a straight-line drop to a floor
+      (recommended): staff has full damage to 15 m, then drops to 40% at 45 m and stays at 40%
+      after that; bow has full damage to 50 m, then drops to 40% at 80 m; a shot flies until it
+      hits something or leaves the map; all `TUNE` in content; (B) one step, half damage past 15 m
+      (bow 50 m): simpler for players to read, no slope; (C) other (note). A, B or C?
+  - Answered 2026-11-20 (DEC-306): "Straight-line drop to a floor", with a note: a staff bolt
+    fizzles out into mist after 100 m; an arrow slows down and falls to the ground at its maximum
+    distance, with a shadow. Built on `feat/ranged-attacks` (PR 1).
+- [x] **HC-Q72 (b) — Staff and bow: placeholder numbers HC-Q72 does not ask about
+      (`feat/ranged-attacks`, 2026-11-20; COMBAT-WEAPONS-ABILITIES-37).** HC-Q72 asks how damage
+      falls off. PR 1 also needs these numbers, which no document gives. All are `TUNE` in
+      content. (1) Firing reach: a bot walks this close before it shoots. Staff 15 m, bow 50 m
+      (your full-damage distances). (2) Shot speed: 60 m/s for both (the physics document's sizing
+      example; wall-turret bolts are 30 m/s and 24 m/s). (3) Bow damage: 45 every 0.7 s (the
+      Warrior basic attack); no document has bow damage. The staff keeps the Magus basic: 40
+      every 0.9 s. (4) Range: no cap in a match. A shot flies until it hits something, a wall or
+      the map edge (your 2026-10-19 ruling that staff range is infinite, "think gun"). Code goes
+      ahead on these numbers; nothing merges before HC-Q67. Options: (A) use these placeholders
+      (recommended): change any number in a note; (B) other (note). A or B?
+  - Answered 2026-11-20 (DEC-310): "Use these placeholders". Point (4), no range cap, is replaced by
+    DEC-306. Built on `feat/ranged-attacks` (PR 1).
+- [x] **HC-Q73 — Passives: build before the presentation? (combat audit,
+      COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls page).** The passives are
+      Sentinel Wrecking Run, Magus Studious and Necromancy (the Vanguard has none yet). Today they
+      are names only. The documents disagree: the class table (classes and sub-classes) says MVP;
+      the MVP requirements (FR-053), the MVP scope and the loadout document say MVP-if-time.
+      Wrecking Run has a rule ("While holding sprint, speed gradually increases to a max of N
+      m/s"); Studious and Necromancy have no numbers. Options: (A) MVP-if-time: after the
+      abilities (PR 8), Wrecking Run first (recommended): Studious and Necromancy get proposed
+      numbers on a page before they are built; (B) build them now, before the abilities; (C) other
+      (note). A, B or C?
+  - Answered 2026-11-20 (DEC-307): "MVP-if-time: after the abilities (PR 8), Wrecking Run first",
+    with a note: momentum exists but needs a physics feel (turns that slide, a Shield Wall-type
+    ability that stops a Sentinel, barging through objects and buildings).
+- [x] **HC-Q74 — Magus staff: keep a melee attack when it turns ranged? (combat audit,
+      COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls page).** Your weapon
+      ruling (DEC-64): "Mages all have staves, which have ranged attacks (default) and melee
+      attacks (TBD how to trigger a different type of attack; likely copying whatever Battlefield
+      does on PC for melee attacks)." PR 1 makes the staff's default attack ranged. The melee
+      trigger is still open. Options: (A) ranged only for now; staff melee on its own key with PR 9
+      (recommended): one attack per click; the melee key (proposed F, rebindable) comes with the
+      swap's input work; (B) automatic: melee when the target is close, ranged otherwise: no new
+      key; (C) staff melee on its own key now (F), in PR 1: one new input action, rebindable;
+      (D) other (note). A, B, C or D?
+  - Answered 2026-11-20 (DEC-308): "Ranged only for now; staff melee on its own key with PR 9", with
+    a note read as: keep the staff melee and put it on its own rebindable action (default F) now, in
+    a PR after PR 1; a per-class "auto-melee on/off" setting comes later. The staff keeps its melee
+    attack as its second attack on `feat/ranged-attacks`.
+- [x] **HC-B16 — Better than the design, sign-off asked: no projectile pool for now
+      (`feat/ranged-attacks`, 2026-11-20; COMBAT-WEAPONS-ABILITIES-37).** Built on
+      `feat/ranged-attacks`; nothing waits on the answer. The design says projectiles come from a
+      `ProjectilePool` (reused objects, to avoid garbage-collection pauses). The build creates
+      each shot new and removes it when it lands. Reasons: (1) an entity's id cannot change, so a
+      pool that gives each shot a fresh id needs a change to the entity base class; (2) spawning
+      rebuilds every component anyway; (3) each shot already makes new event objects, which DEC-94
+      leaves unpooled, so a pool cannot make a shot garbage-free. This is the same "measure first"
+      rule DEC-94 used. The pool comes back if the performance soak test (NFR-023) shows pauses
+      from projectiles. Options: (A) no pool now; add it if the soak test shows pauses
+      (recommended): less code, and the design docs get an implementation-status note; (B) build
+      the pool in PR 1, as designed: entity ids become changeable, and more code for no measured
+      gain; (C) other (note). A, B or C?
+  - Answered 2026-11-20 (DEC-309): "No pool now; add it if the soak test shows pauses". The design
+    docs say so with PR 1.
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays

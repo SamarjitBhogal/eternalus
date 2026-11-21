@@ -4,7 +4,7 @@ description: The default MVP key bindings, the requirement that no binding is ha
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-16
+last-reviewed: 2026-11-20
 tags: [reference, game-design, controls, input, keybindings, settings]
 paths: ['apps/client/src/game/input/**', 'apps/client/src/ui/screens/SettingsScreen*']
 related:
@@ -29,6 +29,7 @@ Top-down, single-character control. Defaults from both sources (all **MVP**):
 | ------------------------------- | -------------------- | ------------------------------------------------- | ------------------------------------- |
 | Move up / left / down / right   | W / A / S / D        | `move-up`, `move-left`, `move-down`, `move-right` | requirements doc, game doc            |
 | Attack                          | Mouse click          | `attack`                                          | game doc ("Click to attack")          |
+| Melee attack (staff melee)      | F                    | `melee-attack`                                    | DEC-308 (owner, 2026-11-20)           |
 | Ability 1, 2, 3                 | 1, 2, 3              | `ability-1`, `ability-2`, `ability-3`             | requirements doc, game doc            |
 | Ultimate (ability 4)            | 4                    | `ability-4` (the id in `keybindings.ts`)          | requirements doc ("4 being ultimate") |
 | Gadget 1 / gadget 2 (artifacts) | Z / C                | `gadget-1`, `gadget-2`                            | requirements doc, game doc            |

@@ -9798,3 +9798,26 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `docs/` (no code).
 - Checks run: `npm run docs:check`, Prettier on the five files, and `npm run check`.
 - Next step: the owner pushes PR #123, then PR #136.
+
+### 2026-11-20 — Phase 4 / combat lane A, PR 1: ranged attacks, shot endings (DEC-306), staff melee on F (DEC-308) — feat/ranged-attacks — sholtzman + Claude Code
+
+- What was done: built PR 1 of the combat plan (DEC-301) on `feat/ranged-attacks`, base
+  `feat/vanguard-kit` (PR #136, `e21692d6`). Core: the `ranged-projectile` attack strategy
+  (`RangedProjectileAttackStrategy`), projectile content (`content/projectiles/`: `magus-bolt`,
+  `arrow`, `loadProjectiles`), `ProjectilePayload`, `ProjectileLanding` (swept hits through
+  `physics/sweepDisc` and `sweepCircle`, walls through `state.collisions.reach`, damage times
+  `falloffMultiplier` through `DamagePipeline`, then `afterHit`), the Magus staff's ranged basic
+  attack and `obsidian-bow`. Shot endings (DEC-306): `ProjectileFlight`, `combat/flightSpeed`,
+  `Movement.limitSpeed`; a bolt fizzles at 100 m, an arrow slows from 80 m and drops at 100 m;
+  an ended shot hits nothing. `EntitySnapshot.projectile` (`speedShare`, `ending`). Staff melee
+  (DEC-308): `AttackMode` and an optional `attack-target` `mode`, `Combat` holds the melee
+  attack, `EntityStore.setAttackTarget` refuses `melee` without one. No projectile pool
+  (DEC-309). Client: `ProjectileView` (fizzle and drop looks, `colorWithAlpha`) and the
+  `melee-attack` action, default F. Records: DEC-301..310 and their `INBOX.md` answers;
+  design text for DEC-306, DEC-308 and DEC-309 in 05 §10, 04 §11, 03 §9, 02, 10 §12, the
+  glossary and the phase 2 and 4 plans; reference 09 controls (F row) and 13 §InputAction.
+- Checks run: `npm run check` exit 0 (core 337 files / 2123 tests, client 309 / 2134, server
+  21 / 84, docs check passed). Breaks in `eternalus-agent-work/abilities/pr1-breaks.log`.
+- Next step: pre-PR gate (architecture-reviewer, correctness and ponytail critics), then the
+  push and `gh pr create --base feat/vanguard-kit` for the owner; then lane A PR 2 (melee
+  sweeps, DEC-304 and DEC-305).

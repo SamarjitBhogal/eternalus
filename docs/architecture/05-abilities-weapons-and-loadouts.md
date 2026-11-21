@@ -165,7 +165,7 @@ and the `DamagePipeline`, never each other and never a system (rule 12). The cat
 | `dash`       | `DashEffect`                 | Moves the caster along `aim` with swept collision; collects units on the path                           | `distance`, `durationTicks`, `teleport?`, `onPath`, `onEnd`         | MVP (Blade Runner, Fury dash, Meteor Fall)   |
 | `knockback`  | `KnockbackEffect`            | `Movement.push` from the centre, less for heavier targets, summed per tick; `knockup` adds `knockup`    | `distance`, `knockup?`, `shape` (DEC-208; ADR 0026 decision 4)      | MVP (Slam, Shockwave, Nova)                  |
 | `zone`       | `ZoneEffect`                 | Spawns an `EffectZone` (`Zone` family, kind `effect-zone`) with a lifetime; children `onEnter`/`onTick` | `shape`, `lifetimeSeconds`, `everyTicks`, `follow?`, `grow?`        | MVP (Death Ray, Nova, flame trail)           |
-| `projectile` | `ProjectileEffect`           | Spawns a pooled `Projectile`; children `onHit`; `pierce` or burst                                       | `speed`, `radius`, `range`, `pierce?`, `onHit`                      | MVP (weapons; Hamstring proposed)            |
+| `projectile` | `ProjectileEffect`           | Spawns a `Projectile` (not pooled, DEC-309); children `onHit`; `pierce` or burst                        | `speed`, `radius`, `range`, `pierce?`, `onHit`                      | MVP (weapons; Hamstring proposed)            |
 | `summon`     | `SummonEffect`               | Spawns entities from a definition, owned by the caster, with an expiry (`RemovalCause` `'despawned'`)   | `definitionId`, `count`, `lifetimeSeconds`, `controllerId?`         | MVP-if-time (Soul Orb; Shield Wall proposed) |
 | `reveal`     | `RevealEffect`               | Grants allied `Vision` over an area or marks targets                                                    | `shape`, `durationSeconds`, `markStatusId?`                         | post-MVP (Eagle Eye; `Vision` beyond MVP)    |
 | `revive`     | `ReviveEffect`               | Returns an intact allied corpse to play at a health fraction                                            | `healthFraction`, `corpseMaxAgeSeconds`, `reviveLockoutSeconds`     | MVP (Magus default action)                   |
@@ -654,11 +654,21 @@ movement speeds). `Combat.weaponId` names the equipped weapon; `CombatSystem` ca
 (`attack(self, target, weapon, ctx)`,
 [04 §4](04-entity-architecture.md#4-strategies-behaviour-that-varies-by-kind)):
 `MeleeAttackStrategy` applies `damage` and `onHit` in the tick; `RangedProjectileAttackStrategy`
-spawns a pooled `Projectile` whose `payload` names the weapon attack, so `CombatSystem` runs
+spawns a `Projectile` (not pooled, DEC-309) whose `payload` names the weapon attack, so `CombatSystem` runs
 `onHit` on `projectile-hit`. A heavy attack arrives as `attack-target` with `mode: 'heavy'`
 (`Recommendation:` one optional field on the existing command; **MVP-if-time**) and uses its own
 cooldown on `Combat`; a parry is a `parrying` status with a window. Non-unique weapons are usable
 by any class (reference 07: the class table's bias is a bias); `uniqueTo` locks the class weapons.
+
+A shot flies straight from where it was fired until it hits an enemy body or a wall, or reaches
+its `ProjectileDefinition.range` (metres from the origin). At its range it stops and ends: it hits
+nothing and stays for its `endDuration` (a bolt's mist fading, an arrow lying on the ground), then
+it is removed. `slowFrom` (at most `range`) is where the shot starts to ease to that stop; equal to
+`range`, the shot flies at full speed to the end. Its damage drops in a straight line from the
+attack's `falloff.fullTo` to `falloff.floor` at `falloff.floorAt`, and stays at the floor after
+that (DEC-306). A weapon with a melee attack beside its default attack also takes `attack-target`
+with `mode: 'melee'`: the unit attacks with that melee attack (the Magus staff's melee, on its own
+rebindable action, DEC-308). `mode` is the same optional field as the heavy attack's.
 
 | Weapon (`id`)                               | Class      | Attacks (`TUNE`, reference 07)                                                          | Unique to | Status                  |
 | ------------------------------------------- | ---------- | --------------------------------------------------------------------------------------- | --------- | ----------------------- |
@@ -688,6 +698,30 @@ their own `attack` and name their own definition (04 §5). Not built yet: ranged
 `damageType`, `damageClass`, `damageMultipliers`, `sprite`, the `AttackStrategy` contract's
 `weapon` argument, and `allowedClasses` / `uniqueTo` enforcement in a loadout (`WeaponAllowedRule`,
 SCRUM-290).
+
+**Implementation status, 2026-11-20 (branch `feat/ranged-attacks`, PR 1; DEC-300).** Ranged attacks
+are built. `AttackStrategyId` is `'melee' | 'ranged-projectile'` (`'beam'` is not built).
+`UnitAttack` is a union: `MeleeAttack` or `RangedAttack`, and a `RangedAttack` carries
+`projectile: { projectileId, falloff }` (`content/units/units.types.ts`). The Magus staff's basic
+attack is ranged, and `obsidian-bow` exists. Projectile content is in `content/projectiles/`
+(`magusBolt.ts`, `arrow.ts`, `projectileCatalogue.ts`, `loadProjectiles`). All numbers are `TUNE`
+(DEC-306, DEC-310). `RangedProjectileAttackStrategy` spawns the `Projectile`
+through `AttackContext.factory`. Its `ProjectilePayload` holds the owner, team, source, attack and
+origin. The shot flies straight at the target's facing point, with no lead. The projectile is
+not pooled (04 §11, DEC-309). Shot endings (DEC-306) are built: `ProjectileFlight` holds `range`,
+`slowFrom` and the ending countdown; `combat/flightSpeed` caps the shot's speed each tick through
+`Movement.limitSpeed`, so it stops exactly at `range`, ends, and is removed as `consumed` after
+`endDuration`. `EntitySnapshot.projectile` (`speedShare`, `ending`) lets the client draw the
+slowing and the ending. The staff's melee attack is on its own action (DEC-308): `attack-target`
+has an optional `mode` (`AttackMode`, `'basic' | 'melee'`, in `content/units/units.types.ts`);
+`Combat` holds the basic attack and the weapon's first melee attack, with one shared cooldown;
+`EntityStore.setAttackTarget` refuses `melee` for a unit without one (`cannot-attack`); the
+client's `melee-attack` action (default F) sends it. `ProjectileLanding` (called by `CombatSystem` before unit attacks)
+applies the hit: damage times `falloffMultiplier`, through `DamagePipeline`, then `afterHit`. No
+`projectile-hit` event exists yet, because nothing listens for it. `ProjectileLanding` runs the
+owner's statuses' `onHit` steps itself, through `HitEffects.afterHit`, and removes the shot with
+cause `consumed`. Still not built: `heavyAttack`, `parry`, `grants`, the flex attack,
+`a-fine-line` and turret lead.
 
 ## 11. Artifacts (gadgets Z and C)
 
@@ -967,6 +1001,11 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   until respawn (FR-051), which O4's posthumous XP needs. Numbers are
   `TUNE`; the curve and the Legend kill and structure XP follow DEC-190 (not final; the
   soak metric can change them) and live in `content/progression/`.
+- **Ranged attacks and projectiles (`feat/ranged-attacks`, 2026-11-20; DEC-300).** See the
+  2026-11-20 note under §10: the `ranged-projectile` strategy, the projectile content and
+  `ProjectileLanding` are built. The shot is not pooled (DEC-309). The client
+  draws a shot with `ProjectileView` (`apps/client/src/game/views/`), registered in
+  `defaultViewRegistry`.
 - **HUD (`feat/hud-and-character-select`, 2026-10-24).** The client's `MatchBridge` joins the
   player's `EntitySnapshot` groups and the slots of core's `Snapshot.player` (since
   `feat/ability-framework`, the bullet below) into `PlayerHudSnapshot` (`bridge/hud.types.ts`), as

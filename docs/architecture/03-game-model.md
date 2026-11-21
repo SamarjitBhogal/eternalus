@@ -186,7 +186,7 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 | Event                               | Payload                                                | Emitted by                                                      | Typical listeners                                                                                          |
 | ----------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | `entity-spawned`                    | `{ entityId, kind, team }`                             | `EntityFactory` via `SpawnSystem`, or `Simulation` for a roster | `SnapshotSystem`, views, `Scoring` (a row per Legend)                                                      |
-| `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`           | `DeathSystem` only                                              | `HordeSystem`, `ProjectilePool`, invariants                                                                |
+| `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`           | `DeathSystem` only                                              | `HordeSystem`, invariants                                                                                  |
 | `damage-applied`                    | `{ targetId, amount, absorbed, source: DamageSource }` | `DamagePipeline`                                                | `ProgressionSystem` (assists), `AiSystem` (aggro), `Scoring` (assists, structure damage)                   |
 | `entity-died`                       | `{ entityId, killer: DamageSource }`                   | `DeathResolver`                                                 | `DeathSystem`, `ProgressionSystem`, `Scoring`, `ObjectiveLostCondition`                                    |
 | `structure-destroyed`               | `{ entityId, kind, team, lane }`                       | `StructureSystem`                                               | `EnragedSystem` (enraged lane), `StructureSystem` (walls, shields), `Scoring` (DEC-212)                    |
@@ -514,6 +514,11 @@ each closed by the session or phase named:
 - `Replay` has no `versions` yet (they arrive with the content catalogue).
 - `map/` still reads its own `MapConfig`, `DEFAULT_MAP_CONFIG`, `MapRandom` and
   `validateMapConfig` until session A swaps to `GameConfig` and `SeededRandom` (06 §10).
+
+**Implementation status, 2026-11-20 (branch `feat/ranged-attacks`, PR 1; DEC-300).**
+`ProjectileLanding` removes each shot with cause `consumed`; projectiles are not pooled (04 §11,
+DEC-309), so nothing listens for `entity-removed` on a projectile's behalf. No `projectile-hit`
+event exists (05 §10).
 
 ## Related
 
