@@ -21,6 +21,7 @@ import { matchWorldOf } from '../../state/__fixtures__/matchWorld';
 import type { GameEventMap } from '../../state/GameEvents.types';
 import { SpawnSystem } from '../SpawnSystem';
 import { countdownTicks } from '../../config/countdownTicks';
+import { timelineFrameOf } from '../../config/timelineFrameOf';
 
 /** The simulation tick rate the fixtures use. */
 export const TICK_RATE = 30;
@@ -63,7 +64,15 @@ export const setUp = (
     match: overrides.match ?? {},
     limits: overrides.limits ?? {},
   });
-  const state = new GameState(config, 1, matchWorldOf(TWO_LANE_MAP));
+  const state = new GameState(
+    config,
+    1,
+    matchWorldOf(TWO_LANE_MAP),
+    {},
+    {
+      countdownEndTick: timelineFrameOf(config).countdownEndTick,
+    },
+  );
   spawnMapStructures(state);
   const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(TICK_RATE));
   const system = newSystem(state, factory, plan);

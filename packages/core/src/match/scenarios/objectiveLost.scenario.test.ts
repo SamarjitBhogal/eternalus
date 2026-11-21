@@ -36,7 +36,7 @@ const MAX_TICKS = 30;
 const playOut = (prepare: (state: GameState) => void = () => undefined) => {
   const logger = new MemoryLogger();
   const timeline = MatchTimeline.resolve(CONFIG);
-  const state = new GameState(CONFIG, 7, null, {}, timeline.schedule());
+  const state = new GameState(CONFIG, 7, null, {}, { schedule: timeline.schedule() });
   const director = createDefaultMatchDirector({
     state,
     timeline,
@@ -104,6 +104,7 @@ describe('losing the last win objective (scenario)', () => {
       playerTeam: 'light',
       hadHuman: false,
       durationTicks: 2,
+      matchTicks: 2, // no countdown in this config
       seed: 7,
     });
     expect(logger.records).toEqual([]);
