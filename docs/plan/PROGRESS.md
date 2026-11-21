@@ -9348,3 +9348,15 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   "Tests 2011 passed (2011)"; server "Tests 84 passed (84)"; "✓ built in 521ms"; "Documentation
   check passed."; `npm ci` exit 0 after the `vite` bump; `npm run bench` as above.
 - Next step: owner sign-off on the CI step and the dependency (S1); then re-request review.
+
+### 2026-11-21 — Phase 3 / minion plan §1.2 unit-cap performance — chore/minion-perf-check (CodeRabbit on `c554f2d4`) — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit's three findings. The plan README row no longer says "met": the run was
+  on a non-reference machine and the timed population falls from 144 to about 95 per team, so it
+  is pending the reference laptop and the sampling rule. `INBOX.md` asks the owner whether NFR-021
+  means the fill or a population held for the whole timed window; the bench header says the window
+  is a fight with a falling population. Not changed: the doc 15 status text waits for the owner's
+  sign-off, as CodeRabbit asks.
+- Checks run: `npm run docs:check` → "Documentation check passed."; `npm run check:quick` by the
+  pre-commit hook (only docs and a script comment changed).
+- Next step: the owner answers S1 and the sampling question; then re-request review.

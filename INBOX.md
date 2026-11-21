@@ -276,7 +276,11 @@ Reply inline (`Decision: …`).
       NFR-025's per-system split (AI ≤ 1.5 ms) is still not measured: it waits for the `Profiler`
       port (15 §6). Still open: which machine is the reference laptop; and the CI step and root
       `vite` devDependency need your sign-off on PR #83 (an ADR or a DEC row), or the step moves to
-      `workflow_dispatch` only.
+      `workflow_dispatch` only. **New question (CodeRabbit on PR #83, 2026-11-21):** the bench
+      fills each team to 144 and then times a fight, so the population falls (143/144 → 92/98 in
+      the 2026-11-20 run). Does NFR-021's "at 144 units per team" mean the fill, or must the bench
+      hold 144 per team for the whole timed window (respawning the dead)? Until you answer, the
+      144-case result is combat-window evidence, not a pass of NFR-021.
 
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on

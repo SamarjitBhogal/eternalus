@@ -4,6 +4,8 @@
 // `Simulation.step()` and prints p50/p95/max tick time. Core is loaded through Vite's module
 // runner, since Node cannot resolve its extensionless TypeScript imports. Times are printed,
 // never asserted (they depend on the machine): a missed budget prints `NO` and still exits 0.
+// The timed window is a fight, so the population falls from the fill (the mob counts at its start
+// and end are printed); whether NFR-021 needs it held at 144 per team is open (INBOX).
 // The script fails when it stops measuring its scenario, so CI notices when the core API it
 // drives changes: a case that could not be filled, a bot Legend that never moved, hordes that
 // never met, or a timed window in which no filled mob died. Per-system times (NFR-025) wait for
