@@ -176,7 +176,26 @@ export class Simulation {
       createDefaultEntityRegistry(),
       Simulation.withStructures(definitions, structures),
       undefined,
-      weaponSource,
+      {
+        weapons: weaponSource,
+        onLoadoutRejected: ({ definitionId, given, problems, used }) => {
+          logger.log(
+            makeLogRecord(
+              'WARN',
+              'core.loadout',
+              'a spawn loadout was invalid; using the auto-build',
+              {
+                attributes: {
+                  definitionId,
+                  givenWeaponId: given.primaryWeaponId,
+                  usedWeaponId: used.primaryWeaponId,
+                  problems: problems.map(({ message }) => message).join('; '),
+                },
+              },
+            ),
+          );
+        },
+      },
     );
     const owners = Simulation.spawnStructures(this.state, factory, structures, mapObjects);
     this.state.indexStructures();

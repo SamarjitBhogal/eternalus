@@ -21,6 +21,7 @@ describe('@eternalus/core public API', () => {
       'SeededRandom',
       'Simulation',
       'StateHasher',
+      'autoBuildLoadout',
       'createDefaultGameConfig',
       'findBuildingAt',
       'findMapObjectAt',
@@ -30,10 +31,13 @@ describe('@eternalus/core public API', () => {
       'isUnitFamily',
       'isWeaponAllowedFor',
       'loadDisplayContent',
+      'loadoutContentOf',
       'makeLogRecord',
       'opponentOf',
+      'repairLoadout',
       'runReplay',
       'validateGameConfig',
+      'validateLoadout',
     ]);
   });
 

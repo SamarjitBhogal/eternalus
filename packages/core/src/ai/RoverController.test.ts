@@ -37,7 +37,7 @@ const setUp = (at = { x: 100, y: 30 }) => {
     createDefaultEntityRegistry(),
     loadDefaultContent(30),
     undefined,
-    loadWeapons(30),
+    { weapons: loadWeapons(30) },
   );
   const perception = new Perception(state);
   const add = (team: 'light' | 'dark', x: number, y: number, kind = 'warrior') => {

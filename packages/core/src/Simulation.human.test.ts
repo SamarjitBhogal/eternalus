@@ -99,6 +99,37 @@ describe('Simulation: the human slot of the roster', () => {
     ]);
   });
 
+  it("logs an invalid loadout on the human slot and spawns the class's auto-build", () => {
+    const logger = new MemoryLogger();
+    const sim = build(
+      [
+        {
+          pilot: 'human',
+          team: 'dark',
+          definitionId: 'warrior',
+          role: 'rover',
+          loadout: { classId: 'warrior', primaryWeaponId: 'magus-staff' },
+        },
+      ],
+      logger,
+    );
+    const { state } = sim as unknown as { readonly state: GameState };
+    const humanId = sim.snapshot().match.humanLegendId ?? '';
+
+    expect(state.entities.get(humanId)?.getComponent(Combat).weaponId).toBe('raptor-talons');
+    expect(logger.records.filter(({ scope }) => scope === 'core.loadout')).toMatchObject([
+      {
+        severityText: 'WARN',
+        attributes: {
+          definitionId: 'warrior',
+          givenWeaponId: 'magus-staff',
+          usedWeaponId: 'raptor-talons',
+          problems: 'class "warrior" may not carry weapon "magus-staff"',
+        },
+      },
+    ]);
+  });
+
   it("snapshots the human Legend's level and XP from the Simulation's own level curves; structures have none", () => {
     const sim = new Simulation({
       config: configFor(),

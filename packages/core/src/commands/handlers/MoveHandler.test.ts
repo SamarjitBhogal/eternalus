@@ -24,12 +24,9 @@ class Rock extends Entity {
 
 const context = (): CommandContext => {
   const state = new GameState(createDefaultGameConfig(), 1);
-  const factory = new EntityFactory(
-    createDefaultEntityRegistry(),
-    UNIT_DEFINITIONS,
-    undefined,
-    loadWeapons(createDefaultGameConfig().tickRate),
-  );
+  const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS, undefined, {
+    weapons: loadWeapons(createDefaultGameConfig().tickRate),
+  });
   state.entities.add(
     factory.create('warrior', 'warrior', { position: { x: 0, y: 0 }, team: 'light' }),
   );

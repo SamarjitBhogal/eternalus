@@ -33,12 +33,9 @@ const EAST: Vec2 = { x: 1, y: 0 };
 /** The shipped unit definitions as the simulation loads them (speeds per tick at 30 ticks/s). */
 const UNIT_DEFINITIONS = loadDefaultContent(createDefaultGameConfig().tickRate);
 const newFactory = (): EntityFactory =>
-  new EntityFactory(
-    createDefaultEntityRegistry(),
-    UNIT_DEFINITIONS,
-    undefined,
-    loadWeapons(createDefaultGameConfig().tickRate),
-  );
+  new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS, undefined, {
+    weapons: loadWeapons(createDefaultGameConfig().tickRate),
+  });
 
 /** Spawns `definitionId` the way a spawn command will: by the definition's kind. */
 const spawnUnit = (

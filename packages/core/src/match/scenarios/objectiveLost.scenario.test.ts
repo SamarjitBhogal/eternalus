@@ -57,12 +57,9 @@ const playOut = (prepare: (state: GameState) => void = () => undefined) => {
     director,
   });
   director.start(state);
-  const factory = new EntityFactory(
-    createDefaultEntityRegistry(),
-    UNITS,
-    undefined,
-    loadWeapons(CONFIG.tickRate),
-  );
+  const factory = new EntityFactory(createDefaultEntityRegistry(), UNITS, undefined, {
+    weapons: loadWeapons(CONFIG.tickRate),
+  });
   const warrior = factory.create('warrior', 'warrior', { position: { x: 0, y: 0 }, team: 'light' });
   const objective = factory.create('light-mob', 'training-dummy', {
     position: { x: 1, y: 0 },

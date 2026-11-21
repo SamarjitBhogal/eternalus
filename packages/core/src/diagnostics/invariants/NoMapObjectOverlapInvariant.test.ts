@@ -24,7 +24,7 @@ describe('NoMapObjectOverlapInvariant', () => {
         get: (id) => definitions.get(id) ?? units.get(id),
       },
       undefined,
-      loadWeapons(config.tickRate),
+      { weapons: loadWeapons(config.tickRate) },
     );
     state.worldObjects = new WorldObjectStore({
       objects: [

@@ -106,12 +106,9 @@ describe('EntityFactory', () => {
     const registry = new EntityRegistry();
     registry.register('factory-entity', FactoryEntity);
     const weapons = new ContentCatalogue([]);
-    const factory = new EntityFactory(
-      registry,
-      new ContentCatalogue([DEFINITION]),
-      undefined,
+    const factory = new EntityFactory(registry, new ContentCatalogue([DEFINITION]), undefined, {
       weapons,
-    );
+    });
 
     const entity = factory.create('factory-entity', 'factory-definition', PLACEMENT);
 
