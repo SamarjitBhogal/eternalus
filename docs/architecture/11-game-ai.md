@@ -196,9 +196,10 @@ Each aggro profile names the one controller that reads it (`controller`), and a 
 accepts only its own profiles. The shared fields are `AggroRuleDefinition`; a horde minion's
 profile (`HordeAggroRuleDefinition`) adds `leashRadius` and `callForHelpRadius`, and a guard's,
 camp mob's or guard-post boss's (`GuardAggroRuleDefinition`) adds nothing, since its leash and its
-mates come from its post's guard plan (18 §7; DEC-168 B2). Durations are seconds in content and are turned into ticks
-with the match's tick rate where they are read; `ghostFirstWaveTicks` is the exception, already in
-ticks.
+mates come from its post's guard plan (18 §7; DEC-168 B2). Durations are seconds in content (the
+`Authored…` forms of these types) and are turned into ticks once, at load, with the match's tick
+rate by `loadAggroRules`, which `Simulation` calls before it builds the controllers (03 §8), so the
+controllers read only ticks; `ghostFirstWaveTicks` is the exception, already in ticks.
 
 ```ts
 // packages/core/src/content/ai/aggro/lane-minion.ts (sketch)
@@ -220,7 +221,7 @@ export const laneMinionAggro = {
   aggroCooldownSeconds: 3, // TUNE: Dota 3 s
   callForHelpRadius: 805, // TUNE: owner DEC-144; the leash
   ghostFirstWaveTicks: 0, // 0 = off; League ghosts the first wave for 18–28 s
-} satisfies HordeAggroRuleDefinition;
+} satisfies AuthoredHordeAggroRule;
 ```
 
 Ghosted first wave (**MVP-if-time**, `Recommendation:`): while `ghostFirstWaveTicks` runs after

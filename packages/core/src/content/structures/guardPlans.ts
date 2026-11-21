@@ -1,7 +1,7 @@
 import { CAPTURE_POINT_COURT } from '../zones/capturePointCourt';
 import { CORNER_CAMP_RING } from './cornerCampRing';
 import { GUARD_LEASH } from './guardLeash';
-import type { GuardPlanDefinition } from './structures.types';
+import type { AuthoredGuardPlan } from './structures.types';
 
 const RESPAWN = 120; // TUNE: game doc "respawn every 2 minutes"
 // TUNE: owner 2026-11-02 (DEC-144): per guard, one decision's walk (10 ticks at its own top
@@ -30,7 +30,7 @@ const CAMP = {
  * medium). The corner camp holds one corner boss (game doc "Outer (Corner) Camps"; interim,
  * DEC-236).
  */
-const CAMP_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
+const CAMP_PLANS: Readonly<Record<string, AuthoredGuardPlan>> = {
   'forest-camp-light': { ...CAMP, table: [{ mobId: 'light-camp-mob', count: 4 }] },
   'forest-camp-medium': {
     ...CAMP,
@@ -70,7 +70,7 @@ const CAMP_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
  * so the Stronghold's light guards fight in melee for now. The forest camps' groups and the outer
  * capture points' mini-boss follow.
  */
-export const GUARD_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
+export const GUARD_PLANS: Readonly<Record<string, AuthoredGuardPlan>> = {
   'spawner-tower': {
     table: [{ mobId: 'light-guard', count: 4 }],
     leashRadius: GUARD_LEASH.tower,

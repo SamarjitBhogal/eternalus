@@ -12,12 +12,12 @@ import type { System, SystemContext } from './System.types';
 /**
  * Heals every living Legend and mob over time once it is out of combat (DEC-188, amended by
  * DEC-215 and DEC-225). A unit is in combat from the tick it deals or takes damage
- * (`damage-applied`, attacker and target, kept in its `CombatClock`) until `delaySeconds` pass. A
+ * (`damage-applied`, attacker and target, kept in its `CombatClock`) until `delayTicks` pass. A
  * blocked or zero-damage hit emits no `damage-applied`, so it puts neither side in combat (DEC-225
  * Q-F) and does not mark a structure as under attack (DEC-225 Q-D). Out of combat a unit regains a
  * flat share of its max health per second. While its centre point is in the zone (`HealingZones`)
  * of a living friendly structure that `structureBonuses` lists and that has taken no damage for
- * `structureQuietSeconds`, that structure's bonus is added. Only hits on the structure itself
+ * `structureQuietTicks`, that structure's bonus is added. Only hits on the structure itself
  * count: a hit on a Stronghold's walls, gates or turrets, or on its palace map object, has its own
  * target id (DEC-215 (2), DEC-225 Q-G).
  * Two zones never overlap (DEC-215 (1)), so the first zone that holds the unit gives its bonus.
@@ -27,29 +27,22 @@ import type { System, SystemContext } from './System.types';
  * damage and before `DeathSystem`, so a unit killed this tick stays dead.
  *
  * The rate is one flat number for every unit (owner, MVP). A per-class rate would replace
- * `content.healthFractionPerSecond` with a lookup keyed by the unit's definition id in `update`.
+ * `content.healthFractionPerTick` with a lookup keyed by the unit's definition id in `update`.
  */
 export class OutOfCombatHealingSystem implements System {
   public readonly name = 'out-of-combat-healing';
-  private readonly delayTicks: number;
-  private readonly quietTicks: number;
-  private readonly perTick: number;
-  private readonly tickRate: number;
   private readonly zones: HealingZones;
 
   /**
-   * @param state - The match whose events this system listens to; its config sets the tick rate
-   *   and its map the Strongholds' zones.
-   * @param content - The rates, delays and structure bonuses, injected.
+   * @param state - The match whose events this system listens to; its map sets the Strongholds'
+   *   zones.
+   * @param content - The rates, delays and structure bonuses, loaded (`loadOutOfCombatHealing`):
+   *   ticks and rates per tick.
    */
   public constructor(
     state: GameState,
     private readonly content: OutOfCombatHealing,
   ) {
-    this.tickRate = state.config.tickRate;
-    this.delayTicks = Math.round(content.delaySeconds * this.tickRate);
-    this.quietTicks = Math.round(content.structureQuietSeconds * this.tickRate);
-    this.perTick = content.healthFractionPerSecond / this.tickRate;
     this.zones = new HealingZones(state.world?.definition);
     state.events.on('damage-applied', ({ targetId, source }) => {
       const target = state.entities.get(targetId);
@@ -74,7 +67,7 @@ export class OutOfCombatHealingSystem implements System {
         health === undefined ||
         health.isDead ||
         health.current >= health.max ||
-        state.tick - (entity.findComponent(CombatClock)?.activeTick ?? 0) < this.delayTicks
+        state.tick - (entity.findComponent(CombatClock)?.activeTick ?? 0) < this.content.delayTicks
       ) {
         return;
       }
@@ -85,11 +78,11 @@ export class OutOfCombatHealingSystem implements System {
           ? 0
           : (zones.find((zone) => zone.team === team && zone.zone.contains(position))
               ?.bonusPerTick ?? 0);
-      health.heal(health.max * (this.perTick + bonus));
+      health.heal(health.max * (this.content.healthFractionPerTick + bonus));
     });
   }
 
-  /** The zones of the living structures with a bonus that have taken no damage for `quietTicks`. */
+  /** The zones of the living structures with a bonus that are quiet (`structureQuietTicks`). */
   private quietZones(state: GameState): BonusZone[] {
     const zones: BonusZone[] = [];
     state.entities.forEach((entity) => {
@@ -98,14 +91,15 @@ export class OutOfCombatHealingSystem implements System {
       if (
         bonus === undefined ||
         entity.findComponent(Health)?.isDead !== false ||
-        state.tick - (entity.findComponent(CombatClock)?.hurtTick ?? 0) < this.quietTicks
+        state.tick - (entity.findComponent(CombatClock)?.hurtTick ?? 0) <
+          this.content.structureQuietTicks
       ) {
         return;
       }
       const team = state.entities.teamOf(entity.id);
       const zone = this.zones.zoneOf(bonus.zone, entity, team);
       if (zone !== undefined) {
-        zones.push({ team, bonusPerTick: bonus.fractionPerSecond / this.tickRate, zone });
+        zones.push({ team, bonusPerTick: bonus.fractionPerTick, zone });
       }
     });
     return zones;

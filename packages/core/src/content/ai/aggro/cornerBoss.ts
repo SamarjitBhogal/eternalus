@@ -1,5 +1,5 @@
 import { CORNER_CAMP_RING } from '../../structures/cornerCampRing';
-import type { GuardAggroRuleDefinition } from '../ai.types';
+import type { AuthoredGuardAggroRule } from '../ai.types';
 import { CAMP_MOB_AGGRO } from './campMob';
 
 /**
@@ -12,4 +12,4 @@ export const CORNER_BOSS_AGGRO = {
   id: 'corner-boss',
   // The ring's diameter (`CORNER_CAMP_RING`): from any post it reaches every point of the ring.
   acquisitionRadius: CORNER_CAMP_RING.acquisitionRadius,
-} as const satisfies GuardAggroRuleDefinition;
+} as const satisfies AuthoredGuardAggroRule;

@@ -178,7 +178,7 @@ Reply inline (`Decision: …`).
 
 - [ ] **Timed guard spawns beside `MatchTimeline` (`feat/zone-guard-homes` critic finding 2,
       2026-11-09) — accepted as interim.** Guard plans now activate `delaySeconds` after the
-      countdown ends (`GuardPlanDefinition.activation`, `content/structures/structures.types.ts`), and the
+      countdown ends (`AuthoredGuardPlan.activation`, `content/structures/structures.types.ts`), and the
       mini-boss (PR A2) uses it. The design schedules mini-boss spawns from `MatchTimeline` /
       `MatchDirector` (07 §7, 12; phase-3 sprints 3.5–3.6), so timed match spawns now have two
       paths and no doc says which owns boss timing. Due before the zone-lock PR: pick one owner
@@ -218,6 +218,36 @@ Reply inline (`Decision: …`).
       asked for minions to attack them. Keep DEC-193, or should minions attack obstacles (and
       which ones: props only, or blocking obstacles too)?
   - **Answered 2026-11-13 by DEC-248** (chat, PR #96). Not built yet (BUG-3).
+
+- [x] **`refactor/durations-at-load` critic (2026-11-14), better than the design — built, sign-off
+      asked; no decision blocks the PR.** #86's healing system divided its two rates
+      (`healthFractionPerSecond`, a structure bonus's `fractionPerSecond`) by the tick rate itself,
+      every tick for the bonus. (1) Built: `loadOutOfCombatHealing` turns the rates into per-tick
+      values at load, next to the two durations (DEC-241), so the system sees only ticks
+      (architecture 03 §10, `packages/core/AGENTS.md` "Time is measured only in ticks", as
+      `loadDefaultContent` already does for speed and acceleration). Same values, so no behaviour
+      change. (2) Built: the same loader rejects a rate that is negative or not finite. (3) Built
+      (critic round 2): the check is unit-free, so it is renamed `assertNonNegativeFinite`, and the
+      rate formula is `TickRate.perTick`, next to the time formulas. Approve, or say which to
+      undo.
+  - **Answered 2026-11-16 by DEC-262** (question dialog, PR #125): (1) to (3) approved. Also
+    signed off: the time check in the aggro, stuck, veterancy and guard loaders (the 2026-11-12
+    critic) and #86's healing times as DEC-241's sixth reader.
+
+- [ ] **HC-B9 — Better than the design, not built, sign-off asked: two older times not read once at
+      load (`refactor/durations-at-load` merge critic, 2026-11-19); no decision blocks the PR.**
+      Both are older than PR #125 and keep their values.
+      (1) **One countdown-end tick.** Three readers each compute the tick the countdown ends with
+      `countdownTicks(countdownSeconds, tickRate)`: `SpawnSystem` (first waves),
+      `GuardRoster.firstTick` (guard activation) and `LeashBehaviour.rankOf` (the
+      `ghostFirstWaveTicks` window). `validateGameConfig` already checks that the match timeline's
+      first mark falls on that tick. Proposal: the three read that one tick from one place, so a
+      change to when the countdown ends changes one line.
+      (2) **Assist window at load.** `assistWindowSeconds` (`content/match/scoring.ts`, DEC-79)
+      becomes ticks in `defaultScoringRules`, outside a loader, unlike the DEC-241 durations.
+      Proposal: a scoring loader turns it into ticks and rejects a negative or non-finite value,
+      as `loadGuardPlans` does.
+      Build both in PR #125, build them in a later PR, or keep the code as it is?
 
 - [x] **Unit facing chevron (DEC-192, feat/unit-facing-chevron, 2026-11-05) — two questions, one
       better-than-design item.**
