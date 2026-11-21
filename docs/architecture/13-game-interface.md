@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-21
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -412,7 +412,7 @@ export class InputMapper {
 
 `Match.tick()` polls the devices, calls `resolve` and `toIntent`, and enqueues one
 `{ type: 'intent', actorId: humanLegendId, intent }` command when the intent changed;
-`PlayerController.decide` turns it into `move`, `attack-target`, `cast-ability` (gadget slots
+`PlayerController.decide` turns it into `move`, `attack-aim` (DEC-184), `cast-ability` (gadget slots
 included), `pick-up`, `throw` ([11](11-game-ai.md) §4.1). `InputIntent` is a core type (public API,
 [02](02-code-structure.md) §6) with no key names in it, so the replay log is device-agnostic and
 bots and the human share one `Command` vocabulary. `BindingResolver` keys chords with

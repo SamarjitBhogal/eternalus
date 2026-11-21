@@ -750,6 +750,31 @@ the `HitRunner` port (`state/HitRunner.types.ts`, which `HitEffects` satisfies);
 removed with cause `consumed`. No `projectile-hit` event exists (DEC-314). Still not built: `heavyAttack`, `parry`, `grants`, the flex attack,
 `a-fine-line` and turret lead.
 
+**Implementation status, 2026-11-21 (branch `feat/melee-sweeps`, PR 2; DEC-184, DEC-304, DEC-305,
+DEC-319).** Melee sweeps, class reach and aimed attacks are built. `AttackStrategyId` adds
+`'melee-sweep'`, and `UnitAttack` adds `SweepAttack` (`arcDegrees`, above 0 and at most 180, checked
+by `loadWeapons`). `MeleeSweepAttackStrategy` damages, in the tick, every live enemy body that the
+wedge from the attacker's centre reaches (radius: body radius plus `reach`); the wedge geometry is
+`utils/sector.ts`. The talons, Wuuthrad and the Magus staff's melee attack are sweeps; mobs keep the
+one-target `melee` attack. A walk-on outline or a body that takes no damage now is hit only when it
+is the locked target, the rule shots use (`EntityStore.isHitOnlyWhenTargeted`, DEC-319 (9)).
+`LegendDefinition.meleeReach` is the class's part of reach; `attacksByMode(attacks, meleeReach)` adds
+it to each melee attack, never to a ranged one, and the weapon's `reach` is its own part. The
+strategy contract is `attack(attacker, aim: AttackAim, attack, context)`, with `AttackAim` =
+`{ targetId: EntityId | null; direction }` (a unit vector): the sketch's `target` argument is now an
+aim, and a one-target melee attack with no target hits nothing. A new command,
+`attack-aim { actorId, aim: Vec2 | null, mode? }`, sets an aim point on `Combat` (a target or an aim
+point, never both; `stop` clears both). With an aim point, `CombatSystem` turns the unit to the point
+each tick and attacks along the line when off cooldown, with no reach check and no line-of-fire
+check. The player's held attack button and melee key send `attack-aim` (client `PlayerCommands`,
+Duel server `SeatCommands`); the developer explorer's clicks stay `attack-target`. This ends the PR 1
+stand-in above: the player now fires along the aim, not only at a target under the cursor.
+`StateHasher` hashes the aim point only when one is set. `Combat.recordSwing` keeps the last sweep
+(not hashed), `EntitySnapshot.swing` sends it, and the client draws a fading wedge
+(`views/swingWedge.ts`). Still not built: the PR 3 weapons and their arcs (dual blades, great sword,
+Bastions), two arcs for a dual-wield weapon (DEC-304, an idea), `heavyAttack`, `parry`, `grants`,
+the flex attack and `a-fine-line`.
+
 ## 11. Artifacts (gadgets Z and C)
 
 An artifact is an `AbilityDefinition` with `slot: 'gadget'` (`ArtifactDefinition =
@@ -1213,7 +1238,8 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   - **On-hit steps on a status.** A status has two optional fields §8 does not have: `onHit`
     (effect steps, loaded in ticks as an ability's are) and `grants` (an ability id).
     `abilities/HitEffects` runs the attacker's statuses' `onHit` steps where each basic attack
-    lands: the attack strategy calls it (`MeleeAttackStrategy` in the tick, after the damage, as
+    lands: the attack strategy calls it (`MeleeAttackStrategy` in the tick, after the damage, and
+    `MeleeSweepAttackStrategy` the same way for each body it hits (DEC-319), as
     §10 plans for a weapon's `onHit`; `CombatSystem` hands it over in the attack context), as one cast through the registry's strategies: credited to
     the attacker under the status's id, from the `default-action` slot, placed from the attacker
     to the struck body. The shape `hit` (`abilities/shapes/HitShape`) holds the struck body only

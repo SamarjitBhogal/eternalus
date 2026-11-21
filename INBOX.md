@@ -636,6 +636,18 @@ Reply inline (`Decision: …`).
       one reusable "first source with the id" definition lookup for `Simulation` and about ten
       tests (BTD-H).
 
+- [x] **HC-B25 — A rule the design did not state, built under your standing rule (DEC-223),
+      sign-off asked: what a melee sweep passes over (`feat/melee-sweeps`, PR 2, 2026-11-21;
+      COMBAT-WEAPONS-ABILITIES-48 and -49).** Built and tested; recorded as DEC-319 (9). Nothing
+      waits on you. (A, built) A sweep passes over a walk-on floor (a palace floor, a gate's
+      passage) and over a body that takes no damage now (a wall or gate before its rule lets it
+      break), unless you lock onto it: the same rule as a shot (DEC-317 (5)). Without it, a
+      Legend inside the enemy palace hit the Stronghold on every swing, because the palace floor
+      is the Stronghold's outline, and a swing at an unbreakable gate ran Fury's knock-back on it.
+      (B) A sweep also hits those bodies: every swing inside an enemy palace damages the
+      Stronghold. **Answered 2026-11-21 in chat: "A".** Signed off as built; recorded in DEC-319
+      (9).
+
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
       small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`

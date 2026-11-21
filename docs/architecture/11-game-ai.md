@@ -137,7 +137,7 @@ The human's Legend has a brain too. The client's `InputMapper` turns device stat
 `InputIntent` (movement axes, aim point, edge-triggered actions) and enqueues it as one `intent`
 command per tick, only when it changes. `CommandApplySystem` stores it in the brain's memory;
 `PlayerController.decide` reads it and emits the same gameplay commands a bot would (`move`,
-`attack-target`, `cast-ability` (gadget slots included), `pick-up`, `throw`). Why: one place validates what a
+`attack-target`, `attack-aim` (DEC-184), `cast-ability` (gadget slots included), `pick-up`, `throw`). Why: one place validates what a
 Legend may do (`applyCommand`), the replay log records device-agnostic intents, and sim mode is
 a one-line controller swap. The cost is one tick (33 ms at 30 Hz) between intent and effect.
 `Recommendation:` accept it for the top-down MVP; if playtests notice it, translate `intent`
