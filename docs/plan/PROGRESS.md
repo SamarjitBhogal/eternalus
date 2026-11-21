@@ -9808,3 +9808,29 @@ docs:check` pass on this entry.
   3200 x 1400), 3 towers of a kind, or 1 + 5 and more buff towers (10 tests), and two time budgets
   (10 s tower exit, 150 s heal and rejoin) are too short for a 56 m fort (4 tests).
 - Next step: the coordinator or the owner decides those configs and budgets; then the pre-PR gate.
+
+### 2026-11-21 — Phase 3 / map work: DEC-315 failing tests — feat/map-work-forts-towers — sholtzman + Claude Code
+
+- What was done: committed the previous runner's staged docs as they were (`3694cf34`) and merged
+  #122's head `ce0ce423` (`668d7e84`; PROGRESS conflict, both sides kept). Root-caused the 14
+  failing core tests of the entry before: its "the 14 need decisions" was wrong for 12 of them.
+  The tower horde exit test (seeds 1, 2, 10) has no stuck member: a 56 m fort adds 12 m to the walk
+  out of it, about 4 s; every member is out from 11.2 s (7.2 s with 32 m forts), so its budget
+  goes from 10 s to 12 s, with the evidence in the test. Seeds 1 and 2 gave the same positions
+  because map-1's lanes and forts do not change with the seed. 9 generator tests checked another
+  rule and hit the fort overlap or a lane band rule first; they get configs where forts fit and the
+  same rule decides (7-lane cases 2400 wide, no towers for the gate turret and the 1600 x 1400
+  lane tests, fewer BuffTowers for the band, order and neighbouring-lane tests; `21afe8c8`). Two
+  tests still fail and need owner calls: "3 towers of each kind" in the default world (56 m forts
+  fit at most 2 of each kind there), and the heal-and-rejoin test. That one is no court-routing
+  fault and no budget too short for the walk: the horde besieging a tower holds 27 m from its
+  centre, beyond a healed bot's 12 m `engageRadius`, so the bot does not fight again until the
+  tower falls (153.4 s, budget 150 s).
+- Checks run: full `npm run check` exit 1 (`eternalus-agent-work/dec-288/map-work-forts-check-2.log`):
+  format, no-js, lint, typecheck and knip pass; core "Tests 2 failed | 1750 passed (1752)" (the
+  two above), protocol "Tests 29 passed (29)", client "Tests 2011 passed (2011)", server "Tests
+  84 passed (84)"; build not reached. Single-file runs: the tower test file "Tests 3 passed | 18
+  skipped (21)" at 12 s, red at 11 s and with a 64 m fort; 5 converted generator tests red under a
+  deliberate code break each. This entry: `prettier --check` and `npm run docs:check`.
+- Next step: the owner rules on the fort-capacity and healed-bot cards (forts runner report,
+  `eternalus-agent-work/dec-288/reports/forts-runner.md`); then the pre-PR gate.
