@@ -21,6 +21,18 @@ overridden by the product owner. Decisions arrive through `INBOX.md`; once imple
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
 
+## Batch 2026-11-20 (Owner Calls page: the `dev-spawn-legend` shape, PR #109)
+
+The owner's answer of 2026-11-20, on the Owner Calls page, to "Which shape should the
+dev-spawn-legend command have?" (PR #109 review, B1; `INBOX.md` BUG-4 / SCRUM-437 slice 2, items
+(a) and (b)). Posted on PR #109 for the owner by the coordinator session
+PR-REVIEW-COORDINATION-7. The owner's words: "Small spawn, plus `dev-remove-legend` that refuses
+the human outside sim mode". DEC-293 is this batch.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Changes                                                                                                                                                         |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DEC-293 | **The developer menu's Legend commands: a small spawn and a `dev-remove-legend` that refuses the human outside sim mode** (FR-097; answers `INBOX.md` BUG-4 / SCRUM-437 slice 2 (a) and (b)). Owner's words: "Small spawn, plus `dev-remove-legend` that refuses the human outside sim mode". (1) `dev-spawn-legend` is `{ team, definitionId }`: the Legend plays the Rover controller at the `rover` difficulty and starts at its team's Stronghold; no `controllerId` and no `at?`. (2) `dev-remove-legend { entityId }` removes a Legend (cause `dev-removed`); it is refused (`command-rejected`) for an entity that is not a Legend and for the human's Legend unless the match is in sim mode, that is while a human seat holds it (`human-legend`). | Architecture 13 §4 row "Add / remove a Legend"; `mechanics-ideas.md` §9 rows "Add a Legend" and "Remove a Legend"; `Command.types.ts`, `DevRemoveLegendHandler` |
+
 ## Batch 2026-11-20 (Owner Calls page: the tower horde test time limit)
 
 The owner's answer of 2026-11-20 on the Owner Calls page (relayed by session
