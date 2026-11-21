@@ -9,6 +9,7 @@ const STATE: DeveloperMenuState = {
   isOpen: true,
   origins: [{ id: 'gate-a', label: 'gate-a (gate)' }],
   humanLegendId: 'entity-9',
+  controllerIds: { player: 'player', rover: 'rover' },
 };
 
 const render = (state: DeveloperMenuState): string =>

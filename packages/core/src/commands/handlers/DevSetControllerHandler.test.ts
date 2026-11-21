@@ -69,7 +69,7 @@ describe('DevSetControllerHandler', () => {
     });
 
     expect(
-      new DevSetControllerHandler(ROVER).handle(command('entity-1', 'human'), context),
+      new DevSetControllerHandler(ROVER, 'player').handle(command('entity-1', 'player'), context),
     ).toBeNull();
 
     expect(context.state.entities.controllerOf('entity-1')).toBeUndefined();
@@ -79,10 +79,10 @@ describe('DevSetControllerHandler', () => {
 
   it('moves the human seat: the old human becomes a Rover bot, and a Rover on the human leaves none', () => {
     const context = contextWith();
-    const handler = new DevSetControllerHandler(ROVER);
-    handler.handle(command('entity-1', 'human'), context);
+    const handler = new DevSetControllerHandler(ROVER, 'player');
+    handler.handle(command('entity-1', 'player'), context);
 
-    handler.handle(command('entity-2', 'human'), context);
+    handler.handle(command('entity-2', 'player'), context);
     expect(context.state.match.humanLegendId).toBe('entity-2');
     expect(context.state.entities.controllerOf('entity-1')?.controllerId).toBe('rover');
 
@@ -92,14 +92,15 @@ describe('DevSetControllerHandler', () => {
   });
 
   it.each([
-    ['unknown-entity', 'nobody', 'human'],
-    ['not-a-legend', 'entity-3', 'human'],
+    ['unknown-entity', 'nobody', 'player'],
+    ['not-a-legend', 'entity-3', 'player'],
+    ['unknown-controller', 'entity-1', 'human'],
     ['unknown-controller', 'entity-1', 'bot-legend'],
   ])('rejects with %s and changes nothing', (reason, entityId, controllerId) => {
     const context = contextWith();
 
     expect(
-      new DevSetControllerHandler(ROVER).handle(command(entityId, controllerId), context),
+      new DevSetControllerHandler(ROVER, 'player').handle(command(entityId, controllerId), context),
     ).toBe(reason);
     expect(context.state.match.humanLegendId).toBeNull();
     expect(context.state.entities.controllerOf('entity-1')?.controllerId).toBe('bot-legend');
@@ -109,15 +110,15 @@ describe('DevSetControllerHandler', () => {
     const context = contextWith();
     context.state.match.seatHuman('entity-2', 'dark');
 
-    expect(new DevSetControllerHandler(ROVER).handle(command('entity-1', 'human'), context)).toBe(
-      'not-supported',
-    );
+    expect(
+      new DevSetControllerHandler(ROVER, 'player').handle(command('entity-1', 'player'), context),
+    ).toBe('not-supported');
     expect(context.state.match.humanLegendId).toBeNull();
   });
 
   it('keeps the brain of a bot that already plays the Rover', () => {
     const context = contextWith();
-    const handler = new DevSetControllerHandler(ROVER);
+    const handler = new DevSetControllerHandler(ROVER, 'player');
     handler.handle(command('entity-2', 'rover'), context);
     context.state.ai.set('entity-2', {
       controllerId: 'rover',
@@ -131,19 +132,37 @@ describe('DevSetControllerHandler', () => {
     expect(context.state.ai.get('entity-2')?.memory).toEqual({ seen: 1 });
   });
 
-  it('clears the seat of a human Legend that was removed, before moving it', () => {
+  it('clears the seat of a human Legend that died (DeathSystem removed it), before moving it', () => {
     const context = contextWith();
-    const handler = new DevSetControllerHandler(ROVER);
-    handler.handle(command('entity-1', 'human'), context);
-    context.state.entities.remove('entity-1', 'dev-removed');
+    const handler = new DevSetControllerHandler(ROVER, 'player');
+    handler.handle(command('entity-1', 'player'), context);
+    context.state.entities.remove('entity-1', 'died');
 
     expect(handler.handle(command('entity-2', 'rover'), context)).toBeNull();
     expect(context.state.match.humanLegendId).toBeNull();
 
-    handler.handle(command('entity-2', 'human'), context);
-    context.state.entities.remove('entity-2', 'dev-removed');
-    context.state.entities.add(new Hero('entity-4', 'hero'));
-    expect(handler.handle(command('entity-4', 'human'), context)).toBeNull();
+    handler.handle(command('entity-2', 'player'), context);
+    context.state.entities.remove('entity-2', 'died');
+    const fresh = new Hero('entity-4', 'hero');
+    fresh.spawn({});
+    context.state.entities.add(fresh);
+    expect(handler.handle(command('entity-4', 'player'), context)).toBeNull();
     expect(context.state.match.humanLegendId).toBe('entity-4');
+  });
+
+  it('refuses to seat the human on a Legend off playerTeam (DEC-173) and changes nothing', () => {
+    const context = contextWith();
+    const handler = new DevSetControllerHandler(ROVER, 'player');
+    handler.handle(command('entity-1', 'player'), context);
+    const enemy = new Hero('entity-5', 'hero');
+    enemy.spawn({});
+    enemy.addComponent(new TeamMembership('dark'));
+    enemy.addComponent(new ControllerBinding('bot-legend', 'normal'));
+    context.state.entities.add(enemy);
+
+    expect(handler.handle(command('entity-5', 'player'), context)).toBe('not-player-team');
+    expect(context.state.match.humanLegendId).toBe('entity-1');
+    expect(context.state.entities.controllerOf('entity-5')?.controllerId).toBe('bot-legend');
+    expect(context.state.entities.controllerOf('entity-1')).toBeUndefined();
   });
 });

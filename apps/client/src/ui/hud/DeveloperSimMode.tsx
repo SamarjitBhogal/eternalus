@@ -4,7 +4,6 @@ import type { DeveloperMenuState } from '../../bridge/developerMenu.types';
 import { emitIntent } from '../../bridge/eventBus';
 import { Button } from '../components/Button';
 import { STRINGS } from '../strings';
-import { HUMAN_CONTROLLER_ID, ROVER_CONTROLLER_ID } from './DeveloperMenu.constants';
 import styles from './DeveloperMenu.module.css';
 
 /**
@@ -14,7 +13,8 @@ import styles from './DeveloperMenu.module.css';
  */
 export function DeveloperSimMode({
   humanLegendId,
-}: Pick<DeveloperMenuState, 'humanLegendId'>): ReactElement {
+  controllerIds,
+}: Pick<DeveloperMenuState, 'humanLegendId' | 'controllerIds'>): ReactElement {
   const [controlId, setControlId] = useState('');
   const controlFieldId = useId();
   const labels = STRINGS.developerMenu;
@@ -30,7 +30,7 @@ export function DeveloperSimMode({
               command: {
                 type: 'dev-set-controller',
                 entityId: humanLegendId,
-                controllerId: ROVER_CONTROLLER_ID,
+                controllerId: controllerIds.rover,
               },
             });
           }
@@ -57,7 +57,7 @@ export function DeveloperSimMode({
             command: {
               type: 'dev-set-controller',
               entityId: controlId,
-              controllerId: HUMAN_CONTROLLER_ID,
+              controllerId: controllerIds.player,
             },
           });
         }}

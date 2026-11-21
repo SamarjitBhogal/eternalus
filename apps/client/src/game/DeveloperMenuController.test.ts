@@ -83,6 +83,7 @@ describe('DeveloperMenuController', () => {
     controller.toggle();
     expect(states.map((state) => state.isOpen)).toEqual([true, false]);
     expect(states[0]?.origins).toEqual([{ id: 'gate-a', label: 'gate-a (gate)' }]);
+    expect(states[0]?.controllerIds).toEqual({ player: 'player', rover: 'rover' });
   });
 
   it('does not open, and publishes nothing, while the menu is not enabled', () => {
@@ -163,5 +164,40 @@ describe('DeveloperMenuController', () => {
     simulation.step();
     expect(legends()).toHaveLength(config.limits.maxLegendsPerTeam);
     expect(rejected).toEqual(['cap-exceeded']);
+  });
+
+  it("publishes sim mode's controller ids, which the real simulation accepts", () => {
+    const config = createDefaultGameConfig({ match: { countdownSeconds: 0 } });
+    const { map } = prepareMatchWorld(config, 1);
+    const simulation = new Simulation({
+      seed: 1,
+      logger: new NullLogger(),
+      ...withPlayer(config, { legend: 'warrior', team: 'light' }),
+      map,
+    });
+    const bus = new TypedEventBus<BridgeEventMap>();
+    const humanId = simulation.snapshot().match.humanLegendId ?? '';
+    const controller = new DeveloperMenuController({
+      isEnabled: true,
+      simulation,
+      bus,
+      map,
+      humanLegendId: () => simulation.snapshot().match.humanLegendId,
+    });
+    const states: BridgeEventMap['developer-menu'][] = [];
+    bus.on('developer-menu', (state) => states.push(state));
+    controller.publish();
+    const ids = states[0]?.controllerIds;
+    const rejected: string[] = [];
+    simulation.on('command-rejected', ({ reason }) => rejected.push(reason));
+    for (const controllerId of [ids?.rover ?? '', ids?.player ?? '']) {
+      bus.emit('ui-intent', {
+        kind: 'dev-command',
+        command: { type: 'dev-set-controller', entityId: humanId, controllerId },
+      });
+      simulation.step();
+    }
+    expect(rejected).toEqual([]);
+    expect(simulation.snapshot().match.humanLegendId).toBe(humanId);
   });
 });

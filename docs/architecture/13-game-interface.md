@@ -565,7 +565,8 @@ difference is registered in
 ## 10. Implementation status
 
 Sim mode (2026-11-13, FR-099): the developer menu's Sim mode section sends `dev-set-controller` (Remove
-human: the human Legend to the Rover; Take control: a typed Legend id to `human`). `Match` reads the
+human: the human Legend to the Rover; Take control: a typed Legend id to `player`, swapping the seat
+if a human exists, DEC-294). The menu reads both controller ids from the `developer-menu` state. `Match` reads the
 human Legend from each snapshot, so with none the camera, the HUD player block and the attack
 clicks stand idle and the match runs on. Not built: `SinglePlayerBrainInvariant` (cited by the sim-mode row of the
 table in section 4); a Legend with no human is not checked for it.

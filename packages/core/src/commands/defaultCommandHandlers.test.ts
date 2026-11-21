@@ -34,10 +34,14 @@ describe('createDefaultCommandHandlers', () => {
       const state = new GameState(createDefaultGameConfig(), 1);
       const reasons: string[] = [];
       state.events.on('command-rejected', ({ reason }) => reasons.push(reason));
-      applyCommand(command, createDefaultCommandHandlers({ rover: TEST_CONTROLLER }), {
-        state,
-        factory: new EntityFactory(new EntityRegistry(), new ContentCatalogue([])),
-      });
+      applyCommand(
+        command,
+        createDefaultCommandHandlers({ rover: TEST_CONTROLLER, player: 'player' }),
+        {
+          state,
+          factory: new EntityFactory(new EntityRegistry(), new ContentCatalogue([])),
+        },
+      );
       expect(reasons).toEqual(['not-supported']);
     },
   );

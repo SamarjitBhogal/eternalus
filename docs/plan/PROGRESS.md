@@ -9369,3 +9369,17 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   reach only the log, and the removal cause is `dev-removed`, not `developer-menu` (INBOX (c), (f)).
 - Checks run: `npm run check` (result in the PR comment).
 - Next step: merge into `feat/developer-menu-sim-mode` (#112); reviewer re-review.
+
+### 2026-11-20 — Phase 3 / sprint 3 review fixes — feat/developer-menu-sim-mode (PR #112) — claudiodh + Claude Code
+
+- What was done: merged `feat/developer-menu-legends` (the #107/#109 review fixes, DEC-293);
+  sim mode is its own menu section (`DeveloperSimMode`). swholtzman's review of 2026-11-19 and
+  DEC-294 ("Keep the swap; update mechanics-ideas §6 in this PR"): B1 refuses a Legend off
+  `playerTeam` (`not-player-team`, DEC-173); B2 keeps the swap, with the DEC-294 row and §6
+  updated; S1 the human's controller id is `player`, published to the menu with the Rover's; N1
+  `human-reseated` moves the scoring rows' `controller`; N2 `opponentOf`; N3 `previousPlayerId`;
+  N4 a replay test of a menu-driven sim-mode match. Correction to the 2026-11-13 merge entry of
+  this branch: its heading lacks the branch and author, and its "Decision:" on the Duel refusal is
+  an agent guard, not an owner decision.
+- Checks run: `npm run check` (result in the PR comment).
+- Next step: reviewer re-review; the architecture critic's verdict on the seat swap goes in the PR.

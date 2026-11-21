@@ -7,6 +7,7 @@ const OPEN = {
   isOpen: true,
   origins: [{ id: 'gate-1', label: 'gate-1' }],
   humanLegendId: 'entity-1',
+  controllerIds: { player: 'player', rover: 'rover' },
 };
 
 describe('developerMenuSlice', () => {

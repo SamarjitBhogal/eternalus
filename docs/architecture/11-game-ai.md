@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-16
+last-reviewed: 2026-11-20
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -372,7 +372,8 @@ and utility better
 ## 10. Implementation status
 
 `dev-set-controller` (2026-11-13, FR-099) is applied by `DevSetControllerHandler` from the queue, not
-by a `CommandApplySystem`; it moves the `ControllerBinding` and drops the brain (03, status).
+by a `CommandApplySystem`; it moves the `ControllerBinding` and drops the brain (03, status). The
+human's controller id is `player` (§2); taking control while a human exists swaps the seat (DEC-294).
 
 Minion plan pull request M2a builds §1–§3, §5 and §6 with these differences, each closed by the
 work named:

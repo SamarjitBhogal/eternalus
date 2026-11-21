@@ -53,6 +53,12 @@ export class Scoring implements ScoreKeeper {
     state.events.on('entity-died', (payload) => {
       this.onDied(payload);
     });
+    state.events.on('human-reseated', ({ from, to }) => {
+      this.defer((book) => {
+        if (from !== null) book.setController(from, 'bot');
+        if (to !== null) book.setController(to, 'human');
+      });
+    });
     for (const listener of rules.listeners) {
       listener.listen(state.events, (change) => {
         this.defer(change);

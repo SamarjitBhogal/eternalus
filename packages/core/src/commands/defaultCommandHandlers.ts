@@ -20,6 +20,7 @@ import { UnsupportedCommandHandler } from './handlers/UnsupportedCommandHandler'
  */
 export const createDefaultCommandHandlers = ({
   rover,
+  player,
 }: DefaultCommandHandlerDeps): CommandHandlers => {
   const unsupported = new UnsupportedCommandHandler();
   const removeEntity = new DevRemoveEntityHandler();
@@ -34,6 +35,6 @@ export const createDefaultCommandHandlers = ({
     'dev-spawn-mobs': new DevSpawnMobsHandler(),
     'dev-remove-entity': removeEntity,
     'dev-remove-legend': new DevRemoveLegendHandler(removeEntity),
-    'dev-set-controller': new DevSetControllerHandler(rover),
+    'dev-set-controller': new DevSetControllerHandler(rover, player),
   };
 };

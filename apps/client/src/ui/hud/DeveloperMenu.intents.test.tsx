@@ -24,6 +24,7 @@ function mount() {
       ...developerMenuSlice.getInitialState(),
       isOpen: true,
       humanLegendId: 'e1',
+      controllerIds: { player: 'player', rover: 'rover' },
       origins: [
         { id: 'gate-a', label: 'gate-a' },
         { id: 'gate-b', label: 'gate-b' },
@@ -208,7 +209,7 @@ describe('DeveloperMenu buttons', () => {
     expect(intents).toEqual([
       {
         kind: 'dev-command',
-        command: { type: 'dev-set-controller', entityId: 'e7', controllerId: 'human' },
+        command: { type: 'dev-set-controller', entityId: 'e7', controllerId: 'player' },
       },
     ]);
   });

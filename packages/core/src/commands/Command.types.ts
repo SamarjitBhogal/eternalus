@@ -84,8 +84,9 @@ type CommandPayloads = {
    */
   readonly 'dev-remove-legend': { readonly entityId: EntityId };
   /**
-   * Developer menu, sim mode: hand a Legend to a controller. `controllerId` is `human` (the Legend
-   * becomes the human's) or the Rover's id (a bot plays it; on the human's Legend, no human is left).
+   * Developer menu, sim mode: hand a Legend to a controller. `controllerId` is `player` (the Legend
+   * becomes the human's; a Legend of `playerTeam` only; a seated human is swapped off to the Rover,
+   * DEC-294) or the Rover's id (a bot plays it; on the human's Legend, no human is left).
    */
   readonly 'dev-set-controller': { readonly entityId: EntityId; readonly controllerId: string };
 };
@@ -121,4 +122,5 @@ export type CommandRejectReason =
   | 'invalid-target'
   | 'not-supported'
   | 'human-legend'
+  | 'not-player-team'
   | 'match-ended';

@@ -188,6 +188,7 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 | `entity-spawned`                    | `{ entityId, kind, team }`                             | `EntityFactory` via `SpawnSystem`, or `Simulation` for a roster | `SnapshotSystem`, views, `Scoring` (a row per Legend)                                    |
 | `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`           | `DeathSystem` only                                              | `HordeSystem`, `ProjectilePool`, invariants                                              |
 | `damage-applied`                    | `{ targetId, amount, absorbed, source: DamageSource }` | `DamagePipeline`                                                | `ProgressionSystem` (assists), `AiSystem` (aggro), `Scoring` (assists, structure damage) |
+| `human-reseated`                    | `{ from: EntityId \| null, to: EntityId \| null }`     | `DevSetControllerHandler` (sim mode, DEC-294)                   | `Scoring`                                                                                |
 | `entity-died`                       | `{ entityId, killer: DamageSource }`                   | `DeathResolver`                                                 | `DeathSystem`, `ProgressionSystem`, `Scoring`, `ObjectiveLostCondition`                  |
 | `structure-destroyed`               | `{ entityId, kind, team, lane }`                       | `StructureSystem`                                               | `EnragedSystem` (enraged lane), `StructureSystem` (walls, shields), `Scoring` (DEC-212)  |
 | `structure-breakability-changed`    | `{ entityId, isBreakable, lane }`                      | `StructureSystem`                                               | `HordeSystem` (gate holding), views                                                      |
@@ -472,10 +473,12 @@ each closed by the session or phase named:
   `AttackTargetHandler`). `cast-ability` and `intent` are routed to
   `UnsupportedCommandHandler` (rejected `not-supported`) until their systems exist; `pick-up`,
   `throw`, `interact` and `dev-set-assert-level` are not in the union yet.
-- `dev-set-controller` (2026-11-13, FR-099) has `DevSetControllerHandler`: `controllerId` `human`
-  makes the Legend the human's (no `ControllerBinding`, no brain; the previous human becomes a Rover
-  bot), the Rover's id binds the Rover (on the human's Legend: no human left; `humanLegendId` null).
-  Refused `unknown-entity`, `not-a-legend` or the new `unknown-controller`. `MatchRecord.reseatHuman`
+- `dev-set-controller` (2026-11-13, FR-099) has `DevSetControllerHandler`: `controllerId` `player`
+  makes a Legend of `playerTeam` the human's (no `ControllerBinding`, no brain; the previous human
+  becomes a Rover bot, DEC-294), the Rover's id binds the Rover (on the human's Legend: no human
+  left; `humanLegendId` null). Each seat move emits `human-reseated`, which `Scoring` folds into the
+  rows' `controller`. Refused `unknown-entity`, `not-a-legend`, `not-player-team` (DEC-173) or
+  `unknown-controller`. `MatchRecord.reseatHuman`
   is the second writer of `humanLegendId`. A bot re-bound loses its brain memory.
 - `dev-spawn-legend` (2026-11-13) is built as `{ team, definitionId }` (a bot Legend at the
   Stronghold, Rover controller); it is in `Command.types.ts`; the union listing below does not show it yet.

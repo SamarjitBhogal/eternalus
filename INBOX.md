@@ -29,7 +29,10 @@ Reply inline (`Decision: …`).
       no invariant violation and the same hash twice instead. Unblocked when a win objective
       exists in content or a test fixture supplies one. (f) The client has no spectate UI: with no human
       the camera stays where it is and the HUD hides the player block. `Take control` takes a typed
-      Legend id. Decision: …
+      Legend id. Decision: DEC-294 (2026-11-20, Owner Calls page) answers (b): "Keep the swap;
+      update mechanics-ideas §6 in this PR" (note: "make sure this is architecturally-sound"). The
+      human's controller id is now `player` (PR #112 review S1), and a Legend off `playerTeam` is
+      refused (`not-player-team`, review B1). (a), (c) to (f) stay open.
 
 - [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu-legends`) — developer menu, slice 2
       (add/remove Legends, FR-097) built; decisions for the owner.** (a) `dev-spawn-legend` takes

@@ -215,9 +215,9 @@ export class Match implements LoopTarget {
     }
     this.deps.simulation.step();
     this.previous = this.current;
-    const hadHuman = this.playerId;
+    const previousPlayerId = this.playerId;
     this.current = this.deps.simulation.snapshot();
-    if (this.playerId !== hadHuman) {
+    if (this.playerId !== previousPlayerId) {
       this.developerMenu.publish();
     }
     this.healthBars.observe(this.current, this.playerId);

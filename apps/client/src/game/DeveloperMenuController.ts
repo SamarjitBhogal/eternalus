@@ -3,6 +3,7 @@ import type { MapDefinition, Simulation } from '@eternalus/core';
 import type { DeveloperMenuOption } from '../bridge/developerMenu.types';
 import type { BridgeEventMap } from '../bridge/events';
 import type { TypedEventBus } from '../bridge/TypedEventBus';
+import { SIM_MODE_CONTROLLER_IDS } from './DeveloperMenuController.constants';
 
 /** What the controller is built from (`Match` passes its own parts). */
 type DeveloperMenuControllerDeps = {
@@ -42,6 +43,7 @@ export class DeveloperMenuController {
     bus.emit('developer-menu', {
       isOpen: this.isOpen,
       humanLegendId: humanLegendId(),
+      controllerIds: SIM_MODE_CONTROLLER_IDS,
       origins: map.features.flatMap(({ id, kind, laneId }): DeveloperMenuOption[] =>
         laneId === undefined ? [] : [{ id, label: `${id} (${kind})` }],
       ),

@@ -1,8 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { MemoryLogger } from './diagnostics/MemoryLogger';
+import { NullLogger } from './diagnostics/NullLogger';
+import { runReplay } from './diagnostics/replay';
+import { REPLAY_CHECKPOINT_EVERY } from './diagnostics/Replay.constants';
+import { Scoring } from './match/Scoring';
 import { Simulation } from './Simulation';
 import type { RosterSlot } from './Simulation.types';
 import { TWO_LANE_MAP } from './state/__fixtures__/twoLaneMap';
@@ -80,7 +84,7 @@ describe('Simulation sim mode (FR-099, dev-set-controller)', () => {
     simulation.enqueueCommand({
       type: 'dev-set-controller',
       entityId: chosen,
-      controllerId: 'human',
+      controllerId: 'player',
     });
     simulation.step();
     simulation.enqueueCommand({ type: 'stop', actorId: chosen });
@@ -114,17 +118,113 @@ describe('Simulation sim mode (FR-099, dev-set-controller)', () => {
     simulation.enqueueCommand({
       type: 'dev-set-controller',
       entityId: 'nobody',
-      controllerId: 'human',
+      controllerId: 'player',
     });
     simulation.enqueueCommand({
       type: 'dev-set-controller',
       entityId: structure?.id ?? '',
-      controllerId: 'human',
+      controllerId: 'player',
     });
     simulation.enqueueCommand({ type: 'dev-set-controller', entityId, controllerId: 'no-such' });
     simulation.step();
 
     expect(rejected).toEqual(['unknown-entity', 'not-a-legend', 'unknown-controller']);
     expect(humanOf(simulation)).toBe(entityId);
+  });
+
+  it('refuses to seat the human on a Legend of the other team (DEC-173): the seat stays', () => {
+    const { simulation } = newMatch();
+    const rejected: string[] = [];
+    simulation.on('command-rejected', ({ reason }) => rejected.push(reason));
+    const human = humanOf(simulation);
+    const lightLegend = simulation
+      .snapshot()
+      .entities.find(({ family, team }) => family === 'legend' && team === 'light');
+
+    simulation.enqueueCommand({
+      type: 'dev-set-controller',
+      entityId: lightLegend?.id ?? '',
+      controllerId: 'player',
+    });
+    simulation.step();
+
+    expect(lightLegend).toBeDefined();
+    expect(rejected).toEqual(['not-player-team']);
+    expect(humanOf(simulation)).toBe(human);
+  });
+
+  it("removes the former human's Legend by dev-remove-legend once in sim mode (DEC-293)", () => {
+    const { simulation } = newMatch();
+    const rejected: string[] = [];
+    simulation.on('command-rejected', ({ reason }) => rejected.push(reason));
+    const former = humanOf(simulation) ?? '';
+
+    simulation.enqueueCommand({ type: 'dev-remove-legend', entityId: former });
+    simulation.step();
+    expect(rejected).toEqual(['human-legend']);
+
+    simulation.enqueueCommand({
+      type: 'dev-set-controller',
+      entityId: former,
+      controllerId: 'rover',
+    });
+    simulation.enqueueCommand({ type: 'dev-remove-legend', entityId: former });
+    simulation.step();
+    expect(rejected).toEqual(['human-legend']);
+    expect(positionOf(simulation, former)).toBeUndefined();
+  });
+
+  it('replays a menu-driven sim-mode match to the same hash (FR-100)', () => {
+    const { simulation } = newMatch();
+    const former = humanOf(simulation) ?? '';
+    const chosen = darkLanerOf(simulation);
+    simulation.enqueueCommand({
+      type: 'dev-set-controller',
+      entityId: former,
+      controllerId: 'rover',
+    });
+    run(simulation, REPLAY_CHECKPOINT_EVERY);
+    simulation.enqueueCommand({
+      type: 'dev-set-controller',
+      entityId: chosen,
+      controllerId: 'player',
+    });
+    run(simulation, 2 * REPLAY_CHECKPOINT_EVERY);
+
+    const replay = simulation.exportReplay();
+
+    expect(replay.commands.map(({ command }) => command.type)).toEqual([
+      'dev-set-controller',
+      'dev-set-controller',
+    ]);
+    expect(
+      runReplay(
+        replay,
+        (setup) => new Simulation({ ...setup, logger: new NullLogger(), debug: TEST_DEBUG_CONFIG }),
+      ),
+    ).toEqual({ firstDivergence: null, finalHash: simulation.hash() });
+  });
+
+  it("moves the scoring rows' human mark with the seat (the match result names who played)", () => {
+    // `Simulation` keeps its state private: read it from the first call of a spy on `Scoring.fold`.
+    const fold = vi.spyOn(Scoring.prototype, 'fold');
+    const { simulation } = newMatch();
+    const former = humanOf(simulation) ?? '';
+    const chosen = darkLanerOf(simulation);
+    simulation.step();
+
+    simulation.enqueueCommand({
+      type: 'dev-set-controller',
+      entityId: chosen,
+      controllerId: 'player',
+    });
+    simulation.step();
+
+    const legends = fold.mock.calls[0]?.[0].state.match.scoring.legends ?? [];
+    const controllerOf = (id: string) =>
+      legends.find(({ entityId }) => entityId === id)?.controller;
+    expect(controllerOf(former)).toBe('bot');
+    expect(controllerOf(chosen)).toBe('human');
+    fold.mockRestore();
   });
 });
