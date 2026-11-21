@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-16
+last-reviewed: 2026-11-20
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -314,8 +314,13 @@ the guard leash tolerance covers the wait instead (DEC-181, 18 §7). A decision 
 cheap: radius-bounded queries, no allocation in hot paths, scratch vectors reused. A bot's A\* is
 the exception: bots steer by `move` commands, so A\* is a `PathQuery` (`state.paths`) its leaves
 call when the straight line is blocked. Its cost is inside the decision budget, and
-`GameConfig.map.pathMaxSearchArea` (DEC-243) caps each search (a path cache in the brain is the
-next step if profiling shows the cost). `StuckSystem` is a second A\* consumer, outside the decision budget:
+`GameConfig.map.pathMaxSearchArea` (DEC-243) caps each search. The brain caches the last search's
+destination and waypoint as plain memory and reuses the waypoint, without a new search, while the
+bot heads to the same place (within its `arrivalDistance`), the straight line to that place is
+still blocked, the waypoint is not yet reached and is still on the way (nearer than the
+destination), and the bot still sees it in a straight line (`PathQuery.isLineClear`). A clear line
+to the destination caches nothing, so a moving destination is followed live; arriving, or a search
+that finds no way, clears the cache. `StuckSystem` is a second A\* consumer, outside the decision budget:
 `STUCK_DETECTION.maxPlansPerTick` caps its plans a tick, and `pathMaxSearchArea` caps each plan.
 Requests over the cap wait (`ChaseWatch.isPlanDue`), served in store order; the upgrade path is a
 round-robin cursor. Other heavy work (flow
@@ -412,8 +417,9 @@ work named:
   stream, at most every `castIntervalTicks`; the cast handler refuses casts until abilities land
   (Phase 4), with no controller change needed then.
 - A\* for Legends (M8, §6) is `map/AStarPathfinder` behind the `PathQuery` port (`state.paths`).
-  One `WorldMap` serves it and the lane flow fields. No path cache yet: a bot searches again on
-  each blocked decision.
+  One `WorldMap` serves it and the lane flow fields. The path cache (§6) is `BotMemory`'s
+  `pathGoal*` and `pathStep*` fields, kept by `BotMovement.moveTo`; `PathQuery.isLineClear` is a
+  port method rather than a read of `state.world.grid` so the leaves' tests stub one object.
 - The bot leaves also read the nav grid directly (`state.world.grid`). A bot sent to a point on
   blocked ground (a tower's centre) stops at the edge of that ground on its side
   (`BotMovement.moveTo`, the leaves' navigation in `ai/BotMovement.ts`). To fight an enemy on

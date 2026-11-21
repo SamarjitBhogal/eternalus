@@ -689,6 +689,8 @@ Reply inline (`Decision: …`).
   - Decision (SamarjitBhogal, chat, 2026-10-27): (2) accepted; doc 11 §6 and sprint 3.2's
     line say A\* is a `PathQuery` (PR #47). (1) Numbers from the design docs, else the agent's
     judgement, which the owner may correct later, so they stay as built.
+  - Update 2026-11-20 (PR #84): a blocked decision no longer always searches again; the brain
+    caches one waypoint and reuses it while it serves the destination (doc 11 §6).
 - [ ] **Minion M8 — exact line checks wait for wall avoidance (FYI, CodeRabbit on PR #47).**
       `WorldMap.isLineClear` samples a quarter cell apart, so a line can clip a blocked cell's
       corner unseen. An exact cell walk (DDA) catches it, but then minions hold at rift corners
