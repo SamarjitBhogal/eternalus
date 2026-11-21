@@ -8,6 +8,8 @@ import { DeveloperMenu } from './DeveloperMenu';
 const STATE: DeveloperMenuState = {
   isOpen: true,
   origins: [{ id: 'gate-a', label: 'gate-a (gate)' }],
+  humanLegendId: 'entity-9',
+  controllerIds: { player: 'player', rover: 'rover' },
 };
 
 const render = (state: DeveloperMenuState): string =>
@@ -31,6 +33,13 @@ describe('DeveloperMenu', () => {
     expect(html).toContain('aria-label="Developer menu"');
     expect(html).toContain('Light Minion');
     expect(html).toContain('gate-a (gate)');
-    expect(buttonNames(html)).toEqual(['Spawn', 'Add', 'Remove Legend', 'Remove']);
+    expect(buttonNames(html)).toEqual([
+      'Spawn',
+      'Add',
+      'Remove Legend',
+      'Remove',
+      'Remove human',
+      'Take control',
+    ]);
   });
 });

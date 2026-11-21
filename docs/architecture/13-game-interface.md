@@ -564,6 +564,13 @@ difference is registered in
 
 ## 10. Implementation status
 
+Sim mode (2026-11-13, FR-099): the developer menu's Sim mode section sends `dev-set-controller` (Remove
+human: the human Legend to the Rover; Take control: a typed Legend id to `player`, swapping the seat
+if a human exists, DEC-294). The menu reads both controller ids from the `developer-menu` state. `Match` reads the
+human Legend from each snapshot, so with none the camera, the HUD player block and the attack
+clicks stand idle and the match runs on. Not built: `SinglePlayerBrainInvariant` (cited by the sim-mode row of the
+table in section 4); a Legend with no human is not checked for it.
+
 Built (Sprint 1, sessions D and F): the bridge (`bridge/`), the session shell and menu screens,
 and the keybinding and settings stack of §6: `keybindings.ts`, `BindingResolver`, `InputMapper`,
 `KeyboardDevice` and `MouseDevice`, `SettingsController`, `settingsSlice`, `KeyGlyph`, `Prompt`,
@@ -596,8 +603,8 @@ opened by `toggle-developer-menu` (F1). Built controls: spawn mobs (`dev-spawn-m
 entity by id (`dev-remove-entity`), each sent as a `dev-command` intent that `Match` enqueues. The
 mob picker lists the lane minions of core's display content (`DisplayContent.laneMinions`). Core
 refuses `dev-remove-entity` for a Legend in a human seat (`human-legend`): the human is removed
-only in sim mode (the "Add / remove a Legend" row above). Not built: sim mode, `dev-toggle`,
-invariant level, timeline jump, config overrides,
+only in sim mode (the "Add / remove a Legend" row above). Not built: `dev-toggle`, invariant
+level, timeline jump, config overrides,
 and showing core's refusals in the UI. `bridge/events.ts` has no `dev-toggle` yet.
 
 HUD (2026-10-18): the `AbilityBar` cooldown sweep of §3 is the owner's Figma look, a vertical fill

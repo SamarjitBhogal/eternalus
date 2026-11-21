@@ -77,6 +77,7 @@ export class MatchRecord implements MatchState {
   public holdIdle(isHeld: boolean): void; // the countdown phase only (DEC-88)
   public endMatch(result: MatchResult): void; // MatchDirector only, once; a second call throws
   public seatHuman(legendId: EntityId): void; // Simulation only, once, when the human slot's Legend spawns
+  public reseatHuman(legendId: EntityId | null): void; // DevSetControllerHandler only (sim mode, DEC-294); emits 'human-reseated'
   public advanceTimeline(): void; // MatchDirector only, once per fired timeline entry
   // the scoring data's only writer (DEC-211): written by Scoring only, in its fold (12 §5)
   public readonly scoreBook: ScoreBook; // addRow, award, awardTeam, recordHit, takeAssists
@@ -188,6 +189,7 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 | `entity-spawned`                    | `{ entityId, kind, team }`                             | `EntityFactory` via `SpawnSystem`, or `Simulation` for a roster | `SnapshotSystem`, views, `Scoring` (a row per Legend)                                    |
 | `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`           | `DeathSystem` only                                              | `HordeSystem`, `ProjectilePool`, invariants                                              |
 | `damage-applied`                    | `{ targetId, amount, absorbed, source: DamageSource }` | `DamagePipeline`                                                | `ProgressionSystem` (assists), `AiSystem` (aggro), `Scoring` (assists, structure damage) |
+| `human-reseated`                    | `{ from: EntityId \| null, to: EntityId \| null }`     | `MatchRecord.reseatHuman` (sim mode, DEC-294)                   | `Scoring`                                                                                |
 | `entity-died`                       | `{ entityId, killer: DamageSource }`                   | `DeathResolver`                                                 | `DeathSystem`, `ProgressionSystem`, `Scoring`, `ObjectiveLostCondition`                  |
 | `structure-destroyed`               | `{ entityId, kind, team, lane }`                       | `StructureSystem`                                               | `EnragedSystem` (enraged lane), `StructureSystem` (walls, shields), `Scoring` (DEC-212)  |
 | `structure-breakability-changed`    | `{ entityId, isBreakable, lane }`                      | `StructureSystem`                                               | `HordeSystem` (gate holding), views                                                      |
@@ -469,9 +471,16 @@ each closed by the session or phase named:
   a log of the external commands and replay checkpoints, both outside the hashed state); no
   `dispose()` yet.
 - `move`, `stop` and `attack-target` have their own handlers (`MoveHandler`, `StopHandler`,
-  `AttackTargetHandler`). `cast-ability`, `intent` and `dev-set-controller` are routed to
+  `AttackTargetHandler`). `cast-ability` and `intent` are routed to
   `UnsupportedCommandHandler` (rejected `not-supported`) until their systems exist; `pick-up`,
   `throw`, `interact` and `dev-set-assert-level` are not in the union yet.
+- `dev-set-controller` (2026-11-13, FR-099) has `DevSetControllerHandler`: `controllerId` `player`
+  makes a Legend of `playerTeam` the human's (no `ControllerBinding`, no brain; the previous human
+  becomes a Rover bot, DEC-294), the Rover's id binds the Rover (on the human's Legend: no human
+  left; `humanLegendId` null). A refused command changes nothing. Refused `unknown-entity`,
+  `not-a-legend`, `not-player-team` (DEC-173), `unknown-controller` or, in a Duel,
+  `not-supported`. `MatchRecord.reseatHuman` is the second writer of `humanLegendId`; each seat
+  move emits `human-reseated`, which `Scoring` folds into the rows' `controller`. A bot re-bound loses its brain memory.
 - `dev-spawn-legend` (2026-11-13) is built as `{ team, definitionId }` (a bot Legend at the
   Stronghold, Rover controller); it is in `Command.types.ts`; the union listing below does not show it yet.
   `dev-remove-legend { entityId }` (2026-11-20, DEC-293) removes a Legend through

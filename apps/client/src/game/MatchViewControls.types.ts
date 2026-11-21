@@ -13,8 +13,8 @@ export type MatchViewControlsDeps = {
   readonly miniMap: MiniMapView;
   /** Told whenever the player shows or hides the minimap (`Match` publishes it to the HUD). */
   readonly onMiniMapShownChanged: (isShown: boolean) => void;
-  /** The player's Legend; `null` when its spawn failed (no Legend, no attack). */
-  readonly playerId: EntityId | null;
+  /** The player's Legend now; `null` when its spawn failed or in sim mode (no Legend, no attack). */
+  readonly playerId: () => EntityId | null;
   /** The match's latest snapshot: its units and map objects are what a click can attack. */
   readonly snapshot: () => Pick<Snapshot, 'entities' | 'mapObjects'>;
 };

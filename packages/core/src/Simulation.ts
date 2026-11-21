@@ -1,5 +1,5 @@
 import { AiSystem } from './ai/AiSystem';
-import type { AiMemory } from './content/ai/ai.types';
+import type { AiMemory, ControllerId } from './content/ai/ai.types';
 import {
   createDefaultControllerRegistry,
   type ControllerRegistry,
@@ -99,6 +99,7 @@ export class Simulation {
   private readonly externalQueue = new CommandQueue();
   private readonly handlers: CommandHandlers = createDefaultCommandHandlers({
     rover: { controllerId: 'rover', profileId: ROVER_BOT.id, memory: {} },
+    player: 'player' satisfies ControllerId,
   });
   private readonly commandContext: CommandContext;
   private readonly systemContext: SystemContext;

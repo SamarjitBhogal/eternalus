@@ -22,4 +22,8 @@ export type DeveloperMenuState = {
   readonly isOpen: boolean;
   /** The map structures a horde can start at (the structures that sit on a lane). */
   readonly origins: readonly DeveloperMenuOption[];
+  /** The human's Legend, or `null` in sim mode (no human); sim mode's buttons read it. */
+  readonly humanLegendId: string | null;
+  /** The controller ids sim mode's buttons send: the human's (`player`) and the Rover's (core's). */
+  readonly controllerIds: { readonly player: string; readonly rover: string };
 };

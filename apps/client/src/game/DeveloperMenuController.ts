@@ -3,6 +3,7 @@ import type { MapDefinition, Simulation } from '@eternalus/core';
 import type { DeveloperMenuOption } from '../bridge/developerMenu.types';
 import type { BridgeEventMap } from '../bridge/events';
 import type { TypedEventBus } from '../bridge/TypedEventBus';
+import { SIM_MODE_CONTROLLER_IDS } from './DeveloperMenuController.constants';
 
 /** What the controller is built from (`Match` passes its own parts). */
 type DeveloperMenuControllerDeps = {
@@ -11,6 +12,8 @@ type DeveloperMenuControllerDeps = {
   readonly simulation: Pick<Simulation, 'enqueueCommand'>;
   readonly bus: TypedEventBus<BridgeEventMap>;
   readonly map: Pick<MapDefinition, 'features'>;
+  /** The human's Legend now (it changes in sim mode); `null` when there is none. */
+  readonly humanLegendId: () => string | null;
 };
 
 /**
@@ -35,10 +38,12 @@ export class DeveloperMenuController {
 
   /** Publishes the menu's state: whether it is open, and its origin picker; nothing while disabled. */
   public publish(): void {
-    const { bus, map, isEnabled } = this.deps;
+    const { bus, map, isEnabled, humanLegendId } = this.deps;
     if (!isEnabled) return;
     bus.emit('developer-menu', {
       isOpen: this.isOpen,
+      humanLegendId: humanLegendId(),
+      controllerIds: SIM_MODE_CONTROLLER_IDS,
       origins: map.features.flatMap(({ id, kind, laneId }): DeveloperMenuOption[] =>
         laneId === undefined ? [] : [{ id, label: `${id} (${kind})` }],
       ),

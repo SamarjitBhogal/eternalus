@@ -21,6 +21,18 @@ overridden by the product owner. Decisions arrive through `INBOX.md`; once imple
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
 
+## Batch 2026-11-20 (Owner Calls page: "Take control" in sim mode, PR #112)
+
+The owner's answer of 2026-11-20, on the Owner Calls page, to "Should "Take control" swap seats or
+refuse while a human exists?" (PR #112 review, B2; `INBOX.md` BUG-4 / SCRUM-437 slice 3, item
+(b)). Posted on PR #112 for the owner by the coordinator session PR-REVIEW-COORDINATION-7. The
+owner's words: "Keep the swap; update mechanics-ideas §6 in this PR", with the note "make sure this
+is architecturally-sound". DEC-294 is this batch.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Changes                                                                                                        |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| DEC-294 | **"Take control" swaps the human seat while a human exists** (FR-099; answers `INBOX.md` BUG-4 / SCRUM-437 slice 3 (b)). Owner's words: "Keep the swap; update mechanics-ideas §6 in this PR"; note: "make sure this is architecturally-sound". `dev-set-controller { entityId, controllerId: 'player' }` on a Legend of `playerTeam` while a human is seated moves the seat to that Legend, and the old human's Legend becomes a Rover bot; at most one Legend is ever the human's (13 §4, "at most one `player` controller"). A Legend off `playerTeam` is refused (`not-player-team`, DEC-173). The swap is announced by `human-reseated`, so the scoring rows follow the seat. | `mechanics-ideas.md` §6 "Mechanics"; architecture 03 (events table, status), 13 §10; `DevSetControllerHandler` |
+
 ## Batch 2026-11-20 (Owner Calls page: the `dev-spawn-legend` shape, PR #109)
 
 The owner's answer of 2026-11-20, on the Owner Calls page, to "Which shape should the
