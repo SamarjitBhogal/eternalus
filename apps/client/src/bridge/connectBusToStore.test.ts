@@ -41,6 +41,14 @@ describe('connectBusToStore', () => {
     expect(store.getState().view.isMinimapShown).toBe(false);
   });
 
+  it('copies developer-menu into its slice and clears it on the next match-setup', () => {
+    const { bus, store } = connected();
+    bus.emit('developer-menu', { isOpen: true, origins: [] });
+    expect(store.getState().developerMenu.isOpen).toBe(true);
+    bus.emit('match-setup', null);
+    expect(store.getState().developerMenu.isOpen).toBe(false);
+  });
+
   it('copies session events into the session slice', () => {
     const { bus, store } = connected();
     bus.emit('session-phase', { phase: 'menu', reason: 'select-timeout' });
@@ -83,6 +91,7 @@ describe('connectBusToStore', () => {
       effectsRenderer: 'css',
       contrastMode: 'minimums',
       hud: TEST_HUD_CATALOGUE,
+      laneMinions: [],
       teamNames: { light: 'Lux', dark: 'Umbra' },
       botRoster: {
         id: 'test',
