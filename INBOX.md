@@ -356,13 +356,33 @@ Reply inline (`Decision: …`).
       says an overlap is a bug. The default (one tower of each kind per lane) has no overlap, and
       the heal-zone overlap test covers only the default. Fix the generator now (towers of one
       kind at least one fort box apart), or with the map work? Decision: …
-- [ ] **Map work has no plan entry (2026-11-20, DEC-311).** Owner rulings send items to "the map
+- [x] **Map work has no plan entry (2026-11-20, DEC-311).** Owner rulings send items to "the map
       work": bigger forts (DEC-185 (A), "bigger forts (b) come when map work resumes") and a
       walkable inside for houses (DEC-311); the item "Generated forts overlap when a lane has two
       or more towers of one kind" asks whether the fort-overlap fix goes there too. No phase doc
       or sprint in `docs/plan/` names the map work, so none of these is scheduled. Which phase or
       sprint gets the map work? Agents then add its tasks (bigger forts, house insides, and the
       overlap fix if it goes there) to that phase doc, citing DEC-185 and DEC-311. Decision: …
+  - **Answered 2026-11-20 by DEC-313** (Owner Calls page): bigger forts, the fort-overlap fix and
+    the tower visuals go in the PR of `docs/dec-288-interior-bonus-buildings`, the buff tower's
+    buff and debuff too if time; walkable houses are post-MVP. That PR schedules the work, so no
+    phase doc gets a map-work entry. The question's overlap premise was stale: DEC-227 had
+    already answered the overlap item, and PR #98 builds the fix. To the owner's "any other
+    items?": a search for "map work" in the repository (2026-11-20) finds no other item; the
+    nearest unscheduled item is "Walkable walls — deferred by the owner" (DEC-188). Open
+    questions: the next item.
+- [ ] **Map work in the DEC-288 PR (DEC-313): open questions (2026-11-20).** Cards
+      `map-work-branch`, `forts-hordes-court`, `forts-size` and `buff-tower-aura` on the Owner
+      Calls page. (1) Branch: bigger forts need PR #98 (fort spacing, the fort size in
+      `BUILDING_GEOMETRY`, 2.5 m navigation cells), and PR #122 is stacked on #98. Build the forts
+      and tower fixes on a new branch stacked on #122 and keep the DEC-288 PR docs only, stack the
+      DEC-288 PR on #122, or wait for #98 and #122 to merge? (2) Do hordes walk through a bigger
+      fort's court (west and east doorways), or go round it as built? (3) Fort size: 56 m gives
+      corridors 2 navigation cells wide, 48 m gives 1. (4) If time: the buff tower's numbers. FR-029 gives the debuff as −10 % health and damage (`TUNE`); `docs/reference/suggestions/balancing.md` "Auras" recommends a 12 m radius, enemies inside dealing 10 % less damage with 10 % less max health and debuffs on them lasting 25 % longer, and allies inside dealing 10 % more damage and regaining aether 50 % faster. There is no max-health stat, so the card offers +10 % damage taken in its place. Approve, or give numbers. (5) The agent's
+      reading of "fixing the current towers so the visuals match the logic" (correct it if more
+      is meant): a destroyed tower keeps its map glyph and banner (`WorldObjectStore.removed` keeps a dead structure's fort standing, so `MapView` never hides the glyph; PR #98 turns the fort's walls into ruins, and the glyph and banner stay), and the
+      spawner and buff tower glyphs are drawn under the fort court, so the two kinds look the
+      same. Decision: …
 
 - [x] **Minion M4 done-when, read for objectives (2026-11-02, `chore/minion-full-march-test`) — sign-off.**
       The plan's M4 check "hordes reach the enemy end with 0 stuck units for `numLanes` 3 and 5"

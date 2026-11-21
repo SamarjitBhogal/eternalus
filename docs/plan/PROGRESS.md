@@ -9299,3 +9299,20 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `prettier --check` and `npm run docs:check` on the four files.
 - Next step: the owner pushes the branch (DEC-288 and DEC-311) and answers "Map work has no plan
   entry".
+
+### 2026-11-20 — Phase 3 / DEC-313: the map work goes in the DEC-288 PR — docs/dec-288-interior-bonus-buildings — sholtzman + Claude Code
+
+- What was done: recorded the owner's answer of 2026-11-20 (Owner Calls page) to `INBOX.md`
+  "Map work has no plan entry" as DEC-313, in the DEC-288 batch: bigger forts, the fort-overlap
+  fix (DEC-227, built on PR #98, taken from there) and the tower visuals go in this branch's PR,
+  the buff tower's buff and debuff too if time; walkable houses are post-MVP. DEC-311 gets an
+  amendment note, the INBOX item is answered (with the stale overlap premise named), the open
+  questions of the work are the new INBOX item "Map work in the DEC-288 PR (DEC-313): open
+  questions", `docs/plan/backlog-post-mvp.md` gains the row "Walkable house interiors", and
+  BUG-2 says houses are post-MVP. Docs only.
+  Critic (`architecture-reviewer`, delta on `eec6f3ca`): request-changes; 1 blocker (prettier
+  on the decisions log), 4 should-fix items (the DEC-227 overlap ruling and PR #98 named, the
+  owner's tower words kept as said, one INBOX item for the open questions, the "any other
+  items?" reply moved out of the DEC row) and 4 nits, all applied except the BUG-2 part of one should-fix (does this PR build the bonus?), which goes to the owner in chat. Round 2: approve after 1 should-fix (name the `balancing.md` "Auras" recommendations) and 3 nits, all applied. Its round-1 claim that the tower glyphs already hide on death was checked and is wrong (`WorldObjectStore.removed` keeps a dead structure's fort); round 2 agrees. Ponytail: 1 cut (a repeated house clause in DEC-313), applied.
+- Checks run: full `npm run check` exit 0 after the round-1 fixes (core 275 files / 1674 tests, protocol 1 / 29, client 298 / 2011, server 21 / 84, "Documentation check passed."; `eternalus-agent-work/dec-288/check-4.log`); after the round-2 fixes, which touch Markdown only, `prettier --check .` and `npm run docs:check`.
+- Next step: the owner answers the open questions; then the forts and tower visuals are built.
