@@ -5,6 +5,7 @@ import type { OpeningWaveDefinition } from '../content/structures/structures.typ
 import type { Entity } from '../entities/Entity';
 import type { EntityFactory } from '../entities/EntityFactory';
 import { Structure } from '../entities/structures/Structure';
+import { CapturePoint } from '../entities/zones/CapturePoint';
 import { Unit } from '../entities/Unit';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
@@ -16,7 +17,7 @@ import type { PlayableTeam } from '../teams/teams.types';
 import { compareById } from '../utils/compareById';
 import type { Vec2 } from '../utils/geometry.types';
 import { GuardRoster } from './GuardRoster';
-import type { ScheduledWave, SpawnPlan } from './SpawnSystem.types';
+import type { ScheduledWave, SpawnPlan, CheckpointReached } from './SpawnSystem.types';
 import type { System, SystemContext } from './System.types';
 import { countdownTicks } from '../config/countdownTicks';
 import { isPlayableTeam } from '../teams/playableTeams';
@@ -38,13 +39,18 @@ import { isPlayableTeam } from '../teams/playableTeams';
  * schedule's times come in ticks, converted once at load (`loadSpawnWaves`), so the system keeps
  * no schedule state of its own.
  *
- * It also runs every structure's and zone's guard plan (18 §7, 07 §6) through its `GuardRoster`.
+ * It also runs every structure's and zone's guard plan (18 §7, 07 §6) through its `GuardRoster`,
+ * and adds a capture point's defenders when `checkpoint-reached` names it with a Legend present
+ * (07 §7, 18 §7.1, DEC-259). A point that changes owner keeps its living defenders: they fight
+ * the new owner inside the zone and count as presence for their own side (DEC-261).
  */
 export class SpawnSystem implements System {
   public readonly name = 'spawn';
   private readonly spawners: readonly Structure[];
   private readonly scheduled: readonly ScheduledWave[];
   private readonly guards: GuardRoster;
+  /** The checkpoints reached with a Legend present since the last pass, in order. */
+  private readonly checkpointsReached: CheckpointReached[] = [];
 
   /**
    * @param state - The match; its structure entities, already spawned, are the spawn points, and
@@ -53,9 +59,9 @@ export class SpawnSystem implements System {
    * @param plan - The waves and the guards (loaded in ticks), the opening wave, the definitions and
    *   the spawn layout.
    * @throws ContentValidationError when a wave this map can spawn names an unknown mob or a mob of
-   *   another weight class, or a guard plan names an unknown mob, so bad content fails when the
-   *   match is built, not when the wave is due. Wave and guard times are checked at load
-   *   (`loadSpawnWaves`, `loadGuardPlans`).
+   *   another weight class, or a guard plan or checkpoint defender row names an unknown mob, so
+   *   bad content fails when the match is built, not when the wave is due. Wave and guard times
+   *   are checked at load (`loadSpawnWaves`, `loadGuardPlans`).
    */
   public constructor(
     state: GameState,
@@ -66,10 +72,12 @@ export class SpawnSystem implements System {
     const spawners: Structure[] = [];
     // The definition ids of every structure and zone on this map, whose guard plans are checked.
     const homes = new Set<string>();
+    let hasCapturePoints = false;
     state.entities.forEach((entity) => {
       if (GuardRoster.isHome(entity)) {
         homes.add(entity.definitionId);
       }
+      hasCapturePoints ||= entity instanceof CapturePoint;
       const team = state.entities.teamOf(entity.id);
       if (
         entity instanceof Structure &&
@@ -88,19 +96,27 @@ export class SpawnSystem implements System {
         firstTick: countdownEnd + wave.firstAtTicks,
       })),
     );
-    this.validate(homes);
-    this.guards = new GuardRoster(factory, plan.definitions, plan.guards);
+    this.validate(homes, hasCapturePoints);
+    this.guards = new GuardRoster(factory, plan.definitions, plan.guards, plan.defenders);
     this.guards.layOut(state);
+    // Queued for this system's pass (03 §4). DEC-259: only a push with a Legend on the zone wakes
+    // the defenders, so passing hordes do not.
+    state.events.on('checkpoint-reached', ({ pointId, checkpoint, presentLegendIds }) => {
+      if (presentLegendIds.length > 0) {
+        this.checkpointsReached.push({ pointId, checkpoint });
+      }
+    });
   }
 
   /**
    * Rejects a plan whose waves name an unknown mob or a mob of another weight class, or whose
    * guard plans name an unknown mob. Only the waves this map's spawners can send and the guard
    * plans of the structures and zones on it (`homes`, by definition id, whether or not they spawn
-   * hordes) are checked, so a match without hordes needs no minions.
+   * hordes) are checked, and the checkpoint defenders when it has capture points, so a match
+   * without hordes needs no minions.
    */
-  private validate(homes: ReadonlySet<string>): void {
-    const { openingWave, definitions, guards } = this.plan;
+  private validate(homes: ReadonlySet<string>, hasCapturePoints: boolean): void {
+    const { openingWave, definitions, guards, defenders } = this.plan;
     const kinds = new Set(this.spawners.map(({ kind }) => kind));
     const waves = [
       ...(kinds.has(openingWave.source) ? [['opening', openingWave] as const] : []),
@@ -113,6 +129,15 @@ export class SpawnSystem implements System {
         definitions.has(mobId) ? [] : [`${id} guard plan names unknown mob "${mobId}"`],
       ),
     );
+    // Only on a map with capture points, so a match without them needs no defender content.
+    const defenderProblems = Object.entries(hasCapturePoints ? defenders : {}).flatMap(
+      ([checkpoint, { table }]) =>
+        table.flatMap(({ mobId }) =>
+          definitions.has(mobId)
+            ? []
+            : [`checkpoint ${checkpoint} defenders name unknown mob "${mobId}"`],
+        ),
+    );
     const mobProblems = waves.flatMap(([source, { mobId, weightClass }]) => {
       if (!definitions.has(mobId)) {
         return [`${source} wave names unknown mob "${mobId}"`];
@@ -122,7 +147,7 @@ export class SpawnSystem implements System {
         ? []
         : [`${source} wave says "${mobId}" is ${weightClass}, but its kind is "${kind}"`];
     });
-    const problems = [...new Set([...guardProblems, ...mobProblems])];
+    const problems = [...new Set([...guardProblems, ...defenderProblems, ...mobProblems])];
     if (problems.length > 0) {
       throw new ContentValidationError(`Invalid spawn plan: ${problems.join('; ')}`);
     }
@@ -141,6 +166,9 @@ export class SpawnSystem implements System {
     const opening = state.tick === 0 ? this.openingHordes(state, routes) : [];
     for (const request of [...opening, ...this.dueWaves(state)]) {
       this.spawnHorde(state, routes, request);
+    }
+    for (const { pointId, checkpoint } of this.checkpointsReached.splice(0)) {
+      this.guards.defend(state, pointId, checkpoint);
     }
     this.guards.update(state);
   }

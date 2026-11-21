@@ -1,0 +1,215 @@
+import { describe, expect, it } from 'vitest';
+import { Capturable } from '../components/Capturable';
+import { Transform } from '../components/Transform';
+import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { ContentValidationError } from '../content/ContentValidationError';
+import { loadDefaultContent } from '../content/loadDefaultContent';
+import { CHECKPOINT_DEFENDERS } from '../content/structures/guardPlans';
+import { CATHEDRAL_CAPTURE_POINT } from '../content/zones/cathedralCapturePoint';
+import { NullLogger } from '../diagnostics/NullLogger';
+import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
+import { EntityFactory } from '../entities/EntityFactory';
+import { CapturePoint } from '../entities/zones/CapturePoint';
+import type { GuardSlot } from '../state/GuardStore.types';
+import { GameState } from '../state/GameState';
+import { matchWorldOf } from '../state/__fixtures__/matchWorld';
+import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
+import type { Team } from '../teams/teams.types';
+import { distance } from '../utils/geometry';
+import { newSystem, NO_OPENING, TICK_RATE } from './__fixtures__/spawnSystemSetup';
+
+const CENTER = { x: 100, y: 30 };
+const HALF = 10;
+const AREA = [
+  [
+    { x: CENTER.x - HALF, y: CENTER.y - HALF },
+    { x: CENTER.x + HALF, y: CENTER.y - HALF },
+    { x: CENTER.x + HALF, y: CENTER.y + HALF },
+    { x: CENTER.x - HALF, y: CENTER.y + HALF },
+  ],
+];
+const logger = new NullLogger();
+
+/** A match with one capture point owned by `owner` and a SpawnSystem with the content's defenders. */
+const setUp = (owner: Team) => {
+  const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP));
+  const point = new CapturePoint('zone-1', CATHEDRAL_CAPTURE_POINT.id);
+  point.spawn({
+    definition: CATHEDRAL_CAPTURE_POINT,
+    position: CENTER,
+    team: 'neutral',
+    area: AREA,
+  });
+  point.getComponent(Capturable).setOwner(owner, state.tick);
+  state.entities.add(point);
+  const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(TICK_RATE));
+  const system = newSystem(state, factory, {
+    openingWave: NO_OPENING,
+    waves: {},
+    defenders: CHECKPOINT_DEFENDERS,
+  });
+  const step = () => {
+    system.update({ state, logger });
+    state.advanceTick();
+  };
+  // `CaptureSystem` runs after `SpawnSystem`, so a checkpoint is reached at the end of a tick.
+  const reach = (checkpoint: number, presentLegendIds: readonly string[] = ['legend-1']) => {
+    state.events.emit('checkpoint-reached', {
+      pointId: point.id,
+      team: owner === 'light' ? 'dark' : 'light',
+      checkpoint,
+      presentLegendIds,
+    });
+    state.advanceTick();
+  };
+  const changeOwner = (to: Team) => {
+    const from = point.getComponent(Capturable).setOwner(to, state.tick);
+    state.events.emit('capture-point-owner-changed', { pointId: point.id, from, to });
+    state.advanceTick();
+  };
+  const posts = () => {
+    const all: GuardSlot[] = [];
+    state.guards.forEach((slot) => all.push(slot));
+    return all;
+  };
+  return { state, point, factory, step, reach, changeOwner, posts };
+};
+
+describe('SpawnSystem', () => {
+  describe('checkpoint defenders (07 §7, 18 §7.1)', () => {
+    it("spawns each checkpoint's listed composition on its next pass", () => {
+      const { state, step, reach, posts } = setUp('dark');
+      reach(1);
+      expect(state.guards.size).toBe(0);
+      step();
+      reach(2);
+      step();
+
+      const mobs = posts().map(({ mobId, guardId }) => {
+        expect(guardId).not.toBeNull();
+        return mobId;
+      });
+      expect(mobs.sort()).toEqual(
+        [
+          ...Array<string>(4).fill('medium-assist-mob'),
+          ...Array<string>(2).fill('heavy-assist-mob'),
+          ...Array<string>(4).fill('light-assist-mob'),
+        ].sort(),
+      );
+    });
+
+    it('defends for the owner, and a point no team owns has neutral defenders (DEC-257)', () => {
+      for (const owner of ['dark', 'neutral'] as const) {
+        const { state, step, reach, posts } = setUp(owner);
+        reach(1);
+        step();
+        expect(posts()).not.toHaveLength(0);
+        for (const { team, guardId } of posts()) {
+          expect(team).toBe(owner);
+          expect(state.entities.teamOf(guardId ?? '')).toBe(owner);
+        }
+      }
+    });
+
+    it("leashes defenders to the zone's reach from its centre and posts them inside it", () => {
+      const { point, step, reach, posts } = setUp('light');
+      reach(2);
+      step();
+      const zoneReach = point.getComponent(Transform).radius;
+      for (const slot of posts()) {
+        expect(slot.homeRadius).toBe(0);
+        expect(slot.leashRadius).toBe(zoneReach);
+        expect(distance({ x: slot.postX, y: slot.postY }, CENTER)).toBeLessThanOrEqual(zoneReach);
+      }
+    });
+
+    it('never refills a dead defender', () => {
+      const { state, step, reach, posts } = setUp('light');
+      reach(1);
+      step();
+      const [first] = posts();
+      state.entities.remove(first?.guardId ?? '', 'died');
+      for (let tick = 0; tick < 10 * TICK_RATE; tick += 1) {
+        step();
+      }
+      const after = posts()[0];
+      expect(after?.guardId).toBeNull();
+      expect(after?.respawnAtTick).toBeNull();
+    });
+
+    it('keeps the living defenders, on their own side, when the point changes owner (DEC-261)', () => {
+      const { state, step, reach, changeOwner, posts } = setUp('neutral');
+      const removed: string[] = [];
+      state.events.on('entity-removed', ({ entityId }) => removed.push(entityId));
+      reach(1);
+      step();
+      const ids = posts().map(({ guardId }) => guardId ?? '');
+      changeOwner('light');
+      for (let tick = 0; tick < 10 * TICK_RATE; tick += 1) {
+        step();
+      }
+
+      expect(removed).toEqual([]);
+      expect(ids.every((id) => state.entities.teamOf(id) === 'neutral')).toBe(true);
+      expect(posts().map(({ guardId }) => guardId)).toEqual(ids);
+    });
+
+    it('gives each reach of a checkpoint its own posts, so ids never repeat', () => {
+      const { step, reach, changeOwner, posts } = setUp('neutral');
+      reach(1);
+      step();
+      changeOwner('light');
+      step();
+      reach(1);
+      step();
+      const ids = posts().map(({ id }) => id);
+      expect(ids).toHaveLength(8);
+      expect(new Set(ids).size).toBe(ids.length);
+    });
+
+    it('adds nothing for a push with no Legend on the zone, such as a passing horde (DEC-259)', () => {
+      const { state, step, reach } = setUp('neutral');
+      reach(1, []);
+      step();
+      expect(state.guards.size).toBe(0);
+    });
+
+    it('adds nothing for a checkpoint with no defender row (checkpoint 3)', () => {
+      const { state, step, reach } = setUp('light');
+      reach(3);
+      step();
+      expect(state.guards.size).toBe(0);
+    });
+
+    it('rejects a defender row that names an unknown mob on a map with capture points', () => {
+      const { state, factory } = setUp('light');
+      const defenders = {
+        1: { postGap: 2, leashTolerance: 5.5, table: [{ mobId: 'nope', count: 1 }] },
+      };
+      const build = () =>
+        newSystem(state, factory, {
+          openingWave: NO_OPENING,
+          defenders,
+        });
+      expect(build).toThrow(ContentValidationError);
+      expect(build).toThrow(/checkpoint 1 defenders name unknown mob "nope"/);
+    });
+
+    it('does not check the defender rows on a map without capture points', () => {
+      const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP));
+      const factory = new EntityFactory(
+        createDefaultEntityRegistry(),
+        loadDefaultContent(TICK_RATE),
+      );
+      const defenders = {
+        1: { postGap: 2, leashTolerance: 5.5, table: [{ mobId: 'nope', count: 1 }] },
+      };
+      expect(() =>
+        newSystem(state, factory, {
+          openingWave: NO_OPENING,
+          defenders,
+        }),
+      ).not.toThrow();
+    });
+  });
+});

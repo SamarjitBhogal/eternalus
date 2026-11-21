@@ -1,5 +1,6 @@
 import type { HordeSteeringProfile, LaneAssessmentWeights } from '../content/ai/ai.types';
 import type {
+  CheckpointDefenderPlanDefinition,
   GuardPlanDefinition,
   OpeningWaveDefinition,
   SpawnWaveDefinition,
@@ -27,6 +28,8 @@ export type SpawnPlan = {
    * (`loadGuardPlans`).
    */
   readonly guards: Readonly<Record<string, GuardPlanDefinition>>;
+  /** Each capture-point checkpoint's defenders, keyed by checkpoint (07 §7, 18 §7.1). */
+  readonly defenders: Readonly<Record<number, CheckpointDefenderPlanDefinition>>;
 };
 
 /** One spawner's repeating wave, with its times in ticks (`loadSpawnWaves`, architecture 03 §10). */
@@ -36,3 +39,6 @@ export type ScheduledWave = {
   /** The tick of the first wave: the countdown's end plus `firstAtTicks`. */
   readonly firstTick: number;
 };
+
+/** A capture point's `checkpoint` reached with a Legend present: `SpawnSystem` adds its defenders. */
+export type CheckpointReached = { readonly pointId: string; readonly checkpoint: number };

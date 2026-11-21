@@ -9265,6 +9265,85 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `prettier --check` and `npm run docs:check` on this file.
 - Next step: the owner pushes the branch (`push-125-r3.sh`), then merges PR #125.
 
+### 2026-11-15 — Phase 3 / minion plan M6b: checkpoint defenders (DEC-257, DEC-259) — feat/minion-m6b-checkpoint-defenders — SamarjitBhogal + Claude Code
+
+- What was done: the owner answered `INBOX.md` "Minion plan MVP gaps" (1) and (2) in chat
+  (DEC-257: leash = the zone's reach, neutral defenders at an unowned point; DEC-258: zone
+  level-up counts all three central zones, with balancing.md's numbers and the event-handler
+  approach, which unblocks M10). M6b is built: `CHECKPOINT_DEFENDERS` in
+  `content/structures/guardPlans.ts` (checkpoint 1: 4 medium; 2: 2 heavy + 4 light, on the tower
+  guards' mobs; checkpoint 3's massive mob is MVP-if-time). `SpawnSystem` hears
+  `checkpoint-reached` and `GuardRoster.defend` adds the posts, filled on the next tick for the
+  point's owner, leashed to the zone's reach and never refilled. While building it, lane hordes
+  were found to wake neutral defenders at outer capture points, so the siege soak saw no tower
+  fall. The owner ruled that only a push with a Legend present wakes them (DEC-259). The
+  capture, capture-scoring and healing soaks remove the defenders as they spawn
+  (`__fixtures__/clearCheckpointDefenders.ts`), since those soaks test other rules. Docs: 18 §7.1
+  and §10, the minion plan's gap rows, the decisions log, `INBOX.md`.
+- Checks run: `npm run check` exit 1. Core "Tests 1589 passed (1589)", protocol 18/18, server
+  79/79. Client "Tests 1 failed | 1978 passed (1979)": `WebSocketTransport.test.ts` "ReferenceError:
+  CloseEvent is not defined". That test also fails on the unchanged phase/3 code here: local
+  Node v22.19.0 has no global `CloseEvent`. No client file is changed.
+- Next step: the pre-PR gate (critic, ponytail), then a draft PR into `phase/3-sprint-3-work`;
+  then M10 (zone level-up).
+
+### 2026-11-15 — Phase 3 / minion plan M6b: critic rework (DEC-260, DEC-261) — feat/minion-m6b-checkpoint-defenders — SamarjitBhogal + Claude Code
+
+- What was done: the pre-PR critic (`architecture-reviewer`, base `80e0ea13`) found no blockers and
+  listed 18 should-fix items and nits. Two of them went to the owner, who ruled: defenders are
+  assist mobs of their own (DEC-260: light, medium and heavy assist mobs, with the
+  `checkpoint-defender` aggro profile, which takes any enemy inside the leash through
+  `LeashRules.acquisitionRadius`), and a point's living defenders despawn when it changes owner
+  (DEC-261, `GuardRoster.dismiss`). Also fixed:
+  - `SpawnSystem` queues the zone events and handles them on its own pass (03 §4).
+  - Defender post ids carry the tick.
+  - Posts whose home is gone release through `each` again.
+  - Guards are mates only on the same home and team.
+  - `TUNE` markers, and a named `GUARD_LEASH.checkpointPostRing`.
+  - The roster takes the defenders without a default.
+  - `GuardStore` TSDoc.
+  - Docs: 07 §7, 03, 18 §7.1, the plan's gap rows (checkpoint-cleared XP, stage gating), the
+    decisions log.
+  - Tests: validation, despawn, unique ids, the two `GuardController` cases, and a Cathedral soak
+    with defenders alive (invariants on, same hash twice).
+  - The test fixture now matches the assist mobs by definition id.
+  - `INBOX.md` "Minion M6b follow-ups" asks about checkpoint-cleared XP and stage gating, and puts
+    two better-than-design items to the owner (a `never` respawn rule; tables keyed by
+    capture-point definition).
+- Checks run: `npm run check` exit 1. Core "Tests 1595 passed (1595)", protocol 18/18, server
+  79/79. Client "Tests 1 failed | 1978 passed (1979)": the same `WebSocketTransport.test.ts`
+  `CloseEvent is not defined` failure under local Node v22.19.0. No client file is changed.
+- Next step: the critic re-checks, ponytail, then a draft PR.
+
+### 2026-11-20 — Phase 3 / minion plan M6b — feat/minion-m6b-checkpoint-defenders (PR #130 review round) — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (`5a7cc8dc`; #99 zone guard homes and the boss,
+  #125 durations at load) and applied the owner's rulings of 2026-11-20 (PR comment) and the
+  2026-11-19 review. DEC-261 changed: a point that changes owner keeps its living defenders; they
+  fight the new owner inside the zone and count as presence for their own side. `GuardRoster.dismiss`
+  and `SpawnSystem`'s owner-change listener are gone, doc 03 §4 stays as phase/3 has it (S4).
+  Merge with #99 (B1, B2, S2): `GuardRoster` is phase/3's, with `defend` and one `addPosts` that
+  `layOut` shares; defender posts carry `GuardSlot.checkpoint`, use the `never` rule and are never
+  looked up in the home's plan, so they sit beside #99's boss plan on the same zone (the inline
+  never-refill branch and `isHomeStanding` are gone). `shouldAcquireAcrossLeash` moved onto the
+  guard aggro fields of the loaded and authored types (S5 kept the flag; #99's guards unchanged,
+  offered in INBOX). Decisions log: DEC-257 to DEC-261 ordered by ID, signed off with the owner's
+  words, DEC-260 records that neutral defenders and forest-camp mobs level (changes DEC-165, not
+  built: INBOX "Minion M6b follow-ups" (4)), DEC-261 rewritten, DEC-258's "Approve" added. S3: both
+  groups kept as they are. Docs: 07 §7 and 18 §7.1 rewritten for DEC-261 and the coexistence, 18's
+  status names the assist mobs (S6), OQ-47 decided (N3). Tests: the DEC-261 unit test now checks
+  that defenders stay; a whole-match test shows a captured Cathedral's 10 neutral defenders stay,
+  count as presence (`neutral: 10`), kill the 4 dark Legends and pull the point back to neutral,
+  the same hash twice; a `Simulation`-level test shows a defender table naming an unknown mob fails
+  when the match is built (S1, CodeRabbit 4); the two `as typeof` casts are gone (N1).
+- Checks run: `npm run check` (Node 24.21.0) on the merge → `EXIT=0`: "All matched files use
+  Prettier code style!"; core "Tests 1689 passed (1689)"; protocol "Tests 29 passed (29)"; client
+  "Tests 2011 passed (2011)"; server "Tests 84 passed (84)"; "✓ built in 625ms"; "Documentation
+  check passed." A first run failed #99's `Simulation.bossFight.test.ts` (the zone stayed neutral
+  after the boss kill): the new checkpoint defenders now hold it (DEC-261), so that test clears
+  them with `clearCheckpointDefenders`, as the other soaks of other rules do.
+- Next step: re-request review on PR #130; then PR #131 merges this branch.
+
 ### 2026-11-15 — Phase 3 / minion plan M10: zone level-up (DEC-258) — feat/minion-m10-zone-level-up — SamarjitBhogal + Claude Code
 
 - What was done: the owner's answer DEC-258 (recorded on `feat/minion-m6b-checkpoint-defenders`,
