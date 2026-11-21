@@ -1,0 +1,10 @@
+/* DEC-278: the pre-match countdown over the whole screen, a tinted veil with the number in the
+   middle. The numeral is the character select's Countdown at its match size, centred on the
+   selection artboard (components/Countdown.module.css: the look and UE-01's urgency, one source,
+   DEC-282; the artboard scales numeral and glow together, DEC-299 (2)). */
+.veil {
+  position: absolute;
+  inset: 0;
+  background: var(--selection-ink-veil);
+  pointer-events: none;
+}

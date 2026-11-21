@@ -9265,6 +9265,119 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `prettier --check` and `npm run docs:check` on this file.
 - Next step: the owner pushes the branch (`push-125-r3.sh`), then merges PR #125.
 
+### 2026-11-19 — Phase 3 / the match-start countdown overlay (DEC-278) — feat/match-start-countdown — sholtzman + Claude Code
+
+- What was done: built the owner's ruling of 2026-11-19 (DEC-278, written as its own batch in the
+  owner decisions log). Core `MatchSnapshot` gains `countdownEndTick` (from config, set in
+  `GameState.snapshot()`), so the countdown holds after its `countdown-over` mark has left
+  `upcoming`. `MatchBridge` derives the countdown for both modes into `match-clock`
+  (`countdown`: 10 to 1 locally, 3 to 1 and START in a Duel, else `null`) and counts match time
+  and `match-ended.durationSeconds` from the countdown's end (core's `durationTicks` unchanged).
+  New `ui/hud/MatchCountdown` draws it over the whole match screen: a tinted veil, the character
+  select's red Cinzel numerals and glow, each number struck in (`--motion-medium`, off under
+  reduced motion), no pointer events (DEC-88). `DuelHud` keeps only the score; its countdown
+  tests moved to `MatchCountdown.test.tsx`. Architecture 13 §3 and §5 and 03 §12 updated.
+  Fail-first: core countdown scenario (`countdownEndTick` missing), 15 `MatchBridge` tests and
+  the missing `MatchCountdown` module failed before the build; the first full check then failed
+  `motionTokens.test.ts` on the overlay's literal `1s` animation, fixed with the token.
+- Checks run: `npm run check` → `EXIT=1` on the first run (client "1 failed | 2020 passed",
+  `motionTokens.test.ts`; `eternalus-agent-work/game-loop-plan/check-countdown-2026-11-19.log`).
+  After the fix, `npm run check` → `EXIT=0` before this entry was added
+  (`eternalus-agent-work/game-loop-plan/check-countdown-2026-11-19-r2.log`): core "Tests 1647
+  passed (1647)"; protocol "Tests 29 passed (29)"; client "Tests 2021 passed (2021)"; server
+  "Tests 84 passed (84)"; "Documentation check passed.". Then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: commit, then the pre-PR gate (critic, ponytail, re-check) and the PR on base
+  `phase/3-sprint-3-work`.
+
+### 2026-11-20 — Phase 3 / the match-start countdown: DEC-282 built and recorded, merge of phase/3 (#125) — feat/match-start-countdown — sholtzman + Claude Code
+
+- What was done: built the owner's answers to the DEC-278 critic's round 1 (DEC-282). Core:
+  `timelineMarkTick` counts `atFraction` marks from the countdown's end (default marks
+  13_800/27_300/40_800); `MatchResult.matchTicks` is the match time and `MatchBridge`'s match
+  length reads it; the capture-point checkpoint plan's `delaySeconds` goes from 440 to 450.
+  Client: UE-03 (`SettingsController` writes `data-reduce-motion` on `<html>`; every
+  reduced-motion rule has its twin), the `uiEnhancements` switch (`data-ui-enhancements`,
+  `?dev=1&ui=`), and UE-01 on one shared `Countdown` for the character select and the
+  match-start overlay (the strike-in is gone). Docs: the DEC-282 row; architecture 12 §2, §3, §10,
+  §12 and 13 §3, §7, §10; plan notes in game-loop-and-results-plan §4.2 and ui-enhancements-plan
+  §1; reference 15 CD-48; INBOX Done entry. Merged `origin/phase/3-sprint-3-work` `5a7cc8dc`
+  (#125): conflicts only in this file and the decisions log, both sides kept.
+- Checks: pre-commit `check:quick` passed on each commit. The full `npm run check` on the merge
+  is the next step; its result goes in the next entry.
+- Next step: full check, critic round 2, ponytail, re-check, PR on base `phase/3-sprint-3-work`.
+  Three owner calls are open on the "Countdown PR Calls" page (win/lose urgency, the overlay's
+  10 s line, the UE visual shots and performance check), and HC-B9 (1) on the Owner Calls page.
+
+### 2026-11-20 — Phase 3 / the match-start countdown: live region at the app root (M1), HC-B9 (1), critic round 2 minors — feat/match-start-countdown — sholtzman + Claude Code
+
+- What was done: `94f3aaf8` first fix for DEC-282 (7); `50e0aca2` critic round 2 M1: one polite
+  live region at the app root (`ui/components/LiveRegion.tsx`), mounted by `App` outside the
+  screen switch, and each countdown portals its line into it (no VoiceOver check yet).
+  `61928f1e` HC-B9 (1), DEC-285: core keeps the countdown's end tick once as
+  `MatchState.countdownEndTick`; `SpawnSystem`, `GuardRoster`, `LeashBehaviour`, `MatchDirector`
+  and the snapshot read it. Critic BTD4 with it: `timelineMarkTick` takes a named `TimelineFrame`.
+  Fail-first: the stored tick + 30 turned 35 core tests red across all five readers
+  (`eternalus-agent-work/game-loop-plan/hcb9-breaks-2026-11-20.md`). `fe0a08d9` and `dee5850d`:
+  critic round 2 m2 (reference 15 CD-49, the overlay), m3 (HC-C1 lists the shots), m5 (INBOX
+  450 s), n1, n2, n5, n6. BTD2 and BTD3 are not built (owner call).
+- Checks: `npm run check` on `94f3aaf8` → `EXIT=0` (core "Tests 1678 passed (1678)", protocol
+  "Tests 29 passed (29)", client "Tests 2065 passed (2065)", server "Tests 84 passed (84)").
+  `npm run check` on `dee5850d` → `EXIT=0`
+  (`eternalus-agent-work/game-loop-plan/check-countdown-2026-11-20-r2.log`): core "Tests 1679
+  passed (1679)"; protocol "Tests 29 passed (29)"; client "Tests 2067 passed (2067)"; server
+  "Tests 84 passed (84)"; "Documentation check passed.".
+- Next step: the UE shots and the rule-7 performance check on a quiet machine
+  (`ue-shots-2026-11-20/run.sh`), shots to the owner on the "Countdown PR Calls" page, critic
+  round 3, ponytail, re-check, PR on base `phase/3-sprint-3-work`.
+
+### 2026-11-20 — Phase 3 / the match-start countdown: DEC-286, critic round 3 minors, ponytail cut — feat/match-start-countdown — sholtzman + Claude Code
+
+- What was done: `6766cc0c` critic round 2 BTD2 and BTD3, DEC-286 (1) and (2): `UI_ENHANCEMENT_IDS`
+  is tied to `UiEnhancementId` by `expectTypeOf`, and the urgent countdown glow spreads the
+  countdown glow. This corrects the last entry's "BTD2 and BTD3 are not built (owner call)": they
+  were built under the owner's standing rule on better-than-design items (DEC-223, DEC-232).
+  Fail-first: `eternalus-agent-work/game-loop-plan/btd23-breaks-2026-11-20.md`. Critic round 3
+  approved with no blockers or majors. `177d1ac7` m7 and BTD6, DEC-286 (3): one
+  `config/timelineFrameOf` builds the `TimelineFrame`, and `Simulation` hands its
+  `countdownEndTick` to `GameState` in a named `GameStateTiming`, so `state/` imports only types
+  from `config/` (architecture 02 §3); with it m8 (DEC-285 citations) and n9 (the hasher names
+  `countdownEndTick`). `3ad7c70e` m10: `LiveRegion.test.tsx`. `729310b3` m9 (the DEC-286 table
+  header), n10, n11 (INBOX Done line) and BTD5, DEC-286 (4): the one-live-region rule in
+  architecture 13 §7. Fail-first for m7 and m10: `m7-m10-breaks-2026-11-20.md` (4 breaks red,
+  restored). `0494a89e` the one ponytail cut (`ponytail-review-countdown-2026-11-20.md`):
+  `MatchBridge.matchSeconds` inlined into `clockOf`.
+- Checks: `npm run check` on `0494a89e` → `EXIT=0`
+  (`eternalus-agent-work/game-loop-plan/check-countdown-2026-11-20-r3.log`): core "Tests 1679
+  passed (1679)"; protocol "Tests 29 passed (29)"; client "Tests 2072 passed (2072)"; server
+  "Tests 84 passed (84)"; "Documentation check passed.".
+- Next step: the UE shots and the rule-7 performance check on a quiet machine
+  (`ue-shots-2026-11-20/run.sh`), the screen-reader check (critic A10), the shots to the owner on
+  the "Countdown PR Calls" page, then the PR on base `phase/3-sprint-3-work`.
+
+### 2026-11-20 — Phase 3 / the match-start countdown: DEC-299 built, critic rounds 1 and 2 on it — feat/match-start-countdown — sholtzman + Claude Code
+
+- What was done: DEC-299 (owner answers on the "Countdown PR Calls" page): (1) UE-01's 1.08, 1.12
+  and 30 % glow kept; (2) the overlay draws the select numeral (64 px) on the select artboard
+  (`SelectionStage`) and enlarges it with `scale: calc(216 / 64)`, so the glow grows with it (216 =
+  "slightly smaller" read as 10 % below 240, a recommendation, CD-49); (3) rule 7 means one 60 Hz
+  frame; (4) the structural tests stand for a screen reader (none was run). Architecture 13 §3
+  MatchCountdown row edited (owner's design text). Critic r1 approved (M1, m1-m6, n1-n7 fixed;
+  BTD3 built; BTD2 rejected, which r2 accepted; BTD1 is `INBOX.md` HC-B15 with options a/b/c).
+  Critic r2 approved, no blockers or majors; R2-m1..m4 and R2-n1..n4 fixed. Rule 7 on the
+  DEC-299 tree (`ue-shots-2026-11-20/perf-dec299/`, ue-perf-soak, ui-on and ui-off, CPU ×1 and
+  ×4, 3 runs each, HeadlessChrome 158): p95 16.7-16.8 ms, max 16.8 ms, 0 intervals over 33.4 ms;
+  3 long tasks per ×4 run, all during page load, on 33bcdcf6 and with every enhancement off too
+  (INBOX "Rule 7 frame latency"). Re-shoot: no visible change (`overlay-glow-r2/`). Fail-first:
+  `eternalus-agent-work/game-loop-plan/dec299-breaks-2026-11-20.md` (6 breaks red, restored).
+  Ponytail: no cuts.
+- Checks run: `npm run check` → `EXIT=0`
+  (`eternalus-agent-work/game-loop-plan/check-countdown-2026-11-20-dec299.log`): core "Tests 1679
+  passed (1679)"; protocol "Tests 29 passed (29)"; client "Tests 2076 passed (2076)"; server
+  "Tests 84 passed (84)"; "Documentation check passed.". This check line was filled in after
+  that run (docs only).
+- Next step: push PR #138 (coordinator), owner review; HC-B15 on the Owner Calls page (Sam).
+
 ### 2026-11-20 — Phase 3 / tower horde test time limit (DEC-289) — fix/horde-test-timeout — sholtzman + Claude Code
 
 - What was done: the owner's Owner Calls answer of 2026-11-20 ("Raise this one test's cap to
@@ -9282,6 +9395,23 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   (84)", "Documentation check passed."; then `prettier --check` and `npm run docs:check` with this
   entry. Critic (architecture-reviewer): PASS WITH NOTES, no violations, four nits not applied.
 - Next step: `/ponytail-review`, then push and open the PR into phase/3.
+
+### 2026-11-21 — Phase 3 / the match-start countdown: merge of phase/3 (`a3550159`, #140) — feat/match-start-countdown — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` at `a3550159` (#140, DEC-289: the tower
+  horde test's own 120 s limit) into PR #138, which GitHub showed as conflicting. Two conflicts,
+  each from entries added at the same place on both sides: this file (both kept, in append order)
+  and the decisions log (both kept, newest batch first: the countdown's 2026-11-20 batches, then
+  DEC-289, then the countdown's 2026-11-19 batch). No line of either side was lost (`comm` on the
+  sorted lines: 0 missing against each parent; the line counts add up). `INBOX.md` and
+  `Simulation.mapObjects.test.ts` merged without conflict.
+- Checks run: `npm run check` → `EXIT=0`
+  (`eternalus-agent-work/game-loop-plan/check-138-merge-a3550159.log`): core "Tests 1679 passed
+  (1679)"; protocol "Tests 29 passed (29)"; client "Tests 2076 passed (2076)"; server "Tests 84
+  passed (84)"; "Documentation check passed.". This check line was filled in after that run (docs
+  only).
+- Next step: push #138 after the DEC-316 push to #143 (the coordinator); the owner merges #138;
+  #143 is then retargeted to `phase/3-sprint-3-work`.
 
 ### 2026-11-19 — Phase 3 / harness — chore/stop-hook-changed-files — Claude Code
 
@@ -9311,5 +9441,21 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   server "Tests 84 passed (84)", "Documentation check passed."; the two hook test files
   (`changedFiles.test.mjs`, `hookInput.test.mjs`) under `node --test`: pass 8, fail 0; then
   `prettier --check` and `npm run docs:check` with this entry.
+- Next step: the owner pushes the branch, then merges PR #135; `chore/progress-entry-files`
+  (#137) then needs one more phase/3 merge (it shares 8 files with #135).
+
+### 2026-11-21 — Phase 3 / harness: merge phase/3 (34954a45, #138) — chore/stop-hook-changed-files — PR-REVIEW-COORDINATION-13 (Claude Code)
+
+- What was done: merged phase/3-sprint-3-work `34954a45` (#138, the match-start countdown) into
+  PR #135 so it can merge again (GitHub showed CONFLICTING). Conflicts were add/add in
+  `docs/plan/PROGRESS.md` and the decisions log; both sides kept, phase/3 first (the countdown's
+  2026-11-19 batch above DEC-276's 2026-11-19 batch). No line of either side was lost (a line
+  multiset check: 0 missing against each parent). `last-reviewed` stays 2026-11-20 on both
+  sides. No hook code changed.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/stop-hook-merge/check-merge-34954a45.log`): core "Tests 1679 passed
+  (1679)", protocol "Tests 29 passed (29)", client "Tests 2076 passed (2076)", server "Tests 84
+  passed (84)", "Documentation check passed."; the two hook test files under `node --test`: pass
+  8, fail 0; then `prettier --check` and `npm run docs:check` with this entry.
 - Next step: the owner pushes the branch, then merges PR #135; `chore/progress-entry-files`
   (#137) then needs one more phase/3 merge (it shares 8 files with #135).

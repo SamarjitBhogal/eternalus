@@ -25,8 +25,10 @@ export const SELECTION_DEF_IDS = {
   glowInner: 'sel-glow-inner',
   /** Select Class and LOCK IN labels (62:228, 58:276: the same six sky shadows). */
   glowLabel: 'sel-glow-label',
-  /** The character-select countdown (62:135, 58:281). */
+  /** The character-select countdown (62:135, 58:281) and the pre-match overlay's (DEC-278). */
   glowCountdown: 'sel-glow-countdown',
+  /** Either countdown from 5 s down while UE-01 is on: the same glow at 30 % (DEC-100). */
+  glowCountdownUrgent: 'sel-glow-countdown-urgent',
   /** GLASS light rim, −45° at intensity 0.8 (the CSS glass approximation, CD-15). */
   glassRim: 'sel-glass-rim',
 } as const;
@@ -169,6 +171,27 @@ const textShadow = (
   opacity = 1,
 ): TextGlowDef['shadows'][number] => ({ dx, dy, sigma, opacity });
 
+/** The countdown glow; UE-01's urgent glow is this def at another alpha (DEC-286). */
+const COUNTDOWN_GLOW: TextGlowDef = {
+  id: SELECTION_DEF_IDS.glowCountdown,
+  region: { x: -0.5, y: -0.5, width: 2, height: 2 },
+  // 62:135 / 58:281: the countdown red at 15 % (the --selection-countdown-glow alpha) at
+  // (6, 0), (−6, 0), (0, 6), (0, −6), radius 8; measured σ 3.4 (OD-27).
+  shadows: [
+    textShadow(6, 0, 3.4, 0.15),
+    textShadow(-6, 0, 3.4, 0.15),
+    textShadow(0, 6, 3.4, 0.15),
+    textShadow(0, -6, 3.4, 0.15),
+  ],
+  flood: 'countdown',
+  // The match-start overlay (CD-49) draws the numeral in artboard px too, scaled after the
+  // filter (DEC-299 (2)): its narrowest box is the `.match` min-width × line-height 1.
+  users: [
+    { node: '62:135 / 58:281 countdown', width: 118, height: 83, bleed: 0 },
+    { node: 'match-start overlay numeral (CD-49)', width: 118, height: 64, bleed: 0 },
+  ],
+};
+
 /**
  * The text glows (regions as above), built as the two experiments of the visual audit of 62:125
  * and pixel-identical to them in Chrome 155 (probe over black and white). CSS
@@ -203,18 +226,12 @@ export const TEXT_GLOW_FILTERS: readonly TextGlowDef[] = [
       { node: '58:276 LOCK IN label', width: 314, height: 48, bleed: 0 },
     ],
   },
+  COUNTDOWN_GLOW,
   {
-    id: SELECTION_DEF_IDS.glowCountdown,
-    region: { x: -0.5, y: -0.5, width: 2, height: 2 },
-    // 62:135 / 58:281: the countdown red at 15 % (the --selection-countdown-glow alpha) at
-    // (6, 0), (−6, 0), (0, 6), (0, −6), radius 8; measured σ 3.4 (OD-27).
-    shadows: [
-      textShadow(6, 0, 3.4, 0.15),
-      textShadow(-6, 0, 3.4, 0.15),
-      textShadow(0, 6, 3.4, 0.15),
-      textShadow(0, -6, 3.4, 0.15),
-    ],
-    flood: 'countdown',
-    users: [{ node: '62:135 / 58:281 countdown', width: 118, height: 83, bleed: 0 }],
+    ...COUNTDOWN_GLOW,
+    id: SELECTION_DEF_IDS.glowCountdownUrgent,
+    // UE-01 (ui-enhancements-plan §3.2): the countdown glow at 30 % instead of 15 % (the
+    // --selection-countdown-urgent-glow alpha), from 5 s down.
+    shadows: COUNTDOWN_GLOW.shadows.map((shadow) => ({ ...shadow, opacity: 0.3 })),
   },
 ];

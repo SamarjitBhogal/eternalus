@@ -33,3 +33,9 @@
     opacity: 0.5;
   }
 }
+
+/* UE-03: the in-game reduce-motion setting, the same as the OS query. */
+:root[data-reduce-motion] .particle {
+  animation: none;
+  opacity: 0.5;
+}
