@@ -37,6 +37,33 @@ export type StructureDefinition = EntityDefinitionBase & {
    * DEC-217 (16)). A gate's outline is for reach only (DEC-217 (17)).
    */
   readonly hasFortBox?: true;
+  /**
+   * The aura a living structure keeps (DEC-315 (4), 07 §1: the BuffTower): every unit of the
+   * structure's team within `radius` has `allyStatusId`, every unit of the other playable team
+   * has `enemyStatusId`, refreshed on `StructureAuraCadence` and ended when the unit leaves or the
+   * structure falls. Neutral units get neither.
+   */
+  readonly aura?: StructureAuraDefinition;
+};
+
+/** One structure's aura: how far it reaches and the status each side gets inside it. */
+export type StructureAuraDefinition = {
+  /** World units from the structure's centre. */
+  readonly radius: number;
+  /** The status given to units of the structure's own team. */
+  readonly allyStatusId: string;
+  /** The status given to units of the other playable team. */
+  readonly enemyStatusId: string;
+};
+
+/** How often structure auras are refreshed, as authored (`STRUCTURE_AURA_CADENCE`). */
+export type AuthoredStructureAuraCadence = {
+  readonly everySeconds: number;
+};
+
+/** The structure aura cadence as loaded (`loadStructureAuraCadence`): in ticks, at least one. */
+export type StructureAuraCadence = {
+  readonly everyTicks: number;
 };
 
 /** Which lane a spawner's horde takes: the spawner's own lane, or the team's worst lane. */

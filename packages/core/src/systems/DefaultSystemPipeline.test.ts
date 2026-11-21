@@ -139,6 +139,7 @@ describe('DefaultSystemPipeline', () => {
       'map-destruction',
       'progression',
       'veterancy',
+      'structure-aura',
       'structure',
       'spawn',
       'enraged',

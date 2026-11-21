@@ -97,3 +97,20 @@ export const MINI_MAP_OUTLINE_COLORS: Readonly<Record<Team, string>> = {
 
 /** Mini map layer of Legends' markers: above the mobs' (layer 0), so a Legend stays on top. */
 export const MINI_MAP_LEGEND_LAYER = 1;
+
+/**
+ * The marker a structure kind draws in the main view, in world units; a kind not listed draws
+ * none. The two lane towers differ in shape (DEC-87: spawner tier 1, buff tier 2).
+ */
+// TUNE: the sizes are the old map-layer glyphs' (28); the shapes tell the two towers apart
+export const STRUCTURE_MARKERS: Readonly<Record<string, GlyphSpec | undefined>> = {
+  'spawner-tower': { shape: 'square', size: 28 },
+  'buff-tower': { shape: 'diamond', size: 28 },
+};
+
+/**
+ * The alpha, as two hex digits appended to a team colour, of the ring a structure draws at its
+ * aura's radius (DEC-315 (4)): faint, so the ground under it stays readable.
+ */
+// TUNE: DEC-315 (4); "a ring is drawn at 12 m", no reference look, close is enough
+export const STRUCTURE_AURA_RING_ALPHA = '66';

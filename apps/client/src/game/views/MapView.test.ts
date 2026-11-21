@@ -13,11 +13,17 @@ import {
 /** The default generated map, the same one the game draws. */
 const MAP = new MapGenerator().generate({ map: DEFAULT_MAP_CONFIG }, 1);
 
-const footprintKinds = new Set(
-  Object.entries(FEATURE_STYLES)
-    .filter(([, style]) => style.shape === 'footprint')
-    .map(([kind]) => kind),
-);
+const kindsWith = (...shapes: readonly string[]): ReadonlySet<string> =>
+  new Set(
+    Object.entries(FEATURE_STYLES)
+      .filter(([, style]) => shapes.includes(style.shape))
+      .map(([kind]) => kind),
+  );
+
+/** Kinds the main view fills from their footprint. */
+const footprintKinds = kindsWith('footprint');
+/** Kinds the main view draws no glyph for: a footprint fill, or the entity's own view. */
+const glyphlessKinds = kindsWith('footprint', 'entity');
 
 /** Draws the map for the main view and returns the recorded calls. */
 const drawMain = (): RecordingRenderer => {
@@ -36,9 +42,30 @@ describe('MapView', () => {
       const glyphs = renderer.calls.filter((call) => call.op === 'drawWorldGlyph');
       expect(glyphs.some((call) => call.args[1] === building.position)).toBe(false);
       expect(glyphs).toHaveLength(
-        MAP.features.filter((feature) => !footprintKinds.has(feature.kind)).length - 1,
+        MAP.features.filter((feature) => !glyphlessKinds.has(feature.kind)).length - 1,
       );
     }
+  });
+  it('leaves lane tower markers to the structure view in the main view', () => {
+    const towers = MAP.features.filter(
+      (f) => f.kind === 'spawner-tower' || f.kind === 'buff-tower',
+    );
+    expect(towers.length).toBeGreaterThan(0);
+    const glyphs = drawMain().calls.filter((call) => call.op === 'drawWorldGlyph');
+    for (const tower of towers) {
+      expect(glyphs.some((call) => call.args[1] === tower.position)).toBe(false);
+    }
+  });
+  it('removes a fallen structure from the minimap, and keeps a standing one', () => {
+    const tower = MAP.features.find((f) => f.kind === 'buff-tower');
+    if (tower === undefined) throw new Error('Missing tower');
+    const renderer = new RecordingRenderer();
+    new MapView(MAP, [], new Set(), undefined, [], undefined, (id) => id === tower.id).drawMinimap(
+      renderer,
+    );
+    const markers = renderer.calls.filter((call) => call.op === 'drawGlyph');
+    expect(markers).toHaveLength(MAP.features.length - 1);
+    expect(markers.some((call) => call.args[1] === tower.position)).toBe(false);
   });
   it('removes destroyed feature markers from the minimap', () => {
     const feature = MAP.features[0];
@@ -55,7 +82,7 @@ describe('MapView', () => {
     const renderer = new RecordingRenderer();
     new MapView(MAP, [], new Set([cathedral?.id ?? ''])).draw(renderer);
     const glyphs = renderer.calls.filter((c) => c.op === 'drawWorldGlyph');
-    expect(glyphs).toHaveLength(MAP.features.filter((f) => !footprintKinds.has(f.kind)).length - 1);
+    expect(glyphs).toHaveLength(MAP.features.filter((f) => !glyphlessKinds.has(f.kind)).length - 1);
     expect(glyphs.some((c) => c.args[1] === cathedral?.position)).toBe(false);
     const minimap = new RecordingRenderer();
     new MapView(MAP, [], new Set(MAP.features.map((f) => f.id))).drawMinimap(minimap);
@@ -151,13 +178,13 @@ describe('MapView', () => {
     const glyphs = drawMain().calls.flatMap((call) =>
       call.op === 'drawWorldGlyph' ? [call.args] : [],
     );
-    const glyphFeatures = MAP.features.filter((feature) => !footprintKinds.has(feature.kind));
-    const tower = MAP.features.find((feature) => feature.id === 'light-spawner-tower-lane-0-0');
+    const glyphFeatures = MAP.features.filter((feature) => !glyphlessKinds.has(feature.kind));
+    const stronghold = MAP.features.find((feature) => feature.id === 'light-stronghold');
 
     expect(glyphs).toHaveLength(glyphFeatures.length);
     expect(glyphs).toContainEqual([
-      FEATURE_STYLES['spawner-tower'],
-      tower?.position,
+      FEATURE_STYLES.stronghold,
+      stronghold?.position,
       TEAM_COLORS.light,
     ]);
     expect(glyphs.map((args) => args[2])).toContain(TEAM_COLORS.dark);

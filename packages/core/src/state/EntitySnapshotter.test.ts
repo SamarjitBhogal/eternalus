@@ -7,6 +7,7 @@ import { ContentCatalogue } from '../content/ContentCatalogue';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { Entity } from '../entities/Entity';
+import { BuffTower } from '../entities/structures/BuffTower';
 import { Stronghold } from '../entities/structures/Stronghold';
 import { EntitySnapshotter } from './EntitySnapshotter';
 
@@ -81,5 +82,24 @@ describe('EntitySnapshotter', () => {
     expect(snapshotter.snapshotOf(loose)).not.toHaveProperty('mapFeatureId');
     expect(snapshotter.snapshotOf(new Bare('entity-3', 'bare'))).not.toHaveProperty('mapFeatureId');
     expect(structuredClone(snapshot)).toEqual(snapshot);
+  });
+
+  it("carries a buff tower's aura radius from its definition, and leaves the key out for a structure without an aura (DEC-315 (4))", () => {
+    const tower = new BuffTower('entity-1', 'buff-tower');
+    tower.spawn({
+      definition: STRUCTURE_DEFINITIONS.get('buff-tower'),
+      position: { x: 5, y: 6 },
+      team: 'light',
+    });
+    const stronghold = new Stronghold('entity-2', 'stronghold');
+    stronghold.spawn({
+      definition: STRUCTURE_DEFINITIONS.get('stronghold'),
+      position: { x: 7, y: 8 },
+      team: 'light',
+    });
+    const snapshotter = new EntitySnapshotter(4, CURVES);
+
+    expect(snapshotter.snapshotOf(tower).auraRadius).toBe(12);
+    expect(snapshotter.snapshotOf(stronghold)).not.toHaveProperty('auraRadius');
   });
 });

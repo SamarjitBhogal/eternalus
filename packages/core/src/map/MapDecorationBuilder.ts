@@ -45,6 +45,12 @@ export abstract class MapDecorationBuilder {
     if (piece !== undefined) this.pieces[this.pieces.length - 1] = { ...piece, isPassage: true };
   }
 
+  /** Makes the just-authored piece the flag of the structure built from feature `featureId`. */
+  protected flagLastOf(featureId: string): void {
+    const piece = this.pieces.at(-1);
+    if (piece !== undefined) this.pieces[this.pieces.length - 1] = { ...piece, flagOf: featureId };
+  }
+
   /** Marks an exact solid footprint without treating shadows or roofs as collision shapes. */
   protected blockPolygon(
     id: string,

@@ -24,6 +24,7 @@ import { MapView } from './views/MapView';
 import { MiniMapView } from './views/MiniMapView';
 import { SceneryView } from './views/SceneryView';
 import { SceneView } from './views/SceneView';
+import { RetiredFeatures } from './views/RetiredFeatures';
 import { WorldObjectsView } from './views/WorldObjectsView';
 
 /**
@@ -52,6 +53,7 @@ export class Match implements LoopTarget {
 
   /** The map objects (walls, furniture, doors) and their destroyed state, drawn in the scene. */
   private readonly objects: WorldObjectsView;
+  private readonly retired = new RetiredFeatures();
 
   private readonly world: { readonly scene: SceneView; readonly miniMap: MiniMapView };
 
@@ -104,9 +106,10 @@ export class Match implements LoopTarget {
     const shown = (): WorldRect => this.camera.visibleArea();
     this.objects = new WorldObjectsView(mapObjects, hiddenRoofs, shown);
     const { isDestroyed } = this.objects;
+    const { isRetired } = this.retired;
     const scene = new SceneView([
-      new MapView(map, scenery, hiddenRoofs, shown, buildings, isDestroyed),
-      new SceneryView(scenery, 'detail', hiddenRoofs, shown, isDestroyed),
+      new MapView(map, scenery, hiddenRoofs, shown, buildings, isDestroyed, isRetired),
+      new SceneryView(scenery, 'detail', hiddenRoofs, shown, isDestroyed, isRetired),
       this.objects,
       this.entities,
     ]);
@@ -217,6 +220,7 @@ export class Match implements LoopTarget {
     renderer.showWorldArea(view);
     this.entities.show(this.previous, this.current, alpha, this.playerId);
     this.objects.show(this.current.mapObjects ?? []);
+    this.retired.observe(this.current);
     scene.draw(renderer);
     miniMap.draw(renderer, this.camera.screenWidth, this.camera.screenHeight);
   }

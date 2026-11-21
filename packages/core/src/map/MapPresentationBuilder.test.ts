@@ -84,4 +84,19 @@ describe('MapPresentationBuilder', () => {
       }
     },
   );
+  it('tags a structure fort banner as that structure flag, and a capture point banner as no flag', () => {
+    const map = new MapGenerator().generate(createDefaultGameConfig(), 1);
+    const { scenery } = new MapPresentationBuilder().build(map);
+    const structures = map.features.filter(
+      (f) => f.kind === 'spawner-tower' || f.kind === 'buff-tower',
+    );
+    expect(structures.length).toBeGreaterThan(0);
+    for (const feature of structures) {
+      expect(scenery.find((p) => p.id === `${feature.id}-fort-banner`)?.flagOf).toBe(feature.id);
+    }
+    const point = map.features.find((f) => f.kind === 'capture-point');
+    const banner = scenery.find((p) => p.id === `${point?.id ?? ''}-fort-banner`);
+    expect(banner).toBeDefined();
+    expect(banner?.flagOf).toBeUndefined();
+  });
 });
