@@ -1,117 +1,125 @@
+import { Aura } from '../components/Aura';
+import { StatusEffects } from '../components/StatusEffects';
+import { Transform } from '../components/Transform';
 import type { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type {
   StructureAuraCadence,
-  StructureAuraDefinition,
   StructureDefinition,
 } from '../content/structures/structures.types';
-import { Structure } from '../entities/structures/Structure';
-import type { EntityId } from '../state/EntityStore.types';
+import type { Entity } from '../entities/Entity';
 import type { GameState } from '../state/GameState';
+import type { Team } from '../teams/teams.types';
+import { isPlayableTeam } from '../teams/playableTeams';
 import type { System, SystemContext } from './System.types';
-
-/** One living aura emitter: who it is, its side and aura, and where it stands. */
-type AuraSource = {
-  readonly id: EntityId;
-  readonly team: 'light' | 'dark';
-  readonly aura: StructureAuraDefinition;
-  readonly x: number;
-  readonly y: number;
-};
-
-/** The units that hold each aura status, by status id. */
-type Holders = Map<string, Set<EntityId>>;
+import type { AuraSource } from './StructureAuraSystem.types';
 
 /**
  * Structure auras (DEC-315 (4), architecture 07 §1, 05 §8): every `cadence.everyTicks`, each
- * living structure whose definition has an `aura` gives its ally status to the units of its own
- * team within the radius and its enemy status to the units of the other playable team. Neutral
- * units (camp mobs, bosses) are neither and get nothing. A unit that had a status on the last
- * pass and does not now (it left, or the tower fell) loses it at once through the applier's
- * `remove` ("loses it on leaving", FR-029); the status's short duration is the backstop. Runs after
- * `VeterancySystem`. It reads the neighbour index and does nothing without one.
+ * living entity with an `Aura` gives its ally status to the units of its own team within the
+ * radius and its enemy status to the units of the other playable team. Neutral units (camp mobs,
+ * bosses) are neither and get nothing. A unit that holds an aura status that no living source
+ * covers now (it left, or the source fell) loses it at once through the applier's `remove`
+ * ("loses it on leaving", FR-029); the status's short duration is the backstop. Stateless: who is
+ * covered comes from the positions on each pass, unit by unit in store order (03 §8), so it holds
+ * after a state restore. Runs after `VeterancySystem`.
  */
 export class StructureAuraSystem implements System {
   public readonly name = 'structure-aura';
-  private found = new Int32Array(0);
-  /** Who the last pass gave each status to. */
-  private held: Holders = new Map();
+  /** Every status an aura gives, so one left behind by a source that is gone is found. */
+  private readonly auraStatusIds: ReadonlySet<string>;
 
   /**
    * @param statuses - The match's one status applier.
-   * @param definitions - Where each structure's definition, and so its aura, is looked up.
-   * @param cadence - How often the aura is refreshed (content, loaded in ticks).
+   * @param structures - The structure definitions, read once for the statuses their auras give.
+   * @param cadence - How often the auras are refreshed (content, loaded in ticks).
    */
   public constructor(
     private readonly statuses: StatusEffectApplier,
-    private readonly definitions: Pick<ContentCatalogue<StructureDefinition>, 'get'>,
+    structures: Pick<ContentCatalogue<StructureDefinition>, 'all'>,
     private readonly cadence: StructureAuraCadence,
-  ) {}
-
-  /** Refreshes every aura on the cadence, then ends the statuses of units that are out now. */
-  public update({ state }: SystemContext): void {
-    const space = state.space;
-    if (space === null || state.tick % this.cadence.everyTicks !== 0) {
-      return;
-    }
-    // Room for every indexed unit, as `VeterancySystem` sizes its buffer: a query never drops one.
-    if (this.found.length < space.count) {
-      this.found = new Int32Array(Math.max(space.count, 2 * this.found.length));
-    }
-    const now: Holders = new Map();
-    state.entities.forEach((entity) => {
-      if (!(entity instanceof Structure)) {
-        return;
-      }
-      const aura = this.definitions.get(entity.definitionId).aura;
-      const index = space.indexOf(entity.id);
-      const team = state.entities.teamOf(entity.id);
-      if (
-        aura === undefined ||
-        index === undefined ||
-        (team !== 'light' && team !== 'dark') ||
-        !state.entities.isAlive(entity.id)
-      ) {
-        return;
-      }
-      const x = space.positions[2 * index] ?? 0;
-      const y = space.positions[2 * index + 1] ?? 0;
-      this.spread(state, { id: entity.id, team, aura, x, y }, now);
-    });
-    this.endLeft(state, now);
-    this.held = now;
+  ) {
+    this.auraStatusIds = new Set(
+      structures
+        .all()
+        .flatMap(({ aura }) => (aura === undefined ? [] : [aura.allyStatusId, aura.enemyStatusId])),
+    );
   }
 
-  /** Ends each status the last pass gave to a unit that this pass did not. */
-  private endLeft(state: GameState, now: Holders): void {
-    for (const [statusId, ids] of this.held) {
-      for (const id of ids) {
-        if (now.get(statusId)?.has(id) !== true) {
-          this.statuses.remove(state, id, statusId);
+  /** On the cadence, ends the aura statuses no source covers now, then refreshes the rest. */
+  public update({ state }: SystemContext): void {
+    if (state.tick % this.cadence.everyTicks !== 0) {
+      return;
+    }
+    const sources = StructureAuraSystem.sourcesOf(state);
+    // ponytail: every unit against every source; few sources (one BuffTower per lane and team).
+    // Query `state.space` per source if auras multiply.
+    state.entities.forEach((unit) => {
+      const statuses = unit.findComponent(StatusEffects);
+      const position = unit.findComponent(Transform)?.position;
+      if (statuses === undefined || position === undefined) {
+        return;
+      }
+      const team = state.entities.teamOf(unit.id);
+      // Backwards: `remove` splices `active`.
+      for (let at = statuses.active.length - 1; at >= 0; at -= 1) {
+        const statusId = statuses.active[at]?.definition.id ?? '';
+        if (
+          this.auraStatusIds.has(statusId) &&
+          !sources.some(
+            (source) =>
+              StructureAuraSystem.statusFrom(source, unit, team, position.x, position.y) ===
+              statusId,
+          )
+        ) {
+          this.statuses.remove(state, unit.id, statusId);
         }
       }
-    }
+      for (const source of sources) {
+        const statusId = StructureAuraSystem.statusFrom(source, unit, team, position.x, position.y);
+        if (statusId !== null) {
+          this.statuses.apply(state, unit.id, statusId, source.id);
+        }
+      }
+    });
   }
 
-  private spread(state: GameState, source: AuraSource, now: Holders): void {
-    const space = state.space;
-    if (space === null) {
-      return;
-    }
+  /** The status `source` gives `unit` (of `team`, at `x`, `y`), or null when it gives none. */
+  private static statusFrom(
+    source: AuraSource,
+    unit: Entity,
+    team: Team | undefined,
+    x: number,
+    y: number,
+  ): string | null {
     const { aura } = source;
-    const count = space.queryCircle(source.x, source.y, aura.radius, this.found);
-    for (let at = 0; at < count; at += 1) {
-      const id = space.idAt(this.found[at] ?? 0);
-      const team = state.entities.teamOf(id);
-      if (id === source.id || (team !== 'light' && team !== 'dark')) {
-        continue;
-      }
-      const statusId = team === source.team ? aura.allyStatusId : aura.enemyStatusId;
-      if (this.statuses.apply(state, id, statusId, source.id)) {
-        const ids = now.get(statusId) ?? new Set<EntityId>();
-        ids.add(id);
-        now.set(statusId, ids);
-      }
+    if (unit.id === source.id || !isPlayableTeam(team)) {
+      return null;
     }
+    const dx = x - source.x;
+    const dy = y - source.y;
+    if (dx * dx + dy * dy > aura.radius * aura.radius) {
+      return null;
+    }
+    return team === source.team ? aura.allyStatusId : aura.enemyStatusId;
+  }
+
+  /** The living aura sources of a playable team, in store order, read from their `Transform`. */
+  private static sourcesOf(state: GameState): readonly AuraSource[] {
+    const sources: AuraSource[] = [];
+    state.entities.forEach((entity) => {
+      const aura = entity.findComponent(Aura);
+      const position = entity.findComponent(Transform)?.position;
+      const team = state.entities.teamOf(entity.id);
+      if (
+        aura !== undefined &&
+        position !== undefined &&
+        isPlayableTeam(team) &&
+        state.entities.isAlive(entity.id)
+      ) {
+        sources.push({ id: entity.id, team, aura: aura.definition, x: position.x, y: position.y });
+      }
+    });
+    return sources;
   }
 }

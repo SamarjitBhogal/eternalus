@@ -13,8 +13,8 @@ import type { StructureDefinition } from './content/structures/structures.types'
 import type { System } from './systems/System.types';
 import type { PlayableTeam } from './teams/teams.types';
 
-/** Where structure definitions are found by id (architecture 07 §1). */
-export type StructureSource = Pick<ContentCatalogue<StructureDefinition>, 'has' | 'get'>;
+/** Where structure definitions are found by id, and listed (architecture 07 §1). */
+export type StructureSource = Pick<ContentCatalogue<StructureDefinition>, 'has' | 'get' | 'all'>;
 
 /** Everything a `Simulation` is built from (architecture 03 §6). Only the first three are required. */
 export type SimulationOptions = {

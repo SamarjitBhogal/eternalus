@@ -36,6 +36,7 @@ const zone = (
   aether: null,
   area,
   capture,
+  aura: null,
 });
 
 const capture = (overrides: Partial<CaptureSnapshot> = {}): CaptureSnapshot => ({

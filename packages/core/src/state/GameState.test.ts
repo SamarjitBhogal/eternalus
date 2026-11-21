@@ -159,6 +159,7 @@ describe('GameState', () => {
           aether: null,
           area: null,
           capture: null,
+          aura: null,
         },
         {
           id: 'entity-2',
@@ -172,6 +173,7 @@ describe('GameState', () => {
           aether: null,
           area: null,
           capture: null,
+          aura: null,
         },
       ],
       hordes: [],

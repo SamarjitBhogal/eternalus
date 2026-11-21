@@ -47,11 +47,11 @@ export type DefaultSystemPipelineOptions = {
     readonly guards?: Readonly<Record<string, AuthoredGuardPlan>>;
   };
   /**
-   * Where each structure's definition, and so its breakability rule, is looked up;
+   * Where each structure's definition, and so its breakability rule and aura, is looked up;
    * `STRUCTURE_DEFINITIONS` when omitted. `Simulation` injects the one set it builds the
    * structures from.
    */
-  readonly structures?: Pick<ContentCatalogue<StructureDefinition>, 'get'>;
+  readonly structures?: Pick<ContentCatalogue<StructureDefinition>, 'get' | 'all'>;
   /**
    * What a standing wall of a lane tower's fort becomes when its tower falls (DEC-219 (a)).
    * `Simulation` passes the definition it registers with the entity factory. Required, so a

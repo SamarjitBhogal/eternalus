@@ -27,6 +27,7 @@ const unit = (id: string, x: number, y: number, facing = EAST): EntitySnapshot =
   aether: null,
   area: null,
   capture: null,
+  aura: null,
 });
 
 const snapshot = (tick: number, entities: EntitySnapshot[]): Snapshot => ({

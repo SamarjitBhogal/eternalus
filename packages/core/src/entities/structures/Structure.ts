@@ -1,4 +1,4 @@
-import { AuraEmitter } from '../../components/AuraEmitter';
+import { Aura } from '../../components/Aura';
 import { Collider } from '../../components/Collider';
 import { Health } from '../../components/Health';
 import { TeamMembership } from '../../components/TeamMembership';
@@ -74,7 +74,7 @@ export abstract class Structure extends Entity {
     collider.setUnbreakable(definition.breakability.kind !== 'always');
     this.addComponent(collider);
     if (definition.aura !== undefined) {
-      this.addComponent(new AuraEmitter(definition.aura.radius));
+      this.addComponent(new Aura(definition.aura));
     }
   }
 }

@@ -23,6 +23,7 @@ const entity = (
   aether: null,
   area: null,
   capture: null,
+  aura: null,
 });
 
 const PLAYER = entity('player', 'legend', 'light', 100);

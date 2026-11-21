@@ -10,8 +10,8 @@ import type { Polygon } from '../utils/geometry.types';
 
 /**
  * One entity as the client sees it. A field is `null` when the entity has no component behind it
- * (no `Transform`, `Health`, `Progression`, `Aether`, `TeamMembership`, `ZoneArea` or
- * `Capturable`), never a made-up default.
+ * (no `Transform`, `Health`, `Progression`, `Aether`, `TeamMembership`, `ZoneArea`, `Capturable`
+ * or `Aura`), never a made-up default.
  */
 export type EntitySnapshot = {
   readonly mapObjectId?: string;
@@ -20,11 +20,6 @@ export type EntitySnapshot = {
    * to its structure by identity, never by position.
    */
   readonly mapFeatureId?: string;
-  /**
-   * How far the entity's aura reaches (`AuraEmitter`), in world units; left out for an entity
-   * without one. The client draws the ring from it, so no radius lives in the client.
-   */
-  readonly auraRadius?: number;
   readonly id: EntityId;
   readonly kind: string;
   readonly family: string;
@@ -46,6 +41,11 @@ export type EntitySnapshot = {
   readonly area: readonly Polygon[] | null;
   /** A capture point's state (`Capturable`, architecture 07 §7); `null` for every other entity. */
   readonly capture: CaptureSnapshot | null;
+  /**
+   * How far the entity's aura reaches (`Aura`, DEC-315 (4)), in world units; `null` for every
+   * entity without one. The client draws the ring from it, so no radius lives in the client.
+   */
+  readonly aura: { readonly radius: number } | null;
 };
 
 /** A Legend's level and XP as the client sees it (architecture 03 §5, the HUD's XP ring). */

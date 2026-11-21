@@ -84,7 +84,7 @@ describe('EntitySnapshotter', () => {
     expect(structuredClone(snapshot)).toEqual(snapshot);
   });
 
-  it("carries a buff tower's aura radius from its definition, and leaves the key out for a structure without an aura (DEC-315 (4))", () => {
+  it("carries a buff tower's aura radius from its definition, and null for a structure without an aura (DEC-315 (4))", () => {
     const tower = new BuffTower('entity-1', 'buff-tower');
     tower.spawn({
       definition: STRUCTURE_DEFINITIONS.get('buff-tower'),
@@ -99,7 +99,7 @@ describe('EntitySnapshotter', () => {
     });
     const snapshotter = new EntitySnapshotter(4, CURVES);
 
-    expect(snapshotter.snapshotOf(tower).auraRadius).toBe(12);
-    expect(snapshotter.snapshotOf(stronghold)).not.toHaveProperty('auraRadius');
+    expect(snapshotter.snapshotOf(tower).aura).toEqual({ radius: 12 });
+    expect(snapshotter.snapshotOf(stronghold).aura).toBeNull();
   });
 });

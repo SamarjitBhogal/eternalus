@@ -6,7 +6,7 @@ import { STRUCTURE_AURA_RING_ALPHA, STRUCTURE_MARKERS } from './entityViews.cons
 /**
  * The structures' view. A lane tower draws its kind's marker in its team's colour, on the entity
  * layer above the fort's court, so a spawner tower and a buff tower look different (DEC-315). A
- * living structure with an aura (`EntitySnapshot.auraRadius`, from its definition) also draws a
+ * living structure with an aura (`EntitySnapshot.aura`, from its definition) also draws a
  * thin, faint ring of that radius in its team's colour (DEC-315 (4)). A fallen structure has no
  * entity, no marker and no ring. The other structures, and every structure's mini
  * map glyph, stay with `MapView`, which paints them from the map's features.
@@ -20,9 +20,9 @@ export class StructureView extends DefaultEntityView {
     const marker = STRUCTURE_MARKERS[entity.kind];
     if (marker === undefined || (entity.health !== null && entity.health.current <= 0)) return;
     const color = this.colorOf(entity.team);
-    if (entity.auraRadius !== undefined) {
+    if (entity.aura !== null) {
       renderer.drawWorldGlyph(
-        { shape: 'ring', size: entity.auraRadius * 2 },
+        { shape: 'ring', size: entity.aura.radius * 2 },
         position,
         `${color}${STRUCTURE_AURA_RING_ALPHA}`,
       );

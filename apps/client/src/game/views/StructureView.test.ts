@@ -12,7 +12,6 @@ const structure = (
   auraRadius?: number,
 ): EntityDrawState => ({
   entity: {
-    ...(auraRadius === undefined ? {} : { auraRadius }),
     id: 'entity-1',
     kind,
     family: 'structure',
@@ -24,6 +23,7 @@ const structure = (
     aether: null,
     area: null,
     capture: null,
+    aura: auraRadius === undefined ? null : { radius: auraRadius },
   },
   position: { x: 5, y: 6 },
   facing: { x: 1, y: 0 },

@@ -27,6 +27,7 @@ const UNIT: EntitySnapshot = {
   aether: null,
   area: null,
   capture: null,
+  aura: null,
 };
 
 /** The points of the one path the chevron draws for `facing`. */

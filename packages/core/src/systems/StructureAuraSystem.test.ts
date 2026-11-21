@@ -8,6 +8,7 @@ import { StatusModifierStep } from '../combat/StatusModifierStep';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
+import { RALLIED } from '../content/status-effects/rallied';
 import { loadStructureAuraCadence } from '../content/structures/loadStructureAuraCadence';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { NullLogger } from '../diagnostics/NullLogger';
@@ -19,11 +20,15 @@ import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { GameState } from '../state/GameState';
 import { StateHasher } from '../state/StateHasher';
+import { SpaceSystem } from './SpaceSystem';
 import { StructureAuraSystem } from './StructureAuraSystem';
 
 const RADIUS = STRUCTURE_DEFINITIONS.get('buff-tower').aura?.radius ?? 0;
 
-/** A light buff tower at (50, 20) in a match whose clock is stepped by hand. */
+/**
+ * A light buff tower at (50, 20) in a match whose clock is stepped by hand. Each step refills the
+ * neighbour index with the match's own `SpaceSystem` (units only), then runs the aura.
+ */
 const setUp = (everyTicks = 1) => {
   const config = createDefaultGameConfig();
   const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
@@ -49,17 +54,11 @@ const setUp = (everyTicks = 1) => {
     return entity;
   };
   const step = () => {
-    space.begin(state.entities.size);
-    state.entities.forEach((entity) => {
-      const { x, y } = entity.getComponent(Transform).position;
-      space.add(entity.id, x, y);
-    });
-    space.commit();
+    new SpaceSystem(space).update({ state, logger: new NullLogger() });
     system.update({ state, logger: new NullLogger() });
   };
   return {
     state,
-    space,
     system,
     statuses,
     unit,
@@ -86,6 +85,16 @@ describe('StructureAuraSystem', () => {
     expect(idsOf(neutral)).toEqual([]);
   });
 
+  it('finds the tower by its Transform, as the neighbour index of a match holds only units', () => {
+    const { state, buff, unit, step } = setUp();
+    const ally = unit('light', 52);
+
+    step();
+
+    expect(state.space?.indexOf(buff.id)).toBeUndefined();
+    expect(idsOf(ally)).toEqual(['tower-aura-buff']);
+  });
+
   it('reaches exactly the content radius, and not beyond', () => {
     const { unit, step } = setUp();
     const inside = unit('dark', 50 + RADIUS - 0.5);
@@ -98,19 +107,37 @@ describe('StructureAuraSystem', () => {
     expect(idsOf(outside)).toEqual([]);
   });
 
-  it('takes the status away from a unit that left, on the next pass', () => {
-    const { state, unit, step } = setUp();
+  it('takes the status away from a unit that left, on the next pass, and keeps its other statuses', () => {
+    const { state, statuses, unit, step } = setUp();
     const ally = unit('light', 52);
     const enemy = unit('dark', 53);
     step();
+    statuses.apply(state, ally.id, RALLIED.id, null);
     state.advanceTick();
     ally.getComponent(Transform).moveTo({ x: 50 + RADIUS + 5, y: 20 });
     enemy.getComponent(Transform).moveTo({ x: 50 + RADIUS + 5, y: 20 });
 
     step();
 
-    expect(idsOf(ally)).toEqual([]);
+    expect(idsOf(ally)).toEqual([RALLIED.id]);
     expect(idsOf(enemy)).toEqual([]);
+  });
+
+  it('keeps the status of a unit that left one tower for another of its side, now credited to it', () => {
+    const { state, unit, tower, step } = setUp();
+    const second = tower('buff-tower', 'light', 50 + 2 * RADIUS);
+    const ally = unit('light', 52);
+    step();
+    state.advanceTick();
+    const expired: string[] = [];
+    state.events.on('status-expired', ({ statusId }) => expired.push(statusId));
+    ally.getComponent(Transform).moveTo({ x: 50 + 2 * RADIUS - 2, y: 20 });
+
+    step();
+
+    expect(idsOf(ally)).toEqual(['tower-aura-buff']);
+    expect(ally.getComponent(StatusEffects).active[0]?.sourceId).toBe(second.id);
+    expect(expired).toEqual([]);
   });
 
   it('takes the statuses away from everyone when the tower is dead, and does not give them again', () => {
@@ -120,6 +147,20 @@ describe('StructureAuraSystem', () => {
     step();
     state.advanceTick();
     buff.getComponent(Health).applyDamage(1_000_000);
+
+    step();
+
+    expect(idsOf(ally)).toEqual([]);
+    expect(idsOf(enemy)).toEqual([]);
+  });
+
+  it('takes the statuses away on the next pass when the tower is gone from the match', () => {
+    const { state, unit, buff, step } = setUp();
+    const ally = unit('light', 52);
+    const enemy = unit('dark', 53);
+    step();
+    state.advanceTick();
+    state.entities.remove(buff.id, 'died');
 
     step();
 
@@ -158,25 +199,33 @@ describe('StructureAuraSystem', () => {
     expect(idsOf(ally)).toEqual([]);
   });
 
-  it('does nothing without a neighbour index', () => {
+  it('works without a neighbour index', () => {
     const config = createDefaultGameConfig();
     const state = new GameState(config, 1);
+    const factory = new EntityFactory(createDefaultEntityRegistry(), {
+      has: (id) => id === 'light-minion' || STRUCTURE_DEFINITIONS.has(id),
+      get: (id) =>
+        id === 'light-minion' ? loadDefaultContent(30).get(id) : STRUCTURE_DEFINITIONS.get(id),
+    });
     const { kind } = STRUCTURE_DEFINITIONS.get('buff-tower');
-    const tower = new EntityFactory(createDefaultEntityRegistry(), STRUCTURE_DEFINITIONS).create(
-      kind,
-      'buff-tower',
-      { team: 'light', position: { x: 0, y: 0 } },
+    state.entities.add(
+      factory.create(kind, 'buff-tower', { team: 'light', position: { x: 0, y: 0 } }),
     );
-    state.entities.add(tower);
+    const ally = factory.create('light-mob', 'light-minion', {
+      team: 'light',
+      position: { x: 2, y: 0 },
+    });
+    state.entities.add(ally);
     const system = new StructureAuraSystem(
       new StatusEffectApplier(loadStatusEffects(30, 2)),
       STRUCTURE_DEFINITIONS,
       { everyTicks: 1 },
     );
 
-    expect(() => {
-      system.update({ state, logger: new NullLogger() });
-    }).not.toThrow();
+    system.update({ state, logger: new NullLogger() });
+
+    expect(state.space).toBeNull();
+    expect(idsOf(ally)).toEqual(['tower-aura-buff']);
   });
 
   it('scales damage: an ally hits x1.1, an enemy hits x0.9 and takes x1.1 (DEC-315 (4))', () => {

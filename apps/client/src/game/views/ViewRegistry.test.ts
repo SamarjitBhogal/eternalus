@@ -18,6 +18,7 @@ const entity = (kind: string, family: string): EntitySnapshot => ({
   aether: null,
   area: null,
   capture: null,
+  aura: null,
 });
 
 describe('ViewRegistry', () => {
