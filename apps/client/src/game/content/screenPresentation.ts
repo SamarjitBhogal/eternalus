@@ -1,0 +1,66 @@
+// Screen-level presentation and the display switches (DEC-52, DEC-54, DEC-55): each switch is a
+// content value published on `DisplayCatalogue`, with the Figma original as the default.
+import type { BackgroundSet, UiEnhancementId } from '../../bridge/catalogue.types';
+import type { CataloguePresentation } from './CataloguePresentation.types';
+import {
+  CLASS_PRESENTATION,
+  LOCKED_CLASS_PRESENTATION,
+  SPEC_PRESENTATION,
+} from './classPresentation';
+import { HUD_PRESENTATION } from './hudPresentation';
+
+/**
+ * One set per team, coloured by token names only. The selection sets draw the Figma backdrop
+ * (62:130, the same for both teams; the screens draw the vignettes themselves).
+ */
+const BACKGROUND_SETS: readonly BackgroundSet[] = [
+  {
+    id: 'menu-neutral',
+    team: 'neutral',
+    layers: [
+      { kind: 'gradient', angleDeg: 160, stops: ['--surface-0', '--team-neutral-accent'] },
+      { kind: 'particles', count: 24, colourToken: '--team-neutral-primary' },
+    ],
+  },
+  {
+    id: 'selection-light',
+    team: 'light',
+    layers: [{ kind: 'image', assetId: 'selection-backdrop' }],
+  },
+  {
+    id: 'selection-dark',
+    team: 'dark',
+    layers: [{ kind: 'image', assetId: 'selection-backdrop' }],
+  },
+];
+
+/**
+ * Every built UI enhancement (ui-enhancements-plan §3); the developer's `ui=` picks among them.
+ * Its test fails `tsc` when a `UiEnhancementId` is not listed (DEC-286).
+ */
+export const UI_ENHANCEMENT_IDS = [
+  'countdown-urgency',
+] as const satisfies readonly UiEnhancementId[];
+
+/** Everything the client adds to core display content. */
+export const CATALOGUE_PRESENTATION: CataloguePresentation = {
+  classes: CLASS_PRESENTATION,
+  lockedClasses: LOCKED_CLASS_PRESENTATION,
+  specs: SPEC_PRESENTATION,
+  backgroundSets: BACKGROUND_SETS,
+  /** DEC-52: the class step's layout; `'alternate'` draws 62:70. */
+  classSelectLayout: 'primary',
+  /** The skull banner behind "Legend Selection" (62:144). */
+  selectionBannerAssetId: 'selection-banner',
+  /** The Figma-state chrome of Select Class (62:222). */
+  selectClassChromeAssetId: 'select-class-chrome',
+  /** The Figma-state chrome of LOCK IN (58:277). */
+  lockInChromeAssetId: 'lock-in-chrome',
+  /** DEC-54: the Figma-render plates draw the Figma effects; `'css'` draws the live CSS path. */
+  effectsRenderer: 'figma-raster',
+  /** DEC-55: the Figma colours; `'minimums'` swaps only the below-minimum tokens. */
+  contrastMode: 'figma',
+  /** ui-enhancements-plan §2 rule 1: every built one on (DEC-100); `[]` draws every Figma original. */
+  uiEnhancements: UI_ENHANCEMENT_IDS,
+  hud: HUD_PRESENTATION,
+};

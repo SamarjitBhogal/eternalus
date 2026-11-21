@@ -25,7 +25,10 @@ Procedure:
    non-deterministic constructs in core, UI importing the game, drive-by refactors, missing
    tests, missing docs/frontmatter updates, missing `docs/plan/PROGRESS.md` entry, commit
    messages that are not Conventional Commits with an allowed scope.
-4. Report as Markdown: verdict (`approve` / `request-changes`), the verbatim check result, then
+4. Also judge whether each decision in the code and the docs is the right one, and whether a more
+   SOLID, OOP-conforming or DRY design exists. Report such a design as a better-than-design item,
+   not a violation (DEC-139).
+5. Report as Markdown: verdict (`approve` / `request-changes`), the verbatim check result, then
    a table of findings with severity (`blocker`, `should-fix`, `nit`), `file:line`, what, the
    rule violated (with the doc reference) and a suggested fix. Blockers must be fixed before
    merge. If you found nothing, say what you checked so the reader can trust the approval.

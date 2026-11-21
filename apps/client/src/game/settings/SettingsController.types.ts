@@ -17,4 +17,11 @@ export type SettingsControllerDeps = {
   readonly persistence: SettingsStorage;
   /** Where load and save failures are reported. */
   readonly logger: Logger;
+  /** True on an Apple device, where Cmd (Meta) takes the place of Ctrl (DEC-118). */
+  readonly isApplePlatform: boolean;
+  /**
+   * Receives `data-reduce-motion` while the in-game "Reduce motion" setting is on (UE-03, FR-084),
+   * so every reduced-motion rule's `:root[data-reduce-motion]` twin applies (`<html>` in the app).
+   */
+  readonly themeRoot: Pick<HTMLElement, 'dataset'>;
 };

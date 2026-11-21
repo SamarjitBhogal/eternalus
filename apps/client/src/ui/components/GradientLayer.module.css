@@ -1,0 +1,26 @@
+.gradient {
+  position: absolute;
+  inset: 0;
+  background-size: 200% 200%;
+  animation: pan var(--motion-ambient) ease-in-out infinite alternate;
+}
+
+@keyframes pan {
+  from {
+    background-position: 0% 0%;
+  }
+  to {
+    background-position: 100% 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gradient {
+    animation: none;
+  }
+}
+
+/* UE-03: the in-game reduce-motion setting, the same as the OS query. */
+:root[data-reduce-motion] .gradient {
+  animation: none;
+}

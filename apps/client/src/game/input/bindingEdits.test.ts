@@ -1,12 +1,24 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Binding, InputAction, InputChord } from '../../bridge/Binding.types';
-import { rebind, resetBindings } from './bindingEdits';
+import { ownPlatformChordsFirst, rebind, resetBindings } from './bindingEdits';
 import { DEFAULT_CHORDS, PRESETS } from './keybindings';
 
 const UP_ARROW: InputChord = { device: 'keyboard', code: 'ArrowUp', label: '↑' };
 const KEY_S: InputChord = { device: 'keyboard', code: 'KeyS', label: 'S' };
 const MOUSE_4: InputChord = { device: 'mouse', code: '3', label: 'Mouse 4' };
+const CTRL_F3: InputChord = {
+  device: 'keyboard',
+  code: 'F3',
+  label: 'Ctrl+Shift+F3',
+  modifiers: ['Control', 'Shift'],
+};
+const CMD_F3: InputChord = {
+  device: 'keyboard',
+  code: 'F3',
+  label: 'Cmd+Shift+F3',
+  modifiers: ['Meta', 'Shift'],
+};
 
 function chordsOf(bindings: readonly Binding[], action: InputAction): readonly InputChord[] {
   return bindings.find((binding) => binding.action === action)?.chords ?? [];
@@ -77,5 +89,35 @@ describe('resetBindings', () => {
     const moved = rebind(PRESETS.wasd, 'move-up', UP_ARROW, 'swap');
 
     expect(resetBindings(moved, null)).toEqual(PRESETS.wasd);
+  });
+});
+
+describe('ownPlatformChordsFirst (DEC-118)', () => {
+  it.each([
+    ['an Apple device', true, [CTRL_F3, CMD_F3], [CMD_F3, CTRL_F3]],
+    ['an Apple device', true, [CMD_F3, CTRL_F3], [CMD_F3, CTRL_F3]],
+    ['any other device', false, [CMD_F3, CTRL_F3], [CTRL_F3, CMD_F3]],
+    ['any other device', false, [CTRL_F3, CMD_F3], [CTRL_F3, CMD_F3]],
+  ])('lists the own chord first on %s', (_platform, isApplePlatform, chords, expected) => {
+    const next = ownPlatformChordsFirst(
+      [{ action: 'toggle-developer-camera', chords }],
+      isApplePlatform,
+    );
+
+    expect(chordsOf(next, 'toggle-developer-camera')).toEqual(expected);
+  });
+
+  it('keeps the order of the actions and of the chords without a platform modifier', () => {
+    const bindings: Binding[] = [
+      { action: 'move-up', chords: [KEY_S, UP_ARROW, MOUSE_4] },
+      { action: 'toggle-developer-camera', chords: [CTRL_F3, CMD_F3] },
+      { action: 'move-down', chords: [MOUSE_4, KEY_S] },
+    ];
+
+    expect(ownPlatformChordsFirst(bindings, true)).toEqual([
+      { action: 'move-up', chords: [KEY_S, UP_ARROW, MOUSE_4] },
+      { action: 'toggle-developer-camera', chords: [CMD_F3, CTRL_F3] },
+      { action: 'move-down', chords: [MOUSE_4, KEY_S] },
+    ]);
   });
 });

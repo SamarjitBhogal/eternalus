@@ -1,11 +1,22 @@
 /**
- * The ONLY list of game ↔ UI messages (architecture 13 §5) and the display types they carry.
- * `game/` emits game → UI events; `ui/` emits only `ui-intent`. `connectBusToStore` copies every
- * game → UI event into its slice.
+ * The ONLY list of game ↔ UI messages (architecture 13 §5). The display types they carry live in
+ * `catalogue.types.ts` and `hud.types.ts`. `game/` emits game → UI events; `ui/` emits only
+ * `ui-intent`. `connectBusToStore` copies every game → UI event into its slice.
  */
+import type { MatchResult } from '@eternalus/core';
+
 import type { InputAction, InputChord } from './Binding.types';
-import type { LegendClassId, PlayableTeam, Team } from './domain.types';
-import type { Announcement, HudSnapshot } from './slices/hudSlice';
+import type { AssetId, DisplayCatalogue, RasterBox } from './catalogue.types';
+import type { CrashReportState } from './CrashReport.types';
+import type { LegendClassId, MatchEnding, PlayableTeam } from './domain.types';
+import type {
+  Announcement,
+  CapturePointStatus,
+  DuelHudState,
+  DuelVersus,
+  PlayerHudSnapshot,
+  StructureStatus,
+} from './hud.types';
 import type { SettingsPatch, SettingsSliceState } from './slices/settingsSlice';
 
 /** Every session phase, in flow order (architecture 13 §2). */
@@ -24,7 +35,18 @@ export const SESSION_PHASES = [
 export type SessionPhase = (typeof SESSION_PHASES)[number];
 
 /** Sub-screens of the menu phase (a store value, not a session phase). */
-export type MenuRoute = 'home' | 'loadouts' | 'profile' | 'settings' | 'about';
+export type MenuRoute =
+  | 'home'
+  | 'loadouts'
+  | 'profile'
+  | 'settings'
+  | 'about'
+  /** The online Duel's name entry (ADR 0016). */
+  | 'duel-name'
+  /** The online Duel's waiting screen: searching for an opponent (ADR 0016). */
+  | 'duel-queue'
+  /** "NAME VS NAME", shown from the pairing until the match starts. */
+  | 'duel-versus';
 
 /** Overlays that can open over the match. */
 export type Overlay = 'pause' | 'settings';
@@ -32,11 +54,21 @@ export type Overlay = 'pause' | 'settings';
 /** Everything the UI can ask the game to do. Components emit these and never write the store. */
 export type UiIntent =
   | { readonly kind: 'start-match' }
+  /** Join the online Duel queue (ADR 0016); the menu shows the waiting screen. */
+  | { readonly kind: 'start-duel'; readonly name: string }
+  /** Leave the Duel queue and return to the home screen. */
+  | { readonly kind: 'cancel-duel' }
   | { readonly kind: 'navigate'; readonly route: MenuRoute }
   | { readonly kind: 'select-class'; readonly classId: LegendClassId; readonly specId?: string }
   | { readonly kind: 'confirm-selection' }
+  /**
+   * Back from the Legend step: clears the class (and Legend) pick; the countdown runs on (HC-F1).
+   */
+  | { readonly kind: 'clear-class-selection' }
   | { readonly kind: 'cancel-match' }
   | { readonly kind: 'leave-match' }
+  /** Leaves the win/lose screen before its countdown ends (DEC-78). */
+  | { readonly kind: 'continue' }
   | { readonly kind: 'open-overlay'; readonly overlay: Overlay }
   | { readonly kind: 'close-overlay' }
   | {
@@ -48,7 +80,18 @@ export type UiIntent =
     }
   /** `action: null` resets every binding. */
   | { readonly kind: 'reset-bindings'; readonly action: InputAction | null }
-  | { readonly kind: 'update-settings'; readonly patch: SettingsPatch };
+  | { readonly kind: 'update-settings'; readonly patch: SettingsPatch }
+  /** A screen threw while rendering (`ErrorBoundary`, ADR 0025 §5); all plain strings. */
+  | {
+      readonly kind: 'report-screen-crash';
+      readonly screen: string;
+      readonly message: string;
+      readonly stack: string;
+      readonly componentStack: string;
+    }
+  /** The player's note on a crash (the crash popup, DEC-106). */
+  | { readonly kind: 'save-crash-note'; readonly note: string }
+  | { readonly kind: 'dismiss-crash-report' };
 
 /** One Legend shown on the selection and loading screens, built before the simulation exists. */
 export type RosterEntry = {
@@ -63,41 +106,57 @@ export type RosterEntry = {
   readonly team: PlayableTeam;
 };
 
-/** A Legend class as the selection screens show it. Specs are post-MVP slots. */
-export type LegendClassCard = {
-  readonly classId: LegendClassId;
-  readonly displayName: string;
-  readonly blurb: string;
-  readonly specs: readonly {
-    readonly specId: string;
-    readonly displayName: string;
-    readonly status: 'post-mvp';
-  }[];
+/**
+ * Why a phase was entered (audit AS-13: a union, so a typo cannot silently drop a banner);
+ * `match-crashed`: the running match stopped on a throw (DEC-106); `screen-crashed`: a screen
+ * outside a match did (DEC-124 (b)). Both open the crash popup.
+ */
+export type SessionReason =
+  | 'select-timeout'
+  | 'cancelled'
+  | 'match-failed'
+  | 'match-crashed'
+  | 'screen-crashed'
+  | 'load-failed'
+  /** The connection to the Duel server ended before the Duel did. */
+  | 'duel-unavailable';
+
+/**
+ * When assets load (13 §2): `selection` holds what both class layouts and the Legend step show, the
+ * layout groups the rest (14 §14); the `-raster` groups hold only plates, loaded only on the
+ * `'figma-raster'` effects renderer (DEC-54). Restated in `data/resources/AssetManifest.types.ts`.
+ */
+export type AssetGroup =
+  | 'boot'
+  | 'selection'
+  | 'selection-primary'
+  | 'selection-alternate'
+  | 'selection-raster'
+  | 'selection-primary-raster'
+  | 'match';
+
+/**
+ * URLs of a group's loaded images and the draw boxes its entries declare (both `{}` after
+ * release); `ui/` reads them by asset id.
+ */
+export type AssetUrls = {
+  readonly group: AssetGroup;
+  /** By asset id, or `id@rendition` for a rendition's own file (a string, as `AssetId` is). */
+  readonly urls: Readonly<Record<AssetId, string>>;
+  /** Keyed like `urls`; only a file the screens place at the slot it was baked for has one. */
+  readonly boxes: Readonly<Record<AssetId, RasterBox>>;
 };
 
-/** One layer of a themed background. Colours are token names (`--team-light-primary`), never literals. */
-export type BackgroundLayer =
-  | { readonly kind: 'gradient'; readonly angleDeg: number; readonly stops: readonly string[] }
-  | { readonly kind: 'particles'; readonly count: number; readonly colourToken: string }
-  | { readonly kind: 'image'; readonly src: string };
-
-/** A swappable background (architecture contract §2.5): content, so real art drops in as data. */
-export type BackgroundSet = {
-  readonly id: string;
-  readonly team: Team;
-  readonly layers: readonly BackgroundLayer[];
+/** One licence block of the About screen, generated from the asset manifest (13 §3 `selectCredits`). */
+export type CreditEntry = {
+  readonly licenceId: string;
+  readonly work: string;
+  readonly licenceName: string;
+  readonly notice: string;
+  /** Licence text that must ship with the files (OFL, MIT); `null` for the owner's own art. */
+  readonly licenceText: string | null;
+  readonly assets: readonly { readonly assetId: AssetId; readonly source: string }[];
 };
-
-/** Display-ready content projected into the store at boot. */
-export type DisplayCatalogue = {
-  readonly legendClasses: readonly LegendClassCard[];
-  readonly backgroundSets: readonly BackgroundSet[];
-  /** Themed display name of the profile screen ("Chronicle", naming.md). */
-  readonly profileDisplayName: string;
-};
-
-/** Asset groups the session loads (architecture 14). */
-export type AssetGroup = 'boot' | 'selection' | 'match';
 
 /** Progress of one asset group load. */
 export type LoadingProgress = {
@@ -109,8 +168,15 @@ export type LoadingProgress = {
   readonly status: 'loading' | 'ready' | 'failed';
 };
 
-/** The match being set up: seed, the player's team and both rosters (allies include the player). */
+/** Where a match runs: in this browser against bots, or an online Duel on the server (ADR 0016). */
+export type MatchMode = 'local' | 'duel';
+
+/**
+ * The match being set up: where it runs, the seed, the player's team and both rosters (allies
+ * include the player).
+ */
 export type MatchSetupDraft = {
+  readonly mode: MatchMode;
   readonly seed: number;
   readonly playerTeam: PlayableTeam;
   readonly allies: readonly RosterEntry[];
@@ -120,25 +186,73 @@ export type MatchSetupDraft = {
 /** The player's class pick on the character-select screen. */
 export type ClassSelection = { readonly classId: LegendClassId; readonly specId: string | null };
 
-/** Simulation time for the match clock. */
-export type MatchClock = { readonly tick: number; readonly seconds: number };
+/** Both rosters once LOCK IN has filled them: every bot with its Legend, the enemy Rover mirrored. */
+export type FilledRosters = Pick<MatchSetupDraft, 'allies' | 'enemies'>;
+
+/** The session countdowns: character select (60 s), the reveal (10 s), the win/lose screen (30 s). */
+export type CountdownKind = 'select' | 'reveal' | 'results';
+
+/**
+ * The match clock and the pre-match countdown (DEC-278). `seconds` is match time, counted from the
+ * countdown's end: 0 through the countdown, which is not game time. `countdown` is the whole
+ * seconds the countdown has left (10 to 1 locally, 3 to 1 in a Duel), 0 ("START") for a Duel's
+ * first second after it, and `null` once the match runs.
+ */
+export type MatchClock = {
+  readonly tick: number;
+  readonly seconds: number;
+  readonly countdown: number | null;
+};
 
 /** Every message on the bridge bus, keyed by event name. */
 export type BridgeEventMap = {
   'ui-intent': UiIntent;
-  'session-phase': { readonly phase: SessionPhase; readonly reason: string | null };
+  'session-phase': { readonly phase: SessionPhase; readonly reason: SessionReason | null };
   'menu-route': { readonly route: MenuRoute };
   overlay: { readonly overlay: Overlay | null };
+  /** The crash popup's state; `null` closes it. */
+  'crash-report': CrashReportState | null;
   'content-catalogue': DisplayCatalogue;
   'loading-progress': LoadingProgress;
   /** `null` clears the setup (back to the menu). */
   'match-setup': MatchSetupDraft | null;
-  'class-selection': ClassSelection;
-  /** Remaining session time of the select (60 s) or reveal (10 s) countdown. */
-  countdown: { readonly kind: 'select' | 'reveal'; readonly remainingMs: number };
+  /** `null` clears the pick (back to the class step). */
+  'class-selection': ClassSelection | null;
+  /**
+   * LOCK IN: the pick is locked until the countdown ends (DEC-60), and the rosters carry every
+   * bot's Legend and the enemy Rover's mirror of the pick (DEC-61).
+   */
+  'selection-locked': FilledRosters;
+  /** Remaining session time of one countdown. */
+  countdown: { readonly kind: CountdownKind; readonly remainingMs: number };
   'match-clock': MatchClock;
-  'hud-state': HudSnapshot;
+  /** The two players' names, when the server pairs them (the VERSUS screen). */
+  'duel-versus': DuelVersus;
+  /** The Duel's scoreboard, on the HUD cadence; only in a Duel. */
+  'duel-state': DuelHudState;
+  /**
+   * The match ended, once per match (13 §5): core's result, and its length in match seconds (the
+   * bridge knows the tick rate, the UI does not; DEC-129 (1)), the countdown not counted (DEC-278).
+   */
+  'match-ended': { readonly result: MatchResult; readonly durationSeconds: number };
+  /**
+   * The server ended an online Duel (ADR 0016): no simulation event reaches the client, so the
+   * session publishes this in place of `match-ended`.
+   */
+  'duel-ended': MatchEnding;
+  /** The human Legend for the HUD, every 6 ticks (13 §5); `null` before it spawns. */
+  'hud-state': { readonly player: PlayerHudSnapshot | null };
+  /** Team structures, at match start and every 30 ticks (13 §9 recipe). */
+  'structure-state': { readonly structures: readonly StructureStatus[] };
+  /** Capture points in lane order, at match start and every 30 ticks (13 §5). */
+  'capture-state': { readonly points: readonly CapturePointStatus[] };
+  /** A group's loaded image URLs; `{}` after its release. */
+  'asset-urls': AssetUrls;
+  /** The licence blocks of every bundled asset, once at boot. */
+  credits: { readonly entries: readonly CreditEntry[] };
   announcement: Announcement;
+  /** The player's minimap key showed (`true`) or hid (`false`) the minimap (DEC-147). */
+  'minimap-visibility': { readonly isShown: boolean };
   /** The whole settings state, published whenever it changes. */
   settings: SettingsSliceState;
 };

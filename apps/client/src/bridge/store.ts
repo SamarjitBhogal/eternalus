@@ -1,5 +1,6 @@
 import { combineSlices, configureStore } from '@reduxjs/toolkit';
 
+import { assetsSlice } from './slices/assetsSlice';
 import { contentSlice } from './slices/contentSlice';
 import { hudSlice } from './slices/hudSlice';
 import { loadingSlice } from './slices/loadingSlice';
@@ -7,6 +8,7 @@ import { matchSetupSlice } from './slices/matchSetupSlice';
 import { matchSlice } from './slices/matchSlice';
 import { sessionSlice } from './slices/sessionSlice';
 import { settingsSlice } from './slices/settingsSlice';
+import { viewSlice } from './slices/viewSlice';
 
 /**
  * Root reducer of the single parent store. Register every feature slice here.
@@ -19,6 +21,8 @@ const rootReducer = combineSlices(
   hudSlice,
   matchSlice,
   contentSlice,
+  assetsSlice,
+  viewSlice,
 );
 
 /** The whole store state, one key per slice. */

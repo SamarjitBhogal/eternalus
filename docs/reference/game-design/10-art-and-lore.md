@@ -4,7 +4,7 @@ description: The art theme and its references, the MVP art level, the Light and 
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-30
 tags: [reference, game-design, art, lore, naming]
 related:
   - 'docs/reference/suggestions/naming.md'
@@ -23,13 +23,13 @@ fantasy, the MVP is low-poly or pixel art, and most names are still placeholders
 **Grand, dark fantasy**: the Remnant 2, Battle for Middle-earth, Elden Ring and Lords of the
 Fallen aesthetic (game doc).
 
-| Item                                                           | Status                                                                       |
-| -------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| Low-poly or pixel art in-game                                  | **MVP** (game doc "MVP decisions so far")                                    |
-| High-quality character art on the selection screen             | **post-MVP** (`[STATUS: needs-planning]`, yellow in the game doc)            |
-| Map-wide atmosphere change when the central boss spawns        | **MVP-if-time** with the boss (`04-objectives-capture-points-and-bosses.md`) |
-| Map starts green and grassy; grass and trees burn              | **MVP-if-time** (`05-map.md`)                                                |
-| Legends grow in size and stature as an Eternal; new animations | **MVP-if-time** with the boss                                                |
+| Item                                                           | Status                                                                                                                                                               |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Low-poly or pixel art in-game                                  | **MVP** (game doc "MVP decisions so far")                                                                                                                            |
+| High-quality character art on the selection screen             | **MVP** (DEC-51, 2026-10-28): the owner's Figma art for now, until a digital artist is employed for the project (`[STATUS: needs-planning]`, yellow in the game doc) |
+| Map-wide atmosphere change when the central boss spawns        | **MVP-if-time** with the boss (`04-objectives-capture-points-and-bosses.md`)                                                                                         |
+| Map starts green and grassy; grass and trees burn              | **MVP-if-time** (`05-map.md`)                                                                                                                                        |
+| Legends grow in size and stature as an Eternal; new animations | **MVP-if-time** with the boss                                                                                                                                        |
 
 Constraint from `AGENTS.md`: never add copyrighted assets the team has no licence for. The
 reference games are mood references only. Assets go through the `ResourceController` and an
@@ -81,24 +81,24 @@ placeholders. The code name is stable; the display name lives in content, so ren
 touches logic. The full list, with proposals, is in `../suggestions/naming.md`; the to-dos are
 tracked in `12-open-questions.md`.
 
-| Placeholder                                                | Kind                                        | Status                                            |
-| ---------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------- |
-| Warrior (formerly Assault)                                 | Class                                       | open                                              |
-| Flying (rename pending) / "arial"                          | Class (post-MVP)                            | open (`[STATUS: idea-pending]`)                   |
-| All sub-class names                                        | Sub-classes (post-MVP)                      | open                                              |
-| Enchantment (rename pending)                               | Form change (post-MVP)                      | open                                              |
-| Titan                                                      | Central boss                                | **removed**; replaced by Eternal (rename pending) |
-| Eternal (rename pending)                                   | Central boss and the final-hit form         | open (the same word is used for both)             |
-| Studious (name pending)                                    | Magus passive                               | open                                              |
-| Death Ray (working title)                                  | Magus ultimate                              | open                                              |
-| The bow (unnamed)                                          | Named weapon                                | open                                              |
-| Second Sentinel artifact (TBD)                             | Artifact                                    | open                                              |
-| Soul Orb (pending); Cast Forward, Follower (names pending) | Magus artifact and modes                    | open                                              |
-| [god name] invoked by Fury                                 | Lore                                        | open                                              |
-| "Hoard"                                                    | Group of minions                            | **horde** in our docs; better name wanted         |
-| Buff/Debuff tower                                          | Structure ("need a themed name")            | open (`BuffTower` is the code name)               |
-| Profile                                                    | Menu section ("better, themed name needed") | open                                              |
-| "Blessings"                                                | Ability upgrades                            | open (`[STATUS: idea-pending]`)                   |
+| Placeholder                                                | Kind                                        | Status                                                                                                                             |
+| ---------------------------------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Warrior (formerly Assault)                                 | Class                                       | **decided** (DEC-48); the display name is content (`packages/core/src/content/legends/`)                                           |
+| Flying / "arial"                                           | Class (post-MVP)                            | **decided** (DEC-48); the display name is content (`content/legends/locked/`)                                                      |
+| All sub-class names                                        | Sub-classes (MVP, DEC-56)                   | **decided** for the playable classes (DEC-49; content in `packages/core/src/content/legends/specs/`); the flying class's stay open |
+| Enchantment (rename pending)                               | Form change (post-MVP)                      | open                                                                                                                               |
+| Titan                                                      | Central boss                                | **removed**; replaced by Eternal (rename pending)                                                                                  |
+| Eternal (rename pending)                                   | Central boss and the final-hit form         | open (the same word is used for both)                                                                                              |
+| Studious (name pending)                                    | Magus passive                               | open                                                                                                                               |
+| Death Ray (working title)                                  | Magus ultimate                              | open                                                                                                                               |
+| The bow (unnamed)                                          | Named weapon                                | open                                                                                                                               |
+| Second Sentinel artifact (TBD)                             | Artifact                                    | open                                                                                                                               |
+| Soul Orb (pending); Cast Forward, Follower (names pending) | Magus artifact and modes                    | open                                                                                                                               |
+| [god name] invoked by Fury                                 | Lore                                        | open                                                                                                                               |
+| "Hoard"                                                    | Group of minions                            | **horde** in our docs; better name wanted                                                                                          |
+| Buff/Debuff tower                                          | Structure ("need a themed name")            | open (`BuffTower` is the code name)                                                                                                |
+| Profile                                                    | Menu section ("better, themed name needed") | open                                                                                                                               |
+| "Blessings"                                                | Ability upgrades                            | open (`[STATUS: idea-pending]`)                                                                                                    |
 
 ## Engineering notes
 

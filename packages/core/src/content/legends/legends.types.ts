@@ -4,6 +4,12 @@ import type { UnitDefinition } from '../units/units.types';
 /** The MVP Legend classes (DEC-08: Assault is now Warrior). */
 export type LegendKind = 'warrior' | 'sentinel' | 'magus';
 
+/**
+ * Content id of a Legend class (a `LegendDefinition` id: `'warrior'`, `'sentinel'`, `'magus'`). A
+ * plain id, not a closed union, so other content (the bot roster, Legend specs) can name a class.
+ */
+export type LegendClassId = string;
+
 /** Kebab-case id of the weapon group a class favours (`01-classes`, Classes table): `light`, `heavy`, `staff`. */
 type WeaponBias = string;
 
@@ -20,6 +26,17 @@ type PassiveId = string;
 type DefaultActionId = string;
 
 /**
+ * Display names of a class's selection-screen detail rows (Figma 72:757); `null` until named.
+ *
+ * TODO(sam): each becomes an ability/weapon id when the kit is mapped (OQ-68).
+ */
+export type ClassDetailNames = {
+  readonly signature: string | null;
+  readonly proficiency: string | null;
+  readonly specialty: string | null;
+};
+
+/**
  * A playable Legend class. Ability, passive and action ids name the class's options; their
  * ability definitions, loadouts and progression arrive in Phase 4.
  */
@@ -34,6 +51,19 @@ export type LegendDefinition = UnitDefinition & {
   readonly levelCurveId: LevelCurveId;
   /** What each level adds (06 XP-based scaling). */
   readonly levelScaling: LevelScalingDefinition;
+  /** Role tag on the class card ("Assault", "Tank", "Ranged"; Figma 72:858–72:860). */
+  readonly roleLabel: string;
+  /** Resource and role line under the class name (Figma 72:749); `null` until written. */
+  readonly tagline: string | null;
+  /** Selection-screen lore paragraph (Figma 72:748); `null` until written. */
+  readonly description: string | null;
+  /**
+   * The lore paragraph of the alternate class-select layout (Figma 62:82), which keeps its own
+   * older copy; `null` shows `description` there too.
+   */
+  readonly alternateLayoutDescription: string | null;
+  /** Names of the class's selection-screen detail rows (Figma 72:757); `null` until named. */
+  readonly detailNames: ClassDetailNames;
   readonly weaponBias: WeaponBias;
   readonly damageFocus: DamageFocus;
   readonly pickUp: PickUpStyle;

@@ -1,0 +1,52 @@
+/* Holds defs only: takes no space and paints nothing (a `display: none` svg would drop its defs). */
+.defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* Glow floods: each Figma shadow colour as its token. */
+.floodFrost {
+  flood-color: var(--selection-glow-frost);
+}
+
+.floodFrostSoft {
+  flood-color: var(--selection-glow-frost-soft);
+}
+
+.floodParchment {
+  flood-color: var(--selection-parchment);
+}
+
+.floodAzure {
+  flood-color: var(--selection-glow-azure);
+}
+
+.floodAzureStrong {
+  flood-color: var(--selection-glow-azure-strong);
+}
+
+.floodPale {
+  flood-color: var(--selection-glow-pale);
+}
+
+.floodSky {
+  flood-color: var(--selection-glow-sky);
+}
+
+.floodCountdown {
+  flood-color: var(--selection-countdown);
+}
+
+/* GLASS light rim (light −45°, intensity 0.8): white 80 % at the top-left fading out by the middle.
+   The clear stop keeps the rim's colour at zero opacity, since SVG gradients interpolate
+   unpremultiplied (a `transparent` stop would grey the fade). */
+.rimLit {
+  stop-color: var(--selection-glass-rim);
+}
+
+.rimClear {
+  stop-color: var(--selection-glass-rim);
+  stop-opacity: 0;
+}

@@ -4,6 +4,7 @@ import { LAKES, LAVA_RIVERS, SNOW_PATCHES } from '../content/maps/map1Landforms'
 import type { SceneryLake } from './sceneryPlacement.types';
 import type { Vec2 } from '../utils/geometry.types';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
+import { MapRoadBuilder } from './MapRoadBuilder';
 /** Layers local snow, flowing lava, water and weathered ground beneath landmarks. */
 export class MapLandscapeBuilder extends MapDecorationBuilder {
   /** Receives the layout and its scenery-clearance predicate. */
@@ -22,7 +23,7 @@ export class MapLandscapeBuilder extends MapDecorationBuilder {
     this.lakes();
     this.ground();
     this.isMirrored = undefined;
-    this.laneRoads();
+    this.pieces.push(...new MapRoadBuilder().build(this.map.lanes));
     this.bridges();
     return this.pieces.map((piece) => ({
       ...piece,
@@ -162,20 +163,6 @@ export class MapLandscapeBuilder extends MapDecorationBuilder {
         );
       this.blockRect(`lava-bridge-${String(i)}-west-rail`, ...at(-17, -25, 4, 50), P.bridgeRail);
       this.blockRect(`lava-bridge-${String(i)}-east-rail`, ...at(13, -25, 4, 50), P.bridgeRail);
-    }
-  }
-
-  private laneRoads(): void {
-    for (const lane of this.map.lanes) {
-      for (let edge = 3; edge > 0; edge--)
-        this.ribbon(
-          `lane-road-${lane.id}-verge-${String(edge)}`,
-          lane.path,
-          3 + edge,
-          P.laneVerge,
-          'ground',
-        );
-      this.ribbon(`lane-road-${lane.id}-track`, lane.path, 3, P.road, 'ground');
     }
   }
 }

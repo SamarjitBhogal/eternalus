@@ -53,7 +53,15 @@ export class MapBuilder {
   /** Light's Stronghold on the west edge, centred vertically; Dark's is its mirror. */
   public placeStrongholds(): this {
     this.addMirrored(
-      { suffix: 'stronghold', definitionId: this.ids().stronghold, position: this.stronghold },
+      {
+        suffix: 'stronghold',
+        definitionId: this.ids().stronghold,
+        position: this.stronghold,
+        wallBoundary: {
+          radius: this.input.layout.wallRing.radius,
+          thickness: this.input.layout.wallRing.thickness,
+        },
+      },
       TEAM_SIDES,
     );
     return this;

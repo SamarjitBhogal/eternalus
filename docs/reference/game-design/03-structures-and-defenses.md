@@ -4,7 +4,7 @@ description: The team buildings (SpawnerTower, BuffTower, Stronghold), what dest
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-11-04
 tags: [reference, game-design, structures, walls, gates, turrets]
 paths: ['packages/core/src/content/structures/**']
 related:
@@ -53,7 +53,7 @@ Stronghold and one Stronghold per team (requirements doc). All of this is **MVP*
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | SpawnerTower | "Reduces the capital's guards and weakens its walls." Also: the enemy minions on that lane get the **enraged** buff (`02-entities-and-units.md`), so the lane gets harder, not easier.                                               |
 | BuffTower    | "Removes the capital's buff and debuff aura." Its shield bar disappears from every allied structure it was protecting (see shield math). Once at least 2 BuffTowers are down, the walls and gates become breakable. Enraged applies. |
-| Stronghold   | Ends the game; the other team wins (`04-objectives-capture-points-and-bosses.md`).                                                                                                                                                   |
+| Stronghold   | Does not end the game by itself. The match ends when a King dies (DEC-71, ADR 0021; `04-objectives-capture-points-and-bosses.md`).                                                                                                   |
 
 "Weakens its walls" and "reduces the capital's guards" for a destroyed SpawnerTower are stated
 without numbers. The Walls section says "all towers provide the wall extra HP" while the shield

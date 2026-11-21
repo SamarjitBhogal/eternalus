@@ -4,9 +4,28 @@ description: How a match unfolds over time - the MatchDirector state machine ove
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-20
 tags: [architecture, match, timeline, phases, scoring, story, lore]
-paths: ['packages/core/src/match/**']
+paths:
+  [
+    'packages/core/src/match/**',
+    'packages/core/src/config/matchPhases.ts',
+    'packages/core/src/config/countdownTicks.ts',
+    'packages/core/src/config/MatchTimelineEntry.types.ts',
+    'packages/core/src/config/timelineMarkTick.ts',
+    'packages/core/src/config/VictoryConditionId.types.ts',
+    'packages/core/src/state/MatchState.types.ts',
+    'packages/core/src/state/MatchRecord.ts',
+    'packages/core/src/state/ScoreBook.ts',
+    'packages/core/src/state/ScoreBook.types.ts',
+    'packages/core/src/state/emptyScoringState.ts',
+    'packages/core/src/state/ScoringState.types.ts',
+    'packages/core/src/state/MatchResult.types.ts',
+    'packages/core/src/components/WinObjective.ts',
+    'packages/core/src/diagnostics/invariants/PhaseMonotonicInvariant.ts',
+    'packages/core/src/systems/MatchDirectorSystem.ts',
+    'packages/core/src/content/match/**',
+  ]
 related:
   [
     'docs/architecture/03-game-model.md',
@@ -22,24 +41,32 @@ related:
 **Purpose.** Read this when you change how a match progresses: the countdown, when towers and
 camps start spawning, the quarter-mark mini-bosses, the mid-game gem and the Eternal, scoring,
 the win condition, what the announcer says, where lore text lives and what is handed to match
-history when a Stronghold falls. The match rules live in `packages/core/src/match/` (L2) as a
+history when a team's win objective is lost. The match rules live in `packages/core/src/match/` (L2) as a
 **State pattern over `MatchPhase` driven by `MatchTimeline` data**, so a new timed event is one
-timeline entry plus one handler class. No match code exists yet; every block is a **sketch** and
-every number quoted from the sources is `TUNE`.
+timeline entry plus one handler class. Every block is a **sketch** and every number quoted from the
+sources is `TUNE`; §13 says what is built.
 
 ## 1. Where it sits
 
-- Folder `packages/core/src/match/`; may import `state/`, `config/`, `utils/`, `teams/` and content types
-  ([02-code-structure.md](02-code-structure.md) §2). Files: `MatchDirector.ts`,
-  `MatchPhase.types.ts`, `phases/<Name>Phase.ts` + `defaultMatchPhases.ts`, `MatchTimeline.ts`,
-  `TimelineActionRegistry.ts` + `actions/<Kind>Action.ts` + `defaultTimelineActions.ts`,
-  `Scoring.ts`, `VictoryConditions.ts` + `conditions/<Name>Condition.ts`,
-  `rewards/BossRewardHandler.ts`, `MatchResult.types.ts`. The `MatchTimelineEntry` type lives in
-  `config/` because the timeline is part of `GameConfig` ([03-game-model.md](03-game-model.md) §10).
+- Folder `packages/core/src/match/`; may import `state/`, `config/`, `components/`, `entities/` (types,
+  DEC-221), `utils/`, `teams/`, content types and the `Logger` port, `makeLogRecord` and `DebugConfig` of `diagnostics/`, so `diagnostics/` never imports `match/` ([02-code-structure.md](02-code-structure.md) §2). Files: `MatchDirector.ts`,
+  `phases/<Name>Phase.ts` + `defaultMatchPhases.ts`, `MatchTimeline.ts`,
+  `TimelineActionRegistry.types.ts` + `actions/<Kind>Action.ts` + `defaultTimelineActions.ts`,
+  `defaultMatchDirector.ts` (the director with the default phases, actions and conditions),
+  `Scoring.ts` + `ScoreKeeper.types.ts`, `ScoringRule.types.ts` (the rule roles `HitRule`,
+  `DeathRule`, `ScoringListener` and `TickScorer`) + `rules/<Name>Rule.ts` (one class per scoring
+  rule, one role each) + `defaultScoringRules.ts`, `VictoryCondition.types.ts` +
+  `conditions/<Name>Condition.ts` +
+  `defaultVictoryConditions.ts`, `rewards/BossRewardHandler.ts`. `MatchResult` and `Verdict`
+  (`state/MatchResult.types.ts`) live in `state/` and `VictoryConditionId`
+  (`config/VictoryConditionId.types.ts`) in `config/`, for the same reason as `MatchPhase`: `state/`
+  may not import `match/`, and `content/` keys verdict lines by it. `MatchPhase` (`matchPhases.ts`), the
+  `MatchTimelineEntry` types and `timelineMarkTick.ts` live in `config/` because the timeline is part
+  of `GameConfig` and names phases ([03-game-model.md](03-game-model.md) §10).
 - `Simulation`'s constructor builds the director (core's composition root). The
-  `MatchDirectorSystem` (`systems/`) is a thin adapter that calls `director.update(ctx)` once per
-  tick and does nothing once `state.match.result` is set. It runs after `DeathSystem` and before
-  `InvariantSystem` and `SnapshotSystem`, so a Stronghold destroyed this tick ends the match this
+  `MatchDirectorSystem` (`systems/`) is a thin adapter that calls `director.update(state)` once per
+  tick; the director does nothing once the result is set (the system stays a plain adapter). It runs after `DeathSystem` and before
+  `InvariantSystem` and `SnapshotSystem`, so an objective lost this tick ends the match this
   tick and the snapshot already carries the new phase.
 - Rule 12 applies: the director never calls a system. It changes `state.match` and emits typed
   `GameEvents` (`phase-changed`, `spawn-requested`, `match-ended`, ...); the owning systems and the
@@ -49,11 +76,11 @@ every number quoted from the sources is `TUNE`.
 ## 2. `MatchPhase` and the State pattern
 
 ```ts
-// Sketch: packages/core/src/match/MatchPhase.types.ts
+// Sketch: packages/core/src/config/matchPhases.ts
 export type MatchPhase =
   'countdown' | 'early-game' | 'quarter-mark' | 'mid-game' | 'end-game' | 'victory' | 'defeat';
 
-// DirectorContext = { state: GameState; events: GameEvents; content: ContentCatalogue; config: GameConfig; tick: number }
+// DirectorContext = { state: GameState; enterPhase(phase: MatchPhase): void }; enterPhase is how a phase or action moves the match on
 export interface MatchPhaseState {
   readonly phase: MatchPhase;
   enter(ctx: DirectorContext): void; // emits requests and announcements; never spawns directly
@@ -63,17 +90,18 @@ export interface MatchPhaseState {
 ```
 
 One class per phase under `phases/` (`CountdownPhase` … `DefeatPhase`), registered in
-`defaultMatchPhases.ts`, the only file that names them. The director never `switch`es on the
+`defaultMatchPhases.ts`, the only file that names them. The registry type is a record keyed by
+every `MatchPhase`, so a missing phase class does not compile. The director never `switch`es on the
 phase: adding a phase is a class, a registry line and a timeline entry (OCP). Transitions are
 strictly forward; `victory` and `defeat` are terminal.
 
 | Phase                | Enters when                                                                                                                                             | What happens and who owns it                                                                                                                                                                                                                                                                                                                                                                                                                                         | Status                              |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
-| `countdown`          | tick 0                                                                                                                                                  | At load-in `SpawnSystem` spawns one light horde of `hordeSizes.light` per lane (`map.numLanes`) per team at the lane's base ([18](18-minion-system.md) §3.1, MS-30). Nothing else spawns: every wave's clock starts when the countdown ends. The director only announces.                                                                                                                                                                                            | **MVP**                             |
-| `early-game`         | `countdownSeconds` elapsed (`TUNE` 60 s, requirements doc)                                                                                              | Towers spawn a horde every `hordeSpawnIntervalSeconds` (`TUNE` 60 s) and forest camps activate after their cooldown: both are `Spawner` data consumed by `SpawnSystem`, not director logic.                                                                                                                                                                                                                                                                          | **MVP**                             |
-| `quarter-mark`       | fraction 0.25 of `plannedMatchSeconds` (game doc "quarter mark")                                                                                        | The `spawn-mini-bosses` action emits one `spawn-requested` per outer-lane `CapturePoint` with the mini-boss table (boss plus support mobs); `CaptureSystem` sets `Capturable.lockedBy` while the boss lives (`07` §7).                                                                                                                                                                                                                                               | **MVP** (mini-boss is MVP, DISC-63) |
+| `countdown`          | tick 0                                                                                                                                                  | At load-in `SpawnSystem` spawns one light horde of `hordeSizes.light` per lane (`map.numLanes`) per team at the lane's base ([18](18-minion-system.md) §3.1, MS-30). No tower spawns (FR-003): every wave's clock starts when the countdown ends (`07` §6). `CountdownPhase` sets `MatchState.isIdleHeld`: every unit is idle and can only turn (no walking, attacks, casts); spawns go on, camps spawn (DEC-81, DEC-84, DEC-88). The director spawns nothing.       | **MVP**                             |
+| `early-game`         | `countdownSeconds` elapsed (the value lives in `config/defaultGameConfig.ts`)                                                                           | Towers spawn a horde every `hordeSpawnIntervalSeconds` (`TUNE` 60 s) and forest camps activate, with no cooldown of their own (DEC-167): both are `Spawner` data consumed by `SpawnSystem`, not director logic.                                                                                                                                                                                                                                                      | **MVP**                             |
+| `quarter-mark`       | fraction 0.25 of `plannedMatchSeconds`, counted from the countdown's end like every fraction (DEC-282) (game doc "quarter mark")                        | The `spawn-mini-bosses` action emits one `spawn-requested` per outer-lane `CapturePoint` with the mini-boss table (boss plus support mobs); `CaptureSystem` sets `Capturable.lockedBy` while the boss lives (`07` §7).                                                                                                                                                                                                                                               | **MVP** (mini-boss is MVP, DISC-63) |
 | `mid-game`           | fraction 0.5 (game doc "mid-game")                                                                                                                      | The `summon-greater-boss` action asks the `Cathedral` spawner for the `greater-boss`; `SpawnSystem` fulfils it and emits `boss-summoned`. `state.match.atmosphere` becomes `eternal` (views spread the change outward from the Cathedral by ticks elapsed). `StatusEffectSystem` applies `empowered` to camp units on `phase-changed`; corner camps' side waves start (`SpawnWave.afterPhase: 'mid-game'`, **Recommendation:** a new optional field on `07`'s type). | **MVP-if-time** (with the boss)     |
-| `end-game`           | fraction 0.75, or the first `structure-breakability-changed` that makes a Stronghold wall breakable, whichever is first (**Recommendation:** no source) | Announcer and music only in the MVP; the extension point for late-game rules (score cap, reinforcement waves).                                                                                                                                                                                                                                                                                                                                                       | **MVP** (as a marker)               |
+| `end-game`           | fraction 0.75 (DEC-175), or the first `structure-breakability-changed` that makes a Stronghold wall breakable if sooner (**Recommendation:** no source) | Announcer and music only in the MVP; the extension point for late-game rules (score cap, reinforcement waves).                                                                                                                                                                                                                                                                                                                                                       | **MVP** (as a marker)               |
 | `victory` / `defeat` | a `VictoryCondition` returns a verdict (§6)                                                                                                             | Terminal. `state.match.result` is built, `match-ended { result }` is emitted, the director goes inert. `victory` when `result.winner === state.match.playerTeam`, otherwise `defeat`; a draw (`winner: null`) enters `defeat` and the results screen says so (**Recommendation:** a `draw` phase is one class and one literal if wanted).                                                                                                                            | **MVP**                             |
 
 The reference doc's shorthand `countdown → open → quarter → midgame → … → results` maps onto
@@ -85,7 +113,7 @@ mode changes nothing: `playerTeam` is the spectated team, so a bot-versus-bot ma
 
 ```ts
 // Sketch: packages/core/src/config/MatchTimelineEntry.types.ts
-export type TimelineMark = { readonly atTick: number } | { readonly atFraction: number }; // fraction of plannedMatchSeconds
+export type TimelineMark = { readonly atTick: number } | { readonly atFraction: number }; // atTick from tick 0; atFraction of plannedMatchSeconds from the countdown's end
 
 export type TimelineAction =
   | { readonly kind: 'enter-phase'; readonly phase: MatchPhase }
@@ -104,23 +132,29 @@ export type MatchTimelineEntry = {
 };
 ```
 
-| Entry (default config, `TUNE`) | `at`                     | Action                                                     | Source                                      |
-| ------------------------------ | ------------------------ | ---------------------------------------------------------- | ------------------------------------------- |
-| `countdown-over`               | `atTick: countdownTicks` | `enter-phase early-game`                                   | requirements doc (1-minute countdown)       |
-| `quarter-mark`                 | `atFraction: 0.25`       | `enter-phase quarter-mark`, then `spawn-mini-bosses outer` | game doc ("quarter mark of the game")       |
-| `mid-game`                     | `atFraction: 0.5`        | `enter-phase mid-game`, then `summon-greater-boss`         | game doc (gem explodes mid-game)            |
-| `end-game`                     | `atFraction: 0.75`       | `enter-phase end-game`                                     | **Recommendation:** no source               |
-| `plannedMatchSeconds`          | 1200                     | the denominator of every fraction                          | `suggestions/balancing.md` (Recommendation) |
+| Entry (default config, `TUNE`) | `at`                     | Action                                                     | Source                                               |
+| ------------------------------ | ------------------------ | ---------------------------------------------------------- | ---------------------------------------------------- |
+| `countdown-over`               | `atTick: countdownTicks` | `enter-phase early-game`                                   | requirements doc; DEC-81, DEC-84                     |
+| `quarter-mark`                 | `atFraction: 0.25`       | `enter-phase quarter-mark`, then `spawn-mini-bosses outer` | game doc ("quarter mark of the game")                |
+| `mid-game`                     | `atFraction: 0.5`        | `enter-phase mid-game`, then `summon-greater-boss`         | game doc (gem explodes mid-game)                     |
+| `end-game`                     | `atFraction: 0.75`       | `enter-phase end-game`                                     | the owner's ruling, DEC-175                          |
+| `plannedMatchSeconds`          | `defaultGameConfig.ts`   | the denominator of every fraction                          | DEC-13, DEC-81 (planning length, not a cap), DEC-282 |
 
 `GameConfig` gains `plannedMatchSeconds` (the reference doc calls it `matchLengthTicks`; seconds
 in config, ticks at runtime, per `03` §10). `MatchTimeline.resolve(config)` turns every mark into
-a tick once at construction and sorts entries by tick, then by config order. `validateGameConfig`
-rejects fractions outside `[0, 1]`, unsorted entries, `enter-phase` entries out of phase order, a
+a tick once at construction and sorts entries by tick, then by config order. An `atTick` mark counts
+from tick 0; an `atFraction` mark counts from the countdown's end, because the countdown is not match
+time (DEC-278, DEC-282 (1)): mid-game is 15:00 on the match clock, as DEC-87's wave clocks are. Both
+it and `validateGameConfig` use one formula for that tick (`config/timelineMarkTick.ts`), so the order
+validation checks is the order the match runs. `validateGameConfig`
+rejects fractions outside `[0, 1]`, unsorted entries, `enter-phase` entries out of phase order, a timeline with no `enter-phase` entry or
+whose first one is not at `round(countdownSeconds × tickRate)`, an `enter-phase` into `victory` or `defeat`, a
 countdown longer than the planned match, and a `tableId` or `bossId` missing from the catalogue.
 The `at: 'quarter' | 'mid'` shorthand in `03` §10 is sugar for the two fractions
 (**Recommendation:** keep only the fraction form in code). `TimelineActionRegistry` maps
 `action.kind` to one `TimelineActionHandler` class (`actions/SpawnMiniBossesAction.ts`, ...)
-registered in `defaultTimelineActions.ts`: the reference doc's "one timeline entry plus one
+registered in `defaultTimelineActions.ts` (a mapped type over every action kind, so a missing
+handler does not compile): the reference doc's "one timeline entry plus one
 handler class", so a new timed event never touches the director. The developer-menu command
 `dev-set-phase` (**MVP-if-time**, `suggestions/mechanics-ideas.md` §9) fast-forwards by running
 every skipped entry in order, so the world after a jump equals the world after waiting.
@@ -130,19 +164,22 @@ every skipped entry in order, so the world after a jump equals the world after w
 ```ts
 // Sketch: packages/core/src/match/MatchDirector.ts
 export class MatchDirector {
-  public constructor(
-    private readonly phases: MatchPhaseRegistry, // phase → MatchPhaseState (defaultMatchPhases.ts)
-    private readonly timeline: ResolvedTimeline, // entries sorted by tick
-    private readonly actions: TimelineActionRegistry,
-    private readonly conditions: readonly VictoryCondition[], // defaultVictoryConditions.ts
-    private readonly scoring: Scoring,
-  ) {}
+  // MatchDirectorOptions: phases (defaultMatchPhases.ts), timeline (entries sorted by tick),
+  // actions, order (MATCH_PHASES), terminal (TERMINAL_MATCH_PHASES), hasher (finalHash), debug,
+  // logger, conditions (defaultVictoryConditions.ts) and scoring. One object, so a new part does not change every caller.
+  public constructor(private readonly options: MatchDirectorOptions) {}
+
+  /** Once, before tick 0: enters the first phase with no 'phase-changed', so its rules cover tick 0. */
+  public start(state: GameState): void {
+    this.options.phases[state.match.phase].enter(this.contextFor(state));
+  }
 
   /** Once per tick, from MatchDirectorSystem. The order of the steps is fixed here. */
-  public update(ctx: DirectorContext): void {
+  public update(state: GameState): void {
+    const ctx = this.contextFor(state); // { state, enterPhase }; enterPhase calls transition
     this.fireDueEntries(ctx); // entries with tick <= ctx.tick, from state.match.timelineCursor
-    this.phases.get(ctx.state.match.phase).update(ctx);
-    this.scoring.fold(ctx); // buffered events → counters; hold points per tick
+    this.options.phases[ctx.state.match.phase].update(ctx);
+    this.options.scoring.fold(ctx); // buffered events → counters; hold points per tick
     const verdict = this.firstVerdict(ctx);
     if (verdict !== null) this.end(verdict, ctx);
   }
@@ -150,33 +187,39 @@ export class MatchDirector {
   private transition(to: MatchPhase, ctx: DirectorContext): void {
     const from = ctx.state.match.phase;
     assertForward(from, to); // a backwards transition is a bug: throws in tests, logs in the browser
-    this.phases.get(from).exit(ctx);
-    ctx.state.setPhase(to); // GameState emits 'phase-changed' { from, to } and stamps phaseEnteredTick
-    this.phases.get(to).enter(ctx);
+    this.options.phases[from].exit(ctx);
+    ctx.state.match.setPhase(to); // the only writer of the phase: emits 'phase-changed' { from, to }, stamps phaseEnteredTick
+    this.options.phases[to].enter(ctx);
   }
 }
 ```
 
 ```ts
-// Sketch: packages/core/src/state/MatchState.types.ts — the director's memory, all plain data
-export type MatchState = {
-  phase: MatchPhase;
-  phaseEnteredTick: number;
-  timelineCursor: number; // index of the next unfired entry
+// Sketch: packages/core/src/state/MatchState.types.ts — the director's memory, all plain data; GameState.match is a MatchRecord holding it (03 §2, DEC-177)
+export interface MatchState {
+  readonly phase: MatchPhase; // written only by MatchRecord.setPhase
+  readonly phaseEnteredTick: number;
+  readonly timelineCursor: number; // index of the next unfired entry; written only by MatchRecord.advanceTimeline (DEC-172)
+  readonly schedule: readonly { readonly entryId: string; readonly tick: number }[]; // every entry's resolved tick, in firing order; taken from config, so not hashed
+  readonly countdownEndTick: number; // the tick the countdown ends, set once at build; the one value every runtime reader reads (DEC-285); taken from config, so not hashed
+  readonly isIdleHeld: boolean; // the countdown freeze: while true every unit is idle and can only turn (DEC-88); written only by MatchRecord.holdIdle
   readonly playerTeam: PlayableTeam; // chosen at match creation, also in sim mode
-  humanLegendId: EntityId | null; // null = sim mode (11-game-ai.md §7); spectatedLegendId beside it
+  readonly humanLegendId: EntityId | null; // null = sim mode (11-game-ai.md §7); the roster's human slot (DEC-173), set once by MatchRecord.seatHuman; spectatedLegendId beside it
   atmosphere:
     'calm' | { readonly kind: 'eternal'; readonly originId: EntityId; readonly sinceTick: number };
-  scoring: ScoringState;
-  result: MatchResult | null;
-};
+  readonly scoring: ScoringState; // read-only at every depth: the data of MatchRecord.scoreBook, its only writer, which only Scoring writes (§5, DEC-211)
+  readonly result: MatchResult | null; // set once by MatchRecord.endMatch
+}
 ```
+
+A phase entered at tick T takes effect from step T+1, so the countdown holds steps 0 to T. A
+backward phase move is a bug: it throws in tests, and in the browser it is logged and skipped.
 
 SOLID: the director has one reason to change (the order of the per-tick steps, SRP); phases,
 actions and conditions are injected abstractions (DIP) replaceable by fakes in tests (LSP); the
 registries are the single places of change (OCP). After `match-ended` the simulation keeps
-stepping (**Recommendation:** `Match` stops the loop a few seconds later) but the director does
-nothing, so replay tails hash the same on every run.
+stepping and no unit is held (DEC-92: `Match` stops the loop a few seconds later), but the director
+does nothing, so replay tails hash the same on every run.
 
 ## 5. Scoring
 
@@ -184,45 +227,76 @@ nothing, so replay tails hash the same on every run.
 and into team points. Counters per Legend (`LegendStats`) mirror the `LegendScoreDtoV1` fields in
 `suggestions/mechanics-ideas.md` §8: `kills`, `deaths`, `assists`, `minionKills`, `damageDealt`,
 `damageTaken`, `healing`, `structureDamage`, `structuresDestroyed`, `checkpointsWon`, `revives`,
-`ultimatesCast`, `finalLevel`, `score`. Per team (`TeamStats`): `score`, `structuresDestroyed`,
-`capturesHeldTicks`, `bossKills`.
+`ultimatesCast`, `finalLevel`, `score`, plus `neutralKills` (DEC-79). Per team (`TeamStats`):
+`score`, `structuresDestroyed`, `capturesHeldTicks`, `checkpointsReached`, `bossKills`. A team's
+`score` is the sum of its Legends' scores plus its team-only points.
 
-| Event                                                   | Counter change                                                                                                                                                                           |
-| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `entity-died` (victim Legend / Mob)                     | killer `kills++` or `minionKills++`, victim `deaths++`; every Legend with damage on the victim within `assistWindowTicks` (`TUNE` 10 s) `assists++`                                      |
-| `damage-applied`                                        | source Legend `damageDealt`, target Legend `damageTaken`, structure targets `structureDamage`; a bounded per-victim ring of recent damagers feeds assists and the checkpoint damage bias |
-| `structure-destroyed`                                   | team `structuresDestroyed++`; Legends above `shareThreshold` of its damage `structuresDestroyed++`                                                                                       |
-| `checkpoint-cleared`, `capture-point-owner-changed`     | present Legends `checkpointsWon++`; the owning team starts or stops accruing `capturesHeldTicks` each tick                                                                               |
-| `entity-revived`, `ability-cast` (ultimate), `level-up` | `revives++`, `ultimatesCast++`, `finalLevel`                                                                                                                                             |
+| Event                                                   | Counter change                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `entity-died` (victim Legend / Mob)                     | Legend killer `kills++` (Legend victim), or `minionKills++` / `neutralKills++` (enemy team mob, Host units and tower guards alike (DEC-211 (2)) / neutral mob), victim `deaths++`; only a Legend earns a kill (a projectile's hit counts for its owner), and a non-Legend last hit gives none; for a Legend victim only, every other Legend with damage on it within `assistWindowTicks` (`SCORING.assistWindowSeconds`, DEC-79) `assists++`, whoever landed the last hit |
+| `damage-applied`                                        | source Legend `damageDealt`, target Legend `damageTaken`, structure targets `structureDamage` (shield damage included, DEC-123); for assists, `ScoringState` keeps the last tick each enemy Legend hit each Legend victim, one entry per attacker and victim, so its size follows the roster, not the hit rate; a victim's entries go at its death, so a hit from an earlier life never earns an assist (DEC-132)                                                         |
+| `structure-destroyed`                                   | the team opposing the structure's playable team `structuresDestroyed++` and team-only points, whoever landed the last hit, as for structure XP (DEC-212, DEC-186); a neutral camp scores nothing; Legends above `shareThreshold` of its damage `structuresDestroyed++`                                                                                                                                                                                                    |
+| `checkpoint-reached`                                    | a playable team whose push reaches a checkpoint `checkpointsReached++` and team-only points, and each of its Legends present on the zone `checkpointsWon++` (no points); a Legend is present when it is alive and its centre is on the zone's area when the checkpoint is reached, which `CaptureSystem` reads in its presence pass and puts on the event (`presentLegendIds`, DEC-145 (a), DEC-223 (4a)); a neutral camp's push scores nothing (DEC-214)                 |
+| each tick (held capture points)                         | every capture point a playable team owns (its `Capturable`'s `owner`, the one source of truth, DEC-223 (4b)) adds one tick to the team's `capturesHeldTicks`, pooled over its points, with team-only points per full minute that a lost point does not reset; `CaptureSystem` runs before the director, so the tick a capture completes counts as held; a point a neutral camp owns scores nothing (DEC-214)                                                              |
+| `entity-revived`, `ability-cast` (ultimate), `level-up` | `revives++`, `ultimatesCast++`, `finalLevel`                                                                                                                                                                                                                                                                                                                                                                                                                              |
 
-Points are content, not code: `content/match/scoring.ts` holds `SCORING_WEIGHTS` (`TUNE`,
-**Recommendation** from the reference doc and `balancing.md`: kill 1, structure 5, capture 3 per
-checkpoint, hold 1 per minute). Listeners only append to a per-tick buffer; `fold(ctx)` applies it
+The rules and the data are apart (DEC-211). `Scoring` and its rules (`match/`) say what each
+event counts for. A `ScoreBook` (`state/`), which `MatchRecord` holds, holds the data and is its
+only writer: it adds a row, awards a Legend's counters and points, awards a team's counters and
+team-only points, records a hit and takes a victim's assists. Its writers keep the rule above, so
+a team's total cannot drift from its Legends' points plus its team-only points. Every other reader
+sees the data as `MatchState.scoring`, read-only at every depth. The rules are injected
+(DEC-221 (2)): `defaultScoringRules.ts` is the only file that names them, as
+`defaultVictoryConditions.ts` is for the conditions, and each rule (`match/rules/`, one class per
+file) takes its points by constructor. The family of a hit's target or a death's victim picks
+its rule from a registry there (DEC-211 (3)); a family with no entry (bosses, the sovereign)
+scores nothing. Every other event goes to a listener rule (`ScoringListener`, such as the
+checkpoint rule): it gets the event bus only, subscribes to its own events when `Scoring` is
+built and buffers what they earn through `Scoring`'s buffer, so it writes the book only at the
+fold. What the tick itself earns goes to a tick scorer (`TickScorer`, such as the hold rule):
+`Scoring` calls it once per fold with the book and the state, after the buffered changes, while
+the match has no result. A rule has one role, so no rule carries a method it does not use
+(DEC-223 (1), (2)). `Scoring` keeps
+only what every rule shares: the rows, the hit guard (an attacker with a row, on another team
+than the target), the lookup by family and the buffer. A new scored family or event, such as
+team boss kills, or a new per-tick score is a rule file and one line in `defaultScoringRules.ts`.
+A new counter is one `LegendStats` or `TeamStats` field and its 0, because the counter names derive from those types;
+a `ScoreBook` writer only if the rule is not a plain award. The `MatchDirector` drives scoring through a
+one-method interface, `ScoreKeeper` (`fold`), that `Scoring` implements (DEC-211 (4)).
+
+Points are content, not code: `content/match/scoring.ts` holds `SCORING`, whose `weights` are
+the owner's values (`TUNE`, DEC-79): a Legend kill, an assist, a death (no points: the owner's request of
+2026-10-27, game-loop plan §4.4) and a mob kill by weight class, keyed by `MobKind` so a new class fails to compile until it has a value. It also
+holds FR-007's objective points (DEC-84 (2)) at the owner's values (DEC-131): a destroyed
+structure (team-only, DEC-212), a capture per checkpoint and a hold per full minute of a team's
+held time pooled over its points (both team-only, DEC-214). Bosses and the sovereign give no
+personal points. A hit on or a kill of a unit on the attacker's own team, itself
+included, counts for nothing, as for XP (DEC-130; O5, `05` §18). The assist window sits beside the weights in `SCORING`, so `Simulation` passes one value. Listeners only append to a per-tick buffer; `fold(ctx)` applies it
 inside the director's pass ("listeners defer state changes to their own system's pass", `03` §4),
-and `ScoringState` sits in `state.match` so it is hashed. Achievements (**MVP-if-time**) are pure
+and the `ScoreBook`'s data sits in `state.match` so it is hashed. Achievements (**MVP-if-time**) are pure
 predicates over these counters evaluated at match end (`evaluateAchievements`,
 `mechanics-ideas.md` §7): nothing is counted only for achievements.
 
 ## 6. Victory conditions and match end
 
 ```ts
-// Sketch: packages/core/src/match/VictoryConditions.ts
+// Sketch: packages/core/src/match/VictoryCondition.types.ts (`Verdict` lives in
+// state/MatchResult.types.ts, `VictoryConditionId` in config/VictoryConditionId.types.ts)
 export type Verdict = {
   readonly winner: PlayableTeam | null;
   readonly condition: VictoryConditionId;
 }; // null winner = draw
-export type VictoryConditionId = 'stronghold-destroyed' | 'score-cap' | 'forfeit' | 'aborted';
+export type VictoryConditionId = 'objective-lost' | 'forfeit' | 'aborted';
 export interface VictoryCondition {
-  readonly id: string;
+  readonly id: VictoryConditionId;
   check(ctx: DirectorContext): Verdict | null;
 }
 ```
 
-| Condition                      | Rule                                                                                                     | Status          |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------- | --------------- |
-| `StrongholdDestroyedCondition` | listens to `structure-destroyed` with `kind: 'stronghold'`; the other team wins (game doc, requirements) | **MVP**         |
-| `ForfeitCondition`             | the `forfeit` command from the pause or results UI → `aborted`, no winner                                | **MVP**         |
-| `ScoreCapCondition`            | after `maxMatchSeconds` (`TUNE` 2700, `balancing.md`) the higher `TeamStats.score` wins; equal → draw    | **MVP-if-time** |
+| Condition                | Rule                                                                                                                                                                                     | Status            |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `ObjectiveLostCondition` | listens to `entity-died`; when the victim carries `WinObjective` and its team has no other live objective, the other team wins; both teams on one tick → draw (ADR 0021, DEC-71, DEC-77) | **MVP**           |
+| `ForfeitCondition`       | the `forfeit` command from the pause or results UI → `aborted`, no winner                                                                                                                | post-MVP (DEC-77) |
 
 Conditions are checked in registry order (`defaultVictoryConditions.ts`) and the first verdict
 wins. `end()` builds the `MatchResult` (§10), stores it in `state.match.result`, transitions to
@@ -255,7 +329,8 @@ buildings later reuses `FormDefinition` plus one interaction class (D12, post-MV
 ## 8. Announcer and narrative hooks
 
 `MatchBridge` (`apps/client/src/game/MatchBridge.ts`, **Recommendation:** the class that owns all
-game → UI publishing so `Match` stays short) subscribes to `phase-changed`, `boss-summoned`,
+game → UI publishing so `Match` stays short) takes the simulation's event subscription
+(`Simulation.on`, DEC-213) and subscribes to `phase-changed`, `boss-summoned`,
 `structure-destroyed`, `entity-died` (Legends), `capture-point-owner-changed`, `form-applied`,
 `level-up` (the player) and `match-ended`, and publishes `announce { id, params, tick }` on the
 `TypedEventBus`; `matchSlice.announcements` queues them and the `Announcer` HUD (`13` §3) shows
@@ -294,13 +369,14 @@ snapshot and `TerrainView` tints outward from the Cathedral (**MVP-if-time**).
 ## 10. `MatchResult` and match history
 
 ```ts
-// Sketch: packages/core/src/match/MatchResult.types.ts — deterministic, no wall clock, no client ids
+// Sketch: packages/core/src/state/MatchResult.types.ts — deterministic, no wall clock, no client ids
 export type MatchResult = {
   readonly winner: PlayableTeam | null;
   readonly condition: VictoryConditionId;
   readonly playerTeam: PlayableTeam;
   readonly hadHuman: boolean; // false for a pure sim match (mechanics-ideas.md §6)
-  readonly durationTicks: number;
+  readonly durationTicks: number; // ticks from tick 0, the countdown included: the replay fact
+  readonly matchTicks: number; // ticks from the countdown's end: the match time (DEC-282 (2))
   readonly seed: number;
   readonly configHash: number; // FNV-1a of GameConfig, so a replay can refuse a mismatched config
   readonly legends: readonly LegendStats[]; // 20 rows: entityId, team, classId, controller, counters, score
@@ -311,13 +387,13 @@ export type MatchResult = {
     readonly actorId: EntityId | null;
   }[];
   readonly achievements: readonly AchievementId[];
-  readonly finalHash: number; // Simulation.hash() at match end
+  readonly finalHash: number; // StateHasher hash on the ending tick, before the terminal phase (§6 order); not a replay checkpoint
 };
 ```
 
 `TimelineEventId` (`first-blood`, `first-structure-destroyed`, `mini-boss-killed`,
 `greater-boss-summoned`, `greater-boss-killed`, `wall-breached`, `eternal-ascended`,
-`match-ended`) lets the profile screen summarise a match without loading the replay. The client's
+`objective-lost`, `match-ended`) lets the profile screen summarise a match without loading the replay. The client's
 `MatchHistoryRepository` maps the result to `MatchHistoryRecordDtoV1` (`14` §7), adding `id`,
 `profileId`, `playedAt`, the versions, `isSimulation` and `replayId`; `SessionController` stores
 it with the replay and the achievements in one unit of work.
@@ -339,17 +415,23 @@ it with the replay and the achievements in one unit of work.
 quarter-mark`), a stub `GameState` stepped to tick 25; assert the `phase-changed` sequence, the
   cursor, that no entry fires twice, that a backwards `enter-phase` throws, and that
   `dev-set-phase` replays the skipped entries in order.
-- `MatchTimeline.test.ts`: fractions resolve against `plannedMatchSeconds`; ties keep config order;
-  every invalid config from §3 is rejected by name. `Scoring.test.ts`: one test per row of the
-  §5 table plus the assist window and the hold accrual.
-- `VictoryConditions.test.ts`: Stronghold destroyed → winner and `victory`/`defeat` by
-  `playerTeam`; forfeit → `aborted`; sim mode ends with `hadHuman: false`.
+- `MatchTimeline.test.ts`: fractions resolve against `plannedMatchSeconds`, from the countdown's end; ties keep config order;
+  every invalid config from §3 is rejected by name. `Scoring.test.ts`: one test per §5 row that
+  the hit, death and structure rules score, plus the assist window; `rules/CheckpointRule.test.ts`: the checkpoint row;
+  `rules/CaptureHoldRule.test.ts`: the held-points row and the hold accrual;
+  `defaultScoringRules.test.ts`: which rules the default lists hold.
+  `state/ScoreBook.test.ts`: one row per Legend, each team's total equal to its Legends' points
+  plus its team-only points, the recent hits (DEC-132).
+- `conditions/ObjectiveLostCondition.test.ts`: objective lost → the other team wins; both on one
+  tick → draw. `MatchDirector.test.ts`: `victory`/`defeat` by `playerTeam`; a draw enters `defeat`;
+  sim mode ends with `hadHuman: false`; inert after the end; no move out of a terminal phase.
+  Forfeit → `aborted` stays a planned test.
   `BossRewardHandler.test.ts`: a Legend's final hit emits `form-applied`, a minion's does not; team
   XP and the team buff are emitted once.
 - `scenarios/fullMatch.test.ts`: a **full bot-versus-bot replay** through
   `runSimMatch({ seed, config, content, profiles, maxTicks, assertLevel: 'heavy' })`
   ([15-diagnostics-and-runtime-testing.md](15-diagnostics-and-runtime-testing.md) §8): the match
-  reaches `victory` or `defeat` before `maxTicks` (`TUNE` 81,000 = `maxMatchSeconds`) with zero
+  reaches `victory` or `defeat` before `maxTicks` (a bound the test passes; the game has no time limit, DEC-81) with zero
   invariant violations, two runs give deep-equal `MatchResult`s, and the committed golden replay
   `__fixtures__/full-match-seed-7.replay.json` reproduces its checkpoint hashes.
 
@@ -357,6 +439,84 @@ Invariants this doc contributes to `defaultInvariants.ts`: `PhaseMonotonicInvari
 `LockedZoneOwnerInvariant` (a zone with a living mini-boss never changes owner),
 `BossIsNeutralInvariant`, `RewardTargetsAliveInvariant` (every reward event names a living Legend
 or a team) and `SinglePlayerBrainInvariant` (at most one `player` controller).
+
+## 13. Implementation status
+
+The match director kernel (GL-1) is built: `MatchDirector`, `MatchTimeline`, the seven phase
+classes (only `CountdownPhase` has rules: the freeze), `defaultMatchPhases.ts`, the `enter-phase`
+action and `defaultTimelineActions.ts`, `MatchDirectorSystem`, `PhaseMonotonicInvariant`,
+`GameState.match` and `Snapshot.match`.
+
+Victory and the result (GL-2, core) are built: the `VictoryCondition` contract
+(`match/VictoryCondition.types.ts`), `ObjectiveLostCondition` with the `WinObjective` component,
+`defaultVictoryConditions.ts`, and the director's verdict step and `end()`, which stores the
+`MatchResult`, enters `victory` or `defeat` and emits `match-ended`. The director is inert once
+`state.match.result` is set, and no move leaves a terminal phase (the director rejects it,
+`phase-monotonic` flags it). `MatchResult` and `Verdict` live in `state/MatchResult.types.ts` and
+`VictoryConditionId` in `config/VictoryConditionId.types.ts`. `MatchConfig.playerTeam` is built.
+`MatchState` has `phase`, `phaseEnteredTick`, `timelineCursor`, `schedule`, `countdownEndTick`
+(DEC-285), `isIdleHeld`, `playerTeam`, `humanLegendId`, `scoring` and `result`. `MatchResult` has
+`winner`, `condition`, `playerTeam`, `hadHuman`, `durationTicks`, `matchTicks`, `seed`,
+`configHash`, `legends`, `teams` and `finalHash`; `timeline` and `achievements` come with the work
+that fills them.
+`match/defaultMatchDirector.ts` builds the director `Simulation` uses. Once `state.match.result` is set,
+`applyCommand` refuses every command with `command-rejected` reason `match-ended` (FR-002); the
+systems keep stepping.
+
+Implementation status, 2026-11-12 (branch `feat/duel-rules`, ADR 0016 draft): the Duel rules are
+built in core. `SimulationOptions.duel` (`{ killTarget }`, kept in the replay setup) makes a match
+a Duel: both human Legends start in the Cathedral (`match/duelStartPoints.ts`), `DuelRoundSystem`
+(before `DeathSystem`) counts a kill for the other team when a seat's Legend dies and resets both
+Legends to their start points at full health at once, and `KillCountCondition` (`kill-count`) ends
+the match at the target. The score is `state.match.duel` and `Snapshot.match.duel`. The shipped
+numbers (target, countdown, start offset) are `DUEL_RULES` in `content/duel/duelRules.ts`. Mobs and
+structures still run as generated; FR-115's inert world is not built.
+
+The human's Legend works like this (DEC-173): it is the roster's `human` slot (`RosterSlot.pilot`),
+at most one per roster and on `playerTeam`; a roster without one is sim mode. The client gives it
+the Rover role (DISC-51), so core spawns it at `playerTeam`'s Stronghold from the map, with the
+other Rovers in roster order and with no controller. No command is involved, and the replay setup
+records the roster, so a replay rebuilds the human's Legend from it. Core sets
+`state.match.humanLegendId` (`MatchRecord.seatHuman`); `Snapshot.match.humanLegendId` carries it (not
+hashed). An unknown definition id, or one that is not a Legend, logs ERROR `core.match`, spawns
+nothing and leaves `humanLegendId` `null`; the match plays on, because the class comes from saved
+data and can be stale (ADR 0023). A second human slot, or a human slot off `playerTeam`, throws, as
+a bad bot slot does. The roster's size check and the Unit-cap check count the human slot, even a
+refused one.
+
+Scoring (GL-4) is built: `match/Scoring.ts` with its rules (`match/rules/`: one registry for hits,
+one for deaths, the listener rules and the tick scorers, injected by `match/defaultScoringRules.ts`, DEC-221 (2)), `match/ScoreKeeper.types.ts`, `state/ScoreBook.ts` (the data and its writers, held by
+`MatchRecord`), `state/ScoringState.types.ts` (`LegendStats`, `TeamStats`, `ScoringState`, all
+read-only), `content/match/scoring.ts` (`SCORING`) and `MobKind`
+in `content/mobs/mobs.types.ts`. `Simulation` passes the
+content values into `createDefaultMatchDirector` and builds the director, and with it `Scoring`,
+before the roster spawns, so every roster Legend, the human's among them, has a row from the fold
+of tick 0. The director folds after the phase update and before the victory check, and `end()`
+copies the rows and team totals into `MatchResult`.
+`ScoringState` joins the state hash once it differs from the empty state (DEC-113 (8)), so the
+golden replay is unchanged. A row is registered from `entity-spawned`. The assist store keeps one
+entry per Legend and victim pair (at most the square of the Legend count) and drops a victim's entries at its
+death. A Legend's kill is credited by its row, so a hit that names a Legend still counts after
+that Legend left the store; no projectile deals damage yet. `LegendStats` has `kills`, `deaths`,
+`assists`, `minionKills`, `neutralKills`, `structureDamage`, `checkpointsWon` and `score`, and
+`TeamStats` has `score`, `structuresDestroyed`, `capturesHeldTicks` and `checkpointsReached`:
+structure points (DEC-212) and capture and hold points (GL-15, DEC-214, DEC-223) are built:
+`match/rules/CheckpointRule.ts` (a listener rule) and `match/rules/CaptureHoldRule.ts` (a tick
+scorer), and `checkpoint-reached` carries `presentLegendIds`. The other §5 counters join with the
+work that fills them.
+
+The verdict lines (§9, GL-5) are built: `content/narrative/verdictLines.ts` holds the
+`objective-lost` lines (the owner's placeholders, DEC-83), with `{name}` for the fallen side's
+sovereign, whose display name per team is in `content/sovereigns/sovereignDisplayNames.ts`
+(DEC-74; a stand-in until GL-3 puts the name on the `monarch` definition, plan §4.3);
+`loadDisplayContent()` returns both, and the client's results screen shows the line.
+`forfeit` and `aborted` have no lines yet (no condition produces them).
+
+Not built yet: `atmosphere` in `MatchState`; the rest of `content/narrative/` (§9); an entity
+that carries `WinObjective` (the sovereign); `MatchResult.timeline` and `achievements` (with
+their producers); the other §5 counters and `TeamStats` fields; a condition for `forfeit` or
+`aborted` (the ids exist); the timeline actions other than `enter-phase`; `dev-set-phase`; the
+announcer; the other invariants of §12.
 
 ## Related
 

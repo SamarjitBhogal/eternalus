@@ -1,0 +1,31 @@
+/* The select-timeout popup (DEC-102): themed like the pause overlay, centred over a scrim. */
+.dialog {
+  min-width: 20rem;
+  max-width: min(36rem, 90vw);
+  padding: var(--space-5);
+  border: 1px solid var(--theme-primary);
+  border-radius: var(--radius-lg);
+  background: var(--surface-1);
+  color: var(--text-primary);
+}
+
+.dialog::backdrop {
+  background: var(--surface-scrim);
+}
+
+.title {
+  margin: 0 0 var(--space-3);
+  color: var(--theme-primary);
+  font-family: var(--font-display);
+  text-align: center;
+}
+
+.text {
+  margin: 0 0 var(--space-4);
+  text-align: center;
+}
+
+.actions {
+  display: grid;
+  justify-items: center;
+}

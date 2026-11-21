@@ -1,0 +1,117 @@
+/* Capture objectives (Figma 62:425): 62 px columns (the capture bar's width) at 834, 930, 1028;
+   33 px after the allied strip, 30 px before the enemy strip. */
+.tracker {
+  display: flex;
+  margin: 0 calc(30 * var(--hud-u)) 0 calc(33 * var(--hud-u));
+}
+
+.objective {
+  position: relative;
+  flex: none;
+  width: calc(62 * var(--hud-u));
+  height: calc(78 * var(--hud-u));
+}
+
+/* The Figma's gaps between the bars, 34 then 36 px; the last one repeats for more lanes. */
+.objective + .objective {
+  margin-left: calc(34 * var(--hud-u));
+}
+
+.objective:nth-child(n + 3) {
+  margin-left: calc(36 * var(--hud-u));
+}
+
+/* The owner's letter inks (65:620 A, 65:613 B, 65:617 C) and, in the minimums set only, the
+   shield ring token (OD-11 b; undefined in the figma set, so no ring is drawn there). */
+.objective[data-team='light'] {
+  --objective-letter: var(--team-light-hud-letter);
+  --objective-letter-shadow: var(--team-light-hud-letter-shadow);
+  --objective-letter-blur: var(--team-light-hud-letter-blur);
+  --shield-outline: var(--team-light-hud-shield-outline);
+}
+
+.objective[data-team='neutral'] {
+  --objective-letter: var(--team-neutral-hud-letter);
+  --objective-letter-shadow: var(--team-neutral-hud-letter-shadow);
+  --objective-letter-blur: var(--team-neutral-hud-letter-blur);
+  --shield-outline: var(--team-neutral-hud-shield-outline);
+}
+
+.objective[data-team='dark'] {
+  --objective-letter: var(--team-dark-hud-letter);
+  --objective-letter-shadow: var(--team-dark-hud-letter-shadow);
+  --objective-letter-blur: var(--team-dark-hud-letter-blur);
+  --shield-outline: var(--team-dark-hud-shield-outline);
+}
+
+/* The shield raster (its stroke, inner shadows and NOISE baked) at (838, 71) 54 × 63 (I-45). In
+   the minimums set a 1 px token ring is drawn around its alpha (four unblurred offset copies
+   beneath it, ≥ 3:1 on the ground; OD-11 b); without the token the filter is invalid at
+   computed-value time, i.e. none, so the figma set stays pixel-exact. */
+.shieldRing {
+  position: absolute;
+  left: calc(4 * var(--hud-u));
+  top: calc(-1 * var(--hud-u));
+  width: calc(54 * var(--hud-u));
+  height: calc(63 * var(--hud-u));
+  filter: drop-shadow(calc(1 * var(--hud-u)) 0 0 var(--shield-outline))
+    drop-shadow(calc(-1 * var(--hud-u)) 0 0 var(--shield-outline))
+    drop-shadow(0 calc(1 * var(--hud-u)) 0 var(--shield-outline))
+    drop-shadow(0 calc(-1 * var(--hud-u)) 0 var(--shield-outline));
+}
+
+.shield {
+  display: block;
+  width: calc(54 * var(--hud-u));
+  height: calc(63 * var(--hud-u));
+}
+
+/* The letter: Cinzel Regular 36, centred in its 20 × 33 box at (shield x + 16, 82.5), with the
+   owner's shadow. */
+.letter {
+  position: absolute;
+  left: calc(21 * var(--hud-u));
+  top: calc(10.5 * var(--hud-u));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(20 * var(--hud-u));
+  height: calc(33 * var(--hud-u));
+  color: var(--objective-letter);
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(calc(36 * var(--hud-u)), var(--text-min));
+  line-height: calc(var(--leading-game-36) * var(--hud-u));
+  text-shadow: 0 0 calc(var(--objective-letter-blur) * var(--hud-u)) var(--objective-letter-shadow);
+  white-space: nowrap;
+}
+
+/* The allegiance flag (CD-03): an 18 × 18 mask in the HUD cream at (893, 72) right of the shield,
+   or its mirrored rendition at (1013, 72) left of it. */
+.flag {
+  position: absolute;
+  top: 0;
+  width: calc(18 * var(--hud-u));
+  height: calc(18 * var(--hud-u));
+  background-color: var(--hud-allegiance-flag);
+  mask-image: var(--allegiance-flag);
+  mask-size: 100% 100%;
+  mask-repeat: no-repeat;
+}
+
+.flagOurs {
+  left: calc(59 * var(--hud-u));
+}
+
+.flagTheirs {
+  left: calc(-15 * var(--hud-u));
+}
+
+/* Capture bar 62 × 6 at y 144. */
+.bar {
+  position: absolute;
+  left: 0;
+  top: calc(72 * var(--hud-u));
+  width: calc(62 * var(--hud-u));
+  height: calc(6 * var(--hud-u));
+}

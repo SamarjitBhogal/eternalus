@@ -16,9 +16,10 @@ import type { WorldMap } from './WorldMap';
  * index; then string pulling, so the answer is the farthest cell of the path the bot can walk to
  * in a straight line. When the straight line to the goal is already clear it answers the goal
  * without searching. A start or goal on blocked ground (inside a footprint) moves to the nearest
- * open cell within `snapCells`. A search stops after `maxExpansions` cells and answers "no way"
- * rather than flood the whole grid. Allocation-free after construction: a search stamps the cells
- * it touches instead of clearing whole-grid buffers.
+ * open cell within `snapCells`. A search stops after it settles `maxSearchArea` of ground (that
+ * area over the cell area, in cells) and answers "no way" rather than flood the whole grid, so a
+ * finer grid searches the same ground. Allocation-free after construction: a search stamps the
+ * cells it touches instead of clearing whole-grid buffers.
  *
  * @remarks ponytail: a bot searches again on each decision whose straight line is blocked (11 §6
  * puts heavy work in systems); cache the path in the brain if profiling shows the cost.
@@ -29,6 +30,8 @@ export class AStarPathfinder {
   private readonly stamp: Uint32Array;
   private readonly heap: CellHeap;
   private readonly path: Int32Array;
+  /** The most cells one search settles: `limits.maxSearchArea` over the grid's cell area. */
+  private readonly maxExpansions: number;
   private search = 0;
   private foundCost = -1;
   private goalCol = 0;
@@ -36,12 +39,13 @@ export class AStarPathfinder {
 
   /**
    * @param grid - The walkability grid every search runs over.
-   * @param limits - How many cells a search may settle and how far it snaps a blocked end.
+   * @param limits - How much ground a search may settle and how far it snaps a blocked end.
    */
   public constructor(
     private readonly grid: WorldMap,
     private readonly limits: AStarLimits,
   ) {
+    this.maxExpansions = Math.floor(limits.maxSearchArea / grid.cellSize ** 2);
     const cells = grid.cols * grid.rows;
     this.cost = new Uint32Array(cells);
     this.from = new Int32Array(cells);
@@ -114,11 +118,7 @@ export class AStarPathfinder {
     this.goalRow = (goalCell - this.goalCol) / cols;
     this.heap.clear();
     this.reach(startCell, 0, -1);
-    for (
-      let expanded = 0;
-      expanded < this.limits.maxExpansions && this.heap.size > 0;
-      expanded += 1
-    ) {
+    for (let expanded = 0; expanded < this.maxExpansions && this.heap.size > 0; expanded += 1) {
       const cell = this.heap.pop();
       if (cell === goalCell) {
         this.foundCost = this.cost[cell] ?? -1;

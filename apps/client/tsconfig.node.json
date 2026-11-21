@@ -8,5 +8,17 @@
     "tsBuildInfoFile": "../../node_modules/.tmp/client-node.tsbuildinfo",
     "allowImportingTsExtensions": true
   },
-  "include": ["vite.config.ts", "vitest.config.ts"]
+  // ADR 0025 §1: the error-reports plugin sits beside vite.config.ts and joins this project, with
+  // the one page file it shares (the endpoint path and the note limit).
+  "include": [
+    "vite.config.ts",
+    "vite.config.test.ts",
+    "vitest.config.ts",
+    "errorReportsPlugin.ts",
+    "errorReportsPlugin.constants.ts",
+    "errorReportsPlugin.fixtures.ts",
+    "errorReportsPlugin.test.ts",
+    "errorReportsPlugin.notes.test.ts",
+    "src/data/logging/ErrorReport.constants.ts"
+  ]
 }

@@ -1,5 +1,6 @@
 import { cos, sin } from './deterministicMath';
 import type { Polygon, Rect, Vec2 } from './geometry.types';
+import type { MutableVec2 } from './vec2.types';
 
 /** Radians per degree; angles in content are authored in degrees. */
 export const RADIANS_PER_DEGREE = Math.PI / 180;
@@ -50,6 +51,21 @@ export const isPointInPolygon = (point: Vec2, polygon: Polygon): boolean => {
   return isInside;
 };
 
+/** Whether `point` lies in the upright rectangle `rect`, edges included. */
+export const isPointInRect = ({ x, y }: Vec2, rect: Rect): boolean =>
+  x >= rect.x && x <= rect.x + rect.width && y >= rect.y && y <= rect.y + rect.height;
+
+/** Whether two upright rectangles overlap or touch, edges included. */
+export const doRectsOverlap = (a: Rect, b: Rect): boolean =>
+  a.x <= b.x + b.width && a.x + a.width >= b.x && a.y <= b.y + b.height && a.y + a.height >= b.y;
+
+/**
+ * Whether `point` lies inside any of `polygons`: the one point-in-footprint test shared by a
+ * capture zone's floor (`ZoneArea.contains`) and the building at a point (`findBuildingAt`).
+ */
+export const isPointInAnyPolygon = (point: Vec2, polygons: readonly Polygon[]): boolean =>
+  polygons.some((polygon) => isPointInPolygon(point, polygon));
+
 /** The point of the segment from `a` to `b` nearest to `point`. */
 export const closestPointOnSegment = (point: Vec2, a: Vec2, b: Vec2): Vec2 => {
   const lengthSquared = (b.x - a.x) ** 2 + (b.y - a.y) ** 2;
@@ -72,6 +88,55 @@ export const distanceToPath = (point: Vec2, path: readonly Vec2[]): number =>
       next === undefined ? distance(point, current) : distanceToSegment(point, current, next);
     return Math.min(best, candidate);
   }, Number.POSITIVE_INFINITY);
+
+/**
+ * Writes into `out` the point of the polygons' outlines (closing edges included) nearest to
+ * `point` and returns its distance; `Infinity`, leaving `out` as it was, without corners. A point
+ * inside a polygon gets its nearest edge too. Allocates nothing, for per-unit steering.
+ */
+export const nearestPointOnPolygons = (
+  point: Vec2,
+  polygons: readonly Polygon[],
+  out: MutableVec2,
+): number => {
+  let best = Number.POSITIVE_INFINITY;
+  for (const polygon of polygons) {
+    for (let index = 0; index < polygon.length; index += 1) {
+      const a = polygon[index];
+      const b = polygon[(index + 1) % polygon.length];
+      if (a === undefined || b === undefined) continue;
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const lengthSquared = dx * dx + dy * dy;
+      const along = ((point.x - a.x) * dx + (point.y - a.y) * dy) / lengthSquared;
+      const t = lengthSquared === 0 ? 0 : Math.min(Math.max(along, 0), 1);
+      const x = a.x + dx * t;
+      const y = a.y + dy * t;
+      const gapSquared = (point.x - x) * (point.x - x) + (point.y - y) * (point.y - y);
+      if (gapSquared < best) {
+        best = gapSquared;
+        out.x = x;
+        out.y = y;
+      }
+    }
+  }
+  return Math.sqrt(best);
+};
+
+/**
+ * The smallest axis-aligned rectangle around a set of points. With no points, `x` and `y` are
+ * `Infinity` and `width` and `height` are `-Infinity`, so no other box overlaps it.
+ */
+export const boundsOf = (points: readonly Vec2[]): Rect => {
+  const xs = points.map((p) => p.x);
+  const ys = points.map((p) => p.y);
+  return {
+    x: Math.min(...xs),
+    y: Math.min(...ys),
+    width: Math.max(...xs) - Math.min(...xs),
+    height: Math.max(...ys) - Math.min(...ys),
+  };
+};
 
 /** Which side of the line `a`→`b` the point `c` is on: positive, negative or 0 (on the line). */
 const orientation = (a: Vec2, b: Vec2, c: Vec2): number =>
@@ -114,12 +179,10 @@ const rectCorners = (rect: Rect): Polygon => [
  */
 export const doesPolygonOverlapRect = (polygon: Polygon, rect: Rect): boolean => {
   const corners = rectCorners(rect);
-  const isInsideRect = (point: Vec2): boolean =>
-    point.x >= rect.x &&
-    point.x <= rect.x + rect.width &&
-    point.y >= rect.y &&
-    point.y <= rect.y + rect.height;
-  if (polygon.some(isInsideRect) || corners.some((corner) => isPointInPolygon(corner, polygon))) {
+  if (
+    polygon.some((point) => isPointInRect(point, rect)) ||
+    corners.some((corner) => isPointInPolygon(corner, polygon))
+  ) {
     return true;
   }
   return polygon.some((start, index) => {

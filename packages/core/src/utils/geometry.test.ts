@@ -1,12 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  boundsOf,
   distance,
+  doRectsOverlap,
   doesPolygonOverlapRect,
   distanceToPath,
   distanceToSegment,
+  isPointInAnyPolygon,
   isPointInPolygon,
+  isPointInRect,
   lerpPoint,
+  nearestPointOnPolygons,
   polarPoint,
   regularPolygon,
 } from './geometry';
@@ -34,10 +39,53 @@ describe('geometry', () => {
     );
   });
 
+  it('boxes a set of points, and gives an empty box for no points', () => {
+    expect(boundsOf([{ x: 3, y: -1 }, ...SQUARE])).toEqual({ x: 0, y: -1, width: 10, height: 11 });
+    expect(boundsOf([])).toEqual({
+      x: Infinity,
+      y: Infinity,
+      width: -Infinity,
+      height: -Infinity,
+    });
+  });
+
   it('tells whether a point is inside a polygon', () => {
     expect(isPointInPolygon({ x: 5, y: 5 }, SQUARE)).toBe(true);
     expect(isPointInPolygon({ x: 15, y: 5 }, SQUARE)).toBe(false);
     expect(isPointInPolygon({ x: 5, y: -1 }, SQUARE)).toBe(false);
+  });
+
+  it('tells whether a point is in an upright rectangle, edges included', () => {
+    const rect = { x: 10, y: 20, width: 30, height: 40 };
+    expect(isPointInRect({ x: 25, y: 40 }, rect)).toBe(true);
+    expect(isPointInRect({ x: 10, y: 20 }, rect)).toBe(true);
+    expect(isPointInRect({ x: 40, y: 60 }, rect)).toBe(true);
+    expect(isPointInRect({ x: 9.9, y: 40 }, rect)).toBe(false);
+    expect(isPointInRect({ x: 40.1, y: 40 }, rect)).toBe(false);
+    expect(isPointInRect({ x: 25, y: 19.9 }, rect)).toBe(false);
+    expect(isPointInRect({ x: 25, y: 60.1 }, rect)).toBe(false);
+  });
+
+  it('tells whether two upright rectangles overlap, touching edges included', () => {
+    const rect = { x: 10, y: 20, width: 30, height: 40 };
+    const small = (x: number, y: number) => ({ x, y, width: 5, height: 5 });
+    expect(doRectsOverlap(rect, small(20, 30))).toBe(true);
+    expect(doRectsOverlap(rect, { x: 0, y: 0, width: 100, height: 100 })).toBe(true);
+    expect(doRectsOverlap(rect, small(40, 60))).toBe(true);
+    expect(doRectsOverlap(rect, small(5, 20))).toBe(true);
+    expect(doRectsOverlap(rect, small(40.1, 30))).toBe(false);
+    expect(doRectsOverlap(rect, small(4.9, 30))).toBe(false);
+    expect(doRectsOverlap(rect, small(20, 60.1))).toBe(false);
+    expect(doRectsOverlap(rect, small(20, 14.9))).toBe(false);
+    expect(doRectsOverlap(boundsOf([]), rect)).toBe(false);
+  });
+
+  it('tells whether a point is inside any of several polygons', () => {
+    const farSquare = SQUARE.map(({ x, y }) => ({ x: x + 20, y }));
+    expect(isPointInAnyPolygon({ x: 5, y: 5 }, [SQUARE, farSquare])).toBe(true);
+    expect(isPointInAnyPolygon({ x: 25, y: 5 }, [SQUARE, farSquare])).toBe(true);
+    expect(isPointInAnyPolygon({ x: 15, y: 5 }, [SQUARE, farSquare])).toBe(false);
+    expect(isPointInAnyPolygon({ x: 5, y: 5 }, [])).toBe(false);
   });
 
   it('measures distance to a segment and a path', () => {
@@ -92,5 +140,30 @@ describe('geometry', () => {
         cell,
       ),
     ).toBe(true);
+  });
+
+  it('writes the nearest point of several outlines into out, closing edges included', () => {
+    const square = [
+      { x: 10, y: 0 },
+      { x: 20, y: 0 },
+      { x: 20, y: 10 },
+      { x: 10, y: 10 },
+    ];
+    const far = [
+      { x: 40, y: 0 },
+      { x: 50, y: 0 },
+      { x: 45, y: 10 },
+    ];
+    const out = { x: -1, y: -1 };
+
+    // The closing edge (10, 10) → (10, 0) is the nearest one.
+    expect(nearestPointOnPolygons({ x: 7, y: 4 }, [far, square], out)).toBe(3);
+    expect(out).toEqual({ x: 10, y: 4 });
+    // A corner, when the point is past both of its edges.
+    expect(nearestPointOnPolygons({ x: 23, y: 14 }, [square], out)).toBe(5);
+    expect(out).toEqual({ x: 20, y: 10 });
+    // No corners: Infinity, and `out` keeps what it held.
+    expect(nearestPointOnPolygons({ x: 0, y: 0 }, [], out)).toBe(Number.POSITIVE_INFINITY);
+    expect(out).toEqual({ x: 20, y: 10 });
   });
 });

@@ -4,7 +4,7 @@ description: Senior-engineering requirements ES-01 to ES-13 for Eternalus (SDLC,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-29
+last-reviewed: 2026-11-02
 tags: [requirements, engineering, testing, performance, security, persistence]
 paths: ['packages/**', 'apps/**', '.github/**', '.githooks/**']
 related:
@@ -53,7 +53,7 @@ this document states what the engineering must achieve and how it is measured.
 | Simulation             | Full `Simulation` with bots only for N ticks: timeline, spawns, victory, invariants                                      | Headless in Node; assert outcomes and that no `DiagnosticEvent` fired                                              | `npm run test`           |
 | Replay-hash regression | Recorded seed + command log + expected checkpoint hashes                                                                 | Fixtures under `__fixtures__/`; replay and compare `StateHasher` output (ES-04)                                    | `npm run test`           |
 | Contract               | Every adapter of a port passes the same suite (`StorageAdapter`, `FrameScheduler`, `Renderer`)                           | One shared suite parameterised over adapters; browser-only adapters run in a dev harness (Recommendation)          | `npm run test` for fakes |
-| Client                 | React screens and HUD via `react-dom/server`; hooks; `GameLoop` with a fake scheduler; views with a recording `Renderer` | Node, no DOM ([`apps/client/AGENTS.md`](../../apps/client/AGENTS.md))                                              | `npm run test`, coverage |
+| Client                 | React screens and HUD via `react-dom/server`; hooks; `GameLoop` with a fake scheduler; views with a recording `Renderer` | Node, no DOM unless a file opts in to happy-dom (DEC-111) ([`apps/client/AGENTS.md`](../../apps/client/AGENTS.md)) | `npm run test`, coverage |
 | Soak                   | Tens of thousands of ticks at the unit cap, heavy invariants every N ticks, bounded counters                             | Tagged test with an explicit timeout, run by `npm run test:soak` (Recommendation) nightly and before a phase merge | Phase merge              |
 | Performance            | Tick time at cap; flow-field rebuild cost                                                                                | Headless timing test with a generous threshold; the real budget is measured in the browser (ES-05)                 | Phase merge              |
 | Runtime invariants     | Light invariants every tick, heavy every N, in dev builds and tests                                                      | `InvariantRunner` (AP-12)                                                                                          | Always on in dev         |
@@ -129,12 +129,13 @@ it('same seed and commands produce the same state hash', () => {
 ### ES-06 Reliability
 
 - **Requirement.** Invariants run in every dev build and every test (AP-12). React error
-  boundaries wrap every screen and the match view; a crash inside the match shows a recoverable
-  results/error screen and dumps the replay. Persistence failures never crash the game: quota
-  errors evict replays first, then warn; an unopenable database falls back to
-  `MemoryStorageAdapter` with a visible "progress will not be saved" notice. The game loop clamps
-  the accumulator so a background tab resumes cleanly; held input is cleared on `blur` and
-  `visibilitychange`. Unhandled promise rejections are a lint error (`CONTRIBUTING.md` §1).
+  boundaries wrap every screen and the match view; a crash inside the match returns to the menu
+  with the crash popup and saves an error report that holds the replay (DEC-106, ADR 0025).
+  Persistence failures never crash the game: quota errors evict replays first, then warn; an
+  unopenable database falls back to `MemoryStorageAdapter` with a visible "progress will not be
+  saved" notice. The game loop clamps the accumulator so a background tab resumes cleanly; held
+  input is cleared on `blur` and `visibilitychange`. Unhandled promise rejections are a lint error
+  (`CONTRIBUTING.md` §1).
 
 ### ES-07 Repeatability
 

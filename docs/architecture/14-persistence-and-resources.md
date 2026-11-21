@@ -4,7 +4,7 @@ description: The "single access with a controller in front" design for local dat
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-09
+last-reviewed: 2026-11-02
 tags: [architecture, persistence, indexeddb, repositories, dto, migrations, resources, assets]
 paths: ['apps/client/src/data/**']
 related:
@@ -46,7 +46,7 @@ data/persistence/   PersistenceController.ts (facade), StorageAdapter.ts (port +
                     (+ idbPromises.ts), MemoryStorageAdapter.ts, schema/migrations.ts, repositories/<Name>Repository.ts
                     (interface) + Storage<Name>Repository.ts (class), dto/<Name>Dto.ts (+ validate/upgrade/mappers),
                     StorageError.ts, EvictionPolicy.ts, profileExport.ts
-data/resources/     ResourceController.ts, AssetManifest.ts, AssetCache.ts, loaders/ImageLoader.ts, AudioLoader.ts, JsonLoader.ts
+data/resources/     ResourceController.ts, AssetManifest.ts (+ one file per asset group), AssetCache.ts, loaders/AssetLoader.ts (port) + AssetLoader.contract.ts, ImageLoader.ts, UiImageLoader.ts, FontLoader.ts, AudioLoader.ts, JsonLoader.ts
 ```
 
 ## 2. `PersistenceController`
@@ -297,7 +297,7 @@ Wall-clock fields exist only here, never in core.
 | `loadouts`   | `id`                 | `SavedLoadoutDtoV1`       | `schemaVersion`, `id`, `profileId`, `classId`, `name`, `updatedAt`, `loadout: LoadoutDtoV1` (mirrors core `Loadout`, [05](05-abilities-weapons-and-loadouts.md) §12: `primaryWeaponId`, `abilities[3]`, `ultimate`, `artifacts[2]`, …)                                                                                                                                                                     | **MVP**                               |
 | `settings`   | `[profileId, group]` | `SettingsGroupDtoV1`      | `schemaVersion`, `profileId`, `group: 'bindings' \| 'audio' \| 'accessibility' \| 'developer' \| 'storage'`, `value`: bindings `{ preset, bindings: BindingDtoV1[] }` (`{ action, chords: ChordDtoV1[] }`, [13](13-game-interface.md) §6); audio `{ master, music, sfx }`; accessibility `{ reducedMotion }`; developer `{ menuEnabled, assertLevel }`; storage `{ recordSimulatedMatches, storeReplays }` | **MVP**                               |
 | `matches`    | `id`                 | `MatchHistoryRecordDtoV1` | as in [mechanics-ideas §8](../reference/suggestions/mechanics-ideas.md#8-match-history-record-contents): `id`, `profileId`, `playedAt`, `durationTicks`, `tickRate`, `seed`, `mapPresetId`, `configHash`, `coreVersion`, `contentVersion`, `isSimulation`, `result`, `player`, `legends: LegendScoreDtoV1[]`, `teams`, `timeline`, `achievements`, `replayId`                                              | **MVP**                               |
-| `replays`    | `matchId`            | `ReplayDtoV1`             | `schemaVersion`, `matchId`, `profileId`, `playedAt`, `replay: Replay` (core: `versions { core, content, schema }`, `seed`, `config`, `commands[{ tick, command }]`, `checkpoints[{ tick, hash }]`)                                                                                                                                                                                                         | **MVP** (cut line 9 in the plan)      |
+| `replays`    | `matchId`            | `ReplayDtoV1`             | `schemaVersion`, `matchId`, `profileId`, `playedAt`, `replay: Replay` (core: `versions { core, content, schema }`, the setup (`seed`, `config`, `map`, `mapObjects`, `roster`), `commands[{ tick, command }]`, `checkpoints[{ tick, hash }]`)                                                                                                                                                              | **MVP** (cut line 9 in the plan)      |
 | `meta`       | `key`                | `MetaDtoV1`               | `key: 'schema'`, `dbVersion`, `coreVersion`, `contentVersion`, `persistRequestedAt`, `lastOpenedAt`                                                                                                                                                                                                                                                                                                        | **MVP**                               |
 | `quarantine` | `id` (auto)          | `QuarantineRecordDtoV1`   | `id`, `store`, `key`, `reason`, `quarantinedAt`, `value: unknown`                                                                                                                                                                                                                                                                                                                                          | **MVP**                               |
 
@@ -395,11 +395,22 @@ as the registry, one loader per asset type, one cache.
 
 ```ts
 // Sketch: apps/client/src/data/resources/AssetManifest.ts — the ONLY list of assets (02 §9); a script checks files, bytes, hash and licence in CI
-export type AssetType = 'image' | 'audio' | 'json';
-export type AssetGroup = 'boot' | 'menu' | 'match';
+export type AssetType = 'image' | 'audio' | 'json' | 'ui-image' | 'font'; // 'ui-image': decoded for the DOM; 'font': DEC-51
+export type AssetGroup =
+  // a session loads only its layout's and its effects renderer's art (DEC-52, DEC-54)
+  | 'boot'
+  | 'selection'
+  | 'selection-primary'
+  | 'selection-alternate'
+  | 'selection-raster'
+  | 'selection-primary-raster'
+  | 'match';
 export type AssetManifestEntry = {
   readonly id: AssetId;
-  readonly url: string;
+  readonly file: AssetFile; // { url, bytes, hash } at device pixel ratio 1
+  readonly file2x?: AssetFile; // the same at 2, chosen once per session
+  readonly renditions?: Readonly<Partial<Record<RenditionKey, RenditionFiles>>>; // per-use exports (size, rotation, mirroring), each with its files and optional box
+  readonly box?: RasterBox; // the draw box of an image placed at the slot it was baked for (a plate, a HUD weapon art)
   readonly type: AssetType;
   readonly group: AssetGroup;
   readonly bytes: number;
@@ -420,6 +431,8 @@ export interface AssetLoader<T> {
 export class ImageLoader implements AssetLoader<ImageBitmap> {} // fetch → blob → createImageBitmap (crops sprite frames from a sheet)
 export class AudioLoader implements AssetLoader<AudioBuffer> {} // fetch → arrayBuffer → injected decode (WebAudioOutput's decodeAudioData)
 export class JsonLoader implements AssetLoader<Json> {} // fetch → json → injected validator (atlas frame tables; content stays TS in core)
+export class UiImageLoader implements AssetLoader<HTMLImageElement> {} // an image decoded for the DOM (decode()); its URL reaches ui/ through the store (DEC-51)
+export class FontLoader implements AssetLoader<LoadableFace> {} // a FontFace added to document.fonts; no @font-face, no CDN (DEC-51)
 export class AssetCache {
   get<T>(id: AssetId): T;
   has(id: AssetId): boolean;
@@ -440,8 +453,18 @@ export class ResourceController {
 }
 ```
 
+- **Images the DOM shows** (screens and the HUD are React, [13](13-game-interface.md) §3) are
+  decoded for the DOM, not as `ImageBitmap`s: `SessionController` publishes the loaded group's
+  asset id → URL map as the `asset-urls` event, and `ui/` resolves an id with a selector, so `ui/`
+  never names a file (rule 13; DEC-51). Fonts are assets too: `FontLoader` adds Cinzel to
+  `document.fonts` from the `boot` group, and `--font-game` names the family first.
+- **Density and groups.** The device pixel ratio is read once per session and picks each entry's
+  `file` or `file2x`; art only one class-step layout or one effects renderer draws sits in its own
+  group, so a session never loads the other's.
 - Progress is byte-based from the manifest (`loadedBytes / totalBytes`), monotonic, and ends at
-  the manifest sum; `SessionController` publishes it as `loading-progress` for `BootScreen`
+  the manifest sum when every file loads: only the loaded files of a loaded entry count, so a load
+  with a failed file ends below the sum; `SessionController` publishes it as `loading-progress` for
+  `BootScreen`
   ([research A4](../research/persistence-input-diagnostics-research.md#a4-game-resources-manifests-preloading-caching-progress)).
 - Decoders are injected (`createImageBitmap`, the audio decode function, `fetch`), so loader
   tests run in Node with fakes; the cache deduplicates concurrent loads of one id. The typed
@@ -478,11 +501,11 @@ export class ResourceController {
 
 ## 13. Recipes
 
-| I am adding…                  | Files                                                                                                                                | Plus                                                                                                          |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| A persisted record type       | `dto/<Name>Dto.ts` (+ `validate`, `upgrade`, `to`/`from` mappers), `repositories/<Name>Repository.ts` + `Storage<Name>Repository.ts` | one `Migration` entry (store + indexes), one property on `PersistenceController`, contract-suite fixtures     |
-| A field or a settings group   | bump `schemaVersion`, extend `upgrade<Name>Dto` and the mappers; or one `group` literal with its `value` DTO and default             | a fixture at the old version in the migration test; one `settingsSlice` field ([13](13-game-interface.md) §5) |
-| An asset or a storage backend | one `ASSET_MANIFEST` line with `licence` and `source`; or `<Tech>StorageAdapter.ts` passing `describeStorageAdapter`                 | nothing else (views ask by id); one line in `main.tsx`                                                        |
+| I am adding…                  | Files                                                                                                                                                                                                                                                                               | Plus                                                                                                                                                            |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A persisted record type       | `dto/<Name>Dto.ts` (+ `validate`, `upgrade`, `to`/`from` mappers), `repositories/<Name>Repository.ts` + `Storage<Name>Repository.ts`                                                                                                                                                | one `Migration` entry (store + indexes), one property on `PersistenceController`, contract-suite fixtures                                                       |
+| A field or a settings group   | a field old saves cannot satisfy (required, renamed or retyped): bump `schemaVersion`, extend `upgrade<Name>Dto` and the mappers; an optional field they simply lack: no bump, the validator accepts its absence (DEC-125); or one `group` literal with its `value` DTO and default | a fixture at the old version (or, for an optional field, one saved without it) in the migration test; one `settingsSlice` field ([13](13-game-interface.md) §5) |
+| An asset or a storage backend | one line in its asset group's manifest file (concatenated into `ASSET_MANIFEST`) with `licence` and `source`; or `<Tech>StorageAdapter.ts` passing `describeStorageAdapter`                                                                                                         | nothing else (views ask by id); one line in `main.tsx`                                                                                                          |
 
 ## 14. Implementation status
 
@@ -507,6 +530,59 @@ reads through the shared `readOrQuarantine`. Interim gaps, to settle before
 - A quarantine is reported through an injected `warn` callback, because `data/` imports core
   types only (§1); `main.tsx` turns it into a `Logger` record. No `degraded` status or memory
   fallback yet (§10): a failed open leaves the settings on defaults.
+- **Stored chord modifiers (2026-10-30).** A stored keyboard chord has an optional `modifiers`
+  field (DEC-105), added inside schema version 1: records saved before it still read, because the
+  field is optional, so no upgrade step was needed and none was written. §13's recipe "A field or
+  a settings group" says to bump `schemaVersion`. The branch reads that rule as applying to a
+  field old records cannot satisfy (a required, renamed or retyped field); an optional field that
+  old records simply lack needs no bump. That reading waits for the owner (`INBOX.md` HC-B4); if he
+  keeps the recipe as written, the settings record moves to version 2 with a pass-through upgrade.
+  `CHORD_MODIFIERS` in `dto/SettingsDto.ts` lists the allowed names, and a test in
+  `settingsState.test.ts` ties that list to the bridge's `ChordModifier` type, so the two cannot
+  drift apart. **Appended 2026-10-30:** the owner adopted that reading (DEC-125, `INBOX.md`
+  HC-B4), so it is now the rule: an optional field that old saves lack needs no `schemaVersion`
+  bump, and the settings record stays at version 1. The wording of §13's recipe row waits for him
+  in `INBOX.md` HC-T1 (T-226). **Appended 2026-11-02:** he approved it (HC-T1, DEC-142); §13's row
+  "A field or a settings group" now says the rule.
+
+Resources (`feat/hud-and-character-select`, 2026-10-24; the owner's art and the Cinzel font,
+DEC-51). §1 and §11 say this since 2026-10-28 (the owner approved them, `INBOX.md` HC-T1); the
+detail:
+
+- **A minimal `ResourceController`** (`data/resources/ResourceController.ts`):
+  `load(group, onProgress)` with byte progress from the manifest, `isLoaded`, `progress`,
+  `urls(group)` (the URLs the DOM shows), `boxes(group)` (the draw boxes the manifest declares)
+  and `release(group)`. The device pixel ratio is read once, so each image's
+  1x or 2x file is fixed for the session. Not built yet: `get`, `AssetCache` and the canvas
+  `ImageBitmap` path (no sprite atlas exists; Phase 6, sprint 6.3), and the audio and JSON loaders
+  (no such assets).
+  An asset that fails to load never rejects its group: it is warned about through an injected
+  callback and listed in the load's outcome, and a failed rendition falls back to the entry's own
+  file; §12's typed error is not built. Progress counts an entry's loaded files once the entry is
+  cached, so a failed file never counts (`ResourceController.load`; HC-T1 T-153).
+- **The manifest** is typed TypeScript in `data/resources/`: `AssetManifest.ts` concatenates one
+  file per asset group (the ~300-line file rule; `selectionAssets.ts` and `matchAssets.ts` join part
+  files) into the one `ASSET_MANIFEST`. An entry has a `file` and an optional `file2x` (each with
+  URL, bytes and hash), its per-use `renditions`, a `licence` and a `source`. An image placed at the
+  spot it was baked for (a plate, a weapon art) also carries its draw `box` (origin and size in px
+  of the 1920 × 1080 frame), on the entry or on a rendition. `AssetType` is `'ui-image' | 'font'`.
+  The seven groups (`boot`, `selection`, `selection-primary`, `selection-alternate`,
+  `selection-raster`, `selection-primary-raster`, `match`) let a session load only its layout's art
+  and, with the `'css'` effects renderer, no Figma plates (`game/session/selectionAssetGroups.ts`).
+  The build emits every asset as its own file and inlines none into the JavaScript
+  (`assetsInlineLimit: 0` in `apps/client/vite.config.ts`, tested), so a group's bytes download
+  only when the group loads.
+- **Loaders** sit behind the `AssetLoader` port in `data/resources/loaders/`, with the
+  `describeAssetLoader` contract suite: `UiImageLoader` decodes images for the DOM, whose URLs reach
+  `ui/` through the `asset-urls` event and `assetsSlice` (the event carries the group's draw boxes
+  beside its URLs, and `ui/` reads a box by asset id with `useAssetBox`), and `FontLoader` adds
+  Cinzel to `document.fonts` from the `boot` group (no `@font-face`, no CDN). Releasing a group
+  clears its images' sources and deletes its fonts; no object URLs are created, so none is revoked.
+- **Checks.** File integrity is a Vitest test (`AssetManifest.files.test.ts`: every file exists
+  with its bytes and SHA-256, and no file in `assets/` lacks an entry), not a `scripts/` check,
+  and no `assets/manifest.json` is generated. `AboutScreen` lists the manifest's credits, each
+  with its licence text (the `credits` event into `assetsSlice`), so the OFL and MIT notices ship
+  in the built game.
 
 ## Related
 

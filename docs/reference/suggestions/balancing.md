@@ -4,7 +4,7 @@ description: Proposed tuning values, formulas and balance knobs for the MVP (hor
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-10
+last-reviewed: 2026-11-05
 tags: [reference, suggestions, balancing, content, testing]
 paths: ['packages/core/src/content/**', 'packages/core/src/config/**']
 related:
@@ -116,6 +116,8 @@ Which towers contribute wall shields (DISC-21): the general note says "all tower
 
 Auras (BuffTower and Stronghold; `TUNE` "reduces enemy health and damage by 10% each", "increases effects of debuffs"; the rest `Recommendation:`): radius 12 m; enemies inside deal 10% less damage, have 10% less max health, and debuffs on them last 25% longer; allies inside deal 10% more damage and regenerate aether 50% faster. The Stronghold's aura scales with `aliveBuffTowers / totalBuffTowers`, so "destroying buff buildings removes the capital's aura" holds at zero and degrades smoothly before that.
 
+Out-of-combat healing (DEC-188, amended by DEC-215 and DEC-225; the values live in `packages/core/src/content/healing/outOfCombatHealing.ts`, `TUNE`): after 10 s without dealing or taking damage, every Legend and mob regains 2% of max health per second, one flat rate. While its centre point is in the heal zone of a friendly structure that has taken no hit for 10 s, it gains +10 points (lane towers: the box round the fort walls, gateways included) or +15 points (Stronghold: the ground inside its shield, not on the shield's walls, gates or turrets; hits on those do not count as hits on the Stronghold). Two zones never overlap. A heal from an allied Legend adds to this one.
+
 Guards (`TUNE` "respawn every 2 minutes", "don't leave the tower's perimeter"; counts are `Recommendation:`): SpawnerTower 4 light, BuffTower 6 medium ("numerous"), Stronghold 6 light ranged + 2 heavy melee, minus 2 light per lost SpawnerTower; leash radius 8 m; respawn 120 s after death.
 
 ### Structure damage multipliers
@@ -203,9 +205,11 @@ Ultimate meter (`TUNE` "kills, assists and objective damage fill your ultimate; 
 xpToNext(L) = 100 + 50 · (L − 1)   for L = 1 … 9      cumulative XP to level 10 = 2,700
 ```
 
+**Superseded for the shipped game by DEC-190 (2026-11-05):** the cap is 50, with the curve in `content/progression/levelCurves.ts` and the sources in `content/progression/xpSources.ts`. Not final; the soak metric below can change it. The text below is the original cap-10 recommendation.
+
 Level cap 10 (options: 12 with the same formula, cumulative 3,850; 15, cumulative 5,950). Per level: +8% max health, +5% basic-attack damage, +4% ability potency, +10 max aether; cooldowns do not scale with level (capture points own that lever).
 
-XP sources (`Recommendation:`): minion kill 20 / 45 / 120 shared equally among allied Legends within 10 m, with the killer getting an unshared +25%; Legend kill 150 + 25 × victim level, assists (damage in the last 10 s) get half; structure destroyed 300 to every allied Legend; checkpoints 60 / 150 / 400 with the damage-biased local share; camp cleared: the mobs' XP + 50; mini-boss 500 team-wide; the Eternal 1,500 team-wide. A laner sharing sixteen light minions a minute earns about 110 XP/min from minions alone, so objectives and kills are what carry a Legend to level 10 in the 18–22 minute window; the soak metric "Legend level at 10 and 20 minutes" is the check.
+XP sources (`Recommendation:`; superseded in part by DEC-190 and DEC-186: Legend kill and structure XP are now in `xpSources.ts`, and every Legend on the destroying team gets structure XP): minion kill 20 / 45 / 120 shared equally among allied Legends within 10 m, with the killer getting an unshared +25%; Legend kill 150 + 25 × victim level, assists (damage in the last 10 s) get half; structure destroyed 300 to every allied Legend; checkpoints 60 / 150 / 400 with the damage-biased local share; camp cleared: the mobs' XP + 50; mini-boss 500 team-wide; the Eternal 1,500 team-wide. A laner sharing sixteen light minions a minute earns about 110 XP/min from minions alone, so objectives and kills are what carry a Legend to level 10 in the 18–22 minute window; the soak metric "Legend level at 10 and 20 minutes" is the check.
 
 ## Eternal (final-hit) stat multipliers — MVP
 
