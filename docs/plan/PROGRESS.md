@@ -8529,6 +8529,105 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Next step: push (`push-98.sh`); post the reply on #98; build the BTD3 and BTD5 branch with the
   band rules (DEC-245).
 
+### 2026-11-14 — Phase 3 / tower ruins: follow-ups BTD3, BTD5 and the band rules (DEC-245) — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: built off `feat/tower-ruins-and-routes` (PR #98), three commits. (BTD3)
+  `DefaultSystemPipelineOptions.ruinWall` is required; the run-time throw is gone, and so is the
+  one test that asserted only that throw ("refuses a match with map objects but no ruinWall"):
+  the type check replaces it (this removal is why the item waited for the owner: "A: follow-up
+  branch now", DEC-245). Nine test call sites pass `ruinWall`. No other test was weakened or
+  deleted. (BTD5) `MatchGrid` keeps its `definition`; `MatchWorld` takes only the grid. (Band
+  rules, "Build now") `map/laneBandRules.ts` holds the one rule set (each band inside [0, 1];
+  spawner band ahead of buff band); `validateMapLayout` and `laneTowerSpecs` both use it, the
+  latter on the widened bands, with a message naming the cause, lane, tower counts and world
+  size. `assertTowersOnLane` is removed. Refused on the default world: 3 lanes, 1 spawner and 6
+  buff towers. The "neighbouring lanes" fort test moved to 9 lanes, 1 spawner, 4 buff towers
+  (same assertion): its old config now breaks the band rule first. Docs: 03 and 06 each had one
+  sentence made false and fixed (06 §3 placement refusal list; 03 `MatchWorld`), `last-reviewed`
+  bumped; decisions log batch and DEC-245; INBOX item ticked with a dated answer line.
+- Red-first: `eternalus-agent-work/tower-ruins-and-routes/tower-ruins-followups/red-first.md`
+  (typecheck red at 9 call sites; copied definition turns 2 tests red; rule off turns 2 red;
+  spawner-ahead rule off turns 2 red).
+- Checks run: full `npm run check` (log `.../tower-ruins-followups/check-1.log`): EXIT=0, core
+  "Tests 1485 passed (1485)", protocol "Tests 18 passed (18)", client "Tests 1883 passed
+  (1883)", server "Tests 79 passed (79)", "Documentation check passed.". Critic and ponytail
+  not run (pre-PR gate is for the session that opens the PR).
+- Next step: critic and ponytail on this branch, then the PR after #98.
+- Correction, 2026-11-14 (critic r1, appended, not an edit): this entry and the DEC-245 row first
+  said the 3-lane, 1 spawner, 6 buff config on the default world was "refused only later, as
+  forts over each other". False: it generates at `f3f649db`. The band rules were also checked on
+  the widened band edges, which can be empty ground, so 406 configs that generated at base were
+  refused. Fixed in the next entry.
+
+### 2026-11-14 — Phase 3 / tower ruins: critic round 1 on the follow-ups — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: critic r1 (REQUEST CHANGES, 2 blockers; `eternalus-agent-work/tower-ruins-and-routes/tower-ruins-followups/critic-r1.md`).
+  (B1) `laneTowerSpecs` now runs `brokenLaneBandRules` on the ground the towers occupy (first to
+  last tower of each kind; the configured band for a kind with none), so the rules mean: every
+  tower on the lane, and the first SpawnerTower ahead of the last BuffTower. Placement
+  (`towerBand`, `bandPositions`) is unchanged. (B2, N1) the false "refused only later" text is
+  corrected in the DEC-245 row, the test comment and architecture 06 §3; the neighbouring-lane
+  test is called "the same kind of assertion". (S1, ponytail 1 and 3) the rule array is typed,
+  `half` is computed only when a band widens. (N2) "keeps the definition it was built from" moved
+  from the 03 status note to 06 §6. Not built: one shared `Band` type (INBOX item for the tidy PR,
+  DEC-218); a getter for `MatchWorld.definition` (rejected, the field stays).
+- Probe (`.../tower-ruins-followups/probe/`, seed 1234, 4800 configs: 2 grounds x 5 worlds x
+  lanes 1/3/5/7/9 x spawn 1-6 x buff 1-16): accepted at `f3f649db` 922, at the new HEAD 922;
+  accepted at base and refused now 0; refused at base and accepted now 0. The new message fires
+  on 2280 configs, all refused at base too (696 as forts over each other, 1584 as off the lane):
+  it is a clearer message, not a new refusal. Default world, 3 lanes: 1/6 generates, 1/10 is
+  refused with the new message.
+- Red-first: `.../tower-ruins-followups/red-first.md` section 4.
+- Checks run: full `npm run check` (log `.../check-2.log`, run with only the docs and this entry
+  uncommitted): EXIT=0, core "Tests 1486 passed (1486)", protocol "Tests 18 passed (18)", client
+  "Tests 1883 passed (1883)", server "Tests 79 passed (79)", "Documentation check passed.".
+- Next step: critic r2 on the changed lines, then the PR after #98.
+
+### 2026-11-14 — Phase 3 / tower-ruins follow-ups: critic round 2 — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: critic round 2 (architecture-reviewer) on `22dfd48d..48c5d74f`: request changes,
+  2 blockers. (1) A kind with no tower used its configured band, so 108 probed configs that
+  generate on `f3f649db` were refused (for example the default world, 3 lanes, 0 SpawnerTowers
+  and 8 BuffTowers). Now a kind with no tower has no band, and `brokenLaneBandRules` skips a rule
+  about a missing band (`LaneBands` in `map/laneBandRules.ts`). (2) The DEC-245 row and a test
+  comment said the neighbouring-lane fort test had to move; with the rule on tower positions its
+  old config gives the old error again. The test is restored exactly as on `f3f649db`. Also: the
+  row's title says "placed towers", not "widened bands"; `laneTowerSpecs` computes the two
+  position lists first (no dead fallback). Rejected nit: the message names `laneBands.*`; one
+  rule set has one message, and the text before it says the placed towers broke it. The
+  correction line above (2026-11-14, under the first entry of this branch) said the
+  neighbouring-lane test moved: it did not, in the end.
+- Red-first: "generates a lane with no SpawnerTower" and "applies the order rule only when both
+  bands are given" failed (2 failed, 77 passed) on `48c5d74f`'s code
+  (`eternalus-agent-work/tower-ruins-and-routes/tower-ruins-followups/red-first.md`, section 5).
+- Probe: the critic's two scripts (copied to
+  `eternalus-agent-work/tower-ruins-and-routes/tower-ruins-followups/probe/`), base `f3f649db`
+  against this tree. Counts 0 to 16 with one kind at 0: 1584 configs, 654 accepted at both, 0
+  changed either way, 0 hash differences. Counts 1 to 6 by 1 to 16: 4800 configs, 1156 accepted
+  at both, 0 changed either way, 0 hash differences.
+- Checks run: full `npm run check` on this tree, before the commit (log
+  `eternalus-agent-work/tower-ruins-and-routes/tower-ruins-followups/check-3.log`): EXIT=0, core
+  "Tests 1488 passed (1488)", protocol "Tests 18 passed (18)", client "Tests 1883 passed
+  (1883)", server "Tests 79 passed (79)", "Documentation check passed.". This line was added
+  after the run; prettier and `docs:check` pass on it.
+- Next step: critic round 3 (the last) on this delta; then push and a PR on
+  `feat/tower-ruins-and-routes`.
+
+### 2026-11-14 — Phase 3 / tower-ruins follow-ups: pre-PR gate passed — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: critic round 3 (architecture-reviewer) on `48c5d74f..c982e3a0`: approve, 0
+  blockers; both round-2 blockers fixed, the rejected message nit accepted. Its own probes, base
+  `f3f649db` against `c982e3a0` (three scripts, 11298 configs, seeds 1, 42, 1234 and 987654):
+  no config changes between accepted and refused, and no output differs. Ponytail
+  (`eternalus-agent-work/tower-ruins-and-routes/tower-ruins-followups/ponytail-review-r1.md`):
+  cuts 1 and 3 applied in `f98af117`; cut 2 (a getter for `MatchWorld.definition`) rejected, a
+  readonly field beside `grid` is as short. The round-2 fix changed lines, not structure.
+  Critic reports: `critic-r1.md`, `critic-r2-r3.md` in the same folder.
+- Checks run: the full `npm run check` of the entry above covers the code (`check-3.log`,
+  EXIT=0); the commits after it change docs only. `npx prettier --check` and `npm run
+docs:check` pass on this entry.
+- Next step: push after `feat/tower-ruins-and-routes` (`f3f649db`) is on origin; PR against it.
+
 ### 2026-11-14 — Phase 3 / minion follow-ups: merge phase/3 (#96) — fix/minion-stack-followups — sholtzman + Claude Code
 
 - What was done: merged phase/3 `a99c3129` (#96 bug tracker, docs only). This file and the
@@ -8568,6 +8667,17 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   kept. No code change.
 - Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
   (`eternalus-agent-work/tower-ruins-and-routes/check-merge85-r7.log`): core "Tests 1480 passed (1480)", protocol
+  "Tests 18 passed (18)", client "Tests 1883 passed (1883)", server "Tests 79 passed (79)",
+  "Documentation check passed."; then `prettier --check` and `npm run docs:check` with this
+  entry.
+- Next step: push.
+
+### 2026-11-14 — Phase 3 / tower-ruins follow-ups: merge #98's #96 head — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: merged `feat/tower-ruins-and-routes` `16c7fe2d` (PR #98) (it adds only the #96 bug tracker, docs only). This file and `INBOX.md` conflicted;
+  both sides are kept. No code change.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/tower-ruins-followups/check-merge98.log`): core "Tests 1488 passed (1488)", protocol
   "Tests 18 passed (18)", client "Tests 1883 passed (1883)", server "Tests 79 passed (79)",
   "Documentation check passed."; then `prettier --check` and `npm run docs:check` with this
   entry.
@@ -9523,6 +9633,42 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   "Tests 1647 passed (1647)", protocol 18, client 1979, server 79, docs passed.
 - Next step: push; then merge this head into `refactor/tower-ruins-followups` (#122).
 
+### 2026-11-14 — Phase 3 / tower-ruins follow-ups: merge #98's phase/3 head — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: merged `feat/tower-ruins-and-routes` `a95efbb0` (PR #98 with phase/3
+  `88f5afd8`: #85 and #86, and the `spawnMapStructures` fixture fix for the fort `Footprint`).
+  Only this file conflicted; both sides are kept. No code change on this branch.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/tower-ruins-followups/check-merge98-a95efbb0.log`):
+  core "Tests 1530 passed (1530)", protocol "Tests 18 passed (18)", client "Tests 1883 passed
+  (1883)", server "Tests 79 passed (79)", "Documentation check passed."; then `prettier --check`
+  and `npm run docs:check` with this entry.
+- Next step: push.
+
+### 2026-11-15 — Phase 3 / tower ruins follow-ups: merge #98's head (phase/3 with #79, #93) — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: merged the local head of `feat/tower-ruins-and-routes` (`3b35621e`), which
+  merges phase/3 at `8dc7d962` (#79 unit facing chevron). Conflicts, both sides kept: this file;
+  `MatchWorld.ts`, where this branch's one-argument constructor (the map comes from
+  `matchGrid.definition`) now also fills #79's Stronghold positions from `this.definition`, and
+  #79's `startFacing` stays. Semantic conflicts, found by `tsc`: #79's two start-facing tests
+  passed the map as well (`TS2554`), now `new MatchWorld(matchGrid)` as this branch's other
+  tests do; #79's DEC-192 pipeline test had no `ruinWall`, which this branch made required
+  (`TS2345`), now `RUINED_FORT_WALL_DEFINITION` as every other test in that file. Assertions
+  unchanged.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/tower-ruins-followups/check-merge98-3b35621e.log`):
+  core "Tests 1563 passed (1563)", protocol "Tests 18 passed (18)", client "Tests 1890 passed
+  (1890)", server "Tests 79 passed (79)", "Documentation check passed."; then
+  `prettier --check` and `npm run docs:check` with this entry.
+  Then merged #98's next head (`d8d89bf7`, phase/3 at `fcc48a7b`, #93 match scoring). Only the
+  owner decisions log conflicted: #93's DEC-250 batch above this branch's DEC-245/246 batch,
+  both of 2026-11-14, as the higher number is the newer. `tsc` found no API drift. Full
+  `npm run check` exit 0
+  (`eternalus-agent-work/tower-ruins-and-routes/tower-ruins-followups/check-merge98-d8d89bf7.log`):
+  core "Tests 1655 passed (1655)", protocol 18, client 1979, server 79, docs passed.
+- Next step: push after #98.
+
 ### 2026-11-19 — Phase 3 / tower ruins and routes: merge phase/3 (the DEC-242 split PRs #121, #120, #119 and #127, #113, #102, #101, #99, #126) — feat/tower-ruins-and-routes — sholtzman + Claude Code
 
 - What was done: merged phase/3 at `d85bc2f5`. 21 files conflicted (15 code, 6 docs). Rule: this
@@ -9559,6 +9705,27 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Next step: push; claudiodh re-reviews #98; merge this head into `refactor/tower-ruins-followups`
   (#122).
 
+### 2026-11-19 — Phase 3 / tower ruins follow-ups: merge #98's head (phase/3 `d85bc2f5`) — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: merged `feat/tower-ruins-and-routes` at `86d70353` (its merge of phase/3
+  `d85bc2f5`: the DEC-242 split PRs #119, #120, #121 and #99, #101, #102, #113, #126, #127) as
+  `3293d7c6`. Three files conflicted, all docs; in each both sides added text at the same place:
+  `INBOX.md` keeps this branch's BT2 item, then #98's new items; `03-game-model.md` takes the
+  later `last-reviewed` (2026-11-14); this file keeps both sides, oldest first. No code
+  conflicts. This branch's required `DefaultSystemPipelineOptions.ruinWall` (BTD3) and its
+  one-grid `MatchWorld` hold at phase/3's new call sites: every `new DefaultSystemPipeline`
+  passes `ruinWall` and every `new MatchWorld` takes one `MatchGrid`. This branch's own diff
+  over its base is unchanged by the merge (sorted added and removed lines of `d8d89bf7..c671628b`
+  and `86d70353..3293d7c6` compared: only doc 03's base `last-reviewed` and one blank line after
+  the BT2 item in `INBOX.md` differ).
+- Checks run: `npm ci`, then full `npm run check` exit 0 on the merged tree `1639473a` before
+  this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-122-merge-86d70353.log`): core "Tests 1715
+  passed (1715)", protocol "Tests 29 passed (29)", client "Tests 2011 passed (2011)", server
+  "Tests 84 passed (84)", "Documentation check passed."; then `prettier --check` and
+  `npm run docs:check` with this entry.
+- Next step: push after #98's head `86d70353` is on origin; claudiodh re-reviews #98, then #122.
+
 ### 2026-11-20 — Phase 3 / tower ruins and routes: merge phase/3 (#125, content durations at load) — feat/tower-ruins-and-routes — sholtzman + Claude Code
 
 - What was done: merged phase/3 at `5a7cc8dc` (#125, DEC-241) as `5502dc94`. Three files
@@ -9576,6 +9743,22 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `npm run docs:check` with this entry.
 - Next step: push; claudiodh re-reviews #98; then #122 takes this head.
 
+### 2026-11-20 — Phase 3 / tower ruins follow-ups: merge #98's head (phase/3 `5a7cc8dc`) — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: merged `feat/tower-ruins-and-routes` at `5502dc94` (its merge of phase/3
+  `5a7cc8dc`, #125, DEC-241) as `56f68caf`, with no conflicts; then #98's PROGRESS entry
+  (`3bc24d27`) as `c3cc2dbf`, where this file keeps both sides, oldest first. This branch's own diff
+  over its base is unchanged (sorted added and removed lines of `86d70353..0e6bc844` and
+  `5502dc94..56f68caf` are identical), and #125 adds no `DefaultSystemPipeline` or
+  `MatchWorld` call site, so this branch's required `ruinWall` (BTD3) and one-grid
+  `MatchWorld` need no change.
+- Checks run: full `npm run check` exit 0 on `56f68caf`
+  (`eternalus-agent-work/tower-ruins-and-routes/check-122-merge-5502dc94.log`): core "Tests 1742
+  passed (1742)", protocol "Tests 29 passed (29)", client "Tests 2011 passed (2011)", server
+  "Tests 84 passed (84)", "Documentation check passed."; the later merge and this entry change
+  only this file: `prettier --check` and `npm run docs:check`.
+- Next step: push after #98's head `3bc24d27`; claudiodh re-reviews #98, then #122.
+
 ### 2026-11-20 — Phase 3 / tower ruins and routes: merge phase/3 (#140, DEC-289) — feat/tower-ruins-and-routes — sholtzman + Claude Code
 
 - What was done: merged phase/3 at `a3550159` (#140, DEC-289, the tower horde test's own 120 s
@@ -9590,3 +9773,22 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   "Tests 84 passed (84)", "Documentation check passed."; then `prettier --check` and
   `npm run docs:check` with this entry.
 - Next step: push; claudiodh re-reviews #98; #122 takes this head.
+
+### 2026-11-20 — Phase 3 / tower ruins follow-ups: merge #98's head (phase/3 `a3550159`, #140) — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: merged `feat/tower-ruins-and-routes` at `aa01127f` (its merge of phase/3
+  `a3550159`, #140, DEC-289). Only this file conflicted: both sides appended entries; it keeps
+  this branch's entry for the `5a7cc8dc` merge first, then #98's new entry. `INBOX.md`, the owner
+  decisions log and `Simulation.mapObjects.test.ts` merged without conflict. Against `56bcd64b`
+  the merge changes only those three files and this one, so no code under test changes. This
+  entry is part of the merge commit.
+- Checks run: full `npm run check` on the merge before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-122-merge-aa01127f.log`) under load average
+  27 to 29 (36 min): core "Tests 1742 passed (1742)", protocol "Tests 29 passed (29)", client
+  "Tests 2011 passed (2011)", server "Tests 2 failed | 82 passed (84)", EXIT=1. The two failures
+  are `CoreDuelSimulationFactory.test.ts` "Test timed out in 5000ms" (7.5 s and 9.2 s); a re-run
+  of the server tests failed the same way (6.8 s and 8.2 s), and the same file with
+  `--testTimeout=60000` passed "Tests 2 passed (2)". The server code is the same as on
+  `56bcd64b`, whose CI passed on ubuntu and windows. `prettier --check` and `npm run docs:check`
+  with this entry. CI on the pushed head is the full check.
+- Next step: push after #98's head `aa01127f`; claudiodh re-reviews #98, then #122.

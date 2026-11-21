@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-10
+last-reviewed: 2026-11-14
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -130,8 +130,13 @@ flowchart LR
    per axis to the world (`map/fortInWorld.ts`). After placement the generator checks every pair
    of lane tower forts on the map, both teams and all lanes, as upright boxes in world units, so
    forts on a bend or on neighbouring lanes are checked too (DEC-215 (1), DEC-239). It refuses
-   (`MapGenerationError`, naming both towers) a config whose forts would overlap, and one whose
-   widened band would leave the lane.
+   (`MapGenerationError`, naming both towers) a config whose forts would overlap. It also
+   refuses, naming the lane, the tower counts and the world size, a config whose placed towers
+   break a lane band rule, checked on the ground each kind occupies (first to last tower): a
+   tower off the lane, or the first SpawnerTower not ahead of the last BuffTower. A band that
+   widens without a tower passing the other kind's is accepted, and a lane with no tower of a
+   kind has no order to break. That rule set
+   (`map/laneBandRules.ts`) is the one `validateMapLayout` applies to the configured bands.
 4. **raiseWalls**: one `gate` centred on each lane's exit; `wall-segment`s fill the rest of the
    ring, split so that none spans more than a maximum arc; a `turret` sits on every ring corner.
    Gate count equals `numLanes` and every lane leaves through its own gate by construction; a
@@ -263,7 +268,9 @@ configured lane fails validation naming the lane and the terrain instead of draw
 `WorldMap` is the mutable per-match view of the map that systems read. It is built once from the
 `MapDefinition` and updated only through events (never by views or the client). `GameState.world`
 is a `MatchWorld` that holds the definition, its lane routes and this grid (03 §2), so `state/`
-imports `map/` types (02 §2):
+imports `map/` types (02 §2). `MatchWorld` takes only the `MatchGrid` (the grid with the rule that
+stamps and reopens it), which keeps the definition it was built from, so a world never pairs a
+grid with another map:
 
 ```ts
 // packages/core/src/map/WorldMap.ts (sketch)

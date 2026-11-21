@@ -12,7 +12,6 @@ import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { loadSpawnWaves } from '../content/structures/loadSpawnWaves';
 import { OPENING_WAVE } from '../content/structures/spawnWaves';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
-import type { ObstacleDefinition } from '../content/obstacles/obstacles.types';
 import type { StructureDefinition } from '../content/structures/structures.types';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { LaneFlowFields } from '../map/LaneFlowFields';
@@ -106,7 +105,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
               state,
               damage,
               flowFields,
-              ruinWall: DefaultSystemPipeline.requireRuinWall(ruinWall),
+              ruinWall,
             }),
           ]),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
@@ -136,20 +135,6 @@ export class DefaultSystemPipeline extends SystemPipeline {
       new MatchDirectorSystem(director),
       new InvariantSystem(invariants),
     ]);
-  }
-
-  /**
-   * The injected `ruinWall`, which a match with map objects needs (DEC-219 (a)).
-   *
-   * @throws Error when it is missing.
-   */
-  private static requireRuinWall(ruinWall: ObstacleDefinition | undefined): ObstacleDefinition {
-    if (ruinWall === undefined) {
-      throw new Error(
-        'A match with map objects needs DefaultSystemPipelineOptions.ruinWall: what a standing fort wall becomes when its tower falls',
-      );
-    }
-    return ruinWall;
   }
 
   /**

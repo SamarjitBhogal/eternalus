@@ -19,21 +19,21 @@ export class MatchWorld {
   /** Each team's Stronghold position, from the map's features. */
   private readonly strongholds = new Map<Team, Vec2>();
 
+  /** The generated map, the one `matchGrid` was built from. */
+  public readonly definition: MapDefinition;
+
   /** The walkability grid the lane flow fields and A\* share (`MatchGrid.grid`). */
   public readonly grid: WorldMap;
 
   /**
-   * @param definition - The generated map.
-   * @param matchGrid - Its grid with the rule that stamped it (`MatchGrid.build`), built by the
-   *   composition root.
+   * @param matchGrid - The map's grid with the rule that stamped it (`MatchGrid.build`), built by
+   *   the composition root. It keeps its map, so the world can never pair a grid with another map.
    */
-  public constructor(
-    public readonly definition: MapDefinition,
-    private readonly matchGrid: MatchGrid,
-  ) {
+  public constructor(private readonly matchGrid: MatchGrid) {
+    this.definition = matchGrid.definition;
     this.grid = matchGrid.grid;
-    this.routes = new LaneRoutes(definition);
-    for (const { kind, team, position } of definition.features) {
+    this.routes = new LaneRoutes(this.definition);
+    for (const { kind, team, position } of this.definition.features) {
       if (kind === 'stronghold' && !this.strongholds.has(team)) {
         this.strongholds.set(team, position);
       }

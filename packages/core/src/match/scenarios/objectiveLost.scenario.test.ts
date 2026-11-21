@@ -4,6 +4,7 @@ import { Health } from '../../components/Health';
 import { WinObjective } from '../../components/WinObjective';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../../config/matchPhases';
+import { RUINED_FORT_WALL_DEFINITION } from '../../content/maps/mapObjectDefinitions';
 import { loadDefaultContent } from '../../content/loadDefaultContent';
 import { SCORING } from '../../content/match/scoring';
 import { loadLevelCurves } from '../../content/progression/loadLevelCurves';
@@ -55,6 +56,7 @@ const playOut = (prepare: (state: GameState) => void = () => undefined) => {
     state,
     progression: { units: UNITS, curves: CURVES, xpSources: XP_SOURCES },
     director,
+    ruinWall: RUINED_FORT_WALL_DEFINITION,
   });
   director.start(state);
   const factory = new EntityFactory(

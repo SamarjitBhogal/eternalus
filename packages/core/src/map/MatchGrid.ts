@@ -10,6 +10,8 @@ import { WorldMap } from './WorldMap';
  */
 export class MatchGrid {
   private constructor(
+    /** The map this grid was built from. */
+    public readonly definition: MapDefinition,
     /** The grid the lane flow fields and A\* share. */
     public readonly grid: WorldMap,
     private readonly backings: ReadonlyMap<string, FeatureBacking>,
@@ -60,7 +62,7 @@ export class MatchGrid {
     for (const object of blocking) {
       for (const footprint of object.footprints) grid.stampFootprint(footprint, object.passages);
     }
-    return new MatchGrid(grid, backings);
+    return new MatchGrid(definition, grid, backings);
   }
 
   /**

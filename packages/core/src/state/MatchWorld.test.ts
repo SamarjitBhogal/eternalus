@@ -9,7 +9,7 @@ import { MatchWorld } from './MatchWorld';
 describe('MatchWorld', () => {
   it('walks the lanes of its definition and keeps the grid it was given', () => {
     const matchGrid = MatchGrid.build(TWO_LANE_MAP, [], { cellSize: 2, features: {} });
-    const world = new MatchWorld(TWO_LANE_MAP, matchGrid);
+    const world = new MatchWorld(matchGrid);
 
     expect(world.definition).toBe(TWO_LANE_MAP);
     expect(world.grid).toBe(matchGrid.grid);
@@ -33,7 +33,6 @@ describe('MatchWorld', () => {
       ],
     };
     const world = new MatchWorld(
-      TWO_LANE_MAP,
       MatchGrid.build(TWO_LANE_MAP, [rock], { cellSize: 2, features: MAP_FEATURE_DEFINITIONS }),
     );
     expect(world.grid.isWalkableAt(42, 20)).toBe(false);
@@ -44,7 +43,7 @@ describe('MatchWorld', () => {
 
   it('faces a unit toward the enemy Stronghold at spawn, and a neutral one nowhere (DEC-216 (6))', () => {
     const matchGrid = MatchGrid.build(TWO_LANE_MAP, [], { cellSize: 2, features: {} });
-    const world = new MatchWorld(TWO_LANE_MAP, matchGrid);
+    const world = new MatchWorld(matchGrid);
 
     // The Strongholds stand at (10, 30), light, and (190, 30), dark.
     expect(world.startFacing('light', { x: 60, y: 20 })).toEqual({ facing: { x: 130, y: 10 } });
@@ -57,7 +56,7 @@ describe('MatchWorld', () => {
       ...TWO_LANE_MAP,
       features: TWO_LANE_MAP.features.filter(({ id }) => id !== 'stronghold-dark'),
     };
-    const world = new MatchWorld(map, MatchGrid.build(map, [], { cellSize: 2, features: {} }));
+    const world = new MatchWorld(MatchGrid.build(map, [], { cellSize: 2, features: {} }));
 
     expect(world.startFacing('light', { x: 60, y: 20 })).toEqual({});
     expect(world.startFacing('dark', { x: 140, y: 20 })).toEqual({ facing: { x: -130, y: 10 } });
