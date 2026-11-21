@@ -6,6 +6,7 @@ import { DefaultEntityView } from './DefaultEntityView';
 import { createDefaultViewRegistry } from './defaultViewRegistry';
 import { LegendView } from './LegendView';
 import { MobView } from './MobView';
+import { ProjectileView } from './ProjectileView';
 import { StructureView } from './StructureView';
 import { ViewRegistry } from './ViewRegistry';
 
@@ -22,6 +23,7 @@ const entity = (kind: string, family: string): EntitySnapshot => ({
   area: null,
   capture: null,
   statuses: null,
+  projectile: null,
 });
 
 describe('createDefaultViewRegistry', () => {
@@ -37,15 +39,14 @@ describe('createDefaultViewRegistry', () => {
     expect(registry.viewFor(entity('pillar', 'obstacle'))).toBeInstanceOf(DefaultEntityView);
     expect(registry.viewFor(entity('pillar', 'obstacle'))).not.toBeInstanceOf(MobView);
     expect(registry.viewFor(entity('capture-point', 'zone'))).toBeInstanceOf(CapturePointView);
+    expect(registry.viewFor(entity('arrow', 'projectile'))).toBeInstanceOf(ProjectileView);
   });
 
   it('passes unknown kinds to the reporter it is given', () => {
     const unknown: string[] = [];
 
-    createDefaultViewRegistry((kind) => unknown.push(kind)).viewFor(
-      entity('projectile', 'projectile'),
-    );
+    createDefaultViewRegistry((kind) => unknown.push(kind)).viewFor(entity('banner', 'decoration'));
 
-    expect(unknown).toEqual(['projectile']);
+    expect(unknown).toEqual(['banner']);
   });
 });

@@ -1,4 +1,5 @@
 import {
+  type AttackMode,
   type EntityId,
   findMapObjectAt,
   findUnitAt,
@@ -33,6 +34,9 @@ export class PlayerCommands implements PlayerActions {
   /** The unit or map object the held attack targeted last; `null` once released or stopped. */
   private attackTargetId: EntityId | null = null;
 
+  /** The attack mode of `attackTargetId`'s command: a change of mode queues a new command. */
+  private attackMode: AttackMode = 'basic';
+
   /** Whether the canvas gestures own the main button's press (`setPointerClaimed`). */
   private isPointerClaimed = false;
 
@@ -64,11 +68,13 @@ export class PlayerCommands implements PlayerActions {
    * @returns Whether the player's movement input is non-zero this tick.
    */
   public apply(actorId: EntityId, snapshot: TargetSnapshot): boolean {
-    const { move, isAttacking, aim, triggered } = this.input.read(this.camera);
+    const { move, isAttacking, isMeleeAttacking, aim, triggered } = this.input.read(this.camera);
     const isHeld = isAttacking === true && !this.isPointerClaimed;
     const isConsumed = this.casts.apply(actorId, { triggered, aim, isAttacking: isHeld });
-    const attackAim = isHeld && !isConsumed ? aim : null;
-    this.applyAttack(actorId, attackAim, snapshot);
+    const isMeleeHeld = isMeleeAttacking === true && !this.isPointerClaimed;
+    // The melee key wins over the click; only the click can be consumed by an aiming cast.
+    const isAttackHeld = isMeleeHeld || (isHeld && !isConsumed);
+    this.applyAttack(actorId, isAttackHeld ? aim : null, isMeleeHeld ? 'melee' : 'basic', snapshot);
     const isMoving = move.x !== 0 || move.y !== 0;
     if (move.x === this.lastMove.x && move.y === this.lastMove.y) {
       return isMoving;
@@ -114,14 +120,25 @@ export class PlayerCommands implements PlayerActions {
 
   /**
    * Queues `attack-target` on the unit or map object under `aim` (the held attack button's world
-   * point, or `null`); holding the button on one target queues one command, not one per tick.
+   * point, or `null`) with `mode`; holding the button on one target queues one command, not one
+   * per tick, and a change of target or mode queues a new one. A `'basic'` command carries no mode.
    */
-  private applyAttack(actorId: EntityId, aim: Vec2 | null, snapshot: TargetSnapshot): void {
+  private applyAttack(
+    actorId: EntityId,
+    aim: Vec2 | null,
+    mode: AttackMode,
+    snapshot: TargetSnapshot,
+  ): void {
     const targetId = aim === null ? null : this.targetAt(actorId, aim, snapshot);
-    if (targetId !== null && targetId !== this.attackTargetId) {
-      this.simulation.enqueueCommand({ type: 'attack-target', actorId, targetId });
+    if (targetId !== null && (targetId !== this.attackTargetId || mode !== this.attackMode)) {
+      this.simulation.enqueueCommand(
+        mode === 'melee'
+          ? { type: 'attack-target', actorId, targetId, mode }
+          : { type: 'attack-target', actorId, targetId },
+      );
     }
     this.attackTargetId = targetId;
+    this.attackMode = mode;
   }
 
   /** The unit under `point`, else the map object there: a unit is drawn on top of a building. */

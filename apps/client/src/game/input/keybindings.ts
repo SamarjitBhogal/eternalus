@@ -15,6 +15,7 @@ export const DEFAULT_CHORDS: Readonly<Record<InputAction, readonly InputChord[]>
   'move-left': [key('KeyA', 'A')],
   'move-right': [key('KeyD', 'D')],
   attack: [{ device: 'mouse', code: '0', label: 'LMB' }],
+  'melee-attack': [key('KeyF', 'F')], // DEC-308: the staff's melee, rebindable
   'ability-1': [key('Digit1', '1')],
   'ability-2': [key('Digit2', '2')],
   'ability-3': [key('Digit3', '3')],

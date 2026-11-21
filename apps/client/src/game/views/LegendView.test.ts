@@ -28,6 +28,7 @@ const WARRIOR: EntitySnapshot = {
   area: null,
   capture: null,
   statuses: null,
+  projectile: null,
 };
 
 const AT = { x: 0, y: 0 };
