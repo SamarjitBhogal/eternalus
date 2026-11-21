@@ -9296,3 +9296,10 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - What was done: the pre-PR critic (an independent `architecture-reviewer` subagent, base `5a7cc8dc` docs) asked for changes. One blocker: `entities/` imported `loadout/` at runtime. Four should-fix items: no replay test for a saved loadout, `uniqueTo` not enforced, 02 and core AGENTS doc drift, and weapon choices bypassing `validateLoadout`. Fixed: the spawn decision is `loadout/SpawnLoadoutPolicy`, injected by `Simulation` through a private `LoadoutResolver` port; `WeaponAllowedRule` enforces `uniqueTo` (`isWeaponAllowedFor` removed); a replay test was added; the screen's choices come from `validateLoadout`; `LoadoutRadioGroup` has a test; and the docs were updated. Round 2: approve. Ponytail was not run (the plugin is not available in this session).
 - Checks run: `npm run check` on `34428df1` → `EXIT=0`: core "Tests 1704 passed (1704)"; protocol "Tests 29 passed (29)"; client "Tests 2072 passed (2072)"; server "Tests 84 passed (84)"; "Documentation check passed."
 - Next step: ponytail in a session with the plugin; the owner's INBOX answers (repair location and the `entities/` type import; the IndexedDB test fake).
+
+### 2026-11-20 — Phase 5 / sprint 5.3 — feat/loadout-indexeddb — claudiodh + Claude Code
+
+- What was done: `IndexedDbStorageAdapter` (SCRUM-31, SCRUM-311) with `idbPromises.ts` and `StorageError`, so saved loadouts and settings survive a reload. `main.tsx` injects `IndexedDbStorageAdapter.inBrowser()` and a `MemoryStorageAdapter` fallback; `PersistenceController.open` warns and falls back when IndexedDB is missing, private, newer or blocked. Architecture 14 §14 updated; four owner questions in `INBOX.md`.
+- Not done (user's call): no IndexedDB fake and no contract-suite run against the adapter; 4 plain unit tests only (unavailable path, error mapping, fallback, no-fallback rejection).
+- Checks run: see the commit's check log (`npm run check`, EXIT recorded in the hand-off).
+- Next step: merge into `feat/loadout-screen`; the owner's INBOX answers (v1 on disk, WARN vs ERROR, blocked wait, degraded status).

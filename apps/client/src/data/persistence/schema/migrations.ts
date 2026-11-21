@@ -10,8 +10,9 @@ export const LOADOUT_STORE = 'loadouts';
 export const QUARANTINE_STORE = 'quarantine';
 
 /**
- * The database schema: the only place stores are created (architecture 14 §5). Nothing is on
- * disk before IndexedDB lands in S2, so v1 still grows with each record type until then.
+ * The database schema: the only place stores are created (architecture 14 §5). With
+ * `IndexedDbStorageAdapter` wired, v1 is on disk: whether it may still change before release
+ * waits for the owner (`INBOX.md`); after that, a store change is a new migration version.
  */
 export const STORAGE_SCHEMA: StorageSchema = {
   name: 'eternalus',

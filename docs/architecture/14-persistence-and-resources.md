@@ -517,6 +517,19 @@ A weapon id content no longer has is not quarantined: the client's `LoadoutContr
 it with core's `repairLoadout` and logs it, in place of §8's repository-side repair, so `data/`
 needs no content and the screen learns which classes were repaired.
 
+**IndexedDB (`feat/loadout-indexeddb`, 2026-11-20).** `IndexedDbStorageAdapter` (over
+`idbPromises.ts`, no dependency) is what `main.tsx` injects, built by `inBrowser()` from the
+page's `indexedDB`; it types against narrow `Idb*Api` interfaces
+(`IndexedDbStorageAdapter.types.ts`) that the browser's objects satisfy. `open` runs the
+`createStores` ladder inside `onupgradeneeded`; a `work` that throws aborts its transaction; on
+`versionchange` the connection closes. Open failures are a `StorageError` (`unavailable`,
+`version`, `blocked`; the other §10 kinds wait for a caller). `PersistenceController` takes an
+optional `fallback` and, when `open` fails, reports it through `warn` (WARN, not §10's ERROR;
+`INBOX.md`) and continues on `MemoryStorageAdapter`; `blocked` falls back at once. No `degraded`
+status yet. §12's contract run against an IndexedDB fake is not built (the user's call: no new
+dependency and no hand-written fake for now); the adapter has unit tests for the unavailable path
+and the error mapping only.
+
 Built in Sprint 1 (session F), settings only: `PersistenceController` with `open`,
 `loadSettings`, `saveSettings` and `close` (the Sprint 1 brief's facade, in place of §2's
 `persistence.settings` repository and `status`); the `StorageAdapter` port with `open`,
