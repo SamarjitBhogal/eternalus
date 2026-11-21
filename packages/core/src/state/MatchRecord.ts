@@ -34,7 +34,8 @@ export class MatchRecord implements MatchState {
   /**
    * @param playerTeam - The team the match is played (or spectated) for.
    * @param schedule - The resolved timeline as plain marks; empty when no director runs.
-   * @param events - The match's event channel; `setPhase` emits `phase-changed` on it.
+   * @param events - The match's event channel; `setPhase` emits `phase-changed` on it and
+   *   `reseatHuman` `human-reseated`.
    * @param currentTick - Reads the tick that `setPhase` stamps.
    */
   public constructor(
@@ -156,18 +157,24 @@ export class MatchRecord implements MatchState {
 
   /**
    * Moves the `playerTeam` human seat (sim mode, FR-099) to `legendId`, or to nobody (`null`).
-   * Called by `DevSetControllerHandler` only, after the match is built; a move to the current seat
-   * is a bug and throws. A Duel's seats (ADR 0016) are never moved: the handler refuses there.
+   * Emits `human-reseated` (DEC-294), so the scoring rows follow. Called by
+   * `DevSetControllerHandler` only, after the match is built; a move to the current seat and a
+   * move in a Duel (ADR 0016: its seats are never moved) are bugs and throw.
    */
   public reseatHuman(legendId: EntityId | null): void {
-    if (legendId === this.humanLegendId) {
+    const from = this.humanLegendId;
+    if (legendId === from) {
       throw new Error('The human is already seated there: reseat only moves humanLegendId.');
+    }
+    if (this.duelKills !== null) {
+      throw new Error("A Duel's seats are never moved (ADR 0016): sim mode only.");
     }
     if (legendId === null) {
       this.seats.delete(this.playerTeam);
     } else {
       this.seats.set(this.playerTeam, legendId);
     }
+    this.events.emit('human-reseated', { from, to: legendId });
   }
 
   /** Moves the timeline cursor past the entry that is due. Called by the `MatchDirector` only. */

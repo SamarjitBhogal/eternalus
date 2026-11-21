@@ -122,7 +122,9 @@ describe('MatchRecord', () => {
   });
 
   it('moves the human seat (sim mode) to another Legend or to nobody, never to where it is', () => {
-    const { match } = recordAt({ tick: 0 });
+    const { match, events } = recordAt({ tick: 0 });
+    const moves: unknown[] = [];
+    events.on('human-reseated', (payload) => moves.push(payload));
     match.seatHuman('entity-7');
 
     match.reseatHuman('entity-8');
@@ -132,6 +134,21 @@ describe('MatchRecord', () => {
     }).toThrow('already seated');
     match.reseatHuman(null);
     expect(match.humanLegendId).toBeNull();
+    expect(moves).toEqual([
+      { from: 'entity-7', to: 'entity-8' },
+      { from: 'entity-8', to: null },
+    ]);
+  });
+
+  it("never moves a Duel's seats (ADR 0016)", () => {
+    const { match } = recordAt({ tick: 0 });
+    match.seatHuman('entity-7');
+    match.startDuel(10);
+
+    expect(() => {
+      match.reseatHuman('entity-8');
+    }).toThrow('never moved');
+    expect(match.humanLegendId).toBe('entity-7');
   });
 
   it("shows the ScoreBook's data as scoring, which MatchState readers cannot write (DEC-211)", () => {

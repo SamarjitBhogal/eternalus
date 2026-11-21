@@ -165,4 +165,34 @@ describe('DevSetControllerHandler', () => {
     expect(context.state.entities.controllerOf('entity-5')?.controllerId).toBe('bot-legend');
     expect(context.state.entities.controllerOf('entity-1')).toBeUndefined();
   });
+
+  it('changes nothing on a refused command, even with the seat of a human that died', () => {
+    const context = contextWith();
+    const handler = new DevSetControllerHandler(ROVER, 'player');
+    handler.handle(command('entity-1', 'player'), context);
+    context.state.entities.remove('entity-1', 'died');
+    const moves: unknown[] = [];
+    context.state.events.on('human-reseated', (payload) => moves.push(payload));
+
+    expect(handler.handle(command('entity-2', 'bot-legend'), context)).toBe('unknown-controller');
+    expect(handler.handle(command('entity-3', 'player'), context)).toBe('not-a-legend');
+    expect(context.state.match.humanLegendId).toBe('entity-1');
+    expect(moves).toEqual([]);
+
+    expect(handler.handle(command('entity-2', 'player'), context)).toBeNull();
+    expect(moves).toEqual([
+      { from: 'entity-1', to: null },
+      { from: null, to: 'entity-2' },
+    ]);
+  });
+
+  it('is not supported in a Duel, whoever holds the other seat', () => {
+    const context = contextWith();
+    context.state.match.startDuel(10);
+
+    expect(
+      new DevSetControllerHandler(ROVER, 'player').handle(command('entity-1', 'player'), context),
+    ).toBe('not-supported');
+    expect(context.state.match.humanLegendId).toBeNull();
+  });
 });

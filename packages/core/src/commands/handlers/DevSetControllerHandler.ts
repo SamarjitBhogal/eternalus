@@ -27,14 +27,18 @@ export class DevSetControllerHandler implements CommandHandler<'dev-set-controll
     private readonly playerControllerId: string,
   ) {}
 
-  /** Validates the Legend and the controller, then moves the binding and `humanLegendId`. */
+  /**
+   * Validates the match, the Legend, the controller and (for the player) the team, so a refused
+   * command changes nothing; then moves the binding and `humanLegendId`.
+   */
   public handle(
     { entityId, controllerId }: Command<'dev-set-controller'>,
     { state }: CommandContext,
   ): CommandRejectReason | null {
-    const { playerTeam } = state.match;
-    if (state.match.humanLegendIdOf(opponentOf(playerTeam)) !== null) {
-      return 'not-supported'; // A Duel seats one human per team (ADR 0016): sim mode only.
+    const { match } = state;
+    // A Duel (ADR 0016) seats one human per team; its seats never move: sim mode only.
+    if (match.duel !== null || match.humanLegendIdOf(opponentOf(match.playerTeam)) !== null) {
+      return 'not-supported';
     }
     const entity = state.entities.get(entityId);
     if (entity === undefined) {
@@ -43,54 +47,45 @@ export class DevSetControllerHandler implements CommandHandler<'dev-set-controll
     if (!(entity instanceof Legend)) {
       return 'not-a-legend';
     }
+    const isPlayer = controllerId === this.playerControllerId;
+    if (!isPlayer && controllerId !== this.rover.controllerId) {
+      return 'unknown-controller';
+    }
+    if (isPlayer && state.entities.teamOf(entityId) !== match.playerTeam) {
+      return 'not-player-team';
+    }
     // A human Legend that died left the store (`DeathSystem`; respawn, FR-051, is not built) but
     // not its seat: clear the seat first. `dev-remove-entity` refuses a seated Legend instead.
-    let humanId = state.match.humanLegendId;
+    let humanId = match.humanLegendId;
     if (humanId !== null && !state.entities.has(humanId)) {
-      state.match.reseatHuman(null);
+      match.reseatHuman(null);
       humanId = null;
     }
-    if (controllerId === this.playerControllerId) {
-      return this.seatHuman(state, entity, humanId);
-    }
-    if (controllerId !== this.rover.controllerId) {
-      return 'unknown-controller';
+    if (isPlayer) {
+      this.seatHuman(state, entity, humanId);
+      return null;
     }
     // A bot that already plays the Rover keeps its brain (and its memory).
     if (state.entities.controllerOf(entityId)?.controllerId !== this.rover.controllerId) {
       this.bindRover(state, entity);
     }
     if (humanId === entityId) {
-      this.reseat(state, humanId, null);
+      match.reseatHuman(null);
     }
     return null;
   }
 
-  /** Seats the human on `entity` (of `playerTeam` only); the previous human's Legend goes to the Rover. */
-  private seatHuman(
-    state: GameState,
-    entity: Entity,
-    humanId: string | null,
-  ): CommandRejectReason | null {
-    if (state.entities.teamOf(entity.id) !== state.match.playerTeam) {
-      return 'not-player-team';
-    }
+  /** Seats the human on `entity`; the previous human's Legend goes to the Rover (DEC-294). */
+  private seatHuman(state: GameState, entity: Entity, humanId: string | null): void {
     if (humanId === entity.id) {
-      return null;
+      return;
     }
     const previous = state.entities.get(humanId ?? '');
     if (previous !== undefined) {
       this.bindRover(state, previous);
     }
     this.detach(state, entity);
-    this.reseat(state, humanId, entity.id);
-    return null;
-  }
-
-  /** Moves the seat and announces it (`human-reseated`), so the scoring rows follow. */
-  private reseat(state: GameState, from: string | null, to: string | null): void {
-    state.match.reseatHuman(to);
-    state.events.emit('human-reseated', { from, to });
+    state.match.reseatHuman(entity.id);
   }
 
   /** Takes `entity` off its controller (a human plays it) and drops its brain. */
