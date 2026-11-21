@@ -21,6 +21,19 @@ overridden by the product owner. Decisions arrive through `INBOX.md`; once imple
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
 
+## Batch 2026-11-20 (Owner Calls page: the tower horde test time limit)
+
+The owner's answer of 2026-11-20 on the Owner Calls page (relayed by session
+PR-REVIEW-COORDINATION-9) to a question from session eternalus-140: one core test's runs on the
+windows-latest CI runner took up to 65 s against core's 60 s test limit. The owner's words are kept
+verbatim outside the repository in
+`eternalus-agent-work/horde-test-timeout/owner-answer-2026-11-20-horde-test-cap.md`. DEC-289 is
+this batch (DEC-287 and DEC-290 to DEC-298 are other sessions').
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Docs changed                                                |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| DEC-289 | **The tower horde test may run for 120 s; the other core tests keep 60 s.** The owner's words: "Raise this one test's cap to 120 s and log an INBOX item to make the test faster". `Simulation.mapObjects.test.ts`, "walks every tower horde out of its tower and on up its lane within 10 seconds (DEC-133, seed %i)", passes its own time limit, `HORDE_WALK_TIMEOUT_MS` (120 s); every other core test keeps the `testTimeout` of `packages/core/vitest.config.ts` (60 s). On PR #122 (run 44714237495, attempt 1, head `56bcd64b`) seed 1 timed out at 60 s on windows-latest; the re-run passed at 51.6 s, Ubuntu runs took 23 to 34 s, and one seed takes about 3 s locally without coverage: runner speed under coverage, not a regression. The cost: a run of this test that really hangs fails 60 s later. Built in its own PR (`fix/horde-test-timeout`). | None; `INBOX.md` request "Make the tower horde test faster" |
+
 ## Batch 2026-11-20 (Owner Calls page: PR #131)
 
 The owner's answers of 2026-11-20 on the Owner Calls page to the 2026-11-19 review of PR #131
