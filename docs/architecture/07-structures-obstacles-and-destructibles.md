@@ -13,6 +13,8 @@ paths:
     'packages/core/src/components/{Health,Spawner,Capturable,Carry}*',
     'packages/core/src/systems/{Structure,Spawn,Capture}System*',
     'packages/core/src/content/{structures,obstacles}/**',
+    'packages/core/src/systems/ZoneLevelUpSystem*',
+    'packages/core/src/content/zones/zoneLevelUp*',
   ]
 related:
   [

@@ -7,6 +7,7 @@ import type { GameState } from '../state/GameState';
 import type { PlayableTeam } from '../teams/teams.types';
 import type { System, SystemContext } from './System.types';
 
+import { TickRate } from '../utils/TickRate';
 /**
  * The zone level-up (architecture 07 §7, DEC-258): once a team has held a capture point for
  * `holdSeconds` without a break (`Capturable.ownedSinceTick`), every horde of that team spawned on
@@ -30,7 +31,7 @@ export class ZoneLevelUpSystem implements System {
     state: GameState,
     private readonly levelUp: ZoneLevelUpDefinition,
   ) {
-    this.holdTicks = Math.round(levelUp.holdSeconds * state.config.tickRate);
+    this.holdTicks = new TickRate(state.config.tickRate).toTicks(levelUp.holdSeconds);
     state.events.on('capture-point-owner-changed', ({ pointId }) => {
       this.changed.push(pointId);
     });

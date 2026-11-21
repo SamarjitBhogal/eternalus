@@ -16,7 +16,8 @@ import type { System, SystemContext } from './System.types';
  * health (healing by the same) and adds a stack of the veteran status. Every `aura.everyTicks`,
  * each unit with a level gives the aura status to the other friendly horde minions and tower
  * guards (DEC-165) within `aura.radius`. Kills come from `entity-died`, counted on this system's
- * pass; it runs after every system that deals damage and before `DeathSystem`.
+ * pass; it runs after every system that deals damage and before `DeathSystem`. Levels a held zone
+ * grants or takes back (`minion-levels-granted`, 07 §7, DEC-258) are applied by its handler.
  */
 export class VeterancySystem implements System {
   public readonly name = 'veterancy';

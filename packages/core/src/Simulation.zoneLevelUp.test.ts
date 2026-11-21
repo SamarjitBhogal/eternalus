@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { clearCheckpointDefenders } from './__fixtures__/clearCheckpointDefenders';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { ZONE_LEVEL_UP } from './content/zones/zoneLevelUp';
 import { MemoryLogger } from './diagnostics/MemoryLogger';
@@ -29,6 +30,8 @@ const play = () => {
     debug: TEST_DEBUG_CONFIG,
     map: MAP,
   });
+  // The zone level-up is under test: the checkpoint defenders (M6b) would hold the point.
+  clearCheckpointDefenders(simulation);
   const at = POINT?.position ?? { x: 0, y: 0 };
   const grants: (GameEventMap['minion-levels-granted'] & { readonly tick: number })[] = [];
   const owners: (GameEventMap['capture-point-owner-changed'] & { readonly tick: number })[] = [];

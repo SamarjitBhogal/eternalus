@@ -9344,6 +9344,18 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   them with `clearCheckpointDefenders`, as the other soaks of other rules do.
 - Next step: re-request review on PR #130; then PR #131 merges this branch.
 
+### 2026-11-20 — Phase 3 / minion plan M6b — feat/minion-m6b-checkpoint-defenders (critic on the review merge) — SamarjitBhogal + Claude Code
+
+- What was done: the `architecture-reviewer` critic on `5a7cc8dc..e28cc1fd`: **approve**, no
+  blockers, 2 should-fix, 5 nits, 4 better-than-design. Applied: N3 (`CheckpointReached.pointId`
+  is an `EntityId`). Recorded for the owner in `INBOX.md` "Minion M6b follow-ups": S1 (a
+  cap-blocked defender post may fill after an owner change; 18 §7.1 says so) as (6), the
+  unbounded defender stacking across owner flips as (7), S2 (`GuardRoster.ts` 332 lines) as (8).
+  Left: N1 (a `group` plan on a capture point would sweep defender posts; the plan is `never`),
+  N2 (fixture matches the `-assist-mob` suffix), N4 (`instanceof CapturePoint` vs `Capturable`).
+- Checks run: `npm run check:quick` by the pre-commit hook; the full check ran on `e28cc1fd`.
+- Next step: re-request review on PR #130.
+
 ### 2026-11-15 — Phase 3 / minion plan M10: zone level-up (DEC-258) — feat/minion-m10-zone-level-up — SamarjitBhogal + Claude Code
 
 - What was done: the owner's answer DEC-258 (recorded on `feat/minion-m6b-checkpoint-defenders`,
@@ -9377,3 +9389,23 @@ tick)`), and a minion records the point that granted its levels (`Veterancy.gran
 - Checks run: `npm run check` exit 1: core "Tests 1595 passed (1595)", protocol 18/18, server 79/79,
   client "Tests 1 failed | 1978 passed (1979)" (the same local-Node `CloseEvent` failure).
 - Next step: the critic re-checks, ponytail, then a draft PR after #130.
+
+### 2026-11-20 — Phase 3 / minion plan M10 — feat/minion-m10-zone-level-up (PR #131 review round) — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (`5a7cc8dc`; conflicts: `Capturable` keeps
+  `lockedByValue` and `ownedSinceValue`, the pipeline keeps `CaptureSystem(..., ZONE_LOCKING_MOBS)`
+  and adds `ZoneLevelUpSystem`, `loadMinionVeterancy` replaces `MINION_VETERANCY` in the pipeline
+  and the level-up test), then merged PR #130 (`27927e4f`), which holds DEC-258 (B1); #130's
+  defender test passes the tick to `setOwner`. B1: the scenario test clears the checkpoint
+  defenders (`clearCheckpointDefenders`). B2 withdrawn by the owner (2026-11-20): kept as built;
+  DEC-279 records the cap ruling and the minion answer in the decisions log; DEC-258's "Approve" is
+  on #130's row. S1: two `StateHasher` tests, `ownedSinceTick` and `grantedBy`; dropping either
+  hashed field fails its test (checked). Nits: `TickRate.toTicks` for the hold (N4); 03's event
+  catalogue has `sourceId` (N1); the M10 plan row says DEC-258 answered it (N2); 07's `paths`
+  lists the level-up system and content (N6); `VeterancySystem` TSDoc names the grant path (N7).
+  Not done: S2 (`INBOX.md` "Minion M10 better-than-design items" (a)–(c)) still waits for the
+  owner; N3's FR-041 citation is an owner call; N5 kept the second `play()` (no assertion dropped).
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code
+  style!"; core "Tests 1704 passed (1704)"; protocol "Tests 29 passed (29)"; client "Tests 2011
+  passed (2011)"; server "Tests 84 passed (84)"; "✓ built in 477ms"; "Documentation check passed."
+- Next step: re-request review on PR #131 after PR #130.

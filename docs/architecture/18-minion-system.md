@@ -610,7 +610,8 @@ without a new controller. Only the home changes, and it is data on the spawning 
   respawns: a checkpoint is reached once per side per owner (07 §7). When the point changes
   owner, its living defenders stay: they fight the new owner's units inside the zone and count as
   presence for their own side, so the new owner must kill them to keep the point (DEC-261). A
-  defender post the unit cap blocks waits, as any post does (§3.4).
+  defender post the unit cap blocks waits, as any post does (§3.4), so a delayed defender may
+  appear after the point has changed owner (`INBOX.md` "Minion M6b follow-ups" (6)).
 - **Zone homes.** A guard plan keyed by a zone's definition id makes the zone a home, like a
   structure's. A zone has no collider edge, so its home radius is 0: posts and the leash are
   measured from its anchor. A zone has no `Health`, so it always stands. Zones exist before the
