@@ -4,8 +4,8 @@ import { BUILDING_GEOMETRY as G } from '../content/maps/buildingGeometry';
 import { LAKES } from '../content/maps/map1Landforms';
 import { RANDOM_SCENERY_SETTINGS as S } from '../content/maps/map1Scenery';
 import { SeededRandom } from '../utils/SeededRandom';
-import { distance, distanceToPath, doRectsOverlap } from '../utils/geometry';
-import { laneFortKeepOuts } from './fortInWorld';
+import { distance, distanceToPath } from '../utils/geometry';
+import { isInLaneFortKeepOut, laneFortKeepOuts } from './fortInWorld';
 
 /**
  * Places west-half lake templates from the match seed, outside lanes, landmark precincts and the
@@ -41,7 +41,7 @@ export function placeSceneryLakes(map: MapDefinition): readonly SceneryLake[] {
         width: 2 * lake.rx,
         height: 2 * lake.ry,
       };
-      if (keepOuts.some((box) => doRectsOverlap(water, box))) continue;
+      if (isInLaneFortKeepOut(water, keepOuts)) continue;
       if (
         ((point.x - G.cathedral.x) / (G.cathedral.precinct.radiusX + lake.rx)) ** 2 +
           ((point.y - G.cathedral.y) / (G.cathedral.precinct.radiusY + lake.ry)) ** 2 <

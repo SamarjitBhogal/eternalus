@@ -2,10 +2,14 @@ import type { MapDefinition, MapFeature, MapLane, MapTerrain } from '../content/
 import type { Vec2 } from '../utils/geometry.types';
 import {
   campDefinitionFor,
+  clearCampOfForts,
   cornerCampPositions,
   distributeCamps,
   placeCampSlots,
 } from './campPlacement';
+import { CAMP_HALF_EXTENT } from './campPlacement.constants';
+import { SKETCH_HEIGHT, SKETCH_WIDTH } from '../content/maps/map1Scenery';
+import { laneFortKeepOuts } from './fortInWorld';
 import { createMapFeature } from './createMapFeature';
 import { LaneGeometry } from './LaneGeometry';
 import { RADIANS_PER_DEGREE } from '../utils/geometry';
@@ -125,6 +129,15 @@ export class MapBuilder {
   /** Forest camps between adjacent lanes (weight by depth, DISC-42), then the corner camps. */
   public placeCamps(): this {
     const { config, layout } = this.input;
+    // Camps are in world units; keep-outs and the camp box are authored in sketch units.
+    const world = { width: config.worldWidth, height: config.worldHeight };
+    const clearance = {
+      keepOuts: laneFortKeepOuts(this.features, world),
+      extent: {
+        x: (CAMP_HALF_EXTENT.x * world.width) / SKETCH_WIDTH,
+        y: (CAMP_HALF_EXTENT.y * world.height) / SKETCH_HEIGHT,
+      },
+    };
     const slots = placeCampSlots({
       lightHalves: this.lightHalves,
       lanePaths: this.lanes.map((lane) => lane.path),
@@ -133,6 +146,7 @@ export class MapBuilder {
       centreX: this.centreX,
       band: layout.camps.band,
       rng: this.input.rng,
+      clearance,
     });
     for (const slot of slots) {
       const definitionId = campDefinitionFor(slot.depth, layout.camps.weightClasses);
@@ -150,10 +164,15 @@ export class MapBuilder {
     }
     cornerCampPositions(config.cornerCamps, layout.cornerCamps, config.worldHeight).forEach(
       (anchor, index) => {
-        const position = {
-          x: anchor.x + this.input.rng.next() * layout.cornerCamps.stepX,
-          y: anchor.y,
-        };
+        const position = clearCampOfForts(
+          { x: anchor.x + this.input.rng.next() * layout.cornerCamps.stepX, y: anchor.y },
+          clearance,
+          ({ x, y }) =>
+            x >= clearance.extent.x &&
+            x <= this.centreX &&
+            y >= clearance.extent.y &&
+            y <= config.worldHeight - clearance.extent.y,
+        );
         this.addMirrored(
           { suffix: `corner-camp-${String(index)}`, definitionId: this.ids().cornerCamp, position },
           NEUTRAL_SIDES,
@@ -219,6 +238,11 @@ export class MapBuilder {
           centre: this.stronghold,
           radius: layout.wallRing.radius + layout.obstacles.featureClearance,
         },
+        fortKeepOuts: laneFortKeepOuts(this.features, {
+          width: config.worldWidth,
+          height: config.worldHeight,
+        }),
+        radiusOf: (definitionId) => this.input.definitions[definitionId]?.footprintRadius ?? 0,
       },
       layout.obstacles,
     );

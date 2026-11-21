@@ -22,7 +22,7 @@ import { LAVA_RIVERS } from '../content/maps/map1Landforms';
 import { distance, distanceToPath, isPointInPolygon } from '../utils/geometry';
 import { SeededRandom } from '../utils/SeededRandom';
 import { mirrorMovableScenery, placeSceneryLakes } from './sceneryPlacement';
-import { laneFortKeepOuts } from './fortInWorld';
+import { isInLaneFortKeepOut, laneFortKeepOuts } from './fortInWorld';
 import type { Rect } from '../utils/geometry.types';
 import type { Vec2 } from '../utils/geometry.types';
 
@@ -217,15 +217,15 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
   }
 
   /**
-   * A camp's clearing, tents, fire and supplies. A blocking piece that would stand in a lane tower's
-   * fort or its clearance (`laneFortKeepOuts`) is left out, so no camp object overlaps a fort
-   * (DEC-315); the camp itself stays where the generator put it.
+   * A camp's clearing, tents, fire and supplies. The generator moves a camp clear of the lane tower
+   * forts and their clearance (`clearCampOfForts`, DEC-315), so a camp keeps every piece. Only a
+   * camp it could not move (a crowded corridor) loses a blocking piece that would stand in a fort
+   * or its clearance (`laneFortKeepOuts`), so no camp object overlaps a fort.
    */
   private camp(point: Vec2, id: string): void {
     this.endObject();
     this.rect(`${id}-clearing`, point.x - 23, point.y - 18, 46, 36, P.road, 'ground');
-    const isClear = (box: Rect): boolean =>
-      !this.keepOuts.some((keepOut) => doRectsOverlap(box, keepOut));
+    const isClear = (box: Rect): boolean => !isInLaneFortKeepOut(box, this.keepOuts);
     for (const side of [-1, 1]) {
       const x = point.x + side * 15;
       if (!isClear({ x: x - 9, y: point.y - 12, width: 18, height: 18 })) continue;

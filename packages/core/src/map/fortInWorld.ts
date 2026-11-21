@@ -2,6 +2,8 @@ import { BUILDING_GEOMETRY as G } from '../content/maps/buildingGeometry';
 import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import { SKETCH_HEIGHT, SKETCH_WIDTH } from '../content/maps/map1Scenery';
 import type { MapFeature } from '../content/maps/maps.types';
+import type { MapObject } from '../content/maps/mapObjects.types';
+import { boundsOf, doRectsOverlap } from '../utils/geometry';
 import type { Rect } from '../utils/geometry.types';
 import { MapGenerationError } from './MapGenerationError';
 
@@ -34,36 +36,50 @@ export const fortInWorld = (sketchSide: number, world: FortWorld): FortInWorld =
 };
 
 /**
- * The north and south wall bands of the lane tower fort whose box is `box` (world units): the full
- * width of the box, one wall thick (`fortInWorld`). The lane runs through a fort's west and east
- * doorways only (DEC-315), so no lane corridor holds these bands (`LaneFlowFields`): the south
- * doorway stays open to walking and A\*, not to a lane field.
+ * The north and south wall bands of a lane tower fort, read from the fort's own wall objects
+ * (`walls`, its body: `MapFortificationBuilder`): the north wall, and the south wall's two pieces
+ * with their doorway between them, so each band is the full width of the fort and one wall thick.
+ * The lane runs through a fort's west and east doorways only (DEC-315), so no lane corridor holds
+ * these bands (`LaneFlowFields`): the south doorway stays open to walking and A\*, not to a lane
+ * field. There is no second calculation of the wall thickness: the objects are the source.
  */
-export const fortWallBands = (box: Rect, world: FortWorld): readonly Rect[] => {
-  const { wallHeight } = fortInWorld(G.fort.laneTowerSize, world);
-  return [
-    { x: box.x, y: box.y, width: box.width, height: wallHeight },
-    { x: box.x, y: box.y + box.height - wallHeight, width: box.width, height: wallHeight },
-  ];
-};
+export const fortWallBands = (walls: readonly MapObject[]): readonly Rect[] =>
+  [['top'], ['bottom-left', 'bottom-right']].flatMap((parts) => {
+    const pieces = walls.filter(({ id, partOf }) =>
+      parts.some((part) => id === `${partOf ?? ''}-fort-wall-${part}`),
+    );
+    return pieces.length === 0
+      ? []
+      : [boundsOf(pieces.flatMap(({ footprints }) => footprints.flat()))];
+  });
 
 /**
- * The ground round every lane tower's fort that no blocking object of another building may take,
- * in sketch units (the space scenery is placed in, `MapSceneryBuilder`): each fort's box grown by
- * `fort.laneTowerClearance` on every side (DEC-315). A lane tower is a feature whose definition
- * `isCourt`, as `MatchGrid` reads it.
+ * The ground round every lane tower's fort that no blocking object of another building may take:
+ * each fort's box grown by `fort.laneTowerClearance` on every side (DEC-315). A lane tower is a
+ * feature whose definition `isCourt`, as `MatchGrid` reads it. The boxes are in sketch units (the
+ * space scenery is placed in, `MapSceneryBuilder`) for `features` in sketch units; with `world`,
+ * for `features` in world units, each box is stretched per axis to the world (DEC-227).
  */
-export const laneFortKeepOuts = (features: readonly MapFeature[]): readonly Rect[] => {
+export const laneFortKeepOuts = (
+  features: readonly MapFeature[],
+  world?: FortWorld,
+): readonly Rect[] => {
   const side = G.fort.laneTowerSize + 2 * G.fort.laneTowerClearance;
+  const width = world === undefined ? side : (side * world.width) / SKETCH_WIDTH;
+  const height = world === undefined ? side : (side * world.height) / SKETCH_HEIGHT;
   return features
     .filter(({ definitionId }) => MAP_FEATURE_DEFINITIONS[definitionId]?.isCourt === true)
     .map(({ position: { x, y } }) => ({
-      x: x - side / 2,
-      y: y - side / 2,
-      width: side,
-      height: side,
+      x: x - width / 2,
+      y: y - height / 2,
+      width,
+      height,
     }));
 };
+
+/** Whether `box` overlaps any of `keepOuts` (`laneFortKeepOuts`). */
+export const isInLaneFortKeepOut = (box: Rect, keepOuts: readonly Rect[]): boolean =>
+  keepOuts.some((keepOut) => doRectsOverlap(box, keepOut));
 
 /**
  * Checks that a navigation cell is finer than the thinnest lane tower fort wall, which

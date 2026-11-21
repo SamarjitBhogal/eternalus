@@ -1,8 +1,7 @@
 import type { MapDecoration, MapDefinition } from '../content/maps/maps.types';
-import { doRectsOverlap } from '../utils/geometry';
 import type { Rect } from '../utils/geometry.types';
 import { SeededRandom } from '../utils/SeededRandom';
-import { laneFortKeepOuts } from './fortInWorld';
+import { isInLaneFortKeepOut, laneFortKeepOuts } from './fortInWorld';
 import { RANDOM_SCENERY_SETTINGS as S } from '../content/maps/map1Scenery';
 import { MAP_PALETTE as P } from '../content/maps/map1Scenery';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
@@ -90,7 +89,7 @@ export class MapVillageBuilder extends MapDecorationBuilder {
         (feature) => Math.hypot(feature.position.x - x, feature.position.y - y) < 38,
       ) ||
       // A house stays out of a lane tower's fort and its clearance (DEC-315).
-      this.keepOuts.some((box) => doRectsOverlap(walls, box))
+      isInLaneFortKeepOut(walls, this.keepOuts)
     )
       return;
     this.beginObject(id, 'house');

@@ -1,8 +1,50 @@
 import type { CampWeightClass, MapLayout } from '../content/maps/maps.types';
-import { distanceToPath } from '../utils/geometry';
-import type { Vec2 } from '../utils/geometry.types';
-import type { CampLayoutInput, CampSlot } from './MapBuilder.types';
+import { distance, distanceToPath } from '../utils/geometry';
+import type { Rect, Vec2 } from '../utils/geometry.types';
+import { isInLaneFortKeepOut } from './fortInWorld';
+import { CAMP_PUSH_MARGIN } from './campPlacement.constants';
+import type { CampClearance, CampLayoutInput, CampSlot } from './MapBuilder.types';
 import { MapGenerationError } from './MapGenerationError';
+
+/** The box a camp's pieces fill when its centre is `position` and its half size is `extent`. */
+const campBox = (position: Vec2, extent: Vec2): Rect => ({
+  x: position.x - extent.x,
+  y: position.y - extent.y,
+  width: 2 * extent.x,
+  height: 2 * extent.y,
+});
+
+/**
+ * Moves a camp the least distance that takes its box off every keep-out (`laneFortKeepOuts`), so
+ * the camp keeps all its pieces (DEC-315). Each keep-out offers a step north, south, west and east
+ * to its edge; the nearest step that is `isAllowed` and clear of every keep-out wins. A camp that
+ * overlaps none stays where it is.
+ *
+ * @param isAllowed - Where the camp may stand (its corridor, the world).
+ * @returns The camp's new centre. A camp no step can clear (a corridor crowded with forts) stays
+ *   where it is; `MapSceneryBuilder` then leaves out its pieces that stand in a fort.
+ */
+export const clearCampOfForts = (
+  position: Vec2,
+  { keepOuts, extent }: CampClearance,
+  isAllowed: (point: Vec2) => boolean,
+): Vec2 => {
+  if (!isInLaneFortKeepOut(campBox(position, extent), keepOuts)) {
+    return position;
+  }
+  const gapX = extent.x + CAMP_PUSH_MARGIN;
+  const gapY = extent.y + CAMP_PUSH_MARGIN;
+  const steps = keepOuts.flatMap((hit): readonly Vec2[] => [
+    { x: position.x, y: hit.y - gapY },
+    { x: position.x, y: hit.y + hit.height + gapY },
+    { x: hit.x - gapX, y: position.y },
+    { x: hit.x + hit.width + gapX, y: position.y },
+  ]);
+  const best = steps
+    .filter((step) => isAllowed(step) && !isInLaneFortKeepOut(campBox(step, extent), keepOuts))
+    .sort((a, b) => distance(a, position) - distance(b, position))[0];
+  return best ?? position;
+};
 
 /**
  * Splits `total` camps over `corridors` corridors as evenly as possible. Leftover camps go to
@@ -40,9 +82,18 @@ export const placeCampSlots = (input: CampLayoutInput): readonly CampSlot[] =>
       const x = stronghold.x + u * (centreX - stronghold.x);
       const top = upper.yAtX(x);
       const bottom = lower.yAtX(x);
-      const position = { x, y: top + ((index + 1) / (count + 1)) * (bottom - top) };
+      const first = { x, y: top + ((index + 1) / (count + 1)) * (bottom - top) };
+      const position =
+        input.clearance === undefined
+          ? first
+          : clearCampOfForts(
+              first,
+              input.clearance,
+              (point) => upper.yAtX(point.x) < point.y && point.y < lower.yAtX(point.x),
+            );
+      const width = Math.abs(lower.yAtX(position.x) - upper.yAtX(position.x));
       const nearest = Math.min(...input.lanePaths.map((path) => distanceToPath(position, path)));
-      return { corridorIndex, index, position, depth: nearest / (Math.abs(bottom - top) / 2) };
+      return { corridorIndex, index, position, depth: nearest / (width / 2) };
     });
   });
 

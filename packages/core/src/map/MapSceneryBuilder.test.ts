@@ -8,7 +8,7 @@ import { DEFAULT_MAP_LAYOUT } from '../content/maps/defaultMapLayout';
 import { MapSceneryBuilder } from './MapSceneryBuilder';
 import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import { doesPolygonOverlapRect } from '../utils/geometry';
-import { fortInWorld } from './fortInWorld';
+import { laneFortKeepOuts } from './fortInWorld';
 import { MapObjectBuilder } from './MapObjectBuilder';
 import { MapPresentationBuilder } from './MapPresentationBuilder';
 
@@ -102,24 +102,21 @@ describe('MapSceneryBuilder', () => {
       xSpan(new MapSceneryBuilder(map).build().find((p) => p.id === 'cathedral-nave')?.shape ?? []);
     expect(nave(big)).toBeCloseTo(nave(generate()) * 2);
   });
-  it('keeps every blocking object of another building out of every lane tower fort box, 3 and 5 lanes, across seeds (DEC-315)', () => {
+  it('keeps every blocking object of another building out of every lane tower fort box and its clearance, 3 and 5 lanes, across seeds (DEC-315)', () => {
     const config = createDefaultGameConfig();
     const overlaps: string[] = [];
     for (const numLanes of [3, 5]) {
       for (const seed of [1, 1234, 7, 10, 42, 99, 2026]) {
         const map = new MapGenerator().generate({ map: { ...config.map, numLanes } }, seed);
         const objects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
-        const fort = fortInWorld(G.fort.laneTowerSize, map);
         const towers = map.features.filter(
           ({ definitionId }) => MAP_FEATURE_DEFINITIONS[definitionId]?.isCourt === true,
         );
-        for (const tower of towers) {
-          const box = {
-            x: tower.position.x - fort.width / 2,
-            y: tower.position.y - fort.height / 2,
-            width: fort.width,
-            height: fort.height,
-          };
+        // One box per tower, in feature order: its fort grown by the clearance (`laneTowerClearance`).
+        const keepOuts = laneFortKeepOuts(map.features, map);
+        for (const [index, tower] of towers.entries()) {
+          const box = keepOuts[index];
+          if (box === undefined) throw new Error('Every lane tower has a keep-out');
           for (const object of objects) {
             const isOwn = object.id === tower.id || object.partOf === tower.id;
             if (!object.isBlocking || isOwn) continue;
@@ -134,5 +131,27 @@ describe('MapSceneryBuilder', () => {
     }
 
     expect(overlaps).toEqual([]);
+  });
+
+  it('keeps every camp whole: tents, fire and supplies stand in every camp, 3 and 5 lanes, across seeds (DEC-315)', () => {
+    const config = createDefaultGameConfig();
+    const missing: string[] = [];
+    for (const numLanes of [3, 5]) {
+      for (const seed of [1, 1234, 7, 10, 42, 99, 2026]) {
+        const map = new MapGenerator().generate({ map: { ...config.map, numLanes } }, seed);
+        const ids = new Set(new MapSceneryBuilder(map).build().map(({ id }) => id));
+        const camps = map.features.filter(({ kind }) => kind === 'camp' || kind === 'corner-camp');
+        expect(camps.length).toBeGreaterThan(0);
+        for (const { id } of camps) {
+          for (const piece of ['tent--1', 'tent-1', 'fire-stone', 'supplies']) {
+            if (!ids.has(`${id}-camp-${piece}`)) {
+              missing.push(`${String(numLanes)} lanes, seed ${String(seed)}: ${id} lost ${piece}`);
+            }
+          }
+        }
+      }
+    }
+
+    expect(missing).toEqual([]);
   });
 });

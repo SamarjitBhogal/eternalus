@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
 import { BUILDING_GEOMETRY as G } from '../content/maps/buildingGeometry';
+import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
+import type { MapObject } from '../content/maps/mapObjects.types';
+import { bodyObjectsOf, fortBox } from './__fixtures__/fortBody';
 import { assertFortWallsResolve, fortInWorld, fortWallBands } from './fortInWorld';
+import { MapGenerator } from './MapGenerator';
+import { MapObjectBuilder } from './MapObjectBuilder';
+import { MapPresentationBuilder } from './MapPresentationBuilder';
 import { MapGenerationError } from './MapGenerationError';
 
 describe('fortInWorld', () => {
@@ -54,13 +61,66 @@ describe('assertFortWallsResolve', () => {
 });
 
 describe('fortWallBands', () => {
-  it("gives a lane tower fort box's north and south wall bands, one wall thick, per axis (DEC-315)", () => {
-    const box = { x: 100, y: 200, width: 112, height: 56 };
-    const { wallHeight } = fortInWorld(G.fort.laneTowerSize, { width: 3200, height: 900 });
+  const objectsOf = (width: number, height: number) => {
+    const config = createDefaultGameConfig();
+    const map = new MapGenerator().generate(
+      { map: { ...config.map, worldWidth: width, worldHeight: height } },
+      1,
+    );
+    return {
+      map,
+      objects: new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map)),
+    };
+  };
 
-    expect(fortWallBands(box, { width: 3200, height: 900 })).toEqual([
-      { x: 100, y: 200, width: 112, height: wallHeight },
-      { x: 100, y: 256 - wallHeight, width: 112, height: wallHeight },
-    ]);
+  it.each([
+    [1600, 900],
+    [3200, 900],
+  ])(
+    "gives each lane tower fort's north and south wall bands from its wall objects, one wall thick, per axis (DEC-315; %i x %i world)",
+    (width, height) => {
+      const { map, objects } = objectsOf(width, height);
+      const towers = map.features.filter(
+        ({ definitionId }) => MAP_FEATURE_DEFINITIONS[definitionId]?.isCourt === true,
+      );
+      const { wallHeight } = fortInWorld(G.fort.laneTowerSize, { width, height });
+
+      expect(towers.length).toBeGreaterThan(0);
+      for (const { id } of towers) {
+        const box = fortBox(objects, id);
+        const [north, south, ...more] = fortWallBands(bodyObjectsOf(objects, id));
+        expect(more).toEqual([]);
+        expect(north?.x).toBeCloseTo(box.x);
+        expect(north?.width).toBeCloseTo(box.width);
+        expect(north?.y).toBeCloseTo(box.y);
+        expect(north?.height).toBeCloseTo(wallHeight);
+        expect(south?.x).toBeCloseTo(box.x);
+        expect(south?.width).toBeCloseTo(box.width);
+        expect(south?.y).toBeCloseTo(box.y + box.height - wallHeight);
+        expect(south?.height).toBeCloseTo(wallHeight);
+      }
+    },
+  );
+
+  it('gives no band for a fort whose wall piece is gone, and ignores objects that are not its walls', () => {
+    const box = (id: string, partOf: string | undefined, y: number): MapObject => ({
+      id,
+      kind: 'wall',
+      isBlocking: true,
+      ...(partOf === undefined ? {} : { partOf }),
+      footprints: [
+        [
+          { x: 0, y },
+          { x: 10, y },
+          { x: 10, y: y + 1 },
+          { x: 0, y: y + 1 },
+        ],
+      ],
+    });
+
+    expect(fortWallBands([])).toEqual([]);
+    expect(
+      fortWallBands([box('a-fort-wall-top', 'a', 0), box('a-fort-wall-left', 'a', 5)]),
+    ).toEqual([{ x: 0, y: 0, width: 10, height: 1 }]);
   });
 });
