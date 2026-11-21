@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-21
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -665,18 +665,22 @@ at spawn by one selector per mode, so `'heavy'` is one more selector (DEC-314). 
 cooldown on `Combat`; a parry is a `parrying` status with a window. Non-unique weapons are usable
 by any class (reference 07: the class table's bias is a bias); `uniqueTo` locks the class weapons.
 
-A shot flies straight from the attacker's centre until it hits an enemy body or a wall, or
-reaches its `ProjectileDefinition.range` (metres from the origin). It passes through allies, as
-the Hamstring blade does (DEC-269). A walk-on outline (a palace floor, a gate's passage) is ground
-units stand on, so a shot flies over it unless it was fired at that entity. At its range it stops and ends: it hits
-nothing and stays for its `endDuration` (a bolt's mist fading, an arrow lying on the ground), then
-it is removed. `slowFrom` (at most `range`) is where the shot starts to ease to that stop; equal to
-`range`, the shot flies at full speed to the end. Its damage drops in a straight line from the
-attack's `falloff.fullTo` to `falloff.floor` at `falloff.floorAt`, and stays at the floor after
-that (DEC-306). A weapon with a melee attack beside its default attack also takes `attack-target`
-with `mode: 'melee'`: the unit attacks with that melee attack (the Magus staff's melee, on its own
-rebindable action, DEC-308). `mode` is the same optional field as the heavy attack's. The basic
-and melee attacks share the unit's one cooldown (a reading of DEC-308).
+A shot flies straight from the attacker's centre until it hits an enemy body or a wall, or reaches
+its `ProjectileDefinition.range` (metres from the origin). It passes through allies, as the
+Hamstring blade does (DEC-269). A walk-on outline (a palace floor, a gate's passage) is ground units
+stand on, so a shot flies over it unless it was fired at that entity (DEC-314). A body that takes no
+damage now (its collider is unbreakable: a forest camp, a gate before its breakability rule passes)
+also lets a shot pass unless the shot was fired at it (DEC-317). `CombatSystem` fires a ranged
+attack only when its target has a clear line of fire (`LineOfFire`, DEC-317); else the unit faces
+the target and waits, and its controller moves it (a bot goes round, DEC-193). At its range it stops
+and ends: it hits nothing and stays for its `endDuration` (a bolt's mist fading, an arrow lying on
+the ground), then it is removed. `slowFrom` (at most `range`) is where the shot starts to ease to
+that stop; equal to `range`, the shot flies at full speed to the end. Its damage drops in a straight
+line from the attack's `falloff.fullTo` to `falloff.floor` at `falloff.floorAt`, and stays at the
+floor after that (DEC-306). A weapon with a melee attack beside its default attack also takes
+`attack-target` with `mode: 'melee'`: the unit attacks with that melee attack (the Magus staff's
+melee, on its own rebindable action, DEC-308). `mode` is the same optional field as the heavy
+attack's. The basic and melee attacks share the unit's one cooldown (a reading of DEC-308).
 
 | Weapon (`id`)                               | Class      | Attacks (`TUNE`, reference 07)                                                          | Unique to | Status                  |
 | ------------------------------------------- | ---------- | --------------------------------------------------------------------------------------- | --------- | ----------------------- |
@@ -721,8 +725,8 @@ at (`targetId`, `null` for none), its impact (`{ kind: 'weapon', attack }`) and 
 shot flies straight at the target's facing point, with no lead. Stand-in until PR 2 (melee sweeps,
 phase 4 sprint 4.4): the player fires only at a target under the cursor (`attack-target`), not
 along the aim DEC-184 sets. A bot holds its ranged attack only with a clear line of fire
-(`state/hasLineOfFire`, with the shot's radius from its `ProjectileDefinition`). The projectile is
-not pooled (04 §11, DEC-309). Shot endings (DEC-306) are built: `ProjectileFlight` holds `range`,
+(`state/LineOfFire`, with the shot's radius from its `ProjectileDefinition`), and `CombatSystem`
+fires one only with that clear line (DEC-317). The projectile is not pooled (04 §11, DEC-309). Shot endings (DEC-306) are built: `ProjectileFlight` holds `range`,
 `slowFrom` and the ending countdown; `physics/flightSpeed` caps the shot's speed each tick through
 `Movement.limitSpeed`, so it stops exactly at `range`, ends, and is removed as `consumed` after
 `endDuration`. `EntitySnapshot.projectile` (`speedShare`, `ending`) lets the client draw the

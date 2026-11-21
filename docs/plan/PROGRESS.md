@@ -9855,3 +9855,26 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `eternalus-agent-work/abilities/pr1-breaks.log` (`tsc -b` TS2741 without the wiring).
 - Next step: gate round 2 (architecture-reviewer, correctness and ponytail critics), then the
   push and `gh pr create --base feat/vanguard-kit` for the owner.
+
+### 2026-11-21 — Phase 4 / combat lane A, PR 1 gate round 2: critic fixes, DEC-317 — feat/ranged-attacks — sholtzman + Claude Code
+
+- What was done: fixed the round-2 findings of the pre-PR gate (reports in
+  `eternalus-agent-work/abilities/pr1-gate/r2-*.md`). Core: `state/LineOfFire` and its port
+  `LineOfFireQuery` replace `state/hasLineOfFire`; `Simulation` builds one and gives it to bots
+  (`fight` and `siege`) and `CombatSystem`, which fires a ranged attack only with a clear line
+  (F6, option A); it uses `ProjectileSystem`'s contact rule and `BODY_BEFORE_WALL_MARGIN`
+  (`state/CollisionQuery.constants.ts`). `systems/defaultProjectileImpacts.ts`. `Combat.setTarget`
+  refuses a mode the unit lacks. A body that takes no damage now stops only a shot fired at it
+  (C1). Zero-aim facing fallback (C6). Client: `RemoteIntentSender.withoutAttack` clears
+  `isMeleeAttacking` (C4); `ProjectileView` throws on a projectile id with no ending look and a
+  test checks its keys against `DisplayContent.projectileIds` (F1, ADR 0023). Records: DEC-317 and
+  `INBOX.md` HC-B20 (asked); HC-B18 reopened as "sign-off asked" and DEC-314 (6) (walk-on rule).
+  Design text: 02 §2 and §9, 03 §4, 04 §3, 05 §10, 10 §7 and §12, 11 status, 17 R10 and R27.
+- Correction to the round-1 entry above: its design-text list also includes 08 (pooling line,
+  DEC-309), and its check was a split run; this entry reports one full run.
+- Checks run: one full `npm run check` (2026-11-20 23:55 to 2026-11-21 00:04 MST) exit 0: format,
+  no-js, lint, typecheck, knip, `test:coverage` (core 345 files / 2170 tests, protocol 1 / 31,
+  client 309 / 2136, server 21 / 85), build, `Documentation check passed.` Every new test was seen
+  red under a deliberate break first (`eternalus-agent-work/abilities/pr1-breaks.log`, r2 sections).
+- Next step: gate round 3 (last loop) on the round-2 delta, then the push and
+  `gh pr create --base feat/vanguard-kit` for the owner.

@@ -591,17 +591,34 @@ Reply inline (`Decision: …`).
       gain; (C) other (note). A, B or C?
   - Answered 2026-11-20 (DEC-309): "No pool now; add it if the soak test shows pauses". The design
     docs say so with PR 1.
-- [x] **HC-B18 — Better than the design, built under your standing rule (DEC-223): five parts of
-      the ranged attacks (`feat/ranged-attacks`, PR 1 critic round 1, 2026-11-20;
-      COMBAT-WEAPONS-ABILITIES-41).** Built and tested; recorded as DEC-314. Nothing waits on you;
-      name a part to change it. (1) One `ProjectileSystem` flies every shot and lands it, just
-      before `CombatSystem`; there is no `projectile-hit` event. (2) What a shot does where it lands
-      is one class per kind: a weapon's shot now, an ability's shot (the Hamstring blade) next, with
-      the same flight. (3) A unit's attacks are held by mode (basic, melee, later heavy), one rule
-      per mode. (4) A general speed cap on `Movement` slows a shot to its range; an ability can
-      reuse it. (5) A weapon names its shot and its fall-off; the shot's flight is its own
-      definition. Also recorded here, a stand-in that PR 2 replaces (scheduled, phase 4 sprint
-      4.4): the player fires only at a target under the cursor, not along the aim (DEC-184).
+- [ ] **HC-B18 — Better than the design, built under your standing rule (DEC-223), sign-off
+      asked: six parts of the ranged attacks (`feat/ranged-attacks`, PR 1 critic round 1,
+      2026-11-20; COMBAT-WEAPONS-ABILITIES-41).** Built and tested; recorded as DEC-314. Nothing
+      waits on you; name a part to change it. (1) One `ProjectileSystem` flies every shot and
+      lands it, just before `CombatSystem`; there is no `projectile-hit` event. (2) What a shot
+      does where it lands is one class per kind: a weapon's shot now, an ability's shot (the
+      Hamstring blade) next, with the same flight. (3) A unit's attacks are held by mode (basic,
+      melee, later heavy), one rule per mode. (4) A general speed cap on `Movement` slows a shot
+      to its range; an ability can reuse it. (5) A weapon names its shot and its fall-off; the
+      shot's flight is its own definition. (6) A shot flies over a walk-on outline (a palace
+      floor, a gate's passage) unless it was fired at that entity. Also recorded here, a stand-in
+      that PR 2 replaces (scheduled, phase 4 sprint 4.4): the player fires only at a target under
+      the cursor, not along the aim (DEC-184).
+- [ ] **HC-B20 — Better than the design, built under your standing rule (DEC-223), sign-off
+      asked: five more parts of the ranged attacks (`feat/ranged-attacks`, PR 1 critic round 2,
+      2026-11-20; COMBAT-WEAPONS-ABILITIES-44).** Built and tested; recorded as DEC-317. Nothing
+      waits on you; name a part to change it. (1) One line-of-fire check tells whether a shot
+      would reach its target now; bots and the combat system both use it, and it uses the same
+      contact rule that lands shots, so a fort that is also its own wall reads clear. (2) One
+      list of what shots do where they land; a missing kind does not compile. (3) A unit given an
+      attack mode it does not have (for example melee on a bow-only unit) refuses the command and
+      changes nothing, with no quiet fallback to the basic attack. (4) A unit fires a ranged
+      attack only with a clear line, every unit, the player's too (option A); without one it
+      faces the target and waits while its controller moves it. Not chosen: (B) bots only, which
+      needs a hold-fire command, or (C) leave shots going into walls and schedule the fix.
+      (5) A body that takes no damage now (a forest camp, a gate before its breakability rule
+      passes) stops only a shot fired at it, as a walk-on floor does; other shots fly on.
+      Alternative: only structures that can never be broken let shots pass.
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays

@@ -4,7 +4,7 @@ description: One recipe per kind of addition, from a Legend class to a port and 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-21
 tags: [architecture, recipes, extension-points, ocp, registries]
 paths:
   [
@@ -190,7 +190,7 @@ R14 "new view" and R16 "new command".
 - **Docs:** 07 §7; `../reference/game-design/04-objectives-capture-points-and-bosses.md`.
 - **Skill:** `new-entity` · [07 §7](07-structures-obstacles-and-destructibles.md#7-capture-points).
 
-## 3. Abilities, status effects and gear (R8–R10)
+## 3. Abilities, status effects and gear (R8–R10, R27)
 
 ### R8. Add an ability
 
@@ -252,13 +252,42 @@ AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `
   `strategy` and `onHit`, `damageMultipliers`, `allowedClasses`, `uniqueTo`) +
   `weaponCatalogue.ts` line. Artifact: `core/content/artifacts/<camelId>.ts` (an
   `AbilityDefinition` with `slot: 'gadget'`, modes as `varieties`) + `artifactCatalogue.ts` line
-  and the `LegendDefinition.allowedArtifactIds` entries.
+  and the `LegendDefinition.allowedArtifactIds` entries. A ranged weapon: the attack names
+  `projectile: { projectileId, falloff }` (a `ProjectileLaunch`); `KnownProjectileRule` checks that
+  `projectileId` is a projectile (R27).
 - **Registry line:** none; `defaultStrategyRegistry.ts` only for a new `AttackStrategy`.
 - **Tests:** content validation; the attack strategy test with `onHit`; the loadout fixtures
   (`WeaponAllowedRule`, `ArtifactClassRule`); an artifact cast through
   `cast-ability { slot: 'gadget-1' }`.
 - **Docs:** `../reference/game-design/07-weapons-and-artifacts.md`; `more-weapons.md`.
 - **Skill:** `new-ability` · [05 §10](05-abilities-weapons-and-loadouts.md#10-weapons), [05 §11](05-abilities-weapons-and-loadouts.md#11-artifacts-gadgets-z-and-c).
+
+### R27. Add a projectile or a projectile impact kind
+
+- **When:** a new shot (a weapon or ability fires something with its own speed, range or end
+  look), or a new thing a shot does where it lands (an impact kind, for example an ability's
+  shot). `ProjectileSystem` flies and sweeps every shot the same way; only the landing varies by
+  kind. A new weapon that fires an existing shot is R10 alone.
+- **Files:** a projectile: `core/content/projectiles/<camelId>.ts` (a `ProjectileDefinition`:
+  `footprintRadius`, `movementProfile`, `range`, `slowFrom`, `endDuration`) and its line in
+  `projectileCatalogue.ts`. A client ending look for it in
+  `apps/client/src/game/views/ProjectileView.constants.ts` (`PROJECTILE_ENDING_LOOKS`); the view
+  throws on an id with no entry. An impact kind: one entry in `ProjectileImpactDataByKind`
+  (`core/components/ProjectilePayload.types.ts`) and one class
+  `core/<folder>/<Name>Impact.ts` that implements `ProjectileImpact<'<kind>'>`
+  (`core/combat/ProjectileImpact.types.ts`); it gets its services (ability registry, damage,
+  statuses) by constructor, because `entities/` may not import `combat/` or `abilities/`.
+- **Registry line:** a projectile: the `projectileCatalogue.ts` line. An impact kind: one key in
+  `core/systems/defaultProjectileImpacts.ts` (`createDefaultProjectileImpacts`, used by
+  `DefaultSystemPipeline` and the test helpers). A missing key does not compile. The dispatch is
+  `impacts[hit.impact.kind].land(state, hit)`, never a `switch`.
+- **Tests:** content validation (`KnownProjectileRule` accepts the id; `loadProjectiles` rules);
+  `ProjectileView.test.ts` fails when the looks' keys and core's projectile ids
+  (`DisplayContent.projectileIds`) differ; for an impact kind, the
+  class alone with a small `GameState`, and one `ProjectileSystem` scenario that lands a shot of
+  that kind; the determinism check, because `StateHasher` hashes the shot's payload.
+- **Docs:** 05 §10 (weapons and shots); 02 §9 (the registry row); 10 §7 if the flight changes.
+- **Skill:** `new-ability` · [05 §10](05-abilities-weapons-and-loadouts.md#10-weapons).
 
 ## 4. Systems, components and strategies (R11–R13)
 
@@ -634,6 +663,10 @@ HC-T1); R1's word for the locked class's id changes with that id's content renam
   `lockedClasses`), `content/teams/teamDisplayNames.ts` and `content/profile/profileDisplayName.ts`.
   The ids are unchanged; the client adds only the locked card's look
   (`game/content/classPresentation.ts`).
+- **A projectile or an impact kind** (R27, `feat/ranged-attacks`, 2026-11-21; DEC-314): built.
+  `ProjectileSystem` flies every shot and lands it through the `ProjectileImpact` of its kind;
+  `createDefaultProjectileImpacts` holds the kinds. The only kind today is `weapon`
+  (`WeaponImpact`); an ability's kind is later work.
 - **A8:** the renderer is created (`Canvas2dRenderer.fromCanvas`) in `game/createBrowserMatch.ts`,
   the match factory bound only by `main.tsx` (DEC-50); it is still the composition root, so the
   anti-recipe's intent holds.
