@@ -8,6 +8,7 @@ import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
 import { WorldObjectStore } from '../state/WorldObjectStore';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import type { DeepPartial, GameConfig } from '../config/GameConfig.types';
+import { timelineFrameOf } from '../config/timelineFrameOf';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { loadGuardPlans } from '../content/structures/loadGuardPlans';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
@@ -28,6 +29,10 @@ import { GuardRoster } from './GuardRoster';
 const TICK_RATE = 30;
 /** The shipped guard plans, loaded at `TICK_RATE`. */
 const GUARD_PLANS = loadGuardPlans(TICK_RATE);
+/** The countdown's end tick from `config`, as `Simulation` hands it to `GameState`. */
+const timingOf = (config: GameConfig) => ({
+  countdownEndTick: timelineFrameOf(config).countdownEndTick,
+});
 
 describe('GuardRoster', () => {
   const guarded = (overrides: DeepPartial<GameConfig> = {}) => {
@@ -35,7 +40,7 @@ describe('GuardRoster', () => {
       match: { countdownSeconds: 6000 },
       ...overrides,
     });
-    const state = new GameState(config, 1, matchWorldOf(TWO_LANE_MAP));
+    const state = new GameState(config, 1, matchWorldOf(TWO_LANE_MAP), {}, timingOf(config));
     spawnMapStructures(state);
     const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(TICK_RATE));
     const roster = new GuardRoster(factory, factory.definitions, GUARD_PLANS);
@@ -258,7 +263,7 @@ describe('GuardRoster', () => {
         ],
       };
       const config = createDefaultGameConfig({ match: { countdownSeconds: 2 } });
-      const state = new GameState(config, 1, matchWorldOf(map));
+      const state = new GameState(config, 1, matchWorldOf(map), {}, timingOf(config));
       spawnMapStructures(state);
       const factory = new EntityFactory(
         createDefaultEntityRegistry(),
@@ -583,7 +588,7 @@ describe('GuardRoster', () => {
      */
     const zoned = (plan: Partial<AuthoredGuardPlan> = {}) => {
       const config = createDefaultGameConfig({ match: { countdownSeconds: 2 } });
-      const state = new GameState(config, 1, matchWorldOf(TWO_LANE_MAP));
+      const state = new GameState(config, 1, matchWorldOf(TWO_LANE_MAP), {}, timingOf(config));
       spawnMapStructures(state);
       const units = loadDefaultContent(TICK_RATE);
       const objects = new Map(Object.values(MAP_OBJECT_DEFINITIONS).map((d) => [d.id, d]));

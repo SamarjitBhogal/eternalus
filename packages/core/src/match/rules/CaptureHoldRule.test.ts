@@ -196,6 +196,7 @@ describe('CaptureHoldRule (through Scoring)', () => {
       playerTeam: 'light',
       hadHuman: false,
       durationTicks: 5,
+      matchTicks: 0,
       seed: 1,
       configHash: 0,
       legends: [],

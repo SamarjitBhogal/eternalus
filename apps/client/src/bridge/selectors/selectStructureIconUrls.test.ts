@@ -68,7 +68,7 @@ describe('selectStructureIconUrls', () => {
     const store = storeWith(ICON_URLS);
     const allied = selectStructureIconUrls(store.getState(), 'allied');
     const enemy = selectStructureIconUrls(store.getState(), 'enemy');
-    store.dispatch(matchSlice.actions.clockChanged({ tick: 30, seconds: 1 }));
+    store.dispatch(matchSlice.actions.clockChanged({ tick: 30, seconds: 1, countdown: null }));
     store.dispatch(hudSlice.actions.hudStateChanged(FIGMA_HUD_PLAYER));
     expect(selectStructureIconUrls(store.getState(), 'allied')).toBe(allied);
     expect(selectStructureIconUrls(store.getState(), 'enemy')).toBe(enemy);
