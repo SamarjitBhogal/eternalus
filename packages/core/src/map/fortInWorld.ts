@@ -2,7 +2,7 @@ import { BUILDING_GEOMETRY as G } from '../content/maps/buildingGeometry';
 import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import { SKETCH_HEIGHT, SKETCH_WIDTH } from '../content/maps/map1Scenery';
 import type { MapFeature } from '../content/maps/maps.types';
-import type { MapObject } from '../content/maps/mapObjects.types';
+import type { FortWallRole, MapObject } from '../content/maps/mapObjects.types';
 import { boundsOf, doRectsOverlap } from '../utils/geometry';
 import type { Rect } from '../utils/geometry.types';
 import { MapGenerationError } from './MapGenerationError';
@@ -35,6 +35,9 @@ export const fortInWorld = (sketchSide: number, world: FortWorld): FortInWorld =
   };
 };
 
+/** The wall roles of each band `fortWallBands` returns: the north wall, then the south wall. */
+const BAND_ROLES: readonly (readonly FortWallRole[])[] = [['top'], ['bottom-left', 'bottom-right']];
+
 /**
  * The north and south wall bands of a lane tower fort, read from the fort's own wall objects
  * (`walls`, its body: `MapFortificationBuilder`): the north wall, and the south wall's two pieces
@@ -44,7 +47,7 @@ export const fortInWorld = (sketchSide: number, world: FortWorld): FortInWorld =
  * field. There is no second calculation of the wall thickness: the objects are the source.
  */
 export const fortWallBands = (walls: readonly MapObject[]): readonly Rect[] =>
-  [['top'], ['bottom-left', 'bottom-right']].flatMap((roles) => {
+  BAND_ROLES.flatMap((roles) => {
     const pieces = walls.filter(
       ({ fortWall }) => fortWall !== undefined && roles.includes(fortWall),
     );

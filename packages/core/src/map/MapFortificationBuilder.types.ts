@@ -4,7 +4,9 @@ import type { Rect } from '../utils/geometry.types';
 /** One fort wall piece for `MapFortificationBuilder`: its id, box and colours. */
 export type FortWall = {
   readonly id: string;
-  /** Which piece of the fort this is; set on a lane tower's walls (with `partOf`). */
+  /**
+   * Which piece of the fort this is; stored on the wall object only for a lane tower (`partOf`).
+   */
   readonly role: FortWallRole;
   readonly box: Rect;
   readonly color: string;

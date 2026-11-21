@@ -59,7 +59,7 @@ export type CampLayoutInput = {
   readonly centreX: number;
   readonly band: readonly [number, number];
   readonly rng?: Rng;
-  /** When set, camps step clear of these keep-outs (`clearCampOfForts`). */
+  /** Camps step clear of these keep-outs (`clearCampOfForts`). */
   readonly clearance: CampClearance;
 };
 
