@@ -56,7 +56,7 @@ export class Match implements LoopTarget {
   /** Which units draw a world health bar, and on which side; it listens to the simulation's events. */
   private readonly healthBars: HealthBarVisibility;
 
-  /** Who watches on this screen: the player's Legend and team, read by the rules that depend on it. */
+  /** Who watches: the player's Legend and team, read by the rules that depend on it. */
   private readonly viewer: Viewer;
 
   /** The map objects (walls, furniture, doors) and their destroyed state, drawn in the scene. */

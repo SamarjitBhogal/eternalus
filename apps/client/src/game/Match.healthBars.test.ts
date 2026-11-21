@@ -24,6 +24,7 @@ import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
 import { HEALTH_BAR_FILL_COLORS } from './views/HealthBarView.constants';
 import type { HealthBarSide } from './views/HealthBarView.types';
+import { LEGEND_OUTLINE_COLOR } from './views/entityViews.constants';
 
 const SEED = 1;
 const PLAYER: PlayerChoice = { legend: 'warrior', team: 'light' };
@@ -159,8 +160,13 @@ describe('Match hidden units: the viewer decides what a hidden unit shows (DEC-2
 
     match.render(0);
 
-    // The light ally fades, body and mini map dot (no cue, no bar yet); the dark one is not drawn.
+    // The light ally fades, body and mini map dot (no cue, no bar yet); the dark one is not drawn:
+    // two Legend bodies (the player's and the ally's), not three.
     expect(renderer.calls.filter(({ op }) => op === 'withOpacity')).toHaveLength(2);
+    const bodies = renderer.calls.filter(
+      (call) => call.op === 'drawWorldGlyph' && call.args[2] === LEGEND_OUTLINE_COLOR,
+    );
+    expect(bodies).toHaveLength(2);
     match.destroy();
   });
 });
