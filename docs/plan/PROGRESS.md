@@ -9343,3 +9343,15 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   after the boss kill): the new checkpoint defenders now hold it (DEC-261), so that test clears
   them with `clearCheckpointDefenders`, as the other soaks of other rules do.
 - Next step: re-request review on PR #130; then PR #131 merges this branch.
+
+### 2026-11-20 — Phase 3 / minion plan M6b — feat/minion-m6b-checkpoint-defenders (critic on the review merge) — SamarjitBhogal + Claude Code
+
+- What was done: the `architecture-reviewer` critic on `5a7cc8dc..e28cc1fd`: **approve**, no
+  blockers, 2 should-fix, 5 nits, 4 better-than-design. Applied: N3 (`CheckpointReached.pointId`
+  is an `EntityId`). Recorded for the owner in `INBOX.md` "Minion M6b follow-ups": S1 (a
+  cap-blocked defender post may fill after an owner change; 18 §7.1 says so) as (6), the
+  unbounded defender stacking across owner flips as (7), S2 (`GuardRoster.ts` 332 lines) as (8).
+  Left: N1 (a `group` plan on a capture point would sweep defender posts; the plan is `never`),
+  N2 (fixture matches the `-assist-mob` suffix), N4 (`instanceof CapturePoint` vs `Capturable`).
+- Checks run: `npm run check:quick` by the pre-commit hook; the full check ran on `e28cc1fd`.
+- Next step: re-request review on PR #130.

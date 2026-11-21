@@ -1,3 +1,4 @@
+import type { EntityId } from '../state/EntityStore.types';
 import type { HordeSteeringProfile, LaneAssessmentWeights } from '../content/ai/ai.types';
 import type {
   CheckpointDefenderPlanDefinition,
@@ -41,4 +42,4 @@ export type ScheduledWave = {
 };
 
 /** A capture point's `checkpoint` reached with a Legend present: `SpawnSystem` adds its defenders. */
-export type CheckpointReached = { readonly pointId: string; readonly checkpoint: number };
+export type CheckpointReached = { readonly pointId: EntityId; readonly checkpoint: number };

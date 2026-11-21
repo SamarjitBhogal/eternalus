@@ -320,6 +320,15 @@ Reply inline (`Decision: …`).
       enemy inside their leash (`shouldAcquireAcrossLeash`, DEC-260), which #99's boss and support
       mobs lack (their fixed `acquisitionRadius` from `CAPTURE_POINT_COURT` only reaches enemies
       near their post). Use the flag for #99's zone guards too? Not changed without your sign-off.
+      (6) **Question (critic, 2026-11-20):** a defender post the unit cap blocks waits and fills
+      when the cap frees, possibly after the point changed owner, so an old owner's defender
+      appears at a zone it lost. `Recommendation:` give such a post up on its due tick (counted as
+      suppressed once), since defenders answer one push. Built today: it waits. (7) **Better than
+      the design (DEC-139), sign-off asked:** with DEC-261 keeping living defenders, each owner
+      flip lets a checkpoint be reached again, so a contested point gains another set per flip
+      without bound. Cap it: skip a checkpoint's defenders while its earlier posts still hold
+      guards? (8) `GuardRoster.ts` is 332 lines (limit ~300): move `clearPost` into its own
+      helper in a tidy PR.
 
 - [ ] **Minion plan MVP gaps (3): who owns the zone cooldown reduction (2026-11-06, PR #81).**
       The zone's cooldown reduction (FR-041, 07 §7) is Legend-side, not minion work, and no plan
