@@ -1219,9 +1219,11 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     (`StatusEffectApplier.removeBroken`: `status-expired`, no `onExpire`). The listener only
     marks, because a hit can land inside a loop over the holder's statuses. A broken status stops
     counting at once (`StatusEffects` recomputes without it: no flags, no modifiers) and neither
-    ticks nor runs out (`StatusEffectRuntime`), so a Veil ends at the hit; its removal and
-    `status-expired` come in the same pass for a bleed tick and in the next tick's pass for a hit
-    from a later system (combat). Casting does not end it.
+    ticks nor runs out (`StatusEffectRuntime`), so a Veil ends at the hit, and the snapshot's
+    `statuses` leaves it out at once; its removal and `status-expired` come in the same pass for a
+    bleed tick and in the next tick's pass for a hit from a later system (combat). A status that
+    has already run out when the hit lands does not break: it ends by expiry, once. Casting does
+    not end it.
   - **Untargetable.** `EntityStore.isTargetable(id)` (alive and not `isUntargetable`) is the one
     rule for every picker: perception's hostile queries, the leashed mobs (`LeashBehaviour`),
     `attack-target` (`invalid-target`) and the bot memory (`BotLeaves`). The systems that act on a

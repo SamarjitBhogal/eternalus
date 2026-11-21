@@ -9871,3 +9871,25 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   (16 files, 115 tests) pass; client `Match.healthBars.test.ts` passes. Full `npm run check` not
   run yet on this commit.
 - Next step: full `npm run check`, then critics round 3 (the last) on the round 2 commits.
+
+### 2026-11-21 — Phase 4 / combat PR 5 (lane B, DEC-301): Veil pre-PR gate, round 3 (last) — feat/vanguard-veil-hamstring — sholtzman + Claude Code
+
+- What was done: full `npm run check` on the round 2 commits (38fedaa9) exit 0 (core 2065/2065,
+  client 2131/2131, server 84/84, protocol 30/30, docs check passed). Critics round 3 on
+  `9cf41171..38fedaa9`: architecture approve, no blocker (`architecture-r3.md`); correctness two
+  nits, no blocker (chat); ponytail comment trims only (`ponytail-r3.md`; reports in
+  `eternalus-agent-work/abilities/veil-gate/`). Fixed: a status that has run out when a hit lands
+  no longer breaks (`StatusEffects.breakOnDamage(tick)`), so a `status-expired` listener that
+  hurts the holder cannot end it twice (the critic's probe saw two `status-expired`); the
+  snapshot's `statuses` leaves out a broken status at once (`EntitySnapshotter`); TSDoc in
+  `CombatSystem` (one 142-column line) and `statusEffects.types.ts` (`isUntargetable` named);
+  `INBOX.md` gains the HC-Q75 entry, HC-B19 (4) and (6) reworded; 05 §18 "Veil" updated. Tests
+  red first: B45, B46 (`eternalus-agent-work/abilities/veil-breaks.log`). Rejected: ponytail r3
+  reverts of the `Match.ts` and `StatusEffects.ts` TSDoc rewraps (round 2 N3 asked for them).
+- Open: HC-Q75, HC-B19 sign-off, veil-own-bleed (all on Owner Calls; none blocks the PR).
+- Checks run: Prettier clean; core vitest on `src/components`, `src/systems`, `src/combat`,
+  `src/abilities`, `src/state`, `src/ai` (134 files, 949 tests) pass; full `npm run check` on
+  these fixes exit 0 (core 2067/2067, client 2131/2131, server 84/84, protocol 30/30, docs check
+  passed).
+- Next step: push line for Sam (PR base `feat/vanguard-kit`), then Hamstring on lane A's
+  `ProjectileImpact` (PR #148), then PR 6 (Sentinel).

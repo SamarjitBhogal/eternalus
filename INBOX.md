@@ -446,6 +446,21 @@ Reply inline (`Decision: …`).
       Also noted, acceptable: only an ability's top-level steps may wait (05 §3 says every spec
       may); no content needs nested delays, and the `Delayed<Step>` type refuses them.
       Keep all six, or name the ones to change?
+- [ ] **HC-Q75 — "veil-held-attack": does the enemy player's attack on a Vanguard who Veils
+      survive the Veil? (`feat/vanguard-veil-hamstring`, 2026-11-21; Owner Calls card
+      "veil-held-attack"; DEC-266).** DEC-266 says what bots, mobs and turrets do, not the human
+      player. Built and tested; nothing waits on the answer. (A) **Kept (built):** while Veil
+      lasts, the player's Legend neither faces, hits nor chases the Vanguard; when Veil ends it
+      attacks again without a new click, unless the player moved and stopped in between (stopping
+      sends `stop`). While the attack is kept, the player's Legend counts as attacking the
+      Vanguard, so the Vanguard's allied minions and guards rank it as attacking an ally Legend
+      (aggro). (B) **Dropped:** the attack ends when Veil starts, and the player clicks again
+      after it. (B) is a small follow-up: the client's `PlayerCommands` and the server's
+      `SeatCommands` forget their attack target when it turns hidden and send `stop`. My advice
+      is (B): it is the genre norm, and under (A) the Legend runs at the Vanguard the moment Veil
+      ends. Every AI controller already drops a Veiled target at its next decision (HC-B19 (3)).
+      HC-B19 (6) stays open under either answer, because the systems keep a held target until the
+      controller's `stop` arrives. Keep (A), or switch to (B)?
 - [ ] **HC-B19 — Better than the design, built under your standing rule (DEC-223), sign-off
       asked: five parts of the Veil build (`feat/vanguard-veil-hamstring`, 2026-11-21; pre-PR
       critic rounds 1 and 2), and one more not built.** Nothing waits on the answer; parts (1) to
@@ -473,8 +488,9 @@ Reply inline (`Decision: …`).
       the next tick's pass, so the Vanguard that hit stayed hidden and untargetable for one or two
       ticks. Now `StatusEffects` recomputes without a broken status at once (no flags, no
       modifiers), and a broken status neither ticks nor runs out, so it always ends through the
-      break (no `onExpire`); only its removal and `status-expired` wait for the pass.
-      `StateHasher` hashes the pending break.
+      break (no `onExpire`); the snapshot's `statuses` leaves it out at once, and only its removal
+      and `status-expired` wait for the pass. A status that has already run out when the hit lands
+      does not break: it ends by expiry, once. `StateHasher` hashes the pending break.
       (5) **`Viewer` decides what the player sees.** A small `Viewer` in `game/` keeps the
       player's Legend and team (also after the player dies) and gives each entity shown, faded or
       hidden; `Match` injects that rule into `EntityLayer` and `HealthBarVisibility` reads the same
@@ -484,8 +500,9 @@ Reply inline (`Decision: …`).
       (6) **Not built, my advice is no: one query for "the held target, while targetable".** The
       round 2 critic noted that `CombatSystem`, `PathingSystem` and `StuckSystem` each check
       `isUntargetable` on their held target, and one `EntityStore` query could hold the rule.
-      `CombatSystem` still needs its own dead-or-untargetable split (a dead target clears, a Veiled
-      one stays), so the query would serve two of three callers; build it when a fourth appears.
+      It would serve all three, with `CombatSystem` keeping its own dead check beside it (a dead
+      target clears, a Veiled one stays). The gain is one line in each of three systems, and
+      `EntityStore` is already over 300 lines; build it when a fourth caller appears.
       Keep all five, build (6) now, or name the ones to change?
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
