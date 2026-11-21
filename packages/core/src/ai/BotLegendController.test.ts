@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { LANE_TOWER_FOOTPRINT_RADIUS } from '../content/maps/buildingGeometry';
 
 import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
@@ -284,12 +285,14 @@ describe('BotLegendController (laner tree, 11 §4.2)', () => {
     expect(decide().commands).toEqual([{ type: 'move', actorId: bot, direction: { x: 40, y: 0 } }]);
   });
 
-  // Dark's lane-0 SpawnerTower stands at x 140, radius 14: hordes gather at its near edge, x 126.
+  // Dark's lane-0 SpawnerTower stands at x 140, its radius following its fort (DEC-315): hordes
+  // gather at its near edge.
+  const nearEdge = 140 - LANE_TOWER_FOOTPRINT_RADIUS;
   const nextTower = (state: GameState) =>
     state.laneStructures.objectiveFor('lane-0', 'light', state.entities)?.id ?? '';
 
   it('Push: at its lane’s next enemy structure it attacks it, walks up to it, then holds in reach', () => {
-    const { state, bot, decide } = setUp({ x: 116, y: 20 });
+    const { state, bot, decide } = setUp({ x: nearEdge - 10, y: 20 });
     spawnMapStructures(state);
     const tower = nextTower(state);
 
@@ -297,7 +300,10 @@ describe('BotLegendController (laner tree, 11 §4.2)', () => {
       { type: 'attack-target', actorId: bot, targetId: tower },
       { type: 'move', actorId: bot, direction: { x: 10, y: 0 } },
     ]);
-    state.entities.get(bot)?.getComponent(Transform).moveTo({ x: 125.5, y: 20 });
+    state.entities
+      .get(bot)
+      ?.getComponent(Transform)
+      .moveTo({ x: nearEdge - 0.5, y: 20 });
     expect(decide({ lane: 'lane-0', targetId: tower }).commands).toEqual([
       { type: 'move', actorId: bot, direction: { x: 0, y: 0 } },
     ]);

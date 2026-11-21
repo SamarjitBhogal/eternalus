@@ -31,12 +31,16 @@ export const BUILDING_GEOMETRY = {
   },
   /**
    * A fort: an outer capture point's square side and a lane tower's, walls included (sketch
-   * units), what every fort's side is divided by to give its wall thickness, and its central
-   * keep's width and height.
+   * units), how far inside its side a lane tower's circle stops (`LANE_TOWER_FOOTPRINT_RADIUS`),
+   * what every fort's side is divided by to give its wall thickness, and its central keep's width
+   * and height.
    */
   fort: {
     capturePointSize: 88,
-    laneTowerSize: 32,
+    // DEC-315 (DEC-185 (A) option (b), "bigger forts"): 56 m, so every passage through the court
+    // (doorway, round the keep) is at least 2 nav cells wide at `config.map.navCellSize` 2.5 m.
+    laneTowerSize: 56,
+    laneTowerInset: 2, // TUNE: a tower's circle stops 2 m inside its fort's side, as at 32 m (DEC-185)
     wallDivisor: 10,
     keepWidthDivisor: 3,
     keepHeightDivisor: 2.5,
@@ -54,3 +58,12 @@ export const BUILDING_GEOMETRY = {
       ) + STRONGHOLD_GEOMETRY.extentPadding,
   },
 } as const;
+
+/**
+ * A lane tower's footprint radius, in world units at the default world (1 sketch unit = 1 m): half
+ * its fort's side less `fort.laneTowerInset`. The tower's circle follows its fort (DEC-315): its
+ * map feature's footprint (the court it stamps, `WorldMap.stampCourt`), its structure's radius and
+ * so its guard ring (`GuardRoster`) and where a horde gathers before it (`LaneStructures`).
+ */
+export const LANE_TOWER_FOOTPRINT_RADIUS =
+  BUILDING_GEOMETRY.fort.laneTowerSize / 2 - BUILDING_GEOMETRY.fort.laneTowerInset;

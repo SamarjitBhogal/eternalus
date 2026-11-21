@@ -1,9 +1,10 @@
 import type { MapDefinition, MapLane } from '../content/maps/maps.types';
 import type { PlayableTeam } from '../teams/teams.types';
-import { distance, distanceToPath } from '../utils/geometry';
-import type { Vec2 } from '../utils/geometry.types';
+import { distance, distanceToPath, isPointInRect } from '../utils/geometry';
+import type { Rect, Vec2 } from '../utils/geometry.types';
 import { FlowField } from './FlowField';
 import { FlowFieldBuilder } from './FlowFieldBuilder';
+import { fortWallBands } from './fortInWorld';
 import type { WorldMap } from './WorldMap';
 import { CELL_EDGE_SLACK } from './WorldMap.constants';
 
@@ -12,7 +13,10 @@ import { CELL_EDGE_SLACK } from './WorldMap.constants';
  * give `2 × numLanes` fields. A field's corridor is every cell within `corridorHalfWidth` of the
  * lane as its team walks it, plus the ground inside the team's wall ring, from the Stronghold out
  * to the gate (18 §3.2), less any walkable sliver the enemy end cannot reach at match start; it
- * flows to the lane's enemy end. All fields are built at match start;
+ * flows to the lane's enemy end. A corridor holds no cell of a standing lane tower fort's north or
+ * south wall band, so a field crosses a fort's court only by its west and east doorways, the lane's
+ * way through (DEC-315; court ground is routable, `WorldMap.isRoutable`). All fields are built at
+ * match start;
  * after a terrain change `markDirty` queues the fields it touches and `rebuildDirty` rebuilds them
  * a cell budget per tick, each old field serving until its new one is finished.
  */
@@ -29,13 +33,22 @@ export class LaneFlowFields {
    * @param grid - The match's walkability grid.
    * @param map - The generated map: its lanes and the Strongholds.
    * @param corridorHalfWidth - How far from the lane, in world units, the corridor reaches.
+   * @param laneForts - The box of every lane tower fort standing at match start (a lane tower's
+   *   `Footprint` bounds); none when the match has no map objects, so no fort stands.
    */
-  public constructor(grid: WorldMap, map: MapDefinition, corridorHalfWidth: number) {
+  public constructor(
+    grid: WorldMap,
+    map: MapDefinition,
+    corridorHalfWidth: number,
+    laneForts: readonly Rect[] = [],
+  ) {
     this.builder = new FlowFieldBuilder(grid);
+    const closed = laneForts.flatMap((box) => fortWallBands(box, map));
+    const corridor = { halfWidth: corridorHalfWidth, closed };
     const fields: FlowField[] = [];
     for (const lane of [...map.lanes].sort((a, b) => a.index - b.index)) {
-      const light = LaneFlowFields.fieldOf(grid, map, lane, 'light', corridorHalfWidth);
-      const dark = LaneFlowFields.fieldOf(grid, map, lane, 'dark', corridorHalfWidth);
+      const light = LaneFlowFields.fieldOf(grid, map, lane, 'light', corridor);
+      const dark = LaneFlowFields.fieldOf(grid, map, lane, 'dark', corridor);
       this.byLane.set(lane.id, { light, dark });
       fields.push(light, dark);
     }
@@ -94,7 +107,7 @@ export class LaneFlowFields {
     map: MapDefinition,
     lane: MapLane,
     team: PlayableTeam,
-    corridorHalfWidth: number,
+    corridor: { readonly halfWidth: number; readonly closed: readonly Rect[] },
   ): FlowField {
     const path = team === 'light' ? lane.path : [...lane.path].reverse();
     const start = path[0] ?? { x: 0, y: 0 };
@@ -102,7 +115,7 @@ export class LaneFlowFields {
     const home = map.features.find(
       (feature) => feature.kind === 'stronghold' && feature.team === team,
     )?.position;
-    const mask = LaneFlowFields.corridorOf(grid, path, corridorHalfWidth, home, start);
+    const mask = LaneFlowFields.corridorOf(grid, path, corridor, home, start);
     // Nudged back along the lane, so an end on a cell edge picks the cell its mirror twin picks.
     const before = path[path.length - 2] ?? end;
     const goal = grid.cellAt({
@@ -118,11 +131,14 @@ export class LaneFlowFields {
     );
   }
 
-  /** 1 for every cell whose centre lies near `path` or inside the home disc out to the gate. */
+  /**
+   * 1 for every cell whose centre lies near `path` or inside the home disc out to the gate, and in
+   * none of `corridor.closed` (the lane tower forts' north and south wall bands).
+   */
   private static corridorOf(
     grid: WorldMap,
     path: readonly Vec2[],
-    halfWidth: number,
+    { halfWidth, closed }: { readonly halfWidth: number; readonly closed: readonly Rect[] },
     home: Vec2 | undefined,
     gate: Vec2,
   ): Uint8Array {
@@ -141,7 +157,8 @@ export class LaneFlowFields {
       for (let col = firstCol; col <= lastCol; col += 1) {
         const centre = { x: (col + 0.5) * grid.cellSize, y: (row + 0.5) * grid.cellSize };
         const isHome = home !== undefined && distance(centre, home) <= homeRadius;
-        if (isHome || distanceToPath(centre, path) <= halfWidth) {
+        const isClosed = closed.some((band) => isPointInRect(centre, band));
+        if (!isClosed && (isHome || distanceToPath(centre, path) <= halfWidth)) {
           mask[row * grid.cols + col] = 1;
         }
       }

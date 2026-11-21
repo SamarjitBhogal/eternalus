@@ -1,5 +1,6 @@
 import { BUILDING_GEOMETRY as G } from '../content/maps/buildingGeometry';
 import { SKETCH_HEIGHT, SKETCH_WIDTH } from '../content/maps/map1Scenery';
+import type { Rect } from '../utils/geometry.types';
 import { MapGenerationError } from './MapGenerationError';
 
 /** The size of the world a fort stands in, in world units. */
@@ -28,6 +29,20 @@ export const fortInWorld = (sketchSide: number, world: FortWorld): FortInWorld =
     wallWidth: wall * scaleX,
     wallHeight: wall * scaleY,
   };
+};
+
+/**
+ * The north and south wall bands of the lane tower fort whose box is `box` (world units): the full
+ * width of the box, one wall thick (`fortInWorld`). The lane runs through a fort's west and east
+ * doorways only (DEC-315), so no lane corridor holds these bands (`LaneFlowFields`): the south
+ * doorway stays open to walking and A\*, not to a lane field.
+ */
+export const fortWallBands = (box: Rect, world: FortWorld): readonly Rect[] => {
+  const { wallHeight } = fortInWorld(G.fort.laneTowerSize, world);
+  return [
+    { x: box.x, y: box.y, width: box.width, height: wallHeight },
+    { x: box.x, y: box.y + box.height - wallHeight, width: box.width, height: wallHeight },
+  ];
 };
 
 /**

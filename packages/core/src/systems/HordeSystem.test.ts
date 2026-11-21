@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { LANE_TOWER_FOOTPRINT_RADIUS } from '../content/maps/buildingGeometry';
 
 import { Deploying } from '../components/Deploying';
 import { Movement } from '../components/Movement';
@@ -187,7 +188,8 @@ describe('HordeSystem', () => {
       STRUCTURE_DEFINITIONS,
       new IdGenerator(1000),
     );
-    // The dark SpawnerTower on lane-0 stands 120 along it from the light gate; radius 14.
+    // The dark SpawnerTower on lane-0 stands 120 along it from the light gate; its radius follows
+    // its fort (DEC-315).
     const tower = structures.create('spawner-tower', 'spawner-tower', {
       team: 'dark',
       position: { x: 140, y: 20 },
@@ -195,15 +197,17 @@ describe('HordeSystem', () => {
     });
     state.entities.add(tower);
     state.indexStructures();
-    const { hordeId } = addHorde([['light-mob', 'light-minion']], 100);
+    const held = 120 - LANE_TOWER_FOOTPRINT_RADIUS - 1;
+    // Starts 5 m short of where it holds.
+    const { hordeId } = addHorde([['light-mob', 'light-minion']], held - 5);
 
     for (let tick = 0; tick < 200; tick += 1) {
       system.update({ state, logger });
     }
-    expect(state.hordes.get(hordeId)?.progress).toBeCloseTo(120 - 14 - 1);
+    expect(state.hordes.get(hordeId)?.progress).toBeCloseTo(held);
 
     state.entities.remove(tower.id, 'died');
     system.update({ state, logger });
-    expect(state.hordes.get(hordeId)?.progress).toBeGreaterThan(105);
+    expect(state.hordes.get(hordeId)?.progress).toBeGreaterThan(held);
   });
 });

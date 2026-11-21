@@ -93,7 +93,8 @@ export type MapFeatureDefinition = {
   /**
    * Whether, when a blocking map object of the feature's id stands round it (a lane tower's fort),
    * its footprint is the fort's court: stamped as court ground (`WorldMap.stampCourt`), closed to
-   * lane flow fields but open to A\* through the doorways (DEC-185 (A), DEC-217 (15)).
+   * straight lines but routable for A\* and the lane flow fields through the doorways (DEC-217
+   * (15); DEC-315 amends DEC-185 (A): the lane runs through the west and east doorways).
    */
   readonly isCourt?: true;
   /**

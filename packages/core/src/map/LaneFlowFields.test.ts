@@ -17,10 +17,57 @@ import { LaneFlowFields } from './LaneFlowFields';
 import { MapGenerator } from './MapGenerator';
 import { MapObjectBuilder } from './MapObjectBuilder';
 import { MapPresentationBuilder } from './MapPresentationBuilder';
+import { MatchGrid } from './MatchGrid';
+import type { MapObject } from '../content/maps/mapObjects.types';
+import type { GameConfig } from '../config/GameConfig.types';
+import { LaneRoutes } from '../state/LaneRoutes';
+import type { Rect } from '../utils/geometry.types';
 import { WorldMap } from './WorldMap';
 
 const isBlocking = (definitionId: string): boolean =>
   MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking ?? false;
+
+/**
+ * A generated map with its map objects, its grid as the match stamps it (`MatchGrid`) and its lane
+ * fields with the lane tower forts' boxes (each tower's body, as its `Footprint` bounds them).
+ */
+const matchFields = (config: GameConfig, seed: number) => {
+  const map = new MapGenerator().generate(config, seed);
+  const objects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+  const { grid } = MatchGrid.build(map, objects, {
+    cellSize: config.map.navCellSize,
+    features: MAP_FEATURE_DEFINITIONS,
+  });
+  const towers = map.features.filter(
+    ({ definitionId }) => MAP_FEATURE_DEFINITIONS[definitionId]?.isCourt === true,
+  );
+  const boxes = towers.map(({ id }) => fortBox(objects, id));
+  const fields = new LaneFlowFields(grid, map, config.map.flowFieldCorridorHalfWidth, boxes);
+  return { map, grid, fields, towers, boxes };
+};
+
+/** The box round a lane tower's body: its keep and its fort's wall pieces (`partOf`). */
+const fortBox = (objects: readonly MapObject[], id: string): Rect => {
+  const points = objects
+    .filter((object) => object.id === id || object.partOf === id)
+    .flatMap(({ footprints }) => footprints.flat());
+  const xs = points.map(({ x }) => x);
+  const ys = points.map(({ y }) => y);
+  const x = Math.min(...xs);
+  const y = Math.min(...ys);
+  return { x, y, width: Math.max(...xs) - x, height: Math.max(...ys) - y };
+};
+
+/** The side of `box` that `point`, just outside or inside it, is nearest to. */
+const sideOf = (
+  point: { x: number; y: number },
+  box: Rect,
+): 'west' | 'east' | 'north' | 'south' => {
+  const dx = point.x - (box.x + box.width / 2);
+  const dy = point.y - (box.y + box.height / 2);
+  if (Math.abs(dx) / box.width >= Math.abs(dy) / box.height) return dx < 0 ? 'west' : 'east';
+  return dy < 0 ? 'north' : 'south';
+};
 
 /** The generated map for `numLanes`, its grid and its fields. */
 const world = (numLanes: number) => {
@@ -266,22 +313,8 @@ describe('LaneFlowFields', () => {
   it.each([1, 2])(
     'reaches every walkable lane point from both ends with the map objects stamped (seed %i, DEC-121 (d))',
     (seed) => {
-      const config = createDefaultGameConfig();
-      const map = new MapGenerator().generate(config, seed);
-      const objects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
-      // The grid as Simulation.buildWorld makes it: walkable objects unstamped, blocking ones stamped.
-      const walkable = new Set(objects.filter((object) => !object.isBlocking).map(({ id }) => id));
-      const grid = WorldMap.fromDefinition(
-        { ...map, features: map.features.filter(({ id }) => !walkable.has(id)) },
-        config.map.navCellSize,
-        isBlocking,
-      );
-      for (const object of objects.filter((candidate) => candidate.isBlocking)) {
-        for (const footprint of object.footprints) {
-          grid.stampFootprint(footprint, object.passages);
-        }
-      }
-      const fields = new LaneFlowFields(grid, map, config.map.flowFieldCorridorHalfWidth);
+      // The grid as the match stamps it (`MatchGrid.build`), the lane forts' courts as court ground.
+      const { map, grid, fields } = matchFields(createDefaultGameConfig(), seed);
 
       const stranded = map.lanes.flatMap((lane) =>
         lane.path.flatMap((point) => {
@@ -299,6 +332,57 @@ describe('LaneFlowFields', () => {
         }),
       );
       expect(stranded).toEqual([]);
+    },
+  );
+
+  it.each([
+    [3, 1, 1],
+    [3, 1234, 2],
+    [5, 1, 1],
+    [5, 1, 2],
+  ])(
+    'routes every lane field through each lane tower fort it crosses, in by one of its west and east doorways and out by the other (DEC-315; %i lanes, seed %i, %i towers of each kind)',
+    (numLanes, seed, towersPerKind) => {
+      const config = createDefaultGameConfig({
+        map: { numLanes, spawnTowersPerLane: towersPerKind, buffTowersPerLane: towersPerKind },
+      });
+      const { map, fields, towers, boxes } = matchFields(config, seed);
+      const routes = new LaneRoutes(map);
+      const crossings = towers.flatMap((tower, index) => {
+        const box = boxes[index] ?? { x: 0, y: 0, width: 0, height: 0 };
+        const lane = tower.laneId ?? '';
+        return (['light', 'dark'] as const).map((team) => {
+          // Follow the field from 70 m up-lane of the tower until it leaves the fort's box.
+          const at = { x: 0, y: 0 };
+          routes.pose(lane, team, routes.distanceAlong(lane, team, tower.position) - 70, at, {
+            x: 0,
+            y: 0,
+          });
+          const field = fields.field(lane, team);
+          const step = { x: 0, y: 0 };
+          const isIn = (point: { x: number; y: number }): boolean =>
+            point.x > box.x &&
+            point.x < box.x + box.width &&
+            point.y > box.y &&
+            point.y < box.y + box.height;
+          let entry = 'none';
+          let exit = 'none';
+          for (let walked = 0; walked < 300 && exit === 'none'; walked += 0.4) {
+            if (field?.directionAt(at.x, at.y, step) !== true) break;
+            const next = { x: at.x + step.x * 0.4, y: at.y + step.y * 0.4 };
+            if (isIn(next) && !isIn(at)) entry = sideOf(next, box);
+            if (!isIn(next) && isIn(at)) exit = sideOf(at, box);
+            at.x = next.x;
+            at.y = next.y;
+          }
+          return `${tower.id} ${team}: ${entry} -> ${exit}`;
+        });
+      });
+
+      // Light marches east, Dark west, each through every fort on its lane.
+      expect(crossings).toEqual(
+        towers.flatMap(({ id }) => [`${id} light: west -> east`, `${id} dark: east -> west`]),
+      );
     },
   );
 

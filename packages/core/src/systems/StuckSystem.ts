@@ -20,8 +20,9 @@ import type { System, SystemContext } from './System.types';
  * waypoint toward that point over the nav grid (`state.paths`), and asks again each time it comes
  * within `waypointRadius` of it or is stuck on the way. A clear straight line, no way, or (for a
  * guard or camp mob) a waypoint outside its leash circle gives it no waypoint, so it chases
- * straight as before. The nav grid blocks a tower's whole court, so a way to a unit inside one ends
- * on the open ground nearest it, and hordes never path through a court (owner 2026-11-05, A). Runs
+ * straight as before. A tower's court is court ground, which A\* walks (`WorldMap.isRoutable`), so a
+ * way to a unit inside one goes in by a doorway (DEC-217 (15)); a lane's field runs through it by
+ * the west and east doorways (DEC-315, amending owner 2026-11-05, A). Runs
  * after the positions are resolved and before `PathingSystem`, which steers mobs to the waypoint;
  * bot Legends read it on their next decision. At most `maxPlansPerTick` A\* plans run a tick (11
  * §6, cost control); a unit due one past that keeps it due (`ChaseWatch.isPlanDue`) and plans on a

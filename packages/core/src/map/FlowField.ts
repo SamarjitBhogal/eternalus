@@ -50,9 +50,15 @@ export class FlowField {
     return this.directionCells;
   }
 
-  /** Whether the field may route through `cell`: in the corridor and walkable now. */
+  /**
+   * Whether the field may route through `cell`: in the corridor and routable now
+   * (`WorldMap.isRoutable`: walkable, or a lane tower's court ground, DEC-315).
+   */
   public isOpen(cell: number): boolean {
-    return this.mask[cell] === 1 && this.grid.walkable[cell] === 1;
+    if (this.mask[cell] !== 1) return false;
+    const { cols } = this.grid;
+    const col = cell % cols;
+    return this.grid.isRoutable(col, (cell - col) / cols);
   }
 
   /**

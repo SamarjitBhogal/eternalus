@@ -10,9 +10,10 @@ import type { BlockingRule } from './WorldMap.types';
  * out-of-bounds terrain or by the footprint of a blocking feature is unwalkable. Footprints can be stamped and cleared
  * later (a wall falls, a tree is felled) without touching the definition.
  *
- * A court (a lane tower's fort court, DEC-185 (A)) is stamped apart from footprints: its cells
- * are unwalkable like any other, so lane flow fields and straight lines never run through it, but
- * `isCourt` tells A\* a unit may walk them to leave or enter by the doorways (DEC-217 (15)).
+ * A court (a lane tower's fort court) is stamped apart from footprints: its cells are unwalkable,
+ * so straight lines never run through it, but routable (`isRoutable`): A\* and the lane flow
+ * fields walk them, so routes into, out of and through a court use its doorways (DEC-217 (15),
+ * DEC-315).
  */
 export class WorldMap {
   /** Side of one square cell in world units. */
@@ -86,6 +87,17 @@ export class WorldMap {
       this.cores[cell] === 0 &&
       this.terrainWalkable[cell] === 1
     );
+  }
+
+  /**
+   * Whether a route may step on the cell at `col`, `row`: walkable, or court ground (`isCourt`). The
+   * one rule A\* and the lane flow fields share, so a horde marches through a lane tower's court by
+   * its doorways (DEC-315, amending DEC-185 (A)) and A\* leads a unit into and out of it there
+   * (DEC-217 (15)). Straight lines (`isLineClear`) still treat court ground as blocked, so a walker
+   * inside a court follows a route, never a straight line into its walls.
+   */
+  public isRoutable(col: number, row: number): boolean {
+    return this.isWalkable(col, row) || this.isCourt(col, row);
   }
 
   /**

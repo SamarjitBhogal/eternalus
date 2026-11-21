@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { LANE_TOWER_FOOTPRINT_RADIUS } from './content/maps/buildingGeometry';
 
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { ContentCatalogue } from './content/ContentCatalogue';
@@ -123,16 +124,17 @@ describe('Simulation structures', () => {
       // The countdown holds every unit (DEC-88); then 60 s of marching.
       run(simulation, countdownTicks(config.match.countdownSeconds, config.tickRate) + 60 * 30);
 
-      // Dark's lane-0 SpawnerTower stands at x 140 with radius 14: Light's lane-0 horde gathers
-      // in front of x 126, in ranks no deeper than 8.
+      // Dark's lane-0 SpawnerTower stands at x 140, its radius following its fort (DEC-315):
+      // Light's lane-0 horde gathers in front of its near edge, in ranks no deeper than 8.
       const lightLane0 = simulation
         .snapshot()
         .entities.filter((entity) => isMinion(entity) && entity.team === 'light')
         .filter(({ transform }) => (transform?.y ?? 0) < 30)
         .map(({ transform }) => transform?.x ?? 0);
       expect(lightLane0.length).toBeGreaterThan(0);
-      expect(Math.max(...lightLane0)).toBeLessThan(126);
-      expect(Math.min(...lightLane0)).toBeGreaterThan(126 - 15);
+      const nearEdge = 140 - LANE_TOWER_FOOTPRINT_RADIUS;
+      expect(Math.max(...lightLane0)).toBeLessThan(nearEdge);
+      expect(Math.min(...lightLane0)).toBeGreaterThan(nearEdge - 15);
     },
   );
 

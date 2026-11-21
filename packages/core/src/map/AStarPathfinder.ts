@@ -26,8 +26,8 @@ import type { WorldMap } from './WorldMap';
  * Court cells (`WorldMap.isCourt`: a lane tower's fort court) are open to a search, so a way from
  * or to a unit inside a court runs through its doorways, never through its walls (DEC-185 (A),
  * DEC-217 (15)); `exitWaypoint` gives the way out of a court alone, kept per cell until the grid
- * changes (`CourtExitField`). Lane flow fields still treat a court as blocked, so hordes never
- * march through one.
+ * changes (`CourtExitField`). Lane flow fields share the rule (`WorldMap.isRoutable`), so hordes
+ * march through a court by its west and east doorways (DEC-315).
  *
  * @remarks ponytail: a bot searches again on each decision whose straight line is blocked (11 §6
  * puts heavy work in systems); cache the path in the brain if profiling shows the cost.
@@ -187,9 +187,9 @@ export class AStarPathfinder {
     return cell !== startCell && this.grid.isWalkable(col, (cell - col) / this.grid.cols);
   }
 
-  /** Whether a search may step on the cell: walkable, or court ground (`WorldMap.isCourt`). */
+  /** Whether a search may step on the cell (`WorldMap.isRoutable`: walkable, or court ground). */
   private isOpen(col: number, row: number): boolean {
-    return this.grid.isWalkable(col, row) || this.grid.isCourt(col, row);
+    return this.grid.isRoutable(col, row);
   }
 
   /** Relaxes the open neighbours of `cell`; diagonals never cut a corner. */

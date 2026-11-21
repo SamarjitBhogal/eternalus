@@ -14,6 +14,7 @@ import { OPENING_WAVE } from '../content/structures/spawnWaves';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type { StructureDefinition } from '../content/structures/structures.types';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
+import { Structure } from '../entities/structures/Structure';
 import { LaneFlowFields } from '../map/LaneFlowFields';
 import type { GameState } from '../state/GameState';
 import type { Rect } from '../utils/geometry.types';
@@ -72,6 +73,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
     const statuses = new StatusEffectApplier(
       loadStatusEffects(tickRate, map.spawnTowersPerLane + map.buffTowersPerLane),
     );
+    const forts = DefaultSystemPipeline.fortsOf(state, structures);
     const flowFields =
       hordes === undefined || state.world === null
         ? null
@@ -79,6 +81,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
             state.world.grid,
             state.world.definition,
             map.flowFieldCorridorHalfWidth,
+            forts.lane,
           );
     super([
       ...(hordes === undefined ? [] : [...hordes.decide, new HordeSystem(state, HORDE_STEERING)]),
@@ -94,7 +97,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
               createDefaultStrategyRegistry().movement,
               FORMATIONS,
               HORDE_STEERING.slotArrivalRadius,
-              { flowFields, forts: DefaultSystemPipeline.fortBoxesOf(state, structures) },
+              { flowFields, forts: forts.all },
             ),
           ]),
       new CombatSystem(damage),
@@ -138,21 +141,25 @@ export class DefaultSystemPipeline extends SystemPipeline {
   }
 
   /**
-   * The box of the `Footprint` of every structure whose definition `hasFortBox`
-   * (`PathingWorld.forts`; not a gate's, DEC-217 (17)). `Simulation` builds the structures before
-   * the pipeline, so they are read here once, while every one still stands.
+   * The box of the `Footprint` of every structure whose definition `hasFortBox` (`all`,
+   * `PathingWorld.forts`; not a gate's, DEC-217 (17)), and of those that stand on a lane (`lane`: the
+   * lane tower forts a lane field crosses by their west and east doorways, DEC-315; not the
+   * palace). `Simulation` builds the structures before the pipeline, so they are read here once,
+   * while every one still stands.
    */
-  private static fortBoxesOf(
+  private static fortsOf(
     state: GameState,
     structures: Pick<ContentCatalogue<StructureDefinition>, 'get'>,
-  ): readonly Rect[] {
-    const forts: Rect[] = [];
+  ): { readonly all: readonly Rect[]; readonly lane: readonly Rect[] } {
+    const all: Rect[] = [];
+    const lane: Rect[] = [];
     state.entities.forEach((entity) => {
       const box = entity.findComponent(Footprint)?.bounds;
       if (box !== undefined && structures.get(entity.definitionId).hasFortBox === true) {
-        forts.push(box);
+        all.push(box);
+        if (entity instanceof Structure && entity.laneId !== null) lane.push(box);
       }
     });
-    return forts;
+    return { all, lane };
   }
 }

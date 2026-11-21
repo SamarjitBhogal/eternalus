@@ -23,8 +23,8 @@ export class MatchGrid {
    * feature whose object is walkable (a Stronghold's floor, whose walls and furniture are objects
    * of their own) is not stamped; other blocking features keep their stamp. A feature that
    * `isCourt` inside a blocking object of its id (a lane tower inside its fort) is stamped as court
-   * ground instead: it fills the fort's hollow core so no lane field runs through it, yet A\* leads
-   * a unit inside out by the doorways (DEC-217 (15)).
+   * ground instead: closed to straight lines, routable for A\* and the lane fields, so routes into,
+   * out of and through the fort use its doorways (DEC-217 (15), DEC-315).
    *
    * @throws MapGenerationError when a court is stamped and `cellSize` is not smaller than a lane
    *   tower fort wall (`WorldMap.isCourt` needs every fort wall thicker than a cell).

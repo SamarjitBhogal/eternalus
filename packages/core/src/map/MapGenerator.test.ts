@@ -28,8 +28,9 @@ import type { MapConfig } from './MapGenerator.types';
 const SEED = 1234;
 /** FNV-1a of the default map's JSON at SEED; see the golden-hash test. */
 // Includes the approved front shield and joined mountain bounds, retaining lane anchors (2026-11-03);
-// Strongholds carry only the wall radius and thickness, not frontArc (PR #69 review S3, 2026-11-04).
-const GOLDEN_HASH = 4_128_499_639;
+// Strongholds carry only the wall radius and thickness, not frontArc (PR #69 review S3, 2026-11-04);
+// lane tower footprints follow their 56 m forts (DEC-315, 2026-11-20).
+const GOLDEN_HASH = 3_073_897_995;
 const EPSILON = 1e-6;
 
 type Ground = 'map-1' | 'generated';

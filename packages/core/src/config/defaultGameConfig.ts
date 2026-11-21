@@ -25,8 +25,10 @@ const DEFAULT_GAME_CONFIG: Omit<GameConfig, 'match'> & {
     // TUNE: DEC-227 (Q-A): 2.5 m cells, so units in a fort court find a route out (DEC-217 (15)).
     // Keep it below the thinnest fort wall, or routes cross walls (`WorldMap.isCourt`).
     navCellSize: 2.5,
-    // TUNE: room to route a 4-wide formation around an obstacle; 30 clears a tower fort on a
-    // diagonal lane (DEC-121 (d)).
+    // TUNE: room to route a 4-wide formation around an obstacle. A lane runs through each lane
+    // tower fort by its doorways (DEC-315), so the corridor must hold a fort's west and east
+    // doorways on the steepest lane at a tower (`LaneFlowFields.test.ts` routes every field
+    // through them).
     flowFieldCorridorHalfWidth: 30,
     flowFieldCellBudget: 2000, // TUNE: Recommendation (sprint 3.2): rebuild cost well under 1 ms
     // TUNE: a cost cap for A* (10 §9), not a gameplay number. DEC-243: on 2.5 m cells this area is

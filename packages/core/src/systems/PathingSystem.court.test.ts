@@ -17,6 +17,14 @@ import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { PathingSystem } from './PathingSystem';
 import { FORMATIONS, logger, STRATEGIES } from './__fixtures__/pathingSystemSetup';
 
+/** The square with corners `(x0, y0)` and `(x1, y1)`. */
+const box = (x0: number, y0: number, x1: number, y1: number) => [
+  { x: x0, y: y0 },
+  { x: x1, y: y0 },
+  { x: x1, y: y1 },
+  { x: x0, y: y1 },
+];
+
 /** A stand-in palace box east of `WALLED_COURT`: a fort box with no court (DEC-217 (16)). */
 const PALACE = { x: 76, y: 10, width: 20, height: 20 };
 /** Palace furniture: blocked ground inside `PALACE` that is no court (x 80..84, y 18..22). */
@@ -80,15 +88,59 @@ const courtMember = () => {
 };
 
 describe('PathingSystem in a fort court (DEC-217 (15))', () => {
-  it('walks a horde member out by the east doorway, not along its lane field through the west wall', () => {
+  it('walks a horde member out by the east doorway along its lane field, which routes through court ground (DEC-315)', () => {
     const { member, step, flowFields } = courtMember();
     const field = { x: 0, y: 0 };
     expect(flowFields.field('lane-0', 'light')?.directionAt(25, 20, field)).toBe(true);
-    expect(field.x).toBeLessThan(0);
+    // Court ground is routable, so the field leads out by the doorway, not through the west wall.
+    expect(field.x).toBeGreaterThan(0);
 
     step();
 
-    // The field and the slot both point west; only the court's way out points east.
+    expect(member.getComponent(Movement).heading.x).toBeGreaterThan(0);
+  });
+
+  it('keeps a marching horde member in a court on its lane field through the far doorway, not back out by the nearest one (DEC-315)', () => {
+    const config = createDefaultGameConfig();
+    const map = { ...BLOCKED_LANE_MAP, terrain: [] };
+    const world = matchWorldOf(map, 2);
+    // `WALLED_COURT` with a west doorway too (y 18..22), as a lane tower's fort has.
+    const [north, south, , eastUpper, eastLower] = WALLED_COURT.walls;
+    for (const wall of [north, south, eastUpper, eastLower]) world.grid.stampFootprint(wall);
+    for (const wall of [box(20, 10, 22, 18), box(20, 22, 22, 30)]) world.grid.stampFootprint(wall);
+    world.grid.stampCourt(WALLED_COURT.court);
+    const flowFields = new LaneFlowFields(world.grid, map, config.map.flowFieldCorridorHalfWidth);
+    const paths = new AStarPathfinder(world.grid, { maxSearchArea: 40_000, snapCells: 6 });
+    const space = new SpaceIndex(map.width, map.height, 2);
+    const state = new GameState(config, 1, world, { space, paths });
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    // Just inside the west doorway, its slot far east: the nearest way out is back west.
+    const member = factory.create('light-mob', 'light-minion', {
+      team: 'light',
+      position: { x: 23, y: 20 },
+    });
+    state.entities.add(member);
+    state.hordes.add({
+      id: 'horde-1',
+      team: 'light',
+      weightClass: 'light',
+      lane: 'lane-0',
+      formationId: 'ranks',
+      memberIds: [member.id],
+      progress: 70,
+    });
+    space.begin(1);
+    space.add(member.id, 23, 20);
+    space.commit();
+    const way = { x: 0, y: 0 };
+    expect(paths.exitWaypoint({ x: 23, y: 20 }, way)).toBe(true);
+    expect(way.x).toBeLessThan(23);
+
+    new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius, {
+      flowFields,
+      forts: [WALLED_COURT.box],
+    }).update({ state, logger });
+
     expect(member.getComponent(Movement).heading.x).toBeGreaterThan(0);
   });
 
