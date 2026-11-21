@@ -3,7 +3,7 @@ import type { DetailSlot, RoleRatingAxis } from '../bridge/catalogue.types';
 import type { MatchVerdict } from '../bridge/domain.types';
 import type { MenuRoute, SessionPhase, SessionReason } from '../bridge/events';
 import type { HudAllegiance, HudBlockReason } from '../bridge/hud.types';
-import type { ResultsStatus } from '../bridge/selectors/selectResultsView';
+import type { DuelScoreSide, ResultsStatus } from '../bridge/selectors/selectResultsView';
 
 /**
  * Banner text per `session.reason`: every `SessionReason` but the popup ones has one (a missing
@@ -129,6 +129,9 @@ export const STRINGS = {
     /** The ended match's length, `mm:ss` (`selectMatchDurationText`). */
     duration: (time: string): string => `Match length ${time}`,
     countdownLabel: 'Time left before the main menu',
+    /** An ended Duel's final kill score, the player's own side first (SCRUM-449). */
+    duelScore: (own: DuelScoreSide, opponent: DuelScoreSide): string =>
+      `${own.name} ${String(own.kills)} – ${opponent.name} ${String(opponent.kills)}`,
     // DEC-78: "A Continue control skips the wait."
     continue: 'Continue',
     playAgain: 'Play again',

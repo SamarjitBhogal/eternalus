@@ -185,6 +185,30 @@ describe('SessionController, online Duel (ADR 0016)', () => {
     expect(session.transport().hasEnded).toBe(true);
   });
 
+  it('publishes both names and the final score from the last snapshot when the Duel ends (SCRUM-449)', async () => {
+    const session = await setUp();
+    await session.startDuel();
+    session.controller.attachViewport(VIEWPORT);
+    const last = snapshotAtTick(2);
+    const duel = { kills: { light: 6, dark: 10 }, killTarget: 10 };
+    session.transport().receive({
+      type: 'state',
+      snapshot: { ...last, match: { ...last.match, duel } },
+      ackSeq: 0,
+    });
+
+    session.transport().receive({ type: 'match-ended', reason: 'finished', winner: 'dark' });
+
+    const { match } = session.store.getState();
+    expect(match.versus).toEqual({ own: 'Ana', opponent: 'Rival' });
+    expect(match.duelHud).toEqual({
+      ownKills: 10,
+      opponentKills: 6,
+      killTarget: 10,
+      countdown: null,
+    });
+  });
+
   it('does not report the socket close the server starts after match-ended as a lost connection', async () => {
     const session = await setUp();
     await session.startDuel();
