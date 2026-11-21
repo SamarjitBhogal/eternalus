@@ -122,7 +122,9 @@ describe('DuelRoundSystem', () => {
     const { add, hit, run } = setUp();
     const light = add('light', true);
     const dark = add('dark', true);
-    light.addComponent(new Combat({ strategy: 'melee', damage: 1, reach: 1, interval: 1 }));
+    light.addComponent(
+      new Combat({ basic: { strategy: 'melee', damage: 1, reach: 1, interval: 1 } }),
+    );
     light.getComponent(Combat).setTarget(dark.id);
     hit(dark, light);
 

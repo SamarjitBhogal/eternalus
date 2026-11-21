@@ -176,6 +176,17 @@ Owner: _ (sim lane). Week 8.
       (an arc where the weapon sweeps); a projectile weapon goes along the aim. Everything in that
       area takes damage, so a minion and an object in one sweep are both hit. A click does not
       need a target under the cursor.
+      **Status (2026-11-20, branch `feat/ranged-attacks`, PR 1; DEC-300):** `ranged-projectile` is built
+      beside `melee`, with projectile content in `content/projectiles/`, the Magus staff's ranged basic
+      attack and the new `obsidian-bow`. The two weapon boxes above stay unticked: the
+      `AttackStrategy` box also needs the flex attack, heavy attack and parry, and the
+      `WeaponDefinition` box needs the loadout validation test (SCRUM-290). All numbers are `TUNE`
+      (DEC-306, DEC-310). The staff's melee attack is on its own action, default F (DEC-308).
+      Stand-in until PR 2 (melee sweeps, which builds the click that needs no target): the
+      player fires only at a target under the cursor (`attack-target`), and the shot flies at
+      that target, not along the aim that DEC-184 sets. PR 2 adds aimed fire for ranged weapons
+      with the same command.
+
 - [ ] **`ArtifactDefinition` content + gadget slots Z/C** (`TUNE`: Sentinel Mortar with impact
       and air-burst modes; Magus Soul Orb (pending) with Cast Forward and Follower; the second
       Sentinel artifact and the Warrior artifact per INBOX). Owner: _. Test: artifacts are

@@ -1,5 +1,6 @@
 import { Collider } from '../components/Collider';
 import { Movement } from '../components/Movement';
+import { ProjectileFlight } from '../components/ProjectileFlight';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import type { ProjectileDefinition } from '../content/projectiles/projectiles.types';
@@ -8,9 +9,9 @@ import type { EntityFamily } from './Entity.types';
 import { SpawnContextReader } from './SpawnContextReader';
 
 /**
- * A fast mover fired by a weapon or ability. Installs `Transform`, `Movement`, a `Collider` on
- * the projectile layer and `TeamMembership` (whose side fired it). Pooling and swept collision
- * arrive with combat in Phase 2.
+ * A fast mover fired by a weapon or ability. Installs `Transform`, `Movement`, a `Collider` on the
+ * projectile layer, `ProjectileFlight` (range and ending) and `TeamMembership` (whose side fired
+ * it). The firing attack adds a `ProjectilePayload`; `ProjectileSystem` flies and lands it.
  */
 export class Projectile extends Entity {
   /** Always `'projectile'`. */
@@ -33,6 +34,9 @@ export class Projectile extends Entity {
     this.addComponent(new Movement(definition.movementProfile));
     this.addComponent(
       new Collider({ kind: 'circle', radius: definition.footprintRadius }, 'projectile'),
+    );
+    this.addComponent(
+      new ProjectileFlight(definition.range, definition.slowFrom, definition.endDuration),
     );
     this.addComponent(new TeamMembership(team));
   }

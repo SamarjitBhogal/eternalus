@@ -14,6 +14,7 @@ import { KebabCaseIdRule } from './validation/KebabCaseIdRule';
 import { KitInPoolRule } from './validation/KitInPoolRule';
 import { KnownAbilityRefsRule } from './validation/KnownAbilityRefsRule';
 import { KnownLevelCurveRule } from './validation/KnownLevelCurveRule';
+import { KnownProjectileRule } from './validation/KnownProjectileRule';
 import { KnownWeaponRule } from './validation/KnownWeaponRule';
 import { LevelScalingRule } from './validation/LevelScalingRule';
 import { PositiveAetherRule } from './validation/PositiveAetherRule';
@@ -32,6 +33,7 @@ describe('createDefaultContentRules', () => {
       KnownLevelCurveRule,
       LevelScalingRule,
       KnownWeaponRule,
+      KnownProjectileRule,
       KnownAbilityRefsRule,
       KitInPoolRule,
     ]);

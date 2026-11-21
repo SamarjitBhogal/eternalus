@@ -2,6 +2,7 @@ import { Abilities } from '../components/Abilities';
 import { Aether } from '../components/Aether';
 import { Progression } from '../components/Progression';
 import type { LegendDefinition } from '../content/legends/legends.types';
+import { attacksByMode } from '../content/units/attacksByMode';
 import { kitOf } from '../content/legends/specs/kitOf';
 import type { LegendSpecDefinition } from '../content/legends/specs/legendSpecs.types';
 import { SpawnContextReader } from './SpawnContextReader';
@@ -89,11 +90,10 @@ export abstract class Legend extends Unit {
       throw new Error(`Legend "${this.id}" needs a weapon source to equip "${weaponId}".`);
     }
     const weapon = weapons.get(weaponId);
-    // ponytail: first attack only; "first attack whose reach covers the target" (05 §10) lands with ranged attacks.
-    const [attack] = weapon.attacks;
-    if (attack === undefined) {
+    const attacks = attacksByMode(weapon.attacks);
+    if (attacks === undefined) {
       throw new Error(`Legend "${this.id}": weapon "${weapon.id}" has no attacks.`);
     }
-    return { attack, weaponId: weapon.id };
+    return { attacks, weaponId: weapon.id };
   }
 }

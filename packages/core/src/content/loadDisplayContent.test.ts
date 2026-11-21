@@ -17,6 +17,7 @@ import type { AbilityStepDescriber, DisplayCatalogues } from './loadDisplayConte
 import { loadDisplayContent } from './loadDisplayContent';
 import { MAP_FEATURE_DEFINITIONS } from './maps/mapFeatureDefinitions';
 import { VERDICT_LINES } from './narrative/verdictLines';
+import { PROJECTILES } from './projectiles/projectileCatalogue';
 import { STATUS_EFFECTS } from './status-effects/statusEffectCatalogue';
 import { BOT_ROSTER } from './teams/botRoster';
 
@@ -78,6 +79,11 @@ describe('loadDisplayContent', () => {
       STATUS_EFFECTS.all().map(({ id, displayName }) => ({ id, displayName })),
     );
     expect(load().statuses).toContainEqual({ id: 'fury-windup', displayName: 'Wind-up' });
+  });
+
+  it('publishes every projectile id, in catalogue order', () => {
+    expect(load().projectileIds).toEqual(PROJECTILES.all().map(({ id }) => id));
+    expect(load().projectileIds).toEqual(['magus-bolt', 'arrow']);
   });
 
   it('carries each feature kind with its name', () => {

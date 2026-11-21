@@ -49,6 +49,21 @@ describe('RemoteIntentSender', () => {
     expect(link.intents[0]?.isAttacking).toBe(false);
   });
 
+  it('sends no melee attack either while the canvas gestures own the press, as locally (DEC-308)', () => {
+    const { input, link, sender, snapshot } = setUp();
+    input.intent = {
+      move: { x: 0, y: 0 },
+      aim: { x: 5, y: 6 },
+      isMeleeAttacking: true,
+      triggered: [],
+    };
+
+    sender.setPointerClaimed(true);
+    sender.apply('entity-2', snapshot);
+
+    expect(link.intents[0]?.isMeleeAttacking).toBe(false);
+  });
+
   it('makes no developer-explorer attack: no command is made on the client', () => {
     const { link, sender, snapshot } = setUp();
 

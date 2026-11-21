@@ -26,6 +26,7 @@ import type { SlotReadiness } from '../state/SlotReadiness.types';
 import { onlyReady } from '../state/__fixtures__/stubReadiness';
 import type { SeededRandomState } from '../utils/SeededRandom.types';
 import { Perception } from './perception/Perception';
+import { SHIPPED_LINE_OF_FIRE } from '../state/__fixtures__/shippedLineOfFire';
 
 /** The shipped difficulties, plus `normal` pinned to never and to always cast. */
 const controllerWith = (readiness: SlotReadiness) =>
@@ -37,6 +38,7 @@ const controllerWith = (readiness: SlotReadiness) =>
     },
     retreatTo: RETREAT_STRUCTURES,
     readiness,
+    lineOfFire: SHIPPED_LINE_OF_FIRE,
   });
 /** Only `ability-1` is ready, so the cast rule has one choice. */
 const controller = controllerWith(onlyReady('ability-1'));

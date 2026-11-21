@@ -2,7 +2,9 @@ import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
 import { Health } from '../components/Health';
 import { MapObjectBody } from '../components/MapObjectBody';
+import { Movement } from '../components/Movement';
 import { Progression } from '../components/Progression';
+import { ProjectileFlight } from '../components/ProjectileFlight';
 import { StatusEffects } from '../components/StatusEffects';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
@@ -11,7 +13,7 @@ import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import type { Entity } from '../entities/Entity';
 import { Structure } from '../entities/structures/Structure';
-import type { EntitySnapshot, StatusSnapshot } from './Snapshot.types';
+import type { EntitySnapshot, ProjectileSnapshot, StatusSnapshot } from './Snapshot.types';
 
 /**
  * Projects one entity into its `EntitySnapshot` (architecture 03 §5): one group per component,
@@ -80,6 +82,20 @@ export class EntitySnapshotter {
               presence: capture.presence,
             },
       statuses: this.statusesOf(entity.findComponent(StatusEffects)),
+      projectile: this.projectileOf(entity),
+    };
+  }
+
+  /** A shot's speed and ending as plain data; `null` for an entity with no `ProjectileFlight`. */
+  private projectileOf(entity: Entity): ProjectileSnapshot | null {
+    const flight = entity.findComponent(ProjectileFlight);
+    const movement = entity.findComponent(Movement);
+    if (flight === undefined || movement === undefined) {
+      return null;
+    }
+    return {
+      speedShare: movement.speed / movement.maxSpeed,
+      ending: flight.isEnded ? flight.endingShare : null,
     };
   }
 

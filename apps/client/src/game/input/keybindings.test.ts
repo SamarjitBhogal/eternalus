@@ -22,6 +22,12 @@ describe('keybindings', () => {
     expect(PRESETS.arrows.map((binding) => binding.action)).toEqual(INPUT_ACTIONS);
   });
 
+  it('melees with F by default, a rebindable action of its own (DEC-308)', () => {
+    expect(DEFAULT_CHORDS['melee-attack']).toEqual([
+      { device: 'keyboard', code: 'KeyF', label: 'F' },
+    ]);
+  });
+
   it('opens View Details with V by default (DEC-103)', () => {
     expect(DEFAULT_CHORDS['view-details']).toEqual([
       { device: 'keyboard', code: 'KeyV', label: 'V' },

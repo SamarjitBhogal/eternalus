@@ -12,6 +12,8 @@ import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { NullLogger } from '../diagnostics/NullLogger';
 import { Deploying } from '../components/Deploying';
 import { Transform } from '../components/Transform';
+import { MAGUS_BOLT } from '../content/projectiles/magusBolt';
+import { Projectile } from '../entities/Projectile';
 import type { MapDefinition, MapPresentation } from '../content/maps/maps.types';
 
 export const EMPTY_MAP: MapDefinition = {
@@ -107,5 +109,26 @@ describe('CollisionSystem', () => {
 
     expect(walk(false)).toBeCloseTo(4.5);
     expect(walk(true)).toBeCloseTo(21);
+  });
+
+  it('leaves a projectile where its move put it, a wall does not slide or stop it', () => {
+    const config = createDefaultGameConfig();
+    const state = new GameState(config, 1);
+    const bolt = new Projectile('shot-1', 'magus-bolt');
+    bolt.spawn({ definition: MAGUS_BOLT, position: { x: 1, y: 5 }, team: 'light' });
+    state.entities.add(bolt);
+    const transform = bolt.getComponent(Transform);
+    transform.moveBy({ x: 50, y: 0 });
+    new CollisionSystem(
+      new CollisionResolver(
+        staticCollisionIndexOf(
+          EMPTY_MAP,
+          new MapObjectBuilder().build(EMPTY_MAP, HOUSE_PRESENTATION),
+        ),
+        { x: 0, y: 0, width: EMPTY_MAP.width, height: EMPTY_MAP.height },
+      ),
+    ).update({ state, logger: new NullLogger() });
+
+    expect(transform.position.x).toBe(51);
   });
 });

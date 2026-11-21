@@ -24,6 +24,7 @@ import type { MapFeatureKind } from './maps/maps.types';
 import { VERDICT_LINES } from './narrative/verdictLines';
 import type { VerdictLines } from './narrative/verdictLines.types';
 import { STATUS_EFFECTS } from './status-effects/statusEffectCatalogue';
+import { PROJECTILES } from './projectiles/projectileCatalogue';
 import { PROFILE_DISPLAY_NAME } from './profile/profileDisplayName';
 import { SOVEREIGN_DISPLAY_NAMES } from './sovereigns/sovereignDisplayNames';
 import { BOT_ROSTER } from './teams/botRoster';
@@ -93,6 +94,12 @@ export type DisplayContent = {
     readonly id: string;
     readonly displayName: string;
   }[];
+  /**
+   * Every projectile id, in catalogue order. The client keys each shot's ending look by these ids,
+   * and its tests check that every id has exactly one look (ADR 0023, DEC-306), so a renamed or new
+   * projectile fails the checks rather than drawing a look by default.
+   */
+  readonly projectileIds: readonly string[];
   /** Each playable team's display name (the team badge and the roster labels). */
   readonly teamNames: Readonly<Record<PlayableTeam, string>>;
   /** The profile screen's display name (the main menu item and the screen's title). */
@@ -195,6 +202,7 @@ export const loadDisplayContent = (
       displayName,
     })),
     statuses: STATUS_EFFECTS.all().map(({ id, displayName }) => ({ id, displayName })),
+    projectileIds: PROJECTILES.all().map(({ id }) => id),
     teamNames: TEAM_DISPLAY_NAMES,
     profileDisplayName: PROFILE_DISPLAY_NAME,
     botRoster,

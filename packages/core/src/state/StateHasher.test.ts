@@ -9,6 +9,8 @@ import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { ChaseWatch } from '../components/ChaseWatch';
 import { CombatClock } from '../components/CombatClock';
+import { ProjectileFlight } from '../components/ProjectileFlight';
+import { ProjectilePayload } from '../components/ProjectilePayload';
 import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
@@ -60,6 +62,15 @@ class Bare extends Entity {
     // No components: every component field hashes as null.
   }
 }
+
+/** The attack a test shot carries; the hash reads its impact kind, not its numbers. */
+const SHOT_ATTACK = {
+  strategy: 'ranged-projectile',
+  damage: 1,
+  reach: 1,
+  interval: 1,
+  projectile: { projectileId: 'magus-bolt', falloff: null },
+} as const;
 
 const stateWithSoldier = (seed = 1): { state: GameState; soldier: Soldier } => {
   const state = new GameState(createDefaultGameConfig(), seed);
@@ -243,6 +254,81 @@ describe('StateHasher', () => {
     veterancy.recordKill(2);
 
     expect(hasher.hash(state)).not.toBe(before);
+  });
+
+  it('changes with a shot owner, target, weapon and origin, which decide who it spares, what it may hit and how hard', () => {
+    const payload = ({
+      ownerId = 'a',
+      targetId = 't',
+      weaponId = 'magus-staff',
+      originX = 1,
+    }: {
+      ownerId?: string;
+      targetId?: string;
+      weaponId?: string;
+      originX?: number;
+    }) =>
+      new ProjectilePayload({
+        ownerId,
+        team: 'light',
+        source: { attackerId: ownerId, kind: 'weapon', definitionId: weaponId },
+        targetId,
+        impact: { kind: 'weapon', attack: SHOT_ATTACK },
+        origin: { x: originX, y: 0 },
+      });
+    const hashWith = (shot: ProjectilePayload | null): number => {
+      const { state, soldier } = stateWithSoldier();
+      if (shot !== null) soldier.addComponent(shot);
+      return hasher.hash(state);
+    };
+    const plain = hashWith(null);
+    const base = hashWith(payload({}));
+
+    expect(base).not.toBe(plain);
+    expect(hashWith(payload({}))).toBe(base);
+    expect(hashWith(payload({ ownerId: 'b' }))).not.toBe(base);
+    expect(hashWith(payload({ targetId: 'u' }))).not.toBe(base);
+    expect(hashWith(payload({ weaponId: 'obsidian-bow' }))).not.toBe(base);
+    expect(hashWith(payload({ originX: 2 }))).not.toBe(base);
+  });
+
+  it('changes when a shot ends and as its ending counts down', () => {
+    const { state, soldier } = stateWithSoldier();
+    soldier.addComponent(
+      new ProjectilePayload({
+        ownerId: 'a',
+        team: 'light',
+        source: { attackerId: 'a', kind: 'weapon', definitionId: 'magus-staff' },
+        targetId: 't',
+        impact: { kind: 'weapon', attack: SHOT_ATTACK },
+        origin: { x: 1, y: 0 },
+      }),
+    );
+    const flight = new ProjectileFlight(100, 80, 5);
+    soldier.addComponent(flight);
+    const flying = hasher.hash(state);
+
+    flight.end();
+    const ending = hasher.hash(state);
+    flight.tickEnding();
+    const later = hasher.hash(state);
+
+    expect(ending).not.toBe(flying);
+    expect(later).not.toBe(ending);
+  });
+
+  it('adds a speed limit only once one is set, so an entity without one hashes as before', () => {
+    const { state, soldier } = stateWithSoldier();
+    const movement = soldier.getComponent(Movement);
+    const before = hasher.hash(state);
+
+    movement.limitSpeed(1);
+    const limited = hasher.hash(state);
+    movement.limitSpeed(0.5);
+
+    expect(limited).not.toBe(before);
+    expect(hasher.hash(state)).not.toBe(limited);
+    expect(hasher.hash(stateWithSoldier().state)).toBe(before);
   });
 
   it('changes when an entity turns, and changes back when it turns back (DEC-192)', () => {

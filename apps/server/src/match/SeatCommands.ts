@@ -1,4 +1,5 @@
 import {
+  type AttackMode,
   type Command,
   type EntityId,
   findMapObjectAt,
@@ -16,12 +17,14 @@ type TargetSnapshot = Pick<Snapshot, 'entities' | 'mapObjects'>;
  * Turns one seat's `InputIntent`s into commands for that seat's Legend (ADR 0016 point 1), the
  * server's copy of the client's `PlayerCommands` rules, because core's `intent` handler does not
  * apply intents yet: `move` or `stop` only when the movement axes change, and one `attack-target`
- * per target the held attack aims at (a living enemy unit first, else a map object). One per seat,
- * so each keeps its own last movement and target.
+ * per target and attack mode the held attack aims at (a living enemy unit first, else a map object;
+ * the melee key wins over the basic attack, DEC-308). One per seat, so each keeps its own last
+ * movement, target and mode.
  */
 export class SeatCommands {
   private lastMove: Vec2 = { x: 0, y: 0 };
   private attackTargetId: EntityId | null = null;
+  private attackMode: AttackMode = 'basic';
 
   /**
    * @param actorId The seat's Legend, stamped on every command.
@@ -37,8 +40,13 @@ export class SeatCommands {
   /** Queues the commands `intent` asks for; `snapshot` is the latest state. */
   public apply(intent: InputIntent, snapshot: TargetSnapshot): void {
     const { actorId } = this;
-    const { move, isAttacking, aim } = intent;
-    this.applyAttack(isAttacking === true ? aim : null, snapshot);
+    const { move, isAttacking, isMeleeAttacking, aim } = intent;
+    const isMeleeHeld = isMeleeAttacking === true;
+    this.applyAttack(
+      isMeleeHeld || isAttacking === true ? aim : null,
+      isMeleeHeld ? 'melee' : 'basic',
+      snapshot,
+    );
     if (move.x === this.lastMove.x && move.y === this.lastMove.y) return;
     const isMoving = move.x !== 0 || move.y !== 0;
     this.enqueue(isMoving ? { type: 'move', actorId, direction: move } : { type: 'stop', actorId });
@@ -54,14 +62,22 @@ export class SeatCommands {
   public reset(): void {
     this.lastMove = { x: 0, y: 0 };
     this.attackTargetId = null;
+    this.attackMode = 'basic';
   }
 
-  private applyAttack(aim: Vec2 | null, snapshot: TargetSnapshot): void {
+  /** A change of target or mode queues a new command; a `'basic'` command carries no mode. */
+  private applyAttack(aim: Vec2 | null, mode: AttackMode, snapshot: TargetSnapshot): void {
     const targetId = aim === null ? null : this.targetAt(aim, snapshot);
-    if (targetId !== null && targetId !== this.attackTargetId) {
-      this.enqueue({ type: 'attack-target', actorId: this.actorId, targetId });
+    if (targetId !== null && (targetId !== this.attackTargetId || mode !== this.attackMode)) {
+      const { actorId } = this;
+      this.enqueue(
+        mode === 'melee'
+          ? { type: 'attack-target', actorId, targetId, mode }
+          : { type: 'attack-target', actorId, targetId },
+      );
     }
     this.attackTargetId = targetId;
+    this.attackMode = mode;
   }
 
   /** The unit under `point`, else the map object there: a unit is drawn on top of a building. */

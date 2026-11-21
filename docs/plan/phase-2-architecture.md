@@ -4,7 +4,7 @@ description: A layered diagram in the style of Sommerville's Figure 4.6 of the w
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-20
 tags: [plan, phase-2, architecture, diagram, layers]
 related:
   [
@@ -104,7 +104,7 @@ flowchart TB
     ST["L2.4 Game state and commands<br/>GameState, EntityStore, GameEvents<br/>Snapshot, StateHasher<br/>Command union, CommandQueue, handlers"]
     STP2["structure, combat, capture,<br/>spawn and terrain events<br/>attack-target handler<br/>spawn-from-origin command"]
     EN["L2.5 Entities, structures, components<br/>Entity, Unit, Legend (Warrior placeholder), Mob<br/>EntityFactory, EntityRegistry<br/>Transform, Health, Movement,<br/>TeamMembership, Collider, Vision"]
-    ENP2["Structure, Zone, Obstacle (felled trees †),<br/>Projectile + ProjectilePool<br/>Stronghold, SpawnerTower, BuffTower,<br/>WallSegment, Gate, Turret, Camp, Cathedral<br/>CapturePoint<br/>StrategyRegistry, Attack and Targeting<br/>strategies, Sentinel sprint-through rule †<br/>shield bars, polygon footprint<br/>Combat, StatusEffects, Spawner, Capturable,<br/>GateState, TurretState, Aura"]
+    ENP2["Structure, Zone, Obstacle (felled trees †),<br/>Projectile (not pooled, DEC-309)<br/>Stronghold, SpawnerTower, BuffTower,<br/>WallSegment, Gate, Turret, Camp, Cathedral<br/>CapturePoint<br/>StrategyRegistry, Attack and Targeting<br/>strategies, Sentinel sprint-through rule †<br/>shield bars, polygon footprint<br/>Combat, StatusEffects, Spawner, Capturable,<br/>GateState, TurretState, Aura"]
     MP["L2.6 World map and physics<br/>MapGenerator, MapBuilder, WorldMap<br/>LaneShape, LaneGeometry, symmetry<br/>SpatialHash, StaticColliderIndex, shapes<br/>SAT, swept tests, CollisionResolver"]
     MPP2["wall-turret slots, spawn origins<br/>unstamp / restamp, terrain-changed<br/>swept tests for projectiles"]
     CO["L2.7 Content and config<br/>GameConfig + validation<br/>ContentCatalogue + ContentValidator<br/>placeholder Legend, Mob and map definitions<br/>teams/"]
