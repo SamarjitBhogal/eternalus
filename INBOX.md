@@ -574,7 +574,7 @@ Reply inline (`Decision: …`).
       (D) other (note). A, B, C or D?
   - Answered 2026-11-20 (DEC-308): "Ranged only for now; staff melee on its own key with PR 9", with
     a note read as: keep the staff melee and put it on its own rebindable action (default F) now, in
-    a PR after PR 1; a per-class "auto-melee on/off" setting comes later. The staff keeps its melee
+    PR 1 (DEC-308's reading); a per-class "auto-melee on/off" setting comes later. The staff keeps its melee
     attack as its second attack on `feat/ranged-attacks`.
 - [x] **HC-B16 — Better than the design, sign-off asked: no projectile pool for now
       (`feat/ranged-attacks`, 2026-11-20; COMBAT-WEAPONS-ABILITIES-37).** Built on
@@ -591,6 +591,17 @@ Reply inline (`Decision: …`).
       gain; (C) other (note). A, B or C?
   - Answered 2026-11-20 (DEC-309): "No pool now; add it if the soak test shows pauses". The design
     docs say so with PR 1.
+- [x] **HC-B18 — Better than the design, built under your standing rule (DEC-223): five parts of
+      the ranged attacks (`feat/ranged-attacks`, PR 1 critic round 1, 2026-11-20;
+      COMBAT-WEAPONS-ABILITIES-41).** Built and tested; recorded as DEC-314. Nothing waits on you;
+      name a part to change it. (1) One `ProjectileSystem` flies every shot and lands it, just
+      before `CombatSystem`; there is no `projectile-hit` event. (2) What a shot does where it lands
+      is one class per kind: a weapon's shot now, an ability's shot (the Hamstring blade) next, with
+      the same flight. (3) A unit's attacks are held by mode (basic, melee, later heavy), one rule
+      per mode. (4) A general speed cap on `Movement` slows a shot to its range; an ability can
+      reuse it. (5) A weapon names its shot and its fall-off; the shot's flight is its own
+      definition. Also recorded here, a stand-in that PR 2 replaces (scheduled, phase 4 sprint
+      4.4): the player fires only at a target under the cursor, not along the aim (DEC-184).
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays

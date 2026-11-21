@@ -283,7 +283,8 @@ keeps a fixed-bucket frame histogram (< 8, < 16, < 33, < 50, ≥ 50 ms) and subs
 `PerformanceObserver` to `long-animation-frame` (feature-detected via `supportedEntryTypes`); the
 `PerfOverlay` HUD reads it through the bridge store
 ([research C2](../research/persistence-input-diagnostics-research.md#c2-structured-logging-timing-memory-and-a-developer-overlay)).
-GC-free hot paths come from pooling (projectiles, particles, events), pre-allocated typed arrays
+GC-free hot paths come from pooling (particles; projectiles only if the soak test shows pauses
+from them, DEC-309; event payloads only once profiling shows GC pauses, DEC-94), pre-allocated typed arrays
 (spatial hash, flow fields, snapshot buffers) and scratch vectors in steering
 ([research §6](../research/game-architecture-and-performance-research.md#6-object-pooling-and-gc-avoidance)).
 Profile before optimising; struct-of-arrays layouts are adopted only where a measure shows a hot

@@ -110,7 +110,12 @@ command log is a complete replay and cheats are replayable too.
 export type Command =
   | { readonly type: 'move'; readonly actorId: EntityId; readonly direction: Vec2 }
   | { readonly type: 'stop'; readonly actorId: EntityId } // clears heading and attack target (18 §6.1)
-  | { readonly type: 'attack-target'; readonly actorId: EntityId; readonly targetId: EntityId }
+  | {
+      readonly type: 'attack-target';
+      readonly actorId: EntityId;
+      readonly targetId: EntityId;
+      readonly mode?: AttackMode; // absent = 'basic'; 'melee' (DEC-308), later 'heavy' (05 §10)
+    }
   | {
       readonly type: 'cast-ability';
       readonly actorId: EntityId;
@@ -186,7 +191,7 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 | Event                               | Payload                                                | Emitted by                                                      | Typical listeners                                                                                          |
 | ----------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | `entity-spawned`                    | `{ entityId, kind, team }`                             | `EntityFactory` via `SpawnSystem`, or `Simulation` for a roster | `SnapshotSystem`, views, `Scoring` (a row per Legend)                                                      |
-| `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`           | `DeathSystem` only                                              | `HordeSystem`, invariants                                                                                  |
+| `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`           | `DeathSystem`; `ProjectileSystem` for a spent shot (`consumed`) | `HordeSystem`, invariants                                                                                  |
 | `damage-applied`                    | `{ targetId, amount, absorbed, source: DamageSource }` | `DamagePipeline`                                                | `ProgressionSystem` (assists), `AiSystem` (aggro), `Scoring` (assists, structure damage)                   |
 | `entity-died`                       | `{ entityId, killer: DamageSource }`                   | `DeathResolver`                                                 | `DeathSystem`, `ProgressionSystem`, `Scoring`, `ObjectiveLostCondition`                                    |
 | `structure-destroyed`               | `{ entityId, kind, team, lane }`                       | `StructureSystem`                                               | `EnragedSystem` (enraged lane), `StructureSystem` (walls, shields), `Scoring` (DEC-212)                    |
@@ -516,9 +521,11 @@ each closed by the session or phase named:
   `validateMapConfig` until session A swaps to `GameConfig` and `SeededRandom` (06 §10).
 
 **Implementation status, 2026-11-20 (branch `feat/ranged-attacks`, PR 1; DEC-300).**
-`ProjectileLanding` removes each shot with cause `consumed`; projectiles are not pooled (04 §11,
+`ProjectileSystem` removes each shot with cause `consumed`; projectiles are not pooled (04 §11,
 DEC-309), so nothing listens for `entity-removed` on a projectile's behalf. No `projectile-hit`
-event exists (05 §10).
+event exists (05 §10, DEC-314). `StateHasher` hashes a shot's payload (owner, target, impact kind,
+source definition, origin, end ticks left) and a `Movement` speed limit when one is set (10 §2,
+DEC-314); a match with no shot keeps its hash.
 
 ## Related
 

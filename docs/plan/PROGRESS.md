@@ -9821,3 +9821,37 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Next step: pre-PR gate (architecture-reviewer, correctness and ponytail critics), then the
   push and `gh pr create --base feat/vanguard-kit` for the owner; then lane A PR 2 (melee
   sweeps, DEC-304 and DEC-305).
+
+### 2026-11-20 — Phase 4 / combat lane A, PR 1 gate round 1: critic fixes, DEC-314 (BTD-1 to BTD-5) — feat/ranged-attacks — sholtzman + Claude Code
+
+- What was done: fixed the round-1 findings of the pre-PR gate (architecture-reviewer, correctness
+  and ponytail critics; reports in `eternalus-agent-work/abilities/pr1-gate/r1-*.md`). Core:
+  `systems/ProjectileSystem` replaces `combat/ProjectileLanding` (flight, sweep and landing; runs
+  directly before `CombatSystem`; a broad phase per move; a body is hit just before the wall it
+  stands at), `combat/ProjectileImpact.types.ts` and `combat/WeaponImpact` (one landing class per
+  impact kind), `ProjectilePayload` carries `targetId` and plain `impact` data, a shot spawns at
+  the attacker's centre, `flightSpeed` moved to `physics/`, `Movement.limitSpeed` takes a number,
+  the hash adds `speed-limit` only when finite. `Combat` holds `UnitAttacks` by mode
+  (`content/units/attacksByMode`). `components/Outline.types.ts` (`Outline`, implemented by
+  `Footprint` and `MapObjectBody`; walk-on outlines are hit only by a shot aimed at their entity,
+  `Footprint.isWalkOn`). One `HitRunner` port (`state/HitRunner.types.ts`). `CombatSystem` takes
+  an options object with a required `factory`; `DefaultSystemPipelineOptions.factory` is required
+  at the top level (`hordes.factory` removed). `KnownProjectileRule` in the default content rules.
+  Bots hold only with a line of fire (`state/hasLineOfFire`); `Simulation` injects
+  `BotLegendControllerContent.shotRadiusOf`, now required. `entities/strategies/weaponSourceOf`.
+  Protocol and server: the Duel parses `isMeleeAttacking` and `SeatCommands` sends the melee mode.
+  Client: `ProjectileView` types file. Records: DEC-314 and `INBOX.md` HC-B18 (five
+  better-than-design items built under DEC-223). Design text: 02 (`combat/`, `physics/`,
+  `components/`, §9 "Projectile impacts"), 03 §4 and §12, 04 §3 and §12, 05 §3 and §10, 07 and 11
+  implementation status, 10 §2, §7, §8 and §12, 12 status, the glossary, the phase 2 plan.
+- Correction to the PR 1 entry above: its "03 §9" means 03 §4 and §12.
+- Open, not changed: a bot that loses its line of fire keeps its attack target, so it fires at the
+  wall while it closes in. Clearing the target needs a new command, and `StuckSystem` and
+  `PathingSystem` read the target to give the bot its detour (DEC-193). Noted in the PR body.
+- Checks run: `npm run check` (20:54-22:47, load 30-70): format, no-js, lint, typecheck passed;
+  knip failed on one unused export (`ProjectileImpactDataByKind`, now file-local). Then knip,
+  `test:coverage` (core 344 files / 2154 tests, protocol 1 / 31, client 309 / 2134, server
+  21 / 85), build and docs check passed (exit 0). `shotRadiusOf` break in
+  `eternalus-agent-work/abilities/pr1-breaks.log` (`tsc -b` TS2741 without the wiring).
+- Next step: gate round 2 (architecture-reviewer, correctness and ponytail critics), then the
+  push and `gh pr create --base feat/vanguard-kit` for the owner.

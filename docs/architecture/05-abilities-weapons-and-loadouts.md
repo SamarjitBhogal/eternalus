@@ -178,7 +178,8 @@ browsers. Every spec may carry `delaySeconds` (converted to `delayTicks`), which
 list of effects into a timeline. `EffectZone` is a new concrete `Zone` kind (depth 2) carrying an
 `AreaEffect` component (`casterId`, `abilityId`, `varietyId`, step path, `expiresTick`,
 `nextTick`; `Recommendation:`) so its state is ids only; a `Projectile` likewise carries a
-`payload` naming the weapon attack or the ability step whose `onHit` list runs on impact.
+`payload` naming the weapon attack or the ability step whose `onHit` list runs on impact (an
+impact kind with its data, landed by the `ProjectileImpact` of that kind, §10).
 
 ## 4. Composing an ability: two worked examples
 
@@ -626,14 +627,14 @@ export type WeaponAttack = {
   readonly damage: number;
   readonly damageType: DamageType;
   readonly intervalTicks: number;
-  readonly projectile?: ProjectileSpec;
+  readonly projectile?: ProjectileLaunch; // ranged only: { projectileId, falloff }; the flight (speed, radius, range) is the ProjectileDefinition by id (DEC-314)
   readonly onHit: readonly AbilityEffectSpec[];
 };
 export type WeaponDefinition = {
   readonly id: WeaponId;
   readonly displayName: string;
   readonly weaponClass: WeaponClass;
-  readonly attacks: readonly WeaponAttack[]; // first attack whose reach covers the target wins: melee-with-ranged-flex is data
+  readonly attacks: readonly WeaponAttack[]; // attacks[0] is the basic attack; an attack mode picks another (melee: the first melee attack, DEC-308)
   readonly heavyAttack: (WeaponAttack & { readonly cooldownTicks: number }) | null; // Wuuthrad, Lightbringer
   readonly parry: {
     readonly windowTicks: number;
@@ -654,21 +655,28 @@ movement speeds). `Combat.weaponId` names the equipped weapon; `CombatSystem` ca
 (`attack(self, target, weapon, ctx)`,
 [04 §4](04-entity-architecture.md#4-strategies-behaviour-that-varies-by-kind)):
 `MeleeAttackStrategy` applies `damage` and `onHit` in the tick; `RangedProjectileAttackStrategy`
-spawns a `Projectile` (not pooled, DEC-309) whose `payload` names the weapon attack, so `CombatSystem` runs
-`onHit` on `projectile-hit`. A heavy attack arrives as `attack-target` with `mode: 'heavy'`
+spawns a `Projectile` (not pooled, DEC-309) whose `payload` carries its impact as plain data by
+impact kind (a weapon's: the attack). `ProjectileSystem` flies every shot the same way and hands
+the hit to the `ProjectileImpact` of its kind (`WeaponImpact`: the damage with its fall-off, then
+the owner's `onHit`); an ability's shot is one more kind and one more impact class, and no
+`projectile-hit` event is needed (DEC-314). `Combat` holds a unit's attacks by mode, resolved once
+at spawn by one selector per mode, so `'heavy'` is one more selector (DEC-314). A heavy attack arrives as `attack-target` with `mode: 'heavy'`
 (`Recommendation:` one optional field on the existing command; **MVP-if-time**) and uses its own
 cooldown on `Combat`; a parry is a `parrying` status with a window. Non-unique weapons are usable
 by any class (reference 07: the class table's bias is a bias); `uniqueTo` locks the class weapons.
 
-A shot flies straight from where it was fired until it hits an enemy body or a wall, or reaches
-its `ProjectileDefinition.range` (metres from the origin). At its range it stops and ends: it hits
+A shot flies straight from the attacker's centre until it hits an enemy body or a wall, or
+reaches its `ProjectileDefinition.range` (metres from the origin). It passes through allies, as
+the Hamstring blade does (DEC-269). A walk-on outline (a palace floor, a gate's passage) is ground
+units stand on, so a shot flies over it unless it was fired at that entity. At its range it stops and ends: it hits
 nothing and stays for its `endDuration` (a bolt's mist fading, an arrow lying on the ground), then
 it is removed. `slowFrom` (at most `range`) is where the shot starts to ease to that stop; equal to
 `range`, the shot flies at full speed to the end. Its damage drops in a straight line from the
 attack's `falloff.fullTo` to `falloff.floor` at `falloff.floorAt`, and stays at the floor after
 that (DEC-306). A weapon with a melee attack beside its default attack also takes `attack-target`
 with `mode: 'melee'`: the unit attacks with that melee attack (the Magus staff's melee, on its own
-rebindable action, DEC-308). `mode` is the same optional field as the heavy attack's.
+rebindable action, DEC-308). `mode` is the same optional field as the heavy attack's. The basic
+and melee attacks share the unit's one cooldown (a reading of DEC-308).
 
 | Weapon (`id`)                               | Class      | Attacks (`TUNE`, reference 07)                                                          | Unique to | Status                  |
 | ------------------------------------------- | ---------- | --------------------------------------------------------------------------------------- | --------- | ----------------------- |
@@ -699,28 +707,39 @@ their own `attack` and name their own definition (04 §5). Not built yet: ranged
 `weapon` argument, and `allowedClasses` / `uniqueTo` enforcement in a loadout (`WeaponAllowedRule`,
 SCRUM-290).
 
-**Implementation status, 2026-11-20 (branch `feat/ranged-attacks`, PR 1; DEC-300).** Ranged attacks
+**Implementation status, 2026-11-20 (branch `feat/ranged-attacks`, PR 1; DEC-300, DEC-314).** Ranged attacks
 are built. `AttackStrategyId` is `'melee' | 'ranged-projectile'` (`'beam'` is not built).
 `UnitAttack` is a union: `MeleeAttack` or `RangedAttack`, and a `RangedAttack` carries
 `projectile: { projectileId, falloff }` (`content/units/units.types.ts`). The Magus staff's basic
 attack is ranged, and `obsidian-bow` exists. Projectile content is in `content/projectiles/`
 (`magusBolt.ts`, `arrow.ts`, `projectileCatalogue.ts`, `loadProjectiles`). All numbers are `TUNE`
-(DEC-306, DEC-310). `RangedProjectileAttackStrategy` spawns the `Projectile`
-through `AttackContext.factory`. Its `ProjectilePayload` holds the owner, team, source, attack and
-origin. The shot flies straight at the target's facing point, with no lead. The projectile is
+(DEC-306, DEC-310). Content validation checks that every weapon's projectile id exists
+(`KnownProjectileRule`, which `loadWeapons` also runs). `RangedProjectileAttackStrategy` spawns the
+`Projectile` at the attacker's centre through `AttackContext.factory` (required: a missing factory
+does not compile). Its `ProjectilePayload` holds the owner, team, source, the entity it was fired
+at (`targetId`, `null` for none), its impact (`{ kind: 'weapon', attack }`) and the origin. The
+shot flies straight at the target's facing point, with no lead. Stand-in until PR 2 (melee sweeps,
+phase 4 sprint 4.4): the player fires only at a target under the cursor (`attack-target`), not
+along the aim DEC-184 sets. A bot holds its ranged attack only with a clear line of fire
+(`state/hasLineOfFire`, with the shot's radius from its `ProjectileDefinition`). The projectile is
 not pooled (04 §11, DEC-309). Shot endings (DEC-306) are built: `ProjectileFlight` holds `range`,
-`slowFrom` and the ending countdown; `combat/flightSpeed` caps the shot's speed each tick through
+`slowFrom` and the ending countdown; `physics/flightSpeed` caps the shot's speed each tick through
 `Movement.limitSpeed`, so it stops exactly at `range`, ends, and is removed as `consumed` after
 `endDuration`. `EntitySnapshot.projectile` (`speedShare`, `ending`) lets the client draw the
 slowing and the ending. The staff's melee attack is on its own action (DEC-308): `attack-target`
 has an optional `mode` (`AttackMode`, `'basic' | 'melee'`, in `content/units/units.types.ts`);
-`Combat` holds the basic attack and the weapon's first melee attack, with one shared cooldown;
-`EntityStore.setAttackTarget` refuses `melee` for a unit without one (`cannot-attack`); the
-client's `melee-attack` action (default F) sends it. `ProjectileLanding` (called by `CombatSystem` before unit attacks)
-applies the hit: damage times `falloffMultiplier`, through `DamagePipeline`, then `afterHit`. No
-`projectile-hit` event exists yet, because nothing listens for it. `ProjectileLanding` runs the
-owner's statuses' `onHit` steps itself, through `HitEffects.afterHit`, and removes the shot with
-cause `consumed`. Still not built: `heavyAttack`, `parry`, `grants`, the flex attack,
+`Combat` holds the attacks by mode (`UnitAttacks`, resolved at spawn by
+`content/units/attacksByMode`), with one shared cooldown; `EntityStore.setAttackTarget` refuses a
+mode the unit has no attack for (`Combat.hasMode`, `cannot-attack`); the client's `melee-attack`
+action (default F) sends it, and a Duel seat's `isMeleeAttacking` intent does the same.
+`ProjectileSystem` (in the pipeline directly before `CombatSystem`) sweeps each shot and hands a
+hit to the impact of its payload's kind (its `impacts`, composed in `DefaultSystemPipeline`). The
+`ProjectileImpact` interface is in `combat/ProjectileImpact.types.ts`, so both `combat/` and
+`abilities/` can implement it; it is not in `StrategyRegistry`, because `entities/` may import
+neither and an ability's impact needs the match's services. `WeaponImpact` applies damage times
+`falloffMultiplier` through `DamagePipeline`, then the owner's statuses' `onHit` steps through
+the `HitRunner` port (`state/HitRunner.types.ts`, which `HitEffects` satisfies); the shot is then
+removed with cause `consumed`. No `projectile-hit` event exists (DEC-314). Still not built: `heavyAttack`, `parry`, `grants`, the flex attack,
 `a-fine-line` and turret lead.
 
 ## 11. Artifacts (gadgets Z and C)
@@ -1002,8 +1021,8 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   `TUNE`; the curve and the Legend kill and structure XP follow DEC-190 (not final; the
   soak metric can change them) and live in `content/progression/`.
 - **Ranged attacks and projectiles (`feat/ranged-attacks`, 2026-11-20; DEC-300).** See the
-  2026-11-20 note under §10: the `ranged-projectile` strategy, the projectile content and
-  `ProjectileLanding` are built. The shot is not pooled (DEC-309). The client
+  2026-11-20 note under §10: the `ranged-projectile` strategy, the projectile content,
+  `ProjectileSystem` and `WeaponImpact` are built. The shot is not pooled (DEC-309). The client
   draws a shot with `ProjectileView` (`apps/client/src/game/views/`), registered in
   `defaultViewRegistry`.
 - **HUD (`feat/hud-and-character-select`, 2026-10-24).** The client's `MatchBridge` joins the

@@ -501,8 +501,8 @@ scorer), and `checkpoint-reached` carries `presentLegendIds`. The other §5 coun
 work that fills them.
 
 Implementation status, 2026-11-20 (branch `feat/ranged-attacks`, PR 1; DEC-300): projectiles now
-deal damage. `ProjectileLanding` applies each hit through `DamagePipeline`, so the hit goes
-through the same path as a melee hit (05 §10).
+deal damage. `WeaponImpact` (called by `ProjectileSystem`, DEC-314) applies each hit through
+`DamagePipeline`, so the hit goes through the same path as a melee hit (05 §10).
 
 Implementation status, 2026-11-16 (branch `feat/vanguard-kit`, DEC-272; `INBOX.md` HC-B7 (3),
 signed off by DEC-283 (3)): `LegendDeathRule` also announces each assist it awards as `assist-earned { legendId,

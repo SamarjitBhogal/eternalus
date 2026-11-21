@@ -182,6 +182,10 @@ Owner: _ (sim lane). Week 8.
       `AttackStrategy` box also needs the flex attack, heavy attack and parry, and the
       `WeaponDefinition` box needs the loadout validation test (SCRUM-290). All numbers are `TUNE`
       (DEC-306, DEC-310). The staff's melee attack is on its own action, default F (DEC-308).
+      Stand-in until PR 2 (melee sweeps, which builds the click that needs no target): the
+      player fires only at a target under the cursor (`attack-target`), and the shot flies at
+      that target, not along the aim that DEC-184 sets. PR 2 adds aimed fire for ranged weapons
+      with the same command.
 
 - [ ] **`ArtifactDefinition` content + gadget slots Z/C** (`TUNE`: Sentinel Mortar with impact
       and air-burst modes; Magus Soul Orb (pending) with Cast Forward and Follower; the second

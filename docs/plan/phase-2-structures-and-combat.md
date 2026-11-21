@@ -124,7 +124,7 @@ Owner: _ (sim lane B). Week 5. Depends on 2.2.
       when: turrets appear on the minimap through the registry with no minimap change.
 
 **Status (2026-11-20, branch `feat/ranged-attacks`, PR 1; DEC-300):** the `Projectile` entity,
-`ProjectileDefinition` content, the swept hit test (`combat/ProjectileLanding`) and basic ranged
+`ProjectileDefinition` content, the swept hit test (`systems/ProjectileSystem`, DEC-314) and basic ranged
 attacks (`RangedProjectileAttackStrategy`) are built; the `CombatSystem` v1 box (2.2) now has its
 ranged half. No box is ticked. Projectiles are not pooled (DEC-309). Turrets and the
 100-projectile soak metric are not built.
