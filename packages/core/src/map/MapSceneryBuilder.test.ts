@@ -8,6 +8,7 @@ import { DEFAULT_MAP_LAYOUT } from '../content/maps/defaultMapLayout';
 import { MapSceneryBuilder } from './MapSceneryBuilder';
 import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import { doesPolygonOverlapRect } from '../utils/geometry';
+import { CAMP_HALF_EXTENT } from './campPlacement.constants';
 import { laneFortKeepOuts } from './fortInWorld';
 import { MapObjectBuilder } from './MapObjectBuilder';
 import { MapPresentationBuilder } from './MapPresentationBuilder';
@@ -153,5 +154,31 @@ describe('MapSceneryBuilder', () => {
     }
 
     expect(missing).toEqual([]);
+  });
+
+  it('fills exactly the box the generator clears for a camp, so art and generation cannot drift apart (CAMP_HALF_EXTENT)', () => {
+    // At the default world, 1 sketch unit is 1 m, so the sketch-unit extent applies as it is.
+    const map = generate();
+    const scenery = new MapSceneryBuilder(map).build();
+    const camps = map.features.filter(({ kind }) => kind === 'camp' || kind === 'corner-camp');
+    const misfits: string[] = [];
+    for (const { id, position } of camps) {
+      const points = scenery
+        .filter((piece) => piece.id.startsWith(`${id}-camp-`))
+        .flatMap(({ shape }) => shape);
+      const reach = {
+        x: Math.max(...points.map(({ x }) => Math.abs(x - position.x))),
+        y: Math.max(...points.map(({ y }) => Math.abs(y - position.y))),
+      };
+      if (
+        Math.abs(reach.x - CAMP_HALF_EXTENT.x) > 1e-9 ||
+        Math.abs(reach.y - CAMP_HALF_EXTENT.y) > 1e-9
+      ) {
+        misfits.push(`${id}: reaches ${String(reach.x)} x ${String(reach.y)}`);
+      }
+    }
+
+    expect(camps.length).toBeGreaterThan(0);
+    expect(misfits).toEqual([]);
   });
 });
