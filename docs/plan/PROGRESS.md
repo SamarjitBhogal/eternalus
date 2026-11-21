@@ -9373,3 +9373,16 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   N2 (fixture matches the `-assist-mob` suffix), N4 (`instanceof CapturePoint` vs `Capturable`).
 - Checks run: `npm run check:quick` by the pre-commit hook; the full check ran on `e28cc1fd`.
 - Next step: re-request review on PR #130.
+
+### 2026-11-20 — Phase 3 / minion plan M6b — feat/minion-m6b-checkpoint-defenders (CodeRabbit on `27927e4f`) — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit found that `CaptureSystem` emits `checkpoint-reached` before it sets a
+  completed capture's new owner in the same pass, while `GuardRoster.defend` read the owner a tick
+  later, so such a pass gave the defenders the new owner's team (against DEC-257). `SpawnSystem`
+  now queues the owner when the event fires and passes it to `defend`. New test: a checkpoint
+  reached, then the owner changed before the next pass, spawns the old owner's defenders (it
+  failed before the fix).
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code
+  style!"; core "Tests 1690 passed (1690)"; protocol "Tests 29 passed (29)"; client "Tests 2011
+  passed (2011)"; server "Tests 84 passed (84)"; "✓ built in 403ms"; "Documentation check passed."
+- Next step: re-request review on PR #130.
