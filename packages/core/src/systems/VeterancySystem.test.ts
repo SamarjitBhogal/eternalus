@@ -7,6 +7,7 @@ import { Veterancy } from '../components/Veterancy';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { loadMinionVeterancy } from '../content/mobs/loadMinionVeterancy';
 import { MINION_VETERANCY } from '../content/mobs/minionVeterancy';
 import { VETERAN } from '../content/status-effects/veteran';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
@@ -26,7 +27,7 @@ const setUp = (config = createDefaultGameConfig()) => {
   const units = loadDefaultContent(30);
   const factory = new EntityFactory(createDefaultEntityRegistry(), units);
   const statuses = new StatusEffectApplier(loadStatusEffects(30, 2));
-  const system = new VeterancySystem(state, statuses, units, MINION_VETERANCY);
+  const system = new VeterancySystem(state, statuses, units, loadMinionVeterancy(config.tickRate));
   const add = (team: 'light' | 'dark' | 'neutral', x: number, mobId = 'light-minion') => {
     const entity = factory.create('light-mob', mobId, { team, position: { x, y: 20 } });
     state.entities.add(entity);
@@ -346,6 +347,17 @@ describe('VeterancySystem', () => {
     step();
 
     expect(statusesOf(neighbour)).toEqual([]);
+
+    // 0.5 s at 30 ticks a second: the next spread is at tick 15, not before.
+    for (let tick = 2; tick < 15; tick += 1) {
+      state.advanceTick();
+      step();
+      expect(statusesOf(neighbour)).toEqual([]);
+    }
+    state.advanceTick();
+    step();
+
+    expect(statusesOf(neighbour)).toContainEqual(['rallied', 1]);
   });
 
   it('hashes a levelled-up minion the same in two runs, and a further kill differently', () => {

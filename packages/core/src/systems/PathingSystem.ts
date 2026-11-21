@@ -16,6 +16,7 @@ import type { WorldMap } from '../map/WorldMap';
 import { formationSlot } from '../state/formationSlot';
 import { guardOutward } from '../state/guardOutward';
 import type { SpaceQuery } from '../state/SpaceQuery.types';
+import { isPointInRect } from '../utils/geometry';
 import type { Rect, Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
 import type { PathingWorld } from './PathingSystem.types';
@@ -118,10 +119,8 @@ export class PathingSystem implements System {
    * Whether `point` lies in a fort box (`PathingWorld.forts`: a lane tower's fort, the palace,
    * DEC-217 (16)).
    */
-  private isInsideFort({ x, y }: Vec2): boolean {
-    return this.forts.some(
-      (box) => x >= box.x && x <= box.x + box.width && y >= box.y && y <= box.y + box.height,
-    );
+  private isInsideFort(point: Vec2): boolean {
+    return this.forts.some((box) => isPointInRect(point, box));
   }
 
   /**

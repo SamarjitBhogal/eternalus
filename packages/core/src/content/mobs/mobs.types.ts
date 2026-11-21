@@ -11,24 +11,38 @@ export type MobDefinition = UnitDefinition & {
   readonly xpValue: number;
 };
 
+/** The veterancy fields that are the same as authored and as loaded. */
+type MinionVeterancyBase = {
+  readonly killsPerLevel: number;
+  readonly maxLevel: number;
+  readonly healthPerLevel: number;
+  readonly statusId: string;
+};
+
+/** The aura fields that are the same as authored and as loaded. */
+type VeterancyAuraBase = {
+  readonly statusId: string;
+  readonly radius: number;
+};
+
 /**
  * How lane minions and tower guards (DEC-165) grow (game doc "Minion XP", MVP-if-time;
  * balancing.md): a level per `killsPerLevel` (a whole number) kills of lane minions, tower guards
  * or camp mobs, or from another source (DEC-168), up to `maxLevel`, each raising max health by
  * `healthPerLevel` of base health and adding a stack of `statusId`; a unit with a level gives
  * `aura.statusId` to the friendly lane minions and tower guards within `aura.radius`, every
- * `aura.everySeconds`.
+ * `aura.everySeconds`. As authored, in seconds.
  */
-export type MinionVeterancyDefinition = {
-  readonly killsPerLevel: number;
-  readonly maxLevel: number;
-  readonly healthPerLevel: number;
-  readonly statusId: string;
-  readonly aura: {
-    readonly statusId: string;
-    readonly radius: number;
-    readonly everySeconds: number;
-  };
+export type AuthoredMinionVeterancy = MinionVeterancyBase & {
+  readonly aura: VeterancyAuraBase & { readonly everySeconds: number };
+};
+
+/**
+ * The minion veterancy rules as loaded (`loadMinionVeterancy`): the aura's period in ticks,
+ * converted once, at least one tick.
+ */
+export type MinionVeterancyDefinition = MinionVeterancyBase & {
+  readonly aura: VeterancyAuraBase & { readonly everyTicks: number };
 };
 
 /**

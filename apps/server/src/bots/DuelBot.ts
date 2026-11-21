@@ -5,7 +5,7 @@ import type { BotLogger } from './BotLogger';
 import type { BotNavigator } from './BotNavigator';
 import type { BotNavigatorSource } from './BotNavigatorSource';
 import type { BotReport } from './BotReport.types';
-import { PROGRESS_EVERY_STATES } from './DuelBot.constants';
+import { BOT_NAME, PROGRESS_EVERY_STATES } from './DuelBot.constants';
 
 /** One scripted Duel player: joins the queue, then chases and attacks the enemy Legend. */
 export class DuelBot {
@@ -52,7 +52,7 @@ export class DuelBot {
   public connect(): void {
     this.link = this.links.open(this.url, {
       onOpen: () => {
-        this.link?.send({ type: 'queue-join' });
+        this.link?.send({ type: 'queue-join', name: BOT_NAME });
       },
       onMessage: (message) => {
         this.receive(message);

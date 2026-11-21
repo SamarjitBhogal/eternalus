@@ -6,6 +6,7 @@ import { Veterancy } from '../components/Veterancy';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { loadMinionVeterancy } from '../content/mobs/loadMinionVeterancy';
 import { MINION_VETERANCY } from '../content/mobs/minionVeterancy';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { ZONE_LEVEL_UP } from '../content/zones/zoneLevelUp';
@@ -40,7 +41,12 @@ const setUp = () => {
   const units = loadDefaultContent(TICK_RATE);
   const factory = new EntityFactory(createDefaultEntityRegistry(), units);
   const statuses = new StatusEffectApplier(loadStatusEffects(TICK_RATE, 2));
-  const veterancy = new VeterancySystem(state, statuses, units, MINION_VETERANCY);
+  const veterancy = new VeterancySystem(
+    state,
+    statuses,
+    units,
+    loadMinionVeterancy(state.config.tickRate),
+  );
   const levelUp = new ZoneLevelUpSystem(state, ZONE_LEVEL_UP);
   const point = new CapturePoint('zone-1', CATHEDRAL_CAPTURE_POINT.id);
   point.spawn({

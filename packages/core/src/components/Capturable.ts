@@ -14,9 +14,15 @@ export class Capturable {
   private presenceValue: Readonly<Record<Team, number>> = ZERO_PER_SIDE;
   private reachedValue: Record<Team, number> = { ...ZERO_PER_SIDE };
   private ownedSinceValue = 0;
+  private lockedByValue: string | null = null;
 
-  /** The living mini-boss that blocks capture, or `null` (set in Phase 3 sprint 3.6). */
-  public readonly lockedBy: string | null = null;
+  /**
+   * The living mini-boss that blocks capture, or `null` (reference 04: "while the mini-boss is
+   * alive, its zone cannot be captured").
+   */
+  public get lockedBy(): string | null {
+    return this.lockedByValue;
+  }
 
   /** Who holds the zone; `'neutral'` at match start. */
   public get owner(): Team {
@@ -84,6 +90,11 @@ export class Capturable {
    */
   public setPresence(presence: Readonly<Record<Team, number>>): void {
     this.presenceValue = presence;
+  }
+
+  /** Locks the zone to the living boss `bossId`, or unlocks it with `null`. */
+  public setLock(bossId: string | null): void {
+    this.lockedByValue = bossId;
   }
 
   /** Records that `team`'s push reached `checkpoint`; a lower checkpoint changes nothing. */
