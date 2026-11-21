@@ -13,7 +13,7 @@ import type { GameState } from '../state/GameState';
 /**
  * The one way a status reaches or leaves an entity (architecture 05 section 8): abilities, weapons,
  * projectiles and structures call `apply`, auras and holds call `remove`, `StatusEffectSystem`
- * calls `expire`. It emits every `status-applied` and `status-expired`, and fills the holder's
+ * calls `expire` and `removeBroken`. It emits every `status-applied` and `status-expired`, and fills the holder's
  * `granted` slot with a status's `grants` ability while the status lasts (Fury's dash, DEC-270),
  * so the slot changes in the same call as the status. When the status whose ability the slot holds
  * ends, the slot takes the ability of the last status still active (oldest first) that grants
@@ -84,6 +84,21 @@ export class StatusEffectApplier {
     }
     state.events.emit('status-expired', { entityId: targetId, statusId, sourceId });
     return true;
+  }
+
+  /**
+   * Ends every status on `targetId` that damage broke (`StatusEffectRuntime.isBroken`, DEC-267),
+   * oldest first, as `remove` does: no `onExpire`, since the status did not run out.
+   */
+  public removeBroken(state: GameState, targetId: EntityId): void {
+    const broken = state.entities
+      .get(targetId)
+      ?.findComponent(StatusEffects)
+      ?.active.filter((status) => status.isBroken)
+      .map((status) => status.definition.id);
+    for (const statusId of broken ?? []) {
+      this.remove(state, targetId, statusId);
+    }
   }
 
   /**

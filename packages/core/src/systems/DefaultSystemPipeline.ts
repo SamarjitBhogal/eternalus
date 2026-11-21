@@ -123,7 +123,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
       new AbilitySystem(abilities, validator, damage, statuses),
       // After the casts, so a cast spends before the tick's regeneration (plan arch call 13).
       new AetherRegenSystem(AETHER_REGEN, tickRate),
-      new StatusEffectSystem(damage, statuses),
+      new StatusEffectSystem(state, damage, statuses),
       new MovementSystem(),
       ...(hordes?.collisions ?? []),
       ...(hordes === undefined

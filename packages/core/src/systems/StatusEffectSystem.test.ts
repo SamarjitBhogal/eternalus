@@ -31,8 +31,8 @@ import type { System, SystemContext } from './System.types';
 import { loadWeapons } from '../content/weapons/loadWeapons';
 
 const CONFIG = createDefaultGameConfig();
-const statusSystem = (applier: StatusEffectApplier) =>
-  new StatusEffectSystem(new DamagePipeline(), applier);
+const statusSystem = (state: GameState, applier: StatusEffectApplier) =>
+  new StatusEffectSystem(state, new DamagePipeline(), applier);
 const STRUCTURES_PER_LANE = CONFIG.map.spawnTowersPerLane + CONFIG.map.buffTowersPerLane;
 
 /** A Warrior (light) at the origin next to a dark training dummy, an applier and an event log. */
@@ -106,11 +106,11 @@ const tickPipeline = (state: GameState): System => {
 
 describe('StatusEffectSystem', () => {
   it('ticks bleed once per second per stack, credited to the source, then expires it on the exact tick', () => {
-    const { applier, dummy, warrior, apply, events, run, ticksOf } = setUp();
+    const { state, applier, dummy, warrior, apply, events, run, ticksOf } = setUp();
     apply(dummy, 'bleed');
     apply(dummy, 'bleed'); // 2 stacks, 12 per tick, 4 ticks over 4 s
 
-    run(statusSystem(applier), 121);
+    run(statusSystem(state, applier), 121);
 
     expect(ticksOf('damage-applied')).toEqual([30, 60, 90, 120]);
     expect(events.find((event) => event.type === 'damage-applied')?.payload).toMatchObject({
@@ -122,9 +122,9 @@ describe('StatusEffectSystem', () => {
   });
 
   it('a bleed reapplied faster than once a second still ticks every second', () => {
-    const { applier, dummy, apply, run, ticksOf } = setUp();
+    const { state, applier, dummy, apply, run, ticksOf } = setUp();
 
-    run(statusSystem(applier), 61, (tick) => {
+    run(statusSystem(state, applier), 61, (tick) => {
       if (tick % 21 === 0) {
         apply(dummy, 'bleed'); // Warrior pace, 0.7 s
       }
@@ -134,11 +134,11 @@ describe('StatusEffectSystem', () => {
   });
 
   it('crushed deals 3% of max health per second', () => {
-    const { applier, dummy, apply, run } = setUp();
+    const { state, applier, dummy, apply, run } = setUp();
     const health = dummy.getComponent(Health);
     apply(dummy, 'crushed');
 
-    run(statusSystem(applier), 31);
+    run(statusSystem(state, applier), 31);
 
     expect(health.current).toBeCloseTo(health.max * 0.97);
   });
@@ -146,7 +146,7 @@ describe('StatusEffectSystem', () => {
   it('gives the same hash for the same statuses, and a different one when only the rhythm differs (determinism)', () => {
     const hashAfter = (reapplyAt: number | null): number => {
       const { applier, state, dummy, apply, run } = setUp();
-      run(statusSystem(applier), 15, (tick) => {
+      run(statusSystem(state, applier), 15, (tick) => {
         if (tick === 0 || tick === reapplyAt) {
           apply(dummy, 'crushed');
         }
@@ -156,6 +156,79 @@ describe('StatusEffectSystem', () => {
 
     expect(hashAfter(10)).toBe(hashAfter(10));
     expect(hashAfter(10)).not.toBe(hashAfter(null));
+  });
+});
+
+describe('StatusEffectSystem: statuses that end on damage (Veil, DEC-267)', () => {
+  const HIT = { kind: 'weapon', definitionId: 'test-hit' } as const;
+  const isVeiled = (entity: Entity): boolean =>
+    entity
+      .getComponent(StatusEffects)
+      .active.some(({ definition }) => definition.id === 'invisible');
+
+  it('a hit taken ends Veil in the next pass, with status-expired and nothing else', () => {
+    const { state, applier, warrior, dummy, apply, run, ticksOf } = setUp();
+    const system = statusSystem(state, applier);
+    apply(warrior, 'invisible');
+    apply(warrior, 'fury');
+
+    new DamagePipeline().apply(state, warrior.id, 5, { ...HIT, attackerId: dummy.id });
+    expect(isVeiled(warrior)).toBe(true);
+    run(system, 1);
+
+    expect(isVeiled(warrior)).toBe(false);
+    expect(ticksOf('status-expired')).toEqual([0]);
+    expect(
+      warrior.getComponent(StatusEffects).active.map(({ definition }) => definition.id),
+    ).toEqual(['fury']);
+  });
+
+  it('a hit dealt ends the attacker’s Veil', () => {
+    const { state, applier, warrior, dummy, apply, run } = setUp();
+    const system = statusSystem(state, applier);
+    apply(warrior, 'invisible');
+
+    new DamagePipeline().apply(state, dummy.id, 5, { ...HIT, attackerId: warrior.id });
+    run(system, 1);
+
+    expect(isVeiled(warrior)).toBe(false);
+  });
+
+  it('a bleed tick ends Veil in the same pass, on the bleeding holder and on the one it is credited to', () => {
+    const { state, applier, warrior, dummy, apply, run } = setUp();
+    const system = statusSystem(state, applier);
+    apply(dummy, 'bleed'); // credited to the warrior; first tick at 30
+    apply(warrior, 'bleed', dummy.id);
+    apply(warrior, 'invisible');
+    apply(dummy, 'invisible', dummy.id);
+
+    run(system, 30);
+    expect([isVeiled(warrior), isVeiled(dummy)]).toEqual([true, true]);
+    run(system, 1);
+
+    expect([isVeiled(warrior), isVeiled(dummy)]).toEqual([false, false]);
+  });
+
+  it('a Veil applied after the hit in the same tick stays on', () => {
+    const { state, applier, warrior, dummy, apply, run } = setUp();
+    const system = statusSystem(state, applier);
+    apply(warrior, 'invisible');
+
+    new DamagePipeline().apply(state, warrior.id, 5, { ...HIT, attackerId: dummy.id });
+    applier.remove(state, warrior.id, 'invisible');
+    apply(warrior, 'invisible');
+    run(system, 1);
+
+    expect(isVeiled(warrior)).toBe(true);
+  });
+
+  it('runs out after 5 s when nothing hits', () => {
+    const { state, applier, warrior, apply, run, ticksOf } = setUp();
+    apply(warrior, 'invisible');
+
+    run(statusSystem(state, applier), 151);
+
+    expect(ticksOf('status-expired')).toEqual([150]);
   });
 });
 

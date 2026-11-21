@@ -5,6 +5,8 @@ import { Deploying } from '../components/Deploying';
 import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
+import { StatusEffects } from '../components/StatusEffects';
+import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
@@ -191,6 +193,28 @@ describe('EntityStore', () => {
     expect(store.teamOf('dummy')).toBeUndefined();
     expect(store.isAlive('dummy')).toBe(false);
     expect(store.isAlive('nobody')).toBe(false);
+  });
+
+  it('reads an entity as targetable while it is alive and no status makes it untargetable (Veil, DEC-266)', () => {
+    const store = storeWith('dummy');
+    const minion = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30)).create(
+      'light-mob',
+      'light-minion',
+      { team: 'dark', position: { x: 0, y: 0 } },
+    );
+    store.add(minion);
+    const statuses = minion.getComponent(StatusEffects);
+
+    expect(store.isTargetable(minion.id)).toBe(true);
+    statuses.apply(loadStatusEffects(30, 2).get('invisible'), null, 0);
+    expect(store.isTargetable(minion.id)).toBe(false);
+    expect(store.isAlive(minion.id)).toBe(true);
+    statuses.remove('invisible');
+    expect(store.isTargetable(minion.id)).toBe(true);
+    minion.getComponent(Health).applyDamage(1e6);
+    expect(store.isTargetable(minion.id)).toBe(false);
+    expect(store.isTargetable('dummy')).toBe(false);
+    expect(store.isTargetable('nobody')).toBe(false);
   });
 
   it("reads, sets and clears an entity's attack target", () => {

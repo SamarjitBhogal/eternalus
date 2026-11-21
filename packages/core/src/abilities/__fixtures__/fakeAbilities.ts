@@ -2,6 +2,7 @@ import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { ContentCatalogue } from '../../content/ContentCatalogue';
 import { loadAbilities } from '../../content/abilities/loadAbilities';
 import { loadKnockback } from '../../content/abilities/loadKnockback';
+import { createDefaultAbilityRegistry } from '../defaultAbilityRegistry';
 import type { AbilityEffect } from '../AbilityEffect.types';
 import { AbilityRegistry } from '../AbilityRegistry';
 import { KnockbackEffect } from '../effects/KnockbackEffect';
@@ -63,6 +64,22 @@ const MIN_LEVEL_5 = { kind: 'min-level', level: 5 } as const;
 /** A strike only a level-5 caster may cast. */
 const FAKE_GATED = fakeAbility({ id: 'fake-gated', restrictions: [MIN_LEVEL_5] });
 
+/**
+ * An ability in a kit that is not built yet (S1): no targeting and no effects, so it is
+ * unavailable. A fake, so the tests do not break each time a shipped ability gets built.
+ */
+const FAKE_UNBUILT = fakeAbility({ id: 'fake-unbuilt', targeting: null, effects: [] });
+
+/**
+ * The default registry over the shipped abilities plus `FAKE_UNBUILT`, at `tickRate`: a whole
+ * match whose kits name an unbuilt slot that stays unbuilt as the shipped abilities get built.
+ */
+export const shippedRegistryWithUnbuilt = (tickRate = createDefaultGameConfig().tickRate) =>
+  createDefaultAbilityRegistry(
+    new ContentCatalogue([...loadAbilities(tickRate).all(), FAKE_UNBUILT]),
+    tickRate,
+  );
+
 /** The shipped abilities (at 30 ticks per second) plus the fakes above. */
 export const ABILITIES_WITH_FAKES = new ContentCatalogue<ComposableAbility>([
   ...loadAbilities(30).all(),
@@ -70,6 +87,7 @@ export const ABILITIES_WITH_FAKES = new ContentCatalogue<ComposableAbility>([
   FAKE_DASH,
   FAKE_ULTIMATE,
   FAKE_GATED,
+  FAKE_UNBUILT,
 ]);
 
 /**

@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import { Health } from '../../components/Health';
+import { StatusEffects } from '../../components/StatusEffects';
 import { Transform } from '../../components/Transform';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { loadDefaultContent } from '../../content/loadDefaultContent';
+import { loadStatusEffects } from '../../content/status-effects/loadStatusEffects';
 import { createDefaultEntityRegistry } from '../../entities/defaultEntityRegistry';
 import { EntityFactory } from '../../entities/EntityFactory';
 import { SpaceIndex } from '../../physics/SpaceIndex';
@@ -76,6 +78,20 @@ describe('Perception', () => {
     // A neutral querier never sees another neutral unit as hostile.
     const asCamp = { hostileTo: 'neutral', neutralAttackersOf: camp.id } as const;
     expect(perception.unitsWithin(center, 5, asCamp)).toEqual([self.id, ally.id]);
+  });
+
+  it('leaves an untargetable (Veiled) unit out of a hostile query only (DEC-266)', () => {
+    const { state, add, index } = setUp();
+    const veiled = add('dark', 11);
+    const seen = add('dark', 12);
+    veiled.getComponent(StatusEffects).apply(loadStatusEffects(30, 2).get('invisible'), null, state.tick);
+    index();
+    const perception = new Perception(state);
+    const center = { x: 10, y: 10 };
+
+    expect(perception.unitsWithin(center, 5, { hostileTo: 'light' })).toEqual([seen.id]);
+    expect(perception.nearest(center, 5, { hostileTo: 'light' })).toBe(seen.id);
+    expect(perception.unitsWithin(center, 5, { aliveOnly: true })).toEqual([veiled.id, seen.id]);
   });
 
   it('returns ids in string order, and breaks a nearest tie toward the lower id', () => {

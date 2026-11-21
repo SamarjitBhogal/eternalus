@@ -7,8 +7,13 @@ export type StatusStat = 'moveSpeed' | 'attackSpeed' | 'damageDealt' | 'damageTa
  * A yes/no rule a status imposes. `cannot-cast` waits for `AbilitySystem` (phase 4);
  * `cannot-move` and `cannot-attack` are read by `MovementSystem` and `CombatSystem`;
  * `control-immune` is read by `StatusEffectApplier`, which then refuses hard control.
+ * `untargetable` keeps enemies from picking the holder as a target (`EntityStore.isTargetable`:
+ * bots, guards, minions and camp mobs, attack commands; Veil, DEC-266); an area still hits it.
+ * `hidden` keeps the holder off its enemies' screens and minimap (`EntitySnapshot.isHidden`);
+ * its own side sees it faded (DEC-266).
  */
-export type StatusFlag = 'cannot-move' | 'cannot-attack' | 'cannot-cast' | 'control-immune';
+export type StatusFlag =
+  'cannot-move' | 'cannot-attack' | 'cannot-cast' | 'control-immune' | 'untargetable' | 'hidden';
 
 /** Whether a status helps, hurts or transforms its target (architecture 05 section 8). */
 type StatusPolarity = 'buff' | 'debuff' | 'form';
@@ -72,6 +77,12 @@ type StatusEffectBase = {
    * while it lasts (Fury's dash, DEC-270); absent = none.
    */
   readonly grants?: string;
+  /**
+   * Whether the status ends when its holder deals or takes damage (Veil, DEC-267): any
+   * `damage-applied` that names the holder as target or attacker, bleed ticks included.
+   * `StatusEffectSystem` removes it in its next pass; absent = it does not.
+   */
+  readonly endsOnDamage?: boolean;
 };
 
 /**

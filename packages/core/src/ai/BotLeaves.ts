@@ -53,7 +53,7 @@ export class BotLeaves {
     if (position === undefined || !isPlayableTeam(team)) {
       return null;
     }
-    const memory = BotLeaves.read(brain.memory);
+    const memory = BotLeaves.read(brain.memory, (id) => state.entities.isTargetable(id));
     return {
       state,
       id: entityId,
@@ -285,12 +285,19 @@ export class BotLeaves {
     return scorer;
   }
 
-  /** A bot's memory from its brain; anything it does not hold reads as a fresh bot's. */
-  private static read(memory: AiMemory): BotMemory {
+  /**
+   * A bot's memory from its brain; anything it does not hold reads as a fresh bot's. A target it
+   * may no longer pick (dead, removed or Veiled, DEC-266) reads as none: `CombatSystem` has dropped
+   * it, so a later fight with it sends a new `attack-target`.
+   */
+  private static read(memory: AiMemory, isTargetable: (id: EntityId) => boolean): BotMemory {
     return {
       lane: typeof memory.lane === 'string' ? memory.lane : '',
       isRetreating: memory.isRetreating === true,
-      targetId: typeof memory.targetId === 'string' ? memory.targetId : null,
+      targetId:
+        typeof memory.targetId === 'string' && isTargetable(memory.targetId)
+          ? memory.targetId
+          : null,
       nextCastTick: typeof memory.nextCastTick === 'number' ? memory.nextCastTick : 0,
       isHalted: memory.isHalted === true,
     };

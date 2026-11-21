@@ -1,7 +1,9 @@
 import type { AuthoredAbility } from './AbilityDefinition.types';
 
 /**
- * Veil: in the Vanguard's kit, not built yet (`effects: []`, so it cannot be cast). Cost and cooldown: balancing.md:180.
+ * Veil: the Vanguard turns invisible. Casting it puts the `invisible` status on the caster, which
+ * holds every effect (untargetable, hidden, ended by damage; DEC-266, DEC-267). Cost and
+ * cooldown: balancing.md:180.
  */
 export const VEIL = {
   id: 'veil',
@@ -11,8 +13,8 @@ export const VEIL = {
   slot: 'ability',
   cooldownSeconds: 20, // TUNE: balancing.md:180
   aetherCost: 40, // TUNE: balancing.md:180
-  targeting: null,
-  effects: [],
+  targeting: { kind: 'self' },
+  effects: [{ kind: 'buff', statusId: 'invisible' }],
   restrictions: [],
   scaling: {},
 } as const satisfies AuthoredAbility;

@@ -23,6 +23,12 @@ export class StatusEffectRuntime {
   /** Ticks between periodic ticks; `null` when not periodic. */
   public periodTicks: number | null = null;
 
+  /**
+   * Whether its holder dealt or took damage while it was on, for a status that `endsOnDamage`
+   * (DEC-267): `StatusEffectSystem` then removes it. An application after the damage clears it.
+   */
+  public isBroken = false;
+
   /** @param definition - The status this is an instance of; `start` sets it again on reuse. */
   public constructor(public definition: StatusEffectDefinition) {}
 
@@ -41,6 +47,7 @@ export class StatusEffectRuntime {
     this.definition = definition;
     this.sourceId = sourceId;
     this.stacks = 1;
+    this.isBroken = false;
     this.periodAnchorTick = tick;
     this.periodTicks = definition.periodic?.everyTicks ?? null;
     this.expiresTick = this.expiryOf(tick, durationTicks);
@@ -51,11 +58,13 @@ export class StatusEffectRuntime {
    * The same status applied again while active: the one switch over stacking modes. The timer
    * runs to the later of its current expiry and this application's (`durationTicks`, else the
    * definition's), so a reapplication never shortens the time left: a 0.5 s stun on a target with
-   * 2 s of stun left leaves 2 s, on one with 0.2 s left gives 0.5 s.
+   * 2 s of stun left leaves 2 s, on one with 0.2 s left gives 0.5 s. It comes after any damage
+   * that broke the status, so it clears `isBroken`.
    */
   public reapply(sourceId: string | null, tick: number, durationTicks?: number): void {
     const { stacking, maxStacks } = this.definition;
     this.sourceId = sourceId;
+    this.isBroken = false;
     switch (stacking) {
       case 'refresh':
         break;

@@ -3,7 +3,10 @@ import type { Team } from '../../teams/teams.types';
 
 /** Which units a perception query keeps (architecture 11 §3). Every field narrows. */
 export type UnitFilter = {
-  /** Keep only units on a team other than this one and not neutral. */
+  /**
+   * Keep only units on a team other than this one and not neutral, that it may pick as a target
+   * (`EntityStore.isTargetable`: a Veiled enemy is left out, DEC-266).
+   */
   readonly hostileTo?: Team;
   /**
    * With `hostileTo`, also keep a neutral unit whose attack target is this unit, so it fights back

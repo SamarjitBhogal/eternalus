@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { unitsWithWarriorKit } from './abilities/__fixtures__/casterState';
+import { shippedRegistryWithUnbuilt } from './abilities/__fixtures__/fakeAbilities';
 import { Footprint } from './components/Footprint';
 import { Health } from './components/Health';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
@@ -27,6 +29,11 @@ const laners = (team: 'light' | 'dark', count: number): RosterSlot[] =>
     difficulty: NORMAL_BOT.id,
   }));
 
+/**
+ * The bots carry Blade Runner and Fury, the abilities built when this match was set up; the other
+ * two slots stay unbuilt, so building more abilities (Veil, DEC-266: bots then cast it and the
+ * lane fights change) does not change which fights this seed plays.
+ */
 const match = () =>
   new Simulation({
     config: CONFIG,
@@ -35,6 +42,11 @@ const match = () =>
     debug: TEST_DEBUG_CONFIG,
     map: TWO_LANE_MAP,
     roster: [...laners('light', 4), ...laners('dark', 4)],
+    content: unitsWithWarriorKit({
+      abilities: ['blade-runner', 'fake-unbuilt', 'fake-unbuilt'],
+      ultimate: 'fury',
+    }),
+    abilities: shippedRegistryWithUnbuilt(TICK_RATE),
   });
 
 describe('Simulation with out-of-combat healing (DEC-188)', () => {

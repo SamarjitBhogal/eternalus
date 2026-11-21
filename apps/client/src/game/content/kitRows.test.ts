@@ -46,7 +46,18 @@ describe('kitRows', () => {
   });
 
   it('marks an ability with no effects as not available', () => {
-    expect(rows[1]).toMatchObject({ abilityId: 'veil', isAvailable: false });
+    const [shipped] = CONTENT.abilities;
+    if (shipped === undefined) throw new Error('no abilities');
+    const unbuilt = { ...shipped, id: 'fake-unbuilt', isAvailable: false };
+    const kit = {
+      abilities: ['blade-runner', 'fake-unbuilt', 'hamstring'],
+      ultimate: 'fury',
+    } as const;
+
+    expect(kitRows(kit, [...CONTENT.abilities, unbuilt])[1]).toMatchObject({
+      abilityId: 'fake-unbuilt',
+      isAvailable: false,
+    });
   });
 
   it('shows the ultimate as charge-based, never as 0 aether or a 0 s cooldown', () => {

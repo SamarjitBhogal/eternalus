@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest';
 
 import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
+import { StatusEffects } from '../components/StatusEffects';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { RETREAT_STRUCTURES } from '../content/ai/botLaner';
 import { BOT_DIFFICULTIES } from '../content/ai/difficulties/botDifficulties';
 import { NORMAL_BOT } from '../content/ai/difficulties/normal';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import type { MapDefinition } from '../content/maps/maps.types';
 import { loadWeapons } from '../content/weapons/loadWeapons';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
@@ -155,10 +157,11 @@ const setUp = (
 
 describe('BotLegendController (laner tree, 11 §4.2)', () => {
   it('Survive: below the retreat line it drops its target and heads for the nearest allied tower', () => {
-    const { bot, decide, hurt } = setUp({ x: 80, y: 20 });
+    const { bot, add, decide, hurt } = setUp({ x: 80, y: 20 });
+    const enemy = add('dark', 120);
     hurt(1 - NORMAL_BOT.retreatHealthFraction + 0.05);
 
-    const decision = decide({ lane: 'lane-0', targetId: 'entity-9' });
+    const decision = decide({ lane: 'lane-0', targetId: enemy });
 
     // The light SpawnerTower on lane-0 stands at (60, 20).
     expect(decision.commands).toEqual([
@@ -220,6 +223,23 @@ describe('BotLegendController (laner tree, 11 §4.2)', () => {
     expect(decide({ lane: 'lane-0', targetId: near }, 'never-casts').commands).toEqual([
       { type: 'move', actorId: bot, direction: { x: 0, y: 0 } },
     ]);
+  });
+
+  it('Fight: forgets a remembered target that turned untargetable (Veil, DEC-266), so it attacks it anew once seen', () => {
+    const { state, bot, add, decide } = setUp();
+    const enemy = add('dark', 64);
+    const statuses = state.entities.get(enemy)?.getComponent(StatusEffects);
+    statuses?.apply(loadStatusEffects(30, 2).get('invisible'), null, state.tick);
+
+    const veiled = decide({ lane: 'lane-0', targetId: enemy }, 'never-casts');
+    expect(veiled.memory).toMatchObject({ targetId: null });
+
+    statuses?.remove('invisible');
+    expect(decide(veiled.memory, 'never-casts').commands).toContainEqual({
+      type: 'attack-target',
+      actorId: bot,
+      targetId: enemy,
+    });
   });
 
   it('holds still in reach, or at its destination, without re-sending an idle move every decision (B66-F2)', () => {

@@ -29,6 +29,7 @@ describe('createDefaultAbilityRegistry', () => {
 
     expect(abilities.ids.filter((id) => registry.resolve(id).isAvailable)).toEqual([
       'blade-runner',
+      'veil',
       'fury',
       'fury-dash',
       'slam',

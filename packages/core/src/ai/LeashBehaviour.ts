@@ -25,8 +25,9 @@ import { countdownTicks } from '../config/countdownTicks';
  * while the target attacks it: back inside, the target is fought on, else the leash breaks: the
  * mob emits one `stop` and rests again (with no target, its movement walks it back to its slot or
  * post), and for `aggroCooldownTicks` it leaves alone the enemy that escaped (DEC-144 F) unless
- * that enemy attacks the mob or a mate while inside the old anchor's leash (DEC-160). A dead
- * target with no enemy left in reach leaves it resting, with no cooldown. It never takes a
+ * that enemy attacks the mob or a mate while inside the old anchor's leash (DEC-160). A dead or
+ * untargetable (Veiled, DEC-266) target with no enemy left in reach leaves it resting, with no
+ * cooldown. It never takes a
  * candidate outside its leash, and `objective` ignores the leash, since a structure cannot drag a
  * mob away. During a ghosted first wave
  * (`ghostFirstWaveTicks`, 11 §4.3) Legends are never candidates. Controllers supply only what
@@ -115,8 +116,8 @@ export class LeashBehaviour {
   ): LeashStep<Idle> {
     const { state, id, rule } = situation;
     const { targetId, breakAtTick } = memory;
-    const isAlive = targetId !== null && state.entities.isAlive(targetId);
-    if (isAlive && this.isInside(situation, memory, rules, targetId)) {
+    const isTargetable = targetId !== null && state.entities.isTargetable(targetId);
+    if (isTargetable && this.isInside(situation, memory, rules, targetId)) {
       const best = this.acquire(situation, memory, rules, null);
       if (best !== null && best.rank < this.rankOf(situation, targetId)) {
         return this.attack(situation, memory, best.id);
@@ -128,7 +129,7 @@ export class LeashBehaviour {
       return this.attack(situation, memory, best.id);
     }
     const stop = [{ type: 'stop', actorId: id }] as const;
-    if (!isAlive) {
+    if (!isTargetable) {
       return {
         memory: { ...memory, fsm: rules.idle, targetId: null, breakAtTick: 0 },
         commands: stop,

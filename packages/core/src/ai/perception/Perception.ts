@@ -82,6 +82,7 @@ export class Perception {
       (hostileTo === undefined ||
         (team !== undefined &&
           team !== hostileTo &&
+          entities.isTargetable(id) &&
           (team !== 'neutral' ||
             (neutralAttackersOf !== undefined &&
               entities.attackTargetOf(id) === neutralAttackersOf)))) &&

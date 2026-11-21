@@ -6,9 +6,8 @@ import { ABILITIES } from './abilityCatalogue';
 import type { AuthoredAbility, AuthoredEffectSpec } from './AbilityDefinition.types';
 import { loadAbilities } from './loadAbilities';
 
-/** Cost and cooldown of the eight abilities with no effects yet: balancing.md "Aether costs and cooldowns" (0 / 0 for an ultimate: the meter gates it). */
+/** Cost and cooldown of the seven abilities with no effects yet: balancing.md "Aether costs and cooldowns" (0 / 0 for an ultimate: the meter gates it). */
 const UNBUILT = {
-  veil: { cooldownSeconds: 20, aetherCost: 40, slot: 'ability' },
   hamstring: { cooldownSeconds: 9, aetherCost: 25, slot: 'ability' },
   'rip-and-tear': { cooldownSeconds: 10, aetherCost: 30, slot: 'ability' },
   'shield-wall': { cooldownSeconds: 18, aetherCost: 40, slot: 'ability' },
@@ -73,6 +72,17 @@ describe('ABILITIES', () => {
     });
   });
 
+  it('gives Veil its self-cast invisible buff, 40 aether and 20 s (balancing.md:180, DEC-266)', () => {
+    expect(ABILITIES.get('veil')).toMatchObject({
+      classId: 'warrior',
+      slot: 'ability',
+      cooldownSeconds: 20,
+      aetherCost: 40,
+      targeting: { kind: 'self' },
+      effects: [{ kind: 'buff', statusId: 'invisible' }],
+    });
+  });
+
   it('gives Slam its area damage, knock-up and 2.0 structure multiplier (balancing.md:185, :123)', () => {
     expect(ABILITIES.get('slam')).toMatchObject({
       classId: 'sentinel',
@@ -119,7 +129,7 @@ describe('ABILITIES', () => {
     expect(['blade-runner', 'slam', 'shockwave'].map(structureMultiplierOf)).toEqual([0.3, 2, 1]);
   });
 
-  it('prices the eight abilities not built yet from balancing.md and gives them no effects', () => {
+  it('prices the seven abilities not built yet from balancing.md and gives them no effects', () => {
     const unbuilt = ABILITIES.all().filter((ability) => ability.effects.length === 0);
 
     expect(unbuilt.map((ability) => ability.id)).toEqual(Object.keys(UNBUILT));

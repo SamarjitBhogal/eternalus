@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import { Health } from '../components/Health';
+import { StatusEffects } from '../components/StatusEffects';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { LANE_MINION_AGGRO } from '../content/ai/aggro/laneMinion';
+import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { engagingOn, setUp } from './__fixtures__/minionControllerSetup';
 import { MINION_STATES } from './MinionController.constants';
 import { LeashBehaviour } from './LeashBehaviour';
@@ -358,6 +360,19 @@ describe('LeashBehaviour', () => {
     expect(decide(self, rested.memory).commands).toEqual([
       { type: 'attack-target', actorId: self, targetId: arrival },
     ]);
+  });
+
+  it('engaging: rests with no cooldown when its target turns untargetable (Veil, DEC-266)', () => {
+    const { state, add, decide } = setUp();
+    const self = add('light', 50);
+    const target = add('dark', 52);
+    const veil = loadStatusEffects(tickRate, 2).get('invisible');
+    state.entities.get(target)?.getComponent(StatusEffects).apply(veil, null, state.tick);
+
+    expect(decide(self, engagingOn(target))).toMatchObject({
+      commands: [{ type: 'stop', actorId: self }],
+      memory: { fsm: 'marching', targetId: null, cooldownUntilTick: 0 },
+    });
   });
 
   it('engaging: when its target dies far from where it took it, takes the next enemy in reach here', () => {

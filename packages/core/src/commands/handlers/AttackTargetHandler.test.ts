@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 
 import { Combat } from '../../components/Combat';
 import { Health } from '../../components/Health';
+import { StatusEffects } from '../../components/StatusEffects';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { loadDefaultContent } from '../../content/loadDefaultContent';
+import { loadStatusEffects } from '../../content/status-effects/loadStatusEffects';
 import { createDefaultEntityRegistry } from '../../entities/defaultEntityRegistry';
 import { EntityFactory } from '../../entities/EntityFactory';
 import { GameState } from '../../state/GameState';
@@ -42,6 +44,17 @@ describe('AttackTargetHandler', () => {
 
     expect(handle(warrior.id, enemy.id)).toBeNull();
     expect(warrior.getComponent(Combat).targetId).toBe(enemy.id);
+  });
+
+  it('rejects an untargetable (Veiled) enemy as invalid-target (DEC-266)', () => {
+    const { spawn, handle } = setUp();
+    const warrior = spawn('warrior', 'warrior', 'light');
+    const enemy = spawn('light-mob', 'training-dummy', 'dark');
+    const veil = loadStatusEffects(CONFIG.tickRate, 2).get('invisible');
+    enemy.getComponent(StatusEffects).apply(veil, null, 0);
+
+    expect(handle(warrior.id, enemy.id)).toBe('invalid-target');
+    expect(warrior.getComponent(Combat).targetId).toBeNull();
   });
 
   it.each([

@@ -7,6 +7,7 @@ import { Deploying } from '../components/Deploying';
 import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
 import { MapObjectBody } from '../components/MapObjectBody';
+import { StatusEffects } from '../components/StatusEffects';
 import { Movement } from '../components/Movement';
 import { Transform } from '../components/Transform';
 import { TeamMembership } from '../components/TeamMembership';
@@ -267,6 +268,19 @@ export class EntityStore {
   /** Whether the entity exists and has health left (`false` for anything without `Health`). */
   public isAlive(id: EntityId): boolean {
     return this.entities.get(id)?.findComponent(Health)?.isDead === false;
+  }
+
+  /**
+   * Whether an enemy may pick the entity as a target: it is alive and no status makes it
+   * `untargetable` (Veil, DEC-266). The one rule for every picker: perception's hostile queries,
+   * the leashed mobs' memory, `CombatSystem` (which drops such a target) and `attack-target`. An
+   * area still hits an untargetable entity; it only cannot be chosen.
+   */
+  public isTargetable(id: EntityId): boolean {
+    return (
+      this.isAlive(id) &&
+      this.entities.get(id)?.findComponent(StatusEffects)?.has('untargetable') !== true
+    );
   }
 
   /**

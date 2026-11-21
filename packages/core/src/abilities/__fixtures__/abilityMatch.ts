@@ -1,3 +1,4 @@
+import type { AbilityRegistry } from '../AbilityRegistry';
 import type { AbilitySlot } from '../../content/abilities/AbilityDefinition.types';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import type { MapObject } from '../../content/maps/mapObjects.types';
@@ -26,18 +27,21 @@ export type ScenarioSpawn = {
  * past (DEC-88 holds every unit idle until it ends), and a log of what the cast path and the
  * statuses announced. Each log line starts with its tick counted from the end of the countdown:
  * the first step after it is tick 1. Invariants run as in a release build unless `debug` is given
- * (`TEST_DEBUG_CONFIG` checks every invariant each tick and throws).
+ * (`TEST_DEBUG_CONFIG` checks every invariant each tick and throws). `abilities` replaces the
+ * shipped registry (a fake beside the shipped abilities).
  */
 export const abilityMatch = (
   spawns: readonly ScenarioSpawn[],
   {
     seed = 1,
     content,
+    abilities,
     world,
     debug,
   }: {
     readonly seed?: number;
     readonly content?: DefinitionSource;
+    readonly abilities?: AbilityRegistry;
     readonly world?: { readonly map: MapDefinition; readonly mapObjects: readonly MapObject[] };
     readonly debug?: DebugConfig;
   } = {},
@@ -47,6 +51,7 @@ export const abilityMatch = (
     seed,
     logger: new NullLogger(),
     ...(content === undefined ? {} : { content }),
+    ...(abilities === undefined ? {} : { abilities }),
     ...(debug === undefined ? {} : { debug }),
     ...world,
   });

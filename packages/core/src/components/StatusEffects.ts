@@ -85,6 +85,22 @@ export class StatusEffects {
     }
   }
 
+  /**
+   * Marks every active status that `endsOnDamage` as broken (its holder dealt or took damage,
+   * DEC-267) and returns whether any was. Removes nothing, so it is safe inside a loop over
+   * `active`; `StatusEffectApplier.removeBroken` removes them.
+   */
+  public breakOnDamage(): boolean {
+    let hasBroken = false;
+    for (const status of this.activeList) {
+      if (status.definition.endsOnDamage === true) {
+        status.isBroken = true;
+        hasBroken = true;
+      }
+    }
+    return hasBroken;
+  }
+
   /** What `stat` is multiplied by: 1 with no modifier on it. */
   public multiplier(stat: StatusStat): number {
     return this.multipliers.get(stat) ?? 1;
