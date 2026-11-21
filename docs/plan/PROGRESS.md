@@ -9282,3 +9282,30 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   (84)", "Documentation check passed."; then `prettier --check` and `npm run docs:check` with this
   entry. Critic (architecture-reviewer): PASS WITH NOTES, no violations, four nits not applied.
 - Next step: `/ponytail-review`, then push and open the PR into phase/3.
+
+### 2026-11-15 — Phase 3 / bug tracker — docs/bug-citadel-side-entrances — SamarjitBhogal + Claude Code
+
+- What was done: logged BUG-8 as Task SCRUM-443 under SCRUM-433 (label `bug`, screenshot
+  attached): units spawned inside the Citadel cannot reach its side gates and walk into walls
+  until they find the middle exit. Cause not confirmed: the palace walls leave a gap toward each
+  gate. The row names the related plan item, M4 Flow fields (Stronghold-to-gate ground).
+- Pre-PR gate: critic (`architecture-reviewer`) request-changes, no blockers; its three
+  should-fix rows (last-reviewed bump, M4 wording, this checks line) and one nit applied.
+  Ponytail: nothing to cut (one table row).
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code
+  style!"; "Tests 1582 passed (1582)"; client "Tests 1979 passed (1979)"; "✓ built in 350ms";
+  "Documentation check passed." Under Node 22 the client test `WebSocketTransport` fails on
+  `CloseEvent is not defined` (outside this diff; the repo requires Node 24).
+- Next step: assign SCRUM-443; find the blocker between the palace and the side gates.
+
+### 2026-11-20 — Phase 3 / bug tracker — docs/bug-citadel-side-entrances (PR #128 review round) — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (`5a7cc8dc`) into the branch; the only conflict
+  was this file (both sides appended, kept both, the phase entries first). Applied the review nit
+  from claudiodh and swholtzman: the BUG-8 row now says the wall-gap test covers the palace oval
+  only (`MapPalaceWallsBuilder.test.ts` probes `floorRadiusX/Y`, not the outer oval).
+- Checks run: `npm run check` (Node 24.21.0) on the merge → `EXIT=0`: "All matched files use
+  Prettier code style!"; core "Tests 1674 passed (1674)"; protocol "Tests 29 passed (29)";
+  client "Tests 2011 passed (2011)"; server "Tests 84 passed (84)"; "✓ built in 377ms";
+  "Documentation check passed."
+- Next step: re-request review on PR #128.
