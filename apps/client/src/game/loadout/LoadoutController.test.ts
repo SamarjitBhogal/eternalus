@@ -109,6 +109,22 @@ describe('LoadoutController', () => {
     expect(fake.saved).toEqual([warriorWith('wuuthrad')]);
   });
 
+  it('answers the saved loadout of a class, or null when none is saved', async () => {
+    const { bus, controller } = await started(fakeStore());
+    expect(controller.loadoutOf('warrior')).toBeNull();
+
+    bus.emit('ui-intent', {
+      kind: 'save-loadout',
+      classId: 'warrior',
+      primaryWeaponId: 'wuuthrad',
+    });
+
+    expect(controller.loadoutOf('warrior')).toEqual({
+      classId: 'warrior',
+      primaryWeaponId: 'wuuthrad',
+    });
+  });
+
   it('refuses a weapon the class does not offer: nothing is published or saved', async () => {
     const fake = fakeStore();
     const { bus, published, logger } = await started(fake);

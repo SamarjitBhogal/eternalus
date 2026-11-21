@@ -1,4 +1,4 @@
-import type { BotRole, BotRosterDefinition, RosterSlot } from '@eternalus/core';
+import type { BotRole, BotRosterDefinition, Loadout, RosterSlot } from '@eternalus/core';
 
 import type { FilledRosters } from '../../bridge/events';
 
@@ -9,18 +9,29 @@ import type { FilledRosters } from '../../bridge/events';
  * controller (DISC-51: the human player is their team's Rover); every other entry is a `bot` slot
  * whose `BotRole` picks its difficulty from the roster's `difficulties` (core
  * `content/teams/botRoster.ts`, DEC-149, DEC-151). A Rover takes no lane. `difficulties` is the
- * injected catalogue's roster difficulties, the one source (rule 11).
+ * injected catalogue's roster difficulties, the one source (rule 11). The human slot carries
+ * `playerLoadout`, the player's saved loadout (reference 08), when it is for the player's class;
+ * otherwise core spawns the class default.
  */
 export function rosterSlots(
   rosters: FilledRosters,
   difficulties: BotRosterDefinition['difficulties'],
+  playerLoadout: Loadout | null = null,
 ): readonly RosterSlot[] {
   return [...rosters.allies, ...rosters.enemies].map(
     ({ team, classId, isPlayer, isRover }): RosterSlot => {
       const role: BotRole = isRover ? 'rover' : 'laner';
-      return isPlayer
-        ? { pilot: 'human', team, definitionId: classId, role }
-        : { pilot: 'bot', team, definitionId: classId, role, difficulty: difficulties[role] };
+      if (isPlayer) {
+        const isForClass = playerLoadout !== null && playerLoadout.classId === classId;
+        return {
+          pilot: 'human',
+          team,
+          definitionId: classId,
+          role,
+          ...(isForClass && { loadout: playerLoadout }),
+        };
+      }
+      return { pilot: 'bot', team, definitionId: classId, role, difficulty: difficulties[role] };
     },
   );
 }

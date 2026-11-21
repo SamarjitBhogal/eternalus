@@ -1,4 +1,4 @@
-import { makeLogRecord } from '@eternalus/core';
+import { type Loadout, makeLogRecord } from '@eternalus/core';
 
 import type { UiIntent } from '../../bridge/events';
 import type { LoadoutsSliceState } from '../../bridge/slices/loadoutsSlice';
@@ -39,6 +39,15 @@ export class LoadoutController {
     }
     this.publish({ options: this.deps.options, saved, repaired });
     this.stopListening = this.deps.bus.on('ui-intent', this.onIntent);
+  }
+
+  /**
+   * The loadout saved for `classId` (already repaired), or `null` when none is saved: the match
+   * then spawns the class default. `SessionController` reads it when it builds a match.
+   */
+  public loadoutOf(classId: string): Loadout | null {
+    const primaryWeaponId = this.state.saved[classId];
+    return primaryWeaponId === undefined ? null : { classId, primaryWeaponId };
   }
 
   /** Stops handling intents. */

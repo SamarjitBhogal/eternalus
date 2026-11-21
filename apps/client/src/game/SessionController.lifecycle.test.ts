@@ -163,6 +163,26 @@ describe('SessionController match lifetime', () => {
     expect(passed).toBe(attached);
   });
 
+  it("gives the human slot the player's saved loadout for the class they locked in (SCRUM-31)", async () => {
+    const asked: string[] = [];
+    const session = setUp({
+      playerLoadout: (classId) => {
+        asked.push(classId);
+        return { classId, primaryWeaponId: 'wuuthrad' };
+      },
+    });
+    await session.toMatch();
+
+    session.controller.attachViewport(viewport());
+
+    const [request] = session.createMatch.mock.calls[0] ?? [];
+    expect(asked).toEqual(['magus']);
+    expect(request?.roster.find(({ pilot }) => pilot === 'human')).toMatchObject({
+      definitionId: 'magus',
+      loadout: { classId: 'magus', primaryWeaponId: 'wuuthrad' },
+    });
+  });
+
   it("builds the match's roster from the locked rosters and the catalogue's difficulties", async () => {
     const session = setUp();
     await session.toMatch();

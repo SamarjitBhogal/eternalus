@@ -162,6 +162,7 @@ const session = new SessionController({
   catalogue: { load: () => catalogue },
   matchConfig: gameConfig.match,
   playerName: PLACEHOLDER_PLAYER_NAME,
+  playerLoadout: (classId) => loadouts.loadoutOf(classId),
   seedSource: createMatchSeed,
   createRng: (seed) => new LcgRng(seed),
   createRosterRng,
