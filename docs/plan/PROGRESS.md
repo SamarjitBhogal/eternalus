@@ -9438,6 +9438,24 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `prettier --check` and `npm run docs:check` on this file.
 - Next step: the owner pushes the branch (`push-125-r3.sh`), then merges PR #125.
 
+### 2026-11-20 — Phase 3 / tower horde test time limit (DEC-289) — fix/horde-test-timeout — sholtzman + Claude Code
+
+- What was done: the owner's Owner Calls answer of 2026-11-20 ("Raise this one test's cap to
+  120 s and log an INBOX item to make the test faster") is DEC-289. `Simulation.mapObjects.test.ts`
+  gives its tower horde test ("walks every tower horde out of its tower and on up its lane within
+  10 seconds (DEC-133, seed %i)") its own time limit, `HORDE_WALK_TIMEOUT_MS` (120 s); core's
+  `testTimeout` (60 s, `packages/core/vitest.config.ts`) is unchanged. On PR #122 (run
+  44714237495, attempt 1) seed 1 timed out at 60 s on windows-latest. `INBOX.md` has the request
+  "Make the tower horde test faster"; the decisions log has the DEC-289 batch.
+- Checks run: a deliberate break (`HORDE_WALK_TIMEOUT_MS = 100`) made all three seeds fail with
+  "Test timed out in 100ms", so the argument reaches the test; restored to 120 s. Full
+  `npm run check` exit 0 before this entry was added
+  (`eternalus-agent-work/horde-test-timeout/check-1.log`): core "Tests 1674 passed (1674)",
+  protocol "Tests 29 passed (29)", client "Tests 2011 passed (2011)", server "Tests 84 passed
+  (84)", "Documentation check passed."; then `prettier --check` and `npm run docs:check` with this
+  entry. Critic (architecture-reviewer): PASS WITH NOTES, no violations, four nits not applied.
+- Next step: `/ponytail-review`, then push and open the PR into phase/3.
+
 ### 2026-11-20 — Phase 3 / corner camp boss (interim), PR #91 round 3 (SamarjitBhogal) and DEC-296 — feat/bosses-p3 — Aryan + Claude Code
 
 - What was done: merged `origin/phase/3-sprint-3-work` (with #125) into `feat/bosses-p3`;
@@ -9456,3 +9474,19 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: `npm run check:quick` (pre-commit hook); `npx prettier --write` on the changed
   files. npm run check: pending, run by Aryan.
 - Next step: Aryan runs `npm run check`, then pushes.
+
+### 2026-11-20 — Phase 3 / corner camp boss, PR #91 phase merge (#140) — feat/bosses-p3 — Aryan + Claude Code
+
+- What was done: re-read every PR #91 review. All items are addressed at this head except the
+  boss's mass, which keeps its `TUNE` (DEC-296: it follows the HC-S12 (d) row, not yet on
+  phase/3; Aryan's call to leave it). Merged `origin/phase/3-sprint-3-work` (#140, DEC-289) into
+  `feat/bosses-p3`. Conflicts in docs only, both sides kept: the decisions log (both
+  2026-11-20 batches, `last-reviewed` 2026-11-20) and this file (both entries).
+- Checks run: `npm run check` on the merged tree: format, no-js, lint, typecheck and knip passed;
+  tests stopped on 4 timeouts while a second lint run loaded the machine (core
+  "Tests 3 failed | 1680 passed (1683)": `replay.test.ts`, `Simulation.duel.test.ts`,
+  `Simulation.flowFields.test.ts`; client "Tests 1 failed | 2012 passed (2013)":
+  `createBrowserMatch.replay.test.ts`; protocol "Tests 29 passed (29)"). Rerun alone: core
+  "Tests 17 passed (17)", client "Tests 1 passed (1)". Then `npm run build` ("✓ built in
+  4.86s") and `npm run docs:check` ("Documentation check passed.").
+- Next step: Aryan pushes `feat/bosses-p3`; the mass follows HC-S12 (d) once its row reaches phase/3.
