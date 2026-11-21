@@ -97,6 +97,8 @@ export class MapFortificationBuilder extends MapDecorationBuilder {
     );
     this.rect(`${id}-fort-keep-roof`, x - size / 7, y - size / 6, size / 3.5, size / 3, roof);
     this.rect(`${id}-fort-banner`, x - 3, y - 3, 6, 6, accent);
+    // A capture point's banner is its own; a structure's goes with the structure.
+    if (!isCapturePoint) this.flagLastOf(id);
     this.rect(`${id}-fort-gate`, x - size / 12, y + size / 3, size / 6, size / 6, P.shadow);
     if (south) this.rect(`${id}-fort-forge`, x - 5, y + 13, 10, 5, P.lavaLight);
     return this.pieces;

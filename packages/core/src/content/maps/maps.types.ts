@@ -234,6 +234,11 @@ export type MapDecoration = {
   readonly isLaneSurface?: true;
   /** This artwork supplies the main-view drawing of a generated feature, without changing it. */
   readonly replacesFeature?: string;
+  /**
+   * The structure's flag: this piece is drawn only while the structure built from the feature with
+   * this id stands, and goes with it, while the rest of the fort's art stays as its ruins.
+   */
+  readonly flagOf?: string;
 };
 
 /** A selectable same-world building, derived from its interior floor and door polygons. */
