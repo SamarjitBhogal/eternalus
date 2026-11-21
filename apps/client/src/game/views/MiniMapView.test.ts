@@ -371,8 +371,9 @@ describe('MiniMapView unit markers (DEC-187)', () => {
       new StatusCueRegistry(),
       () => false,
       () => null,
+      () => 'shown',
     );
-    units.show(null, snapshot, 0, null, null);
+    units.show(null, snapshot, 0, null);
     const renderer = new RecordingRenderer();
     new MiniMapView(MAP, new SceneView([units]), RING, () => CENTRE).draw(renderer, 1920, 1080);
     const glyphs = renderer.calls.flatMap((call) => (call.op === 'drawGlyph' ? [call.args] : []));

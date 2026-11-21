@@ -3,11 +3,11 @@ import {
   isUnitFamily,
   type Simulation,
   type Snapshot,
-  type Team,
   type Unsubscribe,
 } from '@eternalus/core';
 
 import { isDead } from '../bridge/selectors/isDead';
+import type { Viewer } from './Viewer';
 import type { HealthBarRule } from './views/EntityLayer.types';
 
 /**
@@ -15,8 +15,9 @@ import type { HealthBarRule } from './views/EntityLayer.types';
  * stays hidden from its spawn until it fights: it takes damage, or it deals damage to a living
  * unit (a Legend, mob or boss). A hit on a map object or a structure does not count. From then on
  * the bar shows until the unit dies. Allies and enemies both show one; the player's own Legend
- * does not, because the HUD shows the player's health. The rule reads the simulation's events
- * through `Simulation.on`, as 08 §6 designs `SoundView`. The views get only `healthBarOf`.
+ * does not, because the HUD shows the player's health; the `Viewer` names the player and its team.
+ * The rule reads the simulation's events through `Simulation.on`, as 08 §6 designs `SoundView`.
+ * The views get only `healthBarOf`.
  */
 export class HealthBarVisibility {
   /** The units that fought since their last spawn. */
@@ -25,17 +26,16 @@ export class HealthBarVisibility {
   /** The units of the latest snapshot: a hit on one of them makes its attacker fight. */
   private units: ReadonlySet<EntityId> = new Set();
 
-  private playerId: EntityId | null = null;
-
-  private playerTeam: Team | null = null;
-
   private readonly unsubscribes: readonly Unsubscribe[];
 
   /**
    * Starts listening to `damage-applied` and `entity-removed`; `destroy` stops. A removal (death or
    * any other cause) forgets the unit, after the tick's last hit, so a later unit starts hidden.
    */
-  public constructor(simulation: Pick<Simulation, 'on'>) {
+  public constructor(
+    simulation: Pick<Simulation, 'on'>,
+    private readonly viewer: Viewer,
+  ) {
     this.unsubscribes = [
       simulation.on('damage-applied', ({ targetId, source }) => {
         this.fought.add(targetId);
@@ -48,31 +48,13 @@ export class HealthBarVisibility {
   }
 
   /**
-   * Reads the latest snapshot: which entities are units, and the player. Call it for the first
-   * snapshot and after each step, so the next step's hits see this snapshot's units. The player's
-   * team is kept from the first snapshot that has the player: it never changes, and a dead player
-   * is no longer in the snapshot. `playerId` defaults to the snapshot's human; an online Duel
-   * passes its own Legend from `match-found`, because `match.humanLegendId` is only the
-   * `playerTeam` seat there (ADR 0016).
+   * Reads which entities of the latest snapshot are units. Call it for the first snapshot and
+   * after each step, so the next step's hits see this snapshot's units.
    */
-  public observe(
-    snapshot: Snapshot,
-    playerId: EntityId | null = snapshot.match.humanLegendId,
-  ): void {
+  public observe(snapshot: Snapshot): void {
     this.units = new Set(
       snapshot.entities.filter((entity) => isUnitFamily(entity.family)).map(({ id }) => id),
     );
-    this.playerId = playerId;
-    this.playerTeam ??= snapshot.entities.find(({ id }) => id === this.playerId)?.team ?? null;
-  }
-
-  /**
-   * The player's team, the side whose units are allies here; kept after the player dies (see
-   * `observe`). `null` with no player (sim mode). `EntityLayer` draws a hidden unit of this team
-   * faded and leaves out every other hidden unit (DEC-266).
-   */
-  public get viewerTeam(): Team | null {
-    return this.playerTeam;
   }
 
   /**
@@ -83,12 +65,12 @@ export class HealthBarVisibility {
     const isShown =
       this.fought.has(entity.id) &&
       isUnitFamily(entity.family) &&
-      entity.id !== this.playerId &&
+      entity.id !== this.viewer.playerId &&
       !isDead(entity.health);
     if (!isShown) {
       return null;
     }
-    return entity.team === this.playerTeam ? 'ally' : 'enemy';
+    return entity.team === this.viewer.team ? 'ally' : 'enemy';
   };
 
   /** Stops listening, so a finished match leaves no listener behind (13 §2). */

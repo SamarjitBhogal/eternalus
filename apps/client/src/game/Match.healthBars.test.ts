@@ -138,7 +138,7 @@ const withOthersHidden = (simulation: Simulation): MatchSimulation => ({
   on: (type, handler) => simulation.on(type, handler),
 });
 
-describe('Match hidden units: the viewer team the health bar rule keeps (DEC-266)', () => {
+describe('Match hidden units: the viewer decides what a hidden unit shows (DEC-266)', () => {
   it("fades the player's hidden ally and leaves the hidden enemy out", () => {
     const { match, simulation, renderer } = setUp(withOthersHidden);
     const at = match.snapshot.entities.find(({ id }) => id === match.playerEntityId)?.transform;
@@ -159,8 +159,8 @@ describe('Match hidden units: the viewer team the health bar rule keeps (DEC-266
 
     match.render(0);
 
-    // One faded body: the light ally's. The dark one is not drawn at all.
-    expect(renderer.calls.filter(({ op }) => op === 'withOpacity')).toHaveLength(1);
+    // The light ally fades, body and mini map dot (no cue, no bar yet); the dark one is not drawn.
+    expect(renderer.calls.filter(({ op }) => op === 'withOpacity')).toHaveLength(2);
     match.destroy();
   });
 });

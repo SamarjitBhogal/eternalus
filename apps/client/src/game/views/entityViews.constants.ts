@@ -11,12 +11,6 @@ export const FOCUS_RING_COLOR = '#ffe066';
 /** How much wider than the entity the focus ring is. */
 export const FOCUS_RING_SCALE = 1.8;
 
-/**
- * How opaque a hidden (Veiled) unit is drawn for its own side and in sim mode: DEC-266 says
- * "faded" and names no value, so this is a look, not a gameplay number.
- */
-export const HIDDEN_UNIT_OPACITY = 0.4;
-
 /** Colour of the outline that makes Legends stand out from mobs. */
 export const LEGEND_OUTLINE_COLOR = '#ffffff';
 

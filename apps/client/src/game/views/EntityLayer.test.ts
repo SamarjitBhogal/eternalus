@@ -7,11 +7,9 @@ import { createDefaultStatusCueRegistry } from './defaultStatusCueRegistry';
 import { createDefaultViewRegistry } from './defaultViewRegistry';
 import { EntityLayer } from './EntityLayer';
 import type { HealthBarSide } from './HealthBarView.types';
-import {
-  HIDDEN_UNIT_OPACITY,
-  MINI_MAP_LEGEND_GLYPH,
-  MINI_MAP_MOB_GLYPH,
-} from './entityViews.constants';
+import { HIDDEN_UNIT_OPACITY } from './EntityLayer.constants';
+import type { Visibility, VisibilityRule } from './EntityLayer.types';
+import { MINI_MAP_LEGEND_GLYPH, MINI_MAP_MOB_GLYPH } from './entityViews.constants';
 import { HEALTH_BAR_FILL_COLORS, HEALTH_BAR_TRACK_COLOR } from './HealthBarView.constants';
 import type { WorldLayer } from './SceneView.types';
 import { StatusCueRegistry } from './StatusCueRegistry';
@@ -110,9 +108,10 @@ describe('EntityLayer', () => {
       new StatusCueRegistry(),
       () => false,
       () => null,
+      () => 'shown',
     );
 
-    layer.show(snapshot(1, [unit('a', 0, 0)]), snapshot(2, [unit('a', 10, 4)]), 0.25, null, null);
+    layer.show(snapshot(1, [unit('a', 0, 0)]), snapshot(2, [unit('a', 10, 4)]), 0.25, null);
     layer.draw(new RecordingRenderer());
 
     expect(spy.drawn.map((state) => state.position)).toEqual([{ x: 2.5, y: 1 }]);
@@ -124,6 +123,7 @@ describe('EntityLayer', () => {
       new StatusCueRegistry(),
       () => false,
       () => null,
+      () => 'shown',
     );
     const placeless = { ...unit('ghost', 0, 0), transform: null };
 
@@ -131,7 +131,6 @@ describe('EntityLayer', () => {
       snapshot(1, [unit('a', 0, 0)]),
       snapshot(2, [unit('a', 10, 4), placeless]),
       0.25,
-      null,
       null,
     );
 
@@ -148,15 +147,10 @@ describe('EntityLayer', () => {
       new StatusCueRegistry(),
       () => false,
       () => null,
+      () => 'shown',
     );
 
-    layer.show(
-      snapshot(1, [unit('a', 0, 0)]),
-      snapshot(2, [unit('a', 0, 0, SOUTH)]),
-      0.5,
-      null,
-      null,
-    );
+    layer.show(snapshot(1, [unit('a', 0, 0)]), snapshot(2, [unit('a', 0, 0, SOUTH)]), 0.5, null);
     layer.draw(new RecordingRenderer());
 
     expect(spy.drawn[0]?.facing.x).toBeCloseTo(Math.SQRT1_2);
@@ -170,6 +164,7 @@ describe('EntityLayer', () => {
       new StatusCueRegistry(),
       () => false,
       () => null,
+      () => 'shown',
     );
     const west = { x: -1, y: 0 };
 
@@ -177,7 +172,6 @@ describe('EntityLayer', () => {
       snapshot(1, [unit('turned', 0, 0)]),
       snapshot(2, [unit('turned', 0, 0, west), unit('new', 0, 1, SOUTH)]),
       0.5,
-      null,
       null,
     );
     layer.draw(new RecordingRenderer());
@@ -192,9 +186,10 @@ describe('EntityLayer', () => {
       new StatusCueRegistry(),
       () => false,
       () => null,
+      () => 'shown',
     );
 
-    layer.show(snapshot(1, []), snapshot(2, [unit('new', 50, 50)]), 0.5, null, null);
+    layer.show(snapshot(1, []), snapshot(2, [unit('new', 50, 50)]), 0.5, null);
     layer.draw(new RecordingRenderer());
 
     expect(spy.drawn[0]?.position).toEqual({ x: 50, y: 50 });
@@ -207,16 +202,11 @@ describe('EntityLayer', () => {
       new StatusCueRegistry(),
       () => false,
       () => null,
+      () => 'shown',
     );
     const placeless = { ...unit('ghost', 0, 0), transform: null };
 
-    layer.show(
-      null,
-      snapshot(1, [unit('low', 0, 9), unit('high', 0, 1), placeless]),
-      0,
-      'low',
-      null,
-    );
+    layer.show(null, snapshot(1, [unit('low', 0, 9), unit('high', 0, 1), placeless]), 0, 'low');
     layer.draw(new RecordingRenderer());
 
     expect(spy.drawn.map((state) => [state.entity.id, state.isFocused])).toEqual([
@@ -232,6 +222,7 @@ describe('EntityLayer', () => {
       new StatusCueRegistry(),
       () => false,
       () => null,
+      () => 'shown',
     );
     const legend = member('l', 'legend', 10);
 
@@ -242,7 +233,6 @@ describe('EntityLayer', () => {
         member('m', 'mob', 4),
       ]),
       0.5,
-      null,
       null,
     );
 
@@ -259,6 +249,7 @@ describe('EntityLayer', () => {
       new StatusCueRegistry(),
       (health) => health?.current === 7,
       () => null,
+      () => 'shown',
     );
     const units = [
       member('me', 'legend', 1),
@@ -268,7 +259,7 @@ describe('EntityLayer', () => {
       member('alive', 'mob', 5, 0),
     ];
 
-    layer.show(null, snapshot(1, units), 0, 'me', null);
+    layer.show(null, snapshot(1, units), 0, 'me');
 
     expect(minimapMarks(layer)).toEqual([[MINI_MAP_MOB_GLYPH, 5]]);
     // Nothing else is drawn: only that mob's outline and dot.
@@ -284,6 +275,7 @@ describe('EntityLayer', () => {
       new StatusCueRegistry(),
       () => false,
       (entity) => sides[entity.id] ?? null,
+      () => 'shown',
     );
     const foe = {
       ...member('foe', 'mob', 10, 3),
@@ -293,7 +285,6 @@ describe('EntityLayer', () => {
       null,
       snapshot(1, [foe, member('pal', 'mob', 30), member('calm', 'mob', 50)]),
       0,
-      null,
       null,
     );
     const renderer = new RecordingRenderer();
@@ -323,12 +314,13 @@ describe('EntityLayer', () => {
       createDefaultStatusCueRegistry(),
       () => false,
       (entity) => (entity.id === 'foe' ? 'enemy' : null),
+      () => 'shown',
     );
     const vanguard = {
       ...member('vanguard', 'mob', 10),
       statuses: [{ id: 'fury-windup', ticksActive: 2, ticksLeft: 7 }],
     };
-    layer.show(null, snapshot(1, [vanguard, member('foe', 'mob', 30)]), 0, null, null);
+    layer.show(null, snapshot(1, [vanguard, member('foe', 'mob', 30)]), 0, null);
     const renderer = new RecordingRenderer();
     layer.draw(renderer);
     const { calls } = renderer;
@@ -359,6 +351,7 @@ describe('EntityLayer', () => {
       cues,
       () => false,
       () => null,
+      () => 'shown',
     );
     const stun = { id: 'stun', ticksActive: 1, ticksLeft: 4 };
     const slow = { id: 'slow', ticksActive: 2, ticksLeft: null };
@@ -371,7 +364,6 @@ describe('EntityLayer', () => {
         { ...unit('c', 0, 9), statuses: null },
       ]),
       0,
-      null,
       null,
     );
     layer.draw(new RecordingRenderer());
@@ -390,12 +382,15 @@ describe('EntityLayer', () => {
       statuses: VEILED,
     });
 
-    /** A layer over `MarkView`, a cue for the Veil status, and a bar for every unit. */
-    const markLayer = (cued: string[]): EntityLayer => {
+    /**
+     * A layer over `MarkView`, a cue for the Veil status that marks `cue <id>`, a bar for every
+     * unit, and `visibilityOf`.
+     */
+    const markLayer = (visibilityOf: VisibilityRule): EntityLayer => {
       const cues = new StatusCueRegistry();
       cues.register('invisible', {
-        draw: (state) => {
-          cued.push(state.entity.id);
+        draw: (state, _status, renderer) => {
+          renderer.clear(`cue ${state.entity.id}`);
         },
       });
       return new EntityLayer(
@@ -403,67 +398,70 @@ describe('EntityLayer', () => {
         cues,
         () => false,
         () => 'enemy',
+        visibilityOf,
       );
     };
 
-    /** The marked bodies and opacity changes of `calls`, in order. */
+    /** The marked bodies and cues, opacity changes and health bar tracks of `calls`, in order. */
     const marks = (renderer: RecordingRenderer): unknown[] =>
-      renderer.calls.flatMap((call) =>
-        call.op === 'clear' || call.op === 'withOpacity' ? [[call.op, call.args[0]]] : [],
-      );
+      renderer.calls.flatMap((call) => {
+        if (call.op === 'clear' || call.op === 'withOpacity') return [[call.op, call.args[0]]];
+        return call.op === 'fillPolygon' && call.args[1] === HEALTH_BAR_TRACK_COLOR
+          ? [['bar']]
+          : [];
+      });
 
-    it("leaves out the viewer's hidden enemy everywhere and draws its own hidden unit faded", () => {
-      const cued: string[] = [];
-      const layer = markLayer(cued);
+    it('leaves out a unit the rule hides, everywhere, and draws a faded one see-through: body, cue, bar and mini map dot', () => {
+      const rule: Record<string, Visibility> = { 'veiled-foe': 'hidden', 'veiled-pal': 'faded' };
+      const layer = markLayer((entity) => rule[entity.id] ?? 'shown');
       const units = [
         veiled('veiled-foe', 'dark', 0),
         veiled('veiled-pal', 'light', 10),
         member('foe', 'mob', 20),
       ];
 
-      layer.show(null, snapshot(1, units), 0, null, 'light');
+      layer.show(null, snapshot(1, units), 0, null);
       const renderer = new RecordingRenderer();
       layer.draw(renderer);
       const minimap = new RecordingRenderer();
       layer.drawMinimap(minimap);
 
-      // The ally's body inside the fade; the foe's body as usual; no body for the Veiled foe.
+      // Each fade wraps one unit's drawing; nothing at all for the hidden foe.
       expect(marks(renderer)).toEqual([
         ['withOpacity', HIDDEN_UNIT_OPACITY],
         ['clear', 'veiled-pal'],
         ['clear', 'foe'],
+        ['withOpacity', HIDDEN_UNIT_OPACITY],
+        ['clear', 'cue veiled-pal'],
+        ['withOpacity', HIDDEN_UNIT_OPACITY],
+        ['bar'],
+        ['bar'],
       ]);
-      // No cue, no health bar and no mini map dot for the Veiled foe.
-      expect(cued).toEqual(['veiled-pal']);
-      const bars = renderer.calls.filter(
-        (call) => call.op === 'fillPolygon' && call.args[1] === HEALTH_BAR_TRACK_COLOR,
-      );
-      expect(bars).toHaveLength(2);
       expect(marks(minimap)).toEqual([
+        ['withOpacity', HIDDEN_UNIT_OPACITY],
         ['clear', 'minimap veiled-pal'],
         ['clear', 'minimap foe'],
       ]);
       expect(layer.drawnAt('veiled-foe')).toBeNull();
     });
 
-    it('draws every hidden unit faded when there is no player (sim mode)', () => {
-      const layer = markLayer([]);
+    it('fades each faded unit on its own, whatever its team', () => {
+      const layer = markLayer((entity) => (entity.isHidden === true ? 'faded' : 'shown'));
 
       layer.show(
         null,
         snapshot(1, [veiled('dark-one', 'dark', 0), veiled('light-one', 'light', 10)]),
         0,
         null,
-        null,
       );
       const renderer = new RecordingRenderer();
       layer.draw(renderer);
 
+      const fade = ['withOpacity', HIDDEN_UNIT_OPACITY];
       expect(marks(renderer)).toEqual([
-        ['withOpacity', HIDDEN_UNIT_OPACITY],
-        ['clear', 'dark-one'],
-        ['withOpacity', HIDDEN_UNIT_OPACITY],
-        ['clear', 'light-one'],
+        ...[fade, ['clear', 'dark-one'], fade, ['clear', 'light-one']],
+        ...[fade, ['clear', 'cue dark-one'], fade, ['clear', 'cue light-one']],
+        ...[fade, ['bar'], fade, ['bar']],
       ]);
     });
   });
