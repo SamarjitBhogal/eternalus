@@ -23,6 +23,7 @@ import { loadAggroRules } from './content/ai/aggro/loadAggroRules';
 import { AI_CADENCE } from './content/ai/cadence';
 import { LANE_ASSESSMENT_WEIGHTS } from './content/ai/laneAssessmentWeights';
 import { ROVER_TACTICS } from './content/ai/rover';
+import { ContentValidationError } from './content/ContentValidationError';
 import { LEGEND_KIND_IDS, LEGEND_KINDS } from './content/legends/legendKinds';
 import type { LegendDefinition } from './content/legends/legends.types';
 import type { MapDefinition } from './content/maps/maps.types';
@@ -48,6 +49,8 @@ import { loadWeapons } from './content/weapons/loadWeapons';
 import { ZONE_DEFINITIONS, ZONE_PLACEMENTS } from './content/zones/zoneCatalogue';
 import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
+import { autoBuildLoadout, validateLoadout } from './loadout/loadoutApi';
+import type { LoadoutContent } from './loadout/LoadoutValidator.types';
 import { SpawnLoadoutPolicy } from './loadout/SpawnLoadoutPolicy';
 import { DUEL_RULES } from './content/duel/duelRules';
 import { duelStartPoints } from './match/duelStartPoints';
@@ -729,6 +732,23 @@ export class Simulation {
   }
 
   /**
+   * Every Legend class's own default loadout passes the loadout rules (reference 08 "Invariant":
+   * the auto-build is what an invalid or missing loadout falls back to, so it must be valid).
+   *
+   * @throws ContentValidationError listing every class whose default breaks a rule.
+   */
+  private static assertDefaultLoadoutsValid(content: LoadoutContent): void {
+    const problems = LEGEND_KIND_IDS.filter((id) => content.legends.has(id)).flatMap((id) =>
+      validateLoadout(autoBuildLoadout(id, content), content).map(
+        ({ message }) => `${id}: defaultLoadout: ${message}`,
+      ),
+    );
+    if (problems.length > 0) {
+      throw new ContentValidationError(`Invalid content: ${problems.join('; ')}`);
+    }
+  }
+
+  /**
    * The match's `SpawnLoadoutPolicy` (05 §12): loadouts checked against its Legend classes (the
    * `units` whose kind is a Legend class) and `weapons`, a rejection logged at WARN.
    */
@@ -745,6 +765,7 @@ export class Simulation {
         return definition;
       },
     };
+    Simulation.assertDefaultLoadoutsValid({ legends, weapons });
     return new SpawnLoadoutPolicy(
       { legends, weapons },
       ({ definitionId, given, problems, used }) => {
