@@ -223,41 +223,61 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
    * or its clearance (`laneFortKeepOuts`), so no camp object overlaps a fort.
    */
   private camp(point: Vec2, id: string): void {
+    const { clearing, tent, fire, supplies } = G.camp;
+    // A square of half side `half` round the camp's point.
+    const square = (half: number): Rect => ({
+      x: point.x - half,
+      y: point.y - half,
+      width: 2 * half,
+      height: 2 * half,
+    });
     this.endObject();
-    this.rect(`${id}-clearing`, point.x - 23, point.y - 18, 46, 36, P.road, 'ground');
+    const { halfWidth, halfHeight } = clearing;
+    const [left, top] = [point.x - halfWidth, point.y - halfHeight];
+    this.rect(`${id}-clearing`, left, top, 2 * halfWidth, 2 * halfHeight, P.road, 'ground');
     const isClear = (box: Rect): boolean => !isInLaneFortKeepOut(box, this.keepOuts);
+    const [peak, base] = [point.y + tent.top, point.y + tent.bottom];
     for (const side of [-1, 1]) {
-      const x = point.x + side * 15;
-      if (!isClear({ x: x - 9, y: point.y - 12, width: 18, height: 18 })) continue;
+      const x = point.x + side * tent.offsetX;
+      const box = {
+        x: x - tent.halfWidth,
+        y: peak,
+        width: 2 * tent.halfWidth,
+        height: tent.bottom - tent.top,
+      };
+      if (!isClear(box)) continue;
       this.beginObject(`${id}-tent-${String(side)}`, 'camp');
       this.blockPolygon(
         `${id}-tent-${String(side)}`,
         [
-          { x, y: point.y - 12 },
-          { x: x + 9, y: point.y + 6 },
-          { x: x - 9, y: point.y + 6 },
+          { x, y: peak },
+          { x: x + tent.halfWidth, y: base },
+          { x: x - tent.halfWidth, y: base },
         ],
         P.gold,
       );
       this.polygon(
         `${id}-tent-shade-${String(side)}`,
         [
-          { x, y: point.y - 12 },
-          { x, y: point.y + 6 },
-          { x: x - 9, y: point.y + 6 },
+          { x, y: peak },
+          { x, y: base },
+          { x: x - tent.halfWidth, y: base },
         ],
         P.bark,
       );
     }
     this.endObject();
-    if (isClear({ x: point.x - 4, y: point.y - 4, width: 8, height: 8 })) {
+    const stone = square(fire.stoneHalfSide);
+    if (isClear(stone)) {
+      const flame = square(fire.flameHalfSide);
       this.beginObject(`${id}-fire`, 'furniture');
-      this.blockRect(`${id}-fire-stone`, point.x - 4, point.y - 4, 8, 8, P.stoneDark);
-      this.rect(`${id}-fire`, point.x - 2, point.y - 2, 4, 4, P.lavaLight);
+      this.blockRect(`${id}-fire-stone`, stone.x, stone.y, stone.width, stone.height, P.stoneDark);
+      this.rect(`${id}-fire`, flame.x, flame.y, flame.width, flame.height, P.lavaLight);
       this.endObject();
     }
-    if (isClear({ x: point.x - 7, y: point.y + 12, width: 7, height: 5 })) {
-      this.blockRect(`${id}-supplies`, point.x - 7, point.y + 12, 7, 5, P.bark);
+    const pile = { ...supplies, x: point.x + supplies.x, y: point.y + supplies.y };
+    if (isClear(pile)) {
+      this.blockRect(`${id}-supplies`, pile.x, pile.y, pile.width, pile.height, P.bark);
     }
   }
 }

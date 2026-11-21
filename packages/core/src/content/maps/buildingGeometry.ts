@@ -7,6 +7,15 @@ const STRONGHOLD_GEOMETRY = {
   extentPadding: 1,
 } as const;
 
+const CAMP_GEOMETRY = {
+  clearing: { halfWidth: 23, halfHeight: 18 },
+  /** Two tents, `offsetX` left and right of the camp's point; `top` and `bottom` are y offsets. */
+  tent: { offsetX: 15, halfWidth: 9, top: -12, bottom: 6 },
+  fire: { stoneHalfSide: 4, flameHalfSide: 2 },
+  /** The supplies box: its top-left corner as an offset from the camp's point, and its size. */
+  supplies: { x: -7, y: 12, width: 7, height: 5 },
+} as const;
+
 /** Shared authored geometry. Strongholds fit inside their generated ring in world units. */
 export const BUILDING_GEOMETRY = {
   /** Presentation boundary geometry, matching the existing furnished palace silhouette. */
@@ -48,6 +57,26 @@ export const BUILDING_GEOMETRY = {
     wallDivisor: 10,
     keepWidthDivisor: 3,
     keepHeightDivisor: 2.5,
+  },
+  /**
+   * A forest or corner camp round its point, in sketch units: its clearing, two tents, fire and
+   * supplies (`MapSceneryBuilder`). `halfExtent` is half the box they fill: the clearing, widened
+   * to hold the tents; the fire and supplies stay inside the clearing. The generator keeps that box
+   * clear of the lane tower forts (`clearCampOfForts`, DEC-315).
+   */
+  camp: {
+    ...CAMP_GEOMETRY,
+    halfExtent: {
+      x: Math.max(
+        CAMP_GEOMETRY.clearing.halfWidth,
+        CAMP_GEOMETRY.tent.offsetX + CAMP_GEOMETRY.tent.halfWidth,
+      ),
+      y: Math.max(
+        CAMP_GEOMETRY.clearing.halfHeight,
+        -CAMP_GEOMETRY.tent.top,
+        CAMP_GEOMETRY.tent.bottom,
+      ),
+    },
   },
   northDoor: { x: 788, y: 320, width: 24, height: 12 },
   southDoor: { x: 785, y: 541, width: 30, height: 12 },

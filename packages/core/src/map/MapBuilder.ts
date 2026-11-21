@@ -7,7 +7,7 @@ import {
   distributeCamps,
   placeCampSlots,
 } from './campPlacement';
-import { CAMP_HALF_EXTENT } from './campPlacement.constants';
+import { BUILDING_GEOMETRY } from '../content/maps/buildingGeometry';
 import { SKETCH_HEIGHT, SKETCH_WIDTH } from '../content/maps/map1Scenery';
 import { laneFortKeepOuts } from './fortInWorld';
 import { createMapFeature } from './createMapFeature';
@@ -134,8 +134,8 @@ export class MapBuilder {
     const clearance = {
       keepOuts: laneFortKeepOuts(this.features, world),
       extent: {
-        x: (CAMP_HALF_EXTENT.x * world.width) / SKETCH_WIDTH,
-        y: (CAMP_HALF_EXTENT.y * world.height) / SKETCH_HEIGHT,
+        x: (BUILDING_GEOMETRY.camp.halfExtent.x * world.width) / SKETCH_WIDTH,
+        y: (BUILDING_GEOMETRY.camp.halfExtent.y * world.height) / SKETCH_HEIGHT,
       },
     };
     const slots = placeCampSlots({
