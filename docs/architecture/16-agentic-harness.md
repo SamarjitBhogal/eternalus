@@ -4,7 +4,7 @@ description: The coding-agent harness as it exists in the repository (instructio
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-29
+last-reviewed: 2026-11-19
 tags: [architecture, agents, harness, hooks, skills, verification]
 paths: ['.claude/**', '.agents/**', 'scripts/hooks/**', 'docs/agents/**']
 related:
@@ -51,7 +51,7 @@ flowchart LR
   C --> D[Edit with tests]
   D --> E[PostToolUse hook: prettier and eslint on the file]
   E -->|exit 2| D
-  D --> F[Stop hook: npm run check:quick]
+  D --> F[Stop hook: checks on changed files]
   F -->|exit 2, once| D
   F --> G[verify skill: npm run check, PROGRESS entry]
   G --> G2[pre-PR gate, ADR 0010: critic, ponytail, npm run check again]
@@ -70,10 +70,10 @@ flowchart LR
 | `GEMINI.md` (root and packages), `.gemini/settings.json`                       | Two-line pointers; `context.fileName: ["AGENTS.md", "GEMINI.md"]` makes Gemini CLI and Antigravity load `AGENTS.md` as context                                                                     | pointer |
 | `.github/copilot-instructions.md`                                              | The six most-broken rules restated for Copilot's agent and code review; `.github/instructions/` is intentionally unused                                                                            | guide   |
 | `.claude/settings.json`                                                        | `permissions.allow` / `permissions.deny` and the three hooks (§4); committed, so every clone gets the same gates                                                                                   | sensor  |
-| `scripts/hooks/hookInput.mjs`                                                  | Shared helpers: parse the JSON on stdin (never throw), resolve the repo root and the edited file, `run()` with timeout and `CI=1`, `tail()` for short output                                       | infra   |
+| `scripts/hooks/hookInput.mjs`                                                  | Shared helpers: parse the JSON on stdin (never throw), resolve the repo root and the edited file, `run()` with timeout (kills the process tree) and `CI=1`, `tail()` for short output              | infra   |
 | `scripts/hooks/session-start.mjs`                                              | `SessionStart`: branch (warns on `main`), the reading order, open `INBOX.md` items, the last `PROGRESS.md` entry, the done-when reminder                                                           | guide   |
 | `scripts/hooks/post-edit.mjs`                                                  | `PostToolUse` on `Edit\|Write`: Prettier, then ESLint with zero warnings on the touched file; exit 2 surfaces findings                                                                             | sensor  |
-| `scripts/hooks/stop-check.mjs`                                                 | `Stop`: `npm run check:quick`; exit 2 blocks the stop once; `stop_hook_active` loop guard                                                                                                          | sensor  |
+| `scripts/hooks/stop-check.mjs`                                                 | `Stop`: checks only the changed files (skips when none; full `check:quick` when a lint or type config changed); exit 2 blocks the stop once; `stop_hook_active` loop guard                         | sensor  |
 | `.claude/skills/<name>/SKILL.md` (nine)                                        | The procedures of §5: `new-entity`, `new-system`, `new-ability`, `new-screen`, `new-content`, `pr-review`, `doc-gardening`, `verify`, `adr`                                                        | guide   |
 | `.agents/README.md`, `.agents/skills/<name>/SKILL.md`                          | Pointer stubs so Codex, Gemini CLI, Antigravity and Cursor discover the same nine skills; the procedure lives only in `.claude/skills/`                                                            | pointer |
 | `.claude/agents/architecture-reviewer.md`, `test-writer.md`, `doc-gardener.md` | The subagents of §6: a read-only evaluator, a tests-only writer, a docs maintainer                                                                                                                 | sensor  |
@@ -139,13 +139,13 @@ last lines rather than a wall of text.
 | Event (matcher)               | Script (timeout)           | Does                                                                                                                                                                                                                                                                        | Exit codes                                                                                                         |
 | ----------------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | `SessionStart`                | `session-start.mjs` (30 s) | Prints the branch and warns on `main`; the reading order (`AGENTS.md`, the package `AGENTS.md`, the architecture doc whose `paths` matches, the phase doc); the number of open `- [ ]` items in `INBOX.md`; the last `###` heading of `PROGRESS.md`; the done-when reminder | Always 0; stdout becomes context                                                                                   |
-| `PostToolUse` (`Edit\|Write`) | `post-edit.mjs` (120 s)    | `prettier --write` on `.ts .tsx .js .mjs .cjs .json .md .css .yml .yaml`, then `eslint --max-warnings 0` on `.ts .tsx .js .mjs .cjs`; only for files inside the repo                                                                                                        | 0 when clean; Prettier trouble is reported on stderr and never blocks; an ESLint failure exits 2 with the findings |
-| `Stop`                        | `stop-check.mjs` (300 s)   | `npm run check:quick` (typecheck + lint, the same command as the git hooks)                                                                                                                                                                                                 | 0 on pass; 2 with the failure tail; 0 immediately when `stop_hook_active` is `true`                                |
+| `PostToolUse` (`Edit\|Write`) | `post-edit.mjs` (120 s)    | `prettier --write` on `.ts .tsx .js .mjs .cjs .json .md .css .yml .yaml`, then `eslint --max-warnings 0` on `.ts .tsx .js .jsx .mjs .cjs`; only for files inside the repo                                                                                                   | 0 when clean; Prettier trouble is reported on stderr and never blocks; an ESLint failure exits 2 with the findings |
+| `Stop`                        | `stop-check.mjs` (300 s)   | Changed files only (DEC-276): none lintable → skip; a lint or type config changed → `npm run check:quick`; else no-JS check, `tsc -b`, ESLint on the changed files. A timeout exits 2 with its own message, not as a failure. Git hooks and CI still run the whole repo     | 0 on pass; 2 with the failure tail; 0 immediately when `stop_hook_active` is `true`                                |
 
 **Exit-code semantics.** Claude Code treats exit code 2 as the only blocking code; any other
 non-zero code is a non-blocking error (research §2), and what "block" means depends on the
 event. On `Stop`, exit 2 prevents the agent from ending its turn and feeds stderr back as the
-next thing to fix, which turns "declare done" into "make `check:quick` pass" (the "deterministic
+next thing to fix, which turns "declare done" into "make the checks on the changed files pass" (the "deterministic
 gate" of Anthropic's best practices, research §3). On `PostToolUse` the edit has already
 happened, so exit 2 cannot undo it and only shows stderr to the model, which is the lint-on-save
 loop we want: the finding arrives while the file is still in context. `SessionStart` output is
@@ -263,7 +263,7 @@ its final message and in the PR (AI-11). What the ladder enforces and what revie
 | Core purity: no React, Redux or client imports, no `Math.random` (ESLint); no DOM or Node types (tsconfig) | Determinism beyond the lint rules: iteration order, comparator-less sorts, wall clock    |
 | Test integrity (`.only`/`.skip` banned, every test asserts); coverage thresholds                           | Tests assert behaviour, not lines; no product decision made by an agent                  |
 | knip, Prettier, LF endings, lockfile sync, exact versions, the docs check                                  | Docs and frontmatter updated; the PROGRESS entry; scope discipline                       |
-| Per-file lint after edits; `check:quick` before stopping and on commit and push                            | Commit messages, the PR description, an ADR when a guardrail changes                     |
+| Per-file lint after edits; changed-file checks before stopping; `check:quick` on commit and push           | Commit messages, the PR description, an ADR when a guardrail changes                     |
 
 ## 9. Parallel agents and prompt hygiene
 
