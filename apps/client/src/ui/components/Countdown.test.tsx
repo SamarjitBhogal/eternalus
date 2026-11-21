@@ -187,9 +187,10 @@ describe('Countdown urgency (UE-01, DEC-100, DEC-282)', () => {
 
   // DEC-278, DEC-282: the pre-match overlay draws the same numeral at its own size. DEC-299 (2):
   // at the select's font size, where the glow def's px are sized, enlarged by `scale`, so the
-  // glow grows with the numeral; a 216 artboard px font size (a recommendation, CD-49: "slightly
-  // smaller" than 240).
-  it('draws the match size by scaling the select-size numeral and shows the zero text for 0', () => {
+  // glow grows with the numeral; 216 (a recommendation, CD-49: "slightly smaller" than 240).
+  // DEC-312: 216 HUD units, through the HUD frame's own scale as a number (typed arithmetic),
+  // which the select's font floor reads as it reads the artboard's.
+  it('draws the match size by scaling the select-size numeral in HUD units, START for 0', () => {
     const html = renderWithStore(
       <Countdown remainingSeconds={0} label="Match start" size="match" zeroText="START" />,
     );
@@ -197,12 +198,33 @@ describe('Countdown urgency (UE-01, DEC-100, DEC-282)', () => {
 
     expect(html).toContain(`class="${String(styles.countdown)} ${String(styles.match)}"`);
     expect(html).toMatch(/role="timer"[^>]*>START<\/p>$/);
-    expect(match).not.toMatch(/font-size|transform:|translate:/);
-    expect(match).toContain(`scale: calc(216 / ${String(fontPx)});`);
-    expect(match).toMatch(
-      /position: absolute;\s*inset: 0;\s*width: fit-content;\s*height: fit-content;[\s\S]*margin: auto;/,
+    expect(match).not.toMatch(/font-size|transform:|translate:|position:|margin:/);
+    expect(match).toContain('--stage-scale: calc(var(--hud-u) / 1px);');
+    expect(match).toContain(`scale: calc(var(--stage-scale) * 216 / ${String(fontPx)});`);
+    expect(ruleOf('.countdown')).toMatch(
+      /font-size: max\(64px, calc\(var\(--text-min\) \/ var\(--stage-scale\)\)\);/,
     );
-    expect(ruleOf('.countdown')).toMatch(/font-size: max\(64px, /);
+  });
+
+  // DEC-312 (2): where px / px is no number (Safari before 26, Firefox before 158) both
+  // `--stage-scale` uses are invalid at computed time; the numeral then takes the same HUD units
+  // as its font size, unscaled (its glow stays at the select size). That font size wins over
+  // `.countdown`'s at the same specificity only because the block comes after it.
+  it('falls back to the same HUD units as a font size where px / px is no number', () => {
+    const units = /scale: calc\(var\(--stage-scale\) \* (\d+) \//.exec(ruleOf('.match'))?.[1];
+    const fallback =
+      /\n@supports not \(scale: calc\(1px \/ 1px\)\) \{\s*\.match \{([^}]*)\}\s*\}/.exec(
+        countdownCss,
+      )?.[1] ?? 'missing';
+
+    expect(units).toBe('216');
+    expect(fallback).toContain(
+      `font-size: max(calc(${String(units)} * var(--hud-u)), var(--text-min));`,
+    );
+    expect(fallback).toContain('scale: none;');
+    expect(countdownCss.indexOf('\n@supports not (scale: calc(1px / 1px))')).toBeGreaterThan(
+      countdownCss.indexOf('\n.countdown {'),
+    );
   });
 
   // DEC-299 (2): the glow defs check their region against the overlay numeral's narrowest box, so

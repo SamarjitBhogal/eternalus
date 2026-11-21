@@ -184,8 +184,10 @@ const COUNTDOWN_GLOW: TextGlowDef = {
     textShadow(0, -6, 3.4, 0.15),
   ],
   flood: 'countdown',
-  // The match-start overlay (CD-49) draws the numeral in artboard px too, scaled after the
-  // filter (DEC-299 (2)): its narrowest box is the `.match` min-width × line-height 1.
+  // The match-start overlay (CD-49) draws the numeral at the select's px too, scaled after the
+  // filter (DEC-299 (2), DEC-312): its narrowest box is the `.match` min-width × line-height 1
+  // (its fallback without typed arithmetic sets the font itself: a box at least this large from a
+  // 569 × 320 window up).
   users: [
     { node: '62:135 / 58:281 countdown', width: 118, height: 83, bleed: 0 },
     { node: 'match-start overlay numeral (CD-49)', width: 118, height: 64, bleed: 0 },

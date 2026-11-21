@@ -20,8 +20,7 @@ const serverScale = (): number => 1;
 
 /**
  * `fitStageScale` of the window, updated on every resize; 1 during a server render. The selection
- * screens, and the match screen whose countdown overlay draws its numeral on the artboard
- * (DEC-299 (2)), fill the window, so the window is the stage the artboard is fitted into.
+ * screens fill the window, so the window is the stage the artboard is fitted into.
  */
 export function useStageScale(): number {
   return useSyncExternalStore(subscribeToResize, windowStageScale, serverScale);

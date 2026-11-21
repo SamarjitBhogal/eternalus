@@ -52,11 +52,15 @@ describe('MatchCountdown', () => {
     expect(/\n\.veil \{([^}]*)\}/.exec(overlayCss)?.[1]).toContain('pointer-events: none;');
   });
 
-  // DEC-299 (2): the numeral sits in the character select's own artboard, so it and its glow are
-  // in the px the glow def is sized for, and the artboard's fit scale enlarges both together.
-  it("draws the numeral on the character select's artboard, fitted to the window", () => {
-    expect(renderWithStore(<MatchCountdown />, withCountdown(7))).toContain(
-      `<div class="${String(stageStyles.artboard)}" style="--stage-scale:1"><p class="${String(countdownStyles.countdown)} ${String(countdownStyles.match)}"`,
+  // DEC-312: the numeral's scale comes from the HUD frame (Countdown.module.css `.match`), so it
+  // sits on no selection artboard and the veil centres it.
+  it('centres the numeral in its veil, on no selection artboard', () => {
+    const html = renderWithStore(<MatchCountdown />, withCountdown(7));
+
+    expect(html).not.toContain(`class="${String(stageStyles.artboard)}"`);
+    expect(html).not.toContain('--stage-scale');
+    expect(/\n\.veil \{([^}]*)\}/.exec(overlayCss)?.[1]).toMatch(
+      /display: grid;\s*place-items: center;/,
     );
   });
 
