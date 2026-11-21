@@ -61,24 +61,23 @@ export class StructureAuraSystem implements System {
         return;
       }
       const team = state.entities.teamOf(unit.id);
+      const covering = sources.map((source) => ({
+        sourceId: source.id,
+        statusId: StructureAuraSystem.statusFrom(source, unit, team, position.x, position.y),
+      }));
       // Backwards: `remove` splices `active`.
       for (let at = statuses.active.length - 1; at >= 0; at -= 1) {
         const statusId = statuses.active[at]?.definition.id ?? '';
         if (
           this.auraStatusIds.has(statusId) &&
-          !sources.some(
-            (source) =>
-              StructureAuraSystem.statusFrom(source, unit, team, position.x, position.y) ===
-              statusId,
-          )
+          !covering.some((cover) => cover.statusId === statusId)
         ) {
           this.statuses.remove(state, unit.id, statusId);
         }
       }
-      for (const source of sources) {
-        const statusId = StructureAuraSystem.statusFrom(source, unit, team, position.x, position.y);
+      for (const { sourceId, statusId } of covering) {
         if (statusId !== null) {
-          this.statuses.apply(state, unit.id, statusId, source.id);
+          this.statuses.apply(state, unit.id, statusId, sourceId);
         }
       }
     });
