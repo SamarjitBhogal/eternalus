@@ -188,6 +188,58 @@ describe('Match', () => {
     expect(fills()).not.toContainEqual(house.shape);
     match.destroy();
   });
+  it('stops drawing a tower, its minimap glyph and its banner once the tower entity is gone', () => {
+    const { match, simulation, renderer, map, world } = setUp(undefined, true);
+    const { presentation } = world;
+    match.tick();
+    const tower = match.snapshot.entities.find(
+      (entity) => entity.kind === 'buff-tower' && entity.mapFeatureId !== undefined,
+    );
+    const feature = map.features.find(({ id }) => id === tower?.mapFeatureId);
+    const banner = presentation.scenery.find((piece) => piece.flagOf === feature?.id);
+    if (tower === undefined || feature === undefined) throw new Error('Missing tower');
+    if (banner === undefined) throw new Error('Missing banner');
+    const glyphAt = () =>
+      renderer.calls.some((call) => call.op === 'drawGlyph' && call.args[1] === feature.position);
+    const bannerFills = () =>
+      renderer.calls.some((call) => call.op === 'fillPolygon' && call.args[0] === banner.shape);
+    match.render(0);
+    expect(glyphAt()).toBe(true);
+    expect(bannerFills()).toBe(true);
+
+    simulation.enqueueCommand({ type: 'dev-remove-entity', entityId: tower.id });
+    match.tick();
+    renderer.calls.length = 0;
+    match.render(0);
+    expect(glyphAt()).toBe(false);
+    expect(bannerFills()).toBe(false);
+    match.destroy();
+  });
+  it('stops drawing a gate and its minimap glyph once its structure has fallen', () => {
+    const { match, simulation, renderer, map } = setUp(undefined, true);
+    match.tick();
+    const gate = match.snapshot.entities.find(
+      (entity) => entity.kind === 'gate' && entity.mapFeatureId !== undefined,
+    );
+    const feature = map.features.find(({ id }) => id === gate?.mapFeatureId);
+    if (gate === undefined || feature?.footprint === undefined) throw new Error('Missing gate');
+    const { footprint, position } = feature;
+    const drawn = () =>
+      renderer.calls.some(
+        (call) =>
+          (call.op === 'fillPolygon' && call.args[0] === footprint) ||
+          (call.op === 'drawGlyph' && call.args[1] === position),
+      );
+    match.render(0);
+    expect(drawn()).toBe(true);
+
+    simulation.enqueueCommand({ type: 'dev-remove-entity', entityId: gate.id });
+    match.tick();
+    renderer.calls.length = 0;
+    match.render(0);
+    expect(drawn()).toBe(false);
+    match.destroy();
+  });
   it('queues no attack while the canvas gestures own the press (a minimap click or the explorer)', () => {
     const { match, simulation, input, world } = setUp(undefined, true);
     const house = world.mapObjects.find((object) => object.kind === 'house');

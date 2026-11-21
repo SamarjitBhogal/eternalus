@@ -19,6 +19,7 @@ import { TypedEventBus } from '../bridge/TypedEventBus';
 import { MatchBridge } from './MatchBridge';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
+import { RetiredFeatures } from './RetiredFeatures';
 
 const CAPTURE_KINDS: readonly MapFeatureKind[] = ['capture-point', 'cathedral'];
 const PLAYER: EntitySnapshot = {
@@ -33,6 +34,7 @@ const PLAYER: EntitySnapshot = {
   aether: { current: 95, max: 160 },
   area: null,
   capture: null,
+  aura: null,
 };
 
 /** The simulation's side of the bridge's listener table: who listens to what, and a way to emit. */
@@ -87,6 +89,7 @@ const structureOf = (feature: MapFeature, current: number, max: number): EntityS
   aether: null,
   area: null,
   capture: null,
+  aura: null,
   mapFeatureId: feature.id,
 });
 
@@ -142,6 +145,7 @@ function setUp(
     captureKinds: CAPTURE_KINDS,
     events: simulation,
     firstSnapshot,
+    retired: new RetiredFeatures(),
   });
   return { map, bridge, bus, order, clocks, huds, structures, captures, endings, simulation };
 }
@@ -403,6 +407,7 @@ describe('MatchBridge', () => {
       aether: null,
       area: null,
       capture: null,
+      aura: null,
     };
     const start = snapshotAt(0, [bystander]);
     const { bridge, structures: published } = setUp(undefined, start);

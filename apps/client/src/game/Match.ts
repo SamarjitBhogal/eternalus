@@ -14,6 +14,7 @@ import {
 } from './Match.constants';
 import type { MatchDeps } from './Match.types';
 import { MatchBridge } from './MatchBridge';
+import { RetiredFeatures } from './RetiredFeatures';
 import { MatchCamera } from './MatchCamera';
 import { MatchViewControls } from './MatchViewControls';
 import type { PlayerActions } from './PlayerActions';
@@ -24,7 +25,6 @@ import { MapView } from './views/MapView';
 import { MiniMapView } from './views/MiniMapView';
 import { SceneryView } from './views/SceneryView';
 import { SceneView } from './views/SceneView';
-import { RetiredFeatures } from './views/RetiredFeatures';
 import { WorldObjectsView } from './views/WorldObjectsView';
 
 /**
@@ -53,6 +53,7 @@ export class Match implements LoopTarget {
 
   /** The map objects (walls, furniture, doors) and their destroyed state, drawn in the scene. */
   private readonly objects: WorldObjectsView;
+  /** Which structures have fallen; `MatchBridge` observes every snapshot into it. */
   private readonly retired = new RetiredFeatures();
 
   private readonly world: { readonly scene: SceneView; readonly miniMap: MiniMapView };
@@ -129,6 +130,7 @@ export class Match implements LoopTarget {
       map,
       events: simulation,
       firstSnapshot: this.current,
+      retired: this.retired,
     });
     this.controls = new MatchViewControls({
       camera: this.camera,
@@ -220,7 +222,6 @@ export class Match implements LoopTarget {
     renderer.showWorldArea(view);
     this.entities.show(this.previous, this.current, alpha, this.playerId);
     this.objects.show(this.current.mapObjects ?? []);
-    this.retired.observe(this.current);
     scene.draw(renderer);
     miniMap.draw(renderer, this.camera.screenWidth, this.camera.screenHeight);
   }

@@ -2,6 +2,7 @@ import type { MapDefinition, MapFeatureKind, Simulation, Snapshot, Vec2 } from '
 
 import type { BridgeEventMap } from '../bridge/events';
 import type { CapturePointStatus } from '../bridge/hud.types';
+import type { RetiredFeatures } from './RetiredFeatures';
 import type { TypedEventBus } from '../bridge/TypedEventBus';
 
 /** What `Match` builds its `MatchBridge` from. */
@@ -25,6 +26,12 @@ export type MatchBridgeDeps = {
    * before it, so the bridge binds each structure tile here, by `EntitySnapshot.mapFeatureId`.
    */
   readonly firstSnapshot: Snapshot;
+  /**
+   * Which structures have fallen: the bridge observes every snapshot into it (first the first
+   * snapshot, so a tile is bound to what stood then) and reads it for a tile's 0 health. `Match`
+   * shares the same instance with the views.
+   */
+  readonly retired: RetiredFeatures;
 };
 
 /** A capture point the HUD lists, and where its zone stands. */
