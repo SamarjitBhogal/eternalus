@@ -8086,6 +8086,12 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: see the final `npm run check` of this round in the PR reply.
 - Next step: reviewer re-review; S3 and N4 doc updates.
 
+### 2026-11-20 — Phase 3 / sprint 3: respawn design docs (review S3, N4) — fix/legend-respawn (PR #100) — claudiodh + Claude Code
+
+- What was done: doc 03 §2 says a respawned Legend is the same entity (ids stay never reused) and names `EntityStore.withdraw` beside `remove`; its events table names `RespawnSystem` as an `entity-spawned` emitter and gains the `legend-respawned` row. Doc 18's pipeline positions place `RespawnSystem` (every match, after the Duel round). Doc 05's Implementation status describes the built DEC-295 middle way and DEC-186 pay-on-respawn, and the polling note gives the right reason (N4). The previous entry's checks, at 4c0d3dc8: `npm run check` → `EXIT=0`: core "Tests 1700 passed (1700)"; protocol "Tests 29 passed (29)"; client "Tests 2013 passed (2013)"; server "Tests 84 passed (84)"; "Documentation check passed."
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1700 passed (1700)"; protocol "Tests 29 passed (29)"; client "Tests 2013 passed (2013)"; server "Tests 84 passed (84)"; "Documentation check passed." (docs only: the counts match the previous run.)
+- Next step: reviewer re-review; the team merges.
+
 ### 2026-11-12 — Phase 3 / combat sprint: bound key actions, part 1 (BUG-5 / SCRUM-438) — fix/bound-key-actions — Claude Code
 
 - What was done: `camera-zoom-in`, `camera-zoom-out` and `toggle-minimap` now work as `MatchHost`
