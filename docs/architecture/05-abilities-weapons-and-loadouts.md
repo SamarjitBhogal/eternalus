@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-12
+last-reviewed: 2026-11-20
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -930,30 +930,33 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   self or ally kill (O5), and in its own pass emits `xp-gained` and gives the XP to the killer
   only. A level-up raises max health by the class's share of base health and max aether, and heals
   and refills by the raise only while the Legend is alive (O3, O4). Structure XP is built (DEC-186: every
-  Legend on the destroying team; a dead Legend is skipped until respawn, GL-12). Team-kill XP is
+  Legend on the destroying team; a Legend waiting to respawn is paid as it returns, DEC-186). Team-kill XP is
   built for the capture point boss (DEC-237): a mob in `XP_SOURCES.teamKills` pays every Legend of
   its killer's playable team, not the killer alone, and each Legend gets at most the XP that lifts
   it `maxLevels` levels (`Progression.xpToReach`); `level-matches-xp` checks that the killer is on
   the recipient's team (`cause: 'team-kill'`). It listens to `entity-died` itself, not 12's
   `xp-granted` reward path. Not built yet: the share radius and damage bias, assists, checkpoint and
   camp XP, the Eternal's flat 5 levels (DEC-237) (their systems do not exist),
-  basic-attack and ability potency per level, `upgradeIds`, the ultimate charge rules, and keeping
-  dead Legends in the store until respawn (FR-051), which O4's posthumous XP needs. Numbers are
+  basic-attack and ability potency per level, `upgradeIds` and the ultimate charge rules. Numbers are
   `TUNE`; the curve and the Legend kill and structure XP follow DEC-190 (not final; the
   soak metric can change them) and live in `content/progression/`.
-- **Legend respawn (`fix/legend-respawn`, GL-12, 2026-11-11).** Interim, FR-051 and DEC-80.
-  `RespawnSystem` (just before `DeathSystem`) queues every dead Legend in `state.respawns`
-  (`RespawnQueue`, hashed only while non-empty) and, after the fixed delay in
-  `content/progression/legendRespawn.ts`, rebuilds the same Legend with the same id
-  (`EntityFactory.createWithId`) at its team's Stronghold, with its level, XP and caps restored,
-  health and aether refilled and its bot controller kept, and emits `legend-respawned`. The
-  sovereign is not a Legend, so it never returns. The momentum-scaling timer (claudiodh, DEC-80)
-  replaces the fixed value; a structure's XP for a Legend dead at that moment is still skipped
-  (DEC-186 "pay on respawn" is not built). The Legend is absent from the store while it waits.
-  Interim: `RespawnSystem` polls `Health.isDead` before `DeathSystem` instead of subscribing to
-  `entity-died` (the entity is retired by the time that event's listeners could read it); the
-  planned switch is to subscribe to `entity-died`. `legend-respawned` is a new event in
-  `GameEventMap`.
+- **Legend respawn (`fix/legend-respawn`, GL-12, DEC-295).** FR-051 and DEC-80, with the
+  owner's middle way (DEC-295). `RespawnSystem` runs just before `DeathSystem` in every match,
+  after the Duel round: it queues every dead Legend of a playable team in `state.respawns`
+  (`RespawnQueue`, hashed with the waiting Legend's own fields), and `DeathSystem` then withdraws
+  it (`EntityStore.withdraw`), not retires it. After the fixed delay in
+  `content/progression/legendRespawn.ts` the same Legend object returns at its team's Stronghold,
+  facing the enemy Stronghold, with full health and aether and no status effects, movement or
+  target; its id, level, XP, caps, loadout and cooldowns are its own (the ultimate charge is kept
+  apart from aether, DEC-295 (1)). A bot laner picks its lane again by the current threat
+  (DEC-295 (2)); a return ignores every cap (DEC-295 (4)). XP the Legend earns while it waits (its
+  team's structure and boss awards, a kill its hit lands after it died) is owed on its queue entry
+  and paid through `ProgressionSystem` as it returns (`legend-respawned`, cause `respawn`,
+  DEC-186). The sovereign is not a Legend, so it never returns. The client leaves a greyed-out body
+  where a Legend fell (`LegendBodies`). `RespawnSystem` reads `Health.isDead` just before
+  `DeathSystem` rather than subscribing to `entity-died`: `entity-died` fires while the victim is
+  still in the store, but the later pass also keeps any XP the Legend earns later in the same tick.
+  The momentum-scaling timer (claudiodh, DEC-80) replaces the fixed delay.
 - **HUD (`feat/hud-and-character-select`, 2026-10-24).** §15's `PlayerSnapshot` does not exist
   in core yet. The client's `MatchBridge` joins the player's `EntitySnapshot` groups into
   `PlayerHudSnapshot` (`bridge/hud.types.ts`), as §15 sets (DEC-232); until `SnapshotSystem` fills
