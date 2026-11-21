@@ -89,6 +89,19 @@ const marchDirection = (routes: LaneRoutes, { laneId, team, position }: LaneTowe
  */
 const HORDE_WALK_TIMEOUT_MS = 120_000;
 
+/**
+ * How long a tower horde may take to walk out of its fort and on up its lane: a test budget
+ * (DEC-133 states no time). A horde spawns at its tower, in its fort's middle, and its last rank
+ * is out once the anchor has walked half the fort plus the formation's depth at 0.9 × its slowest
+ * member's speed (`marchSpeedFactor`). The 56 m fort (DEC-315) adds 12 m to that walk: about 4 s
+ * for the BuffTower's medium minions (12 m at 2.9 to 3.2 m/s). Measured on seeds 1, 2 and 10,
+ * every member is out from 11.2 s (7.2 s with 32 m forts) and stays out to 13.6 s. No member is
+ * stuck: all are out again from 15.8 s; between, the dark lane-2 SpawnerTower horde's rear rank
+ * brushes the lava bridge rail west of its fort (with 32 m forts from 13.7 to 15.1 s, after the
+ * old 10 s budget).
+ */
+const HORDE_WALK_SECONDS = 12;
+
 describe('Simulation with a roster and map objects (as the client builds a match)', () => {
   it.each([1, 2])(
     'every bot Legend leaves its Stronghold wall ring within 30 seconds (seed %i)',
@@ -129,7 +142,7 @@ describe('Simulation with a roster and map objects (as the client builds a match
 
   // Seed 10 sets a buff tower's march direction diagonal beside a lake (critic round 3, M-A).
   it.each([1, 2, 10])(
-    'walks every tower horde out of its tower and on up its lane within 10 seconds (DEC-133, seed %i)',
+    `walks every tower horde out of its tower and on up its lane within ${String(HORDE_WALK_SECONDS)} seconds (DEC-133, seed %i)`,
     (seed) => {
       const config = createDefaultGameConfig();
       const map = new MapGenerator().generate(config, seed);
@@ -165,7 +178,7 @@ describe('Simulation with a roster and map objects (as the client builds a match
           origin: { kind: 'structure', structureId: tower.id },
         });
       }
-      for (let tick = 0; tick < 10 * config.tickRate; tick += 1) {
+      for (let tick = 0; tick < HORDE_WALK_SECONDS * config.tickRate; tick += 1) {
         simulation.step();
       }
 

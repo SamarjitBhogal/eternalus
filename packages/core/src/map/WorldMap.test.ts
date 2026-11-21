@@ -332,18 +332,20 @@ describe('WorldMap', () => {
     expect(isWalkableAt(grid, at('capture-point-lane-0'))).toBe(true);
   });
 
+  // 56 m lane tower forts (DEC-315) on 7 lanes of map-1 ground overlap in the default 1600-wide
+  // world, which the generator refuses (DEC-246 (1)); they fit 2400 wide.
   it.each([
-    [1, 'map-1'],
-    [3, 'map-1'],
-    [5, 'map-1'],
-    [7, 'map-1'],
-    [3, 'generated'],
-    [5, 'generated'],
-    [7, 'generated'],
+    [1, 'map-1', 1600],
+    [3, 'map-1', 1600],
+    [5, 'map-1', 1600],
+    [7, 'map-1', 2400],
+    [3, 'generated', 1600],
+    [5, 'generated', 1600],
+    [7, 'generated', 1600],
   ] as const)(
-    'connects each Stronghold to the enemy one along every lane (%i lanes, %s ground)',
-    (numLanes, ground) => {
-      const map = generate({ numLanes, campsPerSide: numLanes > 1 ? 6 : 0 }, ground);
+    'connects each Stronghold to the enemy one along every lane (%i lanes, %s ground, %i wide)',
+    (numLanes, ground, worldWidth) => {
+      const map = generate({ numLanes, campsPerSide: numLanes > 1 ? 6 : 0, worldWidth }, ground);
       const grid = WorldMap.fromDefinition(map, DEFAULT_MAP_LAYOUT.navCellSize, isBlocking);
 
       for (const lane of map.lanes) {

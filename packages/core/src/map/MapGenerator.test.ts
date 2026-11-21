@@ -294,19 +294,19 @@ describe('MapGenerator', () => {
   );
 
   it('refuses forts on neighbouring lanes that would overlap near the gates (DEC-215 (1))', () => {
-    // Critic r2 probe: each lane keeps its own towers apart, but lanes 1 and 2 fan out from
+    // Critic r2 probe: each lane keeps its own towers apart, but lanes 0 and 1 fan out from
     // the Light gates close enough that their first BuffTower forts overlap in a 3200x900 world.
+    // With 56 m forts (DEC-315) 2 BuffTowers do it; 11 (the count for 32 m forts) now widen
+    // their band past its lane first, which refuses the map for another cause.
     expect(() =>
       generate({
         worldWidth: 3200,
         worldHeight: 900,
         numLanes: 7,
         spawnTowersPerLane: 1,
-        // 11, not 9: since a band widens by the fort box diagonal (not its larger side times
-        // root 2), 9 BuffTowers no longer reach the gates.
-        buffTowersPerLane: 11,
+        buffTowersPerLane: 2,
       }),
-    ).toThrow(/forts of light-buff-tower-lane-1-0 and light-buff-tower-lane-2-0 over each other/);
+    ).toThrow(/forts of light-buff-tower-lane-0-0 and light-buff-tower-lane-1-0 over each other/);
   });
 
   it('refuses a tower band widened past the end of its lane', () => {
@@ -315,23 +315,29 @@ describe('MapGenerator', () => {
     );
   });
 
-  it('generates 1 SpawnerTower and 6 BuffTowers on 3 lanes: the buff band widens but no tower passes the spawner (DEC-246 (2))', () => {
+  // With 56 m forts (DEC-315) 4 is the most BuffTowers behind one SpawnerTower in the default
+  // world: their band widens from 0.14..0.22 to about 0.08..0.28 of the lane, the SpawnerTower
+  // stands at 0.35, and a fifth BuffTower's fort overlaps the SpawnerTower's.
+  it('generates 1 SpawnerTower and 4 BuffTowers on 3 lanes: the buff band widens but no tower passes the spawner (DEC-246 (2))', () => {
     expect(() =>
-      generate({ numLanes: 3, spawnTowersPerLane: 1, buffTowersPerLane: 6 }),
+      generate({ numLanes: 3, spawnTowersPerLane: 1, buffTowersPerLane: 4 }),
     ).not.toThrow();
   });
 
   it('generates a lane with no SpawnerTower: the order rule needs a tower of each kind', () => {
+    // 6 BuffTowers behind a SpawnerTower break the order rule (the test below); with no
+    // SpawnerTower there is no order to break.
     expect(() =>
-      generate({ numLanes: 3, spawnTowersPerLane: 0, buffTowersPerLane: 8 }),
+      generate({ numLanes: 3, spawnTowersPerLane: 0, buffTowersPerLane: 6 }),
     ).not.toThrow();
   });
 
   it('refuses a last BuffTower that is not behind the first SpawnerTower, naming the cause', () => {
-    // 10 BuffTowers widen their band until the last one stands past the SpawnerTower. The map
-    // was refused before too, but as forts over each other, which does not name the cause.
-    expect(() => generate({ numLanes: 3, spawnTowersPerLane: 1, buffTowersPerLane: 10 })).toThrow(
-      /map\.spawnTowersPerLane = 1 and map\.buffTowersPerLane = 10 put the towers of lane-\d where a lane band rule breaks: laneBands\.spawner must lie ahead of laneBands\.buff \(map\.worldWidth = 1600, map\.worldHeight = 900\)/,
+    // 6 BuffTowers widen their band until the last one stands past the SpawnerTower (with 56 m
+    // forts, DEC-315; 10 at 32 m, which now also widen the band past its lane). The map was refused
+    // before too, but as forts over each other, which does not name the cause.
+    expect(() => generate({ numLanes: 3, spawnTowersPerLane: 1, buffTowersPerLane: 6 })).toThrow(
+      /map\.spawnTowersPerLane = 1 and map\.buffTowersPerLane = 6 put the towers of lane-\d where a lane band rule breaks: laneBands\.spawner must lie ahead of laneBands\.buff \(map\.worldWidth = 1600, map\.worldHeight = 900\)/,
     );
   });
 
@@ -630,7 +636,11 @@ describe('MapGenerator', () => {
   });
 
   it('refuses to build a gate its turrets would close (too many lanes for the ring)', () => {
-    expect(() => generate({ numLanes: 9 })).toThrow(/minGateOpening/);
+    // No lane towers: the generator places them before it raises the walls, and with 56 m forts
+    // (DEC-315) 9 lanes' forts overlap first (DEC-246 (1)).
+    expect(() => generate({ numLanes: 9, spawnTowersPerLane: 0, buffTowersPerLane: 0 })).toThrow(
+      /minGateOpening/,
+    );
     const narrowArc = new MapGenerator({
       layout: {
         ...DEFAULT_MAP_LAYOUT,
@@ -642,11 +652,22 @@ describe('MapGenerator', () => {
     );
   });
 
-  it.each([1, 3, 5, 7])(
-    'is mirror-symmetric in every feature, terrain shape and lane (%i lanes)',
-    (numLanes) => {
+  // 56 m lane tower forts (DEC-315) on 7 lanes of map-1 ground overlap in the default 1600-wide
+  // world, which the generator refuses (DEC-246 (1)); they fit 2400 wide.
+  it.each([
+    [1, 1600],
+    [3, 1600],
+    [5, 1600],
+    [7, 2400],
+  ])(
+    'is mirror-symmetric in every feature, terrain shape and lane (%i lanes, %i wide)',
+    (numLanes, worldWidth) => {
       for (const ground of GROUNDS) {
-        const map = generate({ numLanes, campsPerSide: numLanes > 1 ? 6 : 0 }, SEED, ground);
+        const map = generate(
+          { numLanes, campsPerSide: numLanes > 1 ? 6 : 0, worldWidth },
+          SEED,
+          ground,
+        );
         expect(findAsymmetries(map)).toEqual([]);
       }
     },
@@ -670,15 +691,27 @@ describe('MapGenerator', () => {
     expect(findAsymmetries(map)).toEqual([]);
   });
 
+  // The lanes are laid before the towers, so towers do not shape them. 7 lanes' 56 m forts
+  // (DEC-315) overlap on map-1 ground in a 1600x1400 world (DEC-246 (1)), so that case has none.
   it.each([
-    [1600, 1800, 5],
-    [1600, 1400, 7],
-    [2400, 900, 3],
+    [1600, 1800, 5, 1],
+    [1600, 1400, 7, 0],
+    [2400, 900, 3, 1],
   ])(
-    'keeps lanes out of their own walls in a %ix%i world with %i lanes',
-    (worldWidth, worldHeight, numLanes) => {
+    'keeps lanes out of their own walls in a %ix%i world with %i lanes (towers of each kind per lane: %i)',
+    (worldWidth, worldHeight, numLanes, towers) => {
       for (const ground of GROUNDS) {
-        const map = generate({ worldWidth, worldHeight, numLanes }, SEED, ground);
+        const map = generate(
+          {
+            worldWidth,
+            worldHeight,
+            numLanes,
+            spawnTowersPerLane: towers,
+            buffTowersPerLane: towers,
+          },
+          SEED,
+          ground,
+        );
         expect(map.lanes).toHaveLength(numLanes);
         for (const lane of map.lanes) {
           expect(
