@@ -4,7 +4,7 @@ description: The loadout slots a Legend carries, pre-game configuration with aut
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-19
+last-reviewed: 2026-11-20
 tags: [reference, game-design, loadout, profile]
 paths: ['packages/core/src/loadout/**', 'apps/client/src/ui/screens/LoadoutScreen*']
 related:
@@ -25,16 +25,16 @@ profile that remembers loadouts between matches. The items that fill the slots a
 From the game doc, per Legend (per class, since abilities, artifacts and skins are
 class-specific):
 
-| Slot                      | Filled from                                                                                                               | Status                                                    |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| Primary weapon            | Any non-unique weapon, or the class's unique weapon                                                                       | **MVP**                                                   |
-| Secondary weapon          | As above                                                                                                                  | **MVP-if-time** (one weapon is enough for the MVP attack) |
-| Passive ability or aura   | The class's passives (for example Magus: Studious or Necromancy)                                                          | **MVP-if-time**                                           |
-| Artifact 1 and artifact 2 | The class's artifacts (gadget slots Z and C)                                                                              | slots **MVP**, artifacts **MVP-if-time**                  |
-| Armour set                | Not described anywhere else in the sources                                                                                | **post-MVP**                                              |
-| Ability 1, 2 and 3        | Three from the class's ability pool, each with its variety where one exists (pool rule below)                             | **MVP** ("some ability options")                          |
-| Ultimate                  | One from the class's ultimates (pool rule below); the slot is implied by "changing abilities or ultimate resets cooldown" | **MVP** (one equipped, chosen from the class's ultimates) |
-| Per-class skin selection  | Light and Dark unique skins per class (`10-art-and-lore.md`)                                                              | **post-MVP** (one skin per team in the MVP)               |
+| Slot                      | Filled from                                                                                                               | Status                                                                                                    |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Primary weapon            | Any non-unique weapon, or the class's unique weapon                                                                       | **MVP**                                                                                                   |
+| Secondary weapon          | As above                                                                                                                  | **MVP-if-time** (one weapon is enough for the MVP attack)                                                 |
+| Passive ability or aura   | The class's passives (for example Magus: Studious or Necromancy)                                                          | **MVP-if-time**                                                                                           |
+| Artifact 1 and artifact 2 | The class's artifacts (gadget slots Z and C)                                                                              | slots **MVP**, artifacts **MVP-if-time**                                                                  |
+| Armour set                | Not described anywhere else in the sources                                                                                | **post-MVP**                                                                                              |
+| Ability 1, 2 and 3        | Three from the class's ability pool, each with its variety where one exists (pool rule below)                             | **MVP** ("some ability options")                                                                          |
+| Ultimate                  | One from the class's ultimates (pool rule below); the slot is implied by "changing abilities or ultimate resets cooldown" | **MVP** (one equipped, chosen from the class's ultimates)                                                 |
+| Per-class skin selection  | Light and Dark unique skins per class (`10-art-and-lore.md`)                                                              | **post-MVP** (one skin per team in the MVP; DEC-38: changeable, team- and class-gated, full-game stretch) |
 
 **Pool rule (DEC-11, confirmed in chat 2026-10-10).** The owner: "a player chooses 3 abilities and 1
 ultimate from the set of abilities and ultimates that are available to their class when

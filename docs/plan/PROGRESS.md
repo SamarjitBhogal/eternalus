@@ -9311,3 +9311,22 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   without a conflict and keeps one DEC-38 row.
 - Checks run: `npm run check` (2026-11-19) → exit 0: "All matched files use Prettier code style!"; core "Test Files 268 passed (268)", "Tests 1647 passed (1647)"; protocol "Tests 29 passed (29)"; client "Test Files 298 passed (298)", "Tests 2011 passed (2011)"; server "Test Files 21 passed (21)", "Tests 84 passed (84)"; "✓ built in 883ms"; "Documentation check passed."
 - Next step: push `docs/land-dec-38`; PR #133 merges after one teammate approval and green CI.
+
+### 2026-11-20 — Phase 3 / sprint 3 work: PR #133 review round 1 (merge phase/3 `a3550159`, B1, S1–S5, N1, N2) — docs/land-dec-38 — sholtzman + Claude Code
+
+- What was done: claudiodh's request-changes review on `9669cc66`.
+  - B1: merged `origin/phase/3-sprint-3-work` (`a3550159`, after #125 and #140) into the branch.
+    Conflicts were this file (phase/3's entries kept, ours appended) and the decisions-log
+    frontmatter (phase/3's `last-reviewed`).
+  - S1: the DEC-38 quote now reads "[affecting]": the owner typed "effecting" in `f27a1a17`; his
+    standing rule is to correct typos, and the brackets mark the edit in a verbatim quote.
+  - S2: the DEC-38 row says that Jira SCRUM-411 is a paraphrase of the quote and that the verbatim
+    text was recorded in `f27a1a17`.
+  - S3: the DEC-38 backlog row is folded into the existing team-skins row (one row per feature).
+  - S4, S5: `last-reviewed` bumped on the Legend team brief; `08-loadout.md` (skin row) and
+    `10-art-and-lore.md` (skin paragraph) now name DEC-38.
+  - N1: the second DEC-11 clarification starts "Also confirmed the same day (the owner's words)".
+  - N2: `07-weapons-and-artifacts.md` states that only the class and its subclasses can use its
+    unique weapon (DEC-11), which the DEC-11 row now lists under Changes.
+- Checks run: `npm run check` (2026-11-20) → exit 0: "All matched files use Prettier code style!"; core "Test Files 275 passed (275)", "Tests 1674 passed (1674)"; protocol "Tests 29 passed (29)"; client "Test Files 298 passed (298)", "Tests 2011 passed (2011)"; server "Test Files 21 passed (21)", "Tests 84 passed (84)"; "✓ built in 458ms"; "Documentation check passed." No critic or ponytail re-run: docs-only fixes the reviewer asked for, and the reviewer re-reviews them.
+- Next step: push, reply to the review, re-request review from claudiodh.

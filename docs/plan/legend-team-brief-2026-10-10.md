@@ -4,7 +4,7 @@ description: One-stop brief for the teammates implementing Legend entities and a
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-10
+last-reviewed: 2026-11-20
 tags: [plan, legends, abilities, status-effects, duel, brief]
 related:
   - 'docs/reference/game-design/13-owner-decisions-log.md'
