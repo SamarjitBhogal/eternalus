@@ -176,13 +176,19 @@ export class StateHasher {
       );
     }
     const combat = entity.findComponent(Combat);
-    if (combat !== undefined && (combat.targetId !== null || combat.readyAtTick > 0)) {
-      // Only the melee mode adds a field, so runs that never use it hash as before (DEC-308).
-      fields.push(
-        combat.mode === 'melee'
-          ? ['combat', combat.targetId, combat.readyAtTick, 'melee']
-          : ['combat', combat.targetId, combat.readyAtTick],
-      );
+    if (
+      combat !== undefined &&
+      (combat.targetId !== null || combat.aimPoint !== null || combat.readyAtTick > 0)
+    ) {
+      // Only the melee mode and an aim point add fields, so runs that never use them hash as
+      // before (DEC-308, DEC-184).
+      fields.push([
+        'combat',
+        combat.targetId,
+        combat.readyAtTick,
+        ...(combat.mode === 'melee' ? ['melee'] : []),
+        ...(combat.aimPoint === null ? [] : ['aim', combat.aimPoint.x, combat.aimPoint.y]),
+      ]);
     }
     const vision = entity.findComponent(Vision);
     if (vision !== undefined) {

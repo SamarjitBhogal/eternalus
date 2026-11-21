@@ -81,4 +81,89 @@ describe('Combat', () => {
       expect(rangedOnly.setTarget(null)).toBe(true);
     });
   });
+
+  describe('aim point (DEC-184)', () => {
+    const melee = { strategy: 'melee', damage: 40, reach: 1.5, interval: 27 } as const;
+    const ranged = {
+      strategy: 'ranged-projectile',
+      damage: 40,
+      reach: 15,
+      interval: 27,
+      projectile: { projectileId: 'magus-bolt', falloff: null },
+    } as const;
+
+    it('holds a target or an aim point, never both', () => {
+      const combat = new Combat({ basic: melee });
+
+      combat.setTarget('t');
+      expect(combat.setAim({ x: 3, y: 4 })).toBe(true);
+      expect(combat.aimPoint).toEqual({ x: 3, y: 4 });
+      expect(combat.targetId).toBeNull();
+      combat.setTarget('u');
+      expect(combat.targetId).toBe('u');
+      expect(combat.aimPoint).toBeNull();
+    });
+
+    it('copies the point it is given, so a later change of the caller does not move the aim', () => {
+      const combat = new Combat({ basic: melee });
+      const point = { x: 1, y: 2 };
+
+      combat.setAim(point);
+      point.x = 99;
+
+      expect(combat.aimPoint).toEqual({ x: 1, y: 2 });
+    });
+
+    it('stops with null, resetting the mode, and leaves a target alone when there is no aim', () => {
+      const combat = new Combat({ basic: ranged, melee }, 'staff');
+      combat.setAim({ x: 1, y: 1 }, 'melee');
+      expect(combat.mode).toBe('melee');
+
+      expect(combat.setAim(null)).toBe(true);
+      expect(combat.aimPoint).toBeNull();
+      expect(combat.mode).toBe('basic');
+      expect(combat.attack).toBe(ranged);
+
+      combat.setTarget('t', 'melee');
+      combat.setAim(null);
+      expect(combat.targetId).toBe('t');
+      expect(combat.mode).toBe('melee');
+    });
+
+    it('refuses a mode it has no attack for and changes nothing', () => {
+      const combat = new Combat({ basic: ranged });
+      combat.setTarget('t');
+
+      expect(combat.setAim({ x: 1, y: 1 }, 'melee')).toBe(false);
+      expect(combat.aimPoint).toBeNull();
+      expect(combat.targetId).toBe('t');
+    });
+
+    it('is cleared by setTarget(null)', () => {
+      const combat = new Combat({ basic: melee });
+      combat.setAim({ x: 1, y: 1 });
+
+      combat.setTarget(null);
+
+      expect(combat.aimPoint).toBeNull();
+    });
+  });
+
+  describe('swing record (DEC-304)', () => {
+    it('keeps the latest swing as a copy, and starts with none', () => {
+      const combat = new Combat({ basic: { strategy: 'melee', damage: 1, reach: 1, interval: 5 } });
+      const direction = { x: 1, y: 0 };
+      expect(combat.lastSwing).toBeNull();
+
+      combat.recordSwing({ tick: 4, direction, radius: 3, arcDegrees: 90 });
+      direction.x = 0;
+
+      expect(combat.lastSwing).toEqual({
+        tick: 4,
+        direction: { x: 1, y: 0 },
+        radius: 3,
+        arcDegrees: 90,
+      });
+    });
+  });
 });

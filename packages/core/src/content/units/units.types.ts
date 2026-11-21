@@ -22,7 +22,7 @@ export type MovementProfile = {
 export type MovementStrategyId = 'lane-follow' | 'leashed-chase';
 
 /** How an attack is carried out; one `AttackStrategy` per id in `entities/strategies/defaultStrategyRegistry.ts`. */
-export type AttackStrategyId = 'melee' | 'ranged-projectile';
+export type AttackStrategyId = 'melee' | 'melee-sweep' | 'ranged-projectile';
 
 /**
  * How a ranged shot loses damage with distance travelled (05 §10): full damage up to `fullTo`
@@ -57,6 +57,16 @@ type AttackBase = {
 export type MeleeAttack = AttackBase & { readonly strategy: 'melee' };
 
 /**
+ * A weapon swing (DEC-184): hits every body the area in front of the attacker reaches, not one
+ * target. `reach` is the swing's radius from the body edge; `arcDegrees` is the angle of the
+ * wedge, authored in degrees (the owner's unit) and in (0, 180] (DEC-304).
+ */
+export type SweepAttack = AttackBase & {
+  readonly strategy: 'melee-sweep';
+  readonly arcDegrees: number;
+};
+
+/**
  * A shot: spawns a projectile that lands later (05 §10). `reach` is the distance it is fired from.
  */
 export type RangedAttack = AttackBase & {
@@ -65,9 +75,9 @@ export type RangedAttack = AttackBase & {
 };
 
 /**
- * Which of a unit's attacks an `attack-target` command uses: `'basic'` (the default, the first
- * attack of its weapon) or `'melee'` (its melee attack, DEC-308). Architecture 05 §10 plans a
- * later `'heavy'`.
+ * Which of a unit's attacks an `attack-target` or `attack-aim` command uses: `'basic'` (the
+ * default, the first attack of its weapon) or `'melee'` (its melee attack, DEC-308). Architecture
+ * 05 §10 plans a later `'heavy'`.
  */
 export type AttackMode = 'basic' | 'melee';
 
@@ -75,7 +85,7 @@ export type AttackMode = 'basic' | 'melee';
  * A unit's basic attack (architecture 05 §10, `WeaponAttack`). A mob's attack lives on its
  * definition; a Legend has none and attacks with its weapon (`Legend`).
  */
-export type UnitAttack = MeleeAttack | RangedAttack;
+export type UnitAttack = MeleeAttack | SweepAttack | RangedAttack;
 
 /**
  * A unit's attacks by mode, resolved once at spawn (`attacksByMode`). Every unit has a basic

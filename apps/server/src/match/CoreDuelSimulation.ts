@@ -1,7 +1,6 @@
 import {
   type EntityId,
   type InputIntent,
-  type MapObject,
   type PlayableTeam,
   type Simulation,
   type Snapshot,
@@ -11,7 +10,7 @@ import { SeatCommands } from './SeatCommands';
 
 /**
  * The `DuelSimulation` over core's `Simulation` with one human slot per team (ADR 0016 point 1).
- * It keeps the last snapshot, so one `snapshot()` per tick serves the seats' targeting and the
+ * It keeps the last snapshot, so one `snapshot()` per tick serves the
  * broadcast. The verdict comes from core's `match-ended` event, whose winner is a team, not the
  * playerTeam-relative `victory` or `defeat` phase.
  */
@@ -26,7 +25,6 @@ export class CoreDuelSimulation implements DuelSimulation {
   /** @throws Error when a seat's Legend did not spawn. */
   public constructor(
     private readonly simulation: Simulation,
-    mapObjects: readonly MapObject[],
     public readonly seed: number,
   ) {
     this.legends = {
@@ -34,7 +32,7 @@ export class CoreDuelSimulation implements DuelSimulation {
       dark: CoreDuelSimulation.legendOrThrow(simulation, 'dark'),
     };
     const seat = (team: PlayableTeam): SeatCommands =>
-      new SeatCommands(this.legends[team], mapObjects, (command) => {
+      new SeatCommands(this.legends[team], (command) => {
         simulation.enqueueCommand(command);
       });
     this.seats = { light: seat('light'), dark: seat('dark') };
@@ -52,7 +50,7 @@ export class CoreDuelSimulation implements DuelSimulation {
   }
 
   public enqueueIntent(team: PlayableTeam, intent: InputIntent): void {
-    this.seats[team].apply(intent, this.latest);
+    this.seats[team].apply(intent);
   }
 
   public snapshot(): Snapshot {

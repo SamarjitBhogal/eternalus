@@ -1,6 +1,7 @@
 import type { UnitAttack } from '../../content/units/units.types';
 import type { EntityId } from '../../state/EntityStore.types';
 import type { DamageSource } from '../../state/GameEvents.types';
+import type { Vec2 } from '../../utils/geometry.types';
 import type { GameState } from '../../state/GameState';
 import type { HitRunner } from '../../state/HitRunner.types';
 import type { Entity } from '../Entity';
@@ -26,11 +27,27 @@ export type AttackContext = {
 };
 
 /**
- * How one kind of attack lands (architecture 04 §4, 05 §10): melee hits at once, a ranged attack
- * spawns a projectile that hits later. Stateless and shared. A new kind is one class, one
+ * Where one attack goes (DEC-184): the locked target, if any, and the unit vector the attack is
+ * aimed along. A one-target melee attack needs `targetId`; a sweep and a shot use `direction`; a
+ * shot also names `targetId` so it can hit that target's outline.
+ */
+export type AttackAim = {
+  /** The entity the attack is locked on, or `null` for an aimed attack with no target. */
+  readonly targetId: EntityId | null;
+  /** Unit vector from the attacker towards the target or the aim point. */
+  readonly direction: Vec2;
+};
+
+/**
+ * How one kind of attack lands (architecture 04 §4, 05 §10): melee hits one target at once, a
+ * sweep hits everything in front of the attacker in the same tick, a ranged attack spawns a
+ * projectile that hits later. Stateless and shared. A new kind is one class, one
  * `AttackStrategyId` member and one line in `defaultStrategyRegistry.ts`.
  */
 export interface AttackStrategy {
-  /** Carries out one attack; `CombatSystem` has already checked reach and cooldown. */
-  attack(attacker: Entity, targetId: EntityId, attack: UnitAttack, context: AttackContext): void;
+  /**
+   * Carries out one attack along `aim`; `CombatSystem` has already checked cooldown, and reach and
+   * line of fire for a locked target.
+   */
+  attack(attacker: Entity, aim: AttackAim, attack: UnitAttack, context: AttackContext): void;
 }

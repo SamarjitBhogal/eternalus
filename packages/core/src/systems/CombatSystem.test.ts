@@ -4,6 +4,8 @@ import { Combat } from '../components/Combat';
 import { DamagePipeline } from '../combat/DamagePipeline';
 import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
+import { Movement } from '../components/Movement';
+import { ProjectilePayload } from '../components/ProjectilePayload';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { StatusEffects } from '../components/StatusEffects';
 import { Transform } from '../components/Transform';
@@ -275,6 +277,165 @@ describe('CombatSystem', () => {
     combatSystem().update(context);
 
     expect(warrior.getComponent(Combat).targetId).toBeNull();
+  });
+
+  describe('aimed attacks and sweeps (DEC-184)', () => {
+    const aimAt = (state: GameState, actorId: string, x: number, y: number) =>
+      state.entities.setAttackAim(actorId, { x, y });
+    const healthOf = (entity: Entity) => entity.getComponent(Health);
+
+    it('sweeps along the aim with no target, hitting a body in front and none behind, and faces the aim', () => {
+      const { state, warrior, spawn, context, combatSystem } = setUp();
+      const front = spawn('light-mob', 'training-dummy', 2, 'dark');
+      const behind = spawn('light-mob', 'training-dummy', -2, 'dark');
+      const { damage } = warrior.getComponent(Combat).attack;
+
+      expect(aimAt(state, warrior.id, 10, 0)).toBe(true);
+      combatSystem().update(context);
+
+      expect(healthOf(front).current).toBe(healthOf(front).max - damage);
+      expect(healthOf(behind).current).toBe(healthOf(behind).max);
+      expect(warrior.getComponent(Transform).facing).toEqual({ x: 1, y: 0 });
+      expect(warrior.getComponent(Combat).lastSwing).toMatchObject({ tick: 0, arcDegrees: 90 });
+    });
+
+    it('attacks along the aim even when no body is in reach, then waits for the cooldown', () => {
+      const { state, warrior, spawn, context, combatSystem } = setUp();
+      const far = spawn('light-mob', 'training-dummy', 50, 'dark');
+      const system = combatSystem();
+      const { interval } = warrior.getComponent(Combat).attack;
+      aimAt(state, warrior.id, 0, 10);
+
+      system.update(context);
+      expect(warrior.getComponent(Combat).canAttack(state.tick)).toBe(false);
+      expect(warrior.getComponent(Combat).readyAtTick).toBe(interval);
+      expect(healthOf(far).current).toBe(healthOf(far).max);
+
+      // A body steps into the wedge before the cooldown ends: it is not hit until the interval.
+      const near = spawn('light-mob', 'training-dummy', 0, 'dark');
+      near.getComponent(Transform).moveTo({ x: 0, y: 2 });
+      for (let tick = 1; tick < interval; tick += 1) {
+        state.advanceTick();
+        system.update(context);
+      }
+      expect(healthOf(near).current).toBe(healthOf(near).max);
+
+      state.advanceTick();
+      system.update(context);
+      expect(healthOf(near).current).toBeLessThan(healthOf(near).max);
+    });
+
+    it('keeps facing the aim point as the unit moves', () => {
+      const { state, warrior, context, combatSystem } = setUp();
+      const system = combatSystem();
+      aimAt(state, warrior.id, 0, 10);
+      system.update(context);
+      expect(warrior.getComponent(Transform).facing).toEqual({ x: 0, y: 1 });
+
+      aimAt(state, warrior.id, -10, 0);
+      state.advanceTick();
+      system.update(context);
+
+      expect(warrior.getComponent(Transform).facing).toEqual({ x: -1, y: 0 });
+    });
+
+    it('fires a shot along the aim with no target and no line-of-fire check', () => {
+      const { state, spawn, context, combatSystem } = setUp();
+      const magus = spawn('magus', 'magus', 10, 'light');
+      let asked = 0;
+      const system = combatSystem({
+        isClear: () => {
+          asked += 1;
+          return false;
+        },
+      });
+      const shots: string[] = [];
+      state.events.on('entity-spawned', ({ entityId, kind }) => {
+        if (kind === 'projectile') shots.push(entityId);
+      });
+      state.entities.setAttackAim(magus.id, { x: 10, y: 8 });
+
+      system.update(context);
+
+      expect(shots).toHaveLength(1);
+      expect(asked).toBe(0);
+      expect(state.entities.get(shots[0] ?? '')?.getComponent(Movement).heading).toEqual({
+        x: 0,
+        y: 1,
+      });
+      expect(
+        state.entities.get(shots[0] ?? '')?.getComponent(ProjectilePayload).targetId,
+      ).toBeNull();
+    });
+
+    it('uses the melee attack of the staff when aimed in melee mode', () => {
+      const { state, spawn, context, combatSystem } = setUp();
+      const magus = spawn('magus', 'magus', 10, 'light');
+      const dummy = spawn('light-mob', 'training-dummy', 12, 'dark');
+      state.entities.setAttackAim(magus.id, { x: 20, y: 0 }, 'melee');
+
+      combatSystem().update(context);
+
+      expect(healthOf(dummy).current).toBeLessThan(healthOf(dummy).max);
+    });
+
+    it('does nothing under cannot-attack, and while the match holds units idle', () => {
+      const { state, warrior, spawn, context, combatSystem } = setUp();
+      const dummy = spawn('light-mob', 'training-dummy', 2, 'dark');
+      const system = combatSystem();
+      aimAt(state, warrior.id, 0, 10);
+      warrior
+        .getComponent(StatusEffects)
+        .apply(loadStatusEffects(CONFIG.tickRate, 2).get('stun'), null, 0);
+
+      system.update(context);
+      expect(warrior.getComponent(Transform).facing).toEqual(INITIAL_FACING);
+      expect(healthOf(dummy).current).toBe(healthOf(dummy).max);
+
+      const other = setUp();
+      const target = other.spawn('light-mob', 'training-dummy', 2, 'dark');
+      aimAt(other.state, other.warrior.id, 10, 0);
+      other.state.match.holdIdle(true);
+      other.combatSystem().update(other.context);
+      expect(healthOf(target).current).toBe(healthOf(target).max);
+      expect(other.warrior.getComponent(Combat).aimPoint).toEqual({ x: 10, y: 0 });
+    });
+
+    it('a locked target sweeps its neighbours in the same swing, and an ally beside it is spared', () => {
+      const { warrior, spawn, context, attack, combatSystem } = setUp();
+      const locked = spawn('light-mob', 'training-dummy', 2, 'dark');
+      const neighbour = spawn('light-mob', 'training-dummy', 2.3, 'dark');
+      neighbour.getComponent(Transform).moveTo({ x: 2.3, y: 0.6 });
+      const ally = spawn('light-mob', 'training-dummy', 2, 'light');
+      ally.getComponent(Transform).moveTo({ x: 2, y: -0.5 });
+      const { damage } = warrior.getComponent(Combat).attack;
+
+      attack(locked);
+      combatSystem().update(context);
+
+      expect(healthOf(locked).current).toBe(healthOf(locked).max - damage);
+      expect(healthOf(neighbour).current).toBe(healthOf(neighbour).max - damage);
+      expect(healthOf(ally).current).toBe(healthOf(ally).max);
+    });
+
+    it('fires along its facing when it stands on the point it aims at, so a shot always moves', () => {
+      const { state, spawn, context, combatSystem } = setUp();
+      const magus = spawn('magus', 'magus', 10, 'light');
+      const dummy = spawn('light-mob', 'training-dummy', 10, 'dark');
+      magus.getComponent(Transform).face({ x: 0, y: 1 });
+      const shots: string[] = [];
+      state.events.on('entity-spawned', ({ entityId, kind }) => {
+        if (kind === 'projectile') shots.push(entityId);
+      });
+      state.entities.setAttackTarget(magus.id, dummy.id);
+
+      combatSystem().update(context);
+
+      expect(state.entities.get(shots[0] ?? '')?.getComponent(Movement).heading).toEqual({
+        x: 0,
+        y: 1,
+      });
+    });
   });
 
   it('gives the same hash for the same seed and attacks (determinism)', () => {

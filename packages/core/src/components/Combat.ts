@@ -1,13 +1,21 @@
 import type { AttackMode, UnitAttack, UnitAttacks } from '../content/units/units.types';
+import type { Vec2 } from '../utils/geometry.types';
+import type { CombatSwing } from './Combat.types';
 
 /**
- * A unit's attack state (architecture 04 §3): what it attacks, its target and when it may hit
- * again. `CombatSystem` reads it every tick; the `attack-target` command sets the target and the
- * attack mode. Ids are plain strings because `components/` may not import `state/` (02 §2).
+ * A unit's attack state (architecture 04 §3): what it attacks, its target (or the point it attacks
+ * towards) and when it may hit again. `CombatSystem` reads it every tick; the `attack-target`
+ * command sets the target and the attack mode, the `attack-aim` command sets an aim point and the
+ * mode (DEC-184, DEC-319). A unit holds a target or an aim point, never both. Ids are plain
+ * strings because `components/` may not import `state/` (02 §2).
  * The attacks share one cooldown (`readyAtTick`).
  */
 export class Combat {
   private targetIdValue: string | null = null;
+
+  private aimPointValue: Vec2 | null = null;
+
+  private lastSwingValue: CombatSwing | null = null;
 
   private modeValue: AttackMode = 'basic';
 
@@ -42,6 +50,16 @@ export class Combat {
     return this.targetIdValue;
   }
 
+  /** The world point the unit attacks towards, or `null` when it holds no aimed attack. */
+  public get aimPoint(): Vec2 | null {
+    return this.aimPointValue;
+  }
+
+  /** The latest sweep this unit made, for the swing visual; display only, never hashed. */
+  public get lastSwing(): CombatSwing | null {
+    return this.lastSwingValue;
+  }
+
   /** The first tick the next hit may land. */
   public get readyAtTick(): number {
     return this.readyAtTickValue;
@@ -60,9 +78,45 @@ export class Combat {
       return false;
     }
     this.targetIdValue = targetId;
+    this.aimPointValue = null;
     this.modeValue = nextMode;
     this.attackValue = attack;
     return true;
+  }
+
+  /**
+   * Starts attacking towards `point` with `mode`, dropping any target (DEC-319). `null` stops an aimed
+   * attack and resets the mode, and does nothing when there is none: a target set by
+   * `attack-target` stays.
+   *
+   * @returns `false`, changing nothing, when the unit has no attack for `mode`.
+   */
+  public setAim(point: Vec2 | null, mode: AttackMode = 'basic'): boolean {
+    if (point === null && this.aimPointValue === null) {
+      return true;
+    }
+    const nextMode = point === null ? 'basic' : mode;
+    const attack = this.attacks[nextMode];
+    if (attack === undefined) {
+      return false;
+    }
+    this.aimPointValue = point === null ? null : { x: point.x, y: point.y };
+    if (point !== null) {
+      this.targetIdValue = null;
+    }
+    this.modeValue = nextMode;
+    this.attackValue = attack;
+    return true;
+  }
+
+  /** Records the sweep just made at `swing.tick`, for the client to draw (DEC-304). Copies it. */
+  public recordSwing(swing: CombatSwing): void {
+    this.lastSwingValue = {
+      tick: swing.tick,
+      direction: { x: swing.direction.x, y: swing.direction.y },
+      radius: swing.radius,
+      arcDegrees: swing.arcDegrees,
+    };
   }
 
   /** Whether the attack is off cooldown at `tick`. */

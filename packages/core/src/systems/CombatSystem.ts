@@ -8,7 +8,12 @@ import type { StrategyRegistry } from '../entities/strategies/defaultStrategyReg
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import type { HitRunner } from '../state/HitRunner.types';
 import type { LineOfFireQuery } from '../state/LineOfFire.types';
+import { normalizeInto } from '../utils/vec2';
 import type { MutableVec2 } from '../utils/vec2.types';
+import type { Entity } from '../entities/Entity';
+import type { AttackAim } from '../entities/strategies/AttackStrategy.types';
+import type { GameState } from '../state/GameState';
+import type { Vec2 } from '../utils/geometry.types';
 import type { CombatSystemOptions } from './CombatSystem.types';
 import type { System, SystemContext } from './System.types';
 
@@ -27,11 +32,17 @@ import type { System, SystemContext } from './System.types';
  * target, keeps it and stays ready, and its controller moves it. `ProjectileSystem`, right before
  * this system, flies and lands the shots. Getting into reach is the controller's job (moving), not
  * this system's.
+ *
+ * A unit with an aim point instead of a target (`attack-aim`, DEC-184) attacks along the line to
+ * that point whenever the attack is off cooldown: it faces the point every tick, with no reach and
+ * no line-of-fire check (a shot into a wall just ends there, a sweep hits what its wedge reaches).
  */
 export class CombatSystem implements System {
   public readonly name = 'combat';
   /** Scratch for the point the attacker faces. */
   private readonly aim: MutableVec2 = { x: 0, y: 0 };
+  /** Scratch for the unit vector an attack is aimed along. */
+  private readonly direction: MutableVec2 = { x: 0, y: 0 };
   private readonly damage: DamagePipeline;
   private readonly hits: HitRunner | null;
   private readonly strategies: StrategyRegistry;
@@ -60,7 +71,14 @@ export class CombatSystem implements System {
     }
     state.entities.forEach((attacker) => {
       const combat = attacker.findComponent(Combat);
-      if (combat?.targetId == null) {
+      if (combat === undefined) {
+        return;
+      }
+      if (combat.aimPoint !== null) {
+        this.attackAimPoint(state, attacker, combat, combat.aimPoint);
+        return;
+      }
+      if (combat.targetId === null) {
         return;
       }
 
@@ -76,8 +94,10 @@ export class CombatSystem implements System {
       if (!state.entities.isInReach(attacker.id, target.id)) {
         return;
       }
-      if (state.entities.facingPointOf(attacker.id, target.id, this.aim)) {
-        attacker.getComponent(Transform).lookAt(this.aim);
+      const transform = attacker.getComponent(Transform);
+      const hasPoint = state.entities.facingPointOf(attacker.id, target.id, this.aim);
+      if (hasPoint) {
+        transform.lookAt(this.aim);
       }
       if (
         !combat.canAttack(state.tick) ||
@@ -86,13 +106,54 @@ export class CombatSystem implements System {
         return;
       }
 
-      this.strategies.attack[combat.attack.strategy].attack(attacker, target.id, combat.attack, {
-        state,
-        damage: this.damage,
-        hits: this.hits,
-        factory: this.factory,
+      this.land(state, attacker, combat, {
+        targetId: target.id,
+        // No point to face: `directionTo` falls back to the attacker's facing.
+        direction: this.directionTo(transform, hasPoint ? this.aim : transform.position),
       });
-      combat.beginAttack(state.tick, statuses?.multiplier('attackSpeed') ?? 1);
     });
+  }
+
+  /**
+   * An aimed attack: face the point every tick, and when off cooldown attack along the line to it
+   * with no target. Does nothing under `cannot-attack`.
+   */
+  private attackAimPoint(state: GameState, attacker: Entity, combat: Combat, point: Vec2): void {
+    if (attacker.findComponent(StatusEffects)?.has('cannot-attack') === true) {
+      return;
+    }
+    const transform = attacker.getComponent(Transform);
+    transform.lookAt(point);
+    if (combat.canAttack(state.tick)) {
+      this.land(state, attacker, combat, {
+        targetId: null,
+        direction: this.directionTo(transform, point),
+      });
+    }
+  }
+
+  /** Runs the attack's strategy along `aim`, then puts the attack on cooldown. */
+  private land(state: GameState, attacker: Entity, combat: Combat, aim: AttackAim): void {
+    this.strategies.attack[combat.attack.strategy].attack(attacker, aim, combat.attack, {
+      state,
+      damage: this.damage,
+      hits: this.hits,
+      factory: this.factory,
+    });
+    combat.beginAttack(
+      state.tick,
+      attacker.findComponent(StatusEffects)?.multiplier('attackSpeed') ?? 1,
+    );
+  }
+
+  /** The unit vector from the attacker to `point` (scratch); its facing when it stands on it. */
+  private directionTo(transform: Transform, point: Vec2): Vec2 {
+    const { position, facing } = transform;
+    normalizeInto(this.direction, { x: point.x - position.x, y: point.y - position.y });
+    if (this.direction.x === 0 && this.direction.y === 0) {
+      this.direction.x = facing.x;
+      this.direction.y = facing.y;
+    }
+    return this.direction;
   }
 }

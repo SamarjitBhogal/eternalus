@@ -111,6 +111,7 @@ export type {
   ProjectileSnapshot,
   Snapshot,
   StatusSnapshot,
+  SwingSnapshot,
 } from './state/Snapshot.types';
 export { StateHasher } from './state/StateHasher';
 // DEC-178: the client uses core's "other team" rule instead of a copy.

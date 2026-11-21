@@ -8,6 +8,7 @@ import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { ChaseWatch } from '../components/ChaseWatch';
+import { Combat } from '../components/Combat';
 import { CombatClock } from '../components/CombatClock';
 import { ProjectileFlight } from '../components/ProjectileFlight';
 import { ProjectilePayload } from '../components/ProjectilePayload';
@@ -372,6 +373,67 @@ describe('StateHasher', () => {
     expect(clocked).not.toBe(bare);
     expect(dealt).not.toBe(clocked);
     expect(hasher.hash(state)).not.toBe(dealt);
+  });
+
+  it('hashes an aim point only while one is set, and tells aim points apart (DEC-184)', () => {
+    const { state, soldier } = stateWithSoldier();
+    const combat = new Combat({ basic: { strategy: 'melee', damage: 1, reach: 1, interval: 5 } });
+    soldier.addComponent(combat);
+    combat.setTarget('entity-9');
+    const targeting = hasher.hash(state);
+
+    combat.setAim({ x: 5, y: 6 });
+    const aimed = hasher.hash(state);
+    combat.setAim({ x: 5, y: 7 });
+    const aimedElsewhere = hasher.hash(state);
+    combat.setAim(null);
+    combat.setTarget('entity-9');
+
+    expect(aimed).not.toBe(targeting);
+    expect(aimedElsewhere).not.toBe(aimed);
+    // Without an aim the field is the same as before aimed attacks existed: back to the old hash.
+    expect(hasher.hash(state)).toBe(targeting);
+  });
+
+  it('hashes a unit with a target, and a melee target, exactly as before aimed attacks existed (DEC-184)', () => {
+    // Pinned from the hasher at the commit before `attack-aim`; a changed value breaks old replays.
+    const hashWith = (mode: 'basic' | 'melee', isReady: boolean): number => {
+      const { state, soldier } = stateWithSoldier();
+      const attack = { strategy: 'melee', damage: 1, reach: 1, interval: 5 } as const;
+      const combat = new Combat({ basic: attack, melee: attack });
+      soldier.addComponent(combat);
+      combat.setTarget('entity-9', mode);
+      if (isReady) combat.beginAttack(2);
+      return hasher.hash(state);
+    };
+
+    expect(hashWith('basic', false)).toBe(1983316836);
+    expect(hashWith('basic', true)).toBe(3886219609);
+    expect(hashWith('melee', false)).toBe(3814708316);
+    expect(hashWith('melee', true)).toBe(2312166913);
+  });
+
+  it('hashes an aimed attack that has not yet landed, with no target and no cooldown', () => {
+    const { state, soldier } = stateWithSoldier();
+    const combat = new Combat({ basic: { strategy: 'melee', damage: 1, reach: 1, interval: 5 } });
+    soldier.addComponent(combat);
+    const idle = hasher.hash(state);
+
+    combat.setAim({ x: 5, y: 6 });
+
+    expect(hasher.hash(state)).not.toBe(idle);
+  });
+
+  it('does not hash the swing record, which is display only (DEC-304)', () => {
+    const { state, soldier } = stateWithSoldier();
+    const combat = new Combat({ basic: { strategy: 'melee', damage: 1, reach: 1, interval: 5 } });
+    soldier.addComponent(combat);
+    combat.setTarget('entity-9');
+    const before = hasher.hash(state);
+
+    combat.recordSwing({ tick: 3, direction: { x: 1, y: 0 }, radius: 3, arcDegrees: 90 });
+
+    expect(hasher.hash(state)).toBe(before);
   });
 
   it('differs between seeds', () => {

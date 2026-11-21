@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Abilities } from '../components/Abilities';
+import { Collider } from '../components/Collider';
 import { Deploying } from '../components/Deploying';
 import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
@@ -414,5 +415,34 @@ describe('EntityStore', () => {
     expect(faceAt('nowhere', 'house')).toBeNull();
     expect(faceAt('outside', 'nowhere')).toBeNull();
     expect(faceAt('outside', 'nobody')).toBeNull();
+  });
+
+  it('hits a walk-on outline or a body that takes no damage now only when targeted (DEC-317)', () => {
+    const store = new EntityStore();
+    const square = [
+      { x: 0, y: 0 },
+      { x: 4, y: 0 },
+      { x: 4, y: 4 },
+      { x: 0, y: 4 },
+    ];
+    const add = (id: string): Dummy => {
+      const entity = new Dummy(id, `${id}-definition`);
+      store.add(entity);
+      return entity;
+    };
+    add('floor').addComponent(new Footprint([square], { isWalkOn: true }));
+    add('fort').addComponent(new Footprint([square]));
+    const gate = new Collider({ kind: 'circle', radius: 1 }, 'structure', true);
+    gate.setUnbreakable(true);
+    add('gate').addComponent(gate);
+    add('wall').addComponent(new Collider({ kind: 'circle', radius: 1 }, 'structure', true));
+    add('plain');
+
+    expect(store.isHitOnlyWhenTargeted('floor')).toBe(true);
+    expect(store.isHitOnlyWhenTargeted('gate')).toBe(true);
+    expect(store.isHitOnlyWhenTargeted('fort')).toBe(false);
+    expect(store.isHitOnlyWhenTargeted('wall')).toBe(false);
+    expect(store.isHitOnlyWhenTargeted('plain')).toBe(false);
+    expect(store.isHitOnlyWhenTargeted('nobody')).toBe(false);
   });
 });

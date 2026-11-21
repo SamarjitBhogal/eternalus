@@ -40,7 +40,7 @@ describe('LegendView', () => {
     const renderer = new RecordingRenderer();
 
     new LegendView().draw(
-      { entity: WARRIOR, position: AT, facing: SOUTH, isFocused: false },
+      { entity: WARRIOR, position: AT, facing: SOUTH, tick: 0, isFocused: false },
       renderer,
     );
 
@@ -54,11 +54,28 @@ describe('LegendView', () => {
     ]);
   });
 
+  it('draws the swing wedge first, so the outline and disc stay on top (DEC-304)', () => {
+    const renderer = new RecordingRenderer();
+    const swing = { atTick: 5, direction: SOUTH, radius: 2, arcDegrees: 90 };
+
+    new LegendView().draw(
+      { entity: { ...WARRIOR, swing }, position: AT, facing: SOUTH, tick: 5, isFocused: false },
+      renderer,
+    );
+
+    expect(renderer.calls.map((call) => call.op)).toEqual([
+      'fillPolygon',
+      'drawWorldGlyph',
+      'strokePath',
+      'drawWorldGlyph',
+    ]);
+  });
+
   it("adds the focus ring on top when it is the player's Legend", () => {
     const renderer = new RecordingRenderer();
 
     new LegendView().draw(
-      { entity: WARRIOR, position: AT, facing: SOUTH, isFocused: true },
+      { entity: WARRIOR, position: AT, facing: SOUTH, tick: 0, isFocused: true },
       renderer,
     );
 
@@ -72,7 +89,10 @@ describe('LegendView', () => {
     const renderer = new RecordingRenderer();
     const view = new LegendView();
 
-    view.drawMinimap({ entity: WARRIOR, position: AT, facing: SOUTH, isFocused: false }, renderer);
+    view.drawMinimap(
+      { entity: WARRIOR, position: AT, facing: SOUTH, tick: 0, isFocused: false },
+      renderer,
+    );
 
     expect(renderer.calls).toEqual([
       { op: 'drawGlyph', args: [expect.anything(), AT, MINI_MAP_OUTLINE_COLORS.light] },

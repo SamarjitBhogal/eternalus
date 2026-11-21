@@ -11,7 +11,15 @@ export const WUUTHRAD = {
   id: 'wuuthrad',
   displayName: 'Wuuthrad',
   weaponClass: 'battle-axe',
-  attacks: [{ strategy: 'melee', damage: 90, reach: 1.8, interval: 1.2 }], // TUNE: balancing.md Sentinel (90 / 1.2 s); reach unspecified
+  attacks: [
+    {
+      strategy: 'melee-sweep',
+      damage: 90, // TUNE: balancing.md Sentinel (90 / 1.2 s)
+      reach: 2, // TUNE: DEC-305, the weapon's part; the class adds its own (`LegendDefinition.meleeReach`)
+      interval: 1.2, // TUNE: balancing.md Sentinel (1.2 s)
+      arcDegrees: 160, // TUNE: DEC-304
+    },
+  ],
   allowedClasses: 'any',
   uniqueTo: null,
 } as const satisfies WeaponDefinition;

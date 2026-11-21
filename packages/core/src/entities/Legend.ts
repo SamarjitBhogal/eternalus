@@ -90,7 +90,10 @@ export abstract class Legend extends Unit {
       throw new Error(`Legend "${this.id}" needs a weapon source to equip "${weaponId}".`);
     }
     const weapon = weapons.get(weaponId);
-    const attacks = attacksByMode(weapon.attacks);
+    const attacks = attacksByMode(
+      weapon.attacks,
+      reader.placed<LegendDefinition>(context).definition.meleeReach,
+    );
     if (attacks === undefined) {
       throw new Error(`Legend "${this.id}": weapon "${weapon.id}" has no attacks.`);
     }

@@ -1,4 +1,3 @@
-import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { ProjectileFlight } from '../components/ProjectileFlight';
@@ -158,7 +157,6 @@ export class ProjectileSystem implements System {
         transform,
         health,
         membership: entity.findComponent(TeamMembership),
-        collider: entity.findComponent(Collider),
         outline: state.entities.outlineOf(entity.id) ?? null,
       });
     });
@@ -220,14 +218,13 @@ export class ProjectileSystem implements System {
   private static canHit(
     state: GameState,
     payload: ProjectilePayload,
-    { entity, health, membership, collider, outline }: ShotBody,
+    { entity, health, membership }: ShotBody,
   ): boolean {
     return (
       !health.isDead &&
       entity.id !== payload.ownerId &&
       membership?.team !== payload.team &&
-      (entity.id === payload.targetId ||
-        (outline?.isWalkOn !== true && collider?.isUnbreakable !== true)) &&
+      (entity.id === payload.targetId || !state.entities.isHitOnlyWhenTargeted(entity.id)) &&
       state.entities.has(entity.id)
     );
   }

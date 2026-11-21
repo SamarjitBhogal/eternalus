@@ -299,11 +299,11 @@ describe('MatchViewControls', () => {
     input.aim = IN_CATHEDRAL;
 
     controls.setPointerClaimed(true);
-    commands.apply(ACTOR, { entities: [], mapObjects: HOUSE_STATES });
+    commands.apply(ACTOR);
     expect(sent()).toEqual([]);
 
     controls.setPointerClaimed(false);
-    commands.apply(ACTOR, { entities: [], mapObjects: HOUSE_STATES });
-    expect(sent()).toEqual([{ type: 'attack-target', actorId: ACTOR, targetId: HOUSE_ENTITY }]);
+    commands.apply(ACTOR);
+    expect(sent()).toEqual([{ type: 'attack-aim', actorId: ACTOR, aim: IN_CATHEDRAL }]);
   });
 });

@@ -17,6 +17,7 @@ export const SENTINEL = {
   alternateLayoutDescription: null,
   detailNames: { signature: null, proficiency: null, specialty: null },
   baseHealth: 1200, // TUNE:
+  meleeReach: 4, // TUNE: DEC-305
   baseAether: 80, // TUNE: balancing.md (level 1)
   weaponBias: 'heavy',
   damageFocus: 'physical',

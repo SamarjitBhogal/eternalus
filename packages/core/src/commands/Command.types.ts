@@ -45,6 +45,16 @@ type CommandPayloads = {
     /** Which attack to use; absent means `'basic'`, so recorded replays stay valid (DEC-308). */
     readonly mode?: AttackMode;
   };
+  /**
+   * Attack towards a world point with no target (DEC-184): a sweep hits what its wedge reaches, a
+   * shot flies along the line. `aim: null` stops the aimed attack.
+   */
+  readonly 'attack-aim': {
+    readonly actorId: EntityId;
+    readonly aim: Vec2 | null;
+    /** Which attack to use; absent means `'basic'`. */
+    readonly mode?: AttackMode;
+  };
   readonly 'cast-ability': {
     readonly actorId: EntityId;
     readonly slot: AbilitySlot;

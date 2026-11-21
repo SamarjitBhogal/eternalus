@@ -1,6 +1,7 @@
 import { Abilities } from '../components/Abilities';
 import type { Aim } from '../components/AbilitySlotRuntime.types';
 import { ChaseWatch } from '../components/ChaseWatch';
+import { Collider } from '../components/Collider';
 import { Combat } from '../components/Combat';
 import { ControllerBinding } from '../components/ControllerBinding';
 import { Deploying } from '../components/Deploying';
@@ -175,6 +176,19 @@ export class EntityStore {
   }
 
   /**
+   * Whether `id` is hit only by an attack aimed at it (DEC-317): a walk-on outline (a palace floor,
+   * a gate's passage), which shots fly over and sweeps pass over, or a body that takes no damage
+   * now (`Collider.isUnbreakable`: a wall or gate before its rule passes). `ProjectileSystem` and
+   * the melee sweep share it. `false` for an unknown id.
+   */
+  public isHitOnlyWhenTargeted(id: EntityId): boolean {
+    return (
+      this.outlineOf(id)?.isWalkOn === true ||
+      this.entities.get(id)?.findComponent(Collider)?.isUnbreakable === true
+    );
+  }
+
+  /**
    * Writes into `out` the point of `targetId` that attack reach from `from` is measured to, which a
    * chase heads for (`StuckSystem`, `PathingSystem`): `from` itself when it stands inside the
    * target's outline (`outlineOf`), so it is in reach and a chase holds there (DEC-234); else the
@@ -232,7 +246,10 @@ export class EntityStore {
     return this.entities.get(id)?.findComponent(Combat)?.targetId ?? null;
   }
 
-  /** Clears the entity's attack target; does nothing when it cannot attack or is unknown. */
+  /**
+   * Clears the entity's attack target and aim point (`Combat.setTarget(null)` drops both); does
+   * nothing when it cannot attack or is unknown.
+   */
   public clearAttackTarget(id: EntityId): void {
     this.entities.get(id)?.findComponent(Combat)?.setTarget(null);
   }
@@ -277,6 +294,18 @@ export class EntityStore {
    */
   public setAttackTarget(id: EntityId, targetId: EntityId, mode: AttackMode = 'basic'): boolean {
     return this.entities.get(id)?.findComponent(Combat)?.setTarget(targetId, mode) ?? false;
+  }
+
+  /**
+   * Points the entity's `Combat` at the world point `aim` (an aimed attack with no target, DEC-319),
+   * dropping any target; `null` stops an aimed attack. Lets `commands/` set it without importing
+   * `components/`, as `setAttackTarget` does.
+   *
+   * @param mode - Which attack to use (`'melee'` needs a melee attack).
+   * @returns `false` when the entity is unknown or cannot attack (or has no melee for `'melee'`).
+   */
+  public setAttackAim(id: EntityId, aim: Vec2 | null, mode: AttackMode = 'basic'): boolean {
+    return this.entities.get(id)?.findComponent(Combat)?.setAim(aim, mode) ?? false;
   }
 
   /**

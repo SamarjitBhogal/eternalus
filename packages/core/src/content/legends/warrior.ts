@@ -18,6 +18,7 @@ export const WARRIOR = {
   alternateLayoutDescription: null,
   detailNames: { signature: null, proficiency: null, specialty: null },
   baseHealth: 600, // TUNE:
+  meleeReach: 2, // TUNE: DEC-305
   baseAether: 100, // TUNE: balancing.md (level 1)
   weaponBias: 'light',
   damageFocus: 'mixed',

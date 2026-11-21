@@ -56,6 +56,23 @@ export type EntitySnapshot = {
    * other entity.
    */
   readonly projectile: ProjectileSnapshot | null;
+  /**
+   * The unit's latest melee sweep (`Combat.lastSwing`, DEC-304), left out when it has made none, so
+   * the client can draw a fading wedge for a few frames. Display only.
+   */
+  readonly swing?: SwingSnapshot;
+};
+
+/** A melee sweep as the client sees it. */
+export type SwingSnapshot = {
+  /** The tick the swing was made. */
+  readonly atTick: number;
+  /** Unit vector the wedge points along. */
+  readonly direction: { readonly x: number; readonly y: number };
+  /** How far the wedge reaches from the attacker's centre, metres. */
+  readonly radius: number;
+  /** The wedge's angle in degrees. */
+  readonly arcDegrees: number;
 };
 
 /** A projectile's flight as the client sees it. */
