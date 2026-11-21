@@ -109,6 +109,25 @@ describe('WorldObjectStore', () => {
     expect(world.bodyOf('unknown')).toEqual([]);
   });
 
+  it("builds a fort's interior (the box round its walls) once, and keeps it when a wall falls", () => {
+    const { world, objects } = fortFixture();
+    const court = [
+      { x: 0, y: 0 },
+      { x: 10, y: 0 },
+      { x: 10, y: 10 },
+      { x: 0, y: 10 },
+    ];
+    const first = world.interiorOf('fort');
+    const top = objects[1];
+    if (top === undefined) throw new Error('No fixture wall');
+
+    world.destroy(top);
+
+    expect(first).toEqual([court]);
+    expect(world.interiorOf('fort')).toBe(first);
+    expect(world.interiorOf('unknown')).toEqual([]);
+  });
+
   it('destroys one object of a body for good, leaving the others standing', () => {
     const { world, tower, objects } = fortFixture();
     const [keep, top] = objects;

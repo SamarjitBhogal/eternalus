@@ -24,6 +24,9 @@ export class WorldObjectStore {
   /** Map object id → the index of its record. */
   private readonly indexes = new Map<string, number>();
 
+  /** Building id → its interior (`interiorOf`), built on first use: footprints never change. */
+  private readonly interiors = new Map<string, readonly Polygon[]>();
+
   /**
    * Spawns physical objects through the existing registry/factory; terrain has no health entity.
    * An object named in `owners` gets no entity of its own: it is part of its structure's body and
@@ -116,9 +119,23 @@ export class WorldObjectStore {
    * The ground inside the building `buildingId`, as polygons: the floor of its walkable map object
    * of that id (the Stronghold, the Cathedral) and the box round the walls that are `partOf` it
    * (a lane tower's fort court, DEC-185 B). Empty for an id that is neither. Pure data, no kind
-   * test: a building is whatever has a floor or walls under its id.
+   * test: a building is whatever has a floor or walls under its id. Built once per building, as
+   * the damage path asks for it on every wall hit.
    */
   public interiorOf(buildingId: string): readonly Polygon[] {
+    const cached = this.interiors.get(buildingId);
+    if (cached !== undefined) return cached;
+    const interior = this.buildInterior(buildingId);
+    this.interiors.set(buildingId, interior);
+    return interior;
+  }
+
+  /** Persistent destroyed identifiers, including walkable rubble left by retired entities. */
+  public get destroyedIds(): ReadonlySet<string> {
+    return this.destroyed;
+  }
+
+  private buildInterior(buildingId: string): readonly Polygon[] {
     const floors = this.records.flatMap(({ object }) =>
       object.id === buildingId && !object.isBlocking ? object.footprints : [],
     );
@@ -134,11 +151,6 @@ export class WorldObjectStore {
       { x, y: y + height },
     ];
     return [...floors, court];
-  }
-
-  /** Persistent destroyed identifiers, including walkable rubble left by retired entities. */
-  public get destroyedIds(): ReadonlySet<string> {
-    return this.destroyed;
   }
 
   /** Independent diagnostic check against live solids and authored bridge openings. */

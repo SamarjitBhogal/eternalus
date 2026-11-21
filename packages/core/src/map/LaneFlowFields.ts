@@ -4,7 +4,7 @@ import { distance, distanceToPath, isPointInRect } from '../utils/geometry';
 import type { Rect, Vec2 } from '../utils/geometry.types';
 import { FlowField } from './FlowField';
 import { FlowFieldBuilder } from './FlowFieldBuilder';
-import { fortWallBands } from './fortInWorld';
+import type { LaneCorridor } from './LaneFlowFields.types';
 import type { WorldMap } from './WorldMap';
 import { CELL_EDGE_SLACK } from './WorldMap.constants';
 
@@ -33,17 +33,17 @@ export class LaneFlowFields {
    * @param grid - The match's walkability grid.
    * @param map - The generated map: its lanes and the Strongholds.
    * @param corridorHalfWidth - How far from the lane, in world units, the corridor reaches.
-   * @param laneForts - The box of every lane tower fort standing at match start (a lane tower's
-   *   `Footprint` bounds); none when the match has no map objects, so no fort stands.
+   * @param closed - The north and south wall band of every lane tower fort standing at match
+   *   start (`fortWallBands`, read from each fort's wall objects); none when the match has no map
+   *   objects, so no fort stands.
    */
   public constructor(
     grid: WorldMap,
     map: MapDefinition,
     corridorHalfWidth: number,
-    laneForts: readonly Rect[] = [],
+    closed: readonly Rect[] = [],
   ) {
     this.builder = new FlowFieldBuilder(grid);
-    const closed = laneForts.flatMap((box) => fortWallBands(box, map));
     const corridor = { halfWidth: corridorHalfWidth, closed };
     const fields: FlowField[] = [];
     for (const lane of [...map.lanes].sort((a, b) => a.index - b.index)) {
@@ -107,7 +107,7 @@ export class LaneFlowFields {
     map: MapDefinition,
     lane: MapLane,
     team: PlayableTeam,
-    corridor: { readonly halfWidth: number; readonly closed: readonly Rect[] },
+    corridor: LaneCorridor,
   ): FlowField {
     const path = team === 'light' ? lane.path : [...lane.path].reverse();
     const start = path[0] ?? { x: 0, y: 0 };
@@ -138,7 +138,7 @@ export class LaneFlowFields {
   private static corridorOf(
     grid: WorldMap,
     path: readonly Vec2[],
-    { halfWidth, closed }: { readonly halfWidth: number; readonly closed: readonly Rect[] },
+    { halfWidth, closed }: LaneCorridor,
     home: Vec2 | undefined,
     gate: Vec2,
   ): Uint8Array {

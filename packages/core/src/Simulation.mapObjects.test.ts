@@ -9,6 +9,7 @@ import type { MapDefinition, MapFeature } from './content/maps/maps.types';
 import { SPAWN_WAVES } from './content/structures/spawnWaves';
 import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { NullLogger } from './diagnostics/NullLogger';
+import { bodyOf, wallBox } from './map/__fixtures__/fortBody';
 import { MapGenerator } from './map/MapGenerator';
 import { MapObjectBuilder } from './map/MapObjectBuilder';
 import { MapPresentationBuilder } from './map/MapPresentationBuilder';
@@ -56,25 +57,6 @@ const laneTowers = (map: MapDefinition): LaneTower[] =>
       feature.laneId !== undefined,
   );
 
-/** A tower's body: its own object and its fort's wall pieces (`partOf`, DEC-217 (12)). */
-const bodyOf = (mapObjects: readonly MapObject[], id: string) =>
-  mapObjects
-    .filter((object) => object.id === id || object.partOf === id)
-    .flatMap((o) => o.footprints);
-
-/** A tower's walls, as the box around its collider polygons: its hollow core and doorways. */
-const wallBox = (mapObjects: readonly MapObject[], id: string) => {
-  const points = bodyOf(mapObjects, id).flat();
-  const xs = points.map(({ x }) => x);
-  const ys = points.map(({ y }) => y);
-  return {
-    left: Math.min(...xs),
-    right: Math.max(...xs),
-    top: Math.min(...ys),
-    bottom: Math.max(...ys),
-  };
-};
-
 /** The unit direction the tower's team marches its lane at the tower. */
 const marchDirection = (routes: LaneRoutes, { laneId, team, position }: LaneTower): Vec2 => {
   const forward = { x: 0, y: 0 };
@@ -94,11 +76,12 @@ const HORDE_WALK_TIMEOUT_MS = 120_000;
  * (DEC-133 states no time). A horde spawns at its tower, in its fort's middle, and its last rank
  * is out once the anchor has walked half the fort plus the formation's depth at 0.9 × its slowest
  * member's speed (`marchSpeedFactor`). The 56 m fort (DEC-315) adds 12 m to that walk: about 4 s
- * for the BuffTower's medium minions (12 m at 2.9 to 3.2 m/s). Measured on seeds 1, 2 and 10,
- * every member is out from 11.2 s (7.2 s with 32 m forts) and stays out to 13.6 s. No member is
- * stuck: all are out again from 15.8 s; between, the dark lane-2 SpawnerTower horde's rear rank
- * brushes the lava bridge rail west of its fort (with 32 m forts from 13.7 to 15.1 s, after the
- * old 10 s budget).
+ * for the BuffTower's medium minions (12 m at 2.9 to 3.2 m/s). The test records the first tick at
+ * which every member is out and asserts it comes within the budget. Measured on seeds 1, 2 and 10
+ * (the same on all three): that tick is 11.2 s (7.2 s with 32 m forts). Known gap, not asserted
+ * here: members of the dark lane-2 SpawnerTower horde stand outside the fort on ground the grid
+ * calls unwalkable from 9.30 to 11.17 s and again from 13.60 to 15.77 s (it brushes the lava
+ * bridge rail west of its fort).
  */
 const HORDE_WALK_SECONDS = 12;
 
@@ -178,32 +161,42 @@ describe('Simulation with a roster and map objects (as the client builds a match
           origin: { kind: 'structure', structureId: tower.id },
         });
       }
-      for (let tick = 0; tick < HORDE_WALK_SECONDS * config.tickRate; tick += 1) {
+      const { entities, world } = (simulation as unknown as { readonly state: GameState }).state;
+      // The members still in or at their fort, not yet walking their lane, or on unwalkable ground.
+      const notOutNow = (): readonly string[] => {
+        const at = new Map(
+          simulation.snapshot().entities.map(({ id, transform }) => [id, transform]),
+        );
+        return sent.flatMap(({ tower, memberIds }) => {
+          const { left, right, top, bottom } = wallBox(mapObjects, tower.id);
+          const forward = marchDirection(routes, tower);
+          return memberIds.flatMap((id) => {
+            const { x, y } = at.get(id) ?? tower.position;
+            const isInside = x > left && x < right && y > top && y < bottom;
+            const ahead = (x - tower.position.x) * forward.x + (y - tower.position.y) * forward.y;
+            return entities.get(id)?.hasComponent(Deploying) === true ||
+              isInside ||
+              ahead <= 0 ||
+              world?.grid.isWalkableAt(x, y) !== true
+              ? [`${id} of ${tower.id} at ${x.toFixed(0)},${y.toFixed(0)}`]
+              : [];
+          });
+        });
+      };
+      // The first tick at which every member of every horde is out, so a late sample tick cannot
+      // hide or show a delay by chance (S10).
+      const budgetTicks = HORDE_WALK_SECONDS * config.tickRate;
+      let firstAllOut: number | null = null;
+      let notOut: readonly string[] = ['no horde has spawned'];
+      for (let tick = 1; tick <= budgetTicks && firstAllOut === null; tick += 1) {
         simulation.step();
+        notOut = sent.length === towers.length ? notOutNow() : notOut;
+        if (sent.length === towers.length && notOut.length === 0) firstAllOut = tick;
       }
 
-      const { entities, world } = (simulation as unknown as { readonly state: GameState }).state;
-      const stillDeploying = sent.flatMap(({ memberIds }) =>
-        memberIds.filter((id) => entities.get(id)?.hasComponent(Deploying) === true),
-      );
-      const at = new Map(
-        simulation.snapshot().entities.map(({ id, transform }) => [id, transform]),
-      );
-      const notOut = sent.flatMap(({ tower, memberIds }) => {
-        const { left, right, top, bottom } = wallBox(mapObjects, tower.id);
-        const forward = marchDirection(routes, tower);
-        return memberIds.flatMap((id) => {
-          const { x, y } = at.get(id) ?? tower.position;
-          const isInside = x > left && x < right && y > top && y < bottom;
-          const ahead = (x - tower.position.x) * forward.x + (y - tower.position.y) * forward.y;
-          return isInside || ahead <= 0 || world?.grid.isWalkableAt(x, y) !== true
-            ? [`${id} of ${tower.id} at ${x.toFixed(0)},${y.toFixed(0)}`]
-            : [];
-        });
-      });
       expect(sent).toHaveLength(towers.length);
-      expect(stillDeploying).toEqual([]);
       expect(notOut).toEqual([]);
+      expect(firstAllOut ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(budgetTicks);
     },
     HORDE_WALK_TIMEOUT_MS,
   );

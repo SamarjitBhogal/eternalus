@@ -83,41 +83,54 @@ const STEP = new InteriorAttackStep(INTERIOR_ATTACK_DAMAGE_MULTIPLIER);
 const BONUS = 100 * INTERIOR_ATTACK_DAMAGE_MULTIPLIER;
 
 describe('InteriorAttackStep', () => {
-  it('multiplies a hit on a building wall by an attacker standing inside that building (DEC-247 (2))', () => {
-    const { state, wallOf, attackerAt } = setUp();
-    expect(STEP.adjust(hit(attackerAt(10, 10), wallOf('hall-a-wall')), state)).toBe(BONUS);
-  });
-
-  it('leaves a hit from outside the building whole', () => {
-    const { state, wallOf, attackerAt } = setUp();
-    expect(STEP.adjust(hit(attackerAt(10, -5), wallOf('hall-a-wall')), state)).toBe(100);
-  });
-
-  it("leaves a hit from inside building A on building B's wall whole", () => {
-    const { state, wallOf, attackerAt } = setUp();
-    expect(STEP.adjust(hit(attackerAt(10, 10), wallOf('hall-b-wall')), state)).toBe(100);
-  });
-
-  it("multiplies a hit on a tower's fort wall from its court, and passes it on to the tower's pool", () => {
-    const { state, tower, attackerAt } = setUp();
-    expect(STEP.adjust(hit(attackerAt(205, 2), tower), state)).toBe(BONUS);
-  });
-
-  it('leaves a hit from outside the fort whole', () => {
-    const { state, tower, attackerAt } = setUp();
-    expect(STEP.adjust(hit(attackerAt(205, -3), tower), state)).toBe(100);
-  });
-
-  it("leaves a hit on the tower's own body from its court whole", () => {
-    const { state, tower, attackerAt } = setUp();
-    expect(STEP.adjust(hit(attackerAt(205, 3.5), tower), state)).toBe(100);
-  });
-
-  it('gives a ranged attacker inside the bonus, from any distance to the wall', () => {
-    const { state, wallOf, attackerAt } = setUp();
-    expect(STEP.adjust(hit(attackerAt(10, 19), wallOf('hall-a-wall'), 'ability'), state)).toBe(
+  it.each([
+    [
+      'multiplies a hit on a building wall by an attacker standing inside that building (DEC-247 (2))',
+      'hall-a-wall',
+      { x: 10, y: 10 },
+      'weapon',
       BONUS,
-    );
+    ],
+    [
+      'leaves a hit from outside the building whole',
+      'hall-a-wall',
+      { x: 10, y: -5 },
+      'weapon',
+      100,
+    ],
+    [
+      "leaves a hit from inside building A on building B's wall whole",
+      'hall-b-wall',
+      { x: 10, y: 10 },
+      'weapon',
+      100,
+    ],
+    [
+      "multiplies a hit on a tower's fort wall from its court, and passes it on to the tower's pool",
+      'tower',
+      { x: 205, y: 2 },
+      'weapon',
+      BONUS,
+    ],
+    ['leaves a hit from outside the fort whole', 'tower', { x: 205, y: -3 }, 'weapon', 100],
+    [
+      "leaves a hit on the tower's own body from its court whole",
+      'tower',
+      { x: 205, y: 3.5 },
+      'weapon',
+      100,
+    ],
+    [
+      'gives a ranged attacker inside the bonus, from any distance to the wall',
+      'hall-a-wall',
+      { x: 10, y: 19 },
+      'ability',
+      BONUS,
+    ],
+  ] as const)('%s', (_name, target, at, kind, expected) => {
+    const { state, tower, wallOf, attackerAt } = setUp();
+    const targetId = target === 'tower' ? tower : wallOf(target);
+    expect(STEP.adjust(hit(attackerAt(at.x, at.y), targetId, kind), state)).toBe(expected);
   });
 
   it('leaves attackerless hits, and states without map objects, whole', () => {
@@ -127,7 +140,7 @@ describe('InteriorAttackStep', () => {
     expect(STEP.adjust(hit('nobody', 'nothing'), state)).toBe(100);
   });
 
-  it('reads only hashed state: the same setup and hits give the same result and hash', () => {
+  it('is deterministic: the same setup and hits give the same result and hash', () => {
     const run = (): [number, number] => {
       const { state, wallOf, attackerAt } = setUp();
       const amount = STEP.adjust(hit(attackerAt(10, 10), wallOf('hall-a-wall')), state);

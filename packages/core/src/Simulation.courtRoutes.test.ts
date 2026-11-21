@@ -4,6 +4,7 @@ import { MARCHING_ONLY } from './__fixtures__/hordeMatches';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { countdownTicks } from './config/countdownTicks';
 import { NullLogger } from './diagnostics/NullLogger';
+import { fortBox, sideOf, wallBox } from './map/__fixtures__/fortBody';
 import { MapGenerator } from './map/MapGenerator';
 import { MapObjectBuilder } from './map/MapObjectBuilder';
 import { MapPresentationBuilder } from './map/MapPresentationBuilder';
@@ -31,23 +32,10 @@ describe('Simulation lane routes through lane tower courts (DEC-315)', () => {
         content: MARCHING_ONLY,
       });
       const tower = map.features.find(({ id }) => id === towerId);
-      const points = mapObjects
-        .filter((object) => object.id === towerId || object.partOf === towerId)
-        .flatMap(({ footprints }) => footprints.flat());
-      const left = Math.min(...points.map(({ x }) => x));
-      const right = Math.max(...points.map(({ x }) => x));
-      const top = Math.min(...points.map(({ y }) => y));
-      const bottom = Math.max(...points.map(({ y }) => y));
-      const centre = { x: (left + right) / 2, y: (top + bottom) / 2 };
+      const box = fortBox(mapObjects, towerId);
+      const { left, right, top, bottom } = wallBox(mapObjects, towerId);
       const isInside = ({ x, y }: { x: number; y: number }): boolean =>
         x > left && x < right && y > top && y < bottom;
-      // The side of the fort a point just inside or outside its box is nearest to.
-      const sideOf = ({ x, y }: { x: number; y: number }): string => {
-        const dx = (x - centre.x) / (right - left);
-        const dy = (y - centre.y) / (bottom - top);
-        if (Math.abs(dx) >= Math.abs(dy)) return dx < 0 ? 'west' : 'east';
-        return dy < 0 ? 'north' : 'south';
-      };
       for (let tick = 0; tick < countdownTicks(config.match.countdownSeconds, config.tickRate);) {
         simulation.step();
         tick += 1;
@@ -74,7 +62,7 @@ describe('Simulation lane routes through lane tower courts (DEC-315)', () => {
           const now = { x: transform.x, y: transform.y };
           const before = last.get(id);
           if (before !== undefined && isInside(now) !== isInside(before)) {
-            const side = sideOf(isInside(now) ? now : before);
+            const side = sideOf(isInside(now) ? now : before, box);
             crossings.set(id, [
               ...(crossings.get(id) ?? []),
               `${isInside(now) ? 'in' : 'out'} ${side}`,

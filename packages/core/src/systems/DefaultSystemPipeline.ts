@@ -34,6 +34,7 @@ import { PathingSystem } from './PathingSystem';
 import { ProgressionSystem } from './ProgressionSystem';
 import { SpaceSystem } from './SpaceSystem';
 import { SpawnSystem } from './SpawnSystem';
+import { fortWallBands } from '../map/fortInWorld';
 import { StructureSystem } from './StructureSystem';
 import { StuckSystem } from './StuckSystem';
 import { StructureAuraSystem } from './StructureAuraSystem';
@@ -83,7 +84,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
             state.world.grid,
             state.world.definition,
             map.flowFieldCorridorHalfWidth,
-            forts.lane,
+            forts.laneWalls,
           );
     super([
       ...(hordes === undefined ? [] : [...hordes.decide, new HordeSystem(state, HORDE_STEERING)]),
@@ -145,24 +146,26 @@ export class DefaultSystemPipeline extends SystemPipeline {
 
   /**
    * The box of the `Footprint` of every structure whose definition `hasFortBox` (`all`,
-   * `PathingWorld.forts`; not a gate's, DEC-217 (17)), and of those that stand on a lane (`lane`: the
-   * lane tower forts a lane field crosses by their west and east doorways, DEC-315; not the
-   * palace). `Simulation` builds the structures before the pipeline, so they are read here once,
-   * while every one still stands.
+   * `PathingWorld.forts`; not a gate's, DEC-217 (17)), and the north and south wall bands of the
+   * lane tower forts a lane field crosses by their west and east doorways (`laneWalls`, DEC-315;
+   * `fortWallBands` of the structure's body; not the palace). `Simulation` builds the structures
+   * and the world objects before the pipeline, so they are read here once, while every one stands.
    */
   private static fortsOf(
     state: GameState,
     structures: Pick<ContentCatalogue<StructureDefinition>, 'get'>,
-  ): { readonly all: readonly Rect[]; readonly lane: readonly Rect[] } {
+  ): { readonly all: readonly Rect[]; readonly laneWalls: readonly Rect[] } {
     const all: Rect[] = [];
-    const lane: Rect[] = [];
+    const laneWalls: Rect[] = [];
     state.entities.forEach((entity) => {
       const box = entity.findComponent(Footprint)?.bounds;
       if (box !== undefined && structures.get(entity.definitionId).hasFortBox === true) {
         all.push(box);
-        if (entity instanceof Structure && entity.laneId !== null) lane.push(box);
+        if (entity instanceof Structure && entity.laneId !== null) {
+          laneWalls.push(...fortWallBands(state.worldObjects?.bodyOf(entity.id) ?? []));
+        }
       }
     });
-    return { all, lane };
+    return { all, laneWalls };
   }
 }

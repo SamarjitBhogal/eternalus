@@ -13,15 +13,15 @@ import {
   UNREACHED,
 } from './FlowField.constants';
 import type { FlowField } from './FlowField';
+import { bodyObjectsOf, fortBox, sideOf } from './__fixtures__/fortBody';
+import { fortWallBands } from './fortInWorld';
 import { LaneFlowFields } from './LaneFlowFields';
 import { MapGenerator } from './MapGenerator';
 import { MapObjectBuilder } from './MapObjectBuilder';
 import { MapPresentationBuilder } from './MapPresentationBuilder';
 import { MatchGrid } from './MatchGrid';
-import type { MapObject } from '../content/maps/mapObjects.types';
 import type { GameConfig } from '../config/GameConfig.types';
 import { LaneRoutes } from '../state/LaneRoutes';
-import type { Rect } from '../utils/geometry.types';
 import { WorldMap } from './WorldMap';
 
 const isBlocking = (definitionId: string): boolean =>
@@ -29,7 +29,7 @@ const isBlocking = (definitionId: string): boolean =>
 
 /**
  * A generated map with its map objects, its grid as the match stamps it (`MatchGrid`) and its lane
- * fields with the lane tower forts' boxes (each tower's body, as its `Footprint` bounds them).
+ * fields with the lane tower forts' wall bands (`fortWallBands`) and boxes.
  */
 const matchFields = (config: GameConfig, seed: number) => {
   const map = new MapGenerator().generate(config, seed);
@@ -42,31 +42,9 @@ const matchFields = (config: GameConfig, seed: number) => {
     ({ definitionId }) => MAP_FEATURE_DEFINITIONS[definitionId]?.isCourt === true,
   );
   const boxes = towers.map(({ id }) => fortBox(objects, id));
-  const fields = new LaneFlowFields(grid, map, config.map.flowFieldCorridorHalfWidth, boxes);
+  const closed = towers.flatMap(({ id }) => fortWallBands(bodyObjectsOf(objects, id)));
+  const fields = new LaneFlowFields(grid, map, config.map.flowFieldCorridorHalfWidth, closed);
   return { map, grid, fields, towers, boxes };
-};
-
-/** The box round a lane tower's body: its keep and its fort's wall pieces (`partOf`). */
-const fortBox = (objects: readonly MapObject[], id: string): Rect => {
-  const points = objects
-    .filter((object) => object.id === id || object.partOf === id)
-    .flatMap(({ footprints }) => footprints.flat());
-  const xs = points.map(({ x }) => x);
-  const ys = points.map(({ y }) => y);
-  const x = Math.min(...xs);
-  const y = Math.min(...ys);
-  return { x, y, width: Math.max(...xs) - x, height: Math.max(...ys) - y };
-};
-
-/** The side of `box` that `point`, just outside or inside it, is nearest to. */
-const sideOf = (
-  point: { x: number; y: number },
-  box: Rect,
-): 'west' | 'east' | 'north' | 'south' => {
-  const dx = point.x - (box.x + box.width / 2);
-  const dy = point.y - (box.y + box.height / 2);
-  if (Math.abs(dx) / box.width >= Math.abs(dy) / box.height) return dx < 0 ? 'west' : 'east';
-  return dy < 0 ? 'north' : 'south';
 };
 
 /** The generated map for `numLanes`, its grid and its fields. */

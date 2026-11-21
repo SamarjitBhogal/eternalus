@@ -65,9 +65,10 @@ export const BUILDING_GEOMETRY = {
 
 /**
  * A lane tower's footprint radius, in world units at the default world (1 sketch unit = 1 m): half
- * its fort's side less `fort.laneTowerInset`. The tower's circle follows its fort (DEC-315): its
- * map feature's footprint (the court it stamps, `WorldMap.stampCourt`), its structure's radius and
- * so its guard ring (`GuardRoster`) and where a horde gathers before it (`LaneStructures`).
+ * its fort's side less `fort.laneTowerInset`. At the default world the tower's circle follows its
+ * fort (DEC-315): its map feature's footprint (the court it stamps, `WorldMap.stampCourt`), its
+ * structure's radius and so its guard ring (`GuardRoster`) and where a horde gathers before it
+ * (`LaneStructures`). A larger world stretches the fort (`fortInWorld`) but not this radius.
  */
 export const LANE_TOWER_FOOTPRINT_RADIUS =
   BUILDING_GEOMETRY.fort.laneTowerSize / 2 - BUILDING_GEOMETRY.fort.laneTowerInset;
