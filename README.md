@@ -54,6 +54,7 @@ npm run check      # the full quality gate, the same as CI
 | `npm run docs:check`              | Docs frontmatter, relative links and index freshness              |
 | `npm run docs:index`              | Regenerate the index tables in `docs/README.md`                   |
 | `npm run format` / `format:check` | Prettier write / check                                            |
+| `npm run bench`                   | Headless tick bench: p50/p95/max tick time with full lane hordes  |
 
 ## Repository layout
 
