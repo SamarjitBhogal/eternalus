@@ -1,4 +1,4 @@
-import type { GuardAggroRuleDefinition } from '../ai.types';
+import type { AuthoredGuardAggroRule } from '../ai.types';
 import { TOWER_GUARD_AGGRO } from './towerGuard';
 
 /**
@@ -10,4 +10,4 @@ export const CHECKPOINT_DEFENDER_AGGRO = {
   ...TOWER_GUARD_AGGRO,
   id: 'checkpoint-defender',
   shouldAcquireAcrossLeash: true,
-} as const satisfies GuardAggroRuleDefinition;
+} as const satisfies AuthoredGuardAggroRule;

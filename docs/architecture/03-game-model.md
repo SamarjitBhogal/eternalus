@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-15
+last-reviewed: 2026-11-13
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -186,7 +186,7 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 | Event                               | Payload                                                | Emitted by                                                      | Typical listeners                                                                        |
 | ----------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | `entity-spawned`                    | `{ entityId, kind, team }`                             | `EntityFactory` via `SpawnSystem`, or `Simulation` for a roster | `SnapshotSystem`, views, `Scoring` (a row per Legend)                                    |
-| `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`           | `DeathSystem`; `SpawnSystem` (defender despawn, DEC-261)        | `HordeSystem`, `ProjectilePool`, invariants                                              |
+| `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`           | `DeathSystem` only                                              | `HordeSystem`, `ProjectilePool`, invariants                                              |
 | `damage-applied`                    | `{ targetId, amount, absorbed, source: DamageSource }` | `DamagePipeline`                                                | `ProgressionSystem` (assists), `AiSystem` (aggro), `Scoring` (assists, structure damage) |
 | `entity-died`                       | `{ entityId, killer: DamageSource }`                   | `DeathResolver`                                                 | `DeathSystem`, `ProgressionSystem`, `Scoring`, `ObjectiveLostCondition`                  |
 | `structure-destroyed`               | `{ entityId, kind, team, lane }`                       | `StructureSystem`                                               | `EnragedSystem` (enraged lane), `StructureSystem` (walls, shields), `Scoring` (DEC-212)  |
@@ -194,8 +194,8 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 | `camp-cleared`                      | `{ entityId, team, killerId }`                         | `SpawnSystem`                                                   | `ProgressionSystem` (camp reward), `MatchDirector`                                       |
 | `shield-bars-changed`               | `{ entityId, bars }`                                   | `StructureSystem`                                               | HUD, views                                                                               |
 | `capture-progress`                  | `{ pointId, team, progress, checkpoint }`              | `CaptureSystem`                                                 | HUD, `MinimapView`                                                                       |
-| `checkpoint-reached`                | `{ pointId, team, checkpoint, presentLegendIds }`      | `CaptureSystem`                                                 | `Scoring` (DEC-214, DEC-223), `SpawnSystem` (defenders, DEC-259)                         |
-| `capture-point-owner-changed`       | `{ pointId, from, to }`                                | `CaptureSystem`                                                 | `MatchDirector`, `StatusEffectSystem`, `SpawnSystem` (DEC-261)                           |
+| `checkpoint-reached`                | `{ pointId, team, checkpoint, presentLegendIds }`      | `CaptureSystem`                                                 | `Scoring` (DEC-214, DEC-223), checkpoint spawners (Phase 3)                              |
+| `capture-point-owner-changed`       | `{ pointId, from, to }`                                | `CaptureSystem`                                                 | `MatchDirector`, `StatusEffectSystem`                                                    |
 | `phase-changed`                     | `{ from, to }`                                         | `MatchRecord.setPhase` (called by `MatchDirector`)              | `Announcer`                                                                              |
 | `match-ended`                       | `{ result: MatchResult }`                              | `MatchDirector`                                                 | client `MatchBridge` (the results flow)                                                  |
 | `ability-cast`                      | `{ casterId, abilityId, slot }`                        | `AbilitySystem`                                                 | views (VFX), `Announcer`                                                                 |
@@ -432,7 +432,7 @@ requirement ceilings in `config/GameConfig.constants.ts`; this table records whe
 | `hordeSizes`                                        | per weight class; the opening hordes are one per lane (`map.numLanes`)       | requirements doc; DEC-84                   |
 | `plannedMatchSeconds`                               | the target match length; its value: `config/defaultGameConfig.ts`            | DEC-13; DEC-81                             |
 | `flowFieldCorridorHalfWidth`, `flowFieldCellBudget` | a lane field's corridor reach; cells rebuilt per tick after a terrain change | 06 §6, 10 §9; Phase 3 sprint 3.2 (`TUNE`)  |
-| `pathMaxExpansions`, `pathSnapCells`                | A\* for Legends: cells one search may settle; how far a blocked end snaps    | 10 §9, 11 §6 (`TUNE`)                      |
+| `pathMaxSearchArea`, `pathSnapCells`                | A\* for Legends: area a search may settle (m²); how far a blocked end snaps  | 10 §9, 11 §6 (`TUNE`); DEC-243             |
 | `capturePoints`, `timeline`                         | one capture point per lane, the middle one the Cathedral; timed events       | game doc, Capture zones; 12                |
 
 `validateGameConfig(config: unknown)` throws a `ConfigValidationError` naming the first offending

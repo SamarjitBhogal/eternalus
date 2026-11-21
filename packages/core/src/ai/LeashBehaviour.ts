@@ -21,10 +21,10 @@ import { countdownTicks } from '../config/countdownTicks';
  * (a camp mob) that attacks the mob itself (DEC-166). It fights the target with no time limit
  * while the target is inside the leash, switching only to a strictly better-ranked enemy; only
  * such a switch moves the anchor (DEC-160). When the target leaves the leash the mob takes another
- * enemy in reach at once; with none it chases the target for `leashGraceSeconds` (DEC-144 E), even
+ * enemy in reach at once; with none it chases the target for `leashGraceTicks` (DEC-144 E), even
  * while the target attacks it: back inside, the target is fought on, else the leash breaks: the
  * mob emits one `stop` and rests again (with no target, its movement walks it back to its slot or
- * post), and for `aggroCooldownSeconds` it leaves alone the enemy that escaped (DEC-144 F) unless
+ * post), and for `aggroCooldownTicks` it leaves alone the enemy that escaped (DEC-144 F) unless
  * that enemy attacks the mob or a mate while inside the old anchor's leash (DEC-160). A dead
  * target with no enemy left in reach leaves it resting, with no cooldown. It never takes a
  * candidate outside its leash, and `objective` ignores the leash, since a structure cannot drag a
@@ -114,7 +114,6 @@ export class LeashBehaviour {
     rules: LeashRules<Idle, Rule>,
   ): LeashStep<Idle> {
     const { state, id, rule } = situation;
-    const { tickRate } = state.config;
     const { targetId, breakAtTick } = memory;
     const isAlive = targetId !== null && state.entities.isAlive(targetId);
     if (isAlive && this.isInside(situation, memory, rules, targetId)) {
@@ -135,12 +134,11 @@ export class LeashBehaviour {
         commands: stop,
       };
     }
-    const grace = Math.round(rule.leashGraceSeconds * tickRate);
-    const breakAt = breakAtTick === 0 ? state.tick + grace : breakAtTick;
+    const breakAt = breakAtTick === 0 ? state.tick + rule.leashGraceTicks : breakAtTick;
     if (state.tick < breakAt) {
       return { memory: { ...memory, breakAtTick: breakAt }, commands: [] };
     }
-    const cooldownUntilTick = state.tick + Math.round(rule.aggroCooldownSeconds * tickRate);
+    const cooldownUntilTick = state.tick + rule.aggroCooldownTicks;
     return {
       memory: {
         ...memory,

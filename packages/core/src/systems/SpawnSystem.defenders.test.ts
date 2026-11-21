@@ -137,24 +137,21 @@ describe('SpawnSystem', () => {
       expect(after?.respawnAtTick).toBeNull();
     });
 
-    it('despawns the living defenders when the point changes owner (DEC-261)', () => {
+    it('keeps the living defenders, on their own side, when the point changes owner (DEC-261)', () => {
       const { state, step, reach, changeOwner, posts } = setUp('neutral');
       const removed: string[] = [];
-      state.events.on('entity-removed', ({ entityId, cause }) =>
-        removed.push(`${entityId} ${cause}`),
-      );
+      state.events.on('entity-removed', ({ entityId }) => removed.push(entityId));
       reach(1);
       step();
       const ids = posts().map(({ guardId }) => guardId ?? '');
       changeOwner('light');
-      step();
-      step();
+      for (let tick = 0; tick < 10 * TICK_RATE; tick += 1) {
+        step();
+      }
 
-      expect(ids.every((id) => !state.entities.has(id))).toBe(true);
-      expect(removed.sort()).toEqual(ids.map((id) => `${id} despawned`).sort());
-      expect(
-        posts().every(({ guardId, respawnAtTick }) => guardId === null && respawnAtTick === null),
-      ).toBe(true);
+      expect(removed).toEqual([]);
+      expect(ids.every((id) => state.entities.teamOf(id) === 'neutral')).toBe(true);
+      expect(posts().map(({ guardId }) => guardId)).toEqual(ids);
     });
 
     it('gives each reach of a checkpoint its own posts, so ids never repeat', () => {
@@ -186,11 +183,13 @@ describe('SpawnSystem', () => {
 
     it('rejects a defender row that names an unknown mob on a map with capture points', () => {
       const { state, factory } = setUp('light');
-      const defenders = { 1: { ...CHECKPOINT_DEFENDERS[1], table: [{ mobId: 'nope', count: 1 }] } };
+      const defenders = {
+        1: { postGap: 2, leashTolerance: 5.5, table: [{ mobId: 'nope', count: 1 }] },
+      };
       const build = () =>
         newSystem(state, factory, {
           openingWave: NO_OPENING,
-          defenders: defenders as typeof CHECKPOINT_DEFENDERS,
+          defenders,
         });
       expect(build).toThrow(ContentValidationError);
       expect(build).toThrow(/checkpoint 1 defenders name unknown mob "nope"/);
@@ -202,11 +201,13 @@ describe('SpawnSystem', () => {
         createDefaultEntityRegistry(),
         loadDefaultContent(TICK_RATE),
       );
-      const defenders = { 1: { ...CHECKPOINT_DEFENDERS[1], table: [{ mobId: 'nope', count: 1 }] } };
+      const defenders = {
+        1: { postGap: 2, leashTolerance: 5.5, table: [{ mobId: 'nope', count: 1 }] },
+      };
       expect(() =>
         newSystem(state, factory, {
           openingWave: NO_OPENING,
-          defenders: defenders as typeof CHECKPOINT_DEFENDERS,
+          defenders,
         }),
       ).not.toThrow();
     });

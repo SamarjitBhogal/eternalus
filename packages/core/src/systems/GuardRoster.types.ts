@@ -29,6 +29,8 @@ export type PostLayout = {
   readonly leashTolerance: number;
   readonly respawnTicks: number;
   readonly firstTick: number;
+  /** The checkpoint whose defenders hold these posts; absent for the home's own guard plan. */
+  readonly checkpoint?: number;
   /** The posts' id prefix; the home's id by default. */
   readonly idPrefix?: string;
 };

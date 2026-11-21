@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-11-15
+last-reviewed: 2026-11-20
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
@@ -83,7 +83,7 @@ guards and are the lane objectives (§6.2), but doc 07 implements them. The mini
 level-up** (MVP, a `CaptureSystem` reward, 07 §7) and **Ascend** (MVP-if-time, a Legend-kill
 reward) belong to their reward systems, not to this doc.
 
-**Implementation status (2026-10-30).** Minion plan phase M1 (marching) is built: the three lane
+**Implementation status (2026-11-12).** Minion plan phase M1 (marching) is built: the three lane
 minions (`content/mobs/`), the `ranks` formation, `HordeStore`, `LaneRoutes` and the team spawn
 counters on `GameState`, `assessLanes`, `HordeSystem`, `SpatialHash`, `LaneFollowMovementStrategy`
 with `PathingSystem`, and `SpawnSystem` with the DISC-10 waves and the one-step fulfilment;
@@ -129,16 +129,30 @@ activated when the countdown ends), camp mobs held by `GuardController`, and `ca
 emitted by `SpawnSystem`'s `GuardRoster`; `GuardWithinLeashInvariant` covers camp mobs, since it
 checks every post. Pull request M6b adds the checkpoint defenders: `CHECKPOINT_DEFENDERS` in
 `content/structures/guardPlans.ts` (checkpoint 1 and 2; checkpoint 3's massive mob is
-MVP-if-time), on the tower guards' mobs, laid out by `GuardRoster.defend` on
-`checkpoint-reached`. The minion-stack follow-ups (`fix/minion-stack-followups`) add the shared leash decision
+MVP-if-time), on the light, medium and heavy assist mobs (DEC-260), laid out by
+`GuardRoster.defend` on `checkpoint-reached`; a lost point's living defenders stay (DEC-261).
+The owner's 2026-11-20 rule that neutral defenders and forest-camp mobs level (DEC-260) is not
+built yet. The minion-stack follow-ups (`fix/minion-stack-followups`) add the shared leash decision
 `ai/decideLeashed.ts` (DEC-168 B1), the guard respawn rules `systems/EachGuardRespawn.ts` and
 `GroupGuardRespawn.ts` (B4), the ally-damage listener `state/AllyDamageTally.ts` (B6), and
-`StuckSystem` with its `ChaseWatch` component (§5.2, DEC-193). A unit that chases a lane tower or
-the Stronghold aims at its `Footprint` (07 §13), so minions that target a tower now reach its fort
-wall and hit it (DEC-185). The nav grid still blocks a tower's whole court: hordes never path
+`StuckSystem` with its `ChaseWatch` component (§5.2, DEC-193). A unit that chases a lane tower,
+the Stronghold or a gate aims at its `Footprint` (07 §13), so minions that target a tower now
+reach its fort wall and hit it (DEC-185), and reach to a gate is measured to its polygon (DEC-217
+(17)). The nav grid still blocks a tower's whole court: hordes never path
 through a court, and an A\* way to a unit inside one ends on the open ground nearest it (DEC-185
-(A)). The pull requests and interim stand-ins are in the [minion system
-plan](../plan/minion-system-plan.md) §2–§3.
+(A)). Pull request A1 (`feat/zone-guard-homes`) lets a zone be a guard home (§7.1) and adds the
+`never` respawn (`systems/NeverGuardRespawn.ts`, a third respawn rule) and an activation
+`delaySeconds` after the countdown. Pull request A2 (`feat/capture-point-boss`) gives each outer
+capture point its mini-boss as a zone guard plan, and `feat/capture-point-boss-guards` adds its
+support mobs to that plan.
+Interim, against "the minion system never controls a boss" above: until Phase 3 sprint 3.6 builds
+`MiniBoss` and `BossController` (11 §4.6, 04), the boss is a `heavy-mob` (`capture-point-boss`)
+held by `GuardController`, with one melee hit and no moves, roaming or damage-dealer bias, and its
+kill gives no team buff (`INBOX.md`, capture point mini-boss interims (c) and (d); (c) awaits
+Sam's sign-off). Its kill XP is team-wide, at most 2 levels each (DEC-237), and its zone cannot be
+captured while it lives (07 §7 status); it takes only its share of a lane minion's hit (`BossMinionDamageStep`,
+05 §9; shares in `content/mobs/minionModifiers.ts`). The pull requests and interim stand-ins are in the
+[minion system plan](../plan/minion-system-plan.md) §2–§3.
 
 ## 1. Decisions
 
@@ -431,8 +445,8 @@ called by `PathingSystem` (10 §9). `PathingSystem` reads the mob's `Combat.targ
   which `PathingSystem` steers it to (DEC-193, DEC-217 (14); the numbers, with the cap on A\*
   plans a tick, are `STUCK_DETECTION` in `content/ai/stuckDetection.ts`). A chase of a target
   with an outline (a map object, or a structure with a `Footprint`: a lane tower's fort, the
-  Stronghold's palace, 07 §13) aims at the nearest point of its outline, the point attack reach
-  is measured to (`EntityStore.aimPointOf`); a mob that stands inside the outline is in reach
+  Stronghold's palace, a gate, 07 §13) aims at the nearest point of its outline, the point attack
+  reach is measured to (`EntityStore.aimPointOf`); a mob that stands inside the outline is in reach
   already, so it holds there, as every chase stops at reach (DEC-234); it faces the building's
   centre (DEC-220 (1)). The blocked
   ground under the target (a fort's cells, under the structure or under a unit inside its court,
@@ -586,19 +600,36 @@ without a new controller. Only the home changes, and it is data on the spawning 
   and `SpawnSystem`'s `GuardRoster` adds that checkpoint's posts from its defender table
   (`CHECKPOINT_DEFENDERS`, 07 §7), filled on the next tick like any other post. Only a push with
   a Legend on the zone wakes them (the event's `presentLegendIds`, DEC-259), so a horde marching
-  through a capture point does not. The home is the
-  `CapturePoint`. Defenders fight for the team that owns the capture point when the checkpoint is
-  reached (owner, 2026-10-27), and are neutral at a point no team owns (DEC-257). Their leash is
-  the zone's reach from its centre (DEC-257), so a capture cannot be dragged away from its
-  defenders. They are the assist mobs: minion stats, with an aggro profile that takes any enemy
-  inside the leash (DEC-260). A defender never respawns: a checkpoint is reached once per side per
-  owner (07 §7). When the point changes owner, its living defenders are despawned (DEC-261). A
+  through a capture point does not. The home is the `CapturePoint`. Defenders fight for the team
+  that owns the capture point when the checkpoint is reached (owner, 2026-10-27), and are neutral
+  at a point no team owns (DEC-257). Their leash is the zone's reach from its centre (DEC-257), so
+  a capture cannot be dragged away from its defenders. They are the assist mobs: minion stats,
+  with an aggro profile that takes any enemy inside the leash (DEC-260). A defender never
+  respawns: a checkpoint is reached once per side per owner (07 §7). When the point changes
+  owner, its living defenders stay: they fight the new owner's units inside the zone and count as
+  presence for their own side, so the new owner must kill them to keep the point (DEC-261). A
   defender post the unit cap blocks waits, as any post does (§3.4).
+- **Zone homes.** A guard plan keyed by a zone's definition id makes the zone a home, like a
+  structure's. A zone has no collider edge, so its home radius is 0: posts and the leash are
+  measured from its anchor. A zone has no `Health`, so it always stands. Zones exist before the
+  systems are built, so `SpawnSystem` finds them and validates their plans.
+- **Posts on the floor (content rule).** A zone plan's `postGap` and `leashRadius` are chosen so
+  its posts stay on the zone's floor. The roster does not enforce it (a blocked post searches out
+  to the leash edge), so each zone plan's tests check that its posts are inside its `ZoneArea`.
+- **One plan per home, plus checkpoint posts.** A home has exactly one guard plan, looked up by its
+  definition id. A capture point's checkpoint defenders are not a second plan: their posts are
+  marked with their checkpoint (`GuardSlot.checkpoint`), never refill and are never looked up in
+  the home's plan, so they sit beside the zone's own plan (#99's mini-boss and support mobs) on
+  the same home. Every guard of a home and team counts as a mate of the others
+  (`GuardController`), so neutral defenders and the neutral boss group answer each other's calls.
+- **Activation and respawn.** A plan activates at match start, or `delaySeconds` after the
+  countdown ends (0 for camps); its guards respawn `each` on their own or as a `group` after their
+  respawn time, or `never` (a guard that dies once leaves its post empty for the match). The
+  values are content.
 - Neither kind joins a horde (MS-25 covers lane minions only). A mob on a team counts against that
   team's unit cap (§3.4).
-- `GuardWithinLeashInvariant` (15 §3) is defined for tower guards, measured from the structure's
-  `GuardPlan.leashRadius`. Covering camp mobs and checkpoint defenders changes that definition and
-  its tests (M6). It checks every post, so it covers defenders too.
+- `GuardWithinLeashInvariant` (15 §3) checks every post: tower guards, camp mobs, zone guards and
+  checkpoint defenders, each measured from its home's edge (a zone's anchor).
 
 ## 8. Bot Legends: lane assignment (MS-20)
 

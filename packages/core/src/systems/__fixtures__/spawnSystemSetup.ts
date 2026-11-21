@@ -3,7 +3,14 @@ import type { DeepPartial, GameConfig } from '../../config/GameConfig.types';
 import { HORDE_STEERING } from '../../content/ai/hordeSteering';
 import { LANE_ASSESSMENT_WEIGHTS } from '../../content/ai/laneAssessmentWeights';
 import { loadDefaultContent } from '../../content/loadDefaultContent';
-import { OPENING_WAVE, SPAWN_WAVES } from '../../content/structures/spawnWaves';
+import { loadGuardPlans } from '../../content/structures/loadGuardPlans';
+import { loadSpawnWaves } from '../../content/structures/loadSpawnWaves';
+import { OPENING_WAVE } from '../../content/structures/spawnWaves';
+import type {
+  AuthoredGuardPlan,
+  AuthoredSpawnWave,
+  OpeningWaveDefinition,
+} from '../../content/structures/structures.types';
 import { NullLogger } from '../../diagnostics/NullLogger';
 import { createDefaultEntityRegistry } from '../../entities/defaultEntityRegistry';
 import { EntityFactory } from '../../entities/EntityFactory';
@@ -12,27 +19,38 @@ import { GameState } from '../../state/GameState';
 import { spawnMapStructures } from '../../state/__fixtures__/spawnMapStructures';
 import { matchWorldOf } from '../../state/__fixtures__/matchWorld';
 import type { GameEventMap } from '../../state/GameEvents.types';
-import { SpawnSystem } from '../SpawnSystem';
 import type { SpawnPlan } from '../SpawnSystem.types';
+import { SpawnSystem } from '../SpawnSystem';
 import { countdownTicks } from '../../config/countdownTicks';
 
 /** The simulation tick rate the fixtures use. */
 export const TICK_RATE = 30;
 
-/** A SpawnSystem over `state` with the default steering and weights and the given plan overrides. */
+/** The parts of a spawn plan a test may replace, waves and guards as authored (in seconds). */
+export type SpawnPlanOverrides = {
+  readonly openingWave?: OpeningWaveDefinition;
+  readonly waves?: Readonly<Record<string, readonly AuthoredSpawnWave[]>>;
+  readonly guards?: Readonly<Record<string, AuthoredGuardPlan>>;
+  readonly defenders?: SpawnPlan['defenders'];
+};
+
+/**
+ * A SpawnSystem over `state` with the default steering and weights and the given plan overrides;
+ * waves and guards are loaded at `TICK_RATE`, as the pipeline loads them.
+ */
 export const newSystem = (
   state: GameState,
   factory: EntityFactory,
-  plan: Partial<Pick<SpawnPlan, 'openingWave' | 'waves' | 'guards' | 'defenders'>> = {},
+  plan: SpawnPlanOverrides = {},
 ) =>
   new SpawnSystem(state, factory, {
     definitions: loadDefaultContent(TICK_RATE),
     openingWave: plan.openingWave ?? OPENING_WAVE,
-    waves: plan.waves ?? SPAWN_WAVES,
+    waves: loadSpawnWaves(TICK_RATE, plan.waves),
     steering: HORDE_STEERING,
     weights: LANE_ASSESSMENT_WEIGHTS,
     formationId: 'ranks',
-    guards: plan.guards ?? {},
+    guards: loadGuardPlans(TICK_RATE, plan.guards ?? {}),
     defenders: plan.defenders ?? {},
   });
 
@@ -42,7 +60,7 @@ export const NO_OPENING = { ...OPENING_WAVE, source: 'camp' } as const;
 /** A TWO_LANE_MAP match with its structures built and the system, with spawned hordes and a timeline recorded. */
 export const setUp = (
   overrides: DeepPartial<GameConfig> = {},
-  plan: Partial<Pick<SpawnPlan, 'openingWave' | 'waves'>> = {},
+  plan: Omit<SpawnPlanOverrides, 'guards'> = {},
 ) => {
   const config = createDefaultGameConfig({
     match: overrides.match ?? {},

@@ -1,14 +1,16 @@
-import { Transform } from '../components/Transform';
 import { Capturable } from '../components/Capturable';
 import { Health } from '../components/Health';
+import { Transform } from '../components/Transform';
 import type {
   CheckpointDefenderPlanDefinition,
   GuardPlanDefinition,
 } from '../content/structures/structures.types';
+import type { Entity } from '../entities/Entity';
 import type { DefinitionSource } from '../entities/EntityFactory.types';
 import type { EntityFactory } from '../entities/EntityFactory';
 import { Structure } from '../entities/structures/Structure';
 import { Unit } from '../entities/Unit';
+import { Zone } from '../entities/Zone';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { GuardSlot } from '../state/GuardStore.types';
@@ -19,29 +21,37 @@ import type { Vec2 } from '../utils/geometry.types';
 import { EachGuardRespawn } from './EachGuardRespawn';
 import { GroupGuardRespawn } from './GroupGuardRespawn';
 import type { GuardRespawnRule, PostLayout } from './GuardRoster.types';
+import { NeverGuardRespawn } from './NeverGuardRespawn';
 import { countdownTicks } from '../config/countdownTicks';
 
 /**
- * Runs every structure's guard plan for `SpawnSystem` (architecture 18 §7, 07 §6): it lays out
- * one post per guard on a ring around the structure (`state.guards`); each tick a post whose guard
- * died or left the post's team (`team-changed`) empties, and an empty post whose time has come is
- * filled while its structure stands and the unit cap has room. When an emptied post comes back is
- * its plan's respawn rule (`each` or `group`, DEC-168), which also announces a cleared home. A
- * row with `shrink` keeps `count` fewer posts per lost structure of the kind it names (DISC-21:
- * the Stronghold's light guards per lost SpawnerTower); a guard on a dropped post stays until it
- * dies. Plans are looked up by the structure's definition id.
+ * Runs every home's guard plan for `SpawnSystem` (architecture 18 §7, 07 §6). A home is a
+ * structure or a zone; a zone's edge is its anchor (home radius 0) and, having no `Health`, it
+ * always stands. It lays out one post per guard on a ring around the home (`state.guards`); each
+ * tick a post whose guard died or left the post's team (`team-changed`) empties, and an empty post
+ * whose time has come is filled while its home stands and the unit cap has room. When an emptied
+ * post comes back is its plan's respawn rule (`each`, `group` or `never`, DEC-168), which also
+ * announces a cleared home. A row with `shrink` keeps `count` fewer posts per lost structure of
+ * the kind it names (DISC-21: the Stronghold's light guards per lost SpawnerTower); a guard on a
+ * dropped post stays until it dies. Plans are looked up by the home's definition id; a capture
+ * point's checkpoint defenders (`defend`, 07 §7) are posts of their own, marked with their
+ * checkpoint, which never refill and stay when the point changes owner (DEC-261).
  */
 export class GuardRoster {
-  /** Each plan's respawn rule, by its `respawn` id (DEC-168). */
-  private readonly respawns: Readonly<Record<GuardPlanDefinition['respawn'], GuardRespawnRule>> = {
+  /** Each plan's respawn rule, by its `respawn.kind` (DEC-168). */
+  private readonly respawns: Readonly<
+    Record<GuardPlanDefinition['respawn']['kind'], GuardRespawnRule>
+  > = {
     each: new EachGuardRespawn(),
     group: new GroupGuardRespawn(),
+    never: new NeverGuardRespawn(),
   };
 
   /**
    * @param factory - Builds the guards.
    * @param definitions - Where each guard's mob definition, and so its kind, is looked up.
-   * @param plans - Each structure's guard plan, keyed by structure definition id (content).
+   * @param plans - Each home's guard plan, keyed by structure or zone definition id (content, loaded
+   *   in ticks).
    * @param defenders - Each capture-point checkpoint's defenders, keyed by checkpoint (content).
    */
   public constructor(
@@ -51,11 +61,16 @@ export class GuardRoster {
     private readonly defenders: Readonly<Record<number, CheckpointDefenderPlanDefinition>>,
   ) {}
 
-  /** Lays out one post per guard of every standing structure's plan, in structure id order. */
+  /** Whether `entity` can be a guard home: a structure or a zone (18 §7.1). */
+  public static isHome(entity: Entity): entity is Structure | Zone {
+    return entity instanceof Structure || entity instanceof Zone;
+  }
+
+  /** Lays out one post per guard of every home's plan, in home id order. */
   public layOut(state: GameState): void {
-    const homes: Structure[] = [];
+    const homes: (Structure | Zone)[] = [];
     state.entities.forEach((entity) => {
-      if (entity instanceof Structure && this.plans[entity.definitionId] !== undefined) {
+      if (GuardRoster.isHome(entity) && this.plans[entity.definitionId] !== undefined) {
         homes.push(entity);
       }
     });
@@ -66,21 +81,18 @@ export class GuardRoster {
       if (plan === undefined || team === undefined || transform === undefined) {
         continue;
       }
-      const { countdownSeconds } = state.config.match;
-      const firstTick =
-        plan.activation === 'countdown-end'
-          ? countdownTicks(countdownSeconds, state.config.tickRate)
-          : 0;
+      const homeRadius = home instanceof Zone ? 0 : transform.radius;
       this.addPosts(state, {
         home,
         team,
         table: plan.table,
-        ring: transform.radius + plan.postGap,
-        homeRadius: transform.radius,
+        ring: homeRadius + plan.postGap,
+        homeRadius,
         leashRadius: plan.leashRadius,
         leashTolerance: plan.leashTolerance,
-        respawnTicks: Math.round(plan.respawnSeconds * state.config.tickRate),
-        firstTick,
+        // A `never` post is never refilled, so it has no respawn delay.
+        respawnTicks: plan.respawn.kind === 'never' ? 0 : plan.respawn.ticks,
+        firstTick: GuardRoster.firstTick(state, plan),
       });
     }
   }
@@ -88,8 +100,9 @@ export class GuardRoster {
   /**
    * Adds the posts of `checkpoint`'s defenders around capture point `pointId` (07 §7, 18 §7.1),
    * filled on this pass, for the team that owns the point now (`neutral` while no team does,
-   * DEC-257). The leash is the zone's reach from its centre (DEC-257). A checkpoint with no
-   * defender row adds nothing. Post ids carry the tick, as a checkpoint can be reached again.
+   * DEC-257). The leash is the zone's reach from its centre (DEC-257). The posts never refill and
+   * outlive an owner change (DEC-261). A checkpoint with no defender row adds nothing. Post ids
+   * carry the tick, as a checkpoint can be reached again.
    */
   public defend(state: GameState, pointId: EntityId, checkpoint: number): void {
     const plan = this.defenders[checkpoint];
@@ -114,30 +127,14 @@ export class GuardRoster {
       leashTolerance: plan.leashTolerance,
       respawnTicks: 0,
       firstTick: state.tick,
+      checkpoint,
       idPrefix: `${home.id}:${String(state.tick)}:checkpoint-${String(checkpoint)}`,
-    });
-  }
-
-  /**
-   * Despawns the living defenders of capture point `pointId`, whose owner changed (DEC-261): no
-   * kill, no XP. Every post of the point empties for good, those still waiting to fill too.
-   */
-  public dismiss(state: GameState, pointId: EntityId): void {
-    state.guards.forEach(({ homeId, guardId }, index) => {
-      if (homeId !== pointId) {
-        return;
-      }
-      if (guardId !== null && state.entities.has(guardId)) {
-        state.entities.remove(guardId, 'despawned');
-        state.events.emit('entity-removed', { entityId: guardId, cause: 'despawned' });
-      }
-      state.guards.vacate(index, null);
     });
   }
 
   /** Lays out one post per row entry of `posts.table` on a ring around `posts.home`. */
   private addPosts(state: GameState, posts: PostLayout): void {
-    const { home, team, table, ring, homeRadius, leashRadius, firstTick } = posts;
+    const { home, team, table, ring, homeRadius, leashRadius, firstTick, checkpoint } = posts;
     const center = home.getComponent(Transform).position;
     const total = table.reduce((sum, row) => sum + row.count, 0);
     const edge = homeRadius + leashRadius;
@@ -164,6 +161,7 @@ export class GuardRoster {
             leashRadius,
             leashTolerance: posts.leashTolerance,
             respawnTicks: posts.respawnTicks,
+            ...(checkpoint === undefined ? {} : { checkpoint }),
           },
           firstTick,
         );
@@ -178,14 +176,13 @@ export class GuardRoster {
   public update(state: GameState): void {
     state.guards.forEach((slot, index) => {
       if (slot.guardId !== null && GuardRoster.isLost(state, slot.guardId, slot)) {
-        // A checkpoint defender's post (a home that stands with no plan) never refills; a post
-        // whose home is gone has no plan either, and `each` releases it, never to refill.
-        const plan = this.planOf(state, slot);
-        if (plan === undefined && state.entities.has(slot.homeId)) {
-          state.guards.vacate(index, null);
-        } else {
-          this.respawns[plan?.respawn ?? 'each'].release(state, index, slot);
-        }
+        // A checkpoint defender's post never refills (DEC-261); a post whose home is gone has no
+        // plan to look up, and `each` releases it, never to refill.
+        const kind =
+          slot.checkpoint === undefined
+            ? (this.planOf(state, slot)?.respawn.kind ?? 'each')
+            : 'never';
+        this.respawns[kind].release(state, index, slot);
       }
     });
     state.guards.forEach((slot, index) => {
@@ -195,7 +192,7 @@ export class GuardRoster {
         state.tick < slot.respawnAtTick ||
         // DEC-162: a fallen structure's posts are not refilled; its living guards stay at their
         // posts until killed and still count against the unit cap.
-        !GuardRoster.isHomeStanding(state, slot.homeId) ||
+        !GuardRoster.isStanding(state, slot.homeId) ||
         !this.isPostKept(state, slot)
       ) {
         return;
@@ -240,18 +237,30 @@ export class GuardRoster {
     return !state.entities.isAlive(guardId) || state.entities.teamOf(guardId) !== slot.team;
   }
 
+  /** The tick `plan`'s posts are first filled (its `activation`). */
+  private static firstTick(state: GameState, { activation }: GuardPlanDefinition): number {
+    if (activation.at === 'match-start') {
+      return 0;
+    }
+    const { countdownSeconds } = state.config.match;
+    return countdownTicks(countdownSeconds, state.config.tickRate) + activation.delayTicks;
+  }
+
   /**
-   * Whether `homeId` still stands: a structure while it lives, a capture point (no `Health`)
-   * while it is in the store.
+   * Whether home `homeId` stands: it is in the match and not dead. A home without `Health` (a
+   * zone) always stands.
    */
-  private static isHomeStanding(state: GameState, homeId: EntityId): boolean {
+  private static isStanding(state: GameState, homeId: string): boolean {
     const home = state.entities.get(homeId);
     return home !== undefined && home.findComponent(Health)?.isDead !== true;
   }
 
+  /** The home's own guard plan for `slot`; none for a checkpoint defender's post. */
   private planOf(state: GameState, slot: GuardSlot): GuardPlanDefinition | undefined {
     const home = state.entities.get(slot.homeId);
-    return home === undefined ? undefined : this.plans[home.definitionId];
+    return home === undefined || slot.checkpoint !== undefined
+      ? undefined
+      : this.plans[home.definitionId];
   }
 
   /**

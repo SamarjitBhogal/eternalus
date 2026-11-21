@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
-import { AGGRO_RULES } from '../content/ai/aggro/aggroRules';
+import { loadAggroRules } from '../content/ai/aggro/loadAggroRules';
 import { TOWER_GUARD_AGGRO } from '../content/ai/aggro/towerGuard';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { loadWeapons } from '../content/weapons/loadWeapons';
@@ -18,7 +18,7 @@ import { GuardController } from './GuardController';
 import { Perception } from './perception/Perception';
 
 const controller = new GuardController({
-  aggro: AGGRO_RULES,
+  aggro: loadAggroRules(createDefaultGameConfig().tickRate),
   classOf: (kind) => (kind === 'warrior' ? 'legend' : kind.endsWith('-mob') ? 'minion' : null),
 });
 

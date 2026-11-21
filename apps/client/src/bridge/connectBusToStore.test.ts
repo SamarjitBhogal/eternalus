@@ -35,6 +35,12 @@ function connected() {
 }
 
 describe('connectBusToStore', () => {
+  it('copies minimap-visibility into the view slice', () => {
+    const { bus, store } = connected();
+    bus.emit('minimap-visibility', { isShown: false });
+    expect(store.getState().view.isMinimapShown).toBe(false);
+  });
+
   it('copies session events into the session slice', () => {
     const { bus, store } = connected();
     bus.emit('session-phase', { phase: 'menu', reason: 'select-timeout' });
@@ -243,9 +249,22 @@ describe('connectBusToStore', () => {
         capturePoints: [],
         result: null,
         durationSeconds: null,
+        versus: null,
         duel: null,
+        duelHud: null,
       });
     }
+  });
+
+  it('copies the Duel names and scoreboard, and clears them with the next setup', () => {
+    const { bus, store } = connected();
+    const duel = { ownKills: 3, opponentKills: 1, killTarget: 10, countdown: null };
+    bus.emit('duel-versus', { own: 'Ana', opponent: 'Ben' });
+    bus.emit('duel-state', duel);
+    expect(store.getState().match.versus).toEqual({ own: 'Ana', opponent: 'Ben' });
+    expect(store.getState().match.duelHud).toEqual(duel);
+    bus.emit('match-setup', null);
+    expect(store.getState().match.duelHud).toBeNull();
   });
 
   it('copies the settings state', () => {

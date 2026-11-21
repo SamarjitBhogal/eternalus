@@ -7697,6 +7697,279 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   (`eternalus-agent-work/hud-aether-bar/check-3.log`).
 - Next step: push; CodeRabbit re-review after the owner's sign-off comment; merge into phase/3.
 
+### 2026-11-09 — Phase 3 / sprint 3 work: PR A1, zones as guard homes — feat/zone-guard-homes — Aryan Walanj + Claude Code
+
+- Owner decisions for the capture point mini-boss (Aryan Walanj, assigned owner, 2026-11-09):
+  1. It never respawns: once per match.
+  2. Interim: it spawns 120 s after the countdown ends, a `TUNE` placeholder until the quarter
+     mark and the match timeline (reference 04, 07 §7).
+  3. Interim: capture keeps today's behaviour, the boss counting as neutral presence and draining
+     a held point (no `CaptureSystem` change), until the zone-lock PR (`lockedBy`, 07 §7).
+     Decisions 2 and 3 are interim stand-ins, not design changes: reference 04 is not amended and no
+     DEC row is added. Both are logged in `INBOX.md`, due before the zone-lock PR.
+- What was done (PR A1 only; the boss content is PR A2 on its own branch): `GuardRoster` takes a
+  `Structure` or a `Zone` as a home, with home radius 0 for a zone, and a home without `Health`
+  counts as standing. `SpawnSystem` counts zones among its homes, so `validate()` checks zone
+  plans, and rejects an activation a negative or non-finite time after the countdown.
+  `Simulation` spawns zones right after the structures, before the pipeline is built. Guard plans
+  take two discriminated unions: `activation` is `{ at: 'match-start' }` or
+  `{ at: 'countdown-end', delaySeconds }` (camps use 0), and `respawn` is
+  `{ kind: 'each' | 'group', seconds }` or `{ kind: 'never' }`, so `never` needs no respawn time.
+  `GuardWithinLeashInvariant` TSDoc, docs 18 §7.1, 07 §6 and the 15 §3 invariant row updated.
+- Tests: a zone home's post lands on its `ZoneArea` and off a blocking keep, home radius 0, and
+  is filled; a `never` post stays empty and emits no `camp-cleared`; the delayed activation fills
+  on tick countdown end + 120 s and not one tick before; the same zone run twice gives the same
+  `StateHasher` hash; `SpawnSystem` rejects a zone plan naming an unknown mob and an activation
+  delay of -1, `NaN` or `Infinity`.
+- Critic (architecture-reviewer, base `86b4fc04`): PASS WITH NOTES, no blockers, 14 findings.
+  Owner sign-off: (1) decisions 2 and 3 are interim (above); (2) the second timed-spawn path
+  (guard-plan delay beside `MatchTimeline`) and (3) one plan per home, with mates by `homeId`, are
+  accepted as interim and logged in `INBOX.md`, with the one-plan-per-home note added to 18 §7.1;
+  fixed now: (4) `NaN`/`Infinity` tests, (6) a stale `SpawnSystem` comment, (8) over-long TSDoc
+  lines, (12) 18 §7.1 states the posts-on-the-floor rule as content checked by tests and the
+  spawn order as an invariant, (10) the discriminated unions above. Deferred: (5) a
+  `Simulation`-level zone guard test, as A2's acceptance test. Skipped: (9) a respawn policy
+  table. For the PR description and the squash: (7) entity ids of map objects and Legends shift by
+  the zone count, so replays recorded before this branch with id-naming commands do not
+  reproduce; (13) the TSDoc commit's type; (14) no phase-3 checkbox is ticked (groundwork).
+- Checks run: the first `npm run check` failed one test, `Simulation.bots.test.ts` (the director
+  and systems must subscribe before the first `entity-spawned`; zones now spawned earlier emitted
+  theirs too soon). Fix: zones still spawn before the pipeline, but their `entity-spawned` events
+  are emitted after the roster, in the old order. Second `npm run check`: exit 0, Prettier passed,
+  core `Tests 1308 passed (1308)`, client `Tests 1800 passed (1800)`, docs check passed.
+  After the critic fixes: the first `npm run check` failed at knip (the two new union types were
+  exported but unused; now file-local); the next `npm run check`: exit 0, Prettier passed, core
+  `Tests 1310 passed (1310)`, client `Tests 1800 passed (1800)`, docs check passed.
+- Ponytail (`/ponytail-review` on the branch diff): verdict Ship, no bugs or risks; ponytail: 2
+  nice-to-haves applied, net +5 lines (not net 0: the new `GuardRoster.isHome` with its TSDoc and
+  import outweighs the two copies it replaces). (1) The `GuardRoster` class TSDoc is rewrapped
+  under 100 columns. (2) `GuardRoster.isHome(entity)` is the one structure-or-zone test, used by
+  `layOut` and by `SpawnSystem`'s constructor. Checks: the first `npm run check` timed out three
+  slow tests (two in `Simulation.flowFields.test.ts` at 120 s and 60 s, one in `replay.test.ts` at
+  20 s), with no wrong results; the two files alone passed (11 tests, 105 s). The next
+  `npm run check`: exit 0, Prettier passed, core `Tests 1310 passed (1310)`, client
+  `Tests 1800 passed (1800)`, docs check passed.
+- Next step: open the PR (gate done: critic, ponytail, re-check); PR A2 adds the mini-boss content on
+  its own branch, with the `Simulation`-level zone guard test as its acceptance test.
+
+### 2026-11-11 — Phase 3 / sprint 3 work: boss-spec question, merge phase/3 — feat/zone-guard-homes — Aryan Walanj + Claude Code
+
+- What was done: `INBOX.md` gets one question for Sam: does a teammate's boss spec amend
+  reference 04 (capture weights mini-boss 5 / big boss 20 instead of the zone lock, a 10-minute
+  Eternal respawn, a flag for the killer instead of the Eternal form, 30 s out-of-combat regen
+  against balancing.md's 5%/s in zone)? Nothing is built for it, and no Cathedral or middle-boss
+  work is started. Merged `origin/phase/3-sprint-3-work` at `1b25f586`; only this file conflicted
+  (both sides appended), and both are kept: phase/3's entries, then this branch's. PR #91's
+  corner-camp guard plan is not on phase/3, so nothing was converted to the activation shape.
+- Checks run: full `npm run check` exit 0 on the merged tree: core `Tests 1313 passed (1313)`,
+  client `Tests 1818 passed (1818)`, `Documentation check passed.`
+- Next step: Sam answers the boss-spec question; open the PR A1 PR.
+
+### 2026-11-11 — Phase 3 / sprint 3 work: capture point mini-boss (PR A2) — feat/capture-point-boss — Aryan Walanj + Claude Code
+
+- What was done: the outer capture points get their mini-boss as content on PR A1's zone guard
+  homes. `content/mobs/capturePointBoss.ts` (`capture-point-boss`: `heavy-mob`, `guard`
+  controller, `leashed-chase`; balancing.md MiniBoss 8,200 HP, 205 per hit every 1.5 s, 500 XP;
+  size and speed as the heavy minion, `TUNE`), its own aggro rule
+  (`content/ai/aggro/capturePointBoss.ts`, acquisition 10 m = leash less post gap) and a
+  `capture-point` guard plan: 1 boss, leash 35 m (the fort court's inscribed circle), post gap
+  25 m, activation 120 s after the countdown (`TUNE` placeholder), never respawns. The Cathedral's
+  zone (`cathedral-capture-point`) has no plan. Acceptance test (A1 critic finding 5):
+  `Simulation.bosses.test.ts`, seeds 1 and 2, no boss the tick before the delay, then exactly one
+  neutral boss on each outer capture point's floor and none on the Cathedral's, with
+  `TEST_DEBUG_CONFIG` (throws on any invariant) and no non-INFO log record. Doc 07 §13 status
+  note. Not built: moves, regeneration, the zone lock, support mobs, capture weights, team-wide
+  rewards, the Cathedral boss.
+- Error report `logs/errors/2026-11-11T20-29-51-977Z-error-973e7e32.json` (ResizeObserver loop,
+  `client.window`, no match, no tick) is not from this branch (A2), which changed only core and docs; the only
+  `ResizeObserver` in the client is `ui/components/useFitFontSize.ts`. Not fixed here.
+- Checks run: `npm run check` exit 0: core `Tests 1315 passed (1315)`, client
+  `Tests 1818 passed (1818)`, `Documentation check passed.`
+- Next step: pre-PR gate (critic, ponytail, re-check), then the PR into feat/zone-guard-homes or
+  phase/3 once A1 merges.
+
+### 2026-11-11 — Phase 3 / sprint 3 work: capture point mini-boss critic fixes (PR A2) — feat/capture-point-boss — Aryan Walanj + Claude Code
+
+- What was done: pre-PR critic (architecture-reviewer, base `0e8d7956`): pass with notes, no
+  blockers. The owner signed off the findings. (1, 3) Doc 18's implementation status note records
+  interim (c), the boss on `GuardController` until sprint 3.6's `BossController`; 11 §10 and 04
+  §13 point to it; all three `last-reviewed` bumped; `INBOX.md` capture point mini-boss item gains
+  (c). (2) Interim (d) kept, as the corner boss (PR #91): the 500 XP goes to the killer alone, the
+  boss takes full damage from minions and gives no team buff; recorded in `INBOX.md` and doc 18.
+  (5) `Simulation.bosses.test.ts` injects a 2 s activation delay through the new optional
+  `SimulationOptions.guardPlans` (passed to `DefaultSystemPipeline` as `hordes.guards`;
+  `GUARD_PLANS` when omitted), same checks; it checks only that the shipped plan activates after
+  the countdown, not that its delay is above 0 (round 2 finding 1). (6, 7) Logged in `INBOX.md` as better-than-design follow-ups, no code change. (9) The
+  ResizeObserver note above now names this branch. (11) The `MARCHING_ONLY` TSDoc names every
+  guard-post mob. Skipped by the owner: 4 (engagement test), 8 (rename). 10 goes in the PR
+  description.
+- Checks run: `npm run check` exit 0: core `Tests 1315 passed (1315)`, client
+  `Tests 1818 passed (1818)`, `Documentation check passed.` (knip: one configuration hint, no
+  error).
+- Next step: ponytail review on the branch diff, re-check, then the PR.
+
+### 2026-11-11 — Phase 3 / sprint 3 work: capture point mini-boss critic round 2 fixes (PR A2) — feat/capture-point-boss — Aryan Walanj + Claude Code
+
+- What was done: critic round 2 (head `78d7b30d`): pass with notes, no blockers. The owner signed
+  off the findings. (1) `guardPlans.test.ts` pins that the shipped capture point plan activates a
+  delay above 0 after the countdown; the boss test drops its weaker shipped-plan check. (2) The
+  `SimulationOptions.guardPlans` TSDoc says it is not recorded in `ReplaySetup` (tests and tools
+  only). (3, 4) Long lines re-wrapped in `hordeMatches.ts` and doc 18; doc 18's implementation
+  status date bumped to 2026-11-11. (7) The entry above now says what the boss test checks. (8)
+  The `GuardPlanSource` alias is logged in `INBOX.md` as a follow-up, no code change. 5, 6 and 9
+  go in the PR description.
+- Checks run: `npm run check` exit 0: core `Tests 1316 passed (1316)`, client
+  `Tests 1818 passed (1818)`, `Documentation check passed.` (knip: one configuration hint, no
+  error).
+- Next step: ponytail review on the branch diff, re-check, then the PR.
+
+### 2026-11-12 — Phase 3 / sprint 3 work: capture point mini-boss ponytail cut (PR A2) — feat/capture-point-boss — Aryan Walanj + Claude Code
+
+- What was done: `/ponytail-review` on the branch diff (`0e8d7956...6293059d`): verdict Ship, one
+  nice-to-have. Applied: `Simulation.bosses.test.ts` uses its injected `DELAY_SECONDS` directly
+  instead of reading it back from the plan it built and asserting it. ponytail: 1 nice-to-have
+  applied, -4 lines. Line edits inside one test, no structural change, so no critic re-check.
+- Checks run: `npm run check` exit 0: core `Tests 1316 passed (1316)`, client
+  `Tests 1818 passed (1818)`, `Documentation check passed.` (knip: one configuration hint, no
+  error).
+- Next step: open the PR into feat/zone-guard-homes (or phase/3 once A1 merges) with the critic
+  verdicts, the ponytail cut and this check output.
+
+### 2026-11-12 — Phase 3 / sprint 3 work: capture point mini-boss quarter-mark spawn and court aggro (PR A2) — feat/capture-point-boss — Aryan Walanj + Claude Code
+
+- What was done: (2) The `capture-point` guard plan activates 440 s after the countdown ends: the
+  default timeline's `quarter-mark` entry (0.25 × `plannedMatchSeconds`, counted from match start,
+  tick 13,500) less the 10 s countdown, since guard plan delays count from the countdown's end.
+  Reference 04 cited. `content/` may not import `config/`, so the number is written in
+  `guardPlans.ts` and `guardPlans.test.ts` derives it from `createDefaultGameConfig` with
+  `timelineMarkTick` and `countdownTicks`. `INBOX.md` interim (a) now keeps only the mechanism
+  (guard plan delay instead of `MatchTimeline`). (4) The boss's `acquisitionRadius` and
+  `visionRadius` go from 10/12 m to 60 m (the 35 m leash plus the 25 m post gap), so it reacts to
+  an enemy anywhere in its court, as the corner boss's aggro was widened (PR #91). TUNE markers
+  kept. Doc 07 status note updated.
+- Checks run: `npm run check` exit 0: core `Tests 1316 passed (1316)`, client
+  `Tests 1818 passed (1818)`, `Documentation check passed.`
+- Next step: Part B (support guards, 25% minion damage) on `feat/capture-point-boss-guards`.
+
+### 2026-11-12 — Phase 3 / sprint 3 work: capture point mini-boss footprint (PR A2) — feat/capture-point-boss — Aryan Walanj + Claude Code
+
+- What was done: `capture-point-boss` `footprintRadius` 0.8 → 1.2 m (TUNE: 1.5× the heavy minion,
+  so it reads as a boss; larger sizes stay for the Cathedral boss). Checked the DEC-144 leash
+  tolerance rule: one decision walk (2.8 m/s × 10 ticks / 30 = 0.93 m) plus its farthest stance
+  (1.2 + 1.25 Sentinel + 1.5 reach = 3.95 m) is 4.88 m, within the shared 5 m tolerance, so the
+  `capture-point` plan's `leashTolerance` is unchanged; the `guardPlans.ts` comment now names the
+  boss as the tightest case (about 0.1 m of margin). Checked the post clears the keep: the fort
+  keep (`MapFortificationBuilder`, size 88) reaches at most about 22.7 m from the anchor, so a post
+  25 m out keeps at least 2.3 m from it, more than the 1.2 m radius.
+- Checks run: `npm run check` exit 0, ending `Documentation check passed.`
+- Next step: merge into `feat/capture-point-boss-guards` and run the boss tests there.
+
+### 2026-11-12 — Phase 3 / sprint 3 work: capture point mini-boss support mobs and minion damage share — feat/capture-point-boss-guards — Aryan Walanj + Claude Code
+
+- What was done: (1) The `capture-point` guard plan adds the boss's support mobs (reference 04
+  "along with high-power enemy and support mobs"): 2 `heavy-guard` + 4 `light-guard`, a count
+  reference 04 does not give, borrowed from balancing.md's checkpoint-2 capture point guard set
+  (TUNE). They take the plan's posts on the boss's 25 m ring, its activation (the quarter mark)
+  and its `never` respawn (respawning guards needs Sam's sign-off); no guard plan shape change.
+  `INBOX.md` interim (e) asks the owner to confirm. (2) The quarter-mark spawn (and (4) the
+  court-wide aggro) were done on `feat/capture-point-boss` and come in through its merge.
+  (3) `combat/BossMinionDamageStep.ts`, the last of the default damage steps: a hit from a horde member on a mob listed in
+  `BOSS_MINION_DAMAGE_TAKEN` (`content/mobs/minionModifiers.ts`, `capture-point-boss: 0.25`, TUNE,
+  balancing.md) is cut to that share. The corner boss is not on this branch (`feat/bosses-p3`), so
+  it is not listed; adding it is one line there. Interim (d) no longer lists the minion damage.
+  Tests: `BossMinionDamageStep.test.ts` (the step alone and through the default `DamagePipeline`:
+  a minion's 100 takes 25 off the boss, a Legend's 100 takes 100; guards, Legends and attackerless
+  hits are untouched); `Simulation.bosses.test.ts` now builds the real map objects and checks,
+  seeds 1 and 2, the boss and every support mob on each outer capture point's floor, none on the
+  Cathedral's, none inside a blocking footprint (keep, walls, scenery), with every invariant
+  (`no-map-object-overlap`, `guard-within-leash`) run each tick. Docs 05 §9, 07 and 18 status notes.
+- Checks run: `npm run check` exit 0 on the third run: core `Tests 1318 passed (1318)`,
+  client `Tests 1818 passed (1818)`, `Documentation check passed.` The first two runs failed one
+  test, `diagnostics/replay.test.ts` "reproduces 10 seeds x 3,000 ticks …"
+  (`Test timed out in 20000ms`, 21.7–25.6 s under the full parallel run); alone it takes about
+  4 s on this branch and on its base, the four slowest Simulation test files time the same on both (within 3%), and the
+  core suite alone passed, so it is a load-dependent timeout, not a regression. Timeout not
+  raised; a flaky-timeout follow-up is for the owner.
+- Next step: critic and ponytail on the branch, then the PR into feat/capture-point-boss.
+
+### 2026-11-12 — Phase 3 / sprint 3 work: capture point mini-boss pre-PR gate fixes (PR A2) — feat/capture-point-boss — Aryan Walanj + Claude Code
+
+- What was done: applied the pre-PR gate's should-fix and nits for `93f594d0..f4fc910b` (critic
+  PASS WITH NOTES, ponytail Ship). (1) `INBOX.md` asks Sam to sign off the boss's 1.2 m
+  footprint (kept). (2) The boss aggro comments say its 60 m range covers the court from its
+  post; at the court's edge the far side can be out of range. (3) The `TOLERANCE` comment in
+  `guardPlans.ts` works the DEC-144 sum per guard and shows the tightest case, the boss at
+  4.88 m. (4) `guardPlans.test.ts` checks that the boss's aggro range (through its `aiProfile`)
+  is at least the `capture-point` plan's leash radius plus its post gap. Better-than-design
+  items (timeline-mark activation, aggro range derived from the plan) are not taken up.
+- Checks run: `npm run check:quick` exit 0; `guardPlans.test.ts` `Tests 3 passed (3)`; prettier
+  clean. The full `npm run check` runs after the commit, alone, with the result in the chat report.
+- Next step: merge into `feat/capture-point-boss-guards`.
+
+### 2026-11-12 — Phase 3 / sprint 3 work: capture point mini-boss support mobs pre-PR gate fixes — feat/capture-point-boss-guards — Aryan Walanj + Claude Code
+
+- What was done: merged `feat/capture-point-boss` (its gate fixes) and applied the pre-PR gate's
+  should-fix and nits for `f4fc910b..df8e309e` (critic PASS WITH NOTES, ponytail Ship).
+  (1) `BossMinionDamageStep`'s constructor takes the mob ids and throws on an id that is not a
+  mob or a share outside (0, 1]; `defaultDamageSteps.ts` passes `MOB_DEFINITIONS.ids`. New
+  `content/mobs/minionModifiers.test.ts` checks every `BOSS_MINION_DAMAGE_TAKEN` key is a mob.
+  (2) `BossMinionDamageStep.test.ts` derives the expected damage from the content share and
+  tests the constructor's rejections. (3) Doc 05 §9 lists the step as an interim stand-in for
+  `damageMultipliers` keyed by `damageClass` and splits the run-on list; docs 05, 07 and 18 name
+  `minionModifiers.ts` and the `capture-point` plan in `guardPlans.ts` instead of copying the
+  share and the support-mob count. (4) This file: the support-mob entry names item (2), its
+  indent is fixed, and it now follows the footprint entry. Better-than-design items and a
+  long-run determinism test are not taken up.
+- Checks run: `npm run check:quick` and the touched tests before the commit; the full
+  `npm run check` runs after the commit, alone, with the result in the chat report.
+- Next step: open the PRs with the critic verdicts, ponytail results and check output.
+
+### 2026-11-12 — Phase 3 / sprint 3 work: PR #99 review (claudiodh) fixes — feat/capture-point-boss-guards, merged into feat/capture-point-boss — Aryan Walanj + Claude Code
+
+- What was done: addressed claudiodh's request-changes review of PR #99. PR #85 is not merged
+  into `origin/phase/3-sprint-3-work` (still at `1b25f586`), so F5 (the aggro rule as a
+  `GuardAggroRuleDefinition`) is skipped. (F1) The boss's 500 XP (balancing.md MiniBoss row) is
+  paid to every Legend of the killer's playable team, each at most what lifts it 2 levels
+  (DEC-237, recorded in the decisions log from the owner's words in Sam's PR #91 review):
+  `XP_SOURCES.teamKills`, `Progression.xpToReach`, `ProgressionSystem`'s `team-kill` award, and
+  `level-matches-xp` checks the killer's team; the boss's own `xpValue` is 0. (F2) The
+  quarter-mark activation was already in place (`43c923b1`, `guardPlans.test.ts` derives it).
+  (F8) Zone lock: `CaptureSystem` sets `Capturable.lockedBy` from the zone's guard posts
+  (`content/zones/zoneLocks.ts`) and a locked zone's progress does not move (reference 04).
+  (F4) `Simulation.bossFight.test.ts`: the boss goes for and hits an enemy Legend in its court,
+  chases one leaving the court no farther than its leash, locks its zone, and after a real kill
+  (warriors attacking it) never respawns while the zone is then captured;
+  `CaptureSystem.lock.test.ts` covers the lock itself. (F6) `content/zones/capturePointCourt.ts`
+  derives the leash, post gap (now midway between keep corners and walls, about 29 m) and the
+  boss's acquisition and vision radii from the fort in `buildingGeometry.ts`, which now holds the
+  keep's divisors too. (F7) `Simulation.types.ts` and doc 15 §7 say `guardPlans` is not in
+  `ReplaySetup`. (Nit) One `NO_RESPAWN_TICK` sentinel; the group clear checks the plan's kind.
+  (F3) Unchanged; `INBOX.md` interim (c) asks Sam to sign off.
+- Checks run: `npm run check:quick` exit 0 after the lint fix; `npm run docs:check` passed; the
+  touched suites pass (`Tests 328 passed (328)` and the progression, capture and roster suites).
+  The full `npm run check` is left to the human.
+- Next step: critic and ponytail review; then the human runs `npm run check` and updates the PR.
+
+### 2026-11-12 — Phase 3 / sprint 3 work: PR #99 review fixes, pre-PR gate notes — feat/capture-point-boss-guards, merged into feat/capture-point-boss — Aryan Walanj + Claude Code
+
+- What was done: the critic (PASS WITH NOTES, no blockers) and ponytail (Ship) reviewed
+  `e2490797`. Applied: (1) the capped-reward test is named for what it checks, and a new test
+  pays the full 500 XP when two levels need more and nothing to a Legend at the level cap; (2) a
+  `shortcut:` comment and `INBOX.md` interim (d) record that a boss killed by a hit from a removed
+  Legend pays nobody; (3) `INBOX.md` asks Sam and the owner about four better-than-design items
+  (the lock read from state instead of 12 §7's listener, one boss traits block, a typed cap, a
+  `GuardStore` query); (5) `CAPTURE_POINT_COURT`'s TSDoc sits on the export; (6) the fight test
+  derives the boss count from the map's outer zones and has a 120 s timeout; (7) a long TSDoc line
+  is rewrapped; (8) a Legend the cap leaves nothing to pay gets no `xp-gained`. Not taken up:
+  (4) `LockedZoneOwnerInvariant` stays open (INBOX interim (b), 07 status); (9) a dead `never`
+  post's hashed respawn tick changed with the merged sentinel, to mention in the PR. Ponytail's
+  two test-only nice-to-haves are skipped.
+- Checks run: `npm run check:quick` via the pre-commit hook; `npm run docs:check` passed;
+  `ProgressionSystem.test.ts` `Tests 16 passed (16)`, `Simulation.bossFight.test.ts`
+  `Tests 3 passed (3)`. The full `npm run check` is left to the human.
+- Next step: the human runs `npm run check` and updates PR #99 with the critic verdict, the
+  ponytail result and the check output.
+
 ### 2026-11-10 — Phase 3 / sprint 3.1 — feat/status-control-immune (sync) — claudiodh + Claude Code
 
 - What was done: answered SamarjitBhogal's 2026-11-07 review on PR #52. Merged
@@ -7775,6 +8048,45 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 1336 passed (1336)"; protocol "Tests 18 passed (18)"; server "Tests 79 passed (79)"; client "Tests 1883 passed (1883)"; "Documentation check passed."
 - Next step: reviewer approval; the team merges.
 
+### 2026-11-12 — Phase 3 / combat sprint: bound key actions, part 1 (BUG-5 / SCRUM-438) — fix/bound-key-actions — Claude Code
+
+- What was done: `camera-zoom-in`, `camera-zoom-out` and `toggle-minimap` now work as `MatchHost`
+  one-shot actions (DEC-117). Zoom multiplies by `KEY_ZOOM_STEP` (`MatchHost.constants.ts`,
+  `TUNE:`) through `MatchViewControls.zoomBy`, the wheel's path and clamp. The minimap key calls
+  `MatchViewControls.toggleMiniMap`: `MiniMapView` stops drawing and answering clicks, and the
+  `minimap-visibility` event feeds the new `viewSlice` so `MinimapPanel` hides the ring. Not
+  persisted. `toggle-perf-overlay` is left out: no overlay exists. Left for the owner
+  (`INBOX.md`): `toggle-developer-menu`, `sprint`, `interact`, `turret-*`, and whether to hide
+  them from the bindings screen. Note added to `13-game-interface.md` section 10.
+- Checks run: full `npm run check` exit 0: core `Tests 1305 passed (1305)`, client
+  `Tests 1824 passed (1824)`, `Documentation check passed.`
+- Next step: owner answers the INBOX item; the other bound actions follow with their features.
+
+### 2026-11-13 — Phase 3 / sync — fix/bound-key-actions (PR #101) — claudiodh + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (3dc9e908, after #51 and #52) into this branch because #101 was CONFLICTING. Only `docs/plan/PROGRESS.md` conflicted; both sides' entries are kept. No feature code changed. No force push.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1321 passed (1321)"; client "Tests 1824 passed (1824)"; "Documentation check passed."
+- Next step: reviewer approval; the team merges.
+
+### 2026-11-13 — Phase 3 / combat sprint: bound key actions, review fixes (BUG-5 / SCRUM-438) — fix/bound-key-actions (PR #101) — Claude Code
+
+- What was done: answered the four Copilot comments. `Match.start()` now publishes the minimap's
+  visibility, so a Match that replaces a hidden one (`attachViewport`) no longer leaves the store
+  and its new `MiniMapView` disagreeing. A minimap toggle while paused repaints one frame
+  (`Match.render`, no tick), as the loop is stopped. `MiniMapView.test.ts` now covers that a
+  hidden minimap draws nothing. Mouse chords for the zoom and minimap actions are not fixed (a
+  mouse path beside the canvas gestures is a new input path); recorded in `INBOX.md` as a known
+  limit with the decision it needs.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1321 passed (1321)"; client "Tests 1827 passed (1827)"; "✓ built in 248ms"; "Documentation check passed."
+- Next step: reviewer approval; the owner answers the INBOX item.
+
+### 2026-11-13 — Phase 3 / dependencies — chore/deps-vite-vitest — claudiodh + Claude Code
+
+- What was done: bumped `vite` 8.3.1 → 8.3.8 (`apps/client`, `apps/server`) and `vitest` and `@vitest/coverage-v8` 5.0.2 → 5.1.0 (`apps/client`, `apps/server`, `packages/core`, `packages/protocol`), both non-major, exact versions, installed per workspace with `npm install -D --save-exact` so `package-lock.json` was regenerated by npm (never edited by hand). The lockfile's other changes are only those packages' own dependencies (rolldown 1.2.11 → 1.2.19, postcss, source-map-js 1.2.1 → 1.2.2, tinybench, chai, magic-string, std-env, nanoid, tinyrainbow and their platform bindings). Nothing else was touched: not `eslint`, `typescript-eslint` or `minimatch`, whose suggested audit fixes are downgrades.
+- Audit (`npm audit --json`, phase/3 at `9e2516cf`): before 16 findings (13 moderate, 3 high, none critical); after 11 (10 moderate, 1 high, none critical). Cleared: `vite` (high), `source-map-js` (high), `vitest`, `@vitest/mocker` and `@vitest/coverage-v8` (moderate). Remaining: `zod` (high, transitive through tooling) and the `eslint` / `typescript-eslint` / `minimatch` family (moderate).
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1336 passed (1336)"; protocol "Tests 18 passed (18)"; client "Tests 1883 passed (1883)"; server "Tests 79 passed (79)"; "Documentation check passed."
+- Next step: reviewers approve and merge; the eslint family and `zod` stay open in `INBOX.md`.
+
 ### 2026-11-06 — Phase 3 / minion plan MVP gaps — docs/minion-plan-mvp-gaps — SamarjitBhogal + Claude Code
 
 - What was done: audited `phase/3-sprint-3-work` and the open pull requests against the MVP scope
@@ -7817,6 +8129,49 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   passed (1883)"; server "Tests 79 passed (79)"; "Documentation check passed."
 - Next step: review and merge; then sync the stacked drafts #82, #83 and #84.
 
+### 2026-11-13 — Phase 3 / A\* search area (DEC-243) — refactor/astar-search-area — Sam Holtzman + Claude Code
+
+- What was done: one A\* search is capped by an area of ground, not a count of cells (critic
+  BTD1 on PR #98; the owner's "A: follow-up branch now", split from #98 by DEC-242).
+  `GameConfig.map.pathMaxSearchArea` (m², default 150000 = 6000 cells of 5 m) replaces
+  `pathMaxExpansions`; `AStarLimits.maxSearchArea` replaces `maxExpansions`, and
+  `AStarPathfinder` turns it into cells of its own grid once, at construction.
+  `validateGameConfig` refuses an area that is not finite or is under one nav cell. The golden
+  replay `wanderSeed7` carries the equal area (header notes it; config is not hashed). Docs: 03
+  §10 table, 10 §9, 11 §6, DEC-243.
+- Red-first: a fixed 5 m cell area in the pathfinder turned the new 2.5 m route test red; the
+  validator without the one-cell rule, without the finite check, or with `>` for `>=` turned one
+  validation case red each; the factory passing area 0 and the fixture holding 0 turned the
+  factory and golden replay tests red. Each restored green
+  (`eternalus-agent-work/tower-ruins-and-routes/astar-search-area/red-first.md`).
+- Checks run: `npm run check` (Node 24.21.0) on a421db26 plus these docs → `EXIT=0`: "All matched
+  files use Prettier code style!"; core "Tests 1340 passed (1340)"; protocol "Tests 18 passed
+  (18)"; client "Tests 1883 passed (1883)"; server "Tests 79 passed (79)"; "Documentation check
+  passed." (`eternalus-agent-work/tower-ruins-and-routes/astar-search-area/check-1.log`).
+- Next step: critic and ponytail on the branch; then a PR into `phase/3-sprint-3-work`. When it
+  merges and #98 takes phase/3, #98 drops its 24000 and renames its callers of
+  `pathMaxExpansions`/`maxExpansions`.
+
+### 2026-11-14 — Phase 3 / A\* search area: pre-PR gate — refactor/astar-search-area — sholtzman + Claude Code
+
+- What was done: the pre-PR gate (ADR 0010). Critic (architecture-reviewer) on
+  `76d1007d..0581a90e`: approve, 0 blockers. Fixed in `c8e7ed3d`: the "Safe:" comment on the
+  validator's cast, the `MapConfig` TSDoc (the area fixes the reach, not the cost), the DEC-243
+  batch clause. Its better-than-design item (`pathSnapCells` is counted in cells too) is an INBOX
+  item for the tidy PR (DEC-218), not built. Its nit N3 (a string case for the validator) is
+  rejected: the typed case table refuses a string. Ponytail: nothing to cut
+  (`eternalus-agent-work/tower-ruins-and-routes/astar-search-area/ponytail-review-r1.md`). The
+  subject of `0581a90e` ("docs: ...") has no scope; it is not the tip, and a rebase is not
+  allowed here, so it stays.
+- Checks run: full `npm run check` on `c8e7ed3d`, before this entry (log
+  `eternalus-agent-work/tower-ruins-and-routes/astar-search-area/check-2.log`): EXIT=0, "All
+  matched files use Prettier code style!", core "Tests 1340 passed (1340)", protocol "Tests 18
+  passed (18)", client "Tests 1883 passed (1883)", server "Tests 79 passed (79)",
+  "Documentation check passed.".
+- Next step: push; PR against `phase/3-sprint-3-work` (head `76d1007d`). When it merges and #98
+  takes phase/3, #98 drops its 24000 and renames its callers of
+  `pathMaxExpansions`/`maxExpansions`.
+
 ### 2026-11-09 — Phase 3 / bug tracker — docs/bug-tracker — SamarjitBhogal + Claude Code
 
 - What was done: added the bug tracker (now `docs/plan/bugs.md`), the bug overview linked to the Jira epic
@@ -7858,6 +8213,17 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   passed (1883)"; server "Tests 79 passed (79)"; "Documentation check passed."
 - Next step: merge PR #96. PR #110 drops or ticks its BUG-2/BUG-3 INBOX questions (answered by
   DEC-247/248). The open fix PRs update their rows. BUG-2 and BUG-3 need a plan item.
+
+### 2026-11-14 — Phase 3 / A\* search area: merge phase/3 (#96) — refactor/astar-search-area — sholtzman + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` `a99c3129` (it adds only the #96 bug tracker, docs only). This file, `INBOX.md` and the owner decisions log (the DEC-247 to DEC-249 batch sits above the DEC-243 batch) conflicted;
+  both sides are kept. No code change.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/astar-search-area/check-merge-phase3.log`): core "Tests 1340 passed (1340)", protocol
+  "Tests 18 passed (18)", client "Tests 1883 passed (1883)", server "Tests 79 passed (79)",
+  "Documentation check passed."; then `prettier --check` and `npm run docs:check` with this
+  entry.
+- Next step: push.
 
 ### 2026-11-11 — Phase 3 / minion follow-ups: merge phase/3 (#92) and the CodeRabbit fixes — fix/minion-stack-followups — sholtzman + Claude Code
 
@@ -7915,6 +8281,74 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-85-10.log`).
 - Next step: push; merge the new head into #86 and #79.
 
+### 2026-11-13 — Phase 3 / PR #98 split: the geometry helpers — refactor/fort-geometry-helpers — sholtzman + Claude Code
+
+- What was done: split from PR #98 by DEC-242; PR base is `fix/minion-stack-followups` (#85).
+  `map/fortInWorld.ts` (`fortInWorld`, byte-identical to #98 without its nav-cell check) now
+  serves `map/zoneArea.ts`; `utils/geometry.isPointInRect` serves `PathingSystem.isInsideFort`
+  and `doesPolygonOverlapRect`; new `doRectsOverlap` (critic BTD4) serves `MapSceneryBuilder` and
+  `StaticCollisionIndex.query`. No rule changes; the capture-zone court is bit-identical at the
+  default world size and within one unit in the last place of a float at other sizes (critic
+  finding 1). DEC-244. INBOX H1 notes the part built.
+- Red-first: one deliberate break per helper turned its tests red, then restored green
+  (`eternalus-agent-work/tower-ruins-and-routes/fort-geometry-helpers/red-first.md`).
+- Checks run: full `npm run check` on the tree before the critic's fixes (log
+  `eternalus-agent-work/tower-ruins-and-routes/fort-geometry-helpers/check-3.log`): EXIT=0, core
+  "Tests 1388 passed (1388)", client "Tests 1818 passed (1818)", "Documentation check passed.".
+  Two earlier runs (`check-1.log`, `check-2.log`) failed on test timeouts only, while several
+  worktrees ran checks at once. The run after the fixes and the merge of #85 is in the next entry.
+- Next step: PR into #85; `assertFortWallsResolve` and `assertLaneFortsApart` stay on #98.
+
+### 2026-11-13 — Phase 3 / geometry helpers: pre-PR gate and merge of #85 — refactor/fort-geometry-helpers — sholtzman + Claude Code
+
+- What was done: the pre-PR gate (ADR 0010). Critic (architecture-reviewer) on the tree over
+  `c09507f6`: approve, 0 blockers. Fixed before the commits `d21feb88` and `314f80eb`:
+  `PathingSystem.isInsideFort` passes its point on and builds no object per fort; the DEC-244
+  row and the entry above say what is bit-identical and what is within one unit in the last
+  place; the decisions log's `last-reviewed`. Its two better-than-design items (the ring boxes
+  in `MapSceneryBuilder`; one `fortWall(side)`) are one INBOX item for the tidy PR (DEC-218), not
+  built. Ponytail: nothing to cut
+  (`eternalus-agent-work/tower-ruins-and-routes/fort-geometry-helpers/ponytail-review-r1.md`).
+  Then this branch merged #85's `2e8df5bc` (phase/3 `76d1007d` with #97 and #81); one conflict,
+  in this file, both sides kept.
+- Checks run: full `npm run check` with the fixes and the merge in place, before this entry (log
+  `eternalus-agent-work/tower-ruins-and-routes/fort-geometry-helpers/check-4.log`): EXIT=0, core
+  "Tests 1419 passed (1419)", protocol "Tests 18 passed (18)", client "Tests 1883 passed
+  (1883)", server "Tests 79 passed (79)", "Documentation check passed.".
+
+### 2026-11-13 — Phase 3 / gate reach — feat/gate-reach — sholtzman + Claude Code
+
+- What was done: split from PR #98 (`feat/tower-ruins-and-routes`) by the owner's ruling DEC-242
+  (row on #98). The PR base is `fix/minion-stack-followups` (#85), as #98's. It builds DEC-217
+  (16) and (17), whose rows are on phase/3: a gate's definition has `hasMapFootprint`, so reach to
+  a gate is measured to its polygon, and `hasFortBox` keeps a gate's box out of the chase rule's
+  fort boxes. Cherry-picked from #98's `af76b908`; the conflict in
+  `DefaultSystemPipeline.test.ts` was resolved with #98's version of the gate test, without its
+  ruin parts. Architecture 07 and 18 carry the gate text only.
+- Red-first: dropping `hasMapFootprint` from the gate definition turned 2 tests in
+  `Simulation.mapObjects.test.ts` red (gate Footprint count; melee reach at a gate). Counting every
+  structure as a fort box turned the gate case of the fort-boxes test in
+  `DefaultSystemPipeline.test.ts` red (`red-first.md`).
+- Checks run: see `eternalus-agent-work/tower-ruins-and-routes/gate-reach/check-1.log`.
+- Next step: push; PR against `fix/minion-stack-followups`.
+
+### 2026-11-13 — Phase 3 / gate reach: pre-PR gate and merge of #85 — feat/gate-reach — sholtzman + Claude Code
+
+- What was done: the pre-PR gate (ADR 0010). Critic (architecture-reviewer) on
+  `c09507f6..f3ccc334`: approve, 0 blockers. Fixed in `edab6521`: the `Footprint` and
+  `EntityStore.outlineOf` TSDoc name the gate; the fort-box test title covers both rows. Its two
+  better-than-design items (one field for `hasMapFootprint` and `hasFortBox`; the fort-box fact
+  recorded where the `Footprint` is made) are one INBOX item for the tidy PR (DEC-218), not built.
+  Ponytail: nothing to cut
+  (`eternalus-agent-work/tower-ruins-and-routes/gate-reach/ponytail-review-r1.md`). Then this
+  branch merged #85's `2e8df5bc` (phase/3 `76d1007d` with #97 and #81); one conflict, in this
+  file, both sides kept.
+- Checks run: full `npm run check` with the merge in place, before this entry (log
+  `eternalus-agent-work/tower-ruins-and-routes/gate-reach/check-3.log`): EXIT=0, core "Tests
+  1417 passed (1417)", protocol "Tests 18 passed (18)", client "Tests 1883 passed (1883)",
+  server "Tests 79 passed (79)", "Documentation check passed.".
+- Next step: push; PR against `fix/minion-stack-followups` (#85, head `2e8df5bc`).
+
 ### 2026-11-14 — Phase 3 / minion follow-ups: merge phase/3 (#96) — fix/minion-stack-followups — sholtzman + Claude Code
 
 - What was done: merged phase/3 `a99c3129` (#96 bug tracker, docs only). This file and the
@@ -7926,6 +8360,26 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   passed (79)", "Documentation check passed."; then `prettier --check` and `npm run docs:check`
   on this file.
 - Next step: push; merge the new head into #86, #79, #98, #119 and #120.
+
+### 2026-11-14 — Phase 3 / geometry helpers: merge #85's #96 head — refactor/fort-geometry-helpers — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` `2129a73e` (PR #85; it adds only the
+  merge of phase/3 `a99c3129`, the #96 bug tracker, docs only). This file, `INBOX.md` and the owner decisions log (the DEC-247 to DEC-249 batch sits above the DEC-244 batch) conflicted; both sides are
+  kept. No code change.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/fort-geometry-helpers/check-merge85-2.log`): core "Tests 1419 passed (1419)", protocol
+
+### 2026-11-14 — Phase 3 / gate reach: merge #85's #96 head — feat/gate-reach — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` `2129a73e` (PR #85; it adds only the
+  merge of phase/3 `a99c3129`, the #96 bug tracker, docs only). This file and `INBOX.md` conflicted; both sides are
+  kept. No code change.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/gate-reach/check-merge85-2.log`): core "Tests 1417 passed (1417)", protocol
+  "Tests 18 passed (18)", client "Tests 1883 passed (1883)", server "Tests 79 passed (79)",
+  "Documentation check passed."; then `prettier --check` and `npm run docs:check` with this
+  entry.
+- Next step: push.
 
 ### 2026-11-11 — Phase 3 / out-of-combat healing, merge of fix/minion-stack-followups (phase/3 with #89) — feat/out-of-combat-heal — sholtzman + Claude Code
 
@@ -8214,6 +8668,603 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   (`eternalus-agent-work/tower-ruins-and-routes/ci-timeout-check-merge-fcc48a7b.log`).
 - Next step: a PR into `phase/3-sprint-3-work`.
 
+### 2026-11-12 — Phase 3 / online Duel — feat/duel-rules (stacked on #97) — claudiodh + Claude Code
+
+- What was done: the Duel rules and the organic start flow. Core: `SimulationOptions.duel` (kept in the replay setup), both Legends start in the Cathedral, `DuelRoundSystem` counts a kill and resets both Legends to their start points at full health, `KillCountCondition` ends the match at 10 (`DUEL_RULES`, `// TUNE:`), score in `Snapshot.match.duel`. Protocol: `queue-join` carries a validated `name`, `match-found` carries `opponentName`. Server: the queue keeps names, the match waits 4 s for the VERSUS screen, the countdown is 3 s. Client: name entry screen, VERSUS screen, countdown 3, 2, 1, START and a "3 - 1 (first to 10)" scoreboard on the HUD (`duel-state`); results reuse the existing screen.
+- Tests: `Simulation.duel.test.ts` (spawn, kill and reset, win at a target of 2, replay), `KillCountCondition.test.ts`, `duelStartPoints.test.ts`, parser name cases, `DuelQueue`/`DuelGateway`/`DuelMatch` names and VERSUS wait, `DuelSession`, `SessionController.duel.test.ts` (VERSUS then loading), `MatchBridge.test.ts` (score side, countdown numbers), `DuelHud`, `DuelVersusScreen`, `DuelNameScreen`.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1340 passed (1340)"; protocol "Tests 29 passed (29)"; client "Tests 1909 passed (1909)"; server "Tests 82 passed (82)"; "Documentation check passed."
+- Next step: the owner answers the INBOX items of 2026-11-12 (spawn points, kill credit, name rules, FR-115's inert world); the gate (critic, ponytail) runs before the PR.
+
+### 2026-11-13 — Phase 3 / sync — feat/duel-rules (PR #102) — claudiodh + Claude Code
+
+- What was done: merged `feat/duel-server` into this branch (its base, updated after the sync with `phase/3-sprint-3-work` 3dc9e908) because #102 was CONFLICTING. Only the append-only logs conflicted; both sides' entries are kept. No feature code changed. No force push.
+- Checks run: `npm run check` → `EXIT=0`: Tests 1356 passed (1356);Tests 29 passed (29);Tests 1909 passed (1909);Tests 82 passed (82); "Documentation check passed."
+- Next step: reviewer approval; the team merges in stack order.
+
+### 2026-11-13 — Phase 3 / online Duel — feat/duel-rules (Copilot review fix) — claudiodh + Claude Code
+
+- What was done: answered the Copilot thread on PR #102 (`DuelRoundSystem` clears the heading and target, but the server's `SeatCommands` kept its last movement and target). Valid: a test through `CoreDuelSimulationFactory` (a seat holds a direction, a kill resets both Legends) left the Legend still at its start point. `SeatCommands.reset()` forgets the cached movement and target, and `CoreDuelSimulation` calls it for both seats when the Duel score changes. Core is untouched; no product decision needed.
+- Tests: `CoreDuelSimulation.test.ts` (new; fails without the reset), `SeatCommands.test.ts` (held movement and attack queue again after `reset`).
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1356 passed (1356)"; protocol "Tests 29 passed (29)"; client "Tests 1909 passed (1909)"; server "Tests 84 passed (84)"; "Documentation check passed."
+- Next step: reviewer re-check; the team merges in stack order.
+
+### 2026-11-15 — Phase 3 / sync — feat/duel-rules (PR #102) — claudiodh + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` (796131ff) into this branch because #102 was CONFLICTING. Append-only logs keep both sides. Code conflicts: the bridge now has `match-ended`/`duel-ended` (one `MatchEnding`, no team) so the Duel's old `match-result` and `DuelResult.team` are dropped; the Duel's names and scoreboard stay as `versus` and `duelHud` in `matchSlice` (the phase branch's `duel` field is the ending). `StateHasher`, `MatchRecord`, `Simulation` and `DefaultSystemPipeline` take both sides. `kill-count` gets verdict lines (a test requires one per condition). `CoreDuelSimulation.test.ts` walks to the dark Legend and stops, because out-of-combat healing now refills a target the attacker walks away from. No force push.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1602 passed (1602)"; protocol "Tests 29 passed (29)"; client "Tests 2005 passed (2005)"; server "Tests 84 passed (84)"; "Documentation check passed."
+- Next step: reviewer approval; the team merges in stack order.
+
+### 2026-11-15 — Phase 3 / sync — chore/deps-vite-vitest (PR #113) — claudiodh + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (80e0ea13) into this branch because #113 was CONFLICTING. Conflict: `PROGRESS.md` (both sides kept).
+- Checks run: `npm run check` → `EXIT=0`.
+- Next step: reviewer approval; the team merges.
+
+### 2026-11-16 — Phase 3 / sprint 3 work: merge phase/3 (`330e969a`) into feat/capture-point-boss (PR #99) — feat/capture-point-boss-merge (local, from `d3dd9822`) — Aryan Walanj + Claude Code
+
+- What was done: claudiodh's re-review of `d3dd9822` asked for the current phase branch to be
+  merged. Merged `origin/phase/3-sprint-3-work` at `330e969a`, uncommitted, on a local branch
+  (`feat/capture-point-boss` is checked out in another worktree). 17 files conflicted. Code:
+  `GuardRoster` takes phase/3's respawn-rule registry, keyed by this branch's `respawn.kind`, with
+  `never` as a third rule (`systems/NeverGuardRespawn.ts`, vacates with no respawn tick);
+  `NO_RESPAWN_TICK`, `announceCleared` and `GuardRoster.constants.ts` (deleted on phase/3) are
+  gone, since `GroupGuardRespawn` owns `camp-cleared`; zone homes (`isHome`, `isStanding`, home
+  radius 0, `firstTick`) and phase/3's `isLost` (`team-changed`) are both kept. `guardPlans.ts`
+  takes `GUARD_LEASH` and DEC-181's 5.5 m tolerance with this branch's activation and respawn
+  objects; the tolerance comment covers the boss under the 10- and 16-tick walks. `SpawnSystem`
+  keeps phase/3's local `homes` with `isHome` and the activation check; `CaptureSystem` keeps
+  phase/3's `presenceInside` with the zone lock; `Simulation` and its types keep `guardPlans`,
+  `duel`, `structures` and the zone announcement after `spawnRoster(…, duelStarts)`. Tests keep
+  both sides; phase/3's "keys every plan by a structure definition id" accepts zone ids too;
+  `GuardRoster.test.ts` takes `WorldObjectStore`'s options object and drops a duplicate import.
+  F5: `content/ai/aggro/capturePointBoss.ts` is a `GuardAggroRuleDefinition` spreading
+  `TOWER_GUARD_AGGRO` with the court's acquisition radius. Docs, INBOX and the decisions log keep
+  both sides (the 2026-11-10 DEC-237 batch between the 11-13 and 11-09 batches; doc 07 drops
+  phase/3's "`lockedBy` is always `null`", which the lock replaces).
+- Checks run: the eight boss suites (`Simulation.bossFight`, `Simulation.bosses`,
+  `CaptureSystem.lock`, `BossMinionDamageStep`, `capturePointCourt`, `guardPlans`, `GuardRoster`,
+  `SpawnSystem.guards`): "Test Files 8 passed (8)", "Tests 48 passed (48)". One `npm run check`:
+  format:check, check:no-js, lint, typecheck and knip passed; core "Test Files 1 failed | 266
+  passed (267)", "Tests 1 failed | 1636 passed (1637)": `aggroRules.test.ts` "gives each guard
+  plan's mobs an acquisition radius of the plan's leash less its post gap (AI56-F4)", expected
+  radius 6.144967142003573, received 64.25503285799644 for `capture-point-boss`; protocol "Tests
+  29 passed (29)"; Claude Code then stopped the run for low memory during the client tests. Not
+  committed.
+- Decision (Aryan, 2026-11-16): the boss keeps court-wide aggro (reference 04 "fight anyone
+  inside their zone"). `aggroRules.test.ts` scopes AI56-F4 to a plan's ordinary guard rows and
+  exempts the boss row; #99's `guardPlans.test.ts` case stays. The court's support mobs get a
+  `capture-point-guard` profile (`content/ai/aggro/capturePointGuard.ts`: the court's leash less
+  its post gap) through two mob variants, `capture-point-heavy-guard` and
+  `capture-point-light-guard`, which the `capture-point` plan now uses. One `NeverGuardRespawn`
+  TSDoc names both the capture point boss and the Greater Boss. Doc 07 and an `INBOX.md` line
+  ask the AI56-F4 owner to confirm. Critic (architecture-reviewer) on the resolution: PASS WITH
+  NOTES, no design violations; its two must-fix items (stage the new files, update this entry)
+  are done.
+- Final check: `npm run check` (2026-11-16 03:12-03:37) → exit 0: "All matched files use
+  Prettier code style!"; core "Test Files 267 passed (267)", "Tests 1637 passed (1637)";
+  protocol "Tests 29 passed (29)"; client "Test Files 297 passed (297)", "Tests 2005 passed
+  (2005)"; server "Test Files 21 passed (21)", "Tests 84 passed (84)"; "✓ built in 3.09s";
+  "Documentation check passed."
+- Next step: push `feat/capture-point-boss` and update the PR #99 body.
+
+### 2026-11-14 — Phase 3 / the player who stays in a Duel wins (DEC-251) — feat/duel-leave-victory — sholtzman + Claude Code
+
+- What changed: the owner's answer to the open part of INBOX HC-Q57 (DEC-251, "A) yes"). When a
+  player leaves a live Duel, the server's `DuelMatch.leave` sends the player who stayed
+  `match-ended` with `opponent-left` and that player's team as the winner (it sent `null`).
+  `selectMatchVerdict` drops its `opponent-left` branch, so the results screen shows VICTORY with
+  "Opponent left." under it (`selectResultsView` keeps the status line). The `MatchEnding.winner`
+  TSDoc in `@eternalus/protocol` names the rule. Docs: architecture 13 §3 (screens table), the
+  decisions log (DEC-251), INBOX HC-Q57 (ticked). Branch from PR #93's head `f14e2661`; its PR
+  opens after #93 merges.
+- Fail-first: the four changed tests (`DuelMatch.test.ts`, `selectMatchVerdict.test.ts`,
+  `selectResultsView.test.ts`, `ResultsScreen.test.tsx`) were run before the production change and
+  were red: "expected { type: 'match-ended', …(2) } to deeply equal …", "expected null to be
+  'victory'", "expected { verdict: null, …(2) } to deeply equal { verdict: 'victory', …(2) }",
+  "expected 'Match results' to be 'VICTORY'". After the change: server `src/match` 15 passed,
+  client bridge, results screen and Duel session tests 229 passed.
+- Pre-PR gate: critic (`architecture-reviewer`) approve, 0 blockers; where the rule lives (the
+  server names the winner, so `MatchEnding.winner` means one thing for both reasons) confirmed;
+  its nit on `matchSlice.test.ts` applied (the `opponent-left` fixture now has the winner the
+  server sends); its other nits: the check line is this one, and doc 13 already has
+  `last-reviewed: 2026-11-14`. Ponytail: one finding applied, `DuelMatch.leave` uses core's
+  `opponentOf` instead of its own ternary.
+- Checks run: `npm run check` → `EXIT=0` on `f14e2661` plus this change (diff sha256 prefix
+  `b0dcfe0770f077b1`, before this line was written; log
+  `eternalus-agent-work/game-loop-plan/duel-leave-victory-check2-2026-11-14.log`): core "Tests
+  1428 passed (1428)"; protocol "Tests 18 passed (18)"; client "Tests 1969 passed (1969)" (3
+  fewer than #93: two `it.each` blocks for the old no-verdict rule became one test each); server
+  "Tests 79 passed (79)"; "Documentation check passed.".
+- Next step: the PR, after #93 merges into `phase/3-sprint-3-work` (merge the phase branch in
+  first).
+
+### 2026-11-14 — Phase 3 / DEC-251: merge the new head of feat/match-scoring (#93 with phase/3 at 88f5afd8) — feat/duel-leave-victory — sholtzman + Claude Code
+
+- What was done: merged `a74ecc20` (PR #93's local head: `feat/match-scoring` with
+  `phase/3-sprint-3-work` at `88f5afd8`, #85 minion follow-ups, #86 out-of-combat heal) into
+  this branch as `98edd1bc`. Conflict: this file only (#93's merge entry, then this branch's
+  DEC-251 entry). The other files merged without conflict; outside this file the diff against
+  `a74ecc20` has the same changed lines as `f14e2661..6107cb17`.
+- Checks run: `npm run check` → `EXIT=0` on `98edd1bc` before this entry was added
+  (`eternalus-agent-work/game-loop-plan/duel-merge-a74ecc20-check-2026-11-14.log`): core "Tests
+  1549 passed (1549)"; protocol "Tests 18 passed (18)"; client "Tests 1969 passed (1969)"; server
+  "Tests 79 passed (79)"; "Documentation check passed.". Then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the PR, after #93 merges into `phase/3-sprint-3-work` (merge the phase branch in
+  first).
+
+### 2026-11-15 — Phase 3 / DEC-251: merge phase/3 (#93 merged, #79) — feat/duel-leave-victory — sholtzman + Claude Code
+
+- What was done: PR #93 merged into `phase/3-sprint-3-work` as `fcc48a7b` (after #79, unit facing
+  chevron, at `8dc7d962`). Merged it into this branch as `c5aaf39a`. Conflict: this file only
+  (phase/3's #79-merge entry, then this branch's entries). The diff against phase/3 is the
+  DEC-251 change and this file's entries only.
+- Checks run: `npm run check` → `EXIT=0` on `c5aaf39a` before this entry was added
+  (`eternalus-agent-work/game-loop-plan/duel-merge-fcc48a7b-check-2026-11-15.log`): core "Tests
+  1582 passed (1582)"; protocol "Tests 18 passed (18)"; client "Tests 1976 passed (1976)"; server
+  "Tests 79 passed (79)"; "Documentation check passed.". Then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the owner runs the push script; the PR opens against `phase/3-sprint-3-work`.
+
+### 2026-11-15 — Phase 3 / DEC-251: merge phase/3 (#127 merged) — feat/duel-leave-victory — sholtzman + Claude Code
+
+- What was done: PR #127 (CI job limit, DEC-254) merged into `phase/3-sprint-3-work` as
+  `80e0ea13`. Merged it into this branch as `708c9422`. Conflicts: this file (#127's entry, then
+  this branch's entries) and the owner decisions log (DEC-254's batch above DEC-251's, newest
+  first). First link of the stacked merge chain #126 → #121 → #120 → #119: each later branch merges
+  the previous one's head, so each PR merges into phase/3 without conflict when they land in that
+  order with merge commits.
+- Checks run: `npm run check` → `EXIT=0` on `708c9422` before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-stack-126-708c9422.log`): core "Tests 1582
+  passed (1582)"; protocol "Tests 18 passed (18)"; client "Tests 1976 passed (1976)"; server
+  "Tests 79 passed (79)"; "Documentation check passed.". Then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the owner runs the push script; #126 merges into phase/3 after CI, then #121.
+
+### 2026-11-16 — Phase 3 / DEC-251: merge phase/3 (#113, #102 merged) — feat/duel-leave-victory — sholtzman + Claude Code
+
+- What was done: PR #113 (vite/vitest) and PR #102 (duel rules) merged into
+  `phase/3-sprint-3-work` (now `330e969a`) after this branch was pushed at `4a72b5f7`. Merged it
+  into this branch as `9d106972`. Conflicts: `apps/server/src/match/DuelMatch.ts` (`leave`) and
+  this file. `leave` keeps this branch's DEC-251 rule (the player who stays wins): #102 changed the
+  same lines only to use core's `opponentOf`, which this branch already uses; #102's `winner: null`
+  was the rule DEC-251 replaced. This file: #102's and #113's entries, then this branch's.
+  Rebuilds the first link of the stacked merge chain #126 → #121 → #120 → #119.
+- Checks run: `npm ci` (#113 changed dependencies), then `npm run check` → `EXIT=0` on `9d106972`
+  before this entry was added (`eternalus-agent-work/tower-ruins-and-routes/check-stack-126-r2.log`):
+  core "Tests 1602 passed (1602)"; protocol "Tests 29 passed (29)"; client "Tests 2002 passed
+  (2002)"; server "Tests 84 passed (84)"; "Documentation check passed.". Then `prettier --check`
+  and `npm run docs:check` on this file.
+- Next step: the owner runs the push script; #126 merges into phase/3 after CI, then #121.
+
+### 2026-11-14 — Phase 3 / A\* search area: merge phase/3 (#85, #86) — refactor/astar-search-area — sholtzman + Claude Code
+
+- What was done: merged phase/3 `88f5afd8` (#85 and #86). #85 added four uses of the old cap
+  name, now `pathMaxSearchArea` / `maxSearchArea`: `ai/BotLeaves.test.ts` (two),
+  `ai/BotLegendController.test.ts`, `systems/StuckSystem.test.ts`, and the comment in
+  `content/ai/stuckDetection.ts`. Their grids use `navCellSize` 5, so the cap stays 6000 cells.
+  Conflicts, both sides kept: architecture 10 §6 (#85's stuck-chase sentence, then the search
+  area) and 11 §6 (#85's unit-cap and `StuckSystem` text, with `pathMaxSearchArea` for
+  `pathMaxExpansions`), the owner decisions log (the DEC-243 batch above the DEC-234 batch) and
+  this file.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/astar-search-area/check-merge-phase3-88f5afd8.log`):
+  core "Tests 1461 passed (1461)", protocol "Tests 18 passed (18)", client "Tests 1883 passed
+  (1883)", server "Tests 79 passed (79)", "Documentation check passed."; then `prettier --check`
+  and `npm run docs:check` with this entry.
+- Next step: push.
+
+### 2026-11-14 — Phase 3 / A* search area: merge phase/3 (#79, #93) — refactor/astar-search-area — sholtzman + Claude Code
+
+- What was done: merged phase/3 at `8dc7d962` (#79 unit facing chevron). Only this file
+  conflicted; both sides are kept. #79 adds no A* call site, so no new `pathMaxExpansions` or
+  `maxExpansions` site needed renaming. No code change on this branch.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/astar-search-area/check-merge-phase3-8dc7d962.log`):
+  core "Tests 1494 passed (1494)", protocol "Tests 18 passed (18)", client "Tests 1890 passed
+  (1890)", server "Tests 79 passed (79)", "Documentation check passed."; then
+  `prettier --check` and `npm run docs:check` with this entry.
+  Then merged phase/3 at `fcc48a7b` (#93 match scoring; only this file conflicted, both sides
+  kept): full `npm run check` exit 0 (`eternalus-agent-work/tower-ruins-and-routes/astar-search-area/check-merge-phase3-fcc48a7b.log`): core "Tests 1586 passed (1586)",
+  protocol 18, client 1979, server 79, docs passed. #93 adds no A* call site either.
+- Next step: push.
+
+### 2026-11-15 — Phase 3 / A\* search area: merge #126 (phase/3 with #127) — refactor/astar-search-area — sholtzman + Claude Code
+
+- What was done: merged PR #126's head `4a72b5f7` (`feat/duel-leave-victory` with phase/3 at
+  `80e0ea13`, #127 CI job limit) into this branch as `0a176430`. Conflict: this file only (#127's
+  and #126's entries, then this branch's). Second link of the stacked merge chain
+  #126 → #121 → #120 → #119: this PR merges into phase/3 without conflict right after #126, with
+  merge commits.
+- Checks run: `npm run check` → `EXIT=0` on `0a176430` before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-stack-121.log`): core "Tests 1586 passed
+  (1586)"; protocol "Tests 18 passed (18)"; client "Tests 1976 passed (1976)"; server "Tests 79
+  passed (79)"; "Documentation check passed.". Then `prettier --check` and `npm run docs:check` on
+  this file.
+- Next step: #120 merges this head; the owner runs the push script; #121 merges after #126.
+
+### 2026-11-16 — Phase 3 / A\* search area: merge #126 again (phase/3 with #113, #102) — refactor/astar-search-area — sholtzman + Claude Code
+
+- What was done: PR #113 and PR #102 merged into phase/3 (`330e969a`) after the stacked chain was
+  pushed, so #126 merged phase/3 again (`9dfcadda`). Merged that head into this branch as
+  `2abf6414`. Conflict: this file only (#126's new entry, then this branch's).
+- Checks run: `npm ci` (#113 changed dependencies), then `npm run check` → `EXIT=0` on `2abf6414`
+  before this entry was added (`eternalus-agent-work/tower-ruins-and-routes/check-stack-121-r2.log`):
+  core "Tests 1606 passed (1606)"; protocol "Tests 29 passed (29)"; client "Tests 2002 passed
+  (2002)"; server "Tests 84 passed (84)"; "Documentation check passed.". Then `prettier --check`
+  and `npm run docs:check` on this file.
+- Next step: #120 merges this head; the owner runs the push script; #121 merges after #126.
+
+### 2026-11-14 — Phase 3 / geometry helpers: merge phase/3 (#85, #86) and retarget — refactor/fort-geometry-helpers — sholtzman + Claude Code
+
+- What was done: #85 and #86 merged into phase/3 (`88f5afd8`), so this PR's base moved from
+  `fix/minion-stack-followups` to `phase/3-sprint-3-work` (`gh pr edit --base`) and phase/3
+  was merged in. It brings #86 (out-of-combat healing). Only this file conflicted; both sides are
+  kept. No code change on this branch.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/fort-geometry-helpers/check-merge-phase3-88f5afd8.log`): core "Tests 1461 passed (1461)", protocol
+  "Tests 18 passed (18)", client "Tests 1883 passed (1883)", server "Tests 79 passed (79)",
+  "Documentation check passed."; then `prettier --check` and `npm run docs:check` with this
+  entry.
+- Next step: push.
+
+### 2026-11-14 — Phase 3 / fort geometry helpers: merge phase/3 (#79, #93) — refactor/fort-geometry-helpers — sholtzman + Claude Code
+
+- What was done: merged phase/3 at `8dc7d962` (#79 unit facing chevron). This file and the
+  imports of `PathingSystem.ts` conflicted: both sides are kept (#79's `guardOutward` and
+  `SpaceQuery`, this branch's `isPointInRect`). #79's new guard-facing code checks a distance,
+  not a rectangle, so none of this branch's helpers apply to it.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/fort-geometry-helpers/check-merge-phase3-8dc7d962.log`):
+  core "Tests 1494 passed (1494)", protocol "Tests 18 passed (18)", client "Tests 1890 passed
+  (1890)", server "Tests 79 passed (79)", "Documentation check passed."; then
+  `prettier --check` and `npm run docs:check` with this entry.
+  Then merged phase/3 at `fcc48a7b` (#93 match scoring; only this file conflicted, both sides
+  kept): full `npm run check` exit 0 (`eternalus-agent-work/tower-ruins-and-routes/fort-geometry-helpers/check-merge-phase3-fcc48a7b.log`): core "Tests 1586 passed (1586)",
+  protocol 18, client 1979, server 79, docs passed. #93 adds no inline rectangle or fort-box test.
+- Next step: push.
+
+### 2026-11-15 — Phase 3 / fort geometry helpers: merge #121 (with #126, phase/3 with #127) — refactor/fort-geometry-helpers — sholtzman + Claude Code
+
+- What was done: merged PR #121's head `3181b19c` (`refactor/astar-search-area` with #126 and
+  phase/3 at `80e0ea13`) into this branch as `2f8e5f8d`. Conflicts, all add-add, both sides kept
+  as whole entries: this file (#127's, #126's and #121's entries, then this branch's), `INBOX.md`
+  and the owner decisions log (this branch's critic item and DEC-244 batch on top, newest first).
+  Git split this file's conflict through shared lines of two entries, so it was resolved as one
+  span (`eternalus-agent-work/tower-ruins-and-routes/resolve-span-both.py`); against each side the
+  result removes no lines except the other side's own edits. Third link of the stacked merge chain
+  #126 → #121 → #120 → #119.
+- Checks run: `npm run check` → `EXIT=0` on `2f8e5f8d` before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-stack-120.log`): core "Tests 1590 passed
+  (1590)"; protocol "Tests 18 passed (18)"; client "Tests 1976 passed (1976)"; server "Tests 79
+  passed (79)"; "Documentation check passed.". Then `prettier --check` and `npm run docs:check` on
+  this file.
+- Next step: #119 merges this head; the owner runs the push script; #120 merges after #121.
+
+### 2026-11-16 — Phase 3 / fort geometry helpers: merge #121 again (#126, phase/3 with #113, #102) — refactor/fort-geometry-helpers — sholtzman + Claude Code
+
+- What was done: PR #113 and PR #102 merged into phase/3 (`330e969a`) after the stacked chain was
+  pushed; #126 and #121 merged it again. Merged #121's new head `05cf3d4e` into this branch as
+  `b221906f`. Conflict: this file only (#121's new entry, then this branch's).
+- Checks run: `npm ci` (#113 changed dependencies), then `npm run check` → `EXIT=0` on `b221906f`
+  before this entry was added (`eternalus-agent-work/tower-ruins-and-routes/check-stack-120-r2.log`):
+  core "Tests 1610 passed (1610)"; protocol "Tests 29 passed (29)"; client "Tests 2002 passed
+  (2002)"; server "Tests 84 passed (84)"; "Documentation check passed.". Then `prettier --check`
+  and `npm run docs:check` on this file.
+- Next step: #119 merges this head; the owner runs the push script; #120 merges after #121.
+
+### 2026-11-14 — Phase 3 / gate reach: merge phase/3 (#85, #86) and retarget — feat/gate-reach — sholtzman + Claude Code
+
+- What was done: #85 and #86 merged into phase/3 (`88f5afd8`), so this PR's base moved from
+  `fix/minion-stack-followups` to `phase/3-sprint-3-work` (`gh pr edit --base`) and phase/3
+  was merged in. It brings #86 (out-of-combat healing). Only this file conflicted; both sides are
+  kept. No code change on this branch.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/gate-reach/check-merge-phase3-88f5afd8.log`): core "Tests 1459 passed (1459)", protocol
+  "Tests 18 passed (18)", client "Tests 1883 passed (1883)", server "Tests 79 passed (79)",
+  "Documentation check passed."; then `prettier --check` and `npm run docs:check` with this
+  entry.
+- Next step: push.
+
+### 2026-11-14 — Phase 3 / gate reach: merge phase/3 (#79, #93) — feat/gate-reach — sholtzman + Claude Code
+
+- What was done: merged phase/3 at `8dc7d962` (#79 unit facing chevron). Only this file
+  conflicted; both sides are kept. No code change on this branch.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/gate-reach/check-merge-phase3-8dc7d962.log`):
+  core "Tests 1492 passed (1492)", protocol "Tests 18 passed (18)", client "Tests 1890 passed
+  (1890)", server "Tests 79 passed (79)", "Documentation check passed."; then
+  `prettier --check` and `npm run docs:check` with this entry.
+  Then merged phase/3 at `fcc48a7b` (#93 match scoring; only this file conflicted, both sides
+  kept): full `npm run check` exit 0 (`eternalus-agent-work/tower-ruins-and-routes/gate-reach/check-merge-phase3-fcc48a7b.log`): core "Tests 1584 passed (1584)",
+  protocol 18, client 1979, server 79, docs passed.
+- Next step: push.
+
+### 2026-11-15 — Phase 3 / gate reach: merge #120 (with #121, #126, phase/3 with #127) — feat/gate-reach — sholtzman + Claude Code
+
+- What was done: merged PR #120's head `813823ac` (`refactor/fort-geometry-helpers` with #121,
+  #126 and phase/3 at `80e0ea13`) into this branch as `f2623841`. Conflicts, all add-add, both
+  sides kept as whole entries: this file at three places (#120's entries before this branch's;
+  the last place resolved as one span with
+  `eternalus-agent-work/tower-ruins-and-routes/resolve-span-both.py`, as git split it through
+  shared lines) and `INBOX.md` (this branch's critic item on top). Entry headings: 438 at
+  phase/3 `fcc48a7b`, 5 more on this branch, 17 more on #120's head, 460 after the merge. Last
+  link of the stacked merge chain #126 → #121 → #120 → #119.
+- Checks run: `npm run check` → `EXIT=0` on `f2623841` before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-stack-119.log`): core "Tests 1592 passed
+  (1592)"; protocol "Tests 18 passed (18)"; client "Tests 1976 passed (1976)"; server "Tests 79
+  passed (79)"; "Documentation check passed.". Then `prettier --check` and `npm run docs:check` on
+  this file.
+- Next step: the owner runs the push script; after CI, #126, #121, #120 and #119 merge into
+  phase/3 in that order with merge commits.
+
+### 2026-11-16 — Phase 3 / gate reach: merge #120 again (#121, #126, phase/3 with #113, #102) — feat/gate-reach — sholtzman + Claude Code
+
+- What was done: PR #113 and PR #102 merged into phase/3 (`330e969a`) after the stacked chain was
+  pushed; #126, #121 and #120 merged it again. Merged #120's new head `09566db4` into this branch
+  as `c0aa9895`. Conflict: this file only (#120's new entry, then this branch's).
+- Checks run: `npm ci` (#113 changed dependencies), then `npm run check` → `EXIT=0` on `c0aa9895`
+  before this entry was added (`eternalus-agent-work/tower-ruins-and-routes/check-stack-119-r2.log`):
+  core "Tests 1612 passed (1612)"; protocol "Tests 29 passed (29)"; client "Tests 2002 passed
+  (2002)"; server "Tests 84 passed (84)"; "Documentation check passed.". Then `prettier --check`
+  and `npm run docs:check` on this file.
+- Next step: the owner runs the push script; after CI, #126, #121, #120 and #119 merge into
+  phase/3 in that order with merge commits, with no other merge into phase/3 in between.
+
+### 2026-11-19 — Phase 3 / gate reach: stacked chain round 3 on phase/3 af54fe96 (#101, #99) — feat/gate-reach — sholtzman + Claude Code
+
+- What was done: PR #101 and PR #99 merged into phase/3 (`af54fe96`) after round 2 was built.
+  Round 3 rebuilds the stacked merge chain #126 → #121 → #120 → #119; each link merges the
+  previous link's new head:
+  - #126 `feat/duel-leave-victory`: phase/3 `af54fe96` into `9dfcadda` as `c49e2f45`. Conflict:
+    this file only (#101's and #99's entries first).
+  - #121 `refactor/astar-search-area`: `c49e2f45` into `05cf3d4e` as `49404432`. Conflicts:
+    `INBOX.md` and the owner decisions log (add-add, both sides kept, #121's item and batch
+    first) and doc 11 `last-reviewed` (later date kept).
+  - #120 `refactor/fort-geometry-helpers`: `49404432` into `09566db4` as `0ede127d`. No conflict.
+  - #119 (this branch): `0ede127d` into `6c0fd810` as `882a7421`. Conflicts: docs 07 and 18
+    `last-reviewed` (later date kept); doc 18's status paragraph merged with both sides' text.
+  - Each link's own diff over the previous link is the same as in round 2 (sorted diff lines
+    compared), except the `last-reviewed` lines.
+- Checks run: the pre-commit `check:quick` passed on each merge commit. The owner chose one full
+  check on this branch's tree, which holds all four PRs' code, plus green CI on each head before
+  its merge (machine load). `npm run check` → `EXIT=0` on `882a7421` before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-stack-119-r3.log`): core "Tests 1647 passed
+  (1647)"; protocol "Tests 29 passed (29)"; client "Tests 2011 passed (2011)"; server "Tests 84
+  passed (84)"; "Documentation check passed.". Then `prettier --check` and `npm run docs:check` on
+  this file.
+- Next step: the owner runs the push script, then the merge script. It merges #126, #121, #120
+  and #119 into phase/3 in that order with merge commits, each only with green CI, and stops if
+  another PR merges into phase/3 in between.
+
+### 2026-11-12 — Phase 3 / minion follow-ups: content durations become ticks at load (DEC-241) — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: five loaders (`loadAggroRules`, `loadStuckDetection`, `loadMinionVeterancy`,
+  `loadSpawnWaves`, `loadGuardPlans`) turn seconds into ticks once; `LeashBehaviour`,
+  `StuckSystem`, `VeterancySystem`, `SpawnSystem` and `GuardRoster` read ticks.
+  `TickRate.roundToTicks` keeps 0 s at 0 ticks. Wave timing is checked in the loader, now for
+  every authored wave, not only for the spawners on the map. Branch cut from #85's head.
+- Critics: correctness PASS (a 9000-tick match hashes the same as the base for seeds 1 and 2);
+  its aura-cadence test gap is closed (the new assertion failed under a mutation). Ponytail: the
+  repeated `ScheduledWave.everyTicks` is removed.
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-2.log`).
+- Next step: open the PR after #85 merges into phase/3.
+
+### 2026-11-12 — Phase 3 / content durations at load (DEC-241): merge of fix/minion-stack-followups (phase/3 with #51, #52) — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: merged the local head of `fix/minion-stack-followups` (`18c50e9d`), which
+  merges phase/3 at `3dc9e908` (#51 object pool, #52 status polarity and control class). Only
+  PROGRESS conflicted; both sides kept. No code conflict.
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-3.log`).
+- Next step: pre-PR gate; open the PR after #85 merges into phase/3.
+
+### 2026-11-12 — Phase 3 / content durations at load (DEC-241): pre-PR critic — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: the `architecture-reviewer` critic read `18c50e9d..131f5008`: no blockers. Built
+  its better-than-design item 1: `loadAggroRules`, `loadStuckDetection`, `loadMinionVeterancy`
+  and `loadGuardPlans` now reject a time that is negative or not finite, through one helper
+  (`content/assertValidSeconds.ts`), as `loadSpawnWaves` already did for waves. The four new
+  tests failed first ("expected function to throw an error, but it didn't"). The loaders and
+  `ai.types.ts` now cite architecture 03 §8 (the rule) instead of §11. Rejected item 2 (derive
+  the loaded types with a mapped type): it hides the per-field TSDoc for about 60 lines saved.
+  Not changed: the same §11 citation in `loadStatusEffects`, `loadWeapons` and
+  `loadDefaultContent` (not in this branch's diff).
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-4.log`).
+- Next step: open the PR after #85 merges into phase/3.
+
+### 2026-11-13 — Phase 3 / content durations at load (DEC-241): merge of fix/minion-stack-followups (phase/3 with #97) — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: merged the local head of `fix/minion-stack-followups` (`9c7194d0`), which
+  merges phase/3 at `9e2516cf` (#97 duel server). Only PROGRESS conflicted; both sides kept. No
+  code conflict.
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-5.log`).
+- Next step: open the PR after #85 merges into phase/3.
+
+### 2026-11-13 — Phase 3 / content durations at load (DEC-241): merge of fix/minion-stack-followups (phase/3 with #81) — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: merged the local head of `fix/minion-stack-followups` (`2e8df5bc`), which
+  merges phase/3 at `76d1007d` (#81 minion plan MVP gaps, docs only). Only PROGRESS conflicted;
+  both sides kept. No code conflict.
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-6.log`).
+- Next step: open the PR after #85 merges into phase/3.
+
+### 2026-11-14 — Phase 3 / content durations at load (DEC-241): merge of fix/minion-stack-followups (phase/3 with #96) — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: merged the local head of `fix/minion-stack-followups` (`2129a73e`), which
+  merges phase/3 at `a99c3129` (#96 bug tracker, docs only). This file and the owner decisions
+  log conflicted; both sides are kept (the log has the DEC-247 to DEC-249 batch above the
+  DEC-241 batch, no DEC number is used twice). No code change.
+- Checks run: full `npm run check` exit 0 before this entry was added
+  (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-7.log`); then
+  `prettier --check` and `npm run docs:check` on this file.
+- Next step: open the PR (base phase/3) when #85 merges.
+
+### 2026-11-14 — Phase 3 / content durations at load (DEC-241): merge of phase/3 (#85, #86) — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` at `88f5afd8` (#85 minion stack follow-ups and
+  #86 out-of-combat healing merged). Only this file conflicted; it is rebuilt from phase/3's copy
+  plus the entries only this branch has. No code conflict. #86 brings a sixth duration that a
+  system converts at read time; the next entry moves it to load.
+- Checks run: the full `npm run check` ran on this merge together with the next entry's change,
+  not on the merge alone (`eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-8.log`).
+- Next step: the healing durations at load (next entry).
+
+### 2026-11-14 — Phase 3 / content durations at load (DEC-241): out-of-combat healing durations at load — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: #86 converts the healing delay and the structure quiet time from seconds to
+  ticks in `OutOfCombatHealingSystem`'s constructor, a sixth reader that DEC-241 covers. The
+  content type splits into `AuthoredOutOfCombatHealing` (seconds) and `OutOfCombatHealing`
+  (ticks); the new `loadOutOfCombatHealing` converts both once with `roundToTicks` (the same
+  rounding #86 used, so no tick value changes) and rejects a negative or non-finite time
+  (`assertValidSeconds`). The system reads only ticks. The rates stay per second: DEC-241 covers
+  durations only. The DEC-241 row and the healing paragraph of architecture 04 say so. Fail-first
+  breaks, each restored after: loader without rounding (1 test red), system delay compared with
+  `< 0` (3 red), quiet time `* 3` (4 red).
+- Checks run: full `npm run check` exit 0 before this entry was added (core 255 files / 1478
+  tests, client 285 / 1883, server 20 / 79, protocol 1 / 18;
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-8.log`); then
+  `prettier --check` and `npm run docs:check` on this file.
+- Next step: critic re-check on this change, then open the PR (base phase/3).
+
+### 2026-11-14 — Phase 3 / content durations at load (DEC-241): critic on the healing change, rates per tick — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: the `architecture-reviewer` critic read `e67bcc08..55b3861e`: no blockers, three
+  nits, two better-than-design items; all five are built. (1) `loadOutOfCombatHealing` also turns
+  the two healing rates (`healthFractionPerSecond`, a bonus's `fractionPerSecond`) into per-tick
+  values, so `OutOfCombatHealingSystem` keeps no tick rate and sees only ticks (architecture 03
+  §10, `packages/core/AGENTS.md`). The division is the same, so no value changes. This replaces
+  the previous entry's "the rates stay per second". (2) The loader rejects a rate that is
+  negative or not finite; `assertValidSeconds` takes the unit its message prints (`s` or
+  `per s`). Nits: a delay of 0 s loads as 0 ticks (test); the DEC-241 row says #86 added the
+  sixth reader after the owner's answer; the row no longer reads as a ruling that rates stay per
+  second. The loader test now uses its own authored record, not the tuned numbers. `INBOX.md`
+  asks the owner to sign off (1) and (2). Ponytail on the delta: nothing to cut. Fail-first
+  breaks, each restored after (`cmp`): base rate not divided (14 red), bonus not divided (10),
+  delay with the one-tick floor (1), validator ignores NaN and Infinity (3), unit ignored (2),
+  rate check removed (1), system base rate doubled (12), system ignores the bonus (8).
+- Checks run: full `npm run check` exit 0 before this entry was added (core 255 files / 1481 tests, client 285 / 1883, server 20 / 79, protocol 1 / 18;
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-9.log`); then
+  `prettier --check` and `npm run docs:check` on this file.
+- Next step: critic re-check on this change, then open the PR (base phase/3).
+
+### 2026-11-14 — Phase 3 / content durations at load (DEC-241): critic round 2, unit-free check and `TickRate.perTick` — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: the critic re-read `55b3861e..3eb2b4f9`: no blockers, three nits, one
+  better-than-design item. Built: the check takes any unit, so `assertValidSeconds` is renamed
+  `assertNonNegativeFinite` (its parameters are `values` and `value`; the function and its six
+  callers are new on this branch); the rate formula is `TickRate.perTick`, next to the time
+  formulas, and `loadOutOfCombatHealing` uses it (the same division, so no value changes); the
+  DEC-241 row cites `loadDefaultContent` (speed and acceleration) as the precedent for rates per
+  tick. Kept: the healing loader checks its times and its rates in two calls, so a bad time hides
+  a bad rate in the message (the critic accepted this). Not changed: `loadDefaultContent` still
+  divides speed and acceleration by the tick rate itself (outside this branch's diff). Fail-first
+  break, restored after (`cmp`): `perTick` divides by one tick more (14 red). `INBOX.md` item
+  extended with (3).
+- Checks run: full `npm run check` exit 0 before this entry was added (core 255 files / 1482 tests, client 285 / 1883, server 20 / 79, protocol 1 / 18;
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-10.log`); then
+  `prettier --check` and `npm run docs:check` on this file.
+- Next step: critic round 3 on this change (last of three), then open the PR (base phase/3).
+
+### 2026-11-14 — Phase 3 / content durations at load (DEC-241): critic round 3, wording — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: the critic re-read `3eb2b4f9..de41218b` (round 3, the last of three): approve,
+  no blockers, two wording nits, both applied. The `TickRate` class TSDoc says "the formulas the
+  content loaders share" (not every loader uses it yet: `loadDefaultContent` divides by the tick
+  rate itself); two `assertNonNegativeFinite` test titles say "values", not "times". No code
+  change, so no fail-first break.
+- Checks run: full `npm run check` exit 0 before this entry was added (core 255 files / 1482 tests, client 285 / 1883, server 20 / 79, protocol 1 / 18;
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-11.log`); then
+  `prettier --check` and `npm run docs:check` on this file.
+- Next step: the owner pushes the branch and opens the PR (base phase/3).
+
+### 2026-11-14 — Phase 3 / content durations at load (DEC-241): merge of phase/3 (#79) — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` at `8dc7d962` (#79 unit facing chevron merged
+  after PR #125 opened, so #125 conflicted). Three docs conflicted: `INBOX.md` keeps both items;
+  architecture 04 keeps this branch's `last-reviewed` (2026-11-14); this file is rebuilt from
+  phase/3's copy plus the entries only this branch has. No code conflict: in `GuardRoster`,
+  `SpawnSystem`, `Simulation` and `DefaultSystemPipeline` #79 adds only the start facing and
+  TSDoc, which do not touch the durations.
+- Checks run: full `npm run check` exit 0 on this merge before this entry was added (core 256 files / 1515 tests, client 286 / 1890, server 20 / 79, protocol 1 / 18;
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-12.log`); then
+  `prettier --check` and `npm run docs:check` on this file.
+- Next step: the owner pushes the merge to PR #125.
+
+### 2026-11-16 — Phase 3 / content durations at load (DEC-241): merge of phase/3 (#93, #127, #113, #102), PR #125 review fixes, DEC-262 — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` at `330e969a` (#93 match scoring, #127 CI time
+  limit, #113 Vite and Vitest, #102 Duel rules merged after PR #125 opened). Two files conflicted:
+  this file (rebuilt from phase/3's copy plus the entries only this branch has) and
+  `DefaultSystemPipeline.ts`, which keeps #102's `DuelRoundSystem` line and this branch's
+  `loadOutOfCombatHealing(tickRate)`. #102 adds no duration read at run time (its countdown is
+  `GameConfig`, outside DEC-241). PR #125 reviews: claudiodh's should-fix, a `loadSpawnWaves`
+  test that a wave of a structure kind no map builds is still checked (failed first: with the
+  check limited to the shipped kinds, 1 red; restored, `cmp` identical); Samarjit's nit, a
+  comment on why `loadSpawnWaves` does not use `assertNonNegativeFinite`. The owner signed off
+  DEC-241's better-than-design items and its sixth reader (DEC-262, question dialog): the
+  decisions-log row, the DEC-241 row, architecture 04, `assertNonNegativeFinite`,
+  `TickRate.perTick` and `loadOutOfCombatHealing` cite it, and the `INBOX.md` item is closed.
+- Checks run: full `npm run check` exit 0 before this entry was added (core 267 files / 1628 tests, client 297 / 2005, server 21 / 84, protocol 1 / 29;
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-13.log`); then
+  `prettier --check` and `npm run docs:check` on this file.
+- Next step: the owner pushes the merge, posts the sign-off on PR #125 and asks claudiodh to
+  review again.
+
+### 2026-11-18 — Phase 3 / content durations at load (DEC-241): merge of phase/3 (#101, #99) — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` at `af54fe96` (#101 bound key actions and #99
+  capture point boss, merged after PR #125's last push). #99 changed the guard plan's
+  `activation` and `respawn` into tagged forms with two new times in seconds
+  (`activation.delaySeconds`, `respawn.seconds`) that `GuardRoster` turned into ticks at run time.
+  DEC-241 covers both: `AuthoredGuardPlan` holds the seconds, `loadGuardPlans` turns them into
+  `delayTicks` and `ticks` and rejects a negative or non-finite one, and `GuardRoster` reads only
+  ticks. #99's delay check moved from `SpawnSystem` to the loader, with its three cases
+  (`loadGuardPlans.test.ts`); the `guards` and `guardPlans` options (pipeline, `Simulation`) take
+  authored plans and the pipeline loads them; #99's two capture point aggro rules are typed
+  `AuthoredGuardAggroRule`. Conflicts: architecture 04 and 11 (`last-reviewed` 2026-11-16; 11
+  keeps #99's guard-post boss wording and this branch's load-time text), the decisions log
+  (DEC-241's batch above DEC-237's, newest first), this file (phase/3's copy plus the entries only
+  this branch has). The new loader tests failed first: with the delay neither converted nor
+  checked, 4 red; restored, `cmp` identical, 6 green. Critic (`architecture-reviewer`) on the
+  resolution: approve, no blockers; its two wording nits are applied (`SpawnSystem.types.ts`
+  `guards` TSDoc names zones; `INBOX.md` names `AuthoredGuardPlan.activation`).
+- Checks run: full `npm run check` exit 0 on this merge before this line was added (core 274 files / 1664 tests, protocol 1 / 29, client 298 / 2014, server 21 / 84,
+  "Documentation check passed."; `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-14.log`);
+  then `prettier --check` and `npm run docs:check` on this file.
+- Next step: the owner pushes the merge after the stacked chain #126 → #121 → #120 → #119 lands;
+  then phase/3 merges into this branch again before PR #125 merges.
+
+### 2026-11-19 — Phase 3 / content durations at load (DEC-241): merge committed, HC-B9 asked — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: committed the merge of phase/3 `af54fe96` (`e04e1a27`; the first try was killed
+  for low memory). `INBOX.md` HC-B9 asks the owner to sign off the merge critic's two
+  better-than-design items, both older than this PR and not built: one source for the
+  countdown-end tick (`SpawnSystem`, `GuardRoster`, `LeashBehaviour`) and `assistWindowSeconds`
+  turned into ticks by a loader.
+- Checks run: the pre-commit `check:quick` on `e04e1a27`: exit 0; `prettier --check` and
+  `npm run docs:check` on this file and `INBOX.md`.
+- Next step: as the entry above; HC-B9 waits for the owner.
+
+### 2026-11-19 — Phase 3 / content durations at load (DEC-241): merge of phase/3 (#126, #121, #120, #119) — refactor/durations-at-load — sholtzman + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` at `d85bc2f5` (the stacked chain #126, #121,
+  #120, #119). Conflicts: `DefaultSystemPipeline`'s imports (this branch's `loadSpawnWaves`
+  beside #119's structure catalogue types; `SPAWN_WAVES` stays unused), the decisions log (the
+  two 2026-11-13 batches, DEC-244 and DEC-243, above DEC-241's, newest first) and this file
+  (phase/3's copy plus the entries only this branch has). The chain adds no time in seconds, so
+  no loader changes. The client has 3 fewer tests: #126 (DEC-251) turned two `it.each` tests
+  into one test each.
+- Checks run: full `npm run check` exit 0 on this merge before this entry was added (core 275
+  files / 1674 tests, protocol 1 / 29, client 298 / 2011, server 21 / 84, "Documentation check
+  passed."; `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-15.log`); then
+  `prettier --check` and `npm run docs:check` on this file.
+- Next step: the owner pushes the branch (`push-125-r3.sh`), then merges PR #125.
+
 ### 2026-11-15 — Phase 3 / minion plan M6b: checkpoint defenders (DEC-257, DEC-259) — feat/minion-m6b-checkpoint-defenders — SamarjitBhogal + Claude Code
 
 - What was done: the owner answered `INBOX.md` "Minion plan MVP gaps" (1) and (2) in chat
@@ -8263,3 +9314,32 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   79/79. Client "Tests 1 failed | 1978 passed (1979)": the same `WebSocketTransport.test.ts`
   `CloseEvent is not defined` failure under local Node v22.19.0. No client file is changed.
 - Next step: the critic re-checks, ponytail, then a draft PR.
+
+### 2026-11-20 — Phase 3 / minion plan M6b — feat/minion-m6b-checkpoint-defenders (PR #130 review round) — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (`5a7cc8dc`; #99 zone guard homes and the boss,
+  #125 durations at load) and applied the owner's rulings of 2026-11-20 (PR comment) and the
+  2026-11-19 review. DEC-261 changed: a point that changes owner keeps its living defenders; they
+  fight the new owner inside the zone and count as presence for their own side. `GuardRoster.dismiss`
+  and `SpawnSystem`'s owner-change listener are gone, doc 03 §4 stays as phase/3 has it (S4).
+  Merge with #99 (B1, B2, S2): `GuardRoster` is phase/3's, with `defend` and one `addPosts` that
+  `layOut` shares; defender posts carry `GuardSlot.checkpoint`, use the `never` rule and are never
+  looked up in the home's plan, so they sit beside #99's boss plan on the same zone (the inline
+  never-refill branch and `isHomeStanding` are gone). `shouldAcquireAcrossLeash` moved onto the
+  guard aggro fields of the loaded and authored types (S5 kept the flag; #99's guards unchanged,
+  offered in INBOX). Decisions log: DEC-257 to DEC-261 ordered by ID, signed off with the owner's
+  words, DEC-260 records that neutral defenders and forest-camp mobs level (changes DEC-165, not
+  built: INBOX "Minion M6b follow-ups" (4)), DEC-261 rewritten, DEC-258's "Approve" added. S3: both
+  groups kept as they are. Docs: 07 §7 and 18 §7.1 rewritten for DEC-261 and the coexistence, 18's
+  status names the assist mobs (S6), OQ-47 decided (N3). Tests: the DEC-261 unit test now checks
+  that defenders stay; a whole-match test shows a captured Cathedral's 10 neutral defenders stay,
+  count as presence (`neutral: 10`), kill the 4 dark Legends and pull the point back to neutral,
+  the same hash twice; a `Simulation`-level test shows a defender table naming an unknown mob fails
+  when the match is built (S1, CodeRabbit 4); the two `as typeof` casts are gone (N1).
+- Checks run: `npm run check` (Node 24.21.0) on the merge → `EXIT=0`: "All matched files use
+  Prettier code style!"; core "Tests 1689 passed (1689)"; protocol "Tests 29 passed (29)"; client
+  "Tests 2011 passed (2011)"; server "Tests 84 passed (84)"; "✓ built in 625ms"; "Documentation
+  check passed." A first run failed #99's `Simulation.bossFight.test.ts` (the zone stayed neutral
+  after the boss kill): the new checkpoint defenders now hold it (DEC-261), so that test clears
+  them with `clearCheckpointDefenders`, as the other soaks of other rules do.
+- Next step: re-request review on PR #130; then PR #131 merges this branch.

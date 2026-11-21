@@ -27,6 +27,11 @@ export type GuardSlot = {
   readonly leashRadius: number;
   readonly leashTolerance: number;
   readonly respawnTicks: number;
+  /**
+   * The capture-point checkpoint whose defenders hold this post (07 §7, DEC-257); absent for a
+   * post of the home's own guard plan.
+   */
+  readonly checkpoint?: number;
   /** The guard holding the post, or `null` while it waits to respawn. */
   readonly guardId: EntityId | null;
   /**

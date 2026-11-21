@@ -1,4 +1,4 @@
-import type { OutOfCombatHealing } from './outOfCombatHealing.types';
+import type { AuthoredOutOfCombatHealing } from './outOfCombatHealing.types';
 
 /**
  * Out-of-combat healing (DEC-188, owner 2026-11-04 and 2026-11-05; amended by DEC-215): a Legend
@@ -9,7 +9,7 @@ import type { OutOfCombatHealing } from './outOfCombatHealing.types';
  * adds to this one (DEC-215 (1)). One flat rate for every Legend and mob: a per-class rate is a
  * later keyed lookup that replaces `healthFractionPerSecond`.
  */
-export const OUT_OF_COMBAT_HEALING: OutOfCombatHealing = {
+export const OUT_OF_COMBAT_HEALING: AuthoredOutOfCombatHealing = {
   /** DEC-188 (owner 2026-11-04). */
   delaySeconds: 10, // TUNE:
   /** DEC-188 (owner 2026-11-04): 2% of max health per second. */

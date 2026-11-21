@@ -2,15 +2,18 @@ import { DamagePipeline } from '../combat/DamagePipeline';
 import { Footprint } from '../components/Footprint';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
-import { STUCK_DETECTION } from '../content/ai/stuckDetection';
+import { loadStuckDetection } from '../content/ai/loadStuckDetection';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
-import { OUT_OF_COMBAT_HEALING } from '../content/healing/outOfCombatHealing';
+import { loadOutOfCombatHealing } from '../content/healing/loadOutOfCombatHealing';
 import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import { FORMATIONS } from '../content/mobs/formations/formations';
 import { ENRAGING_STRUCTURES } from '../content/mobs/minionModifiers';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
-import { OPENING_WAVE, SPAWN_WAVES } from '../content/structures/spawnWaves';
+import { loadSpawnWaves } from '../content/structures/loadSpawnWaves';
+import { OPENING_WAVE } from '../content/structures/spawnWaves';
+import type { ContentCatalogue } from '../content/ContentCatalogue';
+import type { StructureDefinition } from '../content/structures/structures.types';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { LaneFlowFields } from '../map/LaneFlowFields';
 import type { GameState } from '../state/GameState';
@@ -20,6 +23,7 @@ import { CombatSystem } from './CombatSystem';
 import { MapDestructionSystem } from './MapDestructionSystem';
 import { DeathSystem } from './DeathSystem';
 import type { DefaultSystemPipelineOptions } from './DefaultSystemPipeline.types';
+import { DuelRoundSystem } from './DuelRoundSystem';
 import { EnragedSystem } from './EnragedSystem';
 import { HordeSystem } from './HordeSystem';
 import { InvariantSystem } from './InvariantSystem';
@@ -33,9 +37,11 @@ import { SpawnSystem } from './SpawnSystem';
 import { StructureSystem } from './StructureSystem';
 import { StuckSystem } from './StuckSystem';
 import { VeterancySystem } from './VeterancySystem';
-import { MINION_VETERANCY } from '../content/mobs/minionVeterancy';
+import { loadMinionVeterancy } from '../content/mobs/loadMinionVeterancy';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
-import { CHECKPOINT_DEFENDERS, GUARD_PLANS } from '../content/structures/guardPlans';
+import { CHECKPOINT_DEFENDERS } from '../content/structures/guardPlans';
+import { ZONE_LOCKING_MOBS } from '../content/zones/zoneLocks';
+import { loadGuardPlans } from '../content/structures/loadGuardPlans';
 import { StatusEffectSystem } from './StatusEffectSystem';
 import { SystemPipeline } from './SystemPipeline';
 
@@ -58,6 +64,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
     state,
     progression,
     director,
+    duelStarts,
     hordes,
     structures = STRUCTURE_DEFINITIONS,
   }: DefaultSystemPipelineOptions) {
@@ -103,19 +110,19 @@ export class DefaultSystemPipeline extends SystemPipeline {
         ? []
         : [
             ...(hordes.space === null ? [] : [new SpaceSystem(hordes.space)]),
-            new StuckSystem(STUCK_DETECTION),
+            new StuckSystem(loadStuckDetection(tickRate)),
             new PathingSystem(
               createDefaultStrategyRegistry().movement,
               FORMATIONS,
               HORDE_STEERING.slotArrivalRadius,
-              { flowFields, forts: DefaultSystemPipeline.fortBoxesOf(state) },
+              { flowFields, forts: DefaultSystemPipeline.fortBoxesOf(state, structures) },
             ),
           ]),
       new CombatSystem(damage),
       ...(state.worldObjects === undefined ? [] : [new MapDestructionSystem(state, damage)]),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
       new ProgressionSystem(state, progression),
-      new VeterancySystem(state, statuses, progression.units, MINION_VETERANCY),
+      new VeterancySystem(state, statuses, progression.units, loadMinionVeterancy(tickRate)),
       new StructureSystem(structures),
       ...(hordes === undefined
         ? []
@@ -123,18 +130,20 @@ export class DefaultSystemPipeline extends SystemPipeline {
             new SpawnSystem(state, hordes.factory, {
               definitions: hordes.factory.definitions,
               openingWave: OPENING_WAVE,
-              waves: SPAWN_WAVES,
+              waves: loadSpawnWaves(tickRate),
               steering: HORDE_STEERING,
               weights: LANE_ASSESSMENT_WEIGHTS,
               formationId: RANKS_FORMATION.id,
-              guards: GUARD_PLANS,
+              guards: loadGuardPlans(tickRate, hordes.guards),
               defenders: CHECKPOINT_DEFENDERS,
             }),
             new EnragedSystem(state, statuses, ENRAGING_STRUCTURES),
           ]),
-      new OutOfCombatHealingSystem(state, OUT_OF_COMBAT_HEALING),
+      // Before death, so a fallen Duel Legend is healed and moved instead of removed.
+      ...(duelStarts === undefined ? [] : [new DuelRoundSystem(duelStarts)]),
+      new OutOfCombatHealingSystem(state, loadOutOfCombatHealing(tickRate)),
       new DeathSystem(),
-      new CaptureSystem(state.config.match.capturePoints, tickRate),
+      new CaptureSystem(state.config.match.capturePoints, tickRate, ZONE_LOCKING_MOBS),
       // After death, so an objective lost this tick can end the match this tick (12 §1).
       new MatchDirectorSystem(director),
       new InvariantSystem(invariants),
@@ -142,14 +151,20 @@ export class DefaultSystemPipeline extends SystemPipeline {
   }
 
   /**
-   * The box of every structure's `Footprint` (`PathingWorld.forts`). `Simulation` builds the
-   * structures before the pipeline, so they are read here once, while every one still stands.
+   * The box of the `Footprint` of every structure whose definition `hasFortBox`
+   * (`PathingWorld.forts`; not a gate's, DEC-217 (17)). `Simulation` builds the structures before
+   * the pipeline, so they are read here once, while every one still stands.
    */
-  private static fortBoxesOf(state: GameState): readonly Rect[] {
+  private static fortBoxesOf(
+    state: GameState,
+    structures: Pick<ContentCatalogue<StructureDefinition>, 'get'>,
+  ): readonly Rect[] {
     const forts: Rect[] = [];
     state.entities.forEach((entity) => {
       const box = entity.findComponent(Footprint)?.bounds;
-      if (box !== undefined) forts.push(box);
+      if (box !== undefined && structures.get(entity.definitionId).hasFortBox === true) {
+        forts.push(box);
+      }
     });
     return forts;
   }
