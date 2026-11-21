@@ -40,9 +40,9 @@ export function Countdown({
   /** What the time is for (the character select's, the win/lose screen's, the match start's). */
   readonly label: string;
   /**
-   * Where it is drawn: the select's box (the default) or the middle of the pre-match overlay. Both
-   * sit on a `SelectionStage` artboard: the font floor reads its `--stage-scale`, and each size
-   * places the numeral on it (DEC-299 (2)).
+   * Where it is drawn: the select's box on a `SelectionStage` artboard (the default), whose
+   * `--stage-scale` the font floor reads, or the middle of the pre-match overlay, inside the HUD
+   * frame, whose `--hud-u` gives that scale (DEC-312).
    */
   readonly size?: 'artboard' | 'match';
   /** Shown in place of 0 (the overlay's START); the number otherwise. */

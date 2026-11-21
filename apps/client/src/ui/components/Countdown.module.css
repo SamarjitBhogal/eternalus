@@ -32,24 +32,31 @@
   justify-content: center;
 }
 
-/* DEC-278: the pre-match overlay's numeral, centred on the selection artboard its overlay draws.
-   DEC-299 (2): the select numeral itself (the font size above, in artboard px, where the glow
-   def's px are sized), enlarged by `scale` about its centre, so the glow grows with it: a 216 px
-   font size (Recommendation, CD-49: the owner's "slightly smaller" read as 10 % below the first
-   240). `scale` composes with UE-01's `transform` keyframes. Centred by its auto margins: no
-   `translate` on Cinzel text (I-88, which keeps it for a measured ink offset). At least the select
-   box's width, so a narrow "1" still gives the glow region the box the def's overlay user is
-   checked with (SelectionDefs.constants.ts). */
+/* DEC-278: the pre-match overlay's numeral, centred by its veil. DEC-299 (2): the select numeral
+   itself (the font size above, in the px the glow def is sized for), enlarged by `scale` about its
+   centre, so the glow grows with it: 216 HUD units (Recommendation, CD-49: the owner's "slightly
+   smaller" read as 10 % below the first 240). DEC-312: `--stage-scale` is the HUD frame's scale as
+   a number (`--hud-u` / 1px, typed arithmetic), so the font floor above reads it as it reads the
+   artboard's. `scale` composes with UE-01's `transform` keyframes. At least the select box's
+   width, so a narrow "1" still gives the glow region the box the def's overlay user is checked
+   with (SelectionDefs.constants.ts). */
 .match {
-  position: absolute;
-  inset: 0;
-  width: fit-content;
-  height: fit-content;
+  --stage-scale: calc(var(--hud-u) / 1px);
   min-width: 118px;
-  margin: auto;
   text-align: center;
-  scale: calc(216 / 64);
+  scale: calc(var(--stage-scale) * 216 / 64);
   line-height: 1;
+}
+
+/* DEC-312 (2): where px / px is no number (Safari before 26, Firefox before 158) both
+   `--stage-scale` uses above are invalid at computed time, so the numeral takes the same HUD units
+   as its font size, unscaled; its glow then stays at the select size. After `.countdown`, so this
+   font size wins at the same specificity. */
+@supports not (scale: calc(1px / 1px)) {
+  .match {
+    font-size: max(calc(216 * var(--hud-u)), var(--text-min));
+    scale: none;
+  }
 }
 
 /* UE-01 countdown urgency (ui-enhancements-plan §3.2, DEC-100, DEC-282), only while the switch
