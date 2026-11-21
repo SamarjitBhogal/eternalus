@@ -47,6 +47,39 @@ describe('MapObjectBuilder', () => {
     expect(teamOf('capture-point-lane-0')).toBeUndefined();
     expect(objects.filter((o) => o.kind === 'tree').every((o) => o.team === undefined)).toBe(true);
   });
+  it("makes each of a lane tower's 11 fort pieces its own wall object, part of the tower, and keeps a capture point's fort one object (DEC-217 (12), DEC-227 (Q-C))", () => {
+    const map = new MapGenerator().generate(createDefaultGameConfig(), 1);
+    const objects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+    const tower = 'light-spawner-tower-lane-0-0';
+    const walls = objects.filter(({ partOf }) => partOf === tower);
+    // The tower's own object keeps only its keep.
+    expect(objects.find(({ id }) => id === tower)).toMatchObject({ kind: 'spawner-tower' });
+    expect(objects.find(({ id }) => id === tower)?.footprints).toHaveLength(1);
+    // 4 walls, cut by the west, east and south doorways into 7, then the 4 corner towers.
+    expect(walls.map(({ id }) => id).slice(0, 7)).toEqual([
+      `${tower}-fort-wall-top`,
+      `${tower}-fort-wall-left`,
+      `${tower}-fort-wall-left-lower`,
+      `${tower}-fort-wall-right`,
+      `${tower}-fort-wall-right-lower`,
+      `${tower}-fort-wall-bottom-left`,
+      `${tower}-fort-wall-bottom-right`,
+    ]);
+    expect(walls.slice(7).map(({ id }) => id.startsWith(`${tower}-fort-tower-`))).toEqual([
+      true,
+      true,
+      true,
+      true,
+    ]);
+    for (const wall of walls) {
+      expect(wall).toMatchObject({ kind: 'wall', isBlocking: true });
+      expect(wall.footprints).toHaveLength(1);
+      // Scenery once its tower falls: either side may break it (DEC-121 (a)).
+      expect(wall.team).toBeUndefined();
+    }
+    expect(objects.filter(({ partOf }) => partOf === 'capture-point-lane-0')).toEqual([]);
+    expect(objects.find(({ id }) => id === 'capture-point-lane-0')?.footprints).toHaveLength(12);
+  });
   it('refuses a footprint with fewer than 3 points', () => {
     const map = { ...new MapGenerator().generate(createDefaultGameConfig(), 1), features: [] };
     const presentation = {

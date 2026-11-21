@@ -29,10 +29,11 @@ const STUB_PATHS: PathQuery = {
     out.y = isBlocked ? 34 : goal.y;
     return true;
   },
+  exitWaypoint: () => false,
 };
 
 /** A pathfinder stub that never finds a way. */
-const NO_WAY: PathQuery = { waypoint: () => false };
+const NO_WAY: PathQuery = { waypoint: () => false, exitWaypoint: () => false };
 
 /** A turn for a bot at `position` on the blocked-lane map, with or without pathfinding. */
 const turnAt = (

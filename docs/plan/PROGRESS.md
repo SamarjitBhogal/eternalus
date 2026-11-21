@@ -7130,6 +7130,74 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   check passed.". This entry was added after it.
 - Next step: push; PR #86 merges this head.
 
+### 2026-11-05 — Phase 3 / tower ruins and gate reach (DEC-217 (12), (15), (17)) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: on `feat/tower-ruins-and-routes` (from `fix/minion-stack-followups` at
+  `ebedddb`), DEC-217 (12) with DEC-219 (a), and DEC-217 (17). DEC-217 (15) is not built (see
+  below). One line per commit:
+  - `af76b90`: reach to a gate is measured to its polygon (`hasMapFootprint` on the gate,
+    DEC-217 (17)); the gate's map object does not block, so the gate keeps its own health
+    (DEC-217 (13)); the new content flag `hasFortBox` keeps a gate's box out of the chase rule's
+    fort boxes (towers and the palace keep theirs, DEC-217 (16)).
+  - `6ae13ac`: a lane tower's fort walls are each their own `wall` map object `partOf` the tower;
+    when the tower dies, its own object and the wall that took the killing hit fall (none when
+    the keep was nearer the killer), and each other wall stands as teamless scenery at half a
+    wall's health (`RUINED_FORT_WALL_DEFINITION`, TUNE, DEC-217 (12), DEC-219 (a)) and blocks
+    until it falls on its own. The grid reopens what fell, the court's ground included.
+  - `b0053f9`: architecture 07 (Implementation status) and 18 (status note, §5.2) for the above.
+  - `a4a76df`: the ruined-wall fraction is module-private (knip).
+- Not built: DEC-217 (15), the routes out of a standing tower's court. A grid-only fix (court
+  ground that A\* may cross, a way out through the doorways for mobs and guards) works on 2 m test
+  cells, but on the 5 m nav cells almost every cell inside a court touches a wall or the keep, so
+  A\* still snaps a unit there to the open ground behind the nearest wall. The work in progress is
+  saved as a patch and a stash (`eternalus-agent-work/tower-ruins-and-routes/`); the options go to
+  the orchestrator.
+- Checks run: `npm run check` at `a4a76df` → exit 0 (log `check-final.log` in
+  `eternalus-agent-work/tower-ruins-and-routes/`): "All matched files use Prettier code style!";
+  core "Tests 1163 passed (1163)"; client "Tests 1754 passed (1754)"; "✓ built in 581ms";
+  "Documentation check passed."; "check exit 0". Each new test was seen red with its fix broken
+  on purpose. This line was filled in after that run (docs-only); `prettier --check` and
+  `docs:check` were re-run on it.
+- Next step: an owner or orchestrator decision on (15), then the critic, ponytail and the PR
+  after `fix/minion-stack-followups` and #75 merge.
+
+### 2026-11-10 — Phase 3 / tower ruins, critic round 1 rework (DEC-227, DEC-235) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: the commits since the branch merged `fix/minion-stack-followups` (`6609b56f`),
+  one line each, then the critic round 1 rework (critic report
+  `eternalus-agent-work/tower-ruins-and-routes/critic-r1.md`):
+  - `60636558`: decisions-log batch 2026-11-09 (DEC-225 to DEC-227), as on #86 and #79.
+  - `19e10fd9`: a lane tower's 4 corner towers are fort walls too, 11 pieces (DEC-227 (Q-C)).
+    Seen red: `MapObjectBuilder.test` on the old builder.
+  - `7b1d20f3`: navigation cells 2.5 m, from 5 m (DEC-227 (Q-A)). Seen red: the Stronghold
+    step-out test with `pathSnapCells` 10.
+  - `b2091978`: units in a lane tower's court leave by its doorways (DEC-217 (15)). No break was
+    recorded at commit time; on the rework tree, A\* without court ground turns 8 court tests red
+    and a `courtMove` that always stays turns 3 red.
+  - `0725607f`, `654f959a`, `2f47bc6a`: lane tower forts kept apart (DEC-227), its INBOX answer and
+    architecture 06, 07, 10 and 18.
+  - Rework, `1639a2a7` (B5, S1, S2), `62ff2387` (B2, B3), `d375ec6c` (nits), `32ad4437` (B1, B4,
+    S4, S5), `8f76fd07` (architecture docs), `523d0039` (DEC-235, INBOX): S1, S2 and B5 (`map/fortInWorld.ts`: the fort in world units; tower
+    spacing scales with the world and throws for any two towers too close; a court match refuses
+    nav cells as thick as the thinnest fort wall); B2 and B3 (`WorldObjectStore` keeps identity and
+    destroyed state; `state/StructureRuins.ts` is the ruin rule, run by `MapDestructionSystem`,
+    which also reopens the grid; `MatchWorld.build`/`reopen` own the stamping rule); B1 and B4 (an
+    exit field in `AStarPathfinder`, reset by `WorldMap.version`; one search loop); S5 (the court
+    rule applies on court ground or a wall cell beside it, `WorldMap.isCourtSideAt`, not on the
+    palace); S4 (horde member, waypoint and palace-guard court tests); nits N1 to N6, N9, N10;
+    ponytail cuts 1 to 4; docs 06, 07, 10 §9, 18; DEC-235 and its INBOX entry.
+- Red-first: every new test was seen red with its rule broken on purpose; the breaks are listed in
+  `eternalus-agent-work/tower-ruins-and-routes/red-first-rework-session2.md` and, for Part A,
+  in the 2026-11-10 handoff (unscaled spacing, no throw, unscaled wall, never-throw).
+- Checks run: `npm run check` on the rework tree before these commits (log
+  `eternalus-agent-work/tower-ruins-and-routes/check-rework.log`, branch line
+  `feat/tower-ruins-and-routes`): "All matched files use Prettier code style!"; core "Tests 1426
+  passed (1426)"; client "Tests 1799 passed (1799)"; "✓ built in 260ms"; "Documentation check
+  passed."; "check exit 0". The first run failed Prettier on two files (line breaks only, fixed).
+  This entry was added after it (docs-only); `prettier --check` and `docs:check` re-run on it.
+- Next step: critic round 2 on the rework (base `2f47bc6a`), ponytail review, re-check, then the
+  PR (base `fix/minion-stack-followups`, or phase/3 once #85 merges).
+
 ### 2026-11-05 — Phase 3 / out-of-combat healing, owner answers DEC-215 — feat/out-of-combat-heal — sholtzman + Claude Code
 
 - What was done: the owner-approved merge of `fix/minion-stack-followups` (`ebedddb`) into this
@@ -8349,6 +8417,118 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   server "Tests 79 passed (79)", "Documentation check passed.".
 - Next step: push; PR against `fix/minion-stack-followups` (#85, head `2e8df5bc`).
 
+### 2026-11-10 — Phase 3 / tower ruins, critic round 2 rework (DEC-239) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: the rest of the critic r2 items. SF2: the DEC-235 row names the capture-point
+  zones (commit `1639a2a7`'s subject says "heal zones" too). SF3/D1: the generator checks every
+  pair of lane tower forts on the map in world units after placement (`assertLaneFortsApart`),
+  the per-lane gap check goes, the on-lane check stays; new tests for neighbouring lanes (3200x900,
+  7 lanes, 1 + 9 towers) and a band past the lane end. D4: `utils/geometry.isPointInRect`. n2 and
+  ponytail cut 4: `FortWall` options object. n4, n5 (`DefaultSystemPipelineOptions.ruinWall`
+  from `Simulation`, throws when missing), n8 (`systems` TSDoc). Ponytail cuts 2 and 5. Docs: 06 §3,
+  decisions log (DEC-239 row), INBOX (DEC-227 correction, H1 note, DEC-235 pointer, DEC-239 entry).
+  Red-first breaks: `eternalus-agent-work/tower-ruins-and-routes/red-first-r2.md`.
+- Checks run: `npm run check:quick` on every commit (pre-commit hook); core tests from
+  `packages/core` pass. Full `npm run check` not yet run.
+- Next step: `npm run check`; critic r3 (last loop); ponytail; PR. Bot A\* finding (below) waits
+  on the owner: on 2.5 m cells `pathMaxExpansions` 6000 fails bot routes of about 470 m.
+
+### 2026-11-10 — Phase 3 / tower ruins, bot A\* search cap (DEC-240) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: the owner chose option A for the bot A\* finding (question dialog, DEC-240):
+  `GameConfig.map.pathMaxExpansions` goes from 6000 to 24000, so on 2.5 m cells one search covers
+  the area 6000 covered on 5 m cells. New test in `map/AStarPathfinder.test.ts`: a route of about
+  560 m between two lane tower forts on a generated map with its map objects; red at 6000 and
+  12000, green at 24000 (`eternalus-agent-work/tower-ruins-and-routes/red-first-r2.md`). Docs:
+  decisions log (DEC-240 batch), INBOX (answered entry; bot path cache request), 03 (source
+  column). The first full `npm run check` on the r2 rework failed at `prettier --check` on the
+  decisions log: this branch's DEC-239 and DEC-235 edits left two table headers unpadded
+  (the file is clean on `a35da809` and on #85's head). Fixed with `prettier --write` on that file
+  (8 header and separator lines).
+- Checks run: see the next entry or the PR description.
+- Next step: `npm run check`; critic r3 (last loop); ponytail; PR.
+
+### 2026-11-10 — Phase 3 / tower ruins, critic round 3 and ponytail r3 (pre-PR gate) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: critic round 3 (last loop; `eternalus-agent-work/tower-ruins-and-routes/critic-r3.md`)
+  on `a35da809..9b22c8c7`: APPROVE, no blockers. Fixed in `17d5478f`: SF1 (placement keeps towers
+  of one kind a fort box's diagonal apart; towers of different kinds on one lane only must not
+  overlap; DEC-239 row and `laneStructures` TSDoc), N2 (`MatchGrid.test` builds its own map),
+  N3 (`MatchWorld.matchGrid`), N4 (DEC-240 "follows DEC-227 (Q-A)", 470 m), N5 (touch comment).
+  Better-than-design BTD1, BTD3 to BTD5: one INBOX item for a follow-up branch; BTD2 added to the
+  bot path cache request. Ponytail r3 (`ponytail-review-r3.md`): one cut (BTD3), not applied (it
+  deletes a test; waits in INBOX). The `npm run check` of `9b22c8c7` passed (log
+  `check-dec240.log`: EXIT 0, core 1442 tests, client 1800 tests, "Documentation check passed.").
+- Checks run: `npm run check` on `17d5478f` with this entry in place (log
+  `eternalus-agent-work/tower-ruins-and-routes/check-r3-final.log`): EXIT 0, core "Test Files
+  244 passed (244)", "Tests 1442 passed (1442)", client "Tests 1800 passed (1800)",
+  "Documentation check passed.".
+- Next step: push and open the PR on `fix/minion-stack-followups` (#85, head `2f100e87`).
+
+### 2026-11-11 — Phase 3 / tower ruins: merge #85's round 4 head — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: PR #85 (`fix/minion-stack-followups`, this branch's PR base) moved from
+  `2f100e87` to `65c4d436` (merge of phase/3 `1b25f586` with #89 and #92, the CodeRabbit fixes).
+  This branch merged `65c4d436`. Four conflicts, all in docs. `PROGRESS.md` and the decisions log
+  keep both sides, the base's first; the log's batches stay newest number first (DEC-232, DEC-230,
+  then DEC-225 to DEC-227). 07 §status keeps this branch's tower paragraph: #85's interim note
+  ("the ruins ... are built on a later branch (DEC-219 (d))") names this branch, which builds them.
+  10's `last-reviewed` takes 2026-11-11.
+- Checks run: full `npm run check` with this entry in place, merge not yet committed (log
+  `eternalus-agent-work/tower-ruins-and-routes/check-merge85-r4.log`): EXIT=0, core "Tests 1447
+  passed (1447)", client "Tests 1818 passed (1818)", "Documentation check passed.".
+- Next step: push and open the PR on `fix/minion-stack-followups` (#85, head `65c4d436`).
+
+### 2026-11-13 — Phase 3 / tower ruins: PR #98 review response — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: claudiodh requested changes on PR #98 (2026-11-13). This branch merged #85's
+  `c09507f6` (`65482701`). The owner asked for a critique of the DEC-239 generator rules
+  (`eternalus-agent-work/tower-ruins-and-routes/critic-dec239-rules-2026-11-13.md`): all four are
+  within the design. Its one nit is fixed in `fa7808ce`: towers of one kind are spaced by the fort
+  box diagonal, `hypot(width, height)`, not `max(width, height) * sqrt(2)` (DEC-227). The owner
+  ruled "Split it" (DEC-242, written here): gate reach, the A\* search cap and the geometry
+  helpers move to `feat/gate-reach`, `refactor/astar-search-area` and
+  `refactor/fort-geometry-helpers`.
+- Red-first: "spaces a widened band by the fort box diagonal" failed (1 failed) before the fix.
+- Checks run: full `npm run check` on `fa7808ce` (log
+  `eternalus-agent-work/tower-ruins-and-routes/check-hypot-fa7808ce.log`): EXIT=0, core "Tests
+  1448 passed (1448)", client "Tests 1818 passed (1818)", "Documentation check passed.".
+- Next step: the owner's call on the DEC-239 rules (DEC-246), the reply on #98, the BTD3 and BTD5
+  branch (DEC-245), and the merge of #85's next head.
+
+### 2026-11-13 — Phase 3 / tower ruins: merge #85's phase/3 head — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: PR #85 (`fix/minion-stack-followups`, this branch's PR base) moved to `2e8df5bc`
+  (phase/3 `76d1007d` with #97, the duel server, and #81). This branch merged it. Two conflicts.
+  This file keeps both sides, the base's first. `Simulation.ts`: #97 builds the walkability grid
+  in `map/MatchPathfinderFactory` with the stamping rule this branch replaced by `MatchGrid`. The
+  factory now builds through `MatchGrid.build` and returns `matchGrid` beside `grid` and `paths`;
+  `Simulation` uses the factory. So the match and the server's scripted player
+  (`apps/server/src/bots/BotNavigatorSource.ts`) read the same ground, courts included. The
+  server's copy is built once: it does not reopen a dead tower's ruins.
+- Red-first: "stamps a lane tower inside its fort as court ground, as the match does" failed
+  (1 failed, 3 passed) with the factory passing no map objects to `MatchGrid.build`
+  (`eternalus-agent-work/tower-ruins-and-routes/red-first-r2.md`).
+- Checks run: full `npm run check` with the merge in place, before this entry (log
+  `eternalus-agent-work/tower-ruins-and-routes/check-merge85-r6.log`): EXIT=0, core "Tests 1480
+  passed (1480)", protocol "Tests 18 passed (18)", client "Tests 1883 passed (1883)", server
+  "Tests 79 passed (79)", "Documentation check passed.".
+- Next step: push; the owner's call on the DEC-239 rules (DEC-246) and the reply on #98.
+
+### 2026-11-14 — Phase 3 / tower ruins: the owner confirms the DEC-239 rules (DEC-246) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: the owner confirmed the four DEC-239 generator rules in the question dialog
+  ("Confirm"), after the critique of 2026-11-13 found them within the design. New batch and row
+  DEC-246 in the decisions log; a dated line under the INBOX answer. DEC-239's row is not
+  changed. The owner also answered "Build now" for the layout band rules on the widened bands:
+  that goes on the BTD3 and BTD5 branch (DEC-245). Answers verbatim:
+  `eternalus-agent-work/tower-ruins-and-routes/OWNER-ANSWERS-2026-11-14.md`. Docs only.
+- Checks run: `npx prettier --check` on the three files and `npm run docs:check`: "All matched
+  files use Prettier code style!", "Documentation check passed.". No code changed since the full
+  `npm run check` in the entry above (EXIT=0).
+- Next step: push (`push-98.sh`); post the reply on #98; build the BTD3 and BTD5 branch with the
+  band rules (DEC-245).
+
 ### 2026-11-14 — Phase 3 / minion follow-ups: merge phase/3 (#96) — fix/minion-stack-followups — sholtzman + Claude Code
 
 - What was done: merged phase/3 `a99c3129` (#96 bug tracker, docs only). This file and the
@@ -8376,6 +8556,18 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   kept. No code change.
 - Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
   (`eternalus-agent-work/tower-ruins-and-routes/gate-reach/check-merge85-2.log`): core "Tests 1417 passed (1417)", protocol
+  "Tests 18 passed (18)", client "Tests 1883 passed (1883)", server "Tests 79 passed (79)",
+  "Documentation check passed."; then `prettier --check` and `npm run docs:check` with this
+  entry.
+- Next step: push.
+
+### 2026-11-14 — Phase 3 / tower ruins: merge #85's #96 head — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` `2129a73e` (PR #85; it adds only the
+  merge of phase/3 `a99c3129`, the #96 bug tracker, docs only). This file and the owner decisions log (the DEC-247 to DEC-249 batch sits between the DEC-246 and the DEC-242 batch, by date) conflicted; both sides are
+  kept. No code change.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-merge85-r7.log`): core "Tests 1480 passed (1480)", protocol
   "Tests 18 passed (18)", client "Tests 1883 passed (1883)", server "Tests 79 passed (79)",
   "Documentation check passed."; then `prettier --check` and `npm run docs:check` with this
   entry.
@@ -9282,3 +9474,119 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   (84)", "Documentation check passed."; then `prettier --check` and `npm run docs:check` with this
   entry. Critic (architecture-reviewer): PASS WITH NOTES, no violations, four nits not applied.
 - Next step: `/ponytail-review`, then push and open the PR into phase/3.
+
+### 2026-11-14 — Phase 3 / tower ruins: merge phase/3 (#85, #86) and retarget — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: #85 and #86 merged into phase/3 (`88f5afd8`), so this PR's base moved from
+  `fix/minion-stack-followups` to `phase/3-sprint-3-work` (`gh pr edit --base`) and phase/3 was
+  merged in. Conflicts, both sides kept: `systems/DefaultSystemPipeline.ts` (#86's
+  `OUT_OF_COMBAT_HEALING` import kept; the `MAP_FEATURE_DEFINITIONS` import dropped, as this
+  branch moved its one use to `StructureRuins`), architecture 06 (`last-reviewed`) and this file.
+  One semantic conflict: #86's `state/__fixtures__/spawnMapStructures.ts` copied the old
+  `Simulation.spawnStructures` rule (only the map object of the same id), so a lane tower's
+  `Footprint` was its own box, not its fort, and two `HealingZones.test.ts` cases failed ("makes a
+  spawner-tower's / buff-tower's zone the box round its fort walls"). The fixture now follows this
+  branch's rule: the object of the same id and the objects `partOf` it.
+- Red first: the two cases failed on the merged tree before the fixture change
+  (`eternalus-agent-work/tower-ruins-and-routes/check-merge-phase3-88f5afd8.log`, "Tests 2 failed
+  | 1520 passed (1522)").
+- Checks run: full `npm run check` exit 0 after the fix and before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-merge-phase3-88f5afd8-r2.log`): core "Tests
+  1522 passed (1522)", protocol "Tests 18 passed (18)", client "Tests 1883 passed (1883)", server
+  "Tests 79 passed (79)", "Documentation check passed."; then `prettier --check` and
+  `npm run docs:check` with this entry.
+- Next step: push; merge into `refactor/tower-ruins-followups` (#122).
+
+### 2026-11-15 — Phase 3 / tower ruins and routes: merge phase/3 (#79, #93) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: merged phase/3 at `8dc7d962` (#79 unit facing chevron). Conflicts, both sides
+  kept: this file; the imports and class TSDoc of `PathingSystem.ts` (#79's guard facing
+  paragraph after this branch's court paragraph); `MatchWorld.test.ts` (this branch's reopen
+  test and #79's two start-facing tests). Semantic conflict: #79's two tests built `MatchWorld`
+  from a `WorldMap`, but this branch's constructor takes a `MatchGrid`
+  (`TS2304: Cannot find name 'WorldMap'` after the merge). They now pass
+  `MatchGrid.build(map, [], { cellSize: 2, features: {} })`, as this file's first test does: no
+  blocking feature, like the `() => false` rule they used. Their assertions are unchanged.
+  #79's facing at spawn is for Legends only, so `__fixtures__/spawnMapStructures.ts` still
+  follows `Simulation.spawnStructures`.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-merge-phase3-8dc7d962.log`): core
+  "Tests 1555 passed (1555)", protocol "Tests 18 passed (18)", client "Tests 1890 passed
+  (1890)", server "Tests 79 passed (79)", "Documentation check passed."; then
+  `prettier --check` and `npm run docs:check` with this entry.
+  Then merged phase/3 at `fcc48a7b` (#93 match scoring). Conflicts, both sides kept: this file
+  and the owner decisions log (#93's DEC-250 batch above this branch's DEC-246 batch, both of
+  2026-11-14, as the higher number is the newer). Semantic: #93 gives each structure its
+  `mapFeatureId` in `Simulation.spawnStructures`, and `__fixtures__/spawnMapStructures.ts`, which
+  builds structures "the way `Simulation` does", now passes it too. Full `npm run check` exit 0
+  (`eternalus-agent-work/tower-ruins-and-routes/check-merge-phase3-fcc48a7b.log`): core
+  "Tests 1647 passed (1647)", protocol 18, client 1979, server 79, docs passed.
+- Next step: push; then merge this head into `refactor/tower-ruins-followups` (#122).
+
+### 2026-11-19 — Phase 3 / tower ruins and routes: merge phase/3 (the DEC-242 split PRs #121, #120, #119 and #127, #113, #102, #101, #99, #126) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: merged phase/3 at `d85bc2f5`. 21 files conflicted (15 code, 6 docs). Rule: this
+  branch still held its own copies of the code that DEC-242 split into #119 (gate reach), #120
+  (fort geometry helpers) and #121 (A\* search area); for those hunks phase/3's reviewed version
+  wins, and this branch's own content (ruins, court routes, 2.5 m cells, fort spacing) stays.
+  Code: `fortInWorld.ts` and its test (add/add) keep this branch's version, which is #120's plus
+  `assertFortWallsResolve`; `utils/geometry.ts` and its test take #120's (with
+  `doRectsOverlap`); `PathingSystem.ts` keeps this branch's `courtMove`/`fortAt`, which already
+  use `isPointInRect`; `AStarPathfinder.ts` keeps this branch's `CourtExitField` and #121's cap
+  from `maxSearchArea`, and its tests keep both sides; `DefaultSystemPipeline` keeps this
+  branch's `ruinWall` (import, `requireRuinWall`, its test) with #99's `GuardPlanDefinition`
+  import and #119's test name; the `Simulation.spawnStructures` and `Footprint` TSDoc keep the
+  `partOf` objects with #119's gate outline wording; `buildingGeometry.ts` keeps
+  `laneTowerSize` (this branch) and #99's keep divisors (the same keep size as before, so the
+  golden map hash 4_128_499_639 is unchanged). DEC-243 rename on this branch's own sites:
+  `MatchPathfinderFactory`, the two default-config tests and the `LIMITS` tests in
+  `AStarPathfinder.test.ts`, and `PathingSystem.court`/`.guards` tests (`maxSearchArea: 40_000`,
+  10000 cells of 2 m); `config.map.pathMaxSearchArea` is 150000 m², 24000 cells of 2.5 m, so
+  DEC-240's own 24000 is gone (the 2.5 m `pathSnapCells` comment stays). Docs: `INBOX.md` (H1
+  note) takes phase/3's DEC-244 text; 03 takes the `pathMaxSearchArea` row (DEC-243) and the later
+  `last-reviewed`; the 07 status note has #119's gate-reach bullet, this branch's ruins bullet
+  without its gate sentence, and the court-routes bullet; the 18 status note keeps this branch's
+  court text and phase/3's A1/A2 and boss interim text; the owner decisions log keeps every
+  batch, newest date first and the higher DEC first within a date (244, 243, 242; 240, 239, 237,
+  235); this file keeps both sides (one region that git split through shared lines keeps the
+  shared tail under each side's last entry). A line count shows this file and the decisions log
+  keep every line of both sides.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-merge-phase3-d85bc2f5.log`): core
+  "Tests 1707 passed (1707)", protocol "Tests 29 passed (29)", client "Tests 2011 passed
+  (2011)", server "Tests 84 passed (84)", "Documentation check passed."; then
+  `prettier --check` and `npm run docs:check` with this entry.
+- Next step: push; claudiodh re-reviews #98; merge this head into `refactor/tower-ruins-followups`
+  (#122).
+
+### 2026-11-20 — Phase 3 / tower ruins and routes: merge phase/3 (#125, content durations at load) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: merged phase/3 at `5a7cc8dc` (#125, DEC-241) as `5502dc94`. Three files
+  conflicted. `DefaultSystemPipeline.ts`, imports only: this branch drops the unused
+  `MAP_FEATURE_DEFINITIONS` import and phase/3 renames the healing import to
+  `loadOutOfCombatHealing`, which the merged file calls; the merged file keeps that one import.
+  The owner decisions log keeps every batch, newest date first (DEC-242 2026-11-13, DEC-241
+  2026-11-11, DEC-240 and DEC-239 2026-11-10), with phase/3's later `last-reviewed`
+  (2026-11-16). This file keeps both sides, phase/3's entries first. A line comparison shows
+  both files keep every line of both sides except this branch's older `last-reviewed`.
+- Checks run: full `npm run check` exit 0 on the merge commit before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-98-merge-5a7cc8dc.log`): core "Tests 1734
+  passed (1734)", protocol "Tests 29 passed (29)", client "Tests 2011 passed (2011)", server
+  "Tests 84 passed (84)", "Documentation check passed."; then `prettier --check` and
+  `npm run docs:check` with this entry.
+- Next step: push; claudiodh re-reviews #98; then #122 takes this head.
+
+### 2026-11-20 — Phase 3 / tower ruins and routes: merge phase/3 (#140, DEC-289) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: merged phase/3 at `a3550159` (#140, DEC-289, the tower horde test's own 120 s
+  time limit). Only this file conflicted: both sides appended entries; it keeps both, phase/3's
+  entry first. `Simulation.mapObjects.test.ts`, `INBOX.md` and the owner decisions log merged
+  without conflict: `HORDE_WALK_TIMEOUT_MS` is the horde `it.each` argument, and the DEC-289
+  batch (2026-11-20) is the newest. `git diff` against each parent shows no removed line in this
+  file. This entry is part of the merge commit.
+- Checks run: full `npm run check` exit 0 on the merge before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-98-merge-a3550159.log`): core "Tests 1734
+  passed (1734)", protocol "Tests 29 passed (29)", client "Tests 2011 passed (2011)", server
+  "Tests 84 passed (84)", "Documentation check passed."; then `prettier --check` and
+  `npm run docs:check` with this entry.
+- Next step: push; claudiodh re-reviews #98; #122 takes this head.

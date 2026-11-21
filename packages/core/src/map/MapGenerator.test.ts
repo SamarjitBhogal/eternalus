@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { BUILDING_GEOMETRY } from '../content/maps/buildingGeometry';
 import { DEFAULT_MAP_CONFIG } from '../content/maps/defaultMapConfig';
 import { DEFAULT_MAP_LAYOUT } from '../content/maps/defaultMapLayout';
 import type {
@@ -20,6 +21,7 @@ import {
 import type { LaneShape } from './LaneShape.types';
 import { MapGenerationError } from './MapGenerationError';
 import { MapGenerator } from './MapGenerator';
+import { fortInWorld } from './fortInWorld';
 import { findAsymmetries } from './mapSymmetry';
 import type { MapConfig } from './MapGenerator.types';
 
@@ -199,6 +201,117 @@ describe('MapGenerator', () => {
         expect(distanceToPath(tower.position, lane.path)).toBeLessThan(EPSILON);
       }
     }
+  });
+
+  it.each([2, 3])(
+    'keeps every lane tower fort apart with %i towers of each kind per lane (DEC-227, DEC-215 (1))',
+    (count) => {
+      const side = BUILDING_GEOMETRY.fort.laneTowerSize;
+      const overlaps: string[] = [];
+      for (const ground of GROUNDS) {
+        for (const numLanes of [3, 5]) {
+          const map = generate(
+            { numLanes, spawnTowersPerLane: count, buffTowersPerLane: count },
+            SEED,
+            ground,
+          );
+          const towers = [...ofKind(map, 'spawner-tower'), ...ofKind(map, 'buff-tower')];
+          towers.forEach((a, index) => {
+            for (const b of towers.slice(index + 1)) {
+              // Two upright fort boxes of one side overlap when both axes are closer than it.
+              const dx = Math.abs(a.position.x - b.position.x);
+              const dy = Math.abs(a.position.y - b.position.y);
+              if (dx < side && dy < side)
+                overlaps.push(`${ground} ${String(numLanes)}: ${a.id} ${b.id}`);
+            }
+          });
+        }
+      }
+
+      expect(overlaps).toEqual([]);
+    },
+  );
+
+  it.each([
+    [3200, 1800],
+    [3200, 900],
+  ])(
+    'keeps every lane tower fort apart in a stretched %ix%i world with 3 towers of each kind (DEC-227)',
+    (worldWidth, worldHeight) => {
+      const fort = fortInWorld(BUILDING_GEOMETRY.fort.laneTowerSize, {
+        width: worldWidth,
+        height: worldHeight,
+      });
+      const overlaps: string[] = [];
+      for (const ground of GROUNDS) {
+        const map = generate(
+          { worldWidth, worldHeight, spawnTowersPerLane: 3, buffTowersPerLane: 3 },
+          SEED,
+          ground,
+        );
+        const towers = [...ofKind(map, 'spawner-tower'), ...ofKind(map, 'buff-tower')];
+        expect(towers).toHaveLength(2 * 3 * 3 * 2);
+        towers.forEach((a, index) => {
+          for (const b of towers.slice(index + 1)) {
+            const dx = Math.abs(a.position.x - b.position.x);
+            const dy = Math.abs(a.position.y - b.position.y);
+            if (dx < fort.width && dy < fort.height) {
+              overlaps.push(`${ground}: ${a.id} ${b.id}`);
+            }
+          }
+        });
+      }
+
+      expect(overlaps).toEqual([]);
+    },
+  );
+
+  it('spaces a widened band by the fort box diagonal, not its larger side times root 2 (DEC-227)', () => {
+    // In a 3200x900 world the fort box is not square, so the two measures differ.
+    const fort = fortInWorld(BUILDING_GEOMETRY.fort.laneTowerSize, { width: 3200, height: 900 });
+    const map = generate({ worldWidth: 3200, worldHeight: 900, spawnTowersPerLane: 3 });
+    const [first, second] = ofKind(map, 'spawner-tower').filter(({ id }) =>
+      id.startsWith('light-spawner-tower-lane-1-'),
+    );
+
+    expect(fort.width).not.toBeCloseTo(fort.height);
+    expect(
+      Math.hypot(
+        (second?.position.x ?? 0) - (first?.position.x ?? 0),
+        (second?.position.y ?? 0) - (first?.position.y ?? 0),
+      ),
+    ).toBeCloseTo(Math.hypot(fort.width, fort.height), 6);
+  });
+
+  it.each([3, 5, 7])(
+    'refuses 5 towers of each kind on %i lanes, whose forts would overlap (DEC-215 (1))',
+    (numLanes) => {
+      expect(() => generate({ numLanes, spawnTowersPerLane: 5, buffTowersPerLane: 5 })).toThrow(
+        /map\.spawnTowersPerLane = 5.*map\.buffTowersPerLane = 5.*lane-\d/,
+      );
+    },
+  );
+
+  it('refuses forts on neighbouring lanes that would overlap near the gates (DEC-215 (1))', () => {
+    // Critic r2 probe: each lane keeps its own towers apart, but lanes 1 and 2 fan out from
+    // the Light gates close enough that their first BuffTower forts overlap in a 3200x900 world.
+    expect(() =>
+      generate({
+        worldWidth: 3200,
+        worldHeight: 900,
+        numLanes: 7,
+        spawnTowersPerLane: 1,
+        // 11, not 9: since a band widens by the fort box diagonal (not its larger side times
+        // root 2), 9 BuffTowers no longer reach the gates.
+        buffTowersPerLane: 11,
+      }),
+    ).toThrow(/forts of light-buff-tower-lane-1-0 and light-buff-tower-lane-2-0 over each other/);
+  });
+
+  it('refuses a tower band widened past the end of its lane', () => {
+    expect(() => generate({ numLanes: 3, spawnTowersPerLane: 1, buffTowersPerLane: 16 })).toThrow(
+      /map\.buffTowersPerLane = 16 put lane towers on lane-0 off the lane/,
+    );
   });
 
   it('starts every lane at its Light gate and ends it at its Dark gate', () => {

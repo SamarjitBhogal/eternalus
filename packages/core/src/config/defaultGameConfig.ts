@@ -22,14 +22,19 @@ const DEFAULT_GAME_CONFIG: Omit<GameConfig, 'match'> & {
     cornerCamps: 4, // MVP-if-time; 0 disables
     worldWidth: 1600, // TUNE: traced from the team sketch
     worldHeight: 900, // TUNE: traced from the team sketch
-    navCellSize: 5, // TUNE: was DEFAULT_MAP_LAYOUT.navCellSize on feat/map-generator
+    // TUNE: DEC-227 (Q-A): 2.5 m cells, so units in a fort court find a route out (DEC-217 (15)).
+    // Keep it below the thinnest fort wall, or routes cross walls (`WorldMap.isCourt`).
+    navCellSize: 2.5,
     // TUNE: room to route a 4-wide formation around an obstacle; 30 clears a tower fort on a
     // diagonal lane (DEC-121 (d)).
     flowFieldCorridorHalfWidth: 30,
     flowFieldCellBudget: 2000, // TUNE: Recommendation (sprint 3.2): rebuild cost well under 1 ms
-    // TUNE: a cost cap for A* (10 §9), not a gameplay number; 6000 cells of 5 m (DEC-243)
+    // TUNE: a cost cap for A* (10 §9), not a gameplay number. DEC-243: on 2.5 m cells this area is
+    // 24000 cells (DEC-240), so bot routes of about 470 m across forts are found.
     pathMaxSearchArea: 150_000,
-    pathSnapCells: 12, // TUNE: covers a Stronghold footprint on 5 m cells
+    // TUNE: on 2.5 m cells (DEC-227 (Q-A)) a ring's corners clear a Stronghold's round footprint
+    // (`MAP_FEATURE_DEFINITIONS`), which the grid blocks when a match has no map objects.
+    pathSnapCells: 12,
     presetId: 'map-1',
   },
   match: {

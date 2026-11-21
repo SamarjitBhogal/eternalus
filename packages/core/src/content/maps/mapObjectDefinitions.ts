@@ -17,8 +17,9 @@ export const MAP_OBJECT_HEALTH = {
   terrain: null,
   stronghold: 10000,
   cathedral: null,
-  // Unused while the tower stands: its fort shares the tower's one health pool (DEC-185 B;
-  // DEC-217 (13): only towers share a pool, the palace and gates keep their own health).
+  // Unused: a lane tower's own map object (its keep) is always its body, and
+  // shares its one health pool (DEC-185 B; DEC-217 (13): only towers share a pool, the palace and
+  // gates keep their own health).
   'spawner-tower': 3000,
   'buff-tower': 2500,
   turret: 600,
@@ -41,3 +42,21 @@ export const MAP_OBJECT_DEFINITIONS = Object.fromEntries(
     } satisfies ObstacleDefinition,
   ]),
 ) as Readonly<Record<MapObjectKind, ObstacleDefinition>>;
+
+/**
+ * The part of a wall's own health (`wall` above) that each standing wall of a lane tower's fort
+ * keeps when its tower falls (DEC-217 (12), DEC-219 (a), DEC-227 (Q-B); owner: "the fort walls
+ * have half-health unless that wall was what was attacked to destroy the tower").
+ */
+const RUINED_FORT_WALL_HEALTH_FRACTION = 0.5; // TUNE: DEC-217 (12), DEC-219 (a), DEC-227 (Q-B)
+
+/**
+ * What a standing wall of a lane tower's fort becomes when its tower falls: scenery that blocks
+ * until it is destroyed on its own, with `RUINED_FORT_WALL_HEALTH_FRACTION` of a wall's health.
+ */
+export const RUINED_FORT_WALL_DEFINITION: ObstacleDefinition = {
+  ...MAP_OBJECT_DEFINITIONS.wall,
+  id: 'map-object-ruined-fort-wall',
+  displayName: 'ruined fort wall',
+  health: MAP_OBJECT_HEALTH.wall * RUINED_FORT_WALL_HEALTH_FRACTION,
+};

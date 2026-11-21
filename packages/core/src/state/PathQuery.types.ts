@@ -11,4 +11,9 @@ export interface PathQuery {
    * there is no way (or none found within the search budget).
    */
   waypoint(start: Vec2, goal: Vec2, out: MutableVec2): boolean;
+  /**
+   * Writes into `out` where a walker standing on blocked ground in a lane tower's court should
+   * head next to leave it by a doorway (DEC-217 (15)); `false` on open ground or with no way out.
+   */
+  exitWaypoint(start: Vec2, out: MutableVec2): boolean;
 }

@@ -91,6 +91,12 @@ export type MapFeatureDefinition = {
   /** Whether the footprint blocks walking in the `WorldMap` grid. */
   readonly isBlocking: boolean;
   /**
+   * Whether, when a blocking map object of the feature's id stands round it (a lane tower's fort),
+   * its footprint is the fort's court: stamped as court ground (`WorldMap.stampCourt`), closed to
+   * lane flow fields but open to A\* through the doorways (DEC-185 (A), DEC-217 (15)).
+   */
+  readonly isCourt?: true;
+  /**
    * Name the HUD shows for this kind; `null` when no screen names it. Not copied into `MapFeature`.
    *
    * TODO(sam): when structure content exists, the stronghold, wall, tower and cathedral names move

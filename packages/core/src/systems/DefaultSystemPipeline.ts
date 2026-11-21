@@ -5,7 +5,6 @@ import { HORDE_STEERING } from '../content/ai/hordeSteering';
 import { loadStuckDetection } from '../content/ai/loadStuckDetection';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
 import { loadOutOfCombatHealing } from '../content/healing/loadOutOfCombatHealing';
-import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import { FORMATIONS } from '../content/mobs/formations/formations';
 import { ENRAGING_STRUCTURES } from '../content/mobs/minionModifiers';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
@@ -13,6 +12,7 @@ import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { loadSpawnWaves } from '../content/structures/loadSpawnWaves';
 import { OPENING_WAVE } from '../content/structures/spawnWaves';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
+import type { ObstacleDefinition } from '../content/obstacles/obstacles.types';
 import type { StructureDefinition } from '../content/structures/structures.types';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { LaneFlowFields } from '../map/LaneFlowFields';
@@ -66,6 +66,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
     duelStarts,
     hordes,
     structures = STRUCTURE_DEFINITIONS,
+    ruinWall,
   }: DefaultSystemPipelineOptions) {
     const { tickRate, map } = state.config;
     const damage = new DamagePipeline();
@@ -80,26 +81,6 @@ export class DefaultSystemPipeline extends SystemPipeline {
             state.world.definition,
             map.flowFieldCorridorHalfWidth,
           );
-    const world = state.world?.grid ?? null;
-    const features = state.world?.definition.features ?? [];
-    if (world !== null && state.worldObjects !== undefined) {
-      // A destroyed blocking map object reopens its cells and the lane fields over them (07 §10).
-      state.events.on('entity-removed', ({ entityId }) => {
-        const object = state.worldObjects?.objectFor(entityId);
-        if (object?.isBlocking !== true) return;
-        const cells = object.footprints.flatMap((footprint) =>
-          world.clearFootprint(footprint, object.passages),
-        );
-        // `Simulation.buildWorld`'s rule: the grid also stamps the blocking feature behind an
-        // object (a wall segment, turret or rock shares its feature's id), so clear that stamp too.
-        const backing = features.find(
-          ({ id, definitionId }) =>
-            id === object.id && MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking === true,
-        )?.footprint;
-        if (backing !== undefined) cells.push(...world.clearFootprint(backing));
-        flowFields?.markDirty(cells);
-      });
-    }
     super([
       ...(hordes === undefined ? [] : [...hordes.decide, new HordeSystem(state, HORDE_STEERING)]),
       new StatusEffectSystem(damage, statuses),
@@ -118,7 +99,16 @@ export class DefaultSystemPipeline extends SystemPipeline {
             ),
           ]),
       new CombatSystem(damage),
-      ...(state.worldObjects === undefined ? [] : [new MapDestructionSystem(state, damage)]),
+      ...(state.worldObjects === undefined
+        ? []
+        : [
+            new MapDestructionSystem({
+              state,
+              damage,
+              flowFields,
+              ruinWall: DefaultSystemPipeline.requireRuinWall(ruinWall),
+            }),
+          ]),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
       new ProgressionSystem(state, progression),
       new VeterancySystem(state, statuses, progression.units, loadMinionVeterancy(tickRate)),
@@ -146,6 +136,20 @@ export class DefaultSystemPipeline extends SystemPipeline {
       new MatchDirectorSystem(director),
       new InvariantSystem(invariants),
     ]);
+  }
+
+  /**
+   * The injected `ruinWall`, which a match with map objects needs (DEC-219 (a)).
+   *
+   * @throws Error when it is missing.
+   */
+  private static requireRuinWall(ruinWall: ObstacleDefinition | undefined): ObstacleDefinition {
+    if (ruinWall === undefined) {
+      throw new Error(
+        'A match with map objects needs DefaultSystemPipelineOptions.ruinWall: what a standing fort wall becomes when its tower falls',
+      );
+    }
+    return ruinWall;
   }
 
   /**

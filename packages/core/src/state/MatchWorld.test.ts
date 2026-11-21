@@ -1,24 +1,50 @@
 import { describe, expect, it } from 'vitest';
 
-import { WorldMap } from '../map/WorldMap';
+import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
+import type { MapObject } from '../content/maps/mapObjects.types';
+import { MatchGrid } from '../map/MatchGrid';
 import { TWO_LANE_MAP } from './__fixtures__/twoLaneMap';
 import { MatchWorld } from './MatchWorld';
 
 describe('MatchWorld', () => {
   it('walks the lanes of its definition and keeps the grid it was given', () => {
-    const grid = WorldMap.fromDefinition(TWO_LANE_MAP, 2, () => false);
-
-    const world = new MatchWorld(TWO_LANE_MAP, grid);
+    const matchGrid = MatchGrid.build(TWO_LANE_MAP, [], { cellSize: 2, features: {} });
+    const world = new MatchWorld(TWO_LANE_MAP, matchGrid);
 
     expect(world.definition).toBe(TWO_LANE_MAP);
-    expect(world.grid).toBe(grid);
+    expect(world.grid).toBe(matchGrid.grid);
+    expect(world.grid.cellSize).toBe(2);
     expect(world.routes.lanes.map((lane) => lane.id)).toEqual(['lane-0', 'lane-1']);
     expect(world.routes.length('lane-0')).toBe(160);
   });
 
+  it('reopens a destroyed object through the rule that stamped it', () => {
+    const rock: MapObject = {
+      id: 'rock',
+      kind: 'rock',
+      isBlocking: true,
+      footprints: [
+        [
+          { x: 40, y: 18 },
+          { x: 44, y: 18 },
+          { x: 44, y: 22 },
+          { x: 40, y: 22 },
+        ],
+      ],
+    };
+    const world = new MatchWorld(
+      TWO_LANE_MAP,
+      MatchGrid.build(TWO_LANE_MAP, [rock], { cellSize: 2, features: MAP_FEATURE_DEFINITIONS }),
+    );
+    expect(world.grid.isWalkableAt(42, 20)).toBe(false);
+
+    expect(world.reopen(rock).length).toBeGreaterThan(0);
+    expect(world.grid.isWalkableAt(42, 20)).toBe(true);
+  });
+
   it('faces a unit toward the enemy Stronghold at spawn, and a neutral one nowhere (DEC-216 (6))', () => {
-    const grid = WorldMap.fromDefinition(TWO_LANE_MAP, 2, () => false);
-    const world = new MatchWorld(TWO_LANE_MAP, grid);
+    const matchGrid = MatchGrid.build(TWO_LANE_MAP, [], { cellSize: 2, features: {} });
+    const world = new MatchWorld(TWO_LANE_MAP, matchGrid);
 
     // The Strongholds stand at (10, 30), light, and (190, 30), dark.
     expect(world.startFacing('light', { x: 60, y: 20 })).toEqual({ facing: { x: 130, y: 10 } });
@@ -31,10 +57,7 @@ describe('MatchWorld', () => {
       ...TWO_LANE_MAP,
       features: TWO_LANE_MAP.features.filter(({ id }) => id !== 'stronghold-dark'),
     };
-    const world = new MatchWorld(
-      map,
-      WorldMap.fromDefinition(map, 2, () => false),
-    );
+    const world = new MatchWorld(map, MatchGrid.build(map, [], { cellSize: 2, features: {} }));
 
     expect(world.startFacing('light', { x: 60, y: 20 })).toEqual({});
     expect(world.startFacing('dark', { x: 140, y: 20 })).toEqual({ facing: { x: -130, y: 10 } });

@@ -22,6 +22,7 @@ export const MAP_FEATURE_DEFINITIONS: Readonly<Record<string, MapFeatureDefiniti
     minimapGlyph: { shape: 'square', size: 5, colourRole: 'team' },
     footprintRadius: 14,
     isBlocking: true,
+    isCourt: true, // DEC-217 (15): routes out of the fort's court run through its doorways
     displayName: 'Production Tower', // names pending HC-Q4
   },
   'buff-tower': {
@@ -30,6 +31,7 @@ export const MAP_FEATURE_DEFINITIONS: Readonly<Record<string, MapFeatureDefiniti
     minimapGlyph: { shape: 'diamond', size: 5, colourRole: 'team' },
     footprintRadius: 14,
     isBlocking: true,
+    isCourt: true, // DEC-217 (15): routes out of the fort's court run through its doorways
     displayName: 'Buff Tower', // names pending HC-Q4
   },
   'wall-segment': {
