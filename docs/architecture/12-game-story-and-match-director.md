@@ -4,7 +4,7 @@ description: How a match unfolds over time - the MatchDirector state machine ove
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-12
+last-reviewed: 2026-11-20
 tags: [architecture, match, timeline, phases, scoring, story, lore]
 paths:
   [
@@ -466,6 +466,20 @@ Legends to their start points at full health at once, and `KillCountCondition` (
 the match at the target. The score is `state.match.duel` and `Snapshot.match.duel`. The shipped
 numbers (target, countdown, start offset) are `DUEL_RULES` in `content/duel/duelRules.ts`. Mobs and
 structures still run as generated; FR-115's inert world is not built.
+
+Implementation status, 2026-11-20 (branch `feat/duel-arena-only-legends`; the owner's feedback on
+the Duel demo of 2026-11-20, Jira SCRUM-445, SCRUM-446, SCRUM-447 and SCRUM-450, within DEC-36): a
+Duel keeps only its arena. `DUEL_RULES.arena` (`DuelArenaRules`, `content/duel/duelRules.types.ts`)
+holds one switch per part of the world, read where that part is built, never in a system's tick:
+no mobs (`spawnsMobs`: `DefaultSystemPipeline` leaves out `SpawnSystem`, so no minion, guard or
+camp unit spawns or respawns), no capture objectives (`hasCaptureObjectives`: `Simulation` spawns
+no zones, so `ObjectiveLostCondition` and the client's `ObjectiveTracker` have none; the tracker
+renders nothing in a Duel), no Cathedral crystal (`hasCathedralGem`: `Simulation` builds no
+`cathedral` structure, and the client's `CrystalStatus` renders nothing in a Duel; no gem exists in
+core yet, so the gem's body, scenery and view must check this switch when they land) and a closed
+Cathedral (`isCathedralClosed`: `match/duelArena.ts` makes the Cathedral's four entrances, the map
+objects marked `isDuelBarrier`, block; 06 §10). Structures other than the gem still run as
+generated, and the Cathedral's interior walls stay breakable (BUG-2).
 
 The human's Legend works like this (DEC-173): it is the roster's `human` slot (`RosterSlot.pilot`),
 at most one per roster and on `playerTeam`; a roster without one is sim mode. The client gives it
