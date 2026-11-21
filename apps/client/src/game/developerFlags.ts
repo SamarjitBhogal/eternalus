@@ -1,6 +1,7 @@
-import type { EffectsRenderer } from '../bridge/catalogue.types';
+import type { EffectsRenderer, UiEnhancementId } from '../bridge/catalogue.types';
 import type { DisplayOverrides } from './content/CataloguePresentation.types';
 import { NO_DISPLAY_OVERRIDES } from './content/coreCatalogue';
+import { UI_ENHANCEMENT_IDS } from './content/screenPresentation';
 
 /** The `fx` values a developer may pass, by the effects renderer each selects (DEC-54). */
 const FX_RENDERERS: ReadonlyMap<string, EffectsRenderer> = new Map([
@@ -15,8 +16,19 @@ const FX_RENDERERS: ReadonlyMap<string, EffectsRenderer> = new Map([
 export type DeveloperFlags = {
   /** `?dev=1`: the explorer chrome (`GameCanvas` `isExplorerShown`) and the display overrides are on. */
   readonly isDeveloper: boolean;
-  /** `NO_DISPLAY_OVERRIDES` unless `isDeveloper`; then `fx=css` → `'css'`, `fx=raster` → `'figma-raster'`, any other `fx` → `null`. */
+  /**
+   * `NO_DISPLAY_OVERRIDES` unless `isDeveloper`; then `fx=css` → `'css'`, `fx=raster` →
+   * `'figma-raster'`, any other `fx` → `null`; `ui=<id>,<id>` → the built ids it lists, once each
+   * (`ui=` alone: none, every Figma original), no `ui` → `null` (ui-enhancements-plan §2 rule 1).
+   */
   readonly displayOverrides: DisplayOverrides;
+};
+
+/** The built UI enhancements `ui` lists, in built order; unknown ids are dropped. */
+const listedUiEnhancements = (ui: string | null): readonly UiEnhancementId[] | null => {
+  if (ui === null) return null;
+  const listed = new Set(ui.split(','));
+  return UI_ENHANCEMENT_IDS.filter((id) => listed.has(id));
 };
 
 /**
@@ -31,6 +43,9 @@ export function readDeveloperFlags(search: string): DeveloperFlags {
   const fx = query.get('fx');
   return {
     isDeveloper: true,
-    displayOverrides: { effectsRenderer: fx === null ? null : (FX_RENDERERS.get(fx) ?? null) },
+    displayOverrides: {
+      effectsRenderer: fx === null ? null : (FX_RENDERERS.get(fx) ?? null),
+      uiEnhancements: listedUiEnhancements(query.get('ui')),
+    },
   };
 }

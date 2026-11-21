@@ -19,3 +19,8 @@
     animation: none;
   }
 }
+
+/* UE-03: the in-game reduce-motion setting, the same as the OS query. */
+:root[data-reduce-motion] .gradient {
+  animation: none;
+}

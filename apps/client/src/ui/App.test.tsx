@@ -32,6 +32,16 @@ describe('App', () => {
     expect(at(sessionAt('loading', { reason: 'select-timeout' }))).not.toContain(title);
   });
 
+  // DEC-282 (7): the one polite region is in the page in every phase, after the screen and outside
+  // it, so a screen that appears holding a line (the match-start overlay at 10 s) says it there.
+  it('mounts one polite live region, outside the screen, in every phase', () => {
+    for (const phase of SESSION_PHASES) {
+      const html = renderWithStore(<App />, { session: sessionAt(phase) });
+      expect(html.match(/aria-live="polite"/g)).toHaveLength(1);
+      expect(html.lastIndexOf('aria-live="polite"')).toBeGreaterThan(html.lastIndexOf('</main>'));
+    }
+  });
+
   it('shows the crash popup, outside the screen, in every phase once a report is open', () => {
     const title = STRINGS.crashReportPopup.matchMessage;
     const withReport = (phase: SessionPhase) =>
