@@ -384,6 +384,32 @@ describe('Simulation: the human slot of the roster', () => {
     expect(build([human()]).exportReplay().roster).toEqual([human()]);
   });
 
+  it('reproduces its hashes in a replay of a human slot with a saved loadout, which the replay keeps', () => {
+    const armed: RosterSlot = {
+      pilot: 'human',
+      team: 'dark',
+      definitionId: 'warrior',
+      role: 'rover',
+      loadout: { classId: 'warrior', primaryWeaponId: 'wuuthrad' },
+    };
+    const createTarget = ({ config, seed, roster }: ReplaySetup) =>
+      new Simulation({
+        config,
+        seed,
+        logger: new NullLogger(),
+        map: TWO_LANE_MAP,
+        ...(roster === undefined ? {} : { roster }),
+      });
+    const replay = recordReplay(
+      { config: configFor(), seed: 5, roster: [armed] },
+      { ticks: 40, checkpointEvery: 10, commandsFor: () => [] },
+      createTarget,
+    );
+
+    expect(runReplay(replay, createTarget).firstDivergence).toBeNull();
+    expect(build([armed]).exportReplay().roster).toEqual([armed]);
+  });
+
   it('hashes a match with a human differently from one in sim mode (the Legend is in the entities)', () => {
     expect(build([human()]).hash()).not.toBe(build([]).hash());
   });

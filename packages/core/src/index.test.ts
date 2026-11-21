@@ -29,7 +29,6 @@ describe('@eternalus/core public API', () => {
       'isPlayableTeam',
       'isPointInPolygon',
       'isUnitFamily',
-      'isWeaponAllowedFor',
       'loadDisplayContent',
       'loadoutContentOf',
       'makeLogRecord',

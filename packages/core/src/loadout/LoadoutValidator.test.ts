@@ -5,7 +5,7 @@ import type { LoadoutContent, LoadoutRule } from './LoadoutValidator.types';
 
 const CONTENT: LoadoutContent = {
   legends: { has: () => true, get: () => ({ defaultLoadout: { primaryWeaponId: 'w' } }) },
-  weapons: { has: () => true, get: () => ({ allowedClasses: 'any' }) },
+  weapons: { has: () => true, get: () => ({ allowedClasses: 'any', uniqueTo: null }) },
 };
 
 const ruleFinding = (id: string, count: number): LoadoutRule => ({

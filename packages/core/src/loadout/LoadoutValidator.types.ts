@@ -26,7 +26,7 @@ type Lookup<Definition> = {
  */
 export type LoadoutContent = {
   readonly legends: Lookup<Pick<LegendDefinition, 'defaultLoadout'>>;
-  readonly weapons: Lookup<Pick<WeaponDefinition, 'allowedClasses'>>;
+  readonly weapons: Lookup<Pick<WeaponDefinition, 'allowedClasses' | 'uniqueTo'>>;
 };
 
 /**

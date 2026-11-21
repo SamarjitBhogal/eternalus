@@ -34,8 +34,8 @@ export type DisplayContent = {
   readonly legends: readonly LegendDefinition[];
   readonly specs: readonly LegendSpecDefinition[];
   /**
-   * Every weapon, with the classes that may carry it (`isWeaponAllowedFor`), in catalogue order:
-   * the Loadout screen's primary-weapon choices (08) and the ids a saved loadout may name.
+   * Every weapon, with the classes that may carry it, in catalogue order: what the client checks
+   * loadouts against (`loadoutContentOf`) and the Loadout screen's primary-weapon choices (08).
    */
   readonly weapons: readonly WeaponDisplay[];
   /** Shown after the playable classes as locked cards, never selectable (DEC-48). */

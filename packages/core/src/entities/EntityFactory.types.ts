@@ -2,7 +2,6 @@ import type { AiMemory, ControllerId } from '../content/ai/ai.types';
 import type { WeaponDefinition } from '../content/weapons/weapons.types';
 import type { EntityDefinitionBase } from '../content/EntityDefinition.types';
 import type { Loadout } from '../loadout/Loadout.types';
-import type { LoadoutProblem } from '../loadout/LoadoutValidator.types';
 import type { Team } from '../teams/teams.types';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
 
@@ -63,19 +62,20 @@ export interface WeaponSource {
   get(id: string): WeaponDefinition;
 }
 
-/** A spawn loadout that failed validation, and the auto-build the factory used instead (05 §12). */
-export type LoadoutRejection = {
-  readonly definitionId: string;
-  readonly given: Loadout;
-  readonly problems: readonly LoadoutProblem[];
-  readonly used: Loadout;
-};
+/**
+ * Decides the loadout a spawn gets from the one its placement gives (05 §12). Core's
+ * `SpawnLoadoutPolicy` implements it; the factory depends on this port, not on `loadout/`.
+ */
+export interface LoadoutResolver {
+  /** The loadout a `definitionId` spawn gets, given the placement's (or none). */
+  loadoutFor(definitionId: string, given: Loadout | undefined): Loadout | undefined;
+}
 
 /**
  * What the factory equips Legends from (architecture 05 §10, §12): the weapons, put in every spawn
- * context, and who hears of a spawn loadout it rejected (a diagnostic; `Simulation` logs it).
+ * context, and the loadout resolver.
  */
 export type LegendEquipment = {
   readonly weapons: WeaponSource;
-  readonly onLoadoutRejected?: (rejection: LoadoutRejection) => void;
+  readonly loadouts?: LoadoutResolver;
 };

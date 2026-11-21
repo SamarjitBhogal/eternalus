@@ -44,7 +44,6 @@ export type {
 export { DUEL_RULES } from './content/duel/duelRules';
 export { loadDisplayContent } from './content/loadDisplayContent';
 export type { DisplayContent } from './content/loadDisplayContent';
-export { isWeaponAllowedFor } from './content/weapons/isWeaponAllowedFor';
 export type { WeaponDisplay } from './content/weapons/weapons.types';
 export { DEFAULT_MAP_CONFIG } from './content/maps/defaultMapConfig';
 export type {

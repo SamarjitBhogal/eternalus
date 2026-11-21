@@ -1,10 +1,11 @@
-import { isWeaponAllowedFor } from '../../content/weapons/isWeaponAllowedFor';
 import type { Loadout } from '../Loadout.types';
 import type { LoadoutContent, LoadoutProblem, LoadoutRule } from '../LoadoutValidator.types';
 
 /**
- * The class may carry the primary weapon (`allowedClasses`, `uniqueTo`; reference 07, 05 §12).
- * Skipped when the class or the weapon is unknown (`ContentExistsRule` reports that).
+ * The class may carry the primary weapon (reference 07: a non-unique weapon is usable by any class,
+ * a unique one only by its class; 05 §12): the class is in `allowedClasses`, and `uniqueTo`, when
+ * set, is that class. Skipped when the class or the weapon is unknown (`ContentExistsRule`
+ * reports that).
  */
 export class WeaponAllowedRule implements LoadoutRule {
   public readonly id = 'weapon-allowed';
@@ -13,7 +14,11 @@ export class WeaponAllowedRule implements LoadoutRule {
   public check(loadout: Loadout, content: LoadoutContent): readonly LoadoutProblem[] {
     const { classId, primaryWeaponId } = loadout;
     if (!content.legends.has(classId) || !content.weapons.has(primaryWeaponId)) return [];
-    return isWeaponAllowedFor(content.weapons.get(primaryWeaponId), classId)
+    const { allowedClasses, uniqueTo } = content.weapons.get(primaryWeaponId);
+    const isAllowed =
+      (allowedClasses === 'any' || allowedClasses.some((kind) => kind === classId)) &&
+      (uniqueTo === null || uniqueTo === classId);
+    return isAllowed
       ? []
       : [
           {
