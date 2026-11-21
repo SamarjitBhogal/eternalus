@@ -31,6 +31,9 @@ describe('LoadoutScreen', () => {
     const names = buttonNames(html);
     for (const card of playable) expect(names).toContain(card.displayName);
     expect(html).not.toContain('Harbinger');
+    const locked = TEST_CONTENT.legendClasses.find((card) => card.status === 'locked');
+    expect(locked?.displayName).toBe('Harbinger');
+    expect(html).not.toContain(locked?.blurb);
     expect(radioTags(html)).toHaveLength(3);
   });
 
