@@ -9378,6 +9378,41 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   that run (docs only).
 - Next step: push PR #138 (coordinator), owner review; HC-B15 on the Owner Calls page (Sam).
 
+### 2026-11-20 — Phase 3 / tower horde test time limit (DEC-289) — fix/horde-test-timeout — sholtzman + Claude Code
+
+- What was done: the owner's Owner Calls answer of 2026-11-20 ("Raise this one test's cap to
+  120 s and log an INBOX item to make the test faster") is DEC-289. `Simulation.mapObjects.test.ts`
+  gives its tower horde test ("walks every tower horde out of its tower and on up its lane within
+  10 seconds (DEC-133, seed %i)") its own time limit, `HORDE_WALK_TIMEOUT_MS` (120 s); core's
+  `testTimeout` (60 s, `packages/core/vitest.config.ts`) is unchanged. On PR #122 (run
+  44714237495, attempt 1) seed 1 timed out at 60 s on windows-latest. `INBOX.md` has the request
+  "Make the tower horde test faster"; the decisions log has the DEC-289 batch.
+- Checks run: a deliberate break (`HORDE_WALK_TIMEOUT_MS = 100`) made all three seeds fail with
+  "Test timed out in 100ms", so the argument reaches the test; restored to 120 s. Full
+  `npm run check` exit 0 before this entry was added
+  (`eternalus-agent-work/horde-test-timeout/check-1.log`): core "Tests 1674 passed (1674)",
+  protocol "Tests 29 passed (29)", client "Tests 2011 passed (2011)", server "Tests 84 passed
+  (84)", "Documentation check passed."; then `prettier --check` and `npm run docs:check` with this
+  entry. Critic (architecture-reviewer): PASS WITH NOTES, no violations, four nits not applied.
+- Next step: `/ponytail-review`, then push and open the PR into phase/3.
+
+### 2026-11-21 — Phase 3 / the match-start countdown: merge of phase/3 (`a3550159`, #140) — feat/match-start-countdown — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` at `a3550159` (#140, DEC-289: the tower
+  horde test's own 120 s limit) into PR #138, which GitHub showed as conflicting. Two conflicts,
+  each from entries added at the same place on both sides: this file (both kept, in append order)
+  and the decisions log (both kept, newest batch first: the countdown's 2026-11-20 batches, then
+  DEC-289, then the countdown's 2026-11-19 batch). No line of either side was lost (`comm` on the
+  sorted lines: 0 missing against each parent; the line counts add up). `INBOX.md` and
+  `Simulation.mapObjects.test.ts` merged without conflict.
+- Checks run: `npm run check` → `EXIT=0`
+  (`eternalus-agent-work/game-loop-plan/check-138-merge-a3550159.log`): core "Tests 1679 passed
+  (1679)"; protocol "Tests 29 passed (29)"; client "Tests 2076 passed (2076)"; server "Tests 84
+  passed (84)"; "Documentation check passed.". This check line was filled in after that run (docs
+  only).
+- Next step: push #138 after the DEC-316 push to #143 (the coordinator); the owner merges #138;
+  #143 is then retargeted to `phase/3-sprint-3-work`.
+
 ### 2026-11-21 — Phase 3 / the match-start countdown: DEC-312, the numeral in HUD units — refactor/countdown-hud-units — sholtzman + Claude Code
 
 - What was done: DEC-312 (owner pick on HC-B15). (1) Option (c), CSS typed arithmetic: `.match`
@@ -9417,3 +9452,20 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   only).
 - Next step: push to PR #143 (the coordinator), refresh its body; retarget #143 to
   `phase/3-sprint-3-work` after #138 merges.
+
+### 2026-11-21 — Phase 3 / the match-start countdown: merge of #138's head (`ef7bc52a`) — refactor/countdown-hud-units — sholtzman + Claude Code
+
+- What was done: merged `origin/feat/match-start-countdown` at `ef7bc52a` (#138 with phase/3
+  `a3550159`, #140, merged in) into PR #143, which GitHub showed as conflicting. One conflict,
+  this file: both sides kept, #138's two entries first and this branch's after them, so against
+  `ef7bc52a` this branch only appends (`git diff ef7bc52a -- docs/plan/PROGRESS.md` removes no
+  line; `comm` on the sorted lines: 0 missing against each parent). The decisions log, `INBOX.md`
+  and `Simulation.mapObjects.test.ts` merged without conflict (DEC-316 batch first, then the
+  countdown's batches, DEC-289, the 2026-11-19 batch).
+- Checks run: `npm run check` → `EXIT=0`
+  (`eternalus-agent-work/game-loop-plan/check-143-merge-ef7bc52a.log`): core "Tests 1679 passed
+  (1679)"; protocol "Tests 29 passed (29)"; client "Tests 2077 passed (2077)"; server "Tests 84
+  passed (84)"; "Documentation check passed.". This check line was filled in after that run (docs
+  only).
+- Next step: push #143 (the coordinator); after #138 merges, retarget #143 to
+  `phase/3-sprint-3-work`.
