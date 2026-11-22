@@ -80,9 +80,16 @@ const play = () => {
   return { simulation, grants, owners, taken };
 };
 
+/**
+ * One match is shared by both tests, so each plays at most one (a match takes up to ~19 s on the
+ * Windows CI runner, against core's 60 s `testTimeout`).
+ */
+let firstRun: ReturnType<typeof play> | undefined;
+const playOnce = () => (firstRun ??= play());
+
 describe('Simulation: zone level-up (07 §7, DEC-258)', () => {
-  it("levels the holder's horde on the point's lane, takes it back on the loss tick, the same way every run", () => {
-    const first = play();
+  it("levels the holder's horde on the point's lane and takes it back on the loss tick", () => {
+    const first = playOnce();
     const lost = first.owners.find(({ to }) => to === 'dark');
     const given = first.grants.filter(({ levels }) => levels > 0);
     const takenBack = first.grants.filter(({ levels }) => levels < 0);
@@ -97,6 +104,9 @@ describe('Simulation: zone level-up (07 §7, DEC-258)', () => {
     // Every living levelled minion loses it on the tick the point changes owner.
     expect(takenBack.length).toBeGreaterThan(0);
     expect(takenBack.every(({ tick }) => tick === lost?.tick)).toBe(true);
-    expect(play().simulation.hash()).toBe(first.simulation.hash());
+  });
+
+  it('plays the same way every run (same seed and commands, same hash)', () => {
+    expect(play().simulation.hash()).toBe(playOnce().simulation.hash());
   });
 });

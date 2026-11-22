@@ -9440,3 +9440,18 @@ tick)`), and a minion records the point that granted its levels (`Veterancy.gran
   style!"; core "Tests 1704 passed (1704)"; protocol "Tests 29 passed (29)"; client "Tests 2011
   passed (2011)"; server "Tests 84 passed (84)"; "✓ built in 477ms"; "Documentation check passed."
 - Next step: re-request review on PR #131 after PR #130.
+
+### 2026-11-21 — Phase 3 / minion plan M10 — feat/minion-m10-zone-level-up (PR #131 review, remaining items) — SamarjitBhogal + Claude Code
+
+- What was done: N5: `Simulation.zoneLevelUp.test.ts` moves the determinism check into its own
+  test, and both tests share the first match (`playOnce`), so no single test plays two whole
+  matches against core's 60 s `testTimeout`; no assertion dropped. Re-checked the rest of the
+  2026-11-19 review against the head: B1, S1, N1, N2, N4, N6, N7 and N8 were applied on
+  2026-11-20; B2 was withdrawn by the owner (DEC-279); N3's OQ-47 is decided (DEC-258).
+- Still open: S2 (`INBOX.md` "Minion M10 better-than-design items" (a)–(c)) and N3's FR-041
+  citation wait for the owner; S3: GitHub shows the PR conflicting with `phase/3-sprint-3-work`
+  (not merged here); N9: the PR description should use the template before "Ready for review".
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code
+  style!"; core "Tests 1706 passed (1706)"; protocol "Tests 29 passed (29)"; client "Tests 2011
+  passed (2011)"; server "Tests 84 passed (84)"; "✓ built in 413ms"; "Documentation check passed."
+- Next step: merge `phase/3-sprint-3-work` to clear the conflicts, then re-request review.
