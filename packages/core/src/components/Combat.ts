@@ -33,15 +33,18 @@ export class Combat {
 
   private attackValue: UnitAttack;
 
+  private attacks: UnitAttacks;
+
+  private weaponIdValue: string | null;
+
   /**
    * @param attacks - The attacks by mode, with `interval` already in ticks (`attacksByMode`).
    * @param weaponId - The equipped weapon the attacks come from (05 §10), or `null` for a unit's own
    *   attack (mobs).
    */
-  public constructor(
-    private readonly attacks: UnitAttacks,
-    public readonly weaponId: string | null = null,
-  ) {
+  public constructor(attacks: UnitAttacks, weaponId: string | null = null) {
+    this.attacks = attacks;
+    this.weaponIdValue = weaponId;
     this.attackValue = attacks.basic;
   }
 
@@ -189,5 +192,25 @@ export class Combat {
   /** The active attack's cooldown in ticks: its `interval` divided by `attackSpeed`, at least 1. */
   private cooldownTicks(attackSpeed: number): number {
     return Math.max(1, Math.round(this.attack.interval / attackSpeed));
+  }
+
+  /** The equipped weapon the attacks come from (05 §10), or `null` for a unit's own attack (mobs). */
+  public get weaponId(): string | null {
+    return this.weaponIdValue;
+  }
+
+  /**
+   * Equips other attacks: a Legend's weapon swap (DEC-303) or a turret's ammo switch. The target
+   * and the attack timer stay. A mode the new attacks do not have becomes `basic`.
+   *
+   * @param attacks - The new attacks by mode, with `interval` already in ticks (`attacksByMode`).
+   * @param weaponId - The weapon the new attacks come from, or `null` for a unit's own attack.
+   */
+  public equip(attacks: UnitAttacks, weaponId: string | null): void {
+    const attack = attacks[this.modeValue];
+    this.attacks = attacks;
+    this.weaponIdValue = weaponId;
+    this.modeValue = attack === undefined ? 'basic' : this.modeValue;
+    this.attackValue = attack ?? attacks.basic;
   }
 }
