@@ -60,7 +60,11 @@ export class FlowField {
     return this.directionCells;
   }
 
-  /** Path cost to the goal of the cell under `point` (`UNREACHED` outside the world or the fill). */
+  /**
+   * Path cost to the goal of the cell under `point` (`UNREACHED` outside the world or the fill).
+   * Repeats `WorldMap.cellAt`'s arithmetic on purpose: that returns a new object per call, and
+   * this runs on every hit on a horde minion.
+   */
   private costAt(point: Vec2): number {
     const { cellSize, cols, rows } = this.grid;
     const col = Math.floor(point.x / cellSize);

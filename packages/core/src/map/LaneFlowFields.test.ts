@@ -450,18 +450,27 @@ describe('LaneFlowFields.progress', () => {
     }
   });
 
+  /**
+   * A field whose start cost reached `UNREACHED` would make `progressAt` fall back to the polyline
+   * on every point; a quarter of the cap leaves room for maps four times as long.
+   */
+  const HOME_COST_HEADROOM = 4;
+
   it.each([
-    ['3 lanes', stampedWorld(3, 1)],
-    ['5 lanes', stampedWorld(5, 1)],
+    [3, 1],
+    [3, 2],
+    [5, 1],
+    [5, 2],
   ] as const)(
-    'keeps every lane’s cost from its own end at most a quarter of UNREACHED, so progress never falls back for want of range: %s',
-    (_, world) => {
+    'keeps every lane’s cost from its own end well below UNREACHED: %i lanes, seed %i',
+    (numLanes, seed) => {
+      const world = stampedWorld(numLanes, seed);
       for (const lane of world.map.lanes) {
         for (const team of ['light', 'dark'] as const) {
           const field = world.fields.field(lane.id, team);
           const home =
             field === undefined ? UNREACHED : (field.integration[field.start] ?? UNREACHED);
-          expect(home, `${lane.id} ${team}`).toBeLessThanOrEqual(UNREACHED / 4);
+          expect(home, `${lane.id} ${team}`).toBeLessThanOrEqual(UNREACHED / HOME_COST_HEADROOM);
         }
       }
     },

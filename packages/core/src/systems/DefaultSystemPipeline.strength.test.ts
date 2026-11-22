@@ -62,8 +62,10 @@ describe('DefaultSystemPipeline minion strength wiring', () => {
       config.map.flowFieldCorridorHalfWidth,
     );
     for (const lane of TWO_LANE_MAP.lanes) {
-      for (const point of lane.path) {
-        expect(progressOf(lane.id, 'light', point)).toBe(fields.progress(lane.id, 'light', point));
+      for (const team of ['light', 'dark'] as const) {
+        for (const point of lane.path) {
+          expect(progressOf(lane.id, team, point)).toBe(fields.progress(lane.id, team, point));
+        }
       }
     }
   });
