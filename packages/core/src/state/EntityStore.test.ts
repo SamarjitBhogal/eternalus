@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
 import { Abilities } from '../components/Abilities';
+import { Collider } from '../components/Collider';
 import { Combat } from '../components/Combat';
 import { Deploying } from '../components/Deploying';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
+import { StatusEffects } from '../components/StatusEffects';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { TeamMembership } from '../components/TeamMembership';
 import type { Team } from '../teams/teams.types';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
@@ -209,7 +212,7 @@ describe('EntityStore', () => {
     expect(store.attackTargetOf('nobody')).toBeNull();
   });
 
-  it('reads whom an entity attacks: its lock, or else the living bodies its last attack hit, for one attack interval (DEC-322 (2))', () => {
+  it('reads whom an entity attacks: its lock first, then each living body its last attack hit while the hits count, once each (DEC-322 (2))', () => {
     const store = new EntityStore();
     const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
     const spawn = (team: Team) => {
@@ -225,14 +228,17 @@ describe('EntityStore', () => {
     const combat = attacker.getComponent(Combat);
 
     expect(store.victimsOf(attacker.id, 0)).toEqual([]);
-    combat.recordHits([first.id, second.id], 0);
+    combat.recordHits([first.id, second.id], 0, 1);
     expect(store.victimsOf(attacker.id, 0)).toEqual([first.id, second.id]);
-    expect(store.isAttacking(attacker.id, second.id, combat.attack.interval - 1)).toBe(true);
-    expect(store.isAttacking(attacker.id, second.id, combat.attack.interval)).toBe(false);
+    expect(store.isAttacking(attacker.id, second.id, combat.attack.interval)).toBe(true);
+    expect(store.isAttacking(attacker.id, second.id, combat.attack.interval + 1)).toBe(false);
 
+    // A locked sweep hits more than its lock; each body it hit is attacked too.
     store.setAttackTarget(attacker.id, locked.id);
-    expect(store.victimsOf(attacker.id, 0)).toEqual([locked.id]);
-    expect(store.isAttacking(attacker.id, first.id, 0)).toBe(false);
+    expect(store.victimsOf(attacker.id, 0)).toEqual([locked.id, first.id, second.id]);
+    expect(store.isAttacking(attacker.id, first.id, 0)).toBe(true);
+    store.setAttackTarget(attacker.id, first.id);
+    expect(store.victimsOf(attacker.id, 0)).toEqual([first.id, second.id]);
     store.clearAttackTarget(attacker.id);
 
     first.getComponent(Health).applyDamage(first.getComponent(Health).current);
@@ -240,6 +246,55 @@ describe('EntityStore', () => {
     expect(store.victimsOf(first.id, 0)).toEqual([]);
     expect(store.victimsOf('nobody', 0)).toEqual([]);
     expect(store.isAttacking('nobody', first.id, 0)).toBe(false);
+  });
+
+  it('records the bodies an attack hit on the living attacker, for one attack interval or its slowed cooldown when longer (DEC-322 (2), DEC-333 (1))', () => {
+    const store = new EntityStore();
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const statuses = loadStatusEffects(30, 2);
+    const spawn = () => {
+      const entity = factory.create('light-mob', 'light-minion', {
+        team: 'dark',
+        position: { x: 0, y: 0 },
+      });
+      store.add(entity);
+      return entity;
+    };
+    const [attacker, slowed, hasted, dead] = [spawn(), spawn(), spawn(), spawn()];
+    slowed.getComponent(StatusEffects).apply(statuses.get('concussion'), null, 0);
+    hasted.getComponent(StatusEffects).apply(statuses.get('fury'), null, 0);
+    dead.getComponent(Health).applyDamage(dead.getComponent(Health).current);
+    const { interval } = attacker.getComponent(Combat).attack;
+
+    for (const entity of [attacker, slowed, hasted, dead]) store.recordHits(entity.id, ['a'], 1);
+    store.recordHits(attacker.id, ['b'], 1);
+    store.recordHits('nobody', ['a'], 1);
+
+    expect(store.attackSpeedOf(attacker.id)).toBe(1);
+    expect(store.attackSpeedOf(slowed.id)).toBe(0.7);
+    expect(store.attackSpeedOf('nobody')).toBe(1);
+    expect(attacker.getComponent(Combat).hitsAt(1)).toEqual(['a', 'b']);
+    expect(attacker.getComponent(Combat).hitsUntilTick).toBe(1 + interval);
+    expect(slowed.getComponent(Combat).hitsUntilTick).toBe(1 + Math.round(interval / 0.7));
+    // Fury triples the attack speed; its hits still count for one full interval.
+    expect(hasted.getComponent(Combat).hitsUntilTick).toBe(1 + interval);
+    expect(dead.getComponent(Combat).hitIds).toEqual([]);
+  });
+
+  it('reads whether an entity takes no damage now: only while its collider is unbreakable', () => {
+    const store = storeWith('no-collider');
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const gate = factory.create('light-mob', 'light-minion', {
+      team: 'dark',
+      position: { x: 0, y: 0 },
+    });
+    store.add(gate);
+
+    expect(store.takesNoDamage(gate.id)).toBe(false);
+    gate.getComponent(Collider).setUnbreakable(true);
+    expect(store.takesNoDamage(gate.id)).toBe(true);
+    expect(store.takesNoDamage('no-collider')).toBe(false);
+    expect(store.takesNoDamage('nobody')).toBe(false);
   });
 
   it('queues a cast on an ability slot, and refuses an entity without that slot', () => {

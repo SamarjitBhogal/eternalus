@@ -1,6 +1,7 @@
 import { Abilities } from '../components/Abilities';
 import type { Aim } from '../components/AbilitySlotRuntime.types';
 import { ChaseWatch } from '../components/ChaseWatch';
+import { Collider } from '../components/Collider';
 import { Combat } from '../components/Combat';
 import { ControllerBinding } from '../components/ControllerBinding';
 import { Deploying } from '../components/Deploying';
@@ -9,6 +10,7 @@ import { Health } from '../components/Health';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { Movement } from '../components/Movement';
 import type { Outline } from '../components/Outline.types';
+import { StatusEffects } from '../components/StatusEffects';
 import { TeamMembership } from '../components/TeamMembership';
 import type { AbilitySlot } from '../content/abilities/AbilityDefinition.types';
 import type { AttackMode } from '../content/units/units.types';
@@ -146,21 +148,55 @@ export class EntityStore {
   }
 
   /**
-   * Whom the entity attacks at `tick` (DEC-322 (2)): its lock when it holds one; else each living
-   * body its last attack hit, for one attack interval from the hit (`Combat.hitsAt`), so a player
-   * who aims, with no lock, attacks what it hits. Empty when it attacks nothing, cannot attack or
-   * is unknown.
+   * Whom the entity attacks at `tick` (DEC-322 (2)): its lock, when it holds one, first; then each
+   * other living body its last attack hit while the hits count (`Combat.hitsAt`). So a player who
+   * aims, with no lock, attacks what it hits, and a locked sweep attacks every body it cut, not
+   * only its lock. Empty when it attacks nothing, cannot attack or is unknown.
    */
   public victimsOf(id: EntityId, tick: number): readonly EntityId[] {
     const combat = this.entities.get(id)?.findComponent(Combat);
     if (combat === undefined) return [];
-    if (combat.targetId !== null) return [combat.targetId];
-    return combat.hitsAt(tick).filter((hitId) => this.isAlive(hitId));
+    const { targetId } = combat;
+    const hits = combat.hitsAt(tick).filter((hitId) => hitId !== targetId && this.isAlive(hitId));
+    return targetId === null ? hits : [targetId, ...hits];
   }
 
   /** Whether `attackerId` attacks `victimId` at `tick` (`victimsOf`). */
   public isAttacking(attackerId: EntityId, victimId: EntityId, tick: number): boolean {
     return this.victimsOf(attackerId, tick).includes(victimId);
+  }
+
+  /**
+   * Records that an attack of `attackerId` touched `bodyIds` at `tick`, on its `Combat`
+   * (`Combat.recordHits`, at its `attackSpeedOf`), so the AI sees whom it attacks (`victimsOf`,
+   * DEC-322 (2)). The one place every contact point reports a hit: a sweep's bodies, a one-target
+   * hit, a shot's body, an ability's targets. Does nothing for an attacker that is unknown, dead or
+   * cannot attack.
+   */
+  public recordHits(attackerId: EntityId, bodyIds: readonly EntityId[], tick: number): void {
+    const attacker = this.entities.get(attackerId);
+    const combat = attacker?.findComponent(Combat);
+    if (combat === undefined || bodyIds.length === 0) return;
+    if (attacker?.findComponent(Health)?.isDead === true) return;
+    combat.recordHits(bodyIds, tick, this.attackSpeedOf(attackerId));
+  }
+
+  /**
+   * The entity's attack-speed multiplier from its statuses (0.7 concussed, 3 under Fury), 1 when it
+   * has none or is unknown. The one read of it, for the cooldown (`CombatSystem`) and the hits.
+   */
+  public attackSpeedOf(id: EntityId): number {
+    return this.entities.get(id)?.findComponent(StatusEffects)?.multiplier('attackSpeed') ?? 1;
+  }
+
+  /**
+   * Whether the entity takes no damage now: its collider is unbreakable (a wall or gate before its
+   * breakability rule passes, a forest camp). The one rule for it (DEC-333 (2)): the damage pipeline
+   * blocks such a hit, and no weapon, shot or ability area lands on such a body (DEC-317 addendum).
+   * `false` for an unknown entity or one with no collider.
+   */
+  public takesNoDamage(id: EntityId): boolean {
+    return this.entities.get(id)?.findComponent(Collider)?.isUnbreakable === true;
   }
 
   /**

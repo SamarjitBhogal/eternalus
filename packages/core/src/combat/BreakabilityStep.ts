@@ -1,4 +1,3 @@
-import { Collider } from '../components/Collider';
 import type { GameState } from '../state/GameState';
 import type { DamageHit, DamageStep } from './DamageStep.types';
 
@@ -9,10 +8,8 @@ import type { DamageHit, DamageStep } from './DamageStep.types';
 export class BreakabilityStep implements DamageStep {
   public readonly name = 'breakability';
 
-  /** Returns 0 when the target's collider is unbreakable, the amount otherwise. */
+  /** Returns 0 when the target takes no damage now (`EntityStore.takesNoDamage`), the amount otherwise. */
   public adjust({ targetId, amount }: DamageHit, state: GameState): number {
-    return state.entities.get(targetId)?.findComponent(Collider)?.isUnbreakable === true
-      ? 0
-      : amount;
+    return state.entities.takesNoDamage(targetId) ? 0 : amount;
   }
 }

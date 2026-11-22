@@ -1,4 +1,3 @@
-import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import type { Outline } from '../components/Outline.types';
 import { TeamMembership } from '../components/TeamMembership';
@@ -25,7 +24,7 @@ import type { EntityId } from './EntityStore.types';
  *    (DEC-322 (1)): it is the locked target, or the aim point is on the outline, on no enemy unit
  *    (the rule of `findUnitAt`) and the attacker stands outside the outline. A swing inside the
  *    enemy palace does not hit the Stronghold; from outside, aiming at the palace floor does.
- * 2. A body that takes no damage now (`takesNoDamage`) is never hit: it takes no damage and runs
+ * 2. A body that takes no damage now (`EntityStore.takesNoDamage`) is never hit: it takes no damage and runs
  *    no on-hit step (DEC-317 addendum). A shot stops on it (`ProjectileSystem`).
  *
  * It also holds the one rule for which bodies stop a shot (`stopsShot`), which `ProjectileSystem`
@@ -37,16 +36,11 @@ import type { EntityId } from './EntityStore.types';
  * query then.
  */
 export class AreaHitQuery {
-  /** Whether `entity` takes no damage now: its collider is unbreakable (a gate before its rule). */
-  public static takesNoDamage(entity: Entity): boolean {
-    return entity.findComponent(Collider)?.isUnbreakable === true;
-  }
-
   /**
    * Whether `shot` stops on `body` when it touches it (DEC-317 addendum, DEC-322 (1)): the body is
    * alive and still in the world, not the shot's owner and not on its team (no team counts as
    * enemy), and, for a walk-on outline, the entity the shot aims at (`shot.targetId`), so a shot
-   * flies over the ground units stand on. A body that takes no damage now (`takesNoDamage`) stops
+   * flies over the ground units stand on. A body that takes no damage now (`EntityStore.takesNoDamage`) stops
    * it too, and nothing lands on it. The one rule by which `ProjectileSystem` flies a shot and
    * `LineOfFire` predicts it.
    */
@@ -84,7 +78,7 @@ export class AreaHitQuery {
         !AreaHitQuery.isAlive(entity) ||
         (entity.id === attackerId && filter.includeSelf !== true) ||
         !AreaHitQuery.passes(filter, AreaHitQuery.isAlly(entity, attackerTeam)) ||
-        AreaHitQuery.takesNoDamage(entity)
+        entities.takesNoDamage(entity.id)
       ) {
         return;
       }

@@ -106,7 +106,7 @@ export class LineOfFire implements LineOfFireQuery {
     const to = { x: from.x + this.aim.x * length, y: from.y + this.aim.y * length };
     let isBlocked = false;
     state.entities.forEach((entity) => {
-      if (isBlocked || !AreaHitQuery.takesNoDamage(entity)) return;
+      if (isBlocked || !state.entities.takesNoDamage(entity.id)) return;
       const health = entity.findComponent(Health);
       const transform = entity.findComponent(Transform);
       if (health === undefined || transform === undefined) return;

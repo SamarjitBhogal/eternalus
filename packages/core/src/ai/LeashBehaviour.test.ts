@@ -444,12 +444,12 @@ describe('LeashBehaviour', () => {
     });
     const interval = state.entities.get(enemy)?.getComponent(Combat).attack.interval ?? 0;
 
-    state.recordHits(enemy, [mate]);
+    state.entities.recordHits(enemy, [mate], state.tick);
     expect(state.entities.attackTargetOf(enemy)).toBeNull();
     expect(decide(self).commands).toEqual([
       { type: 'attack-target', actorId: self, targetId: enemy },
     ]);
-    advance(interval);
+    advance(interval + 1);
     expect(decide(self).commands).toEqual([]);
   });
 

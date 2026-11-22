@@ -152,10 +152,7 @@ export class CombatSystem implements System {
       factory: this.factory,
       areas: this.areas,
     });
-    combat.beginAttack(
-      state.tick,
-      attacker.findComponent(StatusEffects)?.multiplier('attackSpeed') ?? 1,
-    );
+    combat.beginAttack(state.tick, state.entities.attackSpeedOf(attacker.id));
   }
 
   /** The unit vector from the attacker to `point` (scratch); its facing when it stands on it. */

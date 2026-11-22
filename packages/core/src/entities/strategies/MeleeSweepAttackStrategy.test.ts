@@ -221,7 +221,7 @@ describe('MeleeSweepAttackStrategy', () => {
     expect(damaged(calls)).toEqual([wall.id]);
   });
 
-  it('passes over a walk-on outline it stands in (a palace floor) unless it is the locked target (DEC-317)', () => {
+  it('passes over a walk-on outline it stands in (a palace floor) unless it is the locked target (DEC-322 (1))', () => {
     const { spawn, swing, calls } = setUp();
     const floor = spawn(30, 30, 'dark');
     floor.addComponent(
@@ -352,6 +352,18 @@ describe('MeleeSweepAttackStrategy', () => {
 
     expect(combat.hitsAt(state.tick)).toEqual([front.id, frontFar.id]);
     expect(state.entities.isAttacking(attacker.id, frontFar.id, state.tick)).toBe(true);
+  });
+
+  it('makes each body a locked sweep hit an attacked one, beside the lock, so the AI sees the whole sweep (DEC-322 (2))', () => {
+    const { state, attacker, spawn, swing } = setUp();
+    const locked = spawn(2, 0, 'dark');
+    const beside = spawn(2, 1, 'dark');
+    state.entities.setAttackTarget(attacker.id, locked.id);
+
+    swing({ targetId: locked.id });
+
+    expect(state.entities.victimsOf(attacker.id, state.tick)).toEqual([locked.id, beside.id]);
+    expect(state.entities.isAttacking(attacker.id, beside.id, state.tick)).toBe(true);
   });
 
   it('throws when handed an attack that is not a sweep, which a miswired registry would do', () => {

@@ -14,7 +14,11 @@ import { ABILITY_CASTS_PLAN } from './abilityCastsPlan';
  * commands and checkpoint 0 were unchanged, and with those two hash fields left out the old hashes
  * still reproduced. `config.map.pathMaxExpansions: 6000` became `pathMaxSearchArea: 150000` on
  * 2026-11-19 with the phase/3 merge of DEC-243: the same 6000 cells on this config's 5 m cells; it
- * is not hashed, and every checkpoint reproduced unchanged.
+ * is not hashed, and every checkpoint reproduced unchanged. Regenerated 2026-11-22 when the hash
+ * began to cover a hit record without a target (DEC-322 (2), PR 2 round 2): checkpoints 0 to 300
+ * and the commands were unchanged; a dump every 10 ticks of positions, health, motion, facing,
+ * statuses, abilities, the RNG and the AI brains matched the old code at every tick to 450, and
+ * only the new `hits` fields differed.
  */
 export const ABILITY_CASTS_SEED_11: ReplayOf<{
   readonly seed: number;
@@ -141,15 +145,15 @@ export const ABILITY_CASTS_SEED_11: ReplayOf<{
     },
     {
       tick: 350,
-      hash: 1133167808,
+      hash: 2681243284,
     },
     {
       tick: 400,
-      hash: 985238859,
+      hash: 3670819647,
     },
     {
       tick: 450,
-      hash: 4259116751,
+      hash: 3160943889,
     },
   ],
 };

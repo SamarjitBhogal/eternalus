@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { Collider } from '../../components/Collider';
 import { Combat } from '../../components/Combat';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { loadDefaultContent } from '../../content/loadDefaultContent';
@@ -104,5 +105,38 @@ describe('MeleeAttackStrategy', () => {
     );
 
     expect(attacker.getComponent(Combat).hitsAt(0)).toEqual(['entity-2']);
+  });
+
+  it('skips a target that takes no damage now: no damage, no hit effect, no hit (DEC-317 addendum)', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const attacker = factory.create('light-mob', 'light-minion', {
+      team: 'light',
+      position: { x: 0, y: 0 },
+    });
+    const gate = factory.create('light-mob', 'light-minion', {
+      team: 'dark',
+      position: { x: 1, y: 0 },
+    });
+    state.entities.add(attacker);
+    state.entities.add(gate);
+    gate.getComponent(Collider).setUnbreakable(true);
+    const calls: string[] = [];
+
+    new MeleeAttackStrategy().attack(
+      attacker,
+      { targetId: gate.id, point: null, direction: { x: 1, y: 0 } },
+      ATTACK,
+      {
+        state,
+        damage: { apply: () => calls.push('damage') },
+        hits: { afterHit: () => calls.push('after-hit') },
+        factory,
+        areas: new AreaHitQuery(),
+      },
+    );
+
+    expect(calls).toEqual([]);
+    expect(attacker.getComponent(Combat).hitIds).toEqual([]);
   });
 });
