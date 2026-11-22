@@ -21,7 +21,6 @@ export const WALL_TURRET = {
   overrides: ['legend-hurting-ally-legend'], // architecture 11 §4.5: the defend-ally override
   priority: ['heavy-unit', 'nearest-enemy'], // TUNE: balancing.md
   heavyKinds: HEAVY_TARGET_KINDS,
-  ammo: ['bolt-heavy', 'bolt-default'],
 } as const satisfies AuthoredTurretProfile;
 
 /** Every turret profile as authored; `loadTurrets` loads them. */

@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { ContentValidationError } from '../ContentValidationError';
 import { loadWeapons } from './loadWeapons';
 import type { ProjectileLaunch } from '../units/units.types';
-import type { WeaponDefinition } from './weapons.types';
+import type { AuthoredWeaponDefinition } from './weapons.types';
 
 /** A stand-in melee weapon; the shipped catalogue has no numbers until the owner sets them. */
-const TEST_TALONS: WeaponDefinition = {
+const TEST_TALONS: AuthoredWeaponDefinition = {
   id: 'test-talons',
   displayName: 'Test talons',
   weaponClass: 'glove',
@@ -19,7 +19,7 @@ const TEST_TALONS: WeaponDefinition = {
 const shooting = (
   launch: Partial<ProjectileLaunch['falloff'] & object> | null,
   projectileId = 'arrow',
-): WeaponDefinition => ({
+): AuthoredWeaponDefinition => ({
   ...TEST_TALONS,
   weaponClass: 'bow',
   attacks: [
@@ -36,7 +36,10 @@ const shooting = (
   ],
 });
 
-const withAttack = (field: 'damage' | 'reach' | 'interval', value: number): WeaponDefinition => ({
+const withAttack = (
+  field: 'damage' | 'reach' | 'interval',
+  value: number,
+): AuthoredWeaponDefinition => ({
   ...TEST_TALONS,
   attacks: [{ strategy: 'melee', damage: 50, reach: 1.5, interval: 0.5, [field]: value }],
 });
@@ -90,7 +93,7 @@ describe('loadWeapons', () => {
   });
 
   it.each([0, -10, 181, 360, Number.NaN])('rejects a sweep arc of %s degrees', (arcDegrees) => {
-    const sweepWeapon: WeaponDefinition = {
+    const sweepWeapon: AuthoredWeaponDefinition = {
       ...TEST_TALONS,
       attacks: [{ strategy: 'melee-sweep', damage: 50, reach: 1, interval: 0.5, arcDegrees }],
     };
@@ -101,7 +104,7 @@ describe('loadWeapons', () => {
   });
 
   it.each([1, 90, 180])('accepts a sweep arc of %s degrees', (arcDegrees) => {
-    const sweepWeapon: WeaponDefinition = {
+    const sweepWeapon: AuthoredWeaponDefinition = {
       ...TEST_TALONS,
       attacks: [{ strategy: 'melee-sweep', damage: 50, reach: 1, interval: 0.5, arcDegrees }],
     };

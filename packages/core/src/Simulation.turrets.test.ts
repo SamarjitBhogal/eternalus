@@ -281,8 +281,8 @@ describe('Simulation wall turrets', () => {
   it("passes every turret ammo's onHit steps through the ability registry's step check", () => {
     const registry = createDefaultAbilityRegistry(loadAbilities(30), 30);
 
-    for (const { id, onHit } of loadTurrets(30).ammo.all()) {
-      expect(registry.checkSteps(`Turret ammo "${id}" onHit`, onHit)).toEqual([]);
+    for (const { id, attack } of loadTurrets(30).ammo.all()) {
+      expect(registry.checkSteps(`Turret ammo "${id}" onHit`, attack.onHit ?? [])).toEqual([]);
     }
   });
 });

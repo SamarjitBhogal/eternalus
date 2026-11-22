@@ -1,7 +1,9 @@
 import { CastValidator } from './abilities/CastValidator';
+import { checkAttackLinks } from './abilities/checkAttackLinks';
 import { dashReach } from './abilities/dashReach';
 import { createDefaultAbilityRegistry } from './abilities/defaultAbilityRegistry';
 import { AiSystem } from './ai/AiSystem';
+import type { TurretControllerContent } from './ai/TurretController.types';
 import type { AiMemory } from './content/ai/ai.types';
 import {
   createDefaultControllerRegistry,
@@ -89,7 +91,6 @@ import { MatchPathfinderFactory } from './map/MatchPathfinderFactory';
 import { staticCollisionIndexOf } from './map/staticCollisionIndexOf';
 import { zoneAreaOf } from './map/zoneArea';
 import { loadProjectiles } from './content/projectiles/loadProjectiles';
-import type { ProjectileDefinition } from './content/projectiles/projectiles.types';
 import { loadTurrets } from './content/structures/loadTurrets';
 import { DefaultSystemPipeline } from './systems/DefaultSystemPipeline';
 import type { SystemContext } from './systems/System.types';
@@ -190,6 +191,8 @@ export class Simulation {
     this.curves = curves;
     const weaponSource = weapons ?? loadWeapons(tickRate);
     const registry = abilities ?? createDefaultAbilityRegistry(loadAbilities(tickRate), tickRate);
+    const turrets = loadTurrets(tickRate);
+    checkAttackLinks(registry, weaponSource.all(), turrets.ammo.all());
     // One cast rule per match: the handler, `AbilitySystem`, the snapshot and the bots share it.
     const validator = new CastValidator(registry);
     this.handlers = createDefaultCommandHandlers(validator);
@@ -197,7 +200,10 @@ export class Simulation {
     const projectiles = loadProjectiles(tickRate);
     // The bots' line-of-fire query: a bot drops a target its shot cannot reach (DEC-317 addendum).
     const lineOfFire = new LineOfFire(projectiles);
-    const controllers = Simulation.createControllers(validator, tickRate, lineOfFire, projectiles);
+    const controllers = Simulation.createControllers(validator, tickRate, lineOfFire, {
+      profiles: turrets.profiles,
+      projectiles,
+    });
     const units = content ?? Simulation.defaultContent(tickRate, curves, controllers, weaponSource);
     // One factory for commands and spawning, so entity ids come from one counter.
     const factory = new EntityFactory(
@@ -212,6 +218,7 @@ export class Simulation {
       undefined,
       weaponSource,
       LEGEND_SPECS,
+      turrets.ammo,
     );
     const { owners, removedWithOwner } = Simulation.spawnStructures(
       this.state,
@@ -800,13 +807,14 @@ export class Simulation {
 
   /**
    * Every controller, with the shipped content it reads (architecture 11 §2); the aggro profiles
-   * are loaded at `tickRate`. Bots check their line of fire with `lineOfFire`.
+   * are loaded at `tickRate`. Bots check their line of fire with `lineOfFire`; turrets read
+   * `turret` (the match's loaded turret profiles and projectiles).
    */
   private static createControllers(
     readiness: SlotReadiness,
     tickRate: number,
     lineOfFire: LineOfFireQuery,
-    projectiles: Pick<ContentCatalogue<ProjectileDefinition>, 'get'>,
+    turret: TurretControllerContent,
   ): ControllerRegistry {
     const bots = {
       difficulties: BOT_DIFFICULTIES,
@@ -823,7 +831,7 @@ export class Simulation {
         legendKinds: LEGEND_KIND_IDS,
         laneWeights: LANE_ASSESSMENT_WEIGHTS,
       },
-      turret: { ...loadTurrets(tickRate), projectiles },
+      turret,
     });
   }
 

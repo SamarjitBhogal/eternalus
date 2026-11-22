@@ -11,6 +11,7 @@ import { Movement } from '../components/Movement';
 import type { Outline } from '../components/Outline.types';
 import { Transform } from '../components/Transform';
 import { TeamMembership } from '../components/TeamMembership';
+import { TurretState } from '../components/TurretState';
 import type { AbilitySlot } from '../content/abilities/AbilityDefinition.types';
 import type { AttackMode } from '../content/units/units.types';
 import type { Team } from '../teams/teams.types';
@@ -24,6 +25,7 @@ import type {
   EntityId,
   RemovalCause,
   RemovalRecord,
+  TurretAmmoView,
 } from './EntityStore.types';
 
 /**
@@ -268,6 +270,46 @@ export class EntityStore {
   /** Whether `attackerId` attacks `victimId` at `tick` (`victimsOf`). */
   public isAttacking(attackerId: EntityId, victimId: EntityId, tick: number): boolean {
     return this.victimsOf(attackerId, tick).includes(victimId);
+  }
+
+  /**
+   * The world point the entity attacks towards (`Combat.aimPoint`, set by `attack-aim`), or `null`
+   * when it holds no aimed attack, cannot attack or is unknown. Lets `ai/` see an aim it must stop
+   * without importing `components/`.
+   */
+  public attackAimOf(id: EntityId): Vec2 | null {
+    return this.entities.get(id)?.findComponent(Combat)?.aimPoint ?? null;
+  }
+
+  /**
+   * The turret's ammo and the id of the one it has loaded (its `TurretState`, read-only), or
+   * `undefined` for an unknown id or an entity that is not a turret. Lets `ai/` and `commands/`
+   * read it without importing `components/`.
+   */
+  public turretAmmoOf(id: EntityId): TurretAmmoView | undefined {
+    return this.entities.get(id)?.findComponent(TurretState);
+  }
+
+  /**
+   * Loads the turret's ammo `ammoId` (architecture 07 §5): its `TurretState` records it and its
+   * `Combat` equips the ammo's attack (`Combat.equip`, no weapon). The attack timer stays, so a
+   * switch never gives a free shot. Lets `commands/` load it without importing `components/`.
+   *
+   * @returns `false`, changing nothing, when the entity is unknown, is not a turret, cannot attack
+   *   or does not carry `ammoId`.
+   */
+  public loadTurretAmmo(id: EntityId, ammoId: string): boolean {
+    const entity = this.entities.get(id);
+    const combat = entity?.findComponent(Combat);
+    if (combat === undefined) {
+      return false;
+    }
+    const ammo = entity?.findComponent(TurretState)?.load(ammoId);
+    if (ammo === undefined) {
+      return false;
+    }
+    combat.equip({ basic: ammo.attack }, null);
+    return true;
   }
 
   /**

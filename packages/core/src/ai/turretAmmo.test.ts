@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import { loadTurrets } from '../content/structures/loadTurrets';
+import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { chooseTurretAmmo } from './turretAmmo';
 
-const { ammo, profiles } = loadTurrets(30);
-const WALL_TURRET_AMMO = profiles.get('wall-turret').ammo.map((id) => ammo.get(id));
+const { ammo } = loadTurrets(30);
+const WALL_TURRET_AMMO = (STRUCTURE_DEFINITIONS.get('turret').ammo ?? []).map((id) => ammo.get(id));
 
 describe('chooseTurretAmmo', () => {
   it('loads heavy ammo against Sentinels and heavy mobs (heavy minions, the capture point boss)', () => {

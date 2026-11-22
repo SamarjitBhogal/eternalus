@@ -14,6 +14,7 @@ import { Veterancy } from '../components/Veterancy';
 import { StatusEffects } from '../components/StatusEffects';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
+import { TurretState } from '../components/TurretState';
 import { INITIAL_FACING } from '../components/Transform.constants';
 import { Vision } from '../components/Vision';
 import type { Entity } from '../entities/Entity';
@@ -299,6 +300,10 @@ export class StateHasher {
     const clock = entity.findComponent(CombatClock);
     if (clock !== undefined) {
       fields.push(['combat-clock', ...clock.fields]);
+    }
+    const turret = entity.findComponent(TurretState);
+    if (turret !== undefined) {
+      fields.push(['turret', turret.loadedId]);
     }
     return fields;
   }

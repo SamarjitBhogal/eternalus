@@ -82,6 +82,7 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       isBodyRemovedWithIt: true,
       controller: 'turret',
       aiProfile: 'wall-turret',
+      ammo: ['bolt-heavy', 'bolt-default'], // balancing.md "Turrets — MVP": heavy for heavy targets
     },
     {
       id: 'forest-camp-light',

@@ -1,5 +1,6 @@
 import type { AiMemory, ControllerId } from '../content/ai/ai.types';
 import type { LegendSpecDefinition } from '../content/legends/specs/legendSpecs.types';
+import type { TurretAmmoDefinition } from '../content/structures/turrets.types';
 import type { WeaponDefinition } from '../content/weapons/weapons.types';
 import type { EntityDefinitionBase } from '../content/EntityDefinition.types';
 import type { Team } from '../teams/teams.types';
@@ -68,4 +69,15 @@ export interface LegendSpecSource {
   has(id: string): boolean;
   /** The spec with the id `id`. */
   get(id: string): LegendSpecDefinition;
+}
+
+/**
+ * Where a turret finds the ammo its definition names (architecture 07 §5). A
+ * `ContentCatalogue<TurretAmmoDefinition>` (`loadTurrets().ammo`) satisfies it.
+ */
+export interface TurretAmmoSource {
+  /** Whether an ammo has the id `id`. */
+  has(id: string): boolean;
+  /** The ammo with the id `id`. */
+  get(id: string): TurretAmmoDefinition;
 }

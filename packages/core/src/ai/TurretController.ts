@@ -7,6 +7,7 @@ import type { Vec2 } from '../utils/geometry.types';
 import type { Controller, Decision, DecisionInput } from './Controller.types';
 import type { Perception } from './perception/Perception';
 import { predictiveAim } from './predictiveAim';
+import type { Command } from '../commands/Command.types';
 import type { TurretControllerContent, TurretMemory } from './TurretController.types';
 import { chooseTurretAmmo } from './turretAmmo';
 import { chooseTurretTarget } from './turretTarget';
@@ -19,18 +20,21 @@ type Place = { readonly position: Vec2; readonly radius: number };
  * Drives a wall turret in auto mode (architecture 11 §4.5, 07 §5): each decision it takes an enemy
  * Legend that hurt an allied Legend at once (its profile's overrides), else keeps its target while
  * that lives and stays in range, else takes one by its profile's priority list
- * (`chooseTurretTarget`); it loads the first ammo of its profile that fits the target's kind
- * (`chooseTurretAmmo`); and when its next shot is due it aims ahead of the target
- * (`predictiveAim`) and counts the ammo's interval to the shot after. Range runs from the turret's
- * edge to a target's centre, so every target it takes is in its attack reach too (edge to edge,
- * `EntityStore.isInReach`). An enemy is any unit not on its team: neutral units too. All it
- * remembers is in its brain (`TurretMemory`). Stateless; it holds no numbers (they are its
- * profile's).
+ * (`chooseTurretTarget`). Against the target it picks the first ammo it carries whose
+ * `preferredAgainst` fits the target's kind (`chooseTurretAmmo` over its `TurretState`, read
+ * through `EntityStore.turretAmmoOf`), sends `switch-ammo` when that is not the loaded one, then
+ * `attack-aim` at the point ahead of the target (`predictiveAim`) every decision, so the aim stays
+ * fresh; its `Combat` fires whenever its cooldown allows (the one shot clock). With no target and
+ * an aim still set, it sends `attack-aim { aim: null }` once. Range runs from the turret's edge to
+ * a target's centre, so every target it takes is in its attack reach too (edge to edge,
+ * `EntityStore.isInReach`). An enemy is any unit not on its team: neutral units too. Its brain
+ * keeps only the target (`TurretMemory`). Stateless; it holds no numbers (they are its profile's
+ * and its ammo's).
  */
 export class TurretController implements Controller {
   public readonly id = 'turret';
 
-  /** @param content - Turret profiles, ammo and projectiles; the controller holds none. */
+  /** @param content - Turret profiles and projectiles; the controller holds none. */
   public constructor(private readonly content: TurretControllerContent) {}
 
   /** Whether `profileId` names one of the injected turret profiles. */
@@ -39,41 +43,36 @@ export class TurretController implements Controller {
   }
 
   /**
-   * Picks the turret's target and ammo and, when its shot is due, its aim point. A turret that is
-   * dead or has no place or team keeps its memory.
+   * Picks the turret's target and ammo and sends the commands that load the ammo and aim at the
+   * target, or stop the aim. A turret that is dead, or has no place, team or ammo, sends nothing
+   * and keeps its memory.
    *
    * @throws Error when the brain names no turret profile (a content error).
    */
   public decide({ state, entityId, brain, perception }: DecisionInput): Decision {
     const profile = this.content.profiles.get(brain.profileId);
-    const place = state.entities.placeOf(entityId);
-    const team = state.entities.teamOf(entityId);
-    if (place === undefined || team === undefined || !state.entities.isAlive(entityId)) {
+    const { entities } = state;
+    const place = entities.placeOf(entityId);
+    const team = entities.teamOf(entityId);
+    const turret = entities.turretAmmoOf(entityId);
+    if (
+      place === undefined ||
+      team === undefined ||
+      turret === undefined ||
+      !entities.isAlive(entityId)
+    ) {
       return { commands: [], memory: brain.memory, rngState: brain.rngState };
     }
-    const memory = TurretController.memoryOf(brain.memory);
     const candidates = TurretController.candidatesFor(state, perception, place, team, profile);
-    const targetId = chooseTurretTarget({
-      currentId: memory.targetId,
-      candidates,
-      overrides: profile.overrides,
-      priority: profile.priority,
-      heavyKinds: profile.heavyKinds,
-    });
-    const target = candidates.find(({ id }) => id === targetId);
-    const ammo =
-      target === undefined
-        ? undefined
-        : chooseTurretAmmo(
-            target.kind,
-            profile.ammo.map((id) => this.content.ammo.get(id)),
-          );
+    const target = TurretController.targetOf(brain.memory, candidates, profile);
+    const ammo = target === undefined ? undefined : chooseTurretAmmo(target.kind, turret.ammo);
     if (target === undefined || ammo === undefined) {
-      return { commands: [], memory: { ...memory, targetId: null }, rngState: brain.rngState };
-    }
-    const next: TurretMemory = { ...memory, targetId: target.id, ammoId: ammo.id };
-    if (state.tick < memory.nextShotTick) {
-      return { commands: [], memory: next, rngState: brain.rngState };
+      const isAiming = entities.attackAimOf(entityId) !== null;
+      return {
+        commands: isAiming ? [{ type: 'attack-aim', actorId: entityId, aim: null }] : [],
+        memory: { targetId: null } satisfies TurretMemory,
+        rngState: brain.rngState,
+      };
     }
     const { maxSpeed } = this.content.projectiles.get(
       ammo.attack.projectile.projectileId,
@@ -81,20 +80,35 @@ export class TurretController implements Controller {
     const aim = predictiveAim(
       place.position,
       target.position,
-      state.entities.velocityOf(target.id) ?? { x: 0, y: 0 },
+      entities.velocityOf(target.id) ?? { x: 0, y: 0 },
       maxSpeed,
     );
-    // TODO(sholtzman): fire through Combat's aim point when PR 2 (feat/melee-sweeps) lands
+    const commands: Command[] = [];
+    if (ammo.id !== turret.loadedId) {
+      commands.push({ type: 'switch-ammo', actorId: entityId, ammoId: ammo.id });
+    }
+    commands.push({ type: 'attack-aim', actorId: entityId, aim });
     return {
-      commands: [],
-      memory: {
-        ...next,
-        nextShotTick: state.tick + ammo.attack.interval,
-        aimX: aim.x,
-        aimY: aim.y,
-      },
+      commands,
+      memory: { targetId: target.id } satisfies TurretMemory,
       rngState: brain.rngState,
     };
+  }
+
+  /** The candidate the turret attacks, given the target its memory holds, or `undefined`. */
+  private static targetOf(
+    memory: AiMemory,
+    candidates: readonly TurretCandidate[],
+    profile: TurretProfileDefinition,
+  ): TurretCandidate | undefined {
+    const targetId = chooseTurretTarget({
+      currentId: typeof memory.targetId === 'string' ? memory.targetId : null,
+      candidates,
+      overrides: profile.overrides,
+      priority: profile.priority,
+      heavyKinds: profile.heavyKinds,
+    });
+    return candidates.find(({ id }) => id === targetId);
   }
 
   /**
@@ -138,16 +152,5 @@ export class TurretController implements Controller {
       }
     }
     return candidates;
-  }
-
-  /** The turret's memory, with defaults for a field it does not hold yet (the first decision). */
-  private static memoryOf(memory: AiMemory): TurretMemory {
-    return {
-      targetId: typeof memory.targetId === 'string' ? memory.targetId : null,
-      ammoId: typeof memory.ammoId === 'string' ? memory.ammoId : null,
-      nextShotTick: typeof memory.nextShotTick === 'number' ? memory.nextShotTick : 0,
-      aimX: typeof memory.aimX === 'number' ? memory.aimX : null,
-      aimY: typeof memory.aimY === 'number' ? memory.aimY : null,
-    };
   }
 }

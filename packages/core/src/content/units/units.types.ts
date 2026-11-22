@@ -1,4 +1,5 @@
 import type { ControllerId } from '../ai/ai.types';
+import type { AbilityEffectSpec, AuthoredEffectSpec } from '../abilities/AbilityDefinition.types';
 import type { EntityDefinitionBase } from '../EntityDefinition.types';
 
 /**
@@ -43,25 +44,38 @@ export type ProjectileLaunch = {
   readonly falloff: ProjectileFalloff | null;
 };
 
-/** The fields every basic attack has. All values must be positive. */
-type AttackBase = {
+/**
+ * The fields every basic attack has. All numbers must be positive. `Step` is the type of its
+ * `onHit` steps: `AuthoredEffectSpec` as authored (`AuthoredUnitAttack`), `AbilityEffectSpec` once
+ * loaded (the default), as a status's `onHit` steps are.
+ */
+type AttackBase<Step> = {
   /** Damage per hit, before damage steps. */
   readonly damage: number;
   /** Reach in metres, measured edge to edge between the two footprints. */
   readonly reach: number;
   /** Time between hits: seconds in content files, ticks once loaded. */
   readonly interval: number;
+  /**
+   * Effect steps run on each body the attack strikes, after its damage and before the attacker's
+   * statuses' `onHit` steps (05 §10 `WeaponAttack.onHit`; a turret bolt's concussion): times in
+   * seconds as authored, in ticks once loaded (`loadWeapons`, `loadTurrets`, DEC-241). Absent =
+   * none.
+   */
+  readonly onHit?: readonly Step[];
 };
 
 /** A hit that lands in the tick it is made. */
-export type MeleeAttack = AttackBase & { readonly strategy: 'melee' };
+export type MeleeAttack<Step = AbilityEffectSpec> = AttackBase<Step> & {
+  readonly strategy: 'melee';
+};
 
 /**
  * A weapon swing (DEC-184): hits every body the area in front of the attacker reaches, not one
  * target. `reach` is the swing's radius from the body edge; `arcDegrees` is the angle of the
  * wedge, authored in degrees (the owner's unit) and in (0, 180] (DEC-304).
  */
-export type SweepAttack = AttackBase & {
+export type SweepAttack<Step = AbilityEffectSpec> = AttackBase<Step> & {
   readonly strategy: 'melee-sweep';
   readonly arcDegrees: number;
 };
@@ -69,7 +83,7 @@ export type SweepAttack = AttackBase & {
 /**
  * A shot: spawns a projectile that lands later (05 §10). `reach` is the distance it is fired from.
  */
-export type RangedAttack = AttackBase & {
+export type RangedAttack<Step = AbilityEffectSpec> = AttackBase<Step> & {
   readonly strategy: 'ranged-projectile';
   readonly projectile: ProjectileLaunch;
 };
@@ -85,7 +99,14 @@ export type AttackMode = 'basic' | 'melee';
  * A unit's basic attack (architecture 05 §10, `WeaponAttack`). A mob's attack lives on its
  * definition; a Legend has none and attacks with its weapon (`Legend`).
  */
-export type UnitAttack = MeleeAttack | SweepAttack | RangedAttack;
+export type UnitAttack<Step = AbilityEffectSpec> =
+  MeleeAttack<Step> | SweepAttack<Step> | RangedAttack<Step>;
+
+/**
+ * A basic attack as authored: its `onHit` steps' times in seconds. `loadWeapons` and `loadTurrets`
+ * load it into a `UnitAttack`.
+ */
+export type AuthoredUnitAttack = UnitAttack<AuthoredEffectSpec>;
 
 /**
  * A unit's attacks by mode, resolved once at spawn (`attacksByMode`). Every unit has a basic

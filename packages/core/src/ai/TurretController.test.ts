@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { Transform } from '../components/Transform';
+import { TurretState } from '../components/TurretState';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { timelineFrameOf } from '../config/timelineFrameOf';
 import { AI_CADENCE } from '../content/ai/cadence';
@@ -28,7 +29,8 @@ import { predictiveAim } from './predictiveAim';
 import { TurretController } from './TurretController';
 
 const PROJECTILES = loadProjectiles(30);
-const controller = new TurretController({ ...loadTurrets(30), projectiles: PROJECTILES });
+const TURRETS = loadTurrets(30);
+const controller = new TurretController({ profiles: TURRETS.profiles, projectiles: PROJECTILES });
 const PYLON = MAP_FEATURE_DEFINITIONS.turret?.footprintRadius ?? 0;
 const RANGE = 14;
 /** The light turret stands here; units are placed by their distance east of it. */
@@ -55,6 +57,9 @@ const setUp = () => {
     createDefaultEntityRegistry(),
     STRUCTURE_DEFINITIONS,
     new IdGenerator(1000),
+    null,
+    null,
+    TURRETS.ammo,
   );
   const turret = structures.create('turret', 'turret', { team: 'light', position: AT });
   state.entities.add(turret);
@@ -107,16 +112,16 @@ describe('TurretController', () => {
     expect(() => decide({}, 'lane-minion')).toThrow('lane-minion');
   });
 
-  it('takes no target, and changes no shot clock, with no enemy in range', () => {
+  it('takes no target, sends nothing and keeps only the target in memory, with no enemy in range', () => {
     const { add, decide } = setUp();
     add('light', 10);
     // Just past range: its centre is farther than the range from the pylon's edge.
     add('dark', PYLON + RANGE + 0.5);
 
-    const { commands, memory } = decide({ nextShotTick: 7 });
+    const { commands, memory } = decide({ targetId: 'entity-9', nextShotTick: 7, ammoId: 'x' });
 
     expect(commands).toEqual([]);
-    expect(memory).toMatchObject({ targetId: null, nextShotTick: 7 });
+    expect(memory).toEqual({ targetId: null });
   });
 
   it('takes the nearest enemy in range, measured from its edge, and a neutral unit counts as one', () => {
@@ -136,12 +141,19 @@ describe('TurretController', () => {
     const { add, decide } = setUp();
     add('dark', PYLON + 2);
     const heavy = add('dark', PYLON + 12, 'heavy-mob', 'heavy-minion');
+    const decision = decide();
 
-    expect(decide().memory).toMatchObject({ targetId: heavy, ammoId: 'bolt-heavy' });
+    // It starts with its first ammo, the heavy bolt, loaded: no switch for a heavy target.
+    expect(decision.memory).toEqual({ targetId: heavy });
+    expect(decision.commands.map(({ type }) => type)).toEqual(['attack-aim']);
 
     const light = setUp();
     light.add('dark', PYLON + 2);
-    expect(light.decide().memory.ammoId).toBe('bolt-default');
+    expect(light.decide().commands[0]).toEqual({
+      type: 'switch-ammo',
+      actorId: light.turret.id,
+      ammoId: 'bolt-default',
+    });
   });
 
   it('prefers an enemy Legend that hurt an allied Legend in the last 3 s, and forgets it after', () => {
@@ -188,7 +200,7 @@ describe('TurretController', () => {
   });
 
   it('leaves its target at once for an enemy Legend that hurt an allied Legend (the defend-ally override, 11 §4.5)', () => {
-    const { state, add, decide } = setUp();
+    const { state, turret, add, decide } = setUp();
     const first = add('dark', PYLON + 2, 'heavy-mob', 'heavy-minion');
     const { memory } = decide();
     const hurter = add('dark', PYLON + 12, 'warrior', 'warrior');
@@ -198,44 +210,54 @@ describe('TurretController', () => {
     expect(decide(memory).memory.targetId).toBe(first);
 
     state.match.scoreBook.recordHit(ally, hurter, state.tick);
-    expect(decide(memory).memory).toMatchObject({ targetId: hurter, ammoId: 'bolt-default' });
-  });
-
-  it('aims at a still target when its shot is due, and waits the ammo interval for the next', () => {
-    const { state, add, decide, advance } = setUp();
-    const target = add('dark', PYLON + 10);
-    advance(40);
-
-    const { memory } = decide({ nextShotTick: 40 });
-
-    expect(memory).toEqual({
-      targetId: target,
+    const decision = decide(memory);
+    expect(decision.memory.targetId).toBe(hurter);
+    expect(decision.commands[0]).toEqual({
+      type: 'switch-ammo',
+      actorId: turret.id,
       ammoId: 'bolt-default',
-      nextShotTick: 40 + loadTurrets(30).ammo.get('bolt-default').attack.interval,
-      aimX: AT.x + PYLON + 10,
-      aimY: AT.y,
     });
-    expect(state.tick).toBe(40);
   });
 
-  it('keeps its aim and shot clock while its shot is not due', () => {
-    const { add, decide } = setUp();
+  it('aims at a still target every decision, and switches ammo only when the loaded one is not the pick', () => {
+    const { state, turret, add, decide } = setUp();
     add('dark', PYLON + 10);
+    const aim = { type: 'attack-aim', actorId: turret.id, aim: { x: AT.x + PYLON + 10, y: AT.y } };
+    const switchAmmo = { type: 'switch-ammo', actorId: turret.id, ammoId: 'bolt-default' };
 
-    const { memory } = decide({ nextShotTick: 5, aimX: 1, aimY: 2 });
+    expect(decide().commands).toEqual([switchAmmo, aim]);
+    // Not applied yet: it asks again.
+    expect(decide().commands).toEqual([switchAmmo, aim]);
 
-    expect(memory).toMatchObject({ nextShotTick: 5, aimX: 1, aimY: 2 });
+    state.entities.loadTurretAmmo(turret.id, 'bolt-default');
+    expect(decide().commands).toEqual([aim]);
+    expect(decide().commands).toEqual([aim]);
+  });
+
+  it('stops its aim once when it has no target and an aim is set', () => {
+    const { state, turret, add, decide } = setUp();
+    const target = add('dark', PYLON + 10);
+    const { memory } = decide();
+    state.entities.setAttackAim(turret.id, { x: AT.x + PYLON + 10, y: AT.y });
+    state.entities.get(target)?.getComponent(Health).applyDamage(1e6);
+
+    expect(decide(memory).commands).toEqual([
+      { type: 'attack-aim', actorId: turret.id, aim: null },
+    ]);
+
+    state.entities.setAttackAim(turret.id, null);
+    expect(decide({ targetId: null }).commands).toEqual([]);
   });
 
   it('aims ahead of a moving target at its bolt speed (predictive aim)', () => {
-    const { state, add, decide } = setUp();
+    const { state, turret, add, decide } = setUp();
     const target = add('dark', PYLON + 10, 'heavy-mob', 'heavy-minion');
     const movement = state.entities.get(target)?.getComponent(Movement);
     movement?.steer({ x: 0, y: 1 });
     movement?.advance();
     const velocity = movement?.velocity ?? { x: 0, y: 0 };
 
-    const { memory } = decide();
+    const { commands } = decide();
     const expected = predictiveAim(
       AT,
       { x: AT.x + PYLON + 10, y: AT.y },
@@ -244,17 +266,27 @@ describe('TurretController', () => {
     );
 
     expect(velocity.y).toBeGreaterThan(0);
-    expect(memory).toMatchObject({ ammoId: 'bolt-heavy', aimX: expected.x, aimY: expected.y });
+    expect(commands).toEqual([{ type: 'attack-aim', actorId: turret.id, aim: expected }]);
     expect(expected.y).toBeGreaterThan(AT.y);
   });
 
-  it('keeps its memory while it is dead', () => {
+  it('keeps its memory and sends nothing while it is dead', () => {
     const { turret, add, decide } = setUp();
     add('dark', PYLON + 10);
     turret.getComponent(Health).applyDamage(1e6);
-    const memory = { targetId: 'entity-9', ammoId: 'bolt-heavy', nextShotTick: 3 };
+    const memory = { targetId: 'entity-9' };
 
+    expect(decide(memory)).toMatchObject({ commands: [], memory });
     expect(decide(memory).memory).toBe(memory);
+  });
+
+  it('sends nothing for a turret entity with no ammo (no TurretState)', () => {
+    const { state, turret, add, decide } = setUp();
+    add('dark', PYLON + 10);
+    turret.removeComponent(TurretState);
+
+    expect(decide({}).commands).toEqual([]);
+    expect(state.entities.turretAmmoOf(turret.id)).toBeUndefined();
   });
 
   it('updates its memory in its brain as the match steps, which the state hash covers', () => {
@@ -272,8 +304,7 @@ describe('TurretController', () => {
     }
     const brain = state.ai.get(turret.id);
 
-    expect(brain?.memory).toMatchObject({ targetId: target, ammoId: 'bolt-default' });
-    expect(brain?.memory.nextShotTick).toBeGreaterThan(0);
+    expect(brain?.memory).toEqual({ targetId: target });
 
     const hash = new StateHasher().hash(state);
     if (brain !== undefined) {

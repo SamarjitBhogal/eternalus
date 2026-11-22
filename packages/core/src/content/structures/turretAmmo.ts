@@ -19,7 +19,6 @@ export const TURRET_AMMO = new ContentCatalogue<AuthoredTurretAmmo>([
       interval: 5, // TUNE: seconds; game doc via balancing.md (1 bolt / 5 s)
       projectile: { projectileId: 'turret-bolt', falloff: null },
     },
-    onHit: [],
     preferredAgainst: 'any',
   },
   {
@@ -31,11 +30,11 @@ export const TURRET_AMMO = new ContentCatalogue<AuthoredTurretAmmo>([
       reach: WALL_TURRET.range,
       interval: 10, // TUNE: seconds; game doc via balancing.md (1 bolt / 10 s)
       projectile: { projectileId: 'turret-heavy-bolt', falloff: null },
+      // TUNE: balancing.md "Turrets — MVP" (concussion 1.5 s)
+      onHit: [
+        { kind: 'debuff', statusId: 'concussion', durationSeconds: 1.5, shape: { kind: 'hit' } },
+      ],
     },
-    // TUNE: balancing.md "Turrets — MVP" (concussion 1.5 s)
-    onHit: [
-      { kind: 'debuff', statusId: 'concussion', durationSeconds: 1.5, shape: { kind: 'hit' } },
-    ],
     preferredAgainst: HEAVY_TARGET_KINDS,
   },
 ]);

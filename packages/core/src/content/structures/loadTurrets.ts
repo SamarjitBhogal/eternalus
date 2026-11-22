@@ -1,11 +1,14 @@
 import { TickRate } from '../../utils/TickRate';
-import { stepInTicks, timeProblems } from '../abilities/loadAbilities';
+import { timeProblems } from '../abilities/loadAbilities';
 import { ContentCatalogue } from '../ContentCatalogue';
 import { ContentValidationError } from '../ContentValidationError';
 import { PROJECTILES } from '../projectiles/projectileCatalogue';
 import type { ProjectileDefinition } from '../projectiles/projectiles.types';
 import { KEBAB_CASE } from '../validation/KebabCaseIdRule.constants';
 import { KnownProjectileRule } from '../validation/KnownProjectileRule';
+import { attackInTicks } from '../weapons/loadWeapons';
+import { STRUCTURE_DEFINITIONS } from './structureCatalogue';
+import type { StructureDefinition } from './structures.types';
 import { TURRET_PROFILES } from './turret';
 import { TURRET_AMMO } from './turretAmmo';
 import type {
@@ -15,10 +18,14 @@ import type {
   TurretProfileDefinition,
 } from './turrets.types';
 
-/** The turret content as authored: the ammo table and the profiles that load it. */
+/**
+ * The turret content as authored: the ammo table, the profiles, and the structure definitions,
+ * whose `ammo` lists name the ammo each turret carries.
+ */
 type AuthoredTurrets = {
   readonly ammo: readonly AuthoredTurretAmmo[];
   readonly profiles: readonly AuthoredTurretProfile[];
+  readonly structures: readonly StructureDefinition[];
 };
 
 /** The turret content as loaded (`loadTurrets`), each keyed by id. */
@@ -40,60 +47,81 @@ const ammoProblems = (
     if (!isPositive(ammo.attack[field])) problems.push(`attack ${field} must be positive`);
   }
   problems.push(...new KnownProjectileRule(projectiles).check(ammo));
-  problems.push(...timeProblems(ammo.onHit, 'onHit'));
+  problems.push(...timeProblems(ammo.attack.onHit, 'onHit'));
   return problems.map((problem) => `Turret ammo "${ammo.id}": ${problem}.`);
 };
 
-/** What is wrong with `profile` as authored, given the ammo by id, or nothing. */
-const profileProblems = (
-  profile: AuthoredTurretProfile,
-  ammoById: ReadonlyMap<string, AuthoredTurretAmmo>,
-): string[] => {
+/** What is wrong with `profile` as authored, or nothing. */
+const profileProblems = (profile: AuthoredTurretProfile): string[] => {
   const problems: string[] = [];
   if (!KEBAB_CASE.test(profile.id)) problems.push('id must be kebab-case');
   if (!isPositive(profile.range)) problems.push('range must be positive');
   if (!(profile.defendAllySeconds >= 0 && Number.isFinite(profile.defendAllySeconds))) {
     problems.push('defendAllySeconds must not be negative');
   }
-  for (const id of profile.ammo) {
-    const ammo = ammoById.get(id);
-    if (ammo === undefined) {
-      problems.push(`unknown ammo "${id}"`);
-    } else if (ammo.attack.reach < profile.range) {
-      problems.push(`ammo "${id}" reaches less than the range`);
-    }
-  }
-  const last = ammoById.get(profile.ammo.at(-1) ?? '');
-  if (last?.preferredAgainst !== 'any') {
-    problems.push('the last ammo must be preferred against any target');
-  }
   return problems.map((problem) => `Turret profile "${profile.id}": ${problem}.`);
 };
 
 /**
- * Loads the turret content (architecture 07 §5, 11 §4.5): each ammo's interval from seconds to
- * ticks and its `onHit` steps' times to ticks, and each profile's defend-ally window to ticks,
- * once (architecture 03 §8, DEC-241). The window keeps 0 (only this tick's hits); an interval is
- * at least one tick. The `onHit` steps' own fields are their effect strategies' to check when the
- * shot is wired (as a status's `onHit` steps, `checkStatusLinks`).
+ * What is wrong with the ammo list of `structure`, given the ammo and the profiles by id, or
+ * nothing: each id names an ammo that reaches the range of the structure's profile (when that is a
+ * turret profile), and the last one fits any target.
+ */
+const carriedAmmoProblems = (
+  { id, ammo: carried = [], aiProfile, controller }: StructureDefinition,
+  ammoById: ReadonlyMap<string, AuthoredTurretAmmo>,
+  profileById: ReadonlyMap<string, AuthoredTurretProfile>,
+): string[] => {
+  const profile = profileById.get(aiProfile ?? controller ?? '');
+  const problems: string[] = [];
+  for (const ammoId of carried) {
+    const ammo = ammoById.get(ammoId);
+    if (ammo === undefined) {
+      problems.push(`unknown ammo "${ammoId}"`);
+    } else if (profile !== undefined && ammo.attack.reach < profile.range) {
+      problems.push(`ammo "${ammoId}" reaches less than the range of "${profile.id}"`);
+    }
+  }
+  if (ammoById.get(carried.at(-1) ?? '')?.preferredAgainst !== 'any') {
+    problems.push('the last ammo must be preferred against any target');
+  }
+  return problems.map((problem) => `Structure "${id}": ${problem}.`);
+};
+
+/**
+ * Loads the turret content (architecture 07 §5, 11 §4.5): each ammo's attack interval and its
+ * `onHit` steps' times from seconds to ticks (`attackInTicks`, as a weapon's), and each profile's
+ * defend-ally window to ticks, once (architecture 03 §8, DEC-241). The window keeps 0 (only this
+ * tick's hits); an interval is at least one tick. It also checks the ammo list of every structure
+ * definition that names one. The `onHit` steps' own fields are their effect strategies' to check
+ * at boot (`checkAttackLinks`).
  *
  * @param tickRate - Ticks per second (`GameConfig.tickRate`).
- * @param authored - The ammo and profiles to load; the shipped ones by default.
+ * @param authored - The ammo, profiles and structures to load and check; the shipped ones by
+ *   default.
  * @param projectiles - The projectiles an ammo may fire; the shipped set by default.
  * @throws ContentValidationError listing every broken rule: a bad id, a damage, reach or interval
- *   that is not positive, an unknown projectile, a negative time, a range that is not positive, an
- *   unknown ammo, an ammo that reaches less than the profile's range, or a profile whose last ammo
- *   is not preferred against any target (so some target would get none).
+ *   that is not positive, an unknown projectile, a negative time, a range that is not positive, a
+ *   structure that names an unknown ammo or an ammo that reaches less than its profile's range, or
+ *   whose last ammo is not preferred against any target (so some target would get none).
  */
 export const loadTurrets = (
   tickRate: number,
-  authored: AuthoredTurrets = { ammo: TURRET_AMMO.all(), profiles: TURRET_PROFILES.all() },
+  authored: AuthoredTurrets = {
+    ammo: TURRET_AMMO.all(),
+    profiles: TURRET_PROFILES.all(),
+    structures: STRUCTURE_DEFINITIONS.all(),
+  },
   projectiles: Pick<ContentCatalogue<ProjectileDefinition>, 'has'> = PROJECTILES,
 ): TurretContent => {
   const ammoById = new Map(authored.ammo.map((ammo) => [ammo.id, ammo]));
+  const profileById = new Map(authored.profiles.map((profile) => [profile.id, profile]));
   const problems = [
     ...authored.ammo.flatMap((ammo) => ammoProblems(ammo, projectiles)),
-    ...authored.profiles.flatMap((profile) => profileProblems(profile, ammoById)),
+    ...authored.profiles.flatMap(profileProblems),
+    ...authored.structures
+      .filter(({ ammo }) => ammo !== undefined)
+      .flatMap((structure) => carriedAmmoProblems(structure, ammoById, profileById)),
   ];
   if (problems.length > 0) {
     throw new ContentValidationError(problems.join('\n'));
@@ -103,8 +131,7 @@ export const loadTurrets = (
     ammo: new ContentCatalogue(
       authored.ammo.map((ammo): TurretAmmoDefinition => ({
         ...ammo,
-        attack: { ...ammo.attack, interval: rate.toTicks(ammo.attack.interval) },
-        onHit: ammo.onHit.map((step) => stepInTicks(step, rate)),
+        attack: attackInTicks(ammo.attack, rate),
       })),
     ),
     profiles: new ContentCatalogue(

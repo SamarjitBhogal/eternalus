@@ -25,6 +25,6 @@ export class WeaponImpact implements ProjectileImpact<'weapon'> {
     const { attack } = hit.impact;
     const share = falloffMultiplier(attack.projectile.falloff, distance(hit.origin, hit.point));
     this.damage.apply(state, hit.bodyId, attack.damage * share, hit.source);
-    this.hits?.afterHit(state, hit.ownerId, hit.bodyId);
+    this.hits?.afterHit(state, hit.ownerId, hit.bodyId, attack);
   }
 }

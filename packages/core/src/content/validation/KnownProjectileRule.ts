@@ -2,11 +2,11 @@ import type { ContentCatalogue } from '../ContentCatalogue';
 import type { ProjectileDefinition } from '../projectiles/projectiles.types';
 import type { AuthoredTurretAmmo } from '../structures/turrets.types';
 import type { UnitAttack, UnitDefinition } from '../units/units.types';
-import type { WeaponDefinition } from '../weapons/weapons.types';
+import type { AuthoredWeaponDefinition } from '../weapons/weapons.types';
 import type { UnitDefinitionRule } from './ContentValidator.types';
 
 /** What has attacks: a unit definition, a weapon, or a turret ammo (one `attack`, as a mob has). */
-type AttackHolder = UnitDefinition | WeaponDefinition | AuthoredTurretAmmo;
+type AttackHolder = UnitDefinition | AuthoredWeaponDefinition | AuthoredTurretAmmo;
 
 /**
  * Every attack that fires a projectile (it has `projectile`, whatever its strategy), of a unit
@@ -29,7 +29,7 @@ export class KnownProjectileRule implements UnitDefinitionRule {
     return KnownProjectileRule.attacksOf(definition).flatMap((attack) => this.problemsOf(attack));
   }
 
-  private problemsOf(attack: UnitAttack): string[] {
+  private problemsOf(attack: UnitAttack<unknown>): string[] {
     if (!('projectile' in attack)) {
       return [];
     }
@@ -53,7 +53,7 @@ export class KnownProjectileRule implements UnitDefinitionRule {
     return problems;
   }
 
-  private static attacksOf(definition: AttackHolder): readonly UnitAttack[] {
+  private static attacksOf(definition: AttackHolder): readonly UnitAttack<unknown>[] {
     if ('attacks' in definition) {
       return definition.attacks;
     }

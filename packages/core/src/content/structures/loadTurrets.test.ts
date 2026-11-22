@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { ContentValidationError } from '../ContentValidationError';
 import { loadProjectiles } from '../projectiles/loadProjectiles';
 import { loadTurrets } from './loadTurrets';
+import { STRUCTURE_DEFINITIONS } from './structureCatalogue';
+import type { StructureDefinition } from './structures.types';
 import { TURRET_AMMO } from './turretAmmo';
 import type { AuthoredTurretAmmo, AuthoredTurretProfile } from './turrets.types';
 
@@ -16,7 +18,6 @@ const AMMO: AuthoredTurretAmmo = {
     interval: 0.5,
     projectile: { projectileId: 'turret-bolt', falloff: null },
   },
-  onHit: [],
   preferredAgainst: 'any',
 };
 
@@ -27,11 +28,21 @@ const PROFILE: AuthoredTurretProfile = {
   overrides: [],
   priority: ['nearest-enemy'],
   heavyKinds: [],
+};
+
+/** A turret structure that carries the test bolt and reads the test profile. */
+const TURRET: StructureDefinition = {
+  ...STRUCTURE_DEFINITIONS.get('turret'),
+  id: 'test-turret-structure',
+  aiProfile: 'test-turret',
   ammo: ['test-bolt'],
 };
 
-const load = (ammo: readonly AuthoredTurretAmmo[], profiles: readonly AuthoredTurretProfile[]) =>
-  loadTurrets(30, { ammo, profiles });
+const load = (
+  ammo: readonly AuthoredTurretAmmo[],
+  profiles: readonly AuthoredTurretProfile[],
+  structures: readonly StructureDefinition[] = [],
+) => loadTurrets(30, { ammo, profiles, structures });
 
 describe('loadTurrets', () => {
   it('loads the shipped ammo at balancing.md values, its times in ticks', () => {
@@ -50,14 +61,15 @@ describe('loadTurrets', () => {
       interval: 300,
       projectile: { projectileId: 'turret-heavy-bolt' },
     });
-    expect(ammo.get('bolt-heavy').onHit).toEqual([
+    expect(ammo.get('bolt-heavy').attack.onHit).toEqual([
       { kind: 'debuff', statusId: 'concussion', durationTicks: 45, shape: { kind: 'hit' } },
     ]);
+    expect(ammo.get('bolt-default').attack.onHit).toBeUndefined();
     expect(ammo.get('bolt-heavy').preferredAgainst).toEqual(['sentinel', 'heavy-mob']);
     expect(loadTurrets(10).ammo.get('bolt-heavy').attack.interval).toBe(100);
   });
 
-  it('loads the wall turret profile: 14 m range, a 3 s defend-ally window, heavy ammo first', () => {
+  it('loads the wall turret profile: 14 m range, a 3 s defend-ally window', () => {
     const profile = loadTurrets(30).profiles.get('wall-turret');
 
     expect(profile).toEqual({
@@ -67,8 +79,11 @@ describe('loadTurrets', () => {
       overrides: ['legend-hurting-ally-legend'],
       priority: ['heavy-unit', 'nearest-enemy'],
       heavyKinds: ['sentinel', 'heavy-mob'],
-      ammo: ['bolt-heavy', 'bolt-default'],
     });
+  });
+
+  it('arms the shipped turret structure with heavy ammo first, then the default for any target', () => {
+    expect(STRUCTURE_DEFINITIONS.get('turret').ammo).toEqual(['bolt-heavy', 'bolt-default']);
   });
 
   it('fires only shipped projectiles (KnownProjectileRule)', () => {
@@ -104,9 +119,12 @@ describe('loadTurrets', () => {
     [
       'onHit time',
       {
-        onHit: [
-          { kind: 'debuff', statusId: 'concussion', durationSeconds: -1, shape: { kind: 'hit' } },
-        ],
+        attack: {
+          ...AMMO.attack,
+          onHit: [
+            { kind: 'debuff', statusId: 'concussion', durationSeconds: -1, shape: { kind: 'hit' } },
+          ],
+        },
       },
       'debuff durationSeconds must not be negative',
     ],
@@ -117,13 +135,24 @@ describe('loadTurrets', () => {
     expect(broken).toThrow(`Turret ammo "${change.id ?? 'test-bolt'}": ${message}.`);
   });
 
+  it("converts an ammo attack's onHit times to ticks", () => {
+    const concussion = {
+      kind: 'debuff',
+      statusId: 'concussion',
+      durationSeconds: 1.5,
+      shape: { kind: 'hit' },
+    } as const;
+    const { ammo } = load([{ ...AMMO, attack: { ...AMMO.attack, onHit: [concussion] } }], []);
+
+    expect(ammo.get('test-bolt').attack.onHit).toEqual([
+      { kind: 'debuff', statusId: 'concussion', durationTicks: 45, shape: { kind: 'hit' } },
+    ]);
+  });
+
   it.each<[string, Partial<AuthoredTurretProfile>, string]>([
     ['id', { id: 'Test Turret' }, 'id must be kebab-case'],
     ['range', { range: 0 }, 'range must be positive'],
     ['window', { defendAllySeconds: -1 }, 'defendAllySeconds must not be negative'],
-    ['ammo id', { ammo: ['no-such-ammo'] }, 'unknown ammo "no-such-ammo"'],
-    ['ammo reach', { range: 20 }, 'ammo "test-bolt" reaches less than the range'],
-    ['ammo list', { ammo: [] }, 'the last ammo must be preferred against any target'],
   ])('rejects a profile with a bad %s', (_, change, message) => {
     const broken = () => load([AMMO], [{ ...PROFILE, ...change }]);
 
@@ -131,11 +160,30 @@ describe('loadTurrets', () => {
     expect(broken).toThrow(`Turret profile "${change.id ?? 'test-turret'}": ${message}.`);
   });
 
-  it('rejects a profile whose last ammo is kept for some kinds, so another target would get none', () => {
+  it('accepts a turret structure whose ammo exists, reaches its range and ends with one for any target', () => {
+    expect(() => load([AMMO], [PROFILE], [TURRET])).not.toThrow();
+  });
+
+  it.each<[string, Partial<StructureDefinition>, number, string]>([
+    ['ammo id', { ammo: ['no-such-ammo'] }, 14, 'unknown ammo "no-such-ammo"'],
+    ['ammo reach', {}, 20, 'ammo "test-bolt" reaches less than the range of "test-turret"'],
+    ['ammo list', { ammo: [] }, 14, 'the last ammo must be preferred against any target'],
+  ])('rejects a turret structure with a bad %s', (_, change, range, message) => {
+    const broken = () => load([AMMO], [{ ...PROFILE, range }], [{ ...TURRET, ...change }]);
+
+    expect(broken).toThrow(ContentValidationError);
+    expect(broken).toThrow(`Structure "test-turret-structure": ${message}.`);
+  });
+
+  it('rejects a turret whose last ammo is kept for some kinds, so another target would get none', () => {
     const picky = { ...AMMO, preferredAgainst: ['sentinel'] };
 
-    expect(() => load([picky], [PROFILE])).toThrow(
-      'Turret profile "test-turret": the last ammo must be preferred against any target.',
+    expect(() => load([picky], [PROFILE], [TURRET])).toThrow(
+      'Structure "test-turret-structure": the last ammo must be preferred against any target.',
     );
+  });
+
+  it('checks no ammo list for a structure that names none', () => {
+    expect(() => load([AMMO], [PROFILE], [STRUCTURE_DEFINITIONS.get('gate')])).not.toThrow();
   });
 });

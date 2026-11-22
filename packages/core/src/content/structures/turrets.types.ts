@@ -1,4 +1,4 @@
-import type { AbilityEffectSpec, AuthoredEffectSpec } from '../abilities/AbilityDefinition.types';
+import type { AuthoredEffectSpec } from '../abilities/AbilityDefinition.types';
 import type { RangedAttack } from '../units/units.types';
 
 /** The fields of a turret ammo that are the same as authored and as loaded. */
@@ -7,12 +7,6 @@ type TurretAmmoBase = {
   readonly id: string;
   readonly displayName: string;
   /**
-   * The shot (architecture 07 §5 `AmmoDefinition`): its damage, its reach (at least the range of
-   * every turret profile that loads it), the time between two shots (`interval`: seconds as
-   * authored, ticks once loaded) and the projectile it fires.
-   */
-  readonly attack: RangedAttack;
-  /**
    * The target kinds this ammo is chosen against (architecture 11 §4.5 `preferredAgainst`), or
    * `'any'`: every target. A profile's last ammo is `'any'`, so every target gets an ammo.
    */
@@ -20,17 +14,25 @@ type TurretAmmoBase = {
 };
 
 /**
- * One turret ammo as authored (architecture 07 §5): its shot, the steps that run on the body a bolt
- * strikes (authored as a status's `onHit` steps are, times in seconds), and the targets it is
- * chosen against. Changing an ammo, or adding one, is a content entry.
+ * One turret ammo as authored (architecture 07 §5): its shot and the targets it is chosen against.
+ * Changing an ammo, or adding one, is a content entry.
  */
 export type AuthoredTurretAmmo = TurretAmmoBase & {
-  readonly onHit: readonly AuthoredEffectSpec[];
+  /**
+   * The shot (architecture 07 §5 `AmmoDefinition`): its damage, its reach (at least the range of
+   * every turret that carries it), the time between two shots (`interval`), the projectile it
+   * fires, and the steps that run on the body a bolt strikes (`onHit`, as a weapon attack's). Times
+   * in seconds.
+   */
+  readonly attack: RangedAttack<AuthoredEffectSpec>;
 };
 
-/** A turret ammo as loaded (`loadTurrets`): every time in ticks. */
+/**
+ * A turret ammo as loaded (`loadTurrets`): every time in ticks. A turret's `TurretState` holds the
+ * ammo it carries, and its `Combat` fires the loaded one's `attack`.
+ */
 export type TurretAmmoDefinition = TurretAmmoBase & {
-  readonly onHit: readonly AbilityEffectSpec[];
+  readonly attack: RangedAttack;
 };
 
 /**
@@ -58,8 +60,6 @@ type TurretProfileBase = {
   readonly priority: readonly TurretTargetPriority[];
   /** The entity kinds `heavy-unit` names. */
   readonly heavyKinds: readonly string[];
-  /** The ammo ids it may load, best first: the first whose `preferredAgainst` fits the target. */
-  readonly ammo: readonly string[];
 };
 
 /** How a turret picks its targets and its ammo (architecture 11 §4.5), as authored, in seconds. */

@@ -51,6 +51,12 @@ export type StructureDefinition = EntityDefinitionBase & {
   readonly controller?: ControllerId;
   /** The AI profile its controller reads; the controller id by default. */
   readonly aiProfile?: string;
+  /**
+   * The turret ammo ids it carries, best first (architecture 07 §5 `TurretState`): against a
+   * target it loads the first whose `preferredAgainst` fits, so the last one fits any target
+   * (`loadTurrets` checks it). A turret has at least one; other structures none.
+   */
+  readonly ammo?: readonly string[];
 };
 
 /** Which lane a spawner's horde takes: the spawner's own lane, or the team's worst lane. */
