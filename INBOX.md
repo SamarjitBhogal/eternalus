@@ -555,6 +555,17 @@ Reply inline (`Decision: …`).
     - Answered by DEC-199 (batch 2026-11-11) and the readings line of batch 2026-11-16: the default kit's Hamstring is the Serrated form,
       "80 damage and 2 bleed stacks, no slow", a reading you did not change. So (A) holds and is
       not asked again. `06-abilities-and-progression.md` now names the Serrated default.
+  - (4) Built under your standing rule (DEC-223), sign-off asked (gate round 2, R2-A6,
+    2026-11-22): the player sees no difference, and every match hash stays the same. Each shot
+    now lists its own hashed fields (`ProjectilePayload.fields`), as a chase watch does
+    (`ChaseWatch.fields`). Before, `StateHasher` read them one by one and chose the cast level by
+    the impact kind. Keep it?
+  - (5) Found, not built (gate round 2, R2-C6, 2026-11-22): a `hit` area ("the one body just
+    struck") works only in an `onHit` list (a status's or a shot's). Content that puts it on a
+    cast's own step or on a dash's path loads without an error and hits nothing. No content does
+    this today; the shape's TSDoc and a test say so. A load-time check needs a new member on every
+    shape and the list context in the registry's step walk, so it is a design change, not a fix.
+    (A) Leave it, as documented (advised). (B) Build the load-time check in a later PR.
 - [x] **HC-Q67 — Combat gaps: build before the presentation (2026-11-27)? In which order?
       (combat audit, COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls page).**
       Your nine combat questions: 0 of 9 are true today. Evidence and the proposed PRs (two lanes,

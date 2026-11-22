@@ -39,4 +39,22 @@ export class ProjectilePayload {
     this.impact = data.impact;
     this.origin = { x: data.origin.x, y: data.origin.y };
   }
+
+  /**
+   * The fields that change the shot's future, for `StateHasher`: who it spares (owner), which
+   * walk-on outline it may hit (target), what it does there (impact kind, credited weapon or
+   * ability) and how hard it hits (origin, and an ability shot's cast level, as a cast in progress
+   * hashes it).
+   */
+  public get fields(): readonly (string | number | null)[] {
+    return [
+      this.ownerId,
+      this.targetId,
+      this.impact.kind,
+      this.source.definitionId,
+      this.origin.x,
+      this.origin.y,
+      ...(this.impact.kind === 'ability' ? [this.impact.casterLevel] : []),
+    ];
+  }
 }

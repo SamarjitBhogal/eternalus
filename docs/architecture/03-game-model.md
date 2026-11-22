@@ -535,7 +535,8 @@ each closed by the session or phase named:
 `ProjectileSystem` removes each shot with cause `consumed`; projectiles are not pooled (04 §11,
 DEC-309), so nothing listens for `entity-removed` on a projectile's behalf. No `projectile-hit`
 event exists (05 §10, DEC-314). `StateHasher` hashes a shot's payload (owner, target, impact kind,
-source definition, origin, end ticks left, and an ability shot's cast level, 05 §18) and a `Movement` speed limit when one is set (10 §2,
+source definition, origin, and an ability shot's cast level, 05 §18: `ProjectilePayload.fields`),
+its end ticks left and a `Movement` speed limit when one is set (10 §2,
 DEC-314); a match with no shot keeps its hash.
 
 ## Related

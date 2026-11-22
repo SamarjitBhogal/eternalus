@@ -165,6 +165,18 @@ describe('Hamstring (scenario)', () => {
     expect([hitTick(56), hitTick(59)]).toEqual(['6', '9']);
   });
 
+  it('moves exactly 1 m a tick in open ground (30 m/s, DEC-268), from its cast tick on', () => {
+    const { ids, cast, run, at } = abilityMatch([CASTER]);
+
+    cast(ids[0] ?? '', 'ability-3', EAST);
+    const blade = [1, 2, 3, 4].map(() => {
+      run(1);
+      return at(ids[1]);
+    });
+
+    expect(blade).toEqual([51, 52, 53, 54].map((x) => ({ x, y: 50 })));
+  });
+
   it('flies 12 m: an enemy inside the range is hit, one past it is not', () => {
     // 25 ticks: past the 12 m flight (12 ticks), before the first bleed tick (30).
     const near = throwAt([{ kind: 'warrior', team: 'dark', at: { x: 61, y: 50 } }], { ticks: 25 });
@@ -222,9 +234,9 @@ describe('Hamstring (scenario)', () => {
 /**
  * Hamstring and Veil (DEC-266, DEC-327): the blade's hit ends Veil on the thrower and on the one
  * it strikes, and it strikes a Veiled enemy on its line, as an area does. Veil (`ability-2`) is
- * cast in tick 1, the blade in tick 2: the enemy 6 m east is hit in tick 7, and Veil ends in the
- * status pass of tick 8 (`ProjectileSystem` runs after `StatusEffectSystem`). Every invariant
- * runs each tick and throws.
+ * cast in tick 1, the blade in tick 2: the enemy 6 m east is hit in tick 7, and Veil stops at
+ * that hit (HC-B19 (4)). It is removed (`invisible off`) in the status pass of tick 8
+ * (`ProjectileSystem` runs after `StatusEffectSystem`). Every invariant runs each tick and throws.
  */
 describe('Hamstring and Veil (scenario)', () => {
   const ENEMY_AT = { x: 56, y: 50 };

@@ -267,24 +267,12 @@ export class StateHasher {
     if (progression !== undefined) {
       fields.push(['progression', progression.xp, progression.level]);
     }
-    // A shot's payload is fixed at firing but decides who it spares (owner), which walk-on outline
-    // it may hit (target), what it does there (impact kind, credited weapon or ability) and how
-    // hard it hits (origin, and an ability shot's cast level, as a cast in progress hashes it);
-    // how long it has been ending (-1 while it flies) decides when it is removed.
+    // A shot's payload is fixed at firing but decides its hit (`ProjectilePayload.fields`); how
+    // long it has been ending (-1 while it flies) decides when it is removed.
     const shot = entity.findComponent(ProjectilePayload);
     if (shot !== undefined) {
       const endTicksLeft = entity.findComponent(ProjectileFlight)?.endTicksLeft ?? -1;
-      fields.push([
-        'projectile',
-        shot.ownerId,
-        shot.targetId,
-        shot.impact.kind,
-        shot.source.definitionId,
-        shot.origin.x,
-        shot.origin.y,
-        ...(shot.impact.kind === 'ability' ? [shot.impact.casterLevel] : []),
-        endTicksLeft,
-      ]);
+      fields.push(['projectile', ...shot.fields, endTicksLeft]);
     }
     const watch = entity.findComponent(ChaseWatch);
     if (watch !== undefined) {

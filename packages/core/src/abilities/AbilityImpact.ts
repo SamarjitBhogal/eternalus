@@ -23,7 +23,7 @@ export class AbilityImpact implements ProjectileImpact<'ability'> {
     this.hits.runSteps(
       state,
       { casterId: hit.ownerId, sourceId: abilityId, slot, steps: onHit, scaling, casterLevel },
-      // A copy: `body` is the live `Transform` position, which a step may move.
+      // A copy, as `afterHit` makes: the placement does not alias the live `Transform` position.
       { from: hit.point, to: { x: body.x, y: body.y } },
       hit.bodyId,
     );
