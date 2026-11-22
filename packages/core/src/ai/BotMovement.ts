@@ -17,6 +17,8 @@ import { NO_PATH } from './BotMovement.constants';
  */
 export class BotMovement {
   private readonly step: MutableVec2 = { x: 0, y: 0 };
+  /** Scratch for the cached waypoint while `reuseStep` tests it, so the check allocates nothing. */
+  private readonly cachedStep: MutableVec2 = { x: 0, y: 0 };
 
   /**
    * One `move` toward `to`, through the A\* waypoint when the straight line is blocked, or a halt
@@ -24,7 +26,7 @@ export class BotMovement {
    * footprint's edge on the bot's side (`edgeOf`). When the pathfinder
    * finds no way, a `stop`, a forgotten target and `failure`, so the bot does not lean on the
    * obstruction and lower branches may run. A searched waypoint is cached in memory (11 §6) and
-   * reused instead of a new search while it still serves the destination (`isCachedStepUseful`);
+   * reused instead of a new search while it still serves the destination (`reuseStep`);
    * arriving, or a search that finds no way, clears it.
    */
   public moveTo(turn: BotTurn, to: Vec2 | null): BtStatus {
@@ -84,12 +86,14 @@ export class BotMovement {
     const goalShift = BotMovement.gapSquaredOf(pathGoalX, pathGoalY, destination.x, destination.y);
     const toStep = BotMovement.gapSquaredOf(pathStepX, pathStepY, x, y);
     const toDestination = BotMovement.gapSquaredOf(destination.x, destination.y, x, y);
+    this.cachedStep.x = pathStepX;
+    this.cachedStep.y = pathStepY;
     const isUseful =
       goalShift <= reach &&
       toStep > reach &&
       toStep < toDestination &&
       !paths.isLineClear(turn.position, destination) &&
-      paths.isLineClear(turn.position, { x: pathStepX, y: pathStepY });
+      paths.isLineClear(turn.position, this.cachedStep);
     if (isUseful) {
       this.step.x = pathStepX;
       this.step.y = pathStepY;

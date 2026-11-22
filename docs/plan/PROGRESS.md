@@ -9346,3 +9346,19 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   check passed." (A first run failed lint on an unbound static method reference; fixed by calling
   it directly.)
 - Next step: re-request review on PR #84; #121 is merged, so S3's `pathMaxSearchArea` is in.
+
+### 2026-11-21 — Phase 3 / minion plan M8 follow-up — feat/minion-bot-path-cache (PR #84 review round 2) — SamarjitBhogal + Claude Code
+
+- What was done: re-checked both CHANGES_REQUESTED reviews (claudiodh, swholtzman, both on
+  `9cabf9ae`) against the head `3760bcee`; B1, S1, S3 and N1 to N4 were already fixed there. Two
+  leftovers fixed in `BotMovement`: `reuseStep` no longer builds a `{ x, y }` object for its line
+  test on each moving decision (a `cachedStep` scratch vector, 11 §6 "no allocation in hot paths",
+  N1), and the `moveTo` TSDoc names `reuseStep` instead of a method that does not exist. No
+  behaviour change; the existing cache tests cover it. CodeRabbit posted no findings (rate
+  limited).
+- Open: the PR conflicts with `phase/3-sprint-3-work` (`54615afa`) in this file only; not merged
+  here. The PR body's "Measured" table, "Merge after #81" and the `fix/minion-stack-followups`
+  heads-up are stale (S2, N5): the 2026-11-20 entry holds the current numbers.
+- Checks run: `npm run check` (Node 24.21.0), see the PR #84 round-2 report.
+- Next step: merge phase/3 (PROGRESS conflict, keep both sides), refresh the PR body, re-request
+  review.
