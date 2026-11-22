@@ -131,6 +131,23 @@ export class EntityStore {
     return true;
   }
 
+  /**
+   * The entity's position and footprint radius (its `Transform`, read-only), or `undefined` for an
+   * unknown id or one without a `Transform`. Lets `ai/` read where a structure stands (the space
+   * index holds units only) without importing `components/`.
+   */
+  public placeOf(id: EntityId): { readonly position: Vec2; readonly radius: number } | undefined {
+    return this.entities.get(id)?.findComponent(Transform);
+  }
+
+  /**
+   * The entity's velocity in metres per tick (its `Movement`), or `undefined` for an unknown id or
+   * one that cannot move. Lets `ai/` lead a moving target without importing `components/`.
+   */
+  public velocityOf(id: EntityId): Vec2 | undefined {
+    return this.entities.get(id)?.findComponent(Movement)?.velocity;
+  }
+
   /** The entity's health as a fraction of its maximum, or `undefined` without `Health`. */
   public healthFractionOf(id: EntityId): number | undefined {
     const health = this.entities.get(id)?.findComponent(Health);

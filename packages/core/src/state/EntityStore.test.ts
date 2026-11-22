@@ -175,6 +175,30 @@ describe('EntityStore', () => {
     expect(store.steer('nobody', { x: 1, y: 0 })).toBe(false);
   });
 
+  it("reads an entity's place and velocity, and nothing for an entity without them", () => {
+    const store = storeWith('still');
+    const minion = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30)).create(
+      'light-mob',
+      'light-minion',
+      { team: 'dark', position: { x: 4, y: 5 } },
+    );
+    store.add(minion);
+    const movement = minion.getComponent(Movement);
+    movement.steer({ x: 1, y: 0 });
+    movement.advance();
+
+    expect(store.placeOf(minion.id)).toMatchObject({
+      position: { x: 4, y: 5 },
+      radius: minion.getComponent(Transform).radius,
+    });
+    expect(store.velocityOf(minion.id)).toEqual(movement.velocity);
+    expect(store.velocityOf(minion.id)?.x).toBeGreaterThan(0);
+    expect(store.placeOf('still')).toBeUndefined();
+    expect(store.velocityOf('still')).toBeUndefined();
+    expect(store.placeOf('nobody')).toBeUndefined();
+    expect(store.velocityOf('nobody')).toBeUndefined();
+  });
+
   it("reads an entity's team and whether it is alive", () => {
     const store = storeWith('dummy');
     const minion = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30)).create(

@@ -34,8 +34,20 @@ describe('loadProjectiles', () => {
     ).toBe(1);
   });
 
-  it('ships the bolt and the arrow', () => {
-    expect(loadProjectiles(30).ids).toEqual(['magus-bolt', 'arrow']);
+  it('ships the bolt, the arrow and the two turret bolts', () => {
+    expect(loadProjectiles(30).ids).toEqual([
+      'magus-bolt',
+      'arrow',
+      'turret-bolt',
+      'turret-heavy-bolt',
+    ]);
+  });
+
+  it('loads the turret bolts at balancing.md speeds: 30 m/s default, 24 m/s heavy', () => {
+    const projectiles = loadProjectiles(30);
+
+    expect(projectiles.get('turret-bolt').movementProfile.maxSpeed).toBe(1);
+    expect(projectiles.get('turret-heavy-bolt').movementProfile.maxSpeed).toBe(0.8);
   });
 
   it.each([

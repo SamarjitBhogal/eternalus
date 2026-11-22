@@ -89,6 +89,8 @@ import { MatchPathfinderFactory } from './map/MatchPathfinderFactory';
 import { staticCollisionIndexOf } from './map/staticCollisionIndexOf';
 import { zoneAreaOf } from './map/zoneArea';
 import { loadProjectiles } from './content/projectiles/loadProjectiles';
+import type { ProjectileDefinition } from './content/projectiles/projectiles.types';
+import { loadTurrets } from './content/structures/loadTurrets';
 import { DefaultSystemPipeline } from './systems/DefaultSystemPipeline';
 import type { SystemContext } from './systems/System.types';
 import { SystemPipeline } from './systems/SystemPipeline';
@@ -195,7 +197,7 @@ export class Simulation {
     const projectiles = loadProjectiles(tickRate);
     // One line-of-fire query for the bots and `CombatSystem`, so they agree (DEC-317).
     const lineOfFire = new LineOfFire(projectiles);
-    const controllers = Simulation.createControllers(validator, tickRate, lineOfFire);
+    const controllers = Simulation.createControllers(validator, tickRate, lineOfFire, projectiles);
     const units = content ?? Simulation.defaultContent(tickRate, curves, controllers, weaponSource);
     // One factory for commands and spawning, so entity ids come from one counter.
     const factory = new EntityFactory(
@@ -211,7 +213,12 @@ export class Simulation {
       weaponSource,
       LEGEND_SPECS,
     );
-    const owners = Simulation.spawnStructures(this.state, factory, structures, mapObjects);
+    const { owners, removedWithOwner } = Simulation.spawnStructures(
+      this.state,
+      factory,
+      structures,
+      mapObjects,
+    );
     this.state.indexStructures();
     // Before the pipeline: zones can be guard homes, which SpawnSystem finds when it is built.
     const zones = Simulation.spawnZones(this.state, factory);
@@ -227,12 +234,14 @@ export class Simulation {
         entities: this.state.entities,
         definitions: MAP_OBJECT_DEFINITIONS,
         owners,
+        removedWithOwner,
       });
       this.state.worldObjects = worldObjects;
       this.state.events.on('entity-removed', ({ entityId }) => {
         worldObjects.removed(entityId);
         // At once, so walking and a dash both stop seeing it from now on (critic r2 F1). A retired
-        // tower's fort is not its own entity (`objectFor` gives nothing), so it stays, as it blocks.
+        // tower's fort is not its own entity (`objectFor` gives nothing), so it stays, as it blocks;
+        // a wall turret's pylon goes with it (`isBodyRemovedWithIt`).
         const object = worldObjects.objectFor(entityId);
         if (object !== undefined) walls.remove(object.id);
       });
@@ -392,31 +401,38 @@ export class Simulation {
   /**
    * Builds the map's structures, in feature id order, before anything else spawns (architecture
    * 07 §1): every feature whose definition is a structure becomes that structure, with its team
-   * and lane. Features without a structure definition (walls, turrets, corner camps) stay map data.
+   * and lane. Features without a structure definition (walls, corner camps) stay map data.
    * A structure whose definition `hasMapFootprint` takes the footprints of its feature's map object
    * of the same id as its `Footprint` (a lane tower's fort, DEC-185; the Stronghold's palace,
-   * DEC-185 D; a gate's own outline, DEC-217 (17)). A blocking such object (a fort) is the
-   * structure's body: it has no health of its own (one pool, DEC-185 B). Only towers share one
-   * pool (DEC-217 (13)): the palace's and the gates' objects do not block, so they keep their own
-   * health, and their outline is walked on (`Footprint.isWalkOn`): a shot flies over it unless it
-   * was fired at the structure.
+   * DEC-185 D; a gate's own outline, DEC-217 (17); a wall turret's pylon). A blocking such object
+   * (a fort, a pylon) is the structure's body: it has no health of its own (one pool, DEC-185 B).
+   * Towers share one pool (DEC-217 (13)), and so do wall turrets: the palace's and the gates' objects
+   * do not block, so they keep their own health, and their outline is walked on
+   * (`Footprint.isWalkOn`): a shot flies over it unless it was fired at the structure. A body whose
+   * structure's definition `isBodyRemovedWithIt` (a wall turret's pylon) is destroyed with it; a
+   * fort stays standing.
    *
-   * @returns Map object id → the id of the structure it is the body of.
+   * @returns Map object id → the id of the structure it is the body of, and the ids of the bodies
+   *   destroyed with their structure.
    */
   private static spawnStructures(
     state: GameState,
     factory: EntityFactory,
     structures: StructureSource,
     mapObjects: readonly MapObject[] = [],
-  ): ReadonlyMap<string, string> {
+  ): {
+    readonly owners: ReadonlyMap<string, string>;
+    readonly removedWithOwner: ReadonlySet<string>;
+  } {
     const features = [...(state.world?.definition.features ?? [])].sort((a, b) =>
       compareById(a.id, b.id),
     );
     const bodies = new Map(mapObjects.map((object) => [object.id, object]));
     const owners = new Map<string, string>();
+    const removedWithOwner = new Set<string>();
     for (const { id, definitionId, position, team, laneId } of features) {
       if (structures.has(definitionId)) {
-        const { kind, hasMapFootprint } = structures.get(definitionId);
+        const { kind, hasMapFootprint, isBodyRemovedWithIt } = structures.get(definitionId);
         const placement = {
           position,
           team,
@@ -428,11 +444,14 @@ export class Simulation {
         if (body !== undefined) {
           structure.addComponent(new Footprint(body.footprints, { isWalkOn: !body.isBlocking }));
         }
-        if (body?.isBlocking === true) owners.set(body.id, structure.id);
+        if (body?.isBlocking === true) {
+          owners.set(body.id, structure.id);
+          if (isBodyRemovedWithIt === true) removedWithOwner.add(body.id);
+        }
         state.entities.add(structure);
       }
     }
-    return owners;
+    return { owners, removedWithOwner };
   }
 
   /**
@@ -788,6 +807,7 @@ export class Simulation {
     readiness: SlotReadiness,
     tickRate: number,
     lineOfFire: LineOfFireQuery,
+    projectiles: Pick<ContentCatalogue<ProjectileDefinition>, 'get'>,
   ): ControllerRegistry {
     const bots = {
       difficulties: BOT_DIFFICULTIES,
@@ -804,6 +824,7 @@ export class Simulation {
         legendKinds: LEGEND_KIND_IDS,
         laneWeights: LANE_ASSESSMENT_WEIGHTS,
       },
+      turret: { ...loadTurrets(tickRate), projectiles },
     });
   }
 

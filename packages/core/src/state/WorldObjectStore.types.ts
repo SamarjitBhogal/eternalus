@@ -26,4 +26,9 @@ export type WorldObjectStoreOptions = {
   readonly definitions: Readonly<Record<MapObjectKind, ObstacleDefinition>>;
   /** Map object id → the id of the structure in `entities` the object is the body of. */
   readonly owners?: ReadonlyMap<string, string>;
+  /**
+   * The ids of the objects in `owners` that are destroyed with their structure (a wall turret's
+   * pylon); the others outlive it as scenery (a lane tower's fort).
+   */
+  readonly removedWithOwner?: ReadonlySet<string>;
 };

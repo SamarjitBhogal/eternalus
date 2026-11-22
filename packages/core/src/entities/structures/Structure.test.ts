@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Collider } from '../../components/Collider';
+import { ControllerBinding } from '../../components/ControllerBinding';
 import { Health } from '../../components/Health';
 import { TeamMembership } from '../../components/TeamMembership';
 import { Transform } from '../../components/Transform';
@@ -85,6 +86,31 @@ describe('Structure', () => {
 
     expect(tower.mapFeatureId).toBe('dark-buff-tower-lane-2');
     expect(spawned.mapFeatureId).toBeNull();
+  });
+
+  it('binds the controller its definition names, with the profile or the controller id, and none without one', () => {
+    const turret = new FakeTower('entity-1', 'fake-turret');
+    const profiled = new FakeTower('entity-2', 'fake-turret');
+    const tower = new FakeTower('entity-3', 'fake-buff-tower');
+
+    turret.spawn({
+      definition: { ...DEFINITION, controller: 'turret' },
+      position: { x: 0, y: 0 },
+      team: 'dark',
+    });
+    profiled.spawn({
+      definition: { ...DEFINITION, controller: 'turret', aiProfile: 'wall-turret' },
+      position: { x: 0, y: 0 },
+      team: 'dark',
+    });
+    tower.spawn({ definition: DEFINITION, position: { x: 0, y: 0 }, team: 'dark' });
+
+    expect(turret.getComponent(ControllerBinding)).toMatchObject({
+      controllerId: 'turret',
+      profileId: 'turret',
+    });
+    expect(profiled.getComponent(ControllerBinding).profileId).toBe('wall-turret');
+    expect(tower.hasComponent(ControllerBinding)).toBe(false);
   });
 
   it('needs a team', () => {

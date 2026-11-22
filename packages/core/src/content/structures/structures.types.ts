@@ -1,3 +1,4 @@
+import type { ControllerId } from '../ai/ai.types';
 import type { EntityDefinitionBase } from '../EntityDefinition.types';
 import type { BreakabilityRule } from './breakability.types';
 
@@ -32,11 +33,24 @@ export type StructureDefinition = EntityDefinitionBase & {
    */
   readonly hasMapFootprint?: true;
   /**
+   * Whether its body (its blocking map object, `hasMapFootprint`) goes with it: when the structure
+   * is destroyed, that object is destroyed too, and its footprint and nav cells are cleared (a wall
+   * turret's pylon). Absent: the body stays standing as scenery (a lane tower's fort).
+   */
+  readonly isBodyRemovedWithIt?: true;
+  /**
    * Whether the box round its `Footprint` is a fort box (`PathingWorld.forts`): a chase of a unit
    * standing inside it closes in over the blocked ground there (DEC-185; the Stronghold's palace,
    * DEC-217 (16)). A gate's outline is for reach only (DEC-217 (17)).
    */
   readonly hasFortBox?: true;
+  /**
+   * The controller that drives it (architecture 11 §2, a turret's `TurretController`); none for a
+   * structure that decides nothing.
+   */
+  readonly controller?: ControllerId;
+  /** The AI profile its controller reads; the controller id by default. */
+  readonly aiProfile?: string;
 };
 
 /** Which lane a spawner's horde takes: the spawner's own lane, or the team's worst lane. */

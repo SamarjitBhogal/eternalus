@@ -19,8 +19,10 @@ export class WorldObjectStore {
   /**
    * Spawns physical objects through the existing registry/factory; terrain has no health entity.
    * An object named in `owners` gets no entity of its own: its health is its structure's (one pool,
-   * DEC-185 B: a lane tower's fort map object; only towers, DEC-217 (13)), so a hit on it is a hit
-   * on the structure.
+   * DEC-185 B: a lane tower's fort map object, DEC-217 (13); a wall turret's pylon), so a hit on it
+   * is a hit on the structure. One in `removedWithOwner` is destroyed with its structure, as an
+   * object with an entity of its own is (`objectFor` gives it, so its footprint is cleared); the
+   * others outlive it as scenery (`removed`).
    *
    * @param options - The objects, how to spawn them, and the structures some of them are bodies of.
    */
@@ -30,6 +32,7 @@ export class WorldObjectStore {
     entities,
     definitions,
     owners = new Map(),
+    removedWithOwner = new Set(),
   }: WorldObjectStoreOptions) {
     for (const object of objects) {
       const definition = definitions[object.kind];
@@ -37,6 +40,11 @@ export class WorldObjectStore {
       const bounds = boundsOf(points);
       const owner = entities.get(owners.get(object.id) ?? '');
       const health = owner?.findComponent(Health);
+      if (owner !== undefined && health !== undefined && removedWithOwner.has(object.id)) {
+        this.entityObjects.set(owner.id, object);
+        this.records.push({ object, entityId: owner.id, health, bounds });
+        continue;
+      }
       if (owner !== undefined && health !== undefined) {
         this.owned.set(owner.id, this.records.length);
         this.records.push({ object, entityId: owner.id, health, bounds });

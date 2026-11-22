@@ -1,14 +1,19 @@
 import type { ContentCatalogue } from '../ContentCatalogue';
 import type { ProjectileDefinition } from '../projectiles/projectiles.types';
+import type { AuthoredTurretAmmo } from '../structures/turrets.types';
 import type { UnitAttack, UnitDefinition } from '../units/units.types';
 import type { WeaponDefinition } from '../weapons/weapons.types';
 import type { UnitDefinitionRule } from './ContentValidator.types';
 
+/** What has attacks: a unit definition, a weapon, or a turret ammo (one `attack`, as a mob has). */
+type AttackHolder = UnitDefinition | WeaponDefinition | AuthoredTurretAmmo;
+
 /**
  * Every attack that fires a projectile (it has `projectile`, whatever its strategy), of a unit
- * definition (a mob's or turret's own attack) or of a weapon, must name a loaded projectile
+ * definition (a mob's own attack), of a weapon or of a turret ammo, must name a loaded projectile
  * (`projectileId`) and have a valid fall-off (05 §2): a typo fails at load, not at the first
- * shot. `loadWeapons` runs it over each weapon, so weapons and unit definitions share these checks.
+ * shot. `loadWeapons` runs it over each weapon and `loadTurrets` over each ammo, so they and unit
+ * definitions share these checks.
  */
 export class KnownProjectileRule implements UnitDefinitionRule {
   /** @param projectiles - The projectiles a ranged attack may fire. */
@@ -20,7 +25,7 @@ export class KnownProjectileRule implements UnitDefinitionRule {
    * Flags each unknown `projectileId` and each fall-off that is not `0 < fullTo < floorAt`, floor
    * in (0, 1].
    */
-  public check(definition: UnitDefinition | WeaponDefinition): readonly string[] {
+  public check(definition: AttackHolder): readonly string[] {
     return KnownProjectileRule.attacksOf(definition).flatMap((attack) => this.problemsOf(attack));
   }
 
@@ -48,7 +53,7 @@ export class KnownProjectileRule implements UnitDefinitionRule {
     return problems;
   }
 
-  private static attacksOf(definition: UnitDefinition | WeaponDefinition): readonly UnitAttack[] {
+  private static attacksOf(definition: AttackHolder): readonly UnitAttack[] {
     if ('attacks' in definition) {
       return definition.attacks;
     }

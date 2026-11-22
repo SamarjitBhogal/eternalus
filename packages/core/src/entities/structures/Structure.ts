@@ -1,4 +1,5 @@
 import { Collider } from '../../components/Collider';
+import { ControllerBinding } from '../../components/ControllerBinding';
 import { Health } from '../../components/Health';
 import { TeamMembership } from '../../components/TeamMembership';
 import { Transform } from '../../components/Transform';
@@ -10,7 +11,8 @@ import { SpawnContextReader } from '../SpawnContextReader';
 /**
  * Abstract base for static things with health: buildings, walls, gates, turrets, camps and the
  * Cathedral. Installs `Transform`, `Health`, `TeamMembership` and a static `Collider` from a
- * `StructureDefinition`. Concrete structures and their extra components arrive in Phase 2.
+ * `StructureDefinition`, and a `ControllerBinding` when the definition names a controller (a
+ * turret), as `Unit` does. Concrete structures and their extra components arrive in Phase 2.
  *
  * @see docs/architecture/07-structures-obstacles-and-destructibles.md (The Structure family)
  */
@@ -72,5 +74,10 @@ export abstract class Structure extends Entity {
     // Walls and gates start the match unbreakable; `StructureSystem` flips it when the rule passes.
     collider.setUnbreakable(definition.breakability.kind !== 'always');
     this.addComponent(collider);
+    if (definition.controller !== undefined) {
+      this.addComponent(
+        new ControllerBinding(definition.controller, definition.aiProfile ?? definition.controller),
+      );
+    }
   }
 }
