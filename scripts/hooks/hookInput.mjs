@@ -38,7 +38,10 @@ export async function readHookInput() {
   }
 }
 
-/** The repository root: the hook's cwd (Claude Code runs hooks from the project directory). */
+/**
+ * The session's current folder. Claude Code runs a hook there, and it can be a subfolder of the
+ * repository, so `stop-check.mjs` resolves the top level from it (DEC-331).
+ */
 export function repoRoot(input) {
   const cwd = typeof input.cwd === 'string' && input.cwd.length > 0 ? input.cwd : process.cwd();
   return path.resolve(cwd);

@@ -4,7 +4,7 @@ description: Line-by-line explanation of the committed agent configuration (Clau
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-19
+last-reviewed: 2026-11-22
 tags: [agents, harness, tooling, claude-code, codex, gemini, copilot, cursor]
 paths:
   [
@@ -58,7 +58,11 @@ workspace-trust dialog (deny rules apply immediately, allow rules after trust).
 
 Notes: permission patterns are best-effort (`git -C . push` is not matched by `Bash(git push *)`);
 the git hooks and CI remain the hard gate. Commands use the exec form (`"command": "node",
-"args": [...]`) because `.cmd` shims cannot be spawned without a shell on Windows. Hook scripts
+"args": [...]`) because `.cmd` shims cannot be spawned without a shell on Windows. Each script
+path starts with `${CLAUDE_PROJECT_DIR}/`, which Claude Code replaces with the project root: a
+hook runs in the session's current folder, so a relative path breaks after a `cd` into a
+subfolder (DEC-331; `scripts/hooks/settings.test.mjs` checks it). Use the braced form: Claude
+Code does not replace `$CLAUDE_PROJECT_DIR` in `args`. Hook scripts
 receive a JSON object on stdin (`tool_name`, `tool_input.file_path`, `cwd`, `stop_hook_active`,
 …); only exit code 2 blocks; the `Stop` hook honours `stop_hook_active` so it cannot trap an
 agent in a loop. Personal overrides go in `.claude/settings.local.json` (gitignored).
