@@ -41,10 +41,10 @@ Reply inline (`Decision: …`).
       with plain unit tests only (see the next item). The question stays open for when the
       adapter gets real tests.
       _Agent note (2026-11-22, `feat/loadout-screen`, PR #141 review):_ the review asked for the
-      adapter's tests (reads, writes, aborts, upgrades), so the branch now runs the contract
-      suite against a hand-written fake of the subset the adapter uses
-      (`data/persistence/__fixtures__/FakeIdb*.ts`, test-only, no dependency). Keep it, or swap
-      it for `fake-indexeddb` (needs your approval)?
+      adapter's tests (reads, writes, aborts, upgrades), so the branch runs the contract suite
+      against a small hand-written fake of the subset the adapter uses
+      (`data/persistence/__fixtures__/FakeIdb*.ts`, test-only, no dependency). Owner's answer:
+      keep the fake, simplified.
 
 - [ ] **`feat/loadout-screen` (PR #141, SCRUM-31, SCRUM-311) — product and layout rulings the
       review left to you.** (1) Is a saved weapon kept per class (FR-089, reference 08, as built)

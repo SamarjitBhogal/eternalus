@@ -1,3 +1,4 @@
+import { FALLBACK_WARNING, UNKNOWN_ERROR_KIND } from './FallbackStorageAdapter.constants';
 import type { WarnReporter } from './repositories/readOrQuarantine.types';
 import type { StorageAdapter, StorageSchema, StorageTx } from './StorageAdapter.types';
 import { StorageError } from './StorageError';
@@ -27,8 +28,8 @@ export class FallbackStorageAdapter implements StorageAdapter {
     try {
       await this.primary.open(schema);
     } catch (error: unknown) {
-      this.warn('storage unavailable, falling back to memory: progress will not be saved', {
-        kind: error instanceof StorageError ? error.kind : 'unknown',
+      this.warn(FALLBACK_WARNING, {
+        kind: error instanceof StorageError ? error.kind : UNKNOWN_ERROR_KIND,
         error: String(error),
       });
       this.active = this.fallback();

@@ -1,4 +1,5 @@
 import type { IdbDatabaseApi, IdbTransactionApi } from '../IndexedDbStorageAdapter.types';
+import { FIRST_AUTO_KEY } from './FakeIdb.constants';
 import type { FakeDatabaseData } from './FakeIdb.types';
 import { FakeIdbTransaction } from './FakeIdbTransaction';
 
@@ -14,7 +15,7 @@ export class FakeIdbDatabase implements IdbDatabaseApi {
     name: string,
     options: { keyPath: string | string[]; autoIncrement: boolean },
   ): void {
-    this.data.stores.set(name, { ...options, records: new Map(), nextKey: 1 });
+    this.data.stores.set(name, { ...options, records: new Map(), nextKey: FIRST_AUTO_KEY });
   }
 
   public transaction(stores: string[], mode: 'readonly' | 'readwrite'): IdbTransactionApi {

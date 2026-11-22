@@ -1,4 +1,5 @@
 import type { IdbFactoryApi } from '../IndexedDbStorageAdapter.types';
+import { FAKE_EVENT_DELAY_MS } from './FakeIdb.constants';
 import type { FakeDatabaseData } from './FakeIdb.types';
 import { FakeIdbDatabase } from './FakeIdbDatabase';
 import { FakeIdbOpenRequest } from './FakeIdbOpenRequest';
@@ -40,7 +41,7 @@ export class FakeIdbFactory implements IdbFactoryApi {
       }
       this.connections.push(db);
       request.succeed(db);
-    }, 0);
+    }, FAKE_EVENT_DELAY_MS);
     return request;
   }
 }

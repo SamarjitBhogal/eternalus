@@ -1,12 +1,11 @@
 import type { IdbTransactionApi } from '../IndexedDbStorageAdapter.types';
 import type { FakeDatabaseData, FakeStoreData } from './FakeIdb.types';
+import { FAKE_EVENT_DELAY_MS } from './FakeIdb.constants';
 import { FakeIdbRequest } from './FakeIdbRequest';
-
-type Undo = () => void;
 
 /**
  * A transaction of the fake IndexedDB. Requests apply when delivered, one transaction at a time;
- * it commits once none is left pending and aborting undoes what it wrote, as in a browser.
+ * it commits once none is left pending and aborting restores the records it started with.
  */
 export class FakeIdbTransaction implements IdbTransactionApi {
   public readonly error: DOMException | null = null;
@@ -14,7 +13,7 @@ export class FakeIdbTransaction implements IdbTransactionApi {
   public onerror: ((event: Event) => void) | null = null;
   public onabort: ((event: Event) => void) | null = null;
 
-  private readonly undo: Undo[] = [];
+  private readonly restore: (() => void)[] = [];
   private readonly started: Promise<void>;
   private release: () => void = () => undefined;
   private pending = 0;
@@ -29,6 +28,16 @@ export class FakeIdbTransaction implements IdbTransactionApi {
     this.started = previous;
     data.tail = new Promise<void>((resolve) => {
       this.release = resolve;
+    });
+    void this.started.then(() => {
+      for (const store of data.stores.values()) {
+        const { records, nextKey } = { records: new Map(store.records), nextKey: store.nextKey };
+        this.restore.push(() => {
+          store.records.clear();
+          records.forEach((value, key) => store.records.set(key, value));
+          store.nextKey = nextKey;
+        });
+      }
     });
     this.scheduleCommit();
   }
@@ -46,7 +55,6 @@ export class FakeIdbTransaction implements IdbTransactionApi {
       put: (value) => this.write(store, value),
       delete: (key) =>
         this.issue<undefined>(undefined, () => {
-          this.remember(store, JSON.stringify(key));
           store.records.delete(JSON.stringify(key));
           return undefined;
         }),
@@ -58,11 +66,13 @@ export class FakeIdbTransaction implements IdbTransactionApi {
       throw new DOMException('transaction finished', 'InvalidStateError');
     }
     this.isFinished = true;
-    for (const undo of this.undo.reverse()) undo();
+    this.restore.forEach((restore) => {
+      restore();
+    });
     setTimeout(() => {
       this.onabort?.(new Event('abort'));
       this.release();
-    }, 0);
+    }, FAKE_EVENT_DELAY_MS);
   }
 
   private write(store: FakeStoreData, value: unknown): FakeIdbRequest<unknown> {
@@ -73,20 +83,8 @@ export class FakeIdbTransaction implements IdbTransactionApi {
     return this.issue<unknown>(undefined, () => {
       const record = FakeIdbTransaction.withKey(store, copy);
       const key = JSON.stringify(FakeIdbTransaction.keyOf(store, record));
-      this.remember(store, key);
       store.records.set(key, record);
       return key;
-    });
-  }
-
-  private remember(store: FakeStoreData, key: string): void {
-    const had = store.records.has(key);
-    const old = store.records.get(key);
-    const nextKey = store.nextKey;
-    this.undo.push(() => {
-      store.nextKey = nextKey;
-      if (had) store.records.set(key, old);
-      else store.records.delete(key);
     });
   }
 
@@ -99,7 +97,7 @@ export class FakeIdbTransaction implements IdbTransactionApi {
         this.pending -= 1;
         request.succeed(apply());
         this.scheduleCommit();
-      }, 0),
+      }, FAKE_EVENT_DELAY_MS),
     );
     return request;
   }
@@ -111,7 +109,7 @@ export class FakeIdbTransaction implements IdbTransactionApi {
         this.isFinished = true;
         this.oncomplete?.(new Event('complete'));
         this.release();
-      }, 0),
+      }, FAKE_EVENT_DELAY_MS),
     );
   }
 
