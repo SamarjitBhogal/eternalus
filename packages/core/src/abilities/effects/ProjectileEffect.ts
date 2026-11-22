@@ -1,18 +1,22 @@
 import type { ProjectileSpec, WithoutTimes } from '../../content/abilities/AbilityDefinition.types';
 import type { AbilityDisplayStep } from '../../content/loadDisplayContent';
 import type { ProjectileDefinition } from '../../content/projectiles/projectiles.types';
+import { AreaHitQuery } from '../../state/AreaHitQuery';
 import type { AbilityEffect, CastContext, NestedDescriber } from '../AbilityEffect.types';
 
 /**
  * Throws a shot along the cast's direction (architecture 05 §3; Hamstring, DEC-268): the
  * projectile the step names, from where the step sits (the caster), for the caster's team and fired
- * at no one, so it stops at the first enemy body it touches and passes allies (`ProjectileSystem`).
- * Its impact carries the step's `onHit` steps as plain data, which `AbilityImpact` runs on that
- * body when the shot lands. The flight (speed, width, range) is the projectile's definition, by id:
+ * at no unit, so it stops at the first enemy body it touches and passes allies (`ProjectileSystem`).
+ * A walk-on outline (a palace floor, a gate's passage) stops it only when the cast's aim point is
+ * on it (`AreaHitQuery.aimedBodyOf`, DEC-322 (1)), as for a weapon's shot. Its impact carries the
+ * step's `onHit` steps as plain data, which `AbilityImpact` runs on that body when the shot lands. The flight (speed, width, range) is the projectile's definition, by id:
  * one place for it, as for a weapon's shot (DEC-314 (5)).
  */
 export class ProjectileEffect implements AbilityEffect<ProjectileSpec> {
   public readonly kind = 'projectile';
+  /** The one hit rule for areas, for the walk-on outline the aim point names (stateless). */
+  private readonly areas = new AreaHitQuery();
 
   /**
    * @param projectiles - The projectiles a step may name, for their range and width
@@ -66,7 +70,7 @@ export class ProjectileEffect implements AbilityEffect<ProjectileSpec> {
         ownerId: cast.casterId,
         team,
         source: { attackerId: cast.casterId, kind: 'ability', definitionId: cast.abilityId },
-        targetId: null,
+        targetId: this.areas.aimedBodyOf(cast.state.entities, cast.casterId, cast.aim.point),
         impact: {
           kind: 'ability',
           abilityId: cast.abilityId,

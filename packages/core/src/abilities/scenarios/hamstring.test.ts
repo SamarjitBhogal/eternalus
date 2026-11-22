@@ -47,6 +47,25 @@ const TWO_WALL_HOUSE: MapObject = {
   ],
 };
 
+/**
+ * The two-lane map's dark Stronghold palace: a walk-on floor (not blocking), x = 184 to 196 and
+ * y = 24 to 36, around the Stronghold at (190, 30). Its id is the Stronghold's feature id, so the
+ * Stronghold takes it as its outline.
+ */
+const DARK_PALACE: MapObject = {
+  id: 'stronghold-dark',
+  kind: 'stronghold',
+  isBlocking: false,
+  footprints: [
+    [
+      { x: 184, y: 24 },
+      { x: 196, y: 24 },
+      { x: 196, y: 36 },
+      { x: 184, y: 36 },
+    ],
+  ],
+};
+
 /** The Warrior and `others`, Hamstring thrown at `aim` in tick 1, then `ticks` steps. */
 const throwAt = (
   others: readonly ScenarioSpawn[],
@@ -144,6 +163,26 @@ describe('Hamstring (scenario)', () => {
 
     expect(house?.health?.current).toBeCloseTo(100 - 24, 9);
     expect(lost(ids[1])).toBe(0);
+  });
+
+  it('hits the enemy Stronghold for 80 x 0.3 when aimed at its walk-on palace floor, and flies over the floor when aimed past it (DEC-322 (1))', () => {
+    // The two-lane map's dark Stronghold stands at (190, 30) on its walk-on palace outline,
+    // x = 184 to 196. The Warrior throws east from 2 m outside it; the blade flies 12 m, to 194.
+    const strongholdLoss = (aim: Vec2): number => {
+      const { sim, ids, cast, run, lost } = abilityMatch(
+        [{ kind: 'warrior', team: 'light', at: { x: 182, y: 30 } }],
+        { world: { map: TWO_LANE_MAP, mapObjects: [DARK_PALACE] } },
+      );
+      const stronghold = sim
+        .snapshot()
+        .entities.find(({ kind, team }) => kind === 'stronghold' && team === 'dark')?.id;
+      cast(ids[0] ?? '', 'ability-3', aim);
+      run(20);
+      return lost(stronghold);
+    };
+
+    expect(strongholdLoss({ x: 190, y: 30 })).toBeCloseTo(24, 9);
+    expect(strongholdLoss({ x: 199, y: 30 })).toBe(0);
   });
 
   it('is stopped by a wall: the enemy behind it takes nothing from it', () => {

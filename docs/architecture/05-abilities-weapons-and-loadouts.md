@@ -1380,11 +1380,11 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     `EntityFactory` builds the projectile at the caster, it gets its `ProjectilePayload`, is
     steered along the cast's direction, added and announced (`entity-spawned`).
     `DefaultSystemPipeline` builds one launcher for `AbilitySystem` and `HitEffects`. The shot is
-    fired at no one (`targetId: null`), so `ProjectileSystem` lands it on the first enemy body it
-    touches before a wall and passes allies (DEC-269). Not built yet: a walk-on outline (the
-    enemy Stronghold's palace, a gate) takes only a shot fired at it (DEC-314 (6)), so the blade
-    does not hit the Stronghold or a gate. Lane B sets the shot's `targetId` from
-    `AreaHitQuery.aimedBodyOf` on this branch once lane A's melee-sweeps PR merges into it.
+    fired at no unit, so `ProjectileSystem` lands it on the first enemy body it touches before a
+    wall and passes allies (DEC-269). A walk-on outline (the enemy Stronghold's palace, a gate)
+    takes only a shot aimed at it (DEC-314 (6), DEC-322 (1)): as for a weapon's shot, the shot's
+    `targetId` is the walk-on outline the cast's aim point is on (`AreaHitQuery.aimedBodyOf`). A
+    blade aimed at the palace floor from outside hits the Stronghold; one aimed past it flies over.
     A "wall" in DEC-269 is one with no body
     (terrain, the map edge). A breakable enemy `wall` segment is a map object with a body: the
     blade strikes it and it takes 80 × 0.3, as for a house. `AbilitySystem` runs before the
