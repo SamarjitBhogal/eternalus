@@ -23,6 +23,8 @@ const { values } = parseArgs({
     players: { type: 'string', default: BOT_OPTION_DEFAULTS.players },
     seconds: { type: 'string', default: BOT_OPTION_DEFAULTS.seconds },
     stagger: { type: 'string', default: BOT_OPTION_DEFAULTS.stagger },
+    mode: { type: 'string', default: BOT_OPTION_DEFAULTS.mode },
+    rounds: { type: 'string', default: BOT_OPTION_DEFAULTS.rounds },
   },
 });
 
@@ -30,6 +32,7 @@ try {
   const options = new BotOptionsParser().parse(values);
   const run = new BotRun(options, {
     links: new WebSocketBotLinkFactory(),
+    clock: new SystemClock(),
     navigators: new BotNavigatorSource(),
     logger,
     sleep: (ms) => sleep(ms),
