@@ -140,7 +140,7 @@ The human's Legend has a brain too. The client's `InputMapper` turns device stat
 `InputIntent` (movement axes, aim point, edge-triggered actions) and enqueues it as one `intent`
 command per tick, only when it changes. `CommandApplySystem` stores it in the brain's memory;
 `PlayerController.decide` reads it and emits the same gameplay commands a bot would (`move`,
-`attack-target`, `cast-ability` (gadget slots included), `pick-up`, `throw`). Why: one place validates what a
+`attack-aim` (DEC-184; a player has no locked target, DEC-319 (6)), `cast-ability` (gadget slots included), `pick-up`, `throw`). Why: one place validates what a
 Legend may do (`applyCommand`), the replay log records device-agnostic intents, and sim mode is
 a one-line controller swap. The cost is one tick (33 ms at 30 Hz) between intent and effect.
 `Recommendation:` accept it for the top-down MVP; if playtests notice it, translate `intent`
@@ -191,9 +191,15 @@ attacking an allied Legend, (3) enemy minions attacking an allied minion, (4) en
 attacking an allied minion, (5) closest enemy minion, (6) closest enemy Legend; Dota's aggro
 cooldown 3 s (90 ticks). Dota's 2.3 s aggro duration is not used: the owner's leash rule,
 "distance, then time" (18 §6.1, DEC-144), replaces it. "Call for help": an enemy Legend that
-basic-attacks an allied Legend inside the radius becomes priority 1, and an enemy that attacks a
-horde-mate is in reach out to `callForHelpRadius` (DEC-144). The cooldown, after a leash break,
-leaves alone only the enemy that escaped (DEC-144 F).
+attacks (a basic attack or an ability, DEC-322 (2)) an allied Legend inside the radius becomes priority 1, and an enemy that attacks a
+horde-mate is in reach out to `callForHelpRadius` (DEC-144). A unit "attacks" another while that
+is its locked target, and while that body was hit by its last attack (both count, not one or the
+other), for one attack interval, or the slowed cooldown when that is longer, so at least through
+the tick its next attack may land (DEC-322 (2), DEC-333 (1)): a player aims and has no lock, so
+its hits are what the AI sees
+(`EntityStore.victimsOf`, `isAttacking`). Only a mob that is not already fighting answers a call
+for help or turns to a better-ranked enemy: a busy mob finishes its own fight (DEC-326 (2),
+18 §6.1). The cooldown, after a leash break, leaves alone only the enemy that escaped (DEC-144 F).
 
 Each aggro profile names the one controller that reads it (`controller`), and a controller
 accepts only its own profiles. The shared fields are `AggroRuleDefinition`; a horde minion's
@@ -430,10 +436,11 @@ work named:
   (`EntityStore.detourWaypointOf`, DEC-193). A bot that already stands still sends no new halt
   (`isHalted` in its memory).
 - A bot with a ranged attack holds, in `fight` and in `siege`, only when it is in reach and its
-  shot would reach the target before a wall stops it (`state/LineOfFire` on
-  `GameState.collisions`; branch `feat/ranged-attacks`, 2026-11-20, DEC-317). Else it keeps
-  closing in. `CombatSystem` fires a ranged attack only with that clear line, so a bot closing in
-  does not shoot into the wall. `Simulation` builds the one `LineOfFire` from the projectile
+  shot would reach the target before something stops it: a wall (`GameState.collisions`) or a
+  body that stops a shot by the shot's own rule (`AreaHitQuery.stopsShot`, so a body that takes
+  no damage blocks too; `state/LineOfFire`, DEC-317 addendum). Else it drops its lock and keeps
+  closing in for a clear shot. `CombatSystem` itself fires without a line-of-fire check, for every
+  unit (DEC-317 addendum): the bot's own rule keeps it from shooting into a wall. `Simulation` builds the one `LineOfFire` from the projectile
   definitions and injects it (`BotLegendControllerContent.lineOfFire`, the `LineOfFireQuery` port,
   required), because `ai/` may not import content values.
 - A brain's `profileId` names the controller's own content directly: an aggro profile

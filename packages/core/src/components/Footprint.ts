@@ -8,7 +8,7 @@ import type { Outline } from './Outline.types';
  * the structure is measured to these outlines instead of its collider circle, so a melee hit on
  * the fort is a hit on the tower (DEC-185) and melee at the palace wall reaches the Stronghold
  * (DEC-185 D); a chase closes on their nearest point, or holds inside them
- * (`EntityStore.aimPointOf`). For a definition with `hasFortBox`, its `bounds` is the fort box
+ * (`ReachQuery.aimPointOf`). For a definition with `hasFortBox`, its `bounds` is the fort box
  * that tells a chase which units stand inside a fort (`PathingWorld.forts`; the palace box
  * counts, DEC-217 (16); a gate's does not). A walk-on outline (`isWalkOn`: the palace floor, a
  * gate's passage) is ground units stand on, so a shot flies over it unless it was aimed at it

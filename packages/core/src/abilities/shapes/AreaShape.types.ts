@@ -38,7 +38,7 @@ export interface AreaShape<S extends ShapeSpec = ShapeSpec> {
   /**
    * Whether `polygon` (one footprint of the map object `body`: a house, a wall, a fort) overlaps
    * `shape` placed at `placement`, measured to its outline as basic attacks are
-   * (`EntityStore.isInReach`), or, for a shape that holds one body, whether `body` is that body.
+   * (`ReachQuery.isInReach`), or, for a shape that holds one body, whether `body` is that body.
    */
   overlapsPolygon(
     shape: S,

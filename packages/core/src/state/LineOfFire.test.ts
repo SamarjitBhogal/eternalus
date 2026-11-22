@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
+import { Collider } from '../components/Collider';
 import { Combat } from '../components/Combat';
 import { Footprint } from '../components/Footprint';
+import { Health } from '../components/Health';
+import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadProjectiles } from '../content/projectiles/loadProjectiles';
@@ -9,6 +12,7 @@ import type { MeleeAttack, RangedAttack, UnitAttack } from '../content/units/uni
 import { Entity } from '../entities/Entity';
 import { CollisionResolver } from '../physics/CollisionResolver';
 import { StaticCollisionIndex } from '../physics/StaticCollisionIndex';
+import type { Team } from '../teams/teams.types';
 import { cos, sin } from '../utils/deterministicMath';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
 import { GameState } from './GameState';
@@ -60,6 +64,12 @@ type BodySpec = {
   readonly attack?: UnitAttack;
   /** A structure's outline (`Footprint`): shots are aimed at its nearest point. */
   readonly outline?: readonly Polygon[];
+  /** A team gives it a `TeamMembership`, `Health` and a collider: a body a shot can stop on. */
+  readonly team?: Team;
+  /** With a team: it takes no damage now (a forest camp). */
+  readonly isUnbreakable?: boolean;
+  /** With a team and an outline: units walk on it (a gate's passage). */
+  readonly isWalkOn?: boolean;
 };
 
 /** A circle, a shooter, or a structure with an outline. */
@@ -67,10 +77,19 @@ class Body extends Entity {
   public readonly kind = 'dummy';
   public readonly family = 'mob';
   protected installComponents(context: unknown): void {
-    const { at, radius, attack, outline } = context as BodySpec;
+    const { at, radius, attack, outline, team, isUnbreakable, isWalkOn } = context as BodySpec;
     this.addComponent(new Transform(at, radius));
     if (attack !== undefined) this.addComponent(new Combat({ basic: attack }));
-    if (outline !== undefined) this.addComponent(new Footprint(outline));
+    if (outline !== undefined) {
+      this.addComponent(new Footprint(outline, { isWalkOn: isWalkOn === true }));
+    }
+    if (team !== undefined) {
+      this.addComponent(new TeamMembership(team));
+      this.addComponent(new Health(100));
+      const collider = new Collider({ kind: 'circle', radius }, 'unit');
+      collider.setUnbreakable(isUnbreakable === true);
+      this.addComponent(collider);
+    }
   }
 }
 
@@ -100,8 +119,8 @@ const world = (walls: readonly Polygon[] | null) => {
     return body.id;
   };
   /** A Magus-sized shooter with the ranged attack (or `attack`) at `at`. */
-  const shooter = (at: Vec2, attack: UnitAttack = RANGED): string =>
-    add({ at, radius: 0.75, attack });
+  const shooter = (at: Vec2, attack: UnitAttack = RANGED, team?: Team): string =>
+    add({ at, radius: 0.75, attack, ...(team === undefined ? {} : { team }) });
   return { state, add, shooter };
 };
 
@@ -210,5 +229,55 @@ describe('LineOfFire', () => {
     expect(lineOfFire.isClear(walled.state, ranged, 'missing')).toBe(true);
     expect(lineOfFire.isClear(walled.state, 'missing', target)).toBe(true);
     expect(lineOfFire.isClear(open.state, openFrom, openTarget)).toBe(true);
+  });
+
+  describe('bodies that take no damage (the rule that stops a shot, AreaHitQuery.stopsShot)', () => {
+    /** A light bot at the origin, a dark enemy at 10 and a neutral forest camp between them at 5. */
+    const scene = () => {
+      const { state, add, shooter } = world([]);
+      const bot = shooter({ x: 0, y: 0 }, RANGED, 'light');
+      const enemy = add({ at: { x: 10, y: 0 }, radius: 1, team: 'dark' });
+      return { state, add, bot, enemy };
+    };
+
+    it('is blocked by a camp that takes no damage between the bot and its enemy, and clear once it takes damage again (B9)', () => {
+      const { state, add, bot, enemy } = scene();
+      const camp = add({ at: { x: 5, y: 0.5 }, radius: 1, team: 'neutral', isUnbreakable: true });
+
+      expect(lineOfFire.isClear(state, bot, enemy)).toBe(false);
+      expect(lineOfFire.isClear(state, bot, camp)).toBe(true);
+
+      state.entities.get(camp)?.getComponent(Collider).setUnbreakable(false);
+      expect(lineOfFire.isClear(state, bot, enemy)).toBe(true);
+    });
+
+    it('is blocked when the shot width only grazes the camp, and clear past that width', () => {
+      const grazed = scene();
+      const passed = scene();
+      const camp = { radius: 1, team: 'neutral', isUnbreakable: true } as const;
+      grazed.add({ ...camp, at: { x: 5, y: 1 + SHOT_RADIUS / 2 } });
+      passed.add({ ...camp, at: { x: 5, y: 1 + SHOT_RADIUS * 1.5 } });
+
+      expect(lineOfFire.isClear(grazed.state, grazed.bot, grazed.enemy)).toBe(false);
+      expect(lineOfFire.isClear(passed.state, passed.bot, passed.enemy)).toBe(true);
+    });
+
+    it('is not blocked by such a body that is the target, an ally, behind the target, or a walk-on outline it does not aim at', () => {
+      const { state, add, bot, enemy } = scene();
+      const unbreakable = { radius: 1, isUnbreakable: true } as const;
+      const closedGate = add({ ...unbreakable, at: { x: 20, y: 0 }, team: 'dark' });
+      add({ ...unbreakable, at: { x: 3, y: 0 }, team: 'light' });
+      add({ ...unbreakable, at: { x: 13, y: 0 }, team: 'neutral' });
+      add({
+        ...unbreakable,
+        at: { x: 6, y: 0 },
+        team: 'dark',
+        outline: [box(5, -2, 2, 4)],
+        isWalkOn: true,
+      });
+
+      expect(lineOfFire.isClear(state, bot, enemy)).toBe(true);
+      expect(lineOfFire.isClear(state, bot, closedGate)).toBe(false);
+    });
   });
 });

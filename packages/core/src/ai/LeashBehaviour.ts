@@ -17,19 +17,22 @@ import type {
  * MS-36, DEC-144: "distance, then time"). It takes the best-ranked enemy in reach (priority, then
  * distance, then id) and emits one `attack-target`, anchoring its leash where it stands; a
  * mate's attacker within the rules' `helpRadius` counts as in reach, and so does a neutral unit
- * (a camp mob) that attacks the mob itself (DEC-166). It fights the target with no time limit
- * while the target is inside the leash, switching only to a strictly better-ranked enemy; only
- * such a switch moves the anchor (DEC-160). When the target leaves the leash the mob takes another
- * enemy in reach at once; with none it chases the target for `leashGraceTicks` (DEC-144 E), even
- * while the target attacks it: back inside, the target is fought on, else the leash breaks: the
- * mob emits one `stop` and rests again (with no target, its movement walks it back to its slot or
- * post), and for `aggroCooldownTicks` it leaves alone the enemy that escaped (DEC-144 F) unless
- * that enemy attacks the mob or a mate while inside the old anchor's leash (DEC-160). A dead or
- * untargetable (Veiled, DEC-266) target with no enemy left in reach leaves it resting, with no
- * cooldown. It never takes a candidate outside its leash, and `objective` ignores the leash, since
- * a structure cannot drag a mob away. During a ghosted first wave (`ghostFirstWaveTicks`, 11 §4.3)
- * Legends are never candidates. Controllers supply only what differs (`LeashRules`). Pure, apart
- * from one scratch point.
+ * (a camp mob) that attacks the mob itself (DEC-166). "Attacks" means the enemy's lock and
+ * each other body its last attack hit (`EntityStore.victimsOf`, DEC-322 (2)), so a player who
+ * aims is answered too. It fights a unit with no time limit while the unit is inside the leash,
+ * and does not leave that fight for a call for help or a better-ranked enemy (DEC-326 (2)): only a
+ * mob that is not fighting comes to help. Only from its lane objective does it switch, to a
+ * strictly better-ranked enemy; only a switch moves the anchor (DEC-160). When the target leaves
+ * the leash the mob takes another enemy in reach at once; with none it chases the target for
+ * `leashGraceTicks` (DEC-144 E), even while the target attacks it: back inside, the target is
+ * fought on, else the leash breaks: the mob emits one `stop` and rests again (with no target, its
+ * movement walks it back to its slot or post), and for `aggroCooldownTicks` it leaves alone the
+ * enemy that escaped (DEC-144 F) unless that enemy attacks the mob or a mate while inside the
+ * old anchor's leash (DEC-160). A dead or untargetable (Veiled, DEC-266) target with no enemy left
+ * in reach leaves it resting, with no cooldown. It never takes a candidate outside its leash, and
+ * `objective` ignores the leash, since a structure cannot drag a mob away. During a ghosted first
+ * wave (`ghostFirstWaveTicks`, 11 §4.3) Legends are never candidates. Controllers supply only what
+ * differs (`LeashRules`). Pure, apart from one scratch point.
  */
 export class LeashBehaviour {
   private readonly point: MutableVec2 = { x: 0, y: 0 };
@@ -100,12 +103,18 @@ export class LeashBehaviour {
       priority: rule.priority,
       entities: state.entities,
       classOf: this.classOf,
+      tick: state.tick,
       objectiveId: objective?.id ?? null,
     });
     return rank < 0 ? Number.POSITIVE_INFINITY : rank;
   }
 
-  /** Engaging: fight on inside the leash; outside it, take another enemy, chase, or break. */
+  /**
+   * Engaging: fight on inside the leash; outside it, take another enemy, chase, or break. A mob
+   * that fights a unit finishes its fight: it takes no call for help and no better-ranked enemy
+   * while that unit lives inside the leash (DEC-326 (2)). A mob hitting its lane objective still
+   * turns to a better-ranked enemy, as before.
+   */
   private engage<Idle extends string, Rule extends AggroRuleDefinition>(
     situation: LeashSituation<Rule>,
     memory: LeashMemory<Idle>,
@@ -115,7 +124,8 @@ export class LeashBehaviour {
     const { targetId, breakAtTick } = memory;
     const isTargetable = targetId !== null && state.entities.isTargetable(targetId);
     if (isTargetable && this.isInside(situation, memory, rules, targetId)) {
-      const best = this.acquire(situation, memory, rules, null);
+      const best =
+        targetId === situation.objective?.id ? this.acquire(situation, memory, rules, null) : null;
       if (best !== null && best.rank < this.rankOf(situation, targetId)) {
         return this.attack(situation, memory, best.id);
       }
@@ -233,13 +243,15 @@ export class LeashBehaviour {
       const dx = this.point.x - position.x;
       const dy = this.point.y - position.y;
       const gap = dx * dx + dy * dy;
-      const victim = state.entities.attackTargetOf(candidate);
-      const isHelpCall = victim !== null && rules.isMate(situation, victim);
+      // Whom it attacks: its lock and what its last attack hit (DEC-322 (2)).
+      const victims = state.entities.victimsOf(candidate, state.tick);
+      const isHelpCall = victims.some((victim) => rules.isMate(situation, victim));
       // DEC-160 (G2): in the cooldown the escaped enemy is taken back only while it attacks the mob
       // or a mate and is still inside the old anchor's leash, so kiting never drags the mob.
       const isLeftAlone =
         candidate === escapedId &&
-        ((victim !== id && !isHelpCall) || rules.isOutsideLeash(situation, memory, this.point));
+        ((!victims.includes(id) && !isHelpCall) ||
+          rules.isOutsideLeash(situation, memory, this.point));
       if (
         (gap > reach && !isHelpCall) ||
         isLeftAlone ||

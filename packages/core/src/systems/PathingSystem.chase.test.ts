@@ -17,6 +17,7 @@ import { LaneFlowFields } from '../map/LaneFlowFields';
 import { WorldMap } from '../map/WorldMap';
 import { SpaceIndex } from '../physics/SpaceIndex';
 import { GameState } from '../state/GameState';
+import { ReachQuery } from '../state/ReachQuery';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { PathingSystem } from './PathingSystem';
 import { FORMATIONS, logger, STRATEGIES } from './__fixtures__/pathingSystemSetup';
@@ -183,7 +184,7 @@ describe('PathingSystem', () => {
     // 0.8 m from the wall: within the 0.4 m radius + 1.5 m reach, though 15.8 m from the centre.
     minion.getComponent(Transform).moveTo({ x: 83.2, y: 22 });
     update();
-    expect(state.entities.isInReach(minion.id, tower.id)).toBe(true);
+    expect(new ReachQuery().isInReach(state.entities, minion.id, tower.id)).toBe(true);
     expect(minion.getComponent(Movement).heading).toEqual({ x: 0, y: 0 });
   });
 
@@ -228,7 +229,7 @@ describe('PathingSystem', () => {
     // outline), so it holds, where a chase of the centre would still close in.
     minion.getComponent(Transform).moveTo({ x: 83.2, y: 22 });
     update();
-    expect(state.entities.isInReach(minion.id, house.id)).toBe(true);
+    expect(new ReachQuery().isInReach(state.entities, minion.id, house.id)).toBe(true);
     expect(minion.getComponent(Movement).heading).toEqual({ x: 0, y: 0 });
   });
 
@@ -267,7 +268,7 @@ describe('PathingSystem', () => {
       logger,
     });
 
-    expect(state.entities.isInReach(minion.id, house.id)).toBe(true);
+    expect(new ReachQuery().isInReach(state.entities, minion.id, house.id)).toBe(true);
     expect(minion.getComponent(Movement).heading).toEqual({ x: 0, y: 0 });
   });
 

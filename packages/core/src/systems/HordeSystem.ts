@@ -57,7 +57,9 @@ export class HordeSystem implements System {
       return;
     }
     state.hordes.forEach((horde) => {
-      // The anchor holds while any member fights (18 §4, MS-33), so the horde fights as one.
+      // The anchor holds while any member fights (18 §4, MS-33), so the horde fights as one. A
+      // member is a minion and fights only by its lock, so its recorded hits are not read
+      // (`victimsOf`): they would hold the anchor up to an attack interval after a `stop`.
       if (horde.memberIds.some((id) => state.entities.attackTargetOf(id) !== null)) {
         return;
       }

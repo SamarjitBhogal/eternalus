@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { Combat } from '../../components/Combat';
 import { Health } from '../../components/Health';
 import { StatusEffects } from '../../components/StatusEffects';
 import { Transform } from '../../components/Transform';
@@ -94,6 +95,21 @@ describe('Perception', () => {
     expect(perception.unitsWithin(center, 5, { hostileTo: 'light' })).toEqual([seen.id]);
     expect(perception.nearest(center, 5, { hostileTo: 'light' })).toBe(seen.id);
     expect(perception.unitsWithin(center, 5, { aliveOnly: true })).toEqual([veiled.id, seen.id]);
+  });
+
+  it("keeps a neutral unit with no lock while its last attack's hit on this unit counts (DEC-322 (2))", () => {
+    const { state, add, index } = setUp();
+    const self = add('light', 10);
+    const camp = add('neutral', 12, 'light-mob', 'light-camp-mob');
+    index();
+    const perception = new Perception(state);
+    const fightingBack = { hostileTo: 'light', neutralAttackersOf: self.id } as const;
+    const interval = camp.getComponent(Combat).attack.interval;
+
+    state.entities.recordHits(camp.id, [self.id], state.tick);
+    expect(perception.unitsWithin({ x: 10, y: 10 }, 5, fightingBack)).toEqual([camp.id]);
+    for (let tick = 0; tick <= interval; tick += 1) state.advanceTick();
+    expect(perception.unitsWithin({ x: 10, y: 10 }, 5, fightingBack)).toEqual([]);
   });
 
   it('returns ids in string order, and breaks a nearest tie toward the lower id', () => {

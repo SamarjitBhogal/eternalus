@@ -3,6 +3,8 @@ import { colorWithAlpha } from './colorWithAlpha';
 import { DefaultEntityView } from './DefaultEntityView';
 import type { EntityDrawState } from './EntityView.types';
 import {
+  PROJECTILE_ARC_LAUNCH_HEIGHT,
+  PROJECTILE_ARC_RISE,
   PROJECTILE_CORE_COLOR,
   PROJECTILE_CORE_SIZE,
   PROJECTILE_DOT_SIZE,
@@ -14,7 +16,6 @@ import {
   PROJECTILE_MIST_OPACITY,
   PROJECTILE_MIST_START_RADIUS,
   PROJECTILE_SHADOW_COLOR,
-  PROJECTILE_SHADOW_HEIGHT,
   PROJECTILE_SHADOW_OPACITY,
   PROJECTILE_SHADOW_SIZE,
   PROJECTILE_STREAK_LENGTH,
@@ -25,7 +26,8 @@ import type { Point, ProjectileEndingLook } from './ProjectileView.types';
 /**
  * The placeholder look for projectiles (arrows, bolts): a small dot in the shooter's team colour
  * with a bright core, and a short streak behind it, opposite its facing. A shot that drops (an
- * arrow) also has a shadow dot below it that closes in as it slows. When a shot ends (DEC-306), a
+ * arrow) flies an artificial arc (DEC-322 (2)): its shadow dot below it drops away to mid-flight,
+ * then closes in and meets it at the end of its range. When a shot ends (DEC-306), a
  * bolt thins into a mist that grows and fades, and an arrow lies still on its shadow, then fades.
  * The look of each id is in `PROJECTILE_ENDING_LOOKS`. It has no mini map marker. Final projectile
  * art replaces it.
@@ -79,18 +81,27 @@ export class ProjectileView extends DefaultEntityView {
     );
   }
 
-  /** The shadow under a dropping shot, nearer to it the slower the shot, scaled by `fade`. */
+  /** The shadow under a dropping shot, as far below it as its arc is high; scaled by `fade`. */
   private drawShadow(
     { entity, position }: EntityDrawState,
     fade: number,
     renderer: Renderer,
   ): void {
-    const speedShare = entity.projectile?.speedShare ?? 1;
     renderer.drawWorldGlyph(
       { shape: 'dot', size: PROJECTILE_SHADOW_SIZE },
-      { x: position.x, y: position.y + PROJECTILE_SHADOW_HEIGHT * speedShare },
+      { x: position.x, y: position.y + this.arcHeight(entity.projectile?.flownShare ?? 0) },
       colorWithAlpha(PROJECTILE_SHADOW_COLOR, PROJECTILE_SHADOW_OPACITY * fade),
     );
+  }
+
+  /**
+   * How high a dropping shot is after flying `flown` (0 to 1) of its range: a straight drop from
+   * the launch height to the ground at the end, plus a parabola that is 0 at both ends and
+   * `PROJECTILE_ARC_RISE` at mid-flight (`4 * flown * (1 - flown)` peaks at 1 there).
+   */
+  private arcHeight(flown: number): number {
+    const left = 1 - flown;
+    return PROJECTILE_ARC_LAUNCH_HEIGHT * left + PROJECTILE_ARC_RISE * 4 * flown * left;
   }
 
   /** A ring of translucent team-coloured dots that spread and fade as `ending` goes to 1. */

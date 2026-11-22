@@ -13,6 +13,8 @@ export type AggroRankOptions = {
   readonly priority: readonly AggroPriority[];
   readonly entities: EntityStore;
   readonly classOf: UnitClassifier;
+  /** The tick it ranks at: an aimed hit counts for one attack interval (`EntityStore.victimsOf`). */
+  readonly tick: number;
   /** The horde's next objective (18 §6.2); it matches `lane-objective`. */
   readonly objectiveId?: EntityId | null;
 };

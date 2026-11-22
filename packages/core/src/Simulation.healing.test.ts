@@ -16,6 +16,7 @@ import { Simulation } from './Simulation';
 import type { RosterSlot } from './Simulation.types';
 import { TWO_LANE_MAP } from './state/__fixtures__/twoLaneMap';
 import type { GameState } from './state/GameState';
+import { isPlayableTeam, opponentOf } from './teams/playableTeams';
 
 const CONFIG = createDefaultGameConfig({ match: { countdownSeconds: 10, legendsPerTeam: 6 } });
 const TICK_RATE = CONFIG.tickRate;
@@ -28,6 +29,14 @@ const laners = (team: 'light' | 'dark', count: number): RosterSlot[] =>
     pilot: 'bot',
     difficulty: NORMAL_BOT.id,
   }));
+
+/**
+ * How far in front of a bot that rejoined an enemy dummy appears: out of the Warrior's reach
+ * (class plus weapon, DEC-305) and inside the bot's engage radius, so no hit lands until the gap
+ * closes. Sweeps (DEC-184) end the 4v4 lane fight before any bot has healed, and Legends do not
+ * respawn yet, so the test brings the enemy the bot must fight again.
+ */
+const ENEMY_AHEAD_METRES = 8;
 
 /**
  * The bots carry Blade Runner and Fury, the abilities built when this match was set up; the other
@@ -63,7 +72,7 @@ describe('Simulation with out-of-combat healing (DEC-188)', () => {
 
     for (let tick = 0; tick < 150 * TICK_RATE; tick += 1) {
       simulation.step();
-      for (const { id, kind, health } of simulation.snapshot().entities) {
+      for (const { id, kind, team, health, transform } of simulation.snapshot().entities) {
         if (kind !== 'warrior' || health === null) continue;
         const fraction = health.current / health.max;
         if (fraction < NORMAL_BOT.retreatHealthFraction && !retreatedAt.has(id)) {
@@ -75,6 +84,19 @@ describe('Simulation with out-of-combat healing (DEC-188)', () => {
           fraction >= NORMAL_BOT.rejoinHealthFraction
         ) {
           rejoinedAt.set(id, tick);
+          if (transform !== null && team !== null && isPlayableTeam(team)) {
+            simulation.enqueueCommand({
+              type: 'dev-spawn',
+              kind: 'light-mob',
+              definitionId: 'training-dummy',
+              team: opponentOf(team),
+              at: {
+                x: transform.x + transform.facing.x * ENEMY_AHEAD_METRES,
+                y: transform.y + transform.facing.y * ENEMY_AHEAD_METRES,
+              },
+              count: 1,
+            });
+          }
         }
       }
     }

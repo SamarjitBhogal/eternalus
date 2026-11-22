@@ -357,6 +357,7 @@ describe('MiniMapView unit markers (DEC-187)', () => {
       capture: null,
       statuses: null,
       projectile: null,
+      swing: null,
     };
     const counters = { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} };
     const snapshot: Snapshot = {

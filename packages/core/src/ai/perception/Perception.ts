@@ -85,7 +85,7 @@ export class Perception {
           entities.isTargetable(id) &&
           (team !== 'neutral' ||
             (neutralAttackersOf !== undefined &&
-              entities.attackTargetOf(id) === neutralAttackersOf)))) &&
+              entities.isAttacking(id, neutralAttackersOf, this.state.tick))))) &&
       (kinds === undefined || kinds.includes(entity.kind)) &&
       (aliveOnly !== true || entities.isAlive(id))
     );

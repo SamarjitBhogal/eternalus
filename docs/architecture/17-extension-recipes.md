@@ -254,7 +254,9 @@ AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `
   `AbilityDefinition` with `slot: 'gadget'`, modes as `varieties`) + `artifactCatalogue.ts` line
   and the `LegendDefinition.allowedArtifactIds` entries. A ranged weapon: the attack names
   `projectile: { projectileId, falloff }` (a `ProjectileLaunch`); `KnownProjectileRule` checks that
-  `projectileId` is a projectile (R27).
+  `projectileId` is a projectile (R27). A melee weapon attack is `strategy: 'melee-sweep'` with
+  `arcDegrees` (above 0, at most 180; `loadWeapons` checks it); its `reach` is only the weapon's
+  part, because the class adds `LegendDefinition.meleeReach` (DEC-304, DEC-305).
 - **Registry line:** none; `defaultStrategyRegistry.ts` only for a new `AttackStrategy`.
 - **Tests:** content validation; the attack strategy test with `onHit`; the loadout fixtures
   (`WeaponAllowedRule`, `ArtifactClassRule`); an artifact cast through

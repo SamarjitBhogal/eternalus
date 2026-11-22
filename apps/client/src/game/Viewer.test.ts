@@ -18,6 +18,7 @@ const entity = (id: string, team: EntitySnapshot['team'], isHidden = false): Ent
   capture: null,
   statuses: null,
   projectile: null,
+  swing: null,
   ...(isHidden && { isHidden: true }),
 });
 

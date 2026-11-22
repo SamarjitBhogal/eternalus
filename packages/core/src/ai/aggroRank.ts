@@ -18,30 +18,33 @@ const MEANING: Readonly<
 
 /**
  * The index of the first entry of `priority` that the enemy `candidate` matches, as seen by a unit
- * of `options.team` (architecture 11 §4.3, 18 §6.1); lower is better, `-1` when none matches. Pure: the
- * ranking helper minion and guard controllers share (MS-27).
+ * of `options.team` (architecture 11 §4.3, 18 §6.1); lower is better, `-1` when none matches. An
+ * enemy attacks its lock and each other body its last attack hit (`EntityStore.victimsOf`,
+ * DEC-322 (2)), so a player who aims, with no lock, ranks by what it hit; with several allies
+ * attacked, the best entry they match counts. Pure: the ranking helper minion and guard
+ * controllers share (MS-27).
  */
 export const aggroRank = (
   candidate: EntityId,
-  { team, priority, entities, classOf, objectiveId = null }: AggroRankOptions,
+  { team, priority, entities, classOf, tick, objectiveId = null }: AggroRankOptions,
 ): number => {
   if (candidate === objectiveId) {
     return priority.indexOf('lane-objective');
   }
   const kind = entities.get(candidate)?.kind;
   const attacker = kind === undefined ? null : classOf(kind);
-  const victimId = entities.attackTargetOf(candidate);
-  const victimKind = victimId === null ? undefined : entities.get(victimId)?.kind;
-  const victim =
-    victimId !== null && victimKind !== undefined && entities.teamOf(victimId) === team
-      ? classOf(victimKind)
-      : null;
+  const victims = entities.victimsOf(candidate, tick).flatMap((victimId) => {
+    const victimKind = entities.get(victimId)?.kind;
+    return victimKind !== undefined && entities.teamOf(victimId) === team
+      ? [classOf(victimKind)]
+      : [];
+  });
   return priority.findIndex((entry) => {
     const meaning = MEANING[entry];
     return (
       meaning !== null &&
       meaning.attacker === attacker &&
-      (meaning.victim === null || meaning.victim === victim)
+      (meaning.victim === null || victims.includes(meaning.victim))
     );
   });
 };

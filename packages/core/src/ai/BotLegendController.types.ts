@@ -36,9 +36,10 @@ export type BotLegendControllerContent = {
   /** The cast rules a bot picks its ready abilities by (DEC-205). */
   readonly readiness: SlotReadiness;
   /**
-   * Whether the bot's shot would reach its enemy or objective now: a ranged bot holds to shoot only
-   * with a clear line (DEC-317). `Simulation` injects the match's one `LineOfFire`. Required, so a
-   * bot never holds behind a wall by omission.
+   * Whether the bot's shot would reach its enemy or objective now: a ranged bot holds a target
+   * and stands to shoot only with a clear line, and drops the target without one (DEC-317 and its
+   * addendum). `Simulation` injects the match's one `LineOfFire`. Required, so a bot never shoots
+   * into a wall by omission.
    */
   readonly lineOfFire: LineOfFireQuery;
 };

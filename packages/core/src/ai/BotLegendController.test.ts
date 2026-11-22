@@ -20,6 +20,7 @@ import { SpaceIndex } from '../physics/SpaceIndex';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import type { AiMemory } from '../state/AiState.types';
 import { GameState } from '../state/GameState';
+import { ReachQuery } from '../state/ReachQuery';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { spawnMapStructures } from '../state/__fixtures__/spawnMapStructures';
 import type { Team } from '../teams/teams.types';
@@ -398,7 +399,11 @@ describe('BotLegendController (laner tree, 11 §4.2)', () => {
     let memory: AiMemory = { lane: 'lane-0' };
     let heading = { x: 0, y: 0 };
     // Walks as a held `move` drives it, blocked (not slid) by the wall, until it is in reach.
-    for (let turn = 0; turn < 300 && !state.entities.isInReach(bot, stronghold); turn += 1) {
+    for (
+      let turn = 0;
+      turn < 300 && !new ReachQuery().isInReach(state.entities, bot, stronghold);
+      turn += 1
+    ) {
       const decision = decide(memory);
       memory = decision.memory;
       const move = decision.commands.findLast(({ type }) => type === 'move');
@@ -417,7 +422,7 @@ describe('BotLegendController (laner tree, 11 §4.2)', () => {
     }
 
     expect(stronghold).toBe('entity-1001');
-    expect(state.entities.isInReach(bot, stronghold)).toBe(true);
+    expect(new ReachQuery().isInReach(state.entities, bot, stronghold)).toBe(true);
   });
 
   it('Fight before Push: an enemy unit near the structure is fought first', () => {

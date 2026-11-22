@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-22
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -353,6 +353,14 @@ collider is unbreakable (DEC-317 (5)) are hit only by a shot fired at their enti
 `CollisionSystem` skips the `projectile` layer. A shot with nothing in its path is slowed by
 `Movement.limitSpeed` (`physics/flightSpeed`, from `slowFrom`) so it stops exactly at its `range`;
 it then ends and hits nothing until it is removed (`ProjectileFlight`, DEC-306).
+
+**2026-11-22 (branch `feat/melee-sweeps`, PR 2; DEC-317 addendum, DEC-322).** One rule decides
+which body stops a shot: `state/AreaHitQuery.stopsShot`, which `ProjectileSystem` and `LineOfFire`
+both use. This replaces two parts of the 2026-11-20 note above. A body whose collider is
+unbreakable now stops every shot and takes no damage (DEC-317 addendum). A walk-on outline still
+lets a shot fly over unless the shot aims at it: its locked target, or the walk-on body its aim
+point names (`AreaHitQuery.aimedBodyOf`, DEC-322 (1)). The last move up to `range` is swept like any
+other, so a body under the end point takes the hit: an arrow damages what it lands on (DEC-322 (2)).
 
 ## Related
 

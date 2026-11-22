@@ -168,6 +168,17 @@ describe('MinionController', () => {
     expect(decision.memory).toMatchObject({ fsm: 'engaging', targetId: tower.id });
   });
 
+  it('turns from its objective to a unit that comes in reach: hitting a structure is not a fight it must finish (DEC-326 (2) covers units)', () => {
+    const { add, decide, objective } = setUp();
+    const self = add('light', 124);
+    const tower = objective('spawner-tower', 140, self);
+    const enemy = add('dark', 122);
+
+    expect(decide(self, engagingOn(tower.id, { leashX: 124 })).commands).toEqual([
+      { type: 'attack-target', actorId: self, targetId: enemy },
+    ]);
+  });
+
   it.each([
     // The countdown ends on a whole tick (DEC-170): 10 s = 300 ticks, 0.01 s rounds to 0, 0.25 s to 8.
     [10, 330],

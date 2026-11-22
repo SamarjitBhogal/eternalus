@@ -65,7 +65,7 @@ describe('AttackTargetHandler', () => {
 
     expect(handle(magus.id, enemy.id, 'melee')).toBeNull();
     expect(magus.getComponent(Combat).mode).toBe('melee');
-    expect(magus.getComponent(Combat).attack.strategy).toBe('melee');
+    expect(magus.getComponent(Combat).attack.strategy).toBe('melee-sweep');
     expect(handle(magus.id, enemy.id)).toBeNull();
     expect(magus.getComponent(Combat).mode).toBe('basic');
     expect(magus.getComponent(Combat).attack.strategy).toBe('ranged-projectile');

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DamagePipeline } from '../combat/DamagePipeline';
+import { Combat } from '../components/Combat';
 import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
 import { MapObjectBody } from '../components/MapObjectBody';
@@ -21,8 +22,6 @@ import { Projectile } from '../entities/Projectile';
 import { CollisionResolver } from '../physics/CollisionResolver';
 import { StaticCollisionIndex } from '../physics/StaticCollisionIndex';
 import { GameState } from '../state/GameState';
-import { LineOfFire } from '../state/LineOfFire';
-import type { LineOfFireQuery } from '../state/LineOfFire.types';
 import { cos, sin } from '../utils/deterministicMath';
 import type { Team } from '../teams/teams.types';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
@@ -186,10 +185,10 @@ describe('ProjectileSystem on real geometry', () => {
   });
 
   /**
-   * A Magus hugging a wall attacks a dummy behind it, in reach, for 40 ticks with `lineOfFire`;
-   * returns the shots it fired and the damage the dummy took.
+   * A Magus hugging a wall attacks a dummy behind it, in reach, for 40 ticks; returns the shots it
+   * fired, its attack interval and the damage the dummy took.
    */
-  const hugWallAndAttack = (lineOfFire: LineOfFireQuery) => {
+  const hugWallAndAttack = () => {
     const units = loadDefaultContent(CONFIG.tickRate);
     const factory = new EntityFactory(
       createDefaultEntityRegistry(),
@@ -216,7 +215,7 @@ describe('ProjectileSystem on real geometry', () => {
     scene.state.events.on('entity-spawned', ({ kind }) => {
       if (kind === 'projectile') shots += 1;
     });
-    const combat = new CombatSystem({ damage: new DamagePipeline(), factory, lineOfFire });
+    const combat = new CombatSystem({ damage: new DamagePipeline(), factory });
     expect(scene.state.entities.setAttackTarget(magus.id, dummy.id)).toBe(true);
 
     for (let tick = 0; tick < 40; tick += 1) {
@@ -225,22 +224,22 @@ describe('ProjectileSystem on real geometry', () => {
       scene.state.advanceTick();
     }
     const health = dummy.getComponent(Health);
-    return { shots, damage: health.max - health.current };
+    const { interval } = magus.getComponent(Combat).attack;
+    return { shots, interval, damage: health.max - health.current };
   };
 
   it('stops at the wall a shot fired by a unit hugging that wall, with a target behind it in reach', () => {
-    // A line that always reads clear: aimed fire (PR 2) shoots across walls, so the flight must stop.
-    const { shots, damage } = hugWallAndAttack({ isClear: () => true });
+    const { shots, damage } = hugWallAndAttack();
 
     expect(shots).toBeGreaterThan(0);
     expect(damage).toBe(0);
   });
 
-  it('fires no shot from a unit hugging a wall at a target behind it, on the real line of fire', () => {
-    const { shots, damage } = hugWallAndAttack(new LineOfFire(PROJECTILES));
+  it('fires every interval from a unit hugging a wall at a target behind it: no line-of-fire gate (DEC-317 addendum)', () => {
+    const { shots, interval } = hugWallAndAttack();
 
-    expect(shots).toBe(0);
-    expect(damage).toBe(0);
+    // Ticks 0, interval, 2 x interval, ... below 40.
+    expect(shots).toBe(Math.ceil(40 / interval));
   });
 
   describe('from inside a fort court, ringed by its walls', () => {
