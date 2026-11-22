@@ -207,7 +207,7 @@ Reply inline (`Decision: …`).
     signed off: the time check in the aggro, stuck, veterancy and guard loaders (the 2026-11-12
     critic) and #86's healing times as DEC-241's sixth reader.
 
-- [ ] **HC-B9 — Better than the design, not built, sign-off asked: two older times not read once at
+- [x] **HC-B9 — Better than the design, not built, sign-off asked: two older times not read once at
       load (`refactor/durations-at-load` merge critic, 2026-11-19); no decision blocks the PR.**
       Both are older than PR #125 and keep their values.
       (1) **One countdown-end tick.** Three readers each compute the tick the countdown ends with
@@ -226,7 +226,13 @@ Reply inline (`Decision: …`).
     `feat/match-start-countdown`: the tick is `MatchState.countdownEndTick`, set once when the
     match is built; every runtime reader reads it (the three above, and `MatchDirector` and the
     snapshot, which that branch added). Built with it, critic round 2's BTD4: `timelineMarkTick`
-    takes a named `TimelineFrame`. (2) is open for its follow-up pull request.
+    takes a named `TimelineFrame`. (2) **Built** on `refactor/scoring-at-load` (PR #139): `content/match/loadScoring.ts`
+    turns `assistWindowSeconds` into `assistWindowTicks` once and rejects a negative or non-finite
+    window; `Simulation` passes the loaded value, and the scoring rules see only ticks. Same
+    conversion as before (30 s = 900 ticks). With it, under the standing rule, the critic's two
+    better-than-design items (DEC-287): the loader also turns the held minute into ticks, so
+    `createDefaultScoringRules` takes no tick rate, and the authored and loaded scoring types
+    share one `weights` base.
 
 - [x] **Unit facing chevron (DEC-192, feat/unit-facing-chevron, 2026-11-05) — two questions, one
       better-than-design item.**
@@ -2846,16 +2852,23 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
-- [ ] **Make the tower horde test faster (DEC-289, 2026-11-20).** Owner: to be assigned.
+- [ ] **Make the tower horde test and the Duel kill-target test faster (DEC-289, 2026-11-20;
+      widened to both slow whole-match tests by DEC-325, 2026-11-22).** Owner: to be assigned.
+      Both core tests build a whole map and match, then play for many ticks.
       `Simulation.mapObjects.test.ts`, "walks every tower horde out of its tower and on up its
-      lane within 10 seconds (DEC-133, seed %i)", builds a whole map and match for each of its
-      three seeds (1, 2, 10), steps the countdown, then 10 s of play. One seed takes about 3 s
-      locally without coverage, but up to 65 s under coverage on the windows-latest CI runner
-      (PR #122, run 44714237495, 2026-11-20). DEC-289 gave this test its own 120 s time limit
-      (`HORDE_WALK_TIMEOUT_MS`) until it is faster. Where the time goes is not measured yet. Done
-      when the test runs well under 60 s on windows-latest CI and `HORDE_WALK_TIMEOUT_MS` is
-      removed, with every assertion and all three seeds kept (seed 10 covers critic round 3,
-      M-A).
+      lane within 10 seconds (DEC-133, seed %i)", does this for each of its three seeds (1, 2,
+      10): the countdown, then 10 s of play. One seed takes about 3 s locally without coverage,
+      but up to 65 s under coverage on the windows-latest CI runner (PR #122, run 44714237495,
+      2026-11-20). `Simulation.duel.test.ts`, "ends the match for the first team to reach the
+      kill target", fights a Duel to two kills; it took up to 61.7 s under coverage on the
+      ubuntu-latest runner (PR #122, run 44872612846, 2026-11-21). DEC-289 and DEC-325 gave the
+      two tests their own 120 s time limits (`HORDE_WALK_TIMEOUT_MS`, `KILL_TARGET_TIMEOUT_MS`)
+      until they are faster. A CPU profile of the slow Duel tests (2026-11-21) puts most of the
+      time in building the map: `WorldMap.stampFootprint` and `cellsInside`, and
+      `LaneFlowFields`; DEC-227's 2.5 m nav cells made that build about 3 times slower. Done when
+      both tests run well under 60 s on both CI runners and both constants are removed, with every
+      assertion kept, all three horde seeds kept (seed 10 covers critic round 3, M-A) and the Duel
+      still fought to its kill target.
 - [ ] **PR #30 renderer follow-up** — Owner: Gurshaan. Separate caching/batching and close-view
       material detail from the map PR; retain all renderer-specific tests with that change.
       Keep draw order inside SceneView, address renderer file length and the capture layer,
@@ -3101,6 +3114,15 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
       First make them pass on Windows: with `shell: true`, cmd.exe drops the quotes in the first
       test of `scripts/hooks/hookInput.test.mjs`; the signal test is POSIX-only and skips itself
       on Windows. Update the CI gate row in `docs/process/guardrails.md` and doc 16. Close this
+      item when its PR merges.
+- [ ] **HC-B11 guard on progress entry files (DEC-277 critic; better than the design, owner
+      approved 2026-11-19)** — Owner: sholtzman, a `chore/` harness PR after
+      `chore/progress-entry-files` merges. A check in `npm run check` that fails when a commit
+      edits an entry file in `docs/plan/progress/` that already exists on the base branch (new
+      files pass), plus a `.coderabbit.yaml` path rule for `docs/plan/progress/**` that says
+      entries are append-only records. The same check fails on any file in `docs/plan/progress/`
+      other than `README.md` whose name does not match the entry pattern (critic round 2, owner
+      sign-off pending). Update the docs check row in `docs/process/guardrails.md`. Close this
       item when its PR merges.
 
 - [ ] **Bot path cache (DEC-240, 2026-11-10)** — Owner: unassigned, own branch. A bot searches

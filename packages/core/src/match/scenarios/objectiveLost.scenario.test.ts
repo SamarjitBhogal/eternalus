@@ -6,7 +6,7 @@ import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../../config/matchPhases';
 import { RUINED_FORT_WALL_DEFINITION } from '../../content/maps/mapObjectDefinitions';
 import { loadDefaultContent } from '../../content/loadDefaultContent';
-import { SCORING } from '../../content/match/scoring';
+import { loadScoring } from '../../content/match/loadScoring';
 import { loadLevelCurves } from '../../content/progression/loadLevelCurves';
 import { XP_SOURCES } from '../../content/progression/xpSources';
 import { loadWeapons } from '../../content/weapons/loadWeapons';
@@ -43,7 +43,7 @@ const playOut = (prepare: (state: GameState) => void = () => undefined) => {
     timeline,
     debug: TEST_DEBUG_CONFIG,
     logger,
-    scoring: SCORING,
+    scoring: loadScoring(CONFIG.tickRate),
   });
   const pipeline = new DefaultSystemPipeline({
     invariants: new DefaultInvariantRunner({
