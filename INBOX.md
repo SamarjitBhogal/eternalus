@@ -351,7 +351,9 @@ Reply inline (`Decision: …`).
       emits one event, not a `status-expired` plus one `status-applied` per remaining level.
       (c) The zone level-up's hold time and levels as fields of each capture-point
       `ZoneDefinition`, looked up by id (balancing.md's knob table), not one global constant.
-      Approve any, or leave as built.
+      Approve any, or leave as built. Leaving (a) as built keeps 03 §4's one exception (a
+      listener that changes state in its handler), which then needs your sign-off in your own
+      words (PR #131 review S2, 2026-11-22).
 
 - [ ] **Minion plan MVP gaps (3): who owns the zone cooldown reduction (2026-11-06, PR #81).**
       The zone's cooldown reduction (FR-041, 07 §7) is Legend-side, not minion work, and no plan
