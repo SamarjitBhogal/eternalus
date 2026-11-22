@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
-import type { DisplayCatalogue } from '../catalogue.types';
+import type { DisplayCatalogue, UiEnhancementId } from '../catalogue.types';
 import type { Team } from '../domain.types';
 
 const initialState: DisplayCatalogue = {
@@ -13,6 +13,7 @@ const initialState: DisplayCatalogue = {
   lockInChromeAssetId: null,
   effectsRenderer: 'figma-raster',
   contrastMode: 'figma',
+  uiEnhancements: [],
   hud: { structureKinds: [], objectiveKinds: [], chrome: null },
   laneMinions: [],
   teamNames: { light: '', dark: '' },
@@ -43,6 +44,11 @@ export const contentSlice = createSlice({
     selectSelectionBannerAssetId: (state) => state.selectionBannerAssetId,
     selectSelectClassChromeAssetId: (state) => state.selectClassChromeAssetId,
     selectLockInChromeAssetId: (state) => state.lockInChromeAssetId,
+    /**
+     * Whether the UI enhancement `id` is on (ui-enhancements-plan §2 rule 1): read only where its
+     * markup must change (a live region, a `key`); its styling is scoped in CSS.
+     */
+    selectIsUiEnhancementOn: (state, id: UiEnhancementId) => state.uiEnhancements.includes(id),
     selectHudCatalogue: (state) => state.hud,
     selectLaneMinions: (state) => state.laneMinions,
     selectTeamNames: (state) => state.teamNames,

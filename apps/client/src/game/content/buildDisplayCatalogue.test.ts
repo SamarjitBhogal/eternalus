@@ -11,7 +11,7 @@ import { CATALOGUE_PRESENTATION } from './screenPresentation';
 
 const CONTENT = loadDisplayContent();
 const KNOWN = new Set(ASSET_MANIFEST.assets.map((entry) => entry.id));
-const NONE: DisplayOverrides = { effectsRenderer: null };
+const NONE: DisplayOverrides = { effectsRenderer: null, uiEnhancements: null };
 
 function build(
   change: {
@@ -25,7 +25,7 @@ function build(
     content: { ...CONTENT, ...change.content },
     presentation: { ...CATALOGUE_PRESENTATION, ...change.presentation },
     knownAssetIds: change.known ?? KNOWN,
-    overrides: change.renderer === undefined ? NONE : { effectsRenderer: change.renderer },
+    overrides: change.renderer === undefined ? NONE : { ...NONE, effectsRenderer: change.renderer },
   });
 }
 
@@ -372,6 +372,25 @@ describe('buildDisplayCatalogue', () => {
     }
     expect(build().contrastMode).toBe('figma');
     expect(build({ presentation: { contrastMode: 'minimums' } }).contrastMode).toBe('minimums');
+  });
+
+  // ui-enhancements-plan §2 rule 1: the content list, or the developer's `ui=` list in its place.
+  it('copies the UI enhancements from content unless the developer override lists its own', () => {
+    const listed = (
+      presentation: CataloguePresentation['uiEnhancements'],
+      override: DisplayOverrides['uiEnhancements'],
+    ) =>
+      buildDisplayCatalogue({
+        content: CONTENT,
+        presentation: { ...CATALOGUE_PRESENTATION, uiEnhancements: presentation },
+        knownAssetIds: KNOWN,
+        overrides: { ...NONE, uiEnhancements: override },
+      }).uiEnhancements;
+
+    expect(listed(['countdown-urgency'], null)).toEqual(['countdown-urgency']);
+    expect(listed([], null)).toEqual([]);
+    expect(listed(['countdown-urgency'], [])).toEqual([]);
+    expect(listed([], ['countdown-urgency'])).toEqual(['countdown-urgency']);
   });
 });
 

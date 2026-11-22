@@ -90,6 +90,7 @@ describe('connectBusToStore', () => {
       lockInChromeAssetId: 'lock-in-chrome',
       effectsRenderer: 'css',
       contrastMode: 'minimums',
+      uiEnhancements: [],
       hud: TEST_HUD_CATALOGUE,
       laneMinions: [],
       teamNames: { light: 'Lux', dark: 'Umbra' },
@@ -186,10 +187,10 @@ describe('connectBusToStore', () => {
 
   it('copies the match clock, HUD state and announcements', () => {
     const { bus, store } = connected();
-    bus.emit('match-clock', { tick: 60, seconds: 2 });
+    bus.emit('match-clock', { tick: 60, seconds: 2, countdown: null });
     bus.emit('announcement', { id: 'first-blood', text: 'First blood' });
     bus.emit('hud-state', { player: FIGMA_HUD_PLAYER });
-    expect(store.getState().match.clock).toEqual({ tick: 60, seconds: 2 });
+    expect(store.getState().match.clock).toEqual({ tick: 60, seconds: 2, countdown: null });
     expect(store.getState().hud.player).toBe(FIGMA_HUD_PLAYER);
     expect(store.getState().hud.announcements).toEqual([
       { id: 'first-blood', text: 'First blood' },
@@ -248,7 +249,7 @@ describe('connectBusToStore', () => {
       const { bus, store } = connected();
       const { structures } = figmaHudState().match;
       bus.emit('hud-state', { player: FIGMA_HUD_PLAYER });
-      bus.emit('match-clock', { tick: 60, seconds: 2 });
+      bus.emit('match-clock', { tick: 60, seconds: 2, countdown: null });
       bus.emit('structure-state', { structures });
       bus.emit('match-setup', draft);
       expect(store.getState().hud.player).toBeNull();
@@ -267,7 +268,7 @@ describe('connectBusToStore', () => {
 
   it('copies the Duel names and scoreboard, and clears them with the next setup', () => {
     const { bus, store } = connected();
-    const duel = { ownKills: 3, opponentKills: 1, killTarget: 10, countdown: null };
+    const duel = { ownKills: 3, opponentKills: 1, killTarget: 10 };
     bus.emit('duel-versus', { own: 'Ana', opponent: 'Ben' });
     bus.emit('duel-state', duel);
     expect(store.getState().match.versus).toEqual({ own: 'Ana', opponent: 'Ben' });
