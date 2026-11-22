@@ -640,8 +640,10 @@ Reply inline (`Decision: …`).
     a rock if i want"). (4) is replaced: every unit fires without a line-of-fire check, and a bot
     whose shot is blocked drops its lock and moves for a clear shot (scheduled to PR 2 by the
     coordinator under the standing rule). (5) is replaced: a body that takes no damage stops every
-    shot and takes no damage. Built in PR 2 (`feat/melee-sweeps`). Still open: BTD-B, BTD-E and
-    BTD-H (they were not on the card).
+    shot and takes no damage. Built in PR 2 (`feat/melee-sweeps`). The AI half of (4) is also
+    built there: a bot's line of fire uses the shot's own stop rule (`AreaHitQuery.stopsShot`),
+    so a body that takes no damage blocks it. Still open: BTD-B, BTD-E and BTD-H (they were not
+    on the card).
 
 - [x] **HC-B25 — A rule the design did not state, built under your standing rule (DEC-223),
       sign-off asked: what a melee sweep passes over (`feat/melee-sweeps`, PR 2, 2026-11-21;
@@ -723,12 +725,24 @@ Reply inline (`Decision: …`).
       (DEC-326 (2)): "A: a busy minion finishes its own fight; only minions that are not fighting
       come to help". Built in PR 2 (`LeashBehaviour.engage`).
 
+- [ ] **Owner Calls card `busy-minion-building` — Minions hitting a tower: do they come to help?
+      (`feat/melee-sweeps`, PR 2).** Asked on Owner Calls v54, 2026-11-22, by
+      COMBAT-WEAPONS-ABILITIES-55. Does a minion that hits an enemy tower or Stronghold count as
+      "fighting" under DEC-326 (2)? A (built now): no, it leaves the building and helps; only a
+      minion that fights a unit stays. B: yes, it keeps hitting the building. The rule also
+      reaches guards and forest-camp mobs (DEC-144 (C)). Recorded as a reading in DEC-326 (2).
+
 - [ ] **FYI for Samarjit (minion AI owner): two changes to minion AI in PR 2
       (`feat/melee-sweeps`).** Nothing to decide. (1) DEC-326 (2): a minion that is already
       fighting does not leave its fight for a call for help or a better-ranked enemy; only
       minions that are not fighting come to help. (2) DEC-322 (2): a player who hits a unit counts
       as attacking it until the player's next attack is due, so guards and minions answer a
-      player's hits (`EntityStore.attackTargetOf`). Tick this item when Samarjit has read it.
+      player's hits (`EntityStore.victimsOf` and `isAttacking`; `attackTargetOf` still gives the
+      lock only, and `HordeSystem` keeps reading it). (3) Rule (1) is in `LeashBehaviour`, so it
+      also reaches tower and Stronghold guards, forest-camp mobs and the capture point guards
+      (guards follow the minion rules, DEC-144 (C)). A minion that hits its lane objective is not
+      "fighting" and still turns to help (Owner Calls card `busy-minion-building`, open).
+      Architecture 18 §6.1 changes to match. Tick this item when Samarjit has read it.
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays

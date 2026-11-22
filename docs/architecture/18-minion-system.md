@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-11-16
+last-reviewed: 2026-11-22
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
@@ -477,7 +477,8 @@ escaped its leash (DEC-144 F).
 - **acquire** (at cadence, in every state): candidates from `Perception.unitsWithin(pos, radius,
 { hostileTo: team, neutralAttackersOf: id })` plus the horde's next objective (§6.2). A unit counts when it is within
   `acquisitionRadius`, or within `callForHelpRadius` while it attacks a horde-mate ("call for
-  help"), and when it lies inside a leash anchored where the mob stands. A neutral camp mob is a
+  help"; it attacks its locked target, or a body its last attack hit until its next attack is
+  due, so a player's aimed hits count, DEC-322 (2)), and when it lies inside a leash anchored where the mob stands. A neutral camp mob is a
   candidate only while it attacks the mob itself, so a mob fights back but does not farm a camp
   (DEC-166). Candidates rank by the
   aggro priority list, then distance, then id. The list and its numbers are the
@@ -488,7 +489,11 @@ escaped its leash (DEC-144 F).
   (DEC-160). From then on the attack is `CombatSystem`'s job (05)
   and the chase is the movement strategy's (§5.2).
   - While the target is inside `leashRadius` of the anchor, the mob fights it with no time limit,
-    a Legend too, and switches only to a strictly higher priority. The lane minion's leash, and
+    a Legend too. It does not switch for a call for help or for a better-ranked enemy: a busy
+    mob finishes its own fight, and only mobs that are not fighting come to help (DEC-326 (2)).
+    The lane objective is not a fight: a minion that attacks its next structure still switches to
+    an enemy the priority list ranks higher (a reading, Owner Calls card `busy-minion-building`).
+    Guards and camp mobs share this rule (§7, DEC-144 (C)). The lane minion's leash, and
     with it its `callForHelpRadius`, is `LEASH` in `content/ai/aggro/laneMinion.ts`, grown by
     15 percent on the owner's word (DEC-193).
   - When the target leaves the leash, the mob takes the best other enemy in reach at once. With
