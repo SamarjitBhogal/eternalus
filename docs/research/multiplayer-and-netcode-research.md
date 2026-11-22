@@ -4,7 +4,7 @@ description: Sourced comparison of lockstep, rollback and server-authoritative n
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-10
+last-reviewed: 2026-11-19
 tags: [research, multiplayer, netcode, determinism, networking, duel]
 related:
   - 'docs/research/README.md'
@@ -319,7 +319,7 @@ numbers and a recommendation, not production code.
 5. **Robustness (days 6–7).** Close and reopen a tab inside a grace window; send a spoofed
    `actorId`, a `dev-spawn` and malformed JSON, and check the server rejects each without stopping.
 
-**Exit:** a spike note in `PROGRESS.md` with the measurements, a go or no-go on prediction for
+**Exit:** a spike note in `docs/plan/progress/` with the measurements, a go or no-go on prediction for
 Sprint 3, approved dependencies and folder, and an ADR draft for the chosen netcode model. Sprint
 3 then builds the Duel config and rules in core with tests and a replay fixture, the server, a
 client match variant that sends input and draws server snapshots, the FIFO queue, and the score
