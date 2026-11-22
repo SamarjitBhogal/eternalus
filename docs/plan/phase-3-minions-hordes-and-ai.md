@@ -174,6 +174,10 @@ Owner: _ (sim lane A). Week 7. Depends on 3.3 and 3.5.
       from content: move list, cooldowns, zone restriction; fights anyone from either team).
       Owner: _. Test: a boss never leaves its zone; move selection is seeded-random and
       replayable. Done when: a new boss is a definition with a move table.
+- [ ] **Corner boss into the `Boss` family** (DEC-236): the corner camp's `corner-boss` moves
+      from its interim `GuardController` stand-in (a `heavy-mob` guard) to the `Boss` family with
+      `BossController`. Owner: _. Done when: no guard plan posts a boss, and the boss reaches an
+      intruder anywhere in the ring.
 - [ ] **Mini-boss rules** (`TUNE`: spawn at the quarter mark on the outer lanes with support
       mobs; its capture point cannot be captured while it lives; on defeat the team gets a
       permanent buff and ability XP). The final-hit consumable is an open question (INBOX).
