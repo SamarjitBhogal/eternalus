@@ -16,6 +16,7 @@ import { Transform } from '../components/Transform';
 import { MAGUS_BOLT } from '../content/projectiles/magusBolt';
 import { Projectile } from '../entities/Projectile';
 import type { MapDefinition, MapPresentation } from '../content/maps/maps.types';
+import { cos, sin } from '../utils/deterministicMath';
 
 export const EMPTY_MAP: MapDefinition = {
   id: 'collision-test',
@@ -135,13 +136,14 @@ describe('CollisionSystem', () => {
 
   describe('a unit with momentum (Wrecking Run, DEC-307)', () => {
     /**
-     * Runs `kind` from (1, 5) toward the house wall at x = 5 for `ticks` ticks, as the movement and
+     * Runs `kind` from `start` toward the house wall at x = 5 for `ticks` ticks, as the movement and
      * collision systems do, and returns its movement and transform.
      */
     const run = (
       kind: 'sentinel' | 'warrior',
       heading: { x: number; y: number },
       ticks: number,
+      start = { x: 1, y: 5 },
     ) => {
       const config = createDefaultGameConfig();
       const state = new GameState(config, 1);
@@ -150,7 +152,7 @@ describe('CollisionSystem', () => {
         loadDefaultContent(config.tickRate),
         undefined,
         loadWeapons(config.tickRate),
-      ).create(kind, kind, { team: 'light', position: { x: 1, y: 5 } });
+      ).create(kind, kind, { team: 'light', position: start });
       state.entities.add(unit);
       const collision = new CollisionSystem(
         new CollisionResolver(
@@ -180,13 +182,24 @@ describe('CollisionSystem', () => {
       expect(movement.speed).toBeCloseTo(0, 6);
     });
 
-    it('keeps the Sentinel sliding along a wall it hits at a glancing angle', () => {
-      const { movement, transform } = run('sentinel', { x: 1, y: 0.25 }, 70);
+    it.each([30, 45])(
+      'builds the Sentinel past walk speed along a wall it steers %i° into from a standstill',
+      (degrees) => {
+        const radians = (degrees * Math.PI) / 180;
+        const ticksPerSecond = createDefaultGameConfig().tickRate;
+        // Starts beside the wall's south end: 2 s of build-up stays on the 8 m wall (y 1 to 9).
+        const { movement, transform } = run(
+          'sentinel',
+          { x: sin(radians), y: cos(radians) },
+          2 * ticksPerSecond,
+          { x: 3.7, y: 1.5 },
+        );
 
-      expect(transform.position.x).toBeCloseTo(5 - 1.25);
-      expect(movement.velocity.x).toBeCloseTo(0, 6);
-      expect(movement.velocity.y).toBeGreaterThan(0);
-    });
+        expect(transform.position.x).toBeCloseTo(5 - 1.25);
+        expect(Math.abs(movement.velocity.x * ticksPerSecond)).toBeLessThan(0.01);
+        expect(movement.velocity.y * ticksPerSecond).toBeGreaterThanOrEqual(3.5);
+      },
+    );
 
     it('leaves the speed of a unit without momentum alone (the Warrior)', () => {
       const { movement, transform } = run('warrior', { x: 1, y: 0 }, 120);

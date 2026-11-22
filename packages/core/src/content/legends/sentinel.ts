@@ -38,9 +38,9 @@ export const SENTINEL = {
     acceleration: 3, // TUNE: m/s² up to walkSpeed, balancing.md (normal acceleration)
     mass: 6, // TUNE:
     momentum: {
-      walkSpeed: 3.5, // TUNE: m/s, balancing.md (base speed); owner card PR8 W1
-      rampDuration: 20, // TUNE: s from walkSpeed to maxSpeed, balancing.md; owner card PR8 W1
-      grip: 8, // TUNE: m/s², a reverse at 9 m/s slides about 5 m; owner card PR8 W2
+      walkSpeed: 3.5, // TUNE: m/s, balancing.md (base speed); owner check pending (PR8 W1)
+      rampDuration: 20, // TUNE: s from walkSpeed to maxSpeed, balancing.md (sprint ramp); owner check pending (PR8 W1)
+      grip: 8, // TUNE: m/s², proposed, no document has it: a reverse at 9 m/s slides about 5 m; owner answer pending (PR8 W2)
     },
   },
   defaultLoadout: { primaryWeaponId: 'wuuthrad' }, // TUNE: default weapon (05 §10 table) until the owner picks one (INBOX)

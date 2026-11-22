@@ -45,6 +45,9 @@ export class CollisionSystem implements System {
       const delta = { x: transform.position.x - from.x, y: transform.position.y - from.y };
       const to = this.resolver.move(from, delta, transform.radius);
       transform.moveTo(to);
+      // ponytail: one summed loss per move, so a push and the walk that hit two walls in one tick
+      // blend their normals (a head-on stop a tick late in a corner). Report the blocked part per
+      // contact normal from the resolver once a rule reads the hit speed (PR8 W3).
       this.lost.x = delta.x - (to.x - from.x);
       this.lost.y = delta.y - (to.y - from.y);
       movement.hitBlock(this.lost);

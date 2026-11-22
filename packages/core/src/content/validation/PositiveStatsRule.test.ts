@@ -28,11 +28,8 @@ describe('PositiveStatsRule', () => {
 
   it('checks the momentum numbers of a unit that has them (the Sentinel)', () => {
     const sentinel = LEGEND_CLASSES.get('sentinel');
-    const momentum = sentinel.movementProfile.momentum ?? {
-      walkSpeed: 1,
-      rampDuration: 1,
-      grip: 1,
-    };
+    const { momentum } = sentinel.movementProfile;
+    if (momentum === undefined) throw new Error('The shipped Sentinel has momentum.');
     const broken = {
       ...sentinel,
       movementProfile: { ...sentinel.movementProfile, momentum: { ...momentum, grip: 0 } },

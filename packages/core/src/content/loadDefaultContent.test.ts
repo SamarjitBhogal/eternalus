@@ -26,15 +26,17 @@ describe('loadDefaultContent', () => {
 
   it('keeps the time to top speed whatever the tick rate (the Sentinel: walk speed, then the ramp)', () => {
     const authored = LEGEND_CLASSES.get('sentinel').movementProfile;
-    const { walkSpeed, rampDuration } = authored.momentum ?? { walkSpeed: 0, rampDuration: 0 };
+    if (authored.momentum === undefined) throw new Error('The shipped Sentinel has momentum.');
+    const { walkSpeed, rampDuration, grip } = authored.momentum;
     for (const tickRate of [30, 60]) {
       const { acceleration, momentum } =
         loadDefaultContent(tickRate).get('sentinel').movementProfile;
+      if (momentum === undefined) throw new Error('The loaded Sentinel keeps its momentum.');
 
-      expect(momentum?.walkSpeed).toBeCloseTo(walkSpeed / tickRate);
-      expect(momentum?.rampDuration).toBe(rampDuration * tickRate);
-      expect(momentum?.grip).toBeCloseTo((authored.momentum?.grip ?? 0) / tickRate ** 2);
-      expect((momentum?.walkSpeed ?? 0) / acceleration / tickRate).toBeCloseTo(
+      expect(momentum.walkSpeed).toBeCloseTo(walkSpeed / tickRate);
+      expect(momentum.rampDuration).toBe(rampDuration * tickRate);
+      expect(momentum.grip).toBeCloseTo(grip / tickRate ** 2);
+      expect(momentum.walkSpeed / acceleration / tickRate).toBeCloseTo(
         walkSpeed / authored.acceleration,
       );
     }
