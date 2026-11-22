@@ -67,7 +67,7 @@ export class DevSetControllerHandler implements CommandHandler<'dev-set-controll
     }
     // A bot that already plays the Rover keeps its brain (and its memory).
     if (state.entities.controllerOf(entityId)?.controllerId !== this.rover.controllerId) {
-      this.bindRover(state, entity);
+      this.bindRover(entity);
     }
     if (humanId === entityId) {
       match.reseatHuman(null);
@@ -82,21 +82,20 @@ export class DevSetControllerHandler implements CommandHandler<'dev-set-controll
     }
     const previous = state.entities.get(humanId ?? '');
     if (previous !== undefined) {
-      this.bindRover(state, previous);
+      this.bindRover(previous);
     }
-    this.detach(state, entity);
+    this.detach(entity);
     state.match.reseatHuman(entity.id);
   }
 
-  /** Takes `entity` off its controller (a human plays it) and drops its brain. */
-  private detach(state: GameState, entity: Entity): void {
+  /** Takes `entity` off its controller (a human plays it); `AiSystem` drops its brain. */
+  private detach(entity: Entity): void {
     entity.removeComponent(ControllerBinding);
-    state.ai.delete(entity.id);
   }
 
-  /** Gives `entity` the Rover's binding, with a fresh brain. */
-  private bindRover(state: GameState, entity: Entity): void {
-    this.detach(state, entity);
+  /** Gives `entity` the Rover's binding, (`AiSystem` gives it a fresh brain). */
+  private bindRover(entity: Entity): void {
+    this.detach(entity);
     const { controllerId, profileId, memory } = this.rover;
     entity.addComponent(new ControllerBinding(controllerId, profileId, memory));
   }

@@ -59,21 +59,13 @@ const command = (entityId: string, controllerId: string): Command<'dev-set-contr
 });
 
 describe('DevSetControllerHandler', () => {
-  it('makes a bot Legend the human: no binding, no brain, humanLegendId set', () => {
+  it('makes a bot Legend the human: no binding, humanLegendId set', () => {
     const context = contextWith();
-    context.state.ai.set('entity-1', {
-      controllerId: 'bot-legend',
-      profileId: 'normal',
-      memory: {},
-      rngState: new SeededRandom(1).getState(),
-    });
-
     expect(
       new DevSetControllerHandler(ROVER, 'player').handle(command('entity-1', 'player'), context),
     ).toBeNull();
 
     expect(context.state.entities.controllerOf('entity-1')).toBeUndefined();
-    expect(context.state.ai.get('entity-1')).toBeUndefined();
     expect(context.state.match.humanLegendId).toBe('entity-1');
   });
 

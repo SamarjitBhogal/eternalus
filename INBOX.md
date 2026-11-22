@@ -18,21 +18,23 @@ Reply inline (`Decision: …`).
 
 - [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu-sim-mode`) — developer menu, slice 3
       (sim mode, FR-099) built; decisions for the owner.** (a) `dev-set-controller` knows two
-      controller ids: `human` and the Rover's; any other is refused `unknown-controller` (a new
+      controller ids: `player` and the Rover's (base doc: 11 section 7 gives the human its team's Rover
+      role, DISC-51; the 13 section 4 row has only `{ entityId, controllerId }`); any other is refused `unknown-controller` (a new
       reject reason). A profile or `bot-legend` picker is out. (b) Making a Legend the human while
       another one is: the old human becomes a Rover bot (the simplest seat swap). (c) A bot
       re-bound (or a human given to the Rover) starts a fresh brain: its memory, lane included, is
-      dropped. (d) `humanLegendId` gets a second writer, `MatchRecord.reseatHuman`, which throws on
-      a move to the current seat; hashed state is unchanged without the command. (e) FR-099 is only PARTIALLY met: "a Match with no PlayerController runs to a
+      dropped (base doc: 11 section 2 defines brain memory as controller-specific plain data). (d) `humanLegendId` gets a second writer, `MatchRecord.reseatHuman`, which throws on
+      a move to the current seat; hashed state is unchanged without the command (follows from
+      DEC-294, which keeps the seat swap). (e) FR-099 is only PARTIALLY met: "a Match with no PlayerController runs to a
       `MatchResult`" cannot be observed in `Simulation`, because no content marks a `WinObjective`,
       so no `MatchResult` exists in sim mode. The vitest test runs 900 ticks bot-versus-bot with
       no invariant violation and the same hash twice instead. Unblocked when a win objective
       exists in content or a test fixture supplies one. (f) The client has no spectate UI: with no human
       the camera stays where it is and the HUD hides the player block. `Take control` takes a typed
-      Legend id. Decision: DEC-294 (2026-11-20, Owner Calls page) answers (b): "Keep the swap;
+      Legend id (base doc: spectate is its own 13 section 4 row, `spectatedLegendId`, not the sim-mode row). Decision: DEC-294 (2026-11-20, Owner Calls page) answers (b): "Keep the swap;
       update mechanics-ideas §6 in this PR" (note: "make sure this is architecturally-sound"). The
       human's controller id is now `player` (PR #112 review S1), and a Legend off `playerTeam` is
-      refused (`not-player-team`, review B1). (a), (c) to (f) stay open.
+      refused (`not-player-team`, review B1). (a), (c), (d) and (f) follow the base docs named above; (e) is a status. Only the owner's confirmation remains open for them.
 
 - [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu-legends`) — developer menu, slice 2
       (add/remove Legends, FR-097) built; decisions for the owner.** (a) `dev-spawn-legend` takes
