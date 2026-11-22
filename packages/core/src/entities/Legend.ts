@@ -48,8 +48,10 @@ export abstract class Legend extends Unit {
     const secondaryWeaponId = spec?.secondaryWeaponId ?? null;
     this.addComponent(
       new Loadout(
-        this.heldWeapon(definition.defaultLoadout.primaryWeaponId, reader, context),
-        secondaryWeaponId === null ? null : this.heldWeapon(secondaryWeaponId, reader, context),
+        this.heldWeapon(definition.defaultLoadout.primaryWeaponId, definition, reader, context),
+        secondaryWeaponId === null
+          ? null
+          : this.heldWeapon(secondaryWeaponId, definition, reader, context),
       ),
     );
     super.installComponents(context);
@@ -100,20 +102,24 @@ export abstract class Legend extends Unit {
   }
 
   /**
-   * The weapon `weaponId` from the spawn context's weapon source, its attacks by mode.
+   * The weapon `weaponId` from the spawn context's weapon source, its attacks by mode. Each melee
+   * attack's reach is the weapon's part plus the class's `meleeReach` (DEC-305); a ranged attack's
+   * is the weapon's.
    *
    * @throws Error when the spawn context has no weapon source, or the weapon has no attacks.
    */
-  private heldWeapon(weaponId: string, reader: SpawnContextReader, context: unknown): HeldWeapon {
+  private heldWeapon(
+    weaponId: string,
+    definition: LegendDefinition,
+    reader: SpawnContextReader,
+    context: unknown,
+  ): HeldWeapon {
     const weapons = reader.weapons(context);
     if (weapons === null) {
       throw new Error(`Legend "${this.id}" needs a weapon source to equip "${weaponId}".`);
     }
     const weapon = weapons.get(weaponId);
-    const attacks = attacksByMode(
-      weapon.attacks,
-      reader.placed<LegendDefinition>(context).definition.meleeReach,
-    );
+    const attacks = attacksByMode(weapon.attacks, definition.meleeReach);
     if (attacks === undefined) {
       throw new Error(`Legend "${this.id}": weapon "${weapon.id}" has no attacks.`);
     }

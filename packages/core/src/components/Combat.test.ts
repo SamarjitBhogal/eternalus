@@ -144,7 +144,7 @@ describe('Combat', () => {
 
     it('keeps the aim point, the last swing and the recorded hits (DEC-319)', () => {
       const combat = new Combat({ basic: talons, melee: talons }, 'raptor-talons');
-      combat.setAim({ x: 3, y: 4 }, 'melee');
+      combat.setAim({ x: 3, y: 4 });
       combat.recordSwing({ atTick: 5, direction: { x: 1, y: 0 }, radius: 1.5, arcDegrees: 90 });
       combat.recordHits(['a'], 5, 1);
       const before = { swing: combat.lastSwing, until: combat.hitsUntilTick };
@@ -152,10 +152,23 @@ describe('Combat', () => {
       combat.equip({ basic: bow }, 'obsidian-bow');
 
       expect(combat.aimPoint).toEqual({ x: 3, y: 4 });
-      expect(combat.mode).toBe('basic');
+      expect(combat.attack).toBe(bow);
       expect(combat.lastSwing).toBe(before.swing);
       expect(combat.hitsAt(5)).toEqual(['a']);
       expect(combat.hitsUntilTick).toBe(before.until);
+    });
+
+    it('stops an aim held with a mode the new attacks do not have (INBOX.md HC-Q82, A)', () => {
+      const combat = new Combat({ basic: talons, melee: talons }, 'raptor-talons');
+      combat.setAim({ x: 3, y: 4 }, 'melee');
+
+      combat.equip({ basic: bow }, 'obsidian-bow');
+
+      // F held through the swap: the bow does not shoot at the point the talons were aimed at.
+      expect(combat.aimPoint).toBeNull();
+      expect(combat.mode).toBe('basic');
+      expect(combat.setAim({ x: 5, y: 6 }, 'melee')).toBe(false);
+      expect(combat.aimPoint).toBeNull();
     });
   });
 

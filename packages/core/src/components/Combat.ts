@@ -205,7 +205,9 @@ export class Combat {
   /**
    * Equips other attacks: a Legend's weapon swap (DEC-303) or a turret's ammo switch. The target
    * or the aim point, the attack timer, the last swing and the recorded hits stay. A mode the new
-   * attacks do not have becomes `basic`.
+   * attacks do not have becomes `basic`, and an aim point held with that mode stops: the held
+   * button has no attack now, and `setAim` refuses that mode (`INBOX.md` HC-Q82, option A). A
+   * target stays and gets the basic attack.
    *
    * @param attacks - The new attacks by mode, with `interval` already in ticks (`attacksByMode`).
    * @param weaponId - The weapon the new attacks come from, or `null` for a unit's own attack.
@@ -214,7 +216,10 @@ export class Combat {
     const attack = attacks[this.modeValue];
     this.attacks = attacks;
     this.weaponIdValue = weaponId;
-    this.modeValue = attack === undefined ? 'basic' : this.modeValue;
+    if (attack === undefined) {
+      this.modeValue = 'basic';
+      this.aimPointValue = null;
+    }
     this.attackValue = attack ?? attacks.basic;
   }
 }
