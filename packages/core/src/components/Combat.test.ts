@@ -258,6 +258,16 @@ describe('Combat', () => {
       expect(combat.attack).toBe(talons);
     });
 
+    it('uses the new attacks for later target changes', () => {
+      const combat = new Combat({ basic: talons, melee: talons }, 'raptor-talons');
+
+      combat.equip({ basic: bow }, 'obsidian-bow');
+
+      expect(combat.setTarget('t', 'melee')).toBe(false);
+      expect(combat.setTarget('t')).toBe(true);
+      expect(combat.attack).toBe(bow);
+    });
+
     it('takes attacks with no weapon, as a turret does', () => {
       const combat = new Combat({ basic: talons }, 'raptor-talons');
 
