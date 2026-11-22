@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-22
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -453,6 +453,25 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   `EntityStore.outlineOf` returns the one an entity uses, for reach, a chase and a shot alike.
 - `ObstacleDefinition` keeps `kind: 'obstacle'` (the entity class) and moves tree/rock/bridge to
   `obstacleType`; `fell` and `minimapGlyph` arrive with felling and the minimap work.
+- **Wall turrets, part 1 (`feat/wall-turrets`, 2026-11-22; §1, §5).** Each `turret` map feature
+  builds a `Turret` structure: definition `turret` in `content/structures/structureCatalogue.ts`
+  (base health from balancing.md, the map pylon's radius, no lane, the walls' breakability rule
+  pending an owner card). Its pylon map object blocks, so it is the turret's body: one health pool
+  (`hasMapFootprint`, as a lane tower's fort, DEC-185 B; DEC-217 (13) names only towers). Unlike a
+  fort, the pylon goes with the turret (`StructureDefinition.isBodyRemovedWithIt`): when the
+  turret is destroyed, the pylon is destroyed and its footprint and nav cells are cleared, as
+  before turrets were structures (owner card open, default A). A destroyed turret sends
+  `structure-destroyed`, so it pays structure XP and structure points (DEC-186, DEC-212). The
+  ammo table of §5 is `content/structures/turretAmmo.ts` (`bolt-default`, `bolt-heavy`): each
+  ammo is a `RangedAttack` plus `onHit` steps (the heavy bolt's concussion), with
+  `preferredAgainst` for the ammo choice; `loadTurrets` converts its times to ticks and validates
+  it. Its projectiles are `turret-bolt` and `turret-heavy-bolt`. Their 35 m range is `TUNE` with
+  no reference value (a bolt starts at the turret's centre, so it covers the pylon, the turret's
+  range and the lead), pending the owner card "WT bolt stop". `TurretController` picks the target
+  and the ammo and computes the aim point (11 §4.5, §10). Not built: the shot (firing through
+  `Combat` with the aim point waits for PR 2, `feat/melee-sweeps`), `Combat` and `TurretState` on
+  the turret (the controller's memory is in its brain), the `turret-control-changed` and
+  `turret-fired` events, and manual control.
 
 **2026-10-27 (PR #30, map objects).** Generated map objects currently reuse the `Obstacle`
 entity with a `MapObjectBody` component while the full structure family remains planned.

@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-22
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,14 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-22 (wall turrets: one health pool)
+
+Recorded by the session that builds combat lane A PR 4 (wall turrets, `feat/wall-turrets`). DEC-332 is this batch (number given by the coordinator; DEC-331 is another session's).
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DEC-332 | **A wall turret and its pylon have one health pool, like a lane tower and its fort** (amends DEC-217 (13), "Only towers share one health pool with their fort"; built under the owner's 2026-11-09 standing rule as a better-than-design item, DEC-139). Wall turrets become `Turret` structures (architecture 07 §5). The turret's map object blocks movement, so it is the turret's body and has no health of its own (`StructureDefinition.hasMapFootprint`, the rule a lane tower's fort follows, DEC-185 B). One turret has one health bar and one death. The Stronghold palace and the gates still keep their own health. Turret health is balancing.md's 600 (`Recommendation`). When a turret is destroyed and whether it pays structure XP and points are open owner cards ("WT destroyed pylon", "WT destroyed reward"). |
 
 ## Batch 2026-11-21 (Owner Calls page: the browser-support line)
 

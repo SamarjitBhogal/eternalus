@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-22
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -389,8 +389,27 @@ work named:
 - The stagger hashes the string id (`(tick + fnv1a(id)) % cadence`); a budget-deferred queue in
   `state.ai` replaces the round-robin cursor, with the same order (deferred first, then id order).
 - The registry holds `MinionController` (M2b), `GuardController` (M2c), `BotLegendController`
-  (M3) and `RoverController` (M8); the other controllers are absent until their phases, so it is
-  a partial map.
+  (M3), `RoverController` (M8) and `TurretController` (`feat/wall-turrets`); the other controllers
+  are absent until their phases, so it is a partial map.
+- `TurretController` (§4.5, `feat/wall-turrets`, 2026-11-22) drives a wall turret in auto mode. A
+  `Turret` structure whose definition names a controller gets a `ControllerBinding` from
+  `Structure`, as a unit does. Its memory is in its brain (`TurretMemory`: target, loaded ammo,
+  next shot tick, last aim point), so `StateHasher` hashes it; there is no `occupantId`, because
+  manual control is not built. Its content is a turret profile (`content/structures/turret.ts`,
+  `wall-turret`) and the ammo table (`turretAmmo.ts`), loaded by `loadTurrets` and injected by
+  `Simulation`. The profile's `overrides` come first: an enemy Legend that damaged an allied
+  Legend within the defend-ally window (read from `ScoringState.recentHits`) becomes the target at
+  once, also over a held target. Then the target is kept while it lives and stays in range. Then
+  the profile's `priority` list applies (heavy units, then the nearest enemy). Range runs from the
+  turret's edge to a target's centre, so a target is also in the attack reach `Combat` will use.
+  Neutral units count as enemies, so the controller filters teams itself (no `Perception` filter
+  for that). Ammo is the first of the profile's ammo whose `preferredAgainst` fits the target's
+  kind. Predictive aim is `ai/predictiveAim.ts` (one refinement, vectors only). It reads a
+  structure's place and a target's velocity through `EntityStore.placeOf` and `velocityOf`. Not
+  built: the shot. The controller emits no command yet; firing through `Combat` with the aim point
+  waits for PR 2 (`feat/melee-sweeps`). Until then a due decision computes the aim point, keeps it
+  in memory and counts the ammo interval to the next shot. The bolt range is 35 m, `TUNE`, pending
+  the owner card "WT bolt stop" (07 §13).
 - `BotLegendController` (M3) plays the `laner` tree of §4.2 with the nodes it needs
   (`ai/bt/`: `Sequence`, `ActiveSelector`, `Condition`, `Action`; `Selector` and `Cooldown` join
   with their first use) and a `UtilityScorer` (`ai/utility/`) over two considerations, closeness
