@@ -1,4 +1,5 @@
 import {
+  CORNER_CAMP_RING,
   createDefaultGameConfig,
   type InputIntent,
   MapPresentationBuilder,
@@ -325,6 +326,21 @@ describe('Match', () => {
     expect(
       camera.contains(lightStronghold?.position ?? { x: -1, y: -1 }, map.width, map.height),
     ).toBe(true);
+  });
+
+  it("draws every corner camp's ring at core's ring diameter (Match injects it into MapView)", () => {
+    const { match, renderer, map } = setUp();
+
+    match.render(0);
+
+    const camps = map.features.filter(({ kind }) => kind === 'corner-camp');
+    const rings = renderer.calls.flatMap((call) =>
+      call.op === 'drawWorldGlyph' && camps.some(({ position }) => position === call.args[1])
+        ? [call.args[0]]
+        : [],
+    );
+    expect(camps.length).toBeGreaterThan(0);
+    expect(rings).toEqual(camps.map(() => ({ shape: 'ring', size: 2 * CORNER_CAMP_RING.radius })));
   });
 
   it('centres the minimap on the player and keeps it there as the player moves (DEC-182)', () => {
