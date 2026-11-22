@@ -560,12 +560,17 @@ Reply inline (`Decision: …`).
     now lists its own hashed fields (`ProjectilePayload.fields`), as a chase watch does
     (`ChaseWatch.fields`). Before, `StateHasher` read them one by one and chose the cast level by
     the impact kind. Keep it?
-  - (5) Found, not built (gate round 2, R2-C6, 2026-11-22): a `hit` area ("the one body just
-    struck") works only in an `onHit` list (a status's or a shot's). Content that puts it on a
-    cast's own step or on a dash's path loads without an error and hits nothing. No content does
-    this today; the shape's TSDoc and a test say so. A load-time check needs a new member on every
-    shape and the list context in the registry's step walk, so it is a design change, not a fix.
-    (A) Leave it, as documented (advised). (B) Build the load-time check in a later PR.
+  - (5) Found, not built (gate round 2, R2-C6; reason corrected in round 3, R3-2; 2026-11-22):
+    the player sees no difference today. A `hit` area ("the one body just struck") works only in
+    an `onHit` list (a status's or a shot's). Content that puts it on a cast's own step or on a
+    dash's path loads without an error and hits nothing. No content does this today; the shape's
+    TSDoc and a test say so. The fix is a load-time check of about 15 lines with tests: the step
+    walk learns which lists are `onHit` lists, and it passes that to each shape's check, which
+    only the `hit` shape reads. It is not built here because round 3 was this branch's last
+    critic round (your limit), so new code would ship with no review. Under your standing rule
+    (DEC-223) it should not stay open. (A) Build it in lane B's next PR (PR 6, Sentinel Rip &
+    Tear, which adds the `cone` shape and goes through the same check) (advised). (B) Leave it,
+    as documented.
 - [x] **HC-Q67 — Combat gaps: build before the presentation (2026-11-27)? In which order?
       (combat audit, COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls page).**
       Your nine combat questions: 0 of 9 are true today. Evidence and the proposed PRs (two lanes,

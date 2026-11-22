@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { RangedAttack } from '../content/units/units.types';
 import { ProjectilePayload } from './ProjectilePayload';
+import type { ProjectilePayloadData } from './ProjectilePayload.types';
 
 const ATTACK: RangedAttack = {
   strategy: 'ranged-projectile',
@@ -29,5 +30,35 @@ describe('ProjectilePayload', () => {
     expect(payload.origin).toEqual({ x: 3, y: 4 });
     expect(payload.targetId).toBe('entity-2');
     expect(payload.impact).toEqual({ kind: 'weapon', attack: ATTACK });
+  });
+
+  it('lists its hashed fields in a fixed order; an ability shot adds its cast level', () => {
+    const shot = (impact: ProjectilePayloadData['impact']): ProjectilePayload =>
+      new ProjectilePayload({
+        ownerId: 'entity-1',
+        team: 'light',
+        source: { attackerId: 'entity-1', kind: impact.kind, definitionId: 'source-1' },
+        targetId: 'entity-2',
+        impact,
+        origin: { x: 3, y: 4 },
+      });
+    const ability = {
+      kind: 'ability',
+      abilityId: 'hamstring',
+      slot: 'ability-3',
+      onHit: [],
+      scaling: {},
+      casterLevel: 5,
+    } as const;
+
+    expect(shot({ kind: 'weapon', attack: ATTACK }).fields).toEqual([
+      'entity-1',
+      'entity-2',
+      'weapon',
+      'source-1',
+      3,
+      4,
+    ]);
+    expect(shot(ability).fields).toEqual(['entity-1', 'entity-2', 'ability', 'source-1', 3, 4, 5]);
   });
 });
