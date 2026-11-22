@@ -9360,3 +9360,22 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: `npm run docs:check` → "Documentation check passed."; `npm run check:quick` by the
   pre-commit hook (only docs and a script comment changed).
 - Next step: the owner answers S1 and the sampling question; then re-request review.
+
+### 2026-11-21 — Phase 3 / minion plan §1.2 unit-cap performance — chore/minion-perf-check (PR #83 outstanding review comments) — SamarjitBhogal + Claude Code
+
+- What was done: swept every open review item on PR #83. CodeRabbit's `hordes.mjs` finding: the
+  bench now labels its budget column "p95 ≤ 8 ms (combat window)" and prints that the column is
+  combat-window evidence, not an NFR-021 pass, until the owner sets the sampling rule (INBOX).
+  The two plan README findings were already fixed in `5c276d6d`. Left for the owner: the doc 15
+  status-text sign-off (CodeRabbit), S1 (ADR or DEC row for the CI step and root `vite`, the
+  `ci.yml` header and guardrails table), the CI-cost / `workflow_dispatch` ruling, the reference
+  laptop and the NFR-021 sampling rule. The CI step comment nit (N1) is not changed: `ci.yml` is a
+  guardrail config and waits for S1. The PR is CONFLICTING with `phase/3-sprint-3-work` (`54615afa`)
+  in this file only; not merged here.
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code
+  style!"; core "Tests 1684 passed (1684)"; protocol "Tests 29 passed (29)"; client "Tests 2011
+  passed (2011)"; server "Tests 84 passed (84)"; "✓ built in 413ms"; "Documentation check
+  passed." `npm run bench` (Node 24.21.0, loaded machine, not the reference laptop): 144/team p95
+  4.58 ms, mobs 143/144 → 92/98; 290/team p95 4.85 ms, 290/289 → 201/212.
+- Next step: merge the phase branch (PROGRESS conflict, keep both); owner answers S1 and the
+  sampling question; refresh the PR body (N3); then re-request review.

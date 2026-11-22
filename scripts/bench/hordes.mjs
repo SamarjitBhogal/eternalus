@@ -162,7 +162,7 @@ const runCase = (perTeam, budgetMs) => {
     'p50 ms': quantile(times, 0.5).toFixed(2),
     'p95 ms': p95.toFixed(2),
     'max ms': times[times.length - 1].toFixed(2),
-    [`p95 ≤ ${BUDGET_MS} ms`]:
+    [`p95 ≤ ${BUDGET_MS} ms (combat window)`]:
       budgetMs === null ? 'no target (INBOX DEC-137 (1))' : p95 <= budgetMs ? 'yes' : 'NO',
   };
 };
@@ -170,6 +170,9 @@ const runCase = (perTeam, budgetMs) => {
 console.log(
   `Node ${process.version}; ${TIMED_TICKS} ticks timed per case, from the first death after the countdown`,
 );
+// The timed population falls from the fill, so the budget column is combat-window evidence; whether
+// NFR-021 needs 144 per team held for the whole window is open (INBOX).
+console.log('Budget column: combat-window evidence only, not an NFR-021 pass (sampling rule open)');
 const capMobs = config.limits.maxUnitsPerTeam - config.match.legendsPerTeam;
 // The budget applies to the Phase 3 target only: whether it holds at the cap is open (INBOX DEC-137 (1)).
 console.table([runCase(PHASE_3_TARGET_MOBS, BUDGET_MS), runCase(capMobs, null)]);
