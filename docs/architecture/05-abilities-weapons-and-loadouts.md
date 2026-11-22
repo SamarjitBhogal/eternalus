@@ -1315,7 +1315,9 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     (DEC-314 (5)), not §3's `speed`, `radius` and `range` on the step. `pierce` and burst are not
     built: no ability needs them yet. `ProjectileEffect.validate` checks the id; `describe` gives
     the range as `distance` and the width as a `path`, so the aim overlay draws the line the shot
-    flies, stopped by a wall. Owner sign-off asked: HC-B26.
+    flies. The overlay stops the line where a dash of the caster's size stops (`dashReach`), so in
+    a gap narrower than the caster but wider than the blade the line stops short where the blade
+    flies on. Owner sign-off asked: HC-B26.
   - **Launch.** `abilities/` may not import `entities/` ([02](02-code-structure.md) §2), so the
     step launches through a port, `ShotLauncher` (`state/ShotLauncher.types.ts`, on
     `CastContext.launcher`), which `entities/ProjectileLauncher` satisfies: the match's one
@@ -1323,21 +1325,33 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     steered along the cast's direction, added and announced (`entity-spawned`).
     `DefaultSystemPipeline` builds one launcher for `AbilitySystem` and `HitEffects`. The shot is
     fired at no one (`targetId: null`), so `ProjectileSystem` lands it on the first enemy body it
-    touches before a wall and passes allies (DEC-269).
-  - **Landing.** The payload's impact is `{ kind: 'ability', abilityId, slot, onHit }`.
+    touches before a wall and passes allies (DEC-269). A "wall" in DEC-269 is one with no body
+    (terrain, the map edge). A breakable enemy `wall` segment is a map object with a body: the
+    blade strikes it and it takes 80 × 0.3, as for a house. `AbilitySystem` runs before the
+    flight, so the shot moves, and can land, in its cast tick; the one tick of flight before a
+    landing (DEC-314 (1)) holds for the shots `CombatSystem` fires.
+  - **Landing.** The payload's impact is
+    `{ kind: 'ability', abilityId, slot, onHit, scaling, casterLevel }`. The cast puts the
+    ability's `scaling` and the caster's level in it (`CastContext` carries both), so the steps
+    grow by the level of the cast, also when the owner levels up, dies or leaves the match while
+    the shot flies. `StateHasher` hashes the shot's `casterLevel`, as it hashes a cast in progress.
     `AbilityImpact` (`abilities/AbilityImpact.ts`, one more line in
     `createDefaultProjectileImpacts`) runs the `onHit` steps as one cast on the struck body
     through `HitEffects.runSteps`, which `afterHit` also uses for a status's steps. The cast is
-    placed from the contact point to the body's position, credited to the shot's owner under the
-    ability, and grown by the ability's `scaling` at the owner's level when the shot lands (level
-    1 when the owner has no level or has left the match). No `projectile-hit` event (DEC-314).
-  - **`hit` on a map object.** `AreaShape.overlapsPolygon` also gets the object's position. The
-    `hit` shape holds the map object whose position is the struck body's (a house's position is
-    the average of its footprint corners, on none of its walls), so the 80 × 0.3 of DEC-269 lands
-    on a house or a fort. A unit still matches by its centre.
+    placed from the contact point to the body's position and credited to the shot's owner under
+    the ability. No `projectile-hit` event (DEC-314).
+  - **`hit` holds the struck body by its id.** `ShapePlacement` gets `targetId`, the struck body,
+    which `HitEffects.runSteps` sets. `AreaShape.overlaps` gets the body (`ShapeBody`: id,
+    position, radius) in place of a point and a radius, and `overlapsPolygon` also gets the map
+    object's id. The `hit` shape holds the one body whose id is `targetId`: a unit, or a map object
+    whatever its footprints, so the 80 × 0.3 of DEC-269 lands on a house or a fort. Another body
+    on the same point is not hit, for Hamstring and for Fury.
+  - **No slow (a reading, HC-B26 (3)).** DEC-269 names damage and bleed and no slow, as the
+    "Serrated" variety of `more-abilities.md` §2; the game design (06, DEC-11) also slows. The
+    content has no `slowed` status, so Hamstring does not slow until the owner answers.
   - **Bleed stacks.** A `debuff` step's `stacks` (§3) applies the status that many times to each
-    target; `bleed` gains a stack each time, so Hamstring's 2 stacks bleed 2 × 6 a second for
-    4 s.
+    target; `bleed` gains a stack each time, so Hamstring's 2 stacks bleed twice as fast as one
+    (`content/status-effects/bleed.ts`).
   - **Bots and client.** A Warrior bot may now cast Hamstring at the enemy it fights
     (`pickReadySlot` aims at the enemy's position). The client draws the blade as a shot that
     drops at its range (`PROJECTILE_ENDING_LOOKS`).

@@ -10014,3 +10014,22 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   first or under a deliberate break (H1-H20, `hamstring-breaks.log`).
 - Next step: the pre-PR gate (max 3 rounds), then the owner pushes and opens the PR on
   `feat/vanguard-veil-hamstring` (#150).
+
+### 2026-11-22 — Phase 4 / combat lane B, PR 3 gate round 1: Hamstring fixes — feat/vanguard-hamstring — sholtzman + Claude Code
+
+- What was done: fixed the round-1 findings of the pre-PR gate (reports in
+  `eternalus-agent-work/abilities/hamstring-gate/r1-*.md`). A1: the shot carries the ability's
+  `scaling` and the caster's level from the cast, so a thrower who dies or levels up mid-flight
+  does not change the hit; `StateHasher` hashes the shot's `casterLevel`. A5: the `hit` shape holds
+  the struck body by its id (`ShapePlacement.targetId`, `ShapeBody`), so another body on the same
+  point is not hit. A2: a test pins the 30 m/s flight by its hit ticks. A7: the projectile
+  catalogue is injected into `createDefaultAbilityRegistry`. A8, A9, A10, A12, A13, C4, C5, P7:
+  TSDoc, a companion types file and 05 §18 text. Records: `INBOX.md` HC-B26 (2) one launcher for
+  every shot (not built, waits for #148) and (3) no slow (a reading); 05 §18 "Hamstring".
+- Checks run: one full `npm run check` (2026-11-22 03:14:00 to 03:23:29 MST) exit 0: format,
+  no-js, lint, typecheck, knip, `test:coverage` (core 351 files / 2233 tests, protocol 1 / 31,
+  client 310 / 2146, server 21 / 85), build, `Documentation check passed.` Log
+  `eternalus-agent-work/abilities/hamstring-r1fix-check.log`. Every new or changed test was seen
+  red under a deliberate break (H21-H29, `hamstring-breaks.log`).
+- Next step: merge #150 (DEC-327) and the pushed #148 into this branch, add the Veil scenario
+  (A11), then gate round 2.

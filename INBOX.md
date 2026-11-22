@@ -516,6 +516,19 @@ Reply inline (`Decision: …`).
       a shot that passes through enemies (`pierce`) or bursts (no ability needs them yet). The
       design text of 05 §3 changes only after your sign-off; until then 05 §18, "Hamstring",
       records the difference. Keep it, or put the numbers back on the step?
+  - (2) Also better than the design, not built yet (gate round 1, 2026-11-22): one way to put
+    every shot in the match. Today there are two. `ProjectileLauncher.launch` (Hamstring) repeats
+    the last five steps of the weapons' `RangedProjectileAttackStrategy`: build the projectile,
+    add its payload, steer it, add it, announce it. The two copies must always stay the same. The
+    fix: the weapon strategy also launches through the one `ShotLauncher`. The player sees no
+    difference. It changes lane A's weapon code (#148), so lane B builds it with lane A after #148
+    merges. (A) Build it. (B) Keep the two copies.
+  - (3) A reading, sign-off asked: Hamstring does not slow. DEC-269 names 80 damage and 2 bleed
+    stacks, and no slow. That matches the "Serrated" variety in `more-abilities.md` §2 ("2 bleed
+    stacks, no slow"). The game design (`06-abilities-and-progression.md`, approved with DEC-11)
+    says the first enemy hit "bleeds and is slowed", and the base ability in `more-abilities.md`
+    §2 is "slowed 1.5 s". (A) No slow, as built. (B) Also slow the enemy for 1.5 s: this needs a
+    new `slowed` status and the slow amount from you.
 - [x] **HC-Q67 — Combat gaps: build before the presentation (2026-11-27)? In which order?
       (combat audit, COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls page).**
       Your nine combat questions: 0 of 9 are true today. Evidence and the proposed PRs (two lanes,
