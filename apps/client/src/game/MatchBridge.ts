@@ -10,29 +10,28 @@ import {
   type Vec2,
 } from '@eternalus/core';
 
+import type { MatchClock } from '../bridge/events';
 import type {
   CapturePointStatus,
   DuelHudState,
   PlayerHudSnapshot,
   StructureStatus,
 } from '../bridge/hud.types';
-import {
-  COUNTDOWN_OVER_ENTRY_ID,
-  POST_COUNTDOWN_PHASE,
-  ROSTER_PUBLISH_EVERY_TICKS,
-} from './MatchBridge.constants';
+import { ROSTER_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import type { CaptureSite, MatchBridgeDeps } from './MatchBridge.types';
 
 /**
  * All game → UI publishing for one match (architecture 12 §8, 13 §5), owned by `Match`. It
  * publishes only what the simulation has today (DEC-17, HC-F6: no made-up values):
- * - `match-clock` and `hud-state` (the player's health, aether, level and XP; every other value
- *   `null`) every `publishEveryTicks`;
+ * - `match-clock` (match time from the countdown's end, and the countdown; DEC-278) and
+ *   `hud-state` (the player's health, aether, level and XP; every other value `null`) every
+ *   `publishEveryTicks`;
  * - the team structures and the capture points from the map's features every
  *   `ROSTER_PUBLISH_EVERY_TICKS`: each structure with the live health of the structure core built
  *   from its feature (DEC-212), each capture point with its zone's owner and progress;
- * - `match-ended` once, after the tick whose step ended the match: the result is latched inside
- *   the simulation's event and published from `afterTick`, never mid-step.
+ * - `match-ended` once, after the tick whose step ended the match, with its length without the
+ *   countdown (DEC-278): the result is latched inside the simulation's event and published from
+ *   `afterTick`, never mid-step.
  * `publishAll` sends everything once, before the first tick. A roster re-send with no change
  * carries the same array, so the roster selectors return the same value and the HUD does not
  * re-render. Its subscriptions to the simulation's
@@ -98,7 +97,7 @@ export class MatchBridge {
     const { result } = this;
     this.deps.bus.emit('match-ended', {
       result,
-      durationSeconds: result.durationTicks / this.deps.tickRate,
+      durationSeconds: result.matchTicks / this.deps.tickRate,
     });
     return true;
   }
@@ -122,40 +121,44 @@ export class MatchBridge {
 
   private publishFast(snapshot: Snapshot, playerId: EntityId | null): void {
     const { bus, tickRate } = this.deps;
-    bus.emit('match-clock', { tick: snapshot.tick, seconds: snapshot.tick / tickRate });
+    bus.emit('match-clock', MatchBridge.clockOf(snapshot, tickRate));
     bus.emit('hud-state', { player: MatchBridge.playerOf(snapshot, playerId) });
     if (snapshot.match.duel !== undefined) {
-      bus.emit('duel-state', MatchBridge.duelOf(snapshot, snapshot.match.duel, playerId, tickRate));
+      bus.emit('duel-state', MatchBridge.duelOf(snapshot, snapshot.match.duel, playerId));
     }
   }
 
   /**
-   * The Duel's score from the player's side, and the countdown number the server's match shows:
-   * whole seconds left while the `countdown` phase runs (3, 2, 1), 0 ("START") for the first
-   * second after it, `null` once the match is on.
+   * The match clock (DEC-278): match time from the countdown's end, and the countdown, the whole
+   * seconds left while the `countdown` phase runs (10 to 1 locally, 3 to 1 in a Duel). A Duel
+   * shows 0 ("START") for its first second after the countdown; a local match shows nothing then
+   * (DEC-278). One derivation for both modes, from the snapshot's countdown end tick, so it holds
+   * after the `countdown-over` mark has fired.
    */
+  private static clockOf(snapshot: Snapshot, tickRate: number): MatchClock {
+    const { tick, match } = snapshot;
+    const sinceEnd = tick - match.countdownEndTick;
+    let countdown: number | null = null;
+    if (match.phase === 'countdown' && sinceEnd < 0) {
+      countdown = Math.ceil(-sinceEnd / tickRate);
+    } else if (match.duel !== undefined && sinceEnd >= 0 && sinceEnd < tickRate) {
+      countdown = 0;
+    }
+    return { tick, seconds: Math.max(0, sinceEnd) / tickRate, countdown };
+  }
+
+  /** The Duel's score from the player's side. */
   private static duelOf(
     snapshot: Snapshot,
     duel: NonNullable<Snapshot['match']['duel']>,
     playerId: EntityId | null,
-    tickRate: number,
   ): DuelHudState {
     const own = snapshot.entities.find((entity) => entity.id === playerId)?.team;
     const ownTeam = own === 'dark' ? 'dark' : 'light';
-    const opponentTeam = opponentOf(ownTeam);
-    const { phase, phaseEnteredTick, upcoming } = snapshot.match;
-    const over = upcoming.find((mark) => mark.entryId === COUNTDOWN_OVER_ENTRY_ID);
-    let countdown: number | null = null;
-    if (phase === 'countdown' && over !== undefined) {
-      countdown = Math.ceil((over.tick - snapshot.tick) / tickRate);
-    } else if (snapshot.tick - phaseEnteredTick < tickRate && phase === POST_COUNTDOWN_PHASE) {
-      countdown = 0;
-    }
     return {
       ownKills: duel.kills[ownTeam],
-      opponentKills: duel.kills[opponentTeam],
+      opponentKills: duel.kills[opponentOf(ownTeam)],
       killTarget: duel.killTarget,
-      countdown,
     };
   }
 

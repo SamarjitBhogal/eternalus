@@ -134,7 +134,7 @@ describe('ClassSelectAltStep', () => {
 
     expect(stepPart(html)).not.toMatch(/<section[^>]*inert/);
     expect(details).toMatch(
-      /^role="dialog" aria-modal="true" aria-label="View Details" data-open="false" data-reduce-motion="false" inert=""/,
+      /^role="dialog" aria-modal="true" aria-label="View Details" data-open="false" inert=""/,
     );
     expect(details).toContain('data-layout="class-details"');
     expect(details).toContain('>Magus</h3>');

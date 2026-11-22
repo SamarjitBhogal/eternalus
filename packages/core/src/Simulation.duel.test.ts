@@ -58,6 +58,13 @@ const fightUntil = (sim: Simulation, done: (snapshot: Snapshot) => boolean, limi
   return sim.snapshot();
 };
 
+/**
+ * The kill-target test's own time limit, twice the suite's 60 s `testTimeout` (DEC-325, as
+ * DEC-289): it took 26 s on the windows-latest CI runner and up to 61.7 s on ubuntu-latest under
+ * coverage (2026-11-21). `INBOX.md` asks for the slow whole-match tests to be made faster.
+ */
+const KILL_TARGET_TIMEOUT_MS = 120_000;
+
 describe('Simulation: a Duel', () => {
   it('starts both Legends in the Cathedral, light west and dark east, and no kills', () => {
     const sim = build();
@@ -98,18 +105,22 @@ describe('Simulation: a Duel', () => {
     }
   });
 
-  it('ends the match for the first team to reach the kill target', () => {
-    const sim = build({ killTarget: 2 });
-    let result: { winner: PlayableTeam | null; condition: string } | null = null;
-    sim.on('match-ended', (event) => {
-      result = event.result;
-    });
+  it(
+    'ends the match for the first team to reach the kill target',
+    () => {
+      const sim = build({ killTarget: 2 });
+      let result: { winner: PlayableTeam | null; condition: string } | null = null;
+      sim.on('match-ended', (event) => {
+        result = event.result;
+      });
 
-    const after = fightUntil(sim, () => result !== null);
+      const after = fightUntil(sim, () => result !== null);
 
-    expect(after.match.duel?.kills.light).toBe(2);
-    expect(result).toMatchObject({ winner: 'light', condition: 'kill-count' });
-  });
+      expect(after.match.duel?.kills.light).toBe(2);
+      expect(result).toMatchObject({ winner: 'light', condition: 'kill-count' });
+    },
+    KILL_TARGET_TIMEOUT_MS,
+  );
 
   it('replays to the same hashes from its setup and commands', () => {
     const sim = build({ killTarget: 1 });
