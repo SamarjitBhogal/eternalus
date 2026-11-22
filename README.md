@@ -64,7 +64,7 @@ apps/client/     @eternalus/client  Vite + React app: canvas, Redux store, UI
 .githooks/       pre-commit and pre-push hooks
 .claude/         Claude Code harness: settings (permissions, hooks), skills, subagents
 .agents/         cross-tool skill pointers (Codex, Gemini/Antigravity, Cursor)
-scripts/         zero-dependency Node scripts: agent hooks, docs check
+scripts/         Node scripts: agent hooks, docs check; the tick bench (the only one importing a package: Vite)
 docs/            plan, architecture, requirements, reference, research, process, agents, ADRs, changelog
 INBOX.md         product-owner ⇄ agent queue (requests, feedback, decisions)
 ```
