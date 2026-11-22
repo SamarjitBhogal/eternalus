@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
+import { CathedralGemState } from '../components/CathedralGemState';
 import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
@@ -557,6 +558,32 @@ describe('StateHasher', () => {
         expect(new Set([withRequest(2, 2), withRequest(3, 3), withRequest(2, 1)]).size).toBe(3);
       },
     );
+  });
+
+  it('hashes the Cathedral gem: holder, glow ticks left, glow hits and ticks since hit each change the hash', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const holder = new Bare('entity-1', 'bare');
+    holder.spawn({});
+    state.entities.add(holder);
+    const gem = new CathedralGemState();
+    holder.addComponent(gem);
+    const untouched = hasher.hash(state);
+
+    gem.hold('light');
+    const held = hasher.hash(state);
+    gem.struck(3);
+    const struck = hasher.hash(state);
+    gem.struck(3);
+    const struckTwice = hasher.hash(state);
+    gem.age();
+    const aged = hasher.hash(state);
+    gem.age();
+    gem.age();
+    const dark = hasher.hash(state);
+    gem.age(); // the glow is dark: only the ticks since the hit move
+    const later = hasher.hash(state);
+
+    expect(new Set([untouched, held, struck, struckTwice, aged, dark, later]).size).toBe(7);
   });
 
   it('hashes a capture point: owner, progress, checkpoint and reached marks each change the hash', () => {

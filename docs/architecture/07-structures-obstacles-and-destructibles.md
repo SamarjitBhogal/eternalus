@@ -505,9 +505,15 @@ so a replay or a match without map objects rebuilds the same zones. Interim diff
   hit (`damage-blocked`); `CathedralGemSystem` answers each one that has an attacker, and each touch
   (two discs overlapping), by landing `CATHEDRAL_GEM`'s statuses on that unit as environment damage
   (the gem is no team's, so it hurts neutrals too): a stun, its tick damage, and a ward that spaces
-  out touch strikes. Weapons reach it today; projectiles and abilities will through the same
-  pipeline. Bots and minions never pick it as a target (perception sees only units); the player can
-  aim at it (`findGemAt`). The gem blocks no movement (like every structure circle), so the lane
+  out touch strikes. Weapons reach it today; a shot or ability aimed at the gem will through the
+  same pipeline. A stray shot does not yet: the projectile PR (#148) hits an unbreakable body only
+  when the shot was fired at it, so whichever of #132 and #148 merges second makes a stray shot
+  strike the gem too (DEC-292: contact "by accident" strikes). Bots and minions never pick it as a
+  target: perception sees only units, and a lane's objectives are playable-team structures only
+  (`LaneStructures`). The player can aim at it (`findGemAt`). The gem's content id is `cathedral`,
+  because `spawnStructures` builds one structure per map feature, matched by the feature's
+  definition id; the planned `Cathedral` building (§1) cannot share that id, so its PR changes the
+  spawn link (or renames the gem's id, which no save stores yet, ADR 0023). The gem blocks no movement (like every structure circle), so the lane
   through the Cathedral crosses it, and the ward caps a passing unit at one strike. Its
   `CathedralGemState` (the Cathedral's holder from `capture-point-owner-changed`, and its glow) is
   in the snapshot, and `CathedralGemView` draws it in the holder's colour (DEC-291). The system is

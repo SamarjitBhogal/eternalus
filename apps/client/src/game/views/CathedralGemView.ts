@@ -42,14 +42,15 @@ export class CathedralGemView implements EntityView {
     renderer: Renderer,
   ): void {
     if (glowTicksLeft > 0) {
-      const hits = Math.min(Math.max(glowHits, 1), GEM_GLOW.maxHits);
-      const color = GEM_GLOW.colors[Math.min(hits, GEM_GLOW.colors.length) - 1];
+      const hits = Math.min(Math.max(glowHits, 1), GEM_GLOW.colors.length);
+      const color = GEM_GLOW.colors[hits - 1];
       const size = radius * (GEM_GLOW.size + GEM_GLOW.sizePerHit * (hits - 1));
       if (color !== undefined) renderer.drawWorldGlyph({ shape: 'dot', size }, at, color);
     }
     if (ticksSinceHit !== null && ticksSinceHit < GEM_GLOW.pulseTicks) {
       const grown = ticksSinceHit / GEM_GLOW.pulseTicks;
-      const size = radius * (2 + (GEM_GLOW.pulseSize - 2) * grown);
+      const { pulseStartSize, pulseSize } = GEM_GLOW;
+      const size = radius * (pulseStartSize + (pulseSize - pulseStartSize) * grown);
       renderer.drawWorldGlyph({ shape: 'ring', size }, at, GEM_GLOW.pulseColor);
     }
   }

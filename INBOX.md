@@ -22,10 +22,11 @@ Reply inline (`Decision: …`).
       its own `MapDecorationBuilder` subclass picked by the per-kind interior registry (06). OK
       to do as a separate refactor PR?
 
-- [ ] **The Cathedral gem: three rules DEC-292 leaves open (Aryan Walanj, 2026-11-21,
-      `feat/cathedral-gem-hittable`).** DEC-292 is built: hitting or touching the gem lands a 1 s
-      stun and a 72-damage burn on that unit, as environment damage (all `TUNE`, listed in the DEC-292
-      row). Three things the ruling does not say:
+- [ ] **The Cathedral gem: four rules DEC-292 leaves open (Aryan Walanj, 2026-11-21,
+      `feat/cathedral-gem-hittable`; (4) from the #132 re-review, 2026-11-22).** DEC-292 is built:
+      hitting or touching the gem lands a 1 s stun and a 72-damage burn on that unit, as
+      environment damage (all `TUNE`, listed in the DEC-292 row). Four things the ruling does not
+      say:
       (1) **The Duel.** The Duel arena is the Cathedral and the two Legends start 50 units either
       side of the gem. The gem is switched off in a Duel for now (DEC-36: the world round the arena
       is off). Should it strike Duel fighters? If so, who does a death by the gem count for in the
@@ -39,6 +40,10 @@ Reply inline (`Decision: …`).
       (3) **Kill credit.** The burn is environment damage (the gem is no team's, so it also hurts
       neutrals): a unit it kills is nobody's kill and gives no kill XP. Keep it, or should the last
       team or Legend to hit the victim get the credit?
+      (4) **What "tick" means.** The note says the burn hits "for the duration of the stun + 1
+      tick" and the gem glows "for the stun duration + 5 ticks". The build reads the first as one
+      burn pulse (0.2 s): the burn hits 6 times (72). Read as one game tick (1/30 s) it would hit
+      5 times (60). It reads the second as 5 game ticks. Which did you mean for each?
 
 - [ ] **The gem eruption and the Greater Boss: choices to confirm (Aryan Walanj, 2026-11-22,
       `feat/cathedral-eruption-boss`).** Sam (2026-11-15, chat): the boss is in, sprint 3.6 is
@@ -157,6 +162,16 @@ Reply inline (`Decision: …`).
       repeat `baseHealth: 1` and `breakability: never` in `structureCatalogue.ts`. One shared spread
       (like the existing `AFTER_BUFF_TOWERS`) would hold it once. It touches the camp lines, so it
       would be its own small refactor PR. OK, or leave as is?
+
+- [ ] **Better than design: two Cathedral gem items (#132 re-review, swholtzman, 2026-11-22).**
+      (BTD1) The holder is stored twice: `CathedralGemState.holder` copies the capture zone's owner
+      from `capture-point-owner-changed`, while the zone's `Capturable.owner` already holds it.
+      Keeping the zone's id and reading its owner when the snapshot is made gives one source of
+      truth, and the hash needs no holder field. (BTD2) One finder per targetable kind:
+      `PlayerCommands.targetAt` gains `findGemAt` beside `findUnitAt` and `findMapObjectAt`, so
+      each new targetable structure adds a finder and an edit there. One "targetable" snapshot
+      flag and one finder would keep it closed to change. Not built in #132. OK to do each in a
+      small follow-up PR?
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
