@@ -191,7 +191,9 @@ cooldown 3 s (90 ticks). Dota's 2.3 s aggro duration is not used: the owner's le
 attacks (a basic attack or an ability, DEC-322 (2)) an allied Legend inside the radius becomes priority 1, and an enemy that attacks a
 horde-mate is in reach out to `callForHelpRadius` (DEC-144). A unit "attacks" another while that
 is its locked target, and while that body was hit by its last attack (both count, not one or the
-other), until the tick its next attack may land, inclusive (DEC-322 (2), DEC-333 (1)): a player aims and has no lock, so its hits are what the AI sees
+other), for one attack interval, or the slowed cooldown when that is longer, so at least through
+the tick its next attack may land (DEC-322 (2), DEC-333 (1)): a player aims and has no lock, so
+its hits are what the AI sees
 (`EntityStore.victimsOf`, `isAttacking`). Only a mob that is not already fighting answers a call
 for help or turns to a better-ranked enemy: a busy mob finishes its own fight (DEC-326 (2),
 18 §6.1). The cooldown, after a leash break, leaves alone only the enemy that escaped (DEC-144 F).

@@ -764,8 +764,8 @@ DEC-322 (3); `abilities/TargetQuery` is a thin adapter over it): a walk-on outli
 the hit aims at it (DEC-322 (1)), and a body that takes no damage now is never hit. Shots and
 `LineOfFire` use the same module's `stopsShot`, and a shot fired along an aim names the walk-on
 body under the aim point (`aimedBodyOf`; a structure before a map object). Every contact reports
-its bodies once through `GameState.recordHits`, so the AI sees whom a unit with no lock attacks
-(`Combat.recordHits`, `EntityStore.victimsOf`, DEC-322 (2)). The client draws the arrow's arc from
+its bodies once through `EntityStore.recordHits`, so the AI sees every body a unit attacks, not
+only its lock (`Combat.recordHits`, `EntityStore.victimsOf`, DEC-322 (2), DEC-333 (1)). The client draws the arrow's arc from
 `EntitySnapshot.projectile.flownShare` (`views/ProjectileView`). A new command,
 `attack-aim { actorId, aim: Vec2 | null, mode? }`, sets an aim point on `Combat` (a target or an aim
 point, never both; `stop` clears both). With an aim point, `CombatSystem` turns the unit to the point
