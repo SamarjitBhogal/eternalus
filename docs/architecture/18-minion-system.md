@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-22
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
@@ -619,8 +619,9 @@ without a new controller. Only the home changes, and it is data on the spawning 
   to the leash edge), so each zone plan's tests check that its posts are inside its `ZoneArea`.
 - **One plan per home, plus checkpoint posts.** A home has exactly one guard plan, looked up by its
   definition id. A capture point's checkpoint defenders are not a second plan: their posts are
-  marked with their checkpoint (`GuardSlot.checkpoint`), never refill and are never looked up in
-  the home's plan, so they sit beside the zone's own plan (#99's mini-boss and support mobs) on
+  marked with their checkpoint (`GuardSlot.checkpoint`), never refill, are never looked up in
+  the home's plan and are not in a `group` plan's group (its timer and `camp-cleared` count only
+  the home's own posts), so they sit beside the zone's own plan (#99's mini-boss and support mobs) on
   the same home. Every guard of a home and team counts as a mate of the others
   (`GuardController`), so neutral defenders and the neutral boss group answer each other's calls.
 - **Activation and respawn.** A plan activates at match start, or `delaySeconds` after the
