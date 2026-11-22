@@ -10,7 +10,7 @@
 import path from 'node:path';
 
 import { isLintable } from './changedFiles.mjs';
-import { editedFile, isInside, readHookInput, repoRoot, run, tail } from './hookInput.mjs';
+import { editedFile, isInside, projectRoot, readHookInput, run, tail } from './hookInput.mjs';
 
 const FORMATTABLE = new Set([
   '.ts',
@@ -26,7 +26,7 @@ const FORMATTABLE = new Set([
 ]);
 
 const input = await readHookInput();
-const root = repoRoot(input);
+const root = await projectRoot(input);
 const file = editedFile(input);
 
 if (file === null || !isInside(root, file)) {

@@ -12,6 +12,7 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { clearTimeout, setTimeout } from 'node:timers';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /** Reads all of stdin and parses it as JSON. Returns `{}` on empty or invalid input. */
 export async function readHookInput() {
@@ -38,13 +39,36 @@ export async function readHookInput() {
   }
 }
 
+/** The checkout that holds these scripts. */
+const SCRIPTS_ROOT = path.resolve(fileURLToPath(new URL('../..', import.meta.url)));
+
+/** `[topLevel, commonDir]` of the git repository that holds `folder`, or `null` outside one. */
+async function gitRepository(folder) {
+  const result = await run(
+    'git',
+    ['rev-parse', '--path-format=absolute', '--show-toplevel', '--git-common-dir'],
+    { cwd: folder, timeoutMs: 30_000 },
+  );
+  const lines = result.output.trim().split(/\r?\n/);
+  return result.status === 0 && lines.length === 2 ? lines.map((line) => path.resolve(line)) : null;
+}
+
 /**
- * The session's current folder. Claude Code runs a hook there, and it can be a subfolder of the
- * repository, so `stop-check.mjs` resolves the top level from it (DEC-331).
+ * The checkout a hook acts on (DEC-331). Claude Code runs a hook in the session's current folder,
+ * which can be a subfolder, a worktree of this repository, or a folder outside it. A folder in
+ * this repository (any worktree) gives its top level, so a session in a worktree checks that
+ * worktree. Any other folder gives the checkout that holds these scripts.
  */
-export function repoRoot(input) {
+export async function projectRoot(input) {
   const cwd = typeof input.cwd === 'string' && input.cwd.length > 0 ? input.cwd : process.cwd();
-  return path.resolve(cwd);
+  const [session, scripts] = await Promise.all([
+    gitRepository(path.resolve(cwd)),
+    gitRepository(SCRIPTS_ROOT),
+  ]);
+  if (session !== null && scripts !== null && session[1] === scripts[1]) {
+    return session[0];
+  }
+  return scripts?.[0] ?? SCRIPTS_ROOT;
 }
 
 /** The file a tool call touched, or `null` when the event carries no file path. */

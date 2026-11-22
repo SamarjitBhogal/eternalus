@@ -16,6 +16,17 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **HC-B31 — A repair to a guardrail needs only a row in the decisions log (DEC-331 critic,
+      2026-11-22; better than the design, owner sign-off asked).** Owner: sholtzman.
+      `docs/process/guardrails.md` §4 and `docs/process/sdlc.md` §6 ask for an ADR for every
+      change to a guardrail. Three harness fixes did not write one: DEC-254 (CI timeout 25
+      minutes), DEC-276 (Stop hook checks only changed files) and DEC-331 (hook scripts named
+      from the project root). The owner waived the ADR for DEC-254 and DEC-276 one at a time;
+      the DEC-331 waiver is pending. Proposal: add one rule to both docs. A repair that makes a
+      guardrail do again what the docs already say needs only a row in the decisions log. A
+      change to what a guardrail does still needs an ADR. If signed off, this rule also covers
+      DEC-331.
+
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
       small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`

@@ -1,5 +1,5 @@
 /**
- * Checks the hooks' command runner (zero dependencies).
+ * Checks the hooks' command runner and project-root lookup (zero dependencies).
  *
  *   node --test scripts/hooks/hookInput.test.mjs
  */
@@ -12,9 +12,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { setTimeout as delay } from 'node:timers/promises';
-import { run } from './hookInput.mjs';
+import { projectRoot, run } from './hookInput.mjs';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
+const checkout = path.resolve(here, '../..');
 
 const isAlive = (pid) => {
   try {
@@ -88,3 +89,26 @@ test(
     }
   },
 );
+
+test('a session in a subfolder of this checkout acts on its top level', async () => {
+  assert.equal(await projectRoot({ cwd: path.join(checkout, 'docs') }), checkout);
+});
+
+test('a session outside any git repository acts on the checkout that holds the scripts', async () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'hook-root-'));
+  try {
+    assert.equal(await projectRoot({ cwd: dir }), checkout);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('a session in another git repository acts on the checkout that holds the scripts', async () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'hook-root-'));
+  try {
+    assert.equal((await run('git', ['init', '-q'], { cwd: dir })).status, 0);
+    assert.equal(await projectRoot({ cwd: dir }), checkout);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

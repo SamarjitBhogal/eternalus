@@ -19,7 +19,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 import { planChecks, parsePorcelainZ } from './changedFiles.mjs';
-import { readHookInput, repoRoot, run, tail } from './hookInput.mjs';
+import { projectRoot, readHookInput, run, tail } from './hookInput.mjs';
 
 const TIMEOUT_MS = 290_000;
 
@@ -30,12 +30,8 @@ if (input.stop_hook_active === true) {
 }
 
 const startedAt = Date.now();
-// Porcelain paths are relative to the top level, and the session cwd can be a subfolder.
-const topLevel = await run('git', ['rev-parse', '--show-toplevel'], {
-  cwd: repoRoot(input),
-  timeoutMs: 30_000,
-});
-const root = topLevel.status === 0 ? topLevel.output.trim() : repoRoot(input);
+// Porcelain paths are relative to the top level, which `projectRoot` returns.
+const root = await projectRoot(input);
 const status = await run('git', ['--no-optional-locks', 'status', '--porcelain', '-z', '-uall'], {
   cwd: root,
   timeoutMs: 30_000,

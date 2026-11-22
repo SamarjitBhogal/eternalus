@@ -21,6 +21,8 @@ const hooks = Object.values(settings.hooks)
 test('every hook script path starts at the project root and names a file that exists', () => {
   assert.ok(hooks.length > 0, 'settings.json has no hooks');
   for (const hook of hooks) {
+    assert.equal(hook.type, 'command', `${JSON.stringify(hook)} must be a command hook`);
+    assert.ok(Array.isArray(hook.args), `${JSON.stringify(hook)} must use the exec form (args)`);
     const [script] = hook.args;
     assert.ok(script.startsWith(`${PROJECT_DIR}/`), `${script} must start with ${PROJECT_DIR}/`);
     assert.ok(
