@@ -363,7 +363,11 @@ describe('BotLegendController (laner tree, 11 §4.2)', () => {
     let memory: AiMemory = { lane: 'lane-0' };
     let heading = { x: 0, y: 0 };
     // Walks as a held `move` drives it, blocked (not slid) by the wall, until it is in reach.
-    for (let turn = 0; turn < 300 && !new ReachQuery().isInReach(state.entities, bot, stronghold); turn += 1) {
+    for (
+      let turn = 0;
+      turn < 300 && !new ReachQuery().isInReach(state.entities, bot, stronghold);
+      turn += 1
+    ) {
       const decision = decide(memory);
       memory = decision.memory;
       const move = decision.commands.findLast(({ type }) => type === 'move');
