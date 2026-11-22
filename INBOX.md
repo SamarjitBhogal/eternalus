@@ -802,11 +802,12 @@ Reply inline (`Decision: …`).
       key").** The Magus staff shoots on the attack button and has its melee attack on F (DEC-308).
       Options: (A) nothing: each weapon has only its own attacks, and to claw the player swaps back
       to the talons (recommended, built); (B) a talon swipe on F, the same way the staff's melee
-      works; (C) other (note). Note (critic rounds 2 and 3): with today's numbers the bow hits as
-      hard as the talons and from farther away; the talons only hit more surely (HC-Q86 (1)). A, B
-      or C?
+      works; (C) other (note). Note (critic rounds 2 and 3, corrected after the PR 2 merge): with
+      today's numbers the bow hits as hard as the talons and from farther away; the talons hit at
+      once and hit every enemy in their sweep (HC-Q86 (1)). A, B or C?
       _Code: `Combat.equip` changes the attack mode to the basic attack when the new weapon has no
-      attack for the current mode._
+      attack for the current mode, and stops a melee aim held through the swap, so F does nothing
+      with the bow out in either key order._
 - [ ] **HC-Q83 — Zealot: do bot Zealots swap weapons? (`feat/zealot-weapon-swap`, PR 9,
       2026-11-22; PR-38-HELPER-46; Owner Calls card "PR9 bot swap").** This is about bots only; a
       player Zealot can always swap. Options: (A) no, for now: bot Zealots keep the talons
@@ -840,9 +841,10 @@ Reply inline (`Decision: …`).
       weapon is out (`feat/zealot-weapon-swap`, PR 9 critic round 2, 2026-11-22; PR-38-HELPER-48;
       new Owner Calls card "PR9 bow strength and weapon display").** Two facts for HC-Q81 and
       HC-Q82. (1) Today the bow and the talons each do 45 damage every 0.7 s. The talons reach
-      1.5 m and the bow reaches 50 m. So the bow does the same damage per hit and reaches farther.
-      But an arrow flies to where the target was, so a moving target can dodge it, and a wall or
-      another enemy can stop it. A talon hit lands at once. Options: (A) keep these numbers for now (built); (B) change the bow's numbers for the Zealot
+      3 m (their own 1 m plus the Warrior's 2 m, DEC-305) and the bow reaches 50 m. So the bow does
+      the same damage per hit and reaches farther. But an arrow flies to where the target was, so a
+      moving target can dodge it, and a wall or another enemy can stop it. A talon swing lands at
+      once and hits every enemy in a quarter circle in front of the Zealot (DEC-319). Options: (A) keep these numbers for now (built); (B) change the bow's numbers for the Zealot
       (note which: for example less damage or a slower shot); (C) other (note). (2) Nothing on the
       screen shows which weapon is in hand. The Zealot's weapon panel stays empty (DEC-114), so
       the player sees only the gadget cooldown and the arrows. Options: (A) leave it so (built);

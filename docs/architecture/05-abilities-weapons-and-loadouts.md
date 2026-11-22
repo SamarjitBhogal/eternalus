@@ -1330,10 +1330,11 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     `gadget-2` from the spec's `artifacts`. The `swap-weapon` effect
     (`abilities/effects/SwapWeaponEffect.ts`, one line in `defaultAbilityRegistry.ts`) calls
     `Loadout.swap()`, then `Combat.equip(attacks, weaponId)`: the new attack set, the same target
-    and attack timer, and the `basic` mode when the new weapon has no attack for the current mode
-    (the bow has no `melee`). `StateHasher` adds a `loadout` field only while the second weapon is
-    in hand, so a run without a swap hashes as before. There is no `LoadoutValidator`, no
-    `apply(loadout)` and no `loadout/` folder yet.
+    or aim point and attack timer, and the `basic` mode when the new weapon has no attack for the
+    current mode (the bow has no `melee`; a melee aim held through the swap stops, `INBOX.md`
+    HC-Q82). `StateHasher` adds a `loadout` field only while the
+    second weapon is in hand, so a run without a swap hashes as before. There is no
+    `LoadoutValidator`, no `apply(loadout)` and no `loadout/` folder yet.
   - **Invariant.** `weapon-in-hand-matches-combat` (each tick, `error`;
     `diagnostics/invariants/WeaponInHandMatchesCombatInvariant.ts`) flags an entity whose
     `Combat.weaponId` is not `Loadout.inHand.weaponId`: a swap or an equip done around the effect.
