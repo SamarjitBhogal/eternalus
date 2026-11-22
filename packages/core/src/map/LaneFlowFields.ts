@@ -3,6 +3,7 @@ import type { PlayableTeam } from '../teams/teams.types';
 import { distance, distanceToPath } from '../utils/geometry';
 import type { Vec2 } from '../utils/geometry.types';
 import { FlowField } from './FlowField';
+import { NO_CELL } from './FlowField.constants';
 import { FlowFieldBuilder } from './FlowFieldBuilder';
 import type { WorldMap } from './WorldMap';
 import { CELL_EDGE_SLACK } from './WorldMap.constants';
@@ -129,8 +130,8 @@ export class LaneFlowFields {
       lane.id,
       team,
       mask,
-      goal === null ? -1 : goal.row * grid.cols + goal.col,
-      first === null ? -1 : first.row * grid.cols + first.col,
+      goal === null ? NO_CELL : goal.row * grid.cols + goal.col,
+      first === null ? NO_CELL : first.row * grid.cols + first.col,
     );
   }
 

@@ -9332,3 +9332,16 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   "Tests 29 passed (29)"; client "Tests 2011 passed (2011)"; server "Tests 84 passed (84)"; "✓
   built in 483ms"; "Documentation check passed."
 - Next step: re-request review on PR #82.
+
+### 2026-11-21 — Phase 3 / minion plan M5a follow-up — feat/minion-strength-flow-field (PR #82 review round 2) — SamarjitBhogal + Claude Code
+
+- What was done: re-checked every open comment on PR #82. The 2026-11-20 round already covered
+  S1 (DEC-280), N1–N4 and claudiodh's review; the one item left open, the optional nit to name the
+  `-1` cell sentinel, is applied: `FlowField.constants.ts` gains `NO_CELL`, which
+  `LaneFlowFields` passes for an off-world `goal` or `start` and `FlowField.progressAt` tests
+  against. No behaviour change. CodeRabbit posted no review (rate limited). The branch still
+  conflicts with the current `phase/3-sprint-3-work`; left for the owner to merge.
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code
+  style!"; core "Tests 1684 passed (1684)"; protocol "Tests 29 passed (29)"; client "Tests 2011
+  passed (2011)"; server "Tests 84 passed (84)"; "✓ built in 376ms"; "Documentation check passed."
+- Next step: merge `phase/3-sprint-3-work` into the branch, then re-request review.

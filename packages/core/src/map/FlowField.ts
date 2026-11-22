@@ -2,7 +2,13 @@ import type { PlayableTeam } from '../teams/teams.types';
 import { sqrt } from '../utils/deterministicMath';
 import type { Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
-import { DIRECTION_XS, DIRECTION_YS, NO_DIRECTION, UNREACHED } from './FlowField.constants';
+import {
+  DIRECTION_XS,
+  DIRECTION_YS,
+  NO_CELL,
+  NO_DIRECTION,
+  UNREACHED,
+} from './FlowField.constants';
 import type { WorldMap } from './WorldMap';
 
 /**
@@ -22,9 +28,9 @@ export class FlowField {
    * @param laneId - The lane the field leads along.
    * @param team - The team walking it, toward the enemy end.
    * @param mask - 1 for every cell of the corridor, row-major like `grid.walkable`.
-   * @param goal - The cell of the lane's enemy end.
+   * @param goal - The cell of the lane's enemy end; `NO_CELL` when it lies outside the world.
    * @param start - The cell of the lane's own end for `team`, where its walk starts (progress 0);
-   *   -1 when the lane end lies outside the world.
+   *   `NO_CELL` when the lane end lies outside the world.
    */
   public constructor(
     public readonly grid: WorldMap,
@@ -69,11 +75,12 @@ export class FlowField {
    * How far `point` lies along the lane by path cost: 0 at the lane's own end (`start`, and
    * anywhere costlier, such as inside the team's Stronghold), 1 at the enemy end. Measured gate to
    * gate, the lane's ends, as the lane polyline was before it (DEC-280), so the strength curve's
-   * base-stat points keep their meaning. `null`
-   * where the field cannot say: the point or `start` outside the fill, or a zero-cost start.
+   * base-stat points keep their meaning. `null` where the field cannot say: the point or `start`
+   * outside the fill, or a zero-cost start.
    */
   public progressAt(point: Vec2): number | null {
-    const home = this.start < 0 ? UNREACHED : (this.integrationCells[this.start] ?? UNREACHED);
+    const home =
+      this.start === NO_CELL ? UNREACHED : (this.integrationCells[this.start] ?? UNREACHED);
     const here = this.costAt(point);
     if (home === UNREACHED || here === UNREACHED || home === 0) {
       return null;
