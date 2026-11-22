@@ -22,6 +22,6 @@ Phase 3 / minion plan M8 follow-up · feat/minion-bot-path-cache · SamarjitBhog
   4384 → 652 (290/team); p95 times overlap under load. No product question.
 - Checks run: `npm run check` → exit 0: "All matched files use Prettier code style!"; core
   "Tests 1694 passed (1694)"; protocol "Tests 29 passed (29)"; client "Tests 2077 passed (2077)";
-  server "Tests 84 passed (84)"; "✓ built in 465ms"; "Documentation check passed."
+  server "Tests 114 passed (114)"; "✓ built in 337ms"; "Documentation check passed."
 - Next step: re-review by swholtzman; sholtzman signs off the doc 11 §6 wording. #98 (2.5 m grid,
   `WorldMap.version`) re-measures and settles the grid-version choice if it merges second.
