@@ -1,4 +1,5 @@
-import type { ControllerId } from '../content/ai/ai.types';
+import type { BossProfileDefinition, ControllerId } from '../content/ai/ai.types';
+import { BossController } from './BossController';
 import { BotLegendController } from './BotLegendController';
 import type { BotLegendControllerContent } from './BotLegendController.types';
 import type { Controller } from './Controller.types';
@@ -23,9 +24,12 @@ export const createDefaultControllerRegistry = (content: {
   readonly leash: LeashControllerContent;
   readonly botLegend: BotLegendControllerContent;
   readonly rover: RoverControllerContent;
+  /** Every boss profile by id. */
+  readonly bosses: Readonly<Record<string, BossProfileDefinition>>;
 }): ControllerRegistry => ({
   minion: new MinionController(content.leash),
   guard: new GuardController(content.leash),
   'bot-legend': new BotLegendController(content.botLegend),
   rover: new RoverController(content.rover),
+  boss: new BossController(content.bosses),
 });

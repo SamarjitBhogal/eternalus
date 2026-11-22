@@ -18,7 +18,7 @@ describe('applyCommand', () => {
   it('dispatches to the handler registered for the command type', () => {
     const seen: string[] = [];
     const handlers: CommandHandlers = {
-      ...createDefaultCommandHandlers(),
+      ...createDefaultCommandHandlers({}),
       stop: {
         handle: (command) => {
           seen.push(command.actorId);
@@ -39,7 +39,7 @@ describe('applyCommand', () => {
     const rejected: unknown[] = [];
     ctx.state.events.on('command-rejected', (payload) => rejected.push(payload));
     const command = { type: 'stop', actorId: 'entity-3' } as const;
-    applyCommand(command, createDefaultCommandHandlers(), ctx);
+    applyCommand(command, createDefaultCommandHandlers({}), ctx);
     expect(rejected).toEqual([{ command, reason: 'unknown-entity' }]);
   });
 
@@ -47,7 +47,7 @@ describe('applyCommand', () => {
     const ctx = context();
     let calls = 0;
     const handlers: CommandHandlers = {
-      ...createDefaultCommandHandlers(),
+      ...createDefaultCommandHandlers({}),
       stop: {
         handle: () => {
           calls += 1;

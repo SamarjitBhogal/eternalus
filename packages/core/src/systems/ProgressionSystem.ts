@@ -17,7 +17,8 @@ import type { Award, ProgressionContent } from './ProgressionSystem.types';
  * while the victim is still in the store, and in its own pass gives the XP to the killer's
  * `Progression`. A destroyed structure (`structure-destroyed`) pays every Legend of the opposing
  * team (DEC-186), and a boss in `xpSources.teamKills` pays every Legend of its killer's playable
- * team instead of the killer, lifting none more than the reward's `maxLevels` (DEC-237); a Legend
+ * team instead of the killer, lifting none more than the reward's `maxLevels`, or each exactly its
+ * `levels` (the Greater Boss's flat 5, up to the cap) (DEC-237); a Legend
  * the cap leaves nothing to pay gets no award. Self-kills and ally kills pay nothing (O5). Each
  * level gained raises max health by the class's share of its base health (O3) and max aether,
  * heals and refills by the raise only while the Legend is alive (O4), and emits `level-up`.
@@ -54,13 +55,15 @@ export class ProgressionSystem implements System {
         // a Legend already removed (e.g. its projectile) pays nobody; upgrade when `DamageSource`
         // carries the attacker's team (INBOX.md capture point mini-boss interim (d)).
         if (isPlayableTeam(killerTeam)) {
+          // A flat `levels` reward is "all the XP it takes", capped at `levels` levels up.
+          const isFlat = 'levels' in teamKill;
           this.pending.push({
             kind: 'team-kill',
             team: killerTeam,
             victimId: entityId,
             victimTeam,
-            xp: teamKill.xp,
-            maxLevels: teamKill.maxLevels,
+            xp: isFlat ? Number.POSITIVE_INFINITY : teamKill.xp,
+            maxLevels: isFlat ? teamKill.levels : teamKill.maxLevels,
           });
         }
         return;

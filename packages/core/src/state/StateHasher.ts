@@ -1,4 +1,5 @@
 import { Aether } from '../components/Aether';
+import { BossMoveCast } from '../components/BossMoveCast';
 import { Capturable } from '../components/Capturable';
 import { CathedralGemState } from '../components/CathedralGemState';
 import { ChaseWatch } from '../components/ChaseWatch';
@@ -144,6 +145,11 @@ export class StateHasher {
         ...health.shields.flatMap((bar) => [bar.sourceId, bar.current, bar.max]),
       ]);
     }
+    // A push waiting for the next step (a knockback landed this tick) is added only while it
+    // waits, so entities without one hash as before.
+    if (movement !== undefined && (movement.push.x !== 0 || movement.push.y !== 0)) {
+      fields.push(['push', movement.push.x, movement.push.y]);
+    }
     // Only a facing other than INITIAL_FACING is added (a turn, DEC-192, or a start facing,
     // DEC-216 (6)), so entities that keep it hash as before.
     if (
@@ -167,6 +173,10 @@ export class StateHasher {
     const combat = entity.findComponent(Combat);
     if (combat !== undefined && (combat.targetId !== null || combat.readyAtTick > 0)) {
       fields.push(['combat', combat.targetId, combat.readyAtTick]);
+    }
+    const cast = entity.findComponent(BossMoveCast);
+    if (cast !== undefined) {
+      fields.push(['boss-move', ...cast.fields]);
     }
     const vision = entity.findComponent(Vision);
     if (vision !== undefined) {

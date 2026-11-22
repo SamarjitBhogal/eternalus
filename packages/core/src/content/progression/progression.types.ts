@@ -26,14 +26,20 @@ export type XpSourcesDefinition = {
   readonly structureDestroyed: number;
   /**
    * The mobs whose kill pays every Legend of the killer's team instead of the killer, by mob
-   * definition id: `xp` each, but never more than lifts a Legend `maxLevels` levels (DEC-237).
+   * definition id: `xp` each, but never more than lifts a Legend `maxLevels` levels, or exactly
+   * `levels` levels whatever the XP (DEC-237).
    */
   readonly teamKills: Readonly<Record<string, TeamKillReward>>;
 };
 
 /** A team-wide kill reward (balancing.md boss table, DEC-237). */
-type TeamKillReward = {
-  readonly xp: number;
-  /** The most levels one award may lift a Legend; XP past that point is not paid. */
-  readonly maxLevels: number;
-};
+type TeamKillReward =
+  | {
+      readonly xp: number;
+      /** The most levels one award may lift a Legend; XP past that point is not paid. */
+      readonly maxLevels: number;
+    }
+  | {
+      /** Lifts each Legend exactly this many levels (up to the curve's cap), "flat" (DEC-237). */
+      readonly levels: number;
+    };

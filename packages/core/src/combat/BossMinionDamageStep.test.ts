@@ -39,7 +39,7 @@ const setUp = () => {
     memberIds: [minion],
     progress: 0,
   });
-  return { state, boss, guard, minion, legend };
+  return { state, boss, guard, minion, legend, add };
 };
 
 /** The share of a minion's hit the capture point boss takes, from content. */
@@ -73,6 +73,19 @@ describe('BossMinionDamageStep', () => {
     expect(before - (health?.current ?? 0)).toBeCloseTo(100 * SHARE);
     pipeline.apply(state, boss, 100, hit(legend, boss).source);
     expect(before - (health?.current ?? 0)).toBeCloseTo(100 * SHARE + 100);
+  });
+
+  it("takes a quarter of a minion's hit off the Greater Boss, and a Legend's whole (balancing.md)", () => {
+    const { state, minion, legend, add } = setUp();
+    const boss = add('heavy-mob', 'greater-boss', 'neutral');
+    const health = state.entities.get(boss)?.getComponent(Health);
+    const pipeline = new DamagePipeline();
+    const taken = (): number => (health === undefined ? 0 : health.max - health.current);
+
+    pipeline.apply(state, boss, 100, hit(minion, boss).source);
+    expect(taken()).toBeCloseTo(25);
+    pipeline.apply(state, boss, 100, hit(legend, boss).source);
+    expect(taken()).toBeCloseTo(125);
   });
 
   it.each([

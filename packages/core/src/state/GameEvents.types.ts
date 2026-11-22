@@ -146,6 +146,12 @@ export type GameEventMap = {
   readonly 'boss-summoned': { readonly entityId: EntityId; readonly kind: string };
   /** The Cathedral gem erupted (`summon-greater-boss`, 12 §3); `boss-summoned` comes with the spawn. */
   readonly 'greater-boss-summoned': { readonly bossId: string };
+  /** The Greater Boss's entrance roar (reference 04), on its spawn tick; no gameplay effect yet. */
+  readonly 'boss-entrance': { readonly bossId: EntityId };
+  /** A boss began a move (11 §4.6); it lands `telegraphSeconds` later with `boss-move-executed`. */
+  readonly 'boss-telegraph': { readonly bossId: EntityId; readonly move: string };
+  /** A boss's move landed: its hits went through the damage pipeline this tick. */
+  readonly 'boss-move-executed': { readonly bossId: EntityId; readonly move: string };
   /** `command` is the rejected `Command` (typed loosely: `state/` sits below `commands/`). */
   readonly 'command-rejected': {
     readonly command: { readonly type: string };

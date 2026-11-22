@@ -58,9 +58,91 @@ Reply inline (`Decision: …`).
       2.5 s, reach 1.5 m. (5) **Movement.** The heavy minion's (2.8 m/s). (6) **Zone.** A 25 m circle
       around the Cathedral capture zone's centre (balancing.md "centre zone, radius 25 m"); the zone is
       the boss's guard home. Does it also lock the Cathedral's capture while it lives, as the
-      mini-boss locks its zone? (7) **Respawn.** None. (8) **Reward.** DEC-237's flat 5 levels is not built
-      in this PR (it comes with the boss's moves); it takes 25% of a minion's hit.
+      mini-boss locks its zone? (7) **Respawn.** None. (8) **Reward.** DEC-237's flat 5 levels (see "killer only
+      or whole team?"); it takes 25% of a minion's hit.
       (9) `boss-summoned` names its kind as `heavy-mob` until the `GreaterBoss` class lands.
+
+- [ ] **The Greater Boss's BossController: slam and entrance roar (Aryan Walanj, 2026-11-16,
+      `feat/cathedral-boss-controller`).** Built per architecture 11 §4.6 for the Greater Boss
+      only: `entrance → roam → telegraph → execute → recover → roam`, the slam, and the roar as
+      its entrance. balancing.md gives "heavy move 0.45 × refHealth, 2.5 s" and "6 moves (two
+      sweeps, slam, beam, charge, roar)" but none of the numbers below, so each is `TUNE`
+      (`content/ai/bosses/greaterBoss.ts`); please confirm or replace. (1) Slam radius 4 m and
+      start range 4 m (the Sentinel's Slam radius, the only slam radius in the docs). (2) Slam
+      damage: the heavy move, 464. Which of the six moves are heavy and which light (0.15 ×)?
+      (3) Slam knockback and knockup: none yet (the Sentinel's Slam has 3 m and 0.8 s). Add them?
+      (4) Telegraph 1 s, recover 1 s, cooldown 2.5 s (balancing.md's interval, landing to
+      landing). (5) Roam: a new point every 3 s or on arrival (1 m), at least 3 m inside the
+      zone's edge; doc 11 says "every cadence" with no number. (6) Target: the nearest
+      non-neutral unit inside the 25 m zone, minions included. Doc 11 asks for a bias toward the
+      highest recent damage dealer: over what window, and how strong against distance? (7) The
+      slam hits every non-neutral unit whose centre is within 4 m (body edges ignored), never
+      structures or neutral camp mobs. (8) Entrance roar: balancing.md gives the GreaterBoss's roar
+      no effect (the MiniBoss's is a "concussion aura"), so the entrance is the `boss-entrance`
+      event and a 2 s pause with no gameplay effect. Should it knock back, stun or slow, with what
+      radius and length? (9) The boss's old melee `attack` stays in its definition, unused.
+      (10) Can a stun or other `cannot-cast` status stop a boss move? Today nothing stops one.
+
+- [ ] **The Greater Boss's sweep (Aryan Walanj, 2026-11-20, `feat/cathedral-boss-moves`).**
+      balancing.md gives the sweep "cone knockback" (the MiniBoss row) and the GreaterBoss's light
+      moves 0.15 × refHealth (155), nothing else, so these are `TUNE`
+      (`content/ai/bosses/greaterBoss.ts`); please confirm or replace. (1) Cone 6 m long, 60°
+      either side of the boss's facing (120° in all); it starts once the target is within 6 m.
+      (2) Knockback 3 m straight away from the boss (the Sentinel's Slam value, the only
+      knockback in the docs); mass is not read yet. (3) Telegraph 1 s, recover 1 s, cooldown
+      2.5 s (balancing.md gives an interval only for heavy moves). (4) The knockback is a
+      one-step push that stops at walls (doc 10's impulse, mass and friction model is not built);
+      OK as the interim? (5) The cone points where the boss faces when it lands (its last walk,
+      toward its target), so a Legend can sidestep during the telegraph. Should it aim at the
+      target instead?
+
+- [ ] **The Greater Boss's charge (Aryan Walanj, 2026-11-20, `feat/cathedral-boss-moves`).**
+      balancing.md gives only the heavy move (0.45 × refHealth, 464, every 2.5 s), so these are
+      `TUNE` (`content/ai/bosses/greaterBoss.ts`); please confirm or replace. (1) Length 10 m; it
+      starts once the target is within 10 m. (2) Width: the boss's own body (5 m); a unit whose
+      centre is on that path is hit. (3) The dash is one step (no dash speed in the docs), stops at
+      walls and is cut short at the 25 m zone's edge; hits are taken along the path inside the
+      zone, even past a wall that stops the boss. (4) No knockback on the units it hits. Add one?
+      (5) Telegraph 1 s, recover 1 s.
+
+- [ ] **The Greater Boss's second sweep and beam (Aryan Walanj, 2026-11-20,
+      `feat/cathedral-boss-moves`).** balancing.md names "two sweeps" and a "beam" and nothing
+      more, and doc 11 §4.6 gives only the move fields; so these are `TUNE`
+      (`content/ai/bosses/greaterBoss.ts`). (1) Nothing tells the two sweeps apart: the second is
+      the first with a wider cone, 90° either side (a half circle) instead of 60°. What should
+      the difference be? (2) The beam is the Magus's Death Ray size (30 m × 1.5 m, balancing.md),
+      the only beam in the docs, as one hit (no channel). (3) Is the beam heavy (0.45 ×
+      refHealth, 464, as built) or light (0.15 ×, 155)? (4) Walls do not stop the beam (core has
+      no line-of-sight trace yet). Should they? (5) Telegraph 1 s, recover 1 s; the beam's
+      cooldown is the heavy moves' 2.5 s.
+
+- [ ] **The Greater Boss's move rotation and roar (Aryan Walanj, 2026-11-20,
+      `feat/cathedral-boss-moves`).** At Aryan's request the boss uses its six moves in a fixed
+      rotation: slam, sweep, wide sweep, beam, charge, roar, then again. The next move waits (the
+      boss chases) until a target is in its range and it is off cooldown. (1) Doc 11 §4.6 asks for
+      a utility pick (distance, targets in the area, cooldown) with a seeded weighted pick. Keep
+      the rotation, or build that pick, and with what weights? (2) Which order? balancing.md lists
+      "two sweeps, slam, beam, charge, roar"; the slam comes first here. (3) The roar is a move
+      with no effect (range: the whole 25 m zone; telegraph 1 s, recover 1 s, cooldown 2.5 s, all
+      `TUNE`), as at the entrance. Should it stun, slow or knock back (the MiniBoss's roar is a
+      "concussion aura")?
+
+- [ ] **The Greater Boss's kill reward: killer only or whole team? (Aryan Walanj, 2026-11-20,
+      `feat/cathedral-boss-moves`).** DEC-237: "Killing the middle boss puts you up 5 levels from
+      wherever you are, flat". Built as `XP_SOURCES.teamKills['greater-boss'] = { levels: 5 }`:
+      every Legend of the killer's team (killed by a minion too) goes up exactly 5 levels, up to the
+      level cap; the other team gets nothing; it replaces balancing.md's 1,500 XP. Who it goes to
+      is `TUNE`: DEC-237 says "you". Should it be the killer only, or the whole team (as
+      built, like the mini-boss's)? And should a Legend dead at the kill get it on respawn?
+
+- [ ] **Better than design: the BossController (Aryan Walanj, 2026-11-16, critic on
+      `feat/cathedral-boss-controller`).** (B1) Bind the boss to a zone owned by the Cathedral's
+      spawner (`zoneId`, 11 §4.6) instead of a guard post: `PathingSystem` would drop its
+      "controller is not `guard`" exemption, and `StuckSystem` and `VeterancySystem` would stop
+      treating the boss as a guard. (B2) One shared "living units in a circle" query in `physics/`
+      for `BossMoveSystem` and `Perception` (systems may not import `ai/`); `CathedralGemSystem`
+      could use it too. (B3) The boss FSM as a per-state handler table (State pattern, data still
+      in memory), so sweep and charge extend it instead of editing an `if` chain. Adopt any?
 
 - [ ] **Better than design: shared boss numbers (Aryan Walanj, 2026-11-22, critic on
       `feat/cathedral-eruption-boss`).** For sign-off. (1) `greaterBoss.ts` copies balancing.md's

@@ -37,6 +37,21 @@ const setUp = (): { context: SystemContext; dummy: Entity } => {
 };
 
 describe('MovementSystem', () => {
+  it('moves a pushed unit by the push once, without turning it', () => {
+    const { context, dummy } = setUp();
+    const transform = dummy.getComponent(Transform);
+    const facing = { ...transform.facing };
+    dummy.getComponent(Movement).pushBy({ x: 0, y: 3 });
+    const system = new MovementSystem();
+
+    system.update(context);
+    expect(transform.position).toEqual({ x: 0, y: 3 });
+    expect(transform.previousPosition).toEqual({ x: 0, y: 0 });
+    expect(transform.facing).toEqual(facing);
+    system.update(context);
+    expect(transform.position).toEqual({ x: 0, y: 3 });
+  });
+
   it('brings a dummy to maxSpeed after maxSpeed / acceleration ticks, never above', () => {
     const { context, dummy } = setUp();
     const movement = dummy.getComponent(Movement);

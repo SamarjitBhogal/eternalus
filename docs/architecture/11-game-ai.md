@@ -374,11 +374,47 @@ and utility better
 Minion plan pull request M2a builds §1–§3, §5 and §6 with these differences, each closed by the
 work named:
 
-- §4.6 `BossController` is not built (Phase 3 sprint 3.6). Until then the capture point mini-boss
-  and the Greater Boss (`greater-boss`, on the Cathedral zone's guard plan, 07) run on
-  `GuardController`; the interim is recorded in
+- §4.6 `BossController` is built for the Greater Boss only (below). Until the `MiniBoss` class
+  lands the capture point mini-boss runs on `GuardController`; the interim is recorded in
   [18's implementation status note](18-minion-system.md#minion-system).
 
+- `BossController` (§4.6) drives the Greater Boss only (sprint 3.6, owner 2026-11-15); no
+  `MiniBoss` exists on this line yet, and every other mob keeps its controller. Its profile is a
+  `BossProfileDefinition` (`content/ai/bosses/greaterBoss.ts`: entrance, roam cadence, arrival,
+  zone margin, moves), its memory the FSM (`entrance`, then `roam → telegraph → execute → recover
+→ roam`, one state per decision), timers, roam point and a ready tick per move. Its zone is its
+  Cathedral capture zone guard post's circle (home edge plus leash, the 25 m centre zone); the boss still
+  spawns through the guard plan (07's Implementation status), but `PathingSystem` steers only
+  `GuardController`'s guards, so the boss steers itself with `move`. Differences from §4.6, each
+  closed by the work named: the six moves (balancing.md: two sweeps, slam, beam, charge, roar)
+  rotate in profile order, one after another (2026-11-20, so every move comes up), and the next
+  move waits, the boss chasing, until a target is in its range and it is off cooldown; the
+  rotation's place is the brain's `next` memory (the utility pick and the seeded weighted pick
+  are not built); the target is
+  the nearest non-neutral unit inside the zone, with no damage-dealer bias (no window or weight in
+  the docs; `INBOX.md`); a move is not cast through `cast-ability` and an `AbilityEffect`
+  (abilities are Phase 4) but through the interim `boss-move { actorId, moveId }` command:
+  `BossMoveHandler` accepts it only from a boss and only for a move of its own profile, records a
+  `BossMoveCast` landing the move's telegraph later and emits `boss-telegraph`, and
+  `BossMoveSystem` lands it on that tick exactly (`boss-move-executed`), so the telegraph's lead
+  time does not depend on the AI cadence. Moves and the profile are authored in seconds and turned
+  into ticks with `TickRate` where they are read, not as §4.6's `telegraphTicks`/`cooldownTicks`.
+  A move's `effect` is §4.6's `effectId`: `BossMoveSystem` hands the move to the strategy
+  registered under it (`systems/defaultBossMoveEffects.ts`, `BossMoveEffect`), not to a doc 05
+  `AbilityEffect` yet. `area` (the slam) hits every unit within `radius`, with no knockback or
+  knockup; `cone` (the sweep, 2026-11-20) hits every unit within `radius` and
+  `halfAngleDegrees` of the boss's facing and pushes each `knockback` metres away (10's
+  Implementation status); `charge` (2026-11-20) dashes the boss `length` metres along its facing
+  (a push on itself, cut short at its zone's edge) and hits every unit on that path, within
+  `width / 2` of its line (`unitsAlong`); `line` (the beam, 2026-11-20) hits every unit on a line
+  `length` long and `width` wide from the boss, which does not move, and walls do not stop it.
+  The second sweep is the sweep with a wider cone. `roar` lands with no effect (only
+  `boss-move-executed`): balancing.md gives the GreaterBoss's roar none. The facing is the boss's own at landing: it last walked toward its
+  target and stands still through the telegraph. The entrance roar is
+  `boss-entrance` from `SpawnSystem` on its spawn pass and an `entranceSeconds` pause with no
+  gameplay effect: balancing.md gives the GreaterBoss's roar none. The pause counts from the
+  boss's first decision, at most one cadence after the spawn tick. Its numbers are `TUNE`
+  (`INBOX.md`, the BossController item).
 - `AiSystem` lives in `ai/` and fits the `System` contract by shape; `Simulation` puts it first in
   the pipeline, because `systems/` may not import `ai/` (where it lives is the owner's open
   PROTO-01 question). It is second, after `CommandApplySystem` (§1), once that system heads the

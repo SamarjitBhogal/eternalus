@@ -28,10 +28,17 @@ const CURVES = new ContentCatalogue<LevelCurveDefinition>([
 const XP_SOURCES = {
   legendKill: { base: 150, perVictimLevel: 25 },
   structureDestroyed: 300,
-  teamKills: { 'capture-point-boss': { xp: 500, maxLevels: 2 } },
+  teamKills: {
+    'capture-point-boss': { xp: 500, maxLevels: 2 },
+    'greater-boss': { levels: 5 },
+  },
 };
+/** A curve long enough to show a 5-level lift below its cap. */
+const LONG_CURVES = new ContentCatalogue<LevelCurveDefinition>([
+  { id: 'legend', cap: 10, xpToNext: [100, 100, 100, 100, 100, 100, 100, 100, 100] },
+]);
 
-const setUp = () => {
+const setUp = (curves = CURVES) => {
   const state = new GameState(CONFIG, 1);
   const factory = new EntityFactory(
     createDefaultEntityRegistry(),
@@ -46,7 +53,7 @@ const setUp = () => {
   };
   const system = new ProgressionSystem(state, {
     units: UNITS,
-    curves: CURVES,
+    curves,
     xpSources: XP_SOURCES,
   });
   const kill = (killer: Entity | null, victim: Entity) => {
@@ -314,6 +321,35 @@ describe('ProgressionSystem', () => {
       run();
 
       expect(warrior.getComponent(Progression)).toMatchObject({ xp: 250, level: 3 });
+    });
+
+    it("lifts every Legend of the killer's team exactly 5 levels for the Greater Boss, none of the other", () => {
+      const { spawn, kill, run, payloads } = setUp(LONG_CURVES);
+      const curve = LONG_CURVES.get('legend');
+      const killer = spawn('warrior', 'warrior', 'light');
+      const mate = spawn('magus', 'magus', 'light');
+      mate.getComponent(Progression).addXp(150, curve);
+      const dark = spawn('warrior', 'warrior', 'dark');
+
+      kill(killer, spawn('heavy-mob', 'greater-boss', 'neutral'));
+      run();
+
+      // From level 1 (0 XP) to level 6 (500); from level 2 halfway (150) to level 7 (600).
+      expect(killer.getComponent(Progression)).toMatchObject({ xp: 500, level: 6 });
+      expect(mate.getComponent(Progression)).toMatchObject({ xp: 600, level: 7 });
+      expect(dark.getComponent(Progression)).toMatchObject({ xp: 0, level: 1 });
+      expect(payloads('level-up')).toHaveLength(10);
+    });
+
+    it('stops the Greater Boss lift at the level cap', () => {
+      const { spawn, kill, run } = setUp(LONG_CURVES);
+      const warrior = spawn('warrior', 'warrior', 'light');
+      warrior.getComponent(Progression).addXp(700, LONG_CURVES.get('legend'));
+
+      kill(warrior, spawn('heavy-mob', 'greater-boss', 'neutral'));
+      run();
+
+      expect(warrior.getComponent(Progression)).toMatchObject({ xp: 900, level: 10 });
     });
 
     it('caps two levels up from partway through level 2', () => {

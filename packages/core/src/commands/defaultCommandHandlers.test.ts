@@ -33,7 +33,7 @@ describe('createDefaultCommandHandlers', () => {
       const state = new GameState(createDefaultGameConfig(), 1);
       const reasons: string[] = [];
       state.events.on('command-rejected', ({ reason }) => reasons.push(reason));
-      applyCommand(command, createDefaultCommandHandlers(), {
+      applyCommand(command, createDefaultCommandHandlers({}), {
         state,
         factory: new EntityFactory(new EntityRegistry(), new ContentCatalogue([])),
       });

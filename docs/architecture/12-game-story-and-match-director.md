@@ -516,7 +516,9 @@ Not built yet: `atmosphere` in `MatchState`; the rest of `content/narrative/` (�
 that carries `WinObjective` (the sovereign); `MatchResult.timeline` and `achievements` (with
 their producers); the other §5 counters and `TeamStats` fields; a condition for `forfeit` or
 `aborted` (the ids exist); the timeline actions other than `enter-phase` and
-`summon-greater-boss`; `dev-set-phase`; the announcer; the other invariants of §12.
+`summon-greater-boss`; the Greater Boss turning its killer into an Eternal (§7;
+`BossController` with its six moves and entrance roar, and DEC-237's flat 5-level team reward, are
+built); `dev-set-phase`; the announcer; the other invariants of §12.
 
 The gem eruption (§3) is built (2026-11-22, `feat/cathedral-eruption-boss`): the default
 timeline's `gem-eruption` entry, at `mid-game`'s fraction and right after it (DEC-81), runs

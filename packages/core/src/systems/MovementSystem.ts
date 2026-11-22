@@ -9,7 +9,8 @@ import type { System, SystemContext } from './System.types';
  * to the position and the entity faces the way it moved (DEC-192; a still entity keeps its
  * facing). Statuses scale the top speed (`moveSpeed`) or hold the entity in place
  * (`cannot-move`); while the match holds units idle (`state.match.isIdleHeld`, the countdown)
- * every entity is held the same way. Allocates nothing per entity (architecture 10 §2).
+ * every entity is held the same way. A pending push (`Movement.pushBy`, a knockback) is added to
+ * the step once, held or not. Allocates nothing per entity (architecture 10 §2).
  */
 export class MovementSystem implements System {
   public readonly name = 'movement';
@@ -28,7 +29,8 @@ export class MovementSystem implements System {
             ? 0
             : (statuses?.multiplier('moveSpeed') ?? 1);
         movement.advance(speedScale);
-        transform.moveBy(movement.velocity);
+        // A pending push (a knockback) moves even a held unit; it does not turn it.
+        transform.moveBy(movement.takeStep());
         transform.face(movement.velocity);
       }
     });

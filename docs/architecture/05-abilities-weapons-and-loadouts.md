@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-12
+last-reviewed: 2026-11-22
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -933,10 +933,12 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   Legend on the destroying team; a dead Legend is skipped until respawn, GL-12). Team-kill XP is
   built for the capture point boss (DEC-237): a mob in `XP_SOURCES.teamKills` pays every Legend of
   its killer's playable team, not the killer alone, and each Legend gets at most the XP that lifts
-  it `maxLevels` levels (`Progression.xpToReach`); `level-matches-xp` checks that the killer is on
+  it `maxLevels` levels (`Progression.xpToReach`); a reward of `levels` instead (the Greater
+  Boss's flat 5, 2026-11-20) lifts each Legend exactly that many levels, up to the cap, whatever
+  the XP; `level-matches-xp` checks that the killer is on
   the recipient's team (`cause: 'team-kill'`). It listens to `entity-died` itself, not 12's
   `xp-granted` reward path. Not built yet: the share radius and damage bias, assists, checkpoint and
-  camp XP, the Eternal's flat 5 levels (DEC-237) (their systems do not exist),
+  camp XP (their systems do not exist),
   basic-attack and ability potency per level, `upgradeIds`, the ultimate charge rules, and keeping
   dead Legends in the store until respawn (FR-051), which O4's posthumous XP needs. Numbers are
   `TUNE`; the curve and the Legend kill and structure XP follow DEC-190 (not final; the

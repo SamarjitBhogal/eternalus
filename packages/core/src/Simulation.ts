@@ -21,6 +21,7 @@ import { recentContext } from './diagnostics/recentContext';
 import { REPLAY_CHECKPOINT_EVERY } from './diagnostics/Replay.constants';
 import { loadAggroRules } from './content/ai/aggro/loadAggroRules';
 import { AI_CADENCE } from './content/ai/cadence';
+import { BOSS_PROFILES, loadBossTelegraphTicks } from './content/ai/bosses/bossProfiles';
 import { LANE_ASSESSMENT_WEIGHTS } from './content/ai/laneAssessmentWeights';
 import { ROVER_TACTICS } from './content/ai/rover';
 import { LEGEND_KIND_IDS } from './content/legends/legendKinds';
@@ -97,7 +98,7 @@ export class Simulation {
   private readonly botQueue = new CommandQueue();
   /** Commands from `enqueueCommand` (player, developer menu). Each one enters the replay log. */
   private readonly externalQueue = new CommandQueue();
-  private readonly handlers: CommandHandlers = createDefaultCommandHandlers();
+  private readonly handlers: CommandHandlers;
   private readonly commandContext: CommandContext;
   private readonly systemContext: SystemContext;
   private readonly pipeline: SystemPipeline;
@@ -163,6 +164,7 @@ export class Simulation {
       duel === undefined ? undefined : duelStartPoints(map, DUEL_RULES.startOffset);
     if (duel !== undefined) this.state.match.startDuel(duel.killTarget);
     const { tickRate } = this.state.config;
+    this.handlers = createDefaultCommandHandlers(loadBossTelegraphTicks(tickRate));
     const curves = levelCurves ?? loadLevelCurves();
     this.curves = curves;
     const weaponSource = weapons ?? loadWeapons(tickRate);
@@ -729,6 +731,7 @@ export class Simulation {
         legendKinds: LEGEND_KIND_IDS,
         laneWeights: LANE_ASSESSMENT_WEIGHTS,
       },
+      bosses: BOSS_PROFILES,
     });
   }
 

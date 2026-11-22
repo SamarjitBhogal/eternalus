@@ -134,6 +134,17 @@ describe('StateHasher', () => {
     expect(hasher.hash(state)).not.toBe(before);
   });
 
+  it('changes while a push waits, and is back to before once the step uses it up', () => {
+    const { state, soldier } = stateWithSoldier();
+    const before = hasher.hash(state);
+    const movement = soldier.getComponent(Movement);
+
+    movement.pushBy({ x: 1, y: 0 });
+    expect(hasher.hash(state)).not.toBe(before);
+    movement.takeStep();
+    expect(hasher.hash(state)).toBe(before);
+  });
+
   it('changes when an entity turns, and changes back when it turns back (DEC-192)', () => {
     const { state, soldier } = stateWithSoldier();
     const before = hasher.hash(state);

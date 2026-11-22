@@ -1,6 +1,7 @@
 import { DamagePipeline } from '../combat/DamagePipeline';
 import { Footprint } from '../components/Footprint';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
+import { BOSS_MOVES } from '../content/ai/bosses/bossProfiles';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
 import { loadStuckDetection } from '../content/ai/loadStuckDetection';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
@@ -19,6 +20,8 @@ import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStr
 import { LaneFlowFields } from '../map/LaneFlowFields';
 import type { GameState } from '../state/GameState';
 import type { Rect } from '../utils/geometry.types';
+import { BossMoveSystem } from './BossMoveSystem';
+import { createDefaultBossMoveEffects } from './defaultBossMoveEffects';
 import { CaptureSystem } from './CaptureSystem';
 import { CathedralGemSystem } from './CathedralGemSystem';
 import { CombatSystem } from './CombatSystem';
@@ -49,14 +52,15 @@ import { SystemPipeline } from './SystemPipeline';
 /**
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
  * progress, statuses, movement, collision (DEC-121 (c): every later reader sees resolved
- * positions), the neighbour index, stuck detection (DEC-193), steering, combat, map destruction,
- * progression (kill XP), minion veterancy, structure losses and breakability, spawning, enraging,
- * out-of-combat healing (DEC-188), death, capture points, the Cathedral gem, the match director,
- * then invariants last. Combat runs after movement, so a unit with a target in reach faces it, not
- * its own way (DEC-192). This is the one place a system is added, at its position in the tick
- * (architecture 02 §9). It builds the match's one `DamagePipeline` and one `StatusEffectApplier`
- * (with the status effects loaded for this match's config) and hands them to the systems that need
- * them, so a damage step applies to every hit and every status event comes from one place.
+ * positions), the neighbour index, stuck detection (DEC-193), steering, combat, boss moves, map
+ * destruction, progression (kill XP), minion veterancy, structure losses and breakability,
+ * spawning, enraging, out-of-combat healing (DEC-188), death, capture points, the Cathedral gem,
+ * the match director, then invariants last. Combat runs after movement, so a unit with a target in
+ * reach faces it, not its own way (DEC-192). This is the one place a system is added, at its
+ * position in the tick (architecture 02 §9). It builds the match's one `DamagePipeline` and one
+ * `StatusEffectApplier` (with the status effects loaded for this match's config) and hands them to
+ * the systems that need them, so a damage step applies to every hit and every status event comes
+ * from one place.
  */
 export class DefaultSystemPipeline extends SystemPipeline {
   /** Creates the pipeline from its injected parts (`DefaultSystemPipelineOptions`). */
@@ -122,6 +126,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
             ),
           ]),
       new CombatSystem(damage),
+      new BossMoveSystem(damage, BOSS_MOVES, createDefaultBossMoveEffects()),
       ...(state.worldObjects === undefined ? [] : [new MapDestructionSystem(state, damage)]),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
       new ProgressionSystem(state, progression),

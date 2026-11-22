@@ -257,6 +257,7 @@ export class PathingSystem implements System {
 
   /**
    * Steers every guard (18 §7) toward the unit it chases, or its post; never along a lane field.
+   * Only `GuardController`'s: a boss holding a post steers itself.
    * A guard at its post with nothing to chase turns to face outward, on guard again after a chase
    * or a leash return (DEC-220 (3)): at its post as the strategy's arrival counts it. A guard that
    * cannot move (stunned) does not turn (DEC-216 (7)).
@@ -278,7 +279,9 @@ export class PathingSystem implements System {
         guard === undefined ||
         index === undefined ||
         movement === undefined ||
-        strategy === undefined
+        strategy === undefined ||
+        // A boss on a post (the Greater Boss) steers itself with `move` commands (11 §4.6).
+        state.entities.controllerOf(guard.id)?.controllerId !== 'guard'
       ) {
         return;
       }

@@ -216,3 +216,86 @@ export type RoverTactics = {
    */
   readonly laneWeights: Readonly<Record<'pressure' | 'human', number>>;
 };
+
+/**
+ * What each boss move effect reads (architecture 11 §4.6's `effectId`), by effect id; the
+ * strategy that lands it is registered under the same id (`systems/defaultBossMoveEffects.ts`).
+ * Hits go to every living non-neutral unit whose centre is inside the shape (body edges ignored).
+ */
+type BossMoveEffectFields = {
+  /** A circle around the boss (the slam). */
+  readonly area: { readonly radius: number; readonly damage: number };
+  /**
+   * A cone from the boss along its facing (the sweeps): `radius` long, `halfAngleDegrees` either
+   * side of the facing. Each unit hit is pushed `knockback` metres straight away from the boss.
+   */
+  readonly cone: {
+    readonly radius: number;
+    readonly halfAngleDegrees: number;
+    readonly damage: number;
+    readonly knockback: number;
+  };
+  /**
+   * A dash along the boss's facing (the charge): the boss is pushed `length` metres (less where
+   * its zone's edge comes first), and every unit whose centre lies on that path, within
+   * `width / 2` of its line, takes `damage`.
+   */
+  readonly charge: { readonly length: number; readonly width: number; readonly damage: number };
+  /**
+   * A straight line from the boss along its facing (the beam): every unit whose centre lies within
+   * `length` ahead and `width / 2` of the line takes `damage`. The boss does not move.
+   */
+  readonly line: { readonly length: number; readonly width: number; readonly damage: number };
+  /** The roar: `boss-move-executed` and nothing else (balancing.md gives the GreaterBoss's none). */
+  readonly roar: object;
+};
+
+/** A boss move effect's id: the key of its fields and of its strategy. */
+export type BossMoveEffectId = keyof BossMoveEffectFields;
+
+/** The parts every boss move has, whatever its effect. Metres and seconds. */
+type BossMoveTiming = {
+  readonly id: string;
+  /** A target this close (centre to centre) lets the boss start the move. */
+  readonly range: number;
+  /** From the telegraph to the landing. */
+  readonly telegraphSeconds: number;
+  /** After the landing the boss stands this long before it roams again. */
+  readonly recoverSeconds: number;
+  /** At least this long between two landings of this move. */
+  readonly cooldownSeconds: number;
+};
+
+/** A boss move whose effect is `K`, with that effect's fields. */
+export type BossMoveOf<K extends BossMoveEffectId> = BossMoveTiming & {
+  readonly effect: K;
+} & BossMoveEffectFields[K];
+
+/**
+ * One boss move (architecture 11 §4.6): telegraphed, landed, recovered from. `effect` is 11
+ * §4.6's `effectId`: it names the strategy that lands the move and the fields it reads. Moves are
+ * authored in seconds, converted with the match's tick rate where they are read (11's
+ * Implementation status).
+ */
+export type BossMoveDefinition = {
+  readonly [K in BossMoveEffectId]: BossMoveOf<K>;
+}[BossMoveEffectId];
+
+/**
+ * A boss's AI profile (architecture 11 §2, §4.6): every number `BossController` reads. Its zone
+ * is the boss's guard post's circle (home edge plus leash), not a field here.
+ */
+export type BossProfileDefinition = {
+  readonly id: string;
+  readonly controller: 'boss';
+  /** The entrance (the GreaterBoss's roar): the boss stands this long after it spawns. */
+  readonly entranceSeconds: number;
+  /** "Never stands still": a new roam point at least this often, so it idles no longer. */
+  readonly roamSeconds: number;
+  /** A roam point this close counts as reached; the boss picks the next one. */
+  readonly roamArrivalRadius: number;
+  /** Roam points and chase points stay this far inside the zone's edge. */
+  readonly zoneMargin: number;
+  /** Its moves, in rotation order: the boss uses them one after another, then starts again. */
+  readonly moves: readonly BossMoveDefinition[];
+};
