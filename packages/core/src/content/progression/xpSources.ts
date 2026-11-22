@@ -16,6 +16,9 @@ export const XP_SOURCES: XpSourcesDefinition = {
     // TUNE: balancing.md MiniBoss "500 XP team-wide"; DEC-237 (owner 2026-11-10): a mini-boss kill
     // lifts a Legend 2 levels at most.
     'capture-point-boss': { xp: 500, maxLevels: 2 },
+    // TUNE: as the capture point boss: the corner boss uses the same MiniBoss row; DEC-237 (owner
+    // 2026-11-10): "team-wide is fine for now" for the corner boss.
+    'corner-boss': { xp: 500, maxLevels: 2 },
     // DEC-237 (owner 2026-11-10): "Killing the middle boss puts you up 5 levels from wherever you
     // are, flat"; it replaces balancing.md's 1,500 XP. TUNE: paid to every Legend of the killer's
     // team, as the mini-boss's; whether the killer alone gets it is not answered (INBOX).

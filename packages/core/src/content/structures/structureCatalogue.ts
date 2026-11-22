@@ -17,6 +17,14 @@ const footprintOf = (id: string): number => {
  */
 const AFTER_BUFF_TOWERS = { kind: 'allied-buff-towers-down', fraction: 2 / 3 } as const; // TUNE
 
+/** Every camp (forest and corner): only its group's home, never damaged. */
+const CAMP_BODY = {
+  kind: 'camp',
+  baseHealth: 1, // never damaged: a camp is only its group's home
+  footprintRadius: 1, // TUNE: no reference value; the map gives camps no footprint
+  breakability: { kind: 'never' },
+} as const;
+
 /**
  * The lane structures (architecture 07 §1), keyed by the map's definition ids. Base health is
  * balancing.md's `Recommendation:`; shield bars arrive with the rest of Phase 2 sprint 2.1.
@@ -65,30 +73,13 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       // so it is not the gate's body: the gate keeps its own health (DEC-217 (13)).
       hasMapFootprint: true,
     },
-    {
-      id: 'forest-camp-light',
-      kind: 'camp',
-      displayName: 'Forest Camp (light)',
-      baseHealth: 1, // never damaged: a camp is only its group's home
-      footprintRadius: 1, // TUNE: no reference value; the map gives camps no footprint
-      breakability: { kind: 'never' },
-    },
-    {
-      id: 'forest-camp-medium',
-      kind: 'camp',
-      displayName: 'Forest Camp (medium)',
-      baseHealth: 1, // never damaged: a camp is only its group's home
-      footprintRadius: 1, // TUNE: no reference value; the map gives camps no footprint
-      breakability: { kind: 'never' },
-    },
-    {
-      id: 'forest-camp-heavy',
-      kind: 'camp',
-      displayName: 'Forest Camp (heavy)',
-      baseHealth: 1, // never damaged: a camp is only its group's home
-      footprintRadius: 1, // TUNE: no reference value; the map gives camps no footprint
-      breakability: { kind: 'never' },
-    },
+    ...(['light', 'medium', 'heavy'] as const).map((weight): StructureDefinition => ({
+      ...CAMP_BODY,
+      id: `forest-camp-${weight}`,
+      displayName: `Forest Camp (${weight})`,
+    })),
+    // The corner camp is a `Camp` too: the home of its boss (guard plan `corner-camp`).
+    { ...CAMP_BODY, id: 'corner-camp', displayName: 'Corner Camp' },
     {
       // Built at the `cathedral` feature, whose id it shares: the gem's own body, apart from the
       // building (DEC-292). Never damaged: the gem is unbreakable (DISC-11, DEC-292).

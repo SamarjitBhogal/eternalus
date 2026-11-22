@@ -931,11 +931,11 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   only. A level-up raises max health by the class's share of base health and max aether, and heals
   and refills by the raise only while the Legend is alive (O3, O4). Structure XP is built (DEC-186: every
   Legend on the destroying team; a dead Legend is skipped until respawn, GL-12). Team-kill XP is
-  built for the capture point boss (DEC-237): a mob in `XP_SOURCES.teamKills` pays every Legend of
-  its killer's playable team, not the killer alone, and each Legend gets at most the XP that lifts
-  it `maxLevels` levels (`Progression.xpToReach`); a reward of `levels` instead (the Greater
-  Boss's flat 5, 2026-11-20) lifts each Legend exactly that many levels, up to the cap, whatever
-  the XP; `level-matches-xp` checks that the killer is on
+  built for the capture point boss and the corner boss (DEC-237): a mob in `XP_SOURCES.teamKills`
+  pays every Legend of its killer's playable team, not the killer alone, and each Legend gets at
+  most the XP that lifts it `maxLevels` levels (`Progression.xpToReach`); a reward of `levels`
+  instead (the Greater Boss's flat 5, 2026-11-20) lifts each Legend exactly that many levels, up to
+  the cap, whatever the XP; `level-matches-xp` checks that the killer is on
   the recipient's team (`cause: 'team-kill'`). It listens to `entity-died` itself, not 12's
   `xp-granted` reward path. Not built yet: the share radius and damage bias, assists, checkpoint and
   camp XP (their systems do not exist),
