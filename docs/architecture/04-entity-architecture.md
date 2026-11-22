@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-16
+last-reviewed: 2026-11-21
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -74,16 +74,16 @@ classDiagram
   Zone <|-- CapturePoint
 ```
 
-| Family (abstract)       | Concrete kinds (`EntityKind`)                                                                                                             | Installs                                                                                                           | Owned per tick by                                              | Status                                                   |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- | -------------------------------------------------------- |
-| `Unit`                  | (abstract: mobile things)                                                                                                                 | `Transform`, `Health`, `Movement`, `Combat`, `Team`, `Collider` (circle), `StatusEffects`, `Vision`, `Carry`       | `MovementSystem`, `CollisionSystem`, `CombatSystem`            | MVP                                                      |
-| `Legend`                | `warrior` (display name in content, DEC-48), `sentinel`, `magus`; `harbinger` reserved (shown as a locked selection card, DEC-48, DEC-59) | plus `Abilities` (3 + ultimate + 2 gadget slots), `Loadout`, `Progression`                                         | `AbilitySystem`, `ProgressionSystem`, controllers              | MVP; `harbinger` **post-MVP** (D12)                      |
-| `Mob`                   | `light-mob`, `medium-mob`, `heavy-mob`                                                                                                    | `Unit` set; belongs to a `Horde` or a `Spawner`; `team` may be `neutral`                                           | `HordeSystem`, `PathingSystem`, `MinionController`             | MVP                                                      |
-| `Boss`                  | `mini-boss`, `greater-boss` (the Eternal)                                                                                                 | `Unit` set with a multi-move FSM in `BossController`; zone-restricted                                              | `BossController`                                               | MVP-if-time (mini-boss), MVP-if-time (greater boss)      |
-| `Structure`             | `stronghold`, `spawner-tower`, `buff-tower`, `wall-segment`, `gate`, `turret`, `camp`, `cathedral`                                        | `Transform`, `Health` (layered shield bars), `Team`, `Collider` (polygon footprint); `Spawner`, `Vision` as needed | `StructureSystem`, `SpawnSystem`, `TurretController`           | MVP (turrets, camps MVP; corner camps MVP-if-time)       |
-| `Zone`                  | `capture-point`                                                                                                                           | `ZoneArea`, `Transform`, `Capturable`, `Team`; no `Collider`                                                       | `CaptureSystem`                                                | MVP                                                      |
-| `Obstacle` (concrete)   | `obstacle` with data-driven `kind`: tree, rock, bridge-segment                                                                            | `Transform`, `Collider`, optional `Health` (breakable), carry weight                                               | `StructureSystem` (breakability), `Carry` via `PickUpStrategy` | MVP (static); felling, burning, throwing **MVP-if-time** |
-| `Projectile` (concrete) | `projectile`                                                                                                                              | `Transform`, `Movement`, `Collider`, `Team`; pooled                                                                | `MovementSystem` (swept), `CombatSystem`                       | MVP                                                      |
+| Family (abstract)       | Concrete kinds (`EntityKind`)                                                                                                             | Installs                                                                                                                            | Owned per tick by                                               | Status                                                   |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | -------------------------------------------------------- |
+| `Unit`                  | (abstract: mobile things)                                                                                                                 | `Transform`, `Health`, `Movement`, `Combat`, `Team`, `Collider` (circle), `StatusEffects`, `Vision`, `Carry`                        | `MovementSystem`, `CollisionSystem`, `CombatSystem`             | MVP                                                      |
+| `Legend`                | `warrior` (display name in content, DEC-48), `sentinel`, `magus`; `harbinger` reserved (shown as a locked selection card, DEC-48, DEC-59) | plus `Abilities` (3 + ultimate + 2 gadget slots), `Loadout`, `Progression`                                                          | `AbilitySystem`, `ProgressionSystem`, controllers               | MVP; `harbinger` **post-MVP** (D12)                      |
+| `Mob`                   | `light-mob`, `medium-mob`, `heavy-mob`                                                                                                    | `Unit` set; belongs to a `Horde` or a `Spawner`; `team` may be `neutral`                                                            | `HordeSystem`, `PathingSystem`, `MinionController`              | MVP                                                      |
+| `Boss`                  | `mini-boss`, `greater-boss` (the Eternal)                                                                                                 | `Unit` set with a multi-move FSM in `BossController`; zone-restricted                                                               | `BossController`                                                | MVP-if-time (mini-boss), MVP-if-time (greater boss)      |
+| `Structure`             | `stronghold`, `spawner-tower`, `buff-tower`, `wall-segment`, `gate`, `turret`, `camp`, `cathedral`                                        | `Transform`, `Health` (layered shield bars), `Team`, `Collider` (polygon footprint); `Spawner`, `Vision` as needed                  | `StructureSystem`, `SpawnSystem`, `TurretController`            | MVP (turrets, camps MVP; corner camps MVP-if-time)       |
+| `Zone`                  | `capture-point`                                                                                                                           | `ZoneArea`, `Transform`, `Capturable`, `Team`; no `Collider`                                                                        | `CaptureSystem`                                                 | MVP                                                      |
+| `Obstacle` (concrete)   | `obstacle` with data-driven `kind`: tree, rock, bridge-segment                                                                            | `Transform`, `Collider`, optional `Health` (breakable), carry weight                                                                | `StructureSystem` (breakability), `Carry` via `PickUpStrategy`  | MVP (static); felling, burning, throwing **MVP-if-time** |
+| `Projectile` (concrete) | `projectile`                                                                                                                              | `Transform`, `Movement`, `Collider`, `Team`, `ProjectileFlight`; `ProjectilePayload` (added by the firing attack); not pooled (§11) | `MovementSystem`, `ProjectileSystem` (sweep and impact, 05 §10) | MVP                                                      |
 
 Subclasses exist only where an instance genuinely needs different lifecycle code (a Legend levels
 up and respawns; a Mob despawns with its horde; a Structure never moves). Everything tunable is a
@@ -336,11 +336,15 @@ test or the boot-time content validation), never silently.
 
 ## 11. Object pooling
 
-`ProjectilePool` (Object Pool, research §6) keeps fixed-size arrays of `Projectile` instances:
-`acquire()` resets every field and assigns a fresh `EntityId`, `release()` nulls references so a
-pooled object keeps nothing alive. Pooled projectiles still flow through `EntityFactory` and the
-`EntityStore`, so events, invariants and snapshots see them like any entity. Particles are
-client-side (views) and pooled there; mobs may be pooled later if profiling shows spawn churn.
+Projectiles are not pooled (DEC-309): each shot is a new `Projectile` made by `EntityFactory` and
+removed with cause `consumed` when it ends. Measure first, as DEC-94 did for event payloads: an
+`Entity` id cannot change, spawning rebuilds every component, and each shot makes event objects
+that stay unpooled, so a pool cannot make a shot garbage-free. Extension point: if the performance
+soak test (NFR-023) shows pauses from projectiles, a `ProjectilePool` (Object Pool, research §6)
+keeps fixed-size arrays of `Projectile` instances: `acquire()` resets every field and assigns a
+fresh `EntityId`, `release()` nulls references so a pooled object keeps nothing alive, and pooled
+projectiles still flow through `EntityFactory` and the `EntityStore`. Particles are client-side
+(views) and pooled there; mobs may be pooled later if profiling shows spawn churn.
 
 ## 12. Worked example: adding a fourth Legend class
 
@@ -403,6 +407,11 @@ session or phase named:
 - `Boss` and `MiniBoss` are not built (Phase 3 sprint 3.6). The capture point mini-boss is a
   `heavy-mob` until then; the interim is recorded in
   [18's implementation status note](18-minion-system.md#minion-system).
+
+**Implementation status, 2026-11-20 (branch `feat/ranged-attacks`, PR 1; DEC-300).** Projectiles
+spawn and land. `RangedProjectileAttackStrategy` creates each one through `EntityFactory`
+(`AttackContext.factory`), and `ProjectileSystem` removes it with cause `consumed`. Each shot is
+a new entity, with no pool (§11, signed off as DEC-309). Particles are unchanged.
 
 ## Related
 

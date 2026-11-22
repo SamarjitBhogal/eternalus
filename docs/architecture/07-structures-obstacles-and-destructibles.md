@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-16
+last-reviewed: 2026-11-20
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -445,6 +445,12 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
 - **Gate reach (`feat/gate-reach`, 2026-11-13).** A gate's definition has `hasMapFootprint` too, so
   reach to a gate is measured to its polygon (DEC-217 (17)); `hasFortBox` keeps a gate's box out of
   the chase rule's fort boxes, which the towers and the palace keep (DEC-217 (16)).
+- **Ranged attacks (`feat/ranged-attacks`, 2026-11-20; DEC-314).** A `Footprint` is walk-on
+  (`isWalkOn`) when its map object does not block (the palace floor, a gate's passage); a fort is
+  solid. A shot flies over a walk-on outline unless it was fired at that entity, and a solid one is
+  a body every enemy shot hits (05 §10). `Footprint` and `MapObjectBody` share one `Outline`
+  interface (`polygons`, `bounds`, `isWalkOn`; `components/Outline.types.ts`), and
+  `EntityStore.outlineOf` returns the one an entity uses, for reach, a chase and a shot alike.
 - `ObstacleDefinition` keeps `kind: 'obstacle'` (the entity class) and moves tree/rock/bridge to
   `obstacleType`; `fell` and `minimapGlyph` arrive with felling and the minimap work.
 

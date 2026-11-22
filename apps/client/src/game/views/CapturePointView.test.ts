@@ -37,6 +37,7 @@ const zone = (
   area,
   capture,
   statuses: null,
+  projectile: null,
 });
 
 const capture = (overrides: Partial<CaptureSnapshot> = {}): CaptureSnapshot => ({

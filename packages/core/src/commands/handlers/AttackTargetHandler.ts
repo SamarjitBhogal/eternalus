@@ -8,7 +8,7 @@ import type { CommandContext, CommandHandler } from '../CommandHandler.types';
 export class AttackTargetHandler implements CommandHandler<'attack-target'> {
   /** Validates the attacker and target, then sets the target. */
   public handle(
-    { actorId, targetId }: Command<'attack-target'>,
+    { actorId, targetId, mode }: Command<'attack-target'>,
     { state }: CommandContext,
   ): CommandRejectReason | null {
     const { entities } = state;
@@ -20,6 +20,6 @@ export class AttackTargetHandler implements CommandHandler<'attack-target'> {
     if (isAlly || !entities.isAlive(targetId)) {
       return 'invalid-target';
     }
-    return entities.setAttackTarget(actorId, targetId) ? null : 'cannot-attack';
+    return entities.setAttackTarget(actorId, targetId, mode) ? null : 'cannot-attack';
   }
 }

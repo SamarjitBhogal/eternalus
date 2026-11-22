@@ -64,6 +64,9 @@ const BOLT: ProjectileDefinition = {
   displayName: 'Fake Bolt',
   footprintRadius: 0.15,
   movementProfile: { maxSpeed: 2, acceleration: 2, mass: 0.05 },
+  range: 100,
+  slowFrom: 80,
+  endDuration: 2,
 };
 
 type CaptureEvent =

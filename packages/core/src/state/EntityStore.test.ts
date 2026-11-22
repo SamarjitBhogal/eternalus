@@ -361,8 +361,8 @@ describe('EntityStore', () => {
     const aimAt = (id: string, from: { x: number; y: number }) =>
       store.aimPointOf(id, from, aim) ? { ...aim } : null;
 
-    expect(store.outlineOf('house')).toEqual([square]);
-    expect(store.outlineOf('tower')).toHaveLength(1);
+    expect(store.outlineOf('house')?.polygons).toEqual([square]);
+    expect(store.outlineOf('tower')?.polygons).toHaveLength(1);
     expect(store.outlineOf('round')).toBeUndefined();
     expect(aimAt('house', { x: 0, y: 2 })).toEqual({ x: 10, y: 2 });
     expect(aimAt('tower', { x: 60, y: 9 })).toEqual({ x: 50, y: 5 });

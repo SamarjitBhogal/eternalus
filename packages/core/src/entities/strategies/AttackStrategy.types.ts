@@ -2,7 +2,9 @@ import type { UnitAttack } from '../../content/units/units.types';
 import type { EntityId } from '../../state/EntityStore.types';
 import type { DamageSource } from '../../state/GameEvents.types';
 import type { GameState } from '../../state/GameState';
+import type { HitRunner } from '../../state/HitRunner.types';
 import type { Entity } from '../Entity';
+import type { EntityFactory } from '../EntityFactory';
 
 /**
  * Whatever applies damage. `combat/DamagePipeline` satisfies it; the port exists because
@@ -13,22 +15,14 @@ type DamageDealer = {
 };
 
 /**
- * Whatever runs the effects of a landed hit (a status's `onHit`, 05 §8 and §10).
- * `abilities/HitEffects` satisfies it; the port exists because `entities/` may not import
- * `abilities/`.
- */
-type HitRunner = {
-  afterHit(state: GameState, attackerId: EntityId, targetId: EntityId): void;
-};
-
-/**
- * What an attack may use: the state, the one damage pipeline and what runs a landed hit's effects
- * (`null`: none run).
+ * What an attack may use: the state, the one damage pipeline, what runs a landed hit's effects
+ * (`null`: none run) and the match's one factory, which builds the projectiles ranged attacks fire.
  */
 export type AttackContext = {
   readonly state: GameState;
   readonly damage: DamageDealer;
   readonly hits: HitRunner | null;
+  readonly factory: EntityFactory;
 };
 
 /**

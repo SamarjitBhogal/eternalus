@@ -8,8 +8,8 @@ import type { DuelLink } from './DuelLink.types';
 /**
  * The online `PlayerActions` (ADR 0016 point 1): each tick it reads the player's intent from the
  * same `IntentSource` a local match uses and sends it to the server as is; the server turns it
- * into commands. A press the canvas gestures own is no attack, as locally. The developer
- * explorer's clicks do nothing: no command is made on the client.
+ * into commands. A press the canvas gestures own is no attack, basic or melee, as locally. The
+ * developer explorer's clicks do nothing: no command is made on the client.
  */
 export class RemoteIntentSender implements PlayerActions {
   private isPointerClaimed = false;
@@ -44,6 +44,6 @@ export class RemoteIntentSender implements PlayerActions {
   }
 
   private static withoutAttack(intent: InputIntent): InputIntent {
-    return { ...intent, isAttacking: false };
+    return { ...intent, isAttacking: false, isMeleeAttacking: false };
   }
 }
