@@ -151,7 +151,7 @@ Reply inline (`Decision: …`).
       paths and no doc says which owns boss timing. Due before the zone-lock PR: pick one owner
       and update 07 §7 and 12 so only one mechanism is named.
 
-- [ ] **One guard plan per home, mates by `homeId` (`feat/zone-guard-homes` critic finding 3,
+- [x] **One guard plan per home, mates by `homeId` (`feat/zone-guard-homes` critic finding 3,
       2026-11-09) — accepted as interim.** `GuardRoster` looks plans up by the home's definition
       id, so a home has one plan, and `GuardController` (`ai/GuardController.ts`, `isMate`)
       treats every guard on a home as a mate. 18 §7.1 makes the capture point the home of the
@@ -159,6 +159,9 @@ Reply inline (`Decision: …`).
       cannot both be plans, and on one `homeId` they would count as mates across teams. 18 §7.1
       now records the limit. Due before checkpoint defenders get posts: key mates by plan or by
       team as well as home, and allow more than one plan per home if both must coexist.
+      **Done in PR #130 (2026-11-22):** defender posts carry `GuardSlot.checkpoint` and sit beside
+      the zone's plan; mates need the same home and team (`GuardController`), and a `group` plan's
+      group is the home's own posts only (`GroupGuardRespawn`).
 - [ ] **BUG-5 / SCRUM-438 (2026-11-12, `fix/bound-key-actions`) — two owner questions.** (1) Bound
       but unhandled actions: `toggle-developer-menu` (BUG-4, a feature), `sprint`, `interact`,
       `turret-toggle-control`, `turret-switch-ammo` (gameplay not built) and `toggle-perf-overlay`
@@ -342,6 +345,16 @@ Reply inline (`Decision: …`).
       without bound. Cap it: skip a checkpoint's defenders while its earlier posts still hold
       guards? (8) `GuardRoster.ts` is 332 lines (limit ~300): move `clearPost` into its own
       helper in a tidy PR.
+      **Update 2026-11-22 (PR #130 review round 2):** (1), (4) and the answers to (6) and (7) are
+      planned as M6c (`feat/minion-m6c-defender-followups`, SamarjitBhogal, Phase 3 sprint 3; the
+      minion plan's §1.2 rows); (4)'s boss-group question, (6) and (7) still wait on the owner.
+      (8) is done: `clearGuardPost.ts` and `spawnPlanProblems.ts` hold the moved code
+      (`GuardRoster.ts` 275 lines, `SpawnSystem.ts` 318). (9) **Better than the design (DEC-139),
+      sign-off asked (review round 2, finding 5):** put the respawn rule on the post
+      (`GuardSlot.respawn`, set by `addPosts`), so `GuardRoster.update` needs no `checkpoint`
+      ternary and each rule counts only its own posts. Built today: `GroupGuardRespawn` counts
+      only the home's own posts (same `checkpoint` marker), which closes the gap with no new
+      field.
 
 - [ ] **Minion plan MVP gaps (3): who owns the zone cooldown reduction (2026-11-06, PR #81).**
       The zone's cooldown reduction (FR-041, 07 §7) is Legend-side, not minion work, and no plan
