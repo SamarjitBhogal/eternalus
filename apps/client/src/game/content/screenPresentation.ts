@@ -1,6 +1,6 @@
 // Screen-level presentation and the display switches (DEC-52, DEC-54, DEC-55): each switch is a
 // content value published on `DisplayCatalogue`, with the Figma original as the default.
-import type { BackgroundSet } from '../../bridge/catalogue.types';
+import type { BackgroundSet, UiEnhancementId } from '../../bridge/catalogue.types';
 import type { CataloguePresentation } from './CataloguePresentation.types';
 import {
   CLASS_PRESENTATION,
@@ -34,6 +34,14 @@ const BACKGROUND_SETS: readonly BackgroundSet[] = [
   },
 ];
 
+/**
+ * Every built UI enhancement (ui-enhancements-plan §3); the developer's `ui=` picks among them.
+ * Its test fails `tsc` when a `UiEnhancementId` is not listed (DEC-286).
+ */
+export const UI_ENHANCEMENT_IDS = [
+  'countdown-urgency',
+] as const satisfies readonly UiEnhancementId[];
+
 /** Everything the client adds to core display content. */
 export const CATALOGUE_PRESENTATION: CataloguePresentation = {
   classes: CLASS_PRESENTATION,
@@ -52,5 +60,7 @@ export const CATALOGUE_PRESENTATION: CataloguePresentation = {
   effectsRenderer: 'figma-raster',
   /** DEC-55: the Figma colours; `'minimums'` swaps only the below-minimum tokens. */
   contrastMode: 'figma',
+  /** ui-enhancements-plan §2 rule 1: every built one on (DEC-100); `[]` draws every Figma original. */
+  uiEnhancements: UI_ENHANCEMENT_IDS,
   hud: HUD_PRESENTATION,
 };

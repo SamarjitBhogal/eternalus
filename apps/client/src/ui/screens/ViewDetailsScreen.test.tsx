@@ -41,7 +41,7 @@ describe('ViewDetailsScreen', () => {
 
     expect(html).toMatch(
       new RegExp(
-        `^<div class="${String(styles.screen)}" role="dialog" aria-modal="true" aria-label="View Details" data-open="true" data-reduce-motion="false"><div class="${String(styles.backdrop)}"></div><div class="${String(styles.content)}"><p>details</p>`,
+        `^<div class="${String(styles.screen)}" role="dialog" aria-modal="true" aria-label="View Details" data-open="true"><div class="${String(styles.backdrop)}"></div><div class="${String(styles.content)}"><p>details</p>`,
       ),
     );
   });
@@ -62,8 +62,11 @@ describe('ViewDetailsScreen', () => {
     expect(html).not.toContain('<button');
   });
 
-  it('marks the in-game reduce-motion setting for its CSS', () => {
-    expect(render(true, true)).toContain('data-reduce-motion="true"');
+  // UE-03: the page carries the in-game setting (`data-reduce-motion` on <html>), so View Details
+  // no longer reads it for a mark of its own.
+  it('leaves the in-game reduce-motion setting to the page: no mark of its own, on or off', () => {
+    expect(render(true, true)).not.toContain('data-reduce-motion');
+    expect(render(false, false)).not.toContain('data-reduce-motion');
   });
 
   // DEC-103: "a radial fill (60% at 20% opacity, 000, and 100% at 60% opacity, 000)" with a
@@ -94,9 +97,18 @@ describe('ViewDetailsScreen', () => {
     );
   });
 
-  it('stops all its motion under the in-game reduce-motion setting', () => {
-    expect(screenCss).toMatch(
-      /\.screen\[data-reduce-motion='true'\],\n\.screen\[data-reduce-motion='true'\] \.backdrop,\n\.screen\[data-reduce-motion='true'\] \.content \{\s*transition: none;\s*\}/,
+  // UE-03: every transition is timed by --motion-fast, which both reduced-motion sources zero.
+  it('stops all its motion under the in-game reduce-motion setting through the motion tokens', () => {
+    const transitions = [...screenCss.matchAll(/transition:\s*([^;]+);/g)].map(
+      ([, value = '']) => value,
     );
+    const pageRule = /\n:root\[data-reduce-motion\] \{([^}]*)\}/.exec(globalCss)?.[1] ?? 'missing';
+
+    expect(transitions).toHaveLength(3);
+    expect(transitions.map((value) => value.replace(/var\(--motion-fast\)/g, ''))).not.toEqual(
+      expect.arrayContaining([expect.stringMatching(/var\(|\d+m?s\b/)]),
+    );
+    expect(pageRule).toMatch(/--motion-fast: 0ms;/);
+    expect(screenCss).not.toContain('data-reduce-motion');
   });
 });

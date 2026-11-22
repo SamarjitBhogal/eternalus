@@ -4,7 +4,7 @@ description: How the repository and its documentation are organised and why (OG-
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-06
+last-reviewed: 2026-11-19
 tags: [requirements, organization, docs, repo-layout]
 paths: ['docs/**', 'packages/**', 'apps/**']
 related:
@@ -59,17 +59,17 @@ duties that come with each kind of change. Requirement IDs are `OG-nn`.
   Root files (`README.md`, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `CONTRIBUTING.md`, `INBOX.md`)
   have no frontmatter.
 
-| Folder               | Holds                                                                                                 |
-| -------------------- | ----------------------------------------------------------------------------------------------------- |
-| `docs/plan/`         | Roadmap, one doc per phase (sprints, checklists, tests, metrics), the post-MVP backlog, `PROGRESS.md` |
-| `docs/architecture/` | One doc per architecture theme (layers, code structure, game model, entities, ... harness, recipes)   |
-| `docs/reference/`    | The game design split by topic, the glossary, suggestions, and the verbatim game doc under `source/`  |
-| `docs/requirements/` | This folder: principles, standards, the FR/NFR catalogue, and the verbatim requirements doc           |
-| `docs/research/`     | The research reports and works cited; cite them, do not re-research                                   |
-| `docs/process/`      | Git workflow, SDLC, guardrails                                                                        |
-| `docs/agents/`       | Running agents, tool setup, task-brief template, review checklists                                    |
-| `docs/decisions/`    | ADRs, numbered, never edited after acceptance (superseded instead)                                    |
-| `docs/changelog/`    | One entry per phase (or notable milestone), dated                                                     |
+| Folder               | Holds                                                                                                |
+| -------------------- | ---------------------------------------------------------------------------------------------------- |
+| `docs/plan/`         | Roadmap, one doc per phase (sprints, checklists, tests, metrics), the post-MVP backlog, `progress/`  |
+| `docs/architecture/` | One doc per architecture theme (layers, code structure, game model, entities, ... harness, recipes)  |
+| `docs/reference/`    | The game design split by topic, the glossary, suggestions, and the verbatim game doc under `source/` |
+| `docs/requirements/` | This folder: principles, standards, the FR/NFR catalogue, and the verbatim requirements doc          |
+| `docs/research/`     | The research reports and works cited; cite them, do not re-research                                  |
+| `docs/process/`      | Git workflow, SDLC, guardrails                                                                       |
+| `docs/agents/`       | Running agents, tool setup, task-brief template, review checklists                                   |
+| `docs/decisions/`    | ADRs, numbered, never edited after acceptance (superseded instead)                                   |
+| `docs/changelog/`    | One entry per phase (or notable milestone), dated                                                    |
 
 - **Why.** Anything an agent cannot reach from the repository "effectively doesn't exist"
   ([`../research/agentic-harness-research.md#4-openais-harness-engineering-and-other-2026-sources`](../research/agentic-harness-research.md#4-openais-harness-engineering-and-other-2026-sources));
@@ -112,13 +112,13 @@ If nothing fits, propose a location in the PR and ask; do not invent a top-level
 
 | Change type                                    | Must touch                                                                                                                            |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| New or changed system, component, entity, port | TSDoc; the architecture doc that governs the path (its `paths` frontmatter); the phase doc checklist; `docs/plan/PROGRESS.md`         |
+| New or changed system, component, entity, port | TSDoc; the architecture doc that governs the path (its `paths` frontmatter); the phase doc checklist; `docs/plan/progress/`           |
 | New content entry or tuning change             | The reference game-design doc if it is a design fact; the `TUNE` marker; balancing notes in `docs/reference/suggestions/` if debated  |
 | New folder or public export from core          | The package `AGENTS.md` folder table; `02-code-structure.md`; an ESLint boundary rule if the folder has one; PR notes the API change  |
 | Guardrail or tool config change                | An ADR; the table in [`../process/guardrails.md`](../process/guardrails.md)                                                           |
 | New dependency                                 | An ADR or PR justification approved by a human; `package-lock.json` via `npm install`                                                 |
 | Player-visible behaviour                       | The FR's status in `06-mvp-requirements.md` if it changes; the phase doc; the changelog entry for the phase                           |
-| Bug fix                                        | The regression test (and replay fixture if it came from a replay); `PROGRESS.md`                                                      |
+| Bug fix                                        | The regression test (and replay fixture if it came from a replay); new entry file in `docs/plan/progress/`                            |
 | Decision or requirement change                 | ADR first; then the catalogue or principle doc, with `last-reviewed` bumped                                                           |
 | Phase completion                               | Phase doc checklist closed; `docs/changelog/<date>-phase-<n>.md`; `docs/README.md` index regenerated; `last-reviewed` on touched docs |
 | Edit to many docs at once (sweep, rename)      | The OG-12 guard before commit; an independent reviewer of the diff                                                                    |
@@ -177,8 +177,8 @@ related: ['docs/architecture/03-game-model.md'] # optional
     ([`README.md`](README.md)).
   - **Changelog** (`docs/changelog/<yyyy-mm-dd>-<slug>.md`): one entry per phase merge or notable
     milestone, written by the phase lead, listing what shipped, what was cut and which ADRs landed.
-  - **Progress log** (`docs/plan/PROGRESS.md`): append-only; every agent or human task appends
-    one line (date, branch, task, outcome, evidence) so a fresh session can get up to speed
+  - **Progress log** (`docs/plan/progress/`): one file per task, never rewritten; every agent or human task adds
+    one entry file (date, branch, task, outcome, evidence) so a fresh session can get up to speed
     without reading git history.
   - **Inbox** (root `INBOX.md`): the only free-form file; anyone drops ideas, questions and links
     there; gardening moves them into suggestions, the backlog, an ADR or the bin.
@@ -202,8 +202,8 @@ related: ['docs/architecture/03-game-model.md'] # optional
   - **Design text changes for three reasons only:** a decision (an ADR or an owner decision,
     cited by ID), a contract change, or a factual error (a wrong name, path or rule). Each edit is
     the smallest change at the place it applies.
-  - **Records are never rewritten.** Accepted ADR bodies, dated changelog entries, `PROGRESS.md`
-    entries, dated reviews and prompts that have been run are kept as written; corrections are
+  - **Records are never rewritten.** Accepted ADR bodies, dated changelog entries, `PROGRESS.md` and
+    `docs/plan/progress/` entries, dated reviews and prompts that have been run are kept as written; corrections are
     appended (OG-09).
   - **Structure is stable.** Headings are link anchors: renaming or removing one updates every
     inbound link in the same change (`npm run docs:check` checks only links under `docs/`).

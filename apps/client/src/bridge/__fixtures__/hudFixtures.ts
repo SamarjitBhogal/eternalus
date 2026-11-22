@@ -71,7 +71,7 @@ export const FIGMA_HUD_PLAYER: PlayerHudSnapshot = {
 };
 
 /** The Figma clock, 14:32. */
-const FIGMA_CLOCK: MatchClock = { tick: 26160, seconds: 872 };
+const FIGMA_CLOCK: MatchClock = { tick: 26160, seconds: 872, countdown: null };
 
 /** Every Figma structure bar is out of 46 px. */
 const FIGMA_STRUCTURE_MAX = 46;

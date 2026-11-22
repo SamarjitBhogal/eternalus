@@ -117,6 +117,65 @@ describe('motion in module CSS', () => {
   );
 });
 
+/**
+ * UE-03: the selector a reduced-motion rule's in-game twin has. Each selector of the list gains
+ * `[data-reduce-motion]` on `:root`: `:root` itself and a `:root[…]` scope are extended, any other
+ * selector is put under `:root[data-reduce-motion]`.
+ */
+const reduceMotionTwin = (selectorList: string): string =>
+  selectorList
+    .split(',')
+    .map((selector) => selector.trim())
+    .map((selector) =>
+      /^:root(?![\w-])/.test(selector)
+        ? `:root[data-reduce-motion]${selector.slice(':root'.length)}`
+        : `:root[data-reduce-motion] ${selector}`,
+    )
+    .join(', ');
+
+/** `selector { declarations }` with the selector list on one line, for comparing rules. */
+const ruleText = ({ selector, declarations }: Rule): string =>
+  `${selector
+    .split(',')
+    .map((part) => part.trim())
+    .join(
+      ', ',
+    )} { ${[...declarations].map(([property, value]) => `${property}: ${value}`).join('; ')} }`;
+
+describe('the in-game reduce-motion setting (UE-03)', () => {
+  const SHEETS = { 'styles/global.css': globalCss, ...MODULES };
+
+  it.each([
+    [':root', ':root[data-reduce-motion]'],
+    ['.gradient', ':root[data-reduce-motion] .gradient'],
+    [
+      ":root[data-ui-enhancements~='countdown-urgency'] .countdown[data-urgent]",
+      ":root[data-reduce-motion][data-ui-enhancements~='countdown-urgency'] .countdown[data-urgent]",
+    ],
+    ['.a,\n.b .c', ':root[data-reduce-motion] .a, :root[data-reduce-motion] .b .c'],
+  ])('twins the reduced-motion selector %j as %j', (selector, twin) => {
+    expect(reduceMotionTwin(selector)).toBe(twin);
+  });
+
+  it('gives every prefers-reduced-motion rule a :root[data-reduce-motion] twin with the same declarations', () => {
+    const missing = Object.entries(SHEETS).flatMap(([path, css]) => {
+      const text = withoutComments(css);
+      const outside = rulesIn(text.replace(REDUCED_MOTION, '')).map(ruleText);
+      return [...text.matchAll(REDUCED_MOTION)]
+        .flatMap(([, body = '']) => rulesIn(body))
+        .map((rule) => ruleText({ ...rule, selector: reduceMotionTwin(rule.selector) }))
+        .filter((twin) => !outside.includes(twin))
+        .map((twin) => `${path}: ${twin}`);
+    });
+    const reduced = Object.values(SHEETS).flatMap((css) =>
+      [...withoutComments(css).matchAll(REDUCED_MOTION)].flatMap(([, body = '']) => rulesIn(body)),
+    );
+
+    expect(reduced.length).toBeGreaterThanOrEqual(3);
+    expect(missing).toEqual([]);
+  });
+});
+
 describe('Cinzel text rules', () => {
   const usesGameFont = (rule: Rule): boolean =>
     ['font-family', 'font'].some((property) =>

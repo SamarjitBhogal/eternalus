@@ -4,7 +4,7 @@ description: The index of the eighteen architecture docs with the layered model 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-09
+last-reviewed: 2026-11-19
 tags: [architecture, index]
 related:
   [
@@ -90,7 +90,7 @@ definitions) → then the theme you need:
 
 **Agents.** [02](02-code-structure.md) → the doc whose `paths` frontmatter matches the files you
 will touch (the table below, or `grep -l "paths:" docs/architecture/*.md`) → the matching
-recipe in [17](17-extension-recipes.md). Then the current phase doc and the last `PROGRESS.md`
+recipe in [17](17-extension-recipes.md). Then the current phase doc and the newest entries in `docs/plan/progress/`
 entry, per [../agents/README.md](../agents/README.md) §2. Read three documents, not eighteen.
 
 ## 3. The documents

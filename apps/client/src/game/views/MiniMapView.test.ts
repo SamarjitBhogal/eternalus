@@ -359,7 +359,13 @@ describe('MiniMapView unit markers (DEC-187)', () => {
     const counters = { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} };
     const snapshot: Snapshot = {
       tick: 1,
-      match: { phase: 'countdown', phaseEnteredTick: 0, upcoming: [], humanLegendId: null },
+      match: {
+        phase: 'countdown',
+        phaseEnteredTick: 0,
+        upcoming: [],
+        countdownEndTick: 0,
+        humanLegendId: null,
+      },
       player: null,
       entities: [minion],
       hordes: [],
