@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { createDefaultGameConfig } from './config/defaultGameConfig';
+import { ContentCatalogue } from './content/ContentCatalogue';
 import { DUEL_RULES } from './content/duel/duelRules';
+import { STRUCTURE_DEFINITIONS } from './content/structures/structureCatalogue';
 import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { NullLogger } from './diagnostics/NullLogger';
 import { runReplay } from './diagnostics/replay';
@@ -134,6 +136,44 @@ describe('Simulation: a Duel', () => {
 
     expect(mobsAfter(build(), ticks)).toEqual([]);
     expect(mobsAfter(ordinary, ticks).length).toBeGreaterThan(0);
+  });
+
+  it('builds no structure the arena omits, while an ordinary match does (SCRUM-447)', () => {
+    const structures = new ContentCatalogue([
+      ...STRUCTURE_DEFINITIONS.all(),
+      {
+        id: 'cathedral',
+        kind: 'camp', // a registered kind: the gem's own kind is not on this branch
+        displayName: 'Cathedral',
+        baseHealth: 1, // TUNE: test double
+        footprintRadius: 1,
+        breakability: { kind: 'never' },
+      },
+    ] as const);
+    const cathedrals = (sim: Simulation) =>
+      sim.snapshot().entities.filter(({ definitionId }) => definitionId === 'cathedral');
+    const ordinary = new Simulation({
+      config,
+      seed: 7,
+      logger: new NullLogger(),
+      map,
+      mapObjects,
+      structures,
+    });
+    const duel = new Simulation({
+      config,
+      seed: 7,
+      logger: new NullLogger(),
+      map,
+      mapObjects,
+      roster: ROSTER,
+      duel: { killTarget: 2 },
+      structures,
+    });
+
+    expect(DUEL_RULES.arena.omittedStructureIds).toContain('cathedral');
+    expect(cathedrals(ordinary).length).toBeGreaterThan(0);
+    expect(cathedrals(duel)).toEqual([]);
   });
 
   it('has no capture objectives, while an ordinary match does (SCRUM-446)', () => {

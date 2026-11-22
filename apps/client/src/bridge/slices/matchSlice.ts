@@ -80,8 +80,6 @@ export const matchSlice = createSlice({
     selectDuelOutcome: (state) => state.duel,
     selectVersus: (state) => state.versus,
     selectDuelHud: (state) => state.duelHud,
-    /** Whether the match is a Duel: it publishes a Duel HUD state (`duel-state`). */
-    selectIsDuel: (state) => state.duelHud !== null,
     selectMatchClock: (state) => state.clock,
     /** The pre-match countdown's number (0 is "START"); `null` before the first clock and after it. */
     selectMatchCountdown: (state) => state.clock?.countdown ?? null,

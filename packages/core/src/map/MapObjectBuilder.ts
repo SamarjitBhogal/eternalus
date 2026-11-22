@@ -5,7 +5,8 @@ import { MapGenerationError } from './MapGenerationError';
 
 /**
  * Collects explicit authored footprints; floors, roof projections and shadows never block. The
- * doorways a Duel closes become walkable objects that `Simulation` blocks in such a Duel (SCRUM-450).
+ * doorways a Duel closes become walkable objects that `Simulation` blocks in such a Duel
+ * (SCRUM-450).
  */
 export class MapObjectBuilder {
   /**

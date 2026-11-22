@@ -9,11 +9,10 @@ export type DuelArenaRules = {
   /** Whether the capture objectives (capture points and the Cathedral's) exist (SCRUM-446). */
   readonly hasCaptureObjectives: boolean;
   /**
-   * Whether the Cathedral crystal (the gem) exists, drawn or as a body (SCRUM-447). Code that adds
-   * the gem (a `cathedral` structure, its scenery or its view) must leave it out of a Duel when
-   * this is `false`.
+   * The structure definition ids a Duel does not build: the Cathedral crystal (the gem, SCRUM-447)
+   * is the structure `cathedral`. Code that adds the gem's scenery or view must leave it out too.
    */
-  readonly hasCathedralGem: boolean;
+  readonly omittedStructureIds: readonly string[];
   /** Whether the Cathedral's entrances are blocked, so the Legends cannot leave it (SCRUM-450). */
   readonly isCathedralClosed: boolean;
 };

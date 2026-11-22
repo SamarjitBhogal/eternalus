@@ -7,7 +7,7 @@ import type { DuelArenaRules } from './duelRules.types';
 const DUEL_ARENA: DuelArenaRules = {
   spawnsMobs: false,
   hasCaptureObjectives: false,
-  hasCathedralGem: false,
+  omittedStructureIds: ['cathedral'],
   isCathedralClosed: true,
 };
 

@@ -4,7 +4,7 @@ description: How a match unfolds over time - the MatchDirector state machine ove
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-22
 tags: [architecture, match, timeline, phases, scoring, story, lore]
 paths:
   [
@@ -469,8 +469,9 @@ a Duel: both human Legends start in the Cathedral (`match/duelStartPoints.ts`), 
 (before `DeathSystem`) counts a kill for the other team when a seat's Legend dies and resets both
 Legends to their start points at full health at once, and `KillCountCondition` (`kill-count`) ends
 the match at the target. The score is `state.match.duel` and `Snapshot.match.duel`. The shipped
-numbers (target, countdown, start offset) are `DUEL_RULES` in `content/duel/duelRules.ts`. Mobs and
-structures still run as generated; FR-115's inert world is not built.
+numbers (target, countdown, start offset) are `DUEL_RULES` in `content/duel/duelRules.ts`. What
+this note left as generated (mobs, objectives, the crystal, the Cathedral's entrances) is the
+2026-11-20 note below; FR-115's inert world beyond that is not built.
 
 Implementation status, 2026-11-20 (branch `feat/duel-arena-only-legends`; the owner's feedback on
 the Duel demo of 2026-11-20, Jira SCRUM-445, SCRUM-446, SCRUM-447 and SCRUM-450, within DEC-36): a
@@ -479,9 +480,10 @@ holds one switch per part of the world, read where that part is built, never in 
 no mobs (`spawnsMobs`: `DefaultSystemPipeline` leaves out `SpawnSystem`, so no minion, guard or
 camp unit spawns or respawns), no capture objectives (`hasCaptureObjectives`: `Simulation` spawns
 no zones, so `ObjectiveLostCondition` and the client's `ObjectiveTracker` have none; the tracker
-renders nothing in a Duel), no Cathedral crystal (`hasCathedralGem`: `Simulation` builds no
-`cathedral` structure, and the client's `CrystalStatus` renders nothing in a Duel; no gem exists in
-core yet, so the gem's body, scenery and view must check this switch when they land) and a closed
+renders nothing in a Duel), no Cathedral crystal (`omittedStructureIds`, the structure definition ids a Duel does not build,
+`['cathedral']`: `Simulation` skips them, and the client's `CrystalStatus` renders nothing in a
+Duel; no gem exists in core yet, so the gem's body, scenery and view must check this list when
+they land) and a closed
 Cathedral (`isCathedralClosed`: `match/duelArena.ts` makes the Cathedral's four entrances, the map
 objects marked `isDuelBarrier`, block; 06 §10). Structures other than the gem still run as
 generated, and the Cathedral's interior walls stay breakable (BUG-2).

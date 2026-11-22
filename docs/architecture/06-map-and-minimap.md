@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-22
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -626,8 +626,8 @@ and `MapObjectBuilder` makes each an indestructible `cathedral`-kind `MapObject`
 `isDuelBarrier` and `isBlocking: false`, so a normal match walks through as before. A Duel whose
 rules close the Cathedral (`DUEL_RULES.arena.isCathedralClosed`) makes them block
 (`match/duelArena.ts`) before `Simulation` builds the walk grid, the collision index and the world
-objects, so both Legends stay inside. The doorways look the same either way; a closed-door drawing
-is not built.
+objects, so both Legends stay inside. The doorways look the same either way; the closed-door
+drawing is not built, and is requested in `INBOX.md` ("Duel closed-door drawing").
 
 ## Related
 

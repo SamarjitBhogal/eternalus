@@ -195,7 +195,7 @@ export class Simulation {
     const owners = Simulation.spawnStructures(this.state, factory, {
       structures,
       mapObjects,
-      hasCathedralGem: arena?.hasCathedralGem ?? true,
+      omittedIds: arena?.omittedStructureIds ?? [],
     });
     this.state.indexStructures();
     // Before the pipeline: zones can be guard homes, which SpawnSystem finds when it is built.
@@ -239,6 +239,7 @@ export class Simulation {
         progression: { units, curves, xpSources: XP_SOURCES },
         director,
         ...(duelStarts === undefined ? {} : { duelStarts }),
+        ...(arena === undefined ? {} : { spawnsMobs: arena.spawnsMobs }),
         hordes: {
           factory,
           space,
@@ -359,8 +360,8 @@ export class Simulation {
    * DEC-185 D; a gate's own outline, DEC-217 (17)). A blocking such object (a fort) is the
    * structure's body: it has no health of its own (one pool, DEC-185 B). Only towers share one
    * pool (DEC-217 (13)): the palace's and the gates' objects do not block, so they keep their own
-   * health. Without `hasCathedralGem` (a Duel, SCRUM-447) the `cathedral` structure, the gem's
-   * body, is not built.
+   * health. A Duel does not build the structures its `omittedStructureIds` list (SCRUM-447: the
+   * `cathedral`, the gem's body).
    *
    * @returns Map object id → the id of the structure it is the body of.
    */
@@ -370,11 +371,11 @@ export class Simulation {
     {
       structures,
       mapObjects = [],
-      hasCathedralGem,
+      omittedIds,
     }: {
       readonly structures: StructureSource;
       readonly mapObjects?: readonly MapObject[] | undefined;
-      readonly hasCathedralGem: boolean;
+      readonly omittedIds: readonly string[];
     },
   ): ReadonlyMap<string, string> {
     const features = [...(state.world?.definition.features ?? [])].sort((a, b) =>
@@ -383,9 +384,8 @@ export class Simulation {
     const bodies = new Map(mapObjects.map((object) => [object.id, object]));
     const owners = new Map<string, string>();
     for (const { id, definitionId, position, team, laneId } of features) {
-      if (structures.has(definitionId)) {
+      if (structures.has(definitionId) && !omittedIds.includes(definitionId)) {
         const { kind, hasMapFootprint } = structures.get(definitionId);
-        if (kind === 'cathedral' && !hasCathedralGem) continue;
         const placement = {
           position,
           team,

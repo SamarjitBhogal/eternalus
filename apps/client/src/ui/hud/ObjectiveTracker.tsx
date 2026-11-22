@@ -3,9 +3,9 @@ import type { ReactElement } from 'react';
 import { useAppSelector } from '../../bridge/hooks';
 import type { HudAllegiance } from '../../bridge/hud.types';
 import { selectAllegianceFlagUrls } from '../../bridge/selectors/selectAllegianceFlagUrls';
+import { selectIsDuel } from '../../bridge/selectors/selectIsDuel';
 import { selectObjectives } from '../../bridge/selectors/selectObjectives';
 import { contentSlice } from '../../bridge/slices/contentSlice';
-import { matchSlice } from '../../bridge/slices/matchSlice';
 import type { RootState } from '../../bridge/store';
 import { AssetImage } from '../components/AssetImage';
 import { classNames } from '../components/classNames';
@@ -44,7 +44,7 @@ export function ObjectiveTracker(): ReactElement | null {
   const objectives = useAppSelector(selectObjectives);
   const chrome = useAppSelector(selectChrome);
   const flagUrls = useAppSelector(selectAllegianceFlagUrls);
-  const isDuel = useAppSelector(matchSlice.selectors.selectIsDuel);
+  const isDuel = useAppSelector(selectIsDuel);
   if (isDuel) return null;
   return (
     <div role="group" aria-label={STRINGS.hud.objectives} className={styles.tracker}>

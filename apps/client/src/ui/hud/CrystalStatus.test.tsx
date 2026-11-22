@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { contentSlice } from '../../bridge/slices/contentSlice';
-import { matchSlice } from '../../bridge/slices/matchSlice';
+import { matchSetupSlice } from '../../bridge/slices/matchSetupSlice';
 import { renderWithStore } from '../testStore';
 import { CrystalStatus } from './CrystalStatus';
 
@@ -18,9 +18,8 @@ describe('CrystalStatus', () => {
   });
 
   it('draws no crystal in a Duel, which has no Cathedral crystal (SCRUM-447)', () => {
-    const duelHud = { ownKills: 0, opponentKills: 0, killTarget: 10, countdown: null };
     const html = renderWithStore(<CrystalStatus />, {
-      match: { ...matchSlice.getInitialState(), duelHud },
+      matchSetup: { ...matchSetupSlice.getInitialState(), mode: 'duel' },
     });
     expect(html).toBe('');
   });
