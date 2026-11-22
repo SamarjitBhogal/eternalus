@@ -17,7 +17,7 @@ verbatim". This skill is that step.
 3. Report the verbatim tail of the output for each failing step, then a one-line summary per
    step (pass/fail). Never summarise a failure as a pass. Never fix a failure by weakening a
    guardrail (thresholds, lint rules, `@ts-ignore`, skipped tests).
-4. If everything passes, append the `docs/plan/PROGRESS.md` entry for the task (date,
+4. If everything passes, add the new entry file in `docs/plan/progress/` for the task (date,
    phase/sprint, branch, what, checks run, next step).
 5. Verify is the Definition of done, not the end: before a PR is opened, the pre-PR gate in
    `AGENTS.md` follows (critic, ponytail, then this skill again on the post-ponytail code).
