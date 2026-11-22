@@ -79,8 +79,8 @@ type CommandPayloads = {
   readonly 'dev-remove-entity': { readonly entityId: EntityId };
   /**
    * Developer menu: remove a Legend (cause `dev-removed`; FR-097, DEC-293). Refused for an entity
-   * that is not a Legend (`not-a-legend`) and for the human's Legend unless the match is in sim
-   * mode, that is while a human seat holds it (`human-legend`).
+   * that is not a Legend (`not-a-legend`) and refused (`human-legend`) while a human seat holds
+   * the Legend, that is, outside sim mode.
    */
   readonly 'dev-remove-legend': { readonly entityId: EntityId };
   /** Developer menu: hand an entity to another controller (sim mode). */

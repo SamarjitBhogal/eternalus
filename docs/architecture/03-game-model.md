@@ -138,6 +138,12 @@ export type Command =
     }
   | { readonly type: 'dev-remove-entity'; readonly entityId: EntityId }
   | {
+      readonly type: 'dev-spawn-legend';
+      readonly team: PlayableTeam;
+      readonly definitionId: string;
+    }
+  | { readonly type: 'dev-remove-legend'; readonly entityId: EntityId }
+  | {
       readonly type: 'dev-set-controller';
       readonly entityId: EntityId;
       readonly controllerId: ControllerId;
@@ -473,7 +479,7 @@ each closed by the session or phase named:
   `UnsupportedCommandHandler` (rejected `not-supported`) until their systems exist; `pick-up`,
   `throw`, `interact` and `dev-set-assert-level` are not in the union yet.
 - `dev-spawn-legend` (2026-11-13) is built as `{ team, definitionId }` (a bot Legend at the
-  Stronghold, Rover controller); it is in `Command.types.ts`; the union listing below does not show it yet.
+  Stronghold, Rover controller); it is in `Command.types.ts`.
   `dev-remove-legend { entityId }` (2026-11-20, DEC-293) removes a Legend through
   `DevRemoveEntityHandler`, which refuses a Legend in a human seat (`human-legend`).
 - `dev-spawn` and `dev-remove-entity` spawn and remove directly and emit `entity-spawned` /
