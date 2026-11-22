@@ -4,11 +4,11 @@ description: The overview of known bugs in Eternalus, one row per bug linked to 
 audience: [humans, agents]
 status: active
 owner: SamarjitBhogal
-last-reviewed: 2026-11-14
+last-reviewed: 2026-11-19
 tags: [plan, bugs, jira]
 related:
   [
-    'docs/plan/PROGRESS.md',
+    'docs/plan/progress/README.md',
     'docs/plan/README.md',
     'INBOX.md',
     'docs/reference/game-design/13-owner-decisions-log.md',
