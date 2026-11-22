@@ -11,7 +11,7 @@ paths:
     'packages/core/src/ai/MinionController*',
     'packages/core/src/ai/GuardController*',
     'packages/core/src/ai/decideLeashed*',
-    'packages/core/src/systems/{GuardRoster,EachGuardRespawn,GroupGuardRespawn,StuckSystem}*',
+    'packages/core/src/systems/{GuardRoster,EachGuardRespawn,GroupGuardRespawn,StuckSystem,clearGuardPost,spawnPlanProblems}*',
     'packages/core/src/components/ChaseWatch*',
     'packages/core/src/content/ai/stuckDetection*',
     'packages/core/src/content/structures/guardLeash*',

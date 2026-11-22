@@ -16,14 +16,14 @@ export class GroupGuardRespawn implements GuardRespawnRule {
     state.guards.vacate(index, null);
     let held = 0;
     state.guards.forEach((post) => {
-      held += GroupGuardRespawn.isMate(post, slot) && post.guardId !== null ? 1 : 0;
+      held += GroupGuardRespawn.isGroupPost(post, slot) && post.guardId !== null ? 1 : 0;
     });
     if (held > 0) {
       return;
     }
     const respawnAtTick = state.tick + slot.respawnTicks;
     state.guards.forEach((post, at) => {
-      if (GroupGuardRespawn.isMate(post, slot)) {
+      if (GroupGuardRespawn.isGroupPost(post, slot)) {
         state.guards.vacate(at, respawnAtTick);
       }
     });
@@ -39,7 +39,7 @@ export class GroupGuardRespawn implements GuardRespawnRule {
   }
 
   /** Whether `post` is in `slot`'s group: a post of the same home's own plan. */
-  private static isMate(post: GuardSlot, slot: GuardSlot): boolean {
+  private static isGroupPost(post: GuardSlot, slot: GuardSlot): boolean {
     return post.homeId === slot.homeId && post.checkpoint === slot.checkpoint;
   }
 }
