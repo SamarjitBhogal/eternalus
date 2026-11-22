@@ -73,4 +73,15 @@ export type LegendSpecDefinition = {
    * from the class's `abilityPool` (`KitInPoolRule`).
    */
   readonly kit: AbilityKit | null;
+  /**
+   * The second weapon this Legend carries beside its class's default weapon (05 §12
+   * `secondaryWeaponId`), or `null` for none. Only the Zealot has one (DEC-303); a gadget with a
+   * `swap-weapon` step puts it in hand. `SecondaryWeaponRule` checks the id.
+   */
+  readonly secondaryWeaponId: string | null;
+  /**
+   * The artifacts on `gadget-1` and `gadget-2` (05 §11, §12 `artifacts`), in that order; `null` =
+   * an empty slot. Each is a `gadget` ability of the spec's class (`KnownAbilityRefsRule`).
+   */
+  readonly artifacts: readonly [string | null, string | null];
 };

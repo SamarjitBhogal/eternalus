@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { ARTIFACTS } from '../artifacts/artifactCatalogue';
 import { LEGEND_CLASSES } from '../legends/legendCatalogue';
 import { STATUS_EFFECTS } from '../status-effects/statusEffectCatalogue';
 import { ABILITIES } from './abilityCatalogue';
@@ -18,11 +19,11 @@ const UNBUILT = {
   'death-ray': { cooldownSeconds: 0, aetherCost: 0, slot: 'ultimate' },
 } as const;
 
-/** Every effect kind the framework builds (05 §3): PR 1's, then Fury's `buff`; a new kind is added here with its effect class. */
-const BUILT_EFFECT_KINDS = ['damage', 'debuff', 'dash', 'knockback', 'buff'];
+/** Every effect kind the framework builds (05 §3): PR 1's, then Fury's `buff`, then the Zealot's `swap-weapon`; a new kind is added here with its effect class. */
+const BUILT_EFFECT_KINDS = ['damage', 'debuff', 'dash', 'knockback', 'buff', 'swap-weapon'];
 
 describe('ABILITIES', () => {
-  it('lists the twelve kit abilities in class order, abilities before the ultimate, then what the ultimate grants', () => {
+  it('lists the twelve kit abilities in class order, abilities before the ultimate, then what the ultimate grants, then the artifacts', () => {
     expect(ABILITIES.ids).toEqual([
       'blade-runner',
       'veil',
@@ -37,6 +38,7 @@ describe('ABILITIES', () => {
       'sanctuary',
       'imbue',
       'death-ray',
+      'weapon-swap',
     ]);
   });
 
@@ -151,14 +153,25 @@ describe('ABILITIES', () => {
     }
   });
 
-  it("puts every kit ability in its class's pool and every pool entry in the catalogue", () => {
+  it("puts every kit ability in its class's pool and every pool entry in the catalogue; artifacts are in no pool (05 §11)", () => {
     for (const legend of LEGEND_CLASSES.all()) {
       const ofClass = ABILITIES.all()
-        .filter((ability) => ability.classId === legend.id && ability.slot !== 'granted')
+        .filter(
+          (ability) =>
+            ability.classId === legend.id &&
+            ability.slot !== 'granted' &&
+            ability.slot !== 'gadget',
+        )
         .map((ability) => ability.id);
 
       expect(legend.abilityPool).toEqual(ofClass);
     }
+  });
+
+  it('takes every gadget from the artifact catalogue, so each artifact is authored in content/artifacts/ (17 R10)', () => {
+    const gadgets = ABILITIES.all().filter((ability) => ability.slot === 'gadget');
+
+    expect(gadgets.map(({ id }) => id)).toEqual(ARTIFACTS.map(({ id }) => id));
   });
 
   it('leaves a granted ability out of every pool: only a status grants it (DEC-270)', () => {

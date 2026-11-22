@@ -20,6 +20,7 @@ import { LevelScalingRule } from './validation/LevelScalingRule';
 import { PositiveAetherRule } from './validation/PositiveAetherRule';
 import { PositiveStatsRule } from './validation/PositiveStatsRule';
 import { RoleRatingRangeRule } from './validation/RoleRatingRangeRule';
+import { SecondaryWeaponRule } from './validation/SecondaryWeaponRule';
 import { SpecClassExistsRule } from './validation/SpecClassExistsRule';
 
 describe('createDefaultContentRules', () => {
@@ -80,6 +81,7 @@ describe('createLegendSpecRules', () => {
       RoleRatingRangeRule,
       KnownAbilityRefsRule,
       KitInPoolRule,
+      SecondaryWeaponRule,
     ]);
   });
 

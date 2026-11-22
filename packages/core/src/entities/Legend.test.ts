@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { Abilities } from '../components/Abilities';
 import { Combat } from '../components/Combat';
+import { Loadout } from '../components/Loadout';
 import { KNIGHT } from '../content/legends/specs/knight';
 import { LEGEND_SPECS } from '../content/legends/specs/legendSpecCatalogue';
 import { loadDefaultContent } from '../content/loadDefaultContent';
@@ -114,6 +115,65 @@ describe('Legend', () => {
         ['ability-3', 'blade-runner'],
         ['ability-4', 'fury'],
       ]);
+    });
+
+    it('holds the Zealot’s bow as a second weapon and its swap on gadget-1; other specs hold one weapon (DEC-303)', () => {
+      const zealot = new Warrior('entity-1', 'warrior');
+      const knight = new Warrior('entity-2', 'warrior');
+      const noSpec = new Warrior('entity-3', 'warrior');
+      const spawnAs = (legend: Warrior, specId?: string) => {
+        legend.spawn({
+          ...PLACEMENT,
+          definition: WARRIOR,
+          weapons: SHIPPED_WEAPONS,
+          specs: LEGEND_SPECS,
+          ...(specId !== undefined && { specId }),
+        });
+      };
+
+      spawnAs(zealot, 'assassin');
+      spawnAs(knight, 'knight');
+      spawnAs(noSpec);
+
+      const loadout = zealot.getComponent(Loadout);
+      expect(loadout.inHand.weaponId).toBe('raptor-talons');
+      expect(loadout.isSecondaryInHand).toBe(false);
+      expect(loadout.swap()?.weaponId).toBe('obsidian-bow');
+      expect(barOf(zealot).slice(4, 6)).toEqual([
+        ['gadget-1', 'weapon-swap'],
+        ['gadget-2', null],
+      ]);
+      for (const legend of [knight, noSpec]) {
+        expect(legend.getComponent(Loadout).inHand.weaponId).toBe('raptor-talons');
+        expect(legend.getComponent(Loadout).swap()).toBeNull();
+        expect(barOf(legend).slice(4, 6)).toEqual([
+          ['gadget-1', null],
+          ['gadget-2', null],
+        ]);
+      }
+    });
+
+    it('loads each weapon once at spawn: Combat arms itself with the weapon Loadout holds', () => {
+      const looked: string[] = [];
+      const counted = {
+        has: (id: string) => SHIPPED_WEAPONS.has(id),
+        get: (id: string) => {
+          looked.push(id);
+          return SHIPPED_WEAPONS.get(id);
+        },
+      };
+      const zealot = new Warrior('entity-1', 'warrior');
+
+      zealot.spawn({
+        ...PLACEMENT,
+        definition: WARRIOR,
+        weapons: counted,
+        specs: LEGEND_SPECS,
+        specId: 'assassin',
+      });
+
+      expect(looked).toEqual(['raptor-talons', 'obsidian-bow']);
+      expect(zealot.getComponent(Combat).weaponId).toBe('raptor-talons');
     });
 
     it('throws for a spec that does not exist or belongs to another class', () => {

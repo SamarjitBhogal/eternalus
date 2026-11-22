@@ -175,6 +175,15 @@ export type LegendSpecCard = {
   readonly art: LegendSpecArt;
   /** The HUD weapon art of this Legend's start weapon; `null` keeps the class kit's (DEC-114). */
   readonly hudWeapon: ClassHudDisplay['weapon'];
+  /**
+   * The gadget slots this Legend's artifacts fill (05 §11, DEC-303), gadget-1 first; a slot it
+   * leaves empty is absent and keeps the class kit's entry. The HUD shows the artifact's name and
+   * no art, since none exists yet (DEC-114).
+   */
+  readonly gadgets: readonly {
+    readonly slot: Extract<HudSlotId, 'gadget-1' | 'gadget-2'>;
+    readonly displayName: string;
+  }[];
 };
 
 /** Art of one class; `null` renders the placeholder. */

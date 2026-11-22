@@ -6,6 +6,7 @@ import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
 import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
+import { Loadout } from '../components/Loadout';
 import { Movement } from '../components/Movement';
 import { ChaseWatch } from '../components/ChaseWatch';
 import { CombatClock } from '../components/CombatClock';
@@ -40,6 +41,9 @@ class Soldier extends Entity {
   }
 }
 
+/** The attack both of a scout's test weapons carry; the hash reads which one is in hand, not its numbers. */
+const SCOUT_ATTACK = { strategy: 'melee', damage: 1, reach: 1, interval: 1 } as const;
+
 class Scout extends Entity {
   public readonly kind = 'scout';
   public readonly family = 'test';
@@ -51,6 +55,12 @@ class Scout extends Entity {
     this.addComponent(new Vision(10));
     this.addComponent(new Aether(50));
     this.addComponent(new Progression('test'));
+    this.addComponent(
+      new Loadout(
+        { weaponId: 'test-talons', attacks: { basic: SCOUT_ATTACK } },
+        { weaponId: 'test-bow', attacks: { basic: SCOUT_ATTACK } },
+      ),
+    );
   }
 }
 
@@ -331,6 +341,21 @@ describe('StateHasher', () => {
     expect(hasher.hash(stateWithSoldier().state)).toBe(before);
   });
 
+  it('hashes the weapon in hand only while the second one is, so a run that never swaps hashes as before (DEC-303)', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const scout = new Scout('entity-1', 'scout-definition');
+    scout.spawn({});
+    state.entities.add(scout);
+    const before = hasher.hash(state);
+
+    scout.getComponent(Loadout).swap();
+    const swapped = hasher.hash(state);
+    scout.getComponent(Loadout).swap();
+
+    expect(swapped).not.toBe(before);
+    expect(hasher.hash(state)).toBe(before);
+  });
+
   it('changes when an entity turns, and changes back when it turns back (DEC-192)', () => {
     const { state, soldier } = stateWithSoldier();
     const before = hasher.hash(state);
@@ -422,6 +447,12 @@ describe('StateHasher', () => {
       'progression',
       (scout) => {
         scout.getComponent(Progression).addXp(1, { id: 'test', cap: 2, xpToNext: [10] });
+      },
+    ],
+    [
+      'the weapon in hand (DEC-303)',
+      (scout) => {
+        scout.getComponent(Loadout).swap();
       },
     ],
   ])('changes when %s changes on an entity that has it', (_, change) => {

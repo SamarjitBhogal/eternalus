@@ -13,6 +13,8 @@ export type KitSubject = {
   readonly pool: readonly string[];
   /** The kit under check: a class's `defaultKit`, a spec's own `kit` (`null` = it has none). */
   readonly kit: AbilityKit | null;
+  /** The artifacts a spec puts on its gadget slots (05 §11), empty slots left out; none for a class. */
+  readonly artifacts: readonly string[];
   /** Whether the definition is the class itself (it owns the pool) and not a spec. */
   readonly isClass: boolean;
   /** What the messages call the kit. */
@@ -20,7 +22,7 @@ export type KitSubject = {
 };
 
 /**
- * Reads the ability fields of a Legend class (`defaultKit`) or a Legend spec (`kit`), the one
+ * Reads the ability fields of a Legend class (`defaultKit`) or a Legend spec (`kit`, `artifacts`), the one
  * place that knows both shapes, so the ability rules treat them alike. Returns `null` for any
  * other definition (a mob) and for a spec whose class is not loaded (`SpecClassExistsRule` flags
  * that).
@@ -38,6 +40,7 @@ export const kitSubjectOf = (
           classId: definition.classId,
           pool: legends.get(definition.classId).abilityPool,
           kit: definition.kit,
+          artifacts: definition.artifacts.filter((id) => id !== null),
           isClass: false,
           kitName: 'kit',
         }
@@ -48,6 +51,7 @@ export const kitSubjectOf = (
         classId: definition.id,
         pool: definition.abilityPool,
         kit: definition.defaultKit,
+        artifacts: [],
         isClass: true,
         kitName: 'defaultKit',
       }

@@ -636,6 +636,105 @@ Reply inline (`Decision: …`).
       one reusable "first source with the id" definition lookup for `Simulation` and about ten
       tests (BTD-H).
 
+- [ ] **HC-Q80 — Zealot: which key swaps between talons and bow? (`feat/zealot-weapon-swap`,
+      PR 9, 2026-11-22; PR-38-HELPER-46; Owner Calls card "PR9 swap key").** Each Legend has two
+      gadget slots, keys Z (first) and C (second); the player can rebind both. You decided that one
+      of the Zealot's gadget slots swaps to the bow (DEC-303). Options: (A) Z, the first gadget slot
+      (recommended, built): the second slot stays free for a Warrior gadget later; (B) C, the second
+      gadget slot; (C) other (note). Note: in aim-then-click mode, Z does not swap at once. The swap
+      happens on the next click, because every self-targeted ability waits for the click in that
+      mode (DEC-209 (3)). A, B or C? _Code: the spec's `artifacts` in
+      `content/legends/specs/assassin.ts`._
+- [ ] **HC-Q81 — Zealot: how fast is the swap? (`feat/zealot-weapon-swap`, PR 9, 2026-11-22;
+      PR-38-HELPER-46; Owner Calls card "PR9 swap timing").** The player presses the swap key and the
+      other weapon comes out. In every option the attack timer carries over, so a swap never gives a
+      faster hit. Options: (A) instant, then 1 s before the next swap (recommended, built; the 1 s
+      is marked TUNE): no swap spam; (B) instant, with no wait between swaps; (C) a 0.5 s draw time
+      with no attacks during it; (D) other (note). A, B, C or D? _Code: `cooldownSeconds` in
+      `content/artifacts/weaponSwap.ts`; `Combat.equip`; `SwapWeaponEffect`._
+- [ ] **HC-Q82 — Zealot: with the bow out, what does the melee key (F) do?
+      (`feat/zealot-weapon-swap`, PR 9, 2026-11-22; PR-38-HELPER-46; Owner Calls card "PR9 bow melee
+      key").** The Magus staff shoots on the attack button and has its melee attack on F (DEC-308).
+      Options: (A) nothing: each weapon has only its own attacks, and to claw the player swaps back
+      to the talons (recommended, built); (B) a talon swipe on F, the same way the staff's melee
+      works; (C) other (note). Note (critic rounds 2 and 3): with today's numbers the bow hits as
+      hard as the talons and from farther away; the talons only hit more surely (HC-Q86 (1)). A, B
+      or C?
+      _Code: `Combat.equip` changes the attack mode to the basic attack when the new weapon has no
+      attack for the current mode._
+- [ ] **HC-Q83 — Zealot: do bot Zealots swap weapons? (`feat/zealot-weapon-swap`, PR 9,
+      2026-11-22; PR-38-HELPER-46; Owner Calls card "PR9 bot swap").** This is about bots only; a
+      player Zealot can always swap. Options: (A) no, for now: bot Zealots keep the talons
+      (recommended, built); (B) yes: the bow when the enemy is far, the talons when it is near (more
+      bot work in PR 9); (C) other (note). A, B or C? _Code: Weapon Swap is authored
+      `canBotCast: false`; `pickReadySlot` asks `SlotReadiness.canBotCast` and skips it._
+- [ ] **HC-Q84 — Zealot: which weapon does it hold when a new Duel round starts?
+      (`feat/zealot-weapon-swap`, PR 9, 2026-11-22; PR-38-HELPER-46; rewritten by PR-38-HELPER-48
+      after critic round 2; Owner Calls card "PR9 Duel reset").** This cannot happen yet. Today a
+      Duel seats two Warriors with no Legend pick, so no Zealot and no bow, and a Duel casts no
+      abilities (HC-Q55). It matters once Duels cast abilities and can seat a Zealot. Then, after
+      each kill, both Legends go back to their start points at full health (DEC-36), and every
+      ability except the ultimate is ready again (FR-117). A Zealot that died with the bow out:
+      options: (A) it starts each round with the talons, the same way FR-117 resets the abilities
+      (recommended; it joins the round-reset list of HC-Q55); (B) it keeps the weapon it had in
+      hand; (C) other (note). The options were re-lettered on 2026-11-22: the old (A), keep the
+      bow, is now (B), and the recommendation changed to (A). A, B or C? _Code: nothing resets the
+      weapon in hand yet; the Duel
+      reset (`DuelRoundSystem`) does not touch `Loadout`. It is built when Duels cast (HC-Q55)._
+- [ ] **HC-Q85 — Zealot: what is the swap gadget called, and does it cost aether?
+      (`feat/zealot-weapon-swap`, PR 9 critic round 2, 2026-11-22; PR-38-HELPER-48; new Owner
+      Calls card "PR9 swap name and cost").** The gadget frame of the swap key (Z, as built;
+      HC-Q80) shows the gadget's name. DEC-303 quotes your words "the bow switcher", but no
+      document gives the swap a screen name or a price. (1) Name. Options: (A) "Weapon Swap"
+      (built, a placeholder); (B) "Bow Switcher", your words in DEC-303; (C) another name (note).
+      (2) Aether cost. Options: (A) free (recommended, built): the swap only changes the weapon,
+      and if you keep a wait between swaps (HC-Q81), that wait stops swap spam; (B) it costs
+      aether (note how much); (C) other (note). Answer (1) and (2). _Code:
+      `displayName` and `aetherCost` in `content/artifacts/weaponSwap.ts`._
+- [ ] **HC-Q86 — Zealot: the bow is as strong as the talons, and the screen does not show which
+      weapon is out (`feat/zealot-weapon-swap`, PR 9 critic round 2, 2026-11-22; PR-38-HELPER-48;
+      new Owner Calls card "PR9 bow strength and weapon display").** Two facts for HC-Q81 and
+      HC-Q82. (1) Today the bow and the talons each do 45 damage every 0.7 s. The talons reach
+      1.5 m and the bow reaches 50 m. So the bow does the same damage per hit and reaches farther.
+      But an arrow flies to where the target was, so a moving target can dodge it, and a wall or
+      another enemy can stop it. A talon hit lands at once. Options: (A) keep these numbers for now (built); (B) change the bow's numbers for the Zealot
+      (note which: for example less damage or a slower shot); (C) other (note). (2) Nothing on the
+      screen shows which weapon is in hand. The Zealot's weapon panel stays empty (DEC-114), so
+      the player sees only the gadget cooldown and the arrows. Options: (A) leave it so (built);
+      (B) the weapon panel shows the weapon in hand (more work: art and a snapshot field); (C)
+      other (note). Answer (1) and (2). _Code: `content/weapons/obsidianBow.ts` and
+      `raptorTalons.ts` (DEC-310); the weapon panel: `selectHudKit`, `hudPresentation.ts`._
+- [ ] **HC-B34 — Better than the design, not built, sign-off per item (`feat/zealot-weapon-swap`,
+      PR 9 critic round 2, 2026-11-22; PR-38-HELPER-48).** PR 9 needs none of them. (1) **Swap at
+      once in aim-then-click mode.** Weapon Swap has no area, but every self-targeted ability waits
+      for a click in that mode (DEC-209 (3): "still shows the range overlay"). A swap has no range
+      to show. A new targeting kind for a cast with no area and no aim (one class and one registry
+      line, like `HeadingTargeting`) would swap at once on Z in both cast modes. Quick cast, the
+      default, already swaps at once. Recommended: yes, in its own small PR, because it changes
+      DEC-209 (3) for each ability authored with the new kind. (2) **One call changes both weapon
+      records.** The player sees no difference. Today the swap changes the weapon in hand and the
+      attacks in two steps, and a runtime check catches any mismatch. Recommended: no. The swap
+      has only one code path, and the change ties the two records together. _Code:
+      `Loadout.swap(combat)`; `SwapWeaponEffect`; the `weapon-in-hand-matches-combat` invariant._
+      (3) **One shared list of the gadget-slot order** (first gadget, then second). The player
+      sees no difference. Today the simulation and the screen code each keep their own copy.
+      Recommended: yes, in the next tidy PR; it adds one shared constant. _Code: `gadget-1`,
+      `gadget-2` in `Abilities.ts` and the client's `buildDisplayCatalogue.ts`._ Per item: yes, no
+      or a note.
+- [x] **HC-B30 — WITHDRAWN 2026-11-22 by PR-38-HELPER-48 (PR 9 critic round 2, F3): nothing to
+      answer.** The reason below was false. `ContentCatalogue` takes an array, so
+      `content/artifacts/artifactCatalogue.ts` lists the artifacts and `abilityCatalogue.ts` spreads
+      that list in: one registry and one lookup still. PR 9 now builds the design (17 R10).
+      Original card: **Better than the design, built under your standing rule (DEC-223), sign-off
+      asked: one ability catalogue for artifacts too (`feat/zealot-weapon-swap`, PR 9 critic round
+      1, 2026-11-22; PR-38-HELPER-46).** The player sees no difference. The design adds each artifact
+      (a gadget) to its own `artifactCatalogue.ts` (17 R10). PR 9 lists Weapon Swap, the first
+      artifact, in `abilityCatalogue.ts`, with the abilities. Reason: the ability registry resolves
+      every slot, gadgets too, from one catalogue, so a second catalogue would need a second lookup
+      and a merge for no gain. Options: (A) keep one catalogue (recommended, built): after your
+      sign-off, 05 §11 and 17 R10 say "one catalogue"; (B) a separate `artifactCatalogue.ts`, as
+      designed; (C) other (note). A, B or C?
+
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
       small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`

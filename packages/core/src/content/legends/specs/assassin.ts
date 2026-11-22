@@ -16,4 +16,6 @@ export const ASSASSIN = {
   roleRatings: null,
   detailNames: { ultimate: null, 'ability-1': null, 'ability-2': null, 'ability-3': null },
   kit: null, // the class default kit; no Legend has its own yet
+  secondaryWeaponId: 'obsidian-bow', // DEC-303: the Zealot's bow, beside the class's talons
+  artifacts: ['weapon-swap', null], // DEC-303; gadget-1 (Z): INBOX.md HC-Q80 (A)
 } as const satisfies LegendSpecDefinition;

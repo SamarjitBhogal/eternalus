@@ -67,6 +67,28 @@ describe('pickReadySlot (DEC-205)', () => {
     expect(pickReadySlot(turn, onlyReady('granted'), AIM)).toBe('granted');
   });
 
+  it('may pick a gadget whose ability a bot may cast', () => {
+    const turn = turnWith(1);
+    const gadget = turn.state.entities.get(turn.id)?.findComponent(Abilities)?.slot('gadget-1');
+    gadget?.hold('blade-runner');
+
+    expect(pickReadySlot(turn, onlyReady('gadget-1'), AIM)).toBe('gadget-1');
+  });
+
+  it('never picks Weapon Swap, so a bot Zealot keeps its talons (INBOX.md HC-Q83, A)', () => {
+    const readiness = new CastValidator(createDefaultAbilityRegistry(loadAbilities(30), 30));
+    const picks = new Set<string | null>();
+    for (let seed = 1; seed <= 40; seed += 1) {
+      const turn = turnWith(seed);
+      const gadget = turn.state.entities.get(turn.id)?.findComponent(Abilities)?.slot('gadget-1');
+      gadget?.hold('weapon-swap');
+      expect(readiness.blockedBy(turn.state, turn.id, 'gadget-1', AIM)).toBeNull(); // castable
+      picks.add(pickReadySlot(turn, readiness, AIM));
+    }
+
+    expect([...picks]).toEqual(['ability-1']); // Blade Runner, the one other built ability
+  });
+
   it('reaches every ready slot over many seeds', () => {
     const seen = new Set<string | null>();
     for (let seed = 1; seed <= 60; seed += 1) {

@@ -90,6 +90,7 @@ export function specCardFixture(
     details: [],
     art: NO_SPEC_ART,
     hudWeapon: null,
+    gadgets: [],
     ...overrides,
   };
 }
