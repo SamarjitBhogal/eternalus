@@ -12,8 +12,9 @@ import { selectSelectedClassCard } from './selectSelectedClassCard';
  * start-weapon art shows it in place of the class kit's (DEC-114). The slots' names are the
  * Legend's kit (DEC-199: ability-1 to 3 and the ultimate on ability-4); a slot the kit does not fill
  * keeps the class's. A gadget slot the Legend's artifacts fill takes the artifact's name and no
- * icon, as no artifact art exists yet (DEC-303, DEC-114); an empty one keeps the class's. `null` before a pick and for a class without a kit (a locked class is never
- * played). Memoised: the same pick returns the same object.
+ * icon, as no artifact art exists yet (DEC-303, DEC-114); an empty one keeps the class's. `null`
+ * before a pick and for a class without a kit (a locked class is never played). Memoised: the same
+ * pick returns the same object.
  */
 export const selectHudKit = createSelector(
   [
