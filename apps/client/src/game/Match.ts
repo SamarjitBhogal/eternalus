@@ -1,4 +1,10 @@
-import { type EntityId, type EntitySnapshot, makeLogRecord, type Snapshot } from '@eternalus/core';
+import {
+  CORNER_CAMP_RING,
+  type EntityId,
+  type EntitySnapshot,
+  makeLogRecord,
+  type Snapshot,
+} from '@eternalus/core';
 
 import { isDead } from '../bridge/selectors/isDead';
 import { BuildingRoofs } from './BuildingRoofs';
@@ -109,8 +115,9 @@ export class Match implements LoopTarget {
     const shown = (): WorldRect => this.camera.visibleArea();
     this.objects = new WorldObjectsView(mapObjects, hiddenRoofs, shown);
     const { isDestroyed } = this.objects;
+    const featureSizes = { 'corner-camp': 2 * CORNER_CAMP_RING.radius } as const;
     const scene = new SceneView([
-      new MapView(map, scenery, hiddenRoofs, shown, buildings, isDestroyed),
+      new MapView(map, scenery, hiddenRoofs, shown, buildings, isDestroyed, featureSizes),
       new SceneryView(scenery, 'detail', hiddenRoofs, shown, isDestroyed),
       this.objects,
       new LegendBodyLayer(this.bodies.bodies),
