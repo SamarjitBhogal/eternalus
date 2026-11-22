@@ -534,6 +534,13 @@ Reply inline (`Decision: …`).
     (rule 2 of `AreaHitQuery`, `ProjectileSystem`, `MeleeAttackStrategy`; DEC-333 (2)). The stun
     case did not change. For (A), the contact goes in `EntityStore.recordHits` or where a shot
     stops on a body that takes no damage.
+  - Correction 2026-11-22 (Hamstring merge critic round 2, M2-1): the last sentence of the note
+    above is wrong in part. Veil does not end through `EntityStore.recordHits`. It ends when
+    `StatusEffectSystem` sees a `damage-applied` or `status-applied` event. Three places drop a
+    hit on a body that takes no damage before any record or event: rule 2 of `AreaHitQuery.find`
+    (sweeps and ability areas), `MeleeAttackStrategy.attack`, and `ProjectileSystem` (a shot
+    stops on such a body). For (A), each of the three places sends one contact event, and
+    `StatusEffectSystem` listens to it.
 - [ ] **HC-B26 — Better than the design, built under your standing rule (DEC-223), sign-off
       asked: Hamstring's blade takes its speed, width and range from the blade's own definition
       (`feat/vanguard-hamstring`, 2026-11-22; DEC-268, DEC-269).** Nothing waits on the answer;
@@ -585,6 +592,15 @@ Reply inline (`Decision: …`).
     (DEC-223) it should not stay open. (A) Build it in lane B's next PR (PR 6, Sentinel Rip &
     Tear, which adds the `cone` shape and goes through the same check) (advised). (B) Leave it,
     as documented.
+  - (6) Found, not built (Hamstring merge critic round 2, M2-5; 2026-11-22): the player sees no
+    difference. Two places decide if an enemy unit stands on a point: a click on a unit
+    (`findUnitAt`, on the screen's data) and an aim at a palace floor or a gate (`AreaHitQuery`,
+    on the live game). Each has its own copy of the rule. The copies already disagreed once: a
+    Veiled unit blocked an aim at the floor, but not a click (fixed by M1-1, with a test on each
+    side). The fix: one rule that both use, with one test. It is not built here because it
+    changes lane A's PR 2 code (`AreaHitQuery`; #159 is still open). (A) Build it in lane B's
+    next PR, after #159 merges (advised). (B) Keep the two copies; a test on each side keeps them
+    the same.
 - [x] **HC-Q67 — Combat gaps: build before the presentation (2026-11-27)? In which order?
       (combat audit, COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls page).**
       Your nine combat questions: 0 of 9 are true today. Evidence and the proposed PRs (two lanes,

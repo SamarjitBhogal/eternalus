@@ -116,8 +116,9 @@ export class AreaHitQuery {
    * the Stronghold's outline and the palace map object's), a structure comes first, then the first
    * by id, so a shot at the palace names the Stronghold. A sweep still hits both (DEC-284 (2)).
    *
-   * @returns The body's id, or `null` when the point is on no such outline, on an enemy unit, or
-   *   the attacker stands inside the outline or is unknown.
+   * @returns The body's id, or `null` when the point is on no such outline, on a visible enemy
+   *   unit (a hidden one does not count, as in `findUnitAt`), or the attacker stands inside the
+   *   outline or is unknown.
    */
   public aimedBodyOf(entities: EntityStore, attackerId: EntityId, point: Vec2): EntityId | null {
     const attackerTeam = entities.teamOf(attackerId);
@@ -143,7 +144,10 @@ export class AreaHitQuery {
     return aimed.sort((a, b) => isStructure(a) - isStructure(b) || compareById(a, b))[0] ?? null;
   }
 
-  /** Rule 1 by aim point: on the outline, the attacker outside it, and on no enemy unit. */
+  /**
+   * Rule 1 by aim point: on the outline, the attacker outside it, and on no visible enemy unit (a
+   * hidden one does not count, as in `findUnitAt`).
+   */
   private static isAimedByPoint(
     entities: EntityStore,
     attackerTeam: Team | undefined,

@@ -1348,10 +1348,10 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     held target (`CombatSystem`, `PathingSystem`, `StuckSystem`) keep an untargetable one
     (`EntityStore.isUntargetable`) but neither hit nor chase it. An AI controller drops it when it
     next decides (a leashed mob or a bot with a `stop`). The human player attacks by aim
-    (`attack-aim`, DEC-184) and holds no target (DEC-327, HC-Q75): an aimed sweep or shot that
-    touches a Veiled unit hits it and ends Veil, and a miss leaves the unit hidden. The developer
-    explorer's click lock (`attack-target`, DEC-150) is kept and resumes after Veil. An area still
-    hits the holder.
+    (`attack-aim`, DEC-319 (5), (6)) and holds no target (DEC-327, HC-Q75): an aimed sweep or
+    shot that touches a Veiled unit hits it and ends Veil, and a miss leaves the unit hidden. The
+    developer explorer's click lock (`attack-target`, DEC-150) is kept and resumes after Veil. An
+    area still hits the holder.
   - **Hidden.** `EntitySnapshot.isHidden` is present, `true`, while a status sets `hidden`. The
     client's `Viewer` (the player's Legend and team, kept after the player dies) decides how each
     entity shows (`visibilityOf`: shown, faded or hidden), injected into `EntityLayer` as
@@ -1360,8 +1360,8 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     player's team is not known yet; with no player (sim mode) every hidden unit draws faded.
     `HealthBarVisibility` reads the same `Viewer`. `findUnitAt` skips hidden units, so a click does
     not pick one. The aim-point test of a walk-on outline (`AreaHitQuery`, DEC-322 (1)) skips them
-    too, so an aim at the floor under a hidden unit names the floor. Every seat gets the same snapshot (`Simulation.snapshot`); a per-seat filter
-    waits for plan W10 / ADR 0016 point 1.
+    too, so an aim at the floor under a hidden unit names the floor. Every seat gets the same
+    snapshot (`Simulation.snapshot`); a per-seat filter waits for plan W10 / ADR 0016 point 1.
   - **Not built.** HC-B19 (6), one `EntityStore` query for "the held target, while targetable",
     got no answer; `CombatSystem`, `PathingSystem` and `StuckSystem` each keep their own check.
 - **Hamstring (`feat/vanguard-hamstring`, 2026-11-22; DEC-268, DEC-269).** Hamstring is the
@@ -1386,9 +1386,10 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     wall and passes allies (DEC-269). A walk-on outline (the enemy Stronghold's palace, a gate)
     takes only a shot aimed at it (DEC-314 (6), DEC-322 (1)): the shot's `targetId` is the walk-on
     outline the cast's aim point is on (`AreaHitQuery.aimedBodyOf`), and nothing else. A weapon's
-    shot names its locked target first, which wins a near tie (DEC-317 (8)); the blade does not
-    read the cast's `aim.targetId`, so a bot's blade, cast at an enemy unit, gets no such tie. One
-    rule for both waits with the one shot launcher (`INBOX.md` HC-B26 (2)). A blade aimed at the
+    shot names its locked target first. That target wins a near tie (DEC-317 (8)). The blade does
+    not read the cast's `aim.targetId`. So when a bot casts the blade at an enemy unit, that unit
+    does not win a near tie. One rule for both waits with the one shot launcher (`INBOX.md`
+    HC-B26 (2)). A blade aimed at the
     palace floor from outside hits the Stronghold; one aimed past it flies over.
     A "wall" in DEC-269 is one with no body
     (terrain, the map edge). A breakable enemy `wall` segment is a map object with a body: the

@@ -28,7 +28,9 @@ const match = () => {
   const attack = (actorId: string, targetId: string): void => {
     scenario.sim.enqueueCommand({ type: 'attack-target', actorId, targetId });
   };
-  /** Queues `actorId`'s held aimed attack towards `point` (DEC-184), applied in the next step. */
+  /**
+   * Queues `actorId`'s held aimed attack towards `point` (DEC-319 (5)), applied in the next step.
+   */
   const aimAt = (actorId: string, point: Vec2): void => {
     scenario.sim.enqueueCommand({ type: 'attack-aim', actorId, aim: point });
   };
