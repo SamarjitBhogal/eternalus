@@ -30,6 +30,10 @@ const BUDGET_MS = 8;
 const PHASE_3_TARGET_MOBS = 144;
 /** The Rovers' class: the roster's Rover copies the player's (`mirror-player`); there is none here. */
 const ROVER_CLASS = 'warrior';
+/** The mob the fill spawns. */
+const FILL_MOB = 'light-minion';
+/** Where each team's fill spawns, as a fraction of each lane: the two hordes meet in the middle. */
+const FILL_LANE_T = { light: 0.45, dark: 0.55 };
 
 const { module: core } = await runnerImport('./packages/core/src/index.ts', {
   configFile: false,
@@ -101,8 +105,8 @@ const MAX_CONTACT_TICKS = MAX_CONTACT_SECONDS * config.tickRate;
 
 /**
  * A generated 3-lane match with every bot Legend; after the first tick (opening hordes, guards),
- * each team is filled to exactly `perTeam` mobs with light minions, one horde per lane, Light at
- * 45% of each lane and Dark at 55%.
+ * each team is filled to exactly `perTeam` mobs of `FILL_MOB`, one horde per lane, at
+ * `FILL_LANE_T` of each lane.
  *
  * @throws Error when a team holds fewer than `perTeam` mobs after the spawn.
  */
@@ -111,10 +115,7 @@ const filledMatch = (perTeam) => {
   const simulation = new Simulation({ config, seed: 1, logger: new NullLogger(), map, roster });
   simulation.step();
   const before = mobsByTeam(simulation);
-  for (const [team, t] of [
-    ['light', 0.45],
-    ['dark', 0.55],
-  ]) {
+  for (const [team, t] of Object.entries(FILL_LANE_T)) {
     const missing = Math.max(0, perTeam - before[team]);
     map.lanes.forEach((lane, index) => {
       const count =
@@ -123,7 +124,7 @@ const filledMatch = (perTeam) => {
         simulation.enqueueCommand({
           type: 'dev-spawn-mobs',
           team,
-          definitionId: 'light-minion',
+          definitionId: FILL_MOB,
           count,
           origin: { kind: 'lane', lane: lane.id, t },
         });
