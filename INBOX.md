@@ -202,7 +202,7 @@ Reply inline (`Decision: …`).
     signed off: the time check in the aggro, stuck, veterancy and guard loaders (the 2026-11-12
     critic) and #86's healing times as DEC-241's sixth reader.
 
-- [ ] **HC-B9 — Better than the design, not built, sign-off asked: two older times not read once at
+- [x] **HC-B9 — Better than the design, not built, sign-off asked: two older times not read once at
       load (`refactor/durations-at-load` merge critic, 2026-11-19); no decision blocks the PR.**
       Both are older than PR #125 and keep their values.
       (1) **One countdown-end tick.** Three readers each compute the tick the countdown ends with
@@ -221,7 +221,13 @@ Reply inline (`Decision: …`).
     `feat/match-start-countdown`: the tick is `MatchState.countdownEndTick`, set once when the
     match is built; every runtime reader reads it (the three above, and `MatchDirector` and the
     snapshot, which that branch added). Built with it, critic round 2's BTD4: `timelineMarkTick`
-    takes a named `TimelineFrame`. (2) is open for its follow-up pull request.
+    takes a named `TimelineFrame`. (2) **Built** on `refactor/scoring-at-load` (PR #139): `content/match/loadScoring.ts`
+    turns `assistWindowSeconds` into `assistWindowTicks` once and rejects a negative or non-finite
+    window; `Simulation` passes the loaded value, and the scoring rules see only ticks. Same
+    conversion as before (30 s = 900 ticks). With it, under the standing rule, the critic's two
+    better-than-design items (DEC-287): the loader also turns the held minute into ticks, so
+    `createDefaultScoringRules` takes no tick rate, and the authored and loaded scoring types
+    share one `weights` base.
 
 - [x] **Unit facing chevron (DEC-192, feat/unit-facing-chevron, 2026-11-05) — two questions, one
       better-than-design item.**
@@ -3069,6 +3075,15 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
       First make them pass on Windows: with `shell: true`, cmd.exe drops the quotes in the first
       test of `scripts/hooks/hookInput.test.mjs`; the signal test is POSIX-only and skips itself
       on Windows. Update the CI gate row in `docs/process/guardrails.md` and doc 16. Close this
+      item when its PR merges.
+- [ ] **HC-B11 guard on progress entry files (DEC-277 critic; better than the design, owner
+      approved 2026-11-19)** — Owner: sholtzman, a `chore/` harness PR after
+      `chore/progress-entry-files` merges. A check in `npm run check` that fails when a commit
+      edits an entry file in `docs/plan/progress/` that already exists on the base branch (new
+      files pass), plus a `.coderabbit.yaml` path rule for `docs/plan/progress/**` that says
+      entries are append-only records. The same check fails on any file in `docs/plan/progress/`
+      other than `README.md` whose name does not match the entry pattern (critic round 2, owner
+      sign-off pending). Update the docs check row in `docs/process/guardrails.md`. Close this
       item when its PR merges.
 
 ## Feedback

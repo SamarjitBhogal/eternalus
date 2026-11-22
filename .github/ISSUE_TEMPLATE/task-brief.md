@@ -21,7 +21,7 @@ labels: task
 
 - [ ] <!-- Observable behaviour a reviewer can check -->
 - [ ] Tests: <!-- which tests, next to which files -->
-- [ ] Docs: <!-- which docs / frontmatter / PROGRESS.md entry -->
+- [ ] Docs: <!-- which docs / frontmatter / progress entry file -->
 
 ## Out of scope
 
@@ -33,4 +33,4 @@ labels: task
 
 ## Done when
 
-`npm run check` passes locally; PR opened against the phase branch with this issue linked; PROGRESS.md entry appended.
+`npm run check` passes locally; PR opened against the phase branch with this issue linked; new entry file in docs/plan/progress/.
