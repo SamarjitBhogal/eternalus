@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-22
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -1306,6 +1306,41 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     `HealthBarVisibility` reads the same `Viewer`. `findUnitAt` skips hidden units, so a click does
     not pick one. Every seat gets the same snapshot (`Simulation.snapshot`); a per-seat filter
     waits for plan W10 / ADR 0016 point 1.
+- **Hamstring (`feat/vanguard-hamstring`, 2026-11-22; DEC-268, DEC-269).** Hamstring is the
+  Warrior's `ability-3` (`content/abilities/hamstring.ts`): `directional`, with one `projectile`
+  step that throws the `hamstring-blade` projectile (`content/projectiles/hamstringBlade.ts`).
+  Where the code differs from §3 and §10:
+  - **A shot step names its projectile.** The `projectile` spec is `{ projectileId, onHit }`. The
+    flight (speed, width, range) is the `ProjectileDefinition` by id, as for a weapon's shot
+    (DEC-314 (5)), not §3's `speed`, `radius` and `range` on the step. `pierce` and burst are not
+    built: no ability needs them yet. `ProjectileEffect.validate` checks the id; `describe` gives
+    the range as `distance` and the width as a `path`, so the aim overlay draws the line the shot
+    flies, stopped by a wall. Owner sign-off asked: HC-B26.
+  - **Launch.** `abilities/` may not import `entities/` ([02](02-code-structure.md) §2), so the
+    step launches through a port, `ShotLauncher` (`state/ShotLauncher.types.ts`, on
+    `CastContext.launcher`), which `entities/ProjectileLauncher` satisfies: the match's one
+    `EntityFactory` builds the projectile at the caster, it gets its `ProjectilePayload`, is
+    steered along the cast's direction, added and announced (`entity-spawned`).
+    `DefaultSystemPipeline` builds one launcher for `AbilitySystem` and `HitEffects`. The shot is
+    fired at no one (`targetId: null`), so `ProjectileSystem` lands it on the first enemy body it
+    touches before a wall and passes allies (DEC-269).
+  - **Landing.** The payload's impact is `{ kind: 'ability', abilityId, slot, onHit }`.
+    `AbilityImpact` (`abilities/AbilityImpact.ts`, one more line in
+    `createDefaultProjectileImpacts`) runs the `onHit` steps as one cast on the struck body
+    through `HitEffects.runSteps`, which `afterHit` also uses for a status's steps. The cast is
+    placed from the contact point to the body's position, credited to the shot's owner under the
+    ability, and grown by the ability's `scaling` at the owner's level when the shot lands (level
+    1 when the owner has no level or has left the match). No `projectile-hit` event (DEC-314).
+  - **`hit` on a map object.** `AreaShape.overlapsPolygon` also gets the object's position. The
+    `hit` shape holds the map object whose position is the struck body's (a house's position is
+    the average of its footprint corners, on none of its walls), so the 80 × 0.3 of DEC-269 lands
+    on a house or a fort. A unit still matches by its centre.
+  - **Bleed stacks.** A `debuff` step's `stacks` (§3) applies the status that many times to each
+    target; `bleed` gains a stack each time, so Hamstring's 2 stacks bleed 2 × 6 a second for
+    4 s.
+  - **Bots and client.** A Warrior bot may now cast Hamstring at the enemy it fights
+    (`pickReadySlot` aims at the enemy's position). The client draws the blade as a shot that
+    drops at its range (`PROJECTILE_ENDING_LOOKS`).
 
 ## Related
 

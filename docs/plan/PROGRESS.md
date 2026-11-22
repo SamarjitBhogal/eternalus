@@ -9997,3 +9997,20 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `eternalus-agent-work/abilities/pr1-gate/r4-pre-check.log`. Each new or changed test was seen red
   first or under a deliberate break (`pr1-breaks.log`, Round 3).
 - Next step: the owner pushes `feat/ranged-attacks` and opens the PR on `feat/vanguard-kit`.
+
+### 2026-11-22 — Phase 4 / combat lane B, PR 3: Hamstring (DEC-268, DEC-269) — feat/vanguard-hamstring — sholtzman + Claude Code
+
+- What was done: built Hamstring, the Warrior's `ability-3`: the `projectile` effect
+  (`ProjectileEffect`) throws `hamstring-blade` through the `ShotLauncher` port
+  (`entities/ProjectileLauncher`); `AbilityImpact` runs the shot's `onHit` steps on the first
+  enemy body (80 and 2 bleed stacks on a unit, 80 × 0.3 and no bleed on a structure or map object;
+  walls stop it, allies pass) through `HitEffects.runSteps`; the `hit` shape holds a map object by
+  its position; `debuff` takes `stacks`. Client: the blade drops at its range. A Warrior bot may now
+  cast it. Records: 05 §18 "Hamstring", 02 §12, `INBOX.md` HC-B26 (the step names its projectile).
+- Checks run: one full `npm run check` (2026-11-22 01:25:30 to 01:35:01 MST) exit 0: format,
+  no-js, lint, typecheck, knip, `test:coverage` (core 351 files / 2228 tests, protocol 1 / 31,
+  client 310 / 2146, server 21 / 85), build, `Documentation check passed.` Log
+  `eternalus-agent-work/abilities/hamstring-check-1.log`. Every new or changed test was seen red
+  first or under a deliberate break (H1-H20, `hamstring-breaks.log`).
+- Next step: the pre-PR gate (max 3 rounds), then the owner pushes and opens the PR on
+  `feat/vanguard-veil-hamstring` (#150).

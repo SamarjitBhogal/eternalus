@@ -504,6 +504,18 @@ Reply inline (`Decision: …`).
       target clears, a Veiled one stays). The gain is one line in each of three systems, and
       `EntityStore` is already over 300 lines; build it when a fourth caller appears.
       Keep all five, build (6) now, or name the ones to change?
+- [ ] **HC-B26 — Better than the design, built under your standing rule (DEC-223), sign-off
+      asked: Hamstring's blade takes its speed, width and range from the blade's own definition
+      (`feat/vanguard-hamstring`, 2026-11-22; DEC-268, DEC-269).** Nothing waits on the answer;
+      it is built and tested. The player sees no difference: the blade flies at 30 m/s, 0.3 m
+      wide, for 12 m (DEC-268, all `TUNE`). The design puts the speed, width and range on the
+      ability's step (05 §3, the `projectile` row). The build puts them in one place, the blade's
+      projectile definition (`content/projectiles/hamstringBlade.ts`), and the step names it by
+      id, as a weapon names its arrow or bolt (DEC-314 (5)). So the blade is tuned in one file,
+      and it flies and drops at its range the same way the weapons' shots do. Not built:
+      a shot that passes through enemies (`pierce`) or bursts (no ability needs them yet). The
+      design text of 05 §3 changes only after your sign-off; until then 05 §18, "Hamstring",
+      records the difference. Keep it, or put the numbers back on the step?
 - [x] **HC-Q67 — Combat gaps: build before the presentation (2026-11-27)? In which order?
       (combat audit, COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls page).**
       Your nine combat questions: 0 of 9 are true today. Evidence and the proposed PRs (two lanes,

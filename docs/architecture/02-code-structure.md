@@ -4,7 +4,7 @@ description: The planned folder tree of packages/core and apps/client with one l
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-22
 tags: [architecture, code-structure, conventions, registries]
 paths: ['packages/core/src/**', 'apps/client/src/**', 'eslint.config.js', 'knip.json']
 related:
@@ -402,6 +402,13 @@ Ability framework (`feat/ability-framework`, 2026-11-13, updated 2026-11-14; ADR
   `game/AimTargeting.ts` (what the overlay draws, with the `MatchDeps.dashReach` port),
   `game/views/AimOverlayView.ts` with `aimShapePainters.ts`, and `ui/components/InfoPanelKit.tsx`
   ([13](13-game-interface.md) §10).
+
+Hamstring (`feat/vanguard-hamstring`, 2026-11-22; DEC-268, DEC-269). Files the branch added:
+`abilities/effects/ProjectileEffect.ts`, `abilities/AbilityImpact.ts` (the `ProjectileImpact` of
+an ability's shot), `abilities/HitEffects.types.ts`, `entities/ProjectileLauncher.ts` and its port
+`state/ShotLauncher.types.ts` (a port in `state/`, as `HitRunner.types.ts` is, because
+`abilities/` may not import `entities/`), and `content/projectiles/hamstringBlade.ts`
+([05](05-abilities-weapons-and-loadouts.md) §18, "Hamstring").
 
 ## Related
 
