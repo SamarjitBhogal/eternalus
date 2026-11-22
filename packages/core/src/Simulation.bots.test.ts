@@ -6,8 +6,10 @@ import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { ContentCatalogue } from './content/ContentCatalogue';
 import { loadDefaultContent } from './content/loadDefaultContent';
 import { MemoryLogger } from './diagnostics/MemoryLogger';
+import { MapGenerator } from './map/MapGenerator';
 import { Simulation } from './Simulation';
 import type { RosterSlot } from './Simulation.types';
+import { AiState } from './state/AiState';
 import { GameEvents } from './state/GameEvents';
 import { TWO_LANE_MAP } from './state/__fixtures__/twoLaneMap';
 
@@ -222,6 +224,39 @@ describe('Simulation with bot laners (minion plan M3)', () => {
 
     expect(runs[0]?.warnings).toEqual([]);
     expect(runs[0]?.hash).toBe(runs[1]?.hash);
+  });
+
+  it('stores a searched A* waypoint in the bot brains on the generated map, the same way twice (11 §6)', () => {
+    // The two-lane map's lanes are open, so only the generated map makes bots search round
+    // footprints. The cache must reach the brain store, which `StateHasher` hashes.
+    const config = createDefaultGameConfig({ match: { countdownSeconds: 0 } });
+    const map = new MapGenerator().generate(config, 1);
+    const roster: RosterSlot[] = [
+      ...laners('light', 2),
+      ...laners('dark', 2),
+      { pilot: 'bot', team: 'dark', definitionId: 'warrior', role: 'rover', difficulty: 'rover' },
+    ];
+    const runs = [1, 2].map(() => {
+      const stored = vi.spyOn(AiState.prototype, 'set');
+      const simulation = new Simulation({
+        config,
+        seed: 1,
+        logger: new MemoryLogger(),
+        map,
+        roster,
+      });
+      for (let tick = 0; tick < 5 * 30; tick += 1) {
+        simulation.step();
+      }
+      const cached = stored.mock.calls.filter(
+        ([, { memory }]) => typeof memory.pathGoalX === 'number',
+      ).length;
+      stored.mockRestore();
+      return { cached, hash: simulation.hash() };
+    });
+
+    expect(runs[0]?.cached).toBeGreaterThan(0);
+    expect(runs[0]).toEqual(runs[1]);
   });
 
   it('faces every bot Legend toward the enemy Stronghold at spawn, the same way twice (DEC-216 (6))', () => {
