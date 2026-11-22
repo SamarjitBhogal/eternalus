@@ -13,6 +13,17 @@ review comments under "Feedback". Answered decisions are recorded in
 
 ## Decisions needed from Sam
 
+- [ ] **HC-B18 — Better than the design, not built, sign-off asked: minion strength depends only
+      on its lane-progress port** (PR #82 critic, 2026-11-22). Today `MinionStrengthStep` knows two
+      ways to measure `t`: the injected `LaneProgressOf` (the lane flow field, DEC-280) and a
+      built-in fallback to the `LaneRoutes` polyline; `createDefaultDamageSteps`, `DamagePipeline`
+      and the step default the port to `null`, so a composition root that forgets to inject falls
+      back to the polyline without a sign. Proposal: make the polyline a `LaneProgressOf` too, let
+      `DefaultSystemPipeline` compose "field, else polyline", make the parameter required, and test
+      the wiring by injection instead of the `vi.mock` in `DefaultSystemPipeline.strength.test.ts`
+      (the only `vi.mock` in core). No gameplay number or behaviour changes. Approve (built in its
+      own PR) or drop.
+
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 

@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-22
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -278,6 +278,10 @@ export type FlowField = { readonly integration: Uint16Array; readonly direction:
   ([research §3](../research/game-architecture-and-performance-research.md#3-pathfinding-and-movement-for-lane-minions-and-large-unit-counts)).
 - One flow field per (lane, team), flood-filled from the enemy gate inside the lane corridor;
   `PathingSystem` follows it, Legends use A* on the same grid (`10-physics.md` §9).
+- A field also answers how far a point lies along its lane by path cost, from the team's own
+  gate (0) to the enemy gate (1) (DEC-280). Minion strength by distance reads it through the
+  `LaneProgressOf` port of `combat/` (`05-abilities-weapons-and-loadouts.md` §9, `18-minion-system.md`),
+  which falls back to the lane polyline where the field cannot say.
 - Destructible terrain events (`07-structures-obstacles-and-destructibles.md` §10) re-flag cells
   through `stampFootprint`/`clearFootprint`; affected fields are marked dirty and rebuilt over
   several ticks with a cell budget (Dirty Flag; time slicing as in Supreme Commander 2).
