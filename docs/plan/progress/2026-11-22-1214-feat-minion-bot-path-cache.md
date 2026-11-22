@@ -12,7 +12,7 @@ tags: [plan, progress, log]
 
 Phase 3 / minion plan M8 follow-up · feat/minion-bot-path-cache · SamarjitBhogal + Claude Code
 
-- What was done: merged `phase/3-sprint-3-work` at `e2a4fd66` (only `PROGRESS.md` conflicted:
+- What was done: merged `phase/3-sprint-3-work` at `e2a4fd66`, then `25f1151c` (each time only `PROGRESS.md` conflicted:
   both sides kept, this branch's four pre-merge entries stay in the archive, DEC-277). Round-2
   fixes: `NO_PATH` written only when a cache is set (`BotMovement.forgetPath`); the
   `PathQuery.waypoint` exact-copy contract in its TSDoc; a generated-map match test showing a
