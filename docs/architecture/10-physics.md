@@ -361,35 +361,41 @@ it then ends and hits nothing until it is removed (`ProjectileFlight`, DEC-306).
 `acceleration` to `walkSpeed`, then at `(maxSpeed − walkSpeed) / rampDuration` to `maxSpeed`. The
 rest (sideways, or all of it when the unit does not steer) slides off at `grip`, and a part that
 points against the heading brakes to zero at `grip` before the unit builds up again. A turn thus
-slides and loses speed, with no jump at 90°, and a reverse slides to a stop. After
-`CollisionSystem` resolves a move, it gives `Movement.hitBlock` the part of the move that a wall
-or the map's edge took. A unit with momentum loses the velocity that runs into the block, as §6
-and §7 project a unit's velocity onto the contact tangent: a head-on hit stops it, and a glancing
-hit keeps its slide along the wall. When the unit steers into a wall that its last move touched,
-it builds along the wall, up to `maxSpeed` times the cosine of its angle to the wall (as fast as
-a unit without momentum slides there), and it keeps a small push into the wall, so the next move
-touches the wall again. A loss shorter than `BLOCK_EPSILON` (`components/Momentum.constants`) is
-the resolver's back-off, not a wall. The statuses and `limitSpeed` cut the speed at once, as for
-every unit: a stun stops a running Sentinel dead, and a slow cuts it to the slowed top speed in
-one tick (the owner is asked whether a stun should let the slide finish instead). Known limit:
-`CollisionSystem` gives one summed loss per move, so a push and the walk that hit two walls in
-the same tick blend their normals, and in a corner a head-on stop comes one tick late. The
-resolver can report the blocked part per contact normal when a rule reads the hit speed (the
-stun of a full-speed hit). A unit without momentum still turns at once and keeps its speed.
-Three differences from the design wait for the owner (`INBOX.md` HC-B29). (1) §2 has one
-acceleration clamp in every direction, but the Sentinel needs a slow ramp (20 s) and a quick
-slide (about 1 s), so `grip` is a separate rate and the build-up has two stages. The closest match
-to `grip` is the friction of §2 step 3, which also acts only on velocity the unit does not drive;
-`grip` takes off a fixed amount per tick, where step 3 multiplies. (2) The Sentinel's time to top
-speed is `walkSpeed / acceleration + rampDuration`, not `maxSpeed / acceleration`. (3) 05 §7
-applies every passive as a permanent `buff` status, but Wrecking Run's movement is the
-`movementProfile.momentum` field, and the `wrecking-run` id in the Sentinel's `passiveOptions` has
-no ability entry yet. The numbers are in `content/legends/sentinel.ts` (`TUNE`);
-`MomentumWalkSpeedRule` rejects a `walkSpeed` at or above `maxSpeed` when content loads. A bot
-Sentinel at top speed that decides at its controller's cadence slides past the point where it
-halts by less than its braking distance (`maxSpeed² / (2 × grip)`), turns back once and stops
-inside its arrival distance (`ai/BotMovement.test.ts`). Not built yet: the stun and self damage
-of a hit at full speed, barging through objects and walls (07 §3), and a Shield Wall that stops a
+slides and loses speed, with no jump at 90°, and a reverse slides to a stop. A backward part
+shorter than `CONTACT_EPSILON` is roundoff from a wall, not a reverse, so it does not brake.
+`CollisionResolver.move` fills a list with the unit normal of each wall and map edge that the move
+touched (`contacts`), and `CollisionSystem` gives that list to `Movement.hitBlock`. A unit with
+momentum then drops the part of its velocity that runs into those walls (`Momentum.slideOff`, a
+frictionless contact), as §6 and §7 project a unit's velocity onto the contact tangent: a head-on
+hit stops it, a glancing hit keeps its slide along the wall, and a corner stops it. When the unit
+steers into the walls that its last move touched, it builds along them, up to `maxSpeed` times the
+part of the heading that is left (as fast as a unit without momentum slides there). It keeps a
+small push into the walls, so the next move touches them again. The touched walls are simulation
+state: `StateHasher` hashes them (`Movement.wallNormals`), and `Movement.stop` forgets them. The
+statuses and `limitSpeed` cut the speed at once, as for every unit: a stun stops a running
+Sentinel dead, and a slow cuts it to the slowed top speed in one tick (PR 8 card F3 asks the owner
+whether a stun should let the slide finish instead; answers: DEC-330). A unit without momentum
+still turns at once and keeps its speed. Known limit: `CollisionResolver` slides the rest of a move
+off each wall in turn. In a corner wider than 90°, this moves a unit a hair out along one wall, so
+its contacts change from tick to tick. A Sentinel that steers into such a corner then turns its
+facing back and forth while it stays in place, and other units shake by a few centimetres. The fix
+clips the whole move against every wall it meets. That is shared physics for every unit, so it
+waits for the owner (`INBOX.md` HC-B33). Three parts differ from the design and wait for the owner
+(`INBOX.md` HC-B29, parts (1) to (3)). (1) §2 has one acceleration clamp in every direction, but
+the Sentinel needs a slow ramp and a quick slide (about 1 s), so `grip` is a separate rate and the
+build-up has two stages. The closest match to `grip` is the friction of §2 step 3, which also acts
+only on velocity the unit does not drive; `grip` takes off a fixed amount per tick, where step 3
+multiplies. Thus the Sentinel's time to top speed is `walkSpeed / acceleration + rampDuration`, not
+`maxSpeed / acceleration`. (2) 05 §7 applies every passive as a permanent `buff` status, but
+Wrecking Run's movement is the `movementProfile.momentum` field, and the `wrecking-run` id in the
+Sentinel's `passiveOptions` has no ability entry yet. (3) Not built: one shared interface for the
+velocity rules, with one class per rule (04 §4); today `Movement` checks "has momentum?" where the
+rules differ. The numbers, the ramp duration among them, are in `content/legends/sentinel.ts`
+(`TUNE`); `MomentumWalkSpeedRule` rejects a `walkSpeed` at or above `maxSpeed` when content loads.
+A bot Sentinel at top speed that decides at its controller's cadence slides past the point where
+it halts by less than its braking distance (`maxSpeed² / (2 × grip)`), turns back once and stops
+inside its arrival distance (`ai/BotMovement.test.ts`). Not built yet: the stun and self damage of
+a hit at full speed, barging through objects and walls (07 §3), and a Shield Wall that stops a
 Sentinel.
 
 ## Related

@@ -60,7 +60,7 @@ Owner: _ (sim lane A). Week 7. Follows [04-entity-architecture.md](../architectu
       passive changes the documented stat. Done when: passives are entries, not subclasses.
       **Status (2026-11-22, branch `feat/class-passives`, PR 8; DEC-307):** Wrecking Run's movement
       is built as content: the Sentinel's `movementProfile.momentum` (a turn slides and loses
-      speed, a wall stops it; 10 §12). The box stays unticked: the rest of Wrecking Run (stun and
+      speed, a head-on hit stops it, it builds along a wall; 10 §12). The box stays unticked: the rest of Wrecking Run (stun and
       self damage at full speed, barging through objects and walls), Studious and Necromancy wait
       for the owner's answers on the PR 8 cards (DEC-307: numbers on a page first).
 - [ ] **`LegendSpecDefinition` extension point** (D11: sub-classes as data-driven

@@ -636,11 +636,13 @@ Reply inline (`Decision: …`).
       one reusable "first source with the id" definition lookup for `Simulation` and about ten
       tests (BTD-H).
 
-- [ ] **HC-B29 — Better than the design, built under your standing rule (DEC-223), sign-off
-      asked: three parts of the Sentinel's Wrecking Run (`feat/class-passives`, PR 8 critic
-      round 1 and lane B review F1, 2026-11-22; GAME-LOOP-AND-POST-GAME-56 and -57).** Parts (1)
-      and (2) are built and tested. Part (3) is not built. Nothing waits on you; name a part to
-      change it. Your answer goes in the PR 8 answers (DEC-330).
+- [ ] **HC-B29 — Better than the design, sign-off asked: three parts of the Sentinel's
+      Wrecking Run (`feat/class-passives`, PR 8 critic round 1 and lane B review F1, 2026-11-22;
+      GAME-LOOP-AND-POST-GAME-56 and -57).** Parts (1) and (2) are built under your standing rule
+      (DEC-223) and tested. Part (3) is not built, so it asks you to depart from that rule ("do
+      not allow tech debt where we can eliminate it"): it pays only when a third velocity rule
+      comes. Nothing waits on you; name a part to change it. Your answer goes in the PR 8 answers
+      (DEC-330).
       (1) Two rates of change. The physics design (10 §2) gives every unit one limit on how fast
       its velocity changes, in every direction. The Sentinel needs two: it gains speed slowly
       (walk speed in about 1 s, then 20 s to top speed, balancing.md), but it must slide out of a
@@ -648,21 +650,38 @@ Reply inline (`Decision: …`).
       longer than every option on the PR 8 grip card (W2). So the Sentinel has its own slide rate
       (`grip`), and its time to top speed is "time to walk speed + ramp", not "top speed ÷
       acceleration". On sign-off, 10 §2 gets the steps for a unit with momentum. Alternative: one
-      limit for everything, with the 13.5 m slide.
+      limit for everything. At 3 m/s² the Sentinel reaches top speed in 3 s (no ramp) and a
+      reverse slides 13.5 m. A limit slow enough for the 20 s ramp makes a reverse slide over
+      90 m.
       (2) Wrecking Run is part of the Sentinel's movement, not a status. The ability design (05 §7)
-      applies every passive as a permanent buff status. The class table (01) says "Wrecking Run is
-      the in-fiction name for the Sentinel movement profile", so its speed numbers sit in the
-      Sentinel's movement numbers (`movementProfile.momentum`), which the movement code reads
-      every tick. The other parts of Wrecking Run (the stun and self damage of a hit at full speed,
-      and barging through walls) get a `wrecking-run` passive entry when they are built. On
-      sign-off, 05 §7 says that a passive can also be a block of movement numbers, and
+      applies every passive as a permanent buff status. The classes doc
+      (`docs/reference/game-design/01-classes-and-subclasses.md`, below the passives table) says:
+      "Wrecking Run is the in-fiction name for the Sentinel movement profile below." So its speed
+      numbers sit in the Sentinel's movement numbers (`movementProfile.momentum`), which the
+      movement code reads every tick. The other parts of Wrecking Run (the stun and self damage of a
+      hit at full speed, and barging through walls) get a `wrecking-run` passive entry when they are
+      built. On sign-off, 05 §7 says that a passive can also be a block of movement numbers, and
       balancing.md's "`wrecking-run.rampSeconds`" becomes `movementProfile.momentum.rampDuration`.
       Alternative: a `wrecking-run` buff status that carries the speed numbers.
-      (3) Not built: one shared form for the velocity rules. Today there are two rules (turn at
-      once and keep speed; momentum), and `Movement` picks one in two places with a "has
-      momentum?" check. A shared interface with one class per rule removes those checks (04 §4,
-      strategies). Recommended: not yet, because it pays when a third rule comes. Alternative:
-      build it in PR 8.
+      (3) Not built: one shared form for the velocity rules. Today there are two rules (turn at once
+      and keep speed; momentum), and `Movement` picks one with a "has momentum?" check in four
+      places. A shared interface with one class per rule removes those checks (04 §4, strategies).
+      Recommended: not yet, because it pays when a third rule comes. Alternative: build it in PR 8.
+
+- [ ] **HC-B33 — Better than the design, not built, your call to schedule: a unit stops cleanly
+      in a wide corner (`feat/class-passives`, PR 8 probe D3, 2026-11-22;
+      GAME-LOOP-AND-POST-GAME-59 and -60).** What the player sees today: a unit that walks into a
+      corner whose walls meet at more than 90° (for example 120° or 135°) does not stop cleanly. A
+      Sentinel stays in place, but its facing turns back and forth about ten times a second.
+      Other units shake by about 5 cm. Why: the wall code slides what is left of a move off one
+      wall and then off the next. In a wide corner this pushes the unit a hair out along one
+      wall, and on the next tick it walks back. Proposed fix: slide the whole move against every
+      wall it meets at once, so a unit pressed into a corner stops dead. Every unit uses this wall
+      code, so the fix is its own small physics PR with its own tests, not part of PR 8.
+      Recommended: schedule it after PR 8. Alternative: leave it; the twitch stays, and the
+      Sentinel does not move away (under 0.05 m/s). Code: `physics/CollisionResolver.slide`; 10
+      §12 names it as a known limit. Evidence:
+      `eternalus-agent-work/abilities/pr8-passives/probe/probe-obtuse-fix3.txt`.
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
