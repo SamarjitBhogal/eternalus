@@ -22,7 +22,13 @@ const entity = (id: string, team: EntitySnapshot['team'], isHidden = false): Ent
 
 const snapshotOf = (entities: EntitySnapshot[]): Snapshot => ({
   tick: 1,
-  match: { phase: 'early-game', phaseEnteredTick: 0, upcoming: [], humanLegendId: 'me' },
+  match: {
+    phase: 'early-game',
+    phaseEnteredTick: 0,
+    upcoming: [],
+    countdownEndTick: 0,
+    humanLegendId: 'me',
+  },
   player: null,
   entities,
   hordes: [],

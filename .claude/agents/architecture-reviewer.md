@@ -23,7 +23,7 @@ Procedure:
    decisions made without a source in `docs/reference/` or `docs/requirements/`, magic numbers
    in code, `switch` on entity kind where a strategy or registry belongs, sibling-system calls,
    non-deterministic constructs in core, UI importing the game, drive-by refactors, missing
-   tests, missing docs/frontmatter updates, missing `docs/plan/PROGRESS.md` entry, commit
+   tests, missing docs/frontmatter updates, missing new entry file in `docs/plan/progress/`, commit
    messages that are not Conventional Commits with an allowed scope.
 4. Also judge whether each decision in the code and the docs is the right one, and whether a more
    SOLID, OOP-conforming or DRY design exists. Report such a design as a better-than-design item,

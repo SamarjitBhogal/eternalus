@@ -5,6 +5,7 @@ import { FIGMA_HUD_PLAYER, figmaHudState } from '../../bridge/__fixtures__/hudFi
 import type { Overlay } from '../../bridge/events';
 import type { RootState } from '../../bridge/store';
 import { FIGMA_MATCH_SETUP, withHudSetup, HUD_BINDINGS, settingsWith } from '../hud/hudTestSupport';
+import { STRINGS } from '../strings';
 import { accessibleNames, renderWithStore, sessionAt, TEST_CONTENT } from '../testStore';
 import { MatchScreen } from './MatchScreen';
 
@@ -131,6 +132,15 @@ describe('MatchScreen', () => {
     expect(html).toMatch(/<div class="[^"]*" inert=""><canvas/);
     expect(html).toMatch(/<section class="[^"]*" aria-label="Match HUD" inert="">/);
     expect(html.indexOf('role="dialog"')).toBeGreaterThan(html.lastIndexOf('</section>'));
+  });
+
+  it('draws the pre-match countdown inside the inert HUD, under the pause dialog (DEC-278)', () => {
+    const figma = figmaHudState();
+    const clock = { tick: 0, seconds: 0, countdown: 10 };
+    const html = render(withHudSetup({ ...figma, match: { ...figma.match, clock } }), 'pause');
+    const hud = /<section[^>]*inert="">(.*)<\/section>/s.exec(html)?.[1] ?? '';
+    expect(accessibleNames(hud, '[role=timer]')).toContain(STRINGS.hud.matchCountdown);
+    expect(hud).toMatch(/role="timer"[^>]*>10</);
   });
 
   it('is not inert and has no dialog while no overlay is open', () => {

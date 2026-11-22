@@ -19,6 +19,7 @@ export function matchResultFixture(overrides: Partial<MatchResult> = {}): MatchR
     playerTeam: 'light',
     hadHuman: true,
     durationTicks: 3600,
+    matchTicks: 3300,
     seed: 7,
     configHash: 1,
     legends: [],

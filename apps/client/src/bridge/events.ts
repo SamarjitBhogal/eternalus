@@ -194,8 +194,17 @@ export type FilledRosters = Pick<MatchSetupDraft, 'allies' | 'enemies'>;
 /** The session countdowns: character select (60 s), the reveal (10 s), the win/lose screen (30 s). */
 export type CountdownKind = 'select' | 'reveal' | 'results';
 
-/** Simulation time for the match clock. */
-export type MatchClock = { readonly tick: number; readonly seconds: number };
+/**
+ * The match clock and the pre-match countdown (DEC-278). `seconds` is match time, counted from the
+ * countdown's end: 0 through the countdown, which is not game time. `countdown` is the whole
+ * seconds the countdown has left (10 to 1 locally, 3 to 1 in a Duel), 0 ("START") for a Duel's
+ * first second after it, and `null` once the match runs.
+ */
+export type MatchClock = {
+  readonly tick: number;
+  readonly seconds: number;
+  readonly countdown: number | null;
+};
 
 /** Every message on the bridge bus, keyed by event name. */
 export type BridgeEventMap = {
@@ -221,11 +230,11 @@ export type BridgeEventMap = {
   'match-clock': MatchClock;
   /** The two players' names, when the server pairs them (the VERSUS screen). */
   'duel-versus': DuelVersus;
-  /** The Duel's scoreboard and countdown, on the HUD cadence; only in a Duel. */
+  /** The Duel's scoreboard, on the HUD cadence; only in a Duel. */
   'duel-state': DuelHudState;
   /**
    * The match ended, once per match (13 §5): core's result, and its length in match seconds (the
-   * bridge knows the tick rate, the UI does not; DEC-129 (1)).
+   * bridge knows the tick rate, the UI does not; DEC-129 (1)), the countdown not counted (DEC-278).
    */
   'match-ended': { readonly result: MatchResult; readonly durationSeconds: number };
   /**
