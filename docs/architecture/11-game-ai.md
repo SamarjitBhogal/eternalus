@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-16
+last-reviewed: 2026-11-22
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -375,7 +375,8 @@ Minion plan pull request M2a builds §1–§3, §5 and §6 with these difference
 work named:
 
 - §4.6 `BossController` is not built (Phase 3 sprint 3.6). Until then the capture point mini-boss
-  runs on `GuardController`; the interim is recorded in
+  and the Greater Boss (`greater-boss`, on the Cathedral zone's guard plan, 07) run on
+  `GuardController`; the interim is recorded in
   [18's implementation status note](18-minion-system.md#minion-system).
 
 - `AiSystem` lives in `ai/` and fits the `System` contract by shape; `Simulation` puts it first in

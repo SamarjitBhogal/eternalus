@@ -37,13 +37,17 @@ import { isPlayableTeam } from '../teams/playableTeams';
  * schedule's times come in ticks, converted once at load (`loadSpawnWaves`), so the system keeps
  * no schedule state of its own.
  *
- * It also runs every structure's and zone's guard plan (18 §7, 07 §6) through its `GuardRoster`.
+ * It also runs every structure's and zone's guard plan (18 §7, 07 §6) through its `GuardRoster`,
+ * the Cathedral's too: on its pass after `greater-boss-summoned` it spawns the summoned boss and
+ * announces it with `boss-summoned` (12 §3).
  */
 export class SpawnSystem implements System {
   public readonly name = 'spawn';
   private readonly spawners: readonly Structure[];
   private readonly scheduled: readonly ScheduledWave[];
   private readonly guards: GuardRoster;
+  /** The bosses `greater-boss-summoned` asked for, spawned on the next pass. */
+  private readonly summoned: string[] = [];
 
   /**
    * @param state - The match; its structure entities, already spawned, are the spawn points, and
@@ -90,6 +94,10 @@ export class SpawnSystem implements System {
     this.validate(homes);
     this.guards = new GuardRoster(factory, plan.definitions, plan.guards);
     this.guards.layOut(state);
+    // The erupted gem summons its boss (12 §3), spawned on this system's next pass.
+    state.events.on('greater-boss-summoned', ({ bossId }) => {
+      this.summoned.push(bossId);
+    });
   }
 
   /**
@@ -129,6 +137,11 @@ export class SpawnSystem implements System {
 
   /** Spawns the requested hordes in order, then every horde due this tick, then runs the guards. */
   public update({ state }: SystemContext): void {
+    for (const bossId of this.summoned.splice(0)) {
+      for (const boss of this.guards.activate(state, bossId)) {
+        state.events.emit('boss-summoned', { entityId: boss.id, kind: boss.kind });
+      }
+    }
     const routes = state.world?.routes;
     const requests = state.hordeRequests.splice(0);
     if (routes === undefined) {

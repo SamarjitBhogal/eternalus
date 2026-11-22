@@ -10,18 +10,41 @@ import { MOB_DEFINITIONS } from '../mobs/mobCatalogue';
 import { GUARD_PLANS } from './guardPlans';
 import { ZONE_DEFINITIONS } from '../zones/zoneCatalogue';
 import { STRUCTURE_DEFINITIONS } from './structureCatalogue';
+import type { AuthoredGuardPlan } from './structures.types';
+
+/**
+ * Mobs that only ever stand in the centre zone: the guards of a `gem-eruption` plan (the Greater
+ * Boss). They are no other plan's target, since no other guard post reaches the centre zone
+ * (`greaterBossSpawn.scenario.test.ts` checks it on the map).
+ */
+const CENTRE_ONLY = new Set(
+  Object.values(GUARD_PLANS)
+    .filter(({ activation }) => activation.at === 'gem-eruption')
+    .flatMap(({ table }) => table.map(({ mobId }) => mobId)),
+);
+
+/**
+ * The largest unit a guard `mobId` of `plan` can stand off: any Legend or mob outside the centre
+ * zone, or, for the centre zone's one boss, anything but itself.
+ */
+const largestTargetOf = (plan: AuthoredGuardPlan, mobId: string): number => {
+  const isCentre = plan.activation.at === 'gem-eruption';
+  return Math.max(
+    ...[...LEGEND_CLASSES.all(), ...MOB_DEFINITIONS.all()]
+      .filter(({ id }) => (isCentre ? id !== mobId : !CENTRE_ONLY.has(id)))
+      .map((unit) => unit.footprintRadius),
+  );
+};
 
 describe('GUARD_PLANS', () => {
   it('gives every guard a leash tolerance of one decision walk plus its farthest stance (DEC-144)', () => {
     const { tickRate } = createDefaultGameConfig();
-    const largestTarget = Math.max(
-      ...[...LEGEND_CLASSES.all(), ...MOB_DEFINITIONS.all()].map((unit) => unit.footprintRadius),
-    );
     for (const plan of Object.values(GUARD_PLANS)) {
       for (const { mobId } of plan.table) {
         const guard = MOB_DEFINITIONS.get(mobId);
         const walk = (guard.movementProfile.maxSpeed * AI_CADENCE.everyTicks.guard) / tickRate;
-        const stance = guard.footprintRadius + largestTarget + (guard.attack?.reach ?? 0);
+        const stance =
+          guard.footprintRadius + largestTargetOf(plan, mobId) + (guard.attack?.reach ?? 0);
 
         expect({ mobId, tolerance: plan.leashTolerance >= walk + stance }).toEqual({
           mobId,
@@ -63,15 +86,13 @@ describe('GUARD_PLANS', () => {
     // floor((brains - 1) / budget) ticks in the AI queue (AI56-F2).
     const brains = 2 * limits.maxUnitsPerTeam + 48;
     const wait = Math.floor((brains - 1) / AI_CADENCE.maxDecisionsPerTick);
-    const largestTarget = Math.max(
-      ...[...LEGEND_CLASSES.all(), ...MOB_DEFINITIONS.all()].map((unit) => unit.footprintRadius),
-    );
     for (const plan of Object.values(GUARD_PLANS)) {
       for (const { mobId } of plan.table) {
         const guard = MOB_DEFINITIONS.get(mobId);
         const ticks = AI_CADENCE.everyTicks.guard + wait;
         const walk = (guard.movementProfile.maxSpeed * ticks) / tickRate;
-        const stance = guard.footprintRadius + largestTarget + (guard.attack?.reach ?? 0);
+        const stance =
+          guard.footprintRadius + largestTargetOf(plan, mobId) + (guard.attack?.reach ?? 0);
 
         expect({ mobId, tolerance: plan.leashTolerance >= walk + stance }).toEqual({
           mobId,

@@ -26,6 +26,7 @@ export class MatchRecord implements MatchState {
   private enteredTick = 0;
   private cursor = 0;
   private isHeld = false;
+  private hasErupted = false;
   private readonly seats = new Map<PlayableTeam, EntityId>();
   private verdict: MatchResult | null = null;
   private duelKills: Record<PlayableTeam, number> | null = null;
@@ -66,6 +67,23 @@ export class MatchRecord implements MatchState {
   /** While true every unit is idle (DEC-88); see `MatchState.isIdleHeld`. */
   public get isIdleHeld(): boolean {
     return this.isHeld;
+  }
+
+  /** Whether the Cathedral gem has erupted; see `MatchState.isGemErupted`. */
+  public get isGemErupted(): boolean {
+    return this.hasErupted;
+  }
+
+  /**
+   * Erupts the Cathedral gem and emits `greater-boss-summoned { bossId }`. Called by the
+   * `summon-greater-boss` action only, once: the gem erupts once a match, so a second call throws.
+   */
+  public eruptGem(bossId: string): void {
+    if (this.hasErupted) {
+      throw new Error('The Cathedral gem has already erupted: it erupts once a match.');
+    }
+    this.hasErupted = true;
+    this.events.emit('greater-boss-summoned', { bossId });
   }
 
   /**

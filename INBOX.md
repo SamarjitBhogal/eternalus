@@ -40,6 +40,36 @@ Reply inline (`Decision: …`).
       neutrals): a unit it kills is nobody's kill and gives no kill XP. Keep it, or should the last
       team or Legend to hit the victim get the credit?
 
+- [ ] **The gem eruption and the Greater Boss: choices to confirm (Aryan Walanj, 2026-11-22,
+      `feat/cathedral-eruption-boss`).** Sam (2026-11-15, chat): the boss is in, sprint 3.6 is
+      Aryan's, `GuardController` is the interim. Built: at mid-game (DEC-81, 15:00 of the 30-minute
+      plan) the gem erupts: the gem entity is removed, and one neutral `greater-boss` spawns at the
+      Cathedral's centre, once, with one basic attack and no moves. Every number is `TUNE`; please
+      confirm or replace each.
+      (1) **Cut-scene (Aryan's design, 2026-11-22).** The camera turns to the Cathedral 1.5 s before
+      the eruption, the gem bursts (white flash, two purple rings, a short shake) and the camera holds
+      2.5 s, then returns. The match keeps running, the player keeps control, and a fresh move press
+      skips it. Not in a Duel. (2) **Size.** Footprint radius 2.5 m (Aryan; reference 04 "obscenely
+      massive"). A body that big would widen every guard's DEC-144/DEC-181 leash sum, so the boss
+      counts as no other guard's target: a map test checks that no other guard post reaches its zone.
+      Its own plan has a 7 m tolerance (1.49 m walk + 2.5 + 1.25 + 1.5 m stance). (3) **Health.**
+      balancing.md's 40 × refHealth at level 7, refHealth(L) = 650 × 1.08^(L − 1), so 41,259 (level 7
+      was set for a 20-minute match). (4) **Hit.** One basic attack of 0.45 × refHealth = 464 every
+      2.5 s, reach 1.5 m. (5) **Movement.** The heavy minion's (2.8 m/s). (6) **Zone.** A 25 m circle
+      around the Cathedral capture zone's centre (balancing.md "centre zone, radius 25 m"); the zone is
+      the boss's guard home. Does it also lock the Cathedral's capture while it lives, as the
+      mini-boss locks its zone? (7) **Respawn.** None. (8) **Reward.** DEC-237's flat 5 levels is not built
+      in this PR (it comes with the boss's moves); it takes 25% of a minion's hit.
+      (9) `boss-summoned` names its kind as `heavy-mob` until the `GreaterBoss` class lands.
+
+- [ ] **Better than design: shared boss numbers (Aryan Walanj, 2026-11-22, critic on
+      `feat/cathedral-eruption-boss`).** For sign-off. (1) `greaterBoss.ts` copies balancing.md's
+      Warrior anchor (`650 × 1.08^(L − 1)`) as its own `REF_HEALTH`; a shared `refHealth(level)`
+      helper in `content/`, built from the Warrior's content, would keep every boss in step with a
+      Legend retune (balancing.md: the boss table "never silently detunes"). (2) The Greater Boss and
+      the capture point boss each repeat the heavy minion's movement and reach; a shared heavy-mob
+      base would hold them once. Adopt now, with the boss's moves, or leave?
+
 - [ ] **Better than design: one shared "never damaged" structure entry (Aryan Walanj, 2026-11-15,
       critic on `feat/cathedral-gem-hittable`).** The three forest camps and the Cathedral gem each
       repeat `baseHealth: 1` and `breakability: never` in `structureCatalogue.ts`. One shared spread

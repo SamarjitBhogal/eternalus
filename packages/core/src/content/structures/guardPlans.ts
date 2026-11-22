@@ -9,7 +9,8 @@ const RESPAWN = 120; // TUNE: game doc "respawn every 2 minutes"
 // 10 × 2.8 / 30 ≈ 0.93 m plus stance 1.2 + 1.25 + 1.5 = 3.95 m, so 4.88 m. DEC-181 (H2): widened
 // from 5 m to 5.5 m, since at the 300-unit cap a brain can wait up to 6 ticks more for its turn
 // (`AI_CADENCE.maxDecisionsPerTick`): for the boss 16 × 2.8 / 30 ≈ 1.49 m of walk, so 5.44 m and
-// about 0.06 m of margin; a larger or faster guard needs a larger tolerance.
+// about 0.06 m of margin; a larger or faster guard needs a larger tolerance. The Greater Boss is
+// no other guard's target: no other post reaches its centre zone (guardPlans.test.ts).
 // guardPlans.test.ts checks both sums against every guard and target in content.
 const TOLERANCE = 5.5;
 
@@ -83,8 +84,8 @@ export const GUARD_PLANS: Readonly<Record<string, AuthoredGuardPlan>> = {
   },
   ...CAMP_PLANS,
   // The outer capture points' mini-boss and its support mobs (18 §7.1, reference 04 "along with
-  // high-power enemy and support mobs"); the Cathedral's zone has no plan. Posts share the court's
-  // ring, spread evenly around it with the boss.
+  // high-power enemy and support mobs"). Posts share the court's ring, spread evenly around it
+  // with the boss.
   'capture-point': {
     table: [
       { mobId: 'capture-point-boss', count: 1 },
@@ -104,5 +105,18 @@ export const GUARD_PLANS: Readonly<Record<string, AuthoredGuardPlan>> = {
     // reference 04: one mini-boss per match; its support mobs do not come back either until
     // respawning guards is signed off (INBOX.md)
     respawn: { kind: 'never' },
+  },
+  // The Greater Boss (12 §3): one post at the centre of the Cathedral's zone (a zone's edge is its
+  // anchor, so the post gap 0 is the centre itself), filled when the gem erupts and leashed to the
+  // 25 m centre zone. The gem is gone by then, so nothing blocks the centre.
+  'cathedral-capture-point': {
+    table: [{ mobId: 'greater-boss', count: 1 }],
+    leashRadius: GUARD_LEASH.greaterBossZone,
+    postGap: 0,
+    // TUNE: as TOLERANCE, for its 2.5 m body against a Sentinel: 16 × 2.8 / 30 ≈ 1.49 m of walk
+    // plus 2.5 + 1.25 + 1.5 m of stance, so 6.74 m (INBOX)
+    leashTolerance: 7,
+    activation: { at: 'gem-eruption' },
+    respawn: { kind: 'never' }, // TUNE: no respawn (Aryan 2026-11-15; INBOX)
   },
 };

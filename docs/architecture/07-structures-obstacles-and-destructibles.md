@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-22
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -512,8 +512,22 @@ so a replay or a match without map objects rebuilds the same zones. Interim diff
   `CathedralGemState` (the Cathedral's holder from `capture-point-owner-changed`, and its glow) is
   in the snapshot, and `CathedralGemView` draws it in the holder's colour (DEC-291). The system is
   off in a Duel (DEC-36) until `INBOX.md` answers. The `Cathedral` building is not an entity yet:
-  its `Spawner` and `Aura` (§1, §6), the gem's look over time and the summon-greater-boss action are
-  not built.
+  its `Spawner` and `Aura` (§1, §6) and the gem's look over time are not built.
+- **Gem eruption and the Greater Boss (2026-11-22, `feat/cathedral-eruption-boss`).** The
+  `summon-greater-boss` timeline action (12 §3) erupts the gem at mid-game. On the next tick, each in its own
+  pass after `greater-boss-summoned` (03 §Events), `SpawnSystem` fills the Greater Boss's post and
+  `CathedralGemSystem` removes the gem entity (`despawned`) before it answers any touch.
+  Interim for the Cathedral's `Spawner` (§1, §6): the boss is a guard of the Cathedral capture
+  zone's guard plan (`content/structures/guardPlans.ts`, `cathedral-capture-point`), one post at
+  the zone's centre with `activation: { at: 'gem-eruption' }` (posts that `GuardRoster.activate`
+  fills for the summoned `bossId`) and `respawn: never`; `SpawnSystem` then emits
+  `boss-summoned`. Its leash is balancing.md's 25 m centre zone (`GUARD_LEASH.greaterBossZone`).
+  The boss is a neutral `heavy-mob` definition (`content/mobs/greaterBoss.ts`) on
+  `GuardController`, not doc 04's `GreaterBoss` class (11's implementation status). Minions deal it
+  a quarter of their hit (`BOSS_MINION_DAMAGE_TAKEN`); its kill reward (DEC-237: 5 levels, flat)
+  is not built yet. Every number is `TUNE`; the questions are in `INBOX.md` (the
+  Greater Boss item). In a Duel the action does nothing (DEC-36), so the gem
+  stays and no boss comes.
 
 ## Related
 

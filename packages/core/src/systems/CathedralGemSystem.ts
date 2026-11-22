@@ -21,13 +21,16 @@ import type { System, SystemContext } from './System.types';
  * blocks them, they hurt neutrals too ("hurts any entity", DEC-292), and a death by them is
  * nobody's kill (`INBOX.md`). Its holder follows the capture point it stands in. Bots and neutrals
  * never pick the gem as a target: perception sees units only. Runs after `CaptureSystem`, so a
- * change of hands this tick shows this tick.
+ * change of hands this tick shows this tick. When the gem erupts (`greater-boss-summoned`) it is
+ * removed (`despawned`).
  */
 export class CathedralGemSystem implements System {
   public readonly name = 'cathedral-gem';
   private readonly hits: { readonly gemId: EntityId; readonly attackerId: EntityId }[] = [];
   private readonly handovers: { readonly pointId: EntityId; readonly to: Team }[] = [];
   private readonly glowTicks: number;
+  /** Set by `greater-boss-summoned`; the next pass removes the gem. */
+  private hasErupted = false;
 
   /**
    * @param state - The match whose events this system listens to.
@@ -55,10 +58,20 @@ export class CathedralGemSystem implements System {
     state.events.on('capture-point-owner-changed', ({ pointId, to }) => {
       this.handovers.push({ pointId, to });
     });
+    state.events.on('greater-boss-summoned', () => {
+      this.hasErupted = true;
+    });
   }
 
-  /** Ages each gem's glow, hands it over, then answers this tick's hits and touches. */
+  /**
+   * Removes an erupted gem first, then ages each gem's glow, hands it over, and answers this tick's
+   * hits and touches.
+   */
   public update({ state }: SystemContext): void {
+    if (this.hasErupted) {
+      this.hasErupted = false;
+      this.removeGems(state);
+    }
     state.entities.forEach((entity) => {
       const gem = entity.findComponent(CathedralGemState);
       if (gem === undefined) return;
@@ -104,6 +117,23 @@ export class CathedralGemSystem implements System {
         this.strike(state, gem, unit.id);
       }
     });
+  }
+
+  /**
+   * The gem erupts through the roof (12 §3, reference 04): removed (`despawned`) on this system's
+   * pass after `greater-boss-summoned`, before it answers any touch, so it strikes no one after,
+   * the Greater Boss included, who appears where it stood.
+   */
+  private removeGems(state: GameState): void {
+    const gems: EntityId[] = [];
+    state.entities.forEach((entity) => {
+      if (entity.findComponent(CathedralGemState) !== undefined) gems.push(entity.id);
+    });
+    this.hits.length = 0;
+    for (const entityId of gems) {
+      state.entities.remove(entityId, 'despawned');
+      state.events.emit('entity-removed', { entityId, cause: 'despawned' });
+    }
   }
 
   private isCoolingDown(statuses: StatusEffects): boolean {

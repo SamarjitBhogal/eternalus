@@ -54,6 +54,24 @@ describe('MobView', () => {
     ]);
   });
 
+  it('draws the neutral Greater Boss in the neutral colour, as wide as its body', () => {
+    const renderer = new RecordingRenderer();
+    const boss: EntitySnapshot = {
+      ...MINION,
+      kind: 'heavy-mob',
+      definitionId: 'greater-boss',
+      team: 'neutral',
+      transform: { x: 0, y: 0, radius: 2.5, facing: SOUTH },
+    };
+
+    new MobView().draw({ entity: boss, position: AT, facing: SOUTH, isFocused: false }, renderer);
+
+    expect(renderer.calls.at(-1)).toEqual({
+      op: 'drawWorldGlyph',
+      args: [{ shape: 'dot', size: 5 }, AT, NEUTRAL_ENTITY_COLOR],
+    });
+  });
+
   it('marks the minimap with a small team dot on a team outline (13 §7: not colour alone)', () => {
     // Only glyphs: the facing chevron is main view only (DEC-192).
     const renderer = new RecordingRenderer();

@@ -121,47 +121,75 @@ export class GuardRoster {
       }
     });
     state.guards.forEach((slot, index) => {
+      this.fill(state, slot, index);
+    });
+  }
+
+  /**
+   * Fills now every empty `mobId` post of the plans that wait for the gem eruption (12 §3: the gem
+   * summons `mobId`), and returns the guards it placed (none past the unit cap). Called once, on
+   * the eruption; an id no such plan posts places nothing.
+   */
+  public activate(state: GameState, mobId: string): readonly Entity[] {
+    const placed: Entity[] = [];
+    state.guards.forEach((slot, index) => {
       if (
         slot.guardId !== null ||
-        slot.respawnAtTick === null ||
-        state.tick < slot.respawnAtTick ||
-        // DEC-162: a fallen structure's posts are not refilled; its living guards stay at their
-        // posts until killed and still count against the unit cap.
-        !GuardRoster.isStanding(state, slot.homeId) ||
-        !this.isPostKept(state, slot)
+        slot.mobId !== mobId ||
+        this.planOf(state, slot)?.activation.at !== 'gem-eruption'
       ) {
         return;
       }
-      // The cap count walks the entity store, so it runs last, after the cheap checks; neutral
-      // camps count against no team's unit cap (18 §7.1).
-      if (
-        slot.team !== 'neutral' &&
-        state.entities.countOnTeam(slot.team, Unit) >= state.config.limits.maxUnitsPerTeam
-      ) {
-        // A post comes due at its respawn tick, so a refill the cap blocks is counted then, once,
-        // not again on each tick it waits (18 §3.4).
-        if (state.tick === slot.respawnAtTick) {
-          state.recordSpawnRequest(slot.team, 1, 0);
-        }
-        return;
-      }
-      const { kind } = this.definitions.get(slot.mobId);
-      // On guard, until it first moves or attacks: a tower guard (the Stronghold's too, doc 18's
-      // entity legend) faces out from its home's centre (DEC-216 (6)), a camp mob out from the
-      // camp centre (DEC-220 (2)).
-      const guard = this.factory.create(kind, slot.mobId, {
-        team: slot.team,
-        position: { x: slot.postX, y: slot.postY },
-        facing: guardOutward(slot, { x: 0, y: 0 }),
-      });
-      state.entities.add(guard);
-      state.guards.fill(index, guard.id);
-      if (slot.team !== 'neutral') {
-        // DEC-169: a refill that succeeds counts too, so the suppressed share is blocked / all.
-        state.recordSpawnRequest(slot.team, 1, 1);
-      }
-      state.events.emit('entity-spawned', { entityId: guard.id, kind, team: slot.team });
+      state.guards.vacate(index, state.tick);
+      const guard = this.fill(state, { ...slot, respawnAtTick: state.tick }, index);
+      if (guard !== null) placed.push(guard);
     });
+    return placed;
+  }
+
+  /** Fills post `index` if its time has come, its home stands and the cap has room. */
+  private fill(state: GameState, slot: GuardSlot, index: number): Entity | null {
+    if (
+      slot.guardId !== null ||
+      slot.respawnAtTick === null ||
+      state.tick < slot.respawnAtTick ||
+      // DEC-162: a fallen structure's posts are not refilled; its living guards stay at their
+      // posts until killed and still count against the unit cap.
+      !GuardRoster.isStanding(state, slot.homeId) ||
+      !this.isPostKept(state, slot)
+    ) {
+      return null;
+    }
+    // The cap count walks the entity store, so it runs last, after the cheap checks; neutral
+    // camps count against no team's unit cap (18 §7.1).
+    if (
+      slot.team !== 'neutral' &&
+      state.entities.countOnTeam(slot.team, Unit) >= state.config.limits.maxUnitsPerTeam
+    ) {
+      // A post comes due at its respawn tick, so a refill the cap blocks is counted then, once,
+      // not again on each tick it waits (18 §3.4).
+      if (state.tick === slot.respawnAtTick) {
+        state.recordSpawnRequest(slot.team, 1, 0);
+      }
+      return null;
+    }
+    const { kind } = this.definitions.get(slot.mobId);
+    // On guard, until it first moves or attacks: a tower guard (the Stronghold's too, doc 18's
+    // entity legend) faces out from its home's centre (DEC-216 (6)), a camp mob out from the
+    // camp centre (DEC-220 (2)).
+    const guard = this.factory.create(kind, slot.mobId, {
+      team: slot.team,
+      position: { x: slot.postX, y: slot.postY },
+      facing: guardOutward(slot, { x: 0, y: 0 }),
+    });
+    state.entities.add(guard);
+    state.guards.fill(index, guard.id);
+    if (slot.team !== 'neutral') {
+      // DEC-169: a refill that succeeds counts too, so the suppressed share is blocked / all.
+      state.recordSpawnRequest(slot.team, 1, 1);
+    }
+    state.events.emit('entity-spawned', { entityId: guard.id, kind, team: slot.team });
+    return guard;
   }
 
   /**
@@ -172,10 +200,13 @@ export class GuardRoster {
     return !state.entities.isAlive(guardId) || state.entities.teamOf(guardId) !== slot.team;
   }
 
-  /** The tick `plan`'s posts are first filled (its `activation`). */
-  private static firstTick(state: GameState, { activation }: GuardPlanDefinition): number {
+  /** The tick `plan`'s posts are first filled (its `activation`), or `null`: when `activate` says. */
+  private static firstTick(state: GameState, { activation }: GuardPlanDefinition): number | null {
     if (activation.at === 'match-start') {
       return 0;
+    }
+    if (activation.at === 'gem-eruption') {
+      return null; // `activate` fills these posts when the gem erupts
     }
     return state.match.countdownEndTick + activation.delayTicks;
   }

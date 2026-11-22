@@ -14,8 +14,14 @@ export class GuardStore {
     return this.slots.length;
   }
 
-  /** Adds an empty post, first filled at `firstTick` (0: the match's first tick). */
-  public add(slot: Omit<GuardSlot, 'guardId' | 'respawnAtTick'>, firstTick = 0): void {
+  /**
+   * Adds an empty post, first filled at `firstTick` (0: the match's first tick; `null`: not until
+   * `vacate` sets a tick).
+   */
+  public add(
+    slot: Omit<GuardSlot, 'guardId' | 'respawnAtTick'>,
+    firstTick: number | null = 0,
+  ): void {
     this.slots.push({ ...slot, guardId: null, respawnAtTick: firstTick });
   }
 

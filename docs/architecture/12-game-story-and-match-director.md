@@ -4,7 +4,7 @@ description: How a match unfolds over time - the MatchDirector state machine ove
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-22
 tags: [architecture, match, timeline, phases, scoring, story, lore]
 paths:
   [
@@ -515,8 +515,20 @@ sovereign, whose display name per team is in `content/sovereigns/sovereignDispla
 Not built yet: `atmosphere` in `MatchState`; the rest of `content/narrative/` (§9); an entity
 that carries `WinObjective` (the sovereign); `MatchResult.timeline` and `achievements` (with
 their producers); the other §5 counters and `TeamStats` fields; a condition for `forfeit` or
-`aborted` (the ids exist); the timeline actions other than `enter-phase`; `dev-set-phase`; the
-announcer; the other invariants of §12.
+`aborted` (the ids exist); the timeline actions other than `enter-phase` and
+`summon-greater-boss`; `dev-set-phase`; the announcer; the other invariants of §12.
+
+The gem eruption (§3) is built (2026-11-22, `feat/cathedral-eruption-boss`): the default
+timeline's `gem-eruption` entry, at `mid-game`'s fraction and right after it (DEC-81), runs
+`summon-greater-boss` (`match/actions/SummonGreaterBossAction.ts`). It calls
+`MatchRecord.eruptGem(bossId)` outside a Duel (DEC-36), which sets `MatchState.isGemErupted` once (a second call throws;
+hashed from then on) and emits `greater-boss-summoned { bossId }`. On the next tick the gem is
+removed and `SpawnSystem` spawns the boss and emits `boss-summoned` (07's implementation status).
+`bossId` is checked only as a non-empty string; `GuardRoster.activate` fills the gem-eruption
+posts of that mob, so an id no plan posts spawns nothing. The timeline's phase rules read only its
+`enter-phase` entries. The client's `CathedralCutscene` turns the camera to the Cathedral from
+just before the eruption tick (read from `upcoming`) and draws the burst on `greater-boss-summoned`
+(Aryan 2026-11-22; `INBOX.md`).
 
 ## Related
 

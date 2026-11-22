@@ -122,14 +122,19 @@ export type GuardPlanDefinition = GuardPlanBase & {
 
 /**
  * When a guard plan's posts are first filled (architecture 18 §7.1), as authored: the match's
- * first tick, or `delaySeconds` after the countdown ends (0 for camps).
+ * first tick, `delaySeconds` after the countdown ends (0 for camps), or the tick the Cathedral gem
+ * erupts (`greater-boss-summoned`, 12 §3: the Greater Boss).
  */
 type AuthoredGuardActivation =
-  { readonly at: 'match-start' } | { readonly at: 'countdown-end'; readonly delaySeconds: number };
+  | { readonly at: 'match-start' }
+  | { readonly at: 'countdown-end'; readonly delaySeconds: number }
+  | { readonly at: 'gem-eruption' };
 
 /** `AuthoredGuardActivation` as loaded: the delay in ticks. */
 type GuardActivation =
-  { readonly at: 'match-start' } | { readonly at: 'countdown-end'; readonly delayTicks: number };
+  | { readonly at: 'match-start' }
+  | { readonly at: 'countdown-end'; readonly delayTicks: number }
+  | { readonly at: 'gem-eruption' };
 
 /**
  * How a guard plan's posts refill (architecture 18 §7.1), as authored. `each`: a guard comes back

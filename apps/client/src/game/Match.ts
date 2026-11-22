@@ -2,6 +2,8 @@ import { type EntityId, type EntitySnapshot, makeLogRecord, type Snapshot } from
 
 import { isDead } from '../bridge/selectors/isDead';
 import { BuildingRoofs } from './BuildingRoofs';
+import { CathedralCutscene } from './CathedralCutscene';
+import { CUTSCENE } from './CathedralCutscene.constants';
 import { GameLoop } from './engine/loop/GameLoop';
 import { HealthBarVisibility } from './HealthBarVisibility';
 import type { LoopTarget } from './engine/loop/GameLoop.types';
@@ -20,6 +22,7 @@ import type { PlayerActions } from './PlayerActions';
 import { PlayerCommands } from './PlayerCommands';
 import { createDefaultViewRegistry } from './views/defaultViewRegistry';
 import { EntityLayer } from './views/EntityLayer';
+import { EruptionView } from './views/EruptionView';
 import { MapView } from './views/MapView';
 import { MiniMapView } from './views/MiniMapView';
 import { SceneryView } from './views/SceneryView';
@@ -56,6 +59,9 @@ export class Match implements LoopTarget {
   private readonly world: { readonly scene: SceneView; readonly miniMap: MiniMapView };
 
   private readonly camera: MatchCamera;
+
+  /** The mid-game cut-scene: where the camera looks around the gem eruption, and its burst. */
+  private readonly cutscene: CathedralCutscene;
 
   private readonly roofs: BuildingRoofs;
 
@@ -95,6 +101,7 @@ export class Match implements LoopTarget {
       this.healthBars.healthBarOf,
     );
     this.camera = new MatchCamera(camera, map);
+    this.cutscene = new CathedralCutscene(simulation, tickRate);
     this.commands =
       deps.remote?.createActions(this.camera) ??
       new PlayerCommands(input, simulation, this.camera, mapObjects);
@@ -109,6 +116,7 @@ export class Match implements LoopTarget {
       new SceneryView(scenery, 'detail', hiddenRoofs, shown, isDestroyed),
       this.objects,
       this.entities,
+      new EruptionView(() => this.cutscene.burst()),
     ]);
     const centre = (): WorldPoint => this.miniMapCentre();
     this.world = { scene, miniMap: new MiniMapView(map, scene, HUD_MINIMAP_RING, centre) };
@@ -191,8 +199,9 @@ export class Match implements LoopTarget {
    * (`ended`).
    */
   public tick(): void {
+    let isMoving = false;
     if (this.playerId !== null) {
-      const isMoving = this.commands.apply(this.playerId, this.current);
+      isMoving = this.commands.apply(this.playerId, this.current);
       if (isMoving) {
         this.camera.playerMoved();
       }
@@ -201,16 +210,25 @@ export class Match implements LoopTarget {
     this.previous = this.current;
     this.current = this.deps.simulation.snapshot();
     this.healthBars.observe(this.current, this.playerId);
+    this.cutscene.observe(this.current, isMoving);
     this.roofs.playerAt(this.livingPlayerAt());
     if (this.bridge.afterTick(this.current, this.playerId)) {
       this.deps.observer.ended();
     }
   }
 
-  /** One frame: the camera follows the player, then the scene and the minimap are drawn. */
+  /**
+   * One frame: the camera follows the player (or looks where the mid-game cut-scene says), then
+   * the scene and the minimap are drawn.
+   */
   public render(alpha: number): void {
     const { renderer } = this.deps;
-    this.camera.follow(this.playerEntity()?.transform ?? null);
+    const focus = this.cutscene.focus();
+    if (focus === null) {
+      this.camera.follow(this.playerEntity()?.transform ?? null);
+    } else {
+      this.camera.focusOn(focus, CUTSCENE.smoothing);
+    }
     const view = this.camera.visibleArea();
     const { scene, miniMap } = this.world;
     renderer.clear(BACKGROUND_COLOR);
@@ -236,6 +254,7 @@ export class Match implements LoopTarget {
   public destroy(): void {
     this.loop.destroy();
     this.healthBars.destroy();
+    this.cutscene.destroy();
     this.bridge.destroy();
   }
 

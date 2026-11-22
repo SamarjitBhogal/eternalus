@@ -17,6 +17,7 @@ import { Camera } from './engine/Camera';
 import type { Projection } from './engine/input/Projection.types';
 import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
 import { RecordingRenderer } from './engine/render/RecordingRenderer';
+import { CUTSCENE } from './CathedralCutscene.constants';
 import { Match } from './Match';
 import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH } from './Match.constants';
 import type { IntentSource } from './Match.types';
@@ -93,9 +94,14 @@ const CONTENT_WITH_A_ROCK: Content = (() => {
  * mobs the map's structures spawn, it plays in sim mode instead: no map, so no roster (a roster
  * needs the map).
  */
-const setUp = (content?: Content, withMapObjects = false) => {
+const setUp = (content?: Content, withMapObjects = false, plannedMatchSeconds?: number) => {
   // No countdown: core's countdown holds all movement, and these tests walk from the start.
-  const config = createDefaultGameConfig({ match: { countdownSeconds: 0 } });
+  const config = createDefaultGameConfig({
+    match: {
+      countdownSeconds: 0,
+      ...(plannedMatchSeconds === undefined ? {} : { plannedMatchSeconds }),
+    },
+  });
   const world = prepareMatchWorld(config, SEED);
   const generated = world.map;
   const simulation = new Simulation({
@@ -452,5 +458,36 @@ describe('Match', () => {
 
     expect(aim?.x).toBeCloseTo(view.x + view.width / 2);
     expect(aim?.y).toBeCloseTo(view.y + view.height / 2);
+  });
+
+  it('turns the camera to the gem as the mid-game eruption nears, then back to the player', () => {
+    // A 20 s plan: the gem erupts at 10 s; the pan starts `CUTSCENE.panSeconds` before. One second
+    // into the pan the gem is near the middle of the view (the camera still eases in); two seconds
+    // after the hold the player is.
+    const { match, camera, map } = setUp(undefined, false, 20);
+    const { tickRate } = createDefaultGameConfig();
+    const gem = match.snapshot.entities.find(({ kind }) => kind === 'cathedral-gem')?.transform;
+    if (gem == null) throw new Error('No gem');
+    const centre = () => {
+      const view = camera.visibleArea(map.width, map.height);
+      return { x: view.x + view.width / 2, y: view.y + view.height / 2 };
+    };
+    const play = (ticks: number) => {
+      for (let tick = 0; tick < ticks; tick += 1) {
+        match.tick();
+        match.render(1);
+        match.render(1);
+      }
+    };
+
+    play((10 - CUTSCENE.panSeconds + 1) * tickRate);
+    const onGem = centre();
+    expect(Math.hypot(onGem.x - gem.x, onGem.y - gem.y)).toBeLessThan(FOLLOW_VIEW_WIDTH / 10);
+
+    play((CUTSCENE.holdSeconds + 2) * tickRate);
+    const after = centre();
+    expect(Math.hypot(after.x - playerX(match), after.y - playerY(match))).toBeLessThan(
+      FOLLOW_VIEW_WIDTH / 10,
+    );
   });
 });
