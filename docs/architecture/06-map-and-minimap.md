@@ -387,6 +387,7 @@ export type MinimapGlyph = {
 
 // apps/client/src/game/views/EntityView.types.ts (contract)
 export interface EntityView {
+  drawGround?(state: EntityDrawState, renderer: Renderer): void; // under every entity, or nothing
   draw(state: EntityDrawState, renderer: Renderer): void;
   drawMinimap(state: EntityDrawState, renderer: Renderer): void; // marker in CSS pixels, or nothing
   readonly minimapLayer?: number; // higher layers draw later; absent = 0
@@ -668,6 +669,16 @@ the feature of every fallen structure, not only a tower (`isGone`), so the visua
 `RetiredFeatures` (a `mapFeatureId` seen standing in the snapshots and now gone); a fallen wall
 segment or turret, which has no structure entity, through its map object's `isDestroyed`. Each
 loses its main-view marker or footprint fill and its minimap glyph.
+
+### 2026-11-21 — The aura field on the ground (DEC-323 (3))
+
+A standing structure with an aura draws the field it covers: the ground within the aura's radius of
+its outline box (`EntitySnapshot.aura`), faintly filled and ringed in the team colour, with a few
+light particles drifting along the ring. `StructureView.drawGround` draws it; `EntityLayer` calls
+every view's optional `drawGround` before any `draw` (08 §8), so the field lies under every unit and
+tints none. The field is built once per structure, because a structure's box does not move, and the
+particles are a fixed number per structure, so the cost stays flat. A fallen structure draws no
+field. The mini map draws no field.
 
 ## Related
 

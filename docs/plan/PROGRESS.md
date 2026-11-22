@@ -9921,3 +9921,28 @@ docs:check` pass on this entry.
 - Next step: the owner rules on the Owner Calls cards (fort-map-sizes, bot-defend-tower,
   aura-radius-origin, inside-bonus-scope, camp-class-after-move) and signs off HC-B21, HC-B23 and
   HC-B24; then push and open the PR (stacked on #122, docs in #147).
+
+### 2026-11-21 — Phase 3 / map work: DEC-323 owner answers built — feat/map-work-forts-towers — sholtzman + Claude Code
+
+- What was done: the owner's three Owner Calls answers of 2026-11-21 (DEC-323), built after the
+  last architecture loop. (1) fort-map-sizes: the generator does not change; the "3 towers of each
+  kind" test moves to a 2400-wide world, with forts sized by `fortInWorld`. (2) bot-defend-tower:
+  the laner tree gets `Defend` after `Fight` and before `Push` (`ai/BotTargeting`, split out of
+  `BotLeaves`): the bot defends the nearest of its own lane towers or gate that an enemy within
+  `engageRadius` of its box (`LaneStructureEntry.box`, the whole fort) attacks. Engage radii rise
+  (`TUNE`): `normal` 12 → 18, `rover` 16 → 24, Rover hunt 20 → 30, lane minion acquisition 5.4 →
+  its leash. (3) aura-radius-origin: the BuffTower aura reaches 12 m beyond its fort box
+  (`state/outlineBoxOf`, `utils/geometry.distanceSquaredToRect`); `EntitySnapshot.aura` carries
+  the box; `StructureView.drawGround` draws a team-coloured field with drifting particles in a
+  ground pass under every unit. The two owner-card red tests are green. Routing critics instead of
+  a 4th architecture loop: ponytail (cuts and rejections in
+  `eternalus-agent-work/dec-288/reports/dec-323-ponytail.md`); correctness r1 (F1, F2, F3, F5, F7,
+  F8 fixed; F6 rejected: an ability's range is the guard for a far cast); correctness r2 on the
+  `Defend` change (no code defect; F1–F3 test gaps fixed). Fail-first breaks in
+  `eternalus-agent-work/dec-288/dec-323-breaks.log` and `dec-323-aura-breaks.log`.
+- Checks run: full `npm run check` exit 0 (`eternalus-agent-work/dec-288/check-11.log`): format,
+  no-js, lint, typecheck and knip pass; core "Tests 1821 passed (1821)", protocol "Tests 29
+  passed (29)", client "Tests 2039 passed (2039)", server "Tests 84 passed (84)"; build passes;
+  "Documentation check passed.".
+- Next step: the owner rules on inside-bonus-scope and camp-class-after-move and signs off HC-B21,
+  HC-B23 and HC-B24; then push and open the PR (stacked on #122, docs in #147).

@@ -428,20 +428,24 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   `WorldMap`; the main view draws a lane tower's kind marker through `StructureView` (DEC-315) and the other structures from the map layer.
   Minion plan M6 adds `Camp` (forest camps, rule `never`, circle radius 1 `TUNE`, since camp
   features have no footprint); its group is a guard plan (18 §7.1), not a `Spawner` component yet.
-- **BuffTower aura (`feat/map-work-forts-towers`, DEC-315 (4), DEC-318, 2026-11-21).** A
+- **BuffTower aura (`feat/map-work-forts-towers`, DEC-315 (4), DEC-318, DEC-323 (3), 2026-11-21).** A
   `StructureDefinition` may carry `aura` (`radius`, `allyStatusId`, `enemyStatusId`); only
   `buff-tower` has one (`content/structures/structureCatalogue.ts`). `Structure` adds an `Aura`
   component that holds the whole definition. `StructureAuraSystem` (after `VeterancySystem`) runs
   every `STRUCTURE_AURA_CADENCE.everySeconds` (loaded to ticks by `loadStructureAuraCadence`):
   each living entity with an `Aura` on a playable team gives its ally status
   (`content/status-effects/towerAuraBuff.ts`) to units of its team and its enemy status
-  (`towerAuraDebuff.ts`) to units of the other playable team inside the radius, measured from its
-  centre, through the match's one `StatusEffectApplier`. Neutral camp mobs and bosses are neither
+  (`towerAuraDebuff.ts`) to units of the other playable team inside the radius, measured beyond
+  its outline box (`state/outlineBoxOf`: its `Footprint` box, so the court, the doorways and the walls
+  are at distance 0; a source without a `Footprint` measures from its centre), through the match's
+  one `StatusEffectApplier`. Neutral camp mobs and bosses are neither
   side and get nothing. The system keeps no state: each pass ends, unit by unit in store order,
   every aura status that no living source covers now (`remove`; the status's short duration is
   the backstop). Not built: a max-health change and a Stronghold aura (DEC-315 (4)). The snapshot
-  carries `EntitySnapshot.aura` (`radius`; `null` without an `Aura`), and `StructureView` draws a
-  faint ring of that radius in the team colour while the tower stands.
+  carries `EntitySnapshot.aura` (`radius` and that `box`; `null` without an `Aura`), and
+  `StructureView.drawGround` draws the field the aura covers while the tower stands: the box grown
+  by the radius with rounded corners, faintly filled and ringed in the team colour, with a few
+  light particles drifting along the ring, under every unit (08 §8).
 - **Minion follow-ups (`fix/minion-stack-followups`, 2026-11-05).** Lane towers and the
   Stronghold also carry a `Footprint` component: the polygons of their map object of the same id
   (a tower's fort, the Stronghold's palace outline), which `Simulation` copies for a definition

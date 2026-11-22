@@ -221,6 +221,20 @@ Reply inline (`Decision: …`).
       as `loadGuardPlans` does.
       Build both in PR #125, build them in a later PR, or keep the code as it is?
 
+- [ ] **Lane minion acquisition radius raised to the leash (`feat/map-work-forts-towers`,
+      DEC-323 (2), 2026-11-21) — FYI for SamarjitBhogal (minion owner); no decision needed.**
+      Sam's answer on the Owner Calls page asked to raise the bot and minion engage radii ("your
+      decision on exact amount, but current is too restrictive"). `LANE_MINION_AGGRO`
+      `acquisitionRadius` (`content/ai/aggro/laneMinion.ts`) goes from 5.4 to the leash radius
+      (8.625): `LeashBehaviour` takes a target only inside a leash anchored where the minion
+      stands, so a radius larger than the leash takes no unit target from farther out. Effects: the call for help
+      (`callForHelpRadius`, also the leash) no longer reaches farther than the minion's own
+      acquisition; `MinionController` takes the next lane objective when its edge, or the horde's
+      gathering line, is within 8.625 m instead of 5.4 m. Architecture 18 copies no value, so it
+      is unchanged. Tests: `LeashBehaviour.test.ts` "takes an enemy anywhere inside its leash, and
+      none beyond it"; the call-for-help test now runs on a fixture profile that keeps the old
+      5.4 m reach (`short-reach`). Say if you want another number.
+
 - [ ] **HC-B24 — Better than the design, built under your standing rule, sign-off asked: map-work
       critic round 3 (`feat/map-work-forts-towers`, 2026-11-21); no decision blocks the PR.**
       Recorded as DEC-321 (owner decisions log). Built after the last critic loop, so no critic

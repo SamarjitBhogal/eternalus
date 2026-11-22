@@ -482,7 +482,8 @@ each closed by the session or phase named:
   the `xp` inside that level and its `xpToNext`, `null` at the cap; `snapshot(curves)` takes the
   level curves `ProgressionSystem` uses), `aether` (a Legend's `current` and `max` aether, DEC-230),
   `area` (a zone's polygons), `capture` (a capture point's state and presence) and `aura` (a
-  structure's aura `radius`, `null` without an `Aura`, DEC-315 (4)) groups only.
+  structure's aura `radius` and the outline `box` it is measured beyond, `null` without an `Aura`,
+  DEC-315 (4), DEC-323 (3)) groups only.
   `MatchPhase` lives in `config/matchPhases.ts`; the match director is built (12 §13).
 - `GameState.world` is a `MatchWorld` (the generated definition, its lane `routes` and the
   `WorldMap` grid, stamped and reopened by `map/MatchGrid`, which the composition root builds, so
