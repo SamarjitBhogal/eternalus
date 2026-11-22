@@ -636,6 +636,34 @@ Reply inline (`Decision: …`).
       one reusable "first source with the id" definition lookup for `Simulation` and about ten
       tests (BTD-H).
 
+- [ ] **HC-B29 — Better than the design, built under your standing rule (DEC-223), sign-off
+      asked: three parts of the Sentinel's Wrecking Run (`feat/class-passives`, PR 8 critic
+      round 1 and lane B review F1, 2026-11-22; GAME-LOOP-AND-POST-GAME-56 and -57).** Parts (1)
+      and (2) are built and tested. Part (3) is not built. Nothing waits on you; name a part to
+      change it. Your answer goes in the PR 8 answers (DEC-330).
+      (1) Two rates of change. The physics design (10 §2) gives every unit one limit on how fast
+      its velocity changes, in every direction. The Sentinel needs two: it gains speed slowly
+      (walk speed in about 1 s, then 20 s to top speed, balancing.md), but it must slide out of a
+      turn in about 1 s. With one limit, a reverse at top speed slides about 13.5 m, which is
+      longer than every option on the PR 8 grip card (W2). So the Sentinel has its own slide rate
+      (`grip`), and its time to top speed is "time to walk speed + ramp", not "top speed ÷
+      acceleration". On sign-off, 10 §2 gets the steps for a unit with momentum. Alternative: one
+      limit for everything, with the 13.5 m slide.
+      (2) Wrecking Run is part of the Sentinel's movement, not a status. The ability design (05 §7)
+      applies every passive as a permanent buff status. The class table (01) says "Wrecking Run is
+      the in-fiction name for the Sentinel movement profile", so its speed numbers sit in the
+      Sentinel's movement numbers (`movementProfile.momentum`), which the movement code reads
+      every tick. The other parts of Wrecking Run (the stun and self damage of a hit at full speed,
+      and barging through walls) get a `wrecking-run` passive entry when they are built. On
+      sign-off, 05 §7 says that a passive can also be a block of movement numbers, and
+      balancing.md's "`wrecking-run.rampSeconds`" becomes `movementProfile.momentum.rampDuration`.
+      Alternative: a `wrecking-run` buff status that carries the speed numbers.
+      (3) Not built: one shared form for the velocity rules. Today there are two rules (turn at
+      once and keep speed; momentum), and `Movement` picks one in two places with a "has
+      momentum?" check. A shared interface with one class per rule removes those checks (04 §4,
+      strategies). Recommended: not yet, because it pays when a third rule comes. Alternative:
+      build it in PR 8.
+
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
       small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`
