@@ -5,8 +5,8 @@ import { CapturePoint } from '../entities/zones/CapturePoint';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { PlayableTeam } from '../teams/teams.types';
-import type { System, SystemContext } from './System.types';
 import { TickRate } from '../utils/TickRate';
+import type { System, SystemContext } from './System.types';
 
 /**
  * The zone level-up (architecture 07 §7, DEC-258): once a team has held a capture point for

@@ -77,8 +77,8 @@ export class Health {
   }
 
   /**
-   * Lowers full health by `amount` (finite, ≥ 0, never below `MIN_MAX_HEALTH`), and current health with it
-   * when it would pass the new cap: a lost level's health step (07 §7, DEC-258).
+   * Lowers full health by `amount` (finite, ≥ 0, never below `MIN_MAX_HEALTH`), and current health
+   * with it when it would pass the new cap: a lost level's health step (07 §7, DEC-258).
    */
   public lowerMax(amount: number): void {
     Health.checkAmount(amount, 'max lowering');
