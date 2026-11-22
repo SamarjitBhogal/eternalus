@@ -140,6 +140,7 @@ describe('DefaultSystemPipeline', () => {
       'out-of-combat-healing',
       'death',
       'capture',
+      'cathedral-gem',
       'match-director',
       'invariants',
     ]);

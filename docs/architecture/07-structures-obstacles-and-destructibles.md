@@ -4,14 +4,14 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-16
+last-reviewed: 2026-11-21
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
     'packages/core/src/entities/structures/**',
     'packages/core/src/entities/Obstacle*',
-    'packages/core/src/components/{Health,Spawner,Capturable,Carry}*',
-    'packages/core/src/systems/{Structure,Spawn,Capture}System*',
+    'packages/core/src/components/{Health,Spawner,Capturable,Carry,CathedralGemState}*',
+    'packages/core/src/systems/{Structure,Spawn,Capture,CathedralGem}System*',
     'packages/core/src/content/{structures,obstacles}/**',
   ]
 related:
@@ -66,6 +66,7 @@ export abstract class Structure extends Entity {
 | `Turret`       | `TurretState`, `Combat`              | Auto-fires bolts; Warrior Legends may take manual control                                  | MVP (manual: MVP-if-time)           |
 | `Camp`         | `Spawner`                            | Neutral spawner for forest/corner camps; activates when the match countdown ends (DEC-167) | MVP (corner: MVP-if-time)           |
 | `Cathedral`    | `Spawner` (gem), `Aura`              | Middle capture point's building; summons the `GreaterBoss` mid-match                       | MVP (boss summon: per plan phase 3) |
+| `CathedralGem` | `CathedralGemState`                  | The gem: its own unbreakable body (DEC-292); stuns and burns whoever hits or touches it    | MVP                                 |
 
 Not a structure: `CapturePoint` is a `Zone` (no collider, §7). Anti-air buildings and form-change
 stations (Ascendance/Enchantment) are **post-MVP** (§14).
@@ -498,23 +499,21 @@ so a replay or a match without map objects rebuilds the same zones. Interim diff
   does not follow the owner yet (the minimap entity markers, SCRUM-151).
 - The density numbers on the HUD arrive with the HUD work (`feat/hud-and-character-select`, its
   capture tracker); this PR publishes the presence and draws the split bar in the world.
-
-**2026-11-14 (`feat/cathedral-gem`).** The Cathedral gem is interior scenery
-(`MapBuildingInteriorBuilder`, size in `buildingGeometry.ts`, colour in `map1Scenery.ts`),
-presentation only, so nothing can damage it. Not built yet: the Cathedral structure and its
-`Spawner` (§1, §6), lightning on attackers, the change of look over time and the
-summon-greater-boss action. When the Cathedral structure and its view land, the
-`cathedral-interior-gem` scenery piece is removed so the gem is drawn once.
-
-**2026-11-15 (`feat/cathedral-gem-hittable`).** The gem is hittable but unbreakable (DISC-11):
-`Cathedral` is a structure built on the `cathedral` map feature (the gem's position), neutral,
-with the `never` breakability rule, so `BreakabilityStep` blocks every hit from its first tick.
-Its circle collider (`TUNE` radius, the drawn gem's half-width) is for reach and targeting only;
-like every structure circle it blocks no movement. Bots and minions never target it: perception
-sees only units, skips neutrals that are not attacking, and aggro ranks no structure kind. The
-scenery piece stays the only drawing until the Cathedral's view lands. Still not built: the
-`Spawner` and `Aura` (§1, §6), lightning on attackers (its numbers and rules are open in
-`INBOX.md`), the look over time and the summon-greater-boss action.
+- **Cathedral gem (2026-11-21, `feat/cathedral-gem-hittable`).** The gem is its own body, apart from
+  the building (DEC-292): a neutral `CathedralGem` structure built on the `cathedral` map feature,
+  `never` breakable, so `BreakabilityStep` blocks every hit. `DamagePipeline` announces a blocked
+  hit (`damage-blocked`); `CathedralGemSystem` answers each one that has an attacker, and each touch
+  (two discs overlapping), by landing `CATHEDRAL_GEM`'s statuses on that unit as environment damage
+  (the gem is no team's, so it hurts neutrals too): a stun, its tick damage, and a ward that spaces
+  out touch strikes. Weapons reach it today; projectiles and abilities will through the same
+  pipeline. Bots and minions never pick it as a target (perception sees only units); the player can
+  aim at it (`findGemAt`). The gem blocks no movement (like every structure circle), so the lane
+  through the Cathedral crosses it, and the ward caps a passing unit at one strike. Its
+  `CathedralGemState` (the Cathedral's holder from `capture-point-owner-changed`, and its glow) is
+  in the snapshot, and `CathedralGemView` draws it in the holder's colour (DEC-291). The system is
+  off in a Duel (DEC-36) until `INBOX.md` answers. The `Cathedral` building is not an entity yet:
+  its `Spawner` and `Aura` (§1, §6), the gem's look over time and the summon-greater-boss action are
+  not built.
 
 ## Related
 

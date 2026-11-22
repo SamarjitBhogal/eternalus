@@ -10,6 +10,7 @@ import { FORMATIONS } from '../content/mobs/formations/formations';
 import { ENRAGING_STRUCTURES } from '../content/mobs/minionModifiers';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
+import { CATHEDRAL_GEM } from '../content/structures/cathedralGem';
 import { loadSpawnWaves } from '../content/structures/loadSpawnWaves';
 import { OPENING_WAVE } from '../content/structures/spawnWaves';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
@@ -19,6 +20,7 @@ import { LaneFlowFields } from '../map/LaneFlowFields';
 import type { GameState } from '../state/GameState';
 import type { Rect } from '../utils/geometry.types';
 import { CaptureSystem } from './CaptureSystem';
+import { CathedralGemSystem } from './CathedralGemSystem';
 import { CombatSystem } from './CombatSystem';
 import { MapDestructionSystem } from './MapDestructionSystem';
 import { DeathSystem } from './DeathSystem';
@@ -49,12 +51,12 @@ import { SystemPipeline } from './SystemPipeline';
  * progress, statuses, movement, collision (DEC-121 (c): every later reader sees resolved
  * positions), the neighbour index, stuck detection (DEC-193), steering, combat, map destruction,
  * progression (kill XP), minion veterancy, structure losses and breakability, spawning, enraging,
- * out-of-combat healing (DEC-188), death, capture points, the match director, then invariants
- * last. Combat runs after movement, so a unit with a target in reach faces it, not its own way
- * (DEC-192). This is the one place a system is added, at its position in the tick (architecture
- * 02 §9). It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the
- * status effects loaded for this match's config) and hands them to the systems that need them, so
- * a damage step applies to every hit and every status event comes from one place.
+ * out-of-combat healing (DEC-188), death, capture points, the Cathedral gem, the match director,
+ * then invariants last. Combat runs after movement, so a unit with a target in reach faces it, not
+ * its own way (DEC-192). This is the one place a system is added, at its position in the tick
+ * (architecture 02 §9). It builds the match's one `DamagePipeline` and one `StatusEffectApplier`
+ * (with the status effects loaded for this match's config) and hands them to the systems that need
+ * them, so a damage step applies to every hit and every status event comes from one place.
  */
 export class DefaultSystemPipeline extends SystemPipeline {
   /** Creates the pipeline from its injected parts (`DefaultSystemPipelineOptions`). */
@@ -69,9 +71,11 @@ export class DefaultSystemPipeline extends SystemPipeline {
   }: DefaultSystemPipelineOptions) {
     const { tickRate, map } = state.config;
     const damage = new DamagePipeline();
-    const statuses = new StatusEffectApplier(
-      loadStatusEffects(tickRate, map.spawnTowersPerLane + map.buffTowersPerLane),
+    const loadedStatuses = loadStatusEffects(
+      tickRate,
+      map.spawnTowersPerLane + map.buffTowersPerLane,
     );
+    const statuses = new StatusEffectApplier(loadedStatuses);
     const flowFields =
       hordes === undefined || state.world === null
         ? null
@@ -142,6 +146,11 @@ export class DefaultSystemPipeline extends SystemPipeline {
       new OutOfCombatHealingSystem(state, loadOutOfCombatHealing(tickRate)),
       new DeathSystem(),
       new CaptureSystem(state.config.match.capturePoints, tickRate, ZONE_LOCKING_MOBS),
+      // Off in a Duel: the world around the arena is switched off there (DEC-36), and whether the
+      // gem strikes Duel fighters, and who a gem kill counts for, is open (INBOX.md).
+      ...(duelStarts === undefined
+        ? [new CathedralGemSystem(state, statuses, loadedStatuses, CATHEDRAL_GEM)]
+        : []),
       // After death, so an objective lost this tick can end the match this tick (12 §1).
       new MatchDirectorSystem(director),
       new InvariantSystem(invariants),

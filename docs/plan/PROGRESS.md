@@ -9625,3 +9625,36 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   (298)", "Tests 2014 passed (2014)"; server "Test Files 21 passed (21)", "Tests 84 passed (84)";
   "✓ built in 3.09s"; "Documentation check passed."
 - Next step: merge this branch into `feat/cathedral-gem-strike`.
+
+### 2026-11-21 — Phase 3 / sprint 3 work: the Cathedral gem to DEC-291 and DEC-292 (PRs #124 and #132 as one) — feat/cathedral-gem-hittable — Aryan Walanj + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` at `54615afa` (`INBOX.md` and this file
+  conflicted; both sides kept). Built the owner's rulings DEC-291 and DEC-292, posted on #124 and
+  #132 on 2026-11-20. The gem is its own unbreakable body (`CathedralGem`, kind `cathedral-gem`,
+  in place of this branch's `Cathedral` structure). `DamagePipeline` emits `damage-blocked`.
+  `CathedralGemSystem` answers a blocked hit with an attacker, or a touch, with `gem-shock` (1 s
+  stun), `gem-burn` (12 every 0.2 s for 1.2 s, 72 in all) and `gem-warded` (5 s between touch
+  strikes), as environment damage, so they hurt neutrals too. The system is off in a Duel.
+  `CathedralGemState` (the holder and the glow) is hashed and sent in the snapshot as
+  `EntitySnapshot.gem`. `findGemAt` lets the player aim at the gem. `CathedralGemView` draws it
+  in the holder's colour, with a purple glow and pulse. The static scenery gem of #124 is
+  removed. Added the DEC-291 and DEC-292 rows and closed three `INBOX.md` items, with one new item
+  for the three rules DEC-292 leaves open. Docs 03, 04, 07 and 18 are updated. Broke once:
+  without the ward, every middle-lane opening minion died on the gem (`Simulation.flowFields`).
+  Also broke once: a blocking plinth broke the Cathedral entrance lane and the Duel, so it was
+  dropped. The first burn period of 0.25 s was not a whole number of ticks, so it is now 0.2 s.
+  Critic (`architecture-reviewer`): FAIL with one blocker (this entry) and should-fixes, all
+  applied. Ponytail review: ship; two small cuts applied.
+- Checks run: `npm run check` (2026-11-21 17:37-18:04) failed at core `test:coverage`. One failure
+  was real (a snapshot fixture without `gem`) and is fixed. The other six were timeouts under
+  coverage on this machine. The same steps in order, with core tests on `--maxWorkers=2`
+  (2026-11-21 18:15-18:49): format "All matched files use Prettier code style!", `check:no-js`,
+  lint, typecheck and knip exit 0; core "Test Files 1 failed | 279 passed (280)", "Tests 1 failed
+  | 1697 passed (1698)". The failure was `Simulation.duel.test.ts` "ends the match for the first
+  team to reach the kill target", "Test timed out in 60000ms". The same test times out on the base
+  (`feat/bosses-p3` at `2398b031`, 69.9 s) on this machine, and the gem system is off in a Duel.
+  Protocol "Tests 29 passed (29)"; client "Test Files 304 passed (304)", "Tests 2082 passed
+  (2082)"; server "Test Files 21 passed (21)", "Tests 84 passed (84)"; "✓ built in 2.68s";
+  "Documentation check passed."
+- Next step: CI on the pushed branch decides the Duel timeout. Close #124 in favour of #132. The
+  owner answers the three open gem rules in `INBOX.md`.

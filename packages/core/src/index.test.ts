@@ -23,6 +23,7 @@ describe('@eternalus/core public API', () => {
       'StateHasher',
       'createDefaultGameConfig',
       'findBuildingAt',
+      'findGemAt',
       'findMapObjectAt',
       'findUnitAt',
       'isPlayableTeam',

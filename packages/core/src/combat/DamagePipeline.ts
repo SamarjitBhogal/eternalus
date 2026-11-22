@@ -11,8 +11,9 @@ import { createDefaultDamageSteps } from './defaultDamageSteps';
  * same way: Legends, mobs, bosses, structures and destructible obstacles such as trees. An entity
  * without `Health` (an indestructible obstacle) is never damaged.
  *
- * Emits `damage-applied` for every hit that lands and `entity-died` with the killer for the hit
- * that takes health to 0; `DeathSystem` removes the dead later in the tick.
+ * Emits `damage-applied` for every hit that lands, `damage-blocked` for one a step takes to 0, and
+ * `entity-died` with the killer for the hit that takes health to 0; `DeathSystem` removes the dead
+ * later in the tick.
  *
  * Every rule that changes a hit (friendly fire, statuses, structure multipliers, breakability) is a
  * `DamageStep`, run in order before `Health`; add one in `defaultDamageSteps.ts`.
@@ -49,6 +50,7 @@ export class DamagePipeline {
       amount,
     );
     if (final === 0) {
+      state.events.emit('damage-blocked', { targetId, source });
       return { applied: false, reason: 'blocked' };
     }
 

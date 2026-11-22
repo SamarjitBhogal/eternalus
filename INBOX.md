@@ -16,57 +16,32 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
-- [ ] **The Cathedral gem's look (Aryan Walanj, 2026-11-14).** `feat/cathedral-gem` draws the
-      gem at the Cathedral's centre as a `TUNE` diamond, 10 × 16 sketch units
-      (`buildingGeometry.ts`), in pale crystal blue `#9fd3e3` (`map1Scenery.ts`). No reference
-      gives its size or colour. Keep both, or which size and colour? Its look over time is
-      settled by DEC-83 (`docs/reference/game-design/13-owner-decisions-log.md`): for the MVP the
-      gem looks the same until it erupts; the changing look comes later, view-only. It is interior
-      scenery, so players see it only when the roof is cut away (DEC-143); should it also show
-      from outside?
 - [ ] **Better than design: split the Cathedral interior builder (Aryan Walanj, 2026-11-14,
       critic on `feat/cathedral-gem`).** `MapBuildingInteriorBuilder.ts` is past the ~300-line
-      guide (335 lines). The Cathedral furnishing (`cathedral*`, `apseWall`, the gem) could move to
+      guide (316 lines). The Cathedral furnishing (`cathedral*`, `apseWall`) could move to
       its own `MapDecorationBuilder` subclass picked by the per-kind interior registry (06). OK
       to do as a separate refactor PR?
 
-- [ ] **The gem's lightning on attackers: 11 open rules (Aryan Walanj, 2026-11-15,
-      `feat/cathedral-gem-hittable`).** DISC-11 (`13-owner-decisions-log.md`) says the gem
-      "strikes attackers with lightning when hit directly". No doc gives a number or a rule for it
-      (reference 04, balancing.md and architecture 07 are silent). This branch only makes the gem
-      hittable: a neutral `Cathedral` structure on the gem whose rule is `never`, so every hit is
-      blocked. The lightning waits for these answers:
-      (1) Damage per strike, and its type (physical or magical)?
-      (2) Cooldown between strikes, and is it per attacker or one for the gem?
-      (3) Range: is an attacker struck wherever it is (a ranged attacker 30 m away), or only
-      within a maximum range?
-      (4) What counts as "hit directly": basic attacks, abilities, projectiles, damage over time,
-      splash or area damage?
-      (5) Who is struck: Legends only, or mobs and camp units too? Both teams alike? Is the team
-      that holds the Cathedral exempt?
-      (6) Can the lightning kill? If so, who gets the kill credit and XP?
-      (7) Does a strike also stun or blind (as Lightbringer's lightning does), or only damage?
-      (8) After the eruption the gem is gone: does the Cathedral keep striking, or does it stop?
-      (9) The gem's body: the hittable circle is `TUNE` radius 5, the drawn diamond's half-width
-      (`buildingGeometry.ts`, `structureCatalogue.ts`), and it does not block movement. Keep both?
-      The critic adds two better-than-design points here: the `Cathedral` entity's only body is
-      the gem, so "hit the Cathedral" means "hit the gem" (doc 07 §1 could say so, or the gem
-      could become its own component before the building gets walls to hit); and the hit radius
-      follows the drawn size, so the hitbox could get its own content value instead.
-      (10) Bots: should bots ever attack the gem, or keep away? Today no bot or minion targets it.
-      (11) What do the lightning and its sound look and sound like? Until answered a strike would
-      be an event only, with no art.
-- [ ] **Better than design: a general retaliation rule vs a gem-only one (Aryan Walanj,
-      2026-11-15, `feat/cathedral-gem-hittable` plan).** For the lightning, either (a) a general
-      `Retaliation` component on `StructureDefinition` (damage, cooldown, range, all `TUNE`) with a
-      `RetaliationSystem` that answers any hit on its owner, which any later structure can reuse
-      from data (architecture 07 §1: behaviour by component, chosen from data), or (b) a
-      `CathedralGemSystem` for the gem alone, which is less code now. Both need the damage
-      pipeline to announce a blocked hit (a new `damage-blocked` event), since a hit on an
-      unbreakable target emits nothing today. Recommendation: (a), with doc 07 §1 and §11 updated in
-      the same PR. Approve (a), choose (b), or say no.
+- [ ] **The Cathedral gem: three rules DEC-292 leaves open (Aryan Walanj, 2026-11-21,
+      `feat/cathedral-gem-hittable`).** DEC-292 is built: hitting or touching the gem lands a 1 s
+      stun and a 72-damage burn on that unit, as environment damage (all `TUNE`, listed in the DEC-292
+      row). Three things the ruling does not say:
+      (1) **The Duel.** The Duel arena is the Cathedral and the two Legends start 50 units either
+      side of the gem. The gem is switched off in a Duel for now (DEC-36: the world round the arena
+      is off). Should it strike Duel fighters? If so, who does a death by the gem count for in the
+      first-to-N score?
+      (2) **The middle lane.** A lane runs through the Cathedral's centre, so its minions walk
+      across the gem on their way (it blocks no movement). The build strikes a unit by touch at
+      most once every 5 s (`gem-warded`), so a passing minion takes at most one 72-damage strike,
+      half a light minion's health, on both teams alike. Keep it, or should lane minions not be struck by a touch
+      (or should the gem block movement, so lanes route round it; that also needs the Duel's start
+      line kept clear)?
+      (3) **Kill credit.** The burn is environment damage (the gem is no team's, so it also hurts
+      neutrals): a unit it kills is nobody's kill and gives no kill XP. Keep it, or should the last
+      team or Legend to hit the victim get the credit?
+
 - [ ] **Better than design: one shared "never damaged" structure entry (Aryan Walanj, 2026-11-15,
-      critic on `feat/cathedral-gem-hittable`).** The three forest camps and the Cathedral each
+      critic on `feat/cathedral-gem-hittable`).** The three forest camps and the Cathedral gem each
       repeat `baseHealth: 1` and `breakability: never` in `structureCatalogue.ts`. One shared spread
       (like the existing `AFTER_BUFF_TOWERS`) would hold it once. It touches the camp lines, so it
       would be its own small refactor PR. OK, or leave as is?
@@ -3109,6 +3084,15 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-11-21 — **Your picks on the Cathedral gem (DEC-291, DEC-292)** (`feat/cathedral-gem-hittable`,
+  PR #132, which now also carries PR #124): recorded as DEC-291 and DEC-292. The gem keeps its
+  10 × 16 diamond and shows the holder's colour (blue Light, blood-red-purple Dark, purple-violet
+  neutral); it is its own unbreakable body; a hit or a touch stuns and burns the hitter, and the gem
+  pulses and glows purple, brighter and wider with more hits. Closes "The Cathedral gem's look",
+  "The gem's lightning on attackers: 11 open rules" and "a general retaliation rule vs a gem-only
+  one" (built gem-only, with its statuses and glow as content: `CATHEDRAL_GEM`). Three rules the
+  ruling leaves open are a new item under Decisions.
 
 - 2026-11-21 — **Your pick on HC-B17, a browser-support line** (`refactor/countdown-hud-units`):
   recorded as DEC-316. Architecture 13 §7 "Styling" now says, in your words: browser support is a

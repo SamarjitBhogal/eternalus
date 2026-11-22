@@ -9,7 +9,7 @@ import { Obstacle } from './Obstacle';
 import { Projectile } from './Projectile';
 import { BuffTower } from './structures/BuffTower';
 import { Camp } from './structures/Camp';
-import { Cathedral } from './structures/Cathedral';
+import { CathedralGem } from './structures/CathedralGem';
 import { Gate } from './structures/Gate';
 import { SpawnerTower } from './structures/SpawnerTower';
 import { Stronghold } from './structures/Stronghold';
@@ -34,7 +34,7 @@ export const createDefaultEntityRegistry = (): EntityRegistry => {
   registry.register('buff-tower', BuffTower);
   registry.register('gate', Gate);
   registry.register('camp', Camp);
-  registry.register('cathedral', Cathedral);
+  registry.register('cathedral-gem', CathedralGem);
   registry.register('capture-point', CapturePoint);
   return registry;
 };

@@ -1,5 +1,4 @@
 import { ContentCatalogue } from '../ContentCatalogue';
-import { BUILDING_GEOMETRY } from '../maps/buildingGeometry';
 import { MAP_FEATURE_DEFINITIONS } from '../maps/mapFeatureDefinitions';
 import type { StructureDefinition } from './structures.types';
 
@@ -91,13 +90,15 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       breakability: { kind: 'never' },
     },
     {
+      // Built at the `cathedral` feature, whose id it shares: the gem's own body, apart from the
+      // building (DEC-292). Never damaged: the gem is unbreakable (DISC-11, DEC-292).
       id: 'cathedral',
-      kind: 'cathedral',
-      displayName: 'Cathedral',
-      baseHealth: 1, // never damaged: the gem is unbreakable (DISC-11)
-      // TUNE: the drawn gem's half-width (sketch units equal world units at the default map size);
-      // no reference value (INBOX.md, the gem's lightning item)
-      footprintRadius: BUILDING_GEOMETRY.cathedral.gem.halfWidth,
+      kind: 'cathedral-gem',
+      displayName: 'Cathedral gem',
+      baseHealth: 1,
+      // TUNE: DEC-291 keeps the gem a 10 × 16 diamond; its hit and touch circle is the diamond's
+      // half-width, in world units (`CathedralGemView` draws the diamond from this radius)
+      footprintRadius: 5,
       breakability: { kind: 'never' },
     },
   ]);

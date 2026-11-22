@@ -1,5 +1,6 @@
 import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
+import { CathedralGemState } from '../components/CathedralGemState';
 import { ChaseWatch } from '../components/ChaseWatch';
 import { Collider } from '../components/Collider';
 import { Combat } from '../components/Combat';
@@ -197,6 +198,10 @@ export class StateHasher {
         capture.reachedBy('dark'),
         capture.reachedBy('neutral'),
       ]);
+    }
+    const gem = entity.findComponent(CathedralGemState);
+    if (gem !== undefined) {
+      fields.push(['gem', ...gem.fields]);
     }
     const veterancy = entity.findComponent(Veterancy);
     if (veterancy !== undefined) {
