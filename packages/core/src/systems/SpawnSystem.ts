@@ -18,6 +18,7 @@ import type { PlayableTeam } from '../teams/teams.types';
 import { compareById } from '../utils/compareById';
 import type { Vec2 } from '../utils/geometry.types';
 import { GuardRoster } from './GuardRoster';
+import { spawnPlanProblems } from './spawnPlanProblems';
 import type { ScheduledWave, SpawnPlan, CheckpointReached } from './SpawnSystem.types';
 import type { System, SystemContext } from './System.types';
 import { isPlayableTeam } from '../teams/playableTeams';
@@ -118,38 +119,13 @@ export class SpawnSystem implements System {
    * without hordes needs no minions.
    */
   private validate(homes: ReadonlySet<string>, hasCapturePoints: boolean): void {
-    const { openingWave, definitions, guards, defenders } = this.plan;
+    const { openingWave } = this.plan;
     const kinds = new Set(this.spawners.map(({ kind }) => kind));
     const waves = [
       ...(kinds.has(openingWave.source) ? [['opening', openingWave] as const] : []),
       ...this.scheduled.map(({ spawner, wave }) => [spawner.kind, wave] as const),
     ];
-    // Only the plans of structures and zones on this map, so a match without them needs no guard
-    // content.
-    const guardProblems = [...homes].flatMap((id) =>
-      (guards[id]?.table ?? []).flatMap(({ mobId }) =>
-        definitions.has(mobId) ? [] : [`${id} guard plan names unknown mob "${mobId}"`],
-      ),
-    );
-    // Only on a map with capture points, so a match without them needs no defender content.
-    const defenderProblems = Object.entries(hasCapturePoints ? defenders : {}).flatMap(
-      ([checkpoint, { table }]) =>
-        table.flatMap(({ mobId }) =>
-          definitions.has(mobId)
-            ? []
-            : [`checkpoint ${checkpoint} defenders name unknown mob "${mobId}"`],
-        ),
-    );
-    const mobProblems = waves.flatMap(([source, { mobId, weightClass }]) => {
-      if (!definitions.has(mobId)) {
-        return [`${source} wave names unknown mob "${mobId}"`];
-      }
-      const { kind } = definitions.get(mobId);
-      return kind === `${weightClass}-mob`
-        ? []
-        : [`${source} wave says "${mobId}" is ${weightClass}, but its kind is "${kind}"`];
-    });
-    const problems = [...new Set([...guardProblems, ...defenderProblems, ...mobProblems])];
+    const problems = spawnPlanProblems(this.plan, waves, homes, hasCapturePoints);
     if (problems.length > 0) {
       throw new ContentValidationError(`Invalid spawn plan: ${problems.join('; ')}`);
     }
