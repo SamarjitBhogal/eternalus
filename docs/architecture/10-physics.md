@@ -363,11 +363,18 @@ rest of the velocity (sideways, backward, or all of it when the unit does not st
 up again. After `CollisionSystem` resolves a move, it gives `Movement.hitBlock` the part of the
 move that a wall or the map's edge took. A unit with momentum loses the velocity that runs into
 the block: a head-on hit stops it, and a glancing hit keeps its slide along the wall. A unit
-without momentum still turns at once and keeps its speed. Two differences from §2 wait for the
-pre-PR critic: §2 has one acceleration clamp in every direction, but the Sentinel needs two rates
-(a 20 s ramp and a slide of about 1 s), so `grip` is a second rate; and the Sentinel's time to top
-speed is `walkSpeed / acceleration + rampDuration`, not `maxSpeed / acceleration`. The numbers are
-in `content/legends/sentinel.ts` (`TUNE`). Not built yet: the stun and self damage of a hit at full
+without momentum still turns at once and keeps its speed. Three differences from the design wait
+for the pre-PR critic. (1) §2 has one acceleration clamp in every direction, but the Sentinel needs
+two rates (a 20 s ramp and a slide of about 1 s), so `grip` is a second rate. Its closest match is
+the friction of §2 step 3, which also acts only on velocity the unit does not drive; `grip` takes
+off a fixed amount per tick, where step 3 multiplies. (2) The Sentinel's time to top speed is
+`walkSpeed / acceleration + rampDuration`, not `maxSpeed / acceleration`. (3) 05 §7 applies every
+passive as a permanent `buff` status, but Wrecking Run's movement is the `movementProfile.momentum`
+field, and the `wrecking-run` id in the Sentinel's `passiveOptions` has no ability entry yet. The
+numbers are in `content/legends/sentinel.ts` (`TUNE`); `MomentumWalkSpeedRule` rejects a
+`walkSpeed` at or above `maxSpeed` when content loads. A bot Sentinel at top speed slides past the
+point where it halts by less than its braking distance (`maxSpeed² / (2 × grip)`), turns back once
+and stops inside its arrival distance (`ai/BotMovement.test.ts`). Not built yet: the stun and self damage of a hit at full
 speed, barging through objects and walls (07 §3), and a Shield Wall that stops a Sentinel.
 
 ## Related
