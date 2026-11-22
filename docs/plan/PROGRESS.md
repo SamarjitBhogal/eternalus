@@ -9870,3 +9870,19 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Next step: push; #122 takes this head. The ubuntu CI time-outs (server
   `CoreDuelSimulationFactory` at Vitest's 5 s default, core `Simulation.duel.test.ts` at 60 s) wait
   for the owner's answers (Owner Calls cards server-test-timeout and core-duel-test-timeout).
+
+### 2026-11-22 — Phase 3 / tower ruins and routes: the Duel test time limits (DEC-325) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: DEC-325 (owner, Owner Calls page): `apps/server/vitest.config.ts` gets
+  `testTimeout: 60_000` as core and client have; `Simulation.duel.test.ts` "ends the match for the
+  first team to reach the kill target" gets its own 120 s (`KILL_TARGET_TIMEOUT_MS`, as DEC-289).
+  DEC-325 batch in the decisions log; the `INBOX.md` request "Make the tower horde test faster"
+  now covers both slow whole-match tests. Deliberate breaks (each limit set to 1) failed the tests
+  with "Test timed out in 1ms", then passed. Critic (`architecture-reviewer`): approve; findings
+  applied except a shared constant (the owner asked for the test's own limit, as DEC-289).
+- Checks run: `npm run check` → exit 0: core "Tests 1739 passed (1739)", protocol 29, client
+  2077, server 84, "Documentation check passed."
+  (`eternalus-agent-work/tower-ruins-and-routes/check-98-dec325.log`); then `prettier --check .`
+  and `npm run docs:check` with this entry.
+- Next step: merge phase/3 after #137 and #139, then #122 takes this head; push when the
+  coordinator confirms the owner's final answers (DEC-325 is provisional until then).

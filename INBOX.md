@@ -2836,16 +2836,23 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
-- [ ] **Make the tower horde test faster (DEC-289, 2026-11-20).** Owner: to be assigned.
+- [ ] **Make the tower horde test and the Duel kill-target test faster (DEC-289, 2026-11-20;
+      widened to both slow whole-match tests by DEC-325, 2026-11-22).** Owner: to be assigned.
+      Both core tests build a whole map and match, then play for many ticks.
       `Simulation.mapObjects.test.ts`, "walks every tower horde out of its tower and on up its
-      lane within 10 seconds (DEC-133, seed %i)", builds a whole map and match for each of its
-      three seeds (1, 2, 10), steps the countdown, then 10 s of play. One seed takes about 3 s
-      locally without coverage, but up to 65 s under coverage on the windows-latest CI runner
-      (PR #122, run 44714237495, 2026-11-20). DEC-289 gave this test its own 120 s time limit
-      (`HORDE_WALK_TIMEOUT_MS`) until it is faster. Where the time goes is not measured yet. Done
-      when the test runs well under 60 s on windows-latest CI and `HORDE_WALK_TIMEOUT_MS` is
-      removed, with every assertion and all three seeds kept (seed 10 covers critic round 3,
-      M-A).
+      lane within 10 seconds (DEC-133, seed %i)", does this for each of its three seeds (1, 2,
+      10): the countdown, then 10 s of play. One seed takes about 3 s locally without coverage,
+      but up to 65 s under coverage on the windows-latest CI runner (PR #122, run 44714237495,
+      2026-11-20). `Simulation.duel.test.ts`, "ends the match for the first team to reach the
+      kill target", fights a Duel to two kills; it took up to 61.7 s under coverage on the
+      ubuntu-latest runner (PR #122, run 44872612846, 2026-11-21). DEC-289 and DEC-325 gave the
+      two tests their own 120 s time limits (`HORDE_WALK_TIMEOUT_MS`, `KILL_TARGET_TIMEOUT_MS`)
+      until they are faster. A CPU profile of the slow Duel tests (2026-11-21) puts most of the
+      time in building the map: `WorldMap.stampFootprint` and `cellsInside`, and
+      `LaneFlowFields`; DEC-227's 2.5 m nav cells made that build about 3 times slower. Done when
+      both tests run well under 60 s on both CI runners and both constants are removed, with every
+      assertion kept, all three horde seeds kept (seed 10 covers critic round 3, M-A) and the Duel
+      still fought to its kill target.
 - [ ] **PR #30 renderer follow-up** — Owner: Gurshaan. Separate caching/batching and close-view
       material detail from the map PR; retain all renderer-specific tests with that change.
       Keep draw order inside SceneView, address renderer file length and the capture layer,
