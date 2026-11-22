@@ -211,6 +211,11 @@ export type AbilityBase = {
   readonly restrictions: readonly AbilityRestrictionSpec[];
   /** Per-level growth of a spec field, e.g. `{ amount: { perLevel: 0.04 } }` (05 §2, §13). */
   readonly scaling: Readonly<Record<string, { readonly perLevel: number }>>;
+  /**
+   * Whether a bot may cast it; absent means it may. `false` for an ability the bots leave alone:
+   * the Zealot's Weapon Swap, so bots keep the talons (`INBOX.md` HC-Q83, option A).
+   */
+  readonly canBotCast?: boolean;
 };
 
 /** An ability as authored whose effect steps are `Step`: times in seconds. */

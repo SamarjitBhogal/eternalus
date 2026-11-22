@@ -55,7 +55,7 @@ describe('SwapWeaponEffect', () => {
     expect(caster.getComponent(Loadout).isSecondaryInHand).toBe(false);
   });
 
-  it('keeps the target and the attack timer (owner card "PR9 swap timing", A)', () => {
+  it('keeps the target and the attack timer (INBOX.md HC-Q81, A)', () => {
     const { enemy, combat, swap } = setUp('assassin');
     combat.setTarget(enemy.id);
     combat.beginAttack(10);
@@ -68,7 +68,7 @@ describe('SwapWeaponEffect', () => {
     expect(combat.canAttack(readyAtTick - 1)).toBe(false);
   });
 
-  it('drops the melee mode with the bow out, which has none (owner card "PR9 bow melee key", A)', () => {
+  it('drops the melee mode with the bow out, which has none (INBOX.md HC-Q82, A)', () => {
     const { enemy, combat, swap } = setUp('assassin');
     combat.setTarget(enemy.id, 'melee');
 

@@ -3,8 +3,8 @@ import type { AuthoredAbility } from '../abilities/AbilityDefinition.types';
 /**
  * Weapon Swap: the Zealot's gadget (DEC-303), an artifact (05 §11) that puts its other weapon in
  * its hand, the bow for the talons and back. The swap is instant; the next swap waits the
- * cooldown, and the attack timer carries over (owner card "PR9 swap timing", option A, until the
- * owner's answer is final). It costs no aether: no source prices it.
+ * cooldown, and the attack timer carries over (`INBOX.md` HC-Q81, option A, until the owner's
+ * answer is final). It costs no aether: no source prices it.
  */
 export const WEAPON_SWAP = {
   id: 'weapon-swap',
@@ -12,8 +12,9 @@ export const WEAPON_SWAP = {
   description: 'Swap between your talons and your bow.',
   classId: 'warrior',
   slot: 'gadget',
-  cooldownSeconds: 1, // TUNE: owner card "PR9 swap timing" (A), proposed under DEC-305's standing rule
+  cooldownSeconds: 1, // TUNE: INBOX.md HC-Q81 (A), proposed under DEC-305's standing rule
   aetherCost: 0, // TUNE: no source prices a gadget
+  canBotCast: false, // bots keep the talons: INBOX.md HC-Q83 (A)
   targeting: { kind: 'self' },
   effects: [{ kind: 'swap-weapon' }],
   restrictions: [],

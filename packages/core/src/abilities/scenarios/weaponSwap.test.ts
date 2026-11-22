@@ -9,9 +9,9 @@ import { stepPastCountdown } from '../__fixtures__/stepPastCountdown';
 
 /**
  * The Zealot's weapon swap (DEC-303): the human plays the Zealot (spec `assassin`) on the dark
- * team, at its Stronghold (190, 30), with Weapon Swap on gadget-1 (key Z; owner card "PR9 swap
- * key", A). A light training dummy stands 15 m west: out of the talons' 1.5 m reach, inside the
- * bow's 50 m. The swap's cooldown is 1 s, 30 ticks (card "PR9 swap timing", A; TUNE).
+ * team, at its Stronghold (190, 30), with Weapon Swap on gadget-1 (key Z; `INBOX.md` HC-Q80, A).
+ * A light training dummy stands 15 m west: out of the talons' 1.5 m reach, inside the bow's 50 m.
+ * The swap's cooldown is 1 s, 30 ticks (HC-Q81, A; TUNE).
  */
 const match = (seed = 5) => {
   const sim = new Simulation({

@@ -63,6 +63,15 @@ export class CastValidator implements SlotReadiness {
   }
 
   /**
+   * Whether a bot may cast what `actorId` holds in `slot`: the slot holds an ability not authored
+   * `canBotCast: false` (`INBOX.md` HC-Q83).
+   */
+  public canBotCast(state: GameState, actorId: EntityId, slot: AbilitySlot): boolean {
+    const abilityId = state.entities.get(actorId)?.findComponent(Abilities)?.slot(slot)?.abilityId;
+    return abilityId != null && this.registry.resolve(abilityId).definition.canBotCast !== false;
+  }
+
+  /**
    * Why `actorId` may not cast `slot` aimed at `aim` now, or `null` when it may: the checks in
    * order, the aim's only when `aim` is given (`slotBlockedBy` passes `null`).
    */

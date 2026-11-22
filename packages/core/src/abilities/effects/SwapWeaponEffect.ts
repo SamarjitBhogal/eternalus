@@ -7,9 +7,10 @@ import type { AbilityEffect, CastContext } from '../AbilityEffect.types';
 /**
  * Puts the caster's other weapon in its hand (DEC-303: the Zealot's gadget swaps its talons and its
  * bow): the caster's `Loadout` swaps, then its `Combat` equips the new weapon's attacks. The attack
- * timer carries over and the target is kept (`Combat.equip`; owner card "PR9 swap timing", option
- * A). A caster with no second weapon changes nothing. The step has no area, so the aim overlay
- * draws nothing for it.
+ * timer carries over and the target is kept (`Combat.equip`; `INBOX.md` HC-Q81, option A). With
+ * the bow out, the melee mode becomes the basic attack, as the bow has no melee attack (HC-Q82,
+ * option A). A caster with no second weapon changes nothing. The step has no area, so the aim
+ * overlay draws nothing for it.
  */
 export class SwapWeaponEffect implements AbilityEffect<SwapWeaponSpec> {
   public readonly kind = 'swap-weapon';

@@ -13,6 +13,7 @@ import { NoRemovalWithoutCauseInvariant } from './invariants/NoRemovalWithoutCau
 import { PhaseMonotonicInvariant } from './invariants/PhaseMonotonicInvariant';
 import { StatusStacksWithinMaxInvariant } from './invariants/StatusStacksWithinMaxInvariant';
 import { UltimateNeverFillsPassivelyInvariant } from './invariants/UltimateNeverFillsPassivelyInvariant';
+import { WeaponInHandMatchesCombatInvariant } from './invariants/WeaponInHandMatchesCombatInvariant';
 import type { DefaultInvariantRunnerOptions } from './DefaultInvariantRunner.types';
 import { InvariantRunner } from './InvariantRunner';
 
@@ -42,6 +43,7 @@ export class DefaultInvariantRunner extends InvariantRunner {
         new NoCastWhileNotReadyInvariant(),
         new UltimateNeverFillsPassivelyInvariant(),
         new GrantedSlotMatchesStatusInvariant(),
+        new WeaponInHandMatchesCombatInvariant(),
         new CaptureProgressBoundsInvariant(),
         new PhaseMonotonicInvariant(phaseOrder, terminalPhases),
       ],

@@ -9,11 +9,13 @@ import { Aether } from '../components/Aether';
 import { Health } from '../components/Health';
 import { StatusEffects } from '../components/StatusEffects';
 import type { AbilityKit, AbilitySlot } from '../content/abilities/AbilityDefinition.types';
+import { loadAbilities } from '../content/abilities/loadAbilities';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { casterState, TEST_KIT } from './__fixtures__/casterState';
 import { RecordingEffect } from './__fixtures__/RecordingEffect';
 import { testAbilityRegistry } from './__fixtures__/fakeAbilities';
 import { CastValidator } from './CastValidator';
+import { createDefaultAbilityRegistry } from './defaultAbilityRegistry';
 
 const STATUSES = loadStatusEffects(30, 2);
 const AIM_EAST: Aim = { point: { x: 5, y: 0 }, targetId: null };
@@ -200,5 +202,18 @@ describe('CastValidator.slotBlockedBy (the slot alone, for the player snapshot)'
       'no entity "entity-404"',
     );
     expect(validator.blockedBy(state, 'entity-404', 'ability-1', AIM_EAST)).toBe('unknown-entity');
+  });
+});
+
+describe('CastValidator.canBotCast (for the bots)', () => {
+  it('lets a bot cast a filled slot, but not an empty one or Weapon Swap (INBOX.md HC-Q83)', () => {
+    const { state, caster } = casterState();
+    const validator = new CastValidator(createDefaultAbilityRegistry(loadAbilities(30), 30));
+
+    expect(validator.canBotCast(state, caster.id, 'ability-1')).toBe(true);
+    expect(validator.canBotCast(state, caster.id, 'gadget-1')).toBe(false); // empty
+    expect(validator.canBotCast(state, 'entity-404', 'ability-1')).toBe(false);
+    caster.getComponent(Abilities).slot('gadget-1')?.hold('weapon-swap');
+    expect(validator.canBotCast(state, caster.id, 'gadget-1')).toBe(false);
   });
 });

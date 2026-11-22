@@ -32,4 +32,9 @@ export interface SlotReadiness {
   priceOf(state: GameState, actorId: EntityId, abilityId: string): number;
   /** The full cooldown of `abilityId` in ticks. */
   cooldownTicksOf(abilityId: string): number;
+  /**
+   * Whether a bot may cast what `actorId` holds in `slot`: `false` for an empty slot, an unknown
+   * entity, or an ability authored `canBotCast: false` (`INBOX.md` HC-Q83).
+   */
+  canBotCast(state: GameState, actorId: EntityId, slot: AbilitySlot): boolean;
 }

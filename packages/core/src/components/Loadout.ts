@@ -4,7 +4,9 @@ import type { HeldWeapon } from './Loadout.types';
  * The weapons a Legend holds (architecture 04 §3 `Loadout`, its weapon part; 05 §12
  * `primaryWeaponId` and `secondaryWeaponId`): each one's attacks, loaded at spawn, and which one
  * is in its hand. The primary weapon is in hand at spawn. A gadget with a `swap-weapon` step swaps
- * them (DEC-303: the Zealot's talons and bow). The kit and the artifacts are on `Abilities`.
+ * them (DEC-303: the Zealot's talons and bow). The weapon in hand stays through a Duel round
+ * reset, as cooldowns and aether do (`INBOX.md` HC-Q84, option A). The kit and the artifacts are
+ * on `Abilities`.
  */
 export class Loadout {
   private isSecondaryInHandValue = false;
