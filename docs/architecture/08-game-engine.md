@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-09
+last-reviewed: 2026-11-22
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -262,14 +262,14 @@ flowchart LR
 Targets at the MVP cap (144 units per team plus 20 Legends, ~300 units; "engineered for
 hundreds"). **Recommendation:** these are the numbers the plan's phase gates check.
 
-| Metric                                                   | Budget                        | Where measured                                                           |
-| -------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------ |
-| `Simulation.step()` at 300 units                         | ≤ 8 ms (p95)                  | `performance.measure('tick')` in `Match`                                 |
-| `Match.render()` at 1080p, DPR 2                         | ≤ 8 ms (p95)                  | `performance.measure('render')`                                          |
-| Frame time                                               | ≤ 16.7 ms; no LoAF > 50 ms    | `PerformanceObserver('long-animation-frame')`                            |
-| Allocations in hot paths (steering, collision, snapshot) | zero per tick after warm-up   | heap sampling in the Performance panel; soak test counters               |
-| Flow-field rebuild after terrain change                  | ≤ 2 ms per tick (time-sliced) | `performance.measure('flow-rebuild')` in core via `Logger` timing events |
-| Minimap redraw                                           | ≤ 1 ms every 6th frame        | `performance.measure('minimap')`                                         |
+| Metric                                                   | Budget                                       | Where measured                                                           |
+| -------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------ |
+| `Simulation.step()` at 300 units                         | ≤ 8 ms (p95)                                 | `performance.measure('tick')` in `Match`                                 |
+| `Match.render()` at 1080p, DPR 2                         | ≤ 8 ms (p95)                                 | `performance.measure('render')`                                          |
+| Frame time                                               | ≤ one 60 Hz frame (DEC-328); no LoAF > 50 ms | `PerformanceObserver('long-animation-frame')`                            |
+| Allocations in hot paths (steering, collision, snapshot) | zero per tick after warm-up                  | heap sampling in the Performance panel; soak test counters               |
+| Flow-field rebuild after terrain change                  | ≤ 2 ms per tick (time-sliced)                | `performance.measure('flow-rebuild')` in core via `Logger` timing events |
+| Minimap redraw                                           | ≤ 1 ms every 6th frame                       | `performance.measure('minimap')`                                         |
 
 `PerfMonitor` (`engine/time/`) wraps `performance.mark`/`measure` with a `detail.devtools` track,
 keeps a fixed-bucket frame histogram (< 8, < 16, < 33, < 50, ≥ 50 ms) and subscribes a

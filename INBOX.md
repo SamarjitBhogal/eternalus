@@ -16,20 +16,19 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
-- [ ] **HC-B22 — Better than the design, not built, sign-off asked: how rule 7 measures
-      performance (`docs/rule7-frame-latency` critic, 2026-11-21); no decision blocks the PR.**
-      Rule 7 of the UI enhancements plan asks for a frame-interval p95 of 16.7 ms or less (16.8
-      passes, DEC-299 (3)); 16.8 is Chrome's 0.1 ms timestamp rounding, not latency (Done,
-      2026-11-21). A p95 ignores the worst 5 % of frames: about 21 of 420 frames could be missed
-      (33 ms each) and the p95 would still pass. The only slow frames on file are missed frames:
-      2 of 40 runs at CPU ×4 have one 33 ms interval, one of them in the control with every
-      enhancement off, and the script's count of intervals over 33.4 ms misses both. (a) Rule 7
-      becomes "a p95 within one 60 Hz frame, and no more missed frames (intervals over 25 ms) with
-      the enhancements on than in the control with them off"; the test page is served cross-origin
-      isolated, so frames read 16.66 to 16.67 ms and the 16.8 exception goes; the other 16.7 ms
-      frame targets (architecture 08 §9, the plan README §5, phases 1 and 6) read as "one 60 Hz
-      frame". (b) Keep rule 7 as it is. Agent's recommendation: (a); a missed frame is what a
-      player sees as a stutter.
+- [ ] **HC-B28 — Better than the design, not built, sign-off asked: one definition of "one 60 Hz
+      frame" and "missed frame" (`docs/rule7-frame-latency` critic on DEC-328, 2026-11-22); no
+      decision blocks the PR.** (1) The planned `PerfMonitor` frame histogram (architecture 08 §9,
+      not built yet) has buckets < 8, < 16, < 33, < 50 and ≥ 50 ms. A 16.67 ms frame falls in
+      < 33, and no edge marks a missed frame, so `PerfOverlay` cannot check the "one 60 Hz frame"
+      gates. (2) Define "one 60 Hz frame" and "missed frame" once, in 08 §9, and let the README,
+      phase 1 and phase 6 gates point to that definition. The game page is not cross-origin
+      isolated (08 §10), so in the game a frame reads 16.5 to 16.8 ms. (3) A median of frame
+      intervals fails only when more than half the frames are missed. The phase 1 and phase 6
+      gates could also count missed frames, as rule 7 does (DEC-328). (a) Do (1) to (3): buckets
+      with edges at one frame, 25 ms (missed) and 50 ms, one definition in 08 §9, and the gates
+      count missed frames. (b) Do (1) and (2) only; the gates keep the median. (c) Keep the design
+      as it is. Agent's recommendation: (a).
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
@@ -3068,6 +3067,16 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-11-22 — **Your pick on HC-B22, how rule 7 measures performance** (`docs/rule7-frame-latency`):
+  recorded as DEC-328. Option A: rule 7 is now "p95 within one 60 Hz frame, and no more missed
+  frames (intervals over 25 ms) with the enhancements on than in the control with them off". The
+  test page is served cross-origin isolated, so the 16.8 ms pass of DEC-299 (3) ends. The other
+  frame-time targets now read "one 60 Hz frame": architecture 08 §9, the plan README §5, phase 1
+  and phase 6. These are your design docs. Three points are not your words, so DEC-328 records
+  them as defaults: missed frames are compared at the same CPU speed, over the same number of runs
+  for each condition, with on and off runs alternating; "one 60 Hz frame" means ≤ 16.67 ms; the
+  page is isolated with the COOP and COEP headers.
 
 - 2026-11-21 — **Rule 7 frame latency, your question on DEC-299 (3)** (`docs/rule7-frame-latency`):
   the 16.8 ms readings are not latency. Chrome rounds the timestamps of a page that is not
