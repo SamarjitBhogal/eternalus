@@ -517,6 +517,16 @@ Reply inline (`Decision: …`).
     "sure? if it fits what ive been saying" (it does: a hit ends Veil at once), (5) "yes". (6) got
     no answer and stays not built. Built on `feat/vanguard-veil-hamstring`; 03 §2 and §5, 05 §8,
     08 §8 and 11 §3 now state (1) to (5).
+- [ ] **HC-Q79 — "veil-no-damage-hit": does a hit that does no damage end Veil? (DEC-327 delta
+      critic F1, `feat/vanguard-veil-hamstring`, 2026-11-22; asked on the Owner Calls page, v46).**
+      Today a Veiled Vanguard that strikes an enemy wall that cannot break, or tries to stun an
+      enemy that cannot be stunned, stays hidden: the hit does nothing (the damage pipeline blocks
+      it to 0, or the target refuses the debuff), so no event marks it. Your words in DEC-327: "the
+      action of attacking ... not the damage they did itself, but the interaction". (A) Any hit
+      that touches something ends Veil, also with no damage (recommended): built with lane A's
+      target-free attack rework, which decides contact in one place (one hit event at contact,
+      handed to lane A). (B) Only a hit that does something ends Veil, as built now. Until you
+      answer, the rule stays as built.
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
