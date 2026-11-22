@@ -46,7 +46,7 @@ export class FlowFieldBuilder {
     const cells = grid.cols * grid.rows;
     this.integration = new Uint16Array(cells);
     this.direction = new Int8Array(cells);
-    this.heap = new CellHeap(cells, (a, b) => this.isBefore(a, b));
+    this.heap = new CellHeap(cells);
     this.walls = new Int32Array(cells);
     this.wallDepth = new Uint16Array(cells);
   }
@@ -67,7 +67,7 @@ export class FlowFieldBuilder {
     this.field = field;
     if (field.isOpen(field.goal)) {
       this.integration[field.goal] = 0;
-      this.heap.push(field.goal);
+      this.heap.push(field.goal, 0);
     }
   }
 
@@ -120,7 +120,7 @@ export class FlowFieldBuilder {
       const reach = cost + (step < 4 ? STRAIGHT_COST : DIAGONAL_COST);
       if (next !== -1 && reach < (this.integration[next] ?? UNREACHED)) {
         this.integration[next] = reach;
-        this.heap.push(next);
+        this.heap.push(next, reach);
       }
     }
     this.pointWallsOut(field, cell, col, row);
@@ -219,11 +219,5 @@ export class FlowFieldBuilder {
     const isCornerCut =
       step >= 4 && (!field.isOpen(row * cols + nextCol) || !field.isOpen(nextRow * cols + col));
     return field.isOpen(next) && !isCornerCut ? next : -1;
-  }
-
-  private isBefore(a: number, b: number): boolean {
-    const costA = this.integration[a] ?? UNREACHED;
-    const costB = this.integration[b] ?? UNREACHED;
-    return costA < costB || (costA === costB && a < b);
   }
 }

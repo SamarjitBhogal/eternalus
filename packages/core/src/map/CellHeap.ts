@@ -1,24 +1,20 @@
 /**
  * A binary min-heap of grid cell indexes that knows where each cell sits, so a cell whose key
- * dropped moves up in place (Dijkstra and A\*, architecture 06 §6, 10 §9). The order comes from
- * the owner's `isBefore`, which breaks ties by cell index, so pops never depend on push order.
- * Allocation-free after construction.
+ * dropped moves up in place (Dijkstra and A\*, architecture 06 §6, 10 §9). It keeps each queued
+ * cell's key and pops the lowest key first, then the lower cell index, so pops never depend on
+ * push order (11 §5). Allocation-free after construction.
  */
 export class CellHeap {
   private readonly cells: Int32Array;
   private readonly slots: Int32Array;
+  private readonly keys: Uint32Array;
   private count = 0;
 
-  /**
-   * @param capacity - The grid's cell count.
-   * @param isBefore - Whether cell `a` pops before cell `b`.
-   */
-  public constructor(
-    capacity: number,
-    private readonly isBefore: (a: number, b: number) => boolean,
-  ) {
+  /** @param capacity - The grid's cell count. */
+  public constructor(capacity: number) {
     this.cells = new Int32Array(capacity);
     this.slots = new Int32Array(capacity).fill(-1);
+    this.keys = new Uint32Array(capacity);
   }
 
   /** How many cells are queued. */
@@ -34,8 +30,12 @@ export class CellHeap {
     this.count = 0;
   }
 
-  /** Queues `cell`, or moves it up when it is already queued and its key dropped. */
-  public push(cell: number): void {
+  /**
+   * Queues `cell` with `key`, or moves it up when it is already queued with a higher key. A key is
+   * a non-negative integer, and a queued cell's key may only drop.
+   */
+  public push(cell: number, key: number): void {
+    this.keys[cell] = key;
     const slot = this.slots[cell] ?? -1;
     if (slot !== -1) {
       this.siftUp(slot);
@@ -96,6 +96,13 @@ export class CellHeap {
       slot = child;
     }
     this.place(cell, slot);
+  }
+
+  /** Whether cell `a` pops before cell `b`: the lower key, then the lower cell index. */
+  private isBefore(a: number, b: number): boolean {
+    const keyA = this.keys[a] ?? 0;
+    const keyB = this.keys[b] ?? 0;
+    return keyA < keyB || (keyA === keyB && a < b);
   }
 
   private place(cell: number, slot: number): void {

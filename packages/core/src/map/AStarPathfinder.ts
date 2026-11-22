@@ -61,7 +61,7 @@ export class AStarPathfinder {
     this.cost = new Uint32Array(cells);
     this.from = new Int32Array(cells);
     this.stamp = new Uint32Array(cells);
-    this.heap = new CellHeap(cells, (a, b) => this.isBefore(a, b));
+    this.heap = new CellHeap(cells);
     this.path = new Int32Array(cells);
     this.exits = new CourtExitField(grid, (cell, out) => {
       this.searchExit(cell, out);
@@ -217,7 +217,7 @@ export class AStarPathfinder {
     this.stamp[cell] = this.search;
     this.cost[cell] = cost;
     this.from[cell] = previous;
-    this.heap.push(cell);
+    this.heap.push(cell, cost + this.heuristic(cell));
   }
 
   /**
@@ -259,13 +259,6 @@ export class AStarPathfinder {
       out.x = goal.x;
       out.y = goal.y;
     }
-  }
-
-  /** Estimated total cost through `cell`, then the cell index (11 §5: ties never depend on order). */
-  private isBefore(a: number, b: number): boolean {
-    const totalA = (this.cost[a] ?? 0) + this.heuristic(a);
-    const totalB = (this.cost[b] ?? 0) + this.heuristic(b);
-    return totalA < totalB || (totalA === totalB && a < b);
   }
 
   /**

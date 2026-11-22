@@ -91,6 +91,25 @@ describe('AStarPathfinder (A* for Legends, 10 §9)', () => {
     expect(finder.lastCost).toBe(6 * 14 + 15 * 10);
   });
 
+  it('ranks a queued cell by its newest cost when the search finds a cheaper way to it, so the path stays the shortest', () => {
+    const grid = openGrid();
+    // Columns 38..40, rows 10..13: it blocks the straight line and some shortest ways, but one
+    // stays open (along row 17, then up). The search reaches some cells first by a dearer way; a
+    // cell kept at its first estimate pops late and the path costs 8 more (496).
+    grid.stampFootprint([
+      { x: 76, y: 20 },
+      { x: 82, y: 20 },
+      { x: 82, y: 28 },
+      { x: 76, y: 28 },
+    ]);
+    const finder = new AStarPathfinder(grid, LIMITS);
+
+    finder.waypoint({ x: 13, y: 35 }, { x: 105, y: 21 }, { x: 0, y: 0 });
+
+    // Cell (6, 17) to cell (52, 10) by the open way: 7 diagonals and 39 straights.
+    expect(finder.lastCost).toBe(7 * 14 + 39 * 10);
+  });
+
   it('gives the same waypoint every time for the same question', () => {
     const finder = new AStarPathfinder(riftGrid(), LIMITS);
     const first = { x: 0, y: 0 };

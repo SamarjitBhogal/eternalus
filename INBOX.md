@@ -16,6 +16,18 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **HC-B32 — Better than the design, built under your standing rule (DEC-223), sign-off
+      asked: one queue rule for both path searches (`chore/horde-test-speed`, into PR #152,
+      critic round 1, 2026-11-22; MEMORY-CLEANUP-7); no decision blocks the PR.** The player sees
+      no difference: bots and hordes take the same paths as before. Two path searches (bot
+      Legends and the lane flow fields) keep a queue of map cells. Each search takes the cell
+      with the lowest sort value first; on a tie, the lower cell index goes first (11 §5). For a
+      bot, the sort value is the cost so far plus the estimate to the goal. Each search had its
+      own copy of that rule. Now the queue (`CellHeap`) keeps each queued cell's sort value and
+      owns the rule, so the rule is in one place. Proof: the match state hashes and the flow
+      fields are the same before and after. No design doc names the queue, so no doc changes.
+      Options: (A) keep it (recommended, built); (B) undo it; (C) other (note). A, B or C?
+
 - [ ] **`refactor/tower-ruins-followups` critic (2026-11-14), better than the design — one item
       for the tidy PR (DEC-218), sign-off.** Not built: this branch stays small. (BT2) One `Band`
       type in `content/maps/maps.types.ts` (`readonly [number, number]`, a stretch of a lane as
@@ -2908,8 +2920,8 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
       widened to both slow whole-match tests by DEC-325, 2026-11-22).** Owner: to be assigned.
       Both core tests build a whole map and match, then play for many ticks.
       `Simulation.mapObjects.test.ts`, "walks every tower horde out of its tower and on up its
-      lane within 10 seconds (DEC-133, seed %i)", does this for each of its three seeds (1, 2,
-      10): the countdown, then 10 s of play. One seed takes about 3 s locally without coverage,
+      lane within 12 seconds (DEC-133, seed %i)", does this for each of its three seeds (1, 2,
+      10): the countdown, then up to 12 s of play. One seed takes about 3 s locally without coverage,
       but up to 65 s under coverage on the windows-latest CI runner (PR #122, run 44714237495,
       2026-11-20). `Simulation.duel.test.ts`, "ends the match for the first team to reach the
       kill target", fights a Duel to two kills; it took up to 61.7 s under coverage on the
@@ -2921,6 +2933,14 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
       both tests run well under 60 s on both CI runners and both constants are removed, with every
       assertion kept, all three horde seeds kept (seed 10 covers critic round 3, M-A) and the Duel
       still fought to its kill target.
+  - **2026-11-22, horde test step 1 done (`chore/horde-test-speed`, into PR #152):** the A\*
+    queue keeps each queued cell's estimate, so a queue compare no longer computes the heuristic
+    again (HC-B32 moved that key into the shared queue); state hashes do not change. Horde test,
+    local, with coverage, per seed: 12.2-12.6 s before, 8.6-9.0 s after. The rest of the cost:
+    after the tower hordes spawn, no straight line is clear, so every bot Legend decision runs an
+    A\* search to its goal. Next step: remove `HORDE_WALK_TIMEOUT_MS` after PR #84 (bot A\*
+    waypoint cache) reaches PR #152's line (both together: 5.0-5.1 s locally), with CI times on
+    both runners as the proof. The Duel test part is not started.
 - [ ] **PR #30 renderer follow-up** — Owner: Gurshaan. Separate caching/batching and close-view
       material detail from the map PR; retain all renderer-specific tests with that change.
       Keep draw order inside SceneView, address renderer file length and the capture layer,
