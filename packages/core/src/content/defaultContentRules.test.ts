@@ -17,6 +17,7 @@ import { KnownLevelCurveRule } from './validation/KnownLevelCurveRule';
 import { KnownProjectileRule } from './validation/KnownProjectileRule';
 import { KnownWeaponRule } from './validation/KnownWeaponRule';
 import { LevelScalingRule } from './validation/LevelScalingRule';
+import { MomentumWalkSpeedRule } from './validation/MomentumWalkSpeedRule';
 import { PositiveAetherRule } from './validation/PositiveAetherRule';
 import { PositiveStatsRule } from './validation/PositiveStatsRule';
 import { RoleRatingRangeRule } from './validation/RoleRatingRangeRule';
@@ -29,6 +30,7 @@ describe('createDefaultContentRules', () => {
     expect(rules.map((rule) => rule.constructor)).toEqual([
       KebabCaseIdRule,
       PositiveStatsRule,
+      MomentumWalkSpeedRule,
       PositiveAetherRule,
       KnownLevelCurveRule,
       LevelScalingRule,

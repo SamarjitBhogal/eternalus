@@ -21,6 +21,7 @@ import { KnownLevelCurveRule } from './validation/KnownLevelCurveRule';
 import { KnownProjectileRule } from './validation/KnownProjectileRule';
 import { KnownWeaponRule } from './validation/KnownWeaponRule';
 import { LevelScalingRule } from './validation/LevelScalingRule';
+import { MomentumWalkSpeedRule } from './validation/MomentumWalkSpeedRule';
 import { PositiveAetherRule } from './validation/PositiveAetherRule';
 import { PositiveStatsRule } from './validation/PositiveStatsRule';
 import { RoleRatingRangeRule } from './validation/RoleRatingRangeRule';
@@ -47,6 +48,7 @@ export const createDefaultContentRules = (
 ): readonly UnitDefinitionRule[] => [
   new KebabCaseIdRule(),
   new PositiveStatsRule(),
+  new MomentumWalkSpeedRule(),
   new PositiveAetherRule(),
   new KnownLevelCurveRule(curves),
   new LevelScalingRule(),

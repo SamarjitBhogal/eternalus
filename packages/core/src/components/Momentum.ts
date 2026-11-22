@@ -2,6 +2,7 @@ import type { MomentumProfile } from '../content/units/units.types';
 import type { Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
 import { CONTACT_EPSILON } from '../utils/circlePolygon.constants';
+import { sqrt } from '../utils/deterministicMath';
 
 /**
  * The velocity rule of a unit with momentum (the Sentinel's Wrecking Run, DEC-307; architecture
@@ -48,14 +49,14 @@ export class Momentum {
     const forward = Math.max(0, along);
     const restX = velocity.x - heading.x * forward;
     const restY = velocity.y - heading.y * forward;
-    const rest = Math.hypot(restX, restY);
+    const rest = sqrt(restX * restX + restY * restY);
     const kept = rest === 0 ? 0 : Math.max(0, rest - this.profile.grip) / rest;
     const isSteering = heading.x !== 0 || heading.y !== 0;
     // Moving away from the heading: no drive until the slide has stopped it.
     const driven = isSteering && along >= 0 ? this.buildUp(forward) : forward;
     velocity.x = heading.x * driven + restX * kept;
     velocity.y = heading.y * driven + restY * kept;
-    const speed = Math.hypot(velocity.x, velocity.y);
+    const speed = sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
     if (speed <= cap) return speed;
     velocity.x *= cap / speed;
     velocity.y *= cap / speed;
@@ -69,7 +70,7 @@ export class Momentum {
    * Mutates `velocity` and returns its length, the new speed.
    */
   public shed(velocity: MutableVec2, lost: Vec2): number {
-    const length = Math.hypot(lost.x, lost.y);
+    const length = sqrt(lost.x * lost.x + lost.y * lost.y);
     if (length > CONTACT_EPSILON) {
       const into = (velocity.x * lost.x + velocity.y * lost.y) / length;
       if (into > 0) {
@@ -77,7 +78,7 @@ export class Momentum {
         velocity.y -= (lost.y / length) * into;
       }
     }
-    return Math.hypot(velocity.x, velocity.y);
+    return sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
   }
 
   /** The forward speed after one tick of driving: fast to `walkSpeed`, then the slow ramp. */

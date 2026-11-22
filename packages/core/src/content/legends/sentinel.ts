@@ -28,7 +28,7 @@ export const SENTINEL = {
     abilities: ['slam', 'rip-and-tear', 'shield-wall'], // DEC-209 (2): keys 1-3, similar effects share a key
     ultimate: 'berserk', // DEC-209 (2): key 4
   },
-  passiveOptions: ['wrecking-run'],
+  passiveOptions: ['wrecking-run'], // its movement is `movementProfile.momentum` below; the stun, self damage and barging are not built (05 §7, 10 §12)
   defaultAction: null,
   referenceHeight: 4.6, // TUNE: ~15 ft (an elephant)
   footprintRadius: 1.25, // DEC-06
