@@ -36,6 +36,13 @@ describe('Capturable', () => {
     expect(zone.lockingProgress).toBe(1);
   });
 
+  it('records the tick its owner changed (the zone level-up clock, DEC-258)', () => {
+    const zone = new Capturable();
+
+    zone.setOwner('dark', 42);
+    expect(zone.ownedSinceTick).toBe(42);
+  });
+
   it('keeps the presence it is given, empty at first', () => {
     const zone = new Capturable();
     expect(zone.presence).toEqual({ light: 0, dark: 0, neutral: 0 });

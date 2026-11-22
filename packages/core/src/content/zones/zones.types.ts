@@ -22,11 +22,17 @@ export type ZoneDefinition = EntityDefinitionBase & {
 export type ZonePlacements = Readonly<Partial<Record<MapFeatureKind, string>>>;
 
 /**
- * The zone level-up (architecture 07 §7, DEC-258): a capture point held this long without a break
- * grants its owner's minions spawned on its lane `levels` minion levels, taken back when it is lost.
- * The levels' cap is the minion level cap (`MinionVeterancyDefinition.maxLevel`).
+ * The zone level-up as authored (architecture 07 §7, DEC-258): a capture point held `holdSeconds`
+ * without a break grants its owner's minions spawned on its lane `levels` minion levels, taken back
+ * when it is lost. The levels' cap is the minion level cap (`MinionVeterancyDefinition.maxLevel`).
  */
-export type ZoneLevelUpDefinition = {
+export type AuthoredZoneLevelUp = {
   readonly holdSeconds: number;
+  readonly levels: number;
+};
+
+/** The zone level-up as loaded (`loadZoneLevelUp`): the hold time in ticks (DEC-241). */
+export type ZoneLevelUpDefinition = {
+  readonly holdTicks: number;
   readonly levels: number;
 };

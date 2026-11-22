@@ -9,6 +9,7 @@ import { loadDefaultContent } from '../content/loadDefaultContent';
 import { loadMinionVeterancy } from '../content/mobs/loadMinionVeterancy';
 import { MINION_VETERANCY } from '../content/mobs/minionVeterancy';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
+import { loadZoneLevelUp } from '../content/zones/loadZoneLevelUp';
 import { ZONE_LEVEL_UP } from '../content/zones/zoneLevelUp';
 import { CATHEDRAL_CAPTURE_POINT } from '../content/zones/cathedralCapturePoint';
 import { NullLogger } from '../diagnostics/NullLogger';
@@ -47,7 +48,7 @@ const setUp = () => {
     units,
     loadMinionVeterancy(state.config.tickRate),
   );
-  const levelUp = new ZoneLevelUpSystem(state, ZONE_LEVEL_UP);
+  const levelUp = new ZoneLevelUpSystem(state, loadZoneLevelUp(TICK_RATE));
   const point = new CapturePoint('zone-1', CATHEDRAL_CAPTURE_POINT.id);
   point.spawn({
     definition: CATHEDRAL_CAPTURE_POINT,

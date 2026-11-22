@@ -306,7 +306,7 @@ that side's hordes spawned on its lane gain minion levels, and losing the point 
 the same tick. `ZoneLevelUpSystem` hears `CaptureSystem`'s ownership events and announces the levels
 with `minion-levels-granted`; `VeterancySystem` applies them as the one minion level of its two
 sources (DEC-168), so a lost zone never costs a level the kills earned (DEC-279). The hold time and the
-levels are `content/zones/zoneLevelUp.ts`; the cap is the minion level cap. Mini-bosses at the quarter mark
+levels are `content/zones/zoneLevelUp.ts`, and `loadZoneLevelUp` turns the hold time into ticks once, at load (DEC-241); the cap is the minion level cap. Mini-bosses at the quarter mark
 lock the outer zones (`lockedBy`) until they die (`MatchDirector` timeline).
 
 ## 8. Structure destruction effects

@@ -1,4 +1,4 @@
-import type { ZoneLevelUpDefinition } from './zones.types';
+import type { AuthoredZoneLevelUp } from './zones.types';
 
 /**
  * The zone level-up of every capture point (architecture 07 §7; DEC-258: all three central zones
@@ -8,4 +8,4 @@ import type { ZoneLevelUpDefinition } from './zones.types';
 export const ZONE_LEVEL_UP = {
   holdSeconds: 90, // TUNE: balancing.md
   levels: 1, // TUNE: balancing.md
-} as const satisfies ZoneLevelUpDefinition;
+} as const satisfies AuthoredZoneLevelUp;

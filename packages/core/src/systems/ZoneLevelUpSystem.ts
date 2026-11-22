@@ -5,12 +5,11 @@ import { CapturePoint } from '../entities/zones/CapturePoint';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { PlayableTeam } from '../teams/teams.types';
-import { TickRate } from '../utils/TickRate';
 import type { System, SystemContext } from './System.types';
 
 /**
  * The zone level-up (architecture 07 §7, DEC-258): once a team has held a capture point for
- * `holdSeconds` without a break (`Capturable.ownedSinceTick`), every horde of that team spawned on
+ * the hold time (`holdTicks`) without a break (`Capturable.ownedSinceTick`), every horde of that team spawned on
  * the point's lane gets `levels` minion levels (`minion-levels-granted`, applied by
  * `VeterancySystem`, which records the point as `Veterancy.grantedBy`). When the point changes
  * owner, the levels it granted are taken back on that tick. Runs after `CaptureSystem`, so it sees
@@ -19,19 +18,17 @@ import type { System, SystemContext } from './System.types';
  */
 export class ZoneLevelUpSystem implements System {
   public readonly name = 'zone-level-up';
-  private readonly holdTicks: number;
   private readonly changed: EntityId[] = [];
   private readonly spawned: string[] = [];
 
   /**
    * @param state - The match whose events this system listens to.
-   * @param levelUp - The hold time and the levels (content).
+   * @param levelUp - The hold time and the levels, as loaded (`loadZoneLevelUp`).
    */
   public constructor(
     state: GameState,
     private readonly levelUp: ZoneLevelUpDefinition,
   ) {
-    this.holdTicks = new TickRate(state.config.tickRate).toTicks(levelUp.holdSeconds);
     state.events.on('capture-point-owner-changed', ({ pointId }) => {
       this.changed.push(pointId);
     });
@@ -87,7 +84,7 @@ export class ZoneLevelUpSystem implements System {
         entity instanceof CapturePoint &&
         entity.laneId === lane &&
         capturable?.owner === team &&
-        state.tick - capturable.ownedSinceTick >= this.holdTicks
+        state.tick - capturable.ownedSinceTick >= this.levelUp.holdTicks
       ) {
         held = entity.id;
       }
