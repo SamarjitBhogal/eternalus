@@ -109,8 +109,36 @@ export const STRUCTURE_MARKERS: Readonly<Record<string, GlyphSpec | undefined>> 
 };
 
 /**
- * The alpha, as two hex digits appended to a team colour, of the ring a structure draws at its
- * aura's radius (DEC-315 (4)): faint, so the ground under it stays readable.
+ * The alpha, as two hex digits appended to a team colour, of the ring a structure draws round its
+ * aura field (DEC-315 (4), DEC-323 (3)): faint, so the ground under it stays readable.
  */
 // TUNE: DEC-315 (4); "a ring is drawn at 12 m", no reference look, close is enough
 export const STRUCTURE_AURA_RING_ALPHA = '66';
+
+/**
+ * The aura field a living structure draws under the units (DEC-323 (3)): the ground within the
+ * aura's radius of its outline box (`EntitySnapshot.aura`), so a box grown by the radius with
+ * corners rounded by it (a circle round a box of no size). `fillAlpha` is the field's alpha, two
+ * hex digits appended to the team colour; `ringWidth` is the ring's width in screen pixels;
+ * `cornerSegments` straight pieces draw each rounded corner.
+ */
+// TUNE: DEC-323 (3) "a visible field ... team-coloured aura ring"; no reference look, close is enough
+export const STRUCTURE_AURA_FIELD = {
+  fillAlpha: '1a',
+  ringWidth: 1.5,
+  cornerSegments: 8,
+} as const;
+
+/**
+ * The light particles that drift along a structure's aura ring (DEC-323 (3)): `count` dots of
+ * `size` world units, evenly spaced, moving clockwise at `speed` world units per tick (30 ticks a
+ * second), in the team colour at `alpha` (two hex digits appended to it). A fixed count per
+ * structure keeps the cost flat.
+ */
+// TUNE: DEC-323 (3) "light-weight, performance-friendly particles"; no reference look
+export const STRUCTURE_AURA_PARTICLES = {
+  count: 12,
+  size: 0.6,
+  speed: 0.1,
+  alpha: 'b3',
+} as const;

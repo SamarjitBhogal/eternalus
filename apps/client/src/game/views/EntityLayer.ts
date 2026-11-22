@@ -46,22 +46,29 @@ export class EntityLayer implements WorldLayer {
     focusId: string | null,
   ): void {
     const before = new Map(previous?.entities.map((entity) => [entity.id, entity]) ?? []);
+    const time =
+      previous === null ? current.tick : previous.tick + (current.tick - previous.tick) * alpha;
     this.states = current.entities.flatMap((entity) => {
       const now = entity.transform;
       if (entity.mapObjectId !== undefined || now === null) return [];
       const then = before.get(entity.id)?.transform ?? now;
       const position = EntityLayer.lerp(then, now, alpha);
       const facing = EntityLayer.turn(then.facing, now.facing, alpha);
-      return [{ entity, position, facing, isFocused: entity.id === focusId }];
+      return [{ entity, position, facing, isFocused: entity.id === focusId, time }];
     });
   }
 
   /**
-   * Draws every entity, back to front by `y`, so lower entities overlap higher ones. The health
-   * bars (`HealthBarView`) come after every entity of this layer, so no entity hides a bar.
+   * Draws every entity, back to front by `y`, so lower entities overlap higher ones. What lies on
+   * the ground (`EntityView.drawGround`, an aura field) comes before every entity, so no unit is
+   * tinted by it. The health bars (`HealthBarView`) come after every entity of this layer, so no
+   * entity hides a bar.
    */
   public draw(renderer: Renderer): void {
     const ordered = [...this.states].sort((a, b) => a.position.y - b.position.y);
+    for (const state of ordered) {
+      this.views.viewFor(state.entity).drawGround?.(state, renderer);
+    }
     for (const state of ordered) {
       this.views.viewFor(state.entity).draw(state, renderer);
     }

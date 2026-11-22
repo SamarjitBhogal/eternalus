@@ -39,7 +39,10 @@ describe('MobView', () => {
   it('draws a dark outline and the facing chevron under the team disc (DEC-192)', () => {
     const renderer = new RecordingRenderer();
 
-    new MobView().draw({ entity: MINION, position: AT, facing: SOUTH, isFocused: false }, renderer);
+    new MobView().draw(
+      { entity: MINION, position: AT, facing: SOUTH, isFocused: false, time: 0 },
+      renderer,
+    );
 
     expect(renderer.calls).toEqual([
       {
@@ -63,6 +66,7 @@ describe('MobView', () => {
       position: AT,
       facing: SOUTH,
       isFocused: false,
+      time: 0,
     });
 
     view.drawMinimap(at('light'), renderer);

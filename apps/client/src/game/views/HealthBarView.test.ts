@@ -32,7 +32,7 @@ const unit: EntitySnapshot = {
 const fills = (entity: EntitySnapshot): unknown[] => {
   const renderer = new RecordingRenderer();
   new HealthBarView().draw(
-    { entity, position: { x: 0, y: 0 }, facing: EAST, isFocused: false },
+    { entity, position: { x: 0, y: 0 }, facing: EAST, isFocused: false, time: 0 },
     'enemy',
     renderer,
   );
@@ -49,7 +49,7 @@ describe('HealthBarView', () => {
     const renderer = new RecordingRenderer();
     const foe = { ...unit, health: { current: 3, max: 10 } };
     new HealthBarView().draw(
-      { entity: foe, position: { x: 10, y: 20 }, facing: EAST, isFocused: false },
+      { entity: foe, position: { x: 10, y: 20 }, facing: EAST, isFocused: false, time: 0 },
       'enemy',
       renderer,
     );
