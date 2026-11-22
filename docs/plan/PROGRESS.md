@@ -8707,6 +8707,19 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 
 - What was done: merged `feat/duel-server` into this branch (its base, updated after the sync with `phase/3-sprint-3-work` 3dc9e908) because #102 was CONFLICTING. Only the append-only logs conflicted; both sides' entries are kept. No feature code changed. No force push.
 - Checks run: `npm run check` → `EXIT=0`: Tests 1356 passed (1356);Tests 29 passed (29);Tests 1909 passed (1909);Tests 82 passed (82); "Documentation check passed."
+
+- Next step: reviewer approval; the team merges in stack order.
+
+### 2026-11-12 — Phase 3 / online Duel — feat/mm-queue-load (SCRUM-432, stacked on #102) — claudiodh + Claude Code
+
+- What was done: matchmaking tests and a queue-load mode for the bots. Tests: double join, join right after leave, leave by a non-queued player, disconnect while queued, forfeit by disconnect, disconnect right before or after a pairing, an even crowd paired once each (`DuelQueue`, `DuelGateway`, `DuelHost`). Bug fixed: a seat that closes while `match-found` is being sent ended the match, but `DuelMatch.start` then still sent to the other seat and scheduled a tick task that never stopped (test in `DuelHost.test.ts` failed before). Bots: `--mode queue --rounds N` (`QueueLoadRun`, `QueueLoadBot`, `QueueLoadChecks`, `QueueLoadSummary`, `percentile`); `OPS_PORT` makes the health port configurable. Numbers are in the capacity note of `multiplayer-and-scalability-plan.md` section 7: 300 bots x 5 rounds, 750 matches, 0 lost, 0 duplicated, time to match p50 about 250 ms, p99 about 5 s; one process starts about 8 Duels per second (map generation); 400 bots hit the 500 connection cap.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1340 passed (1340)"; protocol "Tests 29 passed (29)"; client "Tests 1909 passed (1909)"; server "Tests 111 passed (111)"; "Documentation check passed."
+- Next step: decide whether Duel creation moves off the main thread or is pre-built (INBOX candidate, owner's call); MP-5 adds ticking matches to the load.
+
+### 2026-11-13 — Phase 3 / sync — feat/mm-queue-load (PR #103) — claudiodh + Claude Code
+
+- What was done: merged `feat/duel-rules` into this branch (its base, updated after the sync with `phase/3-sprint-3-work` 3dc9e908) because #103 was CONFLICTING. Only the append-only logs conflicted; both sides' entries are kept. No feature code changed. No force push.
+- Checks run: `npm run check` → `EXIT=0`: Tests 1356 passed (1356);Tests 29 passed (29);Tests 1909 passed (1909);Tests 111 passed (111); "Documentation check passed."
 - Next step: reviewer approval; the team merges in stack order.
 
 ### 2026-11-13 — Phase 3 / online Duel — feat/duel-rules (Copilot review fix) — claudiodh + Claude Code
@@ -8720,6 +8733,12 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 
 - What was done: merged `origin/phase/3-sprint-3-work` (796131ff) into this branch because #102 was CONFLICTING. Append-only logs keep both sides. Code conflicts: the bridge now has `match-ended`/`duel-ended` (one `MatchEnding`, no team) so the Duel's old `match-result` and `DuelResult.team` are dropped; the Duel's names and scoreboard stay as `versus` and `duelHud` in `matchSlice` (the phase branch's `duel` field is the ending). `StateHasher`, `MatchRecord`, `Simulation` and `DefaultSystemPipeline` take both sides. `kill-count` gets verdict lines (a test requires one per condition). `CoreDuelSimulation.test.ts` walks to the dark Legend and stops, because out-of-combat healing now refills a target the attacker walks away from. No force push.
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 1602 passed (1602)"; protocol "Tests 29 passed (29)"; client "Tests 2005 passed (2005)"; server "Tests 84 passed (84)"; "Documentation check passed."
+- Next step: reviewer approval; the team merges in stack order.
+
+### 2026-11-15 — Phase 3 / sync — feat/mm-queue-load (PR #103) — claudiodh + Claude Code
+
+- What was done: merged `feat/duel-rules` (50f26d06, now synced with `phase/3-sprint-3-work`) into this branch. Only `INBOX.md` conflicted; both sides' items are kept. No feature code changed. No force push.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1602 passed (1602)"; protocol "Tests 29 passed (29)"; client "Tests 2005 passed (2005)"; server "Tests 113 passed (113)"; "Documentation check passed."
 - Next step: reviewer approval; the team merges in stack order.
 
 ### 2026-11-15 — Phase 3 / sync — chore/deps-vite-vitest (PR #113) — claudiodh + Claude Code
