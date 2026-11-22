@@ -1,4 +1,8 @@
-import type { AuthoredAbilityWith, AuthoredStep } from '../abilities/AbilityDefinition.types';
+import type {
+  AuthoredAbilityWith,
+  AuthoredStep,
+  SwapWeaponSpec,
+} from '../abilities/AbilityDefinition.types';
 import type { ContentCatalogue } from '../ContentCatalogue';
 import type { LegendSpecDefinition } from '../legends/specs/legendSpecs.types';
 import type { WeaponDefinition } from '../weapons/weapons.types';
@@ -11,7 +15,7 @@ import type { ContentRule } from './ContentValidator.types';
  */
 export class SecondaryWeaponRule implements ContentRule<LegendSpecDefinition> {
   /** The effect kind that puts a spec's second weapon in hand (`SwapWeaponEffect`). */
-  private static readonly SWAP_WEAPON_KIND = 'swap-weapon';
+  private static readonly SWAP_WEAPON_KIND: SwapWeaponSpec['kind'] = 'swap-weapon';
 
   /**
    * @param weapons - The weapons a second weapon may name.

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { ARTIFACTS } from '../artifacts/artifactCatalogue';
 import { LEGEND_CLASSES } from '../legends/legendCatalogue';
 import { STATUS_EFFECTS } from '../status-effects/statusEffectCatalogue';
 import { ABILITIES } from './abilityCatalogue';
@@ -165,6 +166,12 @@ describe('ABILITIES', () => {
 
       expect(legend.abilityPool).toEqual(ofClass);
     }
+  });
+
+  it('takes every gadget from the artifact catalogue, so each artifact is authored in content/artifacts/ (17 R10)', () => {
+    const gadgets = ABILITIES.all().filter((ability) => ability.slot === 'gadget');
+
+    expect(gadgets.map(({ id }) => id)).toEqual(ARTIFACTS.map(({ id }) => id));
   });
 
   it('leaves a granted ability out of every pool: only a status grants it (DEC-270)', () => {
