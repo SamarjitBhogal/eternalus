@@ -1,17 +1,11 @@
 import type { Polygon, Vec2 } from '../../utils/geometry.types';
-import type { AreaShape, ShapePlacement } from './AreaShape.types';
+import type { AreaShape, ShapeBody, ShapePlacement } from './AreaShape.types';
 import type { HitSpec } from './HitShape.types';
 
 /**
- * The body a basic attack or a shot just struck, for a status's `onHit` steps (Fury's knock-back)
- * and a shot's (Hamstring): the on-hit placement runs from the attacker, or the shot's contact
- * point, (`from`) to the struck body's position (`to`), and a body is in the shape when its
- * position is exactly `to`, so the step reaches the struck body and no neighbour (two bodies on the
- * very same point are both reached). A map object (a house, a wall, a fort) is matched by its
- * position too, not by its footprints, so a shot that strikes it reaches it (DEC-269: 80 × 0.3).
- * Its position is the average of its footprint corners (`WorldObjectStore`), which for a fort lies
- * in its open court, so a test of the point against the footprints would miss it. A push moves
- * away from `from`.
+ * The one body a basic attack or a shot just struck (the placement's `targetId`), for a status's
+ * `onHit` steps (Fury's knock-back) and a shot's (Hamstring, DEC-269: a unit or a map object), and
+ * no other body. A push moves away from `from`, the attacker or the shot's contact point.
  */
 export class HitShape implements AreaShape<HitSpec> {
   public readonly kind = 'hit';
@@ -21,19 +15,19 @@ export class HitShape implements AreaShape<HitSpec> {
     return [];
   }
 
-  /** Whether the body's centre is the struck point. */
-  public overlaps(_shape: HitSpec, { to }: ShapePlacement, point: Vec2): boolean {
-    return point.x === to.x && point.y === to.y;
+  /** Whether the body is the struck one. */
+  public overlaps(_shape: HitSpec, { targetId }: ShapePlacement, { id }: ShapeBody): boolean {
+    return id === targetId;
   }
 
-  /** Whether the map object's position is the struck point; its footprints do not matter. */
+  /** Whether the map object is the struck one; its footprints do not matter. */
   public overlapsPolygon(
     _shape: HitSpec,
-    { to }: ShapePlacement,
+    { targetId }: ShapePlacement,
     _polygon: Polygon,
-    position: Vec2,
+    { id }: Pick<ShapeBody, 'id'>,
   ): boolean {
-    return position.x === to.x && position.y === to.y;
+    return id === targetId;
   }
 
   /** `from` (the attacker or the shot's contact point), so a push moves the struck body away. */

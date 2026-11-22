@@ -132,6 +132,19 @@ describe('Hamstring (scenario)', () => {
     expect(houseHealth()).toBeCloseTo(100 - 24, 9);
   });
 
+  it('hits only the body it strikes: an enemy on the struck house’s position takes nothing', () => {
+    const { sim, ids, lost } = throwAt(
+      [{ kind: 'warrior', team: 'dark', at: { x: 55.5, y: 55 } }],
+      {
+        mapObjects: [TWO_WALL_HOUSE],
+      },
+    );
+    const house = sim.snapshot().mapObjects?.find(({ id }) => id === TWO_WALL_HOUSE.id);
+
+    expect(house?.health?.current).toBeCloseTo(100 - 24, 9);
+    expect(lost(ids[1])).toBe(0);
+  });
+
   it('is stopped by a wall: the enemy behind it takes nothing from it', () => {
     const { ids, log, struck } = throwAt(
       [{ kind: 'warrior', team: 'dark', at: { x: 57, y: 50 } }],
@@ -140,6 +153,15 @@ describe('Hamstring (scenario)', () => {
 
     expect(log).toContain(`1 cast ${ids[0] ?? ''} hamstring`);
     expect(struck).toEqual([]);
+  });
+
+  it('flies 30 m/s (DEC-268), 1 m a tick from its cast tick: an enemy 6 m away is hit in tick 6, one 9 m away in tick 9', () => {
+    const hitTick = (x: number) =>
+      bleedLines(throwAt([{ kind: 'warrior', team: 'dark', at: { x, y: 50 } }]).log)[0]?.split(
+        ' ',
+      )[0];
+
+    expect([hitTick(56), hitTick(59)]).toEqual(['6', '9']);
   });
 
   it('flies 12 m: an enemy inside the range is hit, one past it is not', () => {

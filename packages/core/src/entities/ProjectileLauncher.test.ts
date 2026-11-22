@@ -19,7 +19,14 @@ const PAYLOAD: ProjectilePayloadData = {
   team: 'light',
   source: { attackerId: 'entity-1', kind: 'ability', definitionId: 'hamstring' },
   targetId: null,
-  impact: { kind: 'ability', abilityId: 'hamstring', slot: 'ability-3', onHit: [] },
+  impact: {
+    kind: 'ability',
+    abilityId: 'hamstring',
+    slot: 'ability-3',
+    onHit: [],
+    scaling: {},
+    casterLevel: 1,
+  },
   origin: { x: 3, y: 4 },
 };
 

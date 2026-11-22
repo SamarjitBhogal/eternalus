@@ -11,23 +11,25 @@ const HOUSE = [
   { x: 15, y: 5 },
   { x: 5, y: 5 },
 ];
+/** A body with no id that matters, its circle at (`x`, `y`). */
+const body = (x: number, y: number, radius: number) => ({ id: 'b', position: { x, y }, radius });
 const SWEEP = { from: { x: 0, y: 0 }, to: { x: 8, y: 0 } };
 
 describe('PathShape', () => {
   it('counts a body whose circle overlaps the swept capsule, and nothing past its ends', () => {
     const path = new PathShape();
 
-    expect(path.overlaps(PATH, SWEEP, { x: 4, y: 1 }, 0.5)).toBe(true);
-    expect(path.overlaps(PATH, SWEEP, { x: 4, y: 1.1 }, 0.5)).toBe(false);
-    expect(path.overlaps(PATH, SWEEP, { x: 8.9, y: 0 }, 0.5)).toBe(true);
-    expect(path.overlaps(PATH, SWEEP, { x: 9.1, y: 0 }, 0.5)).toBe(false);
+    expect(path.overlaps(PATH, SWEEP, body(4, 1, 0.5))).toBe(true);
+    expect(path.overlaps(PATH, SWEEP, body(4, 1.1, 0.5))).toBe(false);
+    expect(path.overlaps(PATH, SWEEP, body(8.9, 0, 0.5))).toBe(true);
+    expect(path.overlaps(PATH, SWEEP, body(9.1, 0, 0.5))).toBe(false);
   });
 
   it('widens with its width', () => {
     const path = new PathShape();
 
-    expect(path.overlaps({ kind: 'path', width: 3 }, SWEEP, { x: 4, y: 1.9 }, 0.5)).toBe(true);
-    expect(path.overlaps(PATH, SWEEP, { x: 4, y: 1.9 }, 0.5)).toBe(false);
+    expect(path.overlaps({ kind: 'path', width: 3 }, SWEEP, body(4, 1.9, 0.5))).toBe(true);
+    expect(path.overlaps(PATH, SWEEP, body(4, 1.9, 0.5))).toBe(false);
   });
 
   it('pushes away from the nearest point of its line', () => {

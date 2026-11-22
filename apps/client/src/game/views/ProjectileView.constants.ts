@@ -21,8 +21,8 @@ export const PROJECTILE_STREAK_WIDTH = 2;
  * `ProjectileView.test.ts` checks the keys against core's projectile ids
  * (`DisplayContent.projectileIds`, ADR 0023), and `ProjectileView` throws on an id not listed.
  */
-// TUNE: placeholder looks (DEC-306): the bolt fizzles into a mist, the arrow and Hamstring's
-// blade drop
+// TUNE: placeholder looks (DEC-306): the bolt fizzles into a mist, the arrow drops. Hamstring's
+// blade drops too: proposed, the arrow's look (DEC-306)
 export const PROJECTILE_ENDING_LOOKS: Readonly<Record<string, ProjectileEndingLook>> = {
   'magus-bolt': 'fizzle',
   arrow: 'drop',

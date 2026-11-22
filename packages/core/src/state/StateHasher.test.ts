@@ -309,6 +309,33 @@ describe('StateHasher', () => {
     expect(hashWith(payload({ originX: 2 }))).not.toBe(base);
   });
 
+  it('changes with an ability shot’s cast level, which decides how much its steps grow', () => {
+    const shotAt = (casterLevel: number): number => {
+      const { state, soldier } = stateWithSoldier();
+      soldier.addComponent(
+        new ProjectilePayload({
+          ownerId: 'a',
+          team: 'light',
+          source: { attackerId: 'a', kind: 'ability', definitionId: 'hamstring' },
+          targetId: null,
+          impact: {
+            kind: 'ability',
+            abilityId: 'hamstring',
+            slot: 'ability-3',
+            onHit: [],
+            scaling: {},
+            casterLevel,
+          },
+          origin: { x: 1, y: 0 },
+        }),
+      );
+      return hasher.hash(state);
+    };
+
+    expect(shotAt(2)).toBe(shotAt(2));
+    expect(shotAt(3)).not.toBe(shotAt(2));
+  });
+
   it('changes when a shot ends and as its ending counts down', () => {
     const { state, soldier } = stateWithSoldier();
     soldier.addComponent(

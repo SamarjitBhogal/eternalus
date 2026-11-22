@@ -67,8 +67,6 @@ export class HitEffects {
       if (definition?.onHit === undefined) {
         continue;
       }
-      // ponytail: steps bound and one CastInstance per hit, fine at a few hits a second; cache the
-      // bound steps per status if on-hit statuses become common.
       this.runSteps(
         state,
         {
@@ -88,8 +86,8 @@ export class HitEffects {
   /**
    * Runs `cast`'s steps as one cast through the registry's strategies (`CastInstance`), at once
    * (an on-hit step never waits: it runs where the hit lands), placed at `placement` (from the
-   * attacker or the shot's contact point to the struck body, which the `hit` shape reads) and
-   * aimed at `targetId` there.
+   * attacker or the shot's contact point to the struck body) and aimed at `targetId` there, the
+   * one body the `hit` shape holds.
    */
   public runSteps(
     state: GameState,
@@ -97,6 +95,8 @@ export class HitEffects {
     placement: ShapePlacement,
     targetId: EntityId,
   ): void {
+    // ponytail: steps bound and one CastInstance per hit, fine at a few hits a second; cache the
+    // bound steps per status if on-hit statuses become common.
     new CastInstance(
       {
         casterId: cast.casterId,
@@ -123,7 +123,7 @@ export class HitEffects {
         statuses: this.statuses,
         launcher: this.launcher,
       },
-    ).run(placement);
+    ).run({ from: placement.from, to: placement.to, targetId });
   }
 
   /** Whether any of `active` has `onHit` steps; a loop, so a hit with none allocates nothing. */

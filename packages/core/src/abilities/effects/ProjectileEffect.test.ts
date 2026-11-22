@@ -48,7 +48,12 @@ describe('ProjectileEffect', () => {
     const { state, caster } = casterState();
     const launcher = new RecordingLauncher();
 
-    castSteps(state, caster.id, [SHOT], { aim: { x: 0, y: 5 }, launcher });
+    castSteps(state, caster.id, [SHOT], {
+      aim: { x: 0, y: 5 },
+      launcher,
+      level: 3,
+      scaling: { amount: { perLevel: 0.04 } },
+    });
 
     expect(launcher.shots).toEqual([
       {
@@ -59,7 +64,14 @@ describe('ProjectileEffect', () => {
           team: 'light',
           source: { attackerId: caster.id, kind: 'ability', definitionId: 'test-cast' },
           targetId: null,
-          impact: { kind: 'ability', abilityId: 'test-cast', slot: 'ability-1', onHit: SHOT.onHit },
+          impact: {
+            kind: 'ability',
+            abilityId: 'test-cast',
+            slot: 'ability-1',
+            onHit: SHOT.onHit,
+            scaling: { amount: { perLevel: 0.04 } },
+            casterLevel: 3,
+          },
           origin: { x: 0, y: 0 },
         },
       },

@@ -72,9 +72,20 @@ const withHouse = (house: MapObject) => {
   });
   const houseId = world.snapshot()[0]?.entityId;
   const query = new TargetQuery(testAbilityRegistry([]));
-  const hits = (shape: EffectShape, from: Vec2, to: Vec2) =>
-    query.find(state, caster.id, shape, { from, to }, { team: 'enemies' });
-  return { houseId, hits };
+  const hits = (shape: EffectShape, from: Vec2, to: Vec2, targetId?: string) =>
+    query.find(
+      state,
+      caster.id,
+      shape,
+      targetId === undefined ? { from, to } : { from, to, targetId },
+      { team: 'enemies' },
+    );
+  const addEnemyAt = (position: Vec2) => {
+    const enemy = factory.create('warrior', 'warrior', { position, team: 'dark' });
+    state.entities.add(enemy);
+    return enemy.id;
+  };
+  return { houseId, hits, addEnemyAt };
 };
 
 describe('TargetQuery', () => {
@@ -135,11 +146,14 @@ describe('TargetQuery', () => {
     expect(hits(path(1), { x: 5, y: -30 }, { x: 5, y: 30 })).toEqual([houseId]);
   });
 
-  it('finds a struck house with `hit` by its position (its corners’ average), not by its walls', () => {
-    const { houseId, hits } = withHouse(houseEastOf(1.5));
+  it('finds only the struck body with `hit`, by its id: a house whatever its walls, not a unit on its position', () => {
+    const { houseId, hits, addEnemyAt } = withHouse(houseEastOf(1.5));
     const westWall = { x: 1.5, y: 0 };
+    const housePosition = { x: 8.5, y: 0 }; // its corners' average, on none of its walls
+    const enemyId = addEnemyAt(housePosition);
 
-    expect(hits({ kind: 'hit' }, westWall, { x: 8.5, y: 0 })).toEqual([houseId]);
-    expect(hits({ kind: 'hit' }, { x: 0, y: 0 }, westWall)).toEqual([]);
+    expect(hits({ kind: 'hit' }, westWall, housePosition, houseId ?? '')).toEqual([houseId]);
+    expect(hits({ kind: 'hit' }, westWall, housePosition, enemyId)).toEqual([enemyId]);
+    expect(hits({ kind: 'hit' }, westWall, housePosition)).toEqual([]);
   });
 });

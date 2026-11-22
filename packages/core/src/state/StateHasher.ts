@@ -269,8 +269,8 @@ export class StateHasher {
     }
     // A shot's payload is fixed at firing but decides who it spares (owner), which walk-on outline
     // it may hit (target), what it does there (impact kind, credited weapon or ability) and how
-    // hard it hits (origin); how long it has been ending (-1 while it flies) decides when it is
-    // removed.
+    // hard it hits (origin, and an ability shot's cast level, as a cast in progress hashes it);
+    // how long it has been ending (-1 while it flies) decides when it is removed.
     const shot = entity.findComponent(ProjectilePayload);
     if (shot !== undefined) {
       const endTicksLeft = entity.findComponent(ProjectileFlight)?.endTicksLeft ?? -1;
@@ -282,6 +282,7 @@ export class StateHasher {
         shot.source.definitionId,
         shot.origin.x,
         shot.origin.y,
+        ...(shot.impact.kind === 'ability' ? [shot.impact.casterLevel] : []),
         endTicksLeft,
       ]);
     }

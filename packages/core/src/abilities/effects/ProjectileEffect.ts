@@ -34,7 +34,7 @@ export class ProjectileEffect implements AbilityEffect<ProjectileSpec> {
 
   /**
    * The shot's own row: its range as `distance` and its width as a `path`, so the overlay draws
-   * the line it flies (stopped by a wall, as the shot is); then its `onHit` steps' rows.
+   * the line it flies, stopped where a dash of the caster's size stops; then its `onHit` steps' rows.
    */
   public describe(
     spec: WithoutTimes<ProjectileSpec>,
@@ -67,7 +67,14 @@ export class ProjectileEffect implements AbilityEffect<ProjectileSpec> {
         team,
         source: { attackerId: cast.casterId, kind: 'ability', definitionId: cast.abilityId },
         targetId: null,
-        impact: { kind: 'ability', abilityId: cast.abilityId, slot: cast.slot, onHit: spec.onHit },
+        impact: {
+          kind: 'ability',
+          abilityId: cast.abilityId,
+          slot: cast.slot,
+          onHit: spec.onHit,
+          scaling: cast.scaling,
+          casterLevel: cast.casterLevel,
+        },
         origin: { x: origin.x, y: origin.y },
       },
       cast.direction,

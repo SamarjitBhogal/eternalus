@@ -2,7 +2,7 @@ import { doesCapsuleReachPolygon } from '../../utils/circlePolygon';
 import { closestPointOnSegment, distanceToSegment } from '../../utils/geometry';
 import type { Polygon, Vec2 } from '../../utils/geometry.types';
 import { mustBePositive } from '../specChecks';
-import type { AreaShape, ShapePlacement } from './AreaShape.types';
+import type { AreaShape, ShapeBody, ShapePlacement } from './AreaShape.types';
 import type { PathSpec } from './PathShape.types';
 
 /**
@@ -21,10 +21,9 @@ export class PathShape implements AreaShape<PathSpec> {
   public overlaps(
     shape: PathSpec,
     { from, to }: ShapePlacement,
-    point: Vec2,
-    radius: number,
+    { position, radius }: ShapeBody,
   ): boolean {
-    return distanceToSegment(point, from, to) <= shape.width / 2 + radius;
+    return distanceToSegment(position, from, to) <= shape.width / 2 + radius;
   }
 
   /** Whether the footprint overlaps the capsule: beside the path or crossed by it. */

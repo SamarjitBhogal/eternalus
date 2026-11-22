@@ -2,13 +2,7 @@ import type { ProjectilePayloadData } from '../../components/ProjectilePayload.t
 import type { GameState } from '../../state/GameState';
 import type { ShotLauncher } from '../../state/ShotLauncher.types';
 import type { Vec2 } from '../../utils/geometry.types';
-
-/** One shot a `RecordingLauncher` was asked to launch. */
-export type LaunchedShot = {
-  readonly projectileId: string;
-  readonly payload: ProjectilePayloadData;
-  readonly direction: Vec2;
-};
+import type { LaunchedShot } from './RecordingLauncher.types';
 
 /** A test double for `ShotLauncher`: it only records each shot, and puts nothing in the state. */
 export class RecordingLauncher implements ShotLauncher {

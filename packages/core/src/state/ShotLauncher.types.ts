@@ -11,8 +11,8 @@ import type { GameState } from './GameState';
 export interface ShotLauncher {
   /**
    * Builds the projectile `projectileId` at `payload.origin` for `payload.team`, carrying
-   * `payload`, flying along `direction` (a unit vector) from the next tick, and announces it
-   * (`entity-spawned`).
+   * `payload`, flying along `direction` (a unit vector), and announces it (`entity-spawned`). It
+   * flies in the launch tick when the flight systems run after the caller (an ability's shot).
    */
   launch(
     state: GameState,

@@ -1,7 +1,11 @@
 import type { DamagePipeline } from '../combat/DamagePipeline';
 import type { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import type { Aim } from '../components/AbilitySlotRuntime.types';
-import type { AbilitySlot, WithoutTimes } from '../content/abilities/AbilityDefinition.types';
+import type {
+  AbilityBase,
+  AbilitySlot,
+  WithoutTimes,
+} from '../content/abilities/AbilityDefinition.types';
 import type { AbilityDisplayStep } from '../content/loadDisplayContent';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
@@ -39,6 +43,10 @@ export type CastContext = {
    * so level 1 is the content value). A field the ability does not scale comes back unchanged.
    */
   scaled(field: string, value: number): number;
+  /** The caster's level at the cast: what `scaled` grows by. A shot carries it to its landing. */
+  readonly casterLevel: number;
+  /** The ability's per-level growth: what `scaled` reads. A shot carries it to its landing. */
+  readonly scaling: AbilityBase['scaling'];
   /** The match's one damage pipeline. */
   readonly damage: DamagePipeline;
   /** The match's one status applier. */

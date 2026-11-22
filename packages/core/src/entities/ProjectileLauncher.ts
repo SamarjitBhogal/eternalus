@@ -9,8 +9,9 @@ import type { EntityFactory } from './EntityFactory';
 /**
  * Puts a shot into the match through the match's one `EntityFactory` (architecture 05 §3, §10):
  * the projectile by id at the payload's origin, its `ProjectilePayload`, steered along the given
- * direction, added to the store and announced. `ProjectileSystem` flies and lands it from the next
- * tick. An ability's `projectile` step launches through it (`ShotLauncher`).
+ * direction, added to the store and announced. An ability's `projectile` step launches through it
+ * (`ShotLauncher`); `AbilitySystem` runs before the flight, so the shot moves, and can land, in its
+ * cast tick.
  */
 export class ProjectileLauncher implements ShotLauncher {
   /** @param factory - The match's one factory, which knows the projectile definitions. */

@@ -50,13 +50,12 @@ export class TargetQuery {
       if ((filter.team === 'allies' && !isAlly) || (filter.team === 'enemies' && isAlly)) {
         return;
       }
+      const body = { id: entity.id, position: transform.position, radius: transform.radius };
       const footprints = entity.findComponent(MapObjectBody)?.object.footprints;
       const isHit =
         footprints === undefined
-          ? area.overlaps(shape, placement, transform.position, transform.radius)
-          : footprints.some((footprint) =>
-              area.overlapsPolygon(shape, placement, footprint, transform.position),
-            );
+          ? area.overlaps(shape, placement, body)
+          : footprints.some((footprint) => area.overlapsPolygon(shape, placement, footprint, body));
       if (isHit) {
         hits.push(entity.id);
       }

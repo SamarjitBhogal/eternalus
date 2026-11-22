@@ -1,4 +1,8 @@
-import type { AbilityEffectSpec, AbilitySlot } from '../content/abilities/AbilityDefinition.types';
+import type {
+  AbilityBase,
+  AbilityEffectSpec,
+  AbilitySlot,
+} from '../content/abilities/AbilityDefinition.types';
 import type { RangedAttack } from '../content/units/units.types';
 import type { Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
@@ -23,13 +27,17 @@ type ProjectileImpactDataByKind = {
   /** A weapon's ranged attack: the damage and fall-off it lands with. */
   readonly weapon: { readonly attack: RangedAttack };
   /**
-   * An ability's `projectile` step (Hamstring): the ability (its damage source and its scaling),
-   * the slot it was cast from, and the `onHit` steps that run on the body the shot strikes.
+   * An ability's `projectile` step (Hamstring): the ability (its damage source), the slot it was
+   * cast from, the `onHit` steps that run on the body the shot strikes, and how they grow: the
+   * ability's per-level `scaling` and the caster's level, both fixed at the cast (05 §3), so a
+   * thrower who dies or levels up while the shot flies does not change it.
    */
   readonly ability: {
     readonly abilityId: string;
     readonly slot: AbilitySlot;
     readonly onHit: readonly AbilityEffectSpec[];
+    readonly scaling: AbilityBase['scaling'];
+    readonly casterLevel: number;
   };
 };
 
