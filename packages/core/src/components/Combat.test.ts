@@ -122,5 +122,14 @@ describe('Combat', () => {
       expect(combat.mode).toBe('melee');
       expect(combat.attack).toBe(talons);
     });
+
+    it('takes attacks with no weapon, as a turret does', () => {
+      const combat = new Combat({ basic: talons }, 'raptor-talons');
+
+      combat.equip({ basic: bow }, null);
+
+      expect(combat.weaponId).toBeNull();
+      expect(combat.attack).toBe(bow);
+    });
   });
 });

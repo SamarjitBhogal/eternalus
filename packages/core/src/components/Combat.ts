@@ -87,11 +87,13 @@ export class Combat {
   }
 
   /**
-   * Equips another weapon's attacks (DEC-303: the Zealot's weapon swap). The target and the attack
-   * timer stay (owner card "PR9 swap timing", A). A mode the new attacks do not have becomes
-   * `basic` (the bow has no `melee`: card "PR9 bow melee key", A).
+   * Equips other attacks: a Legend's weapon swap (DEC-303) or a turret's ammo switch. The target
+   * and the attack timer stay. A mode the new attacks do not have becomes `basic`.
+   *
+   * @param attacks - The new attacks by mode, with `interval` already in ticks (`attacksByMode`).
+   * @param weaponId - The weapon the new attacks come from, or `null` for a unit's own attack.
    */
-  public equip(attacks: UnitAttacks, weaponId: string): void {
+  public equip(attacks: UnitAttacks, weaponId: string | null): void {
     const attack = attacks[this.modeValue];
     this.attacks = attacks;
     this.weaponIdValue = weaponId;
