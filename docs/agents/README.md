@@ -4,7 +4,7 @@ description: How AI coding agents (Claude Code, Codex/ChatGPT, Gemini/Antigravit
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-03
+last-reviewed: 2026-11-19
 tags: [agents, harness, process]
 related: ['docs/architecture/16-agentic-harness.md', 'docs/requirements/04-agentic-instructions.md']
 ---
@@ -76,7 +76,7 @@ flowchart LR
 | Core purity (no DOM/Node types, no React/Redux imports, no `Math.random`)         | Determinism beyond the lint rules (iteration order, sort comparators, wall clock)  |
 | Test integrity (`.only`/`.skip` banned, every test asserts), coverage thresholds  | Tests assert behaviour, not coverage; product decisions were not made by an agent  |
 | knip (dead code), Prettier, LF endings, lockfile sync, exact versions, docs check | Docs and frontmatter updated; PROGRESS entry; scope discipline                     |
-| Claude Code hooks: per-file lint after edits, `check:quick` gate before stopping  | Commit messages, PR description, ADR when a guardrail changes                      |
+| Claude Code hooks: per-file lint after edits, changed-file checks before stopping | Commit messages, PR description, ADR when a guardrail changes                      |
 
 ## 5. Files in this folder
 

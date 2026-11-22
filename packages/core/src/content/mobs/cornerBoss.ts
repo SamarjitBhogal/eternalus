@@ -26,6 +26,6 @@ export const CORNER_BOSS = {
   movementProfile: {
     maxSpeed: 2.5, // DEC-296 (1): m/s, a bit slower than a heavy camp mob
     acceleration: 8, // DEC-296 (1): m/s², slow to get going
-    mass: 12, // TUNE: hard to push
+    mass: 6, // DEC-296 (1), HC-S12 (d): the Sentinel's mass (content/legends/sentinel.ts)
   },
 } as const satisfies MobDefinition;
