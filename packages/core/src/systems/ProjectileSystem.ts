@@ -31,9 +31,10 @@ import type { System, SystemContext } from './System.types';
  * body and a wall); a wall or the map's edge spends the shot with no damage. A landed hit goes to
  * the `ProjectileImpact` of the payload's impact kind (a weapon's: its damage, fallen off over the
  * distance from the origin, then the owner's on-hit effects), the hit is recorded on the owner
- * (`GameState.recordHits`, DEC-322 (2)), and the shot is removed as `consumed`. A body that takes
- * no damage now (`AreaHitQuery.takesNoDamage`: a forest camp, a closed gate) stops the shot like
- * any body, but nothing lands: no damage, no on-hit step, no hit recorded (DEC-317 addendum).
+ * (`EntityStore.recordHits`, DEC-322 (2)), and the shot is removed as `consumed`. A body that
+ * takes no damage now (`EntityStore.takesNoDamage`: a forest camp, a wall or gate before its rule)
+ * stops the shot like any body, but nothing lands: no damage, no on-hit step, no hit recorded
+ * (DEC-317 addendum). A gate's outline is walk-on, so only a shot aimed at the gate stops on it.
  *
  * Which bodies stop a shot is `AreaHitQuery.stopsShot`, the rule `LineOfFire` predicts by: live
  * things with `Health` other than the owner and its team (neutral bodies count as enemies). A body
@@ -47,7 +48,9 @@ import type { System, SystemContext } from './System.types';
  * Stronghold's edge does not take a shot fired at the Stronghold (DEC-317 (8)).
  *
  * A shot that touches nothing flies to the end of its `range` (DEC-306): it slows from `slowFrom`
- * (`flightSpeed`, through `Movement.limitSpeed`) so it stops exactly at `range`, then ends. An
+ * (`flightSpeed`, through `Movement.limitSpeed`) so it stops exactly at `range`, then ends. The
+ * move that ends there is swept like any other, so a body under the end point takes the hit: an
+ * arrow damages what it lands on (DEC-322 (2)), and no extra landing test is needed. An
  * ended shot is swept no more and hits nothing; it stays for its end duration (a mist, an arrow on
  * the ground), then is removed as `consumed`. While the match holds units idle
  * (`state.match.isIdleHeld`, the countdown) no shot lands, slows or ends.
@@ -102,7 +105,7 @@ export class ProjectileSystem implements System {
     const wall = this.wallDistance(state, from, delta, length, body.radius);
     const hit = this.firstBody(state, payload, from, delta, length, body.radius);
     if (hit !== null && isTouchedBeforeWall(hit.time * length, wall)) {
-      if (!AreaHitQuery.takesNoDamage(hit.body.entity)) {
+      if (!state.entities.takesNoDamage(hit.body.entity.id)) {
         this.landOn(state, {
           impact: payload.impact,
           ownerId: payload.ownerId,
@@ -111,7 +114,7 @@ export class ProjectileSystem implements System {
           bodyId: hit.body.entity.id,
           point: { x: from.x + delta.x * hit.time, y: from.y + delta.y * hit.time },
         });
-        state.recordHits(payload.ownerId, [hit.body.entity.id]);
+        state.entities.recordHits(payload.ownerId, [hit.body.entity.id], state.tick);
       }
       this.spend(state, shot);
     } else if (wall < Number.POSITIVE_INFINITY) {

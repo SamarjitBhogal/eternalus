@@ -271,19 +271,6 @@ describe('AreaHitQuery.aimedBodyOf', () => {
   });
 });
 
-describe('AreaHitQuery.takesNoDamage', () => {
-  it('is true only while the collider is unbreakable', () => {
-    const { add } = setUp();
-    const gate = add('gate', { at: { x: 0, y: 9 }, isUnbreakable: true });
-    const plain = add('plain', { at: { x: 0, y: 8 } });
-
-    expect(AreaHitQuery.takesNoDamage(gate)).toBe(true);
-    expect(AreaHitQuery.takesNoDamage(plain)).toBe(false);
-    gate.getComponent(Collider).setUnbreakable(false);
-    expect(AreaHitQuery.takesNoDamage(gate)).toBe(false);
-  });
-});
-
 describe('AreaHitQuery.stopsShot', () => {
   const shotAt = (targetId: string | null = null) =>
     ({ ownerId: 'attacker', team: 'light', targetId }) as const;

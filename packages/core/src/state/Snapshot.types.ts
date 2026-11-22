@@ -77,8 +77,11 @@ export type SwingSnapshot = {
 
 /** A projectile's flight as the client sees it. */
 export type ProjectileSnapshot = {
-  /** `Movement.speed` over `Movement.maxSpeed`: 1 at full speed, 0 when stopped. */
-  readonly speedShare: number;
+  /**
+   * How far it has flown, as a share of its `range`: 0 at its origin, 1 at its end (an ended
+   * shot). The client draws an arrow's arc along it (DEC-322 (2)).
+   */
+  readonly flownShare: number;
   /** How far through its ending it is, 0 to 1 (`ProjectileFlight.endingShare`); `null` while it flies. */
   readonly ending: number | null;
 };

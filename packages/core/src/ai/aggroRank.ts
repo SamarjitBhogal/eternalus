@@ -19,7 +19,7 @@ const MEANING: Readonly<
 /**
  * The index of the first entry of `priority` that the enemy `candidate` matches, as seen by a unit
  * of `options.team` (architecture 11 §4.3, 18 §6.1); lower is better, `-1` when none matches. An
- * enemy attacks its lock, or else each body its last attack hit (`EntityStore.victimsOf`,
+ * enemy attacks its lock and each other body its last attack hit (`EntityStore.victimsOf`,
  * DEC-322 (2)), so a player who aims, with no lock, ranks by what it hit; with several allies
  * attacked, the best entry they match counts. Pure: the ranking helper minion and guard
  * controllers share (MS-27).

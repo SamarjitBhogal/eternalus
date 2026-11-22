@@ -27,6 +27,7 @@ import { IdGenerator } from '../utils/IdGenerator';
 import type { Team } from '../teams/teams.types';
 import type { CollisionQuery } from '../state/CollisionQuery.types';
 import { GameState } from '../state/GameState';
+import { ReachQuery } from '../state/ReachQuery';
 import { StateHasher } from '../state/StateHasher';
 import { CombatSystem } from './CombatSystem';
 import type { SystemContext } from './System.types';
@@ -275,15 +276,19 @@ describe('CombatSystem', () => {
     expect(front.getComponent(Health).current).toBe(front.getComponent(Health).max);
   });
 
-  it('throws when a target in reach has no point to face (a broken store invariant)', () => {
-    const { state, spawn, context, attack, combatSystem } = setUp();
+  it('throws when a target in reach has no point to face (a broken ReachQuery invariant)', () => {
+    const { spawn, context, attack, combatSystem } = setUp();
     const dummy = spawn('light-mob', 'training-dummy', 1, 'dark');
     attack(dummy);
-    vi.spyOn(state.entities, 'facingPointOf').mockReturnValue(false);
+    const facing = vi.spyOn(ReachQuery.prototype, 'facingPointOf').mockReturnValue(false);
 
-    expect(() => {
-      combatSystem().update(context);
-    }).toThrow(/no point to face/);
+    try {
+      expect(() => {
+        combatSystem().update(context);
+      }).toThrow(/no point to face/);
+    } finally {
+      facing.mockRestore();
+    }
   });
 
   it('drops a target once it is dead', () => {

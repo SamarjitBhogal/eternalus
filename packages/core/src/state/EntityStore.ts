@@ -1,6 +1,7 @@
 import { Abilities } from '../components/Abilities';
 import type { Aim } from '../components/AbilitySlotRuntime.types';
 import { ChaseWatch } from '../components/ChaseWatch';
+import { Collider } from '../components/Collider';
 import { Combat } from '../components/Combat';
 import { ControllerBinding } from '../components/ControllerBinding';
 import { Deploying } from '../components/Deploying';
@@ -9,18 +10,16 @@ import { Health } from '../components/Health';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { Movement } from '../components/Movement';
 import type { Outline } from '../components/Outline.types';
-import { Transform } from '../components/Transform';
+import { StatusEffects } from '../components/StatusEffects';
 import { TeamMembership } from '../components/TeamMembership';
 import { TurretState } from '../components/TurretState';
+import { Transform } from '../components/Transform';
 import type { AbilitySlot } from '../content/abilities/AbilityDefinition.types';
 import type { AttackMode } from '../content/units/units.types';
 import type { Team } from '../teams/teams.types';
-import { distance, isPointInAnyPolygon, nearestPointOnPolygons } from '../utils/geometry';
 import type { Vec2 } from '../utils/geometry.types';
-import type { MutableVec2 } from '../utils/vec2.types';
 import type { Entity } from '../entities/Entity';
 import type {
-  AimedAt,
   EntityClass,
   EntityId,
   RemovalCause,
@@ -38,8 +37,6 @@ export class EntityStore {
   private readonly removals: RemovalRecord[] = [];
   private added = 0;
   private sizeAtStart = 0;
-  /** Scratch for `isInReach`'s aim point. */
-  private readonly aim: MutableVec2 = { x: 0, y: 0 };
 
   /** Number of live entities. */
   public get size(): number {
@@ -157,93 +154,14 @@ export class EntityStore {
   }
 
   /**
-   * Whether `targetId` is within `attackerId`'s attack reach, measured edge to edge between the
-   * two footprints (architecture 05 §10) to the point `aimPointOf` gives: on the target's outline
-   * when it has one (`outlineOf`: a map object, or a lane tower's fort, DEC-185), standing inside
-   * an outline counting as in reach; else to its collider circle. `false` when either is unknown,
-   * either has no `Transform`, or the attacker cannot attack.
-   */
-  public isInReach(attackerId: EntityId, targetId: EntityId): boolean {
-    const attacker = this.entities.get(attackerId);
-    const combat = attacker?.findComponent(Combat);
-    const from = attacker?.findComponent(Transform);
-    const to = this.entities.get(targetId)?.findComponent(Transform);
-    if (combat === undefined || from === undefined || to === undefined) {
-      return false;
-    }
-    const aimed = this.aimPointOf(targetId, from.position, this.aim);
-    if (aimed === null) {
-      return false;
-    }
-    if (aimed === 'centre') {
-      const gap = distance(from.position, this.aim);
-      return gap - from.radius - to.radius <= combat.attack.reach;
-    }
-    return distance(from.position, this.aim) <= from.radius + combat.attack.reach;
-  }
-
-  /**
-   * The outline attack reach to `id` is measured to, a chase of it aims at and a shot hits: its
-   * `MapObjectBody`, else its structure `Footprint` (a lane tower's fort, the Stronghold's palace,
-   * DEC-185; a gate's outline, DEC-217 (17)). `undefined` for a body that is only its collider
-   * circle, or an unknown id.
+   * The outline attack reach to `id` is measured to, a chase of it aims at and a shot hits
+   * (`ReachQuery`): its `MapObjectBody`, else its structure `Footprint` (a lane tower's fort, the
+   * Stronghold's palace, DEC-185; a gate's outline, DEC-217 (17)). `undefined` for a body that is
+   * only its collider circle, or an unknown id.
    */
   public outlineOf(id: EntityId): Outline | undefined {
     const entity = this.entities.get(id);
     return entity?.findComponent(MapObjectBody) ?? entity?.findComponent(Footprint);
-  }
-
-  /**
-   * Writes into `out` the point of `targetId` that attack reach from `from` is measured to, which a
-   * chase heads for (`StuckSystem`, `PathingSystem`): `from` itself when it stands inside the
-   * target's outline (`outlineOf`), so it is in reach and a chase holds there (DEC-234); else the
-   * point of the outline nearest `from`; else the target's centre (reach then also spans its
-   * collider radius). An attacker outside the outline faces this point (`facingPointOf`, DEC-216
-   * (11)). Returns what it aimed at (`AimedAt`), so the inside test runs only here, or
-   * `null`, leaving `out` as it was, when the target is unknown, has no position, or its outline
-   * has no corners.
-   */
-  public aimPointOf(targetId: EntityId, from: Vec2, out: MutableVec2): AimedAt | null {
-    const outline = this.outlineOf(targetId)?.polygons;
-    if (outline !== undefined) {
-      if (isPointInAnyPolygon(from, outline)) {
-        out.x = from.x;
-        out.y = from.y;
-        return 'inside';
-      }
-      return nearestPointOnPolygons(from, outline, out) === Number.POSITIVE_INFINITY
-        ? null
-        : 'outline';
-    }
-    const at = this.entities.get(targetId)?.findComponent(Transform)?.position;
-    if (at === undefined) {
-      return null;
-    }
-    out.x = at.x;
-    out.y = at.y;
-    return 'centre';
-  }
-
-  /**
-   * Writes into `out` the point `attackerId` faces while it attacks `targetId`: the aim point
-   * (`aimPointOf`, DEC-216 (11)), except that an attacker standing inside the target's outline,
-   * whose aim point is where it stands (DEC-234), faces the target's centre (DEC-220 (1)). A
-   * fort's court is outside its outline, so a unit there faces the aim point (DEC-226). Reach and
-   * chase keep `aimPointOf`. `false`, leaving `out` as it was, when either has no position or the
-   * target has no aim point.
-   */
-  public facingPointOf(attackerId: EntityId, targetId: EntityId, out: MutableVec2): boolean {
-    const from = this.entities.get(attackerId)?.findComponent(Transform)?.position;
-    const centre = this.entities.get(targetId)?.findComponent(Transform)?.position;
-    if (from === undefined || centre === undefined) {
-      return false;
-    }
-    const aimed = this.aimPointOf(targetId, from, out);
-    if (aimed === 'inside') {
-      out.x = centre.x;
-      out.y = centre.y;
-    }
-    return aimed !== null;
   }
 
   /**
@@ -255,16 +173,17 @@ export class EntityStore {
   }
 
   /**
-   * Whom the entity attacks at `tick` (DEC-322 (2)): its lock when it holds one; else each living
-   * body its last attack hit, for one attack interval from the hit (`Combat.hitsAt`), so a player
-   * who aims, with no lock, attacks what it hits. Empty when it attacks nothing, cannot attack or
-   * is unknown.
+   * Whom the entity attacks at `tick` (DEC-322 (2)): its lock, when it holds one, first; then each
+   * other living body its last attack hit while the hits count (`Combat.hitsAt`). So a player who
+   * aims, with no lock, attacks what it hits, and a locked sweep attacks every body it cut, not
+   * only its lock. Empty when it attacks nothing, cannot attack or is unknown.
    */
   public victimsOf(id: EntityId, tick: number): readonly EntityId[] {
     const combat = this.entities.get(id)?.findComponent(Combat);
     if (combat === undefined) return [];
-    if (combat.targetId !== null) return [combat.targetId];
-    return combat.hitsAt(tick).filter((hitId) => this.isAlive(hitId));
+    const { targetId } = combat;
+    const hits = combat.hitsAt(tick).filter((hitId) => hitId !== targetId && this.isAlive(hitId));
+    return targetId === null ? hits : [targetId, ...hits];
   }
 
   /** Whether `attackerId` attacks `victimId` at `tick` (`victimsOf`). */
@@ -310,6 +229,39 @@ export class EntityStore {
     }
     combat.equip({ basic: ammo.attack }, null);
     return true;
+  }
+
+  /**
+   * Records that an attack of `attackerId` touched `bodyIds` at `tick`, on its `Combat`
+   * (`Combat.recordHits`, at its `attackSpeedOf`), so the AI sees whom it attacks (`victimsOf`,
+   * DEC-322 (2)). The one place every contact point reports a hit: a sweep's bodies, a one-target
+   * hit, a shot's body, an ability's targets. Does nothing for an attacker that is unknown, dead or
+   * cannot attack.
+   */
+  public recordHits(attackerId: EntityId, bodyIds: readonly EntityId[], tick: number): void {
+    const attacker = this.entities.get(attackerId);
+    const combat = attacker?.findComponent(Combat);
+    if (combat === undefined || bodyIds.length === 0) return;
+    if (attacker?.findComponent(Health)?.isDead === true) return;
+    combat.recordHits(bodyIds, tick, this.attackSpeedOf(attackerId));
+  }
+
+  /**
+   * The entity's attack-speed multiplier from its statuses (0.7 concussed, 3 under Fury), 1 when it
+   * has none or is unknown. The one read of it, for the cooldown (`CombatSystem`) and the hits.
+   */
+  public attackSpeedOf(id: EntityId): number {
+    return this.entities.get(id)?.findComponent(StatusEffects)?.multiplier('attackSpeed') ?? 1;
+  }
+
+  /**
+   * Whether the entity takes no damage now: its collider is unbreakable (a wall or gate before its
+   * breakability rule passes, a forest camp). The one rule for it (DEC-333 (2)): the damage
+   * pipeline blocks such a hit, and no weapon, shot or ability area lands on such a body (DEC-317
+   * addendum). `false` for an unknown entity or one with no collider.
+   */
+  public takesNoDamage(id: EntityId): boolean {
+    return this.entities.get(id)?.findComponent(Collider)?.isUnbreakable === true;
   }
 
   /**

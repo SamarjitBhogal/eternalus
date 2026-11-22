@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-22
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -277,7 +277,7 @@ export type EntitySnapshot = {
     readonly max: number;
   } | null; // any entity with an aether pool (every Legend), not only the player (DEC-230)
   readonly statuses: readonly StatusSnapshot[] | null; // oldest first; null without StatusEffects
-  readonly projectile: ProjectileSnapshot | null; // a shot's speed share and ending (DEC-306); null for any other entity
+  readonly projectile: ProjectileSnapshot | null; // a shot's flown share and ending (DEC-306, DEC-322); null for any other entity
   readonly swing: SwingSnapshot | null; // the unit's latest melee sweep, display only (DEC-304); null when it made none
   readonly anim: AnimState;
 };

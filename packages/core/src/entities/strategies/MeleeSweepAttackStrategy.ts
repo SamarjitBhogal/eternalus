@@ -22,7 +22,7 @@ import { weaponSourceOf } from './weaponSourceOf';
  * locked target (`aim.targetId`), already checked in reach by `CombatSystem`, is hit without the
  * sector test. There is no wall test, as for one-target melee. Hits land in id order. The swing is
  * recorded on the attacker's `Combat` for the swing visual, and the bodies it hit as the attack's
- * hits (`GameState.recordHits`, DEC-322 (2)).
+ * hits (`EntityStore.recordHits`, DEC-322 (2)).
  */
 export class MeleeSweepAttackStrategy implements AttackStrategy {
   /**
@@ -55,7 +55,7 @@ export class MeleeSweepAttackStrategy implements AttackStrategy {
       damage.apply(state, id, attack.damage, weaponSourceOf(attacker));
       hits?.afterHit(state, attacker.id, id, attack);
     }
-    state.recordHits(attacker.id, hitIds);
+    state.entities.recordHits(attacker.id, hitIds, state.tick);
     attacker.getComponent(Combat).recordSwing({
       atTick: state.tick,
       direction: aim.direction,

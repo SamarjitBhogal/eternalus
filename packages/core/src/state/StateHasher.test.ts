@@ -432,16 +432,27 @@ describe('StateHasher', () => {
     combat.beginAttack(2);
     const before = hasher.hash(state);
 
-    combat.recordHits(['entity-9'], 2);
+    combat.recordHits(['entity-9'], 2, 1);
     const hit = hasher.hash(state);
-    combat.recordHits(['entity-8'], 2);
+    combat.recordHits(['entity-8'], 2, 1);
     const twoHits = hasher.hash(state);
-    combat.recordHits(['entity-9'], 3);
+    combat.recordHits(['entity-9'], 3, 1);
     const later = hasher.hash(state);
 
     expect(hit).not.toBe(before);
     expect(twoHits).not.toBe(hit);
     expect(later).not.toBe(hit);
+  });
+
+  it('hashes recorded hits on a unit with no target, no aim and no cooldown: an ability cast before any attack', () => {
+    const { state, soldier } = stateWithSoldier();
+    const combat = new Combat({ basic: { strategy: 'melee', damage: 1, reach: 1, interval: 5 } });
+    soldier.addComponent(combat);
+    const idle = hasher.hash(state);
+
+    combat.recordHits(['entity-9'], 0, 1);
+
+    expect(hasher.hash(state)).not.toBe(idle);
   });
 
   it('does not hash the swing record, which is display only (DEC-304)', () => {

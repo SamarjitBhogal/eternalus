@@ -640,8 +640,10 @@ Reply inline (`Decision: …`).
     a rock if i want"). (4) is replaced: every unit fires without a line-of-fire check, and a bot
     whose shot is blocked drops its lock and moves for a clear shot (scheduled to PR 2 by the
     coordinator under the standing rule). (5) is replaced: a body that takes no damage stops every
-    shot and takes no damage. Built in PR 2 (`feat/melee-sweeps`). Still open: BTD-B, BTD-E and
-    BTD-H (they were not on the card).
+    shot and takes no damage. Built in PR 2 (`feat/melee-sweeps`). The AI half of (4) is also
+    built there: a bot's line of fire uses the shot's own stop rule (`AreaHitQuery.stopsShot`),
+    so a body that takes no damage blocks it. Still open: BTD-B, BTD-E and BTD-H (they were not
+    on the card).
 
 - [x] **HC-B25 — A rule the design did not state, built under your standing rule (DEC-223),
       sign-off asked: what a melee sweep passes over (`feat/melee-sweeps`, PR 2, 2026-11-21;
@@ -723,12 +725,61 @@ Reply inline (`Decision: …`).
       (DEC-326 (2)): "A: a busy minion finishes its own fight; only minions that are not fighting
       come to help". Built in PR 2 (`LeashBehaviour.engage`).
 
-- [ ] **FYI for Samarjit (minion AI owner): two changes to minion AI in PR 2
+- [ ] **Owner Calls card `busy-minion-building` — Minions hitting a tower: do they come to help?
+      (`feat/melee-sweeps`, PR 2).** Asked on Owner Calls v54, 2026-11-22, by
+      COMBAT-WEAPONS-ABILITIES-55. Does a minion that hits an enemy tower or Stronghold count as
+      "fighting" under DEC-326 (2)? A (built now): no, it leaves the building and helps; only a
+      minion that fights a unit stays. B: yes, it keeps hitting the building. The rule also
+      reaches guards and forest-camp mobs (DEC-144 (C)). Recorded as a reading in DEC-326 (2).
+
+- [ ] **HC-B35 — Better than the design, built under your standing rule (DEC-223), sign-off
+      asked: the hit record and the takes-no-damage rule move onto `EntityStore`
+      (`feat/melee-sweeps`, PR 2, pre-PR gate round 2, 2026-11-22; COMBAT-WEAPONS-ABILITIES-58).**
+      Built and tested; recorded as DEC-333. Nothing waits on you. (1) The record of whom a unit
+      hit sits on `EntityStore` beside the code that reads it (`recordHits`, `victimsOf`), and
+      one function reads a unit's attack speed. A hit counts for the larger of the attack
+      interval and the slowed cooldown, so a faster attack (Fury) no longer shortens it and a
+      slow does not leave the AI blind. (2) One rule, `EntityStore.takesNoDamage`, says a body
+      takes no damage now; the hit rule, shots, the bots' line of fire, the damage step and
+      one-target melee all use it. Say "no" to either and it goes back. Two critic items were
+      rejected: (R2-A8, rest) injecting `ReachQuery` and `AreaHitQuery` into six classes: they
+      are stateless rule objects with no port, the base holds such helpers the same way
+      (`BotLeaves.movement = new BotMovement()`), and `stopsShot` stays static; (R2-A10)
+      splitting `BotLeaves.ts` (328 lines): a split rewires the bot tree in the last critic
+      round, and the leaves are one cohesive set.
+
+- [ ] **HC-Q87 — Inside the enemy palace, your weapon never hits the Stronghold
+      (`feat/melee-sweeps`, PR 2, critic R2-A2).** Confirm. Your answer to HC-Q76 was "A: aim at
+      it to hit it". Your HC-Q78 note says a swing inside a room should not bring the roof down
+      on the swinger. So the game does this: when you stand inside the enemy palace, your sword
+      and your arrows do not hit the Stronghold. Step outside and aim at the palace, and they
+      hit it. Defenders inside are still hit as normal. Options: (A, recommended) keep it as
+      built; (B) a weapon also hits the Stronghold from inside the palace when you aim at bare
+      floor (the text of option A of HC-Q76). Code names: `AreaHitQuery` rule 1,
+      `isOnOutlineFromOutside`; recorded in DEC-322 (1).
+
+- [ ] **HC-Q88 — An ability hit counts as attacking for the AI (`feat/melee-sweeps`, PR 2,
+      critic R2-A3).** Confirm. When a Legend hits an enemy with an ability, the AI treats it
+      like a basic attack: the enemy's guards and minions turn on that Legend, and a call for
+      help can fire. Your Veil note says "whether via basic attack casting or ability casting",
+      which supports this. Options: (A, recommended) keep it as built; (B) only a basic attack
+      counts. Code names: `CastInstance` records its targets as hits (`EntityStore.recordHits`);
+      recorded in DEC-322 (2), correction 2026-11-22.
+
+- [ ] **FYI for Samarjit (minion AI owner): three changes to minion AI in PR 2
       (`feat/melee-sweeps`).** Nothing to decide. (1) DEC-326 (2): a minion that is already
       fighting does not leave its fight for a call for help or a better-ranked enemy; only
       minions that are not fighting come to help. (2) DEC-322 (2): a player who hits a unit counts
       as attacking it until the player's next attack is due, so guards and minions answer a
-      player's hits (`EntityStore.attackTargetOf`). Tick this item when Samarjit has read it.
+      player's hits (`EntityStore.victimsOf` and `isAttacking`; `attackTargetOf` still gives the
+      lock only, and `HordeSystem` keeps reading it). A unit attacks its lock and each other body
+      its last attack hit (a union, not "or else"), and an ability's hits count too (DEC-322 (2),
+      correction 2026-11-22). A hit counts through the tick the next attack may land (inclusive),
+      for the larger of the attack interval and the slowed cooldown (DEC-333 (1)). (3) Rule (1) is in `LeashBehaviour`, so it
+      also reaches tower and Stronghold guards, forest-camp mobs and the capture point guards
+      (guards follow the minion rules, DEC-144 (C)). A minion that hits its lane objective is not
+      "fighting" and still turns to help (Owner Calls card `busy-minion-building`, open).
+      Architecture 18 §6.1 changes to match. Tick this item when Samarjit has read it.
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
@@ -1018,6 +1069,8 @@ Reply inline (`Decision: …`).
   - **(2) done by DEC-234** (#85, 2026-11-09): the inside test runs once, in `aimPointOf`, which
     returns an `AimedAt` tag; `isInReach` and `facingPointOf` read it. The tidy PR builds no
     helper for it.
+  - **(3) built by PR 2 (`state/ReachQuery`); `outlineOf` stays on `EntityStore`** (R2-A6,
+    2026-11-22).
 
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on

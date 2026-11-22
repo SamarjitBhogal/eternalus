@@ -1,5 +1,6 @@
 import type { AiMemory, BotDifficultyDefinition } from '../content/ai/ai.types';
 import type { EntityId } from '../state/EntityStore.types';
+import { ReachQuery } from '../state/ReachQuery';
 import { compareById } from '../utils/compareById';
 import { sqrt } from '../utils/deterministicMath';
 import type { Vec2 } from '../utils/geometry.types';
@@ -27,6 +28,7 @@ export class BotLeaves {
   private readonly anchor: MutableVec2 = { x: 0, y: 0 };
   private readonly forward: MutableVec2 = { x: 0, y: 0 };
   private readonly movement = new BotMovement();
+  private readonly reach = new ReachQuery();
 
   /** @param content - Difficulties and retreat points; the leaves hold no numbers. */
   public constructor(private readonly content: BotLegendControllerContent) {}
@@ -149,7 +151,7 @@ export class BotLeaves {
     const isHolding = BotLeaves.attackAndHold(
       turn,
       enemy,
-      state.entities.isInReach(id, enemy),
+      this.reach.isInReach(state.entities, id, enemy),
       this.content.lineOfFire.isClear(state, id, enemy),
     );
     this.mayCast(turn, enemy, at);
@@ -203,7 +205,7 @@ export class BotLeaves {
     const isHolding = BotLeaves.attackAndHold(
       turn,
       objective.id,
-      state.entities.isInReach(id, objective.id),
+      this.reach.isInReach(state.entities, id, objective.id),
       this.content.lineOfFire.isClear(state, id, objective.id),
     );
     if (isHolding || BotMovement.goRound(turn)) {

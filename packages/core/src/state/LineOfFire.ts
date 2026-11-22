@@ -15,11 +15,12 @@ import type { EntityId } from './EntityStore.types';
 import type { GameState } from './GameState';
 import { isTouchedBeforeWall } from './isTouchedBeforeWall';
 import type { LineOfFireQuery } from './LineOfFire.types';
+import { ReachQuery } from './ReachQuery';
 
 /**
  * The match's line-of-fire query (architecture 05 §10, DEC-317), built once by `Simulation` with
  * the projectile definitions. A shot flies from the attacker's centre to the point it is aimed at
- * (`EntityStore.aimPointOf`): an outline's nearest point, which the shot touches there, or a unit's
+ * (`ReachQuery.aimPointOf`): an outline's nearest point, which the shot touches there, or a unit's
  * centre, whose circle it touches its radius sooner. The line is clear when that contact is within
  * the shot's `range` and touched before the first wall (`isTouchedBeforeWall` on
  * `CollisionQuery.reach`): the rule `ProjectileSystem` lands a shot by, so a fort that is also a
@@ -37,6 +38,7 @@ import type { LineOfFireQuery } from './LineOfFire.types';
 export class LineOfFire implements LineOfFireQuery {
   /** Scratch for the aim point, then the aim direction. */
   private readonly aim: MutableVec2 = { x: 0, y: 0 };
+  private readonly reach = new ReachQuery();
 
   /**
    * @param projectiles - The projectile definitions: a shot sweeps its `footprintRadius` and flies
@@ -61,7 +63,7 @@ export class LineOfFire implements LineOfFireQuery {
     ) {
       return true;
     }
-    const aimed = state.entities.aimPointOf(targetId, from, this.aim);
+    const aimed = this.reach.aimPointOf(state.entities, targetId, from, this.aim);
     if (aimed === null || aimed === 'inside') {
       return true;
     }
@@ -104,7 +106,7 @@ export class LineOfFire implements LineOfFireQuery {
     const to = { x: from.x + this.aim.x * length, y: from.y + this.aim.y * length };
     let isBlocked = false;
     state.entities.forEach((entity) => {
-      if (isBlocked || !AreaHitQuery.takesNoDamage(entity)) return;
+      if (isBlocked || !state.entities.takesNoDamage(entity.id)) return;
       const health = entity.findComponent(Health);
       const transform = entity.findComponent(Transform);
       if (health === undefined || transform === undefined) return;

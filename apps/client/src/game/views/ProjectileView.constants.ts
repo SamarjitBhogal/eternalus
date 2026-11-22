@@ -41,11 +41,19 @@ export const PROJECTILE_SHADOW_OPACITY = 0.35;
 export const PROJECTILE_SHADOW_SIZE = 0.4;
 
 /**
- * How far below the shot (screen down, world +y) the shadow is at full speed, in world units. The
- * offset shrinks with the shot's speed, so the shadow meets it as it stops.
+ * How high a dropping shot (an arrow) is as it leaves its weapon, in world units: how far below
+ * it (screen down, world +y) its shadow is at the start of its flight.
  */
 // TUNE: placeholder look (DEC-306)
-export const PROJECTILE_SHADOW_HEIGHT = 1.2;
+export const PROJECTILE_ARC_LAUNCH_HEIGHT = 1.2;
+
+/**
+ * How much the arc of a dropping shot rises at mid-flight, in world units, above the straight
+ * drop from its launch height to the ground at its end. The shadow drops away from the arrow, then
+ * closes in and meets it where it lands (DEC-322 (2): an artificial arc).
+ */
+// TUNE: placeholder look (DEC-322 (2)); close is enough
+export const PROJECTILE_ARC_RISE = 2;
 
 /** Number of dots in the mist of a fizzling shot. */
 // TUNE: placeholder look (DEC-306)

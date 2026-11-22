@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-22
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -653,7 +653,7 @@ export type WeaponDefinition = {
 Until weapons land, a unit's basic attack is `UnitDefinition.attack` (same shape as `WeaponAttack`
 minus `onHit` and `projectile`; `interval` authored in seconds, converted to ticks at load like
 movement speeds). `Combat.weaponId` names the equipped weapon; `CombatSystem` calls the weapon's `AttackStrategy`
-(`attack(self, aim, attack, ctx)`, with `AttackAim { targetId, direction }`,
+(`attack(self, aim, attack, ctx)`, with `AttackAim { targetId, direction, point }`,
 [04 §4](04-entity-architecture.md#4-strategies-behaviour-that-varies-by-kind)):
 `MeleeAttackStrategy` applies `damage` and `onHit` to one target in the tick;
 `MeleeSweepAttackStrategy` does the same to every live enemy body in the wedge in front of the
@@ -671,17 +671,20 @@ by any class (reference 07: the class table's bias is a bias); `uniqueTo` locks 
 A shot flies straight from the attacker's centre until it hits an enemy body or a wall, or reaches
 its `ProjectileDefinition.range` (metres from the origin). It passes through allies, as the
 Hamstring blade does (DEC-269). A walk-on outline (a palace floor, a gate's passage) is ground units
-stand on, so a shot flies over it unless it was fired at that entity (DEC-314). A body that takes no
-damage now (its collider is unbreakable) also lets a shot pass unless the shot was fired at it
-(DEC-317); in today's content that changes only the forest camps, because the other such bodies are
-walk-on or stand in a wall that stops the shot. `CombatSystem` fires a ranged attack only when its
-target has a clear line of fire (`LineOfFire`, DEC-317: the shot touches it within its `range` and
-before a wall); else the unit faces the target and waits, and its controller moves it (a bot goes
-round, DEC-193). A shot that touches its target and another body at the same point hits its target:
+stand on, so a shot flies over it unless the shot aims at that entity: its locked target, or an aim
+point on the outline from outside it (DEC-314, DEC-322 (1)). A body that takes no damage now (its
+collider is unbreakable, for example a forest camp) stops every shot and takes no damage (DEC-317
+addendum). `CombatSystem` fires an attack without a line-of-fire check, for every unit, so a shot
+into a wall ends there (DEC-317 addendum). A bot holds its ranged attack only with a clear line
+(`LineOfFire`: the shot touches the target within its `range` and before a wall or a body that
+stops a shot); else it drops its lock and moves for a clear shot (11, DEC-193). A shot that touches its target and another body at the same point hits its target:
 at a Stronghold, the palace wall on the edge of its floor does not take a shot fired at the
-Stronghold (DEC-317 (8)). At its range it stops
-and ends: it hits nothing and stays for its `endDuration` (a bolt's mist fading, an arrow lying on
-the ground), then it is removed. `slowFrom` (at most `range`) is where the shot starts to ease to
+Stronghold (DEC-317 (8)). At its range it stops.
+The move that ends there is swept like every other move, so a body under the end point takes the
+hit: an arrow damages what it lands on (DEC-322 (2)). A walk-on floor that the shot does not aim at
+takes nothing there either (the owner's HC-Q78 note: "walk-on floors shouldnt take damage"). With
+no hit, the shot ends: it hits nothing more and stays for its `endDuration` (a bolt's mist fading,
+an arrow lying on the ground), then it is removed. `slowFrom` (at most `range`) is where the shot starts to ease to
 that stop; equal to `range`, the shot flies at full speed to the end. Its damage drops in a straight
 line from the attack's `falloff.fullTo` to `falloff.floor` at `falloff.floorAt`, and stays at the
 floor after that (DEC-306). A weapon with a melee attack beside its default attack also takes
@@ -732,11 +735,11 @@ at (`targetId`, `null` for none), its impact (`{ kind: 'weapon', attack }`) and 
 shot flies straight at the target's facing point, with no lead. Stand-in until PR 2 (melee sweeps,
 phase 4 sprint 4.4): the player fires only at a target under the cursor (`attack-target`), not
 along the aim DEC-184 sets. A bot holds its ranged attack only with a clear line of fire
-(`state/LineOfFire`, with the shot's radius from its `ProjectileDefinition`), and `CombatSystem`
-fires one only with that clear line (DEC-317). The projectile is not pooled (04 §11, DEC-309). Shot endings (DEC-306) are built: `ProjectileFlight` holds `range`,
+(`state/LineOfFire`, with the shot's radius from its `ProjectileDefinition`); PR 2 removed the
+same check from `CombatSystem` (DEC-317 addendum). The projectile is not pooled (04 §11, DEC-309). Shot endings (DEC-306) are built: `ProjectileFlight` holds `range`,
 `slowFrom` and the ending countdown; `physics/flightSpeed` caps the shot's speed each tick through
 `Movement.limitSpeed`, so it stops exactly at `range`, ends, and is removed as `consumed` after
-`endDuration`. `EntitySnapshot.projectile` (`speedShare`, `ending`) lets the client draw the
+`endDuration`. `EntitySnapshot.projectile` (`flownShare`, `ending`) lets the client draw the
 slowing and the ending. The staff's melee attack is on its own action (DEC-308): `attack-target`
 has an optional `mode` (`AttackMode`, `'basic' | 'melee'`, in `content/units/units.types.ts`);
 `Combat` holds the attacks by mode (`UnitAttacks`, resolved at spawn by
@@ -753,11 +756,17 @@ the `HitRunner` port (`state/HitRunner.types.ts`, which `HitEffects` satisfies);
 removed with cause `consumed`. No `projectile-hit` event exists (DEC-314). Still not built: `heavyAttack`, `parry`, `grants`, the flex attack,
 `a-fine-line` and turret lead.
 
-**Implementation status, 2026-11-21 (branch `feat/melee-sweeps`, PR 2; DEC-184, DEC-304, DEC-305,
+**Implementation status, 2026-11-22 (branch `feat/melee-sweeps`, PR 2; DEC-184, DEC-304, DEC-305,
 DEC-319).** Melee sweeps, class reach and aimed attacks are built. The talons, Wuuthrad and the Magus
 staff's melee attack are sweeps; mobs keep the one-target `melee` attack. The wedge geometry is
-`utils/sector.ts`. A walk-on outline or a body that takes no damage now is hit only when it is the
-locked target, the rule shots use (`EntityStore.isHitOnlyWhenTargeted`, DEC-319 (9)). A new command,
+`utils/sector.ts`. One hit rule serves weapon sweeps and ability areas (`state/AreaHitQuery`,
+DEC-322 (3); `abilities/TargetQuery` is a thin adapter over it): a walk-on outline is hit only when
+the hit aims at it (DEC-322 (1)), and a body that takes no damage now is never hit. Shots and
+`LineOfFire` use the same module's `stopsShot`, and a shot fired along an aim names the walk-on
+body under the aim point (`aimedBodyOf`; a structure before a map object). Every contact reports
+its bodies once through `EntityStore.recordHits`, so the AI sees every body a unit attacks, not
+only its lock (`Combat.recordHits`, `EntityStore.victimsOf`, DEC-322 (2), DEC-333 (1)). The client draws the arrow's arc from
+`EntitySnapshot.projectile.flownShare` (`views/ProjectileView`). A new command,
 `attack-aim { actorId, aim: Vec2 | null, mode? }`, sets an aim point on `Combat` (a target or an aim
 point, never both; `stop` clears both). With an aim point, `CombatSystem` turns the unit to the point
 each tick and attacks along the line when off cooldown, with no reach check and no line-of-fire

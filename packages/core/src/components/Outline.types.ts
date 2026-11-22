@@ -2,7 +2,7 @@ import type { Polygon, Rect } from '../utils/geometry.types';
 
 /**
  * An entity's exact outline, used instead of its collider circle: attack reach and a chase
- * measure to it (`EntityStore.aimPointOf`), and a shot hits it (`ProjectileSystem`). A structure's
+ * measure to it (`ReachQuery.aimPointOf`), and a shot hits it (`ProjectileSystem`). A structure's
  * `Footprint` and a map object's `MapObjectBody` implement it; `EntityStore.outlineOf` is the one
  * place that picks which one an entity uses.
  */

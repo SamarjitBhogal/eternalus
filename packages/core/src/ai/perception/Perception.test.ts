@@ -88,9 +88,9 @@ describe('Perception', () => {
     const fightingBack = { hostileTo: 'light', neutralAttackersOf: self.id } as const;
     const interval = camp.getComponent(Combat).attack.interval;
 
-    state.recordHits(camp.id, [self.id]);
+    state.entities.recordHits(camp.id, [self.id], state.tick);
     expect(perception.unitsWithin({ x: 10, y: 10 }, 5, fightingBack)).toEqual([camp.id]);
-    for (let tick = 0; tick < interval; tick += 1) state.advanceTick();
+    for (let tick = 0; tick <= interval; tick += 1) state.advanceTick();
     expect(perception.unitsWithin({ x: 10, y: 10 }, 5, fightingBack)).toEqual([]);
   });
 
