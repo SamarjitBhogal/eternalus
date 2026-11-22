@@ -22,7 +22,6 @@ import { EachGuardRespawn } from './EachGuardRespawn';
 import { GroupGuardRespawn } from './GroupGuardRespawn';
 import type { GuardRespawnRule, PostLayout } from './GuardRoster.types';
 import { NeverGuardRespawn } from './NeverGuardRespawn';
-import { countdownTicks } from '../config/countdownTicks';
 
 /**
  * Runs every home's guard plan for `SpawnSystem` (architecture 18 §7, 07 §6). A home is a
@@ -236,8 +235,7 @@ export class GuardRoster {
     if (activation.at === 'match-start') {
       return 0;
     }
-    const { countdownSeconds } = state.config.match;
-    return countdownTicks(countdownSeconds, state.config.tickRate) + activation.delayTicks;
+    return state.match.countdownEndTick + activation.delayTicks;
   }
 
   /**

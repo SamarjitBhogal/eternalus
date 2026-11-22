@@ -1,7 +1,5 @@
 import type { ReactElement, ReactNode } from 'react';
 
-import { useAppSelector } from '../../bridge/hooks';
-import { settingsSlice } from '../../bridge/slices/settingsSlice';
 import { KeyPrompt } from '../components/KeyPrompt';
 import { useModalKeyFilter } from '../components/useModalKeyFilter';
 import { STRINGS } from '../strings';
@@ -16,10 +14,9 @@ const { characterSelect: text } = STRINGS;
  * shape; while open only Escape works (`useModalKeyFilter`: a `pause-menu` key or mouse button
  * closes, every other key and bound button is stopped), and Esc Back (148:203) takes the focus. It
  * opens with a quick fade and grow and closes by fading while it shrinks to 80 %; closed, it is
- * invisible and inert. It stays mounted, so CSS alone runs both ways; the motion stops under
- * `prefers-reduced-motion` (the motion tokens) and under the in-game reduce-motion setting
- * (`data-reduce-motion`, an interim reading of the setting until UE-03 applies it to the whole
- * page), and it still opens and closes.
+ * invisible and inert. It stays mounted, so CSS alone runs both ways; its motion is timed by the
+ * motion tokens, which stop under `prefers-reduced-motion` and under the in-game reduce-motion
+ * setting (UE-03), and it still opens and closes.
  */
 export function ViewDetailsScreen({
   isOpen,
@@ -30,7 +27,6 @@ export function ViewDetailsScreen({
   readonly onClose: () => void;
   readonly children: ReactNode;
 }): ReactElement {
-  const { reduceMotion } = useAppSelector(settingsSlice.selectors.selectAccessibility);
   useModalKeyFilter(isOpen, onClose);
   return (
     <div
@@ -39,7 +35,6 @@ export function ViewDetailsScreen({
       aria-modal="true"
       aria-label={text.viewDetails}
       data-open={isOpen}
-      data-reduce-motion={reduceMotion}
       inert={!isOpen}
     >
       <div className={styles.backdrop} />
