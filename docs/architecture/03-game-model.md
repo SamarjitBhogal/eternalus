@@ -277,7 +277,15 @@ export type EntitySnapshot = {
     readonly max: number;
   } | null; // any entity with an aether pool (every Legend), not only the player (DEC-230)
   readonly statuses: readonly StatusSnapshot[] | null; // oldest first; null without StatusEffects
+  readonly projectile: ProjectileSnapshot | null; // a shot's speed share and ending (DEC-306); null for any other entity
+  readonly swing: SwingSnapshot | null; // the unit's latest melee sweep, display only (DEC-304); null when it made none
   readonly anim: AnimState;
+};
+export type SwingSnapshot = {
+  readonly atTick: number; // the tick the swing was made
+  readonly direction: { readonly x: number; readonly y: number }; // unit vector
+  readonly radius: number; // metres from the attacker's centre
+  readonly arcDegrees: number;
 };
 export type StatusSnapshot = {
   readonly id: StatusEffectId;

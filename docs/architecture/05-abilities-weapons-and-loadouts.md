@@ -620,10 +620,11 @@ units with no attack (`cannot-attack`).
 ```ts
 // Sketch: packages/core/src/content/weapons/WeaponDefinition.types.ts
 export type WeaponClass = 'glove' | 'bow' | 'sword' | 'spear' | 'battle-axe' | 'staff';
-export type AttackStrategyId = 'melee' | 'ranged-projectile' | 'beam'; // 'beam' reserved (04 §4)
+export type AttackStrategyId = 'melee' | 'melee-sweep' | 'ranged-projectile' | 'beam'; // 'beam' reserved (04 §4)
 export type WeaponAttack = {
   readonly strategy: AttackStrategyId;
-  readonly reach: number;
+  readonly reach: number; // metres from the body edge; a melee attack adds the class's part, LegendDefinition.meleeReach (DEC-305)
+  readonly arcDegrees?: number; // 'melee-sweep' only: above 0, at most 180 (DEC-304)
   readonly damage: number;
   readonly damageType: DamageType;
   readonly intervalTicks: number;
@@ -652,9 +653,11 @@ export type WeaponDefinition = {
 Until weapons land, a unit's basic attack is `UnitDefinition.attack` (same shape as `WeaponAttack`
 minus `onHit` and `projectile`; `interval` authored in seconds, converted to ticks at load like
 movement speeds). `Combat.weaponId` names the equipped weapon; `CombatSystem` calls the weapon's `AttackStrategy`
-(`attack(self, target, weapon, ctx)`,
+(`attack(self, aim, attack, ctx)`, with `AttackAim { targetId, direction }`,
 [04 §4](04-entity-architecture.md#4-strategies-behaviour-that-varies-by-kind)):
-`MeleeAttackStrategy` applies `damage` and `onHit` in the tick; `RangedProjectileAttackStrategy`
+`MeleeAttackStrategy` applies `damage` and `onHit` to one target in the tick;
+`MeleeSweepAttackStrategy` does the same to every live enemy body in the wedge in front of the
+attacker (its radius is the body radius plus `reach`, its angle is `arcDegrees`); `RangedProjectileAttackStrategy`
 spawns a `Projectile` (not pooled, DEC-309) whose `payload` carries its impact as plain data by
 impact kind (a weapon's: the attack). `ProjectileSystem` flies every shot the same way and hands
 the hit to the `ProjectileImpact` of its kind (`WeaponImpact`: the damage with its fall-off, then
@@ -751,18 +754,10 @@ removed with cause `consumed`. No `projectile-hit` event exists (DEC-314). Still
 `a-fine-line` and turret lead.
 
 **Implementation status, 2026-11-21 (branch `feat/melee-sweeps`, PR 2; DEC-184, DEC-304, DEC-305,
-DEC-319).** Melee sweeps, class reach and aimed attacks are built. `AttackStrategyId` adds
-`'melee-sweep'`, and `UnitAttack` adds `SweepAttack` (`arcDegrees`, above 0 and at most 180, checked
-by `loadWeapons`). `MeleeSweepAttackStrategy` damages, in the tick, every live enemy body that the
-wedge from the attacker's centre reaches (radius: body radius plus `reach`); the wedge geometry is
-`utils/sector.ts`. The talons, Wuuthrad and the Magus staff's melee attack are sweeps; mobs keep the
-one-target `melee` attack. A walk-on outline or a body that takes no damage now is hit only when it
-is the locked target, the rule shots use (`EntityStore.isHitOnlyWhenTargeted`, DEC-319 (9)).
-`LegendDefinition.meleeReach` is the class's part of reach; `attacksByMode(attacks, meleeReach)` adds
-it to each melee attack, never to a ranged one, and the weapon's `reach` is its own part. The
-strategy contract is `attack(attacker, aim: AttackAim, attack, context)`, with `AttackAim` =
-`{ targetId: EntityId | null; direction }` (a unit vector): the sketch's `target` argument is now an
-aim, and a one-target melee attack with no target hits nothing. A new command,
+DEC-319).** Melee sweeps, class reach and aimed attacks are built. The talons, Wuuthrad and the Magus
+staff's melee attack are sweeps; mobs keep the one-target `melee` attack. The wedge geometry is
+`utils/sector.ts`. A walk-on outline or a body that takes no damage now is hit only when it is the
+locked target, the rule shots use (`EntityStore.isHitOnlyWhenTargeted`, DEC-319 (9)). A new command,
 `attack-aim { actorId, aim: Vec2 | null, mode? }`, sets an aim point on `Combat` (a target or an aim
 point, never both; `stop` clears both). With an aim point, `CombatSystem` turns the unit to the point
 each tick and attacks along the line when off cooldown, with no reach check and no line-of-fire

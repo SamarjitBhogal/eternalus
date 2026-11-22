@@ -9902,3 +9902,33 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `eternalus-agent-work/abilities/pr1-gate/r4-pre-check.log`. Each new or changed test was seen red
   first or under a deliberate break (`pr1-breaks.log`, Round 3).
 - Next step: the owner pushes `feat/ranged-attacks` and opens the PR on `feat/vanguard-kit`.
+
+### 2026-11-21 — Phase 4 / combat lane A, PR 2: melee sweeps, class reach, aimed attacks (DEC-319), gate round 1 fixes — feat/melee-sweeps — sholtzman + Claude Code
+
+- What was done: a weapon's melee attack sweeps a wedge in front of the Legend and hits every
+  enemy body it reaches (`MeleeSweepAttackStrategy`, `utils/sector.ts`; DEC-184, DEC-304), reach is
+  the class's part plus the weapon's (`LegendDefinition.meleeReach`, DEC-305), and the player
+  attacks along the aim with the new `attack-aim` command (client `PlayerCommands`, Duel server
+  `SeatCommands`); the swing wedge is drawn from `EntitySnapshot.swing`. Rules recorded as DEC-319.
+  Pre-PR gate round 1 (reports and the state of each finding in
+  `eternalus-agent-work/abilities/pr2-gate/r1-*.md`): an attacker killed earlier in the tick lands
+  nothing (m3); `CombatSystem` throws when a target in reach has no point to face (n1);
+  `EntitySnapshot.swing` is `SwingSnapshot | null` with one field name, `atTick` (R1-A16); new
+  `Simulation.aimed.test.ts` runs `attack-aim` through the command path, its release, a replay JSON
+  round trip and a determinism check (m1, R1-A11); the healing scenario spawns the enemy out of
+  reach (m2); ponytail cuts 2-4; TSDoc (R1-A18, R1-A20); design text 03, 04, 05, 06, 13, 17 and
+  DEC-319 (5)-(9) (R1-A6 to A10, A17, A21); `INBOX.md` HC-Q76 to HC-Q78.
+- Not built: HC-Q76 (blocker: with aimed attacks a player's weapon cannot hit the Stronghold, the
+  palace or a gate), HC-Q77 (what the AI counts as "attacking" for an aiming player) and HC-Q78
+  (one area-hit rule, B recommended) wait on the owner (Owner Calls v37; answers become DEC-322).
+  R1-A13 and R1-A19 wait on HC-Q76. Rejected findings and the reasons are in
+  `r1-dispositions.md`.
+- Checks run: `npm run check:quick` (pre-commit hook of the code commit `f7436d8e`, 2026-11-21
+  17:27:44 to 17:34:52 MST) exit 0: no-js, `tsc -b`, `eslint --max-warnings 0 .`. The run before
+  it failed on one lint error (`no-confusing-void-expression`, `CombatSystem.test.ts:293`), fixed.
+  Vitest on the changed areas: `Simulation.aimed.test.ts` 3/3, `Simulation.healing.test.ts` 3/3,
+  `CombatSystem.test.ts` 24/24. Each new or changed test was seen red under a deliberate break
+  (`eternalus-agent-work/abilities/pr2-sweeps/breaks.log`). The full `npm run check` waits for
+  the HC-Q76 and HC-Q77 build.
+- Next step: build the HC-Q76 and HC-Q77 answers (DEC-322), gate round 2, `npm run check`, then the
+  owner pushes `feat/melee-sweeps` and opens the PR on `feat/ranged-attacks`.

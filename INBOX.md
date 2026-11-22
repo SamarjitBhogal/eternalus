@@ -647,6 +647,50 @@ Reply inline (`Decision: …`).
       (B) A sweep also hits those bodies: every swing inside an enemy palace damages the
       Stronghold. **Answered 2026-11-21 in chat: "A".** Signed off as built; recorded in DEC-319
       (9).
+  - Re-asked 2026-11-21 as HC-Q76: this question did not say that PR 2 removes the player's lock,
+    so the 'A' answer was given on incomplete facts. Not Sam's error.
+
+- [ ] **HC-Q76 — Correction to HC-B25: with aimed attacks, a player's weapon cannot hit the
+      Stronghold, the palace or a gate (`feat/melee-sweeps`, PR 2).** Your "A" on HC-B25 said a
+      sweep passes over a walk-on floor or a no-damage body "unless you lock onto it". The
+      question did not say that PR 2 also removes the player's lock: the attack button aims, it
+      does not lock (DEC-319 (6)). So a player's weapon never damages the enemy Stronghold, the
+      palace or a gate, with sweeps or with shots (probe: lock 3-5 hits, aim 0 hits). This also
+      breaks DEC-185 (D). Abilities and bots still hit these bodies. Options: (A, recommended)
+      aim at it to hit it: a walk-on floor or a no-damage body counts as locked while the aim
+      point is on its outline and not on a unit; inside the enemy palace, aiming at a defender
+      hits the defender, aiming at bare floor hits the Stronghold too; (B) as A, but only while
+      the attacker stands outside that outline; (C) a press on a building locks it (client and
+      Duel server only; the attack then follows the building, not the cursor); (D) keep as
+      built: weapons never hit these bodies. Answer will be recorded as DEC-322. Asked on Owner
+      Calls v35, 2026-11-21, COMBAT-WEAPONS-ABILITIES-50.
+
+- [ ] **HC-Q77 — What the AI counts as "attacking" when the player aims (`feat/melee-sweeps`,
+      PR 2).** Minions, tower guards and the leash help call read whom a unit attacks from its
+      lock. The player has no lock now, so for the AI the player attacks nobody: guards and
+      minions do not turn on a player who attacks their Legend, the leash help call never fires
+      for a player, and a player can lead a guard to its leash edge and hit it with no answer.
+      Bots still lock. Samarjit owns this AI and will be told. Options: (A, recommended) a unit
+      attacks its lock, or each body its last attack hit, until its next attack is due (one
+      attack interval; no new number); (B) the unit under the aim point counts as the target
+      while the button is held; (C) reuse the scoring record of Legend-on-Legend hits (DEC-132)
+      with a new short window (a new TUNE number); covers only Legend attacks on Legends; (D)
+      leave it and schedule the fix. Asked on Owner Calls v35, 2026-11-21,
+      COMBAT-WEAPONS-ABILITIES-50.
+
+- [ ] **HC-Q78 — Better than the design: one hit rule for weapon areas and ability areas
+      (`feat/melee-sweeps`, PR 2).** Two pieces of code answer "which bodies does this area
+      touch": the weapon sweep and the ability target query. They already disagree: an ability
+      tests a tower's fort as a circle, not its outline, and hits a walk-on floor (an ability
+      cast inside the enemy palace hits the Stronghold). Lane B's Rip & Tear cone (PR 6) will use
+      the same wedge shape as a sweep but the ability rules, so the same wedge hits different
+      bodies. Architecture critic, PR 2 round 1. Lane B is changing the ability area code now
+      (`AreaShape`, `HitShape` on `feat/vanguard-hamstring`), so building the shared rule in PR 2
+      would conflict with that work. Options: (A) one rule, built in PR 2: one area-hit query in
+      core for abilities and weapons, with one outline test and the Q76 floor rule; abilities
+      change, and lane B must merge it; (B, recommended) the same design, built with the cone
+      (lane B PR 6; scheduled, so not deferred debt); (C) keep two rules. Asked on Owner Calls
+      v35, 2026-11-21, recommendation changed from A to B in v37, COMBAT-WEAPONS-ABILITIES-50.
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
