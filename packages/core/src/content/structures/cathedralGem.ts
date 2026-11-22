@@ -2,7 +2,8 @@ import type { CathedralGemDefinition } from './structures.types';
 
 /**
  * The Cathedral gem's answer to a hit or a touch (DEC-292): "a toned-down stun and tick-damage",
- * and a purple glow "for the stun duration + 5 ticks". The stun and damage numbers live in the two
+ * and a purple glow "for the stun duration + 5 ticks", read as 5 game ticks (the burn's "+ 1
+ * tick" is read as one burn pulse, `gemBurn.ts`; the owner's meaning is an open question). The stun and damage numbers live in the two
  * statuses (`gemShock.ts`, `gemBurn.ts`); `gemWarded.ts` spaces out the strikes on a unit that
  * keeps touching it.
  */

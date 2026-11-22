@@ -226,4 +226,16 @@ describe('CathedralGemSystem (DEC-291, DEC-292)', () => {
       () => new CathedralGemSystem(state, new StatusEffectApplier(loaded), loaded, glow),
     ).toThrow('must have a duration');
   });
+
+  it.each([
+    ['a status it lands', { ...CATHEDRAL_GEM, statusIds: ['gem-shock', 'no-such-status'] }],
+    ['its touch cooldown', { ...CATHEDRAL_GEM, touchCooldownStatusId: 'no-such-status' }],
+  ])('refuses an unknown status id for %s at match start, before any hit', (_, gem) => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const loaded = loadStatusEffects(TICK_RATE, 2);
+
+    expect(
+      () => new CathedralGemSystem(state, new StatusEffectApplier(loaded), loaded, gem),
+    ).toThrow('no-such-status');
+  });
 });
