@@ -1278,11 +1278,13 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
 - **Weapon Swap (`feat/zealot-weapon-swap`, PR 9, 2026-11-22; DEC-303).** The first artifact
   (§11) and the first second weapon (§12) are built for the Zealot only.
   - **Content.** `content/artifacts/weaponSwap.ts` (`weapon-swap`, class `warrior`, slot kind
-    `gadget`, `self` targeting, one `swap-weapon` step) is listed last in `abilityCatalogue.ts`:
-    the ability registry resolves every slot from that one catalogue, so there is no
-    `artifactCatalogue.ts` (17's recipe names one; `INBOX.md` HC-B30 asks to sign this off). It is
-    an `AuthoredAbility`, not an `ArtifactDefinition`, and has no varieties. Its cooldown (1 s)
-    and aether cost (0) are `TUNE`.
+    `gadget`, `self` targeting, one `swap-weapon` step) is the one line of
+    `content/artifacts/artifactCatalogue.ts` (`ARTIFACTS`, 17 R10). `abilityCatalogue.ts` spreads
+    that list last into `ABILITIES`, so the ability registry resolves a gadget slot from the same
+    catalogue as every other slot. An artifact satisfies `AuthoredArtifact`
+    (`content/artifacts/artifacts.types.ts`, the authored form of §11's `ArtifactDefinition`),
+    which checks the `gadget` slot kind at compile time. Weapon Swap has no varieties. Its
+    cooldown, aether cost and name are `TUNE` in `weaponSwap.ts`.
   - **Who carries what.** The Legend spec names its second weapon and its artifacts, as it names
     its kit (DEC-198): `LegendSpecDefinition.secondaryWeaponId` and `artifacts` (`gadget-1`, then
     `gadget-2`; `null` = empty). The Zealot (spec `assassin`) has `obsidian-bow` and
@@ -1310,10 +1312,12 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     authored so, which keeps bot Zealots on the talons (`INBOX.md` HC-Q83, A); other gadgets stay
     open to bots. The HUD's gadget frames come from the spec's artifacts: a filled artifact slot
     shows the artifact's name and no icon, and an empty one keeps the class's entry
-    (`buildDisplayCatalogue`, `selectHudKit`; DEC-114). The weapon panel still shows the class's
-    default weapon while the bow is in hand. The owner questions `INBOX.md` HC-Q80 (swap key),
-    HC-Q81 (swap timing), HC-Q82 (bow melee key), HC-Q83 (bot swap) and HC-Q84 (Duel reset: the
-    weapon in hand stays) are open; the recommended option of each is built.
+    (`buildDisplayCatalogue`, `selectHudKit`; DEC-114). The weapon panel does not change with the
+    swap (the Zealot's weapon frame is empty, DEC-114). The owner questions `INBOX.md` HC-Q80
+    (swap key), HC-Q81 (swap timing), HC-Q82 (bow melee key), HC-Q83 (bot swap), HC-Q85 (name
+    and aether cost) and HC-Q86 (bow strength, weapon display) are open; the recommended or
+    as-built option of each is built. HC-Q84 (Duel reset) is open too, but no Duel seats a Zealot
+    yet, so nothing resets the weapon in hand.
 
 ## Related
 
