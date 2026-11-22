@@ -76,7 +76,7 @@ export type LegendSpecDefinition = {
   /**
    * The second weapon this Legend carries beside its class's default weapon (05 §12
    * `secondaryWeaponId`), or `null` for none. Only the Zealot has one (DEC-303); a gadget with a
-   * `swap-weapon` step puts it in hand. `KnownWeaponRule` checks the id.
+   * `swap-weapon` step puts it in hand. `SecondaryWeaponRule` checks the id.
    */
   readonly secondaryWeaponId: string | null;
   /**

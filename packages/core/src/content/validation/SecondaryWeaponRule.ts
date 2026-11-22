@@ -4,15 +4,15 @@ import type { LegendSpecDefinition } from '../legends/specs/legendSpecs.types';
 import type { WeaponDefinition } from '../weapons/weapons.types';
 import type { ContentRule } from './ContentValidator.types';
 
-/** The effect kind that puts a spec's second weapon in hand (`SwapWeaponEffect`). */
-const SWAP_WEAPON_KIND = 'swap-weapon';
-
 /**
  * A Legend spec's second weapon (05 §12 `secondaryWeaponId`, DEC-303) names a loaded weapon, and
  * the spec has one exactly when one of its artifacts swaps weapons: a swap with no second weapon
  * does nothing, and a second weapon with no swap is never in hand. A typo fails at load (04 §5).
  */
 export class SecondaryWeaponRule implements ContentRule<LegendSpecDefinition> {
+  /** The effect kind that puts a spec's second weapon in hand (`SwapWeaponEffect`). */
+  private static readonly SWAP_WEAPON_KIND = 'swap-weapon';
+
   /**
    * @param weapons - The weapons a second weapon may name.
    * @param abilities - The abilities as authored, to find an artifact's effect steps.
@@ -31,7 +31,9 @@ export class SecondaryWeaponRule implements ContentRule<LegendSpecDefinition> {
       (id): id is string =>
         id !== null &&
         this.abilities.has(id) &&
-        this.abilities.get(id).effects.some(({ kind }) => kind === SWAP_WEAPON_KIND),
+        this.abilities
+          .get(id)
+          .effects.some(({ kind }) => kind === SecondaryWeaponRule.SWAP_WEAPON_KIND),
     );
     if (secondaryWeaponId === null) {
       return swaps.map((id) => `artifacts "${id}" swaps weapons, but secondaryWeaponId is null`);
