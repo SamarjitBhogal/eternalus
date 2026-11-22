@@ -38,35 +38,41 @@ export class BotMovement {
     const isThere =
       BotMovement.gapSquared(turn.position, destination) <= arrivalDistance * arrivalDistance;
     if (isThere) {
-      if (turn.next.pathGoalX !== null) {
-        turn.next = { ...turn.next, ...NO_PATH };
-      }
+      BotMovement.forgetPath(turn);
       return BotMovement.halt(turn);
     }
     const paths = turn.state.paths;
     if (paths !== null && !this.reuseStep(turn, destination, paths)) {
       if (!paths.waypoint(turn.position, destination, this.step)) {
         BotMovement.stop(turn);
-        turn.next = { ...turn.next, ...NO_PATH };
+        BotMovement.forgetPath(turn);
         return 'failure';
       }
       // A clear line gives the destination itself: nothing was searched, so nothing is cached and
       // a moving destination (a chased enemy) is followed where it is now.
+      // `PathQuery.waypoint` promises that exact copy, so an exact comparison is safe here.
       const isSearched = this.step.x !== destination.x || this.step.y !== destination.y;
-      turn.next = {
-        ...turn.next,
-        ...(isSearched
-          ? {
-              pathGoalX: destination.x,
-              pathGoalY: destination.y,
-              pathStepX: this.step.x,
-              pathStepY: this.step.y,
-            }
-          : NO_PATH),
-      };
+      if (isSearched) {
+        turn.next = {
+          ...turn.next,
+          pathGoalX: destination.x,
+          pathGoalY: destination.y,
+          pathStepX: this.step.x,
+          pathStepY: this.step.y,
+        };
+      } else {
+        BotMovement.forgetPath(turn);
+      }
     }
     const next = paths !== null ? this.step : destination;
     return BotMovement.steer(turn, { x: next.x - turn.position.x, y: next.y - turn.position.y });
+  }
+
+  /** Clears the cached waypoint, writing a new memory only when one is set (no hot-path allocation). */
+  private static forgetPath(turn: BotTurn): void {
+    if (turn.next.pathGoalX !== null) {
+      turn.next = { ...turn.next, ...NO_PATH };
+    }
   }
 
   /**
