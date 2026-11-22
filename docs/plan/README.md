@@ -4,12 +4,12 @@ description: The Eternalus MVP roadmap; read this to know which phase we are in,
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-07
+last-reviewed: 2026-11-22
 tags: [plan, roadmap, sprints, metrics]
 related:
   [
     'docs/plan/phase-0-documentation-and-harness.md',
-    'docs/plan/PROGRESS.md',
+    'docs/plan/progress/README.md',
     'docs/requirements/06-mvp-requirements.md',
     'docs/process/git-workflow.md',
   ]
@@ -23,7 +23,7 @@ Read this when you need to know where the project is, what to work on next, or w
 feature is still in scope. It is the roadmap for the COMP 7082 MVP: seven phases (0–6), one
 document per phase, each phase split into sprints (two weeks each since 2026-10-03) with checklists, tests and a
 measurable success metric. The phase docs are the working documents; this file is the map and
-the rulebook. Progress is logged in [PROGRESS.md](PROGRESS.md). Anything outside the MVP lives
+the rulebook. Progress is logged in [progress log](progress/README.md). Anything outside the MVP lives
 in [backlog-post-mvp.md](backlog-post-mvp.md).
 
 ## 0. Re-cut of 2026-10-03 (overrides the dates below)
@@ -62,7 +62,7 @@ table. Session-level work packages for S1 are in
   the phase branch, small enough for one agent session. Every task states **tests to write**
   and **done when**. An agent picks a task, writes its task brief
   ([template](../agents/task-brief-template.md)), works on its own branch and worktree, runs
-  `npm run check`, and appends an entry to [PROGRESS.md](PROGRESS.md).
+  `npm run check`, and adds an entry file in the [progress log](progress/README.md).
 - **Stacking.** While a phase PR waits for review, the next phase branches from that phase
   branch and merges it forward (`git merge phase/<n-1>`) whenever it moves. The PR order into
   `main` never changes. `Recommendation:` a sprint whose dependencies are already merged may
@@ -142,7 +142,7 @@ Phase 2 views sprint, and then Phase 5 early. Phase 6 is everyone.
   quarter-mark mini-bosses, the mid-game GreaterBoss, gates and turrets, a loading screen and an
   about screen.
 - **Cut order if late** (first cut first; each cut is a product-owner decision logged in
-  `INBOX.md` and [PROGRESS.md](PROGRESS.md)):
+  `INBOX.md` and [progress log](progress/README.md)):
   1. Art and audio polish (keep placeholder shapes; MVP art is low-poly/pixel anyway).
   2. Pick-up/throw (**MVP-if-time** in the game doc).
   3. Turret manual control (keep auto-fire; the `TurretController` seam stays).
@@ -162,20 +162,20 @@ generated map, determinism and the developer menu are the requirements' non-nego
 Targets are project-level; the phase docs say when each is first measured. Numbers marked
 `Recommendation:` were set by the architect, not by the source documents.
 
-| Metric                            | Target                                                                                                     | Measured by                                                     | First gate | Status (2026-09-30)                                                                                                                                                                                                                                    |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Determinism replay test           | Same seed + command log → identical `StateHasher` hash every 100 ticks, 10 seeds × 3000 ticks              | `npm run test` (replay fixtures in core)                        | Phase 1    | not started                                                                                                                                                                                                                                            |
-| Simulation tick time              | ≤ 8 ms per tick at 30 TPS with 144 units/team + 20 Legends on the reference dev laptop (`Recommendation:`) | `PerfOverlay` histogram; headless bench in `npm run bench` (P3) | Phase 3    | measured 2026-11-20 (bench with bot pilots and a fight): p95 3.5 ms, filled to 144/team and falling to about 95/team over the timed window, on a non-reference machine; pending the reference laptop and the sampling rule (`INBOX.md`, `PROGRESS.md`) |
-| Render frame rate                 | 60 fps: median frame ≤ 16.7 ms, no frame > 50 ms during a 60 s match segment (`Recommendation:`)           | `PerfOverlay` + long-animation-frame observer                   | Phase 1    | not started                                                                                                                                                                                                                                            |
-| Coverage thresholds               | core ≥ 80% now → 85% end of Phase 2 → 90% end of Phase 6; client ≥ 45/50% now → 55% P1 → 65% P5 → 70% P6   | `npm run test:coverage` (ratchet, only goes up)                 | Every PR   | core 80, client 45                                                                                                                                                                                                                                     |
-| Lint                              | Zero warnings, zero `eslint-disable` without a named rule and reason                                       | `npm run lint`                                                  | Every PR   | green                                                                                                                                                                                                                                                  |
-| Docs check                        | Frontmatter valid on every `docs/**/*.md`, relative links resolve, index in sync                           | `npm run check` (docs step)                                     | Phase 0    | in this PR                                                                                                                                                                                                                                             |
-| Open invariant violations in soak | 0 violations in a 10-minute headless soak (18,000 ticks) with all invariants at `heavy`                    | `npm run test:soak`                                             | Phase 2    | not started                                                                                                                                                                                                                                            |
-| Team-agreed design walkthrough    | Held, minutes in [PROGRESS.md](PROGRESS.md), every INBOX decision answered or scheduled                    | Meeting                                                         | Phase 0    | scheduled                                                                                                                                                                                                                                              |
-| Config-driven map                 | `numLanes` 3→5 and tower counts regenerate map, nav grid, flow fields and minimap in tests, no code change | `MapGenerator` + `MinimapView` tests                            | Phase 1    | not started                                                                                                                                                                                                                                            |
-| Bot-vs-bot match                  | Sim mode match (no human) reaches a `MatchResult` within the timeline cap, deterministic                   | `npm run test:soak`                                             | Phase 3    | not started                                                                                                                                                                                                                                            |
-| Persistence contract              | Same repository test suite passes on `MemoryStorageAdapter` and an IndexedDB fake                          | `npm run test` (client)                                         | Phase 5    | not started                                                                                                                                                                                                                                            |
-| Release                           | `v0.1.0-mvp` tag on green `main`; demo script runs start to finish                                         | CI + demo rehearsal                                             | Phase 6    | not started                                                                                                                                                                                                                                            |
+| Metric                            | Target                                                                                                     | Measured by                                                     | First gate | Status (2026-09-30) |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ---------- | ------------------- |
+| Determinism replay test           | Same seed + command log → identical `StateHasher` hash every 100 ticks, 10 seeds × 3000 ticks              | `npm run test` (replay fixtures in core)                        | Phase 1    | not started         |
+| Simulation tick time              | ≤ 8 ms per tick at 30 TPS with 144 units/team + 20 Legends on the reference dev laptop (`Recommendation:`) | `PerfOverlay` histogram; headless bench in `npm run bench` (P3) | Phase 3    | measured; see INBOX |
+| Render frame rate                 | 60 fps: median frame ≤ 16.7 ms, no frame > 50 ms during a 60 s match segment (`Recommendation:`)           | `PerfOverlay` + long-animation-frame observer                   | Phase 1    | not started         |
+| Coverage thresholds               | core ≥ 80% now → 85% end of Phase 2 → 90% end of Phase 6; client ≥ 45/50% now → 55% P1 → 65% P5 → 70% P6   | `npm run test:coverage` (ratchet, only goes up)                 | Every PR   | core 80, client 45  |
+| Lint                              | Zero warnings, zero `eslint-disable` without a named rule and reason                                       | `npm run lint`                                                  | Every PR   | green               |
+| Docs check                        | Frontmatter valid on every `docs/**/*.md`, relative links resolve, index in sync                           | `npm run check` (docs step)                                     | Phase 0    | in this PR          |
+| Open invariant violations in soak | 0 violations in a 10-minute headless soak (18,000 ticks) with all invariants at `heavy`                    | `npm run test:soak`                                             | Phase 2    | not started         |
+| Team-agreed design walkthrough    | Held, minutes in [progress log](progress/README.md), every INBOX decision answered or scheduled            | Meeting                                                         | Phase 0    | scheduled           |
+| Config-driven map                 | `numLanes` 3→5 and tower counts regenerate map, nav grid, flow fields and minimap in tests, no code change | `MapGenerator` + `MinimapView` tests                            | Phase 1    | not started         |
+| Bot-vs-bot match                  | Sim mode match (no human) reaches a `MatchResult` within the timeline cap, deterministic                   | `npm run test:soak`                                             | Phase 3    | not started         |
+| Persistence contract              | Same repository test suite passes on `MemoryStorageAdapter` and an IndexedDB fake                          | `npm run test` (client)                                         | Phase 5    | not started         |
+| Release                           | `v0.1.0-mvp` tag on green `main`; demo script runs start to finish                                         | CI + demo rehearsal                                             | Phase 6    | not started         |
 
 ## 6. Roles per phase
 
@@ -183,7 +183,7 @@ Five students plus agents. Names known today: **Sam Holtzman** (product owner, l
 `sholtzman`) and **SamarjitBhogal** (`main` maintainer, merges phase PRs, Phase 0 reviewer). The
 lead architect reconciles the `feat/map` code with the architecture; its author, **Aryan
 Walanj**, reviews those changes (DEC-04). The other lanes are assigned at the Phase 0
-walkthrough; record them in [PROGRESS.md](PROGRESS.md).
+walkthrough; record them in [progress log](progress/README.md).
 
 | Phase | Builds                                     | Reviews architecture and design                 | Reviews tests and guardrails | Merges to `main` |
 | ----- | ------------------------------------------ | ----------------------------------------------- | ---------------------------- | ---------------- |
@@ -224,7 +224,7 @@ Every phase PR needs one human approval plus green CI on Linux and Windows; an a
 - [phase-6-hardening-balance-and-release.md](phase-6-hardening-balance-and-release.md)
 - [backlog-post-mvp.md](backlog-post-mvp.md)
 - [bugs.md](bugs.md)
-- [PROGRESS.md](PROGRESS.md)
+- [progress log](progress/README.md)
 - [../requirements/06-mvp-requirements.md](../requirements/06-mvp-requirements.md)
 - [../process/git-workflow.md](../process/git-workflow.md)
 - [../process/sdlc.md](../process/sdlc.md)

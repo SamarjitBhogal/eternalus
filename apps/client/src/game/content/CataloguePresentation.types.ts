@@ -13,6 +13,7 @@ import type {
   HudStructureKind,
   LegendClassArt,
   LegendSpecArt,
+  UiEnhancementId,
 } from '../../bridge/catalogue.types';
 
 /** The icon of each detail row; a slot without one renders the designed placeholder icon box. */
@@ -76,11 +77,16 @@ export type CataloguePresentation = {
   readonly effectsRenderer: EffectsRenderer;
   /** DEC-55: `'figma'` by default. */
   readonly contrastMode: ContrastMode;
+  /** ui-enhancements-plan §2 rule 1: every built id by default (DEC-100). */
+  readonly uiEnhancements: readonly UiEnhancementId[];
   readonly hud: HudPresentation;
 };
 
 /**
- * Developer overrides of the display switches (developer mode only, DEC-54); `null` keeps the
- * content value.
+ * Developer overrides of the display switches (developer mode only, DEC-54; the UI enhancements,
+ * ui-enhancements-plan §2 rule 1); `null` keeps the content value.
  */
-export type DisplayOverrides = { readonly effectsRenderer: EffectsRenderer | null };
+export type DisplayOverrides = {
+  readonly effectsRenderer: EffectsRenderer | null;
+  readonly uiEnhancements: readonly UiEnhancementId[] | null;
+};
