@@ -30,6 +30,14 @@ export interface MatchState {
   /** Every timeline entry's tick in firing order, resolved once when the match is built. */
   readonly schedule: readonly ScheduledMark[];
   /**
+   * The tick the pre-match countdown ends, set once when the match is built (`timelineFrameOf`,
+   * from config, handed in by `Simulation`). The one place every runtime reader takes it from: the
+   * first waves (`SpawnSystem`), guard activation (`GuardRoster`), the first-wave ghost window
+   * (`LeashBehaviour`), the match time (`MatchDirector`) and the snapshot (HC-B9 (1), DEC-285).
+   * Comes from the config, which a replay carries, so it is not hashed.
+   */
+  readonly countdownEndTick: number;
+  /**
    * While true every unit is idle (the countdown, DEC-88): nothing walks, attacks or casts, and
    * turning is allowed. Set only through `MatchRecord.holdIdle` (by phases); read by
    * `MovementSystem`, `CombatSystem` and `HordeSystem`.

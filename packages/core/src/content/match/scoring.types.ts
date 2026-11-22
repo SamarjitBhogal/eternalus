@@ -30,10 +30,28 @@ export type ScoringWeights = {
   readonly holdPerMinute: number;
 };
 
-/** The scoring values in content (`SCORING`); `Simulation` passes them in (12 §1, rule 11). */
-export type ScoringOptions = {
+/** The scoring values that are the same as authored and as loaded. */
+type ScoringBase = {
   /** The points per kill, assist, death, destroyed structure, checkpoint and held minute. */
   readonly weights: ScoringWeights;
+};
+
+/**
+ * The scoring values as content states them (`SCORING`), the assist window in seconds;
+ * `loadScoring` turns them into `ScoringOptions` (12 §1, rule 11).
+ */
+export type AuthoredScoringOptions = ScoringBase & {
   /** How long a hit on an enemy Legend still earns an assist, in seconds. */
   readonly assistWindowSeconds: number;
+};
+
+/**
+ * The scoring values as loaded (`loadScoring`), the one value `Simulation` passes in: every time
+ * in ticks, converted once (architecture 03 §8, DEC-241, DEC-285 (2), DEC-287).
+ */
+export type ScoringOptions = ScoringBase & {
+  /** How long a hit on an enemy Legend still earns an assist, in ticks. */
+  readonly assistWindowTicks: number;
+  /** One minute in ticks: hold points come per full minute of held time (DEC-214 (A2)). */
+  readonly minuteTicks: number;
 };
