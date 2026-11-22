@@ -1,28 +1,35 @@
 ---
 title: Progress log
-description: The running, append-only log of what was done, which checks ran and what comes next, written by humans and agents after every work session; read the last few entries to know where the project is before starting a task.
+description: The archive of progress entries from 2026-09-30, kept as written; new entries go one file each in docs/plan/progress/ since 2026-11-19.
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-12
+last-reviewed: 2026-11-20
 tags: [plan, progress, log]
-related: ['docs/plan/README.md', 'docs/agents/running-agents.md', 'docs/agents/checklists.md']
+related:
+  [
+    'docs/plan/progress/README.md',
+    'docs/plan/README.md',
+    'docs/agents/running-agents.md',
+    'docs/agents/checklists.md',
+  ]
 ---
 
 # Progress log
 
 ## Purpose
 
-Read the last three entries before you start any task: they tell you which phase and sprint is
-active, which branch it lives on, what the last `npm run check` said and what the next step is.
-Append an entry when you finish a session (humans and agents alike, per
-[README.md §1](README.md#1-how-phases-sprints-and-tasks-work) and
-[running-agents.md](../agents/running-agents.md)). The phase docs hold the checklists; this file
-holds the history, the measured numbers and the decisions that changed the plan. Sprint metrics
-are recorded here with the machine they were measured on, so the roadmap's metrics dashboard
-can point at an entry instead of a memory.
+**Archive.** Since 2026-11-19 (DEC-277) new entries go one file each in
+[progress/](progress/README.md), so that two sessions never edit the same file. This file holds
+the earlier entries exactly as written. The cut-over is the merge (owner, 2026-11-20):
+entries that a branch wrote before it merged a `phase/3-sprint-3-work` that has DEC-277 stay
+here; every entry after that merge is a file in `progress/`.
+Read the newest files in `progress/` first; read this archive for earlier history. Sprint metrics
+measured before 2026-11-19 are recorded here with the machine they were measured on.
 
-## Format rules
+## Format rules (for the entries in this file)
+
+These rules applied to the entries below. The current rules are in [progress/README.md](progress/README.md).
 
 - **Append-only, newest at the bottom.** Never rewrite, reorder or delete an earlier entry; to
   correct one, append a new entry that says what was wrong. The only allowed edit to an old
@@ -9658,6 +9665,60 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   "Documentation check passed."
 - Next step: CI on the pushed branch decides the Duel timeout. Close #124 in favour of #132. The
   owner answers the three open gem rules in `INBOX.md`.
+
+### 2026-11-20 — Phase 3 / assist window at load (HC-B9 (2), DEC-285 (2), DEC-287) — refactor/scoring-at-load — sholtzman + Claude Code
+
+- What was done: `content/match/loadScoring.ts` loads `SCORING` once (architecture 03 §8,
+  DEC-241): `assistWindowSeconds` becomes `assistWindowTicks` and a negative or non-finite window
+  is rejected (DEC-285 (2), the owner's "(2) in a follow-up PR"). `Simulation` passes the loaded
+  `ScoringOptions`; `AuthoredScoringOptions` is the seconds form `SCORING` satisfies. Critic round
+  1 found two better-than-design items, built under the standing rule as DEC-287: the loader also
+  loads the hold minute (`minuteTicks`), so `createDefaultScoringRules` takes no tick rate, and the
+  two option types share a private `ScoringBase`. Same conversion as before (`TickRate.toTicks`):
+  30 s = 900 ticks, 60 s = 1800 ticks. Docs: architecture 12 §5 and §13, `INBOX.md` HC-B9, the
+  DEC-287 row. The DEC-285 row comes with `feat/match-start-countdown`, so this branch merges after
+  that PR.
+- Checks run: fail-first, recorded: with the assert dropped and a plain `Math.round`, 2 of the 4
+  new loader tests red; with a 59 s minute, 4 of 13 (loader and `CaptureHoldRule`) red; each
+  restored, `cmp` identical, green. Critic (`architecture-reviewer`): round 1 approve (nits applied,
+  BTD-1/BTD-2 built), round 2 approve (nits applied; minor = merge order). `/ponytail-review`:
+  "Lean already. Ship." Full `npm run check` exit 0 on the final code before this entry (core 276
+  files / 1678 tests, protocol 1 / 29, client 298 / 2011, server 21 / 84, "Documentation check
+  passed."; `eternalus-agent-work/scoring-at-load/check-2.log`); then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the owner pushes and opens the PR to phase/3 after the DEC-278 countdown PR
+  (`feat/match-start-countdown`) is open; merge it after that one. HC-B9 is ticked when both are
+  on phase/3.
+
+### 2026-11-21 — Phase 3 / assist window at load (DEC-285 (2), DEC-287): merge of phase/3 (#138, #143) — refactor/scoring-at-load — sholtzman + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` at `2a5058f7` (#138, the DEC-278 countdown, and
+  #143) into PR #139. Conflicts, all text: `INBOX.md` HC-B9 (#138's "Answered" bullet kept, its
+  "(2) is open" replaced by this branch's "(2) Built" note, and HC-B9 ticked: both parts are
+  built), the decisions log (DEC-287's batch below DEC-316's, above the other 2026-11-20 batches,
+  newest first) and this file (phase/3's copy plus this branch's entries). The code merged
+  without conflict, and no phase/3 caller uses the old `createDefaultScoringRules` signature.
+- Checks run: full `npm run check` exit 0 on this merge before this entry was added (core 277
+  files / 1683 tests, protocol 1 / 29, client 303 / 2077, server 21 / 84, "Documentation check
+  passed."; `eternalus-agent-work/scoring-at-load/check-3.log`); then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the owner pushes the merge (coordinator checks the script); #139 merges. If #135
+  lands first, merge phase/3 once more.
+
+### 2026-11-21 — Phase 3 / assist window at load (DEC-285 (2), DEC-287): merge of phase/3 (#135) — refactor/scoring-at-load — sholtzman + Claude Code
+
+- What was done: #135 (the stop hook, DEC-276) merged into phase/3 (`54615afa`), so phase/3 is
+  merged into PR #139 once more. The one conflict was add/add in this file: both sides kept,
+  phase/3's copy first and this branch's entries after it (against `54615afa` this file only
+  adds lines; a line multiset check: 0 missing against each parent). The decisions log (DEC-276's
+  batch from phase/3, DEC-287's batch below the 2026-11-21 batch) and `INBOX.md` (HC-B9 stays
+  `[x]`) merged without conflict. #135 changed only hook scripts and docs, so no new caller of
+  `createDefaultScoringRules` or `SCORING` arrived.
+- Checks run: full `npm run check` exit 0 on this merge before this entry was added
+  (core 277 files / 1683 tests, protocol 1 / 29, client 303 / 2077, server 21 / 84,
+  "Documentation check passed."; `eternalus-agent-work/scoring-at-load/check-4.log`); then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the owner pushes the merge (coordinator checks the script); #139 merges.
 
 ### 2026-11-22 — Phase 3 / sprint 3.6: the gem eruption, the Greater Boss spawn and the mid-game cut-scene — feat/cathedral-eruption-boss — Aryan Walanj + Claude Code
 
