@@ -180,6 +180,18 @@ decision table is in `docs/architecture/02-code-structure.md`.
 - Core behaviour also gets a determinism check (same seed + commands → same `StateHasher` hash);
   runtime invariants get a test that deliberately triggers them.
 
+## Writing style (ASD-STE100)
+
+Write all text for a person or another agent at least 80% of the way to ASD-STE100 (Simplified
+Technical English). This includes messages to the product owner and to other agents, owner
+question forms, PR descriptions, review comments, commit messages and docs. The text must be
+technical, clear and easy to read, and it must still read naturally.
+
+- Use short sentences. Put one instruction or one fact in each sentence.
+- Use the active voice and common words. Use the same term for the same thing every time.
+- Say what the player sees or does first. Put code names last.
+- If a reader must decode a sentence, write it again.
+
 ## Documentation
 
 - Every doc under `docs/` has YAML frontmatter (`title`, `description`, `audience`, `status`,
