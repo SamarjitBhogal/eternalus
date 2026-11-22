@@ -477,8 +477,8 @@ escaped its leash (DEC-144 F).
 - **acquire** (at cadence, in every state): candidates from `Perception.unitsWithin(pos, radius,
 { hostileTo: team, neutralAttackersOf: id })` plus the horde's next objective (§6.2). A unit counts when it is within
   `acquisitionRadius`, or within `callForHelpRadius` while it attacks a horde-mate ("call for
-  help"; it attacks its locked target, or a body its last attack hit until its next attack is
-  due, so a player's aimed hits count, DEC-322 (2)), and when it lies inside a leash anchored where the mob stands. A neutral camp mob is a
+  help"; it attacks its locked target and each other body its last attack hit, through the tick its
+  next attack may land (inclusive), so a player's aimed hits count, DEC-322 (2), DEC-333 (1)), and when it lies inside a leash anchored where the mob stands. A neutral camp mob is a
   candidate only while it attacks the mob itself, so a mob fights back but does not farm a camp
   (DEC-166). Candidates rank by the
   aggro priority list, then distance, then id. The list and its numbers are the

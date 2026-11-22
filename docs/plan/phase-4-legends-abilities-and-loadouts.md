@@ -4,7 +4,7 @@ description: Sprint checklists for the three Legend classes, the ability framewo
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-22
 tags: [plan, phase-4, legends, abilities, loadouts, progression, hud]
 paths:
   ['packages/core/src/abilities/**', 'packages/core/src/loadout/**', 'apps/client/src/ui/hud/**']
@@ -190,7 +190,7 @@ Owner: _ (sim lane). Week 8.
       the talons, Wuuthrad and the staff's melee attack hit every enemy body in a wedge (arcs
       DEC-304), reach is the class's part plus the weapon's (DEC-305), and the player's attack
       button and melee key attack along the aim with the new `attack-aim` command, so the PR 1
-      stand-in above has ended. The two weapon boxes stay unticked for the reasons above; PR 3
+      stand-in above has ended. The owner's answers are built: DEC-322 (aim at a building to hit it, the AI's reading of "attacking", one area-hit rule), the DEC-317 addendum (shots go into walls) and DEC-326 (the attack button, a busy minion). The two weapon boxes stay unticked for the reasons above; PR 3
       adds the remaining weapons and their arcs.
 
 - [ ] **`ArtifactDefinition` content + gadget slots Z/C** (`TUNE`: Sentinel Mortar with impact

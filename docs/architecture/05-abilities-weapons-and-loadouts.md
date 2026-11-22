@@ -653,7 +653,7 @@ export type WeaponDefinition = {
 Until weapons land, a unit's basic attack is `UnitDefinition.attack` (same shape as `WeaponAttack`
 minus `onHit` and `projectile`; `interval` authored in seconds, converted to ticks at load like
 movement speeds). `Combat.weaponId` names the equipped weapon; `CombatSystem` calls the weapon's `AttackStrategy`
-(`attack(self, aim, attack, ctx)`, with `AttackAim { targetId, direction }`,
+(`attack(self, aim, attack, ctx)`, with `AttackAim { targetId, direction, point }`,
 [04 §4](04-entity-architecture.md#4-strategies-behaviour-that-varies-by-kind)):
 `MeleeAttackStrategy` applies `damage` and `onHit` to one target in the tick;
 `MeleeSweepAttackStrategy` does the same to every live enemy body in the wedge in front of the
