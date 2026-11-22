@@ -14,7 +14,7 @@ paths:
     'packages/core/src/systems/{Structure,Spawn,Capture}System*',
     'packages/core/src/content/{structures,obstacles}/**',
     'packages/core/src/systems/ZoneLevelUpSystem*',
-    'packages/core/src/content/zones/zoneLevelUp*',
+    'packages/core/src/content/zones/{zoneLevelUp,loadZoneLevelUp}*',
   ]
 related:
   [

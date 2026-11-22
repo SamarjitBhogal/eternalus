@@ -8,9 +8,9 @@ import type { PlayableTeam } from '../teams/teams.types';
 import type { System, SystemContext } from './System.types';
 
 /**
- * The zone level-up (architecture 07 §7, DEC-258): once a team has held a capture point for
- * the hold time (`holdTicks`) without a break (`Capturable.ownedSinceTick`), every horde of that team spawned on
- * the point's lane gets `levels` minion levels (`minion-levels-granted`, applied by
+ * The zone level-up (architecture 07 §7, DEC-258): once a team has held a capture point for the
+ * hold time (`holdTicks`) without a break (`Capturable.ownedSinceTick`), every horde of that team
+ * spawned on the point's lane gets `levels` minion levels (`minion-levels-granted`, applied by
  * `VeterancySystem`, which records the point as `Veterancy.grantedBy`). When the point changes
  * owner, the levels it granted are taken back on that tick. Runs after `CaptureSystem`, so it sees
  * this tick's spawns and owner changes. Its queues empty every tick; the match state it reads is
