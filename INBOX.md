@@ -640,48 +640,62 @@ Reply inline (`Decision: …`).
       Wrecking Run (`feat/class-passives`, PR 8 critic round 1 and lane B review F1, 2026-11-22;
       GAME-LOOP-AND-POST-GAME-56 and -57).** Parts (1) and (2) are built under your standing rule
       (DEC-223) and tested. Part (3) is not built, so it asks you to depart from that rule ("do
-      not allow tech debt where we can eliminate it"): it pays only when a third velocity rule
+      not allow tech debt where we can eliminate it"): it pays only when a third movement rule
       comes. Nothing waits on you; name a part to change it. Your answer goes in the PR 8 answers
       (DEC-330).
-      (1) Two rates of change. The physics design (10 §2) gives every unit one limit on how fast
-      its velocity changes, in every direction. The Sentinel needs two: it gains speed slowly
-      (walk speed in about 1 s, then 20 s to top speed, balancing.md), but it must slide out of a
-      turn in about 1 s. With one limit, a reverse at top speed slides about 13.5 m, which is
-      longer than every option on the PR 8 grip card (W2). So the Sentinel has its own slide rate
-      (`grip`), and its time to top speed is "time to walk speed + ramp", not "top speed ÷
+      (1) The Sentinel speeds up slowly but slides out of a turn quickly. It reaches walk speed in
+      about 1 s and top speed 20 s later (balancing.md), but it slides out of a turn in about 1 s.
+      The physics design (10 §2) gives every unit one limit on how fast its velocity changes, in
+      every direction. With one limit, a reverse at top speed slides about 13.5 m, which is longer
+      than every option on the PR 8 grip card (W2). So the Sentinel has a second rate, its slide
+      rate, and its time to top speed is "time to walk speed + ramp", not "top speed ÷
       acceleration". On sign-off, 10 §2 gets the steps for a unit with momentum. Alternative: one
       limit for everything. At 3 m/s² the Sentinel reaches top speed in 3 s (no ramp) and a
       reverse slides 13.5 m. A limit slow enough for the 20 s ramp makes a reverse slide over
-      90 m.
-      (2) Wrecking Run is part of the Sentinel's movement, not a status. The ability design (05 §7)
-      applies every passive as a permanent buff status. The classes doc
-      (`docs/reference/game-design/01-classes-and-subclasses.md`, below the passives table) says:
-      "Wrecking Run is the in-fiction name for the Sentinel movement profile below." So its speed
-      numbers sit in the Sentinel's movement numbers (`movementProfile.momentum`), which the
-      movement code reads every tick. The other parts of Wrecking Run (the stun and self damage of a
-      hit at full speed, and barging through walls) get a `wrecking-run` passive entry when they are
-      built. On sign-off, 05 §7 says that a passive can also be a block of movement numbers, and
-      balancing.md's "`wrecking-run.rampSeconds`" becomes `movementProfile.momentum.rampDuration`.
-      Alternative: a `wrecking-run` buff status that carries the speed numbers.
-      (3) Not built: one shared form for the velocity rules. Today there are two rules (turn at once
-      and keep speed; momentum), and `Movement` picks one with a "has momentum?" check in four
-      places. A shared interface with one class per rule removes those checks (04 §4, strategies).
-      Recommended: not yet, because it pays when a third rule comes. Alternative: build it in PR 8.
+      90 m. Code: the slide rate is `grip` in `content/legends/sentinel.ts`.
+      (2) No change for the player: Wrecking Run is part of the Sentinel's movement numbers, not a
+      status. The ability design (05 §7) applies every passive as a permanent buff status. The
+      classes doc (`docs/reference/game-design/01-classes-and-subclasses.md`, below the passives
+      table) says: "Wrecking Run is the in-fiction name for the Sentinel movement profile below."
+      So its speed numbers sit with the Sentinel's movement numbers, which the movement code reads
+      every tick. The other parts of Wrecking Run (the stun and self damage of a hit at full
+      speed, and barging through walls) get a passive entry when they are built. On sign-off,
+      05 §7 says that a passive can also be a block of movement numbers, and balancing.md's
+      "`wrecking-run.rampSeconds`" becomes the ramp duration in those numbers. Alternative: a
+      `wrecking-run` buff status that carries the speed numbers. Code:
+      `movementProfile.momentum` (`rampDuration`).
+      (3) No change for the player: one shared form for the movement rules is not built. Today
+      there are two rules (turn at once and keep speed; momentum), and the movement code picks one
+      with a "has momentum?" check in four places. A shared interface with one class per rule
+      removes those checks (04 §4, strategies). Recommended: not yet, because it pays when a third
+      rule comes. Alternative: build it in PR 8. Code: `components/Movement`.
 
-- [ ] **HC-B33 — Better than the design, not built, your call to schedule: a unit stops cleanly
-      in a wide corner (`feat/class-passives`, PR 8 probe D3, 2026-11-22;
-      GAME-LOOP-AND-POST-GAME-59 and -60).** What the player sees today: a unit that walks into a
-      corner whose walls meet at more than 90° (for example 120° or 135°) does not stop cleanly. A
-      Sentinel stays in place, but its facing turns back and forth about ten times a second.
-      Other units shake by about 5 cm. Why: the wall code slides what is left of a move off one
-      wall and then off the next. In a wide corner this pushes the unit a hair out along one
-      wall, and on the next tick it walks back. Proposed fix: slide the whole move against every
-      wall it meets at once, so a unit pressed into a corner stops dead. Every unit uses this wall
-      code, so the fix is its own small physics PR with its own tests, not part of PR 8.
-      Recommended: schedule it after PR 8. Alternative: leave it; the twitch stays, and the
-      Sentinel does not move away (under 0.05 m/s). Code: `physics/CollisionResolver.slide`; 10
-      §12 names it as a known limit. Evidence:
-      `eternalus-agent-work/abilities/pr8-passives/probe/probe-obtuse-fix3.txt`.
+- [ ] **HC-B33 — Defect, your call on when to fix it: a unit pressed into a wide corner does
+      not stop cleanly, and PR 8 makes it show on the Sentinel (`feat/class-passives`, PR 8 probe
+      D3 and gate round 3, 2026-11-22; GAME-LOOP-AND-POST-GAME-59 to -61).** What the player sees:
+      a unit that walks into a corner whose walls meet at more than 90° (for example 120° or 135°)
+      does not stop cleanly. With PR 8, a Sentinel stays in the corner, but its facing swings by
+      37° to 68°, 11 to 16 times a second (at 150°, every tick: 30 times a second). A push (a
+      knock-back) into such a corner makes it jump about 15 cm each tick while the push lasts. It
+      never gets out of the corner. Other units do not turn, but they shake by up to about 5 cm.
+      Before PR 8, the Sentinel had no momentum and faced steadily in the same corner, so PR 8
+      adds the part that players see. Why: the wall code slides what is left of a move off one
+      wall and then off the next. In a wide corner, this moves the unit a hair out along one wall,
+      and on the next tick it walks back. Fix: slide the whole move against every wall it meets
+      at once, so a unit pressed into a corner stops dead. PR 8 already uses this rule for the
+      Sentinel's speed; the fix moves it into one shared helper that the wall code also uses
+      (critic BTD-6).
+      (A) Recommended: fix the wall code in a small PR of its own before PR 8 merges. Reason:
+      your standing rule (DEC-223: "do not allow tech debt where we can eliminate it"), and PR 8
+      adds the twitch that players see.
+      (B) Fix it after PR 8 merges. This departs from DEC-223. Reason: the fix changes the walls
+      for every unit, so it needs its own PR and tests either way.
+      A row in `docs/plan/bugs.md` needs a Jira task first, and agents cannot make one. Your
+      answer goes in the PR 8 answers (DEC-330). Code: `physics/CollisionResolver.slide` and
+      `components/Momentum.slideOff`; 10 §12 names the defect. Evidence:
+      `eternalus-agent-work/abilities/pr8-passives/probe/probe-obtuse-fix3.txt` and
+      `probe-obtuse-r3-arch.txt`; the 150° and push numbers are from the gate round 3 correctness
+      critic.
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
