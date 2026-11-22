@@ -521,6 +521,23 @@ so a replay or a match without map objects rebuilds the same zones. Interim diff
   its `Spawner` and `Aura` (§1, §6), the gem's look over time and the summon-greater-boss action are
   not built.
 
+**2026-11-09 (`feat/bosses-p3`, corner camp boss, interim; updated 2026-11-17).** DEC-236
+approves corner camps for Phase 3, with the corner boss on `GuardController` as an interim
+stand-in until it moves to the `Boss` family with `BossController` in Phase 3 sprint 3.6.
+`corner-camp` is a `Camp` structure definition like the forest camps (rule `never`, circle radius
+1 `TUNE`), and its guard plan `corner-camp` (`content/structures/guardPlans.ts`) spawns one
+`corner-boss` at match start: a `heavy-mob` with the MiniBoss row's stats from `balancing.md`,
+held over the camp's ring by `GuardController` and respawned 5 minutes after it dies (DEC-12).
+Its kill pays every Legend of the killer's team, at most 2 levels each (DEC-237,
+`XP_SOURCES.teamKills`). Not built yet: the `MiniBoss` entity and its `BossController` moves, the
+MiniBoss row's 5%/s regeneration and its 25% cut to damage from minions, the support units, the
+crystal, the heavy side wave on a kill and the GreaterBoss buffs. The camp's ring is core content
+(`CORNER_CAMP_RING`, `content/structures/cornerCampRing.ts`): the guard plan's leash and post gap,
+the boss's acquisition and vision radius (the ring's diameter, so from any post it sees an enemy
+anywhere in the ring) and the ring the client draws all derive from it. Gap until sprint 3.6: the
+boss sees the whole ring but cannot always reach it. Its `leashed-chase` movement steers straight
+and stops on the camp's own objects, so a Legend standing behind the camp is safe.
+
 ## Related
 
 - [04 Entity architecture](./04-entity-architecture.md)

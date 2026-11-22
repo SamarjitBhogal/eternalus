@@ -17,4 +17,10 @@ describe('ServerConfig', () => {
     expect(() => new ServerConfig({ DUEL_PORT: 'abc' }).duelListener()).toThrow('DUEL_PORT');
     expect(() => new ServerConfig({ DUEL_PORT: '70000' }).duelListener()).toThrow('DUEL_PORT');
   });
+
+  it('puts the health server on 8788, or on OPS_PORT', () => {
+    expect(new ServerConfig({}).opsListener()).toEqual({ host: '127.0.0.1', port: 8788 });
+    expect(new ServerConfig({ OPS_PORT: '9001' }).opsListener().port).toBe(9001);
+    expect(() => new ServerConfig({ OPS_PORT: '0' }).opsListener()).toThrow('OPS_PORT');
+  });
 });
