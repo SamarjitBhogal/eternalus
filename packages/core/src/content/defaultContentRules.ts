@@ -1,5 +1,9 @@
 import { ABILITIES } from './abilities/abilityCatalogue';
-import type { AbilityBase } from './abilities/AbilityDefinition.types';
+import type {
+  AbilityBase,
+  AuthoredAbilityWith,
+  AuthoredStep,
+} from './abilities/AbilityDefinition.types';
 import { BOT_DIFFICULTIES } from './ai/difficulties/botDifficulties';
 import type { ContentCatalogue } from './ContentCatalogue';
 import type { LegendDefinition } from './legends/legends.types';
@@ -24,6 +28,7 @@ import { LevelScalingRule } from './validation/LevelScalingRule';
 import { PositiveAetherRule } from './validation/PositiveAetherRule';
 import { PositiveStatsRule } from './validation/PositiveStatsRule';
 import { RoleRatingRangeRule } from './validation/RoleRatingRangeRule';
+import { SecondaryWeaponRule } from './validation/SecondaryWeaponRule';
 import { SpecClassExistsRule } from './validation/SpecClassExistsRule';
 import { WEAPONS } from './weapons/weaponCatalogue';
 import type { WeaponDefinition } from './weapons/weapons.types';
@@ -60,13 +65,13 @@ export const createDefaultContentRules = (
  * Every shipped Legend-spec rule. A new spec rule is one line here.
  *
  * @param legends - The loaded Legend classes a spec's `classId` must name.
- * @param abilities - The abilities a spec's own kit and artifacts may name; the shipped set by
- *   default.
+ * @param abilities - The abilities as authored that a spec's own kit and artifacts may name; the
+ *   shipped set by default.
  * @param weapons - The weapons a spec's second weapon must name; the shipped set by default.
  */
 export const createLegendSpecRules = (
   legends: ContentCatalogue<LegendDefinition>,
-  abilities: Pick<ContentCatalogue<AbilityBase>, 'has' | 'get'> = ABILITIES,
+  abilities: Pick<ContentCatalogue<AuthoredAbilityWith<AuthoredStep>>, 'has' | 'get'> = ABILITIES,
   weapons: Pick<ContentCatalogue<WeaponDefinition>, 'has'> = WEAPONS,
 ): readonly ContentRule<LegendSpecDefinition>[] => [
   new KebabCaseIdRule(),
@@ -74,7 +79,7 @@ export const createLegendSpecRules = (
   new RoleRatingRangeRule(),
   new KnownAbilityRefsRule(abilities, legends),
   new KitInPoolRule(legends),
-  new KnownWeaponRule(weapons),
+  new SecondaryWeaponRule(weapons, abilities),
 ];
 
 /** Every shipped locked-class rule. A new locked-class rule is one line here. */

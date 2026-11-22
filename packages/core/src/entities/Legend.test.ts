@@ -153,6 +153,29 @@ describe('Legend', () => {
       }
     });
 
+    it('loads each weapon once at spawn: Combat arms itself with the weapon Loadout holds', () => {
+      const looked: string[] = [];
+      const counted = {
+        has: (id: string) => SHIPPED_WEAPONS.has(id),
+        get: (id: string) => {
+          looked.push(id);
+          return SHIPPED_WEAPONS.get(id);
+        },
+      };
+      const zealot = new Warrior('entity-1', 'warrior');
+
+      zealot.spawn({
+        ...PLACEMENT,
+        definition: WARRIOR,
+        weapons: counted,
+        specs: LEGEND_SPECS,
+        specId: 'assassin',
+      });
+
+      expect(looked).toEqual(['raptor-talons', 'obsidian-bow']);
+      expect(zealot.getComponent(Combat).weaponId).toBe('raptor-talons');
+    });
+
     it('throws for a spec that does not exist or belongs to another class', () => {
       for (const specId of ['no-such-spec', 'oracle']) {
         const legend = new Warrior('entity-1', 'warrior');

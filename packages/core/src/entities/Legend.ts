@@ -31,27 +31,20 @@ export abstract class Legend extends Unit {
   }
 
   /**
-   * Installs the unit components, then the legend-only `Aether` (MP) pool, `Progression` (XP
-   * and level), `Abilities` (the ability bar, from the kit and the spec's artifacts) and
-   * `Loadout` (the weapons it holds: the class's default weapon and the spec's second weapon).
-   * Mobs and structures have none.
+   * Installs `Loadout` (the weapons it holds: the class's default weapon and the spec's second
+   * weapon) first, so the unit components arm `Combat` with the weapon in hand; then the unit
+   * components, then the legend-only `Aether` (MP) pool, `Progression` (XP and level) and
+   * `Abilities` (the ability bar, from the kit and the spec's artifacts). Mobs and structures
+   * have none.
    *
    * @throws Error when the context names a Legend spec but has no spec source, or a spec that
    *   does not exist or is of another class; or when it has no weapon source, or a weapon has no
    *   attacks.
    */
   protected override installComponents(context: unknown): void {
-    super.installComponents(context);
-
     const reader = new SpawnContextReader(this);
     const { definition } = reader.placed<LegendDefinition>(context);
     const spec = this.specOf(definition, reader, context);
-    this.addComponent(new Aether(definition.baseAether));
-    // The id is checked at content load (`KnownLevelCurveRule`); `ProgressionSystem` resolves it.
-    this.addComponent(new Progression(definition.levelCurveId));
-    // The kit's and the artifacts' ids are checked at content load (`KitInPoolRule`,
-    // `KnownAbilityRefsRule`).
-    this.addComponent(new Abilities(kitOf(spec, definition), spec?.artifacts));
     const secondaryWeaponId = spec?.secondaryWeaponId ?? null;
     this.addComponent(
       new Loadout(
@@ -59,6 +52,14 @@ export abstract class Legend extends Unit {
         secondaryWeaponId === null ? null : this.heldWeapon(secondaryWeaponId, reader, context),
       ),
     );
+    super.installComponents(context);
+
+    this.addComponent(new Aether(definition.baseAether));
+    // The id is checked at content load (`KnownLevelCurveRule`); `ProgressionSystem` resolves it.
+    this.addComponent(new Progression(definition.levelCurveId));
+    // The kit's and the artifacts' ids are checked at content load (`KitInPoolRule`,
+    // `KnownAbilityRefsRule`).
+    this.addComponent(new Abilities(kitOf(spec, definition), spec?.artifacts));
   }
 
   /**
@@ -91,15 +92,11 @@ export abstract class Legend extends Unit {
   }
 
   /**
-   * The default weapon's attack (05 §10, §12): a Legend's damage comes from its weapon.
-   *
-   * @throws Error when the spawn context has no weapon source, or the weapon has no attacks.
+   * The attacks of the weapon in hand (05 §10, §12): a Legend's damage comes from its weapon. At
+   * spawn that is the class's default weapon, which `Loadout` resolved once.
    */
-  protected override basicAttack(context: unknown): BasicAttack {
-    const reader = new SpawnContextReader(this);
-    const weaponId =
-      reader.placed<LegendDefinition>(context).definition.defaultLoadout.primaryWeaponId;
-    return this.heldWeapon(weaponId, reader, context);
+  protected override basicAttack(): BasicAttack {
+    return this.getComponent(Loadout).inHand;
   }
 
   /**
