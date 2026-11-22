@@ -18,12 +18,12 @@ import type {
  * distance, then id) and emits one `attack-target`, anchoring its leash where it stands; a
  * mate's attacker within the rules' `helpRadius` counts as in reach, and so does a neutral unit
  * (a camp mob) that attacks the mob itself (DEC-166). "Attacks" means the enemy's lock and
- * each other body its last attack hit (`EntityStore.victimsOf`, DEC-322 (2)), so a player who aims is
- * answered too. It fights a unit with no time limit while the unit is inside the leash, and does
- * not leave that fight for a call for help or a better-ranked enemy (DEC-326 (2)): only a mob that
- * is not fighting comes to help. Only from its lane objective does it switch, to a strictly
- * better-ranked enemy; only a switch moves the anchor (DEC-160). When the target leaves the leash
- * the mob takes another enemy in reach at once; with none it chases the target for
+ * each other body its last attack hit (`EntityStore.victimsOf`, DEC-322 (2)), so a player who
+ * aims is answered too. It fights a unit with no time limit while the unit is inside the leash,
+ * and does not leave that fight for a call for help or a better-ranked enemy (DEC-326 (2)): only a
+ * mob that is not fighting comes to help. Only from its lane objective does it switch, to a
+ * strictly better-ranked enemy; only a switch moves the anchor (DEC-160). When the target leaves
+ * the leash the mob takes another enemy in reach at once; with none it chases the target for
  * `leashGraceTicks` (DEC-144 E), even while the target attacks it: back inside, the target is
  * fought on, else the leash breaks: the mob emits one `stop` and rests again (with no target, its
  * movement walks it back to its slot or post), and for `aggroCooldownTicks` it leaves alone the

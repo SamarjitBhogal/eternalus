@@ -294,7 +294,7 @@ describe('ProjectileSystem', () => {
     expect(onHit).toEqual([]);
   });
 
-  it("records the body it lands on as its living owner's hit, and none on a body that takes no damage (DEC-322 (2))", () => {
+  it("records the body it lands on as its living owner's hit at the landing tick, and none on a body that takes no damage (DEC-322 (2), DEC-333 (1))", () => {
     const { state, context, system, addBody, fire } = setUp();
     const owner = addBody({ x: -50, y: 0 }, 'light');
     owner.addComponent(new Combat({ basic: ATTACK }));
@@ -307,16 +307,19 @@ describe('ProjectileSystem', () => {
     expect(combat.hitIds).toEqual([]);
 
     camp.getComponent(Collider).setUnbreakable(false);
+    for (let tick = 0; tick <= ATTACK.interval; tick += 1) state.advanceTick();
+    const landedAt = state.tick;
     fire({ x: 0, y: 0 }, 20, 'light', ATTACK, BOLT, owner.id);
     system.update(context);
     expect(combat.hitsAt(state.tick)).toEqual([camp.id]);
+    expect(combat.hitsUntilTick).toBe(landedAt + ATTACK.interval);
 
     state.advanceTick();
     owner.getComponent(Health).applyDamage(owner.getComponent(Health).current);
     fire({ x: 0, y: 0 }, 20, 'light', ATTACK, BOLT, owner.id);
     system.update(context);
     expect(combat.hitsAt(state.tick)).toEqual([camp.id]);
-    expect(combat.hitsUntilTick).toBe(ATTACK.interval);
+    expect(combat.hitsUntilTick).toBe(landedAt + ATTACK.interval);
   });
 
   it('stops at a wall in front of a body, with no damage', () => {

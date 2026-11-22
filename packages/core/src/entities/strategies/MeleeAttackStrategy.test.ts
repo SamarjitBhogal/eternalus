@@ -79,7 +79,7 @@ describe('MeleeAttackStrategy', () => {
     expect(hitWith(armed, null)).toEqual([]);
   });
 
-  it("records its target as the attack's hit (DEC-322 (2))", () => {
+  it("records its target as the attack's hit at the tick it lands (DEC-322 (2), DEC-333 (1))", () => {
     const state = new GameState(createDefaultGameConfig(), 1);
     const armed = { ...WARRIOR, defaultLoadout: { primaryWeaponId: 'test-talons' } };
     const attacker = new Warrior('entity-1', armed.id);
@@ -90,6 +90,8 @@ describe('MeleeAttackStrategy', () => {
       weapons: WEAPONS,
     });
     state.entities.add(attacker);
+    const combat = attacker.getComponent(Combat);
+    for (let tick = 0; tick <= combat.attack.interval; tick += 1) state.advanceTick();
 
     new MeleeAttackStrategy().attack(
       attacker,
@@ -104,7 +106,8 @@ describe('MeleeAttackStrategy', () => {
       },
     );
 
-    expect(attacker.getComponent(Combat).hitsAt(0)).toEqual(['entity-2']);
+    expect(combat.hitsAt(state.tick)).toEqual(['entity-2']);
+    expect(combat.hitsUntilTick).toBe(state.tick + combat.attack.interval);
   });
 
   it('skips a target that takes no damage now: no damage, no hit effect, no hit (DEC-317 addendum)', () => {

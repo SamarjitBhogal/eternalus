@@ -339,7 +339,7 @@ describe('MeleeSweepAttackStrategy', () => {
     });
   });
 
-  it("records the bodies it hit as the attack's hits, so the AI sees whom it attacks (DEC-322 (2))", () => {
+  it("records the bodies it hit as the attack's hits at the swing tick, so the AI sees whom it attacks (DEC-322 (2), DEC-333 (1))", () => {
     const { state, attacker, spawn, swing } = setUp();
     const front = spawn(2, 0, 'dark');
     const frontFar = spawn(3.8, 0, 'dark');
@@ -348,9 +348,11 @@ describe('MeleeSweepAttackStrategy', () => {
 
     swing({ direction: { x: 0, y: 1 } });
     expect(combat.hitIds).toEqual([]);
+    for (let tick = 0; tick <= combat.attack.interval; tick += 1) state.advanceTick();
     swing();
 
     expect(combat.hitsAt(state.tick)).toEqual([front.id, frontFar.id]);
+    expect(combat.hitsUntilTick).toBe(state.tick + combat.attack.interval);
     expect(state.entities.isAttacking(attacker.id, frontFar.id, state.tick)).toBe(true);
   });
 

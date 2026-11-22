@@ -191,9 +191,9 @@ export class EntityStore {
 
   /**
    * Whether the entity takes no damage now: its collider is unbreakable (a wall or gate before its
-   * breakability rule passes, a forest camp). The one rule for it (DEC-333 (2)): the damage pipeline
-   * blocks such a hit, and no weapon, shot or ability area lands on such a body (DEC-317 addendum).
-   * `false` for an unknown entity or one with no collider.
+   * breakability rule passes, a forest camp). The one rule for it (DEC-333 (2)): the damage
+   * pipeline blocks such a hit, and no weapon, shot or ability area lands on such a body (DEC-317
+   * addendum). `false` for an unknown entity or one with no collider.
    */
   public takesNoDamage(id: EntityId): boolean {
     return this.entities.get(id)?.findComponent(Collider)?.isUnbreakable === true;

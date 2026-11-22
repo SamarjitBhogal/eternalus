@@ -17,8 +17,9 @@ import { ABILITY_CASTS_PLAN } from './abilityCastsPlan';
  * is not hashed, and every checkpoint reproduced unchanged. Regenerated 2026-11-22 when the hash
  * began to cover a hit record without a target (DEC-322 (2), PR 2 round 2): checkpoints 0 to 300
  * and the commands were unchanged; a dump every 10 ticks of positions, health, motion, facing,
- * statuses, abilities, the RNG and the AI brains matched the old code at every tick to 450, and
- * only the new `hits` fields differed.
+ * statuses, abilities, the RNG and the AI brains matched the old code at every tenth tick to 450,
+ * and only the new `hits` fields differed. The round-3 correctness critic hashed the full state on
+ * every tick to 450 with the old hasher minus its `hits` line: identical.
  */
 export const ABILITY_CASTS_SEED_11: ReplayOf<{
   readonly seed: number;

@@ -145,8 +145,9 @@ export class Combat {
 
   /**
    * The bodies the last attack hit while they still count at `tick` (DEC-322 (2), DEC-333 (1)):
-   * through the tick the next attack may land, so the AI, which decides before attacks land in a
-   * tick, sees a held attack on every tick. Empty after that.
+   * for one attack interval, or the slowed cooldown when that is longer, so at least through the
+   * tick the next attack may land. So the AI, which decides before attacks land in a tick, sees a
+   * held attack on every tick. Empty after that.
    */
   public hitsAt(tick: number): readonly string[] {
     return tick <= this.hitsUntilTickValue ? this.hitIdsValue : Combat.NO_HITS;
