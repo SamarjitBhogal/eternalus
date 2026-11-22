@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-11-16
+last-reviewed: 2026-11-17
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
@@ -152,6 +152,13 @@ Sam's sign-off). Its kill XP is team-wide, at most 2 levels each (DEC-237), and 
 captured while it lives (07 §7 status); it takes only its share of a lane minion's hit (`BossMinionDamageStep`,
 05 §9; shares in `content/mobs/minionModifiers.ts`). The pull requests and interim stand-ins are in the
 [minion system plan](../plan/minion-system-plan.md) §2–§3.
+
+**Implementation status (2026-11-12, corner camp boss).** DEC-236 approves corner camps for
+Phase 3 and lets the corner boss run on `GuardController` as an interim stand-in, against MS-28's
+"never controls a boss": `corner-boss` (`content/mobs/`) is a `heavy-mob` posted by the
+`corner-camp` guard plan. It moves to the `Boss` family with `BossController` in Phase 3 sprint 3.6
+([phase 3 plan](../plan/phase-3-minions-hordes-and-ai.md)); doc 07's implementation status lists
+what it lacks until then.
 
 ## 1. Decisions
 
