@@ -15,7 +15,7 @@ is built. Follow the design when adding code.
 1. This file, then the nearest package `AGENTS.md`.
 2. `docs/architecture/02-code-structure.md`, then the architecture doc whose `paths:`
    frontmatter matches the files you will touch (`docs/architecture/README.md` lists them).
-3. The current phase doc in `docs/plan/` and the last entry of `docs/plan/PROGRESS.md`.
+3. The current phase doc in `docs/plan/` and the newest entries in `docs/plan/progress/`.
 4. Your task brief (issue, prompt, or an open item in `INBOX.md`).
 
 Full documentation map: `docs/README.md`. Recipes for adding things: `docs/architecture/17-extension-recipes.md`.
@@ -27,7 +27,7 @@ Skills (`.claude/skills/`, mirrored in `.agents/skills/`): `new-entity`, `new-sy
 1. Run `npm run check:quick` (typecheck + lint) after each meaningful edit.
 2. Run `npm run check` before declaring a task done, and report the result verbatim.
 3. A task with any failing check is **not done**. Say so; do not hide or work around it.
-4. Append an entry to `docs/plan/PROGRESS.md` (date, phase/sprint, branch, what, checks, next).
+4. Add a new entry file in `docs/plan/progress/` (date, phase/sprint, branch, what, checks, next).
 
 ## Before opening a PR (pre-PR gate, ADR 0010)
 
@@ -188,7 +188,7 @@ decision table is in `docs/architecture/02-code-structure.md`.
 - Docs must outlive the code they describe (OG-12, ADR 0011): design docs state intent,
   invariants and extension points; they name where a value lives instead of copying it; interim
   state goes in one "Implementation status" note, never into the design text; historical records
-  (accepted ADRs, dated changelogs, `PROGRESS.md` entries, dated reviews, prompts that have run)
+  (accepted ADRs, dated changelogs, `PROGRESS.md` and `docs/plan/progress/` entries, dated reviews, prompts that have run)
   are never rewritten.
 
 ## Commands
