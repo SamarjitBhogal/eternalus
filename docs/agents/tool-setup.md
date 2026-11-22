@@ -61,8 +61,8 @@ the git hooks and CI remain the hard gate. Commands use the exec form (`"command
 "args": [...]`) because `.cmd` shims cannot be spawned without a shell on Windows. Each script
 path starts with `${CLAUDE_PROJECT_DIR}/`, which Claude Code replaces with the project root: a
 hook runs in the session's current folder, so a relative path breaks after a `cd` into a
-subfolder (DEC-331; `scripts/hooks/settings.test.mjs` checks it). Use the braced form: Claude
-Code does not replace `$CLAUDE_PROJECT_DIR` in `args`. Hook scripts
+subfolder (DEC-331; `scripts/hooks/settings.test.mjs` checks it, run by hand with `node --test`).
+Use the braced form: Claude Code does not replace `$CLAUDE_PROJECT_DIR` in `args`. Hook scripts
 receive a JSON object on stdin (`tool_name`, `tool_input.file_path`, `cwd`, `stop_hook_active`,
 …); only exit code 2 blocks; the `Stop` hook honours `stop_hook_active` so it cannot trap an
 agent in a loop. Personal overrides go in `.claude/settings.local.json` (gitignored).

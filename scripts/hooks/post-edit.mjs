@@ -26,15 +26,16 @@ const FORMATTABLE = new Set([
 ]);
 
 const input = await readHookInput();
-const root = await projectRoot(input);
 const file = editedFile(input);
+// The edited file's checkout, not the session's: a session can edit a file in another worktree.
+const root = file === null ? null : projectRoot(path.dirname(file));
 
 if (file === null || !isInside(root, file)) {
   process.exit(0);
 }
 
 const extension = path.extname(file).toLowerCase();
-const relativePath = path.relative(root, path.resolve(root, file));
+const relativePath = path.relative(root, file);
 
 if (FORMATTABLE.has(extension)) {
   const prettier = await run(

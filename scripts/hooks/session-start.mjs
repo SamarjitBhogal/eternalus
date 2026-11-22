@@ -8,10 +8,10 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { PROGRESS_DIR, PROGRESS_ENTRY_NAME } from '../docs/progressEntry.mjs';
-import { projectRoot, readHookInput, run } from './hookInput.mjs';
+import { projectRoot, readHookInput, run, sessionFolder } from './hookInput.mjs';
 
 const input = await readHookInput();
-const root = await projectRoot(input);
+const root = projectRoot(sessionFolder(input));
 
 const branchResult = await run('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
   cwd: root,
