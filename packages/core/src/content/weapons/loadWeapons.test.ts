@@ -61,7 +61,7 @@ describe('loadWeapons', () => {
   it('keeps the staff ranged attack first, the default, and its melee attack second (DEC-308)', () => {
     const { attacks } = loadWeapons(30).get('magus-staff');
 
-    expect(attacks.map(({ strategy }) => strategy)).toEqual(['ranged-projectile', 'melee']);
+    expect(attacks.map(({ strategy }) => strategy)).toEqual(['ranged-projectile', 'melee-sweep']);
   });
 
   it('rejects a weapon with no attacks', () => {
@@ -75,6 +75,38 @@ describe('loadWeapons', () => {
     expect(() => loadWeapons(30, [withAttack(field, 0)])).toThrow(
       `Weapon "test-talons": attack ${field} must be positive`,
     );
+  });
+
+  it('ships the DEC-304 arcs and the DEC-305 weapon reach parts', () => {
+    const weapons = loadWeapons(30);
+    const sweep = (id: string, index = 0) => {
+      const attack = weapons.get(id).attacks[index];
+      return attack?.strategy === 'melee-sweep' ? [attack.arcDegrees, attack.reach] : undefined;
+    };
+
+    expect(sweep('raptor-talons')).toEqual([90, 1]);
+    expect(sweep('wuuthrad')).toEqual([160, 2]);
+    expect(sweep('magus-staff', 1)).toEqual([90, 1]);
+  });
+
+  it.each([0, -10, 181, 360, Number.NaN])('rejects a sweep arc of %s degrees', (arcDegrees) => {
+    const sweepWeapon: WeaponDefinition = {
+      ...TEST_TALONS,
+      attacks: [{ strategy: 'melee-sweep', damage: 50, reach: 1, interval: 0.5, arcDegrees }],
+    };
+
+    expect(() => loadWeapons(30, [sweepWeapon])).toThrow(
+      'Weapon "test-talons": sweep arcDegrees must be above 0 and at most 180',
+    );
+  });
+
+  it.each([1, 90, 180])('accepts a sweep arc of %s degrees', (arcDegrees) => {
+    const sweepWeapon: WeaponDefinition = {
+      ...TEST_TALONS,
+      attacks: [{ strategy: 'melee-sweep', damage: 50, reach: 1, interval: 0.5, arcDegrees }],
+    };
+
+    expect(() => loadWeapons(30, [sweepWeapon])).not.toThrow();
   });
 
   it('rejects an id that is not kebab-case', () => {

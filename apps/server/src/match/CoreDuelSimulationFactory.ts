@@ -44,6 +44,6 @@ export class CoreDuelSimulationFactory implements DuelSimulationFactory {
       roster: DUEL_ROSTER,
       duel: { killTarget: DUEL_RULES.killTarget },
     });
-    return new CoreDuelSimulation(simulation, mapObjects, seed);
+    return new CoreDuelSimulation(simulation, seed);
   }
 }

@@ -109,12 +109,18 @@ command log is a complete replay and cheats are replayable too.
 // Sketch: packages/core/src/commands/Command.types.ts (fields per type in `CommandPayloads`)
 export type Command =
   | { readonly type: 'move'; readonly actorId: EntityId; readonly direction: Vec2 }
-  | { readonly type: 'stop'; readonly actorId: EntityId } // clears heading and attack target (18 §6.1)
+  | { readonly type: 'stop'; readonly actorId: EntityId } // clears heading, attack target and aim point (18 §6.1)
   | {
       readonly type: 'attack-target';
       readonly actorId: EntityId;
       readonly targetId: EntityId;
       readonly mode?: AttackMode; // absent = 'basic'; 'melee' (DEC-308), later 'heavy' (05 §10)
+    }
+  | {
+      readonly type: 'attack-aim'; // attack towards a point with no target (DEC-184, DEC-319)
+      readonly actorId: EntityId;
+      readonly aim: Vec2 | null; // null stops the aimed attack
+      readonly mode?: AttackMode;
     }
   | {
       readonly type: 'cast-ability';
@@ -271,7 +277,15 @@ export type EntitySnapshot = {
     readonly max: number;
   } | null; // any entity with an aether pool (every Legend), not only the player (DEC-230)
   readonly statuses: readonly StatusSnapshot[] | null; // oldest first; null without StatusEffects
+  readonly projectile: ProjectileSnapshot | null; // a shot's speed share and ending (DEC-306); null for any other entity
+  readonly swing: SwingSnapshot | null; // the unit's latest melee sweep, display only (DEC-304); null when it made none
   readonly anim: AnimState;
+};
+export type SwingSnapshot = {
+  readonly atTick: number; // the tick the swing was made
+  readonly direction: { readonly x: number; readonly y: number }; // unit vector
+  readonly radius: number; // metres from the attacker's centre
+  readonly arcDegrees: number;
 };
 export type StatusSnapshot = {
   readonly id: StatusEffectId;
@@ -485,8 +499,8 @@ each closed by the session or phase named:
   aim overlay (ADR 0026 decisions 4 and 7). `GameState` also carries the match's collision rule
   (`collisions`, the `CollisionQuery` port beside `space` and `paths`: the one `CollisionResolver`
   `CollisionSystem` uses; `null` without map objects).
-- `move`, `stop` and `attack-target` have their own handlers (`MoveHandler`, `StopHandler`,
-  `AttackTargetHandler`). `cast-ability` has `CastAbilityHandler`, which checks with the
+- `move`, `stop`, `attack-target` and `attack-aim` have their own handlers (`MoveHandler`,
+  `StopHandler`, `AttackTargetHandler`, `AttackAimHandler`). `cast-ability` has `CastAbilityHandler`, which checks with the
   `CastValidator` that `Simulation` injects and queues the cast for `AbilitySystem`; a cast that
   fails `AbilitySystem`'s second check is announced with `command-rejected` from there (05 §7,
   ADR 0026 decision 2). `intent` and `dev-set-controller` are routed to

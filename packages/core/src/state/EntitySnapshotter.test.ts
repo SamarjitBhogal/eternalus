@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Aether } from '../components/Aether';
+import { Combat } from '../components/Combat';
 import { Capturable } from '../components/Capturable';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { Movement } from '../components/Movement';
@@ -124,6 +125,26 @@ describe('EntitySnapshotter', () => {
     ]);
     expect(snapshotter.snapshotOf(calm).statuses).toEqual([]);
     expect(snapshotter.snapshotOf(new Bare('entity-3', 'bare')).statuses).toBeNull();
+  });
+
+  it('snapshots the latest sweep as plain data, and null when there is none (DEC-304)', () => {
+    const swinger = new Bare('entity-1', 'warrior');
+    const combat = new Combat({ basic: { strategy: 'melee', damage: 1, reach: 1, interval: 5 } });
+    swinger.addComponent(combat);
+    const snapshotter = new EntitySnapshotter(4, CURVES, 9);
+    expect(snapshotter.snapshotOf(swinger).swing).toBeNull();
+    expect(snapshotter.snapshotOf(new Bare('entity-2', 'bare')).swing).toBeNull();
+
+    combat.recordSwing({ atTick: 7, direction: { x: 0, y: 1 }, radius: 3.5, arcDegrees: 160 });
+    const { swing } = snapshotter.snapshotOf(swinger);
+
+    expect(swing).toEqual({
+      atTick: 7,
+      direction: { x: 0, y: 1 },
+      radius: 3.5,
+      arcDegrees: 160,
+    });
+    expect(structuredClone(swing)).toEqual(swing);
   });
 
   it('snapshots a shot as its speed share and ending, and anything else as null', () => {

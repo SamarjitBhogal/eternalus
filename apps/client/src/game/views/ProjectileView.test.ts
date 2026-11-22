@@ -39,6 +39,7 @@ const BOLT: EntitySnapshot = {
   capture: null,
   statuses: null,
   projectile: null,
+  swing: null,
 };
 
 const ARROW: EntitySnapshot = { ...BOLT, definitionId: 'arrow' };
@@ -52,7 +53,10 @@ const ended = (entity: EntitySnapshot, ending: number): EntitySnapshot => ({
 });
 const draw = (entity: EntitySnapshot): RecordingRenderer => {
   const renderer = new RecordingRenderer();
-  new ProjectileView().draw({ entity, position: AT, facing: EAST, isFocused: false }, renderer);
+  new ProjectileView().draw(
+    { entity, position: AT, facing: EAST, tick: 0, isFocused: false },
+    renderer,
+  );
   return renderer;
 };
 
@@ -64,7 +68,7 @@ describe('ProjectileView', () => {
     const renderer = new RecordingRenderer();
 
     new ProjectileView().draw(
-      { entity: BOLT, position: AT, facing: EAST, isFocused: false },
+      { entity: BOLT, position: AT, facing: EAST, tick: 0, isFocused: false },
       renderer,
     );
 
@@ -92,7 +96,7 @@ describe('ProjectileView', () => {
     const renderer = new RecordingRenderer();
 
     new ProjectileView().draw(
-      { entity: { ...BOLT, team: null }, position: AT, facing: EAST, isFocused: false },
+      { entity: { ...BOLT, team: null }, position: AT, facing: EAST, tick: 0, isFocused: false },
       renderer,
     );
 
@@ -106,7 +110,7 @@ describe('ProjectileView', () => {
     const renderer = new RecordingRenderer();
 
     new ProjectileView().drawMinimap(
-      { entity: BOLT, position: AT, facing: EAST, isFocused: false },
+      { entity: BOLT, position: AT, facing: EAST, tick: 0, isFocused: false },
       renderer,
     );
 

@@ -134,7 +134,8 @@ export class BotLeaves {
 
   /**
    * Attacks `turn.enemy`, may cast at it, and closes in until it is in reach with a clear line of
-   * fire (DEC-317). An enemy on ground
+   * fire (DEC-317). While a wall would stop its shot, it holds no target, so it does not shoot
+   * into the wall, and it moves for a clear shot (DEC-317 addendum). An enemy on ground
    * the nav grid blocks (inside a tower's fort court) is closed in on as a siege closes in, so the
    * bot follows it inside instead of waiting at the edge (DEC-189). A bot stuck on the way goes
    * round (`BotMovement.goRound`, DEC-193).
@@ -148,7 +149,8 @@ export class BotLeaves {
     const isHolding = BotLeaves.attackAndHold(
       turn,
       enemy,
-      state.entities.isInReach(id, enemy) && this.content.lineOfFire.isClear(state, id, enemy),
+      state.entities.isInReach(id, enemy),
+      this.content.lineOfFire.isClear(state, id, enemy),
     );
     this.mayCast(turn, enemy, at);
     if (isHolding) {
@@ -188,7 +190,8 @@ export class BotLeaves {
   /**
    * Attacks `turn.objective` (11 §4.2 `Push`): A\* to the edge of its footprint on the bot's side
    * (from its collider radius), then straight at it for the last step, holding once it is in
-   * reach with a clear line of fire (B66-F1, `BotMovement.closeIn`, DEC-317). The edge faces the
+   * reach with a clear line of fire (B66-F1, `BotMovement.closeIn`, DEC-317). While a wall would
+   * stop its shot it holds no target, as in `fight`. The edge faces the
    * bot, so a Stronghold behind its wall ring is reached through the ring's gate instead of leaned
    * on from outside. A bot stuck on the way goes round (`BotMovement.goRound`, DEC-193).
    */
@@ -197,10 +200,13 @@ export class BotLeaves {
     if (objective === null) {
       return 'failure';
     }
-    const isHolding =
-      state.entities.isInReach(id, objective.id) &&
-      this.content.lineOfFire.isClear(state, id, objective.id);
-    if (BotLeaves.attackAndHold(turn, objective.id, isHolding) || BotMovement.goRound(turn)) {
+    const isHolding = BotLeaves.attackAndHold(
+      turn,
+      objective.id,
+      state.entities.isInReach(id, objective.id),
+      this.content.lineOfFire.isClear(state, id, objective.id),
+    );
+    if (isHolding || BotMovement.goRound(turn)) {
       return 'running';
     }
     return this.movement.closeIn(turn, objective, objective.radius);
@@ -251,19 +257,33 @@ export class BotLeaves {
   }
 
   /**
-   * Points the bot's attack at `targetId` unless it already is, and holds it still when
-   * `shouldHold` (in reach, with a clear line for a ranged attack): the opening Fight and Push
-   * share (DEC-168, B9). Returns whether it holds.
+   * The opening Fight and Push share (DEC-168, B9). With a clear line of fire (`isClear`; always
+   * for a melee attack) it points the bot's attack at `targetId` unless it already is, and holds
+   * the bot still when it is also in reach. Without one it drops the target it holds, so
+   * `CombatSystem`, which fires with no line-of-fire check, does not shoot into the wall (DEC-317
+   * addendum). The `stop` that drops it also drops the heading, so the caller's `move` that
+   * follows in the same turn keeps the bot moving for a clear shot. Returns whether it holds.
    */
-  private static attackAndHold(turn: BotTurn, targetId: EntityId, shouldHold: boolean): boolean {
+  private static attackAndHold(
+    turn: BotTurn,
+    targetId: EntityId,
+    isInReach: boolean,
+    isClear: boolean,
+  ): boolean {
+    if (!isClear) {
+      if (turn.memory.targetId !== null) {
+        BotMovement.stop(turn);
+      }
+      return false;
+    }
     if (targetId !== turn.memory.targetId) {
       turn.commands.push({ type: 'attack-target', actorId: turn.id, targetId });
       turn.next = { ...turn.next, targetId };
     }
-    if (shouldHold) {
+    if (isInReach) {
       BotMovement.halt(turn);
     }
-    return shouldHold;
+    return isInReach;
   }
 
   /**

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Collider } from '../components/Collider';
+import { Combat } from '../components/Combat';
 import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
@@ -255,8 +256,12 @@ describe('ProjectileSystem', () => {
     expect(state.entities.has(shot.id)).toBe(true);
   });
 
-  it('passes a body that takes no damage now (a forest camp) and lands on the one behind it', () => {
-    const { state, system, context, addBody, fire, healthOf } = setUp();
+  it('stops at a body that takes no damage now (a forest camp), with no damage and no on-hit step (DEC-317 addendum)', () => {
+    const { state, events, context, addBody, fire, healthOf } = setUp();
+    const onHit: string[] = [];
+    const system = projectileSystem({ afterHit: (_state, _owner, id) => onHit.push(id) });
+    const damaged: string[] = [];
+    state.events.on('damage-applied', ({ targetId }) => damaged.push(targetId));
     const camp = addBody({ x: 10, y: 0 }, 'neutral');
     camp.getComponent(Collider).setUnbreakable(true);
     const target = addBody({ x: 15, y: 0 }, 'dark');
@@ -264,12 +269,18 @@ describe('ProjectileSystem', () => {
 
     system.update(context);
 
-    expect(healthOf(target)).toBe(900);
     expect(state.entities.has(shot.id)).toBe(false);
+    expect(events).toEqual([{ entityId: shot.id, cause: 'consumed' }]);
+    expect(healthOf(camp)).toBe(1000);
+    expect(healthOf(target)).toBe(1000);
+    expect(damaged).toEqual([]);
+    expect(onHit).toEqual([]);
   });
 
   it('stops at a body that takes no damage now when it was fired at that body (a closed gate)', () => {
-    const { state, system, context, addBody, fire, healthOf } = setUp();
+    const { state, context, addBody, fire, healthOf } = setUp();
+    const onHit: string[] = [];
+    const system = projectileSystem({ afterHit: (_state, _owner, id) => onHit.push(id) });
     const gate = addBody({ x: 10, y: 0 }, 'dark');
     gate.getComponent(Collider).setUnbreakable(true);
     const behind = addBody({ x: 15, y: 0 }, 'dark');
@@ -278,7 +289,34 @@ describe('ProjectileSystem', () => {
     system.update(context);
 
     expect(state.entities.has(shot.id)).toBe(false);
+    expect(healthOf(gate)).toBe(1000);
     expect(healthOf(behind)).toBe(1000);
+    expect(onHit).toEqual([]);
+  });
+
+  it("records the body it lands on as its living owner's hit, and none on a body that takes no damage (DEC-322 (2))", () => {
+    const { state, context, system, addBody, fire } = setUp();
+    const owner = addBody({ x: -50, y: 0 }, 'light');
+    owner.addComponent(new Combat({ basic: ATTACK }));
+    const combat = owner.getComponent(Combat);
+    const camp = addBody({ x: 10, y: 0 }, 'neutral');
+    camp.getComponent(Collider).setUnbreakable(true);
+    fire({ x: 0, y: 0 }, 20, 'light', ATTACK, BOLT, owner.id);
+
+    system.update(context);
+    expect(combat.hitIds).toEqual([]);
+
+    camp.getComponent(Collider).setUnbreakable(false);
+    fire({ x: 0, y: 0 }, 20, 'light', ATTACK, BOLT, owner.id);
+    system.update(context);
+    expect(combat.hitsAt(state.tick)).toEqual([camp.id]);
+
+    state.advanceTick();
+    owner.getComponent(Health).applyDamage(owner.getComponent(Health).current);
+    fire({ x: 0, y: 0 }, 20, 'light', ATTACK, BOLT, owner.id);
+    system.update(context);
+    expect(combat.hitsAt(state.tick)).toEqual([camp.id]);
+    expect(combat.hitsUntilTick).toBe(ATTACK.interval);
   });
 
   it('stops at a wall in front of a body, with no damage', () => {

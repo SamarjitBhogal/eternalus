@@ -195,7 +195,7 @@ export class Simulation {
     this.handlers = createDefaultCommandHandlers(validator);
     this.readiness = validator;
     const projectiles = loadProjectiles(tickRate);
-    // One line-of-fire query for the bots and `CombatSystem`, so they agree (DEC-317).
+    // The bots' line-of-fire query: a bot drops a target its shot cannot reach (DEC-317 addendum).
     const lineOfFire = new LineOfFire(projectiles);
     const controllers = Simulation.createControllers(validator, tickRate, lineOfFire, projectiles);
     const units = content ?? Simulation.defaultContent(tickRate, curves, controllers, weaponSource);
@@ -268,7 +268,6 @@ export class Simulation {
         }),
         state: this.state,
         factory,
-        lineOfFire,
         progression: { units, curves, xpSources: XP_SOURCES, ultimateCharge: ULTIMATE_CHARGE },
         director,
         abilities: registry,

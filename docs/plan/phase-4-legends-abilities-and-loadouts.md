@@ -4,7 +4,7 @@ description: Sprint checklists for the three Legend classes, the ability framewo
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-21
 tags: [plan, phase-4, legends, abilities, loadouts, progression, hud]
 paths:
   ['packages/core/src/abilities/**', 'packages/core/src/loadout/**', 'apps/client/src/ui/hud/**']
@@ -186,6 +186,12 @@ Owner: _ (sim lane). Week 8.
       player fires only at a target under the cursor (`attack-target`), and the shot flies at
       that target, not along the aim that DEC-184 sets. PR 2 adds aimed fire for ranged weapons
       with the same command.
+      **Status (2026-11-21, branch `feat/melee-sweeps`, PR 2; DEC-319):** `melee-sweep` is built:
+      the talons, Wuuthrad and the staff's melee attack hit every enemy body in a wedge (arcs
+      DEC-304), reach is the class's part plus the weapon's (DEC-305), and the player's attack
+      button and melee key attack along the aim with the new `attack-aim` command, so the PR 1
+      stand-in above has ended. The two weapon boxes stay unticked for the reasons above; PR 3
+      adds the remaining weapons and their arcs.
 
 - [ ] **`ArtifactDefinition` content + gadget slots Z/C** (`TUNE`: Sentinel Mortar with impact
       and air-burst modes; Magus Soul Orb (pending) with Cast Forward and Follower; the second

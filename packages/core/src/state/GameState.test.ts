@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { Aether } from '../components/Aether';
+import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
+import { StatusEffects } from '../components/StatusEffects';
 import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
@@ -9,8 +11,12 @@ import { INITIAL_FACING } from '../components/Transform.constants';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import type { MapDefinition } from '../content/maps/maps.types';
+import { loadDefaultContent } from '../content/loadDefaultContent';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
+import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
+import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { Entity } from '../entities/Entity';
+import { EntityFactory } from '../entities/EntityFactory';
 import type { Team } from '../teams/teams.types';
 import { SeededRandom } from '../utils/SeededRandom';
 import { TWO_LANE_MAP } from './__fixtures__/twoLaneMap';
@@ -106,6 +112,38 @@ describe('GameState', () => {
     state.entities.remove(dark.id, 'dev-removed');
     expect(state.livingBuffTowerCount('dark')).toBe(0);
   });
+  it('records the bodies an attack hit on the living attacker, for its interval at its attack speed (DEC-322 (2))', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const spawn = () => {
+      const entity = factory.create('light-mob', 'light-minion', {
+        team: 'dark',
+        position: { x: 0, y: 0 },
+      });
+      state.entities.add(entity);
+      return entity;
+    };
+    const attacker = spawn();
+    const slowed = spawn();
+    const dead = spawn();
+    slowed.getComponent(StatusEffects).apply(loadStatusEffects(30, 2).get('concussion'), null, 0);
+    dead.getComponent(Health).applyDamage(dead.getComponent(Health).current);
+    state.advanceTick();
+
+    state.recordHits(attacker.id, ['a', 'b']);
+    state.recordHits(slowed.id, ['a']);
+    state.recordHits(dead.id, ['a']);
+    state.recordHits('nobody', ['a']);
+
+    const combat = attacker.getComponent(Combat);
+    expect(combat.hitsAt(1)).toEqual(['a', 'b']);
+    expect(combat.hitsUntilTick).toBe(1 + combat.attack.interval);
+    expect(slowed.getComponent(Combat).hitsUntilTick).toBe(
+      1 + Math.round(combat.attack.interval / 0.7),
+    );
+    expect(dead.getComponent(Combat).hitIds).toEqual([]);
+  });
+
   it('starts at tick 0 in the countdown and counts ticks', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
     expect(state.tick).toBe(0);
@@ -168,6 +206,7 @@ describe('GameState', () => {
           capture: null,
           statuses: null,
           projectile: null,
+          swing: null,
         },
         {
           id: 'entity-2',
@@ -183,6 +222,7 @@ describe('GameState', () => {
           capture: null,
           statuses: null,
           projectile: null,
+          swing: null,
         },
       ],
       hordes: [],

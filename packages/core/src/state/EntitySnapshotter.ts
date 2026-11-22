@@ -1,5 +1,6 @@
 import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
+import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { Movement } from '../components/Movement';
@@ -83,6 +84,8 @@ export class EntitySnapshotter {
             },
       statuses: this.statusesOf(entity.findComponent(StatusEffects)),
       projectile: this.projectileOf(entity),
+      // `Combat.recordSwing` keeps a copy and replaces it on each swing, so it is shared as is.
+      swing: entity.findComponent(Combat)?.lastSwing ?? null,
     };
   }
 

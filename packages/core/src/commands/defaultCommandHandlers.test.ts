@@ -52,6 +52,17 @@ describe('createDefaultCommandHandlers', () => {
     expect(asked).toEqual([{ actorId: 'entity-1', slot: 'ability-1', aim: CAST.aim }]);
   });
 
+  it('routes attack-aim to its handler, which rejects an unknown actor (DEC-184)', () => {
+    const handlers = createDefaultCommandHandlers({ blockedBy: () => null });
+
+    expect(
+      rejectionsOf(
+        { type: 'attack-aim', actorId: 'entity-404', aim: { x: 1, y: 1 }, mode: 'melee' },
+        handlers,
+      ),
+    ).toEqual(['unknown-entity']);
+  });
+
   it.each(NOT_YET_SUPPORTED)(
     'rejects $type as not supported until its system exists',
     (command) => {
@@ -66,6 +77,7 @@ describe('createDefaultCommandHandlers', () => {
     const handlers: CommandHandlers = {
       stop: unsupported,
       'attack-target': unsupported,
+      'attack-aim': unsupported,
       'cast-ability': unsupported,
       intent: unsupported,
       'dev-spawn': unsupported,

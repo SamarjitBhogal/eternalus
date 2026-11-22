@@ -244,12 +244,36 @@ export class EntityStore {
     return aimed !== null;
   }
 
-  /** The entity's attack target, or `null` when it has none, cannot attack or is unknown. */
+  /**
+   * The entity's attack target (its lock, `Combat.targetId`), or `null` when it has none, cannot
+   * attack or is unknown. It does not count aimed hits; `victimsOf` does.
+   */
   public attackTargetOf(id: EntityId): EntityId | null {
     return this.entities.get(id)?.findComponent(Combat)?.targetId ?? null;
   }
 
-  /** Clears the entity's attack target; does nothing when it cannot attack or is unknown. */
+  /**
+   * Whom the entity attacks at `tick` (DEC-322 (2)): its lock when it holds one; else each living
+   * body its last attack hit, for one attack interval from the hit (`Combat.hitsAt`), so a player
+   * who aims, with no lock, attacks what it hits. Empty when it attacks nothing, cannot attack or
+   * is unknown.
+   */
+  public victimsOf(id: EntityId, tick: number): readonly EntityId[] {
+    const combat = this.entities.get(id)?.findComponent(Combat);
+    if (combat === undefined) return [];
+    if (combat.targetId !== null) return [combat.targetId];
+    return combat.hitsAt(tick).filter((hitId) => this.isAlive(hitId));
+  }
+
+  /** Whether `attackerId` attacks `victimId` at `tick` (`victimsOf`). */
+  public isAttacking(attackerId: EntityId, victimId: EntityId, tick: number): boolean {
+    return this.victimsOf(attackerId, tick).includes(victimId);
+  }
+
+  /**
+   * Clears the entity's attack target and aim point (`Combat.setTarget(null)` drops both); does
+   * nothing when it cannot attack or is unknown.
+   */
   public clearAttackTarget(id: EntityId): void {
     this.entities.get(id)?.findComponent(Combat)?.setTarget(null);
   }
@@ -294,6 +318,18 @@ export class EntityStore {
    */
   public setAttackTarget(id: EntityId, targetId: EntityId, mode: AttackMode = 'basic'): boolean {
     return this.entities.get(id)?.findComponent(Combat)?.setTarget(targetId, mode) ?? false;
+  }
+
+  /**
+   * Points the entity's `Combat` at the world point `aim` (an aimed attack with no target, DEC-319),
+   * dropping any target; `null` stops an aimed attack. Lets `commands/` set it without importing
+   * `components/`, as `setAttackTarget` does.
+   *
+   * @param mode - Which attack to use (`'melee'` needs a melee attack).
+   * @returns `false` when the entity is unknown or cannot attack (or has no melee for `'melee'`).
+   */
+  public setAttackAim(id: EntityId, aim: Vec2 | null, mode: AttackMode = 'basic'): boolean {
+    return this.entities.get(id)?.findComponent(Combat)?.setAim(aim, mode) ?? false;
   }
 
   /**

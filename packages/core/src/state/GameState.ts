@@ -1,4 +1,6 @@
+import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
+import { StatusEffects } from '../components/StatusEffects';
 import { TeamMembership } from '../components/TeamMembership';
 import type { GameConfig } from '../config/GameConfig.types';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
@@ -234,6 +236,22 @@ export class GameState {
   public recordTowerLost(team: PlayableTeam, lane: string): void {
     const byLane = this.teamCounters[team].towersLostByLane;
     byLane[lane] = (byLane[lane] ?? 0) + 1;
+  }
+
+  /**
+   * Records that an attack of `attackerId` touched `bodyIds` this tick, on its `Combat`
+   * (`Combat.recordHits`, at its `attackSpeed`), so the AI sees whom it attacks
+   * (`EntityStore.victimsOf`, DEC-322 (2)). The one place every contact point reports a hit: a
+   * sweep's bodies, a one-target hit, a shot's body, an ability's targets. Does nothing for an
+   * attacker that is unknown, dead or cannot attack.
+   */
+  public recordHits(attackerId: EntityId, bodyIds: readonly EntityId[]): void {
+    const attacker = this.entities.get(attackerId);
+    const combat = attacker?.findComponent(Combat);
+    if (attacker === undefined || combat === undefined || bodyIds.length === 0) return;
+    if (attacker.findComponent(Health)?.isDead === true) return;
+    const speed = attacker.findComponent(StatusEffects)?.multiplier('attackSpeed') ?? 1;
+    combat.recordHits(bodyIds, this.currentTick, speed);
   }
 
   /** The most recently applied commands, oldest first. */

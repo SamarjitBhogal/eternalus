@@ -1,4 +1,3 @@
-import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { ProjectileFlight } from '../components/ProjectileFlight';
@@ -15,6 +14,7 @@ import type { Entity } from '../entities/Entity';
 import { flightSpeed } from '../physics/flightSpeed';
 import { sweepCircle } from '../physics/sweepCircle';
 import { sweepDisc } from '../physics/sweepDisc';
+import { AreaHitQuery } from '../state/AreaHitQuery';
 import type { GameState } from '../state/GameState';
 import { isTouchedBeforeWall } from '../state/isTouchedBeforeWall';
 import { CONTACT_EPSILON } from '../utils/circlePolygon.constants';
@@ -30,15 +30,18 @@ import type { System, SystemContext } from './System.types';
  * takes the hit when it is touched before the first wall (`isTouchedBeforeWall`: a fort is both a
  * body and a wall); a wall or the map's edge spends the shot with no damage. A landed hit goes to
  * the `ProjectileImpact` of the payload's impact kind (a weapon's: its damage, fallen off over the
- * distance from the origin, then the owner's on-hit effects), and the shot is removed as
- * `consumed`.
+ * distance from the origin, then the owner's on-hit effects), the hit is recorded on the owner
+ * (`GameState.recordHits`, DEC-322 (2)), and the shot is removed as `consumed`. A body that takes
+ * no damage now (`AreaHitQuery.takesNoDamage`: a forest camp, a closed gate) stops the shot like
+ * any body, but nothing lands: no damage, no on-hit step, no hit recorded (DEC-317 addendum).
  *
- * Bodies are live things with `Health` other than the owner and its team (neutral bodies count as
- * enemies). A body with an outline (`Footprint`, `MapObjectBody`) is hit on that outline, at once
- * when the shot starts inside it. A walk-on outline (a palace floor, a gate's passage) and a body
- * that takes no damage now (`Collider.isUnbreakable`: a forest camp) are hit only by a shot fired
- * at that entity, so a shot flies over the ground units stand on and past what it cannot hurt
- * (DEC-317). A body is gathered once a tick, and each move tests only those whose box it reaches.
+ * Which bodies stop a shot is `AreaHitQuery.stopsShot`, the rule `LineOfFire` predicts by: live
+ * things with `Health` other than the owner and its team (neutral bodies count as enemies). A body
+ * with an outline (`Footprint`, `MapObjectBody`) is hit on that outline, at once when the shot
+ * starts inside it. A walk-on outline (a palace floor, a gate's passage) is hit only by a shot
+ * aimed at that entity (`payload.targetId`: the locked target, or the walk-on outline the aim
+ * point was on, DEC-322 (1)), so a shot flies over the ground units stand on. A body is gathered
+ * once a tick, and each move tests only those whose box it reaches.
  * Ties go to the first body in store order, except that the shot's target takes a near tie
  * (`isTouchedBeforeWall` on the first body's contact): a palace wall whose face is the
  * Stronghold's edge does not take a shot fired at the Stronghold (DEC-317 (8)).
@@ -99,14 +102,17 @@ export class ProjectileSystem implements System {
     const wall = this.wallDistance(state, from, delta, length, body.radius);
     const hit = this.firstBody(state, payload, from, delta, length, body.radius);
     if (hit !== null && isTouchedBeforeWall(hit.time * length, wall)) {
-      this.landOn(state, {
-        impact: payload.impact,
-        ownerId: payload.ownerId,
-        source: payload.source,
-        origin: payload.origin,
-        bodyId: hit.body.entity.id,
-        point: { x: from.x + delta.x * hit.time, y: from.y + delta.y * hit.time },
-      });
+      if (!AreaHitQuery.takesNoDamage(hit.body.entity)) {
+        this.landOn(state, {
+          impact: payload.impact,
+          ownerId: payload.ownerId,
+          source: payload.source,
+          origin: payload.origin,
+          bodyId: hit.body.entity.id,
+          point: { x: from.x + delta.x * hit.time, y: from.y + delta.y * hit.time },
+        });
+        state.recordHits(payload.ownerId, [hit.body.entity.id]);
+      }
       this.spend(state, shot);
     } else if (wall < Number.POSITIVE_INFINITY) {
       this.spend(state, shot);
@@ -158,7 +164,6 @@ export class ProjectileSystem implements System {
         transform,
         health,
         membership: entity.findComponent(TeamMembership),
-        collider: entity.findComponent(Collider),
         outline: state.entities.outlineOf(entity.id) ?? null,
       });
     });
@@ -188,7 +193,10 @@ export class ProjectileSystem implements System {
     let first: ShotContact | null = null;
     let target: ShotContact | null = null;
     for (const body of this.bodies) {
-      if (!ProjectileSystem.isNear(body, box) || !ProjectileSystem.canHit(state, payload, body)) {
+      if (
+        !ProjectileSystem.isNear(body, box) ||
+        !AreaHitQuery.stopsShot(state.entities, payload, body)
+      ) {
         continue;
       }
       const time = ProjectileSystem.contactTime(body, from, delta, radius);
@@ -209,26 +217,6 @@ export class ProjectileSystem implements System {
       position.x - radius <= box.x + box.width &&
       position.y + radius >= box.y &&
       position.y - radius <= box.y + box.height
-    );
-  }
-
-  /**
-   * Whether the shot can hit the body now: alive and still in the world, not its owner, not on
-   * its team, and, for a walk-on outline or a body that takes no damage now, the entity it was
-   * fired at.
-   */
-  private static canHit(
-    state: GameState,
-    payload: ProjectilePayload,
-    { entity, health, membership, collider, outline }: ShotBody,
-  ): boolean {
-    return (
-      !health.isDead &&
-      entity.id !== payload.ownerId &&
-      membership?.team !== payload.team &&
-      (entity.id === payload.targetId ||
-        (outline?.isWalkOn !== true && collider?.isUnbreakable !== true)) &&
-      state.entities.has(entity.id)
     );
   }
 
