@@ -7,7 +7,10 @@ import type { DisplayOverrides } from './CataloguePresentation.types';
 import { CATALOGUE_PRESENTATION } from './screenPresentation';
 
 /** No override: the content values stand. */
-export const NO_DISPLAY_OVERRIDES: DisplayOverrides = { effectsRenderer: null };
+export const NO_DISPLAY_OVERRIDES: DisplayOverrides = {
+  effectsRenderer: null,
+  uiEnhancements: null,
+};
 
 /**
  * The shipped catalogue: core display content (validated by `loadDisplayContent`) joined with the

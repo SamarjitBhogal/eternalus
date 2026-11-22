@@ -155,7 +155,7 @@ describe('PresenceBook', () => {
     expect(b.sentOfType('match-ended')).toMatchObject([{ reason: 'opponent-left' }]);
   });
 
-  it('drops a queued guest after the window: the slot is gone, the id comes back on a new join', () => {
+  it('drops a queued guest after the window: the slot is gone, an unrated id is not remembered', () => {
     const { connect, guestIdOf, presence, scheduler } = setup();
     const a = connect();
     const id = guestIdOf(a);
@@ -165,7 +165,7 @@ describe('PresenceBook', () => {
     expect(presence.counts()).toEqual({ online: 0, queued: 0, inMatch: 0, held: 0 });
     const a2 = connect();
     a2.receive(join(id));
-    expect(guestIdOf(a2)).toBe(id);
+    expect(guestIdOf(a2)).not.toBe(id);
     expect(a2.sentOfType('queue-waiting')).toHaveLength(1);
     expect(presence.counts().queued).toBe(1);
   });
@@ -194,22 +194,52 @@ describe('PresenceBook', () => {
     expect(b2.sentOfType('queue-waiting')).toHaveLength(1);
   });
 
-  it('forgets the oldest gone guest beyond the cap, rating and all', () => {
-    const { connect, guestIdOf, ratings, simulations, scheduler } = setup(MAX_HELD_GUESTS, 2);
+  /** Two fresh guests play one Duel that `light` wins; both sockets close at its end. */
+  function playOne(harness: ReturnType<typeof setup>): { idA: string; idB: string } {
+    const { connect, guestIdOf, simulations, scheduler } = harness;
     const [a, b] = [connect(), connect()];
-    const idA = guestIdOf(a);
+    const [idA, idB] = [guestIdOf(a), guestIdOf(b)];
     a.receive(join());
     b.receive(join());
-    const [simulation] = simulations;
-    if (simulation === undefined || idA === undefined) throw new Error('no Duel');
+    const simulation = simulations[simulations.length - 1];
+    if (simulation === undefined || idA === undefined || idB === undefined)
+      throw new Error('no Duel');
     simulation.result = { winner: 'light' };
     scheduler.tick();
+    return { idA, idB };
+  }
+
+  it('forgets the oldest gone rated guest beyond the cap, rating and all', () => {
+    const harness = setup(MAX_HELD_GUESTS, 2);
+    const { connect, guestIdOf, ratings } = harness;
+    const { idA } = playOne(harness);
     expect(ratings.get(idA).matches).toBe(1);
-    connect().close(); // a third gone guest pushes the oldest, a, out
+    playOne(harness); // two more rated guests push the oldest, a, out
     const a2 = connect();
     a2.receive(join(idA));
     expect(guestIdOf(a2)).not.toBe(idA);
     expect(ratings.get(idA).matches).toBe(0);
+  });
+
+  it('(a) keeps the returning guest when the list is full and it is the oldest', () => {
+    const harness = setup(MAX_HELD_GUESTS, 2);
+    const { connect, guestIdOf, ratings } = harness;
+    const { idA } = playOne(harness);
+    const a2 = connect();
+    a2.receive(join(idA));
+    expect(guestIdOf(a2)).toBe(idA);
+    expect(ratings.get(idA).matches).toBe(1);
+  });
+
+  it('(b) idle connect-and-close loops do not push rated guests out', () => {
+    const harness = setup(MAX_HELD_GUESTS, 2);
+    const { connect, guestIdOf, ratings } = harness;
+    const { idA, idB } = playOne(harness);
+    for (let i = 0; i < 5; i += 1) connect().close();
+    expect([ratings.get(idA).matches, ratings.get(idB).matches]).toEqual([1, 1]);
+    const a2 = connect();
+    a2.receive(join(idA));
+    expect(guestIdOf(a2)).toBe(idA);
   });
 
   it('never pairs a queued guest that is held: the next player waits', () => {

@@ -207,7 +207,7 @@ repo records no role for it.
 
 ## 7. Sprint 2 spikes
 
-Both run on throwaway branches that are never merged; the output is measurements in `PROGRESS.md`
+Both run on throwaway branches that are never merged; the output is measurements in a `docs/plan/progress/` entry
 and a go or no-go, not production code. Each threshold carries the label it has in the research,
 and the owner may change any of them: the capacity inputs I1, I2 and I5 are **assumptions**
 (scalability research, "Capacity estimate"); the scaling-ladder thresholds (scalability research
@@ -440,7 +440,7 @@ DECISIONS MUST BE MADE BY UPCOMING SESSIONS". Upcoming sessions absorb them as t
 
 ## Related
 
-- [Delivery plan](README.md) · [PROGRESS.md](PROGRESS.md) · [post-MVP backlog](backlog-post-mvp.md)
+- [Delivery plan](README.md) · [progress log](progress/README.md) · [post-MVP backlog](backlog-post-mvp.md)
 - [ADR 0016](../decisions/0016-multiplayer-server-authoritative-duel.md) ·
   [ADR 0017](../decisions/0017-balanced-asymmetric-camp-placement.md) ·
   [ADR 0005](../decisions/0005-indexeddb-persistence.md) ·

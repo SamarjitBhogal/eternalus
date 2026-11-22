@@ -25,8 +25,7 @@ ID. Follow `docs/architecture/03-game-model.md` (GameConfig) and `04-entity-arch
    resolve.
 5. Tests: the content test suite (`content/**/*.test.ts`) must still pass; for config changes,
    run the map-generation tests with the new values.
-6. Update `docs/reference/game-design/*` if the design number changed and note the change in
-   `docs/plan/PROGRESS.md`.
+6. Update `docs/reference/game-design/*` if the design number changed and note the change in your new entry file in `docs/plan/progress/`.
 7. Run `npm run check`; report verbatim. No commits unless asked.
 
 ## Done when
