@@ -157,11 +157,13 @@ export class SessionController {
   }
 
   /**
-   * Marks the colour set on the theme root (DEC-55), subscribes to `ui-intent` and enters `boot`.
+   * Marks the colour set (DEC-55) and the UI enhancements (ui-enhancements-plan §2 rule 1) on the
+   * theme root, subscribes to `ui-intent` and enters `boot`.
    */
   public start(): void {
     if (this.current !== null) throw new Error('SessionController is already started');
     this.deps.themeRoot.dataset.contrast = this.context.catalogue.contrastMode;
+    this.deps.themeRoot.dataset.uiEnhancements = this.context.catalogue.uiEnhancements.join(' ');
     this.stopListening = this.deps.bus.on('ui-intent', (intent) => {
       this.crashes.handleIntent(intent);
       this.current?.handleIntent?.(intent, this.context);
@@ -171,13 +173,14 @@ export class SessionController {
 
   /**
    * Exits the current state (cancelling its timers and loads, destroying a running match),
-   * unsubscribes and clears the colour set; safe to call twice.
+   * unsubscribes and clears the colour set and the UI enhancements; safe to call twice.
    */
   public destroy(): void {
     this.current?.exit?.(this.context);
     this.current = null;
     this.stopListening();
     delete this.deps.themeRoot.dataset.contrast;
+    delete this.deps.themeRoot.dataset.uiEnhancements;
   }
 
   /** The running match's evidence for an error report, or `null` outside a match (ADR 0025 §3). */

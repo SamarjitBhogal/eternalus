@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
-import { SCORING } from '../content/match/scoring';
+import { loadScoring } from '../content/match/loadScoring';
 import { createDefaultScoringRules } from './defaultScoringRules';
 import { CaptureHoldRule } from './rules/CaptureHoldRule';
 import { CheckpointRule } from './rules/CheckpointRule';
@@ -11,7 +11,7 @@ import { MobDeathRule } from './rules/MobDeathRule';
 import { StructureDestroyedRule } from './rules/StructureDestroyedRule';
 import { StructureHitRule } from './rules/StructureHitRule';
 
-const rules = createDefaultScoringRules(SCORING, createDefaultGameConfig().tickRate);
+const rules = createDefaultScoringRules(loadScoring(createDefaultGameConfig().tickRate));
 
 describe('createDefaultScoringRules', () => {
   it('scores hits on Legends and structures only', () => {

@@ -113,6 +113,7 @@ const settings = new SettingsController({
   persistence,
   logger,
   isApplePlatform: isAppleUserAgent(window.navigator.userAgent),
+  themeRoot: document.documentElement,
 });
 const resources = new ResourceController({
   manifest: ASSET_MANIFEST,

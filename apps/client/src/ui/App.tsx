@@ -4,6 +4,7 @@ import type { MenuRoute, SessionPhase } from '../bridge/events';
 import { useAppSelector } from '../bridge/hooks';
 import { sessionSlice } from '../bridge/slices/sessionSlice';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { LiveRegion } from './components/LiveRegion';
 import { PlaceholderScreen } from './components/PlaceholderScreen';
 import { AboutScreen } from './screens/AboutScreen';
 import { CharacterSelectScreen } from './screens/CharacterSelectScreen';
@@ -47,7 +48,9 @@ const MENU_SCREENS: Readonly<Record<MenuRoute, ComponentType<ScreenProps>>> = {
  * Shows the screen for the current session phase and menu route, inside the one `ErrorBoundary`
  * (keyed by phase and route, ADR 0025 §5). Outside the boundary it mounts the crash popup (every
  * phase) and, through the `menu` phase, the select-timeout popup (DEC-102), above every menu route
- * so a dismissal holds across them.
+ * so a dismissal holds across them. Everything sits inside the app's one polite `LiveRegion`
+ * (DEC-282 (7)), which is mounted once, outside the screen switch, so it is in the page before any
+ * screen says a line into it.
  */
 export function App({ viewport }: { readonly viewport?: ReactNode }): ReactElement {
   const phase = useAppSelector(sessionSlice.selectors.selectSessionPhase);
@@ -55,12 +58,12 @@ export function App({ viewport }: { readonly viewport?: ReactNode }): ReactEleme
   const Screen = phase === 'menu' ? MENU_SCREENS[route] : PHASE_SCREENS[phase];
   const screen = phase === 'menu' ? `menu.${route}` : phase;
   return (
-    <>
+    <LiveRegion>
       <ErrorBoundary key={screen} screen={screen}>
         <Screen viewport={viewport} />
       </ErrorBoundary>
       {phase === 'menu' && <SelectTimeoutNotice />}
       <CrashReportNotice />
-    </>
+    </LiveRegion>
   );
 }

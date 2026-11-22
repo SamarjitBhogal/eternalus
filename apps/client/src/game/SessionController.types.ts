@@ -222,8 +222,9 @@ export type SessionControllerDeps = {
    */
   readonly createRosterRng: (seed: number) => Pick<SeededRandom, 'nextInt'>;
   /**
-   * Receives `data-team="light|dark"` while a match setup exists and `data-contrast` (the
-   * catalogue's colour set, DEC-55) while the session runs (`<html>` in the app).
+   * Receives `data-team="light|dark"` while a match setup exists, and `data-contrast` (the
+   * catalogue's colour set, DEC-55) and `data-ui-enhancements` (its UI enhancements,
+   * space-separated, ui-enhancements-plan §2 rule 1) while the session runs (`<html>` in the app).
    */
   readonly themeRoot: Pick<HTMLElement, 'dataset'>;
   /** Builds a match's world from its seed (`prepareMatchWorld` over the page's `GameConfig`). */

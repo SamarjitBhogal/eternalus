@@ -191,14 +191,15 @@ describe('validateGameConfig', () => {
     });
 
     it('accepts a countdown that ends on a fraction mark: the mark is resolved to a tick first', () => {
-      // 450 s is a quarter of the planned 1800 s, so `atFraction: 0.25` is tick 13,500 = 450 * 30.
+      // Fractions count from the countdown's end (DEC-282), so `atFraction: 0` is the end itself:
+      // 450 s * 30 = tick 13,500.
       const config = createDefaultGameConfig({
         match: {
           countdownSeconds: 450,
           timeline: [
             {
               id: 'countdown-over',
-              at: { atFraction: 0.25 },
+              at: { atFraction: 0 },
               action: { kind: 'enter-phase', phase: 'early-game' },
             },
           ],
