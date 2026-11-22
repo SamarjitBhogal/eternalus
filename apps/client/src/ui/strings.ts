@@ -183,6 +183,11 @@ export const STRINGS = {
       'duel-versus': 'Duel versus',
     } satisfies Record<MenuRoute, string>,
   },
+  /**
+   * UE-01: the polite line both countdowns say at 10 and 5 s (the character select's and the
+   * pre-match overlay's), while the `countdown-urgency` enhancement is on.
+   */
+  countdownAlert: (seconds: number): string => `${String(seconds)} seconds left`,
   /** Shown where an action has no binding (`KeyGlyph`, the settings list). */
   unbound: '—',
   /** A value not known yet: a HUD slot's or structure's state (CD-13, DEC-17). */
@@ -289,8 +294,8 @@ export const STRINGS = {
     duelScore: 'Duel score',
     /** "3 - 1" with the target beside it: "first to 10". */
     duelFirstTo: (target: number): string => `first to ${String(target)}`,
-    duelCountdown: 'Match start',
-    duelStart: 'START',
+    matchCountdown: 'Match start',
+    countdownStart: 'START',
     health: 'Health',
     aether: 'Aether',
     level: 'Level',

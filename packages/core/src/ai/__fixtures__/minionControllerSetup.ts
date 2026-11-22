@@ -1,6 +1,7 @@
 import { Transform } from '../../components/Transform';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import type { GameConfig } from '../../config/GameConfig.types';
+import { timelineFrameOf } from '../../config/timelineFrameOf';
 import { loadAggroRules } from '../../content/ai/aggro/loadAggroRules';
 import { loadDefaultContent } from '../../content/loadDefaultContent';
 import { STRUCTURE_DEFINITIONS } from '../../content/structures/structureCatalogue';
@@ -33,7 +34,13 @@ export const controller = new MinionController({
  */
 export const setUp = (config: GameConfig = createDefaultGameConfig()) => {
   const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
-  const state = new GameState(config, 1, matchWorldOf(TWO_LANE_MAP), { space });
+  const state = new GameState(
+    config,
+    1,
+    matchWorldOf(TWO_LANE_MAP),
+    { space },
+    { countdownEndTick: timelineFrameOf(config).countdownEndTick },
+  );
   const factory = new EntityFactory(
     createDefaultEntityRegistry(),
     loadDefaultContent(30),

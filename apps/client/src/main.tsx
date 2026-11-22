@@ -118,6 +118,7 @@ const settings = new SettingsController({
   persistence,
   logger,
   isApplePlatform: isAppleUserAgent(window.navigator.userAgent),
+  themeRoot: document.documentElement,
 });
 const loadouts = new LoadoutController({
   bus: eventBus,
