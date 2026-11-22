@@ -17,6 +17,7 @@ import { Simulation } from './Simulation';
 import type { RosterSlot } from './Simulation.types';
 import { AreaHitQuery } from './state/AreaHitQuery';
 import type { GameState } from './state/GameState';
+import { ReachQuery } from './state/ReachQuery';
 import { LaneRoutes } from './state/LaneRoutes';
 import type { PlayableTeam } from './teams/teams.types';
 import { isPointInPolygon } from './utils/geometry';
@@ -262,7 +263,7 @@ describe('Simulation with a roster and map objects (as the client builds a match
 
     expect(structure).toBeDefined();
     expect(gap(legendAt)).toBeGreaterThan((structure?.transform?.radius ?? 0) + 5);
-    expect(entities.isInReach(legend?.id ?? '', structure?.id ?? '')).toBe(true);
+    expect(new ReachQuery().isInReach(entities, legend?.id ?? '', structure?.id ?? '')).toBe(true);
   });
 
   it('puts a melee Legend at the outside of the palace wall in reach of its Stronghold, past its 40 m circle (DEC-185 D)', () => {
@@ -303,7 +304,7 @@ describe('Simulation with a roster and map objects (as the client builds a match
     const stronghold = ids.find(({ kind, team }) => kind === 'stronghold' && team === 'light');
 
     expect(gap(at)).toBeGreaterThan((stronghold?.transform?.radius ?? 0) + 5);
-    expect(entities.isInReach(legend, stronghold?.id ?? '')).toBe(true);
+    expect(new ReachQuery().isInReach(entities, legend, stronghold?.id ?? '')).toBe(true);
   });
 
   it("puts the palace and gate map objects on their structure's team: an own-team aim at the palace floor hits nothing, an enemy aim names the Stronghold and a sweep hits both (B8, DEC-322 (1))", () => {

@@ -7,6 +7,7 @@ import type { EntityFactory } from '../entities/EntityFactory';
 import type { StrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { AreaHitQuery } from '../state/AreaHitQuery';
+import { ReachQuery } from '../state/ReachQuery';
 import type { HitRunner } from '../state/HitRunner.types';
 import { normalizeInto } from '../utils/vec2';
 import type { MutableVec2 } from '../utils/vec2.types';
@@ -21,7 +22,7 @@ import type { System, SystemContext } from './System.types';
  * Lands the attacks of every unit with a target (architecture 05 §10): when the target is in reach
  * and the attack is off cooldown, the attack's strategy hits it through the damage pipeline. A unit
  * with a target in reach faces it every tick, after `MovementSystem`, so attacking outranks moving
- * (DEC-192): it faces `EntityStore.facingPointOf`, a building's outline point nearest it or a
+ * (DEC-192): it faces `ReachQuery.facingPointOf`, a building's outline point nearest it or a
  * unit's centre (DEC-216 (11)), or a building's centre from inside its outline (DEC-220 (1)). A
  * dead or removed target clears. Statuses stop attacks (`cannot-attack`) and scale the cooldown
  * (`attackSpeed`). The attack strategy runs the attacker's statuses' `onHit` steps where the hit
@@ -51,6 +52,8 @@ export class CombatSystem implements System {
   private readonly factory: EntityFactory;
   /** The one hit rule for areas, which the sweep and the shot apply (stateless). */
   private readonly areas = new AreaHitQuery();
+  /** The one aim rule: reach and the point a unit faces. */
+  private readonly reach = new ReachQuery();
 
   /** Creates the system from its injected parts (`CombatSystemOptions`). */
   public constructor({
@@ -69,7 +72,7 @@ export class CombatSystem implements System {
    * Runs each attacker in store order.
    *
    * @throws Error when an attacker in reach of its target has no point to face on it (a broken
-   *   `EntityStore` invariant: `isInReach` and `facingPointOf` measure to the same point).
+   *   `ReachQuery` invariant: `isInReach` and `facingPointOf` measure to the same point).
    */
   public update({ state }: SystemContext): void {
     if (state.match.isIdleHeld) {
@@ -98,11 +101,11 @@ export class CombatSystem implements System {
       if (statuses?.has('cannot-attack') === true) {
         return;
       }
-      if (!state.entities.isInReach(attacker.id, target.id)) {
+      if (!this.reach.isInReach(state.entities, attacker.id, target.id)) {
         return;
       }
       const transform = attacker.getComponent(Transform);
-      if (!state.entities.facingPointOf(attacker.id, target.id, this.facePoint)) {
+      if (!this.reach.facingPointOf(state.entities, attacker.id, target.id, this.facePoint)) {
         // `isInReach` above already found the point reach is measured to.
         throw new Error(
           `Entity "${attacker.id}" has no point to face on its target "${target.id}".`,

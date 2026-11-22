@@ -16,7 +16,7 @@ export interface LineOfFireQuery {
    * (`AreaHitQuery.stopsShot`, `isTouchedBeforeWall`). Units on the line are not read: they may
    * move; nor are other bodies that take damage, since the shot lands on them. `true`
    * for an attack that fires no projectile (melee), an unknown attacker or target, a target with no
-   * point to aim at (`EntityStore.aimPointOf` gives `null`), and a match with no collision rule,
+   * point to aim at (`ReachQuery.aimPointOf` gives `null`), and a match with no collision rule,
    * so a melee unit is never held back by it.
    */
   isClear(state: GameState, attackerId: EntityId, targetId: EntityId): boolean;

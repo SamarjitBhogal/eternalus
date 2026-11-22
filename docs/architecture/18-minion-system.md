@@ -442,7 +442,7 @@ called by `PathingSystem` (10 §9). `PathingSystem` reads the mob's `Combat.targ
   plans a tick, are `STUCK_DETECTION` in `content/ai/stuckDetection.ts`). A chase of a target
   with an outline (a map object, or a structure with a `Footprint`: a lane tower's fort, the
   Stronghold's palace, a gate, 07 §13) aims at the nearest point of its outline, the point attack
-  reach is measured to (`EntityStore.aimPointOf`); a mob that stands inside the outline is in reach
+  reach is measured to (`ReachQuery.aimPointOf`); a mob that stands inside the outline is in reach
   already, so it holds there, as every chase stops at reach (DEC-234); it faces the building's
   centre (DEC-220 (1)). The blocked
   ground under the target (a fort's cells, under the structure or under a unit inside its court,

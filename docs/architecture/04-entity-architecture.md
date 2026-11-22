@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-22
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -152,12 +152,12 @@ the unit's own walking. Forced motion (a dash or a knock-back) moves it and does
 (DEC-264). A
 unit with an attack target in reach faces the target instead, as `CombatSystem` runs after
 `MovementSystem`, unless a status stops its attacks (`cannot-attack`). It faces the spot where it
-deals damage: the point attack reach is measured to (`EntityStore.aimPointOf`), which is the point
+deals damage: the point attack reach is measured to (`ReachQuery.aimPointOf`), which is the point
 of a building's outline nearest the unit, not the building's centre, and a unit target's centre
 (DEC-216 (11)). A unit inside a building's outline faces the building's centre instead (DEC-220
 (1)). Its aim point is where it stands: it is in reach, and a chase holds there (DEC-234). A
 fort's court is outside every outline (its walls and keep), so a unit in the court faces the spot
-it damages (DEC-226). `EntityStore.facingPointOf` holds this facing rule on top of the one aim
+it damages (DEC-226). `ReachQuery.facingPointOf` holds this facing rule on top of the one aim
 rule that reach and chase share. A zero direction, and a point equal to the unit's own position, keep the facing. Core
 turns at once. The client blends the facing between two ticks ([08 §8](08-game-engine.md)). The
 invariant `finite-transforms` checks the position and the facing

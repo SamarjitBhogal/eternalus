@@ -9,22 +9,13 @@ import { Health } from '../components/Health';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { Movement } from '../components/Movement';
 import type { Outline } from '../components/Outline.types';
-import { Transform } from '../components/Transform';
 import { TeamMembership } from '../components/TeamMembership';
 import type { AbilitySlot } from '../content/abilities/AbilityDefinition.types';
 import type { AttackMode } from '../content/units/units.types';
 import type { Team } from '../teams/teams.types';
-import { distance, isPointInAnyPolygon, nearestPointOnPolygons } from '../utils/geometry';
 import type { Vec2 } from '../utils/geometry.types';
-import type { MutableVec2 } from '../utils/vec2.types';
 import type { Entity } from '../entities/Entity';
-import type {
-  AimedAt,
-  EntityClass,
-  EntityId,
-  RemovalCause,
-  RemovalRecord,
-} from './EntityStore.types';
+import type { EntityClass, EntityId, RemovalCause, RemovalRecord } from './EntityStore.types';
 
 /**
  * Every live entity of a match, kept in insertion order. Systems iterate with `forEach`, so the
@@ -36,8 +27,6 @@ export class EntityStore {
   private readonly removals: RemovalRecord[] = [];
   private added = 0;
   private sizeAtStart = 0;
-  /** Scratch for `isInReach`'s aim point. */
-  private readonly aim: MutableVec2 = { x: 0, y: 0 };
 
   /** Number of live entities. */
   public get size(): number {
@@ -138,93 +127,14 @@ export class EntityStore {
   }
 
   /**
-   * Whether `targetId` is within `attackerId`'s attack reach, measured edge to edge between the
-   * two footprints (architecture 05 §10) to the point `aimPointOf` gives: on the target's outline
-   * when it has one (`outlineOf`: a map object, or a lane tower's fort, DEC-185), standing inside
-   * an outline counting as in reach; else to its collider circle. `false` when either is unknown,
-   * either has no `Transform`, or the attacker cannot attack.
-   */
-  public isInReach(attackerId: EntityId, targetId: EntityId): boolean {
-    const attacker = this.entities.get(attackerId);
-    const combat = attacker?.findComponent(Combat);
-    const from = attacker?.findComponent(Transform);
-    const to = this.entities.get(targetId)?.findComponent(Transform);
-    if (combat === undefined || from === undefined || to === undefined) {
-      return false;
-    }
-    const aimed = this.aimPointOf(targetId, from.position, this.aim);
-    if (aimed === null) {
-      return false;
-    }
-    if (aimed === 'centre') {
-      const gap = distance(from.position, this.aim);
-      return gap - from.radius - to.radius <= combat.attack.reach;
-    }
-    return distance(from.position, this.aim) <= from.radius + combat.attack.reach;
-  }
-
-  /**
-   * The outline attack reach to `id` is measured to, a chase of it aims at and a shot hits: its
-   * `MapObjectBody`, else its structure `Footprint` (a lane tower's fort, the Stronghold's palace,
-   * DEC-185; a gate's outline, DEC-217 (17)). `undefined` for a body that is only its collider
-   * circle, or an unknown id.
+   * The outline attack reach to `id` is measured to, a chase of it aims at and a shot hits
+   * (`ReachQuery`): its `MapObjectBody`, else its structure `Footprint` (a lane tower's fort, the
+   * Stronghold's palace, DEC-185; a gate's outline, DEC-217 (17)). `undefined` for a body that is
+   * only its collider circle, or an unknown id.
    */
   public outlineOf(id: EntityId): Outline | undefined {
     const entity = this.entities.get(id);
     return entity?.findComponent(MapObjectBody) ?? entity?.findComponent(Footprint);
-  }
-
-  /**
-   * Writes into `out` the point of `targetId` that attack reach from `from` is measured to, which a
-   * chase heads for (`StuckSystem`, `PathingSystem`): `from` itself when it stands inside the
-   * target's outline (`outlineOf`), so it is in reach and a chase holds there (DEC-234); else the
-   * point of the outline nearest `from`; else the target's centre (reach then also spans its
-   * collider radius). An attacker outside the outline faces this point (`facingPointOf`, DEC-216
-   * (11)). Returns what it aimed at (`AimedAt`), so the inside test runs only here, or
-   * `null`, leaving `out` as it was, when the target is unknown, has no position, or its outline
-   * has no corners.
-   */
-  public aimPointOf(targetId: EntityId, from: Vec2, out: MutableVec2): AimedAt | null {
-    const outline = this.outlineOf(targetId)?.polygons;
-    if (outline !== undefined) {
-      if (isPointInAnyPolygon(from, outline)) {
-        out.x = from.x;
-        out.y = from.y;
-        return 'inside';
-      }
-      return nearestPointOnPolygons(from, outline, out) === Number.POSITIVE_INFINITY
-        ? null
-        : 'outline';
-    }
-    const at = this.entities.get(targetId)?.findComponent(Transform)?.position;
-    if (at === undefined) {
-      return null;
-    }
-    out.x = at.x;
-    out.y = at.y;
-    return 'centre';
-  }
-
-  /**
-   * Writes into `out` the point `attackerId` faces while it attacks `targetId`: the aim point
-   * (`aimPointOf`, DEC-216 (11)), except that an attacker standing inside the target's outline,
-   * whose aim point is where it stands (DEC-234), faces the target's centre (DEC-220 (1)). A
-   * fort's court is outside its outline, so a unit there faces the aim point (DEC-226). Reach and
-   * chase keep `aimPointOf`. `false`, leaving `out` as it was, when either has no position or the
-   * target has no aim point.
-   */
-  public facingPointOf(attackerId: EntityId, targetId: EntityId, out: MutableVec2): boolean {
-    const from = this.entities.get(attackerId)?.findComponent(Transform)?.position;
-    const centre = this.entities.get(targetId)?.findComponent(Transform)?.position;
-    if (from === undefined || centre === undefined) {
-      return false;
-    }
-    const aimed = this.aimPointOf(targetId, from, out);
-    if (aimed === 'inside') {
-      out.x = centre.x;
-      out.y = centre.y;
-    }
-    return aimed !== null;
   }
 
   /**

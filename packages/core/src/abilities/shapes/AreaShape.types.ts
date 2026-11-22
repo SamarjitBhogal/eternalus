@@ -24,7 +24,7 @@ export interface AreaShape<S extends ShapeSpec = ShapeSpec> {
   overlaps(shape: S, placement: ShapePlacement, point: Vec2, radius: number): boolean;
   /**
    * Whether `polygon` (one footprint of a map object: a house, a wall, a fort) overlaps `shape`
-   * placed at `placement`, measured to its outline as basic attacks are (`EntityStore.isInReach`).
+   * placed at `placement`, measured to its outline as basic attacks are (`ReachQuery.isInReach`).
    */
   overlapsPolygon(shape: S, placement: ShapePlacement, polygon: Polygon): boolean;
   /**
