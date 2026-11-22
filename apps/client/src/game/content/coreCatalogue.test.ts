@@ -93,6 +93,11 @@ describe('coreCatalogue', () => {
     expect(catalogue.classSelectLayout).toBe('primary');
   });
 
+  // ui-enhancements-plan §2 rule 1: every built enhancement is on by default (DEC-100, DEC-282).
+  it('turns every built UI enhancement on by default', () => {
+    expect(catalogue.uiEnhancements).toEqual(['countdown-urgency']);
+  });
+
   it("takes the profile screen's name from core content", () => {
     expect(catalogue.profileDisplayName).toBe(CONTENT.profileDisplayName);
   });
@@ -161,7 +166,7 @@ describe('coreCatalogue', () => {
   });
 
   it('has no plate reference at all on the css renderer', () => {
-    const css = shippedCatalogue({ effectsRenderer: 'css' }).load();
+    const css = shippedCatalogue({ ...NO_DISPLAY_OVERRIDES, effectsRenderer: 'css' }).load();
     const plateIds = ASSET_MANIFEST.assets
       .filter(
         (entry) => entry.group === 'selection-raster' || entry.group === 'selection-primary-raster',

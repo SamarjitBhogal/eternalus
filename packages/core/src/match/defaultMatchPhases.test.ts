@@ -13,6 +13,7 @@ const fieldsOf = (match: MatchState): MatchState => ({
   phaseEnteredTick: match.phaseEnteredTick,
   timelineCursor: match.timelineCursor,
   schedule: match.schedule,
+  countdownEndTick: match.countdownEndTick,
   isIdleHeld: match.isIdleHeld,
   playerTeam: match.playerTeam,
   humanLegendId: match.humanLegendId,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { timelineFrameOf } from '../config/timelineFrameOf';
 import type { GameConfig } from '../config/GameConfig.types';
 import type { MatchPhase } from '../config/matchPhases';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../config/matchPhases';
@@ -103,7 +104,16 @@ const setUp = (
     defeat: record('defeat'),
   };
   const timeline = new MatchTimeline(entries);
-  const state = new GameState(config, 1, null, {}, timeline.schedule());
+  const state = new GameState(
+    config,
+    1,
+    null,
+    {},
+    {
+      schedule: timeline.schedule(),
+      countdownEndTick: timelineFrameOf(config).countdownEndTick,
+    },
+  );
   const logger = new MemoryLogger();
   const director = new MatchDirector({
     phases,
@@ -290,6 +300,7 @@ describe('MatchDirector', () => {
         playerTeam: 'light',
         hadHuman: false,
         durationTicks: 13,
+        matchTicks: 0,
         seed: 1,
         configHash: expect.any(Number) as number,
         legends: [],
@@ -302,6 +313,19 @@ describe('MatchDirector', () => {
       // Taken before the result is stored and the terminal phase entered: the hash moved since.
       expect(state.match.result?.finalHash).not.toBe(new StateHasher().hash(state));
       expect(state.match.result?.durationTicks).toBe(state.tick);
+    });
+
+    it('counts the match time from the countdown end; 0 when it ends during the countdown (DEC-278, DEC-282)', () => {
+      const config = createDefaultGameConfig({ match: { countdownSeconds: 0.1 } }); // 3 ticks
+      const { state, stepTo } = setUp(FAKE_TIMELINE, true, {
+        conditions: [new ScriptedCondition(LIGHT_WINS)],
+        config,
+      });
+
+      stepTo(12);
+
+      expect(state.match.result?.durationTicks).toBe(13);
+      expect(state.match.result?.matchTicks).toBe(10);
     });
 
     it('folds the scoring after the phase update and before it ends the match, once per tick', () => {
