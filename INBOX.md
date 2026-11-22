@@ -635,6 +635,13 @@ Reply inline (`Decision: …`).
       content data (BTD-B), one shared intent rule for the client and the Duel server (BTD-E),
       one reusable "first source with the id" definition lookup for `Simulation` and about ten
       tests (BTD-H).
+  - Answered 2026-11-22 for (1) to (8) (Owner Calls v40, DEC-317 addendum): "C: leave shots going
+    into walls; schedule (4)", with a note on the weapon model ("I can shoot my bow or my staff at
+    a rock if i want"). (4) is replaced: every unit fires without a line-of-fire check, and a bot
+    whose shot is blocked drops its lock and moves for a clear shot (scheduled to PR 2 by the
+    coordinator under the standing rule). (5) is replaced: a body that takes no damage stops every
+    shot and takes no damage. Built in PR 2 (`feat/melee-sweeps`). Still open: BTD-B, BTD-E and
+    BTD-H (they were not on the card).
 
 - [x] **HC-B25 — A rule the design did not state, built under your standing rule (DEC-223),
       sign-off asked: what a melee sweep passes over (`feat/melee-sweeps`, PR 2, 2026-11-21;
@@ -650,7 +657,7 @@ Reply inline (`Decision: …`).
   - Re-asked 2026-11-21 as HC-Q76: this question did not say that PR 2 removes the player's lock,
     so the 'A' answer was given on incomplete facts. Not Sam's error.
 
-- [ ] **HC-Q76 — Correction to HC-B25: with aimed attacks, a player's weapon cannot hit the
+- [x] **HC-Q76 — Correction to HC-B25: with aimed attacks, a player's weapon cannot hit the
       Stronghold, the palace or a gate (`feat/melee-sweeps`, PR 2).** Your "A" on HC-B25 said a
       sweep passes over a walk-on floor or a no-damage body "unless you lock onto it". The
       question did not say that PR 2 also removes the player's lock: the attack button aims, it
@@ -664,8 +671,12 @@ Reply inline (`Decision: …`).
       Duel server only; the attack then follows the building, not the cursor); (D) keep as
       built: weapons never hit these bodies. Answer will be recorded as DEC-322. Asked on Owner
       Calls v35, 2026-11-21, COMBAT-WEAPONS-ABILITIES-50.
+  - Answered 2026-11-22 (DEC-322 (1), Owner Calls v40): "A: aim at it to hit it". Reading, from
+    the HC-Q78 note ("if a character is standing in a room and sweeps their sword one time, it
+    shouldnt bring the roof down on them"): the aim counts only while the attacker stands outside
+    the outline (option B's condition). Built in PR 2.
 
-- [ ] **HC-Q77 — What the AI counts as "attacking" when the player aims (`feat/melee-sweeps`,
+- [x] **HC-Q77 — What the AI counts as "attacking" when the player aims (`feat/melee-sweeps`,
       PR 2).** Minions, tower guards and the leash help call read whom a unit attacks from its
       lock. The player has no lock now, so for the AI the player attacks nobody: guards and
       minions do not turn on a player who attacks their Legend, the leash help call never fires
@@ -677,8 +688,13 @@ Reply inline (`Decision: …`).
       with a new short window (a new TUNE number); covers only Legend attacks on Legends; (D)
       leave it and schedule the fix. Asked on Owner Calls v35, 2026-11-21,
       COMBAT-WEAPONS-ABILITIES-50.
+  - Answered 2026-11-22 (DEC-322 (2), Owner Calls v40), note only: the owner's weapon model,
+    which ends "Player do attack and hit enemy. Enemy hurt. Enemy fight back. Nearby enemy help
+    attacking enemy do attack if nearby enemy not already defending self or attacking someone
+    else." Reading: option A (a unit attacks each body its last attack hit, until its next attack
+    is due). Built in PR 2. Samarjit: FYI below.
 
-- [ ] **HC-Q78 — Better than the design: one hit rule for weapon areas and ability areas
+- [x] **HC-Q78 — Better than the design: one hit rule for weapon areas and ability areas
       (`feat/melee-sweeps`, PR 2).** Two pieces of code answer "which bodies does this area
       touch": the weapon sweep and the ability target query. They already disagree: an ability
       tests a tower's fort as a circle, not its outline, and hits a walk-on floor (an ability
@@ -691,6 +707,28 @@ Reply inline (`Decision: …`).
       change, and lane B must merge it; (B, recommended) the same design, built with the cone
       (lane B PR 6; scheduled, so not deferred debt); (C) keep two rules. Asked on Owner Calls
       v35, 2026-11-21, recommendation changed from A to B in v37, COMBAT-WEAPONS-ABILITIES-50.
+  - Answered 2026-11-22 (DEC-322 (3), Owner Calls v40): "A: one rule, build it in PR 2", note
+    "Whatever is best architecturally. Also "walk-on floors" shouldnt take damage." Built in PR 2;
+    lane B merges it.
+
+- [x] **Owner Calls card `attack-click-hold` — Clicking and holding the attack button
+      (`feat/melee-sweeps`, PR 2).** Asked on Owner Calls v40, 2026-11-22. Answered the same day
+      (DEC-326 (1)): "C (click during recovery is lost) but holding also keeps attacking ...
+      Basically disables the attack button while the attack is attacking and recovering but a
+      hold just attacks again if still held when the recovery is done." This is the behaviour
+      built in DEC-319 (5) and (6); no change.
+
+- [x] **Owner Calls card `busy-minion-help` — A busy minion and a call for help
+      (`feat/melee-sweeps`, PR 2).** Asked on Owner Calls v40, 2026-11-22. Answered the same day
+      (DEC-326 (2)): "A: a busy minion finishes its own fight; only minions that are not fighting
+      come to help". Built in PR 2 (`LeashBehaviour.engage`).
+
+- [ ] **FYI for Samarjit (minion AI owner): two changes to minion AI in PR 2
+      (`feat/melee-sweeps`).** Nothing to decide. (1) DEC-326 (2): a minion that is already
+      fighting does not leave its fight for a call for help or a better-ranked enemy; only
+      minions that are not fighting come to help. (2) DEC-322 (2): a player who hits a unit counts
+      as attacking it until the player's next attack is due, so guards and minions answer a
+      player's hits (`EntityStore.attackTargetOf`). Tick this item when Samarjit has read it.
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
