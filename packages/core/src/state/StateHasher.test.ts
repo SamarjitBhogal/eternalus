@@ -135,7 +135,7 @@ describe('StateHasher', () => {
     statuses.apply(veil, null, 0);
     const whole = hasher.hash(state);
 
-    statuses.breakOnDamage(0);
+    statuses.breakOnHit(0);
     expect(hasher.hash(state)).not.toBe(whole);
 
     statuses.apply(veil, null, 0);

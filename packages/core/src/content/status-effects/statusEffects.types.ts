@@ -78,11 +78,13 @@ type StatusEffectBase = {
    */
   readonly grants?: string;
   /**
-   * Whether the status ends when its holder deals or takes damage (Veil, DEC-267): any
-   * `damage-applied` that names the holder as target or attacker, bleed ticks included.
-   * `StatusEffectSystem` removes it in its next pass; absent = it does not.
+   * Whether the status ends when its holder hits or is hit (Veil, DEC-267, DEC-327): a
+   * `damage-applied` that names the holder as target or attacker, except a periodic status tick
+   * (a bleed), and a `status-applied` of a debuff from another entity, on the one struck and on
+   * the one credited. `StatusEffectSystem` holds the rule and removes it in its next pass;
+   * absent = it does not.
    */
-  readonly endsOnDamage?: boolean;
+  readonly endsOnHit?: boolean;
 };
 
 /**

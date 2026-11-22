@@ -95,22 +95,22 @@ describe('StatusEffects', () => {
     expect(statuses.multiplier('damageDealt')).toBe(1);
   });
 
-  it('stops counting a status that damage broke at once, keeps it listed, and counts it again once reapplied (DEC-267)', () => {
+  it('stops counting a status that a hit broke at once, keeps it listed, and counts it again once reapplied (DEC-327)', () => {
     const statuses = new StatusEffects();
     const brittle = loadStatusEffects(30, 2, [
       {
         ...CONCUSSION,
         id: 'brittle',
         modifiers: [{ stat: 'moveSpeed', op: 'mul', value: 0.5 }],
-        endsOnDamage: true,
+        endsOnHit: true,
       },
     ]).get('brittle');
     statuses.apply(STUN, 'a', 0);
-    expect(statuses.breakOnDamage(0)).toBe(false);
+    expect(statuses.breakOnHit(0)).toBe(false);
 
     statuses.apply(LOADED.get('invisible'), 'a', 0);
     statuses.apply(brittle, 'a', 0);
-    expect(statuses.breakOnDamage(0)).toBe(true);
+    expect(statuses.breakOnHit(0)).toBe(true);
 
     expect(statuses.has('untargetable')).toBe(false);
     expect(statuses.has('hidden')).toBe(false);
