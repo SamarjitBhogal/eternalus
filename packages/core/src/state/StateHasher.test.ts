@@ -436,9 +436,15 @@ describe('StateHasher', () => {
     expect(hasher.hash(state)).not.toBe(before);
   });
   it('hashes an untouched match as tick, phase and RNG only, as before the match fields existed', () => {
-    const state = new GameState(createDefaultGameConfig(), 1, null, {}, [
-      { entryId: 'later', tick: 9 },
-    ]);
+    const state = new GameState(
+      createDefaultGameConfig(),
+      1,
+      null,
+      {},
+      {
+        schedule: [{ entryId: 'later', tick: 9 }],
+      },
+    );
 
     expect(hasher.hash(state)).toBe(
       fnv1a(JSON.stringify([0, 'countdown', state.rng.getState(), []])),

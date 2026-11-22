@@ -9,6 +9,7 @@
  */
 import path from 'node:path';
 
+import { isLintable } from './changedFiles.mjs';
 import { editedFile, isInside, readHookInput, repoRoot, run, tail } from './hookInput.mjs';
 
 const FORMATTABLE = new Set([
@@ -23,7 +24,6 @@ const FORMATTABLE = new Set([
   '.yml',
   '.yaml',
 ]);
-const LINTABLE = new Set(['.ts', '.tsx', '.js', '.mjs', '.cjs']);
 
 const input = await readHookInput();
 const root = repoRoot(input);
@@ -37,7 +37,7 @@ const extension = path.extname(file).toLowerCase();
 const relativePath = path.relative(root, path.resolve(root, file));
 
 if (FORMATTABLE.has(extension)) {
-  const prettier = run(
+  const prettier = await run(
     'npx',
     ['--no-install', 'prettier', '--write', '--log-level', 'warn', relativePath],
     {
@@ -53,11 +53,15 @@ if (FORMATTABLE.has(extension)) {
   }
 }
 
-if (LINTABLE.has(extension)) {
-  const eslint = run('npx', ['--no-install', 'eslint', '--max-warnings', '0', relativePath], {
-    cwd: root,
-    timeoutMs: 90_000,
-  });
+if (isLintable(file)) {
+  const eslint = await run(
+    'npx',
+    ['--no-install', 'eslint', '--max-warnings', '0', '--no-warn-ignored', relativePath],
+    {
+      cwd: root,
+      timeoutMs: 90_000,
+    },
+  );
   if (eslint.status !== 0) {
     process.stderr.write(
       `[post-edit] ESLint failed for ${relativePath}. Fix every finding (no eslint-disable without a named rule and a reason):\n${tail(eslint.output, 60)}\n`,
@@ -67,6 +71,6 @@ if (LINTABLE.has(extension)) {
 }
 
 process.stdout.write(
-  `[post-edit] ${relativePath}: formatted${LINTABLE.has(extension) ? ' and lint-clean' : ''}.\n`,
+  `[post-edit] ${relativePath}: formatted${isLintable(file) ? ' and lint-clean' : ''}.\n`,
 );
 process.exit(0);

@@ -59,7 +59,7 @@ export function CharacterSelectScreen(): ReactElement {
           title={STRINGS.characterSelect.bannerTitle}
           bannerAssetId={bannerAssetId}
         />
-        <SessionCountdown kind="select" label={STRINGS.characterSelect.countdownLabel} />
+        <SessionCountdown kind="select" label={STRINGS.characterSelect.countdownLabel} hasUrgency />
         <TeamBadge team={team} />
       </SelectionStage>
     </ScreenFrame>

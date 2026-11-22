@@ -68,7 +68,13 @@ class FakeSimulationEvents implements Pick<Simulation, 'on'> {
 
 const snapshotAt = (tick: number, entities: readonly EntitySnapshot[] = []): Snapshot => ({
   tick,
-  match: { phase: 'early-game', phaseEnteredTick: 0, upcoming: [], humanLegendId: null },
+  match: {
+    phase: 'early-game',
+    phaseEnteredTick: 0,
+    upcoming: [],
+    countdownEndTick: 0,
+    humanLegendId: null,
+  },
   player: null,
   entities,
   hordes: [],
@@ -169,7 +175,7 @@ describe('MatchBridge', () => {
     bridge.publishAll(snapshotAt(0), null);
 
     expect(order).toEqual(['structure-state', 'capture-state', 'match-clock', 'hud-state']);
-    expect(clocks).toEqual([{ tick: 0, seconds: 0 }]);
+    expect(clocks).toEqual([{ tick: 0, seconds: 0, countdown: null }]);
     expect(huds).toEqual([{ player: null }]);
   });
 
@@ -523,7 +529,7 @@ describe('MatchBridge', () => {
 
   it("publishes match-ended once, after the ending tick's other events, with its length", () => {
     const { bridge, order, endings, simulation } = setUp();
-    const result = matchResultFixture({ durationTicks: 3600 });
+    const result = matchResultFixture({ durationTicks: 3600, matchTicks: 3600 });
     expect(bridge.afterTick(snapshotAt(5), null)).toBe(false);
 
     simulation.emit('match-ended', { result });
@@ -549,6 +555,67 @@ describe('MatchBridge', () => {
   });
 });
 
+/** A local match's snapshot at `tick`, with its countdown ending on `COUNTDOWN_END`. */
+const COUNTDOWN_END = 300;
+const countdownSnapshot = (tick: number, phase: 'countdown' | 'early-game'): Snapshot => ({
+  ...snapshotAt(tick),
+  match: {
+    ...snapshotAt(tick).match,
+    phase,
+    phaseEnteredTick: phase === 'countdown' ? 0 : COUNTDOWN_END,
+    countdownEndTick: COUNTDOWN_END,
+  },
+});
+
+describe('MatchBridge: the countdown (DEC-278)', () => {
+  const clockAt = (snapshot: Snapshot) => {
+    const { bridge, clocks } = setUp();
+    bridge.publishAll(snapshot, null);
+    return clocks[0];
+  };
+
+  it.each([
+    [0, 10],
+    [150, 5],
+    [270, 1],
+    [299, 1],
+  ])('counts the 10 s countdown down number by number: tick %i shows %i', (tick, shown) => {
+    expect(clockAt(countdownSnapshot(tick, 'countdown'))).toEqual({
+      tick,
+      seconds: 0,
+      countdown: shown,
+    });
+  });
+
+  it('shows no START in a local match: the overlay goes when the countdown ends', () => {
+    expect(clockAt(countdownSnapshot(COUNTDOWN_END, 'countdown'))?.countdown).toBeNull();
+    expect(clockAt(countdownSnapshot(COUNTDOWN_END + 1, 'early-game'))?.countdown).toBeNull();
+  });
+
+  it('counts match time from the countdown end, not from tick 0', () => {
+    expect(clockAt(countdownSnapshot(COUNTDOWN_END, 'countdown'))?.seconds).toBe(0);
+    expect(clockAt(countdownSnapshot(COUNTDOWN_END + 60, 'early-game'))?.seconds).toBe(2);
+  });
+
+  it('shows no countdown once the countdown phase is over, even before its end tick', () => {
+    expect(clockAt(countdownSnapshot(150, 'early-game'))).toEqual({
+      tick: 150,
+      seconds: 0,
+      countdown: null,
+    });
+  });
+
+  it('publishes the match length without the countdown', () => {
+    const { bridge, endings, simulation } = setUp();
+    const result = matchResultFixture({ durationTicks: 3600, matchTicks: 3000 });
+    simulation.emit('match-ended', { result });
+    bridge.afterTick(countdownSnapshot(3600, 'early-game'), null);
+
+    // The length is the result's match time (DEC-278, DEC-282), not derived from the snapshot.
+    expect(endings).toEqual([{ result, durationSeconds: 100 }]);
+  });
+});
+
 describe('MatchBridge: a Duel', () => {
   const duelSnapshot = (tick: number, phase: 'countdown' | 'early-game', phaseEnteredTick = 0) => ({
     ...snapshotAt(tick, [{ ...PLAYER, team: 'dark' }]),
@@ -556,22 +623,23 @@ describe('MatchBridge: a Duel', () => {
       phase,
       phaseEnteredTick,
       upcoming: phase === 'countdown' ? [{ entryId: 'countdown-over', tick: 90 }] : [],
+      countdownEndTick: 90,
       humanLegendId: null,
       duel: { kills: { light: 3, dark: 1 }, killTarget: 10 },
     },
   });
 
   const publishedAt = (snapshot: Snapshot) => {
-    const { bridge, bus } = setUp();
+    const { bridge, bus, clocks } = setUp();
     const states: BridgeEventMap['duel-state'][] = [];
     bus.on('duel-state', (state) => states.push(state));
     bridge.publishAll(snapshot, 'player-1');
-    return states;
+    return { states, countdown: clocks[0]?.countdown };
   };
 
   it("publishes the score from the player's side", () => {
-    expect(publishedAt(duelSnapshot(120, 'early-game', 90))).toEqual([
-      { ownKills: 1, opponentKills: 3, killTarget: 10, countdown: null },
+    expect(publishedAt(duelSnapshot(120, 'early-game', 90)).states).toEqual([
+      { ownKills: 1, opponentKills: 3, killTarget: 10 },
     ]);
   });
 
@@ -581,15 +649,16 @@ describe('MatchBridge: a Duel', () => {
     [60, 1],
     [89, 1],
   ])('counts the countdown down number by number: tick %i shows %i', (tick, shown) => {
-    expect(publishedAt(duelSnapshot(tick, 'countdown'))[0]?.countdown).toBe(shown);
+    expect(publishedAt(duelSnapshot(tick, 'countdown')).countdown).toBe(shown);
   });
 
   it('shows START (0) for the first second after the countdown, then nothing', () => {
-    expect(publishedAt(duelSnapshot(100, 'early-game', 90))[0]?.countdown).toBe(0);
-    expect(publishedAt(duelSnapshot(121, 'early-game', 90))[0]?.countdown).toBeNull();
+    expect(publishedAt(duelSnapshot(90, 'countdown')).countdown).toBe(0);
+    expect(publishedAt(duelSnapshot(119, 'early-game', 90)).countdown).toBe(0);
+    expect(publishedAt(duelSnapshot(120, 'early-game', 90)).countdown).toBeNull();
   });
 
   it('publishes nothing outside a Duel', () => {
-    expect(publishedAt(snapshotAt(0, [PLAYER]))).toEqual([]);
+    expect(publishedAt(snapshotAt(0, [PLAYER])).states).toEqual([]);
   });
 });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
-import { SCORING } from '../content/match/scoring';
+import { loadScoring } from '../content/match/loadScoring';
 import { GameEvents } from '../state/GameEvents';
 import { createDefaultScoringRules } from './defaultScoringRules';
 import { CaptureHoldRule } from './rules/CaptureHoldRule';
@@ -13,8 +13,7 @@ import { StructureDestroyedRule } from './rules/StructureDestroyedRule';
 import { StructureHitRule } from './rules/StructureHitRule';
 
 const rules = createDefaultScoringRules(
-  SCORING,
-  createDefaultGameConfig().tickRate,
+  loadScoring(createDefaultGameConfig().tickRate),
   new GameEvents(() => 0),
 );
 

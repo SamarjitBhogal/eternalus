@@ -1,4 +1,5 @@
 import type { CollisionQuery } from './CollisionQuery.types';
+import type { ScheduledMark } from './MatchState.types';
 import type { PathQuery } from './PathQuery.types';
 import type { SpaceQuery } from './SpaceQuery.types';
 
@@ -27,6 +28,17 @@ export type TeamState = {
    * `enraged` stack per loss, and each loss moves the enemy's base-stat point toward it (DISC-24).
    */
   readonly towersLostByLane: Readonly<Record<string, number>>;
+};
+
+/** The match's timing, resolved from its config by `Simulation` (none in most unit tests). */
+export type GameStateTiming = {
+  /** The resolved timeline (`MatchTimeline`) as plain marks; empty when no director runs. */
+  readonly schedule?: readonly ScheduledMark[];
+  /**
+   * The tick the pre-match countdown ends (`timelineFrameOf`); 0, no countdown, when not given.
+   * Passed in because `state/` imports only types from `config/` (architecture 02 §3; DEC-286).
+   */
+  readonly countdownEndTick?: number;
 };
 
 /** The match's spatial indexes, built by `Simulation` (none in most unit tests). */

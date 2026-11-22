@@ -684,9 +684,10 @@ Reply inline (`Decision: …`).
       (c) needs Sam's sign-off now and is replaced by phase-3 sprint 3.6's `BossController`, (d)
       partly built, (e) awaits the owner and Sam.** (a) The boss
       spawns at the default timeline's quarter mark (440 s after the countdown ends, 2026-11-12;
+      450 s since DEC-282 (1) counts the marks from the countdown's end, 2026-11-20;
       `guardPlans.test.ts` derives it from `createDefaultGameConfig`'s `quarter-mark` entry), but
       through its guard plan's `delaySeconds`, not `MatchTimeline`: a match with another
-      `plannedMatchSeconds` or countdown keeps 440 s. Reference 04 and 07 §7 schedule it from the
+      `plannedMatchSeconds` keeps 450 s. Reference 04 and 07 §7 schedule it from the
       match timeline; only that mechanism is still interim. (b) **Built 2026-11-12 (PR #99 review
       F8):** while the boss lives its zone cannot be captured, as reference 04 says:
       `CaptureSystem` sets `lockedBy` from the zone's guard posts (`content/zones/zoneLocks.ts`)
@@ -820,7 +821,7 @@ Reply inline (`Decision: …`).
     signed off: the time check in the aggro, stuck, veterancy and guard loaders (the 2026-11-12
     critic) and #86's healing times as DEC-241's sixth reader.
 
-- [ ] **HC-B9 — Better than the design, not built, sign-off asked: two older times not read once at
+- [x] **HC-B9 — Better than the design, not built, sign-off asked: two older times not read once at
       load (`refactor/durations-at-load` merge critic, 2026-11-19); no decision blocks the PR.**
       Both are older than PR #125 and keep their values.
       (1) **One countdown-end tick.** Three readers each compute the tick the countdown ends with
@@ -834,6 +835,18 @@ Reply inline (`Decision: …`).
       Proposal: a scoring loader turns it into ticks and rejects a negative or non-finite value,
       as `loadGuardPlans` does.
       Build both in PR #125, build them in a later PR, or keep the code as it is?
+  - Answered 2026-11-20 (Owner Calls page, DEC-285): "Approve both: (1) in the DEC-278 countdown
+    PR, which already touches every reader; (2) in a follow-up PR". (1) **Built** on
+    `feat/match-start-countdown`: the tick is `MatchState.countdownEndTick`, set once when the
+    match is built; every runtime reader reads it (the three above, and `MatchDirector` and the
+    snapshot, which that branch added). Built with it, critic round 2's BTD4: `timelineMarkTick`
+    takes a named `TimelineFrame`. (2) **Built** on `refactor/scoring-at-load` (PR #139): `content/match/loadScoring.ts`
+    turns `assistWindowSeconds` into `assistWindowTicks` once and rejects a negative or non-finite
+    window; `Simulation` passes the loaded value, and the scoring rules see only ticks. Same
+    conversion as before (30 s = 900 ticks). With it, under the standing rule, the critic's two
+    better-than-design items (DEC-287): the loader also turns the held minute into ticks, so
+    `createDefaultScoringRules` takes no tick rate, and the authored and loaded scoring types
+    share one `weights` base.
 
 - [ ] **HC-B13 — Better than the design, not built, sign-off asked: three ability-loader tidies
       (`feat/ability-framework` merge critic after PR #125, 2026-11-20); no decision blocks PR
@@ -2276,6 +2289,18 @@ Reply inline (`Decision: …`).
     for a class (`Recommendation:`). CD-45, the locked view, shows the locked Legend's panel on the
     left, where your DEC-60 says "the details of the class still shown on the left"
     (`Recommendation:`). Keep, change or reject them with the other rows.
+  - New rows, 2026-11-20 (`feat/match-start-countdown`, DEC-278, DEC-282): CD-48 (UE-01, the
+    countdown's urgency on the character select and the match-start overlay) and CD-49 (the
+    match-start overlay itself, which no frame draws). As you asked (DEC-282 (8)), the shots come
+    to you on the "Countdown PR Calls" page before the pull request opens: the character select at
+    9 s with UE-01 on, the Figma-unchanged scenes, and the overlay at 10 s, at 5 s and the Duel's
+    START; the plan's rule-7 performance check is recorded in `docs/plan/PROGRESS.md` and the
+    pull request. CD-48's 1.08, 1.12 and 0.30 and CD-49's veil and size are recommendations: keep,
+    change or reject them with the other rows.
+  - Answered, 2026-11-20 (DEC-299, Owner Calls page): you kept CD-48's 1.08, 1.12 and 0.30. CD-49's
+    glow now grows with the numeral, whose font size is 216 px, your "slightly smaller" read as
+    10 % below 240 (a recommendation); the new overlay shots are on the "Countdown PR Calls" page. CD-49's
+    veil tint stays a recommendation: keep, change or reject it with the other rows.
 - [ ] **HC-Q1 — The Legends (DEC-49), still open after your answer of 2026-10-17** (the answered
       part is in Done). (1) Do the game doc's Magus focuses carry over to the new Legends
       (reference 01's Necromancer "debuff focus", Druid's buffs, Mage's self focus), and what role
@@ -3408,6 +3433,16 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
+- [ ] **Make the tower horde test faster (DEC-289, 2026-11-20).** Owner: to be assigned.
+      `Simulation.mapObjects.test.ts`, "walks every tower horde out of its tower and on up its
+      lane within 10 seconds (DEC-133, seed %i)", builds a whole map and match for each of its
+      three seeds (1, 2, 10), steps the countdown, then 10 s of play. One seed takes about 3 s
+      locally without coverage, but up to 65 s under coverage on the windows-latest CI runner
+      (PR #122, run 44714237495, 2026-11-20). DEC-289 gave this test its own 120 s time limit
+      (`HORDE_WALK_TIMEOUT_MS`) until it is faster. Where the time goes is not measured yet. Done
+      when the test runs well under 60 s on windows-latest CI and `HORDE_WALK_TIMEOUT_MS` is
+      removed, with every assertion and all three seeds kept (seed 10 covers critic round 3,
+      M-A).
 - [ ] **PR #30 renderer follow-up** — Owner: Gurshaan. Separate caching/batching and close-view
       material detail from the map PR; retain all renderer-specific tests with that change.
       Keep draw order inside SceneView, address renderer file length and the capture layer,
@@ -3446,6 +3481,22 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
       `CaptureHoldRule` takes it instead of the whole `GameState`, and the capture-point lookups
       of `CaptureHoldRule`, `CaptureProgressBoundsInvariant` and `CaptureSystem` move to it. Close
       this item when its PR merges.
+- [ ] **Rule 7 frame latency (DEC-299 (3))** — Owner: sholtzman, after PR #138 is pushed; it does
+      not block that merge. The match-start overlay's performance runs (ui-enhancements-plan §2
+      rule 7) read a frame-interval p95 of 16.7 to 16.8 ms and a maximum of 16.8 ms in every
+      condition, the controls with every enhancement off included, with no frame over 33 ms; the
+      12 rule-7 re-runs on the DEC-299 (2) tree read the same. One diagnostic re-run on that tree
+      (the ui-off control at CPU ×4, `perf-lt.mjs`) read one 33.3 ms interval, one dropped frame
+      (`over33` counts only intervals over 33.4 ms). The owner passed rule 7 and asked: "we
+      should find out why theres latency whenever we have time". Find why the intervals read
+      16.8 ms and not 16.7 (the browser's frame clock, the headless display, the measuring script
+      or the game) and record the answer in `docs/plan/PROGRESS.md` and here. With it: at CPU ×4
+      the re-runs count three long tasks of about 58 ms per run, all during page load before the
+      measured frames, on the commit before DEC-299 too and with every enhancement off, where the
+      first runs counted none with the same script; find what differs. The runs:
+      `eternalus-agent-work/game-loop-plan/ue-shots-2026-11-20/` (`run.sh` perf_run, `perf.mjs`,
+      `report.py`; the re-run: `perf-dec299.sh`, `perf-lt.mjs`, `perf-dec299/NOTE.md`; the
+      diagnostic runs: `perf-dec299-lt/`, `perf-33bcdcf6-lt/`).
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
       `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`
@@ -3630,6 +3681,23 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
   - Decision (sholtzman, chat, 2026-10-30, Call 5): "fix and get the fighting / proceeding
     working"; the critic ruled this rule better than the design. Built as MS-33 on
     `fix/minion-m1-review`; doc 18 §1 and §4 and the minion plan §3 updated.
+- [ ] **HC-B10 hook tests in `npm run check` (DEC-276 critic; better than the design, owner
+      approved 2026-11-19)** — Owner: sholtzman, a `chore/` harness PR after
+      `chore/stop-hook-changed-files` merges. Run `node --test scripts/**/*.test.mjs` (the hook
+      tests and `scripts/coderabbit/`) from `npm run check`, so CI runs them on Linux and Windows.
+      First make them pass on Windows: with `shell: true`, cmd.exe drops the quotes in the first
+      test of `scripts/hooks/hookInput.test.mjs`; the signal test is POSIX-only and skips itself
+      on Windows. Update the CI gate row in `docs/process/guardrails.md` and doc 16. Close this
+      item when its PR merges.
+- [ ] **HC-B11 guard on progress entry files (DEC-277 critic; better than the design, owner
+      approved 2026-11-19)** — Owner: sholtzman, a `chore/` harness PR after
+      `chore/progress-entry-files` merges. A check in `npm run check` that fails when a commit
+      edits an entry file in `docs/plan/progress/` that already exists on the base branch (new
+      files pass), plus a `.coderabbit.yaml` path rule for `docs/plan/progress/**` that says
+      entries are append-only records. The same check fails on any file in `docs/plan/progress/`
+      other than `README.md` whose name does not match the entry pattern (critic round 2, owner
+      sign-off pending). Update the docs check row in `docs/process/guardrails.md`. Close this
+      item when its PR merges.
 
 ## Feedback
 
@@ -3655,6 +3723,39 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-11-21 — **Your pick on HC-B17, a browser-support line** (`refactor/countdown-hud-units`):
+  recorded as DEC-316. Architecture 13 §7 "Styling" now says, in your words: browser support is a
+  baseline, plus newer CSS behind `@supports` with a fallback, as DEC-312 does. You named no
+  baseline, so no browser versions are listed.
+
+- 2026-11-20 — **Your pick on HC-B15, one fit source for the HUD and the countdown**
+  (`refactor/countdown-hud-units`): recorded as DEC-312. (c) CSS typed arithmetic: the match-start
+  numeral is in HUD units again and off the select artboard, so the HUD has one fit source; its
+  glow still grows with it. Your "sure keep it" keeps a fallback for browsers without typed
+  arithmetic (Safari before 26, Firefox before 158): there the numeral is a 216 HUD-unit font and its
+  glow stays at the select size. Architecture 13 §3 and reference 15 CD-49 are amended.
+
+- 2026-11-20 — **Your answers on the countdown pull request #138** (`feat/match-start-countdown`):
+  recorded as DEC-299. UE-01's look stays as built. The match-start numeral is the character
+  select's numeral enlarged on the select artboard, so its glow grows with it, at a 216 px font
+  size (10 % smaller than 240). Rule 7's limit is one 60 Hz frame, so 16.8 ms passes; why frames read
+  16.8 ms is the request "Rule 7 frame latency". The structural tests stand for the screen-reader
+  lines, and the pull request says no screen reader was run. Reference 15 amends CD-48 and CD-49.
+
+- 2026-11-20 — **Built under your standing rule for better-than-design items (DEC-223, DEC-232)**
+  (`feat/match-start-countdown`): the countdown critic's BTD2, BTD3, BTD5 and BTD6, recorded as
+  DEC-286, and BTD4, recorded inside DEC-285. BTD5 appends one bullet to your design text,
+  architecture 13 §7 "Screen-reader lines": one live region, and every screen-reader line goes in
+  through `useLiveRegion`.
+
+- 2026-11-20 — **Your answers on the DEC-278 critic, round 1 (the match-start countdown)**
+  (`feat/match-start-countdown`): recorded as DEC-282 in
+  `docs/reference/game-design/13-owner-decisions-log.md`. The phase marks count from the
+  countdown's end; core's `MatchResult.matchTicks` is the match time; one shared countdown with
+  UE-01's urgency on the character select and the match-start overlay, with UE-03 and the
+  `uiEnhancements` switch built in the same PR; the bridge's countdown derivation is signed off.
+  Reference 15 registers UE-01 as CD-48.
 
 - 2026-11-03 — **PR #56 — the `returning` state (DEC-144 G).** Decision (SamarjitBhogal,
   2026-11-03, recorded as DEC-155): (b) merge it into the resting state. `LeashBehaviour`, `MinionController` and
