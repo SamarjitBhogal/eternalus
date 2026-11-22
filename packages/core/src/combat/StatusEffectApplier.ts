@@ -25,6 +25,15 @@ export class StatusEffectApplier {
   public constructor(private readonly statuses: ContentCatalogue<StatusEffectDefinition>) {}
 
   /**
+   * The polarity of status `statusId` (`buff`, `debuff` or `form`), from its definition.
+   *
+   * @throws UnknownDefinitionError when no status has the id `statusId`.
+   */
+  public polarityOf(statusId: string): StatusEffectDefinition['polarity'] {
+    return this.statuses.get(statusId).polarity;
+  }
+
+  /**
    * Applies status `statusId` to `targetId`, credited to `sourceId`. Returns whether it landed: a
    * missing or dead target, or one without `StatusEffects` (a structure), is immune, and so is a
    * `control-immune` target to hard control.

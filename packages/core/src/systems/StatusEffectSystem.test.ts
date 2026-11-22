@@ -236,11 +236,22 @@ describe('StatusEffectSystem: statuses that end on a hit (Veil, DEC-267, DEC-327
     apply(warrior, 'invisible');
     apply(dummy, 'invisible', dummy.id);
 
-    apply(dummy, 'concussion', warrior.id);
+    apply(dummy, 'bleed', warrior.id); // the owner's "bleed only attack"; its first tick is at 30
     run(system, 1);
 
     expect(ticksOf('damage-applied')).toEqual([]);
     expect([isVeiled(warrior), isVeiled(dummy)]).toEqual([false, false]);
+  });
+
+  it('a debuff from no one ends the Veil of the one struck, as damage with no attacker does', () => {
+    const { state, applier, warrior, apply, run } = setUp();
+    const system = statusSystem(state, applier);
+    apply(warrior, 'invisible');
+
+    apply(warrior, 'concussion', null);
+    run(system, 1);
+
+    expect(isVeiled(warrior)).toBe(false);
   });
 
   it('a buff from another entity (an ally’s aura) ends no Veil (DEC-327)', () => {

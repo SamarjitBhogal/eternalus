@@ -16,9 +16,9 @@ import type { System, SystemContext } from './System.types';
  * and on the one credited with the hit (`StatusEffects.breakOnHit`: they stop counting at once):
  * - a `damage-applied` that is not a periodic status tick (`source.kind` is not `'status'`), so
  *   a bleed applied before Veil keeps ticking and the Veil stays, on both sides;
- * - a `status-applied` of a `debuff` from another entity, so a hit that only applies a status
- *   ends it too. A buff from another entity (an ally's aura) and a status from the holder itself
- *   do not.
+ * - a `status-applied` of a `debuff` from another entity, or from no one (as damage with no
+ *   attacker), so a hit that only applies a status ends it too. A buff from another entity (an
+ *   ally's aura) and a status from the holder itself do not.
  * The next pass removes the broken statuses: this tick's for a hit from a system that runs
  * before it (`AbilitySystem`), the next tick's for a combat hit. The listeners only mark, because
  * a hit can land inside a loop over a holder's statuses (an `onHit` step) and removal splices
@@ -53,15 +53,13 @@ export class StatusEffectSystem implements System {
       }
     });
     state.events.on('status-applied', ({ entityId, statusId, sourceId }) => {
-      if (
-        sourceId === null ||
-        sourceId === entityId ||
-        !StatusEffectSystem.isDebuffOn(state, entityId, statusId)
-      ) {
+      if (sourceId === entityId || this.statuses.polarityOf(statusId) !== 'debuff') {
         return;
       }
       this.breakOn(state, entityId);
-      this.breakOn(state, sourceId);
+      if (sourceId !== null) {
+        this.breakOn(state, sourceId);
+      }
     });
   }
 
@@ -97,14 +95,5 @@ export class StatusEffectSystem implements System {
     if (statuses?.breakOnHit(state.tick) === true) {
       this.broken.add(holderId);
     }
-  }
-
-  /** Whether `statusId`, just applied to `holderId`, is a debuff (read from its active statuses). */
-  private static isDebuffOn(state: GameState, holderId: EntityId, statusId: string): boolean {
-    const statuses = state.entities.get(holderId)?.findComponent(StatusEffects);
-    return (
-      statuses?.active.find(({ definition }) => definition.id === statusId)?.definition.polarity ===
-      'debuff'
-    );
   }
 }
