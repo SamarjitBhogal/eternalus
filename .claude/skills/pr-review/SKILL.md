@@ -30,8 +30,7 @@ interim stand-in) or `better-than-design` (needs the human's sign-off before the
    calls, strategies not switches, registry line instead of edits everywhere); no magic numbers
    (content/config); tests are real (assert behaviour; no loosened assertions, `.skip`, `.only`,
    deleted tests, lowered thresholds); no `any`/`@ts-ignore`/unjustified `eslint-disable`; no
-   new dependencies; scope (no drive-by refactors); docs and frontmatter updated; PROGRESS.md
-   entry present; commit messages are Conventional Commits with an allowed scope.
+   new dependencies; scope (no drive-by refactors); docs and frontmatter updated; docs/plan/progress/ entry file present; commit messages are Conventional Commits with an allowed scope.
 4. For each finding: severity (`blocker` / `should-fix` / `nit`), file:line, what, why (cite the
    rule), suggested fix. Blockers include any guardrail weakening or product decision made by
    an agent.
