@@ -25,7 +25,10 @@ const landAt = (point: { x: number; y: number }): (string | number | DamageSourc
         return { applied: false, reason: 'blocked' } as const;
       },
     },
-    { afterHit: (_state, attackerId, targetId) => calls.push(['after-hit', attackerId, targetId]) },
+    {
+      afterHit: (_state, attackerId, targetId, attack) =>
+        calls.push(['after-hit', attackerId, targetId, attack === ATTACK ? 'its attack' : 'other']),
+    },
   );
   impact.land(new GameState(createDefaultGameConfig(), 1), {
     impact: { kind: 'weapon', attack: ATTACK },
@@ -39,10 +42,10 @@ const landAt = (point: { x: number; y: number }): (string | number | DamageSourc
 };
 
 describe('WeaponImpact', () => {
-  it('deals the full damage within the fall-off, credited to the source, then runs the on-hit effects', () => {
+  it("deals the full damage within the fall-off, credited to the source, then runs the on-hit effects of the shot's own attack", () => {
     expect(landAt({ x: 6, y: 8 })).toEqual([
       ['body-1', 50, SOURCE],
-      ['after-hit', 'owner', 'body-1'],
+      ['after-hit', 'owner', 'body-1', 'its attack'],
     ]);
   });
 

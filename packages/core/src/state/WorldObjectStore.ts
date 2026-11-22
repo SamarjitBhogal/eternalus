@@ -5,7 +5,7 @@ import type { MapObject, MapObjectSnapshot } from '../content/maps/mapObjects.ty
 import type { WorldObjectRecord, WorldObjectStoreOptions } from './WorldObjectStore.types';
 import type { Vec2 } from '../utils/geometry.types';
 import { doesCircleOverlapPolygon, isCircleInsidePolygon } from '../utils/circlePolygon';
-import { boundsOf } from '../utils/geometry';
+import { boundsOf, isPointInBlockingArea } from '../utils/geometry';
 
 /** Owns placed-object identity and persistent destroyed state after DeathSystem retires entities. */
 export class WorldObjectStore {
@@ -106,8 +106,15 @@ export class WorldObjectStore {
     return this.destroyed;
   }
 
-  /** Independent diagnostic check against live solids and authored bridge openings. */
-  public blockingAt(point: Vec2, radius: number): string | null {
+  /**
+   * Independent diagnostic check against live solids and authored bridge openings: the first
+   * surviving blocking object whose footprint a circle of `radius` at `point` overlaps, outside its
+   * passages, or `null`.
+   *
+   * @param launch - A shot's launch point: a footprint whose blocking area (inside it, inside none
+   *   of the object's passages) holds it does not count, as it does not stop the shot (DEC-334).
+   */
+  public blockingAt(point: Vec2, radius: number, launch?: Vec2): string | null {
     for (const { object, entityId, health, bounds } of this.records) {
       if (
         point.x + radius < bounds.x ||
@@ -122,7 +129,13 @@ export class WorldObjectStore {
         object.passages?.some((shape) => isCircleInsidePolygon(point, radius, shape)) === true
       )
         continue;
-      if (object.footprints.some((shape) => doesCircleOverlapPolygon(point, radius, shape)))
+      if (
+        object.footprints.some(
+          (shape) =>
+            doesCircleOverlapPolygon(point, radius, shape) &&
+            (launch === undefined || !isPointInBlockingArea(launch, shape, object.passages)),
+        )
+      )
         return object.id;
     }
     return null;

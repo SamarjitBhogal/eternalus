@@ -44,12 +44,56 @@ const withAttack = (
   attacks: [{ strategy: 'melee', damage: 50, reach: 1.5, interval: 0.5, [field]: value }],
 });
 
+/** The stand-in melee weapon whose one attack runs `onHit` steps. */
+const withOnHit = (
+  onHit: NonNullable<AuthoredWeaponDefinition['attacks'][number]['onHit']>,
+): AuthoredWeaponDefinition => ({
+  ...TEST_TALONS,
+  attacks: [{ strategy: 'melee', damage: 50, reach: 1.5, interval: 0.5, onHit }],
+});
+
 describe('loadWeapons', () => {
   it('converts attack intervals from seconds to ticks, at least one tick', () => {
     expect(loadWeapons(30, [TEST_TALONS]).get('test-talons').attacks[0]?.interval).toBe(15);
     expect(
       loadWeapons(30, [withAttack('interval', 0.01)]).get('test-talons').attacks[0]?.interval,
     ).toBe(1);
+  });
+
+  it("converts an attack's onHit step times from seconds to ticks, and keeps none as none", () => {
+    const concussion = {
+      kind: 'debuff',
+      statusId: 'concussion',
+      durationSeconds: 1.5,
+      shape: { kind: 'hit' },
+    } as const;
+    const talons = withOnHit([concussion]);
+
+    expect(loadWeapons(30, [talons]).get('test-talons').attacks).toEqual([
+      {
+        strategy: 'melee',
+        damage: 50,
+        reach: 1.5,
+        interval: 15,
+        onHit: [
+          { kind: 'debuff', statusId: 'concussion', durationTicks: 45, shape: { kind: 'hit' } },
+        ],
+      },
+    ]);
+    expect(loadWeapons(30, [TEST_TALONS]).get('test-talons').attacks[0]?.onHit).toBeUndefined();
+  });
+
+  it("rejects an attack's onHit step with a negative time", () => {
+    const badTime = {
+      kind: 'debuff',
+      statusId: 'concussion',
+      durationSeconds: -1,
+      shape: { kind: 'hit' },
+    } as const;
+    const broken = () => loadWeapons(30, [withOnHit([badTime])]);
+
+    expect(broken).toThrow(ContentValidationError);
+    expect(broken).toThrow('Weapon "test-talons": debuff durationSeconds must not be negative.');
   });
 
   it('ships each class default weapon', () => {

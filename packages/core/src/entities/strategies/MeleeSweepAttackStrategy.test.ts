@@ -75,8 +75,13 @@ const setUp = () => {
           },
         },
         hits: {
-          afterHit: (_state, attackerId, targetId) =>
-            calls.push(['after-hit', attackerId, targetId]),
+          afterHit: (_state, attackerId, targetId, attack) =>
+            calls.push([
+              'after-hit',
+              attackerId,
+              targetId,
+              attack === SWEEP ? 'its attack' : 'other',
+            ]),
         },
         factory,
         areas: new AreaHitQuery(),
@@ -164,6 +169,10 @@ describe('MeleeSweepAttackStrategy', () => {
       damaged(calls),
     );
     expect(calls.map(([kind]) => kind)).toEqual(['damage', 'after-hit', 'damage', 'after-hit']);
+    expect(calls.filter(([kind]) => kind === 'after-hit').map(([, , , attack]) => attack)).toEqual([
+      'its attack',
+      'its attack',
+    ]);
     expect(sources[0]).toEqual({
       attackerId: attacker.id,
       kind: 'weapon',

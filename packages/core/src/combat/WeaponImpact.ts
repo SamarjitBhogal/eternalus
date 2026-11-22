@@ -8,19 +8,21 @@ import type { ProjectileHit, ProjectileImpact } from './ProjectileImpact.types';
 /**
  * A weapon's shot landing (architecture 05 §10): the attack's damage, scaled by its fall-off over
  * the distance from the shot's origin to where it touched the body, through the match's damage
- * pipeline; then the owner's on-hit effects run, as for a melee hit.
+ * pipeline; then the on-hit steps run, as for a melee hit: the `onHit` of the attack the shot was
+ * fired with (a heavy turret bolt's concussion), then the owner's statuses' `onHit`.
  */
 export class WeaponImpact implements ProjectileImpact<'weapon'> {
   /**
    * @param damage - The match's one damage pipeline.
-   * @param hits - Runs the owner's statuses' `onHit` steps after the damage; `null` runs none.
+   * @param hits - Runs the shot's attack's `onHit` steps, then the owner's statuses', after the
+   *   damage; `null` runs none.
    */
   public constructor(
     private readonly damage: Pick<DamagePipeline, 'apply'>,
     private readonly hits: HitRunner | null,
   ) {}
 
-  /** Deals the fallen-off damage to the body, then runs the owner's on-hit effects. */
+  /** Deals the fallen-off damage to the body, then runs the on-hit steps of the shot's attack. */
   public land(state: GameState, hit: ProjectileHit<'weapon'>): void {
     const { attack } = hit.impact;
     const share = falloffMultiplier(attack.projectile.falloff, distance(hit.origin, hit.point));

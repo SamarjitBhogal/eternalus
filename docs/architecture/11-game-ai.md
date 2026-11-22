@@ -399,9 +399,11 @@ work named:
   are absent until their phases, so it is a partial map.
 - `TurretController` (§4.5, `feat/wall-turrets`, 2026-11-22) drives a wall turret in auto mode. A
   `Turret` structure whose definition names a controller gets a `ControllerBinding` from
-  `Structure`, as a unit does. Its memory is in its brain (`TurretMemory`: target, loaded ammo,
-  next shot tick, last aim point), so `StateHasher` hashes it; there is no `occupantId`, because
-  manual control is not built. Its content is a turret profile (`content/structures/turret.ts`,
+  `Structure`, as a unit does. Its brain keeps only the target (`TurretMemory`), so `StateHasher`
+  hashes it. The loaded ammo is the turret's `TurretState` and the aim point is on its `Combat`
+  (07 §13); the controller reads them through `EntityStore.turretAmmoOf` and `attackAimOf`. There
+  is no `occupantId` and no `nextShotTick`: manual control is not built, and `Combat`'s cooldown is
+  the one shot clock. Its content is a turret profile (`content/structures/turret.ts`,
   `wall-turret`) and the ammo table (`turretAmmo.ts`), loaded by `loadTurrets` and injected by
   `Simulation`. The profile's `overrides` come first: an enemy Legend that damaged an allied
   Legend within the defend-ally window (read from `ScoringState.recentHits`) becomes the target at
@@ -411,11 +413,11 @@ work named:
   Neutral units count as enemies, so the controller filters teams itself (no `Perception` filter
   for that). Ammo is the first of the profile's ammo whose `preferredAgainst` fits the target's
   kind. Predictive aim is `ai/predictiveAim.ts` (one refinement, vectors only). It reads a
-  structure's place and a target's velocity through `EntityStore.placeOf` and `velocityOf`. Not
-  built: the shot. The controller emits no command yet; firing through `Combat` with the aim point
-  waits for PR 2 (`feat/melee-sweeps`). Until then a due decision computes the aim point, keeps it
-  in memory and counts the ammo interval to the next shot. The bolt range is 35 m, `TUNE`, pending
-  the owner card "WT bolt stop" (07 §13).
+  structure's place and a target's velocity through `EntityStore.placeOf` and `velocityOf`. Each
+  decision with a target sends `switch-ammo` when the chosen ammo is not the loaded one, then
+  `attack-aim` at the predicted point, so the aim stays fresh (wall turrets part 2, 2026-11-22).
+  With no target and an aim still set, it sends `attack-aim { aim: null }` once. The bolt range is
+  35 m, `TUNE`, pending the owner card "WT bolt stop" (07 §13).
 - `BotLegendController` (M3) plays the `laner` tree of §4.2 with the nodes it needs
   (`ai/bt/`: `Sequence`, `ActiveSelector`, `Condition`, `Action`; `Selector` and `Cooldown` join
   with their first use) and a `UtilityScorer` (`ai/utility/`) over two considerations, closeness

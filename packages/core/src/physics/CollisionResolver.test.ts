@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { lavaBridge } from '../__fixtures__/lavaBridge';
+import { isPointInAnyPolygon, isPointInPolygon } from '../utils/geometry';
 import { CollisionResolver } from './CollisionResolver';
 import { StaticCollisionIndex } from './StaticCollisionIndex';
 
@@ -110,6 +112,66 @@ describe('CollisionResolver', () => {
     it('is 0 against the wall, and from outside it never takes the circle through a wall thinner than the move', () => {
       expect(wall().reach({ x: 4.5, y: 0 }, EAST, 8, 0.5)).toBe(0);
       expect(wall().reach({ x: 0, y: 0 }, EAST, 100, 0.5)).toBeLessThan(4.5);
+    });
+
+    describe('the launch-shape rule (DEC-334)', () => {
+      /** The bolt's radius: the width a shot sweeps. */
+      const SHOT = 0.15;
+
+      it('lets a shot leave a shape whose blocking area holds its launch point, and no other shape', () => {
+        const resolver = new CollisionResolver(
+          new StaticCollisionIndex([
+            { id: 'pylon', polygon: rect(-1, -1, 10, 2) },
+            { id: 'far-wall', polygon: rect(15, -20, 1, 40) },
+          ]),
+          OPEN,
+        );
+        const launch = { x: -0.5, y: 0 };
+
+        // Without a launch point, a start inside that goes deeper stops at once.
+        expect(resolver.reach(launch, EAST, 3, SHOT)).toBe(0);
+        expect(resolver.reach(launch, EAST, 3, SHOT, launch)).toBe(3);
+        expect(resolver.reach(launch, EAST, 20, SHOT, launch)).toBeCloseTo(15.35, 6);
+        expect(resolver.reach(launch, EAST, 20, SHOT, launch)).toBeLessThan(15.35);
+      });
+
+      it('still stops a shot whose circle, but not its launch point, overlaps the wall at launch', () => {
+        const thick = new CollisionResolver(
+          new StaticCollisionIndex([{ id: 'wall', polygon: rect(5, -20, 10, 40) }]),
+          OPEN,
+        );
+        const pressed = { x: 5 - SHOT / 3, y: 0 };
+
+        expect(thick.reach(pressed, EAST, 2, SHOT)).toBe(0);
+        expect(thick.reach(pressed, EAST, 2, SHOT, pressed)).toBe(0);
+      });
+
+      it('still stops a shot launched on a bridge where it leaves the deck over the lava', () => {
+        const lava = new CollisionResolver(
+          new StaticCollisionIndex([
+            { id: 'lava', polygon: rect(5, -20, 5, 40), passages: [rect(3, -2, 9, 4)] },
+          ]),
+          OPEN,
+        );
+        const onBridge = { x: 7, y: 0 };
+        const north = { x: 0, y: 1 };
+
+        expect(lava.reach(onBridge, north, 10, SHOT)).toBeCloseTo(2 - SHOT, 6);
+        expect(lava.reach(onBridge, north, 10, SHOT, onBridge)).toBe(
+          lava.reach(onBridge, north, 10, SHOT),
+        );
+      });
+
+      it("still stops a shot from the seed 1 map's lava bridge at the lava, 3.46 m out", () => {
+        const { river, collisions, onBridge, offTheSide } = lavaBridge();
+
+        expect(isPointInAnyPolygon(onBridge, river.footprints)).toBe(true);
+        expect(river.passages?.some((passage) => isPointInPolygon(onBridge, passage))).toBe(true);
+        expect(collisions.reach(onBridge, offTheSide, 14, SHOT)).toBeCloseTo(3.46, 2);
+        expect(collisions.reach(onBridge, offTheSide, 14, SHOT, onBridge)).toBe(
+          collisions.reach(onBridge, offTheSide, 14, SHOT),
+        );
+      });
     });
 
     // Moved from `abilities/dashReach.test.ts`: the bounds are the resolver's now (critic r2 BTD-A).

@@ -102,7 +102,7 @@ export class ProjectileSystem implements System {
     const delta = { x: body.position.x - from.x, y: body.position.y - from.y };
     const length = distance(from, body.position);
 
-    const wall = this.wallDistance(state, from, delta, length, body.radius);
+    const wall = this.wallDistance(state, from, delta, length, body.radius, payload.origin);
     const hit = this.firstBody(state, payload, from, delta, length, body.radius);
     if (hit !== null && isTouchedBeforeWall(hit.time * length, wall)) {
       if (!state.entities.takesNoDamage(hit.body.entity.id)) {
@@ -142,17 +142,21 @@ export class ProjectileSystem implements System {
     movement.limitSpeed(flightSpeed(movement.maxSpeed, flown, flight.range, flight.slowFrom));
   }
 
-  /** How far along the move the first wall or the map's edge is; infinite when none is in it. */
+  /**
+   * How far along the move the first wall or the map's edge is; infinite when none is in it. A
+   * shape that holds the shot's `launch` point does not stop it (DEC-334).
+   */
   private wallDistance(
     state: GameState,
     from: Vec2,
     delta: Vec2,
     length: number,
     radius: number,
+    launch: Vec2,
   ): number {
     if (state.collisions === null || length === 0) return Number.POSITIVE_INFINITY;
     const dir = { x: delta.x / length, y: delta.y / length };
-    const reach = state.collisions.reach(from, dir, length, radius);
+    const reach = state.collisions.reach(from, dir, length, radius, launch);
     return reach < length ? reach : Number.POSITIVE_INFINITY;
   }
 

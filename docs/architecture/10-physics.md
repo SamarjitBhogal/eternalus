@@ -362,6 +362,20 @@ lets a shot fly over unless the shot aims at it: its locked target, or the walk-
 point names (`AreaHitQuery.aimedBodyOf`, DEC-322 (1)). The last move up to `range` is swept like any
 other, so a body under the end point takes the hit: an arrow damages what it lands on (DEC-322 (2)).
 
+**2026-11-22 (branch `feat/wall-turrets`, part 2; DEC-334).** The launch-shape rule: a shot is
+not stopped by a blocking shape whose blocking area holds its launch point; the shot can only
+leave that shape. The blocking area is the shape's polygon outside its passages, as
+`CollisionResolver.startsInside` and `WorldObjectStore.blockingAt` read it. So a unit on a bridge
+still has its shot stopped by the lava beside the deck. "Holds" means the launch point, not the
+shot's circle: a shot whose circle touches a wall at launch is still stopped there.
+`CollisionQuery.reach` takes the launch point as an optional argument. `ProjectileSystem` passes
+the shot's `origin`, and `LineOfFire` passes the attacker's centre, so line of fire and shots keep
+one stop rule (DEC-317 B9). `NoMapObjectOverlapInvariant` passes a shot's origin to
+`WorldObjectStore.blockingAt`, which skips such a shape too. A unit's centre is never in a blocking
+area (the invariant), so the rule changes only wall turret bolts, which start at the turret's
+centre inside its pylon and wall (07 §13). The body stop (`AreaHitQuery.stopsShot`) is unchanged:
+on the seed 1 to 8 maps, every body outline that holds a turret's centre is on the turret's team.
+
 ## Related
 
 - [04 Entity architecture](./04-entity-architecture.md)

@@ -66,6 +66,17 @@ export const doRectsOverlap = (a: Rect, b: Rect): boolean =>
 export const isPointInAnyPolygon = (point: Vec2, polygons: readonly Polygon[]): boolean =>
   polygons.some((polygon) => isPointInPolygon(point, polygon));
 
+/**
+ * Whether `point` lies in the blocking area of a shape: inside `polygon` and inside none of its
+ * `passages` (a bridge over a river), the area that blocks a mover. The launch-shape rule
+ * (DEC-334): a shape whose blocking area holds a shot's launch point does not stop that shot.
+ */
+export const isPointInBlockingArea = (
+  point: Vec2,
+  polygon: Polygon,
+  passages: readonly Polygon[] = [],
+): boolean => isPointInPolygon(point, polygon) && !isPointInAnyPolygon(point, passages);
+
 /** The point of the segment from `a` to `b` nearest to `point`. */
 export const closestPointOnSegment = (point: Vec2, a: Vec2, b: Vec2): Vec2 => {
   const lengthSquared = (b.x - a.x) ** 2 + (b.y - a.y) ** 2;

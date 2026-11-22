@@ -468,10 +468,25 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   it. Its projectiles are `turret-bolt` and `turret-heavy-bolt`. Their 35 m range is `TUNE` with
   no reference value (a bolt starts at the turret's centre, so it covers the pylon, the turret's
   range and the lead), pending the owner card "WT bolt stop". `TurretController` picks the target
-  and the ammo and computes the aim point (11 §4.5, §10). Not built: the shot (firing through
-  `Combat` with the aim point waits for PR 2, `feat/melee-sweeps`), `Combat` and `TurretState` on
-  the turret (the controller's memory is in its brain), the `turret-control-changed` and
-  `turret-fired` events, and manual control.
+  and the ammo and computes the aim point (11 §4.5, §10). Part 2 (next item) builds the shot.
+- **Wall turrets, part 2 (`feat/wall-turrets`, 2026-11-22; §5, DEC-334).** Turrets fire. The
+  turret's structure definition names its ammo (`StructureDefinition.ammo`, best first, the last
+  for any target; `loadTurrets` checks both). `Turret` installs a `TurretState` (the ammo it
+  carries and the loaded one, `components/TurretState.ts`) and a `Combat` with the first ammo's
+  attack and no weapon. The `switch-ammo` command (`SwitchAmmoHandler`) loads an ammo through
+  `EntityStore.loadTurretAmmo`: `TurretState` records it and `Combat.equip` swaps the attack. The
+  attack timer stays, so a switch gives no free shot. `TurretController` sends `switch-ammo` and
+  `attack-aim` (11 §10), and `Combat` fires a bolt whenever its cooldown allows. A bolt starts at
+  the turret's centre, inside its pylon and often inside its wall. The launch-shape rule (DEC-334)
+  lets it out: a blocking shape whose blocking area (inside its polygon, inside none of its
+  passages) holds the shot's launch point does not stop that shot (10 §12), and
+  `NoMapObjectOverlapInvariant` does not flag a shot inside such a shape. A turret kill names the
+  turret as the killer (`definitionId` `turret`). The turret has no score row, no `Progression`
+  and no ultimate meter, so the kill gives no kill points, no XP and no ultimate charge to anyone;
+  Legends that hit the victim in the assist window still get their assists. `StateHasher` hashes
+  the loaded ammo. Not built: the bolt stopping at its aim point (owner card "WT bolt stop"; bolts
+  fly their 35 m range), the `turret-control-changed` and `turret-fired` events, manual control
+  and tower orbs.
 
 **2026-10-27 (PR #30, map objects).** Generated map objects currently reuse the `Obstacle`
 entity with a `MapObjectBody` component while the full structure family remains planned.

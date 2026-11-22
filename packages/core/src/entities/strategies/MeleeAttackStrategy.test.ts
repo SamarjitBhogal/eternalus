@@ -4,6 +4,7 @@ import { Collider } from '../../components/Collider';
 import { Combat } from '../../components/Combat';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { loadDefaultContent } from '../../content/loadDefaultContent';
+import type { UnitAttack } from '../../content/units/units.types';
 import { loadWeapons } from '../../content/weapons/loadWeapons';
 import { AreaHitQuery } from '../../state/AreaHitQuery';
 import type { DamageSource } from '../../state/GameEvents.types';
@@ -41,8 +42,8 @@ const hitWith = (
       calls.push([targetId, amount, source]),
   };
   const hits = {
-    afterHit: (_: GameState, attackerId: string, targetId: string) => {
-      calls.push(['after-hit', attackerId, targetId]);
+    afterHit: (_: GameState, attackerId: string, targetId: string, attack?: UnitAttack) => {
+      calls.push(['after-hit', attackerId, targetId, attack === ATTACK ? 'its attack' : 'other']);
     },
   };
   const attacker = new Warrior('entity-1', definition.id);
@@ -64,12 +65,12 @@ const hitWith = (
 };
 
 describe('MeleeAttackStrategy', () => {
-  it('deals the weapon damage at once, naming the attacker and its weapon, then runs the hit effects (05 §10)', () => {
+  it('deals the weapon damage at once, naming the attacker and its weapon, then runs the hit effects of the attack it used (05 §10)', () => {
     const armed = { ...WARRIOR, defaultLoadout: { primaryWeaponId: 'test-talons' } };
 
     expect(hitWith(armed)).toEqual([
       ['entity-2', 40, { attackerId: 'entity-1', kind: 'weapon', definitionId: 'test-talons' }],
-      ['after-hit', 'entity-1', 'entity-2'],
+      ['after-hit', 'entity-1', 'entity-2', 'its attack'],
     ]);
   });
 

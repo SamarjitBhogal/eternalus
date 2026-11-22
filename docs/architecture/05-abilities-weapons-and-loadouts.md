@@ -779,6 +779,17 @@ stand-in above: the player now fires along the aim, not only at a target under t
 Bastions), two arcs for a dual-wield weapon (DEC-304, an idea), `heavyAttack`, `parry`, `grants`,
 the flex attack and `a-fine-line`.
 
+**Implementation status, 2026-11-22 (branch `feat/wall-turrets`, part 2).** An attack's own
+`onHit` steps run (§10 `WeaponAttack.onHit`). `AttackBase` has an optional `onHit`, authored in
+seconds (`AuthoredUnitAttack`) and loaded in ticks (`UnitAttack`, `attackInTicks`, DEC-241), as a
+status's `onHit` is. `loadWeapons` and `loadTurrets` load it. `HitRunner.afterHit` takes the attack
+that struck: `HitEffects` runs that attack's `onHit` first, then the `onHit` of the attacker's
+statuses. A shot keeps the attack it was fired with (`WeaponImpact` passes the payload's attack),
+and the two melee strategies pass the attack they used. `abilities/checkAttackLinks` checks the
+steps of every weapon attack and turret ammo against the ability registry at boot, as
+`checkStatusLinks` checks a status's `onHit`. The first content that uses it is the heavy turret
+bolt's `concussion` (07 §5). Bleed and sundered (lane A PR 3) are still to come as content.
+
 ## 11. Artifacts (gadgets Z and C)
 
 An artifact is an `AbilityDefinition` with `slot: 'gadget'` (`ArtifactDefinition =
