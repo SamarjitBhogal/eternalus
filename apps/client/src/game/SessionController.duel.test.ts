@@ -10,6 +10,7 @@ import { FakeRunningMatch } from './FakeRunningMatch';
 import { FakeViewportCanvas } from './FakeViewportCanvas';
 import { prepareMatchWorld } from './prepareMatchWorld';
 import type { DuelMatchRequest, SessionControllerDeps } from './SessionController.types';
+import { RESULTS_COUNTDOWN_MS } from './session/sessionTiming.constants';
 import { testSession } from './testSessionDeps';
 
 const CONFIG = createDefaultGameConfig();
@@ -205,8 +206,18 @@ describe('SessionController, online Duel (ADR 0016)', () => {
       ownKills: 10,
       opponentKills: 6,
       killTarget: 10,
-      countdown: null,
     });
+  });
+
+  it('stays on the results with no countdown, however long the player waits (SCRUM-449)', async () => {
+    const session = await setUp();
+    await session.startDuel();
+    session.controller.attachViewport(VIEWPORT);
+    session.transport().receive({ type: 'match-ended', reason: 'finished', winner: 'dark' });
+
+    session.clock.advance(RESULTS_COUNTDOWN_MS * 2);
+
+    expect(session.controller.phase).toBe('results');
   });
 
   it('does not report the socket close the server starts after match-ended as a lost connection', async () => {

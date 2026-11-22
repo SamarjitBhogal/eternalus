@@ -13,8 +13,9 @@ export function canRepeatSetup(mode: MatchMode | null): boolean {
 }
 
 /**
- * The win/lose screen counts down to the menu only after a local match (DEC-78); a Duel's stays
- * until the player leaves it (SCRUM-449).
+ * The win/lose screen counts down to the menu after every match but a Duel (DEC-78); a Duel's
+ * stays until the player leaves it (SCRUM-449; its decisions-log row, modifying DEC-78, awaits
+ * the owner: INBOX).
  */
 export function hasResultsCountdown(mode: MatchMode | null): boolean {
   return mode !== 'duel';

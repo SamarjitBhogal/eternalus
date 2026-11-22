@@ -4,15 +4,16 @@
  * `main` (never work there), and points at the three files every session must read first.
  * Always exits 0; its output is informational.
  */
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
+import { PROGRESS_DIR, PROGRESS_ENTRY_NAME } from '../docs/progressEntry.mjs';
 import { readHookInput, repoRoot, run } from './hookInput.mjs';
 
 const input = await readHookInput();
 const root = repoRoot(input);
 
-const branchResult = run('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
+const branchResult = await run('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
   cwd: root,
   timeoutMs: 10_000,
 });
@@ -40,8 +41,22 @@ if (existsSync(inboxPath)) {
   }
 }
 
+const progressDir = path.join(root, PROGRESS_DIR);
 const progressPath = path.join(root, 'docs', 'plan', 'PROGRESS.md');
-if (existsSync(progressPath)) {
+const newestEntry = existsSync(progressDir)
+  ? readdirSync(progressDir)
+      .filter((name) => PROGRESS_ENTRY_NAME.test(name))
+      .sort()
+      .pop()
+  : undefined;
+if (newestEntry !== undefined) {
+  const text = readFileSync(path.join(progressDir, newestEntry), 'utf8');
+  const body = text.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '');
+  const heading = body.split(/\r?\n/).find((line) => /^#{1,2} /.test(line));
+  lines.push(
+    `[session-start] Last progress entry: ${heading === undefined ? newestEntry : heading.replace(/^#+ /, '')} (${PROGRESS_DIR}/${newestEntry})`,
+  );
+} else if (existsSync(progressPath)) {
   const progress = readFileSync(progressPath, 'utf8').trimEnd().split(/\r?\n/);
   const lastHeading = [...progress].reverse().find((line) => line.startsWith('### '));
   if (lastHeading !== undefined) {
@@ -50,7 +65,7 @@ if (existsSync(progressPath)) {
 }
 
 lines.push(
-  '[session-start] Before stopping: `npm run check` must pass and docs/plan/PROGRESS.md gets an entry.',
+  '[session-start] Before stopping: `npm run check` must pass and a new entry file goes in docs/plan/progress/.',
 );
 
 process.stdout.write(`${lines.join('\n')}\n`);

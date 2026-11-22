@@ -67,7 +67,7 @@ const renderDuel = (
       ...matchSlice.getInitialState(),
       duel,
       versus: { own: 'Ana', opponent: 'Rival' },
-      duelHud: { ownKills: kills[0], opponentKills: kills[1], killTarget: 10, countdown: null },
+      duelHud: { ownKills: kills[0], opponentKills: kills[1], killTarget: 10 },
     },
     matchSetup: {
       ...matchSetupSlice.getInitialState(),
