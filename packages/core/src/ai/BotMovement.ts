@@ -1,9 +1,9 @@
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
+import type { PathQuery } from '../state/PathQuery.types';
 import { sqrt } from '../utils/deterministicMath';
 import type { Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
-import type { PathQuery } from '../state/PathQuery.types';
 import type { BtStatus } from './bt/BtNode.types';
 import type { BotTurn } from './BotLegendController.types';
 import { NO_PATH } from './BotMovement.constants';

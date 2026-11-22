@@ -17,11 +17,9 @@ Phase 3 / minion plan M8 follow-up · feat/minion-bot-path-cache · SamarjitBhog
   fixes: `NO_PATH` written only when a cache is set (`BotMovement.forgetPath`); the
   `PathQuery.waypoint` exact-copy contract in its TSDoc; a generated-map match test showing a
   cached waypoint in the brain store, same hash twice; doc 11 §6 names the one-leg case when the
-  grid opens. Bench (#83's `hordes.mjs` at `0067d856`, run uncommitted on this tree; Ryzen AI 9
-  HX 370, Node 24.21.0, load 9 to 15 on 24 threads, cache on and off interleaved, 3 runs each):
-  A\* searches 4764 → 817 (144/team) and 4384 → 652 (290/team); p95 ms with the cache
-  6.72, 2.11, 2.04 and 7.81, 3.67, 4.68; without 5.27, 4.86, 4.92 and 5.15, 10.57, 4.55. Max
-  spikes (up to 16 to 21 ms) are on both sides. No product question.
+  grid opens. Bench: #83's `hordes.mjs` at `0067d856` on this tree, cache on and off
+  interleaved, 3 runs each (numbers in the PR #84 body): A\* searches 4764 → 817 (144/team) and
+  4384 → 652 (290/team); p95 times overlap under load. No product question.
 - Checks run: `npm run check` → exit 0: "All matched files use Prettier code style!"; core
   "Tests 1694 passed (1694)"; protocol "Tests 29 passed (29)"; client "Tests 2077 passed (2077)";
   server "Tests 84 passed (84)"; "✓ built in 465ms"; "Documentation check passed."
