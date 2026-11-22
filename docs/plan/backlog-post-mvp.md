@@ -4,7 +4,7 @@ description: Everything deliberately outside the MVP (post-MVP decisions, ideas 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-28
+last-reviewed: 2026-11-19
 tags: [plan, backlog, post-mvp, extension-points]
 related:
   [
@@ -75,7 +75,7 @@ here are D11 and D12 in the writer brief and the highlight annotations of the ga
 ## MVP-if-time items that join the backlog when cut
 
 The roadmap's cut order ([README.md §4](README.md#4-mvp-cut-lines)); each cut is a
-product-owner decision logged in `INBOX.md` and [PROGRESS.md](PROGRESS.md). The seam stays in
+product-owner decision logged in `INBOX.md` and [progress log](progress/README.md). The seam stays in
 the phase that would have built the feature.
 
 | Cut line | Item                                                                         | Seam that stays                                                                                 | Trigger to build                                                      |
@@ -110,13 +110,13 @@ a `Loadout` + `LegendDefinition` swap with the ultimate penalty as content).
    gets an FR-/NFR- id in [06-mvp-requirements.md](../requirements/06-mvp-requirements.md).
 3. A phase doc gains a sprint or task that names the seam from this table, with tests and a
    done-when; [17-extension-recipes.md](../architecture/17-extension-recipes.md) has the recipe.
-4. The row is deleted here and the move is logged in [PROGRESS.md](PROGRESS.md).
+4. The row is deleted here and the move is logged in [progress log](progress/README.md).
 
 ## Related
 
 - [README.md](README.md) (cut lines, metrics)
 - [phase-6-hardening-balance-and-release.md](phase-6-hardening-balance-and-release.md)
-- [PROGRESS.md](PROGRESS.md)
+- [progress log](progress/README.md)
 - [../architecture/17-extension-recipes.md](../architecture/17-extension-recipes.md)
 - [../architecture/04-entity-architecture.md](../architecture/04-entity-architecture.md)
 - [../architecture/09-hardware-abstraction.md](../architecture/09-hardware-abstraction.md)

@@ -24,7 +24,7 @@ Documentation is the agents' map of the repo, so it must stay accurate. This ski
    prune duplicated or contradictory rules (record why each control exists in
    `docs/process/guardrails.md`).
 5. Regenerate the index: `npm run docs:index` (writes the file tables in `docs/README.md`).
-6. Append a `docs/plan/PROGRESS.md` entry listing what changed. Run `npm run check`. Report
+6. Add a new entry file in `docs/plan/progress/` listing what changed. Run `npm run check`. Report
    verbatim. No commits unless asked.
 
 ## Done when

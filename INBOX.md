@@ -16,6 +16,24 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Dependency audit (re-run 2026-11-20): approve one upgrade PR for the `eslint` family and
+      `zod`, and say whether to turn on Dependabot alerts.** PR #113 already moved `vite` to 8.3.8
+      and `vitest` to 5.1.0. `npm audit` on `phase/3-sprint-3-work` (`5a7cc8dc`) now reports 10
+      findings (9 moderate, 1 high, none critical), all in dev tooling, none in the browser build or
+      the Duel server. High: `zod` 4.6.5 (memory exhaustion on oversized constrained collections,
+      GHSA-mrhx-c7xc-m3w5; fixed in 4.6.6), transitive through `knip` and
+      `eslint-plugin-react-hooks`. Moderate: `minimatch` 10.2.6 (glob DoS, GHSA-g3hv-75wg-m249),
+      reached through `eslint` 10.11.0 and `typescript-eslint` 8.70.1 and the
+      `@typescript-eslint/*` packages; the other 8 moderate findings are those packages. On
+      2026-11-13 npm proposed downgrades for this family; it now proposes upgrades (`eslint`
+      10.15.0, `typescript-eslint` 8.73.0, not semver-major, but past the exact versions pinned in
+      `package.json`, so `npm audit fix --force`), and `zod` 4.6.6 is a patch.
+      AGENTS.md says no new or upgraded dependencies without explicit human approval, and the
+      lockfile is never hand-edited. Approve: one dependency-upgrade PR for these (run by `npm`,
+      with `npm run check`)? Also: GitHub answers "Dependabot alerts are disabled for this
+      repository" (HTTP 403). Turn them on (repository settings, owner), or keep relying on a manual
+      `npm audit`?
+
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
       small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`
@@ -220,12 +238,20 @@ Reply inline (`Decision: …`).
       break. No spec gives the inner walls their own value. Should the `'wall'` features inside the
       Stronghold ring keep the WallSegment value, or get their own (which number)?
   - **Answered 2026-11-13 by DEC-247** (chat, PR #96). Not built yet (BUG-2).
+  - Where it lives: the inner walls are `'wall'` map objects built by
+    `packages/core/src/map/MapBuildingInteriorBuilder.ts` (cathedral partitions, chapel and apse
+    walls) and `packages/core/src/map/MapPalaceRoomsBuilder.ts` (palace room walls); their health
+    is the `wall` entry of `packages/core/src/content/maps/mapObjectDefinitions.ts`. A side's own
+    pieces refusing its attacks (DEC-121 (a), `combat/FriendlyFireStep.ts`) can also look slow.
 
 - [x] **BUG-3: minions attack obstacles (2026-11-12, PR #96, SCRUM-436).** Today a stuck unit
       paths around an obstacle (DEC-193); minions never attack obstacles or props. The playtest
       asked for minions to attack them. Keep DEC-193, or should minions attack obstacles (and
       which ones: props only, or blocking obstacles too)?
   - **Answered 2026-11-13 by DEC-248** (chat, PR #96). Not built yet (BUG-3).
+  - Where it lives: the lane minion's aggro rules (`content/ai/aggro/laneMinion.ts`) and
+    `ai/aggroRank.ts` rank only Legends, minions, turrets and the lane objective today; no rule
+    targets a prop or an obstacle.
 
 - [x] **`refactor/durations-at-load` critic (2026-11-14), better than the design — built, sign-off
       asked; no decision blocks the PR.** #86's healing system divided its two rates
@@ -242,7 +268,7 @@ Reply inline (`Decision: …`).
     signed off: the time check in the aggro, stuck, veterancy and guard loaders (the 2026-11-12
     critic) and #86's healing times as DEC-241's sixth reader.
 
-- [ ] **HC-B9 — Better than the design, not built, sign-off asked: two older times not read once at
+- [x] **HC-B9 — Better than the design, not built, sign-off asked: two older times not read once at
       load (`refactor/durations-at-load` merge critic, 2026-11-19); no decision blocks the PR.**
       Both are older than PR #125 and keep their values.
       (1) **One countdown-end tick.** Three readers each compute the tick the countdown ends with
@@ -261,7 +287,13 @@ Reply inline (`Decision: …`).
     `feat/match-start-countdown`: the tick is `MatchState.countdownEndTick`, set once when the
     match is built; every runtime reader reads it (the three above, and `MatchDirector` and the
     snapshot, which that branch added). Built with it, critic round 2's BTD4: `timelineMarkTick`
-    takes a named `TimelineFrame`. (2) is open for its follow-up pull request.
+    takes a named `TimelineFrame`. (2) **Built** on `refactor/scoring-at-load` (PR #139): `content/match/loadScoring.ts`
+    turns `assistWindowSeconds` into `assistWindowTicks` once and rejects a negative or non-finite
+    window; `Simulation` passes the loaded value, and the scoring rules see only ticks. Same
+    conversion as before (30 s = 900 ticks). With it, under the standing rule, the critic's two
+    better-than-design items (DEC-287): the loader also turns the held minute into ticks, so
+    `createDefaultScoringRules` takes no tick rate, and the authored and loaded scoring types
+    share one `weights` base.
 
 - [x] **Unit facing chevron (DEC-192, feat/unit-facing-chevron, 2026-11-05) — two questions, one
       better-than-design item.**
@@ -305,6 +337,25 @@ Reply inline (`Decision: …`).
   - **(2) done by DEC-234** (#85, 2026-11-09): the inside test runs once, in `aimPointOf`, which
     returns an `AimedAt` tag; `isInReach` and `facingPointOf` read it. The tidy PR builds no
     helper for it.
+- [ ] **Per-address connection cap and `X-Forwarded-For` (SCRUM-432 critic, 2026-11-12) — owner /
+      security, not introduced by this branch.** `ClientAddress.resolve` (`apps/server/src/transport/`)
+      takes the FIRST `X-Forwarded-For` entry when the peer is loopback. Behind `tailscale serve`
+      every peer is loopback, so if the proxy appends to a client-supplied header instead of
+      replacing it, a remote client can pick its own address and defeat the per-address cap (the
+      load bots do exactly this on purpose). Decide: take the LAST trusted hop, or verify what
+      `tailscale serve` does with the header.
+- [ ] **Duel creation cost and the 400-bot failure (SCRUM-432, PR #103 review S3, 2026-11-20) —
+      owner.** (1) The queue-load runs (`multiplayer-and-scalability-plan.md` §7, "Implementation
+      status: matchmaking under load") started about 8 Duels per second in one process (500
+      matches in 62.6 s). A one-off timing gave about 135 ms (132 to 147 ms) of synchronous work
+      per `CoreDuelSimulationFactory.create()`, probably map generation; not confirmed, the
+      timing file was not kept. ADR 0016 point 2 keeps Duels on the main thread until a measured
+      metric breaks the scalability research's ladder. Decide: (A) move Duel creation to a worker,
+      (B) pre-build Duels before pairs need them, or (C) accept it for now and re-measure in MP-5.
+      (2) 400 bots failed (2 to 8 joins never answered, two runs). The cause is unconfirmed: maybe
+      the `MAX_CONNECTIONS = 500` cap. DEC-37 asks for "hundreds or thousands" of players. Approve
+      a follow-up that finds the cause: an `onClose` handler in the bots, or a refusal counter in
+      the server.
 
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on
@@ -3069,6 +3120,15 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
       First make them pass on Windows: with `shell: true`, cmd.exe drops the quotes in the first
       test of `scripts/hooks/hookInput.test.mjs`; the signal test is POSIX-only and skips itself
       on Windows. Update the CI gate row in `docs/process/guardrails.md` and doc 16. Close this
+      item when its PR merges.
+- [ ] **HC-B11 guard on progress entry files (DEC-277 critic; better than the design, owner
+      approved 2026-11-19)** — Owner: sholtzman, a `chore/` harness PR after
+      `chore/progress-entry-files` merges. A check in `npm run check` that fails when a commit
+      edits an entry file in `docs/plan/progress/` that already exists on the base branch (new
+      files pass), plus a `.coderabbit.yaml` path rule for `docs/plan/progress/**` that says
+      entries are append-only records. The same check fails on any file in `docs/plan/progress/`
+      other than `README.md` whose name does not match the entry pattern (critic round 2, owner
+      sign-off pending). Update the docs check row in `docs/process/guardrails.md`. Close this
       item when its PR merges.
 
 ## Feedback
