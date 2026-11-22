@@ -636,6 +636,51 @@ Reply inline (`Decision: …`).
       one reusable "first source with the id" definition lookup for `Simulation` and about ten
       tests (BTD-H).
 
+- [ ] **HC-Q80 — Zealot: which key swaps between talons and bow? (`feat/zealot-weapon-swap`,
+      PR 9, 2026-11-22; PR-38-HELPER-46; Owner Calls card "PR9 swap key").** Each Legend has two
+      gadget slots, keys Z (first) and C (second); the player can rebind both. You decided that one
+      of the Zealot's gadget slots swaps to the bow (DEC-303). Options: (A) Z, the first gadget slot
+      (recommended, built): the second slot stays free for a Warrior gadget later; (B) C, the second
+      gadget slot; (C) other (note). Note: in aim-then-click mode, Z does not swap at once. The swap
+      happens on the next click, because every self-targeted ability waits for the click in that
+      mode (DEC-209 (3)). A, B or C? _Code: the spec's `artifacts` in
+      `content/legends/specs/assassin.ts`._
+- [ ] **HC-Q81 — Zealot: how fast is the swap? (`feat/zealot-weapon-swap`, PR 9, 2026-11-22;
+      PR-38-HELPER-46; Owner Calls card "PR9 swap timing").** The player presses the swap key and the
+      other weapon comes out. In every option the attack timer carries over, so a swap never gives a
+      faster hit. Options: (A) instant, then 1 s before the next swap (recommended, built; the 1 s
+      is marked TUNE): no swap spam; (B) instant, with no wait between swaps; (C) a 0.5 s draw time
+      with no attacks during it; (D) other (note). A, B, C or D? _Code: `cooldownSeconds` in
+      `content/artifacts/weaponSwap.ts`; `Combat.equip`; `SwapWeaponEffect`._
+- [ ] **HC-Q82 — Zealot: with the bow out, what does the melee key (F) do?
+      (`feat/zealot-weapon-swap`, PR 9, 2026-11-22; PR-38-HELPER-46; Owner Calls card "PR9 bow melee
+      key").** The Magus staff shoots on the attack button and has its melee attack on F (DEC-308).
+      Options: (A) nothing: each weapon has only its own attacks, and to claw the player swaps back
+      to the talons (recommended, built): the swap then matters; (B) a talon swipe on F, the same
+      way the staff's melee works; (C) other (note). A, B or C? _Code: `Combat.equip` changes the
+      attack mode to the basic attack when the new weapon has no attack for the current mode._
+- [ ] **HC-Q83 — Zealot: do bot Zealots swap weapons? (`feat/zealot-weapon-swap`, PR 9,
+      2026-11-22; PR-38-HELPER-46; Owner Calls card "PR9 bot swap").** This is about bots only; a
+      player Zealot can always swap. Options: (A) no, for now: bot Zealots keep the talons
+      (recommended, built); (B) yes: the bow when the enemy is far, the talons when it is near (more
+      bot work in PR 9); (C) other (note). A, B or C? _Code: Weapon Swap is authored
+      `canBotCast: false`; `pickReadySlot` asks `SlotReadiness.canBotCast` and skips it._
+- [ ] **HC-Q84 — Zealot: which weapon does it hold when a new Duel round starts?
+      (`feat/zealot-weapon-swap`, PR 9, 2026-11-22; PR-38-HELPER-46; Owner Calls card "PR9 Duel
+      reset").** A Zealot dies with the bow out. The Duel round resets: both Legends go back to their
+      start points at full health (DEC-36). Options: (A) it keeps the bow, the same as cooldowns and
+      aether carry over (recommended, built); (B) it goes back to the talons each round; (C) other
+      (note). A, B or C? _Code: the Duel reset (`DuelRoundSystem`) does not touch `Loadout`._
+- [ ] **HC-B30 — Better than the design, built under your standing rule (DEC-223), sign-off
+      asked: one ability catalogue for artifacts too (`feat/zealot-weapon-swap`, PR 9 critic round
+      1, 2026-11-22; PR-38-HELPER-46).** The player sees no difference. The design adds each artifact
+      (a gadget) to its own `artifactCatalogue.ts` (17 R10). PR 9 lists Weapon Swap, the first
+      artifact, in `abilityCatalogue.ts`, with the abilities. Reason: the ability registry resolves
+      every slot, gadgets too, from one catalogue, so a second catalogue would need a second lookup
+      and a merge for no gain. Options: (A) keep one catalogue (recommended, built): after your
+      sign-off, 05 §11 and 17 R10 say "one catalogue"; (B) a separate `artifactCatalogue.ts`, as
+      designed; (C) other (note). A, B or C?
+
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
       small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`

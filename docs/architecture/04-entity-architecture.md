@@ -418,9 +418,10 @@ Legend installs `Loadout` (`components/Loadout.ts`), which holds only the weapon
 `Loadout`: the class's default weapon, the spec's second weapon or none, and which one is in hand,
 with `inHand`, `isSecondaryInHand` and `swap()`. The artifacts are on `Abilities` (`gadget-1`,
 `gadget-2`), filled from the spec; the abilities and varieties are not on it either. There is no
-`apply(loadout)` and no check on set: no screen builds a loadout yet, and the content rules check
-the spec at load. `Combat` gains `equip(attacks, weaponId)`, which the `swap-weapon` effect calls
-after `swap()`, so `Combat.weaponId` is the weapon in hand. Only the Zealot has a second weapon
+`apply(loadout)` and no check on set: no screen builds a loadout yet, and the spec rules check
+the spec in `loadDisplayContent`, not at simulation boot (05 §18). `Combat` gains
+`equip(attacks, weaponId)`, which the `swap-weapon` effect calls after `swap()`, so
+`Combat.weaponId` is the weapon in hand. Only the Zealot has a second weapon
 ([05 §18](05-abilities-weapons-and-loadouts.md#18-implementation-status)).
 
 ## Related

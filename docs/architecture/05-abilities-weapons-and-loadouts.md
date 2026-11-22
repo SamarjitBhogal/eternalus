@@ -1280,16 +1280,18 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   - **Content.** `content/artifacts/weaponSwap.ts` (`weapon-swap`, class `warrior`, slot kind
     `gadget`, `self` targeting, one `swap-weapon` step) is listed last in `abilityCatalogue.ts`:
     the ability registry resolves every slot from that one catalogue, so there is no
-    `artifactCatalogue.ts` (17's recipe names one). It is an `AuthoredAbility`, not an
-    `ArtifactDefinition`, and has no varieties. Its cooldown (1 s) and aether cost (0) are `TUNE`.
+    `artifactCatalogue.ts` (17's recipe names one; `INBOX.md` HC-B30 asks to sign this off). It is
+    an `AuthoredAbility`, not an `ArtifactDefinition`, and has no varieties. Its cooldown (1 s)
+    and aether cost (0) are `TUNE`.
   - **Who carries what.** The Legend spec names its second weapon and its artifacts, as it names
     its kit (DEC-198): `LegendSpecDefinition.secondaryWeaponId` and `artifacts` (`gadget-1`, then
     `gadget-2`; `null` = empty). The Zealot (spec `assassin`) has `obsidian-bow` and
     `['weapon-swap', null]` (key Z); every other spec has `null` and two empty slots. The class has
     no `allowedArtifactIds` list yet (§2, 04 §5): no screen picks artifacts, so the spec fixes them.
     `KnownAbilityRefsRule` checks that each artifact exists, is of the spec's class and has slot
-    kind `gadget`; `KnownWeaponRule` checks `secondaryWeaponId`. These rules run in
-    `loadDisplayContent`, not at simulation boot, as for every spec rule.
+    kind `gadget`. `SecondaryWeaponRule` checks that `secondaryWeaponId` names a loaded weapon,
+    and that a spec has a second weapon exactly when one of its artifacts has a `swap-weapon`
+    step. These rules run in `loadDisplayContent`, not at simulation boot, as for every spec rule.
   - **Runtime.** Every Legend installs a `Loadout` component (`components/Loadout.ts`), the weapon
     part of §12 only: the class's default weapon and the spec's second weapon (or none), each
     with its attacks loaded at spawn, and which one is in hand. `Abilities` fills `gadget-1` and
@@ -1300,12 +1302,18 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     (the bow has no `melee`). `StateHasher` adds a `loadout` field only while the second weapon is
     in hand, so a run without a swap hashes as before. There is no `LoadoutValidator`, no
     `apply(loadout)` and no `loadout/` folder yet.
-  - **Bots and client.** Bots never cast `gadget-1` or `gadget-2` (`BOT_SKIPPED_SLOTS` in
-    `ai/pickReadySlot.ts`): they would swap at random, and the owner card "PR9 bot swap" (A) keeps
-    them on the talons. The HUD shows the gadget slot through the existing slot path (§15) with no
-    client change; the weapon panel still shows the class's default weapon while the bow is in
-    hand. The owner cards "PR9 swap key", "PR9 swap timing", "PR9 bow melee key" and "PR9 bot
-    swap" are open; the recommended option of each is built.
+  - **Invariant.** `weapon-in-hand-matches-combat` (each tick, `error`;
+    `diagnostics/invariants/WeaponInHandMatchesCombatInvariant.ts`) flags an entity whose
+    `Combat.weaponId` is not `Loadout.inHand.weaponId`: a swap or an equip done around the effect.
+  - **Bots and client.** Bots never cast an ability authored `canBotCast: false`: `pickReadySlot`
+    asks the `SlotReadiness` port (`canBotCast`, implemented by `CastValidator`). Weapon Swap is
+    authored so, which keeps bot Zealots on the talons (`INBOX.md` HC-Q83, A); other gadgets stay
+    open to bots. The HUD's gadget frames come from the spec's artifacts: a filled artifact slot
+    shows the artifact's name and no icon, and an empty one keeps the class's entry
+    (`buildDisplayCatalogue`, `selectHudKit`; DEC-114). The weapon panel still shows the class's
+    default weapon while the bow is in hand. The owner questions `INBOX.md` HC-Q80 (swap key),
+    HC-Q81 (swap timing), HC-Q82 (bow melee key), HC-Q83 (bot swap) and HC-Q84 (Duel reset: the
+    weapon in hand stays) are open; the recommended option of each is built.
 
 ## Related
 
