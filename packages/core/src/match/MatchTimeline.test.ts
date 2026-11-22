@@ -10,20 +10,20 @@ const entry = (id: string, at: TimelineMark): MatchTimelineEntry => ({
   action: { kind: 'enter-phase', phase: 'early-game' },
 });
 
-/** Resolves `timeline` with a 100 s planned match at 30 ticks/s (3,000 ticks). */
+/** Resolves `timeline` with a 100 s planned match at 30 ticks/s (3,000 ticks) after the default 300-tick countdown. */
 const resolve = (timeline: readonly MatchTimelineEntry[]) =>
   MatchTimeline.resolve(createDefaultGameConfig({ match: { plannedMatchSeconds: 100, timeline } }))
     .entries;
 
 describe('MatchTimeline', () => {
-  it('resolves a fraction against plannedMatchSeconds, rounded to a whole tick', () => {
+  it("resolves a fraction against plannedMatchSeconds from the countdown's end, rounded to a whole tick (DEC-282)", () => {
     expect(
       resolve([
         entry('quarter', { atFraction: 0.25 }),
         entry('third', { atFraction: 1 / 3 }),
         entry('end', { atFraction: 1 }),
       ]).map(({ tick }) => tick),
-    ).toEqual([750, 1000, 3000]);
+    ).toEqual([1050, 1300, 3300]); // 300 countdown ticks + 750, 1000, 3000
   });
 
   it('keeps an atTick mark as it is', () => {
@@ -46,11 +46,11 @@ describe('MatchTimeline', () => {
   it('keeps config order for entries on the same tick', () => {
     const ids = (timeline: readonly MatchTimelineEntry[]) => resolve(timeline).map(({ id }) => id);
 
-    expect(ids([entry('a', { atTick: 750 }), entry('b', { atFraction: 0.25 })])).toEqual([
+    expect(ids([entry('a', { atTick: 1050 }), entry('b', { atFraction: 0.25 })])).toEqual([
       'a',
       'b',
     ]);
-    expect(ids([entry('b', { atFraction: 0.25 }), entry('a', { atTick: 750 })])).toEqual([
+    expect(ids([entry('b', { atFraction: 0.25 }), entry('a', { atTick: 1050 })])).toEqual([
       'b',
       'a',
     ]);
@@ -59,9 +59,9 @@ describe('MatchTimeline', () => {
   it('resolves the default timeline: the 10 s countdown, then quarters of the 30-minute match', () => {
     expect(MatchTimeline.resolve(createDefaultGameConfig()).schedule()).toEqual([
       { entryId: 'countdown-over', tick: 300 },
-      { entryId: 'quarter-mark', tick: 13_500 },
-      { entryId: 'mid-game', tick: 27_000 },
-      { entryId: 'end-game', tick: 40_500 },
+      { entryId: 'quarter-mark', tick: 13_800 },
+      { entryId: 'mid-game', tick: 27_300 },
+      { entryId: 'end-game', tick: 40_800 },
     ]);
   });
 
