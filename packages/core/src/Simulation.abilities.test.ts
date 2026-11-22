@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import { abilityMatch } from './abilities/__fixtures__/abilityMatch';
 import { TEST_KIT, unitsWithWarriorKit } from './abilities/__fixtures__/casterState';
-import { statusOnHitEffects, testAbilityRegistry } from './abilities/__fixtures__/fakeAbilities';
+import {
+  shippedRegistryWithUnbuilt,
+  statusOnHitEffects,
+  testAbilityRegistry,
+} from './abilities/__fixtures__/fakeAbilities';
 import { RecordingEffect } from './abilities/__fixtures__/RecordingEffect';
 import { stepPastCountdown } from './abilities/__fixtures__/stepPastCountdown';
 import type { Command } from './commands/Command.types';
@@ -122,6 +126,11 @@ describe('Simulation: casting', () => {
       config: createDefaultGameConfig(),
       seed: 1,
       logger: new NullLogger(),
+      content: unitsWithWarriorKit({
+        abilities: ['blade-runner', 'veil', 'fake-unbuilt'],
+        ultimate: 'fury',
+      }),
+      abilities: shippedRegistryWithUnbuilt(),
     });
     const events: string[] = [];
     sim.on('ability-cast', ({ abilityId }) => events.push(`cast ${abilityId}`));
@@ -131,8 +140,8 @@ describe('Simulation: casting', () => {
 
     play(sim, 1, { 0: [castBy('entity-1'), castBy('entity-1', 'ability-3')] });
 
-    // Hamstring (effects: []) stays unavailable, refused as its command applies; Blade Runner casts
-    // later in the tick, in AbilitySystem.
+    // The unbuilt fake in ability-3 (effects: []) stays unavailable, refused as its command
+    // applies; Blade Runner casts later in the tick, in AbilitySystem.
     expect(events).toEqual(['rejected unavailable', 'cast blade-runner']);
   });
 });

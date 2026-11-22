@@ -134,4 +134,12 @@ describe('TargetQuery', () => {
     // Straight through the house, both ends and every corner far from the line.
     expect(hits(path(1), { x: 5, y: -30 }, { x: 5, y: 30 })).toEqual([houseId]);
   });
+
+  it('finds a struck house with `hit` by its position (its corners’ average), not by its walls', () => {
+    const { houseId, hits } = withHouse(houseEastOf(1.5));
+    const westWall = { x: 1.5, y: 0 };
+
+    expect(hits({ kind: 'hit' }, westWall, { x: 8.5, y: 0 })).toEqual([houseId]);
+    expect(hits({ kind: 'hit' }, { x: 0, y: 0 }, westWall)).toEqual([]);
+  });
 });

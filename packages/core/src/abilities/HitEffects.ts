@@ -6,8 +6,11 @@ import { StatusEffects } from '../components/StatusEffects';
 import { Transform } from '../components/Transform';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
+import type { ShotLauncher } from '../state/ShotLauncher.types';
 import type { AbilityRegistry } from './AbilityRegistry';
 import { CastInstance } from './CastInstance';
+import type { OnHitCast } from './HitEffects.types';
+import type { ShapePlacement } from './shapes/AreaShape.types';
 import { TargetQuery } from './TargetQuery';
 
 /**
@@ -17,7 +20,7 @@ import { TargetQuery } from './TargetQuery';
  * status's id, from the `default-action` slot (the basic attack), aimed at the struck body and
  * placed from the attacker to it, which the `hit` shape reads. The attack strategy calls it where
  * the hit lands (`MeleeAttackStrategy` in the tick); a weapon's `onHit` (05 §10) can run through it
- * too.
+ * too. A shot's `onHit` steps run through `runSteps` when it lands (`AbilityImpact`).
  */
 export class HitEffects {
   private readonly targets: TargetQuery;
@@ -26,11 +29,13 @@ export class HitEffects {
    * @param registry - Where effect and shape strategies are found (the `AbilityRegistry`).
    * @param damage - The match's one damage pipeline, for the steps.
    * @param statuses - The match's one status applier, for the steps.
+   * @param launcher - Puts a step's shot into the match.
    */
   public constructor(
     private readonly registry: Pick<AbilityRegistry, 'effectFor' | 'shapeFor'>,
     private readonly damage: DamagePipeline,
     private readonly statuses: StatusEffectApplier,
+    private readonly launcher: ShotLauncher,
   ) {
     this.targets = new TargetQuery(registry);
   }
@@ -64,33 +69,61 @@ export class HitEffects {
       }
       // ponytail: steps bound and one CastInstance per hit, fine at a few hits a second; cache the
       // bound steps per status if on-hit statuses become common.
-      new CastInstance(
+      this.runSteps(
+        state,
         {
           casterId: attacker.id,
-          ability: {
-            id: definition.id,
-            steps: definition.onHit.map((spec) => ({
-              effect: this.registry.effectFor(spec.kind),
-              spec,
-              delayTicks: 0, // an on-hit step never waits: it runs where the hit lands
-            })),
-            definition: { scaling: {} },
-          },
+          sourceId: definition.id,
           slot: 'default-action',
-          aim: { point: to, targetId },
-          origin: from,
+          steps: definition.onHit,
+          scaling: {},
           casterLevel: attacker.findComponent(Progression)?.level ?? 1,
-          tick: state.tick,
         },
-        {
-          state,
-          effects: this.registry,
-          targets: this.targets,
-          damage: this.damage,
-          statuses: this.statuses,
-        },
-      ).run({ from, to });
+        { from, to },
+        targetId,
+      );
     }
+  }
+
+  /**
+   * Runs `cast`'s steps as one cast through the registry's strategies (`CastInstance`), at once
+   * (an on-hit step never waits: it runs where the hit lands), placed at `placement` (from the
+   * attacker or the shot's contact point to the struck body, which the `hit` shape reads) and
+   * aimed at `targetId` there.
+   */
+  public runSteps(
+    state: GameState,
+    cast: OnHitCast,
+    placement: ShapePlacement,
+    targetId: EntityId,
+  ): void {
+    new CastInstance(
+      {
+        casterId: cast.casterId,
+        ability: {
+          id: cast.sourceId,
+          steps: cast.steps.map((spec) => ({
+            effect: this.registry.effectFor(spec.kind),
+            spec,
+            delayTicks: 0,
+          })),
+          definition: { scaling: cast.scaling },
+        },
+        slot: cast.slot,
+        aim: { point: placement.to, targetId },
+        origin: placement.from,
+        casterLevel: cast.casterLevel,
+        tick: state.tick,
+      },
+      {
+        state,
+        effects: this.registry,
+        targets: this.targets,
+        damage: this.damage,
+        statuses: this.statuses,
+        launcher: this.launcher,
+      },
+    ).run(placement);
   }
 
   /** Whether any of `active` has `onHit` steps; a loop, so a hit with none allocates nothing. */

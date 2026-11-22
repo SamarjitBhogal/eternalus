@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { casterState, TEST_KIT } from '../abilities/__fixtures__/casterState';
 import { RecordingEffect } from '../abilities/__fixtures__/RecordingEffect';
+import { RecordingLauncher } from '../abilities/__fixtures__/RecordingLauncher';
 import {
   ABILITIES_WITH_FAKES,
   fakeAbility,
@@ -50,6 +51,7 @@ const setUp = () => {
     new CastValidator(registry),
     new DamagePipeline(),
     new StatusEffectApplier(STATUSES),
+    new RecordingLauncher(),
   );
   const events: string[] = [];
   state.events.on('ability-cast', ({ casterId, abilityId, slot }) =>

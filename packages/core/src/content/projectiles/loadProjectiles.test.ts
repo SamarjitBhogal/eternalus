@@ -34,8 +34,8 @@ describe('loadProjectiles', () => {
     ).toBe(1);
   });
 
-  it('ships the bolt and the arrow', () => {
-    expect(loadProjectiles(30).ids).toEqual(['magus-bolt', 'arrow']);
+  it('ships the bolt, the arrow and the Hamstring blade', () => {
+    expect(loadProjectiles(30).ids).toEqual(['magus-bolt', 'arrow', 'hamstring-blade']);
   });
 
   it.each([

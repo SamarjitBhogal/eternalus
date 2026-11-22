@@ -1,3 +1,4 @@
+import type { AbilityEffectSpec, AbilitySlot } from '../content/abilities/AbilityDefinition.types';
 import type { RangedAttack } from '../content/units/units.types';
 import type { Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
@@ -21,6 +22,15 @@ export type ProjectileSource = {
 type ProjectileImpactDataByKind = {
   /** A weapon's ranged attack: the damage and fall-off it lands with. */
   readonly weapon: { readonly attack: RangedAttack };
+  /**
+   * An ability's `projectile` step (Hamstring): the ability (its damage source and its scaling),
+   * the slot it was cast from, and the `onHit` steps that run on the body the shot strikes.
+   */
+  readonly ability: {
+    readonly abilityId: string;
+    readonly slot: AbilitySlot;
+    readonly onHit: readonly AbilityEffectSpec[];
+  };
 };
 
 /** The kinds of impact a shot can carry. */

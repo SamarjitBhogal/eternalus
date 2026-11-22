@@ -83,7 +83,7 @@ describe('loadDisplayContent', () => {
 
   it('publishes every projectile id, in catalogue order', () => {
     expect(load().projectileIds).toEqual(PROJECTILES.all().map(({ id }) => id));
-    expect(load().projectileIds).toEqual(['magus-bolt', 'arrow']);
+    expect(load().projectileIds).toEqual(['magus-bolt', 'arrow', 'hamstring-blade']);
   });
 
   it('carries each feature kind with its name', () => {
@@ -187,11 +187,11 @@ describe('loadDisplayContent', () => {
     );
   });
 
-  it('marks exactly the six built abilities available; the others have no steps', () => {
+  it('marks exactly the seven built abilities available; the others have no steps', () => {
     const { abilities } = load();
 
     expect(abilities.filter((ability) => ability.isAvailable).map((ability) => ability.id)).toEqual(
-      ['blade-runner', 'veil', 'fury', 'fury-dash', 'slam', 'shockwave'],
+      ['blade-runner', 'veil', 'hamstring', 'fury', 'fury-dash', 'slam', 'shockwave'],
     );
     for (const ability of abilities.filter((entry) => !entry.isAvailable)) {
       expect(ability.steps).toEqual([]);

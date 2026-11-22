@@ -38,8 +38,9 @@ type AbilitySlotKind = 'ability' | 'ultimate' | 'granted';
 
 /**
  * How a cast is aimed (05 §2): `self` acts around the caster; `directional` follows the aim vector
- * with no range (dashes); `heading` ignores the aim and goes the way the caster moves, or the way it
- * faces when still (Fury's dash, DEC-270). `aimed` and `target-unit` join with their first ability.
+ * with no range (dashes, a thrown shot); `heading` ignores the aim and goes the way the caster
+ * moves, or the way it faces when still (Fury's dash, DEC-270). `aimed` and `target-unit` join with
+ * their first ability.
  */
 type AbilityTargeting =
   { readonly kind: 'self' } | { readonly kind: 'directional' } | { readonly kind: 'heading' };
@@ -47,8 +48,8 @@ type AbilityTargeting =
 /**
  * The area an effect step covers (05 §3). `circle` is centred on the caster, or on the dash's end
  * for a dash's `onEnd` step; `path` is the capsule a dash sweeps, `width` metres across (its length
- * is the dash's `distance`); `hit` is the body a basic attack just struck, for a status's `onHit`
- * steps (Fury). `cone` joins with Rip & Tear (DEC-206).
+ * is the dash's `distance`); `hit` is the body a basic attack or a shot just struck, for a
+ * status's `onHit` steps (Fury) and a shot's (Hamstring). `cone` joins with Rip & Tear (DEC-206).
  */
 export type EffectShape =
   | { readonly kind: 'circle'; readonly radius: number }
@@ -86,6 +87,8 @@ type AuthoredDebuffSpec = {
   readonly statusId: string;
   /** Overrides the status's own duration; absent = the status's duration. */
   readonly durationSeconds?: number;
+  /** How many times the status is applied to each target (bleed stacks, DEC-269); absent = 1. */
+  readonly stacks?: number;
   readonly shape: EffectShape;
 };
 
@@ -156,10 +159,26 @@ type AuthoredDashSpec = {
 export type DashSpec = InTicks<AuthoredDashSpec>;
 
 /**
+ * Throws a shot along the cast's direction (05 §3 `ProjectileEffect`). `projectileId` names its
+ * flight (speed, width, range: the `ProjectileDefinition`, one place for them, as a weapon's shot,
+ * DEC-314 (5)); `onHit` runs on the first enemy body it touches (the `hit` shape). Seconds as
+ * authored.
+ */
+type AuthoredProjectileSpec = {
+  readonly kind: 'projectile';
+  readonly projectileId: string;
+  readonly onHit: readonly AuthoredShapedEffectSpec[];
+};
+
+/** A loaded shot: its `onHit` steps' times in ticks. */
+export type ProjectileSpec = InTicks<AuthoredProjectileSpec>;
+
+/**
  * One step of an ability's cast timeline as authored (05 §3); one effect strategy per `kind`. A
  * status's `onHit` steps are authored the same way.
  */
-export type AuthoredEffectSpec = AuthoredShapedEffectSpec | AuthoredDashSpec | AuthoredBuffSpec;
+export type AuthoredEffectSpec =
+  AuthoredShapedEffectSpec | AuthoredDashSpec | AuthoredBuffSpec | AuthoredProjectileSpec;
 
 /** One loaded effect step: every time in ticks. A status's `onHit` steps are loaded this way. */
 export type AbilityEffectSpec = InTicks<AuthoredEffectSpec>;

@@ -54,7 +54,9 @@ export class TargetQuery {
       const isHit =
         footprints === undefined
           ? area.overlaps(shape, placement, transform.position, transform.radius)
-          : footprints.some((footprint) => area.overlapsPolygon(shape, placement, footprint));
+          : footprints.some((footprint) =>
+              area.overlapsPolygon(shape, placement, footprint, transform.position),
+            );
       if (isHit) {
         hits.push(entity.id);
       }

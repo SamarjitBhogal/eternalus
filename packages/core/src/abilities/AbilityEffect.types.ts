@@ -5,6 +5,7 @@ import type { AbilitySlot, WithoutTimes } from '../content/abilities/AbilityDefi
 import type { AbilityDisplayStep } from '../content/loadDisplayContent';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
+import type { ShotLauncher } from '../state/ShotLauncher.types';
 import type { Vec2 } from '../utils/geometry.types';
 import type { ShapePlacement, ShapeSpec } from './shapes/AreaShape.types';
 import type { TargetFilter } from './TargetQuery.types';
@@ -42,6 +43,8 @@ export type CastContext = {
   readonly damage: DamagePipeline;
   /** The match's one status applier. */
   readonly statuses: StatusEffectApplier;
+  /** Puts a shot into the match (a `projectile` step). */
+  readonly launcher: ShotLauncher;
   /** Every live entity that overlaps `shape` at this step's placement and passes `filter`, by id. */
   targets(shape: ShapeSpec, filter: TargetFilter): readonly EntityId[];
   /** The point of `shape` at this step's placement that a push at `point` moves away from. */

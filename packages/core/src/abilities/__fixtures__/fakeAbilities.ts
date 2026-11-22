@@ -15,8 +15,18 @@ import { DirectionalTargeting } from '../targeting/DirectionalTargeting';
 import { HeadingTargeting } from '../targeting/HeadingTargeting';
 import { SelfTargeting } from '../targeting/SelfTargeting';
 
-/** The effect kinds the shipped abilities name (S1 content, then Fury's `buff`). */
-export const SHIPPED_EFFECT_KINDS = ['damage', 'knockback', 'debuff', 'dash', 'buff'] as const;
+/**
+ * The effect kinds the shipped abilities name (S1 content, Fury's `buff`, Hamstring's
+ * `projectile`).
+ */
+export const SHIPPED_EFFECT_KINDS = [
+  'damage',
+  'knockback',
+  'debuff',
+  'dash',
+  'buff',
+  'projectile',
+] as const;
 
 /**
  * The effects the shipped statuses' `onHit` steps name (Fury's knock-back): a match checks them

@@ -9,6 +9,7 @@ import type { AbilityEffect, CastContext, EffectStep } from './AbilityEffect.typ
 import { casterState } from './__fixtures__/casterState';
 import { fakeAbility, testAbilityRegistry } from './__fixtures__/fakeAbilities';
 import { RecordingEffect } from './__fixtures__/RecordingEffect';
+import { RecordingLauncher } from './__fixtures__/RecordingLauncher';
 import { CastInstance } from './CastInstance';
 import { TargetQuery } from './TargetQuery';
 
@@ -56,6 +57,7 @@ const timeline = () => {
       targets: new TargetQuery(registry),
       damage: new DamagePipeline(),
       statuses: new StatusEffectApplier(STATUSES),
+      launcher: new RecordingLauncher(),
     },
   );
   /** Steps the state to `tick`. */
@@ -115,6 +117,7 @@ describe('CastInstance', () => {
         targets: new TargetQuery(registry),
         damage: new DamagePipeline(),
         statuses: new StatusEffectApplier(loadStatusEffects(30, 2)),
+        launcher: new RecordingLauncher(),
       },
     ).run(AT_ORIGIN);
 
@@ -150,6 +153,7 @@ describe('CastInstance', () => {
         targets: new TargetQuery(registry),
         damage: new DamagePipeline(),
         statuses: new StatusEffectApplier(loadStatusEffects(30, 2)),
+        launcher: new RecordingLauncher(),
       },
     ).run(AT_ORIGIN);
 

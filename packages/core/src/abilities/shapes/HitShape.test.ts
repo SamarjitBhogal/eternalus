@@ -23,10 +23,12 @@ describe('HitShape', () => {
     expect(hit.overlaps(HIT, STRUCK, { x: 0, y: 0 }, 0.5)).toBe(false);
   });
 
-  it('never holds a map object’s footprint, even one around the struck point', () => {
+  it('holds a struck map object by its position, whatever its footprint (DEC-269)', () => {
     const hit: AreaShape<HitSpec> = new HitShape();
+    const { to } = STRUCK;
 
-    expect(hit.overlapsPolygon(HIT, STRUCK, SQUARE)).toBe(false);
+    expect(hit.overlapsPolygon(HIT, STRUCK, SQUARE, { x: to.x, y: to.y })).toBe(true);
+    expect(hit.overlapsPolygon(HIT, STRUCK, SQUARE, { x: to.x + 0.1, y: to.y })).toBe(false);
   });
 
   it('pushes away from the attacker', () => {

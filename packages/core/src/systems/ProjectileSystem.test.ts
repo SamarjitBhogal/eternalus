@@ -24,6 +24,7 @@ import type { GameEventMap } from '../state/GameEvents.types';
 import type { Team } from '../teams/teams.types';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
 import { MovementSystem } from './MovementSystem';
+import { NO_ABILITY_SHOTS } from '../abilities/__fixtures__/noAbilityShots';
 import { createDefaultProjectileImpacts } from './defaultProjectileImpacts';
 import { ProjectileSystem } from './ProjectileSystem';
 
@@ -39,7 +40,9 @@ const BOLT: ProjectileDefinition = { ...MAGUS_BOLT, range: 1000 };
 
 /** The system with the weapon impact on a fresh damage pipeline; `hits` runs on-hit effects. */
 const projectileSystem = (hits: HitRunner | null = null): ProjectileSystem =>
-  new ProjectileSystem(createDefaultProjectileImpacts(new DamagePipeline(), hits));
+  new ProjectileSystem(
+    createDefaultProjectileImpacts(new DamagePipeline(), hits, NO_ABILITY_SHOTS),
+  );
 
 /** A body with health: a circle, or an outline when given polygons. */
 class Body extends Entity {

@@ -23,10 +23,12 @@ export interface AreaShape<S extends ShapeSpec = ShapeSpec> {
   /** Whether a body of `radius` at `point` overlaps `shape` placed at `placement`. */
   overlaps(shape: S, placement: ShapePlacement, point: Vec2, radius: number): boolean;
   /**
-   * Whether `polygon` (one footprint of a map object: a house, a wall, a fort) overlaps `shape`
-   * placed at `placement`, measured to its outline as basic attacks are (`EntityStore.isInReach`).
+   * Whether `polygon` (one footprint of a map object at `position`: a house, a wall, a fort)
+   * overlaps `shape` placed at `placement`, measured to its outline as basic attacks are
+   * (`EntityStore.isInReach`). `position` is the object's own point, which a shape aimed at one
+   * struck body (`hit`) matches.
    */
-  overlapsPolygon(shape: S, placement: ShapePlacement, polygon: Polygon): boolean;
+  overlapsPolygon(shape: S, placement: ShapePlacement, polygon: Polygon, position: Vec2): boolean;
   /**
    * The point of `shape` placed at `placement` nearest to its middle as seen from `point`: what a
    * knock-back at `point` pushes away from (a circle's centre, the nearest point of a path's line).

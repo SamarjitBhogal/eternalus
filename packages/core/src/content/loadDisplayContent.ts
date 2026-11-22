@@ -36,14 +36,16 @@ import { ContentValidator } from './validation/ContentValidator';
  * One step of an ability's effect list as the client draws it: what it does and the area it covers,
  * for the range overlay. Each effect strategy describes its own steps (`AbilityEffect.describe`): a
  * dash step is `{ kind: 'dash', distance }`, followed by its `onPath` and `onEnd` steps, whose
- * areas the overlay places along and at the end of that distance.
+ * areas the overlay places along and at the end of that distance; a shot is
+ * `{ kind: 'projectile', distance, shape }` (its range and flight path), followed by its `onHit`
+ * steps.
  */
 export type AbilityDisplayStep = {
   /** The effect kind (`AbilityEffect.kind`): any string, so a new effect kind needs no edit here. */
   readonly kind: string;
   /** The area the step acts on; absent on a step that moves rather than hits (a dash). */
   readonly shape?: EffectShape;
-  /** A dash's length in metres; absent on every other step. */
+  /** A dash's length or a shot's range, in metres; absent on every other step. */
   readonly distance?: number;
 };
 

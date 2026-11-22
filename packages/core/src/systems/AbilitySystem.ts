@@ -13,6 +13,7 @@ import { Progression } from '../components/Progression';
 import { Transform } from '../components/Transform';
 import type { Entity } from '../entities/Entity';
 import type { GameState } from '../state/GameState';
+import type { ShotLauncher } from '../state/ShotLauncher.types';
 import type { SlotReadiness } from '../state/SlotReadiness.types';
 import { compareById } from '../utils/compareById';
 import type { System, SystemContext } from './System.types';
@@ -40,12 +41,14 @@ export class AbilitySystem implements System {
    *   `CastValidator`, through its `SlotReadiness` port).
    * @param damage - The match's one damage pipeline, for the effects.
    * @param statuses - The match's one status applier, for the effects.
+   * @param launcher - Puts a `projectile` step's shot into the match.
    */
   public constructor(
     private readonly registry: AbilityRegistry,
     private readonly validator: Pick<SlotReadiness, 'blockedBy' | 'priceOf'>,
     private readonly damage: DamagePipeline,
     private readonly statuses: StatusEffectApplier,
+    private readonly launcher: ShotLauncher,
   ) {
     this.targets = new TargetQuery(registry);
   }
@@ -148,6 +151,7 @@ export class AbilitySystem implements System {
         targets: this.targets,
         damage: this.damage,
         statuses: this.statuses,
+        launcher: this.launcher,
       },
     ).run({ from: here, to: here }, cast.nextStep);
     if (next < ability.steps.length) {

@@ -1,4 +1,5 @@
 import { loadKnockback } from '../content/abilities/loadKnockback';
+import { PROJECTILES } from '../content/projectiles/projectileCatalogue';
 import { STATUS_EFFECTS } from '../content/status-effects/statusEffectCatalogue';
 import { AbilityRegistry } from './AbilityRegistry';
 import type { AbilitySource } from './AbilityRegistry.types';
@@ -7,6 +8,7 @@ import { DamageEffect } from './effects/DamageEffect';
 import { DashEffect } from './effects/DashEffect';
 import { DebuffEffect } from './effects/DebuffEffect';
 import { KnockbackEffect } from './effects/KnockbackEffect';
+import { ProjectileEffect } from './effects/ProjectileEffect';
 import { MinLevelRestriction } from './restrictions/MinLevelRestriction';
 import { CircleShape } from './shapes/CircleShape';
 import { HitShape } from './shapes/HitShape';
@@ -41,6 +43,7 @@ export const createDefaultAbilityRegistry = (
   registry.registerEffect(new KnockbackEffect(loadKnockback(tickRate)));
   registry.registerEffect(new DashEffect());
   registry.registerEffect(new BuffEffect(statuses));
+  registry.registerEffect(new ProjectileEffect(PROJECTILES));
   registry.registerShape(new CircleShape());
   registry.registerShape(new PathShape());
   registry.registerShape(new HitShape());

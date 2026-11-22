@@ -8,7 +8,6 @@ import { loadAbilities } from './loadAbilities';
 
 /** Cost and cooldown of the seven abilities with no effects yet: balancing.md "Aether costs and cooldowns" (0 / 0 for an ultimate: the meter gates it). */
 const UNBUILT = {
-  hamstring: { cooldownSeconds: 9, aetherCost: 25, slot: 'ability' },
   'rip-and-tear': { cooldownSeconds: 10, aetherCost: 30, slot: 'ability' },
   'shield-wall': { cooldownSeconds: 18, aetherCost: 40, slot: 'ability' },
   berserk: { cooldownSeconds: 0, aetherCost: 0, slot: 'ultimate' },
@@ -17,8 +16,11 @@ const UNBUILT = {
   'death-ray': { cooldownSeconds: 0, aetherCost: 0, slot: 'ultimate' },
 } as const;
 
-/** Every effect kind the framework builds (05 §3): PR 1's, then Fury's `buff`; a new kind is added here with its effect class. */
-const BUILT_EFFECT_KINDS = ['damage', 'debuff', 'dash', 'knockback', 'buff'];
+/**
+ * Every effect kind the framework builds (05 §3): PR 1's, Fury's `buff`, Hamstring's `projectile`;
+ * a new kind is added here with its effect class.
+ */
+const BUILT_EFFECT_KINDS = ['damage', 'debuff', 'dash', 'knockback', 'buff', 'projectile'];
 
 describe('ABILITIES', () => {
   it('lists the twelve kit abilities in class order, abilities before the ultimate, then what the ultimate grants', () => {
@@ -129,7 +131,7 @@ describe('ABILITIES', () => {
     expect(['blade-runner', 'slam', 'shockwave'].map(structureMultiplierOf)).toEqual([0.3, 2, 1]);
   });
 
-  it('prices the seven abilities not built yet from balancing.md and gives them no effects', () => {
+  it('prices the six abilities not built yet from balancing.md and gives them no effects', () => {
     const unbuilt = ABILITIES.all().filter((ability) => ability.effects.length === 0);
 
     expect(unbuilt.map((ability) => ability.id)).toEqual(Object.keys(UNBUILT));

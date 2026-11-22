@@ -28,6 +28,7 @@ import type { Team } from '../teams/teams.types';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
 import { CombatSystem } from './CombatSystem';
 import { MovementSystem } from './MovementSystem';
+import { NO_ABILITY_SHOTS } from '../abilities/__fixtures__/noAbilityShots';
 import { createDefaultProjectileImpacts } from './defaultProjectileImpacts';
 import { ProjectileSystem } from './ProjectileSystem';
 
@@ -97,7 +98,7 @@ const world = (walls: readonly Polygon[]) => {
   const state = new GameState(CONFIG, 1, null, { collisions });
   const context = { state, logger: new NullLogger() };
   const projectiles = new ProjectileSystem(
-    createDefaultProjectileImpacts(new DamagePipeline(), null),
+    createDefaultProjectileImpacts(new DamagePipeline(), null, NO_ABILITY_SHOTS),
   );
   const movement = new MovementSystem();
   let counter = 0;
