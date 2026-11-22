@@ -230,12 +230,24 @@ describe('LeashBehaviour', () => {
     });
   });
 
+  it('takes an enemy anywhere inside its leash, and none beyond it (DEC-323 (2))', () => {
+    const { add, decide } = setUp();
+    const self = add('light', 50);
+    add('dark', 50 + LANE_MINION_AGGRO.leashRadius + 0.1);
+
+    expect(decide(self).commands).toEqual([]);
+    const near = add('dark', 50 + LANE_MINION_AGGRO.leashRadius - 0.1);
+    expect(decide(self).commands).toEqual([
+      { type: 'attack-target', actorId: self, targetId: near },
+    ]);
+  });
+
   it('answers a call for help: takes an enemy beyond its reach that attacks a horde-mate', () => {
     const { state, add, decide } = setUp();
     const self = add('light', 50);
     const mate = add('light', 56);
     const outsider = add('light', 58);
-    // 7 away: past the 5.4 reach, inside the 8.625 call for help.
+    // 7 away: past the `short-reach` 5.4 m reach, inside the 8.625 call for help.
     const enemy = add('dark', 57);
     state.hordes.add({
       id: 'horde-1',
@@ -248,10 +260,10 @@ describe('LeashBehaviour', () => {
     });
 
     state.entities.setAttackTarget(enemy, outsider);
-    expect(decide(self).commands).toEqual([]);
+    expect(decide(self, {}, 'short-reach').commands).toEqual([]);
 
     state.entities.setAttackTarget(enemy, mate);
-    expect(decide(self).commands).toEqual([
+    expect(decide(self, {}, 'short-reach').commands).toEqual([
       { type: 'attack-target', actorId: self, targetId: enemy },
     ]);
   });

@@ -1,6 +1,8 @@
 import { Transform } from '../../components/Transform';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import type { GameConfig } from '../../config/GameConfig.types';
+import { AGGRO_RULES } from '../../content/ai/aggro/aggroRules';
+import { LANE_MINION_AGGRO } from '../../content/ai/aggro/laneMinion';
 import { loadAggroRules } from '../../content/ai/aggro/loadAggroRules';
 import { loadDefaultContent } from '../../content/loadDefaultContent';
 import { STRUCTURE_DEFINITIONS } from '../../content/structures/structureCatalogue';
@@ -21,9 +23,16 @@ import { Perception } from '../perception/Perception';
 export const CLASS_OF = (kind: string) =>
   kind === 'warrior' ? ('legend' as const) : kind.endsWith('-mob') ? ('minion' as const) : null;
 
-/** A lane-minion controller over the default aggro content, loaded at the default tick rate. */
+/**
+ * A lane-minion controller over the default aggro content, loaded at the default tick rate, plus
+ * `short-reach`: the lane minion with the 5.4 m reach it had before DEC-323 (2), short of its call
+ * for help, so a test can reach the call-for-help path.
+ */
 export const controller = new MinionController({
-  aggro: loadAggroRules(createDefaultGameConfig().tickRate),
+  aggro: loadAggroRules(createDefaultGameConfig().tickRate, {
+    ...AGGRO_RULES,
+    'short-reach': { ...LANE_MINION_AGGRO, id: 'short-reach', acquisitionRadius: 5.4 },
+  }),
   classOf: CLASS_OF,
 });
 

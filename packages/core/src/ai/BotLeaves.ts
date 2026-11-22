@@ -1,31 +1,30 @@
-import type { AiMemory, BotDifficultyDefinition } from '../content/ai/ai.types';
+import type { AiMemory } from '../content/ai/ai.types';
 import type { EntityId } from '../state/EntityStore.types';
 import { compareById } from '../utils/compareById';
-import { sqrt } from '../utils/deterministicMath';
 import type { Vec2 } from '../utils/geometry.types';
 import { SeededRandom } from '../utils/SeededRandom';
 import type { MutableVec2 } from '../utils/vec2.types';
 import type { BtStatus } from './bt/BtNode.types';
 import type { BotMemory, BotLegendControllerContent, BotTurn } from './BotLegendController.types';
 import { BotMovement } from './BotMovement';
+import { BotTargeting } from './BotTargeting';
 import type { Decision, DecisionInput } from './Controller.types';
-import { closeness, weakness } from './utility/considerations';
-import { UtilityScorer } from './utility/UtilityScorer';
 import { isPlayableTeam } from '../teams/playableTeams';
 
 /**
  * The conditions and actions every bot Legend tree is built from (architecture 11 §4.2):
- * surviving, choosing and fighting an enemy (and casting), attacking the lane's next enemy
- * structure, following the lead horde and walking. How the bot gets there (A\* round obstacles,
- * footprint edges, detours) is `BotMovement`'s. `BotLegendController` and `RoverController`
+ * surviving, choosing and fighting an enemy (and casting), defending its own lane structures,
+ * attacking the lane's next enemy structure, following the lead horde and walking. Which enemy it
+ * picks is `BotTargeting`'s; how the bot gets there (A\* round obstacles, footprint edges,
+ * detours) is `BotMovement`'s. `BotLegendController` and `RoverController`
  * arrange the leaves into their trees. Stateless apart from scratch: what a bot remembers is its
  * brain.
  */
 export class BotLeaves {
-  private readonly scorers = new Map<string, UtilityScorer<'closeness' | 'weakness'>>();
   private readonly anchor: MutableVec2 = { x: 0, y: 0 };
   private readonly forward: MutableVec2 = { x: 0, y: 0 };
   private readonly movement = new BotMovement();
+  private readonly targeting = new BotTargeting();
 
   /** @param content - Difficulties and retreat points; the leaves hold no numbers. */
   public constructor(private readonly content: BotLegendControllerContent) {}
@@ -110,25 +109,14 @@ export class BotLeaves {
     return this.moveTo(turn, best.position);
   }
 
-  /**
-   * Picks the enemy in `engageRadius` the utility scorer likes best: an enemy unit, or a camp mob
-   * attacking the bot (DEC-166; it never farms a camp that leaves it alone).
-   */
+  /** Picks the enemy in `engageRadius` to fight (`BotTargeting.findEnemy`). */
   public findEnemy(turn: BotTurn): boolean {
-    const { state, id, team, position, difficulty, perception } = turn;
-    const enemies = perception.unitsWithin(position, difficulty.engageRadius, {
-      hostileTo: team,
-      neutralAttackersOf: id,
-      aliveOnly: true,
-    });
-    turn.enemy = this.scorerFor(difficulty).best(enemies, (enemy) => {
-      const at = BotMovement.positionOf(state, enemy) ?? position;
-      return {
-        closeness: closeness(sqrt(BotMovement.gapSquared(position, at)), difficulty.engageRadius),
-        weakness: weakness(state.entities.healthFractionOf(enemy) ?? 1),
-      };
-    });
-    return turn.enemy !== null;
+    return this.targeting.findEnemy(turn);
+  }
+
+  /** Picks an enemy attacking the bot's own structures on `lane` (`BotTargeting.findDefence`). */
+  public findDefence(turn: BotTurn, lane: string): boolean {
+    return this.targeting.findDefence(turn, lane);
   }
 
   /**
@@ -270,15 +258,6 @@ export class BotLeaves {
       aim: { point: { x: at.x, y: at.y }, targetId: enemy },
     });
     turn.next = { ...turn.next, nextCastTick: turn.state.tick + castIntervalTicks };
-  }
-
-  private scorerFor(difficulty: BotDifficultyDefinition): UtilityScorer<'closeness' | 'weakness'> {
-    let scorer = this.scorers.get(difficulty.id);
-    if (scorer === undefined) {
-      scorer = new UtilityScorer(difficulty.utilityWeights);
-      this.scorers.set(difficulty.id, scorer);
-    }
-    return scorer;
   }
 
   /** A bot's memory from its brain; anything it does not hold reads as a fresh bot's. */

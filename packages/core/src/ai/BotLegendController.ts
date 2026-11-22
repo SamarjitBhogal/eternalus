@@ -15,10 +15,13 @@ import type { Controller, Decision, DecisionInput } from './Controller.types';
  *    target and falls back to the nearest allied tower or its Stronghold.
  * 2. `Fight`: an enemy inside `engageRadius` → the `UtilityScorer` picks one by closeness and
  *    weakness; it attacks it (casting when the roll allows) and closes in until it is in reach.
- * 3. `Push`: once it has come up to its lane's next enemy structure (a gate only when it can be
+ * 3. `Defend`: an enemy unit attacks one of its own towers or its gate on its lane → it fights
+ *    the enemies near that structure (within `engageRadius` of its box, a tower's whole fort) as
+ *    `Fight` does, wherever on the lane it stands (DEC-323 (2)).
+ * 4. `Push`: once it has come up to its lane's next enemy structure (a gate only when it can be
  *    broken), it attacks it: to the edge of its footprint on the bot's side, then in reach of it.
  *    Before that it walks with the most advanced allied horde on its lane, at that horde's anchor.
- * 4. `Regroup`: with no allied horde on its lane, it returns to the nearest point of its lane.
+ * 5. `Regroup`: with no allied horde on its lane, it returns to the nearest point of its lane.
  *
  * Every step is a `move`, `attack-target`, `cast-ability` or `stop` command for the next tick,
  * routed around obstacles by A\*; a bot already standing sends no new halt. Stateless: its lane,
@@ -43,6 +46,10 @@ export class BotLegendController implements Controller {
       ]),
       new Sequence([
         new Condition((turn) => leaves.findEnemy(turn)),
+        new Action((turn) => leaves.fight(turn)),
+      ]),
+      new Sequence([
+        new Condition((turn) => leaves.findDefence(turn, turn.memory.lane)),
         new Action((turn) => leaves.fight(turn)),
       ]),
       new Sequence([
