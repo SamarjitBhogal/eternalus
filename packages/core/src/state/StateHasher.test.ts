@@ -6,6 +6,7 @@ import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { ChaseWatch } from '../components/ChaseWatch';
+import { Combat } from '../components/Combat';
 import { CombatClock } from '../components/CombatClock';
 import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
@@ -175,6 +176,19 @@ describe('StateHasher', () => {
     expect(clocked).not.toBe(bare);
     expect(dealt).not.toBe(clocked);
     expect(hasher.hash(state)).not.toBe(dealt);
+  });
+
+  it('changes with the weapon a unit has equipped', () => {
+    const attack = { strategy: 'melee', damage: 10, reach: 1, interval: 5 } as const;
+    const hashWith = (weaponId: string | null): number => {
+      const { state, soldier } = stateWithSoldier();
+      soldier.addComponent(new Combat(attack, weaponId));
+      return hasher.hash(state);
+    };
+
+    expect(hashWith('raptor-talons')).not.toBe(hashWith(null));
+    expect(hashWith('raptor-talons')).not.toBe(hashWith('wuuthrad'));
+    expect(hashWith('wuuthrad')).toBe(hashWith('wuuthrad'));
   });
 
   it('differs between seeds', () => {

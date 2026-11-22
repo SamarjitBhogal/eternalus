@@ -1,3 +1,4 @@
+import { isWeaponAllowedFor } from '../../content/weapons/isWeaponAllowedFor';
 import type { Loadout } from '../Loadout.types';
 import type { LoadoutContent, LoadoutProblem, LoadoutRule } from '../LoadoutValidator.types';
 
@@ -14,10 +15,7 @@ export class WeaponAllowedRule implements LoadoutRule {
   public check(loadout: Loadout, content: LoadoutContent): readonly LoadoutProblem[] {
     const { classId, primaryWeaponId } = loadout;
     if (!content.legends.has(classId) || !content.weapons.has(primaryWeaponId)) return [];
-    const { allowedClasses, uniqueTo } = content.weapons.get(primaryWeaponId);
-    const isAllowed =
-      (allowedClasses === 'any' || allowedClasses.some((kind) => kind === classId)) &&
-      (uniqueTo === null || uniqueTo === classId);
+    const isAllowed = isWeaponAllowedFor(content.weapons.get(primaryWeaponId), classId);
     return isAllowed
       ? []
       : [

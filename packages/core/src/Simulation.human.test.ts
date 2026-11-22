@@ -9,7 +9,6 @@ import { NullLogger } from './diagnostics/NullLogger';
 import { recordReplay, runReplay } from './diagnostics/replay';
 import type { MapDefinition } from './content/maps/maps.types';
 import { Combat } from './components/Combat';
-import { loadDefaultContent } from './content/loadDefaultContent';
 import { Simulation } from './Simulation';
 import type { ReplaySetup, RosterSlot } from './Simulation.types';
 import { TWO_LANE_MAP } from './state/__fixtures__/twoLaneMap';
@@ -129,23 +128,6 @@ describe('Simulation: the human slot of the roster', () => {
         },
       },
     ]);
-  });
-
-  it('refuses content whose class default loadout breaks the loadout rules, at load', () => {
-    const shipped = loadDefaultContent(30);
-    const content = {
-      has: (id: string) => shipped.has(id),
-      get: (id: string) =>
-        id === 'warrior'
-          ? { ...shipped.get(id), defaultLoadout: { primaryWeaponId: 'magus-staff' } }
-          : shipped.get(id),
-    };
-
-    expect(
-      () => new Simulation({ config: configFor(), seed: 5, logger: new NullLogger(), content }),
-    ).toThrow(
-      'Invalid content: warrior: defaultLoadout: class "warrior" may not carry weapon "magus-staff"',
-    );
   });
 
   it("snapshots the human Legend's level and XP from the Simulation's own level curves; structures have none", () => {

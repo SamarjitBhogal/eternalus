@@ -19,6 +19,7 @@ export function shippedCatalogue(
   overrides: DisplayOverrides = NO_DISPLAY_OVERRIDES,
 ): CatalogueSource {
   return createCoreCatalogue({
+    content: loadDisplayContent(),
     knownAssetIds: new Set(ASSET_MANIFEST.assets.map((entry) => entry.id)),
     overrides,
   });

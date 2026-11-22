@@ -1,4 +1,5 @@
 import type { DtoCheck } from './DtoCheck.types';
+import { isRecord } from './dtoCheck';
 
 /**
  * What a saved loadout holds today: the primary weapon. Secondary weapon, passive, artifacts,
@@ -26,10 +27,6 @@ const KEY_SEPARATOR = '/';
 /** The store key of the loadout `profileId` keeps for `classId`. */
 export function loadoutKey(profileId: string, classId: string): string {
   return `${profileId}${KEY_SEPARATOR}${classId}`;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function loadoutProblem(value: unknown): string | null {

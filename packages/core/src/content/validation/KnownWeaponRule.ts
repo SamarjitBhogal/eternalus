@@ -23,7 +23,8 @@ export class KnownWeaponRule implements UnitDefinitionRule {
       : [`defaultLoadout.primaryWeaponId "${weaponId}" names no weapon`];
   }
 
-  private static primaryWeaponIdOf(definition: UnitDefinition): string | null {
+  /** The default weapon id a definition names, or `null`. */
+  public static primaryWeaponIdOf(definition: UnitDefinition): string | null {
     if (!('defaultLoadout' in definition)) {
       return null;
     }

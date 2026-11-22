@@ -1,3 +1,4 @@
+import { WEAPONS } from './weapons/weaponCatalogue';
 import { describe, expect, it } from 'vitest';
 
 import { ContentCatalogue } from './ContentCatalogue';
@@ -12,6 +13,7 @@ import { ORACLE } from './legends/specs/oracle';
 import { ContentValidator } from './validation/ContentValidator';
 import { KebabCaseIdRule } from './validation/KebabCaseIdRule';
 import { KnownLevelCurveRule } from './validation/KnownLevelCurveRule';
+import { DefaultWeaponAllowedRule } from './validation/DefaultWeaponAllowedRule';
 import { KnownWeaponRule } from './validation/KnownWeaponRule';
 import { LevelScalingRule } from './validation/LevelScalingRule';
 import { PositiveAetherRule } from './validation/PositiveAetherRule';
@@ -30,6 +32,7 @@ describe('createDefaultContentRules', () => {
       KnownLevelCurveRule,
       LevelScalingRule,
       KnownWeaponRule,
+      DefaultWeaponAllowedRule,
     ]);
   });
 
@@ -52,7 +55,10 @@ describe('createDefaultContentRules', () => {
 
   it('rejects a Legend whose default weapon is not among the given weapons', () => {
     const validator = new ContentValidator(
-      createDefaultContentRules(undefined, { has: () => false }),
+      createDefaultContentRules(undefined, {
+        has: () => false,
+        get: (id) => WEAPONS.get(id),
+      }),
     );
     const armed = new ContentCatalogue([
       { ...LEGEND_CLASSES.get('warrior'), defaultLoadout: { primaryWeaponId: 'test-talons' } },

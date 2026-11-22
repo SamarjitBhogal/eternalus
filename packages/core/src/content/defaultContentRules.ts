@@ -9,6 +9,7 @@ import type { BotRosterDefinition } from './teams/botRoster.types';
 import { BotRosterClassRule } from './validation/BotRosterClassRule';
 import { BotRosterDifficultyRule } from './validation/BotRosterDifficultyRule';
 import type { ContentRule, UnitDefinitionRule } from './validation/ContentValidator.types';
+import { DefaultWeaponAllowedRule } from './validation/DefaultWeaponAllowedRule';
 import { KebabCaseIdRule } from './validation/KebabCaseIdRule';
 import { KnownLevelCurveRule } from './validation/KnownLevelCurveRule';
 import { KnownWeaponRule } from './validation/KnownWeaponRule';
@@ -28,7 +29,7 @@ import type { WeaponDefinition } from './weapons/weapons.types';
  */
 export const createDefaultContentRules = (
   curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'has'> = LEVEL_CURVE_CATALOGUE,
-  weapons: Pick<ContentCatalogue<WeaponDefinition>, 'has'> = WEAPONS,
+  weapons: Pick<ContentCatalogue<WeaponDefinition>, 'has' | 'get'> = WEAPONS,
 ): readonly UnitDefinitionRule[] => [
   new KebabCaseIdRule(),
   new PositiveStatsRule(),
@@ -36,6 +37,7 @@ export const createDefaultContentRules = (
   new KnownLevelCurveRule(curves),
   new LevelScalingRule(),
   new KnownWeaponRule(weapons),
+  new DefaultWeaponAllowedRule(weapons),
 ];
 
 /**

@@ -40,6 +40,25 @@ Reply inline (`Decision: …`).
       dependency and no hand-written fake or contract run against IndexedDB; the adapter landed
       with plain unit tests only (see the next item). The question stays open for when the
       adapter gets real tests.
+      _Agent note (2026-11-22, `feat/loadout-screen`, PR #141 review):_ the review asked for the
+      adapter's tests (reads, writes, aborts, upgrades), so the branch now runs the contract
+      suite against a hand-written fake of the subset the adapter uses
+      (`data/persistence/__fixtures__/FakeIdb*.ts`, test-only, no dependency). Keep it, or swap
+      it for `fake-indexeddb` (needs your approval)?
+
+- [ ] **`feat/loadout-screen` (PR #141, SCRUM-31, SCRUM-311) — product and layout rulings the
+      review left to you.** (1) Is a saved weapon kept per class (FR-089, reference 08, as built)
+      or per Legend (DEC-57, DEC-301, `Loadout.specId`)? Storage v1 is not on players' disks
+      yet, so changing it is cheap now. (2) Does the HUD weapon slot show the picked weapon's art
+      or the class art (DEC-57, DEC-114)? (3) Copy of the repaired-loadout status line on the
+      Loadout screen. (4) The rule that gates Save (a pick must differ from the saved weapon).
+      (5) Disabled placeholder rows (secondary weapon, passive, artifacts, abilities, ultimate)
+      and their copy: keep or remove. (6) The new `apps/client/src/game/loadout/` folder: it is
+      not in the `apps/client/AGENTS.md` folder table. (7) The public core API additions
+      (`DisplayContent.weapons`, `LegendEquipment`) and the `entities/` import of `loadout/`
+      types with the `LoadoutResolver` port. (8) The locked view's line now reads
+      "Recommendation: <weapon>" (the review's wording); confirm it with (1) and (2).
+      _Agent note (2026-11-22):_ nothing was removed; these stay as built until you rule.
 
 - [ ] **`feat/loadout-indexeddb` (SCRUM-31, SCRUM-311), `IndexedDbStorageAdapter` — four points
       the docs leave open.** (1) Wiring the adapter puts schema v1 on players' disks once it

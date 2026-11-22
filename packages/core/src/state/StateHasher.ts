@@ -163,6 +163,10 @@ export class StateHasher {
     if (combat !== undefined && (combat.targetId !== null || combat.readyAtTick > 0)) {
       fields.push(['combat', combat.targetId, combat.readyAtTick]);
     }
+    // A Legend's equipped weapon is state (the saved loadout picks it); units with none add no field.
+    if (combat?.weaponId !== null && combat?.weaponId !== undefined) {
+      fields.push(['weapon', combat.weaponId]);
+    }
     const vision = entity.findComponent(Vision);
     if (vision !== undefined) {
       fields.push(['vision', vision.revealedUntilTick]);
