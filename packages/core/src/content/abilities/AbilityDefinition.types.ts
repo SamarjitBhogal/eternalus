@@ -31,10 +31,11 @@ export type AbilityRejectReason =
 
 /**
  * Which kind of slot an ability fills (05 §2). `granted`: only a status grants it, for as long as
- * it lasts (the `granted` slot; a kit may not name it). `gadget`, `default-action` and `passive`
+ * it lasts (the `granted` slot; a kit may not name it). `gadget`: an artifact (05 §11) on
+ * `gadget-1` or `gadget-2`, named by a Legend spec's `artifacts`. `default-action` and `passive`
  * join when the first ability of that kind is built.
  */
-type AbilitySlotKind = 'ability' | 'ultimate' | 'granted';
+type AbilitySlotKind = 'ability' | 'ultimate' | 'granted' | 'gadget';
 
 /**
  * How a cast is aimed (05 §2): `self` acts around the caster; `directional` follows the aim vector
@@ -156,10 +157,17 @@ type AuthoredDashSpec = {
 export type DashSpec = InTicks<AuthoredDashSpec>;
 
 /**
+ * Puts the caster's other weapon in its hand (DEC-303: the Zealot's talons and bow): the weapons
+ * are the caster's `Loadout`, so the step has no fields.
+ */
+export type SwapWeaponSpec = { readonly kind: 'swap-weapon' };
+
+/**
  * One step of an ability's cast timeline as authored (05 §3); one effect strategy per `kind`. A
  * status's `onHit` steps are authored the same way.
  */
-export type AuthoredEffectSpec = AuthoredShapedEffectSpec | AuthoredDashSpec | AuthoredBuffSpec;
+export type AuthoredEffectSpec =
+  AuthoredShapedEffectSpec | AuthoredDashSpec | AuthoredBuffSpec | SwapWeaponSpec;
 
 /** One loaded effect step: every time in ticks. A status's `onHit` steps are loaded this way. */
 export type AbilityEffectSpec = InTicks<AuthoredEffectSpec>;

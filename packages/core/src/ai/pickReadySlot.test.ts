@@ -67,6 +67,14 @@ describe('pickReadySlot (DEC-205)', () => {
     expect(pickReadySlot(turn, onlyReady('granted'), AIM)).toBe('granted');
   });
 
+  it('never picks a gadget, so a bot Zealot keeps its talons (owner card "PR9 bot swap", A)', () => {
+    const turn = turnWith(1);
+    const gadget = turn.state.entities.get(turn.id)?.findComponent(Abilities)?.slot('gadget-1');
+    gadget?.hold('weapon-swap');
+
+    expect(pickReadySlot(turn, onlyReady('gadget-1'), AIM)).toBeNull();
+  });
+
   it('reaches every ready slot over many seeds', () => {
     const seen = new Set<string | null>();
     for (let seed = 1; seed <= 60; seed += 1) {

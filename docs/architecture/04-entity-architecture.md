@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-22
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -412,6 +412,16 @@ session or phase named:
 spawn and land. `RangedProjectileAttackStrategy` creates each one through `EntityFactory`
 (`AttackContext.factory`), and `ProjectileSystem` removes it with cause `consumed`. Each shot is
 a new entity, with no pool (§11, signed off as DEC-309). Particles are unchanged.
+
+**Implementation status, 2026-11-22 (branch `feat/zealot-weapon-swap`, PR 9; DEC-303).** Every
+Legend installs `Loadout` (`components/Loadout.ts`), which holds only the weapon part of §3's
+`Loadout`: the class's default weapon, the spec's second weapon or none, and which one is in hand,
+with `inHand`, `isSecondaryInHand` and `swap()`. The artifacts are on `Abilities` (`gadget-1`,
+`gadget-2`), filled from the spec; the abilities and varieties are not on it either. There is no
+`apply(loadout)` and no check on set: no screen builds a loadout yet, and the content rules check
+the spec at load. `Combat` gains `equip(attacks, weaponId)`, which the `swap-weapon` effect calls
+after `swap()`, so `Combat.weaponId` is the weapon in hand. Only the Zealot has a second weapon
+([05 §18](05-abilities-weapons-and-loadouts.md#18-implementation-status)).
 
 ## Related
 

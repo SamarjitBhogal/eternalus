@@ -60,17 +60,21 @@ export const createDefaultContentRules = (
  * Every shipped Legend-spec rule. A new spec rule is one line here.
  *
  * @param legends - The loaded Legend classes a spec's `classId` must name.
- * @param abilities - The abilities a spec's own kit may name; the shipped set by default.
+ * @param abilities - The abilities a spec's own kit and artifacts may name; the shipped set by
+ *   default.
+ * @param weapons - The weapons a spec's second weapon must name; the shipped set by default.
  */
 export const createLegendSpecRules = (
   legends: ContentCatalogue<LegendDefinition>,
   abilities: Pick<ContentCatalogue<AbilityBase>, 'has' | 'get'> = ABILITIES,
+  weapons: Pick<ContentCatalogue<WeaponDefinition>, 'has'> = WEAPONS,
 ): readonly ContentRule<LegendSpecDefinition>[] => [
   new KebabCaseIdRule(),
   new SpecClassExistsRule(legends),
   new RoleRatingRangeRule(),
   new KnownAbilityRefsRule(abilities, legends),
   new KitInPoolRule(legends),
+  new KnownWeaponRule(weapons),
 ];
 
 /** Every shipped locked-class rule. A new locked-class rule is one line here. */

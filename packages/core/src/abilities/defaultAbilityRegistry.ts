@@ -7,6 +7,7 @@ import { DamageEffect } from './effects/DamageEffect';
 import { DashEffect } from './effects/DashEffect';
 import { DebuffEffect } from './effects/DebuffEffect';
 import { KnockbackEffect } from './effects/KnockbackEffect';
+import { SwapWeaponEffect } from './effects/SwapWeaponEffect';
 import { MinLevelRestriction } from './restrictions/MinLevelRestriction';
 import { CircleShape } from './shapes/CircleShape';
 import { HitShape } from './shapes/HitShape';
@@ -41,6 +42,7 @@ export const createDefaultAbilityRegistry = (
   registry.registerEffect(new KnockbackEffect(loadKnockback(tickRate)));
   registry.registerEffect(new DashEffect());
   registry.registerEffect(new BuffEffect(statuses));
+  registry.registerEffect(new SwapWeaponEffect());
   registry.registerShape(new CircleShape());
   registry.registerShape(new PathShape());
   registry.registerShape(new HitShape());

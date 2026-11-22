@@ -15,15 +15,23 @@ export class Abilities {
 
   /**
    * Builds the bar from `kit` (DEC-198, DEC-209 (2)): its three abilities on `ability-1` to
-   * `ability-3`, its ultimate on `ability-4`; the gadget and default-action slots stay empty until
-   * their content exists.
+   * `ability-3`, its ultimate on `ability-4`; then `artifacts` on `gadget-1` and `gadget-2` (05
+   * §11, DEC-303). The default-action slot stays empty until its content exists.
+   *
+   * @param kit - The Legend's kit (`kitOf`).
+   * @param artifacts - The spec's artifacts, `null` for an empty gadget slot; both empty by default.
    */
-  public constructor(kit: AbilityKit) {
-    const held = new Map<AbilitySlot, string>([
+  public constructor(
+    kit: AbilityKit,
+    artifacts: readonly [string | null, string | null] = [null, null],
+  ) {
+    const held = new Map<AbilitySlot, string | null>([
       ['ability-1', kit.abilities[0]],
       ['ability-2', kit.abilities[1]],
       ['ability-3', kit.abilities[2]],
       [ULTIMATE_SLOT, kit.ultimate],
+      ['gadget-1', artifacts[0]],
+      ['gadget-2', artifacts[1]],
     ]);
     this.bySlot = new Map(
       ABILITY_SLOTS.map((slot) => [slot, new AbilitySlotRuntime(slot, held.get(slot) ?? null)]),

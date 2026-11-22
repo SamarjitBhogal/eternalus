@@ -80,6 +80,7 @@ describe('createLegendSpecRules', () => {
       RoleRatingRangeRule,
       KnownAbilityRefsRule,
       KitInPoolRule,
+      KnownWeaponRule,
     ]);
   });
 

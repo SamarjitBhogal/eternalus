@@ -33,6 +33,7 @@ describe('createDefaultAbilityRegistry', () => {
       'fury-dash',
       'slam',
       'shockwave',
+      'weapon-swap',
     ]);
     expect(SHIPPED_EFFECT_KINDS.map((kind) => registry.effectFor(kind).kind)).toEqual(
       SHIPPED_EFFECT_KINDS,

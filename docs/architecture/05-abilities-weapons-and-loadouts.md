@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-22
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -1275,6 +1275,37 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     client checks neither the slot nor the targeting kind. The HUD shows a prompt (key and name)
     while the slot holds an ability (DEC-283 (7)). A bot may cast a filled `granted` slot
     (`pickReadySlot`).
+- **Weapon Swap (`feat/zealot-weapon-swap`, PR 9, 2026-11-22; DEC-303).** The first artifact
+  (§11) and the first second weapon (§12) are built for the Zealot only.
+  - **Content.** `content/artifacts/weaponSwap.ts` (`weapon-swap`, class `warrior`, slot kind
+    `gadget`, `self` targeting, one `swap-weapon` step) is listed last in `abilityCatalogue.ts`:
+    the ability registry resolves every slot from that one catalogue, so there is no
+    `artifactCatalogue.ts` (17's recipe names one). It is an `AuthoredAbility`, not an
+    `ArtifactDefinition`, and has no varieties. Its cooldown (1 s) and aether cost (0) are `TUNE`.
+  - **Who carries what.** The Legend spec names its second weapon and its artifacts, as it names
+    its kit (DEC-198): `LegendSpecDefinition.secondaryWeaponId` and `artifacts` (`gadget-1`, then
+    `gadget-2`; `null` = empty). The Zealot (spec `assassin`) has `obsidian-bow` and
+    `['weapon-swap', null]` (key Z); every other spec has `null` and two empty slots. The class has
+    no `allowedArtifactIds` list yet (§2, 04 §5): no screen picks artifacts, so the spec fixes them.
+    `KnownAbilityRefsRule` checks that each artifact exists, is of the spec's class and has slot
+    kind `gadget`; `KnownWeaponRule` checks `secondaryWeaponId`. These rules run in
+    `loadDisplayContent`, not at simulation boot, as for every spec rule.
+  - **Runtime.** Every Legend installs a `Loadout` component (`components/Loadout.ts`), the weapon
+    part of §12 only: the class's default weapon and the spec's second weapon (or none), each
+    with its attacks loaded at spawn, and which one is in hand. `Abilities` fills `gadget-1` and
+    `gadget-2` from the spec's `artifacts`. The `swap-weapon` effect
+    (`abilities/effects/SwapWeaponEffect.ts`, one line in `defaultAbilityRegistry.ts`) calls
+    `Loadout.swap()`, then `Combat.equip(attacks, weaponId)`: the new attack set, the same target
+    and attack timer, and the `basic` mode when the new weapon has no attack for the current mode
+    (the bow has no `melee`). `StateHasher` adds a `loadout` field only while the second weapon is
+    in hand, so a run without a swap hashes as before. There is no `LoadoutValidator`, no
+    `apply(loadout)` and no `loadout/` folder yet.
+  - **Bots and client.** Bots never cast `gadget-1` or `gadget-2` (`BOT_SKIPPED_SLOTS` in
+    `ai/pickReadySlot.ts`): they would swap at random, and the owner card "PR9 bot swap" (A) keeps
+    them on the talons. The HUD shows the gadget slot through the existing slot path (§15) with no
+    client change; the weapon panel still shows the class's default weapon while the bow is in
+    hand. The owner cards "PR9 swap key", "PR9 swap timing", "PR9 bow melee key" and "PR9 bot
+    swap" are open; the recommended option of each is built.
 
 ## Related
 

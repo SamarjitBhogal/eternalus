@@ -19,4 +19,6 @@ export const CATALYST = {
   roleRatings: null,
   detailNames: { ultimate: null, 'ability-1': null, 'ability-2': null, 'ability-3': null },
   kit: null, // the class default kit; no Legend has its own yet
+  secondaryWeaponId: null,
+  artifacts: [null, null],
 } as const satisfies LegendSpecDefinition;

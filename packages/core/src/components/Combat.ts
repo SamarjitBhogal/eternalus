@@ -15,15 +15,18 @@ export class Combat {
 
   private attackValue: UnitAttack;
 
+  private attacks: UnitAttacks;
+
+  private weaponIdValue: string | null;
+
   /**
    * @param attacks - The attacks by mode, with `interval` already in ticks (`attacksByMode`).
    * @param weaponId - The equipped weapon the attacks come from (05 §10), or `null` for a unit's own
    *   attack (mobs).
    */
-  public constructor(
-    private readonly attacks: UnitAttacks,
-    public readonly weaponId: string | null = null,
-  ) {
+  public constructor(attacks: UnitAttacks, weaponId: string | null = null) {
+    this.attacks = attacks;
+    this.weaponIdValue = weaponId;
     this.attackValue = attacks.basic;
   }
 
@@ -76,5 +79,23 @@ export class Combat {
    */
   public beginAttack(tick: number, attackSpeed = 1): void {
     this.readyAtTickValue = tick + Math.max(1, Math.round(this.attack.interval / attackSpeed));
+  }
+
+  /** The equipped weapon the attacks come from (05 §10), or `null` for a unit's own attack (mobs). */
+  public get weaponId(): string | null {
+    return this.weaponIdValue;
+  }
+
+  /**
+   * Equips another weapon's attacks (DEC-303: the Zealot's weapon swap). The target and the attack
+   * timer stay (owner card "PR9 swap timing", A). A mode the new attacks do not have becomes
+   * `basic` (the bow has no `melee`: card "PR9 bow melee key", A).
+   */
+  public equip(attacks: UnitAttacks, weaponId: string): void {
+    const attack = attacks[this.modeValue];
+    this.attacks = attacks;
+    this.weaponIdValue = weaponId;
+    this.modeValue = attack === undefined ? 'basic' : this.modeValue;
+    this.attackValue = attack ?? attacks.basic;
   }
 }
