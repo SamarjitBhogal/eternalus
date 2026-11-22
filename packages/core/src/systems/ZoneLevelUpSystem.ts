@@ -6,8 +6,8 @@ import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { PlayableTeam } from '../teams/teams.types';
 import type { System, SystemContext } from './System.types';
-
 import { TickRate } from '../utils/TickRate';
+
 /**
  * The zone level-up (architecture 07 §7, DEC-258): once a team has held a capture point for
  * `holdSeconds` without a break (`Capturable.ownedSinceTick`), every horde of that team spawned on
@@ -74,7 +74,10 @@ export class ZoneLevelUpSystem implements System {
     this.spawned.length = 0;
   }
 
-  /** A capture point on `lane` that `team` has held for the hold time, if any. */
+  /**
+   * A capture point on `lane` that `team` has held for the hold time, if any: the first in
+   * `state.entities` order (insertion order, so deterministic) when several qualify.
+   */
   private heldPoint(state: GameState, team: PlayableTeam, lane: string): EntityId | undefined {
     let held: EntityId | undefined;
     state.entities.forEach((entity) => {

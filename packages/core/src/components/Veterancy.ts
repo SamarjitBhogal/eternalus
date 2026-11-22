@@ -2,7 +2,7 @@
  * A minion's level and kills (game doc "Minion XP"): one level with two sources (DEC-168). Kills
  * earn a level every `killsPerLevel` (`gainLevels`); a held capture zone grants levels that its
  * loss takes back (`grantLevels`, 07 §7, DEC-258). The level is the sum of both, capped, so losing
- * a granted level never costs a level the kills earned. Added by `VeterancySystem` on a minion's
+ * a granted level never costs a level the kills earned (DEC-279). Added by `VeterancySystem` on a minion's
  * first kill or level; other systems reach it through `VeterancySystem`'s events, so the level's
  * effects apply.
  */
@@ -60,6 +60,9 @@ export class Veterancy {
   /**
    * Adds `levels` levels granted by `sourceId`, or takes some back when negative (never below none
    * granted); returns how much the level changed, which the cap may make less than `levels`.
+   * Holds one source only: a grant from a second source relabels every granted level, so the first
+   * source's take-back would miss them. Today a minion gets one grant, at spawn, from its lane's one
+   * capture point (`MapBuilder.placeCapturePoints`); keep a count per source if that changes.
    */
   public grantLevels(levels: number, maxLevel: number, sourceId: string): number {
     this.grantedValue = Math.max(0, this.grantedValue + levels);

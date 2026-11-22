@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-22
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -204,7 +204,7 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 | `ability-cast`                      | `{ casterId, abilityId, slot }`                        | `AbilitySystem`                                                 | views (VFX), `Announcer`                                                                 |
 | `status-applied`                    | `{ entityId, statusId, sourceId }`                     | `StatusEffectApplier` (DEC-41)                                  | views, HUD                                                                               |
 | `status-expired`                    | `{ entityId, statusId, sourceId }`                     | `StatusEffectSystem`                                            | views, HUD                                                                               |
-| `horde-spawned` / `horde-dissolved` | `{ hordeId, lane, team, memberIds }`                   | `SpawnSystem` / `HordeSystem`                                   | `EnragedSystem`, `MinimapView`                                                           |
+| `horde-spawned` / `horde-dissolved` | `{ hordeId, lane, team, memberIds }`                   | `SpawnSystem` / `HordeSystem`                                   | `EnragedSystem`, `MinimapView`, `ZoneLevelUpSystem` (DEC-258)                            |
 | `level-up`                          | `{ entityId, level }`                                  | `ProgressionSystem`                                             | `AbilitySystem` (scaling), HUD                                                           |
 | `team-changed`                      | `{ entityId, from, to, cause }`                        | `Team` component                                                | `HordeSystem`, views                                                                     |
 | `boss-summoned`                     | `{ entityId, kind }`                                   | `SpawnSystem` (timeline)                                        | `Announcer`, `AiSystem` (camps turn aggressive)                                          |
