@@ -54,10 +54,11 @@ export class DevSetControllerHandler implements CommandHandler<'dev-set-controll
     if (isPlayer && state.entities.teamOf(entityId) !== match.playerTeam) {
       return 'not-player-team';
     }
-    // A human Legend that died left the store (`DeathSystem`; respawn, FR-051, is not built) but
-    // not its seat: clear the seat first. `dev-remove-entity` refuses a seated Legend instead.
+    // A human Legend that died left the store (`DeathSystem`) but not its seat. One waiting in the
+    // respawn queue is still alive (FR-051): it keeps its seat. Otherwise clear the seat first.
+    // `dev-remove-entity` refuses a seated Legend instead.
     let humanId = match.humanLegendId;
-    if (humanId !== null && !state.entities.has(humanId)) {
+    if (humanId !== null && !state.entities.has(humanId) && !state.respawns.has(humanId)) {
       match.reseatHuman(null);
       humanId = null;
     }
@@ -80,7 +81,7 @@ export class DevSetControllerHandler implements CommandHandler<'dev-set-controll
     if (humanId === entity.id) {
       return;
     }
-    const previous = state.entities.get(humanId ?? '');
+    const previous = state.entities.get(humanId ?? '') ?? state.respawns.legendOf(humanId ?? '');
     if (previous !== undefined) {
       this.bindRover(previous);
     }

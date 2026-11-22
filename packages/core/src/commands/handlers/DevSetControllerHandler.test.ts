@@ -142,6 +142,24 @@ describe('DevSetControllerHandler', () => {
     expect(context.state.match.humanLegendId).toBe('entity-4');
   });
 
+  it('keeps the seat of a human Legend waiting in the respawn queue and gives it to the Rover on a move', () => {
+    const context = contextWith();
+    const handler = new DevSetControllerHandler(ROVER, 'player');
+    handler.handle(command('entity-1', 'player'), context);
+    const waiting = context.state.entities.withdraw('entity-1', 'died');
+    if (!(waiting instanceof Legend)) {
+      throw new Error('entity-1 must be a Legend');
+    }
+    context.state.respawns.add(waiting, 'light', 100);
+
+    expect(handler.handle(command('entity-2', 'rover'), context)).toBeNull();
+    expect(context.state.match.humanLegendId).toBe('entity-1');
+
+    expect(handler.handle(command('entity-2', 'player'), context)).toBeNull();
+    expect(context.state.match.humanLegendId).toBe('entity-2');
+    expect(waiting.getComponent(ControllerBinding).controllerId).toBe('rover');
+  });
+
   it('refuses to seat the human on a Legend off playerTeam (DEC-173) and changes nothing', () => {
     const context = contextWith();
     const handler = new DevSetControllerHandler(ROVER, 'player');
