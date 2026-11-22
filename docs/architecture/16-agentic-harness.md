@@ -4,7 +4,7 @@ description: The coding-agent harness as it exists in the repository (instructio
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-19
+last-reviewed: 2026-11-22
 tags: [architecture, agents, harness, hooks, skills, verification]
 paths: ['.claude/**', '.agents/**', 'scripts/hooks/**', 'docs/agents/**']
 related:
@@ -140,7 +140,7 @@ last lines rather than a wall of text.
 | ----------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | `SessionStart`                | `session-start.mjs` (30 s) | Prints the branch and warns on `main`; the reading order (`AGENTS.md`, the package `AGENTS.md`, the architecture doc whose `paths` matches, the phase doc); the number of open `- [ ]` items in `INBOX.md`; the first heading of the newest file in `docs/plan/progress/` (fallback: the last `###` heading of the archive `PROGRESS.md`); the done-when reminder | Always 0; stdout becomes context                                                                                   |
 | `PostToolUse` (`Edit\|Write`) | `post-edit.mjs` (120 s)    | `prettier --write` on `.ts .tsx .js .mjs .cjs .json .md .css .yml .yaml`, then `eslint --max-warnings 0` on `.ts .tsx .js .jsx .mjs .cjs`; only for files inside the repo                                                                                                                                                                                         | 0 when clean; Prettier trouble is reported on stderr and never blocks; an ESLint failure exits 2 with the findings |
-| `Stop`                        | `stop-check.mjs` (620 s)   | Changed files only (DEC-276): none lintable → skip; a lint or type config changed → `npm run check:quick`; else no-JS check, `tsc -b`, ESLint on the changed files. A timeout exits 2 with its own message, not as a failure. Git hooks and CI still run the whole repo                                                                                           | 0 on pass; 2 with the failure tail; 0 immediately when `stop_hook_active` is `true`                                |
+| `Stop`                        | `stop-check.mjs` (620 s)   | Changed files only (DEC-276): none lintable → skip; a lint or type config changed → `npm run check:quick`; else no-JS check, `tsc -b`, ESLint on the changed files. A timeout exits 2 with its own message, not as a failure. Git hooks and CI still run the whole repo. The script gives up at 600 s, inside the hook's 620 s (DEC-265)                          | 0 on pass; 2 with the failure tail; 0 immediately when `stop_hook_active` is `true`                                |
 
 **Exit-code semantics.** Claude Code treats exit code 2 as the only blocking code; any other
 non-zero code is a non-blocking error (research §2), and what "block" means depends on the
