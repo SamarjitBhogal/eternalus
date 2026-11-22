@@ -11,7 +11,8 @@ import { selectSelectedClassCard } from './selectSelectedClassCard';
  * fixed for the whole match, joined with the catalogue (05 §15). A picked Legend with its own
  * start-weapon art shows it in place of the class kit's (DEC-114). The slots' names are the
  * Legend's kit (DEC-199: ability-1 to 3 and the ultimate on ability-4); a slot the kit does not fill
- * keeps the class's. `null` before a pick and for a class without a kit (a locked class is never
+ * keeps the class's. A gadget slot the Legend's artifacts fill takes the artifact's name and no
+ * icon, as no artifact art exists yet (DEC-303, DEC-114); an empty one keeps the class's. `null` before a pick and for a class without a kit (a locked class is never
  * played). Memoised: the same pick returns the same object.
  */
 export const selectHudKit = createSelector(
@@ -28,12 +29,16 @@ export const selectHudKit = createSelector(
         kit === undefined ? [] : [[kit.slot, kit.displayName]],
       ),
     );
+    const gadgets = new Map<HudSlotId, string>(
+      spec?.gadgets.map(({ slot, displayName }) => [slot, displayName]),
+    );
     const weapon = spec?.hudWeapon ?? null;
-    if (kitNames.size === 0 && weapon === null) return card.hud;
-    const slots = card.hud.slots.map((entry) => ({
-      ...entry,
-      displayName: kitNames.get(entry.slot) ?? entry.displayName,
-    }));
+    if (kitNames.size === 0 && gadgets.size === 0 && weapon === null) return card.hud;
+    const slots = card.hud.slots.map((entry) => {
+      const gadgetName = gadgets.get(entry.slot);
+      if (gadgetName !== undefined) return { ...entry, displayName: gadgetName, iconAssetId: null };
+      return { ...entry, displayName: kitNames.get(entry.slot) ?? entry.displayName };
+    });
     return { ...card.hud, slots, weapon: weapon ?? card.hud.weapon };
   },
 );

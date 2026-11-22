@@ -95,4 +95,40 @@ describe('selectHudKit', () => {
       { slot: 'ability-4', displayName: 'Fury', iconAssetId: 'icon-4' },
     ]);
   });
+
+  describe('spec gadgets (DEC-303)', () => {
+    const hud: ClassHudDisplay = {
+      ...WARRIOR_KIT,
+      slots: [
+        { slot: 'gadget-1', displayName: 'Courage', iconAssetId: 'courage' },
+        { slot: 'gadget-2', displayName: 'Other', iconAssetId: 'other' },
+      ],
+    };
+    const pick = (specs: ReturnType<typeof specCardFixture>[]) =>
+      selectHudKit(
+        pickedClassState([classCardFixture({ classId: 'warrior', hud, specs })], 'warrior', 'a'),
+      )?.slots;
+
+    it('names the slot after the artifact and clears its icon', () => {
+      expect(
+        pick([
+          specCardFixture({ specId: 'a', gadgets: [{ slot: 'gadget-1', displayName: 'Swap' }] }),
+        ]),
+      ).toEqual([
+        { slot: 'gadget-1', displayName: 'Swap', iconAssetId: null },
+        { slot: 'gadget-2', displayName: 'Other', iconAssetId: 'other' },
+      ]);
+    });
+
+    it('keeps the class entry of a slot the spec leaves empty', () => {
+      const slots = pick([
+        specCardFixture({ specId: 'a', gadgets: [{ slot: 'gadget-1', displayName: 'Swap' }] }),
+      ]);
+      expect(slots?.[1]).toEqual({ slot: 'gadget-2', displayName: 'Other', iconAssetId: 'other' });
+    });
+
+    it('changes nothing for a spec with no gadgets', () => {
+      expect(pick([specCardFixture({ specId: 'a' })])).toBe(hud.slots);
+    });
+  });
 });
