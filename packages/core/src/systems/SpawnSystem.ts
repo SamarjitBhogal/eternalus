@@ -20,7 +20,6 @@ import type { Vec2 } from '../utils/geometry.types';
 import { GuardRoster } from './GuardRoster';
 import type { ScheduledWave, SpawnPlan, CheckpointReached } from './SpawnSystem.types';
 import type { System, SystemContext } from './System.types';
-import { countdownTicks } from '../config/countdownTicks';
 import { isPlayableTeam } from '../teams/playableTeams';
 
 /**
@@ -89,12 +88,12 @@ export class SpawnSystem implements System {
       }
     });
     this.spawners = spawners.sort((a, b) => compareById(a.id, b.id));
-    const countdownEnd = countdownTicks(state.config.match.countdownSeconds, state.config.tickRate);
+    const { countdownEndTick } = state.match;
     this.scheduled = this.spawners.flatMap((spawner) =>
       (plan.waves[spawner.kind] ?? []).map((wave) => ({
         spawner,
         wave,
-        firstTick: countdownEnd + wave.firstAtTicks,
+        firstTick: countdownEndTick + wave.firstAtTicks,
       })),
     );
     this.validate(homes, hasCapturePoints);

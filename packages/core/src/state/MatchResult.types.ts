@@ -27,6 +27,12 @@ export type MatchResult = {
   readonly hadHuman: boolean;
   /** The ticks the match ran, the ending tick included (`MatchDirector` gives the exact rule). */
   readonly durationTicks: number;
+  /**
+   * The match time: the ticks from the countdown's end to the match's end, the ending tick
+   * included; 0 when the match ended during the countdown. The countdown is not match time
+   * (DEC-278, DEC-282); `durationTicks` stays the replay fact, counted from tick 0.
+   */
+  readonly matchTicks: number;
   readonly seed: number;
   /** FNV-1a of the canonical config, so a replay can refuse a mismatched config. */
   readonly configHash: number;

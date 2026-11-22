@@ -99,7 +99,7 @@ describe('selectObjectives', () => {
   it('returns the same list after a clock tick and after a HUD publish', () => {
     const store = storeWith('light', FIGMA_POINTS);
     const before = selectObjectives(store.getState());
-    store.dispatch(matchSlice.actions.clockChanged({ tick: 30, seconds: 1 }));
+    store.dispatch(matchSlice.actions.clockChanged({ tick: 30, seconds: 1, countdown: null }));
     store.dispatch(hudSlice.actions.hudStateChanged(FIGMA_HUD_PLAYER));
     expect(selectObjectives(store.getState())).toBe(before);
   });
