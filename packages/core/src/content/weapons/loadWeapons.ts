@@ -10,9 +10,6 @@ import type { WeaponDefinition } from './weapons.types';
 
 const isPositive = (value: number): boolean => value > 0 && Number.isFinite(value);
 
-/** Whether `degrees` is a wedge a sweep can use: above 0 and at most 180, so the wedge is convex. */
-const isArc = (degrees: number): boolean => degrees > 0 && degrees <= 180;
-
 /** What is wrong with `weapon` as authored, or nothing. */
 const problemsOf = (
   weapon: WeaponDefinition,
@@ -27,7 +24,8 @@ const problemsOf = (
     }
   }
   for (const attack of weapon.attacks) {
-    if (attack.strategy === 'melee-sweep' && !isArc(attack.arcDegrees)) {
+    // A sweep's wedge must be convex: above 0 and at most 180 degrees.
+    if (attack.strategy === 'melee-sweep' && !(attack.arcDegrees > 0 && attack.arcDegrees <= 180)) {
       problems.push('sweep arcDegrees must be above 0 and at most 180');
     }
   }

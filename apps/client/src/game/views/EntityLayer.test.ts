@@ -33,6 +33,7 @@ const unit = (id: string, x: number, y: number, facing = EAST): EntitySnapshot =
   capture: null,
   statuses: null,
   projectile: null,
+  swing: null,
 });
 
 const snapshot = (tick: number, entities: EntitySnapshot[]): Snapshot => ({
@@ -309,6 +310,7 @@ describe('EntityLayer', () => {
       ...member('vanguard', 'mob', 10),
       statuses: [{ id: 'fury-windup', ticksActive: 2, ticksLeft: 7 }],
       projectile: null,
+      swing: null,
     };
     layer.show(null, snapshot(1, [vanguard, member('foe', 'mob', 30)]), 0, null);
     const renderer = new RecordingRenderer();

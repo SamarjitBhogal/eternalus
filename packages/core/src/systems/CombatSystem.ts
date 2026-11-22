@@ -27,11 +27,11 @@ import type { System, SystemContext } from './System.types';
  * (`attackSpeed`). The attack strategy runs the attacker's statuses' `onHit` steps where the hit
  * lands (`HitEffects`: Fury's knock-back). While the match holds units idle
  * (`state.match.isIdleHeld`, the countdown) no attack lands, no unit turns to its target, and
- * targets are kept for after. A ranged attack fires a shot (the match's one `EntityFactory` builds
- * it) only when the shot would reach the target (`LineOfFire`, DEC-317); else the unit faces the
- * target, keeps it and stays ready, and its controller moves it. `ProjectileSystem`, right before
- * this system, flies and lands the shots. Getting into reach is the controller's job (moving), not
- * this system's.
+ * targets are kept for after. An attacker killed earlier in the tick lands nothing. A ranged
+ * attack fires a shot (the match's one `EntityFactory` builds it) only when the shot would reach
+ * the target (`LineOfFire`, DEC-317); else the unit faces the target, keeps it and stays ready,
+ * and its controller moves it. `ProjectileSystem`, right before this system, flies and lands the
+ * shots. Getting into reach is the controller's job (moving), not this system's.
  *
  * A unit with an aim point instead of a target (`attack-aim`, DEC-184) attacks along the line to
  * that point whenever the attack is off cooldown: it faces the point every tick, with no reach and
@@ -40,7 +40,7 @@ import type { System, SystemContext } from './System.types';
 export class CombatSystem implements System {
   public readonly name = 'combat';
   /** Scratch for the point the attacker faces. */
-  private readonly aim: MutableVec2 = { x: 0, y: 0 };
+  private readonly facePoint: MutableVec2 = { x: 0, y: 0 };
   /** Scratch for the unit vector an attack is aimed along. */
   private readonly direction: MutableVec2 = { x: 0, y: 0 };
   private readonly damage: DamagePipeline;
@@ -64,14 +64,20 @@ export class CombatSystem implements System {
     this.strategies = strategies;
   }
 
-  /** Runs each attacker in store order. */
+  /**
+   * Runs each attacker in store order.
+   *
+   * @throws Error when an attacker in reach of its target has no point to face on it (a broken
+   *   `EntityStore` invariant: `isInReach` and `facingPointOf` measure to the same point).
+   */
   public update({ state }: SystemContext): void {
     if (state.match.isIdleHeld) {
       return;
     }
     state.entities.forEach((attacker) => {
       const combat = attacker.findComponent(Combat);
-      if (combat === undefined) {
+      // An attacker killed earlier in this tick (a shot, an ability) lands nothing.
+      if (combat === undefined || attacker.findComponent(Health)?.isDead === true) {
         return;
       }
       if (combat.aimPoint !== null) {
@@ -95,10 +101,13 @@ export class CombatSystem implements System {
         return;
       }
       const transform = attacker.getComponent(Transform);
-      const hasPoint = state.entities.facingPointOf(attacker.id, target.id, this.aim);
-      if (hasPoint) {
-        transform.lookAt(this.aim);
+      if (!state.entities.facingPointOf(attacker.id, target.id, this.facePoint)) {
+        // `isInReach` above already found the point reach is measured to.
+        throw new Error(
+          `Entity "${attacker.id}" has no point to face on its target "${target.id}".`,
+        );
       }
+      transform.lookAt(this.facePoint);
       if (
         !combat.canAttack(state.tick) ||
         !this.lineOfFire.isClear(state, attacker.id, target.id)
@@ -108,8 +117,7 @@ export class CombatSystem implements System {
 
       this.land(state, attacker, combat, {
         targetId: target.id,
-        // No point to face: `directionTo` falls back to the attacker's facing.
-        direction: this.directionTo(transform, hasPoint ? this.aim : transform.position),
+        direction: this.directionTo(transform, this.facePoint),
       });
     });
   }

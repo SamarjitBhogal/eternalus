@@ -13,38 +13,19 @@ import { dot } from './vec2';
  * reuse these.
  */
 
-/** The two straight edges of a sector, as end points and inward normals. */
-type SectorEdges = {
-  readonly tips: readonly [Vec2, Vec2];
-  readonly normals: readonly [Vec2, Vec2];
-};
-
-/** The sector's edges: `direction` turned by plus and minus half the arc. */
-const edgesOf = (
-  origin: Vec2,
-  direction: Vec2,
-  radius: number,
-  cosHalfArc: number,
-): SectorEdges => {
+/** The unit directions of the sector's two straight edges: `direction` turned by ± half the arc. */
+const edgeDirectionsOf = (direction: Vec2, cosHalfArc: number): readonly [Vec2, Vec2] => {
   const sinHalfArc = sqrt(Math.max(0, 1 - cosHalfArc * cosHalfArc));
-  const left = {
-    x: direction.x * cosHalfArc - direction.y * sinHalfArc,
-    y: direction.y * cosHalfArc + direction.x * sinHalfArc,
-  };
-  const right = {
-    x: direction.x * cosHalfArc + direction.y * sinHalfArc,
-    y: direction.y * cosHalfArc - direction.x * sinHalfArc,
-  };
-  return {
-    tips: [
-      { x: origin.x + left.x * radius, y: origin.y + left.y * radius },
-      { x: origin.x + right.x * radius, y: origin.y + right.y * radius },
-    ],
-    normals: [
-      { x: left.y, y: -left.x },
-      { x: -right.y, y: right.x },
-    ],
-  };
+  return [
+    {
+      x: direction.x * cosHalfArc - direction.y * sinHalfArc,
+      y: direction.y * cosHalfArc + direction.x * sinHalfArc,
+    },
+    {
+      x: direction.x * cosHalfArc + direction.y * sinHalfArc,
+      y: direction.y * cosHalfArc - direction.x * sinHalfArc,
+    },
+  ];
 };
 
 /** Whether `point` lies inside the sector's angle (the infinite wedge), the tip included. */
@@ -82,8 +63,10 @@ export const doesSectorReachDisc = (
   if (isInAngle(origin, direction, cosHalfArc, centre)) {
     return true;
   }
-  const { tips } = edgesOf(origin, direction, radius, cosHalfArc);
-  return tips.some((tip) => distanceToSegment(centre, origin, tip) <= discRadius);
+  return edgeDirectionsOf(direction, cosHalfArc).some((edge) => {
+    const tip = { x: origin.x + edge.x * radius, y: origin.y + edge.y * radius };
+    return distanceToSegment(centre, origin, tip) <= discRadius;
+  });
 };
 
 /**
@@ -92,7 +75,7 @@ export const doesSectorReachDisc = (
  */
 const clipToWedge = (
   origin: Vec2,
-  normals: SectorEdges['normals'],
+  normals: readonly [Vec2, Vec2],
   from: Vec2,
   to: Vec2,
 ): readonly [Vec2, Vec2] | null => {
@@ -137,7 +120,11 @@ export const doesSectorReachPolygon = (
   if (polygon.some((corner) => isPointInSector(origin, direction, radius, cosHalfArc, corner))) {
     return true;
   }
-  const { normals } = edgesOf(origin, direction, radius, cosHalfArc);
+  const [left, right] = edgeDirectionsOf(direction, cosHalfArc);
+  const normals = [
+    { x: left.y, y: -left.x },
+    { x: -right.y, y: right.x },
+  ] as const;
   return polygon.some((corner, index) => {
     const next = polygon[(index + 1) % polygon.length] ?? corner;
     const clipped = clipToWedge(origin, normals, corner, next);

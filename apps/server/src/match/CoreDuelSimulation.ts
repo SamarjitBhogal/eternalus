@@ -10,9 +10,9 @@ import { SeatCommands } from './SeatCommands';
 
 /**
  * The `DuelSimulation` over core's `Simulation` with one human slot per team (ADR 0016 point 1).
- * It keeps the last snapshot, so one `snapshot()` per tick serves the
- * broadcast. The verdict comes from core's `match-ended` event, whose winner is a team, not the
- * playerTeam-relative `victory` or `defeat` phase.
+ * It keeps the last snapshot, so one `snapshot()` per tick serves the broadcast. The verdict
+ * comes from core's `match-ended` event, whose winner is a team, not the playerTeam-relative
+ * `victory` or `defeat` phase.
  */
 export class CoreDuelSimulation implements DuelSimulation {
   private readonly legends: Readonly<Record<PlayableTeam, EntityId>>;

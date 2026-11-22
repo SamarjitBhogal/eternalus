@@ -127,15 +127,15 @@ describe('EntitySnapshotter', () => {
     expect(snapshotter.snapshotOf(new Bare('entity-3', 'bare')).statuses).toBeNull();
   });
 
-  it('snapshots the latest sweep as plain data, and leaves the key out when there is none (DEC-304)', () => {
+  it('snapshots the latest sweep as plain data, and null when there is none (DEC-304)', () => {
     const swinger = new Bare('entity-1', 'warrior');
     const combat = new Combat({ basic: { strategy: 'melee', damage: 1, reach: 1, interval: 5 } });
     swinger.addComponent(combat);
     const snapshotter = new EntitySnapshotter(4, CURVES, 9);
-    expect(snapshotter.snapshotOf(swinger)).not.toHaveProperty('swing');
-    expect(snapshotter.snapshotOf(new Bare('entity-2', 'bare'))).not.toHaveProperty('swing');
+    expect(snapshotter.snapshotOf(swinger).swing).toBeNull();
+    expect(snapshotter.snapshotOf(new Bare('entity-2', 'bare')).swing).toBeNull();
 
-    combat.recordSwing({ tick: 7, direction: { x: 0, y: 1 }, radius: 3.5, arcDegrees: 160 });
+    combat.recordSwing({ atTick: 7, direction: { x: 0, y: 1 }, radius: 3.5, arcDegrees: 160 });
     const { swing } = snapshotter.snapshotOf(swinger);
 
     expect(swing).toEqual({

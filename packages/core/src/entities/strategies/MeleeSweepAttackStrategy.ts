@@ -33,7 +33,7 @@ export class MeleeSweepAttackStrategy implements AttackStrategy {
    * for every body.
    *
    * @throws Error when handed an attack that is not a sweep (a miswired registry), or when the
-   *   attacker has no `Transform`.
+   *   attacker has no `Transform` or no `Combat`.
    */
   public attack(
     attacker: Entity,
@@ -59,8 +59,8 @@ export class MeleeSweepAttackStrategy implements AttackStrategy {
       damage.apply(state, id, attack.damage, weaponSourceOf(attacker));
       hits?.afterHit(state, attacker.id, id);
     }
-    attacker.findComponent(Combat)?.recordSwing({
-      tick: state.tick,
+    attacker.getComponent(Combat).recordSwing({
+      atTick: state.tick,
       direction: aim.direction,
       radius,
       arcDegrees: attack.arcDegrees,

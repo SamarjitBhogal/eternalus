@@ -28,6 +28,7 @@ const MINION: EntitySnapshot = {
   capture: null,
   statuses: null,
   projectile: null,
+  swing: null,
 };
 
 const AT = { x: 0, y: 0 };

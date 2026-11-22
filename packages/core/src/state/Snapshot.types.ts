@@ -57,10 +57,10 @@ export type EntitySnapshot = {
    */
   readonly projectile: ProjectileSnapshot | null;
   /**
-   * The unit's latest melee sweep (`Combat.lastSwing`, DEC-304), left out when it has made none, so
-   * the client can draw a fading wedge for a few frames. Display only.
+   * The unit's latest melee sweep (`Combat.lastSwing`, DEC-304), so the client can draw a fading
+   * wedge for a few frames; `null` when it has made none. Display only.
    */
-  readonly swing?: SwingSnapshot;
+  readonly swing: SwingSnapshot | null;
 };
 
 /** A melee sweep as the client sees it. */

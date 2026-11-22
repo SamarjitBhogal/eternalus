@@ -14,12 +14,7 @@ import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import type { Entity } from '../entities/Entity';
 import { Structure } from '../entities/structures/Structure';
-import type {
-  EntitySnapshot,
-  ProjectileSnapshot,
-  StatusSnapshot,
-  SwingSnapshot,
-} from './Snapshot.types';
+import type { EntitySnapshot, ProjectileSnapshot, StatusSnapshot } from './Snapshot.types';
 
 /**
  * Projects one entity into its `EntitySnapshot` (architecture 03 §5): one group per component,
@@ -89,23 +84,9 @@ export class EntitySnapshotter {
             },
       statuses: this.statusesOf(entity.findComponent(StatusEffects)),
       projectile: this.projectileOf(entity),
-      ...this.swingOf(entity),
+      // `Combat.recordSwing` keeps a copy and replaces it on each swing, so it is shared as is.
+      swing: entity.findComponent(Combat)?.lastSwing ?? null,
     };
-  }
-
-  /** The latest sweep as plain data, or nothing for an entity that has made none. */
-  private swingOf(entity: Entity): { readonly swing: SwingSnapshot } | undefined {
-    const swing = entity.findComponent(Combat)?.lastSwing;
-    return swing == null
-      ? undefined
-      : {
-          swing: {
-            atTick: swing.tick,
-            direction: { x: swing.direction.x, y: swing.direction.y },
-            radius: swing.radius,
-            arcDegrees: swing.arcDegrees,
-          },
-        };
   }
 
   /** A shot's speed and ending as plain data; `null` for an entity with no `ProjectileFlight`. */

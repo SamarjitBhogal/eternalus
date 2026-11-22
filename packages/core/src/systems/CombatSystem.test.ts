@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { Combat } from '../components/Combat';
 import { DamagePipeline } from '../combat/DamagePipeline';
@@ -268,6 +268,33 @@ describe('CombatSystem', () => {
     expect(health.current).toBe(health.max - warrior.getComponent(Combat).attack.damage);
   });
 
+  it('lands no attack from an attacker killed earlier in the tick, locked or aimed', () => {
+    const locked = setUp();
+    const target = locked.spawn('light-mob', 'training-dummy', 1, 'dark');
+    locked.attack(target);
+    locked.warrior.getComponent(Health).applyDamage(1_000_000);
+    locked.combatSystem().update(locked.context);
+    expect(target.getComponent(Health).current).toBe(target.getComponent(Health).max);
+
+    const aimed = setUp();
+    const front = aimed.spawn('light-mob', 'training-dummy', 2, 'dark');
+    aimed.state.entities.setAttackAim(aimed.warrior.id, { x: 10, y: 0 });
+    aimed.warrior.getComponent(Health).applyDamage(1_000_000);
+    aimed.combatSystem().update(aimed.context);
+    expect(front.getComponent(Health).current).toBe(front.getComponent(Health).max);
+  });
+
+  it('throws when a target in reach has no point to face (a broken store invariant)', () => {
+    const { state, spawn, context, attack, combatSystem } = setUp();
+    const dummy = spawn('light-mob', 'training-dummy', 1, 'dark');
+    attack(dummy);
+    vi.spyOn(state.entities, 'facingPointOf').mockReturnValue(false);
+
+    expect(() => {
+      combatSystem().update(context);
+    }).toThrow(/no point to face/);
+  });
+
   it('drops a target once it is dead', () => {
     const { warrior, spawn, context, attack, combatSystem } = setUp();
     const dummy = spawn('light-mob', 'training-dummy', 1, 'dark');
@@ -296,7 +323,7 @@ describe('CombatSystem', () => {
       expect(healthOf(front).current).toBe(healthOf(front).max - damage);
       expect(healthOf(behind).current).toBe(healthOf(behind).max);
       expect(warrior.getComponent(Transform).facing).toEqual({ x: 1, y: 0 });
-      expect(warrior.getComponent(Combat).lastSwing).toMatchObject({ tick: 0, arcDegrees: 90 });
+      expect(warrior.getComponent(Combat).lastSwing).toMatchObject({ atTick: 0, arcDegrees: 90 });
     });
 
     it('attacks along the aim even when no body is in reach, then waits for the cooldown', () => {

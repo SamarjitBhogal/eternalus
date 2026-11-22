@@ -3,7 +3,8 @@ import type { WeaponDefinition } from './weapons.types';
 /**
  * Staff: melee physical, ranged magical (reference 07, 05 §10), unique to the Magus and its default
  * weapon. The ranged attack is first, so it is the default attack (DEC-308); the melee attack is
- * used on its own rebindable action, `attack-target` with `mode: 'melee'` (DEC-308).
+ * used on its own rebindable action, an attack command with `mode: 'melee'` (DEC-308; the player
+ * sends `attack-aim`, DEC-319 (6)).
  *
  * TUNE: damage, interval and firing reach accepted in DEC-310; fall-off in DEC-306. `grants:
  * ['spell-potency']` joins with its status.

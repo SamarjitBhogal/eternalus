@@ -31,6 +31,7 @@ describe('StructureView', () => {
         capture: null,
         statuses: null,
         projectile: null,
+        swing: null,
       },
       position: { x: 0, y: 0 },
       facing: { x: 1, y: 0 },

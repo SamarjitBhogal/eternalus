@@ -155,11 +155,11 @@ describe('Combat', () => {
       const direction = { x: 1, y: 0 };
       expect(combat.lastSwing).toBeNull();
 
-      combat.recordSwing({ tick: 4, direction, radius: 3, arcDegrees: 90 });
+      combat.recordSwing({ atTick: 4, direction, radius: 3, arcDegrees: 90 });
       direction.x = 0;
 
       expect(combat.lastSwing).toEqual({
-        tick: 4,
+        atTick: 4,
         direction: { x: 1, y: 0 },
         radius: 3,
         arcDegrees: 90,

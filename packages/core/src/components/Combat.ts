@@ -66,7 +66,8 @@ export class Combat {
   }
 
   /**
-   * Starts attacking `targetId` with `mode`, or stops with `null` (which resets the mode).
+   * Starts attacking `targetId` with `mode`, or stops with `null` (which resets the mode). Either
+   * way it drops the aim point: a unit holds a target or an aim point, never both.
    *
    * @returns `false`, changing nothing, when the unit has no attack for `mode` (`attack-target`
    *   then answers `cannot-attack`).
@@ -112,7 +113,7 @@ export class Combat {
   /** Records the sweep just made at `swing.tick`, for the client to draw (DEC-304). Copies it. */
   public recordSwing(swing: CombatSwing): void {
     this.lastSwingValue = {
-      tick: swing.tick,
+      atTick: swing.atTick,
       direction: { x: swing.direction.x, y: swing.direction.y },
       radius: swing.radius,
       arcDegrees: swing.arcDegrees,

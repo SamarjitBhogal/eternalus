@@ -277,7 +277,7 @@ describe('MeleeSweepAttackStrategy', () => {
     swing({ targetId: null, direction: { x: 0, y: 1 } });
 
     expect(attacker.getComponent(Combat).lastSwing).toEqual({
-      tick: 1,
+      atTick: 1,
       direction: { x: 0, y: 1 },
       radius: 3.5,
       arcDegrees: 90,

@@ -16,7 +16,7 @@ export const drawSwingWedge = (
   renderer: Renderer,
 ): void => {
   const { swing } = entity;
-  if (swing === undefined) return;
+  if (swing === null) return;
   const { fadeTicks, arcSegments, color, startOpacity } = SWING_WEDGE;
   const age = tick - swing.atTick;
   if (age < 0 || age >= fadeTicks) return;

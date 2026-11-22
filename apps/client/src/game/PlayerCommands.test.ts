@@ -73,6 +73,7 @@ const unit = (id: string, team: Team, x: number, y: number): EntitySnapshot => (
   capture: null,
   statuses: null,
   projectile: null,
+  swing: null,
 });
 const PLAYER: EntitySnapshot = { ...unit(ACTOR, 'light', 20, 20), family: 'legend' };
 /** A dark-team minion standing on the house, so the house and the unit overlap. */

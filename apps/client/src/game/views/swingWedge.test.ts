@@ -27,7 +27,7 @@ const legend = (swing?: SwingSnapshot): EntitySnapshot => ({
   capture: null,
   statuses: null,
   projectile: null,
-  ...(swing === undefined ? {} : { swing }),
+  swing: swing ?? null,
 });
 
 const draw = (tick: number, swing?: SwingSnapshot): RecordingRenderer => {

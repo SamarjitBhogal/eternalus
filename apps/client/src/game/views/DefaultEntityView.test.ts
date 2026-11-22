@@ -20,6 +20,7 @@ const dummy = (team: EntitySnapshot['team']): EntitySnapshot => ({
   capture: null,
   statuses: null,
   projectile: null,
+  swing: null,
 });
 
 const AT = { x: 10, y: 20 };

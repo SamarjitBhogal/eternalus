@@ -29,11 +29,12 @@ const laners = (team: 'light' | 'dark', count: number): RosterSlot[] =>
   }));
 
 /**
- * How far in front of a bot that rejoined an enemy dummy appears. Sweeps (DEC-184) end the 4v4
- * lane fight before any bot has healed, and Legends do not respawn yet, so the test brings the
- * enemy the bot must fight again.
+ * How far in front of a bot that rejoined an enemy dummy appears: out of the Warrior's reach
+ * (class plus weapon, DEC-305) and inside the bot's engage radius, so no hit lands until the gap
+ * closes. Sweeps (DEC-184) end the 4v4 lane fight before any bot has healed, and Legends do not
+ * respawn yet, so the test brings the enemy the bot must fight again.
  */
-const ENEMY_AHEAD_METRES = 3;
+const ENEMY_AHEAD_METRES = 8;
 
 const match = () =>
   new Simulation({

@@ -431,7 +431,7 @@ describe('StateHasher', () => {
     combat.setTarget('entity-9');
     const before = hasher.hash(state);
 
-    combat.recordSwing({ tick: 3, direction: { x: 1, y: 0 }, radius: 3, arcDegrees: 90 });
+    combat.recordSwing({ atTick: 3, direction: { x: 1, y: 0 }, radius: 3, arcDegrees: 90 });
 
     expect(hasher.hash(state)).toBe(before);
   });
