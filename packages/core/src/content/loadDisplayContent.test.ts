@@ -17,6 +17,7 @@ import type { AbilityStepDescriber, DisplayCatalogues } from './loadDisplayConte
 import { loadDisplayContent } from './loadDisplayContent';
 import { MAP_FEATURE_DEFINITIONS } from './maps/mapFeatureDefinitions';
 import { VERDICT_LINES } from './narrative/verdictLines';
+import { STATUS_EFFECTS } from './status-effects/statusEffectCatalogue';
 import { BOT_ROSTER } from './teams/botRoster';
 
 /** The shipped Legends plus one whose class is the reserved, unplayable `harbinger`. */
@@ -42,7 +43,8 @@ const NAMED_FEATURES = {
 const describeKinds: AbilityStepDescriber = (effects) =>
   effects.map(({ kind }) => ({ kind, shape: { kind: 'circle', radius: 0 } }));
 
-const load = (catalogues?: DisplayCatalogues) => loadDisplayContent(describeKinds, catalogues);
+const load = (catalogues?: DisplayCatalogues) =>
+  loadDisplayContent({ describeSteps: describeKinds, usesAim: () => true }, catalogues);
 
 describe('loadDisplayContent', () => {
   it('returns the validated Legend classes and Legends, in catalogue order', () => {
@@ -69,6 +71,13 @@ describe('loadDisplayContent', () => {
 
     expect(named).toEqual(NAMED_FEATURES);
     expect(mapFeatures.map((feature) => feature.id)).toEqual(Object.keys(MAP_FEATURE_DEFINITIONS));
+  });
+
+  it('publishes every status effect with its display name, in catalogue order', () => {
+    expect(load().statuses).toEqual(
+      STATUS_EFFECTS.all().map(({ id, displayName }) => ({ id, displayName })),
+    );
+    expect(load().statuses).toContainEqual({ id: 'fury-windup', displayName: 'Wind-up' });
   });
 
   it('carries each feature kind with its name', () => {
@@ -172,11 +181,11 @@ describe('loadDisplayContent', () => {
     );
   });
 
-  it('marks exactly the three built abilities available; the others have no steps', () => {
+  it('marks exactly the five built abilities available; the others have no steps', () => {
     const { abilities } = load();
 
     expect(abilities.filter((ability) => ability.isAvailable).map((ability) => ability.id)).toEqual(
-      ['blade-runner', 'slam', 'shockwave'],
+      ['blade-runner', 'fury', 'fury-dash', 'slam', 'shockwave'],
     );
     for (const ability of abilities.filter((entry) => !entry.isAvailable)) {
       expect(ability.steps).toEqual([]);

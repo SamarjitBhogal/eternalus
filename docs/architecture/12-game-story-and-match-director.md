@@ -505,6 +505,15 @@ structure points (DEC-212) and capture and hold points (GL-15, DEC-214, DEC-223)
 scorer), and `checkpoint-reached` carries `presentLegendIds`. The other §5 counters join with the
 work that fills them.
 
+Implementation status, 2026-11-16 (branch `feat/vanguard-kit`, DEC-272; `INBOX.md` HC-B7 (3),
+signed off by DEC-283 (3)): `LegendDeathRule` also announces each assist it awards as `assist-earned { legendId,
+victimId }`, which fills the helper's ultimate meter
+([05](05-abilities-weapons-and-loadouts.md) §18), so scoring's assist window is the only one. The
+rule therefore gets the event bus as well as its points by constructor
+(`createDefaultScoringRules(…, events)`, passed by `createDefaultMatchDirector`), and a death rule
+now has a second role beside scoring (§5 has the bus for listener rules only). Once the match has
+a result, scoring counts nothing, so no assist is announced.
+
 The verdict lines (§9, GL-5) are built: `content/narrative/verdictLines.ts` holds the
 `objective-lost` lines (the owner's placeholders, DEC-83), with `{name}` for the fallen side's
 sovereign, whose display name per team is in `content/sovereigns/sovereignDisplayNames.ts`

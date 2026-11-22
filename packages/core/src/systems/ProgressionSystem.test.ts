@@ -8,6 +8,7 @@ import { ContentCatalogue } from '../content/ContentCatalogue';
 import { WARRIOR } from '../content/legends/warrior';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
+import { ULTIMATE_CHARGE } from '../content/progression/ultimateCharge';
 import { NullLogger } from '../diagnostics/NullLogger';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import type { Entity } from '../entities/Entity';
@@ -48,6 +49,7 @@ const setUp = () => {
     units: UNITS,
     curves: CURVES,
     xpSources: XP_SOURCES,
+    ultimateCharge: ULTIMATE_CHARGE,
   });
   const kill = (killer: Entity | null, victim: Entity) => {
     state.events.emit('entity-died', {
@@ -338,6 +340,7 @@ describe('ProgressionSystem', () => {
         units: UNITS,
         curves: bigSteps,
         xpSources: XP_SOURCES,
+        ultimateCharge: ULTIMATE_CHARGE,
       });
       const fresh = spawn('warrior', 'warrior', 'light');
       const capped = spawn('magus', 'magus', 'light');

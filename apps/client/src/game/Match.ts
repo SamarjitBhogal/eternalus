@@ -21,6 +21,7 @@ import { MatchCamera } from './MatchCamera';
 import { MatchViewControls } from './MatchViewControls';
 import type { PlayerActions } from './PlayerActions';
 import { PlayerCommands } from './PlayerCommands';
+import { createDefaultStatusCueRegistry } from './views/defaultStatusCueRegistry';
 import { createDefaultViewRegistry } from './views/defaultViewRegistry';
 import { EntityLayer } from './views/EntityLayer';
 import { AimOverlayView } from './views/AimOverlayView';
@@ -107,13 +108,24 @@ export class Match implements LoopTarget {
           ),
         );
       }),
+      createDefaultStatusCueRegistry(),
       isDead,
       this.healthBars.healthBarOf,
     );
     this.camera = new MatchCamera(camera, map);
-    this.casts = new AbilityCasts(simulation, (slot) => {
-      bridge.bus.emit('aiming-slot', { slot });
-    });
+    this.casts = new AbilityCasts(
+      simulation,
+      (slot) => {
+        bridge.bus.emit('aiming-slot', { slot });
+      },
+      {
+        usesAim: (slot) => this.aiming.usesAim(this.current, slot),
+        legendAt: () => {
+          const at = this.playerEntity()?.transform ?? null;
+          return at === null ? null : { x: at.x, y: at.y };
+        },
+      },
+    );
     this.commands =
       deps.remote?.createActions(this.camera) ??
       new PlayerCommands(input, simulation, this.camera, mapObjects, this.casts);

@@ -74,6 +74,7 @@ const unit = (id: string, team: 'light' | 'dark', at: Vec2): EntitySnapshot => (
   aether: null,
   area: null,
   capture: null,
+  statuses: null,
 });
 /** The player's Legend, away from the point the camera looks at. */
 const PLAYER: EntitySnapshot = { ...unit(ACTOR, 'light', OPEN_GROUND), family: 'legend' };
@@ -118,7 +119,7 @@ const setUp = (
     { enqueueCommand },
     view,
     [HOUSE],
-    new AbilityCasts({ enqueueCommand }, vi.fn()),
+    new AbilityCasts({ enqueueCommand }, vi.fn(), { usesAim: () => true, legendAt: () => null }),
   );
   // No living Legend here, so the minimap centres on the camera's focus (DEC-182).
   const miniMap = new MiniMapView(MAP, new MapView(MAP), RING, () => look);

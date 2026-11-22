@@ -14,15 +14,18 @@ export const NO_DISPLAY_OVERRIDES: DisplayOverrides = {
 
 /**
  * The shipped catalogue: core display content (validated by `loadDisplayContent`) joined with the
- * client presentation, its asset ids checked against `knownAssetIds`, with developer overrides
- * applied. `main.tsx`, the composition root, passes its config's tick rate, the asset manifest's
- * ids and `readDeveloperFlags(location.search).displayOverrides`; this module reads no data/
- * facade.
+ * client presentation, its asset ids checked against `knownAssetIds` and its drawn statuses against
+ * core's, with developer overrides applied. `main.tsx`, the composition root, passes its config's
+ * tick rate, the asset manifest's ids, the status cue registry's ids and
+ * `readDeveloperFlags(location.search).displayOverrides`; this module reads no data/ facade and
+ * imports no view.
  */
 export function createCoreCatalogue(inputs: {
   /** Ticks per second (`GameConfig.tickRate`): core loads the ability strategies' tuning at it. */
   readonly tickRate: number;
   readonly knownAssetIds: ReadonlySet<AssetId>;
+  /** The statuses the canvas draws a cue for (`createDefaultStatusCueRegistry().statusIds`). */
+  readonly drawnStatusIds: readonly string[];
   readonly overrides: DisplayOverrides;
 }): CatalogueSource {
   return {
@@ -31,6 +34,7 @@ export function createCoreCatalogue(inputs: {
         content: loadDisplayContent(inputs.tickRate),
         presentation: CATALOGUE_PRESENTATION,
         knownAssetIds: inputs.knownAssetIds,
+        drawnStatusIds: inputs.drawnStatusIds,
         overrides: inputs.overrides,
       }),
   };

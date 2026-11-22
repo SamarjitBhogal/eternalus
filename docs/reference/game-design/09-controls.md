@@ -4,7 +4,7 @@ description: The default MVP key bindings, the requirement that no binding is ha
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-16
 tags: [reference, game-design, controls, input, keybindings, settings]
 paths: ['apps/client/src/game/input/**', 'apps/client/src/ui/screens/SettingsScreen*']
 related:
@@ -25,25 +25,24 @@ anyone".
 
 Top-down, single-character control. Defaults from both sources (all **MVP**):
 
-| Action                          | Default                        | `InputAction` (proposed id)                       | Source                                |
-| ------------------------------- | ------------------------------ | ------------------------------------------------- | ------------------------------------- |
-| Move up / left / down / right   | W / A / S / D                  | `move-up`, `move-left`, `move-down`, `move-right` | requirements doc, game doc            |
-| Attack                          | Mouse click                    | `attack`                                          | game doc ("Click to attack")          |
-| Ability 1, 2, 3                 | 1, 2, 3                        | `ability-1`, `ability-2`, `ability-3`             | requirements doc, game doc            |
-| Ultimate (ability 4)            | 4                              | `ability-4` (the id in `keybindings.ts`)          | requirements doc ("4 being ultimate") |
-| Gadget 1 / gadget 2 (artifacts) | Z / C                          | `gadget-1`, `gadget-2`                            | requirements doc, game doc            |
-| Sprint (Sentinel Wrecking Run)  | not specified                  | `sprint`                                          | game doc ("While holding sprint")     |
-| Pick up / throw                 | not specified                  | `interact`                                        | game doc (default interactives)       |
-| Turret: assume / exit control   | P                              | `turret-toggle`                                   | game doc (Turrets)                    |
-| Turret: switch ammo type        | T                              | `turret-ammo`                                     | game doc (Turrets)                    |
-| Fury dash direction             | WASD (or joystick) during Fury | reuses move actions                               | game doc (Fury)                       |
-| View Details (character select) | V                              | `view-details`                                    | DEC-103 (owner, 2026-10-29)           |
+| Action                          | Default              | `InputAction` (proposed id)                       | Source                                |
+| ------------------------------- | -------------------- | ------------------------------------------------- | ------------------------------------- |
+| Move up / left / down / right   | W / A / S / D        | `move-up`, `move-left`, `move-down`, `move-right` | requirements doc, game doc            |
+| Attack                          | Mouse click          | `attack`                                          | game doc ("Click to attack")          |
+| Ability 1, 2, 3                 | 1, 2, 3              | `ability-1`, `ability-2`, `ability-3`             | requirements doc, game doc            |
+| Ultimate (ability 4)            | 4                    | `ability-4` (the id in `keybindings.ts`)          | requirements doc ("4 being ultimate") |
+| Gadget 1 / gadget 2 (artifacts) | Z / C                | `gadget-1`, `gadget-2`                            | requirements doc, game doc            |
+| Sprint (Sentinel Wrecking Run)  | not specified        | `sprint`                                          | game doc ("While holding sprint")     |
+| Pick up / throw                 | not specified        | `interact`                                        | game doc (default interactives)       |
+| Turret: assume / exit control   | P                    | `turret-toggle`                                   | game doc (Turrets)                    |
+| Turret: switch ammo type        | T                    | `turret-ammo`                                     | game doc (Turrets)                    |
+| Fury dash (during Fury)         | Space (WASD aims it) | `granted` (status-granted slot)                   | DEC-270 (owner, 2026-11-16)           |
+| View Details (character select) | V                    | `view-details`                                    | DEC-103 (owner, 2026-10-29)           |
 
 Defaults are data in `apps/client/src/game/input/keybindings.ts`; the table is the initial
-content of that file, not a spec for code paths. Unspecified defaults (sprint, interact, Fury's
-"[button]") are naming/binding to-dos (`12-open-questions.md`); `Recommendation:` Shift for
-sprint, E or F for interact, and Space for the Fury dash, chosen to avoid the number row and
-Z/C.
+content of that file, not a spec for code paths. Unspecified defaults (sprint, interact) are
+binding to-dos (`12-open-questions.md` OQ-18); `Recommendation:` Shift for sprint, E or F for
+interact, chosen to avoid the number row and Z/C. The Fury dash is Space (DEC-270).
 
 The game doc's pitch calls the MVP "point-and-click" while both sources fix WASD movement; read
 it as WASD movement with mouse-click attacks and targeting.

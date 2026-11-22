@@ -10,6 +10,7 @@ import type { EntityId } from '../../state/EntityStore.types';
 import type { GameState } from '../../state/GameState';
 import type { Vec2 } from '../../utils/geometry.types';
 import { CastInstance } from '../CastInstance';
+import { BuffEffect } from '../effects/BuffEffect';
 import { DamageEffect } from '../effects/DamageEffect';
 import { DashEffect } from '../effects/DashEffect';
 import { DebuffEffect } from '../effects/DebuffEffect';
@@ -30,7 +31,7 @@ type CastOptions = {
 
 /**
  * Casts a one-off ability made of `effects` for `casterId` at `state.tick`, as `AbilitySystem`
- * would after the checks: a real `CastInstance` with the four shipped effect strategies, the
+ * would after the checks: a real `CastInstance` with the five shipped effect strategies, the
  * shipped shapes, one `DamagePipeline` (`options.damage`) and one `StatusEffectApplier`.
  */
 export const castSteps = (
@@ -45,6 +46,7 @@ export const castSteps = (
       new DebuffEffect(STATUS_EFFECTS),
       new KnockbackEffect(loadKnockback(state.config.tickRate)),
       new DashEffect(),
+      new BuffEffect(STATUS_EFFECTS),
     ],
     new ContentCatalogue([fakeAbility({ id: 'test-cast', effects, scaling })]),
   );
@@ -67,5 +69,5 @@ export const castSteps = (
       damage,
       statuses: new StatusEffectApplier(loadStatusEffects(state.config.tickRate, 2)),
     },
-  ).run();
+  ).run({ from: origin, to: origin });
 };

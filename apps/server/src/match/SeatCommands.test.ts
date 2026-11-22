@@ -22,6 +22,7 @@ const unit = (
   aether: null,
   area: null,
   capture: null,
+  statuses: null,
 });
 
 const intent = (over: Partial<InputIntent>): InputIntent => ({

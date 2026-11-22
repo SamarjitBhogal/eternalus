@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-09
+last-reviewed: 2026-11-20
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -255,6 +255,13 @@ flowchart LR
   by `HealthBarVisibility` (DEC-195), which reads `damage-applied` and `entity-removed` through
   `Simulation.on`, as §6 designs `SoundView`; `Match` injects its rule into the layer, because
   views read only snapshots.
+- Status cues: for each status an entity has, `EntityLayer` draws the cue view registered for its
+  id in the `StatusCueRegistry` (`defaultStatusCueRegistry.ts`; a new cue is one `StatusCueView`
+  and one `register` line), after every entity of its layer and before the health bars. Fury's
+  dash wind-up (DEC-283) has `WindupRingsView`: orange rings around the Legend that close in as
+  the status's time passes, read from the snapshot (`EntitySnapshot.statuses`); the look is in
+  `WindupRingsView.constants.ts`. `main.tsx` passes the registry's `statusIds` to the display
+  catalogue's boot check, which refuses a status core does not have (ADR 0023).
 - `MinimapView` runs at a lower cadence into the `'minimap'` layer (`06-map-and-minimap.md` §8).
 
 ## 9. Performance budget and how it is measured

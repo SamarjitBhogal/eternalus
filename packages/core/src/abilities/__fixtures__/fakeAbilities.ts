@@ -1,14 +1,31 @@
+import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { ContentCatalogue } from '../../content/ContentCatalogue';
 import { loadAbilities } from '../../content/abilities/loadAbilities';
+import { loadKnockback } from '../../content/abilities/loadKnockback';
 import type { AbilityEffect } from '../AbilityEffect.types';
 import { AbilityRegistry } from '../AbilityRegistry';
+import { KnockbackEffect } from '../effects/KnockbackEffect';
 import type { ComposableAbility } from '../AbilityRegistry.types';
 import { MinLevelRestriction } from '../restrictions/MinLevelRestriction';
 import { CircleShape } from '../shapes/CircleShape';
+import { HitShape } from '../shapes/HitShape';
 import { PathShape } from '../shapes/PathShape';
+import { DirectionalTargeting } from '../targeting/DirectionalTargeting';
+import { HeadingTargeting } from '../targeting/HeadingTargeting';
+import { SelfTargeting } from '../targeting/SelfTargeting';
 
-/** The effect kinds the shipped abilities name (S1 content). */
-export const SHIPPED_EFFECT_KINDS = ['damage', 'knockback', 'debuff', 'dash'] as const;
+/** The effect kinds the shipped abilities name (S1 content, then Fury's `buff`). */
+export const SHIPPED_EFFECT_KINDS = ['damage', 'knockback', 'debuff', 'dash', 'buff'] as const;
+
+/**
+ * The effects the shipped statuses' `onHit` steps name (Fury's knock-back): a match checks them
+ * against its registry at boot (`checkStatusLinks`), so a test registry a `Simulation` boots on
+ * needs them beside its own. The knock-back is loaded at `tickRate`, the default config's rate
+ * unless given.
+ */
+export const statusOnHitEffects = (
+  tickRate = createDefaultGameConfig().tickRate,
+): readonly AbilityEffect[] => [new KnockbackEffect(loadKnockback(tickRate))];
 
 /** A Warrior ability for tests: 30 aether, a 90-tick cooldown, one `fake-strike` step around the caster. */
 export const fakeAbility = (
@@ -56,8 +73,9 @@ export const ABILITIES_WITH_FAKES = new ContentCatalogue<ComposableAbility>([
 ]);
 
 /**
- * A registry over `abilities` with the shipped shapes and restriction and the given effects, built
- * by hand so the tests do not depend on which effects `createDefaultAbilityRegistry` registers.
+ * A registry over `abilities` with the shipped shapes, restriction and targetings and the given
+ * effects, built by hand so the tests do not depend on which effects `createDefaultAbilityRegistry`
+ * registers.
  */
 export const testAbilityRegistry = (
   effects: readonly AbilityEffect[],
@@ -66,7 +84,11 @@ export const testAbilityRegistry = (
   const registry = new AbilityRegistry(abilities);
   registry.registerShape(new CircleShape());
   registry.registerShape(new PathShape());
+  registry.registerShape(new HitShape());
   registry.registerRestriction(new MinLevelRestriction());
+  registry.registerTargeting(new SelfTargeting());
+  registry.registerTargeting(new DirectionalTargeting());
+  registry.registerTargeting(new HeadingTargeting());
   for (const effect of effects) {
     registry.registerEffect(effect);
   }

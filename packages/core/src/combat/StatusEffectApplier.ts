@@ -1,3 +1,5 @@
+import { Abilities } from '../components/Abilities';
+import type { AbilitySlotRuntime } from '../components/AbilitySlotRuntime';
 import { Health } from '../components/Health';
 import { StatusEffects } from '../components/StatusEffects';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
@@ -11,8 +13,12 @@ import type { GameState } from '../state/GameState';
 /**
  * The one way a status reaches or leaves an entity (architecture 05 section 8): abilities, weapons,
  * projectiles and structures call `apply`, auras and holds call `remove`, `StatusEffectSystem`
- * calls `expire`. It emits every `status-applied` and `status-expired`. `DefaultSystemPipeline`
- * builds the match's one instance and hands it to the systems that need it.
+ * calls `expire`. It emits every `status-applied` and `status-expired`, and fills the holder's
+ * `granted` slot with a status's `grants` ability while the status lasts (Fury's dash, DEC-270),
+ * so the slot changes in the same call as the status. When the status whose ability the slot holds
+ * ends, the slot takes the ability of the last status still active (oldest first) that grants
+ * one, or empties, unless an ended status's `onExpire` lands a grant (`expire`).
+ * `DefaultSystemPipeline` builds the match's one instance and hands it to the systems that need it.
  */
 export class StatusEffectApplier {
   /** @param statuses - The loaded status effects (`loadStatusEffects`). */
@@ -52,6 +58,9 @@ export class StatusEffectApplier {
       return false;
     }
     statuses.apply(definition, sourceId, state.tick, durationTicks);
+    if (definition.grants !== undefined) {
+      target.findComponent(Abilities)?.slot('granted')?.hold(definition.grants);
+    }
     state.events.emit('status-applied', { entityId: targetId, statusId, sourceId });
     return true;
   }
@@ -61,10 +70,17 @@ export class StatusEffectApplier {
    * `status-expired`. Returns whether it was active.
    */
   public remove(state: GameState, targetId: EntityId, statusId: string): boolean {
-    const statuses = state.entities.get(targetId)?.findComponent(StatusEffects);
-    const sourceId = statuses?.active.find((status) => status.definition.id === statusId)?.sourceId;
-    if (statuses === undefined || sourceId === undefined || !statuses.remove(statusId)) {
+    const target = state.entities.get(targetId);
+    const statuses = target?.findComponent(StatusEffects);
+    const active = statuses?.active.find((status) => status.definition.id === statusId);
+    if (target === undefined || statuses === undefined || active === undefined) {
       return false;
+    }
+    const { sourceId, definition } = active;
+    const slot = target.findComponent(Abilities)?.slot('granted');
+    statuses.remove(statusId);
+    if (StatusEffectApplier.holdsGrantOf(slot, definition)) {
+      StatusEffectApplier.regrant(slot, statuses);
     }
     state.events.emit('status-expired', { entityId: targetId, statusId, sourceId });
     return true;
@@ -73,13 +89,17 @@ export class StatusEffectApplier {
   /**
    * Removes every status on `targetId` that is over at `state.tick`, emitting `status-expired` for
    * each, oldest first, then runs their `onExpire` (stun → `control-immune`), credited to the same
-   * source.
+   * source. When the slot held the grant of a status that ended, it takes the grant of the last
+   * status still active only if no follow-up landed a grant of its own.
    */
   public expire(state: GameState, targetId: EntityId): void {
-    const statuses = state.entities.get(targetId)?.findComponent(StatusEffects);
-    if (statuses === undefined) {
+    const target = state.entities.get(targetId);
+    const statuses = target?.findComponent(StatusEffects);
+    if (target === undefined || statuses === undefined) {
       return;
     }
+    const slot = target.findComponent(Abilities)?.slot('granted');
+    let hasGrantEnded = false;
     // Allocated only when a status with an onExpire times out, never per tick (NFR-023).
     let followUps: [StatusExpireSpec, EntityId | null][] | undefined;
     for (const status of statuses.active) {
@@ -89,17 +109,45 @@ export class StatusEffectApplier {
           statusId: status.definition.id,
           sourceId: status.sourceId,
         });
+        hasGrantEnded ||= StatusEffectApplier.holdsGrantOf(slot, status.definition);
         for (const spec of status.definition.onExpire) {
           (followUps ??= []).push([spec, status.sourceId]);
         }
       }
     }
     statuses.expire(state.tick);
-    if (followUps === undefined) {
-      return;
+    // A follow-up that lands a grant fills the slot itself, later than the expiry: the slot then
+    // never passes through another ability on the way, which would end its cooldown (`hold`).
+    let isRegrantDue = hasGrantEnded;
+    if (followUps !== undefined) {
+      for (const [spec, sourceId] of followUps) {
+        if (
+          this.apply(state, targetId, spec.statusId, sourceId) &&
+          this.statuses.get(spec.statusId).grants !== undefined
+        ) {
+          isRegrantDue = false;
+        }
+      }
     }
-    for (const [spec, sourceId] of followUps) {
-      this.apply(state, targetId, spec.statusId, sourceId);
+    if (isRegrantDue) {
+      StatusEffectApplier.regrant(slot, statuses);
     }
+  }
+
+  /** Whether `slot` (the holder's `granted` slot) holds the ability `definition` grants. */
+  private static holdsGrantOf(
+    slot: AbilitySlotRuntime | undefined,
+    definition: StatusEffectDefinition,
+  ): boolean {
+    return definition.grants !== undefined && slot?.abilityId === definition.grants;
+  }
+
+  /**
+   * Fills `slot` from `statuses` once the status whose ability it held has left them: the grant of
+   * the last active status (oldest first) that has one, or nothing.
+   */
+  private static regrant(slot: AbilitySlotRuntime | undefined, statuses: StatusEffects): void {
+    const granting = statuses.active.findLast(({ definition }) => definition.grants !== undefined);
+    slot?.hold(granting?.definition.grants ?? null);
   }
 }

@@ -2,6 +2,7 @@ import type { AbilitySlot } from '../../content/abilities/AbilityDefinition.type
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import type { MapObject } from '../../content/maps/mapObjects.types';
 import type { MapDefinition } from '../../content/maps/maps.types';
+import type { DebugConfig } from '../../diagnostics/InvariantRunner.types';
 import { NullLogger } from '../../diagnostics/NullLogger';
 import type { DefinitionSource } from '../../entities/EntityFactory.types';
 import { Simulation } from '../../Simulation';
@@ -24,7 +25,8 @@ export type ScenarioSpawn = {
  * order) and the countdown stepped
  * past (DEC-88 holds every unit idle until it ends), and a log of what the cast path and the
  * statuses announced. Each log line starts with its tick counted from the end of the countdown:
- * the first step after it is tick 1.
+ * the first step after it is tick 1. Invariants run as in a release build unless `debug` is given
+ * (`TEST_DEBUG_CONFIG` checks every invariant each tick and throws).
  */
 export const abilityMatch = (
   spawns: readonly ScenarioSpawn[],
@@ -32,10 +34,12 @@ export const abilityMatch = (
     seed = 1,
     content,
     world,
+    debug,
   }: {
     readonly seed?: number;
     readonly content?: DefinitionSource;
     readonly world?: { readonly map: MapDefinition; readonly mapObjects: readonly MapObject[] };
+    readonly debug?: DebugConfig;
   } = {},
 ) => {
   const sim = new Simulation({
@@ -43,6 +47,7 @@ export const abilityMatch = (
     seed,
     logger: new NullLogger(),
     ...(content === undefined ? {} : { content }),
+    ...(debug === undefined ? {} : { debug }),
     ...world,
   });
   const ids: EntityId[] = [];

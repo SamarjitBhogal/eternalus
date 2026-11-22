@@ -242,6 +242,7 @@ changes the shape of the world, it is config. If a player may change it, it is a
 | Victory conditions          | `core/src/match/defaultVictoryConditions.ts`                                         | A `VictoryCondition` (a way to win or lose)                                                                                    |
 | Scoring rules               | `core/src/match/defaultScoringRules.ts`                                              | A hit or death rule for an entity family, a listener rule for another event, or a tick scorer for what each tick earns (12 §5) |
 | `ViewRegistry`              | `client/src/game/views/defaultViewRegistry.ts`                                       | A view for an entity family or kind                                                                                            |
+| `StatusCueRegistry`         | `client/src/game/views/defaultStatusCueRegistry.ts`                                  | A cue drawn on an entity while it has a status                                                                                 |
 | Draw order                  | `client/src/game/views/SceneView.ts`                                                 | A layer in the frame                                                                                                           |
 | Keybindings                 | `client/src/game/input/keybindings.ts`                                               | An `InputAction` with its default chords                                                                                       |
 | Redux slices                | `client/src/bridge/store.ts` (`combineSlices`)                                       | A slice                                                                                                                        |
@@ -268,7 +269,7 @@ changes the shape of the world, it is config. If a player may change it, it is a
 | An event                                        | `core/state/GameEvents.types.ts`                                                | emitter and listeners                                                                          |
 | A runtime check                                 | `core/diagnostics/invariants/<Fact>Invariant.ts`                                | `defaultInvariants.ts` line                                                                    |
 | A bot behaviour                                 | `core/ai/<Name>Controller.ts` or a behaviour-tree node                          | aggro numbers in `content/`                                                                    |
-| Something drawn on the canvas                   | `client/game/views/<Name>View.ts`                                               | `defaultViewRegistry.ts` line; draw order in `SceneView`                                       |
+| Something drawn on the canvas                   | `client/game/views/<Name>View.ts`                                               | `defaultViewRegistry.ts` line (a status cue: `defaultStatusCueRegistry.ts`); `SceneView` order |
 | A key or mouse action                           | `client/game/input/keybindings.ts`                                              | `InputMapper` mapping to an `InputIntent` field                                                |
 | A screen or HUD element                         | `client/ui/screens/<Name>Screen.tsx` or `ui/hud/<Name>.tsx`                     | selector; slice if new data; bridge event if new game data                                     |
 | Data React needs from the game                  | `client/bridge/events.ts` + `slices/<name>Slice.ts`                             | publish (throttled) from `Match`'s `MatchBridge`                                               |
@@ -340,8 +341,8 @@ text since 2026-10-28 (the owner approved them, `INBOX.md` HC-T1):
 - **Game.** `game/content/` builds the display catalogue the UI reads from core's display content
   (`coreCatalogue.ts`, `buildDisplayCatalogue.ts` and the presentation files) in place of
   `placeholderCatalogue.ts`. `main.tsx` calls `createCoreCatalogue` with its config's tick rate,
-  the manifest's asset ids and the developer overrides, so no `game/content/` module reads
-  `data/`; the shipped catalogue for tests is `game/content/__fixtures__/shippedCatalogue.ts`.
+  the manifest's asset ids, the developer overrides and the status cue registry's ids (DEC-283),
+  so no `game/content/` module reads `data/` or `game/views/`; the shipped catalogue for tests is `game/content/__fixtures__/shippedCatalogue.ts`.
   `game/session/` gains `selectionAssetGroups.ts`, `fillRosters.ts` (LOCK IN's roster fill,
   DEC-61) and
   `createRosterRng.ts` (its random stream, injected as `SessionControllerDeps.createRosterRng`) and

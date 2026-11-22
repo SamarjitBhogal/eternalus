@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { STATUS_EFFECTS } from './statusEffectCatalogue';
 
 describe('STATUS_EFFECTS', () => {
-  it('holds the MVP set, the minion veterancy statuses and the knock-back statuses', () => {
+  it('holds the MVP set, the minion veterancy statuses, the knock-back statuses, Fury and its wind-up', () => {
     expect(STATUS_EFFECTS.ids).toEqual([
       'bleed',
       'concussion',
@@ -16,6 +16,8 @@ describe('STATUS_EFFECTS', () => {
       'rallied',
       'knockup',
       'staggered',
+      'fury',
+      'fury-windup',
     ]);
   });
 
@@ -27,5 +29,16 @@ describe('STATUS_EFFECTS', () => {
         onExpire: [],
       });
     }
+  });
+
+  it('makes Fury’s wind-up stop walking only, for 0.3 s: no control, no follow-up (DEC-283)', () => {
+    expect(STATUS_EFFECTS.get('fury-windup')).toMatchObject({
+      controlClass: 'none',
+      durationSeconds: 0.3,
+      stacking: 'refresh',
+      modifiers: [],
+      flags: ['cannot-move'],
+      onExpire: [],
+    });
   });
 });

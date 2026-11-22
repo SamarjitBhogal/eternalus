@@ -27,7 +27,10 @@ class TestLegend extends Entity {
 
 const setUp = () => {
   const state = new GameState(createDefaultGameConfig(), 1);
-  const scoring = new Scoring(state, createDefaultScoringRules(loadScoring(state.config.tickRate)));
+  const scoring = new Scoring(
+    state,
+    createDefaultScoringRules(loadScoring(state.config.tickRate), state.events),
+  );
   let next = 0;
   /** Adds a Legend at `at` and announces it with `entity-spawned`, as a spawn does. */
   const legend = (team: Team, at = CENTER): EntityId => {

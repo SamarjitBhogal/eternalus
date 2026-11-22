@@ -38,10 +38,32 @@ describe('AbilitySlotRuntime', () => {
 
     expect(runtime.cooldownUntilTick).toBe(580);
     expect(runtime.charge).toBe(0);
-    expect(runtime.lastCast).toEqual({ tick: 100, cooldownUntilTickBefore: 0, chargeBefore: 1 });
+    expect(runtime.lastCast).toEqual({
+      tick: 100,
+      abilityId: 'fury',
+      cooldownUntilTickBefore: 0,
+      chargeBefore: 1,
+    });
     expect(runtime.isCoolingDown(579)).toBe(true);
     expect(runtime.isCoolingDown(580)).toBe(false);
     expect(runtime.cooldownRemaining(500)).toBe(80);
     expect(runtime.cooldownRemaining(600)).toBe(0);
+  });
+
+  it('takes an ability a status grants and gives it back, keeping the cooldown only while it stays', () => {
+    const runtime = new AbilitySlotRuntime('granted', null);
+
+    runtime.hold('fury-dash');
+    runtime.recordCast(100, 30);
+    runtime.hold('fury-dash'); // the status refreshed
+
+    expect(runtime.abilityId).toBe('fury-dash');
+    expect(runtime.cooldownUntilTick).toBe(130);
+
+    runtime.hold(null); // the status ended
+
+    expect(runtime.abilityId).toBeNull();
+    expect(runtime.cooldownUntilTick).toBe(0);
+    expect(runtime.lastCast?.abilityId).toBe('fury-dash');
   });
 });

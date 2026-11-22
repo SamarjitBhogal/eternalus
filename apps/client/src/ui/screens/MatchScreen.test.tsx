@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { figmaHudState } from '../../bridge/__fixtures__/hudFixtures';
+import { FIGMA_HUD_PLAYER, figmaHudState } from '../../bridge/__fixtures__/hudFixtures';
 
 import type { Overlay } from '../../bridge/events';
 import type { RootState } from '../../bridge/store';
 import { FIGMA_MATCH_SETUP, withHudSetup, HUD_BINDINGS, settingsWith } from '../hud/hudTestSupport';
 import { STRINGS } from '../strings';
-import { accessibleNames, renderWithStore, sessionAt } from '../testStore';
+import { accessibleNames, renderWithStore, sessionAt, TEST_CONTENT } from '../testStore';
 import { MatchScreen } from './MatchScreen';
 
 const VIEWPORT = <canvas data-testid="viewport" />;
@@ -59,6 +59,36 @@ describe('MatchScreen', () => {
     for (const value of ['>1850<', '>4700<', '>42<', '>14:32<']) {
       expect(html).toContain(value);
     }
+  });
+
+  it('shows the granted-ability prompt in the abilities region only while one is granted', () => {
+    const state = figmaHudState();
+    const holding = (grantedAbilityId: string | null): Partial<RootState> => ({
+      ...withHudSetup({
+        ...state,
+        hud: { ...state.hud, player: { ...FIGMA_HUD_PLAYER, grantedAbilityId } },
+      }),
+      content: {
+        ...TEST_CONTENT,
+        abilities: [
+          {
+            id: 'fury-dash',
+            displayName: 'Fury Dash',
+            description: 'Dash.',
+            slot: 'granted',
+            aetherCost: 0,
+            cooldownSeconds: 0,
+            isAvailable: true,
+            steps: [],
+            usesAim: false,
+          },
+        ],
+      },
+    });
+
+    const shown = render(holding('fury-dash'));
+    expect(shown).toMatch(/data-hud-region="abilities"[^>]*><div role="status"[^>]*>.*Fury Dash/);
+    expect(render(holding(null))).not.toContain('Fury Dash');
   });
 
   it('shows none of them, and dashes, before the first publish', () => {

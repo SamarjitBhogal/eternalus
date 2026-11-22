@@ -18,6 +18,7 @@ function build(
     readonly content?: Partial<typeof CONTENT>;
     readonly presentation?: Partial<CataloguePresentation>;
     readonly known?: ReadonlySet<string>;
+    readonly drawn?: readonly string[];
     readonly renderer?: EffectsRenderer | null;
   } = {},
 ) {
@@ -25,6 +26,7 @@ function build(
     content: { ...CONTENT, ...change.content },
     presentation: { ...CATALOGUE_PRESENTATION, ...change.presentation },
     knownAssetIds: change.known ?? KNOWN,
+    drawnStatusIds: change.drawn ?? [],
     overrides: change.renderer === undefined ? NONE : { ...NONE, effectsRenderer: change.renderer },
   });
 }
@@ -268,6 +270,17 @@ describe('buildDisplayCatalogue', () => {
     expect(() => build({ known: without('selection-backdrop') })).toThrow('"selection-backdrop"');
   });
 
+  it('throws naming the first status the canvas draws that core does not have', () => {
+    const statuses = CONTENT.statuses.filter((status) => status.id !== 'fury-windup');
+    expect(() => build({ content: { statuses }, drawn: ['fury-windup'] })).toThrow(
+      'status "fury-windup" is not in the core status effects',
+    );
+    expect(() => build({ drawn: ['fury-windup', 'no-such-status', 'other'] })).toThrow(
+      'status "no-such-status" is not in the core status effects',
+    );
+    expect(() => build({ drawn: ['fury-windup'] })).not.toThrow();
+  });
+
   it('lists core classes in order with their specs in core order, then the locked classes', () => {
     const catalogue = build({ content: { specs: [...CONTENT.specs].reverse() } });
     expect(catalogue.legendClasses.map((card) => card.classId)).toEqual([
@@ -423,6 +436,7 @@ describe('buildDisplayCatalogue', () => {
         content: CONTENT,
         presentation: { ...CATALOGUE_PRESENTATION, uiEnhancements: presentation },
         knownAssetIds: KNOWN,
+        drawnStatusIds: [],
         overrides: { ...NONE, uiEnhancements: override },
       }).uiEnhancements;
 

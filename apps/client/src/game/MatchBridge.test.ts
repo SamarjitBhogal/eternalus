@@ -34,6 +34,7 @@ const PLAYER: EntitySnapshot = {
   aether: { current: 95, max: 160 },
   area: null,
   capture: null,
+  statuses: null,
 };
 
 /** The simulation's side of the bridge's listener table: who listens to what, and a way to emit. */
@@ -95,6 +96,7 @@ const structureOf = (feature: MapFeature, current: number, max: number): EntityS
   aether: null,
   area: null,
   capture: null,
+  statuses: null,
   mapFeatureId: feature.id,
 });
 
@@ -195,6 +197,7 @@ describe('MatchBridge', () => {
           weaponProgress: null,
           ultimatePips: null,
           slots: [],
+          grantedAbilityId: null,
         },
       },
       { player: null },
@@ -406,6 +409,27 @@ describe('MatchBridge', () => {
 
       expect(huds[0]?.player?.slots.map(({ slot: id }) => id)).toEqual(['ability-1']);
     });
+
+    it('leaves the granted slot (Fury’s dash) out: it has no HUD slot', () => {
+      const { bridge, huds } = setUp();
+      bridge.publishAll(
+        withPlayer([slot({}), slot({ slot: 'granted', abilityId: 'fury-dash' })]),
+        'player-1',
+      );
+
+      expect(huds[0]?.player?.slots.map(({ slot: id }) => id)).toEqual(['ability-1']);
+    });
+
+    it('publishes the granted ability’s id, and null while none is granted', () => {
+      const { bridge, huds } = setUp();
+      bridge.publishAll(
+        withPlayer([slot({}), slot({ slot: 'granted', abilityId: 'fury-dash' })]),
+        'player-1',
+      );
+      bridge.publishAll(withPlayer([slot({})]), 'player-1');
+
+      expect(huds.map((hud) => hud.player?.grantedAbilityId)).toEqual(['fury-dash', null]);
+    });
   });
 
   it('re-sends the same structure array while no health changed, and keeps each unchanged tile (DEC-221)', () => {
@@ -488,6 +512,7 @@ describe('MatchBridge', () => {
       aether: null,
       area: null,
       capture: null,
+      statuses: null,
     };
     const start = snapshotAt(0, [bystander]);
     const { bridge, structures: published } = setUp(undefined, start);

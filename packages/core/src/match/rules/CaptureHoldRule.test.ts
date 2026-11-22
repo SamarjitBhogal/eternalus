@@ -43,7 +43,10 @@ class TestLegend extends Entity {
 
 const setUp = () => {
   const state = new GameState(createDefaultGameConfig(), 1);
-  const scoring = new Scoring(state, createDefaultScoringRules(loadScoring(state.config.tickRate)));
+  const scoring = new Scoring(
+    state,
+    createDefaultScoringRules(loadScoring(state.config.tickRate), state.events),
+  );
   for (const id of [POINT, OTHER_POINT]) {
     const point = new CapturePoint(id, CATHEDRAL_CAPTURE_POINT.id);
     point.spawn({

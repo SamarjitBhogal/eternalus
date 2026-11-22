@@ -8863,6 +8863,162 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Next step: push (owner); the owner's sign-off comment on PR #123 and the updated PR body; the
   reviewers re-check. Then the Vanguard PRs (DEC-266 on; meter and Fury first).
 
+### 2026-11-16 — Phase 4 / Vanguard PR 2a: the ultimate meter (DEC-272, DEC-273) — feat/vanguard-kit — sholtzman + Claude Code
+
+- What was done: (1) `6c65d0a6` records the owner's Vanguard kit calls (DEC-266 to DEC-275, the
+  readings paragraph, OQ-18 and the Fury dash row of `09-controls.md`). (2) The ultimate meter:
+  the table `content/progression/ultimateCharge.ts` (a record, `UltimateChargeDefinition`), the
+  helper `systems/UltimateCharge.ts` that `ProgressionSystem` owns and pays after the XP (Legend
+  kill, assist, mob kill by weight class, structure damage per 1%, checkpoint, death loss with
+  floor 0; no gain for a dead Legend; clamp to 1), the events `ultimate-charged` and
+  `assist-earned` (emitted by `LegendDeathRule`, so assists stay scoring's), the ledger
+  `state/ChargeLedger.ts` (`GameState.charges`) and the periodic invariant
+  `ultimate-never-fills-passively`; `Snapshot.player` reports `charge` on the ultimate slot, so
+  the HUD's ultimate bar is live. `abilityMatch` takes an optional invariant config; the meter
+  scenario runs with `TEST_DEBUG_CONFIG`. Docs: 05 §18 (new "Ultimate meter" bullet; the ability
+  framework bullet's ultimate line), 03 §4 (the two events, `checkpoint-reached` listener);
+  `INBOX.md` HC-B7 (four better-than-design items: the record, the helper class, `assist-earned`,
+  the ledger). 05 §6, §13 and §16 design text is not changed.
+- Tests: `systems/UltimateCharge.test.ts` (9), `state/ChargeLedger.test.ts` (3),
+  `UltimateNeverFillsPassivelyInvariant.test.ts` (3), `abilities/scenarios/ultimateMeter.test.ts`
+  (2, real `Simulation`, every invariant on), an assist test in `match/Scoring.test.ts`, the
+  ultimate slot in `PlayerSnapshotter.test.ts`. Each failed first under a deliberate break (13
+  breaks, each restored and checked with `cmp`; log
+  `eternalus-agent-work/abilities/meter-breaks.log`): no team check on a kill (2 red), no dead
+  check (1), no clamp to 1 (1), no floor at 0 (3), absorbed damage dropped (1), no
+  `assist-earned` listener (1), no `assist-earned` emit (1), no ledger reset on an ultimate cast
+  (2), invariant compared with 0 (1 unit; 2 scenario), ledger not fed by `ultimate-charged` (2
+  scenario), snapshot `charge: null` (1), no `pay` call (2). The golden replay did not change.
+- Checks run: on the tree of this commit (before this line was added), `npm run check` →
+  `EXIT=0`: core "Tests 1877 passed (1877)"; protocol "Tests 29 passed (29)"; client "Tests 2087
+  passed (2087)"; server "Tests 84 passed (84)"; "All matched files use Prettier code style!";
+  "Documentation check passed." (`eternalus-agent-work/abilities/check-meter.log`).
+- Next step: Fury (Vanguard PR 2a commit 3: `buff` effect, `fury` status with on-hit knock-back,
+  the status-granted `granted` slot and `fury-dash`), then the pre-PR gate.
+
+### 2026-11-16 — Phase 4 / Vanguard PR 2a: Fury (DEC-270, DEC-271) — feat/vanguard-kit — sholtzman + Claude Code
+
+- What was done: Fury, the Vanguard's ultimate. Content: `content/abilities/fury.ts` (self, one
+  `buff` step), the status `content/status-effects/fury.ts` (8 s, `refresh`, attack speed × 3,
+  damage × 1.5, `onHit` knock-back 1 m, `grants: 'fury-dash'`; `TUNE`, balancing.md:185) and
+  `content/abilities/furyDash.ts` (3 m, 0.3 s, 1 s cooldown, targeting `heading`). Core: the
+  `buff` effect (`abilities/effects/BuffEffect.ts`, caster only); status fields `onHit` and
+  `grants` (`onHit` loaded in ticks); `abilities/HitEffects.ts` runs the attacker's statuses'
+  `onHit` steps after each landed basic attack (`CombatSystem`); the `hit` shape
+  (`abilities/shapes/HitShape.ts`); the eighth slot `granted` (slot kind `granted`), filled and
+  emptied by `StatusEffectApplier`, through `AbilitySlotRuntime.hold` (a change ends the
+  cooldown); `LastCast.abilityId`, read by `no-cast-while-not-ready`; `heading` aim in
+  `AbilitySystem`; `abilities/checkStatusLinks.ts` and `AbilityRegistry.checkSteps`, run at boot
+  by `DefaultSystemPipeline`. Protocol and client: `'granted'` in the parser's slot set,
+  `InputAction` (Space, "Fury dash"), `CAST_SLOTS`; `AbilityCasts` casts it at once;
+  `MatchBridge` and `HudSlotId` leave it out of the HUD; the aim overlay draws nothing for `hit`.
+  Docs: 05 §18 (new "Fury" bullet; pointers in the framework and meter bullets and §8's status),
+  13 §10 (Fury's dash; the stale "until its meter is built" line); `INBOX.md` HC-B8 (five
+  better-than-design items). The design text of 05 §3, §6, §8 and §15 is not changed.
+- Tests: `abilities/scenarios/fury.test.ts` (7, real `Simulation`, every invariant on: meter and
+  `not-charged`, 8 s, ×3 and ×1.5, push 1 m and 1/6 m with `staggered`, dash by facing and by
+  heading, `empty-slot` and `on-cooldown`, a dash in Fury's last tick, same hash);
+  `effects/BuffEffect.test.ts` (5), `checkStatusLinks.test.ts` (4), `HitEffects.test.ts` (3),
+  `shapes/HitShape.test.ts` (4); new cases in `AbilityRegistry.test.ts` (`checkSteps`),
+  `StatusEffectApplier.test.ts` (4: fill, empty on remove and on expiry, another ability kept,
+  no ability bar), `loadStatusEffects.test.ts` (`onHit` in ticks, its time check),
+  `AbilitySlotRuntime.test.ts` (`hold`), `pickReadySlot.test.ts` (a filled `granted` slot);
+  `packages/protocol` `ClientMessageParser.test.ts` (the too-many-slots boundary follows
+  `ABILITY_SLOTS.size + 1`; new case "accepts every slot once, the status-granted slot
+  included"); list updates in the catalogue, display, registry, `Legend`, `Abilities` and
+  snapshot tests. Each new test failed first under a deliberate break (24 breaks: 23 in core, 1
+  in protocol; each source restored and compared; log
+  `eternalus-agent-work/abilities/fury-breaks.log`). The golden replay did not change.
+- Fixes found by the full check: knip "Unused exported types: CastSource", so `CastSource` is
+  now file-local in `CastInstance.types.ts`; the protocol test "refuses too many slots as
+  malformed" sent 8 slots, which is now legal (fixed as above).
+- Checks run: `npm run check` (log `eternalus-agent-work/abilities/check-fury-3.log`): EXIT=0;
+  core "Tests 1909 passed (1909)"; protocol "Tests 30 passed (30)"; client "Tests 2087 passed
+  (2087)"; server "Tests 84 passed (84)"; "All matched files use Prettier code style!";
+  "Documentation check passed.".
+- Next step: commit, then the pre-PR gate (critic against base `ecac47ac`, ponytail review,
+  re-check), then the PR on `feat/ability-framework` (stacked, DEC-275).
+
+### 2026-11-18 — Phase 4 / Vanguard PR 2a: critic round 1 — feat/vanguard-kit — sholtzman + Claude Code
+
+- What was done: the pre-PR gate's round 1 on `62c4387a` (base `ecac47ac`; architecture
+  reviewer REWORK with one blocker, correctness critic eight findings, ponytail minor; table and
+  dispositions in `eternalus-agent-work/abilities/critic-pr2a-r1-findings.md`). Fixed:
+  - Granted slot: `DuelRoundSystem` ends each status through the match's `StatusEffectApplier`
+    (a Duel round reset left Fury's dash in the slot); the applier gives the slot the ability of
+    the last remaining granting status on `remove` and `expire`; `StateHasher` hashes the held
+    ability when it differs from `AbilitySlotRuntime.builtWith` (03 §9); new invariant
+    `granted-slot-matches-status` (tick, `error`); a pipeline test proves the boot status-link
+    check runs; `hold` TSDoc.
+  - Targeting: `abilities/targeting/` (`SelfTargeting`, `DirectionalTargeting`,
+    `HeadingTargeting`, contract `CastTargeting`), registered with `registerTargeting` and bound
+    per ability; `CastValidator` and `AbilitySystem` no longer branch on the kind (rule 12).
+  - Client: a `granted` press casts at once in both cast modes with the latest pointer point.
+  - Meter: `charge` rounds to a grid of a millionth (`UltimateCharge.constants.ts`), so whole
+    points worth a full meter make exactly 1; `KindSet.hasKind` is a type predicate, used for
+    mob kinds; a test for the death loss of a victim already at 0 health.
+  - On-hit: `HitEffects.afterHit(state, attackerId, targetId)` (no `Entity` import, no
+    allocation when there is no `onHit`), called by `MeleeAttackStrategy` through
+    `AttackContext.hits` (05 §10).
+  - Docs: 05 §18 (meter, Fury: Duel reset, refill, hash, invariant, targeting strategies,
+    client), 12 §13 implementation status (`assist-earned`), 13 §10, `fury.ts` TSDoc;
+    `INBOX.md` HC-B7 (3), HC-B8 rewritten (four sign-off items and two notes; new (6): the
+    `abilities/` row of `packages/core/AGENTS.md` needs "targeting", not changed), new HC-Q61
+    (three Fury questions) and HC-Q62 (how the client knows a cast needs no pointer).
+- Tests: each new or changed test failed first under a deliberate break (26 breaks: 23 core, 3
+  client; each source restored and its bytes compared, tree hash the same before and after;
+  log `eternalus-agent-work/abilities/fury-r1-breaks.log`). The golden replays did not change.
+- Checks run: on the tree of this commit (before this entry), `npm run check` → `EXIT=0`: core
+  "Tests 1931 passed (1931)"; protocol "Tests 30 passed (30)"; client "Tests 2090 passed
+  (2090)"; server "Tests 84 passed (84)"; "All matched files use Prettier code style!";
+  "Documentation check passed." (`eternalus-agent-work/abilities/check-fury-r1.log`).
+- Next step: critic round 2 on the round 1 delta, then ponytail, re-check and the PR (stacked
+  on `feat/ability-framework`, DEC-275), after PR #123 takes phase/3 (#99, #101).
+
+### 2026-11-19 — Phase 4 / Vanguard PR 2a: critic round 2 — feat/vanguard-kit — sholtzman + Claude Code
+
+- What was done: the fixes from the pre-PR gate's round 2 on `4396178b` (architecture reviewer
+  APPROVE, correctness critic three Low, ponytail one cut rejected; table and dispositions in
+  `eternalus-agent-work/abilities/critic-pr2a-r2-findings.md`):
+  - C2-2: `StatusEffectApplier.expire` skips the regrant when an `onExpire` follow-up lands a
+    grant of its own, so a follow-up that grants the same ability keeps the cooldown (it went
+    to `null` and back). The critic's proposal (regrant after the follow-ups) was not used: when
+    the follow-up refreshes a status in place and a later status grants another ability, the
+    regrant would replace the follow-up's later `apply`. 05 §18 notes the rule.
+  - N1/C2-1: `AbilitySlotRuntime.hold` TSDoc says `reset` is planned (05 §6), not built.
+  - N2/C2-3: a client test pins that Space queues nothing before the pointer has had any world
+    point.
+  - S1 and BTD1: `INBOX.md` HC-Q62 now has (1) with option B3 (`usesAim` per slot,
+    recommended) and (2) whether Space in aim-then-click shows the overlay first (DEC-209 (3)).
+- Tests: each new test failed first under a deliberate break (3 breaks: 2 core, 1 client; each
+  source restored; log `eternalus-agent-work/abilities/fury-r2-breaks.log`).
+- Checks run: on the tree of this commit (before this line), `npm run check` → `EXIT=0`: core
+  "Tests 1933 passed (1933)"; protocol "Tests 30 passed (30)"; client "Tests 2091 passed
+  (2091)"; server "Tests 84 passed (84)"; "All matched files use Prettier code style!";
+  "Documentation check passed." (`eternalus-agent-work/abilities/check-fury-r2.log`).
+- Next step: commit, critic round 3 (the last) on this delta, then merge the new
+  `feat/ability-framework` (phase/3 `af54fe96`) into this branch.
+
+### 2026-11-19 — Phase 4 / Vanguard PR 2a: critic round 3 — feat/vanguard-kit — sholtzman + Claude Code
+
+- What was done: the fixes from the pre-PR gate's round 3 (the last) on `67ebf01e` (architecture
+  reviewer APPROVE, correctness critic two Low, ponytail no cuts; table in
+  `eternalus-agent-work/abilities/critic-pr2a-r3-findings.md`):
+  - C3-1: two `StatusEffectApplier` tests pin both conditions of the `expire` skip: the slot
+    empties when the `onExpire` follow-up does not land (dead holder) and when it lands but grants
+    no ability (`control-immune`).
+  - R3-1: the follow-up fixture uses a fixed 8 s Fury, so the "follow-up's grant wins" test does
+    not depend on Fury's `TUNE` duration. C3-2: the class TSDoc says "an ended status's
+    `onExpire`". R3-2 (a helper for the one-line slot rule) rejected: no second caller.
+- Tests: breaks B4 and B5 turn the two new tests red, and B2, re-run on the new fixture, is still
+  red (source restored, SHA-256 matched; `eternalus-agent-work/abilities/fury-r3-breaks.log`).
+- Checks run: on the tree of this commit (before this line), `npm run check` → `EXIT=0`: core
+  "Tests 1935 passed (1935)"; protocol "Tests 30 passed (30)"; client "Tests 2091 passed
+  (2091)"; server "Tests 84 passed (84)"; "All matched files use Prettier code style!";
+  "Documentation check passed." (`eternalus-agent-work/abilities/check-fury-r3.log`).
+- Next step: merge the new `feat/ability-framework` (phase/3 `d85bc2f5`) into this branch, then
+  ponytail on the branch diff, re-check and the stacked PR (base `feat/ability-framework`).
+
 ### 2026-11-16 — Phase 3 / sprint 3 work: merge phase/3 (`330e969a`) into feat/capture-point-boss (PR #99) — feat/capture-point-boss-merge (local, from `d3dd9822`) — Aryan Walanj + Claude Code
 
 - What was done: claudiodh's re-review of `d3dd9822` asked for the current phase branch to be
@@ -9262,6 +9418,28 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Next step: the owner pushes PR #123, posts the sign-off comment and updates the body; then
   `feat/vanguard-kit` merges this branch.
 
+### 2026-11-20 — Phase 4 / Vanguard PR 2a: merge of feat/ability-framework and boss damage (DEC-272) — feat/vanguard-kit — sholtzman + Claude Code
+
+- What was done: merged `feat/ability-framework` `5ebe1021` (PR #123 with phase/3 `af54fe96`
+  and `d85bc2f5`: #101, #99, #126, #121, #120, #119). Four conflicts, both sides kept
+  (`ProgressionSystem` TSDoc, `DefaultSystemPipeline.test.ts`, `INBOX.md`, this file); the
+  framework's DEC-237 test now passes `ultimateCharge` (merge critic B1). The merge critic
+  (`architecture-reviewer`) asked for changes; fixed in the next commit: boss damage pays the meter
+  (S1: `bossDamagePerPercent`, `capture-point-boss` 1, `TUNE`, cause `boss-damage`; the kill price
+  is INBOX HC-Q65), the HC-Q63 Fury note (S2), 05 §18 (N1), HC-B12 one boss record for a
+  follow-up (BTD1), this entry (S3), and a content test that each boss id is a shipped mob (ADR
+  0023). Re-check: APPROVE. Ponytail on the branch against `5ebe1021`: no cuts.
+- Tests: breaks B6 (rate ignored), B7 (wrong cause) and B8 (misspelt boss id) turned the new tests
+  red; source restored, SHA-256 matched (`eternalus-agent-work/abilities/merge-5ebe1021-breaks.log`).
+- Checks run: on the tree of both commits (before this entry), `npm run check` → `EXIT=0`: core
+  "Tests 1982 passed (1982)"; protocol "Tests 30 passed (30)"; client "Tests 2097 passed
+  (2097)"; server "Tests 84 passed (84)"; "All matched files use Prettier code style!";
+  "Documentation check passed." (`check-merge-5ebe1021.log`). The merge commit alone: pre-commit
+  `check:quick` → passed (`EXIT=0`, `commit-merge-5ebe1021.log`); its two changed test files "Tests 31 passed (31)".
+- Next step: the owner pushes PR #123 and this branch and opens the stacked PR (base
+  `feat/ability-framework`); the owner answers HC-Q61 to HC-Q65, HC-B7, HC-B8, HC-B12 and HC-S12
+  on the "Combat Track Calls" page.
+
 ### 2026-11-12 — Phase 3 / minion follow-ups: content durations become ticks at load (DEC-241) — refactor/durations-at-load — sholtzman + Claude Code
 
 - What was done: five loaders (`loadAggroRules`, `loadStuckDetection`, `loadMinionVeterancy`,
@@ -9519,6 +9697,86 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Next step: the owner pushes PR #123 (no new sign-off comment; the body gets this merge and the
   checks); `feat/vanguard-kit` merges this head; the owner answers HC-B13.
 
+### 2026-11-20 — Phase 4 / Vanguard PR 2a: merges of feat/ability-framework `ed7be614` and `7a952b48` — feat/vanguard-kit — sholtzman + Claude Code
+
+- What was done: merged PR #123's head twice. `d9137ed1` takes `ed7be614` (its merge of phase/3
+  `5a7cc8dc`, #125: content durations become ticks at load, DEC-241); two files conflicted:
+  `DefaultSystemPipeline.ts` keeps `DuelRoundSystem(duelStarts, statuses)` and #125's
+  `loadOutOfCombatHealing(tickRate)`, and this file keeps both sides. `614c1754` takes
+  `7a952b48` (#123's merge-critic fix: `loadKnockback(tickRate)`); `defaultAbilityRegistry.ts`
+  TSDoc keeps "a debuff or a buff" and gains the tick rate and the `loadKnockback` throw, and
+  doc 05's `last-reviewed` is 2026-11-20.
+- Merge critic (`architecture-reviewer`) on both merges: APPROVE, no blockers
+  (`eternalus-agent-work/abilities/critic-merge-7a952b48-findings.md`). Nits applied here: N1
+  `loadStatusEffects` cites 03 §8 and DEC-241; N2 the `statusOnHitEffects` fixture loads the
+  knock-back at the default config's tick rate (a `tickRate` parameter), not a literal 30; N3
+  three comment lines over 100 columns rewrapped. Its better-than-design item (one module for
+  the step-time helpers `loadAbilities.ts` and `loadStatusEffects.ts` share) belongs with
+  `INBOX.md` HC-B13 (2)/(3), written on `feat/ability-framework` after PR #123 is pushed.
+- Checks run: on `614c1754`, `npm run check` → `EXIT=0`: core "Tests 2012 passed (2012)";
+  protocol "Tests 30 passed (30)"; client "Tests 2097 passed (2097)"; server "Tests 84 passed
+  (84)"; "All matched files use Prettier code style!"; "Documentation check passed."
+  (`eternalus-agent-work/abilities/check-merge-7a952b48.log`). After the nits (before this
+  entry), `npm run check` → `EXIT=0` with the same counts (`check-merge-nits.log`).
+- Next step: the owner pushes PR #123, then this branch, and opens the stacked PR (base
+  `feat/ability-framework`); then DEC-283 and the group-A builds from the "Combat Track Calls"
+  page.
+
+### 2026-11-20 — Phase 4 / Vanguard PR 2a: DEC-283 builds, critic round 4 and its fixes — feat/vanguard-kit — sholtzman + Claude Code
+
+- What was done: the owner's PR 2a calls (DEC-283, row in `61201fba`). `1163c444`: the last hit
+  on a boss fills the killer's ultimate meter (`ULTIMATE_CHARGE.bossKill`, cause `boss-kill`).
+  `e2943aca` merges `feat/pr2a-aim-hud`: each targeting strategy states `usesAim`, published as
+  `AbilityDisplay.usesAim`, so the client casts Fury's dash at once in both cast modes, and the
+  `GrantedPrompt` HUD element shows the Space key and the ability's name while Fury lasts.
+  `87654528` merges `feat/pr2a-windup`: ability steps may wait (`delaySeconds`, top-level steps,
+  loaded as ticks), a cast with steps left stays on the caster as `CastInProgress` (hashed,
+  dropped by death and a Duel round reset), Fury's dash winds up 0.3 s (`fury-windup`,
+  `cannot-move`), and the client draws closing orange rings from `EntitySnapshot.statuses`.
+  INBOX HC-Q66 records five readings of the wind-up that the answer did not settle.
+- Critic round 4 on `87654528` (delta from `ca90c758`): `architecture-reviewer` APPROVE, no
+  blockers, S1-S5 should-fix, N1-N9; correctness one medium (M1, the `Match` wiring of `usesAim`
+  was untested), three low, three nits; ponytail four cuts. Dispositions:
+  `eternalus-agent-work/abilities/critic-pr2a-r4-dispositions.md`. Fixed: S1 (`DisplayContent.statuses`
+  and a boot check of the rings' status id, ADR 0023), M1 and L1 (two `Match` tests; a plain
+  `{ x, y }` aim point), L2 (a `CastInstance` only on a due tick; cuts 1 and 2), N1 (the Fury hash
+  test fails without cast hashing), N2 (`FURY_WINDUP_SECONDS`), arch N1, S2, S3 (03 §5/§12 and
+  05 §6/§13/§15 show the as-built and signed-off design), S4 (INBOX HC-B14, built under the
+  standing rule DEC-223), N8 (HC-B12 note; the phase 3 `Boss` item names the five boss lists),
+  N9. Rejected with reasons: L3 (matches the neighbouring lookups), ponytail cut 4, N3/N4, N6,
+  N7 (`Match.ts` 308 lines).
+- Tests failed first: every new test was red under a deliberate break and green after the restore
+  (SHA-256 checked): `boss-kill-breaks.log`, `aim-hud-breaks.log`, `windup-breaks.log`,
+  `r4-runner-a-breaks.log` (A1-A2), `r4-runner-b-breaks.log` (B1-B3), `r4-runner-c-breaks.log`
+  (C1-C2), all in `eternalus-agent-work/abilities/`.
+- Checks run: on `87654528`, `npm run check` → `EXIT=0` (core 2035, protocol 30, client 2111,
+  server 84; `check-pr2a-merged.log`). With the round 4 fixes (before this entry), `npm run check`
+  → `EXIT=0`: core "Tests 2037 passed (2037)"; protocol "Tests 30 passed (30)"; client "Tests
+  2114 passed (2114)"; server "Tests 84 passed (84)"; "All matched files use Prettier code
+  style!"; "Documentation check passed." (`check-pr2a-r4-fixes.log`).
+- Next step: the critic re-checks the fix diff; then the owner pushes this branch and opens the
+  stacked PR (base `feat/ability-framework`, #123); then DEC-284 on `feat/ability-framework`.
+
+### 2026-11-20 — Phase 4 / Vanguard PR 2a: critic re-check fixes and loop 3 of 3 — feat/vanguard-kit — sholtzman + Claude Code
+
+- What was done: the re-check of the round 4 fixes (`critic-pr2a-r4-recheck-*.md`, architecture
+  APPROVE) asked for R1-R8; fixed in `1951f972`, `9df04b75`, `51614a38`: a client status-cue
+  registry (`defaultStatusCueRegistry.ts`, injected into `EntityLayer`; drawn status ids reach the
+  boot check from `main.tsx`; INBOX HC-B14 (f), built under DEC-223), `CastInstance.isDue` as the
+  one due rule, the Fury hash test without a private-state reach. Loop 3 of 3 on that diff:
+  architecture APPROVE (N1-N5), correctness 0 blockers (N1-N4, every fix claim held), ponytail one
+  cut rejected (it allocates per frame). All nits fixed in `2c1a4bf0`, `524028a7` and this
+  commit: `CastInstance.run` needs a placement, the status id lives in the registry,
+  `StatusCueView.types.ts`, 17 R9 and 02 §10/§12 name the registry, the cast hash test varies x.
+  Dispositions: `eternalus-agent-work/abilities/critic-pr2a-r4-recheck2-dispositions.md`.
+- Checks run: red first, SHA-256 restored: `r4-recheck-fix-breaks.log` (D1-D8),
+  `loop3-fix-breaks.log` (E1-E3). With every fix (before this entry), `npm run check` →
+  `EXIT=0`: core "Tests 2038 passed (2038)"; protocol "Tests 30 passed (30)"; client "Tests 2121
+  passed (2121)"; server "Tests 84 passed (84)"; "All matched files use Prettier code style!";
+  "Documentation check passed." (`check-pr2a-loop3-fixes.log`).
+- Next step: the owner runs `push-vanguard-pr2a.sh` (push, open the stacked PR on #123); then
+  DEC-284 on `feat/ability-framework` (#123).
+
 ### 2026-11-20 — Phase 4 / sprint 4.2: DEC-284, the owner's follow-up calls for the ability framework — feat/ability-framework — sholtzman + Claude Code
 
 - What was done: recorded the owner's group B answers of 2026-11-20 (Combat Track Calls page,
@@ -9534,6 +9792,19 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: `npm run docs:check` and `npx prettier --check` on the five changed files.
 - Next step: the owner pushes PR #123; `feat/vanguard-kit` (PR #136) merges this head, keeping one
   2026-11-20 batch heading with both rows, DEC-283 and DEC-284.
+
+### 2026-11-20 — Phase 4 / Vanguard PR 2a: merge of feat/ability-framework `04e86aaf` (DEC-284) — feat/vanguard-kit — sholtzman + Claude Code
+
+- What was done: merged the DEC-284 docs commit of PR #123 (`04e86aaf`) into `feat/vanguard-kit`
+  for PR #136. Three files conflicted, all by design: the decisions log keeps one 2026-11-20
+  batch heading with both rows, DEC-283 and DEC-284, and the paragraph under the table now says
+  "the build of DEC-283 (5)", since the table has two rows; `INBOX.md` keeps the 2026-11-19 Fury
+  note under HC-Q63 and then its DEC-284 answer, and the HC-Q64 answer before this branch's new
+  items; this file keeps both sides. HC-B13 (5) now says its code came with PR #136, not with
+  PR #123 (#123's "not on this branch" is false here). The merge changes only `INBOX.md` and
+  `docs/` (no code).
+- Checks run: `npm run docs:check`, Prettier on the five files, and `npm run check`.
+- Next step: the owner pushes PR #123, then PR #136.
 
 ### 2026-11-19 — Phase 3 / the match-start countdown overlay (DEC-278) — feat/match-start-countdown — sholtzman + Claude Code
 

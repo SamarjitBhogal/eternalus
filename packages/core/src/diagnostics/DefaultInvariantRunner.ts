@@ -1,6 +1,7 @@
 import { CaptureProgressBoundsInvariant } from './invariants/CaptureProgressBoundsInvariant';
 import { CooldownAndAetherBoundsInvariant } from './invariants/CooldownAndAetherBoundsInvariant';
 import { FiniteTransformsInvariant } from './invariants/FiniteTransformsInvariant';
+import { GrantedSlotMatchesStatusInvariant } from './invariants/GrantedSlotMatchesStatusInvariant';
 import { HealthWithinBoundsInvariant } from './invariants/HealthWithinBoundsInvariant';
 import { GuardWithinLeashInvariant } from './invariants/GuardWithinLeashInvariant';
 import { HordeMembershipConsistentInvariant } from './invariants/HordeMembershipConsistentInvariant';
@@ -11,6 +12,7 @@ import { NoMapObjectOverlapInvariant } from './invariants/NoMapObjectOverlapInva
 import { NoRemovalWithoutCauseInvariant } from './invariants/NoRemovalWithoutCauseInvariant';
 import { PhaseMonotonicInvariant } from './invariants/PhaseMonotonicInvariant';
 import { StatusStacksWithinMaxInvariant } from './invariants/StatusStacksWithinMaxInvariant';
+import { UltimateNeverFillsPassivelyInvariant } from './invariants/UltimateNeverFillsPassivelyInvariant';
 import type { DefaultInvariantRunnerOptions } from './DefaultInvariantRunner.types';
 import { InvariantRunner } from './InvariantRunner';
 
@@ -38,6 +40,8 @@ export class DefaultInvariantRunner extends InvariantRunner {
         new StatusStacksWithinMaxInvariant(),
         new CooldownAndAetherBoundsInvariant(abilities),
         new NoCastWhileNotReadyInvariant(),
+        new UltimateNeverFillsPassivelyInvariant(),
+        new GrantedSlotMatchesStatusInvariant(),
         new CaptureProgressBoundsInvariant(),
         new PhaseMonotonicInvariant(phaseOrder, terminalPhases),
       ],

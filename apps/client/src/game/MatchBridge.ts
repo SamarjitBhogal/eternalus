@@ -280,13 +280,17 @@ export class MatchBridge {
       ultimatePips: null,
       slots:
         snapshot.player?.entityId === entity.id ? MatchBridge.slotsOf(snapshot.player.slots) : [],
+      grantedAbilityId:
+        snapshot.player?.entityId === entity.id
+          ? (snapshot.player.slots.find(({ slot }) => slot === 'granted')?.abilityId ?? null)
+          : null,
     };
   }
 
-  /** The bar slots the HUD draws: `default-action` has no HUD slot. */
+  /** The bar slots the HUD draws: `default-action` and `granted` (Fury's dash) have no HUD slot. */
   private static slotsOf(slots: readonly AbilitySlotSnapshot[]): readonly AbilitySlotStatus[] {
     return slots.flatMap(({ slot, ...rest }) =>
-      slot === 'default-action' ? [] : [{ slot, ...rest }],
+      slot === 'default-action' || slot === 'granted' ? [] : [{ slot, ...rest }],
     );
   }
 

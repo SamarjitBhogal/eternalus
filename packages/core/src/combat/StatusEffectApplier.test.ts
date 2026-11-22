@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
+import { casterState } from '../abilities/__fixtures__/casterState';
+import { Abilities } from '../components/Abilities';
 import { Health } from '../components/Health';
 import { StatusEffects } from '../components/StatusEffects';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { ContentCatalogue } from '../content/ContentCatalogue';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { UnknownDefinitionError } from '../content/UnknownDefinitionError';
@@ -195,5 +198,164 @@ describe('StatusEffectApplier', () => {
     applier.expire(state, dummy.id);
 
     expect(applier.apply(state, dummy.id, 'stun', 'entity-9')).toBe(true);
+  });
+
+  describe('a status that grants an ability (Fury’s dash, DEC-270)', () => {
+    const setUpLegend = () => {
+      const { state, caster } = casterState();
+      const applier = new StatusEffectApplier(loadStatusEffects(CONFIG.tickRate, 2));
+      return { state, caster, applier, slot: caster.getComponent(Abilities).slot('granted') };
+    };
+
+    it('fills the holder’s granted slot while it lasts and empties it when removed', () => {
+      const { state, caster, applier, slot } = setUpLegend();
+
+      applier.apply(state, caster.id, 'fury', caster.id);
+
+      expect(slot?.abilityId).toBe('fury-dash');
+
+      applier.remove(state, caster.id, 'fury');
+
+      expect(slot?.abilityId).toBeNull();
+    });
+
+    it('empties the slot when the status runs out', () => {
+      const { state, caster, applier, slot } = setUpLegend();
+      applier.apply(state, caster.id, 'fury', caster.id);
+
+      for (let tick = 0; tick < 239; tick += 1) state.advanceTick();
+      applier.expire(state, caster.id);
+
+      expect(slot?.abilityId).toBe('fury-dash');
+
+      state.advanceTick();
+      applier.expire(state, caster.id);
+
+      expect(slot?.abilityId).toBeNull();
+    });
+
+    it('leaves the slot alone when it holds another ability, or the status grants none', () => {
+      const { state, caster, applier, slot } = setUpLegend();
+      applier.apply(state, caster.id, 'fury', caster.id);
+      applier.apply(state, caster.id, 'stun', null);
+      slot?.hold('other-dash');
+
+      applier.remove(state, caster.id, 'stun');
+      applier.remove(state, caster.id, 'fury');
+
+      expect(slot?.abilityId).toBe('other-dash');
+    });
+
+    describe('while two statuses grant an ability', () => {
+      const shipped = loadStatusEffects(CONFIG.tickRate, 2);
+      /** Fury, and a test status that grants another dash for 2 s (tick 60). */
+      const twoGranting = () => {
+        const { state, caster } = casterState();
+        const frenzy = { ...shipped.get('fury'), id: 'frenzy', durationTicks: 60, grants: 'leap' };
+        const applier = new StatusEffectApplier(new ContentCatalogue([...shipped.all(), frenzy]));
+        return { state, caster, applier, slot: caster.getComponent(Abilities).slot('granted') };
+      };
+
+      it('gives the slot back to the other status’s ability when the one it holds is removed', () => {
+        const { state, caster, applier, slot } = twoGranting();
+        applier.apply(state, caster.id, 'fury', caster.id);
+        applier.apply(state, caster.id, 'frenzy', caster.id);
+
+        expect(slot?.abilityId).toBe('leap');
+
+        applier.remove(state, caster.id, 'frenzy');
+
+        expect(slot?.abilityId).toBe('fury-dash');
+      });
+
+      it('gives the slot back to the other status’s ability when the one it holds runs out', () => {
+        const { state, caster, applier, slot } = twoGranting();
+        applier.apply(state, caster.id, 'fury', caster.id);
+        applier.apply(state, caster.id, 'frenzy', caster.id);
+
+        for (let tick = 0; tick < 60; tick += 1) state.advanceTick();
+        applier.expire(state, caster.id);
+
+        expect(slot?.abilityId).toBe('fury-dash');
+      });
+    });
+
+    describe('when the status that ends applies a granting status (onExpire)', () => {
+      const shipped = loadStatusEffects(CONFIG.tickRate, 2);
+      /**
+       * `rage` grants `granted` for 2 s (tick 60), then applies `then`; `frenzy` grants `leap`.
+       * Fury lasts a fixed 8 s (tick 240) here, not its TUNE value, so it always outlasts `rage`.
+       */
+      const withFollowUp = (granted: string, then = 'fury') => {
+        const { state, caster } = casterState();
+        const fury = { ...shipped.get('fury'), durationTicks: 240 };
+        const rage = {
+          ...fury,
+          id: 'rage',
+          durationTicks: 60,
+          grants: granted,
+          onExpire: [{ kind: 'apply-status', statusId: then }] as const,
+        };
+        const frenzy = { ...fury, id: 'frenzy', grants: 'leap' };
+        const others = [...shipped.all()].filter(({ id }) => id !== 'fury');
+        const applier = new StatusEffectApplier(
+          new ContentCatalogue([...others, fury, rage, frenzy]),
+        );
+        return { state, caster, applier, slot: caster.getComponent(Abilities).slot('granted') };
+      };
+
+      it('keeps the cooldown when the follow-up grants the same ability', () => {
+        const { state, caster, applier, slot } = withFollowUp('fury-dash');
+        applier.apply(state, caster.id, 'rage', caster.id);
+        slot?.recordCast(state.tick, 1000);
+
+        for (let tick = 0; tick < 60; tick += 1) state.advanceTick();
+        applier.expire(state, caster.id);
+
+        expect(slot?.abilityId).toBe('fury-dash');
+        expect(slot?.cooldownRemaining(state.tick)).toBe(940);
+      });
+
+      it('gives the slot to the follow-up’s grant, even when a later status grants another', () => {
+        const { state, caster, applier, slot } = withFollowUp('charge');
+        applier.apply(state, caster.id, 'fury', caster.id);
+        applier.apply(state, caster.id, 'frenzy', caster.id);
+        applier.apply(state, caster.id, 'rage', caster.id);
+
+        for (let tick = 0; tick < 60; tick += 1) state.advanceTick();
+        applier.expire(state, caster.id);
+
+        expect(slot?.abilityId).toBe('fury-dash');
+      });
+
+      it('empties the slot when the follow-up does not land', () => {
+        const { state, caster, applier, slot } = withFollowUp('fury-dash');
+        applier.apply(state, caster.id, 'rage', caster.id);
+        caster.getComponent(Health).applyDamage(1_000_000);
+
+        for (let tick = 0; tick < 60; tick += 1) state.advanceTick();
+        applier.expire(state, caster.id);
+
+        expect(slot?.abilityId).toBeNull();
+      });
+
+      it('empties the slot when the follow-up grants no ability', () => {
+        const { state, caster, applier, slot } = withFollowUp('fury-dash', 'control-immune');
+        applier.apply(state, caster.id, 'rage', caster.id);
+
+        for (let tick = 0; tick < 60; tick += 1) state.advanceTick();
+        applier.expire(state, caster.id);
+
+        expect(caster.getComponent(StatusEffects).has('control-immune')).toBe(true);
+        expect(slot?.abilityId).toBeNull();
+      });
+    });
+
+    it('lands on a unit with no ability bar', () => {
+      const { state, dummy, applier } = setUp();
+
+      expect(applier.apply(state, dummy.id, 'fury', null)).toBe(true);
+      expect(applier.remove(state, dummy.id, 'fury')).toBe(true);
+    });
   });
 });

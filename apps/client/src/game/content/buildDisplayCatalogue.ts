@@ -273,13 +273,16 @@ function catalogueAssetIds(catalogue: DisplayCatalogue): AssetId[] {
  * icons, in slot order. HUD kinds: core names by kind (an aggregated group takes its first named
  * kind's name).
  * @throws Error naming the id: a core class, spec or locked class without presentation, a
- *   presentation key without a core entry, a HUD kind or group without a core name, or an asset id
- *   that is not in `knownAssetIds` (checked at boot).
+ *   presentation key without a core entry, a HUD kind or group without a core name, a status in
+ *   `drawnStatusIds` that core does not have, or an asset id that is not in `knownAssetIds`
+ *   (checked at boot).
  */
 export function buildDisplayCatalogue(inputs: {
   readonly content: DisplayContent;
   readonly presentation: CataloguePresentation;
   readonly knownAssetIds: ReadonlySet<AssetId>;
+  /** The statuses the canvas draws a cue for (`StatusCueRegistry.statusIds`), by core id. */
+  readonly drawnStatusIds: readonly string[];
   /**
    * The effects renderer is `overrides.effectsRenderer ?? presentation.effectsRenderer`; on `'css'`
    * every `cardPlates` is `{}` and every `rowPlate` and both chrome ids are `null` (DEC-54). Plate
@@ -288,7 +291,7 @@ export function buildDisplayCatalogue(inputs: {
    */
   readonly overrides: DisplayOverrides;
 }): DisplayCatalogue {
-  const { content, presentation, knownAssetIds, overrides } = inputs;
+  const { content, presentation, knownAssetIds, drawnStatusIds, overrides } = inputs;
   const effectsRenderer = overrides.effectsRenderer ?? presentation.effectsRenderer;
   const full: DisplayCatalogue = {
     legendClasses: [
@@ -312,6 +315,10 @@ export function buildDisplayCatalogue(inputs: {
     sovereignNames: content.sovereignNames,
   };
   checkNoLeftoverPresentation(content, presentation);
+  const undrawable = drawnStatusIds.find(
+    (id) => !content.statuses.some((status) => status.id === id),
+  );
+  if (undrawable !== undefined) fail(`status "${undrawable}" is not in the core status effects`);
   const unknown = catalogueAssetIds(full).find((id) => !knownAssetIds.has(id));
   if (unknown !== undefined) fail(`asset "${unknown}" is not in the asset manifest`);
   return RENDERER_VIEWS[effectsRenderer](full);

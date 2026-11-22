@@ -48,6 +48,7 @@ import { STRUCTURE_DEFINITIONS } from './content/structures/structureCatalogue';
 import { compareById } from './utils/compareById';
 import type { LevelCurveDefinition } from './content/progression/progression.types';
 import { loadLevelCurves } from './content/progression/loadLevelCurves';
+import { ULTIMATE_CHARGE } from './content/progression/ultimateCharge';
 import { XP_SOURCES } from './content/progression/xpSources';
 import { loadWeapons } from './content/weapons/loadWeapons';
 import { ZONE_DEFINITIONS, ZONE_PLACEMENTS } from './content/zones/zoneCatalogue';
@@ -254,7 +255,7 @@ export class Simulation {
           terminalPhases: TERMINAL_MATCH_PHASES,
         }),
         state: this.state,
-        progression: { units, curves, xpSources: XP_SOURCES },
+        progression: { units, curves, xpSources: XP_SOURCES, ultimateCharge: ULTIMATE_CHARGE },
         director,
         abilities: registry,
         validator,

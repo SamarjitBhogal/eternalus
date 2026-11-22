@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { ContentValidationError } from '../ContentValidationError';
+import { FURY } from './fury';
 import { STUN } from './stun';
 import { loadStatusEffects } from './loadStatusEffects';
 
@@ -37,6 +38,25 @@ describe('loadStatusEffects', () => {
     expect(loadStatusEffects(30, 3).get('enraged').maxStacks).toBe(3);
   });
 
+  it('loads Fury’s onHit steps with every time in ticks, and its grant as authored', () => {
+    const debuffOnHit = {
+      ...FURY,
+      id: 'sapping',
+      onHit: [{ kind: 'debuff', statusId: 'stun', durationSeconds: 0.5, shape: { kind: 'hit' } }],
+    } as const;
+    const loaded = loadStatusEffects(30, 2, [FURY, debuffOnHit]);
+
+    expect(loaded.get('fury')).toMatchObject({
+      durationTicks: 240,
+      onHit: [{ kind: 'knockback', distance: 1, shape: { kind: 'hit' } }],
+      grants: 'fury-dash',
+    });
+    expect(loaded.get('sapping').onHit).toEqual([
+      { kind: 'debuff', statusId: 'stun', durationTicks: 15, shape: { kind: 'hit' } },
+    ]);
+    expect(loadStatusEffects(30, 2).get('stun').onHit).toBeUndefined();
+  });
+
   it('rejects broken content at load, naming every problem', () => {
     const broken = [
       { ...STUN, id: 'Bad_Id', maxStacks: 2 },
@@ -48,11 +68,16 @@ describe('loadStatusEffects', () => {
         periodic: { everySeconds: -1, effects: [{ kind: 'damage', amount: 0 }] },
       },
       { ...STUN, id: 'daze', onExpire: [{ kind: 'apply-status', statusId: 'dizzy' }] },
+      {
+        ...STUN,
+        id: 'sapping',
+        onHit: [{ kind: 'debuff', statusId: 'stun', durationSeconds: -1, shape: { kind: 'hit' } }],
+      },
     ] as const;
 
     expect(() => loadStatusEffects(30, 2, broken)).toThrow(ContentValidationError);
     expect(() => loadStatusEffects(30, 2, broken)).toThrow(
-      /"Bad_Id": id must be kebab-case[\s\S]*"Bad_Id": refresh needs maxStacks 1[\s\S]*"frozen": modifier values must be positive[\s\S]*"instant": durationSeconds must be positive[\s\S]*"drip": everySeconds must be positive[\s\S]*"drip": periodic amounts must be positive[\s\S]*"daze": onExpire names unknown status "dizzy"/,
+      /"Bad_Id": id must be kebab-case[\s\S]*"Bad_Id": refresh needs maxStacks 1[\s\S]*"frozen": modifier values must be positive[\s\S]*"instant": durationSeconds must be positive[\s\S]*"drip": everySeconds must be positive[\s\S]*"drip": periodic amounts must be positive[\s\S]*"daze": onExpire names unknown status "dizzy"[\s\S]*"sapping": debuff durationSeconds must not be negative/,
     );
   });
 });

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { DamagePipeline } from '../combat/DamagePipeline';
+import { StatusEffectApplier } from '../combat/StatusEffectApplier';
+import { Abilities } from '../components/Abilities';
 import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
@@ -12,6 +14,7 @@ import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { NullLogger } from '../diagnostics/NullLogger';
 import { Entity } from '../entities/Entity';
 import { KillCountCondition } from '../match/conditions/KillCountCondition';
+import type { GameEventMap } from '../state/GameEvents.types';
 import { GameState } from '../state/GameState';
 import type { PlayableTeam } from '../teams/teams.types';
 import { DuelRoundSystem } from './DuelRoundSystem';
@@ -32,7 +35,8 @@ const setUp = (killTarget = 10) => {
   const state = new GameState(createDefaultGameConfig(), 1);
   state.match.startDuel(killTarget);
   const damage = new DamagePipeline();
-  const system = new DuelRoundSystem(STARTS);
+  const applier = new StatusEffectApplier(loadStatusEffects(30, 2));
+  const system = new DuelRoundSystem(STARTS, applier);
   let next = 0;
   const add = (team: PlayableTeam | 'neutral', isSeat: boolean): Entity => {
     next += 1;
@@ -54,7 +58,7 @@ const setUp = (killTarget = 10) => {
   const run = (): void => {
     system.update({ state, logger: new NullLogger() });
   };
-  return { state, add, hit, run };
+  return { state, applier, add, hit, run };
 };
 
 describe('DuelRoundSystem', () => {
@@ -141,6 +145,31 @@ describe('DuelRoundSystem', () => {
     expect(statuses.active).toHaveLength(0);
   });
 
+  it('ends each status through the applier: one status-expired each, and Fury takes its dash with it', () => {
+    const { state, applier, add, hit, run } = setUp();
+    const light = add('light', true);
+    const dark = add('dark', true);
+    light.addComponent(new StatusEffects());
+    const bar = new Abilities({
+      abilities: ['blade-runner', 'veil', 'hamstring'],
+      ultimate: 'fury',
+    });
+    light.addComponent(bar);
+    applier.apply(state, light.id, 'fury', light.id);
+    applier.apply(state, light.id, 'bleed', dark.id);
+    const expired: GameEventMap['status-expired'][] = [];
+    state.events.on('status-expired', (payload) => expired.push(payload));
+    hit(dark, light);
+
+    run();
+
+    expect(bar.slot('granted')?.abilityId).toBeNull();
+    expect(expired).toEqual([
+      { entityId: light.id, statusId: 'fury', sourceId: light.id },
+      { entityId: light.id, statusId: 'bleed', sourceId: dark.id },
+    ]);
+  });
+
   it('ends the dash or knock-back of a reset Legend, so it does not slide off its start point', () => {
     const { add, hit, run } = setUp();
     const light = add('light', true);
@@ -153,6 +182,31 @@ describe('DuelRoundSystem', () => {
     run();
 
     expect(movement.isForced).toBe(false);
+  });
+
+  it('drops the steps still to come of a reset Legend’s casts (Fury’s dash after its wind-up)', () => {
+    const { add, hit, run } = setUp();
+    const light = add('light', true);
+    const dark = add('dark', true);
+    const bar = new Abilities({
+      abilities: ['blade-runner', 'veil', 'hamstring'],
+      ultimate: 'fury',
+    });
+    bar.keepCast({
+      abilityId: 'fury-dash',
+      slot: 'granted',
+      aim: { point: { x: 100, y: 99 }, targetId: null },
+      origin: { x: 99, y: 99 },
+      casterLevel: 1,
+      tick: 0,
+      nextStep: 1,
+    });
+    light.addComponent(bar);
+    hit(dark, light);
+
+    run();
+
+    expect(bar.castsInProgress).toEqual([]);
   });
 
   it('ends in a draw when both teams reach the target on one tick', () => {

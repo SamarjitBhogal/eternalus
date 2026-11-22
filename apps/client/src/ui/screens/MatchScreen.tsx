@@ -7,6 +7,7 @@ import { DuelHud } from '../hud/DuelHud';
 import { CrystalStatus } from '../hud/CrystalStatus';
 import { GadgetBar } from '../hud/GadgetBar';
 import { HealthBar } from '../hud/HealthBar';
+import { GrantedPrompt } from '../hud/GrantedPrompt';
 import { HudFilters } from '../hud/HudFilters';
 import { LevelBadge } from '../hud/LevelBadge';
 import { MatchClock } from '../hud/MatchClock';
@@ -43,6 +44,7 @@ export function MatchScreen({ viewport }: ScreenProps): ReactElement {
         <HudFilters />
         <DuelHud />
         <div className={styles.abilities} data-hud-region="abilities">
+          <GrantedPrompt />
           <AbilityBar />
         </div>
         <div className={styles.weapon} data-hud-region="weapon">

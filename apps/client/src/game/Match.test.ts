@@ -26,6 +26,7 @@ import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
 import { AIM_OVERLAY_FILL_COLOR } from './views/AimOverlayView.constants';
 import { FOCUS_RING_COLOR } from './views/entityViews.constants';
+import { WINDUP_RING_COLOR, WINDUP_RING_COUNT } from './views/WindupRingsView.constants';
 
 const SEED = 1;
 const ABILITIES = loadDisplayContent(createDefaultGameConfig().tickRate).abilities;
@@ -201,6 +202,72 @@ describe('Match ability casts', () => {
       aim: { point: { x: 40, y: 50 }, targetId: null },
     });
     match.destroy();
+  });
+
+  describe('with Fury granted the dash (DEC-283)', () => {
+    /** A match whose snapshots hold `fury-dash` in the player's `granted` slot. */
+    const withGrantedDash = () => {
+      const made = setUp();
+      const real = made.simulation.snapshot.bind(made.simulation);
+      vi.spyOn(made.simulation, 'snapshot').mockImplementation(() => {
+        const snapshot = real();
+        const { player } = snapshot;
+        return {
+          ...snapshot,
+          player:
+            player === null
+              ? null
+              : {
+                  ...player,
+                  slots: player.slots.map((entry) =>
+                    entry.slot === 'granted' ? { ...entry, abilityId: 'fury-dash' } : entry,
+                  ),
+                },
+        };
+      });
+      made.match.tick();
+      return made;
+    };
+
+    it('casts at once with the pointer off the canvas, aimed at the Legend as a plain point', () => {
+      const { match, simulation, input } = withGrantedDash();
+      const enqueue = vi.spyOn(simulation, 'enqueueCommand');
+      const here = { x: playerX(match), y: playerY(match) };
+      input.aim = null;
+      input.triggered = ['granted'];
+      match.tick();
+
+      const casts = enqueue.mock.calls
+        .map(([command]) => command)
+        .filter((command) => command.type === 'cast-ability');
+      // A plain point: `toEqual` fails on a radius or facing, which the commandLog must not carry.
+      expect(casts).toEqual([
+        {
+          type: 'cast-ability',
+          actorId: match.playerEntityId,
+          slot: 'granted',
+          aim: { point: here, targetId: null },
+        },
+      ]);
+      match.destroy();
+    });
+
+    it('casts at once in aim-then-click too, without selecting the slot', () => {
+      const { match, bus, simulation, input } = withGrantedDash();
+      const enqueue = vi.spyOn(simulation, 'enqueueCommand');
+      const slots: (string | null)[] = [];
+      bus.on('aiming-slot', ({ slot }) => slots.push(slot));
+      match.setCastMode('aim-then-click');
+      input.aim = null;
+      input.triggered = ['granted'];
+
+      match.tick();
+
+      const casts = enqueue.mock.calls.filter(([command]) => command.type === 'cast-ability');
+      expect(casts).toHaveLength(1);
+      expect(slots).toEqual([]);
+      match.destroy();
+    });
   });
 
   it('publishes aiming-slot at once as a slot is selected, cancelled, and when paused', () => {
@@ -464,6 +531,31 @@ describe('Match', () => {
     expect(
       camera.contains(lightStronghold?.position ?? { x: -1, y: -1 }, map.width, map.height),
     ).toBe(true);
+  });
+
+  it("draws a status's cue through the shipped status cues: the wind-up rings (DEC-283)", () => {
+    const { match, renderer, simulation } = setUp();
+    const real = simulation.snapshot.bind(simulation);
+    vi.spyOn(simulation, 'snapshot').mockImplementation(() => {
+      const snapshot = real();
+      return {
+        ...snapshot,
+        entities: snapshot.entities.map((entity) =>
+          entity.id === match.playerEntityId
+            ? { ...entity, statuses: [{ id: 'fury-windup', ticksActive: 2, ticksLeft: 7 }] }
+            : entity,
+        ),
+      };
+    });
+    match.tick();
+
+    match.render(0);
+
+    const rings = renderer.calls.filter(
+      (call) => call.op === 'drawWorldGlyph' && call.args[2] === WINDUP_RING_COLOR,
+    );
+    expect(rings).toHaveLength(WINDUP_RING_COUNT);
+    match.destroy();
   });
 
   it('centres the minimap on the player and keeps it there as the player moves (DEC-182)', () => {
