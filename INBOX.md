@@ -657,8 +657,9 @@ Reply inline (`Decision: …`).
       key").** The Magus staff shoots on the attack button and has its melee attack on F (DEC-308).
       Options: (A) nothing: each weapon has only its own attacks, and to claw the player swaps back
       to the talons (recommended, built); (B) a talon swipe on F, the same way the staff's melee
-      works; (C) other (note). Note (critic round 2): with today's numbers the bow hits as hard as
-      the talons and from farther away, so clawing gains nothing yet (HC-Q86 (1)). A, B or C?
+      works; (C) other (note). Note (critic rounds 2 and 3): with today's numbers the bow hits as
+      hard as the talons and from farther away; the talons only hit more surely (HC-Q86 (1)). A, B
+      or C?
       _Code: `Combat.equip` changes the attack mode to the basic attack when the new weapon has no
       attack for the current mode._
 - [ ] **HC-Q83 — Zealot: do bot Zealots swap weapons? (`feat/zealot-weapon-swap`, PR 9,
@@ -676,23 +677,27 @@ Reply inline (`Decision: …`).
       ability except the ultimate is ready again (FR-117). A Zealot that died with the bow out:
       options: (A) it starts each round with the talons, the same way FR-117 resets the abilities
       (recommended; it joins the round-reset list of HC-Q55); (B) it keeps the weapon it had in
-      hand; (C) other (note). A, B or C? _Code: nothing resets the weapon in hand yet; the Duel
+      hand; (C) other (note). The options were re-lettered on 2026-11-22: the old (A), keep the
+      bow, is now (B), and the recommendation changed to (A). A, B or C? _Code: nothing resets the
+      weapon in hand yet; the Duel
       reset (`DuelRoundSystem`) does not touch `Loadout`. It is built when Duels cast (HC-Q55)._
 - [ ] **HC-Q85 — Zealot: what is the swap gadget called, and does it cost aether?
       (`feat/zealot-weapon-swap`, PR 9 critic round 2, 2026-11-22; PR-38-HELPER-48; new Owner
-      Calls card "PR9 swap name and cost").** The gadget frame on Z shows the gadget's name. No
-      document names the swap or gives it a price. (1) Name. Options: (A) "Weapon Swap" (built, a
-      placeholder); (B) another name (note). (2) Aether cost. Options: (A) free (recommended,
-      built): the swap only changes the weapon, and the wait of HC-Q81 already stops swap spam;
-      (B) it costs aether (note how much); (C) other (note). Answer (1) and (2). _Code:
+      Calls card "PR9 swap name and cost").** The gadget frame of the swap key (Z, as built;
+      HC-Q80) shows the gadget's name. DEC-303 quotes your words "the bow switcher", but no
+      document gives the swap a screen name or a price. (1) Name. Options: (A) "Weapon Swap"
+      (built, a placeholder); (B) "Bow Switcher", your words in DEC-303; (C) another name (note).
+      (2) Aether cost. Options: (A) free (recommended, built): the swap only changes the weapon,
+      and if you keep a wait between swaps (HC-Q81), that wait stops swap spam; (B) it costs
+      aether (note how much); (C) other (note). Answer (1) and (2). _Code:
       `displayName` and `aetherCost` in `content/artifacts/weaponSwap.ts`._
 - [ ] **HC-Q86 — Zealot: the bow is as strong as the talons, and the screen does not show which
       weapon is out (`feat/zealot-weapon-swap`, PR 9 critic round 2, 2026-11-22; PR-38-HELPER-48;
       new Owner Calls card "PR9 bow strength and weapon display").** Two facts for HC-Q81 and
       HC-Q82. (1) Today the bow and the talons each do 45 damage every 0.7 s. The talons reach
-      1.5 m and the bow reaches 50 m. So the bow does the same damage from far away, and the
-      talons have no use of their own until the melee sweeps (DEC-319) or on-hit effects arrive.
-      Options: (A) keep these numbers for now (built); (B) change the bow's numbers for the Zealot
+      1.5 m and the bow reaches 50 m. So the bow does the same damage per hit and reaches farther.
+      But an arrow flies to where the target was, so a moving target can dodge it, and a wall or
+      another enemy can stop it. A talon hit lands at once. Options: (A) keep these numbers for now (built); (B) change the bow's numbers for the Zealot
       (note which: for example less damage or a slower shot); (C) other (note). (2) Nothing on the
       screen shows which weapon is in hand. The Zealot's weapon panel stays empty (DEC-114), so
       the player sees only the gadget cooldown and the arrows. Options: (A) leave it so (built);
@@ -706,13 +711,16 @@ Reply inline (`Decision: …`).
       to show. A new targeting kind for a cast with no area and no aim (one class and one registry
       line, like `HeadingTargeting`) would swap at once on Z in both cast modes. Quick cast, the
       default, already swaps at once. Recommended: yes, in its own small PR, because it changes
-      DEC-209 (3) for each ability authored with the new kind. (2) **`Loadout.swap(combat)`.** The
-      swap would also equip `Combat`, so the two cannot get out of step. Recommended: no.
-      `SwapWeaponEffect` is the one swap path, the `weapon-in-hand-matches-combat` invariant already
-      catches a mismatch, and the change makes `Loadout` depend on `Combat`. (3) **One constant
-      for the artifact-slot order** (`gadget-1`, then `gadget-2`). Today `Abilities.ts` and the
-      client's `buildDisplayCatalogue.ts` each know it. Recommended: yes, in the next tidy PR; it
-      adds a core export. Per item: yes, no or a note.
+      DEC-209 (3) for each ability authored with the new kind. (2) **One call changes both weapon
+      records.** The player sees no difference. Today the swap changes the weapon in hand and the
+      attacks in two steps, and a runtime check catches any mismatch. Recommended: no. The swap
+      has only one code path, and the change ties the two records together. _Code:
+      `Loadout.swap(combat)`; `SwapWeaponEffect`; the `weapon-in-hand-matches-combat` invariant._
+      (3) **One shared list of the gadget-slot order** (first gadget, then second). The player
+      sees no difference. Today the simulation and the screen code each keep their own copy.
+      Recommended: yes, in the next tidy PR; it adds one shared constant. _Code: `gadget-1`,
+      `gadget-2` in `Abilities.ts` and the client's `buildDisplayCatalogue.ts`._ Per item: yes, no
+      or a note.
 - [x] **HC-B30 — WITHDRAWN 2026-11-22 by PR-38-HELPER-48 (PR 9 critic round 2, F3): nothing to
       answer.** The reason below was false. `ContentCatalogue` takes an array, so
       `content/artifacts/artifactCatalogue.ts` lists the artifacts and `abilityCatalogue.ts` spreads
