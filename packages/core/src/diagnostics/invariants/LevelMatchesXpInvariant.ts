@@ -9,7 +9,8 @@ import type { Invariant, Violation } from '../Invariant.types';
  * `level-matches-xp` (architecture 05 §16, 15 §3): (1) every `Progression`'s level is the one its XP
  * gives on its curve; and every `xp-gained` of this tick (2) is backed by an `entity-died` this tick
  * whose killer is the recipient (a structure award, DEC-186, instead needs the structure gone; a
- * team-kill award, DEC-237, a killer on the recipient's team), (3)
+ * team-kill award, DEC-237, a killer on the recipient's team; a camp award, a guard home with no guard
+ * left), (3)
  * is the only award for that kill, and (4) is not for a self-kill or an ally kill (O5). It keeps
  * no scratch: everything comes from the state and this tick's events.
  * Runs every tick, since rules 2–4 read this tick's events.
@@ -91,6 +92,16 @@ export class LevelMatchesXpInvariant implements Invariant {
             ),
           );
         }
+      } else if (award.cause === 'camp-cleared') {
+        // The camp itself stands; what backs the bonus is a camp whose every post is empty.
+        if (!LevelMatchesXpInvariant.isCampCleared(state, victimId)) {
+          violations.push(
+            this.violation(
+              entityId,
+              `Entity "${entityId}" gained camp XP for "${victimId}", which is no cleared camp.`,
+            ),
+          );
+        }
       } else if (state.killerOf(victimId)?.attackerId !== entityId) {
         violations.push(
           this.violation(
@@ -115,6 +126,17 @@ export class LevelMatchesXpInvariant implements Invariant {
 
   private violation(entityId: string, message: string): Violation {
     return { invariantId: this.id, severity: this.severity, message, entityId, details: {} };
+  }
+
+  /** Whether `campId` is a guard home with at least one post and no post holding a guard. */
+  private static isCampCleared(state: GameState, campId: string): boolean {
+    let posts = 0;
+    let held = 0;
+    state.guards.forEach(({ homeId, guardId }) => {
+      posts += homeId === campId ? 1 : 0;
+      held += homeId === campId && guardId !== null ? 1 : 0;
+    });
+    return posts > 0 && held === 0;
   }
 
   /** The level `xp` gives on `curve`, recomputed independently of `Progression`. */

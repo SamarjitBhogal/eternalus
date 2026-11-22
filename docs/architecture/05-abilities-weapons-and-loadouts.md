@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-12
+last-reviewed: 2026-11-22
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -778,7 +778,7 @@ export type LevelScalingDefinition = {
 ```
 
 `ProgressionSystem` listens to `entity-died`, `damage-applied` (assist window, objective damage),
-`structure-destroyed` and `checkpoint-cleared`, defers the awards to its own pass, applies XP from
+`structure-destroyed`, `camp-cleared` and `checkpoint-cleared`, defers the awards to its own pass, applies XP from
 `content/progression/xpSources.ts` (per-source amounts, share radius, damage bias;
 `Recommendation:` balancing.md), emits `level-up { entityId, level }`, raises the `Health` base
 max and `Abilities.maxAether` by the class's `LevelScalingDefinition`, and applies the
@@ -934,9 +934,13 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   built for the capture point boss (DEC-237): a mob in `XP_SOURCES.teamKills` pays every Legend of
   its killer's playable team, not the killer alone, and each Legend gets at most the XP that lifts
   it `maxLevels` levels (`Progression.xpToReach`); `level-matches-xp` checks that the killer is on
-  the recipient's team (`cause: 'team-kill'`). It listens to `entity-died` itself, not 12's
-  `xp-granted` reward path. Not built yet: the share radius and damage bias, assists, checkpoint and
-  camp XP, the Eternal's flat 5 levels (DEC-237) (their systems do not exist),
+  the recipient's team (`cause: 'team-kill'`). `ProgressionSystem` listens to `entity-died`
+  itself, not 12's `xp-granted` reward path. Camp XP is built: `camp-cleared` pays
+  `XP_SOURCES.campCleared` (`cause: 'camp-cleared'`), one tick after the last mob's kill XP, and
+  `level-matches-xp` checks that the camp is a guard home with no guard left. Interim: the bonus
+  goes only to the Legend that killed the camp's last mob, until the owner says who "the clearing
+  Legends" are (`INBOX.md` "Camp rewards"). Not built yet: the share radius and damage bias, assists, checkpoint
+  XP, the Eternal's flat 5 levels (DEC-237) (their systems do not exist),
   basic-attack and ability potency per level, `upgradeIds`, the ultimate charge rules, and keeping
   dead Legends in the store until respawn (FR-051), which O4's posthumous XP needs. Numbers are
   `TUNE`; the curve and the Legend kill and structure XP follow DEC-190 (not final; the

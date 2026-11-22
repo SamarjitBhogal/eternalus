@@ -18,7 +18,8 @@ import type { Award, ProgressionContent } from './ProgressionSystem.types';
  * `Progression`. A destroyed structure (`structure-destroyed`) pays every Legend of the opposing
  * team (DEC-186), and a boss in `xpSources.teamKills` pays every Legend of its killer's playable
  * team instead of the killer, lifting none more than the reward's `maxLevels` (DEC-237); a Legend
- * the cap leaves nothing to pay gets no award. Self-kills and ally kills pay nothing (O5). Each
+ * the cap leaves nothing to pay gets no award. A cleared camp (`camp-cleared`) pays the Legend
+ * that killed its last mob `xpSources.campCleared`. Self-kills and ally kills pay nothing (O5). Each
  * level gained raises max health by the class's share of its base health (O3) and max aether,
  * heals and refills by the raise only while the Legend is alive (O4), and emits `level-up`.
  */
@@ -83,12 +84,30 @@ export class ProgressionSystem implements System {
         });
       }
     });
+    // balancing.md "Camps": the Legend that killed a camp's last mob earns the clear bonus on top of
+    // the mob XP it was paid per kill; a last hit from anything but a Legend pays no bonus.
+    // `SpawnSystem` emits it after this system's pass, so the bonus lands one tick after the kill
+    // XP, as structure XP does.
+    state.events.on('camp-cleared', ({ entityId, killerId }) => {
+      const killer = killerId === null ? undefined : state.entities.get(killerId);
+      const campTeam = state.entities.get(entityId)?.findComponent(TeamMembership)?.team;
+      if (killer === undefined || campTeam === undefined || this.legendOf(killer) === undefined) {
+        return;
+      }
+      this.pending.push({
+        kind: 'camp-cleared',
+        killerId: killer.id,
+        victimId: entityId,
+        victimTeam: campTeam,
+        xp: content.xpSources.campCleared,
+      });
+    });
   }
 
   /** Gives this tick's XP, in the order it was earned, and applies each level gained. */
   public update({ state }: SystemContext): void {
     for (const award of this.pending.splice(0)) {
-      if (award.kind === 'kill') {
+      if (award.kind === 'kill' || award.kind === 'camp-cleared') {
         // TODO(claudiodh): O4 pays a Legend killed earlier, but `DeathSystem` still removes dead
         // Legends, so its XP is dropped here; respawn (FR-051, SCRUM-178) must keep them in the
         // store.
@@ -120,7 +139,7 @@ export class ProgressionSystem implements System {
     }
     const curve = this.content.curves.get(progression.curveId);
     const capped =
-      award.kind === 'kill' || award.maxLevels === undefined
+      award.kind === 'kill' || award.kind === 'camp-cleared' || award.maxLevels === undefined
         ? award
         : {
             ...award,

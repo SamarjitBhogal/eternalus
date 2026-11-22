@@ -158,6 +158,68 @@ describe('LevelMatchesXpInvariant', () => {
     ]);
   });
 
+  describe('camp award', () => {
+    /** Camp `entity-5` with two guard posts; `held` posts are filled by `entity-6`, `entity-7`. */
+    const campWith = (held: number) => {
+      const fixture = setUp();
+      const camp = fixture.spawn('entity-5', 'neutral');
+      for (let post = 0; post < 2; post += 1) {
+        fixture.state.guards.add({
+          id: `post-${String(post)}`,
+          homeId: camp.id,
+          team: 'neutral',
+          mobId: 'light-camp-mob',
+          row: 0,
+          indexInRow: post,
+          postX: 0,
+          postY: 0,
+          homeX: 0,
+          homeY: 0,
+          homeRadius: 1,
+          leashRadius: 6,
+          leashTolerance: 0,
+          respawnTicks: 3600,
+        });
+        if (post < held) {
+          fixture.state.guards.fill(post, `entity-${String(6 + post)}`);
+        }
+      }
+      fixture.state.events.emit('xp-gained', {
+        entityId: fixture.hero.id,
+        amount: 50,
+        victimId: camp.id,
+        victimTeam: 'neutral',
+        cause: 'camp-cleared',
+      });
+      return fixture;
+    };
+
+    it('rule 2: passes a camp award for a camp with no guard left', () => {
+      expect(campWith(0).check()).toEqual([]);
+    });
+
+    it('rule 2: flags a camp award for a camp that still has a guard', () => {
+      expect(campWith(1).check()).toEqual([
+        'Entity "entity-1" gained camp XP for "entity-5", which is no cleared camp.',
+      ]);
+    });
+
+    it('rule 2: flags a camp award for an entity with no guard posts', () => {
+      const { hero, enemy, state, check } = setUp();
+      state.events.emit('xp-gained', {
+        entityId: hero.id,
+        amount: 50,
+        victimId: enemy.id,
+        victimTeam: 'dark',
+        cause: 'camp-cleared',
+      });
+
+      expect(check()).toEqual([
+        'Entity "entity-1" gained camp XP for "entity-2", which is no cleared camp.',
+      ]);
+    });
+  });
+
   it('rule 3: flags a second award for the same kill', () => {
     const { hero, enemy, died, gained, check } = setUp();
     died(enemy.id, hero.id);

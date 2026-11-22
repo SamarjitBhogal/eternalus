@@ -123,14 +123,15 @@ export type GameEventMap = {
   /**
    * XP reaching a Legend; one per award, so the invariant can audit every award. A kill pays its
    * killer; `cause: 'structure-destroyed'` pays a Legend of the team that destroyed `victimId`, and
-   * `cause: 'team-kill'` a Legend of the team whose unit killed boss `victimId` (DEC-237).
+   * `cause: 'team-kill'` a Legend of the team whose unit killed boss `victimId` (DEC-237), and
+   * `cause: 'camp-cleared'` the Legend that killed the last mob of camp `victimId`.
    */
   readonly 'xp-gained': {
     readonly entityId: EntityId;
     readonly amount: number;
     readonly victimId: EntityId;
     readonly victimTeam: Team;
-    readonly cause: 'kill' | 'structure-destroyed' | 'team-kill';
+    readonly cause: 'kill' | 'structure-destroyed' | 'team-kill' | 'camp-cleared';
   };
   readonly 'team-changed': {
     readonly entityId: EntityId;

@@ -16,6 +16,26 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **`feat/camp-rewards` critic (2026-11-22), better than the design: three items, sign-off
+      per item.** Not built: the branch stays small. (B1) `ProgressionSystem`'s awards are split
+      by kind (`kill`, `camp-cleared`, `structure-destroyed`, `team-kill`), and `update` and
+      `grant` branch on kind; each new source (checkpoints, assists, the Eternal) adds a branch.
+      Split them by recipient instead: one recipient (`scope: 'one'`) or a whole team
+      (`scope: 'team'`, with `maxLevels`), with a separate `cause` copied into `xp-gained`. (B2) `LevelMatchesXpInvariant`
+      checks each `xp-gained` cause in an if/else chain; a `Record<XpCause, rule>` with an exported
+      `XpCause` type makes the compiler ask each new cause for its rule. (B3) "does this guard home
+      still hold a guard" is counted in `GroupGuardRespawn.release` and again in the invariant; one
+      `GuardStore` query would serve both.
+
+- [ ] **Camp rewards (`feat/camp-rewards`, 2026-11-22): who are "the clearing Legends"?
+      Sign-off needed.** Built: clearing a forest camp pays a 50 XP bonus (balancing.md "Camps"
+      `Recommendation:`, `XP_SOURCES.campCleared`, `TUNE`) on top of the mob XP each camp mob
+      already pays its killer. As built, "the clearing Legends" is the one Legend that killed the
+      camp's last mob; when a minion or a turret lands that hit, nobody gets the bonus.
+      Alternatives: (a) every Legend of the last killer's team; (b) every Legend of that team near
+      the camp (needs a radius); (c) every Legend that damaged a camp mob since the camp woke. Say
+      which, or approve as built.
+
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
       small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`
