@@ -9,6 +9,7 @@ import type { WorldObjectRecord, WorldObjectStoreOptions } from './WorldObjectSt
 import type { Polygon, Rect, Vec2 } from '../utils/geometry.types';
 import { doesCircleOverlapPolygon, isCircleInsidePolygon } from '../utils/circlePolygon';
 import { boundsOf } from '../utils/geometry';
+import { courtBoxOf } from './courtBoxOf';
 
 /** Owns placed-object identity and persistent destroyed state after DeathSystem retires entities. */
 export class WorldObjectStore {
@@ -117,8 +118,9 @@ export class WorldObjectStore {
 
   /**
    * The ground inside the building `buildingId`, as polygons: the floor of its walkable map object
-   * of that id (the Stronghold, the Cathedral) and the box round the walls that are `partOf` it
-   * (a lane tower's fort court, DEC-185 B). Empty for an id that is neither. Pure data, no kind
+   * of that id (the Stronghold, the Cathedral) and the court inside the wall band of the walls that
+   * are `partOf` it (a lane tower's fort, DEC-185 B; `courtBoxOf`, so not its doorways, DEC-324
+   * (2)). Empty for an id that is neither. Pure data, no kind
    * test: a building is whatever has a floor or walls under its id. Built once per building, as
    * the damage path asks for it on every wall hit.
    */
@@ -134,11 +136,11 @@ export class WorldObjectStore {
     const floors = this.records.flatMap(({ object }) =>
       object.id === buildingId && !object.isBlocking ? object.footprints : [],
     );
-    const walls = this.records.flatMap(({ object }) =>
-      object.partOf === buildingId ? object.footprints.flat() : [],
+    const box = courtBoxOf(
+      this.records.flatMap(({ object }) => (object.partOf === buildingId ? [object] : [])),
     );
-    if (walls.length === 0) return floors;
-    const { x, y, width, height } = boundsOf(walls);
+    if (box === undefined) return floors;
+    const { x, y, width, height } = box;
     const court: Polygon = [
       { x, y },
       { x: x + width, y },

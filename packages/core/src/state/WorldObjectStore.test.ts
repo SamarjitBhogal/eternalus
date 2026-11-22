@@ -109,13 +109,13 @@ describe('WorldObjectStore', () => {
     expect(world.bodyOf('unknown')).toEqual([]);
   });
 
-  it("builds a fort's interior (the box round its walls) once, and keeps it when a wall falls", () => {
+  it("builds a fort's interior (the court inside its wall band, DEC-324 (2)) once, and keeps it when a wall falls", () => {
     const { world, objects } = fortFixture();
     const court = [
-      { x: 0, y: 0 },
-      { x: 10, y: 0 },
-      { x: 10, y: 10 },
-      { x: 0, y: 10 },
+      { x: 0, y: 1 },
+      { x: 10, y: 1 },
+      { x: 10, y: 9 },
+      { x: 0, y: 9 },
     ];
     const first = world.interiorOf('fort');
     const top = objects[1];

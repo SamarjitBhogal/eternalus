@@ -2,7 +2,7 @@ import {
   MAP_OBJECT_DEFINITIONS,
   RUINED_FORT_WALL_DEFINITION,
 } from '../../content/maps/mapObjectDefinitions';
-import type { MapObject } from '../../content/maps/mapObjects.types';
+import type { FortWallRole, MapObject } from '../../content/maps/mapObjects.types';
 import { EntityFactory } from '../../entities/EntityFactory';
 import { createDefaultEntityRegistry } from '../../entities/defaultEntityRegistry';
 import { EntityStore } from '../EntityStore';
@@ -33,7 +33,7 @@ const box = (x0: number, y0: number, x1: number, y1: number) => [
   { x: x0, y: y1 },
 ];
 
-/** A tower stand-in at (5, 5): its own object (the keep) and two fort walls, top and bottom. */
+/** A tower stand-in at (5, 5): its own object (the keep) and two fort walls, top and bottom (1 thick). */
 export const fortFixture = () => {
   const factory = fixtureFactory();
   const entities = new EntityStore();
@@ -47,14 +47,19 @@ export const fortFixture = () => {
     isBlocking: true,
     footprints: [box(4, 4, 6, 6)],
   };
-  const wall = (id: string, y0: number): MapObject => ({
+  const wall = (id: string, y0: number, fortWall: FortWallRole): MapObject => ({
     id,
     kind: 'wall',
     isBlocking: true,
     partOf: 'fort',
+    fortWall,
     footprints: [box(0, y0, 10, y0 + 1)],
   });
-  const objects = [keep, wall('fort-wall-top', 0), wall('fort-wall-bottom', 9)];
+  const objects = [
+    keep,
+    wall('fort-wall-top', 0, 'top'),
+    wall('fort-wall-bottom', 9, 'bottom-left'),
+  ];
   const world = new WorldObjectStore({
     objects,
     factory,

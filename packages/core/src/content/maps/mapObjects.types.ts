@@ -60,7 +60,10 @@ export type MapObject = {
    * DEC-219 (a)).
    */
   readonly partOf?: string;
-  /** Which piece of its tower's fort a wall that is `partOf` the tower is; read by `fortWallBands`. */
+  /**
+   * Which piece of its tower's fort a wall that is `partOf` the tower is; read by `fortWallBands`
+   * and `courtBoxOf`.
+   */
   readonly fortWall?: FortWallRole;
   /**
    * The side that built it: its Stronghold and everything of that palace, its gates, wall

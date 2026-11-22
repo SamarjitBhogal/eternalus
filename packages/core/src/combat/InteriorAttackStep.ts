@@ -1,31 +1,31 @@
 import { Transform } from '../components/Transform';
 import type { MapObject } from '../content/maps/mapObjects.types';
 import type { GameState } from '../state/GameState';
-import { wallHitFrom } from '../state/wallHitFrom';
-import type { MutableVec2 } from '../utils/vec2.types';
-import type { Vec2 } from '../utils/geometry.types';
+import type { WorldObjectStore } from '../state/WorldObjectStore';
 import { isPointInAnyPolygon } from '../utils/geometry';
 import type { DamageHit, DamageStep } from './DamageStep.types';
 
 /**
- * An attacker that stands inside a building deals more damage to that building's walls (DEC-247
- * (2), DEC-288, DEC-315; BUG-2). The walls keep their health, so only the hit grows (DEC-247 (1)).
+ * An attacker that stands inside a building deals more damage to that building (DEC-247 (2),
+ * DEC-288, DEC-315, DEC-324; BUG-2). The building keeps its health, so only the hit grows (DEC-247
+ * (1)).
  *
- * What counts, as built (readings the owner may overrule):
+ * What counts:
  * - A building is the Stronghold, the Cathedral or a lane tower's fort. A house has no inside yet
  *   (DEC-311, DEC-313), so it never qualifies.
- * - Its walls are its `'wall'` map objects with a `buildingId` (Stronghold, Cathedral), and the
- *   wall pieces of a lane tower's fort (`MapObject.partOf`) while the tower stands. A hit on the
- *   tower's body, a gate or a turret gets no bonus; a fort wall left standing after its tower fell
- *   is scenery and gets none.
- * - "Inside a tower fort" is standing in its court. Which piece of a fort a hit lands on is the
- *   one nearest the attacker (`wallHitFrom`), as `DamageSource` carries no hit point.
+ * - On the Stronghold and the Cathedral, the bonus is for a hit on one of the building's `'wall'`
+ *   map objects (`buildingId`) from inside its floor; the Stronghold's ring walls do not count
+ *   (DEC-324 (3)).
+ * - On a lane tower, every hit on the tower from inside its fort counts, keep or wall, because the
+ *   fort and the keep are one health pool (DEC-185 B, DEC-324 (1)). A fort wall left standing
+ *   after its tower fell is scenery and gets no bonus.
+ * - "Inside a tower's fort" is standing in its court, the ground inside the wall band, so a
+ *   doorway is outside (`WorldObjectStore.interiorOf`, DEC-324 (2)).
  * - The attacker's own position counts (`source.attackerId`), so a ranged attacker inside gets the
  *   bonus too.
  */
 export class InteriorAttackStep implements DamageStep {
   public readonly name = 'interior-attack';
-  private readonly aim: MutableVec2 = { x: 0, y: 0 };
 
   /**
    * @param multiplier - The factor on a hit by an attacker inside, from content.
@@ -37,22 +37,24 @@ export class InteriorAttackStep implements DamageStep {
     }
   }
 
-  /** Returns the amount times the multiplier when the attacker stands inside the wall's building. */
+  /** Returns the amount times the multiplier when the attacker stands inside the target's building. */
   public adjust({ targetId, amount, source }: DamageHit, state: GameState): number {
     const objects = state.worldObjects;
     const from = state.entities.get(source.attackerId ?? '')?.findComponent(Transform)?.position;
     if (objects === undefined || from === undefined) return amount;
-    const buildingId = this.buildingOfWall(targetId, from, state);
+    const buildingId = InteriorAttackStep.buildingOf(targetId, objects);
     return buildingId !== undefined && isPointInAnyPolygon(from, objects.interiorOf(buildingId))
       ? amount * this.multiplier
       : amount;
   }
 
-  /** The building whose wall `targetId` is hit on from `from`, or `undefined` when no wall is. */
-  private buildingOfWall(targetId: string, from: Vec2, state: GameState): string | undefined {
-    const objects = state.worldObjects;
-    const own: MapObject | undefined = objects?.objectFor(targetId);
+  /**
+   * The building a hit on `targetId` gets the bonus for: a wall's building, or a lane tower's fort
+   * (the `partOf` of its body's wall pieces); `undefined` for any other target.
+   */
+  private static buildingOf(targetId: string, objects: WorldObjectStore): string | undefined {
+    const own: MapObject | undefined = objects.objectFor(targetId);
     if (own !== undefined) return own.kind === 'wall' ? own.buildingId : undefined;
-    return wallHitFrom(objects?.bodyOf(targetId) ?? [], from, this.aim)?.partOf;
+    return objects.bodyOf(targetId).find(({ partOf }) => partOf !== undefined)?.partOf;
   }
 }
