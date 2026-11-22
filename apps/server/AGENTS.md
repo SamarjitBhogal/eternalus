@@ -15,7 +15,7 @@ Package-specific rules. The root `AGENTS.md` still applies. Design: ADR 0016
   place using timers or the clock.
 - Run with `npm run build -w @eternalus/server` then `npm run start -w @eternalus/server`;
   `DUEL_HOST` / `DUEL_PORT` choose the listener (default `127.0.0.1:8787`); `/health` answers on
-  `127.0.0.1:8788`.
+  `127.0.0.1:8788` (`OPS_PORT` changes it, so a second instance can run beside one).
 
 ## Folders
 
@@ -38,6 +38,16 @@ Package-specific rules. The root `AGENTS.md` still applies. Design: ADR 0016
 scripted Duel players against a running server: matchmaking checks plus chase and combat, using
 core's `MatchPathfinderFactory` on the map regenerated from `match-found.seed`. It uses Node's
 `WebSocket` (not `ws`); `bots/main.ts` is its entry and owns argv, std streams and exit code.
+
+Queue load: `npm run duel:bots -- --url ws://127.0.0.1:8787 --mode queue --players 100 --rounds 5
+--stagger 0 --seconds 300` joins the queue `--rounds` times per bot (the light seat forfeits, the
+dark seat waits for `match-ended`, both reconnect), prints time-to-match p50/p99/max and queue
+size, and fails on a lost or duplicated player. `--seconds` is a hard deadline in this mode too
+(default 20, too short for 100 bots), so set it above the expected run time.
+
+In both modes every bot socket sends its own made-up `X-Forwarded-For` address, to any URL. The
+server trusts that header only from a loopback peer, so it spreads sockets past the per-address
+cap only when bots and server run on the same host.
 
 ## Tests
 
