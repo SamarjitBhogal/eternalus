@@ -4,7 +4,7 @@ description: Sprint checklists for the persistence layer (IndexedDB behind Persi
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-19
 tags: [plan, phase-5, persistence, resources, ui, settings, keybindings, developer-menu]
 paths: ['apps/client/src/data/**', 'apps/client/src/ui/**', 'apps/client/src/game/input/**']
 related:
@@ -270,7 +270,7 @@ passes the keyboard-only walk.
 
 ## Exit criteria
 
-1. All five sprint metrics pass and are recorded in [PROGRESS.md](PROGRESS.md) with the machine
+1. All five sprint metrics pass and are recorded in [progress log](progress/README.md) with the machine
    and browser versions used for the manual runs.
 2. The demo script below runs end to end for a reviewer who did not build it, in Chrome and one
    other browser.
@@ -307,7 +307,7 @@ passes the keyboard-only walk.
 - [phase-4-legends-abilities-and-loadouts.md](phase-4-legends-abilities-and-loadouts.md)
 - [phase-6-hardening-balance-and-release.md](phase-6-hardening-balance-and-release.md)
 - [backlog-post-mvp.md](backlog-post-mvp.md)
-- [PROGRESS.md](PROGRESS.md)
+- [progress log](progress/README.md)
 - [../architecture/13-game-interface.md](../architecture/13-game-interface.md)
 - [../architecture/14-persistence-and-resources.md](../architecture/14-persistence-and-resources.md)
 - [../reference/game-design/08-loadout.md](../reference/game-design/08-loadout.md)

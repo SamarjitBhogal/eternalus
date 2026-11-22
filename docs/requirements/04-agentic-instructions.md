@@ -4,7 +4,7 @@ description: Agent-agnostic requirements AI-01 to AI-12 for work done by coding 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-11-19
 tags: [requirements, agents, harness, verification]
 paths:
   [
@@ -14,7 +14,7 @@ paths:
     '.claude/**',
     '.github/**',
     'docs/agents/**',
-    'docs/plan/PROGRESS.md',
+    'docs/plan/progress/README.md',
   ]
 related:
   [
@@ -81,7 +81,7 @@ agents day to day is in [`../agents/`](../agents/README.md). Requirement IDs are
   editing; runs `npm run check:quick` after each meaningful edit and `npm run check` before
   declaring done; reports the check result verbatim (AI-11); ships tests with every behaviour
   change and a failing-first test with every bug fix; updates the docs and frontmatter that OG-06
-  requires; appends one line to [`../plan/PROGRESS.md`](../plan/PROGRESS.md) (date, branch, task,
+  requires; writes a new entry file in [`../plan/progress/`](../plan/progress/README.md) (date, branch, task,
   outcome, evidence); leaves changes uncommitted for review unless told otherwise; says plainly
   when something is not done.
 
@@ -169,7 +169,7 @@ agents day to day is in [`../agents/`](../agents/README.md). Requirement IDs are
 ### AI-12 Multi-session work uses the plan, not memory
 
 - **Requirement.** Work that spans sessions is tracked in the phase doc's checklist and
-  `PROGRESS.md`; an agent may tick only items it verified with a passing check in that session.
+  the progress entries; an agent may tick only items it verified with a passing check in that session.
   Recommendation: for long autonomous runs, keep a machine-readable feature list
   (`docs/plan/<task>.json` with `passes: false` entries) that agents may only flip to `true`, as
   Anthropic's long-running harness pattern describes
