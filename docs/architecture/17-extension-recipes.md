@@ -4,7 +4,7 @@ description: One recipe per kind of addition, from a Legend class to a port and 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-19
 tags: [architecture, recipes, extension-points, ocp, registries]
 paths:
   [
@@ -50,7 +50,7 @@ Six lines each. **When**: the situation, and the neighbouring recipe for the loo
 are in the linked doc. **Registry line**: the single place of change from
 [02 §9](02-code-structure.md#9-single-place-of-change); "none" means the catalogue line is the
 whole change. **Tests**: per [02 §8](02-code-structure.md#8-where-tests-go). **Docs**: what moves
-in the same PR, always plus a `docs/plan/PROGRESS.md` entry. **Skill**: the
+in the same PR, always plus a new entry file in `docs/plan/progress/`. **Skill**: the
 `.claude/skills/<name>/SKILL.md` procedure and the doc section behind it. Numbers are stable
 because other docs cite them (`17 R8`); OG-05 in
 [../requirements/03-organization-guidelines.md](../requirements/03-organization-guidelines.md)

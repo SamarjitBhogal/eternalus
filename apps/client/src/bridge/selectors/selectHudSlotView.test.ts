@@ -118,7 +118,7 @@ describe('selectHudSlotView', () => {
     const store = storeWith(FIGMA_HUD_PLAYER.slots);
     const before = selectHudSlotView(store.getState(), 'ability-2');
     expect(before).toMatchObject({ displayName: null, iconAssetId: null });
-    store.dispatch(matchSlice.actions.clockChanged({ tick: 30, seconds: 1 }));
+    store.dispatch(matchSlice.actions.clockChanged({ tick: 30, seconds: 1, countdown: null }));
     expect(selectHudSlotView(store.getState(), 'ability-2')).toBe(before);
   });
 

@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-14
+last-reviewed: 2026-11-19
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -226,7 +226,7 @@ can be `postMessage`d to a Worker later without change (decided, D8; research §
 // Sketch: packages/core/src/state/Snapshot.types.ts
 export type Snapshot = {
   readonly tick: number;
-  readonly match: MatchSnapshot; // phase, phaseEnteredTick, the unfired timeline marks (12 §3), humanLegendId
+  readonly match: MatchSnapshot; // phase, phaseEnteredTick, the unfired timeline marks (12 §3), the countdown end tick (DEC-278), humanLegendId
   readonly entities: readonly EntitySnapshot[]; // store (creation) order
   readonly hordes: readonly HordeSnapshot[];
   readonly teams: Readonly<Record<Team, TeamSnapshot>>;

@@ -27,7 +27,7 @@ in `17-extension-recipes.md`.
    system N ticks, assert state and emitted events. Add a determinism test (same seed + commands
    twice -> equal `StateHasher` hash). If the system can violate an invariant, add or extend an
    `Invariant` in `packages/core/src/diagnostics/` with a test that triggers it.
-6. Append a `docs/plan/PROGRESS.md` entry; tick the sprint checkbox in the phase doc if the task
+6. Add a new entry file in `docs/plan/progress/`; tick the sprint checkbox in the phase doc if the task
    is listed there.
 7. Run `npm run check` and report verbatim. Do not commit unless asked.
 

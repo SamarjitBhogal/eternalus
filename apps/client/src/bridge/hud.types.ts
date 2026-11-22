@@ -101,15 +101,13 @@ export type HudSide = 'allied' | 'enemy';
 export type HudAllegiance = 'ours' | 'theirs' | 'neutral';
 
 /**
- * The Duel's scoreboard and pre-match countdown, as the player sees them (from `snapshot.match`):
- * kills of the player's own team and of the opponent, the kills that win, and the number the
- * countdown shows (3, 2, 1; 0 is "START"; `null` once the match is running).
+ * The Duel's scoreboard, as the player sees it (from `snapshot.match`): kills of the player's own
+ * team and of the opponent, and the kills that win. Its countdown is the match clock's (DEC-278).
  */
 export type DuelHudState = {
   readonly ownKills: number;
   readonly opponentKills: number;
   readonly killTarget: number;
-  readonly countdown: number | null;
 };
 
 /** The two names of the VERSUS screen: this player and the opponent. */

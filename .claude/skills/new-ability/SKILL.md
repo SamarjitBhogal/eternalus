@@ -39,7 +39,7 @@ Abilities are data composed from `AbilityEffect` strategies. Follow
    the on-hit effects.
 6. HUD: nothing to change - `AbilityBar` reads slots and `<KeyGlyph action="ability-n"/>`
    shows the current binding. If you think the HUD must change, stop and explain.
-7. Append to `docs/plan/PROGRESS.md`; run `npm run check`; report verbatim. No commits unless
+7. Add a new entry file in `docs/plan/progress/`; run `npm run check`; report verbatim. No commits unless
    asked.
 
 ## Done when
