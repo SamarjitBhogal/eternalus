@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-22
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -92,7 +92,8 @@ Ids are strings (`entity-12`), so code that needs a total order compares them as
 store order; it never sorts them as numbers. `remove(id, cause)` is the only way out and always
 carries a `RemovalCause` (`'died' | 'despawned' | 'consumed' | 'dev-removed' | 'match-ended'`, plus
 the killer for `'died'`); an invariant checks no entity disappears any other way. The store never
-exposes a `Map` for iteration.
+exposes a `Map` for iteration. `isTargetable(id)` is the one rule for whether an enemy may pick a
+unit as a target: it is alive, and no status sets `untargetable` (Veil, DEC-266, DEC-327).
 
 `GameState` is mutable only inside `Simulation.step()`, and only through component methods that
 guard their own invariants (`Health.applyDamage` clamps; `Team.setTeam` emits `team-changed`).
@@ -233,7 +234,7 @@ can be `postMessage`d to a Worker later without change (decided, D8; research §
 // Sketch: packages/core/src/state/Snapshot.types.ts
 export type Snapshot = {
   readonly tick: number;
-  readonly match: MatchSnapshot; // phase, phaseEnteredTick, the unfired timeline marks (12 §3), humanLegendId
+  readonly match: MatchSnapshot; // phase, phaseEnteredTick, the unfired timeline marks (12 §3), the countdown end tick (DEC-278), humanLegendId
   readonly entities: readonly EntitySnapshot[]; // store (creation) order
   readonly hordes: readonly HordeSnapshot[];
   readonly teams: Readonly<Record<Team, TeamSnapshot>>;
@@ -250,6 +251,7 @@ export type EntitySnapshot = {
   readonly definitionId: string;
   readonly mapFeatureId?: string; // a structure's map feature, so the HUD binds its tile (DEC-212)
   readonly team: Team | null;
+  readonly isHidden?: boolean; // present, true, while a status sets `hidden` (Veil, DEC-266, DEC-327)
   readonly transform: {
     readonly x: number;
     readonly y: number;
@@ -283,6 +285,12 @@ export type StatusSnapshot = {
 `SnapshotSystem` builds each `EntitySnapshot` through `EntitySnapshotter`
 (`state/EntitySnapshotter.ts`), one group per component, so a new component group changes that
 class and the `EntitySnapshot` type, never `GameState` (DEC-232).
+
+Core decides what is hidden (ADR 0016 point 1): `isHidden` is one flag for every viewer, made in
+core from the statuses, and present only while a status sets `hidden`. The client does not read
+the statuses to find it. Its `Viewer` decides how a hidden unit shows to the player
+([08](08-game-engine.md) §8), and `findUnitAt` (the unit under a click) skips a hidden unit, so a
+click does not pick one (DEC-327).
 
 `Match` keeps the two latest snapshots (`previous`, `current`); `SceneView.draw(previous, current,
 alpha)` pairs the entities of both by id (both arrays are in store order; an entity spawned or
@@ -519,9 +527,8 @@ each closed by the session or phase named:
 - `Replay` has no `versions` yet (they arrive with the content catalogue).
 - `map/` still reads its own `MapConfig`, `DEFAULT_MAP_CONFIG`, `MapRandom` and
   `validateMapConfig` until session A swaps to `GameConfig` and `SeededRandom` (06 §10).
-- Veil (`feat/vanguard-veil-hamstring`, DEC-266): `EntitySnapshot.isHidden` (present, `true`,
-  while a status sets `hidden`), `EntityStore.isTargetable` and `isUntargetable` (the targeting
-  rule) and `findUnitAt` skipping hidden units are not in §5 yet (`INBOX.md` HC-B19); see
+- Veil (`feat/vanguard-veil-hamstring`, DEC-266, DEC-327): §2 and §5 state the build; the
+  systems that keep a held target that turned untargetable (`EntityStore.isUntargetable`) are in
   [05 §18, "Veil"](05-abilities-weapons-and-loadouts.md#18-implementation-status).
 
 **Implementation status, 2026-11-20 (branch `feat/ranged-attacks`, PR 1; DEC-300).**

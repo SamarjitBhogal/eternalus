@@ -87,7 +87,7 @@ export class StatusEffectApplier {
   }
 
   /**
-   * Ends every status on `targetId` that damage broke (`StatusEffectRuntime.isBroken`, DEC-267),
+   * Ends every status on `targetId` that a hit broke (`StatusEffectRuntime.isBroken`, DEC-327),
    * oldest first, as `remove` does: no `onExpire`, since the status did not run out.
    */
   public removeBroken(state: GameState, targetId: EntityId): void {

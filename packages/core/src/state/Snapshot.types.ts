@@ -139,6 +139,12 @@ export type MatchSnapshot = {
   readonly phaseEnteredTick: number;
   /** The unfired timeline entries in tick order; empty after the last one. */
   readonly upcoming: readonly ScheduledMark[];
+  /**
+   * The tick the pre-match countdown ends (`MatchState.countdownEndTick`, from config), also once
+   * its `countdown-over` mark has left `upcoming`: the HUD counts the countdown down to it and the
+   * match time up from it (DEC-278).
+   */
+  readonly countdownEndTick: number;
   /** The human's Legend; `null` in sim mode, or when the human slot names no Legend definition. */
   readonly humanLegendId: EntityId | null;
   /** The Duel's score and kill target (ADR 0016); present only in a Duel. */

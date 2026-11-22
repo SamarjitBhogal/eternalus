@@ -163,7 +163,7 @@ describe('StatusEffectSystem', () => {
   });
 });
 
-describe('StatusEffectSystem: statuses that end on damage (Veil, DEC-267)', () => {
+describe('StatusEffectSystem: statuses that end on a hit (Veil, DEC-267, DEC-327)', () => {
   const HIT = { kind: 'weapon', definitionId: 'test-hit' } as const;
   const isVeiled = (entity: Entity): boolean =>
     entity
@@ -198,19 +198,80 @@ describe('StatusEffectSystem: statuses that end on damage (Veil, DEC-267)', () =
     expect(isVeiled(warrior)).toBe(false);
   });
 
-  it('a bleed tick ends Veil in the same pass, on the bleeding holder and on the one it is credited to', () => {
+  it('a weapon hit ends Veil on both sides', () => {
     const { state, applier, warrior, dummy, apply, run } = setUp();
     const system = statusSystem(state, applier);
-    apply(dummy, 'bleed'); // credited to the warrior; first tick at 30
-    apply(warrior, 'bleed', dummy.id);
     apply(warrior, 'invisible');
     apply(dummy, 'invisible', dummy.id);
 
-    run(system, 30);
-    expect([isVeiled(warrior), isVeiled(dummy)]).toEqual([true, true]);
+    new DamagePipeline().apply(state, dummy.id, 5, { ...HIT, attackerId: warrior.id });
     run(system, 1);
 
     expect([isVeiled(warrior), isVeiled(dummy)]).toEqual([false, false]);
+  });
+
+  it('a bleed applied before Veil ticks on the Veiled holder and the Veil stays (DEC-327)', () => {
+    const { state, applier, warrior, dummy, apply, run, ticksOf } = setUp();
+    const system = statusSystem(state, applier);
+    apply(warrior, 'bleed', dummy.id); // first tick at 30
+    apply(warrior, 'invisible');
+
+    run(system, 61);
+
+    expect(ticksOf('damage-applied')).toEqual([30, 60]);
+    expect(isVeiled(warrior)).toBe(true);
+  });
+
+  it('a bleed tick credited to a Veiled attacker leaves its Veil on (DEC-327)', () => {
+    const { state, applier, warrior, dummy, apply, run, ticksOf } = setUp();
+    const system = statusSystem(state, applier);
+    apply(dummy, 'bleed'); // credited to the warrior; first tick at 30
+    apply(warrior, 'invisible');
+
+    run(system, 31);
+
+    expect(ticksOf('damage-applied')).toEqual([30]);
+    expect(isVeiled(warrior)).toBe(true);
+  });
+
+  it('a debuff from another entity, with no damage, ends Veil on the one struck and on the applier (DEC-327)', () => {
+    const { state, applier, warrior, dummy, apply, run, ticksOf } = setUp();
+    const system = statusSystem(state, applier);
+    apply(warrior, 'invisible');
+    apply(dummy, 'invisible', dummy.id);
+
+    apply(dummy, 'concussion', warrior.id);
+    run(system, 1);
+
+    expect(ticksOf('damage-applied')).toEqual([]);
+    expect([isVeiled(warrior), isVeiled(dummy)]).toEqual([false, false]);
+  });
+
+  it('a buff from another entity (an ally’s aura) ends no Veil (DEC-327)', () => {
+    const { state, applier, warrior, dummy, apply, run } = setUp();
+    const system = statusSystem(state, applier);
+    apply(warrior, 'invisible');
+    apply(dummy, 'invisible', dummy.id);
+
+    apply(warrior, 'rallied', dummy.id);
+    run(system, 1);
+
+    expect([isVeiled(warrior), isVeiled(dummy)]).toEqual([true, true]);
+  });
+
+  it('a status from the holder itself ends no Veil: Veil cast again, or its own debuff (DEC-327)', () => {
+    const { state, applier, warrior, apply, run } = setUp();
+    const system = statusSystem(state, applier);
+    apply(warrior, 'invisible');
+    run(system, 1);
+
+    apply(warrior, 'invisible');
+    run(system, 1);
+    expect(isVeiled(warrior)).toBe(true);
+
+    apply(warrior, 'concussion');
+    run(system, 1);
+    expect(isVeiled(warrior)).toBe(true);
   });
 
   it('a Veil applied after the hit in the same tick stays on', () => {

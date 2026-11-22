@@ -4,10 +4,10 @@ import { TEST_DEBUG_CONFIG } from '../../diagnostics/InvariantRunner.constants';
 import { abilityMatch } from '../__fixtures__/abilityMatch';
 
 /**
- * Veil (balancing.md:182, DEC-266, DEC-267): for 5 s (150 ticks) the Vanguard is `invisible`:
+ * Veil (balancing.md:182, DEC-266, DEC-327): for 5 s (150 ticks) the Vanguard is `invisible`:
  * enemies cannot pick it as a target, and one that holds it neither hits nor chases it (a unit
- * no controller drives keeps it and fights on after Veil); an area still hits it, and dealing or
- * taking any damage ends it. The light Vanguard stands at (50, 50) with Veil on key 2; a dark
+ * no controller drives keeps it and fights on after Veil); an area still hits it, and a hit
+ * dealt or taken ends it. The light Vanguard stands at (50, 50) with Veil on key 2; a dark
  * Vanguard stands 1.2 m north, in reach both ways. Every invariant runs each tick and
  * throws.
  */

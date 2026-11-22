@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-22
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -122,7 +122,10 @@ export interface Perception {
 Rules: radii come from the entity's `Vision` component or its profile, never "everything"; a
 query touches at most the 9 surrounding cells
 [research §4](../research/game-architecture-and-performance-research.md#4-spatial-partitioning-and-collision);
-results are id-sorted. Fog of war is **post-MVP**; `Vision` is its extension point.
+results are id-sorted. A `hostileTo` query keeps only units an enemy may pick
+(`EntityStore.isTargetable`: alive, and no status sets `untargetable`), so it leaves out a Veiled
+unit and a dead one; the leashed mobs and the bot memory use the same rule, so `ai/` reads no
+components for it (DEC-327). Fog of war is **post-MVP**; `Vision` is its extension point.
 
 ## 4. Controllers
 
@@ -443,9 +446,8 @@ work named:
   content) or the first tick `AiSystem` sees the entity (injected content).
 - `Perception` has `unitsWithin` and `nearest`; `structuresWithin` waits for a controller that
   needs it (M2c reads lane objectives from `state.laneStructures`).
-- `Perception`'s `hostileTo` queries, `LeashBehaviour` and the bot memory keep only units an
-  enemy may pick (`EntityStore.isTargetable`: alive, and no status sets `untargetable`; DEC-266),
-  so a Veiled or dead unit is left out. §3 does not say so yet (`INBOX.md` HC-B19); see
+- Veil (DEC-266, DEC-327): §3 states the targeting rule; how each AI controller drops a target
+  that turned untargetable is in
   [05 §18, "Veil"](05-abilities-weapons-and-loadouts.md#18-implementation-status).
 
 ## Related

@@ -20,6 +20,7 @@ async function started(
   controller: SettingsController;
   persistence: PersistenceController;
   published: SettingsSliceState[];
+  themeRoot: Pick<HTMLElement, 'dataset'>;
 }> {
   const persistence = new PersistenceController({
     adapter,
@@ -31,14 +32,16 @@ async function started(
   const bus = new TypedEventBus<BridgeEventMap>();
   const published: SettingsSliceState[] = [];
   bus.on('settings', (settings) => published.push(settings));
+  const themeRoot: Pick<HTMLElement, 'dataset'> = { dataset: {} };
   const controller = new SettingsController({
     bus,
     persistence,
     logger: new NullLogger(),
     isApplePlatform,
+    themeRoot,
   });
   await controller.start();
-  return { bus, controller, persistence, published };
+  return { bus, controller, persistence, published, themeRoot };
 }
 
 function moveUpChords(settings: SettingsSliceState | undefined): unknown {
@@ -90,6 +93,7 @@ describe('SettingsController', () => {
       persistence,
       logger: new NullLogger(),
       isApplePlatform: false,
+      themeRoot: { dataset: {} },
     });
     expect(controller.bindings).toBeNull();
 
@@ -135,6 +139,44 @@ describe('SettingsController', () => {
     expect(published.at(-1)?.audio.master).toBe(0.3);
   });
 
+  // UE-03 (ui-enhancements-plan §3.1, FR-084): the setting reaches the page, so every
+  // `:root[data-reduce-motion]` twin of a reduced-motion rule applies, live.
+  it('marks the reduce-motion setting on the theme root, sets and removes it live, and clears it when destroyed', async () => {
+    const { bus, controller, themeRoot } = await started();
+    expect(themeRoot.dataset.reduceMotion).toBeUndefined();
+
+    bus.emit('ui-intent', {
+      kind: 'update-settings',
+      patch: { accessibility: { reduceMotion: true } },
+    });
+    expect(themeRoot.dataset.reduceMotion).toBe('');
+
+    bus.emit('ui-intent', {
+      kind: 'update-settings',
+      patch: { accessibility: { reduceMotion: false } },
+    });
+    expect(themeRoot.dataset.reduceMotion).toBeUndefined();
+
+    bus.emit('ui-intent', {
+      kind: 'update-settings',
+      patch: { accessibility: { reduceMotion: true } },
+    });
+    controller.destroy();
+    expect(themeRoot.dataset.reduceMotion).toBeUndefined();
+  });
+
+  it('marks a saved reduce-motion setting at start', async () => {
+    const adapter = new MemoryStorageAdapter();
+    const first = await started(adapter);
+    first.bus.emit('ui-intent', {
+      kind: 'update-settings',
+      patch: { accessibility: { reduceMotion: true } },
+    });
+    const second = await started(adapter);
+
+    expect(second.themeRoot.dataset.reduceMotion).toBe('');
+  });
+
   it('ignores intents that are not about settings', async () => {
     const { bus, published } = await started();
 
@@ -158,6 +200,7 @@ describe('SettingsController', () => {
       persistence: failing,
       logger,
       isApplePlatform: false,
+      themeRoot: { dataset: {} },
     }).start();
     bus.emit('ui-intent', { kind: 'reset-bindings', action: null });
     await Promise.resolve(); // let the rejected save be reported

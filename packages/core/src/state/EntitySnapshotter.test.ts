@@ -150,7 +150,7 @@ describe('EntitySnapshotter', () => {
     statuses.apply(STATUSES.get('enraged'), null, 0);
     veiled.addComponent(statuses);
 
-    statuses.breakOnDamage(1);
+    statuses.breakOnHit(1);
     const snapshot = new EntitySnapshotter(4, CURVES, 1).snapshotOf(veiled);
 
     expect(snapshot.statuses?.map(({ id }) => id)).toEqual(['enraged']);

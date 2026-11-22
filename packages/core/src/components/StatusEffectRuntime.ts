@@ -24,8 +24,8 @@ export class StatusEffectRuntime {
   public periodTicks: number | null = null;
 
   /**
-   * Whether its holder dealt or took damage while it was on, for a status that `endsOnDamage`
-   * (DEC-267): `StatusEffectSystem` then removes it. An application after the damage clears it.
+   * Whether its holder hit or was hit while it was on, for a status that `endsOnHit` (DEC-267,
+   * DEC-327): `StatusEffectSystem` then removes it. An application after the hit clears it.
    */
   public isBroken = false;
 
@@ -58,7 +58,7 @@ export class StatusEffectRuntime {
    * The same status applied again while active: the one switch over stacking modes. The timer
    * runs to the later of its current expiry and this application's (`durationTicks`, else the
    * definition's), so a reapplication never shortens the time left: a 0.5 s stun on a target with
-   * 2 s of stun left leaves 2 s, on one with 0.2 s left gives 0.5 s. It comes after any damage
+   * 2 s of stun left leaves 2 s, on one with 0.2 s left gives 0.5 s. It comes after any hit
    * that broke the status, so it clears `isBroken`.
    */
   public reapply(sourceId: string | null, tick: number, durationTicks?: number): void {

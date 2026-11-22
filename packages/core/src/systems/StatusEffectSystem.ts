@@ -11,11 +11,19 @@ import type { System, SystemContext } from './System.types';
  * status's effect on its ticks, then removes the ones that are over (`status-expired`). Runs before
  * movement and combat, so both read this tick's multipliers and flags.
  *
- * It also ends a status that `endsOnDamage` (Veil, DEC-267): every `damage-applied` marks such
- * statuses on the target and the attacker as broken (`StatusEffects.breakOnDamage`: they stop
- * counting at once), and the end of a pass removes them: the same pass for a bleed tick, the next
- * tick's for a combat hit. The listener only marks because a hit can land inside a loop over a
- * holder's statuses (a bleed tick, an `onHit` step) and removal splices that list.
+ * It also holds the one end rule of a status that `endsOnHit` (Veil, DEC-267, DEC-327): the act
+ * of hitting ends it, not the damage. These events mark such statuses as broken on the one struck
+ * and on the one credited with the hit (`StatusEffects.breakOnHit`: they stop counting at once):
+ * - a `damage-applied` that is not a periodic status tick (`source.kind` is not `'status'`), so
+ *   a bleed applied before Veil keeps ticking and the Veil stays, on both sides;
+ * - a `status-applied` of a `debuff` from another entity, so a hit that only applies a status
+ *   ends it too. A buff from another entity (an ally's aura) and a status from the holder itself
+ *   do not.
+ * The next pass removes the broken statuses: this tick's for a hit from a system that runs
+ * before it (`AbilitySystem`), the next tick's for a combat hit. The listeners only mark, because
+ * a hit can land inside a loop over a holder's statuses (an `onHit` step) and removal splices
+ * that list. A hit that the damage pipeline blocks to 0 emits no `damage-applied`, so it does not
+ * end the status.
  */
 export class StatusEffectSystem implements System {
   public readonly name = 'status-effects';
@@ -24,7 +32,7 @@ export class StatusEffectSystem implements System {
   private readonly broken = new Set<EntityId>();
 
   /**
-   * @param state - The match whose `damage-applied` events break statuses.
+   * @param state - The match whose `damage-applied` and `status-applied` events break statuses.
    * @param damage - The match's one damage pipeline, shared with every system that deals damage.
    * @param statuses - The match's one status applier; it emits `status-expired`.
    * @param tickEffects - Each periodic tick kind's strategy.
@@ -36,14 +44,28 @@ export class StatusEffectSystem implements System {
     private readonly tickEffects = createDefaultStatusTickEffects(),
   ) {
     state.events.on('damage-applied', ({ targetId, source }) => {
+      if (source.kind === 'status') {
+        return;
+      }
       this.breakOn(state, targetId);
       if (source.attackerId !== null) {
         this.breakOn(state, source.attackerId);
       }
     });
+    state.events.on('status-applied', ({ entityId, statusId, sourceId }) => {
+      if (
+        sourceId === null ||
+        sourceId === entityId ||
+        !StatusEffectSystem.isDebuffOn(state, entityId, statusId)
+      ) {
+        return;
+      }
+      this.breakOn(state, entityId);
+      this.breakOn(state, sourceId);
+    });
   }
 
-  /** Ticks and expires every entity's statuses, then ends the ones damage broke. */
+  /** Ticks and expires every entity's statuses, then ends the ones a hit broke. */
   public update({ state }: SystemContext): void {
     const context = { state, damage: this.damage };
     state.entities.forEach((entity) => {
@@ -69,11 +91,20 @@ export class StatusEffectSystem implements System {
     }
   }
 
-  /** Marks `holderId`'s statuses that end on damage as broken, and remembers it if any were. */
+  /** Marks `holderId`'s statuses that end on a hit as broken, and remembers it if any were. */
   private breakOn(state: GameState, holderId: EntityId): void {
     const statuses = state.entities.get(holderId)?.findComponent(StatusEffects);
-    if (statuses?.breakOnDamage(state.tick) === true) {
+    if (statuses?.breakOnHit(state.tick) === true) {
       this.broken.add(holderId);
     }
+  }
+
+  /** Whether `statusId`, just applied to `holderId`, is a debuff (read from its active statuses). */
+  private static isDebuffOn(state: GameState, holderId: EntityId, statusId: string): boolean {
+    const statuses = state.entities.get(holderId)?.findComponent(StatusEffects);
+    return (
+      statuses?.active.find(({ definition }) => definition.id === statusId)?.definition.polarity ===
+      'debuff'
+    );
   }
 }

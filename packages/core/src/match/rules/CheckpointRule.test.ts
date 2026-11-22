@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { TeamMembership } from '../../components/TeamMembership';
 import { Transform } from '../../components/Transform';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
-import { SCORING } from '../../content/match/scoring';
+import { loadScoring } from '../../content/match/loadScoring';
 import { Entity } from '../../entities/Entity';
 import type { EntityId } from '../../state/EntityStore.types';
 import { GameState } from '../../state/GameState';
@@ -29,7 +29,7 @@ const setUp = () => {
   const state = new GameState(createDefaultGameConfig(), 1);
   const scoring = new Scoring(
     state,
-    createDefaultScoringRules(SCORING, state.config.tickRate, state.events),
+    createDefaultScoringRules(loadScoring(state.config.tickRate), state.events),
   );
   let next = 0;
   /** Adds a Legend at `at` and announces it with `entity-spawned`, as a spawn does. */

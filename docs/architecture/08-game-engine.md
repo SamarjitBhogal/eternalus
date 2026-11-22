@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-22
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -263,6 +263,14 @@ flowchart LR
   the status's time passes, read from the snapshot (`EntitySnapshot.statuses`); the look is in
   `WindupRingsView.constants.ts`. `main.tsx` passes the registry's `statusIds` to the display
   catalogue's boot check, which refuses a status core does not have (ADR 0023).
+- Hidden units: `Viewer` (`game/Viewer.ts`) decides what the player sees. It keeps the player's
+  Legend and team (also after the player dies) and gives each entity shown, faded or hidden from
+  `EntitySnapshot.isHidden` ([03](03-game-model.md) §5). `Match` injects its `visibilityOf` into
+  `EntityLayer`, as it injects the health-bar rule: a hidden unit of the viewer's team draws
+  faded (`Renderer.withOpacity`), any other hidden unit not at all, also while the viewer's team
+  is not known yet. `HealthBarVisibility` reads the same `Viewer`, so it holds no team of its own.
+  The later per-seat filter (multiplayer plan W10) replaces this one rule, not view code
+  (DEC-327).
 - `MinimapView` runs at a lower cadence into the `'minimap'` layer (`06-map-and-minimap.md` §8).
 
 ## 9. Performance budget and how it is measured
@@ -338,11 +346,8 @@ after the tick on which `MatchBridge` publishes `match-ended`; the world keeps r
 until `MatchState` leaves the phase ([13](13-game-interface.md) §2). A pause overlay still pauses
 the loop, but not the timer that leaves the phase (DEC-134).
 
-Veil (`feat/vanguard-veil-hamstring`, DEC-266): `Viewer` (`game/Viewer.ts`) keeps the player's
-Legend and team and decides how each entity shows (shown, faded or hidden); `Match` injects its
-`visibilityOf` into `EntityLayer`, which leaves out a hidden enemy and draws a hidden unit of the
-viewer's team faded (`Renderer.withOpacity`). `HealthBarVisibility` reads the same `Viewer`. §8
-does not list this yet (`INBOX.md` HC-B19); see
+Veil (`feat/vanguard-veil-hamstring`, DEC-266, DEC-327): §8 states the `Viewer`; the faded draw
+of body, status cues, health bar and minimap dot, and sim mode, are in
 [05 §18, "Veil"](05-abilities-weapons-and-loadouts.md#18-implementation-status).
 
 ## Related
