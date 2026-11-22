@@ -9537,3 +9537,57 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   passed (84)", "Documentation check passed."; the two hook test files under `node --test`: pass
   8, fail 0; then `prettier --check` and `npm run docs:check` with this entry.
 - Next step: the owner pushes the branch, then merges PR #135; then #137 needs a phase/3 merge.
+
+### 2026-11-20 — Phase 3 / assist window at load (HC-B9 (2), DEC-285 (2), DEC-287) — refactor/scoring-at-load — sholtzman + Claude Code
+
+- What was done: `content/match/loadScoring.ts` loads `SCORING` once (architecture 03 §8,
+  DEC-241): `assistWindowSeconds` becomes `assistWindowTicks` and a negative or non-finite window
+  is rejected (DEC-285 (2), the owner's "(2) in a follow-up PR"). `Simulation` passes the loaded
+  `ScoringOptions`; `AuthoredScoringOptions` is the seconds form `SCORING` satisfies. Critic round
+  1 found two better-than-design items, built under the standing rule as DEC-287: the loader also
+  loads the hold minute (`minuteTicks`), so `createDefaultScoringRules` takes no tick rate, and the
+  two option types share a private `ScoringBase`. Same conversion as before (`TickRate.toTicks`):
+  30 s = 900 ticks, 60 s = 1800 ticks. Docs: architecture 12 §5 and §13, `INBOX.md` HC-B9, the
+  DEC-287 row. The DEC-285 row comes with `feat/match-start-countdown`, so this branch merges after
+  that PR.
+- Checks run: fail-first, recorded: with the assert dropped and a plain `Math.round`, 2 of the 4
+  new loader tests red; with a 59 s minute, 4 of 13 (loader and `CaptureHoldRule`) red; each
+  restored, `cmp` identical, green. Critic (`architecture-reviewer`): round 1 approve (nits applied,
+  BTD-1/BTD-2 built), round 2 approve (nits applied; minor = merge order). `/ponytail-review`:
+  "Lean already. Ship." Full `npm run check` exit 0 on the final code before this entry (core 276
+  files / 1678 tests, protocol 1 / 29, client 298 / 2011, server 21 / 84, "Documentation check
+  passed."; `eternalus-agent-work/scoring-at-load/check-2.log`); then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the owner pushes and opens the PR to phase/3 after the DEC-278 countdown PR
+  (`feat/match-start-countdown`) is open; merge it after that one. HC-B9 is ticked when both are
+  on phase/3.
+
+### 2026-11-21 — Phase 3 / assist window at load (DEC-285 (2), DEC-287): merge of phase/3 (#138, #143) — refactor/scoring-at-load — sholtzman + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` at `2a5058f7` (#138, the DEC-278 countdown, and
+  #143) into PR #139. Conflicts, all text: `INBOX.md` HC-B9 (#138's "Answered" bullet kept, its
+  "(2) is open" replaced by this branch's "(2) Built" note, and HC-B9 ticked: both parts are
+  built), the decisions log (DEC-287's batch below DEC-316's, above the other 2026-11-20 batches,
+  newest first) and this file (phase/3's copy plus this branch's entries). The code merged
+  without conflict, and no phase/3 caller uses the old `createDefaultScoringRules` signature.
+- Checks run: full `npm run check` exit 0 on this merge before this entry was added (core 277
+  files / 1683 tests, protocol 1 / 29, client 303 / 2077, server 21 / 84, "Documentation check
+  passed."; `eternalus-agent-work/scoring-at-load/check-3.log`); then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the owner pushes the merge (coordinator checks the script); #139 merges. If #135
+  lands first, merge phase/3 once more.
+
+### 2026-11-21 — Phase 3 / assist window at load (DEC-285 (2), DEC-287): merge of phase/3 (#135) — refactor/scoring-at-load — sholtzman + Claude Code
+
+- What was done: #135 (the stop hook, DEC-276) merged into phase/3 (`54615afa`), so phase/3 is
+  merged into PR #139 once more. The one conflict was add/add in this file: both sides kept,
+  phase/3's copy first and this branch's entries after it (against `54615afa` this file only
+  adds lines; a line multiset check: 0 missing against each parent). The decisions log (DEC-276's
+  batch from phase/3, DEC-287's batch below the 2026-11-21 batch) and `INBOX.md` (HC-B9 stays
+  `[x]`) merged without conflict. #135 changed only hook scripts and docs, so no new caller of
+  `createDefaultScoringRules` or `SCORING` arrived.
+- Checks run: full `npm run check` exit 0 on this merge before this entry was added
+  (core 277 files / 1683 tests, protocol 1 / 29, client 303 / 2077, server 21 / 84,
+  "Documentation check passed."; `eternalus-agent-work/scoring-at-load/check-4.log`); then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the owner pushes the merge (coordinator checks the script); #139 merges.
