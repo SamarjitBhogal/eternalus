@@ -3,8 +3,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { Collider } from '../components/Collider';
 import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
+import { StatusEffects } from '../components/StatusEffects';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
+import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { Entity } from '../entities/Entity';
 import type { Team } from '../teams/teams.types';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
@@ -55,6 +57,7 @@ const square = (x: number, y: number, size: number): Polygon => [
 /** A palace floor (walk-on), 10 m square from (0, -5); the attacker is light. */
 const FLOOR = square(0, -5, 10);
 const NO_AIM: AreaAim = { targetId: null, point: null };
+const STATUSES = loadStatusEffects(30, 2);
 
 /** An area that holds exactly the bodies with the given ids. */
 const holding = (...ids: string[]): HitArea => ({
@@ -226,6 +229,20 @@ describe('AreaHitQuery.aimedBodyOf', () => {
     expect(
       covered.query.aimedBodyOf(covered.entities, covered.attacker.id, { x: 5, y: 0 }),
     ).toBeNull();
+  });
+
+  it('names the floor under a hidden (Veiled) enemy unit, as `findUnitAt` skips it (DEC-266)', () => {
+    const { entities, add, attacker, query, find } = setUp();
+    add('floor', { at: { x: 5, y: 0 }, team: 'dark', outline: [FLOOR], isWalkOn: true });
+    const veiled = add('veiled', { at: { x: 5, y: 0 }, team: 'dark', family: 'legend' });
+    const statuses = new StatusEffects();
+    statuses.apply(STATUSES.get('invisible'), veiled.id, 0);
+    veiled.addComponent(statuses);
+    const aim = { targetId: null, point: { x: 5, y: 0 } };
+
+    expect(query.aimedBodyOf(entities, attacker.id, aim.point)).toBe('floor');
+    // The area still hits the hidden unit it touches (05 §18 "Untargetable").
+    expect(find(holding('floor', 'veiled'), aim)).toEqual(['floor', 'veiled']);
   });
 
   it('names the structure before a map object that holds the same point, whatever their ids (B8)', () => {

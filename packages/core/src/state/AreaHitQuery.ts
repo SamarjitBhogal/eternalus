@@ -1,5 +1,6 @@
 import { Health } from '../components/Health';
 import type { Outline } from '../components/Outline.types';
+import { StatusEffects } from '../components/StatusEffects';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import type { Entity } from '../entities/Entity';
@@ -172,7 +173,8 @@ export class AreaHitQuery {
   /**
    * Whether a living unit (Legend, mob or boss) not on `team` covers `point` with its collider
    * circle: the test of `findUnitAt`, which picks the unit a click is on, on live entities. An
-   * entity with no team counts as on no team, as in `findUnitAt`.
+   * entity with no team counts as on no team, and a `hidden` unit (Veil, DEC-266) covers nothing,
+   * as in `findUnitAt`.
    */
   private static isEnemyUnitAt(
     entities: EntityStore,
@@ -187,7 +189,8 @@ export class AreaHitQuery {
         transform === undefined ||
         !isUnitFamily(entity.family) ||
         entity.findComponent(TeamMembership)?.team === team ||
-        !AreaHitQuery.isAlive(entity)
+        !AreaHitQuery.isAlive(entity) ||
+        entity.findComponent(StatusEffects)?.has('hidden') === true
       ) {
         return;
       }
