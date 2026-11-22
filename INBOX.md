@@ -271,29 +271,28 @@ Reply inline (`Decision: …`).
     returns an `AimedAt` tag; `isInReach` and `facingPointOf` read it. The tidy PR builds no
     helper for it.
 
-- [ ] **Tick time misses the 8 ms target (2026-11-07, `chore/minion-perf-check`) — for your
-      information, one question.** The new `npm run bench` (a 3-lane match with 144, then 290 mobs
-      per team, 10 bot Legends per team, hordes fighting) measured p50 2 to 3 ms but p95 8 to 12 ms,
-      max up to 26 ms, against the plan's p95 ≤ 8 ms. Pathing plus steering is about 0.6 ms p95,
-      inside its 2.5 ms share, and the spikes are the bot laners' decisions (both from a one-off probe,
-      not committed) (0.45 ms each on average,
-      up to 6.9 ms), which run A\* again on every blocked decision (minion plan §3, M8 stand-in);
-      the bot path cache is being built next on its own branch. `maxDecisionsPerTick` 96 held:
-      about 88 decisions were due per tick at the cap (DEC-181). Question: the targets name "the
-      reference dev laptop"; which machine is it? These numbers are from an AMD Ryzen AI 9 HX 370.
-      **Update 2026-11-20 (PR #83 review):** the bench had lost its bot Legends after DEC-173 (no
-      `pilot`) and timed the countdown freeze, so its later numbers measured no bots and no fight.
-      Fixed: bot pilots, timing from the first death after the countdown, and guards that fail the
-      bench when the scenario stops. Re-measured (same machine, Node 24): p95 3.47 ms at 144/team
-      (NFR-021's ≤ 8 ms: met), p95 3.44 ms / max 11.65 ms at 290/team (no target, DEC-137 (1)).
-      NFR-025's per-system split (AI ≤ 1.5 ms) is still not measured: it waits for the `Profiler`
-      port (15 §6). Still open: which machine is the reference laptop; and the CI step and root
-      `vite` devDependency need your sign-off on PR #83 (an ADR or a DEC row), or the step moves to
-      `workflow_dispatch` only. **New question (CodeRabbit on PR #83, 2026-11-21):** the bench
-      fills each team to 144 and then times a fight, so the population falls (143/144 → 92/98 in
-      the 2026-11-20 run). Does NFR-021's "at 144 units per team" mean the fill, or must the bench
-      hold 144 per team for the whole timed window (respawning the dead)? Until you answer, the
-      144-case result is combat-window evidence, not a pass of NFR-021.
+- [ ] **Tick time: bench evidence, four questions (`chore/minion-perf-check`, PR #83; rewritten
+      2026-11-22 to the current state).** `npm run bench` runs a 3-lane match with the shipped bot
+      roster (10 bot Legends per team), fills each team to 144 mobs, then to the cap, and times 900
+      ticks of the fight from the first death after the countdown. Latest run (2026-11-22, AMD
+      Ryzen AI 9 HX 370, Node 24, load about 6): p95 4.50 ms at 144/team (143/144 → 92/98 mobs over
+      the window), p95 4.85 ms / max 8.59 ms at 290/team (no target, DEC-137 (1)). This is
+      combat-window evidence, not an NFR-021 pass. NFR-025's per-system split (AI ≤ 1.5 ms) is not
+      measured: it waits for the `Profiler` port (15 §6). The 2026-11-07 figures in `PROGRESS.md`
+      are not comparable (that bench later lost its bots). Questions:
+      (1) **Reference laptop:** the targets name "the reference dev laptop"; which machine is it?
+      (2) **Sampling rule (CodeRabbit on PR #83):** the population falls during the timed fight.
+      Does NFR-021's "at 144 units per team" mean the fill, or must the bench hold 144 per team for
+      the whole window (respawning the dead)?
+      (3) **CI step sign-off:** the bench step in `ci.yml` (17 to 19 s per job) and the root `vite`
+      devDependency rest on the author's PR description (ADR 0018 (3)). Do you also want an ADR or
+      a DEC row, or should the step move to `workflow_dispatch` only? The `ci.yml` header and the
+      guardrails "CI gate" row still say CI mirrors `npm run check` one-to-one; they get one line
+      each once you answer.
+      (4) **Better than the design (DEC-139), optional:** move the bench scenario (roster, fill,
+      wait for contact) into a typed core module with a vitest test, leaving only the clock in the
+      `.mjs`; `tsc` would then catch API changes such as DEC-173's `pilot`, and a test would prove
+      the hordes fight without a timed CI step. Recommendation: yes, after (3).
 
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on
