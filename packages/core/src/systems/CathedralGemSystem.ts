@@ -20,9 +20,10 @@ import type { System, SystemContext } from './System.types';
  * statuses come from the environment (no attacker), as the gem is no team's: so friendly fire never
  * blocks them, they hurt neutrals too ("hurts any entity", DEC-292), and a death by them is
  * nobody's kill (`INBOX.md`). Its holder follows the capture point it stands in. Bots and neutrals
- * never pick the gem as a target: perception sees units only. Runs after `CaptureSystem`, so a
- * change of hands this tick shows this tick. When the gem erupts (`greater-boss-summoned`) it is
- * removed (`despawned`).
+ * never pick the gem as a target: perception sees units only, and a lane's objectives are
+ * playable-team structures only (`LaneStructures`). Runs after `CaptureSystem`, so a change of
+ * hands this tick shows this tick. When the gem erupts (`greater-boss-summoned`) it is removed
+ * (`despawned`).
  */
 export class CathedralGemSystem implements System {
   public readonly name = 'cathedral-gem';
@@ -44,6 +45,8 @@ export class CathedralGemSystem implements System {
     loaded: Pick<ContentCatalogue<StatusEffectDefinition>, 'get'>,
     private readonly gem: CathedralGemDefinition,
   ) {
+    // Looks up every id now, so a wrong one fails at match start, not at the first hit.
+    for (const id of [...gem.statusIds, gem.touchCooldownStatusId]) loaded.get(id);
     const { durationTicks } = loaded.get(gem.glow.statusId);
     if (durationTicks === null) {
       throw new Error(`The gem's glow status "${gem.glow.statusId}" must have a duration.`);

@@ -21,13 +21,13 @@ export const GEM_HEIGHT_PER_WIDTH = 1.6;
  * TUNE: DEC-292 gives no look beyond that; these are defaults taken in the build.
  */
 export const GEM_GLOW = {
-  /** The glow disc's diameter on the first hit, and how much each more hit adds, up to `maxHits`. */
+  /** The glow disc's diameter on the first hit, and how much each more hit adds, one per colour. */
   size: 3,
   sizePerHit: 0.75,
   /** The glow's colour, faintest first: one entry per hit counted, the last for every hit after. */
   colors: ['#a855f740', '#a855f760', '#a855f780', '#a855f7a0'],
-  maxHits: 4,
-  /** The pulse ring grows from the gem's size to `pulseSize` over `pulseTicks` after a hit. */
+  /** The pulse ring grows from `pulseStartSize` (the gem's own size) to `pulseSize` over `pulseTicks` after a hit. */
+  pulseStartSize: 2,
   pulseSize: 6,
   pulseTicks: 10,
   pulseColor: '#c084fc',

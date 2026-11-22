@@ -128,7 +128,7 @@ describe('CathedralGem (07 §1, DISC-11, DEC-292)', () => {
         const result = apply.mock.results[at];
         return targetId === gem.id && result?.type === 'return' ? [result.value] : [];
       });
-      expect(onGem.length).toBeGreaterThan(0);
+      expect(onGem.length).toBeGreaterThan(1);
       expect(onGem.every((result) => !result.applied && result.reason === 'blocked')).toBe(true);
       expect(statuses).toContainEqual({
         entityId: warriorId,
