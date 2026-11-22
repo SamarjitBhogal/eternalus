@@ -524,9 +524,13 @@ A status with `endsOnHit` (Veil) ends when its holder hits or is hit: the act of
 not the damage (DEC-327). A hit is a `damage-applied` that names the holder as target or
 attacker, except a periodic status tick (`source.kind: 'status'`), or a `status-applied` of a
 `debuff` from another entity, on the one struck and on the one credited. So a bleed that was on
-before Veil keeps ticking and the Veil stays; a buff from another entity (an ally's aura) and a
-status from the holder itself do not end it. A hit that the damage pipeline blocks to 0 emits no
-`damage-applied`, so it does not end the status. `StatusEffectSystem` holds this one end rule
+before Veil keeps ticking and the Veil stays. Build readings, not the owner's words (DEC-327): a
+buff from another entity (an ally's aura) and a status from the holder itself do not end it
+(Veil is itself a status its holder applies); a debuff from no one ends it on the one struck, as
+damage with no attacker does; a hit that the damage pipeline blocks to 0 (an unbreakable
+structure) emits no `damage-applied`, and a debuff the target refuses (hard control on a
+`control-immune` target) emits no `status-applied`, so neither ends the status (asked of the
+owner, `INBOX.md` HC-Q79). `StatusEffectSystem` holds this one end rule
 (DEC-267): a hit marks the status as broken, and the system's next pass removes it
 (`status-expired`, no `onExpire`). A broken status stops at the hit: `StatusEffects` recomputes
 without it (no flags, no modifiers), it neither ticks nor runs out, and the snapshot leaves it
@@ -1305,8 +1309,9 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     because a hit can land inside a loop over the holder's statuses (an `onHit` step). The
     removal and `status-expired` come in the same tick's pass for a hit from a system that runs
     before it (`AbilitySystem`) and in the next tick's pass for a hit from a later system
-    (combat). The polarity of an applied status is read from the holder's active statuses, so
-    the event and the constructor stay as they were. Casting does not end it.
+    (combat). The polarity of an applied status comes from its definition
+    (`StatusEffectApplier.polarityOf`, the applier the system already holds), so the event and
+    the constructor stay as they were. Casting does not end it.
   - **Untargetable.** `EntityStore.isTargetable(id)` (alive and not `isUntargetable`) is the one
     rule for every picker: perception's hostile queries, the leashed mobs (`LeashBehaviour`),
     `attack-target` (`invalid-target`) and the bot memory (`BotLeaves`). The systems that act on a
