@@ -47,7 +47,9 @@ import type { System, SystemContext } from './System.types';
  * Stronghold's edge does not take a shot fired at the Stronghold (DEC-317 (8)).
  *
  * A shot that touches nothing flies to the end of its `range` (DEC-306): it slows from `slowFrom`
- * (`flightSpeed`, through `Movement.limitSpeed`) so it stops exactly at `range`, then ends. An
+ * (`flightSpeed`, through `Movement.limitSpeed`) so it stops exactly at `range`, then ends. The
+ * move that ends there is swept like any other, so a body under the end point takes the hit: an
+ * arrow damages what it lands on (DEC-322 (2)), and no extra landing test is needed. An
  * ended shot is swept no more and hits nothing; it stays for its end duration (a mist, an arrow on
  * the ground), then is removed as `consumed`. While the match holds units idle
  * (`state.match.isIdleHeld`, the countdown) no shot lands, slows or ends.

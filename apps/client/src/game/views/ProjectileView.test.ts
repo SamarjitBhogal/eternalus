@@ -6,6 +6,8 @@ import { NEUTRAL_ENTITY_COLOR } from './entityViews.constants';
 import { TEAM_COLORS } from './MapView.constants';
 import { colorWithAlpha } from './colorWithAlpha';
 import {
+  PROJECTILE_ARC_LAUNCH_HEIGHT,
+  PROJECTILE_ARC_RISE,
   PROJECTILE_CORE_COLOR,
   PROJECTILE_CORE_SIZE,
   PROJECTILE_DOT_SIZE,
@@ -17,7 +19,6 @@ import {
   PROJECTILE_MIST_OPACITY,
   PROJECTILE_MIST_START_RADIUS,
   PROJECTILE_SHADOW_COLOR,
-  PROJECTILE_SHADOW_HEIGHT,
   PROJECTILE_SHADOW_OPACITY,
   PROJECTILE_SHADOW_SIZE,
   PROJECTILE_STREAK_LENGTH,
@@ -43,13 +44,13 @@ const BOLT: EntitySnapshot = {
 };
 
 const ARROW: EntitySnapshot = { ...BOLT, definitionId: 'arrow' };
-const flying = (entity: EntitySnapshot, speedShare: number): EntitySnapshot => ({
+const flying = (entity: EntitySnapshot, flownShare: number): EntitySnapshot => ({
   ...entity,
-  projectile: { speedShare, ending: null },
+  projectile: { flownShare, ending: null },
 });
 const ended = (entity: EntitySnapshot, ending: number): EntitySnapshot => ({
   ...entity,
-  projectile: { speedShare: 0, ending },
+  projectile: { flownShare: 1, ending },
 });
 const draw = (entity: EntitySnapshot): RecordingRenderer => {
   const renderer = new RecordingRenderer();
@@ -117,20 +118,21 @@ describe('ProjectileView', () => {
     expect(renderer.calls).toEqual([]);
   });
 
-  it('draws a flying arrow with a shadow below it, closer the slower it flies', () => {
-    const shadowAt = (speedShare: number) =>
-      draw(flying(ARROW, speedShare)).calls[0]?.args as unknown[];
+  it('draws a flying arrow on an arc: its shadow drops away to mid-flight, then meets it at the end (DEC-322 (2))', () => {
+    const shadowAt = (flownShare: number) =>
+      draw(flying(ARROW, flownShare)).calls[0]?.args as unknown[];
+    const heightAt = (flownShare: number) => (shadowAt(flownShare)[1] as { y: number }).y - AT.y;
 
-    expect(shadowAt(1)).toEqual([
+    expect(shadowAt(0)).toEqual([
       { shape: 'dot', size: PROJECTILE_SHADOW_SIZE },
-      { x: AT.x, y: AT.y + PROJECTILE_SHADOW_HEIGHT },
+      { x: AT.x, y: AT.y + PROJECTILE_ARC_LAUNCH_HEIGHT },
       colorWithAlpha(PROJECTILE_SHADOW_COLOR, PROJECTILE_SHADOW_OPACITY),
     ]);
-    expect(shadowAt(0.25)).toEqual([
-      { shape: 'dot', size: PROJECTILE_SHADOW_SIZE },
-      { x: AT.x, y: AT.y + PROJECTILE_SHADOW_HEIGHT * 0.25 },
-      colorWithAlpha(PROJECTILE_SHADOW_COLOR, PROJECTILE_SHADOW_OPACITY),
-    ]);
+    // Half the launch height left of the straight drop, plus the whole rise.
+    expect(heightAt(0.5)).toBeCloseTo(PROJECTILE_ARC_LAUNCH_HEIGHT / 2 + PROJECTILE_ARC_RISE);
+    expect(heightAt(0.25)).toBeGreaterThan(heightAt(0));
+    expect(heightAt(0.75)).toBeLessThan(heightAt(0.5));
+    expect(shadowAt(1)[1]).toEqual(AT);
   });
 
   it('draws a flying bolt with no shadow', () => {

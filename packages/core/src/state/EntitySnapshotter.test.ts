@@ -4,14 +4,16 @@ import { Aether } from '../components/Aether';
 import { Combat } from '../components/Combat';
 import { Capturable } from '../components/Capturable';
 import { MapObjectBody } from '../components/MapObjectBody';
-import { Movement } from '../components/Movement';
 import { ProjectileFlight } from '../components/ProjectileFlight';
+import { ProjectilePayload } from '../components/ProjectilePayload';
 import { StatusEffects } from '../components/StatusEffects';
+import { Transform } from '../components/Transform';
 import { ZoneArea } from '../components/ZoneArea';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
+import type { RangedAttack } from '../content/units/units.types';
 import { Entity } from '../entities/Entity';
 import { Stronghold } from '../entities/structures/Stronghold';
 import { EntitySnapshotter } from './EntitySnapshotter';
@@ -34,6 +36,13 @@ const SQUARE = [
   { x: 4, y: 4 },
   { x: 0, y: 4 },
 ];
+const SHOT_ATTACK: RangedAttack = {
+  strategy: 'ranged-projectile',
+  damage: 45,
+  reach: 50,
+  interval: 21,
+  projectile: { projectileId: 'arrow', falloff: null },
+};
 
 describe('EntitySnapshotter', () => {
   it("snapshots a zone's area and capture state, with the checkpoint count it is given", () => {
@@ -147,23 +156,37 @@ describe('EntitySnapshotter', () => {
     expect(structuredClone(swing)).toEqual(swing);
   });
 
-  it('snapshots a shot as its speed share and ending, and anything else as null', () => {
+  it('snapshots a fired shot as its flown share of the range and its ending, and anything else as null', () => {
     const snapshotter = new EntitySnapshotter(3, CURVES, 0);
-    const shot = new Bare('shot-1', 'magus-bolt');
-    const movement = new Movement({ maxSpeed: 4, acceleration: 1, mass: 1 });
+    const shot = new Bare('shot-1', 'arrow');
     const flight = new ProjectileFlight(100, 80, 4);
-    shot.addComponent(movement);
+    const at = new Transform({ x: 13, y: 4 }, 0.15);
+    shot.addComponent(at);
     shot.addComponent(flight);
-    movement.accelerateToward({ x: 1, y: 0 });
-    movement.accelerateToward({ x: 1, y: 0 });
+    shot.addComponent(
+      new ProjectilePayload({
+        ownerId: 'owner',
+        team: 'light',
+        source: { attackerId: 'owner', kind: 'weapon', definitionId: 'obsidian-bow' },
+        targetId: null,
+        impact: { kind: 'weapon', attack: SHOT_ATTACK },
+        origin: { x: 10, y: 0 },
+      }),
+    );
+    const unfired = new Bare('shot-2', 'arrow');
+    unfired.addComponent(new Transform({ x: 0, y: 0 }, 0.15));
+    unfired.addComponent(new ProjectileFlight(100, 80, 4));
 
+    // 5 m from its origin (a 3-4-5 triangle) of a 100 m range.
     const flying = snapshotter.snapshotOf(shot).projectile;
+    at.moveBy({ x: 60, y: 80 });
     flight.end();
     flight.tickEnding();
     const ending = snapshotter.snapshotOf(shot).projectile;
 
-    expect(flying).toEqual({ speedShare: 0.5, ending: null });
-    expect(ending).toEqual({ speedShare: 0.5, ending: 0.25 });
+    expect(flying).toEqual({ flownShare: 0.05, ending: null });
+    expect(ending).toEqual({ flownShare: 1, ending: 0.25 });
+    expect(snapshotter.snapshotOf(unfired).projectile).toBeNull();
     expect(snapshotter.snapshotOf(new Bare('bare-1', 'x')).projectile).toBeNull();
   });
 });
