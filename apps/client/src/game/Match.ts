@@ -233,7 +233,7 @@ export class Match implements LoopTarget {
    */
   public tick(): void {
     if (this.playerId !== null) {
-      const isMoving = this.commands.apply(this.playerId, this.current);
+      const isMoving = this.commands.apply(this.playerId);
       if (isMoving) {
         this.camera.playerMoved();
       }

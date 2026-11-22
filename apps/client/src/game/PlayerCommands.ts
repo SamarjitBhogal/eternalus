@@ -19,29 +19,32 @@ type TargetSnapshot = Pick<Snapshot, 'entities' | 'mapObjects'>;
 
 /**
  * Turns the player's intent into commands for the player's Legend, once a tick (`Match.tick`):
- * `move` or `stop` only when the movement axes change, and `attack-target` once per target the
- * held attack button aims at (a living enemy unit under the cursor first, else a map object). A
- * press the canvas gestures own is no held attack (`setPointerClaimed`; 06 §10, attack and roof
- * input arbitration): with the developer explorer shown that is every press, and a plain click
- * attacks once on its release instead (`MatchViewControls.clickAt`, DEC-150). It only turns input
- * into commands (ability keys go through `AbilityCasts`, which also says when aiming has taken
- * the main button from the attack): `apply` tells `Match` whether the player moves, and `Match` tells the camera
+ * `move` or `stop` only when the movement axes change, and `attack-aim` with the cursor's world
+ * point whenever the held attack button's point or mode changes, and one `attack-aim` with a null
+ * point on release (DEC-184: a click attacks wherever it aims, whether or not a target is under
+ * the cursor; core's `CombatSystem` picks what is hit). A press the canvas gestures own is no
+ * held attack (`setPointerClaimed`; 06 §10, attack and roof input arbitration): with the
+ * developer explorer shown that is every press, and a plain click attacks once on its release
+ * instead (`MatchViewControls.clickAt`, DEC-150). It only turns input into commands (ability keys
+ * go through `AbilityCasts`, which also says when aiming has taken the main button from the
+ * attack): `apply` tells `Match` whether the player moves, and `Match` tells the camera
  * (DEC-151).
  */
 export class PlayerCommands implements PlayerActions {
   private lastMove: Vec2 = { x: 0, y: 0 };
 
-  /** The unit or map object the held attack targeted last; `null` once released or stopped. */
-  private attackTargetId: EntityId | null = null;
+  /** The last `attack-aim` point sent, `null` after a release or a stop (nothing aimed). */
+  private lastAim: Vec2 | null = null;
 
-  /** The attack mode of `attackTargetId`'s command: a change of mode queues a new command. */
+  /** The attack mode of `lastAim`'s command: a change of mode queues a new command. */
   private attackMode: AttackMode = 'basic';
 
   /** Whether the canvas gestures own the main button's press (`setPointerClaimed`). */
   private isPointerClaimed = false;
 
   /**
-   * @param mapObjects The world's map objects (`PreparedWorld.mapObjects`), the attack targets.
+   * @param mapObjects The world's map objects (`PreparedWorld.mapObjects`), the explorer's click
+   *   targets.
    */
   public constructor(
     private readonly input: IntentSource,
@@ -62,19 +65,18 @@ export class PlayerCommands implements PlayerActions {
   }
 
   /**
-   * Reads this tick's intent and queues its commands for the Legend `actorId`. `snapshot` is the
-   * latest one: only a living unit or map object in it can be the target.
+   * Reads this tick's intent and queues its commands for the Legend `actorId`.
    *
    * @returns Whether the player's movement input is non-zero this tick.
    */
-  public apply(actorId: EntityId, snapshot: TargetSnapshot): boolean {
+  public apply(actorId: EntityId): boolean {
     const { move, isAttacking, isMeleeAttacking, aim, triggered } = this.input.read(this.camera);
     const isHeld = isAttacking === true && !this.isPointerClaimed;
     const isConsumed = this.casts.apply(actorId, { triggered, aim, isAttacking: isHeld });
     const isMeleeHeld = isMeleeAttacking === true && !this.isPointerClaimed;
     // The melee key wins over the click; only the click can be consumed by an aiming cast.
     const isAttackHeld = isMeleeHeld || (isHeld && !isConsumed);
-    this.applyAttack(actorId, isAttackHeld ? aim : null, isMeleeHeld ? 'melee' : 'basic', snapshot);
+    this.applyAttack(actorId, isAttackHeld ? aim : null, isMeleeHeld ? 'melee' : 'basic');
     const isMoving = move.x !== 0 || move.y !== 0;
     if (move.x === this.lastMove.x && move.y === this.lastMove.y) {
       return isMoving;
@@ -83,8 +85,8 @@ export class PlayerCommands implements PlayerActions {
       isMoving ? { type: 'move', actorId, direction: move } : { type: 'stop', actorId },
     );
     if (!isMoving) {
-      // `stop` also drops the attack target, so a button still held queues it again next tick.
-      this.attackTargetId = null;
+      // `stop` also drops the aim, so a button still held queues it again next tick.
+      this.lastAim = null;
     }
     this.lastMove = move;
     return isMoving;
@@ -119,33 +121,25 @@ export class PlayerCommands implements PlayerActions {
   }
 
   /**
-   * Queues `attack-target` on the unit or map object under `aim` (the held attack button's world
-   * point, or `null`) with `mode`; holding the button on one target queues one command, not one
-   * per tick, and a change of target or mode queues a new one. A `'basic'` command carries no mode.
+   * Queues `attack-aim` at `aim` (the held attack button's world point, or `null`) with `mode`
+   * when the point or mode differs from the last one sent, and one `attack-aim` with `null` on
+   * release. A `'basic'` command carries no mode. Nothing is queued while the button is up and no
+   * aim is held.
    */
-  private applyAttack(
-    actorId: EntityId,
-    aim: Vec2 | null,
-    mode: AttackMode,
-    snapshot: TargetSnapshot,
-  ): void {
-    const targetId = aim === null ? null : this.targetAt(actorId, aim, snapshot);
-    if (targetId !== null && (targetId !== this.attackTargetId || mode !== this.attackMode)) {
+  private applyAttack(actorId: EntityId, aim: Vec2 | null, mode: AttackMode): void {
+    const last = this.lastAim;
+    const isSame =
+      aim === null
+        ? last === null
+        : last !== null && last.x === aim.x && last.y === aim.y && mode === this.attackMode;
+    if (!isSame) {
       this.simulation.enqueueCommand(
-        mode === 'melee'
-          ? { type: 'attack-target', actorId, targetId, mode }
-          : { type: 'attack-target', actorId, targetId },
+        aim !== null && mode === 'melee'
+          ? { type: 'attack-aim', actorId, aim, mode }
+          : { type: 'attack-aim', actorId, aim },
       );
     }
-    this.attackTargetId = targetId;
+    this.lastAim = aim;
     this.attackMode = mode;
-  }
-
-  /** The unit under `point`, else the map object there: a unit is drawn on top of a building. */
-  private targetAt(actorId: EntityId, point: Vec2, snapshot: TargetSnapshot): EntityId | null {
-    return (
-      findUnitAt(snapshot.entities, actorId, point) ??
-      findMapObjectAt(this.mapObjects, snapshot.mapObjects ?? [], point)
-    );
   }
 }

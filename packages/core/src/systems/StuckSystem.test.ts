@@ -13,6 +13,7 @@ import { AStarPathfinder } from '../map/AStarPathfinder';
 import { LaneFlowFields } from '../map/LaneFlowFields';
 import { SpaceIndex } from '../physics/SpaceIndex';
 import { GameState } from '../state/GameState';
+import { ReachQuery } from '../state/ReachQuery';
 import { StateHasher } from '../state/StateHasher';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { MovementSystem } from './MovementSystem';
@@ -91,7 +92,7 @@ const riftChase = (systems: (state: GameState) => readonly System[]) => {
     target,
     run,
     detours: () => detours,
-    isInReach: () => state.entities.isInReach(chaser.id, target.id),
+    isInReach: () => new ReachQuery().isInReach(state.entities, chaser.id, target.id),
   };
 };
 

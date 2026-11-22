@@ -409,7 +409,7 @@ describe('Match', () => {
     match.tick();
     const enqueue = vi.spyOn(simulation, 'enqueueCommand');
     const attacks = () =>
-      enqueue.mock.calls.filter(([command]) => command.type === 'attack-target').length;
+      enqueue.mock.calls.filter(([command]) => command.type === 'attack-aim').length;
     input.isAttacking = true;
     input.aim = { x: (corner.x + opposite.x) / 2, y: (corner.y + opposite.y) / 2 };
 

@@ -9,7 +9,6 @@ import type { EntityFactory } from '../entities/EntityFactory';
 import type { MatchDirector } from '../match/MatchDirector';
 import type { SpaceIndex } from '../physics/SpaceIndex';
 import type { GameState } from '../state/GameState';
-import type { LineOfFireQuery } from '../state/LineOfFire.types';
 import type { SlotReadiness } from '../state/SlotReadiness.types';
 import type { ProgressionContent } from './ProgressionSystem.types';
 import type { PlayableTeam } from '../teams/teams.types';
@@ -30,8 +29,6 @@ export type DefaultSystemPipelineOptions = {
    * attacks fire and, with `hordes`, the units spawned on lanes.
    */
   readonly factory: EntityFactory;
-  /** The match's one line-of-fire query: `CombatSystem` fires a ranged attack only with it. */
-  readonly lineOfFire: LineOfFireQuery;
   /** The content kills are priced and levels applied with, injected. */
   readonly progression: ProgressionContent;
   /** The match's director, built and started by `Simulation`; it runs after `DeathSystem`. */

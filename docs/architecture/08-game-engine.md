@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-21
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -318,7 +318,7 @@ HUD and character select (`feat/hud-and-character-select`, 2026-10-26; DEC-50):
   the match factory that only `main.tsx` binds, and `MatchHost` owns the window, document and
   canvas listeners, the devices and the ordered teardown.
 - The tick has `PlayerCommands` read the intent source (`input.read`) and enqueue `move`, `stop`
-  or `attack-target`, steps the simulation, swaps the snapshots and lets `MatchBridge`
+  or `attack-aim` (DEC-319), steps the simulation, swaps the snapshots and lets `MatchBridge`
   publish; there is no `devices.poll()` or `inputMapper.map` step and no `PerfMonitor` yet.
 - The minimap is drawn into the main canvas, clipped to the HUD's ring
   ([06](06-map-and-minimap.md) §10), not into a separate `'minimap'` layer.

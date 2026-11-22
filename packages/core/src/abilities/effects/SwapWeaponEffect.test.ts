@@ -51,8 +51,20 @@ describe('SwapWeaponEffect', () => {
 
     expect(withBow).toEqual({ weaponId: 'obsidian-bow', strategy: 'ranged-projectile' });
     expect(combat.weaponId).toBe('raptor-talons');
-    expect(combat.attack.strategy).toBe('melee');
+    expect(combat.attack.strategy).toBe('melee-sweep');
     expect(caster.getComponent(Loadout).isSecondaryInHand).toBe(false);
+  });
+
+  it('keeps the class reach on the talons after a swap back, and adds none to the bow (DEC-305)', () => {
+    const { combat, swap } = setUp('assassin');
+
+    swap();
+    const bowReach = combat.attack.reach;
+    swap();
+
+    // The talons' 1 m plus the Warrior's class reach of 2 m; the bow shoots its own 50 m.
+    expect(combat.attack.reach).toBe(3);
+    expect(bowReach).toBe(50);
   });
 
   it('keeps the target and the attack timer (INBOX.md HC-Q81, A)', () => {

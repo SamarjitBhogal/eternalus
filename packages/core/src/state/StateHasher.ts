@@ -177,13 +177,24 @@ export class StateHasher {
       );
     }
     const combat = entity.findComponent(Combat);
-    if (combat !== undefined && (combat.targetId !== null || combat.readyAtTick > 0)) {
-      // Only the melee mode adds a field, so runs that never use it hash as before (DEC-308).
-      fields.push(
-        combat.mode === 'melee'
-          ? ['combat', combat.targetId, combat.readyAtTick, 'melee']
-          : ['combat', combat.targetId, combat.readyAtTick],
-      );
+    if (
+      combat !== undefined &&
+      (combat.targetId !== null ||
+        combat.aimPoint !== null ||
+        combat.readyAtTick > 0 ||
+        combat.hitIds.length > 0)
+    ) {
+      // Only the melee mode, an aim point and recorded hits add fields, so runs that never use
+      // them hash as before (DEC-308, DEC-184). The hits decide whom the AI sees a unit attack
+      // (DEC-322 (2)).
+      fields.push([
+        'combat',
+        combat.targetId,
+        combat.readyAtTick,
+        ...(combat.mode === 'melee' ? ['melee'] : []),
+        ...(combat.aimPoint === null ? [] : ['aim', combat.aimPoint.x, combat.aimPoint.y]),
+        ...(combat.hitIds.length === 0 ? [] : ['hits', combat.hitsUntilTick, ...combat.hitIds]),
+      ]);
     }
     if (entity.findComponent(Loadout)?.isSecondaryInHand === true) {
       // Only the second weapon in hand adds a field, so runs that never swap hash as before (DEC-303).

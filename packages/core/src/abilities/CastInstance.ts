@@ -10,7 +10,9 @@ import type { ShapePlacement } from './shapes/AreaShape.types';
  * after the cast tick, so a step with no delay fires at the cast. `AbilitySystem` keeps a cast with
  * steps left on the caster (`CastInProgress`) and, on each tick a step is due, builds it again and
  * runs it from the first step left. A status's `onHit` steps run as a cast too (`HitEffects`),
- * placed from the attacker to the struck body; they never wait.
+ * placed from the attacker to the struck body; they never wait. The enemies a step's shape finds
+ * are recorded as the caster's hits (`EntityStore.recordHits`), so the AI sees whom it attacks
+ * (DEC-322 (2)).
  */
 export class CastInstance {
   /** @param facts - The cast. @param services - What its effects work with. */
@@ -68,7 +70,12 @@ export class CastInstance {
       scaled: (field, value) => value * (1 + (scaling[field]?.perLevel ?? 0) * (casterLevel - 1)),
       damage,
       statuses,
-      targets: (shape, filter) => targets.find(state, casterId, shape, placement, filter),
+      targets: (shape, filter) => {
+        const found = targets.find(state, casterId, shape, placement, filter, aim);
+        // An area aimed at enemies hits them: the caster attacks them (DEC-322 (2)).
+        if (filter.team === 'enemies') state.entities.recordHits(casterId, found, state.tick);
+        return found;
+      },
       centreFor: (shape, point) => effects.shapeFor(shape.kind).centreFor(shape, placement, point),
       run: (step: EffectStep, at: ShapePlacement) => {
         effects.effectFor(step.kind).apply(step, this.contextAt(at));

@@ -76,6 +76,7 @@ const unit = (id: string, team: 'light' | 'dark', at: Vec2): EntitySnapshot => (
   capture: null,
   statuses: null,
   projectile: null,
+  swing: null,
 });
 /** The player's Legend, away from the point the camera looks at. */
 const PLAYER: EntitySnapshot = { ...unit(ACTOR, 'light', OPEN_GROUND), family: 'legend' };
@@ -299,11 +300,11 @@ describe('MatchViewControls', () => {
     input.aim = IN_CATHEDRAL;
 
     controls.setPointerClaimed(true);
-    commands.apply(ACTOR, { entities: [], mapObjects: HOUSE_STATES });
+    commands.apply(ACTOR);
     expect(sent()).toEqual([]);
 
     controls.setPointerClaimed(false);
-    commands.apply(ACTOR, { entities: [], mapObjects: HOUSE_STATES });
-    expect(sent()).toEqual([{ type: 'attack-target', actorId: ACTOR, targetId: HOUSE_ENTITY }]);
+    commands.apply(ACTOR);
+    expect(sent()).toEqual([{ type: 'attack-aim', actorId: ACTOR, aim: IN_CATHEDRAL }]);
   });
 });

@@ -8,6 +8,8 @@ import { LEGEND_SPECS } from '../content/legends/specs/legendSpecCatalogue';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { loadWeapons } from '../content/weapons/loadWeapons';
 import type { WeaponDefinition } from '../content/weapons/weapons.types';
+import { Magus } from './legends/Magus';
+import { Sentinel } from './legends/Sentinel';
 import { Warrior } from './legends/Warrior';
 
 const TEST_TALONS: WeaponDefinition = {
@@ -31,7 +33,8 @@ describe('Legend', () => {
 
     const combat = legend.getComponent(Combat);
     expect(combat.weaponId).toBe('test-talons');
-    expect(combat.attack).toMatchObject({ damage: 50, reach: 1.5, interval: 15 });
+    // The weapon's 1.5 m plus the Warrior's class reach of 2 m (DEC-305).
+    expect(combat.attack).toMatchObject({ damage: 50, reach: 3.5, interval: 15 });
   });
 
   it('builds its Combat from its shipped default weapon', () => {
@@ -41,7 +44,31 @@ describe('Legend', () => {
 
     const combat = legend.getComponent(Combat);
     expect(combat.weaponId).toBe('raptor-talons');
-    expect(combat.attack).toMatchObject({ damage: 45, reach: 1.5, interval: 21 });
+    // Talons 1 m plus the Warrior's 2 m (DEC-305), a 90 degree sweep (DEC-304).
+    expect(combat.attack).toMatchObject({
+      strategy: 'melee-sweep',
+      damage: 45,
+      reach: 3,
+      interval: 21,
+      arcDegrees: 90,
+    });
+  });
+
+  it('adds the class reach to the melee attack of each class and not to the staff shot (DEC-305)', () => {
+    const content = loadDefaultContent(30);
+    const CLASSES = { warrior: Warrior, sentinel: Sentinel, magus: Magus };
+    const reachOf = (kind: 'warrior' | 'sentinel' | 'magus', mode: 'basic' | 'melee') => {
+      const legend = new CLASSES[kind]('entity-1', kind);
+      legend.spawn({ ...PLACEMENT, definition: content.get(kind), weapons: loadWeapons(30) });
+      return legend.getComponent(Combat).setTarget('t', mode)
+        ? legend.getComponent(Combat).attack.reach
+        : undefined;
+    };
+
+    expect(reachOf('warrior', 'basic')).toBe(3);
+    expect(reachOf('sentinel', 'basic')).toBe(6);
+    expect(reachOf('magus', 'melee')).toBe(4);
+    expect(reachOf('magus', 'basic')).toBe(15);
   });
 
   it('throws when it names a weapon but was spawned without a weapon source', () => {

@@ -141,5 +141,161 @@ describe('Combat', () => {
       expect(combat.weaponId).toBeNull();
       expect(combat.attack).toBe(bow);
     });
+
+    it('keeps the aim point, the last swing and the recorded hits (DEC-319)', () => {
+      const combat = new Combat({ basic: talons, melee: talons }, 'raptor-talons');
+      combat.setAim({ x: 3, y: 4 }, 'melee');
+      combat.recordSwing({ atTick: 5, direction: { x: 1, y: 0 }, radius: 1.5, arcDegrees: 90 });
+      combat.recordHits(['a'], 5, 1);
+      const before = { swing: combat.lastSwing, until: combat.hitsUntilTick };
+
+      combat.equip({ basic: bow }, 'obsidian-bow');
+
+      expect(combat.aimPoint).toEqual({ x: 3, y: 4 });
+      expect(combat.mode).toBe('basic');
+      expect(combat.lastSwing).toBe(before.swing);
+      expect(combat.hitsAt(5)).toEqual(['a']);
+      expect(combat.hitsUntilTick).toBe(before.until);
+    });
+  });
+
+  describe('aim point (DEC-184)', () => {
+    const melee = { strategy: 'melee', damage: 40, reach: 1.5, interval: 27 } as const;
+    const ranged = {
+      strategy: 'ranged-projectile',
+      damage: 40,
+      reach: 15,
+      interval: 27,
+      projectile: { projectileId: 'magus-bolt', falloff: null },
+    } as const;
+
+    it('holds a target or an aim point, never both', () => {
+      const combat = new Combat({ basic: melee });
+
+      combat.setTarget('t');
+      expect(combat.setAim({ x: 3, y: 4 })).toBe(true);
+      expect(combat.aimPoint).toEqual({ x: 3, y: 4 });
+      expect(combat.targetId).toBeNull();
+      combat.setTarget('u');
+      expect(combat.targetId).toBe('u');
+      expect(combat.aimPoint).toBeNull();
+    });
+
+    it('copies the point it is given, so a later change of the caller does not move the aim', () => {
+      const combat = new Combat({ basic: melee });
+      const point = { x: 1, y: 2 };
+
+      combat.setAim(point);
+      point.x = 99;
+
+      expect(combat.aimPoint).toEqual({ x: 1, y: 2 });
+    });
+
+    it('stops with null, resetting the mode, and leaves a target alone when there is no aim', () => {
+      const combat = new Combat({ basic: ranged, melee }, 'staff');
+      combat.setAim({ x: 1, y: 1 }, 'melee');
+      expect(combat.mode).toBe('melee');
+
+      expect(combat.setAim(null)).toBe(true);
+      expect(combat.aimPoint).toBeNull();
+      expect(combat.mode).toBe('basic');
+      expect(combat.attack).toBe(ranged);
+
+      combat.setTarget('t', 'melee');
+      combat.setAim(null);
+      expect(combat.targetId).toBe('t');
+      expect(combat.mode).toBe('melee');
+    });
+
+    it('refuses a mode it has no attack for and changes nothing', () => {
+      const combat = new Combat({ basic: ranged });
+      combat.setTarget('t');
+
+      expect(combat.setAim({ x: 1, y: 1 }, 'melee')).toBe(false);
+      expect(combat.aimPoint).toBeNull();
+      expect(combat.targetId).toBe('t');
+    });
+
+    it('is cleared by setTarget(null)', () => {
+      const combat = new Combat({ basic: melee });
+      combat.setAim({ x: 1, y: 1 });
+
+      combat.setTarget(null);
+
+      expect(combat.aimPoint).toBeNull();
+    });
+  });
+
+  describe('swing record (DEC-304)', () => {
+    it('keeps the latest swing as a copy, and starts with none', () => {
+      const combat = new Combat({ basic: { strategy: 'melee', damage: 1, reach: 1, interval: 5 } });
+      const direction = { x: 1, y: 0 };
+      expect(combat.lastSwing).toBeNull();
+
+      combat.recordSwing({ atTick: 4, direction, radius: 3, arcDegrees: 90 });
+      direction.x = 0;
+
+      expect(combat.lastSwing).toEqual({
+        atTick: 4,
+        direction: { x: 1, y: 0 },
+        radius: 3,
+        arcDegrees: 90,
+      });
+    });
+  });
+
+  describe('hit record (DEC-322 (2))', () => {
+    const attack = { strategy: 'melee', damage: 1, reach: 1, interval: 10 } as const;
+
+    it('has no hits before the first, then keeps them through the tick the next attack is ready, so a held attack is seen on its swing tick too', () => {
+      const combat = new Combat({ basic: attack });
+      expect(combat.hitsAt(0)).toEqual([]);
+
+      combat.recordHits(['a', 'b'], 5, 1);
+      combat.beginAttack(5, 1);
+
+      expect(combat.hitsAt(5)).toEqual(['a', 'b']);
+      // The AI decides before the next swing lands on this tick (DefaultSystemPipeline order).
+      expect(combat.hitsAt(combat.readyAtTick)).toEqual(['a', 'b']);
+      expect(combat.hitsAt(16)).toEqual([]);
+      expect(combat.hitsUntilTick).toBe(15);
+    });
+
+    it('counts hits for at least one attack interval, and for the slowed cooldown when that is longer (DEC-333 (1))', () => {
+      const hasted = new Combat({ basic: attack });
+      hasted.recordHits(['a'], 0, 2);
+      expect(hasted.hitsUntilTick).toBe(10);
+
+      const slowed = new Combat({ basic: attack });
+      slowed.recordHits(['a'], 0, 0.5);
+      slowed.beginAttack(0, 0.5);
+      expect(slowed.hitsUntilTick).toBe(20);
+      expect(slowed.hitsUntilTick).toBe(slowed.readyAtTick);
+    });
+
+    it('replaces the hits of an earlier tick, adds those of the same tick once, and copies them', () => {
+      const combat = new Combat({ basic: attack });
+      const ids = ['a'];
+
+      combat.recordHits(ids, 3, 1);
+      ids.push('z');
+      combat.recordHits(['b', 'a'], 3, 1);
+      expect(combat.hitsAt(3)).toEqual(['a', 'b']);
+
+      combat.recordHits(['c'], 4, 1);
+      expect(combat.hitsAt(4)).toEqual(['c']);
+      expect(combat.hitIds).toEqual(['c']);
+    });
+
+    it('counts a later hit for its own window, even when it is shorter than the one it replaces', () => {
+      const combat = new Combat({ basic: attack });
+
+      combat.recordHits(['a'], 0, 0.5);
+      combat.recordHits(['b'], 1, 1);
+
+      expect(combat.hitsUntilTick).toBe(11);
+      expect(combat.hitsAt(11)).toEqual(['b']);
+      expect(combat.hitsAt(12)).toEqual([]);
+    });
   });
 });
