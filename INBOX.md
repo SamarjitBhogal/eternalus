@@ -446,7 +446,7 @@ Reply inline (`Decision: …`).
       Also noted, acceptable: only an ability's top-level steps may wait (05 §3 says every spec
       may); no content needs nested delays, and the `Delayed<Step>` type refuses them.
       Keep all six, or name the ones to change?
-- [ ] **HC-Q75 — "veil-held-attack": does the enemy player's attack on a Vanguard who Veils
+- [x] **HC-Q75 — "veil-held-attack": does the enemy player's attack on a Vanguard who Veils
       survive the Veil? (`feat/vanguard-veil-hamstring`, 2026-11-21; Owner Calls card
       "veil-held-attack"; DEC-266).** DEC-266 says what bots, mobs and turrets do, not the human
       player. Built and tested; nothing waits on the answer. (A) **Kept (built):** while Veil
@@ -461,7 +461,12 @@ Reply inline (`Decision: …`).
       ends. Every AI controller already drops a Veiled target at its next decision (HC-B19 (3)).
       HC-B19 (6) stays open under either answer, because the systems keep a held target until the
       controller's `stop` arrives. Keep (A), or switch to (B)?
-- [ ] **HC-B19 — Better than the design, built under your standing rule (DEC-223), sign-off
+  - Answered 2026-11-22 (DEC-327): neither (A) nor (B). Attacks become isolated events with no
+    target (lane A's attack rework, owner calls HC-Q77 and attack-click-hold). An attack area
+    that touches the Vanguard after Veil starts ends Veil; a miss leaves the Vanguard hidden.
+    Lane A builds the target-free attack; `feat/vanguard-veil-hamstring` makes no code change for
+    it, and the held attack (A) goes away with that rework. 05 §18 "Veil" says so.
+- [x] **HC-B19 — Better than the design, built under your standing rule (DEC-223), sign-off
       asked: five parts of the Veil build (`feat/vanguard-veil-hamstring`, 2026-11-21; pre-PR
       critic rounds 1 and 2), and one more not built.** Nothing waits on the answer; parts (1) to
       (5) are built and tested. The design
@@ -504,6 +509,14 @@ Reply inline (`Decision: …`).
       target clears, a Veiled one stays). The gain is one line in each of three systems, and
       `EntityStore` is already over 300 lines; build it when a fourth caller appears.
       Keep all five, build (6) now, or name the ones to change?
+  - Answered 2026-11-22 (DEC-327): (1) replaced by the owner's end rule: the act of hitting ends
+    Veil, not the damage. A periodic status tick (a bleed on before Veil) does not end it; any
+    other hit dealt or taken does, and so does a debuff from another entity. The field is now
+    `endsOnHit` (`StatusEffects.breakOnHit`). (2) to (5) signed off: (2) and (3) "sure sounds
+    good", (3) with the note that a basic attack needs no target (lane A's attack rework), (4)
+    "sure? if it fits what ive been saying" (it does: a hit ends Veil at once), (5) "yes". (6) got
+    no answer and stays not built. Built on `feat/vanguard-veil-hamstring`; 03 §2 and §5, 05 §8,
+    08 §8 and 11 §3 now state (1) to (5).
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays

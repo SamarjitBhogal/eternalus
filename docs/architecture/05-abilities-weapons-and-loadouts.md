@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-22
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -491,6 +491,7 @@ export type StatusEffectDefinition = {
     readonly effects: readonly AbilityEffectSpec[];
   } | null; // bleed, burn
   readonly onExpire: readonly AbilityEffectSpec[]; // e.g. apply 'control-immune' after a stun
+  readonly endsOnHit?: boolean; // ends when its holder hits or is hit (Veil, DEC-327); absent = no
   readonly appliesTo: 'units' | 'structures' | 'all';
 };
 
@@ -516,7 +517,21 @@ dead and immune targets and emits `status-applied`. `StatusEffectSystem` walks `
 components in id order: it fires `periodic` effects through the registry, expires instances
 (`status-expired`) and runs `onExpire`. `StatusEffects` recomputes its cached modifier table
 (`StatusEffects.multiplier('moveSpeed')`) whenever its list changes (DEC-41), so `MovementSystem`,
-`DamagePipeline` and `AbilityRuntime` each read one number. Mode semantics and the full id table
+`DamagePipeline` and `AbilityRuntime` each read one number.
+
+A status with `endsOnHit` (Veil) ends when its holder hits or is hit: the act of hitting ends it,
+not the damage (DEC-327). A hit is a `damage-applied` that names the holder as target or
+attacker, except a periodic status tick (`source.kind: 'status'`), or a `status-applied` of a
+`debuff` from another entity, on the one struck and on the one credited. So a bleed that was on
+before Veil keeps ticking and the Veil stays; a buff from another entity (an ally's aura) and a
+status from the holder itself do not end it. A hit that the damage pipeline blocks to 0 emits no
+`damage-applied`, so it does not end the status. `StatusEffectSystem` holds this one end rule
+(DEC-267): a hit marks the status as broken, and the system's next pass removes it
+(`status-expired`, no `onExpire`). A broken status stops at the hit: `StatusEffects` recomputes
+without it (no flags, no modifiers), it neither ticks nor runs out, and the snapshot leaves it
+out. A status that has already run out when the hit lands ends by expiry, once.
+
+Mode semantics and the full id table
 (bleed, burn, concussion, blind, stun, knockup, crushed, marked, enraged, ascended, invisible,
 sundered, slowed, rooted, taunted, pulled, staggered, control-immune, eternal, hallowed,
 emboldened, hexed) are in
@@ -557,7 +572,8 @@ that re-applies a stun before it ends can hold a target until it stops.
 Not built yet: `controlResistance` (bosses, Eternal), `appliesTo` (the component is the gate), the `duration`,
 `independent` and `permanent` modes, and a max-health stat (the FR-029 aura). `StatusEffectSystem`
 runs before movement. Fury adds two optional status fields, `onHit` and `grants` (§18, "Fury").
-Veil adds a third, `endsOnDamage`, and the readers of `untargetable` and `hidden` (§18, "Veil").
+Veil adds a third, `endsOnHit` (above), and the readers of `untargetable` and `hidden` (§18,
+"Veil").
 
 ## 9. Combat pipeline (`combat/`)
 
@@ -1210,27 +1226,30 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     client checks neither the slot nor the targeting kind. The HUD shows a prompt (key and name)
     while the slot holds an ability (DEC-283 (7)). A bot may cast a filled `granted` slot
     (`pickReadySlot`).
-- **Veil (`feat/vanguard-veil-hamstring`, 2026-11-20; DEC-266, DEC-267).** Veil targets `self` and
-  casts the `buff` effect with the status `invisible` (`content/status-effects/invisible.ts`),
-  which sets the flags `untargetable` and `hidden`. Where the code differs from §8:
-  - **Ends on damage.** A status has a third optional field §8 does not have: `endsOnDamage`.
-    `StatusEffectSystem` listens to `damage-applied` and marks each such status of the target and
-    of the attacker as broken (`StatusEffects.breakOnDamage`); the end of its pass removes them
-    (`StatusEffectApplier.removeBroken`: `status-expired`, no `onExpire`). The listener only
-    marks, because a hit can land inside a loop over the holder's statuses. A broken status stops
-    counting at once (`StatusEffects` recomputes without it: no flags, no modifiers) and neither
-    ticks nor runs out (`StatusEffectRuntime`), so a Veil ends at the hit, and the snapshot's
-    `statuses` leaves it out at once; its removal and `status-expired` come in the same pass for a
-    bleed tick and in the next tick's pass for a hit from a later system (combat). A status that
-    has already run out when the hit lands does not break: it ends by expiry, once. Casting does
-    not end it.
+- **Veil (`feat/vanguard-veil-hamstring`, 2026-11-20; DEC-266, DEC-267, DEC-327).** Veil targets
+  `self` and casts the `buff` effect with the status `invisible`
+  (`content/status-effects/invisible.ts`), which sets the flags `untargetable` and `hidden`.
+  The owner answered its build items in DEC-327 (`INBOX.md` HC-B19: (1) replaced by the end
+  rule of §8, (2) to (5) signed off); §8, 03 §5, 08 §8 and 11 §3 now state them. The owner
+  expects that playtests may change the end rule. Build details:
+  - **Ends on a hit.** The status field `endsOnHit` and its rule are in §8.
+    `StatusEffectSystem` listens to `damage-applied` and `status-applied` and marks each such
+    status of the one struck and of the one credited as broken (`StatusEffects.breakOnHit`); the
+    end of its pass removes them (`StatusEffectApplier.removeBroken`). The listeners only mark,
+    because a hit can land inside a loop over the holder's statuses (an `onHit` step). The
+    removal and `status-expired` come in the same tick's pass for a hit from a system that runs
+    before it (`AbilitySystem`) and in the next tick's pass for a hit from a later system
+    (combat). The polarity of an applied status is read from the holder's active statuses, so
+    the event and the constructor stay as they were. Casting does not end it.
   - **Untargetable.** `EntityStore.isTargetable(id)` (alive and not `isUntargetable`) is the one
     rule for every picker: perception's hostile queries, the leashed mobs (`LeashBehaviour`),
     `attack-target` (`invalid-target`) and the bot memory (`BotLeaves`). The systems that act on a
     held target (`CombatSystem`, `PathingSystem`, `StuckSystem`) keep an untargetable one
     (`EntityStore.isUntargetable`) but neither hit nor chase it. An AI controller drops it when it
-    next decides (a leashed mob or a bot with a `stop`); the human player's attack is kept and
-    resumes after Veil (owner question HC-Q75). An area still hits the holder.
+    next decides (a leashed mob or a bot with a `stop`). The human player's attack is still kept
+    and resumes after Veil; it goes away with lane A's attack rework (DEC-327, HC-Q75), in which
+    an attack is an event with no target: an attack area that touches the Vanguard after Veil
+    starts ends Veil, and a miss leaves the Vanguard hidden. An area still hits the holder.
   - **Hidden.** `EntitySnapshot.isHidden` is present, `true`, while a status sets `hidden`. The
     client's `Viewer` (the player's Legend and team, kept after the player dies) decides how each
     entity shows (`visibilityOf`: shown, faded or hidden), injected into `EntityLayer` as
@@ -1240,6 +1259,8 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     `HealthBarVisibility` reads the same `Viewer`. `findUnitAt` skips hidden units, so a click does
     not pick one. Every seat gets the same snapshot (`Simulation.snapshot`); a per-seat filter
     waits for plan W10 / ADR 0016 point 1.
+  - **Not built.** HC-B19 (6), one `EntityStore` query for "the held target, while targetable",
+    got no answer; `CombatSystem`, `PathingSystem` and `StuckSystem` each keep their own check.
 
 ## Related
 
