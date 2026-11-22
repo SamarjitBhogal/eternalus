@@ -25,4 +25,22 @@ describe('PositiveStatsRule', () => {
       'acceleration must be a positive finite number',
     ]);
   });
+
+  it('checks the momentum numbers of a unit that has them (the Sentinel)', () => {
+    const sentinel = LEGEND_CLASSES.get('sentinel');
+    const momentum = sentinel.movementProfile.momentum ?? {
+      walkSpeed: 1,
+      rampDuration: 1,
+      grip: 1,
+    };
+    const broken = {
+      ...sentinel,
+      movementProfile: { ...sentinel.movementProfile, momentum: { ...momentum, grip: 0 } },
+    };
+
+    expect(new PositiveStatsRule().check(sentinel)).toEqual([]);
+    expect(new PositiveStatsRule().check(broken)).toEqual([
+      'momentum.grip must be a positive finite number',
+    ]);
+  });
 });

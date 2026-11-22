@@ -11,6 +11,7 @@ import { EntityFactory } from '../entities/EntityFactory';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { NullLogger } from '../diagnostics/NullLogger';
 import { Deploying } from '../components/Deploying';
+import { Movement } from '../components/Movement';
 import { Transform } from '../components/Transform';
 import { MAGUS_BOLT } from '../content/projectiles/magusBolt';
 import { Projectile } from '../entities/Projectile';
@@ -130,5 +131,68 @@ describe('CollisionSystem', () => {
     ).update({ state, logger: new NullLogger() });
 
     expect(transform.position.x).toBe(51);
+  });
+
+  describe('a unit with momentum (Wrecking Run, DEC-307)', () => {
+    /**
+     * Runs `kind` from (1, 5) toward the house wall at x = 5 for `ticks` ticks, as the movement and
+     * collision systems do, and returns its movement and transform.
+     */
+    const run = (
+      kind: 'sentinel' | 'warrior',
+      heading: { x: number; y: number },
+      ticks: number,
+    ) => {
+      const config = createDefaultGameConfig();
+      const state = new GameState(config, 1);
+      const unit = new EntityFactory(
+        createDefaultEntityRegistry(),
+        loadDefaultContent(config.tickRate),
+        undefined,
+        loadWeapons(config.tickRate),
+      ).create(kind, kind, { team: 'light', position: { x: 1, y: 5 } });
+      state.entities.add(unit);
+      const collision = new CollisionSystem(
+        new CollisionResolver(
+          staticCollisionIndexOf(
+            EMPTY_MAP,
+            new MapObjectBuilder().build(EMPTY_MAP, HOUSE_PRESENTATION),
+          ),
+          { x: 0, y: 0, width: EMPTY_MAP.width, height: EMPTY_MAP.height },
+        ),
+      );
+      const movement = unit.getComponent(Movement);
+      const transform = unit.getComponent(Transform);
+      movement.steer(heading);
+      for (let tick = 0; tick < ticks; tick += 1) {
+        movement.advance();
+        transform.moveBy(movement.velocity);
+        collision.update({ state, logger: new NullLogger() });
+      }
+      return { movement, transform };
+    };
+
+    it('stops the Sentinel dead on a wall it runs into head-on', () => {
+      const { movement, transform } = run('sentinel', { x: 1, y: 0 }, 120);
+
+      expect(transform.position.x).toBeCloseTo(5 - 1.25);
+      // Rounding and the contact gap leave below 1e-6; one tick of rebuilt speed is ~3e-3.
+      expect(movement.speed).toBeCloseTo(0, 6);
+    });
+
+    it('keeps the Sentinel sliding along a wall it hits at a glancing angle', () => {
+      const { movement, transform } = run('sentinel', { x: 1, y: 0.25 }, 70);
+
+      expect(transform.position.x).toBeCloseTo(5 - 1.25);
+      expect(movement.velocity.x).toBeCloseTo(0, 6);
+      expect(movement.velocity.y).toBeGreaterThan(0);
+    });
+
+    it('leaves the speed of a unit without momentum alone (the Warrior)', () => {
+      const { movement, transform } = run('warrior', { x: 1, y: 0 }, 120);
+
+      expect(transform.position.x).toBeCloseTo(5 - 0.5);
+      expect(movement.speed).toBe(movement.topSpeed);
+    });
   });
 });

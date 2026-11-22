@@ -8,7 +8,14 @@ export class PositiveStatsRule implements UnitDefinitionRule {
     const stats = {
       baseHealth: definition.baseHealth,
       footprintRadius: definition.footprintRadius,
-      ...definition.movementProfile,
+      maxSpeed: definition.movementProfile.maxSpeed,
+      acceleration: definition.movementProfile.acceleration,
+      mass: definition.movementProfile.mass,
+      ...(definition.movementProfile.momentum && {
+        'momentum.walkSpeed': definition.movementProfile.momentum.walkSpeed,
+        'momentum.rampDuration': definition.movementProfile.momentum.rampDuration,
+        'momentum.grip': definition.movementProfile.momentum.grip,
+      }),
       ...(definition.attack && {
         'attack.damage': definition.attack.damage,
         'attack.reach': definition.attack.reach,

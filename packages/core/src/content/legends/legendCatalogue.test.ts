@@ -5,8 +5,10 @@ import type { LegendKind } from './legends.types';
 
 /** Seconds of constant acceleration from a standstill to top speed (content is per second). */
 const secondsToTopSpeed = (kind: LegendKind): number => {
-  const { maxSpeed, acceleration } = LEGEND_CLASSES.get(kind).movementProfile;
-  return maxSpeed / acceleration;
+  const { maxSpeed, acceleration, momentum } = LEGEND_CLASSES.get(kind).movementProfile;
+  return momentum === undefined
+    ? maxSpeed / acceleration
+    : momentum.walkSpeed / acceleration + momentum.rampDuration;
 };
 
 describe('LEGEND_CLASSES', () => {
@@ -97,14 +99,14 @@ describe('LEGEND_CLASSES', () => {
     expect(magus.movementProfile.mass).toBeLessThan(sentinel.movementProfile.mass);
   });
 
-  it('gives the Sentinel the highest top speed but a run-up of about a minute', () => {
+  it('gives the Sentinel the highest top speed but a run-up of 20 s to a minute (balancing.md, game doc)', () => {
     const warrior = LEGEND_CLASSES.get('warrior');
     const sentinel = LEGEND_CLASSES.get('sentinel');
     const magus = LEGEND_CLASSES.get('magus');
 
     expect(sentinel.movementProfile.maxSpeed).toBeGreaterThan(warrior.movementProfile.maxSpeed);
     expect(sentinel.movementProfile.maxSpeed).toBeGreaterThan(magus.movementProfile.maxSpeed);
-    expect(secondsToTopSpeed('sentinel')).toBeGreaterThanOrEqual(30);
+    expect(secondsToTopSpeed('sentinel')).toBeGreaterThanOrEqual(20);
     expect(secondsToTopSpeed('sentinel')).toBeLessThanOrEqual(60);
   });
 

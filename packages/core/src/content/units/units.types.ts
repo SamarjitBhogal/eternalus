@@ -13,6 +13,26 @@ export type MovementProfile = {
   readonly acceleration: number;
   /** How hard the unit is to push (knockback, Sentinel sprint-through). */
   readonly mass: number;
+  /**
+   * Momentum (the Sentinel's Wrecking Run, DEC-307): turns slide and lose speed. Without it the
+   * unit turns at once and keeps its speed.
+   */
+  readonly momentum?: MomentumProfile;
+};
+
+/**
+ * A unit with momentum gains speed at `acceleration` up to `walkSpeed`, then slowly up to
+ * `maxSpeed` over `rampDuration` while it keeps moving forward. Only `grip` takes away the part of
+ * its velocity that does not point where it is heading, so a turn slides and loses speed and a
+ * unit that stops steering coasts to a stop (architecture 10 §2). All values must be positive.
+ */
+export type MomentumProfile = {
+  /** Speed reached fast, below `maxSpeed`: metres per second in content, metres per tick loaded. */
+  readonly walkSpeed: number;
+  /** Time from `walkSpeed` to `maxSpeed` moving straight: seconds in content, ticks loaded. */
+  readonly rampDuration: number;
+  /** How fast sideways and backward motion slides off: m/s² in content, metres per tick² loaded. */
+  readonly grip: number;
 };
 
 /**

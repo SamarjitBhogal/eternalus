@@ -225,4 +225,56 @@ describe('Movement', () => {
       new Movement(STATS).limitSpeed(-1);
     }).toThrow('speed limit');
   });
+
+  describe('with momentum (Wrecking Run, DEC-307)', () => {
+    const MOMENTUM = { walkSpeed: 1, rampDuration: 4, grip: 0.5 };
+    /** A momentum unit at top speed, heading east: walk speed in 1 tick, then 4 ticks of ramp. */
+    const atTopSpeed = (): Movement => {
+      const movement = new Movement({ ...STATS, momentum: MOMENTUM });
+      movement.steer({ x: 1, y: 0 });
+      for (let tick = 0; tick < 5; tick += 1) {
+        movement.advance();
+      }
+      return movement;
+    };
+
+    it('slides on a reverse by one tick of grip instead of flipping the velocity', () => {
+      const movement = atTopSpeed();
+      expect(movement.velocity).toEqual({ x: 3, y: 0 });
+
+      movement.steer({ x: -1, y: 0 });
+      movement.advance();
+
+      expect(movement.velocity).toEqual({ x: 2.5, y: 0 });
+      expect(movement.speed).toBe(2.5);
+    });
+
+    it('stops dead when a block takes its move head-on', () => {
+      const movement = atTopSpeed();
+
+      movement.hitBlock({ x: 0.5, y: 0 });
+
+      expect(movement.speed).toBe(0);
+      expect(movement.velocity).toEqual({ x: 0, y: 0 });
+    });
+
+    it('rejects a walk speed that is not below maxSpeed and a momentum value that is not positive', () => {
+      expect(() => new Movement({ ...STATS, momentum: { ...MOMENTUM, walkSpeed: 3 } })).toThrow(
+        /walkSpeed/,
+      );
+      expect(() => new Movement({ ...STATS, momentum: { ...MOMENTUM, grip: -1 } })).toThrow(/grip/);
+    });
+  });
+
+  it('keeps its speed on hitBlock without momentum: the heading re-points it every tick', () => {
+    const movement = new Movement(STATS);
+    movement.steer({ x: 1, y: 0 });
+    movement.advance();
+    movement.advance();
+
+    movement.hitBlock({ x: 0.5, y: 0 });
+
+    expect(movement.speed).toBe(2);
+    expect(movement.velocity).toEqual({ x: 2, y: 0 });
+  });
 });

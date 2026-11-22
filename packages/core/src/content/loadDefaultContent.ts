@@ -16,6 +16,13 @@ const perTick = (definition: UnitDefinition, tickRate: number, rate: TickRate): 
     ...definition.movementProfile,
     maxSpeed: definition.movementProfile.maxSpeed / tickRate,
     acceleration: definition.movementProfile.acceleration / (tickRate * tickRate),
+    ...(definition.movementProfile.momentum && {
+      momentum: {
+        walkSpeed: definition.movementProfile.momentum.walkSpeed / tickRate,
+        rampDuration: rate.toTicks(definition.movementProfile.momentum.rampDuration),
+        grip: definition.movementProfile.momentum.grip / (tickRate * tickRate),
+      },
+    }),
   },
   ...(definition.attack && {
     attack: {
