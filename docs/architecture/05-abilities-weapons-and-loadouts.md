@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-22
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -585,8 +585,9 @@ tower the enemy has lost there, DISC-24; [18](18-minion-system.md) MS-16) and
 `BossMinionDamageStep` (a boss takes only its share of a lane minion's hit, balancing.md; the
 shares are `BOSS_MINION_DAMAGE_TAKEN` in `content/mobs/minionModifiers.ts`) and
 `InteriorAttackStep` (an attacker standing inside a building deals
-`INTERIOR_ATTACK_DAMAGE_MULTIPLIER` to that building's walls: the Stronghold's and the Cathedral's
-`'wall'` objects, and a lane tower's fort walls from its court; DEC-247 (2), DEC-288, DEC-315;
+`INTERIOR_ATTACK_DAMAGE_MULTIPLIER` to that building: the Stronghold's and the Cathedral's
+`'wall'` objects, and every hit on a lane tower from its court, the ground inside the fort's wall
+band, so not from a doorway; DEC-247 (2), DEC-288, DEC-315, DEC-324;
 [07](07-structures-obstacles-and-destructibles.md)). Interim differences:
 no `DamageType` yet (nothing reads it; it joins `DamageHit` and
 `apply` with the first resistance); the pipeline itself emits `entity-died` with the killer, so

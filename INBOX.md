@@ -235,7 +235,7 @@ Reply inline (`Decision: …`).
       none beyond it"; the call-for-help test now runs on a fixture profile that keeps the old
       5.4 m reach (`short-reach`). Say if you want another number.
 
-- [ ] **HC-B24 — Better than the design, built under your standing rule, sign-off asked: map-work
+- [x] **HC-B24 — Better than the design, built under your standing rule, sign-off asked: map-work
       critic round 3 (`feat/map-work-forts-towers`, 2026-11-21); no decision blocks the PR.**
       Recorded as DEC-321 (owner decisions log). Built after the last critic loop, so no critic
       has reviewed them; each has a test that a deliberate break turned red. (1) A camp's art
@@ -244,8 +244,10 @@ Reply inline (`Decision: …`).
       cannot drift apart. No camp moves. (2) The map generator checks every obstacle choice
       against the map feature definitions before it builds, so a wrong id fails for every seed,
       not only for a seed that happens to pick it. Approve, or say which to undo.
+  - **Answered 2026-11-22 by DEC-324** (Owner Calls page): "A: sign off (1) and (2) as built".
+    His note asks for a quick mini critic run if nothing waits; it runs with the DEC-324 critic.
 
-- [ ] **HC-B23 — Better than the design, built under your standing rule, sign-off asked: map-work
+- [x] **HC-B23 — Better than the design, built under your standing rule, sign-off asked: map-work
       critic round 2 (`feat/map-work-forts-towers`, 2026-11-21); no decision blocks the PR.**
       Recorded as DEC-320 (owner decisions log). (1) A fallen lane tower's banner goes with its
       own fort object, which is destroyed when the tower falls, so one rule hides all of a fallen
@@ -253,8 +255,9 @@ Reply inline (`Decision: …`).
       feeds each snapshot to the one fallen-structure rule (`RetiredFeatures`); the HUD bridge only
       reads it. (3) Each fort wall carries a typed role, and the lane corridors pick a fort's wall
       bands by that role, not by reading wall ids. Approve, or say which to undo.
+  - **Answered 2026-11-22 by DEC-324** (Owner Calls page): "A: sign off (1)-(3) as built".
 
-- [ ] **HC-B21 — Better than the design, built under your standing rule, sign-off asked: map-work
+- [x] **HC-B21 — Better than the design, built under your standing rule, sign-off asked: map-work
       critic round 1 (`feat/map-work-forts-towers`, 2026-11-21); no decision blocks the PR.**
       Recorded as DEC-318 (owner decisions log). (1) One `Aura` component holds a structure's
       whole aura; the aura system and the snapshot (`EntitySnapshot.aura`) read only it.
@@ -267,6 +270,8 @@ Reply inline (`Decision: …`).
       building's interior is built once, and the lane
       corridors read a fort's wall bands from its wall objects. (6) The tower-exit test checks the
       first tick at which every horde member is out. Approve, or say which to undo.
+  - **Answered 2026-11-22 by DEC-324** (Owner Calls page): "A: sign off (1)-(6) as built".
+    Card `camp-class-after-move` (4): "A: the class of its new position (as built)".
 
 - [x] **Unit facing chevron (DEC-192, feat/unit-facing-chevron, 2026-11-05) — two questions, one
       better-than-design item.**
