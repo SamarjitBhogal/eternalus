@@ -1,3 +1,8 @@
+import type { Health } from '../components/Health';
+import type { Outline } from '../components/Outline.types';
+import type { TeamMembership } from '../components/TeamMembership';
+import type { Entity } from '../entities/Entity';
+import type { Team } from '../teams/teams.types';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
 import type { EntityId } from './EntityStore.types';
 
@@ -37,4 +42,24 @@ export type AreaFilter = {
   readonly team: 'enemies' | 'allies' | 'all';
   /** Whether the attacker itself may be hit; absent = no. */
   readonly includeSelf?: boolean;
+};
+
+/**
+ * A shot as the rule that stops it sees it (`AreaHitQuery.stopsShot`): who fired it, for which
+ * team, and what it aims at (`ProjectilePayload` has this shape).
+ */
+export type ShotAim = {
+  readonly ownerId: EntityId;
+  readonly team: Team;
+  /** The locked target, or the walk-on outline the aim point was on; `null` for neither. */
+  readonly targetId: EntityId | null;
+};
+
+/** A body as the rule that stops a shot sees it, read once by the caller. */
+export type ShotStopBody = {
+  readonly entity: Entity;
+  readonly health: Health;
+  readonly membership: TeamMembership | undefined;
+  /** What a shot touches; `null` for a body that is only its collider circle. */
+  readonly outline: Outline | null;
 };

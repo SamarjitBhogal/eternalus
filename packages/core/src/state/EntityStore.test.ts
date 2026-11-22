@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Abilities } from '../components/Abilities';
+import { Combat } from '../components/Combat';
 import { Deploying } from '../components/Deploying';
 import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
@@ -210,6 +211,39 @@ describe('EntityStore', () => {
     store.clearAttackTarget('dummy');
     expect(store.attackTargetOf('dummy')).toBeNull();
     expect(store.attackTargetOf('nobody')).toBeNull();
+  });
+
+  it('reads whom an entity attacks: its lock, or else the living bodies its last attack hit, for one attack interval (DEC-322 (2))', () => {
+    const store = new EntityStore();
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const spawn = (team: Team) => {
+      const entity = factory.create('light-mob', 'light-minion', {
+        team,
+        position: { x: 0, y: 0 },
+      });
+      store.add(entity);
+      return entity;
+    };
+    const attacker = spawn('dark');
+    const [first, second, locked] = [spawn('light'), spawn('light'), spawn('light')];
+    const combat = attacker.getComponent(Combat);
+
+    expect(store.victimsOf(attacker.id, 0)).toEqual([]);
+    combat.recordHits([first.id, second.id], 0);
+    expect(store.victimsOf(attacker.id, 0)).toEqual([first.id, second.id]);
+    expect(store.isAttacking(attacker.id, second.id, combat.attack.interval - 1)).toBe(true);
+    expect(store.isAttacking(attacker.id, second.id, combat.attack.interval)).toBe(false);
+
+    store.setAttackTarget(attacker.id, locked.id);
+    expect(store.victimsOf(attacker.id, 0)).toEqual([locked.id]);
+    expect(store.isAttacking(attacker.id, first.id, 0)).toBe(false);
+    store.clearAttackTarget(attacker.id);
+
+    first.getComponent(Health).applyDamage(first.getComponent(Health).current);
+    expect(store.victimsOf(attacker.id, 0)).toEqual([second.id]);
+    expect(store.victimsOf(first.id, 0)).toEqual([]);
+    expect(store.victimsOf('nobody', 0)).toEqual([]);
+    expect(store.isAttacking('nobody', first.id, 0)).toBe(false);
   });
 
   it('queues a cast on an ability slot, and refuses an entity without that slot', () => {

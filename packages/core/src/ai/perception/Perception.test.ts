@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { Combat } from '../../components/Combat';
 import { Health } from '../../components/Health';
 import { Transform } from '../../components/Transform';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
@@ -76,6 +77,21 @@ describe('Perception', () => {
     // A neutral querier never sees another neutral unit as hostile.
     const asCamp = { hostileTo: 'neutral', neutralAttackersOf: camp.id } as const;
     expect(perception.unitsWithin(center, 5, asCamp)).toEqual([self.id, ally.id]);
+  });
+
+  it("keeps a neutral unit with no lock while its last attack's hit on this unit counts (DEC-322 (2))", () => {
+    const { state, add, index } = setUp();
+    const self = add('light', 10);
+    const camp = add('neutral', 12, 'light-mob', 'light-camp-mob');
+    index();
+    const perception = new Perception(state);
+    const fightingBack = { hostileTo: 'light', neutralAttackersOf: self.id } as const;
+    const interval = camp.getComponent(Combat).attack.interval;
+
+    state.recordHits(camp.id, [self.id]);
+    expect(perception.unitsWithin({ x: 10, y: 10 }, 5, fightingBack)).toEqual([camp.id]);
+    for (let tick = 0; tick < interval; tick += 1) state.advanceTick();
+    expect(perception.unitsWithin({ x: 10, y: 10 }, 5, fightingBack)).toEqual([]);
   });
 
   it('returns ids in string order, and breaks a nearest tie toward the lower id', () => {

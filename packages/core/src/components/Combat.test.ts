@@ -166,4 +166,54 @@ describe('Combat', () => {
       });
     });
   });
+
+  describe('hit record (DEC-322 (2))', () => {
+    const attack = { strategy: 'melee', damage: 1, reach: 1, interval: 10 } as const;
+
+    it('has no hits before the first, then keeps them for one attack interval from the hit', () => {
+      const combat = new Combat({ basic: attack });
+      expect(combat.hitsAt(0)).toEqual([]);
+
+      combat.recordHits(['a', 'b'], 5);
+
+      expect(combat.hitsAt(5)).toEqual(['a', 'b']);
+      expect(combat.hitsAt(14)).toEqual(['a', 'b']);
+      expect(combat.hitsAt(15)).toEqual([]);
+      expect(combat.hitsUntilTick).toBe(15);
+    });
+
+    it('divides the interval by the attack speed, as the cooldown does', () => {
+      const combat = new Combat({ basic: attack });
+
+      combat.recordHits(['a'], 0, 2);
+      combat.beginAttack(0, 2);
+
+      expect(combat.hitsUntilTick).toBe(5);
+      expect(combat.hitsUntilTick).toBe(combat.readyAtTick);
+    });
+
+    it('replaces the hits of an earlier tick, adds those of the same tick once, and copies them', () => {
+      const combat = new Combat({ basic: attack });
+      const ids = ['a'];
+
+      combat.recordHits(ids, 3);
+      ids.push('z');
+      combat.recordHits(['b', 'a'], 3);
+      expect(combat.hitsAt(3)).toEqual(['a', 'b']);
+
+      combat.recordHits(['c'], 4);
+      expect(combat.hitsAt(4)).toEqual(['c']);
+      expect(combat.hitIds).toEqual(['c']);
+    });
+
+    it('counts a later hit for its own interval, even when it is shorter than the one it replaces', () => {
+      const combat = new Combat({ basic: attack });
+
+      combat.recordHits(['a'], 0, 0.5);
+      combat.recordHits(['b'], 1, 2);
+
+      expect(combat.hitsUntilTick).toBe(6);
+      expect(combat.hitsAt(6)).toEqual([]);
+    });
+  });
 });

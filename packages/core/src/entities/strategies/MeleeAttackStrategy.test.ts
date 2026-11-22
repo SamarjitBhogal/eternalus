@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { Combat } from '../../components/Combat';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { loadDefaultContent } from '../../content/loadDefaultContent';
 import { loadWeapons } from '../../content/weapons/loadWeapons';
@@ -75,5 +76,33 @@ describe('MeleeAttackStrategy', () => {
     const armed = { ...WARRIOR, defaultLoadout: { primaryWeaponId: 'test-talons' } };
 
     expect(hitWith(armed, null)).toEqual([]);
+  });
+
+  it("records its target as the attack's hit (DEC-322 (2))", () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const armed = { ...WARRIOR, defaultLoadout: { primaryWeaponId: 'test-talons' } };
+    const attacker = new Warrior('entity-1', armed.id);
+    attacker.spawn({
+      definition: armed,
+      position: { x: 0, y: 0 },
+      team: 'light',
+      weapons: WEAPONS,
+    });
+    state.entities.add(attacker);
+
+    new MeleeAttackStrategy().attack(
+      attacker,
+      { targetId: 'entity-2', point: null, direction: { x: 1, y: 0 } },
+      ATTACK,
+      {
+        state,
+        damage: { apply: () => undefined },
+        hits: null,
+        factory: new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30)),
+        areas: new AreaHitQuery(),
+      },
+    );
+
+    expect(attacker.getComponent(Combat).hitsAt(0)).toEqual(['entity-2']);
   });
 });

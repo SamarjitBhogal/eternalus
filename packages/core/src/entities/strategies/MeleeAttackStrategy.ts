@@ -8,8 +8,9 @@ export class MeleeAttackStrategy implements AttackStrategy {
   /**
    * Deals `attack.damage` to the target. The source is the attacker and its weapon
    * (`weaponSourceOf`). The hit lands in this tick, so its `onHit` effects run here too (05 §10),
-   * after the damage. An aim with no target is a whiff: it hits nothing (a one-target attack has
-   * no area, DEC-184 is about weapons).
+   * after the damage, and it is recorded as the attack's hit (`GameState.recordHits`). An aim with
+   * no target is a whiff: it hits nothing (a one-target attack has no area, DEC-184 is about
+   * weapons).
    */
   public attack(
     attacker: Entity,
@@ -22,5 +23,6 @@ export class MeleeAttackStrategy implements AttackStrategy {
     }
     damage.apply(state, targetId, attack.damage, weaponSourceOf(attacker));
     hits?.afterHit(state, attacker.id, targetId);
+    state.recordHits(attacker.id, [targetId]);
   }
 }

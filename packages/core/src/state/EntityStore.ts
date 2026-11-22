@@ -227,9 +227,30 @@ export class EntityStore {
     return aimed !== null;
   }
 
-  /** The entity's attack target, or `null` when it has none, cannot attack or is unknown. */
+  /**
+   * The entity's attack target (its lock, `Combat.targetId`), or `null` when it has none, cannot
+   * attack or is unknown. It does not count aimed hits; `victimsOf` does.
+   */
   public attackTargetOf(id: EntityId): EntityId | null {
     return this.entities.get(id)?.findComponent(Combat)?.targetId ?? null;
+  }
+
+  /**
+   * Whom the entity attacks at `tick` (DEC-322 (2)): its lock when it holds one; else each living
+   * body its last attack hit, for one attack interval from the hit (`Combat.hitsAt`), so a player
+   * who aims, with no lock, attacks what it hits. Empty when it attacks nothing, cannot attack or
+   * is unknown.
+   */
+  public victimsOf(id: EntityId, tick: number): readonly EntityId[] {
+    const combat = this.entities.get(id)?.findComponent(Combat);
+    if (combat === undefined) return [];
+    if (combat.targetId !== null) return [combat.targetId];
+    return combat.hitsAt(tick).filter((hitId) => this.isAlive(hitId));
+  }
+
+  /** Whether `attackerId` attacks `victimId` at `tick` (`victimsOf`). */
+  public isAttacking(attackerId: EntityId, victimId: EntityId, tick: number): boolean {
+    return this.victimsOf(attackerId, tick).includes(victimId);
   }
 
   /**

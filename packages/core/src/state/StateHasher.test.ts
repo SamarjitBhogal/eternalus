@@ -424,6 +424,26 @@ describe('StateHasher', () => {
     expect(hasher.hash(state)).not.toBe(idle);
   });
 
+  it('hashes recorded hits once there are some, with their ids and the tick they stop counting, which decide whom the AI sees a unit attack (DEC-322 (2))', () => {
+    const { state, soldier } = stateWithSoldier();
+    const combat = new Combat({ basic: { strategy: 'melee', damage: 1, reach: 1, interval: 5 } });
+    soldier.addComponent(combat);
+    combat.setTarget('entity-9');
+    combat.beginAttack(2);
+    const before = hasher.hash(state);
+
+    combat.recordHits(['entity-9'], 2);
+    const hit = hasher.hash(state);
+    combat.recordHits(['entity-8'], 2);
+    const twoHits = hasher.hash(state);
+    combat.recordHits(['entity-9'], 3);
+    const later = hasher.hash(state);
+
+    expect(hit).not.toBe(before);
+    expect(twoHits).not.toBe(hit);
+    expect(later).not.toBe(hit);
+  });
+
   it('does not hash the swing record, which is display only (DEC-304)', () => {
     const { state, soldier } = stateWithSoldier();
     const combat = new Combat({ basic: { strategy: 'melee', damage: 1, reach: 1, interval: 5 } });

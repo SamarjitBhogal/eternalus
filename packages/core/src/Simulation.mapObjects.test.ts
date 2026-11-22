@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { Deploying } from './components/Deploying';
 import { Footprint } from './components/Footprint';
+import { MapObjectBody } from './components/MapObjectBody';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { DEFAULT_MAP_LAYOUT } from './content/maps/defaultMapLayout';
 import type { MapObject } from './content/maps/mapObjects.types';
@@ -14,6 +15,7 @@ import { MapObjectBuilder } from './map/MapObjectBuilder';
 import { MapPresentationBuilder } from './map/MapPresentationBuilder';
 import { Simulation } from './Simulation';
 import type { RosterSlot } from './Simulation.types';
+import { AreaHitQuery } from './state/AreaHitQuery';
 import type { GameState } from './state/GameState';
 import { LaneRoutes } from './state/LaneRoutes';
 import type { PlayableTeam } from './teams/teams.types';
@@ -302,6 +304,68 @@ describe('Simulation with a roster and map objects (as the client builds a match
 
     expect(gap(at)).toBeGreaterThan((stronghold?.transform?.radius ?? 0) + 5);
     expect(entities.isInReach(legend, stronghold?.id ?? '')).toBe(true);
+  });
+
+  it("puts the palace and gate map objects on their structure's team: an own-team aim at the palace floor hits nothing, an enemy aim names the Stronghold and a sweep hits both (B8, DEC-322 (1))", () => {
+    const config = createDefaultGameConfig();
+    const map = new MapGenerator().generate(config, 1);
+    const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+    const simulation = new Simulation({
+      config,
+      seed: 1,
+      logger: new NullLogger(),
+      map,
+      mapObjects,
+    });
+    const centre = map.features.find(({ kind, team }) => kind === 'stronghold' && team === 'light')
+      ?.position ?? { x: 0, y: 0 };
+    const outline = mapObjects.find(({ id }) => id === 'light-stronghold')?.footprints[0] ?? [];
+    const gap = ({ x, y }: Vec2): number => Math.hypot(x - centre.x, y - centre.y);
+    const corner = outline.reduce((far, point) => (gap(point) > gap(far) ? point : far));
+    // 0.6 m out from the palace's far corner, and 1 m in from it: a floor point with no unit.
+    const along = (metres: number): Vec2 => ({
+      x: corner.x + ((corner.x - centre.x) * metres) / gap(corner),
+      y: corner.y + ((corner.y - centre.y) * metres) / gap(corner),
+    });
+    for (const team of ['light', 'dark'] as const) {
+      simulation.enqueueCommand({
+        type: 'dev-spawn',
+        kind: 'warrior',
+        definitionId: 'warrior',
+        team,
+        at: along(0.6),
+        count: 1,
+      });
+    }
+    simulation.step();
+    const { entities } = (simulation as unknown as { readonly state: GameState }).state;
+    const legendOf = (team: PlayableTeam): string =>
+      simulation
+        .snapshot()
+        .entities.find((entity) => entity.definitionId === 'warrior' && entity.team === team)?.id ??
+      '';
+    const stronghold = simulation
+      .snapshot()
+      .entities.find(({ kind, team }) => kind === 'stronghold' && team === 'light')?.id;
+    let palaceObject: string | undefined;
+    entities.forEach((entity) => {
+      if (entity.findComponent(MapObjectBody)?.object.id === 'light-stronghold') {
+        palaceObject = entity.id;
+      }
+    });
+    const everything = { overlapsBody: () => true, overlapsOutline: () => true };
+    const query = new AreaHitQuery();
+    const floor = along(-1);
+    const sweep = (attacker: string) =>
+      query
+        .find(entities, attacker, everything, { targetId: null, point: floor }, { team: 'enemies' })
+        .filter((id) => id === stronghold || id === palaceObject);
+
+    expect(entities.teamOf(palaceObject ?? '')).toBe('light');
+    expect(query.aimedBodyOf(entities, legendOf('light'), floor)).toBeNull();
+    expect(sweep(legendOf('light'))).toEqual([]);
+    expect(query.aimedBodyOf(entities, legendOf('dark'), floor)).toBe(stronghold);
+    expect(sweep(legendOf('dark')).sort()).toEqual([stronghold, palaceObject].sort());
   });
 
   it("makes each lane tower's fort map object the tower's body: one health pool, no entity of its own (DEC-185 B)", () => {

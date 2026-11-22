@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { Health } from '../components/Health';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadAggroRules } from '../content/ai/aggro/loadAggroRules';
@@ -202,6 +203,30 @@ describe('GuardController', () => {
     state.entities.setAttackTarget(enemy, mate);
 
     expect(decide().commands).toEqual([{ type: 'attack-target', actorId: guard, targetId: enemy }]);
+  });
+
+  it('engaging: finishes its fight and answers no call for help while its target lives (DEC-326 (2))', () => {
+    const { state, guard, add, post, decide } = setUp();
+    const mate = add('light', 38, 'light-guard');
+    post(mate, 'home', 38);
+    const target = add('dark', 62);
+    const enemy = add('dark', 34);
+    state.entities.setAttackTarget(enemy, mate);
+    const memory = {
+      fsm: 'engaging',
+      targetId: target,
+      breakAtTick: 0,
+      cooldownUntilTick: 0,
+      leashX: 60,
+      leashY: 20,
+    };
+
+    expect(decide(memory)).toMatchObject({ commands: [], memory: { targetId: target } });
+
+    state.entities.get(target)?.getComponent(Health).applyDamage(1_000_000);
+    expect(decide(memory).commands).toEqual([
+      { type: 'attack-target', actorId: guard, targetId: enemy },
+    ]);
   });
 
   it('answers no call from outside its circle, or from a guard of another structure (DEC-144)', () => {

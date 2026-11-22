@@ -9,7 +9,7 @@ import type { Team } from '../teams/teams.types';
 import { compareById } from '../utils/compareById';
 import { isPointInAnyPolygon } from '../utils/geometry';
 import type { Vec2 } from '../utils/geometry.types';
-import type { AreaAim, AreaFilter, HitArea } from './AreaHitQuery.types';
+import type { AreaAim, AreaFilter, HitArea, ShotAim, ShotStopBody } from './AreaHitQuery.types';
 import type { EntityStore } from './EntityStore';
 import type { EntityId } from './EntityStore.types';
 
@@ -28,7 +28,9 @@ import type { EntityId } from './EntityStore.types';
  * 2. A body that takes no damage now (`takesNoDamage`) is never hit: it takes no damage and runs
  *    no on-hit step (DEC-317 addendum). A shot stops on it (`ProjectileSystem`).
  *
- * Ids come back in `compareById` order, so every run hits in the same order. Stateless.
+ * It also holds the one rule for which bodies stop a shot (`stopsShot`), which `ProjectileSystem`
+ * flies shots by and `LineOfFire` predicts them by. Ids come back in `compareById` order, so every
+ * run hits in the same order. Stateless.
  *
  * ponytail: a walk over the store, not the `SpatialHash`, O(entities) per area. Only Legends
  * sweep and casts are rare. Ceiling: many sweepers (mob weapons); upgrade to a `SpatialHash`
@@ -38,6 +40,25 @@ export class AreaHitQuery {
   /** Whether `entity` takes no damage now: its collider is unbreakable (a gate before its rule). */
   public static takesNoDamage(entity: Entity): boolean {
     return entity.findComponent(Collider)?.isUnbreakable === true;
+  }
+
+  /**
+   * Whether `shot` stops on `body` when it touches it (DEC-317 addendum, DEC-322 (1)): the body is
+   * alive and still in the world, not the shot's owner and not on its team (no team counts as
+   * enemy), and, for a walk-on outline, the entity the shot aims at (`shot.targetId`), so a shot
+   * flies over the ground units stand on. A body that takes no damage now (`takesNoDamage`) stops
+   * it too, and nothing lands on it. The one rule by which `ProjectileSystem` flies a shot and
+   * `LineOfFire` predicts it.
+   */
+  public static stopsShot(entities: EntityStore, shot: ShotAim, body: ShotStopBody): boolean {
+    const { entity, health, membership, outline } = body;
+    return (
+      !health.isDead &&
+      entity.id !== shot.ownerId &&
+      membership?.team !== shot.team &&
+      (outline?.isWalkOn !== true || entity.id === shot.targetId) &&
+      entities.has(entity.id)
+    );
   }
 
   /**
@@ -96,7 +117,9 @@ export class AreaHitQuery {
   /**
    * The walk-on outline that `attackerId` aims at with `point` under rule 1, which its shot then
    * names as its target (`ProjectilePayload.targetId`), so the shot can hit it. Only enemy bodies
-   * (no team counts as enemy). When several walk-on outlines hold the point, the first by id wins.
+   * (no team counts as enemy). When several walk-on outlines hold the point (a palace floor is both
+   * the Stronghold's outline and the palace map object's), a structure comes first, then the first
+   * by id, so a shot at the palace names the Stronghold. A sweep still hits both (DEC-284 (2)).
    *
    * @returns The body's id, or `null` when the point is on no such outline, on an enemy unit, or
    *   the attacker stands inside the outline or is unknown.
@@ -120,7 +143,9 @@ export class AreaHitQuery {
     if (aimed.length === 0 || AreaHitQuery.isEnemyUnitAt(entities, attackerTeam, point)) {
       return null;
     }
-    return aimed.sort(compareById)[0] ?? null;
+    const isStructure = (id: EntityId): number =>
+      entities.get(id)?.family === 'structure' ? 0 : 1;
+    return aimed.sort((a, b) => isStructure(a) - isStructure(b) || compareById(a, b))[0] ?? null;
   }
 
   /** Rule 1 by aim point: on the outline, the attacker outside it, and on no enemy unit. */

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { DamagePipeline } from '../combat/DamagePipeline';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
+import { Combat } from '../components/Combat';
 import { Footprint } from '../components/Footprint';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import type { AbilityDisplayStep } from '../content/loadDisplayContent';
@@ -129,6 +130,43 @@ describe('CastInstance', () => {
       placement: END,
     });
     expect(nested?.cast.targets(DISC, { team: 'enemies' })).toEqual([near.id]);
+  });
+
+  it("records the enemies a step's shape finds as the caster's hits, and no ally (DEC-322 (2))", () => {
+    const { state, factory, caster } = casterState();
+    const enemy = factory.create('light-mob', 'training-dummy', {
+      position: { x: 1, y: 0 },
+      team: 'dark',
+    });
+    state.entities.add(enemy);
+    const strike = new RecordingEffect('fake-strike');
+    const registry = testAbilityRegistry([strike]);
+
+    new CastInstance(
+      {
+        casterId: caster.id,
+        ability: registry.resolve('fake-strike'),
+        slot: 'ability-1',
+        aim: { point: { x: 1, y: 0 }, targetId: null },
+        origin: { x: 0, y: 0 },
+        casterLevel: 1,
+        tick: 0,
+      },
+      {
+        state,
+        effects: registry,
+        targets: new TargetQuery(registry),
+        damage: new DamagePipeline(),
+        statuses: new StatusEffectApplier(loadStatusEffects(30, 2)),
+      },
+    ).run(AT_ORIGIN);
+    const [step] = strike.log;
+    const combat = caster.getComponent(Combat);
+
+    step?.cast.targets(DISC, { team: 'allies', includeSelf: true });
+    expect(combat.hitIds).toEqual([]);
+    expect(step?.cast.targets(DISC, { team: 'enemies' })).toEqual([enemy.id]);
+    expect(combat.hitsAt(0)).toEqual([enemy.id]);
   });
 
   it('gives a zero direction when the aim is on the caster', () => {

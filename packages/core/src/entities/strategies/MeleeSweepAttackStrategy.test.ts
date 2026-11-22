@@ -339,6 +339,21 @@ describe('MeleeSweepAttackStrategy', () => {
     });
   });
 
+  it("records the bodies it hit as the attack's hits, so the AI sees whom it attacks (DEC-322 (2))", () => {
+    const { state, attacker, spawn, swing } = setUp();
+    const front = spawn(2, 0, 'dark');
+    const frontFar = spawn(3.8, 0, 'dark');
+    spawn(-2, 0, 'dark');
+    const combat = attacker.getComponent(Combat);
+
+    swing({ direction: { x: 0, y: 1 } });
+    expect(combat.hitIds).toEqual([]);
+    swing();
+
+    expect(combat.hitsAt(state.tick)).toEqual([front.id, frontFar.id]);
+    expect(state.entities.isAttacking(attacker.id, frontFar.id, state.tick)).toBe(true);
+  });
+
   it('throws when handed an attack that is not a sweep, which a miswired registry would do', () => {
     const { attacker, state, factory } = setUp();
 

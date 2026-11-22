@@ -180,14 +180,16 @@ export class StateHasher {
       combat !== undefined &&
       (combat.targetId !== null || combat.aimPoint !== null || combat.readyAtTick > 0)
     ) {
-      // Only the melee mode and an aim point add fields, so runs that never use them hash as
-      // before (DEC-308, DEC-184).
+      // Only the melee mode, an aim point and recorded hits add fields, so runs that never use
+      // them hash as before (DEC-308, DEC-184). The hits decide whom the AI sees a unit attack
+      // (DEC-322 (2)).
       fields.push([
         'combat',
         combat.targetId,
         combat.readyAtTick,
         ...(combat.mode === 'melee' ? ['melee'] : []),
         ...(combat.aimPoint === null ? [] : ['aim', combat.aimPoint.x, combat.aimPoint.y]),
+        ...(combat.hitIds.length === 0 ? [] : ['hits', combat.hitsUntilTick, ...combat.hitIds]),
       ]);
     }
     const vision = entity.findComponent(Vision);

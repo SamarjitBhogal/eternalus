@@ -8,14 +8,24 @@ import type { CombatSwing } from './Combat.types';
  * command sets the target and the attack mode, the `attack-aim` command sets an aim point and the
  * mode (DEC-184, DEC-319). A unit holds a target or an aim point, never both. Ids are plain
  * strings because `components/` may not import `state/` (02 §2).
- * The attacks share one cooldown (`readyAtTick`).
+ * The attacks share one cooldown (`readyAtTick`). It also keeps the bodies its last attack hit
+ * (`recordHits`), so the AI sees whom a unit with no target attacks (DEC-322 (2)).
  */
 export class Combat {
+  /** What `hitsAt` gives once the last attack's hits no longer count. */
+  private static readonly NO_HITS: readonly string[] = [];
+
   private targetIdValue: string | null = null;
 
   private aimPointValue: Vec2 | null = null;
 
   private lastSwingValue: CombatSwing | null = null;
+
+  private hitIdsValue: string[] = [];
+
+  private hitAtTickValue = -1;
+
+  private hitsUntilTickValue = 0;
 
   private modeValue: AttackMode = 'basic';
 
@@ -120,6 +130,49 @@ export class Combat {
     };
   }
 
+  /**
+   * The bodies the last attack hit, kept until `hitsUntilTick`; read them through `hitsAt`. Empty
+   * before the first hit.
+   */
+  public get hitIds(): readonly string[] {
+    return this.hitIdsValue;
+  }
+
+  /** The first tick at which the last attack's hits no longer count (`hitsAt`). */
+  public get hitsUntilTick(): number {
+    return this.hitsUntilTickValue;
+  }
+
+  /**
+   * The bodies the last attack hit while they still count at `tick` (DEC-322 (2)): for one attack
+   * interval from the hit, the cooldown `beginAttack` would start then. Empty after that.
+   */
+  public hitsAt(tick: number): readonly string[] {
+    return tick < this.hitsUntilTickValue ? this.hitIdsValue : Combat.NO_HITS;
+  }
+
+  /**
+   * Records that an attack touched `ids` at `tick` (a sweep's bodies, a shot's body, an ability's
+   * targets). They count for one attack interval from `tick`, divided by `attackSpeed` as
+   * `beginAttack` divides it. Hits of an earlier tick are replaced: only the last attack's are kept.
+   * Hits of the same tick are added, so a shot and a sweep that land together both count. Copies
+   * `ids`.
+   */
+  public recordHits(ids: readonly string[], tick: number, attackSpeed = 1): void {
+    if (tick !== this.hitAtTickValue) {
+      this.hitIdsValue = [];
+      this.hitAtTickValue = tick;
+      this.hitsUntilTickValue = 0;
+    }
+    for (const id of ids) {
+      if (!this.hitIdsValue.includes(id)) this.hitIdsValue.push(id);
+    }
+    this.hitsUntilTickValue = Math.max(
+      this.hitsUntilTickValue,
+      tick + this.cooldownTicks(attackSpeed),
+    );
+  }
+
   /** Whether the attack is off cooldown at `tick`. */
   public canAttack(tick: number): boolean {
     return tick >= this.readyAtTickValue;
@@ -130,6 +183,11 @@ export class Combat {
    * divided by `attackSpeed` (statuses: 0.7 concussed), at least one tick.
    */
   public beginAttack(tick: number, attackSpeed = 1): void {
-    this.readyAtTickValue = tick + Math.max(1, Math.round(this.attack.interval / attackSpeed));
+    this.readyAtTickValue = tick + this.cooldownTicks(attackSpeed);
+  }
+
+  /** The active attack's cooldown in ticks: its `interval` divided by `attackSpeed`, at least 1. */
+  private cooldownTicks(attackSpeed: number): number {
+    return Math.max(1, Math.round(this.attack.interval / attackSpeed));
   }
 }

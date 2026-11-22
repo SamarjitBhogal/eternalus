@@ -228,6 +228,16 @@ describe('AreaHitQuery.aimedBodyOf', () => {
     ).toBeNull();
   });
 
+  it('names the structure before a map object that holds the same point, whatever their ids (B8)', () => {
+    const { entities, add, attacker, query } = setUp();
+    const palace = { at: { x: 5, y: 0 }, team: 'dark', outline: [FLOOR], isWalkOn: true } as const;
+    add('a-palace-object', { ...palace, family: 'obstacle' });
+    add('b-stronghold', palace);
+    add('c-gate-object', { ...palace, family: 'obstacle' });
+
+    expect(query.aimedBodyOf(entities, attacker.id, { x: 5, y: 0 })).toBe('b-stronghold');
+  });
+
   it('skips an allied floor, a solid outline and a dead floor', () => {
     const { entities, add, attacker, query } = setUp();
     add('own', { at: { x: 5, y: 0 }, team: 'light', outline: [FLOOR], isWalkOn: true });
@@ -271,5 +281,73 @@ describe('AreaHitQuery.takesNoDamage', () => {
     expect(AreaHitQuery.takesNoDamage(plain)).toBe(false);
     gate.getComponent(Collider).setUnbreakable(false);
     expect(AreaHitQuery.takesNoDamage(gate)).toBe(false);
+  });
+});
+
+describe('AreaHitQuery.stopsShot', () => {
+  const shotAt = (targetId: string | null = null) =>
+    ({ ownerId: 'attacker', team: 'light', targetId }) as const;
+  const stops = (
+    { entities, add }: ReturnType<typeof setUp>,
+    id: string,
+    spec: BodySpec,
+    targetId: string | null = null,
+  ): boolean => {
+    const entity = add(id, spec);
+    return AreaHitQuery.stopsShot(entities, shotAt(targetId), {
+      entity,
+      health: entity.getComponent(Health),
+      membership: entity.findComponent(TeamMembership),
+      outline: entities.outlineOf(id) ?? null,
+    });
+  };
+
+  it('stops a shot on a live enemy or teamless body, one that takes no damage too, and not on its owner or an ally (DEC-317 addendum)', () => {
+    const scene = setUp();
+    const at = { x: 3, y: 0 };
+
+    expect(stops(scene, 'enemy', { at, team: 'dark' })).toBe(true);
+    expect(stops(scene, 'teamless', { at })).toBe(true);
+    expect(stops(scene, 'camp', { at, team: 'neutral', isUnbreakable: true })).toBe(true);
+    expect(stops(scene, 'ally', { at, team: 'light' })).toBe(false);
+    const owner = scene.attacker;
+    expect(
+      AreaHitQuery.stopsShot(
+        scene.entities,
+        { ...shotAt(), team: 'dark' },
+        {
+          entity: owner,
+          health: owner.getComponent(Health),
+          membership: undefined,
+          outline: null,
+        },
+      ),
+    ).toBe(false);
+  });
+
+  it('stops a shot on a walk-on outline only when the shot aims at it, and never on a dead or removed body (DEC-322 (1))', () => {
+    const scene = setUp();
+    const floor = { at: { x: 5, y: 0 }, team: 'dark', outline: [FLOOR], isWalkOn: true } as const;
+
+    expect(stops(scene, 'floor', floor)).toBe(false);
+    expect(stops(scene, 'aimed-floor', floor, 'aimed-floor')).toBe(true);
+    const dead = scene.add('dead', { at: { x: 3, y: 0 }, team: 'dark' });
+    dead.getComponent(Health).applyDamage(1000);
+    const body = {
+      entity: dead,
+      health: dead.getComponent(Health),
+      membership: undefined,
+      outline: null,
+    };
+    expect(AreaHitQuery.stopsShot(scene.entities, shotAt(), body)).toBe(false);
+    const removed = scene.add('removed', { at: { x: 3, y: 0 }, team: 'dark' });
+    const removedBody = {
+      entity: removed,
+      health: removed.getComponent(Health),
+      membership: undefined,
+      outline: null,
+    };
+    scene.entities.remove(removed.id, 'dev-removed');
+    expect(AreaHitQuery.stopsShot(scene.entities, shotAt(), removedBody)).toBe(false);
   });
 });
