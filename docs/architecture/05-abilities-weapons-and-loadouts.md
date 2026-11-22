@@ -1351,7 +1351,11 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     steered along the cast's direction, added and announced (`entity-spawned`).
     `DefaultSystemPipeline` builds one launcher for `AbilitySystem` and `HitEffects`. The shot is
     fired at no one (`targetId: null`), so `ProjectileSystem` lands it on the first enemy body it
-    touches before a wall and passes allies (DEC-269). A "wall" in DEC-269 is one with no body
+    touches before a wall and passes allies (DEC-269). Not built yet: a walk-on outline (the
+    enemy Stronghold's palace, a gate) takes only a shot fired at it (DEC-314 (6)), so the blade
+    does not hit the Stronghold or a gate. Lane B sets the shot's `targetId` from
+    `AreaHitQuery.aimedBodyOf` on this branch once lane A's melee-sweeps PR merges into it.
+    A "wall" in DEC-269 is one with no body
     (terrain, the map edge). A breakable enemy `wall` segment is a map object with a body: the
     blade strikes it and it takes 80 × 0.3, as for a house. `AbilitySystem` runs before the
     flight, so the shot moves, and can land, in its cast tick; the one tick of flight before a
@@ -1379,7 +1383,7 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   - **Bleed stacks.** A `debuff` step's `stacks` (§3) applies the status that many times to each
     target; `bleed` gains a stack each time, so Hamstring's 2 stacks bleed twice as fast as one
     (`content/status-effects/bleed.ts`).
-  - **Veil.** The blade hits a Veiled enemy on its line, as an area does (DEC-266):
+  - **Veil.** The blade hits a Veiled enemy on its line, as an area does (a reading of DEC-266 and DEC-327):
     `ProjectileSystem` and `TargetQuery` do not read `untargetable`. Its hit ends Veil on the
     thrower and on the one struck (DEC-327). A scenario test pins both.
   - **Bots and client.** A Warrior bot may now cast Hamstring at the enemy it fights
