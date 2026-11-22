@@ -1372,12 +1372,16 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     object's id. The `hit` shape holds the one body whose id is `targetId`: a unit, or a map object
     whatever its footprints, so the 80 × 0.3 of DEC-269 lands on a house or a fort. Another body
     on the same point is not hit, for Hamstring and for Fury.
-  - **No slow (a reading, HC-B26 (3)).** DEC-269 names damage and bleed and no slow, as the
-    "Serrated" variety of `more-abilities.md` §2; the game design (06, DEC-11) also slows. The
-    content has no `slowed` status, so Hamstring does not slow until the owner answers.
+  - **No slow (DEC-199, HC-B26 (3)).** The default kit's Hamstring is the "Serrated" variety of
+    `more-abilities.md` §2 (DEC-199): damage and bleed and no slow, as DEC-269 names. The base
+    ability of the game design (06, DEC-11) also slows. The content has no `slowed` status, so
+    Hamstring does not slow.
   - **Bleed stacks.** A `debuff` step's `stacks` (§3) applies the status that many times to each
     target; `bleed` gains a stack each time, so Hamstring's 2 stacks bleed twice as fast as one
     (`content/status-effects/bleed.ts`).
+  - **Veil.** The blade hits a Veiled enemy on its line, as an area does (DEC-266):
+    `ProjectileSystem` and `TargetQuery` do not read `untargetable`. Its hit ends Veil on the
+    thrower and on the one struck (DEC-327). A scenario test pins both.
   - **Bots and client.** A Warrior bot may now cast Hamstring at the enemy it fights
     (`pickReadySlot` aims at the enemy's position). The client draws the blade as a shot that
     drops at its range (`PROJECTILE_ENDING_LOOKS`).

@@ -552,6 +552,9 @@ Reply inline (`Decision: …`).
     says the first enemy hit "bleeds and is slowed", and the base ability in `more-abilities.md`
     §2 is "slowed 1.5 s". (A) No slow, as built. (B) Also slow the enemy for 1.5 s: this needs a
     new `slowed` status and the slow amount from you.
+    - Answered by DEC-199 (batch 2026-11-16): the default kit's Hamstring is the Serrated form,
+      "80 damage and 2 bleed stacks, no slow", a reading you did not change. So (A) holds and is
+      not asked again. `06-abilities-and-progression.md` now names the Serrated default.
 - [x] **HC-Q67 — Combat gaps: build before the presentation (2026-11-27)? In which order?
       (combat audit, COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls page).**
       Your nine combat questions: 0 of 9 are true today. Evidence and the proposed PRs (two lanes,
