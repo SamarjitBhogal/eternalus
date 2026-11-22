@@ -947,12 +947,13 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   it (`EntityStore.withdraw`), not retires it. After the fixed delay in
   `content/progression/legendRespawn.ts` the same Legend object returns at its team's Stronghold,
   facing the enemy Stronghold, with full health and aether and no status effects, movement or
-  target; its id, level, XP, caps, loadout and cooldowns are its own (the ultimate charge is kept
-  apart from aether, DEC-295 (1)). A bot laner picks its lane again by the current threat
+  target; its id, level, XP, caps and loadout are its own. Only the ultimate's charge and cooldown
+  survive death (kept apart from aether, DEC-295 (1)); every other ability comes back fully cooled
+  down (FR-117). A bot laner picks its lane again by the current threat
   (DEC-295 (2)); a return ignores every cap (DEC-295 (4)). XP the Legend earns while it waits (its
   team's structure and boss awards, a kill its hit lands after it died) is owed on its queue entry
-  and paid through `ProgressionSystem` as it returns (`legend-respawned`, cause `respawn`,
-  DEC-186). The sovereign is not a Legend, so it never returns. The client leaves a greyed-out body
+  and paid by `ProgressionSystem` in its pass after it returns (`legend-respawned` is buffered,
+  cause `respawn`, DEC-186). `LegendReset` holds the reset `DuelRoundSystem` shares. The sovereign is not a Legend, so it never returns. The client leaves a greyed-out body
   where a Legend fell (`LegendBodies`). `RespawnSystem` reads `Health.isDead` just before
   `DeathSystem` rather than subscribing to `entity-died`: `entity-died` fires while the victim is
   still in the store, but the later pass also keeps any XP the Legend earns later in the same tick.

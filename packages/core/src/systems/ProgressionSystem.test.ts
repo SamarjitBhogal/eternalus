@@ -400,6 +400,10 @@ describe('ProgressionSystem', () => {
 
       respawn(state, waiting);
 
+      // The listener only buffers; the pass of the next tick pays.
+      expect(waiting.getComponent(Progression).xp).toBe(0);
+      run();
+
       expect(waiting.getComponent(Progression)).toMatchObject({ xp: 300, level: 3 });
       expect(payloads('xp-gained').at(-1)).toEqual({
         entityId: waiting.id,
@@ -426,6 +430,7 @@ describe('ProgressionSystem', () => {
       kill(mate, boss);
       run();
       respawn(state, waiting);
+      run();
 
       // The minion's XP, then the boss's 500 capped at two levels up (250 XP in all on this curve).
       expect(waiting.getComponent(Progression)).toMatchObject({ xp: 250, level: 3 });

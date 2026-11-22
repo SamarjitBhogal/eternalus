@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-22
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -84,7 +84,7 @@ export class MatchRecord implements MatchState {
 }
 ```
 
-`EntityStore` keeps entities in insertion order (DEC-20), which is creation order: every `EntityId`
+`EntityStore` keeps entities in insertion order (DEC-20), which is creation order, except that a returning Legend is appended at the end (DEC-295): every `EntityId`
 comes from a monotonically increasing counter (`utils/IdGenerator`) and is never reused: a Legend
 that respawns is the same entity, not a new one with an old id (DEC-295). `forEach`
 visits in that order, which is the iteration order every system uses (research
@@ -230,7 +230,7 @@ can be `postMessage`d to a Worker later without change (decided, D8; research §
 // Sketch: packages/core/src/state/Snapshot.types.ts
 export type Snapshot = {
   readonly tick: number;
-  readonly match: MatchSnapshot; // phase, phaseEnteredTick, the unfired timeline marks (12 §3), humanLegendId
+  readonly match: MatchSnapshot; // phase, phaseEnteredTick, the unfired timeline marks (12 §3), the countdown end tick (DEC-278), humanLegendId
   readonly entities: readonly EntitySnapshot[]; // store (creation) order
   readonly hordes: readonly HordeSnapshot[];
   readonly teams: Readonly<Record<Team, TeamSnapshot>>;
@@ -344,7 +344,7 @@ JavaScript-specific hazards and their rules (research §1, table "Determinism pi
 | `Map`/`Set`/object iteration order        | Never drive simulation order from a `Map`; iterate `EntityStore` (creation order) or arrays built in tick order                                                                                             | Review; `EntityStore` API exposes no `Map`                        |
 | `Array.prototype.sort` comparators        | Comparators are pure and total; ties broken by entity id                                                                                                                                                    | Review; `utils/compareById`                                       |
 | Transcendental `Math.*`                   | `sin`, `cos`, `atan2`, `exp`, `pow` only through `utils/deterministicMath.ts`; steering works with vectors, never angles                                                                                    | ESLint `no-restricted-properties` with a file override (ADR 0012) |
-| Update order and removal during iteration | Fixed `SystemPipeline` order; spawns and removals are deferred to `SpawnSystem`/`DeathSystem`                                                                                                               | Design + `InvariantSystem`                                        |
+| Update order and removal during iteration | Fixed `SystemPipeline` order; spawns and removals are deferred to `SpawnSystem`/`DeathSystem` (`RespawnSystem` also adds entities)                                                                          | Design + `InvariantSystem`                                        |
 | Floats                                    | Doubles are fine for single-machine replays; revisit fixed point only for networked lockstep                                                                                                                | None needed                                                       |
 
 ## 9. `StateHasher` and replays

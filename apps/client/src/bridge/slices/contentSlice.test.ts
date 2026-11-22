@@ -19,6 +19,7 @@ const CATALOGUE: DisplayCatalogue = {
   lockInChromeAssetId: 'lock-in-chrome',
   effectsRenderer: 'figma-raster',
   contrastMode: 'figma',
+  uiEnhancements: [],
   hud: TEST_HUD_CATALOGUE,
   teamNames: { light: 'Lux', dark: 'Umbra' },
   botRoster: {
@@ -45,6 +46,7 @@ const {
   selectTeamNames,
   selectVerdictLines,
   selectSovereignNames,
+  selectIsUiEnhancementOn,
 } = contentSlice.selectors;
 
 const loaded = () => ({
@@ -52,6 +54,24 @@ const loaded = () => ({
 });
 
 describe('contentSlice', () => {
+  // ui-enhancements-plan §2 rule 1: off before content loads and while the list lacks the id.
+  it('says whether a UI enhancement is on', () => {
+    const withList = (uiEnhancements: DisplayCatalogue['uiEnhancements']) => ({
+      content: contentSlice.reducer(
+        undefined,
+        contentSlice.actions.catalogueLoaded({ ...CATALOGUE, uiEnhancements }),
+      ),
+    });
+
+    expect(
+      selectIsUiEnhancementOn({ content: contentSlice.getInitialState() }, 'countdown-urgency'),
+    ).toBe(false);
+    expect(selectIsUiEnhancementOn(withList([]), 'countdown-urgency')).toBe(false);
+    expect(selectIsUiEnhancementOn(withList(['countdown-urgency']), 'countdown-urgency')).toBe(
+      true,
+    );
+  });
+
   it('is empty until the catalogue loads, then holds it', () => {
     expect(selectLegendClasses({ content: contentSlice.getInitialState() })).toEqual([]);
     const state = loaded();
@@ -67,6 +87,7 @@ describe('contentSlice', () => {
       lockInChromeAssetId: null,
       effectsRenderer: 'figma-raster',
       contrastMode: 'figma',
+      uiEnhancements: [],
       hud: { structureKinds: [], objectiveKinds: [], chrome: null },
     });
   });

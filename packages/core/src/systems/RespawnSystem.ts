@@ -1,10 +1,7 @@
 import { Aether } from '../components/Aether';
 import { ChaseWatch } from '../components/ChaseWatch';
-import { Combat } from '../components/Combat';
 import { ControllerBinding } from '../components/ControllerBinding';
 import { Health } from '../components/Health';
-import { Movement } from '../components/Movement';
-import { StatusEffects } from '../components/StatusEffects';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import type { LaneAssessmentWeights } from '../content/ai/ai.types';
@@ -14,6 +11,7 @@ import { assessLanes } from '../state/LaneAssessment';
 import type { RespawnEntry } from '../state/RespawnQueue.types';
 import { isPlayableTeam } from '../teams/playableTeams';
 import type { PlayableTeam } from '../teams/teams.types';
+import { LegendReset } from './LegendReset';
 import type { System, SystemContext } from './System.types';
 
 /**
@@ -31,6 +29,8 @@ import type { System, SystemContext } from './System.types';
  */
 export class RespawnSystem implements System {
   public readonly name = 'respawn';
+
+  private readonly reset = new LegendReset();
 
   /**
    * @param respawnTicks - How long a dead Legend waits, from content (`LEGEND_RESPAWN_SECONDS`).
@@ -66,19 +66,11 @@ export class RespawnSystem implements System {
     if (position === undefined) {
       throw new Error(`The map has no ${team} Stronghold for "${legend.id}".`);
     }
-    const health = legend.getComponent(Health);
-    health.heal(health.max);
+    this.reset.apply(legend, position);
     const aether = legend.getComponent(Aether);
     aether.restore(aether.max);
-    const statuses = legend.findComponent(StatusEffects);
-    for (const { definition } of [...(statuses?.active ?? [])]) {
-      statuses?.remove(definition.id);
-    }
-    legend.findComponent(Movement)?.stop();
-    legend.findComponent(Combat)?.setTarget(null);
     legend.removeComponent(ChaseWatch);
     const transform = legend.getComponent(Transform);
-    transform.moveTo(position);
     const { facing } = state.world?.startFacing(team, position) ?? {};
     if (facing !== undefined) {
       transform.face(facing);

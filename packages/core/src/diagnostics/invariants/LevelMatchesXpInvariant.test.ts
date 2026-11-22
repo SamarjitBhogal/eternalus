@@ -158,9 +158,8 @@ describe('LevelMatchesXpInvariant', () => {
     ]);
   });
 
-  it('rule 2: passes owed XP paid to a Legend that respawned this tick, and flags it otherwise (DEC-186)', () => {
-    const { state, hero, spawn, check } = setUp();
-    const mate = spawn('entity-3', 'light');
+  it('rule 2: passes owed XP paid to a Legend that is back, and flags one still waiting (DEC-186)', () => {
+    const { state, hero, check } = setUp();
     const owed = (entityId: string) => {
       state.events.emit('xp-gained', {
         entityId,
@@ -170,22 +169,11 @@ describe('LevelMatchesXpInvariant', () => {
         cause: 'respawn',
       });
     };
-    state.events.emit('legend-respawned', {
-      entityId: hero.id,
-      team: 'light',
-      position: { x: 0, y: 0 },
-      owedXp: [],
-    });
     owed(hero.id);
-    owed(mate.id);
+    owed('entity-3');
 
     expect(check()).toEqual([
-      'Entity "entity-3" gained owed XP for "entity-77" without respawning this tick.',
-    ]);
-    state.advanceTick();
-    owed(hero.id);
-    expect(check()).toEqual([
-      'Entity "entity-1" gained owed XP for "entity-77" without respawning this tick.',
+      'Entity "entity-3" gained owed XP for "entity-77" while it is not in the match.',
     ]);
   });
 

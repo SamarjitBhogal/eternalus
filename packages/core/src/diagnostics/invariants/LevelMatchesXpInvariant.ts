@@ -10,7 +10,7 @@ import type { Invariant, Violation } from '../Invariant.types';
  * gives on its curve; and every `xp-gained` of this tick (2) is backed by an `entity-died` this tick
  * whose killer is the recipient (a structure award, DEC-186, instead needs the structure gone; a
  * team-kill award, DEC-237, a killer on the recipient's team; XP owed while waiting to respawn,
- * DEC-186, the recipient's return this tick), (3)
+ * DEC-186, a recipient that is back in the store), (3)
  * is the only award for that kill, and (4) is not for a self-kill or an ally kill (O5). It keeps
  * no scratch: everything comes from the state and this tick's events.
  * Runs every tick, since rules 2–4 read this tick's events.
@@ -80,12 +80,12 @@ export class LevelMatchesXpInvariant implements Invariant {
           );
         }
       } else if (award.cause === 'respawn') {
-        // Owed while the recipient waited to respawn (DEC-186): paid only as it returns.
-        if (!state.respawnedThisTick().includes(entityId)) {
+        // Owed while the recipient waited to respawn (DEC-186): paid only once it is back.
+        if (state.entities.get(entityId) === undefined) {
           violations.push(
             this.violation(
               entityId,
-              `Entity "${entityId}" gained owed XP for "${victimId}" without respawning this tick.`,
+              `Entity "${entityId}" gained owed XP for "${victimId}" while it is not in the match.`,
             ),
           );
         }

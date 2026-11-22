@@ -11,7 +11,7 @@ import type { GameState } from '../state/GameState';
 import type { OwedXp } from '../state/RespawnQueue.types';
 import { isPlayableTeam, opponentOf } from '../teams/playableTeams';
 import type { System, SystemContext } from './System.types';
-import type { Award, PassAward, ProgressionContent } from './ProgressionSystem.types';
+import type { Award, ProgressionContent } from './ProgressionSystem.types';
 
 /**
  * Turns kills into XP and levels (architecture 05 §13). It listens to `entity-died`, prices the kill
@@ -24,14 +24,13 @@ import type { Award, PassAward, ProgressionContent } from './ProgressionSystem.t
  * heals and refills by the raise only while the Legend is alive (O4), and emits `level-up`.
  * A Legend waiting to respawn (`state.respawns`) is owed what it earns meanwhile: its team's
  * structure and boss awards, and a kill its projectile or damage over time lands after it died.
- * It gets that XP as it returns (`legend-respawned`, DEC-186 "pay on respawn"), by the same path,
- * with the cause `respawn`; it is paid then, not in the next pass, so the award and the return
- * fall in one tick for `level-matches-xp`.
+ * It gets that XP once it is back (`legend-respawned`, DEC-186 "pay on respawn"): the listener
+ * buffers it and the next tick's pass pays it by the same path, with the cause `respawn`.
  */
 export class ProgressionSystem implements System {
   public readonly name = 'progression';
 
-  private readonly pending: PassAward[] = [];
+  private readonly pending: Award[] = [];
 
   /**
    * @param state - The match whose `entity-died` events this system listens to.
@@ -93,24 +92,18 @@ export class ProgressionSystem implements System {
         });
       }
     });
+    // The listener only buffers: the XP is paid in this system's own pass on the next tick, as
+    // architecture 03 §4 requires of a listener that changes state.
     state.events.on('legend-respawned', ({ entityId, owedXp }) => {
-      const legend = state.entities.get(entityId);
-      if (legend === undefined) {
-        return;
-      }
       for (const { victimId, victimTeam, xp, maxLevels } of owedXp) {
-        this.grant(
-          legend,
-          {
-            kind: 'respawn',
-            recipientId: entityId,
-            victimId,
-            victimTeam,
-            xp,
-            ...(maxLevels !== undefined && { maxLevels }),
-          },
-          state,
-        );
+        this.pending.push({
+          kind: 'respawn',
+          recipientId: entityId,
+          victimId,
+          victimTeam,
+          xp,
+          ...(maxLevels !== undefined && { maxLevels }),
+        });
       }
     });
   }
@@ -118,6 +111,13 @@ export class ProgressionSystem implements System {
   /** Gives this tick's XP, in the order it was earned, and applies each level gained. */
   public update({ state }: SystemContext): void {
     for (const award of this.pending.splice(0)) {
+      if (award.kind === 'respawn') {
+        const recipient = state.entities.get(award.recipientId);
+        if (recipient !== undefined) {
+          this.grant(recipient, award, state);
+        }
+        continue;
+      }
       if (award.kind === 'kill') {
         // O4 pays a Legend killed earlier: still in the store this tick, or waiting to respawn.
         const killer = state.entities.get(award.killerId);
@@ -147,7 +147,7 @@ export class ProgressionSystem implements System {
   }
 
   /** What a waiting Legend is owed for `award`. */
-  private static owed(award: PassAward): OwedXp {
+  private static owed(award: Exclude<Award, { readonly kind: 'respawn' }>): OwedXp {
     return {
       cause: award.kind,
       victimId: award.victimId,
