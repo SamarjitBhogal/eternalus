@@ -9606,3 +9606,15 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - What was done: merged `phase/3-sprint-3-work` (80e0ea13) into this branch because #110 was CONFLICTING. Conflicts: `INBOX.md` and `PROGRESS.md` (both sides kept).
 - Checks run: `npm run check` → `EXIT=0`.
 - Next step: reviewer approval; the team merges.
+
+### 2026-11-20 — Phase 3 / review fixes — docs/inbox-audit-and-bugs (PR #110) — claudiodh + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (`5a7cc8dc`) into this branch (conflict:
+  `INBOX.md`, both sides kept), then fixed the 2026-11-19 review. Corrects the 2026-11-13 entry of
+  this branch: BUG-2 and BUG-3 were already answered (DEC-247, DEC-248), so both open items are
+  dropped and their file pointers moved under the ticked BUG-2 and BUG-3 items. The dependency
+  audit item is rewritten to a fresh `npm audit`: 10 findings (9 moderate, 1 high), `zod` and the
+  `eslint` / `typescript-eslint` / `minimatch` family; vite and vitest were fixed by #113.
+- Checks run: `npm audit` → `10 vulnerabilities (9 moderate, 1 high)`; `npm run check` → `EXIT=0`.
+- Next step: Sam answers the dependency item (upgrade PR, Dependabot alerts); BUG-2 and BUG-3
+  are built from DEC-247 and DEC-248 when a plan item schedules them (`docs/plan/bugs.md`).
