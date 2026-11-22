@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   boundsOf,
   distance,
+  distanceSquaredToRect,
   doRectsOverlap,
   doesPolygonOverlapRect,
   distanceToPath,
@@ -64,6 +65,16 @@ describe('geometry', () => {
     expect(isPointInRect({ x: 40.1, y: 40 }, rect)).toBe(false);
     expect(isPointInRect({ x: 25, y: 19.9 }, rect)).toBe(false);
     expect(isPointInRect({ x: 25, y: 60.1 }, rect)).toBe(false);
+  });
+
+  it('measures the squared distance to an upright rectangle: 0 inside, to an edge or a corner outside', () => {
+    const rect = { x: 10, y: 20, width: 30, height: 40 };
+    expect(distanceSquaredToRect({ x: 25, y: 40 }, rect)).toBe(0);
+    expect(distanceSquaredToRect({ x: 40, y: 60 }, rect)).toBe(0);
+    expect(distanceSquaredToRect({ x: 4, y: 40 }, rect)).toBe(36);
+    expect(distanceSquaredToRect({ x: 25, y: 65 }, rect)).toBe(25);
+    expect(distanceSquaredToRect({ x: 43, y: 64 }, rect)).toBe(25);
+    expect(distanceSquaredToRect({ x: 7, y: 16 }, rect)).toBe(25);
   });
 
   it('tells whether two upright rectangles overlap, touching edges included', () => {

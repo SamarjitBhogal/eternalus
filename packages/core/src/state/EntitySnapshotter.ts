@@ -11,6 +11,7 @@ import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import type { Entity } from '../entities/Entity';
 import { Structure } from '../entities/structures/Structure';
+import { outlineBoxOf } from './outlineBoxOf';
 import type { EntitySnapshot } from './Snapshot.types';
 
 /**
@@ -37,6 +38,7 @@ export class EntitySnapshotter {
     const aether = entity.findComponent(Aether);
     const capture = entity.findComponent(Capturable);
     const aura = entity.findComponent(Aura);
+    const auraBox = aura === undefined ? undefined : outlineBoxOf(entity);
     return {
       id: entity.id,
       kind: entity.kind,
@@ -78,7 +80,10 @@ export class EntitySnapshotter {
               lockedBy: capture.lockedBy,
               presence: capture.presence,
             },
-      aura: aura === undefined ? null : { radius: aura.definition.radius },
+      aura:
+        aura === undefined || auraBox === undefined
+          ? null
+          : { radius: aura.definition.radius, box: auraBox },
     };
   }
 }

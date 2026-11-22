@@ -55,6 +55,16 @@ export const isPointInPolygon = (point: Vec2, polygon: Polygon): boolean => {
 export const isPointInRect = ({ x, y }: Vec2, rect: Rect): boolean =>
   x >= rect.x && x <= rect.x + rect.width && y >= rect.y && y <= rect.y + rect.height;
 
+/**
+ * The squared distance from `point` to the upright rectangle `rect`: 0 inside it or on its edge,
+ * else to its nearest edge or corner. Squared, so a caller compares it with a squared radius.
+ */
+export const distanceSquaredToRect = ({ x, y }: Vec2, rect: Rect): number => {
+  const dx = Math.max(rect.x - x, 0, x - (rect.x + rect.width));
+  const dy = Math.max(rect.y - y, 0, y - (rect.y + rect.height));
+  return dx * dx + dy * dy;
+};
+
 /** Whether two upright rectangles overlap or touch, edges included. */
 export const doRectsOverlap = (a: Rect, b: Rect): boolean =>
   a.x <= b.x + b.width && a.x + a.width >= b.x && a.y <= b.y + b.height && a.y + a.height >= b.y;

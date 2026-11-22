@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { Footprint } from '../components/Footprint';
 import { StatusEffects } from '../components/StatusEffects';
 import { Health } from '../components/Health';
 import { Transform } from '../components/Transform';
@@ -42,8 +43,8 @@ const setUp = (everyTicks = 1) => {
   });
   const statuses = new StatusEffectApplier(loadStatusEffects(30, 2));
   const system = new StructureAuraSystem(statuses, STRUCTURE_DEFINITIONS, { everyTicks });
-  const unit = (team: 'light' | 'dark' | 'neutral', x: number): Entity => {
-    const entity = factory.create('light-mob', 'light-minion', { team, position: { x, y: 20 } });
+  const unit = (team: 'light' | 'dark' | 'neutral', x: number, y = 20): Entity => {
+    const entity = factory.create('light-mob', 'light-minion', { team, position: { x, y } });
     state.entities.add(entity);
     return entity;
   };
@@ -67,6 +68,32 @@ const setUp = (everyTicks = 1) => {
     buff: tower('buff-tower', 'light', 50),
   };
 };
+
+/**
+ * A 40 by 32 m fort round the tower at (50, 20): its keep (46..54, 16..24) and its west and east
+ * walls (30..32 and 68..70, from y 4 to 36), so its box is x 30..70, y 4..36 and the court between
+ * the keep and the walls is in no polygon.
+ */
+const FORT = [
+  [
+    { x: 46, y: 16 },
+    { x: 54, y: 16 },
+    { x: 54, y: 24 },
+    { x: 46, y: 24 },
+  ],
+  [
+    { x: 30, y: 4 },
+    { x: 32, y: 4 },
+    { x: 32, y: 36 },
+    { x: 30, y: 36 },
+  ],
+  [
+    { x: 68, y: 4 },
+    { x: 70, y: 4 },
+    { x: 70, y: 36 },
+    { x: 68, y: 36 },
+  ],
+];
 
 const idsOf = (entity: Entity) =>
   entity.getComponent(StatusEffects).active.map(({ definition }) => definition.id);
@@ -95,7 +122,7 @@ describe('StructureAuraSystem', () => {
     expect(idsOf(ally)).toEqual(['tower-aura-buff']);
   });
 
-  it('reaches exactly the content radius, and not beyond', () => {
+  it('measures from the centre of a source without a Footprint: exactly the content radius, and not beyond', () => {
     const { unit, step } = setUp();
     const inside = unit('dark', 50 + RADIUS - 0.5);
     const outside = unit('dark', 50 + RADIUS + 0.5);
@@ -105,6 +132,46 @@ describe('StructureAuraSystem', () => {
     expect(RADIUS).toBe(12);
     expect(idsOf(inside)).toEqual(['tower-aura-debuff']);
     expect(idsOf(outside)).toEqual([]);
+  });
+
+  it('measures the radius beyond the fort box: beside a wall, more than the radius from the tower (DEC-323 (3))', () => {
+    const { buff, unit, step } = setUp();
+    buff.addComponent(new Footprint(FORT));
+    const ally = unit('light', 70 + 10);
+    const enemy = unit('dark', 70 + RADIUS - 0.5);
+    const beyond = unit('light', 70 + RADIUS + 0.5);
+
+    step();
+
+    expect(80 - 50).toBeGreaterThan(RADIUS);
+    expect(idsOf(ally)).toEqual(['tower-aura-buff']);
+    expect(idsOf(enemy)).toEqual(['tower-aura-debuff']);
+    expect(idsOf(beyond)).toEqual([]);
+  });
+
+  it('covers the whole court inside the fort box, at no distance (DEC-323 (3))', () => {
+    const { buff, unit, step } = setUp();
+    buff.addComponent(new Footprint(FORT));
+    const court = unit('light', 64, 34);
+
+    step();
+
+    expect(Math.hypot(64 - 50, 34 - 20)).toBeGreaterThan(RADIUS);
+    expect(idsOf(court)).toEqual(['tower-aura-buff']);
+  });
+
+  it('rounds the corners of the fort box: the radius counts along the diagonal (DEC-323 (3))', () => {
+    const { buff, unit, step } = setUp();
+    buff.addComponent(new Footprint(FORT));
+    const near = unit('dark', 70 + 8, 36 + 8);
+    const far = unit('dark', 70 + 9, 36 + 9);
+
+    step();
+
+    expect(Math.hypot(8, 8)).toBeLessThan(RADIUS);
+    expect(Math.hypot(9, 9)).toBeGreaterThan(RADIUS);
+    expect(idsOf(near)).toEqual(['tower-aura-debuff']);
+    expect(idsOf(far)).toEqual([]);
   });
 
   it('takes the status away from a unit that left, on the next pass, and keeps its other statuses', () => {

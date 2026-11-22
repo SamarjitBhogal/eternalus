@@ -6,7 +6,7 @@ import type { TeamState } from './GameState.types';
 import type { Horde } from './Horde.types';
 import type { DuelScore, ScheduledMark } from './MatchState.types';
 import type { MapObjectSnapshot } from '../content/maps/mapObjects.types';
-import type { Polygon } from '../utils/geometry.types';
+import type { Polygon, Rect } from '../utils/geometry.types';
 
 /**
  * One entity as the client sees it. A field is `null` when the entity has no component behind it
@@ -42,10 +42,12 @@ export type EntitySnapshot = {
   /** A capture point's state (`Capturable`, architecture 07 §7); `null` for every other entity. */
   readonly capture: CaptureSnapshot | null;
   /**
-   * How far the entity's aura reaches (`Aura`, DEC-315 (4)), in world units; `null` for every
-   * entity without one. The client draws the ring from it, so no radius lives in the client.
+   * The entity's aura (`Aura`, DEC-315 (4)) in world units: its `radius`, measured beyond the
+   * outline box (DEC-323 (3)), and that `box` (`outlineBoxOf`: the `Footprint` box, or a box of no
+   * size at the centre). `null` for every entity without an aura, or without a box to measure
+   * from. The client draws the field from it, so no radius lives in the client.
    */
-  readonly aura: { readonly radius: number } | null;
+  readonly aura: { readonly radius: number; readonly box: Rect } | null;
 };
 
 /** A Legend's level and XP as the client sees it (architecture 03 §5, the HUD's XP ring). */

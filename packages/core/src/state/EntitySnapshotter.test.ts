@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Capturable } from '../components/Capturable';
+import { Footprint } from '../components/Footprint';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { ZoneArea } from '../components/ZoneArea';
 import { ContentCatalogue } from '../content/ContentCatalogue';
@@ -84,7 +85,7 @@ describe('EntitySnapshotter', () => {
     expect(structuredClone(snapshot)).toEqual(snapshot);
   });
 
-  it("carries a buff tower's aura radius from its definition, and null for a structure without an aura (DEC-315 (4))", () => {
+  it("carries a buff tower's aura radius from its definition, measured from its centre without a Footprint, and null for a structure without an aura (DEC-315 (4))", () => {
     const tower = new BuffTower('entity-1', 'buff-tower');
     tower.spawn({
       definition: STRUCTURE_DEFINITIONS.get('buff-tower'),
@@ -99,7 +100,27 @@ describe('EntitySnapshotter', () => {
     });
     const snapshotter = new EntitySnapshotter(4, CURVES);
 
-    expect(snapshotter.snapshotOf(tower).aura).toEqual({ radius: 12 });
+    expect(snapshotter.snapshotOf(tower).aura).toEqual({
+      radius: 12,
+      box: { x: 5, y: 6, width: 0, height: 0 },
+    });
     expect(snapshotter.snapshotOf(stronghold).aura).toBeNull();
+  });
+
+  it("carries the box a buff tower's aura is measured beyond: its Footprint box (DEC-323 (3))", () => {
+    const tower = new BuffTower('entity-1', 'buff-tower');
+    tower.spawn({
+      definition: STRUCTURE_DEFINITIONS.get('buff-tower'),
+      position: { x: 2, y: 2 },
+      team: 'dark',
+    });
+    const footprint = new Footprint([SQUARE, [...SQUARE.map(({ x, y }) => ({ x: x + 6, y }))]]);
+    tower.addComponent(footprint);
+
+    const snapshot = new EntitySnapshotter(4, CURVES).snapshotOf(tower);
+
+    expect(snapshot.aura).toEqual({ radius: 12, box: { x: 0, y: 0, width: 10, height: 4 } });
+    expect(snapshot.aura?.box).toEqual(footprint.bounds);
+    expect(structuredClone(snapshot)).toEqual(snapshot);
   });
 });
