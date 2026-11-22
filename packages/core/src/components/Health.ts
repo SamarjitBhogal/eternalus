@@ -1,3 +1,4 @@
+import { MIN_MAX_HEALTH } from './Health.constants';
 import type { DamageBreakdown, MutableShieldBar, ShieldBar } from './Health.types';
 
 /**
@@ -76,12 +77,12 @@ export class Health {
   }
 
   /**
-   * Lowers full health by `amount` (finite, ≥ 0, never below 1 max), and current health with it
+   * Lowers full health by `amount` (finite, ≥ 0, never below `MIN_MAX_HEALTH`), and current health with it
    * when it would pass the new cap: a lost level's health step (07 §7, DEC-258).
    */
   public lowerMax(amount: number): void {
     Health.checkAmount(amount, 'max lowering');
-    this.maxValue = Math.max(1, this.maxValue - amount);
+    this.maxValue = Math.max(MIN_MAX_HEALTH, this.maxValue - amount);
     this.currentValue = Math.min(this.currentValue, this.maxValue);
   }
 
