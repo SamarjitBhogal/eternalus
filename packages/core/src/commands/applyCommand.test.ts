@@ -63,6 +63,7 @@ describe('applyCommand', () => {
       playerTeam: 'light',
       hadHuman: false,
       durationTicks: 1,
+      matchTicks: 0,
       seed: 1,
       configHash: 0,
       legends: [],

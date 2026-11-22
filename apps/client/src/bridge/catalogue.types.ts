@@ -101,6 +101,11 @@ export type RasterBox = {
 export type EffectsRenderer = 'figma-raster' | 'css';
 /** Which colour set the token pairs below 13 §7's minimums use (DEC-55). */
 export type ContrastMode = 'figma' | 'minimums';
+/**
+ * A built UI enhancement (ui-enhancements-plan §3): an id `data-ui-enhancements` lists and its CSS
+ * is scoped under (§2 rule 1, DEC-53). Only ids that are built are members.
+ */
+export type UiEnhancementId = 'countdown-urgency';
 
 /**
  * Art of one Legend, keyed by spec id, never by a Legend name (DEC-49); `null` renders the
@@ -274,6 +279,11 @@ export type DisplayCatalogue = {
   readonly effectsRenderer: EffectsRenderer;
   /** The colour set; `SessionController` writes it to `data-contrast` on the theme root. */
   readonly contrastMode: ContrastMode;
+  /**
+   * The UI enhancements on; `SessionController` writes them, space-separated, to
+   * `data-ui-enhancements` on the theme root. Empty: every module draws its Figma original.
+   */
+  readonly uiEnhancements: readonly UiEnhancementId[];
   readonly hud: HudCatalogue;
   /** The lane minions by id and display name (core content): the developer menu's mob picker. */
   readonly laneMinions: readonly { readonly id: string; readonly displayName: string }[];

@@ -216,4 +216,19 @@ describe('SessionController asset groups', () => {
     minimums.controller.start();
     expect(minimums.themeRoot.dataset.contrast).toBe('minimums');
   });
+
+  // ui-enhancements-plan §2 rule 1: a space-separated list, so CSS scopes each id with `~=`.
+  it("marks the catalogue's UI enhancements on the theme root while the session runs", () => {
+    const shipped = testSession();
+    shipped.controller.start();
+    expect(shipped.themeRoot.dataset.uiEnhancements).toBe('countdown-urgency');
+    shipped.controller.destroy();
+    expect(shipped.themeRoot.dataset.uiEnhancements).toBeUndefined();
+
+    const original = testSession({
+      catalogue: { load: () => ({ ...shippedCatalogue().load(), uiEnhancements: [] }) },
+    });
+    original.controller.start();
+    expect(original.themeRoot.dataset.uiEnhancements).toBe('');
+  });
 });

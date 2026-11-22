@@ -206,6 +206,7 @@ export const TEST_CONTENT: DisplayCatalogue = {
   lockInChromeAssetId: 'lock-in-chrome',
   effectsRenderer: 'figma-raster',
   contrastMode: 'figma',
+  uiEnhancements: [],
   hud: TEST_HUD_CATALOGUE,
   laneMinions: [
     { id: 'light-minion', displayName: 'Light Minion' },
