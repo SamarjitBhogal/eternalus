@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { MapObject } from '../../content/maps/mapObjects.types';
+import { TEST_DEBUG_CONFIG } from '../../diagnostics/InvariantRunner.constants';
 import { TWO_LANE_MAP } from '../../state/__fixtures__/twoLaneMap';
 import type { Vec2 } from '../../utils/geometry.types';
 import { abilityMatch, type ScenarioSpawn } from '../__fixtures__/abilityMatch';
@@ -215,5 +216,51 @@ describe('Hamstring (scenario)', () => {
 
     expect(second.sim.hash()).toBe(first.sim.hash());
     expect(idle.sim.hash()).not.toBe(first.sim.hash());
+  });
+});
+
+/**
+ * Hamstring and Veil (DEC-266, DEC-327): the blade's hit ends Veil on the thrower and on the one
+ * it strikes, and it strikes a Veiled enemy on its line, as an area does. Veil (`ability-2`) is
+ * cast in tick 1, the blade in tick 2: the enemy 6 m east is hit in tick 7, and Veil ends in the
+ * status pass of tick 8 (`ProjectileSystem` runs after `StatusEffectSystem`). Every invariant
+ * runs each tick and throws.
+ */
+describe('Hamstring and Veil (scenario)', () => {
+  const ENEMY_AT = { x: 56, y: 50 };
+
+  const veilMatch = () => {
+    const scenario = abilityMatch([CASTER, { kind: 'warrior', team: 'dark', at: ENEMY_AT }], {
+      debug: TEST_DEBUG_CONFIG,
+    });
+    const [thrower = '', enemy = ''] = scenario.ids;
+    /** Veil on `id` in tick 1, the blade thrown east in tick 2, then 18 more ticks. */
+    const veilThenThrow = (id: string, at: Vec2): void => {
+      scenario.cast(id, 'ability-2', at);
+      scenario.run(1);
+      scenario.cast(thrower, 'ability-3', EAST);
+      scenario.run(19);
+    };
+    const veilLog = () => scenario.log.filter((line) => line.includes('invisible'));
+    return { ...scenario, thrower, enemy, veilThenThrow, veilLog };
+  };
+
+  it('a Veiled Warrior’s blade hits the enemy for 80, and its own Veil ends', () => {
+    const { thrower, enemy, lost, veilThenThrow, veilLog } = veilMatch();
+
+    veilThenThrow(thrower, CASTER.at);
+
+    expect(lost(enemy)).toBe(80);
+    expect(lost(thrower)).toBe(0);
+    expect(veilLog()).toEqual([`1 invisible on ${thrower}`, `8 invisible off ${thrower}`]);
+  });
+
+  it('the blade hits a Veiled enemy on its line for 80, and that Veil ends', () => {
+    const { enemy, lost, veilThenThrow, veilLog } = veilMatch();
+
+    veilThenThrow(enemy, ENEMY_AT);
+
+    expect(lost(enemy)).toBe(80);
+    expect(veilLog()).toEqual([`1 invisible on ${enemy}`, `8 invisible off ${enemy}`]);
   });
 });
