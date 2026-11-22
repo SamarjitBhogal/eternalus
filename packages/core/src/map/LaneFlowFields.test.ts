@@ -450,6 +450,23 @@ describe('LaneFlowFields.progress', () => {
     }
   });
 
+  it.each([
+    ['3 lanes', stampedWorld(3, 1)],
+    ['5 lanes', stampedWorld(5, 1)],
+  ] as const)(
+    'keeps every lane’s cost from its own end at most a quarter of UNREACHED, so progress never falls back for want of range: %s',
+    (_, world) => {
+      for (const lane of world.map.lanes) {
+        for (const team of ['light', 'dark'] as const) {
+          const field = world.fields.field(lane.id, team);
+          const home =
+            field === undefined ? UNREACHED : (field.integration[field.start] ?? UNREACHED);
+          expect(home, `${lane.id} ${team}`).toBeLessThanOrEqual(UNREACHED / 4);
+        }
+      }
+    },
+  );
+
   it('cannot say for an unknown lane or a point outside the world', () => {
     const lane = map.lanes[0];
     if (lane === undefined) throw new Error('no lane');
