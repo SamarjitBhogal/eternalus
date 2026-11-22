@@ -27,7 +27,7 @@ selectors and sends intents that become `Command`s through the bridge. Follow
    with a store holding the state under test; assert the markup; test selectors/hooks separately.
 7. Wire it into `SessionController`/`MainMenuScreen` navigation if it is a screen; add the HUD
    element to `MatchScreen` if it is HUD. One place each.
-8. Append to `docs/plan/PROGRESS.md`; run `npm run check`; report verbatim. No commits unless
+8. Add a new entry file in `docs/plan/progress/`; run `npm run check`; report verbatim. No commits unless
    asked.
 
 ## Done when

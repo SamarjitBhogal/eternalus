@@ -4,7 +4,7 @@ description: The copy-paste brief for handing one concern to a teammate or a cod
 audience: [humans]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-11-19
 tags: [agents, process, template]
 related: ['docs/agents/running-agents.md', 'docs/agents/checklists.md']
 ---
@@ -26,9 +26,9 @@ Acceptance criteria:
   - <observable behaviour 1>
   - <observable behaviour 2>
 Tests: <which tests, next to which files; determinism test if core>
-Docs: <which docs/frontmatter to update; PROGRESS.md entry>
+Docs: <which docs/frontmatter to update; progress entry file>
 Out of scope: <what not to touch>
-Done when: npm run check passes; PR into phase/<n>-<name>; PROGRESS.md entry appended.
+Done when: npm run check passes; PR into phase/<n>-<name>; new entry file in docs/plan/progress/.
 ```
 
 ## Filled example
@@ -47,9 +47,9 @@ Acceptance criteria:
   - removeShield(sourceId) removes only that bar; base health is untouched.
   - Worked example passes: base 1000 + three bars of 1500 = 4500 effective.
 Tests: Health.test.ts covering the four criteria plus over-damage and zero-damage edge cases.
-Docs: none beyond TSDoc; PROGRESS.md entry.
+Docs: none beyond TSDoc; progress entry file.
 Out of scope: DamagePipeline, StructureSystem, UI.
-Done when: npm run check passes; PR into phase/2-structures-and-combat; PROGRESS.md entry.
+Done when: npm run check passes; PR into phase/2-structures-and-combat; progress entry file.
 ```
 
 ## Related
