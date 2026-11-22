@@ -75,6 +75,13 @@ const marchDirection = (routes: LaneRoutes, { laneId, team, position }: LaneTowe
   return forward;
 };
 
+/**
+ * The tower horde test's own time limit, twice the suite's 60 s `testTimeout` (DEC-289): one seed
+ * took about 3 s locally but 65 s under coverage on the windows-latest CI runner (2026-11-20).
+ * `INBOX.md` asks for the test to be made faster.
+ */
+const HORDE_WALK_TIMEOUT_MS = 120_000;
+
 describe('Simulation with a roster and map objects (as the client builds a match)', () => {
   it.each([1, 2])(
     'every bot Legend leaves its Stronghold wall ring within 30 seconds (seed %i)',
@@ -178,9 +185,10 @@ describe('Simulation with a roster and map objects (as the client builds a match
       expect(stillDeploying).toEqual([]);
       expect(notOut).toEqual([]);
     },
+    HORDE_WALK_TIMEOUT_MS,
   );
 
-  it("gives each lane tower its fort's footprint as its Footprint, the Stronghold its palace outline, and a gate none (DEC-185, D)", () => {
+  it("gives each lane tower its fort's footprint as its Footprint, the Stronghold its palace outline, and a gate its own outline (DEC-185, D; DEC-217 (17))", () => {
     const config = createDefaultGameConfig();
     const map = new MapGenerator().generate(config, 1);
     const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
@@ -209,7 +217,50 @@ describe('Simulation with a roster and map objects (as the client builds a match
       mapObjects.find(({ kind }) => kind === 'stronghold')?.footprints.length,
     );
     expect(shapes.get('stronghold')).toBeGreaterThan(0);
-    expect(shapes.get('gate')).toBe(0);
+    expect(shapes.get('gate')).toBe(
+      mapObjects.find(({ kind }) => kind === 'gate')?.footprints.length,
+    );
+    expect(shapes.get('gate')).toBeGreaterThan(0);
+  });
+
+  it('puts a melee Legend at the far end of a gate in reach of the gate, past its 3 m circle (DEC-217 (17))', () => {
+    const config = createDefaultGameConfig();
+    const map = new MapGenerator().generate(config, 1);
+    const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+    const simulation = new Simulation({
+      config,
+      seed: 1,
+      logger: new NullLogger(),
+      map,
+      mapObjects,
+    });
+    const gate = map.features.find(({ kind, team }) => kind === 'gate' && team === 'light');
+    const centre = gate?.position ?? { x: 0, y: 0 };
+    const outline = mapObjects.find(({ id }) => id === gate?.id)?.footprints[0] ?? [];
+    const gap = ({ x, y }: Vec2): number => Math.hypot(x - centre.x, y - centre.y);
+    // The legend stands on the gate's corner farthest from its centre.
+    const at = outline.reduce((far, point) => (gap(point) > gap(far) ? point : far));
+    simulation.enqueueCommand({
+      type: 'dev-spawn',
+      kind: 'warrior',
+      definitionId: 'warrior',
+      team: 'dark',
+      at,
+      count: 1,
+    });
+    simulation.step();
+    const { entities } = (simulation as unknown as { readonly state: GameState }).state;
+    const ids = simulation.snapshot().entities;
+    const legend = ids.find(({ definitionId }) => definitionId === 'warrior');
+    const structure = ids.find(
+      ({ kind, transform }) =>
+        kind === 'gate' && transform?.x === centre.x && transform.y === centre.y,
+    );
+    const legendAt = legend?.transform ?? { x: 0, y: 0 };
+
+    expect(structure).toBeDefined();
+    expect(gap(legendAt)).toBeGreaterThan((structure?.transform?.radius ?? 0) + 5);
+    expect(entities.isInReach(legend?.id ?? '', structure?.id ?? '')).toBe(true);
   });
 
   it('puts a melee Legend at the outside of the palace wall in reach of its Stronghold, past its 40 m circle (DEC-185 D)', () => {

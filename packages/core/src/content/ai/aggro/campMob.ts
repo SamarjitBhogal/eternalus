@@ -1,5 +1,5 @@
 import { GUARD_LEASH } from '../../structures/guardLeash';
-import type { GuardAggroRuleDefinition } from '../ai.types';
+import type { AuthoredGuardAggroRule } from '../ai.types';
 import { TOWER_GUARD_AGGRO } from './towerGuard';
 
 /**
@@ -11,4 +11,4 @@ export const CAMP_MOB_AGGRO = {
   id: 'camp-mob',
   // TUNE: the camp leash less the post gap.
   acquisitionRadius: GUARD_LEASH.camp - GUARD_LEASH.postGap,
-} as const satisfies GuardAggroRuleDefinition;
+} as const satisfies AuthoredGuardAggroRule;

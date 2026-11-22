@@ -18,7 +18,6 @@ import { EachGuardRespawn } from './EachGuardRespawn';
 import { GroupGuardRespawn } from './GroupGuardRespawn';
 import type { GuardRespawnRule } from './GuardRoster.types';
 import { NeverGuardRespawn } from './NeverGuardRespawn';
-import { countdownTicks } from '../config/countdownTicks';
 
 /**
  * Runs every home's guard plan for `SpawnSystem` (architecture 18 §7, 07 §6). A home is a
@@ -44,7 +43,8 @@ export class GuardRoster {
   /**
    * @param factory - Builds the guards.
    * @param definitions - Where each guard's mob definition, and so its kind, is looked up.
-   * @param plans - Each structure's guard plan, keyed by structure definition id (content).
+   * @param plans - Each home's guard plan, keyed by structure or zone definition id (content, loaded
+   *   in ticks).
    */
   public constructor(
     private readonly factory: EntityFactory,
@@ -75,10 +75,7 @@ export class GuardRoster {
       const firstTick = GuardRoster.firstTick(state, plan);
       const homeRadius = home instanceof Zone ? 0 : transform.radius;
       // A `never` post is never refilled, so it has no respawn delay.
-      const respawnTicks =
-        plan.respawn.kind === 'never'
-          ? 0
-          : Math.round(plan.respawn.seconds * state.config.tickRate);
+      const respawnTicks = plan.respawn.kind === 'never' ? 0 : plan.respawn.ticks;
       const total = plan.table.reduce((sum, row) => sum + row.count, 0);
       const ring = homeRadius + plan.postGap;
       const edge = homeRadius + plan.leashRadius;
@@ -180,9 +177,7 @@ export class GuardRoster {
     if (activation.at === 'match-start') {
       return 0;
     }
-    const { tickRate } = state.config;
-    const countdownEnd = countdownTicks(state.config.match.countdownSeconds, tickRate);
-    return countdownEnd + Math.round(activation.delaySeconds * tickRate);
+    return state.match.countdownEndTick + activation.delayTicks;
   }
 
   /**

@@ -8,8 +8,9 @@ import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
 import { WorldObjectStore } from '../state/WorldObjectStore';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import type { DeepPartial, GameConfig } from '../config/GameConfig.types';
+import { timelineFrameOf } from '../config/timelineFrameOf';
 import { loadDefaultContent } from '../content/loadDefaultContent';
-import { GUARD_PLANS } from '../content/structures/guardPlans';
+import { loadGuardPlans } from '../content/structures/loadGuardPlans';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import { spawnMapStructures } from '../state/__fixtures__/spawnMapStructures';
@@ -20,12 +21,18 @@ import { GameState } from '../state/GameState';
 import { StateHasher } from '../state/StateHasher';
 import type { MapDefinition } from '../content/maps/maps.types';
 import { ZONE_DEFINITIONS } from '../content/zones/zoneCatalogue';
-import type { GuardPlanDefinition } from '../content/structures/structures.types';
+import type { AuthoredGuardPlan } from '../content/structures/structures.types';
 import { ZoneArea } from '../components/ZoneArea';
 import type { GuardSlot } from '../state/GuardStore.types';
 import { GuardRoster } from './GuardRoster';
 
 const TICK_RATE = 30;
+/** The shipped guard plans, loaded at `TICK_RATE`. */
+const GUARD_PLANS = loadGuardPlans(TICK_RATE);
+/** The countdown's end tick from `config`, as `Simulation` hands it to `GameState`. */
+const timingOf = (config: GameConfig) => ({
+  countdownEndTick: timelineFrameOf(config).countdownEndTick,
+});
 
 describe('GuardRoster', () => {
   const guarded = (overrides: DeepPartial<GameConfig> = {}) => {
@@ -33,7 +40,7 @@ describe('GuardRoster', () => {
       match: { countdownSeconds: 6000 },
       ...overrides,
     });
-    const state = new GameState(config, 1, matchWorldOf(TWO_LANE_MAP));
+    const state = new GameState(config, 1, matchWorldOf(TWO_LANE_MAP), {}, timingOf(config));
     spawnMapStructures(state);
     const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(TICK_RATE));
     const roster = new GuardRoster(factory, factory.definitions, GUARD_PLANS);
@@ -256,7 +263,7 @@ describe('GuardRoster', () => {
         ],
       };
       const config = createDefaultGameConfig({ match: { countdownSeconds: 2 } });
-      const state = new GameState(config, 1, matchWorldOf(map));
+      const state = new GameState(config, 1, matchWorldOf(map), {}, timingOf(config));
       spawnMapStructures(state);
       const factory = new EntityFactory(
         createDefaultEntityRegistry(),
@@ -566,7 +573,7 @@ describe('GuardRoster', () => {
       { x: CENTRE.x + half, y: CENTRE.y + half },
       { x: CENTRE.x - half, y: CENTRE.y + half },
     ];
-    const ZONE_PLAN: GuardPlanDefinition = {
+    const ZONE_PLAN: AuthoredGuardPlan = {
       table: [{ mobId: 'heavy-camp-mob', count: 1 }],
       leashRadius: 8,
       postGap: 0,
@@ -579,9 +586,9 @@ describe('GuardRoster', () => {
      * The two-lane map with a neutral capture point at `CENTRE` (a 20 m square floor) and a
      * blocking 8 m keep on its anchor; countdown 2 s (60 ticks).
      */
-    const zoned = (plan: Partial<GuardPlanDefinition> = {}) => {
+    const zoned = (plan: Partial<AuthoredGuardPlan> = {}) => {
       const config = createDefaultGameConfig({ match: { countdownSeconds: 2 } });
-      const state = new GameState(config, 1, matchWorldOf(TWO_LANE_MAP));
+      const state = new GameState(config, 1, matchWorldOf(TWO_LANE_MAP), {}, timingOf(config));
       spawnMapStructures(state);
       const units = loadDefaultContent(TICK_RATE);
       const objects = new Map(Object.values(MAP_OBJECT_DEFINITIONS).map((d) => [d.id, d]));
@@ -602,9 +609,11 @@ describe('GuardRoster', () => {
         entities: state.entities,
         definitions: MAP_OBJECT_DEFINITIONS,
       });
-      const roster = new GuardRoster(factory, factory.definitions, {
-        'capture-point': { ...ZONE_PLAN, ...plan },
-      });
+      const roster = new GuardRoster(
+        factory,
+        factory.definitions,
+        loadGuardPlans(TICK_RATE, { 'capture-point': { ...ZONE_PLAN, ...plan } }),
+      );
       roster.layOut(state);
       const cleared: string[] = [];
       state.events.on('camp-cleared', ({ entityId }) => cleared.push(entityId));

@@ -6,9 +6,13 @@ import {
 } from './GameConfig.constants';
 import type { GameConfig } from './GameConfig.types';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from './matchPhases';
-import type { MatchTimelineEntry, TimelineActionKind } from './MatchTimelineEntry.types';
+import type {
+  MatchTimelineEntry,
+  TimelineActionKind,
+  TimelineFrame,
+} from './MatchTimelineEntry.types';
+import { timelineFrameOf } from './timelineFrameOf';
 import { timelineMarkTick } from './timelineMarkTick';
-import { countdownTicks } from './countdownTicks';
 import { isPlayableTeam } from '../teams/playableTeams';
 
 type Rule = {
@@ -77,6 +81,17 @@ const timelineOf = (config: unknown): readonly MatchTimelineEntry[] =>
   // Safe: every mark and every action passed their rules before any rule that calls this.
   valueAt(config, 'match.timeline') as readonly MatchTimelineEntry[];
 
+/** What the timeline's marks resolve against; only for rules after the three fields' own rules. */
+const frameOf = (config: unknown): TimelineFrame =>
+  // Safe: all three fields passed their own rules before any rule that calls this.
+  timelineFrameOf({
+    tickRate: valueAt(config, 'tickRate') as number,
+    match: {
+      plannedMatchSeconds: valueAt(config, 'match.plannedMatchSeconds') as number,
+      countdownSeconds: valueAt(config, 'match.countdownSeconds') as number,
+    },
+  });
+
 /** Checked in order; cross-field rules come after the fields they read. */
 const RULES: readonly Rule[] = [
   {
@@ -123,9 +138,11 @@ const RULES: readonly Rule[] = [
     isValid: (value) => isWhole(value, 1),
   },
   {
-    path: 'map.pathMaxExpansions',
-    rule: 'must be a whole number >= 1',
-    isValid: (value) => isWhole(value, 1),
+    path: 'map.pathMaxSearchArea',
+    rule: 'must be a finite number >= map.navCellSize squared (one cell)',
+    isValid: (value, config) =>
+      // Safe: the map.navCellSize rule passed before this one.
+      isPositive(value) && value >= (valueAt(config, 'map.navCellSize') as number) ** 2,
   },
   {
     path: 'map.pathSnapCells',
@@ -210,12 +227,10 @@ const RULES: readonly Rule[] = [
     path: 'match.timeline',
     rule: 'entries must be in tick order',
     isValid: (_value, config) => {
-      // Safe: both fields passed their own rules above.
-      const tickRate = valueAt(config, 'tickRate') as number;
-      const planned = valueAt(config, 'match.plannedMatchSeconds') as number;
+      const frame = frameOf(config);
       let previous = 0;
       return timelineOf(config).every(({ at }) => {
-        const tick = timelineMarkTick(at, tickRate, planned);
+        const tick = timelineMarkTick(at, frame);
         const isInOrder = tick >= previous;
         previous = tick;
         return isInOrder;
@@ -246,15 +261,9 @@ const RULES: readonly Rule[] = [
     path: 'match.timeline',
     rule: 'the first enter-phase entry ends the countdown, so it must be at tick round(match.countdownSeconds * tickRate)',
     isValid: (_value, config) => {
-      // Safe: all three fields passed their own rules above.
-      const tickRate = valueAt(config, 'tickRate') as number;
-      const planned = valueAt(config, 'match.plannedMatchSeconds') as number;
-      const countdownSeconds = valueAt(config, 'match.countdownSeconds') as number;
+      const frame = frameOf(config);
       const [first] = timelineOf(config);
-      return (
-        first !== undefined &&
-        timelineMarkTick(first.at, tickRate, planned) === countdownTicks(countdownSeconds, tickRate)
-      );
+      return first !== undefined && timelineMarkTick(first.at, frame) === frame.countdownEndTick;
     },
   },
   {

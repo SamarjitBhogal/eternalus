@@ -1,6 +1,6 @@
 import { CAPTURE_POINT_COURT } from '../zones/capturePointCourt';
 import { GUARD_LEASH } from './guardLeash';
-import type { GuardPlanDefinition } from './structures.types';
+import type { AuthoredGuardPlan } from './structures.types';
 
 const RESPAWN = 120; // TUNE: game doc "respawn every 2 minutes"
 // TUNE: owner 2026-11-02 (DEC-144): per guard, one decision's walk (10 ticks at its own top
@@ -28,7 +28,7 @@ const CAMP = {
  * balancing.md's `Recommendation:` (light 4 light; medium 2 medium + 2 light; heavy 1 heavy + 2
  * medium).
  */
-const CAMP_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
+const CAMP_PLANS: Readonly<Record<string, AuthoredGuardPlan>> = {
   'forest-camp-light': { ...CAMP, table: [{ mobId: 'light-camp-mob', count: 4 }] },
   'forest-camp-medium': {
     ...CAMP,
@@ -53,7 +53,7 @@ const CAMP_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
  * so the Stronghold's light guards fight in melee for now. The forest camps' groups and the outer
  * capture points' mini-boss follow.
  */
-export const GUARD_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
+export const GUARD_PLANS: Readonly<Record<string, AuthoredGuardPlan>> = {
   'spawner-tower': {
     table: [{ mobId: 'light-guard', count: 4 }],
     leashRadius: GUARD_LEASH.tower,
@@ -97,10 +97,10 @@ export const GUARD_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
     postGap: CAPTURE_POINT_COURT.postGap,
     leashTolerance: TOLERANCE,
     // TUNE: reference 04 "Mini-bosses at the quarter mark": the default timeline's quarter-mark
-    // entry (0.25 × plannedMatchSeconds 1800, from match start: 450 s) less the 10 s countdown,
-    // since this delay counts from the countdown's end. guardPlans.test.ts derives it from the
-    // config; content may not import config/, so the number is written here.
-    activation: { at: 'countdown-end', delaySeconds: 440 },
+    // entry (0.25 × plannedMatchSeconds 1800 = 450 s) counted from the countdown's end, as this
+    // delay is (DEC-282). guardPlans.test.ts derives it from the config; content may not import
+    // config/, so the number is written here.
+    activation: { at: 'countdown-end', delaySeconds: 450 },
     // reference 04: one mini-boss per match; its support mobs do not come back either until
     // respawning guards is signed off (INBOX.md)
     respawn: { kind: 'never' },

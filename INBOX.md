@@ -71,6 +71,31 @@ Reply inline (`Decision: …`).
       (like the existing `AFTER_BUFF_TOWERS`) would hold it once. It touches the camp lines, so it
       would be its own small refactor PR. OK, or leave as is?
 
+- [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
+      PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
+      small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`
+      without `hasMapFootprint` is legal and does nothing. One field (for example
+      `mapFootprint?: 'reach' | 'fort'`) makes that state impossible; it changes the same field
+      as item (B3) below, so do both together. (G2) `DefaultSystemPipeline.fortBoxesOf` looks up
+      each entity's definition again; record the fort-box fact where the `Footprint` is made
+      (`Simulation.spawnStructures`), so the pipeline needs no catalogue. Same code as item (C1)
+      below.
+
+- [ ] **`refactor/fort-geometry-helpers` critic (2026-11-13), better than the design — two items
+      for the tidy PR (DEC-218), sign-off per item.** Not built: the branch is a split from
+      PR #98 and stays small. (F1) `MapSceneryBuilder` still grows each ring feature's box by
+      hand, with 5 and 10 as literals; use `boundsOf`, a `growRect(rect, pad)` helper and a
+      constant in `MapSceneryBuilder.constants.ts`. (F2) "wall = side / `wallDivisor`" is in
+      `MapFortificationBuilder` (sketch units) and in `fortInWorld` (world units); one
+      `fortWall(side)` serves both.
+
+- [ ] **`refactor/astar-search-area` critic (2026-11-13), better than the design — one item,
+      sign-off.** Not built. `GameConfig.map.pathSnapCells` (12) is counted in cells, like the
+      old A\* cap: its comment says it "covers a Stronghold footprint on 5 m cells" (60 m), and on
+      PR #98's 2.5 m cells it reaches 30 m. Proposed: `pathSnapDistance` in world units, with the
+      rings derived as `ceil(distance / cellSize)`. Whether 30 m still covers a Stronghold is a
+      live question on #98.
+
 - [ ] **Teammate's boss spec (Aryan Walanj, 2026-11-11): amend reference 04?** A teammate's spec
       differs from `docs/reference/game-design/04-objectives-capture-points-and-bosses.md` in
       four places. Nothing is built for any of them until you answer; no Cathedral or middle-boss
@@ -94,9 +119,10 @@ Reply inline (`Decision: …`).
       (c) needs Sam's sign-off now and is replaced by phase-3 sprint 3.6's `BossController`, (d)
       partly built, (e) awaits the owner and Sam.** (a) The boss
       spawns at the default timeline's quarter mark (440 s after the countdown ends, 2026-11-12;
+      450 s since DEC-282 (1) counts the marks from the countdown's end, 2026-11-20;
       `guardPlans.test.ts` derives it from `createDefaultGameConfig`'s `quarter-mark` entry), but
       through its guard plan's `delaySeconds`, not `MatchTimeline`: a match with another
-      `plannedMatchSeconds` or countdown keeps 440 s. Reference 04 and 07 §7 schedule it from the
+      `plannedMatchSeconds` keeps 450 s. Reference 04 and 07 §7 schedule it from the
       match timeline; only that mechanism is still interim. (b) **Built 2026-11-12 (PR #99 review
       F8):** while the boss lives its zone cannot be captured, as reference 04 says:
       `CaptureSystem` sets `lockedBy` from the zone's guard posts (`content/zones/zoneLocks.ts`)
@@ -174,7 +200,7 @@ Reply inline (`Decision: …`).
 
 - [ ] **Timed guard spawns beside `MatchTimeline` (`feat/zone-guard-homes` critic finding 2,
       2026-11-09) — accepted as interim.** Guard plans now activate `delaySeconds` after the
-      countdown ends (`GuardPlanDefinition.activation`, `content/structures/structures.types.ts`), and the
+      countdown ends (`AuthoredGuardPlan.activation`, `content/structures/structures.types.ts`), and the
       mini-boss (PR A2) uses it. The design schedules mini-boss spawns from `MatchTimeline` /
       `MatchDirector` (07 §7, 12; phase-3 sprints 3.5–3.6), so timed match spawns now have two
       paths and no doc says which owns boss timing. Due before the zone-lock PR: pick one owner
@@ -214,6 +240,42 @@ Reply inline (`Decision: …`).
       asked for minions to attack them. Keep DEC-193, or should minions attack obstacles (and
       which ones: props only, or blocking obstacles too)?
   - **Answered 2026-11-13 by DEC-248** (chat, PR #96). Not built yet (BUG-3).
+
+- [x] **`refactor/durations-at-load` critic (2026-11-14), better than the design — built, sign-off
+      asked; no decision blocks the PR.** #86's healing system divided its two rates
+      (`healthFractionPerSecond`, a structure bonus's `fractionPerSecond`) by the tick rate itself,
+      every tick for the bonus. (1) Built: `loadOutOfCombatHealing` turns the rates into per-tick
+      values at load, next to the two durations (DEC-241), so the system sees only ticks
+      (architecture 03 §10, `packages/core/AGENTS.md` "Time is measured only in ticks", as
+      `loadDefaultContent` already does for speed and acceleration). Same values, so no behaviour
+      change. (2) Built: the same loader rejects a rate that is negative or not finite. (3) Built
+      (critic round 2): the check is unit-free, so it is renamed `assertNonNegativeFinite`, and the
+      rate formula is `TickRate.perTick`, next to the time formulas. Approve, or say which to
+      undo.
+  - **Answered 2026-11-16 by DEC-262** (question dialog, PR #125): (1) to (3) approved. Also
+    signed off: the time check in the aggro, stuck, veterancy and guard loaders (the 2026-11-12
+    critic) and #86's healing times as DEC-241's sixth reader.
+
+- [ ] **HC-B9 — Better than the design, not built, sign-off asked: two older times not read once at
+      load (`refactor/durations-at-load` merge critic, 2026-11-19); no decision blocks the PR.**
+      Both are older than PR #125 and keep their values.
+      (1) **One countdown-end tick.** Three readers each compute the tick the countdown ends with
+      `countdownTicks(countdownSeconds, tickRate)`: `SpawnSystem` (first waves),
+      `GuardRoster.firstTick` (guard activation) and `LeashBehaviour.rankOf` (the
+      `ghostFirstWaveTicks` window). `validateGameConfig` already checks that the match timeline's
+      first mark falls on that tick. Proposal: the three read that one tick from one place, so a
+      change to when the countdown ends changes one line.
+      (2) **Assist window at load.** `assistWindowSeconds` (`content/match/scoring.ts`, DEC-79)
+      becomes ticks in `defaultScoringRules`, outside a loader, unlike the DEC-241 durations.
+      Proposal: a scoring loader turns it into ticks and rejects a negative or non-finite value,
+      as `loadGuardPlans` does.
+      Build both in PR #125, build them in a later PR, or keep the code as it is?
+  - Answered 2026-11-20 (Owner Calls page, DEC-285): "Approve both: (1) in the DEC-278 countdown
+    PR, which already touches every reader; (2) in a follow-up PR". (1) **Built** on
+    `feat/match-start-countdown`: the tick is `MatchState.countdownEndTick`, set once when the
+    match is built; every runtime reader reads it (the three above, and `MatchDirector` and the
+    snapshot, which that branch added). Built with it, critic round 2's BTD4: `timelineMarkTick`
+    takes a named `TimelineFrame`. (2) is open for its follow-up pull request.
 
 - [x] **Unit facing chevron (DEC-192, feat/unit-facing-chevron, 2026-11-05) — two questions, one
       better-than-design item.**
@@ -340,6 +402,10 @@ Reply inline (`Decision: …`).
       `partOf` (stays as ruins); (T2) `WorldObjectStore.spawn` gets only the definition id: pass
       what it needs explicitly. Heal (DEC-215): (H1) one point-in-box helper instead of three
       copies (`PathingSystem.isInsideFort`, `geometry.doesPolygonOverlapRect`, `HealingZones`).
+      (H1 is built in part on `refactor/fort-geometry-helpers` (DEC-244, split from PR #98):
+      `utils/geometry.isPointInRect` replaces `PathingSystem.isInsideFort`'s test and the copy in
+      `doesPolygonOverlapRect`. `HealingZones` is only on `feat/out-of-combat-heal`, not merged:
+      it uses `isPointInRect` once both branches meet.)
       Full findings: `eternalus-agent-work/minion-stack-audit/reports/runner-reports/critic-followups-r2.md`,
       `eternalus-agent-work/playtest-2026-11-04/critic-chevron-r3.md` and
       `eternalus-agent-work/playtest-2026-11-04/session-2383bba1-reports.md`. Approve all,
@@ -678,7 +744,8 @@ Reply inline (`Decision: …`).
       `MovementStrategy`", but bots steer by `move`
       commands, so A\* is a `PathQuery` the bot leaves call (doc 11 §10). Its cost then sits in
       the AI decision budget, not in `PathingSystem` as 11 §6 puts heavy work: each blocked
-      decision searches again (capped by `GameConfig.map.pathMaxExpansions`). If accepted,
+      decision searches again (capped by `GameConfig.map.pathMaxExpansions`; since 2026-11-13
+      `pathMaxSearchArea`, DEC-243). If accepted,
       sprint 3.2's line changes, and a path cache in the brain is the next step if profiling
       shows the cost.
   - Decision (SamarjitBhogal, chat, 2026-10-27): (2) accepted; doc 11 §6 and sprint 3.2's
@@ -1617,6 +1684,18 @@ Reply inline (`Decision: …`).
     for a class (`Recommendation:`). CD-45, the locked view, shows the locked Legend's panel on the
     left, where your DEC-60 says "the details of the class still shown on the left"
     (`Recommendation:`). Keep, change or reject them with the other rows.
+  - New rows, 2026-11-20 (`feat/match-start-countdown`, DEC-278, DEC-282): CD-48 (UE-01, the
+    countdown's urgency on the character select and the match-start overlay) and CD-49 (the
+    match-start overlay itself, which no frame draws). As you asked (DEC-282 (8)), the shots come
+    to you on the "Countdown PR Calls" page before the pull request opens: the character select at
+    9 s with UE-01 on, the Figma-unchanged scenes, and the overlay at 10 s, at 5 s and the Duel's
+    START; the plan's rule-7 performance check is recorded in `docs/plan/PROGRESS.md` and the
+    pull request. CD-48's 1.08, 1.12 and 0.30 and CD-49's veil and size are recommendations: keep,
+    change or reject them with the other rows.
+  - Answered, 2026-11-20 (DEC-299, Owner Calls page): you kept CD-48's 1.08, 1.12 and 0.30. CD-49's
+    glow now grows with the numeral, whose font size is 216 px, your "slightly smaller" read as
+    10 % below 240 (a recommendation); the new overlay shots are on the "Countdown PR Calls" page. CD-49's
+    veil tint stays a recommendation: keep, change or reject it with the other rows.
 - [ ] **HC-Q1 — The Legends (DEC-49), still open after your answer of 2026-10-17** (the answered
       part is in Done). (1) Do the game doc's Magus focuses carry over to the new Legends
       (reference 01's Necromancer "debuff focus", Druid's buffs, Mage's self focus), and what role
@@ -2365,7 +2444,7 @@ Reply inline (`Decision: …`).
       keep it as it is.
   - Answered 2026-11-08 in chat (DEC-222): "(b) Build it in GL-16". To build: in GL-16 (game-loop
     plan §7), with its own unit test, the length-change branch included.
-- [ ] **HC-Q57 — The online Duel in the results flow: five better-than-design items and one rule
+- [x] **HC-Q57 — The online Duel in the results flow: five better-than-design items and one rule
       question (critics on the #97 merge into GL-4, PR #93; DEC-139).** The merge keeps GL-5's
       results flow for a Duel (`duel-ended`, `selectMatchVerdict`, `ResultsScreen`). Both critics
       approved it and proposed:
@@ -2396,9 +2475,12 @@ Reply inline (`Decision: …`).
     `canRepeatSetup`). (5): scheduled with HC-S7. (6): option B, the run-on is built with the
     Duel's own win rules (DEC-36); until then a finished Duel goes to the results at once. A
     finished Duel keeps no status line.
-  - Still open: after the opponent leaves, does the player who stayed see VICTORY? The leaver
-    takes a loss (DEC-250 (4)); the screen for the player who stayed shows no verdict until the
-    owner says.
+  - Open until DEC-251: after the opponent leaves, does the player who stayed see VICTORY? The
+    leaver takes a loss (DEC-250 (4)); the screen for the player who stayed shows no verdict until
+    the owner says.
+  - Answered 2026-11-14 in chat (DEC-251): "A) yes". The player who stayed sees VICTORY, with
+    "Opponent left." under it. The server names that player's team as the winner of the
+    `opponent-left` ending, so `selectMatchVerdict` has no Duel branch (`feat/duel-leave-victory`).
   - Critic notes on the built delta (2026-11-14), for the HC-S7 work: `createMatch` still asks
     `duel.status === 'started'` while `canRepeatMatchSetup` reads `setup.mode`, so the strategy
     should key on `setup.mode`; `MatchSetupDraft` could be a union by `mode`, so that "a Duel has
@@ -2746,6 +2828,16 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
+- [ ] **Make the tower horde test faster (DEC-289, 2026-11-20).** Owner: to be assigned.
+      `Simulation.mapObjects.test.ts`, "walks every tower horde out of its tower and on up its
+      lane within 10 seconds (DEC-133, seed %i)", builds a whole map and match for each of its
+      three seeds (1, 2, 10), steps the countdown, then 10 s of play. One seed takes about 3 s
+      locally without coverage, but up to 65 s under coverage on the windows-latest CI runner
+      (PR #122, run 44714237495, 2026-11-20). DEC-289 gave this test its own 120 s time limit
+      (`HORDE_WALK_TIMEOUT_MS`) until it is faster. Where the time goes is not measured yet. Done
+      when the test runs well under 60 s on windows-latest CI and `HORDE_WALK_TIMEOUT_MS` is
+      removed, with every assertion and all three seeds kept (seed 10 covers critic round 3,
+      M-A).
 - [ ] **PR #30 renderer follow-up** — Owner: Gurshaan. Separate caching/batching and close-view
       material detail from the map PR; retain all renderer-specific tests with that change.
       Keep draw order inside SceneView, address renderer file length and the capture layer,
@@ -2784,6 +2876,22 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
       `CaptureHoldRule` takes it instead of the whole `GameState`, and the capture-point lookups
       of `CaptureHoldRule`, `CaptureProgressBoundsInvariant` and `CaptureSystem` move to it. Close
       this item when its PR merges.
+- [ ] **Rule 7 frame latency (DEC-299 (3))** — Owner: sholtzman, after PR #138 is pushed; it does
+      not block that merge. The match-start overlay's performance runs (ui-enhancements-plan §2
+      rule 7) read a frame-interval p95 of 16.7 to 16.8 ms and a maximum of 16.8 ms in every
+      condition, the controls with every enhancement off included, with no frame over 33 ms; the
+      12 rule-7 re-runs on the DEC-299 (2) tree read the same. One diagnostic re-run on that tree
+      (the ui-off control at CPU ×4, `perf-lt.mjs`) read one 33.3 ms interval, one dropped frame
+      (`over33` counts only intervals over 33.4 ms). The owner passed rule 7 and asked: "we
+      should find out why theres latency whenever we have time". Find why the intervals read
+      16.8 ms and not 16.7 (the browser's frame clock, the headless display, the measuring script
+      or the game) and record the answer in `docs/plan/PROGRESS.md` and here. With it: at CPU ×4
+      the re-runs count three long tasks of about 58 ms per run, all during page load before the
+      measured frames, on the commit before DEC-299 too and with every enhancement off, where the
+      first runs counted none with the same script; find what differs. The runs:
+      `eternalus-agent-work/game-loop-plan/ue-shots-2026-11-20/` (`run.sh` perf_run, `perf.mjs`,
+      `report.py`; the re-run: `perf-dec299.sh`, `perf-lt.mjs`, `perf-dec299/NOTE.md`; the
+      diagnostic runs: `perf-dec299-lt/`, `perf-33bcdcf6-lt/`).
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
       `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`
@@ -2968,6 +3076,14 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
   - Decision (sholtzman, chat, 2026-10-30, Call 5): "fix and get the fighting / proceeding
     working"; the critic ruled this rule better than the design. Built as MS-33 on
     `fix/minion-m1-review`; doc 18 §1 and §4 and the minion plan §3 updated.
+- [ ] **HC-B10 hook tests in `npm run check` (DEC-276 critic; better than the design, owner
+      approved 2026-11-19)** — Owner: sholtzman, a `chore/` harness PR after
+      `chore/stop-hook-changed-files` merges. Run `node --test scripts/**/*.test.mjs` (the hook
+      tests and `scripts/coderabbit/`) from `npm run check`, so CI runs them on Linux and Windows.
+      First make them pass on Windows: with `shell: true`, cmd.exe drops the quotes in the first
+      test of `scripts/hooks/hookInput.test.mjs`; the signal test is POSIX-only and skips itself
+      on Windows. Update the CI gate row in `docs/process/guardrails.md` and doc 16. Close this
+      item when its PR merges.
 
 ## Feedback
 
@@ -2993,6 +3109,39 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-11-21 — **Your pick on HC-B17, a browser-support line** (`refactor/countdown-hud-units`):
+  recorded as DEC-316. Architecture 13 §7 "Styling" now says, in your words: browser support is a
+  baseline, plus newer CSS behind `@supports` with a fallback, as DEC-312 does. You named no
+  baseline, so no browser versions are listed.
+
+- 2026-11-20 — **Your pick on HC-B15, one fit source for the HUD and the countdown**
+  (`refactor/countdown-hud-units`): recorded as DEC-312. (c) CSS typed arithmetic: the match-start
+  numeral is in HUD units again and off the select artboard, so the HUD has one fit source; its
+  glow still grows with it. Your "sure keep it" keeps a fallback for browsers without typed
+  arithmetic (Safari before 26, Firefox before 158): there the numeral is a 216 HUD-unit font and its
+  glow stays at the select size. Architecture 13 §3 and reference 15 CD-49 are amended.
+
+- 2026-11-20 — **Your answers on the countdown pull request #138** (`feat/match-start-countdown`):
+  recorded as DEC-299. UE-01's look stays as built. The match-start numeral is the character
+  select's numeral enlarged on the select artboard, so its glow grows with it, at a 216 px font
+  size (10 % smaller than 240). Rule 7's limit is one 60 Hz frame, so 16.8 ms passes; why frames read
+  16.8 ms is the request "Rule 7 frame latency". The structural tests stand for the screen-reader
+  lines, and the pull request says no screen reader was run. Reference 15 amends CD-48 and CD-49.
+
+- 2026-11-20 — **Built under your standing rule for better-than-design items (DEC-223, DEC-232)**
+  (`feat/match-start-countdown`): the countdown critic's BTD2, BTD3, BTD5 and BTD6, recorded as
+  DEC-286, and BTD4, recorded inside DEC-285. BTD5 appends one bullet to your design text,
+  architecture 13 §7 "Screen-reader lines": one live region, and every screen-reader line goes in
+  through `useLiveRegion`.
+
+- 2026-11-20 — **Your answers on the DEC-278 critic, round 1 (the match-start countdown)**
+  (`feat/match-start-countdown`): recorded as DEC-282 in
+  `docs/reference/game-design/13-owner-decisions-log.md`. The phase marks count from the
+  countdown's end; core's `MatchResult.matchTicks` is the match time; one shared countdown with
+  UE-01's urgency on the character select and the match-start overlay, with UE-03 and the
+  `uiEnhancements` switch built in the same PR; the bridge's countdown derivation is signed off.
+  Reference 15 registers UE-01 as CD-48.
 
 - 2026-11-03 — **PR #56 — the `returning` state (DEC-144 G).** Decision (SamarjitBhogal,
   2026-11-03, recorded as DEC-155): (b) merge it into the resting state. `LeashBehaviour`, `MinionController` and

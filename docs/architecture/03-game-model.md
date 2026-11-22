@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-09
+last-reviewed: 2026-11-19
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -226,7 +226,7 @@ can be `postMessage`d to a Worker later without change (decided, D8; research §
 // Sketch: packages/core/src/state/Snapshot.types.ts
 export type Snapshot = {
   readonly tick: number;
-  readonly match: MatchSnapshot; // phase, phaseEnteredTick, the unfired timeline marks (12 §3), humanLegendId
+  readonly match: MatchSnapshot; // phase, phaseEnteredTick, the unfired timeline marks (12 §3), the countdown end tick (DEC-278), humanLegendId
   readonly entities: readonly EntitySnapshot[]; // store (creation) order
   readonly hordes: readonly HordeSnapshot[];
   readonly teams: Readonly<Record<Team, TeamSnapshot>>;
@@ -432,7 +432,7 @@ requirement ceilings in `config/GameConfig.constants.ts`; this table records whe
 | `hordeSizes`                                        | per weight class; the opening hordes are one per lane (`map.numLanes`)       | requirements doc; DEC-84                   |
 | `plannedMatchSeconds`                               | the target match length; its value: `config/defaultGameConfig.ts`            | DEC-13; DEC-81                             |
 | `flowFieldCorridorHalfWidth`, `flowFieldCellBudget` | a lane field's corridor reach; cells rebuilt per tick after a terrain change | 06 §6, 10 §9; Phase 3 sprint 3.2 (`TUNE`)  |
-| `pathMaxExpansions`, `pathSnapCells`                | A\* for Legends: cells one search may settle; how far a blocked end snaps    | 10 §9, 11 §6 (`TUNE`)                      |
+| `pathMaxSearchArea`, `pathSnapCells`                | A\* for Legends: area a search may settle (m²); how far a blocked end snaps  | 10 §9, 11 §6 (`TUNE`); DEC-243             |
 | `capturePoints`, `timeline`                         | one capture point per lane, the middle one the Cathedral; timed events       | game doc, Capture zones; 12                |
 
 `validateGameConfig(config: unknown)` throws a `ConfigValidationError` naming the first offending

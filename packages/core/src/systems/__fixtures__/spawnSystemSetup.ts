@@ -3,7 +3,14 @@ import type { DeepPartial, GameConfig } from '../../config/GameConfig.types';
 import { HORDE_STEERING } from '../../content/ai/hordeSteering';
 import { LANE_ASSESSMENT_WEIGHTS } from '../../content/ai/laneAssessmentWeights';
 import { loadDefaultContent } from '../../content/loadDefaultContent';
-import { OPENING_WAVE, SPAWN_WAVES } from '../../content/structures/spawnWaves';
+import { loadGuardPlans } from '../../content/structures/loadGuardPlans';
+import { loadSpawnWaves } from '../../content/structures/loadSpawnWaves';
+import { OPENING_WAVE } from '../../content/structures/spawnWaves';
+import type {
+  AuthoredGuardPlan,
+  AuthoredSpawnWave,
+  OpeningWaveDefinition,
+} from '../../content/structures/structures.types';
 import { NullLogger } from '../../diagnostics/NullLogger';
 import { createDefaultEntityRegistry } from '../../entities/defaultEntityRegistry';
 import { EntityFactory } from '../../entities/EntityFactory';
@@ -13,26 +20,36 @@ import { spawnMapStructures } from '../../state/__fixtures__/spawnMapStructures'
 import { matchWorldOf } from '../../state/__fixtures__/matchWorld';
 import type { GameEventMap } from '../../state/GameEvents.types';
 import { SpawnSystem } from '../SpawnSystem';
-import type { SpawnPlan } from '../SpawnSystem.types';
 import { countdownTicks } from '../../config/countdownTicks';
+import { timelineFrameOf } from '../../config/timelineFrameOf';
 
 /** The simulation tick rate the fixtures use. */
 export const TICK_RATE = 30;
 
-/** A SpawnSystem over `state` with the default steering and weights and the given plan overrides. */
+/** The parts of a spawn plan a test may replace, waves and guards as authored (in seconds). */
+export type SpawnPlanOverrides = {
+  readonly openingWave?: OpeningWaveDefinition;
+  readonly waves?: Readonly<Record<string, readonly AuthoredSpawnWave[]>>;
+  readonly guards?: Readonly<Record<string, AuthoredGuardPlan>>;
+};
+
+/**
+ * A SpawnSystem over `state` with the default steering and weights and the given plan overrides;
+ * waves and guards are loaded at `TICK_RATE`, as the pipeline loads them.
+ */
 export const newSystem = (
   state: GameState,
   factory: EntityFactory,
-  plan: Partial<Pick<SpawnPlan, 'openingWave' | 'waves' | 'guards'>> = {},
+  plan: SpawnPlanOverrides = {},
 ) =>
   new SpawnSystem(state, factory, {
     definitions: loadDefaultContent(TICK_RATE),
     openingWave: plan.openingWave ?? OPENING_WAVE,
-    waves: plan.waves ?? SPAWN_WAVES,
+    waves: loadSpawnWaves(TICK_RATE, plan.waves),
     steering: HORDE_STEERING,
     weights: LANE_ASSESSMENT_WEIGHTS,
     formationId: 'ranks',
-    guards: plan.guards ?? {},
+    guards: loadGuardPlans(TICK_RATE, plan.guards ?? {}),
   });
 
 /** The opening wave sent by a structure kind the test map does not have, so no opening hordes. */
@@ -41,13 +58,21 @@ export const NO_OPENING = { ...OPENING_WAVE, source: 'camp' } as const;
 /** A TWO_LANE_MAP match with its structures built and the system, with spawned hordes and a timeline recorded. */
 export const setUp = (
   overrides: DeepPartial<GameConfig> = {},
-  plan: Partial<Pick<SpawnPlan, 'openingWave' | 'waves'>> = {},
+  plan: Omit<SpawnPlanOverrides, 'guards'> = {},
 ) => {
   const config = createDefaultGameConfig({
     match: overrides.match ?? {},
     limits: overrides.limits ?? {},
   });
-  const state = new GameState(config, 1, matchWorldOf(TWO_LANE_MAP));
+  const state = new GameState(
+    config,
+    1,
+    matchWorldOf(TWO_LANE_MAP),
+    {},
+    {
+      countdownEndTick: timelineFrameOf(config).countdownEndTick,
+    },
+  );
   spawnMapStructures(state);
   const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(TICK_RATE));
   const system = newSystem(state, factory, plan);
