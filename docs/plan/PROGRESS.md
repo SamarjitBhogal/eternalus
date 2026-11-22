@@ -8087,6 +8087,12 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 1340 passed (1340)"; client "Tests 1819 passed (1819)"; "Documentation check passed."
 - Next step: reviewer approval; the team merges.
 
+### 2026-11-13 — Phase 3 — fix/session-e2e-test-isolation — Claude Code
+
+- What was done: fixed a test-order dependency in `apps/client/src/game/SessionController.endToEnd.test.ts`. The "tick throws" test spies on `Simulation.prototype.step`; the config's `restoreMocks` does not undo it, so when it ran before "screen crashed" every tick threw, the match ended as `match-crashed` first, and the screen-crash intent then reported `screen-crashed`. Fix: `afterEach(() => vi.restoreAllMocks())` in that describe. No assertion changed; no production code changed.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1321 passed (1321)"; client "Tests 1818 passed (1818)"; "Documentation check passed."; the file passes alone (3 runs) and in the suite.
+- Next step: review; the team merges.
+
 ### 2026-11-12 — Phase 3 / combat sprint: bound key actions, part 1 (BUG-5 / SCRUM-438) — fix/bound-key-actions — Claude Code
 
 - What was done: `camera-zoom-in`, `camera-zoom-out` and `toggle-minimap` now work as `MatchHost`
@@ -8125,6 +8131,15 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Audit (`npm audit --json`, phase/3 at `9e2516cf`): before 16 findings (13 moderate, 3 high, none critical); after 11 (10 moderate, 1 high, none critical). Cleared: `vite` (high), `source-map-js` (high), `vitest`, `@vitest/mocker` and `@vitest/coverage-v8` (moderate). Remaining: `zod` (high, transitive through tooling) and the `eslint` / `typescript-eslint` / `minimatch` family (moderate).
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 1336 passed (1336)"; protocol "Tests 18 passed (18)"; client "Tests 1883 passed (1883)"; server "Tests 79 passed (79)"; "Documentation check passed."
 - Next step: reviewers approve and merge; the eslint family and `zod` stay open in `INBOX.md`.
+
+### 2026-11-13 — Phase 3 — docs/inbox-audit-and-bugs — Claude Code
+
+- What was done: added three items at the top of "Decisions needed from Sam" in `INBOX.md`: the
+  dependency audit (17 findings: 14 moderate, 3 high, none critical; Dependabot alerts unreadable),
+  BUG-2 (SCRUM-435, interior walls at 2,000 HP) and BUG-3 (SCRUM-436, minions and obstacles, a
+  design change request against DEC-193). Docs only; no code changed.
+- Checks run: `npm run docs:check`, `npm run format:check`, then `npm run check` → `EXIT=0`: core "Tests 1321 passed (1321)"; client "Tests 1818 passed (1818)"; "✓ built in 523ms"; "Documentation check passed."
+- Next step: Sam answers inline; the agent schedules the upgrade PR and the BUG-2/BUG-3 changes.
 
 ### 2026-11-06 — Phase 3 / minion plan MVP gaps — docs/minion-plan-mvp-gaps — SamarjitBhogal + Claude Code
 
@@ -8710,6 +8725,10 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 ### 2026-11-15 — Phase 3 / sync — fix/legend-respawn (PR #100) — claudiodh + Claude Code
 
 - What was done: merged `phase/3-sprint-3-work` (80e0ea13) into this branch because #100 was CONFLICTING. Conflicts: `INBOX.md` (both sides kept); `MatchWorld.ts` and its test (both the `strongholdOf` and `startFacing` members kept); `DefaultSystemPipeline.ts` and its test (the out-of-combat healing system and the respawn system both kept, healing first, both before death).
+
+### 2026-11-15 — Phase 3 / sync — fix/session-e2e-test-isolation (PR #111) — claudiodh + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (80e0ea13) into this branch because #111 was CONFLICTING. Conflict: `PROGRESS.md` (both sides kept).
 - Checks run: `npm run check` → `EXIT=0`.
 - Next step: reviewer approval; the team merges.
 
@@ -9641,3 +9660,21 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - What was done: doc 03 §2 says a respawned Legend is the same entity (ids stay never reused) and names `EntityStore.withdraw` beside `remove`; its events table names `RespawnSystem` as an `entity-spawned` emitter and gains the `legend-respawned` row. Doc 18's pipeline positions place `RespawnSystem` (every match, after the Duel round). Doc 05's Implementation status describes the built DEC-295 middle way and DEC-186 pay-on-respawn, and the polling note gives the right reason (N4). The previous entry's checks, at 4c0d3dc8: `npm run check` → `EXIT=0`: core "Tests 1700 passed (1700)"; protocol "Tests 29 passed (29)"; client "Tests 2013 passed (2013)"; server "Tests 84 passed (84)"; "Documentation check passed."
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 1700 passed (1700)"; protocol "Tests 29 passed (29)"; client "Tests 2013 passed (2013)"; server "Tests 84 passed (84)"; "Documentation check passed." (docs only: the counts match the previous run.)
 - Next step: reviewer re-review; the team merges.
+
+### 2026-11-15 — Phase 3 / sync — docs/inbox-audit-and-bugs (PR #110) — claudiodh + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (80e0ea13) into this branch because #110 was CONFLICTING. Conflicts: `INBOX.md` and `PROGRESS.md` (both sides kept).
+- Checks run: `npm run check` → `EXIT=0`.
+- Next step: reviewer approval; the team merges.
+
+### 2026-11-20 — Phase 3 / review fixes — docs/inbox-audit-and-bugs (PR #110) — claudiodh + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (`5a7cc8dc`) into this branch (conflict:
+  `INBOX.md`, both sides kept), then fixed the 2026-11-19 review. Corrects the 2026-11-13 entry of
+  this branch: BUG-2 and BUG-3 were already answered (DEC-247, DEC-248), so both open items are
+  dropped and their file pointers moved under the ticked BUG-2 and BUG-3 items. The dependency
+  audit item is rewritten to a fresh `npm audit`: 10 findings (9 moderate, 1 high), `zod` and the
+  `eslint` / `typescript-eslint` / `minimatch` family; vite and vitest were fixed by #113.
+- Checks run: `npm audit` → `10 vulnerabilities (9 moderate, 1 high)`; `npm run check` → `EXIT=0`.
+- Next step: Sam answers the dependency item (upgrade PR, Dependabot alerts); BUG-2 and BUG-3
+  are built from DEC-247 and DEC-248 when a plan item schedules them (`docs/plan/bugs.md`).
