@@ -99,6 +99,29 @@ describe('Simulation with developer-menu Legends (FR-097)', () => {
     expect(first.legends[0]?.transform?.x).not.toBe(190);
   });
 
+  it('replays dev-spawn-legend then dev-remove-legend to the same hash (determinism)', () => {
+    const run = () => {
+      const simulation = newMatch();
+      simulation.enqueueCommand({
+        type: 'dev-spawn-legend',
+        team: 'dark',
+        definitionId: 'warrior',
+      });
+      for (let tick = 0; tick < 60; tick += 1) {
+        simulation.step();
+      }
+      const [bot] = legendsOf(simulation, 'dark');
+      simulation.enqueueCommand({ type: 'dev-remove-legend', entityId: bot?.id ?? '' });
+      for (let tick = 0; tick < 60; tick += 1) {
+        simulation.step();
+      }
+      expect(legendsOf(simulation, 'dark')).toHaveLength(0);
+      return simulation.hash();
+    };
+
+    expect(run()).toBe(run());
+  });
+
   it("removes a Legend by dev-remove-legend in sim mode, and refuses the human's Legend outside it (DEC-293)", () => {
     const simMode = newMatch();
     simMode.enqueueCommand({ type: 'dev-spawn-legend', team: 'dark', definitionId: 'warrior' });

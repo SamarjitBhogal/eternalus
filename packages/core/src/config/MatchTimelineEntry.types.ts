@@ -3,6 +3,17 @@ import type { MatchPhase } from './matchPhases';
 /** When a timeline entry fires: a fixed tick, or a fraction of `plannedMatchSeconds` (12 §3). */
 export type TimelineMark = { readonly atTick: number } | { readonly atFraction: number };
 
+/**
+ * What a `TimelineMark` resolves against (`timelineMarkTick`): named, not positional, so the three
+ * numbers cannot be swapped.
+ */
+export type TimelineFrame = {
+  readonly tickRate: number;
+  readonly plannedMatchSeconds: number;
+  /** The tick the pre-match countdown ends (`countdownTicks`); `atFraction` counts from it. */
+  readonly countdownEndTick: number;
+};
+
 /** Each timeline action's fields, by kind. A new kind is one line here and one handler class. */
 type TimelineActionPayloads = {
   readonly 'enter-phase': { readonly phase: MatchPhase };

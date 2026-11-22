@@ -34,6 +34,7 @@ export class MatchRecord implements MatchState {
   /**
    * @param playerTeam - The team the match is played (or spectated) for.
    * @param schedule - The resolved timeline as plain marks; empty when no director runs.
+   * @param countdownEndTick - The tick the pre-match countdown ends (`MatchState.countdownEndTick`).
    * @param events - The match's event channel; `setPhase` emits `phase-changed` on it and
    *   `reseatHuman` `human-reseated`.
    * @param currentTick - Reads the tick that `setPhase` stamps.
@@ -41,6 +42,7 @@ export class MatchRecord implements MatchState {
   public constructor(
     public readonly playerTeam: PlayableTeam,
     schedule: readonly ScheduledMark[],
+    public readonly countdownEndTick: number,
     private readonly events: GameEvents,
     private readonly currentTick: () => number,
   ) {

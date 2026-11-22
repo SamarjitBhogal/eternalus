@@ -14,7 +14,7 @@ import { createDefaultCommandHandlers } from './commands/defaultCommandHandlers'
 import { Footprint } from './components/Footprint';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from './config/matchPhases';
 import { validateGameConfig } from './config/validateGameConfig';
-import { SCORING } from './content/match/scoring';
+import { loadScoring } from './content/match/loadScoring';
 import { DefaultInvariantRunner } from './diagnostics/DefaultInvariantRunner';
 import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import type { LogContext, Logger } from './diagnostics/Logger.types';
@@ -53,6 +53,7 @@ import { DUEL_RULES } from './content/duel/duelRules';
 import { duelStartPoints } from './match/duelStartPoints';
 import { createDefaultMatchDirector } from './match/defaultMatchDirector';
 import { MatchTimeline } from './match/MatchTimeline';
+import { timelineFrameOf } from './config/timelineFrameOf';
 import type { DefinitionSource, WeaponSource } from './entities/EntityFactory.types';
 import { Unit } from './entities/Unit';
 import type {
@@ -155,7 +156,13 @@ export class Simulation {
     const { space, world, paths } = Simulation.buildWorld(map, validConfig, mapObjects);
     // Without the default pipeline no director runs, so no mark would ever fire: list none.
     const schedule = systems === undefined ? timeline.schedule() : [];
-    this.state = new GameState(validConfig, seed, world, { space, paths }, schedule);
+    this.state = new GameState(
+      validConfig,
+      seed,
+      world,
+      { space, paths },
+      { schedule, countdownEndTick: timelineFrameOf(validConfig).countdownEndTick },
+    );
     const duelStarts =
       duel === undefined ? undefined : duelStartPoints(map, DUEL_RULES.startOffset);
     if (duel !== undefined) this.state.match.startDuel(duel.killTarget);
@@ -210,7 +217,7 @@ export class Simulation {
         timeline,
         debug,
         logger,
-        scoring: SCORING,
+        scoring: loadScoring(tickRate),
       });
       this.pipeline = new DefaultSystemPipeline({
         invariants: new DefaultInvariantRunner({

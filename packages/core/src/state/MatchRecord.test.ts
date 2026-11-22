@@ -13,7 +13,7 @@ const SCHEDULE = [
 /** A record on its own event channel, whose clock reads `clock.tick`. */
 const recordAt = (clock: { tick: number }) => {
   const events = new GameEvents(() => clock.tick);
-  return { events, match: new MatchRecord('light', SCHEDULE, events, () => clock.tick) };
+  return { events, match: new MatchRecord('light', SCHEDULE, 60, events, () => clock.tick) };
 };
 
 describe('MatchRecord', () => {
@@ -25,6 +25,7 @@ describe('MatchRecord', () => {
       phaseEnteredTick: match.phaseEnteredTick,
       timelineCursor: match.timelineCursor,
       schedule: match.schedule,
+      countdownEndTick: match.countdownEndTick,
       isIdleHeld: match.isIdleHeld,
       playerTeam: match.playerTeam,
       humanLegendId: match.humanLegendId,
@@ -35,6 +36,7 @@ describe('MatchRecord', () => {
       phaseEnteredTick: 0,
       timelineCursor: 0,
       schedule: SCHEDULE,
+      countdownEndTick: 60,
       isIdleHeld: false,
       playerTeam: 'light',
       humanLegendId: null,
@@ -90,6 +92,7 @@ describe('MatchRecord', () => {
       playerTeam: 'light',
       hadHuman: false,
       durationTicks: 1,
+      matchTicks: 0,
       seed: 1,
       configHash: 0,
       legends: [],

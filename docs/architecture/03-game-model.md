@@ -139,6 +139,12 @@ export type Command =
     }
   | { readonly type: 'dev-remove-entity'; readonly entityId: EntityId }
   | {
+      readonly type: 'dev-spawn-legend';
+      readonly team: PlayableTeam;
+      readonly definitionId: string;
+    }
+  | { readonly type: 'dev-remove-legend'; readonly entityId: EntityId }
+  | {
       readonly type: 'dev-set-controller';
       readonly entityId: EntityId;
       readonly controllerId: ControllerId;
@@ -228,7 +234,7 @@ can be `postMessage`d to a Worker later without change (decided, D8; research §
 // Sketch: packages/core/src/state/Snapshot.types.ts
 export type Snapshot = {
   readonly tick: number;
-  readonly match: MatchSnapshot; // phase, phaseEnteredTick, the unfired timeline marks (12 §3), humanLegendId
+  readonly match: MatchSnapshot; // phase, phaseEnteredTick, the unfired timeline marks (12 §3), the countdown end tick (DEC-278), humanLegendId
   readonly entities: readonly EntitySnapshot[]; // store (creation) order
   readonly hordes: readonly HordeSnapshot[];
   readonly teams: Readonly<Record<Team, TeamSnapshot>>;
@@ -482,7 +488,7 @@ each closed by the session or phase named:
   `not-supported`. `MatchRecord.reseatHuman` is the second writer of `humanLegendId`; each seat
   move emits `human-reseated`, which `Scoring` folds into the rows' `controller`. A bot re-bound loses its brain memory.
 - `dev-spawn-legend` (2026-11-13) is built as `{ team, definitionId }` (a bot Legend at the
-  Stronghold, Rover controller); it is in `Command.types.ts`; the union listing below does not show it yet.
+  Stronghold, Rover controller); it is in `Command.types.ts`.
   `dev-remove-legend { entityId }` (2026-11-20, DEC-293) removes a Legend through
   `DevRemoveEntityHandler`, which refuses a Legend in a human seat (`human-legend`).
 - `dev-spawn` and `dev-remove-entity` spawn and remove directly and emit `entity-spawned` /
