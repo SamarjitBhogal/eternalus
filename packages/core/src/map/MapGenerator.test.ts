@@ -205,25 +205,33 @@ describe('MapGenerator', () => {
     }
   });
 
-  it.each([2, 3])(
-    'keeps every lane tower fort apart with %i towers of each kind per lane (DEC-227, DEC-215 (1))',
-    (count) => {
-      const side = BUILDING_GEOMETRY.fort.laneTowerSize;
+  // The default world holds 2 of each kind; 3 of each needs a 2400-wide world (DEC-323 (1)).
+  it.each([
+    [2, DEFAULT_MAP_CONFIG.worldWidth],
+    [3, 2400],
+  ])(
+    'keeps every lane tower fort apart with %i towers of each kind per lane in a %i-wide world (DEC-227, DEC-215 (1), DEC-323 (1))',
+    (count, worldWidth) => {
+      // A fort stretches with the world (DEC-227): 84 m wide in the 2400-wide world.
+      const fort = fortInWorld(BUILDING_GEOMETRY.fort.laneTowerSize, {
+        width: worldWidth,
+        height: DEFAULT_MAP_CONFIG.worldHeight,
+      });
       const overlaps: string[] = [];
       for (const ground of GROUNDS) {
         for (const numLanes of [3, 5]) {
           const map = generate(
-            { numLanes, spawnTowersPerLane: count, buffTowersPerLane: count },
+            { numLanes, worldWidth, spawnTowersPerLane: count, buffTowersPerLane: count },
             SEED,
             ground,
           );
           const towers = [...ofKind(map, 'spawner-tower'), ...ofKind(map, 'buff-tower')];
           towers.forEach((a, index) => {
             for (const b of towers.slice(index + 1)) {
-              // Two upright fort boxes of one side overlap when both axes are closer than it.
+              // Two upright fort boxes overlap when both axes are closer than the fort's size.
               const dx = Math.abs(a.position.x - b.position.x);
               const dy = Math.abs(a.position.y - b.position.y);
-              if (dx < side && dy < side)
+              if (dx < fort.width && dy < fort.height)
                 overlaps.push(`${ground} ${String(numLanes)}: ${a.id} ${b.id}`);
             }
           });
