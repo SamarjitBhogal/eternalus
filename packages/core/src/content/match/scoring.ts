@@ -1,10 +1,10 @@
-import type { ScoringOptions } from './scoring.types';
+import type { AuthoredScoringOptions } from './scoring.types';
 
 /**
- * The match's scoring values (architecture 12 §5), the one value `Simulation` passes in: the
- * owner's point model (DEC-79), FR-007's objective points (DEC-131) and the assist window.
- * `createDefaultScoringRules` hands each scoring rule its part. Bosses and the sovereign give no
- * personal points, so they have no line.
+ * The match's scoring values as authored (architecture 12 §5): the owner's point model (DEC-79),
+ * FR-007's objective points (DEC-131) and the assist window in seconds. `loadScoring` loads them
+ * once into the ticks `Simulation` passes in, and `createDefaultScoringRules` hands each scoring
+ * rule its part. Bosses and the sovereign give no personal points, so they have no line.
  */
 export const SCORING = {
   weights: {
@@ -18,4 +18,4 @@ export const SCORING = {
   },
   /** How long a Legend's hit on an enemy Legend still earns an assist when that Legend dies. */
   assistWindowSeconds: 30, // TUNE: DEC-79 (the owner's ruling of 2026-10-19)
-} as const satisfies ScoringOptions;
+} as const satisfies AuthoredScoringOptions;

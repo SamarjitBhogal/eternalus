@@ -286,7 +286,8 @@ export function buildDisplayCatalogue(inputs: {
   /**
    * The effects renderer is `overrides.effectsRenderer ?? presentation.effectsRenderer`; on `'css'`
    * every `cardPlates` is `{}` and every `rowPlate` and both chrome ids are `null` (DEC-54). Plate
-   * ids are validated against `knownAssetIds` on both renderers.
+   * ids are validated against `knownAssetIds` on both renderers. The UI enhancements are
+   * `overrides.uiEnhancements ?? presentation.uiEnhancements`.
    */
   readonly overrides: DisplayOverrides;
 }): DisplayCatalogue {
@@ -305,6 +306,7 @@ export function buildDisplayCatalogue(inputs: {
     lockInChromeAssetId: presentation.lockInChromeAssetId,
     effectsRenderer,
     contrastMode: presentation.contrastMode,
+    uiEnhancements: overrides.uiEnhancements ?? presentation.uiEnhancements,
     hud: hudCatalogue(content.mapFeatures, presentation.hud),
     teamNames: content.teamNames,
     botRoster: content.botRoster,

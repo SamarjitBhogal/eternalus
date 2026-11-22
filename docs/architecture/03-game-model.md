@@ -239,7 +239,7 @@ can be `postMessage`d to a Worker later without change (decided, D8; research §
 // Sketch: packages/core/src/state/Snapshot.types.ts
 export type Snapshot = {
   readonly tick: number;
-  readonly match: MatchSnapshot; // phase, phaseEnteredTick, the unfired timeline marks (12 §3), humanLegendId
+  readonly match: MatchSnapshot; // phase, phaseEnteredTick, the unfired timeline marks (12 §3), the countdown end tick (DEC-278), humanLegendId
   readonly entities: readonly EntitySnapshot[]; // store (creation) order
   readonly hordes: readonly HordeSnapshot[];
   readonly teams: Readonly<Record<Team, TeamSnapshot>>;

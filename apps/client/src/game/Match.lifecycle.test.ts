@@ -251,7 +251,7 @@ describe('Match lifecycle', () => {
   it('publishes once before the first frame, then on the bridge cadence', () => {
     const { match, simulation, scheduler, clocks } = build();
     match.start();
-    expect(clocks).toEqual([{ tick: 0, seconds: 0 }]);
+    expect(clocks).toEqual([{ tick: 0, seconds: 0, countdown: 10 }]);
 
     scheduler.advance(0);
     scheduler.runFrames(30, TICK_MS);

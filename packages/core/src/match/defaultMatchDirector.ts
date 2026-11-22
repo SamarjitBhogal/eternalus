@@ -19,7 +19,7 @@ export type DefaultMatchDirectorOptions = {
   readonly timeline: MatchTimeline;
   readonly debug: MatchDirectorOptions['debug'];
   readonly logger: MatchDirectorOptions['logger'];
-  /** The points and the assist window `Scoring` counts with (`content/match/scoring.ts`). */
+  /** The points and the times `Scoring` counts with, in ticks (`loadScoring`). */
   readonly scoring: ScoringOptions;
 };
 
@@ -46,8 +46,5 @@ export const createDefaultMatchDirector = ({
     debug,
     logger,
     conditions: createDefaultVictoryConditions(state),
-    scoring: new Scoring(
-      state,
-      createDefaultScoringRules(scoring, state.config.tickRate, state.events),
-    ),
+    scoring: new Scoring(state, createDefaultScoringRules(scoring, state.events)),
   });
