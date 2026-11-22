@@ -27,12 +27,12 @@ Reply inline (`Decision: …`).
       core; (d) invariant level, timeline jump, overlays, time scale, replay dump and fixture
       (FR-110), pre-match config overrides; (e) teleport, which no requirement names (SCRUM-437
       says to raise it as a feature request); (f) showing core's refusals (unit cap clipping,
-      `command-rejected`): the bridge carries no diagnostic event yet. The mob picker is a short
-      client list of the three lane minions (`DeveloperMenuController.constants.ts`) because
-      neither the display catalogue nor core's public API lists mobs; a test spawns each one in a
-      real simulation. Decide: (1) the menu's name ("Architect's Table" is still only proposed);
-      (2) whether core should publish its mob list in `loadDisplayContent`; (3) whether the next
-      slice adds `dev-spawn-legend` (FR-097); (4) `?dev=1` also works in release builds (the same
+      `command-rejected`): the bridge carries no diagnostic event yet. The mob picker reads
+      the lane minions from `DisplayContent.laneMinions`, which core now publishes through
+      `loadDisplayContent`; no client list remains. Decide: (1) the menu's name ("Architect's
+      Table" is still only proposed); (2) built: core publishes its mob list in
+      `loadDisplayContent` (`DisplayContent.laneMinions`); (3) whether the next slice adds
+      `dev-spawn-legend` (FR-097); (4) `?dev=1` also works in release builds (the same
       flag already turns on the explorer chrome): add a build-time guard? Online play: a remote
       (online Duel) match must always keep the menu disabled (`Match.isDeveloperMenuEnabled` is
       optional and off by default, and the online match factory must not pass it), otherwise dev
