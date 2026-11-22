@@ -12,6 +12,6 @@ tags: [plan, progress, log]
 
 Phase 3 / sprint 3 · feat/developer-menu · claudiodh + Claude Code
 
-- What was done: merged `origin/phase/3-sprint-3-work` into the branch (conflicts only in `docs/plan/PROGRESS.md`, both sides kept, and the `last-reviewed` line of architecture 13). INBOX BUG-4 now says the mob picker reads `DisplayContent.laneMinions` and marks question (2) built. The PR title needs the `core` scope (see the PR).
-- Checks run: `npm run check` on Node 22 (repo needs 24): core 1687, protocol 29, server 84 pass; client 2109 of 2110, the one failure is `WebSocketTransport.test.ts` "CloseEvent is not defined" (Node 22 has no global `CloseEvent`), not from this change.
+- What was done: merged `origin/phase/3-sprint-3-work` into the branch (conflicts only in `docs/plan/PROGRESS.md`, both sides kept, and the `last-reviewed` line of architecture 13). INBOX BUG-4 now says the mob picker reads `DisplayContent.laneMinions` and marks question (2) built. The PR title needs the `core` scope: core 1687, protocol 29, client 2110, server 84 tests passed; "Documentation check passed."
+- Checks run: `npm run check` on Node 24.21.0 → exit 0: core 1687, protocol 29, client 2110, server 84 tests passed; "Documentation check passed."
 - Next step: push, then the stack merge into #109 and #112.
