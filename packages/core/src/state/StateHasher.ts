@@ -38,11 +38,15 @@ export class StateHasher {
     const parts: unknown[] = [state.tick, match.phase, state.rng.getState(), entities];
     // Appended only once a field leaves its initial value (0 or false), so a match no director
     // runs hashes exactly as before (recorded replay checkpoints stay valid). One list feeds both
-    // the check and the hash, so a new field cannot be left out of the check. The schedule comes
-    // from the config, which a replay carries, so it is not hashed.
+    // the check and the hash, so a new field cannot be left out of the check. The schedule and
+    // `countdownEndTick` come from the config, which a replay carries, so they are not hashed.
     const matchFields = [match.phaseEnteredTick, match.timelineCursor, match.isIdleHeld];
     if (matchFields.some((value) => value !== 0 && value !== false)) {
       parts.push(['match', ...matchFields]);
+    }
+    // A Duel's score, only in a Duel, so every other match hashes as before.
+    if (match.duel !== null) {
+      parts.push(['duel', match.duel.kills.light, match.duel.kills.dark]);
     }
     // Scoring joins by the same rule, once it differs from the empty state: one serialisation
     // feeds both the check and the hash, so a new scoring field cannot be left out of either.

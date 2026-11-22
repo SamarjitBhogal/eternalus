@@ -1,0 +1,9 @@
+/* The app's polite live region (DEC-282 (7)): read, never seen. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

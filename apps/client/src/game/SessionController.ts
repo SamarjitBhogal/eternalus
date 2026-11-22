@@ -51,6 +51,8 @@ export class SessionController {
   private readonly context: SessionContext;
   private readonly crashes: SessionCrashes;
   private readonly duel: DuelSession;
+  /** The name this player joined the Duel queue with, for the VERSUS screen. */
+  private duelName = '';
 
   /** Loads the content catalogue; nothing runs until `start()`. */
   public constructor(private readonly deps: SessionControllerDeps) {
@@ -58,6 +60,10 @@ export class SessionController {
       createTransport: deps.createDuelTransport,
       logger: deps.logger,
       handlers: {
+        matched: (opponent) => {
+          deps.bus.emit('duel-versus', { own: this.duelName, opponent });
+          deps.bus.emit('menu-route', { route: 'duel-versus' });
+        },
         started: () => {
           // The HUD reads the seat from the setup, as in a solo match; a Duel has no rosters. The
           // setup goes first: match-loading may prepare the world as soon as it is entered.
@@ -112,8 +118,9 @@ export class SessionController {
         this.selection = selection;
         deps.bus.emit('class-selection', selection);
       },
-      joinDuelQueue: () => {
-        this.duel.join();
+      joinDuelQueue: (name) => {
+        this.duelName = name;
+        this.duel.join(name);
       },
       leaveDuelQueue: () => {
         this.duel.leave();
@@ -149,11 +156,13 @@ export class SessionController {
   }
 
   /**
-   * Marks the colour set on the theme root (DEC-55), subscribes to `ui-intent` and enters `boot`.
+   * Marks the colour set (DEC-55) and the UI enhancements (ui-enhancements-plan §2 rule 1) on the
+   * theme root, subscribes to `ui-intent` and enters `boot`.
    */
   public start(): void {
     if (this.current !== null) throw new Error('SessionController is already started');
     this.deps.themeRoot.dataset.contrast = this.context.catalogue.contrastMode;
+    this.deps.themeRoot.dataset.uiEnhancements = this.context.catalogue.uiEnhancements.join(' ');
     this.stopListening = this.deps.bus.on('ui-intent', (intent) => {
       this.crashes.handleIntent(intent);
       this.current?.handleIntent?.(intent, this.context);
@@ -163,13 +172,14 @@ export class SessionController {
 
   /**
    * Exits the current state (cancelling its timers and loads, destroying a running match),
-   * unsubscribes and clears the colour set; safe to call twice.
+   * unsubscribes and clears the colour set and the UI enhancements; safe to call twice.
    */
   public destroy(): void {
     this.current?.exit?.(this.context);
     this.current = null;
     this.stopListening();
     delete this.deps.themeRoot.dataset.contrast;
+    delete this.deps.themeRoot.dataset.uiEnhancements;
   }
 
   /** The running match's evidence for an error report, or `null` outside a match (ADR 0025 §3). */

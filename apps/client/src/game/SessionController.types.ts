@@ -118,10 +118,11 @@ export interface SessionContext {
    */
   repeatMatchSetup(): void;
   /**
-   * Joins the online Duel queue (ADR 0016): connects to the server and sends `queue-join`. When an
-   * opponent is found and the first snapshot arrives, the session moves to `match-loading`.
+   * Joins the online Duel queue as `name` (ADR 0016): connects to the server and sends
+   * `queue-join`. When an opponent is found the VERSUS screen shows, and once the first snapshot
+   * arrives the session moves to `match-loading`.
    */
-  joinDuelQueue(): void;
+  joinDuelQueue(name: string): void;
   /** Leaves the Duel queue (`queue-leave`) and closes the connection. */
   leaveDuelQueue(): void;
   /**
@@ -220,8 +221,9 @@ export type SessionControllerDeps = {
    */
   readonly createRosterRng: (seed: number) => Pick<SeededRandom, 'nextInt'>;
   /**
-   * Receives `data-team="light|dark"` while a match setup exists and `data-contrast` (the
-   * catalogue's colour set, DEC-55) while the session runs (`<html>` in the app).
+   * Receives `data-team="light|dark"` while a match setup exists, and `data-contrast` (the
+   * catalogue's colour set, DEC-55) and `data-ui-enhancements` (its UI enhancements,
+   * space-separated, ui-enhancements-plan §2 rule 1) while the session runs (`<html>` in the app).
    */
   readonly themeRoot: Pick<HTMLElement, 'dataset'>;
   /** Builds a match's world from its seed (`prepareMatchWorld` over the page's `GameConfig`). */

@@ -13,11 +13,13 @@ const fieldsOf = (match: MatchState): MatchState => ({
   phaseEnteredTick: match.phaseEnteredTick,
   timelineCursor: match.timelineCursor,
   schedule: match.schedule,
+  countdownEndTick: match.countdownEndTick,
   isIdleHeld: match.isIdleHeld,
   playerTeam: match.playerTeam,
   humanLegendId: match.humanLegendId,
   scoring: match.scoring,
   result: match.result,
+  duel: match.duel,
 });
 
 describe('createDefaultMatchPhases', () => {

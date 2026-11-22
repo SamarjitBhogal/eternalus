@@ -27,7 +27,7 @@ describe('matchSlice', () => {
 
   it("stores the ended match's result as given and its length, keeping the clock", () => {
     const result = matchResultFixture();
-    const clock = { tick: 3610, seconds: 3610 / 30 };
+    const clock = { tick: 3610, seconds: 3610 / 30, countdown: null };
     let match = matchSlice.reducer(undefined, clockChanged(clock));
     match = matchSlice.reducer(match, ended({ result, durationSeconds: 120 }));
     expect(selectMatchResult({ match })).toBe(result);
@@ -44,6 +44,19 @@ describe('matchSlice', () => {
     expect(selectMatchClock({ match })).toBe(clock);
     expect(selectStructures({ match })).toBe(structures);
     expect(selectCapturePoints({ match })).toBe(capturePoints);
+  });
+
+  it('stores the Duel names and scoreboard, and has none outside a Duel', () => {
+    expect(matchSlice.selectors.selectVersus({ match: matchSlice.getInitialState() })).toBeNull();
+    expect(matchSlice.selectors.selectDuelHud({ match: matchSlice.getInitialState() })).toBeNull();
+    const duel = { ownKills: 2, opponentKills: 0, killTarget: 10 };
+    let match = matchSlice.reducer(
+      undefined,
+      matchSlice.actions.versusChanged({ own: 'A', opponent: 'B' }),
+    );
+    match = matchSlice.reducer(match, matchSlice.actions.duelHudChanged(duel));
+    expect(matchSlice.selectors.selectVersus({ match })).toEqual({ own: 'A', opponent: 'B' });
+    expect(matchSlice.selectors.selectDuelHud({ match })).toBe(duel);
   });
 
   it("stores a Duel's outcome, a draw included", () => {
@@ -63,14 +76,16 @@ describe('matchSlice', () => {
     const { structures } = figmaHudState().match;
     let match = matchSlice.reducer(undefined, structuresChanged(structures));
     match = matchSlice.reducer(match, ended({ result: matchResultFixture(), durationSeconds: 9 }));
-    match = matchSlice.reducer(match, duelEnded({ winner: null, reason: 'opponent-left' }));
+    match = matchSlice.reducer(match, duelEnded({ winner: 'dark', reason: 'opponent-left' }));
     expect(matchSlice.reducer(match, reset())).toEqual({
       clock: null,
       structures: [],
       capturePoints: [],
       result: null,
       durationSeconds: null,
+      versus: null,
       duel: null,
+      duelHud: null,
     });
   });
 });

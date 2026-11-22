@@ -15,9 +15,13 @@ import type { EntityId, RemovalRecord } from './EntityStore.types';
 import { GameEvents } from './GameEvents';
 import type { DamageSource, GameEventMap } from './GameEvents.types';
 import { RECENT_COMMAND_CAPACITY } from './GameState.constants';
-import type { GameStateIndexes, RecordedCommand, TeamState } from './GameState.types';
+import type {
+  GameStateIndexes,
+  GameStateTiming,
+  RecordedCommand,
+  TeamState,
+} from './GameState.types';
 import { MatchRecord } from './MatchRecord';
-import type { ScheduledMark } from './MatchState.types';
 import type { HordeRequest } from './HordeRequest.types';
 import { GuardStore } from './GuardStore';
 import { HordeStore } from './HordeStore';
@@ -102,8 +106,8 @@ export class GameState {
    * @param world - The match's map at runtime; without one, nothing spawns on lanes.
    * @param indexes - The neighbour index `SpaceSystem` refills each tick and A\* for Legends;
    *   each `null` without a map.
-   * @param schedule - The resolved timeline (`MatchTimeline`) as plain marks; empty when no
-   *   director runs.
+   * @param timing - The resolved timeline marks and the countdown's end tick (`Simulation`);
+   *   none in most unit tests.
    */
   public constructor(
     public readonly config: GameConfig,
@@ -112,7 +116,7 @@ export class GameState {
     /** The map, its lane routes and its grid, or `null` (most unit tests). */
     public readonly world: MatchWorld | null = null,
     indexes: GameStateIndexes = {},
-    schedule: readonly ScheduledMark[] = [],
+    { schedule = [], countdownEndTick = 0 }: GameStateTiming = {},
   ) {
     this.space = indexes.space ?? null;
     this.paths = indexes.paths ?? null;
@@ -121,6 +125,7 @@ export class GameState {
     this.match = new MatchRecord(
       config.match.playerTeam,
       schedule,
+      countdownEndTick,
       this.events,
       () => this.currentTick,
     );
@@ -232,7 +237,15 @@ export class GameState {
     this.entities.forEach((entity) => {
       entities.push(snapshotter.snapshotOf(entity));
     });
-    const { phase, phaseEnteredTick, timelineCursor, schedule, humanLegendId } = this.match;
+    const {
+      phase,
+      phaseEnteredTick,
+      timelineCursor,
+      schedule,
+      countdownEndTick,
+      humanLegendId,
+      duel,
+    } = this.match;
     const hordes: HordeSnapshot[] = [];
     this.hordes.forEach((horde) => {
       hordes.push({ ...horde });
@@ -244,7 +257,9 @@ export class GameState {
         phase,
         phaseEnteredTick,
         upcoming: schedule.slice(timelineCursor),
+        countdownEndTick,
         humanLegendId,
+        ...(duel !== null && { duel }),
       },
       entities,
       hordes,
