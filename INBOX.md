@@ -527,6 +527,13 @@ Reply inline (`Decision: …`).
       target-free attack rework, which decides contact in one place (one hit event at contact,
       handed to lane A). (B) Only a hit that does something ends Veil, as built now. Until you
       answer, the rule stays as built.
+  - Note 2026-11-22 (Hamstring merge critic M1-7; not asked again): the outcome is the same.
+    Such a hit still leaves the Vanguard hidden. The reason changed. Lane A's attack rework (PR 2,
+    #159) is now in the Hamstring branch, and it drops a sweep, shot or melee hit on a body that
+    takes no damage before the damage step. So the game records no hit, and no event marks it
+    (rule 2 of `AreaHitQuery`, `ProjectileSystem`, `MeleeAttackStrategy`; DEC-333 (2)). The stun
+    case did not change. For (A), the contact goes in `EntityStore.recordHits` or where a shot
+    stops on a body that takes no damage.
 - [ ] **HC-B26 — Better than the design, built under your standing rule (DEC-223), sign-off
       asked: Hamstring's blade takes its speed, width and range from the blade's own definition
       (`feat/vanguard-hamstring`, 2026-11-22; DEC-268, DEC-269).** Nothing waits on the answer;
@@ -546,6 +553,13 @@ Reply inline (`Decision: …`).
     fix: the weapon strategy also launches through the one `ShotLauncher`. The player sees no
     difference. It changes lane A's weapon code (#148), so lane B builds it with lane A after #148
     merges. (A) Build it. (B) Keep the two copies.
+    - Note 2026-11-22 (Hamstring merge critic M1-6): (A) also removes a second difference. A
+      weapon's shot aims first at the unit it attacks, then at the floor under the aim point.
+      Hamstring's blade aims only at the floor under the aim point. A player sees no difference. A
+      bot casts the blade at an enemy unit. When that unit and another body touch the blade at the
+      same point, the blade can hit the other body; a bot's arrow hits the unit (DEC-317 (8)). (A)
+      makes one rule for the target of every shot, with a test. #148 and PR 2 (#159) are now in
+      the Hamstring branch; #148 is not merged yet.
   - (3) A reading, sign-off asked: Hamstring does not slow. DEC-269 names 80 damage and 2 bleed
     stacks, and no slow. That matches the "Serrated" variety in `more-abilities.md` §2 ("2 bleed
     stacks, no slow"). The game design (`06-abilities-and-progression.md`, approved with DEC-11)

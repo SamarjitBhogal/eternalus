@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { Footprint } from '../../components/Footprint';
 import type { ProjectileSpec } from '../../content/abilities/AbilityDefinition.types';
 import { PROJECTILES } from '../../content/projectiles/projectileCatalogue';
 import { casterState } from '../__fixtures__/casterState';
@@ -44,7 +45,7 @@ describe('ProjectileEffect', () => {
     ]);
   });
 
-  it('launches the shot from the caster along the aim, at no one, carrying its on-hit steps', () => {
+  it('launches the shot from the caster along the aim, carrying its on-hit steps, at no one when the aim point is on no walk-on outline', () => {
     const { state, caster } = casterState();
     const launcher = new RecordingLauncher();
 
@@ -76,5 +77,32 @@ describe('ProjectileEffect', () => {
         },
       },
     ]);
+  });
+
+  it('names the enemy walk-on outline under the aim point as its target (DEC-322 (1))', () => {
+    const { state, factory, caster } = casterState();
+    const floor = factory.create('light-mob', 'training-dummy', {
+      position: { x: 30, y: 30 },
+      team: 'dark',
+    });
+    floor.addComponent(
+      new Footprint(
+        [
+          [
+            { x: -4, y: 3 },
+            { x: 4, y: 3 },
+            { x: 4, y: 11 },
+            { x: -4, y: 11 },
+          ],
+        ],
+        { isWalkOn: true },
+      ),
+    );
+    state.entities.add(floor);
+    const launcher = new RecordingLauncher();
+
+    castSteps(state, caster.id, [SHOT], { aim: { x: 0, y: 5 }, launcher });
+
+    expect(launcher.shots.map((shot) => shot.payload.targetId)).toEqual([floor.id]);
   });
 });
