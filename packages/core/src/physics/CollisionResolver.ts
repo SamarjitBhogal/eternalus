@@ -33,15 +33,22 @@ export class CollisionResolver {
 
   /**
    * Where a circle of `radius` that moves `displacement` from `start` ends: short of the first
-   * wall, sliding along it, and inside the bounds. Mutates nothing.
+   * wall, sliding along it, and inside the bounds. Mutates nothing but `contacts`.
+   *
+   * @param contacts - When given, it is filled with the unit normal, pointing out of the wall, of
+   *   each wall and bounds edge the move touched, in the order the slide met them.
    */
-  public move(start: Vec2, displacement: Vec2, radius: number): Vec2 {
-    const end = this.slide(start, displacement, radius);
+  public move(start: Vec2, displacement: Vec2, radius: number, contacts?: Vec2[]): Vec2 {
+    if (contacts !== undefined) contacts.length = 0;
+    const end = this.slide(start, displacement, radius, contacts);
     const { x, y, width, height } = this.bounds;
-    return {
+    const inside = {
       x: CollisionResolver.clamp(end.x, x, width, radius),
       y: CollisionResolver.clamp(end.y, y, height, radius),
     };
+    if (inside.x !== end.x) contacts?.push({ x: Math.sign(inside.x - end.x), y: 0 });
+    if (inside.y !== end.y) contacts?.push({ x: 0, y: Math.sign(inside.y - end.y) });
+    return inside;
   }
 
   /**
@@ -63,12 +70,13 @@ export class CollisionResolver {
   }
 
   /** `move` without the bounds: the sweep and the slide. */
-  private slide(start: Vec2, displacement: Vec2, radius: number): Vec2 {
+  private slide(start: Vec2, displacement: Vec2, radius: number, contacts?: Vec2[]): Vec2 {
     let position = { ...start };
     let delta = { ...displacement };
     for (let iteration = 0; iteration < MAX_SLIDE_CONTACTS; iteration++) {
       const contact = this.firstContact(position, delta, radius);
       if (contact === null) return { x: position.x + delta.x, y: position.y + delta.y };
+      contacts?.push(contact.normal);
       const travel = CollisionResolver.shortOf(contact, delta);
       position = { x: position.x + delta.x * travel, y: position.y + delta.y * travel };
       const remainder = { x: delta.x * (1 - contact.time), y: delta.y * (1 - contact.time) };

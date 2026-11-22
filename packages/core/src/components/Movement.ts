@@ -15,7 +15,8 @@ import type { ForcedPush } from './Movement.types';
  * per-tick re-pointing of velocity along the heading cannot wipe it, and pushes add up as vectors.
  *
  * A unit whose profile has `momentum` (the Sentinel's Wrecking Run, DEC-307) drives through its
- * `Momentum` instead: a turn slides and loses speed, and a wall stops it (`hitBlock`).
+ * `Momentum` instead: a turn slides and loses speed, and a wall takes the speed that runs into it
+ * (`hitBlock`).
  *
  * @remarks Velocity and heading are updated in place, so a tick allocates nothing per unit.
  * Read them, but do not keep them: they change on the next tick.
@@ -181,15 +182,23 @@ export class Movement {
   }
 
   /**
-   * The last move was cut short by `lost`, the part of it a wall or the world's edge took
-   * (`CollisionSystem`). A unit with momentum loses the velocity that runs into the block, so a
-   * head-on hit stops it dead. A unit without momentum re-points its velocity from its heading
-   * every tick, so nothing changes for it.
+   * The last move touched the walls or world edges whose unit normals, pointing out of each, are
+   * `normals` (`CollisionSystem`). A unit with momentum loses the velocity that runs into them, so
+   * a head-on hit stops it dead, and builds along them while it steers into them. A unit without
+   * momentum re-points its velocity from its heading every tick, so nothing changes for it.
    */
-  public hitBlock(lost: Vec2): void {
+  public hitBlock(normals: readonly Vec2[]): void {
     if (this.momentum !== undefined) {
-      this.currentSpeed = this.momentum.shed(this.currentVelocity, lost);
+      this.currentSpeed = this.momentum.shed(this.currentVelocity, normals);
     }
+  }
+
+  /**
+   * The unit normals of the walls the last move touched, which the next `advance` reads: state
+   * that `StateHasher` hashes. Always empty for a unit without momentum.
+   */
+  public get wallNormals(): readonly Vec2[] {
+    return this.momentum?.wallNormals ?? [];
   }
 
   /** Whether a push (a dash or knock-back) is still moving the entity. */
@@ -252,6 +261,7 @@ export class Movement {
 
   /** Stops at once and drops the heading. A push under way goes on: it is not the entity's will. */
   public stop(): void {
+    this.momentum?.forgetWalls();
     this.currentSpeed = 0;
     this.currentVelocity.x = 0;
     this.currentVelocity.y = 0;

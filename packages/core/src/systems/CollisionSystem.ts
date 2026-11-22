@@ -3,18 +3,19 @@ import { Deploying } from '../components/Deploying';
 import { Movement } from '../components/Movement';
 import { Transform } from '../components/Transform';
 import type { CollisionResolver } from '../physics/CollisionResolver';
-import type { MutableVec2 } from '../utils/vec2.types';
+import type { Vec2 } from '../utils/geometry.types';
 import type { System, SystemContext } from './System.types';
 
 /**
  * Resolves moving units against exact generated walls and authored object footprints, then tells
- * each unit's `Movement` what part of its move the walls took (`hitBlock`), so a unit with momentum
- * loses the speed that ran into a wall (DEC-307).
+ * each unit's `Movement` which walls its move touched (`hitBlock`), so a unit with momentum loses
+ * the speed that ran into a wall (DEC-307).
  */
 export class CollisionSystem implements System {
   public readonly name = 'collision';
 
-  private readonly lost: MutableVec2 = { x: 0, y: 0 };
+  /** The contact normals of the move being resolved, reused for every unit. */
+  private readonly contacts: Vec2[] = [];
 
   /**
    * Geometry is shared with the map presentation, never reconstructed from screen pixels.
@@ -43,14 +44,8 @@ export class CollisionSystem implements System {
         return;
       const from = transform.previousPosition;
       const delta = { x: transform.position.x - from.x, y: transform.position.y - from.y };
-      const to = this.resolver.move(from, delta, transform.radius);
-      transform.moveTo(to);
-      // ponytail: one summed loss per move, so a push and the walk that hit two walls in one tick
-      // blend their normals (a head-on stop a tick late in a corner). Report the blocked part per
-      // contact normal from the resolver once a rule reads the hit speed (PR8 W3).
-      this.lost.x = delta.x - (to.x - from.x);
-      this.lost.y = delta.y - (to.y - from.y);
-      movement.hitBlock(this.lost);
+      transform.moveTo(this.resolver.move(from, delta, transform.radius, this.contacts));
+      movement.hitBlock(this.contacts);
     });
   }
 }

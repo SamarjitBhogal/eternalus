@@ -252,10 +252,20 @@ describe('Movement', () => {
     it('stops dead when a block takes its move head-on', () => {
       const movement = atTopSpeed();
 
-      movement.hitBlock({ x: 0.5, y: 0 });
+      movement.hitBlock([{ x: -1, y: 0 }]);
 
       expect(movement.speed).toBe(0);
       expect(movement.velocity).toEqual({ x: 0, y: 0 });
+      expect(movement.wallNormals).toEqual([{ x: -1, y: 0 }]);
+    });
+
+    it('forgets the walls it touched when it stops, as a unit put somewhere new', () => {
+      const movement = atTopSpeed();
+      movement.hitBlock([{ x: -1, y: 0 }]);
+
+      movement.stop();
+
+      expect(movement.wallNormals).toEqual([]);
     });
 
     it('rejects a walk speed that is not below maxSpeed and a momentum value that is not positive', () => {
@@ -272,9 +282,10 @@ describe('Movement', () => {
     movement.advance();
     movement.advance();
 
-    movement.hitBlock({ x: 0.5, y: 0 });
+    movement.hitBlock([{ x: -1, y: 0 }]);
 
     expect(movement.speed).toBe(2);
     expect(movement.velocity).toEqual({ x: 2, y: 0 });
+    expect(movement.wallNormals).toEqual([]);
   });
 });

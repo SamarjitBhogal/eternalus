@@ -18,12 +18,11 @@ const WEST = { x: -1, y: 0 };
 const NORTH = { x: 0, y: 1 };
 const NONE = { x: 0, y: 0 };
 const NORTHEAST = { x: Math.SQRT1_2, y: Math.SQRT1_2 };
-/**
- * A loss the resolver can leave when a unit runs north almost along a wall to the east: about
- * 1e-6 m into the wall, tilted by its back-off (up to `CONTACT_EPSILON` along the move). It is not
- * a block (`BLOCK_EPSILON`); read as one, it would push the unit off the wall at about 1 m/s.
- */
-const BACK_OFF = { x: 9e-7, y: 1e-7 };
+const NORTHWEST = { x: -Math.SQRT1_2, y: Math.SQRT1_2 };
+/** The unit normal of a wall to the east, pointing out of it (as `CollisionResolver` reports it). */
+const EAST_WALL = { x: -1, y: 0 };
+/** The unit normal of a wall to the north, pointing out of it. */
+const NORTH_WALL = { x: 0, y: -1 };
 
 /** A unit vector `degrees` into a wall to the east (normal `EAST`) from running north along it. */
 const intoEastWall = (degrees: number) => ({
@@ -45,8 +44,8 @@ const drive = (rule: Momentum, velocity: MutableVec2, heading: typeof EAST, tick
 };
 
 /**
- * Drives `ticks` ticks toward `heading` beside a straight wall to the east: each tick's move loses
- * its part into the wall, as `CollisionSystem` reports it. Returns the speed after the last tick.
+ * Drives `ticks` ticks toward `heading` beside a straight wall to the east: each move that runs
+ * into the wall touches it, as `CollisionSystem` reports it. Returns the speed after the last tick.
  */
 const driveBesideEastWall = (
   rule: Momentum,
@@ -56,7 +55,7 @@ const driveBesideEastWall = (
 ) => {
   for (let tick = 0; tick < ticks; tick += 1) {
     rule.drive(velocity, heading, MAX_SPEED);
-    rule.shed(velocity, { x: Math.max(0, velocity.x), y: 0 });
+    rule.shed(velocity, velocity.x > 0 ? [EAST_WALL] : []);
   }
   return Math.hypot(velocity.x, velocity.y);
 };
@@ -152,14 +151,18 @@ describe('Momentum', () => {
     const headOn = { x: MAX_SPEED, y: 0 };
     const glancing = { x: MAX_SPEED, y: MAX_SPEED };
     const away = { x: -MAX_SPEED, y: 0 };
-    const backOff = { x: 0, y: MAX_SPEED };
+    const along = { x: 0, y: MAX_SPEED };
+    const intoCorner = { x: MAX_SPEED / 2, y: MAX_SPEED };
 
-    expect(rule.shed(headOn, { x: 0.2, y: 0 })).toBe(0);
-    expect(rule.shed(glancing, { x: 0.05, y: 0 })).toBeCloseTo(MAX_SPEED);
+    expect(rule.shed(headOn, [EAST_WALL])).toBe(0);
+    expect(rule.shed(glancing, [EAST_WALL])).toBeCloseTo(MAX_SPEED);
     expect(glancing).toEqual({ x: 0, y: MAX_SPEED });
-    expect(rule.shed(away, { x: 0.2, y: 0 })).toBe(MAX_SPEED);
-    expect(rule.shed(backOff, BACK_OFF)).toBe(MAX_SPEED);
-    expect(backOff).toEqual({ x: 0, y: MAX_SPEED });
+    expect(rule.shed(away, [EAST_WALL])).toBe(MAX_SPEED);
+    // A wall it runs along takes nothing, so it does not tilt the run off the wall.
+    expect(rule.shed(along, [EAST_WALL])).toBe(MAX_SPEED);
+    expect(along).toEqual({ x: 0, y: MAX_SPEED });
+    // In a corner, each wall takes its own part: nothing is left.
+    expect(rule.shed(intoCorner, [EAST_WALL, NORTH_WALL])).toBe(0);
   });
 
   it('builds along a wall it steers 45° into from a standstill, past walk speed in 2 s', () => {
@@ -185,7 +188,7 @@ describe('Momentum', () => {
     const rule = momentum();
     const velocity = { x: 0, y: MAX_SPEED };
     const steep = intoEastWall(30);
-    rule.shed(velocity, { x: 0.01, y: 0 });
+    rule.shed(velocity, [EAST_WALL]);
 
     expect(driveBesideEastWall(rule, velocity, steep, 1) * TICKS).toBeCloseTo(9 - 8 / TICKS, 2);
     expect(driveBesideEastWall(rule, velocity, steep, TICKS)).toBeCloseTo(MAX_SPEED * steep.y, 9);
@@ -197,22 +200,80 @@ describe('Momentum', () => {
     expect(driveBesideEastWall(momentum(), velocity, EAST, TICKS)).toBe(0);
   });
 
-  it('forgets the wall once a move hits nothing, and keeps none for a back-off loss', () => {
+  it('stays stopped in a corner it steers into, and keeps pressing along its heading', () => {
+    const rule = momentum();
+    const velocity = { x: 0, y: 0 };
+    // Mostly north, so it points into both walls but not at the corner's middle.
+    const heading = intoEastWall(30);
+
+    for (let tick = 0; tick < TICKS; tick += 1) {
+      rule.drive(velocity, heading, MAX_SPEED);
+      // The move it tries (what `MovementSystem` faces) is along the heading, every tick.
+      expect(velocity.x * heading.y - velocity.y * heading.x).toBeCloseTo(0, 12);
+      expect(rule.shed(velocity, [EAST_WALL, NORTH_WALL])).toBe(0);
+    }
+  });
+
+  it('stays stopped in a corner wider than 90° that it steers into, as in a square one', () => {
+    const rule = momentum();
+    const velocity = { x: 0, y: 0 };
+    // The east wall meets a wall that runs north-west from it: a 135° corner. The heading points
+    // into both walls, but not at the corner's middle.
+    const northWestWall = { x: -Math.SQRT1_2, y: -Math.SQRT1_2 };
+    const heading = intoEastWall(60);
+
+    for (let tick = 0; tick < TICKS; tick += 1) {
+      rule.drive(velocity, heading, MAX_SPEED);
+      // Sliding off one wall and then the other leaves a part along the second wall, out of the
+      // corner, so the unit would flip between the walls every tick.
+      expect(velocity.x * heading.y - velocity.y * heading.x).toBeCloseTo(0, 12);
+      expect(rule.shed(velocity, [EAST_WALL, northWestWall])).toBe(0);
+    }
+  });
+
+  it('builds along a slanted wall from rest, though roundoff puts it a hair against the build', () => {
+    const rule = momentum();
+    const slantedWall = { x: -0.96, y: -0.28 };
+    // East slides off this wall along (0.28, -0.96), and the slide rounds 1e-17 into the wall;
+    // `shed` leaves 1e-18 of speed against the slide.
+    const velocity = { x: -0.28e-18, y: 0.96e-18 };
+    rule.shed(velocity, [slantedWall]);
+
+    rule.drive(velocity, EAST, MAX_SPEED);
+
+    expect(velocity.x * 0.28 - velocity.y * 0.96).toBeCloseTo(ACCELERATION, 12);
+  });
+
+  it('forgets the wall once a move hits nothing, and ignores a wall it steers away from', () => {
     const steered = momentum();
     const velocity = { x: 0, y: MAX_SPEED };
-    steered.shed(velocity, { x: 0.01, y: 0 });
+    steered.shed(velocity, [EAST_WALL]);
     steered.drive(velocity, NORTHEAST, MAX_SPEED);
-    const backedOff = momentum();
-    const backedOffVelocity = { ...velocity };
-    backedOff.shed(backedOffVelocity, BACK_OFF);
     const fresh = { ...velocity };
+    const away = momentum();
+    const awayVelocity = { ...velocity };
+    away.shed(awayVelocity, [EAST_WALL]);
+    const freshAway = { ...awayVelocity };
 
     steered.drive(velocity, NORTHEAST, MAX_SPEED);
-    backedOff.drive(backedOffVelocity, NORTHEAST, MAX_SPEED);
     momentum().drive(fresh, NORTHEAST, MAX_SPEED);
+    away.drive(awayVelocity, NORTHWEST, MAX_SPEED);
+    momentum().drive(freshAway, NORTHWEST, MAX_SPEED);
 
     expect(velocity).toEqual(fresh);
-    expect(backedOffVelocity).toEqual(fresh);
+    expect(awayVelocity).toEqual(freshAway);
+  });
+
+  it('keeps the walls the last move touched until the next drive, or until it forgets them', () => {
+    const rule = momentum();
+    rule.shed({ x: 0, y: 0 }, [EAST_WALL, NORTH_WALL]);
+
+    expect(rule.wallNormals).toEqual([EAST_WALL, NORTH_WALL]);
+    rule.forgetWalls();
+    expect(rule.wallNormals).toEqual([]);
+    rule.shed({ x: 0, y: 0 }, [EAST_WALL]);
+    rule.drive({ x: 0, y: 0 }, NORTHEAST, MAX_SPEED);
+    expect(rule.wallNormals).toEqual([]);
   });
 
   it('rejects a walk speed at or above the top speed, and any value that is not positive', () => {

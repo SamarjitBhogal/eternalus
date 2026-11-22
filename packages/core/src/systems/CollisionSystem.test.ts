@@ -137,13 +137,15 @@ describe('CollisionSystem', () => {
   describe('a unit with momentum (Wrecking Run, DEC-307)', () => {
     /**
      * Runs `kind` from `start` toward the house wall at x = 5 for `ticks` ticks, as the movement and
-     * collision systems do, and returns its movement and transform.
+     * collision systems do, and returns its movement and transform. `beforeCollision` sees each
+     * tick's move before the walls cut it (the velocity `MovementSystem` faces).
      */
     const run = (
       kind: 'sentinel' | 'warrior',
       heading: { x: number; y: number },
       ticks: number,
       start = { x: 1, y: 5 },
+      beforeCollision: (movement: Movement) => void = () => undefined,
     ) => {
       const config = createDefaultGameConfig();
       const state = new GameState(config, 1);
@@ -169,6 +171,7 @@ describe('CollisionSystem', () => {
       for (let tick = 0; tick < ticks; tick += 1) {
         movement.advance();
         transform.moveBy(movement.velocity);
+        beforeCollision(movement);
         collision.update({ state, logger: new NullLogger() });
       }
       return { movement, transform };
@@ -200,6 +203,46 @@ describe('CollisionSystem', () => {
         expect(movement.velocity.y * ticksPerSecond).toBeGreaterThanOrEqual(3.5);
       },
     );
+
+    it('never turns the Sentinel away from a wall it runs along at a hair into it', () => {
+      const ticksPerSecond = createDefaultGameConfig().tickRate;
+      const angle = 3e-6;
+      const awayFromWall: number[] = [];
+
+      // Starts touching the wall (as the resolver leaves a unit), beside its south end.
+      const { movement, transform } = run(
+        'sentinel',
+        { x: sin(angle), y: cos(angle) },
+        2 * ticksPerSecond,
+        { x: 3.75 - 1e-7, y: 1.5 },
+        (moving) => awayFromWall.push(Math.max(0, -moving.velocity.x * ticksPerSecond)),
+      );
+
+      expect(Math.max(...awayFromWall)).toBeLessThan(1e-6);
+      expect(transform.position.x).toBeLessThanOrEqual(5 - 1.25);
+      expect(movement.velocity.y * ticksPerSecond).toBeGreaterThanOrEqual(3.5);
+    });
+
+    it('holds the Sentinel still in a corner it steers into, trying to move along its heading', () => {
+      const ticksPerSecond = createDefaultGameConfig().tickRate;
+      // Into the map's corner at the origin, mostly along y: it meets one edge, then slides along
+      // it into the corner within the first second.
+      const heading = { x: -sin(Math.PI / 6), y: -cos(Math.PI / 6) };
+      const offHeading: number[] = [];
+
+      const { movement, transform } = run(
+        'sentinel',
+        heading,
+        2 * ticksPerSecond,
+        { x: 2, y: 2 },
+        ({ velocity }) => offHeading.push(velocity.x * heading.y - velocity.y * heading.x),
+      );
+
+      expect(transform.position).toEqual({ x: 1.25, y: 1.25 });
+      expect(movement.speed).toBe(0);
+      // The last second: the move it tries points along the heading every tick (no flicker).
+      for (const sideways of offHeading.slice(ticksPerSecond)) expect(sideways).toBeCloseTo(0, 12);
+    });
 
     it('leaves the speed of a unit without momentum alone (the Warrior)', () => {
       const { movement, transform } = run('warrior', { x: 1, y: 0 }, 120);

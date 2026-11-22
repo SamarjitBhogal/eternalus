@@ -166,6 +166,11 @@ export class StateHasher {
         ...movement.forcedPushes.flatMap(({ x, y, ticksLeft }) => [x, y, ticksLeft]),
       ]);
     }
+    // The walls a unit with momentum touched, which its next tick builds along (DEC-307): a field
+    // only while there are some, so every other entity hashes as before.
+    if (movement !== undefined && movement.wallNormals.length > 0) {
+      fields.push(['walls', ...movement.wallNormals.flatMap(({ x, y }) => [x, y])]);
+    }
     const collider = entity.findComponent(Collider);
     if (collider !== undefined) {
       // Only an unbreakable collider adds a field, so states without walls hash as before.

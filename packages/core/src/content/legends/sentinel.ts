@@ -4,7 +4,8 @@ import type { LegendDefinition } from './legends.types';
  * Sentinel: heavy and powerful; one of the highest top speeds but very slow acceleration.
  *
  * TUNE: health and movement are placeholders. Movement is Wrecking Run (DEC-307): momentum, so a
- * turn slides and loses speed and a wall stops it; the build-up follows the game doc's "up to 1
+ * turn slides and loses speed, a head-on hit stops it and it builds along a wall; the build-up
+ * follows the game doc's "up to 1
  * minute of running straight to get to full speed", shortened for the MVP map (balancing.md,
  * "Sentinel wall sprint"). The radius is DEC-06.
  */
@@ -40,7 +41,7 @@ export const SENTINEL = {
     momentum: {
       walkSpeed: 3.5, // TUNE: m/s, balancing.md (base speed); owner check pending (PR8 W1)
       rampDuration: 20, // TUNE: s from walkSpeed to maxSpeed, balancing.md (sprint ramp); owner check pending (PR8 W1)
-      grip: 8, // TUNE: m/s², proposed, no document has it: a reverse at 9 m/s slides about 5 m; owner answer pending (PR8 W2)
+      grip: 8, // TUNE: m/s², proposed (DEC-307: "Numbers for these go on the PR 8 page."): a reverse at 9 m/s slides about 5 m; owner answer pending (PR8 W2)
     },
   },
   defaultLoadout: { primaryWeaponId: 'wuuthrad' }, // TUNE: default weapon (05 §10 table) until the owner picks one (INBOX)

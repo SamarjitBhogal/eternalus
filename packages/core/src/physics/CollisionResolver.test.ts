@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CollisionResolver } from './CollisionResolver';
 import { StaticCollisionIndex } from './StaticCollisionIndex';
+import type { Vec2 } from '../utils/geometry.types';
 
 /** Bounds far from every wall here, so only the walls stop a circle. */
 const OPEN = { x: -1000, y: -1000, width: 2000, height: 2000 };
@@ -50,6 +51,29 @@ describe('CollisionResolver', () => {
     expect(end.x).toBeCloseTo(4.5);
     expect(end.y).toBeCloseTo(4.5);
     expect(resolver.move({ x: 0, y: 0 }, { x: 0, y: 0 }, 0.5)).toEqual({ x: 0, y: 0 });
+  });
+
+  it('reports the normal, out of the wall, of each wall and bounds edge a move touches', () => {
+    const resolver = new CollisionResolver(
+      new StaticCollisionIndex([
+        { id: 'east', polygon: rect(5, -20, 1, 40) },
+        { id: 'south', polygon: rect(-20, 5, 40, 1) },
+      ]),
+      { x: -10, y: -10, width: 30, height: 30 },
+    );
+    const contacts: Vec2[] = [{ x: 9, y: 9 }];
+
+    resolver.move({ x: 0, y: 0 }, { x: 100, y: 100 }, 0.5, contacts);
+    expect(contacts).toHaveLength(2);
+    expect(contacts).toContainEqual({ x: -1, y: 0 });
+    expect(contacts).toContainEqual({ x: 0, y: -1 });
+    resolver.move({ x: 0, y: 0 }, { x: 1, y: 0 }, 0.5, contacts);
+    expect(contacts).toEqual([]);
+    resolver.move({ x: 0, y: 0 }, { x: -100, y: -100 }, 0.5, contacts);
+    expect(contacts).toEqual([
+      { x: 1, y: 0 },
+      { x: 0, y: 1 },
+    ]);
   });
 
   it('lets a mover that starts inside a footprint walk out, but never deeper in', () => {
