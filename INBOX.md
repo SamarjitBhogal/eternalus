@@ -335,6 +335,11 @@ Reply inline (`Decision: …`).
     (7), and the rest of plan question 44 (forfeit stats, deploys).
   - **Changed by the PR #104 review fixes (2026-11-20)**: (4) a queued guest whose slot is held
     is no longer paired; on a resume `welcome` comes before `queue-waiting` or `match-found`.
+  - **Changed by the PR #104 review round 3 (2026-11-22)**: only a guest with a finished match
+    (a `PlayerRatings` record) is remembered after its socket closes, so idle connect-and-close
+    loops cannot push rated guests out; an unrated guest that comes back gets a fresh id. Still
+    open for the owner: how long a remembered guest id should live (a time limit, not just the
+    `MAX_KNOWN_GUESTS` cap), and whether the game reconnects a dropped Duel player on its own (7).
 
 - [ ] **Per-address connection cap and `X-Forwarded-For` (SCRUM-432 critic, 2026-11-12) — owner /
       security, not introduced by this branch.** `ClientAddress.resolve` (`apps/server/src/transport/`)

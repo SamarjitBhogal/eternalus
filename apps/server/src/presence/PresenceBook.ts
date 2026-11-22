@@ -16,7 +16,7 @@ type Guest = {
  * never copied, so it cannot drift. When a queued or in-match guest disconnects, its slot is held
  * for the reconnect window (DEC-297 (1)): a connection that presents the same id inside it takes
  * the slot over; after it the guest leaves the queue or forfeits, a leave and a loss (DEC-250 (4)).
- * A guest whose connection is gone (every match end closes both sockets) is remembered: a later
+ * A guest with a finished match whose connection is gone (every match end closes both sockets) is remembered: a later
  * connection that presents its id becomes that guest again, with its rating. Only the newest
  * `maxKnownGuests` are remembered; the oldest is forgotten, rating and all, so memory stays
  * bounded. The ids are bearer tokens: never log them.
@@ -138,8 +138,8 @@ export class PresenceBook {
 
   /** `own` (idle, connected) becomes the remembered guest `guestId` and is told so. */
   private adopt(own: Guest, guestId: string): void {
-    this.remove(own);
     this.known.delete(guestId);
+    this.remove(own);
     const guest: Guest = {
       id: guestId,
       connection: own.connection,
@@ -159,8 +159,10 @@ export class PresenceBook {
     this.remember(guest.id);
   }
 
+  /** Only a guest with a finished match is remembered: an id with no rating is not worth a slot. */
   private remember(guestId: string): void {
     this.known.delete(guestId);
+    if (this.options.ratings.get(guestId).matches === 0) return;
     this.known.add(guestId);
     if (this.known.size <= this.options.maxKnownGuests) return;
     for (const oldest of this.known) {
