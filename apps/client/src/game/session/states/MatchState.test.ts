@@ -175,13 +175,13 @@ describe('MatchState', () => {
     expect(overlays).toEqual(['leave-duel', null]);
   });
 
-  it('forfeits the Duel, then returns to the menu, on forfeit-duel', () => {
+  it('forfeits the Duel, then returns to the menu, on forfeit', () => {
     const order: string[] = [];
     const context = new FakeSessionContext(order);
     const state = new MatchState();
     state.enter(context);
     order.length = 0;
-    state.handleIntent({ kind: 'forfeit-duel' }, context);
+    state.handleIntent({ kind: 'forfeit' }, context);
     expect(order).toEqual(['forfeitDuel', 'transition']);
     expect(context.calls.transition).toEqual([['menu']]);
   });

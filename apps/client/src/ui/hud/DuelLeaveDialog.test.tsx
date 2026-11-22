@@ -21,7 +21,7 @@ describe('DuelLeaveDialog', () => {
   it('warns that leaving forfeits and that the match does not pause', () => {
     const html = render('leave-duel');
 
-    expect(STRINGS.duelLeave.title).toBe('Leave the Duel?');
+    expect(html).toContain(`>${STRINGS.duelLeave.title}</h2>`);
     expect(html).toContain(
       'If you leave, you forfeit the match and your opponent wins. The match does not pause.',
     );

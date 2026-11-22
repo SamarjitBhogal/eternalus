@@ -1,9 +1,7 @@
 import { type ReactElement, useEffect, useState } from 'react';
 
-import { ElapsedTimeFormatter } from './ElapsedTimeFormatter';
-import { WAIT_TIMER_TICK_MS } from './WaitTimer.constants';
-
-const formatter = new ElapsedTimeFormatter();
+import { matchTimeText } from '../../bridge/selectors/matchTimeText';
+import { MS_PER_SECOND, WAIT_TIMER_TICK_MS } from './WaitTimer.constants';
 
 /** A live `mm:ss` count of how long the component has been mounted. A `timer`: never announced per tick. */
 export function WaitTimer({ label }: { readonly label: string }): ReactElement {
@@ -11,7 +9,7 @@ export function WaitTimer({ label }: { readonly label: string }): ReactElement {
   useEffect(() => {
     const startedAt = Date.now();
     const id = setInterval(() => {
-      setElapsedSeconds((Date.now() - startedAt) / WAIT_TIMER_TICK_MS);
+      setElapsedSeconds((Date.now() - startedAt) / MS_PER_SECOND);
     }, WAIT_TIMER_TICK_MS);
     return () => {
       clearInterval(id);
@@ -19,7 +17,7 @@ export function WaitTimer({ label }: { readonly label: string }): ReactElement {
   }, []);
   return (
     <p role="timer" aria-label={label}>
-      {formatter.format(elapsedSeconds)}
+      {matchTimeText(elapsedSeconds)}
     </p>
   );
 }

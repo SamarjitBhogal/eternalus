@@ -10,3 +10,7 @@
   font-size: max(calc(22 * var(--hud-u)), var(--text-min));
   white-space: nowrap;
 }
+
+.banner p {
+  margin: 0;
+}

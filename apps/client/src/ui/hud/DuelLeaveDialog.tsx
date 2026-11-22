@@ -58,7 +58,7 @@ export function DuelLeaveDialog(): ReactElement | null {
           </Button>
           <Button
             onClick={() => {
-              emitIntent({ kind: 'forfeit-duel' });
+              emitIntent({ kind: 'forfeit' });
             }}
           >
             {text.leave}

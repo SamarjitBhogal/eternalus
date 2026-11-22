@@ -68,7 +68,7 @@ export type UiIntent =
   | { readonly kind: 'cancel-match' }
   | { readonly kind: 'leave-match' }
   /** Forfeit the online Duel in progress (the opponent wins) and return to the main menu. */
-  | { readonly kind: 'forfeit-duel' }
+  | { readonly kind: 'forfeit' }
   /** Leaves the win/lose screen before its countdown ends (DEC-78). */
   | { readonly kind: 'continue' }
   | { readonly kind: 'open-overlay'; readonly overlay: Overlay }

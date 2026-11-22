@@ -33,11 +33,18 @@ describe('OpponentPresenceBanner', () => {
     act(() => {
       store.dispatch(matchSlice.actions.opponentPresenceChanged(10_000));
     });
-    expect(container.textContent).toBe(STRINGS.duelOpponent.lostConnection(10));
+    expect(container.querySelector('[role="status"]')?.textContent).toBe(
+      STRINGS.duelOpponent.lostConnection,
+    );
+    expect(container.querySelector('[role="timer"]')?.textContent).toBe(
+      STRINGS.duelOpponent.seconds(10),
+    );
     act(() => {
       vi.advanceTimersByTime(4000);
     });
-    expect(container.textContent).toBe(STRINGS.duelOpponent.lostConnection(6));
+    expect(container.querySelector('[role="timer"]')?.textContent).toBe(
+      STRINGS.duelOpponent.seconds(6),
+    );
     act(() => {
       store.dispatch(matchSlice.actions.opponentPresenceChanged(null));
     });

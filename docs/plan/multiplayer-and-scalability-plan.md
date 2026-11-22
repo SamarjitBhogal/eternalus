@@ -249,7 +249,7 @@ takes the slot over; after it the guest leaves the queue or forfeits, and a time
 leave and a loss (DEC-250 (4)): the player who stayed wins once the window runs out. A guest whose
 connection is gone keeps its id and rating for a later `queue-join` (the newest
 `MAX_KNOWN_GUESTS`; the oldest is forgotten). The `forfeit` message ends only the sender's own
-match (DEC-297 (2)). The client does not rejoin on its own yet; it only stores and sends the id.
+match (DEC-297 (2)). The server tells the other player about the gap (`opponent-presence`: `disconnected` with the window's length, then `reconnected`); the client shows it as a banner with a countdown and sends `forfeit` on a deliberate leave from the Duel's leave dialog. The client does not rejoin on its own yet; it only stores and sends the id.
 
 ### Implementation status: Glicko-2 rating and skill-based pairing (2026-11-13, SCRUM-431)
 

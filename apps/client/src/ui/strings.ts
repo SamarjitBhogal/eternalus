@@ -99,14 +99,14 @@ export const STRINGS = {
   duelVersus: {
     title: 'Duel online',
     versus: 'VS',
-    matchFound: 'Match found:',
-    startsSoon: 'The match starts in a moment.',
+    matchFound: (own: string, opponent: string): string =>
+      `Match found: ${own} VS ${opponent}. The match starts in a moment.`,
   },
   duelQueue: {
     title: 'Duel online',
     searching: 'Searching for an opponent…',
     explanation:
-      'You are in the Duel queue. We are looking for an opponent with a similar rating; this usually takes a moment.',
+      'You are in the Duel queue. We are looking for an opponent; this usually takes a moment.',
     waitedLabel: 'Time in queue',
     cancel: 'Cancel',
   },
@@ -196,7 +196,10 @@ export const STRINGS = {
     reduceMotion: 'Reduce motion',
     colourBlindMode: 'Colour-blind mode',
   },
-  /** The confirmation before leaving an online Duel: leaving forfeits, the server keeps running the match. */
+  /**
+   * The confirmation before leaving an online Duel: leaving forfeits (DEC-250 (4)), the opponent
+   * wins (DEC-251), the server keeps running the match.
+   */
   duelLeave: {
     title: 'Leave the Duel?',
     text: 'If you leave, you forfeit the match and your opponent wins. The match does not pause.',
@@ -275,9 +278,11 @@ export const STRINGS = {
     allyTile: (who: string, className: string | null): string =>
       className === null ? who : `${who}, ${className}`,
   },
+  /** The opponent's dropped connection is held for the reconnect window (DEC-297 (1)). */
   duelOpponent: {
-    lostConnection: (seconds: number): string =>
-      `Your opponent lost connection. Waiting up to ${String(seconds)} s for them to come back…`,
+    lostConnection: 'Your opponent lost connection. Waiting for them to come back…',
+    secondsLeft: 'Seconds left to reconnect',
+    seconds: (seconds: number): string => `${String(seconds)} s`,
   },
   /** The match HUD (62:231); slot names reuse `ACTION_LABELS`, gameplay names are content. */
   hud: {

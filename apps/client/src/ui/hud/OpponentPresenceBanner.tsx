@@ -3,7 +3,7 @@ import { type ReactElement, useEffect, useState } from 'react';
 import { useAppSelector } from '../../bridge/hooks';
 import { matchSlice } from '../../bridge/slices/matchSlice';
 import { STRINGS } from '../strings';
-import { OPPONENT_BANNER_TICK_MS } from './OpponentPresenceBanner.constants';
+import { MS_PER_SECOND, OPPONENT_BANNER_TICK_MS } from './OpponentPresenceBanner.constants';
 import styles from './OpponentPresenceBanner.module.css';
 
 /** The text with a live countdown from `graceMs`; remounted per disconnect, so it restarts. */
@@ -19,9 +19,12 @@ function Countdown({ graceMs }: { readonly graceMs: number }): ReactElement {
     };
   }, [graceMs]);
   return (
-    <p role="status" className={styles.banner}>
-      {STRINGS.duelOpponent.lostConnection(Math.ceil(remainingMs / OPPONENT_BANNER_TICK_MS))}
-    </p>
+    <div className={styles.banner}>
+      <p role="status">{STRINGS.duelOpponent.lostConnection}</p>
+      <p role="timer" aria-label={STRINGS.duelOpponent.secondsLeft}>
+        {STRINGS.duelOpponent.seconds(Math.ceil(remainingMs / MS_PER_SECOND))}
+      </p>
+    </div>
   );
 }
 

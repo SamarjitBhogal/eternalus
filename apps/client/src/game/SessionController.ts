@@ -266,8 +266,7 @@ export class SessionController {
   }
 
   private clearMatchSetup(): void {
-    // Any deliberate way out of a Duel in progress forfeits it, so the opponent is told at once.
-    this.duel.forfeit();
+    this.duel.close();
     this.setup = null;
     this.selection = null;
     this.rosters = null;

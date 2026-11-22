@@ -284,14 +284,14 @@ describe('SessionController, online Duel (ADR 0016)', () => {
     expect(session.matches[0]?.destroyCount).toBe(1);
   });
 
-  it('forfeits a Duel in progress when the player leaves the match another way', async () => {
+  it('closes without a forfeit when the session leaves a Duel another way (the seat is held)', async () => {
     const session = await setUp();
     await session.startDuel();
     session.controller.attachViewport(VIEWPORT);
 
     session.intent({ kind: 'leave-match' });
 
-    expect(session.transport().sent.at(-1)).toEqual({ type: 'forfeit' });
+    expect(session.transport().sent).not.toContainEqual({ type: 'forfeit' });
     expect(session.transport().hasEnded).toBe(true);
     expect(session.controller.phase).toBe('menu');
   });
