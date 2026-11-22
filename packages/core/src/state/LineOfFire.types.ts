@@ -2,8 +2,9 @@ import type { EntityId } from './EntityStore.types';
 import type { GameState } from './GameState';
 
 /**
- * Whether a unit's shot would reach its target now (architecture 05 §10, DEC-317). A bot holds to
- * shoot only with a clear line, and `CombatSystem` fires a ranged attack only with one. A port so
+ * Whether a unit's shot would reach its target now (architecture 05 §10, DEC-317). A bot holds a
+ * target and stands to shoot only with a clear line; without one it drops the target and moves
+ * (DEC-317 addendum). `CombatSystem` does not read it: a unit fires whenever it attacks. A port so
  * `ai/` reads it without the projectile content and tests can stand it in; `LineOfFire` is the
  * match's one.
  */

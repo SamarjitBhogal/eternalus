@@ -1,7 +1,6 @@
 import { Abilities } from '../components/Abilities';
 import type { Aim } from '../components/AbilitySlotRuntime.types';
 import { ChaseWatch } from '../components/ChaseWatch';
-import { Collider } from '../components/Collider';
 import { Combat } from '../components/Combat';
 import { ControllerBinding } from '../components/ControllerBinding';
 import { Deploying } from '../components/Deploying';
@@ -173,19 +172,6 @@ export class EntityStore {
   public outlineOf(id: EntityId): Outline | undefined {
     const entity = this.entities.get(id);
     return entity?.findComponent(MapObjectBody) ?? entity?.findComponent(Footprint);
-  }
-
-  /**
-   * Whether `id` is hit only by an attack aimed at it (DEC-317): a walk-on outline (a palace floor,
-   * a gate's passage), which shots fly over and sweeps pass over, or a body that takes no damage
-   * now (`Collider.isUnbreakable`: a wall or gate before its rule passes). `ProjectileSystem` and
-   * the melee sweep share it. `false` for an unknown id.
-   */
-  public isHitOnlyWhenTargeted(id: EntityId): boolean {
-    return (
-      this.outlineOf(id)?.isWalkOn === true ||
-      this.entities.get(id)?.findComponent(Collider)?.isUnbreakable === true
-    );
   }
 
   /**

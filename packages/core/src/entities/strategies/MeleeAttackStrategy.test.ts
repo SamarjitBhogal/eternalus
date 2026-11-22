@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { loadDefaultContent } from '../../content/loadDefaultContent';
 import { loadWeapons } from '../../content/weapons/loadWeapons';
+import { AreaHitQuery } from '../../state/AreaHitQuery';
 import type { DamageSource } from '../../state/GameEvents.types';
 import { GameState } from '../../state/GameState';
 import { createDefaultEntityRegistry } from '../defaultEntityRegistry';
@@ -45,12 +46,18 @@ const hitWith = (
   const attacker = new Warrior('entity-1', definition.id);
   attacker.spawn({ definition, position: { x: 0, y: 0 }, team: 'light', weapons: WEAPONS });
 
-  new MeleeAttackStrategy().attack(attacker, { targetId, direction: { x: 1, y: 0 } }, ATTACK, {
-    state,
-    damage,
-    hits,
-    factory: new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30)),
-  });
+  new MeleeAttackStrategy().attack(
+    attacker,
+    { targetId, point: null, direction: { x: 1, y: 0 } },
+    ATTACK,
+    {
+      state,
+      damage,
+      hits,
+      factory: new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30)),
+      areas: new AreaHitQuery(),
+    },
+  );
   return calls;
 };
 

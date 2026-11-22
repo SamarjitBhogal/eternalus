@@ -6,8 +6,8 @@ import type { DamagePipeline } from '../combat/DamagePipeline';
 import type { EntityFactory } from '../entities/EntityFactory';
 import type { StrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
+import { AreaHitQuery } from '../state/AreaHitQuery';
 import type { HitRunner } from '../state/HitRunner.types';
-import type { LineOfFireQuery } from '../state/LineOfFire.types';
 import { normalizeInto } from '../utils/vec2';
 import type { MutableVec2 } from '../utils/vec2.types';
 import type { Entity } from '../entities/Entity';
@@ -28,14 +28,16 @@ import type { System, SystemContext } from './System.types';
  * lands (`HitEffects`: Fury's knock-back). While the match holds units idle
  * (`state.match.isIdleHeld`, the countdown) no attack lands, no unit turns to its target, and
  * targets are kept for after. An attacker killed earlier in the tick lands nothing. A ranged
- * attack fires a shot (the match's one `EntityFactory` builds it) only when the shot would reach
- * the target (`LineOfFire`, DEC-317); else the unit faces the target, keeps it and stays ready,
- * and its controller moves it. `ProjectileSystem`, right before this system, flies and lands the
- * shots. Getting into reach is the controller's job (moving), not this system's.
+ * attack fires a shot (the match's one `EntityFactory` builds it) with no line-of-fire check, for
+ * every unit (DEC-317 addendum): a shot into a wall ends there. A bot whose shot a wall would stop
+ * drops its target and moves (`BotLeaves`). `ProjectileSystem`, right before this system, flies
+ * and lands the shots. Getting into reach is the controller's job (moving), not this system's.
  *
  * A unit with an aim point instead of a target (`attack-aim`, DEC-184) attacks along the line to
- * that point whenever the attack is off cooldown: it faces the point every tick, with no reach and
- * no line-of-fire check (a shot into a wall just ends there, a sweep hits what its wedge reaches).
+ * that point whenever the attack is off cooldown: it faces the point every tick, with no reach
+ * check (a shot into a wall just ends there, a sweep hits what its wedge reaches). The strategies
+ * get the aim point, and the one hit rule for areas (`AreaHitQuery`), so a sweep or a shot hits a
+ * walk-on outline only when it aims at it (DEC-322 (1)).
  */
 export class CombatSystem implements System {
   public readonly name = 'combat';
@@ -47,19 +49,18 @@ export class CombatSystem implements System {
   private readonly hits: HitRunner | null;
   private readonly strategies: StrategyRegistry;
   private readonly factory: EntityFactory;
-  private readonly lineOfFire: LineOfFireQuery;
+  /** The one hit rule for areas, which the sweep and the shot apply (stateless). */
+  private readonly areas = new AreaHitQuery();
 
   /** Creates the system from its injected parts (`CombatSystemOptions`). */
   public constructor({
     damage,
     factory,
-    lineOfFire,
     hits = null,
     strategies = createDefaultStrategyRegistry(),
   }: CombatSystemOptions) {
     this.damage = damage;
     this.factory = factory;
-    this.lineOfFire = lineOfFire;
     this.hits = hits;
     this.strategies = strategies;
   }
@@ -108,15 +109,13 @@ export class CombatSystem implements System {
         );
       }
       transform.lookAt(this.facePoint);
-      if (
-        !combat.canAttack(state.tick) ||
-        !this.lineOfFire.isClear(state, attacker.id, target.id)
-      ) {
+      if (!combat.canAttack(state.tick)) {
         return;
       }
 
       this.land(state, attacker, combat, {
         targetId: target.id,
+        point: null,
         direction: this.directionTo(transform, this.facePoint),
       });
     });
@@ -135,6 +134,7 @@ export class CombatSystem implements System {
     if (combat.canAttack(state.tick)) {
       this.land(state, attacker, combat, {
         targetId: null,
+        point,
         direction: this.directionTo(transform, point),
       });
     }
@@ -147,6 +147,7 @@ export class CombatSystem implements System {
       damage: this.damage,
       hits: this.hits,
       factory: this.factory,
+      areas: this.areas,
     });
     combat.beginAttack(
       state.tick,

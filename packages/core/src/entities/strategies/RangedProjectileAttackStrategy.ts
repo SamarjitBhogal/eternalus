@@ -11,8 +11,10 @@ import { weaponSourceOf } from './weaponSourceOf';
  * Fires a projectile along the aim (architecture 05 §10, DEC-184): it spawns at the attacker's
  * centre, so its circle starts clear of every wall the attacker is kept out of, flies straight
  * along `aim.direction` (no lead) and carries a `ProjectilePayload` with a weapon impact and the
- * locked target, if any. `CombatSystem` hands it a unit direction, so a shot always moves. It
- * passes its owner by; `ProjectileSystem` flies and lands it, from the next tick.
+ * body it aims at: the locked target, or else the walk-on outline the aim point is on
+ * (`AreaHitQuery.aimedBodyOf`, DEC-322 (1)), so the shot can hit that outline and flies over the
+ * others. `CombatSystem` hands it a unit direction, so a shot always moves. It passes its owner
+ * by; `ProjectileSystem` flies and lands it, from the next tick.
  */
 export class RangedProjectileAttackStrategy implements AttackStrategy {
   /**
@@ -24,9 +26,9 @@ export class RangedProjectileAttackStrategy implements AttackStrategy {
    */
   public attack(
     attacker: Entity,
-    { targetId, direction }: AttackAim,
+    { targetId, point, direction }: AttackAim,
     attack: UnitAttack,
-    { state, factory }: AttackContext,
+    { state, factory, areas }: AttackContext,
   ): void {
     if (attack.strategy !== 'ranged-projectile') {
       throw new Error(`The ranged attack strategy cannot fire a "${attack.strategy}" attack.`);
@@ -42,7 +44,9 @@ export class RangedProjectileAttackStrategy implements AttackStrategy {
         ownerId: attacker.id,
         team,
         source: weaponSourceOf(attacker),
-        targetId,
+        targetId:
+          targetId ??
+          (point === null ? null : areas.aimedBodyOf(state.entities, attacker.id, point)),
         impact: { kind: 'weapon', attack },
         origin,
       }),

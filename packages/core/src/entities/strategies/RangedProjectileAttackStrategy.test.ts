@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { Footprint } from '../../components/Footprint';
 import { Movement } from '../../components/Movement';
 import { ProjectilePayload } from '../../components/ProjectilePayload';
 import { Transform } from '../../components/Transform';
@@ -8,6 +9,7 @@ import { loadDefaultContent } from '../../content/loadDefaultContent';
 import { loadProjectiles } from '../../content/projectiles/loadProjectiles';
 import type { RangedAttack } from '../../content/units/units.types';
 import { loadWeapons } from '../../content/weapons/loadWeapons';
+import { AreaHitQuery } from '../../state/AreaHitQuery';
 import { GameState } from '../../state/GameState';
 import { IdGenerator } from '../../utils/IdGenerator';
 import type { GameEventMap } from '../../state/GameEvents.types';
@@ -21,7 +23,8 @@ const WEAPONS = loadWeapons(30);
 const UNITS = loadDefaultContent(30);
 const ATTACK = WEAPONS.get('magus-staff').attacks[0] as RangedAttack;
 const NO_DAMAGE = { apply: () => undefined };
-const EAST_AT_TARGET = { targetId: 'entity-2', direction: { x: 1, y: 0 } };
+const EAST_AT_TARGET = { targetId: 'entity-2', point: null, direction: { x: 1, y: 0 } };
+const AREAS = new AreaHitQuery();
 
 /** A Magus at the origin and a Warrior 10 m east of it, in one state. */
 const setup = () => {
@@ -62,6 +65,7 @@ describe('RangedProjectileAttackStrategy', () => {
       damage: NO_DAMAGE,
       hits: null,
       factory,
+      areas: AREAS,
     });
 
     const shot = state.entities.get('entity-3');
@@ -89,14 +93,57 @@ describe('RangedProjectileAttackStrategy', () => {
 
     new RangedProjectileAttackStrategy().attack(
       attacker,
-      { targetId: null, direction: { x: 0, y: 1 } },
+      { targetId: null, point: { x: 0, y: 10 }, direction: { x: 0, y: 1 } },
       ATTACK,
-      { state, damage: NO_DAMAGE, hits: null, factory },
+      { state, damage: NO_DAMAGE, hits: null, factory, areas: AREAS },
     );
 
     const shot = state.entities.get('entity-3');
     expect(shot?.getComponent(Movement).heading).toEqual({ x: 0, y: 1 });
     expect(shot?.getComponent(ProjectilePayload).targetId).toBeNull();
+  });
+
+  it('names the walk-on outline the aim point is on as its target, so the shot can hit it (DEC-322 (1))', () => {
+    const { state, attacker, factory } = setup();
+    const palace = new Warrior('entity-9', 'warrior');
+    palace.spawn({
+      definition: UNITS.get('warrior'),
+      position: { x: 30, y: 30 },
+      team: 'dark',
+      weapons: WEAPONS,
+    });
+    palace.addComponent(
+      new Footprint(
+        [
+          [
+            { x: 20, y: -10 },
+            { x: 40, y: -10 },
+            { x: 40, y: 10 },
+            { x: 20, y: 10 },
+          ],
+        ],
+        { isWalkOn: true },
+      ),
+    );
+    state.entities.add(palace);
+    const fire = (targetId: string | null, point: { x: number; y: number }) => {
+      new RangedProjectileAttackStrategy().attack(
+        attacker,
+        { targetId, point, direction: { x: 1, y: 0 } },
+        ATTACK,
+        { state, damage: NO_DAMAGE, hits: null, factory, areas: AREAS },
+      );
+    };
+
+    fire(null, { x: 25, y: 0 });
+    fire(null, { x: 15, y: 0 });
+    fire('entity-2', { x: 25, y: 0 });
+
+    const targets = ['entity-3', 'entity-4', 'entity-5'].map(
+      (id) => state.entities.get(id)?.getComponent(ProjectilePayload).targetId,
+    );
+    // On the floor; off it; the locked target first.
+    expect(targets).toEqual(['entity-9', null, 'entity-2']);
   });
 
   it('throws when handed a melee attack, which a miswired registry would do', () => {
@@ -109,6 +156,7 @@ describe('RangedProjectileAttackStrategy', () => {
         damage: NO_DAMAGE,
         hits: null,
         factory,
+        areas: AREAS,
       });
     }).toThrow('cannot fire a "melee" attack');
     expect(state.entities.has('entity-3')).toBe(false);

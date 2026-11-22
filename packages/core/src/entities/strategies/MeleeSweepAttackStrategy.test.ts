@@ -5,18 +5,21 @@ import { Combat } from '../../components/Combat';
 import { Footprint } from '../../components/Footprint';
 import { Health } from '../../components/Health';
 import { MapObjectBody } from '../../components/MapObjectBody';
+import { Transform } from '../../components/Transform';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { loadDefaultContent } from '../../content/loadDefaultContent';
 import { MAP_OBJECT_DEFINITIONS } from '../../content/maps/mapObjectDefinitions';
 import type { SweepAttack } from '../../content/units/units.types';
 import { loadWeapons } from '../../content/weapons/loadWeapons';
 import type { DamageSource } from '../../state/GameEvents.types';
+import { AreaHitQuery } from '../../state/AreaHitQuery';
 import { GameState } from '../../state/GameState';
 import type { Team } from '../../teams/teams.types';
 import { IdGenerator } from '../../utils/IdGenerator';
 import { createDefaultEntityRegistry } from '../defaultEntityRegistry';
 import type { Entity } from '../Entity';
 import { EntityFactory } from '../EntityFactory';
+import type { AttackAim } from './AttackStrategy.types';
 import { MeleeSweepAttackStrategy } from './MeleeSweepAttackStrategy';
 
 const CONFIG = createDefaultGameConfig();
@@ -57,25 +60,28 @@ const setUp = () => {
   };
   const calls: string[][] = [];
   const sources: DamageSource[] = [];
-  const swing = (
-    aim: { targetId: string | null; direction: { x: number; y: number } } = {
-      targetId: null,
-      direction: EAST,
-    },
-  ) => {
-    new MeleeSweepAttackStrategy().attack(attacker, aim, SWEEP, {
-      state,
-      damage: {
-        apply: (_state, targetId, amount, source) => {
-          calls.push(['damage', targetId, String(amount)]);
-          sources.push(source);
+  /** Swings with no target and no aim point along east, unless `aim` says otherwise. */
+  const swing = (aim: Partial<AttackAim> = {}) => {
+    new MeleeSweepAttackStrategy().attack(
+      attacker,
+      { targetId: null, point: null, direction: EAST, ...aim },
+      SWEEP,
+      {
+        state,
+        damage: {
+          apply: (_state, targetId, amount, source) => {
+            calls.push(['damage', targetId, String(amount)]);
+            sources.push(source);
+          },
         },
+        hits: {
+          afterHit: (_state, attackerId, targetId) =>
+            calls.push(['after-hit', attackerId, targetId]),
+        },
+        factory,
+        areas: new AreaHitQuery(),
       },
-      hits: {
-        afterHit: (_state, attackerId, targetId) => calls.push(['after-hit', attackerId, targetId]),
-      },
-      factory,
-    });
+    );
   };
   return { state, factory, attacker, spawn, swing, calls, sources };
 };
@@ -239,25 +245,74 @@ describe('MeleeSweepAttackStrategy', () => {
     expect(damaged(calls)).toEqual([floor.id]);
   });
 
-  it('does not hit a body that takes no damage now (an unbreakable gate) unless it is the locked target (DEC-317)', () => {
+  it('never hits a body that takes no damage now (an unbreakable gate), not even the locked target (DEC-317 addendum)', () => {
     const { spawn, swing, calls } = setUp();
     const gate = spawn(2, 0, 'dark');
     gate.getComponent(Collider).setUnbreakable(true);
 
     swing();
+    swing({ targetId: gate.id });
+    // No damage and no on-hit step (no knock-back on a gate it cannot hurt).
     expect(calls).toEqual([]);
 
-    swing({ targetId: gate.id, direction: EAST });
+    gate.getComponent(Collider).setUnbreakable(false);
+    swing();
     expect(damaged(calls)).toEqual([gate.id]);
+  });
+
+  it('hits a walk-on outline it aims at from outside, not from inside it or with an enemy unit on the aim point (DEC-322 (1))', () => {
+    const { attacker, spawn, swing, calls } = setUp();
+    const floor = spawn(30, 30, 'dark');
+    floor.addComponent(
+      new Footprint(
+        [
+          [
+            { x: 2, y: -4 },
+            { x: 10, y: -4 },
+            { x: 10, y: 4 },
+            { x: 2, y: 4 },
+          ],
+        ],
+        { isWalkOn: true },
+      ),
+    );
+
+    swing({ point: { x: 6, y: 0 } });
+    expect(damaged(calls)).toEqual([floor.id]);
+
+    // A defender on the aim point takes the aim; it stands beyond the reach, so nothing is hit.
+    const defender = spawn(6, 0, 'dark');
+    swing({ point: { x: 6, y: 0 } });
+    expect(damaged(calls)).toEqual([floor.id]);
+    defender.getComponent(Health).applyDamage(1_000_000);
+
+    // Inside the floor a swing does not bring the roof down.
+    attacker.getComponent(Transform).moveTo({ x: 3, y: 0 });
+    swing({ point: { x: 6, y: 0 } });
+    expect(damaged(calls)).toEqual([floor.id]);
   });
 
   it('always hits the locked target, even one the wedge does not reach', () => {
     const { spawn, swing, calls } = setUp();
     const locked = spawn(0, 3, 'dark');
+    const wall = spawn(30, 30, 'dark');
+    wall.addComponent(
+      new Footprint([
+        [
+          { x: -3, y: -1 },
+          { x: -2, y: -1 },
+          { x: -2, y: 1 },
+          { x: -3, y: 1 },
+        ],
+      ]),
+    );
 
     swing({ targetId: locked.id, direction: EAST });
-
     expect(damaged(calls)).toEqual([locked.id]);
+
+    // A locked wall behind the attacker, by its outline.
+    swing({ targetId: wall.id, direction: EAST });
+    expect(damaged(calls)).toEqual([locked.id, wall.id]);
   });
 
   it('skips a dead body', () => {
@@ -290,9 +345,15 @@ describe('MeleeSweepAttackStrategy', () => {
     expect(() => {
       new MeleeSweepAttackStrategy().attack(
         attacker,
-        { targetId: null, direction: EAST },
+        { targetId: null, point: null, direction: EAST },
         { strategy: 'melee', damage: 1, reach: 1, interval: 1 },
-        { state, damage: { apply: () => undefined }, hits: null, factory },
+        {
+          state,
+          damage: { apply: () => undefined },
+          hits: null,
+          factory,
+          areas: new AreaHitQuery(),
+        },
       );
     }).toThrow('cannot swing a "melee" attack');
   });

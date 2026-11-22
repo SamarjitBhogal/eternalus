@@ -11,6 +11,6 @@ export interface Outline {
   readonly polygons: readonly Polygon[];
   /** The box around every polygon: a cheap first test before the exact polygons. */
   readonly bounds: Rect;
-  /** Units walk on it (a palace floor, a gate's passage): only a shot fired at its entity hits it. */
+  /** Units walk on it (a palace floor, a gate's passage): only a hit aimed at it hits it (DEC-322). */
   readonly isWalkOn: boolean;
 }

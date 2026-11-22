@@ -255,8 +255,12 @@ describe('ProjectileSystem', () => {
     expect(state.entities.has(shot.id)).toBe(true);
   });
 
-  it('passes a body that takes no damage now (a forest camp) and lands on the one behind it', () => {
-    const { state, system, context, addBody, fire, healthOf } = setUp();
+  it('stops at a body that takes no damage now (a forest camp), with no damage and no on-hit step (DEC-317 addendum)', () => {
+    const { state, events, context, addBody, fire, healthOf } = setUp();
+    const onHit: string[] = [];
+    const system = projectileSystem({ afterHit: (_state, _owner, id) => onHit.push(id) });
+    const damaged: string[] = [];
+    state.events.on('damage-applied', ({ targetId }) => damaged.push(targetId));
     const camp = addBody({ x: 10, y: 0 }, 'neutral');
     camp.getComponent(Collider).setUnbreakable(true);
     const target = addBody({ x: 15, y: 0 }, 'dark');
@@ -264,12 +268,18 @@ describe('ProjectileSystem', () => {
 
     system.update(context);
 
-    expect(healthOf(target)).toBe(900);
     expect(state.entities.has(shot.id)).toBe(false);
+    expect(events).toEqual([{ entityId: shot.id, cause: 'consumed' }]);
+    expect(healthOf(camp)).toBe(1000);
+    expect(healthOf(target)).toBe(1000);
+    expect(damaged).toEqual([]);
+    expect(onHit).toEqual([]);
   });
 
   it('stops at a body that takes no damage now when it was fired at that body (a closed gate)', () => {
-    const { state, system, context, addBody, fire, healthOf } = setUp();
+    const { state, context, addBody, fire, healthOf } = setUp();
+    const onHit: string[] = [];
+    const system = projectileSystem({ afterHit: (_state, _owner, id) => onHit.push(id) });
     const gate = addBody({ x: 10, y: 0 }, 'dark');
     gate.getComponent(Collider).setUnbreakable(true);
     const behind = addBody({ x: 15, y: 0 }, 'dark');
@@ -278,7 +288,9 @@ describe('ProjectileSystem', () => {
     system.update(context);
 
     expect(state.entities.has(shot.id)).toBe(false);
+    expect(healthOf(gate)).toBe(1000);
     expect(healthOf(behind)).toBe(1000);
+    expect(onHit).toEqual([]);
   });
 
   it('stops at a wall in front of a body, with no damage', () => {

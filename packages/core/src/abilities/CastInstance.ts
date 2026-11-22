@@ -68,7 +68,7 @@ export class CastInstance {
       scaled: (field, value) => value * (1 + (scaling[field]?.perLevel ?? 0) * (casterLevel - 1)),
       damage,
       statuses,
-      targets: (shape, filter) => targets.find(state, casterId, shape, placement, filter),
+      targets: (shape, filter) => targets.find(state, casterId, shape, placement, filter, aim),
       centreFor: (shape, point) => effects.shapeFor(shape.kind).centreFor(shape, placement, point),
       run: (step: EffectStep, at: ShapePlacement) => {
         effects.effectFor(step.kind).apply(step, this.contextAt(at));
