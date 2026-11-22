@@ -22,6 +22,9 @@ import type { ForcedPush } from './Movement.types';
  * Read them, but do not keep them: they change on the next tick.
  */
 export class Movement {
+  /** The walls of a unit without momentum: none, shared so that `wallNormals` allocates nothing. */
+  private static readonly NO_WALLS: readonly Vec2[] = [];
+
   public readonly maxSpeed: number;
 
   public readonly acceleration: number;
@@ -198,7 +201,7 @@ export class Movement {
    * that `StateHasher` hashes. Always empty for a unit without momentum.
    */
   public get wallNormals(): readonly Vec2[] {
-    return this.momentum?.wallNormals ?? [];
+    return this.momentum?.wallNormals ?? Movement.NO_WALLS;
   }
 
   /** Whether a push (a dash or knock-back) is still moving the entity. */

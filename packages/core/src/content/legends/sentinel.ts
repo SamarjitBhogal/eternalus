@@ -5,9 +5,8 @@ import type { LegendDefinition } from './legends.types';
  *
  * TUNE: health and movement are placeholders. Movement is Wrecking Run (DEC-307): momentum, so a
  * turn slides and loses speed, a head-on hit stops it and it builds along a wall; the build-up
- * follows the game doc's "up to 1
- * minute of running straight to get to full speed", shortened for the MVP map (balancing.md,
- * "Sentinel wall sprint"). The radius is DEC-06.
+ * follows the game doc's "up to 1 minute of running straight to get to full speed", shortened for
+ * the MVP map (balancing.md, "Sentinel wall sprint"). The radius is DEC-06.
  */
 export const SENTINEL = {
   id: 'sentinel',

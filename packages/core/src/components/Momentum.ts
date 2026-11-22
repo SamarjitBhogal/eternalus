@@ -12,14 +12,18 @@ import { sqrt } from '../utils/deterministicMath';
  * slides and comes out slow, and a reverse slides to a stop before it builds up again. A wall takes
  * the part of the velocity that runs into it (`shed`), so a head-on hit stops the unit dead; a unit
  * that steers into a wall it touches builds along the wall instead, up to the top speed times the
- * cosine of its angle to the wall (as a unit without momentum slides), and stops in a corner.
- * `Movement` owns one when its profile has `momentum`; every value is per tick (loaded content).
+ * cosine of its angle to the wall (as a unit without momentum slides), and stops when it is pressed
+ * into a corner. `Movement` owns one when its profile has `momentum`; every value is per tick
+ * (loaded content).
  */
 export class Momentum {
   private readonly rampAcceleration: number;
 
-  /** The unit normals (pointing out of each wall) of the walls the last move touched (`shed`). */
-  private readonly walls: MutableVec2[] = [];
+  /**
+   * The unit normals (pointing out of each wall) of the walls the last move touched (`shed`): the
+   * objects `CollisionResolver` made, a new one per contact that nothing changes.
+   */
+  private readonly walls: Vec2[] = [];
 
   /** The direction this tick's drive builds along (`aim`), reused every tick. */
   private readonly guide: MutableVec2 = { x: 0, y: 0 };
@@ -86,12 +90,12 @@ export class Momentum {
    * The unit's last move touched the walls or world edges whose unit normals, pointing out of
    * each, are `normals` (`CollisionSystem`): drops the part of `velocity` that runs into them
    * (`slideOff`), so a head-on hit stops the unit, a glancing one keeps its slide along the wall,
-   * and a corner stops it. Keeps the walls for the next `drive`.
+   * and a press into a corner stops it. Keeps the walls for the next `drive`.
    * Mutates `velocity` and returns its length, the new speed.
    */
   public shed(velocity: MutableVec2, normals: readonly Vec2[]): number {
     this.forgetWalls();
-    for (const normal of normals) this.walls.push({ x: normal.x, y: normal.y });
+    for (const normal of normals) this.walls.push(normal);
     this.slideOff(velocity.x, velocity.y, velocity);
     return sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
   }
@@ -159,9 +163,14 @@ export class Momentum {
     return true;
   }
 
-  /** The forward speed after one tick of driving: fast to `walkSpeed`, then the slow ramp. */
+  /**
+   * The forward speed after one tick of driving: fast to `walkSpeed`, then the slow ramp. A speed
+   * within `CONTACT_EPSILON` below `walkSpeed` counts as walk speed: `drive` reads the speed along a
+   * unit heading that roundoff makes a hair short (a diagonal, a slide along a wall), so a strict
+   * test would cap it at walk speed every tick and the ramp would never start.
+   */
   private buildUp(forward: number): number {
-    return forward < this.profile.walkSpeed
+    return forward < this.profile.walkSpeed - CONTACT_EPSILON
       ? Math.min(this.profile.walkSpeed, forward + this.acceleration)
       : forward + this.rampAcceleration;
   }

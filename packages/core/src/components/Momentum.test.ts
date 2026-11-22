@@ -65,8 +65,8 @@ describe('Momentum', () => {
     const rule = momentum();
     const velocity = { x: 0, y: 0 };
 
-    // 35 ticks of acceleration reach walk speed; the 36th is the capped tick that lands on it.
-    drive(rule, velocity, EAST, 36);
+    // 35 ticks of acceleration reach walk speed (3.5 m/s at 3 m/s²); the ramp starts on the 36th.
+    drive(rule, velocity, EAST, 35);
     expect(velocity.x * TICKS).toBeCloseTo(3.5);
     drive(rule, velocity, EAST, RAMP_TICKS / 2);
     expect(velocity.x * TICKS).toBeCloseTo((3.5 + 9) / 2, 1);
@@ -74,6 +74,46 @@ describe('Momentum', () => {
     expect(velocity.x * TICKS).toBeCloseTo(9);
     drive(rule, velocity, EAST, 30);
     expect(velocity.x).toBe(MAX_SPEED);
+  });
+
+  it('reaches the top speed on every heading, though roundoff reads a diagonal a hair below walk speed', () => {
+    const stalled: number[] = [];
+    for (let degrees = 0; degrees < 360; degrees += 1) {
+      const rule = momentum();
+      const velocity = { x: 0, y: 0 };
+      const heading = { x: cos((degrees * Math.PI) / 180), y: sin((degrees * Math.PI) / 180) };
+      drive(rule, velocity, heading, 35 + RAMP_TICKS + TICKS);
+      if (Math.hypot(velocity.x, velocity.y) * TICKS < 8.99) stalled.push(degrees);
+    }
+
+    expect(stalled).toEqual([]);
+  });
+
+  it('reaches the top speed along a wall it steers a hair into, at every wall angle', () => {
+    const stalled: string[] = [];
+    for (let wallDegrees = 0; wallDegrees < 360; wallDegrees += 1) {
+      const wallAngle = (wallDegrees * Math.PI) / 180;
+      const wall = { x: cos(wallAngle), y: sin(wallAngle) };
+      for (const degrees of [0.01, 1]) {
+        const rule = momentum();
+        const velocity = { x: 0, y: 0 };
+        const angle = (degrees * Math.PI) / 180;
+        // Along the wall (-wall.y, wall.x), turned `degrees` into it (-wall).
+        const heading = {
+          x: -wall.y * cos(angle) - wall.x * sin(angle),
+          y: wall.x * cos(angle) - wall.y * sin(angle),
+        };
+        for (let tick = 0; tick < 35 + RAMP_TICKS + TICKS; tick += 1) {
+          rule.drive(velocity, heading, MAX_SPEED);
+          rule.shed(velocity, velocity.x * wall.x + velocity.y * wall.y < 0 ? [wall] : []);
+        }
+        const speed = Math.hypot(velocity.x, velocity.y) * TICKS;
+        if (Math.abs(speed - 9 * cos(angle)) > 0.01)
+          stalled.push(`${String(wallDegrees)}/${String(degrees)}`);
+      }
+    }
+
+    expect(stalled).toEqual([]);
   });
 
   it('slides a full reverse at top speed about 5 m to a stop in about 1.1 s, then builds up again', () => {

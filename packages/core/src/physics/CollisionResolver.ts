@@ -36,7 +36,7 @@ export class CollisionResolver {
    * wall, sliding along it, and inside the bounds. Mutates nothing but `contacts`.
    *
    * @param contacts - When given, it is filled with the unit normal, pointing out of the wall, of
-   *   each wall and bounds edge the move touched, in the order the slide met them.
+   *   each wall the move touched, in the order the slide met them, then the bounds edges.
    */
   public move(start: Vec2, displacement: Vec2, radius: number, contacts?: Vec2[]): Vec2 {
     if (contacts !== undefined) contacts.length = 0;
@@ -55,7 +55,8 @@ export class CollisionResolver {
    * How far, up to `distance` metres, a circle of `radius` moves from `from` along `direction` (a
    * unit vector) in a straight line before it first touches a wall or the edge of the bounds, kept
    * as far short of a wall as `move` keeps a unit: `move`'s first sweep, without the slide. The
-   * whole `distance` when nothing is in the way. Read-only, like `move`.
+   * whole `distance` when nothing is in the way. Read-only, like `move` apart from `move`'s
+   * `contacts` list.
    */
   public reach(from: Vec2, direction: Vec2, distance: number, radius: number): number {
     const { x, y, width, height } = this.bounds;
@@ -69,7 +70,11 @@ export class CollisionResolver {
     return reach * (contact === null ? 1 : CollisionResolver.shortOf(contact, displacement));
   }
 
-  /** `move` without the bounds: the sweep and the slide. */
+  /**
+   * `move` without the bounds: the sweep and the slide. It slides the rest of the move off each
+   * wall in turn, so a unit pressed into a corner wider than 90° moves a hair out along one wall,
+   * and back, from tick to tick (a known defect, `INBOX.md` HC-B33).
+   */
   private slide(start: Vec2, displacement: Vec2, radius: number, contacts?: Vec2[]): Vec2 {
     let position = { ...start };
     let delta = { ...displacement };
