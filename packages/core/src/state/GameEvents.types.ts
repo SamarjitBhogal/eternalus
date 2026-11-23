@@ -53,6 +53,11 @@ export type GameEventMap = {
     readonly kind: string;
     readonly team: Team;
   };
+  /**
+   * Nav grid cells whose walkability changed during the match (07 §10, §11): a wall placed or
+   * removed (`RuntimeWalls`). The lane fields over them are rebuilt (`DefaultSystemPipeline`).
+   */
+  readonly 'terrain-changed': { readonly cells: readonly number[] };
   /** `killer` is set for a `died` removal whose lethal hit went through the damage pipeline. */
   readonly 'entity-removed': {
     readonly entityId: EntityId;

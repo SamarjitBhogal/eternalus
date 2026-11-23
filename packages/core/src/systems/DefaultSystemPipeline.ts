@@ -107,6 +107,10 @@ export class DefaultSystemPipeline extends SystemPipeline {
             state.world.definition,
             map.flowFieldCorridorHalfWidth,
           );
+    // A wall placed or removed during the match changed these cells (07 §10).
+    state.events.on('terrain-changed', ({ cells }) => {
+      flowFields?.markDirty(cells);
+    });
     const world = state.world?.grid ?? null;
     const features = state.world?.definition.features ?? [];
     if (world !== null && state.worldObjects !== undefined) {
