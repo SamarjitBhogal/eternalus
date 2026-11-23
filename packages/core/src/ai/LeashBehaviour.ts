@@ -114,7 +114,7 @@ export class LeashBehaviour {
    * Engaging: fight on inside the leash; outside it, take another enemy, chase, or break. A mob
    * that fights a unit finishes its fight: it takes no call for help and no better-ranked enemy
    * while that unit lives inside the leash (DEC-326 (2)). A mob hitting its lane objective still
-   * turns to a better-ranked enemy, as before.
+   * turns to a better-ranked enemy: hitting a building is not a fight (DEC-344 (1)).
    */
   private engage<Idle extends string, Rule extends AggroRuleDefinition>(
     situation: LeashSituation<Rule>,
