@@ -37,6 +37,12 @@ const meterValues = (html: string) =>
   );
 
 describe('MatchScreen', () => {
+  it('shows the boss spawn button only in local matches', () => {
+    const local = { ...FIGMA_MATCH_SETUP, mode: 'local' as const };
+    expect(render({ matchSetup: local })).toContain('Spawn Boss');
+    expect(render({ matchSetup: { ...local, mode: 'duel' } })).not.toContain('Spawn Boss');
+  });
+
   it('renders the viewport under a HUD of nine regions', () => {
     const html = render(withHudSetup(figmaHudState()));
     expect(html).toContain('<canvas data-testid="viewport"></canvas>');

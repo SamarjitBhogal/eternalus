@@ -3,6 +3,7 @@ import { type GameConfig, makeLogRecord, SEVERITY, Simulation } from '@eternalus
 import type { BridgeEventMap } from '../bridge/events';
 import type { TypedEventBus } from '../bridge/TypedEventBus';
 import type { MatchEvidence } from '../data/logging/ErrorReport.types';
+import type { ResourceController } from '../data/resources/ResourceController';
 import type { LogSink } from '../data/logging/LogSink.types';
 import { RingBufferSink } from '../data/logging/RingBufferSink';
 import { SinkLogger } from '../data/logging/SinkLogger';
@@ -26,6 +27,7 @@ import type { MatchFactory } from './SessionController.types';
 
 /** What the browser match factory is built from; `main.tsx` passes window, document and the page singletons. */
 export type BrowserMatchDeps = {
+  readonly resources?: Pick<ResourceController, 'image' | 'load' | 'release'>;
   /** The frame scheduler (`RafFrameScheduler`) is built on it, so the type names rAF. */
   readonly window: HostWindow & Pick<Window, 'requestAnimationFrame' | 'cancelAnimationFrame'>;
   readonly document: HostDocument;
@@ -76,7 +78,7 @@ function readEvidence(simulation: Simulation, ring: RingBufferSink): MatchEviden
  */
 export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
   return (request, viewport) => {
-    const { window, gameConfig, settings } = deps;
+    const { window, gameConfig, settings, resources } = deps;
     // Core spawns the roster's human slot, the player's Rover, at the team's Stronghold: a map
     // without one throws in `Simulation`, below.
     const config = withPlayerTeam(gameConfig, request.setup.playerTeam);
@@ -106,6 +108,7 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
         roster: request.roster,
       });
       match = new Match({
+        ...(resources === undefined ? {} : { image: (id: string) => resources.image(id) }),
         simulation,
         world: request.world,
         tickRate: gameConfig.tickRate,
@@ -137,12 +140,29 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
       input,
       bus: deps.bus,
       mapper,
-      adapters: [renderer, camera],
+      adapters: [
+        renderer,
+        camera,
+        {
+          destroy: () => {
+            resources?.release('boss');
+          },
+        },
+      ],
       evidence: () => readEvidence(simulation, ring),
       currentTick: () => simulation.tick,
     });
     // A throw here has already been undone by the host (every listener, the match, the adapters).
     host.start();
+    void resources
+      ?.load('boss', () => undefined)
+      .catch((error: unknown) => {
+        logger.log(
+          makeLogRecord('WARN', 'client.resources', 'Boss art could not be loaded.', {
+            attributes: { error: String(error) },
+          }),
+        );
+      });
     return host;
   };
 }

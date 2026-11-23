@@ -1,5 +1,6 @@
 import { type ReactElement, useRef } from 'react';
 
+import { eventBus } from '../../bridge/eventBus';
 import { useAppSelector } from '../../bridge/hooks';
 import { AbilityBar } from '../hud/AbilityBar';
 import { AetherBar } from '../hud/AetherBar';
@@ -31,6 +32,7 @@ import type { ScreenProps } from './screen.types';
  */
 export function MatchScreen({ viewport }: ScreenProps): ReactElement {
   const overlay = useAppSelector((state) => state.session.overlay);
+  const isLocal = useAppSelector((state) => state.matchSetup.mode === 'local');
   const openerRef: PauseOpenerRef = useRef<Element | null>(null);
   usePauseMenuKey(overlay, openerRef);
   const isInert = overlay !== null;
@@ -73,6 +75,17 @@ export function MatchScreen({ viewport }: ScreenProps): ReactElement {
           <MinimapPanel />
         </div>
         <MatchCountdown />
+        {import.meta.env.DEV && isLocal && (
+          <button
+            className={styles.spawnBoss}
+            type="button"
+            onClick={() => {
+              eventBus.emit('spawn-boss', undefined);
+            }}
+          >
+            Spawn Boss
+          </button>
+        )}
       </section>
       <PauseOverlay openerRef={openerRef} />
     </main>

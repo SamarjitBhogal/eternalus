@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-12
+last-reviewed: 2026-11-22
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -431,6 +431,14 @@ evaluates it yet. Ultimate Plus (**MVP-if-time**) is a variety with `unlockLevel
 ability.
 
 ## 7. Cast lifecycle: `applyCommand` and `AbilitySystem`
+
+The Eternal, the central Cathedral boss, has its own AI-driven cast cycle. Its move timing and reach live in
+`content/mobs/cathedralBossAbilities.ts`. Its combat component records charge, active and
+recovery phases, and remembers targets already hit by a multi-tick cast. Damage and statuses go
+through the shared combat pipeline. The cast locks movement and basic attacks. The client selects
+sprite frames from the snapshot and draws the Void Sweep beam from the simulation's sweep angle.
+The Eternal's authored combat outline tracks its visible body and is shared by attack reach and
+point targeting. Its navigation collider stays independent so the art does not obstruct passages.
 
 1. `InputMapper` (human) or a controller (bot) enqueues `cast-ability { actorId, slot, aim }`
    ([03 §3](03-game-model.md#3-commands)); gadgets are the same command with `slot: 'gadget-1' |

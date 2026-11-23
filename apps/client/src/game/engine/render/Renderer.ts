@@ -27,6 +27,8 @@ export interface Renderer {
   strokePath(points: readonly WorldPoint[], color: string, width: number): void;
   /** Draws a marker centred on a world position, sized in world units (scales with zoom). */
   drawWorldGlyph(glyph: GlyphSpec, center: WorldPoint, color: string): void;
+  /** Paints one source rectangle of a decoded sprite at a world-space rectangle. */
+  drawSprite(image: CanvasImageSource, source: ScreenRect, area: WorldRect, flipX: boolean): void;
   /** Draws a marker centred on a world position, sized in CSS pixels (minimap markers). */
   drawGlyph(glyph: GlyphSpec, center: WorldPoint, color: string): void;
   /** Converts a world position to a screen position in device pixels. */

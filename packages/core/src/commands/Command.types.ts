@@ -67,6 +67,8 @@ type CommandPayloads = {
     readonly count: number;
     readonly origin: SpawnOrigin;
   };
+  /** Developer menu: bring forward the match's scheduled Cathedral boss. */
+  readonly 'dev-spawn-boss': { readonly definitionId: 'cathedral-boss' };
   /** Developer menu: remove an entity (cause `dev-removed`). */
   readonly 'dev-remove-entity': { readonly entityId: EntityId };
   /** Developer menu: hand an entity to another controller (sim mode). */

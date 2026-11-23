@@ -1,4 +1,5 @@
 import { CapturePointView } from './CapturePointView';
+import { ColossusView } from './ColossusView';
 import { DefaultEntityView } from './DefaultEntityView';
 import { LegendView } from './LegendView';
 import { MobView } from './MobView';
@@ -11,11 +12,15 @@ import { ViewRegistry } from './ViewRegistry';
  *
  * @param onUnknownKind - Told once per kind drawn with the default view.
  */
-export const createDefaultViewRegistry = (onUnknownKind?: (kind: string) => void): ViewRegistry => {
+export const createDefaultViewRegistry = (
+  onUnknownKind?: (kind: string) => void,
+  image?: (id: string) => HTMLImageElement | undefined,
+): ViewRegistry => {
   const registry = new ViewRegistry(new DefaultEntityView(), onUnknownKind);
   registry.registerFamily('legend', new LegendView());
   registry.registerFamily('mob', new MobView());
   registry.registerFamily('structure', new StructureView());
   registry.registerKind('capture-point', new CapturePointView());
+  if (image !== undefined) registry.registerDefinition('cathedral-boss', new ColossusView(image));
   return registry;
 };

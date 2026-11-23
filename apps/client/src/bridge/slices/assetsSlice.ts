@@ -22,6 +22,7 @@ const NO_GROUPS: ByGroup<never> = {
   'selection-raster': {},
   'selection-primary-raster': {},
   match: {},
+  boss: {},
 };
 
 const initialState: AssetsSliceState = {

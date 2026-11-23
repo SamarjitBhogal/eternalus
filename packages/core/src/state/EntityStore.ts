@@ -1,5 +1,6 @@
 import { ChaseWatch } from '../components/ChaseWatch';
 import { Combat } from '../components/Combat';
+import { CombatHitbox } from '../components/CombatHitbox';
 import { ControllerBinding } from '../components/ControllerBinding';
 import { Deploying } from '../components/Deploying';
 import { Footprint } from '../components/Footprint';
@@ -166,9 +167,15 @@ export class EntityStore {
    */
   public outlineOf(id: EntityId): readonly Polygon[] | undefined {
     const entity = this.entities.get(id);
+    if (entity === undefined) return undefined;
+    const hitbox = entity.findComponent(CombatHitbox);
+    if (hitbox !== undefined) {
+      const { position, facing } = entity.getComponent(Transform);
+      return [hitbox.polygonAt(position, facing)];
+    }
     return (
-      entity?.findComponent(MapObjectBody)?.object.footprints ??
-      entity?.findComponent(Footprint)?.polygons
+      entity.findComponent(MapObjectBody)?.object.footprints ??
+      entity.findComponent(Footprint)?.polygons
     );
   }
 

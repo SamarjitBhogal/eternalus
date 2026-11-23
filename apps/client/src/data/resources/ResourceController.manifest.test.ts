@@ -59,6 +59,14 @@ describe('ResourceController with the shipped manifest', () => {
     expect(totals).toEqual(BUDGETS);
   });
 
+  it('loads boss artwork separately within a 3 MB budget', () => {
+    for (const density of [1, 2]) {
+      const bytes = shippedResources(density).resources.progress('boss').totalBytes;
+      expect(bytes).toBeGreaterThan(0);
+      expect(bytes).toBeLessThan(3_000_000);
+    }
+  });
+
   it('registers the Cinzel face with the boot group', async () => {
     const { resources, faces } = shippedResources(1);
 

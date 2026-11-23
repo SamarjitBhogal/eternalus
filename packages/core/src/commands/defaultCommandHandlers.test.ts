@@ -50,6 +50,8 @@ describe('createDefaultCommandHandlers', () => {
       'cast-ability': unsupported,
       intent: unsupported,
       'dev-spawn': unsupported,
+      'dev-spawn-boss': unsupported,
+      'dev-spawn-mobs': unsupported,
       'dev-remove-entity': unsupported,
       'dev-set-controller': unsupported,
     };

@@ -241,6 +241,24 @@ describe('EntityStore', () => {
     expect(store.isInReach(minion.id, 'nobody')).toBe(false);
   });
 
+  it('lets melee connect with the Eternal at the edge of its visible body', () => {
+    const store = new EntityStore();
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const boss = factory.create('heavy-mob', 'cathedral-boss', {
+      team: 'neutral',
+      position: { x: 100, y: 100 },
+    });
+    const minion = factory.create('light-mob', 'light-minion', {
+      team: 'light',
+      position: { x: 121, y: 94 },
+    });
+    store.add(boss);
+    store.add(minion);
+    expect(store.isInReach(minion.id, boss.id)).toBe(true);
+    minion.getComponent(Transform).moveTo({ x: 125, y: 94 });
+    expect(store.isInReach(minion.id, boss.id)).toBe(false);
+  });
+
   it('measures reach to a map object from its footprint edge, and never to a cornerless one', () => {
     const store = new EntityStore();
     const content = loadDefaultContent(30);

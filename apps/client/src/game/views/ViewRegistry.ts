@@ -8,6 +8,7 @@ import type { EntityView } from './EntityView.types';
  * no `switch` on kind exists in `views/`.
  */
 export class ViewRegistry {
+  private readonly byDefinition = new Map<string, EntityView>();
   private readonly byKind = new Map<string, EntityView>();
 
   private readonly byFamily = new Map<string, EntityView>();
@@ -30,6 +31,11 @@ export class ViewRegistry {
     ViewRegistry.add(this.byKind, 'kind', kind, view);
   }
 
+  /** Uses a custom view for one content definition. */
+  public registerDefinition(id: string, view: EntityView): void {
+    ViewRegistry.add(this.byDefinition, 'definition', id, view);
+  }
+
   /** Uses `view` for every entity of `family` whose kind has no view. Throws on duplicates. */
   public registerFamily(family: string, view: EntityView): void {
     ViewRegistry.add(this.byFamily, 'family', family, view);
@@ -37,7 +43,10 @@ export class ViewRegistry {
 
   /** The view that draws `entity`. */
   public viewFor(entity: EntitySnapshot): EntityView {
-    const view = this.byKind.get(entity.kind) ?? this.byFamily.get(entity.family);
+    const view =
+      this.byDefinition.get(entity.definitionId) ??
+      this.byKind.get(entity.kind) ??
+      this.byFamily.get(entity.family);
     if (view !== undefined) {
       return view;
     }

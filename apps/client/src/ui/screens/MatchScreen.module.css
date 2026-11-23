@@ -108,3 +108,9 @@
   top: 0;
   right: 0;
 }
+.spawnBoss {
+  position: absolute;
+  inset-block-start: 25%;
+  inset-inline-end: 1rem;
+  pointer-events: auto;
+}

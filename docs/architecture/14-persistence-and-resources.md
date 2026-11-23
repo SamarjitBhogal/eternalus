@@ -4,7 +4,7 @@ description: The "single access with a controller in front" design for local dat
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-22
 tags: [architecture, persistence, indexeddb, repositories, dto, migrations, resources, assets]
 paths: ['apps/client/src/data/**']
 related:
@@ -508,6 +508,10 @@ export class ResourceController {
 | An asset or a storage backend | one line in its asset group's manifest file (concatenated into `ASSET_MANIFEST`) with `licence` and `source`; or `<Tech>StorageAdapter.ts` passing `describeStorageAdapter`                                                                                                         | nothing else (views ask by id); one line in `main.tsx`                                                                                                          |
 
 ## 14. Implementation status
+
+The local browser match loads the Cathedral boss's sprite sheets through the resource
+controller in its own `boss` group. The group is released with the match, and the world view
+can draw a placeholder while the sheets decode. The HUD's `match` group retains its own budget.
 
 Built in Sprint 1 (session F), settings only: `PersistenceController` with `open`,
 `loadSettings`, `saveSettings` and `close` (the Sprint 1 brief's facade, in place of §2's

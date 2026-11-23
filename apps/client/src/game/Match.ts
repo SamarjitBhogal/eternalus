@@ -62,6 +62,7 @@ export class Match implements LoopTarget {
   private readonly commands: PlayerActions;
 
   private readonly bridge: MatchBridge;
+  private readonly unsubscribeBossSpawn: () => void;
 
   private previous: Snapshot | null = null;
 
@@ -90,7 +91,7 @@ export class Match implements LoopTarget {
             `No view for kind "${kind}"; drawing the default view.`,
           ),
         );
-      }),
+      }, deps.image),
       isDead,
       this.healthBars.healthBarOf,
     );
@@ -143,6 +144,11 @@ export class Match implements LoopTarget {
       snapshot: () => this.current,
     });
     camera.lookAt(this.playerEntity()?.transform ?? { x: map.width / 2, y: map.height / 2 });
+    this.unsubscribeBossSpawn = bridge.bus.on('spawn-boss', () => {
+      if (deps.remote === undefined) {
+        simulation.enqueueCommand({ type: 'dev-spawn-boss', definitionId: 'cathedral-boss' });
+      }
+    });
   }
 
   /** The id of the player's Legend; known from construction, `null` when its spawn failed. */
@@ -234,6 +240,7 @@ export class Match implements LoopTarget {
    * camera are injected, so their owner (`MatchHost`) destroys them.
    */
   public destroy(): void {
+    this.unsubscribeBossSpawn();
     this.loop.destroy();
     this.healthBars.destroy();
     this.bridge.destroy();

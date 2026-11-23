@@ -1,5 +1,6 @@
 import { ContentCatalogue } from '../ContentCatalogue';
 import { CAPTURE_POINT_BOSS } from './capturePointBoss';
+import { CATHEDRAL_BOSS } from './cathedralBoss';
 import { CAPTURE_POINT_HEAVY_GUARD } from './capturePointHeavyGuard';
 import { CAPTURE_POINT_LIGHT_GUARD } from './capturePointLightGuard';
 import { HEAVY_CAMP_MOB } from './heavyCampMob';
@@ -27,6 +28,7 @@ export const MOB_DEFINITIONS = new ContentCatalogue<MobDefinition>([
   MEDIUM_CAMP_MOB,
   HEAVY_CAMP_MOB,
   CAPTURE_POINT_BOSS,
+  CATHEDRAL_BOSS,
   CAPTURE_POINT_HEAVY_GUARD,
   CAPTURE_POINT_LIGHT_GUARD,
 ]);

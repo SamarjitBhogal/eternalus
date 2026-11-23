@@ -133,7 +133,8 @@ export type AssetGroup =
   | 'selection-alternate'
   | 'selection-raster'
   | 'selection-primary-raster'
-  | 'match';
+  | 'match'
+  | 'boss';
 
 /**
  * URLs of a group's loaded images and the draw boxes its entries declare (both `{}` after
@@ -207,6 +208,7 @@ export type MatchClock = {
 /** Every message on the bridge bus, keyed by event name. */
 export type BridgeEventMap = {
   'ui-intent': UiIntent;
+  'spawn-boss': undefined;
   'session-phase': { readonly phase: SessionPhase; readonly reason: SessionReason | null };
   'menu-route': { readonly route: MenuRoute };
   overlay: { readonly overlay: Overlay | null };

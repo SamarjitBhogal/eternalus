@@ -57,6 +57,11 @@ export class RecordingRenderer implements Renderer {
     this.calls.push({ op: 'drawWorldGlyph', args });
   }
 
+  /** Records the sprite frame and its world placement. */
+  public drawSprite(...args: Parameters<Renderer['drawSprite']>): void {
+    this.calls.push({ op: 'drawSprite', args });
+  }
+
   /** Records the call. */
   public drawGlyph(...args: Parameters<Renderer['drawGlyph']>): void {
     this.calls.push({ op: 'drawGlyph', args });

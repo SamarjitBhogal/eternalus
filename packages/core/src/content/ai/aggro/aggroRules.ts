@@ -1,4 +1,5 @@
 import type { AuthoredAggroProfile } from '../ai.types';
+import { CATHEDRAL_BOSS, CATHEDRAL_BOSS_ARENA } from '../../mobs/cathedralBoss';
 import { CAMP_MOB_AGGRO } from './campMob';
 import { CAPTURE_POINT_BOSS_AGGRO } from './capturePointBoss';
 import { CAPTURE_POINT_GUARD_AGGRO } from './capturePointGuard';
@@ -14,5 +15,10 @@ export const AGGRO_RULES: Readonly<Record<string, AuthoredAggroProfile>> = {
   [TOWER_GUARD_AGGRO.id]: TOWER_GUARD_AGGRO,
   [CAMP_MOB_AGGRO.id]: CAMP_MOB_AGGRO,
   [CAPTURE_POINT_BOSS_AGGRO.id]: CAPTURE_POINT_BOSS_AGGRO,
+  [CATHEDRAL_BOSS.id]: {
+    ...TOWER_GUARD_AGGRO,
+    id: CATHEDRAL_BOSS.id,
+    acquisitionRadius: CATHEDRAL_BOSS_ARENA.leash,
+  },
   [CAPTURE_POINT_GUARD_AGGRO.id]: CAPTURE_POINT_GUARD_AGGRO,
 };

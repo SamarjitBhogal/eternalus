@@ -16,5 +16,7 @@ export const XP_SOURCES: XpSourcesDefinition = {
     // TUNE: balancing.md MiniBoss "500 XP team-wide"; DEC-237 (owner 2026-11-10): a mini-boss kill
     // lifts a Legend 2 levels at most.
     'capture-point-boss': { xp: 500, maxLevels: 2 },
+    // TUNE: balancing.md GreaterBoss team-wide reward, using the boss kill level cap.
+    'cathedral-boss': { xp: 1500, maxLevels: 2 },
   },
 };

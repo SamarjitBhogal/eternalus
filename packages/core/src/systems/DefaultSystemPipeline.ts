@@ -19,6 +19,7 @@ import { LaneFlowFields } from '../map/LaneFlowFields';
 import type { GameState } from '../state/GameState';
 import type { Rect } from '../utils/geometry.types';
 import { CaptureSystem } from './CaptureSystem';
+import { CathedralBossSystem } from './CathedralBossSystem';
 import { CombatSystem } from './CombatSystem';
 import { MapDestructionSystem } from './MapDestructionSystem';
 import { DeathSystem } from './DeathSystem';
@@ -117,6 +118,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
               { flowFields, forts: DefaultSystemPipeline.fortBoxesOf(state, structures) },
             ),
           ]),
+      new CathedralBossSystem(damage, statuses),
       new CombatSystem(damage),
       ...(state.worldObjects === undefined ? [] : [new MapDestructionSystem(state, damage)]),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.

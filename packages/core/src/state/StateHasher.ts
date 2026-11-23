@@ -3,6 +3,7 @@ import { Capturable } from '../components/Capturable';
 import { ChaseWatch } from '../components/ChaseWatch';
 import { Collider } from '../components/Collider';
 import { Combat } from '../components/Combat';
+import { BossCombat } from '../components/BossCombat';
 import { CombatClock } from '../components/CombatClock';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
@@ -160,6 +161,10 @@ export class StateHasher {
       );
     }
     const combat = entity.findComponent(Combat);
+    const boss = entity.findComponent(BossCombat);
+    if (boss !== undefined) {
+      fields.push(['boss', boss.nextMove, boss.readyAt, JSON.stringify(boss.cast), ...boss.hit]);
+    }
     if (combat !== undefined && (combat.targetId !== null || combat.readyAtTick > 0)) {
       fields.push(['combat', combat.targetId, combat.readyAtTick]);
     }

@@ -1,4 +1,5 @@
 import { Movement } from '../components/Movement';
+import { BossCombat } from '../components/BossCombat';
 import { StatusEffects } from '../components/StatusEffects';
 import { Transform } from '../components/Transform';
 import type { System, SystemContext } from './System.types';
@@ -24,7 +25,9 @@ export class MovementSystem implements System {
       if (movement !== undefined && transform !== undefined) {
         const statuses = entity.findComponent(StatusEffects);
         const speedScale =
-          isHeld || statuses?.has('cannot-move') === true
+          isHeld ||
+          statuses?.has('cannot-move') === true ||
+          entity.findComponent(BossCombat)?.cast != null
             ? 0
             : (statuses?.multiplier('moveSpeed') ?? 1);
         movement.advance(speedScale);
