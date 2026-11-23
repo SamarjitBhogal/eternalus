@@ -16,5 +16,5 @@ export const ASSASSIN = {
   roleRatings: null,
   detailNames: { ultimate: null, 'ability-1': null, 'ability-2': null, 'ability-3': null },
   kit: null, // the class default kit; no Legend has its own yet
-  passiveId: null, // the Vanguard has no passive (DISC-38)
+  passiveId: null, // the class default: none (DISC-38)
 } as const satisfies LegendSpecDefinition;

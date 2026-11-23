@@ -41,6 +41,7 @@ export const MAGUS = {
     ultimate: 'death-ray', // DEC-209 (2): key 4
   },
   passiveOptions: ['erudition', 'necromancy'], // DEC-330: Erudition was "Studious"
+  defaultPassiveId: null, // each Magus spec names its own (DEC-330 P1)
   defaultAction: 'revive',
   referenceHeight: 3, // TUNE: ~10 ft (Hades)
   footprintRadius: 0.75, // DEC-06

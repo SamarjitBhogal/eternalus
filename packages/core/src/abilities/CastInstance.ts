@@ -70,7 +70,8 @@ export class CastInstance {
       potency,
       statusDuration: ({ statusId, durationTicks }) => {
         const own = durationTicks ?? statuses.durationOf(statusId);
-        return own === null ? undefined : Math.max(1, Math.round(own * stretch));
+        const factor = statuses.hasFixedDuration(statusId) ? 1 : stretch;
+        return own === null ? undefined : Math.max(1, Math.round(own * factor));
       },
       damage,
       statuses,

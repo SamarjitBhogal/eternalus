@@ -15,17 +15,19 @@ export type KitSubject = {
   readonly kit: AbilityKit | null;
   /** The class's `passiveOptions`. */
   readonly passiveOptions: readonly string[];
-  /** A spec's `passiveId`; `null` for a spec with none and for the class itself. */
+  /** A spec's own `passiveId` or the class's `defaultPassiveId`; `null` for none. */
   readonly passiveId: string | null;
   /** Whether the definition is the class itself (it owns the pool) and not a spec. */
   readonly isClass: boolean;
   /** What the messages call the kit. */
   readonly kitName: string;
+  /** What the messages call the passive. */
+  readonly passiveName: string;
 };
 
 /**
- * Reads the ability fields of a Legend class (`defaultKit`, `passiveOptions`) or a Legend spec
- * (`kit`, `passiveId`), the one place that knows both shapes, so the ability rules treat them
+ * Reads the ability fields of a Legend class (`defaultKit`, `passiveOptions`, `defaultPassiveId`)
+ * or a Legend spec (`kit`, `passiveId`), the one place that knows both shapes, so the ability rules treat them
  * alike. Returns `null` for any other definition (a mob) and for a spec whose class is not loaded
  * (`SpecClassExistsRule` flags that).
  *
@@ -49,6 +51,7 @@ export const kitSubjectOf = (
       passiveId: definition.passiveId,
       isClass: false,
       kitName: 'kit',
+      passiveName: 'passiveId',
     };
   }
   return LEGEND_KINDS.has(definition)
@@ -57,9 +60,10 @@ export const kitSubjectOf = (
         pool: definition.abilityPool,
         kit: definition.defaultKit,
         passiveOptions: definition.passiveOptions,
-        passiveId: null,
+        passiveId: definition.defaultPassiveId,
         isClass: true,
         kitName: 'defaultKit',
+        passiveName: 'defaultPassiveId',
       }
     : null;
 };

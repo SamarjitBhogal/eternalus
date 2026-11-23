@@ -92,6 +92,12 @@ type StatusEffectBase = {
    * while it lasts (Fury's dash, DEC-270); absent = none.
    */
   readonly grants?: string;
+  /**
+   * Whether the status keeps its time when an ability applies it: `abilityDuration` (Erudition)
+   * does not stretch it, because its time matches a step of its ability (Fury's wind-up hold,
+   * DEC-361); absent = false.
+   */
+  readonly hasFixedDuration?: boolean;
 };
 
 /**

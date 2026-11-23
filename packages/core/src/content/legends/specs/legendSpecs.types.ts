@@ -76,8 +76,8 @@ export type LegendSpecDefinition = {
   readonly kit: AbilityKit | null;
   /**
    * The passive this Legend has (DEC-330 P1 names which sub-class has which), put on when it
-   * spawns (05 §7); `null` for none (DEC-338: no spec, no passive). An ability of slot kind
-   * `passive` from the class's `passiveOptions` (`KnownAbilityRefsRule`, `KitInPoolRule`).
+   * spawns (05 §7); `null` = its class's `defaultPassiveId` (`passiveOf`). An ability of slot kind
+   * `passive` from the class's `passiveOptions` (`KnownAbilityRefsRule`, `PassiveInOptionsRule`).
    */
   readonly passiveId: string | null;
 };

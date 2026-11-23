@@ -8,9 +8,9 @@ import { kitSubjectOf } from './kitSubjectOf';
 
 /**
  * Every ability id a Legend class or spec names is a loaded ability of that class (a
- * dangling-reference rule, 04 §5): a class's `abilityPool`, `defaultKit` and `passiveOptions`, a
- * spec's own `kit` and `passiveId`. The kit's first three ids are `ability` slots and its last is an
- * `ultimate`; a passive id is a `passive` (05 §2, §12).
+ * dangling-reference rule, 04 §5): a class's `abilityPool`, `defaultKit`, `passiveOptions` and
+ * `defaultPassiveId`, a spec's own `kit` and `passiveId`. The kit's first three ids are `ability`
+ * slots and its last is an `ultimate`; a passive id is a `passive` (05 §2, §12).
  */
 export class KnownAbilityRefsRule implements UnitDefinitionRule, ContentRule<LegendSpecDefinition> {
   /**
@@ -28,7 +28,8 @@ export class KnownAbilityRefsRule implements UnitDefinitionRule, ContentRule<Leg
     if (subject === null) {
       return [];
     }
-    const { classId, pool, kit, passiveOptions, passiveId, isClass, kitName } = subject;
+    const { classId, pool, kit, passiveOptions, passiveId, isClass, kitName, passiveName } =
+      subject;
     const named = [
       ...(isClass ? pool.map((id) => ['abilityPool', id, null] as const) : []),
       ...(isClass ? passiveOptions.map((id) => ['passiveOptions', id, 'passive'] as const) : []),
@@ -38,7 +39,7 @@ export class KnownAbilityRefsRule implements UnitDefinitionRule, ContentRule<Leg
             ...kit.abilities.map((id) => [kitName, id, 'ability'] as const),
             [kitName, kit.ultimate, 'ultimate'] as const,
           ]),
-      ...(passiveId === null ? [] : [['passiveId', passiveId, 'passive'] as const]),
+      ...(passiveId === null ? [] : [[passiveName, passiveId, 'passive'] as const]),
     ];
     return named.flatMap(([where, id, slot]) => {
       if (!this.abilities.has(id)) {

@@ -22,8 +22,8 @@ export class Abilities {
    * `ability-3`, its ultimate on `ability-4`; the gadget and default-action slots stay empty until
    * their content exists.
    *
-   * @param passiveId - The Legend's passive (its spec's `passiveId`, DEC-338), due at once; `null`
-   *   for none.
+   * @param passiveId - The Legend's passive (`passiveOf`: its spec's, else its class's; DEC-361),
+   *   due at once; `null` for none.
    */
   public constructor(
     kit: AbilityKit,

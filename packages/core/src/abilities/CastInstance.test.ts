@@ -255,6 +255,13 @@ describe('CastInstance', () => {
       expect(contextWith(1, 1.2)?.statusDuration({ statusId: 'enraged' })).toBeUndefined();
     });
 
+    it('keeps the time of a status with a fixed duration (Fury’s wind-up)', () => {
+      expect(contextWith(1, 1.2)?.statusDuration({ statusId: 'fury-windup' })).toBe(9);
+      expect(
+        contextWith(1, 1.2)?.statusDuration({ statusId: 'fury-windup', durationTicks: 6 }),
+      ).toBe(6);
+    });
+
     it('never lets a stretched status last under one tick', () => {
       expect(contextWith(1, 0.3)?.statusDuration({ statusId: 'stun', durationTicks: 1 })).toBe(1);
     });

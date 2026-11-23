@@ -16,5 +16,5 @@ export const COLOSSUS = {
   roleRatings: null,
   detailNames: { ultimate: null, 'ability-1': null, 'ability-2': null, 'ability-3': null },
   kit: null, // the class default kit; no Legend has its own yet
-  passiveId: 'wrecking-run', // every Sentinel (DEC-307, DEC-338 (5))
+  passiveId: null, // the class default, Wrecking Run
 } as const satisfies LegendSpecDefinition;

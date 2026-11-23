@@ -116,6 +116,23 @@ describe('Legend', () => {
       ]);
     });
 
+    it('has its spec’s own passive, else its class’s default passive (DEC-361)', () => {
+      const withDefault = { ...WARRIOR, defaultPassiveId: 'class-passive' };
+      const ownKnight = {
+        has: (id: string) => id === 'knight',
+        get: () => ({ ...KNIGHT, passiveId: 'own-passive' }),
+      };
+      const passiveOf = (spawn: object) => {
+        const legend = new Warrior('entity-1', 'warrior');
+        legend.spawn({ ...PLACEMENT, definition: withDefault, weapons: SHIPPED_WEAPONS, ...spawn });
+        return legend.getComponent(Abilities).passiveId;
+      };
+
+      expect(passiveOf({})).toBe('class-passive');
+      expect(passiveOf({ specs: LEGEND_SPECS, specId: 'knight' })).toBe('class-passive');
+      expect(passiveOf({ specs: ownKnight, specId: 'knight' })).toBe('own-passive');
+    });
+
     it('throws for a spec that does not exist or belongs to another class', () => {
       for (const specId of ['no-such-spec', 'oracle']) {
         const legend = new Warrior('entity-1', 'warrior');

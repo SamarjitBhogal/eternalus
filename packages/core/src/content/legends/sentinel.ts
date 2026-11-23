@@ -29,6 +29,7 @@ export const SENTINEL = {
     ultimate: 'berserk', // DEC-209 (2): key 4
   },
   passiveOptions: ['wrecking-run'], // its movement is `movementProfile.momentum` below; the stun, self damage and barging are not built (05 §7, 10 §12)
+  defaultPassiveId: 'wrecking-run', // every Sentinel (DEC-307, DEC-338 (5))
   defaultAction: null,
   referenceHeight: 4.6, // TUNE: ~15 ft (an elephant)
   footprintRadius: 1.25, // DEC-06

@@ -74,6 +74,11 @@ export class StatusEffectApplier {
     return this.statuses.get(statusId).durationTicks;
   }
 
+  /** Whether status `statusId` keeps its time when an ability applies it (`hasFixedDuration`). */
+  public hasFixedDuration(statusId: string): boolean {
+    return this.statuses.get(statusId).hasFixedDuration === true;
+  }
+
   /**
    * Ends status `statusId` on `targetId` now (an aura left, a hold released) and emits
    * `status-expired`. Returns whether it was active.

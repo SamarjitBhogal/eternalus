@@ -22,6 +22,7 @@ import { KnownProjectileRule } from './validation/KnownProjectileRule';
 import { KnownWeaponRule } from './validation/KnownWeaponRule';
 import { LevelScalingRule } from './validation/LevelScalingRule';
 import { MomentumWalkSpeedRule } from './validation/MomentumWalkSpeedRule';
+import { PassiveInOptionsRule } from './validation/PassiveInOptionsRule';
 import { PositiveAetherRule } from './validation/PositiveAetherRule';
 import { PositiveStatsRule } from './validation/PositiveStatsRule';
 import { RoleRatingRangeRule } from './validation/RoleRatingRangeRule';
@@ -56,6 +57,7 @@ export const createDefaultContentRules = (
   new KnownProjectileRule(projectiles),
   new KnownAbilityRefsRule(abilities, legends),
   new KitInPoolRule(legends),
+  new PassiveInOptionsRule(legends),
 ];
 
 /**
@@ -73,6 +75,7 @@ export const createLegendSpecRules = (
   new RoleRatingRangeRule(),
   new KnownAbilityRefsRule(abilities, legends),
   new KitInPoolRule(legends),
+  new PassiveInOptionsRule(legends),
 ];
 
 /** Every shipped locked-class rule. A new locked-class rule is one line here. */

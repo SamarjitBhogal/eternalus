@@ -46,8 +46,8 @@ export type CastContext = {
   /**
    * How long a status a step applies lasts, in ticks: the step's own `durationTicks`, else the
    * status's own duration, times the cast's `stretch` (`CastFacts`: the caster's `abilityDuration`,
-   * Erudition, DEC-337), rounded and at least 1 tick. `undefined` for a status that lasts until
-   * removed (nothing to stretch).
+   * Erudition, DEC-337), rounded and at least 1 tick; a status with `hasFixedDuration` is not
+   * stretched (DEC-361). `undefined` for a status that lasts until removed (nothing to stretch).
    */
   statusDuration(step: {
     readonly statusId: string;

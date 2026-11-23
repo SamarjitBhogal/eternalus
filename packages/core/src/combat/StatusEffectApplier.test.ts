@@ -367,4 +367,11 @@ describe('StatusEffectApplier', () => {
     expect(applier.durationOf('erudition')).toBeNull();
     expect(() => applier.durationOf('frozen')).toThrow(UnknownDefinitionError);
   });
+
+  it('reports whether a status keeps its time when an ability applies it', () => {
+    const { applier } = setUp();
+
+    expect(applier.hasFixedDuration('fury-windup')).toBe(true);
+    expect(applier.hasFixedDuration('stun')).toBe(false);
+  });
 });
