@@ -316,7 +316,7 @@ lock the outer zones (`lockedBy`) until they die (`MatchDirector` timeline).
 | `BuffTower` destroyed          | its shield bars removed everywhere; team buff and enemy debuff aura end                             | MVP        |
 | `Gate`/`WallSegment` destroyed | footprint cleared; flow fields rebuilt; minimap terrain dirty                                       | MVP        |
 | `Stronghold` destroyed         | `match-ended` with the winner                                                                       | MVP        |
-| `Turret` destroyed             | its pylon stays as a ruin that blocks (DEC-341 (2)); XP only to the destroyer (DEC-341 (3), 05 §13) | MVP        |
+| `Turret` destroyed             | its pylon stays as a ruin that blocks (DEC-341 (2)); XP only to the destroyer (DEC-341 (3), 05 §18) | MVP        |
 
 Every effect is a listener on `structure-destroyed` in the owning system; `StructureSystem` never
 calls another system (rule 12).
@@ -472,7 +472,8 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   outlives the turret: it stays as a ruin that blocks, and its footprint and nav cells stay
   (DEC-341, HC-Q91). `WorldObjectStore.removed` marks every such body ruined, and the snapshot
   carries `MapObjectSnapshot.isRuined`, so the client draws a fallen tower's fort and a dead
-  turret's pylon as ruins (06; the fort's walls still block, DEC-217 (12), until the tower-ruins work (#98) lands). A destroyed turret sends `structure-destroyed`. It
+  turret's pylon as ruins (06; the fort's walls still block, DEC-217 (12), until the tower-ruins
+  work (#98) lands). A destroyed turret sends `structure-destroyed`. It
   pays structure points (DEC-212; whether it should is open in DEC-341), but no team-wide
   structure XP: its XP (`xpSources.destroyerOnly`) goes only to the Legend that lands the killing
   hit (DEC-341, HC-Q92). The

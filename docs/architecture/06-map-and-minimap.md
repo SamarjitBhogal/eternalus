@@ -595,14 +595,6 @@ The client caches those polygons from the original footprint. Remains and cosmet
 add colliders, damage or simulation state; snapshot destruction still controls visibility and
 walkability. Interior remains follow the same roof and parent-building visibility as intact art.
 
-### 2026-11-23 — A structure's body that outlives its structure (DEC-341)
-
-A structure's body that outlives its structure (a lane tower's fort, a wall turret's pylon) is a
-ruin: its snapshot carries `isRuined`, and the client draws its remains as for a destroyed
-object, but it still blocks and its cells stay closed. The fort's walls still block (DEC-217 (12));
-the pylon stays (DEC-341 (2)). This holds until the tower-ruins work (#98) lands. #98 lets a
-fort's keep and the struck wall fall, and its merge note is in DEC-341 (2).
-
 ### 2026-11-03 — Front-facing stronghold shield (owner rulings DEC-158, DEC-159 of 2026-11-04)
 
 The owner ruled that the Stronghold wall is an arc from cliff face to cliff face, not a ring
@@ -628,6 +620,15 @@ seams, runes and emitter artwork for the existing turret features. `MapDecoratio
 suppresses the main view's plain feature marker; explicit object ownership removes the correct
 panel artwork when its wall segment dies. The minimap retains its generated feature markers.
 All decoration stays in the existing render layers and adds no new shield-immunity mechanic.
+
+### 2026-11-23 — A structure's body that outlives its structure (DEC-341)
+
+A structure's body that outlives its structure (a lane tower's fort, a wall turret's pylon) is a
+ruin: its snapshot carries `isRuined`, it still blocks, and its cells stay closed. The client
+draws one ruin per footprint polygon, so a ruined fort keeps the shape of its walls. A destroyed
+object draws one ruin over its whole box. The pylon stays as a ruin (DEC-341 (2)). Until the
+tower-ruins work (#98) lands, every wall of a fallen tower's fort blocks (DEC-217 (12)). #98 lets
+a fort's keep and the struck wall fall; its merge note is in DEC-341 (2).
 
 ## Related
 

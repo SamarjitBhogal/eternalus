@@ -1,7 +1,7 @@
 import type { MapObject, MapObjectSnapshot } from '@eternalus/core';
 import type { Renderer } from '../engine/render/Renderer';
 import type { WorldRect } from '../engine/render/Renderer.types';
-import type { ObjectDrawGeometry } from './WorldObjectsView.types';
+import type { ObjectDrawGeometry, RuinLook } from './WorldObjectsView.types';
 import { OBJECT_DRAWING as S } from './WorldObjectsView.constants';
 import type { WorldLayer } from './SceneView.types';
 import { ObjectRuinsView } from './ObjectRuinsView';
@@ -23,24 +23,10 @@ export class WorldObjectsView implements WorldLayer {
         .filter((object) => object.footprints.flat().length > 0)
         .map((object) => {
           const bounds = WorldObjectsView.boxOf(object.footprints.flat());
-          const pieces = object.footprints.map(
-            (polygon) => new ObjectRuinsView(object.kind, WorldObjectsView.boxOf(polygon)),
-          );
-          const pieceBounds = WorldObjectsView.boxOf(
-            pieces.flatMap(({ bounds: b }) => [
-              { x: b.x, y: b.y },
-              { x: b.x + b.width, y: b.y + b.height },
-            ]),
-          );
+          const ruins = new ObjectRuinsView(object.kind, bounds);
           return [
             object.id,
-            {
-              object,
-              bounds,
-              ruins: new ObjectRuinsView(object.kind, bounds),
-              pieces,
-              pieceBounds,
-            },
+            { object, bounds, ruins, pieces: WorldObjectsView.piecesOf(object, ruins) },
           ];
         }),
     );
@@ -60,7 +46,8 @@ export class WorldObjectsView implements WorldLayer {
   }
   /**
    * Shared visibility predicate for both scenery layers and feature glyphs: whether the object is
-   * fallen: destroyed or a ruin (a structure's body that outlives it, DEC-341), so its intact art is hidden.
+   * fallen (destroyed, or a ruin: a structure's body that outlives it, DEC-341), so its intact art
+   * is hidden.
    */
   public readonly isFallen = (id: string): boolean => this.fallen.has(id);
   /** Draws nearby health bars and low ruined silhouettes without changing collision geometry. */
@@ -70,12 +57,8 @@ export class WorldObjectsView implements WorldLayer {
       const geometry = this.objects.get(state.id);
       if (geometry === undefined) continue;
       const { object, bounds } = geometry;
-      const isFallen = WorldObjectsView.isFallenState(state);
-      const visibleBounds = !isFallen
-        ? bounds
-        : state.isDestroyed
-          ? geometry.ruins.bounds
-          : geometry.pieceBounds;
+      const look = WorldObjectsView.ruinLookOf(geometry, state);
+      const visibleBounds = look?.bounds ?? bounds;
       if (
         object.buildingId !== undefined &&
         (this.isFallen(object.buildingId) ||
@@ -89,7 +72,7 @@ export class WorldObjectsView implements WorldLayer {
         visibleBounds.y > view.y + view.height
       )
         continue;
-      if (isFallen) WorldObjectsView.drawRuins(renderer, geometry, state);
+      if (look !== undefined) look.draw(renderer);
       else if (state.health !== null && view.width < S.healthBarViewLimit) {
         const width = Math.min(S.barWidth, Math.max(S.barHeight, bounds.width));
         const x = bounds.x + (bounds.width - width) / 2;
@@ -107,26 +90,44 @@ export class WorldObjectsView implements WorldLayer {
   public drawMinimap(renderer: Renderer): void {
     for (const state of this.states) {
       const geometry = this.objects.get(state.id);
+      if (geometry === undefined) continue;
+      const look = WorldObjectsView.ruinLookOf(geometry, state);
       if (
-        WorldObjectsView.isFallenState(state) &&
-        geometry !== undefined &&
+        look !== undefined &&
         geometry.object.isInterior !== true &&
         (geometry.object.buildingId === undefined || !this.isFallen(geometry.object.buildingId))
       )
-        WorldObjectsView.drawRuins(renderer, geometry, state);
+        look.draw(renderer);
     }
   }
   /**
    * A destroyed body is one ruin over its whole box. A ruined body still blocks, so a ruined fort's
-   * walls keep their shape: one ruin per footprint polygon.
+   * walls keep their shape: one ruin per footprint polygon. An object that stands has no ruin look.
    */
-  private static drawRuins(
-    renderer: Renderer,
+  private static ruinLookOf(
     geometry: ObjectDrawGeometry,
     state: MapObjectSnapshot,
-  ): void {
-    if (state.isDestroyed) geometry.ruins.draw(renderer);
-    else for (const piece of geometry.pieces) piece.draw(renderer);
+  ): RuinLook | undefined {
+    if (!WorldObjectsView.isFallenState(state)) return undefined;
+    return state.isDestroyed ? geometry.ruins : geometry.pieces;
+  }
+  /** One ruin per footprint polygon; an object with one polygon reuses its whole-box ruin. */
+  private static piecesOf(object: MapObject, whole: RuinLook): RuinLook {
+    if (object.footprints.length === 1) return whole;
+    const pieces = object.footprints.map(
+      (polygon) => new ObjectRuinsView(object.kind, WorldObjectsView.boxOf(polygon)),
+    );
+    return {
+      bounds: WorldObjectsView.boxOf(
+        pieces.flatMap(({ bounds: b }) => [
+          { x: b.x, y: b.y },
+          { x: b.x + b.width, y: b.y + b.height },
+        ]),
+      ),
+      draw: (renderer) => {
+        for (const piece of pieces) piece.draw(renderer);
+      },
+    };
   }
   /** Destroyed, or a structure's body left standing as a ruin: both draw as ruins. */
   private static isFallenState(state: MapObjectSnapshot): boolean {
