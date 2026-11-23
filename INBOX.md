@@ -820,6 +820,10 @@ Reply inline (`Decision: …`).
     move?". Before, one question with an optional extra part served both, so a later shot that
     left out the extra part would be stopped by a lake. No change for the player. Code names:
     `CollisionQuery.reach` (units, dashes) and `CollisionQuery.shotReach` (shots).
+  - Added 2026-11-23 (pre-PR gate round 3, DEC-360 addendum): (4) two checks now share one piece
+    of code for bridge decks: "where does this unit or shot first touch a map shape?" and "does
+    this shot touch lava?". Before, each check had its own copy. No change for the player. Code
+    names: `CollisionResolver.contactWith`, used by `firstContact` and `touches`.
 
 - [ ] **HC-Q90 — When can a wall turret take damage? (`feat/wall-turrets`, PR 4, Owner Calls
       card "WT when damageable", 2026-11-22; PR-REVIEW-ASSIST-33).** No doc sets it: 07 §3 names
