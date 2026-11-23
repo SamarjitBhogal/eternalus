@@ -8,8 +8,9 @@ import type {
 
 /**
  * What a projectile carries from the shot to the hit (architecture 05 §10): who fired it, for which
- * team, at what level and at whom, who the damage is credited to, what it does where it lands (its impact, by
- * kind) and where it was fired from. Fixed at firing; the flight reads it, nothing changes it.
+ * team, at what level and at whom, who the damage is credited to, what it does where it lands (its
+ * impact, by kind) and where it was fired from. Fixed at firing; the flight reads it, nothing
+ * changes it.
  */
 export class ProjectilePayload {
   /** The entity that fired it. */

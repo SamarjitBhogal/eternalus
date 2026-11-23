@@ -15,14 +15,14 @@ import type { TurretCandidate } from './turretTarget.types';
 
 /**
  * Drives a wall turret in auto mode (architecture 11 §4.5, 07 §5): each decision it ranks its
- * candidates (`rankTurretTargets`): an enemy Legend that hurt an allied Legend first (its
- * profile's overrides), then its target while that lives and stays in range, then the others by
- * its profile's priority list. It takes the first one in rank order that its shot can reach
- * (`LineOfFireQuery`, the bots' rule, DEC-317 addendum) with the ammo it would fire at that
- * candidate, not the loaded one, so it tests the line only until one is clear, and a held target whose line closes is dropped as one that leaves range. Against the
- * target it picks the first ammo it carries whose `preferredAgainst` fits the target's kind
- * (`chooseTurretAmmo` over its `TurretState`, read through `TurretAmmoRule.ammoOf`), sends
- * `switch-ammo` when that is not the loaded one, then
+ * candidates (`rankTurretTargets`): an enemy Legend that hurt an allied Legend first (its profile's
+ * overrides), then its target while that lives and stays in range, then the others by its profile's
+ * priority list. It takes the first one in rank order that its shot can reach (`LineOfFireQuery`,
+ * the bots' rule, DEC-317 addendum) with the ammo it would fire at that candidate, not the loaded
+ * one, so it tests the line only until one is clear, and a held target whose line closes is dropped
+ * as one that leaves range. Against the target it picks the first ammo it carries whose
+ * `preferredAgainst` fits the target's kind (`chooseTurretAmmo` over its `TurretState`, read
+ * through `TurretAmmoRule.ammoOf`), sends `switch-ammo` when that is not the loaded one, then
  * `attack-aim` at the point ahead of the target (`predictiveAim`) every decision, so the aim stays
  * fresh; its `Combat` fires whenever its cooldown allows (the one shot clock). With no target and
  * an aim still set, it sends `attack-aim { aim: null }` once. Range runs from the turret's edge to

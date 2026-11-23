@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { DamagePipeline } from '../combat/DamagePipeline';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { Movement } from '../components/Movement';
+import { Transform } from '../components/Transform';
 import { loadAbilities } from '../content/abilities/loadAbilities';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { loadTurrets } from '../content/structures/loadTurrets';
@@ -176,6 +177,26 @@ describe('HitEffects', () => {
     state.entities.remove(struck.id, 'died');
 
     hits.afterHit(state, caster.id, struck.id);
+
+    expect(applied).toEqual([]);
+  });
+
+  it('runs nothing for an attacker that is gone when no shooter is given (critic r3 N1)', () => {
+    const { state, caster, struck, applied, hits } = setUp('rallied');
+    state.entities.remove(caster.id, 'died');
+    applied.length = 0;
+
+    hits.afterHit(state, caster.id, struck.id, HEAVY_BOLT);
+
+    expect(applied).toEqual([]);
+  });
+
+  it('runs nothing for an attacker in the store that has no position (critic r3 N1)', () => {
+    const { state, caster, struck, applied, hits } = setUp('rallied');
+    caster.removeComponent(Transform);
+    applied.length = 0;
+
+    hits.afterHit(state, caster.id, struck.id, HEAVY_BOLT, SHOOTER);
 
     expect(applied).toEqual([]);
   });
