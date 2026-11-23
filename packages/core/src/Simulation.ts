@@ -95,6 +95,7 @@ import type { SystemContext } from './systems/System.types';
 import { SystemPipeline } from './systems/SystemPipeline';
 import { WorldObjectStore } from './state/WorldObjectStore';
 import { MAP_OBJECT_DEFINITIONS } from './content/maps/mapObjectDefinitions';
+import { OBSTACLE_DEFINITIONS } from './content/obstacles/obstacleCatalogue';
 import { CollisionSystem } from './systems/CollisionSystem';
 import type { PlayableTeam } from './teams/teams.types';
 import type { Vec2 } from './utils/geometry.types';
@@ -210,6 +211,7 @@ export class Simulation {
       createDefaultEntityRegistry(),
       Simulation.firstOf([
         new ContentCatalogue(Object.values(MAP_OBJECT_DEFINITIONS)),
+        OBSTACLE_DEFINITIONS,
         ZONE_DEFINITIONS,
         projectiles,
         units,
@@ -378,8 +380,9 @@ export class Simulation {
   }
 
   /**
-   * One definition source over `sources`, so one factory builds map objects, zones, shots, units
-   * and structures (architecture 04 §6): the first source that has an id answers for it.
+   * One definition source over `sources`, so one factory builds map objects, placed obstacles,
+   * zones, shots, units and structures (architecture 04 §6): the first source that has an id
+   * answers for it.
    */
   private static firstOf(sources: readonly DefinitionSource[]): DefinitionSource {
     const sourceOf = (id: string): DefinitionSource | undefined =>

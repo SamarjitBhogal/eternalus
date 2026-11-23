@@ -23,46 +23,50 @@ export class SpawnContextReader {
   public constructor(private readonly entity: Entity) {}
 
   /**
-   * Reads a context's position, with the definition the factory put next to it.
+   * Reads a context's position, with the definition the factory put next to it, and its start
+   * facing when it gives one.
    *
-   * @throws Error when the context has no position.
+   * @throws Error when the context has no position, or gives a facing that is not a finite vector.
    */
   public positioned<Definition extends DefinitionRef>(
     context: unknown,
   ): PositionedSpawnContext<Definition> {
-    const { definition, position } = SpawnContextReader.fields(context);
+    const { definition, position, facing } = SpawnContextReader.fields(context);
 
     if (!SpawnContextReader.isObject(position)) {
       throw new Error(`Entity "${this.entity.id}" needs a spawn context with a position.`);
     }
+    if (facing !== undefined && !SpawnContextReader.isFiniteVector(facing)) {
+      throw new Error(
+        `Entity "${this.entity.id}" was given a spawn facing that is not a finite vector.`,
+      );
+    }
 
     // Safe: the factory looked the definition up and matched it to this kind (04 §6), so it is
     // not checked again; Transform rejects a position that is not a finite point.
-    return { definition: definition as Definition, position: position as Vec2 };
+    return {
+      definition: definition as Definition,
+      position: position as Vec2,
+      ...(facing !== undefined && { facing }),
+    };
   }
 
   /**
    * Reads a context with a definition, a position and a team, and its controller and start facing
    * when it gives them.
    *
-   * @throws Error when `positioned` would, the team is not light, dark or neutral, or the context
-   *   gives a facing that is not a finite vector.
+   * @throws Error when `positioned` would, or the team is not light, dark or neutral.
    */
   public placed<Definition extends DefinitionRef>(
     context: unknown,
   ): PlacedSpawnContext<Definition> {
     const positioned = this.positioned<Definition>(context);
-    const { team: candidate, facing } = SpawnContextReader.fields(context);
+    const { team: candidate } = SpawnContextReader.fields(context);
     const team = SPAWNABLE_TEAMS.find((spawnable) => spawnable === candidate);
 
     if (team === undefined) {
       throw new Error(
         `Entity "${this.entity.id}" needs a spawn context with a team (light, dark or neutral).`,
-      );
-    }
-    if (facing !== undefined && !SpawnContextReader.isFiniteVector(facing)) {
-      throw new Error(
-        `Entity "${this.entity.id}" was given a spawn facing that is not a finite vector.`,
       );
     }
 
@@ -71,7 +75,6 @@ export class SpawnContextReader {
       ...positioned,
       team,
       ...(controller !== undefined && { controller }),
-      ...(facing !== undefined && { facing }),
     };
   }
 

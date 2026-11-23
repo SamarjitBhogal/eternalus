@@ -119,4 +119,16 @@ describe('SpawnContextReader', () => {
     expect(reader.specId({ specId: 7 })).toBeNull();
     expect(reader.specId({})).toBeNull();
   });
+
+  it('reads a positioned context’s facing too, and refuses one that is not a finite vector', () => {
+    const base = { definition: DEFINITION, position: POSITION };
+
+    expect(
+      reader.positioned<typeof DEFINITION>({ ...base, facing: { x: 1, y: 0 } }).facing,
+    ).toEqual({ x: 1, y: 0 });
+    expect(reader.positioned<typeof DEFINITION>(base)).not.toHaveProperty('facing');
+    expect(() => reader.positioned<typeof DEFINITION>({ ...base, facing: { x: 1 } })).toThrow(
+      'Entity "entity-1" was given a spawn facing that is not a finite vector.',
+    );
+  });
 });

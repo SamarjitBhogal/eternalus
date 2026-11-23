@@ -6,10 +6,9 @@ import { ABILITIES } from './abilityCatalogue';
 import type { AuthoredAbility, AuthoredEffectSpec } from './AbilityDefinition.types';
 import { loadAbilities } from './loadAbilities';
 
-/** Cost and cooldown of the seven abilities with no effects yet: balancing.md "Aether costs and cooldowns" (0 / 0 for an ultimate: the meter gates it). */
+/** Cost and cooldown of the five abilities with no effects yet: balancing.md "Aether costs and cooldowns" (0 / 0 for an ultimate: the meter gates it). */
 const UNBUILT = {
   'rip-and-tear': { cooldownSeconds: 10, aetherCost: 30, slot: 'ability' },
-  'shield-wall': { cooldownSeconds: 18, aetherCost: 40, slot: 'ability' },
   berserk: { cooldownSeconds: 0, aetherCost: 0, slot: 'ultimate' },
   sanctuary: { cooldownSeconds: 22, aetherCost: 60, slot: 'ability' },
   imbue: { cooldownSeconds: 20, aetherCost: 45, slot: 'ability' },
@@ -17,10 +16,18 @@ const UNBUILT = {
 } as const;
 
 /**
- * Every effect kind the framework builds (05 §3): PR 1's, Fury's `buff`, Hamstring's `projectile`;
- * a new kind is added here with its effect class.
+ * Every effect kind the framework builds (05 §3): PR 1's, Fury's `buff`, Hamstring's `projectile`,
+ * Shield Wall's `summon`; a new kind is added here with its effect class.
  */
-const BUILT_EFFECT_KINDS = ['damage', 'debuff', 'dash', 'knockback', 'buff', 'projectile'];
+const BUILT_EFFECT_KINDS = [
+  'damage',
+  'debuff',
+  'dash',
+  'knockback',
+  'buff',
+  'projectile',
+  'summon',
+];
 
 describe('ABILITIES', () => {
   it('lists the twelve kit abilities in class order, abilities before the ultimate, then what the ultimate grants', () => {
@@ -131,13 +138,24 @@ describe('ABILITIES', () => {
     expect(['blade-runner', 'slam', 'shockwave'].map(structureMultiplierOf)).toEqual([0.3, 2, 1]);
   });
 
-  it('prices the six abilities not built yet from balancing.md and gives them no effects', () => {
+  it('prices the five abilities not built yet from balancing.md and gives them no effects', () => {
     const unbuilt = ABILITIES.all().filter((ability) => ability.effects.length === 0);
 
     expect(unbuilt.map((ability) => ability.id)).toEqual(Object.keys(UNBUILT));
     for (const [id, expected] of Object.entries(UNBUILT)) {
       expect(ABILITIES.get(id)).toMatchObject({ ...expected, targeting: null });
     }
+  });
+
+  it('gives Shield Wall its cost, cooldown and one summon of the barrier 3 m ahead, 2 at most (balancing.md:188, DEC-330 (7))', () => {
+    expect(ABILITIES.get('shield-wall')).toMatchObject({
+      classId: 'sentinel',
+      slot: 'ability',
+      cooldownSeconds: 18,
+      aetherCost: 40,
+      targeting: { kind: 'directional' },
+      effects: [{ kind: 'summon', definitionId: 'shield-wall-barrier', distance: 3, maxActive: 2 }],
+    });
   });
 
   it('gives every ability a description and builds only the effect kinds the framework implements', () => {

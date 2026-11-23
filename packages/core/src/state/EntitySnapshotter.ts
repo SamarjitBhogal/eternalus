@@ -1,6 +1,7 @@
 import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
 import { Combat } from '../components/Combat';
+import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { Progression } from '../components/Progression';
@@ -19,8 +20,8 @@ import type { EntitySnapshot, ProjectileSnapshot, StatusSnapshot } from './Snaps
 
 /**
  * Projects one entity into its `EntitySnapshot` (architecture 03 §5): one group per component,
- * `null` when the entity has no such component (DEC-17); `mapObjectId`, `mapFeatureId` and
- * `isHidden` are left out instead. A new component group is added here, never in `GameState`
+ * `null` when the entity has no such component (DEC-17); `mapObjectId`, `mapFeatureId`,
+ * `isHidden` and `outline` are left out instead. A new component group is added here, never in `GameState`
  * (DEC-232).
  */
 export class EntitySnapshotter {
@@ -43,6 +44,8 @@ export class EntitySnapshotter {
     const progression = entity.findComponent(Progression);
     const aether = entity.findComponent(Aether);
     const capture = entity.findComponent(Capturable);
+    // A structure's outline comes from its map object, which the map draws.
+    const outline = entity instanceof Structure ? undefined : entity.findComponent(Footprint);
     return {
       id: entity.id,
       kind: entity.kind,
@@ -54,6 +57,7 @@ export class EntitySnapshotter {
       ...(entity instanceof Structure &&
         entity.mapFeatureId !== null && { mapFeatureId: entity.mapFeatureId }),
       ...(entity.findComponent(StatusEffects)?.has('hidden') === true && { isHidden: true }),
+      ...(outline !== undefined && { outline: outline.polygons }),
       team: entity.findComponent(TeamMembership)?.team ?? null,
       transform:
         transform === undefined

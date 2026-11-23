@@ -174,11 +174,28 @@ type AuthoredProjectileSpec = {
 export type ProjectileSpec = InTicks<AuthoredProjectileSpec>;
 
 /**
+ * Places one body from a definition, owned by the caster (05 §3 `SummonEffect`; Shield Wall,
+ * DEC-330 (7)): `distance` metres from the caster's centre along the cast's direction, facing that
+ * way. The caster holds at most `maxActive` bodies of the definition: a new one removes the oldest.
+ */
+export type SummonSpec = {
+  readonly kind: 'summon';
+  /** The body's definition (`content/obstacles/`). */
+  readonly definitionId: string;
+  readonly distance: number;
+  readonly maxActive: number;
+};
+
+/**
  * One step of an ability's cast timeline as authored (05 §3); one effect strategy per `kind`. A
  * status's `onHit` steps are authored the same way.
  */
 export type AuthoredEffectSpec =
-  AuthoredShapedEffectSpec | AuthoredDashSpec | AuthoredBuffSpec | AuthoredProjectileSpec;
+  | AuthoredShapedEffectSpec
+  | AuthoredDashSpec
+  | AuthoredBuffSpec
+  | AuthoredProjectileSpec
+  | SummonSpec;
 
 /** One loaded effect step: every time in ticks. A status's `onHit` steps are loaded this way. */
 export type AbilityEffectSpec = InTicks<AuthoredEffectSpec>;

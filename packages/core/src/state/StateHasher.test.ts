@@ -934,4 +934,30 @@ describe('StateHasher', () => {
       expect(new Set(hashes).size).toBe(5);
     });
   });
+
+  it('hashes the placed bodies once a caster has one, by caster, definition and body', () => {
+    const hashWith = (placed: readonly (readonly [string, string, string])[]): number => {
+      const { state } = stateWithSoldier();
+      for (const [ownerId, definitionId, entityId] of placed) {
+        state.summons.record(ownerId, definitionId, entityId);
+      }
+      return hasher.hash(state);
+    };
+    const none = hashWith([]);
+
+    expect(hashWith([])).toBe(none);
+    expect(
+      new Set([
+        none,
+        hashWith([['entity-1', 'wall', 'entity-9']]),
+        hashWith([['entity-2', 'wall', 'entity-9']]),
+        hashWith([['entity-1', 'orb', 'entity-9']]),
+        hashWith([['entity-1', 'wall', 'entity-8']]),
+        hashWith([
+          ['entity-1', 'wall', 'entity-8'],
+          ['entity-1', 'wall', 'entity-9'],
+        ]),
+      ]).size,
+    ).toBe(6);
+  });
 });

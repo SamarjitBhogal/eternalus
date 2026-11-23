@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { Aether } from '../components/Aether';
 import { Combat } from '../components/Combat';
+import { Footprint } from '../components/Footprint';
 import { Capturable } from '../components/Capturable';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { ProjectileFlight } from '../components/ProjectileFlight';
@@ -219,5 +220,25 @@ describe('EntitySnapshotter', () => {
     expect(ending).toEqual({ flownShare: 1, ending: 0.25 });
     expect(snapshotter.snapshotOf(unfired).projectile).toBeNull();
     expect(snapshotter.snapshotOf(new Bare('bare-1', 'x')).projectile).toBeNull();
+  });
+
+  it('gives a placed body its outline, and leaves the key out for a structure and every other entity', () => {
+    const wall = new Bare('entity-1', 'wall');
+    wall.addComponent(new Footprint([SQUARE]));
+    const stronghold = new Stronghold('entity-2', 'stronghold');
+    stronghold.spawn({
+      definition: STRUCTURE_DEFINITIONS.get('stronghold'),
+      position: { x: 2, y: 2 },
+      team: 'light',
+    });
+    stronghold.addComponent(new Footprint([SQUARE]));
+    const snapshotter = new EntitySnapshotter(4, CURVES, 0);
+
+    const snapshot = snapshotter.snapshotOf(wall);
+
+    expect(snapshot.outline).toEqual([SQUARE]);
+    expect(snapshotter.snapshotOf(stronghold)).not.toHaveProperty('outline');
+    expect(snapshotter.snapshotOf(new Bare('entity-3', 'bare'))).not.toHaveProperty('outline');
+    expect(structuredClone(snapshot)).toEqual(snapshot);
   });
 });
