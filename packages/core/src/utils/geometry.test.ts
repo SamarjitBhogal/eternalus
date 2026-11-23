@@ -6,6 +6,7 @@ import {
   distanceSquaredToRect,
   doRectsOverlap,
   doesPolygonOverlapRect,
+  doPolygonsOverlap,
   distanceToPath,
   distanceToSegment,
   isPointInAnyPolygon,
@@ -151,6 +152,29 @@ describe('geometry', () => {
         cell,
       ),
     ).toBe(true);
+  });
+
+  it('tells whether two polygons share any point (HC-Q95)', () => {
+    const triangle = (x: number, y: number) => [
+      { x, y },
+      { x: x + 4, y },
+      { x: x + 2, y: y + 4 },
+    ];
+    // Crossing edges with no corner inside the other polygon: a thin bar across SQUARE.
+    const bar = [
+      { x: -5, y: 4 },
+      { x: 15, y: 4 },
+      { x: 15, y: 6 },
+      { x: -5, y: 6 },
+    ];
+
+    expect(doPolygonsOverlap(SQUARE, bar)).toBe(true);
+    expect(doPolygonsOverlap(SQUARE, triangle(3, 3))).toBe(true);
+    expect(doPolygonsOverlap(triangle(3, 3), SQUARE)).toBe(true);
+    expect(doPolygonsOverlap(SQUARE, triangle(10, 0))).toBe(true);
+    expect(doPolygonsOverlap(SQUARE, triangle(30, 30))).toBe(false);
+    expect(doPolygonsOverlap(SQUARE, [{ x: 5, y: 5 }])).toBe(true);
+    expect(doPolygonsOverlap(SQUARE, [{ x: 50, y: 5 }])).toBe(false);
   });
 
   it('writes the nearest point of several outlines into out, closing edges included', () => {

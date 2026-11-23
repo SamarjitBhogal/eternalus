@@ -202,3 +202,17 @@ export const doesPolygonOverlapRect = (polygon: Polygon, rect: Rect): boolean =>
     );
   });
 };
+
+/**
+ * Whether two polygons share any point: a corner of one inside the other, or crossing edges
+ * (touching edges count). A one-point polygon is a point.
+ */
+export const doPolygonsOverlap = (a: Polygon, b: Polygon): boolean =>
+  a.some((point) => isPointInPolygon(point, b)) ||
+  b.some((point) => isPointInPolygon(point, a)) ||
+  a.some((start, index) => {
+    const end = a[(index + 1) % a.length] ?? start;
+    return b.some((corner, cornerIndex) =>
+      doSegmentsIntersect(start, end, corner, b[(cornerIndex + 1) % b.length] ?? corner),
+    );
+  });

@@ -1,9 +1,26 @@
-import { MAP_PALETTE as P } from '../content/maps/map1Scenery';
+import { MAP_PALETTE as P, SKETCH_HEIGHT, SKETCH_WIDTH } from '../content/maps/map1Scenery';
 import type { MapDecoration } from '../content/maps/maps.types';
+import { doPolygonsOverlap } from '../utils/geometry';
+import type { Polygon, Vec2 } from '../utils/geometry.types';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
 /** Builds overlapping, individually shaped mountain masses around the battlefield. */
 export class MapMountainBuilder extends MapDecorationBuilder {
-  /** Returns varied peaks, foothills and rocky slopes without changing collision. */
+  /** The sizes a mountain tries to clear a keep-clear area: full, then a tenth smaller each time. */
+  private static readonly SIZE_STEPS = 10;
+
+  /**
+   * Creates a builder whose mountains stay clear of `keepClear` (HC-Q95, DEC-340: the Stronghold
+   * wall, its turrets and gates), in sketch units.
+   */
+  public constructor(private readonly keepClear: readonly Polygon[] = []) {
+    super();
+  }
+
+  /**
+   * Returns varied peaks, foothills and rocky slopes; each mountain's mass blocks. A mountain
+   * whose mass touches a keep-clear polygon gets smaller, a tenth of its size at a time, until
+   * its mass is clear. A mountain that is still not clear at a tenth of its size is left out.
+   */
   public build(seed = 0): readonly MapDecoration[] {
     this.isMirrored = true;
     for (let x = 0; x <= 1640;) {
@@ -81,12 +98,19 @@ export class MapMountainBuilder extends MapDecorationBuilder {
       );
     return this.pieces.map((piece) => ({
       ...piece,
-      shape: piece.shape.map((p) => ({
-        x: Math.max(0, Math.min(1600, p.x)),
-        y: Math.max(0, Math.min(900, p.y)),
-      })),
+      shape: piece.shape.map((p) => MapMountainBuilder.clampToSketch(p)),
     }));
   }
+
+  /** A point moved onto the sketch (`SKETCH_WIDTH` × `SKETCH_HEIGHT`). */
+  private static clampToSketch({ x, y }: Vec2): Vec2 {
+    return {
+      x: Math.max(0, Math.min(SKETCH_WIDTH, x)),
+      y: Math.max(0, Math.min(SKETCH_HEIGHT, y)),
+    };
+  }
+
+  /** Draws the mountain at the largest size step whose mass is clear of every keep-clear area. */
   private mountain(
     id: string,
     x: number,
@@ -95,6 +119,29 @@ export class MapMountainBuilder extends MapDecorationBuilder {
     ry: number,
     n: number,
     mirrorId = `${id}-mirror`,
+  ): void {
+    const start = this.pieces.length;
+    for (let step = 0; step < MapMountainBuilder.SIZE_STEPS; step++) {
+      const scale = 1 - step / MapMountainBuilder.SIZE_STEPS;
+      this.drawMountain(id, x, y, rx * scale, ry * scale, n, mirrorId);
+      const masses = this.pieces
+        .slice(start)
+        .filter(({ object }) => object?.isFootprint === true)
+        .map(({ shape }) => shape.map((p) => MapMountainBuilder.clampToSketch(p)));
+      if (!masses.some((mass) => this.keepClear.some((area) => doPolygonsOverlap(mass, area))))
+        return;
+      this.pieces.splice(start);
+    }
+  }
+
+  private drawMountain(
+    id: string,
+    x: number,
+    y: number,
+    rx: number,
+    ry: number,
+    n: number,
+    mirrorId: string,
   ): void {
     const start = this.pieces.length;
     const point = (dx: number, dy: number) => ({ x: x + dx * rx, y: y + dy * ry });
