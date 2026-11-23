@@ -106,7 +106,8 @@ special case.
 
 The loadout has one "passive ability or aura" slot (see `08-loadout.md`), so Magus chooses
 between Erudition and Necromancy. Until a player can choose it, the sub-class sets it
-(DEC-330): see the sub-class specs' `passiveId` in `content/legends/specs/`. Warrior has no
+(DEC-330): see the sub-class specs' `passiveId` and the class `defaultPassiveId` in
+`content/legends/` (DEC-361). Warrior has no
 passive in the source. Wrecking Run is the
 in-fiction name for the Sentinel movement profile below.
 

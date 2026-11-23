@@ -467,8 +467,15 @@ binds it to each ability and `loadDisplayContent` publishes it as `AbilityDispla
 (§15), so the client decides "cast at once, no pointer needed" from the ability in the slot,
 never from the slot or the targeting kind (DEC-283 (8), `INBOX.md` HC-Q62 (1)).
 
-Passives (`slot: 'passive'`: Wrecking Run, Erudition, Necromancy) are applied once
-by `Legend.onSpawn` as permanent `buff` effects, so they are ordinary statuses with modifiers.
+Passives (`slot: 'passive'`: Wrecking Run, Erudition, Necromancy) are permanent `buff` effects,
+so they are ordinary statuses with modifiers. A Legend's passive is its spec's, else its class's
+default (`passiveOf`). `Abilities` holds it and marks it due at spawn. `AbilitySystem` puts on each
+due passive first in its pass, casters in id order, before the queued casts: no price, no cooldown
+and no `ability-cast`. `Legend.onSpawn` cannot do it, because an entity cannot reach the match's
+`StatusEffectApplier`. So a Legend that spawns later in a tick gets its passive on the next tick. A
+Duel round reset removes every status, so `DuelRoundSystem` makes the passive due again, and it is
+back on the next tick, before combat. At boot, `checkStatusLinks` rejects a passive step that is not
+a `buff` of a status that lasts until removed (DEC-338, DEC-361).
 A passive can also be a block of movement numbers that the movement code reads every tick: Wrecking
 Run's build-up and slide are the Sentinel's `movementProfile.momentum` (10 §2; DEC-330, `INBOX.md`
 HC-B29 (2)).
@@ -1280,25 +1287,22 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     while the slot holds an ability (DEC-283 (7)). A bot may cast a filled `granted` slot
     (`pickReadySlot`).
 
-- **Magus passives (`feat/magus-passives`, 2026-11-23; DEC-330, DEC-337, DEC-338).** A Legend's
-  passive comes from its spec: `LegendSpecDefinition.passiveId` (the specs in
-  `content/legends/specs/`; `null` = no passive). The owner chose the passive by sub-class for now
-  (DEC-330 P1); the loadout's `passiveId` (§12) is not built.
-  `KnownAbilityRefsRule` checks that each id in a class's `passiveOptions` and each spec
-  `passiveId` is a `passive` ability of that class, and `KitInPoolRule` checks that a spec's
-  `passiveId` is one of its class's `passiveOptions`. A passive ability costs no aether and has no
-  cooldown (`loadAbilities`). Its one step is a `buff` that puts its permanent status on the
-  Legend. Where the code differs from §3, §6, §7 and §8:
-  - **Who puts it on (§7).** `Legend.onSpawn` does not: an entity has no access to the match's
-    `StatusEffectApplier`. `Abilities` holds the passive id and a due flag, set at spawn.
-    `AbilitySystem` first puts on each due passive, casters in id order, before the queued casts:
-    the steps run as a cast at the caster in the `default-action` slot, with no price, no
-    cooldown and no `ability-cast`. A Duel round reset removes every status, so
-    `DuelRoundSystem` makes the passive due again (`Abilities.rearmPassive`) and it is back on
-    the next tick, before combat. `StateHasher` adds the field `passive-due` only while a passive
-    is due, so the golden replays stay valid. Two gaps follow (DEC-338): a Legend that spawns
-    later in a tick (after `AbilitySystem`) gets its passive on the next tick, and on a Duel reset
-    tick a meter gain after the reset (a capture that ends on that tick) is not multiplied.
+- **Magus passives (`feat/magus-passives`, 2026-11-23; DEC-330, DEC-337, DEC-338, DEC-361).** A
+  Legend's passive comes from its spec, else its class (`passiveOf`):
+  `LegendSpecDefinition.passiveId` (the specs in `content/legends/specs/`), and when that is
+  `null`, `LegendDefinition.defaultPassiveId` (`null` = no passive). The owner chose the passive by
+  sub-class for now (DEC-330 P1); the loadout's `passiveId` (§12) is not built.
+  `KnownAbilityRefsRule` checks that each id in a class's `passiveOptions`, its `defaultPassiveId`
+  and each spec `passiveId` is a `passive` ability of that class, and `PassiveInOptionsRule` checks
+  that the class default and a spec's `passiveId` are among the class's `passiveOptions`. A
+  passive ability costs no aether and has no cooldown (`loadAbilities`). Its one step is a `buff`
+  that puts its permanent status on the Legend. Where the code differs from §3, §6, §7 and §8:
+  - **The passive's cast (§7).** Its steps run as a cast at the caster in the `default-action`
+    slot, as a status's `onHit` steps do (`HitEffects`). A cast that says where it comes from (a
+    bar slot, a passive or a hit) is a follow-up after PRs #162 and #163 (`INBOX.md` HC-B40 (3)).
+    `StateHasher` adds the field `passive-due` only while a passive is due, so the golden replays
+    stay valid. On a Duel reset tick, a meter gain after the reset (a capture that ends on that
+    tick) is not multiplied (DEC-338).
   - **Wrecking Run (§7).** Its passive ability has no steps (`effects: []`): its effect is the
     Sentinel's movement numbers (DEC-307), not a status. It exists so that every id in
     `passiveOptions` is an ability.
@@ -1310,7 +1314,9 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     `UltimateCharge`), so the meter still moves only on an event (DISC-44). Erudition holds all
     three (`content/status-effects/erudition.ts`). Basic attacks do not change: a status's
     `onHit` steps (`HitEffects`) read 1 for both ability stats. The statuses that a knock-back
-    applies (`staggered`, `knockup`) are not stretched (DEC-337 (4)).
+    applies (`staggered`, `knockup`) are not stretched (DEC-337 (4)). A status with
+    `hasFixedDuration` is not stretched either, because its time matches a step of its ability
+    (Fury's wind-up; DEC-361).
   - **Modifier scaled by lost health (§8).** A `StatModifier` can have `byLostHealth: { fullAt }`:
     no effect at full health, its full value at `fullAt` of max health or less, in a straight
     line between. Only `damageDealt` and `damageTaken` take it, and `0 <= fullAt < 1`

@@ -709,26 +709,25 @@ Reply inline (`Decision: …`).
 
 - [ ] **HC-B40 — Better than the design, your sign-off: six small changes that the Magus
       passives critic proposes (`feat/magus-passives`, architecture critic round 1, 2026-11-23;
-      eternalus-149).** Nothing that the player sees changes. The branch is built as it is now.
-      Each item is a later tidy-up if you sign it off.
-  - (1) Who puts a passive on. 05 §7 says that the Legend does it when it spawns. The Legend
-    cannot reach the status code, so `AbilitySystem` does it first in its pass, and a Duel round
-    reset makes it due again (DEC-338 (4)). Sign-off: 05 §7 names this, and the 05 §18 note
-    drops "Who puts it on".
-  - (2) A default passive per class. Now a spec with no passive (`passiveId: null`) has none,
-    but a spec with no kit (`kit: null`) gets the class kit. Proposal: each class names a default
-    passive (Sentinel: Wrecking Run; Vanguard and Magus: none), and a spec's `null` means "the
-    class default", as for the kit.
-  - (3) The slot of a passive's cast and of an on-hit cast. Both now use the `default-action`
-    slot (the basic attack, later Revive). Proposal: a cast says where it comes from (a bar
-    slot, a passive or a hit).
-  - (4) One check per rule. `KitInPoolRule` now checks the kit and the passive. Proposal: a
-    separate rule for the passive (05 §12 calls it `PassiveOwnedRule`).
-  - (5) A load check that a passive's buff puts a permanent status on its holder. Nothing checks
-    this now.
-  - (6) Statuses that time something. Erudition's "longer" also stretches a status that is
-    matched to a step delay (a hold during a wind-up). Proposal: a status can say that it is
-    never stretched. This goes with the knock-back reading in DEC-337 (4).
+      eternalus-149, eternalus-150).** Nothing that the player sees changes. Five are built under
+      your standing rule (DEC-223), recorded as DEC-361. One (3) is a follow-up, because two open
+      PRs change the same code. Sign off, or name the ones to undo.
+  - (1) Built. Who puts a passive on. 05 §7 said that the Legend does it when it spawns. The
+    Legend cannot reach the status code, so `AbilitySystem` does it first in its pass, and a Duel
+    round reset makes it due again (DEC-338 (4)). 05 §7 now says so.
+  - (2) Built. A default passive per class (`defaultPassiveId`: Sentinel Wrecking Run; Vanguard
+    and Magus none). A spec's `passiveId: null` now means "the class default", as `kit: null`
+    does (`passiveOf`). A Legend with no spec (a developer spawn) now gets the class default.
+  - (3) Not built: a follow-up after PRs #162 and #163 merge. A passive's cast and a hit's cast
+    both use the `default-action` slot (the basic attack, later Revive). Proposal: a cast says
+    where it comes from (a bar slot, a passive or a hit). #162 and #163 rewrite `HitEffects`.
+  - (4) Built. One check per rule: `PassiveInOptionsRule` checks the passive, and
+    `KitInPoolRule` checks only the kit.
+  - (5) Built. At boot, `checkStatusLinks` rejects a passive step that is not a `buff` of a status
+    that lasts until removed.
+  - (6) Built. A status can say that it is never stretched (`hasFixedDuration`). Fury's wind-up
+    has it, because its time matches the dash step. The knock-back statuses need no flag: a
+    knock-back step does not stretch them (DEC-337 (4), on its own card).
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
