@@ -781,6 +781,22 @@ Reply inline (`Decision: …`).
       "fighting" and still turns to help (Owner Calls card `busy-minion-building`, open).
       Architecture 18 §6.1 changes to match. Tick this item when Samarjit has read it.
 
+- [x] **HC-Q89 — Shots over lakes and lava rivers (`feat/wall-turrets`, PR 4).** Asked on Owner
+      Calls v63, 2026-11-22, from the wall turret work. Can arrows and orbs fly over lakes and
+      lava rivers? Built then as option A (they stop there, as at any blocking shape).
+  - Answered 2026-11-23 (DEC-345, Owner Calls v68): "B: shots fly over lakes and lava rivers —
+    Arrows shot over lava/fire catch fire and apply burn." Built in `feat/shots-over-lava`.
+
+- [ ] **HC-Q105 — Does an arrow fly over a camp fire and catch fire? (`feat/shots-over-lava`,
+      follow-up to HC-Q89, DEC-345 (3)).** Asked on Owner Calls v71, 2026-11-23, by
+      COMBAT-WEAPONS-ABILITIES-59. Your HC-Q89 note: "Arrows shot over lava/fire catch fire and
+      apply burn." The only fires on the map are the camp fires in the forest camps. A camp fire
+      sits in a ring of stones that blocks units and stops shots, so today an arrow catches fire
+      only over a lava river. Options: (A, recommended) shots fly over a camp fire, as over lava,
+      and an arrow that crosses one catches fire; units still cannot walk through it; (B) camp
+      fires stop shots as today; only lava lights an arrow. Code names: camp fire = furniture
+      object `<camp>-fire` (`MapSceneryBuilder`).
+
 - [ ] **HC-Q90 — When can a wall turret take damage? (`feat/wall-turrets`, PR 4, Owner Calls
       card "WT when damageable", 2026-11-22; PR-REVIEW-ASSIST-33).** No doc sets it: 07 §3 names
       walls and gates only, and balancing.md gives a turret 600 health. Options: (A, built) like
