@@ -561,12 +561,16 @@ describe('StateHasher', () => {
   });
 
   it('hashes the Cathedral gem: holder, glow ticks left, glow hits and ticks since hit each change the hash', () => {
-    const state = new GameState(createDefaultGameConfig(), 1);
-    const holder = new Bare('entity-1', 'bare');
-    holder.spawn({});
-    state.entities.add(holder);
-    const gem = new CathedralGemState();
-    holder.addComponent(gem);
+    const stateWithGem = (): { state: GameState; gem: CathedralGemState } => {
+      const state = new GameState(createDefaultGameConfig(), 1);
+      const holder = new Bare('entity-1', 'bare');
+      holder.spawn({});
+      state.entities.add(holder);
+      const gem = new CathedralGemState();
+      holder.addComponent(gem);
+      return { state, gem };
+    };
+    const { state, gem } = stateWithGem();
     const untouched = hasher.hash(state);
 
     gem.hold('light');
@@ -584,6 +588,14 @@ describe('StateHasher', () => {
     const later = hasher.hash(state);
 
     expect(new Set([untouched, held, struck, struckTwice, aged, dark, later]).size).toBe(7);
+
+    // Each step above moves more than one field; these two gems differ in glow ticks left alone.
+    const struckFor = (glowTicks: number): number => {
+      const fresh = stateWithGem();
+      fresh.gem.struck(glowTicks);
+      return hasher.hash(fresh.state);
+    };
+    expect(struckFor(3)).not.toBe(struckFor(4));
   });
 
   it('hashes a capture point: owner, progress, checkpoint and reached marks each change the hash', () => {
