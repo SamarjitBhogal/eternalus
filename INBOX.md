@@ -16,9 +16,10 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
-- [ ] **HC-B32 — Better than the design, built under your standing rule (DEC-223), sign-off
+- [x] **HC-B32 — Better than the design, built under your standing rule (DEC-223), sign-off
       asked: one queue rule for both path searches (`chore/horde-test-speed`, into PR #152,
-      critic round 1, 2026-11-22; MEMORY-CLEANUP-7); no decision blocks the PR.** The player sees
+      critic round 1, 2026-11-22; MEMORY-CLEANUP-7); no decision blocks the PR.** Recorded as
+      DEC-357 (owner decisions log). The player sees
       no difference: bots and hordes take the same paths as before. Two path searches (bot
       Legends and the lane flow fields) keep a queue of map cells. Each search takes the cell
       with the lowest sort value first; on a tie, the lower cell index goes first (11 §5). For a
@@ -27,6 +28,7 @@ Reply inline (`Decision: …`).
       owns the rule, so the rule is in one place. Proof: the match state hashes and the flow
       fields are the same before and after. No design doc names the queue, so no doc changes.
       Options: (A) keep it (recommended, built); (B) undo it; (C) other (note). A, B or C?
+  - **Answered 2026-11-23 by DEC-357** (Owner Calls page): "Keep it (built)".
 
 - [ ] **`refactor/tower-ruins-followups` critic (2026-11-14), better than the design — one item
       for the tidy PR (DEC-218), sign-off.** Not built: this branch stays small. (BT2) One `Band`

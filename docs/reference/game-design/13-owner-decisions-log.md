@@ -21,6 +21,18 @@ overridden by the product owner. Decisions arrive through `INBOX.md`; once imple
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
 
+## Batch 2026-11-23 (Owner Calls page: one queue rule for both path searches)
+
+The owner's answer of 2026-11-23 on the Owner Calls page (page v68, relayed by session
+PR-REVIEW-COORDINATION-32) to `INBOX.md` HC-B32 from session MEMORY-CLEANUP-7. The owner's words
+are kept verbatim outside the repository in
+`eternalus-agent-work/owner-calls-2026-11-20/answers-v68/PASTE-2026-11-23.md`. DEC-357 is this
+batch.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Docs changed                         |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| DEC-357 | **The shared path-search queue keeps each queued cell's sort value and owns the tie rule, as built (HC-B32 signed off).** The owner chose: "Keep it (built)". `CellHeap.push(cell, key)` stores the key of each queued cell. The heap pops the lowest key first, then the lower cell index (architecture 11 §5). `AStarPathfinder` and `FlowFieldBuilder` no longer keep their own copy of that rule. The player sees no change: the match state hashes and the lane flow fields are the same before and after (`chore/horde-test-speed`, PR #154). | None; no design doc names the queue. |
+
 ## Batch 2026-11-22 (Owner Calls page: the Duel test time limits)
 
 The owner's answers of 2026-11-22 on the Owner Calls page (relayed by session
