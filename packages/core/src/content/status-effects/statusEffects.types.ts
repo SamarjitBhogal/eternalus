@@ -4,7 +4,7 @@ import type { AbilityEffectSpec, AuthoredEffectSpec } from '../abilities/Ability
  * A number a status scales: each reader asks `StatusEffects.multiplier(stat)` for one value.
  * `aetherCost` multiplies what a cast costs. The caster's `abilityPotency` multiplies its
  * abilities' damage, `abilityDuration` the statuses its abilities apply, and `ultimateGain` the
- * points its ultimate meter earns (Erudition, DEC-330).
+ * points its ultimate meter earns (Erudition, DEC-337).
  */
 export type StatusStat =
   | 'moveSpeed'
@@ -56,7 +56,7 @@ export type StatModifier = {
   readonly op: 'mul' | 'add';
   readonly value: number;
   /**
-   * Scales the modifier by the health its holder has lost (Necromancy, DEC-330): none of it at
+   * Scales the modifier by the health its holder has lost (Necromancy, DEC-338): none of it at
    * full health, all of it at `fullAt` (a fraction of max health) or less, in a straight line
    * between. A `mul` of 1.3 is then ×1 to ×1.3. Absent = always all of it. Only `damageDealt` and
    * `damageTaken` may carry it: their reader (`StatusModifierStep`) is the one that knows the health.

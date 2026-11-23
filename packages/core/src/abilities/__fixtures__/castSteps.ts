@@ -1,5 +1,6 @@
 import { DamagePipeline } from '../../combat/DamagePipeline';
 import { StatusEffectApplier } from '../../combat/StatusEffectApplier';
+import { StatusEffects } from '../../components/StatusEffects';
 import { Transform } from '../../components/Transform';
 import type { AbilityEffectSpec } from '../../content/abilities/AbilityDefinition.types';
 import { loadKnockback } from '../../content/abilities/loadKnockback';
@@ -31,8 +32,9 @@ type CastOptions = {
 
 /**
  * Casts a one-off ability made of `effects` for `casterId` at `state.tick`, as `AbilitySystem`
- * would after the checks: a real `CastInstance` with the five shipped effect strategies, the
- * shipped shapes, one `DamagePipeline` (`options.damage`) and one `StatusEffectApplier`.
+ * would after the checks, with the caster's ability stats (DEC-337): a real `CastInstance` with the
+ * five shipped effect strategies, the shipped shapes, one `DamagePipeline` (`options.damage`) and
+ * one `StatusEffectApplier`.
  */
 export const castSteps = (
   state: GameState,
@@ -52,6 +54,7 @@ export const castSteps = (
   );
   const position = state.entities.get(casterId)?.getComponent(Transform).position ?? { x: 0, y: 0 };
   const origin = { x: position.x, y: position.y };
+  const boosts = state.entities.get(casterId)?.findComponent(StatusEffects);
   new CastInstance(
     {
       casterId,
@@ -61,6 +64,8 @@ export const castSteps = (
       origin,
       casterLevel: level,
       tick: state.tick,
+      potency: boosts?.multiplier('abilityPotency') ?? 1,
+      stretch: boosts?.multiplier('abilityDuration') ?? 1,
     },
     {
       state,

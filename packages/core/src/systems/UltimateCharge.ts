@@ -135,7 +135,7 @@ export class UltimateCharge {
 
   /**
    * Buffers a change for an entity with a meter; every other entity's kills and hits are skipped.
-   * A gain is multiplied by the recipient's `ultimateGain` (Erudition, DEC-330); a loss is not.
+   * A gain is multiplied by the recipient's `ultimateGain` (Erudition, DEC-337); a loss is not.
    */
   private queue(
     state: GameState,
@@ -146,14 +146,15 @@ export class UltimateCharge {
     if (points === 0 || UltimateCharge.meterOf(state, recipientId) === undefined) {
       return;
     }
-    const gain =
-      points > 0
-        ? (state.entities
-            .get(recipientId)
-            ?.findComponent(StatusEffects)
-            ?.multiplier('ultimateGain') ?? 1)
-        : 1;
+    const gain = points > 0 ? UltimateCharge.gainOf(state, recipientId) : 1;
     this.pending.push({ recipientId, points: points * gain, cause });
+  }
+
+  /** What `entityId`'s statuses multiply its meter gains by (`ultimateGain`); 1 with none. */
+  private static gainOf(state: GameState, entityId: EntityId): number {
+    return (
+      state.entities.get(entityId)?.findComponent(StatusEffects)?.multiplier('ultimateGain') ?? 1
+    );
   }
 
   private static meterOf(state: GameState, entityId: EntityId): AbilitySlotRuntime | undefined {

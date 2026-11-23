@@ -32,8 +32,8 @@ export type AbilityRejectReason =
 /**
  * Which kind of slot an ability fills (05 §2). `granted`: only a status grants it, for as long as
  * it lasts (the `granted` slot; a kit may not name it). `passive`: a Legend spec's `passiveId`
- * names it; it is on no bar slot and is never cast, and its steps run once when the Legend spawns
- * (05 §7). `gadget` and `default-action` join when the first ability of that kind is built.
+ * names it; it is on no bar slot and is never cast, and its steps run when the Legend spawns and
+ * again after each Duel round reset (05 §7). `gadget` and `default-action` join when the first ability of that kind is built.
  */
 type AbilitySlotKind = 'ability' | 'ultimate' | 'granted' | 'passive';
 

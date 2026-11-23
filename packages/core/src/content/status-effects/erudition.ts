@@ -4,7 +4,8 @@ import type { AuthoredStatusEffect } from './statusEffects.types';
  * Erudition (the Magus passive of the same id): permanent, put on at spawn. The statuses the
  * Magus's abilities apply last 20% longer, its ability damage is 10% higher and its ultimate meter
  * earns 25% more points (only from what earns points: kills, assists and objective damage, DISC-44).
- * Cooldowns and basic attacks do not change. TUNE: DEC-330 (owner, 2026-11-23).
+ * Cooldowns and basic attacks do not change. TUNE: DEC-330 S1 (owner, 2026-11-23). Which steps
+ * each stat touches is a reading (DEC-337).
  */
 export const ERUDITION = {
   id: 'erudition',

@@ -34,8 +34,9 @@ export type LegendName = {
 
 /**
  * A Legend: a named specialisation of a class (DEC-49; 17 R2). Mostly display and setup data (ADR
- * 0018); its gameplay fields are its `kit` (DEC-198) and its `passiveId` (DEC-330). Both are data,
- * so a later configurable loadout replaces them without code changes.
+ * 0018); its gameplay fields are its `kit` (DEC-198) and its `passiveId` (DEC-330 P1). Both are
+ * data, so a later configurable loadout (DEC-330 P1, post-MVP) can supply them; `Legend` then reads
+ * them from the loadout instead of the spec.
  *
  * @remarks The sub-class title (`displayName`) and the Legend's name (`legendName`) are two
  * different things: the title is the same on both teams, the name is per team.
@@ -74,9 +75,9 @@ export type LegendSpecDefinition = {
    */
   readonly kit: AbilityKit | null;
   /**
-   * The passive this Legend has (DEC-330: Heretic Necromancy, Catalyst and Oracle Erudition), put
-   * on when it spawns (05 §7); `null` for none. An ability of slot kind `passive` from the class's
-   * `passiveOptions` (`KnownAbilityRefsRule`, `KitInPoolRule`).
+   * The passive this Legend has (DEC-330 P1 names which sub-class has which), put on when it
+   * spawns (05 §7); `null` for none (DEC-338: no spec, no passive). An ability of slot kind
+   * `passive` from the class's `passiveOptions` (`KnownAbilityRefsRule`, `KitInPoolRule`).
    */
   readonly passiveId: string | null;
 };

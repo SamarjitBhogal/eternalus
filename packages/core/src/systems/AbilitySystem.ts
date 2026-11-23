@@ -10,6 +10,7 @@ import type { CastInProgress } from '../components/Abilities.types';
 import { Aether } from '../components/Aether';
 import { Health } from '../components/Health';
 import { Progression } from '../components/Progression';
+import { StatusEffects } from '../components/StatusEffects';
 import { Transform } from '../components/Transform';
 import type { Entity } from '../entities/Entity';
 import type { GameState } from '../state/GameState';
@@ -21,13 +22,14 @@ import type { System, SystemContext } from './System.types';
  * First puts on each due passive (05 §7: at spawn, and again after a Duel round's reset), casters
  * in id order: its steps run as a cast at the caster, with no price, no cooldown and no
  * `ability-cast`. Then runs the casts the `cast-ability` handler queued this tick (architecture 05
- * §7 step 3), casters in id order. Each cast is checked again (the state may have moved since the command); a cast
- * that now fails is announced as `command-rejected` and dropped. Otherwise it pays the price in
- * aether, stamps the cooldown (cooldowns start at cast), emits `ability-cast` and fires the
- * ability's steps that are due at the cast through their strategies. A cast with later steps
- * (`delayTicks`, 05 §4) is kept on the caster's `Abilities` as plain data; after this tick's new
- * casts, each kept cast fires the steps that are now due, in list order, on the caster where it
- * is then, and is dropped after its last step. Its aim stays the one fixed at the cast. A caster
+ * §7 step 3), casters in id order. Each cast is checked again (the state may have moved since the
+ * command); a cast that now fails is announced as `command-rejected` and dropped. Otherwise it
+ * pays the price in aether, stamps the cooldown (cooldowns start at cast), emits `ability-cast`
+ * and fires the ability's steps that are due at the cast through their strategies. On each tick
+ * that steps fire, the cast reads the caster's ability stats (`CastFacts.potency` and `stretch`,
+ * DEC-337). A cast with later steps (`delayTicks`, 05 §4) is kept on the caster's `Abilities` as
+ * plain data; after this tick's new casts, each kept cast fires the steps that are now due, in
+ * list order, on the caster where it is then, and is dropped after its last step. Its aim stays the one fixed at the cast. A caster
  * that died drops its casts; one that left the match took them along. Runs after `HordeSystem`
  * and before `StatusEffectSystem` (plan arch call 13).
  */
@@ -52,7 +54,7 @@ export class AbilitySystem implements System {
     this.targets = new TargetQuery(registry);
   }
 
-  /** Puts on every due passive, runs every queued cast of this tick, then the due steps of every cast in progress. */
+  /** Puts on every due passive, runs this tick's new casts, then the due steps of older casts. */
   public update({ state }: SystemContext): void {
     const passives: Entity[] = [];
     const queued: { readonly caster: Entity; readonly runtime: AbilitySlotRuntime }[] = [];
@@ -173,8 +175,15 @@ export class AbilitySystem implements System {
     const here = { x: position.x, y: position.y };
     // ponytail: one CastInstance per cast per due tick, fine while casts are rare; pool it if bots
     // cast every tick.
+    const boosts = caster.findComponent(StatusEffects);
     const next = new CastInstance(
-      { ...cast, casterId: caster.id, ability },
+      {
+        ...cast,
+        casterId: caster.id,
+        ability,
+        potency: boosts?.multiplier('abilityPotency') ?? 1,
+        stretch: boosts?.multiplier('abilityDuration') ?? 1,
+      },
       {
         state,
         effects: this.registry,

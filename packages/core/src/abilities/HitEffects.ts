@@ -81,6 +81,8 @@ export class HitEffects {
           origin: from,
           casterLevel: attacker.findComponent(Progression)?.level ?? 1,
           tick: state.tick,
+          potency: 1, // a basic attack's hit: the ability stats do not apply (DEC-337)
+          stretch: 1,
         },
         {
           state,

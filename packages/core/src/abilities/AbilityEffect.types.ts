@@ -39,14 +39,15 @@ export type CastContext = {
    */
   scaled(field: string, value: number): number;
   /**
-   * What the caster's statuses multiply its abilities' damage, healing and shields by: its
-   * `abilityPotency` (Erudition, DEC-330), 1 with none. Basic attacks never read it.
+   * What a damage step's hit is multiplied by: the caster's `abilityPotency` (Erudition, DEC-337),
+   * from `CastFacts`; 1 with none, and 1 for a status's `onHit` steps (basic attacks).
    */
   readonly potency: number;
   /**
    * How long a status a step applies lasts, in ticks: the step's own `durationTicks`, else the
-   * status's own duration, times the caster's `abilityDuration` (Erudition, DEC-330), rounded and at
-   * least 1 tick. `undefined` for a status that lasts until removed (nothing to stretch).
+   * status's own duration, times the cast's `stretch` (`CastFacts`: the caster's `abilityDuration`,
+   * Erudition, DEC-337), rounded and at least 1 tick. `undefined` for a status that lasts until
+   * removed (nothing to stretch).
    */
   statusDuration(step: {
     readonly statusId: string;

@@ -1,13 +1,10 @@
 import type {
-  StatModifier,
   StatusEffectDefinition,
   StatusFlag,
   StatusStat,
 } from '../content/status-effects/statusEffects.types';
+import type { ScaledModifier } from './StatusEffects.types';
 import { StatusEffectRuntime } from './StatusEffectRuntime';
-
-/** A health-scaled modifier (`StatModifier.byLostHealth`) of an active status, with its stacks. */
-type ScaledModifier = Required<StatModifier> & { readonly stacks: number };
 
 /**
  * The statuses on an entity (architecture 05 section 8) and what they add up to: one multiplier per
@@ -102,6 +99,9 @@ export class StatusEffects {
   public multiplier(stat: StatusStat, healthFraction = 1): number {
     let bonus = this.bonuses.get(stat) ?? 0;
     let product = this.products.get(stat) ?? 1;
+    if (this.scaled.length === 0) {
+      return (1 + bonus) * product; // nearly every entity: no loop on the hot path (NFR-023)
+    }
     for (const { stat: scaledStat, op, value, byLostHealth, stacks } of this.scaled) {
       if (scaledStat !== stat) {
         continue;

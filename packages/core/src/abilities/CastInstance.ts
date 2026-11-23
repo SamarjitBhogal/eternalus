@@ -1,4 +1,3 @@
-import { StatusEffects } from '../components/StatusEffects';
 import { normalize } from '../utils/vec2';
 import type { CastContext, EffectStep } from './AbilityEffect.types';
 import type { CastStep } from './AbilityRegistry.types';
@@ -53,12 +52,11 @@ export class CastInstance {
   }
 
   private contextAt(placement: ShapePlacement): CastContext {
-    const { casterId, ability, slot, aim, origin, casterLevel, tick } = this.facts;
+    const { casterId, ability, slot, aim, origin, casterLevel, tick, potency, stretch } =
+      this.facts;
     const { state, effects, targets, damage, statuses } = this.services;
     const toAim = { x: aim.point.x - origin.x, y: aim.point.y - origin.y };
     const { scaling } = ability.definition;
-    const casterStatuses = state.entities.get(casterId)?.findComponent(StatusEffects);
-    const stretch = casterStatuses?.multiplier('abilityDuration') ?? 1;
     return {
       casterId,
       abilityId: ability.id,
@@ -69,7 +67,7 @@ export class CastInstance {
       direction: toAim.x === 0 && toAim.y === 0 ? { x: 0, y: 0 } : normalize(toAim),
       placement,
       scaled: (field, value) => value * (1 + (scaling[field]?.perLevel ?? 0) * (casterLevel - 1)),
-      potency: casterStatuses?.multiplier('abilityPotency') ?? 1,
+      potency,
       statusDuration: ({ statusId, durationTicks }) => {
         const own = durationTicks ?? statuses.durationOf(statusId);
         return own === null ? undefined : Math.max(1, Math.round(own * stretch));

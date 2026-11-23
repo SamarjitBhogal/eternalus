@@ -8,7 +8,7 @@ import type { DamageHit, DamageStep } from './DamageStep.types';
 /**
  * Scales a hit by the attacker's `damageDealt` and the target's `damageTaken` multipliers (enraged,
  * sundered, marked). Each side's own health, shields not counted, scales a modifier that grows as
- * its holder is hurt (Necromancy, DEC-330). Blind is not a multiplier: its misses come from aim
+ * its holder is hurt (Necromancy, DEC-338). Blind is not a multiplier: its misses come from aim
  * wobble (DEC-42).
  */
 export class StatusModifierStep implements DamageStep {

@@ -3,7 +3,8 @@ import type { AuthoredAbility } from './AbilityDefinition.types';
 /**
  * Wrecking Run: the Sentinel passive. Its movement is the class's `movementProfile.momentum`
  * (`content/legends/sentinel.ts`, HC-B29 (2)), so it has no effect steps and nothing applies at
- * spawn (`effects: []`). The stun, self damage and barging are not built (05 §7, 10 §12).
+ * spawn (`effects: []`, DEC-338 (5)). The stun, self damage and barging are not built (05 §7,
+ * 10 §12).
  */
 export const WRECKING_RUN = {
   id: 'wrecking-run',
