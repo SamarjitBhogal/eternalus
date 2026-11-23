@@ -1,5 +1,5 @@
 import { ContentCatalogue } from '../ContentCatalogue';
-import { HEAVY_TARGET_KINDS, WALL_TURRET } from '../ai/turret';
+import { HEAVY_TARGET_KINDS, LANE_TOWER, WALL_TURRET } from '../ai/turret';
 import type { AuthoredTurretAmmo } from './turrets.types';
 
 /**
@@ -36,5 +36,22 @@ export const TURRET_AMMO = new ContentCatalogue<AuthoredTurretAmmo>([
       ],
     },
     preferredAgainst: HEAVY_TARGET_KINDS,
+  },
+  {
+    id: 'tower-orb',
+    displayName: 'Tower Orb',
+    attack: {
+      strategy: 'ranged-projectile',
+      damage: 120, // TUNE: HC-Q97 (Owner Calls v70, pending), option A
+      reach: LANE_TOWER.range, // a lane tower's reach is its range, as the wall turret's
+      interval: 2, // TUNE: HC-Q97 (Owner Calls v70, pending), option A; seconds
+      projectile: {
+        projectileId: 'tower-orb',
+        falloff: null,
+        // TUNE: HC-Q98 (Owner Calls v70, pending), option A
+        splash: { radius: 3, edgeMultiplier: 0.5 },
+      },
+    },
+    preferredAgainst: 'any', // TUNE: HC-Q100 (Owner Calls v70, pending), option A
   },
 ]);

@@ -110,6 +110,7 @@ export class EntitySnapshotter {
           : Math.min(1, distance(payload.origin, transform.position) / flight.range),
       isArc: flight.isArc,
       range: flight.range,
+      blastRadius: payload.impact.attack.projectile.splash?.radius ?? null,
       ending: flight.isEnded ? flight.endingShare : null,
     };
   }

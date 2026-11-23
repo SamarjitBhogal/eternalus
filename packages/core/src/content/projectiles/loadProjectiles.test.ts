@@ -34,12 +34,13 @@ describe('loadProjectiles', () => {
     ).toBe(1);
   });
 
-  it('ships the bolt, the arrow and the two turret bolts', () => {
+  it('ships the bolt, the arrow, the two turret bolts and the tower orb', () => {
     expect(loadProjectiles(30).ids).toEqual([
       'magus-bolt',
       'arrow',
       'turret-bolt',
       'turret-heavy-bolt',
+      'tower-orb',
     ]);
   });
 

@@ -92,6 +92,11 @@ export type ProjectileSnapshot = {
    * point for an arc shot (`ProjectileFlight.range`). The arc's height scales with it.
    */
   readonly range: number;
+  /**
+   * The radius in metres of the blast where it lands (`ProjectileLaunch.splash`, DEC-342); `null`
+   * for a shot with no blast. The client draws its burst this wide.
+   */
+  readonly blastRadius: number | null;
   /** How far through its ending it is, 0 to 1 (`ProjectileFlight.endingShare`); `null` while it flies. */
   readonly ending: number | null;
 };

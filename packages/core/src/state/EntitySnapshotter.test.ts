@@ -185,8 +185,20 @@ describe('EntitySnapshotter', () => {
     flight.tickEnding();
     const ending = snapshotter.snapshotOf(shot).projectile;
 
-    expect(flying).toEqual({ flownShare: 0.05, isArc: false, range: 100, ending: null });
-    expect(ending).toEqual({ flownShare: 1, isArc: false, range: 100, ending: 0.25 });
+    expect(flying).toEqual({
+      flownShare: 0.05,
+      isArc: false,
+      range: 100,
+      blastRadius: null,
+      ending: null,
+    });
+    expect(ending).toEqual({
+      flownShare: 1,
+      isArc: false,
+      range: 100,
+      blastRadius: null,
+      ending: 0.25,
+    });
     expect(snapshotter.snapshotOf(unfired).projectile).toBeNull();
     // An arc shot reports its flag and its shortened range, which the arc's height scales with.
     flight.shortenTo(50);
@@ -195,5 +207,38 @@ describe('EntitySnapshotter', () => {
     shot.addComponent(arc);
     expect(snapshotter.snapshotOf(shot).projectile).toMatchObject({ isArc: true, range: 50 });
     expect(snapshotter.snapshotOf(new Bare('bare-1', 'x')).projectile).toBeNull();
+  });
+
+  it("snapshots a shot's blast radius from its launch, the same id with no blast as null (DEC-342)", () => {
+    const snapshotter = new EntitySnapshotter(3, CURVES, 0);
+    const shotWith = (attack: RangedAttack): Bare => {
+      const shot = new Bare('shot-1', 'tower-orb');
+      shot.addComponent(new Transform({ x: 0, y: 0 }, 0.2));
+      shot.addComponent(new ProjectileFlight(30, 30, 4, true));
+      shot.addComponent(
+        new ProjectilePayload({
+          ownerId: 'tower',
+          team: 'dark',
+          ownerLevel: 1,
+          source: { attackerId: 'tower', kind: 'weapon', definitionId: 'tower-orb' },
+          targetId: null,
+          impact: { kind: 'weapon', attack },
+          origin: { x: 0, y: 0 },
+        }),
+      );
+      return shot;
+    };
+    const splash = { radius: 3.5, edgeMultiplier: 0.5 };
+    const orb: RangedAttack = {
+      ...SHOT_ATTACK,
+      projectile: { projectileId: 'tower-orb', falloff: null, splash },
+    };
+    const plain: RangedAttack = {
+      ...SHOT_ATTACK,
+      projectile: { projectileId: 'tower-orb', falloff: null },
+    };
+
+    expect(snapshotter.snapshotOf(shotWith(orb)).projectile?.blastRadius).toBe(3.5);
+    expect(snapshotter.snapshotOf(shotWith(plain)).projectile?.blastRadius).toBeNull();
   });
 });

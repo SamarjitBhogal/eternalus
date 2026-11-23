@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { loadTurrets } from '../content/structures/loadTurrets';
 import { Deploying } from '../components/Deploying';
 import { Movement } from '../components/Movement';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
@@ -186,6 +187,9 @@ describe('HordeSystem', () => {
       createDefaultEntityRegistry(),
       STRUCTURE_DEFINITIONS,
       new IdGenerator(1000),
+      null,
+      null,
+      loadTurrets(30).ammo,
     );
     // The dark SpawnerTower on lane-0 stands 120 along it from the light gate; radius 14.
     const tower = structures.create('spawner-tower', 'spawner-tower', {

@@ -1,4 +1,5 @@
 import { ContentCatalogue } from '../ContentCatalogue';
+import { MAP_FEATURE_DEFINITIONS } from '../maps/mapFeatureDefinitions';
 import type { AuthoredTurretProfile } from './turret.types';
 
 /**
@@ -25,5 +26,43 @@ export const WALL_TURRET = {
   heavyKinds: HEAVY_TARGET_KINDS,
 } as const satisfies AuthoredTurretProfile;
 
+/**
+ * How far from a lane tower's centre it takes a target, in metres.
+ * TUNE: HC-Q96 (Owner Calls v70, pending), option A (26 m from the tower centre).
+ */
+export const LANE_TOWER_REACH_FROM_CENTRE = 26;
+
+/**
+ * The footprint radius both lane towers share, from the map's feature definitions. The profile is
+ * one for both towers, so a map that gives them different footprints must split it.
+ */
+const LANE_TOWER_FOOTPRINT = ((): number => {
+  const radii = ['spawner-tower', 'buff-tower'].map(
+    (id) => MAP_FEATURE_DEFINITIONS[id]?.footprintRadius,
+  );
+  const [first] = radii;
+  if (first === undefined || radii.some((radius) => radius !== first)) {
+    throw new Error('The lane towers need one footprint radius to share the lane-tower profile.');
+  }
+  return first;
+})();
+
+/**
+ * The lane towers' targeting (DEC-302, DEC-342): the defend-ally override and window of the wall
+ * turret, then the nearest enemy. The controller measures from the tower's edge, so the range is
+ * the 26 m the owner card gives from the tower's centre, less the footprint radius.
+ */
+export const LANE_TOWER = {
+  id: 'lane-tower',
+  range: LANE_TOWER_REACH_FROM_CENTRE - LANE_TOWER_FOOTPRINT,
+  defendAllySeconds: WALL_TURRET.defendAllySeconds,
+  overrides: WALL_TURRET.overrides,
+  priority: ['nearest-enemy'], // TUNE: HC-Q100 (Owner Calls v70, pending), option A
+  heavyKinds: HEAVY_TARGET_KINDS,
+} as const satisfies AuthoredTurretProfile;
+
 /** Every turret profile as authored; `loadTurrets` loads them. */
-export const TURRET_PROFILES = new ContentCatalogue<AuthoredTurretProfile>([WALL_TURRET]);
+export const TURRET_PROFILES = new ContentCatalogue<AuthoredTurretProfile>([
+  WALL_TURRET,
+  LANE_TOWER,
+]);

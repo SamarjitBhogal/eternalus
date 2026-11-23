@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { loadTurrets } from '../content/structures/loadTurrets';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
 import type { MapDefinition } from '../content/maps/maps.types';
@@ -82,6 +83,9 @@ describe('assessLanes', () => {
       createDefaultEntityRegistry(),
       STRUCTURE_DEFINITIONS,
       new IdGenerator(1000),
+      null,
+      null,
+      loadTurrets(30).ammo,
     );
     const towers = new Map<string, string[]>();
     for (const lane of state.world?.routes.lanes ?? []) {
