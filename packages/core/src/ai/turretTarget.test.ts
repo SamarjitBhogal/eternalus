@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import type { TurretTargetPriority } from '../content/structures/turrets.types';
-import { chooseTurretTarget } from './turretTarget';
-import type { TurretCandidate } from './turretTarget.types';
+import type { TurretTargetPriority } from '../content/ai/turret.types';
+import { rankTurretTargets } from './turretTarget';
+import type { TurretCandidate, TurretTargetInput } from './turretTarget.types';
 
 const OVERRIDES: readonly TurretTargetPriority[] = ['legend-hurting-ally-legend'];
 const PRIORITY: readonly TurretTargetPriority[] = ['heavy-unit', 'nearest-enemy'];
@@ -15,8 +15,12 @@ const candidate = (
   hasHurtAllyLegend = false,
 ): TurretCandidate => ({ id, kind, position: { x: 0, y: 0 }, distanceSquared, hasHurtAllyLegend });
 
+/** The id of the target ranked first, or `null`: the one a turret with every line clear takes. */
+const firstOf = (input: TurretTargetInput): string | null =>
+  rankTurretTargets(input)[0]?.id ?? null;
+
 const choose = (candidates: readonly TurretCandidate[], currentId: string | null = null) =>
-  chooseTurretTarget({
+  firstOf({
     currentId,
     candidates,
     overrides: OVERRIDES,
@@ -24,7 +28,7 @@ const choose = (candidates: readonly TurretCandidate[], currentId: string | null
     heavyKinds: HEAVY,
   });
 
-describe('chooseTurretTarget', () => {
+describe('rankTurretTargets', () => {
   it('takes nothing when no enemy is in range', () => {
     expect(choose([])).toBeNull();
   });
@@ -88,7 +92,7 @@ describe('chooseTurretTarget', () => {
     const candidates = [candidate('entity-1', 4), candidate('entity-2', 90, 'heavy-mob')];
 
     expect(
-      chooseTurretTarget({
+      firstOf({
         currentId: null,
         candidates,
         overrides: [],
@@ -97,7 +101,7 @@ describe('chooseTurretTarget', () => {
       }),
     ).toBe('entity-1');
     expect(
-      chooseTurretTarget({
+      firstOf({
         currentId: null,
         candidates: [candidate('entity-1', 4)],
         overrides: [],
@@ -106,7 +110,7 @@ describe('chooseTurretTarget', () => {
       }),
     ).toBeNull();
     expect(
-      chooseTurretTarget({
+      firstOf({
         currentId: 'entity-1',
         candidates,
         overrides: ['heavy-unit'],
@@ -114,5 +118,23 @@ describe('chooseTurretTarget', () => {
         heavyKinds: HEAVY,
       }),
     ).toBe('entity-2');
+  });
+
+  it('ranks the override entries, then the current target, then each priority entry nearest first, each candidate once', () => {
+    const ranked = rankTurretTargets({
+      currentId: 'entity-4',
+      candidates: [
+        candidate('entity-1', 40),
+        candidate('entity-2', 30, 'sentinel'),
+        candidate('entity-3', 20, 'light-mob', true),
+        candidate('entity-4', 90),
+        candidate('entity-5', 10, 'heavy-mob'),
+      ],
+      overrides: OVERRIDES,
+      priority: ['heavy-unit'],
+      heavyKinds: HEAVY,
+    });
+
+    expect(ranked.map(({ id }) => id)).toEqual(['entity-3', 'entity-4', 'entity-5', 'entity-2']);
   });
 });

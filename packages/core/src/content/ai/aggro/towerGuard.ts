@@ -3,7 +3,8 @@ import type { AuthoredGuardAggroRule } from '../ai.types';
 
 /**
  * The tower guard's aggro rules (architecture 18 §7, 11 §4.4): the lane minion's priority list
- * without `lane-objective` and `turret-attacking-ally-minion` (no turret entity exists yet), and a
+ * without `lane-objective` and `turret-attacking-ally-minion` (that entry does not match yet:
+ * `unitClassOf` does not map the turret kind, INBOX.md HC-B36), and a
  * radius that stays inside the guard's leash, measured from its post. Its leash is its post's
  * guard plan.
  */

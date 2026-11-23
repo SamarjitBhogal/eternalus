@@ -374,7 +374,10 @@ one stop rule (DEC-317 B9). `NoMapObjectOverlapInvariant` passes a shot's origin
 `WorldObjectStore.blockingAt`, which skips such a shape too. A unit's centre is never in a blocking
 area (the invariant), so the rule changes only wall turret bolts, which start at the turret's
 centre inside its pylon and wall (07 §13). The body stop (`AreaHitQuery.stopsShot`) is unchanged:
-on the seed 1 to 8 maps, every body outline that holds a turret's centre is on the turret's team.
+on the seed 1 to 8 maps, every body outline that holds a turret's centre is on the turret's team
+(a scenario test checks each seed). The rule assumes a convex launch shape: the shape is skipped
+for the whole flight, so a shot that leaves a concave shape and enters it again is not stopped by
+it. A pylon is a convex 12-gon.
 
 ## Related
 

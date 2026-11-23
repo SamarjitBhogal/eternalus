@@ -1,5 +1,5 @@
 import { ContentCatalogue } from '../ContentCatalogue';
-import type { AuthoredTurretProfile } from './turrets.types';
+import type { AuthoredTurretProfile } from './turret.types';
 
 /**
  * The entity kinds a wall turret treats as heavy (balancing.md "Turrets — MVP": heavy ammo "against
@@ -11,14 +11,16 @@ export const HEAVY_TARGET_KINDS = ['sentinel', 'heavy-mob'] as const;
 /**
  * The wall turret's targeting (architecture 11 §4.5; numbers from balancing.md "Turrets — MVP",
  * `Recommendation:`): an enemy Legend that damaged an allied Legend in the last 3 s becomes the
- * target at once (the defend-ally override); else it keeps its target until that dies or leaves
- * range; else heavy units, then the nearest enemy.
+ * target at once (the defend-ally override); else it keeps its target until that dies, leaves
+ * range or its line of fire closes; else heavy units, then the nearest enemy.
  */
 export const WALL_TURRET = {
   id: 'wall-turret',
   range: 14, // TUNE: balancing.md "Turrets — MVP"
   defendAllySeconds: 3, // TUNE: balancing.md "Turrets — MVP"
-  overrides: ['legend-hurting-ally-legend'], // architecture 11 §4.5: the defend-ally override
+  // architecture 11 §4.5: the defend-ally override; whether it leaves a held target is INBOX.md
+  // HC-Q94 (FR-073 keeps the first target)
+  overrides: ['legend-hurting-ally-legend'],
   priority: ['heavy-unit', 'nearest-enemy'], // TUNE: balancing.md
   heavyKinds: HEAVY_TARGET_KINDS,
 } as const satisfies AuthoredTurretProfile;

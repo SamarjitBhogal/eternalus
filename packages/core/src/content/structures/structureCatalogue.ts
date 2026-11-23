@@ -72,13 +72,13 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       displayName: 'Turret',
       baseHealth: 600, // TUNE: balancing.md
       footprintRadius: footprintOf('turret'),
-      // TUNE: owner question pending (wall turret breakability); default = like the wall it sits on
+      // TUNE: owner question pending (INBOX.md HC-Q90); default = like the wall it sits on
       breakability: AFTER_BUFF_TOWERS,
       // Reach to the turret's pylon. Its map object blocks, so it is the turret's body: one health
       // pool, no health of its own (as a lane tower's fort, DEC-185 B).
       hasMapFootprint: true,
-      // Owner card open (a destroyed turret's pylon): default A, the pylon goes with the turret, as
-      // before turrets were structures.
+      // Owner question open (INBOX.md HC-Q91, a destroyed turret's pylon): default A, the pylon
+      // goes with the turret, as before turrets were structures.
       isBodyRemovedWithIt: true,
       controller: 'turret',
       aiProfile: 'wall-turret',

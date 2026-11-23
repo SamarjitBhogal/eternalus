@@ -10,7 +10,7 @@ import { loadTurrets } from './content/structures/loadTurrets';
 import { loadWeapons } from './content/weapons/loadWeapons';
 import { STRUCTURE_DEFINITIONS } from './content/structures/structureCatalogue';
 import type { StructureDefinition } from './content/structures/structures.types';
-import { WALL_TURRET } from './content/structures/turret';
+import { WALL_TURRET } from './content/ai/turret';
 import { RELEASE_DEBUG_CONFIG, TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { MemoryLogger } from './diagnostics/MemoryLogger';
 import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
@@ -23,11 +23,13 @@ import type { SimulationOptions } from './Simulation.types';
 import type { GameState } from './state/GameState';
 import { Health } from './components/Health';
 import type { Vec2 } from './utils/geometry.types';
+import { cos, sin } from './utils/deterministicMath';
 import { isPointInAnyPolygon } from './utils/geometry';
 import { TeamMembership } from './components/TeamMembership';
 import { Transform } from './components/Transform';
 import { Turret } from './entities/structures/Turret';
 import { AreaHitQuery } from './state/AreaHitQuery';
+import { TurretAmmoRule } from './state/TurretAmmoRule';
 import type { GameEventMap } from './state/GameEvents.types';
 import { TRAINING_DUMMY } from './content/mobs/trainingDummy';
 
@@ -60,25 +62,39 @@ const setUp = (options: Partial<SimulationOptions> = {}) => {
   return { simulation, state, logger, run, turretOf };
 };
 
-/** A point `gap` metres outside `feature`'s pylon, away from its team's Stronghold. */
-const outside = (feature: MapFeature, gap: number): Vec2 => {
+/** The unit vector from `feature`'s team's Stronghold to `feature`, turned by `degrees`. */
+const outwardOf = (feature: MapFeature, degrees = 0): Vec2 => {
   const home = MAP.features.find(
     ({ kind, team }) => kind === 'stronghold' && team === feature.team,
   )?.position;
   const dx = feature.position.x - (home?.x ?? 0);
   const dy = feature.position.y - (home?.y ?? 0);
   const length = Math.hypot(dx, dy);
+  const turn = (degrees * Math.PI) / 180;
+  return {
+    x: (dx * cos(turn) - dy * sin(turn)) / length,
+    y: (dx * sin(turn) + dy * cos(turn)) / length,
+  };
+};
+
+/**
+ * A point `gap` metres outside `feature`'s pylon, away from its team's Stronghold, or turned
+ * `degrees` from that line.
+ */
+const outside = (feature: MapFeature, gap: number, degrees = 0): Vec2 => {
+  const out = outwardOf(feature, degrees);
   const radius = STRUCTURE_DEFINITIONS.get('turret').footprintRadius;
   return {
-    x: feature.position.x + (dx / length) * (radius + gap),
-    y: feature.position.y + (dy / length) * (radius + gap),
+    x: feature.position.x + out.x * (radius + gap),
+    y: feature.position.y + out.y * (radius + gap),
   };
 };
 
 const LIGHT_TURRET = TURRET_FEATURES.find(({ team }) => team === 'light');
 /**
- * A light turret whose line out, away from its Stronghold, is open for its whole range. The line
- * out of `LIGHT_TURRET` meets a cliff 7.35 m from its centre, where its bolts end.
+ * A light turret whose lines out are open for its whole range. The line out of `LIGHT_TURRET`, away
+ * from its Stronghold, meets a cliff 7.35 m from its centre, inside its 8 m pylon, where its bolts
+ * end; its line turned 60 degrees from that is open.
  */
 const FIRING_TURRET = TURRET_FEATURES.find(({ id }) => id === 'light-turret-2');
 const AMMO = loadTurrets(config.tickRate).ammo;
@@ -251,14 +267,14 @@ describe('Simulation wall turrets', () => {
   it('keeps only its target in its brain, its ammo and aim on the turret, and drops a removed target', () => {
     const match = setUp();
     const { simulation, state, run, turretOf } = match;
-    const feature = LIGHT_TURRET;
-    if (feature === undefined) throw new Error('The generated map has no light turret.');
+    const feature = FIRING_TURRET;
+    if (feature === undefined) throw new Error('The generated map has no light-turret-2.');
     const turretId = turretOf(feature)?.id ?? '';
     const sentinelId = spawnDark(match, 'sentinel', 'sentinel', outside(feature, 4));
     run(COUNTDOWN + 3);
 
     expect(state.ai.get(turretId)?.memory).toEqual({ targetId: sentinelId });
-    expect(state.entities.turretAmmoOf(turretId)?.loadedId).toBe('bolt-heavy');
+    expect(new TurretAmmoRule().ammoOf(state.entities, turretId)?.loadedId).toBe('bolt-heavy');
     expect(state.entities.attackAimOf(turretId)).toEqual(
       state.entities.placeOf(sentinelId)?.position,
     );
@@ -270,8 +286,8 @@ describe('Simulation wall turrets', () => {
   });
 
   it('gives the same state hash for the same seed and commands with turrets firing, and the hash covers their brains and loaded ammo', () => {
-    const feature = LIGHT_TURRET;
-    if (feature === undefined) throw new Error('The generated map has no light turret.');
+    const feature = FIRING_TURRET;
+    if (feature === undefined) throw new Error('The generated map has no light-turret-2.');
     const runs = [setUp(), setUp(), setUp()].map((match) => {
       const { simulation, state, run, turretOf } = match;
       const fired: string[] = [];
@@ -292,7 +308,8 @@ describe('Simulation wall turrets', () => {
       second.state.ai.set(second.turretId, { ...brain, memory: { targetId: null } });
     }
     expect(first?.simulation.hash()).not.toBe(second?.simulation.hash());
-    third?.state.entities.loadTurretAmmo(third.turretId, 'bolt-default');
+    if (third !== undefined)
+      new TurretAmmoRule().load(third.state.entities, third.turretId, 'bolt-default');
     expect(first?.simulation.hash()).not.toBe(third?.simulation.hash());
   });
 
@@ -312,7 +329,7 @@ describe('Simulation wall turrets', () => {
     run(COUNTDOWN + 30);
 
     expect(hits).toEqual([Math.min(DEFAULT_BOLT.attack.damage, DUMMY_HEALTH)]);
-    expect(state.entities.turretAmmoOf(turretId)?.loadedId).toBe('bolt-default');
+    expect(new TurretAmmoRule().ammoOf(state.entities, turretId)?.loadedId).toBe('bolt-default');
     expect(deaths).toContainEqual({
       entityId: dummyId,
       killer: { attackerId: turretId, kind: 'weapon', definitionId: 'turret' },
@@ -366,30 +383,180 @@ describe('Simulation wall turrets', () => {
     expect(shots).toBe(0);
   });
 
-  it('launches each bolt inside no body outline that would stop it, so the body stop needs no launch rule', () => {
-    const { state, run } = setUp();
-    run(1);
-    const turretIds: string[] = [];
-    state.entities.forEach((entity) => {
-      if (entity instanceof Turret) turretIds.push(entity.id);
+  it('skips a nearer enemy behind a cliff for one it has a line of fire to, and sees past its own pylon (DEC-334)', () => {
+    const match = setUp();
+    const { state, run, turretOf } = match;
+    const feature = LIGHT_TURRET;
+    if (feature === undefined) throw new Error('The generated map has no light turret.');
+    const turretId = turretOf(feature)?.id ?? '';
+    const hidden = spawnDark(match, 'light-mob', 'training-dummy', outside(feature, 2));
+    const open = spawnDark(match, 'light-mob', 'training-dummy', outside(feature, 4, 60));
+    const centre = state.entities.placeOf(turretId)?.position ?? { x: 0, y: 0 };
+    const pylon = state.entities.outlineOf(turretId)?.polygons ?? [];
+    const hit: string[] = [];
+    state.events.on('damage-applied', ({ targetId, source }) => {
+      if (source.attackerId === turretId) hit.push(targetId);
     });
-    expect(turretIds).toHaveLength(TURRET_FEATURES.length);
+    run(COUNTDOWN + 3);
 
-    for (const turretId of turretIds) {
-      const team = state.entities.teamOf(turretId);
-      const launch = state.entities.placeOf(turretId)?.position;
-      if (team === undefined || launch === undefined) throw new Error('A turret has no place.');
-      state.entities.forEach((entity) => {
-        const outline = state.entities.outlineOf(entity.id);
-        const health = entity.findComponent(Health);
-        if (outline === undefined || health === undefined) return;
-        if (!isPointInAnyPolygon(launch, outline.polygons)) return;
-        const body = { entity, health, membership: entity.findComponent(TeamMembership), outline };
-        expect(
-          AreaHitQuery.stopsShot(state.entities, { ownerId: turretId, team, targetId: null }, body),
-        ).toBe(false);
-      });
+    // The nearer dummy ranks first; the cliff stops its line, so the turret takes the open one.
+    expect(isPointInAnyPolygon(centre, pylon)).toBe(true);
+    expect(state.ai.get(turretId)?.memory).toEqual({ targetId: open });
+    expect(state.entities.attackAimOf(turretId)).toEqual(state.entities.placeOf(open)?.position);
+    run(DEFAULT_BOLT.attack.interval);
+    expect(hit).toContain(open);
+    expect(hit).not.toContain(hidden);
+    expect(state.entities.get(hidden)?.getComponent(Health).current).toBe(DUMMY_HEALTH);
+  });
+
+  it('drops a held target whose line of fire closes behind a cliff, as one that leaves range', () => {
+    const match = setUp();
+    const { state, run, turretOf } = match;
+    const feature = LIGHT_TURRET;
+    if (feature === undefined) throw new Error('The generated map has no light turret.');
+    const turretId = turretOf(feature)?.id ?? '';
+    const dummyId = spawnDark(match, 'light-mob', 'training-dummy', outside(feature, 4, 60));
+    run(COUNTDOWN + 3);
+    expect(state.ai.get(turretId)?.memory).toEqual({ targetId: dummyId });
+    let shots = 0;
+    state.events.on('entity-spawned', ({ kind }) => {
+      if (kind === 'projectile') shots += 1;
+    });
+
+    state.entities.get(dummyId)?.getComponent(Transform).moveTo(outside(feature, 2));
+    run(4);
+
+    expect(state.ai.get(turretId)?.memory).toEqual({ targetId: null });
+    expect(state.entities.attackAimOf(turretId)).toBeNull();
+    run(DEFAULT_BOLT.attack.interval);
+    expect(shots).toBe(0);
+  });
+
+  it('leads a unit that crosses its range at constant velocity, and its bolt hits it (predictive aim)', () => {
+    const match = setUp();
+    const { simulation, state, run, turretOf } = match;
+    const feature = FIRING_TURRET;
+    if (feature === undefined) throw new Error('The generated map has no light-turret-2.');
+    const turretId = turretOf(feature)?.id ?? '';
+    const out = outwardOf(feature);
+    const across = outwardOf(feature, 90);
+    // Out of range at first, on a line 14 m out that crosses the range circle.
+    const start = {
+      x: feature.position.x + out.x * 14 - across.x * 26,
+      y: feature.position.y + out.y * 14 - across.y * 26,
+    };
+    const runnerId = spawnDark(match, 'warrior', 'warrior', start);
+    run(COUNTDOWN);
+    const hits: number[] = [];
+    state.events.on('damage-applied', ({ targetId, source }) => {
+      if (targetId === runnerId && source.attackerId === turretId) hits.push(state.tick);
+    });
+    const speeds: number[] = [];
+    simulation.enqueueCommand({ type: 'move', actorId: runnerId, direction: across });
+    for (let tick = 0; tick < 90 && hits.length === 0; tick += 1) {
+      run(1);
+      const velocity = state.entities.velocityOf(runnerId) ?? { x: 0, y: 0 };
+      if (state.entities.attackAimOf(turretId) !== null)
+        speeds.push(Math.hypot(velocity.x, velocity.y));
     }
+
+    expect(hits).toHaveLength(1);
+    // It moved at one speed from the turret's first aim to the hit.
+    expect(speeds.length).toBeGreaterThan(0);
+    expect(new Set(speeds.map((speed) => speed.toFixed(6))).size).toBe(1);
+  });
+
+  it('switches to an enemy Legend that kills an allied Legend in its range by a real hit (11 §8)', () => {
+    const match = setUp();
+    const { simulation, state, run, turretOf } = match;
+    const feature = FIRING_TURRET;
+    if (feature === undefined) throw new Error('The generated map has no light-turret-2.');
+    const turretId = turretOf(feature)?.id ?? '';
+    const dummyId = spawnDark(match, 'light-mob', 'training-dummy', outside(feature, 2, 30));
+    const killerId = spawnDark(match, 'warrior', 'warrior', outside(feature, 7.5));
+    let allyId = '';
+    const stop = state.events.on('entity-spawned', ({ entityId, team }) => {
+      if (team === 'light' && allyId === '') allyId = entityId;
+    });
+    simulation.enqueueCommand({
+      type: 'dev-spawn',
+      kind: 'warrior',
+      definitionId: 'warrior',
+      team: 'light',
+      at: outside(feature, 6),
+      count: 1,
+    });
+    run(1);
+    stop();
+    run(COUNTDOWN + 3);
+    expect(state.ai.get(turretId)?.memory).toEqual({ targetId: dummyId });
+
+    // One hit from the killer is enough: the ally is left with 1 health.
+    const allyHealth = state.entities.get(allyId)?.getComponent(Health);
+    allyHealth?.applyDamage(allyHealth.current - 1);
+    const killers: (string | null)[] = [];
+    state.events.on('entity-died', ({ entityId, killer }) => {
+      if (entityId === allyId) killers.push(killer.attackerId);
+    });
+    simulation.enqueueCommand({ type: 'attack-target', actorId: killerId, targetId: allyId });
+    for (let tick = 0; tick < 60 && killers.length === 0; tick += 1) run(1);
+    expect(killers).toEqual([killerId]);
+    run(4);
+
+    expect(state.ai.get(turretId)?.memory).toEqual({ targetId: killerId });
+  });
+
+  it.each([1, 2, 3, 4, 5, 6, 7, 8])(
+    'launches each bolt inside no body outline that would stop it, so the body stop needs no launch rule (seed %i)',
+    (seed) => {
+      const map = new MapGenerator().generate(config, seed);
+      const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+      const { state, run } = setUp({ seed, map, mapObjects });
+      run(1);
+      const turretIds: string[] = [];
+      state.entities.forEach((entity) => {
+        if (entity instanceof Turret) turretIds.push(entity.id);
+      });
+      expect(turretIds).toHaveLength(map.features.filter(({ kind }) => kind === 'turret').length);
+      expect(turretIds.length).toBeGreaterThan(0);
+
+      for (const turretId of turretIds) {
+        const team = state.entities.teamOf(turretId);
+        const launch = state.entities.placeOf(turretId)?.position;
+        if (team === undefined || launch === undefined) throw new Error('A turret has no place.');
+        state.entities.forEach((entity) => {
+          const outline = state.entities.outlineOf(entity.id);
+          const health = entity.findComponent(Health);
+          if (outline === undefined || health === undefined) return;
+          if (!isPointInAnyPolygon(launch, outline.polygons)) return;
+          const body = {
+            entity,
+            health,
+            membership: entity.findComponent(TeamMembership),
+            outline,
+          };
+          expect(
+            AreaHitQuery.stopsShot(
+              state.entities,
+              { ownerId: turretId, team, targetId: null },
+              body,
+            ),
+          ).toBe(false);
+        });
+      }
+    },
+  );
+
+  it('checks the ammo lists of the injected structures it builds from, not the shipped ones (DEC-168 B8)', () => {
+    const badAmmo = new ContentCatalogue<StructureDefinition>(
+      STRUCTURE_DEFINITIONS.all().map((definition) =>
+        definition.id === 'turret' ? { ...definition, ammo: ['bolt-missing'] } : definition,
+      ),
+    );
+
+    expect(() => setUp({ structures: badAmmo })).toThrow(
+      'Structure "turret": unknown ammo "bolt-missing".',
+    );
   });
 
   it("refuses to start when a weapon attack's onHit step fails the ability registry's step check", () => {

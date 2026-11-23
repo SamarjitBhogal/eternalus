@@ -1,5 +1,4 @@
-import type { TurretTargetPriority } from '../content/structures/turrets.types';
-import type { EntityId } from '../state/EntityStore.types';
+import type { TurretTargetPriority } from '../content/ai/turret.types';
 import { compareById } from '../utils/compareById';
 import type { TurretCandidate, TurretTargetInput } from './turretTarget.types';
 
@@ -15,62 +14,43 @@ const MATCHES: Readonly<
   'nearest-enemy': () => true,
 };
 
-/** Whether `a` is nearer than `b`, ties to the lower id. */
-const isNearer = (a: TurretCandidate, b: TurretCandidate): boolean =>
-  a.distanceSquared < b.distanceSquared ||
-  (a.distanceSquared === b.distanceSquared && compareById(a.id, b.id) < 0);
-
-/** The nearest of `candidates` that `entry` names, ties to the lower id, or `undefined`. */
-const nearestNamed = (
-  entry: TurretTargetPriority,
-  candidates: readonly TurretCandidate[],
-  heavyKinds: readonly string[],
-): TurretCandidate | undefined => {
-  let best: TurretCandidate | undefined;
-  for (const candidate of candidates) {
-    if (
-      MATCHES[entry](candidate, heavyKinds) &&
-      (best === undefined || isNearer(candidate, best))
-    ) {
-      best = candidate;
-    }
-  }
-  return best;
-};
+/** Nearer first, ties to the lower id: a sort order that never depends on the input order. */
+const byNearness = (a: TurretCandidate, b: TurretCandidate): number =>
+  a.distanceSquared - b.distanceSquared || compareById(a.id, b.id);
 
 /**
- * A turret's target (architecture 11 §4.5): first the override entries, in order (the defend-ally
- * override), even while it holds a target: it keeps a target an entry names, else takes the
- * nearest candidate the entry names. Then it keeps its current target while that is still a
- * candidate (alive and in range). Then it takes the nearest candidate of the first priority entry
- * that names one. Ties go to the lower id, so the choice never depends on the order of
- * `candidates`. `null` when nothing names a candidate. Pure.
+ * A turret's targets in rank order (architecture 11 §4.5): first, for each override entry in
+ * order (the defend-ally override), its current target when the entry names it, then the other
+ * candidates the entry names, nearest first; even while it holds a target. Then its current target
+ * while that is still a candidate (alive and in range). Then, for each priority entry in order, the
+ * candidates it names, nearest first. Each candidate appears once, at its first place; one no
+ * entry names is left out. Ties go to the lower id, so the order never depends on the order of
+ * `candidates`. `TurretController` takes the first one it has a line of fire to, so a blocked
+ * target falls to the next. Pure.
  */
-export const chooseTurretTarget = ({
+export const rankTurretTargets = ({
   currentId,
   candidates,
   overrides,
   priority,
   heavyKinds,
-}: TurretTargetInput): EntityId | null => {
+}: TurretTargetInput): readonly TurretCandidate[] => {
   const current = candidates.find(({ id }) => id === currentId);
+  const nearestFirst = [...candidates].sort(byNearness);
+  const ranked: TurretCandidate[] = [];
+  const add = (candidate: TurretCandidate): void => {
+    if (!ranked.includes(candidate)) ranked.push(candidate);
+  };
+  const addNamed = (entry: TurretTargetPriority): void => {
+    for (const candidate of nearestFirst) {
+      if (MATCHES[entry](candidate, heavyKinds)) add(candidate);
+    }
+  };
   for (const entry of overrides) {
-    if (current !== undefined && MATCHES[entry](current, heavyKinds)) {
-      return current.id;
-    }
-    const named = nearestNamed(entry, candidates, heavyKinds);
-    if (named !== undefined) {
-      return named.id;
-    }
+    if (current !== undefined && MATCHES[entry](current, heavyKinds)) add(current);
+    addNamed(entry);
   }
-  if (current !== undefined) {
-    return current.id;
-  }
-  for (const entry of priority) {
-    const named = nearestNamed(entry, candidates, heavyKinds);
-    if (named !== undefined) {
-      return named.id;
-    }
-  }
-  return null;
+  if (current !== undefined) add(current);
+  for (const entry of priority) addNamed(entry);
+  return ranked;
 };

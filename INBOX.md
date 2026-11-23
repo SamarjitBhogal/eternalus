@@ -781,6 +781,62 @@ Reply inline (`Decision: …`).
       "fighting" and still turns to help (Owner Calls card `busy-minion-building`, open).
       Architecture 18 §6.1 changes to match. Tick this item when Samarjit has read it.
 
+- [ ] **HC-Q90 — When can a wall turret take damage? (`feat/wall-turrets`, PR 4, Owner Calls
+      card "WT when damageable", 2026-11-22; PR-REVIEW-ASSIST-33).** No doc sets it: 07 §3 names
+      walls and gates only, and balancing.md gives a turret 600 health. Options: (A, built) like
+      walls and gates: a turret takes damage only after 2 of the 3 BuffTowers of its side are
+      down, because it stands on the wall; (B) it can always take damage. Code names:
+      `content/structures/structureCatalogue.ts` (`breakability`).
+
+- [ ] **HC-Q91 — What is left when a wall turret is destroyed? (`feat/wall-turrets`, PR 4,
+      Owner Calls card "WT destroyed pylon").** Options: (A, built) the pylon goes away, and
+      units can walk where it stood; (B) a ruin stays and still blocks movement. Code names:
+      `StructureDefinition.isBodyRemovedWithIt`.
+
+- [ ] **HC-Q92 — Does destroying a wall turret pay a reward? (`feat/wall-turrets`, PR 4,
+      Owner Calls card "WT destroyed reward").** Options: (A, built) yes: structure XP and points,
+      like the other structures; (B) no reward. Code names: `StructureDestroyedRule`,
+      `ProgressionSystem` (no turret-only code). FYI: a turret that kills a unit gives no kill
+      points, XP or ultimate charge to anyone, and assists still count (DEC-79: a non-Legend last
+      hit gives no kill).
+
+- [ ] **HC-Q93 — Where does a wall turret's bolt stop? (`feat/wall-turrets`, PR 4, Owner Calls
+      card "WT bolt stop").** A turret aims where its target will be. Options: (A, recommended,
+      not built yet) the bolt stops at that point and damages what is there; your HC-Q77 note
+      ("A tower shoots at where its target is or is about to be") and game design 03 ("fire at
+      destination") support it; (B, built now) the bolt flies on to its full range and hits the
+      first body it touches. A is a content flag and a few lines where the bolt is made. Code
+      names: `content/projectiles/turretBolt.ts`, `turretHeavyBolt.ts` (`range`, `TUNE`).
+
+- [ ] **HC-Q94 — Does a wall turret drop its target to defend your Legend? (`feat/wall-turrets`,
+      PR 4, Owner Calls card "WT defend switch", critic round 1 V3).** A turret shoots an enemy
+      minion. Then an enemy Legend near the turret hits one of your Legends. Options: (A,
+      recommended, built; architecture 11 §4.5 says "immediately") the turret drops the minion
+      and shoots that Legend at once; (B, requirement FR-073 and balancing.md: "keeps its first
+      target until it dies or leaves range") the turret finishes the minion first, then picks
+      that Legend first. A follows the source that 11 §4.5 and balancing.md both cite: research
+      §7 (`docs/research/game-architecture-and-performance-research.md`) says League turrets
+      "immediately switch to an enemy champion who damages an allied champion within 1400
+      range". B is two content lines (`overrides: []`, and `legend-hurting-ally-legend` first in
+      `priority`). Either answer then needs a fix in the other doc (FR-073 acceptance, or
+      11 §4.5). Code names: the turret AI profile (`overrides`, `priority`).
+
+- [ ] **HC-B36 — Better than the design, built under your standing rule (DEC-223), sign-off
+      asked: one health pool for a wall turret, and the wall turret code layout
+      (`feat/wall-turrets`, PR 4, pre-PR gate round 1, 2026-11-22; PR-REVIEW-ASSIST-34).**
+      Built and tested. Nothing waits on you. Say "no" to an item and it goes back.
+      (1) DEC-332: a wall turret and the pylon under it have one health bar and die together,
+      like a lane tower and its fort. This changes your DEC-217 (13) text, "Only towers share one
+      health pool with their fort". (2) DEC-335: only the code layout changes, so the game plays
+      the same. A turret fires through the same attack code as Legends and mobs. Its target rules
+      are a list in its content file. One critic item was rejected: keeping the launch shapes' ids
+      on each bolt gives the same result as the built rule (DEC-334) and adds saved state.
+      FYI for Samarjit (minion AI owner): a lane minion does not yet treat an enemy wall turret
+      that shoots an allied minion as a target (architecture 11 §4.3, priority (4)). The minion
+      aggro entry `turret-attacking-ally-minion` never matches, because `unitClassOf` does not map
+      the `turret` kind (`content/ai/unitClasses.ts`). Map `turret` there to turn it on. Tick
+      this part when Samarjit has read it.
+
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
       small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`

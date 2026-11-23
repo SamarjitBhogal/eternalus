@@ -1,28 +1,28 @@
-import type { TurretProfileDefinition } from '../content/structures/turrets.types';
+import type { TurretProfileDefinition } from '../content/ai/turret.types';
 import type { AiMemory } from '../state/AiState.types';
-import type { EntityId } from '../state/EntityStore.types';
+import type { EntityPlace } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { Team } from '../teams/teams.types';
-import type { Vec2 } from '../utils/geometry.types';
 import type { Controller, Decision, DecisionInput } from './Controller.types';
 import type { Perception } from './perception/Perception';
 import { predictiveAim } from './predictiveAim';
 import type { Command } from '../commands/Command.types';
+import { TurretAmmoRule } from '../state/TurretAmmoRule';
 import type { TurretControllerContent, TurretMemory } from './TurretController.types';
 import { chooseTurretAmmo } from './turretAmmo';
-import { chooseTurretTarget } from './turretTarget';
+import { rankTurretTargets } from './turretTarget';
 import type { TurretCandidate } from './turretTarget.types';
 
-/** A turret's place: where it stands and its footprint radius. */
-type Place = { readonly position: Vec2; readonly radius: number };
-
 /**
- * Drives a wall turret in auto mode (architecture 11 §4.5, 07 §5): each decision it takes an enemy
- * Legend that hurt an allied Legend at once (its profile's overrides), else keeps its target while
- * that lives and stays in range, else takes one by its profile's priority list
- * (`chooseTurretTarget`). Against the target it picks the first ammo it carries whose
- * `preferredAgainst` fits the target's kind (`chooseTurretAmmo` over its `TurretState`, read
- * through `EntityStore.turretAmmoOf`), sends `switch-ammo` when that is not the loaded one, then
+ * Drives a wall turret in auto mode (architecture 11 §4.5, 07 §5): each decision it ranks its
+ * candidates (`rankTurretTargets`): an enemy Legend that hurt an allied Legend first (its
+ * profile's overrides), then its target while that lives and stays in range, then the others by
+ * its profile's priority list. It takes the first one in rank order that its shot can reach
+ * (`LineOfFireQuery`, the bots' rule, DEC-317 addendum), so it tests the line only until one is
+ * clear, and a held target whose line closes is dropped as one that leaves range. Against the
+ * target it picks the first ammo it carries whose `preferredAgainst` fits the target's kind
+ * (`chooseTurretAmmo` over its `TurretState`, read through `TurretAmmoRule.ammoOf`), sends
+ * `switch-ammo` when that is not the loaded one, then
  * `attack-aim` at the point ahead of the target (`predictiveAim`) every decision, so the aim stays
  * fresh; its `Combat` fires whenever its cooldown allows (the one shot clock). With no target and
  * an aim still set, it sends `attack-aim { aim: null }` once. Range runs from the turret's edge to
@@ -34,7 +34,9 @@ type Place = { readonly position: Vec2; readonly radius: number };
 export class TurretController implements Controller {
   public readonly id = 'turret';
 
-  /** @param content - Turret profiles and projectiles; the controller holds none. */
+  private readonly ammoRule = new TurretAmmoRule();
+
+  /** @param content - Turret profiles, projectiles and the line-of-fire query; it holds none. */
   public constructor(private readonly content: TurretControllerContent) {}
 
   /** Whether `profileId` names one of the injected turret profiles. */
@@ -54,7 +56,7 @@ export class TurretController implements Controller {
     const { entities } = state;
     const place = entities.placeOf(entityId);
     const team = entities.teamOf(entityId);
-    const turret = entities.turretAmmoOf(entityId);
+    const turret = this.ammoRule.ammoOf(entities, entityId);
     if (
       place === undefined ||
       team === undefined ||
@@ -64,7 +66,9 @@ export class TurretController implements Controller {
       return { commands: [], memory: brain.memory, rngState: brain.rngState };
     }
     const candidates = TurretController.candidatesFor(state, perception, place, team, profile);
-    const target = TurretController.targetOf(brain.memory, candidates, profile);
+    const target = TurretController.ranked(brain.memory, candidates, profile).find(({ id }) =>
+      this.content.lineOfFire.isClear(state, entityId, id),
+    );
     const ammo = target === undefined ? undefined : chooseTurretAmmo(target.kind, turret.ammo);
     if (target === undefined || ammo === undefined) {
       const isAiming = entities.attackAimOf(entityId) !== null;
@@ -95,43 +99,36 @@ export class TurretController implements Controller {
     };
   }
 
-  /** The candidate the turret attacks, given the target its memory holds, or `undefined`. */
-  private static targetOf(
+  /** The candidates in rank order, given the target its memory holds (`rankTurretTargets`). */
+  private static ranked(
     memory: AiMemory,
     candidates: readonly TurretCandidate[],
     profile: TurretProfileDefinition,
-  ): TurretCandidate | undefined {
-    const targetId = chooseTurretTarget({
+  ): readonly TurretCandidate[] {
+    return rankTurretTargets({
       currentId: typeof memory.targetId === 'string' ? memory.targetId : null,
       candidates,
       overrides: profile.overrides,
       priority: profile.priority,
       heavyKinds: profile.heavyKinds,
     });
-    return candidates.find(({ id }) => id === targetId);
   }
 
   /**
    * Every living unit not on `team` whose centre is within `profile.range` of the turret's edge,
-   * with what `chooseTurretTarget` ranks it by. An enemy Legend has hurt an allied Legend when the
-   * match's recent Legend hits (`ScoringState.recentHits`) hold its hit on a Legend of `team`
-   * inside the defend-ally window.
+   * with what `rankTurretTargets` ranks it by. An enemy Legend has hurt an allied Legend when it
+   * hit a Legend of `team` inside the defend-ally window (`GameState.legendHits`, which keeps a hit
+   * after its victim dies). Only the hurter must be in range: the ally is near it by its reach.
    */
   private static candidatesFor(
     state: GameState,
     perception: Perception,
-    { position, radius }: Place,
+    { position, radius }: EntityPlace,
     team: Team,
     profile: TurretProfileDefinition,
   ): TurretCandidate[] {
     const { entities } = state;
     const since = state.tick - profile.defendAllyTicks;
-    const hurters = new Set<EntityId>();
-    for (const { legendId, victimId, tick } of state.match.scoring.recentHits) {
-      if (tick >= since && entities.teamOf(victimId) === team) {
-        hurters.add(legendId);
-      }
-    }
     const candidates: TurretCandidate[] = [];
     for (const id of perception.unitsWithin(position, radius + profile.range, {
       aliveOnly: true,
@@ -147,7 +144,7 @@ export class TurretController implements Controller {
           kind,
           position: at,
           distanceSquared: dx * dx + dy * dy,
-          hasHurtAllyLegend: hurters.has(id),
+          hasHurtAllyLegend: state.legendHits.hasHitTeamSince(id, team, since),
         });
       }
     }

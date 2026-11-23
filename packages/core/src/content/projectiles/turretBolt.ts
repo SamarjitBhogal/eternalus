@@ -19,7 +19,7 @@ export const TURRET_BOLT = {
   },
   // TUNE: no reference value. A bolt starts at the turret's centre, so it covers the 8 m pylon, the
   // 14 m range and the lead on a Sentinel at full speed (about 33 m). Owner question pending: does
-  // a bolt end at its aim point (wall-turrets DESIGN.md)?
+  // a bolt end at its aim point (INBOX.md HC-Q93)?
   range: 35,
   slowFrom: 35, // equal to range: a bolt flies at full speed until it fizzles
   endDuration: 0.4, // TUNE: no reference value; seconds, as the Magus bolt's mist

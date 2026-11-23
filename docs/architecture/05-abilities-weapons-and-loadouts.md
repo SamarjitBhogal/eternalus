@@ -788,7 +788,11 @@ statuses. A shot keeps the attack it was fired with (`WeaponImpact` passes the p
 and the two melee strategies pass the attack they used. `abilities/checkAttackLinks` checks the
 steps of every weapon attack and turret ammo against the ability registry at boot, as
 `checkStatusLinks` checks a status's `onHit`. The first content that uses it is the heavy turret
-bolt's `concussion` (07 §5). Bleed and sundered (lane A PR 3) are still to come as content.
+bolt's `concussion` (07 §5). Bleed and sundered (lane A PR 3) are still to come as content. A
+known limit: a shot that lands after its owner left the store (a destroyed turret, a Legend that
+died while its arrow flew) deals its damage, but no `onHit` step runs, since `HitEffects` places
+the steps from the owner. `attackInTicks` and `timeProblems` now live in `content/timesInTicks.ts`
+with `stepInTicks`, shared by the loaders of abilities, statuses, weapons and turret ammo.
 
 ## 11. Artifacts (gadgets Z and C)
 

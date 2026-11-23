@@ -1,7 +1,7 @@
 import { TickRate } from '../../utils/TickRate';
 import { ContentCatalogue } from '../ContentCatalogue';
 import { ContentValidationError } from '../ContentValidationError';
-import { stepInTicks, timeProblems } from '../abilities/loadAbilities';
+import { stepInTicks, timeProblems } from '../timesInTicks';
 import { STATUS_EFFECTS } from './statusEffectCatalogue';
 import type { AuthoredStatusEffect, StatusEffectDefinition } from './statusEffects.types';
 

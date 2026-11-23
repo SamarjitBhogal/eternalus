@@ -19,8 +19,11 @@ import { SpaceIndex } from '../physics/SpaceIndex';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import type { AiMemory } from '../state/AiState.types';
+import type { EntityId } from '../state/EntityStore.types';
 import { GameState } from '../state/GameState';
+import type { LineOfFireQuery } from '../state/LineOfFire.types';
 import { StateHasher } from '../state/StateHasher';
+import { TurretAmmoRule } from '../state/TurretAmmoRule';
 import type { Team } from '../teams/teams.types';
 import { IdGenerator } from '../utils/IdGenerator';
 import { AiSystem } from './AiSystem';
@@ -30,14 +33,24 @@ import { TurretController } from './TurretController';
 
 const PROJECTILES = loadProjectiles(30);
 const TURRETS = loadTurrets(30);
-const controller = new TurretController({ profiles: TURRETS.profiles, projectiles: PROJECTILES });
+/** A line of fire that is clear to every target. */
+const CLEAR: LineOfFireQuery = { isClear: () => true };
+const controller = new TurretController({
+  profiles: TURRETS.profiles,
+  projectiles: PROJECTILES,
+  lineOfFire: CLEAR,
+});
 const PYLON = MAP_FEATURE_DEFINITIONS.turret?.footprintRadius ?? 0;
 const RANGE = 14;
 /** The light turret stands here; units are placed by their distance east of it. */
 const AT = { x: 100, y: 30 };
 
-/** A light wall turret on the two-lane map with a space index; `add` places units east of it. */
-const setUp = () => {
+/**
+ * A light wall turret on the two-lane map with a space index; `add` places units east of it, and
+ * `hit` makes a Legend hit another (a `damage-applied` event at the current tick). The turret's
+ * controller reads `lineOfFire`.
+ */
+const setUp = (lineOfFire: LineOfFireQuery = CLEAR) => {
   const config = createDefaultGameConfig();
   const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
   const state = new GameState(
@@ -80,9 +93,13 @@ const setUp = () => {
     space.commit();
   };
   const perception = new Perception(state);
+  const turretController =
+    lineOfFire === CLEAR
+      ? controller
+      : new TurretController({ profiles: TURRETS.profiles, projectiles: PROJECTILES, lineOfFire });
   const decide = (memory: AiMemory = {}, profileId = 'wall-turret') => {
     index();
-    return controller.decide({
+    return turretController.decide({
       state,
       entityId: turret.id,
       perception,
@@ -99,7 +116,15 @@ const setUp = () => {
       state.advanceTick();
     }
   };
-  return { state, turret, add, index, decide, advance };
+  const hit = (attackerId: EntityId, targetId: EntityId) => {
+    state.events.emit('damage-applied', {
+      targetId,
+      amount: 10,
+      absorbed: 0,
+      source: { attackerId, kind: 'weapon', definitionId: 'test' },
+    });
+  };
+  return { state, turret, add, index, decide, advance, hit };
 };
 
 describe('TurretController', () => {
@@ -157,25 +182,31 @@ describe('TurretController', () => {
   });
 
   it('prefers an enemy Legend that hurt an allied Legend in the last 3 s, and forgets it after', () => {
-    const { state, add, decide, advance } = setUp();
+    const { add, decide, advance, hit } = setUp();
     add('dark', PYLON + 2, 'heavy-mob', 'heavy-minion');
     const hurter = add('dark', PYLON + 12, 'warrior', 'warrior');
     const ally = add('light', -PYLON - 20, 'warrior', 'warrior');
-    advance(100);
-    state.match.scoreBook.recordHit(ally, hurter, state.tick - 90);
+    advance(10);
+    hit(hurter, ally);
+    advance(90);
 
     expect(decide().memory.targetId).toBe(hurter);
 
-    state.match.scoreBook.recordHit(ally, hurter, state.tick - 91);
+    advance(1);
     expect(decide().memory.targetId).not.toBe(hurter);
   });
 
-  it('ignores a hit on a Legend of the other team', () => {
-    const { state, add, decide } = setUp();
+  it('ignores a hit on a Legend of the other team, a hit on a minion and a hit by a minion', () => {
+    const { add, decide, hit } = setUp();
     const near = add('dark', PYLON + 2);
     const hurter = add('dark', PYLON + 12, 'warrior', 'warrior');
+    const minionHurter = add('dark', PYLON + 6);
     const enemy = add('dark', PYLON + 40, 'warrior', 'warrior', 10);
-    state.match.scoreBook.recordHit(enemy, hurter, state.tick);
+    const ally = add('light', -PYLON - 20, 'warrior', 'warrior');
+    const minion = add('light', -PYLON - 20);
+    hit(hurter, enemy);
+    hit(hurter, minion);
+    hit(minionHurter, ally);
 
     expect(decide().memory.targetId).toBe(near);
   });
@@ -200,7 +231,7 @@ describe('TurretController', () => {
   });
 
   it('leaves its target at once for an enemy Legend that hurt an allied Legend (the defend-ally override, 11 §4.5)', () => {
-    const { state, turret, add, decide } = setUp();
+    const { turret, add, decide, hit } = setUp();
     const first = add('dark', PYLON + 2, 'heavy-mob', 'heavy-minion');
     const { memory } = decide();
     const hurter = add('dark', PYLON + 12, 'warrior', 'warrior');
@@ -209,7 +240,7 @@ describe('TurretController', () => {
     expect(memory.targetId).toBe(first);
     expect(decide(memory).memory.targetId).toBe(first);
 
-    state.match.scoreBook.recordHit(ally, hurter, state.tick);
+    hit(hurter, ally);
     const decision = decide(memory);
     expect(decision.memory.targetId).toBe(hurter);
     expect(decision.commands[0]).toEqual({
@@ -217,6 +248,31 @@ describe('TurretController', () => {
       actorId: turret.id,
       ammoId: 'bolt-default',
     });
+  });
+
+  it('takes the first target in rank order with a clear line, tests no line past it, and drops a held target whose line closes', () => {
+    const blocked = new Set<EntityId>();
+    const tested: EntityId[] = [];
+    const { add, decide } = setUp({
+      isClear: (_state, _attackerId, targetId) => {
+        tested.push(targetId);
+        return !blocked.has(targetId);
+      },
+    });
+    const heavy = add('dark', PYLON + 6, 'heavy-mob', 'heavy-minion');
+    const near = add('dark', PYLON + 2);
+    const far = add('dark', PYLON + 10);
+    blocked.add(heavy);
+
+    const { memory } = decide();
+    expect(memory.targetId).toBe(near);
+    expect(tested).toEqual([heavy, near]);
+
+    blocked.add(near);
+    expect(decide(memory).memory.targetId).toBe(far);
+
+    blocked.add(far);
+    expect(decide(memory)).toMatchObject({ memory: { targetId: null }, commands: [] });
   });
 
   it('aims at a still target every decision, and switches ammo only when the loaded one is not the pick', () => {
@@ -229,7 +285,7 @@ describe('TurretController', () => {
     // Not applied yet: it asks again.
     expect(decide().commands).toEqual([switchAmmo, aim]);
 
-    state.entities.loadTurretAmmo(turret.id, 'bolt-default');
+    new TurretAmmoRule().load(state.entities, turret.id, 'bolt-default');
     expect(decide().commands).toEqual([aim]);
     expect(decide().commands).toEqual([aim]);
   });
@@ -286,7 +342,7 @@ describe('TurretController', () => {
     turret.removeComponent(TurretState);
 
     expect(decide({}).commands).toEqual([]);
-    expect(state.entities.turretAmmoOf(turret.id)).toBeUndefined();
+    expect(new TurretAmmoRule().ammoOf(state.entities, turret.id)).toBeUndefined();
   });
 
   it('updates its memory in its brain as the match steps, which the state hash covers', () => {

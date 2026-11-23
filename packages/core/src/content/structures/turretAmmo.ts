@@ -1,5 +1,5 @@
 import { ContentCatalogue } from '../ContentCatalogue';
-import { HEAVY_TARGET_KINDS, WALL_TURRET } from './turret';
+import { HEAVY_TARGET_KINDS, WALL_TURRET } from '../ai/turret';
 import type { AuthoredTurretAmmo } from './turrets.types';
 
 /**

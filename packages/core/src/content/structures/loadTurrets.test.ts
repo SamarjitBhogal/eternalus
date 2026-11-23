@@ -6,7 +6,8 @@ import { loadTurrets } from './loadTurrets';
 import { STRUCTURE_DEFINITIONS } from './structureCatalogue';
 import type { StructureDefinition } from './structures.types';
 import { TURRET_AMMO } from './turretAmmo';
-import type { AuthoredTurretAmmo, AuthoredTurretProfile } from './turrets.types';
+import type { AuthoredTurretProfile } from '../ai/turret.types';
+import type { AuthoredTurretAmmo } from './turrets.types';
 
 const AMMO: AuthoredTurretAmmo = {
   id: 'test-bolt',

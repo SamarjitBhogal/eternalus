@@ -1,8 +1,8 @@
-import type { TurretTargetPriority } from '../content/structures/turrets.types';
+import type { TurretTargetPriority } from '../content/ai/turret.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { Vec2 } from '../utils/geometry.types';
 
-/** One living enemy in a turret's range, as `chooseTurretTarget` ranks it. */
+/** One living enemy in a turret's range, as `rankTurretTargets` ranks it. */
 export type TurretCandidate = {
   readonly id: EntityId;
   readonly kind: string;
@@ -14,7 +14,7 @@ export type TurretCandidate = {
   readonly hasHurtAllyLegend: boolean;
 };
 
-/** What a turret chooses its target from (architecture 11 §4.5). */
+/** What a turret ranks its targets from (architecture 11 §4.5). */
 export type TurretTargetInput = {
   /** The target it holds, or `null`. */
   readonly currentId: EntityId | null;

@@ -9,6 +9,7 @@ import { SeededRandom } from '../utils/SeededRandom';
 import { AiState } from './AiState';
 import { AllyDamageStore } from './AllyDamageStore';
 import { AllyDamageTally } from './AllyDamageTally';
+import { LegendHitLog } from './LegendHitLog';
 import { ChargeLedger } from './ChargeLedger';
 import { EntitySnapshotter } from './EntitySnapshotter';
 import { EntityStore } from './EntityStore';
@@ -70,6 +71,8 @@ export class GameState {
   public readonly guards = new GuardStore();
   /** Each team's ally damage per lane since its last heavy wave (DEC-89, architecture 18 §3.3). */
   public readonly allyDamage = new AllyDamageStore();
+  /** When each Legend last hit a Legend of each other team: a turret's defend-ally rule (11 §4.5). */
+  public readonly legendHits: LegendHitLog;
   /** Hordes asked for this tick (developer menu), fulfilled by `SpawnSystem` in order. */
   public readonly hordeRequests: HordeRequest[] = [];
   private readonly teamCounters: Record<
@@ -157,6 +160,7 @@ export class GameState {
       this.phaseChanges.push(change);
     });
     new AllyDamageTally(this.events, this.entities, this.world, this.allyDamage);
+    this.legendHits = new LegendHitLog(this.events, this.entities, () => this.currentTick);
     this.charges = new ChargeLedger(this.events);
   }
 

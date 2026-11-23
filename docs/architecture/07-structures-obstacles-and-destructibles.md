@@ -165,17 +165,27 @@ export type GateState = 'closed' | 'opening' | 'open' | 'closing';
 
 ```ts
 export type TurretControl = 'auto' | { readonly kind: 'manual'; readonly legendId: EntityId };
-export type AmmoDefinition = {
+// DEC-335: an ammo is a shot like any other; its `interval` is the time between two bolts
+// (TUNE: default 1 bolt / 5 s, heavy 1 / 10 s), and `Combat` is the one shot clock.
+export type TurretAmmoDefinition = {
   readonly id: string; // 'bolt-default' | 'bolt-heavy'
-  readonly cooldownTicks: number; // TUNE: default 1 bolt / 5 s (150 ticks), heavy 1 / 10 s (300)
-  readonly projectileId: string;
-  readonly preferredTargetClasses: readonly string[]; // heavy: ['sentinel', 'heavy-mob']
+  readonly attack: RangedAttack; // damage, reach, interval, projectile, onHit
+  readonly preferredAgainst: readonly string[] | 'any'; // heavy: ['sentinel', 'heavy-mob']
+};
+// A turret's equipment: the ammo it carries, best first, and the loaded one.
+export type TurretState = {
+  readonly ammo: readonly TurretAmmoDefinition[];
+  readonly loaded: TurretAmmoDefinition;
 };
 ```
 
+The turret's `StructureDefinition` names its ammo (best first) and its controller and AI profile
+(DEC-335); `switch-ammo` is a command, so the loaded ammo is hashed state.
+
 `TurretController` (in `ai/`) drives auto mode: acquire the first enemy in range, keep it while
-alive and in range, prefer by a data priority list, switch ammo to the first `AmmoDefinition`
-whose `preferredTargetClasses` includes the target's class, and aim predictively (target position
+alive and in range, prefer by a data priority list, switch ammo to the first
+`TurretAmmoDefinition` whose `preferredAgainst` fits the target's kind, and aim predictively
+(target position
 
 - velocity × time-to-impact, solved in two iterations with deterministic vector math, no `atan2`).
   Manual mode (MVP-if-time): an Warrior Legend issues the `turret-toggle-control` and
@@ -397,8 +407,8 @@ Nothing in `StructureSystem`, `DamagePipeline`, `SpawnSystem` or `MinimapView` c
 ## 14. Post-MVP items
 
 - **Anti-air defence** (orange in the game doc): a `Combat` targeting filter on `height > 0` once the
-  Flying class exists; the `Turret` class does not change, only an `AmmoDefinition` and a
-  `TargetingStrategy`.
+  Flying class exists; the `Turret` class does not change, only a `TurretAmmoDefinition` and an
+  entry in its profile's target lists (DEC-335).
 - **Form change at buildings** (yellow): an `Interactable` component on `Stronghold`/`BuffTower`
   that emits `form-change-requested`; the Legend side is a `LegendSpecDefinition` swap (D11).
 - **Bridges** across the rift as `bridge-segment` obstacles are MVP-if-time; until then the rift
@@ -456,25 +466,27 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
 - **Wall turrets, part 1 (`feat/wall-turrets`, 2026-11-22; §1, §5).** Each `turret` map feature
   builds a `Turret` structure: definition `turret` in `content/structures/structureCatalogue.ts`
   (base health from balancing.md, the map pylon's radius, no lane, the walls' breakability rule
-  pending an owner card). Its pylon map object blocks, so it is the turret's body: one health pool
+  pending the owner, INBOX.md HC-Q90). Its pylon map object blocks, so it is the turret's body: one health pool
   (`hasMapFootprint`, as a lane tower's fort, DEC-185 B; DEC-217 (13) names only towers). Unlike a
   fort, the pylon goes with the turret (`StructureDefinition.isBodyRemovedWithIt`): when the
   turret is destroyed, the pylon is destroyed and its footprint and nav cells are cleared, as
-  before turrets were structures (owner card open, default A). A destroyed turret sends
-  `structure-destroyed`, so it pays structure XP and structure points (DEC-186, DEC-212). The
+  before turrets were structures (owner question INBOX.md HC-Q91, default A). A destroyed turret
+  sends `structure-destroyed`, so it pays structure XP and structure points (DEC-186, DEC-212;
+  the reward is INBOX.md HC-Q92). The
   ammo table of §5 is `content/structures/turretAmmo.ts` (`bolt-default`, `bolt-heavy`): each
   ammo is a `RangedAttack` plus `onHit` steps (the heavy bolt's concussion), with
   `preferredAgainst` for the ammo choice; `loadTurrets` converts its times to ticks and validates
   it. Its projectiles are `turret-bolt` and `turret-heavy-bolt`. Their 35 m range is `TUNE` with
   no reference value (a bolt starts at the turret's centre, so it covers the pylon, the turret's
-  range and the lead), pending the owner card "WT bolt stop". `TurretController` picks the target
+  range and the lead), pending the owner question "WT bolt stop" (INBOX.md HC-Q93).
+  `TurretController` picks the target
   and the ammo and computes the aim point (11 §4.5, §10). Part 2 (next item) builds the shot.
 - **Wall turrets, part 2 (`feat/wall-turrets`, 2026-11-22; §5, DEC-334).** Turrets fire. The
   turret's structure definition names its ammo (`StructureDefinition.ammo`, best first, the last
   for any target; `loadTurrets` checks both). `Turret` installs a `TurretState` (the ammo it
   carries and the loaded one, `components/TurretState.ts`) and a `Combat` with the first ammo's
   attack and no weapon. The `switch-ammo` command (`SwitchAmmoHandler`) loads an ammo through
-  `EntityStore.loadTurretAmmo`: `TurretState` records it and `Combat.equip` swaps the attack. The
+  `TurretAmmoRule.load`: `TurretState` records it and `Combat.equip` swaps the attack. The
   attack timer stays, so a switch gives no free shot. `TurretController` sends `switch-ammo` and
   `attack-aim` (11 §10), and `Combat` fires a bolt whenever its cooldown allows. A bolt starts at
   the turret's centre, inside its pylon and often inside its wall. The launch-shape rule (DEC-334)
@@ -484,7 +496,7 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   turret as the killer (`definitionId` `turret`). The turret has no score row, no `Progression`
   and no ultimate meter, so the kill gives no kill points, no XP and no ultimate charge to anyone;
   Legends that hit the victim in the assist window still get their assists. `StateHasher` hashes
-  the loaded ammo. Not built: the bolt stopping at its aim point (owner card "WT bolt stop"; bolts
+  the loaded ammo. Not built: the bolt stopping at its aim point (INBOX.md HC-Q93; bolts
   fly their 35 m range), the `turret-control-changed` and `turret-fired` events, manual control
   and tower orbs.
 

@@ -1,5 +1,5 @@
 import { TickRate } from '../../utils/TickRate';
-import { stepInTicks, timeProblems } from '../abilities/loadAbilities';
+import { attackInTicks, timeProblems } from '../timesInTicks';
 import { ContentCatalogue } from '../ContentCatalogue';
 import { ContentValidationError } from '../ContentValidationError';
 import { KEBAB_CASE } from '../validation/KebabCaseIdRule.constants';
@@ -7,8 +7,6 @@ import { KnownProjectileRule } from '../validation/KnownProjectileRule';
 import { PROJECTILES } from '../projectiles/projectileCatalogue';
 import { WEAPONS } from './weaponCatalogue';
 import type { ProjectileDefinition } from '../projectiles/projectiles.types';
-import type { AuthoredEffectSpec } from '../abilities/AbilityDefinition.types';
-import type { AuthoredUnitAttack, RangedAttack, UnitAttack } from '../units/units.types';
 import type { AuthoredWeaponDefinition, WeaponDefinition } from './weapons.types';
 
 const isPositive = (value: number): boolean => value > 0 && Number.isFinite(value);
@@ -48,29 +46,6 @@ const problemsOf = (
   }
   return problems.map((problem) => `Weapon "${weapon.id}": ${problem}.`);
 };
-
-/**
- * An attack with its times in ticks: its interval (at least one tick) and each `onHit` step's
- * times (DEC-241, as `loadStatusEffects` loads a status's `onHit`). `loadTurrets` loads an ammo's
- * attack with it too, so a ranged attack stays a `RangedAttack`.
- */
-export function attackInTicks(
-  attack: RangedAttack<AuthoredEffectSpec>,
-  rate: TickRate,
-): RangedAttack;
-export function attackInTicks(attack: AuthoredUnitAttack, rate: TickRate): UnitAttack;
-export function attackInTicks(
-  { onHit, ...attack }: AuthoredUnitAttack,
-  rate: TickRate,
-): UnitAttack {
-  // Only `interval` and `onHit` change, so the attack keeps its strategy and that strategy's own
-  // fields (`arcDegrees`, `projectile`).
-  return {
-    ...attack,
-    interval: rate.toTicks(attack.interval),
-    ...(onHit === undefined ? {} : { onHit: onHit.map((step) => stepInTicks(step, rate)) }),
-  };
-}
 
 /**
  * Loads the weapons: attack intervals and `onHit` step times from seconds to ticks (architecture

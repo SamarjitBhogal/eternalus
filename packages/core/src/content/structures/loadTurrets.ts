@@ -1,22 +1,17 @@
 import { TickRate } from '../../utils/TickRate';
-import { timeProblems } from '../abilities/loadAbilities';
 import { ContentCatalogue } from '../ContentCatalogue';
 import { ContentValidationError } from '../ContentValidationError';
 import { PROJECTILES } from '../projectiles/projectileCatalogue';
 import type { ProjectileDefinition } from '../projectiles/projectiles.types';
 import { KEBAB_CASE } from '../validation/KebabCaseIdRule.constants';
 import { KnownProjectileRule } from '../validation/KnownProjectileRule';
-import { attackInTicks } from '../weapons/loadWeapons';
+import { attackInTicks, timeProblems } from '../timesInTicks';
 import { STRUCTURE_DEFINITIONS } from './structureCatalogue';
 import type { StructureDefinition } from './structures.types';
-import { TURRET_PROFILES } from './turret';
+import { TURRET_PROFILES } from '../ai/turret';
 import { TURRET_AMMO } from './turretAmmo';
-import type {
-  AuthoredTurretAmmo,
-  AuthoredTurretProfile,
-  TurretAmmoDefinition,
-  TurretProfileDefinition,
-} from './turrets.types';
+import type { AuthoredTurretProfile, TurretProfileDefinition } from '../ai/turret.types';
+import type { AuthoredTurretAmmo, TurretAmmoDefinition } from './turrets.types';
 
 /**
  * The turret content as authored: the ammo table, the profiles, and the structure definitions,
@@ -97,8 +92,8 @@ const carriedAmmoProblems = (
  * at boot (`checkAttackLinks`).
  *
  * @param tickRate - Ticks per second (`GameConfig.tickRate`).
- * @param authored - The ammo, profiles and structures to load and check; the shipped ones by
- *   default.
+ * @param authored - The ammo, profiles and structures to load and check; each the shipped one
+ *   when omitted. `Simulation` passes the structures it builds from.
  * @param projectiles - The projectiles an ammo may fire; the shipped set by default.
  * @throws ContentValidationError listing every broken rule: a bad id, a damage, reach or interval
  *   that is not positive, an unknown projectile, a negative time, a range that is not positive, a
@@ -107,20 +102,20 @@ const carriedAmmoProblems = (
  */
 export const loadTurrets = (
   tickRate: number,
-  authored: AuthoredTurrets = {
-    ammo: TURRET_AMMO.all(),
-    profiles: TURRET_PROFILES.all(),
-    structures: STRUCTURE_DEFINITIONS.all(),
-  },
+  {
+    ammo = TURRET_AMMO.all(),
+    profiles = TURRET_PROFILES.all(),
+    structures = STRUCTURE_DEFINITIONS.all(),
+  }: Partial<AuthoredTurrets> = {},
   projectiles: Pick<ContentCatalogue<ProjectileDefinition>, 'has'> = PROJECTILES,
 ): TurretContent => {
-  const ammoById = new Map(authored.ammo.map((ammo) => [ammo.id, ammo]));
-  const profileById = new Map(authored.profiles.map((profile) => [profile.id, profile]));
+  const ammoById = new Map(ammo.map((ammo) => [ammo.id, ammo]));
+  const profileById = new Map(profiles.map((profile) => [profile.id, profile]));
   const problems = [
-    ...authored.ammo.flatMap((ammo) => ammoProblems(ammo, projectiles)),
-    ...authored.profiles.flatMap(profileProblems),
-    ...authored.structures
-      .filter(({ ammo }) => ammo !== undefined)
+    ...ammo.flatMap((entry) => ammoProblems(entry, projectiles)),
+    ...profiles.flatMap(profileProblems),
+    ...structures
+      .filter((structure) => structure.ammo !== undefined)
       .flatMap((structure) => carriedAmmoProblems(structure, ammoById, profileById)),
   ];
   if (problems.length > 0) {
@@ -129,13 +124,13 @@ export const loadTurrets = (
   const rate = new TickRate(tickRate);
   return {
     ammo: new ContentCatalogue(
-      authored.ammo.map((ammo): TurretAmmoDefinition => ({
-        ...ammo,
-        attack: attackInTicks(ammo.attack, rate),
+      ammo.map((entry): TurretAmmoDefinition => ({
+        ...entry,
+        attack: attackInTicks(entry.attack, rate),
       })),
     ),
     profiles: new ContentCatalogue(
-      authored.profiles.map(({ defendAllySeconds, ...profile }): TurretProfileDefinition => ({
+      profiles.map(({ defendAllySeconds, ...profile }): TurretProfileDefinition => ({
         ...profile,
         defendAllyTicks: rate.roundToTicks(defendAllySeconds),
       })),

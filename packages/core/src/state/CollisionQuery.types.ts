@@ -14,9 +14,9 @@ export interface CollisionQuery {
    * short of a wall as `CollisionSystem` keeps a walking unit; the whole `distance` when nothing is
    * in the way.
    *
-   * Precondition: the circle at `from` overlaps no wall, as `CollisionSystem` keeps every unit. A
-   * circle that starts inside a wall is not stopped by that wall (`CollisionResolver`'s
-   * `ponytail` remark).
+   * Precondition: the circle at `from` overlaps no wall, except a shape whose blocking area holds
+   * `launch`, as `CollisionSystem` keeps every unit. A circle that starts inside a wall is not
+   * stopped by that wall (`CollisionResolver`'s `ponytail` remark).
    *
    * @param launch - A shot's launch point (the launch-shape rule, DEC-334): a shape whose blocking
    *   area (inside its polygon, inside none of its passages) holds it does not stop the sweep, so a

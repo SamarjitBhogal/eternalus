@@ -74,10 +74,9 @@ export abstract class Structure extends Entity {
     // Walls and gates start the match unbreakable; `StructureSystem` flips it when the rule passes.
     collider.setUnbreakable(definition.breakability.kind !== 'always');
     this.addComponent(collider);
-    if (definition.controller !== undefined) {
-      this.addComponent(
-        new ControllerBinding(definition.controller, definition.aiProfile ?? definition.controller),
-      );
+    const binding = ControllerBinding.ofDefinition(definition);
+    if (binding !== undefined) {
+      this.addComponent(binding);
     }
   }
 }

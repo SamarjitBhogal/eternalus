@@ -4,7 +4,7 @@ import type { TurretAmmoDefinition } from '../content/structures/turrets.types';
  * A turret's equipment (architecture 07 §5 `TurretState`): the ammo it carries, loaded and best
  * first (its definition's `ammo` order, so the first whose `preferredAgainst` fits a target is the
  * one for it), and the id of the ammo it has loaded. Loading an ammo changes only this record; the
- * `switch-ammo` command loads it through `EntityStore.loadTurretAmmo`, which also equips the ammo's
+ * `switch-ammo` command loads it through `TurretAmmoRule.load`, which also equips the ammo's
  * attack on the turret's `Combat`. Manual control (`TurretControl`) joins when it is built.
  */
 export class TurretState {

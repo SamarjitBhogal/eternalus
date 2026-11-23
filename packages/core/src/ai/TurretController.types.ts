@@ -1,7 +1,8 @@
 import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type { ProjectileDefinition } from '../content/projectiles/projectiles.types';
-import type { TurretProfileDefinition } from '../content/structures/turrets.types';
+import type { TurretProfileDefinition } from '../content/ai/turret.types';
 import type { EntityId } from '../state/EntityStore.types';
+import type { LineOfFireQuery } from '../state/LineOfFire.types';
 
 /** What `TurretController` reads besides the state, injected by `Simulation` (11 §2). */
 export type TurretControllerContent = {
@@ -9,6 +10,13 @@ export type TurretControllerContent = {
   readonly profiles: Pick<ContentCatalogue<TurretProfileDefinition>, 'has' | 'get'>;
   /** The loaded projectiles: a bolt's speed per tick, for the lead. */
   readonly projectiles: Pick<ContentCatalogue<ProjectileDefinition>, 'get'>;
+  /**
+   * Whether the turret's shot would reach a candidate now: it takes a target only with a clear
+   * line, and drops a held one whose line closes (the bots' rule, DEC-317 addendum). `Simulation`
+   * injects the match's one `LineOfFire`. Required, so a turret never shoots into a wall by
+   * omission.
+   */
+  readonly lineOfFire: LineOfFireQuery;
 };
 
 /**
