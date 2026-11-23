@@ -44,13 +44,31 @@ const legendOf = (sim: Simulation, snapshot: Snapshot, team: PlayableTeam) => {
   return { id, legend };
 };
 
-/** Steps until `done` holds (at most `limit` ticks), the light Legend walking at the dark one and hitting it. */
+/**
+ * A Duel to two kills takes about 25 s here and more than vitest's 60 s under coverage, now the
+ * walker goes round the gem (DEC-346).
+ */
+const TWO_KILLS_TIMEOUT_MS = 180_000;
+
+/** How far either side of the gem the walker below steps south to go round it (DEC-346). */
+const ROUND_THE_GEM = 15;
+
+/**
+ * Steps until `done` holds (at most `limit` ticks), the light Legend walking at the dark one and
+ * hitting it. The gem between the start points blocks movement (DEC-346), so near it the walker
+ * also steps south and slides round it.
+ */
 const fightUntil = (sim: Simulation, done: (snapshot: Snapshot) => boolean, limit = 6000) => {
   for (let i = 0; i < limit && !done(sim.snapshot()); i += 1) {
     const snapshot = sim.snapshot();
     const { id: light, legend: from } = legendOf(sim, snapshot, 'light');
     const { id: dark, legend: to } = legendOf(sim, snapshot, 'dark');
-    const direction = { x: Math.sign((to.transform?.x ?? 0) - (from.transform?.x ?? 0)), y: 0 };
+    const at = { x: from.transform?.x ?? 0, y: from.transform?.y ?? 0 };
+    const isByTheGem = Math.abs(at.x - (cathedral?.x ?? 0)) < ROUND_THE_GEM;
+    const direction = {
+      x: Math.sign((to.transform?.x ?? 0) - at.x),
+      y: isByTheGem ? 1 : Math.sign((to.transform?.y ?? 0) - at.y),
+    };
     sim.enqueueCommand({ type: 'move', actorId: light, direction });
     sim.enqueueCommand({ type: 'attack-target', actorId: light, targetId: dark });
     sim.step();
@@ -98,18 +116,22 @@ describe('Simulation: a Duel', () => {
     }
   });
 
-  it('ends the match for the first team to reach the kill target', () => {
-    const sim = build({ killTarget: 2 });
-    let result: { winner: PlayableTeam | null; condition: string } | null = null;
-    sim.on('match-ended', (event) => {
-      result = event.result;
-    });
+  it(
+    'ends the match for the first team to reach the kill target',
+    () => {
+      const sim = build({ killTarget: 2 });
+      let result: { winner: PlayableTeam | null; condition: string } | null = null;
+      sim.on('match-ended', (event) => {
+        result = event.result;
+      });
 
-    const after = fightUntil(sim, () => result !== null);
+      const after = fightUntil(sim, () => result !== null);
 
-    expect(after.match.duel?.kills.light).toBe(2);
-    expect(result).toMatchObject({ winner: 'light', condition: 'kill-count' });
-  });
+      expect(after.match.duel?.kills.light).toBe(2);
+      expect(result).toMatchObject({ winner: 'light', condition: 'kill-count' });
+    },
+    TWO_KILLS_TIMEOUT_MS,
+  );
 
   it('replays to the same hashes from its setup and commands', () => {
     const sim = build({ killTarget: 1 });

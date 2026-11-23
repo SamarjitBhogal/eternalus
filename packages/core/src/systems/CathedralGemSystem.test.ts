@@ -94,7 +94,6 @@ describe('CathedralGemSystem (DEC-291, DEC-292)', () => {
     expect(statusIdsOf(hitter)).toEqual([
       { id: 'gem-shock', sourceId: null },
       { id: 'gem-burn', sourceId: null },
-      { id: 'gem-warded', sourceId: null },
     ]);
     expect(gem.getComponent(CathedralGemState)).toMatchObject({
       glowTicksLeft: GLOW_TICKS,
@@ -129,40 +128,16 @@ describe('CathedralGemSystem (DEC-291, DEC-292)', () => {
     expect(gem.getComponent(CathedralGemState).ticksSinceHit).toBeNull();
   });
 
-  it('strikes a unit touching the gem once, and again only after its ward has run out', () => {
-    const { gem, warrior, tick, statusIdsOf } = setUp();
-    const toucher = warrior({ x: GEM_AT.x + 5, y: GEM_AT.y });
-    const bystander = warrior({ x: GEM_AT.x + 20, y: GEM_AT.y });
-    const glow = gem.getComponent(CathedralGemState);
-
-    tick();
-    expect(statusIdsOf(toucher).map(({ id }) => id)).toEqual([
-      'gem-shock',
-      'gem-burn',
-      'gem-warded',
-    ]);
-    expect(statusIdsOf(bystander)).toEqual([]);
-
-    tick();
-    expect(glow.glowHits).toBe(1);
-
-    // The ward is never expired here (no StatusEffectSystem), so remove it as its timer would.
-    toucher.getComponent(StatusEffects).remove('gem-warded');
-    tick();
-    expect(glow.glowHits).toBe(2);
-  });
-
-  it('measures a touch from the edges of both discs', () => {
+  it('never strikes a unit that only stands against the gem (DEC-346)', () => {
     const { gem, warrior, tick, statusIdsOf } = setUp();
     const reach = gem.getComponent(Transform).radius;
-    const edge = warrior({ x: GEM_AT.x, y: GEM_AT.y + reach });
-    const unitRadius = edge.getComponent(Transform).radius;
-    const outside = warrior({ x: GEM_AT.x - reach - unitRadius - 0.01, y: GEM_AT.y });
+    const against = warrior({ x: GEM_AT.x + reach, y: GEM_AT.y });
+    const glow = gem.getComponent(CathedralGemState);
 
-    tick();
+    for (let at = 0; at < TICK_RATE; at += 1) tick();
 
-    expect(statusIdsOf(edge)).not.toEqual([]);
-    expect(statusIdsOf(outside)).toEqual([]);
+    expect(statusIdsOf(against)).toEqual([]);
+    expect(glow.ticksSinceHit).toBeNull();
   });
 
   it('shows the colour of the team holding the capture point it stands in', () => {
@@ -206,12 +181,13 @@ describe('CathedralGemSystem (DEC-291, DEC-292)', () => {
     expect(holder()).toBe('light');
   });
 
-  it('burns a neutral toucher too: friendly fire never blocks the gem (DEC-292)', () => {
-    const { warrior, fullTick } = setUp();
-    const neutral = warrior({ x: GEM_AT.x + 5, y: GEM_AT.y }, 'neutral');
+  it('burns a neutral hitter too: friendly fire never blocks the gem (DEC-292)', () => {
+    const { state, gem, warrior, fullTick } = setUp();
+    const neutral = warrior(FAR, 'neutral');
     const health = neutral.getComponent(Health);
     const full = health.current;
 
+    new DamagePipeline().apply(state, gem.id, 45, { ...SWORD, attackerId: neutral.id });
     for (let at = 0; at < 2 * TICK_RATE; at += 1) fullTick();
 
     expect(health.current).toBe(full - 72);
@@ -227,10 +203,8 @@ describe('CathedralGemSystem (DEC-291, DEC-292)', () => {
     ).toThrow('must have a duration');
   });
 
-  it.each([
-    ['a status it lands', { ...CATHEDRAL_GEM, statusIds: ['gem-shock', 'no-such-status'] }],
-    ['its touch cooldown', { ...CATHEDRAL_GEM, touchCooldownStatusId: 'no-such-status' }],
-  ])('refuses an unknown status id for %s at match start, before any hit', (_, gem) => {
+  it('refuses an unknown status id at match start, before any hit', () => {
+    const gem = { ...CATHEDRAL_GEM, statusIds: ['gem-shock', 'no-such-status'] };
     const state = new GameState(createDefaultGameConfig(), 1);
     const loaded = loadStatusEffects(TICK_RATE, 2);
 

@@ -1,4 +1,5 @@
 import { DamagePipeline } from '../combat/DamagePipeline';
+import { KillCredit } from '../combat/KillCredit';
 import { Footprint } from '../components/Footprint';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
@@ -11,6 +12,7 @@ import { ENRAGING_STRUCTURES } from '../content/mobs/minionModifiers';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { CATHEDRAL_GEM } from '../content/structures/cathedralGem';
+import { loadScoring } from '../content/match/loadScoring';
 import { loadSpawnWaves } from '../content/structures/loadSpawnWaves';
 import { OPENING_WAVE } from '../content/structures/spawnWaves';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
@@ -70,7 +72,11 @@ export class DefaultSystemPipeline extends SystemPipeline {
     structures = STRUCTURE_DEFINITIONS,
   }: DefaultSystemPipelineOptions) {
     const { tickRate, map } = state.config;
-    const damage = new DamagePipeline();
+    // A death by the gem counts for the victim's last enemy damager in the assist window (DEC-346).
+    const damage = new DamagePipeline(
+      undefined,
+      new KillCredit(loadScoring(tickRate).assistWindowTicks, CATHEDRAL_GEM.statusIds),
+    );
     const loadedStatuses = loadStatusEffects(
       tickRate,
       map.spawnTowersPerLane + map.buffTowersPerLane,
@@ -146,8 +152,8 @@ export class DefaultSystemPipeline extends SystemPipeline {
       new OutOfCombatHealingSystem(state, loadOutOfCombatHealing(tickRate)),
       new DeathSystem(),
       new CaptureSystem(state.config.match.capturePoints, tickRate, ZONE_LOCKING_MOBS),
-      // Off in a Duel: the world around the arena is switched off there (DEC-36), and whether the
-      // gem strikes Duel fighters, and who a gem kill counts for, is open (INBOX.md).
+      // Off in a Duel: the world around the arena is switched off there (DEC-36), and the gem's
+      // Duel design waits on the owner's numbers (DEC-346, a follow-up PR).
       ...(duelStarts === undefined
         ? [new CathedralGemSystem(state, statuses, loadedStatuses, CATHEDRAL_GEM)]
         : []),
