@@ -16,40 +16,12 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
-- [ ] **Better than design: split the Cathedral interior builder (Aryan Walanj, 2026-11-14,
-      critic on `feat/cathedral-gem`).** `MapBuildingInteriorBuilder.ts` is past the ~300-line
-      guide (316 lines). The Cathedral furnishing (`cathedral*`, `apseWall`) could move to
-      its own `MapDecorationBuilder` subclass picked by the per-kind interior registry (06). OK
-      to do as a separate refactor PR?
-
-- [ ] **The Cathedral gem: four rules DEC-292 leaves open (Aryan Walanj, 2026-11-21,
-      `feat/cathedral-gem-hittable`; (4) from the #132 re-review, 2026-11-22).** DEC-292 is built:
-      hitting or touching the gem lands a 1 s stun and a 72-damage burn on that unit, as
-      environment damage (all `TUNE`, listed in the DEC-292 row). Four things the ruling does not
-      say:
-      (1) **The Duel.** The Duel arena is the Cathedral and the two Legends start 50 units either
-      side of the gem. The gem is switched off in a Duel for now (DEC-36: the world round the arena
-      is off). Should it strike Duel fighters? If so, who does a death by the gem count for in the
-      first-to-N score?
-      (2) **The middle lane.** A lane runs through the Cathedral's centre, so its minions walk
-      across the gem on their way (it blocks no movement). The build strikes a unit by touch at
-      most once every 5 s (`gem-warded`), so a passing minion takes at most one 72-damage strike,
-      half a light minion's health, on both teams alike. Keep it, or should lane minions not be struck by a touch
-      (or should the gem block movement, so lanes route round it; that also needs the Duel's start
-      line kept clear)?
-      (3) **Kill credit.** The burn is environment damage (the gem is no team's, so it also hurts
-      neutrals): a unit it kills is nobody's kill and gives no kill XP. Keep it, or should the last
-      team or Legend to hit the victim get the credit?
-      (4) **What "tick" means.** The note says the burn hits "for the duration of the stun + 1
-      tick" and the gem glows "for the stun duration + 5 ticks". The build reads the first as one
-      burn pulse (0.2 s): the burn hits 6 times (72). Read as one game tick (1/30 s) it would hit
-      5 times (60). It reads the second as 5 game ticks. Which did you mean for each?
-
-- [ ] **Better than design: one shared "never damaged" structure entry (Aryan Walanj, 2026-11-15,
-      critic on `feat/cathedral-gem-hittable`; updated 2026-11-22 after #91).** The camps now share
-      `CAMP_BODY` (#91), but the Cathedral gem still repeats `baseHealth: 1` and
-      `breakability: never` in `structureCatalogue.ts`. One shared "never damaged" spread for both
-      would hold it once. A small refactor PR. OK, or leave as is?
+- [ ] **Why can forest camps never break? (your note on the gem tidy-ups, DEC-346, 2026-11-23).**
+      You asked "what about the forest camps? why can they never break?". Today a camp's body is only
+      its group's home (`CAMP_BODY`: "a camp is only its group's home"): the camp's mobs are what
+      players fight, and no reference doc gives the camp body health of its own. Should a camp
+      become breakable (and if so, what happens to its mobs and respawns)? A breakable camp leaves
+      the shared `NEVER_DAMAGED` spread with a one-line change.
 
 - [ ] **Better than design: two Cathedral gem items (#132 re-review, swholtzman, 2026-11-22).**
       (BTD1) The holder is stored twice: `CathedralGemState.holder` copies the capture zone's owner
@@ -3200,6 +3172,15 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-11-23 — **Your answers on the five Cathedral gem cards (DEC-346)** (`feat/cathedral-gem-hittable`,
+  PR #132): recorded as DEC-346. The gem blocks movement (an unbreakable plinth under it) and a
+  touch no longer strikes; a death by the gem counts for the victim's last enemy damager within the
+  30 s assist window, else nobody's kill or XP; both "tick" readings stay; the Cathedral interior
+  builder is split and camps and the gem share one "never damaged" entry. Closes "The Cathedral
+  gem: four rules DEC-292 leaves open", "split the Cathedral interior builder" and "one shared
+  'never damaged' structure entry". Decision: DEC-346. The Duel design (circle strike, laser) is a
+  follow-up PR once the six "GEM duel" cards are answered; your camp question is a new item.
 
 - 2026-11-21 — **Your picks on the Cathedral gem (DEC-291, DEC-292)** (`feat/cathedral-gem-hittable`,
   PR #132, which now also carries PR #124): recorded as DEC-291 and DEC-292. The gem keeps its
