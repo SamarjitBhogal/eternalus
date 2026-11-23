@@ -185,9 +185,15 @@ describe('EntitySnapshotter', () => {
     flight.tickEnding();
     const ending = snapshotter.snapshotOf(shot).projectile;
 
-    expect(flying).toEqual({ flownShare: 0.05, ending: null });
-    expect(ending).toEqual({ flownShare: 1, ending: 0.25 });
+    expect(flying).toEqual({ flownShare: 0.05, isArc: false, range: 100, ending: null });
+    expect(ending).toEqual({ flownShare: 1, isArc: false, range: 100, ending: 0.25 });
     expect(snapshotter.snapshotOf(unfired).projectile).toBeNull();
+    // An arc shot reports its flag and its shortened range, which the arc's height scales with.
+    flight.shortenTo(50);
+    const arc = new ProjectileFlight(100, 80, 4, true);
+    arc.shortenTo(50);
+    shot.addComponent(arc);
+    expect(snapshotter.snapshotOf(shot).projectile).toMatchObject({ isArc: true, range: 50 });
     expect(snapshotter.snapshotOf(new Bare('bare-1', 'x')).projectile).toBeNull();
   });
 });

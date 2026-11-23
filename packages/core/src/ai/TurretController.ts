@@ -7,6 +7,7 @@ import type { Perception } from './perception/Perception';
 import { predictiveAim } from './predictiveAim';
 import type { Command } from '../commands/Command.types';
 import { TurretAmmoRule } from '../state/TurretAmmoRule';
+import { ARC_LAUNCH_DELAY_TICKS } from './TurretController.constants';
 import type { TurretControllerContent, TurretMemory } from './TurretController.types';
 import { chooseTurretAmmo } from './turretAmmo';
 import { rankTurretTargets } from './turretTarget';
@@ -22,8 +23,8 @@ import type { TurretCandidate } from './turretTarget.types';
  * as one that leaves range. Against the target it picks the first ammo it carries whose
  * `preferredAgainst` fits the target's kind (`chooseTurretAmmo` over its `TurretState`, read
  * through `TurretAmmoRule.ammoOf`), sends `switch-ammo` when that is not the loaded one, then
- * `attack-aim` at the point ahead of the target (`predictiveAim`) every decision, so the aim stays
- * fresh; its `Combat` fires whenever its cooldown allows (the one shot clock). With no target and
+ * `attack-aim` at the point ahead of the target (`predictiveAim`; an arc shot lands at that point,
+ * so its lead adds the launch delay) every decision, so the aim stays fresh; its `Combat` fires whenever its cooldown allows (the one shot clock). With no target and
  * an aim still set, it sends `attack-aim { aim: null }` once. Range runs from the turret's edge to
  * a target's centre, so every target it takes is in its attack reach too (edge to edge,
  * `EntityStore.isInReach`). An enemy is any unit not on its team: neutral units too. Its brain
@@ -87,14 +88,14 @@ export class TurretController implements Controller {
         rngState: brain.rngState,
       };
     }
-    const { maxSpeed } = this.content.projectiles.get(
-      ammo.attack.projectile.projectileId,
-    ).movementProfile;
+    const projectile = this.content.projectiles.get(ammo.attack.projectile.projectileId);
+    // An arc shot lands at its aim point, so the lead covers its launch delay too.
     const aim = predictiveAim(
       place.position,
       target.position,
       entities.velocityOf(target.id) ?? { x: 0, y: 0 },
-      maxSpeed,
+      projectile.movementProfile.maxSpeed,
+      projectile.isArc === true ? ARC_LAUNCH_DELAY_TICKS : 0,
     );
     const commands: Command[] = [];
     if (ammo.id !== turret.loadedId) {

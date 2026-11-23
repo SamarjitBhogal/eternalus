@@ -27,4 +27,11 @@ export type ProjectileDefinition = EntityDefinitionBase & {
    * nothing, before it is removed; ticks once loaded (`loadProjectiles`).
    */
   readonly endDuration: number;
+  /**
+   * Whether it is an arc shot (DEC-341 (4), DEC-342): it comes from above, so no wall, body or map
+   * edge stops it in the air. It flies to its aim point (`min(range, distance to the aim)`) and
+   * lands there, then lodges for `endDuration`. Absent: a straight shot, which a body or a wall
+   * ends on contact.
+   */
+  readonly isArc?: boolean;
 };

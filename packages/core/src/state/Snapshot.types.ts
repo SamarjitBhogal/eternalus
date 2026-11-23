@@ -82,6 +82,16 @@ export type ProjectileSnapshot = {
    * shot). The client draws an arrow's arc along it (DEC-322 (2)).
    */
   readonly flownShare: number;
+  /**
+   * Whether it is an arc shot (`ProjectileFlight.isArc`, DEC-342): the client draws it coming from
+   * above, with a shadow on its mark.
+   */
+  readonly isArc: boolean;
+  /**
+   * Metres from its origin to where it stops: the definition's range, or the distance to its aim
+   * point for an arc shot (`ProjectileFlight.range`). The arc's height scales with it.
+   */
+  readonly range: number;
   /** How far through its ending it is, 0 to 1 (`ProjectileFlight.endingShare`); `null` while it flies. */
   readonly ending: number | null;
 };

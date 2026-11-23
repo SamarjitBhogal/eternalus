@@ -11,6 +11,7 @@ import type {
   ProjectileImpacts,
 } from '../combat/ProjectileImpact.types';
 import type { Entity } from '../entities/Entity';
+import type { EntityId } from '../state/EntityStore.types';
 import { flightSpeed } from '../physics/flightSpeed';
 import { sweepCircle } from '../physics/sweepCircle';
 import { sweepDisc } from '../physics/sweepDisc';
@@ -21,6 +22,7 @@ import { CONTACT_EPSILON } from '../utils/circlePolygon.constants';
 import { distance, doRectsOverlap, isPointInAnyPolygon } from '../utils/geometry';
 import type { Rect, Vec2 } from '../utils/geometry.types';
 import type { ShotBody, ShotContact } from './ProjectileSystem.types';
+import { ArcLanding } from './ArcLanding';
 import type { System, SystemContext } from './System.types';
 
 /**
@@ -55,6 +57,13 @@ import type { System, SystemContext } from './System.types';
  * the ground), then is removed as `consumed`. While the match holds units idle
  * (`state.match.isIdleHeld`, the countdown) no shot lands, slows or ends.
  *
+ * An arc shot (`ProjectileFlight.isArc`, DEC-342) is swept against nothing: no wall, body or map
+ * edge stops it in the air. It flies to its range, which its attack shortened to the aim point,
+ * and there it **lands** (`ArcLanding.bodyUnder`: the body under it, the target winning a tie, or
+ * bare ground): the impact gets the landing, which may be a body or only a blast, the hits are
+ * recorded on the owner, and the shot ends and lodges for its end duration. It hits nothing
+ * after that.
+ *
  * It runs right before `CombatSystem`, so a shot fired this tick flies a tick before it can land.
  */
 export class ProjectileSystem implements System {
@@ -67,6 +76,7 @@ export class ProjectileSystem implements System {
   /** The bodies a shot can hit this tick, in store order; gathered on the first move. */
   private readonly bodies: ShotBody[] = [];
   private isGathered = false;
+  private readonly landing = new ArcLanding();
 
   /** @param impacts - What a landed shot does, by its payload's impact kind. */
   public constructor(private readonly impacts: ProjectileImpacts) {}
@@ -98,6 +108,10 @@ export class ProjectileSystem implements System {
     if (!this.isGathered) this.gather(state);
     const payload = shot.getComponent(ProjectilePayload);
     const body = shot.getComponent(Transform);
+    if (flight.isArc) {
+      this.flyArc(state, shot, flight, payload);
+      return;
+    }
     const from = body.previousPosition;
     const delta = { x: body.position.x - from.x, y: body.position.y - from.y };
     const length = distance(from, body.position);
@@ -106,7 +120,7 @@ export class ProjectileSystem implements System {
     const hit = this.firstBody(state, payload, from, delta, length, body.radius);
     if (hit !== null && isTouchedBeforeWall(hit.time * length, wall)) {
       if (!state.entities.takesNoDamage(hit.body.entity.id)) {
-        this.landOn(state, {
+        const landed = this.landOn(state, {
           impact: payload.impact,
           ownerId: payload.ownerId,
           team: payload.team,
@@ -116,7 +130,7 @@ export class ProjectileSystem implements System {
           bodyId: hit.body.entity.id,
           point: { x: from.x + delta.x * hit.time, y: from.y + delta.y * hit.time },
         });
-        state.entities.recordHits(payload.ownerId, [hit.body.entity.id], state.tick);
+        state.entities.recordHits(payload.ownerId, landed, state.tick);
       }
       this.spend(state, shot);
     } else if (wall < Number.POSITIVE_INFINITY) {
@@ -126,10 +140,45 @@ export class ProjectileSystem implements System {
     }
   }
 
-  /** Hands the hit to the impact of its kind. */
-  private landOn<K extends ProjectileImpactKind>(state: GameState, hit: ProjectileHit<K>): void {
+  /** Flies an arc shot over everything; at its range it lands, records its hits and ends. */
+  private flyArc(
+    state: GameState,
+    shot: Entity,
+    flight: ProjectileFlight,
+    payload: ProjectilePayload,
+  ): void {
+    const body = shot.getComponent(Transform);
+    const flown = distance(payload.origin, body.position);
+    if (flight.range - flown <= CONTACT_EPSILON) {
+      const under = this.landing.bodyUnder(
+        state.entities,
+        payload,
+        this.bodies,
+        body.position,
+        body.radius,
+      );
+      const landed = this.landOn(state, {
+        impact: payload.impact,
+        ownerId: payload.ownerId,
+        team: payload.team,
+        ownerLevel: payload.ownerLevel,
+        source: payload.source,
+        origin: payload.origin,
+        bodyId: under?.entity.id ?? null,
+        point: { x: body.position.x, y: body.position.y },
+      });
+      state.entities.recordHits(payload.ownerId, landed, state.tick);
+    }
+    this.steerToEnd(shot, flight, flown);
+  }
+
+  /** Hands the hit to the impact of its kind; returns the ids it landed on. */
+  private landOn<K extends ProjectileImpactKind>(
+    state: GameState,
+    hit: ProjectileHit<K>,
+  ): readonly EntityId[] {
     const impact: ProjectileImpact<K> = this.impacts[hit.impact.kind];
-    impact.land(state, hit);
+    return impact.land(state, hit);
   }
 
   /** Slows the shot toward its range, or ends it and stops it there when it has flown all of it. */

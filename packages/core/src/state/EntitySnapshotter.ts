@@ -104,7 +104,12 @@ export class EntitySnapshotter {
       return null;
     }
     return {
-      flownShare: Math.min(1, distance(payload.origin, transform.position) / flight.range),
+      flownShare:
+        flight.range === 0
+          ? 1
+          : Math.min(1, distance(payload.origin, transform.position) / flight.range),
+      isArc: flight.isArc,
+      range: flight.range,
       ending: flight.isEnded ? flight.endingShare : null,
     };
   }

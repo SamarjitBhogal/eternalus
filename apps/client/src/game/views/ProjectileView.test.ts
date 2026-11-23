@@ -46,11 +46,11 @@ const BOLT: EntitySnapshot = {
 const ARROW: EntitySnapshot = { ...BOLT, definitionId: 'arrow' };
 const flying = (entity: EntitySnapshot, flownShare: number): EntitySnapshot => ({
   ...entity,
-  projectile: { flownShare, ending: null },
+  projectile: { flownShare, isArc: false, range: 30, ending: null },
 });
 const ended = (entity: EntitySnapshot, ending: number): EntitySnapshot => ({
   ...entity,
-  projectile: { flownShare: 1, ending },
+  projectile: { flownShare: 1, isArc: false, range: 30, ending },
 });
 const draw = (entity: EntitySnapshot): RecordingRenderer => {
   const renderer = new RecordingRenderer();

@@ -29,6 +29,7 @@ import { IdGenerator } from '../utils/IdGenerator';
 import { AiSystem } from './AiSystem';
 import { Perception } from './perception/Perception';
 import { predictiveAim } from './predictiveAim';
+import { ARC_LAUNCH_DELAY_TICKS } from './TurretController.constants';
 import { TurretController } from './TurretController';
 
 const PROJECTILES = loadProjectiles(30);
@@ -50,7 +51,10 @@ const AT = { x: 100, y: 30 };
  * `hit` makes a Legend hit another (a `damage-applied` event at the current tick). The turret's
  * controller reads `lineOfFire`.
  */
-const setUp = (lineOfFire: LineOfFireQuery = CLEAR) => {
+const setUp = (
+  lineOfFire: LineOfFireQuery = CLEAR,
+  projectiles: Pick<typeof PROJECTILES, 'get'> = PROJECTILES,
+) => {
   const config = createDefaultGameConfig();
   const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
   const state = new GameState(
@@ -94,9 +98,9 @@ const setUp = (lineOfFire: LineOfFireQuery = CLEAR) => {
   };
   const perception = new Perception(state);
   const turretController =
-    lineOfFire === CLEAR
+    lineOfFire === CLEAR && projectiles === PROJECTILES
       ? controller
-      : new TurretController({ profiles: TURRETS.profiles, projectiles: PROJECTILES, lineOfFire });
+      : new TurretController({ profiles: TURRETS.profiles, projectiles, lineOfFire });
   const decide = (memory: AiMemory = {}, profileId = 'wall-turret') => {
     index();
     return turretController.decide({
@@ -327,7 +331,7 @@ describe('TurretController', () => {
     expect(decide({ targetId: null }).commands).toEqual([]);
   });
 
-  it('aims ahead of a moving target at its bolt speed (predictive aim)', () => {
+  it('aims ahead of a moving target at its bolt speed, plus the launch delay of an arc shot (predictive aim)', () => {
     const { state, turret, add, decide } = setUp();
     const target = add('dark', PYLON + 10, 'heavy-mob', 'heavy-minion');
     const movement = state.entities.get(target)?.getComponent(Movement);
@@ -341,11 +345,36 @@ describe('TurretController', () => {
       { x: AT.x + PYLON + 10, y: AT.y },
       velocity,
       PROJECTILES.get('turret-heavy-bolt').movementProfile.maxSpeed,
+      ARC_LAUNCH_DELAY_TICKS,
     );
 
+    expect(PROJECTILES.get('turret-heavy-bolt').isArc).toBe(true);
     expect(velocity.y).toBeGreaterThan(0);
     expect(commands).toEqual([{ type: 'attack-aim', actorId: turret.id, aim: expected }]);
     expect(expected.y).toBeGreaterThan(AT.y);
+  });
+
+  it('leads a straight shot with no launch delay, as before DEC-342', () => {
+    const straight = { get: (id: string) => ({ ...PROJECTILES.get(id), isArc: false }) };
+    const { state, turret, add, decide } = setUp(CLEAR, straight);
+    const target = add('dark', PYLON + 10, 'heavy-mob', 'heavy-minion');
+    const movement = state.entities.get(target)?.getComponent(Movement);
+    movement?.steer({ x: 0, y: 1 });
+    movement?.advance();
+    const velocity = movement?.velocity ?? { x: 0, y: 0 };
+
+    expect(decide().commands).toEqual([
+      {
+        type: 'attack-aim',
+        actorId: turret.id,
+        aim: predictiveAim(
+          AT,
+          { x: AT.x + PYLON + 10, y: AT.y },
+          velocity,
+          PROJECTILES.get('turret-heavy-bolt').movementProfile.maxSpeed,
+        ),
+      },
+    ]);
   });
 
   it('keeps its memory and sends nothing while it is dead', () => {

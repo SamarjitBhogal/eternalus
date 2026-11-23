@@ -1,9 +1,11 @@
 import { Movement } from '../../components/Movement';
+import { ProjectileFlight } from '../../components/ProjectileFlight';
 import { Progression } from '../../components/Progression';
 import { ProjectilePayload } from '../../components/ProjectilePayload';
 import { TeamMembership } from '../../components/TeamMembership';
 import { Transform } from '../../components/Transform';
 import type { UnitAttack } from '../../content/units/units.types';
+import { distance } from '../../utils/geometry';
 import type { Entity } from '../Entity';
 import type { AttackAim, AttackContext, AttackStrategy } from './AttackStrategy.types';
 import { weaponSourceOf } from './weaponSourceOf';
@@ -16,6 +18,12 @@ import { weaponSourceOf } from './weaponSourceOf';
  * (`AreaHitQuery.aimedBodyOf`, DEC-322 (1)), so the shot can hit that outline and flies over the
  * others. `CombatSystem` hands it a unit direction, so a shot always moves. It passes its owner
  * by; `ProjectileSystem` flies and lands it, from the next tick.
+ *
+ * An arc shot (`ProjectileFlight.isArc`, DEC-342) flies exactly to its aim point: its range is
+ * shortened to the distance from the attacker to the aim (`AttackAim.point`, else the locked
+ * target's centre, else the definition's full range), and its first move is capped to that range,
+ * so it cannot overshoot a near aim. At full speed (`slowFrom` equal to `range`) it takes
+ * `distance / speed` ticks to land, which is the time `predictiveAim` leads a target by.
  */
 export class RangedProjectileAttackStrategy implements AttackStrategy {
   /**
@@ -53,7 +61,15 @@ export class RangedProjectileAttackStrategy implements AttackStrategy {
         origin,
       }),
     );
-    projectile.getComponent(Movement).steer(direction);
+    const movement = projectile.getComponent(Movement);
+    const flight = projectile.getComponent(ProjectileFlight);
+    if (flight.isArc) {
+      const aimAt =
+        point ?? (targetId === null ? undefined : state.entities.placeOf(targetId)?.position);
+      if (aimAt !== undefined) flight.shortenTo(distance(origin, aimAt));
+      movement.limitSpeed(Math.min(movement.maxSpeed, flight.range));
+    }
+    movement.steer(direction);
     state.entities.add(projectile);
     state.events.emit('entity-spawned', { entityId: projectile.id, kind: projectile.kind, team });
   }
