@@ -70,6 +70,44 @@ Reply inline (`Decision: …`).
       rings derived as `ceil(distance / cellSize)`. Whether 30 m still covers a Stronghold is a
       live question on #98.
 
+- [x] **Corner camp boss: new `TUNE` values, its display name, and better-than-design items B2
+      and N4 (Aryan Walanj, 2026-11-12; PR #91 `feat/bosses-p3`, your review S2, S3 and nit 3;
+      DEC-236).** (1) The values with no reference source, all `TUNE` in
+      `content/mobs/cornerBoss.ts`: footprint radius 1.5 m (about twice a heavy camp mob), attack
+      reach 2 m, max speed 2.5 m/s, acceleration 8 m/s², mass 12, vision radius 45 m (its aggro
+      radius, the ring's diameter, from `CORNER_CAMP_RING`). Its health (8,200), damage (205 per hit every 1.5 s) and team-wide XP (500,
+      DEC-237) are `balancing.md`'s MiniBoss row, sized for level-4 Legends, though this boss exists from
+      t = 0. Also `TUNE` (2026-11-17, PR #91 critic): the corner camp plan's leash tolerance
+      7 m (`content/structures/guardPlans.ts`), above DEC-181's 5.5 m, since this boss is bigger,
+      slower and reaches further than any guard (DEC-181's sum for it is about 6.08 m). Approve
+      them or give values. (2) The display name "Corner Camp Boss" (names are open
+      with HC-Q4). Approve or rename. (3) **B2 of the PR #91 body (your S2 calls it "your B2"; not your review's B2, the team XP), better than the design:** store the boss's health
+      and damage as multiples of `refHealth(level)` (10 × and 0.25 ×), as `balancing.md`
+      recommends, instead of absolute numbers. (4) **N4, better than the design:** the capture
+      point boss (`capturePointBoss.ts`, PR #99) uses the same MiniBoss row; once B2 is done, keep
+      that row in one shared constant, as `refHealth` multiples, that both bosses use. Approve
+      B2 and N4 (one follow-up PR), or drop them.
+  - **Answered 2026-11-20 by DEC-296** (PR #91 comments). (1) and (2) approved and cited in the
+    code; the mass follows the HC-S12 (d) answer, the same for both bosses: the corner boss has
+    the Sentinel's 6 (PR #91); the capture point boss gets 6 in the DEC-284 (3) follow-up PR.
+    (3) and (4) approved, not built yet: they go in the HC-B12 follow-up PR.
+
+- [x] **PR #91 critic (2026-11-13), better than the design: the ring size on the map feature
+      (Aryan Walanj, `feat/bosses-p3`, claudiodh's B4).** The corner camp's ring is now core
+      content (`CORNER_CAMP_RING`, `content/structures/cornerCampRing.ts`, radius 22.5 m; the
+      boss's vision and acquisition radius follow it: 45 m, the ring's diameter, since PR #91
+      B6, so the boss sees the whole ring from any post). The client draws it because core exports the constant and `Match` passes the size
+      into `MapView` (`featureSizes`). The critic proposes instead an optional ring radius on
+      `MapFeatureDefinition` (`content/maps/mapFeatureDefinitions.ts`), copied onto `MapFeature`
+      by the generator, which `MapView` draws from the map data it already gets. That drops the
+      new export, the constructor parameter and the size-0 placeholder in `FEATURE_STYLES`, and
+      the capture point's ring (still 45 m in `FEATURE_STYLES`) could use the same field. It also
+      suggested one shared camp post gap constant; done 2026-11-17 by the phase/3 merge
+      (`cornerCampRing.ts` reads `GUARD_LEASH.postGap`). Approve the ring field as a follow-up PR
+      (docs 06 and 07 updated with it), or keep the current wiring.
+  - **Answered 2026-11-20 by DEC-296** (PR #91 comments): the ring field is approved as a
+    follow-up PR, not built yet; the 22.5 m radius is approved.
+
 - [ ] **Teammate's boss spec (Aryan Walanj, 2026-11-11): amend reference 04?** A teammate's spec
       differs from `docs/reference/game-design/04-objectives-capture-points-and-bosses.md` in
       four places. Nothing is built for any of them until you answer; no Cathedral or middle-boss
@@ -142,7 +180,10 @@ Reply inline (`Decision: …`).
       are metres on the default 1600 × 900 world; on another world size `map/zoneArea.ts`
       stretches the floor and the leash does not follow.
 
-- [ ] AI56-F4 exemption for boss rows; claudiodh/Sam to confirm (asked on #99).
+- [x] AI56-F4 exemption for boss rows; claudiodh/Sam to confirm (asked on #99). Since
+      2026-11-17 (PR #91) the corner boss (`corner-boss`) is exempt too: it acquires across its
+      camp ring (`CORNER_CAMP_RING`), not leash less post gap (`aggroRules.test.ts`).
+  - **Answered 2026-11-20 by DEC-296** (PR #91 comments): the boss exemption is approved.
 
 - [ ] **Capture point boss: four better-than-design items (PR #99 critic, 2026-11-12) — Sam and
       the owner: approve or drop; no code change until then.** (1) **Zone lock read from state,
