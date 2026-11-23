@@ -300,7 +300,7 @@ describe('Simulation wall turrets', () => {
     expect(shots).toBe(0);
   });
 
-  it('takes the nearest enemy even behind a cliff, because its arc bolt needs no line of fire, and sees past its own pylon (DEC-334, DEC-342)', () => {
+  it('takes the nearest enemy behind a cliff and hits it with an arc bolt launched inside its own pylon: an arc bolt needs no line of fire (DEC-342)', () => {
     const match = setUp();
     const { state, run, turretOf } = match;
     const feature = LIGHT_TURRET;

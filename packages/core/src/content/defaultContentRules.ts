@@ -11,6 +11,9 @@ import { PROJECTILES } from './projectiles/projectileCatalogue';
 import { LEVEL_CURVE_CATALOGUE } from './progression/levelCurveCatalogue';
 import type { LevelCurveDefinition } from './progression/progression.types';
 import type { BotRosterDefinition } from './teams/botRoster.types';
+import type { StructureDefinition } from './structures/structures.types';
+import { AmmoNeedsTurretRule } from './validation/AmmoNeedsTurretRule';
+import { ArcShotSpeedRule } from './validation/ArcShotSpeedRule';
 import { BotRosterClassRule } from './validation/BotRosterClassRule';
 import { BotRosterDifficultyRule } from './validation/BotRosterDifficultyRule';
 import type { ContentRule, UnitDefinitionRule } from './validation/ContentValidator.types';
@@ -25,6 +28,7 @@ import { PositiveAetherRule } from './validation/PositiveAetherRule';
 import { PositiveStatsRule } from './validation/PositiveStatsRule';
 import { RoleRatingRangeRule } from './validation/RoleRatingRangeRule';
 import { SpecClassExistsRule } from './validation/SpecClassExistsRule';
+import { TurretNeedsAmmoRule } from './validation/TurretNeedsAmmoRule';
 import { WEAPONS } from './weapons/weaponCatalogue';
 import type { WeaponDefinition } from './weapons/weapons.types';
 
@@ -76,6 +80,23 @@ export const createLegendSpecRules = (
 /** Every shipped locked-class rule. A new locked-class rule is one line here. */
 export const createLockedClassRules = (): readonly ContentRule<LockedClassDefinition>[] => [
   new KebabCaseIdRule(),
+];
+
+/**
+ * Every shipped structure rule, which `loadTurrets` runs over each structure definition. A new
+ * structure rule is one line here.
+ */
+export const createStructureRules = (): readonly ContentRule<StructureDefinition>[] => [
+  new TurretNeedsAmmoRule(),
+  new AmmoNeedsTurretRule(),
+];
+
+/**
+ * Every shipped projectile rule, which `loadProjectiles` runs over each projectile. A new
+ * projectile rule is one line here.
+ */
+export const createProjectileRules = (): readonly ContentRule<ProjectileDefinition>[] => [
+  new ArcShotSpeedRule(),
 ];
 
 /**

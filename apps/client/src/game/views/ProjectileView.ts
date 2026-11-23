@@ -13,6 +13,7 @@ import {
   PROJECTILE_ARC_SHADOW_RADIUS_X,
   PROJECTILE_ARC_SHADOW_RADIUS_Y,
   PROJECTILE_ARC_SHADOW_SEGMENTS,
+  PROJECTILE_BODY_LOOKS,
   PROJECTILE_BURST_OPACITY,
   PROJECTILE_BURST_SEGMENTS,
   PROJECTILE_ORB_BODY_SIZE,
@@ -77,7 +78,7 @@ export class ProjectileView extends DefaultEntityView {
     } else if (this.lookOf(state) === 'drop') {
       this.drawShadow(state, 1, renderer);
     }
-    if (this.lookOf(state) === 'burst') {
+    if ((PROJECTILE_BODY_LOOKS[state.entity.definitionId] ?? 'streak') === 'orb') {
       this.drawOrb(state, this.colorOf(state.entity.team), renderer);
       return;
     }
@@ -228,7 +229,11 @@ export class ProjectileView extends DefaultEntityView {
     ending: number,
     renderer: Renderer,
   ): void {
-    const radius = (entity.projectile?.blastRadius ?? 0) * ending;
+    const blastRadius = entity.projectile?.blastRadius ?? null;
+    if (blastRadius === null) {
+      return;
+    }
+    const radius = blastRadius * ending;
     renderer.fillPolygon(
       ellipsePoints(position, radius, radius, PROJECTILE_BURST_SEGMENTS),
       colorWithAlpha(this.colorOf(entity.team), PROJECTILE_BURST_OPACITY * (1 - ending)),

@@ -24,6 +24,6 @@ export const TOWER_ORB = {
   // delay. The shot flies only as far as its aim point (`isArc`).
   range: LANE_TOWER_REACH_FROM_CENTRE + 14,
   slowFrom: LANE_TOWER_REACH_FROM_CENTRE + 14, // equal to range: an orb flies at full speed until it lands
-  isArc: true,
+  isArc: true, // HC-Q99 (Owner Calls v70, pending), option A: it flies over walls and units
   endDuration: 0.5, // TUNE: no reference value; seconds, the burst's look
 } as const satisfies ProjectileDefinition;

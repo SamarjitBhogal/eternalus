@@ -4,9 +4,10 @@ import type { AuthoredTurretAmmo } from './turrets.types';
 
 /**
  * The turret ammo table (architecture 07 §5; balancing.md "Turrets — MVP", which names this file):
- * one entry per ammo, so changing an ammo is one entry. Both are physical; an attack carries no
- * damage type yet. Each reach is the wall turret's range, so its attack reaches every target it
- * takes.
+ * one entry per ammo, so changing an ammo is one entry: the wall turret's two bolts and the lane
+ * tower's orb (DEC-342). Every ammo is physical; an attack carries no damage type yet. Each reach
+ * is the range of the profile of the turrets that carry it (the wall turret's for the bolts, the
+ * lane tower's for the orb), so its attack reaches every target it takes (`loadTurrets` checks it).
  */
 export const TURRET_AMMO = new ContentCatalogue<AuthoredTurretAmmo>([
   {
@@ -52,6 +53,8 @@ export const TURRET_AMMO = new ContentCatalogue<AuthoredTurretAmmo>([
         splash: { radius: 3, edgeMultiplier: 0.5 },
       },
     },
-    preferredAgainst: 'any', // TUNE: HC-Q100 (Owner Calls v70, pending), option A
+    // The tower's one ammo fits every target (`loadTurrets`). It does not order targets: the
+    // lane-tower profile's `priority` does (HC-Q100).
+    preferredAgainst: 'any',
   },
 ]);

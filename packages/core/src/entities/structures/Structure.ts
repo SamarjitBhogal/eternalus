@@ -81,7 +81,7 @@ export abstract class Structure extends Entity {
       this.addComponent(binding);
     }
     if (definition.ammo !== undefined) {
-      this.installAmmo(context, definition);
+      this.installAmmo(context, definition.ammo);
     }
   }
 
@@ -91,15 +91,16 @@ export abstract class Structure extends Entity {
    * ammo source) and a `Combat` loaded with the first one's attack. It has no weapon (`weaponId`
    * null).
    *
+   * @param ammoIds - The ammo ids its definition names, best first.
    * @throws Error when the context has no ammo source, the definition names no ammo, or an ammo
    *   it names is unknown.
    */
-  private installAmmo(context: unknown, definition: StructureDefinition): void {
+  private installAmmo(context: unknown, ammoIds: readonly string[]): void {
     const source = new SpawnContextReader(this).ammo(context);
     if (source === null) {
       throw new Error(`Structure "${this.id}" needs an ammo source to load its ammo.`);
     }
-    const ammo = (definition.ammo ?? []).map((id) => {
+    const ammo = ammoIds.map((id) => {
       if (!source.has(id)) {
         throw new Error(`Structure "${this.id}": unknown ammo "${id}".`);
       }

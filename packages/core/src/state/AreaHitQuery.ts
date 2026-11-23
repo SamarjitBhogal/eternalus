@@ -21,9 +21,10 @@ import type { EntityId } from './EntityStore.types';
 
 /**
  * The one hit rule for weapon areas and ability areas (DEC-322 (3)): which live bodies an area
- * touches. The weapon sweep and the abilities' `TargetQuery` hand it their area as a `HitArea`.
- * It walks the live bodies with a `Transform` and `Health`, filters them by team relative to the
- * attacker, and tests each one against the area. A body with an outline (`EntityStore.outlineOf`:
+ * touches. The weapon sweep, a shot's blast (`WeaponImpact`, DEC-342) and the abilities'
+ * `TargetQuery` hand it their area as a `HitArea`. It walks the live bodies with a `Transform` and
+ * `Health`, filters them by team relative to the attacker (and to units only, when the filter
+ * asks), and tests each one against the area. A body with an outline (`EntityStore.outlineOf`:
  * a map object, a structure footprint) is tested by its polygons; any other body by its collider
  * circle. Then two rules apply:
  *
@@ -68,7 +69,8 @@ export class AreaHitQuery {
    *
    * @param aim - What the hit aims at; a walk-on outline needs it (rule 1).
    * @param attacker - The attacker's team and position; absent, the store's. A cast whose caster
-   *   may be gone passes its own (`CastFacts.caster`), so its enemies stay its team's enemies.
+   *   may be gone passes its own (`CastFacts.caster`), and a shot's blast its shot's team and
+   *   origin (`WeaponImpact`), so their enemies stay their team's enemies.
    */
   public find(
     entities: EntityStore,
@@ -88,6 +90,7 @@ export class AreaHitQuery {
         transform === undefined ||
         !AreaHitQuery.isAlive(entity) ||
         (entity.id === attackerId && filter.includeSelf !== true) ||
+        (filter.isUnitsOnly === true && !isUnitFamily(entity.family)) ||
         !AreaHitQuery.passes(filter, AreaHitQuery.isAlly(entity, attackerTeam)) ||
         entities.takesNoDamage(entity.id)
       ) {

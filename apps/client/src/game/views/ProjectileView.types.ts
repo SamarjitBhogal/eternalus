@@ -7,5 +7,8 @@ import type { EntityDrawState } from './EntityView.types';
  */
 export type ProjectileEndingLook = 'fizzle' | 'drop' | 'lodge' | 'burst';
 
+/** How a flying shot's body looks: `'streak'` is a dot with a trailing streak, `'orb'` is a circle. */
+export type ProjectileBodyLook = 'streak' | 'orb';
+
 /** A point or direction in world units, as an entity's draw state holds it. */
 export type Point = EntityDrawState['position'];

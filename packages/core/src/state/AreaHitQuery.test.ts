@@ -128,6 +128,23 @@ describe('AreaHitQuery.find', () => {
     expect(run('allies', true)).toEqual(['a-ally', attacker.id]);
   });
 
+  it('hits only units (Legends, mobs, bosses) when the filter asks for units only (a blast, DEC-342)', () => {
+    const { entities, add, attacker, query } = setUp();
+    for (const family of ['legend', 'mob', 'boss', 'structure', 'obstacle']) {
+      add(family, { at: { x: 1, y: 0 }, team: 'dark', family });
+    }
+    const area = holding('legend', 'mob', 'boss', 'structure', 'obstacle');
+    const run = (isUnitsOnly?: boolean) =>
+      query.find(entities, attacker.id, area, NO_AIM, {
+        team: 'enemies',
+        ...(isUnitsOnly === undefined ? {} : { isUnitsOnly }),
+      });
+
+    expect(run(true)).toEqual(['boss', 'legend', 'mob']);
+    expect(run(false)).toEqual(['boss', 'legend', 'mob', 'obstacle', 'structure']);
+    expect(run()).toEqual(run(false));
+  });
+
   it('skips a dead body and a body without health', () => {
     const { add, find } = setUp();
     const dead = add('dead', { at: { x: 1, y: 0 }, team: 'dark' });

@@ -1,14 +1,22 @@
 import { TickRate } from '../../utils/TickRate';
 import { ContentCatalogue } from '../ContentCatalogue';
 import { ContentValidationError } from '../ContentValidationError';
+import { createProjectileRules } from '../defaultContentRules';
 import { KEBAB_CASE } from '../validation/KebabCaseIdRule.constants';
 import { PROJECTILES } from './projectileCatalogue';
 import type { ProjectileDefinition } from './projectiles.types';
 
 const isPositive = (value: number): boolean => value > 0 && Number.isFinite(value);
 
-/** What is wrong with `projectile` as authored, or nothing. */
-const problemsOf = (projectile: ProjectileDefinition, tickRate: number): string[] => {
+/**
+ * What is wrong with `projectile` as authored, or nothing: its own numbers, then the projectile
+ * rules (`createProjectileRules`).
+ */
+const problemsOf = (
+  projectile: ProjectileDefinition,
+  tickRate: number,
+  catalogue: ContentCatalogue<ProjectileDefinition>,
+): string[] => {
   const problems: string[] = [];
   if (!KEBAB_CASE.test(projectile.id)) problems.push('id must be kebab-case');
   if (!isPositive(projectile.footprintRadius)) problems.push('footprintRadius must be positive');
@@ -22,6 +30,7 @@ const problemsOf = (projectile: ProjectileDefinition, tickRate: number): string[
   if (projectile.range < projectile.movementProfile.maxSpeed / tickRate) {
     problems.push('range must be at least one tick of flight');
   }
+  problems.push(...createProjectileRules().flatMap((rule) => rule.check(projectile, catalogue)));
   return problems.map((problem) => `Projectile "${projectile.id}": ${problem}.`);
 };
 
@@ -38,7 +47,8 @@ export const loadProjectiles = (
   tickRate: number,
   authored: readonly ProjectileDefinition[] = PROJECTILES.all(),
 ): ContentCatalogue<ProjectileDefinition> => {
-  const problems = authored.flatMap((projectile) => problemsOf(projectile, tickRate));
+  const catalogue = new ContentCatalogue(authored);
+  const problems = authored.flatMap((projectile) => problemsOf(projectile, tickRate, catalogue));
   if (problems.length > 0) {
     throw new ContentValidationError(problems.join('\n'));
   }

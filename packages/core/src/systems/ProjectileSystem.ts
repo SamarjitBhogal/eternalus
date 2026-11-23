@@ -120,16 +120,8 @@ export class ProjectileSystem implements System {
     const hit = this.firstBody(state, payload, from, delta, length, body.radius);
     if (hit !== null && isTouchedBeforeWall(hit.time * length, wall)) {
       if (!state.entities.takesNoDamage(hit.body.entity.id)) {
-        const landed = this.landOn(state, {
-          impact: payload.impact,
-          ownerId: payload.ownerId,
-          team: payload.team,
-          ownerLevel: payload.ownerLevel,
-          source: payload.source,
-          origin: payload.origin,
-          bodyId: hit.body.entity.id,
-          point: { x: from.x + delta.x * hit.time, y: from.y + delta.y * hit.time },
-        });
+        const point = { x: from.x + delta.x * hit.time, y: from.y + delta.y * hit.time };
+        const landed = this.landOn(state, ProjectileSystem.hitOf(payload, hit.body, point));
         state.entities.recordHits(payload.ownerId, landed, state.tick);
       }
       this.spend(state, shot);
@@ -157,19 +149,21 @@ export class ProjectileSystem implements System {
         body.position,
         body.radius,
       );
-      const landed = this.landOn(state, {
-        impact: payload.impact,
-        ownerId: payload.ownerId,
-        team: payload.team,
-        ownerLevel: payload.ownerLevel,
-        source: payload.source,
-        origin: payload.origin,
-        bodyId: under?.entity.id ?? null,
-        point: { x: body.position.x, y: body.position.y },
-      });
+      const point = { x: body.position.x, y: body.position.y };
+      const landed = this.landOn(state, ProjectileSystem.hitOf(payload, under, point));
       state.entities.recordHits(payload.ownerId, landed, state.tick);
     }
     this.steerToEnd(shot, flight, flown);
+  }
+
+  /** The hit `payload` makes at `point` on `body` (`null`: bare ground, an arc shot's landing). */
+  private static hitOf(
+    { impact, ownerId, team, ownerLevel, source, origin }: ProjectilePayload,
+    body: ShotBody | null,
+    point: Vec2,
+  ): ProjectileHit<ProjectileImpactKind> {
+    const bodyId = body?.entity.id ?? null;
+    return { impact, ownerId, team, ownerLevel, source, origin, bodyId, point };
   }
 
   /** Hands the hit to the impact of its kind; returns the ids it landed on. */

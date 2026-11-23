@@ -12,7 +12,10 @@ import type { ShotBody } from './ProjectileSystem.types';
  * when the shot aims at it) whose outline, or collider circle, meets the shot's circle there. A
  * body that takes no damage now (`EntityStore.takesNoDamage`: a wall, a gate, a forest camp) is
  * not a candidate: nothing lands on it, so a unit beside it still takes the hit. The shot's target
- * wins if it is a candidate, else the first candidate in store order. Stateless.
+ * wins if it is a candidate, else the first candidate in store order. A turret's shot names no
+ * target: a turret aims at a point (`attack-aim`), and the enemy walk-on outlines that
+ * `AreaHitQuery.aimedBodyOf` could name for that point (the enemy palace and gates) are far out of
+ * every turret's reach. So under a turret's shot a tie goes to store order. Stateless.
  */
 export class ArcLanding {
   /**

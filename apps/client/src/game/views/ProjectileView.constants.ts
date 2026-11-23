@@ -1,4 +1,4 @@
-import type { ProjectileEndingLook } from './ProjectileView.types';
+import type { ProjectileBodyLook, ProjectileEndingLook } from './ProjectileView.types';
 
 /** Size of a projectile's team-coloured dot, in world units. */
 // TUNE: placeholder look for ranged attacks (PR 1); close is enough
@@ -28,6 +28,16 @@ export const PROJECTILE_ENDING_LOOKS: Readonly<Record<string, ProjectileEndingLo
   'turret-bolt': 'lodge',
   'turret-heavy-bolt': 'lodge',
   'tower-orb': 'burst',
+};
+
+/**
+ * The body look of each projectile definition id; an id with no entry is a `'streak'`.
+ * `ProjectileView.test.ts` checks the keys against core's projectile ids
+ * (`DisplayContent.projectileIds`, ADR 0023).
+ */
+// TUNE: placeholder looks (DEC-302): the tower orb is a circle, every other shot a streak
+export const PROJECTILE_BODY_LOOKS: Readonly<Record<string, ProjectileBodyLook>> = {
+  'tower-orb': 'orb',
 };
 
 /** Colour of the shadow under a dropping shot. */

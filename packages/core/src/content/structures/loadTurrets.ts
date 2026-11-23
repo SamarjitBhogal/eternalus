@@ -1,6 +1,7 @@
 import { TickRate } from '../../utils/TickRate';
 import { ContentCatalogue } from '../ContentCatalogue';
 import { ContentValidationError } from '../ContentValidationError';
+import { createStructureRules } from '../defaultContentRules';
 import { PROJECTILES } from '../projectiles/projectileCatalogue';
 import type { ProjectileDefinition } from '../projectiles/projectiles.types';
 import { KEBAB_CASE } from '../validation/KebabCaseIdRule.constants';
@@ -84,12 +85,25 @@ const carriedAmmoProblems = (
 };
 
 /**
+ * What is wrong with `structure` under the structure rules (`createStructureRules`: a turret needs
+ * ammo, ammo needs the turret controller), or nothing.
+ */
+const structureRuleProblems = (
+  structure: StructureDefinition,
+  catalogue: ContentCatalogue<StructureDefinition>,
+): string[] =>
+  createStructureRules()
+    .flatMap((rule) => rule.check(structure, catalogue))
+    .map((problem) => `Structure "${structure.id}": ${problem}.`);
+
+/**
  * Loads the turret content (architecture 07 §5, 11 §4.5): each ammo's attack interval and its
  * `onHit` steps' times from seconds to ticks (`attackInTicks`, as a weapon's), and each profile's
  * defend-ally window to ticks, once (architecture 03 §8, DEC-241). The window keeps 0 (only this
- * tick's hits); an interval is at least one tick. It also checks the ammo list of every structure
- * definition that names one. The `onHit` steps' own fields are their effect strategies' to check
- * at boot (`checkAttackLinks`).
+ * tick's hits); an interval is at least one tick. It also checks every structure definition
+ * against the structure rules (`createStructureRules`) and the ammo list of every one that names
+ * one. The `onHit` steps' own fields are their effect strategies' to check at boot
+ * (`checkAttackLinks`).
  *
  * @param tickRate - Ticks per second (`GameConfig.tickRate`).
  * @param authored - The ammo, profiles and structures to load and check; each the shipped one
@@ -98,7 +112,8 @@ const carriedAmmoProblems = (
  * @throws ContentValidationError listing every broken rule: a bad id, a damage, reach or interval
  *   that is not positive, an unknown projectile, a negative time, a range that is not positive, a
  *   structure that names an unknown ammo or an ammo that reaches less than its profile's range, or
- *   whose last ammo is not preferred against any target (so some target would get none).
+ *   whose last ammo is not preferred against any target (so some target would get none), a turret
+ *   with no ammo list, or ammo on a structure the turret controller does not drive.
  */
 export const loadTurrets = (
   tickRate: number,
@@ -111,9 +126,11 @@ export const loadTurrets = (
 ): TurretContent => {
   const ammoById = new Map(ammo.map((ammo) => [ammo.id, ammo]));
   const profileById = new Map(profiles.map((profile) => [profile.id, profile]));
+  const structureCatalogue = new ContentCatalogue(structures);
   const problems = [
     ...ammo.flatMap((entry) => ammoProblems(entry, projectiles)),
     ...profiles.flatMap(profileProblems),
+    ...structures.flatMap((structure) => structureRuleProblems(structure, structureCatalogue)),
     ...structures
       .filter((structure) => structure.ammo !== undefined)
       .flatMap((structure) => carriedAmmoProblems(structure, ammoById, profileById)),

@@ -11,6 +11,7 @@ import {
   PROJECTILE_ARC_REFERENCE_RANGE,
   PROJECTILE_ARC_SHADOW_OPACITY_END,
   PROJECTILE_ARC_SHADOW_OPACITY_START,
+  PROJECTILE_BODY_LOOKS,
   PROJECTILE_BURST_OPACITY,
   PROJECTILE_ARC_RISE,
   PROJECTILE_CORE_COLOR,
@@ -23,6 +24,7 @@ import {
   PROJECTILE_MIST_END_RADIUS,
   PROJECTILE_MIST_OPACITY,
   PROJECTILE_MIST_START_RADIUS,
+  PROJECTILE_ORB_BODY_SIZE,
   PROJECTILE_SHADOW_COLOR,
   PROJECTILE_SHADOW_OPACITY,
   PROJECTILE_SHADOW_SIZE,
@@ -184,6 +186,20 @@ describe('ProjectileView', () => {
     expect(Object.keys(PROJECTILE_ENDING_LOOKS).sort()).toEqual([...coreIds].sort());
   });
 
+  it('has a body look only for core projectile ids (ADR 0023)', () => {
+    const coreIds = loadDisplayContent(createDefaultGameConfig().tickRate).projectileIds;
+
+    expect(Object.keys(PROJECTILE_BODY_LOOKS).filter((id) => !coreIds.includes(id))).toEqual([]);
+  });
+
+  it('has a launch height only for core projectile ids (ADR 0023)', () => {
+    const coreIds = loadDisplayContent(createDefaultGameConfig().tickRate).projectileIds;
+
+    expect(
+      Object.keys(PROJECTILE_ARC_LAUNCH_HEIGHTS).filter((id) => !coreIds.includes(id)),
+    ).toEqual([]);
+  });
+
   it('lays an ended arrow still on its shadow, solid at first and gone at the end', () => {
     const solid = draw(ended(ARROW, 0)).calls;
     const gone = draw(ended(ARROW, 1)).calls;
@@ -286,9 +302,15 @@ describe('ProjectileView', () => {
 
     it('draws an orb as a team-coloured circle', () => {
       const orb = { ...arc(0.5, 20), definitionId: 'tower-orb' };
-      const glyph = draw(orb).calls.find((call) => call.op === 'drawWorldGlyph');
+      const calls = draw(orb).calls;
+      const glyph = calls.find((call) => call.op === 'drawWorldGlyph');
 
-      expect(glyph?.args[2]).toBe(TEAM_COLORS.dark);
+      expect(glyph?.args).toEqual([
+        { shape: 'dot', size: PROJECTILE_ORB_BODY_SIZE },
+        expect.anything(),
+        TEAM_COLORS.dark,
+      ]);
+      expect(calls.filter((call) => call.op === 'strokePath')).toEqual([]);
     });
 
     it("bursts an orb into a circle that grows to its shot's blast radius and fades", () => {
@@ -314,8 +336,12 @@ describe('ProjectileView', () => {
       expect(half.color).toBe(colorWithAlpha(TEAM_COLORS.dark, PROJECTILE_BURST_OPACITY * 0.5));
       expect(full.color).toBe(TEAM_COLORS.dark + '00');
       expect(radiusOf(orb(1, 2.5)).radius).toBeCloseTo(2.5);
-      // The same id fired with no blast draws no circle.
-      expect(radiusOf(orb(1, null)).radius).toBe(0);
+    });
+
+    it('draws no burst circle for a shot with no blast radius', () => {
+      const entity = { ...arc(1, 20, 1, null), definitionId: 'tower-orb' };
+
+      expect(draw(entity).calls.filter((call) => call.op === 'fillPolygon')).toEqual([]);
     });
   });
 });

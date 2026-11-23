@@ -91,8 +91,10 @@ export class EntitySnapshotter {
   }
 
   /**
-   * A fired shot's flown share and ending as plain data; `null` for an entity that is not one (no
-   * `ProjectileFlight`, `ProjectilePayload` or `Transform`).
+   * A fired shot as plain data: its flown share, whether it is an arc shot and its range (both
+   * `ProjectileFlight`'s), its blast radius (`ProjectilePayload.blastRadius`) and its ending;
+   * `null` for an entity that is not one (no `ProjectileFlight`, `ProjectilePayload` or
+   * `Transform`).
    */
   private projectileOf(
     entity: Entity,
@@ -110,7 +112,7 @@ export class EntitySnapshotter {
           : Math.min(1, distance(payload.origin, transform.position) / flight.range),
       isArc: flight.isArc,
       range: flight.range,
-      blastRadius: payload.impact.attack.projectile.splash?.radius ?? null,
+      blastRadius: payload.blastRadius,
       ending: flight.isEnded ? flight.endingShare : null,
     };
   }

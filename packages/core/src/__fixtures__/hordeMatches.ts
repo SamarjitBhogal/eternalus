@@ -41,12 +41,14 @@ export const MARCHING_ONLY = new ContentCatalogue<UnitDefinition>(
 );
 
 /**
- * The shipped structures with every controller and carried ammo taken away, so a lane tower does
- * not shoot the hordes that march on it (DEC-302): marching tests are about where a horde goes,
- * not about the tower's orbs.
+ * The shipped structures with every lane tower's controller and carried ammo taken away, so a lane
+ * tower does not shoot the hordes that march on it (DEC-302): marching tests are about where a
+ * horde goes, not about the tower's orbs. The wall turret keeps its own: a turret needs its ammo
+ * (`TurretNeedsAmmoRule`), and the maps these tests march on have none.
  */
 export const UNARMED_STRUCTURES = new ContentCatalogue<StructureDefinition>(
   STRUCTURE_DEFINITIONS.all().map((definition) => {
+    if (definition.kind === 'turret') return definition;
     const unarmed = { ...definition };
     delete unarmed.controller;
     delete unarmed.aiProfile;

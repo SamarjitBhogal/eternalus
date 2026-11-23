@@ -28,6 +28,14 @@ describe('loadProjectiles', () => {
     expect(endDuration).toBe(15);
   });
 
+  it('rejects an arc shot that slows before its range (createProjectileRules)', () => {
+    const broken = () => loadProjectiles(30, [{ ...TEST_SHOT, isArc: true }]);
+
+    expect(broken).toThrow(ContentValidationError);
+    expect(broken).toThrow('Projectile "test-shot": an arc shot needs slowFrom equal to range.');
+    expect(() => loadProjectiles(30, [{ ...TEST_SHOT, isArc: true, slowFrom: 500 }])).not.toThrow();
+  });
+
   it('keeps an end duration of at least one tick', () => {
     expect(
       loadProjectiles(30, [{ ...TEST_SHOT, endDuration: 0.001 }]).get('test-shot').endDuration,

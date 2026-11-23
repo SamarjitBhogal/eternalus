@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { Health } from './components/Health';
 import { loadTurrets } from './content/structures/loadTurrets';
 import { StateHasher } from './state/StateHasher';
+import { doesDiscReachPolygon } from './utils/circlePolygon';
 import type { Vec2 } from './utils/geometry.types';
 import { MARCHING_ONLY } from './__fixtures__/hordeMatches';
 import { config, COUNTDOWN, MAP, setUp, spawnDark } from './__fixtures__/turretMatch';
@@ -57,16 +58,23 @@ describe('Simulation lane towers (DEC-302, DEC-342)', () => {
     expect(context.dealt.has(outside)).toBe(false);
   });
 
-  it('splashes: two enemy dummies near each other both take damage, an ally and the tower take none', () => {
+  it('splashes: two enemy dummies near each other both take damage; an ally and the tower, both inside the blast, take none', () => {
     const context = withTower();
-    const first = spawnDark(context, 'light-mob', 'training-dummy', awayFrom(20));
-    const second = spawnDark(context, 'light-mob', 'training-dummy', {
-      x: awayFrom(20).x + 1.5,
-      y: awayFrom(20).y,
+    // 12 m from the tower's centre to the south-east, in the fort's yard: the blast (3 m) reaches
+    // the fort's corner, which is the tower's outline, and the orb crosses no wall on the way.
+    const yard = (dx: number, dy = 0): Vec2 => ({
+      x: TOWER.position.x + 8.5 + dx,
+      y: TOWER.position.y - 8.5 - dy,
     });
-    const ally = spawnLight(context, awayFrom(20.5));
+    const first = spawnDark(context, 'light-mob', 'training-dummy', yard(0));
+    const second = spawnDark(context, 'light-mob', 'training-dummy', yard(1.5));
+    const ally = spawnLight(context, yard(0, 1.5));
+    const landing = { ...(context.state.entities.placeOf(first)?.position ?? yard(0)) };
+    const blast = ORB.projectile.splash?.radius ?? 0;
+    const fort = context.state.entities.outlineOf(context.towerId)?.polygons ?? [];
     context.run(COUNTDOWN + config.tickRate * 3);
 
+    expect(fort.some((polygon) => doesDiscReachPolygon(landing, blast, polygon))).toBe(true);
     expect(context.dealt.get(first)).toBeGreaterThan(0);
     expect(context.dealt.get(second)).toBeGreaterThan(0);
     expect(context.dealt.has(ally)).toBe(false);
