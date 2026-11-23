@@ -195,11 +195,11 @@ export class Simulation {
     this.handlers = createDefaultCommandHandlers(validator);
     this.readiness = validator;
     const projectiles = loadProjectiles(tickRate);
-    // The bots' line-of-fire query: a bot drops a target its shot cannot reach (DEC-317 addendum).
     // The match's one aim rule and one hit rule for areas, shared by the bots, the line of fire
-    // and the systems.
+    // and the systems (DEC-344 (3)).
     const reach = new ReachQuery();
     const areas = new AreaHitQuery();
+    // The bots' line-of-fire query: a bot drops a target its shot cannot reach (DEC-317 addendum).
     const lineOfFire = new LineOfFire(projectiles, reach, areas);
     const controllers = Simulation.createControllers(validator, tickRate, lineOfFire, reach);
     const units = content ?? Simulation.defaultContent(tickRate, curves, controllers, weaponSource);
@@ -789,7 +789,8 @@ export class Simulation {
 
   /**
    * Every controller, with the shipped content it reads (architecture 11 §2); the aggro profiles
-   * are loaded at `tickRate`. Bots check their line of fire with `lineOfFire` and their reach with `reach`.
+   * are loaded at `tickRate`. Bots check their line of fire with `lineOfFire` and their reach
+   * with `reach`.
    */
   private static createControllers(
     readiness: SlotReadiness,

@@ -66,7 +66,7 @@ export class PathingSystem implements System {
     private readonly strategies: StrategyRegistry['movement'],
     private readonly formations: Readonly<Record<string, FormationDefinition>>,
     private readonly slotArrivalRadius: number,
-    private readonly reach: ReachQuery,
+    private readonly reach: Pick<ReachQuery, 'aimPointOf'>,
     { flowFields = null, forts = [] }: PathingWorld = {},
   ) {
     this.flowFields = flowFields;

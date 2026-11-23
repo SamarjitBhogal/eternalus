@@ -2,6 +2,7 @@ import { CastValidator } from '../abilities/CastValidator';
 import { checkStatusLinks } from '../abilities/checkStatusLinks';
 import { createDefaultAbilityRegistry } from '../abilities/defaultAbilityRegistry';
 import { HitEffects } from '../abilities/HitEffects';
+import { TargetQuery } from '../abilities/TargetQuery';
 import { DamagePipeline } from '../combat/DamagePipeline';
 import { Footprint } from '../components/Footprint';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
@@ -99,7 +100,8 @@ export class DefaultSystemPipeline extends SystemPipeline {
     );
     checkStatusLinks(abilities, statusEffects.all());
     const statuses = new StatusEffectApplier(statusEffects);
-    const hits = new HitEffects(abilities, damage, statuses, areas);
+    const targets = new TargetQuery(abilities, areas);
+    const hits = new HitEffects(abilities, damage, statuses, targets);
     const flowFields =
       hordes === undefined || state.world === null
         ? null
@@ -130,7 +132,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
     }
     super([
       ...(hordes === undefined ? [] : [...hordes.decide, new HordeSystem(state, HORDE_STEERING)]),
-      new AbilitySystem(abilities, validator, damage, statuses, areas),
+      new AbilitySystem(abilities, validator, damage, statuses, targets),
       // After the casts, so a cast spends before the tick's regeneration (plan arch call 13).
       new AetherRegenSystem(AETHER_REGEN, tickRate),
       new StatusEffectSystem(damage, statuses),

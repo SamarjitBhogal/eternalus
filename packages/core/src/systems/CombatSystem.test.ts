@@ -61,7 +61,9 @@ const setUp = (collisions: CollisionQuery | null = null) => {
   const context: SystemContext = { state, logger: new NullLogger() };
   const attack = (target: Entity) => state.entities.setAttackTarget(warrior.id, target.id);
   /** A combat system on a fresh damage pipeline, firing with this world's factory. */
-  const combatSystem = (reach: ReachQuery = new ReachQuery()): CombatSystem =>
+  const combatSystem = (
+    reach: Pick<ReachQuery, 'isInReach' | 'facingPointOf'> = new ReachQuery(),
+  ): CombatSystem =>
     new CombatSystem({ damage: new DamagePipeline(), factory, areas: new AreaHitQuery(), reach });
   return { state, warrior, spawn, context, attack, combatSystem };
 };
@@ -282,7 +284,7 @@ describe('CombatSystem', () => {
     const dummy = spawn('light-mob', 'training-dummy', 1, 'dark');
     attack(dummy);
     // A reach rule that measures a target in reach but gives no point to face on it.
-    const reach = Object.assign(new ReachQuery(), { facingPointOf: () => false });
+    const reach = { isInReach: () => true, facingPointOf: () => false };
 
     expect(() => {
       combatSystem(reach).update(context);

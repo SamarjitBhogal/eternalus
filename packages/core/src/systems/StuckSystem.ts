@@ -43,7 +43,7 @@ export class StuckSystem implements System {
    */
   public constructor(
     private readonly rule: StuckDetectionRule,
-    private readonly reach: ReachQuery,
+    private readonly reach: Pick<ReachQuery, 'aimPointOf' | 'isInReach'>,
   ) {}
 
   /** Watches every AI unit with an attack target, in store order; drops the watch of the rest. */

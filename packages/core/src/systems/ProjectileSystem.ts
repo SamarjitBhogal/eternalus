@@ -74,7 +74,7 @@ export class ProjectileSystem implements System {
    */
   public constructor(
     private readonly impacts: ProjectileImpacts,
-    private readonly areas: AreaHitQuery,
+    private readonly areas: Pick<AreaHitQuery, 'stopsShot'>,
   ) {}
 
   /** Flies every shot in the air, in store order. */

@@ -18,14 +18,17 @@ import { isPlayableTeam } from '../teams/playableTeams';
  * surviving, choosing and fighting an enemy (and casting), attacking the lane's next enemy
  * structure and walking. How the bot gets there (A\* round obstacles,
  * footprint edges, detours) is `BotMovement`'s; following the lane is `BotLaneLeaves`'.
- * `BotLegendController` and `RoverController` arrange the leaves into their trees. Stateless apart from scratch: what a bot remembers is its
- * brain.
+ * `BotLegendController` and `RoverController` arrange the leaves into their trees. Stateless
+ * apart from scratch: what a bot remembers is its brain.
  */
 export class BotLeaves {
   private readonly scorers = new Map<string, UtilityScorer<'closeness' | 'weakness'>>();
   private readonly movement = new BotMovement();
 
-  /** @param content - Difficulties and retreat points; the leaves hold no numbers. */
+  /**
+   * @param content - The difficulties, the retreat points and the bots' queries (`readiness`,
+   *   `lineOfFire`, `reach`); the leaves hold no numbers.
+   */
   public constructor(private readonly content: BotLegendControllerContent) {}
 
   /** Whether `profileId` names one of the injected difficulties. */

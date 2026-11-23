@@ -14,7 +14,7 @@ export type CombatSystemOptions = {
   /** The match's one hit rule for areas, which the sweep and the shot apply (`Simulation`'s). */
   readonly areas: AreaHitQuery;
   /** The match's one aim rule: reach and the point a unit faces (`Simulation`'s). */
-  readonly reach: ReachQuery;
+  readonly reach: Pick<ReachQuery, 'isInReach' | 'facingPointOf'>;
   /**
    * Runs the attacker's statuses' `onHit` steps when an attack lands, handed to the attack
    * strategy; none run when omitted.

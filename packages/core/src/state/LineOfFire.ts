@@ -47,8 +47,8 @@ export class LineOfFire implements LineOfFireQuery {
    */
   public constructor(
     private readonly projectiles: Pick<ContentCatalogue<ProjectileDefinition>, 'get'>,
-    private readonly reach: ReachQuery,
-    private readonly areas: AreaHitQuery,
+    private readonly reach: Pick<ReachQuery, 'aimPointOf'>,
+    private readonly areas: Pick<AreaHitQuery, 'stopsShot'>,
   ) {}
 
   /** {@inheritDoc LineOfFireQuery.isClear} */

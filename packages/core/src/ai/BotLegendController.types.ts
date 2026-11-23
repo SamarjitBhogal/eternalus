@@ -44,7 +44,7 @@ export type BotLegendControllerContent = {
    */
   readonly lineOfFire: LineOfFireQuery;
   /** The match's one aim rule (`Simulation`'s): whether the bot's attack is in reach. */
-  readonly reach: ReachQuery;
+  readonly reach: Pick<ReachQuery, 'isInReach'>;
 };
 
 /** One bot's decision in the making: what the tree reads, and what its nodes write. */

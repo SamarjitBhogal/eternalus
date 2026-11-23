@@ -24,7 +24,7 @@ export class TargetQuery {
    */
   public constructor(
     private readonly shapes: { shapeFor(kind: string): AreaShape },
-    private readonly areas: AreaHitQuery,
+    private readonly areas: Pick<AreaHitQuery, 'find'>,
   ) {}
 
   /**

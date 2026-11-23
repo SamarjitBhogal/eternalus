@@ -53,7 +53,7 @@ export class CombatSystem implements System {
   /** The match's one hit rule for areas, which the sweep and the shot apply. */
   private readonly areas: AreaHitQuery;
   /** The match's one aim rule: reach and the point a unit faces. */
-  private readonly reach: ReachQuery;
+  private readonly reach: Pick<ReachQuery, 'isInReach' | 'facingPointOf'>;
 
   /** Creates the system from its injected parts (`CombatSystemOptions`). */
   public constructor({
