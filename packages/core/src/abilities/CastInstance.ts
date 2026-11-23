@@ -12,7 +12,7 @@ import type { ShapePlacement } from './shapes/AreaShape.types';
  * runs it from the first step left. A status's `onHit` steps run as a cast too (`HitEffects`),
  * placed from the attacker to the struck body; they never wait. The enemies a step's shape finds
  * are recorded as the caster's hits (`EntityStore.recordHits`), so the AI sees whom it attacks
- * (DEC-322 (2)).
+ * (DEC-322 (2); the owner kept it, DEC-344 (2)).
  */
 export class CastInstance {
   /** @param facts - The cast. @param services - What its effects work with. */

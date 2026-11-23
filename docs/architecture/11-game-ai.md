@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-23
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -188,7 +188,7 @@ attacking an allied Legend, (3) enemy minions attacking an allied minion, (4) en
 attacking an allied minion, (5) closest enemy minion, (6) closest enemy Legend; Dota's aggro
 cooldown 3 s (90 ticks). Dota's 2.3 s aggro duration is not used: the owner's leash rule,
 "distance, then time" (18 §6.1, DEC-144), replaces it. "Call for help": an enemy Legend that
-attacks (a basic attack or an ability, DEC-322 (2)) an allied Legend inside the radius becomes priority 1, and an enemy that attacks a
+attacks (a basic attack or an ability, DEC-322 (2), DEC-344 (2)) an allied Legend inside the radius becomes priority 1, and an enemy that attacks a
 horde-mate is in reach out to `callForHelpRadius` (DEC-144). A unit "attacks" another while that
 is its locked target, and while that body was hit by its last attack (both count, not one or the
 other), for one attack interval, or the slowed cooldown when that is longer, so at least through

@@ -725,14 +725,17 @@ Reply inline (`Decision: …`).
       (DEC-326 (2)): "A: a busy minion finishes its own fight; only minions that are not fighting
       come to help". Built in PR 2 (`LeashBehaviour.engage`).
 
-- [ ] **Owner Calls card `busy-minion-building` — Minions hitting a tower: do they come to help?
+- [x] **Owner Calls card `busy-minion-building` — Minions hitting a tower: do they come to help?
       (`feat/melee-sweeps`, PR 2).** Asked on Owner Calls v54, 2026-11-22, by
       COMBAT-WEAPONS-ABILITIES-55. Does a minion that hits an enemy tower or Stronghold count as
       "fighting" under DEC-326 (2)? A (built now): no, it leaves the building and helps; only a
       minion that fights a unit stays. B: yes, it keeps hitting the building. The rule also
       reaches guards and forest-camp mobs (DEC-144 (C)). Recorded as a reading in DEC-326 (2).
+  - Answered 2026-11-23 (DEC-344 (1), Owner Calls v68): "Yes: hitting a building is not a fight.
+    The minion leaves the tower and helps. Only a minion that fights a unit (a minion, a Legend or
+    a mob) stays in its fight". This is A, as built; no change.
 
-- [ ] **HC-B35 — Better than the design, built under your standing rule (DEC-223), sign-off
+- [x] **HC-B35 — Better than the design, built under your standing rule (DEC-223), sign-off
       asked: the hit record and the takes-no-damage rule move onto `EntityStore`
       (`feat/melee-sweeps`, PR 2, pre-PR gate round 2, 2026-11-22; COMBAT-WEAPONS-ABILITIES-58).**
       Built and tested; recorded as DEC-333. Nothing waits on you. (1) The record of whom a unit
@@ -747,6 +750,9 @@ Reply inline (`Decision: …`).
       (`BotLeaves.movement = new BotMovement()`), and `stopsShot` stays static; (R2-A10)
       splitting `BotLeaves.ts` (328 lines): a split rewires the bot tree in the last critic
       round, and the leaves are one cohesive set.
+  - Answered 2026-11-23 (DEC-344 (3), Owner Calls v68): "B: sign off, and build the two skipped
+    suggestions in a follow-up". (1) and (2) stay. Lane A builds R2-A8 and R2-A10 in its next PR
+    after PR 2.
 
 - [ ] **HC-Q87 — Inside the enemy palace, your weapon never hits the Stronghold
       (`feat/melee-sweeps`, PR 2, critic R2-A2).** Confirm. Your answer to HC-Q76 was "A: aim at
@@ -757,14 +763,36 @@ Reply inline (`Decision: …`).
       built; (B) a weapon also hits the Stronghold from inside the palace when you aim at bare
       floor (the text of option A of HC-Q76). Code names: `AreaHitQuery` rule 1,
       `isOnOutlineFromOutside`; recorded in DEC-322 (1).
+  - Answered 2026-11-23 (DEC-344 (4), Owner Calls v68), "Other (note)": "Hitting the walls of the
+    stronghold damage hit. Attacking the throne does too. Floors do not count towards the health
+    pool, neither does furniture. However, it should be noted that the stronghold is not the
+    end-game target; the Emperor is. ... He is not built. Gurshaan or Aryan are supposed to
+    handle this." Not built yet: which walls count is asked as HC-Q104 (Owner Calls v71). Lane A
+    builds the answer in its own PR on PR 2. Tick this item when that PR is built.
 
-- [ ] **HC-Q88 — An ability hit counts as attacking for the AI (`feat/melee-sweeps`, PR 2,
+- [x] **HC-Q88 — An ability hit counts as attacking for the AI (`feat/melee-sweeps`, PR 2,
       critic R2-A3).** Confirm. When a Legend hits an enemy with an ability, the AI treats it
       like a basic attack: the enemy's guards and minions turn on that Legend, and a call for
       help can fire. Your Veil note says "whether via basic attack casting or ability casting",
       which supports this. Options: (A, recommended) keep it as built; (B) only a basic attack
       counts. Code names: `CastInstance` records its targets as hits (`EntityStore.recordHits`);
       recorded in DEC-322 (2), correction 2026-11-22.
+  - Answered 2026-11-23 (DEC-344 (2), Owner Calls v68): "A: keep it (built): ability hits count
+    as attacks". No change.
+
+- [ ] **HC-Q104 — Do all the palace walls and the throne share the Stronghold's health?
+      (`feat/melee-sweeps` stack, follow-up to HC-Q87, DEC-344 (4)).** Asked on Owner Calls v71,
+      2026-11-23, by COMBAT-WEAPONS-ABILITIES-59. Your HC-Q87 note: a hit on the Stronghold's
+      walls or its throne damages the Stronghold; floors and furniture do not. Today each palace
+      wall has its own health (2,000) and breaks on its own, and the throne is furniture with 100
+      health. Options: (A, recommended) every palace wall (outer walls, inner ring, room walls)
+      and the throne become part of the Stronghold, as a tower's fort walls are part of the
+      tower: a hit on any of them takes the Stronghold's health, and they no longer break on
+      their own; (B) only the outer walls and the throne; room walls keep their own health;
+      (C) walls keep their own health and also pass the damage on. This changes DEC-217 (13)
+      and part of DEC-322 (1). Lane A builds the answer in its own PR on PR 2. Code names:
+      `Simulation.spawnStructures` (one body object per structure today), `WorldObjectStore`,
+      `AreaHitQuery` rule 1.
 
 - [ ] **FYI for Samarjit (minion AI owner): three changes to minion AI in PR 2
       (`feat/melee-sweeps`).** Nothing to decide. (1) DEC-326 (2): a minion that is already
@@ -778,7 +806,8 @@ Reply inline (`Decision: …`).
       for the larger of the attack interval and the slowed cooldown (DEC-333 (1)). (3) Rule (1) is in `LeashBehaviour`, so it
       also reaches tower and Stronghold guards, forest-camp mobs and the capture point guards
       (guards follow the minion rules, DEC-144 (C)). A minion that hits its lane objective is not
-      "fighting" and still turns to help (Owner Calls card `busy-minion-building`, open).
+      "fighting" and still turns to help (Owner Calls card `busy-minion-building`, answered
+      2026-11-23: DEC-344 (1)).
       Architecture 18 §6.1 changes to match. Tick this item when Samarjit has read it.
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
