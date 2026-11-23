@@ -404,6 +404,16 @@ ring's size puts that second crossing far from the turret, near the end of the b
 measured). The sentence in §4 that concave footprints are split into convex colliders does not hold
 for wall pieces; that was so before PR 4.
 
+**2026-11-23 (branch `feat/tower-orbs`; DEC-342).** Both wall turret bolts and the tower orb are
+arc shots (`ProjectileFlight.isArc`, 05 §10). `ProjectileSystem` does not sweep an arc shot while
+it flies (§7), and `NoMapObjectOverlapInvariant` skips it. So three statements of the 2026-11-22
+DEC-334 note no longer hold for the bolts: a mountain at a turret does not stop its bolts at
+launch, the invariant does not flag them, and the release client logs no ERROR for them. No shot
+in play uses the launch-shape rule now: a unit's centre is never in a blocking area, and every
+shot that starts inside one is an arc shot. The rule stays: `LineOfFire` and straight shots keep
+it, and a straight orb (owner card HC-Q99, option B) would need it. The corner mountains on the
+wall ring (HC-Q95) still need the map fix; they no longer show as bolt errors.
+
 ## Related
 
 - [04 Entity architecture](./04-entity-architecture.md)

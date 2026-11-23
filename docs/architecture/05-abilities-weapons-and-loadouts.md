@@ -817,31 +817,23 @@ ignores an unknown attacker. A live attacker's hit does not change. `attackInTic
 abilities, statuses, weapons and turret ammo.
 
 **Implementation status, 2026-11-23 (branch `feat/tower-orbs`, DEC-342; arc shot and splash).**
-Two shot types are built on the ranged-attack path above.
+How the design text above is built:
 
-- **The arc shot** (`ProjectileDefinition.isArc`, DEC-341 (4)). It comes from above, so no wall,
-  body or map edge stops it in the air. It flies to its aim point and no further: the shot's
-  range is the shorter of the definition's range and the distance to the aim. The aim is
-  `AttackAim.point`, else the target's place. `RangedProjectileAttackStrategy` sets that range
-  (`ProjectileFlight`). At its range the shot lands. The body under it takes the hit: the shot's
-  target if that target is under it, else the first body in store order that a shot stops on
-  (`systems/ArcLanding`, with `AreaHitQuery.stopsShot`). A body that takes no damage now is never
-  chosen. Bare ground is a legal landing. Then the shot lodges: it ends and stays for its
-  `endDuration`, and it hits nothing more. The owner's hit record gets the bodies it landed on
-  (`EntityStore.recordHits`). `LineOfFire` treats an arc shot as always clear. The turret bolts
-  and the tower orb are arc shots; arrows and the Magus bolt stay straight. The client draws the
-  arc and the shadow (`views/ProjectileView`) from `EntitySnapshot.projectile` (`isArc`, `range`).
+- **The arc shot.** `RangedProjectileAttackStrategy` cuts the shot's range (`ProjectileFlight`) to
+  the distance to its aim: `AttackAim.point`, else the target's place. `systems/ArcLanding` picks
+  the body under the landing point with `AreaHitQuery.stopsShot`: the shot's target if it is
+  under it, else the first in store order. The shot then lodges for its `endDuration`, and the
+  owner's hit record gets the bodies it landed on (`EntityStore.recordHits`). `LineOfFire` treats
+  an arc shot as always clear. The turret bolts and the tower orb are arc shots; arrows and the
+  Magus bolt stay straight. The client draws the arc and the shadow (`views/ProjectileView`) from
+  `EntitySnapshot.projectile` (`isArc`, `range`).
 - **The splash** (`ProjectileLaunch.splash`: `radius` and `edgeMultiplier`, validated by
-  `KnownProjectileRule`). Where the shot lands, every live enemy unit whose circle meets the blast
-  circle takes the damage. A neutral unit counts as an enemy. Structures and allies take nothing.
-  The damage falls in a straight line from full at the centre to `edgeMultiplier` at the radius,
-  on top of the shot's fall-off. The on-hit steps run on each unit. `ProjectileImpact.land` now
-  returns the ids it landed on, and `ProjectileHit.bodyId` can be `null`. A straight shot with a
-  splash bursts at its contact point. The client draws the blast from
-  `EntitySnapshot.projectile.blastRadius`.
-- Where the numbers live: `content/projectiles/` (flight) and `content/structures/turretAmmo.ts`
-  (the ammo's splash). The tower-orb values are `TUNE` and wait for the owner (`INBOX.md`
-  HC-Q96 to HC-Q100).
+  `KnownProjectileRule`). A neutral unit counts as an enemy. The edge fall-off is on top of the
+  shot's own fall-off, and the on-hit steps run on each unit. `ProjectileImpact.land` returns the
+  ids it landed on, and `ProjectileHit.bodyId` can be `null`. A straight shot with a splash bursts
+  at its contact point. The client draws the blast from `EntitySnapshot.projectile.blastRadius`.
+- The tower-orb values (`content/projectiles/towerOrb.ts`, `content/structures/turretAmmo.ts`)
+  are `TUNE` and wait for the owner (`INBOX.md` HC-Q96 to HC-Q100).
 
 ## 11. Artifacts (gadgets Z and C)
 
