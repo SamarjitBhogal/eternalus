@@ -796,6 +796,25 @@ Reply inline (`Decision: …`).
       and an arrow that crosses one catches fire; units still cannot walk through it; (B) camp
       fires stop shots as today; only lava lights an arrow. Code names: camp fire = furniture
       object `<camp>-fire` (`MapSceneryBuilder`).
+  - Updated 2026-11-23 (Owner Calls v83, after pre-PR gate round 1): the burn is now the one in
+    the reference table of status effects (`docs/reference/suggestions/more-abilities.md` §7):
+    10 damage a second for 3 s. Please also confirm three readings of your HC-Q89 note (built
+    this way): (1) only the bow's arrows catch fire; magic orbs, turret bolts and thrown blades
+    fly over lava but do not light. (2) A lit arrow stays lit until it lands; flying over a lake
+    does not put it out. (3) A lit arrow burns units only; towers and walls take no burn. The
+    reference table says buildings take burn too, but buildings have no status effects yet.
+
+- [ ] **HC-B41 — Better than the design, built under your standing rule (DEC-223), sign-off
+      asked: two code tidy-ups in the shots-over-lava work (`feat/shots-over-lava`, HC-Q89,
+      pre-PR gate round 1, 2026-11-23; COMBAT-WEAPONS-ABILITIES-62).** Built and tested;
+      recorded as DEC-360. Nothing waits on you. No change for the player. (1) Each map shape
+      says what it does to a shot: "shots fly over it" and "a shot that flies over it catches
+      fire". Before, the flags named the ground ("low ground", "fire"). So if you say yes to
+      camp fires in HC-Q105, the change is two flags in one place. (2) One rule decides whether
+      a map shape stops a shot, and both places that check it use that rule. Before, each had
+      its own copy, and the two copies disagreed over lakes (the critic found it). Code names:
+      `canShotsCross`, `canLightShots`, `CollisionQuery.lightsShot`, `doesShapeStopShot`. Say
+      "no" to either and it goes back.
 
 - [ ] **HC-Q90 — When can a wall turret take damage? (`feat/wall-turrets`, PR 4, Owner Calls
       card "WT when damageable", 2026-11-22; PR-REVIEW-ASSIST-33).** No doc sets it: 07 §3 names
