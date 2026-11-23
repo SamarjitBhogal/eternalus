@@ -119,10 +119,7 @@ export class ProjectileView extends DefaultEntityView {
     );
   }
 
-  /**
-   * The orb: a circle in its team's colour.
-   * ponytail: team-coloured circle until the owner's orb sprites (DEC-302)
-   */
+  /** The orb: a circle in its team's colour (`PROJECTILE_ORB_BODY_SIZE`). */
   private drawOrb({ position }: EntityDrawState, color: string, renderer: Renderer): void {
     renderer.drawWorldGlyph({ shape: 'dot', size: PROJECTILE_ORB_BODY_SIZE }, position, color);
   }
