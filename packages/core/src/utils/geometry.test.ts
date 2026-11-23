@@ -102,6 +102,18 @@ describe('geometry', () => {
     expect(isPointInBlockingArea({ x: 15, y: 5 }, SQUARE)).toBe(false);
   });
 
+  it('holds a point on the joint of two shapes in both, as a wall turret stands on two wall pieces (DEC-334)', () => {
+    const east = SQUARE.map(({ x, y }) => ({ x: x + 10, y }));
+    // The even-odd test gives a point on the shared edge x = 10 to one square only.
+    const joint = { x: 10, y: 5 };
+    expect([isPointInPolygon(joint, SQUARE), isPointInPolygon(joint, east)]).toEqual([false, true]);
+
+    expect(isPointInBlockingArea(joint, SQUARE)).toBe(true);
+    expect(isPointInBlockingArea(joint, east)).toBe(true);
+    expect(isPointInBlockingArea({ x: 10.001, y: 5 }, SQUARE)).toBe(false);
+    expect(isPointInBlockingArea({ x: 10, y: 10 }, SQUARE)).toBe(true);
+  });
+
   it('measures distance to a segment and a path', () => {
     expect(distanceToSegment({ x: 5, y: 3 }, { x: 0, y: 0 }, { x: 10, y: 0 })).toBe(3);
     expect(distanceToSegment({ x: -3, y: 4 }, { x: 0, y: 0 }, { x: 10, y: 0 })).toBe(5);

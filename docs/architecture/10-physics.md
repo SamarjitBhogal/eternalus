@@ -367,7 +367,18 @@ not stopped by a blocking shape whose blocking area holds its launch point; the 
 leave that shape. The blocking area is the shape's polygon outside its passages, as
 `CollisionResolver.startsInside` and `WorldObjectStore.blockingAt` read it. So a unit on a bridge
 still has its shot stopped by the lava beside the deck. "Holds" means the launch point, not the
-shot's circle: a shot whose circle touches a wall at launch is still stopped there.
+shot's circle: a shot whose circle touches a wall at launch is still stopped there. A launch point
+on the polygon's edge is held too (within `CONTACT_EPSILON`, `utils/geometry`
+`isPointInBlockingArea`). A wall turret stands on the joint of two wall pieces, and the even-odd
+point test gives a point on a shared edge to one piece at most. Without the edge, the other piece
+stopped every bolt that flew into it, and `NoMapObjectOverlapInvariant` flagged the bolt at launch
+(12 of the 20 turrets on each of the seed 1 to 8 maps).
+Known limit (a map bug from before PR 4, reported to the map-work lane): blocking corner mountains
+(`map/MapMountainBuilder`) can cover a fort's wall ring. On seeds 3 to 8 a mountain holds the
+centre of turret 0 of each side (on some seeds also turret 1 or 9), so those bolts ignore that
+mountain for their whole flight. On seed 2 the mountain's edge is 0.04 m from that centre, so the
+mountain stops the bolts fired into it at launch, and `NoMapObjectOverlapInvariant` flags them.
+The fix is in the map: keep blocking terrain off the wall ring.
 `CollisionQuery.reach` takes the launch point as an optional argument. `ProjectileSystem` passes
 the shot's `origin`, and `LineOfFire` passes the attacker's centre, so line of fire and shots keep
 one stop rule (DEC-317 B9). `NoMapObjectOverlapInvariant` passes a shot's origin to

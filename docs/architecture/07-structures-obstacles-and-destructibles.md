@@ -490,8 +490,8 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   attack timer stays, so a switch gives no free shot. `TurretController` sends `switch-ammo` and
   `attack-aim` (11 §10), and `Combat` fires a bolt whenever its cooldown allows. A bolt starts at
   the turret's centre, inside its pylon and often inside its wall. The launch-shape rule (DEC-334)
-  lets it out: a blocking shape whose blocking area (inside its polygon, inside none of its
-  passages) holds the shot's launch point does not stop that shot (10 §12), and
+  lets it out: a blocking shape whose blocking area (inside its polygon or on its edge, inside none
+  of its passages) holds the shot's launch point does not stop that shot (10 §12), and
   `NoMapObjectOverlapInvariant` does not flag a shot inside such a shape. A turret kill names the
   turret as the killer (`definitionId` `turret`). The turret has no score row, no `Progression`
   and no ultimate meter, so the kill gives no kill points, no XP and no ultimate charge to anyone;

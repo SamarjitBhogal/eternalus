@@ -51,8 +51,9 @@ export class CollisionResolver {
    * whole `distance` when nothing is in the way. Read-only, like `move`.
    *
    * @param launch - A shot's launch point. A shape whose blocking area holds it (inside the
-   *   polygon, inside none of its passages) does not stop the sweep: the shot can only leave that
-   *   shape (the launch-shape rule, DEC-334). A unit's centre is never in a blocking area, so a
+   *   polygon or on its edge, inside none of its passages) does not stop the sweep: the shot can
+   *   only leave that shape (the launch-shape rule, DEC-334). The edge counts, so a turret on the
+   *   joint of two wall pieces can leave both. A unit's centre is never in a blocking area, so a
    *   shot from a unit is stopped as before.
    */
   public reach(

@@ -111,8 +111,9 @@ export class WorldObjectStore {
    * surviving blocking object whose footprint a circle of `radius` at `point` overlaps, outside its
    * passages, or `null`.
    *
-   * @param launch - A shot's launch point: a footprint whose blocking area (inside it, inside none
-   *   of the object's passages) holds it does not count, as it does not stop the shot (DEC-334).
+   * @param launch - A shot's launch point: a footprint whose blocking area (inside it or on its
+   *   edge, inside none of the object's passages) holds it does not count, as it does not stop the
+   *   shot (DEC-334).
    */
   public blockingAt(point: Vec2, radius: number, launch?: Vec2): string | null {
     for (const { object, entityId, health, bounds } of this.records) {
