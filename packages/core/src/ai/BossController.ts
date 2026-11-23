@@ -20,8 +20,8 @@ import type { Controller, Decision, DecisionInput } from './Controller.types';
  * post's circle (home edge plus leash). Stateless: its FSM, timers and roam point live in the
  * brain's memory.
  *
- * Interim (11 §4.6): moves rotate in profile order, one after another, so every move comes up (the
- * owner's brief, 2026-11-20); the next move waits, and the boss chases, until a target is in its
+ * Interim (11 §4.6): moves rotate in profile order, one after another, so every move comes up (at
+ * Aryan's request; INBOX: the rotation item); the next move waits, and the boss chases, until a target is in its
  * range and it is off cooldown. The utility and seeded weighted pick are not built. The target is
  * the nearest one, not the top recent damage dealer (INBOX: the bias has no window or weight yet).
  */

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Aether } from '../components/Aether';
+import { BossMoveCast } from '../components/BossMoveCast';
 import { Capturable } from '../components/Capturable';
 import { CathedralGemState } from '../components/CathedralGemState';
 import { Collider } from '../components/Collider';
@@ -144,6 +145,23 @@ describe('StateHasher', () => {
     expect(hasher.hash(state)).not.toBe(before);
     movement.takeStep();
     expect(hasher.hash(state)).toBe(before);
+  });
+
+  it('changes when a boss starts a move, with its move and landing tick, and again when it lands', () => {
+    const { state, soldier } = stateWithSoldier();
+    const before = hasher.hash(state);
+
+    state.entities.beginBossMove(soldier.id, 'slam', 10);
+    const waiting = hasher.hash(state);
+    expect(waiting).not.toBe(before);
+    state.entities.beginBossMove(soldier.id, 'sweep', 10);
+    expect(hasher.hash(state)).not.toBe(waiting);
+    state.entities.beginBossMove(soldier.id, 'slam', 11);
+    expect(hasher.hash(state)).not.toBe(waiting);
+    state.entities.beginBossMove(soldier.id, 'slam', 10);
+    expect(hasher.hash(state)).toBe(waiting);
+    soldier.getComponent(BossMoveCast).clear();
+    expect(hasher.hash(state)).not.toBe(waiting);
   });
 
   it('changes when an entity turns, and changes back when it turns back (DEC-192)', () => {

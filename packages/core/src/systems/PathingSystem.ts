@@ -279,9 +279,7 @@ export class PathingSystem implements System {
         guard === undefined ||
         index === undefined ||
         movement === undefined ||
-        strategy === undefined ||
-        // A boss on a post (the Greater Boss) steers itself with `move` commands (11 §4.6).
-        state.entities.controllerOf(guard.id)?.controllerId !== 'guard'
+        strategy === undefined
       ) {
         return;
       }

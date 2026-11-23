@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-23
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -294,7 +294,7 @@ Knockback (§3) is interim (2026-11-22, `feat/greater-boss-moves`): no `pendingI
 or friction yet. A knockback is a one-step displacement, `Movement.pushBy`, added to the unit's
 next step by `MovementSystem` (held or not, without turning it) and swept by `CollisionSystem`
 like a walk, so it stops at walls; `StateHasher` hashes a push while it waits. The Greater Boss's
-sweep is its only user. The impulse model replaces it when a second pusher (the Sentinel's Slam)
+sweep (on the units it hits) and charge (on the boss itself) are its only users. The impulse model replaces it when a second pusher (the Sentinel's Slam)
 lands.
 
 `physics/SpatialHash` (minion plan M1, M2a) has §5's `rebuild` and an exact, ascending

@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-23
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -530,8 +530,8 @@ so a replay or a match without map objects rebuilds the same zones. Interim diff
   `boss-summoned`. Its leash is balancing.md's 25 m centre zone (`GUARD_LEASH.greaterBossZone`).
   The boss is a neutral `heavy-mob` definition (`content/mobs/greaterBoss.ts`) on
   `BossController` with six moves, not doc 04's `GreaterBoss` class (11's implementation status);
-  its guard post spawns it and its circle is the boss's zone, but `PathingSystem` does not steer
-  it to the post. Minions deal it
+  its guard post spawns it and its circle is the boss's zone, but it has no movement strategy, so
+  `PathingSystem` does not steer it to the post. Minions deal it
   a quarter of their hit (`BOSS_MINION_DAMAGE_TAKEN`); its kill lifts the killer's team 5 levels
   (DEC-237, `XP_SOURCES.teamKills`). Every number is `TUNE`; the questions are in `INBOX.md` (the
   Greater Boss item). In a Duel the action does nothing (DEC-36), so the gem

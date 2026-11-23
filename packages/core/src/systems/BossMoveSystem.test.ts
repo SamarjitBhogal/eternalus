@@ -64,6 +64,27 @@ const setUp = () => {
   return { state, boss, add, land, executed };
 };
 
+/** Puts `bossId` on a guard post whose circle (its zone) has radius 4 around `BOSS_AT`. */
+const postInZoneOfRadius4 = (state: GameState, bossId: string): void => {
+  state.guards.add({
+    id: 'cathedral:0',
+    homeId: 'cathedral',
+    team: 'neutral',
+    mobId: 'greater-boss',
+    row: 0,
+    indexInRow: 0,
+    postX: BOSS_AT.x,
+    postY: BOSS_AT.y,
+    homeX: BOSS_AT.x,
+    homeY: BOSS_AT.y,
+    homeRadius: 1,
+    leashRadius: 3,
+    leashTolerance: 3,
+    respawnTicks: 0,
+  });
+  state.guards.fill(0, bossId);
+};
+
 const damageOf = (entity: { getComponent: (type: typeof Health) => Health }): number => {
   const health = entity.getComponent(Health);
   return health.max - health.current;
@@ -190,23 +211,7 @@ describe('BossMoveSystem', () => {
   it("cuts the charge short at its zone's edge, and hits nothing past it", () => {
     const { state, boss, add, land } = setUp();
     // A zone of radius 4 around the boss's own spot: the dash stops 4 m out.
-    state.guards.add({
-      id: 'cathedral:0',
-      homeId: 'cathedral',
-      team: 'neutral',
-      mobId: 'greater-boss',
-      row: 0,
-      indexInRow: 0,
-      postX: BOSS_AT.x,
-      postY: BOSS_AT.y,
-      homeX: BOSS_AT.x,
-      homeY: BOSS_AT.y,
-      homeRadius: 1,
-      leashRadius: 3,
-      leashTolerance: 3,
-      respawnTicks: 0,
-    });
-    state.guards.fill(0, boss.id);
+    postInZoneOfRadius4(state, boss.id);
     boss.getComponent(Transform).face({ x: 0, y: 1 });
     const inside = add('warrior', 'warrior', 'light', 0);
     inside.getComponent(Transform).moveTo({ x: BOSS_AT.x, y: BOSS_AT.y + 3.9 });
@@ -261,6 +266,32 @@ describe('BossMoveSystem', () => {
     ]);
     expect(boss.getComponent(Movement).push).toEqual({ x: 0, y: 0 });
     expect(near.getComponent(Movement).push).toEqual({ x: 0, y: 0 });
+  });
+
+  it("cuts the beam at its zone's edge: a unit on its line outside the zone takes no hit", () => {
+    const { state, boss, add, land } = setUp();
+    postInZoneOfRadius4(state, boss.id);
+    boss.getComponent(Transform).face({ x: 1, y: 0 });
+    const inside = add('warrior', 'warrior', 'light', 3.9);
+    const outside = add('warrior', 'warrior', 'light', 4.1);
+    state.entities.beginBossMove(boss.id, BEAM.id, 0);
+
+    land();
+    expect([inside, outside].map(damageOf)).toEqual([BEAM.damage, 0]);
+  });
+
+  it('neither hits nor pushes a unit that died earlier in the tick', () => {
+    const { state, boss, add, land } = setUp();
+    boss.getComponent(Transform).face({ x: 1, y: 0 });
+    const fallen = add('warrior', 'warrior', 'light', 1);
+    fallen.getComponent(Health).applyDamage(10_000_000);
+    const died: unknown[] = [];
+    state.events.on('entity-died', (payload) => died.push(payload));
+    state.entities.beginBossMove(boss.id, SWEEP.id, 0);
+
+    land();
+    expect(died).toEqual([]);
+    expect(fallen.getComponent(Movement).push).toEqual({ x: 0, y: 0 });
   });
 
   it('roars with no gameplay effect: the landing event only', () => {

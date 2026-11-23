@@ -34,6 +34,11 @@ export type ScoringWeights = {
 type ScoringBase = {
   /** The points per kill, assist, death, destroyed structure, checkpoint and held minute. */
   readonly weights: ScoringWeights;
+  /**
+   * The mob definitions that are bosses: their kill gives no personal points or counters (DEC-79),
+   * though their kind has a `minionKill` weight. Interim until doc 04's `Boss` family.
+   */
+  readonly bossIds: readonly string[];
 };
 
 /**
