@@ -1295,8 +1295,9 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   `KnownAbilityRefsRule` checks that each id in a class's `passiveOptions`, its `defaultPassiveId`
   and each spec `passiveId` is a `passive` ability of that class, and `PassiveInOptionsRule` checks
   that the class default and a spec's `passiveId` are among the class's `passiveOptions`. A
-  passive ability costs no aether and has no cooldown (`loadAbilities`). Its one step is a `buff`
-  that puts its permanent status on the Legend. Where the code differs from §3, §6, §7 and §8:
+  passive ability costs no aether and has no cooldown (`loadAbilities`). Each of its steps is a
+  `buff` that puts a permanent status on the Legend at once (`checkStatusLinks`); Wrecking Run has
+  none (DEC-338 (5)). Where the code differs from §3, §6, §7 and §8:
   - **The passive's cast (§7).** Its steps run as a cast at the caster in the `default-action`
     slot, as a status's `onHit` steps do (`HitEffects`). A cast that says where it comes from (a
     bar slot, a passive or a hit) is a follow-up after PRs #162 and #163 (`INBOX.md` HC-B40 (3)).

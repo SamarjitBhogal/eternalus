@@ -95,7 +95,8 @@ Phase 4 / sprint 4.1 · feat/magus-passives (from `feat/class-passives` eeba668e
   | B11   | `components/Abilities.ts`  | `takeDuePassive` keeps the flag              | Abilities: given out once       |
   | B12   | `components/Abilities.ts`  | `rearmPassive` sets the flag with no passive | Abilities: no passive, no rearm |
 
-- Checks run (after the gate fixes): CHECK-2
+- Checks run (after the gate fixes): see `2026-11-23-0731-feat-magus-passives.md`, which also
+  records the HC-B40 build (DEC-361, eternalus-150) and critic round 2 (eternalus-151).
 - Next step: critic round 2 on the fix commits; then the PR (base `feat/class-passives`, after
   origin has GL's bf34cfcd), pushed by a script that the coordinator gives to Sam; tell
   GAME-LOOP-AND-POST-GAME-64 the PR number. Owner item G (content ids: names or slot ids such as

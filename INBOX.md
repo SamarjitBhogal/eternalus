@@ -707,11 +707,11 @@ Reply inline (`Decision: …`).
   - Answered 2026-11-23 (DEC-330): "A: fix it in a small PR before PR 8 merges". Not built yet;
     the fix PR comes after the PR 8 follow-up.
 
-- [ ] **HC-B40 — Better than the design, your sign-off: six small changes that the Magus
-      passives critic proposes (`feat/magus-passives`, architecture critic round 1, 2026-11-23;
-      eternalus-149, eternalus-150).** Nothing that the player sees changes. Five are built under
-      your standing rule (DEC-223), recorded as DEC-361. One (3) is a follow-up, because two open
-      PRs change the same code. Sign off, or name the ones to undo.
+- [ ] **HC-B40 — Better than the design, your sign-off: eight small changes that the Magus
+      passives critic proposes (`feat/magus-passives`, architecture critic rounds 1 and 2,
+      2026-11-23; eternalus-149, eternalus-150, eternalus-151).** Nothing that the player sees
+      changes. Seven are built under your standing rule (DEC-223), recorded as DEC-361. One (3) is
+      a follow-up, because two open PRs change the same code. Sign off, or name the ones to undo.
   - (1) Built. Who puts a passive on. 05 §7 said that the Legend does it when it spawns. The
     Legend cannot reach the status code, so `AbilitySystem` does it first in its pass, and a Duel
     round reset makes it due again (DEC-338 (4)). 05 §7 now says so.
@@ -724,10 +724,14 @@ Reply inline (`Decision: …`).
   - (4) Built. One check per rule: `PassiveInOptionsRule` checks the passive, and
     `KitInPoolRule` checks only the kit.
   - (5) Built. At boot, `checkStatusLinks` rejects a passive step that is not a `buff` of a status
-    that lasts until removed.
+    that lasts until removed, and a buff that waits or has a time of its own.
   - (6) Built. A status can say that it is never stretched (`hasFixedDuration`). Fury's wind-up
     has it, because its time matches the dash step. The knock-back statuses need no flag: a
     knock-back step does not stretch them (DEC-337 (4), on its own card).
+  - (7) Built (round 2). Code only: `castStatsOf` is the one read of a caster's ability stats;
+    `AbilitySystem` and the test fixture both use it, so a test cannot drift from the code.
+  - (8) Built (round 2). Code only: `StatusEffectApplier.durationFor` holds the stretch rule
+    beside the status data. It replaces `durationOf` and `hasFixedDuration`.
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays

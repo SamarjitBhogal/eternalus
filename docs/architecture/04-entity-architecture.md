@@ -401,7 +401,8 @@ session or phase named:
   not exist or belongs to another class throws at spawn, as does a spec id with no spec source. This is the first piece of
   sub-class gameplay of §9 (HC-Q17); every shipped spec's `kit` is `null`. The ultimate is the
   kit's `ultimate`, not a separate `ultimateId`. `Aether` keeps its `base` capacity for
-  `AetherRegenSystem` (05 §18). `Abilities` also holds the spec's passive and its due flag (05 §18).
+  `AetherRegenSystem` (05 §18). `Abilities` also holds the Legend's passive (`passiveOf`: the spec's `passiveId`,
+  else the class's `defaultPassiveId`) and its due flag (05 §18).
 - Shipped kinds: the Legend classes of `LEGEND_KINDS` (`content/legends/legendKinds.ts`),
   `light-mob` (the training dummy only),
   `obstacle`, `projectile` and `capture-point` (PR #64). Other mobs are SCRUM-59; structures get
