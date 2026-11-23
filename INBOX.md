@@ -517,7 +517,7 @@ Reply inline (`Decision: …`).
     "sure? if it fits what ive been saying" (it does: a hit ends Veil at once), (5) "yes". (6) got
     no answer and stays not built. Built on `feat/vanguard-veil-hamstring`; 03 §2 and §5, 05 §8,
     08 §8 and 11 §3 now state (1) to (5).
-- [ ] **HC-Q79 — "veil-no-damage-hit": does a hit that does no damage end Veil? (DEC-327 delta
+- [x] **HC-Q79 — "veil-no-damage-hit": does a hit that does no damage end Veil? (DEC-327 delta
       critic F1, `feat/vanguard-veil-hamstring`, 2026-11-22; asked on the Owner Calls page, v46).**
       Today a Veiled Vanguard that strikes an enemy wall that cannot break, or tries to stun an
       enemy that cannot be stunned, stays hidden: the hit does nothing (the damage pipeline blocks
@@ -541,7 +541,12 @@ Reply inline (`Decision: …`).
     (sweeps and ability areas), `MeleeAttackStrategy.attack`, and `ProjectileSystem` (a shot
     stops on such a body). For (A), each of the three places sends one contact event, and
     `StatusEffectSystem` listens to it.
-- [ ] **HC-B26 — Better than the design, built under your standing rule (DEC-223), sign-off
+  - Answered 2026-11-23 (DEC-343): (A). Any hit that touches an enemy ends Veil, also when it
+    does nothing. Lane A's attack rework builds it. Until then, the rule stays as built. Your
+    answer also said that an attack from behind while invisible does critical damage. The game
+    has no critical hits and no bonus from behind, so that is not today's rule. The coordinator
+    asks you if you want it as a new rule. 05 §8 states (A); 05 §18 states what is built today.
+- [x] **HC-B26 — Better than the design, built under your standing rule (DEC-223), sign-off
       asked: Hamstring's blade takes its speed, width and range from the blade's own definition
       (`feat/vanguard-hamstring`, 2026-11-22; DEC-268, DEC-269).** Nothing waits on the answer;
       it is built and tested. The player sees no difference: the blade flies at 30 m/s, 0.3 m
@@ -601,6 +606,9 @@ Reply inline (`Decision: …`).
     changes lane A's PR 2 code (`AreaHitQuery`; #159 is still open). (A) Build it in lane B's
     next PR, after #159 merges (advised). (B) Keep the two copies; a test on each side keeps them
     the same.
+  - Answered 2026-11-23 (DEC-343): (1) kept, as built; 05 §3 now states it. (2) (A): lane B
+    builds the one shot launcher with lane A after #148 merges. (4) kept, as built. (5) (A): built
+    in lane B's PR 6 (Sentinel Rip & Tear). (6) (A): built in lane B's next PR, after #159 merges.
 - [x] **HC-Q67 — Combat gaps: build before the presentation (2026-11-27)? In which order?
       (combat audit, COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls page).**
       Your nine combat questions: 0 of 9 are true today. Evidence and the proposed PRs (two lanes,

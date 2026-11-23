@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-23
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -165,7 +165,7 @@ and the `DamagePipeline`, never each other and never a system (rule 12). The cat
 | `dash`       | `DashEffect`                 | Moves the caster along `aim` with swept collision; collects units on the path                           | `distance`, `durationTicks`, `teleport?`, `onPath`, `onEnd`         | MVP (Blade Runner, Fury dash, Meteor Fall)   |
 | `knockback`  | `KnockbackEffect`            | `Movement.push` from the centre, less for heavier targets, summed per tick; `knockup` adds `knockup`    | `distance`, `knockup?`, `shape` (DEC-208; ADR 0026 decision 4)      | MVP (Slam, Shockwave, Nova)                  |
 | `zone`       | `ZoneEffect`                 | Spawns an `EffectZone` (`Zone` family, kind `effect-zone`) with a lifetime; children `onEnter`/`onTick` | `shape`, `lifetimeSeconds`, `everyTicks`, `follow?`, `grow?`        | MVP (Death Ray, Nova, flame trail)           |
-| `projectile` | `ProjectileEffect`           | Spawns a `Projectile` (not pooled, DEC-309); children `onHit`; `pierce` or burst                        | `speed`, `radius`, `range`, `pierce?`, `onHit`                      | MVP (weapons; Hamstring proposed)            |
+| `projectile` | `ProjectileEffect`           | Spawns a `Projectile` (not pooled, DEC-309); children `onHit`; `pierce` or burst                        | `projectileId` (speed, width, range; DEC-343), `pierce?`, `onHit`   | MVP (weapons; Hamstring proposed)            |
 | `summon`     | `SummonEffect`               | Spawns entities from a definition, owned by the caster, with an expiry (`RemovalCause` `'despawned'`)   | `definitionId`, `count`, `lifetimeSeconds`, `controllerId?`         | MVP-if-time (Soul Orb; Shield Wall proposed) |
 | `reveal`     | `RevealEffect`               | Grants allied `Vision` over an area or marks targets                                                    | `shape`, `durationSeconds`, `markStatusId?`                         | post-MVP (Eagle Eye; `Vision` beyond MVP)    |
 | `revive`     | `ReviveEffect`               | Returns an intact allied corpse to play at a health fraction                                            | `healthFraction`, `corpseMaxAgeSeconds`, `reviveLockoutSeconds`     | MVP (Magus default action)                   |
@@ -527,10 +527,11 @@ attacker, except a periodic status tick (`source.kind: 'status'`), or a `status-
 before Veil keeps ticking and the Veil stays. Build readings, not the owner's words (DEC-327): a
 buff from another entity (an ally's aura) and a status from the holder itself do not end it
 (Veil is itself a status its holder applies); a debuff from no one ends it on the one struck, as
-damage with no attacker does; a hit that the damage pipeline blocks to 0 (an unbreakable
-structure) emits no `damage-applied`, and a debuff the target refuses (hard control on a
-`control-immune` target) emits no `status-applied`, so neither ends the status (asked of the
-owner, `INBOX.md` HC-Q79). `StatusEffectSystem` holds this one end rule
+damage with no attacker does. A hit that touches an enemy ends it also when the hit does nothing
+(DEC-343, HC-Q79): a hit that the damage pipeline blocks to 0 (an unbreakable structure), and a
+debuff the target refuses (hard control on a `control-immune` target). Lane A's attack rework
+builds this, because it decides contact in one place (§18 states what is built today).
+`StatusEffectSystem` holds this one end rule
 (DEC-267): a hit marks the status as broken, and the system's next pass removes it
 (`status-expired`, no `onExpire`). A broken status stops at the hit: `StatusEffects` recomputes
 without it (no flags, no modifiers), it neither ticks nor runs out, and the snapshot leaves it
@@ -1342,6 +1343,11 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     (combat). The polarity of an applied status comes from its definition
     (`StatusEffectApplier.polarityOf`, the applier the system already holds), so the event and
     the constructor stay as they were. Casting does not end it.
+  - **Not built yet: a hit that does nothing (DEC-343, HC-Q79).** Today such a hit sends no
+    event, so Veil stays. Since lane A's PR 2 (#159), three places drop a hit on a body that takes
+    no damage before any event: rule 2 of `AreaHitQuery.find`, `MeleeAttackStrategy.attack` and
+    `ProjectileSystem`. A refused debuff sends no `status-applied`. Lane A's attack rework sends
+    one contact event from each place, and `StatusEffectSystem` listens to it.
   - **Untargetable.** `EntityStore.isTargetable(id)` (alive and not `isUntargetable`) is the one
     rule for every picker: perception's hostile queries, the leashed mobs (`LeashBehaviour`),
     `attack-target` (`invalid-target`) and the bot memory (`BotLeaves`). The systems that act on a
@@ -1368,14 +1374,14 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   Warrior's `ability-3` (`content/abilities/hamstring.ts`): `directional`, with one `projectile`
   step that throws the `hamstring-blade` projectile (`content/projectiles/hamstringBlade.ts`).
   Where the code differs from §3 and §10:
-  - **A shot step names its projectile.** The `projectile` spec is `{ projectileId, onHit }`. The
-    flight (speed, width, range) is the `ProjectileDefinition` by id, as for a weapon's shot
-    (DEC-314 (5)), not §3's `speed`, `radius` and `range` on the step. `pierce` and burst are not
-    built: no ability needs them yet. `ProjectileEffect.validate` checks the id; `describe` gives
-    the range as `distance` and the width as a `path`, so the aim overlay draws the line the shot
-    flies. The overlay stops the line where a dash of the caster's size stops (`dashReach`), so in
-    a gap narrower than the caster but wider than the blade the line stops short where the blade
-    flies on. Owner sign-off asked: HC-B26.
+  - **A shot step names its projectile (DEC-343, HC-B26 (1)).** The `projectile` spec is
+    `{ projectileId, onHit }`. The flight (speed, width, range) is the `ProjectileDefinition` by
+    id, as for a weapon's shot (DEC-314 (5)). The owner signed off this change, and §3 now states
+    it. `pierce` and burst are not built: no ability needs them yet. `ProjectileEffect.validate`
+    checks the id; `describe` gives the range as `distance` and the width as a `path`, so the aim
+    overlay draws the line the shot flies. The overlay stops the line where a dash of the caster's
+    size stops (`dashReach`), so in a gap narrower than the caster but wider than the blade the
+    line stops short where the blade flies on.
   - **Launch.** `abilities/` may not import `entities/` ([02](02-code-structure.md) §2), so the
     step launches through a port, `ShotLauncher` (`state/ShotLauncher.types.ts`, on
     `CastContext.launcher`), which `entities/ProjectileLauncher` satisfies: the match's one
@@ -1388,12 +1394,11 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     outline the cast's aim point is on (`AreaHitQuery.aimedBodyOf`), and nothing else. A weapon's
     shot names its locked target first. That target wins a near tie (DEC-317 (8)). The blade does
     not read the cast's `aim.targetId`. So when a bot casts the blade at an enemy unit, that unit
-    does not win a near tie. One rule for both waits with the one shot launcher (`INBOX.md`
-    HC-B26 (2)). A blade aimed at the
-    palace floor from outside hits the Stronghold; one aimed past it flies over.
-    A "wall" in DEC-269 is one with no body
-    (terrain, the map edge). A breakable enemy `wall` segment is a map object with a body: the
-    blade strikes it and it takes 80 × 0.3, as for a house. `AbilitySystem` runs before the
+    does not win a near tie. One rule for both comes with the one shot launcher, which lane B
+    builds with lane A after #148 merges (DEC-343, HC-B26 (2)). A blade aimed at the palace floor
+    from outside hits the Stronghold; one aimed past it flies over. A "wall" in DEC-269 is one with
+    no body (terrain, the map edge). A breakable enemy `wall` segment is a map object with a body:
+    the blade strikes it and it takes 80 × 0.3, as for a house. `AbilitySystem` runs before the
     flight, so the shot moves, and can land, in its cast tick; the one tick of flight before a
     landing (DEC-314 (1)) holds for the shots `CombatSystem` fires.
   - **Landing.** The payload's impact is
