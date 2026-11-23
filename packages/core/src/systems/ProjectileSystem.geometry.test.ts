@@ -403,7 +403,7 @@ describe('ProjectileSystem on real geometry', () => {
       expect(scene.healthOf(behind)).toBe(FULL_HEALTH);
     });
 
-    it("still ends a shot fired from the seed 1 map's lava bridge at the lava, short of a body past it", () => {
+    it("flies a shot fired from the seed 1 map's lava bridge over the lava, onto the body past it (HC-Q89, DEC-345)", () => {
       const { collisions, onBridge, offTheSide } = lavaBridge();
       const scene = world([], collisions);
       const past = scene.addBody({
@@ -411,9 +411,9 @@ describe('ProjectileSystem on real geometry', () => {
       });
       const shot = scene.shoot(onBridge, offTheSide, past.id);
 
-      // 2 m per tick: one whole move, then the lava 3.46 m out.
-      expect(scene.fly(10, shot)).toHaveLength(1);
-      expect(scene.healthOf(past)).toBe(FULL_HEALTH);
+      // 2 m per tick: the lava no longer ends it: it flies two ticks, lands in the third.
+      expect(scene.fly(10, shot)).toHaveLength(2);
+      expect(scene.healthOf(past)).toBeLessThan(FULL_HEALTH);
     });
   });
 });

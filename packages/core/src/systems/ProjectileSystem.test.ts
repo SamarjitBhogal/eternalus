@@ -73,6 +73,7 @@ const setUp = (wallAtX: number | null = null) => {
     wallAtX === null
       ? null
       : {
+          touchesFire: () => false,
           reach: (from, _dir, distance, radius) =>
             Math.max(0, Math.min(distance, wallAtX - radius - from.x)),
         };

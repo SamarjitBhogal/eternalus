@@ -1,3 +1,4 @@
+import type { AbilityEffectSpec } from '../content/abilities/AbilityDefinition.types';
 import type { UnitAttack } from '../content/units/units.types';
 import type { Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
@@ -36,6 +37,31 @@ export type HitRunner = {
     attackerId: EntityId,
     targetId: EntityId,
     attack?: UnitAttack,
+    shooter?: Shooter,
+  ): void;
+};
+
+/**
+ * Whatever runs a list of effect steps for a landed hit (a lit arrow's burn, `ProjectileSystem`,
+ * HC-Q89, DEC-345). `abilities/HitEffects` satisfies it. Apart from `HitRunner`, so a consumer
+ * that only runs the attack's own on-hit steps does not need it.
+ */
+export type StepRunner = {
+  /**
+   * Runs `steps` as one cast named `id` for a hit that just landed, credited to `attackerId` and
+   * aimed at `targetId`, as the attack's own `onHit` runs, but not the attacker's statuses' steps.
+   * A lit arrow's burn (`ProjectileSystem`, HC-Q89, DEC-345). Nothing runs for no steps, or when
+   * the struck body or the attacker is gone and no `shooter` is given.
+   *
+   * @param id - The cast's name: the shot's definition id.
+   * @param shooter - A shot's owner as it fired; the steps run from it when the owner is gone.
+   */
+  runSteps(
+    state: GameState,
+    attackerId: EntityId,
+    targetId: EntityId,
+    id: string,
+    steps: readonly AbilityEffectSpec[],
     shooter?: Shooter,
   ): void;
 };

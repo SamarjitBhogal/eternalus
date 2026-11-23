@@ -61,4 +61,22 @@ describe('staticCollisionIndexOf', () => {
       new CollisionResolver(index, BOUNDS).reach({ x: 0, y: 0 }, { x: 1, y: 0 }, 100, 0.5),
     ).toBeCloseTo(29.5, 4);
   });
+
+  it('carries the low-ground and fire flags of an object to its shapes, and no flag when it has none', () => {
+    const lava: MapObject = {
+      ...object('lava', 10, true),
+      isLowGround: true,
+      isFire: true,
+    };
+    const resolver = new CollisionResolver(
+      staticCollisionIndexOf(MAP, [lava, object('wall', 60, true)]),
+      BOUNDS,
+    );
+    const shot = { x: 0, y: 0 };
+    const east = { x: 1, y: 0 };
+
+    expect(resolver.reach(shot, east, 100, 0.5, shot)).toBeCloseTo(29.5, 5);
+    expect(resolver.touchesFire(shot, { x: 20, y: 0 }, 0.5)).toBe(true);
+    expect(resolver.touchesFire({ x: 40, y: 0 }, { x: 40, y: 0 }, 0.5)).toBe(false);
+  });
 });

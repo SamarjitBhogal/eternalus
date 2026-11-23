@@ -47,6 +47,20 @@ describe('MapObjectBuilder', () => {
     expect(teamOf('capture-point-lane-0')).toBeUndefined();
     expect(objects.filter((o) => o.kind === 'tree').every((o) => o.team === undefined)).toBe(true);
   });
+  it('marks lakes as low ground and lava rivers as low ground and fire, and nothing else (DEC-345)', () => {
+    const map = new MapGenerator().generate(createDefaultGameConfig(), 1);
+    const objects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+    const lakes = objects.filter((o) => /^lake-\d+(-mirror)?$/.test(o.id));
+    const rivers = objects.filter((o) => /^lava-river-\d+(-mirror)?$/.test(o.id));
+    const rest = objects.filter((o) => !lakes.includes(o) && !rivers.includes(o));
+
+    expect(lakes.length).toBeGreaterThan(1);
+    expect(rivers.length).toBeGreaterThan(0);
+    expect(lakes.every((o) => o.isLowGround === true && o.isFire === undefined)).toBe(true);
+    expect(rivers.every((o) => o.isLowGround === true && o.isFire === true)).toBe(true);
+    expect(rest.some((o) => o.kind === 'rock' || o.kind === 'tree')).toBe(true);
+    expect(rest.every((o) => o.isLowGround === undefined && o.isFire === undefined)).toBe(true);
+  });
   it('refuses a footprint with fewer than 3 points', () => {
     const map = { ...new MapGenerator().generate(createDefaultGameConfig(), 1), features: [] };
     const presentation = {

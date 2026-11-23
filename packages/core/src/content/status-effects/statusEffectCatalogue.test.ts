@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { STATUS_EFFECTS } from './statusEffectCatalogue';
 
 describe('STATUS_EFFECTS', () => {
-  it('holds the MVP set, the minion veterancy statuses, the knock-back statuses, Fury and its wind-up', () => {
+  it('holds the MVP set, the minion veterancy statuses, the knock-back statuses, Fury, its wind-up and burn', () => {
     expect(STATUS_EFFECTS.ids).toEqual([
       'bleed',
       'concussion',
@@ -18,6 +18,7 @@ describe('STATUS_EFFECTS', () => {
       'staggered',
       'fury',
       'fury-windup',
+      'burn',
     ]);
   });
 
@@ -39,6 +40,17 @@ describe('STATUS_EFFECTS', () => {
       modifiers: [],
       flags: ['cannot-move'],
       onExpire: [],
+    });
+  });
+
+  it('makes burn the gem burn of DEC-292: 12 damage every 0.2 s for 1.2 s, refreshed, one stack (DEC-345)', () => {
+    expect(STATUS_EFFECTS.get('burn')).toMatchObject({
+      polarity: 'debuff',
+      controlClass: 'none',
+      durationSeconds: 1.2,
+      stacking: 'refresh',
+      maxStacks: 1,
+      periodic: { everySeconds: 0.2, effects: [{ kind: 'damage', amount: 12 }] },
     });
   });
 });

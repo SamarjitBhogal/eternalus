@@ -10,6 +10,7 @@ import type { UnitAttack } from '../content/units/units.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { Shooter } from '../state/HitRunner.types';
+import type { Vec2 } from '../utils/geometry.types';
 import type { AbilityRegistry } from './AbilityRegistry';
 import { CastInstance } from './CastInstance';
 import type { LandedHit } from './HitEffects.types';
@@ -26,7 +27,8 @@ import { TargetQuery } from './TargetQuery';
  * (`weaponSourceOf`); a status's after the status. The attack strategy calls it where the hit
  * lands (`MeleeAttackStrategy` in the tick, `WeaponImpact` when a shot lands). A shot whose owner
  * left the store before it landed still runs its attack's steps, cast from the owner as it fired
- * (`Shooter`); the statuses' steps need the live owner, so they do not run.
+ * (`Shooter`); the statuses' steps need the live owner, so they do not run. `runSteps` runs any
+ * list of steps for a landed hit the same way, without the statuses': a lit arrow's burn.
  */
 export class HitEffects {
   /** What `afterHit` reads for an attacker with no `StatusEffects`. */
@@ -79,14 +81,7 @@ export class HitEffects {
     if (caster === undefined) {
       return;
     }
-    const hit: LandedHit = {
-      casterId: attackerId,
-      casterLevel: caster.ownerLevel,
-      casterTeam: caster.team,
-      targetId,
-      from: { x: caster.origin.x, y: caster.origin.y },
-      to: { x: struck.x, y: struck.y },
-    };
+    const hit = HitEffects.landedHit(attackerId, targetId, caster, struck);
     if (steps.length > 0) {
       this.run(state, hit, caster.source.definitionId, steps);
     }
@@ -98,6 +93,55 @@ export class HitEffects {
         this.run(state, hit, definition.id, definition.onHit);
       }
     }
+  }
+
+  /**
+   * Runs `steps` as one cast named `id` for a hit that landed: the steps of a lit shot's
+   * `litOnHit` (HC-Q89, DEC-345). The attacker's statuses' steps do not run. Nothing runs, and
+   * nothing is allocated, for no steps; nothing runs when the struck body is gone or has no
+   * position, or the attacker is gone (no position) and no `shooter` is given.
+   *
+   * @param id - The cast's name: the shot's definition id.
+   * @param shooter - A shot's owner as it fired: the steps run from it when the attacker is gone.
+   *   Ignored while the attacker is in the store.
+   */
+  public runSteps(
+    state: GameState,
+    attackerId: EntityId,
+    targetId: EntityId,
+    id: string,
+    steps: readonly AbilityEffectSpec[],
+    shooter?: Shooter,
+  ): void {
+    const struck = state.entities.get(targetId)?.findComponent(Transform)?.position;
+    if (struck === undefined || steps.length === 0) {
+      return;
+    }
+    const caster =
+      state.entities.get(attackerId) === undefined
+        ? shooter
+        : HitEffects.liveShooter(state, attackerId);
+    if (caster === undefined) {
+      return;
+    }
+    this.run(state, HitEffects.landedHit(attackerId, targetId, caster, struck), id, steps);
+  }
+
+  /** The hit of `caster` on the body at `struck`, as the steps cast it. */
+  private static landedHit(
+    attackerId: EntityId,
+    targetId: EntityId,
+    caster: Shooter,
+    struck: Vec2,
+  ): LandedHit {
+    return {
+      casterId: attackerId,
+      casterLevel: caster.ownerLevel,
+      casterTeam: caster.team,
+      targetId,
+      from: { x: caster.origin.x, y: caster.origin.y },
+      to: { x: struck.x, y: struck.y },
+    };
   }
 
   /** Runs `steps` as one cast named `id`, by the attacker of `hit`, at the struck body. */

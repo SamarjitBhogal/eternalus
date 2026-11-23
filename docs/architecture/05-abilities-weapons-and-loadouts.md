@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-23
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -667,6 +667,18 @@ at spawn by one selector per mode, so `'heavy'` is one more selector (DEC-314). 
 (`Recommendation:` one optional field on the existing command; **MVP-if-time**) and uses its own
 cooldown on `Combat`; a parry is a `parrying` status with a window. Non-unique weapons are usable
 by any class (reference 07: the class table's bias is a bias); `uniqueTo` locks the class weapons.
+
+**Lit shots (HC-Q89, DEC-345).** A `ProjectileDefinition` may have `litOnHit` steps (authored in
+seconds, loaded in ticks like `onHit`, `loadProjectiles`). A shot with such steps catches fire when
+a move of it touches fire, a lava river (`CollisionQuery.touchesFire`, 10 §7). It then stays lit
+until it lands or ends: nothing puts it out. Where a lit shot lands damage, `ProjectileSystem` runs
+its `litOnHit` steps on the body through the `StepRunner` port (`HitEffects.runSteps`), as one
+cast named after the projectile, credited to the owner (or to the payload as the `Shooter` when the
+owner is gone). Only the arrow has them: a burn (`burn`, the Cathedral gem's numbers, DEC-292). A
+body with no `StatusEffects` takes the arrow's damage and no burn. An orb, a turret bolt and a
+thrown blade fly over lava and do not catch fire; content decides, not code (a projectile with no
+`litOnHit` cannot be lit). `ProjectileFlight` holds `isLit`; the hash and `EntitySnapshot.projectile`
+carry it, and the client draws a lit shot in a fire colour.
 
 A shot flies straight from the attacker's centre until it hits an enemy body or a wall, or reaches
 its `ProjectileDefinition.range` (metres from the origin). It passes through allies, as the

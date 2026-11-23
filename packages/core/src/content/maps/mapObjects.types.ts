@@ -18,15 +18,27 @@ export type MapObjectKind =
   | 'turret'
   | 'gate';
 
+/**
+ * What a shot does over an object's footprint (HC-Q89, DEC-345). Set only by the map builder, on
+ * lakes and lava rivers; absent on every other object, which stops a shot. Units collide with the
+ * footprint whatever the flags say.
+ */
+export type MapObjectFlags = {
+  /** A shot flies over it (a lake, a lava river); a unit or a dash still stops at it. */
+  readonly isLowGround?: true;
+  /** A shot that flies over it catches fire (a lava river); a bridge deck over it is not fire. */
+  readonly isFire?: true;
+};
+
 /** Authored ownership: all art of one object changes together when that object is destroyed. */
-export type MapObjectArt = {
+export type MapObjectArt = MapObjectFlags & {
   readonly id: string;
   readonly kind: MapObjectKind;
   readonly isFootprint: boolean;
 };
 
 /** Exact world geometry shared by collision, targeting and destruction presentation. */
-export type MapObject = {
+export type MapObject = MapObjectFlags & {
   readonly id: string;
   readonly kind: MapObjectKind;
   readonly footprints: readonly Polygon[];

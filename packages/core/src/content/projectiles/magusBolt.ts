@@ -1,4 +1,4 @@
-import type { ProjectileDefinition } from './projectiles.types';
+import type { AuthoredProjectile } from './projectiles.types';
 
 /**
  * The Magus staff's bolt (reference 07, 05 §10): a small fast shot that flies straight until it
@@ -20,4 +20,4 @@ export const MAGUS_BOLT = {
   range: 100, // TUNE: metres; owner words in DEC-306 "after 100m, they could 'fizzle out'"
   slowFrom: 100, // TUNE: metres; equal to range, so no slowing: a bolt flies at full speed until it fizzles (DEC-306)
   endDuration: 0.4, // TUNE: seconds the mist stays; proposed, "tunable" in DEC-306
-} as const satisfies ProjectileDefinition;
+} as const satisfies AuthoredProjectile;

@@ -278,7 +278,7 @@ describe('LineOfFire', () => {
       expect(lineOfFire.isClear(state, from, target)).toBe(false);
     });
 
-    it("is still blocked by the lava from the seed 1 map's lava bridge", () => {
+    it("is clear across the lava from the seed 1 map's lava bridge: a shot flies over lava (HC-Q89, DEC-345)", () => {
       const { collisions, onBridge, offTheSide } = lavaBridge();
       const { state, add, shooter } = world(null, collisions);
       const from = shooter(onBridge);
@@ -287,7 +287,27 @@ describe('LineOfFire', () => {
         radius: 1,
       });
 
-      expect(lineOfFire.isClear(state, from, past)).toBe(false);
+      expect(lineOfFire.isClear(state, from, past)).toBe(true);
+    });
+  });
+
+  describe('lakes and mountains (HC-Q89, DEC-345)', () => {
+    const lake = { id: 'lake', polygon: box(4, -20, 4, 40), isLowGround: true } as const;
+    const mountain = { id: 'mountain', polygon: box(4, -20, 4, 40) };
+    const sceneOf = (shape: typeof lake | typeof mountain) => {
+      const collisions = new CollisionResolver(new StaticCollisionIndex([shape]), BOUNDS);
+      const { state, add, shooter } = world(null, collisions);
+      const from = shooter({ x: 0, y: 0 });
+      const target = add({ at: { x: 12, y: 0 }, radius: 1 });
+      return { state, from, target };
+    };
+
+    it("is clear across a lake from a bot's attacker and blocked by a mountain", () => {
+      const over = sceneOf(lake);
+      const into = sceneOf(mountain);
+
+      expect(lineOfFire.isClear(over.state, over.from, over.target)).toBe(true);
+      expect(lineOfFire.isClear(into.state, into.from, into.target)).toBe(false);
     });
   });
 

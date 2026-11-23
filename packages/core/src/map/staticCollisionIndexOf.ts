@@ -18,6 +18,8 @@ export function staticCollisionIndexOf(
       ? object.footprints.map((polygon) => ({
           id: object.id,
           polygon,
+          ...(object.isLowGround === undefined ? {} : { isLowGround: object.isLowGround }),
+          ...(object.isFire === undefined ? {} : { isFire: object.isFire }),
           ...(object.passages === undefined ? {} : { passages: object.passages }),
         }))
       : [],

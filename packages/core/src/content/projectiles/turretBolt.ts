@@ -1,4 +1,4 @@
-import type { ProjectileDefinition } from './projectiles.types';
+import type { AuthoredProjectile } from './projectiles.types';
 
 /**
  * A wall turret's default bolt (architecture 07 §5, DEC-302): a fast shot at one target, no splash.
@@ -23,4 +23,4 @@ export const TURRET_BOLT = {
   range: 35,
   slowFrom: 35, // equal to range: a bolt flies at full speed until it fizzles
   endDuration: 0.4, // TUNE: no reference value; seconds, as the Magus bolt's mist
-} as const satisfies ProjectileDefinition;
+} as const satisfies AuthoredProjectile;

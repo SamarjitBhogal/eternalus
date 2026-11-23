@@ -10,8 +10,9 @@ import { RADIANS_PER_DEGREE } from '../utils/geometry';
 /**
  * A unit on a bridge over lava (DEC-334 decision 3): the seed 1 map's `lava-river-0`, a point on
  * one of its passages (inside the river's polygon too), and a direction off the bridge's side into
- * the lava. The river stops a shot there 3.46 m out; a launch-shape rule that ignored passages
- * would let the shot fly on. `collisions` is the match's one collision rule on that map.
+ * the lava. The river stops a mover there 3.46 m out. A shot flies over it since DEC-345, so the
+ * passage rule of DEC-334 is read on that mover's sweep (no `launch`).
+ * `collisions` is the match's one collision rule on that map.
  */
 export const lavaBridge = () => {
   const config = createDefaultGameConfig({});

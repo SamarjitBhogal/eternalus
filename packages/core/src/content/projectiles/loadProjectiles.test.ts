@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import { ContentValidationError } from '../ContentValidationError';
 import { loadProjectiles } from './loadProjectiles';
-import type { ProjectileDefinition } from './projectiles.types';
+import type { AuthoredProjectile } from './projectiles.types';
 
-const TEST_SHOT: ProjectileDefinition = {
+const TEST_SHOT: AuthoredProjectile = {
   id: 'test-shot',
   kind: 'projectile',
   displayName: 'Test shot',
@@ -48,6 +48,43 @@ describe('loadProjectiles', () => {
 
     expect(projectiles.get('turret-bolt').movementProfile.maxSpeed).toBe(1);
     expect(projectiles.get('turret-heavy-bolt').movementProfile.maxSpeed).toBe(0.8);
+  });
+
+  it('loads the lit-on-hit steps with their times in ticks, and none when a shot has none (DEC-345)', () => {
+    const lit = {
+      ...TEST_SHOT,
+      litOnHit: [
+        { kind: 'debuff', statusId: 'burn', durationSeconds: 1.2, shape: { kind: 'hit' } },
+      ] as const,
+    };
+    const projectiles = loadProjectiles(30, [lit, { ...TEST_SHOT, id: 'plain-shot' }]);
+
+    expect(projectiles.get('test-shot').litOnHit).toEqual([
+      { kind: 'debuff', statusId: 'burn', durationTicks: 36, shape: { kind: 'hit' } },
+    ]);
+    expect(projectiles.get('plain-shot').litOnHit).toBeUndefined();
+  });
+
+  it('ships the arrow lit by lava with the gem burn numbers and no other shot (DEC-345, DEC-292)', () => {
+    const projectiles = loadProjectiles(30);
+
+    expect(projectiles.get('arrow').litOnHit).toEqual([
+      { kind: 'debuff', statusId: 'burn', durationTicks: 36, shape: { kind: 'hit' } },
+    ]);
+    for (const id of ['magus-bolt', 'turret-bolt', 'turret-heavy-bolt']) {
+      expect(projectiles.get(id).litOnHit).toBeUndefined();
+    }
+  });
+
+  it('rejects a lit-on-hit step with a negative time', () => {
+    const bad = {
+      ...TEST_SHOT,
+      litOnHit: [
+        { kind: 'debuff', statusId: 'burn', durationSeconds: -1, shape: { kind: 'hit' } },
+      ] as const,
+    };
+
+    expect(() => loadProjectiles(30, [bad])).toThrow('debuff durationSeconds must not be negative');
   });
 
   it.each([

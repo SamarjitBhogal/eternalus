@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-23
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -199,6 +199,16 @@ Overlap tests are therefore not enough:
   Projectiles are swept by `ProjectileSystem`, not by the resolver's step 1: a shot is not pushed
   or slid, it ends at the first body or wall it touches (05 §10, DEC-314). Walls still come from
   the resolver's `CollisionQuery.reach`. The resolver's steps below are for units.
+- **Low ground and fire (HC-Q89, DEC-345).** A shot flies over lakes and lava rivers; a unit and a
+  dash do not. The map builder flags the object (`MapObjectFlags`: `isLowGround` on a lake and a
+  lava river, `isFire` on a lava river only), the static index keeps the flags on each shape, and
+  the one rule reads them: `CollisionQuery.reach` skips a shape with `isLowGround` when it is
+  given a `launch` point (only a shot gives one; a mover or a dash gives none). A mountain, a
+  wall, a camp fire and every other shape stop a shot as before. `CollisionQuery.touchesFire`
+  answers whether a circle that moves along a delta touches (or starts in) a shape with `isFire`;
+  a bridge deck (a passage) is above the lava, so a move along the deck does not touch it, while a
+  move that leaves the deck over the lava does. `ProjectileSystem` asks it for a shot whose
+  definition has `litOnHit` steps (05 §10).
 - The test casts the segment `previousPosition → position` (expanded by the circle's radius, i.e.
   a capsule) against `StaticColliderIndex` entries flagged `isUnbreakable`, plus closed gates and
   map bounds; the earliest time of impact `t ∈ [0, 1]` wins; the mover is placed at
@@ -399,6 +409,16 @@ piece toward the court can cross that piece again further along the ring and pas
 ring's size puts that second crossing far from the turret, near the end of the bolt's range (not
 measured). The sentence in §4 that concave footprints are split into convex colliders does not hold
 for wall pieces; that was so before PR 4.
+
+**2026-11-23 (branch `feat/shots-over-lava`; HC-Q89, DEC-345).** Shots fly over lakes and lava
+rivers (§7 "Low ground and fire"). This replaces one sentence of the DEC-334 note above: a unit on
+a bridge no longer has its shot stopped by the lava beside the deck, because no shot is stopped by
+lava; a mover from the bridge is still stopped there. The rest of the launch-shape rule stands (it
+still applies to walls and every shape without `isLowGround`). `MapObject`, `MapObjectArt` and
+`StaticCollisionShape` carry `isLowGround` and `isFire` (set in `MapLandscapeBuilder` for `lake-N`
+and `lava-river-N`, copied by `MapObjectBuilder` and `staticCollisionIndexOf`). Camp fires do not
+light arrows yet (HC-Q105). `CollisionResolver.touchesFire` is the second method on the
+`CollisionQuery` port.
 
 ## Related
 

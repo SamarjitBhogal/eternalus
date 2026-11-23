@@ -24,6 +24,8 @@ export class MapObjectBuilder {
         id: art.id,
         kind: art.kind,
         ...(art.kind === 'terrain' ? { passages } : {}),
+        ...(art.isLowGround === undefined ? {} : { isLowGround: art.isLowGround }),
+        ...(art.isFire === undefined ? {} : { isFire: art.isFire }),
         footprints: [...(previous?.footprints ?? []), piece.shape],
         isBlocking: true,
         ...(piece.buildingId === undefined ? {} : { buildingId: piece.buildingId }),

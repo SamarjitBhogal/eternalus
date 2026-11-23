@@ -74,6 +74,50 @@ export class CollisionResolver {
     return reach * (contact === null ? 1 : CollisionResolver.shortOf(contact, displacement));
   }
 
+  /**
+   * Whether a circle of `radius` that moves `delta` from `from` touches fire (HC-Q89, DEC-345), or
+   * starts in it: a shape flagged `isFire`, outside its passages. A bridge deck is above the lava,
+   * so a circle that stays on the deck does not touch it; one that leaves the deck over the lava
+   * does, as `reach` stops a mover there. Read-only.
+   */
+  public touchesFire(from: Vec2, delta: Vec2, radius: number): boolean {
+    for (const entry of this.candidatesOf(from, delta, radius)) {
+      if (entry.isFire === true && CollisionResolver.touches(from, delta, radius, entry)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** The static shapes whose box meets the box a circle of `radius` sweeps along `delta`. */
+  private candidatesOf(start: Vec2, delta: Vec2, radius: number): ReadonlySet<IndexedPolygon> {
+    return this.index.query({
+      x: Math.min(start.x, start.x + delta.x) - radius,
+      y: Math.min(start.y, start.y + delta.y) - radius,
+      width: Math.abs(delta.x) + radius * 2,
+      height: Math.abs(delta.y) + radius * 2,
+    });
+  }
+
+  /** Whether the circle touches the shape's polygon outside its passages on the move. */
+  private static touches(start: Vec2, delta: Vec2, radius: number, entry: IndexedPolygon): boolean {
+    const at = (time: number) => ({ x: start.x + delta.x * time, y: start.y + delta.y * time });
+    const isOnDeck = (point: Vec2) =>
+      entry.passages?.some((passage) => isCircleInsidePolygon(point, radius, passage)) === true;
+    if (
+      !isOnDeck(start) &&
+      circlePenetration(start, radius, entry.polygon).depth > CONTACT_EPSILON
+    ) {
+      return true;
+    }
+    const enter = sweepCircle(start, delta, radius, entry.polygon);
+    if (enter !== null && !isOnDeck(at(enter.time))) return true;
+    return (entry.passages ?? []).some((passage) => {
+      const edge = sweepCircle(start, delta, radius, passage);
+      return edge !== null && isPointInPolygon(at(edge.time), entry.polygon);
+    });
+  }
+
   /** `move` without the bounds: the sweep and the slide. */
   private slide(start: Vec2, displacement: Vec2, radius: number): Vec2 {
     let position = { ...start };
@@ -134,15 +178,11 @@ export class CollisionResolver {
     radius: number,
     launch?: Vec2,
   ): SweepContact | null {
-    const candidates = this.index.query({
-      x: Math.min(start.x, start.x + delta.x) - radius,
-      y: Math.min(start.y, start.y + delta.y) - radius,
-      width: Math.abs(delta.x) + radius * 2,
-      height: Math.abs(delta.y) + radius * 2,
-    });
+    const candidates = this.candidatesOf(start, delta, radius);
     let first: SweepContact | null = null;
     const at = (time: number) => ({ x: start.x + delta.x * time, y: start.y + delta.y * time });
     for (const entry of candidates) {
+      if (launch !== undefined && entry.isLowGround === true) continue;
       if (launch !== undefined && isPointInBlockingArea(launch, entry.polygon, entry.passages))
         continue;
       const stuck = CollisionResolver.startsInside(start, at(1), radius, entry);

@@ -16,6 +16,7 @@ import { sweepCircle } from '../physics/sweepCircle';
 import { sweepDisc } from '../physics/sweepDisc';
 import { AreaHitQuery } from '../state/AreaHitQuery';
 import type { GameState } from '../state/GameState';
+import type { StepRunner } from '../state/HitRunner.types';
 import { isTouchedBeforeWall } from '../state/isTouchedBeforeWall';
 import { CONTACT_EPSILON } from '../utils/circlePolygon.constants';
 import { distance, doRectsOverlap, isPointInAnyPolygon } from '../utils/geometry';
@@ -47,6 +48,14 @@ import type { System, SystemContext } from './System.types';
  * (`isTouchedBeforeWall` on the first body's contact): a palace wall whose face is the
  * Stronghold's edge does not take a shot fired at the Stronghold (DEC-317 (8)).
  *
+ * A shot flies over low ground (a lake, a lava river: the collision rule skips it for a shot, so
+ * it is no wall here). A shot whose definition has `litOnHit` steps (an arrow) catches fire when
+ * a move touches fire (a lava river, `CollisionQuery.touchesFire`), tested over the whole move
+ * before the hit test: an arrow that crosses lava and lands in the same move lands lit. It stays
+ * lit until it lands or ends. A lit shot that lands damage runs its `litOnHit` steps on the body
+ * (the burn), named after its definition and cast by the owner, or by the payload as the
+ * `Shooter` when the owner is gone (HC-Q89, DEC-345).
+ *
  * A shot that touches nothing flies to the end of its `range` (DEC-306): it slows from `slowFrom`
  * (`flightSpeed`, through `Movement.limitSpeed`) so it stops exactly at `range`, then ends. The
  * move that ends there is swept like any other, so a body under the end point takes the hit: an
@@ -68,8 +77,15 @@ export class ProjectileSystem implements System {
   private readonly bodies: ShotBody[] = [];
   private isGathered = false;
 
-  /** @param impacts - What a landed shot does, by its payload's impact kind. */
-  public constructor(private readonly impacts: ProjectileImpacts) {}
+  /**
+   * @param impacts - What a landed shot does, by its payload's impact kind.
+   * @param hits - Runs a lit shot's `litOnHit` steps where it lands (HC-Q89, DEC-345); `null`
+   *   runs none.
+   */
+  public constructor(
+    private readonly impacts: ProjectileImpacts,
+    private readonly hits: StepRunner | null = null,
+  ) {}
 
   /** Flies every shot in the air, in store order. */
   public update({ state }: SystemContext): void {
@@ -102,6 +118,13 @@ export class ProjectileSystem implements System {
     const delta = { x: body.position.x - from.x, y: body.position.y - from.y };
     const length = distance(from, body.position);
 
+    if (
+      flight.canLight &&
+      !flight.isLit &&
+      state.collisions?.touchesFire(from, delta, body.radius)
+    ) {
+      flight.light();
+    }
     const wall = this.wallDistance(state, from, delta, length, body.radius, payload.origin);
     const hit = this.firstBody(state, payload, from, delta, length, body.radius);
     if (hit !== null && isTouchedBeforeWall(hit.time * length, wall)) {
@@ -117,6 +140,16 @@ export class ProjectileSystem implements System {
           point: { x: from.x + delta.x * hit.time, y: from.y + delta.y * hit.time },
         });
         state.entities.recordHits(payload.ownerId, [hit.body.entity.id], state.tick);
+        if (flight.isLit) {
+          this.hits?.runSteps(
+            state,
+            payload.ownerId,
+            hit.body.entity.id,
+            shot.definitionId,
+            flight.litOnHit,
+            payload,
+          );
+        }
       }
       this.spend(state, shot);
     } else if (wall < Number.POSITIVE_INFINITY) {

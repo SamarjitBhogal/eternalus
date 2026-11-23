@@ -336,6 +336,30 @@ describe('StateHasher', () => {
     expect(later).not.toBe(ending);
   });
 
+  it('changes when a shot catches fire (HC-Q89, DEC-345)', () => {
+    const { state, soldier } = stateWithSoldier();
+    soldier.addComponent(
+      new ProjectilePayload({
+        ownerId: 'a',
+        team: 'light',
+        ownerLevel: 1,
+        source: { attackerId: 'a', kind: 'weapon', definitionId: 'obsidian-bow' },
+        targetId: null,
+        impact: { kind: 'weapon', attack: SHOT_ATTACK },
+        origin: { x: 1, y: 0 },
+      }),
+    );
+    const flight = new ProjectileFlight(100, 80, 5, [
+      { kind: 'debuff', statusId: 'burn', durationTicks: 36, shape: { kind: 'hit' } },
+    ]);
+    soldier.addComponent(flight);
+    const unlit = hasher.hash(state);
+
+    flight.light();
+
+    expect(hasher.hash(state)).not.toBe(unlit);
+  });
+
   it('adds a speed limit only once one is set, so an entity without one hashes as before', () => {
     const { state, soldier } = stateWithSoldier();
     const movement = soldier.getComponent(Movement);
