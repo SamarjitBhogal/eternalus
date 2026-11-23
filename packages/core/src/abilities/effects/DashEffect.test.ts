@@ -150,12 +150,18 @@ describe('DashEffect', () => {
     expect(dashOf(caster).x).toBeCloseTo(-0.5, 9); // from x = 1 to x = 0.5, the Warrior's radius
   });
 
-  it('throws for a caster the state does not hold, never dashing a 0 m circle (critic r2 F3)', () => {
-    const { state } = setUp(true);
+  it('does nothing for a caster the state does not hold (a shot owner gone before its onHit dash): no 0 m circle dashes, no path or end step runs (critic r2 F3, PR 4 S4)', () => {
+    const { state, dummyAt } = setUp();
+    // castSteps places a caster the state does not hold at (0, 0); the dash would run 8 m toward
+    // (30, 10), over (3, 1), and end at about (7.6, 2.5).
+    const onPath = dummyAt(3, 1);
+    const atEnd = dummyAt(7.6, 2.5);
 
     expect(() => {
       castSteps(state, 'entity-404', [DASH], { aim: { x: 30, y: 10 } });
-    }).toThrow('"entity-404"');
+    }).not.toThrow();
+    expect(damageTaken(onPath)).toBe(0);
+    expect(isStunned(atEnd)).toBe(false);
   });
 
   it('throws for a caster that cannot be moved, never running the steps of a dash that did not start (critic r3 nit 1)', () => {

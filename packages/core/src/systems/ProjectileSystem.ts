@@ -109,6 +109,8 @@ export class ProjectileSystem implements System {
         this.landOn(state, {
           impact: payload.impact,
           ownerId: payload.ownerId,
+          team: payload.team,
+          ownerLevel: payload.ownerLevel,
           source: payload.source,
           origin: payload.origin,
           bodyId: hit.body.entity.id,

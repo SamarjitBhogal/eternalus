@@ -9,7 +9,9 @@ import type { ProjectileHit, ProjectileImpact } from './ProjectileImpact.types';
  * A weapon's shot landing (architecture 05 §10): the attack's damage, scaled by its fall-off over
  * the distance from the shot's origin to where it touched the body, through the match's damage
  * pipeline; then the on-hit steps run, as for a melee hit: the `onHit` of the attack the shot was
- * fired with (a heavy turret bolt's concussion), then the owner's statuses' `onHit`.
+ * fired with (a heavy turret bolt's concussion), then the owner's statuses' `onHit`. The hit is
+ * also the shooter (`Shooter`): the attack's `onHit` runs from the owner as it fired when the
+ * owner is gone before the shot lands.
  */
 export class WeaponImpact implements ProjectileImpact<'weapon'> {
   /**
@@ -27,6 +29,6 @@ export class WeaponImpact implements ProjectileImpact<'weapon'> {
     const { attack } = hit.impact;
     const share = falloffMultiplier(attack.projectile.falloff, distance(hit.origin, hit.point));
     this.damage.apply(state, hit.bodyId, attack.damage * share, hit.source);
-    this.hits?.afterHit(state, hit.ownerId, hit.bodyId, attack);
+    this.hits?.afterHit(state, hit.ownerId, hit.bodyId, attack, hit);
   }
 }

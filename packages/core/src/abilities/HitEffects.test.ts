@@ -6,8 +6,10 @@ import { Movement } from '../components/Movement';
 import { loadAbilities } from '../content/abilities/loadAbilities';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { loadTurrets } from '../content/structures/loadTurrets';
+import type { UnitAttack } from '../content/units/units.types';
 import type { Entity } from '../entities/Entity';
 import type { GameEventMap } from '../state/GameEvents.types';
+import type { Shooter } from '../state/HitRunner.types';
 import { casterState } from './__fixtures__/casterState';
 import { createDefaultAbilityRegistry } from './defaultAbilityRegistry';
 import { HitEffects } from './HitEffects';
@@ -35,7 +37,49 @@ const setUp = (statusId: string) => {
   const applied: GameEventMap['status-applied'][] = [];
   state.events.on('status-applied', (payload) => applied.push(payload));
   const hits = new HitEffects(REGISTRY, new DamagePipeline(), statuses);
-  return { state, caster, struck, neighbour, applied, hits };
+  return { state, factory, caster, struck, neighbour, applied, hits };
+};
+
+/** A light shot's owner as it fired from the origin, under the heavy bolt's name. */
+const SHOOTER: Shooter = {
+  team: 'light',
+  ownerLevel: 1,
+  origin: { x: 0, y: 0 },
+  source: { definitionId: 'turret' },
+};
+
+/** A heavy bolt whose onHit step concusses everyone in a 3 m circle around the struck body. */
+const AREA_BOLT: UnitAttack = {
+  ...HEAVY_BOLT,
+  onHit: [
+    {
+      kind: 'debuff',
+      statusId: 'concussion',
+      durationTicks: 45,
+      shape: { kind: 'circle', radius: 3 },
+    },
+  ],
+};
+
+/** A heavy bolt whose onHit step dashes the owner 4 m and damages around where it ends. */
+const DASH_BOLT: UnitAttack = {
+  ...HEAVY_BOLT,
+  onHit: [
+    {
+      kind: 'dash',
+      distance: 4,
+      durationTicks: 4,
+      onPath: [],
+      onEnd: [
+        {
+          kind: 'damage',
+          amount: 40,
+          damageType: 'physical',
+          shape: { kind: 'circle', radius: 3 },
+        },
+      ],
+    },
+  ],
 };
 
 /** Where the pushes under way will have moved `entity`, in all. */
@@ -96,6 +140,35 @@ describe('HitEffects', () => {
     hits.afterHit(state, caster.id, struck.id, DEFAULT_BOLT);
 
     expect(applied).toEqual([{ entityId: struck.id, statusId: 'staggered', sourceId: caster.id }]);
+  });
+
+  it("runs the attack's area step for a shot whose owner is gone: it hits the owner's enemies, not its allies (S4)", () => {
+    const { state, caster, struck, neighbour, applied, hits, factory } = setUp('rallied');
+    const ally = factory.create('warrior', 'warrior', { position: { x: 1, y: 0 }, team: 'light' });
+    state.entities.add(ally);
+    state.entities.remove(caster.id, 'died');
+    applied.length = 0;
+
+    hits.afterHit(state, caster.id, struck.id, AREA_BOLT, SHOOTER);
+
+    expect(applied).toEqual([
+      { entityId: struck.id, statusId: 'concussion', sourceId: caster.id },
+      { entityId: neighbour.id, statusId: 'concussion', sourceId: caster.id },
+    ]);
+  });
+
+  it('does nothing for a dash in the onHit of a shot whose owner is gone, and does not throw (S4)', () => {
+    const { state, caster, struck, neighbour, hits } = setUp('rallied');
+    const damaged: string[] = [];
+    state.events.on('damage-applied', ({ targetId }) => damaged.push(targetId));
+    state.entities.remove(caster.id, 'died');
+
+    expect(() => {
+      hits.afterHit(state, caster.id, struck.id, DASH_BOLT, SHOOTER);
+    }).not.toThrow();
+    expect(damaged).toEqual([]);
+    expect(pushOf(struck)).toEqual({ x: 0, y: 0 });
+    expect(pushOf(neighbour)).toEqual({ x: 0, y: 0 });
   });
 
   it('runs nothing when the struck body is gone', () => {

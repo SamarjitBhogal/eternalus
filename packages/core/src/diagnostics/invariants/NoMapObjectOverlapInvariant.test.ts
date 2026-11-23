@@ -109,6 +109,7 @@ describe('NoMapObjectOverlapInvariant', () => {
         new ProjectilePayload({
           ownerId: 'turret',
           team: 'light',
+          ownerLevel: 1,
           source: { attackerId: 'turret', kind: 'weapon', definitionId: 'turret' },
           targetId: null,
           impact: { kind: 'weapon', attack: ammo.attack },

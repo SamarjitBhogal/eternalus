@@ -45,6 +45,15 @@ export type AreaFilter = {
 };
 
 /**
+ * The attacker as `AreaHitQuery.find` reads it: its team (none: nobody's ally, so every body counts
+ * as an enemy) and where it stands (none: no walk-on outline is aimed at by point, rule 1).
+ */
+export type AreaAttacker = {
+  readonly team: Team | undefined;
+  readonly position: Vec2 | undefined;
+};
+
+/**
  * A shot as the rule that stops it sees it (`AreaHitQuery.stopsShot`): who fired it, for which
  * team, and what it aims at (`ProjectilePayload` has this shape).
  */

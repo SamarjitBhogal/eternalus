@@ -17,6 +17,7 @@ describe('ProjectilePayload', () => {
     const payload = new ProjectilePayload({
       ownerId: 'entity-1',
       team: 'light',
+      ownerLevel: 1,
       source: { attackerId: 'entity-1', kind: 'weapon', definitionId: 'magus-staff' },
       targetId: 'entity-2',
       impact: { kind: 'weapon', attack: ATTACK },

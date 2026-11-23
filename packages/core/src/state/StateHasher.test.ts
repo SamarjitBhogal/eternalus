@@ -288,6 +288,7 @@ describe('StateHasher', () => {
       new ProjectilePayload({
         ownerId,
         team: 'light',
+        ownerLevel: 1,
         source: { attackerId: ownerId, kind: 'weapon', definitionId: weaponId },
         targetId,
         impact: { kind: 'weapon', attack: SHOT_ATTACK },
@@ -315,6 +316,7 @@ describe('StateHasher', () => {
       new ProjectilePayload({
         ownerId: 'a',
         team: 'light',
+        ownerLevel: 1,
         source: { attackerId: 'a', kind: 'weapon', definitionId: 'magus-staff' },
         targetId: 't',
         impact: { kind: 'weapon', attack: SHOT_ATTACK },

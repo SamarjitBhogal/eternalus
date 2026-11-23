@@ -122,6 +122,7 @@ const world = (
       new ProjectilePayload({
         ownerId: 'owner',
         team: 'light',
+        ownerLevel: 1,
         source: { attackerId: 'owner', kind: 'weapon', definitionId: 'magus-staff' },
         targetId,
         impact: { kind: 'weapon', attack: ATTACK },

@@ -731,7 +731,8 @@ attack is ranged, and `obsidian-bow` exists. Projectile content is in `content/p
 (`KnownProjectileRule`, which `loadWeapons` also runs). `RangedProjectileAttackStrategy` spawns the
 `Projectile` at the attacker's centre through `AttackContext.factory` (required: a missing factory
 does not compile). Its `ProjectilePayload` holds the owner, team, source, the entity it was fired
-at (`targetId`, `null` for none), its impact (`{ kind: 'weapon', attack }`) and the origin. The
+at (`targetId`, `null` for none), its impact (`{ kind: 'weapon', attack }`), the origin and the
+owner's level at firing (`ownerLevel`, 1 without `Progression`; PR 4). The
 shot flies straight at the target's facing point, with no lead. Stand-in until PR 2 (melee sweeps,
 phase 4 sprint 4.4): the player fires only at a target under the cursor (`attack-target`), not
 along the aim DEC-184 sets. A bot holds its ranged attack only with a clear line of fire
@@ -751,7 +752,8 @@ hit to the impact of its payload's kind (its `impacts`, composed in `DefaultSyst
 `ProjectileImpact` interface is in `combat/ProjectileImpact.types.ts`, so both `combat/` and
 `abilities/` can implement it; it is not in `StrategyRegistry`, because `entities/` may import
 neither and an ability's impact needs the match's services. `WeaponImpact` applies damage times
-`falloffMultiplier` through `DamagePipeline`, then the owner's statuses' `onHit` steps through
+`falloffMultiplier` through `DamagePipeline`, then the shot's attack's own `onHit` steps and the
+owner's statuses' `onHit` steps (PR 4) through
 the `HitRunner` port (`state/HitRunner.types.ts`, which `HitEffects` satisfies); the shot is then
 removed with cause `consumed`. No `projectile-hit` event exists (DEC-314). Still not built: `heavyAttack`, `parry`, `grants`, the flex attack,
 `a-fine-line` and turret lead.
@@ -788,16 +790,20 @@ A shot keeps the attack it was fired with (`WeaponImpact` passes the payload's a
 melee strategies pass the attack they used. `abilities/checkAttackLinks` checks the steps of every
 weapon attack and turret ammo against the ability registry at boot, as `checkStatusLinks` checks a
 status's `onHit`. The first content that uses it is the heavy turret bolt's `concussion` (07 §5).
-Bleed and sundered (lane A PR 3) are still to come as content. A known limit: a shot that lands
-after its owner left the store (a destroyed turret, a Legend that died while its arrow flew) deals
-its damage, but no `onHit` step runs, since `HitEffects` places the steps from the owner. A removed
-caster breaks more than `HitEffects`: `AreaHitQuery` reads the caster's team and position from the
-store, `CastInstance` records the caster's hits, and `DashEffect` throws without its caster. The fix
-carries the caster's team, level and origin on the cast facts and gives them to `AreaHitQuery` (PR 4
-critic round 2, S4). Proposed for lane A PR 3, whose weapon `onHit` steps (bleed, sundered) a Legend
-that dies while its arrow flies would skip; the lane A owner has not confirmed it yet.
-`attackInTicks` and `timeProblems` now live in `content/timesInTicks.ts` with `stepInTicks`, shared
-by the loaders of abilities, statuses, weapons and turret ammo.
+Bleed and sundered (lane A PR 3) are still to come as content. A shot that lands after its owner
+left the store (a destroyed turret, a Legend that died while its arrow flew) still runs its attack's
+own `onHit` steps (PR 4 critic round 2, S4; built in PR 4, since the lane A owner did not take it
+into lane A PR 3). The shot carries its owner as it fired: `ProjectilePayload` holds the owner's
+team, its level at firing (`ownerLevel`) and the origin, and `WeaponImpact` passes them to
+`HitRunner.afterHit` as the `Shooter`. `HitEffects` then casts the attack's steps from the shot's
+origin, at that level, named after the payload's source (the name `weaponSourceOf` gives a live
+owner). The statuses' `onHit` steps need the live owner, so they do not run. The cast facts carry
+the caster's team and position (`CastFacts.caster`), and `AreaHitQuery.find` uses them, so an
+`enemies` area of a gone caster still spares that caster's allies; without them it reads the store,
+as before. A dash step of a gone caster does nothing (`DashEffect`), and `EntityStore.recordHits`
+ignores an unknown attacker. A live attacker's hit does not change. `attackInTicks` and
+`timeProblems` now live in `content/timesInTicks.ts` with `stepInTicks`, shared by the loaders of
+abilities, statuses, weapons and turret ammo.
 
 ## 11. Artifacts (gadgets Z and C)
 

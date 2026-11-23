@@ -9,6 +9,7 @@ import type { AbilityEffectSpec } from '../content/abilities/AbilityDefinition.t
 import type { UnitAttack } from '../content/units/units.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
+import type { Shooter } from '../state/HitRunner.types';
 import type { AbilityRegistry } from './AbilityRegistry';
 import { CastInstance } from './CastInstance';
 import type { LandedHit } from './HitEffects.types';
@@ -23,7 +24,9 @@ import { TargetQuery } from './TargetQuery';
  * to it, which the `hit` shape reads. The attack's cast is named after the attacker's weapon, or
  * its definition when it has none (a turret), as the attack's damage source is
  * (`weaponSourceOf`); a status's after the status. The attack strategy calls it where the hit
- * lands (`MeleeAttackStrategy` in the tick, `WeaponImpact` when a shot lands).
+ * lands (`MeleeAttackStrategy` in the tick, `WeaponImpact` when a shot lands). A shot whose owner
+ * left the store before it landed still runs its attack's steps, cast from the owner as it fired
+ * (`Shooter`); the statuses' steps need the live owner, so they do not run.
  */
 export class HitEffects {
   /** What `afterHit` reads for an attacker with no `StatusEffects`. */
@@ -51,45 +54,44 @@ export class HitEffects {
    * Runs the `onHit` steps of `attack`, then those of every status on `attackerId`, oldest status
    * first, for the basic attack that just struck `targetId`. Nothing runs, and nothing is
    * allocated (NFR-023), when neither the attack nor any status has `onHit` steps; nothing runs
-   * when either entity is gone or has no position.
+   * when the struck body is gone or has no position, or the attacker has no position, or the
+   * attacker is gone and no `shooter` is given.
    *
    * @param attack - The attack that struck; absent runs only the statuses' steps.
+   * @param shooter - A shot's owner as it fired: the attack's steps run from it when the attacker
+   *   is gone. Ignored while the attacker is in the store.
    */
   public afterHit(
     state: GameState,
     attackerId: EntityId,
     targetId: EntityId,
     attack?: UnitAttack,
+    shooter?: Shooter,
   ): void {
     const attacker = state.entities.get(attackerId);
     const active = attacker?.findComponent(StatusEffects)?.active ?? HitEffects.NO_STATUSES;
-    const position = attacker?.findComponent(Transform)?.position;
     const struck = state.entities.get(targetId)?.findComponent(Transform)?.position;
     const steps = attack?.onHit ?? HitEffects.NO_STEPS;
-    if (
-      attacker === undefined ||
-      position === undefined ||
-      struck === undefined ||
-      (steps.length === 0 && !HitEffects.hasOnHit(active))
-    ) {
+    if (struck === undefined || (steps.length === 0 && !HitEffects.hasOnHit(active))) {
+      return;
+    }
+    const caster = attacker === undefined ? shooter : HitEffects.liveShooter(state, attackerId);
+    if (caster === undefined) {
       return;
     }
     const hit: LandedHit = {
-      casterId: attacker.id,
-      casterLevel: attacker.findComponent(Progression)?.level ?? 1,
+      casterId: attackerId,
+      casterLevel: caster.ownerLevel,
+      casterTeam: caster.team,
       targetId,
-      from: { x: position.x, y: position.y },
+      from: { x: caster.origin.x, y: caster.origin.y },
       to: { x: struck.x, y: struck.y },
     };
     if (steps.length > 0) {
-      this.run(
-        state,
-        hit,
-        attacker.findComponent(Combat)?.weaponId ?? attacker.definitionId,
-        steps,
-      );
+      this.run(state, hit, caster.source.definitionId, steps);
     }
-    // Only the statuses active at the hit: a step may add one to the attacker (a buff on hit).
+    // Only the statuses active at the hit (none once the attacker is gone): a step may add one to
+    // the attacker (a buff on hit).
     for (let index = 0, count = active.length; index < count; index += 1) {
       const definition = active[index]?.definition;
       if (definition?.onHit !== undefined) {
@@ -101,7 +103,7 @@ export class HitEffects {
   /** Runs `steps` as one cast named `id`, by the attacker of `hit`, at the struck body. */
   private run(
     state: GameState,
-    { casterId, casterLevel, targetId, from, to }: LandedHit,
+    { casterId, casterLevel, casterTeam, targetId, from, to }: LandedHit,
     id: string,
     steps: readonly AbilityEffectSpec[],
   ): void {
@@ -110,6 +112,7 @@ export class HitEffects {
     new CastInstance(
       {
         casterId,
+        caster: { team: casterTeam, position: from },
         ability: {
           id,
           steps: steps.map((spec) => ({
@@ -133,6 +136,24 @@ export class HitEffects {
         statuses: this.statuses,
       },
     ).run({ from, to });
+  }
+
+  /**
+   * The attacker in the store as the shooter of its own hit, as it is now: its cast named after its
+   * weapon, or its definition (`weaponSourceOf`). `undefined` when it has no position.
+   */
+  private static liveShooter(state: GameState, attackerId: EntityId): Shooter | undefined {
+    const attacker = state.entities.get(attackerId);
+    const origin = attacker?.findComponent(Transform)?.position;
+    if (attacker === undefined || origin === undefined) {
+      return undefined;
+    }
+    return {
+      team: state.entities.teamOf(attackerId),
+      ownerLevel: attacker.findComponent(Progression)?.level ?? 1,
+      origin,
+      source: { definitionId: attacker.findComponent(Combat)?.weaponId ?? attacker.definitionId },
+    };
   }
 
   /** Whether any of `active` has `onHit` steps; a loop, so a hit with none allocates nothing. */

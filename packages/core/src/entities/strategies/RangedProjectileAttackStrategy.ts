@@ -1,4 +1,5 @@
 import { Movement } from '../../components/Movement';
+import { Progression } from '../../components/Progression';
 import { ProjectilePayload } from '../../components/ProjectilePayload';
 import { TeamMembership } from '../../components/TeamMembership';
 import { Transform } from '../../components/Transform';
@@ -43,6 +44,7 @@ export class RangedProjectileAttackStrategy implements AttackStrategy {
       new ProjectilePayload({
         ownerId: attacker.id,
         team,
+        ownerLevel: attacker.findComponent(Progression)?.level ?? 1,
         source: weaponSourceOf(attacker),
         targetId:
           targetId ??

@@ -33,6 +33,8 @@ const landAt = (point: { x: number; y: number }): (string | number | DamageSourc
   impact.land(new GameState(createDefaultGameConfig(), 1), {
     impact: { kind: 'weapon', attack: ATTACK },
     ownerId: 'owner',
+    team: 'light',
+    ownerLevel: 1,
     source: SOURCE,
     origin: { x: 0, y: 0 },
     bodyId: 'body-1',

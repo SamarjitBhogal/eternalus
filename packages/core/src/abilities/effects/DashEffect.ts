@@ -43,17 +43,19 @@ export class DashEffect implements AbilityEffect<DashSpec> {
   }
 
   /**
-   * Starts the dash and runs its path and end steps.
+   * Starts the dash and runs its path and end steps. A caster that is gone (the owner of a shot
+   * whose `onHit` dashes, removed before the shot landed) does not move: nothing happens, and no
+   * path or end step runs.
    *
-   * @throws Error when the caster is not in the state or has no `Transform` or `Movement`: the
-   *   cast check (`CastValidator`) passed it, so each is a broken invariant.
+   * @throws Error when the caster has no `Transform` or `Movement`: the cast check
+   *   (`CastValidator`) passed it, so each is a broken invariant.
    */
   public apply(spec: DashSpec, cast: CastContext): void {
     const { direction } = cast;
     const from = cast.placement.to;
     const caster = cast.state.entities.get(cast.casterId);
     if (caster === undefined) {
-      throw new Error(`DashEffect: the caster "${cast.casterId}" is not in the state.`);
+      return;
     }
     const { radius } = caster.getComponent(Transform);
     const reach = dashReach(cast.state.collisions, from, direction, spec.distance, radius);
