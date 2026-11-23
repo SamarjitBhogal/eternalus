@@ -275,6 +275,28 @@ describe('TurretController', () => {
     expect(decide(memory)).toMatchObject({ memory: { targetId: null }, commands: [] });
   });
 
+  it('tests the line of each candidate with the ammo it would fire at it, not the loaded ammo (BTD-1)', () => {
+    const tested: string[] = [];
+    const { add, decide } = setUp({
+      isClear: (_state, _attackerId, targetId, attack) => {
+        const projectileId =
+          attack !== undefined && 'projectile' in attack
+            ? attack.projectile.projectileId
+            : 'loaded';
+        tested.push(`${targetId} ${projectileId}`);
+        // Only the default bolt's line is clear.
+        return projectileId === 'turret-bolt';
+      },
+    });
+    const heavy = add('dark', PYLON + 6, 'heavy-mob', 'heavy-minion');
+    const light = add('dark', PYLON + 2);
+
+    const { memory } = decide();
+
+    expect(tested).toEqual([`${heavy} turret-heavy-bolt`, `${light} turret-bolt`]);
+    expect(memory.targetId).toBe(light);
+  });
+
   it('aims at a still target every decision, and switches ammo only when the loaded one is not the pick', () => {
     const { state, turret, add, decide } = setUp();
     add('dark', PYLON + 10);

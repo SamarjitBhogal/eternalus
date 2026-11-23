@@ -779,20 +779,25 @@ stand-in above: the player now fires along the aim, not only at a target under t
 Bastions), two arcs for a dual-wield weapon (DEC-304, an idea), `heavyAttack`, `parry`, `grants`,
 the flex attack and `a-fine-line`.
 
-**Implementation status, 2026-11-22 (branch `feat/wall-turrets`, part 2).** An attack's own
-`onHit` steps run (§10 `WeaponAttack.onHit`). `AttackBase` has an optional `onHit`, authored in
-seconds (`AuthoredUnitAttack`) and loaded in ticks (`UnitAttack`, `attackInTicks`, DEC-241), as a
-status's `onHit` is. `loadWeapons` and `loadTurrets` load it. `HitRunner.afterHit` takes the attack
-that struck: `HitEffects` runs that attack's `onHit` first, then the `onHit` of the attacker's
-statuses. A shot keeps the attack it was fired with (`WeaponImpact` passes the payload's attack),
-and the two melee strategies pass the attack they used. `abilities/checkAttackLinks` checks the
-steps of every weapon attack and turret ammo against the ability registry at boot, as
-`checkStatusLinks` checks a status's `onHit`. The first content that uses it is the heavy turret
-bolt's `concussion` (07 §5). Bleed and sundered (lane A PR 3) are still to come as content. A
-known limit: a shot that lands after its owner left the store (a destroyed turret, a Legend that
-died while its arrow flew) deals its damage, but no `onHit` step runs, since `HitEffects` places
-the steps from the owner. `attackInTicks` and `timeProblems` now live in `content/timesInTicks.ts`
-with `stepInTicks`, shared by the loaders of abilities, statuses, weapons and turret ammo.
+**Implementation status, 2026-11-22 (branch `feat/wall-turrets`, part 2).** An attack's own `onHit`
+steps run (§10 `WeaponAttack.onHit`). `AttackBase` has an optional `onHit`, authored in seconds
+(`AuthoredUnitAttack`) and loaded in ticks (`UnitAttack`, `attackInTicks`, DEC-241), as a status's
+`onHit` is. `loadWeapons` and `loadTurrets` load it. `HitRunner.afterHit` takes the attack that
+struck: `HitEffects` runs that attack's `onHit` first, then the `onHit` of the attacker's statuses.
+A shot keeps the attack it was fired with (`WeaponImpact` passes the payload's attack), and the two
+melee strategies pass the attack they used. `abilities/checkAttackLinks` checks the steps of every
+weapon attack and turret ammo against the ability registry at boot, as `checkStatusLinks` checks a
+status's `onHit`. The first content that uses it is the heavy turret bolt's `concussion` (07 §5).
+Bleed and sundered (lane A PR 3) are still to come as content. A known limit: a shot that lands
+after its owner left the store (a destroyed turret, a Legend that died while its arrow flew) deals
+its damage, but no `onHit` step runs, since `HitEffects` places the steps from the owner. A removed
+caster breaks more than `HitEffects`: `AreaHitQuery` reads the caster's team and position from the
+store, `CastInstance` records the caster's hits, and `DashEffect` throws without its caster. The fix
+carries the caster's team, level and origin on the cast facts and gives them to `AreaHitQuery` (PR 4
+critic round 2, S4). Proposed for lane A PR 3, whose weapon `onHit` steps (bleed, sundered) a Legend
+that dies while its arrow flies would skip; the lane A owner has not confirmed it yet.
+`attackInTicks` and `timeProblems` now live in `content/timesInTicks.ts` with `stepInTicks`, shared
+by the loaders of abilities, statuses, weapons and turret ammo.
 
 ## 11. Artifacts (gadgets Z and C)
 

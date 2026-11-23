@@ -541,6 +541,13 @@ event exists (05 §10, DEC-314). `StateHasher` hashes a shot's payload (owner, t
 source definition, origin, end ticks left) and a `Movement` speed limit when one is set (10 §2,
 DEC-314); a match with no shot keeps its hash.
 
+**Implementation status, 2026-11-22 (branch `feat/wall-turrets`, PR 4; DEC-335).** `StateHasher`
+hashes the Legend hit log (`state/LegendHitLog`, `legendHits`) only while it is not empty, as it
+hashes the ally damage (DEC-89). A wall turret's target choice reads that log, so two runs that
+differ in it show it at the next hash. The golden replay `abilityCastsSeed11` changed at its
+checkpoints 350 to 450, once Legends hit Legends; with the new line left out, every old hash
+reproduced.
+
 ## Related
 
 - [01-layered-oop-model.md](01-layered-oop-model.md): why core owns no platform code.

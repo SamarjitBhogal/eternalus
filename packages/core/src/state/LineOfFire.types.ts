@@ -1,3 +1,4 @@
+import type { UnitAttack } from '../content/units/units.types';
 import type { EntityId } from './EntityStore.types';
 import type { GameState } from './GameState';
 
@@ -18,6 +19,9 @@ export interface LineOfFireQuery {
    * for an attack that fires no projectile (melee), an unknown attacker or target, a target with no
    * point to aim at (`ReachQuery.aimPointOf` gives `null`), and a match with no collision rule,
    * so a melee unit is never held back by it.
+   *
+   * @param attack - The attack to test; absent tests the attacker's current one. A turret passes the
+   *   ammo it will fire against this target, which may not be the one it has loaded.
    */
-  isClear(state: GameState, attackerId: EntityId, targetId: EntityId): boolean;
+  isClear(state: GameState, attackerId: EntityId, targetId: EntityId, attack?: UnitAttack): boolean;
 }

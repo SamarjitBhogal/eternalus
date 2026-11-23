@@ -11,8 +11,8 @@ import type { GameEvents } from './GameEvents';
  * marks it as an enemy's hurter.
  * Unlike the assist record (`ScoringState.recentHits`), which forgets the hits on a Legend at its
  * death, it keeps them, so a turret still sees the Legend that killed its ally. One tick per
- * attacker and team, so it never grows past the roster. It is derived from the events, as
- * `AllyDamageStore` is, so `StateHasher` does not hash it.
+ * attacker and team, so it never grows past the roster. It is fed by the events, as
+ * `AllyDamageStore` is, and `StateHasher` hashes it as it does that store (`size`, `forEach`).
  */
 export class LegendHitLog {
   private readonly lastHitTicks = new Map<EntityId, Map<Team, number>>();
@@ -31,6 +31,20 @@ export class LegendHitLog {
   ) {
     events.on('damage-applied', ({ targetId, source }) => {
       this.record(source.attackerId, targetId);
+    });
+  }
+
+  /** How many attackers have hit a Legend. */
+  public get size(): number {
+    return this.lastHitTicks.size;
+  }
+
+  /** Every recorded hit: attacker, team hit and tick, in the order each was first recorded. */
+  public forEach(visit: (legendId: EntityId, team: Team, tick: number) => void): void {
+    this.lastHitTicks.forEach((byTeam, legendId) => {
+      byTeam.forEach((tick, team) => {
+        visit(legendId, team, tick);
+      });
     });
   }
 

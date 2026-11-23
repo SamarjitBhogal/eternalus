@@ -128,8 +128,12 @@ export type UnitDefinition = EntityDefinitionBase & {
   readonly movementProfile: MovementProfile;
   /** The strategy that steers this unit each tick; none for a unit nothing steers. */
   readonly movementStrategy?: MovementStrategyId;
-  /** The basic attack; a unit without one cannot attack (a training dummy). */
-  readonly attack?: UnitAttack;
+  /**
+   * The basic attack; a unit without one cannot attack (a training dummy). Its `onHit` is typed
+   * `never[]`: a mob's attack has no `onHit` until the loader converts its times to ticks
+   * (DEC-241), so authoring one is a type error.
+   */
+  readonly attack?: UnitAttack<never>;
   /** The controller that drives this unit (architecture 11 §2); none for the player. */
   readonly controller?: ControllerId;
   /** The AI profile its controller reads (`content/ai/profiles/`); the controller id by default. */

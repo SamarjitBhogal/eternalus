@@ -99,6 +99,14 @@ export class StateHasher {
       });
       parts.push(['allyDamage', ...tallies]);
     }
+    // Legend hits (DEC-335) are appended only while some are recorded, for the same reason.
+    if (state.legendHits.size > 0) {
+      const hits: unknown[] = [];
+      state.legendHits.forEach((legendId, team, tick) => {
+        hits.push([legendId, team, tick]);
+      });
+      parts.push(['legendHits', ...hits]);
+    }
     // Lost towers are appended only once a lane has one, for the same reason.
     const lost = PLAYABLE_TEAMS.flatMap((team) =>
       Object.keys(state.teams[team].towersLostByLane)

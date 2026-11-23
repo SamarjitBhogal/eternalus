@@ -222,6 +222,28 @@ describe('LineOfFire', () => {
     expect(shortShots.isClear(state, from, far)).toBe(false);
   });
 
+  it('tests the attack it is given, not the one the attacker has loaded (BTD-1)', () => {
+    const SHORT: RangedAttack = {
+      ...RANGED,
+      projectile: { projectileId: 'short-bolt', falloff: null },
+    };
+    const mixed = new LineOfFire({
+      get: (id) =>
+        id === 'short-bolt' ? { ...PROJECTILES.get('magus-bolt'), range: 8 } : PROJECTILES.get(id),
+    });
+    const { state, add, shooter } = world([]);
+    const loadedLong = shooter({ x: 0, y: 0 });
+    const loadedShort = shooter({ x: 0, y: 4 }, SHORT);
+    // 8.85 m from the first shooter: past the short bolt's range, inside the long one's.
+    const far = add({ at: { x: 10, y: 0 }, radius: 1 });
+    const farFromShort = add({ at: { x: 10, y: 4 }, radius: 1 });
+
+    expect(mixed.isClear(state, loadedLong, far)).toBe(true);
+    expect(mixed.isClear(state, loadedLong, far, SHORT)).toBe(false);
+    expect(mixed.isClear(state, loadedShort, farFromShort)).toBe(false);
+    expect(mixed.isClear(state, loadedShort, farFromShort, RANGED)).toBe(true);
+  });
+
   it('is clear for a melee attack, an unknown id, and a match with no collision rule', () => {
     const walled = world([box(5, -5, 0.5, 10)]);
     const melee = walled.shooter({ x: 0, y: 0 }, MELEE);

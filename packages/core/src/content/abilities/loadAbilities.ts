@@ -1,7 +1,7 @@
 import { TickRate } from '../../utils/TickRate';
 import { ContentCatalogue } from '../ContentCatalogue';
 import { ContentValidationError } from '../ContentValidationError';
-import { stepInTicks, ticksOf, timeProblems } from '../timesInTicks';
+import { isNonNegative, stepInTicks, ticksOf, timeProblems } from '../timesInTicks';
 import { KEBAB_CASE } from '../validation/KebabCaseIdRule.constants';
 import { ABILITIES } from './abilityCatalogue';
 import type {
@@ -11,8 +11,6 @@ import type {
   AuthoredStep,
   InTicks,
 } from './AbilityDefinition.types';
-
-const isNonNegative = (value: number): boolean => value >= 0 && Number.isFinite(value);
 
 /** Whether no step waits less after the cast than the step before it (05 §4; absent = 0). */
 const hasDelaysInOrder = (steps: readonly { readonly delaySeconds?: number }[]): boolean =>

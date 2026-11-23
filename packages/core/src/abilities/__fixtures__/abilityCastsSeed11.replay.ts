@@ -19,7 +19,11 @@ import { ABILITY_CASTS_PLAN } from './abilityCastsPlan';
  * and the commands were unchanged; a dump every 10 ticks of positions, health, motion, facing,
  * statuses, abilities, the RNG and the AI brains matched the old code at every tenth tick to 450,
  * and only the new `hits` fields differed. The round-3 correctness critic hashed the full state on
- * every tick to 450 with the old hasher minus its `hits` line: identical.
+ * every tick to 450 with the old hasher minus its `hits` line: identical. Regenerated 2026-11-22
+ * when the hash began to cover the Legend hit log (DEC-335 (V2), wall turrets PR 4, critic round 2
+ * S1): checkpoints 0 to 300 and the commands were unchanged, and with the new `legendHits` line left
+ * out every old hash reproduced; only checkpoints 350, 400 and 450 changed, once Legends hit
+ * Legends.
  */
 export const ABILITY_CASTS_SEED_11: ReplayOf<{
   readonly seed: number;
@@ -146,15 +150,15 @@ export const ABILITY_CASTS_SEED_11: ReplayOf<{
     },
     {
       tick: 350,
-      hash: 2681243284,
+      hash: 3211682349,
     },
     {
       tick: 400,
-      hash: 3670819647,
+      hash: 564540832,
     },
     {
       tick: 450,
-      hash: 3160943889,
+      hash: 1025047570,
     },
   ],
 };

@@ -18,8 +18,8 @@ import type { TurretCandidate } from './turretTarget.types';
  * candidates (`rankTurretTargets`): an enemy Legend that hurt an allied Legend first (its
  * profile's overrides), then its target while that lives and stays in range, then the others by
  * its profile's priority list. It takes the first one in rank order that its shot can reach
- * (`LineOfFireQuery`, the bots' rule, DEC-317 addendum), so it tests the line only until one is
- * clear, and a held target whose line closes is dropped as one that leaves range. Against the
+ * (`LineOfFireQuery`, the bots' rule, DEC-317 addendum) with the ammo it would fire at that
+ * candidate, not the loaded one, so it tests the line only until one is clear, and a held target whose line closes is dropped as one that leaves range. Against the
  * target it picks the first ammo it carries whose `preferredAgainst` fits the target's kind
  * (`chooseTurretAmmo` over its `TurretState`, read through `TurretAmmoRule.ammoOf`), sends
  * `switch-ammo` when that is not the loaded one, then
@@ -66,8 +66,15 @@ export class TurretController implements Controller {
       return { commands: [], memory: brain.memory, rngState: brain.rngState };
     }
     const candidates = TurretController.candidatesFor(state, perception, place, team, profile);
-    const target = TurretController.ranked(brain.memory, candidates, profile).find(({ id }) =>
-      this.content.lineOfFire.isClear(state, entityId, id),
+    // The line is tested with the ammo the turret will fire at that candidate, not the loaded one.
+    const target = TurretController.ranked(brain.memory, candidates, profile).find(
+      ({ id, kind }) => {
+        const chosen = chooseTurretAmmo(kind, turret.ammo);
+        return (
+          chosen !== undefined &&
+          this.content.lineOfFire.isClear(state, entityId, id, chosen.attack)
+        );
+      },
     );
     const ammo = target === undefined ? undefined : chooseTurretAmmo(target.kind, turret.ammo);
     if (target === undefined || ammo === undefined) {

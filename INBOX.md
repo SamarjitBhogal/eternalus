@@ -829,7 +829,8 @@ Reply inline (`Decision: …`).
       like a lane tower and its fort. This changes your DEC-217 (13) text, "Only towers share one
       health pool with their fort". (2) DEC-335: only the code layout changes, so the game plays
       the same. A turret fires through the same attack code as Legends and mobs. Its target rules
-      are a list in its content file. One critic item was rejected: keeping the launch shapes' ids
+      are a list in its content file. It checks its line of fire with the ammo it will fire.
+      One critic item was rejected: keeping the launch shapes' ids
       on each bolt gives the same result as the built rule (DEC-334) and adds saved state.
       FYI for Samarjit (minion AI owner): a lane minion does not yet treat an enemy wall turret
       that shoots an allied minion as a target (architecture 11 §4.3, priority (4)). The minion

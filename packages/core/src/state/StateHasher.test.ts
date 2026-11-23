@@ -41,6 +41,22 @@ class Soldier extends Entity {
   }
 }
 
+class Champion extends Entity {
+  public readonly kind = 'champion';
+  public readonly family = 'legend';
+
+  public constructor(
+    id: string,
+    private readonly team: 'light' | 'dark',
+  ) {
+    super(id, 'champion-definition');
+  }
+
+  protected installComponents(): void {
+    this.addComponent(new TeamMembership(this.team));
+  }
+}
+
 class Scout extends Entity {
   public readonly kind = 'scout';
   public readonly family = 'test';
@@ -888,6 +904,34 @@ describe('StateHasher', () => {
       ];
 
       expect(new Set(hashes).size).toBe(5);
+    });
+  });
+
+  describe('Legend hits (DEC-335)', () => {
+    const withHits = (...ticks: readonly number[]): number => {
+      const { state } = stateWithSoldier();
+      for (const entity of [new Champion('light-1', 'light'), new Champion('dark-1', 'dark')]) {
+        entity.spawn({});
+        state.entities.add(entity);
+      }
+      for (const tick of ticks) {
+        while (state.tick < tick) state.advanceTick();
+        state.events.emit('damage-applied', {
+          targetId: 'light-1',
+          amount: 1,
+          absorbed: 0,
+          source: { attackerId: 'dark-1', kind: 'weapon', definitionId: 'sword' },
+        });
+      }
+      while (state.tick < 10) state.advanceTick();
+      return hasher.hash(state);
+    };
+
+    it('hashes a recorded Legend hit, and the tick of it', () => {
+      const hashes = [withHits(), withHits(5), withHits(6)];
+
+      expect(new Set(hashes).size).toBe(3);
+      expect(withHits(5)).toBe(withHits(5));
     });
   });
 });

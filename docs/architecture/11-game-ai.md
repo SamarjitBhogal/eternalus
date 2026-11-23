@@ -420,7 +420,9 @@ work named:
   turret range, since the ally it hit is near it by its weapon's reach. Then the target is kept
   while it lives and stays in range. Then the profile's `priority` list applies (heavy units, then
   the nearest enemy). The turret takes the first candidate in that order that its shot can reach
-  (`LineOfFireQuery`, the match's one `LineOfFire`, the bots' rule of the DEC-317 addendum), so it
+  (`LineOfFireQuery`, the match's one `LineOfFire`, the bots' rule of the DEC-317 addendum). It
+  picks the ammo for each candidate first and tests the line with that ammo's attack (DEC-335), so
+  the test uses the shot the turret will fire. It
   tests the line only until one is clear, and a held target whose line closes is dropped as one
   that leaves range. A wall turret's line starts inside its pylon and wall, which do not block it
   (DEC-334). Range runs from the

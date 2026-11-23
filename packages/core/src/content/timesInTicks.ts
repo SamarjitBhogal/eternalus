@@ -11,7 +11,8 @@ import type { AuthoredUnitAttack, RangedAttack, UnitAttack } from './units/units
 const SECONDS = 'Seconds';
 const TICKS = 'Ticks';
 
-const isNonNegative = (value: number): boolean => value >= 0 && Number.isFinite(value);
+/** Whether `value` is a finite number of 0 or more. */
+export const isNonNegative = (value: number): boolean => value >= 0 && Number.isFinite(value);
 
 /**
  * Every `<name>Seconds` field in `value` (at any depth) that is not a finite time of 0 or more,
