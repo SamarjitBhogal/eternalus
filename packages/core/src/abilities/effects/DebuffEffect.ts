@@ -7,7 +7,8 @@ import { mustBePositive } from '../specChecks';
  * Applies a negative status to every enemy in the step's shape through the match's one
  * `StatusEffectApplier` (architecture 05 §3, §8), credited to the caster. A step's
  * `durationTicks` overrides the status's own duration for this application (Blade Runner's 0.5 s
- * stun against the 2 s default); without it the status lasts its own time.
+ * stun against the 2 s default); without it the status lasts its own time. Either way the caster's
+ * `abilityDuration` stretches it (`CastContext.statusDuration`, Erudition).
  */
 export class DebuffEffect implements AbilityEffect<DebuffSpec> {
   public readonly kind = 'debuff';
@@ -33,7 +34,7 @@ export class DebuffEffect implements AbilityEffect<DebuffSpec> {
   /** Applies the step's status to every enemy in its shape, in id order. */
   public apply(spec: DebuffSpec, cast: CastContext): void {
     for (const targetId of cast.targets(spec.shape, { team: 'enemies' })) {
-      cast.statuses.apply(cast.state, targetId, spec.statusId, cast.casterId, spec.durationTicks);
+      cast.statuses.apply(cast.state, targetId, spec.statusId, cast.casterId, cast.statusDuration(spec));
     }
   }
 }

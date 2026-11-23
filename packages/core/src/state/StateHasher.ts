@@ -216,6 +216,11 @@ export class StateHasher {
         ]),
       ]);
     }
+    // A passive adds a field only while it waits to be put on (from the spawn to the next
+    // `AbilitySystem` pass, and after a Duel round's reset).
+    if (entity.findComponent(Abilities)?.isPassiveDue === true) {
+      fields.push(['passive-due']);
+    }
     // A cast with steps still to come (05 §4) adds a field only while one waits, so a match where
     // every step fired at its cast hashes as before.
     const casts = entity.findComponent(Abilities)?.castsInProgress ?? [];

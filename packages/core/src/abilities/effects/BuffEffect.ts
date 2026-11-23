@@ -5,9 +5,11 @@ import { mustBePositive } from '../specChecks';
 
 /**
  * Applies a status to the caster itself through the match's one `StatusEffectApplier`
- * (architecture 05 §3, §8), credited to the caster: Fury's `fury`. A step's `durationTicks`
- * overrides the status's own duration for this application; without it the status lasts its own
- * time. It has no area (every buff built so far is on self), so the aim overlay draws nothing for
+ * (architecture 05 §3, §8), credited to the caster: Fury's `fury`, a passive's status. A step's
+ * `durationTicks` overrides the status's own duration for this application; without it the status
+ * lasts its own time. Either way the caster's `abilityDuration` stretches it
+ * (`CastContext.statusDuration`, Erudition); a status that lasts until removed stays so. It has no
+ * area (every buff built so far is on self), so the aim overlay draws nothing for
  * it.
  */
 export class BuffEffect implements AbilityEffect<BuffSpec> {
@@ -38,7 +40,7 @@ export class BuffEffect implements AbilityEffect<BuffSpec> {
       cast.casterId,
       spec.statusId,
       cast.casterId,
-      spec.durationTicks,
+      cast.statusDuration(spec),
     );
   }
 }

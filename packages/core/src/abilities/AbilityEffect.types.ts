@@ -38,6 +38,19 @@ export type CastContext = {
    * so level 1 is the content value). A field the ability does not scale comes back unchanged.
    */
   scaled(field: string, value: number): number;
+  /**
+   * What the caster's statuses multiply its abilities' damage, healing and shields by: its
+   * `abilityPotency` (Erudition, DEC-330), 1 with none. Basic attacks never read it.
+   */
+  readonly potency: number;
+  /**
+   * How long a status a step applies lasts, in ticks: the step's own `durationTicks`, else the
+   * status's own duration, times the caster's `abilityDuration` (Erudition, DEC-330), rounded and at
+   * least 1 tick. `undefined` for a status that lasts until removed (nothing to stretch).
+   */
+  statusDuration(step: { readonly statusId: string; readonly durationTicks?: number }):
+    | number
+    | undefined;
   /** The match's one damage pipeline. */
   readonly damage: DamagePipeline;
   /** The match's one status applier. */

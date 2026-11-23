@@ -18,8 +18,10 @@ import { compareById } from '../utils/compareById';
 import type { System, SystemContext } from './System.types';
 
 /**
- * Runs the casts the `cast-ability` handler queued this tick (architecture 05 §7 step 3), casters
- * in id order. Each cast is checked again (the state may have moved since the command); a cast
+ * First puts on each due passive (05 §7: at spawn, and again after a Duel round's reset), casters
+ * in id order: its steps run as a cast at the caster, with no price, no cooldown and no
+ * `ability-cast`. Then runs the casts the `cast-ability` handler queued this tick (architecture 05
+ * §7 step 3), casters in id order. Each cast is checked again (the state may have moved since the command); a cast
  * that now fails is announced as `command-rejected` and dropped. Otherwise it pays the price in
  * aether, stamps the cooldown (cooldowns start at cast), emits `ability-cast` and fires the
  * ability's steps that are due at the cast through their strategies. A cast with later steps
@@ -50,12 +52,16 @@ export class AbilitySystem implements System {
     this.targets = new TargetQuery(registry);
   }
 
-  /** Runs every queued cast of this tick, then the due steps of every cast in progress. */
+  /** Puts on every due passive, runs every queued cast of this tick, then the due steps of every cast in progress. */
   public update({ state }: SystemContext): void {
+    const passives: Entity[] = [];
     const queued: { readonly caster: Entity; readonly runtime: AbilitySlotRuntime }[] = [];
     const inProgress: Entity[] = [];
     state.entities.forEach((caster) => {
       const abilities = caster.findComponent(Abilities);
+      if (abilities?.isPassiveDue === true) {
+        passives.push(caster);
+      }
       for (const runtime of abilities?.slots ?? []) {
         if (runtime.pendingCast !== null) {
           queued.push({ caster, runtime });
@@ -65,6 +71,10 @@ export class AbilitySystem implements System {
         inProgress.push(caster);
       }
     });
+    passives.sort((a, b) => compareById(a.id, b.id));
+    for (const caster of passives) {
+      this.putOnPassive(state, caster);
+    }
     queued.sort((a, b) => compareById(a.caster.id, b.caster.id));
     for (const { caster, runtime } of queued) {
       this.cast(state, caster, runtime);
@@ -109,6 +119,29 @@ export class AbilitySystem implements System {
       nextStep: 0,
     };
     this.fireDue(state, caster, cast);
+  }
+
+  /**
+   * Runs the steps of `caster`'s due passive as a cast at the caster (05 §7): its `buff` puts on
+   * the passive's permanent status. Like a status's `onHit` steps (`HitEffects`) it is not a bar
+   * cast, so it reads as the `default-action` slot.
+   */
+  private putOnPassive(state: GameState, caster: Entity): void {
+    const abilityId = caster.getComponent(Abilities).takeDuePassive();
+    if (abilityId === null) {
+      return;
+    }
+    const { position } = caster.getComponent(Transform);
+    const here = { x: position.x, y: position.y };
+    this.fireDue(state, caster, {
+      abilityId,
+      slot: 'default-action',
+      aim: { point: here, targetId: null },
+      origin: here,
+      casterLevel: caster.findComponent(Progression)?.level ?? 1,
+      tick: state.tick,
+      nextStep: 0,
+    });
   }
 
   /** Fires the due steps of each cast `caster` has in progress; drops them all once it died. */

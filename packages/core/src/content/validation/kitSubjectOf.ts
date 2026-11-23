@@ -13,6 +13,10 @@ export type KitSubject = {
   readonly pool: readonly string[];
   /** The kit under check: a class's `defaultKit`, a spec's own `kit` (`null` = it has none). */
   readonly kit: AbilityKit | null;
+  /** The class's `passiveOptions`. */
+  readonly passiveOptions: readonly string[];
+  /** A spec's `passiveId`; `null` for a spec with none and for the class itself. */
+  readonly passiveId: string | null;
   /** Whether the definition is the class itself (it owns the pool) and not a spec. */
   readonly isClass: boolean;
   /** What the messages call the kit. */
@@ -20,8 +24,8 @@ export type KitSubject = {
 };
 
 /**
- * Reads the ability fields of a Legend class (`defaultKit`) or a Legend spec (`kit`), the one
- * place that knows both shapes, so the ability rules treat them alike. Returns `null` for any
+ * Reads the ability fields of a Legend class (`defaultKit`, `passiveOptions`) or a Legend spec
+ * (`kit`, `passiveId`), the one place that knows both shapes, so the ability rules treat them alike. Returns `null` for any
  * other definition (a mob) and for a spec whose class is not loaded (`SpecClassExistsRule` flags
  * that).
  *
@@ -33,21 +37,27 @@ export const kitSubjectOf = (
   legends: Pick<ContentCatalogue<LegendDefinition>, 'has' | 'get'>,
 ): KitSubject | null => {
   if ('classId' in definition) {
-    return legends.has(definition.classId)
-      ? {
-          classId: definition.classId,
-          pool: legends.get(definition.classId).abilityPool,
-          kit: definition.kit,
-          isClass: false,
-          kitName: 'kit',
-        }
-      : null;
+    if (!legends.has(definition.classId)) {
+      return null;
+    }
+    const legend = legends.get(definition.classId);
+    return {
+      classId: definition.classId,
+      pool: legend.abilityPool,
+      kit: definition.kit,
+      passiveOptions: legend.passiveOptions,
+      passiveId: definition.passiveId,
+      isClass: false,
+      kitName: 'kit',
+    };
   }
   return LEGEND_KINDS.has(definition)
     ? {
         classId: definition.id,
         pool: definition.abilityPool,
         kit: definition.defaultKit,
+        passiveOptions: definition.passiveOptions,
+        passiveId: null,
         isClass: true,
         kitName: 'defaultKit',
       }

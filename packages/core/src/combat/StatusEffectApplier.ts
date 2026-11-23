@@ -66,6 +66,15 @@ export class StatusEffectApplier {
   }
 
   /**
+   * How long status `statusId` lasts on its own, in ticks; `null` for one that lasts until removed.
+   *
+   * @throws UnknownDefinitionError when no status has the id `statusId`.
+   */
+  public durationOf(statusId: string): number | null {
+    return this.statuses.get(statusId).durationTicks;
+  }
+
+  /**
    * Ends status `statusId` on `targetId` now (an aura left, a hold released) and emits
    * `status-expired`. Returns whether it was active.
    */

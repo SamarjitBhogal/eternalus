@@ -1,6 +1,7 @@
 import { Abilities } from '../components/Abilities';
 import { ULTIMATE_SLOT } from '../components/Abilities.constants';
 import { Health } from '../components/Health';
+import { StatusEffects } from '../components/StatusEffects';
 import { MOB_KINDS } from '../content/mobs/mobKinds';
 import type { UltimateChargeDefinition } from '../content/progression/progression.types';
 import type { AbilitySlotRuntime } from '../components/AbilitySlotRuntime';
@@ -132,16 +133,25 @@ export class UltimateCharge {
     );
   }
 
-  /** Buffers a change for an entity with a meter; every other entity's kills and hits are skipped. */
+  /**
+   * Buffers a change for an entity with a meter; every other entity's kills and hits are skipped.
+   * A gain is multiplied by the recipient's `ultimateGain` (Erudition, DEC-330); a loss is not.
+   */
   private queue(
     state: GameState,
     recipientId: EntityId,
     points: number,
     cause: UltimateChargeCause,
   ): void {
-    if (points !== 0 && UltimateCharge.meterOf(state, recipientId) !== undefined) {
-      this.pending.push({ recipientId, points, cause });
+    if (points === 0 || UltimateCharge.meterOf(state, recipientId) === undefined) {
+      return;
     }
+    const gain =
+      points > 0
+        ? (state.entities.get(recipientId)?.findComponent(StatusEffects)?.multiplier('ultimateGain') ??
+          1)
+        : 1;
+    this.pending.push({ recipientId, points: points * gain, cause });
   }
 
   private static meterOf(state: GameState, entityId: EntityId): AbilitySlotRuntime | undefined {

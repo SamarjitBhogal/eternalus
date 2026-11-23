@@ -5,20 +5,31 @@ import { AbilitySlotRuntime } from './AbilitySlotRuntime';
 
 /**
  * A Legend's ability bar (architecture 05 §6): one `AbilitySlotRuntime` per slot, in bar order,
- * and the casts whose later steps still wait (05 §4), so they leave the match with the Legend.
- * Aether is its own component (`Aether`, plan arch call 3).
+ * and the casts whose later steps still wait (05 §4), so they leave the match with the Legend. It
+ * also holds the Legend's passive (05 §7), which is on no bar slot: it is due from the spawn until
+ * `AbilitySystem` puts it on, and due again after a reset removed every status. Aether is its own
+ * component (`Aether`, plan arch call 3).
  */
 export class Abilities {
   private readonly bySlot: ReadonlyMap<AbilitySlot, AbilitySlotRuntime>;
 
   private readonly casts: CastInProgress[] = [];
 
+  private isPassiveDueNow: boolean;
+
   /**
    * Builds the bar from `kit` (DEC-198, DEC-209 (2)): its three abilities on `ability-1` to
    * `ability-3`, its ultimate on `ability-4`; the gadget and default-action slots stay empty until
    * their content exists.
+   *
+   * @param passiveId - The Legend's passive (its spec's `passiveId`, DEC-330), due at once; `null`
+   *   for none.
    */
-  public constructor(kit: AbilityKit) {
+  public constructor(
+    kit: AbilityKit,
+    public readonly passiveId: string | null = null,
+  ) {
+    this.isPassiveDueNow = passiveId !== null;
     const held = new Map<AbilitySlot, string>([
       ['ability-1', kit.abilities[0]],
       ['ability-2', kit.abilities[1]],
@@ -53,6 +64,25 @@ export class Abilities {
   /** Keeps `cast`, whose later steps wait for their due tick, after the others. */
   public keepCast(cast: CastInProgress): void {
     this.casts.push(cast);
+  }
+
+  /** Whether the passive waits for `AbilitySystem` to put it on. */
+  public get isPassiveDue(): boolean {
+    return this.isPassiveDueNow;
+  }
+
+  /** Returns the passive's id and marks it put on when it is due; `null` otherwise. */
+  public takeDuePassive(): string | null {
+    if (!this.isPassiveDueNow) {
+      return null;
+    }
+    this.isPassiveDueNow = false;
+    return this.passiveId;
+  }
+
+  /** Makes the passive due again: a reset (a Duel round) removed every status, its own too. */
+  public rearmPassive(): void {
+    this.isPassiveDueNow = this.passiveId !== null;
   }
 
   /**

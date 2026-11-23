@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { StatusEffects } from '../../components/StatusEffects';
+import { loadStatusEffects } from '../../content/status-effects/loadStatusEffects';
 import { STATUS_EFFECTS } from '../../content/status-effects/statusEffectCatalogue';
 import type { Entity } from '../../entities/Entity';
 import type { GameEventMap } from '../../state/GameEvents.types';
@@ -64,5 +65,35 @@ describe('BuffEffect', () => {
 
   it('draws nothing on the aim overlay: it has no area', () => {
     expect(new BuffEffect(STATUS_EFFECTS).describe()).toEqual([]);
+  });
+
+  describe('with Erudition on the caster (abilityDuration x1.2)', () => {
+    const withErudition = () => {
+      const context = setUp();
+      context.caster
+        .getComponent(StatusEffects)
+        .apply(loadStatusEffects(30, 2).get('erudition'), null, 0);
+      return context;
+    };
+
+    it('stretches a timed buff: fury’s 240 ticks last 288, a 15-tick override 18', () => {
+      const { state, caster, expiryOf } = withErudition();
+
+      castSteps(state, caster.id, [
+        { kind: 'buff', statusId: 'rallied', durationTicks: 15 },
+        { kind: 'buff', statusId: 'fury' },
+      ]);
+
+      expect(expiryOf(caster, 'rallied')).toBe(state.tick + 18);
+      expect(expiryOf(caster, 'fury')).toBe(state.tick + 288);
+    });
+
+    it('keeps a permanent status permanent', () => {
+      const { state, caster, expiryOf } = withErudition();
+
+      castSteps(state, caster.id, [{ kind: 'buff', statusId: 'enraged' }]);
+
+      expect(expiryOf(caster, 'enraged')).toBeNull();
+    });
   });
 });

@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 
 import { DamagePipeline } from '../combat/DamagePipeline';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
+import { StatusEffects } from '../components/StatusEffects';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import type { AbilityDisplayStep } from '../content/loadDisplayContent';
+import { ERUDITION } from '../content/status-effects/erudition';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import type { AbilityEffect, CastContext, EffectStep } from './AbilityEffect.types';
 import { casterState } from './__fixtures__/casterState';
@@ -198,5 +200,73 @@ describe('CastInstance', () => {
       { x: 1, y: 0 },
       { x: 1, y: 0 },
     ]);
+  });
+
+  describe('the ability stats of the caster’s statuses (Erudition, DEC-330)', () => {
+    /** The context a step sees, cast by a Warrior that holds `statusId` (none when null). */
+    const contextWith = (
+      statusId: string | null,
+      catalogue = STATUSES,
+    ): CastContext | undefined => {
+      const { state, caster } = casterState();
+      if (statusId !== null) {
+        caster.getComponent(StatusEffects).apply(catalogue.get(statusId), null, 0);
+      }
+      const strike = new RecordingEffect('fake-strike');
+      const registry = testAbilityRegistry([strike]);
+      new CastInstance(
+        {
+          casterId: caster.id,
+          ability: registry.resolve('fake-strike'),
+          slot: 'ability-1',
+          aim: { point: { x: 4, y: 0 }, targetId: null },
+          origin: { x: 0, y: 0 },
+          casterLevel: 1,
+          tick: 0,
+        },
+        {
+          state,
+          effects: registry,
+          targets: new TargetQuery(registry),
+          damage: new DamagePipeline(),
+          statuses: new StatusEffectApplier(catalogue),
+        },
+      ).run(AT_ORIGIN);
+      return strike.log[0]?.cast;
+    };
+
+    it('gives potency 1.1 with Erudition and 1 without', () => {
+      expect(contextWith('erudition')?.potency).toBeCloseTo(1.1);
+      expect(contextWith(null)?.potency).toBe(1);
+    });
+
+    it('stretches a step override by 1.2, rounded, and the status’s own duration when none is given', () => {
+      const cast = contextWith('erudition');
+
+      expect(cast?.statusDuration({ statusId: 'stun', durationTicks: 90 })).toBe(108);
+      expect(cast?.statusDuration({ statusId: 'stun', durationTicks: 15 })).toBe(18);
+      expect(cast?.statusDuration({ statusId: 'concussion' })).toBe(108);
+      expect(cast?.statusDuration({ statusId: 'stun', durationTicks: 8 })).toBe(10); // 9.6 rounds up
+    });
+
+    it('leaves a duration alone without Erudition, and a permanent status without one', () => {
+      expect(contextWith(null)?.statusDuration({ statusId: 'stun', durationTicks: 90 })).toBe(90);
+      expect(contextWith(null)?.statusDuration({ statusId: 'concussion' })).toBe(90);
+      expect(contextWith('erudition')?.statusDuration({ statusId: 'enraged' })).toBeUndefined();
+    });
+
+    it('never lets a stretched status last under one tick', () => {
+      const shrinking = loadStatusEffects(30, 2, [
+        {
+          ...ERUDITION,
+          id: 'brief',
+          modifiers: [{ stat: 'abilityDuration', op: 'mul', value: 0.3 }],
+        },
+      ]);
+
+      expect(
+        contextWith('brief', shrinking)?.statusDuration({ statusId: 'brief', durationTicks: 1 }),
+      ).toBe(1);
+    });
   });
 });

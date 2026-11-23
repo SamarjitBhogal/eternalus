@@ -30,7 +30,8 @@ export abstract class Legend extends Unit {
 
   /**
    * Installs the unit components, then the legend-only `Aether` (MP) pool, `Progression` (XP
-   * and level) and `Abilities` (the ability bar, from the kit). Mobs and structures have none.
+   * and level) and `Abilities` (the ability bar, from the kit, and the spec's passive). Mobs and
+   * structures have none.
    *
    * @throws Error when the context names a Legend spec but has no spec source, or a spec that
    *   does not exist or is of another class.
@@ -43,8 +44,10 @@ export abstract class Legend extends Unit {
     this.addComponent(new Aether(definition.baseAether));
     // The id is checked at content load (`KnownLevelCurveRule`); `ProgressionSystem` resolves it.
     this.addComponent(new Progression(definition.levelCurveId));
-    // The kit's ids are checked at content load (`KitInPoolRule`, `KnownAbilityRefsRule`).
-    this.addComponent(new Abilities(kitOf(this.specOf(definition, reader, context), definition)));
+    // The kit's and the passive's ids are checked at content load (`KitInPoolRule`,
+    // `KnownAbilityRefsRule`).
+    const spec = this.specOf(definition, reader, context);
+    this.addComponent(new Abilities(kitOf(spec, definition), spec?.passiveId ?? null));
   }
 
   /**

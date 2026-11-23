@@ -55,4 +55,16 @@ describe('KitInPoolRule', () => {
       }),
     ).toEqual([]);
   });
+
+  it("flags a spec's passiveId outside its class's passiveOptions, and passes null", () => {
+    expect(rule.check({ ...ORACLE, passiveId: 'wrecking-run' })).toEqual([
+      'passiveId "wrecking-run" is not in the passiveOptions of class "magus"',
+    ]);
+    expect(rule.check({ ...ORACLE, passiveId: 'necromancy' })).toEqual([]);
+    expect(rule.check({ ...ORACLE, passiveId: null })).toEqual([]);
+  });
+
+  it('checks a spec’s passiveId even when the spec has no kit', () => {
+    expect(rule.check({ ...ORACLE, kit: null, passiveId: 'wrecking-run' })).toHaveLength(1);
+  });
 });

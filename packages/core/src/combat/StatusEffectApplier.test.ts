@@ -358,4 +358,13 @@ describe('StatusEffectApplier', () => {
       expect(applier.remove(state, dummy.id, 'fury')).toBe(true);
     });
   });
+
+  it('reports a status’s own duration in ticks, null for a permanent one', () => {
+    const { applier } = setUp();
+
+    expect(applier.durationOf('stun')).toBe(60);
+    expect(applier.durationOf('concussion')).toBe(90);
+    expect(applier.durationOf('erudition')).toBeNull();
+    expect(() => applier.durationOf('frozen')).toThrow(UnknownDefinitionError);
+  });
 });
