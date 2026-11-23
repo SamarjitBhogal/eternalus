@@ -731,7 +731,8 @@ Reply inline (`Decision: …`).
   - (7) Built (round 2). Code only: `castStatsOf` is the one read of a caster's ability stats;
     `AbilitySystem` and the test fixture both use it, so a test cannot drift from the code.
   - (8) Built (round 2). Code only: `StatusEffectApplier.durationFor` holds the stretch rule
-    beside the status data. It replaces `durationOf` and `hasFixedDuration`.
+    beside the status data. It replaces the methods `durationOf` and `hasFixedDuration`; the
+    status field `hasFixedDuration` stays.
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
