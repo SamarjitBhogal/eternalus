@@ -187,7 +187,7 @@ describe('AbilityRegistry', () => {
     ]);
   });
 
-  it('allows a "hit" area only in an onHit list: a shot\'s or a status\'s, not a cast\'s or a dash\'s (HC-B26 (5))', () => {
+  it("allows a \"hit\" area only in an onHit list: a shot's or a status's, not a cast's or a dash's (HC-B26 (5))", () => {
     const shot = { kind: 'projectile', projectileId: 'bolt', onHit: [HIT_STRIKE] } as const;
     const dash = { kind: 'dash', distance: 3, durationTicks: 9, onPath: [], onEnd: [HIT_STRIKE] };
     const abilities = new ContentCatalogue([
@@ -211,9 +211,7 @@ describe('AbilityRegistry', () => {
     expect(() => registry.resolve('dash-strike')).toThrow(
       `Ability "dash-strike": ${HIT_OUTSIDE_ON_HIT}.`,
     );
-    expect(registry.checkSteps('Status "fury" onHit', [HIT_STRIKE], { isOnHit: true })).toEqual(
-      [],
-    );
+    expect(registry.checkSteps('Status "fury" onHit', [HIT_STRIKE], { isOnHit: true })).toEqual([]);
     expect(registry.checkSteps('Status "fury" onHit', [dash], { isOnHit: true })).toEqual([
       `Status "fury" onHit: ${HIT_OUTSIDE_ON_HIT}.`,
     ]);

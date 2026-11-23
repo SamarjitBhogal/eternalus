@@ -7,6 +7,7 @@ import { BuffEffect } from './effects/BuffEffect';
 import { DamageEffect } from './effects/DamageEffect';
 import { DashEffect } from './effects/DashEffect';
 import { DebuffEffect } from './effects/DebuffEffect';
+import { ExecuteEffect } from './effects/ExecuteEffect';
 import { KnockbackEffect } from './effects/KnockbackEffect';
 import { ProjectileEffect } from './effects/ProjectileEffect';
 import { MinLevelRestriction } from './restrictions/MinLevelRestriction';
@@ -47,6 +48,7 @@ export const createDefaultAbilityRegistry = (
   registry.registerEffect(new DashEffect());
   registry.registerEffect(new BuffEffect(statuses));
   registry.registerEffect(new ProjectileEffect(projectiles));
+  registry.registerEffect(new ExecuteEffect());
   registry.registerShape(new CircleShape());
   registry.registerShape(new PathShape());
   registry.registerShape(new HitShape());

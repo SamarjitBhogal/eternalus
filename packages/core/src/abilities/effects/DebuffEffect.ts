@@ -1,7 +1,7 @@
 import type { DebuffSpec, WithoutTimes } from '../../content/abilities/AbilityDefinition.types';
 import type { AbilityDisplayStep } from '../../content/loadDisplayContent';
 import type { AbilityEffect, CastContext } from '../AbilityEffect.types';
-import { mustBePositive } from '../specChecks';
+import { healthConditionProblems, mustBePositive } from '../specChecks';
 
 /**
  * Applies a negative status to every enemy in the step's shape through the match's one
@@ -18,8 +18,8 @@ export class DebuffEffect implements AbilityEffect<DebuffSpec> {
   public constructor(private readonly statuses: { has(id: string): boolean }) {}
 
   /**
-   * A debuff names a known status, a duration override, when set, of at least one tick, and a
-   * stack count, when set, that is a positive whole number.
+   * A debuff names a known status, a duration override, when set, of at least one tick, a stack
+   * count, when set, that is a positive whole number, and health bounds, when set, from 0 to 1.
    */
   public validate(spec: DebuffSpec): readonly string[] {
     return [
@@ -30,6 +30,7 @@ export class DebuffEffect implements AbilityEffect<DebuffSpec> {
       ...(spec.stacks === undefined || (Number.isInteger(spec.stacks) && spec.stacks > 0)
         ? []
         : ['debuff stacks must be a positive whole number']),
+      ...healthConditionProblems(spec.health),
     ];
   }
 
@@ -44,7 +45,7 @@ export class DebuffEffect implements AbilityEffect<DebuffSpec> {
    */
   public apply(spec: DebuffSpec, cast: CastContext): void {
     const times = spec.stacks ?? 1;
-    for (const targetId of cast.targets(spec.shape, { team: 'enemies' })) {
+    for (const targetId of cast.targets(spec.shape, { team: 'enemies', health: spec.health })) {
       for (let stack = 0; stack < times; stack += 1) {
         cast.statuses.apply(cast.state, targetId, spec.statusId, cast.casterId, spec.durationTicks);
       }

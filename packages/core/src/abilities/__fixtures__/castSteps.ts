@@ -16,6 +16,7 @@ import { BuffEffect } from '../effects/BuffEffect';
 import { DamageEffect } from '../effects/DamageEffect';
 import { DashEffect } from '../effects/DashEffect';
 import { DebuffEffect } from '../effects/DebuffEffect';
+import { ExecuteEffect } from '../effects/ExecuteEffect';
 import { KnockbackEffect } from '../effects/KnockbackEffect';
 import { ProjectileEffect } from '../effects/ProjectileEffect';
 import { TargetQuery } from '../TargetQuery';
@@ -37,7 +38,7 @@ type CastOptions = {
 
 /**
  * Casts a one-off ability made of `effects` for `casterId` at `state.tick`, as `AbilitySystem`
- * would after the checks: a real `CastInstance` with the six shipped effect strategies, the
+ * would after the checks: a real `CastInstance` with the seven shipped effect strategies, the
  * shipped shapes, one `DamagePipeline` (`options.damage`), one `StatusEffectApplier` and
  * `options.launcher`.
  */
@@ -61,6 +62,7 @@ export const castSteps = (
       new DashEffect(),
       new BuffEffect(STATUS_EFFECTS),
       new ProjectileEffect(PROJECTILES),
+      new ExecuteEffect(),
     ],
     new ContentCatalogue([fakeAbility({ id: 'test-cast', effects, scaling })]),
   );

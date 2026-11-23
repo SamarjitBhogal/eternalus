@@ -52,11 +52,41 @@ export class DamagePipeline {
       return { applied: false, reason: 'blocked' };
     }
 
-    const { toShields, toBase } = health.applyDamage(final);
-    state.events.emit('damage-applied', { targetId, amount: toBase, absorbed: toShields, source });
+    return DamagePipeline.land(state, targetId, health, final, source);
+  }
 
-    // Not `health.isDead`: TypeScript still narrows it to false from the check above.
-    const killed = health.current === 0;
+  /**
+   * Kills `targetId` outright (an ability's `execute` step, DEC-204): it takes the target's health
+   * and every shield bar, and no damage step runs, so nothing reduces it (not `damageTaken`, not a
+   * shield). It is announced as a killing hit from `source` (`damage-applied`, then
+   * `entity-died`), so the kill, the XP, the assists and the ultimate meter follow as for any kill.
+   */
+  public execute(state: GameState, targetId: EntityId, source: DamageSource): DamageResult {
+    const target = state.entities.get(targetId);
+    if (target === undefined) {
+      return { applied: false, reason: 'no-target' };
+    }
+    const health = target.findComponent(Health);
+    if (health === undefined) {
+      return { applied: false, reason: 'no-health' };
+    }
+    if (health.isDead) {
+      return { applied: false, reason: 'already-dead' };
+    }
+    return DamagePipeline.land(state, targetId, health, health.total, source);
+  }
+
+  /** Takes `amount` from `health` and announces the hit, and the kill when it took the last of it. */
+  private static land(
+    state: GameState,
+    targetId: EntityId,
+    health: Health,
+    amount: number,
+    source: DamageSource,
+  ): DamageResult {
+    const { toShields, toBase } = health.applyDamage(amount);
+    state.events.emit('damage-applied', { targetId, amount: toBase, absorbed: toShields, source });
+    const killed = health.isDead;
     if (killed) {
       state.events.emit('entity-died', { entityId: targetId, killer: source });
     }

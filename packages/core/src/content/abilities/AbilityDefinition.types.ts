@@ -62,6 +62,13 @@ export type EffectShape =
 /** What kind of damage a hit deals (`balancing.md` ability table). */
 type DamageType = 'physical' | 'magical';
 
+/**
+ * Which targets of a step's `shape` it acts on by their health, as fractions of max health (base
+ * health, no shields) read when the step runs (Rip & Tear, DEC-204): `below` takes those under it,
+ * `atOrAbove` those at or above it; both may be set. Each is from 0 to 1 (checked at load).
+ */
+export type HealthCondition = { readonly below?: number; readonly atOrAbove?: number };
+
 /** Damages every target in `shape` (05 §3 `DamageEffect`). */
 export type DamageSpec = {
   readonly kind: 'damage';
@@ -70,6 +77,18 @@ export type DamageSpec = {
   readonly shape: EffectShape;
   /** Damage multiplier against structures and obstacles; absent = 1. */
   readonly structureMultiplier?: number;
+  /** Only the targets whose health meets it; absent = every target. */
+  readonly health?: HealthCondition;
+};
+
+/**
+ * Kills every target in `shape` at or below `atOrBelow` of its max health, read when the step runs
+ * (Rip & Tear, DEC-204: "enemies at or below 10% health die"); nothing reduces it (`ExecuteEffect`).
+ */
+export type ExecuteSpec = {
+  readonly kind: 'execute';
+  readonly atOrBelow: number;
+  readonly shape: EffectShape;
 };
 
 /**
@@ -82,6 +101,8 @@ export type KnockbackSpec = {
   readonly distance: number;
   readonly knockup?: boolean;
   readonly shape: EffectShape;
+  /** Only the targets whose health meets it; absent = every target. */
+  readonly health?: HealthCondition;
 };
 
 /** Applies a negative status to every target in `shape` (05 §3 `DebuffEffect`); seconds as authored. */
@@ -93,6 +114,8 @@ type AuthoredDebuffSpec = {
   /** How many times the status is applied to each target (bleed stacks, DEC-269); absent = 1. */
   readonly stacks?: number;
   readonly shape: EffectShape;
+  /** Only the targets whose health meets it; absent = every target. */
+  readonly health?: HealthCondition;
 };
 
 /**
@@ -144,7 +167,7 @@ type AuthoredBuffSpec = {
 export type BuffSpec = InTicks<AuthoredBuffSpec>;
 
 /** An effect that acts on the targets in its `shape`, as authored. */
-type AuthoredShapedEffectSpec = DamageSpec | KnockbackSpec | AuthoredDebuffSpec;
+type AuthoredShapedEffectSpec = DamageSpec | KnockbackSpec | AuthoredDebuffSpec | ExecuteSpec;
 
 /**
  * Moves the caster `distance` metres along the aim (05 §3 `DashEffect`); `onPath` runs on the

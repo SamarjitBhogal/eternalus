@@ -289,7 +289,10 @@ describe('CastInstance areas', () => {
   it('points a cone along the cast’s aim and counts its reach from the caster’s body edge (DEC-319)', () => {
     const { state, factory, caster } = casterState();
     const dummyAt = (x: number, y: number) => {
-      const dummy = factory.create('light-mob', 'training-dummy', { position: { x, y }, team: 'dark' });
+      const dummy = factory.create('light-mob', 'training-dummy', {
+        position: { x, y },
+        team: 'dark',
+      });
       state.entities.add(dummy);
       return dummy;
     };
