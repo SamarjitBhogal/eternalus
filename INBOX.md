@@ -16,7 +16,7 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
-- [ ] **HC-B31 — A repair to a guardrail needs only a row in the decisions log (DEC-331 critic,
+- [x] **HC-B31 — A repair to a guardrail needs only a row in the decisions log (DEC-331 critic,
       2026-11-22; better than the design, owner sign-off asked).** Owner: sholtzman.
       `docs/process/guardrails.md` §4 and `docs/process/sdlc.md` §6 ask for an ADR for every
       change to a guardrail. Three harness fixes did not write one: DEC-254 (CI timeout 25
@@ -26,6 +26,11 @@ Reply inline (`Decision: …`).
       guardrail do again what the docs already say needs only a row in the decisions log. A
       change to what a guardrail does still needs an ADR. If signed off, this rule also covers
       DEC-331.
+  - Answered 2026-11-23 (Owner Calls page, DEC-352): "A rule for all such repairs: a repair
+    that makes a guardrail do again what the docs say needs only a decisions-log row. A change
+    to what a guardrail does still needs an ADR. The rule also covers this fix". Applied on
+    `fix/hook-project-dir` (PR #155): the rule is in `docs/process/guardrails.md` §4 and
+    `docs/process/sdlc.md` §6, and the DEC-331 row cites DEC-352 in place of the pending waiver.
 
 - [ ] **Dependency audit (re-run 2026-11-20): approve one upgrade PR for the `eslint` family and
       `zod`, and say whether to turn on Dependabot alerts.** PR #113 already moved `vite` to 8.3.8
