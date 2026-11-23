@@ -469,6 +469,9 @@ never from the slot or the targeting kind (DEC-283 (8), `INBOX.md` HC-Q62 (1)).
 
 Passives (`slot: 'passive'`: Wrecking Run, Erudition, Necromancy) are applied once
 by `Legend.onSpawn` as permanent `buff` effects, so they are ordinary statuses with modifiers.
+A passive can also be a block of movement numbers that the movement code reads every tick: Wrecking
+Run's build-up and slide are the Sentinel's `movementProfile.momentum` (10 §2; DEC-330, `INBOX.md`
+HC-B29 (2)).
 The Magus default action (Revive, **MVP**) sits in `default-action` with the `revive` effect and
 a `requires-target` restriction on intact corpses (`corpseMaxAgeSeconds`, `TUNE`).
 

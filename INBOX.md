@@ -638,7 +638,7 @@ Reply inline (`Decision: …`).
       one reusable "first source with the id" definition lookup for `Simulation` and about ten
       tests (BTD-H).
 
-- [ ] **HC-B29 — Better than the design, sign-off asked: three parts of the Sentinel's
+- [x] **HC-B29 — Better than the design, sign-off asked: three parts of the Sentinel's
       Wrecking Run (`feat/class-passives`, PR 8 critic round 1 and lane B review F1, 2026-11-22;
       GAME-LOOP-AND-POST-GAME-56 and -57).** Parts (1) and (2) are built under your standing rule
       (DEC-223) and tested. Part (3) is not built, so it asks you to depart from that rule ("do
@@ -671,8 +671,14 @@ Reply inline (`Decision: …`).
       with a "has momentum?" check in four places. A shared interface with one class per rule
       removes those checks (04 §4, strategies). Recommended: not yet, because it pays when a third
       rule comes. Alternative: build it in PR 8. Code: `components/Movement`.
+  - Answered 2026-11-23 (DEC-330): (1) "Keep the two rates (built)". (2) "Keep them with the
+    movement numbers (built)". (3) "Not yet: build it when a third rule comes", with a note: the
+    Magus will float on its wings and switch between floating and walking stances, and the
+    Harbinger flies almost all the time (post-MVP); "Please ensure this is, at least, documented."
+    10 §2 ("Movement with momentum", "Movement rules") and 05 §7 now say all three
+    (`feat/class-passives`, the PR 8 follow-up).
 
-- [ ] **HC-B33 — Defect, your call on when to fix it: a unit pressed into a wide corner does
+- [x] **HC-B33 — Defect, your call on when to fix it: a unit pressed into a wide corner does
       not stop cleanly, and PR 8 makes it show on the Sentinel (`feat/class-passives`, PR 8 probe
       D3 and gate round 3, 2026-11-22; GAME-LOOP-AND-POST-GAME-59 to -61).** What the player sees:
       a unit that walks into a corner whose walls meet at more than 90° (for example 120° or 135°)
@@ -698,6 +704,8 @@ Reply inline (`Decision: …`).
       `eternalus-agent-work/abilities/pr8-passives/probe/probe-obtuse-fix3.txt` and
       `probe-obtuse-r3-arch.txt`; the 150° and push numbers are from the gate round 3 correctness
       critic.
+  - Answered 2026-11-23 (DEC-330): "A: fix it in a small PR before PR 8 merges". Not built yet;
+    the fix PR comes after the PR 8 follow-up.
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays

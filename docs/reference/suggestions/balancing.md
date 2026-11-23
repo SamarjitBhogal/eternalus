@@ -142,7 +142,7 @@ Range 14 m. Targeting (`Recommendation:`, after the published turret rules cited
 `Recommendation:`
 
 - "Full speed" means `speed ≥ 0.95 × sprintMaxSpeed` (a content threshold, so a near-miss is not a coin flip).
-- Sprint ramp: 20 s for the MVP map (options: 30 s; 60 s as in the doc). Reason: at a 9 m/s sprint maximum, a 20 s ramp needs about 120 m of straight runway, a 60 s ramp about 360 m, which is more than half of a lane on a map the size of the traced draft. The ramp is `wrecking-run.rampSeconds`, so the doc's value is one edit away once the map size is final.
+- Sprint ramp: 20 s for the MVP map (options: 30 s; 60 s as in the doc). Reason: at a 9 m/s sprint maximum, a 20 s ramp needs about 120 m of straight runway, a 60 s ramp about 360 m, which is more than half of a lane on a map the size of the traced draft. The ramp is `rampDuration` in the Sentinel's `movementProfile.momentum` (`content/legends/sentinel.ts`; DEC-330), so the doc's value is one edit away once the map size is final.
 - Self damage: 50% of _max_ health (a Sentinel under half health dies on the wall; option: 50% of _current_ health, never lethal).
 - Segment damage: 50% of the segment's current total health (base plus bars), through the normal `DamagePipeline` so bars drain first.
 - Only walls and gates can be breached, and only when breakable. Sprinting into an unbreakable wall: bounce (knockback 3 m, concussion 2 s, 10% self damage). Sprinting into any other structure: no breach, concussion 1.5 s, 10% self damage.
