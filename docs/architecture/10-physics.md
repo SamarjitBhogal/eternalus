@@ -16,6 +16,7 @@ paths:
     'packages/core/src/systems/MovementSystem*',
     'packages/core/src/systems/CollisionSystem*',
     'packages/core/src/utils/deterministicMath*',
+    'packages/core/src/utils/slideOff*',
   ]
 related:
   [
@@ -241,6 +242,14 @@ Overlap tests are therefore not enough:
   map bounds; the earliest time of impact `t ∈ [0, 1]` wins; the mover is placed at
   `previous + (position − previous) × t` minus a small skin (TUNE) and its velocity is projected
   onto the tangent (or the projectile is resolved as a hit).
+- **Several walls in one move** (a corner): at each wall the move meets, what is left of the
+  whole move slides off every wall that the move has met so far, at once. The result is the vector
+  closest to the move that runs into none of those walls: the move itself, its slide along one of
+  them, or zero. So a unit pressed into a corner of any angle stops dead. Sliding off each wall in
+  turn is not enough: in a corner wider than 90°, it moves a unit a hair out along one wall, and
+  back, every tick. One helper, `slideOffInto` (`utils/slideOff.ts`), holds this rule for a move
+  and for the velocity of a unit with momentum (§2), so the two agree on every wall (DEC-330,
+  `INBOX.md` HC-B33).
 - **Anomaly detection** (the requirements doc's runtime check): after resolution the segment is
   re-cast; if it still crosses an unbreakable collider, `CollisionSystem` emits
   `collision-anomaly { entityId, tick, from, to, colliderId }`. The
@@ -401,7 +410,7 @@ slides and loses speed, with no jump at 90°, and a reverse slides to a stop. A 
 shorter than `CONTACT_EPSILON` is roundoff from a wall, not a reverse, so it does not brake.
 `CollisionResolver.move` fills a list with the unit normal of each wall and map edge that the move
 touched (`contacts`), and `CollisionSystem` gives that list to `Movement.hitBlock`. A unit with
-momentum then drops the part of its velocity that runs into those walls (`Momentum.slideOff`, a
+momentum then drops the part of its velocity that runs into those walls (`slideOffInto`, a
 frictionless contact), as §6 and §7 project a unit's velocity onto the contact tangent: a head-on
 hit stops it, a glancing hit keeps its slide along the wall, and a press into a corner stops it.
 When the unit steers into the walls that its last move touched, it builds along them, up to
@@ -416,14 +425,11 @@ Every `cannot-move` status takes the drive away in the same way: a knock-up too,
 slides off at `grip` in the same way. The card names only the stun and the slow, so these two parts
 are a reading (DEC-330 (2)). `limitSpeed` and the
 countdown hold (`Movement.hold`) still cut the speed at once. A unit without momentum
-still turns at once and keeps its speed. Known defect: `CollisionResolver` slides the rest of a move
-off each wall in turn. In a corner wider than 90°, this moves a unit a hair out along one wall, so
-its contacts change from tick to tick. A Sentinel pressed into such a corner stays in place, but its
-facing swings back and forth, and a push into the corner makes it jump each tick. PR 8 adds this
-part: before it, the Sentinel had no momentum and faced steadily. Other units shake by a few
-centimetres. The fix clips the whole move against every wall it meets at once and shares one slide
-helper with `Momentum.slideOff`. It changes the walls for every unit, so it is its own small PR,
-which merges before PR 8 (DEC-330, `INBOX.md` HC-B33, option A). The owner signed off the three
+still turns at once and keeps its speed. `CollisionResolver` and `Momentum` share one slide rule
+(§7, `slideOffInto`; DEC-330, `INBOX.md` HC-B33, option A), so a Sentinel pressed into a corner
+faces one way. When a Sentinel runs along one face into such a corner, its momentum can carry it a
+little out along the other face, and its heading brings it back, then it settles
+(`systems/CollisionSystem.test.ts`). The owner signed off the three
 parts that differed from the design (DEC-330, `INBOX.md` HC-B29), and §2 now states them: the two
 rates (§2 "Movement with momentum"), the numbers as a block of movement numbers (05 §7), and one
 `Movement` with a "has momentum?" check until a third movement rule comes (§2 "Movement rules"). The
