@@ -1,5 +1,4 @@
 import type { TurretProfileDefinition } from '../content/ai/turret.types';
-import type { AiMemory } from '../state/AiState.types';
 import type { EntityPlace } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { Team } from '../teams/teams.types';
@@ -67,15 +66,18 @@ export class TurretController implements Controller {
     }
     const candidates = TurretController.candidatesFor(state, perception, place, team, profile);
     // The line is tested with the ammo the turret will fire at that candidate, not the loaded one.
-    const target = TurretController.ranked(brain.memory, candidates, profile).find(
-      ({ id, kind }) => {
-        const chosen = chooseTurretAmmo(kind, turret.ammo);
-        return (
-          chosen !== undefined &&
-          this.content.lineOfFire.isClear(state, entityId, id, chosen.attack)
-        );
-      },
-    );
+    const target = rankTurretTargets({
+      currentId: typeof brain.memory.targetId === 'string' ? brain.memory.targetId : null,
+      candidates,
+      overrides: profile.overrides,
+      priority: profile.priority,
+      heavyKinds: profile.heavyKinds,
+    }).find(({ id, kind }) => {
+      const chosen = chooseTurretAmmo(kind, turret.ammo);
+      return (
+        chosen !== undefined && this.content.lineOfFire.isClear(state, entityId, id, chosen.attack)
+      );
+    });
     const ammo = target === undefined ? undefined : chooseTurretAmmo(target.kind, turret.ammo);
     if (target === undefined || ammo === undefined) {
       const isAiming = entities.attackAimOf(entityId) !== null;
@@ -104,21 +106,6 @@ export class TurretController implements Controller {
       memory: { targetId: target.id } satisfies TurretMemory,
       rngState: brain.rngState,
     };
-  }
-
-  /** The candidates in rank order, given the target its memory holds (`rankTurretTargets`). */
-  private static ranked(
-    memory: AiMemory,
-    candidates: readonly TurretCandidate[],
-    profile: TurretProfileDefinition,
-  ): readonly TurretCandidate[] {
-    return rankTurretTargets({
-      currentId: typeof memory.targetId === 'string' ? memory.targetId : null,
-      candidates,
-      overrides: profile.overrides,
-      priority: profile.priority,
-      heavyKinds: profile.heavyKinds,
-    });
   }
 
   /**

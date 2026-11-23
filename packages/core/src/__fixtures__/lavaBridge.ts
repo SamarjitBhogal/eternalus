@@ -21,7 +21,6 @@ export const lavaBridge = () => {
   if (river === undefined) throw new Error('The seed 1 map has no lava-river-0.');
   const angle = 225 * RADIANS_PER_DEGREE;
   return {
-    map,
     river,
     collisions: new CollisionResolver(staticCollisionIndexOf(map, objects), {
       x: 0,

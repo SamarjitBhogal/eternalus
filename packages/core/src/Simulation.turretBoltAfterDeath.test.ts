@@ -6,15 +6,13 @@ import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import type { GameEventMap } from './state/GameEvents.types';
 import {
   config,
-  TURRET_FEATURES,
+  FIRING_TURRET,
   setUp,
   outside,
   COUNTDOWN,
   spawnDark,
 } from './__fixtures__/turretMatch';
 
-/** A light turret whose line out, turned 60 degrees, is open for its whole range. */
-const FIRING_TURRET = TURRET_FEATURES.find(({ id }) => id === 'light-turret-2');
 const HEAVY_BOLT = loadTurrets(config.tickRate).ammo.get('bolt-heavy');
 
 describe('Simulation wall turrets: a bolt whose turret is destroyed in flight (S4)', () => {

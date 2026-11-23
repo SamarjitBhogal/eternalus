@@ -80,6 +80,13 @@ export const outside = (feature: MapFeature, gap: number, degrees = 0): Vec2 => 
 };
 
 export const LIGHT_TURRET = TURRET_FEATURES.find(({ team }) => team === 'light');
+/**
+ * A light turret whose lines out are open for its whole range. The line out of `LIGHT_TURRET`, away
+ * from its Stronghold, meets a cliff 7.35 m from its centre, inside its 8 m pylon, where its bolts
+ * end; its line turned 60 degrees from that is open.
+ */
+export const FIRING_TURRET = TURRET_FEATURES.find(({ id }) => id === 'light-turret-2');
+
 /** Ticks from the match start to the end of its countdown, when turrets start to fire. */
 export const COUNTDOWN = countdownTicks(config.match.countdownSeconds, config.tickRate);
 

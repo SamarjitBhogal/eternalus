@@ -28,16 +28,11 @@ import {
   outwardOf,
   outside,
   LIGHT_TURRET,
+  FIRING_TURRET,
   COUNTDOWN,
   spawnDark,
 } from './__fixtures__/turretMatch';
 
-/**
- * A light turret whose lines out are open for its whole range. The line out of `LIGHT_TURRET`, away
- * from its Stronghold, meets a cliff 7.35 m from its centre, inside its 8 m pylon, where its bolts
- * end; its line turned 60 degrees from that is open.
- */
-const FIRING_TURRET = TURRET_FEATURES.find(({ id }) => id === 'light-turret-2');
 const AMMO = loadTurrets(config.tickRate).ammo;
 const DEFAULT_BOLT = AMMO.get('bolt-default');
 const HEAVY_BOLT = AMMO.get('bolt-heavy');

@@ -40,13 +40,12 @@ export class WorldObjectStore {
       const bounds = boundsOf(points);
       const owner = entities.get(owners.get(object.id) ?? '');
       const health = owner?.findComponent(Health);
-      if (owner !== undefined && health !== undefined && removedWithOwner.has(object.id)) {
-        this.entityObjects.set(owner.id, object);
-        this.records.push({ object, entityId: owner.id, health, bounds });
-        continue;
-      }
       if (owner !== undefined && health !== undefined) {
-        this.owned.set(owner.id, this.records.length);
+        if (removedWithOwner.has(object.id)) {
+          this.entityObjects.set(owner.id, object);
+        } else {
+          this.owned.set(owner.id, this.records.length);
+        }
         this.records.push({ object, entityId: owner.id, health, bounds });
         continue;
       }

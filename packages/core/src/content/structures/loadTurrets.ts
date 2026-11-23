@@ -5,7 +5,7 @@ import { PROJECTILES } from '../projectiles/projectileCatalogue';
 import type { ProjectileDefinition } from '../projectiles/projectiles.types';
 import { KEBAB_CASE } from '../validation/KebabCaseIdRule.constants';
 import { KnownProjectileRule } from '../validation/KnownProjectileRule';
-import { attackInTicks, timeProblems } from '../timesInTicks';
+import { attackInTicks, isNonNegative, timeProblems } from '../timesInTicks';
 import { STRUCTURE_DEFINITIONS } from './structureCatalogue';
 import type { StructureDefinition } from './structures.types';
 import { TURRET_PROFILES } from '../ai/turret';
@@ -51,7 +51,7 @@ const profileProblems = (profile: AuthoredTurretProfile): string[] => {
   const problems: string[] = [];
   if (!KEBAB_CASE.test(profile.id)) problems.push('id must be kebab-case');
   if (!isPositive(profile.range)) problems.push('range must be positive');
-  if (!(profile.defendAllySeconds >= 0 && Number.isFinite(profile.defendAllySeconds))) {
+  if (!isNonNegative(profile.defendAllySeconds)) {
     problems.push('defendAllySeconds must not be negative');
   }
   return problems.map((problem) => `Turret profile "${profile.id}": ${problem}.`);
