@@ -373,12 +373,14 @@ on the polygon's edge is held too (within `CONTACT_EPSILON`, `utils/geometry`
 point test gives a point on a shared edge to one piece at most. Without the edge, the other piece
 stopped every bolt that flew into it, and `NoMapObjectOverlapInvariant` flagged the bolt at launch
 (12 of the 20 turrets on each of the seed 1 to 8 maps).
-Known limit (a map bug from before PR 4, reported to the map-work lane): blocking corner mountains
-(`map/MapMountainBuilder`) can cover a fort's wall ring. On seeds 3 to 8 a mountain holds the
-centre of turret 0 of each side (on some seeds also turret 1 or 9), so those bolts ignore that
-mountain for their whole flight. On seed 2 the mountain's edge is 0.04 m from that centre, so the
-mountain stops the bolts fired into it at launch, and `NoMapObjectOverlapInvariant` flags them.
-The fix is in the map: keep blocking terrain off the wall ring.
+Known limit (a map bug from before PR 4; `INBOX.md` HC-Q95, owner call pending): blocking corner
+mountains (`map/MapMountainBuilder`) can cover a fort's wall ring. A mountain covers turret 0 of
+each side on each of the seed 1 to 8 maps, the lane gate on seeds 3 and 5 to 8, and turret 9 on
+some seeds. Where a mountain holds a turret's centre (turret 0 on seeds 3 to 8, turret 9 on seed
+6), that turret's bolts ignore that mountain for their whole flight. Where the mountain's edge is
+nearer than a bolt's radius (seed 2: 0.04 m), it stops the bolts fired into it at launch, and
+`NoMapObjectOverlapInvariant` flags them. The fix is in the map: keep blocking terrain off the wall
+ring.
 `CollisionQuery.reach` takes the launch point as an optional argument. `ProjectileSystem` passes
 the shot's `origin`, and `LineOfFire` passes the attacker's centre, so line of fire and shots keep
 one stop rule (DEC-317 B9). `NoMapObjectOverlapInvariant` passes a shot's origin to
