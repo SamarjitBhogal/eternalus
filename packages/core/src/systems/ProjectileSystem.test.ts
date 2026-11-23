@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Collider } from '../components/Collider';
+import { Combat } from '../components/Combat';
 import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
@@ -255,8 +256,12 @@ describe('ProjectileSystem', () => {
     expect(state.entities.has(shot.id)).toBe(true);
   });
 
-  it('passes a body that takes no damage now (a forest camp) and lands on the one behind it', () => {
-    const { state, system, context, addBody, fire, healthOf } = setUp();
+  it('stops at a body that takes no damage now (a forest camp), with no damage and no on-hit step (DEC-317 addendum)', () => {
+    const { state, events, context, addBody, fire, healthOf } = setUp();
+    const onHit: string[] = [];
+    const system = projectileSystem({ afterHit: (_state, _owner, id) => onHit.push(id) });
+    const damaged: string[] = [];
+    state.events.on('damage-applied', ({ targetId }) => damaged.push(targetId));
     const camp = addBody({ x: 10, y: 0 }, 'neutral');
     camp.getComponent(Collider).setUnbreakable(true);
     const target = addBody({ x: 15, y: 0 }, 'dark');
@@ -264,12 +269,18 @@ describe('ProjectileSystem', () => {
 
     system.update(context);
 
-    expect(healthOf(target)).toBe(900);
     expect(state.entities.has(shot.id)).toBe(false);
+    expect(events).toEqual([{ entityId: shot.id, cause: 'consumed' }]);
+    expect(healthOf(camp)).toBe(1000);
+    expect(healthOf(target)).toBe(1000);
+    expect(damaged).toEqual([]);
+    expect(onHit).toEqual([]);
   });
 
   it('stops at a body that takes no damage now when it was fired at that body (a closed gate)', () => {
-    const { state, system, context, addBody, fire, healthOf } = setUp();
+    const { state, context, addBody, fire, healthOf } = setUp();
+    const onHit: string[] = [];
+    const system = projectileSystem({ afterHit: (_state, _owner, id) => onHit.push(id) });
     const gate = addBody({ x: 10, y: 0 }, 'dark');
     gate.getComponent(Collider).setUnbreakable(true);
     const behind = addBody({ x: 15, y: 0 }, 'dark');
@@ -278,7 +289,37 @@ describe('ProjectileSystem', () => {
     system.update(context);
 
     expect(state.entities.has(shot.id)).toBe(false);
+    expect(healthOf(gate)).toBe(1000);
     expect(healthOf(behind)).toBe(1000);
+    expect(onHit).toEqual([]);
+  });
+
+  it("records the body it lands on as its living owner's hit at the landing tick, and none on a body that takes no damage (DEC-322 (2), DEC-333 (1))", () => {
+    const { state, context, system, addBody, fire } = setUp();
+    const owner = addBody({ x: -50, y: 0 }, 'light');
+    owner.addComponent(new Combat({ basic: ATTACK }));
+    const combat = owner.getComponent(Combat);
+    const camp = addBody({ x: 10, y: 0 }, 'neutral');
+    camp.getComponent(Collider).setUnbreakable(true);
+    fire({ x: 0, y: 0 }, 20, 'light', ATTACK, BOLT, owner.id);
+
+    system.update(context);
+    expect(combat.hitIds).toEqual([]);
+
+    camp.getComponent(Collider).setUnbreakable(false);
+    for (let tick = 0; tick <= ATTACK.interval; tick += 1) state.advanceTick();
+    const landedAt = state.tick;
+    fire({ x: 0, y: 0 }, 20, 'light', ATTACK, BOLT, owner.id);
+    system.update(context);
+    expect(combat.hitsAt(state.tick)).toEqual([camp.id]);
+    expect(combat.hitsUntilTick).toBe(landedAt + ATTACK.interval);
+
+    state.advanceTick();
+    owner.getComponent(Health).applyDamage(owner.getComponent(Health).current);
+    fire({ x: 0, y: 0 }, 20, 'light', ATTACK, BOLT, owner.id);
+    system.update(context);
+    expect(combat.hitsAt(state.tick)).toEqual([camp.id]);
+    expect(combat.hitsUntilTick).toBe(landedAt + ATTACK.interval);
   });
 
   it('stops at a wall in front of a body, with no damage', () => {
@@ -464,6 +505,47 @@ describe('ProjectileSystem', () => {
 
       expect(1000 - scene.healthOf(target)).toBeCloseTo(45 * 0.4);
       expect(scene.state.entities.has(shot.id)).toBe(false);
+    });
+
+    it('lands an arrow on an enemy under the end of its range and damages it; the move that ends there touches it (DEC-322 (2))', () => {
+      const falloff = { fullTo: 50, floorAt: 80, floor: 0.4 };
+      const landOn = (id: string) => {
+        const attack: RangedAttack = {
+          ...ATTACK,
+          damage: 45,
+          projectile: { projectileId: id, falloff },
+        };
+        const scene = setUp();
+        // A minion-sized body whose circle holds the 100 m end point (99.8 m to 100.8 m).
+        const target = scene.addBody({ x: 100.3, y: 0 }, 'dark', 0.5);
+        const shot = scene.fire({ x: 0, y: 0 }, 0, 'light', attack, SHIPPED.get(id));
+        shot.getComponent(Movement).steer({ x: 1, y: 0 });
+        const movement = new MovementSystem();
+        let hasEnded = false;
+        for (let tick = 0; tick < 80; tick += 1) {
+          movement.update(scene.context);
+          scene.system.update(scene.context);
+          hasEnded ||= shot.findComponent(ProjectileFlight)?.isEnded === true;
+        }
+        return {
+          damage: 1000 - scene.healthOf(target),
+          hasEnded,
+          isPresent: scene.state.entities.has(shot.id),
+        };
+      };
+
+      // The arrow takes the floor damage and is spent on the body, never lying on the ground.
+      expect(landOn('arrow')).toEqual({
+        damage: expect.closeTo(45 * 0.4) as number,
+        hasEnded: false,
+        isPresent: false,
+      });
+      // The bolt flies the same 100 m: it touches the body before its end too, so it hits it.
+      expect(landOn('magus-bolt')).toEqual({
+        damage: expect.closeTo(45 * 0.4) as number,
+        hasEnded: false,
+        isPresent: false,
+      });
     });
   });
 

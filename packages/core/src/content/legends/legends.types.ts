@@ -46,6 +46,11 @@ export type LegendDefinition = UnitDefinition & {
   readonly kind: LegendKind;
   /** One line for the character-select screen. */
   readonly roleBlurb: string;
+  /**
+   * The class's part of melee reach in metres (DEC-305), added to the reach of every melee attack
+   * of its weapon; the weapon adds its own part. Not added to a ranged attack.
+   */
+  readonly meleeReach: number;
   /** Full aether (MP) pool; abilities and class default actions spend it (`01-classes`). */
   readonly baseAether: number;
   /** The XP table this class levels along (`content/progression/levelCurves.ts`). */

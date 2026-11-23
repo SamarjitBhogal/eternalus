@@ -23,6 +23,12 @@ const problemsOf = (
       problems.push(`attack ${field} must be positive`);
     }
   }
+  for (const attack of weapon.attacks) {
+    // A sweep's wedge must be convex: above 0 and at most 180 degrees.
+    if (attack.strategy === 'melee-sweep' && !(attack.arcDegrees > 0 && attack.arcDegrees <= 180)) {
+      problems.push('sweep arcDegrees must be above 0 and at most 180');
+    }
+  }
   problems.push(...new KnownProjectileRule(projectiles).check(weapon));
   if (
     weapon.uniqueTo !== null &&

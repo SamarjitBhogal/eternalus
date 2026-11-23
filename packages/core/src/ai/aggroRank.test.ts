@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { Combat } from '../components/Combat';
+import { Health } from '../components/Health';
 import { LANE_MINION_AGGRO } from '../content/ai/aggro/laneMinion';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { loadWeapons } from '../content/weapons/loadWeapons';
@@ -25,9 +27,13 @@ const setUp = () => {
     entities.add(entity);
     return entity.id;
   };
-  const rank = (candidate: string) =>
-    aggroRank(candidate, { team: 'light', priority: PRIORITY, entities, classOf: CLASS_OF });
-  return { entities, add, rank };
+  const rank = (candidate: string, tick = 0) =>
+    aggroRank(candidate, { team: 'light', priority: PRIORITY, entities, classOf: CLASS_OF, tick });
+  /** Records that `attacker`'s attack hit `bodies` at `tick` (`EntityStore.recordHits`). */
+  const hit = (attacker: string, bodies: readonly string[], tick: number) => {
+    entities.recordHits(attacker, bodies, tick);
+  };
+  return { entities, add, rank, hit };
 };
 
 describe('aggroRank', () => {
@@ -57,5 +63,39 @@ describe('aggroRank', () => {
     expect(rank(enemyMinion)).toBe(PRIORITY.indexOf('closest-minion'));
     expect(rank(add('dark', 'sentinel', 'sentinel'))).toBe(-1);
     expect(rank('nobody')).toBe(-1);
+  });
+
+  it('ranks an enemy with no lock by each ally its last attack hit, the best entry first, for one attack interval, its swing tick included (DEC-322 (2))', () => {
+    const { entities, add, rank, hit } = setUp();
+    const allyLegend = add('light', 'warrior', 'warrior');
+    const allyMinion = add('light', 'light-mob', 'light-minion');
+    const enemyLegend = add('dark', 'warrior', 'warrior');
+    const interval = entities.get(enemyLegend)?.getComponent(Combat).attack.interval ?? 0;
+
+    hit(enemyLegend, [allyMinion, allyLegend], 10);
+    expect(rank(enemyLegend, 10)).toBe(PRIORITY.indexOf('legend-attacking-ally-legend'));
+    expect(rank(enemyLegend, 10 + interval)).toBe(PRIORITY.indexOf('legend-attacking-ally-legend'));
+    expect(rank(enemyLegend, 10 + interval + 1)).toBe(PRIORITY.indexOf('closest-legend'));
+  });
+
+  it('counts the lock and the hits together, the best entry they match, and a hit body that died as no attack (DEC-322 (2))', () => {
+    const { entities, add, rank, hit } = setUp();
+    const allyLegend = add('light', 'warrior', 'warrior');
+    const allyMinion = add('light', 'light-mob', 'light-minion');
+    const enemyMinion = add('dark', 'light-mob', 'light-minion');
+
+    hit(enemyMinion, [allyLegend], 0);
+    entities.setAttackTarget(enemyMinion, allyMinion);
+    expect(rank(enemyMinion)).toBe(
+      Math.min(
+        PRIORITY.indexOf('minion-attacking-ally-minion'),
+        PRIORITY.indexOf('minion-attacking-ally-legend'),
+      ),
+    );
+    entities.clearAttackTarget(enemyMinion);
+    expect(rank(enemyMinion)).toBe(PRIORITY.indexOf('minion-attacking-ally-legend'));
+    const health = entities.get(allyLegend)?.getComponent(Health);
+    health?.applyDamage(health.current);
+    expect(rank(enemyMinion)).toBe(PRIORITY.indexOf('closest-minion'));
   });
 });

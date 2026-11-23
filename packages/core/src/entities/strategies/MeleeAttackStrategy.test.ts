@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
+import { Collider } from '../../components/Collider';
+import { Combat } from '../../components/Combat';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { loadDefaultContent } from '../../content/loadDefaultContent';
 import { loadWeapons } from '../../content/weapons/loadWeapons';
+import { AreaHitQuery } from '../../state/AreaHitQuery';
 import type { DamageSource } from '../../state/GameEvents.types';
 import { GameState } from '../../state/GameState';
 import { createDefaultEntityRegistry } from '../defaultEntityRegistry';
@@ -27,7 +30,10 @@ const WARRIOR = loadDefaultContent(30).get('warrior');
  * Hits `entity-2` once with a Warrior spawned from `definition`; returns the damage calls and the
  * hit-effect calls, in the order they came.
  */
-const hitWith = (definition: typeof WARRIOR): (string | number | DamageSource)[][] => {
+const hitWith = (
+  definition: typeof WARRIOR,
+  targetId: string | null = 'entity-2',
+): (string | number | DamageSource)[][] => {
   const state = new GameState(createDefaultGameConfig(), 1);
   const calls: (string | number | DamageSource)[][] = [];
   const damage = {
@@ -42,12 +48,18 @@ const hitWith = (definition: typeof WARRIOR): (string | number | DamageSource)[]
   const attacker = new Warrior('entity-1', definition.id);
   attacker.spawn({ definition, position: { x: 0, y: 0 }, team: 'light', weapons: WEAPONS });
 
-  new MeleeAttackStrategy().attack(attacker, 'entity-2', ATTACK, {
-    state,
-    damage,
-    hits,
-    factory: new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30)),
-  });
+  new MeleeAttackStrategy().attack(
+    attacker,
+    { targetId, point: null, direction: { x: 1, y: 0 } },
+    ATTACK,
+    {
+      state,
+      damage,
+      hits,
+      factory: new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30)),
+      areas: new AreaHitQuery(),
+    },
+  );
   return calls;
 };
 
@@ -59,5 +71,75 @@ describe('MeleeAttackStrategy', () => {
       ['entity-2', 40, { attackerId: 'entity-1', kind: 'weapon', definitionId: 'test-talons' }],
       ['after-hit', 'entity-1', 'entity-2'],
     ]);
+  });
+
+  it('hits nothing when aimed with no target: a whiff', () => {
+    const armed = { ...WARRIOR, defaultLoadout: { primaryWeaponId: 'test-talons' } };
+
+    expect(hitWith(armed, null)).toEqual([]);
+  });
+
+  it("records its target as the attack's hit at the tick it lands (DEC-322 (2), DEC-333 (1))", () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const armed = { ...WARRIOR, defaultLoadout: { primaryWeaponId: 'test-talons' } };
+    const attacker = new Warrior('entity-1', armed.id);
+    attacker.spawn({
+      definition: armed,
+      position: { x: 0, y: 0 },
+      team: 'light',
+      weapons: WEAPONS,
+    });
+    state.entities.add(attacker);
+    const combat = attacker.getComponent(Combat);
+    for (let tick = 0; tick <= combat.attack.interval; tick += 1) state.advanceTick();
+
+    new MeleeAttackStrategy().attack(
+      attacker,
+      { targetId: 'entity-2', point: null, direction: { x: 1, y: 0 } },
+      ATTACK,
+      {
+        state,
+        damage: { apply: () => undefined },
+        hits: null,
+        factory: new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30)),
+        areas: new AreaHitQuery(),
+      },
+    );
+
+    expect(combat.hitsAt(state.tick)).toEqual(['entity-2']);
+    expect(combat.hitsUntilTick).toBe(state.tick + combat.attack.interval);
+  });
+
+  it('skips a target that takes no damage now: no damage, no hit effect, no hit (DEC-317 addendum)', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const attacker = factory.create('light-mob', 'light-minion', {
+      team: 'light',
+      position: { x: 0, y: 0 },
+    });
+    const gate = factory.create('light-mob', 'light-minion', {
+      team: 'dark',
+      position: { x: 1, y: 0 },
+    });
+    state.entities.add(attacker);
+    state.entities.add(gate);
+    gate.getComponent(Collider).setUnbreakable(true);
+    const calls: string[] = [];
+
+    new MeleeAttackStrategy().attack(
+      attacker,
+      { targetId: gate.id, point: null, direction: { x: 1, y: 0 } },
+      ATTACK,
+      {
+        state,
+        damage: { apply: () => calls.push('damage') },
+        hits: { afterHit: () => calls.push('after-hit') },
+        factory,
+        areas: new AreaHitQuery(),
+      },
+    );
+
+    expect(calls).toEqual([]);
+    expect(attacker.getComponent(Combat).hitIds).toEqual([]);
   });
 });

@@ -15,6 +15,7 @@ import type { LaneFlowFields } from '../map/LaneFlowFields';
 import type { WorldMap } from '../map/WorldMap';
 import { formationSlot } from '../state/formationSlot';
 import { guardOutward } from '../state/guardOutward';
+import { ReachQuery } from '../state/ReachQuery';
 import type { SpaceQuery } from '../state/SpaceQuery.types';
 import { isPointInRect } from '../utils/geometry';
 import type { Rect, Vec2 } from '../utils/geometry.types';
@@ -42,6 +43,7 @@ import type { System, SystemContext } from './System.types';
 export class PathingSystem implements System {
   public readonly name = 'pathing';
   private readonly target: MutableVec2 = { x: 0, y: 0 };
+  private readonly reach = new ReachQuery();
   private readonly out: MutableVec2 = { x: 0, y: 0 };
   private readonly forward: MutableVec2 = { x: 0, y: 0 };
   private readonly anchor: MutableVec2 = { x: 0, y: 0 };
@@ -73,7 +75,7 @@ export class PathingSystem implements System {
   /**
    * Points `target` at the unit `memberId` attacks (18 §5.2, engaging) and returns the distance
    * from it at which the target is in reach; `undefined` when it attacks nothing. The target point
-   * is `EntityStore.aimPointOf`'s, the one `isInReach` measures to: on the outline of a target that
+   * is `ReachQuery.aimPointOf`'s, the one `isInReach` measures to: on the outline of a target that
    * has one (a map object; a lane tower's fort or the Stronghold's palace, DEC-185), or the unit's
    * own position when it stands inside that outline, so it holds there (DEC-234), else its
    * centre. For an outline, and for a unit standing inside a fort's box, `depth` is how far the
@@ -99,7 +101,7 @@ export class PathingSystem implements System {
       this.target.y = way.y;
       return this.slotArrivalRadius;
     }
-    const aimed = state.entities.aimPointOf(targetId, self.position, this.target);
+    const aimed = this.reach.aimPointOf(state.entities, targetId, self.position, this.target);
     if (aimed === null) {
       return undefined;
     }
