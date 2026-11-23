@@ -81,10 +81,8 @@ export class ProgressionSystem implements System {
     // DEC-186: a destroyed structure pays every Legend of the opposing playable team, whoever or
     // whatever landed the last hit; one in `destroyerOnly` paid its killer instead (DEC-341).
     // Buildings are map objects, not structures: no event, no XP.
-    state.events.on('structure-destroyed', ({ entityId, team }) => {
-      const definitionId = state.entities.get(entityId)?.definitionId;
-      const isDestroyerOnly =
-        definitionId !== undefined && content.xpSources.destroyerOnly[definitionId] !== undefined;
+    state.events.on('structure-destroyed', ({ entityId, definitionId, team }) => {
+      const isDestroyerOnly = content.xpSources.destroyerOnly[definitionId] !== undefined;
       if (team !== 'neutral' && !isDestroyerOnly) {
         this.pending.push({
           kind: 'structure-destroyed',

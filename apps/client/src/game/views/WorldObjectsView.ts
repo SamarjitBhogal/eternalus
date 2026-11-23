@@ -9,7 +9,7 @@ import { ObjectRuinsView } from './ObjectRuinsView';
 /** Snapshot-driven health and ruined artwork; roof toggles cannot change physical state. */
 export class WorldObjectsView implements WorldLayer {
   private states: readonly MapObjectSnapshot[] = [];
-  private readonly destroyed = new Set<string>();
+  private readonly fallen = new Set<string>();
   private readonly objects: ReadonlyMap<string, ObjectDrawGeometry>;
   private version = 0;
   /** Caches geometry once; interior furnishings remain hidden under an intact roof. */
@@ -22,16 +22,26 @@ export class WorldObjectsView implements WorldLayer {
       objects
         .filter((object) => object.footprints.flat().length > 0)
         .map((object) => {
-          const points = object.footprints.flat();
-          const xs = points.map((p) => p.x);
-          const ys = points.map((p) => p.y);
-          const bounds = {
-            x: Math.min(...xs),
-            y: Math.min(...ys),
-            width: Math.max(...xs) - Math.min(...xs),
-            height: Math.max(...ys) - Math.min(...ys),
-          };
-          return [object.id, { object, bounds, ruins: new ObjectRuinsView(object.kind, bounds) }];
+          const bounds = WorldObjectsView.boxOf(object.footprints.flat());
+          const pieces = object.footprints.map(
+            (polygon) => new ObjectRuinsView(object.kind, WorldObjectsView.boxOf(polygon)),
+          );
+          const pieceBounds = WorldObjectsView.boxOf(
+            pieces.flatMap(({ bounds: b }) => [
+              { x: b.x, y: b.y },
+              { x: b.x + b.width, y: b.y + b.height },
+            ]),
+          );
+          return [
+            object.id,
+            {
+              object,
+              bounds,
+              ruins: new ObjectRuinsView(object.kind, bounds),
+              pieces,
+              pieceBounds,
+            },
+          ];
         }),
     );
   }
@@ -43,16 +53,16 @@ export class WorldObjectsView implements WorldLayer {
   public show(states: readonly MapObjectSnapshot[]): void {
     this.states = states;
     for (const state of states)
-      if (WorldObjectsView.isFallen(state) && !this.destroyed.has(state.id)) {
-        this.destroyed.add(state.id);
+      if (WorldObjectsView.isFallenState(state) && !this.fallen.has(state.id)) {
+        this.fallen.add(state.id);
         this.version++;
       }
   }
   /**
    * Shared visibility predicate for both scenery layers and feature glyphs: whether the object is
-   * destroyed or a ruin (a structure's body that outlives it, DEC-341), so its intact art is hidden.
+   * fallen: destroyed or a ruin (a structure's body that outlives it, DEC-341), so its intact art is hidden.
    */
-  public readonly isDestroyed = (id: string): boolean => this.destroyed.has(id);
+  public readonly isFallen = (id: string): boolean => this.fallen.has(id);
   /** Draws nearby health bars and low ruined silhouettes without changing collision geometry. */
   public draw(renderer: Renderer, view = this.currentView?.()): void {
     if (view === undefined) return;
@@ -60,11 +70,15 @@ export class WorldObjectsView implements WorldLayer {
       const geometry = this.objects.get(state.id);
       if (geometry === undefined) continue;
       const { object, bounds } = geometry;
-      const isFallen = WorldObjectsView.isFallen(state);
-      const visibleBounds = isFallen ? geometry.ruins.bounds : bounds;
+      const isFallen = WorldObjectsView.isFallenState(state);
+      const visibleBounds = !isFallen
+        ? bounds
+        : state.isDestroyed
+          ? geometry.ruins.bounds
+          : geometry.pieceBounds;
       if (
         object.buildingId !== undefined &&
-        (this.isDestroyed(object.buildingId) ||
+        (this.isFallen(object.buildingId) ||
           (object.isInterior === true && !this.hiddenRoofs.has(object.buildingId)))
       )
         continue;
@@ -75,7 +89,7 @@ export class WorldObjectsView implements WorldLayer {
         visibleBounds.y > view.y + view.height
       )
         continue;
-      if (isFallen) geometry.ruins.draw(renderer);
+      if (isFallen) WorldObjectsView.drawRuins(renderer, geometry, state);
       else if (state.health !== null && view.width < S.healthBarViewLimit) {
         const width = Math.min(S.barWidth, Math.max(S.barHeight, bounds.width));
         const x = bounds.x + (bounds.width - width) / 2;
@@ -94,17 +108,39 @@ export class WorldObjectsView implements WorldLayer {
     for (const state of this.states) {
       const geometry = this.objects.get(state.id);
       if (
-        WorldObjectsView.isFallen(state) &&
+        WorldObjectsView.isFallenState(state) &&
         geometry !== undefined &&
         geometry.object.isInterior !== true &&
-        (geometry.object.buildingId === undefined || !this.isDestroyed(geometry.object.buildingId))
+        (geometry.object.buildingId === undefined || !this.isFallen(geometry.object.buildingId))
       )
-        geometry.ruins.draw(renderer);
+        WorldObjectsView.drawRuins(renderer, geometry, state);
     }
   }
+  /**
+   * A destroyed body is one ruin over its whole box. A ruined body still blocks, so a ruined fort's
+   * walls keep their shape: one ruin per footprint polygon.
+   */
+  private static drawRuins(
+    renderer: Renderer,
+    geometry: ObjectDrawGeometry,
+    state: MapObjectSnapshot,
+  ): void {
+    if (state.isDestroyed) geometry.ruins.draw(renderer);
+    else for (const piece of geometry.pieces) piece.draw(renderer);
+  }
   /** Destroyed, or a structure's body left standing as a ruin: both draw as ruins. */
-  private static isFallen(state: MapObjectSnapshot): boolean {
+  private static isFallenState(state: MapObjectSnapshot): boolean {
     return state.isDestroyed || state.isRuined === true;
+  }
+  private static boxOf(points: readonly { readonly x: number; readonly y: number }[]): WorldRect {
+    const xs = points.map((p) => p.x);
+    const ys = points.map((p) => p.y);
+    return {
+      x: Math.min(...xs),
+      y: Math.min(...ys),
+      width: Math.max(...xs) - Math.min(...xs),
+      height: Math.max(...ys) - Math.min(...ys),
+    };
   }
   private rect(renderer: Renderer, b: WorldRect, color: string): void {
     renderer.fillPolygon(

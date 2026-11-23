@@ -149,6 +149,7 @@ describe('losing the last win objective (scenario)', () => {
       events.emit('structure-destroyed', {
         entityId: 'entity-99',
         kind: 'spawner-tower',
+        definitionId: 'spawner-tower',
         team: 'dark',
         lane: null,
       });

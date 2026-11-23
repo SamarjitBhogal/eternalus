@@ -20,7 +20,7 @@ export const TURRET_BOLT = {
   },
   // TUNE: no reference value. A bolt starts at the turret's centre, so it covers the 8 m pylon, the
   // 14 m range and the lead on a Sentinel at full speed (about 33 m). DEC-341 (HC-Q93): a bolt
-  // arcs down onto its aim point and lodges there (`isArc`, DEC-342); its range is the cap, and
+  // arcs down onto its aim point and lodges there (`isArc`, DEC-341 (4)); its range is the cap, and
   // the shot flies only as far as its aim point.
   range: 35,
   slowFrom: 35, // equal to range: a bolt flies at full speed until it lands at its aim point

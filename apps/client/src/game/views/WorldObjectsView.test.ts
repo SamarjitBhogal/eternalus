@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
 import { WorldObjectsView } from './WorldObjectsView';
 import { OBJECT_DRAWING as S } from './WorldObjectsView.constants';
+import { OBJECT_RUINS } from './ObjectRuinsView.constants';
 import { RUIN_PALETTE } from './ruinMaterials';
 const HOUSE: MapObject = {
   id: 'house',
@@ -37,7 +38,7 @@ describe('WorldObjectsView', () => {
     renderer.calls.length = 0;
     view.show([{ ...STATE, isDestroyed: true, health: { current: 0, max: 100 } }]);
     view.draw(renderer, AREA);
-    expect(view.isDestroyed('house')).toBe(true);
+    expect(view.isFallen('house')).toBe(true);
     expect(view.revision).toBe(1);
     const ruinColors = renderer.calls.flatMap((call) =>
       call.op === 'fillPolygon' ? [call.args[1]] : [],
@@ -56,7 +57,7 @@ describe('WorldObjectsView', () => {
     view.draw(renderer, AREA);
     view.drawMinimap(renderer);
 
-    expect(view.isDestroyed('pylon')).toBe(true);
+    expect(view.isFallen('pylon')).toBe(true);
     expect(view.revision).toBe(1);
     expect(renderer.calls.filter((call) => call.op === 'fillPolygon').length).toBeGreaterThan(0);
   });
@@ -102,5 +103,69 @@ describe('WorldObjectsView', () => {
     view.show([STATE]);
     view.draw(renderer, AREA);
     expect(renderer.calls).toHaveLength(2);
+  });
+  describe('a body with three footprint polygons', () => {
+    const box = (x: number) => [
+      { x, y: 0 },
+      { x: x + 4, y: 0 },
+      { x: x + 4, y: 4 },
+      { x, y: 4 },
+    ];
+    const FORT: MapObject = {
+      ...HOUSE,
+      id: 'fort',
+      kind: 'house',
+      footprints: [box(0), box(10), box(20)],
+    };
+    const BOXES = [0, 10, 20];
+    const WIDE = { x: 0, y: 0, width: 64, height: 64 };
+    const ruinFills = (view: WorldObjectsView, flags: Partial<MapObjectSnapshot>) => {
+      const renderer = new RecordingRenderer();
+      view.show([{ id: 'fort', entityId: null, health: null, isDestroyed: false, ...flags }]);
+      view.draw(renderer, WIDE);
+      const draw = [...renderer.calls];
+      renderer.calls.length = 0;
+      view.drawMinimap(renderer);
+      return { draw, minimap: [...renderer.calls] };
+    };
+    const polygons = (calls: readonly { op: string; args: readonly unknown[] }[]) =>
+      calls.flatMap((call) =>
+        call.op === 'fillPolygon'
+          ? [{ points: call.args[0] as readonly { x: number }[], color: call.args[1] }]
+          : [],
+      );
+    const colours = new Set<unknown>(OBJECT_RUINS.house.pieces.map(({ color }) => color));
+
+    it('draws a ruined body as one ruin per piece, none in the court between', () => {
+      const { draw, minimap } = ruinFills(new WorldObjectsView([FORT]), { isRuined: true });
+      for (const calls of [draw, minimap]) {
+        const drawn = polygons(calls);
+        expect(drawn.length).toBe(OBJECT_RUINS.house.pieces.length * BOXES.length);
+        expect(drawn.every(({ color }) => colours.has(color))).toBe(true);
+        for (const { points } of drawn)
+          expect(BOXES.some((x) => points.every((p) => p.x >= x && p.x <= x + 4))).toBe(true);
+        for (const x of BOXES)
+          expect(drawn.some(({ points }) => points.every((p) => p.x >= x && p.x <= x + 4))).toBe(
+            true,
+          );
+      }
+    });
+
+    it('still draws a destroyed body as one ruin over the whole box', () => {
+      const { draw, minimap } = ruinFills(new WorldObjectsView([FORT]), { isDestroyed: true });
+      for (const calls of [draw, minimap]) {
+        const drawn = polygons(calls);
+        expect(drawn.length).toBe(OBJECT_RUINS.house.pieces.length);
+        expect(drawn.some(({ points }) => points.some((p) => p.x > 4 && p.x < 20))).toBe(true);
+      }
+    });
+
+    it('keeps a ruined body visible when only its last piece is in view', () => {
+      const view = new WorldObjectsView([FORT]);
+      const renderer = new RecordingRenderer();
+      view.show([{ id: 'fort', entityId: null, health: null, isDestroyed: false, isRuined: true }]);
+      view.draw(renderer, { x: 21, y: 0, width: 8, height: 8 });
+      expect(polygons(renderer.calls).length).toBeGreaterThan(0);
+    });
   });
 });

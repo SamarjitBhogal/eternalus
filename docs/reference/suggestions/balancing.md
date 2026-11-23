@@ -4,7 +4,7 @@ description: Proposed tuning values, formulas and balance knobs for the MVP (hor
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-23
 tags: [reference, suggestions, balancing, content, testing]
 paths: ['packages/core/src/content/**', 'packages/core/src/config/**']
 related:
@@ -133,7 +133,7 @@ Guards (`TUNE` "respawn every 2 minutes", "don't leave the tower's perimeter"; c
 | default | 150 physical | —                | 5 s             | 30 m/s           | everything else                  |
 | heavy   | 500 physical | concussion 1.5 s | 10 s            | 24 m/s           | Sentinels, heavy minions, bosses |
 
-Range 14 m. Targeting (`Recommendation:`, after the published turret rules cited in `../../research/game-architecture-and-performance-research.md#7-game-ai-for-bots`): keep the current target until it dies or leaves range; otherwise prefer a Legend that damaged an allied Legend in the last 3 s, then heavy units, then the nearest enemy. A level-1 Warrior survives about 21 s under one turret and a Sentinel about 22 s under heavy fire, so walking through a gate without minions is a losing trade at level 1. Turret positions are placed by the `MapGenerator` (two per gate, one per wall corner) rather than traced.
+Range 14 m. Targeting (`Recommendation:`, after the published turret rules cited in `../../research/game-architecture-and-performance-research.md#7-game-ai-for-bots`): keep the current target until it dies or leaves range; otherwise prefer a Legend that damaged an allied Legend in the last 3 s, then heavy units, then the nearest enemy. DEC-341 (5) (HC-Q94 A) now rules the defend switch: the turret switches at once to an enemy Legend that hits an allied Legend, also over a held target. A level-1 Warrior survives about 21 s under one turret and a Sentinel about 22 s under heavy fire, so walking through a gate without minions is a losing trade at level 1. Turret positions are placed by the `MapGenerator` (two per gate, one per wall corner) rather than traced.
 
 ## Sentinel wall sprint — MVP
 
