@@ -24,7 +24,9 @@ import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStr
 import { LaneFlowFields } from '../map/LaneFlowFields';
 import { AbilitySystem } from './AbilitySystem';
 import { AetherRegenSystem } from './AetherRegenSystem';
+import { AreaHitQuery } from '../state/AreaHitQuery';
 import type { GameState } from '../state/GameState';
+import { ReachQuery } from '../state/ReachQuery';
 import type { Rect } from '../utils/geometry.types';
 import { CaptureSystem } from './CaptureSystem';
 import { CombatSystem } from './CombatSystem';
@@ -86,6 +88,8 @@ export class DefaultSystemPipeline extends SystemPipeline {
     ),
     validator = new CastValidator(abilities),
     structures = STRUCTURE_DEFINITIONS,
+    areas = new AreaHitQuery(),
+    reach = new ReachQuery(),
   }: DefaultSystemPipelineOptions) {
     const { tickRate, map } = state.config;
     const damage = new DamagePipeline();
@@ -95,7 +99,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
     );
     checkStatusLinks(abilities, statusEffects.all());
     const statuses = new StatusEffectApplier(statusEffects);
-    const hits = new HitEffects(abilities, damage, statuses);
+    const hits = new HitEffects(abilities, damage, statuses, areas);
     const flowFields =
       hordes === undefined || state.world === null
         ? null
@@ -126,7 +130,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
     }
     super([
       ...(hordes === undefined ? [] : [...hordes.decide, new HordeSystem(state, HORDE_STEERING)]),
-      new AbilitySystem(abilities, validator, damage, statuses),
+      new AbilitySystem(abilities, validator, damage, statuses, areas),
       // After the casts, so a cast spends before the tick's regeneration (plan arch call 13).
       new AetherRegenSystem(AETHER_REGEN, tickRate),
       new StatusEffectSystem(damage, statuses),
@@ -136,17 +140,18 @@ export class DefaultSystemPipeline extends SystemPipeline {
         ? []
         : [
             ...(hordes.space === null ? [] : [new SpaceSystem(hordes.space)]),
-            new StuckSystem(loadStuckDetection(tickRate)),
+            new StuckSystem(loadStuckDetection(tickRate), reach),
             new PathingSystem(
               createDefaultStrategyRegistry().movement,
               FORMATIONS,
               HORDE_STEERING.slotArrivalRadius,
+              reach,
               { flowFields, forts: DefaultSystemPipeline.fortBoxesOf(state, structures) },
             ),
           ]),
       // Before combat, so a shot fired this tick flies a tick before it can land.
-      new ProjectileSystem(createDefaultProjectileImpacts(damage, hits)),
-      new CombatSystem({ damage, factory, hits }),
+      new ProjectileSystem(createDefaultProjectileImpacts(damage, hits), areas),
+      new CombatSystem({ damage, factory, areas, reach, hits }),
       ...(state.worldObjects === undefined ? [] : [new MapDestructionSystem(state, damage)]),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
       new ProgressionSystem(state, progression),

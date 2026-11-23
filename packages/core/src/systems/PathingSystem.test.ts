@@ -19,6 +19,7 @@ import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import type { MovementContext } from '../entities/strategies/MovementStrategy.types';
 import { PathingSystem } from './PathingSystem';
 import { FORMATIONS, logger, STRATEGIES } from './__fixtures__/pathingSystemSetup';
+import { ReachQuery } from '../state/ReachQuery';
 
 describe('PathingSystem', () => {
   it.each([
@@ -61,7 +62,12 @@ describe('PathingSystem', () => {
         memberIds: [leader.id, ...fillers, member.id],
         progress: 40,
       });
-      const system = new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius);
+      const system = new PathingSystem(
+        STRATEGIES,
+        FORMATIONS,
+        HORDE_STEERING.slotArrivalRadius,
+        new ReachQuery(),
+      );
 
       // Fill the index the way SpaceSystem does: every unit, in store order.
       space.begin(state.entities.size);
@@ -126,9 +132,15 @@ describe('PathingSystem', () => {
       });
       indexAll(space, state);
 
-      new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius, {
-        flowFields: fields,
-      }).update({
+      new PathingSystem(
+        STRATEGIES,
+        FORMATIONS,
+        HORDE_STEERING.slotArrivalRadius,
+        new ReachQuery(),
+        {
+          flowFields: fields,
+        },
+      ).update({
         state,
         logger,
       });
@@ -163,7 +175,12 @@ describe('PathingSystem', () => {
       });
       indexAll(space, state);
 
-      new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius).update({
+      new PathingSystem(
+        STRATEGIES,
+        FORMATIONS,
+        HORDE_STEERING.slotArrivalRadius,
+        new ReachQuery(),
+      ).update({
         state,
         logger,
       });
@@ -199,7 +216,12 @@ describe('PathingSystem', () => {
       });
       indexAll(space, state);
 
-      new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius).update({
+      new PathingSystem(
+        STRATEGIES,
+        FORMATIONS,
+        HORDE_STEERING.slotArrivalRadius,
+        new ReachQuery(),
+      ).update({
         state,
         logger,
       });
@@ -229,7 +251,12 @@ describe('PathingSystem', () => {
       });
       indexAll(space, state);
 
-      new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius).update({
+      new PathingSystem(
+        STRATEGIES,
+        FORMATIONS,
+        HORDE_STEERING.slotArrivalRadius,
+        new ReachQuery(),
+      ).update({
         state,
         logger,
       });
@@ -273,7 +300,12 @@ describe('PathingSystem', () => {
         },
       },
     };
-    const system = new PathingSystem(recording, FORMATIONS, HORDE_STEERING.slotArrivalRadius);
+    const system = new PathingSystem(
+      recording,
+      FORMATIONS,
+      HORDE_STEERING.slotArrivalRadius,
+      new ReachQuery(),
+    );
 
     for (let tick = 0; tick < 2; tick += 1) {
       space.begin(state.entities.size);
@@ -291,7 +323,12 @@ describe('PathingSystem', () => {
   });
 
   it('does nothing without a map or index, without hordes or with an unknown formation', () => {
-    const system = new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius);
+    const system = new PathingSystem(
+      STRATEGIES,
+      FORMATIONS,
+      HORDE_STEERING.slotArrivalRadius,
+      new ReachQuery(),
+    );
     const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
     const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP), {
       space,
@@ -358,7 +395,12 @@ describe('PathingSystem', () => {
       space.commit();
       return { state, heading: () => minion.getComponent(Movement).heading };
     };
-    const system = new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius);
+    const system = new PathingSystem(
+      STRATEGIES,
+      FORMATIONS,
+      HORDE_STEERING.slotArrivalRadius,
+      new ReachQuery(),
+    );
 
     it('for a horde whose formation is unknown', () => {
       const { state, heading } = setUpMember('wedge');
@@ -399,9 +441,15 @@ describe('PathingSystem', () => {
     const grid = WorldMap.fromDefinition(TWO_LANE_MAP, config.map.navCellSize, () => false);
     const fields = new LaneFlowFields(grid, TWO_LANE_MAP, config.map.flowFieldCorridorHalfWidth);
     const field = fields.fields[0];
-    const system = new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius, {
-      flowFields: fields,
-    });
+    const system = new PathingSystem(
+      STRATEGIES,
+      FORMATIONS,
+      HORDE_STEERING.slotArrivalRadius,
+      new ReachQuery(),
+      {
+        flowFields: fields,
+      },
+    );
     const state = new GameState(config, 1, matchWorldOf(TWO_LANE_MAP));
     fields.markDirty([field?.goal ?? 0]);
     const serving = field?.integration;

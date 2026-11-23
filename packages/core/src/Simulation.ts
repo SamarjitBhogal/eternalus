@@ -37,7 +37,9 @@ import { RETREAT_STRUCTURES } from './content/ai/botLaner';
 import { BOT_DIFFICULTIES } from './content/ai/difficulties/botDifficulties';
 import { RANKS_FORMATION } from './content/mobs/formations/ranks';
 import type { EntityId } from './state/EntityStore.types';
+import { AreaHitQuery } from './state/AreaHitQuery';
 import { LineOfFire } from './state/LineOfFire';
+import { ReachQuery } from './state/ReachQuery';
 import type { LineOfFireQuery } from './state/LineOfFire.types';
 import { assignLanes } from './state/assignLanes';
 import { formationSlot } from './state/formationSlot';
@@ -194,8 +196,12 @@ export class Simulation {
     this.readiness = validator;
     const projectiles = loadProjectiles(tickRate);
     // The bots' line-of-fire query: a bot drops a target its shot cannot reach (DEC-317 addendum).
-    const lineOfFire = new LineOfFire(projectiles);
-    const controllers = Simulation.createControllers(validator, tickRate, lineOfFire);
+    // The match's one aim rule and one hit rule for areas, shared by the bots, the line of fire
+    // and the systems.
+    const reach = new ReachQuery();
+    const areas = new AreaHitQuery();
+    const lineOfFire = new LineOfFire(projectiles, reach, areas);
+    const controllers = Simulation.createControllers(validator, tickRate, lineOfFire, reach);
     const units = content ?? Simulation.defaultContent(tickRate, curves, controllers, weaponSource);
     // One factory for commands and spawning, so entity ids come from one counter.
     const factory = new EntityFactory(
@@ -263,6 +269,8 @@ export class Simulation {
         director,
         abilities: registry,
         validator,
+        areas,
+        reach,
         ...(duelStarts === undefined ? {} : { duelStarts }),
         hordes: {
           space,
@@ -781,18 +789,20 @@ export class Simulation {
 
   /**
    * Every controller, with the shipped content it reads (architecture 11 §2); the aggro profiles
-   * are loaded at `tickRate`. Bots check their line of fire with `lineOfFire`.
+   * are loaded at `tickRate`. Bots check their line of fire with `lineOfFire` and their reach with `reach`.
    */
   private static createControllers(
     readiness: SlotReadiness,
     tickRate: number,
     lineOfFire: LineOfFireQuery,
+    reach: ReachQuery,
   ): ControllerRegistry {
     const bots = {
       difficulties: BOT_DIFFICULTIES,
       retreatTo: RETREAT_STRUCTURES,
       readiness,
       lineOfFire,
+      reach,
     };
     return createDefaultControllerRegistry({
       leash: { aggro: loadAggroRules(tickRate), classOf: unitClassOf },

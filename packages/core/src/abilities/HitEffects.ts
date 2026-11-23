@@ -4,6 +4,7 @@ import { Progression } from '../components/Progression';
 import type { StatusEffectRuntime } from '../components/StatusEffectRuntime';
 import { StatusEffects } from '../components/StatusEffects';
 import { Transform } from '../components/Transform';
+import type { AreaHitQuery } from '../state/AreaHitQuery';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { AbilityRegistry } from './AbilityRegistry';
@@ -26,13 +27,15 @@ export class HitEffects {
    * @param registry - Where effect and shape strategies are found (the `AbilityRegistry`).
    * @param damage - The match's one damage pipeline, for the steps.
    * @param statuses - The match's one status applier, for the steps.
+   * @param areas - The match's one hit rule for areas, for the steps' targets.
    */
   public constructor(
     private readonly registry: Pick<AbilityRegistry, 'effectFor' | 'shapeFor'>,
     private readonly damage: DamagePipeline,
     private readonly statuses: StatusEffectApplier,
+    areas: AreaHitQuery,
   ) {
-    this.targets = new TargetQuery(registry);
+    this.targets = new TargetQuery(registry, areas);
   }
 
   /**

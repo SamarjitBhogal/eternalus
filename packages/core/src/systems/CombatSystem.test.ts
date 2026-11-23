@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { Combat } from '../components/Combat';
 import { DamagePipeline } from '../combat/DamagePipeline';
@@ -27,6 +27,7 @@ import { IdGenerator } from '../utils/IdGenerator';
 import type { Team } from '../teams/teams.types';
 import type { CollisionQuery } from '../state/CollisionQuery.types';
 import { GameState } from '../state/GameState';
+import { AreaHitQuery } from '../state/AreaHitQuery';
 import { ReachQuery } from '../state/ReachQuery';
 import { StateHasher } from '../state/StateHasher';
 import { CombatSystem } from './CombatSystem';
@@ -60,8 +61,8 @@ const setUp = (collisions: CollisionQuery | null = null) => {
   const context: SystemContext = { state, logger: new NullLogger() };
   const attack = (target: Entity) => state.entities.setAttackTarget(warrior.id, target.id);
   /** A combat system on a fresh damage pipeline, firing with this world's factory. */
-  const combatSystem = (): CombatSystem =>
-    new CombatSystem({ damage: new DamagePipeline(), factory });
+  const combatSystem = (reach: ReachQuery = new ReachQuery()): CombatSystem =>
+    new CombatSystem({ damage: new DamagePipeline(), factory, areas: new AreaHitQuery(), reach });
   return { state, warrior, spawn, context, attack, combatSystem };
 };
 
@@ -280,15 +281,12 @@ describe('CombatSystem', () => {
     const { spawn, context, attack, combatSystem } = setUp();
     const dummy = spawn('light-mob', 'training-dummy', 1, 'dark');
     attack(dummy);
-    const facing = vi.spyOn(ReachQuery.prototype, 'facingPointOf').mockReturnValue(false);
+    // A reach rule that measures a target in reach but gives no point to face on it.
+    const reach = Object.assign(new ReachQuery(), { facingPointOf: () => false });
 
-    try {
-      expect(() => {
-        combatSystem().update(context);
-      }).toThrow(/no point to face/);
-    } finally {
-      facing.mockRestore();
-    }
+    expect(() => {
+      combatSystem(reach).update(context);
+    }).toThrow(/no point to face/);
   });
 
   it('drops a target once it is dead', () => {
@@ -512,7 +510,12 @@ const firstHit = (kind: string, definitionId: string): { amount: number; source:
   state.events.on('damage-applied', ({ amount, source }) => hits.push({ amount, source }));
 
   state.entities.setAttackTarget(attacker.id, dummy.id);
-  new CombatSystem({ damage: new DamagePipeline(), factory }).update({
+  new CombatSystem({
+    damage: new DamagePipeline(),
+    factory,
+    areas: new AreaHitQuery(),
+    reach: new ReachQuery(),
+  }).update({
     state,
     logger: new NullLogger(),
   });

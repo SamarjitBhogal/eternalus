@@ -15,7 +15,7 @@ import type { LaneFlowFields } from '../map/LaneFlowFields';
 import type { WorldMap } from '../map/WorldMap';
 import { formationSlot } from '../state/formationSlot';
 import { guardOutward } from '../state/guardOutward';
-import { ReachQuery } from '../state/ReachQuery';
+import type { ReachQuery } from '../state/ReachQuery';
 import type { SpaceQuery } from '../state/SpaceQuery.types';
 import { isPointInRect } from '../utils/geometry';
 import type { Rect, Vec2 } from '../utils/geometry.types';
@@ -43,7 +43,6 @@ import type { System, SystemContext } from './System.types';
 export class PathingSystem implements System {
   public readonly name = 'pathing';
   private readonly target: MutableVec2 = { x: 0, y: 0 };
-  private readonly reach = new ReachQuery();
   private readonly out: MutableVec2 = { x: 0, y: 0 };
   private readonly forward: MutableVec2 = { x: 0, y: 0 };
   private readonly anchor: MutableVec2 = { x: 0, y: 0 };
@@ -59,6 +58,7 @@ export class PathingSystem implements System {
    * @param strategies - Every movement strategy by id; a mob's `Movement.strategyId` picks one.
    * @param formations - Every formation, by id.
    * @param slotArrivalRadius - A mob this close to its formation slot is there.
+   * @param reach - The match's one aim rule (`Simulation`'s): the point a chase heads for.
    * @param world - The lane flow fields and the fort boxes (`PathingWorld`); none of either by
    *   default.
    */
@@ -66,6 +66,7 @@ export class PathingSystem implements System {
     private readonly strategies: StrategyRegistry['movement'],
     private readonly formations: Readonly<Record<string, FormationDefinition>>,
     private readonly slotArrivalRadius: number,
+    private readonly reach: ReachQuery,
     { flowFields = null, forts = [] }: PathingWorld = {},
   ) {
     this.flowFields = flowFields;

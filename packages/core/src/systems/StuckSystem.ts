@@ -6,7 +6,7 @@ import { Transform } from '../components/Transform';
 import type { StuckDetectionRule } from '../content/ai/ai.types';
 import type { Entity } from '../entities/Entity';
 import type { GameState } from '../state/GameState';
-import { ReachQuery } from '../state/ReachQuery';
+import type { ReachQuery } from '../state/ReachQuery';
 import { distance } from '../utils/geometry';
 import type { Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
@@ -36,10 +36,15 @@ export class StuckSystem implements System {
   public readonly name = 'stuck';
   private readonly aim: MutableVec2 = { x: 0, y: 0 };
   private readonly step: MutableVec2 = { x: 0, y: 0 };
-  private readonly reach = new ReachQuery();
 
-  /** @param rule - When a chase counts as stuck and how it goes round, from content, in ticks. */
-  public constructor(private readonly rule: StuckDetectionRule) {}
+  /**
+   * @param rule - When a chase counts as stuck and how it goes round, from content, in ticks.
+   * @param reach - The match's one aim rule (`Simulation`'s): the point a chase aims at.
+   */
+  public constructor(
+    private readonly rule: StuckDetectionRule,
+    private readonly reach: ReachQuery,
+  ) {}
 
   /** Watches every AI unit with an attack target, in store order; drops the watch of the rest. */
   public update({ state }: SystemContext): void {

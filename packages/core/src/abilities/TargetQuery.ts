@@ -1,4 +1,4 @@
-import { AreaHitQuery } from '../state/AreaHitQuery';
+import type { AreaHitQuery } from '../state/AreaHitQuery';
 import type { AreaAim } from '../state/AreaHitQuery.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
@@ -18,10 +18,14 @@ const NO_AIM: AreaAim = { targetId: null, point: null };
  * aims at it, and a body that takes no damage now is not hit.
  */
 export class TargetQuery {
-  private readonly areas = new AreaHitQuery();
-
-  /** @param shapes - Where each shape kind's `AreaShape` is found (the `AbilityRegistry`). */
-  public constructor(private readonly shapes: { shapeFor(kind: string): AreaShape }) {}
+  /**
+   * @param shapes - Where each shape kind's `AreaShape` is found (the `AbilityRegistry`).
+   * @param areas - The match's one hit rule for areas (`Simulation`'s), as weapon sweeps use it.
+   */
+  public constructor(
+    private readonly shapes: { shapeFor(kind: string): AreaShape },
+    private readonly areas: AreaHitQuery,
+  ) {}
 
   /**
    * Every live entity overlapping `shape` at `placement` that passes `filter` for `casterId`, sorted

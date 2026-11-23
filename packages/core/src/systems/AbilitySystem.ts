@@ -12,6 +12,7 @@ import { Health } from '../components/Health';
 import { Progression } from '../components/Progression';
 import { Transform } from '../components/Transform';
 import type { Entity } from '../entities/Entity';
+import type { AreaHitQuery } from '../state/AreaHitQuery';
 import type { GameState } from '../state/GameState';
 import type { SlotReadiness } from '../state/SlotReadiness.types';
 import { compareById } from '../utils/compareById';
@@ -40,14 +41,16 @@ export class AbilitySystem implements System {
    *   `CastValidator`, through its `SlotReadiness` port).
    * @param damage - The match's one damage pipeline, for the effects.
    * @param statuses - The match's one status applier, for the effects.
+   * @param areas - The match's one hit rule for areas, for the effects' targets.
    */
   public constructor(
     private readonly registry: AbilityRegistry,
     private readonly validator: Pick<SlotReadiness, 'blockedBy' | 'priceOf'>,
     private readonly damage: DamagePipeline,
     private readonly statuses: StatusEffectApplier,
+    areas: AreaHitQuery,
   ) {
-    this.targets = new TargetQuery(registry);
+    this.targets = new TargetQuery(registry, areas);
   }
 
   /** Runs every queued cast of this tick, then the due steps of every cast in progress. */

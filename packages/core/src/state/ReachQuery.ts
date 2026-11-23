@@ -9,8 +9,9 @@ import type { AimedAt } from './ReachQuery.types';
 
 /**
  * The one aim rule of an attack (architecture 05 §10): the point of a target that attack reach is
- * measured to, that a chase heads for and that the attacker faces. Every caller holds its own
- * instance and passes the store, as with `AreaHitQuery`. Its only state is a scratch point.
+ * measured to, that a chase heads for and that the attacker faces. `Simulation` builds one for the
+ * match and injects it; a caller passes the store, as with `AreaHitQuery`. Its only state is a
+ * scratch point, so callers share it only because the tick runs one at a time.
  */
 export class ReachQuery {
   /** Scratch for `isInReach`'s aim point. */

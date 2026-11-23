@@ -272,6 +272,7 @@ describe('AreaHitQuery.aimedBodyOf', () => {
 });
 
 describe('AreaHitQuery.stopsShot', () => {
+  const query = new AreaHitQuery();
   const shotAt = (targetId: string | null = null) =>
     ({ ownerId: 'attacker', team: 'light', targetId }) as const;
   const stops = (
@@ -281,7 +282,7 @@ describe('AreaHitQuery.stopsShot', () => {
     targetId: string | null = null,
   ): boolean => {
     const entity = add(id, spec);
-    return AreaHitQuery.stopsShot(entities, shotAt(targetId), {
+    return query.stopsShot(entities, shotAt(targetId), {
       entity,
       health: entity.getComponent(Health),
       membership: entity.findComponent(TeamMembership),
@@ -299,7 +300,7 @@ describe('AreaHitQuery.stopsShot', () => {
     expect(stops(scene, 'ally', { at, team: 'light' })).toBe(false);
     const owner = scene.attacker;
     expect(
-      AreaHitQuery.stopsShot(
+      query.stopsShot(
         scene.entities,
         { ...shotAt(), team: 'dark' },
         {
@@ -326,7 +327,7 @@ describe('AreaHitQuery.stopsShot', () => {
       membership: undefined,
       outline: null,
     };
-    expect(AreaHitQuery.stopsShot(scene.entities, shotAt(), body)).toBe(false);
+    expect(query.stopsShot(scene.entities, shotAt(), body)).toBe(false);
     const removed = scene.add('removed', { at: { x: 3, y: 0 }, team: 'dark' });
     const removedBody = {
       entity: removed,
@@ -335,6 +336,6 @@ describe('AreaHitQuery.stopsShot', () => {
       outline: null,
     };
     scene.entities.remove(removed.id, 'dev-removed');
-    expect(AreaHitQuery.stopsShot(scene.entities, shotAt(), removedBody)).toBe(false);
+    expect(query.stopsShot(scene.entities, shotAt(), removedBody)).toBe(false);
   });
 });

@@ -10,6 +10,7 @@ import type { GameEventMap } from '../state/GameEvents.types';
 import { casterState } from './__fixtures__/casterState';
 import { createDefaultAbilityRegistry } from './defaultAbilityRegistry';
 import { HitEffects } from './HitEffects';
+import { AreaHitQuery } from '../state/AreaHitQuery';
 
 const STATUSES = loadStatusEffects(30, 2);
 const REGISTRY = createDefaultAbilityRegistry(loadAbilities(30), 30);
@@ -28,7 +29,7 @@ const setUp = (statusId: string) => {
   statuses.apply(state, caster.id, statusId, caster.id);
   const applied: GameEventMap['status-applied'][] = [];
   state.events.on('status-applied', (payload) => applied.push(payload));
-  const hits = new HitEffects(REGISTRY, new DamagePipeline(), statuses);
+  const hits = new HitEffects(REGISTRY, new DamagePipeline(), statuses, new AreaHitQuery());
   return { state, caster, struck, neighbour, applied, hits };
 };
 

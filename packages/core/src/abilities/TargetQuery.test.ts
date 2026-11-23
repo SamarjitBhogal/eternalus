@@ -18,6 +18,7 @@ import type { Polygon, Vec2 } from '../utils/geometry.types';
 import { casterState, unitsWithWarriorKit } from './__fixtures__/casterState';
 import { testAbilityRegistry } from './__fixtures__/fakeAbilities';
 import { TargetQuery } from './TargetQuery';
+import { AreaHitQuery } from '../state/AreaHitQuery';
 
 const DISC = { kind: 'circle', radius: 5 } as const;
 const ON_CASTER = { from: { x: 0, y: 0 }, to: { x: 0, y: 0 } };
@@ -36,7 +37,7 @@ const setUp = () => {
     state.entities.add(entity);
     return entity;
   };
-  const query = new TargetQuery(testAbilityRegistry([]));
+  const query = new TargetQuery(testAbilityRegistry([]), new AreaHitQuery());
   return { state, caster, add, query };
 };
 
@@ -81,7 +82,7 @@ const withHouse = (house: MapObject) => {
     definitions: MAP_OBJECT_DEFINITIONS,
   });
   const houseId = world.snapshot()[0]?.entityId;
-  const query = new TargetQuery(testAbilityRegistry([]));
+  const query = new TargetQuery(testAbilityRegistry([]), new AreaHitQuery());
   const hits = (shape: EffectShape, from: Vec2, to: Vec2) =>
     query.find(state, caster.id, shape, { from, to }, { team: 'enemies' });
   return { houseId, hits };

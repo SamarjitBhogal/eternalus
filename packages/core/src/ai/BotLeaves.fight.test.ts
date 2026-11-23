@@ -24,7 +24,7 @@ import { SeededRandom } from '../utils/SeededRandom';
 import type { BotTurn } from './BotLegendController.types';
 import { BotLeaves } from './BotLeaves';
 import { Perception } from './perception/Perception';
-import { SHIPPED_LINE_OF_FIRE } from '../state/__fixtures__/shippedLineOfFire';
+import { SHIPPED_LINE_OF_FIRE, SHIPPED_REACH } from '../state/__fixtures__/shippedLineOfFire';
 import { CONTACT_EPSILON } from '../utils/circlePolygon.constants';
 
 const leaves = new BotLeaves({
@@ -32,6 +32,7 @@ const leaves = new BotLeaves({
   retreatTo: RETREAT_STRUCTURES,
   readiness: allReady,
   lineOfFire: SHIPPED_LINE_OF_FIRE,
+  reach: SHIPPED_REACH,
 });
 
 const RANGED: UnitAttack = {

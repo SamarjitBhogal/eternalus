@@ -14,6 +14,7 @@ import { fakeAbility, testAbilityRegistry } from './__fixtures__/fakeAbilities';
 import { RecordingEffect } from './__fixtures__/RecordingEffect';
 import { CastInstance } from './CastInstance';
 import { TargetQuery } from './TargetQuery';
+import { AreaHitQuery } from '../state/AreaHitQuery';
 
 const DISC = { kind: 'circle', radius: 3 } as const;
 const END = { from: { x: 6, y: 0 }, to: { x: 6, y: 0 } };
@@ -56,7 +57,7 @@ const timeline = () => {
     {
       state,
       effects: registry,
-      targets: new TargetQuery(registry),
+      targets: new TargetQuery(registry, new AreaHitQuery()),
       damage: new DamagePipeline(),
       statuses: new StatusEffectApplier(STATUSES),
     },
@@ -115,7 +116,7 @@ describe('CastInstance', () => {
       {
         state,
         effects: registry,
-        targets: new TargetQuery(registry),
+        targets: new TargetQuery(registry, new AreaHitQuery()),
         damage: new DamagePipeline(),
         statuses: new StatusEffectApplier(loadStatusEffects(30, 2)),
       },
@@ -155,7 +156,7 @@ describe('CastInstance', () => {
       {
         state,
         effects: registry,
-        targets: new TargetQuery(registry),
+        targets: new TargetQuery(registry, new AreaHitQuery()),
         damage: new DamagePipeline(),
         statuses: new StatusEffectApplier(loadStatusEffects(30, 2)),
       },
@@ -187,7 +188,7 @@ describe('CastInstance', () => {
       {
         state,
         effects: registry,
-        targets: new TargetQuery(registry),
+        targets: new TargetQuery(registry, new AreaHitQuery()),
         damage: new DamagePipeline(),
         statuses: new StatusEffectApplier(loadStatusEffects(30, 2)),
       },

@@ -5,6 +5,7 @@ import type { GameState } from '../state/GameState';
 import type { SlotReadiness } from '../state/SlotReadiness.types';
 import type { LaneObjective } from '../state/LaneStructures.types';
 import type { LineOfFireQuery } from '../state/LineOfFire.types';
+import type { ReachQuery } from '../state/ReachQuery';
 import type { PlayableTeam } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
 import type { SeededRandom } from '../utils/SeededRandom';
@@ -42,6 +43,8 @@ export type BotLegendControllerContent = {
    * into a wall by omission.
    */
   readonly lineOfFire: LineOfFireQuery;
+  /** The match's one aim rule (`Simulation`'s): whether the bot's attack is in reach. */
+  readonly reach: ReachQuery;
 };
 
 /** One bot's decision in the making: what the tree reads, and what its nodes write. */

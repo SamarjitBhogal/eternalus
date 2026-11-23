@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-23
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -762,11 +762,14 @@ staff's melee attack are sweeps; mobs keep the one-target `melee` attack. The we
 `utils/sector.ts`. One hit rule serves weapon sweeps and ability areas (`state/AreaHitQuery`,
 DEC-322 (3); `abilities/TargetQuery` is a thin adapter over it): a walk-on outline is hit only when
 the hit aims at it (DEC-322 (1)), and a body that takes no damage now is never hit. Shots and
-`LineOfFire` use the same module's `stopsShot`, and a shot fired along an aim names the walk-on
+`LineOfFire` use the same module's `stopsShot` (an instance method), and a shot fired along an aim names the walk-on
 body under the aim point (`aimedBodyOf`; a structure before a map object). Every contact reports
 its bodies once through `EntityStore.recordHits`, so the AI sees every body a unit attacks, not
 only its lock (`Combat.recordHits`, `EntityStore.victimsOf`, DEC-322 (2), DEC-333 (1)). The client draws the arrow's arc from
-`EntitySnapshot.projectile.flownShare` (`views/ProjectileView`). A new command,
+`EntitySnapshot.projectile.flownShare` (`views/ProjectileView`). `Simulation` builds one
+`AreaHitQuery` and one `ReachQuery` per match and injects them into every class that uses them
+(`CombatSystem`, `ProjectileSystem`, `PathingSystem`, `StuckSystem`, `LineOfFire`, `TargetQuery`
+and the bot leaves); none builds its own (DEC-344 (3)). A new command,
 `attack-aim { actorId, aim: Vec2 | null, mode? }`, sets an aim point on `Combat` (a target or an aim
 point, never both; `stop` clears both). With an aim point, `CombatSystem` turns the unit to the point
 each tick and attacks along the line when off cooldown, with no reach check and no line-of-fire
