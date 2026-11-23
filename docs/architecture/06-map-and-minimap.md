@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-23
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -679,6 +679,16 @@ every view's optional `drawGround` before any `draw` (08 §8), so the field lies
 tints none. The field is built once per structure, because a structure's box does not move, and the
 particles are a fixed number per structure, so the cost stays flat. A fallen structure draws no
 field. The mini map draws no field.
+
+### 2026-11-23 — No mountain on the Stronghold wall (DEC-340)
+
+No mountain's blocking mass touches the Stronghold wall, a gate or a wall turret. A mountain blocks
+units and shots, so a mountain on the wall would hide a turret in rock and narrow a gate.
+`MapSceneryBuilder` gives `MapMountainBuilder` the footprints of the wall's features
+(`WALL_RING_KINDS`) as keep-clear areas. A mountain whose mass touches one is drawn smaller about
+its anchor point, one size step at a time, until it is clear; its art shrinks with it. A mountain
+that is still not clear at its smallest step is left out. The cliffs behind the Stronghold, not the
+mountains, close the back of the base (DEC-158).
 
 ## Related
 

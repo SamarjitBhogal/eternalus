@@ -234,6 +234,42 @@ Reply inline (`Decision: …`).
     `createDefaultScoringRules` takes no tick rate, and the authored and loaded scoring types
     share one `weights` base.
 
+- [ ] **HC-B37 — Better than the design, built under your standing rule, sign-off asked: HC-Q95
+      critic (`feat/map-work-forts-towers`, 2026-11-23); no decision blocks the PR.**
+      Recorded as DEC-358 (owner decisions log). The map scenery is drawn on a 1600 × 900 sketch
+      and then stretched to the world. The scenery builder keeps a sketch copy of the map. In that
+      copy, the building positions were in sketch units, but the building outlines stayed in world
+      units. The outlines are now in sketch units too, so the copy uses one unit everywhere. No
+      scenery moves. The mountains that must stay off the Stronghold wall (HC-Q95) read the wall
+      outlines from that copy. A test on a stretched 2000 × 900 world fails when the outlines stay
+      in world units (deliberate break, recorded). Approve, or say to undo it. _Code:
+      `map/MapSceneryBuilder.ts` (constructor, `wallFootprints`)._
+
+- [x] **HC-Q95 — A corner mountain covers the end of the Stronghold wall
+      (`feat/map-work-forts-towers`, 2026-11-23; found by PR-REVIEW-ASSIST-34 in PR 4 (wall
+      turrets); card by PR-38-HELPER-51; Owner Calls card "HC-Q95 corner mountain on wall").**
+      At each end of the Stronghold wall, one corner mountain can grow over the wall. On every
+      test map (seeds 1 to 8), the north mountain covers the end turret; on 3 of 8 it also
+      covers the centre of the next turret. On some test maps the south mountain touches the
+      other end turret, and on 5 of 8 the north mountain also covers part of the lane 0 gate. The mountain blocks units and shots, so a turret inside it shoots
+      through rock and the lane 0 gate is narrower. Both sides are the same (mirrored). With PR 4,
+      every bolt of a turret that the mountain touches logs one error (seed 2: about one each
+      second for the whole match). In every option the cliffs behind the Stronghold stay, so the
+      back of the base stays closed. Options: (A) leave that mountain out: if a corner mountain
+      would touch the wall, a turret or a gate, the map does not draw it; the cliff behind is
+      still there (recommended; camps use a similar rule: a camp piece that cannot move clear of
+      a fort is left out); (B) make that mountain smaller until it is clear of the wall; (C) cut
+      the mountain in a straight line along the wall (new shape-cutting code, the largest
+      change). A, B or C? _Code: `map/MapMountainBuilder.ts` (`mountain-corner-nw-93-278` and
+      `mountain-corner-sw-93-278` and their mirrors); `MapSceneryBuilder.build` moves art under
+      the wall to the ground layer but keeps its block; the seal is `map/strongholdCliffs.ts`.
+      The bug is also on `phase/3-sprint-3-work`._
+  - **Answered 2026-11-23 by DEC-340** (Owner Calls page): "B: make that mountain smaller".
+    **Built** on `feat/map-work-forts-towers`: a mountain whose blocking mass touches the wall, a
+    turret or a gate is drawn a tenth smaller each time until it is clear. On the test maps (seeds
+    1 to 8, 3 and 5 lanes) a shrunk mountain keeps 40 % to 80 % of its width. A mountain that is
+    still not clear at a tenth of its size is left out; no test map needs this step.
+
 - [ ] **Lane minion acquisition radius raised to the leash (`feat/map-work-forts-towers`,
       DEC-323 (2), 2026-11-21) — FYI for SamarjitBhogal (minion owner); no decision needed.**
       Sam's answer on the Owner Calls page asked to raise the bot and minion engage radii ("your
