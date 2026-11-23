@@ -136,9 +136,10 @@ describe('CollisionSystem', () => {
 
   describe('a unit with momentum (Wrecking Run, DEC-307)', () => {
     /**
-     * Runs `kind` from `start` toward the house wall at x = 5 for `ticks` ticks, as the movement and
-     * collision systems do, and returns its movement and transform. `beforeCollision` sees each
-     * tick's move before the walls cut it (the velocity `MovementSystem` faces).
+     * Runs `kind` from `start` toward the house wall at x = 5 (or the walls of `presentation`) for
+     * `ticks` ticks, as the movement and collision systems do, and returns its movement and
+     * transform. `beforeCollision` sees each tick's move before the walls cut it (the velocity
+     * `MovementSystem` faces).
      */
     const run = (
       kind: 'sentinel' | 'warrior',
@@ -146,6 +147,7 @@ describe('CollisionSystem', () => {
       ticks: number,
       start = { x: 1, y: 5 },
       beforeCollision: (movement: Movement) => void = () => undefined,
+      presentation = HOUSE_PRESENTATION,
     ) => {
       const config = createDefaultGameConfig();
       const state = new GameState(config, 1);
@@ -158,10 +160,7 @@ describe('CollisionSystem', () => {
       state.entities.add(unit);
       const collision = new CollisionSystem(
         new CollisionResolver(
-          staticCollisionIndexOf(
-            EMPTY_MAP,
-            new MapObjectBuilder().build(EMPTY_MAP, HOUSE_PRESENTATION),
-          ),
+          staticCollisionIndexOf(EMPTY_MAP, new MapObjectBuilder().build(EMPTY_MAP, presentation)),
           { x: 0, y: 0, width: EMPTY_MAP.width, height: EMPTY_MAP.height },
         ),
       );
@@ -243,6 +242,56 @@ describe('CollisionSystem', () => {
       // The last second: the move it tries points along the heading every tick (no flicker).
       for (const sideways of offHeading.slice(ticksPerSecond)) expect(sideways).toBeCloseTo(0, 12);
     });
+
+    it.each([120, 135])(
+      'holds the Sentinel still, facing one way, in a %i° corner it steers into',
+      (degrees) => {
+        const ticksPerSecond = createDefaultGameConfig().tickRate;
+        const radians = (degrees * Math.PI) / 180;
+        // One wall bends at (50, 50): its face x = 50 runs south from the bend, and its other face
+        // leaves the bend `degrees` from the first. 30° off the first face's normal points into both.
+        const bentWall: MapPresentation = {
+          buildings: [],
+          scenery: [
+            {
+              id: 'bent-wall',
+              shape: [
+                { x: 50, y: 50 },
+                { x: 50, y: 10 },
+                { x: 90, y: 10 },
+                { x: 90, y: 90 },
+                { x: 50 - 40 * sin(radians), y: 50 - 40 * cos(radians) },
+              ],
+              layer: 'detail',
+              color: 'stone',
+              object: { id: 'bent', kind: 'house', isFootprint: true },
+            },
+          ],
+        };
+        const heading = { x: cos(Math.PI / 6), y: sin(Math.PI / 6) };
+        const offHeading: number[] = [];
+
+        const { movement, transform } = run(
+          'sentinel',
+          heading,
+          6 * ticksPerSecond,
+          { x: 46, y: 45 },
+          ({ velocity }) => offHeading.push(velocity.x * heading.y - velocity.y * heading.x),
+          bentWall,
+        );
+
+        // Pressed into the bend, touching both faces, and still.
+        const { x, y } = transform.position;
+        expect(x).toBeCloseTo(50 - 1.25, 5);
+        expect((x - 50) * cos(radians) - (y - 50) * sin(radians)).toBeCloseTo(1.25, 5);
+        expect(movement.speed).toBe(0);
+        // After it settles (the last 2 s), the move it tries, which it faces, points along the
+        // heading every tick: its walls no longer change from tick to tick (`INBOX.md` HC-B33).
+        for (const sideways of offHeading.slice(4 * ticksPerSecond)) {
+          expect(sideways).toBeCloseTo(0, 12);
+        }
+      },
+    );
 
     it('leaves the speed of a unit without momentum alone (the Warrior)', () => {
       const { movement, transform } = run('warrior', { x: 1, y: 0 }, 120);
