@@ -83,7 +83,13 @@ const setUp = () => {
       .filter((event) => event.type === type)
       .map((event) => event.payload);
   const destroyStructure = (team: Team, kind = 'spawner-tower', entityId = 'entity-gone') => {
-    state.events.emit('structure-destroyed', { entityId, kind, team, lane: null });
+    state.events.emit('structure-destroyed', {
+      entityId,
+      kind,
+      definitionId: kind,
+      team,
+      lane: null,
+    });
   };
   return { state, spawn, kill, run, payloads, destroyStructure };
 };
@@ -305,6 +311,17 @@ describe('ProgressionSystem', () => {
           cause: 'kill',
         },
       ]);
+    });
+
+    it('pays no team-wide XP for a wall turret the store no longer holds (the event names its definition)', () => {
+      const { spawn, run, payloads, destroyStructure } = setUp();
+      const ally = spawn('magus', 'magus', 'light');
+
+      destroyStructure('dark', 'turret', 'entity-not-in-store');
+      run();
+
+      expect(ally.getComponent(Progression).xp).toBe(0);
+      expect(payloads('xp-gained')).toEqual([]);
     });
 
     it('pays no one when a minion destroys the turret', () => {

@@ -14,7 +14,7 @@ export class SceneryView implements WorldLayer {
     layer: MapDecorationLayer,
     private readonly hiddenRoofs: ReadonlySet<string> = new Set(),
     _detailArea?: () => WorldRect,
-    private readonly isDestroyed: (id: string) => boolean = () => false,
+    private readonly isFallen: (id: string) => boolean = () => false,
   ) {
     this.pieces = scenery.filter((piece) => piece.layer === layer);
   }
@@ -27,8 +27,8 @@ export class SceneryView implements WorldLayer {
   private paint(renderer: Renderer): void {
     for (const piece of this.pieces) {
       if (
-        (piece.object !== undefined && this.isDestroyed(piece.object.id)) ||
-        (piece.buildingId !== undefined && this.isDestroyed(piece.buildingId))
+        (piece.object !== undefined && this.isFallen(piece.object.id)) ||
+        (piece.buildingId !== undefined && this.isFallen(piece.buildingId))
       )
         continue;
       const isOpen = piece.buildingId !== undefined && this.hiddenRoofs.has(piece.buildingId);

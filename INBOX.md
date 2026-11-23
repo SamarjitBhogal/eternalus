@@ -792,6 +792,12 @@ Reply inline (`Decision: …`).
     the killing hit, no team-wide structure XP. Still open: your note names XP only, so the turret
     still gives its team 5 points and counts as a destroyed structure (DEC-212). Say if a turret
     should give no points.
+    The level question moved to HC-Q106.
+
+- [ ] **HC-Q106 — Does one wall turret lift a Legend by 2 levels? (`feat/wall-turrets`, PR 4).**
+      One turret lifts a Legend by 2 levels at every level from 1 to 20. The old rule (DEC-190)
+      was at most 1 level. Options: (A, built) keep 2 levels; (B) cap it at 1 level, as the boss
+      reward is capped (DEC-237). Also: when a minion lands the last hit, no one gets the XP.
 
 - [ ] **HC-Q93 — Where does a wall turret's bolt stop? (`feat/wall-turrets`, PR 4, Owner Calls
       card "WT bolt stop").** A turret aims where its target will be. Options: (A, recommended,
@@ -801,8 +807,9 @@ Reply inline (`Decision: …`).
       first body it touches. A is a content flag and a few lines where the bolt is made. Code
       names: `content/projectiles/turretBolt.ts`, `turretHeavyBolt.ts` (`range`, `TUNE`).
   - Answered 2026-11-23 (DEC-341): an arc shot from above, with a ground shadow, that lands where
-    the target would be and lodges in the ground. Not built yet: the tower-orb PR (DEC-342),
-    stacked on #163, builds it for turret bolts and tower orbs. Tick this item when it merges.
+    the target would be and lodges in the ground. Not built yet: the tower-orb PR (Owner Calls
+    "WT orb page", DEC-341 (4)), stacked on #163, builds it for turret bolts and tower orbs. Tick
+    this item when it merges.
 
 - [ ] **HC-B36 — Better than the design, built under your standing rule (DEC-223), sign-off
       asked: one health pool for a wall turret, and the wall turret code layout

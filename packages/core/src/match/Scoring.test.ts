@@ -100,7 +100,13 @@ const setUp = (assistWindowSeconds: number = SCORING.assistWindowSeconds) => {
   const destroy = (kind: string, team: Team): void => {
     next += 1;
     const entityId = `entity-${String(next)}`;
-    state.events.emit('structure-destroyed', { entityId, kind, team, lane: null });
+    state.events.emit('structure-destroyed', {
+      entityId,
+      kind,
+      definitionId: kind,
+      team,
+      lane: null,
+    });
   };
   return { state, spawn, legend, hit, kill, endTick, runTo, rowOf, destroy };
 };

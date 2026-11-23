@@ -20,7 +20,8 @@ export const TURRET_HEAVY_BOLT = {
   },
   // TUNE: no reference value. A bolt starts at the turret's centre, so it covers the 8 m pylon, the
   // 14 m range and the lead on a Sentinel at full speed (about 33 m). DEC-341 (HC-Q93): a bolt
-  // arcs down onto its aim point and lodges there; the tower-orb PR (DEC-342) builds that model.
+  // arcs down onto its aim point and lodges there; the tower-orb PR (Owner Calls "WT orb page",
+  // DEC-341 (4)) builds that model.
   range: 35,
   slowFrom: 35, // equal to range: a bolt flies at full speed until it fizzles
   endDuration: 0.4, // TUNE: no reference value; seconds, as the Magus bolt's mist

@@ -37,6 +37,7 @@ export class StructureSystem implements System {
         state.events.emit('structure-destroyed', {
           entityId: entity.id,
           kind: entity.kind,
+          definitionId: entity.definitionId,
           team: state.entities.teamOf(entity.id) ?? 'neutral',
           lane: entity.laneId,
         });

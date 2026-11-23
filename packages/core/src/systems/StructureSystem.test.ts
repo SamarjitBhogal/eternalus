@@ -52,7 +52,13 @@ describe('StructureSystem', () => {
     kill(spawner);
 
     expect(destroyed).toEqual([
-      { entityId: spawner.id, kind: 'spawner-tower', team: 'light', lane: 'lane-1' },
+      {
+        entityId: spawner.id,
+        kind: 'spawner-tower',
+        definitionId: spawner.definitionId,
+        team: 'light',
+        lane: 'lane-1',
+      },
     ]);
   });
 

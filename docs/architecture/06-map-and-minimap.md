@@ -594,9 +594,14 @@ shells, scattered rock fragments, collapsed tents, broken timber and ruined ston
 The client caches those polygons from the original footprint. Remains and cosmetic fire do not
 add colliders, damage or simulation state; snapshot destruction still controls visibility and
 walkability. Interior remains follow the same roof and parent-building visibility as intact art.
+
+### 2026-11-23 — A structure's body that outlives its structure (DEC-341)
+
 A structure's body that outlives its structure (a lane tower's fort, a wall turret's pylon) is a
 ruin: its snapshot carries `isRuined`, and the client draws its remains as for a destroyed
-object, but it still blocks and its cells stay closed (DEC-341, DEC-219 (a)).
+object, but it still blocks and its cells stay closed. The fort's walls still block (DEC-217 (12));
+the pylon stays (DEC-341 (2)). This holds until the tower-ruins work (#98) lands. #98 lets a
+fort's keep and the struck wall fall, and its merge note is in DEC-341 (2).
 
 ### 2026-11-03 — Front-facing stronghold shield (owner rulings DEC-158, DEC-159 of 2026-11-04)
 

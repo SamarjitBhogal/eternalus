@@ -434,7 +434,8 @@ work named:
   decision with a target sends `switch-ammo` when the chosen ammo is not the loaded one, then
   `attack-aim` at the predicted point, so the aim stays fresh (wall turrets part 2, 2026-11-22).
   With no target and an aim still set, it sends `attack-aim { aim: null }` once. The bolt range is
-  35 m, `TUNE`, until the arc shot of DEC-341 (HC-Q93) lands in the tower-orb PR (DEC-342, 07 §13).
+  35 m, `TUNE`, until the arc shot of DEC-341 (HC-Q93) lands in the tower-orb PR (Owner Calls "WT orb page",
+  DEC-341 (4); 07 §13).
 - `BotLegendController` (M3) plays the `laner` tree of §4.2 with the nodes it needs
   (`ai/bt/`: `Sequence`, `ActiveSelector`, `Condition`, `Action`; `Selector` and `Cooldown` join
   with their first use) and a `UtilityScorer` (`ai/utility/`) over two considerations, closeness

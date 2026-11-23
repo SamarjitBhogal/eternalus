@@ -34,7 +34,7 @@ export class MapView implements WorldLayer {
     private readonly hiddenRoofs: ReadonlySet<string> = new Set(),
     detailArea?: () => WorldRect,
     private readonly buildings: readonly MapBuilding[] = [],
-    private readonly isDestroyed: (id: string) => boolean = () => false,
+    private readonly isFallen: (id: string) => boolean = () => false,
   ) {
     this.map = map;
     this.hasLaneSurfaces = scenery.some((piece) => piece.isLaneSurface === true);
@@ -43,14 +43,14 @@ export class MapView implements WorldLayer {
         piece.replacesFeature === undefined ? [] : [piece.replacesFeature],
       ),
     );
-    this.groundScenery = new SceneryView(scenery, 'ground', hiddenRoofs, detailArea, isDestroyed);
+    this.groundScenery = new SceneryView(scenery, 'ground', hiddenRoofs, detailArea, isFallen);
   }
 
   /** Draws the whole map for the main view. */
   public draw(renderer: Renderer): void {
     this.drawGround(renderer);
     for (const feature of this.map.features) {
-      if (this.isDestroyed(feature.id)) continue;
+      if (this.isFallen(feature.id)) continue;
       if (this.dressedFeatures.has(feature.id)) continue;
       if (this.hiddenRoofs.has(feature.id)) continue;
       if (this.buildings.some((building) => building.id === feature.id)) continue;
@@ -68,7 +68,7 @@ export class MapView implements WorldLayer {
   public drawMinimap(renderer: Renderer): void {
     this.drawGround(renderer, true);
     for (const feature of this.map.features) {
-      if (this.isDestroyed(feature.id)) continue;
+      if (this.isFallen(feature.id)) continue;
       renderer.drawGlyph(feature.minimapGlyph, feature.position, MapView.minimapColor(feature));
     }
   }
