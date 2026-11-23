@@ -100,52 +100,11 @@ const SENTINEL_LEGEND: SpecPresentation = {
 
 /** Keyed by core spec id; whether a Legend can be picked is core content (DEC-49). */
 export const SPEC_PRESENTATION: Readonly<Record<string, SpecPresentation>> = {
-  assassin: {
-    ...WARRIOR_LEGEND,
-    art: {
-      ...NO_LEGEND_ART,
-      card: 'assassin-reference-art',
-      portrait: 'assassin-reference-art',
-      mini: 'assassin-reference-art',
-    },
-  },
-  knight: {
-    ...WARRIOR_LEGEND,
-    art: {
-      ...NO_LEGEND_ART,
-      card: 'knight-reference-art',
-      portrait: 'knight-reference-art',
-      mini: 'knight-reference-art',
-    },
-  },
-  paladin: {
-    ...WARRIOR_LEGEND,
-    art: {
-      ...NO_LEGEND_ART,
-      card: 'paladin-reference-art',
-      portrait: 'paladin-reference-art',
-      mini: 'paladin-reference-art',
-    },
-  },
-  colossus: {
-    ...SENTINEL_LEGEND,
-    art: {
-      ...NO_LEGEND_ART,
-      card: 'colossus-reference-art',
-      portrait: 'colossus-reference-art',
-      mini: 'colossus-reference-art',
-    },
-  },
-  juggernaut: {
-    ...SENTINEL_LEGEND,
-    art: {
-      ...NO_LEGEND_ART,
-      card: 'juggernaut-reference-art',
-      portrait: 'juggernaut-reference-art',
-      mini: 'juggernaut-reference-art',
-    },
-    hudWeapon: WUUTHRAD_HUD_WEAPON,
-  },
+  assassin: WARRIOR_LEGEND,
+  knight: WARRIOR_LEGEND,
+  paladin: WARRIOR_LEGEND,
+  colossus: SENTINEL_LEGEND,
+  juggernaut: { ...SENTINEL_LEGEND, hudWeapon: WUUTHRAD_HUD_WEAPON },
   catalyst: {
     accentToken: '--legend-catalyst-accent',
     art: {

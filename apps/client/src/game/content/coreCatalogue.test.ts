@@ -21,18 +21,16 @@ const specs = (classId: string): readonly LegendSpecCard[] => classCard(classId)
 const allSpecs = catalogue.legendClasses.flatMap((card) => card.specs);
 
 /**
- * Legend-specific art fields (DEC-49): each distinct asset id has one owning spec.
+ * Legend-specific art fields (DEC-49): each id has one owning spec, except the one stand-in.
  */
 const legendArt = (spec: LegendSpecCard): string[] =>
-  [
-    ...new Set([
-      spec.art.card,
-      spec.art.refraction,
-      spec.art.portrait,
-      spec.art.mini,
-      spec.art.rowPlate,
-    ]),
-  ].filter((id) => id !== null);
+  [spec.art.card, spec.art.refraction, spec.art.portrait, spec.art.mini, spec.art.rowPlate].filter(
+    (id) => id !== null,
+  );
+const SHARED_LEGEND_ART = {
+  id: 'warrior-legend-portrait',
+  specIds: ['assassin', 'knight', 'paladin'],
+};
 
 /** Every custom property `global.css` declares (a test-only text read of the stylesheet). */
 const DECLARED_TOKENS = new Set([...globalCss.matchAll(/(--[\w-]+)\s*:/g)].map(([, name]) => name));
@@ -95,6 +93,11 @@ describe('coreCatalogue', () => {
     expect(catalogue.classSelectLayout).toBe('primary');
   });
 
+  // ui-enhancements-plan §2 rule 1: every built enhancement is on by default (DEC-100, DEC-282).
+  it('turns every built UI enhancement on by default', () => {
+    expect(catalogue.uiEnhancements).toEqual(['countdown-urgency']);
+  });
+
   it("takes the profile screen's name from core content", () => {
     expect(catalogue.profileDisplayName).toBe(CONTENT.profileDisplayName);
   });
@@ -127,9 +130,10 @@ describe('coreCatalogue', () => {
     for (const spec of allSpecs) {
       for (const id of legendArt(spec)) owners.set(id, [...(owners.get(id) ?? []), spec.specId]);
     }
-    expect(owners.has('warrior-legend-portrait')).toBe(false);
-    expect(owners.size).toBe(16);
-    expect([...owners].filter(([, owner]) => owner.length !== 1)).toEqual([]);
+    expect(owners.get(SHARED_LEGEND_ART.id)).toEqual(SHARED_LEGEND_ART.specIds);
+    const others = [...owners].filter(([id]) => id !== SHARED_LEGEND_ART.id);
+    expect(others).toHaveLength(11);
+    expect(others.filter(([, owner]) => owner.length !== 1)).toEqual([]);
   });
 
   it('gives a row plate only to the Figma state it was exported from (I-69)', () => {
@@ -162,7 +166,7 @@ describe('coreCatalogue', () => {
   });
 
   it('has no plate reference at all on the css renderer', () => {
-    const css = shippedCatalogue({ effectsRenderer: 'css' }).load();
+    const css = shippedCatalogue({ ...NO_DISPLAY_OVERRIDES, effectsRenderer: 'css' }).load();
     const plateIds = ASSET_MANIFEST.assets
       .filter(
         (entry) => entry.group === 'selection-raster' || entry.group === 'selection-primary-raster',

@@ -1,4 +1,3 @@
-import { Abilities } from '../components/Abilities';
 import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
 import { ChaseWatch } from '../components/ChaseWatch';
@@ -17,7 +16,6 @@ import { Vision } from '../components/Vision';
 import type { Entity } from '../entities/Entity';
 import { fnv1a } from '../utils/fnv1a';
 import { createEmptyScoringState } from './emptyScoringState';
-import { abilityStateFields } from './abilityStateFields';
 import type { GameState } from './GameState';
 import { PLAYABLE_TEAMS } from '../teams/playableTeams';
 
@@ -40,8 +38,8 @@ export class StateHasher {
     const parts: unknown[] = [state.tick, match.phase, state.rng.getState(), entities];
     // Appended only once a field leaves its initial value (0 or false), so a match no director
     // runs hashes exactly as before (recorded replay checkpoints stay valid). One list feeds both
-    // the check and the hash, so a new field cannot be left out of the check. The schedule comes
-    // from the config, which a replay carries, so it is not hashed.
+    // the check and the hash, so a new field cannot be left out of the check. The schedule and
+    // `countdownEndTick` come from the config, which a replay carries, so they are not hashed.
     const matchFields = [match.phaseEnteredTick, match.timelineCursor, match.isIdleHeld];
     if (matchFields.some((value) => value !== 0 && value !== false)) {
       parts.push(['match', ...matchFields]);
@@ -152,14 +150,6 @@ export class StateHasher {
     if (movement !== undefined && (movement.heading.x !== 0 || movement.heading.y !== 0)) {
       fields.push(['heading', movement.heading.x, movement.heading.y]);
     }
-    // Forced motion (a dash or knock-back, ADR 0026 decision 4) adds a field only while a push is
-    // under way, so a match where nobody was pushed hashes as before.
-    if (movement?.isForced === true) {
-      fields.push([
-        'forced',
-        ...movement.forcedPushes.flatMap(({ x, y, ticksLeft }) => [x, y, ticksLeft]),
-      ]);
-    }
     const collider = entity.findComponent(Collider);
     if (collider !== undefined) {
       // Only an unbreakable collider adds a field, so states without walls hash as before.
@@ -180,23 +170,6 @@ export class StateHasher {
     const aether = entity.findComponent(Aether);
     if (aether !== undefined) {
       fields.push(['aether', aether.current, aether.max]);
-    }
-    // Ability slots add a field only once one leaves its initial state (no cooldown, no charge,
-    // nothing queued), so a match where nobody cast hashes as before.
-    const slots = (entity.findComponent(Abilities)?.slots ?? []).filter(
-      ({ cooldownUntilTick, charge, pendingCast }) =>
-        cooldownUntilTick !== 0 || charge !== 0 || pendingCast !== null,
-    );
-    if (slots.length > 0) {
-      fields.push([
-        'abilities',
-        ...slots.map(({ slot, cooldownUntilTick, charge, pendingCast }) => [
-          slot,
-          cooldownUntilTick,
-          charge,
-          pendingCast && [pendingCast.point.x, pendingCast.point.y, pendingCast.targetId],
-        ]),
-      ]);
     }
     const statuses = entity.findComponent(StatusEffects);
     if (statuses !== undefined && statuses.active.length > 0) {
@@ -241,6 +214,6 @@ export class StateHasher {
     if (clock !== undefined) {
       fields.push(['combat-clock', ...clock.fields]);
     }
-    return [...fields, ...abilityStateFields(entity)];
+    return fields;
   }
 }

@@ -17,10 +17,7 @@ export type HostDocument = EventTarget & { readonly hidden: boolean };
 /** Everything `MatchHost` hosts (built by `createBrowserMatch`, or a test). */
 export type MatchHostDeps = {
   /** The parts of `Match` the host and its pointer controls drive. */
-  readonly match: Pick<
-    Match,
-    'start' | 'destroy' | 'resize' | 'setPaused' | 'setCastMode' | 'cancelAim'
-  > & {
+  readonly match: Pick<Match, 'start' | 'destroy' | 'resize' | 'setPaused'> & {
     readonly controls: CanvasPointerControlsDeps['controls'] &
       Pick<MatchViewControls, 'toggleMiniMap'>;
   };

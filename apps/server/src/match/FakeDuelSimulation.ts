@@ -28,11 +28,16 @@ export class FakeDuelSimulation implements DuelSimulation {
   public snapshot(): Snapshot {
     return {
       tick: this.steps,
-      match: { phase: 'countdown', phaseEnteredTick: 0, upcoming: [], humanLegendId: null },
+      match: {
+        phase: 'countdown',
+        phaseEnteredTick: 0,
+        upcoming: [],
+        countdownEndTick: 0,
+        humanLegendId: null,
+      },
       entities: [],
       hordes: [],
       teams: { light: EMPTY_TEAM, dark: EMPTY_TEAM },
-      player: null,
     };
   }
 

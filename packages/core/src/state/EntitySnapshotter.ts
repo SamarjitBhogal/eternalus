@@ -5,7 +5,6 @@ import { MapObjectBody } from '../components/MapObjectBody';
 import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
-import { StatusEffects } from '../components/StatusEffects';
 import { ZoneArea } from '../components/ZoneArea';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
@@ -41,12 +40,6 @@ export class EntitySnapshotter {
       kind: entity.kind,
       family: entity.family,
       definitionId: entity.definitionId,
-      ...(entity.findComponent(StatusEffects)?.has('invisible') === true
-        ? { isInvisible: true as const }
-        : {}),
-      ...(transform !== undefined && transform.sizeMultiplier !== 1
-        ? { visualScale: transform.sizeMultiplier }
-        : {}),
       ...(entity.findComponent(MapObjectBody) === undefined
         ? {}
         : { mapObjectId: entity.getComponent(MapObjectBody).object.id }),

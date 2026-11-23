@@ -2,7 +2,7 @@ import { makeLogRecord } from '@eternalus/core';
 
 import type { Binding } from '../../bridge/Binding.types';
 import type { UiIntent } from '../../bridge/events';
-import type { CastMode, SettingsSliceState } from '../../bridge/slices/settingsSlice';
+import type { SettingsSliceState } from '../../bridge/slices/settingsSlice';
 import { ownPlatformChordsFirst } from '../input/bindingEdits';
 import type { SettingsControllerDeps } from './SettingsController.types';
 import { applySettingsIntent, settingsWithDefaults } from './settingsState';
@@ -11,7 +11,8 @@ import { applySettingsIntent, settingsWithDefaults } from './settingsState';
  * The one writer of settings and keybindings, in every session phase (menu and in-match pause).
  * Loads the saved settings at start, then turns each settings intent from the UI into new
  * settings, publishes them on the bus (the store and `InputMapper` follow) and saves them. The
- * published bindings list the platform's own modifier chords first (DEC-118).
+ * published bindings list the platform's own modifier chords first (DEC-118). Each published
+ * reduce-motion setting is marked on the theme root as `data-reduce-motion` (UE-03).
  */
 export class SettingsController {
   private readonly deps: SettingsControllerDeps;
@@ -41,15 +42,11 @@ export class SettingsController {
     return this.settings?.bindings ?? null;
   }
 
-  /** The current cast mode, or `null` before `start()` has published the settings. */
-  public get castMode(): CastMode | null {
-    return this.settings?.gameplay.castMode ?? null;
-  }
-
-  /** Stops handling intents. */
+  /** Stops handling intents and clears the reduce-motion mark. */
   public destroy(): void {
     this.stopListening?.();
     this.stopListening = null;
+    delete this.deps.themeRoot.dataset.reduceMotion;
   }
 
   private readonly onIntent = (intent: UiIntent): void => {
@@ -72,12 +69,22 @@ export class SettingsController {
     );
   }
 
+  /** UE-03: present (empty) while the setting is on, absent while it is off. */
+  private markReduceMotion(isOn: boolean): void {
+    if (isOn) {
+      this.deps.themeRoot.dataset.reduceMotion = '';
+    } else {
+      delete this.deps.themeRoot.dataset.reduceMotion;
+    }
+  }
+
   private publish(settings: SettingsSliceState): SettingsSliceState {
     const published = {
       ...settings,
       bindings: ownPlatformChordsFirst(settings.bindings, this.deps.isApplePlatform),
     };
     this.settings = published;
+    this.markReduceMotion(published.accessibility.reduceMotion);
     this.deps.bus.emit('settings', published);
     return published;
   }

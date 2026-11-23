@@ -1,8 +1,6 @@
 import {
-  type AbilitySlot,
   createDefaultGameConfig,
   type InputIntent,
-  loadDisplayContent,
   MapPresentationBuilder,
   MemoryLogger,
   NullLogger,
@@ -24,11 +22,9 @@ import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH } from './Match.constants';
 import type { IntentSource } from './Match.types';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
-import { AIM_OVERLAY_FILL_COLOR } from './views/AimOverlayView.constants';
 import { FOCUS_RING_COLOR } from './views/entityViews.constants';
 
 const SEED = 1;
-const ABILITIES = loadDisplayContent().abilities;
 const PLAYER: PlayerChoice = { legend: 'warrior', team: 'light' };
 
 /**
@@ -52,18 +48,11 @@ class ScriptedIntent implements IntentSource {
 
   public aim: Vec2 | null = null;
 
-  public triggered: readonly AbilitySlot[] = [];
-
   public projection: Projection | null = null;
 
   public read(projection: Projection): InputIntent {
     this.projection = projection;
-    return {
-      move: this.move,
-      isAttacking: this.isAttacking,
-      aim: this.aim,
-      triggered: this.triggered,
-    };
+    return { move: this.move, isAttacking: this.isAttacking, aim: this.aim, triggered: [] };
   }
 }
 
@@ -104,7 +93,7 @@ const CONTENT_WITH_A_ROCK: Content = (() => {
  * mobs the map's structures spawn, it plays in sim mode instead: no map, so no roster (a roster
  * needs the map).
  */
-const setUp = (content?: Content, withMapObjects = false, playerSpecId?: string) => {
+const setUp = (content?: Content, withMapObjects = false, playerSpecId: string | null = null) => {
   // No countdown: core's countdown holds all movement, and these tests walk from the start.
   const config = createDefaultGameConfig({ match: { countdownSeconds: 0 } });
   const world = prepareMatchWorld(config, SEED);
@@ -117,14 +106,13 @@ const setUp = (content?: Content, withMapObjects = false, playerSpecId?: string)
       : { config, content }),
     ...(withMapObjects ? { mapObjects: world.mapObjects } : {}),
   });
-  const bus = new TypedEventBus<BridgeEventMap>();
   const scheduler = new FakeFrameScheduler();
   const renderer = new RecordingRenderer();
   const camera = new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT);
   const input = new ScriptedIntent();
   const logger = new MemoryLogger();
   const match = new Match({
-    playerSpecId: playerSpecId ?? null,
+    playerSpecId,
     simulation,
     world,
     tickRate: config.tickRate,
@@ -133,14 +121,10 @@ const setUp = (content?: Content, withMapObjects = false, playerSpecId?: string)
     camera,
     input,
     logger,
-    abilities: ABILITIES,
-    // The port as `createBrowserMatch` binds it.
-    dashReach: (origin, direction, distance, radius) =>
-      simulation.dashReach(origin, direction, distance, radius),
     observer: { crashed: () => undefined, ended: () => undefined },
-    // A bus only the tests listen to, at the shipped cadence.
+    // A bus nobody listens to, at the shipped cadence.
     bridge: {
-      bus,
+      bus: new TypedEventBus<BridgeEventMap>(),
       publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,
       captureKinds: [],
     },
@@ -151,7 +135,6 @@ const setUp = (content?: Content, withMapObjects = false, playerSpecId?: string)
   );
   return {
     match,
-    bus,
     simulation,
     renderer,
     camera,
@@ -184,134 +167,6 @@ const lastMinimap = (renderer: RecordingRenderer) => {
     worldPerPixel: view.width / area.width,
   };
 };
-
-describe('Match ability casts', () => {
-  it('queues a cast-ability for a pressed slot in quick cast, at the pointer', () => {
-    const { match, simulation, input } = setUp();
-    match.tick();
-    const enqueue = vi.spyOn(simulation, 'enqueueCommand');
-    input.aim = { x: 40, y: 50 };
-    input.triggered = ['ability-1'];
-
-    match.tick();
-
-    expect(enqueue.mock.calls.map(([command]) => command)).toContainEqual({
-      type: 'cast-ability',
-      actorId: match.playerEntityId,
-      slot: 'ability-1',
-      aim: { point: { x: 40, y: 50 }, targetId: null },
-    });
-    match.destroy();
-  });
-
-  it('publishes aiming-slot at once as a slot is selected, cancelled, and when paused', () => {
-    const { match, bus, input } = setUp();
-    const slots: (string | null)[] = [];
-    bus.on('aiming-slot', ({ slot }) => slots.push(slot));
-    match.setCastMode('aim-then-click');
-    input.aim = { x: 40, y: 50 };
-
-    input.triggered = ['ability-2'];
-    match.tick();
-    input.triggered = [];
-    match.cancelAim();
-    input.triggered = ['ability-3'];
-    match.tick();
-    input.triggered = [];
-    match.setPaused(true);
-
-    expect(slots).toEqual(['ability-2', null, 'ability-3', null]);
-    match.destroy();
-  });
-});
-
-describe('Match range overlay', () => {
-  /** The overlay's filled areas in the last frame. */
-  const overlayFills = (renderer: RecordingRenderer): number =>
-    renderer.calls.filter(
-      (call) => call.op === 'fillPolygon' && call.args[1] === AIM_OVERLAY_FILL_COLOR,
-    ).length;
-
-  it('draws the selected ability’s area in aim-then-click, and stops when the aim is cancelled', () => {
-    const { match, input, renderer } = setUp();
-    match.setCastMode('aim-then-click');
-    input.aim = { x: 40, y: 50 };
-    input.triggered = ['ability-1'];
-    match.tick();
-    input.triggered = [];
-
-    match.render(0);
-    // Blade Runner (the warrior's ability 1): the dash path and its end circle.
-    expect(overlayFills(renderer)).toBe(2);
-
-    match.cancelAim();
-    renderer.calls.length = 0;
-    match.render(0);
-    expect(overlayFills(renderer)).toBe(0);
-    match.destroy();
-  });
-
-  it('aims from where the Legend is drawn between two ticks, not from its snapshot position', () => {
-    const { match, input, simulation } = setUp();
-    const reach = vi.spyOn(simulation, 'dashReach');
-    const playerAt = () => {
-      const transform = match.snapshot.entities.find(
-        ({ id }) => id === match.playerEntityId,
-      )?.transform;
-      return { x: transform?.x ?? Number.NaN, y: transform?.y ?? Number.NaN };
-    };
-    match.setCastMode('aim-then-click');
-    input.move = { x: 1, y: 0 };
-    for (let tick = 0; tick < 5; tick += 1) match.tick();
-    input.aim = { x: 40, y: 50 };
-    input.triggered = ['ability-1'];
-    const before = playerAt();
-    match.tick();
-    input.triggered = [];
-    const after = playerAt();
-
-    match.render(0.5);
-
-    expect(after.x).not.toBeCloseTo(before.x, 3);
-    const [origin] = reach.mock.lastCall ?? [];
-    expect(origin?.x).toBeCloseTo((before.x + after.x) / 2, 9);
-    expect(origin?.y).toBeCloseTo((before.y + after.y) / 2, 9);
-    match.destroy();
-  });
-
-  it('asks the simulation how far the dash goes, so a wall shortens the drawn path', () => {
-    const { match, input, renderer, simulation } = setUp();
-    const reach = vi.spyOn(simulation, 'dashReach').mockReturnValue(3);
-    match.setCastMode('aim-then-click');
-    input.aim = { x: 40, y: 50 };
-    input.triggered = ['ability-1'];
-    match.tick();
-    input.triggered = [];
-
-    match.render(0);
-
-    expect(reach).toHaveBeenCalled();
-    const path = renderer.calls.find(
-      (call) => call.op === 'fillPolygon' && call.args[1] === AIM_OVERLAY_FILL_COLOR,
-    );
-    const corners = path?.op === 'fillPolygon' ? path.args[0] : [];
-    const [a, b] = corners;
-    expect(Math.hypot((b?.x ?? 0) - (a?.x ?? 0), (b?.y ?? 0) - (a?.y ?? 0))).toBeCloseTo(3);
-    match.destroy();
-  });
-
-  it('draws no overlay in quick cast, even with a slot pressed', () => {
-    const { match, input, renderer } = setUp();
-    input.aim = { x: 40, y: 50 };
-    input.triggered = ['ability-1'];
-    match.tick();
-
-    match.render(0);
-
-    expect(overlayFills(renderer)).toBe(0);
-    match.destroy();
-  });
-});
 
 describe('Match', () => {
   it('updates the main scene and minimap when a map object is destroyed', () => {
@@ -532,17 +387,6 @@ describe('Match', () => {
 
   it('logs once for each kind it has to draw with the default view', () => {
     const { match, simulation, logger } = setUp(CONTENT_WITH_A_ROCK);
-    // Obstacle now has the Shield Wall view. An unknown snapshot kind still tests the warning.
-    const snapshotOf = simulation.snapshot.bind(simulation);
-    vi.spyOn(simulation, 'snapshot').mockImplementation(() => {
-      const snapshot = snapshotOf();
-      return {
-        ...snapshot,
-        entities: snapshot.entities.map((entity) =>
-          entity.kind === 'obstacle' ? { ...entity, kind: 'unregistered-rock' } : entity,
-        ),
-      };
-    });
     simulation.enqueueCommand({
       type: 'dev-spawn',
       kind: 'obstacle',
@@ -558,9 +402,7 @@ describe('Match', () => {
 
     expect(
       logger.records.map(({ severityText, scope, body }) => [severityText, scope, body]),
-    ).toEqual([
-      ['WARN', 'client.views', 'No view for kind "unregistered-rock"; drawing the default view.'],
-    ]);
+    ).toEqual([['WARN', 'client.views', 'No view for kind "obstacle"; drawing the default view.']]);
   });
 
   it('draws the lane hordes and other mobs with their own view, logging no default-view warning', () => {
@@ -614,7 +456,7 @@ describe('Match', () => {
   });
 });
 
-it('renders the selected restored character through the live Match wiring', () => {
+it('renders the selected Knight through the live match view registry', () => {
   const { match, renderer } = setUp(undefined, false, 'knight');
   match.render(0);
   expect(

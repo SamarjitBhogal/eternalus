@@ -21,7 +21,7 @@ export class LegendView extends DefaultEntityView {
   protected override readonly minimapGlyph = MINI_MAP_LEGEND_GLYPH;
 
   /** Draws the white outline and the facing chevron, then the team disc and focus ring on top. */
-  public override draw(state: EntityDrawState, renderer: Renderer): void {
+  public override draw(state: EntityDrawState, renderer: Renderer): number | undefined {
     const diameter = (state.entity.transform?.radius ?? 0) * 2;
     renderer.drawWorldGlyph(
       { shape: 'dot', size: diameter * LEGEND_OUTLINE_SCALE },
@@ -29,6 +29,6 @@ export class LegendView extends DefaultEntityView {
       LEGEND_OUTLINE_COLOR,
     );
     drawFacingChevron(state, renderer);
-    super.draw(state, renderer);
+    return super.draw(state, renderer);
   }
 }

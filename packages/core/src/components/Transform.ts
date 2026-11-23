@@ -8,7 +8,6 @@ import { INITIAL_FACING } from './Transform.constants';
  * finite point; facing is always a unit vector (architecture 10 §10: vectors, never angles).
  */
 export class Transform {
-  private scale = 1;
   private readonly currentPosition: MutableVec2;
   private readonly beforeMovement: MutableVec2;
   private readonly currentFacing: MutableVec2 = { ...INITIAL_FACING };
@@ -19,9 +18,8 @@ export class Transform {
    */
   public constructor(
     position: Vec2,
-    private readonly baseRadius: number,
+    public readonly radius: number,
   ) {
-    const radius = baseRadius;
     if (!(radius > 0) || !Number.isFinite(radius)) {
       throw new Error(`Transform radius must be a positive number, got ${String(radius)}.`);
     }
@@ -29,22 +27,6 @@ export class Transform {
     Transform.assertFinite(position.x, position.y);
     this.currentPosition = { x: position.x, y: position.y };
     this.beforeMovement = { ...position };
-  }
-
-  /** Current body radius, including temporary form changes. */
-  public get radius(): number {
-    return this.baseRadius * this.scale;
-  }
-
-  /** The active form multiplier, also projected to the renderer. */
-  public get sizeMultiplier(): number {
-    return this.scale;
-  }
-
-  /** Changes form without accumulating drift across application and expiry. */
-  public setSizeMultiplier(value: number): void {
-    if (!(value > 0) || !Number.isFinite(value)) throw new Error('Invalid form size multiplier');
-    this.scale = value;
   }
 
   /** The current position. Read it, but do not keep it: moves update it in place. */

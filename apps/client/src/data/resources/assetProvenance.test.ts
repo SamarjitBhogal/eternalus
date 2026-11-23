@@ -12,11 +12,13 @@ const entry = {
 const documents = { 'docs/reference/legend-sprite-provenance.md': provenance };
 
 describe('asset provenance (ADR 0028)', () => {
-  it('registers both the selection and sprite derivatives of every contributor reference', () => {
+  it('registers a sprite derivative for every contributor reference', () => {
     const derived = ASSET_MANIFEST.assets.filter(
       (asset) => asset.licence === 'user-authorised-art',
     );
-    expect(derived).toHaveLength(10);
+    expect(derived.map(({ attachmentReferenceId }) => attachmentReferenceId).sort()).toEqual(
+      Object.keys(ATTACHMENT_REFERENCES).sort(),
+    );
     for (const asset of derived) {
       expect(asset.attachmentReferenceId).toBeDefined();
       expect(hasAssetProvenance(asset, ATTACHMENT_REFERENCES, documents)).toBe(true);

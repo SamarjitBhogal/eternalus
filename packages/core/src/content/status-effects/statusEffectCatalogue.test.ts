@@ -3,15 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { STATUS_EFFECTS } from './statusEffectCatalogue';
 
 describe('STATUS_EFFECTS', () => {
-  it('holds the MVP set, the minion veterancy statuses and the knock-back statuses', () => {
+  it('holds the MVP set and the minion veterancy statuses', () => {
     expect(STATUS_EFFECTS.ids).toEqual([
       'bleed',
-      'imbued',
-      'veiled',
-      'fury',
-      'berserk',
-      'hamstrung',
-      'channeling',
       'concussion',
       'stun',
       'blind',
@@ -20,8 +14,6 @@ describe('STATUS_EFFECTS', () => {
       'control-immune',
       'veteran',
       'rallied',
-      'knockup',
-      'staggered',
     ]);
   });
 

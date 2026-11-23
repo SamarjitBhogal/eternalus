@@ -1,20 +1,25 @@
-import type {
-  AbilityRejectReason,
-  AbilitySlot,
-} from '../content/abilities/AbilityDefinition.types';
-import type { Aim } from '../components/AbilitySlotRuntime.types';
 import type { PlayableTeam, Team } from '../teams/teams.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { Vec2 } from '../utils/geometry.types';
 
-export type { AbilitySlot } from '../content/abilities/AbilityDefinition.types';
-export type { Aim } from '../components/AbilitySlotRuntime.types';
+/** An ability bar slot (architecture 05 §6); `ability-4` is the ultimate. */
+export type AbilitySlot =
+  | 'ability-1'
+  | 'ability-2'
+  | 'ability-3'
+  | 'ability-4'
+  | 'gadget-1'
+  | 'gadget-2'
+  | 'default-action';
 
 /** Where a developer-menu horde appears (architecture 13 §4). */
 export type SpawnOrigin =
   | { readonly kind: 'structure'; readonly structureId: string }
   | { readonly kind: 'lane'; readonly lane: string; readonly t: number }
   | { readonly kind: 'point'; readonly at: Vec2 };
+
+/** Where an ability is aimed: a world point and, for targeted abilities, the target. */
+export type Aim = { readonly point: Vec2; readonly targetId: EntityId | null };
 
 /**
  * The human's per-tick input with no key names in it (architecture 13 §6.2): movement axes as one
@@ -79,9 +84,8 @@ export type Command<K extends CommandType = CommandType> = {
   readonly [P in K]: { readonly type: P } & CommandPayloads[P];
 }[K];
 
-/** Why a command was not applied; sent with `command-rejected`. A refused cast gives its `AbilityRejectReason`. */
+/** Why a command was not applied; sent with `command-rejected`. */
 export type CommandRejectReason =
-  | AbilityRejectReason
   | 'unknown-entity'
   | 'unknown-kind'
   | 'unknown-definition'

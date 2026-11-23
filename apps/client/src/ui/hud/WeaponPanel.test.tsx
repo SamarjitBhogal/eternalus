@@ -99,11 +99,7 @@ describe('WeaponPanel', () => {
   it('hatches the weapon level bar while its value is unknown', () => {
     const html = renderWithStore(<WeaponPanel />, {
       ...withHudSetup(figmaHudState()),
-      hud: {
-        player: { ...FIGMA_HUD_PLAYER, weaponProgress: null },
-        announcements: [],
-        aimingSlot: null,
-      },
+      hud: { player: { ...FIGMA_HUD_PLAYER, weaponProgress: null }, announcements: [] },
     });
     expect(accessibleNames(html, '[role=img]')).toEqual(['Weapon level: No data yet']);
   });

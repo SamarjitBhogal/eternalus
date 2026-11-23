@@ -27,11 +27,9 @@ export type HudSlotView = {
    */
   readonly cooldownFraction: number | null;
   readonly blockedBy: HudBlockReason | null;
-  /** The slot is the one selected for aiming (aim-then-click): the bar highlights it. */
-  readonly isAiming: boolean;
 };
 
-const { selectSlotStatus, selectAimingSlot } = hudSlice.selectors;
+const { selectSlotStatus } = hudSlice.selectors;
 
 /** The red fill's height: the share of the cooldown still to run (a cooldown of 0 ticks is full). */
 const cooldownFractionOf = (status: AbilitySlotStatus): number =>
@@ -46,7 +44,7 @@ function lookOf(status: AbilitySlotStatus | null): HudSlotLook {
 
 /**
  * The view of `slot`: the kit entry (name, icon) and the runtime look. Memoised per slot (the
- * arguments are the kit, the slot's runtime entry, the slot id and the aimed slot), so a publish that leaves both
+ * arguments are the kit, the slot's runtime entry and the slot id), so a publish that leaves both
  * unchanged returns the same object; components read it with `shallowEqual`.
  */
 export const selectHudSlotView = createSelector(
@@ -54,9 +52,8 @@ export const selectHudSlotView = createSelector(
     selectHudKit,
     (state: RootState, slot: HudSlotId) => selectSlotStatus(state, slot),
     (_state: RootState, slot: HudSlotId) => slot,
-    selectAimingSlot,
   ],
-  (kit, status, slot, aimingSlot): HudSlotView => {
+  (kit, status, slot): HudSlotView => {
     const display = kit?.slots.find((entry) => entry.slot === slot);
     const look = lookOf(status);
     return {
@@ -65,7 +62,6 @@ export const selectHudSlotView = createSelector(
       look,
       cooldownFraction: look === 'cooldown' && status !== null ? cooldownFractionOf(status) : null,
       blockedBy: status?.blockedBy ?? null,
-      isAiming: aimingSlot === slot,
     };
   },
 );

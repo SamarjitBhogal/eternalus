@@ -1,3 +1,4 @@
+import { SpriteAtlasLoader } from './loaders/SpriteAtlasLoader';
 import { describe, expect, it } from 'vitest';
 
 import { ASSET_MANIFEST } from './AssetManifest';
@@ -6,22 +7,18 @@ import { FontLoader } from './loaders/FontLoader';
 import type { LoadableFace } from './loaders/FontLoader.types';
 import { UiImageLoader } from './loaders/UiImageLoader';
 import { ResourceController } from './ResourceController';
-import { SpriteAtlasLoader } from './loaders/SpriteAtlasLoader';
 
 /** Byte totals per group at a pixel ratio of 1 and 2: the HC-Q15 budgets accepted by OD-7. */
 const BUDGETS: readonly (readonly [AssetGroup, number, number])[] = [
   ['boot', 25_888, 25_888],
   // OD-44: the three Legend minis (49,506 / 118,376 B) move from selection-primary to selection (DEC-109).
-  // ADR 0027: five selection portraits; additional budget approved 2026-11-12.
-  ['selection', 6_844_804, 10_687_858],
+  ['selection', 4_105_368, 2_023_392],
   ['selection-primary', 746_408, 747_230],
   ['selection-alternate', 456_024, 587_480],
   ['selection-raster', 867_022, 243_798],
   ['selection-primary-raster', 1_041_660, 281_268],
   // OD-28: the battle axe with the owner's Noise grain, +206 B (1x) and +1,322 B (2x) on OD-7's 141,440 / 358,580.
-  // ADR 0026: three Magus sheets; byte allowance approved by Gurshaan on 2026-11-11.
-  // ADR 0027 allowance; 2026-11-13 isolated-pose repair reduces both exact totals.
-  ['match', 2_410_484, 8_305_770],
+  ['match', 141_646, 359_902],
 ];
 
 /** The shipped manifest behind the browser adapters, with fake images and font faces. */
@@ -31,7 +28,7 @@ function shippedResources(pixelRatio: number) {
     manifest: ASSET_MANIFEST,
     loaders: [
       new SpriteAtlasLoader(() =>
-        Promise.resolve({ width: 6, height: 10, close: () => undefined }),
+        Promise.resolve({ width: 384, height: 640, close: () => undefined }),
       ),
       new UiImageLoader({
         createImage: () => ({

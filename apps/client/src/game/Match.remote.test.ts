@@ -59,7 +59,6 @@ function setUp() {
     camera,
     input: scripted,
     logger: new MemoryLogger(),
-    abilities: [],
     observer: { crashed: () => undefined, ended: () => undefined },
     bridge: {
       bus: new TypedEventBus<BridgeEventMap>(),

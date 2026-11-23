@@ -1,3 +1,4 @@
+import { describeAssetLoader } from './AssetLoader.contract';
 import { describe, expect, it, vi } from 'vitest';
 import { SpriteAtlasLoader } from './SpriteAtlasLoader';
 import type { SpriteAtlasEntry } from '../AssetManifest.types';
@@ -37,4 +38,27 @@ describe('SpriteAtlasLoader', () => {
     );
     expect(decode).not.toHaveBeenCalled();
   });
+});
+
+describeAssetLoader('Sprite atlas', () => {
+  let isHeld = false;
+  const loader = new SpriteAtlasLoader((url) => {
+    if (url === 'bad.webp') return Promise.reject(new Error('decode failed'));
+    isHeld = true;
+    return Promise.resolve({
+      width: 384,
+      height: 640,
+      close: () => {
+        isHeld = false;
+      },
+    });
+  });
+  return {
+    loader,
+    goodEntry: entry,
+    goodUrl: 'sheet.webp',
+    badEntry: entry,
+    badUrl: 'bad.webp',
+    isHeld: () => isHeld,
+  };
 });

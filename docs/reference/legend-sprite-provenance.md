@@ -36,9 +36,7 @@ Zealot was regenerated to show two swords; earlier single-sword candidates are n
 Packing: split each source into its uniform 6 by 10 grid, retain a four-source-pixel inset gutter,
 nearest-resize each cell to 128 square pixels, then compose a 768 by 1280 RGBA high-density
 atlas. Nearest-resize to 384 by 640 for standard density; save both as lossless WebP. Alpha is
-preserved. Selection portraits contain the original reference within a dark 512 by 768 canvas,
-with a 256 by 384 standard rendition, saved as lossless WebP. Native-size card, refraction and mini renditions bake the existing `archUnitPath.ts`
-selection mask into alpha; roster tiles retain their square crop. No watermark removal is applied.
+preserved. Selected-subclass portraits are deferred to the portrait follow-up under DEC-298 (7).
 
 ## Source hashes
 
@@ -67,10 +65,7 @@ plinths, pillars, wing reliefs and faction crystals. No executable content from 
 
 ## Attachment provenance approval
 
-On 2026-11-13, Gurshaan approved the documented attachment route with hashes and permission
-confirmation (ADR 0028). Both the portrait and atlas entries identify their original attachment
-through the registered reference ID; all filenames and original hashes remain recorded above.
-This approval changes source documentation handling, not the underlying artwork permission.
+The owner accepted the attachment provenance route on 2026-11-20 (DEC-298, ADR 0028). Atlas entries identify their registered attachment. DEC-298 (5) permits the credited Juggernaut portrait for the attributed, non-commercial class project, with replacement after MVP delivery. The portrait follow-up must retain the printed notice intact. The supplied Knight reference was described as watermarked. The original and earlier portrait export are outside the rebuild, so any watermark change in that export is unverified.
 
 ## 2026-11-13 — Isolated-pose repair
 
@@ -85,9 +80,7 @@ inspected across idle, four walking directions, attack and all four preview rows
 generation or source artwork was used. Magus sheets and selection portraits are unchanged.
 
 The repaired five-atlas totals are 1,097,818 / 3,856,300 bytes (standard / high density).
-Exact match-group totals decrease to 2,410,484 / 8,305,770 bytes, within ADR 0027's approved
-allowance; the manifest test pins these smaller totals and the binary-integrity test pins the
-new hashes in `legendSpriteAssets.ts`. The original dated generation record remains above.
+The rebuild loads only the selected atlas in its own group. ADR 0027 lists its proposed byte budgets.
 
 Large combat effects are now code-drawn outside the sprite cells. Class-pool previews still
 have no gameplay effects. Warrior playback covers Veil, Blade Runner, Hamstring and Fury;

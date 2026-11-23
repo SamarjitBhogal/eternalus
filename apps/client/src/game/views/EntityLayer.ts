@@ -46,12 +46,9 @@ export class EntityLayer implements WorldLayer {
     focusId: string | null,
   ): void {
     const before = new Map(previous?.entities.map((entity) => [entity.id, entity]) ?? []);
-    const focusTeam = current.entities.find((entity) => entity.id === focusId)?.team;
     this.states = current.entities.flatMap((entity) => {
       const now = entity.transform;
-      if ((entity.mapObjectId !== undefined && entity.area === null) || now === null) return [];
-      if (entity.isInvisible === true && entity.id !== focusId && entity.team !== focusTeam)
-        return [];
+      if (entity.mapObjectId !== undefined || now === null) return [];
       const then = before.get(entity.id)?.transform ?? now;
       const position = EntityLayer.lerp(then, now, alpha);
       const facing = EntityLayer.turn(then.facing, now.facing, alpha);
@@ -60,28 +57,16 @@ export class EntityLayer implements WorldLayer {
   }
 
   /**
-   * Where `id` is drawn in the main view since the last `show` (its interpolated position), so
-   * what is drawn around a unit sits on it; `null` when the layer does not draw it.
-   */
-  public drawnAt(id: string | null): WorldPoint | null {
-    return this.states.find(({ entity }) => entity.id === id)?.position ?? null;
-  }
-
-  /**
    * Draws every entity, back to front by `y`, so lower entities overlap higher ones. The health
    * bars (`HealthBarView`) come after every entity of this layer, so no entity hides a bar.
    */
   public draw(renderer: Renderer): void {
     const ordered = [...this.states].sort((a, b) => a.position.y - b.position.y);
-    for (const state of ordered) {
-      this.views.viewFor(state.entity).draw(state, renderer);
-    }
-    for (const state of ordered) {
+    const heights = ordered.map((state) => this.views.viewFor(state.entity).draw(state, renderer));
+    ordered.forEach((state, index) => {
       const side = this.healthBarOf(state.entity);
-      if (side !== null) {
-        this.healthBars.draw(state, side, renderer);
-      }
-    }
+      if (side !== null) this.healthBars.draw(state, side, renderer, heights[index] ?? undefined);
+    });
   }
 
   /**

@@ -64,9 +64,10 @@ Reply inline (`Decision: …`).
       (c) needs Sam's sign-off now and is replaced by phase-3 sprint 3.6's `BossController`, (d)
       partly built, (e) awaits the owner and Sam.** (a) The boss
       spawns at the default timeline's quarter mark (440 s after the countdown ends, 2026-11-12;
+      450 s since DEC-282 (1) counts the marks from the countdown's end, 2026-11-20;
       `guardPlans.test.ts` derives it from `createDefaultGameConfig`'s `quarter-mark` entry), but
       through its guard plan's `delaySeconds`, not `MatchTimeline`: a match with another
-      `plannedMatchSeconds` or countdown keeps 440 s. Reference 04 and 07 §7 schedule it from the
+      `plannedMatchSeconds` keeps 450 s. Reference 04 and 07 §7 schedule it from the
       match timeline; only that mechanism is still interim. (b) **Built 2026-11-12 (PR #99 review
       F8):** while the boss lives its zone cannot be captured, as reference 04 says:
       `CaptureSystem` sets `lockedBy` from the zone's guard posts (`content/zones/zoneLocks.ts`)
@@ -171,171 +172,6 @@ Reply inline (`Decision: …`).
       yet, because the one-shot table has no mouse path (the canvas gestures own the mouse).
       Decide whether to add one, or to make the bindings screen accept only keys for these
       actions.
-
-- [ ] **HC-Q48 — Accept ADR 0026, the ability framework's build decisions
-      (`feat/ability-framework`, 2026-11-13).** `docs/decisions/0026-ability-framework.md`
-      (proposed) records seven decisions
-      the framework PR took beyond or against architecture 05, 04 and 10: (1) kits from a class
-      pool, with an optional kit per Legend read through `RosterSlot.specId`, which amends ADR 0018
-      point 2 ("nothing in the simulation or in a running match reads it"); (2) one
-      `CastValidator` for the cast handler, `AbilitySystem`, the HUD snapshot and the bots; (3) an
-      ability with no effects is `unavailable`, and a missing strategy stops the boot; (4) forced
-      motion instead of impulses for dashes and knock-backs; (5) aether regeneration in its own
-      system, with exact amounts; (6) where the two new systems run in the tick; (7) area shapes
-      behind a registry, shared with the aim overlay. The code is built on the branch. Accept, or
-      name the decisions to change. On acceptance, ADR 0018's Status line gets "amended by 0026".
-- [ ] **HC-B5 — Better than the design, for sign-off: five parts of the ability framework
-      (`feat/ability-framework`, 2026-11-13) — sign-off per item.** All five are built.
-      (1) **Aether regeneration is its own system.** Design (05 §6): `AbilitySystem` adds
-      `aetherRegenPerTick`, a field on `Abilities`. Built: `AetherRegenSystem` refills every
-      `Aether` pool right after `AbilitySystem` (ADR 0026 decisions 5 and 6). Better: each class
-      has one reason to change, and the rate is computed from the maximum and base aether every
-      tick, so it cannot go stale after a level-up or an aura change.
-      (2) **A `SlotReadiness` port.** Design (05 §6, §15): `AbilityRuntime.canCast` decides, and
-      the snapshot's `isReady` has no stated source. Built: `abilities/CastValidator` is the one
-      rule and implements `state/SlotReadiness.types.ts` itself (since HC-B6 (4); first built with
-      an adapter, `abilities/CastReadiness`), and `Simulation` gives it to the snapshot and the
-      bots (ADR 0026 decision 2). Better: the HUD, the bots, the
-      handler and `AbilitySystem` judge a cast by one rule, and the folder import rules hold.
-      (3) **Forced motion instead of impulses.** Design (10 §2, 05 §3): every push is an impulse,
-      velocity change `J / mass`. Built: `Movement.push` spreads a displacement over a number of
-      ticks; a knock-back's distance shrinks with the target's mass, and knock-backs in one tick
-      add up (DEC-208; ADR 0026 decision 4). Better: `Movement` re-points its velocity every tick,
-      so an impulse would be gone a tick later; a push gives each knock-back an exact distance
-      that content tunes.
-      (4) **A kit per Legend, read through `specId`.** Design (04 §5, 05 §2): a fixed
-      `abilityIds` and `ultimateId` per class; ADR 0018 point 2: the simulation does not read the
-      Legend pick. Built: `abilityPool` and `defaultKit` per class, an optional `kit` per Legend
-      spec, and `RosterSlot.specId` (DEC-198; ADR 0026 decision 1). Better: DEC-198's "each Legend
-      has its own default kit" needs no code per Legend, and a custom loadout later picks from the
-      same pool.
-      (5) **`HudBlockReason` is core's type.** Before: the client restated 05 §6's reasons in
-      `bridge/hud.types.ts` "until core exports it". Built: `HudBlockReason` is core's
-      `AbilityRejectReason`, exported from `@eternalus/core`. Better: one list; a new reason (here
-      `unavailable`) reaches the HUD with no client edit.
-      Where DEC-198, DEC-201 or DEC-208 require it, 04 §5, 05 §2, §3, §6, §7 and 10 §2 already
-      say this (each change cites its ruling). Approve all, approve some, or say no; a "no" reworks the
-      code and those lines.
-- [ ] **HC-B6 — Better than the design, for sign-off: seven more parts of the ability framework,
-      from critic round 1 (`feat/ability-framework`, 2026-11-14) — sign-off per item.** All seven
-      are built, under your 2026-11-09 rule "pick the best architectural outcome, build it now".
-      (1) **A dash stops where walking stops.** First built: the dash was clamped on the 5 m nav
-      grid, so a Blade Runner cast beside a wall moved 0 m and still cost aether. Built now:
-      `dashReach` uses the radius-aware sweep of `physics/CollisionResolver` through a
-      `CollisionQuery` port on `MatchWorld` (ADR 0026 decision 4). The cast and the aim overlay
-      use the same function. Critic round 2 (2026-11-14) built three more parts of it: the
-      map-bounds rule lives once, inside the resolver (`move` keeps a unit inside the map,
-      `reach` cuts a dash at its edge); the `CollisionQuery` port moved from `MatchWorld` to
-      `GameState`, beside `space` and `paths`, so `MatchWorld` is map data again; and one
-      `CollisionResolver` per match is injected into both `CollisionSystem` and that port, on the
-      one index a destroyed object leaves at once (a dash cast the tick after an object breaks
-      now goes through, as walking does).
-      (2) **A `DashReach` port for the client.** `MatchDeps.dashReach` replaces `dashReach` on the
-      `MatchSimulation` pick; the Duel's stub is gone, and the overlay view gets a finished target
-      and never calls the simulation.
-      (3) **One `Aim` type.** `components/AbilitySlotRuntime.types.ts` holds it and `commands/`
-      re-exports it; `CastAim` is deleted, so `state/` no longer imports `commands/`. The
-      `commands/` row of `packages/core/AGENTS.md` now names the types of `content/` and
-      `components/` it re-exports (critic round 2).
-      (4) **One `CastValidator` per match, and it is the `SlotReadiness` port.** The `CastCheck`
-      port and `abilities/CastReadiness` are deleted (ADR 0026 decision 2 is rewritten to this). A
-      slot's HUD state is judged with no aim (`slotBlockedBy`), not with an invented one.
-      (5) **One kit rule.** `kitOf` ("the spec's kit, else the class default") is one core content
-      function; `Legend` and the client's kit rows both use it. Legend specs reach `Legend`
-      through an injected source, as weapons do.
-      (6) **Strategies validate and describe themselves.** Each effect and shape strategy has
-      `validate(spec)` and `describe(spec)`; the registry runs them at boot. `loadAbilities` and
-      `loadDisplayContent` know no effect or shape kind (05 §3 put `validate` on the strategy; it
-      takes no `content` argument, a strategy gets content in its constructor).
-      (7) **Ability areas hit buildings by their footprints,** with the geometry basic attacks
-      use, not a 0.5 m circle at the centre (DEC-209 (1) now holds for houses, forts and towers).
-      Approve all, approve some, or say no; a "no" reworks the code.
-- [ ] **HC-Q54 — Derive each class's ability pool from the abilities' `classId`?
-      (`feat/ability-framework`; changes DEC-198's shape, not built).** Today `abilityPool` on
-      the class lists every ability, and each ability also names its `classId`: two sources, and
-      no rule checks that the pool is complete. Deriving the pool removes `abilityPool`,
-      `KitInPoolRule` and its test (about 45 lines); an extra approved ability (DEC-11) then joins
-      a pool by content alone. Derive it, or keep the explicit list?
-- [ ] **HC-Q55 — What does a Duel show for abilities? (`feat/ability-framework`, critic finding
-      C6, not changed).** A Duel casts no abilities, but the seat on the snapshot's player team
-      still sees its ability slots as ready; the other seat sees none
-      (`GameState.snapshot` fills `player` for one Legend only). Hiding `player` in a Duel also
-      hides that seat's aether and level data. Options: hide the ability bar in a Duel; send
-      `player` per seat once Duels cast abilities; or leave it until then.
-- [ ] **HC-Q56 — Four ideas from critic round 2 and one from round 3, not built: your call
-      (`feat/ability-framework`, 2026-11-14).** (1) **Name and home of the display loader.**
-      `abilities/loadShippedDisplayContent` is exported as `loadDisplayContent` and wraps
-      `content/loadDisplayContent`: two functions with one public name, and `abilities/` holds a
-      loader that also checks Legends, specs and the bot roster. The reviewer proposes a
-      composition file beside `Simulation.ts` and a distinct inner name. (2) **One `sources`
-      object for `EntityFactory`,** which now has five positional parameters. (3) **Drop the
-      generic loader types** (`AuthoredAbilityWith`, `AbilityDefinitionWith`, the `loadAbilities`
-      overloads, about 25 lines): they exist so the Fake Bolt litmus can load an unlisted effect
-      kind with full types; one cast in that test would replace them. (4) **Merge `slotBlockedBy`
-      into `blockedBy` with an aim that can be null** (about 12 lines). `CastValidator.blockedBy`
-      already takes a null aim; only the `SlotReadiness` port keeps two methods. The session kept
-      (3) and (4) as built: (3) is what the litmus proves, and (4) keeps the HUD check apart from
-      the cast check. (5) **One subscriber for "a map object is retired"** (critic round 3):
-      `Simulation` (marks the object destroyed and takes it out of the collision index) and
-      `DefaultSystemPipeline` both listen to `entity-removed` for map objects; one owner of that
-      reaction would keep the two from drifting apart. Say which to build.
-- [ ] **HC-Q49 — Five tuning values the ability framework uses until you set them (`TUNE`,
-      `feat/ability-framework`).** (1) Blade Runner's path width: 1.5 m, the 05 §4 sketch value
-      (`content/abilities/bladeRunner.ts`). (2) Blade Runner's end-stun radius: 1.5 m, the same
-      sketch value and file. (3) The aura radius for the aether refill: 12 m, `balancing.md`
-      "Auras" (`content/abilities/aetherRegen.ts`). (4) Knock-back: travel time 0.25 s, base mass
-      1 (the Vanguard's mass), and the formula distance × base mass / max(base mass, target mass)
-      (`content/abilities/knockback.ts`); DEC-208 (1) says only that a heavier target moves less.
-      With these, a Sentinel (mass 6) moves a sixth of the distance and a Magus (mass 2) half.
-      (5) How the refill grows with capacity (DEC-201 (3), "Proceed, mark TUNE"): in the same
-      ratio as the maximum aether, so a full refill takes the same time at every level. Keep each
-      value, or give yours.
-- [ ] **HC-Q50 — Does a right click also cancel an aimed ability? (`feat/ability-framework`).** In
-      aim-then-click mode, Esc cancels a selected ability and does not open the pause menu
-      (DEC-200, DEC-209 (3)). The branch builds Esc only. Keep Esc only, or add the right mouse
-      button as a second way to cancel.
-- [ ] **HC-Q51 — Review the kit ability descriptions (`feat/ability-framework`; DEC-199).** The
-      Legend panels and View Details now show each kit ability's description from content
-      (`packages/core/src/content/abilities/<id>.ts`). Blade Runner, Slam and Shockwave quote the
-      game doc's Abilities table. The other nine texts were written in the session and name no
-      source; the build plan lists Veil, Fury, Rip & Tear, Berserk, Imbue and Death Ray for your
-      review first. Rip & Tear's text now follows DEC-204 and DEC-206 (corrected on this branch,
-      `8d230e9a`): enemies under 30% health are knocked back, those at 10% or less die, and
-      survivors get Fear. Give the texts you want, or approve them.
-- [ ] **HC-Q52 — The Legend specs' `detailNames` ability rows are now unused
-      (`feat/ability-framework`).** The kit rows come from the abilities' content (DEC-199), so the
-      client no longer reads a spec's `detailNames` (`ultimate`, `ability-1` to `ability-3`). No
-      content rule checks them: only the TypeScript type and `legendSpecCatalogue.test.ts` hold
-      them (corrected 2026-11-14; this item first said "core still validates them"). The class
-      `detailNames` rows are still read. Removing the spec rows (about 28 lines) also removes the
-      Oracle names "Severed Accord" and "Unison Ward" (DEC-103), which are in no other content
-      file. Remove the spec rows, move those two names into ability content first, or keep the
-      rows for another use?
-- [ ] **HC-Q53 — Seven readings the framework session took, for you to confirm
-      (`feat/ability-framework`; none blocks the PR).** (1) An airborne target can still be
-      pushed: DEC-208's stacking is kept over `more-abilities.md` §7, whose `knockup` row says an
-      airborne unit cannot "be pushed further". (2) Blade Runner knocks back along the whole path
-      (sideways off the dash line) and stuns only at the end (game doc: "knocks back enemies in
-      your way and stuns anyone at the end of your path"). (3) A dash's end steps run at cast, at
-      the point where the dash will stop, while the caster is still on the way (0.3 s). (4) The
-      structure multiplier applies to every target that is not a unit: structures, obstacles and
-      map objects (DEC-209 (1)). (5) Ability potency grows linearly:
-      amount × (1 + 0.04 × (level − 1)) (`balancing.md`, +4% per level). (6) Inside several allied auras a Legend gets the
-      largest refill bonus; bonuses never add up. (7) The default cast mode is quick cast. Keep
-      each, or say which to change.
-- [ ] **HC-S12 — Scheduled: follow-ups of the ability framework (`feat/ability-framework`,
-      2026-11-13).** Already scheduled by your rulings: (a) the ultimate meter, with Fury, in the
-      Vanguard PR (DEC-202; phase-4 sprint 4.3); (b) situational bot casting in its own follow-up
-      PR: a heal when the bot or nearby allies have low health, a courage ability on first entering
-      combat, an execute when an enemy is in range (DEC-205); (c) a page of proposed numbers for the
-      seven abilities with no price in `balancing.md`, before they ship (DEC-197); (d) boss masses
-      with the boss content (DEC-208 (2)). Not scheduled yet, approve a PR for each or drop it:
-      (e) status `onExpire`, which the 0.2 s landing stagger after a knock-up and `control-immune`
-      after hard control need (`more-abilities.md` §7; 05 §8); (f) icons for the kit abilities,
-      which have none, and new Oracle icons (its Legend panel still shows the old preview icons
-      beside the new kit names); (g) the aether cost on the HUD bar (the snapshot carries it); (h)
-      a check in the browser of the Legend panels, whose ability bands changed size.
-
 - [x] **BUG-2: interior wall health (2026-11-12, PR #96, SCRUM-435).** Every `'wall'` map object
       uses the WallSegment value from balancing.md (`content/maps/mapObjectDefinitions.ts`): the
       Stronghold's wall ring and the `'wall'` features inside it alike. The playtest called the
@@ -365,7 +201,7 @@ Reply inline (`Decision: …`).
     signed off: the time check in the aggro, stuck, veterancy and guard loaders (the 2026-11-12
     critic) and #86's healing times as DEC-241's sixth reader.
 
-- [ ] **HC-B9 — Better than the design, not built, sign-off asked: two older times not read once at
+- [x] **HC-B9 — Better than the design, not built, sign-off asked: two older times not read once at
       load (`refactor/durations-at-load` merge critic, 2026-11-19); no decision blocks the PR.**
       Both are older than PR #125 and keep their values.
       (1) **One countdown-end tick.** Three readers each compute the tick the countdown ends with
@@ -379,6 +215,18 @@ Reply inline (`Decision: …`).
       Proposal: a scoring loader turns it into ticks and rejects a negative or non-finite value,
       as `loadGuardPlans` does.
       Build both in PR #125, build them in a later PR, or keep the code as it is?
+  - Answered 2026-11-20 (Owner Calls page, DEC-285): "Approve both: (1) in the DEC-278 countdown
+    PR, which already touches every reader; (2) in a follow-up PR". (1) **Built** on
+    `feat/match-start-countdown`: the tick is `MatchState.countdownEndTick`, set once when the
+    match is built; every runtime reader reads it (the three above, and `MatchDirector` and the
+    snapshot, which that branch added). Built with it, critic round 2's BTD4: `timelineMarkTick`
+    takes a named `TimelineFrame`. (2) **Built** on `refactor/scoring-at-load` (PR #139): `content/match/loadScoring.ts`
+    turns `assistWindowSeconds` into `assistWindowTicks` once and rejects a negative or non-finite
+    window; `Simulation` passes the loaded value, and the scoring rules see only ticks. Same
+    conversion as before (30 s = 900 ticks). With it, under the standing rule, the critic's two
+    better-than-design items (DEC-287): the loader also turns the held minute into ticks, so
+    `createDefaultScoringRules` takes no tick rate, and the authored and loaded scoring types
+    share one `weights` base.
 
 - [x] **Unit facing chevron (DEC-192, feat/unit-facing-chevron, 2026-11-05) — two questions, one
       better-than-design item.**
@@ -1787,6 +1635,18 @@ Reply inline (`Decision: …`).
     for a class (`Recommendation:`). CD-45, the locked view, shows the locked Legend's panel on the
     left, where your DEC-60 says "the details of the class still shown on the left"
     (`Recommendation:`). Keep, change or reject them with the other rows.
+  - New rows, 2026-11-20 (`feat/match-start-countdown`, DEC-278, DEC-282): CD-48 (UE-01, the
+    countdown's urgency on the character select and the match-start overlay) and CD-49 (the
+    match-start overlay itself, which no frame draws). As you asked (DEC-282 (8)), the shots come
+    to you on the "Countdown PR Calls" page before the pull request opens: the character select at
+    9 s with UE-01 on, the Figma-unchanged scenes, and the overlay at 10 s, at 5 s and the Duel's
+    START; the plan's rule-7 performance check is recorded in `docs/plan/PROGRESS.md` and the
+    pull request. CD-48's 1.08, 1.12 and 0.30 and CD-49's veil and size are recommendations: keep,
+    change or reject them with the other rows.
+  - Answered, 2026-11-20 (DEC-299, Owner Calls page): you kept CD-48's 1.08, 1.12 and 0.30. CD-49's
+    glow now grows with the numeral, whose font size is 216 px, your "slightly smaller" read as
+    10 % below 240 (a recommendation); the new overlay shots are on the "Countdown PR Calls" page. CD-49's
+    veil tint stays a recommendation: keep, change or reject it with the other rows.
 - [ ] **HC-Q1 — The Legends (DEC-49), still open after your answer of 2026-10-17** (the answered
       part is in Done). (1) Do the game doc's Magus focuses carry over to the new Legends
       (reference 01's Necromancer "debuff focus", Druid's buffs, Mage's self focus), and what role
@@ -2919,6 +2779,16 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
+- [ ] **Make the tower horde test faster (DEC-289, 2026-11-20).** Owner: to be assigned.
+      `Simulation.mapObjects.test.ts`, "walks every tower horde out of its tower and on up its
+      lane within 10 seconds (DEC-133, seed %i)", builds a whole map and match for each of its
+      three seeds (1, 2, 10), steps the countdown, then 10 s of play. One seed takes about 3 s
+      locally without coverage, but up to 65 s under coverage on the windows-latest CI runner
+      (PR #122, run 44714237495, 2026-11-20). DEC-289 gave this test its own 120 s time limit
+      (`HORDE_WALK_TIMEOUT_MS`) until it is faster. Where the time goes is not measured yet. Done
+      when the test runs well under 60 s on windows-latest CI and `HORDE_WALK_TIMEOUT_MS` is
+      removed, with every assertion and all three seeds kept (seed 10 covers critic round 3,
+      M-A).
 - [ ] **PR #30 renderer follow-up** — Owner: Gurshaan. Separate caching/batching and close-view
       material detail from the map PR; retain all renderer-specific tests with that change.
       Keep draw order inside SceneView, address renderer file length and the capture layer,
@@ -2957,6 +2827,22 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
       `CaptureHoldRule` takes it instead of the whole `GameState`, and the capture-point lookups
       of `CaptureHoldRule`, `CaptureProgressBoundsInvariant` and `CaptureSystem` move to it. Close
       this item when its PR merges.
+- [ ] **Rule 7 frame latency (DEC-299 (3))** — Owner: sholtzman, after PR #138 is pushed; it does
+      not block that merge. The match-start overlay's performance runs (ui-enhancements-plan §2
+      rule 7) read a frame-interval p95 of 16.7 to 16.8 ms and a maximum of 16.8 ms in every
+      condition, the controls with every enhancement off included, with no frame over 33 ms; the
+      12 rule-7 re-runs on the DEC-299 (2) tree read the same. One diagnostic re-run on that tree
+      (the ui-off control at CPU ×4, `perf-lt.mjs`) read one 33.3 ms interval, one dropped frame
+      (`over33` counts only intervals over 33.4 ms). The owner passed rule 7 and asked: "we
+      should find out why theres latency whenever we have time". Find why the intervals read
+      16.8 ms and not 16.7 (the browser's frame clock, the headless display, the measuring script
+      or the game) and record the answer in `docs/plan/PROGRESS.md` and here. With it: at CPU ×4
+      the re-runs count three long tasks of about 58 ms per run, all during page load before the
+      measured frames, on the commit before DEC-299 too and with every enhancement off, where the
+      first runs counted none with the same script; find what differs. The runs:
+      `eternalus-agent-work/game-loop-plan/ue-shots-2026-11-20/` (`run.sh` perf_run, `perf.mjs`,
+      `report.py`; the re-run: `perf-dec299.sh`, `perf-lt.mjs`, `perf-dec299/NOTE.md`; the
+      diagnostic runs: `perf-dec299-lt/`, `perf-33bcdcf6-lt/`).
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
       `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`
@@ -3141,6 +3027,23 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
   - Decision (sholtzman, chat, 2026-10-30, Call 5): "fix and get the fighting / proceeding
     working"; the critic ruled this rule better than the design. Built as MS-33 on
     `fix/minion-m1-review`; doc 18 §1 and §4 and the minion plan §3 updated.
+- [ ] **HC-B10 hook tests in `npm run check` (DEC-276 critic; better than the design, owner
+      approved 2026-11-19)** — Owner: sholtzman, a `chore/` harness PR after
+      `chore/stop-hook-changed-files` merges. Run `node --test scripts/**/*.test.mjs` (the hook
+      tests and `scripts/coderabbit/`) from `npm run check`, so CI runs them on Linux and Windows.
+      First make them pass on Windows: with `shell: true`, cmd.exe drops the quotes in the first
+      test of `scripts/hooks/hookInput.test.mjs`; the signal test is POSIX-only and skips itself
+      on Windows. Update the CI gate row in `docs/process/guardrails.md` and doc 16. Close this
+      item when its PR merges.
+- [ ] **HC-B11 guard on progress entry files (DEC-277 critic; better than the design, owner
+      approved 2026-11-19)** — Owner: sholtzman, a `chore/` harness PR after
+      `chore/progress-entry-files` merges. A check in `npm run check` that fails when a commit
+      edits an entry file in `docs/plan/progress/` that already exists on the base branch (new
+      files pass), plus a `.coderabbit.yaml` path rule for `docs/plan/progress/**` that says
+      entries are append-only records. The same check fails on any file in `docs/plan/progress/`
+      other than `README.md` whose name does not match the entry pattern (critic round 2, owner
+      sign-off pending). Update the docs check row in `docs/process/guardrails.md`. Close this
+      item when its PR merges.
 
 ## Feedback
 
@@ -3166,6 +3069,39 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-11-21 — **Your pick on HC-B17, a browser-support line** (`refactor/countdown-hud-units`):
+  recorded as DEC-316. Architecture 13 §7 "Styling" now says, in your words: browser support is a
+  baseline, plus newer CSS behind `@supports` with a fallback, as DEC-312 does. You named no
+  baseline, so no browser versions are listed.
+
+- 2026-11-20 — **Your pick on HC-B15, one fit source for the HUD and the countdown**
+  (`refactor/countdown-hud-units`): recorded as DEC-312. (c) CSS typed arithmetic: the match-start
+  numeral is in HUD units again and off the select artboard, so the HUD has one fit source; its
+  glow still grows with it. Your "sure keep it" keeps a fallback for browsers without typed
+  arithmetic (Safari before 26, Firefox before 158): there the numeral is a 216 HUD-unit font and its
+  glow stays at the select size. Architecture 13 §3 and reference 15 CD-49 are amended.
+
+- 2026-11-20 — **Your answers on the countdown pull request #138** (`feat/match-start-countdown`):
+  recorded as DEC-299. UE-01's look stays as built. The match-start numeral is the character
+  select's numeral enlarged on the select artboard, so its glow grows with it, at a 216 px font
+  size (10 % smaller than 240). Rule 7's limit is one 60 Hz frame, so 16.8 ms passes; why frames read
+  16.8 ms is the request "Rule 7 frame latency". The structural tests stand for the screen-reader
+  lines, and the pull request says no screen reader was run. Reference 15 amends CD-48 and CD-49.
+
+- 2026-11-20 — **Built under your standing rule for better-than-design items (DEC-223, DEC-232)**
+  (`feat/match-start-countdown`): the countdown critic's BTD2, BTD3, BTD5 and BTD6, recorded as
+  DEC-286, and BTD4, recorded inside DEC-285. BTD5 appends one bullet to your design text,
+  architecture 13 §7 "Screen-reader lines": one live region, and every screen-reader line goes in
+  through `useLiveRegion`.
+
+- 2026-11-20 — **Your answers on the DEC-278 critic, round 1 (the match-start countdown)**
+  (`feat/match-start-countdown`): recorded as DEC-282 in
+  `docs/reference/game-design/13-owner-decisions-log.md`. The phase marks count from the
+  countdown's end; core's `MatchResult.matchTicks` is the match time; one shared countdown with
+  UE-01's urgency on the character select and the match-start overlay, with UE-03 and the
+  `uiEnhancements` switch built in the same PR; the bridge's countdown derivation is signed off.
+  Reference 15 registers UE-01 as CD-48.
 
 - 2026-11-03 — **PR #56 — the `returning` state (DEC-144 G).** Decision (SamarjitBhogal,
   2026-11-03, recorded as DEC-155): (b) merge it into the resting state. `LeashBehaviour`, `MinionController` and
@@ -3461,3 +3397,5 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
   `docs/inbox-decisions-2026-10-03`.
 - 2026-09-30 — Phase 0 documentation + harness written on `docs/phase-0-foundation`
   (merged as PR #3; see `docs/changelog/2026-09-30-phase-0-foundation.md`).
+
+- [ ] DEC-298 (5), (7) — Selected-subclass portrait follow-up. Carry the credited Juggernaut portrait with its notice intact for the class-project MVP and replace it after delivery. Build the selected, forward-facing character cutouts using the Oracle reference and propose their actual encoded bytes for review.

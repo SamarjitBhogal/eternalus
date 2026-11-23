@@ -4,21 +4,6 @@ import { Transform } from './Transform';
 import { INITIAL_FACING } from './Transform.constants';
 
 describe('Transform', () => {
-  it('scales from the base radius without accumulating drift and rejects invalid forms', () => {
-    const body = new Transform({ x: 0, y: 0 }, 2);
-    body.setSizeMultiplier(1.3);
-    body.setSizeMultiplier(1.3);
-    expect(body.radius).toBe(2.6);
-    body.setSizeMultiplier(1);
-    expect(body.radius).toBe(2);
-    expect(() => {
-      body.setSizeMultiplier(0);
-    }).toThrow();
-    expect(() => {
-      body.setSizeMultiplier(Number.NaN);
-    }).toThrow();
-    expect(body.radius).toBe(2);
-  });
   it('starts at the given position and moves by and to points', () => {
     const transform = new Transform({ x: 10, y: 20 }, 0.5);
 

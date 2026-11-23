@@ -1,12 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { loadAbilities } from '../../content/abilities/loadAbilities';
 
 import { Health } from '../../components/Health';
 import { WinObjective } from '../../components/WinObjective';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../../config/matchPhases';
 import { loadDefaultContent } from '../../content/loadDefaultContent';
-import { SCORING } from '../../content/match/scoring';
+import { loadScoring } from '../../content/match/loadScoring';
 import { loadLevelCurves } from '../../content/progression/loadLevelCurves';
 import { XP_SOURCES } from '../../content/progression/xpSources';
 import { loadWeapons } from '../../content/weapons/loadWeapons';
@@ -37,19 +36,18 @@ const MAX_TICKS = 30;
 const playOut = (prepare: (state: GameState) => void = () => undefined) => {
   const logger = new MemoryLogger();
   const timeline = MatchTimeline.resolve(CONFIG);
-  const state = new GameState(CONFIG, 7, null, {}, timeline.schedule());
+  const state = new GameState(CONFIG, 7, null, {}, { schedule: timeline.schedule() });
   const director = createDefaultMatchDirector({
     state,
     timeline,
     debug: TEST_DEBUG_CONFIG,
     logger,
-    scoring: SCORING,
+    scoring: loadScoring(CONFIG.tickRate),
   });
   const pipeline = new DefaultSystemPipeline({
     invariants: new DefaultInvariantRunner({
       debug: TEST_DEBUG_CONFIG,
       logger,
-      abilities: loadAbilities(30),
       curves: CURVES,
       phaseOrder: MATCH_PHASES,
       terminalPhases: TERMINAL_MATCH_PHASES,
@@ -106,6 +104,7 @@ describe('losing the last win objective (scenario)', () => {
       playerTeam: 'light',
       hadHuman: false,
       durationTicks: 2,
+      matchTicks: 2, // no countdown in this config
       seed: 7,
     });
     expect(logger.records).toEqual([]);

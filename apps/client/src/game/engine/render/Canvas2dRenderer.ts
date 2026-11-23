@@ -1,4 +1,9 @@
-import { FULL_TURN, GLYPH_OUTLINE_WIDTH, OUTLINED_GLYPHS } from './Canvas2dRenderer.constants';
+import {
+  FULL_TURN,
+  GLYPH_OUTLINE_WIDTH,
+  OUTLINED_GLYPHS,
+  SPRITE_FRAME_CACHE_LIMIT,
+} from './Canvas2dRenderer.constants';
 import type {
   DrawContext,
   DrawSurface,
@@ -38,7 +43,7 @@ export class Canvas2dRenderer implements Renderer {
   /** Creates a renderer that draws through the given context. */
   public constructor(
     context: DrawContext,
-    private readonly atlases: Readonly<Record<string, SpriteAtlas>> = {},
+    private atlases: Readonly<Record<string, SpriteAtlas>> = {},
   ) {
     this.context = context;
     const ellipse: GlyphTracer = (center, halfWidth, halfHeight) => {
@@ -69,12 +74,18 @@ export class Canvas2dRenderer implements Renderer {
     return context === null ? null : new Canvas2dRenderer(context, atlases);
   }
 
-  /** Prepares each size once, then copies 1:1 without resampling during animation draws. */
+  /** Installs decoded atlases and discards prepared frames from any previous atlas. */
+  public setAtlases(atlases: Readonly<Record<string, SpriteAtlas>>): void {
+    this.atlases = atlases;
+    this.frames.clear();
+  }
+
+  /** Draws one atlas frame when its image is ready. */
   public drawSprite(sprite: SpriteRef, feet: WorldPoint, size: number): boolean {
     const atlas = this.atlases[sprite.atlasId];
     if (
       atlas === undefined ||
-      this.context.drawImage === undefined ||
+      typeof OffscreenCanvas === 'undefined' ||
       !Number.isInteger(sprite.frame) ||
       sprite.frame < 0 ||
       sprite.frame >= atlas.columns * atlas.rows ||
@@ -104,7 +115,7 @@ export class Canvas2dRenderer implements Renderer {
         height,
       );
       // Bound zoom/resizing variants; evicting prepared frames never releases the source atlas.
-      if (this.frames.size >= 360) this.frames.clear();
+      if (this.frames.size >= SPRITE_FRAME_CACHE_LIMIT) this.frames.clear();
       this.frames.set(key, frame);
     }
     const at = this.toScreen(feet);

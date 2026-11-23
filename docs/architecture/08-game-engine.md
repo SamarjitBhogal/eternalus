@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-18
+last-reviewed: 2026-11-22
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -301,6 +301,8 @@ The design keeps the move cheap:
 
 ## 11. Implementation status
 
+Legend sprite rendering uses the current port drawSprite(sprite, feet, size), which returns whether it drew a frame. Canvas2dRenderer prepares destination-size frames lazily in a bounded cache and copies them without resampling. LegendSpriteView uses its ordinary Legend fallback while an atlas loads or the frame cannot be drawn.
+
 HUD and character select (`feat/hud-and-character-select`, 2026-10-26; DEC-50):
 
 - `Match` receives a prepared world (`MatchDeps.world`: the map from `setup.seed`, generated in
@@ -328,10 +330,6 @@ Game-loop plan GL-5 (`feat/results-flow`): `Match.tick` calls the match observer
 after the tick on which `MatchBridge` publishes `match-ended`; the world keeps running (DEC-92)
 until `MatchState` leaves the phase ([13](13-game-interface.md) §2). A pause overlay still pauses
 the loop, but not the timer that leaves the phase (DEC-134).
-
-### Character sprite restoration — implementation status (2026-11-17)
-
-Character atlases are a presentation adapter: Match owns LegendAnimation, selects by the locked-in subclass, and releases its subscriptions with the match. Snapshot displacement drives walking; existing damage-applied, ability-cast and ability-recast events drive attacks and cast effects. Persistent spell fields, barriers and blades use dedicated snapshot views; Berserk uses the snapshot visual scale without moving its ground anchor. Unknown selections, other entities and unavailable atlases retain LegendView. No input action starts a successful-cast animation and no new simulation ability stack is introduced.
 
 ## Related
 

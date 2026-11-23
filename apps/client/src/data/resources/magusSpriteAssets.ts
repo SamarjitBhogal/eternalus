@@ -11,7 +11,7 @@ export const MAGUS_SPRITE_ASSETS: readonly AssetManifestEntry[] = [
   {
     id: 'catalyst-sprites',
     type: 'sprite-atlas',
-    group: 'match',
+    group: 'atlas-catalyst',
     columns: 6,
     rows: 10,
     licence: 'owner',
@@ -31,7 +31,7 @@ export const MAGUS_SPRITE_ASSETS: readonly AssetManifestEntry[] = [
   {
     id: 'oracle-sprites',
     type: 'sprite-atlas',
-    group: 'match',
+    group: 'atlas-oracle',
     columns: 6,
     rows: 10,
     licence: 'owner',
@@ -51,7 +51,7 @@ export const MAGUS_SPRITE_ASSETS: readonly AssetManifestEntry[] = [
   {
     id: 'necromancer-sprites',
     type: 'sprite-atlas',
-    group: 'match',
+    group: 'atlas-necromancer',
     columns: 6,
     rows: 10,
     licence: 'owner',

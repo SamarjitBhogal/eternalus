@@ -16,7 +16,7 @@ export const LEGEND_SPRITE_ASSETS: readonly AssetManifestEntry[] = [
     id: 'assassin-sprites',
     attachmentReferenceId: 'assassin-reference',
     type: 'sprite-atlas',
-    group: 'match',
+    group: 'atlas-assassin',
     licence: 'user-authorised-art',
     source:
       'User-provided 8026e904-46be-4d2c-93ad-40812f27e23e.avif; permission to use and adapt confirmed by Gurshaan 2026-11-12; AI-generated 6-by-10 pixel atlas; see docs/reference/legend-sprite-provenance.md',
@@ -37,7 +37,7 @@ export const LEGEND_SPRITE_ASSETS: readonly AssetManifestEntry[] = [
     id: 'knight-sprites',
     attachmentReferenceId: 'knight-reference',
     type: 'sprite-atlas',
-    group: 'match',
+    group: 'atlas-knight',
     licence: 'user-authorised-art',
     source:
       'User-provided Gemini_Generated_Image_vpyd7fvpyd7fvpyd.jpeg; permission to use and adapt confirmed by Gurshaan 2026-11-12; AI-generated 6-by-10 pixel atlas; see docs/reference/legend-sprite-provenance.md',
@@ -58,7 +58,7 @@ export const LEGEND_SPRITE_ASSETS: readonly AssetManifestEntry[] = [
     id: 'paladin-sprites',
     attachmentReferenceId: 'paladin-reference',
     type: 'sprite-atlas',
-    group: 'match',
+    group: 'atlas-paladin',
     licence: 'user-authorised-art',
     source:
       'User-provided ayqniwg53.webp; permission to use and adapt confirmed by Gurshaan 2026-11-12; AI-generated 6-by-10 pixel atlas; see docs/reference/legend-sprite-provenance.md',
@@ -79,7 +79,7 @@ export const LEGEND_SPRITE_ASSETS: readonly AssetManifestEntry[] = [
     id: 'colossus-sprites',
     attachmentReferenceId: 'colossus-reference',
     type: 'sprite-atlas',
-    group: 'match',
+    group: 'atlas-colossus',
     licence: 'user-authorised-art',
     source:
       'User-provided flat750x075f-pad750x1000f8f8f8.jpg; permission to use and adapt confirmed by Gurshaan 2026-11-12; AI-generated 6-by-10 pixel atlas; see docs/reference/legend-sprite-provenance.md',
@@ -100,7 +100,7 @@ export const LEGEND_SPRITE_ASSETS: readonly AssetManifestEntry[] = [
     id: 'juggernaut-sprites',
     attachmentReferenceId: 'juggernaut-reference',
     type: 'sprite-atlas',
-    group: 'match',
+    group: 'atlas-juggernaut',
     licence: 'user-authorised-art',
     source:
       'User-provided 3a3b993770906ed01544422b12c6fb37.jpg, printed credit https://www.artstation.com/jsraphael; copyright 2021 Arackhan Wars, Nothing But Dreams; permission to use and adapt confirmed by Gurshaan 2026-11-12; AI-generated 6-by-10 pixel atlas; see docs/reference/legend-sprite-provenance.md',

@@ -9,7 +9,6 @@ import type { BtStatus } from './bt/BtNode.types';
 import type { BotMemory, BotLegendControllerContent, BotTurn } from './BotLegendController.types';
 import { BotMovement } from './BotMovement';
 import type { Decision, DecisionInput } from './Controller.types';
-import { pickReadySlot } from './pickReadySlot';
 import { closeness, weakness } from './utility/considerations';
 import { UtilityScorer } from './utility/UtilityScorer';
 import { isPlayableTeam } from '../teams/playableTeams';
@@ -258,21 +257,18 @@ export class BotLeaves {
     return isInReach;
   }
 
-  /**
-   * Casts one of its ready abilities at the enemy when the cast is due and the roll comes up
-   * (11 §4.2, DEC-205); with none ready it casts nothing and tries again next decision.
-   */
+  /** Casts its first ability at the enemy when the cast is due and the roll comes up (11 §4.2). */
   private mayCast(turn: BotTurn, enemy: EntityId, at: Vec2): void {
     const { abilityUseChance, castIntervalTicks } = turn.difficulty;
     if (turn.state.tick < turn.memory.nextCastTick || turn.rng.nextFloat() >= abilityUseChance) {
       return;
     }
-    const aim = { point: { x: at.x, y: at.y }, targetId: enemy };
-    const slot = pickReadySlot(turn, this.content.readiness, aim);
-    if (slot === null) {
-      return;
-    }
-    turn.commands.push({ type: 'cast-ability', actorId: turn.id, slot, aim });
+    turn.commands.push({
+      type: 'cast-ability',
+      actorId: turn.id,
+      slot: 'ability-1',
+      aim: { point: { x: at.x, y: at.y }, targetId: enemy },
+    });
     turn.next = { ...turn.next, nextCastTick: turn.state.tick + castIntervalTicks };
   }
 

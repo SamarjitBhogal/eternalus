@@ -11,8 +11,6 @@ import { LEGEND_SPECS } from './legends/specs/legendSpecCatalogue';
 import { ORACLE } from './legends/specs/oracle';
 import { ContentValidator } from './validation/ContentValidator';
 import { KebabCaseIdRule } from './validation/KebabCaseIdRule';
-import { KitInPoolRule } from './validation/KitInPoolRule';
-import { KnownAbilityRefsRule } from './validation/KnownAbilityRefsRule';
 import { KnownLevelCurveRule } from './validation/KnownLevelCurveRule';
 import { KnownWeaponRule } from './validation/KnownWeaponRule';
 import { LevelScalingRule } from './validation/LevelScalingRule';
@@ -32,8 +30,6 @@ describe('createDefaultContentRules', () => {
       KnownLevelCurveRule,
       LevelScalingRule,
       KnownWeaponRule,
-      KnownAbilityRefsRule,
-      KitInPoolRule,
     ]);
   });
 
@@ -76,8 +72,6 @@ describe('createLegendSpecRules', () => {
       KebabCaseIdRule,
       SpecClassExistsRule,
       RoleRatingRangeRule,
-      KnownAbilityRefsRule,
-      KitInPoolRule,
     ]);
   });
 

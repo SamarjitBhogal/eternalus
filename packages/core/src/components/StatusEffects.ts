@@ -33,21 +33,14 @@ export class StatusEffects {
   /**
    * Applies `definition` (loaded, in ticks) at `tick`: a new instance, or the active one reapplied
    * by its stacking rule. Use `combat/StatusEffectApplier`, which also emits `status-applied`.
-   *
-   * @param durationTicks - This application's duration when its source overrides the definition's.
    */
-  public apply(
-    definition: StatusEffectDefinition,
-    sourceId: string | null,
-    tick: number,
-    durationTicks?: number,
-  ): void {
+  public apply(definition: StatusEffectDefinition, sourceId: string | null, tick: number): void {
     const existing = this.find(definition.id);
     if (existing === undefined) {
       const runtime = this.spare.pop() ?? new StatusEffectRuntime(definition);
-      this.activeList.push(runtime.start(definition, sourceId, tick, durationTicks));
+      this.activeList.push(runtime.start(definition, sourceId, tick));
     } else {
-      existing.reapply(sourceId, tick, durationTicks);
+      existing.reapply(sourceId, tick);
     }
     this.recompute();
   }
@@ -93,11 +86,6 @@ export class StatusEffects {
   /** Whether any active status sets `flag`. */
   public has(flag: StatusFlag): boolean {
     return this.flags.has(flag);
-  }
-
-  /** Whether a particular authored status is currently active. */
-  public hasStatus(statusId: string): boolean {
-    return this.find(statusId) !== undefined;
   }
 
   private find(statusId: string): StatusEffectRuntime | undefined {

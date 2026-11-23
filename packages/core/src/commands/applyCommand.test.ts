@@ -9,9 +9,6 @@ import { applyCommand } from './applyCommand';
 import type { CommandContext, CommandHandlers } from './CommandHandler.types';
 import { createDefaultCommandHandlers } from './defaultCommandHandlers';
 
-/** No caster in these tests can cast: the cast rules are `CastValidator`'s, tested with it. */
-const NO_CASTS = { blockedBy: () => 'empty-slot' as const };
-
 const context = (): CommandContext => ({
   state: new GameState(createDefaultGameConfig(), 1),
   factory: new EntityFactory(new EntityRegistry(), new ContentCatalogue([])),
@@ -21,7 +18,7 @@ describe('applyCommand', () => {
   it('dispatches to the handler registered for the command type', () => {
     const seen: string[] = [];
     const handlers: CommandHandlers = {
-      ...createDefaultCommandHandlers(NO_CASTS),
+      ...createDefaultCommandHandlers(),
       stop: {
         handle: (command) => {
           seen.push(command.actorId);
@@ -42,7 +39,7 @@ describe('applyCommand', () => {
     const rejected: unknown[] = [];
     ctx.state.events.on('command-rejected', (payload) => rejected.push(payload));
     const command = { type: 'stop', actorId: 'entity-3' } as const;
-    applyCommand(command, createDefaultCommandHandlers(NO_CASTS), ctx);
+    applyCommand(command, createDefaultCommandHandlers(), ctx);
     expect(rejected).toEqual([{ command, reason: 'unknown-entity' }]);
   });
 
@@ -50,7 +47,7 @@ describe('applyCommand', () => {
     const ctx = context();
     let calls = 0;
     const handlers: CommandHandlers = {
-      ...createDefaultCommandHandlers(NO_CASTS),
+      ...createDefaultCommandHandlers(),
       stop: {
         handle: () => {
           calls += 1;
@@ -64,6 +61,7 @@ describe('applyCommand', () => {
       playerTeam: 'light',
       hadHuman: false,
       durationTicks: 1,
+      matchTicks: 0,
       seed: 1,
       configHash: 0,
       legends: [],

@@ -11,14 +11,13 @@ import type { CommandHandlers } from './CommandHandler.types';
 import { createDefaultCommandHandlers } from './defaultCommandHandlers';
 import { UnsupportedCommandHandler } from './handlers/UnsupportedCommandHandler';
 
-const CAST: Command<'cast-ability'> = {
-  type: 'cast-ability',
-  actorId: 'entity-1',
-  slot: 'ability-1',
-  aim: { point: { x: 1, y: 1 }, targetId: null },
-};
-
 const NOT_YET_SUPPORTED: readonly Command[] = [
+  {
+    type: 'cast-ability',
+    actorId: 'entity-1',
+    slot: 'ability-1',
+    aim: { point: { x: 1, y: 1 }, targetId: null },
+  },
   {
     type: 'intent',
     actorId: 'entity-1',
@@ -27,36 +26,18 @@ const NOT_YET_SUPPORTED: readonly Command[] = [
   { type: 'dev-set-controller', entityId: 'entity-1', controllerId: 'bot-legend' },
 ];
 
-const rejectionsOf = (command: Command, handlers: CommandHandlers): string[] => {
-  const state = new GameState(createDefaultGameConfig(), 1);
-  const reasons: string[] = [];
-  state.events.on('command-rejected', ({ reason }) => reasons.push(reason));
-  applyCommand(command, handlers, {
-    state,
-    factory: new EntityFactory(new EntityRegistry(), new ContentCatalogue([])),
-  });
-  return reasons;
-};
-
 describe('createDefaultCommandHandlers', () => {
-  it('routes cast-ability through the injected cast check and announces its reason', () => {
-    const asked: unknown[] = [];
-    const handlers = createDefaultCommandHandlers({
-      blockedBy: (_state, actorId, slot, aim) => {
-        asked.push({ actorId, slot, aim });
-        return 'on-cooldown';
-      },
-    });
-
-    expect(rejectionsOf(CAST, handlers)).toEqual(['on-cooldown']);
-    expect(asked).toEqual([{ actorId: 'entity-1', slot: 'ability-1', aim: CAST.aim }]);
-  });
-
   it.each(NOT_YET_SUPPORTED)(
     'rejects $type as not supported until its system exists',
     (command) => {
-      const handlers = createDefaultCommandHandlers({ blockedBy: () => null });
-      expect(rejectionsOf(command, handlers)).toEqual(['not-supported']);
+      const state = new GameState(createDefaultGameConfig(), 1);
+      const reasons: string[] = [];
+      state.events.on('command-rejected', ({ reason }) => reasons.push(reason));
+      applyCommand(command, createDefaultCommandHandlers(), {
+        state,
+        factory: new EntityFactory(new EntityRegistry(), new ContentCatalogue([])),
+      });
+      expect(reasons).toEqual(['not-supported']);
     },
   );
 

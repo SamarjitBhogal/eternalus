@@ -12,20 +12,14 @@ export class StaticCollisionIndex {
   /** Indexes exact world-space polygons once, rather than scanning every scenery piece per unit. */
   public constructor(shapes: readonly StaticCollisionShape[]) {
     for (const shape of shapes) {
-      this.add(shape);
+      if (shape.polygon.length < 3) continue;
+      const entry = { ...shape, bounds: boundsOf(shape.polygon) };
+      this.cells(entry.bounds, (key) => {
+        const bucket = this.buckets.get(key) ?? [];
+        bucket.push(entry);
+        this.buckets.set(key, bucket);
+      });
     }
-  }
-
-  /** Adds one temporary polygon to the same index used by walking and dashes. */
-  public add(shape: StaticCollisionShape): void {
-    if (shape.polygon.length < 3) return;
-    this.removed.delete(shape.id);
-    const entry = { ...shape, bounds: boundsOf(shape.polygon) };
-    this.cells(entry.bounds, (key) => {
-      const bucket = this.buckets.get(key) ?? [];
-      bucket.push(entry);
-      this.buckets.set(key, bucket);
-    });
   }
 
   /** Stops an object's polygons blocking immediately; the immutable definition stays intact. */

@@ -1,7 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { createDefaultAbilityRegistry } from './abilities/defaultAbilityRegistry';
-import { ContentCatalogue } from './content/ContentCatalogue';
-import { loadAbilities } from './content/abilities/loadAbilities';
 
 import { Footprint } from './components/Footprint';
 import { Health } from './components/Health';
@@ -21,20 +18,6 @@ import type { GameState } from './state/GameState';
 const CONFIG = createDefaultGameConfig({ match: { countdownSeconds: 10, legendsPerTeam: 6 } });
 const TICK_RATE = CONFIG.tickRate;
 
-// Keep this healing/rejoin scenario's original combat loadout. Full starter kits can eliminate
-// one team before its opponents finish healing; starter scenarios test those abilities separately.
-const HEALING_ABILITIES = createDefaultAbilityRegistry(
-  new ContentCatalogue(
-    loadAbilities(TICK_RATE)
-      .all()
-      .map((ability) =>
-        ['blade-runner', 'slam', 'shockwave'].includes(ability.id)
-          ? ability
-          : { ...ability, effects: [], targeting: null },
-      ),
-  ),
-);
-
 const laners = (team: 'light' | 'dark', count: number): RosterSlot[] =>
   Array.from({ length: count }, () => ({
     team,
@@ -52,7 +35,6 @@ const match = () =>
     debug: TEST_DEBUG_CONFIG,
     map: TWO_LANE_MAP,
     roster: [...laners('light', 4), ...laners('dark', 4)],
-    abilities: HEALING_ABILITIES,
   });
 
 describe('Simulation with out-of-combat healing (DEC-188)', () => {

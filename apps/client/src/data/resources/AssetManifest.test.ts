@@ -1,3 +1,5 @@
+import { MAGUS_SPRITE_ASSETS } from './magusSpriteAssets';
+import { LEGEND_SPRITE_ASSETS } from './legendSpriteAssets';
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import { ASSET_LICENCES } from './assetLicences';
@@ -31,6 +33,14 @@ const GROUPS = [
   'selection-raster',
   'selection-primary-raster',
   'match',
+  'atlas-assassin',
+  'atlas-knight',
+  'atlas-paladin',
+  'atlas-colossus',
+  'atlas-juggernaut',
+  'atlas-catalyst',
+  'atlas-oracle',
+  'atlas-necromancer',
 ] as const satisfies readonly AssetGroup[];
 
 /** Each group's file, in `ASSET_MANIFEST` order. */
@@ -42,6 +52,9 @@ const GROUP_FILES: readonly (readonly [AssetGroup, readonly AssetManifestEntry[]
   ['selection-raster', SELECTION_RASTER_ASSETS],
   ['selection-primary-raster', SELECTION_PRIMARY_RASTER_ASSETS],
   ['match', MATCH_ASSETS],
+  ...[...LEGEND_SPRITE_ASSETS, ...MAGUS_SPRITE_ASSETS].map(
+    (asset) => [asset.group, [asset]] as const,
+  ),
 ];
 
 /** The WebP files, read inline as data URLs, for their RIFF chunk. */
@@ -187,7 +200,7 @@ describe('ASSET_MANIFEST', () => {
     expect(ASSET_LICENCES.owner.text).toBeNull();
   });
 
-  it('uses only the seven asset groups', () => {
+  it('uses only the declared asset groups', () => {
     expectTypeOf<(typeof GROUPS)[number]>().toEqualTypeOf<AssetGroup>();
     expect(assets.filter((entry) => !(GROUPS as readonly string[]).includes(entry.group))).toEqual(
       [],
@@ -204,10 +217,10 @@ describe('ASSET_MANIFEST', () => {
     );
 
     expect(misplaced).toEqual([]);
-    expect(filesPerGroup).toEqual([1, 1, 1, 1, 1, 1, 1]);
+    expect(filesPerGroup).toEqual(GROUPS.map(() => 1));
   });
 
-  it('is the concatenation of the seven group files', () => {
+  it('is the concatenation of the declared group files', () => {
     expect(assets).toEqual(GROUP_FILES.flatMap(([, entries]) => entries));
   });
 

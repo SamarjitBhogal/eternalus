@@ -97,3 +97,6 @@ export const MINI_MAP_OUTLINE_COLORS: Readonly<Record<Team, string>> = {
 
 /** Mini map layer of Legends' markers: above the mobs' (layer 0), so a Legend stays on top. */
 export const MINI_MAP_LEGEND_LAYER = 1;
+
+/** Legend presentation diameter shared with the visuals branch (DEC-238). */
+export const LEGEND_VISUAL_DIAMETER = 5.2;

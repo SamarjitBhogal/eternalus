@@ -5,7 +5,7 @@
  */
 import type { MatchResult } from '@eternalus/core';
 
-import type { HudSlotId, InputAction, InputChord } from './Binding.types';
+import type { InputAction, InputChord } from './Binding.types';
 import type { AssetId, DisplayCatalogue, RasterBox } from './catalogue.types';
 import type { CrashReportState } from './CrashReport.types';
 import type { LegendClassId, MatchEnding, PlayableTeam } from './domain.types';
@@ -81,8 +81,6 @@ export type UiIntent =
   /** `action: null` resets every binding. */
   | { readonly kind: 'reset-bindings'; readonly action: InputAction | null }
   | { readonly kind: 'update-settings'; readonly patch: SettingsPatch }
-  /** Esc while an ability is selected for aiming: drops the selection (not the pause menu). */
-  | { readonly kind: 'cancel-aim' }
   /** A screen threw while rendering (`ErrorBoundary`, ADR 0025 §5); all plain strings. */
   | {
       readonly kind: 'report-screen-crash';
@@ -135,7 +133,15 @@ export type AssetGroup =
   | 'selection-alternate'
   | 'selection-raster'
   | 'selection-primary-raster'
-  | 'match';
+  | 'match'
+  | 'atlas-assassin'
+  | 'atlas-knight'
+  | 'atlas-paladin'
+  | 'atlas-colossus'
+  | 'atlas-juggernaut'
+  | 'atlas-catalyst'
+  | 'atlas-oracle'
+  | 'atlas-necromancer';
 
 /**
  * URLs of a group's loaded images and the draw boxes its entries declare (both `{}` after
@@ -194,8 +200,17 @@ export type FilledRosters = Pick<MatchSetupDraft, 'allies' | 'enemies'>;
 /** The session countdowns: character select (60 s), the reveal (10 s), the win/lose screen (30 s). */
 export type CountdownKind = 'select' | 'reveal' | 'results';
 
-/** Simulation time for the match clock. */
-export type MatchClock = { readonly tick: number; readonly seconds: number };
+/**
+ * The match clock and the pre-match countdown (DEC-278). `seconds` is match time, counted from the
+ * countdown's end: 0 through the countdown, which is not game time. `countdown` is the whole
+ * seconds the countdown has left (10 to 1 locally, 3 to 1 in a Duel), 0 ("START") for a Duel's
+ * first second after it, and `null` once the match runs.
+ */
+export type MatchClock = {
+  readonly tick: number;
+  readonly seconds: number;
+  readonly countdown: number | null;
+};
 
 /** Every message on the bridge bus, keyed by event name. */
 export type BridgeEventMap = {
@@ -221,11 +236,11 @@ export type BridgeEventMap = {
   'match-clock': MatchClock;
   /** The two players' names, when the server pairs them (the VERSUS screen). */
   'duel-versus': DuelVersus;
-  /** The Duel's scoreboard and countdown, on the HUD cadence; only in a Duel. */
+  /** The Duel's scoreboard, on the HUD cadence; only in a Duel. */
   'duel-state': DuelHudState;
   /**
    * The match ended, once per match (13 §5): core's result, and its length in match seconds (the
-   * bridge knows the tick rate, the UI does not; DEC-129 (1)).
+   * bridge knows the tick rate, the UI does not; DEC-129 (1)), the countdown not counted (DEC-278).
    */
   'match-ended': { readonly result: MatchResult; readonly durationSeconds: number };
   /**
@@ -235,11 +250,6 @@ export type BridgeEventMap = {
   'duel-ended': MatchEnding;
   /** The human Legend for the HUD, every 6 ticks (13 §5); `null` before it spawns. */
   'hud-state': { readonly player: PlayerHudSnapshot | null };
-  /**
-   * The ability slot being aimed, published the moment it changes (not throttled); `null` when
-   * none is.
-   */
-  'aiming-slot': { readonly slot: HudSlotId | null };
   /** Team structures, at match start and every 30 ticks (13 §9 recipe). */
   'structure-state': { readonly structures: readonly StructureStatus[] };
   /** Capture points in lane order, at match start and every 30 ticks (13 §5). */

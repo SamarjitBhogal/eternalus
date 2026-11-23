@@ -23,13 +23,12 @@ function unlabelledFields(html: string): string[] {
 }
 
 describe('SettingsScreen', () => {
-  it('opens on the Controls tab with the five tabs listed', () => {
+  it('opens on the Controls tab with the four tabs listed', () => {
     const html = render(<SettingsScreen />);
 
     expect(html).toMatch(/<h2[^>]*>Settings<\/h2>/);
     expect([...html.matchAll(/role="tab"[^>]*>([^<]+)</g)].map(([, label]) => label)).toEqual([
       'Controls',
-      'Gameplay',
       'Audio',
       'Video',
       'Accessibility',

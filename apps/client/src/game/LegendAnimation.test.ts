@@ -30,15 +30,6 @@ const events = () => {
 };
 
 describe('LegendAnimation on Phase 3', () => {
-  it('uses the successful Fury repeat event for its dash pose', () => {
-    const { bus, simulation } = events();
-    const animation = new LegendAnimation(hero.id, 'knight', 30, simulation);
-    bus.emit('ability-recast', { casterId: hero.id, abilityId: 'fury', slot: 'ability-4' });
-    expect(animation.frame(hero, 0)?.frame).toBe(42);
-    expect(animation.effects(0)[0]?.abilityId).toBe('fury-dash');
-    animation.destroy();
-    expect(bus.listenerCount()).toBe(0);
-  });
   it.each(Object.entries(LEGEND_SKINS))(
     'selects the %s sheet and leaves other entities unchanged',
     (spec, atlasId) => {
@@ -69,6 +60,18 @@ describe('LegendAnimation on Phase 3', () => {
     expect(animation.frame(hero, 0)?.frame).toBe(row * 6);
     animation.observe(null, snapshot);
     expect(animation.frame(hero, 0)?.frame).toBe(0);
+    animation.destroy();
+  });
+  it('keeps the last facing frame while idle without cycling a walk pose', () => {
+    const { simulation } = events();
+    const animation = new LegendAnimation(hero.id, 'oracle', 30, simulation);
+    const snapshot = base();
+    animation.observe(null, {
+      ...snapshot,
+      entities: [{ ...hero, transform: { x: 0, y: 0, radius: 0.75, facing: { x: -1, y: 0 } } }],
+    });
+    expect(animation.frame(hero, 0)?.frame).toBe(18);
+    expect(animation.frame(hero, 27)?.frame).toBe(18);
     animation.destroy();
   });
   it('uses actual weapon damage for staff attack animation and releases its listeners', () => {
@@ -102,6 +105,7 @@ describe('LegendAnimation on Phase 3', () => {
     expect(animation.frame(hero, 0)?.frame).toBe(30);
     bus.emit('ability-cast', { casterId: hero.id, abilityId: 'unknown', slot: 'ability-1' });
     bus.emit('ability-cast', { casterId: 'bot', abilityId: 'veil', slot: 'ability-1' });
+    expect(animation.frame(hero, 0)?.frame).toBe(30);
     expect(animation.effects(181)).toEqual([]);
     expect(animation.effects(-1)).toEqual([]);
     animation.destroy();

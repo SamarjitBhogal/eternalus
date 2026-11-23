@@ -3,7 +3,7 @@ title: 0028. User attachment art provenance
 description: Explicit provenance route for contributor-supplied local references.
 audience: [humans, agents]
 status: active
-owner: gurshaan
+owner: sholtzman
 last-reviewed: 2026-11-13
 tags: [adr, assets, provenance, guardrails]
 related:
@@ -13,7 +13,7 @@ related:
 
 # 0028. User attachment art provenance
 
-- Status: accepted by Gurshaan on 2026-11-13
+- Status: accepted by the owner on 2026-11-20 (DEC-298, PR #134)
 - Date: 2026-11-12
 
 ## Context
@@ -21,7 +21,7 @@ related:
 The user supplied five local character references and confirmed permission to use and adapt
 them. The existing manifest provenance assertion accepts only a public URL or a Figma node.
 An attachment can have documented provenance without either, but invented links would be false.
-The additional asset byte allowance in ADR 0027 does not change this provenance rule.
+The sprite atlas budget proposal in ADR 0027 remains a draft.
 
 ## Decision
 
@@ -31,7 +31,7 @@ provenance record. Derived portraits and sprites must identify that same registe
 The existing URL/Figma route remains intact. Missing, malformed or unregistered attachment
 records must still fail validation; a filename alone is not sufficient.
 
-Gurshaan approved this route on 2026-11-13. Extend `AssetManifest.test.ts` with the
+The owner accepted this route in DEC-298. Extend `AssetManifest.test.ts` with the
 shared provenance validator and rejection tests. Keep every licence,
 file-integrity, byte-budget and ownership assertion. Preserve original credits and classify
 contributor-authorised art separately from the existing owner-made artwork licence.

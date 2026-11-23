@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { Capturable } from '../../components/Capturable';
 import { TeamMembership } from '../../components/TeamMembership';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
+import { loadScoring } from '../../content/match/loadScoring';
 import { SCORING } from '../../content/match/scoring';
 import { CATHEDRAL_CAPTURE_POINT } from '../../content/zones/cathedralCapturePoint';
 import { Entity } from '../../entities/Entity';
@@ -42,7 +43,7 @@ class TestLegend extends Entity {
 
 const setUp = () => {
   const state = new GameState(createDefaultGameConfig(), 1);
-  const scoring = new Scoring(state, createDefaultScoringRules(SCORING, state.config.tickRate));
+  const scoring = new Scoring(state, createDefaultScoringRules(loadScoring(state.config.tickRate)));
   for (const id of [POINT, OTHER_POINT]) {
     const point = new CapturePoint(id, CATHEDRAL_CAPTURE_POINT.id);
     point.spawn({
@@ -195,6 +196,7 @@ describe('CaptureHoldRule (through Scoring)', () => {
       playerTeam: 'light',
       hadHuman: false,
       durationTicks: 5,
+      matchTicks: 0,
       seed: 1,
       configHash: 0,
       legends: [],

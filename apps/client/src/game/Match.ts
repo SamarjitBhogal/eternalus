@@ -1,13 +1,10 @@
+import { LegendAnimation } from './LegendAnimation';
+import { LEGEND_VISUAL_DIAMETER } from './views/entityViews.constants';
+import { LegendSpriteView } from './views/LegendSpriteView';
 import { type EntityId, type EntitySnapshot, makeLogRecord, type Snapshot } from '@eternalus/core';
 
-import type { CastMode } from '../bridge/slices/settingsSlice';
 import { isDead } from '../bridge/selectors/isDead';
-import { AbilityCasts } from './AbilityCasts';
-import { AimTargeting } from './AimTargeting';
 import { BuildingRoofs } from './BuildingRoofs';
-import { LegendAnimation } from './LegendAnimation';
-import { LEGEND_ANIMATION } from './LegendAnimation.constants';
-import { LegendSpriteView } from './views/LegendSpriteView';
 import { GameLoop } from './engine/loop/GameLoop';
 import { HealthBarVisibility } from './HealthBarVisibility';
 import type { LoopTarget } from './engine/loop/GameLoop.types';
@@ -26,7 +23,6 @@ import type { PlayerActions } from './PlayerActions';
 import { PlayerCommands } from './PlayerCommands';
 import { createDefaultViewRegistry } from './views/defaultViewRegistry';
 import { EntityLayer } from './views/EntityLayer';
-import { AimOverlayView } from './views/AimOverlayView';
 import { MapView } from './views/MapView';
 import { MiniMapView } from './views/MiniMapView';
 import { SceneryView } from './views/SceneryView';
@@ -50,8 +46,6 @@ import { WorldObjectsView } from './views/WorldObjectsView';
  * publishes to the UI. The canvas gestures act through its `controls` (`MatchViewControls`).
  */
 export class Match implements LoopTarget {
-  private readonly legendAnimation: LegendAnimation;
-  private frameTick = 0;
   private readonly loop: GameLoop;
 
   private readonly entities: EntityLayer;
@@ -70,20 +64,13 @@ export class Match implements LoopTarget {
 
   private readonly commands: PlayerActions;
 
-  /** The ability keys and the aim-then-click selection (`aiming-slot` goes out when it changes). */
-  private readonly casts: AbilityCasts;
-
-  /** The range overlay of the ability selected for aiming, drawn over the units. */
-  private readonly aimOverlay = new AimOverlayView();
-
-  /** What the range overlay shows each frame, with the simulation's dash reach. */
-  private readonly aiming: AimTargeting;
-
   private readonly bridge: MatchBridge;
 
   private previous: Snapshot | null = null;
 
   private current: Snapshot;
+  private readonly legendAnimation: LegendAnimation;
+  private frameTick = 0;
 
   private readonly playerId: EntityId | null;
 
@@ -98,16 +85,15 @@ export class Match implements LoopTarget {
   public constructor(private readonly deps: MatchDeps) {
     const { simulation, world, tickRate, scheduler, camera, logger, bridge, input } = deps;
     const { map, presentation, mapObjects } = world;
-    this.healthBars = new HealthBarVisibility(simulation);
     this.current = simulation.snapshot();
     this.playerId = deps.remote?.legendId ?? this.current.match.humanLegendId;
-    this.healthBars.observe(this.current, this.playerId);
     this.legendAnimation = new LegendAnimation(
-      deps.remote?.legendId ?? simulation.snapshot().match.humanLegendId,
+      this.playerId,
       deps.playerSpecId ?? null,
       tickRate,
       simulation,
     );
+    this.healthBars = new HealthBarVisibility(simulation);
     this.entities = new EntityLayer(
       createDefaultViewRegistry(
         (kind) => {
@@ -121,34 +107,27 @@ export class Match implements LoopTarget {
         },
         new LegendSpriteView(
           (entity) => this.legendAnimation.frame(entity, this.frameTick),
-          LEGEND_ANIMATION.spriteSize,
-          () => this.legendAnimation.effects(this.frameTick),
+          LEGEND_VISUAL_DIAMETER,
         ),
-        () => this.frameTick / tickRate,
       ),
       isDead,
       this.healthBars.healthBarOf,
     );
     this.camera = new MatchCamera(camera, map);
-    this.casts = new AbilityCasts(simulation, (slot) => {
-      bridge.bus.emit('aiming-slot', { slot });
-    });
     this.commands =
       deps.remote?.createActions(this.camera) ??
-      new PlayerCommands(input, simulation, this.camera, mapObjects, this.casts);
+      new PlayerCommands(input, simulation, this.camera, mapObjects);
     const { scenery, buildings } = presentation;
     this.roofs = new BuildingRoofs(buildings);
     const { hidden: hiddenRoofs } = this.roofs;
     const shown = (): WorldRect => this.camera.visibleArea();
     this.objects = new WorldObjectsView(mapObjects, hiddenRoofs, shown);
     const { isDestroyed } = this.objects;
-    this.aiming = new AimTargeting(deps.abilities, this.playerId, deps.dashReach);
     const scene = new SceneView([
       new MapView(map, scenery, hiddenRoofs, shown, buildings, isDestroyed),
       new SceneryView(scenery, 'detail', hiddenRoofs, shown, isDestroyed),
       this.objects,
       this.entities,
-      this.aimOverlay,
     ]);
     const centre = (): WorldPoint => this.miniMapCentre();
     this.world = { scene, miniMap: new MiniMapView(map, scene, HUD_MINIMAP_RING, centre) };
@@ -157,7 +136,7 @@ export class Match implements LoopTarget {
       tickMs,
       maxFrameMs: MAX_TICKS_PER_FRAME * tickMs,
     });
-    this.legendAnimation.observe(null, this.current);
+    this.healthBars.observe(this.current, this.playerId);
     this.bridge = new MatchBridge({
       ...bridge,
       tickRate,
@@ -209,21 +188,10 @@ export class Match implements LoopTarget {
    */
   public setPaused(isPaused: boolean): void {
     if (isPaused) {
-      this.casts.cancel();
       this.loop.stop();
     } else {
       this.loop.start();
     }
-  }
-
-  /** Sets how the ability keys cast (the `gameplay.castMode` setting). */
-  public setCastMode(mode: CastMode): void {
-    this.casts.setCastMode(mode);
-  }
-
-  /** Drops the ability selected for aiming (Esc, `cancel-aim`). */
-  public cancelAim(): void {
-    this.casts.cancel();
   }
 
   /** Sets the drawing area in device pixels; call on mount and on every resize. */
@@ -268,14 +236,6 @@ export class Match implements LoopTarget {
     renderer.showWorldArea(view);
     this.entities.show(this.previous, this.current, alpha, this.playerId);
     this.objects.show(this.current.mapObjects ?? []);
-    this.aimOverlay.show(
-      this.aiming.targetOf(
-        this.current,
-        this.casts.aimingSlot,
-        this.casts.aimPoint,
-        this.entities.drawnAt(this.playerId),
-      ),
-    );
     scene.draw(renderer);
     miniMap.draw(renderer, this.camera.screenWidth, this.camera.screenHeight);
   }
@@ -293,10 +253,10 @@ export class Match implements LoopTarget {
    * camera are injected, so their owner (`MatchHost`) destroys them.
    */
   public destroy(): void {
+    this.legendAnimation.destroy();
     this.loop.destroy();
     this.healthBars.destroy();
     this.bridge.destroy();
-    this.legendAnimation.destroy();
   }
 
   /**

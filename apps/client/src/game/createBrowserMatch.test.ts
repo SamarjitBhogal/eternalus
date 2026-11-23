@@ -8,13 +8,12 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { matchResultFixture } from '../bridge/__fixtures__/matchResultFixtures';
 import type { BridgeEventMap, RosterEntry } from '../bridge/events';
-import type { CastMode } from '../bridge/slices/settingsSlice';
 import type { PlayerHudSnapshot } from '../bridge/hud.types';
 import { TypedEventBus } from '../bridge/TypedEventBus';
 import type { LogSink } from '../data/logging/LogSink.types';
 import { RingBufferSink } from '../data/logging/RingBufferSink';
 import { shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
-import { createBrowserMatch } from './createBrowserMatch';
+import { createBrowserMatch, type BrowserMatchDeps } from './createBrowserMatch';
 import { FakeSessionClock } from './engine/time/FakeSessionClock';
 import { FakeBrowserTarget } from './FakeBrowserTarget';
 import { FakeViewportCanvas } from './FakeViewportCanvas';
@@ -46,7 +45,7 @@ function evidenceOf(running: RunningMatch): MatchEvidence {
 function setUp(
   canvas = new FakeViewportCanvas(),
   sinks: readonly LogSink[] = [],
-  castMode: CastMode | null = null,
+  resources?: BrowserMatchDeps['resources'],
 ) {
   const window = new FakeBrowserTarget();
   const document = new FakeBrowserTarget();
@@ -56,9 +55,10 @@ function setUp(
     document,
     gameConfig: CONFIG,
     bus,
-    settings: { bindings: null, castMode },
+    settings: { bindings: null },
     clock: new FakeSessionClock(),
     sinks,
+    ...(resources === undefined ? {} : { resources }),
   });
   const viewport: MatchViewport = {
     canvas,
@@ -77,7 +77,6 @@ function setUp(
     world,
     captureKinds: ['capture-point', 'cathedral'],
     roster: [PLAYER_SLOT],
-    abilities: [],
     observer,
   });
   /** Every listener on the window, the document and the canvas. */
@@ -87,6 +86,36 @@ function setUp(
 }
 
 describe('createBrowserMatch', () => {
+  it('loads only the selected atlas and releases it with the match', async () => {
+    const group = 'atlas-colossus';
+    const resources = {
+      load: vi.fn(() => Promise.resolve({ group, failed: [] } as const)),
+      release: vi.fn(),
+      atlases: vi.fn(() => ({})),
+    };
+    const { factory, viewport, request } = setUp(undefined, [], resources);
+    const matchRequest = request();
+    const player: RosterEntry = {
+      legendId: 'player',
+      displayName: 'Player',
+      team: 'dark',
+      isBot: false,
+      isRover: true,
+      classId: 'sentinel',
+      specId: 'colossus',
+      isPlayer: true,
+    };
+    const running = factory(
+      { ...matchRequest, setup: { ...matchRequest.setup, allies: [player] } },
+      viewport,
+    );
+    await Promise.resolve();
+    expect(resources.load.mock.calls).toHaveLength(1);
+    expect(resources.load).toHaveBeenCalledWith(group, expect.any(Function));
+    expect(resources.atlases).toHaveBeenCalledWith(group);
+    running.destroy();
+    expect(resources.release).toHaveBeenCalledExactlyOnceWith(group);
+  });
   it('throws for a canvas without a 2D context and leaves nothing behind', () => {
     const { window, factory, viewport, request, listeners } = setUp(
       new FakeViewportCanvas(1280, 720, null),
@@ -162,24 +191,6 @@ describe('createBrowserMatch', () => {
     expect(listeners()).toBe(0);
     expect(window.pendingFrames).toBe(0);
     expect(bus.listenerCount()).toBe(busBefore + 1);
-  });
-
-  it("starts with the settings' cast mode: aim-then-click selects an ability key instead of casting", () => {
-    const { window, bus, factory, viewport, request } = setUp(
-      new FakeViewportCanvas(),
-      [],
-      'aim-then-click',
-    );
-    const slots: (string | null)[] = [];
-    bus.on('aiming-slot', ({ slot }) => slots.push(slot));
-    const running = factory(request(), viewport);
-
-    window.dispatchEvent(Object.assign(new Event('keydown'), { code: 'Digit1', key: '1' }));
-    window.runFrame(0);
-    window.runFrame(MS_PER_SECOND / CONFIG.tickRate);
-
-    expect(slots).toEqual(['ability-1']);
-    running.destroy();
   });
 
   it('links each capture point the HUD lists to its zone in the simulation (PR #64)', () => {

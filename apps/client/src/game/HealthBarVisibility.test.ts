@@ -70,8 +70,13 @@ const TOWER = entity('tower', 'structure', 'dark');
 
 const snapshotOf = (entities: EntitySnapshot[], humanLegendId: string | null = 'me'): Snapshot => ({
   tick: 1,
-  match: { phase: 'early-game', phaseEnteredTick: 0, upcoming: [], humanLegendId },
-  player: null,
+  match: {
+    phase: 'early-game',
+    phaseEnteredTick: 0,
+    upcoming: [],
+    countdownEndTick: 0,
+    humanLegendId,
+  },
   entities,
   hordes: [],
   teams: {

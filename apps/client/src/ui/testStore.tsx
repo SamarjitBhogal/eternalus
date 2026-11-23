@@ -206,6 +206,7 @@ export const TEST_CONTENT: DisplayCatalogue = {
   lockInChromeAssetId: 'lock-in-chrome',
   effectsRenderer: 'figma-raster',
   contrastMode: 'figma',
+  uiEnhancements: [],
   hud: TEST_HUD_CATALOGUE,
   teamNames: { light: 'Light', dark: 'Dark' },
   botRoster: {
@@ -214,7 +215,6 @@ export const TEST_CONTENT: DisplayCatalogue = {
     enemyRover: 'mirror-player',
     difficulties: { laner: 'normal', rover: 'rover' },
   },
-  abilities: [],
   verdictLines: {
     'objective-lost': {
       victory: 'The enemy {name} has fallen.',

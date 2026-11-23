@@ -18,8 +18,6 @@ export class MatchHost implements RunningMatch {
 
   private stopSettings = (): void => undefined;
 
-  private stopIntents = (): void => undefined;
-
   private isDestroyed = false;
 
   /**
@@ -76,14 +74,8 @@ export class MatchHost implements RunningMatch {
       keyboard.attach(window);
       mouse.attach(viewport.canvas);
       this.pointer.attach();
-      this.stopSettings = bus.on('settings', ({ bindings, gameplay }) => {
+      this.stopSettings = bus.on('settings', ({ bindings }) => {
         mapper.setBindings(bindings);
-        match.setCastMode(gameplay.castMode);
-      });
-      this.stopIntents = bus.on('ui-intent', (intent) => {
-        if (intent.kind === 'cancel-aim') {
-          match.cancelAim();
-        }
       });
       match.start();
     } catch (error) {
@@ -128,7 +120,6 @@ export class MatchHost implements RunningMatch {
     mouse.detach();
     this.pointer.detach();
     this.stopSettings();
-    this.stopIntents();
     match.destroy();
     for (const adapter of adapters) {
       adapter.destroy();

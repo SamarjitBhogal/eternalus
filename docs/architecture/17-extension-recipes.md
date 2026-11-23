@@ -4,7 +4,7 @@ description: One recipe per kind of addition, from a Legend class to a port and 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-19
 tags: [architecture, recipes, extension-points, ocp, registries]
 paths:
   [
@@ -50,7 +50,7 @@ Six lines each. **When**: the situation, and the neighbouring recipe for the loo
 are in the linked doc. **Registry line**: the single place of change from
 [02 §9](02-code-structure.md#9-single-place-of-change); "none" means the catalogue line is the
 whole change. **Tests**: per [02 §8](02-code-structure.md#8-where-tests-go). **Docs**: what moves
-in the same PR, always plus a `docs/plan/PROGRESS.md` entry. **Skill**: the
+in the same PR, always plus a new entry file in `docs/plan/progress/`. **Skill**: the
 `.claude/skills/<name>/SKILL.md` procedure and the doc section behind it. Numbers are stable
 because other docs cite them (`17 R8`); OG-05 in
 [../requirements/03-organization-guidelines.md](../requirements/03-organization-guidelines.md)
@@ -199,27 +199,12 @@ R14 "new view" and R16 "new command".
 - **Files:** `core/content/abilities/<camelId>.ts` exporting `<SCREAMING_ID>` (`satisfies
 AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `restrictions[]`)
   - `abilityCatalogue.ts` line; the `LegendDefinition` slot that names it. Only if needed:
-    `core/abilities/effects/<Kind>Effect.ts` (an `AbilityEffect`: `validate`, `describe`,
-    `apply`), `shapes/<Kind>Shape.ts` (an `AreaShape`: `validate`, `overlaps`,
-    `overlapsPolygon`, `centreFor`) or `restrictions/<Rule>Restriction.ts`, each + `.test.ts`;
-    a new effect or shape kind also adds its spec type to the content union
-    (`AbilityDefinition.types.ts`), and a new shape kind one client painter
-    (`game/views/aimShapePainters.ts`, which does not compile without it).
+    `core/abilities/effects/<Kind>Effect.ts` or `restrictions/<Rule>Restriction.ts` + `.test.ts`.
 - **Registry line:** none for content; one `core/abilities/defaultAbilityRegistry.ts` line for a
-  new class (`registry.registerEffect(new <Kind>Effect());` or
-  `registry.registerShape(new <Kind>Shape());`), which also injects the content the class reads
-  (the statuses a debuff names, the knock-back tuning).
-- **Loading:** no loader changes. `loadAbilities` knows no effect or shape kind: it checks the
-  ability's own fields and that every time is 0 or more, and turns every `<name>Seconds` field
-  of a step, at any depth, into `<name>Ticks`. The rest of a step is its strategy's to check:
-  `createDefaultAbilityRegistry` runs each step's and each shape's `validate` in
-  `AbilityRegistry.resolveAll`, at boot. The aim overlay's rows (`AbilityDisplay.steps`) come
-  from each strategy's `describe`, bound into core's `loadDisplayContent`.
-- **Tests:** `abilityCatalogue.test.ts` (`validateContent()`); the new class's `validate` and
-  `describe` in its own test, and `defaultAbilityRegistry.test.ts` for the boot failure;
+  new class (`registry.registerEffect(new <Kind>Effect());`).
+- **Tests:** `abilityCatalogue.test.ts` (`validateContent()`);
   `core/abilities/scenarios/<id>.test.ts` drives a `Simulation`: cast, effects, cooldown and
-  aether accounting, `command-rejected` reasons. The litmus (`abilities/litmus.test.ts`)
-  authors a new kind as content through `loadAbilities` and casts it with one registry line.
+  aether accounting, `command-rejected` reasons.
 - **Docs:** `../reference/game-design/06-abilities-and-progression.md`; values in `balancing.md`.
 - **Skill:** `new-ability` · [05 §14](05-abilities-weapons-and-loadouts.md#14-abilityregistry-the-single-place-of-change), [05 §17](05-abilities-weapons-and-loadouts.md#17-recipes-and-mvp-status).
   Untouched: `AbilitySystem`, `applyCommand`, `AbilityBar` (it reads slots and `<KeyGlyph/>`).

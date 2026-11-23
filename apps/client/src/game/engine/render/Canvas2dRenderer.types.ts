@@ -9,6 +9,8 @@ export type DrawContext = Pick<
   | 'beginPath'
   | 'clip'
   | 'closePath'
+  | 'drawImage'
+  | 'imageSmoothingEnabled'
   | 'ellipse'
   | 'fill'
   | 'fillRect'
@@ -23,8 +25,7 @@ export type DrawContext = Pick<
   | 'stroke'
   | 'strokeRect'
   | 'strokeStyle'
-> &
-  Partial<Pick<CanvasRenderingContext2D, 'drawImage' | 'imageSmoothingEnabled'>>;
+>;
 
 /**
  * What `Canvas2dRenderer.fromCanvas` needs of a canvas: its 2D context. An `HTMLCanvasElement`

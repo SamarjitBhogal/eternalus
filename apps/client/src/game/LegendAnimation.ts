@@ -2,12 +2,12 @@ import type { EntitySnapshot, Simulation, Snapshot, Unsubscribe } from '@eternal
 import type { SpriteRef } from './engine/render/Renderer.types';
 import {
   LEGEND_ANIMATION,
+  LEGEND_ATLAS_ROWS,
   LEGEND_CAST_ROWS,
   LEGEND_CAST_SECONDS,
   LEGEND_EFFECT_HISTORY,
   LEGEND_SKINS,
   RANGED_LEGEND_SKINS,
-  LEGEND_RECAST_ANIMATIONS,
   ATTACK_REACTIVE_CASTS,
 } from './LegendAnimation.constants';
 import type { LegendCastFrame, LegendCastPose, LegendPose } from './LegendAnimation.types';
@@ -15,8 +15,9 @@ import type { LegendCastFrame, LegendCastPose, LegendPose } from './LegendAnimat
 /** Match-owned presentation state driven by successful simulation events and observed motion. */
 export class LegendAnimation {
   private pose: LegendPose | null = null;
-  private walkRow = 1;
+  private walkRow: number = LEGEND_ATLAS_ROWS.south;
   private isMoving = false;
+  private idleRow: number = LEGEND_ATLAS_ROWS.idle;
   private position = { x: 0, y: 0 };
   private direction = { x: 1, y: 0 };
   private casts: readonly LegendCastPose[] = [];
@@ -33,10 +34,6 @@ export class LegendAnimation {
       return;
     }
     this.unsubscribe = [
-      simulation.on('ability-recast', (event) => {
-        const action = LEGEND_RECAST_ANIMATIONS[event.abilityId];
-        if (event.casterId === playerId && action !== undefined) this.cast(action, simulation.tick);
-      }),
       simulation.on('damage-applied', ({ source }) => {
         if (source.attackerId === playerId && source.kind === 'weapon')
           this.attack(simulation.tick);
@@ -60,8 +57,26 @@ export class LegendAnimation {
         : after.y - before.y;
     this.isMoving = Math.abs(dx) + Math.abs(dy) > Number.EPSILON;
     if (after !== undefined && after !== null) this.position = { x: after.x, y: after.y };
+    const facing = after?.facing;
+    if (facing !== undefined) {
+      this.idleRow =
+        Math.abs(facing.x) > Math.abs(facing.y)
+          ? facing.x > 0
+            ? LEGEND_ATLAS_ROWS.east
+            : LEGEND_ATLAS_ROWS.west
+          : facing.y < 0
+            ? LEGEND_ATLAS_ROWS.north
+            : LEGEND_ATLAS_ROWS.idle;
+    }
     if (this.isMoving) {
-      this.walkRow = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 4 : 3) : dy > 0 ? 1 : 2;
+      this.walkRow =
+        Math.abs(dx) > Math.abs(dy)
+          ? dx > 0
+            ? LEGEND_ATLAS_ROWS.east
+            : LEGEND_ATLAS_ROWS.west
+          : dy > 0
+            ? LEGEND_ATLAS_ROWS.south
+            : LEGEND_ATLAS_ROWS.north;
       const length = Math.hypot(dx, dy);
       this.direction = { x: dx / length, y: dy / length };
     }
@@ -79,8 +94,12 @@ export class LegendAnimation {
       return null;
     const elapsed = this.pose === null ? Infinity : (tick - this.pose.startedTick) / this.tickRate;
     const isCasting = this.pose !== null && elapsed >= 0 && elapsed < this.pose.duration;
-    const row = isCasting ? (this.pose?.row ?? 0) : this.isMoving ? this.walkRow : 0;
-    const seconds = isCasting ? elapsed : tick / this.tickRate;
+    const row = isCasting ? (this.pose?.row ?? 0) : this.isMoving ? this.walkRow : this.idleRow;
+    const seconds = isCasting
+      ? elapsed
+      : !this.isMoving && this.idleRow !== LEGEND_ATLAS_ROWS.idle
+        ? 0
+        : tick / this.tickRate;
     const duration = isCasting
       ? (this.pose?.duration ?? 1)
       : this.isMoving
@@ -117,11 +136,15 @@ export class LegendAnimation {
       !RANGED_LEGEND_SKINS.has(this.specId ?? '') &&
       !ATTACK_REACTIVE_CASTS.has(this.pose?.abilityId ?? '') &&
       this.pose !== null &&
-      this.pose.row >= 6 &&
+      this.pose.row >= LEGEND_ATLAS_ROWS.firstCast &&
       tick < this.pose.startedTick + this.pose.duration * this.tickRate
     )
       return;
-    this.pose = { row: 5, startedTick: tick, duration: LEGEND_ANIMATION.attackSeconds };
+    this.pose = {
+      row: LEGEND_ATLAS_ROWS.attack,
+      startedTick: tick,
+      duration: LEGEND_ANIMATION.attackSeconds,
+    };
   }
   private cast(abilityId: string, tick: number): void {
     const row = LEGEND_CAST_ROWS[abilityId];

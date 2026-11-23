@@ -76,7 +76,7 @@ describe('describeCredits', () => {
     ]);
     expect(credited.sort()).toEqual(ASSET_MANIFEST.assets.map((asset) => asset.id).sort());
     const references = credits.find((credit) => credit.licenceId === 'user-authorised-art');
-    expect(references?.assets).toHaveLength(10);
+    expect(references?.assets).toHaveLength(5);
     expect(references?.notice).toContain('Arackhan Wars');
   });
 });

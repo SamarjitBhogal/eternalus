@@ -1,10 +1,4 @@
-import type {
-  AbilityDisplay,
-  Logger,
-  MapFeatureKind,
-  RosterSlot,
-  SeededRandom,
-} from '@eternalus/core';
+import type { Logger, MapFeatureKind, RosterSlot, SeededRandom } from '@eternalus/core';
 
 import type { DisplayCatalogue } from '../bridge/catalogue.types';
 import type {
@@ -42,8 +36,6 @@ export type MatchRequest = {
    * over the catalogue's difficulties.
    */
   readonly roster: readonly RosterSlot[];
-  /** Every ability's display data: `catalogue.abilities` (the range overlay draws from it). */
-  readonly abilities: readonly AbilityDisplay[];
   /**
    * Hears the match: `crashed` if its game loop stops because a tick or a frame threw (DEC-106),
    * `ended` once after the tick that ended it (`match-ended`; game-loop plan A8); the match runs on
@@ -229,8 +221,9 @@ export type SessionControllerDeps = {
    */
   readonly createRosterRng: (seed: number) => Pick<SeededRandom, 'nextInt'>;
   /**
-   * Receives `data-team="light|dark"` while a match setup exists and `data-contrast` (the
-   * catalogue's colour set, DEC-55) while the session runs (`<html>` in the app).
+   * Receives `data-team="light|dark"` while a match setup exists, and `data-contrast` (the
+   * catalogue's colour set, DEC-55) and `data-ui-enhancements` (its UI enhancements,
+   * space-separated, ui-enhancements-plan §2 rule 1) while the session runs (`<html>` in the app).
    */
   readonly themeRoot: Pick<HTMLElement, 'dataset'>;
   /** Builds a match's world from its seed (`prepareMatchWorld` over the page's `GameConfig`). */

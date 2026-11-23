@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 
-import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { ZoneArea } from '../components/ZoneArea';
@@ -58,24 +57,6 @@ describe('EntitySnapshotter', () => {
 
     expect(snapshotter.snapshotOf(house).mapObjectId).toBe('house-7');
     expect(snapshotter.snapshotOf(new Bare('entity-2', 'bare'))).not.toHaveProperty('mapObjectId');
-  });
-
-  it("snapshots an entity's aether pool as current and max (DEC-230)", () => {
-    const mage = new Bare('entity-1', 'mage');
-    const aether = new Aether(80);
-    aether.spend(30);
-    mage.addComponent(aether);
-
-    expect(new EntitySnapshotter(4, CURVES).snapshotOf(mage).aether).toEqual({
-      current: 50,
-      max: 80,
-    });
-  });
-
-  it('gives an entity without aether no aether group', () => {
-    expect(
-      new EntitySnapshotter(4, CURVES).snapshotOf(new Bare('entity-1', 'bare')).aether,
-    ).toBeNull();
   });
 
   it('names the map feature a structure was built from, and leaves the key out for every other entity', () => {

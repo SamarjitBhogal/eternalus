@@ -57,8 +57,6 @@ export function createBrowserDuelMatch(deps: BrowserMatchDeps): DuelMatchFactory
         camera,
         input,
         logger,
-        // A Duel casts no abilities yet (the server reads no `triggered` slots): no overlay to draw.
-        abilities: [],
         observer: request.observer,
         bridge: {
           bus: deps.bus,

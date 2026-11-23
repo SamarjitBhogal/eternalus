@@ -25,7 +25,15 @@ export type AssetGroup =
   | 'selection-alternate'
   | 'selection-raster'
   | 'selection-primary-raster'
-  | 'match';
+  | 'match'
+  | 'atlas-assassin'
+  | 'atlas-knight'
+  | 'atlas-paladin'
+  | 'atlas-colossus'
+  | 'atlas-juggernaut'
+  | 'atlas-catalyst'
+  | 'atlas-oracle'
+  | 'atlas-necromancer';
 
 /**
  * One use of an image whose device-pixel box differs from the entry's other uses in size,

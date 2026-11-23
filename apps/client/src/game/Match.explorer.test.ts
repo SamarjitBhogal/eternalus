@@ -54,7 +54,6 @@ const setUp = () => {
     camera,
     input,
     logger: new NullLogger(),
-    abilities: [],
     observer: { crashed: () => undefined, ended: () => undefined },
     bridge: {
       bus: new TypedEventBus<BridgeEventMap>(),

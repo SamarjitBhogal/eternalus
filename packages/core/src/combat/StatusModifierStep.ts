@@ -17,13 +17,7 @@ export class StatusModifierStep implements DamageStep {
         ? 1
         : (StatusModifierStep.statusesOf(source.attackerId, state)?.multiplier('damageDealt') ?? 1);
     const taken = StatusModifierStep.statusesOf(targetId, state)?.multiplier('damageTaken') ?? 1;
-    const weapon =
-      source.kind === 'weapon' && source.attackerId !== null
-        ? (StatusModifierStep.statusesOf(source.attackerId, state)?.multiplier(
-            'weaponDamageDealt',
-          ) ?? 1)
-        : 1;
-    return amount * dealt * weapon * taken;
+    return amount * dealt * taken;
   }
 
   private static statusesOf(id: EntityId, state: GameState): StatusEffects | undefined {

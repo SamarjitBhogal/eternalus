@@ -9,8 +9,6 @@ export type SettingsIntent = Extract<
 >;
 
 /** Settings as storage returns them: bindings still carry plain-string actions. */
-export type SavedSettings = Omit<SettingsSliceState, 'bindings' | 'gameplay'> & {
+export type SavedSettings = Omit<SettingsSliceState, 'bindings'> & {
   readonly bindings: readonly SavedBinding[];
-  /** Absent in a save written before the cast mode existed (DEC-125). */
-  readonly gameplay?: SettingsSliceState['gameplay'];
 };

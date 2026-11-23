@@ -74,7 +74,6 @@ function matchDeps(
     camera: new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT),
     input: { read: () => STILL },
     logger: new NullLogger(),
-    abilities: [],
     observer: {
       crashed: vi.fn<MatchObserver['crashed']>(),
       ended: vi.fn<MatchObserver['ended']>(),
@@ -251,7 +250,7 @@ describe('Match lifecycle', () => {
   it('publishes once before the first frame, then on the bridge cadence', () => {
     const { match, simulation, scheduler, clocks } = build();
     match.start();
-    expect(clocks).toEqual([{ tick: 0, seconds: 0 }]);
+    expect(clocks).toEqual([{ tick: 0, seconds: 0, countdown: 10 }]);
 
     scheduler.advance(0);
     scheduler.runFrames(30, TICK_MS);

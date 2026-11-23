@@ -65,6 +65,8 @@ const createFakeContext = (): DrawContext => ({
   save: vi.fn(),
   stroke: vi.fn(),
   strokeRect: vi.fn(),
+  drawImage: vi.fn(),
+  imageSmoothingEnabled: true,
   fillStyle: '',
   strokeStyle: '',
   lineWidth: 1,
@@ -357,8 +359,13 @@ describe('MiniMapView unit markers (DEC-187)', () => {
     const counters = { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} };
     const snapshot: Snapshot = {
       tick: 1,
-      match: { phase: 'countdown', phaseEnteredTick: 0, upcoming: [], humanLegendId: null },
-      player: null,
+      match: {
+        phase: 'countdown',
+        phaseEnteredTick: 0,
+        upcoming: [],
+        countdownEndTick: 0,
+        humanLegendId: null,
+      },
       entities: [minion],
       hordes: [],
       teams: { light: counters, dark: counters },

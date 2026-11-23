@@ -78,7 +78,6 @@ export class Perception {
       return false;
     }
     const team = entities.teamOf(id);
-    if (hostileTo !== undefined && !entities.isVisibleToTeam(hostileTo, id)) return false;
     return (
       (hostileTo === undefined ||
         (team !== undefined &&
