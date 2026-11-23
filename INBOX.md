@@ -844,14 +844,14 @@ Reply inline (`Decision: …`).
       the whole box, or one ruin per wall piece) and uses it both to cull and to draw.
 
 - [ ] **HC-B42 — Better than the design, sign-off asked: 4 code ideas from the tower-orb
-      critic, built (`feat/tower-orbs`, critic rounds 1 and 2, 2026-11-23; DEC-362;
-      PR-REVIEW-ASSIST-41, -42).** Nothing changes in play. Say "no" to a built item and it goes
+      critic, built (`feat/tower-orbs`, critic rounds 1 to 3, 2026-11-23; DEC-362;
+      PR-REVIEW-ASSIST-41 to -43).** Nothing changes in play. Say "no" to a built item and it goes
       back. (1) The orb blast uses the one shared rule for "which bodies does an area hit"
-      (`AreaHitQuery`, with the abilities' family filter), so a body that cannot take damage (a
-      forest camp, a wall or gate that cannot break yet) is never in a blast. (2) The game
-      refuses bad turret and orb data at load: a turret with no ammo, ammo on a structure that
-      is not a turret, an arc shot that slows down before its end. One shared check loop runs
-      these rules. (3) The client picks how a shot looks in the air (streak or orb) from its own
+      (`AreaHitQuery`, with a family filter). So a unit that cannot take damage would not be
+      hit either. No unit is in that state today. (2) The game refuses bad turret and orb data
+      at load: a turret with no ammo, ammo on a structure that is not a turret, an arc shot
+      that slows down before its end. One shared check loop runs these rules, and the shot id
+      check uses the shared id rule (critic round 3). (3) The client picks how a shot looks in the air (streak or orb) from its own
       table. (4) The blast size reaches the screen from the shot itself. (5) Not built: one
       "flight" object for all arc-shot code (each place does a different job in a different
       code layer, and the flight part needs code that two of those layers may not use); a
