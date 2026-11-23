@@ -814,7 +814,19 @@ Reply inline (`Decision: …`).
       (5) Built (critic round 5): the map view picks one ruin look per fallen object (one ruin over
       the whole box, or one ruin per wall piece) and uses it both to cull and to draw.
 
-- [ ] **HC-Q93 — Where does a wall turret's bolt stop? (`feat/wall-turrets`, PR 4, Owner Calls
+- [ ] **HC-B42 — Better than the design, sign-off asked: 4 code ideas from the tower-orb
+      critic, built (`feat/tower-orbs`, critic round 1, 2026-11-23; DEC-362;
+      PR-REVIEW-ASSIST-41).** Nothing changes in play. Say "no" to a built item and it goes back.
+      (1) The orb blast uses the one shared rule for "which bodies does an area hit"
+      (`AreaHitQuery`), so a unit that takes no damage is not hit by it either. (2) The game
+      refuses bad turret and orb data at load: a turret with no ammo, ammo on a structure that
+      is not a turret, an arc shot that slows down before its end. (3) The client picks how a
+      shot looks in the air (streak or orb) from its own table. (4) The blast size reaches the
+      screen from the shot itself. Not built: a flight "strategy" object (the code layers
+      cannot share one), and a turret shot that names its target unit (the case cannot happen
+      on the map).
+
+- [x] **HC-Q93 — Where does a wall turret's bolt stop? (`feat/wall-turrets`, PR 4, Owner Calls
       card "WT bolt stop").** A turret aims where its target will be. Options: (A, recommended,
       not built yet) the bolt stops at that point and damages what is there; your HC-Q77 note
       ("A tower shoots at where its target is or is about to be") and game design 03 ("fire at
@@ -822,9 +834,56 @@ Reply inline (`Decision: …`).
       first body it touches. A is a content flag and a few lines where the bolt is made. Code
       names: `content/projectiles/turretBolt.ts`, `turretHeavyBolt.ts` (`range`, `TUNE`).
   - Answered 2026-11-23 (DEC-341): an arc shot from above, with a ground shadow, that lands where
-    the target would be and lodges in the ground. Not built yet: the tower-orb PR (Owner Calls
-    "WT orb page", DEC-341 (4)), stacked on #163, builds it for turret bolts and tower orbs. Tick
-    this item when it merges.
+    the target would be and lodges in the ground. Built in the tower-orb PR (DEC-342),
+    stacked on #163, for the turret bolts and the tower orbs.
+
+- [ ] **HC-Q96 — How far does a lane tower shoot? (`feat/tower-orbs`, Owner Calls v70, card "ORB
+      range").** Both lane towers (production and buff) use the same range. All distances count
+      from the tower centre. Options: (A, built) 26 m, about 10 m outside the fort wall: the
+      tower covers its fort and the ground in front of it; (B) 22 m, a narrow strip; (C) 30 m,
+      a wide area that is hard to enter without minions. Built as option A, marked `TUNE`; the
+      orb PR waits for the answer. Code names: `LANE_TOWER_REACH_FROM_CENTRE` in
+      `content/ai/turret.ts`.
+
+- [ ] **HC-Q97 — How hard and how fast does a lane tower hit? (`feat/tower-orbs`, card "ORB
+      damage").** This is the damage of one orb on the unit it aims at, and the time between two
+      orbs. Options: (A, built) 120 damage every 2 s: a light minion dies to 2 orbs, a level-1
+      Warrior alone under the tower dies in about 9 s; (B) 200 damage every 3 s: a light minion
+      dies to 1 orb, a level-1 Warrior in about 7 s; (C) 80 damage every 1.5 s: steady damage,
+      weaker on clumps. Built as option A, marked `TUNE`; the orb PR waits for the answer. Code
+      names: `damage` and `interval` of the `tower-orb` entry in
+      `content/structures/turretAmmo.ts`.
+
+- [ ] **HC-Q98 — How big is the orb blast? (`feat/tower-orbs`, card "ORB splash").** Each enemy
+      unit in the blast takes damage. Your own team and buildings take none. Options: (A, built)
+      3 m blast, full damage at the centre and half at the edge; (B) 3 m blast, full damage
+      everywhere in it; (C) 2 m blast, full damage everywhere in it. Built as option A, marked
+      `TUNE`; the orb PR waits for the answer. Code names: `splash` (`radius`,
+      `edgeMultiplier`) of the `tower-orb` entry in `content/structures/turretAmmo.ts`.
+
+- [ ] **HC-Q99 — How does the orb fly? (`feat/tower-orbs`, card "ORB flight").** Options: (A,
+      built) like the wall turret bolt: from above in an arc, with a shadow on the ground; it
+      bursts where it lands; walls and units on the way do not stop it; speed 20 m/s. At 26 m it
+      flies about 1.3 s, so a Legend that turns can dodge it, and the tower can hit an enemy
+      inside its own fort court; (B) straight: it flies flat and bursts on the first unit or
+      wall it touches, so a minion in front of a Legend takes the orb and a fort wall can block
+      it. Built as option A, marked `TUNE`; the orb PR waits for the answer. A change to B
+      changes how the orb moves, not only a number. Code names: `isArc` and `maxSpeed` in
+      `content/projectiles/towerOrb.ts`.
+  - Card "ORB flight over cliffs" (Owner Calls v86, part of HC-Q99): do the bolts and orbs also
+    fly over cliffs, mountains and the map edge? (A, built) yes: nothing on the way stops an arc
+    shot; (B) a cliff or a mountain on the way stops the shot (a code change: the arc shot
+    checks the ground on its way). DEC-342 (2) marks the built behaviour as a reading.
+
+- [ ] **HC-Q100 — Which enemy does a lane tower shoot first? (`feat/tower-orbs`, card "ORB
+      targets").** The tower shoots enemy units only. Options: (A, built) as the wall turrets: if
+      an enemy Legend hit one of your Legends near the tower in the last 3 s, shoot it at once;
+      else the nearest enemy; (B) minions first: Legends only when no enemy minion is in range,
+      or when one hits your Legend; (C) Legends first: always an enemy Legend in range before
+      any minion. Built as option A, marked `TUNE`; the orb PR waits for the answer. Code
+      names: `priority` of `LANE_TOWER` in `content/ai/turret.ts`. Options B and C each need
+      one new priority entry (a `TurretTargetPriority` member and its line in
+      `ai/turretTarget.ts`), not only a content change.
 
 - [ ] **HC-B36 — Better than the design, built under your standing rule (DEC-223), sign-off
       asked: one health pool for a wall turret, and the wall turret code layout

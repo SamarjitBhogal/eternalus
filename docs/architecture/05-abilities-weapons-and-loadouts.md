@@ -659,16 +659,16 @@ movement speeds). `Combat.weaponId` names the equipped weapon; `CombatSystem` ca
 `MeleeSweepAttackStrategy` does the same to every live enemy body in the wedge in front of the
 attacker (its radius is the body radius plus `reach`, its angle is `arcDegrees`); `RangedProjectileAttackStrategy`
 spawns a `Projectile` (not pooled, DEC-309) whose `payload` carries its impact as plain data by
-impact kind (a weapon's: the attack). `ProjectileSystem` flies every shot the same way and hands
-the hit to the `ProjectileImpact` of its kind (`WeaponImpact`: the damage with its fall-off, then
-the owner's `onHit`); an ability's shot is one more kind and one more impact class, and no
+impact kind (a weapon's: the attack). `ProjectileSystem` flies every shot, straight or in an arc
+(below), and hands the hit to the `ProjectileImpact` of its kind (`WeaponImpact`: the damage with
+its fall-off, or a blast, then the on-hit steps); an ability's shot is one more kind and one more impact class, and no
 `projectile-hit` event is needed (DEC-314). `Combat` holds a unit's attacks by mode, resolved once
 at spawn by one selector per mode, so `'heavy'` is one more selector (DEC-314). A heavy attack arrives as `attack-target` with `mode: 'heavy'`
 (`Recommendation:` one optional field on the existing command; **MVP-if-time**) and uses its own
 cooldown on `Combat`; a parry is a `parrying` status with a window. Non-unique weapons are usable
 by any class (reference 07: the class table's bias is a bias); `uniqueTo` locks the class weapons.
 
-A shot flies straight from the attacker's centre until it hits an enemy body or a wall, or reaches
+A straight shot flies from the attacker's centre until it hits an enemy body or a wall, or reaches
 its `ProjectileDefinition.range` (metres from the origin). It passes through allies, as the
 Hamstring blade does (DEC-269). A walk-on outline (a palace floor, a gate's passage) is ground units
 stand on, so a shot flies over it unless the shot aims at that entity: its locked target, or an aim
@@ -691,6 +691,17 @@ floor after that (DEC-306). A weapon with a melee attack beside its default atta
 `attack-target` with `mode: 'melee'`: the unit attacks with that melee attack (the Magus staff's
 melee, on its own rebindable action, DEC-308). `mode` is the same optional field as the heavy
 attack's. The basic and melee attacks share the unit's one cooldown (a reading of DEC-308).
+
+An arc shot (`ProjectileDefinition.isArc`; DEC-341 (4), DEC-342) comes from above. Nothing stops
+it in the air: no wall, body or map edge. It flies to its aim point and no further (its
+definition's `range` is the cap), lands on the body under it that a straight shot would stop on
+and that can take damage, or on bare ground, and then ends as a straight shot does. It needs no
+clear line of fire, only its range. An attack with a `splash` bursts where its shot lands: every
+live enemy unit whose circle meets the blast circle takes the damage, which falls from full at
+the centre to the splash's edge multiplier at its radius. Structures and allies take nothing.
+The blast finds its units through `AreaHitQuery`, the one area-hit rule (DEC-322 (3)). Which
+shots arc and the splash numbers live in `content/projectiles/` and the attack's `projectile`
+data.
 
 | Weapon (`id`)                               | Class      | Attacks (`TUNE`, reference 07)                                                          | Unique to | Status                  |
 | ------------------------------------------- | ---------- | --------------------------------------------------------------------------------------- | --------- | ----------------------- |
@@ -804,6 +815,33 @@ as before. A dash step of a gone caster does nothing (`DashEffect`), and `Entity
 ignores an unknown attacker. A live attacker's hit does not change. `attackInTicks` and
 `timeProblems` now live in `content/timesInTicks.ts` with `stepInTicks`, shared by the loaders of
 abilities, statuses, weapons and turret ammo.
+
+**Implementation status, 2026-11-23 (branch `feat/tower-orbs`, DEC-342; arc shot and splash).**
+Two shot types are built on the ranged-attack path above.
+
+- **The arc shot** (`ProjectileDefinition.isArc`, DEC-341 (4)). It comes from above, so no wall,
+  body or map edge stops it in the air. It flies to its aim point and no further: the shot's
+  range is the shorter of the definition's range and the distance to the aim. The aim is
+  `AttackAim.point`, else the target's place. `RangedProjectileAttackStrategy` sets that range
+  (`ProjectileFlight`). At its range the shot lands. The body under it takes the hit: the shot's
+  target if that target is under it, else the first body in store order that a shot stops on
+  (`systems/ArcLanding`, with `AreaHitQuery.stopsShot`). A body that takes no damage now is never
+  chosen. Bare ground is a legal landing. Then the shot lodges: it ends and stays for its
+  `endDuration`, and it hits nothing more. The owner's hit record gets the bodies it landed on
+  (`EntityStore.recordHits`). `LineOfFire` treats an arc shot as always clear. The turret bolts
+  and the tower orb are arc shots; arrows and the Magus bolt stay straight. The client draws the
+  arc and the shadow (`views/ProjectileView`) from `EntitySnapshot.projectile` (`isArc`, `range`).
+- **The splash** (`ProjectileLaunch.splash`: `radius` and `edgeMultiplier`, validated by
+  `KnownProjectileRule`). Where the shot lands, every live enemy unit whose circle meets the blast
+  circle takes the damage. A neutral unit counts as an enemy. Structures and allies take nothing.
+  The damage falls in a straight line from full at the centre to `edgeMultiplier` at the radius,
+  on top of the shot's fall-off. The on-hit steps run on each unit. `ProjectileImpact.land` now
+  returns the ids it landed on, and `ProjectileHit.bodyId` can be `null`. A straight shot with a
+  splash bursts at its contact point. The client draws the blast from
+  `EntitySnapshot.projectile.blastRadius`.
+- Where the numbers live: `content/projectiles/` (flight) and `content/structures/turretAmmo.ts`
+  (the ammo's splash). The tower-orb values are `TUNE` and wait for the owner (`INBOX.md`
+  HC-Q96 to HC-Q100).
 
 ## 11. Artifacts (gadgets Z and C)
 

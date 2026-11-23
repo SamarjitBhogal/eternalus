@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-23
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -198,7 +198,11 @@ Overlap tests are therefore not enough:
   sprint). **Swept when fast**: any unit whose displacement this tick exceeds its radius.
   Projectiles are swept by `ProjectileSystem`, not by the resolver's step 1: a shot is not pushed
   or slid, it ends at the first body or wall it touches (05 §10, DEC-314). Walls still come from
-  the resolver's `CollisionQuery.reach`. The resolver's steps below are for units.
+  the resolver's `CollisionQuery.reach`. The resolver's steps below are for units. An arc shot
+  (`ProjectileFlight.isArc`, 05 §10, DEC-342) is the exception: `ProjectileSystem` does not sweep
+  it while it flies, so no wall, body or map edge stops it. It moves to its range, which its
+  attack set to the aim point, and lands there (`ArcLanding`). It is then ended and hits nothing
+  more.
 - The test casts the segment `previousPosition → position` (expanded by the circle's radius, i.e.
   a capsule) against `StaticColliderIndex` entries flagged `isUnbreakable`, plus closed gates and
   map bounds; the earliest time of impact `t ∈ [0, 1]` wins; the mover is placed at

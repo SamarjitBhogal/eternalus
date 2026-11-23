@@ -433,9 +433,17 @@ work named:
   structure's place and a target's velocity through `EntityStore.placeOf` and `velocityOf`. Each
   decision with a target sends `switch-ammo` when the chosen ammo is not the loaded one, then
   `attack-aim` at the predicted point, so the aim stays fresh (wall turrets part 2, 2026-11-22).
-  With no target and an aim still set, it sends `attack-aim { aim: null }` once. The bolt range is
-  35 m, `TUNE`, until the arc shot of DEC-341 (HC-Q93) lands in the tower-orb PR (Owner Calls "WT orb page",
-  DEC-341 (4); 07 §13).
+  With no target and an aim still set, it sends `attack-aim { aim: null }` once. The bolts are arc
+  shots (DEC-341 (4), 05 §10): the shot lands at its aim point, so `predictiveAim` adds the ticks
+  between the decision and the shot's first move (`ai/TurretController.constants.ts`) to the
+  flight time, and a line of fire is always clear for an arc shot (`LineOfFire`).
+  The lane towers use this controller too (DEC-302, DEC-342; 07 §13). Their profile is
+  `lane-tower` (`content/ai/turret.ts`, `LANE_TOWER`): the defend-ally override and window of the
+  wall turret, then the nearest enemy, and one ammo, `tower-orb`. The controller measures range
+  from the footprint's edge, so the profile's `range` is `LANE_TOWER_REACH_FROM_CENTRE` (the reach
+  from the tower's centre, `TUNE`, HC-Q96) less the footprint radius, which comes from the map
+  feature definitions. The profile and the ammo numbers are option A of the open owner cards
+  HC-Q96 to HC-Q100.
 - `BotLegendController` (M3) plays the `laner` tree of §4.2 with the nodes it needs
   (`ai/bt/`: `Sequence`, `ActiveSelector`, `Condition`, `Action`; `Selector` and `Cooldown` join
   with their first use) and a `UtilityScorer` (`ai/utility/`) over two considerations, closeness
