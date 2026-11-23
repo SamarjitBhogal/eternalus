@@ -198,7 +198,7 @@ Overlap tests are therefore not enough:
   sprint). **Swept when fast**: any unit whose displacement this tick exceeds its radius.
   Projectiles are swept by `ProjectileSystem`, not by the resolver's step 1: a shot is not pushed
   or slid, it ends at the first body or wall it touches (05 §10, DEC-314). Walls still come from
-  the resolver's `CollisionQuery.reach`. The resolver's steps below are for units.
+  the resolver's `CollisionQuery.shotReach`. The resolver's steps below are for units.
 - **Shapes that shots cross, shapes that light shots (HC-Q89, DEC-345).** A shot flies over lakes
   and lava rivers; a unit and a dash do not. The map builder flags each object by what it does to
   a shot (`MapObjectFlags`, set in `MapLandscapeBuilder`: `canShotsCross` on a lake and a lava
@@ -207,9 +207,9 @@ Overlap tests are therefore not enough:
   (`utils/geometry.ts`) is false when shots can cross the shape or when the shape's blocking area
   holds the shot's launch point (the launch-shape rule, DEC-334). `CollisionQuery.shotReach` applies
   it (a shot must give its launch point); `CollisionQuery.reach`, for a mover or a dash, does not, so
-  every blocking shape stops them (DEC-360). And
-  `WorldObjectStore.blockingAt` applies it for `NoMapObjectOverlapInvariant`, so the sweep and the
-  invariant agree. A mountain, a wall, a camp fire and every other shape without `canShotsCross`
+  every blocking shape stops them (DEC-360).
+  `WorldObjectStore.blockingAt` also applies it, for `NoMapObjectOverlapInvariant`, so the sweep
+  and the invariant agree. A mountain, a wall, a camp fire and every other shape without `canShotsCross`
   stop a shot. `CollisionQuery.lightsShot` answers whether a circle that moves along a delta
   touches (or starts in) a shape with `canLightShots`, outside its passages: a bridge deck (a
   passage) does not light a shot, so a move along the deck does not, while a move that leaves the
@@ -430,8 +430,9 @@ lake or a lava river, and still flags a unit in one. `MapObject`, `MapObjectArt`
 declares its own two fields, so it imports nothing from `content/`. Camp fires do not light arrows
 yet (HC-Q105). The `CollisionQuery` port has two more methods: `shotReach`, the sweep of a shot,
 whose launch point is required, so a shot cannot get the mover rule by leaving it out (DEC-360);
-and `lightsShot`. So where the text above says that a shot's walls come from `CollisionQuery.reach`
-(§7, the DEC-334 note), read `shotReach`; `reach` serves movers and dashes only.
+and `lightsShot`. So where the dated notes above say that a shot's walls come from
+`CollisionQuery.reach` (the 2026-11-20 note, `state.collisions.reach`, and the DEC-334 note), read
+`shotReach`; `reach` serves movers and dashes only.
 `doesShapeStopShot` uses game words but lives in `utils/`: `state/` (`WorldObjectStore`) may not
 import `physics/`, and `physics/` may not import `state/` or `content/`, so `utils/` is the one
 layer both can call (as for `isPointInBlockingArea`, DEC-334).

@@ -90,16 +90,17 @@ export const isPointInBlockingArea = (
 /**
  * Whether a blocking shape stops a shot launched at `launch`: the one shot stop rule, shared by the
  * collision sweep (`CollisionResolver.shotReach`) and the overlap check (`WorldObjectStore.blockingAt`).
- * It does not when shots can cross the shape (`canShotsCross`, which a map builder sets: DEC-345),
- * or when the shape's blocking area holds `launch` (`isPointInBlockingArea`, the launch-shape rule
- * of DEC-334: the shot can only leave that shape).
+ * `polygon` is one footprint of the shape; `shape` holds its passages and flags (a collision shape
+ * or a map object). It does not when shots can cross the shape (`canShotsCross`, which a map
+ * builder sets: DEC-345), or when the shape's blocking area holds `launch` (`isPointInBlockingArea`,
+ * the launch-shape rule of DEC-334: the shot can only leave that shape).
  */
 export const doesShapeStopShot = (
   polygon: Polygon,
-  passages: readonly Polygon[] | undefined,
-  canShotsCross: boolean,
+  shape: { readonly passages?: readonly Polygon[]; readonly canShotsCross?: true },
   launch: Vec2,
-): boolean => !canShotsCross && !isPointInBlockingArea(launch, polygon, passages);
+): boolean =>
+  shape.canShotsCross !== true && !isPointInBlockingArea(launch, polygon, shape.passages);
 
 /** The point of the segment from `a` to `b` nearest to `point`. */
 export const closestPointOnSegment = (point: Vec2, a: Vec2, b: Vec2): Vec2 => {

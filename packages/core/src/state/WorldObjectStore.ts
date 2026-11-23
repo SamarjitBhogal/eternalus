@@ -135,8 +135,7 @@ export class WorldObjectStore {
         object.footprints.some(
           (shape) =>
             doesCircleOverlapPolygon(point, radius, shape) &&
-            (launch === undefined ||
-              doesShapeStopShot(shape, object.passages, object.canShotsCross === true, launch)),
+            (launch === undefined || doesShapeStopShot(shape, object, launch)),
         )
       )
         return object.id;

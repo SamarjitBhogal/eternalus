@@ -124,12 +124,14 @@ describe('geometry', () => {
     ];
     const outside = { x: -5, y: 5 };
 
-    expect(doesShapeStopShot(SQUARE, undefined, false, outside)).toBe(true);
-    expect(doesShapeStopShot(SQUARE, undefined, true, outside)).toBe(false);
-    expect(doesShapeStopShot(SQUARE, undefined, false, { x: 2, y: 5 })).toBe(false);
-    expect(doesShapeStopShot(SQUARE, undefined, false, { x: 10, y: 5 })).toBe(false);
-    expect(doesShapeStopShot(SQUARE, [bridge], false, { x: 5, y: 5 })).toBe(true);
-    expect(doesShapeStopShot(SQUARE, [bridge], true, { x: 5, y: 5 })).toBe(false);
+    expect(doesShapeStopShot(SQUARE, {}, outside)).toBe(true);
+    expect(doesShapeStopShot(SQUARE, { canShotsCross: true }, outside)).toBe(false);
+    expect(doesShapeStopShot(SQUARE, {}, { x: 2, y: 5 })).toBe(false);
+    expect(doesShapeStopShot(SQUARE, {}, { x: 10, y: 5 })).toBe(false);
+    expect(doesShapeStopShot(SQUARE, { passages: [bridge] }, { x: 5, y: 5 })).toBe(true);
+    expect(
+      doesShapeStopShot(SQUARE, { passages: [bridge], canShotsCross: true }, { x: 5, y: 5 }),
+    ).toBe(false);
   });
 
   it('measures distance to a segment and a path', () => {

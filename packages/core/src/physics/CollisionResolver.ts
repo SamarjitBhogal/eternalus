@@ -61,7 +61,7 @@ export class CollisionResolver {
    * a shape whose blocking area holds `launch` (inside the polygon or on its edge, inside none of
    * its passages): the shot can only leave that shape (the launch-shape rule, DEC-334). The edge
    * counts, so a turret on the joint of two wall pieces can leave both. A unit's centre is never in
-   * a blocking area, so a shot from a unit is stopped there as a mover is. Read-only.
+   * a blocking area, so the launch-shape rule never frees a shot from a unit. Read-only.
    */
   public shotReach(
     from: Vec2,
@@ -115,23 +115,16 @@ export class CollisionResolver {
     });
   }
 
-  /** Whether the circle touches the shape's polygon outside its passages on the move. */
+  /**
+   * Whether the circle starts in the shape's polygon outside its passages, or touches it there on
+   * the move: the same start test and contact as `firstContact` (`startsInside`, `contactWith`).
+   */
   private static touches(start: Vec2, delta: Vec2, radius: number, entry: IndexedPolygon): boolean {
-    const at = (time: number) => ({ x: start.x + delta.x * time, y: start.y + delta.y * time });
-    const isOnDeck = (point: Vec2) =>
-      entry.passages?.some((passage) => isCircleInsidePolygon(point, radius, passage)) === true;
-    if (
-      !isOnDeck(start) &&
-      circlePenetration(start, radius, entry.polygon).depth > CONTACT_EPSILON
-    ) {
-      return true;
-    }
-    const enter = sweepCircle(start, delta, radius, entry.polygon);
-    if (enter !== null && !isOnDeck(at(enter.time))) return true;
-    return (entry.passages ?? []).some((passage) => {
-      const edge = sweepCircle(start, delta, radius, passage);
-      return edge !== null && isPointInPolygon(at(edge.time), entry.polygon);
-    });
+    const end = { x: start.x + delta.x, y: start.y + delta.y };
+    return (
+      CollisionResolver.startsInside(start, end, radius, entry) !== undefined ||
+      CollisionResolver.contactWith(start, delta, radius, entry) !== null
+    );
   }
 
   /** `move` without the bounds: the sweep and the slide. */
@@ -199,37 +192,46 @@ export class CollisionResolver {
     let first: SweepContact | null = null;
     const at = (time: number) => ({ x: start.x + delta.x * time, y: start.y + delta.y * time });
     for (const entry of candidates) {
-      if (
-        launch !== undefined &&
-        !doesShapeStopShot(entry.polygon, entry.passages, entry.canShotsCross === true, launch)
-      )
-        continue;
+      if (launch !== undefined && !doesShapeStopShot(entry.polygon, entry, launch)) continue;
       const stuck = CollisionResolver.startsInside(start, at(1), radius, entry);
       if (stuck !== undefined) {
         if (stuck !== null && (first === null || first.time > 0)) first = stuck;
         continue;
       }
-      let contact = sweepCircle(start, delta, radius, entry.polygon);
-      if (
-        contact !== null &&
-        entry.passages?.some((passage) => {
-          const point = at(contact?.time ?? 0);
-          return isCircleInsidePolygon(point, radius, passage);
-        }) === true
-      )
-        contact = null;
-      for (const passage of entry.passages ?? []) {
-        const edge = sweepCircle(start, delta, radius, passage);
-        if (
-          edge !== null &&
-          isPointInPolygon(at(edge.time), entry.polygon) &&
-          (contact === null || edge.time < contact.time)
-        )
-          contact = edge;
-      }
+      const contact = CollisionResolver.contactWith(start, delta, radius, entry);
       if (contact !== null && (first === null || contact.time < first.time)) first = contact;
     }
     return first;
+  }
+
+  /**
+   * The first contact of a circle that moves `delta` from `start` with the shape's polygon outside
+   * its passages, or `null`: a contact on a passage (a bridge deck) does not count, and the edge of
+   * a passage inside the polygon (the deck's side) does.
+   */
+  private static contactWith(
+    start: Vec2,
+    delta: Vec2,
+    radius: number,
+    entry: IndexedPolygon,
+  ): SweepContact | null {
+    const at = (time: number) => ({ x: start.x + delta.x * time, y: start.y + delta.y * time });
+    let contact = sweepCircle(start, delta, radius, entry.polygon);
+    if (contact !== null) {
+      const point = at(contact.time);
+      if (entry.passages?.some((passage) => isCircleInsidePolygon(point, radius, passage)) === true)
+        contact = null;
+    }
+    for (const passage of entry.passages ?? []) {
+      const edge = sweepCircle(start, delta, radius, passage);
+      if (
+        edge !== null &&
+        isPointInPolygon(at(edge.time), entry.polygon) &&
+        (contact === null || edge.time < contact.time)
+      )
+        contact = edge;
+    }
+    return contact;
   }
 
   /**

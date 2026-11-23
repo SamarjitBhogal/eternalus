@@ -222,7 +222,7 @@ describe('ProjectileSystem with lakes, lava and lit arrows (HC-Q89, DEC-345)', (
     expect(burning()).toBe(false);
   });
 
-  it('runs the lit steps once, named after the credited weapon, from the owner, for a hit that lands', () => {
+  it('runs the lit steps once, named after the weapon that fired the shot, from the owner, for a hit that lands', () => {
     const calls: unknown[][] = [];
     const hits: StepRunner = {
       runSteps: (_state, attackerId, targetId, id, steps) =>
