@@ -725,14 +725,17 @@ Reply inline (`Decision: …`).
       (DEC-326 (2)): "A: a busy minion finishes its own fight; only minions that are not fighting
       come to help". Built in PR 2 (`LeashBehaviour.engage`).
 
-- [ ] **Owner Calls card `busy-minion-building` — Minions hitting a tower: do they come to help?
+- [x] **Owner Calls card `busy-minion-building` — Minions hitting a tower: do they come to help?
       (`feat/melee-sweeps`, PR 2).** Asked on Owner Calls v54, 2026-11-22, by
       COMBAT-WEAPONS-ABILITIES-55. Does a minion that hits an enemy tower or Stronghold count as
       "fighting" under DEC-326 (2)? A (built now): no, it leaves the building and helps; only a
       minion that fights a unit stays. B: yes, it keeps hitting the building. The rule also
       reaches guards and forest-camp mobs (DEC-144 (C)). Recorded as a reading in DEC-326 (2).
+  - Answered 2026-11-23 (DEC-344 (1), Owner Calls v68): "Yes: hitting a building is not a fight.
+    The minion leaves the tower and helps. Only a minion that fights a unit (a minion, a Legend or
+    a mob) stays in its fight". This is A, as built; no change.
 
-- [ ] **HC-B35 — Better than the design, built under your standing rule (DEC-223), sign-off
+- [x] **HC-B35 — Better than the design, built under your standing rule (DEC-223), sign-off
       asked: the hit record and the takes-no-damage rule move onto `EntityStore`
       (`feat/melee-sweeps`, PR 2, pre-PR gate round 2, 2026-11-22; COMBAT-WEAPONS-ABILITIES-58).**
       Built and tested; recorded as DEC-333. Nothing waits on you. (1) The record of whom a unit
@@ -747,6 +750,9 @@ Reply inline (`Decision: …`).
       (`BotLeaves.movement = new BotMovement()`), and `stopsShot` stays static; (R2-A10)
       splitting `BotLeaves.ts` (328 lines): a split rewires the bot tree in the last critic
       round, and the leaves are one cohesive set.
+  - Answered 2026-11-23 (DEC-344 (3), Owner Calls v68): "B: sign off, and build the two skipped
+    suggestions in a follow-up". (1) and (2) stay. Lane A builds R2-A8 and R2-A10 in its next PR
+    after PR 2.
 
 - [ ] **HC-Q87 — Inside the enemy palace, your weapon never hits the Stronghold
       (`feat/melee-sweeps`, PR 2, critic R2-A2).** Confirm. Your answer to HC-Q76 was "A: aim at
@@ -757,14 +763,36 @@ Reply inline (`Decision: …`).
       built; (B) a weapon also hits the Stronghold from inside the palace when you aim at bare
       floor (the text of option A of HC-Q76). Code names: `AreaHitQuery` rule 1,
       `isOnOutlineFromOutside`; recorded in DEC-322 (1).
+  - Answered 2026-11-23 (DEC-344 (4), Owner Calls v68), "Other (note)": "Hitting the walls of the
+    stronghold damage hit. Attacking the throne does too. Floors do not count towards the health
+    pool, neither does furniture. However, it should be noted that the stronghold is not the
+    end-game target; the Emperor is. ... He is not built. Gurshaan or Aryan are supposed to
+    handle this." Not built yet: which walls count is asked as HC-Q104 (Owner Calls v71). Lane A
+    builds the answer in its own PR on PR 2. Tick this item when that PR is built.
 
-- [ ] **HC-Q88 — An ability hit counts as attacking for the AI (`feat/melee-sweeps`, PR 2,
+- [x] **HC-Q88 — An ability hit counts as attacking for the AI (`feat/melee-sweeps`, PR 2,
       critic R2-A3).** Confirm. When a Legend hits an enemy with an ability, the AI treats it
       like a basic attack: the enemy's guards and minions turn on that Legend, and a call for
       help can fire. Your Veil note says "whether via basic attack casting or ability casting",
       which supports this. Options: (A, recommended) keep it as built; (B) only a basic attack
       counts. Code names: `CastInstance` records its targets as hits (`EntityStore.recordHits`);
       recorded in DEC-322 (2), correction 2026-11-22.
+  - Answered 2026-11-23 (DEC-344 (2), Owner Calls v68): "A: keep it (built): ability hits count
+    as attacks". No change.
+
+- [ ] **HC-Q104 — Do all the palace walls and the throne share the Stronghold's health?
+      (`feat/melee-sweeps` stack, follow-up to HC-Q87, DEC-344 (4)).** Asked on Owner Calls v71,
+      2026-11-23, by COMBAT-WEAPONS-ABILITIES-59. Your HC-Q87 note: a hit on the Stronghold's
+      walls or its throne damages the Stronghold; floors and furniture do not. Today each palace
+      wall has its own health (2,000) and breaks on its own, and the throne is furniture with 100
+      health. Options: (A, recommended) every palace wall (outer walls, inner ring, room walls)
+      and the throne become part of the Stronghold, as a tower's fort walls are part of the
+      tower: a hit on any of them takes the Stronghold's health, and they no longer break on
+      their own; (B) only the outer walls and the throne; room walls keep their own health;
+      (C) walls keep their own health and also pass the damage on. This changes DEC-217 (13)
+      and part of DEC-322 (1). Lane A builds the answer in its own PR on PR 2. Code names:
+      `Simulation.spawnStructures` (one body object per structure today), `WorldObjectStore`,
+      `AreaHitQuery` rule 1.
 
 - [ ] **FYI for Samarjit (minion AI owner): three changes to minion AI in PR 2
       (`feat/melee-sweeps`).** Nothing to decide. (1) DEC-326 (2): a minion that is already
@@ -778,7 +806,8 @@ Reply inline (`Decision: …`).
       for the larger of the attack interval and the slowed cooldown (DEC-333 (1)). (3) Rule (1) is in `LeashBehaviour`, so it
       also reaches tower and Stronghold guards, forest-camp mobs and the capture point guards
       (guards follow the minion rules, DEC-144 (C)). A minion that hits its lane objective is not
-      "fighting" and still turns to help (Owner Calls card `busy-minion-building`, open).
+      "fighting" and still turns to help (Owner Calls card `busy-minion-building`, answered
+      2026-11-23: DEC-344 (1)).
       Architecture 18 §6.1 changes to match. Tick this item when Samarjit has read it.
 
 - [x] **HC-Q89 — Shots over lakes and lava rivers (`feat/wall-turrets`, PR 4).** Asked on Owner
@@ -825,24 +854,38 @@ Reply inline (`Decision: …`).
     this shot touch lava?". Before, each check had its own copy. No change for the player. Code
     names: `CollisionResolver.contactWith`, used by `firstContact` and `touches`.
 
-- [ ] **HC-Q90 — When can a wall turret take damage? (`feat/wall-turrets`, PR 4, Owner Calls
-      card "WT when damageable", 2026-11-22; PR-REVIEW-ASSIST-33).** No doc sets it: 07 §3 names
-      walls and gates only, and balancing.md gives a turret 600 health. Options: (A, built) like
-      walls and gates: a turret takes damage only after 2 of the 3 BuffTowers of its side are
-      down, because it stands on the wall; (B) it can always take damage. Code names:
-      `content/structures/structureCatalogue.ts` (`breakability`).
-
-- [ ] **HC-Q91 — What is left when a wall turret is destroyed? (`feat/wall-turrets`, PR 4,
-      Owner Calls card "WT destroyed pylon").** Options: (A, built) the pylon goes away, and
-      units can walk where it stood; (B) a ruin stays and still blocks movement. Code names:
-      `StructureDefinition.isBodyRemovedWithIt`.
-
 - [ ] **HC-Q92 — Does destroying a wall turret pay a reward? (`feat/wall-turrets`, PR 4,
       Owner Calls card "WT destroyed reward").** Options: (A, built) yes: structure XP and points,
       like the other structures; (B) no reward. Code names: `StructureDestroyedRule`,
       `ProgressionSystem` (no turret-only code). FYI: a turret that kills a unit gives no kill
       points, XP or ultimate charge to anyone, and assists still count (DEC-79: a non-Legend last
       hit gives no kill).
+  - Answered 2026-11-23 (DEC-341): "Only the one who destroys it gets the XP. Its like killing 2
+    or 3 heavy minions." Built on `feat/wall-turrets`: 300 XP (`TUNE`) to the Legend that lands
+    the killing hit, no team-wide structure XP. Still open: your note names XP only, so the turret
+    still gives its team 5 points and counts as a destroyed structure (DEC-212). Say if a turret
+    should give no points.
+    The level question moved to HC-Q106.
+
+- [ ] **HC-Q106 — Does one wall turret lift a Legend by 2 levels? (`feat/wall-turrets`, PR 4).**
+      One turret lifts a Legend by 2 levels at every level from 1 to 20. The old rule (DEC-190)
+      was at most 1 level. Options: (A, built) keep 2 levels; (B) cap it at 1 level, as the boss
+      reward is capped (DEC-237). Also: when a minion lands the last hit, no one gets the XP.
+
+- [ ] **HC-B38 — Better than the design, sign-off asked: 5 code ideas from the critic
+      (`feat/wall-turrets`, PR 4, critic rounds 4 and 5, 2026-11-23; PR-REVIEW-ASSIST-38/39).**
+      Nothing changes in play. Say "no" to a built item and it goes back.
+      (1) Built (coordinator ruling): the `structure-destroyed` event names the structure's
+      content id (`definitionId`), so the XP code does not look the structure up in the store.
+      (2) Not built yet: a setting per structure for what its body leaves (a ruin that blocks, or
+      open ground). Today every body leaves a ruin that blocks, so the setting has one value. It
+      goes in when the tower-ruins work (#98) merges (the merge note in DEC-341 (2)).
+      (3) Not built: one state field (standing, ruin, destroyed) on each map object in place of
+      `isDestroyed` and `isRuined`. It changes the golden replay hashes of every open PR.
+      (4) Not better: one table for the team-kill XP and the destroyer-only XP. They pay different
+      people on different events and share no data.
+      (5) Built (critic round 5): the map view picks one ruin look per fallen object (one ruin over
+      the whole box, or one ruin per wall piece) and uses it both to cull and to draw.
 
 - [ ] **HC-Q93 — Where does a wall turret's bolt stop? (`feat/wall-turrets`, PR 4, Owner Calls
       card "WT bolt stop").** A turret aims where its target will be. Options: (A, recommended,
@@ -851,19 +894,10 @@ Reply inline (`Decision: …`).
       destination") support it; (B, built now) the bolt flies on to its full range and hits the
       first body it touches. A is a content flag and a few lines where the bolt is made. Code
       names: `content/projectiles/turretBolt.ts`, `turretHeavyBolt.ts` (`range`, `TUNE`).
-
-- [ ] **HC-Q94 — Does a wall turret drop its target to defend your Legend? (`feat/wall-turrets`,
-      PR 4, Owner Calls card "WT defend switch", critic round 1 V3).** A turret shoots an enemy
-      minion. Then an enemy Legend near the turret hits one of your Legends. Options: (A,
-      recommended, built; architecture 11 §4.5 says "immediately") the turret drops the minion
-      and shoots that Legend at once; (B, requirement FR-073 and balancing.md: "keeps its first
-      target until it dies or leaves range") the turret finishes the minion first, then picks
-      that Legend first. A follows the source that 11 §4.5 and balancing.md both cite: research
-      §7 (`docs/research/game-architecture-and-performance-research.md`) says League turrets
-      "immediately switch to an enemy champion who damages an allied champion within 1400
-      range". B is two content lines (`overrides: []`, and `legend-hurting-ally-legend` first in
-      `priority`). Either answer then needs a fix in the other doc (FR-073 acceptance, or
-      11 §4.5). Code names: the turret AI profile (`overrides`, `priority`).
+  - Answered 2026-11-23 (DEC-341): an arc shot from above, with a ground shadow, that lands where
+    the target would be and lodges in the ground. Not built yet: the tower-orb PR (Owner Calls
+    "WT orb page", DEC-341 (4)), stacked on #163, builds it for turret bolts and tower orbs. Tick
+    this item when it merges.
 
 - [ ] **HC-B36 — Better than the design, built under your standing rule (DEC-223), sign-off
       asked: one health pool for a wall turret, and the wall turret code layout
@@ -3971,6 +4005,13 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-11-23 — **Your answers on the wall turret cards HC-Q90, HC-Q91 and HC-Q94** (PR 4, #163,
+  `feat/wall-turrets`): recorded as DEC-341. HC-Q90: a turret takes damage only after 2 of the 3
+  buff towers of its side are down, like its wall (as built). HC-Q91: a destroyed turret's pylon
+  stays as a ruin and blocks; a fallen tower's fort now also draws as ruins (one rule for every
+  structure body). HC-Q94: the turret switches at once to an enemy Legend that hits your Legend
+  (as built); FR-073 now says so. HC-Q92 and HC-Q93 stay open above with notes.
 
 - 2026-11-21 — **Your pick on HC-B17, a browser-support line** (`refactor/countdown-hud-units`):
   recorded as DEC-316. Architecture 13 §7 "Styling" now says, in your words: browser support is a

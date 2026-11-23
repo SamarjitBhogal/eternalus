@@ -309,13 +309,14 @@ lock the outer zones (`lockedBy`) until they die (`MatchDirector` timeline).
 
 ## 8. Structure destruction effects
 
-| Event                          | Effect (all data in content)                                               | MVP status |
-| ------------------------------ | -------------------------------------------------------------------------- | ---------- |
-| any lane structure destroyed   | `enraged` status on enemy minions in that lane (lane gets harder)          | MVP        |
-| `SpawnerTower` destroyed       | stronghold guard table shrinks; walls lose a bar if it was a shield source | MVP        |
-| `BuffTower` destroyed          | its shield bars removed everywhere; team buff and enemy debuff aura end    | MVP        |
-| `Gate`/`WallSegment` destroyed | footprint cleared; flow fields rebuilt; minimap terrain dirty              | MVP        |
-| `Stronghold` destroyed         | `match-ended` with the winner                                              | MVP        |
+| Event                          | Effect (all data in content)                                                                        | MVP status |
+| ------------------------------ | --------------------------------------------------------------------------------------------------- | ---------- |
+| any lane structure destroyed   | `enraged` status on enemy minions in that lane (lane gets harder)                                   | MVP        |
+| `SpawnerTower` destroyed       | stronghold guard table shrinks; walls lose a bar if it was a shield source                          | MVP        |
+| `BuffTower` destroyed          | its shield bars removed everywhere; team buff and enemy debuff aura end                             | MVP        |
+| `Gate`/`WallSegment` destroyed | footprint cleared; flow fields rebuilt; minimap terrain dirty                                       | MVP        |
+| `Stronghold` destroyed         | `match-ended` with the winner                                                                       | MVP        |
+| `Turret` destroyed             | its pylon stays as a ruin that blocks (DEC-341 (2)); XP only to the destroyer (DEC-341 (3), 05 §18) | MVP        |
 
 Every effect is a listener on `structure-destroyed` in the owning system; `StructureSystem` never
 calls another system (rule 12).
@@ -465,20 +466,24 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   `obstacleType`; `fell` and `minimapGlyph` arrive with felling and the minimap work.
 - **Wall turrets, part 1 (`feat/wall-turrets`, 2026-11-22; §1, §5).** Each `turret` map feature
   builds a `Turret` structure: definition `turret` in `content/structures/structureCatalogue.ts`
-  (base health from balancing.md, the map pylon's radius, no lane, the walls' breakability rule
-  pending the owner, INBOX.md HC-Q90). Its pylon map object blocks, so it is the turret's body: one health pool
-  (`hasMapFootprint`, as a lane tower's fort, DEC-185 B; DEC-217 (13) names only towers). Unlike a
-  fort, the pylon goes with the turret (`StructureDefinition.isBodyRemovedWithIt`): when the
-  turret is destroyed, the pylon is destroyed and its footprint and nav cells are cleared, as
-  before turrets were structures (owner question INBOX.md HC-Q91, default A). A destroyed turret
-  sends `structure-destroyed`, so it pays structure XP and structure points (DEC-186, DEC-212;
-  the reward is INBOX.md HC-Q92). The
+  (base health from balancing.md, the map pylon's radius, no lane, the walls' breakability rule,
+  DEC-341). Its pylon map object blocks, so it is the turret's body: one health pool
+  (`hasMapFootprint`, as a lane tower's fort, DEC-185 B, DEC-332). Like a fort, the pylon
+  outlives the turret: it stays as a ruin that blocks, and its footprint and nav cells stay
+  (DEC-341, HC-Q91). `WorldObjectStore.removed` marks every such body ruined, and the snapshot
+  carries `MapObjectSnapshot.isRuined`, so the client draws a fallen tower's fort and a dead
+  turret's pylon as ruins (06; the fort's walls still block, DEC-217 (12), until the tower-ruins
+  work (#98) lands). A destroyed turret sends `structure-destroyed`. It
+  pays structure points (DEC-212; whether it should is open in DEC-341), but no team-wide
+  structure XP: its XP (`xpSources.destroyerOnly`) goes only to the Legend that lands the killing
+  hit (DEC-341, HC-Q92). The
   ammo table of §5 is `content/structures/turretAmmo.ts` (`bolt-default`, `bolt-heavy`): each
   ammo is a `RangedAttack` plus `onHit` steps (the heavy bolt's concussion), with
   `preferredAgainst` for the ammo choice; `loadTurrets` converts its times to ticks and validates
   it. Its projectiles are `turret-bolt` and `turret-heavy-bolt`. Their 35 m range is `TUNE` with
   no reference value (a bolt starts at the turret's centre, so it covers the pylon, the turret's
-  range and the lead), pending the owner question "WT bolt stop" (INBOX.md HC-Q93).
+  range and the lead) until the arc shot of DEC-341 (HC-Q93) replaces the straight flight in the
+  tower-orb PR (Owner Calls "WT orb page", DEC-341 (4)).
   `TurretController` picks the target
   and the ammo and computes the aim point (11 §4.5, §10). Part 2 (next item) builds the shot.
 - **Wall turrets, part 2 (`feat/wall-turrets`, 2026-11-22; §5, DEC-334).** Turrets fire. The
@@ -496,8 +501,8 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   turret as the killer (`definitionId` `turret`). The turret has no score row, no `Progression`
   and no ultimate meter, so the kill gives no kill points, no XP and no ultimate charge to anyone;
   Legends that hit the victim in the assist window still get their assists. `StateHasher` hashes
-  the loaded ammo. Not built: the bolt stopping at its aim point (INBOX.md HC-Q93; bolts
-  fly their 35 m range), the `turret-control-changed` and `turret-fired` events, manual control
+  the loaded ammo. Not built: the arc shot of DEC-341 (HC-Q93; the tower-orb PR, Owner Calls
+  "WT orb page", DEC-341 (4), builds it; until then bolts fly their 35 m range), the `turret-control-changed` and `turret-fired` events, manual control
   and tower orbs.
 
 **2026-10-27 (PR #30, map objects).** Generated map objects currently reuse the `Obstacle`

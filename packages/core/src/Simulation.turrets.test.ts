@@ -111,7 +111,7 @@ describe('Simulation wall turrets', () => {
     expect(pylon).toMatchObject({ entityId: turretId, health });
   });
 
-  it("removes a destroyed turret's pylon, clearing its footprint and nav cells, while a fallen lane tower's fort stays", () => {
+  it("keeps a destroyed turret's pylon standing and blocking, its footprint and nav cells kept, as a fallen lane tower's fort (DEC-341, HC-Q91)", () => {
     // The lethal hits below skip the damage pipeline, which the test invariants refuse.
     const { simulation, state, run, turretOf } = setUp({ debug: RELEASE_DEBUG_CONFIG });
     const tower = MAP.features.find(
@@ -165,11 +165,19 @@ describe('Simulation wall turrets', () => {
     const { entities, mapObjects = [] } = simulation.snapshot();
 
     expect(entities.filter(({ id }) => id === turretOf(feature)?.id || id === towerId)).toEqual([]);
-    expect(mapObjects.find(({ id }) => id === feature.id)?.isDestroyed).toBe(true);
-    expect(state.worldObjects?.blockingAt(probe, 0.3)).toBeNull();
-    expect(grid?.isWalkableAt(probe.x, probe.y)).toBe(true);
-    expect(simulation.dashReach(from, direction, gap, 0.3)).toBe(gap);
-    expect(mapObjects.find(({ id }) => id === tower.id)?.isDestroyed).toBe(false);
+    expect(mapObjects.find(({ id }) => id === feature.id)).toMatchObject({
+      entityId: null,
+      health: null,
+      isDestroyed: false,
+      isRuined: true,
+    });
+    expect(state.worldObjects?.blockingAt(probe, 0.3)).toBe(feature.id);
+    expect(grid?.isWalkableAt(probe.x, probe.y)).toBe(false);
+    expect(simulation.dashReach(from, direction, gap, 0.3)).toBeLessThan(gap);
+    expect(mapObjects.find(({ id }) => id === tower.id)).toMatchObject({
+      isDestroyed: false,
+      isRuined: true,
+    });
     expect(state.worldObjects?.blockingAt(inFort, 0.5)).toBe(tower.id);
   });
 

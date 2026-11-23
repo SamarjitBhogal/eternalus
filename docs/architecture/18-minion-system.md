@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-23
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
@@ -493,7 +493,7 @@ escaped its leash (DEC-144 F).
     a Legend too. It does not switch for a call for help or for a better-ranked enemy: a busy
     mob finishes its own fight, and only mobs that are not fighting come to help (DEC-326 (2)).
     The lane objective is not a fight: a minion that attacks its next structure still switches to
-    an enemy the priority list ranks higher (a reading, Owner Calls card `busy-minion-building`).
+    an enemy the priority list ranks higher: hitting a building is not a fight (DEC-344 (1)).
     Guards and camp mobs share this rule (§7, DEC-144 (C)). The lane minion's leash, and
     with it its `callForHelpRadius`, is `LEASH` in `content/ai/aggro/laneMinion.ts`, grown by
     15 percent on the owner's word (DEC-193).

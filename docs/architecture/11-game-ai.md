@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-23
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -189,7 +189,7 @@ attacking an allied Legend, (3) enemy minions attacking an allied minion, (4) en
 attacking an allied minion, (5) closest enemy minion, (6) closest enemy Legend; Dota's aggro
 cooldown 3 s (90 ticks). Dota's 2.3 s aggro duration is not used: the owner's leash rule,
 "distance, then time" (18 §6.1, DEC-144), replaces it. "Call for help": an enemy Legend that
-attacks (a basic attack or an ability, DEC-322 (2)) an allied Legend inside the radius becomes priority 1, and an enemy that attacks a
+attacks (a basic attack or an ability, DEC-322 (2), DEC-344 (2)) an allied Legend inside the radius becomes priority 1, and an enemy that attacks a
 horde-mate is in reach out to `callForHelpRadius` (DEC-144). A unit "attacks" another while that
 is its locked target, and while that body was hit by its last attack (both count, not one or the
 other), for one attack interval, or the slowed cooldown when that is longer, so at least through
@@ -412,7 +412,7 @@ work named:
   loaded by `loadTurrets` and injected by `Simulation`. The controller ranks its candidates
   (`rankTurretTargets`). The profile's `overrides` come first: an enemy Legend that damaged an
   allied Legend within the defend-ally window becomes the target at once, also over a held target
-  (whether it should leave a held target is INBOX.md HC-Q94). The hits come from
+  (DEC-341, HC-Q94 A). The hits come from
   `GameState.legendHits` (`LegendHitLog`), which keeps a hit after its victim dies, so the turret
   still sees the Legend that killed its ally; the assist record (`ScoringState.recentHits`) forgets
   them at the death. balancing.md's window ("a Legend that damaged an allied Legend in the last
@@ -434,7 +434,8 @@ work named:
   decision with a target sends `switch-ammo` when the chosen ammo is not the loaded one, then
   `attack-aim` at the predicted point, so the aim stays fresh (wall turrets part 2, 2026-11-22).
   With no target and an aim still set, it sends `attack-aim { aim: null }` once. The bolt range is
-  35 m, `TUNE`, pending the owner question "WT bolt stop" (INBOX.md HC-Q93, 07 §13).
+  35 m, `TUNE`, until the arc shot of DEC-341 (HC-Q93) lands in the tower-orb PR (Owner Calls "WT orb page",
+  DEC-341 (4); 07 §13).
 - `BotLegendController` (M3) plays the `laner` tree of §4.2 with the nodes it needs
   (`ai/bt/`: `Sequence`, `ActiveSelector`, `Condition`, `Action`; `Selector` and `Cooldown` join
   with their first use) and a `UtilityScorer` (`ai/utility/`) over two considerations, closeness

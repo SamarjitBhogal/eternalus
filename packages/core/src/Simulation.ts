@@ -223,12 +223,7 @@ export class Simulation {
       LEGEND_SPECS,
       turrets.ammo,
     );
-    const { owners, removedWithOwner } = Simulation.spawnStructures(
-      this.state,
-      factory,
-      structures,
-      mapObjects,
-    );
+    const owners = Simulation.spawnStructures(this.state, factory, structures, mapObjects);
     this.state.indexStructures();
     // Before the pipeline: zones can be guard homes, which SpawnSystem finds when it is built.
     const zones = Simulation.spawnZones(this.state, factory);
@@ -244,14 +239,13 @@ export class Simulation {
         entities: this.state.entities,
         definitions: MAP_OBJECT_DEFINITIONS,
         owners,
-        removedWithOwner,
       });
       this.state.worldObjects = worldObjects;
       this.state.events.on('entity-removed', ({ entityId }) => {
         worldObjects.removed(entityId);
         // At once, so walking and a dash both stop seeing it from now on (critic r2 F1). A retired
-        // tower's fort is not its own entity (`objectFor` gives nothing), so it stays, as it blocks;
-        // a wall turret's pylon goes with it (`isBodyRemovedWithIt`).
+        // structure's body (a tower's fort, a turret's pylon) is not its own entity (`objectFor`
+        // gives nothing), so it stays as a ruin that blocks (DEC-341, HC-Q91).
         const object = worldObjects.objectFor(entityId);
         if (object !== undefined) walls.remove(object.id);
       });
@@ -417,31 +411,25 @@ export class Simulation {
    * (a fort, a pylon) is the structure's body: it has no health of its own (one pool, DEC-185 B).
    * Towers share one pool (DEC-217 (13)), and so do wall turrets: the palace's and the gates' objects
    * do not block, so they keep their own health, and their outline is walked on
-   * (`Footprint.isWalkOn`): a shot flies over it unless it was fired at the structure. A body whose
-   * structure's definition `isBodyRemovedWithIt` (a wall turret's pylon) is destroyed with it; a
-   * fort stays standing.
+   * (`Footprint.isWalkOn`): a shot flies over it unless it was fired at the structure. A body
+   * outlives its structure as a ruin that blocks (`WorldObjectStore.removed`, DEC-341).
    *
-   * @returns Map object id → the id of the structure it is the body of, and the ids of the bodies
-   *   destroyed with their structure.
+   * @returns Map object id → the id of the structure it is the body of.
    */
   private static spawnStructures(
     state: GameState,
     factory: EntityFactory,
     structures: StructureSource,
     mapObjects: readonly MapObject[] = [],
-  ): {
-    readonly owners: ReadonlyMap<string, string>;
-    readonly removedWithOwner: ReadonlySet<string>;
-  } {
+  ): ReadonlyMap<string, string> {
     const features = [...(state.world?.definition.features ?? [])].sort((a, b) =>
       compareById(a.id, b.id),
     );
     const bodies = new Map(mapObjects.map((object) => [object.id, object]));
     const owners = new Map<string, string>();
-    const removedWithOwner = new Set<string>();
     for (const { id, definitionId, position, team, laneId } of features) {
       if (structures.has(definitionId)) {
-        const { kind, hasMapFootprint, isBodyRemovedWithIt } = structures.get(definitionId);
+        const { kind, hasMapFootprint } = structures.get(definitionId);
         const placement = {
           position,
           team,
@@ -453,14 +441,11 @@ export class Simulation {
         if (body !== undefined) {
           structure.addComponent(new Footprint(body.footprints, { isWalkOn: !body.isBlocking }));
         }
-        if (body?.isBlocking === true) {
-          owners.set(body.id, structure.id);
-          if (isBodyRemovedWithIt === true) removedWithOwner.add(body.id);
-        }
+        if (body?.isBlocking === true) owners.set(body.id, structure.id);
         state.entities.add(structure);
       }
     }
-    return { owners, removedWithOwner };
+    return owners;
   }
 
   /**

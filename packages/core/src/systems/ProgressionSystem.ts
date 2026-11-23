@@ -17,7 +17,8 @@ import { UltimateCharge } from './UltimateCharge';
  * Turns kills into XP and levels (architecture 05 §13). It listens to `entity-died`, prices the kill
  * while the victim is still in the store, and in its own pass gives the XP to the killer's
  * `Progression`. A destroyed structure (`structure-destroyed`) pays every Legend of the opposing
- * team (DEC-186), and a boss in `xpSources.teamKills` pays every Legend of its killer's playable
+ * team (DEC-186), except one in `xpSources.destroyerOnly`, which pays only its killer (DEC-341); a
+ * boss in `xpSources.teamKills` pays every Legend of its killer's playable
  * team instead of the killer, lifting none more than the reward's `maxLevels` (DEC-237); a Legend
  * the cap leaves nothing to pay gets no award. Self-kills and ally kills pay nothing (O5). Each
  * level gained raises max health by the class's share of its base health (O3) and max aether,
@@ -78,9 +79,11 @@ export class ProgressionSystem implements System {
       }
     });
     // DEC-186: a destroyed structure pays every Legend of the opposing playable team, whoever or
-    // whatever landed the last hit. Buildings are map objects, not structures: no event, no XP.
-    state.events.on('structure-destroyed', ({ entityId, team }) => {
-      if (team !== 'neutral') {
+    // whatever landed the last hit; one in `destroyerOnly` paid its killer instead (DEC-341).
+    // Buildings are map objects, not structures: no event, no XP.
+    state.events.on('structure-destroyed', ({ entityId, definitionId, team }) => {
+      const isDestroyerOnly = content.xpSources.destroyerOnly[definitionId] !== undefined;
+      if (team !== 'neutral' && !isDestroyerOnly) {
         this.pending.push({
           kind: 'structure-destroyed',
           team: opponentOf(team),
@@ -184,6 +187,10 @@ export class ProgressionSystem implements System {
     if (level !== undefined) {
       const { base, perVictimLevel } = this.content.xpSources.legendKill;
       return base + perVictimLevel * level;
+    }
+    const destroyerXp = this.content.xpSources.destroyerOnly[victim.definitionId];
+    if (destroyerXp !== undefined) {
+      return destroyerXp;
     }
     if (!this.content.units.has(victim.definitionId)) {
       return 0;

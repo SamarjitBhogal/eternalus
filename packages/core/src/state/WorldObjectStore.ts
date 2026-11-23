@@ -12,6 +12,8 @@ export class WorldObjectStore {
   private readonly records: WorldObjectRecord[] = [];
   private readonly entityObjects = new Map<string, MapObject>();
   private readonly destroyed = new Set<string>();
+  /** The ids of the structure bodies that outlive their structure: they block and draw as ruins. */
+  private readonly ruined = new Set<string>();
 
   /** A standing structure's id → the index of the record of the map object that is its body. */
   private readonly owned = new Map<string, number>();
@@ -20,9 +22,7 @@ export class WorldObjectStore {
    * Spawns physical objects through the existing registry/factory; terrain has no health entity.
    * An object named in `owners` gets no entity of its own: its health is its structure's (one pool,
    * DEC-185 B: a lane tower's fort map object, DEC-217 (13); a wall turret's pylon), so a hit on it
-   * is a hit on the structure. One in `removedWithOwner` is destroyed with its structure, as an
-   * object with an entity of its own is (`objectFor` gives it, so its footprint is cleared); the
-   * others outlive it as scenery (`removed`).
+   * is a hit on the structure. It outlives its structure as a ruin that still blocks (`removed`).
    *
    * @param options - The objects, how to spawn them, and the structures some of them are bodies of.
    */
@@ -32,7 +32,6 @@ export class WorldObjectStore {
     entities,
     definitions,
     owners = new Map(),
-    removedWithOwner = new Set(),
   }: WorldObjectStoreOptions) {
     for (const object of objects) {
       const definition = definitions[object.kind];
@@ -41,11 +40,7 @@ export class WorldObjectStore {
       const owner = entities.get(owners.get(object.id) ?? '');
       const health = owner?.findComponent(Health);
       if (owner !== undefined && health !== undefined) {
-        if (removedWithOwner.has(object.id)) {
-          this.entityObjects.set(owner.id, object);
-        } else {
-          this.owned.set(owner.id, this.records.length);
-        }
+        this.owned.set(owner.id, this.records.length);
         this.records.push({ object, entityId: owner.id, health, bounds });
         continue;
       }
@@ -74,8 +69,9 @@ export class WorldObjectStore {
 
   /**
    * Marks only actual retired entities destroyed; a roof toggle never changes this state. A
-   * retired structure's own map object (its fort) stays standing, as it did when it had a pool of
-   * its own, with no health left to take: it is scenery from then on.
+   * retired structure's own map object (a lane tower's fort, a wall turret's pylon) stays standing
+   * and blocking, with no health left to take: it is a ruin from then on (DEC-341, HC-Q91; fort
+   * pieces become ruins that block, DEC-219 (a), DEC-227 Q-C).
    */
   public removed(entityId: string): void {
     const object = this.entityObjects.get(entityId);
@@ -84,6 +80,7 @@ export class WorldObjectStore {
     const record = index === undefined ? undefined : this.records[index];
     if (index !== undefined && record !== undefined) {
       this.owned.delete(entityId);
+      this.ruined.add(record.object.id);
       this.records[index] = { ...record, entityId: null, health: null };
     }
   }
@@ -125,8 +122,8 @@ export class WorldObjectStore {
         point.y - radius > bounds.y + bounds.height ||
         !object.isBlocking ||
         this.destroyed.has(object.id) ||
-        // A structure's fort outlives the structure (`removed`), so only an object's own death
-        // counts.
+        // A structure's body (a fort, a pylon) outlives the structure (`removed`), so only an
+        // object's own death counts.
         (health?.isDead === true && !this.owned.has(entityId ?? '')) ||
         object.passages?.some((shape) => isCircleInsidePolygon(point, radius, shape)) === true
       )
@@ -150,6 +147,7 @@ export class WorldObjectStore {
       entityId,
       health: health === null ? null : { current: health.current, max: health.max },
       isDestroyed: this.destroyed.has(object.id),
+      ...(this.ruined.has(object.id) && { isRuined: true as const }),
     }));
   }
 }

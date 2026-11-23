@@ -62,4 +62,9 @@ export type MapObjectSnapshot = {
   readonly entityId: string | null;
   readonly health: { readonly current: number; readonly max: number } | null;
   readonly isDestroyed: boolean;
+  /**
+   * Set when the object is a structure's body (a lane tower's fort, a wall turret's pylon) and its
+   * structure is gone: it still stands and blocks, and it draws as ruins (DEC-341, HC-Q91).
+   */
+  readonly isRuined?: true;
 };

@@ -43,7 +43,13 @@ const setUp = () => {
     entity.getComponent(StatusEffects).active.find(({ definition }) => definition.id === 'enraged')
       ?.stacks ?? 0;
   const lose = (team: Team, kind: string, lane: string | null = 'lane-0') => {
-    state.events.emit('structure-destroyed', { entityId: 'tower', kind, team, lane });
+    state.events.emit('structure-destroyed', {
+      entityId: 'tower',
+      kind,
+      definitionId: kind,
+      team,
+      lane,
+    });
   };
   return { state, system, addHorde, stacksOf, lose };
 };

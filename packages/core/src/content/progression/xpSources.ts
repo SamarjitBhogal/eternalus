@@ -17,4 +17,7 @@ export const XP_SOURCES: XpSourcesDefinition = {
     // lifts a Legend 2 levels at most.
     'capture-point-boss': { xp: 500, maxLevels: 2 },
   },
+  // TUNE: DEC-341 (owner 2026-11-23, "Only the one who destroys it gets the XP. Its like killing 2
+  // or 3 heavy minions"): 2.5 heavy minion kills (120 each), the middle of the owner's range.
+  destroyerOnly: { turret: 300 },
 };
