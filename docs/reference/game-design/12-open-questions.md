@@ -4,7 +4,7 @@ description: Every open question and naming to-do from the game doc and the requ
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-16
+last-reviewed: 2026-11-23
 tags: [reference, game-design, open-questions, naming, decisions]
 related:
   - 'docs/reference/source/game-project-eternalus-v2.md'
@@ -43,7 +43,7 @@ comment.
 | OQ-05 | Rename Titan.                                                                                                                                        | game doc: Naming (red)                                            | removed (replaced by "Eternal (rename pending)") |       |          |
 | OQ-06 | Name the central boss and the final-hit form; "Eternal (rename pending)" is used for both, and the source also writes "Mage Prime" and "Warrior′".   | game doc: Central boss; Form change                               | open                                             |       |          |
 | OQ-07 | Name the bow (the obsidian, purple-arrow ranged magical debuff weapon).                                                                              | game doc: Naming; Named weapons                                   | open                                             |       |          |
-| OQ-08 | Name the Studious passive (Magus).                                                                                                                   | game doc: Naming; Passives                                        | open                                             |       |          |
+| OQ-08 | Name the Studious passive (Magus). **Decided (DEC-330): Erudition**; id `erudition`.                                                                 | game doc: Naming; Passives                                        | decided (DEC-330); MVP                           |       |          |
 | OQ-09 | Name the Death Ray (working title).                                                                                                                  | game doc: Naming; Ultimates                                       | open                                             |       |          |
 | OQ-10 | Name and define the second Sentinel (Tank) artifact.                                                                                                 | game doc: Naming; Design; Artifact                                | open                                             |       |          |
 | OQ-11 | Name the god invoked by Fury ("the light of [god name]").                                                                                            | game doc: Naming; Ultimates                                       | open                                             |       |          |

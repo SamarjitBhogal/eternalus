@@ -4,7 +4,7 @@ description: The four Legend classes, their sub-classes (MVP since DEC-56; the r
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-28
+last-reviewed: 2026-11-23
 tags: [reference, game-design, legends, classes]
 paths: ['packages/core/src/content/legends/**', 'packages/core/src/entities/**']
 related:
@@ -98,14 +98,16 @@ special case.
 
 ## Passives
 
-| Class    | Name                    | Description                                                                                                                                         | Status  |
-| -------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| Sentinel | Wrecking Run            | While holding sprint, speed gradually increases to a max of N m/s.                                                                                  | **MVP** |
-| Magus    | Studious (name pending) | Abilities last X% longer and are N% more potent. Your ultimate fills faster.                                                                        | **MVP** |
-| Magus    | Necromancy              | The lower your health, the stronger you become. All undead abilities are amplified. Revived allies have increased power and negation for N seconds. | **MVP** |
+| Class    | Name         | Description                                                                                                                                         | Status  |
+| -------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| Sentinel | Wrecking Run | While holding sprint, speed gradually increases to a max of N m/s.                                                                                  | **MVP** |
+| Magus    | Erudition    | Abilities last X% longer and are N% more potent. Your ultimate fills faster.                                                                        | **MVP** |
+| Magus    | Necromancy   | The lower your health, the stronger you become. All undead abilities are amplified. Revived allies have increased power and negation for N seconds. | **MVP** |
 
 The loadout has one "passive ability or aura" slot (see `08-loadout.md`), so Magus chooses
-between Studious and Necromancy. Warrior has no passive in the source. Wrecking Run is the
+between Erudition and Necromancy. Until a player can choose it, the sub-class sets it: the
+Heretic has Necromancy, the Catalyst and the Oracle have Erudition (DEC-330). Warrior has no
+passive in the source. Wrecking Run is the
 in-fiction name for the Sentinel movement profile below.
 
 ## Default interactives: pick up and throw

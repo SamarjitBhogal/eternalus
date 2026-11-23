@@ -4,7 +4,7 @@ description: One recipe per kind of addition, from a Legend class to a port and 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-23
 tags: [architecture, recipes, extension-points, ocp, registries]
 paths:
   [
@@ -96,14 +96,16 @@ R14 "new view" and R16 "new command".
   ADR 0018, its phase open in `INBOX.md` HC-Q17). The roster is content
   (`packages/core/src/content/legends/specs/`), and the MVP already ships each spec's display and
   setup part (`loadDisplayContent()`, DEC-49); this recipe adds the gameplay: stat
-  modifiers, ability overrides, a pick-up id and a skin the existing class consumes. Behaviour no
+  modifiers, ability overrides (`kit`), its passive (`passiveId`, one of the class's
+  `passiveOptions` or `null`; DEC-330), a pick-up id and a skin the existing class consumes. Behaviour no
   strategy can express becomes a **sibling** kind under `Legend` (R1), never a fourth level.
 - **Files:** `core/content/legends/specs/<id>.ts` (`LegendSpecDefinition`; the folder is a
   `Recommendation:`) + a catalogue line. `Loadout.specId` already exists (05 §12);
   `Legend.attachComponents` applies the spec over the class definition.
 - **Registry line:** none: the catalogue line is the change.
 - **Tests:** `validateContent()` accepts an empty spec (the Phase 4.1 done-when); a spec changes
-  exactly the documented stat at spawn; a `LoadoutRule` rejects a spec of another class.
+  exactly the documented stat at spawn; a `LoadoutRule` rejects a spec of another class;
+  `KitInPoolRule` and `KnownAbilityRefsRule` reject a `kit` or `passiveId` outside the class.
 - **Docs:** the backlog row moves into a phase doc; `01-classes-and-subclasses.md` status.
 - **Skill:** `new-content`, or `new-entity` for a sibling class · [04 §9](04-entity-architecture.md#9-sub-classes-and-specialisations-d11).
 

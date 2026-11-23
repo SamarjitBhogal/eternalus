@@ -562,6 +562,8 @@ Reply inline (`Decision: …`).
   - Answered 2026-11-20 (DEC-307): "MVP-if-time: after the abilities (PR 8), Wrecking Run first",
     with a note: momentum exists but needs a physics feel (turns that slide, a Shield Wall-type
     ability that stops a Sentinel, barging through objects and buildings).
+  - Built 2026-11-23 (DEC-330, `feat/magus-passives`): Erudition (was Studious) and Necromancy,
+    with the owner's numbers; the sub-class sets the passive.
 - [x] **HC-Q74 — Magus staff: keep a melee attack when it turns ranged? (combat audit,
       COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls page).** Your weapon
       ruling (DEC-64): "Mages all have staves, which have ranged attacks (default) and melee
@@ -2706,6 +2708,8 @@ Reply inline (`Decision: …`).
     too. I see this could be a whole WI. For now we start building out the selection screen. Next
     sprint we do the rest." Recorded in DEC-70. **Waits for:** the next sprint's plan tasks for
     sub-class gameplay, which agents propose, and the backlog row's move.
+  - Part built 2026-11-23 (DEC-330, `feat/magus-passives`): the spec's `passiveId` is the second
+    gameplay field a match reads, after `kit` (architecture 17 R2).
 - [ ] **HC-Q18 — Making roster changes cheap: four decisions (not urgent; they save time later;
       OD-38).** An audit renamed a sub-class title, a Legend name, a class display name and a
       Legend id on scratch copies to see what each change touches. The cheap fixes are now built in
@@ -3639,6 +3643,8 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
       the code).
   - (1) `passiveOptions`: a class chooses between passives (Magus: Studious or Necromancy),
     while 04 §5 has a single `passiveId`.
+    Update 2026-11-23 (DEC-330): a spec now has one `passiveId`, taken from its class's
+    `passiveOptions` (Studious is now Erudition).
   - (2) `obstacleType`: `ObstacleDefinition.kind` stays `'obstacle'` (the entity class) and
     tree/rock/bridge go to `obstacleType`. It fixes the conflict between 04 §1/§5 and 07 §9.
   - (3) `Collider` fields: 04 §3 → 10 §4's `isStatic`/`isEnabled`/`isUnbreakable`.
