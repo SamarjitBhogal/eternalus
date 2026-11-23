@@ -815,6 +815,11 @@ Reply inline (`Decision: …`).
       its own copy, and the two copies disagreed over lakes (the critic found it). Code names:
       `canShotsCross`, `canLightShots`, `CollisionQuery.lightsShot`, `doesShapeStopShot`. Say
       "no" to either and it goes back.
+  - Added 2026-11-23 (pre-PR gate round 2, DEC-360 addendum): (3) a shot and a moving unit now
+    ask the map two different questions: "how far can this shot fly?" and "how far can this unit
+    move?". Before, one question with an optional extra part served both, so a later shot that
+    left out the extra part would be stopped by a lake. No change for the player. Code names:
+    `CollisionQuery.reach` (units, dashes) and `CollisionQuery.shotReach` (shots).
 
 - [ ] **HC-Q90 — When can a wall turret take damage? (`feat/wall-turrets`, PR 4, Owner Calls
       card "WT when damageable", 2026-11-22; PR-REVIEW-ASSIST-33).** No doc sets it: 07 §3 names
