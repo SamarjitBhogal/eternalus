@@ -74,7 +74,10 @@ const setUp = (wallAtX: number | null = null) => {
       ? null
       : {
           lightsShot: () => false,
-          reach: (from, _dir, distance, radius) =>
+          reach: () => {
+            throw new Error('a shot is swept by the shot rule (`shotReach`), never the mover rule');
+          },
+          shotReach: (from, _dir, distance, radius) =>
             Math.max(0, Math.min(distance, wallAtX - radius - from.x)),
         };
   const state = new GameState(CONFIG, 1, null, collisions === null ? {} : { collisions });

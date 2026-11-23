@@ -82,7 +82,7 @@ describe('Simulation wall turrets: launch shape (DEC-334)', () => {
           y: (neighbour.y - position.y) / length,
         };
         const reach =
-          state.collisions?.reach(
+          state.collisions?.shotReach(
             position,
             direction,
             WALL_TURRET.range,

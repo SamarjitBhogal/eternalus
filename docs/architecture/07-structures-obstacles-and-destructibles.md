@@ -555,7 +555,7 @@ so a replay or a match without map objects rebuilds the same zones. Interim diff
 rule and the shapes that shots cross share one predicate, `doesShapeStopShot` (`utils/geometry.ts`,
 10 §7): a blocking shape does not stop a shot when shots can cross it (`canShotsCross`: a lake, a
 lava river) or when its blocking area holds the shot's launch point (DEC-334). The collision sweep
-(`CollisionResolver.reach`) and `WorldObjectStore.blockingAt` both use it, so
+(`CollisionResolver.shotReach`) and `WorldObjectStore.blockingAt` both use it, so
 `NoMapObjectOverlapInvariant` does not flag a shot over a lake or a lava river, and still flags a
 unit in one.
 

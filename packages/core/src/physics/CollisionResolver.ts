@@ -48,16 +48,33 @@ export class CollisionResolver {
    * How far, up to `distance` metres, a circle of `radius` moves from `from` along `direction` (a
    * unit vector) in a straight line before it first touches a wall or the edge of the bounds, kept
    * as far short of a wall as `move` keeps a unit: `move`'s first sweep, without the slide. The
-   * whole `distance` when nothing is in the way. Read-only, like `move`.
-   *
-   * @param launch - A shot's launch point. A shape whose blocking area holds it (inside the
-   *   polygon or on its edge, inside none of its passages) does not stop the sweep: the shot can
-   *   only leave that shape (the launch-shape rule, DEC-334). The edge counts, so a turret on the
-   *   joint of two wall pieces can leave both. A unit's centre is never in a blocking area, so a
-   *   shot from a unit is stopped as before. A shape flagged `canShotsCross` does not stop a shot
-   *   either (DEC-345); it stops a mover. `doesShapeStopShot` holds both rules.
+   * whole `distance` when nothing is in the way. Every blocking shape stops it. Read-only, like
+   * `move`.
    */
-  public reach(
+  public reach(from: Vec2, direction: Vec2, distance: number, radius: number): number {
+    return this.sweep(from, direction, distance, radius);
+  }
+
+  /**
+   * `reach` for a shot launched at `launch`: a shape that does not stop a shot is skipped
+   * (`doesShapeStopShot`). That is a shape flagged `canShotsCross` (DEC-345; it stops a mover), and
+   * a shape whose blocking area holds `launch` (inside the polygon or on its edge, inside none of
+   * its passages): the shot can only leave that shape (the launch-shape rule, DEC-334). The edge
+   * counts, so a turret on the joint of two wall pieces can leave both. A unit's centre is never in
+   * a blocking area, so a shot from a unit is stopped there as a mover is. Read-only.
+   */
+  public shotReach(
+    from: Vec2,
+    direction: Vec2,
+    distance: number,
+    radius: number,
+    launch: Vec2,
+  ): number {
+    return this.sweep(from, direction, distance, radius, launch);
+  }
+
+  /** `reach`, or `shotReach` when `launch` is given. */
+  private sweep(
     from: Vec2,
     direction: Vec2,
     distance: number,
@@ -76,10 +93,8 @@ export class CollisionResolver {
   }
 
   /**
-   * Whether a circle of `radius` that moves `delta` from `from` touches a shape flagged
-   * `canLightShots` outside its passages, or starts in one (HC-Q89, DEC-345). A passage (a bridge
-   * deck) does not light a shot, so a circle that stays on the deck does not touch the shape; one
-   * that leaves the deck over the shape does, as `reach` stops a mover there. Read-only.
+   * `CollisionQuery.lightsShot`: whether the move touches a shape flagged `canLightShots` outside
+   * its passages, or starts in one (HC-Q89, DEC-345). Read-only.
    */
   public lightsShot(from: Vec2, delta: Vec2, radius: number): boolean {
     for (const entry of this.candidatesOf(from, delta, radius)) {
@@ -172,7 +187,7 @@ export class CollisionResolver {
   /**
    * The first contact of a circle of `radius` that moves `delta` from `start`, or `null`. With a
    * `launch` point (a shot), a shape that does not stop the shot is skipped (`doesShapeStopShot`:
-   * shots can cross it, DEC-345, or its blocking area holds `launch`, DEC-334; see `reach`).
+   * shots can cross it, DEC-345, or its blocking area holds `launch`, DEC-334; see `shotReach`).
    */
   private firstContact(
     start: Vec2,

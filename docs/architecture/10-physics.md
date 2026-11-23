@@ -205,8 +205,9 @@ Overlap tests are therefore not enough:
   river, `canLightShots` on a lava river only), and the static index keeps the flags on each
   shape. One predicate decides whether a shape stops a shot: `doesShapeStopShot`
   (`utils/geometry.ts`) is false when shots can cross the shape or when the shape's blocking area
-  holds the shot's launch point (the launch-shape rule, DEC-334). `CollisionQuery.reach` applies it
-  when it is given a `launch` point (only a shot gives one; a mover or a dash gives none), and
+  holds the shot's launch point (the launch-shape rule, DEC-334). `CollisionQuery.shotReach` applies
+  it (a shot must give its launch point); `CollisionQuery.reach`, for a mover or a dash, does not, so
+  every blocking shape stops them (DEC-360). And
   `WorldObjectStore.blockingAt` applies it for `NoMapObjectOverlapInvariant`, so the sweep and the
   invariant agree. A mountain, a wall, a camp fire and every other shape without `canShotsCross`
   stop a shot. `CollisionQuery.lightsShot` answers whether a circle that moves along a delta
@@ -427,7 +428,13 @@ lake or a lava river, and still flags a unit in one. `MapObject`, `MapObjectArt`
 `StaticCollisionShape` carry `canShotsCross` and `canLightShots` (set in `MapLandscapeBuilder` for
 `lake-N` and `lava-river-N`, copied by `MapObjectBuilder` and `staticCollisionIndexOf`); `physics/`
 declares its own two fields, so it imports nothing from `content/`. Camp fires do not light arrows
-yet (HC-Q105). `CollisionResolver.lightsShot` is the second method on the `CollisionQuery` port.
+yet (HC-Q105). The `CollisionQuery` port has two more methods: `shotReach`, the sweep of a shot,
+whose launch point is required, so a shot cannot get the mover rule by leaving it out (DEC-360);
+and `lightsShot`. So where the text above says that a shot's walls come from `CollisionQuery.reach`
+(§7, the DEC-334 note), read `shotReach`; `reach` serves movers and dashes only.
+`doesShapeStopShot` uses game words but lives in `utils/`: `state/` (`WorldObjectStore`) may not
+import `physics/`, and `physics/` may not import `state/` or `content/`, so `utils/` is the one
+layer both can call (as for `isPointInBlockingArea`, DEC-334).
 
 ## Related
 

@@ -697,7 +697,7 @@ definition has `litOnHit` steps catches fire when it flies over a shape that lig
 river: `CollisionQuery.lightsShot`, 10 §7) before it reaches the body it lands on. It stays lit
 until it lands or ends. Where a lit shot lands damage, `ProjectileSystem` runs its `litOnHit` steps
 on the body through the `StepRunner` port (`HitEffects.runSteps`), as the attack's `onHit` runs:
-one cast named after the credited weapon, credited to the owner (or to the payload as the
+one cast named after the weapon that fired it, credited to the owner (or to the payload as the
 `Shooter` when the owner is gone). Content decides which shots can catch fire and what a lit shot
 does: each projectile's `litOnHit` in `content/projectiles/` (authored in seconds, loaded in ticks
 by `loadProjectiles`, checked against the ability registry at boot by `checkAttackLinks`), and the

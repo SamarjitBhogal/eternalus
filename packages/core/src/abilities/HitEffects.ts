@@ -96,12 +96,11 @@ export class HitEffects {
 
   /**
    * Runs `steps` as one cast named `id` for a hit that landed: the steps of a lit shot's
-   * `litOnHit` (HC-Q89, DEC-345). The attacker's statuses' steps do not run. Nothing runs, and
-   * nothing is allocated, for no steps; nothing runs when the struck body is gone or has no
-   * position, or the attacker has no position, or the attacker is gone and no `shooter` is given.
+   * `litOnHit` (HC-Q89, DEC-345). The attacker's statuses' steps do not run. Nothing runs for no
+   * steps, or when the struck body is gone or has no position, or the attacker has no position, or
+   * the attacker is gone and no `shooter` is given.
    *
-   * @param id - The cast's name: the weapon the hit is credited to (a shot's
-   *   `payload.source.definitionId`), as `afterHit` names the attack's cast.
+   * @param id - The cast's name: the weapon that fired the shot (its `payload.source.definitionId`).
    * @param shooter - A shot's owner as it fired: the steps run from it when the attacker is gone.
    *   Ignored while the attacker is in the store.
    */
@@ -113,9 +112,6 @@ export class HitEffects {
     steps: readonly AbilityEffectSpec[],
     shooter?: Shooter,
   ): void {
-    if (steps.length === 0) {
-      return;
-    }
     const landed = HitEffects.landing(state, attackerId, targetId, shooter);
     if (landed !== undefined) {
       this.run(state, landed.hit, id, steps);

@@ -48,12 +48,10 @@ export type HitRunner = {
  */
 export type StepRunner = {
   /**
-   * Runs `steps` as one cast named `id` for a hit that just landed, credited to `attackerId` and
-   * aimed at `targetId`, as the attack's own `onHit` runs, but not the attacker's statuses' steps.
-   * A lit arrow's burn (`ProjectileSystem`, HC-Q89, DEC-345). Nothing runs for no steps, or when
-   * the struck body or the attacker is gone and no `shooter` is given.
+   * Runs `steps` as one cast named `id` for a hit that just landed, from `attackerId` at
+   * `targetId` (`HitEffects.runSteps`).
    *
-   * @param id - The cast's name: the shot's definition id.
+   * @param id - The cast's name: the weapon that fired the shot (its `payload.source.definitionId`).
    * @param shooter - A shot's owner as it fired; the steps run from it when the owner is gone.
    */
   runSteps(

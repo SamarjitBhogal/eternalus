@@ -54,7 +54,7 @@ import type { System, SystemContext } from './System.types';
  * `CollisionQuery.lightsShot`). When the move lands on a body, only the part before that body is
  * tested: a shot that crosses lava and lands in the same move lands lit, and one that lands before
  * it reaches the lava does not. It stays lit until it lands or ends. A lit shot that lands damage
- * runs its `litOnHit` steps on the body, as one cast named after the credited weapon
+ * runs its `litOnHit` steps on the body, as one cast named after the weapon that fired it
  * (`payload.source.definitionId`), cast by the owner, or by the payload as the `Shooter` when the
  * owner is gone (HC-Q89, DEC-345).
  *
@@ -192,7 +192,7 @@ export class ProjectileSystem implements System {
   ): number {
     if (state.collisions === null || length === 0) return Number.POSITIVE_INFINITY;
     const dir = { x: delta.x / length, y: delta.y / length };
-    const reach = state.collisions.reach(from, dir, length, radius, launch);
+    const reach = state.collisions.shotReach(from, dir, length, radius, launch);
     return reach < length ? reach : Number.POSITIVE_INFINITY;
   }
 

@@ -105,9 +105,10 @@ const fightTurn = (attack: UnitAttack, collisions: CollisionQuery | null): BotTu
   };
 };
 
-const WALLED: CollisionQuery = { reach: () => 4, lightsShot: () => false };
+const WALLED: CollisionQuery = { reach: () => 4, shotReach: () => 4, lightsShot: () => false };
 const OPEN: CollisionQuery = {
   reach: (_from, _direction, distance) => distance,
+  shotReach: (_from, _direction, distance) => distance,
   lightsShot: () => false,
 };
 
@@ -164,6 +165,7 @@ describe('BotLeaves.fight: line of fire for a ranged attack', () => {
     const touching: CollisionQuery = {
       lightsShot: () => false,
       reach: (_from, _direction, distance) => distance - CONTACT_EPSILON,
+      shotReach: (_from, _direction, distance) => distance - CONTACT_EPSILON,
     };
     const turn = fightTurn(RANGED, touching);
 

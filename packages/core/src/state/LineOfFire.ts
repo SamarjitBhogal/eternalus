@@ -24,7 +24,7 @@ import { ReachQuery } from './ReachQuery';
  * (`ReachQuery.aimPointOf`): an outline's nearest point, which the shot touches there, or a unit's
  * centre, whose circle it touches its radius sooner. The line is clear when that contact is within
  * the shot's `range` and touched before the first wall (`isTouchedBeforeWall` on
- * `CollisionQuery.reach`): the rule `ProjectileSystem` lands a shot by, so a fort that is also a
+ * `CollisionQuery.shotReach`): the rule `ProjectileSystem` lands a shot by, so a fort that is also a
  * wall reads clear. A body that takes no damage now (a forest camp) blocks the line too, when the
  * shot would stop on it (`AreaHitQuery.stopsShot`, the rule `ProjectileSystem` flies a shot by)
  * more than `BODY_BEFORE_WALL_MARGIN` before it touches the target, as `ProjectileSystem` breaks a
@@ -87,7 +87,7 @@ export class LineOfFire implements LineOfFireQuery {
       return false;
     }
     normalizeInto(this.aim, subInto(this.aim, this.aim, from));
-    const wall = state.collisions.reach(from, this.aim, contact, shot.footprintRadius, from);
+    const wall = state.collisions.shotReach(from, this.aim, contact, shot.footprintRadius, from);
     return (
       isTouchedBeforeWall(contact, wall) &&
       !this.isBlocked(state, attackerId, targetId, from, contact, shot.footprintRadius)

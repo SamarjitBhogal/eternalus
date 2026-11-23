@@ -75,7 +75,7 @@ describe('staticCollisionIndexOf', () => {
     const shot = { x: 0, y: 0 };
     const east = { x: 1, y: 0 };
 
-    expect(resolver.reach(shot, east, 100, 0.5, shot)).toBeCloseTo(29.5, 5);
+    expect(resolver.shotReach(shot, east, 100, 0.5, shot)).toBeCloseTo(29.5, 5);
     expect(resolver.lightsShot(shot, { x: 20, y: 0 }, 0.5)).toBe(true);
     expect(resolver.lightsShot({ x: 40, y: 0 }, { x: 40, y: 0 }, 0.5)).toBe(false);
   });

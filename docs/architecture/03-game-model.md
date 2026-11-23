@@ -552,8 +552,9 @@ reproduced.
 lit: it flew over a shape that lights shots (a lava river) and runs its definition's `litOnHit`
 steps where it lands (05 §10). `StateHasher` adds a `lit` field for a shot only while the shot is
 lit, so a match with no lit shot hashes as before. `ProjectileSnapshot` carries `isLit` for the
-client. The `CollisionQuery` port has a second method, `lightsShot` (whether a shot's move touches
-a shape that lights shots, 10 §7), beside `reach`. `state/HitRunner.types.ts` has a second port
+client. The `CollisionQuery` port has two more methods beside `reach` (movers and dashes):
+`shotReach` (the sweep of a shot, launch point required, DEC-360) and `lightsShot` (whether a
+shot's move touches a shape that lights shots, 10 §7). `state/HitRunner.types.ts` has a second port
 beside `HitRunner`: `StepRunner` (`runSteps`, run a list of steps for a landed hit, without the
 attacker's statuses' steps), which `abilities/HitEffects` satisfies and `ProjectileSystem` uses for
 a lit shot. It is apart from `HitRunner`, so a consumer that runs only an attack's own `onHit`

@@ -130,9 +130,9 @@ describe('CollisionResolver', () => {
 
         // Without a launch point, a start inside that goes deeper stops at once.
         expect(resolver.reach(launch, EAST, 3, SHOT)).toBe(0);
-        expect(resolver.reach(launch, EAST, 3, SHOT, launch)).toBe(3);
-        expect(resolver.reach(launch, EAST, 20, SHOT, launch)).toBeCloseTo(15.35, 6);
-        expect(resolver.reach(launch, EAST, 20, SHOT, launch)).toBeLessThan(15.35);
+        expect(resolver.shotReach(launch, EAST, 3, SHOT, launch)).toBe(3);
+        expect(resolver.shotReach(launch, EAST, 20, SHOT, launch)).toBeCloseTo(15.35, 6);
+        expect(resolver.shotReach(launch, EAST, 20, SHOT, launch)).toBeLessThan(15.35);
       });
 
       it('still stops a shot whose circle, but not its launch point, overlaps the wall at launch', () => {
@@ -143,7 +143,7 @@ describe('CollisionResolver', () => {
         const pressed = { x: 5 - SHOT / 3, y: 0 };
 
         expect(thick.reach(pressed, EAST, 2, SHOT)).toBe(0);
-        expect(thick.reach(pressed, EAST, 2, SHOT, pressed)).toBe(0);
+        expect(thick.shotReach(pressed, EAST, 2, SHOT, pressed)).toBe(0);
       });
 
       it('still stops a shot launched in a passage where it leaves the passage over a shape shots cannot cross', () => {
@@ -157,7 +157,7 @@ describe('CollisionResolver', () => {
         const north = { x: 0, y: 1 };
 
         expect(barrier.reach(inPassage, north, 10, SHOT)).toBeCloseTo(2 - SHOT, 6);
-        expect(barrier.reach(inPassage, north, 10, SHOT, inPassage)).toBe(
+        expect(barrier.shotReach(inPassage, north, 10, SHOT, inPassage)).toBe(
           barrier.reach(inPassage, north, 10, SHOT),
         );
       });
@@ -169,7 +169,7 @@ describe('CollisionResolver', () => {
         expect(river.passages?.some((passage) => isPointInPolygon(onBridge, passage))).toBe(true);
         expect(river.canShotsCross).toBe(true);
         expect(collisions.reach(onBridge, offTheSide, 14, SHOT)).toBeCloseTo(3.46, 2);
-        expect(collisions.reach(onBridge, offTheSide, 14, SHOT, onBridge)).toBe(14);
+        expect(collisions.shotReach(onBridge, offTheSide, 14, SHOT, onBridge)).toBe(14);
       });
     });
 
@@ -205,16 +205,16 @@ describe('CollisionResolver', () => {
       const lake = resolverOf({ canShotsCross: true });
       const mountain = resolverOf({});
 
-      expect(lake.reach(LAUNCH, EAST, 20, SHOT, LAUNCH)).toBe(20);
+      expect(lake.shotReach(LAUNCH, EAST, 20, SHOT, LAUNCH)).toBe(20);
       expect(lake.reach(LAUNCH, EAST, 20, SHOT)).toBeCloseTo(5 - SHOT, 6);
-      expect(mountain.reach(LAUNCH, EAST, 20, SHOT, LAUNCH)).toBeCloseTo(5 - SHOT, 6);
+      expect(mountain.shotReach(LAUNCH, EAST, 20, SHOT, LAUNCH)).toBeCloseTo(5 - SHOT, 6);
       expect(mountain.reach(LAUNCH, EAST, 20, SHOT)).toBeCloseTo(5 - SHOT, 6);
     });
 
     it('lets a shot fly over a shape that also lights shots (lava)', () => {
       const lava = resolverOf({ canShotsCross: true, canLightShots: true });
 
-      expect(lava.reach(LAUNCH, EAST, 20, SHOT, LAUNCH)).toBe(20);
+      expect(lava.shotReach(LAUNCH, EAST, 20, SHOT, LAUNCH)).toBe(20);
     });
 
     describe('lightsShot', () => {
