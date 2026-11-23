@@ -36,7 +36,7 @@ const momentum = (): Momentum => new Momentum(PROFILE, ACCELERATION, MAX_SPEED);
 const drive = (rule: Momentum, velocity: MutableVec2, heading: typeof EAST, ticks: number) => {
   const moved = { x: 0, y: 0 };
   for (let tick = 0; tick < ticks; tick += 1) {
-    rule.drive(velocity, heading, MAX_SPEED);
+    rule.drive(velocity, heading, MAX_SPEED, MAX_SPEED);
     moved.x += velocity.x;
     moved.y += velocity.y;
   }
@@ -54,7 +54,7 @@ const driveBesideEastWall = (
   ticks: number,
 ) => {
   for (let tick = 0; tick < ticks; tick += 1) {
-    rule.drive(velocity, heading, MAX_SPEED);
+    rule.drive(velocity, heading, MAX_SPEED, MAX_SPEED);
     rule.shed(velocity, velocity.x > 0 ? [EAST_WALL] : []);
   }
   return Math.hypot(velocity.x, velocity.y);
@@ -104,7 +104,7 @@ describe('Momentum', () => {
           y: wall.x * cos(angle) - wall.y * sin(angle),
         };
         for (let tick = 0; tick < 35 + RAMP_TICKS + TICKS; tick += 1) {
-          rule.drive(velocity, heading, MAX_SPEED);
+          rule.drive(velocity, heading, MAX_SPEED, MAX_SPEED);
           rule.shed(velocity, velocity.x * wall.x + velocity.y * wall.y < 0 ? [wall] : []);
         }
         const speed = Math.hypot(velocity.x, velocity.y) * TICKS;
@@ -177,12 +177,52 @@ describe('Momentum', () => {
     expect(coast.x).toBeCloseTo(81 / 16, 0);
   });
 
+  it('slides down to a top a slow lowers at grip: the slow bites in about 0.3 s (DEC-330, F3)', () => {
+    const rule = momentum();
+    const velocity = { x: MAX_SPEED, y: 0 };
+    const slowed = 0.7 * MAX_SPEED;
+    const slide = (ticks: number) => {
+      for (let tick = 0; tick < ticks; tick += 1) rule.drive(velocity, EAST, slowed, MAX_SPEED);
+      return velocity.x;
+    };
+
+    expect(slide(1)).toBeCloseTo(MAX_SPEED - GRIP, 12);
+    expect(slide(9)).toBeGreaterThan(slowed);
+    expect(slide(1)).toBe(slowed);
+    expect(slide(TICKS)).toBe(slowed);
+  });
+
+  it('slides about 5 m to a stop in about 1.1 s when a stun takes away the drive, though it steers on', () => {
+    const rule = momentum();
+    const velocity = { x: MAX_SPEED, y: 0 };
+
+    let slid = 0;
+    for (let tick = 0; tick < 34; tick += 1) {
+      rule.drive(velocity, EAST, 0, MAX_SPEED);
+      slid += velocity.x;
+    }
+
+    expect(velocity).toEqual({ x: 0, y: 0 });
+    expect(slid).toBeCloseTo(81 / 16, 0);
+  });
+
+  it('does not press into a wall it steers into while a stun takes away the drive', () => {
+    const rule = momentum();
+    const velocity = { x: 0, y: MAX_SPEED };
+    rule.shed(velocity, [EAST_WALL]);
+
+    rule.drive(velocity, intoEastWall(30), 0, MAX_SPEED);
+
+    expect(velocity.x).toBe(0);
+    expect(velocity.y * TICKS).toBeCloseTo(9 - 8 / TICKS, 9);
+  });
+
   it('never returns more than the cap and stops at once on a zero cap', () => {
     const rule = momentum();
     const velocity = { x: MAX_SPEED, y: 0 };
 
-    expect(rule.drive(velocity, EAST, MAX_SPEED / 2)).toBeCloseTo(MAX_SPEED / 2);
-    expect(rule.drive(velocity, EAST, 0)).toBe(0);
+    expect(rule.drive(velocity, EAST, MAX_SPEED, MAX_SPEED / 2)).toBeCloseTo(MAX_SPEED / 2);
+    expect(rule.drive(velocity, EAST, MAX_SPEED, 0)).toBe(0);
     expect(velocity).toEqual({ x: 0, y: 0 });
   });
 
@@ -247,7 +287,7 @@ describe('Momentum', () => {
     const heading = intoEastWall(30);
 
     for (let tick = 0; tick < TICKS; tick += 1) {
-      rule.drive(velocity, heading, MAX_SPEED);
+      rule.drive(velocity, heading, MAX_SPEED, MAX_SPEED);
       // The move it tries (what `MovementSystem` faces) is along the heading, every tick.
       expect(velocity.x * heading.y - velocity.y * heading.x).toBeCloseTo(0, 12);
       expect(rule.shed(velocity, [EAST_WALL, NORTH_WALL])).toBe(0);
@@ -263,7 +303,7 @@ describe('Momentum', () => {
     const heading = intoEastWall(60);
 
     for (let tick = 0; tick < TICKS; tick += 1) {
-      rule.drive(velocity, heading, MAX_SPEED);
+      rule.drive(velocity, heading, MAX_SPEED, MAX_SPEED);
       // Sliding off one wall and then the other leaves a part along the second wall, out of the
       // corner, so the unit would flip between the walls every tick.
       expect(velocity.x * heading.y - velocity.y * heading.x).toBeCloseTo(0, 12);
@@ -279,7 +319,7 @@ describe('Momentum', () => {
     const velocity = { x: -0.28e-18, y: 0.96e-18 };
     rule.shed(velocity, [slantedWall]);
 
-    rule.drive(velocity, EAST, MAX_SPEED);
+    rule.drive(velocity, EAST, MAX_SPEED, MAX_SPEED);
 
     expect(velocity.x * 0.28 - velocity.y * 0.96).toBeCloseTo(ACCELERATION, 12);
   });
@@ -288,17 +328,17 @@ describe('Momentum', () => {
     const steered = momentum();
     const velocity = { x: 0, y: MAX_SPEED };
     steered.shed(velocity, [EAST_WALL]);
-    steered.drive(velocity, NORTHEAST, MAX_SPEED);
+    steered.drive(velocity, NORTHEAST, MAX_SPEED, MAX_SPEED);
     const fresh = { ...velocity };
     const away = momentum();
     const awayVelocity = { ...velocity };
     away.shed(awayVelocity, [EAST_WALL]);
     const freshAway = { ...awayVelocity };
 
-    steered.drive(velocity, NORTHEAST, MAX_SPEED);
-    momentum().drive(fresh, NORTHEAST, MAX_SPEED);
-    away.drive(awayVelocity, NORTHWEST, MAX_SPEED);
-    momentum().drive(freshAway, NORTHWEST, MAX_SPEED);
+    steered.drive(velocity, NORTHEAST, MAX_SPEED, MAX_SPEED);
+    momentum().drive(fresh, NORTHEAST, MAX_SPEED, MAX_SPEED);
+    away.drive(awayVelocity, NORTHWEST, MAX_SPEED, MAX_SPEED);
+    momentum().drive(freshAway, NORTHWEST, MAX_SPEED, MAX_SPEED);
 
     expect(velocity).toEqual(fresh);
     expect(awayVelocity).toEqual(freshAway);
@@ -312,7 +352,7 @@ describe('Momentum', () => {
     rule.forgetWalls();
     expect(rule.wallNormals).toEqual([]);
     rule.shed({ x: 0, y: 0 }, [EAST_WALL]);
-    rule.drive({ x: 0, y: 0 }, NORTHEAST, MAX_SPEED);
+    rule.drive({ x: 0, y: 0 }, NORTHEAST, MAX_SPEED, MAX_SPEED);
     expect(rule.wallNormals).toEqual([]);
   });
 

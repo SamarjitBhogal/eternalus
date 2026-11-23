@@ -3,10 +3,10 @@ import type { LegendDefinition } from './legends.types';
 /**
  * Sentinel: heavy and powerful; one of the highest top speeds but very slow acceleration.
  *
- * TUNE: health and movement are placeholders. Movement is Wrecking Run (DEC-307): momentum, so a
- * turn slides and loses speed, a head-on hit stops it and it builds along a wall; the build-up
- * follows the game doc's "up to 1 minute of running straight to get to full speed", shortened for
- * the MVP map (balancing.md, "Sentinel wall sprint"). The radius is DEC-06.
+ * TUNE: health and movement are placeholders. Movement is Wrecking Run (DEC-307, DEC-330):
+ * momentum, so a turn slides and loses speed, a head-on hit stops it and it builds along a wall;
+ * the build-up follows the game doc's "up to 1 minute of running straight to get to full speed",
+ * shortened for the MVP map (balancing.md, "Sentinel wall sprint"). The radius is DEC-06.
  */
 export const SENTINEL = {
   id: 'sentinel',
@@ -38,9 +38,9 @@ export const SENTINEL = {
     acceleration: 3, // TUNE: m/s² up to walkSpeed, balancing.md (normal acceleration)
     mass: 6, // TUNE:
     momentum: {
-      walkSpeed: 3.5, // TUNE: m/s, balancing.md (base speed); owner check pending (PR8 W1)
-      rampDuration: 20, // TUNE: s from walkSpeed to maxSpeed, balancing.md (sprint ramp); owner check pending (PR8 W1)
-      grip: 8, // TUNE: m/s², proposed (DEC-307: "Numbers for these go on the PR 8 page."): a reverse at 9 m/s slides about 5 m; owner answer pending (PR8 W2)
+      walkSpeed: 3.5, // TUNE: m/s, balancing.md (base speed); DEC-330 (W1): "Walk speed in about 1 s"
+      rampDuration: 20, // TUNE: s from walkSpeed to maxSpeed; DEC-330 (W1): "then build to 9 m/s over 20 s more"
+      grip: 8, // TUNE: m/s²; DEC-330 (W2): "a full reverse slides about 5 m in about 1.1 s"
     },
   },
   defaultLoadout: { primaryWeaponId: 'wuuthrad' }, // TUNE: default weapon (05 §10 table) until the owner picks one (INBOX)

@@ -12,10 +12,11 @@ import type { System, SystemContext } from './System.types';
  * move, so `CollisionSystem` sweeps both against walls and world bounds alike. The entity faces
  * the way it walked, its own velocity (DEC-192): a still entity keeps its facing, and forced motion
  * does not turn it. Statuses scale the top speed (`moveSpeed`) or hold the entity's own walking
- * (`cannot-move`); forced motion still moves a stunned or airborne entity (Slam knocks back and up
- * at once). While the match holds units idle (`state.match.isIdleHeld`, the countdown) every
- * entity is held, forced motion included, which waits for the hold to end. Allocates nothing per
- * entity (architecture 10 §2).
+ * (`cannot-move`; a unit with momentum slides to a stop instead, DEC-330); forced motion still
+ * moves a stunned or airborne entity (Slam knocks back and up at once). While the match holds units
+ * idle (`state.match.isIdleHeld`, the countdown) every entity is held at once (`Movement.hold`),
+ * forced motion included, which waits for the hold to end. Allocates nothing per entity
+ * (architecture 10 §2).
  */
 export class MovementSystem implements System {
   public readonly name = 'movement';
@@ -31,11 +32,13 @@ export class MovementSystem implements System {
 
       if (movement !== undefined && transform !== undefined) {
         const statuses = entity.findComponent(StatusEffects);
-        const speedScale =
-          isHeld || statuses?.has('cannot-move') === true
-            ? 0
-            : (statuses?.multiplier('moveSpeed') ?? 1);
-        movement.advance(speedScale);
+        if (isHeld) {
+          movement.hold();
+        } else {
+          movement.advance(
+            statuses?.has('cannot-move') === true ? 0 : (statuses?.multiplier('moveSpeed') ?? 1),
+          );
+        }
         if (isHeld || !movement.isForced) {
           transform.moveBy(movement.velocity);
         } else {

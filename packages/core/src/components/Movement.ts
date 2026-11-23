@@ -86,7 +86,8 @@ export class Movement {
 
   /**
    * The top speed the last `advance` allowed: `maxSpeed` times its `speedScale`, so above
-   * `maxSpeed` while a status speeds the entity up (`enraged`).
+   * `maxSpeed` while a status speeds the entity up (`enraged`). For a unit with momentum that slides
+   * down to a lower top (a stun or a slow), its speed before that tick.
    */
   public get topSpeed(): number {
     return this.currentTopSpeed;
@@ -142,24 +143,29 @@ export class Movement {
   /**
    * One tick of movement: speeds up along the heading, or slows down by one tick of
    * acceleration when there is no heading. The heading is kept, so movement resumes on its own.
-   * A unit with momentum drives through its `Momentum` instead.
+   * A unit with momentum drives through its `Momentum` instead: a status lowers only the top it
+   * drives to, and the speed above that top slides off at its grip (DEC-330, card F3), so a stun
+   * takes away its drive and it slides to a stop.
    *
    * @param speedScale - Multiplies `maxSpeed` for this tick (statuses: 0.7 slowed, 0 stunned,
-   *   above 1 enraged). The speed limit (`limitSpeed`) still caps the result.
+   *   above 1 enraged). The speed limit (`limitSpeed`) still caps the result at once.
    */
   public advance(speedScale = 1): void {
-    const cap = Math.min(this.maxSpeed * speedScale, this.currentSpeedLimit);
-    this.currentTopSpeed = cap;
+    const top = Math.min(this.maxSpeed * speedScale, this.currentSpeedLimit);
     if (this.momentum !== undefined) {
-      this.currentSpeed = this.momentum.drive(this.currentVelocity, this.currentHeading, cap);
+      // The drive never adds speed above the top; speed already above it only slides off.
+      const cap = Math.min(this.currentSpeedLimit, Math.max(top, this.currentSpeed));
+      this.currentTopSpeed = cap;
+      this.currentSpeed = this.momentum.drive(this.currentVelocity, this.currentHeading, top, cap);
       return;
     }
+    this.currentTopSpeed = top;
     if (this.currentHeading.x !== 0 || this.currentHeading.y !== 0) {
-      this.accelerateToward(this.currentHeading, cap);
+      this.accelerateToward(this.currentHeading, top);
       return;
     }
 
-    const slower = Math.min(cap, Math.max(0, this.currentSpeed - this.acceleration));
+    const slower = Math.min(top, Math.max(0, this.currentSpeed - this.acceleration));
     const factor = this.currentSpeed === 0 ? 0 : slower / this.currentSpeed;
     this.currentSpeed = slower;
     this.currentVelocity.x *= factor;
@@ -260,6 +266,18 @@ export class Movement {
   /** Ends every push under way (a dash or knock-back), for a reset that puts the entity somewhere new. */
   public endPushes(): void {
     this.pushes.length = 0;
+  }
+
+  /**
+   * Holds the entity still for this tick, in place of `advance`, while the match holds every unit
+   * idle (the countdown): its speed drops to zero at once, a unit with momentum too, and it keeps
+   * its heading, so movement resumes on its own when the hold ends.
+   */
+  public hold(): void {
+    this.currentTopSpeed = 0;
+    this.currentSpeed = 0;
+    this.currentVelocity.x = 0;
+    this.currentVelocity.y = 0;
   }
 
   /** Stops at once and drops the heading. A push under way goes on: it is not the entity's will. */

@@ -17,6 +17,9 @@ import { sqrt } from '../utils/deterministicMath';
  * (loaded content).
  */
 export class Momentum {
+  /** The heading of a unit that cannot drive (a stun): zero, so all of its velocity slides off. */
+  private static readonly NO_HEADING: Vec2 = { x: 0, y: 0 };
+
   private readonly rampAcceleration: number;
 
   /**
@@ -56,15 +59,17 @@ export class Momentum {
 
   /**
    * One tick of the unit's own driving: builds the speed along `heading` (a unit vector, or zero
-   * while the unit does not steer) and slides the rest of `velocity` off at `grip`, never above
-   * `cap`. A part that points against the heading brakes at `grip` first. When the last move
-   * touched walls that the heading points into, the drive builds along them and keeps pressing
-   * into them, so the next move touches them again. Mutates `velocity` and returns its length, the
-   * new speed.
+   * while the unit does not steer) up to `top` and slides the rest of `velocity` off at `grip`,
+   * never above `cap`. A part that points against the heading brakes at `grip` first, and speed
+   * above `top` (a slow lowered it) slides down to it at `grip`. A zero `top` (a stun) takes away
+   * the drive: all of the velocity slides off at `grip`, as when the unit does not steer. When the
+   * last move touched walls that the heading points into, the drive builds along them and keeps
+   * pressing into them, so the next move touches them again. Mutates `velocity` and returns its
+   * length, the new speed.
    */
-  public drive(velocity: MutableVec2, heading: Vec2, cap: number): number {
+  public drive(velocity: MutableVec2, heading: Vec2, top: number, cap: number): number {
     const { guide, press } = this;
-    const top = this.aim(heading, cap);
+    const reach = this.aim(top === 0 ? Momentum.NO_HEADING : heading, top);
     const along = velocity.x * guide.x + velocity.y * guide.y;
     const acrossX = velocity.x - guide.x * along;
     const acrossY = velocity.y - guide.y * along;
@@ -74,8 +79,8 @@ export class Momentum {
     // A backward part within CONTACT_EPSILON is roundoff left by `shed`, not a reverse: braking it
     // would hold a unit at rest against a slanted wall forever.
     if (along < -CONTACT_EPSILON) driven = Math.min(0, along + this.profile.grip);
-    else if (along > top) driven = Math.max(top, along - this.profile.grip);
-    else driven = Math.min(this.buildUp(along), top);
+    else if (along > reach) driven = Math.max(reach, along - this.profile.grip);
+    else driven = Math.min(this.buildUp(along), reach);
     velocity.x = guide.x * driven + acrossX * kept + press.x * this.acceleration;
     velocity.y = guide.y * driven + acrossY * kept + press.y * this.acceleration;
     this.forgetWalls();
@@ -113,19 +118,19 @@ export class Momentum {
   /**
    * Points `guide` where this tick's drive builds and sets `press`, the part of `heading` that runs
    * into the walls the last move touched (`slideOff` takes it off). Returns the most speed the
-   * drive builds to along `guide`: no limit in the open (the caller's `cap` still holds), `cap`
-   * times what is left of the heading at a wall, and 0 head-on or in a corner.
+   * drive builds to along `guide`: `top` in the open, `top` times what is left of the heading at a
+   * wall, and 0 head-on or in a corner.
    */
-  private aim(heading: Vec2, cap: number): number {
+  private aim(heading: Vec2, top: number): number {
     const { guide, press } = this;
     this.slideOff(heading.x, heading.y, guide);
     press.x = heading.x - guide.x;
     press.y = heading.y - guide.y;
-    if (press.x === 0 && press.y === 0) return Number.POSITIVE_INFINITY;
+    if (press.x === 0 && press.y === 0) return top;
     const reach = sqrt(guide.x * guide.x + guide.y * guide.y);
     guide.x = reach === 0 ? 0 : guide.x / reach;
     guide.y = reach === 0 ? 0 : guide.y / reach;
-    return cap * reach;
+    return top * reach;
   }
 
   /**
