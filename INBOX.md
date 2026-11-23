@@ -707,6 +707,29 @@ Reply inline (`Decision: …`).
   - Answered 2026-11-23 (DEC-330): "A: fix it in a small PR before PR 8 merges". Not built yet;
     the fix PR comes after the PR 8 follow-up.
 
+- [ ] **HC-B40 — Better than the design, your sign-off: six small changes that the Magus
+      passives critic proposes (`feat/magus-passives`, architecture critic round 1, 2026-11-23;
+      eternalus-149).** Nothing that the player sees changes. The branch is built as it is now.
+      Each item is a later tidy-up if you sign it off.
+  - (1) Who puts a passive on. 05 §7 says that the Legend does it when it spawns. The Legend
+    cannot reach the status code, so `AbilitySystem` does it first in its pass, and a Duel round
+    reset makes it due again (DEC-338 (4)). Sign-off: 05 §7 names this, and the 05 §18 note
+    drops "Who puts it on".
+  - (2) A default passive per class. Now a spec with no passive (`passiveId: null`) has none,
+    but a spec with no kit (`kit: null`) gets the class kit. Proposal: each class names a default
+    passive (Sentinel: Wrecking Run; Vanguard and Magus: none), and a spec's `null` means "the
+    class default", as for the kit.
+  - (3) The slot of a passive's cast and of an on-hit cast. Both now use the `default-action`
+    slot (the basic attack, later Revive). Proposal: a cast says where it comes from (a bar
+    slot, a passive or a hit).
+  - (4) One check per rule. `KitInPoolRule` now checks the kit and the passive. Proposal: a
+    separate rule for the passive (05 §12 calls it `PassiveOwnedRule`).
+  - (5) A load check that a passive's buff puts a permanent status on its holder. Nothing checks
+    this now.
+  - (6) Statuses that time something. Erudition's "longer" also stretches a status that is
+    matched to a step delay (a hold during a wind-up). Proposal: a status can say that it is
+    never stretched. This goes with the knock-back reading in DEC-337 (4).
+
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
       small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`

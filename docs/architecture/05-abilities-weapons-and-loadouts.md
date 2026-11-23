@@ -1280,10 +1280,10 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     while the slot holds an ability (DEC-283 (7)). A bot may cast a filled `granted` slot
     (`pickReadySlot`).
 
-- **Magus passives (`feat/magus-passives`, 2026-11-23; DEC-330).** A Legend's passive comes
-  from its spec: `LegendSpecDefinition.passiveId` (Heretic `necromancy`; Catalyst and Oracle
-  `erudition`; both Sentinel specs `wrecking-run`; the Vanguard specs `null`). The owner chose the
-  passive by sub-class for now (DEC-330); the loadout's `passiveId` (§12) is not built.
+- **Magus passives (`feat/magus-passives`, 2026-11-23; DEC-330, DEC-337, DEC-338).** A Legend's
+  passive comes from its spec: `LegendSpecDefinition.passiveId` (the specs in
+  `content/legends/specs/`; `null` = no passive). The owner chose the passive by sub-class for now
+  (DEC-330 P1); the loadout's `passiveId` (§12) is not built.
   `KnownAbilityRefsRule` checks that each id in a class's `passiveOptions` and each spec
   `passiveId` is a `passive` ability of that class, and `KitInPoolRule` checks that a spec's
   `passiveId` is one of its class's `passiveOptions`. A passive ability costs no aether and has no
@@ -1296,25 +1296,31 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     cooldown and no `ability-cast`. A Duel round reset removes every status, so
     `DuelRoundSystem` makes the passive due again (`Abilities.rearmPassive`) and it is back on
     the next tick, before combat. `StateHasher` adds the field `passive-due` only while a passive
-    is due, so the golden replays stay valid.
+    is due, so the golden replays stay valid. Two gaps follow (DEC-338): a Legend that spawns
+    later in a tick (after `AbilitySystem`) gets its passive on the next tick, and on a Duel reset
+    tick a meter gain after the reset (a capture that ends on that tick) is not multiplied.
   - **Wrecking Run (§7).** Its passive ability has no steps (`effects: []`): its effect is the
     Sentinel's movement numbers (DEC-307), not a status. It exists so that every id in
     `passiveOptions` is an ability.
-  - **New stats (§8).** `abilityPotency` multiplies the damage of an ability's `damage` steps.
+  - **New stats (§8; DEC-337).** `abilityPotency` multiplies the damage of an ability's `damage`
+    steps.
     `abilityDuration` stretches the time of the statuses that a `buff` or `debuff` step applies
     (`CastContext.statusDuration(step)`, at least one tick; a status with no end stays without
     one). `ultimateGain` multiplies each gain of the ultimate meter, not a loss (§6;
     `UltimateCharge`), so the meter still moves only on an event (DISC-44). Erudition holds all
-    three (`content/status-effects/erudition.ts`). Basic attacks do not change.
+    three (`content/status-effects/erudition.ts`). Basic attacks do not change: a status's
+    `onHit` steps (`HitEffects`) read 1 for both ability stats. The statuses that a knock-back
+    applies (`staggered`, `knockup`) are not stretched (DEC-337 (4)).
   - **Modifier scaled by lost health (§8).** A `StatModifier` can have `byLostHealth: { fullAt }`:
     no effect at full health, its full value at `fullAt` of max health or less, in a straight
     line between. Only `damageDealt` and `damageTaken` take it, and `0 <= fullAt < 1`
     (`loadStatusEffects`). `StatusEffects.multiplier(stat, healthFraction)` reads it;
-    `StatusModifierStep` passes each side's health. Necromancy holds both stats with
-    `fullAt: 0.15` (`content/status-effects/necromancy.ts`); a shield does not count as health.
-  - **`CastContext.potency` (§3).** It is the status part only: the caster's `abilityPotency`
-    when each step fires (`CastInstance.contextAt`), not once per cast. The level growth stays
-    in `scaled(field, value)` (§13).
+    `StatusModifierStep` passes each side's health. Necromancy holds both stats and its `fullAt`
+    (`content/status-effects/necromancy.ts`); a shield does not count as health (DEC-338).
+  - **`CastContext.potency` (§3).** It is the status part only. The level growth stays in
+    `scaled(field, value)` (§13). `CastFacts` carries `potency` and `stretch`: `AbilitySystem`
+    reads the caster's `abilityPotency` and `abilityDuration` on each tick that steps of the cast
+    fire, not once per cast, so the steps that fire on one tick share them.
 
 ## Related
 

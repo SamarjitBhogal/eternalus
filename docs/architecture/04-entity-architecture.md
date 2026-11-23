@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-23
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -314,6 +314,7 @@ old design would have said `NeutralEntity` now says `team === 'neutral'`.
 
 Sub-classes (Legends) are MVP (ADR 0018), each as `LegendSpecDefinition` data (stat modifiers,
 ability overrides, pick-up strategy, skin) that the existing class consumes; no new code class. The
+spec data names the Legend's passive (`passiveId`, one of its class's `passiveOptions`; DEC-330). The
 roster is content (the specs in `packages/core/src/content/legends/specs/` and the class files
 beside them), never copied into a doc. The player already picks a Legend at character select as
 display and setup data (DEC-49); its gameplay is MVP scope, and the phase that builds it is open
@@ -399,7 +400,7 @@ session or phase named:
   not exist or belongs to another class throws at spawn, as does a spec id with no spec source. This is the first piece of
   sub-class gameplay of §9 (HC-Q17); every shipped spec's `kit` is `null`. The ultimate is the
   kit's `ultimate`, not a separate `ultimateId`. `Aether` keeps its `base` capacity for
-  `AetherRegenSystem` (05 §18).
+  `AetherRegenSystem` (05 §18). `Abilities` also holds the spec's passive and its due flag (05 §18).
 - Shipped kinds: the Legend classes of `LEGEND_KINDS` (`content/legends/legendKinds.ts`),
   `light-mob` (the training dummy only),
   `obstacle`, `projectile` and `capture-point` (PR #64). Other mobs are SCRUM-59; structures get

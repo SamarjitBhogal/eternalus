@@ -201,7 +201,8 @@ R14 "new view" and R16 "new command".
   **rule** (not a new use of one) is needed.
 - **Files:** `core/content/abilities/<camelId>.ts` exporting `<SCREAMING_ID>` (`satisfies
 AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `restrictions[]`)
-  - `abilityCatalogue.ts` line; the `LegendDefinition` slot that names it. Only if needed:
+  - `abilityCatalogue.ts` line; for a passive, the class `passiveOptions` and the spec `passiveId` that name it
+    (DEC-330); otherwise the `LegendDefinition` slot that names it. Only if needed:
     `core/abilities/effects/<Kind>Effect.ts` (an `AbilityEffect`: `validate`, `describe`,
     `apply`), `shapes/<Kind>Shape.ts` (an `AreaShape`: `validate`, `overlaps`,
     `overlapsPolygon`, `centreFor`) or `restrictions/<Rule>Restriction.ts`, each + `.test.ts`;

@@ -105,8 +105,8 @@ special case.
 | Magus    | Necromancy   | The lower your health, the stronger you become. All undead abilities are amplified. Revived allies have increased power and negation for N seconds. | **MVP** |
 
 The loadout has one "passive ability or aura" slot (see `08-loadout.md`), so Magus chooses
-between Erudition and Necromancy. Until a player can choose it, the sub-class sets it: the
-Heretic has Necromancy, the Catalyst and the Oracle have Erudition (DEC-330). Warrior has no
+between Erudition and Necromancy. Until a player can choose it, the sub-class sets it
+(DEC-330): see the sub-class specs' `passiveId` in `content/legends/specs/`. Warrior has no
 passive in the source. Wrecking Run is the
 in-fiction name for the Sentinel movement profile below.
 
