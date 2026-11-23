@@ -6,11 +6,10 @@ import { ABILITIES } from './abilityCatalogue';
 import type { AuthoredAbility, AuthoredEffectSpec } from './AbilityDefinition.types';
 import { loadAbilities } from './loadAbilities';
 
-/** Cost and cooldown of the seven abilities with no effects yet: balancing.md "Aether costs and cooldowns" (0 / 0 for an ultimate: the meter gates it). */
+/** Cost and cooldown of the five abilities with no effects yet: balancing.md "Aether costs and cooldowns" (0 / 0 for an ultimate: the meter gates it). */
 const UNBUILT = {
   'rip-and-tear': { cooldownSeconds: 10, aetherCost: 30, slot: 'ability' },
   'shield-wall': { cooldownSeconds: 18, aetherCost: 40, slot: 'ability' },
-  berserk: { cooldownSeconds: 0, aetherCost: 0, slot: 'ultimate' },
   sanctuary: { cooldownSeconds: 22, aetherCost: 60, slot: 'ability' },
   imbue: { cooldownSeconds: 20, aetherCost: 45, slot: 'ability' },
   'death-ray': { cooldownSeconds: 0, aetherCost: 0, slot: 'ultimate' },
@@ -85,6 +84,17 @@ describe('ABILITIES', () => {
     });
   });
 
+  it('gives Berserk its self-cast berserk buff, gated by the meter alone (balancing.md:189)', () => {
+    expect(ABILITIES.get('berserk')).toMatchObject({
+      classId: 'sentinel',
+      slot: 'ultimate',
+      cooldownSeconds: 0,
+      aetherCost: 0,
+      targeting: { kind: 'self' },
+      effects: [{ kind: 'buff', statusId: 'berserk' }],
+    });
+  });
+
   it('gives Slam its area damage, knock-up and 2.0 structure multiplier (balancing.md:185, :123)', () => {
     expect(ABILITIES.get('slam')).toMatchObject({
       classId: 'sentinel',
@@ -131,7 +141,7 @@ describe('ABILITIES', () => {
     expect(['blade-runner', 'slam', 'shockwave'].map(structureMultiplierOf)).toEqual([0.3, 2, 1]);
   });
 
-  it('prices the six abilities not built yet from balancing.md and gives them no effects', () => {
+  it('prices the five abilities not built yet from balancing.md and gives them no effects', () => {
     const unbuilt = ABILITIES.all().filter((ability) => ability.effects.length === 0);
 
     expect(unbuilt.map((ability) => ability.id)).toEqual(Object.keys(UNBUILT));

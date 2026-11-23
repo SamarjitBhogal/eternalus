@@ -5,28 +5,43 @@ import { INITIAL_FACING } from './Transform.constants';
 
 /**
  * Where an entity is, which way it faces and how much room it takes. Position must always be a
- * finite point; facing is always a unit vector (architecture 10 §10: vectors, never angles).
+ * finite point; facing is always a unit vector (architecture 10 §10: vectors, never angles). The
+ * radius is the one every reader uses (reach, areas, clicks, collision, the snapshot): the built
+ * radius times a scale that only `resize` changes (`BodySizeSystem`, the `size` stat).
  */
 export class Transform {
   private readonly currentPosition: MutableVec2;
   private readonly beforeMovement: MutableVec2;
   private readonly currentFacing: MutableVec2 = { ...INITIAL_FACING };
+  private scale = 1;
 
   /**
    * @param position - Starting point in world units.
-   * @param radius - Footprint radius in world units; must be positive.
+   * @param baseRadius - Footprint radius in world units at scale 1; must be positive.
    */
   public constructor(
     position: Vec2,
-    public readonly radius: number,
+    private readonly baseRadius: number,
   ) {
-    if (!(radius > 0) || !Number.isFinite(radius)) {
-      throw new Error(`Transform radius must be a positive number, got ${String(radius)}.`);
-    }
-
+    Transform.assertPositive(baseRadius, 'radius');
     Transform.assertFinite(position.x, position.y);
     this.currentPosition = { x: position.x, y: position.y };
     this.beforeMovement = { ...position };
+  }
+
+  /** The footprint radius now: the built radius times the current scale. */
+  public get radius(): number {
+    return this.baseRadius * this.scale;
+  }
+
+  /**
+   * Scales the footprint to `scale` times the built radius (1 = as built).
+   *
+   * @throws Error when `scale` is not a positive number.
+   */
+  public resize(scale: number): void {
+    Transform.assertPositive(scale, 'scale');
+    this.scale = scale;
   }
 
   /** The current position. Read it, but do not keep it: moves update it in place. */
@@ -95,6 +110,12 @@ export class Transform {
     Transform.assertFinite(x, y);
     this.currentPosition.x = x;
     this.currentPosition.y = y;
+  }
+
+  private static assertPositive(value: number, name: string): void {
+    if (!(value > 0) || !Number.isFinite(value)) {
+      throw new Error(`Transform ${name} must be a positive number, got ${String(value)}.`);
+    }
   }
 
   private static assertFinite(x: number, y: number, name = 'position'): void {

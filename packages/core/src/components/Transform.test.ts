@@ -20,6 +20,29 @@ describe('Transform', () => {
     expect(() => new Transform({ x: 0, y: 0 }, Number.NaN)).toThrow('radius');
   });
 
+  it('scales its radius from the built one, and back (the `size` stat, BodySizeSystem)', () => {
+    const transform = new Transform({ x: 0, y: 0 }, 1.25);
+
+    transform.resize(1.3);
+    const grown = transform.radius;
+    transform.resize(1);
+
+    expect(grown).toBeCloseTo(1.625, 12);
+    expect(transform.radius).toBe(1.25);
+  });
+
+  it('rejects a scale that is not positive, and keeps the radius it had', () => {
+    const transform = new Transform({ x: 0, y: 0 }, 0.5);
+
+    expect(() => {
+      transform.resize(0);
+    }).toThrow('scale must be a positive number');
+    expect(() => {
+      transform.resize(Number.POSITIVE_INFINITY);
+    }).toThrow('scale');
+    expect(transform.radius).toBe(0.5);
+  });
+
   it('never holds a non-finite position', () => {
     const transform = new Transform({ x: 1, y: 1 }, 1);
 

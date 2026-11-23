@@ -78,6 +78,7 @@ const setUp = (wallAtX: number | null = null) => {
       : {
           reach: (from, _dir, distance, radius) =>
             Math.max(0, Math.min(distance, wallAtX - radius - from.x)),
+          pushOut: (at) => at,
         };
   const state = new GameState(CONFIG, 1, null, collisions === null ? {} : { collisions });
   const events: GameEventMap['entity-removed'][] = [];

@@ -136,7 +136,7 @@ describe('DefaultSystemPipeline', () => {
     blockedBy.mockRestore();
   });
 
-  it('runs the horde systems in the order of architecture 10 §9, 11 §3 and 18 §3.2, collision right after movement (DEC-121 (c)), the casts and aether regeneration before statuses (plan arch call 13), stuck detection before steering (DEC-193)', () => {
+  it('runs the horde systems in the order of architecture 10 §9, 11 §3 and 18 §3.2, collision right after movement (DEC-121 (c)), the casts and aether regeneration before statuses (plan arch call 13), body sizes after statuses and before movement, stuck detection before steering (DEC-193)', () => {
     const logger = new MemoryLogger();
     const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
     const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP), {
@@ -178,6 +178,7 @@ describe('DefaultSystemPipeline', () => {
       'abilities',
       'aether-regen',
       'status-effects',
+      'body-size',
       'movement',
       'collision',
       'space',

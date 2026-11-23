@@ -221,7 +221,7 @@ describe('CombatSystem', () => {
 
   it('fires a ranged attack at a target in reach with no line-of-fire check, once per interval (DEC-317 addendum)', () => {
     // A wall stands between them: the shot is fired all the same and ends at the wall.
-    const walled: CollisionQuery = { reach: () => 1 };
+    const walled: CollisionQuery = { reach: () => 1, pushOut: (at) => at };
     const { state, spawn, context, combatSystem } = setUp(walled);
     const magus = spawn('magus', 'magus', 10, 'light');
     const dummy = spawn('light-mob', 'training-dummy', 5, 'dark');

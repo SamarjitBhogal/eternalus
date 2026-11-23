@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { STATUS_EFFECTS } from './statusEffectCatalogue';
 
 describe('STATUS_EFFECTS', () => {
-  it('holds the MVP set, the minion veterancy statuses, the knock-back statuses, Fury and its wind-up, and Veil’s invisible', () => {
+  it('holds the MVP set, the minion veterancy statuses, the knock-back statuses, Fury and its wind-up, Veil’s invisible and Berserk', () => {
     expect(STATUS_EFFECTS.ids).toEqual([
       'bleed',
       'concussion',
@@ -19,6 +19,7 @@ describe('STATUS_EFFECTS', () => {
       'fury',
       'fury-windup',
       'invisible',
+      'berserk',
     ]);
   });
 
@@ -30,6 +31,25 @@ describe('STATUS_EFFECTS', () => {
         onExpire: [],
       });
     }
+  });
+
+  it('makes Berserk a 12 s buff: 1.3× size, 1.5× damage dealt, 0.7× taken, 1.2× top speed (balancing.md:189)', () => {
+    expect(STATUS_EFFECTS.get('berserk')).toMatchObject({
+      polarity: 'buff',
+      controlClass: 'none',
+      durationSeconds: 12,
+      stacking: 'refresh',
+      maxStacks: 1,
+      modifiers: [
+        { stat: 'damageDealt', op: 'mul', value: 1.5 },
+        { stat: 'damageTaken', op: 'mul', value: 0.7 },
+        { stat: 'moveSpeed', op: 'mul', value: 1.2 },
+        { stat: 'size', op: 'mul', value: 1.3 },
+      ],
+      flags: [],
+      periodic: null,
+      onExpire: [],
+    });
   });
 
   it('makes Fury’s wind-up stop walking only, for 0.3 s: no control, no follow-up (DEC-283)', () => {

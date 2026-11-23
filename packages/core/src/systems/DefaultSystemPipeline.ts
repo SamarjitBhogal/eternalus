@@ -25,6 +25,7 @@ import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStr
 import { LaneFlowFields } from '../map/LaneFlowFields';
 import { AbilitySystem } from './AbilitySystem';
 import { AetherRegenSystem } from './AetherRegenSystem';
+import { BodySizeSystem } from './BodySizeSystem';
 import type { GameState } from '../state/GameState';
 import type { Rect } from '../utils/geometry.types';
 import { CaptureSystem } from './CaptureSystem';
@@ -57,11 +58,11 @@ import { SystemPipeline } from './SystemPipeline';
 
 /**
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
- * progress, the queued casts, aether regeneration, statuses, movement, collision (DEC-121 (c):
- * every later reader sees resolved positions), the neighbour index, stuck detection (DEC-193),
- * steering, the shots in flight, combat, map destruction, progression (kill XP), minion veterancy,
- * structure losses and breakability, spawning, enraging, out-of-combat healing (DEC-188), death,
- * capture points, the match director, then invariants last. Combat runs after movement, so a unit
+ * progress, the queued casts, aether regeneration, statuses, body sizes, movement, collision
+ * (DEC-121 (c): every later reader sees resolved positions), the neighbour index, stuck detection
+ * (DEC-193), steering, the shots in flight, combat, map destruction, progression (kill XP), minion
+ * veterancy, structure losses and breakability, spawning, enraging, out-of-combat healing
+ * (DEC-188), death, capture points, the match director, then invariants last. Combat runs after movement, so a unit
  * with a target in reach faces it, not its own way (DEC-192). This is the one place a system is
  * added, at its position in the tick (architecture 02 §9). It builds the match's one
  * `DamagePipeline` and one `StatusEffectApplier` (with the status effects loaded for this match's
@@ -133,6 +134,8 @@ export class DefaultSystemPipeline extends SystemPipeline {
       // After the casts, so a cast spends before the tick's regeneration (plan arch call 13).
       new AetherRegenSystem(AETHER_REGEN, tickRate),
       new StatusEffectSystem(state, damage, statuses),
+      // After the statuses, so a size takes effect in the tick its status starts or ends.
+      new BodySizeSystem(),
       new MovementSystem(),
       ...(hordes?.collisions ?? []),
       ...(hordes === undefined

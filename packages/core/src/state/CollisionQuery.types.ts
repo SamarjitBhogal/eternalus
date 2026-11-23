@@ -19,4 +19,12 @@ export interface CollisionQuery {
    * `ponytail` remark).
    */
   reach(from: Vec2, direction: Vec2, distance: number, radius: number): number;
+
+  /**
+   * Where a circle of `radius` at `at` stands once pushed out of every wall it overlaps, each
+   * time the shortest way out of the deepest one, and kept inside the map's edge: `at` itself
+   * when it overlaps none. A body that grew in place (`BodySizeSystem`) is moved here, so it keeps
+   * the precondition of `reach`.
+   */
+  pushOut(at: Vec2, radius: number): Vec2;
 }

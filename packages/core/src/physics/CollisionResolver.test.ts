@@ -129,4 +129,61 @@ describe('CollisionResolver', () => {
       );
     });
   });
+
+  describe('pushOut', () => {
+    it('leaves a circle that overlaps no wall where it is', () => {
+      const resolver = new CollisionResolver(
+        new StaticCollisionIndex([{ id: 'wall', polygon: rect(5, -20, 1, 40) }]),
+        OPEN,
+      );
+
+      expect(resolver.pushOut({ x: 4.5, y: 0 }, 0.5)).toEqual({ x: 4.5, y: 0 });
+    });
+
+    it('moves a grown circle the shortest way out of a wall, just clear of it', () => {
+      const resolver = new CollisionResolver(
+        new StaticCollisionIndex([{ id: 'wall', polygon: rect(5, -20, 1, 40) }]),
+        OPEN,
+      );
+
+      const out = resolver.pushOut({ x: 4.5, y: 0 }, 0.65);
+
+      expect(out.x).toBeCloseTo(4.35, 6);
+      expect(out.x).toBeLessThan(4.35);
+      expect(out.y).toBe(0);
+    });
+
+    it('clears both walls of a corner, and keeps the circle inside the bounds', () => {
+      const corner = new CollisionResolver(
+        new StaticCollisionIndex([
+          { id: 'east', polygon: rect(5, -20, 1, 40) },
+          { id: 'north', polygon: rect(-20, 5, 40, 1) },
+        ]),
+        OPEN,
+      );
+      const edge = new CollisionResolver(new StaticCollisionIndex([]), {
+        x: 0,
+        y: 0,
+        width: 20,
+        height: 10,
+      });
+
+      const out = corner.pushOut({ x: 4.5, y: 4.5 }, 0.8);
+
+      expect(out.x).toBeLessThanOrEqual(4.2);
+      expect(out.y).toBeLessThanOrEqual(4.2);
+      expect(edge.pushOut({ x: 0.5, y: 5 }, 0.65)).toEqual({ x: 0.65, y: 5 });
+    });
+
+    it('leaves a circle inside a passage of the wall where it is', () => {
+      const resolver = new CollisionResolver(
+        new StaticCollisionIndex([
+          { id: 'wall', polygon: rect(5, -20, 1, 40), passages: [rect(4, -2, 3, 4)] },
+        ]),
+        OPEN,
+      );
+
+      expect(resolver.pushOut({ x: 5.5, y: 0 }, 0.65)).toEqual({ x: 5.5, y: 0 });
+    });
+  });
 });
