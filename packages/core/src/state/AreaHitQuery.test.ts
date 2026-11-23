@@ -134,15 +134,15 @@ describe('AreaHitQuery.find', () => {
       add(family, { at: { x: 1, y: 0 }, team: 'dark', family });
     }
     const area = holding('legend', 'mob', 'boss', 'structure', 'obstacle');
-    const run = (isUnitsOnly?: boolean) =>
+    const run = (families?: readonly string[]) =>
       query.find(entities, attacker.id, area, NO_AIM, {
         team: 'enemies',
-        ...(isUnitsOnly === undefined ? {} : { isUnitsOnly }),
+        ...(families === undefined ? {} : { families }),
       });
 
-    expect(run(true)).toEqual(['boss', 'legend', 'mob']);
-    expect(run(false)).toEqual(['boss', 'legend', 'mob', 'obstacle', 'structure']);
-    expect(run()).toEqual(run(false));
+    expect(run()).toEqual(['boss', 'legend', 'mob', 'obstacle', 'structure']);
+    expect(run(AreaHitQuery.UNIT_FAMILIES)).toEqual(['boss', 'legend', 'mob']);
+    expect(run(['structure'])).toEqual(['structure']);
   });
 
   it('skips a dead body and a body without health', () => {

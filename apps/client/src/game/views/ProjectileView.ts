@@ -33,7 +33,7 @@ import {
   PROJECTILE_STREAK_LENGTH,
   PROJECTILE_STREAK_WIDTH,
 } from './ProjectileView.constants';
-import type { Point, ProjectileEndingLook } from './ProjectileView.types';
+import type { Point, ProjectileBodyLook, ProjectileEndingLook } from './ProjectileView.types';
 
 /**
  * The placeholder look for projectiles (arrows, bolts): a small dot in the shooter's team colour
@@ -41,8 +41,9 @@ import type { Point, ProjectileEndingLook } from './ProjectileView.types';
  * arrow) flies an artificial arc (DEC-322 (2)): its shadow dot below it drops away to mid-flight,
  * then closes in and meets it at the end of its range. When a shot ends (DEC-306), a
  * bolt thins into a mist that grows and fades, and an arrow lies still on its shadow, then fades.
- * The look of each id is in `PROJECTILE_ENDING_LOOKS`. It has no mini map marker. Final projectile
- * art replaces it.
+ * A shot whose id is in `PROJECTILE_BODY_LOOKS` as an orb draws a team-coloured circle in place of
+ * the dot and streak. The ending look of each id is in `PROJECTILE_ENDING_LOOKS`, the body look in
+ * `PROJECTILE_BODY_LOOKS`. It has no mini map marker. Final projectile art replaces it.
  */
 export class ProjectileView extends DefaultEntityView {
   /** The ways a shot looks while it ends. */
@@ -66,6 +67,18 @@ export class ProjectileView extends DefaultEntityView {
     },
   };
 
+  /** The ways a flying shot looks. */
+  private readonly bodies: Readonly<
+    Record<ProjectileBodyLook, (state: EntityDrawState, color: string, renderer: Renderer) => void>
+  > = {
+    streak: (state, color, renderer) => {
+      this.drawShot(state, color, renderer);
+    },
+    orb: (state, color, renderer) => {
+      this.drawOrb(state, color, renderer);
+    },
+  };
+
   /** Draws the flying shot, or its ending look once it has ended. */
   public override draw(state: EntityDrawState, renderer: Renderer): void {
     const ending = state.entity.projectile?.ending ?? null;
@@ -78,11 +91,12 @@ export class ProjectileView extends DefaultEntityView {
     } else if (this.lookOf(state) === 'drop') {
       this.drawShadow(state, 1, renderer);
     }
-    if ((PROJECTILE_BODY_LOOKS[state.entity.definitionId] ?? 'streak') === 'orb') {
-      this.drawOrb(state, this.colorOf(state.entity.team), renderer);
-      return;
-    }
-    this.drawShot(state, this.colorOf(state.entity.team), renderer);
+    this.bodies[this.bodyLookOf(state)](state, this.colorOf(state.entity.team), renderer);
+  }
+
+  /** The shot's body look; an id with no entry in `PROJECTILE_BODY_LOOKS` is a streak. */
+  private bodyLookOf({ entity }: EntityDrawState): ProjectileBodyLook {
+    return PROJECTILE_BODY_LOOKS[entity.definitionId] ?? 'streak';
   }
 
   /** The shot's ending look; throws for an id with none, which the content check rules out. */

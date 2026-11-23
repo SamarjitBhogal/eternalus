@@ -42,11 +42,8 @@ export type AreaFilter = {
   readonly team: 'enemies' | 'allies' | 'all';
   /** Whether the attacker itself may be hit; absent = no. */
   readonly includeSelf?: boolean;
-  /**
-   * Whether only units (Legends, mobs, bosses: `isUnitFamily`) may be hit, so no structure or map
-   * object is (a shot's blast, DEC-342); absent = every family.
-   */
-  readonly isUnitsOnly?: boolean;
+  /** The entity families that may be hit (05 §3 `TargetFilter.families`); absent = every family. */
+  readonly families?: readonly string[];
 };
 
 /**

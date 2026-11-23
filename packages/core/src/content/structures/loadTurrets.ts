@@ -4,6 +4,7 @@ import { ContentValidationError } from '../ContentValidationError';
 import { createStructureRules } from '../defaultContentRules';
 import { PROJECTILES } from '../projectiles/projectileCatalogue';
 import type { ProjectileDefinition } from '../projectiles/projectiles.types';
+import { ContentValidator } from '../validation/ContentValidator';
 import { KEBAB_CASE } from '../validation/KebabCaseIdRule.constants';
 import { KnownProjectileRule } from '../validation/KnownProjectileRule';
 import { attackInTicks, isNonNegative, timeProblems } from '../timesInTicks';
@@ -90,10 +91,11 @@ const carriedAmmoProblems = (
  */
 const structureRuleProblems = (
   structure: StructureDefinition,
+  validator: ContentValidator<StructureDefinition>,
   catalogue: ContentCatalogue<StructureDefinition>,
 ): string[] =>
-  createStructureRules()
-    .flatMap((rule) => rule.check(structure, catalogue))
+  validator
+    .problemsOf(structure, catalogue)
     .map((problem) => `Structure "${structure.id}": ${problem}.`);
 
 /**
@@ -127,10 +129,13 @@ export const loadTurrets = (
   const ammoById = new Map(ammo.map((ammo) => [ammo.id, ammo]));
   const profileById = new Map(profiles.map((profile) => [profile.id, profile]));
   const structureCatalogue = new ContentCatalogue(structures);
+  const structureValidator = new ContentValidator(createStructureRules());
   const problems = [
     ...ammo.flatMap((entry) => ammoProblems(entry, projectiles)),
     ...profiles.flatMap(profileProblems),
-    ...structures.flatMap((structure) => structureRuleProblems(structure, structureCatalogue)),
+    ...structures.flatMap((structure) =>
+      structureRuleProblems(structure, structureValidator, structureCatalogue),
+    ),
     ...structures
       .filter((structure) => structure.ammo !== undefined)
       .flatMap((structure) => carriedAmmoProblems(structure, ammoById, profileById)),

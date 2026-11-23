@@ -2,6 +2,7 @@ import { TickRate } from '../../utils/TickRate';
 import { ContentCatalogue } from '../ContentCatalogue';
 import { ContentValidationError } from '../ContentValidationError';
 import { createProjectileRules } from '../defaultContentRules';
+import { ContentValidator } from '../validation/ContentValidator';
 import { KEBAB_CASE } from '../validation/KebabCaseIdRule.constants';
 import { PROJECTILES } from './projectileCatalogue';
 import type { ProjectileDefinition } from './projectiles.types';
@@ -15,6 +16,7 @@ const isPositive = (value: number): boolean => value > 0 && Number.isFinite(valu
 const problemsOf = (
   projectile: ProjectileDefinition,
   tickRate: number,
+  validator: ContentValidator<ProjectileDefinition>,
   catalogue: ContentCatalogue<ProjectileDefinition>,
 ): string[] => {
   const problems: string[] = [];
@@ -30,7 +32,7 @@ const problemsOf = (
   if (projectile.range < projectile.movementProfile.maxSpeed / tickRate) {
     problems.push('range must be at least one tick of flight');
   }
-  problems.push(...createProjectileRules().flatMap((rule) => rule.check(projectile, catalogue)));
+  problems.push(...validator.problemsOf(projectile, catalogue));
   return problems.map((problem) => `Projectile "${projectile.id}": ${problem}.`);
 };
 
@@ -48,7 +50,10 @@ export const loadProjectiles = (
   authored: readonly ProjectileDefinition[] = PROJECTILES.all(),
 ): ContentCatalogue<ProjectileDefinition> => {
   const catalogue = new ContentCatalogue(authored);
-  const problems = authored.flatMap((projectile) => problemsOf(projectile, tickRate, catalogue));
+  const validator = new ContentValidator(createProjectileRules());
+  const problems = authored.flatMap((projectile) =>
+    problemsOf(projectile, tickRate, validator, catalogue),
+  );
   if (problems.length > 0) {
     throw new ContentValidationError(problems.join('\n'));
   }

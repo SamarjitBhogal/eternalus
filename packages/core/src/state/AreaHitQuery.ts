@@ -3,7 +3,7 @@ import type { Outline } from '../components/Outline.types';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import type { Entity } from '../entities/Entity';
-import { isUnitFamily } from '../entities/unitFamilies';
+import { isUnitFamily, UNIT_FAMILIES } from '../entities/unitFamilies';
 import type { Team } from '../teams/teams.types';
 import { compareById } from '../utils/compareById';
 import { isPointInAnyPolygon } from '../utils/geometry';
@@ -44,6 +44,12 @@ import type { EntityId } from './EntityStore.types';
  * query then.
  */
 export class AreaHitQuery {
+  /**
+   * The unit families (`entities/unitFamilies`), so a layer that may not import `entities/`
+   * (`combat/`, architecture 02) can ask for units only: `{ families: AreaHitQuery.UNIT_FAMILIES }`.
+   */
+  public static readonly UNIT_FAMILIES: readonly string[] = UNIT_FAMILIES;
+
   /**
    * Whether `shot` stops on `body` when it touches it (DEC-317 addendum, DEC-322 (1)): the body is
    * alive and still in the world, not the shot's owner and not on its team (no team counts as
@@ -90,7 +96,7 @@ export class AreaHitQuery {
         transform === undefined ||
         !AreaHitQuery.isAlive(entity) ||
         (entity.id === attackerId && filter.includeSelf !== true) ||
-        (filter.isUnitsOnly === true && !isUnitFamily(entity.family)) ||
+        (filter.families !== undefined && !filter.families.includes(entity.family)) ||
         !AreaHitQuery.passes(filter, AreaHitQuery.isAlly(entity, attackerTeam)) ||
         entities.takesNoDamage(entity.id)
       ) {

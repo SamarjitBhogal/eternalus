@@ -74,7 +74,7 @@ export class WeaponImpact implements ProjectileImpact<'weapon'> {
       hit.ownerId,
       WeaponImpact.blastAt(hit.point, splash.radius),
       { targetId: null, point: null },
-      { team: 'enemies', isUnitsOnly: true },
+      { team: 'enemies', families: AreaHitQuery.UNIT_FAMILIES },
       { team: hit.team, position: hit.origin },
     );
     // Every distance before the first strike: an on-hit step may move a unit.
