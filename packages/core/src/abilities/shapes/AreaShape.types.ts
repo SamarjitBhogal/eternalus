@@ -24,6 +24,12 @@ export type ShapeBody = {
 };
 
 /**
+ * The list a step is authored in, as the boot check sees it (HC-B26 (5)): `isOnHit` for an `onHit`
+ * list (a shot's or a status's), the one list whose steps are placed on a struck body.
+ */
+export type StepList = { readonly isOnHit: boolean };
+
+/**
  * One kind of effect area (plan arch call 12): answers whether a body overlaps it. Stateless; one
  * instance per kind in the `AbilityRegistry`. A new shape kind is one class and one
  * `defaultAbilityRegistry.ts` line.
@@ -31,8 +37,11 @@ export type ShapeBody = {
 export interface AreaShape<S extends ShapeSpec = ShapeSpec> {
   /** The registry key, e.g. `circle`. */
   readonly kind: S['kind'];
-  /** What is wrong with `shape` as authored, or nothing; run at boot by `AbilityRegistry.resolveAll`. */
-  validate(shape: S): readonly string[];
+  /**
+   * What is wrong with `shape` as authored in a step of `list`, or nothing; run at boot by
+   * `AbilityRegistry.resolveAll` and `checkStatusLinks`.
+   */
+  validate(shape: S, list: StepList): readonly string[];
   /** Whether `body` (its circle, or its id) overlaps `shape` placed at `placement`. */
   overlaps(shape: S, placement: ShapePlacement, body: ShapeBody): boolean;
   /**
