@@ -49,7 +49,9 @@ export class KnownAbilityRefsRule implements UnitDefinitionRule, ContentRule<Leg
         ...(ability.classId === classId
           ? []
           : [`${where} "${id}" belongs to class "${ability.classId}"`]),
-        ...(slot === null || ability.slot === slot ? [] : [`${where} "${id}" is not an ${slot}`]),
+        ...(slot === null || ability.slot === slot
+          ? []
+          : [`${where} "${id}" is not ${slot === 'passive' ? 'a' : 'an'} ${slot}`]),
       ];
     });
   }

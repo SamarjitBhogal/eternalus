@@ -148,8 +148,10 @@ export class UltimateCharge {
     }
     const gain =
       points > 0
-        ? (state.entities.get(recipientId)?.findComponent(StatusEffects)?.multiplier('ultimateGain') ??
-          1)
+        ? (state.entities
+            .get(recipientId)
+            ?.findComponent(StatusEffects)
+            ?.multiplier('ultimateGain') ?? 1)
         : 1;
     this.pending.push({ recipientId, points: points * gain, cause });
   }

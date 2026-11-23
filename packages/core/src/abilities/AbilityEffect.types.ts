@@ -48,9 +48,10 @@ export type CastContext = {
    * status's own duration, times the caster's `abilityDuration` (Erudition, DEC-330), rounded and at
    * least 1 tick. `undefined` for a status that lasts until removed (nothing to stretch).
    */
-  statusDuration(step: { readonly statusId: string; readonly durationTicks?: number }):
-    | number
-    | undefined;
+  statusDuration(step: {
+    readonly statusId: string;
+    readonly durationTicks?: number;
+  }): number | undefined;
   /** The match's one damage pipeline. */
   readonly damage: DamagePipeline;
   /** The match's one status applier. */

@@ -34,7 +34,13 @@ export class DebuffEffect implements AbilityEffect<DebuffSpec> {
   /** Applies the step's status to every enemy in its shape, in id order. */
   public apply(spec: DebuffSpec, cast: CastContext): void {
     for (const targetId of cast.targets(spec.shape, { team: 'enemies' })) {
-      cast.statuses.apply(cast.state, targetId, spec.statusId, cast.casterId, cast.statusDuration(spec));
+      cast.statuses.apply(
+        cast.state,
+        targetId,
+        spec.statusId,
+        cast.casterId,
+        cast.statusDuration(spec),
+      );
     }
   }
 }

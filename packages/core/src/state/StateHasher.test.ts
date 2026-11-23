@@ -199,6 +199,29 @@ describe('StateHasher', () => {
     expect(hasher.hash(state)).toBe(empty);
   });
 
+  it('hashes a passive only while it is due (05 §7, DEC-330)', () => {
+    const kit = {
+      abilities: ['slam', 'rip-and-tear', 'shield-wall'],
+      ultimate: 'berserk',
+    } as const;
+    const { state: plain, soldier: none } = stateWithSoldier();
+    none.addComponent(new Abilities(kit));
+    const { state, soldier } = stateWithSoldier();
+    const bar = new Abilities(kit, 'necromancy');
+    soldier.addComponent(bar);
+    const without = hasher.hash(plain);
+
+    const due = hasher.hash(state);
+    bar.takeDuePassive();
+    const putOn = hasher.hash(state);
+    bar.rearmPassive();
+
+    expect(due).not.toBe(without);
+    // Put on, the bar hashes as one with no passive: the golden replays stay valid.
+    expect(putOn).toBe(without);
+    expect(hasher.hash(state)).toBe(due);
+  });
+
   it('hashes a cast in progress only while one waits, then each of its fields (05 §4)', () => {
     const { state, soldier } = stateWithSoldier();
     const bar = new Abilities({
