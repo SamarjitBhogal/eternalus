@@ -754,6 +754,16 @@ Reply inline (`Decision: …`).
     suggestions in a follow-up". (1) and (2) stay. Lane A builds R2-A8 and R2-A10 in its next PR
     after PR 2.
 
+- [ ] **HC-B39 — Better than the design, built under your standing rule (DEC-223), sign-off
+      asked: two more code tidy-ups in the HC-B35 follow-up (`refactor/query-injection`,
+      pre-PR gate round 1, 2026-11-23; COMBAT-WEAPONS-ABILITIES-61).** Built and tested;
+      recorded as DEC-359. Nothing waits on you. No change for the player. (1) The match makes
+      one copy of the rule that finds what an ability hits (`TargetQuery`) and gives it to the
+      two places that use it (`HitEffects`, `AbilitySystem`). Before, each made its own copy.
+      (2) Each class that uses the shared reach rule or hit rule asks only for the one or two
+      functions it calls (`Pick<ReachQuery, ...>`, `Pick<AreaHitQuery, ...>`). Say "no" to
+      either and it goes back.
+
 - [ ] **HC-Q87 — Inside the enemy palace, your weapon never hits the Stronghold
       (`feat/melee-sweeps`, PR 2, critic R2-A2).** Confirm. Your answer to HC-Q76 was "A: aim at
       it to hit it". Your HC-Q78 note says a swing inside a room should not bring the roof down
