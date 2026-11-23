@@ -799,6 +799,21 @@ Reply inline (`Decision: …`).
       was at most 1 level. Options: (A, built) keep 2 levels; (B) cap it at 1 level, as the boss
       reward is capped (DEC-237). Also: when a minion lands the last hit, no one gets the XP.
 
+- [ ] **HC-B38 — Better than the design, sign-off asked: 5 code ideas from the critic
+      (`feat/wall-turrets`, PR 4, critic rounds 4 and 5, 2026-11-23; PR-REVIEW-ASSIST-38/39).**
+      Nothing changes in play. Say "no" to a built item and it goes back.
+      (1) Built (coordinator ruling): the `structure-destroyed` event names the structure's
+      content id (`definitionId`), so the XP code does not look the structure up in the store.
+      (2) Not built yet: a setting per structure for what its body leaves (a ruin that blocks, or
+      open ground). Today every body leaves a ruin that blocks, so the setting has one value. It
+      goes in when the tower-ruins work (#98) merges (the merge note in DEC-341 (2)).
+      (3) Not built: one state field (standing, ruin, destroyed) on each map object in place of
+      `isDestroyed` and `isRuined`. It changes the golden replay hashes of every open PR.
+      (4) Not better: one table for the team-kill XP and the destroyer-only XP. They pay different
+      people on different events and share no data.
+      (5) Built (critic round 5): the map view picks one ruin look per fallen object (one ruin over
+      the whole box, or one ruin per wall piece) and uses it both to cull and to draw.
+
 - [ ] **HC-Q93 — Where does a wall turret's bolt stop? (`feat/wall-turrets`, PR 4, Owner Calls
       card "WT bolt stop").** A turret aims where its target will be. Options: (A, recommended,
       not built yet) the bolt stops at that point and damages what is there; your HC-Q77 note
