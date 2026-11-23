@@ -19,15 +19,17 @@ export type MapObjectKind =
   | 'gate';
 
 /**
- * What a shot does over an object's footprint (HC-Q89, DEC-345). Set only by the map builder, on
- * lakes and lava rivers; absent on every other object, which stops a shot. Units collide with the
- * footprint whatever the flags say.
+ * What an object's footprint does to a shot (HC-Q89, DEC-345). A map builder sets them; an object
+ * without them stops a shot. A unit or a dash collides with the footprint whatever they say.
  */
 export type MapObjectFlags = {
-  /** A shot flies over it (a lake, a lava river); a unit or a dash still stops at it. */
-  readonly isLowGround?: true;
-  /** A shot that flies over it catches fire (a lava river); a bridge deck over it is not fire. */
-  readonly isFire?: true;
+  /** A shot flies over the footprint: it does not stop the shot. A unit or a dash still stops. */
+  readonly canShotsCross?: true;
+  /**
+   * A shot that flies over the footprint, outside its passages, catches fire (if its definition
+   * lets it). A passage (a bridge deck) does not light a shot.
+   */
+  readonly canLightShots?: true;
 };
 
 /** Authored ownership: all art of one object changes together when that object is destroyed. */

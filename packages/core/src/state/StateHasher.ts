@@ -289,7 +289,7 @@ export class StateHasher {
     // A shot's payload is fixed at firing but decides who it spares (owner), which walk-on outline
     // it may hit (target), what it does there (impact kind, credited weapon or ability) and how
     // hard it hits (origin); how long it has been ending (-1 while it flies) decides when it is
-    // removed; whether it is lit (it flew over fire, HC-Q89, DEC-345) decides whether it burns.
+    // removed.
     const shot = entity.findComponent(ProjectilePayload);
     if (shot !== undefined) {
       const flight = entity.findComponent(ProjectileFlight);
@@ -303,8 +303,12 @@ export class StateHasher {
         shot.origin.x,
         shot.origin.y,
         endTicksLeft,
-        flight?.isLit === true,
       ]);
+      // Whether it is lit decides whether it runs its `litOnHit` steps where it lands (HC-Q89,
+      // DEC-345). Only a lit shot adds a field, so a match with no lit shot hashes as before.
+      if (flight?.isLit === true) {
+        fields.push(['lit']);
+      }
     }
     const watch = entity.findComponent(ChaseWatch);
     if (watch !== undefined) {

@@ -12,7 +12,7 @@ import { dashReach } from './dashReach';
 const wallAt = (wallX: number) => {
   const asked: [Vec2, Vec2, number, number][] = [];
   const collisions: CollisionQuery = {
-    touchesFire: () => false,
+    lightsShot: () => false,
     reach: (from, direction, distance, radius) => {
       asked.push([from, direction, distance, radius]);
       return Math.max(0, Math.min(distance, (wallX - radius - from.x) / direction.x));

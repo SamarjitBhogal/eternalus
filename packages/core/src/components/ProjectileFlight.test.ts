@@ -49,7 +49,7 @@ describe('ProjectileFlight', () => {
 
   describe('lit shots (HC-Q89, DEC-345)', () => {
     const BURN: readonly AbilityEffectSpec[] = [
-      { kind: 'debuff', statusId: 'burn', durationTicks: 36, shape: { kind: 'hit' } },
+      { kind: 'debuff', statusId: 'burn', shape: { kind: 'hit' } },
     ];
 
     it('catches fire once: light() sets isLit for a shot that has lit-on-hit steps', () => {

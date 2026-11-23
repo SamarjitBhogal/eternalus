@@ -29,10 +29,11 @@ type ProjectileDefinitionWith<Step> = EntityDefinitionBase & {
    * Seconds an ended shot stays (a bolt's mist fading, an arrow lying on the ground), hitting
    * nothing, before it is removed; ticks once loaded (`loadProjectiles`).
    */
-  readonly endDuration: number; /**
-   * Effect steps run on the body this shot lands on when the shot is lit: it flew over fire (a
-   * lava river, `CollisionQuery.touchesFire`) before it landed (HC-Q89, DEC-345). The arrow's
-   * burn. Absent: the shot cannot catch fire (a bolt, an orb).
+  readonly endDuration: number;
+  /**
+   * Effect steps run on the body this shot lands on when the shot is lit: before it landed, it
+   * flew over a shape that lights shots (a lava river, `CollisionQuery.lightsShot`; HC-Q89,
+   * DEC-345). Absent: the shot cannot catch fire.
    */
   readonly litOnHit?: readonly Step[];
 };

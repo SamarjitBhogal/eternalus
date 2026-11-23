@@ -205,13 +205,13 @@ describe('HitEffects', () => {
 
   describe('runSteps (a lit arrow, HC-Q89, DEC-345)', () => {
     const BURN: readonly AbilityEffectSpec[] = [
-      { kind: 'debuff', statusId: 'burn', durationTicks: 36, shape: { kind: 'hit' } },
+      { kind: 'debuff', statusId: 'burn', shape: { kind: 'hit' } },
     ];
 
     it("runs the given steps on the struck body only, credited to the attacker, and not the attacker's statuses' steps", () => {
       const { state, caster, struck, neighbour, applied, hits } = setUp('fury');
 
-      hits.runSteps(state, caster.id, struck.id, 'arrow', BURN);
+      hits.runSteps(state, caster.id, struck.id, 'bow', BURN);
 
       expect(applied).toEqual([{ entityId: struck.id, statusId: 'burn', sourceId: caster.id }]);
       expect(neighbour.getComponent(StatusEffects).active).toEqual([]);
@@ -223,9 +223,9 @@ describe('HitEffects', () => {
       state.entities.remove(caster.id, 'died');
       applied.length = 0;
 
-      hits.runSteps(state, caster.id, struck.id, 'arrow', BURN);
+      hits.runSteps(state, caster.id, struck.id, 'bow', BURN);
       expect(applied).toEqual([]);
-      hits.runSteps(state, caster.id, struck.id, 'arrow', BURN, SHOOTER);
+      hits.runSteps(state, caster.id, struck.id, 'bow', BURN, SHOOTER);
 
       expect(applied).toEqual([{ entityId: struck.id, statusId: 'burn', sourceId: caster.id }]);
     });
@@ -233,9 +233,9 @@ describe('HitEffects', () => {
     it('runs nothing for no steps or a struck body that is gone', () => {
       const { state, caster, struck, applied, hits } = setUp('rallied');
 
-      hits.runSteps(state, caster.id, struck.id, 'arrow', []);
+      hits.runSteps(state, caster.id, struck.id, 'bow', []);
       state.entities.remove(struck.id, 'died');
-      hits.runSteps(state, caster.id, struck.id, 'arrow', BURN);
+      hits.runSteps(state, caster.id, struck.id, 'bow', BURN);
 
       expect(applied).toEqual([]);
     });

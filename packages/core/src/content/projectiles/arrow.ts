@@ -21,7 +21,7 @@ export const ARROW = {
   range: 100, // TUNE: metres; "bows can have a max distance where the arrow falls to the ground" (DEC-306), value is a guess
   slowFrom: 80, // TUNE: metres; the bow's fall-off floor distance, so the arrow drops while it is at floor damage (DEC-306)
   endDuration: 1, // TUNE: seconds the arrow lies on the ground; proposed, "tunable" in DEC-306
-  // An arrow that flew over lava burns what it lands on (HC-Q89, DEC-345). TUNE: 1.2 s is the
-  // Cathedral gem's burn (DEC-292, PR #132 `gemBurn.ts`); see `status-effects/burn.ts`.
-  litOnHit: [{ kind: 'debuff', statusId: 'burn', durationSeconds: 1.2, shape: { kind: 'hit' } }],
+  // An arrow that flew over lava burns what it lands on (HC-Q89, DEC-345), for the burn status's
+  // own duration (`status-effects/burn.ts`).
+  litOnHit: [{ kind: 'debuff', statusId: 'burn', shape: { kind: 'hit' } }],
 } as const satisfies AuthoredProjectile;

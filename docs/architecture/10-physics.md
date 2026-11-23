@@ -199,16 +199,21 @@ Overlap tests are therefore not enough:
   Projectiles are swept by `ProjectileSystem`, not by the resolver's step 1: a shot is not pushed
   or slid, it ends at the first body or wall it touches (05 §10, DEC-314). Walls still come from
   the resolver's `CollisionQuery.reach`. The resolver's steps below are for units.
-- **Low ground and fire (HC-Q89, DEC-345).** A shot flies over lakes and lava rivers; a unit and a
-  dash do not. The map builder flags the object (`MapObjectFlags`: `isLowGround` on a lake and a
-  lava river, `isFire` on a lava river only), the static index keeps the flags on each shape, and
-  the one rule reads them: `CollisionQuery.reach` skips a shape with `isLowGround` when it is
-  given a `launch` point (only a shot gives one; a mover or a dash gives none). A mountain, a
-  wall, a camp fire and every other shape stop a shot as before. `CollisionQuery.touchesFire`
-  answers whether a circle that moves along a delta touches (or starts in) a shape with `isFire`;
-  a bridge deck (a passage) is above the lava, so a move along the deck does not touch it, while a
-  move that leaves the deck over the lava does. `ProjectileSystem` asks it for a shot whose
-  definition has `litOnHit` steps (05 §10).
+- **Shapes that shots cross, shapes that light shots (HC-Q89, DEC-345).** A shot flies over lakes
+  and lava rivers; a unit and a dash do not. The map builder flags each object by what it does to
+  a shot (`MapObjectFlags`, set in `MapLandscapeBuilder`: `canShotsCross` on a lake and a lava
+  river, `canLightShots` on a lava river only), and the static index keeps the flags on each
+  shape. One predicate decides whether a shape stops a shot: `doesShapeStopShot`
+  (`utils/geometry.ts`) is false when shots can cross the shape or when the shape's blocking area
+  holds the shot's launch point (the launch-shape rule, DEC-334). `CollisionQuery.reach` applies it
+  when it is given a `launch` point (only a shot gives one; a mover or a dash gives none), and
+  `WorldObjectStore.blockingAt` applies it for `NoMapObjectOverlapInvariant`, so the sweep and the
+  invariant agree. A mountain, a wall, a camp fire and every other shape without `canShotsCross`
+  stop a shot. `CollisionQuery.lightsShot` answers whether a circle that moves along a delta
+  touches (or starts in) a shape with `canLightShots`, outside its passages: a bridge deck (a
+  passage) does not light a shot, so a move along the deck does not, while a move that leaves the
+  deck over the lava does. `ProjectileSystem` asks it for a shot whose definition has `litOnHit`
+  steps, over the part of the move before the body the shot lands on (05 §10).
 - The test casts the segment `previousPosition → position` (expanded by the circle's radius, i.e.
   a capsule) against `StaticColliderIndex` entries flagged `isUnbreakable`, plus closed gates and
   map bounds; the earliest time of impact `t ∈ [0, 1]` wins; the mover is placed at
@@ -411,14 +416,18 @@ measured). The sentence in §4 that concave footprints are split into convex col
 for wall pieces; that was so before PR 4.
 
 **2026-11-23 (branch `feat/shots-over-lava`; HC-Q89, DEC-345).** Shots fly over lakes and lava
-rivers (§7 "Low ground and fire"). This replaces one sentence of the DEC-334 note above: a unit on
-a bridge no longer has its shot stopped by the lava beside the deck, because no shot is stopped by
-lava; a mover from the bridge is still stopped there. The rest of the launch-shape rule stands (it
-still applies to walls and every shape without `isLowGround`). `MapObject`, `MapObjectArt` and
-`StaticCollisionShape` carry `isLowGround` and `isFire` (set in `MapLandscapeBuilder` for `lake-N`
-and `lava-river-N`, copied by `MapObjectBuilder` and `staticCollisionIndexOf`). Camp fires do not
-light arrows yet (HC-Q105). `CollisionResolver.touchesFire` is the second method on the
-`CollisionQuery` port.
+rivers (§7 "Shapes that shots cross, shapes that light shots"). This replaces one sentence of the
+DEC-334 note above: a unit on a bridge no longer has its shot stopped by the lava beside the deck,
+because no shot is stopped by lava; a mover from the bridge is still stopped there. The rest of
+the launch-shape rule stands (it still applies to walls and every shape without `canShotsCross`).
+The sweep and `WorldObjectStore.blockingAt` share one predicate for both rules,
+`doesShapeStopShot` (`utils/geometry.ts`), so the DEC-334 note's "which skips such a shape too"
+also holds for a shape shots can cross: `NoMapObjectOverlapInvariant` does not flag a shot over a
+lake or a lava river, and still flags a unit in one. `MapObject`, `MapObjectArt` and
+`StaticCollisionShape` carry `canShotsCross` and `canLightShots` (set in `MapLandscapeBuilder` for
+`lake-N` and `lava-river-N`, copied by `MapObjectBuilder` and `staticCollisionIndexOf`); `physics/`
+declares its own two fields, so it imports nothing from `content/`. Camp fires do not light arrows
+yet (HC-Q105). `CollisionResolver.lightsShot` is the second method on the `CollisionQuery` port.
 
 ## Related
 

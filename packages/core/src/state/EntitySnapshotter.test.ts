@@ -211,7 +211,7 @@ describe('EntitySnapshotter', () => {
       return shot;
     };
     const lit = new ProjectileFlight(100, 80, 4, [
-      { kind: 'debuff', statusId: 'burn', durationTicks: 36, shape: { kind: 'hit' } },
+      { kind: 'debuff', statusId: 'burn', shape: { kind: 'hit' } },
     ]);
     const bolt = new ProjectileFlight(100, 80, 4);
 

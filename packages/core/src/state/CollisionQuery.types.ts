@@ -21,17 +21,19 @@ export interface CollisionQuery {
    * @param launch - A shot's launch point (the launch-shape rule, DEC-334): a shape whose blocking
    *   area (inside its polygon or on its edge, inside none of its passages) holds it does not stop
    *   the sweep, so a shot launched inside a wall turret's pylon and wall can leave them, also
-   *   where the turret stands on the joint of two wall pieces. Omitted for a mover.
-   *   A shot also flies over low ground (a lake, a lava river: `MapObjectFlags.isLowGround`,
-   *   HC-Q89, DEC-345); a mover or a dash does not.
+   *   where the turret stands on the joint of two wall pieces. Omitted for a mover. A shot also
+   *   flies over a shape flagged `canShotsCross` (a map builder sets it on lakes and lava rivers,
+   *   HC-Q89, DEC-345); a mover or a dash does not. One predicate decides both for a shot
+   *   (`doesShapeStopShot`).
    */
   reach(from: Vec2, direction: Vec2, distance: number, radius: number, launch?: Vec2): number;
 
   /**
-   * Whether a circle of `radius` that moves `delta` from `from` touches fire, or starts in it: a
-   * shape flagged `isFire` (a lava river). A bridge deck over it is not fire, so a move along the
-   * deck does not touch it. Read-only. A shot that touches fire catches fire if its definition
-   * allows it (`ProjectileSystem`).
+   * Whether a shot, a circle of `radius` that moves `delta` from `from`, touches a shape flagged
+   * `canLightShots` (a map builder sets it on lava rivers, HC-Q89, DEC-345) outside its passages,
+   * or starts in one. A passage (a bridge deck) does not light a shot, so a move along the deck
+   * does not; a move that leaves the deck over the shape does. Read-only. `ProjectileSystem` lights
+   * a shot it is true for, if the shot's definition lets it catch fire.
    */
-  touchesFire(from: Vec2, delta: Vec2, radius: number): boolean;
+  lightsShot(from: Vec2, delta: Vec2, radius: number): boolean;
 }

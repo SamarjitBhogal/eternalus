@@ -8,8 +8,11 @@ import type { Invariant, Violation } from '../Invariant.types';
 
 /**
  * Detects units placed into surviving solids independently of the collision solver. A shot inside
- * a shape that holds its own launch point is not a violation: the shot can only leave that shape
- * (the launch-shape rule, DEC-334), as a wall turret's bolt leaves its pylon and wall.
+ * a shape that does not stop it is not a violation (`WorldObjectStore.blockingAt` with the shot's
+ * launch point, by the rule the sweep uses, `doesShapeStopShot`): a shape that holds its own
+ * launch point, which the shot can only leave (the launch-shape rule, DEC-334), as a wall turret's
+ * bolt leaves its pylon and wall; and a shape shots can cross, a lake or a lava river (DEC-345).
+ * A unit in such a shape is still a violation.
  */
 export class NoMapObjectOverlapInvariant implements Invariant {
   public readonly id = 'no-map-object-overlap';

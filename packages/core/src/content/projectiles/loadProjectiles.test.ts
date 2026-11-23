@@ -54,22 +54,22 @@ describe('loadProjectiles', () => {
     const lit = {
       ...TEST_SHOT,
       litOnHit: [
-        { kind: 'debuff', statusId: 'burn', durationSeconds: 1.2, shape: { kind: 'hit' } },
+        { kind: 'debuff', statusId: 'burn', durationSeconds: 2, shape: { kind: 'hit' } },
       ] as const,
     };
     const projectiles = loadProjectiles(30, [lit, { ...TEST_SHOT, id: 'plain-shot' }]);
 
     expect(projectiles.get('test-shot').litOnHit).toEqual([
-      { kind: 'debuff', statusId: 'burn', durationTicks: 36, shape: { kind: 'hit' } },
+      { kind: 'debuff', statusId: 'burn', durationTicks: 60, shape: { kind: 'hit' } },
     ]);
     expect(projectiles.get('plain-shot').litOnHit).toBeUndefined();
   });
 
-  it('ships the arrow lit by lava with the gem burn numbers and no other shot (DEC-345, DEC-292)', () => {
+  it("ships the arrow lit by lava with the burn status at the status's own duration, and no other shot (DEC-345)", () => {
     const projectiles = loadProjectiles(30);
 
     expect(projectiles.get('arrow').litOnHit).toEqual([
-      { kind: 'debuff', statusId: 'burn', durationTicks: 36, shape: { kind: 'hit' } },
+      { kind: 'debuff', statusId: 'burn', shape: { kind: 'hit' } },
     ]);
     for (const id of ['magus-bolt', 'turret-bolt', 'turret-heavy-bolt']) {
       expect(projectiles.get(id).litOnHit).toBeUndefined();

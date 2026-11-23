@@ -43,14 +43,15 @@ describe('STATUS_EFFECTS', () => {
     });
   });
 
-  it('makes burn the gem burn of DEC-292: 12 damage every 0.2 s for 1.2 s, refreshed, one stack (DEC-345)', () => {
+  it('makes burn the reference burn: 10 damage each second for 3 s, refreshed, one stack (more-abilities.md section 7, DEC-345)', () => {
     expect(STATUS_EFFECTS.get('burn')).toMatchObject({
+      displayName: 'Burning',
       polarity: 'debuff',
       controlClass: 'none',
-      durationSeconds: 1.2,
+      durationSeconds: 3,
       stacking: 'refresh',
       maxStacks: 1,
-      periodic: { everySeconds: 0.2, effects: [{ kind: 'damage', amount: 12 }] },
+      periodic: { everySeconds: 1, effects: [{ kind: 'damage', amount: 10 }] },
     });
   });
 });

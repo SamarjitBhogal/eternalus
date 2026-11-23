@@ -7,6 +7,7 @@ import {
   doesPolygonOverlapRect,
   distanceToPath,
   distanceToSegment,
+  doesShapeStopShot,
   isPointInAnyPolygon,
   isPointInBlockingArea,
   isPointInPolygon,
@@ -112,6 +113,23 @@ describe('geometry', () => {
     expect(isPointInBlockingArea(joint, east)).toBe(true);
     expect(isPointInBlockingArea({ x: 10.001, y: 5 }, SQUARE)).toBe(false);
     expect(isPointInBlockingArea({ x: 10, y: 10 }, SQUARE)).toBe(true);
+  });
+
+  it('stops a shot at a shape unless shots can cross it or it holds the launch point (DEC-334, DEC-345)', () => {
+    const bridge = [
+      { x: 4, y: 0 },
+      { x: 6, y: 0 },
+      { x: 6, y: 10 },
+      { x: 4, y: 10 },
+    ];
+    const outside = { x: -5, y: 5 };
+
+    expect(doesShapeStopShot(SQUARE, undefined, false, outside)).toBe(true);
+    expect(doesShapeStopShot(SQUARE, undefined, true, outside)).toBe(false);
+    expect(doesShapeStopShot(SQUARE, undefined, false, { x: 2, y: 5 })).toBe(false);
+    expect(doesShapeStopShot(SQUARE, undefined, false, { x: 10, y: 5 })).toBe(false);
+    expect(doesShapeStopShot(SQUARE, [bridge], false, { x: 5, y: 5 })).toBe(true);
+    expect(doesShapeStopShot(SQUARE, [bridge], true, { x: 5, y: 5 })).toBe(false);
   });
 
   it('measures distance to a segment and a path', () => {

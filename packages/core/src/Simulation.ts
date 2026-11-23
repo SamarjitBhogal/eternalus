@@ -193,12 +193,12 @@ export class Simulation {
     const registry = abilities ?? createDefaultAbilityRegistry(loadAbilities(tickRate), tickRate);
     // The turret content, with the ammo lists of the structures this match builds (DEC-168 B8).
     const turrets = loadTurrets(tickRate, { structures: structures.all() });
-    checkAttackLinks(registry, weaponSource.all(), turrets.ammo.all());
+    const projectiles = loadProjectiles(tickRate);
+    checkAttackLinks(registry, weaponSource.all(), turrets.ammo.all(), projectiles.all());
     // One cast rule per match: the handler, `AbilitySystem`, the snapshot and the bots share it.
     const validator = new CastValidator(registry);
     this.handlers = createDefaultCommandHandlers(validator);
     this.readiness = validator;
-    const projectiles = loadProjectiles(tickRate);
     // The line-of-fire query of the bots and turrets: each drops a target its shot cannot reach
     // (DEC-317 addendum).
     const lineOfFire = new LineOfFire(projectiles);

@@ -4,7 +4,7 @@ import type { StaticCollisionIndex } from './StaticCollisionIndex';
 import type { IndexedPolygon } from './StaticCollisionIndex.types';
 import { sweepCircle } from './sweepCircle';
 import type { SweepContact } from './sweepCircle.types';
-import { isPointInBlockingArea, isPointInPolygon } from '../utils/geometry';
+import { doesShapeStopShot, isPointInPolygon } from '../utils/geometry';
 import { circlePenetration, isCircleInsidePolygon } from '../utils/circlePolygon';
 import { CONTACT_EPSILON } from '../utils/circlePolygon.constants';
 
@@ -54,7 +54,8 @@ export class CollisionResolver {
    *   polygon or on its edge, inside none of its passages) does not stop the sweep: the shot can
    *   only leave that shape (the launch-shape rule, DEC-334). The edge counts, so a turret on the
    *   joint of two wall pieces can leave both. A unit's centre is never in a blocking area, so a
-   *   shot from a unit is stopped as before.
+   *   shot from a unit is stopped as before. A shape flagged `canShotsCross` does not stop a shot
+   *   either (DEC-345); it stops a mover. `doesShapeStopShot` holds both rules.
    */
   public reach(
     from: Vec2,
@@ -75,14 +76,14 @@ export class CollisionResolver {
   }
 
   /**
-   * Whether a circle of `radius` that moves `delta` from `from` touches fire (HC-Q89, DEC-345), or
-   * starts in it: a shape flagged `isFire`, outside its passages. A bridge deck is above the lava,
-   * so a circle that stays on the deck does not touch it; one that leaves the deck over the lava
-   * does, as `reach` stops a mover there. Read-only.
+   * Whether a circle of `radius` that moves `delta` from `from` touches a shape flagged
+   * `canLightShots` outside its passages, or starts in one (HC-Q89, DEC-345). A passage (a bridge
+   * deck) does not light a shot, so a circle that stays on the deck does not touch the shape; one
+   * that leaves the deck over the shape does, as `reach` stops a mover there. Read-only.
    */
-  public touchesFire(from: Vec2, delta: Vec2, radius: number): boolean {
+  public lightsShot(from: Vec2, delta: Vec2, radius: number): boolean {
     for (const entry of this.candidatesOf(from, delta, radius)) {
-      if (entry.isFire === true && CollisionResolver.touches(from, delta, radius, entry)) {
+      if (entry.canLightShots === true && CollisionResolver.touches(from, delta, radius, entry)) {
         return true;
       }
     }
@@ -169,8 +170,9 @@ export class CollisionResolver {
   }
 
   /**
-   * The first contact of a circle of `radius` that moves `delta` from `start`, or `null`. A shape
-   * whose blocking area holds `launch` is skipped (DEC-334, see `reach`).
+   * The first contact of a circle of `radius` that moves `delta` from `start`, or `null`. With a
+   * `launch` point (a shot), a shape that does not stop the shot is skipped (`doesShapeStopShot`:
+   * shots can cross it, DEC-345, or its blocking area holds `launch`, DEC-334; see `reach`).
    */
   private firstContact(
     start: Vec2,
@@ -182,8 +184,10 @@ export class CollisionResolver {
     let first: SweepContact | null = null;
     const at = (time: number) => ({ x: start.x + delta.x * time, y: start.y + delta.y * time });
     for (const entry of candidates) {
-      if (launch !== undefined && entry.isLowGround === true) continue;
-      if (launch !== undefined && isPointInBlockingArea(launch, entry.polygon, entry.passages))
+      if (
+        launch !== undefined &&
+        !doesShapeStopShot(entry.polygon, entry.passages, entry.canShotsCross === true, launch)
+      )
         continue;
       const stuck = CollisionResolver.startsInside(start, at(1), radius, entry);
       if (stuck !== undefined) {

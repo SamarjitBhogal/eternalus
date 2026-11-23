@@ -668,18 +668,6 @@ at spawn by one selector per mode, so `'heavy'` is one more selector (DEC-314). 
 cooldown on `Combat`; a parry is a `parrying` status with a window. Non-unique weapons are usable
 by any class (reference 07: the class table's bias is a bias); `uniqueTo` locks the class weapons.
 
-**Lit shots (HC-Q89, DEC-345).** A `ProjectileDefinition` may have `litOnHit` steps (authored in
-seconds, loaded in ticks like `onHit`, `loadProjectiles`). A shot with such steps catches fire when
-a move of it touches fire, a lava river (`CollisionQuery.touchesFire`, 10 §7). It then stays lit
-until it lands or ends: nothing puts it out. Where a lit shot lands damage, `ProjectileSystem` runs
-its `litOnHit` steps on the body through the `StepRunner` port (`HitEffects.runSteps`), as one
-cast named after the projectile, credited to the owner (or to the payload as the `Shooter` when the
-owner is gone). Only the arrow has them: a burn (`burn`, the Cathedral gem's numbers, DEC-292). A
-body with no `StatusEffects` takes the arrow's damage and no burn. An orb, a turret bolt and a
-thrown blade fly over lava and do not catch fire; content decides, not code (a projectile with no
-`litOnHit` cannot be lit). `ProjectileFlight` holds `isLit`; the hash and `EntitySnapshot.projectile`
-carry it, and the client draws a lit shot in a fire colour.
-
 A shot flies straight from the attacker's centre until it hits an enemy body or a wall, or reaches
 its `ProjectileDefinition.range` (metres from the origin). It passes through allies, as the
 Hamstring blade does (DEC-269). A walk-on outline (a palace floor, a gate's passage) is ground units
@@ -703,6 +691,20 @@ floor after that (DEC-306). A weapon with a melee attack beside its default atta
 `attack-target` with `mode: 'melee'`: the unit attacks with that melee attack (the Magus staff's
 melee, on its own rebindable action, DEC-308). `mode` is the same optional field as the heavy
 attack's. The basic and melee attacks share the unit's one cooldown (a reading of DEC-308).
+
+**Lit shots (HC-Q89, DEC-345).** A shot flies over a lake or a lava river (10 §7). A shot whose
+definition has `litOnHit` steps catches fire when it flies over a shape that lights shots (a lava
+river: `CollisionQuery.lightsShot`, 10 §7) before it reaches the body it lands on. It stays lit
+until it lands or ends. Where a lit shot lands damage, `ProjectileSystem` runs its `litOnHit` steps
+on the body through the `StepRunner` port (`HitEffects.runSteps`), as the attack's `onHit` runs:
+one cast named after the credited weapon, credited to the owner (or to the payload as the
+`Shooter` when the owner is gone). Content decides which shots can catch fire and what a lit shot
+does: each projectile's `litOnHit` in `content/projectiles/` (authored in seconds, loaded in ticks
+by `loadProjectiles`, checked against the ability registry at boot by `checkAttackLinks`), and the
+statuses those steps apply in `content/status-effects/`. A shot with no `litOnHit` flies over lava
+and does not catch fire. A body with no `StatusEffects` takes the shot's damage and no status.
+`ProjectileFlight` holds whether a shot is lit; the hash, `EntitySnapshot.projectile` and the
+client's look of the shot follow it.
 
 | Weapon (`id`)                               | Class      | Attacks (`TUNE`, reference 07)                                                          | Unique to | Status                  |
 | ------------------------------------------- | ---------- | --------------------------------------------------------------------------------------- | --------- | ----------------------- |

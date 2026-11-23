@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-23
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -620,6 +620,16 @@ seams, runes and emitter artwork for the existing turret features. `MapDecoratio
 suppresses the main view's plain feature marker; explicit object ownership removes the correct
 panel artwork when its wall segment dies. The minimap retains its generated feature markers.
 All decoration stays in the existing render layers and adds no new shield-immunity mechanic.
+
+### 2026-11-23 — Implementation status (branch `feat/shots-over-lava`, DEC-345)
+
+A map object can carry two flags that say what its footprint does to a shot (`MapObjectFlags` in
+`content/maps/mapObjects.types.ts`): `canShotsCross` (a shot flies over it; a unit or a dash still
+collides with it) and `canLightShots` (a shot that flies over it, outside its passages, catches
+fire). The map builder sets them: `MapLandscapeBuilder` gives lakes `canShotsCross` and lava rivers
+both, through `MapDecorationBuilder.beginObject`. `MapObjectBuilder` copies them to the
+`MapObject`, and `staticCollisionIndexOf` to each collision shape. Every other object has neither,
+so it stops a shot. Collision reads the flags (10 §7); the map does not.
 
 ## Related
 

@@ -336,6 +336,46 @@ describe('StateHasher', () => {
     expect(later).not.toBe(ending);
   });
 
+  it('hashes an unlit shot as before shots could catch fire: only a lit shot adds a field (HC-Q89, DEC-345)', () => {
+    const { state, soldier } = stateWithSoldier();
+    soldier.addComponent(
+      new ProjectilePayload({
+        ownerId: 'a',
+        team: 'light',
+        ownerLevel: 1,
+        source: { attackerId: 'a', kind: 'weapon', definitionId: 'bow' },
+        targetId: null,
+        impact: { kind: 'weapon', attack: SHOT_ATTACK },
+        origin: { x: 1, y: 0 },
+      }),
+    );
+    soldier.addComponent(
+      new ProjectileFlight(100, 80, 5, [
+        { kind: 'debuff', statusId: 'burn', shape: { kind: 'hit' } },
+      ]),
+    );
+    // The soldier's fields, then the shot's as `StateHasher` hashed them before DEC-345.
+    const legacy = [
+      state.tick,
+      state.match.phase,
+      state.rng.getState(),
+      [
+        [
+          soldier.id,
+          soldier.kind,
+          soldier.definitionId,
+          'light',
+          [3, 4, 0.5],
+          [100, 100],
+          [0, 0, 0],
+          ['projectile', 'a', null, 'weapon', 'bow', 1, 0, -1],
+        ],
+      ],
+    ];
+
+    expect(hasher.hash(state)).toBe(fnv1a(JSON.stringify(legacy)));
+  });
+
   it('changes when a shot catches fire (HC-Q89, DEC-345)', () => {
     const { state, soldier } = stateWithSoldier();
     soldier.addComponent(
@@ -350,7 +390,7 @@ describe('StateHasher', () => {
       }),
     );
     const flight = new ProjectileFlight(100, 80, 5, [
-      { kind: 'debuff', statusId: 'burn', durationTicks: 36, shape: { kind: 'hit' } },
+      { kind: 'debuff', statusId: 'burn', shape: { kind: 'hit' } },
     ]);
     soldier.addComponent(flight);
     const unlit = hasher.hash(state);

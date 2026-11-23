@@ -105,10 +105,10 @@ const fightTurn = (attack: UnitAttack, collisions: CollisionQuery | null): BotTu
   };
 };
 
-const WALLED: CollisionQuery = { reach: () => 4, touchesFire: () => false };
+const WALLED: CollisionQuery = { reach: () => 4, lightsShot: () => false };
 const OPEN: CollisionQuery = {
   reach: (_from, _direction, distance) => distance,
-  touchesFire: () => false,
+  lightsShot: () => false,
 };
 
 /** The headings the turn commanded; `(0, 0)` is a halt, which is how a bot holds. */
@@ -162,7 +162,7 @@ describe('BotLeaves.fight: line of fire for a ranged attack', () => {
   it('holds when a wall touches the near edge of the enemy (the shot touches the enemy first)', () => {
     // The resolver stops CONTACT_EPSILON short of a wall at the shot's contact with the enemy.
     const touching: CollisionQuery = {
-      touchesFire: () => false,
+      lightsShot: () => false,
       reach: (_from, _direction, distance) => distance - CONTACT_EPSILON,
     };
     const turn = fightTurn(RANGED, touching);

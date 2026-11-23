@@ -292,7 +292,7 @@ describe('LineOfFire', () => {
   });
 
   describe('lakes and mountains (HC-Q89, DEC-345)', () => {
-    const lake = { id: 'lake', polygon: box(4, -20, 4, 40), isLowGround: true } as const;
+    const lake = { id: 'lake', polygon: box(4, -20, 4, 40), canShotsCross: true } as const;
     const mountain = { id: 'mountain', polygon: box(4, -20, 4, 40) };
     const sceneOf = (shape: typeof lake | typeof mountain) => {
       const collisions = new CollisionResolver(new StaticCollisionIndex([shape]), BOUNDS);
