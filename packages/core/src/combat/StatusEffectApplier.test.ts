@@ -178,6 +178,24 @@ describe('StatusEffectApplier', () => {
     expect(dummy.getComponent(StatusEffects).has('cannot-move')).toBe(false);
   });
 
+  it('refuses a status its target’s content is immune to, from any source, with no event (DEC-207)', () => {
+    const { state, factory } = casterState();
+    const { applier } = setUp();
+    const events: GameEventMap['status-applied'][] = [];
+    state.events.on('status-applied', (payload) => events.push(payload));
+    const sentinel = factory.create('sentinel', 'sentinel', {
+      position: { x: 5, y: 0 },
+      team: 'dark',
+    });
+    state.entities.add(sentinel);
+
+    expect(applier.apply(state, sentinel.id, 'feared', 'entity-9')).toBe(false);
+    expect(applier.apply(state, sentinel.id, 'feared', null)).toBe(false);
+    expect(sentinel.getComponent(StatusEffects).active).toEqual([]);
+    expect(events).toEqual([]);
+    expect(applier.apply(state, sentinel.id, 'bleed', 'entity-9')).toBe(true);
+  });
+
   it('runs onExpire only when a status times out, not when it is removed early', () => {
     const { state, dummy, applier } = setUp();
     applier.apply(state, dummy.id, 'stun', null);

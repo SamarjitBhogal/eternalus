@@ -154,6 +154,20 @@ describe('StateHasher', () => {
     expect(hasher.hash(state)).toBe(whole);
   });
 
+  it('changes with the heading of a status that steers (Fear), which a source that is gone keeps', () => {
+    const { state, soldier } = stateWithSoldier();
+    const statuses = new StatusEffects();
+    soldier.addComponent(statuses);
+    statuses.apply(loadStatusEffects(30, 2).get('feared'), null, 0);
+    const still = hasher.hash(state);
+
+    const heading = statuses.steering?.heading;
+    if (heading === undefined) throw new Error('no steering status');
+    heading.x = -1;
+
+    expect(hasher.hash(state)).not.toBe(still);
+  });
+
   it('hashes an ability bar only once a slot leaves its initial state, then each slot field', () => {
     const { state, soldier } = stateWithSoldier();
     const before = hasher.hash(state);

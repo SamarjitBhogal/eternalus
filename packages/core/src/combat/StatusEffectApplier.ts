@@ -36,7 +36,8 @@ export class StatusEffectApplier {
   /**
    * Applies status `statusId` to `targetId`, credited to `sourceId`. Returns whether it landed: a
    * missing or dead target, or one without `StatusEffects` (a structure), is immune, and so is a
-   * `control-immune` target to hard control.
+   * `control-immune` target to hard control and a target whose content is immune to the status
+   * (`StatusEffects.isImmuneTo`: the Sentinel to Fear, DEC-207), whatever the source.
    *
    * @param durationTicks - The source's own duration for this application (a debuff step's
    *   `durationTicks`); the status's own duration when omitted.
@@ -62,6 +63,7 @@ export class StatusEffectApplier {
       target === undefined ||
       statuses === undefined ||
       target.findComponent(Health)?.isDead === true ||
+      statuses.isImmuneTo(statusId) ||
       (definition.controlClass === 'hard' && statuses.has('control-immune'))
     ) {
       return false;

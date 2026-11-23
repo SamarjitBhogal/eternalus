@@ -113,4 +113,9 @@ export type UnitDefinition = EntityDefinitionBase & {
   readonly controller?: ControllerId;
   /** The AI profile its controller reads (`content/ai/profiles/`); the controller id by default. */
   readonly aiProfile?: string;
+  /**
+   * The statuses this unit never gets, from any source (the Sentinel's Fear, DEC-207: "content on
+   * the class, not a check in code"); absent = none. `KnownStatusRefsRule` checks the ids.
+   */
+  readonly statusImmunities?: readonly string[];
 };

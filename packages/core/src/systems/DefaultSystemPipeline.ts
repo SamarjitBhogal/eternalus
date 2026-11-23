@@ -53,6 +53,7 @@ import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue'
 import { ZONE_LOCKING_MOBS } from '../content/zones/zoneLocks';
 import { loadGuardPlans } from '../content/structures/loadGuardPlans';
 import { StatusEffectSystem } from './StatusEffectSystem';
+import { StatusSteeringSystem } from './StatusSteeringSystem';
 import { SystemPipeline } from './SystemPipeline';
 
 /**
@@ -133,6 +134,8 @@ export class DefaultSystemPipeline extends SystemPipeline {
       // After the casts, so a cast spends before the tick's regeneration (plan arch call 13).
       new AetherRegenSystem(AETHER_REGEN, tickRate),
       new StatusEffectSystem(state, damage, statuses),
+      // After the AI, the commands and the statuses of this tick, before the walking it steers.
+      new StatusSteeringSystem(createDefaultStrategyRegistry().steering),
       new MovementSystem(),
       ...(hordes?.collisions ?? []),
       ...(hordes === undefined

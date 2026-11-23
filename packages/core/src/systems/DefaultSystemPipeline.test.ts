@@ -178,6 +178,7 @@ describe('DefaultSystemPipeline', () => {
       'abilities',
       'aether-regen',
       'status-effects',
+      'status-steering',
       'movement',
       'collision',
       'space',

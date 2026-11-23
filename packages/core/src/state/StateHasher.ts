@@ -253,6 +253,10 @@ export class StateHasher {
           status.periodAnchorTick,
           status.expiresTick,
           ...(status.isBroken ? ['broken'] : []),
+          // Only a status that steers (Fear) adds its heading, so other statuses hash as before.
+          ...(status.definition.steering === undefined
+            ? []
+            : ['heading', status.heading.x, status.heading.y]),
         ]),
       ]);
     }
