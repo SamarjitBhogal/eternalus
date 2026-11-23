@@ -1,3 +1,4 @@
+import { MAP_CAMP_GEOMETRY } from '../content/maps/campArt';
 import type { MapDecoration, MapFeature } from '../content/maps/maps.types';
 import {
   CAMP_APPEARANCES,
@@ -44,7 +45,12 @@ export class MapCampBuilder extends MapDecorationBuilder {
         : feature.kind === 'buff-tower'
           ? 'buff-tower'
           : 'spawner-tower';
-    this.ellipse(`${id}-camp-clearing`, 0, 13, 39, 17, M.shadow, 'ground');
+    this.ellipse(
+      `${id}-camp-clearing`,
+      ...MAP_CAMP_GEOMETRY.campClearingBounds,
+      M.shadow,
+      'ground',
+    );
     this.pieces.push(
       ...(feature.kind === 'corner-camp'
         ? new CampShrineBuilder().build(id)
@@ -75,39 +81,16 @@ export class MapCampBuilder extends MapDecorationBuilder {
     id: string,
     appearance: { readonly glow: string; readonly crystal: string; readonly core: string },
   ): void {
-    this.ellipse(`${id}-crystal-aura`, 0, -18, 12, 16, appearance.glow);
+    this.ellipse(`${id}-crystal-aura`, ...MAP_CAMP_GEOMETRY.crystalAuraBounds, appearance.glow);
     this.chain(id);
-    this.ellipse(`${id}-crystal-pool`, 0, -6, 6, 1.6, appearance.glow);
-    this.polygon(
-      `${id}-crystal-dark`,
-      [
-        { x: 0, y: -31 },
-        { x: 4, y: -21 },
-        { x: 0, y: -10 },
-        { x: -4, y: -21 },
-      ],
-      appearance.crystal,
-    );
-    this.polygon(
-      `${id}-crystal-light`,
-      [
-        { x: 0, y: -29 },
-        { x: 2.5, y: -21 },
-        { x: 0, y: -13 },
-        { x: -1.2, y: -21 },
-      ],
-      appearance.core,
-    );
+    this.ellipse(`${id}-crystal-pool`, ...MAP_CAMP_GEOMETRY.crystalPoolBounds, appearance.glow);
+    this.polygon(`${id}-crystal-dark`, MAP_CAMP_GEOMETRY.crystalDark, appearance.crystal);
+    this.polygon(`${id}-crystal-light`, MAP_CAMP_GEOMETRY.crystalLight, appearance.core);
     for (const side of [-1, 1]) {
       this.ribbon(
         `${id}-crystal-cage-${String(side)}`,
-        [
-          { x: 0, y: -34 },
-          { x: side * 5.5, y: -25 },
-          { x: side * 5, y: -16 },
-          { x: 0, y: -8 },
-        ],
-        0.8,
+        MAP_CAMP_GEOMETRY.crystalCage(side),
+        MAP_CAMP_GEOMETRY.crystalCageWidth,
         M.iron,
         'detail',
       );
@@ -115,105 +98,115 @@ export class MapCampBuilder extends MapDecorationBuilder {
   }
 
   private chain(id: string): void {
-    this.rect(`${id}-suspension-chain`, -0.35, -47, 0.7, 14, M.bronzeLight);
+    this.rect(`${id}-suspension-chain`, ...MAP_CAMP_GEOMETRY.suspensionChainBounds, M.bronzeLight);
     for (let link = 0; link < 6; link++) {
-      this.ellipse(`${id}-chain-link-${String(link)}`, 0, -45 + link * 2, 1, 0.7, M.bronze);
+      this.ellipse(
+        `${id}-chain-link-${String(link)}`,
+        ...MAP_CAMP_GEOMETRY.chainLinkBounds(link),
+        M.bronze,
+      );
     }
   }
 
   private shields(id: string): void {
     for (const side of [-1, 1]) {
-      const x = side * 28;
-      this.blockRect(`${id}-heavy-rack-${String(side)}`, x - 3, -5, 6, 10, M.iron);
+      const x = side * MAP_CAMP_GEOMETRY.equipmentOffset;
+      this.blockRect(
+        `${id}-heavy-rack-${String(side)}`,
+        ...MAP_CAMP_GEOMETRY.heavyRackBounds(x),
+        M.iron,
+      );
       this.polygon(
         `${id}-heavy-shield-${String(side)}`,
-        [
-          { x: x - 6, y: -15 },
-          { x: x + 6, y: -15 },
-          { x: x + 5, y: -4 },
-          { x, y: 1 },
-          { x: x - 5, y: -4 },
-        ],
+        MAP_CAMP_GEOMETRY.heavyShield(x),
         M.bronze,
       );
       this.polygon(
         `${id}-heavy-shield-inset-${String(side)}`,
-        [
-          { x: x - 4, y: -13 },
-          { x: x + 4, y: -13 },
-          { x: x + 3, y: -5 },
-          { x, y: -1 },
-          { x: x - 3, y: -5 },
-        ],
+        MAP_CAMP_GEOMETRY.heavyShieldInset(x),
         M.iron,
       );
-      this.rect(`${id}-heavy-shield-spine-${String(side)}`, x - 0.7, -13, 1.4, 12, M.bronzeLight);
-      this.rect(`${id}-heavy-hammer-handle-${String(side)}`, x + side * 6, -18, 1.3, 19, M.wood);
-      this.rect(`${id}-heavy-hammer-head-${String(side)}`, x + side * 6 - 3, -19, 7, 4, M.light);
+      this.rect(
+        `${id}-heavy-shield-spine-${String(side)}`,
+        ...MAP_CAMP_GEOMETRY.heavyShieldSpineBounds(x),
+        M.bronzeLight,
+      );
+      this.rect(
+        `${id}-heavy-hammer-handle-${String(side)}`,
+        ...MAP_CAMP_GEOMETRY.heavyHammerHandleBounds(x, side),
+        M.wood,
+      );
+      this.rect(
+        `${id}-heavy-hammer-head-${String(side)}`,
+        ...MAP_CAMP_GEOMETRY.heavyHammerHeadBounds(x, side),
+        M.light,
+      );
     }
   }
 
   private spears(id: string): void {
     for (const side of [-1, 1]) {
-      const x = side * 28;
-      this.blockRect(`${id}-medium-rack-${String(side)}`, x - 5, -2, 10, 3, M.wood);
+      const x = side * MAP_CAMP_GEOMETRY.equipmentOffset;
+      this.blockRect(
+        `${id}-medium-rack-${String(side)}`,
+        ...MAP_CAMP_GEOMETRY.mediumRackBounds(x),
+        M.wood,
+      );
       for (let i = 0; i < 3; i++) {
         const offset = x - 4 + i * 4;
         this.rect(
           `${id}-medium-spear-${String(side)}-${String(i)}`,
-          offset,
-          -20 - i * 2,
-          0.8,
-          22,
+          ...MAP_CAMP_GEOMETRY.mediumSpearBounds(offset, i),
           M.wood,
         );
         this.polygon(
           `${id}-medium-blade-${String(side)}-${String(i)}`,
-          [
-            { x: offset - 1.5, y: -20 - i * 2 },
-            { x: offset + 0.4, y: -27 - i * 2 },
-            { x: offset + 2, y: -20 - i * 2 },
-          ],
+          MAP_CAMP_GEOMETRY.mediumBlade(offset, i),
           M.light,
         );
       }
-      this.ellipse(`${id}-medium-buckler-${String(side)}`, x, -5, 4.5, 5, M.bronze);
-      this.ellipse(`${id}-medium-buckler-boss-${String(side)}`, x, -5, 1.7, 2, M.iron);
+      this.ellipse(
+        `${id}-medium-buckler-${String(side)}`,
+        ...MAP_CAMP_GEOMETRY.mediumBucklerBounds(x),
+        M.bronze,
+      );
+      this.ellipse(
+        `${id}-medium-buckler-boss-${String(side)}`,
+        ...MAP_CAMP_GEOMETRY.mediumBucklerBossBounds(x),
+        M.iron,
+      );
     }
   }
 
   private bows(id: string): void {
     for (const side of [-1, 1]) {
-      const x = side * 28;
-      this.blockRect(`${id}-light-quiver-${String(side)}`, x - 3, -7, 6, 8, M.cloth);
+      const x = side * MAP_CAMP_GEOMETRY.equipmentOffset;
+      this.blockRect(
+        `${id}-light-quiver-${String(side)}`,
+        ...MAP_CAMP_GEOMETRY.lightQuiverBounds(x),
+        M.cloth,
+      );
       this.ribbon(
         `${id}-light-bow-${String(side)}`,
-        [
-          { x, y: -22 },
-          { x: x + side * 6, y: -14 },
-          { x: x + side * 6, y: -7 },
-          { x, y: 1 },
-        ],
-        1.1,
+        MAP_CAMP_GEOMETRY.lightBow(x, side),
+        MAP_CAMP_GEOMETRY.lightBowWidth,
         M.wood,
         'detail',
       );
-      this.rect(`${id}-light-bowstring-${String(side)}`, x, -22, 0.4, 23, M.edge);
+      this.rect(
+        `${id}-light-bowstring-${String(side)}`,
+        ...MAP_CAMP_GEOMETRY.lightBowstringBounds(x),
+        M.edge,
+      );
       for (let arrow = 0; arrow < 3; arrow++) {
         this.rect(
           `${id}-light-arrow-${String(side)}-${String(arrow)}`,
-          x - 2 + arrow * 2,
-          -15,
-          0.5,
-          10,
+          ...MAP_CAMP_GEOMETRY.lightArrowBounds(x, arrow),
           M.wood,
         );
         this.rect(
           `${id}-light-fletching-${String(side)}-${String(arrow)}`,
-          x - 2.7 + arrow * 2,
-          -15,
-          1.7,
-          3,
+          ...MAP_CAMP_GEOMETRY.lightFletchingBounds(x, arrow),
           M.edge,
         );
       }

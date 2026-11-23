@@ -23,9 +23,14 @@ export class LegendView extends DefaultEntityView {
 
   protected override readonly minimapGlyph = MINI_MAP_LEGEND_GLYPH;
 
+  /** Returns the displayed Legend radius (DEC-238). */
+  public visualRadiusOf(): number {
+    return LEGEND_VISUAL_DIAMETER / 2;
+  }
+
   /** Draws the white outline, then the team disc and focus ring on top. */
   public override draw(state: EntityDrawState, renderer: Renderer): void {
-    const visual = withVisualRadius(state, LEGEND_VISUAL_DIAMETER / 2);
+    const visual = withVisualRadius(state, this.visualRadiusOf());
     const diameter = (visual.entity.transform?.radius ?? 0) * 2;
     renderer.drawWorldGlyph(
       { shape: 'dot', size: diameter * LEGEND_OUTLINE_SCALE },

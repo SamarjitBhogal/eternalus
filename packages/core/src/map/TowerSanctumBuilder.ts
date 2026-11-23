@@ -1,3 +1,4 @@
+import { TOWER_SANCTUM_GEOMETRY } from '../content/maps/towerSanctumArt';
 import type { MapDecoration } from '../content/maps/maps.types';
 import { CAMP_CRYSTALS, CAMP_MATERIALS as M } from '../content/maps/campScenery';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
@@ -10,21 +11,22 @@ export class TowerSanctumBuilder extends MapDecorationBuilder {
     const stone = isDark ? M.iron : M.light;
     const trim = isDark ? M.bronze : M.bronzeLight;
     const crystal = CAMP_CRYSTALS[isDark ? 'dark' : 'light'];
-    this.rect(`${id}-sanctum-shadow`, -30, -30, 64, 58, M.shadow);
-    this.rect(`${id}-sanctum-plinth`, -32, -35, 64, 59, M.face);
-    this.rect(`${id}-sanctum-outer-inlay`, -30, -33, 60, 55, trim);
-    this.rect(`${id}-sanctum-floor`, -28, -31, 56, 51, stone);
-    this.rect(`${id}-sanctum-inner-inlay`, -23, -26, 46, 41, trim);
-    this.rect(`${id}-sanctum-recess`, -21, -24, 42, 37, M.face);
+    this.rect(`${id}-sanctum-shadow`, ...TOWER_SANCTUM_GEOMETRY.sanctumShadowBounds, M.shadow);
+    this.rect(`${id}-sanctum-plinth`, ...TOWER_SANCTUM_GEOMETRY.sanctumPlinthBounds, M.face);
+    this.rect(`${id}-sanctum-outer-inlay`, ...TOWER_SANCTUM_GEOMETRY.sanctumOuterInlayBounds, trim);
+    this.rect(`${id}-sanctum-floor`, ...TOWER_SANCTUM_GEOMETRY.sanctumFloorBounds, stone);
+    this.rect(`${id}-sanctum-inner-inlay`, ...TOWER_SANCTUM_GEOMETRY.sanctumInnerInlayBounds, trim);
+    this.rect(`${id}-sanctum-recess`, ...TOWER_SANCTUM_GEOMETRY.sanctumRecessBounds, M.face);
     for (let step = 0; step < 4; step++) {
       const width = 21 + step * 3;
-      this.rect(`${id}-sanctum-stair-${String(step)}`, -width / 2, 16 + step * 3, width, 3, stone);
+      this.rect(
+        `${id}-sanctum-stair-${String(step)}`,
+        ...TOWER_SANCTUM_GEOMETRY.sanctumStairBounds(width, step),
+        stone,
+      );
       this.rect(
         `${id}-sanctum-stair-edge-${String(step)}`,
-        -width / 2,
-        16 + step * 3,
-        width,
-        0.6,
+        ...TOWER_SANCTUM_GEOMETRY.sanctumStairEdgeBounds(width, step),
         trim,
       );
     }
@@ -35,28 +37,26 @@ export class TowerSanctumBuilder extends MapDecorationBuilder {
         const y = -9 - feather * 2.2;
         this.polygon(
           `${id}-sanctum-wing-${String(side)}-${String(feather)}`,
-          [
-            { x: side * 5, y: -5 },
-            { x, y: y - 8 },
-            { x: x + side * 2.4, y: y - 3 },
-            { x: side * 9, y: -1 },
-          ],
+          TOWER_SANCTUM_GEOMETRY.sanctumWing(side, x, y),
           feather % 2 === 0 ? trim : stone,
         );
       }
     }
-    this.ellipse(`${id}-sanctum-orbit`, 0, -8, 14, 12, trim);
-    this.ellipse(`${id}-sanctum-orbit-inset`, 0, -8, 12.5, 10.5, M.iron);
-    this.ellipse(`${id}-sanctum-aether`, 0, -8, 10, 8, crystal.glow);
+    this.ellipse(`${id}-sanctum-orbit`, ...TOWER_SANCTUM_GEOMETRY.sanctumOrbitBounds, trim);
+    this.ellipse(
+      `${id}-sanctum-orbit-inset`,
+      ...TOWER_SANCTUM_GEOMETRY.sanctumOrbitInsetBounds,
+      M.iron,
+    );
+    this.ellipse(
+      `${id}-sanctum-aether`,
+      ...TOWER_SANCTUM_GEOMETRY.sanctumAetherBounds,
+      crystal.glow,
+    );
     for (const side of [-1, 1]) {
       this.polygon(
         `${id}-sanctum-floating-shard-${String(side)}`,
-        [
-          { x: side * 17, y: -14 },
-          { x: side * 20, y: -9 },
-          { x: side * 17, y: -4 },
-          { x: side * 15, y: -9 },
-        ],
+        TOWER_SANCTUM_GEOMETRY.sanctumFloatingShard(side),
         crystal.crystal,
       );
     }
@@ -66,11 +66,20 @@ export class TowerSanctumBuilder extends MapDecorationBuilder {
   private pillar(id: string, side: number, stone: string, trim: string): void {
     const x = side * 26;
     const prefix = `${id}-sanctum-pillar-${String(side)}`;
-    this.rect(`${prefix}-shadow`, x - 4, -29, 10, 38, M.crack);
-    this.rect(`${prefix}-shaft`, x - 4, -32, 8, 36, stone);
-    this.rect(`${prefix}-flute`, x - 1, -28, 2, 28, trim);
-    for (const y of [-34, 2]) this.rect(`${prefix}-capital-${String(y)}`, x - 6, y, 12, 4, trim);
+    this.rect(`${prefix}-shadow`, ...TOWER_SANCTUM_GEOMETRY.shadowBounds(x), M.crack);
+    this.rect(`${prefix}-shaft`, ...TOWER_SANCTUM_GEOMETRY.shaftBounds(x), stone);
+    this.rect(`${prefix}-flute`, ...TOWER_SANCTUM_GEOMETRY.fluteBounds(x), trim);
+    for (const y of [-34, 2])
+      this.rect(
+        `${prefix}-capital-${String(y)}`,
+        ...TOWER_SANCTUM_GEOMETRY.capitalBounds(x, y),
+        trim,
+      );
     for (let course = 0; course < 5; course++)
-      this.rect(`${prefix}-course-${String(course)}`, x - 4, -25 + course * 6, 8, 0.6, M.face);
+      this.rect(
+        `${prefix}-course-${String(course)}`,
+        ...TOWER_SANCTUM_GEOMETRY.courseBounds(x, course),
+        M.face,
+      );
   }
 }

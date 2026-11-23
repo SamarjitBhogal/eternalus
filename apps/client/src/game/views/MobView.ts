@@ -1,3 +1,4 @@
+import type { EntitySnapshot } from '@eternalus/core';
 import { drawFacingChevron } from './facingChevron';
 import type { Renderer } from '../engine/render/Renderer';
 import { DefaultEntityView } from './DefaultEntityView';
@@ -14,12 +15,18 @@ import { MINI_MAP_MOB_GLYPH } from './entityViews.constants';
 export class MobView extends DefaultEntityView {
   protected override readonly minimapGlyph = MINI_MAP_MOB_GLYPH;
 
+  /** Returns the visible mob disc radius. */
+  public visualRadiusOf(entity: EntitySnapshot): number {
+    return this.discRadiusOf(entity);
+  }
+
+  private discRadiusOf(entity: EntitySnapshot): number {
+    return (entity.transform?.radius ?? 0) * MOB_VISUAL_SCALE;
+  }
+
   /** Draws the dark outline, then the team disc and focus ring on top. */
   public override draw(state: EntityDrawState, renderer: Renderer): void {
-    const visual = withVisualRadius(
-      state,
-      (state.entity.transform?.radius ?? 0) * MOB_VISUAL_SCALE,
-    );
+    const visual = withVisualRadius(state, this.discRadiusOf(state.entity));
     const diameter = (visual.entity.transform?.radius ?? 0) * 2;
     renderer.drawWorldGlyph(
       { shape: 'dot', size: diameter * MOB_OUTLINE_SCALE },

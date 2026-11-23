@@ -1,3 +1,4 @@
+import { NEUTRAL_CAMP_GEOMETRY } from '../content/maps/neutralCampArt';
 import type { MapDecoration, MapFeature } from '../content/maps/maps.types';
 import { CAMP_MATERIALS as M } from '../content/maps/campScenery';
 import { placeLocalArt } from './placeLocalArt';
@@ -8,8 +9,8 @@ export class NeutralCampBuilder extends MapDecorationBuilder {
   /** Builds rooted standing stones, an old dolmen, offerings and a moss-covered clearing. */
   public build(feature: MapFeature, mirrorWidth?: number): readonly MapDecoration[] {
     const id = feature.id;
-    this.blob(`${id}-camp-clearing`, 0, 0, 27, 20, M.dust, 'ground');
-    this.blob(`${id}-forest-moss`, -2, 0, 24, 17, M.moss, 'ground');
+    this.blob(`${id}-camp-clearing`, ...NEUTRAL_CAMP_GEOMETRY.campClearingBounds, M.dust, 'ground');
+    this.blob(`${id}-forest-moss`, ...NEUTRAL_CAMP_GEOMETRY.forestMossBounds, M.moss, 'ground');
     this.beginObject(id, 'camp');
     this.stones(id);
     this.dolmen(id);
@@ -24,104 +25,80 @@ export class NeutralCampBuilder extends MapDecorationBuilder {
   }
 
   private stones(id: string): void {
-    for (const [index, x, y, height] of [
-      [0, -19, -3, 18],
-      [1, 17, -5, 22],
-      [2, -9, 12, 9],
-      [3, 15, 11, 8],
-    ]) {
-      if (index === undefined || x === undefined || y === undefined || height === undefined)
-        continue;
+    for (const [index, x, y, height] of NEUTRAL_CAMP_GEOMETRY.standingStones) {
       const prefix = `${id}-standing-stone-${String(index)}`;
-      this.ellipse(`${prefix}-shadow`, x + 2, y + 2, 6, 3, M.shadow);
-      this.blockEllipse(`${prefix}-foot`, x, y, 4, 2.5, M.face);
-      this.polygon(
-        `${prefix}-face`,
-        [
-          { x: x - 3, y },
-          { x: x - 4, y: y - height + 4 },
-          { x, y: y - height },
-          { x: x + 4, y: y - height + 3 },
-          { x: x + 5, y },
-        ],
-        M.stone,
-      );
-      this.polygon(
-        `${prefix}-facet`,
-        [
-          { x, y: y - height },
-          { x: x + 4, y: y - height + 3 },
-          { x: x + 5, y },
-          { x: x + 1, y },
-        ],
-        M.face,
-      );
-      this.rect(`${prefix}-rune`, x - 0.5, y - height + 6, 1, 5, M.rune);
-      this.blob(`${prefix}-lichen`, x - 2, y - 2, 3, 2, M.moss);
+      this.ellipse(`${prefix}-shadow`, ...NEUTRAL_CAMP_GEOMETRY.shadowBounds(x, y), M.shadow);
+      this.blockEllipse(`${prefix}-foot`, ...NEUTRAL_CAMP_GEOMETRY.footBounds(x, y), M.face);
+      this.polygon(`${prefix}-face`, NEUTRAL_CAMP_GEOMETRY.face(x, y, height), M.stone);
+      this.polygon(`${prefix}-facet`, NEUTRAL_CAMP_GEOMETRY.facet(x, y, height), M.face);
+      this.rect(`${prefix}-rune`, ...NEUTRAL_CAMP_GEOMETRY.runeBounds(x, y, height), M.rune);
+      this.blob(`${prefix}-lichen`, ...NEUTRAL_CAMP_GEOMETRY.lichenBounds(x, y), M.moss);
     }
   }
 
   private dolmen(id: string): void {
     for (const side of [-1, 1]) {
-      this.blockRect(`${id}-dolmen-leg-${String(side)}`, side * 7 - 2, -10, 4, 5, M.face);
+      this.blockRect(
+        `${id}-dolmen-leg-${String(side)}`,
+        ...NEUTRAL_CAMP_GEOMETRY.dolmenLegBounds(side),
+        M.face,
+      );
     }
-    this.polygon(
-      `${id}-dolmen-cap`,
-      [
-        { x: -12, y: -16 },
-        { x: 8, y: -18 },
-        { x: 13, y: -13 },
-        { x: 10, y: -10 },
-        { x: -11, y: -10 },
-      ],
-      M.stone,
-    );
+    this.polygon(`${id}-dolmen-cap`, NEUTRAL_CAMP_GEOMETRY.dolmenCap, M.stone);
     this.ribbon(
       `${id}-dolmen-crack`,
-      [
-        { x: -3, y: -16 },
-        { x: -1, y: -13 },
-        { x: -4, y: -10 },
-      ],
-      0.7,
+      NEUTRAL_CAMP_GEOMETRY.dolmenCrack,
+      NEUTRAL_CAMP_GEOMETRY.dolmenCrackWidth,
       M.crack,
       'detail',
     );
   }
 
   private offerings(id: string): void {
-    this.ellipse(`${id}-offering-bowl`, 0, 2, 6, 3, M.face);
-    this.ellipse(`${id}-offering-water`, 0, 1, 4, 1.5, M.water);
+    this.ellipse(`${id}-offering-bowl`, ...NEUTRAL_CAMP_GEOMETRY.offeringBowlBounds, M.face);
+    this.ellipse(`${id}-offering-water`, ...NEUTRAL_CAMP_GEOMETRY.offeringWaterBounds, M.water);
     for (const side of [-1, 1]) {
       this.ribbon(
         `${id}-root-${String(side)}`,
-        [
-          { x: side * 24, y: -9 },
-          { x: side * 16, y: 0 },
-          { x: side * 12, y: 7 },
-          { x: side * 4, y: 12 },
-        ],
-        1.5,
+        NEUTRAL_CAMP_GEOMETRY.root(side),
+        NEUTRAL_CAMP_GEOMETRY.rootWidth,
         M.wood,
         'detail',
       );
-      this.rect(`${id}-lantern-post-${String(side)}`, side * 23, -11, 0.8, 13, M.wood);
-      this.ellipse(`${id}-lantern-glow-${String(side)}`, side * 23, -11, 4, 5, M.lanternGlow);
-      this.rect(`${id}-lantern-cage-${String(side)}`, side * 23 - 1.5, -13, 3, 4, M.iron);
+      this.rect(
+        `${id}-lantern-post-${String(side)}`,
+        ...NEUTRAL_CAMP_GEOMETRY.lanternPostBounds(side),
+        M.wood,
+      );
+      this.ellipse(
+        `${id}-lantern-glow-${String(side)}`,
+        ...NEUTRAL_CAMP_GEOMETRY.lanternGlowBounds(side),
+        M.lanternGlow,
+      );
+      this.rect(
+        `${id}-lantern-cage-${String(side)}`,
+        ...NEUTRAL_CAMP_GEOMETRY.lanternCageBounds(side),
+        M.iron,
+      );
       this.rect(
         `${id}-lantern-light-${String(side)}`,
-        side * 23 - 0.6,
-        -12,
-        1.2,
-        2,
+        ...NEUTRAL_CAMP_GEOMETRY.lanternLightBounds(side),
         M.lanternLight,
       );
     }
     for (let i = 0; i < 9; i++) {
       const x = -20 + i * 5;
       const y = 15 + (i % 3);
-      this.rect(`${id}-mushroom-stem-${String(i)}`, x, y, 0.6, 2, M.edge);
-      this.ellipse(`${id}-mushroom-cap-${String(i)}`, x + 0.3, y, 1.3, 0.8, M.bronze);
+      this.rect(
+        `${id}-mushroom-stem-${String(i)}`,
+        ...NEUTRAL_CAMP_GEOMETRY.mushroomStemBounds(x, y),
+        M.edge,
+      );
+      this.ellipse(
+        `${id}-mushroom-cap-${String(i)}`,
+        ...NEUTRAL_CAMP_GEOMETRY.mushroomCapBounds(x, y),
+        M.bronze,
+      );
     }
   }
 }

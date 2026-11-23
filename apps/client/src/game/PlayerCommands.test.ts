@@ -104,6 +104,19 @@ describe('PlayerCommands', () => {
     expect(enqueueCommand.mock.calls).toEqual([[expected], [expected]]);
   });
 
+  it('selects a minion by its drawn figure beyond the ordinary mob disc', () => {
+    const { commands, enqueueCommand } = setUp();
+    const minion = { ...ENEMY, kind: 'heavy-mob', definitionId: 'heavy-minion' };
+    const snapshot = snapshotOf([PLAYER, minion]);
+    expect(commands.attackUnitAt(ACTOR, { x: 2, y: -0.7 }, snapshot)).toBe(true);
+    expect(enqueueCommand).toHaveBeenCalledWith({
+      type: 'attack-target',
+      actorId: ACTOR,
+      targetId: minion.id,
+    });
+    expect(commands.attackUnitAt(ACTOR, { x: 2, y: -20 }, snapshot)).toBe(false);
+  });
+
   it('queues one attack per target while held, and again after a release or a stop', () => {
     const { input, queued, tick, enqueueCommand } = setUp();
     input.isAttacking = true;

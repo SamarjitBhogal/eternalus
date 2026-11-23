@@ -113,7 +113,7 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
     this.isMirrored = true;
     this.forest();
     this.isMirrored = undefined;
-    this.pieces.push(...new MapMountainBuilder().build(this.map.seed));
+    this.pieces.push(...new MapMountainBuilder().build(this.map));
     this.pieces.push(...new MapVillageBuilder(this.map).build());
     const themes = laneCampThemes(this.map);
     this.map.features.forEach((feature) => {

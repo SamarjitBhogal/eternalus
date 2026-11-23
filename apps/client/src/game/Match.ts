@@ -83,23 +83,20 @@ export class Match implements LoopTarget {
     const { simulation, world, tickRate, scheduler, camera, logger, bridge, input } = deps;
     const { map, presentation, mapObjects } = world;
     this.healthBars = new HealthBarVisibility(simulation);
-    this.entities = new EntityLayer(
-      createDefaultViewRegistry((kind) => {
-        logger.log(
-          makeLogRecord(
-            'WARN',
-            'client.views',
-            `No view for kind "${kind}"; drawing the default view.`,
-          ),
-        );
-      }),
-      isDead,
-      this.healthBars.healthBarOf,
-    );
+    const views = createDefaultViewRegistry((kind) => {
+      logger.log(
+        makeLogRecord(
+          'WARN',
+          'client.views',
+          `No view for kind "${kind}"; drawing the default view.`,
+        ),
+      );
+    });
+    this.entities = new EntityLayer(views, isDead, this.healthBars.healthBarOf);
     this.camera = new MatchCamera(camera, map);
     this.commands =
       deps.remote?.createActions(this.camera) ??
-      new PlayerCommands(input, simulation, this.camera, mapObjects);
+      new PlayerCommands(input, simulation, this.camera, mapObjects, views);
     const { scenery, buildings } = presentation;
     this.roofs = new BuildingRoofs(buildings);
     const { hidden: hiddenRoofs } = this.roofs;

@@ -13,6 +13,7 @@ export class MinionView extends MobView {
     EntityDrawState['entity'],
     { shape: { x: number; y: number }[]; color: string }[]
   >();
+  private readonly extentByTeam = new Map<string, number>();
   private readonly figures: ReadonlyMap<string, readonly MinionPart[]>;
 
   /** Selects a weight silhouette once; each faction's local artwork is assembled only once. */
@@ -24,6 +25,23 @@ export class MinionView extends MobView {
         new MinionFigureBuilder().build(weight, palette),
       ]),
     );
+    for (const [team, figure] of this.figures) {
+      this.extentByTeam.set(
+        team,
+        Math.max(0, ...figure.flatMap((part) => part.shape.map(({ x, y }) => Math.hypot(x, y)))),
+      );
+    }
+  }
+
+  /** Returns a radius that encloses the cached figure for this faction. */
+  public override visualRadiusOf(entity: EntityDrawState['entity']): number {
+    const team = entity.team ?? 'neutral';
+    const extent = this.extentByTeam.get(team) ?? 0;
+    return Math.max(super.visualRadiusOf(entity), extent * this.figureScale(entity));
+  }
+
+  private figureScale(entity: EntityDrawState['entity']): number {
+    return (entity.transform?.radius ?? 0) * MINION_ART_SCALE;
   }
 
   /** Draws at the interpolated position; the snapshot and physical footprint are never modified. */
@@ -31,7 +49,7 @@ export class MinionView extends MobView {
     super.draw({ ...state, isFocused: false }, renderer);
     const radius = state.entity.transform?.radius ?? 0;
     if (radius <= 0) return;
-    const scale = radius * MINION_ART_SCALE;
+    const scale = this.figureScale(state.entity);
     const team = state.entity.team ?? 'neutral';
     const key = team + ':' + String(scale);
     let figure = this.transformed.get(key);

@@ -1,5 +1,6 @@
 import {
   type EntityId,
+  type EntitySnapshot,
   findMapObjectAt,
   findUnitAt,
   type MapObject,
@@ -11,15 +12,11 @@ import {
 import type { Projection } from './engine/input/Projection.types';
 import type { IntentSource } from './Match.types';
 import type { PlayerActions } from './PlayerActions';
-import { LEGEND_VISUAL_DIAMETER, MOB_VISUAL_SCALE } from './views/entityViews.constants';
+import { createDefaultViewRegistry } from './views/defaultViewRegistry';
+import type { ViewRegistry } from './views/ViewRegistry';
 
 /** The parts of a snapshot an attack target is picked from: its units and map objects. */
 type TargetSnapshot = Pick<Snapshot, 'entities' | 'mapObjects'>;
-
-const visualRadiusFor = (family: string, colliderRadius: number): number => {
-  if (family === 'legend') return LEGEND_VISUAL_DIAMETER / 2;
-  return family === 'mob' ? colliderRadius * MOB_VISUAL_SCALE : colliderRadius;
-};
 
 /**
  * Turns the player's intent into commands for the player's Legend, once a tick (`Match.tick`):
@@ -48,6 +45,7 @@ export class PlayerCommands implements PlayerActions {
     private readonly simulation: Pick<Simulation, 'enqueueCommand'>,
     private readonly camera: Projection,
     private readonly mapObjects: readonly MapObject[],
+    private readonly views: ViewRegistry = createDefaultViewRegistry(),
   ) {}
 
   /**
@@ -93,7 +91,7 @@ export class PlayerCommands implements PlayerActions {
    * @returns Whether a unit was under the point; it wins over a roof (`MatchViewControls.clickAt`).
    */
   public attackUnitAt(actorId: EntityId, point: Vec2, snapshot: TargetSnapshot): boolean {
-    const targetId = findUnitAt(snapshot.entities, actorId, point, visualRadiusFor);
+    const targetId = findUnitAt(snapshot.entities, actorId, point, this.visualRadiusFor);
     if (targetId === null) {
       return false;
     }
@@ -125,10 +123,13 @@ export class PlayerCommands implements PlayerActions {
     this.attackTargetId = targetId;
   }
 
+  private readonly visualRadiusFor = (entity: EntitySnapshot): number =>
+    this.views.viewFor(entity).visualRadiusOf?.(entity) ?? entity.transform?.radius ?? 0;
+
   /** The unit under `point`, else the map object there: a unit is drawn on top of a building. */
   private targetAt(actorId: EntityId, point: Vec2, snapshot: TargetSnapshot): EntityId | null {
     return (
-      findUnitAt(snapshot.entities, actorId, point, visualRadiusFor) ??
+      findUnitAt(snapshot.entities, actorId, point, this.visualRadiusFor) ??
       findMapObjectAt(this.mapObjects, snapshot.mapObjects ?? [], point)
     );
   }

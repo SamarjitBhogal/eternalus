@@ -21,12 +21,13 @@ export const findUnitAt = (
   entities: readonly EntitySnapshot[],
   actorId: EntityId,
   point: Vec2,
-  radiusFor: (family: string, colliderRadius: number) => number = (_, radius) => radius,
+  radiusFor: (entity: EntitySnapshot) => number = (entity) => entity.transform?.radius ?? 0,
 ): EntityId | null => {
   const actorTeam = entities.find((entity) => entity.id === actorId)?.team ?? null;
   let selected: EntityId | null = null;
   let frontY = -Infinity;
-  for (const { id, family, team, transform, health } of entities) {
+  for (const entity of entities) {
+    const { id, family, team, transform, health } = entity;
     if (
       team === actorTeam ||
       !isUnitFamily(family) ||
@@ -39,7 +40,7 @@ export const findUnitAt = (
     const dx = transform.x - point.x;
     const dy = transform.y - point.y;
     // Squared distances: core keeps transcendental Math out (ADR 0012).
-    const radius = radiusFor(family, transform.radius);
+    const radius = radiusFor(entity);
     const isUnderPoint = dx * dx + dy * dy <= radius * radius;
     if (isUnderPoint && transform.y >= frontY) {
       selected = id;

@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-19
+last-reviewed: 2026-11-22
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -486,7 +486,9 @@ approved them, `INBOX.md` HC-T1), and this note gives the detail:
   click; else the click attacks the map object there. A drag does neither. When units overlap, the
   one drawn on top wins (DEC-183). The held attack button aims the same way: a unit first, else a
   map object (`PlayerCommands`). In local matches, both inputs pick Legends and mobs by the
-  radius of their drawn body. Movement collision and attack reach still use simulation geometry.
+  hit radius reported by their registered view. Health bars use the same display extent.
+  Movement collision and attack reach still use simulation geometry. When Duel intent moves into
+  core, its targeting needs the shared drawn-size rule as well.
   A click on the building the player's Legend stands in toggles
   nothing (its roof is already cut away), so it attacks (DEC-153). The owner selected "Allow attack"
   (option text: "A plain click on the world attacks even with the explorer shown; only drags and

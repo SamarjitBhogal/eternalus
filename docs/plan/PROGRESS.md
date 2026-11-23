@@ -9598,3 +9598,13 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Next step: commit and push the verified merge as requested, then confirm PR #90's
   published head and mergeability against Phase 3. Existing review sign-offs remain separate
   from successful merge verification.
+
+### 2026-11-22 — Phase 3 / visuals review fixes — feat/visuals-and-design — Codex
+
+- What was done: moved authored geometry into content and view constants, shared rendered
+  extents with targeting and health bars, and recorded owner approval in DEC-238.
+- Checks run: `npm run check` exit 0 with 3,854 tests passing (core 1,702, protocol 29,
+  client 2,039, server 84). Final output: "Checked 128 Markdown files under docs/.",
+  "Documentation check passed."
+- Next step: reconcile the Phase 3 progress log and run the pre-PR gate before requesting
+  another review.
