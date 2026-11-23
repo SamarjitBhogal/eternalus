@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-23
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -412,7 +412,7 @@ work named:
   loaded by `loadTurrets` and injected by `Simulation`. The controller ranks its candidates
   (`rankTurretTargets`). The profile's `overrides` come first: an enemy Legend that damaged an
   allied Legend within the defend-ally window becomes the target at once, also over a held target
-  (whether it should leave a held target is INBOX.md HC-Q94). The hits come from
+  (DEC-341, HC-Q94 A). The hits come from
   `GameState.legendHits` (`LegendHitLog`), which keeps a hit after its victim dies, so the turret
   still sees the Legend that killed its ally; the assist record (`ScoringState.recentHits`) forgets
   them at the death. balancing.md's window ("a Legend that damaged an allied Legend in the last
@@ -434,7 +434,7 @@ work named:
   decision with a target sends `switch-ammo` when the chosen ammo is not the loaded one, then
   `attack-aim` at the predicted point, so the aim stays fresh (wall turrets part 2, 2026-11-22).
   With no target and an aim still set, it sends `attack-aim { aim: null }` once. The bolt range is
-  35 m, `TUNE`, pending the owner question "WT bolt stop" (INBOX.md HC-Q93, 07 §13).
+  35 m, `TUNE`, until the arc shot of DEC-341 (HC-Q93) lands in the tower-orb PR (DEC-342, 07 §13).
 - `BotLegendController` (M3) plays the `laner` tree of §4.2 with the nodes it needs
   (`ai/bt/`: `Sequence`, `ActiveSelector`, `Condition`, `Action`; `Selector` and `Cooldown` join
   with their first use) and a `UtilityScorer` (`ai/utility/`) over two considerations, closeness

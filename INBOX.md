@@ -781,24 +781,17 @@ Reply inline (`Decision: …`).
       "fighting" and still turns to help (Owner Calls card `busy-minion-building`, open).
       Architecture 18 §6.1 changes to match. Tick this item when Samarjit has read it.
 
-- [ ] **HC-Q90 — When can a wall turret take damage? (`feat/wall-turrets`, PR 4, Owner Calls
-      card "WT when damageable", 2026-11-22; PR-REVIEW-ASSIST-33).** No doc sets it: 07 §3 names
-      walls and gates only, and balancing.md gives a turret 600 health. Options: (A, built) like
-      walls and gates: a turret takes damage only after 2 of the 3 BuffTowers of its side are
-      down, because it stands on the wall; (B) it can always take damage. Code names:
-      `content/structures/structureCatalogue.ts` (`breakability`).
-
-- [ ] **HC-Q91 — What is left when a wall turret is destroyed? (`feat/wall-turrets`, PR 4,
-      Owner Calls card "WT destroyed pylon").** Options: (A, built) the pylon goes away, and
-      units can walk where it stood; (B) a ruin stays and still blocks movement. Code names:
-      `StructureDefinition.isBodyRemovedWithIt`.
-
 - [ ] **HC-Q92 — Does destroying a wall turret pay a reward? (`feat/wall-turrets`, PR 4,
       Owner Calls card "WT destroyed reward").** Options: (A, built) yes: structure XP and points,
       like the other structures; (B) no reward. Code names: `StructureDestroyedRule`,
       `ProgressionSystem` (no turret-only code). FYI: a turret that kills a unit gives no kill
       points, XP or ultimate charge to anyone, and assists still count (DEC-79: a non-Legend last
       hit gives no kill).
+  - Answered 2026-11-23 (DEC-341): "Only the one who destroys it gets the XP. Its like killing 2
+    or 3 heavy minions." Built on `feat/wall-turrets`: 300 XP (`TUNE`) to the Legend that lands
+    the killing hit, no team-wide structure XP. Still open: your note names XP only, so the turret
+    still gives its team 5 points and counts as a destroyed structure (DEC-212). Say if a turret
+    should give no points.
 
 - [ ] **HC-Q93 — Where does a wall turret's bolt stop? (`feat/wall-turrets`, PR 4, Owner Calls
       card "WT bolt stop").** A turret aims where its target will be. Options: (A, recommended,
@@ -807,19 +800,9 @@ Reply inline (`Decision: …`).
       destination") support it; (B, built now) the bolt flies on to its full range and hits the
       first body it touches. A is a content flag and a few lines where the bolt is made. Code
       names: `content/projectiles/turretBolt.ts`, `turretHeavyBolt.ts` (`range`, `TUNE`).
-
-- [ ] **HC-Q94 — Does a wall turret drop its target to defend your Legend? (`feat/wall-turrets`,
-      PR 4, Owner Calls card "WT defend switch", critic round 1 V3).** A turret shoots an enemy
-      minion. Then an enemy Legend near the turret hits one of your Legends. Options: (A,
-      recommended, built; architecture 11 §4.5 says "immediately") the turret drops the minion
-      and shoots that Legend at once; (B, requirement FR-073 and balancing.md: "keeps its first
-      target until it dies or leaves range") the turret finishes the minion first, then picks
-      that Legend first. A follows the source that 11 §4.5 and balancing.md both cite: research
-      §7 (`docs/research/game-architecture-and-performance-research.md`) says League turrets
-      "immediately switch to an enemy champion who damages an allied champion within 1400
-      range". B is two content lines (`overrides: []`, and `legend-hurting-ally-legend` first in
-      `priority`). Either answer then needs a fix in the other doc (FR-073 acceptance, or
-      11 §4.5). Code names: the turret AI profile (`overrides`, `priority`).
+  - Answered 2026-11-23 (DEC-341): an arc shot from above, with a ground shadow, that lands where
+    the target would be and lodges in the ground. Not built yet: the tower-orb PR (DEC-342),
+    stacked on #163, builds it for turret bolts and tower orbs. Tick this item when it merges.
 
 - [ ] **HC-B36 — Better than the design, built under your standing rule (DEC-223), sign-off
       asked: one health pool for a wall turret, and the wall turret code layout
@@ -3927,6 +3910,13 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-11-23 — **Your answers on the wall turret cards HC-Q90, HC-Q91 and HC-Q94** (PR 4, #163,
+  `feat/wall-turrets`): recorded as DEC-341. HC-Q90: a turret takes damage only after 2 of the 3
+  buff towers of its side are down, like its wall (as built). HC-Q91: a destroyed turret's pylon
+  stays as a ruin and blocks; a fallen tower's fort now also draws as ruins (one rule for every
+  structure body). HC-Q94: the turret switches at once to an enemy Legend that hits your Legend
+  (as built); FR-073 now says so. HC-Q92 and HC-Q93 stay open above with notes.
 
 - 2026-11-21 — **Your pick on HC-B17, a browser-support line** (`refactor/countdown-hud-units`):
   recorded as DEC-316. Architecture 13 §7 "Styling" now says, in your words: browser support is a

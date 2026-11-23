@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-23
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -1076,7 +1076,10 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   built for the capture point boss (DEC-237): a mob in `XP_SOURCES.teamKills` pays every Legend of
   its killer's playable team, not the killer alone, and each Legend gets at most the XP that lifts
   it `maxLevels` levels (`Progression.xpToReach`); `level-matches-xp` checks that the killer is on
-  the recipient's team (`cause: 'team-kill'`). It listens to `entity-died` itself, not 12's
+  the recipient's team (`cause: 'team-kill'`). Destroyer-only structure XP is built for the wall
+  turret (DEC-341): a structure in `XP_SOURCES.destroyerOnly` pays its XP only to the Legend that
+  lands the killing hit (a turret: 300, `TUNE`, about 2.5 heavy-minion kills), and its
+  `structure-destroyed` pays no team-wide structure XP; a non-Legend killer pays no one. It listens to `entity-died` itself, not 12's
   `xp-granted` reward path. Not built yet: the share radius and damage bias, assists, checkpoint and
   camp XP, the Eternal's flat 5 levels (DEC-237) (their systems do not exist),
   basic-attack and ability potency per level, `upgradeIds`, and keeping dead Legends in the store

@@ -48,6 +48,18 @@ describe('WorldObjectsView', () => {
     view.show([{ ...STATE, isDestroyed: true }]);
     expect(view.revision).toBe(1);
   });
+  it("draws a structure's ruined body (a dead turret's pylon) as ruins, though it still stands and blocks (DEC-341)", () => {
+    const pylon: MapObject = { ...HOUSE, id: 'pylon', kind: 'turret' };
+    const view = new WorldObjectsView([pylon]);
+    const renderer = new RecordingRenderer();
+    view.show([{ id: 'pylon', entityId: null, health: null, isDestroyed: false, isRuined: true }]);
+    view.draw(renderer, AREA);
+    view.drawMinimap(renderer);
+
+    expect(view.isDestroyed('pylon')).toBe(true);
+    expect(view.revision).toBe(1);
+    expect(renderer.calls.filter((call) => call.op === 'fillPolygon').length).toBeGreaterThan(0);
+  });
   it('keeps a fallen log visible when its original trunk footprint is offscreen', () => {
     const tree = {
       ...HOUSE,

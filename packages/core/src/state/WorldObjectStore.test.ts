@@ -89,7 +89,7 @@ describe('WorldObjectStore', () => {
     });
   });
 
-  it("makes a structure's own map object (a lane tower's fort) share its health, and leaves it standing with none once the structure is gone (DEC-185 B)", () => {
+  it("makes a structure's own map object (a lane tower's fort) share its health, and leaves it standing with none, as a ruin, once the structure is gone (DEC-185 B, DEC-341)", () => {
     const factory = fixtureFactory();
     const entities = new EntityStore();
     const tower = factory.create('obstacle', MAP_OBJECT_DEFINITIONS.rock.id, {
@@ -131,58 +131,16 @@ describe('WorldObjectStore', () => {
     expect(world.blockingAt({ x: 7, y: 2 }, 0.5)).toBe('fort');
     entities.remove(tower.id, 'died');
     world.removed(tower.id);
+    // It stands as a ruin that blocks (DEC-341, HC-Q91; DEC-219 (a)).
     expect(world.snapshot()[0]).toEqual({
       id: 'fort',
       entityId: null,
       health: null,
       isDestroyed: false,
+      isRuined: true,
     });
     expect(world.blockingAt({ x: 7, y: 2 }, 0.5)).toBe('fort');
     expect(world.destroyedIds.has('fort')).toBe(false);
-  });
-
-  it('destroys an owned body named in removedWithOwner with its structure, as an object of its own (a wall turret pylon)', () => {
-    const factory = fixtureFactory();
-    const entities = new EntityStore();
-    const turret = factory.create('obstacle', MAP_OBJECT_DEFINITIONS.rock.id, {
-      position: { x: 5, y: 5 },
-    });
-    entities.add(turret);
-    const pylon: MapObject = {
-      id: 'pylon',
-      kind: 'turret',
-      isBlocking: true,
-      footprints: [
-        [
-          { x: 0, y: 0 },
-          { x: 10, y: 0 },
-          { x: 10, y: 10 },
-        ],
-      ],
-    };
-    const world = new WorldObjectStore({
-      objects: [pylon],
-      factory,
-      entities,
-      definitions: MAP_OBJECT_DEFINITIONS,
-      owners: new Map([['pylon', turret.id]]),
-      removedWithOwner: new Set(['pylon']),
-    });
-
-    // No entity of its own, one pool; `objectFor` gives it, so its footprint is cleared at removal.
-    expect(entities.size).toBe(1);
-    expect(world.objectFor(turret.id)).toBe(pylon);
-    turret.getComponent(Health).applyDamage(100);
-    expect(world.blockingAt({ x: 7, y: 2 }, 0.5)).toBeNull();
-    entities.remove(turret.id, 'died');
-    world.removed(turret.id);
-    expect(world.snapshot()[0]).toEqual({
-      id: 'pylon',
-      entityId: turret.id,
-      health: { current: 0, max: 100 },
-      isDestroyed: true,
-    });
-    expect(world.destroyedIds.has('pylon')).toBe(true);
   });
 
   it('skips an object whose footprint box misses the circle, without testing its shape', () => {

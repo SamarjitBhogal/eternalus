@@ -18,8 +18,8 @@ export const WALL_TURRET = {
   id: 'wall-turret',
   range: 14, // TUNE: balancing.md "Turrets — MVP"
   defendAllySeconds: 3, // TUNE: balancing.md "Turrets — MVP"
-  // architecture 11 §4.5: the defend-ally override; whether it leaves a held target is INBOX.md
-  // HC-Q94 (FR-073 keeps the first target)
+  // architecture 11 §4.5: the defend-ally override; it leaves a held target at once (DEC-341,
+  // HC-Q94 A)
   overrides: ['legend-hurting-ally-legend'],
   priority: ['heavy-unit', 'nearest-enemy'], // TUNE: balancing.md
   heavyKinds: HEAVY_TARGET_KINDS,

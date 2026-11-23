@@ -43,12 +43,15 @@ export class WorldObjectsView implements WorldLayer {
   public show(states: readonly MapObjectSnapshot[]): void {
     this.states = states;
     for (const state of states)
-      if (state.isDestroyed && !this.destroyed.has(state.id)) {
+      if (WorldObjectsView.isFallen(state) && !this.destroyed.has(state.id)) {
         this.destroyed.add(state.id);
         this.version++;
       }
   }
-  /** Shared visibility predicate for both scenery layers and feature glyphs. */
+  /**
+   * Shared visibility predicate for both scenery layers and feature glyphs: whether the object is
+   * destroyed or a ruin (a structure's body that outlives it, DEC-341), so its intact art is hidden.
+   */
   public readonly isDestroyed = (id: string): boolean => this.destroyed.has(id);
   /** Draws nearby health bars and low ruined silhouettes without changing collision geometry. */
   public draw(renderer: Renderer, view = this.currentView?.()): void {
@@ -57,7 +60,8 @@ export class WorldObjectsView implements WorldLayer {
       const geometry = this.objects.get(state.id);
       if (geometry === undefined) continue;
       const { object, bounds } = geometry;
-      const visibleBounds = state.isDestroyed ? geometry.ruins.bounds : bounds;
+      const isFallen = WorldObjectsView.isFallen(state);
+      const visibleBounds = isFallen ? geometry.ruins.bounds : bounds;
       if (
         object.buildingId !== undefined &&
         (this.isDestroyed(object.buildingId) ||
@@ -71,7 +75,7 @@ export class WorldObjectsView implements WorldLayer {
         visibleBounds.y > view.y + view.height
       )
         continue;
-      if (state.isDestroyed) geometry.ruins.draw(renderer);
+      if (isFallen) geometry.ruins.draw(renderer);
       else if (state.health !== null && view.width < S.healthBarViewLimit) {
         const width = Math.min(S.barWidth, Math.max(S.barHeight, bounds.width));
         const x = bounds.x + (bounds.width - width) / 2;
@@ -85,18 +89,22 @@ export class WorldObjectsView implements WorldLayer {
       }
     }
   }
-  /** Draws destroyed exterior objects on the minimap without health-bar clutter. */
+  /** Draws destroyed and ruined exterior objects on the minimap without health-bar clutter. */
   public drawMinimap(renderer: Renderer): void {
     for (const state of this.states) {
       const geometry = this.objects.get(state.id);
       if (
-        state.isDestroyed &&
+        WorldObjectsView.isFallen(state) &&
         geometry !== undefined &&
         geometry.object.isInterior !== true &&
         (geometry.object.buildingId === undefined || !this.isDestroyed(geometry.object.buildingId))
       )
         geometry.ruins.draw(renderer);
     }
+  }
+  /** Destroyed, or a structure's body left standing as a ruin: both draw as ruins. */
+  private static isFallen(state: MapObjectSnapshot): boolean {
+    return state.isDestroyed || state.isRuined === true;
   }
   private rect(renderer: Renderer, b: WorldRect, color: string): void {
     renderer.fillPolygon(

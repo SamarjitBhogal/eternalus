@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-23
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -594,6 +594,9 @@ shells, scattered rock fragments, collapsed tents, broken timber and ruined ston
 The client caches those polygons from the original footprint. Remains and cosmetic fire do not
 add colliders, damage or simulation state; snapshot destruction still controls visibility and
 walkability. Interior remains follow the same roof and parent-building visibility as intact art.
+A structure's body that outlives its structure (a lane tower's fort, a wall turret's pylon) is a
+ruin: its snapshot carries `isRuined`, and the client draws its remains as for a destroyed
+object, but it still blocks and its cells stay closed (DEC-341, DEC-219 (a)).
 
 ### 2026-11-03 — Front-facing stronghold shield (owner rulings DEC-158, DEC-159 of 2026-11-04)
 
