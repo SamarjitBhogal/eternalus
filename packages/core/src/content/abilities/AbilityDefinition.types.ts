@@ -49,12 +49,15 @@ type AbilityTargeting =
  * The area an effect step covers (05 §3). `circle` is centred on the caster, or on the dash's end
  * for a dash's `onEnd` step; `path` is the capsule a dash sweeps, `width` metres across (its length
  * is the dash's `distance`); `hit` is the body a basic attack or a shot just struck, for a
- * status's `onHit` steps (Fury) and a shot's (Hamstring). `cone` joins with Rip & Tear (DEC-206).
+ * status's `onHit` steps (Fury) and a shot's (Hamstring); `cone` is a fan from the caster along
+ * the aim, `reach` metres past its body edge (DEC-319) and `arcDegrees` wide, or the whole circle of
+ * that reach at 360 (Rip & Tear, DEC-206).
  */
 export type EffectShape =
   | { readonly kind: 'circle'; readonly radius: number }
   | { readonly kind: 'path'; readonly width: number }
-  | { readonly kind: 'hit' };
+  | { readonly kind: 'hit' }
+  | { readonly kind: 'cone'; readonly reach: number; readonly arcDegrees: number };
 
 /** What kind of damage a hit deals (`balancing.md` ability table). */
 type DamageType = 'physical' | 'magical';

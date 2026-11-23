@@ -8,12 +8,17 @@ export type ShapeSpec = { readonly kind: string };
  * Where a step's shape sits: a segment from `from` to `to`. A step of the cast itself sits on the
  * caster (`from` = `to`); a dash runs its `onPath` steps on its sweep and its `onEnd` steps where
  * it stops (S1 `EffectShape`). `targetId` is the body an on-hit cast struck (`HitEffects.runSteps`),
- * the one body the `hit` shape holds.
+ * the one body the `hit` shape holds. `CastInstance` adds the cast's aim and the caster's size, for
+ * the `cone` shape.
  */
 export type ShapePlacement = {
   readonly from: Vec2;
   readonly to: Vec2;
   readonly targetId?: EntityId;
+  /** The cast's aim, a unit vector (`CastContext.direction`): the way a fan points; absent = none. */
+  readonly direction?: Vec2;
+  /** The caster's body radius: a fan's reach counts from the body edge (DEC-319); absent = 0. */
+  readonly casterRadius?: number;
 };
 
 /** A body a shape is tested against: its id, and the circle of a body that is not a map object. */

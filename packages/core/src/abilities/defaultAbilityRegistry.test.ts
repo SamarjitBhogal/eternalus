@@ -22,6 +22,7 @@ describe('createDefaultAbilityRegistry', () => {
     expect(registry.shapeFor('circle').kind).toBe('circle');
     expect(registry.shapeFor('path').kind).toBe('path');
     expect(registry.shapeFor('hit').kind).toBe('hit');
+    expect(registry.shapeFor('cone').kind).toBe('cone');
   });
 
   it('makes every shipped ability with effects available: every effect kind it names is registered', () => {

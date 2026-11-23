@@ -9,6 +9,7 @@ import { KnockbackEffect } from '../effects/KnockbackEffect';
 import type { ComposableAbility } from '../AbilityRegistry.types';
 import { MinLevelRestriction } from '../restrictions/MinLevelRestriction';
 import { CircleShape } from '../shapes/CircleShape';
+import { ConeShape } from '../shapes/ConeShape';
 import { HitShape } from '../shapes/HitShape';
 import { PathShape } from '../shapes/PathShape';
 import { DirectionalTargeting } from '../targeting/DirectionalTargeting';
@@ -113,6 +114,7 @@ export const testAbilityRegistry = (
   registry.registerShape(new CircleShape());
   registry.registerShape(new PathShape());
   registry.registerShape(new HitShape());
+  registry.registerShape(new ConeShape());
   registry.registerRestriction(new MinLevelRestriction());
   registry.registerTargeting(new SelfTargeting());
   registry.registerTargeting(new DirectionalTargeting());

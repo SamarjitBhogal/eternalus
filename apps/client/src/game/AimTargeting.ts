@@ -51,7 +51,7 @@ export class AimTargeting {
           ? null
           : (this.dashReach?.(origin, direction, distance, radius) ?? distance),
     }));
-    return { origin: { x: origin.x, y: origin.y }, direction, steps };
+    return { origin: { x: origin.x, y: origin.y }, casterRadius: radius, direction, steps };
   }
 
   /**
