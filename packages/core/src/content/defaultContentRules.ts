@@ -96,6 +96,7 @@ export const createStructureRules = (): readonly ContentRule<StructureDefinition
  * projectile rule is one line here.
  */
 export const createProjectileRules = (): readonly ContentRule<ProjectileDefinition>[] => [
+  new KebabCaseIdRule(),
   new ArcShotSpeedRule(),
 ];
 

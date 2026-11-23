@@ -23,8 +23,8 @@ import type { EntityId } from './EntityStore.types';
  * The one hit rule for weapon areas and ability areas (DEC-322 (3)): which live bodies an area
  * touches. The weapon sweep, a shot's blast (`WeaponImpact`, DEC-342) and the abilities'
  * `TargetQuery` hand it their area as a `HitArea`. It walks the live bodies with a `Transform` and
- * `Health`, filters them by team relative to the attacker (and to units only, when the filter
- * asks), and tests each one against the area. A body with an outline (`EntityStore.outlineOf`:
+ * `Health`, filters them by team relative to the attacker (and by family, when the filter names
+ * families), and tests each one against the area. A body with an outline (`EntityStore.outlineOf`:
  * a map object, a structure footprint) is tested by its polygons; any other body by its collider
  * circle. Then two rules apply:
  *

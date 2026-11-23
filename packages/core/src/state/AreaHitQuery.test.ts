@@ -128,7 +128,7 @@ describe('AreaHitQuery.find', () => {
     expect(run('allies', true)).toEqual(['a-ally', attacker.id]);
   });
 
-  it('hits only units (Legends, mobs, bosses) when the filter asks for units only (a blast, DEC-342)', () => {
+  it('hits only the families the filter names: units for a blast (DEC-342), structures when asked', () => {
     const { entities, add, attacker, query } = setUp();
     for (const family of ['legend', 'mob', 'boss', 'structure', 'obstacle']) {
       add(family, { at: { x: 1, y: 0 }, team: 'dark', family });

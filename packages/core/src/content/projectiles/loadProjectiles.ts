@@ -3,7 +3,6 @@ import { ContentCatalogue } from '../ContentCatalogue';
 import { ContentValidationError } from '../ContentValidationError';
 import { createProjectileRules } from '../defaultContentRules';
 import { ContentValidator } from '../validation/ContentValidator';
-import { KEBAB_CASE } from '../validation/KebabCaseIdRule.constants';
 import { PROJECTILES } from './projectileCatalogue';
 import type { ProjectileDefinition } from './projectiles.types';
 
@@ -20,7 +19,6 @@ const problemsOf = (
   catalogue: ContentCatalogue<ProjectileDefinition>,
 ): string[] => {
   const problems: string[] = [];
-  if (!KEBAB_CASE.test(projectile.id)) problems.push('id must be kebab-case');
   if (!isPositive(projectile.footprintRadius)) problems.push('footprintRadius must be positive');
   if (!isPositive(projectile.range)) problems.push('range must be positive');
   if (!isPositive(projectile.movementProfile.maxSpeed)) problems.push('maxSpeed must be positive');

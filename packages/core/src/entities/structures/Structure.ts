@@ -92,8 +92,7 @@ export abstract class Structure extends Entity {
    * null).
    *
    * @param ammoIds - The ammo ids its definition names, best first.
-   * @throws Error when the context has no ammo source, the definition names no ammo, or an ammo
-   *   it names is unknown.
+   * @throws Error when the context has no ammo source, or an ammo it names is unknown.
    */
   private installAmmo(context: unknown, ammoIds: readonly string[]): void {
     const source = new SpawnContextReader(this).ammo(context);
