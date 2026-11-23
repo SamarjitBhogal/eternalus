@@ -566,7 +566,7 @@ MS-16, `balancing.md`), applied by `VeterancySystem`.
 strategies (`combat/defaultStatusTickEffects.ts`, `DamageStatusTick`) until the `AbilityRegistry`
 lands; their damage goes through the match's one `DamagePipeline` with `kind: 'status'`, crediting
 the applier. Readers: `MovementSystem` (`moveSpeed`, `cannot-move`), `CombatSystem`
-(`cannot-attack`; `attackSpeed`, fixed when a hit lands), `StatusModifierStep` (`damageDealt`, `damageTaken`); `CastValidator` (`cannot-cast` and the `aetherCost` stat, §18). Whether the applier's `remove` / `expire` (and so `status-expired`) are covered by
+(`cannot-attack`; `attackSpeed`, fixed when a hit lands), `StatusModifierStep` (`damageDealt`, `damageTaken`); `CastValidator` (`cannot-cast` and the `aetherCost` stat, §18); `BodySizeSystem` (`size`, the body's radius, §18 "Berserk"). Whether the applier's `remove` / `expire` (and so `status-expired`) are covered by
 DEC-41 is still open. `blind` has no hard miss (DEC-42): its aim wobble and the client vignette are
 follow-ups. `StatusStacksWithinMaxInvariant` runs every tick. `polarity`, `controlClass` and
 `onExpire` (`apply-status` specs, run by the applier's `expire` on time-out only, credited to the
@@ -1430,6 +1430,22 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   - **Bots and client.** A Warrior bot may now cast Hamstring at the enemy it fights
     (`pickReadySlot` aims at the enemy's position). The client draws the blade as a shot that
     drops at its range (`PROJECTILE_ENDING_LOOKS`).
+- **Berserk (`feat/sentinel-kit`, lane B PR 6, 2026-11-23; DEC-199).** Berserk is the Sentinel's
+  ultimate (`content/abilities/berserk.ts`): targeting `self` and one `buff` step, as Fury. The
+  status `content/status-effects/berserk.ts` lasts 12 s (`refresh`) and has four modifiers:
+  `damageDealt` × 1.5, `damageTaken` × 0.7, `moveSpeed` × 1.2 and `size` × 1.3 (`TUNE`,
+  `balancing.md`). "Speed +20%" raises the top speed only; the speed-up rate stays (reading R5,
+  owner card "PR6 R5 berserk speed"). Where the code adds to §8:
+  - **`size` stat.** `StatusStat` has a sixth member, `size`, which scales the body's radius.
+    `Transform.radius` is the built radius times a scale, and `Transform.resize` is the one way to
+    change the scale. `systems/BodySizeSystem` runs after `StatusEffectSystem` and before
+    `MovementSystem`. Each tick it scales every body with `StatusEffects` to
+    `multiplier('size')`, so a size starts and ends in the tick its status does, whatever ends the
+    status (time-out, a Duel reset). Every reader sees the one radius: reach (`ReachQuery`, the
+    sweep), areas, shots, clicks (`findUnitAt`), collision, the hash and the snapshot, so the
+    client draws the larger body. A moving body that grew is pushed out of the walls it then
+    overlaps ([10](10-physics.md) §12). `ascended` (× 1.25) and `eternal` (× 1.5) can use the
+    same stat.
 
 ## Related
 

@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-23
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -361,6 +361,19 @@ unbreakable now stops every shot and takes no damage (DEC-317 addendum). A walk-
 lets a shot fly over unless the shot aims at it: its locked target, or the walk-on body its aim
 point names (`AreaHitQuery.aimedBodyOf`, DEC-322 (1)). The last move up to `range` is swept like any
 other, so a body under the end point takes the hit: an arrow damages what it lands on (DEC-322 (2)).
+
+**2026-11-23 (branch `feat/sentinel-kit`, lane B PR 6; Berserk).** A body's radius can change in a
+match. `Transform.radius` is the built radius times a scale, and `Transform.resize` alone changes
+the scale. `systems/BodySizeSystem` runs after `StatusEffectSystem` and before `MovementSystem`.
+Each tick it sets every body with statuses to its `size` stat (05 §18, "Berserk"). Every reader
+(collision, reach, areas, shots, clicks, the hash, the snapshot) reads the one radius. A moving
+body that grew is moved out of the walls it now overlaps by `CollisionQuery.pushOut`
+(`CollisionResolver.pushOut`: up to `MAX_SLIDE_CONTACTS` passes, each the shortest way out of the
+deepest overlap, then the bounds clamp). So `reach`'s precondition (no unit starts inside a wall)
+still holds. A deploying mob is not pushed, as `CollisionSystem` lets it pass its walls. In a gap
+narrower than the grown body, the passes can end with the body still inside a wall. That body then
+can walk out but not deeper in (the `ponytail` remark on `CollisionResolver`).
+`Collider.shape.radius` stays the built radius; no code reads it at runtime.
 
 ## Related
 
