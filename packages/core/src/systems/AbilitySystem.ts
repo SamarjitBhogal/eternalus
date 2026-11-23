@@ -1,5 +1,6 @@
 import type { AbilityRegistry } from '../abilities/AbilityRegistry';
 import { CastInstance } from '../abilities/CastInstance';
+import { castStatsOf } from '../abilities/castStatsOf';
 import { TargetQuery } from '../abilities/TargetQuery';
 import type { DamagePipeline } from '../combat/DamagePipeline';
 import type { Command } from '../commands/Command.types';
@@ -29,8 +30,9 @@ import type { System, SystemContext } from './System.types';
  * that steps fire, the cast reads the caster's ability stats (`CastFacts.potency` and `stretch`,
  * DEC-337). A cast with later steps (`delayTicks`, 05 §4) is kept on the caster's `Abilities` as
  * plain data; after this tick's new casts, each kept cast fires the steps that are now due, in
- * list order, on the caster where it is then, and is dropped after its last step. Its aim stays the one fixed at the cast. A caster
- * that died drops its casts; one that left the match took them along. Runs after `HordeSystem`
+ * list order, on the caster where it is then, and is dropped after its last step. Its aim stays
+ * the one fixed at the cast. A caster that died drops its casts; one that left the match took them
+ * along. Runs after `HordeSystem`
  * and before `StatusEffectSystem` (plan arch call 13).
  */
 export class AbilitySystem implements System {
@@ -175,14 +177,12 @@ export class AbilitySystem implements System {
     const here = { x: position.x, y: position.y };
     // ponytail: one CastInstance per cast per due tick, fine while casts are rare; pool it if bots
     // cast every tick.
-    const boosts = caster.findComponent(StatusEffects);
     const next = new CastInstance(
       {
         ...cast,
         casterId: caster.id,
         ability,
-        potency: boosts?.multiplier('abilityPotency') ?? 1,
-        stretch: boosts?.multiplier('abilityDuration') ?? 1,
+        ...castStatsOf(caster.findComponent(StatusEffects)),
       },
       {
         state,

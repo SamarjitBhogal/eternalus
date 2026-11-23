@@ -11,6 +11,7 @@ import type { EntityId } from '../../state/EntityStore.types';
 import type { GameState } from '../../state/GameState';
 import type { Vec2 } from '../../utils/geometry.types';
 import { CastInstance } from '../CastInstance';
+import { castStatsOf } from '../castStatsOf';
 import { BuffEffect } from '../effects/BuffEffect';
 import { DamageEffect } from '../effects/DamageEffect';
 import { DashEffect } from '../effects/DashEffect';
@@ -54,7 +55,6 @@ export const castSteps = (
   );
   const position = state.entities.get(casterId)?.getComponent(Transform).position ?? { x: 0, y: 0 };
   const origin = { x: position.x, y: position.y };
-  const boosts = state.entities.get(casterId)?.findComponent(StatusEffects);
   new CastInstance(
     {
       casterId,
@@ -64,8 +64,7 @@ export const castSteps = (
       origin,
       casterLevel: level,
       tick: state.tick,
-      potency: boosts?.multiplier('abilityPotency') ?? 1,
-      stretch: boosts?.multiplier('abilityDuration') ?? 1,
+      ...castStatsOf(state.entities.get(casterId)?.findComponent(StatusEffects)),
     },
     {
       state,

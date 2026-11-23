@@ -68,11 +68,8 @@ export class CastInstance {
       placement,
       scaled: (field, value) => value * (1 + (scaling[field]?.perLevel ?? 0) * (casterLevel - 1)),
       potency,
-      statusDuration: ({ statusId, durationTicks }) => {
-        const own = durationTicks ?? statuses.durationOf(statusId);
-        const factor = statuses.hasFixedDuration(statusId) ? 1 : stretch;
-        return own === null ? undefined : Math.max(1, Math.round(own * factor));
-      },
+      statusDuration: ({ statusId, durationTicks }) =>
+        statuses.durationFor(statusId, durationTicks, stretch),
       damage,
       statuses,
       targets: (shape, filter) => targets.find(state, casterId, shape, placement, filter),

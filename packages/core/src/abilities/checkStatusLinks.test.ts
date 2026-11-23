@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { AbilityEffectSpec } from '../content/abilities/AbilityDefinition.types';
+import type { AbilityDefinition } from '../content/abilities/AbilityDefinition.types';
 import { loadAbilities } from '../content/abilities/loadAbilities';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import { ContentValidationError } from '../content/ContentValidationError';
@@ -47,9 +47,9 @@ describe('checkStatusLinks', () => {
     }).toThrow('Status "fury" onHit: knockback distance must be positive.');
   });
 
-  it('rejects a passive whose step is not a buff, or puts on a status that ends', () => {
+  it('rejects a passive step that is not a buff, waits, has its own time, or puts on a status that ends', () => {
     const abilities = loadAbilities(30);
-    const withNecromancy = (effects: readonly AbilityEffectSpec[]) =>
+    const withNecromancy = (effects: AbilityDefinition['effects']) =>
       createDefaultAbilityRegistry(
         new ContentCatalogue([
           ...abilities.all().filter(({ id }) => id !== 'necromancy'),
@@ -57,7 +57,7 @@ describe('checkStatusLinks', () => {
         ]),
         30,
       );
-    const check = (effects: readonly AbilityEffectSpec[]) => () => {
+    const check = (effects: AbilityDefinition['effects']) => () => {
       checkStatusLinks(withNecromancy(effects), STATUSES.all());
     };
 
@@ -65,7 +65,10 @@ describe('checkStatusLinks', () => {
       'Passive "necromancy" buffs "fury", which does not last until removed.',
     );
     expect(check([{ kind: 'buff', statusId: 'necromancy', durationTicks: 30 }])).toThrow(
-      'Passive "necromancy" buffs "necromancy", which does not last until removed.',
+      'Passive "necromancy" gives "necromancy" a time of its own; a passive\'s buffs have none.',
+    );
+    expect(check([{ kind: 'buff', statusId: 'necromancy', delayTicks: 3 }])).toThrow(
+      'Passive "necromancy" buffs "necromancy" after a delay; a passive\'s steps run at once.',
     );
     expect(check([{ ...KNOCKBACK_ON_HIT, shape: { kind: 'circle', radius: 1 } }])).toThrow(
       'Passive "necromancy" has a "knockback" step; a passive\'s steps are buffs.',

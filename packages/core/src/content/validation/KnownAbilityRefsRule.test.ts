@@ -87,6 +87,14 @@ describe('KnownAbilityRefsRule', () => {
       expect(lastOf(messages)).toMatch(/^passiveOptions "shockwave" is not a passive$/);
     });
 
+    it('flags a class defaultPassiveId that is not a passive (DEC-361)', () => {
+      const magus = { ...MAGUS, defaultPassiveId: 'shockwave' };
+      const messages = rule.check(magus);
+
+      expect(messages).toHaveLength(1);
+      expect(lastOf(messages)).toMatch(/^defaultPassiveId "shockwave" is not a passive$/);
+    });
+
     it('accepts a spec with no passive', () => {
       expect(rule.check({ ...ORACLE, passiveId: null })).toEqual([]);
     });

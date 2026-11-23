@@ -66,17 +66,26 @@ export class StatusEffectApplier {
   }
 
   /**
-   * How long status `statusId` lasts on its own, in ticks; `null` for one that lasts until removed.
+   * How long status `statusId` lasts when an ability's step applies it, in ticks: the step's own
+   * time, else the status's own duration, times `stretch` (the caster's `abilityDuration`,
+   * Erudition, DEC-337), rounded and at least 1 tick. A status with `hasFixedDuration` keeps its
+   * time (DEC-361).
    *
+   * @param statusId - The status the step applies.
+   * @param stepTicks - The step's own `durationTicks`, if it has one.
+   * @param stretch - What the time is multiplied by (`CastFacts.stretch`).
+   * @returns The ticks, or `undefined` for a status that lasts until removed (nothing to stretch).
    * @throws UnknownDefinitionError when no status has the id `statusId`.
    */
-  public durationOf(statusId: string): number | null {
-    return this.statuses.get(statusId).durationTicks;
-  }
-
-  /** Whether status `statusId` keeps its time when an ability applies it (`hasFixedDuration`). */
-  public hasFixedDuration(statusId: string): boolean {
-    return this.statuses.get(statusId).hasFixedDuration === true;
+  public durationFor(
+    statusId: string,
+    stepTicks: number | undefined,
+    stretch: number,
+  ): number | undefined {
+    const { durationTicks, hasFixedDuration } = this.statuses.get(statusId);
+    const own = stepTicks ?? durationTicks;
+    const factor = hasFixedDuration === true ? 1 : stretch;
+    return own === null ? undefined : Math.max(1, Math.round(own * factor));
   }
 
   /**

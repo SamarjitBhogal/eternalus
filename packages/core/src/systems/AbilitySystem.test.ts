@@ -243,6 +243,20 @@ describe('AbilitySystem', () => {
     expect(log[0]?.cast.statusDuration({ statusId: 'stun', durationTicks: 90 })).toBe(108);
   });
 
+  it('reads the ability stats again on the tick a later step fires (DEC-337 (7))', () => {
+    const { caster, log, run, next } = setUp();
+    caster.getComponent(Abilities).slot('ability-3')?.queue(AIM);
+    run();
+    caster.getComponent(StatusEffects).apply(STATUSES.get('erudition'), null, 1);
+    next();
+    next();
+    next();
+
+    expect(log.map(({ spec }) => spec.kind)).toEqual(['fake-strike', 'fake-blast']);
+    expect(log[0]?.cast.potency).toBe(1);
+    expect(log[1]?.cast.potency).toBeCloseTo(1.1);
+  });
+
   it('puts on each due passive in id order, with no price, no cooldown and no ability-cast', () => {
     const { state, factory, caster } = casterState();
     const registry = createDefaultAbilityRegistry(loadAbilities(30), 30);

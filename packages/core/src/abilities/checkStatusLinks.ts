@@ -24,24 +24,40 @@ const grantProblems = (
 /** Whether `step` is a `buff` step (its `kind` names its shape). */
 const isBuff = (step: EffectStep): step is BuffSpec => step.kind === 'buff';
 
+/** What is wrong with `step` of passive `id`, or nothing (see `passiveProblems`). */
+const passiveStepProblems = (
+  id: string,
+  step: ComposableAbility['effects'][number],
+  permanent: ReadonlySet<string>,
+): string[] => {
+  const { delayTicks } = step;
+  if (!isBuff(step)) {
+    return [`Passive "${id}" has a "${step.kind}" step; a passive's steps are buffs.`];
+  }
+  const { statusId, durationTicks } = step;
+  return [
+    ...(delayTicks === undefined
+      ? []
+      : [`Passive "${id}" buffs "${statusId}" after a delay; a passive's steps run at once.`]),
+    ...(durationTicks === undefined
+      ? []
+      : [`Passive "${id}" gives "${statusId}" a time of its own; a passive's buffs have none.`]),
+    ...(permanent.has(statusId)
+      ? []
+      : [`Passive "${id}" buffs "${statusId}", which does not last until removed.`]),
+  ];
+};
+
 /**
  * What is wrong with `ability` if it is a passive, or nothing. A passive is a permanent buff (05
- * §7), so each of its steps is a `buff` with no time of its own, and its status lasts until
- * removed. Wrecking Run has no steps (DEC-338 (5)).
+ * §7), so each of its steps is a `buff` that runs at once, with no time of its own, and its status
+ * lasts until removed. Wrecking Run has no steps (DEC-338 (5)).
  */
 const passiveProblems = (
   { id, slot, effects }: ComposableAbility,
   permanent: ReadonlySet<string>,
 ): string[] =>
-  slot === 'passive'
-    ? effects.flatMap((step) =>
-        !isBuff(step)
-          ? [`Passive "${id}" has a "${step.kind}" step; a passive's steps are buffs.`]
-          : step.durationTicks === undefined && permanent.has(step.statusId)
-            ? []
-            : [`Passive "${id}" buffs "${step.statusId}", which does not last until removed.`],
-      )
-    : [];
+  slot === 'passive' ? effects.flatMap((step) => passiveStepProblems(id, step, permanent)) : [];
 
 /**
  * Checks, at boot, the links between the statuses and the ability layer (architecture 05 §7, §8):

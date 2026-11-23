@@ -81,7 +81,8 @@ type RosterSlotBase = {
   readonly role: BotRole;
   /**
    * The Legend (spec) of that class whose kit and passive it equips (DEC-198, plan arch call 1,
-   * amending ADR 0018 point 2); absent = the class's `defaultKit` and no passive (DEC-338).
+   * amending ADR 0018 point 2); absent = the class's `defaultKit` and `defaultPassiveId`
+   * (`passiveOf`, DEC-361).
    */
   readonly specId?: string;
 };

@@ -46,7 +46,7 @@ export type Placement = {
   readonly area?: readonly Polygon[];
   /**
    * The Legend spec whose kit and passive a Legend equips (`RosterSlot.specId`); absent = its
-   * class's kit and no passive (DEC-338).
+   * class's `defaultKit` and `defaultPassiveId` (`passiveOf`, DEC-361).
    */
   readonly specId?: string;
 };

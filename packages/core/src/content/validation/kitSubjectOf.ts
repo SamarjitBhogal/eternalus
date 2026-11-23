@@ -27,9 +27,9 @@ export type KitSubject = {
 
 /**
  * Reads the ability fields of a Legend class (`defaultKit`, `passiveOptions`, `defaultPassiveId`)
- * or a Legend spec (`kit`, `passiveId`), the one place that knows both shapes, so the ability rules treat them
- * alike. Returns `null` for any other definition (a mob) and for a spec whose class is not loaded
- * (`SpecClassExistsRule` flags that).
+ * or a Legend spec (`kit`, `passiveId`), the one place that knows both shapes, so the ability
+ * rules treat them alike. Returns `null` for any other definition (a mob) and for a spec whose
+ * class is not loaded (`SpecClassExistsRule` flags that).
  *
  * @param definition - A unit definition or a Legend spec.
  * @param legends - The loaded Legend classes, for a spec's class pool.

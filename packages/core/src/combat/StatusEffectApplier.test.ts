@@ -359,19 +359,30 @@ describe('StatusEffectApplier', () => {
     });
   });
 
-  it('reports a status’s own duration in ticks, null for a permanent one', () => {
-    const { applier } = setUp();
+  describe('durationFor (an ability step’s status time, DEC-337, DEC-361)', () => {
+    it('is the step’s own time, else the status’s own duration, times the stretch, rounded', () => {
+      const { applier } = setUp();
 
-    expect(applier.durationOf('stun')).toBe(60);
-    expect(applier.durationOf('concussion')).toBe(90);
-    expect(applier.durationOf('erudition')).toBeNull();
-    expect(() => applier.durationOf('frozen')).toThrow(UnknownDefinitionError);
-  });
+      expect(applier.durationFor('stun', undefined, 1)).toBe(60);
+      expect(applier.durationFor('concussion', undefined, 1)).toBe(90);
+      expect(applier.durationFor('stun', 15, 1)).toBe(15);
+      expect(applier.durationFor('stun', undefined, 1.2)).toBe(72);
+      expect(applier.durationFor('stun', 8, 1.2)).toBe(10); // 9.6 rounds up
+    });
 
-  it('reports whether a status keeps its time when an ability applies it', () => {
-    const { applier } = setUp();
+    it('keeps the time of a status with a fixed duration (Fury’s wind-up)', () => {
+      const { applier } = setUp();
 
-    expect(applier.hasFixedDuration('fury-windup')).toBe(true);
-    expect(applier.hasFixedDuration('stun')).toBe(false);
+      expect(applier.durationFor('fury-windup', undefined, 1.2)).toBe(9);
+      expect(applier.durationFor('fury-windup', 6, 1.2)).toBe(6);
+    });
+
+    it('is undefined for a permanent status, at least 1 tick, and throws on an unknown id', () => {
+      const { applier } = setUp();
+
+      expect(applier.durationFor('erudition', undefined, 1.2)).toBeUndefined();
+      expect(applier.durationFor('stun', 1, 0.3)).toBe(1);
+      expect(() => applier.durationFor('frozen', undefined, 1)).toThrow(UnknownDefinitionError);
+    });
   });
 });

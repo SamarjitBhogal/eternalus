@@ -7,8 +7,9 @@ import { mustBePositive } from '../specChecks';
  * Applies a negative status to every enemy in the step's shape through the match's one
  * `StatusEffectApplier` (architecture 05 §3, §8), credited to the caster. A step's
  * `durationTicks` overrides the status's own duration for this application (Blade Runner's 0.5 s
- * stun against the 2 s default); without it the status lasts its own time. Either way the caster's
- * `abilityDuration` stretches it (`CastContext.statusDuration`, Erudition).
+ * stun against the 2 s default); without it the status lasts its own time. Either way the cast's
+ * `stretch` (the caster's `abilityDuration`, Erudition) lengthens it, unless the status has
+ * `hasFixedDuration` (`CastContext.statusDuration`).
  */
 export class DebuffEffect implements AbilityEffect<DebuffSpec> {
   public readonly kind = 'debuff';
