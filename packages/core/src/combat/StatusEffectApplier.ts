@@ -17,7 +17,8 @@ import type { GameState } from '../state/GameState';
  * `granted` slot with a status's `grants` ability while the status lasts (Fury's dash, DEC-270),
  * so the slot changes in the same call as the status. When the status whose ability the slot holds
  * ends, the slot takes the ability of the last status still active (oldest first) that grants
- * one, or empties, unless an ended status's `onExpire` lands a grant (`expire`).
+ * one, or empties, unless an ended status's `onExpire` lands a grant (`expire`). It also tells an
+ * ability step how long a status lasts (`durationFor`).
  * `DefaultSystemPipeline` builds the match's one instance and hands it to the systems that need it.
  */
 export class StatusEffectApplier {
@@ -74,7 +75,8 @@ export class StatusEffectApplier {
    * @param statusId - The status the step applies.
    * @param stepTicks - The step's own `durationTicks`, if it has one.
    * @param stretch - What the time is multiplied by (`CastFacts.stretch`).
-   * @returns The ticks, or `undefined` for a status that lasts until removed (nothing to stretch).
+   * @returns The ticks, or `undefined` when neither the step nor the status has a time (a status
+   *   that lasts until removed, applied by a step with no time of its own).
    * @throws UnknownDefinitionError when no status has the id `statusId`.
    */
   public durationFor(

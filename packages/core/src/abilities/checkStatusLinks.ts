@@ -36,7 +36,7 @@ const passiveStepProblems = (
   }
   const { statusId, durationTicks } = step;
   return [
-    ...(delayTicks === undefined
+    ...((delayTicks ?? 0) === 0
       ? []
       : [`Passive "${id}" buffs "${statusId}" after a delay; a passive's steps run at once.`]),
     ...(durationTicks === undefined

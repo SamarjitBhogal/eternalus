@@ -74,6 +74,7 @@ describe('checkStatusLinks', () => {
       'Passive "necromancy" has a "knockback" step; a passive\'s steps are buffs.',
     );
     expect(check([{ kind: 'buff', statusId: 'necromancy' }])).not.toThrow();
+    expect(check([{ kind: 'buff', statusId: 'necromancy', delayTicks: 0 }])).not.toThrow();
   });
 
   it('names every problem of every status in one error', () => {

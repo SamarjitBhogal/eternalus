@@ -368,6 +368,7 @@ describe('StatusEffectApplier', () => {
       expect(applier.durationFor('stun', 15, 1)).toBe(15);
       expect(applier.durationFor('stun', undefined, 1.2)).toBe(72);
       expect(applier.durationFor('stun', 8, 1.2)).toBe(10); // 9.6 rounds up
+      expect(applier.durationFor('stun', 6, 1.2)).toBe(7); // 7.2 rounds down
     });
 
     it('keeps the time of a status with a fixed duration (Fury’s wind-up)', () => {
@@ -377,10 +378,11 @@ describe('StatusEffectApplier', () => {
       expect(applier.durationFor('fury-windup', 6, 1.2)).toBe(6);
     });
 
-    it('is undefined for a permanent status, at least 1 tick, and throws on an unknown id', () => {
+    it('is undefined only with no step time on a permanent status, at least 1 tick, and throws on an unknown id', () => {
       const { applier } = setUp();
 
       expect(applier.durationFor('erudition', undefined, 1.2)).toBeUndefined();
+      expect(applier.durationFor('erudition', 30, 1.2)).toBe(36);
       expect(applier.durationFor('stun', 1, 0.3)).toBe(1);
       expect(() => applier.durationFor('frozen', undefined, 1)).toThrow(UnknownDefinitionError);
     });

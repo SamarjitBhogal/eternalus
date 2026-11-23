@@ -32,8 +32,7 @@ import type { System, SystemContext } from './System.types';
  * plain data; after this tick's new casts, each kept cast fires the steps that are now due, in
  * list order, on the caster where it is then, and is dropped after its last step. Its aim stays
  * the one fixed at the cast. A caster that died drops its casts; one that left the match took them
- * along. Runs after `HordeSystem`
- * and before `StatusEffectSystem` (plan arch call 13).
+ * along. Runs after `HordeSystem` and before `StatusEffectSystem` (plan arch call 13).
  */
 export class AbilitySystem implements System {
   public readonly name = 'abilities';
