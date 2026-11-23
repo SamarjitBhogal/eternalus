@@ -108,8 +108,8 @@ export class WorldObjectsView implements WorldLayer {
     geometry: ObjectDrawGeometry,
     state: MapObjectSnapshot,
   ): RuinLook | undefined {
-    if (state.isDestroyed) return geometry.ruins;
-    return state.isRuined === true ? geometry.pieces : undefined;
+    if (!WorldObjectsView.isFallenState(state)) return undefined;
+    return state.isDestroyed ? geometry.ruins : geometry.pieces;
   }
   /** One ruin per footprint polygon; an object with one polygon reuses its whole-box ruin. */
   private static piecesOf(object: MapObject, whole: RuinLook): RuinLook {
