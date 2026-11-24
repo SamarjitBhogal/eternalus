@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-23
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -322,7 +322,8 @@ destination), and the bot still sees it in a straight line (`PathQuery.isLineCle
 to the destination caches nothing, so a moving destination is followed live; arriving, or a search
 that finds no way, clears the cache. The cache holds no grid version: at runtime the grid only
 opens cells, so a way that opens while a cached waypoint is in use is found once the bot reaches
-that waypoint, at most one leg late. That cost is accepted; if a runtime change ever closes cells,
+that waypoint, at most one leg late. That cost waits for the owner's sign-off (`INBOX.md` "Bot
+path cache"); if a runtime change ever closes cells,
 store the grid's version with the cache and search again when it differs. `StuckSystem` is a second A\* consumer, outside the decision budget:
 `STUCK_DETECTION.maxPlansPerTick` caps its plans a tick, and `pathMaxSearchArea` caps each plan.
 Requests over the cap wait (`ChaseWatch.isPlanDue`), served in store order; the upgrade path is a

@@ -16,6 +16,13 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Bot path cache (PR #84, 2026-11-23): accept "one leg late"? Sign-off needed.** Built: a
+      bot brain reuses its cached A\* waypoint while the way to the same place stays blocked (doc 11
+      §6). The grid only opens cells at runtime, so a way that opens while the bot walks a cached leg
+      is found when the bot reaches that waypoint, at most one leg late. Options: (a) accept as
+      built; (b) store the grid's version with the cache and search again when it changes (one more
+      number in brain memory, one more search after each opening). Say which.
+
 - [ ] **Dependency audit (re-run 2026-11-20): approve one upgrade PR for the `eslint` family and
       `zod`, and say whether to turn on Dependabot alerts.** PR #113 already moved `vite` to 8.3.8
       and `vitest` to 5.1.0. `npm audit` on `phase/3-sprint-3-work` (`5a7cc8dc`) now reports 10
