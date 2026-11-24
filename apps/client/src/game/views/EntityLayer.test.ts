@@ -50,7 +50,7 @@ const snapshot = (tick: number, entities: EntitySnapshot[]): Snapshot => ({
 class SpyView implements EntityView {
   public readonly drawn: EntityDrawState[] = [];
 
-  public draw(state: EntityDrawState): void {
+  public draw(state: EntityDrawState): undefined {
     this.drawn.push(state);
   }
 

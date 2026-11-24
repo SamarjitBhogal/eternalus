@@ -6,6 +6,10 @@ import {
   type Snapshot,
 } from '@eternalus/core';
 
+import { LegendAnimation } from './LegendAnimation';
+import { LEGEND_VISUAL_DIAMETER } from './views/entityViews.constants';
+import { LegendSpriteView } from './views/LegendSpriteView';
+
 import { isDead } from '../bridge/selectors/isDead';
 import { BuildingRoofs } from './BuildingRoofs';
 import { GameLoop } from './engine/loop/GameLoop';
@@ -72,6 +76,8 @@ export class Match implements LoopTarget {
   private previous: Snapshot | null = null;
 
   private current: Snapshot;
+  private readonly legendAnimation: LegendAnimation;
+  private frameTick = 0;
 
   private readonly playerId: EntityId | null;
 
@@ -86,17 +92,31 @@ export class Match implements LoopTarget {
   public constructor(private readonly deps: MatchDeps) {
     const { simulation, world, tickRate, scheduler, camera, logger, bridge, input } = deps;
     const { map, presentation, mapObjects } = world;
+    this.current = simulation.snapshot();
+    this.playerId = deps.remote?.legendId ?? this.current.match.humanLegendId;
+    this.legendAnimation = new LegendAnimation(
+      this.playerId,
+      deps.playerSpecId ?? null,
+      tickRate,
+      simulation,
+    );
     this.healthBars = new HealthBarVisibility(simulation);
     this.entities = new EntityLayer(
-      createDefaultViewRegistry((kind) => {
-        logger.log(
-          makeLogRecord(
-            'WARN',
-            'client.views',
-            `No view for kind "${kind}"; drawing the default view.`,
-          ),
-        );
-      }),
+      createDefaultViewRegistry(
+        (kind) => {
+          logger.log(
+            makeLogRecord(
+              'WARN',
+              'client.views',
+              `No view for kind "${kind}"; drawing the default view.`,
+            ),
+          );
+        },
+        new LegendSpriteView(
+          (entity) => this.legendAnimation.frame(entity, this.frameTick),
+          LEGEND_VISUAL_DIAMETER,
+        ),
+      ),
       isDead,
       this.healthBars.healthBarOf,
     );
@@ -124,8 +144,6 @@ export class Match implements LoopTarget {
       tickMs,
       maxFrameMs: MAX_TICKS_PER_FRAME * tickMs,
     });
-    this.current = simulation.snapshot();
-    this.playerId = deps.remote?.legendId ?? this.current.match.humanLegendId;
     this.healthBars.observe(this.current, this.playerId);
     this.bridge = new MatchBridge({
       ...bridge,
@@ -207,6 +225,7 @@ export class Match implements LoopTarget {
     this.deps.simulation.step();
     this.previous = this.current;
     this.current = this.deps.simulation.snapshot();
+    this.legendAnimation.observe(this.previous, this.current);
     this.healthBars.observe(this.current, this.playerId);
     this.roofs.playerAt(this.livingPlayerAt());
     if (this.bridge.afterTick(this.current, this.playerId)) {
@@ -216,6 +235,7 @@ export class Match implements LoopTarget {
 
   /** One frame: the camera follows the player, then the scene and the minimap are drawn. */
   public render(alpha: number): void {
+    this.frameTick = this.current.tick + alpha;
     const { renderer } = this.deps;
     this.camera.follow(this.playerEntity()?.transform ?? null);
     const view = this.camera.visibleArea();
@@ -241,6 +261,7 @@ export class Match implements LoopTarget {
    * camera are injected, so their owner (`MatchHost`) destroys them.
    */
   public destroy(): void {
+    this.legendAnimation.destroy();
     this.loop.destroy();
     this.healthBars.destroy();
     this.bridge.destroy();
