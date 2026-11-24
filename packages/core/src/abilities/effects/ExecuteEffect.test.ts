@@ -10,8 +10,10 @@ import { ExecuteEffect } from './ExecuteEffect';
 
 const AREA = { kind: 'circle', radius: 4 } as const;
 const EXECUTE = { kind: 'execute', atOrBelow: 0.1, shape: AREA } as const;
-/** A damage step that blocks every hit: an execute runs none. */
+/** A damage step that blocks every hit (an unbreakable target, a body that takes no damage). */
 const BLOCK_ALL: DamageStep = { name: 'block-all', adjust: () => 0 };
+/** A damage step that only lowers every hit, as `damageTaken` × 0.1 does. */
+const REDUCE: DamageStep = { name: 'reduce', adjust: ({ amount }) => amount * 0.1 };
 
 /** The Warrior at the origin and a training dummy (100 health) of `team` at (`x`, 0), left with `left` health. */
 const setUp = () => {
@@ -27,7 +29,7 @@ const setUp = () => {
   const deaths: GameEventMap['entity-died'][] = [];
   state.events.on('damage-applied', (hit) => hits.push(hit));
   state.events.on('entity-died', (death) => deaths.push(death));
-  return { state, caster, dummyAt, hits, deaths };
+  return { state, factory, caster, dummyAt, hits, deaths };
 };
 
 describe('ExecuteEffect', () => {
@@ -49,15 +51,41 @@ describe('ExecuteEffect', () => {
     expect([above, ally].map((dummy) => dummy.getComponent(Health).current)).toEqual([11, 5]);
   });
 
-  it('is reduced by nothing: no damage step runs, and a shield goes with the health', () => {
+  it('is reduced by nothing: a step that only lowers a hit does not count, and a shield goes with the health', () => {
     const { state, caster, dummyAt, hits } = setUp();
     const shielded = dummyAt(2, 'dark', 10);
     shielded.getComponent(Health).addShield('ward', 50);
 
-    castSteps(state, caster.id, [EXECUTE], { damage: new DamagePipeline([BLOCK_ALL]) });
+    castSteps(state, caster.id, [EXECUTE], { damage: new DamagePipeline([REDUCE]) });
 
     expect(shielded.getComponent(Health).isDead).toBe(true);
     expect(hits.map(({ amount, absorbed }) => [amount, absorbed])).toEqual([[10, 50]]);
+  });
+
+  it('spares an enemy that a damage step blocks fully, even at or below the threshold', () => {
+    const { state, caster, dummyAt, hits, deaths } = setUp();
+    const blocked = dummyAt(2, 'dark', 5);
+
+    castSteps(state, caster.id, [EXECUTE], { damage: new DamagePipeline([BLOCK_ALL]) });
+
+    expect(blocked.getComponent(Health).current).toBe(5);
+    expect([hits, deaths]).toEqual([[], []]);
+  });
+
+  it('kills only units: an enemy tower at or below the threshold is spared (reading, owner card PR6 R6)', () => {
+    const { state, factory, caster, hits } = setUp();
+    const tower = factory.create('buff-tower', 'buff-tower', {
+      position: { x: 2, y: 0 },
+      team: 'dark',
+    });
+    state.entities.add(tower);
+    const health = tower.getComponent(Health);
+    health.applyDamage(health.max * 0.95);
+
+    castSteps(state, caster.id, [EXECUTE]);
+
+    expect(health.isDead).toBe(false);
+    expect(hits).toEqual([]);
   });
 
   it('needs a threshold above 0 and at most 1', () => {

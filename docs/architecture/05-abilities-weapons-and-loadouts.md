@@ -1477,16 +1477,17 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   - **Not built.** The aim overlay has no row for a placed body (`describe` gives none). DEC-307's
     stop of a charging Sentinel comes with PR 8; the wall blocks walking and dashes like a map wall.
   - **Client.** The snapshot carries a placed body's outline (`EntitySnapshot.outline`, left out
-    for every other entity). Obstacles have no view of their own, so `DefaultEntityView` draws it:
+    for every other entity). `DefaultEntityView` draws it, registered on purpose for the
+    `obstacle` family (`defaultViewRegistry.ts`), so a wall logs no "No view for kind" warning:
     the outline filled in the team colour (neutral) with a dark edge, in place of the disc.
 - **Rip & Tear and Fear (`feat/sentinel-rip`, 2026-11-23; DEC-203, DEC-204, DEC-206, DEC-207;
-  readings R1 to R3).** Rip & Tear is the Sentinel's `ability-2`
+  readings R1 to R3 and R6).** Rip & Tear is the Sentinel's `ability-2`
   (`content/abilities/ripAndTear.ts`), `directional` (the fan needs a direction, so an aim on the
   caster is refused, as for a dash). Its steps, in order: 180 damage to the enemies in the fan
   under 30% health, 90 to those at or above it, an execute at or below 10%, a 1.5 m knock-back of
   those under 30%, one bleed stack, then `feared` on the enemies in the circle of the fan's range.
-  The numbers marked "reading" wait for the owner's cards "PR6 R1" to "PR6 R3". Where the code
-  differs from §3 and §8:
+  The values marked "reading" wait for the owner's cards "PR6 R1" to "PR6 R3" and "PR6 R6".
+  Where the code differs from §3 and §8:
   - **`cone` (§3).** `{ kind: 'cone', reach, arcDegrees }` (`abilities/shapes/ConeShape.ts`): a fan
     from the caster along the cast's aim, `reach` metres past the caster's body edge (as a melee
     sweep's reach, DEC-319), `arcDegrees` above 0 and at most 180, on the sweep's sector geometry
@@ -1497,10 +1498,13 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     `health: { below?, atOrAbove? }` (fractions of max health, base bar only). `TargetQuery` keeps
     the targets that meet it, read when the step runs, so a hit earlier in the cast counts. A new
     `execute` step (`ExecuteEffect`) kills the enemies at or below `atOrBelow` through
-    `DamagePipeline.execute`: no damage step runs and shields go too, and it is announced as a
-    killing hit, so the kill, the XP, the assists and the ultimate meter follow as for any kill.
-    It hits what the step's shape finds, so an enemy structure or map object at or below the
-    threshold dies too (DEC-206 (1), "every enemy in the fan"; open question for the owner).
+    `DamagePipeline.execute`: a damage step that only reduces a hit does not count and shields go
+    too, but a step that blocks the hit fully (an unbreakable structure, a body that takes no
+    damage) stops it. It is announced as a killing hit, so the kill, the XP, the assists and the
+    ultimate meter follow as for any kill.
+    It kills units only: its filter sets `TargetFilter.families` (§3) to `UNIT_FAMILIES`
+    (`entities/unitFamilies.ts`), so an enemy structure or map object at or below the threshold
+    is spared (reading R6, owner card "PR6 R6"; DEC-206 (1) says "every enemy in the fan").
   - **Fear (§8).** `feared` (`content/status-effects/feared.ts`): half speed, `cannot-attack`,
     `cannot-cast`, soft control, 2 s, and `steering: 'flee-source'`. A status's `steering` kind
     names a `StatusSteering` strategy (`entities/strategies/`, the `steering` key of the strategy
