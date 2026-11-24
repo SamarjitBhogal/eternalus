@@ -3,6 +3,7 @@ import { CATHEDRAL_BOSS, CATHEDRAL_BOSS_ARENA } from '../../mobs/cathedralBoss';
 import { CAMP_MOB_AGGRO } from './campMob';
 import { CAPTURE_POINT_BOSS_AGGRO } from './capturePointBoss';
 import { CAPTURE_POINT_GUARD_AGGRO } from './capturePointGuard';
+import { CHECKPOINT_DEFENDER_AGGRO } from './checkpointDefender';
 import { CORNER_BOSS_AGGRO } from './cornerBoss';
 import { LANE_MINION_AGGRO } from './laneMinion';
 import { TOWER_GUARD_AGGRO } from './towerGuard';
@@ -23,4 +24,5 @@ export const AGGRO_RULES: Readonly<Record<string, AuthoredAggroProfile>> = {
     acquisitionRadius: CATHEDRAL_BOSS_ARENA.leash,
   },
   [CAPTURE_POINT_GUARD_AGGRO.id]: CAPTURE_POINT_GUARD_AGGRO,
+  [CHECKPOINT_DEFENDER_AGGRO.id]: CHECKPOINT_DEFENDER_AGGRO,
 };
