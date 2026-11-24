@@ -138,9 +138,16 @@ export type HordeAggroRuleDefinition = AggroRuleDefinition & HordeAggroFields;
 
 /**
  * What a guard's aggro profile adds (18 §7): its leash and its mates come from its post's guard
- * plan, so it adds nothing to the shared fields. Only `GuardController` reads it.
+ * plan. Only `GuardController` reads it.
  */
-type GuardAggroFields = { readonly controller: 'guard' };
+type GuardAggroFields = {
+  readonly controller: 'guard';
+  /**
+   * Takes any enemy inside the post's leash, not only within `acquisitionRadius` of the guard: a
+   * capture point's defenders, whose leash is the zone's reach (DEC-257, DEC-260).
+   */
+  readonly shouldAcquireAcrossLeash?: boolean;
+};
 
 /** A guard's aggro profile as authored, in seconds. */
 export type AuthoredGuardAggroRule = AuthoredAggroRule & GuardAggroFields;

@@ -290,9 +290,14 @@ The weights, the rate cap and the revert rate are `TUNE` values in
 looked up by map feature kind in `map/zoneArea.ts` (the fort's size and the Cathedral's floor are
 in `content/maps/buildingGeometry.ts`); the zone definition has no size.
 
-Reaching a checkpoint (`checkpoint-reached`) spawns that checkpoint's defenders (held by `GuardController` with the zone as home and fighting
-for the team that owns the point, [18](18-minion-system.md) MS-28, §7.1) through a `Spawner` table (1: medium assist mobs; 2: heavy plus light assist mobs; 3: one massive
-"Balrog-type" mob) and, when cleared, awards XP shared among nearby allies biased toward the top
+Reaching a checkpoint (`checkpoint-reached`) with a Legend of the reaching side on the zone
+(DEC-259) spawns that checkpoint's defenders from its defender table (1: medium assist mobs; 2:
+heavy plus light assist mobs; 3: one massive "Balrog-type" mob; DEC-260), held by
+`GuardController` with the zone as home, leashed to the zone's reach and fighting for the team
+that owns the point, or neutral while no team does ([18](18-minion-system.md) MS-28, §7.1;
+DEC-257). They never respawn. A change of owner keeps the ones still alive: they fight the new
+owner's units inside the zone and count as presence for their own side, so the new owner must
+kill them to keep the point (DEC-261). A cleared checkpoint awards XP shared among nearby allies biased toward the top
 damage dealer (`ProgressionSystem` listens to `checkpoint-cleared`). Holding a zone applies
 `StatusEffects` from content: ability/ultimate cooldown reduction and, after `levelUpAfterTicks`,
 a level-up for that side's lane minions; both are removed on loss. Mini-bosses at the quarter mark

@@ -8,4 +8,5 @@ export const GUARD_LEASH = {
   postGap: 2, // TUNE: no reference value; just outside the footprint
   // TUNE: balancing.md GreaterBoss "centre zone, radius 25 m", from the Cathedral's centre
   greaterBossZone: 25,
+  checkpointPostRing: 2, // TUNE: no reference value; defenders' posts around a capture point's centre
 } as const;

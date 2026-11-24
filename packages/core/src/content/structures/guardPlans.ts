@@ -1,7 +1,7 @@
 import { CAPTURE_POINT_COURT } from '../zones/capturePointCourt';
 import { CORNER_CAMP_RING } from './cornerCampRing';
 import { GUARD_LEASH } from './guardLeash';
-import type { AuthoredGuardPlan } from './structures.types';
+import type { AuthoredGuardPlan, CheckpointDefenderPlanDefinition } from './structures.types';
 
 const RESPAWN = 120; // TUNE: game doc "respawn every 2 minutes"
 // TUNE: owner 2026-11-02 (DEC-144): per guard, one decision's walk (10 ticks at its own top
@@ -135,5 +135,27 @@ export const GUARD_PLANS: Readonly<Record<string, AuthoredGuardPlan>> = {
     leashTolerance: 7,
     activation: { at: 'gem-eruption' },
     respawn: { kind: 'never' }, // TUNE: no respawn (Aryan 2026-11-15; INBOX)
+  },
+};
+
+/**
+ * Each capture-point checkpoint's defenders, keyed by checkpoint (architecture 07 §7, 18 §7.1).
+ * Compositions are balancing.md's `Recommendation:` (checkpoint 1: 4 medium; checkpoint 2: 2 heavy
+ * + 4 light), on the assist mobs (DEC-260).
+ * Checkpoint 3's one massive mob is MVP-if-time (reference 02 "Assist mobs") and has no row yet.
+ */
+const DEFENDERS = { postGap: GUARD_LEASH.checkpointPostRing, leashTolerance: TOLERANCE } as const;
+
+export const CHECKPOINT_DEFENDERS: Readonly<Record<number, CheckpointDefenderPlanDefinition>> = {
+  1: {
+    ...DEFENDERS,
+    table: [{ mobId: 'medium-assist-mob', count: 4 }], // TUNE: balancing.md 4 medium
+  },
+  2: {
+    ...DEFENDERS,
+    table: [
+      { mobId: 'heavy-assist-mob', count: 2 }, // TUNE: balancing.md 2 heavy
+      { mobId: 'light-assist-mob', count: 4 }, // TUNE: balancing.md 4 light
+    ],
   },
 };

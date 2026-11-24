@@ -10,6 +10,8 @@ import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import type { DeepPartial, GameConfig } from '../config/GameConfig.types';
 import { timelineFrameOf } from '../config/timelineFrameOf';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { MOB_DEFINITIONS } from '../content/mobs/mobCatalogue';
+import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { loadGuardPlans } from '../content/structures/loadGuardPlans';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
@@ -43,7 +45,7 @@ describe('GuardRoster', () => {
     const state = new GameState(config, 1, matchWorldOf(TWO_LANE_MAP), {}, timingOf(config));
     spawnMapStructures(state);
     const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(TICK_RATE));
-    const roster = new GuardRoster(factory, factory.definitions, GUARD_PLANS);
+    const roster = new GuardRoster(factory, factory.definitions, GUARD_PLANS, {});
     roster.layOut(state);
     const step = () => {
       roster.update(state);
@@ -269,7 +271,7 @@ describe('GuardRoster', () => {
         createDefaultEntityRegistry(),
         loadDefaultContent(TICK_RATE),
       );
-      const roster = new GuardRoster(factory, factory.definitions, GUARD_PLANS);
+      const roster = new GuardRoster(factory, factory.definitions, GUARD_PLANS, {});
       roster.layOut(state);
       const cleared: string[] = [];
       state.events.on('camp-cleared', ({ entityId }) => cleared.push(entityId));
@@ -499,7 +501,7 @@ describe('GuardRoster', () => {
       throw new Error('no spawner-tower guard plan');
     }
     const plan = { ...base, postGap: 2, leashRadius: 5 };
-    new GuardRoster(factory, factory.definitions, { 'spawner-tower': plan }).layOut(state);
+    new GuardRoster(factory, factory.definitions, { 'spawner-tower': plan }, {}).layOut(state);
 
     let posts = 0;
     state.guards.forEach((post) => {
@@ -552,7 +554,7 @@ describe('GuardRoster', () => {
     if (base === undefined) {
       throw new Error('no spawner-tower guard plan');
     }
-    new GuardRoster(factory, factory.definitions, { 'spawner-tower': base }).layOut(state);
+    new GuardRoster(factory, factory.definitions, { 'spawner-tower': base }, {}).layOut(state);
 
     let posts = 0;
     state.guards.forEach((post) => {
@@ -593,9 +595,18 @@ describe('GuardRoster', () => {
       const units = loadDefaultContent(TICK_RATE);
       const objects = new Map(Object.values(MAP_OBJECT_DEFINITIONS).map((d) => [d.id, d]));
       const factory = new EntityFactory(createDefaultEntityRegistry(), {
-        has: (id) => units.has(id) || objects.has(id) || ZONE_DEFINITIONS.has(id),
+        has: (id) =>
+          units.has(id) ||
+          objects.has(id) ||
+          ZONE_DEFINITIONS.has(id) ||
+          STRUCTURE_DEFINITIONS.has(id),
         get: (id) =>
-          objects.get(id) ?? (ZONE_DEFINITIONS.has(id) ? ZONE_DEFINITIONS.get(id) : units.get(id)),
+          objects.get(id) ??
+          (ZONE_DEFINITIONS.has(id)
+            ? ZONE_DEFINITIONS.get(id)
+            : STRUCTURE_DEFINITIONS.has(id)
+              ? STRUCTURE_DEFINITIONS.get(id)
+              : units.get(id)),
       });
       const zone = factory.create('capture-point', 'capture-point', {
         position: CENTRE,
@@ -613,6 +624,7 @@ describe('GuardRoster', () => {
         factory,
         factory.definitions,
         loadGuardPlans(TICK_RATE, { 'capture-point': { ...ZONE_PLAN, ...plan } }),
+        { 1: { table: [{ mobId: 'light-assist-mob', count: 2 }], postGap: 2, leashTolerance: 5 } },
       );
       roster.layOut(state);
       const cleared: string[] = [];
@@ -638,7 +650,7 @@ describe('GuardRoster', () => {
             .applyDamage(1e6);
         }
       };
-      return { state, zone, step, posts, kill, cleared };
+      return { state, factory, zone, roster, step, posts, kill, cleared };
     };
 
     it('posts a zone’s guard inside its area and off the keep, with home radius 0', () => {
@@ -666,6 +678,53 @@ describe('GuardRoster', () => {
 
       expect(posts().map(({ guardId }) => guardId)).toEqual([null]);
       expect(cleared).toEqual([]);
+    });
+
+    it('keeps checkpoint defenders out of a `group` plan: the plan clears and refills without them (18 §7.1)', () => {
+      const { state, zone, roster, step, posts, cleared } = zoned({
+        respawn: { kind: 'group', seconds: 5 },
+      });
+      step();
+      roster.defend(state, zone.id, 1, 'neutral');
+      step();
+      const own = () => posts().filter(({ checkpoint }) => checkpoint === undefined);
+      const defenders = () => posts().filter(({ checkpoint }) => checkpoint !== undefined);
+      const held = defenders().map(({ guardId }) => guardId);
+      expect(held).toHaveLength(2);
+      expect(held.every((id) => id !== null)).toBe(true);
+
+      state.entities
+        .get(own()[0]?.guardId ?? '')
+        ?.getComponent(Health)
+        .applyDamage(1e6);
+      step();
+      expect(cleared).toEqual([zone.id]);
+      expect(defenders().map(({ guardId }) => guardId)).toEqual(held);
+
+      step(5 * TICK_RATE);
+      expect(own()[0]?.guardId).not.toBeNull();
+      expect(defenders().map(({ guardId }) => guardId)).toEqual(held);
+    });
+
+    it('posts checkpoint defenders clear of a structure in the zone, off the Cathedral gem (07 §1)', () => {
+      const { state, factory, zone, roster, step, posts } = zoned();
+      step();
+      const stone = factory.create('cathedral-gem', 'cathedral', {
+        position: CENTRE,
+        team: 'neutral',
+      });
+      state.entities.add(stone);
+      const reach =
+        stone.getComponent(Transform).radius +
+        MOB_DEFINITIONS.get('light-assist-mob').footprintRadius;
+
+      roster.defend(state, zone.id, 1, 'neutral');
+
+      const defenders = posts().filter(({ checkpoint }) => checkpoint !== undefined);
+      expect(defenders).toHaveLength(2);
+      for (const { postX, postY } of defenders) {
+        expect(Math.hypot(postX - CENTRE.x, postY - CENTRE.y)).toBeGreaterThan(reach);
+      }
     });
 
     it('fills its posts `delaySeconds` after the countdown ends', () => {

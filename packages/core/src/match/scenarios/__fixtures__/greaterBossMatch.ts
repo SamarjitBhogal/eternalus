@@ -1,3 +1,4 @@
+import { clearCheckpointDefenders } from '../../../__fixtures__/clearCheckpointDefenders';
 import { createDefaultGameConfig } from '../../../config/defaultGameConfig';
 import type { GameConfig } from '../../../config/GameConfig.types';
 import { timelineFrameOf } from '../../../config/timelineFrameOf';
@@ -37,6 +38,9 @@ export const match = (plannedMatchSeconds = 20, seed = 1) => {
     map,
     mapObjects: new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map)),
   });
+  // The Cathedral is a capture zone: a Legend standing in it wakes its checkpoint defenders, whose
+  // hits would blur the boss's own (they have their own tests).
+  clearCheckpointDefenders(simulation);
   const feature = map.features.find(({ definitionId }) => definitionId === 'cathedral');
   if (feature === undefined) throw new Error('No Cathedral');
   const eruptionTick = markTick(config, 'gem-eruption');

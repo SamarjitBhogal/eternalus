@@ -21,9 +21,10 @@ import type { Controller, Decision, DecisionInput } from './Controller.types';
  * brain's memory.
  *
  * Interim (11 §4.6): moves rotate in profile order, one after another, so every move comes up (at
- * Aryan's request; INBOX: the rotation item); the next move waits, and the boss chases, until a target is in its
- * range and it is off cooldown. The utility and seeded weighted pick are not built. The target is
- * the nearest one, not the top recent damage dealer (INBOX: the bias has no window or weight yet).
+ * Aryan's request; INBOX: the rotation item); the next move waits, and the boss chases, until a
+ * target is in its range and it is off cooldown. The utility and seeded weighted pick are not
+ * built. The target is the nearest one, not the top recent damage dealer (INBOX: the bias has no
+ * window or weight yet).
  */
 export class BossController implements Controller {
   public readonly id = 'boss';

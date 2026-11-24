@@ -23,10 +23,10 @@ export const GREATER_BOSS_LIGHT_HIT = Math.round(0.15 * REF_HEALTH);
  * later): a neutral heavy mob on the Cathedral capture zone's guard post, whose circle is its zone
  * and whose plan (`content/structures/guardPlans.ts`) gives its (no) respawn. Its movement profile
  * is the heavy minion's, since no reference gives the boss's (INBOX). It has no movement strategy:
- * its controller steers it with `move` commands, so `PathingSystem` leaves it alone. It takes a quarter of a
- * minion's hit (`BOSS_MINION_DAMAGE_TAKEN`), and its kill lifts the killer's team 5 levels
- * (`XP_SOURCES.teamKills`, DEC-237). Its `attack` is never used: the controller gives it no attack
- * target, only moves.
+ * its controller steers it with `move` commands, so `PathingSystem` leaves it alone. It takes a
+ * quarter of a minion's hit (`BOSS_MINION_DAMAGE_TAKEN`), and its kill lifts the killer's team 5
+ * levels (`XP_SOURCES.teamKills`, DEC-237). Its `attack` is never used: the controller gives it no
+ * attack target, only moves.
  */
 export const GREATER_BOSS = {
   id: 'greater-boss',
