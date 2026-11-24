@@ -45,3 +45,9 @@ export type CastServices = {
   /** Puts a step's body into the match, and takes one out (`SummonEffect`). */
   readonly summoner: Summoner;
 };
+
+/**
+ * The match's services that a cast's steps write through, the same for every cast: `HitEffects`
+ * and `AbilitySystem` take them once and pass them into each cast's `CastServices`.
+ */
+export type StepServices = Pick<CastServices, 'damage' | 'statuses' | 'launcher' | 'summoner'>;

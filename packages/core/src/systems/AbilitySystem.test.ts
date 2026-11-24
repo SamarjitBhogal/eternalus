@@ -47,14 +47,12 @@ const setUp = () => {
     }),
   ]);
   const registry = testAbilityRegistry([strike, blast], abilities);
-  const system = new AbilitySystem(
-    registry,
-    new CastValidator(registry),
-    new DamagePipeline(),
-    new StatusEffectApplier(STATUSES),
-    new RecordingLauncher(),
-    new RecordingSummoner(),
-  );
+  const system = new AbilitySystem(registry, new CastValidator(registry), {
+    damage: new DamagePipeline(),
+    statuses: new StatusEffectApplier(STATUSES),
+    launcher: new RecordingLauncher(),
+    summoner: new RecordingSummoner(),
+  });
   const events: string[] = [];
   state.events.on('ability-cast', ({ casterId, abilityId, slot }) =>
     events.push(`cast ${casterId} ${abilityId} ${slot}`),

@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-23
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -570,8 +570,11 @@ Health and destruction snapshots drive art and ruins; cutaways remain cosmetic. 
 passages) instead of the Stronghold feature's footprint, whose floor is walkable; a destroyed
 object reopens its cells and marks the lane fields over them dirty. Conservative stamping
 (DEC-14) closes palace room doors narrower than two cells in the grid; the collider still lets
-units through them. The `terrain-changed` event follows in Phase 2 sprint 2.5, the Structure
-family replaces obstacle-backed scenery in sprint 2.1 and walls and gates follow in sprint 2.4.
+units through them. The `terrain-changed` event exists since lane B PR 6 (`feat/sentinel-kit`,
+2026-11-23): a wall placed during the match (a Shield Wall) reports its cells with it
+(`map/RuntimeWalls`, [10](10-physics.md) §12). A destroyed map object still clears its cells and
+marks the lane fields dirty directly (`INBOX.md` HC-B43 (2)). The Structure family replaces
+obstacle-backed scenery in sprint 2.1 and walls and gates follow in sprint 2.4.
 Duel door closure uses those structure snapshots; occupancy-driven cutaways are not yet
 scheduled (INBOX).
 Renderer caching and close-view material detail belong to the separate renderer follow-up in

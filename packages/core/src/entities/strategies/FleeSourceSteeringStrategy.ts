@@ -7,7 +7,7 @@ import type { StatusSteering } from './StatusSteering.types';
  * R3). Once the source is gone, or while the holder stands right on it, the holder keeps the heading
  * it last took.
  */
-export class FleeSourceSteering implements StatusSteering {
+export class FleeSourceSteeringStrategy implements StatusSteering {
   /** Points `heading` from `source` through `position`; leaves it as it is with no way to point. */
   public steer(position: Vec2, source: Vec2 | undefined, heading: MutableVec2): void {
     if (source === undefined) {

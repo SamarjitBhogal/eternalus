@@ -2,6 +2,7 @@ import type { AbilityDisplayStep } from '../content/loadDisplayContent';
 import { ContentValidationError } from '../content/ContentValidationError';
 import type { AbilityEffect, EffectStep } from './AbilityEffect.types';
 import type { AbilityRestriction } from './AbilityRestriction.types';
+import { CAST_STEPS } from './AbilityRegistry.constants';
 import type {
   Ability,
   AbilitySource,
@@ -12,9 +13,6 @@ import { ComposedAbility } from './ComposedAbility';
 import { flattenSteps, shapeOf } from './effectSteps';
 import type { AreaShape, StepList } from './shapes/AreaShape.types';
 import type { CastTargeting, TargetingSpec } from './targeting/CastTargeting.types';
-
-/** An ability's own effects: a cast's steps, not an `onHit` list. */
-const CAST_STEPS: StepList = { isOnHit: false };
 
 /**
  * The single place abilities are composed (architecture 05 §14): effect, restriction, shape and

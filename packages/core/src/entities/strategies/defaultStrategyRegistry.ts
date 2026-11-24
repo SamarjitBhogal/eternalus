@@ -2,7 +2,7 @@ import { HORDE_STEERING } from '../../content/ai/hordeSteering';
 import type { StatusSteeringKind } from '../../content/status-effects/statusEffects.types';
 import type { AttackStrategyId, MovementStrategyId } from '../../content/units/units.types';
 import type { AttackStrategy } from './AttackStrategy.types';
-import { FleeSourceSteering } from './FleeSourceSteering';
+import { FleeSourceSteeringStrategy } from './FleeSourceSteeringStrategy';
 import { LaneFollowMovementStrategy } from './LaneFollowMovementStrategy';
 import { LeashedChaseMovementStrategy } from './LeashedChaseMovementStrategy';
 import { MeleeAttackStrategy } from './MeleeAttackStrategy';
@@ -34,6 +34,6 @@ export const createDefaultStrategyRegistry = (): StrategyRegistry => ({
     'ranged-projectile': new RangedProjectileAttackStrategy(),
   },
   steering: {
-    'flee-source': new FleeSourceSteering(),
+    'flee-source': new FleeSourceSteeringStrategy(),
   },
 });

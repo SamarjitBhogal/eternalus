@@ -100,9 +100,14 @@ export class DefaultSystemPipeline extends SystemPipeline {
     );
     checkStatusLinks(abilities, statusEffects.all());
     const statuses = new StatusEffectApplier(statusEffects);
-    const launcher = new ProjectileLauncher(factory);
-    const summoner = new EntitySummoner(factory);
-    const hits = new HitEffects(abilities, damage, statuses, launcher, summoner);
+    const steps = {
+      damage,
+      statuses,
+      launcher: new ProjectileLauncher(factory),
+      summoner: new EntitySummoner(factory),
+    };
+    const hits = new HitEffects(abilities, steps);
+    const strategies = createDefaultStrategyRegistry();
     const flowFields =
       hordes === undefined || state.world === null
         ? null
@@ -137,14 +142,14 @@ export class DefaultSystemPipeline extends SystemPipeline {
     }
     super([
       ...(hordes === undefined ? [] : [...hordes.decide, new HordeSystem(state, HORDE_STEERING)]),
-      new AbilitySystem(abilities, validator, damage, statuses, launcher, summoner),
+      new AbilitySystem(abilities, validator, steps),
       // After the casts, so a cast spends before the tick's regeneration (plan arch call 13).
       new AetherRegenSystem(AETHER_REGEN, tickRate),
       new StatusEffectSystem(state, damage, statuses),
       // After the statuses, so a size takes effect in the tick its status starts or ends.
       new BodySizeSystem(),
       // After the AI, the commands and the statuses of this tick, before the walking it steers.
-      new StatusSteeringSystem(createDefaultStrategyRegistry().steering),
+      new StatusSteeringSystem(strategies.steering),
       new MovementSystem(),
       ...(hordes?.collisions ?? []),
       ...(hordes === undefined
@@ -152,12 +157,10 @@ export class DefaultSystemPipeline extends SystemPipeline {
         : [
             ...(hordes.space === null ? [] : [new SpaceSystem(hordes.space)]),
             new StuckSystem(loadStuckDetection(tickRate)),
-            new PathingSystem(
-              createDefaultStrategyRegistry().movement,
-              FORMATIONS,
-              HORDE_STEERING.slotArrivalRadius,
-              { flowFields, forts: DefaultSystemPipeline.fortBoxesOf(state, structures) },
-            ),
+            new PathingSystem(strategies.movement, FORMATIONS, HORDE_STEERING.slotArrivalRadius, {
+              flowFields,
+              forts: DefaultSystemPipeline.fortBoxesOf(state, structures),
+            }),
           ]),
       // Before combat, so a shot fired this tick flies a tick before it can land.
       new ProjectileSystem(createDefaultProjectileImpacts(damage, hits, hits)),

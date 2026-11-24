@@ -4,7 +4,7 @@ description: The planned folder tree of packages/core and apps/client with one l
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-23
 tags: [architecture, code-structure, conventions, registries]
 paths: ['packages/core/src/**', 'apps/client/src/**', 'eslint.config.js', 'knip.json']
 related:
@@ -223,7 +223,7 @@ changes the shape of the world, it is config. If a player may change it, it is a
 | Registry                    | File                                                                                 | One line adds                                                                                                                                                                             |
 | --------------------------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `EntityRegistry`            | `core/src/entities/defaultEntityRegistry.ts`                                         | A concrete entity class for an `EntityKind`                                                                                                                                               |
-| `StrategyRegistry`          | `core/src/entities/strategies/defaultStrategyRegistry.ts`                            | A movement, targeting, attack or pick-up strategy                                                                                                                                         |
+| `StrategyRegistry`          | `core/src/entities/strategies/defaultStrategyRegistry.ts`                            | A movement, targeting, attack, pick-up or status-steering strategy                                                                                                                        |
 | Damage steps                | `core/src/combat/defaultDamageSteps.ts`                                              | A rule every hit runs through, at its position                                                                                                                                            |
 | `AbilityRegistry`           | `core/src/abilities/defaultAbilityRegistry.ts`                                       | An `AbilityEffect`, `AbilityRestriction` or `AreaShape` class (ADR 0026)                                                                                                                  |
 | `ControllerRegistry`        | `core/src/ai/defaultControllerRegistry.ts`                                           | A `Controller` for a `ControllerId`                                                                                                                                                       |

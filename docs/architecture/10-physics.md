@@ -384,9 +384,11 @@ it into the index, stamps it on the nav grid and reports the changed cells as `t
 calls it at every `entity-removed`. `abilities/` and `entities/` reach it through the
 `GameState.walls` port (`PlacedWalls`, beside `collisions`), which also answers whether an outline
 has room (`isBlocked`: no overlap with an indexed polygon, passages ignored, and inside the map).
-The map's own objects keep their removal path. `CollisionResolver` is unchanged: a unit that a
-new wall covers is pushed out by the summoner (`EntitySummoner`), so its precondition (no move
-starts inside a wall) still holds.
+The map's own objects keep their removal path (`INBOX.md` HC-B43 (2)). A unit that a new wall
+covers is pushed out by the summoner (`EntitySummoner`) through `CollisionQuery.pushOut`, the rule
+`BodySizeSystem` uses (the Berserk note above), so `CollisionResolver`'s precondition (no move
+starts inside a wall) still holds. One predicate, `entities/isCollisionMover`, says which units
+walls stop: `CollisionSystem` slides exactly these, and only these are pushed (DEC-363).
 
 ## Related
 

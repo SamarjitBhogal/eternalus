@@ -1467,15 +1467,24 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     (`structureMultiplier` applies).
   - **Blocking.** The summoner makes a solid outline a wall through `GameState.walls`
     (`PlacedWalls`, 10 §12): the static collision index, the nav grid and the lane fields. It
-    pushes every unit the outline covers straight out of it, so no unit starts a move inside a
-    wall; a push that another wall cuts short leaves the unit where it stops.
+    pushes every unit the outline covers out of the walls by the match's one push-out rule
+    (`CollisionQuery.pushOut`, which `BodySizeSystem` also uses; DEC-363), so no unit starts a
+    move inside a wall. In a gap narrower than the unit, the unit can stay partly inside a wall;
+    it can walk out (10 §12).
   - **A step's aim check.** An effect may have `aimBlockedBy` (optional on `AbilityEffect`);
     `CastValidator` asks every step of the ability after the targeting, so a refused cast spends
     nothing. The summon refuses (`no-target`) a wall whose outline would overlap a wall (terrain,
     a blocking map object, another placed wall, the caster's oldest wall included) or reach past
     the map's edge. A delayed step is checked at the cast.
-  - **Not built.** The aim overlay has no row for a placed body (`describe` gives none). DEC-307's
-    stop of a charging Sentinel comes with PR 8; the wall blocks walking and dashes like a map wall.
+  - **Aim overlay.** `describe` gives one display step with the display-only shape `outline`
+    (`PlacedOutline` in `content/loadDisplayContent.ts`: the outline's corners and its
+    distance). The client paints it where the wall will stand: its middle `distance` ahead of
+    the caster toward the pointer, turned to face that way (`aimShapePainters.ts`). Known limit:
+    the overlay does not turn red where the cast is refused; that needs a walls query in the
+    client.
+  - **Not built.** DEC-307's stop of a charging Sentinel comes with PR 8; the wall blocks walking
+    and dashes like a map wall. `NoMapObjectOverlapInvariant` does not check placed walls
+    (`INBOX.md` HC-S14, scheduled with PR 8).
   - **Client.** The snapshot carries a placed body's outline (`EntitySnapshot.outline`, left out
     for every other entity). `DefaultEntityView` draws it, registered on purpose for the
     `obstacle` family (`defaultViewRegistry.ts`), so a wall logs no "No view for kind" warning:
@@ -1502,9 +1511,11 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     too, but a step that blocks the hit fully (an unbreakable structure, a body that takes no
     damage) stops it. It is announced as a killing hit, so the kill, the XP, the assists and the
     ultimate meter follow as for any kill.
-    It kills units only: its filter sets `TargetFilter.families` (§3) to `UNIT_FAMILIES`
+    It kills units only: its step sets `families: 'units'` (`ExecuteSpec`, `ripAndTear.ts`), which
+    the effect turns into `TargetFilter.families` (§3) = `UNIT_FAMILIES`
     (`entities/unitFamilies.ts`), so an enemy structure or map object at or below the threshold
-    is spared (reading R6, owner card "PR6 R6"; DEC-206 (1) says "every enemy in the fan").
+    is spared (reading R6, owner card "PR6 R6"; DEC-206 (1) says "every enemy in the fan"). An
+    `execute` step with no `families` kills an enemy of any family.
   - **Fear (§8).** `feared` (`content/status-effects/feared.ts`): half speed, `cannot-attack`,
     `cannot-cast`, soft control, 2 s, and `steering: 'flee-source'`. A status's `steering` kind
     names a `StatusSteering` strategy (`entities/strategies/`, the `steering` key of the strategy

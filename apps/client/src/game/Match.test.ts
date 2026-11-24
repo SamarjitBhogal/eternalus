@@ -7,6 +7,7 @@ import {
   MemoryLogger,
   NullLogger,
   Simulation,
+  type Snapshot,
   type Vec2,
 } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
@@ -99,18 +100,39 @@ const CONTENT_WITH_A_ROCK: Content = (() => {
 })();
 
 /**
+ * A simulation whose snapshots show every rock as a zone of a kind that no view draws
+ * (`test-zone`): every shipped kind has a view, so only such a kind reaches the default view's
+ * warning.
+ */
+class UnknownKindSimulation extends Simulation {
+  public override snapshot(): Snapshot {
+    const snapshot = super.snapshot();
+    return {
+      ...snapshot,
+      entities: snapshot.entities.map((entity) =>
+        entity.kind === 'obstacle' ? { ...entity, kind: 'test-zone', family: 'zone' } : entity,
+      ),
+    };
+  }
+}
+
+/**
  * A match on seed 1's prepared world, with `PLAYER` the roster's human slot on the world's map
  * (core spawns the human slot at its Stronghold, and the map's hordes and guards spawn too); the
  * simulation gets the world's map objects only `withMapObjects`. With `content`, which lacks the
  * mobs the map's structures spawn, it plays in sim mode instead: no map, so no roster (a roster
  * needs the map).
  */
-const setUp = (content?: Content, withMapObjects = false) => {
+const setUp = (
+  content?: Content,
+  withMapObjects = false,
+  SimulationType: typeof Simulation = Simulation,
+) => {
   // No countdown: core's countdown holds all movement, and these tests walk from the start.
   const config = createDefaultGameConfig({ match: { countdownSeconds: 0 } });
   const world = prepareMatchWorld(config, SEED);
   const generated = world.map;
-  const simulation = new Simulation({
+  const simulation = new SimulationType({
     seed: SEED,
     logger: new NullLogger(),
     ...(content === undefined
@@ -619,6 +641,29 @@ describe('Match', () => {
     match.tick();
     match.render(0);
     expect(camera.visibleArea(map.width, map.height)).not.toEqual(lookedAt);
+  });
+
+  it('logs once for each kind it has to draw with the default view', () => {
+    const { match, simulation, logger } = setUp(CONTENT_WITH_A_ROCK, false, UnknownKindSimulation);
+    simulation.enqueueCommand({
+      type: 'dev-spawn',
+      kind: 'obstacle',
+      definitionId: 'rock',
+      team: 'neutral',
+      at: { x: 100, y: 100 },
+      count: 2,
+    });
+    match.tick();
+
+    match.render(0);
+    match.render(0);
+
+    expect(match.snapshot.entities.filter(({ kind }) => kind === 'test-zone')).toHaveLength(2);
+    expect(
+      logger.records.map(({ severityText, scope, body }) => [severityText, scope, body]),
+    ).toEqual([
+      ['WARN', 'client.views', 'No view for kind "test-zone"; drawing the default view.'],
+    ]);
   });
 
   it('draws an obstacle outside the map objects (a placed wall) with the default view, logging no warning', () => {

@@ -1,8 +1,6 @@
 import type { EntityId } from './EntityStore.types';
 import type { GameEvents } from './GameEvents';
-
-/** One body a caster placed: what it was built from and its id. */
-type Placed = { readonly definitionId: string; readonly entityId: EntityId };
+import type { Placed } from './SummonLedger.types';
 
 /**
  * Which bodies each caster has placed and that still stand, oldest first (architecture 05 §3

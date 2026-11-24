@@ -35,13 +35,12 @@ const setUp = (statusId: string) => {
   statuses.apply(state, caster.id, statusId, caster.id);
   const applied: GameEventMap['status-applied'][] = [];
   state.events.on('status-applied', (payload) => applied.push(payload));
-  const hits = new HitEffects(
-    REGISTRY,
-    new DamagePipeline(),
+  const hits = new HitEffects(REGISTRY, {
+    damage: new DamagePipeline(),
     statuses,
-    new RecordingLauncher(),
-    new RecordingSummoner(),
-  );
+    launcher: new RecordingLauncher(),
+    summoner: new RecordingSummoner(),
+  });
   return { state, caster, struck, neighbour, applied, hits };
 };
 
