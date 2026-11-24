@@ -4,6 +4,10 @@ import { MOB_DEFINITIONS } from './mobCatalogue';
 import { BOSS_MINION_DAMAGE_TAKEN } from './minionModifiers';
 
 describe('BOSS_MINION_DAMAGE_TAKEN', () => {
+  it('gives the Cathedral boss the documented quarter damage from lane minions', () => {
+    expect(BOSS_MINION_DAMAGE_TAKEN['cathedral-boss']).toBe(0.25);
+  });
+
   it('names only real mobs, each with a share in (0, 1]', () => {
     const entries = Object.entries(BOSS_MINION_DAMAGE_TAKEN);
 

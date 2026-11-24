@@ -92,6 +92,8 @@ type GuardTableEntry = {
 /** The fields of a guard plan that are the same as authored and as loaded. */
 type GuardPlanBase = {
   readonly table: readonly GuardTableEntry[];
+  /** Skip this encounter when laying out posts for an online Duel. */
+  readonly isLocalOnly?: boolean;
   /** How far past the home's edge a guard may chase ("don't leave the tower's perimeter"). */
   readonly leashRadius: number;
   /** Posts stand on a ring this far outside the home's edge. */

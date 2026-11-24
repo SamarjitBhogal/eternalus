@@ -7,7 +7,7 @@ import type { MobDefinition } from './mobs.types';
  * capture point; when it appears, its leash and that it never respawns are the zone's guard plan
  * (`content/structures/guardPlans.ts`). Its kill pays the killer's whole team, capped
  * (`XP_SOURCES.teamKills`, DEC-237), and locks its zone while it lives (`CaptureSystem`). Its
- * basic melee attack is distinct from the Cathedral encounter's special moves.
+ * moves, regeneration and permanent team buff come later; until then it fights with one melee hit.
  */
 export const CAPTURE_POINT_BOSS = {
   id: 'capture-point-boss',

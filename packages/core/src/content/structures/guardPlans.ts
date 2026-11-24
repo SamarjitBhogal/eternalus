@@ -124,6 +124,7 @@ export const GUARD_PLANS: Readonly<Record<string, AuthoredGuardPlan>> = {
     respawn: { kind: 'never' },
   },
   'cathedral-capture-point': {
+    isLocalOnly: true,
     table: [{ mobId: CATHEDRAL_BOSS.id, count: 1 }],
     leashRadius: CATHEDRAL_BOSS_ARENA.leash,
     postGap: CATHEDRAL_BOSS_ARENA.postGap,

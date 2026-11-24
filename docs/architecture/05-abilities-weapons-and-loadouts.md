@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-23
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -431,14 +431,6 @@ evaluates it yet. Ultimate Plus (**MVP-if-time**) is a variety with `unlockLevel
 ability.
 
 ## 7. Cast lifecycle: `applyCommand` and `AbilitySystem`
-
-The Eternal, the central Cathedral boss, has its own AI-driven cast cycle. Its move timing and reach live in
-`content/mobs/cathedralBossAbilities.ts`. Its combat component records charge, active and
-recovery phases, and remembers targets already hit by a multi-tick cast. Damage and statuses go
-through the shared combat pipeline. The cast locks movement and basic attacks. The client selects
-sprite frames from the snapshot and draws the Void Sweep beam from the simulation's sweep angle.
-The Eternal's authored combat outline tracks its visible body and is shared by attack reach and
-point targeting. Its navigation collider stays independent so the art does not obstruct passages.
 
 1. `InputMapper` (human) or a controller (bot) enqueues `cast-ability { actorId, slot, aim }`
    ([03 §3](03-game-model.md#3-commands)); gadgets are the same command with `slot: 'gadget-1' |
@@ -927,6 +919,13 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
 | Ability tree, class-switch penalty, Barricades, Eagle Eye, Firestorm, `reveal`, armour set, skins, weapon abilities (`WeaponDefinition.abilityIds` reuses `Ability`)       | **post-MVP**                                                                        |
 
 ## 18. Implementation status
+
+- **Cathedral boss.** The interim cast cycle uses the shared damage and status pipeline.
+  Its special attacks can select and hit targets inside the Cathedral arena. The client draws
+  sprites and the sweep from the cast snapshot. The boss's kill raises the rewarded team's
+  Legends by five levels, up to the level cap (DEC-237). Cast recovery releases the movement
+  and basic-attack lock. The Cathedral guard post is local-only, with a default delay pinned
+  to the mid-game timeline mark.
 
 - **Progression (PR #31, SCRUM-426).** Legends install `Aether` (own component, O1) and
   `Progression` (`xp`, `level`, `curveId`). Level curves are a catalogue

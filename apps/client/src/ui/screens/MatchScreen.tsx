@@ -1,6 +1,6 @@
 import { type ReactElement, useRef } from 'react';
 
-import { eventBus } from '../../bridge/eventBus';
+import { emitIntent } from '../../bridge/eventBus';
 import { useAppSelector } from '../../bridge/hooks';
 import { AbilityBar } from '../hud/AbilityBar';
 import { AetherBar } from '../hud/AetherBar';
@@ -80,7 +80,7 @@ export function MatchScreen({ viewport }: ScreenProps): ReactElement {
             className={styles.spawnBoss}
             type="button"
             onClick={() => {
-              eventBus.emit('spawn-boss', undefined);
+              emitIntent({ kind: 'dev-command', command: 'spawn-boss' });
             }}
           >
             Spawn Boss

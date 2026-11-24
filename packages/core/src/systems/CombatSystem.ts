@@ -1,5 +1,4 @@
 import { Combat } from '../components/Combat';
-import { BossCombat } from '../components/BossCombat';
 import { Health } from '../components/Health';
 import { StatusEffects } from '../components/StatusEffects';
 import { Transform } from '../components/Transform';
@@ -40,7 +39,6 @@ export class CombatSystem implements System {
       return;
     }
     state.entities.forEach((attacker) => {
-      if (attacker.findComponent(BossCombat)?.cast != null) return;
       const combat = attacker.findComponent(Combat);
       if (combat?.targetId == null) {
         return;

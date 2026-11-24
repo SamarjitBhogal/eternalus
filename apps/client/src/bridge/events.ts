@@ -54,6 +54,7 @@ export type Overlay = 'pause' | 'settings';
 /** Everything the UI can ask the game to do. Components emit these and never write the store. */
 export type UiIntent =
   | { readonly kind: 'start-match' }
+  | { readonly kind: 'dev-command'; readonly command: 'spawn-boss' }
   /** Join the online Duel queue (ADR 0016); the menu shows the waiting screen. */
   | { readonly kind: 'start-duel'; readonly name: string }
   /** Leave the Duel queue and return to the home screen. */
@@ -208,7 +209,6 @@ export type MatchClock = {
 /** Every message on the bridge bus, keyed by event name. */
 export type BridgeEventMap = {
   'ui-intent': UiIntent;
-  'spawn-boss': undefined;
   'session-phase': { readonly phase: SessionPhase; readonly reason: SessionReason | null };
   'menu-route': { readonly route: MenuRoute };
   overlay: { readonly overlay: Overlay | null };

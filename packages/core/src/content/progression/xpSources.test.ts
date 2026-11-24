@@ -39,9 +39,11 @@ describe('legend XP design intent (DEC-190)', () => {
     }
   });
 
-  it('a team-kill reward names a mob that pays its killer nothing alone, and lifts at most 2 levels (DEC-237)', () => {
-    for (const [mobId, { xp, maxLevels }] of Object.entries(XP_SOURCES.teamKills)) {
+  it('team kills pay nothing to the killer alone and mini-boss rewards cap at two levels (DEC-237)', () => {
+    for (const [mobId, reward] of Object.entries(XP_SOURCES.teamKills)) {
       expect({ mobId, xpValue: MOB_DEFINITIONS.get(mobId).xpValue }).toEqual({ mobId, xpValue: 0 });
+      if ('flatLevels' in reward) continue;
+      const { xp, maxLevels } = reward;
       expect({ mobId, isAtMostTwo: maxLevels <= 2 }).toEqual({ mobId, isAtMostTwo: true });
       for (const level of levels) {
         // As ProgressionSystem pays it: no more than brings the Legend `maxLevels` levels up.

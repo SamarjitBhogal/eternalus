@@ -16,6 +16,15 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Cathedral Greater Boss (PR #161).** Which PR owns the encounter logic (#160, #161,
+      or #164), and which activation trigger should it use? May the Codex-generated Colossus
+      sprites ship, and under what provenance and licence notice? Approve or decline the
+      proposed 40 × 27 m combat outline as an exception to DEC-183, and confirm the asset budget.
+      Confirm the six reference attack behaviours or approve the current provisional move set
+      in `cathedralBossAbilities.ts`. The open tuning values are cast phase timings, range,
+      width, sweep angle, damage class, stun and pull, shield, time between specials, and the
+      boss's movement speed, acceleration, mass, basic attack reach and navigation footprint.
+
 - [ ] **Dependency audit (re-run 2026-11-20): approve one upgrade PR for the `eslint` family and
       `zod`, and say whether to turn on Dependabot alerts.** PR #113 already moved `vite` to 8.3.8
       and `vitest` to 5.1.0. `npm audit` on `phase/3-sprint-3-work` (`5a7cc8dc`) now reports 10

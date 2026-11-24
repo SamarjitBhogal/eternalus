@@ -36,6 +36,7 @@ type TeamAward = {
   readonly victimTeam: Team;
   readonly xp: number;
   readonly maxLevels?: number;
+  readonly flatLevels?: number;
 };
 
 /** One award waiting for this system's pass. */

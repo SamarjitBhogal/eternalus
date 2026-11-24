@@ -11,9 +11,11 @@ import {
   CATHEDRAL_BOSS_ABILITIES,
   CATHEDRAL_BOSS_CAST,
 } from '../content/mobs/cathedralBossAbilities';
+import { BOSS_CAST_LOCK } from '../content/status-effects/bossCastLock';
 import type { Entity } from '../entities/Entity';
 import { Unit } from '../entities/Unit';
 import type { GameState } from '../state/GameState';
+import type { GuardSlot } from '../state/GuardStore.types';
 import { atan2, cos, sin, sqrt } from '../utils/deterministicMath';
 import type { System, SystemContext } from './System.types';
 
@@ -34,6 +36,8 @@ export class CathedralBossSystem implements System {
       if (boss.definitionId !== CATHEDRAL_BOSS.id || boss.findComponent(Health)?.isDead !== false)
         return;
       const combat = boss.findComponent(Combat);
+      const arena = state.guards.slotOf(boss.id);
+      if (arena === undefined) return;
       const targetId = combat?.targetId;
       const existing = boss.findComponent(BossCombat);
       if (existing === undefined && targetId == null) return;
@@ -50,21 +54,32 @@ export class CathedralBossSystem implements System {
         targetId != null &&
         boss.findComponent(StatusEffects)?.has('cannot-cast') !== true
       ) {
-        this.begin(state, cycle, body, targetId);
+        this.begin(state, cycle, body, boss.id, targetId, arena);
       }
       if (cycle.cast !== null) this.advance(state, boss, cycle, body);
     });
   }
 
-  private begin(state: GameState, cycle: BossCombat, body: Transform, targetId: string): void {
+  private begin(
+    state: GameState,
+    cycle: BossCombat,
+    body: Transform,
+    bossId: string,
+    targetId: string,
+    arena: GuardSlot,
+  ): void {
     const target = state.entities.get(targetId);
     const aim = target?.findComponent(Transform)?.position;
     if (aim === undefined || target?.findComponent(Health)?.isDead !== false) return;
+    if (!CathedralBossSystem.isInArena(arena, aim)) return;
     const move = CATHEDRAL_BOSS_ABILITIES[cycle.nextMove] ?? CATHEDRAL_BOSS_ABILITIES[0];
     const dx = aim.x - body.position.x;
     const dy = aim.y - body.position.y;
-    const reach = move.range || CATHEDRAL_BOSS.attack.reach + body.radius;
-    if (dx * dx + dy * dy > reach * reach) return;
+    const isInRange =
+      move.range === 0
+        ? state.entities.isInReach(bossId, targetId)
+        : dx * dx + dy * dy <= move.range * move.range;
+    if (!isInRange) return;
     const fire = state.tick + this.ticks(state, move.charge);
     const recover = fire + this.ticks(state, move.active);
     const heading = atan2(dy, dx);
@@ -79,6 +94,7 @@ export class CathedralBossSystem implements System {
       range: move.range,
       width: move.width,
     };
+    this.statuses.apply(state, bossId, BOSS_CAST_LOCK.id, bossId);
   }
 
   private advance(state: GameState, boss: Entity, cycle: BossCombat, body: Transform): void {
@@ -87,6 +103,7 @@ export class CathedralBossSystem implements System {
     const move = CATHEDRAL_BOSS_ABILITIES[cycle.nextMove] ?? CATHEDRAL_BOSS_ABILITIES[0];
     const health = boss.getComponent(Health);
     if (state.tick >= cast.end) {
+      this.statuses.remove(state, boss.id, BOSS_CAST_LOCK.id);
       cycle.cast = null;
       cycle.hit.clear();
       cycle.nextMove = (cycle.nextMove + 1) % CATHEDRAL_BOSS_ABILITIES.length;
@@ -117,6 +134,8 @@ export class CathedralBossSystem implements System {
     move: (typeof CATHEDRAL_BOSS_ABILITIES)[number],
     angle: number,
   ): void {
+    const arena = state.guards.slotOf(boss.id);
+    if (arena === undefined) return;
     const team = state.entities.teamOf(boss.id);
     const x = cos(angle);
     const y = sin(angle);
@@ -128,6 +147,7 @@ export class CathedralBossSystem implements System {
       )
         return;
       const target = victim.getComponent(Transform);
+      if (!CathedralBossSystem.isInArena(arena, target.position)) return;
       const dx = target.position.x - body.position.x;
       const dy = target.position.y - body.position.y;
       const length = sqrt(dx * dx + dy * dy);
@@ -159,6 +179,12 @@ export class CathedralBossSystem implements System {
         }
       }
     });
+  }
+
+  private static isInArena(arena: GuardSlot, position: Transform['position']): boolean {
+    const dx = position.x - arena.homeX;
+    const dy = position.y - arena.homeY;
+    return dx * dx + dy * dy <= arena.leashRadius * arena.leashRadius;
   }
 
   private ticks(state: GameState, seconds: number): number {

@@ -7,7 +7,12 @@ import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import { WARRIOR } from '../content/legends/warrior';
 import { loadDefaultContent } from '../content/loadDefaultContent';
-import type { LevelCurveDefinition } from '../content/progression/progression.types';
+import type {
+  LevelCurveDefinition,
+  XpSourcesDefinition,
+} from '../content/progression/progression.types';
+import { XP_SOURCES as SHIPPED_XP_SOURCES } from '../content/progression/xpSources';
+import { LEGEND_LEVEL_CURVE } from '../content/progression/levelCurves';
 import { NullLogger } from '../diagnostics/NullLogger';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import type { Entity } from '../entities/Entity';
@@ -31,7 +36,7 @@ const XP_SOURCES = {
   teamKills: { 'capture-point-boss': { xp: 500, maxLevels: 2 } },
 };
 
-const setUp = () => {
+const setUp = (curves = CURVES, xpSources: XpSourcesDefinition = XP_SOURCES) => {
   const state = new GameState(CONFIG, 1);
   const factory = new EntityFactory(
     createDefaultEntityRegistry(),
@@ -46,8 +51,8 @@ const setUp = () => {
   };
   const system = new ProgressionSystem(state, {
     units: UNITS,
-    curves: CURVES,
-    xpSources: XP_SOURCES,
+    curves,
+    xpSources,
   });
   const kill = (killer: Entity | null, victim: Entity) => {
     state.events.emit('entity-died', {
@@ -74,6 +79,20 @@ const setUp = () => {
 };
 
 describe('ProgressionSystem', () => {
+  it('awards five levels to teammates at different levels for the Cathedral boss (DEC-237)', () => {
+    const { spawn, kill, run } = setUp(
+      new ContentCatalogue([LEGEND_LEVEL_CURVE]),
+      SHIPPED_XP_SOURCES,
+    );
+    const killer = spawn('warrior', 'warrior', 'light');
+    const ally = spawn('warrior', 'warrior', 'light').getComponent(Progression);
+    ally.addXp(ally.xpToReach(3, LEGEND_LEVEL_CURVE), LEGEND_LEVEL_CURVE);
+    kill(killer, spawn('heavy-mob', 'cathedral-boss', 'neutral'));
+    run();
+    expect(killer.getComponent(Progression).level).toBe(6);
+    expect(ally.level).toBe(8);
+  });
+
   it("gives the killer the mob's own xpValue in its pass, announcing the award", () => {
     const { spawn, kill, run, payloads } = setUp();
     const warrior = spawn('warrior', 'warrior', 'light');

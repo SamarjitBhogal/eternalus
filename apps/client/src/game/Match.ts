@@ -151,8 +151,8 @@ export class Match implements LoopTarget {
       snapshot: () => this.current,
     });
     camera.lookAt(this.playerEntity()?.transform ?? { x: map.width / 2, y: map.height / 2 });
-    this.unsubscribeBossSpawn = bridge.bus.on('spawn-boss', () => {
-      if (deps.remote === undefined) {
+    this.unsubscribeBossSpawn = bridge.bus.on('ui-intent', (intent) => {
+      if (deps.remote === undefined && intent.kind === 'dev-command') {
         simulation.enqueueCommand({ type: 'dev-spawn-boss', definitionId: 'cathedral-boss' });
       }
     });

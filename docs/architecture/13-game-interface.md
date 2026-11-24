@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-23
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -178,10 +178,6 @@ for a note and saves the error report (`match-crashed`, or `screen-crashed` outs
 never a blank page (DEC-106, DEC-124; ADR 0025 §5).
 
 ## 4. The developer menu
-
-The local development HUD provides **Spawn Boss**. The button queues a replayable command
-that advances the Eternal's pending Cathedral post to the current simulation tick. The guard
-spawner fills that post normally and the original schedule cannot duplicate the boss.
 
 `DeveloperMenu` (`ui/hud/`; Architect's Table is the proposed name) is enabled by the persisted
 `settings.developer.menuEnabled` flag or the `?dev=1` query flag, opened with the rebindable
@@ -580,6 +576,9 @@ difference is registered in
 [reference 15](../reference/game-design/15-figma-frames-and-creative-decisions.md).
 
 ## 10. Implementation status
+
+The local development HUD provides **Spawn Boss**. It queues a replayable command that
+advances the Eternal's pending Cathedral guard post to the current simulation tick.
 
 Built (Sprint 1, sessions D and F): the bridge (`bridge/`), the session shell and menu screens,
 and the keybinding and settings stack of §6: `keybindings.ts`, `BindingResolver`, `InputMapper`,

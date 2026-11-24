@@ -9887,12 +9887,3 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   timed out in 120000ms"). Rerun alone: "Tests 11 passed (11)". Then `npm run build` ("✓ built in
   4.49s") and `npm run docs:check` ("Documentation check passed.").
 - Next step: Aryan pushes `feat/bosses-p3` and asks the reviewers to re-review PR #91.
-
-### 2026-11-23 — Phase 3 / Cathedral boss merge resolution — feat/boss-design — Codex
-
-- What was done: resolved three conflicts with Phase 3 at `edf18533`, retaining both
-  boss XP entries and guard-plan imports and the newer abilities document review date.
-- Checks run: `npm run check` passed with 3,921 tests across core, protocol, client, and
-  server. The final output was "Checked 139 Markdown files under docs." and
-  "Documentation check passed."
-- Next step: commit the staged merge and push the branch to update PR #161.

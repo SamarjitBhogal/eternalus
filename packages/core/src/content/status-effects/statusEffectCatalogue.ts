@@ -1,6 +1,7 @@
 import { ContentCatalogue } from '../ContentCatalogue';
 import { BLEED } from './bleed';
 import { BLIND } from './blind';
+import { BOSS_CAST_LOCK } from './bossCastLock';
 import { CONCUSSION } from './concussion';
 import { CONTROL_IMMUNE } from './controlImmune';
 import { CRUSHED } from './crushed';
@@ -21,4 +22,5 @@ export const STATUS_EFFECTS = new ContentCatalogue<AuthoredStatusEffect>([
   CONTROL_IMMUNE,
   VETERAN,
   RALLIED,
+  BOSS_CAST_LOCK,
 ]);

@@ -36,6 +36,31 @@ const ZONE_TABLE = Object.fromEntries(
 );
 
 describe('Simulation capture point bosses', () => {
+  it('does not spawn a Cathedral boss in a Duel, even after its activation or a dev command', () => {
+    const seed = 1;
+    const cathedral = GUARD_PLANS['cathedral-capture-point'];
+    if (cathedral === undefined) throw new Error('missing Cathedral boss plan');
+    const simulation = new Simulation({
+      config: CONFIG,
+      seed,
+      logger: new MemoryLogger(),
+      map: new MapGenerator().generate(CONFIG, seed),
+      duel: { killTarget: 3 },
+      guardPlans: {
+        ...PLANS,
+        'cathedral-capture-point': {
+          ...cathedral,
+          activation: { at: 'countdown-end', delaySeconds: DELAY_SECONDS },
+        },
+      },
+    });
+    simulation.enqueueCommand({ type: 'dev-spawn-boss', definitionId: 'cathedral-boss' });
+    run(simulation, CONFIG.tickRate * 4);
+    expect(
+      simulation.snapshot().entities.some(({ definitionId }) => definitionId === 'cathedral-boss'),
+    ).toBe(false);
+  });
+
   it('brings forward the Cathedral boss once and replays the same state', () => {
     const seed = 1;
     const map = new MapGenerator().generate(CONFIG, seed);

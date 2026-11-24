@@ -17,7 +17,7 @@ import type { Award, ProgressionContent } from './ProgressionSystem.types';
  * while the victim is still in the store, and in its own pass gives the XP to the killer's
  * `Progression`. A destroyed structure (`structure-destroyed`) pays every Legend of the opposing
  * team (DEC-186), and a boss in `xpSources.teamKills` pays every Legend of its killer's playable
- * team instead of the killer, lifting none more than the reward's `maxLevels` (DEC-237); a Legend
+ * team instead of the killer, using capped XP or flat levels (DEC-237); a Legend
  * the cap leaves nothing to pay gets no award. Self-kills and ally kills pay nothing (O5). Each
  * level gained raises max health by the class's share of its base health (O3) and max aether,
  * heals and refills by the raise only while the Legend is alive (O4), and emits `level-up`.
@@ -59,8 +59,7 @@ export class ProgressionSystem implements System {
             team: killerTeam,
             victimId: entityId,
             victimTeam,
-            xp: teamKill.xp,
-            maxLevels: teamKill.maxLevels,
+            ...('flatLevels' in teamKill ? { xp: 0, flatLevels: teamKill.flatLevels } : teamKill),
           });
         }
         return;
@@ -119,16 +118,7 @@ export class ProgressionSystem implements System {
       return;
     }
     const curve = this.content.curves.get(progression.curveId);
-    const capped =
-      award.kind === 'kill' || award.maxLevels === undefined
-        ? award
-        : {
-            ...award,
-            xp: Math.min(
-              award.xp,
-              progression.xpToReach(progression.level + award.maxLevels, curve),
-            ),
-          };
+    const capped = { ...award, xp: this.xpForAward(progression, award, curve) };
     if (capped.kind === 'team-kill' && capped.xp <= 0) {
       return;
     }
@@ -140,6 +130,19 @@ export class ProgressionSystem implements System {
       }
       state.events.emit('level-up', { entityId: recipient.id, level: progression.level - step });
     }
+  }
+
+  private xpForAward(
+    progression: Progression,
+    award: Award,
+    curve: ReturnType<ProgressionContent['curves']['get']>,
+  ): number {
+    if (award.kind === 'kill') return award.xp;
+    if (award.flatLevels !== undefined) {
+      return progression.xpToReach(progression.level + award.flatLevels, curve);
+    }
+    if (award.maxLevels === undefined) return award.xp;
+    return Math.min(award.xp, progression.xpToReach(progression.level + award.maxLevels, curve));
   }
 
   /** The one caller of `addXp`; it always announces the award, so none can bypass the invariant. */
