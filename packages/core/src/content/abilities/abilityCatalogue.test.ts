@@ -102,7 +102,7 @@ describe('ABILITIES', () => {
     });
   });
 
-  it('gives Slam its area damage, knock-up and 2.0 structure multiplier (balancing.md:185, :123)', () => {
+  it('gives Slam its area damage, knock-up and 2.0 structure multiplier (balancing.md:187, :123)', () => {
     expect(ABILITIES.get('slam')).toMatchObject({
       classId: 'sentinel',
       cooldownSeconds: 16,
