@@ -6800,6 +6800,54 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   pre-commit `check:quick` passed. CI runs the full `npm run check` on the pushed head.
 - Next step: Sam's script merges #88, pushes this branch, waits for CI, then merges #87.
 
+### 2026-11-09 — Phase 3 / corner camp boss (interim), critic round 1 — feat/bosses-p3 — Aryan Walanj + Claude Code
+
+- What was done: the PM approved pulling the corner camp boss (FR-033, cut 4) into Phase 3 as an
+  **interim** version, which resolves critic F5. The boss is a `heavy-mob` (`corner-boss`) held
+  over the corner camp's ring by `GuardController`, respawned 5 minutes after it dies. It has no
+  `BossController` moves, no support units and no team-wide reward yet. Critic fixes: F1 stats
+  now come from `balancing.md` "Mini-boss and Greater Boss relative to Legends", MiniBoss row
+  (health 8,200, 205 per hit every 1.5 s, 500 XP; the XP goes through the ordinary kill path until
+  the team-wide reward lands); F4 doc 07 §6 table restored, the interim note moved to §13
+  "Implementation status", `last-reviewed` bumped; F6 the boss keeps the camp mob's target
+  priority order; F8 the corner camp plan activates at `match-start` (game doc "from the start");
+  F9 the test asserts every boss has a transform instead of a `NaN` fallback and an id filter;
+  F10 the aggro rule id is `corner-boss` (file `content/ai/aggro/cornerBoss.ts`), apart from the
+  planned `boss` controller kind.
+- Follow-up (left for later): **F7** the leash (21.5 m), acquisition radius (26 m) and the test's
+  `45 / 2` derive from the client's drawn ring size (`MapView.constants.ts`); put the camp's zone
+  radius in core content and derive them from it. **B1** `leashRadius` lives in both the aggro rule
+  and the guard plan (as for camp mobs); give each leash one home. **B2** store boss stats as
+  multiples of `refHealth(level)` as `balancing.md` recommends, instead of absolute numbers. B1 and
+  B2 are better-than-design items awaiting sign-off.
+- Critic round 2: FAIL with one blocker, now fixed. N1: a stray line had replaced the blank line
+  under doc 07's `## 6. Spawners` and failed Prettier; it is removed, so doc 07's diff against the
+  base is only the `last-reviewed` bump and the "Implementation status" note. N2: this line is
+  refreshed with the run below. N3 (acceptable, for the PR): `balancing.md` has no corner-camp
+  stat row, so the corner boss borrows the MiniBoss (outer lanes) row, which describes the
+  capture-point mini-boss.
+- ponytail: 1 should-fix applied (test now covers match-start), net 0 lines. The corner boss
+  scenario test runs with `countdownSeconds: 10`, so it checks the bosses while the countdown is
+  still running; with the plan set back to `countdown-end` both seeds fail.
+- Checks run: `npm run check` on the post-ponytail tree → exit 0: "All matched files use
+  Prettier code style!"; core "Tests 1081 passed (1081)"; client "Tests 1754 passed (1754)";
+  "✓ built in 2.85s"; "Documentation check passed." This line was filled in after that run
+  (docs-only).
+- Next step: PR into phase/3-sprint-3-work.
+
+### 2026-11-09 — Phase 3 / corner camp boss (interim), PR #91 follow-ups — feat/bosses-p3 — Aryan Walanj + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` into this branch (a merge, no force push).
+  Doc 07 kept the newer `last-reviewed` (2026-11-09) and both "Implementation status" notes
+  (capture points, then the corner boss); this file kept every entry from both sides. Answered
+  CodeRabbit on `Simulation.mapObjects.test.ts`: the corner boss test now counts the bosses inside
+  each corner camp's ring and expects exactly one per camp, so two bosses in one camp and none in
+  another fails.
+- Checks run: `npm run check` → exit 0: "All matched files use Prettier code style!"; core
+  "Tests 1304 passed (1304)"; client "Tests 1800 passed (1800)"; "✓ built in 4.06s";
+  "Documentation check passed."
+- Next step: push and re-request review on PR #91.
+
 ### 2026-11-09 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / phase/3 merge (#87) — feat/match-scoring — sholtzman + Claude Code
 
 - What: merged `phase/3-sprint-3-work` (`86b4fc04`, PR #87: one `INBOX.md` item and its PROGRESS
@@ -8017,6 +8065,37 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: `npm run check` → `EXIT=0` (Node 24.21.0).
 - Next step: squash-merge #52 into phase/3.
 
+### 2026-11-12 — Phase 3 / corner camp boss (interim), PR #91 review (Sam) — feat/bosses-p3 — Aryan Walanj + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` (`3dc9e908`) into this branch; only this
+  file conflicted (both sides' entries kept); `structureCatalogue.ts` and doc 07 merged cleanly.
+  Answered Sam's review of PR #91 where it does not wait on another PR:
+  - "PM-approved" wording replaced by DEC-236 citations (`mobs/cornerBoss.ts`, `guardPlans.ts`,
+    doc 07); the 300 s respawn cites DEC-12. The DEC-236 row is added (2026-11-13) to the
+    decisions log in a new top batch, "Batch 2026-11-10 (PR #91 review: corner camps)", with
+    Sam's words, laid out like PR #99's "PR #91 review: boss kill rewards" batch. DEC-237 is not
+    added here (PR #99 adds it).
+  - B5: new `Simulation.cornerBoss.test.ts` on a taller two-lane map with one corner camp away
+    from the lanes: an enemy Legend 15 m inside the ring loses health within 10 s; a Legend just
+    past the leash (leash + camp footprint + 1 m) is not chased (the boss stays within 1 m of its
+    post for 10 s and the Legend keeps full health); removing the boss fires `camp-cleared` once
+    with the camp's id and the boss is back 300 s later, not one tick sooner. Each test was broken
+    once and failed: aggro `acquisitionRadius` 26 → 5 (attack test), `GuardController` leash
+    check + 100 m (leash test), `respawnSeconds` 300 → 299 and the `camp-cleared` emit removed
+    (respawn test); all restored. The team-reward test waits for B2 (#99).
+  - S4: dated implementation status notes citing DEC-236 in docs 11 (§10) and 18; the sprint 3.6
+    "Bosses" list in `phase-3-minions-hordes-and-ai.md` gains "Corner boss into the `Boss` family".
+  - S2: doc 07's note lists the MiniBoss row's 5%/s regeneration and 25% minion damage cut as not
+    built. S2/S3/nit: one `INBOX.md` item for Sam with the new `TUNE` values (footprint, reach,
+    speed, acceleration, mass, vision), the "Corner Camp Boss" display name, and the PR body's B2 (`refHealth` multiples) and N4.
+  - Nit: forest and corner camps spread one `CAMP_BODY` in `structureCatalogue.ts`.
+- Waiting on #99 and #85 (not done): Sam's B2 team-wide XP capped at 2 levels (DEC-237, #99) and its
+  test; B3 the aggro rule as `GuardAggroRuleDefinition` with `GUARD_LEASH` (#85); B4 the corner
+  camp radius in core content (after #85's `GUARD_LEASH`); S5 the tolerance comments (after #85's
+  5.5 m tolerance). S1 (acquisition from the real post) goes with B4.
+- Checks run: the critic ran `npm run check` on `5c2fda3e` → `EXIT 0` ("Documentation check passed."). The final run on the post-ponytail tree (the test edits after `5c2fda3e`) was stopped by Claude Code for low system memory, so it has no result yet; the three corner boss tests pass, and eslint and Prettier pass on the changed files.
+- Next step: Aryan pushes and re-requests review; then B2–B5 leftovers once #85 and #99 merge.
+
 ### 2026-11-10 — Phase 3 / sprint 3.1 — feat/duel-server — claudiodh + Claude Code
 
 - What was done: the online 1v1 Duel along ADR 0016 (draft; built ahead of acceptance by
@@ -8054,6 +8133,12 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - What was done: merged `phase/3-sprint-3-work` (3dc9e908, after #51 and #52) into this branch because #97 was CONFLICTING. Only `docs/plan/PROGRESS.md` conflicted; both sides' entries are kept. No feature code changed. No force push.
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 1336 passed (1336)"; protocol "Tests 18 passed (18)"; server "Tests 79 passed (79)"; client "Tests 1883 passed (1883)"; "Documentation check passed."
 - Next step: reviewer approval; the team merges.
+
+### 2026-11-13 — Phase 3 — fix/session-e2e-test-isolation — Claude Code
+
+- What was done: fixed a test-order dependency in `apps/client/src/game/SessionController.endToEnd.test.ts`. The "tick throws" test spies on `Simulation.prototype.step`; the config's `restoreMocks` does not undo it, so when it ran before "screen crashed" every tick threw, the match ended as `match-crashed` first, and the screen-crash intent then reported `screen-crashed`. Fix: `afterEach(() => vi.restoreAllMocks())` in that describe. No assertion changed; no production code changed.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1321 passed (1321)"; client "Tests 1818 passed (1818)"; "Documentation check passed."; the file passes alone (3 runs) and in the suite.
+- Next step: review; the team merges.
 
 ### 2026-11-12 — Phase 3 / combat sprint: bound key actions, part 1 (BUG-5 / SCRUM-438) — fix/bound-key-actions — Claude Code
 
@@ -8093,6 +8178,15 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Audit (`npm audit --json`, phase/3 at `9e2516cf`): before 16 findings (13 moderate, 3 high, none critical); after 11 (10 moderate, 1 high, none critical). Cleared: `vite` (high), `source-map-js` (high), `vitest`, `@vitest/mocker` and `@vitest/coverage-v8` (moderate). Remaining: `zod` (high, transitive through tooling) and the `eslint` / `typescript-eslint` / `minimatch` family (moderate).
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 1336 passed (1336)"; protocol "Tests 18 passed (18)"; client "Tests 1883 passed (1883)"; server "Tests 79 passed (79)"; "Documentation check passed."
 - Next step: reviewers approve and merge; the eslint family and `zod` stay open in `INBOX.md`.
+
+### 2026-11-13 — Phase 3 — docs/inbox-audit-and-bugs — Claude Code
+
+- What was done: added three items at the top of "Decisions needed from Sam" in `INBOX.md`: the
+  dependency audit (17 findings: 14 moderate, 3 high, none critical; Dependabot alerts unreadable),
+  BUG-2 (SCRUM-435, interior walls at 2,000 HP) and BUG-3 (SCRUM-436, minions and obstacles, a
+  design change request against DEC-193). Docs only; no code changed.
+- Checks run: `npm run docs:check`, `npm run format:check`, then `npm run check` → `EXIT=0`: core "Tests 1321 passed (1321)"; client "Tests 1818 passed (1818)"; "✓ built in 523ms"; "Documentation check passed."
+- Next step: Sam answers inline; the agent schedules the upgrade PR and the BUG-2/BUG-3 changes.
 
 ### 2026-11-06 — Phase 3 / minion plan MVP gaps — docs/minion-plan-mvp-gaps — SamarjitBhogal + Claude Code
 
@@ -8178,6 +8272,29 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Next step: push; PR against `phase/3-sprint-3-work` (head `76d1007d`). When it merges and #98
   takes phase/3, #98 drops its 24000 and renames its callers of
   `pathMaxExpansions`/`maxExpansions`.
+
+### 2026-11-13 — Phase 3 / corner camp boss (interim), PR #91 re-review (claudiodh) — feat/bosses-p3 — Aryan Walanj + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` (`76d1007d`); only this file conflicted,
+  both sides kept. B4 + S1: the corner camp's ring is core content, `CORNER_CAMP_RING`
+  (`content/structures/cornerCampRing.ts`, after `capturePointCourt.ts` on
+  `feat/capture-point-boss`): radius 22.5 m (the 45 m ring the client drew); the guard plan's
+  leash (21.5 m) and post gap, the aggro rule's acquisition and leash radius and the boss's vision
+  derive from it. Acquisition and vision go 26 → 25.5 m (ring + the post's 3 m off the centre,
+  no longer rounded up). Core exports `CORNER_CAMP_RING` (public API change); `Match` injects the
+  ring size into `MapView` (`featureSizes`), since views only `import type` from core;
+  `Simulation.mapObjects.test.ts` reads the same value. S-1: the leash test asserts the intruder
+  stands inside the boss's acquisition radius from its post. Doc 07's note updated.
+- Not done here: B2 (team XP, DEC-237) waits for #99 to merge first and then uses its
+  `XP_SOURCES.teamKills`; B3 (#85 types) left as is.
+- Note: the merged lockfile lacks the client's `@eternalus/protocol` entry (`npm install` adds it);
+  left untouched here for upstream to fix.
+- Pre-PR gate: the architecture-reviewer critic approved (no blockers); its better-than-design
+  item (the ring radius on the map feature instead of an export plus `featureSizes`; one shared
+  camp post gap) is in `INBOX.md`. Ponytail review: ship, no cuts.
+- Checks run: `npm run check:quick` passed on the merge; the touched core tests (6 files, 28 tests)
+  and client tests (`MapView`, `Match`: 27 tests) pass. `npm run check` not run (Aryan runs it).
+- Next step: Aryan runs `npm run check`, pushes and re-requests review; B2 after #99.
 
 ### 2026-11-09 — Phase 3 / bug tracker — docs/bug-tracker — SamarjitBhogal + Claude Code
 
@@ -8675,6 +8792,12 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   (`eternalus-agent-work/tower-ruins-and-routes/ci-timeout-check-merge-fcc48a7b.log`).
 - Next step: a PR into `phase/3-sprint-3-work`.
 
+### 2026-11-15 — Phase 3 / sync — fix/session-e2e-test-isolation (PR #111) — claudiodh + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (80e0ea13) into this branch because #111 was CONFLICTING. Conflict: `PROGRESS.md` (both sides kept).
+- Checks run: `npm run check` → `EXIT=0`.
+- Next step: reviewer approval; the team merges.
+
 ### 2026-11-12 — Phase 3 / online Duel — feat/duel-rules (stacked on #97) — claudiodh + Claude Code
 
 - What was done: the Duel rules and the organic start flow. Core: `SimulationOptions.duel` (kept in the replay setup), both Legends start in the Cathedral, `DuelRoundSystem` counts a kill and resets both Legends to their start points at full health, `KillCountCondition` ends the match at 10 (`DUEL_RULES`, `// TUNE:`), score in `Snapshot.match.duel`. Protocol: `queue-join` carries a validated `name`, `match-found` carries `opponentName`. Server: the queue keeps names, the match waits 4 s for the VERSUS screen, the countdown is 3 s. Client: name entry screen, VERSUS screen, countdown 3, 2, 1, START and a "3 - 1 (first to 10)" scoreboard on the HUD (`duel-state`); results reuse the existing screen.
@@ -8686,6 +8809,19 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 
 - What was done: merged `feat/duel-server` into this branch (its base, updated after the sync with `phase/3-sprint-3-work` 3dc9e908) because #102 was CONFLICTING. Only the append-only logs conflicted; both sides' entries are kept. No feature code changed. No force push.
 - Checks run: `npm run check` → `EXIT=0`: Tests 1356 passed (1356);Tests 29 passed (29);Tests 1909 passed (1909);Tests 82 passed (82); "Documentation check passed."
+
+- Next step: reviewer approval; the team merges in stack order.
+
+### 2026-11-12 — Phase 3 / online Duel — feat/mm-queue-load (SCRUM-432, stacked on #102) — claudiodh + Claude Code
+
+- What was done: matchmaking tests and a queue-load mode for the bots. Tests: double join, join right after leave, leave by a non-queued player, disconnect while queued, forfeit by disconnect, disconnect right before or after a pairing, an even crowd paired once each (`DuelQueue`, `DuelGateway`, `DuelHost`). Bug fixed: a seat that closes while `match-found` is being sent ended the match, but `DuelMatch.start` then still sent to the other seat and scheduled a tick task that never stopped (test in `DuelHost.test.ts` failed before). Bots: `--mode queue --rounds N` (`QueueLoadRun`, `QueueLoadBot`, `QueueLoadChecks`, `QueueLoadSummary`, `percentile`); `OPS_PORT` makes the health port configurable. Numbers are in the capacity note of `multiplayer-and-scalability-plan.md` section 7: 300 bots x 5 rounds, 750 matches, 0 lost, 0 duplicated, time to match p50 about 250 ms, p99 about 5 s; one process starts about 8 Duels per second (map generation); 400 bots hit the 500 connection cap.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1340 passed (1340)"; protocol "Tests 29 passed (29)"; client "Tests 1909 passed (1909)"; server "Tests 111 passed (111)"; "Documentation check passed."
+- Next step: decide whether Duel creation moves off the main thread or is pre-built (INBOX candidate, owner's call); MP-5 adds ticking matches to the load.
+
+### 2026-11-13 — Phase 3 / sync — feat/mm-queue-load (PR #103) — claudiodh + Claude Code
+
+- What was done: merged `feat/duel-rules` into this branch (its base, updated after the sync with `phase/3-sprint-3-work` 3dc9e908) because #103 was CONFLICTING. Only the append-only logs conflicted; both sides' entries are kept. No feature code changed. No force push.
+- Checks run: `npm run check` → `EXIT=0`: Tests 1356 passed (1356);Tests 29 passed (29);Tests 1909 passed (1909);Tests 111 passed (111); "Documentation check passed."
 - Next step: reviewer approval; the team merges in stack order.
 
 ### 2026-11-13 — Phase 3 / online Duel — feat/duel-rules (Copilot review fix) — claudiodh + Claude Code
@@ -8699,6 +8835,12 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 
 - What was done: merged `origin/phase/3-sprint-3-work` (796131ff) into this branch because #102 was CONFLICTING. Append-only logs keep both sides. Code conflicts: the bridge now has `match-ended`/`duel-ended` (one `MatchEnding`, no team) so the Duel's old `match-result` and `DuelResult.team` are dropped; the Duel's names and scoreboard stay as `versus` and `duelHud` in `matchSlice` (the phase branch's `duel` field is the ending). `StateHasher`, `MatchRecord`, `Simulation` and `DefaultSystemPipeline` take both sides. `kill-count` gets verdict lines (a test requires one per condition). `CoreDuelSimulation.test.ts` walks to the dark Legend and stops, because out-of-combat healing now refills a target the attacker walks away from. No force push.
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 1602 passed (1602)"; protocol "Tests 29 passed (29)"; client "Tests 2005 passed (2005)"; server "Tests 84 passed (84)"; "Documentation check passed."
+- Next step: reviewer approval; the team merges in stack order.
+
+### 2026-11-15 — Phase 3 / sync — feat/mm-queue-load (PR #103) — claudiodh + Claude Code
+
+- What was done: merged `feat/duel-rules` (50f26d06, now synced with `phase/3-sprint-3-work`) into this branch. Only `INBOX.md` conflicted; both sides' items are kept. No feature code changed. No force push.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1602 passed (1602)"; protocol "Tests 29 passed (29)"; client "Tests 2005 passed (2005)"; server "Tests 113 passed (113)"; "Documentation check passed."
 - Next step: reviewer approval; the team merges in stack order.
 
 ### 2026-11-15 — Phase 3 / sync — chore/deps-vite-vitest (PR #113) — claudiodh + Claude Code
@@ -9043,6 +9185,77 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Next step: the owner runs the push script, then the merge script. It merges #126, #121, #120
   and #119 into phase/3 in that order with merge commits, each only with green CI, and stops if
   another PR merges into phase/3 in between.
+
+### 2026-11-17 — Phase 3 / corner camp boss (interim), PR #91 reviews (swholtzman, claudiodh, SamarjitBhogal) — feat/bosses-p3 — Aryan Walanj + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` (`af54fe96`, with #85 and #99) onto the
+  local 2026-11-13 commit `3031f88d` (B4, S1, S-1, never pushed). Code resolved onto phase/3's
+  shapes: `structureCatalogue.ts` keeps phase/3's literal rows plus a `corner-camp` row; the
+  aggro and mob catalogues keep both sides. Docs, `INBOX.md`, this file and the decisions log
+  keep both sides; DEC-236 and DEC-237 rows appear once each. B3: `CORNER_BOSS_AGGRO` is a
+  `GuardAggroRuleDefinition`, `{ ...CAMP_MOB_AGGRO, id: 'corner-boss', acquisitionRadius }`; the
+  `corner-camp` plan uses activation `{ at: 'match-start' }` and respawn
+  `{ kind: 'group', seconds: 300 }` (DEC-12; `group`, not the brief's `each`, because only
+  `group` emits `camp-cleared` and with one boss both respawn at the same tick). Leash tolerance
+  stays 7 m: DEC-181's sum for this boss is about 6.08 m, above the 5.5 m; the comment is fixed
+  and `INBOX.md` asks the owner. `corner-boss` joins the AI56-F4 boss exemption as #99's boss
+  did. The DEC-181 test no longer counts a neutral home's mobs as targets of a neutral guard
+  (neutral units are allies); without that, the 1.5 m corner boss pushed the capture point
+  boss's sum to 5.69 m. B2: `xpValue: 0` and a `corner-boss` row in `XP_SOURCES.teamKills`,
+  `{ xp: 500, maxLevels: 2 }` (DEC-237); `Simulation.cornerBoss.test.ts` kills the boss for real and checks
+  every light Legend is paid and ends at level 3, the dark Legend gets nothing, `camp-cleared`
+  fires once, and the boss returns to its post 300 s later. B4/S1: `cornerCampRing.ts` reads
+  `GUARD_LEASH.postGap`. Docs 05 and 07 updated.
+- Break once: (1) `teamKills` `maxLevels` 3 → the real-kill test fails (levels 4, expected 3);
+  it first passed because it read the cap from the same content, so it now pins DEC-237's 2.
+  (2) corner `leashTolerance` 6 → the DEC-181 test fails for `corner-boss`. (3) `corner-boss`
+  out of `BOSS_MOBS` → AI56-F4 fails (25.5 vs 19.5). (4) the leash 5 m longer → S-1 fails.
+  (5) acquisition 1 m short → `cornerCampRing.test.ts` fails. (6) the ring's `radius` 2 →
+  `Simulation.mapObjects` fails (0 bosses per camp); a 3 m `RADIUS` broke every map test via
+  map-object overlap, so this break moves only the radius. (7) `MapView` ignoring
+  `featureSizes` → its ring test fails. Each was restored.
+- Pre-PR gate: critic (`architecture-reviewer`) PASS, no blockers; its two should-fix items (the
+  tolerance comment's target size, the 7 m tolerance in `INBOX.md`) and two nits (import order,
+  doc 05 wrap) applied; better-than-design items (ring radius on the map feature, already in
+  `INBOX.md`; read a home's team instead of guessing neutrality in `guardPlans.test.ts`) left for
+  sign-off. Ponytail review: ship; one cut applied (`POST_REACH` inlined).
+- Checks run: `npm run check` (2026-11-17) → exit 0: "All matched files use Prettier code
+  style!"; core "Test Files 269 passed (269)", "Tests 1645 passed (1645)"; protocol "Tests 29
+  passed (29)"; client "Test Files 298 passed (298)", "Tests 2015 passed (2015)"; server "Test
+  Files 21 passed (21)", "Tests 84 passed (84)"; "✓ built in 3.14s"; "Documentation check
+  passed." This entry was added after that run (docs only).
+- Next step: push `feat/bosses-p3`, update the PR #91 body, re-request review.
+
+### 2026-11-19 — Phase 3 / corner camp boss (interim), PR #91 B6 (SamarjitBhogal) — feat/bosses-p3 — Aryan Walanj + Claude Code
+
+- What was done: B6, the corner boss now sees its whole ring. On a generated map the camp's own
+  objects push the boss's post away from the camp, so the old acquisition radius (ring radius +
+  camp footprint + post gap, 25.5 m) missed an intruder inside the ring on the far side.
+  `CORNER_CAMP_RING.acquisitionRadius` is now the ring's diameter (`2 * RADIUS`, 45 m);
+  `GuardController` still only takes targets inside the leash from home, so the boss ignores
+  everyone outside the ring. New `Simulation.cornerBossRing.test.ts` puts an enemy Legend inside
+  the ring straight across the camp from the post on a generated map and checks the boss leaves
+  its post; `cornerCampRing.test.ts` pins the diameter. `Match.test.ts` checks every corner
+  camp's ring is drawn at `2 × CORNER_CAMP_RING.radius` (S1). `structureCatalogue.ts` shares one
+  `CAMP_BODY` across the forest and corner camp rows. Docs 07, the phase 3 plan's sprint 3.6
+  boss item (the gap: `leashed-chase` steers straight and stops on the camp's objects) and
+  `INBOX.md` (45 m vision) updated.
+- Checks run: `npm run check` (2026-11-19, run by the human) → exit 1 only on two timeouts in
+  files this change does not touch: core "Tests 2 failed | 1644 passed (1646)",
+  `Simulation.duel.test.ts` "Test timed out in 60000ms" and `Simulation.flowFields.test.ts`
+  "Test timed out in 120000ms"; client "Tests 2016 passed (2016)"; server "Tests 84 passed
+  (84)". Both files then passed alone: "Test Files 2 passed (2)", "Tests 11 passed (11)". Not
+  re-run; CI runs it on push.
+- Next step: watch CI on `feat/bosses-p3`, post the B6 reply to Sam, update the PR #91 body.
+
+### 2026-11-19 — Phase 3 / merge phase/3 (#119, #120, #121, #126) into feat/bosses-p3 — feat/bosses-p3 — Aryan Walanj + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` (`d85bc2f5`) into `feat/bosses-p3`. Only
+  `INBOX.md`, this file and the owner decisions log conflicted; both sides kept (phase/3's first,
+  then this branch's), decision batches newest first, every DEC row once.
+- Checks run: `npx prettier --write` on the three files; `npm run docs:check`. npm run check:
+  pending, run by Aryan.
+- Next step: Aryan runs `npm run check`, then pushes.
 
 ### 2026-11-12 — Phase 3 / minion follow-ups: content durations become ticks at load (DEC-241) — refactor/durations-at-load — sholtzman + Claude Code
 
@@ -9706,3 +9919,86 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   "Documentation check passed."; `eternalus-agent-work/scoring-at-load/check-4.log`); then `prettier --check` and
   `npm run docs:check` on this file.
 - Next step: the owner pushes the merge (coordinator checks the script); #139 merges.
+
+### 2026-11-15 — Phase 3 / sync — docs/inbox-audit-and-bugs (PR #110) — claudiodh + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (80e0ea13) into this branch because #110 was CONFLICTING. Conflicts: `INBOX.md` and `PROGRESS.md` (both sides kept).
+- Checks run: `npm run check` → `EXIT=0`.
+- Next step: reviewer approval; the team merges.
+
+### 2026-11-20 — Phase 3 / review fixes — docs/inbox-audit-and-bugs (PR #110) — claudiodh + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (`5a7cc8dc`) into this branch (conflict:
+  `INBOX.md`, both sides kept), then fixed the 2026-11-19 review. Corrects the 2026-11-13 entry of
+  this branch: BUG-2 and BUG-3 were already answered (DEC-247, DEC-248), so both open items are
+  dropped and their file pointers moved under the ticked BUG-2 and BUG-3 items. The dependency
+  audit item is rewritten to a fresh `npm audit`: 10 findings (9 moderate, 1 high), `zod` and the
+  `eslint` / `typescript-eslint` / `minimatch` family; vite and vitest were fixed by #113.
+- Checks run: `npm audit` → `10 vulnerabilities (9 moderate, 1 high)`; `npm run check` → `EXIT=0`.
+- Next step: Sam answers the dependency item (upgrade PR, Dependabot alerts); BUG-2 and BUG-3
+  are built from DEC-247 and DEC-248 when a plan item schedules them (`docs/plan/bugs.md`).
+
+### 2026-11-20 — Phase 3 / corner camp boss (interim), PR #91 round 3 (SamarjitBhogal) and DEC-296 — feat/bosses-p3 — Aryan + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` (with #125) into `feat/bosses-p3`;
+  conflicts in the decisions log (batch 2026-11-11 above batch 2026-11-10 corner camps) and in
+  this file (both entries kept). M1: `content/ai/aggro/cornerBoss.ts` satisfies
+  `AuthoredGuardAggroRule`, as #125 did for the other aggro rules (needed for the merge to
+  typecheck). DEC-296 (the owner's sign-off in Sam's two PR comments of 2026-11-20) recorded in the
+  decisions log and cited in place of the `TUNE` marks in `content/mobs/cornerBoss.ts`, the corner
+  camp `leashTolerance` 7 in `content/structures/guardPlans.ts` and the ring radius in
+  `content/structures/cornerCampRing.ts`; three `INBOX.md` items answered. The boss's mass (12)
+  keeps its `TUNE`: DEC-296 says it follows the HC-S12 (d) answer, and phase/3 has no row for it
+  yet (DEC-284 answers it on `feat/ability-framework`).
+- Follow-ups: B2 and N4 (health and damage as `refHealth` multiples, one shared MiniBoss row) go
+  in the HC-B12 PR; the ring radius moves to a `MapFeatureDefinition` field in a follow-up PR;
+  the mass follows HC-S12 (d) once its row reaches phase/3.
+- Checks run: `npm run check:quick` (pre-commit hook); `npx prettier --write` on the changed
+  files. npm run check: pending, run by Aryan.
+- Next step: Aryan runs `npm run check`, then pushes.
+
+### 2026-11-20 — Phase 3 / corner camp boss, PR #91 phase merge (#140) — feat/bosses-p3 — Aryan + Claude Code
+
+- What was done: re-read every PR #91 review. All items are addressed at this head except the
+  boss's mass, which keeps its `TUNE` (DEC-296: it follows the HC-S12 (d) row, not yet on
+  phase/3; Aryan's call to leave it). Merged `origin/phase/3-sprint-3-work` (#140, DEC-289) into
+  `feat/bosses-p3`. Conflicts in docs only, both sides kept: the decisions log (both
+  2026-11-20 batches, `last-reviewed` 2026-11-20) and this file (both entries).
+- Checks run: `npm run check` on the merged tree: format, no-js, lint, typecheck and knip passed;
+  tests stopped on 4 timeouts while a second lint run loaded the machine (core
+  "Tests 3 failed | 1680 passed (1683)": `replay.test.ts`, `Simulation.duel.test.ts`,
+  `Simulation.flowFields.test.ts`; client "Tests 1 failed | 2012 passed (2013)":
+  `createBrowserMatch.replay.test.ts`; protocol "Tests 29 passed (29)"). Rerun alone: core
+  "Tests 17 passed (17)", client "Tests 1 passed (1)". Then `npm run build` ("✓ built in
+  4.86s") and `npm run docs:check` ("Documentation check passed.").
+- Next step: Aryan pushes `feat/bosses-p3`; the mass follows HC-S12 (d) once its row reaches phase/3.
+
+### 2026-11-21 — Phase 3 / corner camp boss, PR #91 phase merge (#138, #143) — feat/bosses-p3 — Aryan + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` at `2a5058f7` (#138, the match-start
+  countdown; #143, its HUD units) into `feat/bosses-p3`. Conflicts in docs only, both sides kept:
+  the decisions log (phase/3's newer batches above the DEC-296 batch; no DEC id repeated) and this
+  file (both entries, in append order). The code merged cleanly; the corner camp keeps
+  `activation: { at: 'match-start' }`, so DEC-282's countdown-end change does not touch it.
+- Checks run: `npm run check` on the merged tree: format, no-js, lint, typecheck and knip passed;
+  protocol "Tests 29 passed (29)", client "Tests 2079 passed (2079)", server "Tests 84 passed
+  (84)"; core "Tests 2 failed | 1686 passed (1688)", two timeouts in files this branch does not
+  touch (`Simulation.duel.test.ts` "Test timed out in 60000ms", `Simulation.flowFields.test.ts`
+  "Test timed out in 120000ms"). Rerun alone: "Tests 11 passed (11)". Then `npm run build`
+  ("✓ built in 4.16s") and `npm run docs:check` ("Documentation check passed.").
+- Next step: Aryan pushes `feat/bosses-p3`, then asks the three reviewers to re-review PR #91.
+
+### 2026-11-22 — Phase 3 / corner camp boss, PR #91 phase merge (#135) and round 5 — feat/bosses-p3 — Aryan + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` at `54615afa` (#135, the changed-file
+  stop hook) into `feat/bosses-p3`; one conflict, in this file only, both sides kept. Round 5
+  (swholtzman): B1, the corner boss's mass is 6, the Sentinel's (DEC-296 (1), HC-S12 (d) as
+  DEC-284 (3) records it), and `INBOX.md` notes the capture point boss follows in DEC-284 (3)'s
+  PR; nit, the DEC-296 batch intro names the owner's account.
+- Checks run: `npm run check` on the merged tree: format, no-js, lint, typecheck and knip passed;
+  protocol "Tests 29 passed (29)", client "Tests 2079 passed (2079)", server "Tests 84 passed
+  (84)"; core "Tests 2 failed | 1686 passed (1688)", the same two timeouts as on 2026-11-21
+  (`Simulation.duel.test.ts` "Test timed out in 60000ms", `Simulation.flowFields.test.ts` "Test
+  timed out in 120000ms"). Rerun alone: "Tests 11 passed (11)". Then `npm run build` ("✓ built in
+  4.49s") and `npm run docs:check` ("Documentation check passed.").
+- Next step: Aryan pushes `feat/bosses-p3` and asks the reviewers to re-review PR #91.
