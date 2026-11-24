@@ -133,7 +133,7 @@ describe('LegendView', () => {
         ],
       },
       {
-        op: 'strokePath',
+        op: 'strokePath', // DEC-192: Legends show their facing with a chevron.
         args: [expect.any(Array), FACING_CHEVRON.color, FACING_CHEVRON.lineWidth],
       },
       {

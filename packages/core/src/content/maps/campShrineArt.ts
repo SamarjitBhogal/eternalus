@@ -1,5 +1,20 @@
 /** Authored stand-in silhouette coordinates and bounds (DEC-238). */
 export const CAMP_SHRINE_GEOMETRY = {
+  stairCount: 4,
+  altarCarvingOffsets: [-7, 0, 7],
+  fallenStoneCount: 14,
+  fallenStonePosition: (index: number) => ({
+    x: (index % 2 === 0 ? -1 : 1) * (23 + (index % 5) * 2),
+    y: 3 + (index % 7) * 2.4,
+  }),
+  fallenStoneHighlightPeriod: 3,
+  fleckCount: 3,
+  fleckBand: (sample: number) => 0.15 + (sample % 70) / 100,
+  fleckYShift: 8,
+  stairBlockCount: 6,
+  stairBlockOffset: (halfWidth: number, block: number) =>
+    -halfWidth + 4 + (block * (halfWidth * 2 - 8)) / 6,
+  pillarCourseCount: 5,
   shadowBounds: [2, 17, 35, 13] as const,
   altarFootBounds: [0, 1, 12, 4] as const,
   altarFaceBounds: [-10, -5, 20, 6] as const,

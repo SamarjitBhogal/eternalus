@@ -4,16 +4,16 @@ description: One entry per phase (and per large change) recording exactly what w
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-25
+last-reviewed: 2026-11-19
 tags: [changelog, process]
-related: ['docs/process/sdlc.md', 'docs/plan/PROGRESS.md']
+related: ['docs/process/sdlc.md', 'docs/plan/progress/README.md']
 ---
 
 # Changelog index
 
 **Purpose.** Read this to find the record of what changed in the repository and why. Entries
 are written by whoever makes the change (human or agent) and are part of the Definition of
-Done for a phase (`docs/process/sdlc.md` §2). `docs/plan/PROGRESS.md` is the day-to-day log;
+Done for a phase (`docs/process/sdlc.md` §2). `docs/plan/progress/` is the day-to-day log (one file per entry);
 this folder is the curated, per-change explanation.
 
 ## Format
@@ -36,5 +36,5 @@ in `docs/reviews/`.
 ## Related
 
 - [`../process/sdlc.md`](../process/sdlc.md)
-- [`../plan/PROGRESS.md`](../plan/PROGRESS.md)
+- [`../plan/progress/`](../plan/progress/README.md)
 - [`../reviews/2026-09-30-scaffold-review.md`](../reviews/2026-09-30-scaffold-review.md)

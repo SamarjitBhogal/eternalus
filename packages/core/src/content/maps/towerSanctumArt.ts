@@ -1,5 +1,15 @@
 /** Authored stand-in silhouette coordinates and bounds (DEC-238). */
 export const TOWER_SANCTUM_GEOMETRY = {
+  stairCount: 4,
+  stairWidth: (step: number) => 21 + step * 3,
+  featherCount: 5,
+  featherPosition: (side: number, feather: number) => ({
+    x: side * (8 + feather * 3.3),
+    y: -9 - feather * 2.2,
+  }),
+  pillarSideOffset: 26,
+  pillarCapitalHeights: [-34, 2],
+  pillarCourseCount: 5,
   sanctumShadowBounds: [-30, -30, 64, 58] as const,
   sanctumPlinthBounds: [-32, -35, 64, 59] as const,
   sanctumOuterInlayBounds: [-30, -33, 60, 55] as const,

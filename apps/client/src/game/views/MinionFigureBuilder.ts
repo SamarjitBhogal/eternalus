@@ -32,7 +32,7 @@ export class MinionFigureBuilder extends MinionPartBuilder {
 
   private limbs(w: number, s: number, p: MinionPalette): void {
     for (const side of [-1, 1]) {
-      const x = side * w * 0.55;
+      const x = side * w * MINION_FIGURE_GEOMETRY.legOffsetRatio;
       this.rect(...MINION_FIGURE_GEOMETRY.shinOutlineBounds(x), INK);
       this.rect(...MINION_FIGURE_GEOMETRY.shinPlateBounds(x), p.armor);
       this.rect(...MINION_FIGURE_GEOMETRY.footBounds(x), p.highlight);

@@ -1,5 +1,7 @@
 /** Authored stand-in silhouette coordinates and bounds (DEC-238). */
 export const MAP_CAMP_GEOMETRY = {
+  mediumSpearCount: 3,
+  mediumSpearOffset: (x: number, index: number) => x - 4 + index * 4,
   campClearingBounds: [0, 13, 39, 17] as const,
   crystalAuraBounds: [0, -18, 12, 16] as const,
   crystalPoolBounds: [0, -6, 6, 1.6] as const,

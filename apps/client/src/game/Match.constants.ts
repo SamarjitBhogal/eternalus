@@ -1,4 +1,3 @@
-/** Provisional display tuning approved by DEC-238 (owner decisions log). */
 import { MINI_MAP_DESIGN_FRAME, MINI_MAP_RING, MINI_MAP_RING_STROKE } from '../bridge/minimapRing';
 import type { MiniMapRing } from './views/MiniMapView.types';
 
@@ -18,12 +17,12 @@ export const HUD_MINIMAP_RING: MiniMapRing = {
 /** The loop's frame clamp, in ticks: a frame may run at most this many (architecture 08 §2). */
 export const MAX_TICKS_PER_FRAME = 5;
 
-/** How much of the world the following camera shows left to right, in metres. TUNE: zoom. */
+/** Following camera width in metres (DEC-238). */
 export const FOLLOW_VIEW_WIDTH = 96;
 
 /**
  * How much of the world the following camera shows top to bottom (16:9 with the width).
- * TUNE: provisional.
+ * DEC-238.
  */
 export const FOLLOW_VIEW_HEIGHT = 54;
 

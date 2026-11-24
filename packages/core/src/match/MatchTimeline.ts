@@ -1,4 +1,5 @@
 import type { GameConfig } from '../config/GameConfig.types';
+import { timelineFrameOf } from '../config/timelineFrameOf';
 import { timelineMarkTick } from '../config/timelineMarkTick';
 import type { ScheduledMark } from '../state/MatchState.types';
 import { deepFreeze } from '../utils/deepFreeze';
@@ -11,13 +12,14 @@ export class MatchTimeline {
 
   /**
    * Resolves `config.match.timeline` once, at match construction: each mark becomes a tick
-   * (`atFraction` of `plannedMatchSeconds`), then entries are sorted by tick. The sort is
-   * stable, so entries on one tick keep their config order.
+   * (`atFraction` of `plannedMatchSeconds`, counted from the countdown's end: DEC-282), then
+   * entries are sorted by tick. The sort is stable, so entries on one tick keep their config order.
    */
-  public static resolve({ tickRate, match }: GameConfig): MatchTimeline {
-    const entries = match.timeline.map(({ id, at, action }) => ({
+  public static resolve(config: GameConfig): MatchTimeline {
+    const frame = timelineFrameOf(config);
+    const entries = config.match.timeline.map(({ id, at, action }) => ({
       id,
-      tick: timelineMarkTick(at, tickRate, match.plannedMatchSeconds),
+      tick: timelineMarkTick(at, frame),
       action,
     }));
     return new MatchTimeline(deepFreeze(entries.toSorted((a, b) => a.tick - b.tick)));

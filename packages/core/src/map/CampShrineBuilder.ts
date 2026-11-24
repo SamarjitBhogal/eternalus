@@ -10,27 +10,26 @@ export class CampShrineBuilder extends MapDecorationBuilder {
   public build(id: string): readonly MapDecoration[] {
     this.beginObject(id, 'camp');
     this.ellipse(`${id}-shadow`, ...CAMP_SHRINE_GEOMETRY.shadowBounds, M.shadow);
-    for (let step = 0; step < 4; step++) this.stair(id, step);
+    for (let step = 0; step < CAMP_SHRINE_GEOMETRY.stairCount; step++) this.stair(id, step);
     for (const side of [-1, 1]) this.pillar(id, side);
     this.arch(id);
     this.blockEllipse(`${id}-altar-foot`, ...CAMP_SHRINE_GEOMETRY.altarFootBounds, M.face);
     this.rect(`${id}-altar-face`, ...CAMP_SHRINE_GEOMETRY.altarFaceBounds, M.face);
     this.ellipse(`${id}-altar-rim`, ...CAMP_SHRINE_GEOMETRY.altarRimBounds, M.bronze);
     this.ellipse(`${id}-altar-top`, ...CAMP_SHRINE_GEOMETRY.altarTopBounds, M.stone);
-    for (const x of [-7, 0, 7]) {
+    for (const x of CAMP_SHRINE_GEOMETRY.altarCarvingOffsets) {
       this.polygon(
         `${id}-altar-carving-${String(x)}`,
         CAMP_SHRINE_GEOMETRY.altarCarving(x),
         M.bronzeLight,
       );
     }
-    for (let i = 0; i < 14; i++) {
-      const x = (i % 2 === 0 ? -1 : 1) * (23 + (i % 5) * 2);
-      const y = 3 + (i % 7) * 2.4;
+    for (let i = 0; i < CAMP_SHRINE_GEOMETRY.fallenStoneCount; i++) {
+      const { x, y } = CAMP_SHRINE_GEOMETRY.fallenStonePosition(i);
       this.polygon(
         `${id}-fallen-stone-${String(i)}`,
         CAMP_SHRINE_GEOMETRY.fallenStone(x, y),
-        i % 3 === 0 ? M.light : M.face,
+        i % CAMP_SHRINE_GEOMETRY.fallenStoneHighlightPeriod === 0 ? M.light : M.face,
       );
     }
     this.weathering(id);
@@ -44,10 +43,13 @@ export class CampShrineBuilder extends MapDecorationBuilder {
       const ys = stone.shape.map((point) => point.y);
       const left = Math.min(...xs);
       const top = Math.min(...ys);
-      for (let fleck = 0; fleck < 3; fleck++) {
+      for (let fleck = 0; fleck < CAMP_SHRINE_GEOMETRY.fleckCount; fleck++) {
         const n = this.variation(index, fleck);
-        const x = left + (Math.max(...xs) - left) * (0.15 + (n % 70) / 100);
-        const y = top + (Math.max(...ys) - top) * (0.15 + ((n >>> 8) % 70) / 100);
+        const x = left + (Math.max(...xs) - left) * CAMP_SHRINE_GEOMETRY.fleckBand(n);
+        const y =
+          top +
+          (Math.max(...ys) - top) *
+            CAMP_SHRINE_GEOMETRY.fleckBand(n >>> CAMP_SHRINE_GEOMETRY.fleckYShift);
         const shape = CAMP_SHRINE_GEOMETRY.marbleFleck(x, y);
         if (!shape.every((point) => isPointInPolygon(point, stone.shape))) continue;
         this.polygon(
@@ -66,8 +68,8 @@ export class CampShrineBuilder extends MapDecorationBuilder {
     this.polygon(`${prefix}-face`, CAMP_SHRINE_GEOMETRY.face(w, y), M.face);
     this.polygon(`${prefix}-tread`, CAMP_SHRINE_GEOMETRY.tread(w, y), M.stone);
     this.rect(`${prefix}-lip`, ...CAMP_SHRINE_GEOMETRY.lipBounds(w, y), M.light);
-    for (let block = 0; block < 6; block++) {
-      const x = -w + 4 + (block * (w * 2 - 8)) / 6;
+    for (let block = 0; block < CAMP_SHRINE_GEOMETRY.stairBlockCount; block++) {
+      const x = CAMP_SHRINE_GEOMETRY.stairBlockOffset(w, block);
       this.polygon(`${prefix}-joint-${String(block)}`, CAMP_SHRINE_GEOMETRY.joint(x, y), M.crack);
       this.rect(
         `${prefix}-lichen-${String(block)}`,
@@ -88,7 +90,7 @@ export class CampShrineBuilder extends MapDecorationBuilder {
     this.rect(`${prefix}-flute`, ...CAMP_SHRINE_GEOMETRY.fluteBounds(x), M.bronzeLight);
     this.rect(`${prefix}-capital`, ...CAMP_SHRINE_GEOMETRY.capitalBounds(x), M.light);
     this.rect(`${prefix}-crown`, ...CAMP_SHRINE_GEOMETRY.crownBounds(x), M.stone);
-    for (let course = 0; course < 5; course++) {
+    for (let course = 0; course < CAMP_SHRINE_GEOMETRY.pillarCourseCount; course++) {
       const y =
         CAMP_SHRINE_GEOMETRY.pillar.jointStart + course * CAMP_SHRINE_GEOMETRY.pillar.courseHeight;
       this.rect(

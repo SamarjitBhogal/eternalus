@@ -9,6 +9,7 @@ import type {
   Vec2,
 } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
+import { createDefaultViewRegistry } from './views/defaultViewRegistry';
 
 import type { IntentSource } from './Match.types';
 import { PlayerCommands } from './PlayerCommands';
@@ -78,6 +79,7 @@ const setUp = () => {
     { enqueueCommand },
     { screenToWorld: (point) => point },
     [HOUSE],
+    createDefaultViewRegistry(),
   );
   const queued = (type: Command['type']): number =>
     enqueueCommand.mock.calls.filter(([command]) => command.type === type).length;

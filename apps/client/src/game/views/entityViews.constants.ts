@@ -1,4 +1,3 @@
-/** Provisional display tuning approved by DEC-238 (owner decisions log). */
 import type { Team } from '@eternalus/core';
 
 import type { GlyphSpec } from '../engine/render/Renderer.types';
@@ -18,13 +17,13 @@ export const LEGEND_OUTLINE_COLOR = '#ffffff';
 /** How much wider than the Legend its outline is. */
 export const LEGEND_OUTLINE_SCALE = 1.1;
 
-/** Shared presentation diameter: every hero is slightly larger than the largest minion figure. */
+/** Shared Legend display diameter, approved for the stand-in art by DEC-238. */
 export const LEGEND_VISUAL_DIAMETER = 5.2;
 
 /** Keep the selected hero's ring close to the enlarged body rather than enlarging it as a halo. */
 export const LEGEND_FOCUS_RING_SCALE = 1.18;
 
-/** Enlarges fallback troop markers as well as the footprints beneath detailed minion figures. */
+/** Enlarges fallback troop markers and footprints beneath minion figures (DEC-238). */
 export const MOB_VISUAL_SCALE = 1.4;
 
 /** Colour of the outline that keeps mobs visible on their own team's ground (the Stronghold). */

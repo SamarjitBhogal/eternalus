@@ -174,17 +174,7 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
         const size = 8 + (n % 10);
         this.beginObject(id, n % 7 === 0 ? 'rock' : 'tree');
         if (n % 7 === 0) {
-          this.blob(`${id}-boulder-shadow`, point.x + 3, point.y + 4, size, size * 0.65, P.shadow);
-          this.blob(`${id}-boulder`, point.x, point.y, size, size * 0.65, P.stoneDark);
-          this.blockLastShape();
-          this.blob(
-            `${id}-boulder-light`,
-            point.x - 2,
-            point.y - 2,
-            size * 0.6,
-            size * 0.35,
-            P.stone,
-          );
+          this.boulder(id, point, size);
           continue;
         }
         const biome = sceneryBiomeAt(point);
@@ -235,5 +225,12 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
         );
       }
     }
+  }
+
+  private boulder(id: string, point: Vec2, size: number): void {
+    this.blob(`${id}-boulder-shadow`, point.x + 3, point.y + 4, size, size * 0.65, P.shadow);
+    this.blob(`${id}-boulder`, point.x, point.y, size, size * 0.65, P.stoneDark);
+    this.blockLastShape();
+    this.blob(`${id}-boulder-light`, point.x - 2, point.y - 2, size * 0.6, size * 0.35, P.stone);
   }
 }

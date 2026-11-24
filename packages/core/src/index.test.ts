@@ -7,6 +7,7 @@ describe('@eternalus/core public API', () => {
   it('exports exactly the documented runtime values', () => {
     expect(Object.keys(core).sort()).toEqual([
       'AStarPathfinder',
+      'CORNER_CAMP_RING',
       'ConfigValidationError',
       'DEFAULT_MAP_CONFIG',
       'DUEL_RULES',
@@ -70,10 +71,11 @@ describe('@eternalus/core public API', () => {
         phaseEnteredTick: 0,
         upcoming: [
           { entryId: 'countdown-over', tick: 300 },
-          { entryId: 'quarter-mark', tick: 13_500 },
-          { entryId: 'mid-game', tick: 27_000 },
-          { entryId: 'end-game', tick: 40_500 },
+          { entryId: 'quarter-mark', tick: 13_800 },
+          { entryId: 'mid-game', tick: 27_300 },
+          { entryId: 'end-game', tick: 40_800 },
         ],
+        countdownEndTick: 300,
         humanLegendId: null,
       },
       entities: [],

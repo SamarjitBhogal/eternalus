@@ -12,7 +12,6 @@ import {
 import type { Projection } from './engine/input/Projection.types';
 import type { IntentSource } from './Match.types';
 import type { PlayerActions } from './PlayerActions';
-import { createDefaultViewRegistry } from './views/defaultViewRegistry';
 import type { ViewRegistry } from './views/ViewRegistry';
 
 /** The parts of a snapshot an attack target is picked from: its units and map objects. */
@@ -45,7 +44,7 @@ export class PlayerCommands implements PlayerActions {
     private readonly simulation: Pick<Simulation, 'enqueueCommand'>,
     private readonly camera: Projection,
     private readonly mapObjects: readonly MapObject[],
-    private readonly views: ViewRegistry = createDefaultViewRegistry(),
+    private readonly views: ViewRegistry,
   ) {}
 
   /**

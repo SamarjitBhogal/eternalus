@@ -17,8 +17,8 @@ export class TowerSanctumBuilder extends MapDecorationBuilder {
     this.rect(`${id}-sanctum-floor`, ...TOWER_SANCTUM_GEOMETRY.sanctumFloorBounds, stone);
     this.rect(`${id}-sanctum-inner-inlay`, ...TOWER_SANCTUM_GEOMETRY.sanctumInnerInlayBounds, trim);
     this.rect(`${id}-sanctum-recess`, ...TOWER_SANCTUM_GEOMETRY.sanctumRecessBounds, M.face);
-    for (let step = 0; step < 4; step++) {
-      const width = 21 + step * 3;
+    for (let step = 0; step < TOWER_SANCTUM_GEOMETRY.stairCount; step++) {
+      const width = TOWER_SANCTUM_GEOMETRY.stairWidth(step);
       this.rect(
         `${id}-sanctum-stair-${String(step)}`,
         ...TOWER_SANCTUM_GEOMETRY.sanctumStairBounds(width, step),
@@ -32,9 +32,8 @@ export class TowerSanctumBuilder extends MapDecorationBuilder {
     }
     for (const side of [-1, 1]) {
       this.pillar(id, side, stone, trim);
-      for (let feather = 0; feather < 5; feather++) {
-        const x = side * (8 + feather * 3.3);
-        const y = -9 - feather * 2.2;
+      for (let feather = 0; feather < TOWER_SANCTUM_GEOMETRY.featherCount; feather++) {
+        const { x, y } = TOWER_SANCTUM_GEOMETRY.featherPosition(side, feather);
         this.polygon(
           `${id}-sanctum-wing-${String(side)}-${String(feather)}`,
           TOWER_SANCTUM_GEOMETRY.sanctumWing(side, x, y),
@@ -64,18 +63,18 @@ export class TowerSanctumBuilder extends MapDecorationBuilder {
   }
 
   private pillar(id: string, side: number, stone: string, trim: string): void {
-    const x = side * 26;
+    const x = side * TOWER_SANCTUM_GEOMETRY.pillarSideOffset;
     const prefix = `${id}-sanctum-pillar-${String(side)}`;
     this.rect(`${prefix}-shadow`, ...TOWER_SANCTUM_GEOMETRY.shadowBounds(x), M.crack);
     this.rect(`${prefix}-shaft`, ...TOWER_SANCTUM_GEOMETRY.shaftBounds(x), stone);
     this.rect(`${prefix}-flute`, ...TOWER_SANCTUM_GEOMETRY.fluteBounds(x), trim);
-    for (const y of [-34, 2])
+    for (const y of TOWER_SANCTUM_GEOMETRY.pillarCapitalHeights)
       this.rect(
         `${prefix}-capital-${String(y)}`,
         ...TOWER_SANCTUM_GEOMETRY.capitalBounds(x, y),
         trim,
       );
-    for (let course = 0; course < 5; course++)
+    for (let course = 0; course < TOWER_SANCTUM_GEOMETRY.pillarCourseCount; course++)
       this.rect(
         `${prefix}-course-${String(course)}`,
         ...TOWER_SANCTUM_GEOMETRY.courseBounds(x, course),

@@ -86,9 +86,8 @@ export class NeutralCampBuilder extends MapDecorationBuilder {
         M.lanternLight,
       );
     }
-    for (let i = 0; i < 9; i++) {
-      const x = -20 + i * 5;
-      const y = 15 + (i % 3);
+    for (let i = 0; i < NEUTRAL_CAMP_GEOMETRY.mushroomCount; i++) {
+      const { x, y } = NEUTRAL_CAMP_GEOMETRY.mushroomPosition(i);
       this.rect(
         `${id}-mushroom-stem-${String(i)}`,
         ...NEUTRAL_CAMP_GEOMETRY.mushroomStemBounds(x, y),

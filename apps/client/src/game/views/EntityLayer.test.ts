@@ -31,7 +31,13 @@ const unit = (id: string, x: number, y: number, facing = EAST): EntitySnapshot =
 
 const snapshot = (tick: number, entities: EntitySnapshot[]): Snapshot => ({
   tick,
-  match: { phase: 'countdown', phaseEnteredTick: 0, upcoming: [], humanLegendId: null },
+  match: {
+    phase: 'countdown',
+    phaseEnteredTick: 0,
+    upcoming: [],
+    countdownEndTick: 0,
+    humanLegendId: null,
+  },
   entities,
   hordes: [],
   teams: {

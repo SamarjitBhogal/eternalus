@@ -1,4 +1,10 @@
-import { type EntityId, type EntitySnapshot, makeLogRecord, type Snapshot } from '@eternalus/core';
+import {
+  CORNER_CAMP_RING,
+  type EntityId,
+  type EntitySnapshot,
+  makeLogRecord,
+  type Snapshot,
+} from '@eternalus/core';
 
 import { isDead } from '../bridge/selectors/isDead';
 import { BuildingRoofs } from './BuildingRoofs';
@@ -104,8 +110,9 @@ export class Match implements LoopTarget {
     this.objects = new WorldObjectsView(mapObjects, hiddenRoofs, shown);
     const { isDestroyed } = this.objects;
     this.atmosphere = new BiomeAtmosphereView(scenery, shown);
+    const featureSizes = { 'corner-camp': 2 * CORNER_CAMP_RING.radius } as const;
     const scene = new SceneView([
-      new MapView(map, scenery, hiddenRoofs, shown, buildings, isDestroyed),
+      new MapView(map, scenery, hiddenRoofs, shown, buildings, isDestroyed, featureSizes),
       new SceneryView(scenery, 'detail', hiddenRoofs, shown, isDestroyed),
       this.objects,
       this.entities,
@@ -128,13 +135,18 @@ export class Match implements LoopTarget {
       events: simulation,
       firstSnapshot: this.current,
     });
-    this.controls = new MatchViewControls({
+    this.controls = this.createControls();
+    camera.lookAt(this.playerEntity()?.transform ?? { x: map.width / 2, y: map.height / 2 });
+  }
+
+  private createControls(): MatchViewControls {
+    return new MatchViewControls({
       camera: this.camera,
       roofs: this.roofs,
       commands: this.commands,
       miniMap: this.world.miniMap,
       onMiniMapShownChanged: (isShown) => {
-        bridge.bus.emit('minimap-visibility', { isShown });
+        this.deps.bridge.bus.emit('minimap-visibility', { isShown });
         // The loop is stopped while paused, so nothing else would repaint the canvas.
         if (!this.loop.isRunning) {
           this.render(1);
@@ -143,7 +155,6 @@ export class Match implements LoopTarget {
       playerId: this.playerId,
       snapshot: () => this.current,
     });
-    camera.lookAt(this.playerEntity()?.transform ?? { x: map.width / 2, y: map.height / 2 });
   }
 
   /** The id of the player's Legend; known from construction, `null` when its spawn failed. */

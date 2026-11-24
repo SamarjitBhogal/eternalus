@@ -187,7 +187,7 @@ describe('selectStructureStrip', () => {
     const store = storeWith('light', figmaHudState().match.structures);
     const allied = selectStructureStrip(store.getState(), 'allied');
     const enemy = selectStructureStrip(store.getState(), 'enemy');
-    store.dispatch(matchSlice.actions.clockChanged({ tick: 30, seconds: 1 }));
+    store.dispatch(matchSlice.actions.clockChanged({ tick: 30, seconds: 1, countdown: null }));
     store.dispatch(hudSlice.actions.hudStateChanged(FIGMA_HUD_PLAYER));
     expect(selectStructureStrip(store.getState(), 'allied')).toBe(allied);
     expect(selectStructureStrip(store.getState(), 'enemy')).toBe(enemy);

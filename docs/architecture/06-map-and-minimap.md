@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-23
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -651,7 +651,8 @@ offerings and lanterns. `campScenery.ts` owns the materials and lane-theme order
 builders produce deterministic mirrored artwork. Solid feet and plinths retain explicit object
 ownership for health and destruction; steps, shadows, light and suspended ornaments do not
 become walls. Authored `replacesFeature` metadata suppresses only the main-view placeholder;
-the feature's minimap marker continues to represent its gameplay role.
+the feature's minimap marker and the core-sized corner camp ring remain visible alongside the
+authored dressing.
 
 ### 2026-11-08 — Camp colors and expanded biomes
 

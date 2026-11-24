@@ -221,7 +221,7 @@ export type MapDecoration = {
   readonly isMirrored?: true;
   /** Optional authored identity for the reflected artwork. */
   readonly mirrorId?: string;
-  /** Authored artwork replaces this feature's placeholder in the main view only. */
+  /** Suppresses this feature's main-view placeholder. Gameplay rings and minimap markers remain. */
   readonly replacesFeature?: string;
   /** Presentation region polygon that supplies local atmospheric effects. */
   readonly ambientBiome?: BiomeKind;

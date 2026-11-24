@@ -48,7 +48,7 @@ describe('MobView', () => {
         args: [{ shape: 'dot', size: DIAMETER * MOB_OUTLINE_SCALE }, AT, MOB_OUTLINE_COLOR],
       },
       {
-        op: 'strokePath',
+        op: 'strokePath', // DEC-192: mobs show their facing with a chevron.
         args: [expect.any(Array), FACING_CHEVRON.color, FACING_CHEVRON.lineWidth],
       },
       { op: 'drawWorldGlyph', args: [{ shape: 'dot', size: DIAMETER }, AT, TEAM_COLORS.light] },

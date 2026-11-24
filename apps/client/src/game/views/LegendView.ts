@@ -8,9 +8,10 @@ import {
   LEGEND_VISUAL_DIAMETER,
   LEGEND_FOCUS_RING_SCALE,
   FOCUS_RING_COLOR,
+  MINI_MAP_LEGEND_GLYPH,
+  MINI_MAP_LEGEND_LAYER,
 } from './entityViews.constants';
 import { withVisualRadius } from './entityVisualState';
-import { MINI_MAP_LEGEND_GLYPH, MINI_MAP_LEGEND_LAYER } from './entityViews.constants';
 
 /**
  * The placeholder look for Legends (the characters): the default disc with a white outline, so a

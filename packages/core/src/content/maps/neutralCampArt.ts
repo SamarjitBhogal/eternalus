@@ -1,5 +1,7 @@
 /** Authored stand-in silhouette coordinates and bounds (DEC-238). */
 export const NEUTRAL_CAMP_GEOMETRY = {
+  mushroomCount: 9,
+  mushroomPosition: (index: number) => ({ x: -20 + index * 5, y: 15 + (index % 3) }),
   standingStones: [
     [0, -19, -3, 18],
     [1, 17, -5, 22],

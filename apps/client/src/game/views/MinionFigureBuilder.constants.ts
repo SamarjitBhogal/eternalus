@@ -1,5 +1,6 @@
 /** Authored stand-in silhouette coordinates and bounds (DEC-238). */
 export const MINION_FIGURE_GEOMETRY = {
+  legOffsetRatio: 0.55,
   bodyOutline: (w: number) =>
     [
       [-w, -0.7],

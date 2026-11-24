@@ -152,8 +152,8 @@ export class MapCampBuilder extends MapDecorationBuilder {
         ...MAP_CAMP_GEOMETRY.mediumRackBounds(x),
         M.wood,
       );
-      for (let i = 0; i < 3; i++) {
-        const offset = x - 4 + i * 4;
+      for (let i = 0; i < MAP_CAMP_GEOMETRY.mediumSpearCount; i++) {
+        const offset = MAP_CAMP_GEOMETRY.mediumSpearOffset(x, i);
         this.rect(
           `${id}-medium-spear-${String(side)}-${String(i)}`,
           ...MAP_CAMP_GEOMETRY.mediumSpearBounds(offset, i),
