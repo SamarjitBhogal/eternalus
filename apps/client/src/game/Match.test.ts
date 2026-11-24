@@ -71,7 +71,7 @@ class ScriptedIntent implements IntentSource {
 /** Where a test `Simulation` finds definitions, when a test needs kinds the shipped content lacks. */
 type Content = NonNullable<ConstructorParameters<typeof Simulation>[0]['content']>;
 
-/** A rock (kind `obstacle`, which has no view of its own), alone: no human slot plays on it. */
+/** A rock (kind `obstacle`, drawn by the default view), alone: no human slot plays on it. */
 const CONTENT_WITH_A_ROCK: Content = (() => {
   const definitions = [
     {
@@ -621,7 +621,7 @@ describe('Match', () => {
     expect(camera.visibleArea(map.width, map.height)).not.toEqual(lookedAt);
   });
 
-  it('logs once for each kind it has to draw with the default view', () => {
+  it('draws an obstacle outside the map objects (a placed wall) with the default view, logging no warning', () => {
     const { match, simulation, logger } = setUp(CONTENT_WITH_A_ROCK);
     simulation.enqueueCommand({
       type: 'dev-spawn',
@@ -636,9 +636,8 @@ describe('Match', () => {
     match.render(0);
     match.render(0);
 
-    expect(
-      logger.records.map(({ severityText, scope, body }) => [severityText, scope, body]),
-    ).toEqual([['WARN', 'client.views', 'No view for kind "obstacle"; drawing the default view.']]);
+    expect(match.snapshot.entities.filter(({ kind }) => kind === 'obstacle')).toHaveLength(2);
+    expect(logger.records).toEqual([]);
   });
 
   it('draws the lane hordes and other mobs with their own view, logging no default-view warning', () => {
