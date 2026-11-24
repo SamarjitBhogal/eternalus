@@ -55,7 +55,7 @@ export const FEATURE_STYLES: Readonly<Record<MapFeatureKind, FeatureStyle>> = {
   gate: { shape: 'footprint', size: 0 },
   turret: { shape: 'dot', size: 14 },
   camp: { shape: 'dot', size: 26 },
-  'corner-camp': { shape: 'ring', size: 45 },
+  'corner-camp': { shape: 'ring', size: 0 }, // sized by core's CORNER_CAMP_RING, through Match
   'capture-point': { shape: 'ring', size: 45 },
   cathedral: { shape: 'diamond', size: 110 },
   obstacle: { shape: 'dot', size: 14 },
