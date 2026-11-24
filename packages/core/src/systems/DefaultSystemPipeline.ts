@@ -70,12 +70,16 @@ export class DefaultSystemPipeline extends SystemPipeline {
     duelStarts,
     hordes,
     structures = STRUCTURE_DEFINITIONS,
+    assistWindowTicks,
   }: DefaultSystemPipelineOptions) {
     const { tickRate, map } = state.config;
     // A death by the gem counts for the victim's last enemy damager in the assist window (DEC-346).
     const damage = new DamagePipeline(
       undefined,
-      new KillCredit(loadScoring(tickRate).assistWindowTicks, CATHEDRAL_GEM.statusIds),
+      new KillCredit(
+        assistWindowTicks ?? loadScoring(tickRate).assistWindowTicks,
+        CATHEDRAL_GEM.statusIds,
+      ),
     );
     const loadedStatuses = loadStatusEffects(
       tickRate,

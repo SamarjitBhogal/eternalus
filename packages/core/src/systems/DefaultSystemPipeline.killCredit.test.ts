@@ -23,7 +23,7 @@ const config = createDefaultGameConfig();
 const UNITS = loadDefaultContent(config.tickRate);
 
 /** The match pipeline as a match builds it, a neutral gem, and a light and a dark Warrior. */
-const setUp = () => {
+const setUp = (assistWindowTicks?: number) => {
   const logger = new MemoryLogger();
   const state = new GameState(config, 1);
   const pipeline = new DefaultSystemPipeline({
@@ -37,6 +37,7 @@ const setUp = () => {
     state,
     progression: { units: UNITS, curves: loadLevelCurves(), xpSources: XP_SOURCES },
     director: { update: () => undefined },
+    ...(assistWindowTicks === undefined ? {} : { assistWindowTicks }),
   });
   const registry = createDefaultEntityRegistry();
   const ids = new IdGenerator();
@@ -66,8 +67,9 @@ const setUp = () => {
 };
 
 describe('DefaultSystemPipeline kill credit (DEC-346)', () => {
-  it("credits a gem burn death to the victim's last enemy damager", () => {
-    const { state, gem, victim, enemy, deaths, hits, runUntil } = setUp();
+  /** An enemy hit, then a swing at the gem with too little health for the burn. */
+  const dieToTheGem = (assistWindowTicks?: number) => {
+    const { state, gem, victim, enemy, deaths, hits, runUntil } = setUp(assistWindowTicks);
     state.entities.setAttackTarget(enemy.id, victim.id);
     runUntil(() => hits.some(({ targetId }) => targetId === victim.id), 5 * config.tickRate);
     state.entities.clearAttackTarget(enemy.id);
@@ -82,11 +84,27 @@ describe('DefaultSystemPipeline kill credit (DEC-346)', () => {
 
     state.entities.setAttackTarget(victim.id, gem.id);
     runUntil(() => deaths.length > 0, 5 * config.tickRate);
+    return { victim, enemy, deaths };
+  };
+
+  it("credits a gem burn death to the victim's last enemy damager", () => {
+    const { victim, enemy, deaths } = dieToTheGem();
 
     expect(deaths).toEqual([
       {
         entityId: victim.id,
         killer: { attackerId: enemy.id, kind: 'status', definitionId: 'gem-burn' },
+      },
+    ]);
+  });
+
+  it('uses the assist window it is given: with none, the same death is nobody’s kill', () => {
+    const { victim, deaths } = dieToTheGem(0);
+
+    expect(deaths).toEqual([
+      {
+        entityId: victim.id,
+        killer: { attackerId: null, kind: 'status', definitionId: 'gem-burn' },
       },
     ]);
   });
