@@ -80,7 +80,7 @@ export type OpeningWaveDefinition = Pick<SpawnWaveDefinition, 'mobId' | 'weightC
 };
 
 /** One row of a guard plan: which guard, how many, and how a lost SpawnerTower shrinks it. */
-type GuardTableEntry = {
+export type GuardTableEntry = {
   readonly mobId: string;
   readonly count: number;
   /**
@@ -101,6 +101,20 @@ type GuardPlanBase = {
    * How far past its leash a guard may stand (`GuardWithinLeashInvariant`): the distance it covers
    * between two decisions plus the farthest it stands from a target in reach.
    */
+  readonly leashTolerance: number;
+};
+
+/**
+ * The defenders one capture-point checkpoint spawns (architecture 07 §7, 18 §7.1): held by
+ * `GuardController` with the capture point as home, for the team that owns the point when the
+ * checkpoint is reached (`neutral` while no team does). Their leash is the zone's reach (owner,
+ * 18 §10 item 4), so it is not content; they never respawn.
+ */
+export type CheckpointDefenderPlanDefinition = {
+  readonly table: readonly Omit<GuardTableEntry, 'shrink'>[];
+  /** Posts stand on a ring this far from the zone's centre. */
+  readonly postGap: number;
+  /** As `GuardPlanDefinition.leashTolerance`. */
   readonly leashTolerance: number;
 };
 
@@ -158,4 +172,9 @@ export type CathedralGemDefinition = {
   readonly statusIds: readonly string[];
   /** The gem glows for this status's duration plus `extraTicks` after each hit. */
   readonly glow: { readonly statusId: string; readonly extraTicks: number };
+  /**
+   * The map object of the plinth under the gem that blocks movement (DEC-346); destroyed with the
+   * gem when it erupts (12 §3), so the Greater Boss stands where the gem stood.
+   */
+  readonly plinthObjectId: string;
 };

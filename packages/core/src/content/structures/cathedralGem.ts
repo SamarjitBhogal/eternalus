@@ -10,4 +10,5 @@ import type { CathedralGemDefinition } from './structures.types';
 export const CATHEDRAL_GEM: CathedralGemDefinition = {
   statusIds: ['gem-shock', 'gem-burn'],
   glow: { statusId: 'gem-shock', extraTicks: 5 },
+  plinthObjectId: 'cathedral-interior-gem-plinth',
 };

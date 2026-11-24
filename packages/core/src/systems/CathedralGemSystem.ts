@@ -94,9 +94,9 @@ export class CathedralGemSystem implements System {
   }
 
   /**
-   * The gem erupts through the roof (12 §3, reference 04): removed (`despawned`) on this system's
-   * pass after `greater-boss-summoned`, before it answers any touch, so it strikes no one after,
-   * the Greater Boss included, who appears where it stood.
+   * The gem erupts through the roof (12 §3, reference 04): removed (`despawned`) with its plinth
+   * on this system's pass after `greater-boss-summoned`, so this tick's hits on it strike no one
+   * and nothing blocks the centre, where the Greater Boss appears.
    */
   private removeGems(state: GameState): void {
     const gems: EntityId[] = [];
@@ -108,7 +108,9 @@ export class CathedralGemSystem implements System {
       state.entities.remove(entityId, 'despawned');
       state.events.emit('entity-removed', { entityId, cause: 'despawned' });
     }
+    state.worldObjects?.destroy(this.gem.plinthObjectId);
   }
+
   private strike(state: GameState, gem: CathedralGemState, unitId: EntityId): void {
     for (const statusId of this.gem.statusIds) {
       this.statuses.apply(state, unitId, statusId, null);

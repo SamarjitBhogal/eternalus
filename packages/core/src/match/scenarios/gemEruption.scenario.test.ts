@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { timelineFrameOf } from '../../config/timelineFrameOf';
 import { timelineMarkTick } from '../../config/timelineMarkTick';
+import { CATHEDRAL_GEM } from '../../content/structures/cathedralGem';
 import { TEST_DEBUG_CONFIG } from '../../diagnostics/InvariantRunner.constants';
 import { MemoryLogger } from '../../diagnostics/MemoryLogger';
 import { MapGenerator } from '../../map/MapGenerator';
@@ -56,17 +57,20 @@ describe('the gem eruption (scenario, 12 §3, DEC-83)', () => {
     expect(simulation.snapshot().match.phase).toBe('mid-game');
   });
 
-  it('removes the gem on its next pass after the eruption, so it strikes no one after', () => {
+  it('removes the gem and its plinth on its next pass after the eruption, so nothing blocks the centre', () => {
     const { simulation, config, eruptionTick, gem } = match();
     const removed: { tick: number; entityId: string; cause: string }[] = [];
     simulation.on('entity-removed', ({ entityId, cause }) => {
       if (entityId === gem.id) removed.push({ tick: simulation.tick, entityId, cause });
     });
-    const shocks: number[] = [];
-    simulation.on('status-applied', ({ statusId }) => {
-      if (statusId === 'gem-shock') shocks.push(simulation.tick);
-    });
-    // A Warrior standing on the gem is struck while it stands.
+    const plinthDestroyed = (): boolean | undefined =>
+      simulation.snapshot().mapObjects?.find(({ id }) => id === CATHEDRAL_GEM.plinthObjectId)
+        ?.isDestroyed;
+    expect(plinthDestroyed()).toBe(false);
+
+    stepTo(simulation, eruptionTick + 1);
+    // A Warrior standing where the gem stood: the debug invariants throw if it overlaps a
+    // surviving map object (`no-map-object-overlap`).
     simulation.enqueueCommand({
       type: 'dev-spawn',
       kind: 'warrior',
@@ -75,13 +79,11 @@ describe('the gem eruption (scenario, 12 §3, DEC-83)', () => {
       at: { x: gem.transform?.x ?? 0, y: gem.transform?.y ?? 0 },
       count: 1,
     });
-
-    stepTo(simulation, eruptionTick + 8 * config.tickRate);
+    stepTo(simulation, eruptionTick + 2 * config.tickRate);
 
     expect(removed).toEqual([{ tick: eruptionTick + 1, entityId: gem.id, cause: 'despawned' }]);
     expect(simulation.snapshot().entities.some(({ kind }) => kind === 'cathedral-gem')).toBe(false);
-    expect(shocks.filter((tick) => tick < eruptionTick).length).toBeGreaterThan(0);
-    expect(shocks.filter((tick) => tick > eruptionTick)).toEqual([]);
+    expect(plinthDestroyed()).toBe(true);
   });
 
   it('summons no boss in a Duel and leaves the gem standing (DEC-36: the world is off)', () => {

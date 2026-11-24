@@ -67,6 +67,8 @@ export type LeashRules<
   readonly isMate: (situation: LeashSituation<Rule>, victimId: EntityId) => boolean;
   /** How far from the mob an enemy attacking a mate may stand to be taken (DEC-144 D). */
   readonly helpRadius: (situation: LeashSituation<Rule>) => number;
+  /** How far from the mob any enemy may stand to be taken; the profile's `acquisitionRadius`. */
+  readonly acquisitionRadius: (situation: LeashSituation<Rule>) => number;
 };
 
 /** What a leashed controller reads besides the state, injected so it holds no content. */

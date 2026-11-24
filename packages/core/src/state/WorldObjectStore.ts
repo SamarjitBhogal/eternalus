@@ -81,6 +81,14 @@ export class WorldObjectStore {
     }
   }
 
+  /**
+   * Destroys map object `objectId` that no entity of its own retires: one that has no health (the
+   * gem's plinth when the gem erupts, 12 §3). Collision drops it and it no longer blocks.
+   */
+  public destroy(objectId: string): void {
+    this.destroyed.add(objectId);
+  }
+
   /** Exact map object for a live or retired entity. */
   public objectFor(entityId: string): MapObject | undefined {
     return this.entityObjects.get(entityId);
