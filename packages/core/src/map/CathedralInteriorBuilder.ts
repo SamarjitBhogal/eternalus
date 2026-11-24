@@ -109,7 +109,7 @@ export class CathedralInteriorBuilder extends MapDecorationBuilder {
    * health) the size of the gem's own body, so collision and the lane paths go round it. Drawn in
    * the inlay's stone, under the gem.
    *
-   * shortcut: sketch units equal world units only at the default world size; a world of another
+   * ponytail: sketch units equal world units only at the default world size; a world of another
    * size stretches the plinth with the Cathedral. Upgrade if world sizes ever vary.
    */
   private gemPlinth(): void {

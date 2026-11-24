@@ -15,6 +15,7 @@ import { GameState } from '../state/GameState';
 import { DeathSystem } from '../systems/DeathSystem';
 import type { Team } from '../teams/teams.types';
 import { DamagePipeline } from './DamagePipeline';
+import type { DamageStep } from './DamageStep.types';
 import { KillCredit } from './KillCredit';
 
 /** A test unit of any family, with the `Health` and team `spawn` gives it. */
@@ -34,12 +35,15 @@ class TestUnit extends Entity {
 
 const BURN = { attackerId: null, kind: 'status', definitionId: 'gem-burn' } as const;
 
-const setUp = () => {
+/**
+ * @param steps - The damage steps; `[]` lets an ally's hit land, so only `KillCredit` judges it.
+ */
+const setUp = (steps?: readonly DamageStep[]) => {
   const state = new GameState(createDefaultGameConfig(), 1);
   const scoring = loadScoring(state.config.tickRate);
   const score = new Scoring(state, createDefaultScoringRules(scoring));
   const damage = new DamagePipeline(
-    undefined,
+    steps,
     new KillCredit(scoring.assistWindowTicks, CATHEDRAL_GEM.statusIds),
   );
   const deaths: GameEventMap['entity-died'][] = [];
@@ -135,8 +139,8 @@ describe('KillCredit (DEC-346)', () => {
     expect(rowOf(enemy)).toMatchObject({ kills: 0, assists: 1 });
   });
 
-  it("never credits an ally's hit", () => {
-    const { deaths, legend, hit, burnToDeath, endTick } = setUp();
+  it("never credits an ally's hit, even one that lands", () => {
+    const { deaths, legend, hit, burnToDeath, endTick } = setUp([]);
     const victim = legend('light');
     const ally = legend('light');
     hit(ally, victim);
