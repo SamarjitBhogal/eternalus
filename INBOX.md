@@ -609,6 +609,74 @@ Reply inline (`Decision: …`).
   - Answered 2026-11-23 (DEC-343): (1) kept, as built; 05 §3 now states it. (2) (A): lane B
     builds the one shot launcher with lane A after #148 merges. (4) kept, as built. (5) (A): built
     in lane B's PR 6 (Sentinel Rip & Tear). (6) (A): built in lane B's next PR, after #159 merges.
+- [ ] **HC-Q107 — Rip & Tear: how wide is the fan in front of the Sentinel? (lane B PR 6,
+      `feat/sentinel-kit`, card "PR6 R1 cone" on the Owner Calls page v92, 2026-11-23).**
+      Nothing waits on the answer; the build uses (A), marked `TUNE`. The Sentinel claws in a fan
+      in front of it, and every enemy in the fan is hit. The fan reaches 3 m past the Sentinel's
+      body (`balancing.md`, Rip & Tear row). Nothing gives its width. The weapon arcs (DEC-304)
+      are 70° (Bastions) to 160° (Wuuthrad). (A) 90°, a quarter circle (built). (B) 120°.
+      (C) 60°. (D) Other (note). Code: `content/abilities/ripAndTear.ts`.
+- [ ] **HC-Q108 — Rip & Tear: do weak enemies (under 30% health) also take double damage, and
+      how far are they pushed? (lane B PR 6, card "PR6 R2 low health", 2026-11-23).** Nothing
+      waits on the answer; the build uses (A). The balancing row says enemies under 30% health
+      "take double and are dragged 1.5 m toward you". DEC-204 changed the drag to a push away and
+      added the kill at 10% health or less. It says nothing about the double damage or the push
+      distance. Each health check is made when its part of the attack happens, in order: damage,
+      then the kill, then the push. So an enemy that the 90 damage takes under 30% is also pushed,
+      and an enemy that it takes to 10% or less dies. (A) Double damage (180), pushed 1.5 m away
+      (built). (B) Normal damage (90), pushed 1.5 m away. (C) Other (note).
+- [ ] **HC-Q109 — Rip & Tear Fear: do enemies run or cower, and for how long? (lane B PR 6, card
+      "PR6 R3 fear", 2026-11-23).** Nothing waits on the answer; the build uses (A). After Rip &
+      Tear, every enemy that survives within 3 m of the Sentinel's body is feared. DEC-203: a
+      feared unit runs away at half speed or cowers in place, for 2 to 4 s, and the source may
+      choose which. The build: the unit runs straight away from the Sentinel for 2 s, and it
+      cannot attack or use abilities. A player's own Legend runs too; its move, attack and ability
+      keys do nothing for those 2 s. A second Rip & Tear starts a new 2 s; Fear never adds up.
+      Sentinels are never feared (DEC-207). (A) Run away for 2 s (built). (B) Run away for 3 s.
+      (C) Cower in place for 2 s. (D) Random run or cower, 2 to 4 s. (E) Other (note). Code:
+      `content/status-effects/feared.ts`.
+- [ ] **HC-Q110 — Shield Wall: where does it stand, and who can break it? (lane B PR 6, card
+      "PR6 R4 wall", 2026-11-23).** Nothing waits on the answer; the build uses (A). DEC-330 (7):
+      the wall stays until it breaks, each Legend has at most 2, and a third removes the oldest.
+      The build: the wall is 4 m long and 1 m thick, at a right angle to the aim, with its middle
+      3 m in front of the Sentinel. It has 800 health (`balancing.md`). It blocks walking and
+      shots for both teams, attacks from both teams damage it, and it stays when the Sentinel
+      dies. If the spot overlaps a wall, a building, the map edge or another Shield Wall (also the
+      Sentinel's own oldest one), the cast does not happen and costs nothing. A wall can stand in
+      a gate opening. The narrowest gate opening is about 12 m (the middle lane; 18.5 m on the
+      side lanes; measured on the seed-1 map). One Sentinel's 2 walls (8 m) cannot close a gate,
+      but 2 Sentinels can close the middle gate. `more-abilities.md` says the wall "never blocks a
+      gate or a lane fully". (A) As built: both teams can break it, and it may stand in a gate.
+      (B) As built, but only the Sentinel's enemies can damage it. (C) As built, but a wall cannot
+      be placed in a gate opening. (D) Other (note). Code: `content/abilities/shieldWall.ts`,
+      `content/obstacles/shieldWallBarrier.ts`.
+- [ ] **HC-Q111 — Berserk: does "speed +20%" mean a higher top speed only? (lane B PR 6, card
+      "PR6 R5 berserk speed", 2026-11-23).** Nothing waits on the answer; the build uses (A).
+      Berserk lasts 12 s: the Sentinel grows 1.3 times bigger, deals 1.5 times the damage, takes
+      30% less damage and gets 20% more speed (`balancing.md`). The Sentinel speeds up very slowly
+      (about 50 s to top speed today; Wrecking Run in PR 8 changes this). The build raises only
+      the top speed by 20%, so a Sentinel that starts from a stop gains almost nothing in 12 s.
+      (A) Top speed +20% only (built). (B) Top speed +20%, and it also speeds up 20% faster.
+      (C) Other (note). Code: `content/status-effects/berserk.ts`.
+- [ ] **HC-Q112 — Rip & Tear: does the 10% kill also work on towers and the Stronghold? (lane B
+      PR 6, card "PR6 R6 execute", 2026-11-23).** Nothing waits on the answer; the build uses
+      (A). Rip & Tear kills every enemy in the fan that has 10% health or less (DEC-204). DEC-206
+      (1) says the attack applies to "every enemy in the fan", and towers, the Stronghold, gates
+      and walls are enemies too. If the kill works on them, a Sentinel finishes any tower or the
+      Stronghold at 10% with one cast. The build kills units only: Legends, minions, camp
+      monsters and bosses. Buildings still take the normal damage. (A) Units only (built).
+      (B) Every enemy in the fan. (C) Other (note). Code: `abilities/effects/ExecuteEffect.ts`
+      (`TargetFilter.families`).
+- [ ] **HC-S13 — Scheduled: an online Duel must not send a hidden enemy to a player
+      (Samarjit's review of #150, 6026306663, nit 1; lane B PR 6, 2026-11-23).** Nothing to
+      answer now. `isHidden` on a snapshot entity only tells the client not to draw the unit
+      (`Viewer`, HC-B19 (5)). The snapshot still holds the hidden enemy and its position. In a
+      single-player match this is safe. In a server-run Duel, a changed client could show the
+      enemy. The multiplayer plan already has the fix: W10 builds the per-seat snapshot and its
+      visibility filter in core (ADR 0016 point 1, draft), and the match host (MP-4) sends each
+      seat only what core filters. That filter must leave out every enemy that is hidden from the
+      seat's team (Veil today, any `hidden` status later). Scheduled with W10; it needs no change
+      before a server-run Duel exists.
 - [x] **HC-Q67 — Combat gaps: build before the presentation (2026-11-27)? In which order?
       (combat audit, COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls page).**
       Your nine combat questions: 0 of 9 are true today. Evidence and the proposed PRs (two lanes,
