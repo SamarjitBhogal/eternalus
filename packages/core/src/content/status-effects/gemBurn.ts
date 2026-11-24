@@ -6,7 +6,8 @@ import type { AuthoredStatusEffect } from './statusEffects.types';
  * game tick: it lasts one period longer than `gem-shock` (36 game ticks), so it hits 6 times (72).
  * The owner keeps this reading (DEC-346: "Keep both readings (as built)"). TUNE: DEC-292 leaves
  * the damage to the build (it should be "a reasonable amount of damage to deter attacking it on
- * purpose, but not a game-breaking amount"): 12 every 0.2 s, 72 in all, about an eighth of a Warrior's health; it can kill.
+ * purpose, but not a game-breaking amount"): 12 every 0.2 s, 72 in all, about an eighth of a
+ * Warrior's health; it can kill.
  */
 export const GEM_BURN = {
   id: 'gem-burn',
