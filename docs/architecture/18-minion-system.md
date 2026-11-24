@@ -11,7 +11,7 @@ paths:
     'packages/core/src/ai/MinionController*',
     'packages/core/src/ai/GuardController*',
     'packages/core/src/ai/decideLeashed*',
-    'packages/core/src/systems/{GuardRoster,EachGuardRespawn,GroupGuardRespawn,StuckSystem}*',
+    'packages/core/src/systems/{GuardRoster,EachGuardRespawn,GroupGuardRespawn,StuckSystem,clearGuardPost,spawnPlanProblems}*',
     'packages/core/src/components/ChaseWatch*',
     'packages/core/src/content/ai/stuckDetection*',
     'packages/core/src/content/structures/guardLeash*',
@@ -155,6 +155,13 @@ Sam's sign-off). Its kill XP is team-wide, at most 2 levels each (DEC-237), and 
 captured while it lives (07 §7 status); it takes only its share of a lane minion's hit (`BossMinionDamageStep`,
 05 §9; shares in `content/mobs/minionModifiers.ts`). The pull requests and interim stand-ins are in the
 [minion system plan](../plan/minion-system-plan.md) §2–§3.
+
+**Implementation status (2026-11-12, corner camp boss).** DEC-236 approves corner camps for
+Phase 3 and lets the corner boss run on `GuardController` as an interim stand-in, against MS-28's
+"never controls a boss": `corner-boss` (`content/mobs/`) is a `heavy-mob` posted by the
+`corner-camp` guard plan. It moves to the `Boss` family with `BossController` in Phase 3 sprint 3.6
+([phase 3 plan](../plan/phase-3-minions-hordes-and-ai.md)); doc 07's implementation status lists
+what it lacks until then.
 
 ## 1. Decisions
 
@@ -621,8 +628,9 @@ without a new controller. Only the home changes, and it is data on the spawning 
   to the leash edge), so each zone plan's tests check that its posts are inside its `ZoneArea`.
 - **One plan per home, plus checkpoint posts.** A home has exactly one guard plan, looked up by its
   definition id. A capture point's checkpoint defenders are not a second plan: their posts are
-  marked with their checkpoint (`GuardSlot.checkpoint`), never refill and are never looked up in
-  the home's plan, so they sit beside the zone's own plan (#99's mini-boss and support mobs) on
+  marked with their checkpoint (`GuardSlot.checkpoint`), never refill, are never looked up in
+  the home's plan and are not in a `group` plan's group (its timer and `camp-cleared` count only
+  the home's own posts), so they sit beside the zone's own plan (#99's mini-boss and support mobs) on
   the same home. Every guard of a home and team counts as a mate of the others
   (`GuardController`), so neutral defenders and the neutral boss group answer each other's calls.
 - **Activation and respawn.** A plan activates at match start, or `delaySeconds` after the

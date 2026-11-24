@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Capturable } from '../components/Capturable';
 import { Transform } from '../components/Transform';
+import { ZoneArea } from '../components/ZoneArea';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { ContentValidationError } from '../content/ContentValidationError';
 import { loadDefaultContent } from '../content/loadDefaultContent';
@@ -111,15 +112,18 @@ describe('SpawnSystem', () => {
       }
     });
 
-    it("leashes defenders to the zone's reach from its centre and posts them inside it", () => {
+    it("leashes defenders to the zone's reach from its centre and posts them on its floor", () => {
       const { point, step, reach, posts } = setUp('light');
       reach(2);
       step();
       const zoneReach = point.getComponent(Transform).radius;
+      const floor = point.getComponent(ZoneArea);
       for (const slot of posts()) {
+        const post = { x: slot.postX, y: slot.postY };
         expect(slot.homeRadius).toBe(0);
         expect(slot.leashRadius).toBe(zoneReach);
-        expect(distance({ x: slot.postX, y: slot.postY }, CENTER)).toBeLessThanOrEqual(zoneReach);
+        expect(distance(post, CENTER)).toBeLessThanOrEqual(zoneReach);
+        expect(floor.contains(post)).toBe(true);
       }
     });
 

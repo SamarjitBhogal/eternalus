@@ -59,6 +59,44 @@ Reply inline (`Decision: …`).
       rings derived as `ceil(distance / cellSize)`. Whether 30 m still covers a Stronghold is a
       live question on #98.
 
+- [x] **Corner camp boss: new `TUNE` values, its display name, and better-than-design items B2
+      and N4 (Aryan Walanj, 2026-11-12; PR #91 `feat/bosses-p3`, your review S2, S3 and nit 3;
+      DEC-236).** (1) The values with no reference source, all `TUNE` in
+      `content/mobs/cornerBoss.ts`: footprint radius 1.5 m (about twice a heavy camp mob), attack
+      reach 2 m, max speed 2.5 m/s, acceleration 8 m/s², mass 12, vision radius 45 m (its aggro
+      radius, the ring's diameter, from `CORNER_CAMP_RING`). Its health (8,200), damage (205 per hit every 1.5 s) and team-wide XP (500,
+      DEC-237) are `balancing.md`'s MiniBoss row, sized for level-4 Legends, though this boss exists from
+      t = 0. Also `TUNE` (2026-11-17, PR #91 critic): the corner camp plan's leash tolerance
+      7 m (`content/structures/guardPlans.ts`), above DEC-181's 5.5 m, since this boss is bigger,
+      slower and reaches further than any guard (DEC-181's sum for it is about 6.08 m). Approve
+      them or give values. (2) The display name "Corner Camp Boss" (names are open
+      with HC-Q4). Approve or rename. (3) **B2 of the PR #91 body (your S2 calls it "your B2"; not your review's B2, the team XP), better than the design:** store the boss's health
+      and damage as multiples of `refHealth(level)` (10 × and 0.25 ×), as `balancing.md`
+      recommends, instead of absolute numbers. (4) **N4, better than the design:** the capture
+      point boss (`capturePointBoss.ts`, PR #99) uses the same MiniBoss row; once B2 is done, keep
+      that row in one shared constant, as `refHealth` multiples, that both bosses use. Approve
+      B2 and N4 (one follow-up PR), or drop them.
+  - **Answered 2026-11-20 by DEC-296** (PR #91 comments). (1) and (2) approved and cited in the
+    code; the mass follows the HC-S12 (d) answer, the same for both bosses: the corner boss has
+    the Sentinel's 6 (PR #91); the capture point boss gets 6 in the DEC-284 (3) follow-up PR.
+    (3) and (4) approved, not built yet: they go in the HC-B12 follow-up PR.
+
+- [x] **PR #91 critic (2026-11-13), better than the design: the ring size on the map feature
+      (Aryan Walanj, `feat/bosses-p3`, claudiodh's B4).** The corner camp's ring is now core
+      content (`CORNER_CAMP_RING`, `content/structures/cornerCampRing.ts`, radius 22.5 m; the
+      boss's vision and acquisition radius follow it: 45 m, the ring's diameter, since PR #91
+      B6, so the boss sees the whole ring from any post). The client draws it because core exports the constant and `Match` passes the size
+      into `MapView` (`featureSizes`). The critic proposes instead an optional ring radius on
+      `MapFeatureDefinition` (`content/maps/mapFeatureDefinitions.ts`), copied onto `MapFeature`
+      by the generator, which `MapView` draws from the map data it already gets. That drops the
+      new export, the constructor parameter and the size-0 placeholder in `FEATURE_STYLES`, and
+      the capture point's ring (still 45 m in `FEATURE_STYLES`) could use the same field. It also
+      suggested one shared camp post gap constant; done 2026-11-17 by the phase/3 merge
+      (`cornerCampRing.ts` reads `GUARD_LEASH.postGap`). Approve the ring field as a follow-up PR
+      (docs 06 and 07 updated with it), or keep the current wiring.
+  - **Answered 2026-11-20 by DEC-296** (PR #91 comments): the ring field is approved as a
+    follow-up PR, not built yet; the 22.5 m radius is approved.
+
 - [ ] **Teammate's boss spec (Aryan Walanj, 2026-11-11): amend reference 04?** A teammate's spec
       differs from `docs/reference/game-design/04-objectives-capture-points-and-bosses.md` in
       four places. Nothing is built for any of them until you answer; no Cathedral or middle-boss
@@ -131,7 +169,10 @@ Reply inline (`Decision: …`).
       are metres on the default 1600 × 900 world; on another world size `map/zoneArea.ts`
       stretches the floor and the leash does not follow.
 
-- [ ] AI56-F4 exemption for boss rows; claudiodh/Sam to confirm (asked on #99).
+- [x] AI56-F4 exemption for boss rows; claudiodh/Sam to confirm (asked on #99). Since
+      2026-11-17 (PR #91) the corner boss (`corner-boss`) is exempt too: it acquires across its
+      camp ring (`CORNER_CAMP_RING`), not leash less post gap (`aggroRules.test.ts`).
+  - **Answered 2026-11-20 by DEC-296** (PR #91 comments): the boss exemption is approved.
 
 - [ ] **Capture point boss: four better-than-design items (PR #99 critic, 2026-11-12) — Sam and
       the owner: approve or drop; no code change until then.** (1) **Zone lock read from state,
@@ -169,7 +210,7 @@ Reply inline (`Decision: …`).
       paths and no doc says which owns boss timing. Due before the zone-lock PR: pick one owner
       and update 07 §7 and 12 so only one mechanism is named.
 
-- [ ] **One guard plan per home, mates by `homeId` (`feat/zone-guard-homes` critic finding 3,
+- [x] **One guard plan per home, mates by `homeId` (`feat/zone-guard-homes` critic finding 3,
       2026-11-09) — accepted as interim.** `GuardRoster` looks plans up by the home's definition
       id, so a home has one plan, and `GuardController` (`ai/GuardController.ts`, `isMate`)
       treats every guard on a home as a mate. 18 §7.1 makes the capture point the home of the
@@ -177,6 +218,9 @@ Reply inline (`Decision: …`).
       cannot both be plans, and on one `homeId` they would count as mates across teams. 18 §7.1
       now records the limit. Due before checkpoint defenders get posts: key mates by plan or by
       team as well as home, and allow more than one plan per home if both must coexist.
+      **Done in PR #130 (2026-11-22):** defender posts carry `GuardSlot.checkpoint` and sit beside
+      the zone's plan; mates need the same home and team (`GuardController`), and a `group` plan's
+      group is the home's own posts only (`GroupGuardRespawn`).
 - [ ] **BUG-5 / SCRUM-438 (2026-11-12, `fix/bound-key-actions`) — two owner questions.** (1) Bound
       but unhandled actions: `toggle-developer-menu` (BUG-4, a feature), `sprint`, `interact`,
       `turret-toggle-control`, `turret-switch-ammo` (gameplay not built) and `toggle-perf-overlay`
@@ -387,6 +431,21 @@ Reply inline (`Decision: …`).
       without bound. Cap it: skip a checkpoint's defenders while its earlier posts still hold
       guards? (8) `GuardRoster.ts` is 332 lines (limit ~300): move `clearPost` into its own
       helper in a tidy PR.
+      **Update 2026-11-22 (PR #130 review round 2):** (1), (4) and the answers to (6) and (7) are
+      planned as M6c (`feat/minion-m6c-defender-followups`, SamarjitBhogal, Phase 3 sprint 3; the
+      minion plan's §1.2 rows); (4)'s boss-group question, (6) and (7) still wait on the owner.
+      (8) is done: `clearGuardPost.ts` and `spawnPlanProblems.ts` hold the moved code
+      (`GuardRoster.ts` 275 lines, `SpawnSystem.ts` 318). (9) **Better than the design (DEC-139),
+      sign-off asked (review round 2, finding 5):** put the respawn rule on the post
+      (`GuardSlot.respawn`, set by `addPosts`), so `GuardRoster.update` needs no `checkpoint`
+      ternary and each rule counts only its own posts. Built today: `GroupGuardRespawn` counts
+      only the home's own posts (same `checkpoint` marker), which closes the gap with no new
+      field.
+      **Update 2026-11-23 (owner answers, relayed on PR #130):** (4)'s boss-group question, (6)
+      and (7) are answered as DEC-350: the boss group levels; a late team defender appears only
+      while its team still owns the point, and is cancelled when the point changes owner; at most
+      10 defenders per capture point. They are built in M6c. (3)(b), (5) and (9) still wait for
+      sign-off.
 
 - [ ] **Minion M10 better-than-design items (`feat/minion-m10-zone-level-up`, 2026-11-15,
       critic; DEC-139) — sign-off per item.** (a) A `MinionLevelSystem` after
