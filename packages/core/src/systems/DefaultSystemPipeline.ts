@@ -55,11 +55,12 @@ import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue'
 import { ZONE_LOCKING_MOBS } from '../content/zones/zoneLocks';
 import { loadGuardPlans } from '../content/structures/loadGuardPlans';
 import { StatusEffectSystem } from './StatusEffectSystem';
+import { StatusSteeringSystem } from './StatusSteeringSystem';
 import { SystemPipeline } from './SystemPipeline';
 
 /**
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
- * progress, the queued casts, aether regeneration, statuses, body sizes, movement, collision
+ * progress, the queued casts, aether regeneration, statuses, body sizes, status steering, movement, collision
  * (DEC-121 (c): every later reader sees resolved positions), the neighbour index, stuck detection
  * (DEC-193), steering, the shots in flight, combat, map destruction, progression (kill XP), minion
  * veterancy, structure losses and breakability, spawning, enraging, out-of-combat healing
@@ -142,6 +143,8 @@ export class DefaultSystemPipeline extends SystemPipeline {
       new StatusEffectSystem(state, damage, statuses),
       // After the statuses, so a size takes effect in the tick its status starts or ends.
       new BodySizeSystem(),
+      // After the AI, the commands and the statuses of this tick, before the walking it steers.
+      new StatusSteeringSystem(createDefaultStrategyRegistry().steering),
       new MovementSystem(),
       ...(hordes?.collisions ?? []),
       ...(hordes === undefined

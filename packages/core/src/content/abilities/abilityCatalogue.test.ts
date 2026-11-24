@@ -6,9 +6,8 @@ import { ABILITIES } from './abilityCatalogue';
 import type { AuthoredAbility, AuthoredEffectSpec } from './AbilityDefinition.types';
 import { loadAbilities } from './loadAbilities';
 
-/** Cost and cooldown of the four abilities with no effects yet: balancing.md "Aether costs and cooldowns" (0 / 0 for an ultimate: the meter gates it). */
+/** Cost and cooldown of the three abilities with no effects yet: balancing.md "Aether costs and cooldowns" (0 / 0 for an ultimate: the meter gates it). */
 const UNBUILT = {
-  'rip-and-tear': { cooldownSeconds: 10, aetherCost: 30, slot: 'ability' },
   sanctuary: { cooldownSeconds: 22, aetherCost: 60, slot: 'ability' },
   imbue: { cooldownSeconds: 20, aetherCost: 45, slot: 'ability' },
   'death-ray': { cooldownSeconds: 0, aetherCost: 0, slot: 'ultimate' },
@@ -16,7 +15,7 @@ const UNBUILT = {
 
 /**
  * Every effect kind the framework builds (05 §3): PR 1's, Fury's `buff`, Hamstring's `projectile`,
- * Shield Wall's `summon`; a new kind is added here with its effect class.
+ * Shield Wall's `summon`, Rip & Tear's `execute`; a new kind is added here with its effect class.
  */
 const BUILT_EFFECT_KINDS = [
   'damage',
@@ -26,6 +25,7 @@ const BUILT_EFFECT_KINDS = [
   'buff',
   'projectile',
   'summon',
+  'execute',
 ];
 
 describe('ABILITIES', () => {
@@ -185,7 +185,7 @@ describe('ABILITIES', () => {
         )
         .flatMap((effect) => (effect.kind === 'debuff' ? [effect.statusId] : []));
 
-    expect(ABILITIES.all().flatMap(debuffIds)).toEqual(['stun', 'concussion']);
+    expect(ABILITIES.all().flatMap(debuffIds)).toEqual(['stun', 'bleed', 'feared', 'concussion']);
     for (const id of ABILITIES.all().flatMap(debuffIds)) {
       expect(STATUS_EFFECTS.has(id)).toBe(true);
     }

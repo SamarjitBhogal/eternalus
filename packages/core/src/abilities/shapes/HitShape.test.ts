@@ -42,7 +42,10 @@ describe('HitShape', () => {
     expect(new HitShape().centreFor(HIT, STRUCK)).toEqual({ x: 0, y: 0 });
   });
 
-  it('has nothing to validate', () => {
-    expect(new HitShape().validate()).toEqual([]);
+  it('is valid only in an onHit list, the one list placed on a struck body (HC-B26 (5))', () => {
+    expect(new HitShape().validate(HIT, { isOnHit: true })).toEqual([]);
+    expect(new HitShape().validate(HIT, { isOnHit: false })).toEqual([
+      'a "hit" shape holds a body only in an onHit list (a shot\'s or a status\'s)',
+    ]);
   });
 });

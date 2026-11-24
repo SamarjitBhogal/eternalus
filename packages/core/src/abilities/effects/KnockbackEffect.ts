@@ -6,7 +6,7 @@ import type { Vec2 } from '../../utils/geometry.types';
 import { normalize } from '../../utils/vec2';
 import type { AbilityDisplayStep } from '../../content/loadDisplayContent';
 import type { AbilityEffect, CastContext } from '../AbilityEffect.types';
-import { mustBePositive } from '../specChecks';
+import { healthConditionProblems, mustBePositive } from '../specChecks';
 
 /**
  * Knocks every enemy in the step's shape away from the shape's centre (architecture 05 §3) as
@@ -24,9 +24,12 @@ export class KnockbackEffect implements AbilityEffect<KnockbackSpec> {
   /** @param tuning - Base mass, travel ticks and the follow-up statuses (`loadKnockback`). */
   public constructor(private readonly tuning: KnockbackDefinition) {}
 
-  /** A knock-back needs a positive distance. */
+  /** A knock-back needs a positive distance, and health bounds, when set, from 0 to 1. */
   public validate(spec: KnockbackSpec): readonly string[] {
-    return mustBePositive(spec.distance, 'knockback distance');
+    return [
+      ...mustBePositive(spec.distance, 'knockback distance'),
+      ...healthConditionProblems(spec.health),
+    ];
   }
 
   /** Its area. */
@@ -34,11 +37,11 @@ export class KnockbackEffect implements AbilityEffect<KnockbackSpec> {
     return [{ kind, shape }];
   }
 
-  /** Pushes and staggers every enemy in the step's shape, in id order. */
+  /** Pushes and staggers every enemy in the step's shape whose health meets its condition, in id order. */
   public apply(spec: KnockbackSpec, cast: CastContext): void {
     const { state } = cast;
     const { baseMass, travelTicks, staggerStatusId, knockupStatusId } = this.tuning;
-    for (const targetId of cast.targets(spec.shape, { team: 'enemies' })) {
+    for (const targetId of cast.targets(spec.shape, { team: 'enemies', health: spec.health })) {
       const target = state.entities.get(targetId);
       const movement = target?.findComponent(Movement);
       const position = target?.findComponent(Transform)?.position;

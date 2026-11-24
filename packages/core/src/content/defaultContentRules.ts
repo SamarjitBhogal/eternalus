@@ -19,12 +19,14 @@ import { KitInPoolRule } from './validation/KitInPoolRule';
 import { KnownAbilityRefsRule } from './validation/KnownAbilityRefsRule';
 import { KnownLevelCurveRule } from './validation/KnownLevelCurveRule';
 import { KnownProjectileRule } from './validation/KnownProjectileRule';
+import { KnownStatusRefsRule } from './validation/KnownStatusRefsRule';
 import { KnownWeaponRule } from './validation/KnownWeaponRule';
 import { LevelScalingRule } from './validation/LevelScalingRule';
 import { PositiveAetherRule } from './validation/PositiveAetherRule';
 import { PositiveStatsRule } from './validation/PositiveStatsRule';
 import { RoleRatingRangeRule } from './validation/RoleRatingRangeRule';
 import { SpecClassExistsRule } from './validation/SpecClassExistsRule';
+import { STATUS_EFFECTS } from './status-effects/statusEffectCatalogue';
 import { WEAPONS } from './weapons/weaponCatalogue';
 import type { WeaponDefinition } from './weapons/weapons.types';
 
@@ -37,6 +39,7 @@ import type { WeaponDefinition } from './weapons/weapons.types';
  *   by default.
  * @param legends - The Legend classes the ability rules read pools from; the shipped set by default.
  * @param projectiles - The projectiles a unit's ranged attack may fire; the shipped set by default.
+ * @param statuses - The statuses a unit may be immune to; the shipped set by default.
  */
 export const createDefaultContentRules = (
   curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'has'> = LEVEL_CURVE_CATALOGUE,
@@ -44,6 +47,7 @@ export const createDefaultContentRules = (
   abilities: Pick<ContentCatalogue<AbilityBase>, 'has' | 'get'> = ABILITIES,
   legends: Pick<ContentCatalogue<LegendDefinition>, 'has' | 'get'> = LEGEND_CLASSES,
   projectiles: Pick<ContentCatalogue<ProjectileDefinition>, 'has'> = PROJECTILES,
+  statuses: Pick<ContentCatalogue<{ id: string }>, 'has'> = STATUS_EFFECTS,
 ): readonly UnitDefinitionRule[] => [
   new KebabCaseIdRule(),
   new PositiveStatsRule(),
@@ -54,6 +58,7 @@ export const createDefaultContentRules = (
   new KnownProjectileRule(projectiles),
   new KnownAbilityRefsRule(abilities, legends),
   new KitInPoolRule(legends),
+  new KnownStatusRefsRule(statuses),
 ];
 
 /**

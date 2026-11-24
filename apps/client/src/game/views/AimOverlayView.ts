@@ -8,7 +8,7 @@ import type { WorldLayer } from './SceneView.types';
  * effect steps, drawn in the world around the player's Legend. A caster-centred ability shows a
  * circle on the caster whatever the pointer does; a dash shows its path from the caster toward the
  * pointer, as far as the dash will really go (a wall stops it), and the circles of the steps that
- * run at its end. `Match` builds what it shows (`AimTargeting`): the view only reads that target
+ * run at its end; a cone shows its fan toward the pointer (Rip & Tear, DEC-206 (3)). `Match` builds what it shows (`AimTargeting`): the view only reads that target
  * and draws nothing without one (always the case in quick-cast mode). Each shape kind is one
  * painter (`AIM_SHAPE_PAINTERS`).
  */
@@ -29,8 +29,14 @@ export class AimOverlayView implements WorldLayer {
    */
   public draw(renderer: Renderer): void {
     if (this.target === null) return;
-    const { origin, direction, steps } = this.target;
-    let frame: AimFrame = { origin, direction, circleCentre: origin, pathLength: null };
+    const { origin, casterRadius, direction, steps } = this.target;
+    let frame: AimFrame = {
+      origin,
+      casterRadius,
+      direction,
+      circleCentre: origin,
+      pathLength: null,
+    };
     const drawn = new Set<string>();
     for (const { shape, reach } of steps) {
       if (reach !== null) {

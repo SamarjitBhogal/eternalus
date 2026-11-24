@@ -18,6 +18,7 @@ import { BuffEffect } from '../effects/BuffEffect';
 import { DamageEffect } from '../effects/DamageEffect';
 import { DashEffect } from '../effects/DashEffect';
 import { DebuffEffect } from '../effects/DebuffEffect';
+import { ExecuteEffect } from '../effects/ExecuteEffect';
 import { KnockbackEffect } from '../effects/KnockbackEffect';
 import { ProjectileEffect } from '../effects/ProjectileEffect';
 import { SummonEffect } from '../effects/SummonEffect';
@@ -68,6 +69,7 @@ export const castSteps = (
       new BuffEffect(STATUS_EFFECTS),
       new ProjectileEffect(PROJECTILES),
       new SummonEffect(OBSTACLE_DEFINITIONS),
+      new ExecuteEffect(),
     ],
     new ContentCatalogue([fakeAbility({ id: 'test-cast', effects, scaling })]),
   );

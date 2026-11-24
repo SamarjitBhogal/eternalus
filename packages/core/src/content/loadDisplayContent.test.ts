@@ -187,7 +187,7 @@ describe('loadDisplayContent', () => {
     );
   });
 
-  it('marks exactly the nine built abilities available; the others have no steps', () => {
+  it('marks exactly the ten built abilities available; the others have no steps', () => {
     const { abilities } = load();
 
     expect(abilities.filter((ability) => ability.isAvailable).map((ability) => ability.id)).toEqual(
@@ -198,6 +198,7 @@ describe('loadDisplayContent', () => {
         'fury',
         'fury-dash',
         'slam',
+        'rip-and-tear',
         'shield-wall',
         'berserk',
         'shockwave',

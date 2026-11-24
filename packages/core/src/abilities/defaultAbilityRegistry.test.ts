@@ -11,7 +11,7 @@ import { fakeAbility, SHIPPED_EFFECT_KINDS } from './__fixtures__/fakeAbilities'
 import { createDefaultAbilityRegistry } from './defaultAbilityRegistry';
 
 /** A damage step with a shape kind the default registry has no line for. */
-const CONE_DAMAGE = { kind: 'damage', shape: { kind: 'cone' } } as const;
+const RING_DAMAGE = { kind: 'damage', shape: { kind: 'ring' } } as const;
 
 describe('createDefaultAbilityRegistry', () => {
   it('composes every shipped ability at build: every shape and restriction kind is registered', () => {
@@ -22,6 +22,7 @@ describe('createDefaultAbilityRegistry', () => {
     expect(registry.shapeFor('circle').kind).toBe('circle');
     expect(registry.shapeFor('path').kind).toBe('path');
     expect(registry.shapeFor('hit').kind).toBe('hit');
+    expect(registry.shapeFor('cone').kind).toBe('cone');
   });
 
   it('makes every shipped ability with effects available: every effect kind it names is registered', () => {
@@ -35,6 +36,7 @@ describe('createDefaultAbilityRegistry', () => {
       'fury',
       'fury-dash',
       'slam',
+      'rip-and-tear',
       'shield-wall',
       'berserk',
       'shockwave',
@@ -46,7 +48,7 @@ describe('createDefaultAbilityRegistry', () => {
 
   it('fails at build, not at cast, when an ability names a shape kind it has no line for', () => {
     const abilities = new ContentCatalogue([
-      fakeAbility({ id: 'cone-strike', effects: [CONE_DAMAGE] }),
+      fakeAbility({ id: 'ring-strike', effects: [RING_DAMAGE] }),
     ]);
 
     expect(() => createDefaultAbilityRegistry(abilities, 30)).toThrow(ContentValidationError);

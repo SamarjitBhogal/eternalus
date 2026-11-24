@@ -16,6 +16,13 @@ export type StatusStat =
 export type StatusFlag =
   'cannot-move' | 'cannot-attack' | 'cannot-cast' | 'control-immune' | 'untargetable' | 'hidden';
 
+/**
+ * How a status steers its holder while it lasts, over every command, controller and pathing steer
+ * (Fear, DEC-203): `flee-source` runs straight away from the status's source. One `StatusSteering`
+ * strategy per kind (`entities/strategies/defaultStrategyRegistry.ts`, `StatusSteeringSystem`).
+ */
+export type StatusSteeringKind = 'flee-source';
+
 /** Whether a status helps, hurts or transforms its target (architecture 05 section 8). */
 type StatusPolarity = 'buff' | 'debuff' | 'form';
 
@@ -86,6 +93,11 @@ type StatusEffectBase = {
    * absent = it does not.
    */
   readonly endsOnHit?: boolean;
+  /**
+   * How the status steers its holder (Fear's flight, DEC-203); absent = it does not. A status that
+   * holds its holder in place (a cower) needs none: `cannot-move` does it.
+   */
+  readonly steering?: StatusSteeringKind;
 };
 
 /**

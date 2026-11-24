@@ -100,6 +100,35 @@ describe('DamagePipeline', () => {
     expect(state.events.recentEvents()).toEqual([]);
   });
 
+  it('kills outright on an execute: no step runs, the shields go too, and it is a killing hit (DEC-204)', () => {
+    const state = setUp();
+    healthOf(state).addShield('entity-50', 10);
+    const blockAll = { name: 'block-all', adjust: () => 0 };
+
+    const result = new DamagePipeline([blockAll]).execute(state, 'entity-1', SOURCE);
+
+    expect(result).toEqual({ applied: true, amount: 100, absorbed: 10, killed: true });
+    expect(state.events.recentEvents().map(({ type, payload }) => [type, payload])).toEqual([
+      ['damage-applied', { targetId: 'entity-1', amount: 100, absorbed: 10, source: SOURCE }],
+      ['entity-died', { entityId: 'entity-1', killer: SOURCE }],
+    ]);
+  });
+
+  it('executes nothing that is missing or already dead', () => {
+    const state = setUp();
+    const pipeline = new DamagePipeline();
+    pipeline.execute(state, 'entity-1', SOURCE);
+
+    expect(pipeline.execute(state, 'entity-1', SOURCE)).toEqual({
+      applied: false,
+      reason: 'already-dead',
+    });
+    expect(pipeline.execute(state, 'entity-404', SOURCE)).toEqual({
+      applied: false,
+      reason: 'no-target',
+    });
+  });
+
   it('rejects a missing target without throwing', () => {
     expect(new DamagePipeline().apply(setUp(), 'entity-404', 5, SOURCE)).toEqual({
       applied: false,

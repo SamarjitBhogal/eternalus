@@ -128,12 +128,14 @@ export class Movement {
    *
    * @param speedScale - Multiplies `maxSpeed` for this tick (statuses: 0.7 slowed, 0 stunned,
    *   above 1 enraged). The speed limit (`limitSpeed`) still caps the result.
+   * @param heading - The heading for this tick only, in place of the entity's own (a status that
+   *   steers it, Fear); the own heading stays as it is. The own heading by default.
    */
-  public advance(speedScale = 1): void {
+  public advance(speedScale = 1, heading: Vec2 = this.currentHeading): void {
     const cap = Math.min(this.maxSpeed * speedScale, this.currentSpeedLimit);
     this.currentTopSpeed = cap;
-    if (this.currentHeading.x !== 0 || this.currentHeading.y !== 0) {
-      this.accelerateToward(this.currentHeading, cap);
+    if (heading.x !== 0 || heading.y !== 0) {
+      this.accelerateToward(heading, cap);
       return;
     }
 

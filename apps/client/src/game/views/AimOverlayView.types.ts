@@ -22,22 +22,25 @@ export type AimStep = {
 
 /**
  * What the range overlay draws this frame (`AimTargeting` builds it): where the caster is drawn,
- * the unit direction toward the pointer (the zero vector while the pointer is on the caster) and
- * the selected ability's steps in cast order.
+ * its body radius, the unit direction toward the pointer (the zero vector while the pointer is on
+ * the caster) and the selected ability's steps in cast order.
  */
 export type AimTarget = {
   readonly origin: Vec2;
+  readonly casterRadius: number;
   readonly direction: Vec2;
   readonly steps: readonly AimStep[];
 };
 
 /**
- * Where an area is drawn for this aim: the caster, the unit direction toward the pointer (the zero
- * vector while the pointer is on the caster), the centre a circle takes (the caster, or the end of
- * a dash that came before it) and the length of a path (a dash's distance), `null` before any dash.
+ * Where an area is drawn for this aim: the caster and its body radius (a cone's reach counts from
+ * the body edge, DEC-319), the unit direction toward the pointer (the zero vector while the pointer
+ * is on the caster), the centre a circle takes (the caster, or the end of a dash that came before
+ * it) and the length of a path (a dash's distance), `null` before any dash.
  */
 export type AimFrame = {
   readonly origin: Vec2;
+  readonly casterRadius: number;
   readonly direction: Vec2;
   readonly circleCentre: Vec2;
   readonly pathLength: number | null;
@@ -45,7 +48,7 @@ export type AimFrame = {
 
 /**
  * One painter per `EffectShape` kind. A new shape kind in core makes this type fail to compile
- * until its painter is added: the one place a cone (and its second, lighter circle) joins.
+ * until its painter is added (as the cone's was, with its full-turn circle).
  */
 export type ShapePainters = {
   readonly [K in keyof AimShapeOf]: (

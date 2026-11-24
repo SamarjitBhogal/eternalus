@@ -8,12 +8,17 @@ export type ShapeSpec = { readonly kind: string };
  * Where a step's shape sits: a segment from `from` to `to`. A step of the cast itself sits on the
  * caster (`from` = `to`); a dash runs its `onPath` steps on its sweep and its `onEnd` steps where
  * it stops (S1 `EffectShape`). `targetId` is the body an on-hit cast struck (`HitEffects.runSteps`),
- * the one body the `hit` shape holds.
+ * the one body the `hit` shape holds. `CastInstance` adds the cast's aim and the caster's size, for
+ * the `cone` shape.
  */
 export type ShapePlacement = {
   readonly from: Vec2;
   readonly to: Vec2;
   readonly targetId?: EntityId;
+  /** The cast's aim, a unit vector (`CastContext.direction`): the way a fan points; absent = none. */
+  readonly direction?: Vec2;
+  /** The caster's body radius: a fan's reach counts from the body edge (DEC-319); absent = 0. */
+  readonly casterRadius?: number;
 };
 
 /** A body a shape is tested against: its id, and the circle of a body that is not a map object. */
@@ -24,6 +29,12 @@ export type ShapeBody = {
 };
 
 /**
+ * The list a step is authored in, as the boot check sees it (HC-B26 (5)): `isOnHit` for an `onHit`
+ * list (a shot's or a status's), the one list whose steps are placed on a struck body.
+ */
+export type StepList = { readonly isOnHit: boolean };
+
+/**
  * One kind of effect area (plan arch call 12): answers whether a body overlaps it. Stateless; one
  * instance per kind in the `AbilityRegistry`. A new shape kind is one class and one
  * `defaultAbilityRegistry.ts` line.
@@ -31,8 +42,11 @@ export type ShapeBody = {
 export interface AreaShape<S extends ShapeSpec = ShapeSpec> {
   /** The registry key, e.g. `circle`. */
   readonly kind: S['kind'];
-  /** What is wrong with `shape` as authored, or nothing; run at boot by `AbilityRegistry.resolveAll`. */
-  validate(shape: S): readonly string[];
+  /**
+   * What is wrong with `shape` as authored in a step of `list`, or nothing; run at boot by
+   * `AbilityRegistry.resolveAll` and `checkStatusLinks`.
+   */
+  validate(shape: S, list: StepList): readonly string[];
   /** Whether `body` (its circle, or its id) overlaps `shape` placed at `placement`. */
   overlaps(shape: S, placement: ShapePlacement, body: ShapeBody): boolean;
   /**

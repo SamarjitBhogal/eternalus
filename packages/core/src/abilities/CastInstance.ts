@@ -1,3 +1,4 @@
+import { Transform } from '../components/Transform';
 import { normalize } from '../utils/vec2';
 import type { CastContext, EffectStep } from './AbilityEffect.types';
 import type { CastStep } from './AbilityRegistry.types';
@@ -53,10 +54,21 @@ export class CastInstance {
     return next;
   }
 
-  private contextAt(placement: ShapePlacement): CastContext {
+  /**
+   * The context of the steps placed at `at`, with the cast's aim and the caster's body radius added
+   * to the placement (a `cone` reads them).
+   */
+  private contextAt(at: ShapePlacement): CastContext {
     const { casterId, ability, slot, aim, origin, casterLevel, tick } = this.facts;
     const { state, effects, targets, damage, statuses, launcher, summoner } = this.services;
     const toAim = { x: aim.point.x - origin.x, y: aim.point.y - origin.y };
+    const direction = toAim.x === 0 && toAim.y === 0 ? { x: 0, y: 0 } : normalize(toAim);
+    const casterRadius = state.entities.get(casterId)?.findComponent(Transform)?.radius;
+    const placement: ShapePlacement = {
+      ...at,
+      direction,
+      ...(casterRadius === undefined ? {} : { casterRadius }),
+    };
     const { scaling } = ability.definition;
     return {
       casterId,
@@ -65,7 +77,7 @@ export class CastInstance {
       tick,
       state,
       aim,
-      direction: toAim.x === 0 && toAim.y === 0 ? { x: 0, y: 0 } : normalize(toAim),
+      direction,
       placement,
       scaled: (field, value) => value * (1 + (scaling[field]?.perLevel ?? 0) * (casterLevel - 1)),
       casterLevel,

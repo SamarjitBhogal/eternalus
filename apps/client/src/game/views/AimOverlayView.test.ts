@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
 import {
   AIM_CIRCLE_SEGMENTS,
+  AIM_CONE_CIRCLE_COLORS,
+  AIM_CONE_FAN_COLORS,
   AIM_OVERLAY_FILL_COLOR,
   AIM_OVERLAY_OUTLINE_COLOR,
 } from './AimOverlayView.constants';
@@ -13,6 +15,8 @@ import { AIM_SHAPE_PAINTERS } from './aimShapePainters';
 
 const ABILITIES = loadDisplayContent(createDefaultGameConfig().tickRate).abilities;
 const ORIGIN = { x: 10, y: 20 };
+/** The caster's body radius (a Sentinel's, DEC-06): a cone's reach counts from its edge. */
+const CASTER_RADIUS = 1.25;
 
 /**
  * The target of the shipped ability `abilityId` cast from (10, 20) toward `aim`, each dash going
@@ -30,8 +34,11 @@ const targetOf = (abilityId: string, aim: { x: number; y: number }, reach?: numb
       reach: distance === undefined ? null : (reach ?? distance),
     }),
   );
-  return { origin: ORIGIN, direction, steps };
+  return { origin: ORIGIN, casterRadius: CASTER_RADIUS, direction, steps };
 };
+
+/** Rip & Tear: a 90-degree fan 3 m past the body edge and the full circle of its range. */
+const coneTarget = (aim: { x: number; y: number }): AimTarget => targetOf('rip-and-tear', aim);
 
 const drawn = (target: AimTarget | null): RecordingRenderer => {
   const renderer = new RecordingRenderer();
@@ -134,6 +141,7 @@ describe('AimOverlayView', () => {
   it("draws no area for a dash's own row, which still moves the end circle to its reach", () => {
     const target: AimTarget = {
       origin: ORIGIN,
+      casterRadius: CASTER_RADIUS,
       direction: { x: 1, y: 0 },
       steps: [
         { shape: null, reach: 3 },
@@ -149,6 +157,45 @@ describe('AimOverlayView', () => {
     }
   });
 
+  it('draws Rip & Tear as a darker-blue fan toward the pointer and a lighter-blue circle of its range (DEC-206 (3))', () => {
+    // 3 m past the 1.25 m body (DEC-319): 4.25 m from the caster's centre; the fan 90 degrees wide.
+    const renderer = drawn(coneTarget({ x: 30, y: 20 }));
+
+    const [fan, circle, ...rest] = fills(renderer);
+    expect(rest).toEqual([]);
+    expect(fan?.[0]).toEqual(ORIGIN);
+    const rim = fan?.slice(1) ?? [];
+    for (const radius of radiusOf(rim, ORIGIN)) {
+      expect(radius).toBeCloseTo(4.25);
+    }
+    const angles = rim.map(({ x, y }) => (Math.atan2(y - ORIGIN.y, x - ORIGIN.x) * 180) / Math.PI);
+    expect(angles[0]).toBeCloseTo(-45);
+    expect(angles.at(-1)).toBeCloseTo(45);
+    expect(circle).toHaveLength(AIM_CIRCLE_SEGMENTS);
+    for (const radius of radiusOf(circle ?? [], ORIGIN)) {
+      expect(radius).toBeCloseTo(4.25);
+    }
+    const colours = renderer.calls.map(({ args }) => args[1]);
+    expect(colours).toEqual([
+      AIM_CONE_FAN_COLORS.fill,
+      AIM_CONE_FAN_COLORS.outline,
+      AIM_CONE_CIRCLE_COLORS.fill,
+      AIM_CONE_CIRCLE_COLORS.outline,
+    ]);
+  });
+
+  it('turns the fan with the pointer, and draws only the circle with the pointer on the caster', () => {
+    const [north] = fills(drawn(coneTarget({ x: 10, y: 90 })));
+    const rim = north?.slice(1) ?? [];
+    const angles = rim.map(({ x, y }) => (Math.atan2(y - ORIGIN.y, x - ORIGIN.x) * 180) / Math.PI);
+
+    expect(angles[0]).toBeCloseTo(45);
+    expect(angles.at(-1)).toBeCloseTo(135);
+    const onCaster = fills(drawn(coneTarget(ORIGIN)));
+    expect(onCaster).toHaveLength(1);
+    expect(onCaster[0]).toHaveLength(AIM_CIRCLE_SEGMENTS);
+  });
+
   it('draws nothing without a target, as in quick cast or with no ability selected', () => {
     expect(drawn(null).calls).toEqual([]);
   });
@@ -162,7 +209,6 @@ describe('AimOverlayView', () => {
   });
 
   it('draws each shape kind through its own painter, so a new kind is one more painter', () => {
-    // A cone would be one more key of `ShapePainters` and one more painter; the view is unchanged.
     const calls: string[] = [];
     const painters: ShapePainters = {
       ...AIM_SHAPE_PAINTERS,
@@ -173,6 +219,7 @@ describe('AimOverlayView', () => {
     const view = new AimOverlayView(painters);
     view.show({
       origin: ORIGIN,
+      casterRadius: CASTER_RADIUS,
       direction: { x: 1, y: 0 },
       steps: [{ shape: { kind: 'circle', radius: 2 }, reach: null }],
     });

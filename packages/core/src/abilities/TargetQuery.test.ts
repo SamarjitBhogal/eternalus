@@ -126,6 +126,23 @@ describe('TargetQuery', () => {
     expect(everyone).toHaveLength(foes.length + 2);
   });
 
+  it('keeps only the bodies whose health, read now, meets the filter’s health condition (DEC-204)', () => {
+    const { state, caster, add, query } = setUp();
+    const at = (left: number) => {
+      const dummy = add('light-mob', 'training-dummy', 'dark', { x: 1, y: 0 });
+      dummy.getComponent(Health).applyDamage(100 - left); // a dummy has 100 health
+      return dummy.id;
+    };
+    const [low, edge, high] = [at(29), at(30), at(100)];
+    const find = (health: { below?: number; atOrAbove?: number }) =>
+      query.find(state, caster.id, DISC, ON_CASTER, { team: 'enemies', health });
+
+    expect(find({ below: 0.3 })).toEqual([low]);
+    expect(find({ atOrAbove: 0.3 })).toEqual([edge, high]);
+    expect(find({ atOrAbove: 0.3, below: 1 })).toEqual([edge]);
+    expect(find({})).toEqual([low, edge, high]);
+  });
+
   it('leaves the caster out unless the filter includes it', () => {
     const { state, caster, query } = setUp();
 

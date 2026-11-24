@@ -3,7 +3,7 @@ import { isUnitFamily } from '../../entities/unitFamilies';
 import type { DamageSource } from '../../state/GameEvents.types';
 import type { AbilityDisplayStep } from '../../content/loadDisplayContent';
 import type { AbilityEffect, CastContext } from '../AbilityEffect.types';
-import { mustBePositive, mustNotBeNegative } from '../specChecks';
+import { healthConditionProblems, mustBePositive, mustNotBeNegative } from '../specChecks';
 
 /**
  * Damages every enemy in the step's shape through the match's one `DamagePipeline` (architecture
@@ -15,11 +15,15 @@ import { mustBePositive, mustNotBeNegative } from '../specChecks';
 export class DamageEffect implements AbilityEffect<DamageSpec> {
   public readonly kind = 'damage';
 
-  /** A hit needs a positive amount, and a structure multiplier, when set, of 0 or more. */
+  /**
+   * A hit needs a positive amount, a structure multiplier, when set, of 0 or more, and health
+   * bounds, when set, from 0 to 1.
+   */
   public validate(spec: DamageSpec): readonly string[] {
     return [
       ...mustBePositive(spec.amount, 'damage amount'),
       ...mustNotBeNegative(spec.structureMultiplier, 'structureMultiplier'),
+      ...healthConditionProblems(spec.health),
     ];
   }
 
@@ -28,7 +32,7 @@ export class DamageEffect implements AbilityEffect<DamageSpec> {
     return [{ kind, shape }];
   }
 
-  /** Deals the step's damage to every enemy in its shape, in id order. */
+  /** Deals the step's damage to every enemy in its shape whose health meets its condition, in id order. */
   public apply(spec: DamageSpec, cast: CastContext): void {
     const { state } = cast;
     const amount = cast.scaled('amount', spec.amount);
@@ -37,7 +41,7 @@ export class DamageEffect implements AbilityEffect<DamageSpec> {
       kind: 'ability',
       definitionId: cast.abilityId,
     };
-    for (const targetId of cast.targets(spec.shape, { team: 'enemies' })) {
+    for (const targetId of cast.targets(spec.shape, { team: 'enemies', health: spec.health })) {
       const family = state.entities.get(targetId)?.family ?? 'unit';
       const multiplier = isUnitFamily(family) ? 1 : (spec.structureMultiplier ?? 1);
       cast.damage.apply(state, targetId, amount * multiplier, source);

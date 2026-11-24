@@ -1,4 +1,5 @@
 import type { StatusEffectDefinition } from '../content/status-effects/statusEffects.types';
+import type { MutableVec2 } from '../utils/vec2.types';
 
 /**
  * One active status on one entity (architecture 05 section 8). `StatusEffects` keeps and reuses
@@ -29,6 +30,12 @@ export class StatusEffectRuntime {
    */
   public isBroken = false;
 
+  /**
+   * The heading a status that steers its holder (`definition.steering`, Fear) last gave it, written
+   * by `StatusSteeringSystem` each tick; zero before the first and for any other status.
+   */
+  public readonly heading: MutableVec2 = { x: 0, y: 0 };
+
   /** @param definition - The status this is an instance of; `start` sets it again on reuse. */
   public constructor(public definition: StatusEffectDefinition) {}
 
@@ -48,6 +55,8 @@ export class StatusEffectRuntime {
     this.sourceId = sourceId;
     this.stacks = 1;
     this.isBroken = false;
+    this.heading.x = 0;
+    this.heading.y = 0;
     this.periodAnchorTick = tick;
     this.periodTicks = definition.periodic?.everyTicks ?? null;
     this.expiresTick = this.expiryOf(tick, durationTicks);

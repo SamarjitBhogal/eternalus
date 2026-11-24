@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { CONCUSSION } from '../content/status-effects/concussion';
+import { FEARED } from '../content/status-effects/feared';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import type { StatusEffectRuntime } from './StatusEffectRuntime';
 import { StatusEffects } from './StatusEffects';
@@ -17,6 +18,34 @@ const slow = (id: string, value: number) =>
   ]).get(id);
 
 describe('StatusEffects', () => {
+  it('knows the statuses its content is immune to (DEC-207)', () => {
+    const statuses = new StatusEffects(['feared']);
+
+    expect(statuses.isImmuneTo('feared')).toBe(true);
+    expect(statuses.isImmuneTo('bleed')).toBe(false);
+    expect(new StatusEffects().isImmuneTo('feared')).toBe(false);
+  });
+
+  it('gives the newest unbroken status that steers, with a heading that starts at zero', () => {
+    const statuses = new StatusEffects();
+    const feared = LOADED.get('feared');
+    const otherFear = loadStatusEffects(30, 2, [{ ...FEARED, id: 'dread', endsOnHit: true }]).get(
+      'dread',
+    );
+
+    expect(statuses.steering).toBeUndefined();
+    statuses.apply(BLEED, 'a', 0);
+    statuses.apply(feared, 'a', 0);
+    expect(statuses.steering?.definition.id).toBe('feared');
+    expect(statuses.steering?.heading).toEqual({ x: 0, y: 0 });
+    statuses.apply(otherFear, 'b', 1);
+    expect(statuses.steering?.definition.id).toBe('dread');
+    statuses.breakOnHit(2);
+    expect(statuses.steering?.definition.id).toBe('feared');
+    statuses.expire(60);
+    expect(statuses.steering).toBeUndefined();
+  });
+
   it('expires a status on the exact tick its duration ends', () => {
     const statuses = new StatusEffects();
     statuses.apply(LOADED.get('concussion'), 'a', 10); // 3 s = 90 ticks

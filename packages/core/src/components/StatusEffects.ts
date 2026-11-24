@@ -9,11 +9,22 @@ import { StatusEffectRuntime } from './StatusEffectRuntime';
  * The statuses on an entity (architecture 05 section 8) and what they add up to: one multiplier per
  * stat (each modifier's `value` once per stack, `StatModifier`) and the set of flags, recomputed
  * whenever the list changes or a status breaks, so every reader asks one question per tick. An
- * entity without this component is immune to statuses (structures). Ids are plain strings
- * (`components/` may not import `state/`).
+ * entity without this component is immune to statuses (structures); one with it may be immune to
+ * some by its content (`UnitDefinition.statusImmunities`: the Sentinel to Fear, DEC-207). Ids are
+ * plain strings (`components/` may not import `state/`).
  */
 export class StatusEffects {
   private readonly activeList: StatusEffectRuntime[] = [];
+
+  private readonly immunities: ReadonlySet<string>;
+
+  /** The newest active status that steers its holder; recomputed with the flags. */
+  private steeringStatus: StatusEffectRuntime | undefined = undefined;
+
+  /** @param immunities - The ids of the statuses this entity never gets (its content's). */
+  public constructor(immunities: readonly string[] = []) {
+    this.immunities = new Set(immunities);
+  }
 
   private readonly spare: StatusEffectRuntime[] = [];
 
@@ -106,6 +117,19 @@ export class StatusEffects {
     return hasBroken;
   }
 
+  /** Whether this entity never gets the status `statusId` (`StatusEffectApplier` refuses it). */
+  public isImmuneTo(statusId: string): boolean {
+    return this.immunities.has(statusId);
+  }
+
+  /**
+   * The newest active, unbroken status that steers this entity (`definition.steering`, Fear), whose
+   * `heading` `MovementSystem` walks along in place of the entity's own; `undefined` with none.
+   */
+  public get steering(): StatusEffectRuntime | undefined {
+    return this.steeringStatus;
+  }
+
   /** What `stat` is multiplied by: 1 with no modifier on it. */
   public multiplier(stat: StatusStat): number {
     return this.multipliers.get(stat) ?? 1;
@@ -129,9 +153,14 @@ export class StatusEffects {
     this.multipliers.clear();
     this.bonuses.clear();
     this.flags.clear();
-    for (const { definition, stacks, isBroken } of this.activeList) {
+    this.steeringStatus = undefined;
+    for (const status of this.activeList) {
+      const { definition, stacks, isBroken } = status;
       if (isBroken) {
         continue;
+      }
+      if (definition.steering !== undefined) {
+        this.steeringStatus = status;
       }
       for (const { stat, op, value } of definition.modifiers) {
         if (op === 'add') {
