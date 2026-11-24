@@ -3,7 +3,12 @@ import { describe, expect, it } from 'vitest';
 
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
 import { DefaultEntityView } from './DefaultEntityView';
-import { FOCUS_RING_COLOR, NEUTRAL_ENTITY_COLOR } from './entityViews.constants';
+import {
+  BODY_OUTLINE_EDGE_COLOR,
+  BODY_OUTLINE_EDGE_WIDTH,
+  FOCUS_RING_COLOR,
+  NEUTRAL_ENTITY_COLOR,
+} from './entityViews.constants';
 import { TEAM_COLORS } from './MapView.constants';
 
 const dummy = (team: EntitySnapshot['team']): EntitySnapshot => ({
@@ -81,5 +86,34 @@ describe('DefaultEntityView', () => {
     );
 
     expect(renderer.calls).toEqual([]);
+  });
+
+  it('draws a body with an outline (a Shield Wall) as that outline, filled and edged, not a disc', () => {
+    const wall = [
+      { x: 12.5, y: 8 },
+      { x: 13.5, y: 8 },
+      { x: 13.5, y: 12 },
+      { x: 12.5, y: 12 },
+    ];
+    const renderer = new RecordingRenderer();
+
+    new DefaultEntityView().draw(
+      {
+        entity: { ...dummy(null), kind: 'obstacle', family: 'obstacle', outline: [wall] },
+        position: AT,
+        facing: EAST,
+        tick: 0,
+        isFocused: false,
+      },
+      renderer,
+    );
+
+    expect(renderer.calls).toEqual([
+      { op: 'fillPolygon', args: [wall, NEUTRAL_ENTITY_COLOR] },
+      {
+        op: 'strokePath',
+        args: [[...wall, wall[0]], BODY_OUTLINE_EDGE_COLOR, BODY_OUTLINE_EDGE_WIDTH],
+      },
+    ]);
   });
 });

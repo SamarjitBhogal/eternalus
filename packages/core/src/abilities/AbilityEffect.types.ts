@@ -3,6 +3,7 @@ import type { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import type { Aim } from '../components/AbilitySlotRuntime.types';
 import type {
   AbilityBase,
+  AbilityRejectReason,
   AbilitySlot,
   WithoutTimes,
 } from '../content/abilities/AbilityDefinition.types';
@@ -10,6 +11,7 @@ import type { AbilityDisplayStep } from '../content/loadDisplayContent';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { ShotLauncher } from '../state/ShotLauncher.types';
+import type { Summoner } from '../state/Summoner.types';
 import type { Vec2 } from '../utils/geometry.types';
 import type { ShapePlacement, ShapeSpec } from './shapes/AreaShape.types';
 import type { TargetFilter } from './TargetQuery.types';
@@ -53,6 +55,8 @@ export type CastContext = {
   readonly statuses: StatusEffectApplier;
   /** Puts a shot into the match (a `projectile` step). */
   readonly launcher: ShotLauncher;
+  /** Puts a body into the match and takes one out (a `summon` step). */
+  readonly summoner: Summoner;
   /** Every live entity that overlaps `shape` at this step's placement and passes `filter`, by id. */
   targets(shape: ShapeSpec, filter: TargetFilter): readonly EntityId[];
   /** The point of `shape` at this step's placement that a push at `point` moves away from. */
@@ -87,4 +91,16 @@ export interface AbilityEffect<S extends EffectStep = EffectStep> {
   describe(spec: WithoutTimes<S>, nested: NestedDescriber): readonly AbilityDisplayStep[];
   /** Applies `spec` for the cast described by `cast`, this tick. */
   apply(spec: S, cast: CastContext): void;
+  /**
+   * Why the step cannot run for a cast of `casterId` aimed with `aim` now (`no-target`: a summoned
+   * wall would overlap a wall), or `null` when it can. `CastValidator` asks every step of the
+   * ability at the cast, after the targeting, so a refused cast spends nothing. Optional: a step
+   * without it takes any aim.
+   */
+  aimBlockedBy?(
+    spec: S,
+    aim: Aim,
+    casterId: EntityId,
+    state: GameState,
+  ): AbilityRejectReason | null;
 }

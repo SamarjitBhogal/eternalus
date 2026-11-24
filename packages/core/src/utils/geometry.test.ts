@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   boundsOf,
   distance,
+  doPolygonsOverlap,
   doRectsOverlap,
   doesPolygonOverlapRect,
   distanceToPath,
@@ -12,6 +13,7 @@ import {
   isPointInRect,
   lerpPoint,
   nearestPointOnPolygons,
+  placePolygon,
   polarPoint,
   regularPolygon,
 } from './geometry';
@@ -165,5 +167,47 @@ describe('geometry', () => {
     // No corners: Infinity, and `out` keeps what it held.
     expect(nearestPointOnPolygons({ x: 0, y: 0 }, [], out)).toBe(Number.POSITIVE_INFINITY);
     expect(out).toEqual({ x: 20, y: 10 });
+  });
+
+  it('finds overlap of two polygons by a corner inside, a crossing edge or a touch, and none apart', () => {
+    const at = (x: number, y: number) => [
+      { x, y },
+      { x: x + 2, y },
+      { x: x + 2, y: y + 2 },
+      { x, y: y + 2 },
+    ];
+    const cross = [
+      { x: 1, y: -1 },
+      { x: 1.5, y: -1 },
+      { x: 1.5, y: 5 },
+      { x: 1, y: 5 },
+    ];
+
+    expect(doPolygonsOverlap(at(0, 0), at(1, 1))).toBe(true);
+    expect(doPolygonsOverlap(at(0, 0), cross)).toBe(true);
+    expect(doPolygonsOverlap(at(0, 0), at(2, 0))).toBe(true);
+    expect(doPolygonsOverlap(at(0, 0), at(3, 0))).toBe(false);
+  });
+
+  it('turns a forward-pointing outline to a facing and moves it to a position', () => {
+    const outline = [
+      { x: -0.5, y: -2 },
+      { x: 0.5, y: -2 },
+      { x: 0.5, y: 2 },
+      { x: -0.5, y: 2 },
+    ];
+
+    expect(placePolygon(outline, { x: 10, y: 20 }, { x: 1, y: 0 })).toEqual([
+      { x: 9.5, y: 18 },
+      { x: 10.5, y: 18 },
+      { x: 10.5, y: 22 },
+      { x: 9.5, y: 22 },
+    ]);
+    expect(placePolygon(outline, { x: 10, y: 20 }, { x: 0, y: 1 })).toEqual([
+      { x: 12, y: 19.5 },
+      { x: 12, y: 20.5 },
+      { x: 8, y: 20.5 },
+      { x: 8, y: 19.5 },
+    ]);
   });
 });

@@ -1,4 +1,5 @@
 import { loadKnockback } from '../content/abilities/loadKnockback';
+import { OBSTACLE_DEFINITIONS } from '../content/obstacles/obstacleCatalogue';
 import { PROJECTILES } from '../content/projectiles/projectileCatalogue';
 import { STATUS_EFFECTS } from '../content/status-effects/statusEffectCatalogue';
 import { AbilityRegistry } from './AbilityRegistry';
@@ -9,6 +10,7 @@ import { DashEffect } from './effects/DashEffect';
 import { DebuffEffect } from './effects/DebuffEffect';
 import { KnockbackEffect } from './effects/KnockbackEffect';
 import { ProjectileEffect } from './effects/ProjectileEffect';
+import { SummonEffect } from './effects/SummonEffect';
 import { MinLevelRestriction } from './restrictions/MinLevelRestriction';
 import { CircleShape } from './shapes/CircleShape';
 import { HitShape } from './shapes/HitShape';
@@ -29,6 +31,7 @@ import { SelfTargeting } from './targeting/SelfTargeting';
  *   (`loadKnockback`).
  * @param statuses - The statuses a debuff or a buff may name; the shipped ones by default.
  * @param projectiles - The projectiles a shot step may name; the shipped ones by default.
+ * @param bodies - The bodies a summon step may place; the shipped obstacles by default.
  * @throws ContentValidationError when the knock-back tuning is invalid (`loadKnockback`), or
  *   listing every ability that names a kind with no line here or has a step or shape its strategy
  *   refuses.
@@ -38,6 +41,7 @@ export const createDefaultAbilityRegistry = (
   tickRate: number,
   statuses: { has(id: string): boolean } = STATUS_EFFECTS,
   projectiles: ConstructorParameters<typeof ProjectileEffect>[0] = PROJECTILES,
+  bodies: ConstructorParameters<typeof SummonEffect>[0] = OBSTACLE_DEFINITIONS,
 ): AbilityRegistry => {
   const registry = new AbilityRegistry(abilities);
   registry.registerEffect(new DamageEffect());
@@ -46,6 +50,7 @@ export const createDefaultAbilityRegistry = (
   registry.registerEffect(new DashEffect());
   registry.registerEffect(new BuffEffect(statuses));
   registry.registerEffect(new ProjectileEffect(projectiles));
+  registry.registerEffect(new SummonEffect(bodies));
   registry.registerShape(new CircleShape());
   registry.registerShape(new PathShape());
   registry.registerShape(new HitShape());

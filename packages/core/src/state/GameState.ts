@@ -16,6 +16,7 @@ import type { EntityId, RemovalRecord } from './EntityStore.types';
 import { GameEvents } from './GameEvents';
 import type { DamageSource, GameEventMap } from './GameEvents.types';
 import { RECENT_COMMAND_CAPACITY } from './GameState.constants';
+import { SummonLedger } from './SummonLedger';
 import type {
   GameStateIndexes,
   GameStateTiming,
@@ -30,6 +31,7 @@ import { LaneStructures } from './LaneStructures';
 import type { CollisionQuery } from './CollisionQuery.types';
 import type { MatchWorld } from './MatchWorld';
 import type { PathQuery } from './PathQuery.types';
+import type { PlacedWalls } from './PlacedWalls.types';
 import type { EntitySnapshot, HordeSnapshot, Snapshot } from './Snapshot.types';
 import { PlayerSnapshotter } from './PlayerSnapshotter';
 import type { SlotReadiness } from './SlotReadiness.types';
@@ -96,6 +98,12 @@ export class GameState {
    * no `CollisionSystem` runs and nothing stops a unit.
    */
   public readonly collisions: CollisionQuery | null;
+  /**
+   * The walls bodies placed during the match join and leave (architecture 10 §5): whether an
+   * outline has room, and what makes it block walking and paths. `null` without map objects, as
+   * `collisions`.
+   */
+  public readonly walls: PlacedWalls | null;
   public readonly events: GameEvents;
   /**
    * Where the match is in its timeline and the only writers of it (architecture 12 §4, DEC-172,
@@ -114,12 +122,16 @@ export class GameState {
   /** The ultimate charge each entity was last announced to hold (for the invariant, 05 §16). */
   public readonly charges: ChargeLedger;
 
+  /** Which placed bodies (Shield Walls) each caster has standing, oldest first (05 §3 `summon`). */
+  public readonly summons: SummonLedger;
+
   /**
    * @param config - A config that passed `validateGameConfig()`.
    * @param seed - The match seed (a whole number from 0 to 2^32 - 1).
    * @param world - The match's map at runtime; without one, nothing spawns on lanes.
-   * @param indexes - The neighbour index `SpaceSystem` refills each tick, A\* for Legends and the
-   *   collision rule; each `null` without a map, the collision rule also without map objects.
+   * @param indexes - The neighbour index `SpaceSystem` refills each tick, A\* for Legends, the
+   *   collision rule and the placed walls; each `null` without a map, the collision rule and the
+   *   placed walls also without map objects.
    * @param timing - The resolved timeline marks and the countdown's end tick (`Simulation`);
    *   none in most unit tests.
    */
@@ -135,6 +147,7 @@ export class GameState {
     this.space = indexes.space ?? null;
     this.paths = indexes.paths ?? null;
     this.collisions = indexes.collisions ?? null;
+    this.walls = indexes.walls ?? null;
     this.rng = new SeededRandom(seed);
     this.events = new GameEvents(() => this.currentTick);
     this.match = new MatchRecord(
@@ -158,6 +171,7 @@ export class GameState {
     });
     new AllyDamageTally(this.events, this.entities, this.world, this.allyDamage);
     this.charges = new ChargeLedger(this.events);
+    this.summons = new SummonLedger(this.events);
   }
 
   /** The lane structures as they stood at match start (architecture 18 §6.2); empty until indexed. */

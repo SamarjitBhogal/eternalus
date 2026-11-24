@@ -10,6 +10,7 @@ import type { Entity } from '../entities/Entity';
 import type { GameEventMap } from '../state/GameEvents.types';
 import { casterState } from './__fixtures__/casterState';
 import { RecordingLauncher } from './__fixtures__/RecordingLauncher';
+import { RecordingSummoner } from './__fixtures__/RecordingSummoner';
 import { createDefaultAbilityRegistry } from './defaultAbilityRegistry';
 import { HitEffects } from './HitEffects';
 
@@ -34,7 +35,13 @@ const setUp = (statusId: string) => {
   statuses.apply(state, caster.id, statusId, caster.id);
   const applied: GameEventMap['status-applied'][] = [];
   state.events.on('status-applied', (payload) => applied.push(payload));
-  const hits = new HitEffects(REGISTRY, new DamagePipeline(), statuses, new RecordingLauncher());
+  const hits = new HitEffects(
+    REGISTRY,
+    new DamagePipeline(),
+    statuses,
+    new RecordingLauncher(),
+    new RecordingSummoner(),
+  );
   return { state, caster, struck, neighbour, applied, hits };
 };
 

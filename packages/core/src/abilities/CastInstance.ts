@@ -55,7 +55,7 @@ export class CastInstance {
 
   private contextAt(placement: ShapePlacement): CastContext {
     const { casterId, ability, slot, aim, origin, casterLevel, tick } = this.facts;
-    const { state, effects, targets, damage, statuses, launcher } = this.services;
+    const { state, effects, targets, damage, statuses, launcher, summoner } = this.services;
     const toAim = { x: aim.point.x - origin.x, y: aim.point.y - origin.y };
     const { scaling } = ability.definition;
     return {
@@ -73,6 +73,7 @@ export class CastInstance {
       damage,
       statuses,
       launcher,
+      summoner,
       targets: (shape, filter) => {
         const found = targets.find(state, casterId, shape, placement, filter, aim);
         // An area aimed at enemies hits them: the caster attacks them (DEC-322 (2)).

@@ -115,6 +115,17 @@ export class StateHasher {
       });
       parts.push(['ai', ...brains]);
     }
+    // Placed bodies (Shield Walls) are appended only once a caster has one, for the same reason.
+    if (state.summons.size > 0) {
+      const owners: unknown[] = [];
+      state.summons.forEach((ownerId, placed) => {
+        owners.push([
+          ownerId,
+          ...placed.flatMap(({ definitionId, entityId }) => [definitionId, entityId]),
+        ]);
+      });
+      parts.push(['summons', ...owners]);
+    }
     if (state.worldObjects !== undefined) parts.push(state.worldObjects.snapshot());
     return fnv1a(JSON.stringify(parts));
   }

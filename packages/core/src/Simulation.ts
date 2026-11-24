@@ -86,6 +86,7 @@ import { SpaceIndex } from './physics/SpaceIndex';
 import { CollisionResolver } from './physics/CollisionResolver';
 import type { StaticCollisionIndex } from './physics/StaticCollisionIndex';
 import { MatchPathfinderFactory } from './map/MatchPathfinderFactory';
+import { RuntimeWalls } from './map/RuntimeWalls';
 import { staticCollisionIndexOf } from './map/staticCollisionIndexOf';
 import { zoneAreaOf } from './map/zoneArea';
 import { loadProjectiles } from './content/projectiles/loadProjectiles';
@@ -94,6 +95,7 @@ import type { SystemContext } from './systems/System.types';
 import { SystemPipeline } from './systems/SystemPipeline';
 import { WorldObjectStore } from './state/WorldObjectStore';
 import { MAP_OBJECT_DEFINITIONS } from './content/maps/mapObjectDefinitions';
+import { OBSTACLE_DEFINITIONS } from './content/obstacles/obstacleCatalogue';
 import { CollisionSystem } from './systems/CollisionSystem';
 import type { PlayableTeam } from './teams/teams.types';
 import type { Vec2 } from './utils/geometry.types';
@@ -166,10 +168,13 @@ export class Simulation {
       ...(roster.length === 0 ? {} : { roster }),
       ...(duel === undefined ? {} : { duel }),
     };
-    const { space, world, paths, walls, collisions } = Simulation.buildWorld(
+    const { space, world, paths, walls, collisions, placed } = Simulation.buildWorld(
       map,
       validConfig,
       mapObjects,
+      (cells) => {
+        this.state.events.emit('terrain-changed', { cells });
+      },
     );
     // Without the default pipeline no director runs, so no mark would ever fire: list none.
     const schedule = systems === undefined ? timeline.schedule() : [];
@@ -177,9 +182,13 @@ export class Simulation {
       validConfig,
       seed,
       world,
-      { space, paths, collisions },
+      { space, paths, collisions, walls: placed },
       { schedule, countdownEndTick: timelineFrameOf(validConfig).countdownEndTick },
     );
+    // A placed wall stops blocking the moment its body leaves the world, whatever the cause.
+    this.state.events.on('entity-removed', ({ entityId }) => {
+      placed?.remove(entityId);
+    });
     const duelStarts =
       duel === undefined ? undefined : duelStartPoints(map, DUEL_RULES.startOffset);
     if (duel !== undefined) this.state.match.startDuel(duel.killTarget);
@@ -202,6 +211,7 @@ export class Simulation {
       createDefaultEntityRegistry(),
       Simulation.firstOf([
         new ContentCatalogue(Object.values(MAP_OBJECT_DEFINITIONS)),
+        OBSTACLE_DEFINITIONS,
         ZONE_DEFINITIONS,
         projectiles,
         units,
@@ -370,8 +380,9 @@ export class Simulation {
   }
 
   /**
-   * One definition source over `sources`, so one factory builds map objects, zones, shots, units
-   * and structures (architecture 04 §6): the first source that has an id answers for it.
+   * One definition source over `sources`, so one factory builds map objects, placed obstacles,
+   * zones, shots, units and structures (architecture 04 §6): the first source that has an id
+   * answers for it.
    */
   private static firstOf(sources: readonly DefinitionSource[]): DefinitionSource {
     const sourceOf = (id: string): DefinitionSource | undefined =>
@@ -749,33 +760,42 @@ export class Simulation {
    * the walls close off. Also with `mapObjects`, `walls` is the one static collision index, from
    * which a destroyed object is removed, and `collisions` the one `CollisionResolver` on it and the
    * map's bounds: `CollisionSystem` moves units with it and the state's `collisions` port cuts
-   * dashes with it.
+   * dashes with it. `placed` adds the walls of bodies placed during the match to that index and the
+   * grid and takes them out again (`RuntimeWalls`), telling `onCellsChanged` the cells it changed.
    */
   private static buildWorld(
     map: MapDefinition | undefined,
     config: GameConfig,
     mapObjects: readonly MapObject[] | undefined,
+    onCellsChanged: (cells: readonly number[]) => void,
   ): {
     readonly space: SpaceIndex | null;
     readonly world: MatchWorld | null;
     readonly paths: AStarPathfinder | null;
     readonly walls: StaticCollisionIndex | null;
     readonly collisions: CollisionResolver | null;
+    readonly placed: RuntimeWalls | null;
   } {
     if (map === undefined) {
-      return { space: null, world: null, paths: null, walls: null, collisions: null };
+      return {
+        space: null,
+        world: null,
+        paths: null,
+        walls: null,
+        collisions: null,
+        placed: null,
+      };
     }
     const { grid, paths } = new MatchPathfinderFactory().create(map, config, mapObjects);
     const walls = mapObjects === undefined ? null : staticCollisionIndexOf(map, mapObjects);
+    const bounds = { x: 0, y: 0, width: map.width, height: map.height };
     return {
       space: new SpaceIndex(map.width, map.height, SPACE_CELL_SIZE),
       world: new MatchWorld(map, grid),
       paths,
       walls,
-      collisions:
-        walls === null
-          ? null
-          : new CollisionResolver(walls, { x: 0, y: 0, width: map.width, height: map.height }),
+      collisions: walls === null ? null : new CollisionResolver(walls, bounds),
+      placed: walls === null ? null : new RuntimeWalls(walls, grid, bounds, onCellsChanged),
     };
   }
 

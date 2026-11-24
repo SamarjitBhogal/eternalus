@@ -7,6 +7,7 @@ import { Transform } from '../components/Transform';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { ShotLauncher } from '../state/ShotLauncher.types';
+import type { Summoner } from '../state/Summoner.types';
 import type { AbilityRegistry } from './AbilityRegistry';
 import { CastInstance } from './CastInstance';
 import type { OnHitCast } from './HitEffects.types';
@@ -30,12 +31,14 @@ export class HitEffects {
    * @param damage - The match's one damage pipeline, for the steps.
    * @param statuses - The match's one status applier, for the steps.
    * @param launcher - Puts a step's shot into the match.
+   * @param summoner - Puts a step's body into the match.
    */
   public constructor(
     private readonly registry: Pick<AbilityRegistry, 'effectFor' | 'shapeFor'>,
     private readonly damage: DamagePipeline,
     private readonly statuses: StatusEffectApplier,
     private readonly launcher: ShotLauncher,
+    private readonly summoner: Summoner,
   ) {
     this.targets = new TargetQuery(registry);
   }
@@ -122,6 +125,7 @@ export class HitEffects {
         damage: this.damage,
         statuses: this.statuses,
         launcher: this.launcher,
+        summoner: this.summoner,
       },
     ).run({ from: placement.from, to: placement.to, targetId });
   }

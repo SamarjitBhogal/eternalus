@@ -20,6 +20,7 @@ import { loadSpawnWaves } from '../content/structures/loadSpawnWaves';
 import { OPENING_WAVE } from '../content/structures/spawnWaves';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type { StructureDefinition } from '../content/structures/structures.types';
+import { EntitySummoner } from '../entities/EntitySummoner';
 import { ProjectileLauncher } from '../entities/ProjectileLauncher';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { LaneFlowFields } from '../map/LaneFlowFields';
@@ -70,8 +71,8 @@ import { SystemPipeline } from './SystemPipeline';
  * that need them, so a damage step applies to every hit and every status event comes from one
  * place. What a landed shot does is one `ProjectileImpact` per impact kind, from
  * `createDefaultProjectileImpacts`; the match's one `EntityFactory` builds the shots `CombatSystem`
- * fires and the units `SpawnSystem` spawns, and through one `ProjectileLauncher` the shots
- * abilities throw.
+ * fires and the units `SpawnSystem` spawns, through one `ProjectileLauncher` the shots
+ * abilities throw and through one `EntitySummoner` the bodies they place.
  */
 export class DefaultSystemPipeline extends SystemPipeline {
   /** Creates the pipeline from its injected parts (`DefaultSystemPipelineOptions`). */
@@ -99,7 +100,8 @@ export class DefaultSystemPipeline extends SystemPipeline {
     checkStatusLinks(abilities, statusEffects.all());
     const statuses = new StatusEffectApplier(statusEffects);
     const launcher = new ProjectileLauncher(factory);
-    const hits = new HitEffects(abilities, damage, statuses, launcher);
+    const summoner = new EntitySummoner(factory);
+    const hits = new HitEffects(abilities, damage, statuses, launcher, summoner);
     const flowFields =
       hordes === undefined || state.world === null
         ? null
@@ -108,6 +110,10 @@ export class DefaultSystemPipeline extends SystemPipeline {
             state.world.definition,
             map.flowFieldCorridorHalfWidth,
           );
+    // A wall placed or removed during the match changed these cells (07 §10).
+    state.events.on('terrain-changed', ({ cells }) => {
+      flowFields?.markDirty(cells);
+    });
     const world = state.world?.grid ?? null;
     const features = state.world?.definition.features ?? [];
     if (world !== null && state.worldObjects !== undefined) {
@@ -130,7 +136,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
     }
     super([
       ...(hordes === undefined ? [] : [...hordes.decide, new HordeSystem(state, HORDE_STEERING)]),
-      new AbilitySystem(abilities, validator, damage, statuses, launcher),
+      new AbilitySystem(abilities, validator, damage, statuses, launcher, summoner),
       // After the casts, so a cast spends before the tick's regeneration (plan arch call 13).
       new AetherRegenSystem(AETHER_REGEN, tickRate),
       new StatusEffectSystem(state, damage, statuses),

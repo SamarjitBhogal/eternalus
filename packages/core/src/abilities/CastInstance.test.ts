@@ -13,6 +13,7 @@ import { castSteps } from './__fixtures__/castSteps';
 import { fakeAbility, testAbilityRegistry } from './__fixtures__/fakeAbilities';
 import { RecordingEffect } from './__fixtures__/RecordingEffect';
 import { RecordingLauncher } from './__fixtures__/RecordingLauncher';
+import { RecordingSummoner } from './__fixtures__/RecordingSummoner';
 import { CastInstance } from './CastInstance';
 import { TargetQuery } from './TargetQuery';
 
@@ -61,6 +62,7 @@ const timeline = () => {
       damage: new DamagePipeline(),
       statuses: new StatusEffectApplier(STATUSES),
       launcher: new RecordingLauncher(),
+      summoner: new RecordingSummoner(),
     },
   );
   /** Steps the state to `tick`. */
@@ -121,6 +123,7 @@ describe('CastInstance', () => {
         damage: new DamagePipeline(),
         statuses: new StatusEffectApplier(loadStatusEffects(30, 2)),
         launcher: new RecordingLauncher(),
+        summoner: new RecordingSummoner(),
       },
     ).run(AT_ORIGIN);
 
@@ -162,6 +165,7 @@ describe('CastInstance', () => {
         damage: new DamagePipeline(),
         statuses: new StatusEffectApplier(loadStatusEffects(30, 2)),
         launcher: new RecordingLauncher(),
+        summoner: new RecordingSummoner(),
       },
     ).run(AT_ORIGIN);
     const [step] = strike.log;
@@ -195,6 +199,7 @@ describe('CastInstance', () => {
         damage: new DamagePipeline(),
         statuses: new StatusEffectApplier(loadStatusEffects(30, 2)),
         launcher: new RecordingLauncher(),
+        summoner: new RecordingSummoner(),
       },
     ).run(AT_ORIGIN);
 

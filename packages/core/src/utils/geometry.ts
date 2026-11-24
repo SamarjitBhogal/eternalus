@@ -192,3 +192,30 @@ export const doesPolygonOverlapRect = (polygon: Polygon, rect: Rect): boolean =>
     );
   });
 };
+
+/**
+ * Whether two polygons share any point: a corner of one inside the other, or crossing or
+ * touching edges (edges that only touch count). Where a body placed during the match may stand
+ * (`RuntimeWalls.isBlocked`).
+ */
+export const doPolygonsOverlap = (a: Polygon, b: Polygon): boolean =>
+  a.some((point) => isPointInPolygon(point, b)) ||
+  b.some((point) => isPointInPolygon(point, a)) ||
+  a.some((start, index) => {
+    const end = a[(index + 1) % a.length] ?? start;
+    return b.some((corner, cornerIndex) =>
+      doSegmentsIntersect(start, end, corner, b[(cornerIndex + 1) % b.length] ?? corner),
+    );
+  });
+
+/**
+ * `outline`, authored around the origin with +x pointing forward, turned to point along `facing`
+ * (a unit vector) and moved to `position`: a body's local outline in the world (a Shield Wall's
+ * rectangle, `ObstacleDefinition.footprint`). Rotation by the facing's components, so no
+ * trigonometry.
+ */
+export const placePolygon = (outline: Polygon, position: Vec2, facing: Vec2): Polygon =>
+  outline.map(({ x, y }) => ({
+    x: position.x + x * facing.x - y * facing.y,
+    y: position.y + x * facing.y + y * facing.x,
+  }));

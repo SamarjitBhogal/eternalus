@@ -375,6 +375,19 @@ narrower than the grown body, the passes can end with the body still inside a wa
 can walk out but not deeper in (the `ponytail` remark on `CollisionResolver`).
 `Collider.shape.radius` stays the built radius; no code reads it at runtime.
 
+**2026-11-23 (branch `feat/sentinel-wall`, lane B PR 6; DEC-330 (7), DEC-307).** A wall can be
+added during the match (a Shield Wall, 05 §18). `StaticCollisionIndex` has `add`, and `remove`
+now takes a shape out of its buckets, so an id can be added again (a gate may reuse this).
+`map/RuntimeWalls` is the one place a placed body's outline joins and leaves the walls: `add` puts
+it into the index, stamps it on the nav grid and reports the changed cells as `terrain-changed`
+(07 §10), which marks the lane fields over them dirty; `remove` undoes all three, and `Simulation`
+calls it at every `entity-removed`. `abilities/` and `entities/` reach it through the
+`GameState.walls` port (`PlacedWalls`, beside `collisions`), which also answers whether an outline
+has room (`isBlocked`: no overlap with an indexed polygon, passages ignored, and inside the map).
+The map's own objects keep their removal path. `CollisionResolver` is unchanged: a unit that a
+new wall covers is pushed out by the summoner (`EntitySummoner`), so its precondition (no move
+starts inside a wall) still holds.
+
 ## Related
 
 - [04 Entity architecture](./04-entity-architecture.md)

@@ -1,6 +1,7 @@
 import type { CollisionQuery } from './CollisionQuery.types';
 import type { ScheduledMark } from './MatchState.types';
 import type { PathQuery } from './PathQuery.types';
+import type { PlacedWalls } from './PlacedWalls.types';
 import type { SpaceQuery } from './SpaceQuery.types';
 
 /**
@@ -49,4 +50,6 @@ export type GameStateIndexes = {
   readonly paths?: PathQuery | null;
   /** The walls and edge that stop a dash as they stop walking (architecture 10 §7). */
   readonly collisions?: CollisionQuery | null;
+  /** Where a body placed during the match may stand, and what makes it block (10 §5). */
+  readonly walls?: PlacedWalls | null;
 };

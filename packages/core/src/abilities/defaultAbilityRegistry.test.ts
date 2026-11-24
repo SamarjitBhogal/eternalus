@@ -35,6 +35,7 @@ describe('createDefaultAbilityRegistry', () => {
       'fury',
       'fury-dash',
       'slam',
+      'shield-wall',
       'berserk',
       'shockwave',
     ]);
