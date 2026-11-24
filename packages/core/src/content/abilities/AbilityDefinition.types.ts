@@ -89,6 +89,8 @@ export type ExecuteSpec = {
   readonly kind: 'execute';
   readonly atOrBelow: number;
   readonly shape: EffectShape;
+  /** `'units'`: only Legends, mobs and bosses (`entities/unitFamilies`); absent = every family. */
+  readonly families?: 'units';
 };
 
 /**

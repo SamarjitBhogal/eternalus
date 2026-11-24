@@ -1,3 +1,4 @@
+import type { AimAreaColors } from './AimOverlayView.types';
 import { FOCUS_RING_COLOR } from './entityViews.constants';
 
 /** Outline of the range overlay: the player's focus-ring yellow (`FOCUS_RING_COLOR`). */
@@ -13,9 +14,6 @@ export const AIM_OVERLAY_OUTLINE_WIDTH = 2;
 
 /** How many corners approximate a circle (the renderer draws polygons and paths only). */
 export const AIM_CIRCLE_SEGMENTS = 48;
-
-/** Colours of one overlay area: its fill and its outline. */
-type AimAreaColors = { readonly fill: string; readonly outline: string };
 
 /** Every area but a cone's: the overlay fill and outline above. */
 export const AIM_OVERLAY_COLORS: AimAreaColors = {

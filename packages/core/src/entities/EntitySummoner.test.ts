@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { Deploying } from '../components/Deploying';
 import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
 import { Transform } from '../components/Transform';
@@ -111,6 +112,16 @@ describe('EntitySummoner', () => {
 
     expect(inside.getComponent(Transform).position.x).toBeCloseTo(12.5 - 0.5, 5);
     expect(beside.getComponent(Transform).position).toEqual({ x: 11, y: 10 });
+  });
+
+  it('leaves a mob walking out of its structure where it stands: walls do not stop it (DEC-133)', () => {
+    const { state, summoner, warriorAt } = setUp();
+    const deploying = warriorAt(12.8, 10);
+    deploying.addComponent(new Deploying({ x: 0, y: 10 }));
+
+    summoner.summon(state, 'shield-wall-barrier', EAST_OF_TEN);
+
+    expect(deploying.getComponent(Transform).position).toEqual({ x: 12.8, y: 10 });
   });
 
   it('stops a push at another wall, short of it', () => {

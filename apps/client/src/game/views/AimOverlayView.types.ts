@@ -5,6 +5,9 @@ import type { Renderer } from '../engine/render/Renderer';
 /** The area of one effect step, as the display data gives it (`AbilityDisplayStep['shape']`). */
 type AimShape = NonNullable<AbilityDisplayStep['shape']>;
 
+/** Colours of one overlay area: its fill and its outline. */
+export type AimAreaColors = { readonly fill: string; readonly outline: string };
+
 /** Each shape kind's own shape type, by kind: the painters and their lookup index it. */
 export type AimShapeOf = {
   readonly [K in AimShape['kind']]: Extract<AimShape, { readonly kind: K }>;

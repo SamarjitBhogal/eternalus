@@ -9,9 +9,11 @@ const RESPAWN = 120; // TUNE: game doc "respawn every 2 minutes"
 // 10 × 2.8 / 30 ≈ 0.93 m plus stance 1.2 + 1.25 + 1.5 = 3.95 m, so 4.88 m. DEC-181 (H2): widened
 // from 5 m to 5.5 m, since at the 300-unit cap a brain can wait up to 6 ticks more for its turn
 // (`AI_CADENCE.maxDecisionsPerTick`): for the boss 16 × 2.8 / 30 ≈ 1.49 m of walk, so 5.44 m and
-// about 0.06 m of margin; a larger or faster guard needs a larger tolerance.
-// guardPlans.test.ts checks both sums against every guard and target in content.
-const TOLERANCE = 5.5;
+// about 0.06 m of margin; a larger or faster guard needs a larger tolerance. Widened to 6 m by
+// the same rule for a Berserk Sentinel (radius 1.25 × 1.3 = 1.625 m, balancing.md:189): 1.49 +
+// 1.2 + 1.625 + 1.5 ≈ 5.82 m, about 0.18 m of margin (DEC-305 standing rule for distances).
+// guardPlans.test.ts checks both sums against every guard and target in content, grown targets too.
+const TOLERANCE = 6;
 
 const CAMP = {
   leashRadius: GUARD_LEASH.camp,

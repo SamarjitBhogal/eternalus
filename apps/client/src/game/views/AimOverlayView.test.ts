@@ -196,6 +196,27 @@ describe('AimOverlayView', () => {
     expect(onCaster[0]).toHaveLength(AIM_CIRCLE_SEGMENTS);
   });
 
+  it('draws Shield Wall as the outline it places: 4 m by 1 m, its middle 3 m ahead, square to the pointer', () => {
+    const [east] = fills(drawn(targetOf('shield-wall', { x: 30, y: 20 })));
+    const [north] = fills(drawn(targetOf('shield-wall', { x: 10, y: 90 })));
+    const rounded = (corners: readonly { x: number; y: number }[] = []) =>
+      corners.map(({ x, y }) => ({ x: Number(x.toFixed(6)), y: Number(y.toFixed(6)) }));
+
+    expect(rounded(east)).toEqual([
+      { x: 12.5, y: 18 },
+      { x: 13.5, y: 18 },
+      { x: 13.5, y: 22 },
+      { x: 12.5, y: 22 },
+    ]);
+    expect(rounded(north)).toEqual([
+      { x: 12, y: 22.5 },
+      { x: 12, y: 23.5 },
+      { x: 8, y: 23.5 },
+      { x: 8, y: 22.5 },
+    ]);
+    expect(fills(drawn(targetOf('shield-wall', ORIGIN)))).toEqual([]);
+  });
+
   it('draws nothing without a target, as in quick cast or with no ability selected', () => {
     expect(drawn(null).calls).toEqual([]);
   });

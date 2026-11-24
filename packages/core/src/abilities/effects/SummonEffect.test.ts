@@ -43,9 +43,27 @@ const casterOn = (walls: PlacedWalls) => {
 describe('SummonEffect', () => {
   const effect = new SummonEffect(OBSTACLE_DEFINITIONS);
 
-  it('has the kind it is registered under, and no overlay rows', () => {
+  it('has the kind it is registered under', () => {
     expect(effect.kind).toBe('summon');
-    expect(effect.describe()).toEqual([]);
+  });
+
+  it('describes the outline it places, its distance ahead, for the overlay', () => {
+    expect(effect.describe(WALL)).toEqual([
+      {
+        kind: 'summon',
+        shape: {
+          kind: 'outline',
+          corners: OBSTACLE_DEFINITIONS.get('shield-wall-barrier').footprint,
+          distance: 3,
+        },
+      },
+    ]);
+  });
+
+  it('describes nothing for a body with no outline', () => {
+    const plain = new SummonEffect({ has: () => true, get: () => ({}) });
+
+    expect(plain.describe(WALL)).toEqual([]);
   });
 
   it('checks its own fields: a known body, a distance of 0 or more, a whole cap of 1 or more', () => {

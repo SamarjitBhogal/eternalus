@@ -32,6 +32,19 @@ const setUp = () => {
   return { state, factory, caster, dummyAt, hits, deaths };
 };
 
+/** The set-up with an enemy tower at (2, 0), left with 5% of its health. */
+const withTower = () => {
+  const scene = setUp();
+  const tower = scene.factory.create('buff-tower', 'buff-tower', {
+    position: { x: 2, y: 0 },
+    team: 'dark',
+  });
+  scene.state.entities.add(tower);
+  const towerHealth = tower.getComponent(Health);
+  towerHealth.applyDamage(towerHealth.max * 0.95);
+  return { ...scene, towerHealth };
+};
+
 describe('ExecuteEffect', () => {
   it('has the kind it is registered under', () => {
     expect(new ExecuteEffect().kind).toBe('execute');
@@ -72,20 +85,21 @@ describe('ExecuteEffect', () => {
     expect([hits, deaths]).toEqual([[], []]);
   });
 
-  it('kills only units: an enemy tower at or below the threshold is spared (reading, owner card PR6 R6)', () => {
-    const { state, factory, caster, hits } = setUp();
-    const tower = factory.create('buff-tower', 'buff-tower', {
-      position: { x: 2, y: 0 },
-      team: 'dark',
-    });
-    state.entities.add(tower);
-    const health = tower.getComponent(Health);
-    health.applyDamage(health.max * 0.95);
+  it('kills only units when its spec says so: an enemy tower at or below the threshold is spared (reading, owner card PR6 R6)', () => {
+    const { state, caster, towerHealth, hits } = withTower();
+
+    castSteps(state, caster.id, [{ ...EXECUTE, families: 'units' }]);
+
+    expect(towerHealth.isDead).toBe(false);
+    expect(hits).toEqual([]);
+  });
+
+  it('kills an enemy of any family with no family in its spec: a tower at or below the threshold dies', () => {
+    const { state, caster, towerHealth } = withTower();
 
     castSteps(state, caster.id, [EXECUTE]);
 
-    expect(health.isDead).toBe(false);
-    expect(hits).toEqual([]);
+    expect(towerHealth.isDead).toBe(true);
   });
 
   it('needs a threshold above 0 and at most 1', () => {

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { isMinion, MARCHING_ONLY, STRONGHOLDS_ONLY } from '../../__fixtures__/hordeMatches';
+import { Health } from '../../components/Health';
+import type { GameState } from '../../state/GameState';
 import type { EntitySnapshot } from '../../state/Snapshot.types';
 import { TWO_LANE_MAP } from '../../state/__fixtures__/twoLaneMap';
 import { doesCircleOverlapPolygon } from '../../utils/circlePolygon';
@@ -196,6 +198,37 @@ describe('Shield Wall (scenario)', () => {
 
     expect(removed).toEqual([`${first} despawned`, `${second} dev-removed`]);
     expect(walls().map(({ id }) => id)).toEqual([third, expect.any(String)]);
+  });
+
+  it('frees the place of a wall broken earlier in the same tick: the new wall removes none', () => {
+    const foe: ScenarioSpawn = { kind: 'sentinel', team: 'dark', at: { x: 116, y: 54 } };
+    const match = abilityMatch([foe, SENTINEL], {
+      content: MARCHING_ONLY,
+      world: { map: TWO_LANE_MAP, mapObjects: [] },
+    });
+    const { state } = match.sim as unknown as { readonly state: GameState };
+    const [dark = '', light = ''] = match.ids;
+    const removed: string[] = [];
+    match.sim.on('entity-removed', ({ entityId, cause }) => removed.push(`${entityId} ${cause}`));
+    const walls = (): string[] =>
+      match.sim
+        .snapshot()
+        .entities.filter((e) => e.definitionId === 'shield-wall-barrier')
+        .map(({ id }) => id);
+    match.cast(light, 'ability-3', { x: 110, y: 70 });
+    match.run(COOLDOWN);
+    match.cast(light, 'ability-3', EAST);
+    match.run(COOLDOWN);
+    const [north = '', east = ''] = walls();
+    const health = state.entities.get(east)?.getComponent(Health);
+    health?.applyDamage(health.current - 5);
+
+    match.cast(dark, 'ability-1', { x: 116, y: 54 });
+    match.cast(light, 'ability-3', { x: 90, y: 54 });
+    match.run(1);
+
+    expect(removed).toEqual([`${east} died`]);
+    expect(walls()).toEqual([north, expect.any(String)]);
   });
 
   it('lets a walker through where a wall was broken', () => {

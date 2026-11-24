@@ -1,24 +1,23 @@
-import { Collider } from '../components/Collider';
 import { Footprint } from '../components/Footprint';
-import { Movement } from '../components/Movement';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { SummonPlacement, Summoner } from '../state/Summoner.types';
-import { circlePenetration } from '../utils/circlePolygon';
-import { CONTACT_EPSILON } from '../utils/circlePolygon.constants';
+import { doesCircleOverlapPolygon } from '../utils/circlePolygon';
 import type { Polygon } from '../utils/geometry.types';
 import type { EntityFactory } from './EntityFactory';
+import { isCollisionMover } from './isCollisionMover';
 
 /**
  * Puts a summoned body into the match through the match's one `EntityFactory` (architecture 05 §3
  * `summon`): the definition at the placement, facing its way, added to the store and announced
  * (`entity-spawned`, on its team or `neutral`). A body with a solid outline (`Footprint`, not
  * walk-on: a Shield Wall) becomes a wall at once (`GameState.walls`), and every unit its outline
- * overlaps is pushed straight out of it, by the walls' own rule (`GameState.collisions.reach`), so
- * no unit starts a move inside a wall (`CollisionResolver`'s precondition). A push that another
- * wall or the map's edge cuts short leaves the unit where it stops; it can still walk out.
+ * overlaps is pushed out of the walls by the match's one push-out rule
+ * (`GameState.collisions.pushOut`, which `BodySizeSystem` also uses; DEC-363), so no unit starts a
+ * move inside a wall (`CollisionResolver`'s precondition). A gap narrower than the unit has no
+ * room for it, so the unit can stay partly inside a wall there; it can still walk out.
  * `despawn` takes a body out as `despawned`; the wall goes with it (`Simulation` removes a placed
  * wall at every `entity-removed`).
  */
@@ -53,30 +52,18 @@ export class EntitySummoner implements Summoner {
   }
 
   /**
-   * Moves every unit `CollisionSystem` moves (a mover with an enabled, non-static collider that is
-   * not a shot) out of `polygons`, along the shortest way out, by as much as it overlaps.
+   * Moves every unit walls stop (`isCollisionMover`) that overlaps `polygons` out of the walls, by
+   * the match's one push-out rule (`GameState.collisions.pushOut`, DEC-363).
    */
   private static pushOut(state: GameState, polygons: readonly Polygon[]): void {
     const { collisions } = state;
     if (collisions === null) return;
     state.entities.forEach((entity) => {
       const transform = entity.findComponent(Transform);
-      const collider = entity.findComponent(Collider);
-      if (
-        transform === undefined ||
-        !entity.hasComponent(Movement) ||
-        collider?.isEnabled !== true ||
-        collider.isStatic ||
-        collider.layer === 'projectile'
-      )
-        return;
-      for (const polygon of polygons) {
-        const { position, radius } = transform;
-        const { depth, normal } = circlePenetration(position, radius, polygon);
-        if (depth <= 0 || (normal.x === 0 && normal.y === 0)) continue;
-        const way = collisions.reach(position, normal, depth + CONTACT_EPSILON, radius);
-        transform.moveTo({ x: position.x + normal.x * way, y: position.y + normal.y * way });
-      }
+      if (transform === undefined || !isCollisionMover(entity)) return;
+      const { position, radius } = transform;
+      if (polygons.some((polygon) => doesCircleOverlapPolygon(position, radius, polygon)))
+        transform.moveTo(collisions.pushOut(position, radius));
     });
   }
 }

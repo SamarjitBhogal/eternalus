@@ -1,7 +1,5 @@
-import { Collider } from '../components/Collider';
-import { Deploying } from '../components/Deploying';
-import { Movement } from '../components/Movement';
 import { Transform } from '../components/Transform';
+import { isCollisionMover } from '../entities/isCollisionMover';
 import type { CollisionResolver } from '../physics/CollisionResolver';
 import type { System, SystemContext } from './System.types';
 
@@ -17,22 +15,14 @@ export class CollisionSystem implements System {
    */
   public constructor(private readonly resolver: CollisionResolver) {}
 
-  /** Sweeps from the pre-movement position, including the unit radius, inside the world's bounds. */
+  /**
+   * Sweeps each unit walls stop (`isCollisionMover`) from its pre-movement position, including its
+   * radius, inside the world's bounds.
+   */
   public update({ state }: SystemContext): void {
     state.entities.forEach((entity) => {
       const transform = entity.findComponent(Transform);
-      const collider = entity.findComponent(Collider);
-      if (
-        !entity.hasComponent(Movement) ||
-        transform === undefined ||
-        collider?.isEnabled !== true ||
-        collider.isStatic ||
-        // A projectile stops at what it hits, it does not slide along it (`ProjectileSystem`).
-        collider.layer === 'projectile' ||
-        // A mob walking out of the structure it spawned inside passes its walls (DEC-133).
-        entity.hasComponent(Deploying)
-      )
-        return;
+      if (transform === undefined || !isCollisionMover(entity)) return;
       const from = transform.previousPosition;
       const delta = { x: transform.position.x - from.x, y: transform.position.y - from.y };
       transform.moveTo(this.resolver.move(from, delta, transform.radius));

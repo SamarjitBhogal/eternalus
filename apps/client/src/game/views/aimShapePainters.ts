@@ -9,13 +9,13 @@ import {
   AIM_OVERLAY_COLORS,
   AIM_OVERLAY_OUTLINE_WIDTH,
 } from './AimOverlayView.constants';
-import type { ShapePainters } from './AimOverlayView.types';
+import type { AimAreaColors, ShapePainters } from './AimOverlayView.types';
 
 /** Fills a closed outline and strokes it, in `colors`. */
 function paint(
   corners: readonly Vec2[],
   renderer: Renderer,
-  colors: { readonly fill: string; readonly outline: string } = AIM_OVERLAY_COLORS,
+  colors: AimAreaColors = AIM_OVERLAY_COLORS,
 ): void {
   const [first] = corners;
   if (first === undefined) return;
@@ -38,8 +38,10 @@ function arcCorners(centre: Vec2, radius: number, from: number, sweep: number): 
  * circle centre, a path as the rectangle the dash sweeps (the dash's length by the path's width),
  * a cone as its fan from the caster toward the pointer in darker blue, or, at a full turn, the
  * circle of its range in lighter blue (DEC-206 (3)); a cone's reach counts from the caster's body
- * edge (DEC-319). A `hit` shape (a status's on-hit step, Fury, or a shot's, Hamstring) is never
- * aimed, so it draws nothing.
+ * edge (DEC-319). An `outline` is the body a step places (Shield Wall), drawn where it will stand:
+ * its middle the outline's distance ahead of the caster toward the pointer, turned to face the
+ * pointer as core's `placePolygon` turns it; nothing with the pointer on the caster. A `hit` shape
+ * (a status's on-hit step, Fury, or a shot's, Hamstring) is never aimed, so it draws nothing.
  */
 export const AIM_SHAPE_PAINTERS: ShapePainters = {
   hit: () => undefined,
@@ -57,6 +59,17 @@ export const AIM_SHAPE_PAINTERS: ShapePainters = {
         { x: end.x - half.x, y: end.y - half.y },
         { x: origin.x - half.x, y: origin.y - half.y },
       ],
+      renderer,
+    );
+  },
+  outline: ({ corners, distance }, { origin, direction }, renderer) => {
+    if (direction.x === 0 && direction.y === 0) return;
+    const centre = { x: origin.x + direction.x * distance, y: origin.y + direction.y * distance };
+    paint(
+      corners.map(({ x, y }) => ({
+        x: centre.x + x * direction.x - y * direction.y,
+        y: centre.y + x * direction.y + y * direction.x,
+      })),
       renderer,
     );
   },

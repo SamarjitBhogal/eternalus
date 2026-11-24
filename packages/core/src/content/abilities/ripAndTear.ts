@@ -43,7 +43,9 @@ export const RIP_AND_TEAR = {
       shape: FAN,
       health: { atOrAbove: LOW.below },
     },
-    { kind: 'execute', atOrBelow: 0.1, shape: FAN }, // TUNE: DEC-204
+    // TUNE: DEC-204 (10%). Units only: reading, owner card PR6 R6 (Legends, minions, camp mobs,
+    // bosses; never a structure or a map object, though DEC-206 (1) says "every enemy in the fan").
+    { kind: 'execute', atOrBelow: 0.1, shape: FAN, families: 'units' },
     // TUNE: reading, owner card PR6 R2 low health (1.5 m, the old drag of balancing.md:186; DEC-204)
     { kind: 'knockback', distance: 1.5, shape: FAN, health: LOW },
     { kind: 'debuff', statusId: 'bleed', shape: FAN }, // TUNE: balancing.md:186 "+ bleed", 1 stack
