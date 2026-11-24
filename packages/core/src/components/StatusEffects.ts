@@ -62,8 +62,8 @@ export class StatusEffects {
   }
 
   /**
-   * Takes `count` stacks off status `statusId` now, keeping its timer (a lost minion level); it
-   * ends when none are left. Returns the stacks left, or `undefined` when it was not active. Use
+   * Takes `count` stacks (a whole number, at least 1) off status `statusId` now, keeping its
+   * timer (a lost minion level); it ends when none are left. Returns the stacks left, or `undefined` when it was not active. Use
    * `combat/StatusEffectApplier.removeStacks`, which also emits the event.
    */
   public removeStacks(statusId: string, count: number): number | undefined {

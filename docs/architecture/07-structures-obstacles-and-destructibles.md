@@ -15,7 +15,6 @@ paths:
     'packages/core/src/content/{structures,obstacles}/**',
     'packages/core/src/systems/ZoneLevelUpSystem*',
     'packages/core/src/content/zones/loadZoneLevelUp*',
-    'packages/core/src/systems/MinionLevelSystem*',
   ]
 related:
   [

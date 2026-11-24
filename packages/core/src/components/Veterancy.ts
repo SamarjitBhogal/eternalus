@@ -2,9 +2,9 @@
  * A minion's level and kills (game doc "Minion XP"): one level with two sources (DEC-168). Kills
  * earn a level every `killsPerLevel` (`gainLevels`); a held capture zone grants levels that its
  * loss takes back (`grantLevels`, 07 §7, DEC-258). The level is the sum of both, capped, so losing
- * a granted level never costs a level the kills earned (DEC-279). Added by `VeterancySystem` on a
- * minion's first kill or level; other systems reach it through `VeterancySystem`'s events, so the
- * level's effects apply.
+ * a granted level never costs a level the kills earned (DEC-279). Added on a minion's first kill or
+ * level (`systems/veterancyOf`); its levels change only in `MinionLevelSystem`, which also applies
+ * their effects (DEC-353).
  */
 export class Veterancy {
   private killsValue = 0;

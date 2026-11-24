@@ -106,13 +106,13 @@ export type GameEventMap = {
     readonly from: Team;
     readonly to: Team;
   };
+  /** A minion's kills earned it one level (`VeterancySystem`); `MinionLevelSystem` applies it. */
+  readonly 'minion-level-earned': { readonly entityId: EntityId };
   /**
    * A level source other than kills (`sourceId`, a held capture zone, 07 §7, DEC-258) grants a
    * minion `levels` minion levels, or takes them back when negative; `MinionLevelSystem` applies
    * them on its pass.
    */
-  /** A minion's kills earned it one level (`VeterancySystem`); `MinionLevelSystem` applies it. */
-  readonly 'minion-level-earned': { readonly entityId: EntityId };
   readonly 'minion-levels-granted': {
     readonly entityId: EntityId;
     readonly levels: number;
