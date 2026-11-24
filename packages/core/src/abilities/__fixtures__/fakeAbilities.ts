@@ -18,7 +18,7 @@ import { SelfTargeting } from '../targeting/SelfTargeting';
 
 /**
  * The effect kinds the shipped abilities name (S1 content, Fury's `buff`, Hamstring's
- * `projectile`).
+ * `projectile`, Rip & Tear's `execute`).
  */
 export const SHIPPED_EFFECT_KINDS = [
   'damage',
@@ -27,6 +27,7 @@ export const SHIPPED_EFFECT_KINDS = [
   'dash',
   'buff',
   'projectile',
+  'execute',
 ] as const;
 
 /**

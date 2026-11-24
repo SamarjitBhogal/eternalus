@@ -1430,6 +1430,52 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   - **Bots and client.** A Warrior bot may now cast Hamstring at the enemy it fights
     (`pickReadySlot` aims at the enemy's position). The client draws the blade as a shot that
     drops at its range (`PROJECTILE_ENDING_LOOKS`).
+- **Rip & Tear and Fear (`feat/sentinel-rip`, 2026-11-23; DEC-203, DEC-204, DEC-206, DEC-207;
+  readings R1 to R3).** Rip & Tear is the Sentinel's `ability-2`
+  (`content/abilities/ripAndTear.ts`), `directional` (the fan needs a direction, so an aim on the
+  caster is refused, as for a dash). Its steps, in order: 180 damage to the enemies in the fan
+  under 30% health, 90 to those at or above it, an execute at or below 10%, a 1.5 m knock-back of
+  those under 30%, one bleed stack, then `feared` on the enemies in the circle of the fan's range.
+  The numbers marked "reading" wait for the owner's cards "PR6 R1" to "PR6 R3". Where the code
+  differs from §3 and §8:
+  - **`cone` (§3).** `{ kind: 'cone', reach, arcDegrees }` (`abilities/shapes/ConeShape.ts`): a fan
+    from the caster along the cast's aim, `reach` metres past the caster's body edge (as a melee
+    sweep's reach, DEC-319), `arcDegrees` above 0 and at most 180, on the sweep's sector geometry
+    (`utils/sector.ts`). At 360 it is the whole circle of that reach: DEC-206 (2)'s circle "with the
+    fan's range as its radius", which needs no direction. `ShapePlacement` gets `direction` and
+    `casterRadius`; `CastInstance` adds both to every placement. A push moves away from the caster.
+  - **Health conditions and `execute` (§3).** A `damage`, `knockback` or `debuff` step may carry
+    `health: { below?, atOrAbove? }` (fractions of max health, base bar only). `TargetQuery` keeps
+    the targets that meet it, read when the step runs, so a hit earlier in the cast counts. A new
+    `execute` step (`ExecuteEffect`) kills the enemies at or below `atOrBelow` through
+    `DamagePipeline.execute`: no damage step runs and shields go too, and it is announced as a
+    killing hit, so the kill, the XP, the assists and the ultimate meter follow as for any kill.
+    It hits what the step's shape finds, so an enemy structure or map object at or below the
+    threshold dies too (DEC-206 (1), "every enemy in the fan"; open question for the owner).
+  - **Fear (§8).** `feared` (`content/status-effects/feared.ts`): half speed, `cannot-attack`,
+    `cannot-cast`, soft control, 2 s, and `steering: 'flee-source'`. A status's `steering` kind
+    names a `StatusSteering` strategy (`entities/strategies/`, the `steering` key of the strategy
+    registry). `StatusSteeringSystem` runs after the statuses and before `MovementSystem`; each tick
+    it sets the newest steering status's `heading` straight away from the status's source, and
+    keeps the last one once the source is gone. `MovementSystem` walks the holder along that
+    heading in place of its own (`Movement.advance(speedScale, heading)`), so a command, a
+    controller or `PathingSystem` steers underneath and takes over when the fear ends. A player's
+    Legend runs too; its cast is refused (`cannot-cast`). `StateHasher` hashes the heading of a
+    steering status. DEC-203's cower is a status with `cannot-move` and no steering (not built).
+  - **Status immunity (DEC-207).** `UnitDefinition.statusImmunities` lists the statuses a unit
+    never gets; the Sentinel's is `['feared']` (`content/legends/sentinel.ts`). `StatusEffects`
+    keeps the list and `StatusEffectApplier.apply` refuses such a status from any source, with no
+    event. `KnownStatusRefsRule` checks the ids at load.
+  - **The `hit` area only in an `onHit` list (DEC-343, HC-B26 (5)).** The boot check walks each
+    step with the list that holds it (`flattenSteps`); a list field named `onHit` (a shot's) and a
+    status's `onHit` are `onHit` lists. Each shape's `validate` gets the list, and `HitShape`
+    refuses a `hit` anywhere else, so content that puts it on a cast's own step or in a dash's
+    `onPath` or `onEnd` fails at boot.
+  - **Bots and client.** A Sentinel bot may now cast Rip & Tear at the enemy it fights
+    (`pickReadySlot` aims at the enemy's position). The aim overlay paints a cone as its fan toward
+    the pointer in darker blue, and a cone of 360 as a lighter-blue circle (DEC-206 (3)); the
+    circle is drawn after the fan, both translucent. The aim target carries the caster's body
+    radius.
 
 ## Related
 

@@ -37,15 +37,8 @@ const targetOf = (abilityId: string, aim: { x: number; y: number }, reach?: numb
   return { origin: ORIGIN, casterRadius: CASTER_RADIUS, direction, steps };
 };
 
-/** A 90-degree fan 3 m past the body edge and the full circle of its range (Rip & Tear's areas). */
-const coneTarget = (aim: { x: number; y: number }): AimTarget => ({
-  ...targetOf('slam', aim),
-  steps: [
-    { shape: { kind: 'cone', reach: 3, arcDegrees: 90 }, reach: null },
-    { shape: { kind: 'cone', reach: 3, arcDegrees: 90 }, reach: null },
-    { shape: { kind: 'cone', reach: 3, arcDegrees: 360 }, reach: null },
-  ],
-});
+/** Rip & Tear: a 90-degree fan 3 m past the body edge and the full circle of its range. */
+const coneTarget = (aim: { x: number; y: number }): AimTarget => targetOf('rip-and-tear', aim);
 
 const drawn = (target: AimTarget | null): RecordingRenderer => {
   const renderer = new RecordingRenderer();
@@ -164,7 +157,7 @@ describe('AimOverlayView', () => {
     }
   });
 
-  it('draws a cone as a darker-blue fan toward the pointer and its full turn as a lighter-blue circle (DEC-206 (3))', () => {
+  it('draws Rip & Tear as a darker-blue fan toward the pointer and a lighter-blue circle of its range (DEC-206 (3))', () => {
     // 3 m past the 1.25 m body (DEC-319): 4.25 m from the caster's centre; the fan 90 degrees wide.
     const renderer = drawn(coneTarget({ x: 30, y: 20 }));
 
