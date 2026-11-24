@@ -19,6 +19,7 @@ import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { GameState } from '../state/GameState';
 import { StateHasher } from '../state/StateHasher';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
+import { MinionLevelSystem } from './MinionLevelSystem';
 import { VeterancySystem } from './VeterancySystem';
 
 const setUp = (config = createDefaultGameConfig()) => {
@@ -27,7 +28,9 @@ const setUp = (config = createDefaultGameConfig()) => {
   const units = loadDefaultContent(30);
   const factory = new EntityFactory(createDefaultEntityRegistry(), units);
   const statuses = new StatusEffectApplier(loadStatusEffects(30, 2));
-  const system = new VeterancySystem(state, statuses, units, loadMinionVeterancy(config.tickRate));
+  const rules = loadMinionVeterancy(config.tickRate);
+  const system = new VeterancySystem(state, statuses, rules);
+  const levels = new MinionLevelSystem(state, statuses, units, rules);
   const add = (team: 'light' | 'dark' | 'neutral', x: number, mobId = 'light-minion') => {
     const entity = factory.create('light-mob', mobId, { team, position: { x, y: 20 } });
     state.entities.add(entity);
@@ -104,6 +107,7 @@ const setUp = (config = createDefaultGameConfig()) => {
     });
     space.commit();
     system.update({ state, logger: new NullLogger() });
+    levels.update({ state, logger: new NullLogger() });
   };
   return { state, system, killer, neighbour, far, enemy, add, kill, guard, step };
 };
@@ -116,6 +120,18 @@ const statusesOf = (entity: {
     ?.active.map(({ definition, stacks }) => [definition.id, stacks]) ?? [];
 
 describe('VeterancySystem', () => {
+  it('announces a level every two mob kills (minion-level-earned), applied by MinionLevelSystem', () => {
+    const { state, killer, kill, step } = setUp();
+    const earned: string[] = [];
+    state.events.on('minion-level-earned', ({ entityId }) => earned.push(entityId));
+    kill();
+    step();
+    expect(earned).toEqual([]);
+    kill();
+    step();
+    expect(earned).toEqual([killer.id]);
+  });
+
   it('levels a horde minion up every two mob kills: more health, a veteran stack', () => {
     const { killer, kill, step } = setUp();
     kill();
@@ -132,57 +148,12 @@ describe('VeterancySystem', () => {
     expect(statusesOf(killer)).toContainEqual(['veteran', 1]);
   });
 
-  it('applies a granted level and takes it back with its effects, keeping the kill levels (DEC-258)', () => {
-    const { state, killer, kill, step } = setUp();
-    for (let count = 0; count < 4; count += 1) {
-      kill();
-      step();
-    }
-    expect(killer.getComponent(Veterancy).level).toBe(2);
-    const killMax = killer.getComponent(Health).max;
-
-    state.events.emit('minion-levels-granted', {
-      entityId: killer.id,
-      levels: 1,
-      sourceId: 'zone-1',
-    });
-    expect(killer.getComponent(Veterancy).level).toBe(3);
-    expect(killer.getComponent(Health).max).toBeCloseTo(165 + 30);
-    expect(statusesOf(killer)).toContainEqual(['veteran', 3]);
-    expect(killer.getComponent(Veterancy).grantedBy).toBe('zone-1');
-
-    state.events.emit('minion-levels-granted', {
-      entityId: killer.id,
-      levels: -1,
-      sourceId: 'zone-1',
-    });
-    expect(killer.getComponent(Veterancy).level).toBe(2);
-    expect(killer.getComponent(Health).max).toBeCloseTo(killMax);
-    expect(statusesOf(killer)).toContainEqual(['veteran', 2]);
-    expect(killer.getComponent(Veterancy).grantedBy).toBeNull();
-  });
-
-  it('ignores a granted level for a dead or unknown entity', () => {
-    const { state, killer } = setUp();
-    killer.getComponent(Health).applyDamage(1e6);
-    state.events.emit('minion-levels-granted', {
-      entityId: killer.id,
-      levels: 1,
-      sourceId: 'zone-1',
-    });
-    state.events.emit('minion-levels-granted', {
-      entityId: 'nobody',
-      levels: 1,
-      sourceId: 'zone-1',
-    });
-    expect(killer.findComponent(Veterancy)).toBeUndefined();
-  });
-
   it('rallies the friendly horde minions within the aura radius, and no one else', () => {
     const { killer, neighbour, far, enemy, kill, step } = setUp();
     kill();
     kill();
     step();
+    step(); // the aura reads the level `MinionLevelSystem` applied on the first pass
 
     expect(statusesOf(neighbour)).toContainEqual(['rallied', 1]);
     expect(statusesOf(far)).toEqual([]);
@@ -239,6 +210,7 @@ describe('VeterancySystem', () => {
     kill(true, neighbour.id);
     kill(true, neighbour.id);
     step();
+    step(); // the aura reads the levels applied on the first pass
 
     expect(statusesOf(killer)).toContainEqual(['veteran', MINION_VETERANCY.maxLevel]);
     expect(statusesOf(killer)).toContainEqual(['rallied', 1]);
@@ -268,6 +240,7 @@ describe('VeterancySystem', () => {
     kill();
     kill();
     step();
+    step(); // the aura reads the level applied on the first pass
 
     expect(statusesOf(towerGuard)).toContainEqual(['rallied', 1]);
     expect(statusesOf(campMob)).toEqual([]);
@@ -333,6 +306,7 @@ describe('VeterancySystem', () => {
       progress: 0,
     });
     step();
+    step(); // the aura reads the level applied on the first pass
 
     expect(killer.getComponent(Veterancy).level).toBe(1);
     expect(statusesOf(late)).toContainEqual(['rallied', 1]);

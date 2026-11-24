@@ -13,6 +13,8 @@ export type ZoneDefinition = EntityDefinitionBase & {
   readonly kind: ZoneKind;
   /** How the zone shows on the minimap. */
   readonly minimapGlyph: MinimapGlyph;
+  /** Its zone level-up (07 §7, DEC-258; per zone, DEC-353 (c)). */
+  readonly levelUp: AuthoredZoneLevelUp;
 };
 
 /**
@@ -26,7 +28,7 @@ export type ZonePlacements = Readonly<Partial<Record<MapFeatureKind, string>>>;
  * without a break grants its owner's minions spawned on its lane `levels` minion levels, taken back
  * when it is lost. The levels' cap is the minion level cap (`MinionVeterancyDefinition.maxLevel`).
  */
-export type AuthoredZoneLevelUp = {
+type AuthoredZoneLevelUp = {
   readonly holdSeconds: number;
   readonly levels: number;
 };

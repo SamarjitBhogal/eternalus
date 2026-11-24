@@ -108,9 +108,11 @@ export type GameEventMap = {
   };
   /**
    * A level source other than kills (`sourceId`, a held capture zone, 07 §7, DEC-258) grants a
-   * minion `levels` minion levels, or takes them back when negative; `VeterancySystem` applies
-   * them.
+   * minion `levels` minion levels, or takes them back when negative; `MinionLevelSystem` applies
+   * them on its pass.
    */
+  /** A minion's kills earned it one level (`VeterancySystem`); `MinionLevelSystem` applies it. */
+  readonly 'minion-level-earned': { readonly entityId: EntityId };
   readonly 'minion-levels-granted': {
     readonly entityId: EntityId;
     readonly levels: number;
@@ -127,6 +129,8 @@ export type GameEventMap = {
   };
   readonly 'status-applied': StatusPayload;
   readonly 'status-expired': StatusPayload;
+  /** Some stacks of a status taken off while some stay on (a lost minion level); `stacks` are left. */
+  readonly 'status-stacks-lost': StatusPayload & { readonly stacks: number };
   readonly 'horde-spawned': HordePayload;
   readonly 'horde-dissolved': HordePayload;
   readonly 'level-up': { readonly entityId: EntityId; readonly level: number };

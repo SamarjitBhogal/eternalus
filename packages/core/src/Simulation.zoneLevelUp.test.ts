@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { clearCheckpointDefenders } from './__fixtures__/clearCheckpointDefenders';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
-import { ZONE_LEVEL_UP } from './content/zones/zoneLevelUp';
+import { CAPTURE_POINT } from './content/zones/capturePoint';
 import { MemoryLogger } from './diagnostics/MemoryLogger';
 import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { MapGenerator } from './map/MapGenerator';
@@ -16,9 +16,11 @@ const MAP = new MapGenerator().generate(CONFIG, 1);
 const POINT = MAP.features.find(({ kind }) => kind === 'capture-point');
 const LANE = POINT?.laneId ?? '';
 const TICK_RATE = CONFIG.tickRate;
+// An outer point: its own level-up (DEC-353 (c)).
+const ZONE_LEVEL_UP = CAPTURE_POINT.levelUp;
 
 /**
- * The whole pipeline (CaptureSystem → SpawnSystem → ZoneLevelUpSystem → VeterancySystem): a Light
+ * The whole pipeline (CaptureSystem → SpawnSystem → ZoneLevelUpSystem → MinionLevelSystem): a Light
  * Legend takes an outer capture point, holds it past the hold time, a Light horde spawns on its
  * lane, then two Dark Legends take the point back.
  */

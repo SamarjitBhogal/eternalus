@@ -10,7 +10,6 @@ import { loadMinionVeterancy } from '../content/mobs/loadMinionVeterancy';
 import { MINION_VETERANCY } from '../content/mobs/minionVeterancy';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { loadZoneLevelUp } from '../content/zones/loadZoneLevelUp';
-import { ZONE_LEVEL_UP } from '../content/zones/zoneLevelUp';
 import { CATHEDRAL_CAPTURE_POINT } from '../content/zones/cathedralCapturePoint';
 import { NullLogger } from '../diagnostics/NullLogger';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
@@ -21,11 +20,13 @@ import { GameState } from '../state/GameState';
 import { StateHasher } from '../state/StateHasher';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
+import type { ZoneDefinition } from '../content/zones/zones.types';
 import type { PlayableTeam, Team } from '../teams/teams.types';
-import { VeterancySystem } from './VeterancySystem';
+import { MinionLevelSystem } from './MinionLevelSystem';
 import { ZoneLevelUpSystem } from './ZoneLevelUpSystem';
 
 const TICK_RATE = 30;
+const ZONE_LEVEL_UP = CATHEDRAL_CAPTURE_POINT.levelUp;
 const HOLD_TICKS = ZONE_LEVEL_UP.holdSeconds * TICK_RATE;
 const AREA = [
   [
@@ -37,21 +38,21 @@ const AREA = [
 ];
 const logger = new NullLogger();
 
-const setUp = () => {
+const setUp = (zone: ZoneDefinition = CATHEDRAL_CAPTURE_POINT) => {
   const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP));
   const units = loadDefaultContent(TICK_RATE);
   const factory = new EntityFactory(createDefaultEntityRegistry(), units);
   const statuses = new StatusEffectApplier(loadStatusEffects(TICK_RATE, 2));
-  const veterancy = new VeterancySystem(
+  const levels = new MinionLevelSystem(
     state,
     statuses,
     units,
     loadMinionVeterancy(state.config.tickRate),
   );
-  const levelUp = new ZoneLevelUpSystem(state, loadZoneLevelUp(TICK_RATE));
-  const point = new CapturePoint('zone-1', CATHEDRAL_CAPTURE_POINT.id);
+  const levelUp = new ZoneLevelUpSystem(state, loadZoneLevelUp(TICK_RATE, [zone]));
+  const point = new CapturePoint('zone-1', zone.id);
   point.spawn({
-    definition: CATHEDRAL_CAPTURE_POINT,
+    definition: zone,
     position: { x: 100, y: 30 },
     team: 'neutral',
     area: AREA,
@@ -62,8 +63,8 @@ const setUp = () => {
   /** Steps both systems `ticks` times, as the pipeline does at the end of a tick. */
   const run = (ticks = 1) => {
     for (let tick = 0; tick < ticks; tick += 1) {
-      veterancy.update({ state, logger });
       levelUp.update({ state, logger });
+      levels.update({ state, logger });
       state.advanceTick();
     }
   };
@@ -119,6 +120,17 @@ describe('ZoneLevelUpSystem (07 §7, DEC-258)', () => {
     expect(levelOf(enemy)).toBe(0);
   });
 
+  it("uses each zone definition's own hold time and levels (DEC-353 (c))", () => {
+    const zone = { ...CATHEDRAL_CAPTURE_POINT, levelUp: { holdSeconds: 10, levels: 2 } };
+    const { own, spawn, run, levelOf } = setUp(zone);
+    own('light');
+    run(10 * TICK_RATE);
+    const minion = spawn('light');
+    run();
+
+    expect(levelOf(minion)).toBe(2);
+  });
+
   it('gives the level its effects: max health and a veteran stack', () => {
     const { own, spawn, run, veteranStacks } = setUp();
     own('light');
@@ -152,13 +164,13 @@ describe('ZoneLevelUpSystem (07 §7, DEC-258)', () => {
   });
 
   it('never takes back a level the minion earned from kills', () => {
-    const { own, spawn, run, levelOf, veteranStacks } = setUp();
+    const { state, own, spawn, run, levelOf, veteranStacks } = setUp();
     own('light');
     run(HOLD_TICKS);
     const minion = spawn('light');
     run();
-    // A kill level on top of the zone's.
-    minion.getComponent(Veterancy).gainLevels(1, MINION_VETERANCY.maxLevel);
+    // A kill level on top of the zone's, as `VeterancySystem` announces it.
+    state.events.emit('minion-level-earned', { entityId: minion.id });
     own('neutral');
     run();
 

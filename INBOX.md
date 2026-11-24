@@ -447,7 +447,7 @@ Reply inline (`Decision: …`).
       10 defenders per capture point. They are built in M6c. (3)(b), (5) and (9) still wait for
       sign-off.
 
-- [ ] **Minion M10 better-than-design items (`feat/minion-m10-zone-level-up`, 2026-11-15,
+- [x] **Minion M10 better-than-design items (`feat/minion-m10-zone-level-up`, 2026-11-15,
       critic; DEC-139) — sign-off per item.** (a) A `MinionLevelSystem` after
       `ZoneLevelUpSystem` that owns every minion level change: `VeterancySystem` would announce
       kill levels by event too, so no listener changes state inside a handler (it removes 03 §4's
@@ -458,6 +458,8 @@ Reply inline (`Decision: …`).
       Approve any, or leave as built. Leaving (a) as built keeps 03 §4's one exception (a
       listener that changes state in its handler), which then needs your sign-off in your own
       words (PR #131 review S2, 2026-11-22).
+      **Answered 2026-11-23 (owner, relayed on PR #131), DEC-353:** "Build all three in #131
+      before it merges". Done in PR #131.
 
 - [ ] **Minion plan MVP gaps (3): who owns the zone cooldown reduction (2026-11-06, PR #81).**
       The zone's cooldown reduction (FR-041, 07 §7) is Legend-side, not minion work, and no plan

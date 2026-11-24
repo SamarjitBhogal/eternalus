@@ -1,23 +1,19 @@
-import { Health } from '../components/Health';
 import { Veterancy } from '../components/Veterancy';
 import type { StatusEffectApplier } from '../combat/StatusEffectApplier';
-import { MOB_KINDS } from '../content/mobs/mobKinds';
 import type { MinionVeterancyDefinition } from '../content/mobs/mobs.types';
-import type { Entity } from '../entities/Entity';
-import type { DefinitionSource } from '../entities/EntityFactory.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { System, SystemContext } from './System.types';
+import { veterancyOf } from './veterancyOf';
 
 /**
  * Minion XP (game doc, MVP-if-time; architecture 18 MS-16): a lane minion (a horde member) or a
  * tower guard (DEC-165) that kills a lane minion, a tower guard or a camp mob counts the kill in
- * its `Veterancy`; each level it gains raises its max health by `healthPerLevel` of its base
- * health (healing by the same) and adds a stack of the veteran status. Every `aura.everyTicks`,
- * each unit with a level gives the aura status to the other friendly horde minions and tower
- * guards (DEC-165) within `aura.radius`. Kills come from `entity-died`, counted on this system's
- * pass; it runs after every system that deals damage and before `DeathSystem`. Levels a held zone
- * grants or takes back (`minion-levels-granted`, 07 §7, DEC-258) are applied by its handler.
+ * its `Veterancy`; every `killsPerLevel`-th kill announces a level (`minion-level-earned`), which
+ * `MinionLevelSystem` applies with its effects (DEC-353 (a)). Every `aura.everyTicks`, each unit
+ * with a level gives the aura status to the other friendly horde minions and tower guards
+ * (DEC-165) within `aura.radius`. Kills come from `entity-died`, counted on this system's pass; it
+ * runs after every system that deals damage and before `DeathSystem`.
  */
 export class VeterancySystem implements System {
   public readonly name = 'veterancy';
@@ -26,29 +22,17 @@ export class VeterancySystem implements System {
 
   /**
    * @param state - The match whose deaths this system listens to.
-   * @param statuses - The match's one status applier.
-   * @param units - Unit definitions, for a minion's base health.
+   * @param statuses - The match's one status applier (the aura).
    * @param veterancy - The growth rules (content, loaded in ticks).
    */
   public constructor(
     state: GameState,
     private readonly statuses: StatusEffectApplier,
-    private readonly units: DefinitionSource,
     private readonly veterancy: MinionVeterancyDefinition,
   ) {
     state.events.on('entity-died', ({ entityId, killer }) => {
       if (killer.attackerId !== null) {
         this.kills.push({ killerId: killer.attackerId, victimId: entityId });
-      }
-    });
-    // Applied as it is announced (an exception 03 §4 records): its sender, `ZoneLevelUpSystem`,
-    // runs after this system, and a lost zone takes its levels back on the same tick (DEC-258).
-    state.events.on('minion-levels-granted', ({ entityId, levels, sourceId }) => {
-      const entity = state.entities.get(entityId);
-      if (entity !== undefined && state.entities.isAlive(entityId)) {
-        const veterancy = VeterancySystem.veterancyOf(entity);
-        const { maxLevel } = this.veterancy;
-        this.applyLevelChange(state, entity, veterancy.grantLevels(levels, maxLevel, sourceId));
       }
     });
   }
@@ -76,44 +60,8 @@ export class VeterancySystem implements System {
     ) {
       return;
     }
-    if (VeterancySystem.veterancyOf(killer).recordKill(this.veterancy.killsPerLevel)) {
-      this.gainLevels(state, killer, 1);
-    }
-  }
-
-  /** Gives `entity` up to `levels` minion levels earned by kills, never past the cap. */
-  private gainLevels(state: GameState, entity: Entity, levels: number): void {
-    const gained = VeterancySystem.veterancyOf(entity).gainLevels(levels, this.veterancy.maxLevel);
-    this.applyLevelChange(state, entity, gained);
-  }
-
-  /**
-   * The effects of `entity`'s level moving by `change` (DEC-168: one level, every source): each
-   * level raises max health by `healthPerLevel` of base health (healed by the same) and adds a
-   * veteran stack; each level lost lowers max health by the same and leaves one stack per level.
-   * Kills reach it from this system; other sources through `minion-levels-granted` (07 §7).
-   */
-  private applyLevelChange(state: GameState, entity: Entity, change: number): void {
-    const definition = this.units.get(entity.definitionId);
-    const health = entity.findComponent(Health);
-    if (change === 0 || !MOB_KINDS.has(definition) || health === undefined) {
-      return;
-    }
-    const step = definition.baseHealth * this.veterancy.healthPerLevel;
-    const { statusId } = this.veterancy;
-    if (change > 0) {
-      for (let level = 0; level < change; level += 1) {
-        health.raiseMaxAndHeal(step);
-        this.statuses.apply(state, entity.id, statusId, entity.id);
-      }
-      return;
-    }
-    health.lowerMax(-change * step);
-    // A status ends whole, so the stacks of the levels kept are put back.
-    this.statuses.remove(state, entity.id, statusId);
-    const { level } = VeterancySystem.veterancyOf(entity);
-    for (let stack = 0; stack < level; stack += 1) {
-      this.statuses.apply(state, entity.id, statusId, entity.id);
+    if (veterancyOf(killer).recordKill(this.veterancy.killsPerLevel)) {
+      state.events.emit('minion-level-earned', { entityId: killerId });
     }
   }
 
@@ -131,16 +79,6 @@ export class VeterancySystem implements System {
   /** DEC-165: a lane minion, tower guard or camp mob counts as a kill for a leveller that kills it. */
   private static countsAsKill(state: GameState, id: EntityId): boolean {
     return state.hordes.hordeOf(id) !== undefined || state.guards.slotOf(id) !== undefined;
-  }
-
-  private static veterancyOf(entity: Entity): Veterancy {
-    const found = entity.findComponent(Veterancy);
-    if (found !== undefined) {
-      return found;
-    }
-    const veterancy = new Veterancy();
-    entity.addComponent(veterancy);
-    return veterancy;
   }
 
   private spreadAura(state: GameState): void {

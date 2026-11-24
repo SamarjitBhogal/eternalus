@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-23
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -14,7 +14,8 @@ paths:
     'packages/core/src/systems/{Structure,Spawn,Capture}System*',
     'packages/core/src/content/{structures,obstacles}/**',
     'packages/core/src/systems/ZoneLevelUpSystem*',
-    'packages/core/src/content/zones/{zoneLevelUp,loadZoneLevelUp}*',
+    'packages/core/src/content/zones/loadZoneLevelUp*',
+    'packages/core/src/systems/MinionLevelSystem*',
   ]
 related:
   [
@@ -304,9 +305,9 @@ damage dealer (`ProgressionSystem` listens to `checkpoint-cleared`). Holding a z
 point has a zone level-up (DEC-258): once a side has held it for the hold time without a break,
 that side's hordes spawned on its lane gain minion levels, and losing the point takes them back on
 the same tick. `ZoneLevelUpSystem` hears `CaptureSystem`'s ownership events and announces the levels
-with `minion-levels-granted`; `VeterancySystem` applies them as the one minion level of its two
-sources (DEC-168), so a lost zone never costs a level the kills earned (DEC-279). The hold time and the
-levels are `content/zones/zoneLevelUp.ts`, and `loadZoneLevelUp` turns the hold time into ticks once, at load (DEC-241); the cap is the minion level cap. Mini-bosses at the quarter mark
+with `minion-levels-granted`; `MinionLevelSystem` applies them on its pass as the one minion level of
+its two sources (DEC-168, DEC-353), so a lost zone never costs a level the kills earned (DEC-279). The hold
+time and the levels are fields of each capture point's `ZoneDefinition` (`levelUp`, DEC-353), and `loadZoneLevelUp` turns the hold time into ticks once, at load (DEC-241); the cap is the minion level cap. Mini-bosses at the quarter mark
 lock the outer zones (`lockedBy`) until they die (`MatchDirector` timeline).
 
 ## 8. Structure destruction effects

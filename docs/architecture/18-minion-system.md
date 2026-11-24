@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-23
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
@@ -133,7 +133,8 @@ MVP-if-time), on the light, medium and heavy assist mobs (DEC-260), laid out by
 `GuardRoster.defend` on `checkpoint-reached`; a lost point's living defenders stay (DEC-261).
 The owner's 2026-11-20 rule that neutral defenders and forest-camp mobs level (DEC-260) is not
 built yet. Pull request M10 adds the zone level-up (07 §7, DEC-258): `ZoneLevelUpSystem` and
-`minion-levels-granted`, applied by `VeterancySystem`; `Veterancy` keeps the levels kills earned
+`minion-levels-granted`, applied with kill levels (`minion-level-earned`) by `MinionLevelSystem`
+(DEC-353); `Veterancy` keeps the levels kills earned
 apart from the levels a zone granted. The minion-stack follow-ups (`fix/minion-stack-followups`) add the shared leash decision
 `ai/decideLeashed.ts` (DEC-168 B1), the guard respawn rules `systems/EachGuardRespawn.ts` and
 `GroupGuardRespawn.ts` (B4), the ally-damage listener `state/AllyDamageTally.ts` (B6), and

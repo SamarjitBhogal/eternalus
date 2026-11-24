@@ -8,10 +8,11 @@ import type { PlayableTeam } from '../teams/teams.types';
 import type { System, SystemContext } from './System.types';
 
 /**
- * The zone level-up (architecture 07 §7, DEC-258): once a team has held a capture point for the
- * hold time (`holdTicks`) without a break (`Capturable.ownedSinceTick`), every horde of that team
- * spawned on the point's lane gets `levels` minion levels (`minion-levels-granted`, applied by
- * `VeterancySystem`, which records the point as `Veterancy.grantedBy`). When the point changes
+ * The zone level-up (architecture 07 §7, DEC-258): once a team has held a capture point for its
+ * hold time (`holdTicks`, per zone definition, DEC-353 (c)) without a break
+ * (`Capturable.ownedSinceTick`), every horde of that team spawned on the point's lane gets the
+ * zone's `levels` minion levels (`minion-levels-granted`, applied by `MinionLevelSystem`, which
+ * records the point as `Veterancy.grantedBy`). When the point changes
  * owner, the levels it granted are taken back on that tick. Runs after `CaptureSystem`, so it sees
  * this tick's spawns and owner changes. Its queues empty every tick; the match state it reads is
  * hashed.
@@ -23,11 +24,11 @@ export class ZoneLevelUpSystem implements System {
 
   /**
    * @param state - The match whose events this system listens to.
-   * @param levelUp - The hold time and the levels, as loaded (`loadZoneLevelUp`).
+   * @param levelUps - Each zone definition's hold time and levels, as loaded (`loadZoneLevelUp`).
    */
   public constructor(
     state: GameState,
-    private readonly levelUp: ZoneLevelUpDefinition,
+    private readonly levelUps: ReadonlyMap<string, ZoneLevelUpDefinition>,
   ) {
     state.events.on('capture-point-owner-changed', ({ pointId }) => {
       this.changed.push(pointId);
@@ -54,16 +55,15 @@ export class ZoneLevelUpSystem implements System {
     }
     for (const hordeId of this.spawned) {
       const horde = state.hordes.get(hordeId);
-      const sourceId =
-        horde === undefined ? undefined : this.heldPoint(state, horde.team, horde.lane);
-      if (horde === undefined || sourceId === undefined) {
+      const held = horde === undefined ? undefined : this.heldPoint(state, horde.team, horde.lane);
+      if (horde === undefined || held === undefined) {
         continue;
       }
       for (const entityId of horde.memberIds) {
         state.events.emit('minion-levels-granted', {
           entityId,
-          levels: this.levelUp.levels,
-          sourceId,
+          levels: held.levels,
+          sourceId: held.id,
         });
       }
     }
@@ -72,21 +72,27 @@ export class ZoneLevelUpSystem implements System {
   }
 
   /**
-   * A capture point on `lane` that `team` has held for the hold time, if any: the first in
-   * `state.entities` order (insertion order, so deterministic) when several qualify.
+   * A capture point on `lane` that `team` has held for its hold time, with its levels, if any:
+   * the first in `state.entities` order (insertion order, so deterministic) when several qualify.
    */
-  private heldPoint(state: GameState, team: PlayableTeam, lane: string): EntityId | undefined {
-    let held: EntityId | undefined;
+  private heldPoint(
+    state: GameState,
+    team: PlayableTeam,
+    lane: string,
+  ): { readonly id: EntityId; readonly levels: number } | undefined {
+    let held: { readonly id: EntityId; readonly levels: number } | undefined;
     state.entities.forEach((entity) => {
       const capturable = entity.findComponent(Capturable);
+      const levelUp = this.levelUps.get(entity.definitionId);
       if (
         held === undefined &&
+        levelUp !== undefined &&
         entity instanceof CapturePoint &&
         entity.laneId === lane &&
         capturable?.owner === team &&
-        state.tick - capturable.ownedSinceTick >= this.levelUp.holdTicks
+        state.tick - capturable.ownedSinceTick >= levelUp.holdTicks
       ) {
-        held = entity.id;
+        held = { id: entity.id, levels: levelUp.levels };
       }
     });
     return held;
