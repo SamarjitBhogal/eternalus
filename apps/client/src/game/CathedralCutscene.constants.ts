@@ -12,8 +12,6 @@ export const CUTSCENE = {
   /** Share of the distance to the Cathedral the camera covers each frame (slower than follow). */
   smoothing: 0.08,
   /** The screen shake: its largest offset (world units) at the eruption, fading over the burst. */
-  shake: { amplitude: 0.8, ticksPerSwing: 2 },
+  /** `verticalShare`: the share of the sideways swing the camera also moves up and down. */
+  shake: { amplitude: 0.8, ticksPerSwing: 2, verticalShare: 0.5 },
 } as const;
-
-/** The timeline entry the gem erupts on (core's default timeline, architecture 12 §3). */
-export const ERUPTION_ENTRY = 'gem-eruption';

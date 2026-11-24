@@ -98,7 +98,7 @@ export class GuardRoster {
         leashTolerance: plan.leashTolerance,
         // A `never` post is never refilled, so it has no respawn delay.
         respawnTicks: plan.respawn.kind === 'never' ? 0 : plan.respawn.ticks,
-        firstTick: GuardRoster.firstTick(state, plan),
+        firstTick: GuardRoster.firstTick(state, plan.activation),
       });
     }
   }
@@ -270,12 +270,8 @@ export class GuardRoster {
     return !state.entities.isAlive(guardId) || state.entities.teamOf(guardId) !== slot.team;
   }
 
-  /** The tick `plan`'s posts are first filled (its `activation`), or `null`: when `activate` says. */
-  private static firstTick(state: GameState, { activation }: GuardPlanDefinition): number | null {
-    return GuardRoster.firstTickOf(state, activation);
-  }
-
-  private static firstTickOf<K extends ActivationKind>(
+  /** The tick a plan's posts are first filled (its `activation`), or `null`: when `activate` says. */
+  private static firstTick<K extends ActivationKind>(
     state: GameState,
     activation: ActivationOf<K>,
   ): number | null {

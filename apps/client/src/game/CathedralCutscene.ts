@@ -1,6 +1,7 @@
+import { GEM_ERUPTION_ENTRY_ID } from '@eternalus/core';
 import type { Simulation, Snapshot, Unsubscribe } from '@eternalus/core';
 
-import { CUTSCENE, ERUPTION_ENTRY } from './CathedralCutscene.constants';
+import { CUTSCENE } from './CathedralCutscene.constants';
 import type { WorldPoint } from './engine/render/Renderer.types';
 import type { EruptionBurst } from './views/EruptionView.types';
 
@@ -58,7 +59,9 @@ export class CathedralCutscene {
   public observe(snapshot: Snapshot, isMoving: boolean): void {
     this.tick = snapshot.tick;
     this.isDuel = snapshot.match.duel !== undefined;
-    const eruption = snapshot.match.upcoming.find(({ entryId }) => entryId === ERUPTION_ENTRY);
+    const eruption = snapshot.match.upcoming.find(
+      ({ entryId }) => entryId === GEM_ERUPTION_ENTRY_ID,
+    );
     if (eruption !== undefined) this.eruptionTick = eruption.tick;
     const gem = snapshot.entities.find(({ kind }) => kind === 'cathedral-gem');
     if (gem?.transform != null) this.gemAt = { x: gem.transform.x, y: gem.transform.y };
@@ -75,10 +78,10 @@ export class CathedralCutscene {
     if (!this.isPlaying() || this.gemAt === null) return null;
     const burst = this.burst();
     if (burst === null) return this.gemAt;
-    const { amplitude, ticksPerSwing } = CUTSCENE.shake;
+    const { amplitude, ticksPerSwing, verticalShare } = CUTSCENE.shake;
     const side = this.tick % (2 * ticksPerSwing) < ticksPerSwing ? 1 : -1;
     const swing = (1 - burst.progress) * amplitude * side;
-    return { x: this.gemAt.x + swing, y: this.gemAt.y - swing / 2 };
+    return { x: this.gemAt.x + swing, y: this.gemAt.y - swing * verticalShare };
   }
 
   /** The gem's burst while it lasts, or `null`. */

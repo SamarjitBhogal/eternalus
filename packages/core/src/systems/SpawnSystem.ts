@@ -18,6 +18,7 @@ import type { PlayableTeam } from '../teams/teams.types';
 import { compareById } from '../utils/compareById';
 import type { Vec2 } from '../utils/geometry.types';
 import { GuardRoster } from './GuardRoster';
+import { checkEruptionPlan } from './eruptionPlanProblems';
 import { spawnPlanProblems } from './spawnPlanProblems';
 import type { ScheduledWave, SpawnPlan, CheckpointReached } from './SpawnSystem.types';
 import type { System, SystemContext } from './System.types';
@@ -103,6 +104,7 @@ export class SpawnSystem implements System {
     this.validate(homes, hasCapturePoints);
     this.guards = new GuardRoster(factory, plan.definitions, plan.guards, plan.defenders);
     this.guards.layOut(state);
+    checkEruptionPlan(state, plan);
     // Queued for this system's pass (03 §4). DEC-259: only a push with a Legend on the zone wakes
     // the defenders, so passing hordes do not. The owner is read now: the same capture pass may
     // complete the capture after this event, and the defenders are the old owner's (DEC-257).

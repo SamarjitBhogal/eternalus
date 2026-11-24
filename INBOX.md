@@ -31,12 +31,17 @@ Reply inline (`Decision: …`).
       Its own plan has a 7 m tolerance (1.49 m walk + 2.5 + 1.25 + 1.5 m stance). (3) **Health.**
       balancing.md's 40 × refHealth at level 7, refHealth(L) = 650 × 1.08^(L − 1), so 41,259 (level 7
       was set for a 20-minute match). (4) **Hit.** One basic attack of 0.45 × refHealth = 464 every
-      2.5 s, reach 1.5 m. (5) **Movement.** The heavy minion's (2.8 m/s). (6) **Zone.** A 25 m circle
+      2.5 s, reach 1.5 m. (5) **Movement and vision.** The heavy minion's speed (2.8 m/s), acceleration (14) and mass
+      (3.125), and a vision radius of 25 m (the zone's radius): none has a reference value. (6) **Zone.** A 25 m circle
       around the Cathedral capture zone's centre (balancing.md "centre zone, radius 25 m"); the zone is
       the boss's guard home. Does it also lock the Cathedral's capture while it lives, as the
       mini-boss locks its zone? (7) **Respawn.** None. (8) **Reward.** DEC-237's flat 5 levels is not built
       in this PR (it comes with the boss's moves); it takes 25% of a minion's hit.
       (9) `boss-summoned` names its kind as `heavy-mob` until the `GreaterBoss` class lands.
+      (10) **Other guards near the boss.** No other guard counts the boss in its leash sum. A map
+      test checks that no other guard post on the default map (seeds 1 to 3) reaches its zone. But
+      a Cathedral checkpoint's defenders (#130) are leashed to the capture zone itself, so they
+      will fight the boss. Is that intended, or should the defenders leave it alone?
 
 - [ ] **Better than design: shared boss numbers (Aryan Walanj, 2026-11-22, critic on
       `feat/cathedral-eruption-boss`).** For sign-off. (1) `greaterBoss.ts` copies balancing.md's

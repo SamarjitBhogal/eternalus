@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-24
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -186,7 +186,7 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 | Event                               | Payload                                                | Emitted by                                                         | Typical listeners                                                                                   |
 | ----------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
 | `entity-spawned`                    | `{ entityId, kind, team }`                             | `EntityFactory` via `SpawnSystem`, or `Simulation` for a roster    | `SnapshotSystem`, views, `Scoring` (a row per Legend)                                               |
-| `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`           | `DeathSystem`; `CathedralGemSystem` (the erupted gem)              | `HordeSystem`, `ProjectilePool`, invariants                                                         |
+| `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`           | `DeathSystem` only                                                 | `HordeSystem`, `ProjectilePool`, invariants                                                         |
 | `damage-applied`                    | `{ targetId, amount, absorbed, source: DamageSource }` | `DamagePipeline`                                                   | `ProgressionSystem` (assists), `AiSystem` (aggro), `Scoring` (assists, structure damage)            |
 | `damage-blocked`                    | `{ targetId, source: DamageSource }`                   | `DamagePipeline` (a step took the hit to 0)                        | `CathedralGemSystem` (DEC-292)                                                                      |
 | `entity-died`                       | `{ entityId, killer: DamageSource }`                   | `DeathResolver`                                                    | `DeathSystem`, `ProgressionSystem`, `Scoring`, `ObjectiveLostCondition`                             |
@@ -482,6 +482,8 @@ each closed by the session or phase named:
   `throw`, `interact` and `dev-set-assert-level` are not in the union yet.
 - `dev-spawn` and `dev-remove-entity` spawn and remove directly and emit `entity-spawned` /
   `entity-removed` themselves until `SpawnSystem` / `DeathSystem` exist (session C).
+- `CathedralGemSystem` removes the erupted gem (12 §3) itself and emits `entity-removed`
+  (`despawned`) until `DeathSystem` takes removal requests.
 - `GameState.snapshot()` builds the snapshot, each entity through `EntitySnapshotter`, until
   `SnapshotSystem` exists; `Snapshot` carries
   `tick`, `match`, `entities`, `hordes` and `teams` (the team counters, since minion plan M1),

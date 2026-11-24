@@ -59,8 +59,7 @@ const ACTION_RULES: Readonly<
   Record<TimelineActionKind, (action: Readonly<Record<string, unknown>>) => boolean>
 > = {
   'enter-phase': (action) => MATCH_PHASES.some((phase) => phase === action.phase),
-  // ponytail: config/ reads no content, so the id is not looked up in the mob catalogue; an id no
-  // gem-eruption guard plan posts spawns nothing (`GuardRoster.activate`). Upgrade: check it there.
+  // config/ reads no content: `SpawnSystem` checks the id against the map's gem-eruption posts.
   'summon-greater-boss': (action) => typeof action.bossId === 'string' && action.bossId !== '',
 };
 
@@ -265,7 +264,7 @@ const RULES: readonly Rule[] = [
   },
   {
     path: 'match.timeline',
-    rule: 'must have at most one summon-greater-boss entry: the gem erupts once (DEC-83)',
+    rule: 'must have at most one summon-greater-boss entry: the gem erupts once (architecture 12 §3)',
     isValid: (_value, config) =>
       timelineOf(config).filter(({ action }) => action.kind === 'summon-greater-boss').length <= 1,
   },

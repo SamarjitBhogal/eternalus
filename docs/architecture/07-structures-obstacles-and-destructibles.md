@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-23
+last-reviewed: 2026-11-24
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -532,7 +532,7 @@ so a replay or a match without map objects rebuilds the same zones. Interim diff
 - **Gem eruption and the Greater Boss (2026-11-22, `feat/cathedral-eruption-boss`).** The
   `summon-greater-boss` timeline action (12 §3) erupts the gem at mid-game. On the next tick, each in its own
   pass after `greater-boss-summoned` (03 §Events), `SpawnSystem` fills the Greater Boss's post and
-  `CathedralGemSystem` removes the gem entity (`despawned`) before it answers any touch.
+  `CathedralGemSystem` removes the gem entity (`despawned`) and destroys its plinth.
   Interim for the Cathedral's `Spawner` (§1, §6): the boss is a guard of the Cathedral capture
   zone's guard plan (`content/structures/guardPlans.ts`, `cathedral-capture-point`), one post at
   the zone's centre with `activation: { at: 'gem-eruption' }` (posts that `GuardRoster.activate`

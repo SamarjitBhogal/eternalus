@@ -4,6 +4,7 @@ import { DamagePipeline } from '../../combat/DamagePipeline';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { timelineFrameOf } from '../../config/timelineFrameOf';
 import { timelineMarkTick } from '../../config/timelineMarkTick';
+import { ContentValidationError } from '../../content/ContentValidationError';
 import { LEGEND_CLASSES } from '../../content/legends/legendCatalogue';
 import { MOB_DEFINITIONS } from '../../content/mobs/mobCatalogue';
 import { GUARD_LEASH } from '../../content/structures/guardLeash';
@@ -234,6 +235,40 @@ describe('the Greater Boss spawns at the gem eruption (scenario, 12 §3)', () =>
 
     expect(died).toContain(boss.id);
     expect(bossesOf(simulation)).toEqual([]);
+    // Its post is never refilled, whatever a respawn time would be: no tick is set to fill it.
+    const refills: (number | null)[] = [];
+    stateOf(simulation).guards.forEach((slot) => {
+      if (slot.mobId === BOSS.id) refills.push(slot.respawnAtTick);
+    });
+    expect(refills).toEqual([null]);
+  });
+
+  it('fails at load when the timeline summons a boss no gem-eruption post holds', () => {
+    const plan = { countdownSeconds: 0, plannedMatchSeconds: 20 };
+    const base = createDefaultGameConfig({ match: plan });
+    const config = createDefaultGameConfig({
+      match: {
+        ...plan,
+        timeline: base.match.timeline.map((entry) =>
+          entry.action.kind === 'summon-greater-boss'
+            ? { ...entry, action: { kind: 'summon-greater-boss', bossId: 'greatr-boss' } }
+            : entry,
+        ),
+      },
+    });
+    const map = new MapGenerator().generate(config, 1);
+
+    expect(
+      () =>
+        new Simulation({
+          config,
+          seed: 1,
+          logger: new MemoryLogger(),
+          debug: TEST_DEBUG_CONFIG,
+          map,
+          mapObjects: new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map)),
+        }),
+    ).toThrow(ContentValidationError);
   });
 
   it('is never struck by the gem, which is gone when it spawns', () => {

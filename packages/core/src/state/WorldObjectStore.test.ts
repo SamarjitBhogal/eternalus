@@ -24,6 +24,35 @@ const fixtureFactory = (): EntityFactory => {
 };
 
 describe('WorldObjectStore', () => {
+  it('destroys a map object with no health of its own, which then blocks nothing (12 §3)', () => {
+    const plinth: MapObject = {
+      id: 'plinth',
+      kind: 'cathedral',
+      isBlocking: true,
+      footprints: [
+        [
+          { x: 0, y: 0 },
+          { x: 4, y: 0 },
+          { x: 4, y: 4 },
+          { x: 0, y: 4 },
+        ],
+      ],
+    };
+    const world = new WorldObjectStore({
+      objects: [plinth],
+      factory: fixtureFactory(),
+      entities: new EntityStore(),
+      definitions: MAP_OBJECT_DEFINITIONS,
+    });
+    expect(world.blockingAt({ x: 2, y: 2 }, 1)).toBe('plinth');
+
+    world.destroy('plinth');
+
+    expect(world.blockingAt({ x: 2, y: 2 }, 1)).toBeNull();
+    expect([...world.destroyedIds]).toEqual(['plinth']);
+    expect(world.snapshot()[0]?.isDestroyed).toBe(true);
+  });
+
   it('uses injected content policy instead of global map-object defaults', () => {
     const definitions = {
       ...MAP_OBJECT_DEFINITIONS,
