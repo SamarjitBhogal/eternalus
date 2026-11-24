@@ -5,6 +5,7 @@ import type { DamageSource } from '../state/GameEvents.types';
 import type { DamageResult } from './DamagePipeline.types';
 import type { DamageStep } from './DamageStep.types';
 import { createDefaultDamageSteps } from './defaultDamageSteps';
+import type { KillCredit } from './KillCredit';
 
 /**
  * The one way damage reaches `Health` (architecture 05 §9). Anything with `Health` can be hit the
@@ -13,14 +14,21 @@ import { createDefaultDamageSteps } from './defaultDamageSteps';
  *
  * Emits `damage-applied` for every hit that lands, `damage-blocked` for one a step takes to 0, and
  * `entity-died` with the killer for the hit that takes health to 0; `DeathSystem` removes the dead
- * later in the tick.
+ * later in the tick. With a `KillCredit`, a death by the Cathedral gem names the victim's last
+ * enemy damager as its killer (DEC-346).
  *
  * Every rule that changes a hit (friendly fire, statuses, structure multipliers, breakability) is a
  * `DamageStep`, run in order before `Health`; add one in `defaultDamageSteps.ts`.
  */
 export class DamagePipeline {
-  /** @param steps - The rules each hit runs through, in order. */
-  public constructor(private readonly steps: readonly DamageStep[] = createDefaultDamageSteps()) {}
+  /**
+   * @param steps - The rules each hit runs through, in order.
+   * @param credit - Who a death by the gem counts for; without it every killer is the hit's source.
+   */
+  public constructor(
+    private readonly steps: readonly DamageStep[] = createDefaultDamageSteps(),
+    private readonly credit?: KillCredit,
+  ) {}
 
   /** Deals `amount` (finite, ≥ 0) damage from `source` to `targetId`. */
   public apply(
@@ -56,11 +64,13 @@ export class DamagePipeline {
 
     const { toShields, toBase } = health.applyDamage(final);
     state.events.emit('damage-applied', { targetId, amount: toBase, absorbed: toShields, source });
+    this.credit?.recordHit(state, targetId, source);
 
     // Not `health.isDead`: TypeScript still narrows it to false from the check above.
     const killed = health.current === 0;
     if (killed) {
-      state.events.emit('entity-died', { entityId: targetId, killer: source });
+      const killer = this.credit?.killerOf(state, targetId, source) ?? source;
+      state.events.emit('entity-died', { entityId: targetId, killer });
     }
     return { applied: true, amount: toBase, absorbed: toShields, killed };
   }

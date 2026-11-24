@@ -1,7 +1,5 @@
 import type { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { CathedralGemState } from '../components/CathedralGemState';
-import { Health } from '../components/Health';
-import { StatusEffects } from '../components/StatusEffects';
 import { Transform } from '../components/Transform';
 import { ZoneArea } from '../components/ZoneArea';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
@@ -14,12 +12,13 @@ import type { Team } from '../teams/teams.types';
 import type { System, SystemContext } from './System.types';
 
 /**
- * The Cathedral gem's rules (DEC-291, DEC-292). A hit on the gem (any blocked hit with an attacker:
- * a weapon, a projectile or an ability, all through the damage pipeline) or a touch (a unit's disc
- * overlapping the gem's) lands the gem's statuses on that unit and lights the gem's glow. The
- * statuses come from the environment (no attacker), as the gem is no team's: so friendly fire never
- * blocks them, they hurt neutrals too ("hurts any entity", DEC-292), and a death by them is
- * nobody's kill (`INBOX.md`). Its holder follows the capture point it stands in. Bots and neutrals
+ * The Cathedral gem's rules (DEC-291, DEC-292, DEC-346). A hit on the gem (any blocked hit with an
+ * attacker: a weapon, a projectile or an ability, all through the damage pipeline) lands the gem's
+ * statuses on the hitter and lights the gem's glow. Walking by it strikes nobody: the gem blocks
+ * movement instead (its plinth, `CathedralInteriorBuilder`; DEC-346). The statuses come from the
+ * environment, as the gem is no team's: so friendly fire never blocks them and they hurt neutrals
+ * too ("hurts any entity", DEC-292); a death by them is credited to the unit's last enemy damager
+ * (`KillCredit`, DEC-346). Its holder follows the capture point it stands in. Bots and neutrals
  * never pick the gem as a target: perception sees units only, and a lane's objectives are
  * playable-team structures only (`LaneStructures`). Runs after `CaptureSystem`, so a change of
  * hands this tick shows this tick. When the gem erupts (`greater-boss-summoned`) it is removed
@@ -46,7 +45,7 @@ export class CathedralGemSystem implements System {
     private readonly gem: CathedralGemDefinition,
   ) {
     // Looks up every id now, so a wrong one fails at match start, not at the first hit.
-    for (const id of [...gem.statusIds, gem.touchCooldownStatusId]) loaded.get(id);
+    for (const id of gem.statusIds) loaded.get(id);
     const { durationTicks } = loaded.get(gem.glow.statusId);
     if (durationTicks === null) {
       throw new Error(`The gem's glow status "${gem.glow.statusId}" must have a duration.`);
@@ -66,10 +65,7 @@ export class CathedralGemSystem implements System {
     });
   }
 
-  /**
-   * Removes an erupted gem first, then ages each gem's glow, hands it over, and answers this tick's
-   * hits and touches.
-   */
+  /** Removes an erupted gem first, then ages each gem's glow, hands it over, then answers this tick's hits. */
   public update({ state }: SystemContext): void {
     if (this.hasErupted) {
       this.hasErupted = false;
@@ -80,7 +76,6 @@ export class CathedralGemSystem implements System {
       if (gem === undefined) return;
       gem.age();
       this.handOver(state, entity, gem);
-      this.answerTouches(state, entity, gem);
     });
     for (const { gemId, attackerId } of this.hits) {
       const gem = state.entities.get(gemId)?.findComponent(CathedralGemState);
@@ -96,30 +91,6 @@ export class CathedralGemSystem implements System {
       const area = state.entities.get(pointId)?.findComponent(ZoneArea);
       if (at !== undefined && area?.contains(at) === true) gem.hold(to);
     }
-  }
-
-  /** Strikes every living unit whose disc overlaps the gem's and is not warded from it. */
-  private answerTouches(state: GameState, entity: Entity, gem: CathedralGemState): void {
-    const body = entity.findComponent(Transform);
-    if (body === undefined) return;
-    state.entities.forEach((unit) => {
-      const transform = unit.findComponent(Transform);
-      if (unit === entity || transform === undefined) return;
-      const dx = transform.position.x - body.position.x;
-      const dy = transform.position.y - body.position.y;
-      const reach = transform.radius + body.radius;
-      // Squared distances: core keeps transcendental Math out (ADR 0012). Distance first: it rules
-      // out almost every entity before the component lookups.
-      if (dx * dx + dy * dy > reach * reach) return;
-      const statuses = unit.findComponent(StatusEffects);
-      if (
-        statuses !== undefined &&
-        unit.findComponent(Health)?.isDead === false &&
-        !this.isCoolingDown(statuses)
-      ) {
-        this.strike(state, gem, unit.id);
-      }
-    });
   }
 
   /**
@@ -138,14 +109,6 @@ export class CathedralGemSystem implements System {
       state.events.emit('entity-removed', { entityId, cause: 'despawned' });
     }
   }
-
-  private isCoolingDown(statuses: StatusEffects): boolean {
-    for (const status of statuses.active) {
-      if (status.definition.id === this.gem.touchCooldownStatusId) return true;
-    }
-    return false;
-  }
-
   private strike(state: GameState, gem: CathedralGemState, unitId: EntityId): void {
     for (const statusId of this.gem.statusIds) {
       this.statuses.apply(state, unitId, statusId, null);

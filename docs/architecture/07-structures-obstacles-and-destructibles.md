@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-23
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -66,7 +66,7 @@ export abstract class Structure extends Entity {
 | `Turret`       | `TurretState`, `Combat`              | Auto-fires bolts; Warrior Legends may take manual control                                  | MVP (manual: MVP-if-time)           |
 | `Camp`         | `Spawner`                            | Neutral spawner for forest/corner camps; activates when the match countdown ends (DEC-167) | MVP (corner: MVP-if-time)           |
 | `Cathedral`    | `Spawner` (gem), `Aura`              | Middle capture point's building; summons the `GreaterBoss` mid-match                       | MVP (boss summon: per plan phase 3) |
-| `CathedralGem` | `CathedralGemState`                  | The gem: its own unbreakable body (DEC-292); stuns and burns whoever hits or touches it    | MVP                                 |
+| `CathedralGem` | `CathedralGemState`                  | Its own unbreakable body (DEC-292); stuns and burns hitters; blocks movement (DEC-346)     | MVP                                 |
 
 Not a structure: `CapturePoint` is a `Zone` (no collider, §7). Anti-air buildings and form-change
 stations (Ascendance/Enchantment) are **post-MVP** (§14).
@@ -499,26 +499,31 @@ so a replay or a match without map objects rebuilds the same zones. Interim diff
   does not follow the owner yet (the minimap entity markers, SCRUM-151).
 - The density numbers on the HUD arrive with the HUD work (`feat/hud-and-character-select`, its
   capture tracker); this PR publishes the presence and draws the split bar in the world.
-- **Cathedral gem (2026-11-21, `feat/cathedral-gem-hittable`).** The gem is its own body, apart from
-  the building (DEC-292): a neutral `CathedralGem` structure built on the `cathedral` map feature,
-  `never` breakable, so `BreakabilityStep` blocks every hit. `DamagePipeline` announces a blocked
-  hit (`damage-blocked`); `CathedralGemSystem` answers each one that has an attacker, and each touch
-  (two discs overlapping), by landing `CATHEDRAL_GEM`'s statuses on that unit as environment damage
-  (the gem is no team's, so it hurts neutrals too): a stun, its tick damage, and a ward that spaces
-  out touch strikes. Weapons reach it today; a shot or ability aimed at the gem will through the
-  same pipeline. A stray shot does not yet: the projectile PR (#148) hits an unbreakable body only
-  when the shot was fired at it, so whichever of #132 and #148 merges second makes a stray shot
-  strike the gem too (DEC-292: contact "by accident" strikes). Bots and minions never pick it as a
-  target: perception sees only units, and a lane's objectives are playable-team structures only
-  (`LaneStructures`). The player can aim at it (`findGemAt`). The gem's content id is `cathedral`,
-  because `spawnStructures` builds one structure per map feature, matched by the feature's
-  definition id; the planned `Cathedral` building (§1) cannot share that id, so its PR changes the
-  spawn link (or renames the gem's id, which no save stores yet, ADR 0023). The gem blocks no movement (like every structure circle), so the lane
-  through the Cathedral crosses it, and the ward caps a passing unit at one strike. Its
+- **Cathedral gem (`feat/cathedral-gem-hittable`; DEC-291, DEC-292, DEC-346).** The gem is its own
+  body, apart from the building: a neutral `CathedralGem` structure built on the `cathedral` map
+  feature, `never` breakable, so `BreakabilityStep` blocks every hit. `DamagePipeline` announces a
+  blocked hit (`damage-blocked`); `CathedralGemSystem` answers each one that has an attacker by
+  landing `CATHEDRAL_GEM`'s statuses on that unit as environment damage (the gem is no team's, so it
+  hurts neutrals too): a stun and its tick damage. A touch strikes nobody (DEC-346): the gem blocks
+  movement instead, through an unbreakable plinth of the gem's own radius under it (a `cathedral`
+  map object, built by `CathedralInteriorBuilder`), so collision and the lane paths go round it.
+  A death by the gem's statuses counts for the victim's last enemy damager within the assist
+  window, or nobody (DEC-346): `KillCredit`, called by `DamagePipeline` before `entity-died`, so
+  every reader of the killer agrees; the last enemy hit is the hashed `LastEnemyHit` component.
+  Weapons reach the gem today, and the player's aim picks the gem before the plinth (`findGemAt`
+  before `findMapObjectAt`). The projectile PR (#148) stops a shot on static shapes: whichever of
+  #132 and #148 merges second must let a shot aimed at the gem reach the gem's circle before the
+  plinth around it (and make a stray shot strike it, DEC-292: contact "by accident" strikes).
+  Bots and minions never pick the gem as a target: perception sees only units, and a lane's
+  objectives are playable-team structures only (`LaneStructures`). The gem's content id is
+  `cathedral`, because `spawnStructures` builds one structure per map feature, matched by the
+  feature's definition id; the planned `Cathedral` building (§1) cannot share that id, so its PR
+  changes the spawn link (or renames the gem's id, which no save stores yet, ADR 0023). Its
   `CathedralGemState` (the Cathedral's holder from `capture-point-owner-changed`, and its glow) is
-  in the snapshot, and `CathedralGemView` draws it in the holder's colour (DEC-291). The system is
-  off in a Duel (DEC-36) until `INBOX.md` answers. The `Cathedral` building is not an entity yet:
-  its `Spawner` and `Aura` (§1, §6) and the gem's look over time are not built.
+  in the snapshot, and `CathedralGemView` draws it in the holder's colour (DEC-291). The gem system
+  is off in a Duel until the follow-up PR builds the owner's Duel design (DEC-346). The `Cathedral`
+  building is not an entity yet: its `Spawner` and `Aura` (§1, §6), and the gem's look over time
+  are not built.
 - **Gem eruption and the Greater Boss (2026-11-22, `feat/cathedral-eruption-boss`).** The
   `summon-greater-boss` timeline action (12 §3) erupts the gem at mid-game. On the next tick, each in its own
   pass after `greater-boss-summoned` (03 §Events), `SpawnSystem` fills the Greater Boss's post and

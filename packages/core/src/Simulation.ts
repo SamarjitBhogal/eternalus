@@ -208,12 +208,13 @@ export class Simulation {
     if (systems === undefined) {
       // Before any Legend spawns (`spawnRoster`), so `Scoring` hears each one's `entity-spawned`
       // and gives it a row.
+      const scoring = loadScoring(tickRate);
       const director = createDefaultMatchDirector({
         state: this.state,
         timeline,
         debug,
         logger,
-        scoring: loadScoring(tickRate),
+        scoring,
       });
       this.pipeline = new DefaultSystemPipeline({
         invariants: new DefaultInvariantRunner({
@@ -226,6 +227,8 @@ export class Simulation {
         state: this.state,
         progression: { units, curves, xpSources: XP_SOURCES },
         director,
+        // One scoring load: a gem kill's window is the assists' window (DEC-346).
+        assistWindowTicks: scoring.assistWindowTicks,
         ...(duelStarts === undefined ? {} : { duelStarts }),
         hordes: {
           factory,

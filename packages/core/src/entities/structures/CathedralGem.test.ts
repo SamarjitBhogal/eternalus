@@ -9,6 +9,8 @@ import { STRUCTURE_DEFINITIONS } from '../../content/structures/structureCatalog
 import { TEST_DEBUG_CONFIG } from '../../diagnostics/InvariantRunner.constants';
 import { MemoryLogger } from '../../diagnostics/MemoryLogger';
 import { MapGenerator } from '../../map/MapGenerator';
+import { MapObjectBuilder } from '../../map/MapObjectBuilder';
+import { MapPresentationBuilder } from '../../map/MapPresentationBuilder';
 import { Simulation } from '../../Simulation';
 import type { DuelOptions, RosterSlot } from '../../Simulation.types';
 import { EntityStore } from '../../state/EntityStore';
@@ -39,6 +41,8 @@ const match = (roster: readonly RosterSlot[] = [], duel?: DuelOptions) => {
     logger,
     debug: TEST_DEBUG_CONFIG,
     map,
+    // The map's objects, as the client passes them: the gem's plinth blocks movement (DEC-346).
+    mapObjects: new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map)),
     roster,
     ...(duel === undefined ? {} : { duel }),
   });
@@ -150,27 +154,32 @@ describe('CathedralGem (07 §1, DISC-11, DEC-292)', () => {
     expect(run()).toBe(run());
   });
 
-  it('burns a unit standing on it until the burn kills it, nobody’s kill', () => {
+  it('stops a unit walking into it at its edge and never strikes it (DEC-346)', () => {
     const { simulation, config, feature, gem } = match();
-    const warriorId = warriorBeside(simulation, feature.position, 0);
-    const deaths: GameEventMap['entity-died'][] = [];
-    simulation.on('entity-died', (event) => deaths.push(event));
+    const warriorId = warriorBeside(simulation, feature.position, -15);
+    const statuses: GameEventMap['status-applied'][] = [];
+    simulation.on('status-applied', (event) => statuses.push(event));
+    simulation.enqueueCommand({ type: 'move', actorId: warriorId, direction: { x: 1, y: 0 } });
 
-    steps(simulation, 120 * config.tickRate);
+    steps(simulation, 3 * config.tickRate);
 
-    expect(deaths).toContainEqual({
-      entityId: warriorId,
-      killer: { attackerId: null, kind: 'status', definitionId: 'gem-burn' },
-    });
-    const glow = simulation.snapshot().entities.find(({ id }) => id === gem.id)?.gem;
-    expect(glow?.ticksSinceHit).not.toBeNull();
+    const warrior = simulation.snapshot().entities.find(({ id }) => id === warriorId);
+    const x = warrior?.transform?.x ?? Number.NaN;
+    const reach = (gem.transform?.radius ?? 0) + (warrior?.transform?.radius ?? 0);
+    expect(x).toBeLessThan(feature.position.x - (gem.transform?.radius ?? 0));
+    expect(x).toBeGreaterThan(feature.position.x - reach - 1);
+    expect(statuses.filter(({ statusId }) => statusId.startsWith('gem-'))).toEqual([]);
+    expect(simulation.snapshot().entities.find(({ id }) => id === gem.id)?.gem?.ticksSinceHit).toBe(
+      null,
+    );
   });
 
   it('does nothing in a Duel, where the world round the arena is off (DEC-36)', () => {
-    const { simulation, config, feature } = match([], { killTarget: 10 });
+    const { simulation, config, feature, gem } = match([], { killTarget: 10 });
     const statuses: GameEventMap['status-applied'][] = [];
     simulation.on('status-applied', (event) => statuses.push(event));
-    warriorBeside(simulation, feature.position, 0);
+    const warriorId = warriorBeside(simulation, feature.position, -6);
+    simulation.enqueueCommand({ type: 'attack-target', actorId: warriorId, targetId: gem.id });
 
     steps(simulation, 2 * config.tickRate);
 

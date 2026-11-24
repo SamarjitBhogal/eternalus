@@ -16,7 +16,6 @@ describe('STATUS_EFFECTS', () => {
       'rallied',
       'gem-shock',
       'gem-burn',
-      'gem-warded',
     ]);
   });
 

@@ -8,6 +8,7 @@ import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { ChaseWatch } from '../components/ChaseWatch';
 import { CombatClock } from '../components/CombatClock';
+import { LastEnemyHit } from '../components/LastEnemyHit';
 import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
@@ -186,6 +187,22 @@ describe('StateHasher', () => {
     state.match.eruptGem('greater-boss');
 
     expect(hasher.hash(state)).not.toBe(before);
+  });
+
+  it('changes with a last enemy hit and with each of its fields (DEC-346)', () => {
+    const { state, soldier } = stateWithSoldier();
+    const bare = hasher.hash(state);
+    const last = new LastEnemyHit('entity-7', 5);
+    soldier.addComponent(last);
+    const hit = hasher.hash(state);
+    last.record('entity-8', 5);
+    const byAnother = hasher.hash(state);
+
+    last.record('entity-8', 6);
+
+    expect(hit).not.toBe(bare);
+    expect(byAnother).not.toBe(hit);
+    expect(hasher.hash(state)).not.toBe(byAnother);
   });
 
   it('differs between seeds', () => {
