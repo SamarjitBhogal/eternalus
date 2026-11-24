@@ -156,21 +156,25 @@ describe('Shield Wall (scenario)', () => {
     raise(EAST);
     const wall = walls()[0]?.id ?? '';
     const attackers = new Set<string>();
-    let health = 800;
-    sim.on('damage-applied', ({ targetId, source }) => {
-      if (targetId === wall && source.attackerId !== null) attackers.add(source.attackerId);
+    let dealt = 0;
+    sim.on('damage-applied', ({ targetId, amount, source }) => {
+      if (targetId !== wall) return;
+      dealt += amount;
+      if (source.attackerId !== null) attackers.add(source.attackerId);
     });
 
     sim.enqueueCommand({ type: 'attack-aim', actorId: light, aim: { x: 113, y: 53 } });
     sim.enqueueCommand({ type: 'attack-aim', actorId: dark, aim: { x: 113, y: 54 } });
+    let dealtWhileStanding = 0;
     for (let tick = 0; tick < 120 * SECOND && walls().length > 0; tick += 1) {
-      health = walls()[0]?.health?.current ?? health;
+      dealtWhileStanding = dealt;
       run(1);
     }
 
     expect([...attackers].sort()).toEqual([light, dark].sort());
     expect(removed).toContain(`${wall} died`);
-    expect(health).toBeGreaterThan(0);
+    expect(dealtWhileStanding).toBeLessThan(800);
+    expect(dealt).toBeGreaterThanOrEqual(800);
   });
 
   it('keeps 2 walls: a 3rd removes the oldest, and one that is destroyed frees its place', () => {

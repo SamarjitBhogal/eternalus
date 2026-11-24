@@ -1430,6 +1430,39 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   - **Bots and client.** A Warrior bot may now cast Hamstring at the enemy it fights
     (`pickReadySlot` aims at the enemy's position). The client draws the blade as a shot that
     drops at its range (`PROJECTILE_ENDING_LOOKS`).
+- **Shield Wall (`feat/sentinel-wall`, 2026-11-23; DEC-330 (7), DEC-307, reading R4).** Shield
+  Wall is the Sentinel's `ability-3` (`content/abilities/shieldWall.ts`): `directional`, with one
+  `summon` step that places the `shield-wall-barrier` obstacle (`content/obstacles/`). Where the
+  code differs from §3:
+  - **The `summon` spec.** `{ definitionId, distance, maxActive }`: the body stands `distance`
+    metres from the caster's centre along the cast's direction, facing that way, and a caster holds
+    at most `maxActive` bodies of the definition. A new one first removes the caster's oldest as
+    `despawned`; a body that leaves the world for any cause frees its place (DEC-330 (7)). The
+    ledger is `GameState.summons` (`state/SummonLedger`), which `StateHasher` hashes. §3's `count`,
+    `lifetimeSeconds` and `controllerId` are not built: no ability needs them yet (the wall is
+    permanent until broken, DEC-330 (7)). The body stays when its caster dies or leaves.
+  - **Placing.** `abilities/` may not import `entities/` (02 §2), so the step places through a
+    port, `Summoner` (`state/Summoner.types.ts`, on `CastContext.summoner`), which
+    `entities/EntitySummoner` satisfies with the match's one `EntityFactory`, as `ShotLauncher`
+    does for shots. `ObstacleDefinition.footprint` (07 §9) is the outline in metres with +x along
+    the facing; `Obstacle` turns it to the spawn's facing and installs it as a solid `Footprint`,
+    so reach, area hits and shots find the wall by its outline (`EntityStore.outlineOf`). The
+    wall has no team, so every attack of either team damages it, as a tree or a rock
+    (`structureMultiplier` applies).
+  - **Blocking.** The summoner makes a solid outline a wall through `GameState.walls`
+    (`PlacedWalls`, 10 §12): the static collision index, the nav grid and the lane fields. It
+    pushes every unit the outline covers straight out of it, so no unit starts a move inside a
+    wall; a push that another wall cuts short leaves the unit where it stops.
+  - **A step's aim check.** An effect may have `aimBlockedBy` (optional on `AbilityEffect`);
+    `CastValidator` asks every step of the ability after the targeting, so a refused cast spends
+    nothing. The summon refuses (`no-target`) a wall whose outline would overlap a wall (terrain,
+    a blocking map object, another placed wall, the caster's oldest wall included) or reach past
+    the map's edge. A delayed step is checked at the cast.
+  - **Not built.** The aim overlay has no row for a placed body (`describe` gives none). DEC-307's
+    stop of a charging Sentinel comes with PR 8; the wall blocks walking and dashes like a map wall.
+  - **Client.** The snapshot carries a placed body's outline (`EntitySnapshot.outline`, left out
+    for every other entity). Obstacles have no view of their own, so `DefaultEntityView` draws it:
+    the outline filled in the team colour (neutral) with a dark edge, in place of the disc.
 
 ## Related
 
