@@ -1,7 +1,7 @@
 # The steps below mirror `npm run check` one-to-one so a failure points at
 # exactly one tool. If you change the "check" script in package.json, change this file too.
 # One extra step is not part of `npm run check`: the headless tick bench (`npm run bench`, no time
-# assertion), so a change that breaks the bench script fails CI (owner sign-off: INBOX "Tick time" (3)).
+# assertion), so a change that breaks the bench script fails CI (DEC-351).
 #
 # The job runs on Linux and Windows. macOS is left out to save CI minutes (ADR 0019): it behaves
 # like Linux for this Node tooling, and macOS developers run the full `npm run check` locally

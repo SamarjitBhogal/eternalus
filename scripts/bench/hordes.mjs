@@ -6,7 +6,7 @@
 // imports. Times are printed, never asserted (they depend on the machine): a missed budget prints
 // `NO` and still exits 0.
 // The timed window is a fight, so the population falls from the fill (the mob counts at its start
-// and end are printed); whether NFR-021 needs it held at 144 per team is open (INBOX).
+// and end are printed); the fill to 144 per team is what NFR-021 asks (DEC-351).
 // The script fails when it stops measuring its scenario, so CI notices when the core API it
 // drives changes: a case that could not be filled, a bot Legend that never travelled, hordes that
 // never met, or a timed window in which no filled mob died. Per-system times (NFR-025) wait for
@@ -209,7 +209,7 @@ const runCase = (perTeam, budgetMs) => {
     'p50 ms': quantile(times, 0.5).toFixed(2),
     'p95 ms': p95.toFixed(2),
     'max ms': times[times.length - 1].toFixed(2),
-    [`p95 ≤ ${BUDGET_MS} ms (combat window)`]:
+    [`p95 ≤ ${BUDGET_MS} ms (NFR-021)`]:
       budgetMs === null ? 'no target (INBOX DEC-137 (1))' : p95 <= budgetMs ? 'yes' : 'NO',
   };
 };
@@ -217,9 +217,10 @@ const runCase = (perTeam, budgetMs) => {
 console.log(
   `Node ${process.version}; ${TIMED_TICKS} ticks timed per case, from the first death after the countdown`,
 );
-// The timed population falls from the fill, so the budget column is combat-window evidence; whether
-// NFR-021 needs 144 per team held for the whole window is open (INBOX).
-console.log('Budget column: combat-window evidence only, not an NFR-021 pass (sampling rule open)');
+// NFR-021 counts the fill, so the population may fall during the window (DEC-351).
+console.log(
+  'Budget column: the NFR-021 result on ubuntu-latest CI; elsewhere extra evidence (DEC-351)',
+);
 const capMobs = config.limits.maxUnitsPerTeam - config.match.legendsPerTeam;
 // The budget applies to the Phase 3 target only: whether it holds at the cap is open (INBOX DEC-137 (1)).
 console.table([runCase(PHASE_3_TARGET_MOBS, BUDGET_MS), runCase(capMobs, null)]);

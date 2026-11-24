@@ -379,6 +379,9 @@ Reply inline (`Decision: …`).
       wait for contact) into a typed core module with a vitest test, leaving only the clock in the
       `.mjs`; `tsc` would then catch API changes such as DEC-173's `pilot`, and a test would prove
       the hordes fight without a timed CI step. Recommendation: yes, after (3).
+  - Answered 2026-11-23 (Owner Calls page, relayed on PR #83), recorded as DEC-351: (1) the CI
+    runner (`ubuntu-latest`); (2) the fill is enough, report the start and end counts; (3) the
+    step stays on every pull request, as built. Done in PR #83. Only (4) stays open.
 
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on

@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-23
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,16 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-23 (Owner Calls page: tick time)
+
+The owner's answers of 2026-11-23 on the Owner Calls page to `INBOX.md` "Tick time" (1) to (3),
+relayed on PR #83 by swholtzman's reviewer session. DEC-351 is this batch (other numbers from
+DEC-317 on are other sessions').
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Docs changed                                                                                                                                          |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DEC-351 | **The tick bench runs on every pull request; the fill to 144 is enough; the reference machine is the CI runner** (closes `INBOX.md` "Tick time" (1) to (3); PR #83). (3) "Yes, on every pull request, as built; a DEC row records it, and the author fixes the guardrails table and the CI file header": the `npm run bench` step stays in `ci.yml` (no time assertion), with the root `vite` devDependency (the client's version) and doc 15's status sentence. (2) "The fill is enough; report the start and end counts with the result — Whatever is the best proof.": NFR-021's "at 144 units per team" means the bench fills each team to 144 before the timed window; units can die during it, and each result gives the mob counts at the window's start and end. (1) "The CI machine (GitHub's standard Linux runner)": the reference machine for the tick targets is `ubuntu-latest`; a pass or a fail comes from the bench step's output in a CI run there, and a laptop run is extra evidence. | requirements 06 NFR-021; plan README §5; `docs/process/guardrails.md` "CI gate"; `.github/workflows/ci.yml` header; `scripts/bench/hordes.mjs` header |
 
 ## Batch 2026-11-21 (Owner Calls page: the browser-support line)
 
