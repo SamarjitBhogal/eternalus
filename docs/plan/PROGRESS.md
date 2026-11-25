@@ -8906,7 +8906,56 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 
 - What was done: merged `feat/duel-rules` into this branch (its base, updated after the sync with `phase/3-sprint-3-work` 3dc9e908) because #103 was CONFLICTING. Only the append-only logs conflicted; both sides' entries are kept. No feature code changed. No force push.
 - Checks run: `npm run check` → `EXIT=0`: Tests 1356 passed (1356);Tests 29 passed (29);Tests 1909 passed (1909);Tests 111 passed (111); "Documentation check passed."
+
 - Next step: reviewer approval; the team merges in stack order.
+
+### 2026-11-13 — Phase 3 / online Duel — feat/mm-guest-identity (SCRUM-430, stacked on #103) — claudiodh + Claude Code
+
+- What was done: guest identity, presence and a reconnect window. Protocol: server `welcome {guestId}` (a `randomUUID`, sent on connect and again on a resume), `queue-join` may carry `guestId` (a malformed one is dropped by the parser), new `forfeit` message. Server: `PresenceBook` gives each connection a guest id and reads its state (online, queued, in-match) from the queue and host; a queued or in-match guest that disconnects keeps its slot for `RECONNECT_WINDOW_MS` (10 s), a connection presenting the same id inside the window takes the slot over (`DuelQueue.replace`, `DuelHost.replace`, `DuelMatch.replaceSeat`: the client gets `welcome`, then `queue-waiting` or `match-found` and the next `state`), after it the guest leaves the queue or forfeits; only a held guest can be resumed (the id of a connected guest is ignored); at most `MAX_HELD_GUESTS` guests are held and a match with both seats held ends at once (gate fixes). `DuelGateway` takes an options object. The load bots' light seat now sends `forfeit` instead of only closing. Client: `DuelSession` keeps the id from `welcome` through `PersistenceController` (new `GuestRepository`, `guest` store) and sends it on every join; storage failure only means a new id.
+- Tests: `PresenceBook.test.ts` (same id and state back for queued and in-match, window expiry, malformed or unknown id, duplicate id, counts equal open connections), parser id and forfeit cases, gateway forfeit, `DuelSession` (id stored and sent, storage failure), `ServerMessageDecoder`, `PersistenceController` (guest id). Existing gateway disconnect tests now run out the window with `drop()`.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1340 passed (1340)"; protocol "Tests 31 passed (31)"; client "Tests 1917 passed (1917)"; server "Tests 124 passed (124)"; "Documentation check passed." Smoke: `npm run duel:bots -- --mode queue --players 20 --rounds 3 --stagger 0` against the production build: 30 matches, 0 lost, 0 duplicated.
+- Next step: the owner answers the INBOX item on guest identity (window length, duplicate rule, id storage); the client does not reconnect by itself yet (it ends the Duel as lost), a follow-up wires an automatic rejoin; the gate (critic, ponytail) runs before the PR.
+
+### 2026-11-13 — Phase 3 / sync — feat/mm-guest-identity (PR #104) — claudiodh + Claude Code
+
+- What was done: merged `feat/mm-queue-load` into this branch (its base, updated after the sync with `phase/3-sprint-3-work` 3dc9e908) because #104 was CONFLICTING. Only the append-only logs conflicted; both sides' entries are kept. No feature code changed. No force push.
+- Checks run: `npm run check` → `EXIT=0`: Tests 1356 passed (1356);Tests 31 passed (31);Tests 1917 passed (1917);Tests 124 passed (124); "Documentation check passed."
+
+- Next step: reviewer approval; the team merges in stack order.
+
+### 2026-11-13 — Phase 3 / online Duel — feat/mm-glicko (SCRUM-431, stacked on #104) — claudiodh + Claude Code
+
+- What was done: Glicko-2 rating and skill-based pairing. `Glicko2` (pure, Glickman's algorithm) and `PlayerRatings` (rating, deviation, volatility, wins, losses, streak, matches by guest id, in memory). `DuelMatch` reports the winner to `onEnded` (a leaver counts as the loser) and `DuelHost` records it. `DuelQueue` holds several waiters and pairs the closest ratings first: allowed gap = `BASE_RATING_GAP` (100) + `GAP_WIDENING_PER_SECOND` (25) x seconds the longer-waiting of the two has waited, unlimited after `QUEUE_TIMEOUT_MS` (30 s), re-checked on each join and every `QUEUE_SWEEP_MS` (1 s). The gateway passes the guest id (`PresenceBook.guestIdOf`). Queue-load check comment updated: bots are all default-rated, so "at most one waits" still holds.
+- Tests: `Glicko2.test.ts` (Glickman's worked example: 1464.05, 151.52, 0.05999; RD growth with no games), `PlayerRatings.test.ts`, `DuelQueue.test.ts` (close pairs first, 300 gap widens, everyone pairs within the timeout, leaver never paired, reconnect slot), `DuelHost.test.ts` and `DuelMatch.test.ts` (ratings after win and forfeit).
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1340 passed (1340)"; protocol "Tests 31 passed (31)"; client "Tests 1917 passed (1917)"; server "Tests 139 passed (139)"; "Documentation check passed."
+- Next step: the owner answers the INBOX item on ratings (persistence, rating period, gap numbers); the gate (critic, ponytail) runs before the PR.
+
+### 2026-11-13 — Phase 3 / sync — feat/mm-glicko (PR #105) — claudiodh + Claude Code
+
+- What was done: merged `feat/mm-guest-identity` into this branch (its base, updated after the sync with `phase/3-sprint-3-work` 3dc9e908) because #105 was CONFLICTING. Only the append-only logs conflicted; both sides' entries are kept. No feature code changed. No force push.
+- Checks run: `npm run check` → `EXIT=0`: Tests 1356 passed (1356);Tests 31 passed (31);Tests 1917 passed (1917);Tests 139 passed (139); "Documentation check passed."
+
+- Next step: reviewer approval; the team merges in stack order.
+
+### 2026-11-13 — Phase 3 / online Duel — chore/server-dockerfile (SCRUM-404, stacked on #105) — claudiodh + Claude Code
+
+- What was done: `apps/server/Dockerfile` and a root `.dockerignore` for the Duel server image. Two stages: the build stage runs `npm ci` for the server workspace and bundles the server with core and protocol into one file; the run stage copies only `ws` (the lockfile-pinned version from the build stage's `npm ci`, nothing fetched from the registry) beside that file, runs as the `node` user, listens on `0.0.0.0:8787` and has a `HEALTHCHECK` on the container's own `/health`. Added a line to `apps/server/AGENTS.md` and an INBOX item on the open deploy choices (the per-IP cap behind a platform proxy, the health check, TLS, the platform).
+- Verified: `docker build -f apps/server/Dockerfile -t eternalus-duel .` builds (333 MB), the container reports `healthy`, and `npm run duel:bots -- --url ws://127.0.0.1:18787` finishes a Duel against it ("every check passed"). Not deployed anywhere.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1340 passed (1340)"; protocol "Tests 31 passed (31)"; client "Tests 1917 passed (1917)"; server "Tests 139 passed (139)"; "Documentation check passed."
+- Next step: the owner picks the platform (SCRUM-404) and answers the INBOX item on the proxy and the cap; then deploy and run the load test (SCRUM-403).
+
+### 2026-11-13 — Phase 3 / sync — chore/server-dockerfile (PR #106) — claudiodh + Claude Code
+
+- What was done: merged `feat/mm-glicko` into this branch (its base, updated after the sync with `phase/3-sprint-3-work` 3dc9e908) because #106 was CONFLICTING. Only the append-only logs conflicted; both sides' entries are kept. No feature code changed. No force push.
+- Checks run: `npm run check` → `EXIT=0`: Tests 1356 passed (1356);Tests 31 passed (31);Tests 1917 passed (1917);Tests 139 passed (139); "Documentation check passed."
+- Next step: reviewer approval; the team merges in stack order.
+
+### 2026-11-13 — Phase 3 / online Duel — chore/server-deploy-units (SCRUM-404, stacked on #106) — claudiodh + Claude Code
+
+- What was done: `apps/server/deploy/` with the two systemd user units that run the Duel server and the static client on a Linux host without a container (`eternalus-duel.service`, `eternalus-client.service`) and a README with the layout, the first install, the redeploy, the check and the proxy note. The units use `%h` and no user, host or machine name; `ExecStart` points at `/usr/bin/node` and says it needs Node 24. A line in `apps/server/AGENTS.md`. No code change.
+- Verified: the same units, with a Node 24 path, run the Duel server and the client on the author's machine, and `npm run duel:bots` plays a Duel against it.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1356 passed (1356)"; protocol "Tests 31 passed (31)"; client "Tests 1917 passed (1917)"; server "Tests 139 passed (139)"; "Documentation check passed."
+- Next step: the owner picks the platform (SCRUM-404); this folder is the fallback for a self-hosted demo.
 
 ### 2026-11-13 — Phase 3 / online Duel — feat/duel-rules (Copilot review fix) — claudiodh + Claude Code
 
@@ -8926,6 +8975,12 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - What was done: merged `feat/duel-rules` (50f26d06, now synced with `phase/3-sprint-3-work`) into this branch. Only `INBOX.md` conflicted; both sides' items are kept. No feature code changed. No force push.
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 1602 passed (1602)"; protocol "Tests 29 passed (29)"; client "Tests 2005 passed (2005)"; server "Tests 113 passed (113)"; "Documentation check passed."
 - Next step: reviewer approval; the team merges in stack order.
+
+### 2026-11-15 — Phase 3 / sync and review nits — feat/mm-guest-identity (PR #104) — claudiodh + Claude Code
+
+- What was done: merged `feat/mm-queue-load` (b632a80d) into this branch (conflicts in `INBOX.md`, `domain.types.ts` and `DuelSession.test.ts`: both sides kept). Review nits on #104: `MS_PER_SECOND` now lives once in `apps/server/src/time/time.constants.ts` (the queue, the token bucket, `main.ts` and the bots no longer import it from a sibling's constants); the Dockerfile pins `node:24.21.0-slim` (the root `engines` minimum); the `ponytail:` note on `closestAllowed` says `pairUp` calls it once per pair, so a sweep is O(n^3). No behaviour change. No force push.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1602 passed (1602)"; protocol "Tests 31 passed (31)"; client "Tests 2013 passed (2013)"; server "Tests 141 passed (141)"; "Documentation check passed."
+- Next step: reviewer re-check; the team merges in stack order.
 
 ### 2026-11-15 — Phase 3 / sync — chore/deps-vite-vitest (PR #113) — claudiodh + Claude Code
 
@@ -10158,3 +10213,100 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   timed out in 120000ms"). Rerun alone: "Tests 11 passed (11)". Then `npm run build` ("✓ built in
   4.49s") and `npm run docs:check` ("Documentation check passed.").
 - Next step: Aryan pushes `feat/bosses-p3` and asks the reviewers to re-review PR #91.
+
+### 2026-11-07 — Phase 3 / unit-cap performance check (minion plan §1.2) — chore/minion-perf-check — SamarjitBhogal + Claude Code
+
+- What was done: `npm run bench` (`scripts/bench/hordes.mjs`), the headless tick bench of the Phase
+  1 plan in a minion form: it loads core through Vite's module runner (Vitest 5 has no `bench`
+  API, and Node cannot resolve core's extensionless imports), builds a generated 3-lane match with
+  every bot Legend (9 laners and the Rover per team), fills each team to 144 mobs, then to the
+  cap, with light-minion hordes at 45% and 55% of every lane so they fight, and times 900 ticks
+  after 60 warm-up ticks. It prints p50, p95 and max and asserts no time; it fails only when a
+  case cannot be filled. CI runs it as its own step (not part of `npm run check`), as the Phase 1
+  item asks; approved by SamarjitBhogal on 2026-11-07. Doc 15 Implementation status,
+  the Phase 1 bench item, the plan README metric and the README command list name it.
+- Measured (Node 24.21, AMD Ryzen AI 9 HX 370, three runs; these first runs filled 146 mobs per
+  team for the 144 case, and a rerun after the critic's exact-fill fix gave p95 11.4 ms at 144 and
+  12.1 ms at 290):
+  - 144 mobs per team + 10 Legends each: p50 1.9 to 2.7 ms, p95 8.0 to 11.4 ms, max 17.5 to
+    19.4 ms.
+  - 290 mobs per team (the 300-unit cap with the Legends) + 10 Legends each: p50 2.0 to 2.9 ms,
+    p95 8.2 to 12.0 ms, max 18.2 to 26.1 ms.
+  - Over the plan's p95 ≤ 8 ms. A one-off probe timing each system and controller (not committed)
+    put the spikes in `ai` (p95 10.6 ms, max 24 ms at the cap): the `bot-legend` controller took
+    1.2 s of the 900 ticks (0.45 ms per decision, 166 decisions over 2 ms, max 6.9 ms), against
+    0.25 s for 76,550 minion decisions. Pathing p95 0.57 ms, the next system 0.23 ms. About 88
+    decisions were due per tick at the cap, under `maxDecisionsPerTick` 96 (DEC-181).
+- Dependency: `vite` 8.3.1 is now also a root devDependency (the client already had the same
+  version), so knip sees the script's import; approved by SamarjitBhogal on 2026-11-07.
+- Checks run: `npm run check` passed: core `Tests  1079 passed (1079)`, client
+  `Tests  1754 passed (1754)`, `Documentation check passed.`
+- Next step: the bot path cache (minion plan §3, M8 stand-in), then re-run `npm run bench`.
+
+### 2026-11-12 — Phase 3 / sync — chore/minion-perf-check — SamarjitBhogal + Claude Code
+
+- What was done: merged `docs/minion-plan-mvp-gaps` (PR #81, which now carries
+  `phase/3-sprint-3-work` at `3dc9e908`) into PR #83; it was 166 commits behind and conflicting.
+  Append-only logs: both sides kept, this branch's entries last. `INBOX.md`: this branch's
+  tick-time item kept, the stale copy of #81's item dropped (#81's refreshed items come in).
+  Minion plan §1.2: #81's refreshed rows, with this branch's measured "Unit-cap performance" row.
+  Doc 15: the later `last-reviewed`.
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code
+  style!"; core "Tests 1321 passed (1321)"; client "Tests 1818 passed (1818)"; "✓ built in
+  307ms"; "Documentation check passed." `npm run bench` on the merged base: 144/team p95 1.46 ms
+  (max 2.99), 290/team p95 2.51 ms (max 4.99), both within 8 ms; but only one mob per team died
+  in 900 ticks (2026-11-07: hordes fought), so the bench may no longer make the hordes meet.
+- Next step: check that the bench's hordes still fight on the new base before quoting these
+  numbers; then update the INBOX tick-time item.
+
+### 2026-11-20 — Phase 3 / minion plan §1.2 unit-cap performance — chore/minion-perf-check (PR #83 review round) — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (`5a7cc8dc`); conflicts in `INBOX.md` and this
+  file (kept both), doc 15 `last-reviewed`. Review fixes: root `vite` bumped to 8.3.8 with
+  `npm install -D -E` so `npm ci` works after the merge (B3); every bench roster slot has
+  `pilot: 'bot'` (B1, DEC-173); timing starts at the first death of a filled mob after the
+  countdown, so the 900 timed ticks are a fight (B2); the bench throws when a bot Legend has not
+  moved, the hordes never meet or no filled mob dies while timed (S3; checked: without `pilot` it
+  throws "10 Legends did not move after the countdown"); the 290 case prints "no target (INBOX
+  DEC-137 (1))" (N2); the header says a missed budget exits 0 (N1). Re-measured on an idle machine
+  (load 2.7 on 24 threads, Node 24.21.0, AMD Ryzen AI 9 HX 370): 144/team p50 1.78 / p95 3.47 /
+  max 4.85 ms, mobs 143/144 → 92/98, contact 588 ticks after the countdown; 290/team p50 2.51 /
+  p95 3.44 / max 11.65 ms, mobs 290/289 → 201/212. INBOX item, plan README row, minion plan row
+  and doc 15 updated (S2). Not done: S1 (an ADR or DEC row for the CI step and root `vite`, the
+  `ci.yml` header and the guardrails table) waits for the owner's call.
+- Checks run: `npm run check` (Node 24.21.0) on the merge → `EXIT=0`: "All matched files use
+  Prettier code style!"; core "Tests 1674 passed (1674)"; protocol "Tests 29 passed (29)"; client
+  "Tests 2011 passed (2011)"; server "Tests 84 passed (84)"; "✓ built in 521ms"; "Documentation
+  check passed."; `npm ci` exit 0 after the `vite` bump; `npm run bench` as above.
+- Next step: owner sign-off on the CI step and the dependency (S1); then re-request review.
+
+### 2026-11-21 — Phase 3 / minion plan §1.2 unit-cap performance — chore/minion-perf-check (CodeRabbit on `c554f2d4`) — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit's three findings. The plan README row no longer says "met": the run was
+  on a non-reference machine and the timed population falls from 144 to about 95 per team, so it
+  is pending the reference laptop and the sampling rule. `INBOX.md` asks the owner whether NFR-021
+  means the fill or a population held for the whole timed window; the bench header says the window
+  is a fight with a falling population. Not changed: the doc 15 status text waits for the owner's
+  sign-off, as CodeRabbit asks.
+- Checks run: `npm run docs:check` → "Documentation check passed."; `npm run check:quick` by the
+  pre-commit hook (only docs and a script comment changed).
+- Next step: the owner answers S1 and the sampling question; then re-request review.
+
+### 2026-11-21 — Phase 3 / minion plan §1.2 unit-cap performance — chore/minion-perf-check (PR #83 outstanding review comments) — SamarjitBhogal + Claude Code
+
+- What was done: swept every open review item on PR #83. CodeRabbit's `hordes.mjs` finding: the
+  bench now labels its budget column "p95 ≤ 8 ms (combat window)" and prints that the column is
+  combat-window evidence, not an NFR-021 pass, until the owner sets the sampling rule (INBOX).
+  The two plan README findings were already fixed in `5c276d6d`. Left for the owner: the doc 15
+  status-text sign-off (CodeRabbit), S1 (ADR or DEC row for the CI step and root `vite`, the
+  `ci.yml` header and guardrails table), the CI-cost / `workflow_dispatch` ruling, the reference
+  laptop and the NFR-021 sampling rule. The CI step comment nit (N1) is not changed: `ci.yml` is a
+  guardrail config and waits for S1. The PR is CONFLICTING with `phase/3-sprint-3-work` (`54615afa`)
+  in this file only; not merged here.
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code
+  style!"; core "Tests 1684 passed (1684)"; protocol "Tests 29 passed (29)"; client "Tests 2011
+  passed (2011)"; server "Tests 84 passed (84)"; "✓ built in 413ms"; "Documentation check
+  passed." `npm run bench` (Node 24.21.0, loaded machine, not the reference laptop): 144/team p95
+  4.58 ms, mobs 143/144 → 92/98; 290/team p95 4.85 ms, 290/289 → 201/212.
+- Next step: merge the phase branch (PROGRESS conflict, keep both); owner answers S1 and the
+  sampling question; refresh the PR body (N3); then re-request review.
