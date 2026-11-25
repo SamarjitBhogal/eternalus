@@ -8,6 +8,7 @@ import { MemoryLogger } from './diagnostics/MemoryLogger';
 import { MapGenerator } from './map/MapGenerator';
 import { Simulation } from './Simulation';
 import type { EntitySnapshot } from './state/Snapshot.types';
+import { clearCheckpointDefenders } from './__fixtures__/clearCheckpointDefenders';
 import { run } from './__fixtures__/hordeMatches';
 
 // A one-second countdown and a two-second boss delay keep the run short. The shipped plan keeps
@@ -46,6 +47,8 @@ const setUp = () => {
     map: new MapGenerator().generate(CONFIG, 1),
     guardPlans: PLANS,
   });
+  // The boss's rule is under test: the checkpoint defenders (DEC-261) would hold the zone.
+  clearCheckpointDefenders(simulation);
   const spawned: string[] = [];
   simulation.on('entity-spawned', ({ entityId }) => spawned.push(entityId));
   run(simulation, FIRST_TICK + 1);
