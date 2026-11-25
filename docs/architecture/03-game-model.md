@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-25
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -140,6 +140,12 @@ export type Command =
       readonly origin: SpawnOrigin; // a structure, `{ lane, t }` or a point
     }
   | { readonly type: 'dev-remove-entity'; readonly entityId: EntityId }
+  | {
+      readonly type: 'dev-spawn-legend';
+      readonly team: PlayableTeam;
+      readonly definitionId: string;
+    }
+  | { readonly type: 'dev-remove-legend'; readonly entityId: EntityId }
   | {
       readonly type: 'dev-set-controller';
       readonly entityId: EntityId;
@@ -476,6 +482,10 @@ each closed by the session or phase named:
   `AttackTargetHandler`). `cast-ability`, `intent` and `dev-set-controller` are routed to
   `UnsupportedCommandHandler` (rejected `not-supported`) until their systems exist; `pick-up`,
   `throw`, `interact` and `dev-set-assert-level` are not in the union yet.
+- `dev-spawn-legend` (2026-11-13) is built as `{ team, definitionId }` (a bot Legend at the
+  Stronghold, Rover controller); it is in `Command.types.ts`.
+  `dev-remove-legend { entityId }` (2026-11-20, DEC-293) removes a Legend through
+  `DevRemoveEntityHandler`, which refuses a Legend in a human seat (`human-legend`).
 - `dev-spawn` and `dev-remove-entity` spawn and remove directly and emit `entity-spawned` /
   `entity-removed` themselves until `SpawnSystem` / `DeathSystem` exist (session C).
 - `GameState.snapshot()` builds the snapshot, each entity through `EntitySnapshotter`, until
