@@ -37,6 +37,7 @@ export class FakeSessionContext implements SessionContext {
     recordSelection: [],
     joinDuelQueue: [],
     leaveDuelQueue: [],
+    forfeitDuel: [],
     lockIn: [],
     prepareWorld: [],
     createMatch: [],
@@ -119,6 +120,11 @@ export class FakeSessionContext implements SessionContext {
   /** Records the call. */
   public leaveDuelQueue(): void {
     this.record('leaveDuelQueue', []);
+  }
+
+  /** Records the call. */
+  public forfeitDuel(): void {
+    this.record('forfeitDuel', []);
   }
 
   /** Records the call. */

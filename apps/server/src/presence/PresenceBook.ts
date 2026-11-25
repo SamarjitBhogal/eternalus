@@ -70,6 +70,11 @@ export class PresenceBook {
     });
     guest.cancelDrop = cancel;
     this.options.queue.hold(connection);
+    rival?.send({
+      type: 'opponent-presence',
+      status: 'disconnected',
+      graceMs: this.options.reconnectWindowMs,
+    });
   }
 
   /**
@@ -96,6 +101,7 @@ export class PresenceBook {
       return false;
     }
     const previous = guest.connection;
+    const rival = this.options.host.rivalOf(previous);
     guest.cancelDrop?.();
     guest.cancelDrop = null;
     this.remove(own);
@@ -106,6 +112,7 @@ export class PresenceBook {
     connection.send({ type: 'welcome', guestId: guest.id });
     this.options.host.replace(previous, connection);
     this.options.queue.replace(previous, connection);
+    rival?.send({ type: 'opponent-presence', status: 'reconnected' });
     return this.stateOf(guest) !== 'online';
   }
 

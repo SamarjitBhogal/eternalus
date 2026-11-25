@@ -24,7 +24,7 @@ export function PauseOverlay({
   const overlay = useAppSelector((state) => state.session.overlay);
   const titleId = useId();
   const dialogRef = usePauseOverlayFocus(overlay, openerRef);
-  if (overlay === null) {
+  if (overlay === null || overlay === 'leave-duel') {
     return null;
   }
   return (

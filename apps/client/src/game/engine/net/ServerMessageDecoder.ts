@@ -59,6 +59,13 @@ export class ServerMessageDecoder {
           ? { type: 'match-ended', reason, winner }
           : null;
       }
+      case 'opponent-presence': {
+        const { status, graceMs } = data;
+        if (status === 'reconnected') return { type: 'opponent-presence', status };
+        return status === 'disconnected' && typeof graceMs === 'number' && graceMs >= 0
+          ? { type: 'opponent-presence', status, graceMs }
+          : null;
+      }
       case 'rejected':
         return ServerMessageDecoder.isRejectReason(data.reason)
           ? { type: 'rejected', reason: data.reason }

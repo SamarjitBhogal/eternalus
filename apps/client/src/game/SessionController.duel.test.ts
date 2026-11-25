@@ -339,6 +339,38 @@ describe('SessionController, online Duel (ADR 0016)', () => {
     expect(session.matches[0]?.destroyCount).toBe(1);
   });
 
+  it('closes without a forfeit when the session leaves a Duel another way (the seat is held)', async () => {
+    const session = await setUp();
+    await session.startDuel();
+    session.controller.attachViewport(VIEWPORT);
+
+    session.intent({ kind: 'leave-match' });
+
+    expect(session.transport().sent).not.toContainEqual({ type: 'forfeit' });
+    expect(session.transport().hasEnded).toBe(true);
+    expect(session.controller.phase).toBe('menu');
+  });
+
+  it('re-sends an opponent drop seen during VERSUS once the setup is published', async () => {
+    const session = await setUp();
+    session.intent({ kind: 'start-duel', name: 'Ana' });
+    session.transport().receive({
+      type: 'match-found',
+      opponentName: 'Rival',
+      matchId: 'm',
+      seed: 1234,
+      team: 'dark',
+      legendId: 'entity-7',
+    });
+    session
+      .transport()
+      .receive({ type: 'opponent-presence', status: 'disconnected', graceMs: 10_000 });
+    session.transport().receive({ type: 'state', snapshot: snapshotAtTick(1), ackSeq: 0 });
+
+    expect(session.store.getState().matchSetup.mode).toBe('duel');
+    expect(session.store.getState().match.opponentGraceMs).toBe(10_000);
+  });
+
   it('shows "Reconnecting..." on a drop and returns to the same Duel with no click (DEC-349)', async () => {
     const session = await setUp();
     await session.startDuel();
