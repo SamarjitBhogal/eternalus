@@ -47,6 +47,7 @@ describe('connectBusToStore', () => {
       isOpen: true,
       origins: [],
       humanLegendId: null,
+      followedLegendId: null,
       controllerIds: { player: 'player', rover: 'rover' },
     });
     expect(store.getState().developerMenu.isOpen).toBe(true);

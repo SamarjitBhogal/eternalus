@@ -6,6 +6,7 @@ const initialState: DeveloperMenuState = {
   isOpen: false,
   origins: [],
   humanLegendId: null,
+  followedLegendId: null,
   controllerIds: { player: '', rover: '' },
 };
 

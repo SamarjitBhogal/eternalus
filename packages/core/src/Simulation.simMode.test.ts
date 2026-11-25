@@ -227,4 +227,35 @@ describe('Simulation sim mode (FR-099, dev-set-controller)', () => {
     expect(controllerOf(chosen)).toBe('human');
     fold.mockRestore();
   });
+
+  it('gives a Legend the human leaves the role its team lacks: the Rover first, then a lane', () => {
+    // `Simulation` keeps its state private: read it from the first call of a spy on `Scoring.fold`.
+    const fold = vi.spyOn(Scoring.prototype, 'fold');
+    const { simulation } = newMatch();
+    const former = humanOf(simulation) ?? '';
+    const chosen = darkLanerOf(simulation);
+    simulation.step();
+    const bindingOf = (id: string) => fold.mock.calls[0]?.[0].state.entities.controllerOf(id);
+
+    // The dark team's Rover was the human: the Legend the human leaves becomes the Rover.
+    simulation.enqueueCommand({
+      type: 'dev-set-controller',
+      entityId: chosen,
+      controllerId: 'player',
+    });
+    simulation.step();
+    expect(bindingOf(former)?.controllerId).toBe('rover');
+
+    // Now the team has its Rover: the Legend the human leaves takes a lane.
+    simulation.enqueueCommand({
+      type: 'dev-set-controller',
+      entityId: chosen,
+      controllerId: 'rover',
+    });
+    simulation.step();
+    expect(humanOf(simulation)).toBeNull();
+    expect(bindingOf(chosen)?.controllerId).toBe('bot-legend');
+    expect(bindingOf(chosen)?.initialMemory).toEqual({ lane: 'lane-0' });
+    fold.mockRestore();
+  });
 });

@@ -39,19 +39,21 @@ const feature = (id: string, kind: MapFeatureKind, laneId?: string): MapFeature 
   ...(laneId === undefined ? {} : { laneId }),
 });
 
-function setUp(isEnabled: boolean) {
+function setUp(isEnabled: boolean, human: string | null = 'entity-1') {
   const bus = new TypedEventBus<BridgeEventMap>();
   const enqueueCommand = vi.fn<Simulation['enqueueCommand']>();
   const states: BridgeEventMap['developer-menu'][] = [];
   bus.on('developer-menu', (state) => states.push(state));
+  const onFollow = vi.fn<() => void>();
   const controller = new DeveloperMenuController({
     isEnabled,
     simulation: { enqueueCommand },
     bus,
     map: { features: [feature('gate-a', 'gate', 'lane-1'), feature('camp-a', 'camp')] },
-    humanLegendId: () => 'entity-1',
+    humanLegendId: () => human,
+    onFollow,
   });
-  return { bus, enqueueCommand, states, controller };
+  return { bus, enqueueCommand, states, controller, onFollow };
 }
 
 describe('DeveloperMenuController', () => {
@@ -75,6 +77,30 @@ describe('DeveloperMenuController', () => {
     controller.destroy();
     bus.emit('ui-intent', { kind: 'dev-command', command: SPAWN });
     expect(enqueueCommand).not.toHaveBeenCalled();
+  });
+
+  it('follows a Legend with no human, sends no command and publishes the choice', () => {
+    const { bus, enqueueCommand, states, controller, onFollow } = setUp(true, null);
+    bus.emit('ui-intent', { kind: 'dev-follow', legendId: 'entity-4' });
+    expect(controller.followedLegendId).toBe('entity-4');
+    expect(onFollow).toHaveBeenCalledTimes(1);
+    bus.emit('ui-intent', { kind: 'dev-follow', legendId: null });
+    expect(controller.followedLegendId).toBeNull();
+    expect(onFollow).toHaveBeenCalledTimes(1);
+    expect(states.map((state) => state.followedLegendId)).toEqual(['entity-4', null]);
+    expect(enqueueCommand).not.toHaveBeenCalled();
+  });
+
+  it('follows nothing while a human is seated, or while the menu is not enabled', () => {
+    const seated = setUp(true);
+    seated.bus.emit('ui-intent', { kind: 'dev-follow', legendId: 'entity-4' });
+    expect(seated.controller.followedLegendId).toBeNull();
+
+    const disabled = setUp(false, null);
+    disabled.bus.emit('ui-intent', { kind: 'dev-follow', legendId: 'entity-4' });
+    expect(disabled.controller.followedLegendId).toBeNull();
+    expect(disabled.onFollow).not.toHaveBeenCalled();
+    expect(disabled.states).toEqual([]);
   });
 
   it('toggles open and closed, publishing only the structures on a lane', () => {

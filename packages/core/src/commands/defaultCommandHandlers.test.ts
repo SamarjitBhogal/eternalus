@@ -36,7 +36,11 @@ describe('createDefaultCommandHandlers', () => {
       state.events.on('command-rejected', ({ reason }) => reasons.push(reason));
       applyCommand(
         command,
-        createDefaultCommandHandlers({ rover: TEST_CONTROLLER, player: 'player' }),
+        createDefaultCommandHandlers({
+          rover: TEST_CONTROLLER,
+          player: 'player',
+          missingRole: () => TEST_CONTROLLER,
+        }),
         {
           state,
           factory: new EntityFactory(new EntityRegistry(), new ContentCatalogue([])),

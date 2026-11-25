@@ -374,6 +374,8 @@ and utility better
 `dev-set-controller` (2026-11-13, FR-099) is applied by `DevSetControllerHandler` from the queue, not
 by a `CommandApplySystem`; it moves the `ControllerBinding` and drops the brain (03, status). The
 human's controller id is `player` (§2); taking control while a human exists swaps the seat (DEC-294).
+A Legend the human leaves takes the role its team lacks (the Rover, else a laner on the free lane;
+`state/missingRoleChooser.ts`, injected by `Simulation`), and `AiSystem` gives it a fresh brain.
 
 Minion plan pull request M2a builds §1–§3, §5 and §6 with these differences, each closed by the
 work named:

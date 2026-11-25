@@ -24,6 +24,11 @@ export type DeveloperMenuState = {
   readonly origins: readonly DeveloperMenuOption[];
   /** The human's Legend, or `null` in sim mode (no human); sim mode's buttons read it. */
   readonly humanLegendId: string | null;
+  /**
+   * The Legend the camera follows while no human is seated (sim mode's Follow, client-only), or
+   * `null` when it follows none.
+   */
+  readonly followedLegendId: string | null;
   /** The controller ids sim mode's buttons send: the human's (`player`) and the Rover's (core's). */
   readonly controllerIds: { readonly player: string; readonly rover: string };
 };

@@ -17,13 +17,14 @@ import { DeveloperMenu } from './DeveloperMenu';
 let root: Root | undefined;
 
 /** Mounts the open menu; returns the container and every `dev-command` it emits. */
-function mount() {
+function mount(humanLegendId: string | null = 'e1', followedLegendId: string | null = null) {
   const store = createAppStore({
     content: TEST_CONTENT,
     developerMenu: {
       ...developerMenuSlice.getInitialState(),
       isOpen: true,
-      humanLegendId: 'e1',
+      humanLegendId,
+      followedLegendId,
       controllerIds: { player: 'player', rover: 'rover' },
       origins: [
         { id: 'gate-a', label: 'gate-a' },
@@ -211,6 +212,30 @@ describe('DeveloperMenu buttons', () => {
         kind: 'dev-command',
         command: { type: 'dev-set-controller', entityId: 'e7', controllerId: 'player' },
       },
+    ]);
+  });
+
+  it('Follow and Stop following send one client-only dev-follow with no human, and nothing with one', () => {
+    const seated = mount();
+    type(seated.container, 'Legend id', 'e7');
+    click(seated.container, 'Follow');
+    seated.stop();
+    expect(seated.intents).toEqual([]);
+    act(() => {
+      root?.unmount();
+    });
+    seated.container.remove();
+
+    const { container, intents, stop } = mount(null, 'e3');
+    click(container, 'Follow');
+    expect(intents).toEqual([]);
+    type(container, 'Legend id', ' e7 ');
+    click(container, 'Follow');
+    click(container, 'Stop following');
+    stop();
+    expect(intents).toEqual([
+      { kind: 'dev-follow', legendId: 'e7' },
+      { kind: 'dev-follow', legendId: null },
     ]);
   });
 

@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-25
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -578,10 +578,12 @@ difference is registered in
 ## 10. Implementation status
 
 Sim mode (2026-11-13, FR-099): the developer menu's Sim mode section sends `dev-set-controller` (Remove
-human: the human Legend to the Rover; Take control: a typed Legend id to `player`, swapping the seat
-if a human exists, DEC-294). The menu reads both controller ids from the `developer-menu` state. `Match` reads the
-human Legend from each snapshot, so with none the camera, the HUD player block and the attack
-clicks stand idle and the match runs on. Not built: `SinglePlayerBrainInvariant` (cited by the sim-mode row of the
+human: the human Legend to the bot role its team lacks; Take control: a typed Legend id to
+`player`, swapping the seat if a human exists, DEC-294). With no human, Follow (client-only, no
+`Command`: the `dev-follow` intent to `DeveloperMenuController`) makes the camera follow a typed
+Legend id, the spectate row of §4; Stop following ends it. The menu reads both controller ids from the `developer-menu` state. `Match` reads the
+human Legend from each snapshot, so with none the HUD player block and the attack clicks stand
+idle, the camera too unless Follow names a Legend, and the match runs on. Not built: `SinglePlayerBrainInvariant` (cited by the sim-mode row of the
 table in section 4); a Legend with no human is not checked for it.
 
 Built (Sprint 1, sessions D and F): the bridge (`bridge/`), the session shell and menu screens,

@@ -20,7 +20,11 @@ describe('applyCommand', () => {
   it('dispatches to the handler registered for the command type', () => {
     const seen: string[] = [];
     const handlers: CommandHandlers = {
-      ...createDefaultCommandHandlers({ rover: TEST_CONTROLLER, player: 'player' }),
+      ...createDefaultCommandHandlers({
+        rover: TEST_CONTROLLER,
+        player: 'player',
+        missingRole: () => TEST_CONTROLLER,
+      }),
       stop: {
         handle: (command) => {
           seen.push(command.actorId);
@@ -43,7 +47,11 @@ describe('applyCommand', () => {
     const command = { type: 'stop', actorId: 'entity-3' } as const;
     applyCommand(
       command,
-      createDefaultCommandHandlers({ rover: TEST_CONTROLLER, player: 'player' }),
+      createDefaultCommandHandlers({
+        rover: TEST_CONTROLLER,
+        player: 'player',
+        missingRole: () => TEST_CONTROLLER,
+      }),
       ctx,
     );
     expect(rejected).toEqual([{ command, reason: 'unknown-entity' }]);
@@ -53,7 +61,11 @@ describe('applyCommand', () => {
     const ctx = context();
     let calls = 0;
     const handlers: CommandHandlers = {
-      ...createDefaultCommandHandlers({ rover: TEST_CONTROLLER, player: 'player' }),
+      ...createDefaultCommandHandlers({
+        rover: TEST_CONTROLLER,
+        player: 'player',
+        missingRole: () => TEST_CONTROLLER,
+      }),
       stop: {
         handle: () => {
           calls += 1;

@@ -251,7 +251,18 @@ describe('Simulation capture points', () => {
     const darkLegends = first.simulation
       .snapshot()
       .entities.filter(({ family, team }) => family === 'legend' && team === 'dark');
-    expect(darkLegends).toEqual([]);
+    // The four dark Legends died in the zone and came back at their Stronghold (FR-051, 10 s).
+    const darkStronghold = map.features.find(
+      ({ kind, team }) => kind === 'stronghold' && team === 'dark',
+    );
+    expect(darkLegends.map(({ id }) => id)).toHaveLength(4);
+    expect(
+      darkLegends.every(
+        ({ transform }) =>
+          transform?.x === darkStronghold?.position.x &&
+          transform?.y === darkStronghold?.position.y,
+      ),
+    ).toBe(true);
     expect(first.after.map(({ id }) => id)).toEqual(first.atCapture.map(({ id }) => id));
     expect(first.owners).toEqual(['dark', 'neutral']);
     expect(first.zone?.owner).toBe('neutral');

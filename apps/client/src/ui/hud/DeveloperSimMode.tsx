@@ -8,13 +8,16 @@ import styles from './DeveloperMenu.module.css';
 
 /**
  * The developer menu's "Sim mode" section (13 §4, FR-099): Remove human hands the human's Legend
- * to the Rover (the match runs on with no human); Take control puts the human on the Legend whose
- * id is typed. Each emits one `dev-set-controller`; core validates it.
+ * to the bots (the match runs on with no human); Take control puts the human on the Legend whose
+ * id is typed. Each emits one `dev-set-controller`; core validates it. With no human, Follow makes
+ * the camera follow the typed Legend and Stop following ends it (client-only `dev-follow`, no
+ * `Command`).
  */
 export function DeveloperSimMode({
   humanLegendId,
+  followedLegendId,
   controllerIds,
-}: Pick<DeveloperMenuState, 'humanLegendId' | 'controllerIds'>): ReactElement {
+}: Pick<DeveloperMenuState, 'humanLegendId' | 'followedLegendId' | 'controllerIds'>): ReactElement {
   const [controlId, setControlId] = useState('');
   const controlFieldId = useId();
   const labels = STRINGS.developerMenu;
@@ -63,6 +66,22 @@ export function DeveloperSimMode({
         }}
       >
         {labels.takeControl}
+      </Button>
+      <Button
+        isDisabled={humanLegendId !== null || controlId === ''}
+        onClick={() => {
+          emitIntent({ kind: 'dev-follow', legendId: controlId });
+        }}
+      >
+        {labels.follow}
+      </Button>
+      <Button
+        isDisabled={humanLegendId !== null || followedLegendId === null}
+        onClick={() => {
+          emitIntent({ kind: 'dev-follow', legendId: null });
+        }}
+      >
+        {labels.stopFollowing}
       </Button>
     </fieldset>
   );

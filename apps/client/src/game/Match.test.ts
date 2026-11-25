@@ -94,7 +94,7 @@ const CONTENT_WITH_A_ROCK: Content = (() => {
  * mobs the map's structures spawn, it plays in sim mode instead: no map, so no roster (a roster
  * needs the map).
  */
-const setUp = (content?: Content, withMapObjects = false) => {
+const setUp = (content?: Content, withMapObjects = false, isDeveloperMenuEnabled = false) => {
   // No countdown: core's countdown holds all movement, and these tests walk from the start.
   const config = createDefaultGameConfig({ match: { countdownSeconds: 0 } });
   const world = prepareMatchWorld(config, SEED);
@@ -112,6 +112,7 @@ const setUp = (content?: Content, withMapObjects = false) => {
   const camera = new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT);
   const input = new ScriptedIntent();
   const logger = new MemoryLogger();
+  const bus = new TypedEventBus<BridgeEventMap>();
   const match = new Match({
     simulation,
     world,
@@ -122,9 +123,10 @@ const setUp = (content?: Content, withMapObjects = false) => {
     input,
     logger,
     observer: { crashed: () => undefined, ended: () => undefined },
+    isDeveloperMenuEnabled,
     // A bus nobody listens to, at the shipped cadence.
     bridge: {
-      bus: new TypedEventBus<BridgeEventMap>(),
+      bus,
       publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,
       captureKinds: [],
     },
@@ -135,6 +137,7 @@ const setUp = (content?: Content, withMapObjects = false) => {
   );
   return {
     match,
+    bus,
     simulation,
     renderer,
     camera,
@@ -257,6 +260,45 @@ describe('Match', () => {
     const player = match.snapshot.entities.find((entity) => entity.id === match.playerEntityId);
     expect(player).toMatchObject({ kind: 'warrior', family: 'legend', team: 'light' });
     expect(player?.transform).toMatchObject(lightStronghold?.position ?? {});
+  });
+
+  it("follows the developer menu's Follow Legend with no human, and the human first (13 §4)", () => {
+    const { match, bus, simulation, camera, map } = setUp(undefined, false, true);
+    const human = match.playerEntityId ?? '';
+    // A dark bot Legend at the dark Stronghold, far from the light human.
+    simulation.enqueueCommand({ type: 'dev-spawn-legend', team: 'dark', definitionId: 'warrior' });
+    match.tick();
+    const bot = match.snapshot.entities.find(
+      ({ family, team }) => family === 'legend' && team === 'dark',
+    );
+    const shows = (id: string): boolean => {
+      const at = match.snapshot.entities.find((entity) => entity.id === id)?.transform;
+      return at !== undefined && at !== null && camera.contains(at, map.width, map.height);
+    };
+    const frames = (count: number): void => {
+      for (let frame = 0; frame < count; frame += 1) {
+        match.tick();
+        match.render(0);
+      }
+    };
+    expect(bot).toBeDefined();
+    bus.emit('ui-intent', { kind: 'dev-follow', legendId: bot?.id ?? '' });
+    frames(60);
+    // A human is seated: the camera stays on the human's Legend.
+    expect(match.developerMenu.followedLegendId).toBeNull();
+    expect(shows(human)).toBe(true);
+    expect(shows(bot?.id ?? '')).toBe(false);
+
+    simulation.enqueueCommand({
+      type: 'dev-set-controller',
+      entityId: human,
+      controllerId: 'rover',
+    });
+    frames(120);
+    expect(match.playerEntityId).toBeNull();
+    expect(match.developerMenu.followedLegendId).toBe(bot?.id);
+    expect(shows(bot?.id ?? '')).toBe(true);
+    match.destroy();
   });
 
   it("points the camera at the human slot's Legend from construction, before any tick or frame", () => {

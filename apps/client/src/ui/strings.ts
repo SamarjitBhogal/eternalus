@@ -209,6 +209,8 @@ export const STRINGS = {
     legendId: 'Legend id',
     removeHuman: 'Remove human',
     takeControl: 'Take control',
+    follow: 'Follow',
+    stopFollowing: 'Stop following',
   },
   pause: { title: 'Paused', resume: 'Resume', settings: 'Settings', leave: 'Leave match' },
   /** The match viewport; the explorer labels show only with the developer flag (13 §4, DEC-32). */

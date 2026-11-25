@@ -31,6 +31,7 @@ export function DeveloperMenu(): ReactElement | null {
     <DeveloperPanel
       origins={state.origins}
       humanLegendId={state.humanLegendId}
+      followedLegendId={state.followedLegendId}
       controllerIds={state.controllerIds}
     />
   ) : null;
@@ -43,8 +44,12 @@ export function DeveloperMenu(): ReactElement | null {
 function DeveloperPanel({
   origins,
   humanLegendId,
+  followedLegendId,
   controllerIds,
-}: Pick<DeveloperMenuState, 'origins' | 'humanLegendId' | 'controllerIds'>): ReactElement {
+}: Pick<
+  DeveloperMenuState,
+  'origins' | 'humanLegendId' | 'followedLegendId' | 'controllerIds'
+>): ReactElement {
   const teamNames = useAppSelector(contentSlice.selectors.selectTeamNames);
   const [team, setTeam] = useState<PlayableTeam>('light');
   const teamId = useId();
@@ -71,7 +76,11 @@ function DeveloperPanel({
       <DeveloperSpawnMobs team={team} origins={origins} />
       <DeveloperLegends team={team} />
       <DeveloperRemoveEntity />
-      <DeveloperSimMode humanLegendId={humanLegendId} controllerIds={controllerIds} />
+      <DeveloperSimMode
+        humanLegendId={humanLegendId}
+        followedLegendId={followedLegendId}
+        controllerIds={controllerIds}
+      />
     </aside>
   );
 }

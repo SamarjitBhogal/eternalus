@@ -94,7 +94,12 @@ export type UiIntent =
   | { readonly kind: 'save-crash-note'; readonly note: string }
   | { readonly kind: 'dismiss-crash-report' }
   /** The developer menu's gameplay button: `Match` enqueues the command; ignored while the menu is off (13 §4). */
-  | { readonly kind: 'dev-command'; readonly command: DevCommand };
+  | { readonly kind: 'dev-command'; readonly command: DevCommand }
+  /**
+   * The developer menu's Follow (13 §4 spectate, client-only, no `Command`): with no human seated,
+   * the camera follows this Legend; `null` stops following. Ignored while the menu is off.
+   */
+  | { readonly kind: 'dev-follow'; readonly legendId: string | null };
 
 /** One Legend shown on the selection and loading screens, built before the simulation exists. */
 export type RosterEntry = {

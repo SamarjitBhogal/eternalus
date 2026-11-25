@@ -138,6 +138,9 @@ export class Match implements LoopTarget {
       bus: bridge.bus,
       map,
       humanLegendId: () => this.playerId,
+      onFollow: () => {
+        this.camera.playerMoved();
+      },
     });
     this.current = simulation.snapshot();
     this.healthBars.observe(this.current, this.playerId);
@@ -242,10 +245,13 @@ export class Match implements LoopTarget {
     }
   }
 
-  /** One frame: the camera follows the player, then the scene and the minimap are drawn. */
+  /**
+   * One frame: the camera follows the player (with no human, the Legend the developer menu's
+   * Follow names), then the scene and the minimap are drawn.
+   */
   public render(alpha: number): void {
     const { renderer } = this.deps;
-    this.camera.follow(this.playerEntity()?.transform ?? null);
+    this.camera.follow(this.cameraTarget()?.transform ?? null);
     const view = this.camera.visibleArea();
     const { scene, miniMap } = this.world;
     renderer.clear(BACKGROUND_COLOR);
@@ -289,6 +295,18 @@ export class Match implements LoopTarget {
   private miniMapCentre(): WorldPoint {
     const view = this.camera.visibleArea();
     return this.livingPlayerAt() ?? { x: view.x + view.width / 2, y: view.y + view.height / 2 };
+  }
+
+  /**
+   * What the camera follows: the player's Legend, or with no human the Legend the developer menu
+   * follows (13 §4 spectate); `undefined` when neither is in the latest snapshot.
+   */
+  private cameraTarget(): EntitySnapshot | undefined {
+    const followed = this.developerMenu.followedLegendId;
+    return (
+      this.playerEntity() ??
+      this.current.entities.find(({ id, family }) => id === followed && family === 'legend')
+    );
   }
 
   /** The player's Legend in the latest snapshot; `undefined` before it spawns or once removed. */

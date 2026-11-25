@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-25
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -485,9 +485,12 @@ each closed by the session or phase named:
   `UnsupportedCommandHandler` (rejected `not-supported`) until their systems exist; `pick-up`,
   `throw`, `interact` and `dev-set-assert-level` are not in the union yet.
 - `dev-set-controller` (2026-11-13, FR-099) has `DevSetControllerHandler`: `controllerId` `player`
-  makes a Legend of `playerTeam` the human's (no `ControllerBinding`, no brain; the previous human
-  becomes a Rover bot, DEC-294), the Rover's id binds the Rover (on the human's Legend: no human
-  left; `humanLegendId` null). A refused command changes nothing. Refused `unknown-entity`,
+  makes a Legend of `playerTeam` the human's (no `ControllerBinding`, no brain; the seat moves,
+  DEC-294), the Rover's id binds the Rover to a bot Legend (on the human's Legend: no human left;
+  `humanLegendId` null). A Legend the human leaves becomes the bot its team lacks: the Rover if the
+  team has no Rover bot, otherwise a `bot-legend` laner on the free lane (`assignLanes` with
+  `occupied`); the chooser is `state/missingRoleChooser.ts`, built by `Simulation` from content
+  (owner's answer on PR #112, 2026-11-23). A refused command changes nothing. Refused `unknown-entity`,
   `not-a-legend`, `not-player-team` (DEC-173), `unknown-controller` or, in a Duel,
   `not-supported`. `MatchRecord.reseatHuman` is the second writer of `humanLegendId`; each seat
   move emits `human-reseated`, which `Scoring` folds into the rows' `controller`. A bot re-bound loses its brain memory.

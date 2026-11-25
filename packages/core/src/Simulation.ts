@@ -9,7 +9,6 @@ import type { Command } from './commands/Command.types';
 import type { CommandContext, CommandHandlers } from './commands/CommandHandler.types';
 import { CommandQueue } from './commands/CommandQueue';
 import { LegendSpawner } from './entities/LegendSpawner';
-import { ROVER_BOT } from './content/ai/difficulties/rover';
 import { createDefaultCommandHandlers } from './commands/defaultCommandHandlers';
 import { Footprint } from './components/Footprint';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from './config/matchPhases';
@@ -35,6 +34,9 @@ import { BOT_DIFFICULTIES } from './content/ai/difficulties/botDifficulties';
 import { RANKS_FORMATION } from './content/mobs/formations/ranks';
 import type { EntityId } from './state/EntityStore.types';
 import { assignLanes } from './state/assignLanes';
+import { createMissingRoleChooser } from './state/missingRoleChooser';
+import { BOT_ROSTER } from './content/teams/botRoster';
+import { ROVER_SPAWN } from './Simulation.constants';
 import { formationSlot } from './state/formationSlot';
 import { unitClassOf } from './content/ai/unitClasses';
 import { SPACE_CELL_SIZE } from './content/ai/hordeSteering';
@@ -99,8 +101,12 @@ export class Simulation {
   /** Commands from `enqueueCommand` (player, developer menu). Each one enters the replay log. */
   private readonly externalQueue = new CommandQueue();
   private readonly handlers: CommandHandlers = createDefaultCommandHandlers({
-    rover: { controllerId: 'rover', profileId: ROVER_BOT.id, memory: {} },
+    rover: ROVER_SPAWN,
     player: 'player' satisfies ControllerId,
+    missingRole: createMissingRoleChooser({
+      rover: ROVER_SPAWN,
+      laner: { controllerId: 'bot-legend', profileId: BOT_ROSTER.difficulties.laner },
+    }),
   });
   private readonly commandContext: CommandContext;
   private readonly systemContext: SystemContext;
