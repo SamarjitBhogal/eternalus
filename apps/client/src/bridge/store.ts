@@ -2,6 +2,7 @@ import { combineSlices, configureStore } from '@reduxjs/toolkit';
 
 import { assetsSlice } from './slices/assetsSlice';
 import { contentSlice } from './slices/contentSlice';
+import { developerMenuSlice } from './slices/developerMenuSlice';
 import { hudSlice } from './slices/hudSlice';
 import { loadingSlice } from './slices/loadingSlice';
 import { matchSetupSlice } from './slices/matchSetupSlice';
@@ -23,6 +24,7 @@ const rootReducer = combineSlices(
   contentSlice,
   assetsSlice,
   viewSlice,
+  developerMenuSlice,
 );
 
 /** The whole store state, one key per slice. */
