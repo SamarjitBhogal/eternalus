@@ -40,4 +40,16 @@ export class Abilities {
   public get hasPendingCast(): boolean {
     return this.slots.some((runtime) => runtime.pendingCast !== null);
   }
+
+  /**
+   * Ends the cooldown of every slot but the ultimate's (FR-117): a Legend back from death has its
+   * other abilities ready, and the ultimate keeps its cooldown and charge (DEC-295 (1)).
+   */
+  public endCooldownsButUltimate(): void {
+    for (const runtime of this.slots) {
+      if (runtime.slot !== ULTIMATE_SLOT) {
+        runtime.cooldownUntilTick = 0;
+      }
+    }
+  }
 }

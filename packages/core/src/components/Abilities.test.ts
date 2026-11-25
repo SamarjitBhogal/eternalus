@@ -35,4 +35,25 @@ describe('Abilities', () => {
 
     expect(bar.hasPendingCast).toBe(true);
   });
+
+  it('ends every cooldown but the ultimate, and leaves the ultimate charge alone (FR-117)', () => {
+    const bar = new Abilities(KIT);
+    for (const runtime of bar.slots) {
+      runtime.cooldownUntilTick = 900;
+      runtime.charge = 0.4;
+    }
+
+    bar.endCooldownsButUltimate();
+
+    expect(bar.slots.map(({ slot, cooldownUntilTick }) => [slot, cooldownUntilTick])).toEqual([
+      ['ability-1', 0],
+      ['ability-2', 0],
+      ['ability-3', 0],
+      ['ability-4', 900],
+      ['gadget-1', 0],
+      ['gadget-2', 0],
+      ['default-action', 0],
+    ]);
+    expect(bar.slot('ability-4')?.charge).toBe(0.4);
+  });
 });

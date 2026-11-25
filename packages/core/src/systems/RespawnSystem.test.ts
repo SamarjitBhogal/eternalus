@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { Abilities } from '../components/Abilities';
+import { ULTIMATE_SLOT } from '../components/Abilities.constants';
 import { Aether } from '../components/Aether';
 import { Combat } from '../components/Combat';
 import { Movement } from '../components/Movement';
@@ -289,6 +291,34 @@ describe('RespawnSystem', () => {
     expect(legend.getComponent(Movement).velocity).toEqual({ x: 0, y: 0 });
     expect(legend.getComponent(Combat).targetId).toBeNull();
     expect(legend.getComponent(Progression)).toMatchObject({ xp: 250, level: 3 });
+  });
+
+  it('returns with every ability but the ultimate ready; the ultimate keeps its cooldown and charge (FR-117, DEC-295 (1))', () => {
+    const match = setUp();
+    const legend = addLegend(match);
+    const bar = legend.getComponent(Abilities);
+    // Still running when the Legend returns, DELAY ticks after its death.
+    const stillCooling = match.state.tick + DELAY * 2;
+    for (const runtime of bar.slots) {
+      runtime.cooldownUntilTick = stillCooling;
+    }
+    const ultimate = bar.slots.find(({ slot }) => slot === ULTIMATE_SLOT);
+    if (ultimate === undefined) throw new Error('The bar has an ultimate slot.');
+    ultimate.charge = 0.4;
+    kill(match, legend.id);
+
+    for (let tick = 0; tick <= DELAY; tick += 1) match.step();
+
+    expect(match.state.entities.has(legend.id)).toBe(true);
+    expect(bar.slots.filter(({ slot }) => slot !== ULTIMATE_SLOT)).not.toHaveLength(0);
+    for (const runtime of bar.slots.filter(({ slot }) => slot !== ULTIMATE_SLOT)) {
+      expect([runtime.slot, runtime.isCoolingDown(match.state.tick)]).toEqual([
+        runtime.slot,
+        false,
+      ]);
+    }
+    expect(ultimate.cooldownUntilTick).toBe(stillCooling);
+    expect(ultimate.charge).toBe(0.4);
   });
 
   it('brings a Legend back even when its team filled the unit cap meanwhile', () => {

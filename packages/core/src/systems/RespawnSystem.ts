@@ -1,3 +1,4 @@
+import { Abilities } from '../components/Abilities';
 import { Aether } from '../components/Aether';
 import { ChaseWatch } from '../components/ChaseWatch';
 import { ControllerBinding } from '../components/ControllerBinding';
@@ -20,7 +21,8 @@ import type { System, SystemContext } from './System.types';
  * `DeathSystem` then withdraws from the store without retiring it. Once `respawnTicks` have passed
  * it adds the same Legend object back at its team's Stronghold, facing the enemy Stronghold
  * (DEC-216 (6)), with full health and aether (DEC-295 (1)), no status effects, no movement and no
- * attack target; its id, level, XP, caps and loadout are its own, as it never left. A bot laner
+ * attack target; its id, level, XP, caps and loadout are its own, as it never left. Every ability
+ * but the ultimate is ready; the ultimate keeps its cooldown and charge (FR-117). A bot laner
  * picks its lane again by the current threat (`assessLanes`, DEC-295 (2)). It announces
  * `entity-spawned` and `legend-respawned` (with the XP it is owed, which `ProgressionSystem` pays,
  * DEC-186). A match without a Stronghold for the team queues nothing: its Legends stay gone. A
@@ -69,6 +71,7 @@ export class RespawnSystem implements System {
     this.reset.apply(legend, position);
     const aether = legend.getComponent(Aether);
     aether.restore(aether.max);
+    legend.getComponent(Abilities).endCooldownsButUltimate();
     legend.removeComponent(ChaseWatch);
     const transform = legend.getComponent(Transform);
     const { facing } = state.world?.startFacing(team, position) ?? {};
