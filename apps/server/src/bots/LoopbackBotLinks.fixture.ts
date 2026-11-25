@@ -1,15 +1,11 @@
 import { MemoryLogger } from '@eternalus/core';
-import { ClientMessageParser, type ClientMessage } from '@eternalus/protocol';
+import { ClientMessageParser, type ClientMessage, RECONNECT_WINDOW_MS } from '@eternalus/protocol';
 import { DuelGateway } from '../gateway/DuelGateway';
 import { TokenBucket } from '../limits/TokenBucket';
 import { DuelHost } from '../match/DuelHost';
 import { FakeDuelSimulation } from '../match/FakeDuelSimulation';
 import { PresenceBook } from '../presence/PresenceBook';
-import {
-  MAX_HELD_GUESTS,
-  MAX_KNOWN_GUESTS,
-  RECONNECT_WINDOW_MS,
-} from '../presence/PresenceBook.constants';
+import { MAX_HELD_GUESTS, MAX_KNOWN_GUESTS } from '../presence/PresenceBook.constants';
 import { DuelQueue } from '../queue/DuelQueue';
 import { PlayerRatings } from '../rating/PlayerRatings';
 import { FakeClock } from '../time/FakeClock';

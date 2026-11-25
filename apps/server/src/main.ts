@@ -1,7 +1,7 @@
 import { randomInt, randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
 import { createDefaultGameConfig, DUEL_RULES, makeLogRecord } from '@eternalus/core';
-import { ClientMessageParser } from '@eternalus/protocol';
+import { ClientMessageParser, RECONNECT_WINDOW_MS } from '@eternalus/protocol';
 import { SEED_LIMIT } from './config/ServerConfig.constants';
 import { ServerConfig } from './config/ServerConfig';
 import { DuelGateway } from './gateway/DuelGateway';
@@ -14,11 +14,7 @@ import { CoreDuelSimulationFactory } from './match/CoreDuelSimulationFactory';
 import { DuelHost } from './match/DuelHost';
 import { DUEL_VERSUS_MS } from './match/DuelHost.constants';
 import { PresenceBook } from './presence/PresenceBook';
-import {
-  MAX_HELD_GUESTS,
-  MAX_KNOWN_GUESTS,
-  RECONNECT_WINDOW_MS,
-} from './presence/PresenceBook.constants';
+import { MAX_HELD_GUESTS, MAX_KNOWN_GUESTS } from './presence/PresenceBook.constants';
 import { PlayerRatings } from './rating/PlayerRatings';
 import { DuelQueue } from './queue/DuelQueue';
 import { IntervalTickScheduler } from './time/IntervalTickScheduler';

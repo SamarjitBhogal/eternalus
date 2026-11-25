@@ -14,6 +14,7 @@ import { MatchCountdown } from '../hud/MatchCountdown';
 import { MinimapPanel } from '../hud/MinimapPanel';
 import { ObjectiveTracker } from '../hud/ObjectiveTracker';
 import { PauseOverlay } from '../hud/PauseOverlay';
+import { ReconnectingNotice } from '../hud/ReconnectingNotice';
 import { StructureStrip } from '../hud/StructureStrip';
 import { type PauseOpenerRef, usePauseMenuKey } from '../hud/usePauseMenuKey';
 import { WeaponPanel } from '../hud/WeaponPanel';
@@ -42,6 +43,7 @@ export function MatchScreen({ viewport }: ScreenProps): ReactElement {
       <section className={styles.hud} aria-label={STRINGS.hud.label} inert={isInert}>
         <HudFilters />
         <DuelHud />
+        <ReconnectingNotice />
         <div className={styles.abilities} data-hud-region="abilities">
           <AbilityBar />
         </div>
