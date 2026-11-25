@@ -99,7 +99,7 @@ describe('Simulation: the human slot of the roster', () => {
     ]);
   });
 
-  it("logs an invalid loadout on the human slot and spawns the class's auto-build", () => {
+  it("logs an invalid loadout on the human slot as a diagnostic event and spawns the class's auto-build", () => {
     const logger = new MemoryLogger();
     const sim = build(
       [
@@ -120,6 +120,7 @@ describe('Simulation: the human slot of the roster', () => {
     expect(logger.records.filter(({ scope }) => scope === 'core.loadout')).toMatchObject([
       {
         severityText: 'WARN',
+        eventName: 'loadout-rejected',
         attributes: {
           definitionId: 'warrior',
           givenWeaponId: 'magus-staff',

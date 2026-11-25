@@ -716,7 +716,8 @@ export class Simulation {
 
   /**
    * The match's `SpawnLoadoutPolicy` (05 §12): loadouts checked against its Legend classes (the
-   * `units` whose kind is a Legend class) and `weapons`, a rejection logged at WARN.
+   * `units` whose kind is a Legend class) and `weapons`, a rejection logged at WARN as the
+   * `loadout-rejected` diagnostic event (DEC-354 (3)).
    */
   private static loadoutPolicy(
     units: DefinitionSource,
@@ -740,11 +741,14 @@ export class Simulation {
             'core.loadout',
             'a spawn loadout was invalid; using the auto-build',
             {
-              attributes: {
-                definitionId,
-                givenWeaponId: given.primaryWeaponId,
-                usedWeaponId: used.primaryWeaponId,
-                problems: problems.map(({ message }) => message).join('; '),
+              event: {
+                name: 'loadout-rejected',
+                attributes: {
+                  definitionId,
+                  givenWeaponId: given.primaryWeaponId,
+                  usedWeaponId: used.primaryWeaponId,
+                  problems: problems.map(({ message }) => message).join('; '),
+                },
               },
             },
           ),
