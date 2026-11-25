@@ -87,6 +87,28 @@ describe('StatusEffectApplier', () => {
     expect(dummy.getComponent(StatusEffects).active).toHaveLength(0);
   });
 
+  it('takes stacks off with one event: status-stacks-lost while some stay, status-expired at none', () => {
+    const { state, dummy, events, applier } = setUp();
+    const lost: GameEventMap['status-stacks-lost'][] = [];
+    state.events.on('status-stacks-lost', (payload) => lost.push(payload));
+    applier.apply(state, dummy.id, 'enraged', 'entity-9');
+    applier.apply(state, dummy.id, 'enraged', 'entity-9'); // 2 stacks: one per structure per lane
+    const before = events.length;
+
+    expect(applier.removeStacks(state, dummy.id, 'enraged', 1)).toBe(true);
+    expect(lost).toEqual([
+      { entityId: dummy.id, statusId: 'enraged', sourceId: 'entity-9', stacks: 1 },
+    ]);
+    expect(events).toHaveLength(before);
+
+    expect(applier.removeStacks(state, dummy.id, 'enraged', 1)).toBe(true);
+    expect(events.slice(before)).toEqual([
+      ['expired', { entityId: dummy.id, statusId: 'enraged', sourceId: 'entity-9' }],
+    ]);
+    expect(lost).toHaveLength(1);
+    expect(applier.removeStacks(state, dummy.id, 'enraged', 1)).toBe(false);
+  });
+
   it.each(['stun', 'crushed'])(
     'follows %s that runs out with control-immune, credited to the same source',
     (hardControlId) => {
