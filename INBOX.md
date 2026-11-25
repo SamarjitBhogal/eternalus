@@ -30,6 +30,11 @@ Reply inline (`Decision: …`).
       only loadout types; the branch added `loadout/` (types) to the `entities/` may-import row
       of 02 §2 and `packages/core/AGENTS.md`. Keep these (then 14 §8 and 05 §12 are updated to
       match) or move the repair into the repository?
+      _Agent note (2026-11-25, PR #141):_ Owner's answer (2026-11-23): "Keep all four — If this
+      is the best design." (DEC-354 (3)). The review found the repair place and the
+      `LoadoutResolver` port best as built. It fixed the other two on the branch: `LoadoutField`
+      is `'class' | LoadoutSlot`, and a refused spawn loadout is the `loadout-rejected`
+      diagnostic event.
 
 - [ ] **`IndexedDbStorageAdapter` test fake — approve `fake-indexeddb`?** Saved settings and
       loadouts still live in `MemoryStorageAdapter` and are lost on reload. Phase 5's adapter
@@ -45,6 +50,9 @@ Reply inline (`Decision: …`).
       against a small hand-written fake of the subset the adapter uses
       (`data/persistence/__fixtures__/FakeIdb*.ts`, test-only, no dependency). Owner's answer:
       keep the fake, simplified.
+      _Agent note (2026-11-25, PR #141):_ a newer owner answer (2026-11-23) replaces "keep the
+      fake" above: "Approve fake-indexeddb, a test-only package" (DEC-354 (4)). The follow-up PR
+      `feat/loadout-per-legend` adds it and removes the hand-written fake.
 
 - [ ] **`feat/loadout-screen` (PR #141, SCRUM-31, SCRUM-311) — product and layout rulings the
       review left to you.** (1) Is a saved weapon kept per class (FR-089, reference 08, as built)
@@ -59,6 +67,11 @@ Reply inline (`Decision: …`).
       types with the `LoadoutResolver` port. (8) The locked view's line now reads
       "Recommendation: <weapon>" (the review's wording); confirm it with (1) and (2).
       _Agent note (2026-11-22):_ nothing was removed; these stay as built until you rule.
+      _Agent note (2026-11-25, PR #141):_ Owner's answers (2026-11-23): (1) "Per Legend" and
+      (2) "Show the held weapon's picture, or an empty slot when it has no picture" (DEC-354 (1)
+      and (2)); the follow-up PR `feat/loadout-per-legend` builds both. (8) The locked view reads
+      "Weapon: <name>" again: the review meant `Recommendation:` as a code label, not as player
+      text.
 
 - [ ] **`feat/loadout-indexeddb` (SCRUM-31, SCRUM-311), `IndexedDbStorageAdapter` — four points
       the docs leave open.** (1) Wiring the adapter puts schema v1 on players' disks once it
@@ -72,6 +85,11 @@ Reply inline (`Decision: …`).
       and closes the connection if it opens later. Keep, or name a wait? (4) No `degraded`
       status, `persistenceSlice` or "progress will not be saved" banner is built; the fallback
       is only logged.
+      _Agent note (2026-11-25, PR #141):_ (1) Owner's answer (2026-11-23): "Change the layout
+      first, then turn on disk saves" (DEC-354 (5)). `main.tsx` uses `MemoryStorageAdapter`
+      again; the follow-up PR `feat/loadout-per-legend` changes the layout, then turns on
+      IndexedDB. (2) The fallback now logs at ERROR, as 14 §10's table says, so it becomes an
+      error report; say so if you want WARN. (3) and (4) stay open.
 
 - [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu-legends`) — developer menu, slice 2
       (add/remove Legends, FR-097) built; decisions for the owner.** (a) `dev-spawn-legend` takes

@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-25
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -925,22 +925,26 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   fields join when their content does (no ability, artifact or passive definitions exist, and
   the secondary weapon is MVP-if-time). `LoadoutValidator` runs the injected rules
   `ContentExistsRule` and `WeaponAllowedRule` (`allowedClasses` and `uniqueTo`;
-  `createDefaultLoadoutRules`) and reports every problem, with a `field` (`'class'` or a slot) in
-  place of the sketch's `slot`. `validateLoadout`, `autoBuildLoadout` (from `defaultLoadout`),
-  `repairLoadout` (auto-builds each broken slot) and `loadoutContentOf` (the same rules over display
-  content) are public; the client's weapon choices are the weapons `validateLoadout` accepts.
-  `SpawnLoadoutPolicy` decides a spawn's loadout: `Placement.loadout` when it passes for that class,
-  else the auto-build, which is also what a Legend given none (every bot) gets. Besides the rules it
-  checks that the loadout is for the spawned class (`class-matches-legend`), a check only a spawn
-  can make. `Simulation` builds it over the match's Legend classes and weapons, logs a rejection at
-  WARN (`core.loadout`, not a `GameEvents` diagnostic) and injects it into `EntityFactory` as the
-  `LoadoutResolver` port of its `LegendEquipment`, so `entities/` imports only loadout types. The
-  human `RosterSlot` carries the player's saved loadout, so it is part of `ReplaySetup`;
-  `StateHasher` does not hash a Legend's weapon, so two spawns that differ only in weapon hash the
-  same until they fight. No content rule yet checks that a class's own `defaultLoadout` passes the
-  loadout rules; `loadoutApi.test.ts` checks it for shipped content. No `Loadout` component
-  yet: the Legend reads its weapon from the spawn context, and in-match changes (MVP-if-time)
-  are not built.
+  `createDefaultLoadoutRules`) and reports every problem, with a `field` in place of the sketch's
+  `slot`: `LoadoutField` is `'class'` or a `LoadoutSlot` (only `'primary-weapon'` so far), and
+  `repairLoadout` returns the `LoadoutSlot`s it replaced (DEC-354 (3)). `validateLoadout`,
+  `autoBuildLoadout` (from `defaultLoadout`), `repairLoadout` (auto-builds each broken slot) and
+  `loadoutContentOf` (the same rules over display content) are public; the client's weapon
+  choices are the weapons `validateLoadout` accepts. `SpawnLoadoutPolicy` decides a spawn's
+  loadout: `Placement.loadout` when it passes for that class, else the auto-build, which is also
+  what a Legend given none (every bot) gets. Besides the rules it checks that the loadout is for
+  the spawned class (`class-matches-legend`), a check only a spawn can make. `Simulation` builds it
+  over the match's Legend classes and weapons, logs a rejection at WARN as the `loadout-rejected`
+  diagnostic event (`DiagnosticEventMap`, scope `core.loadout`; DEC-354 (3)) and injects it into
+  `EntityFactory` as the `LoadoutResolver` port of its `LegendEquipment`, so `entities/` imports
+  only loadout types. The human `RosterSlot` carries the player's saved loadout, so it is part of
+  `ReplaySetup`; `StateHasher` hashes a Legend's weapon (`Combat.weaponId`), so a replay of that
+  slot without its loadout diverges at the first checkpoint. The content rule
+  `DefaultWeaponAllowedRule` checks at load that a class may carry its own `defaultLoadout` weapon
+  (it shares `isWeaponAllowedFor` with `WeaponAllowedRule`). Loadouts are saved per class; per
+  Legend follows in `feat/loadout-per-legend` (DEC-354 (1)). No `Loadout` component yet: the
+  Legend reads its weapon from the spawn context, and in-match changes (MVP-if-time) are not
+  built.
 
 - **Progression (PR #31, SCRUM-426).** Legends install `Aether` (own component, O1) and
   `Progression` (`xp`, `level`, `curveId`). Level curves are a catalogue
