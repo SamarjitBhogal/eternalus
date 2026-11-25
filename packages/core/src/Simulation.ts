@@ -227,7 +227,14 @@ export class Simulation {
           terminalPhases: TERMINAL_MATCH_PHASES,
         }),
         state: this.state,
-        progression: { units, curves, xpSources: XP_SOURCES },
+        progression: {
+          units,
+          curves,
+          xpSources: XP_SOURCES,
+          ...(duel === undefined
+            ? {}
+            : { legendsStartAtMaxLevel: DUEL_RULES.legendsStartAtMaxLevel }),
+        },
         director,
         ...(duelStarts === undefined ? {} : { duelStarts }),
         hordes: {
@@ -608,6 +615,7 @@ export class Simulation {
         position: feature.position,
         team: feature.team,
         area: zoneAreaOf(map, feature),
+        ...(feature.laneId !== undefined && { laneId: feature.laneId }),
       });
       state.entities.add(entity);
       spawned.push({ entityId: entity.id, kind, team: feature.team });

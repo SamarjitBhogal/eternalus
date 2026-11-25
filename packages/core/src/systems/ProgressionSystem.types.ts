@@ -14,6 +14,11 @@ export type ProgressionContent = {
   /** Level curves by id (`Progression.curveId`). */
   readonly curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'get'>;
   readonly xpSources: XpSourcesDefinition;
+  /**
+   * When set, every Legend that spawns starts at its curve's cap, its health and aether raised by
+   * each level (a Duel, `DUEL_RULES.legendsStartAtMaxLevel`, SCRUM-444). Mobs are untouched.
+   */
+  readonly legendsStartAtMaxLevel?: boolean;
 };
 
 /** One kill waiting for this system's pass. */

@@ -84,6 +84,19 @@ describe('StatusEffects', () => {
     expect(statuses.multiplier('damageDealt')).toBe(1);
   });
 
+  it('takes stacks off, keeps the status while any stay, and ends it at none', () => {
+    const statuses = new StatusEffects();
+    statuses.apply(ENRAGED, 'a', 0);
+    statuses.apply(ENRAGED, 'a', 0);
+
+    expect(statuses.removeStacks('enraged', 1)).toBe(1);
+    expect(statuses.multiplier('damageDealt')).toBeCloseTo(1.15);
+    expect(statuses.removeStacks('enraged', 5)).toBe(0);
+    expect(statuses.active).toHaveLength(0);
+    expect(statuses.multiplier('damageDealt')).toBe(1);
+    expect(statuses.removeStacks('enraged', 1)).toBeUndefined();
+  });
+
   it('reuses expired and removed instances (pooled) with none of their old state', () => {
     const statuses = new StatusEffects();
     statuses.apply(BLEED, 'a', 0);

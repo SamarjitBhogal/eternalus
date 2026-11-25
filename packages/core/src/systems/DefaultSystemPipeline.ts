@@ -29,6 +29,7 @@ import { EnragedSystem } from './EnragedSystem';
 import { HordeSystem } from './HordeSystem';
 import { InvariantSystem } from './InvariantSystem';
 import { MatchDirectorSystem } from './MatchDirectorSystem';
+import { MinionLevelSystem } from './MinionLevelSystem';
 import { MovementSystem } from './MovementSystem';
 import { OutOfCombatHealingSystem } from './OutOfCombatHealingSystem';
 import { PathingSystem } from './PathingSystem';
@@ -39,12 +40,14 @@ import { SpawnSystem } from './SpawnSystem';
 import { StructureSystem } from './StructureSystem';
 import { StuckSystem } from './StuckSystem';
 import { VeterancySystem } from './VeterancySystem';
+import { ZoneLevelUpSystem } from './ZoneLevelUpSystem';
 import { loadMinionVeterancy } from '../content/mobs/loadMinionVeterancy';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { CHECKPOINT_DEFENDERS } from '../content/structures/guardPlans';
 import { ZONE_LOCKING_MOBS } from '../content/zones/zoneLocks';
 import { TickRate } from '../utils/TickRate';
 import { loadGuardPlans } from '../content/structures/loadGuardPlans';
+import { loadZoneLevelUp } from '../content/zones/loadZoneLevelUp';
 import { StatusEffectSystem } from './StatusEffectSystem';
 import { SystemPipeline } from './SystemPipeline';
 
@@ -74,6 +77,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
   }: DefaultSystemPipelineOptions) {
     const { tickRate, map } = state.config;
     const damage = new DamagePipeline();
+    const veterancy = loadMinionVeterancy(tickRate);
     const statuses = new StatusEffectApplier(
       loadStatusEffects(tickRate, map.spawnTowersPerLane + map.buffTowersPerLane),
     );
@@ -126,7 +130,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
       ...(state.worldObjects === undefined ? [] : [new MapDestructionSystem(state, damage)]),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
       new ProgressionSystem(state, progression),
-      new VeterancySystem(state, statuses, progression.units, loadMinionVeterancy(tickRate)),
+      new VeterancySystem(state, statuses, veterancy),
       new StructureSystem(structures),
       ...(hordes === undefined
         ? []
@@ -154,6 +158,9 @@ export class DefaultSystemPipeline extends SystemPipeline {
       ),
       new DeathSystem(),
       new CaptureSystem(state.config.match.capturePoints, tickRate, ZONE_LOCKING_MOBS),
+      ...(hordes === undefined ? [] : [new ZoneLevelUpSystem(state, loadZoneLevelUp(tickRate))]),
+      // After every level source, so kill and zone levels land on the tick they are announced.
+      new MinionLevelSystem(state, statuses, progression.units, veterancy),
       // After death, so an objective lost this tick can end the match this tick (12 §1).
       new MatchDirectorSystem(director),
       new InvariantSystem(invariants),
