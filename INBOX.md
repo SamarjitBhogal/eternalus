@@ -16,6 +16,24 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Dependency audit (re-run 2026-11-20): approve one upgrade PR for the `eslint` family and
+      `zod`, and say whether to turn on Dependabot alerts.** PR #113 already moved `vite` to 8.3.8
+      and `vitest` to 5.1.0. `npm audit` on `phase/3-sprint-3-work` (`5a7cc8dc`) now reports 10
+      findings (9 moderate, 1 high, none critical), all in dev tooling, none in the browser build or
+      the Duel server. High: `zod` 4.6.5 (memory exhaustion on oversized constrained collections,
+      GHSA-mrhx-c7xc-m3w5; fixed in 4.6.6), transitive through `knip` and
+      `eslint-plugin-react-hooks`. Moderate: `minimatch` 10.2.6 (glob DoS, GHSA-g3hv-75wg-m249),
+      reached through `eslint` 10.11.0 and `typescript-eslint` 8.70.1 and the
+      `@typescript-eslint/*` packages; the other 8 moderate findings are those packages. On
+      2026-11-13 npm proposed downgrades for this family; it now proposes upgrades (`eslint`
+      10.15.0, `typescript-eslint` 8.73.0, not semver-major, but past the exact versions pinned in
+      `package.json`, so `npm audit fix --force`), and `zod` 4.6.6 is a patch.
+      AGENTS.md says no new or upgraded dependencies without explicit human approval, and the
+      lockfile is never hand-edited. Approve: one dependency-upgrade PR for these (run by `npm`,
+      with `npm run check`)? Also: GitHub answers "Dependabot alerts are disabled for this
+      repository" (HTTP 403). Turn them on (repository settings, owner), or keep relying on a manual
+      `npm audit`?
+
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
       small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`
@@ -40,6 +58,44 @@ Reply inline (`Decision: …`).
       PR #98's 2.5 m cells it reaches 30 m. Proposed: `pathSnapDistance` in world units, with the
       rings derived as `ceil(distance / cellSize)`. Whether 30 m still covers a Stronghold is a
       live question on #98.
+
+- [x] **Corner camp boss: new `TUNE` values, its display name, and better-than-design items B2
+      and N4 (Aryan Walanj, 2026-11-12; PR #91 `feat/bosses-p3`, your review S2, S3 and nit 3;
+      DEC-236).** (1) The values with no reference source, all `TUNE` in
+      `content/mobs/cornerBoss.ts`: footprint radius 1.5 m (about twice a heavy camp mob), attack
+      reach 2 m, max speed 2.5 m/s, acceleration 8 m/s², mass 12, vision radius 45 m (its aggro
+      radius, the ring's diameter, from `CORNER_CAMP_RING`). Its health (8,200), damage (205 per hit every 1.5 s) and team-wide XP (500,
+      DEC-237) are `balancing.md`'s MiniBoss row, sized for level-4 Legends, though this boss exists from
+      t = 0. Also `TUNE` (2026-11-17, PR #91 critic): the corner camp plan's leash tolerance
+      7 m (`content/structures/guardPlans.ts`), above DEC-181's 5.5 m, since this boss is bigger,
+      slower and reaches further than any guard (DEC-181's sum for it is about 6.08 m). Approve
+      them or give values. (2) The display name "Corner Camp Boss" (names are open
+      with HC-Q4). Approve or rename. (3) **B2 of the PR #91 body (your S2 calls it "your B2"; not your review's B2, the team XP), better than the design:** store the boss's health
+      and damage as multiples of `refHealth(level)` (10 × and 0.25 ×), as `balancing.md`
+      recommends, instead of absolute numbers. (4) **N4, better than the design:** the capture
+      point boss (`capturePointBoss.ts`, PR #99) uses the same MiniBoss row; once B2 is done, keep
+      that row in one shared constant, as `refHealth` multiples, that both bosses use. Approve
+      B2 and N4 (one follow-up PR), or drop them.
+  - **Answered 2026-11-20 by DEC-296** (PR #91 comments). (1) and (2) approved and cited in the
+    code; the mass follows the HC-S12 (d) answer, the same for both bosses: the corner boss has
+    the Sentinel's 6 (PR #91); the capture point boss gets 6 in the DEC-284 (3) follow-up PR.
+    (3) and (4) approved, not built yet: they go in the HC-B12 follow-up PR.
+
+- [x] **PR #91 critic (2026-11-13), better than the design: the ring size on the map feature
+      (Aryan Walanj, `feat/bosses-p3`, claudiodh's B4).** The corner camp's ring is now core
+      content (`CORNER_CAMP_RING`, `content/structures/cornerCampRing.ts`, radius 22.5 m; the
+      boss's vision and acquisition radius follow it: 45 m, the ring's diameter, since PR #91
+      B6, so the boss sees the whole ring from any post). The client draws it because core exports the constant and `Match` passes the size
+      into `MapView` (`featureSizes`). The critic proposes instead an optional ring radius on
+      `MapFeatureDefinition` (`content/maps/mapFeatureDefinitions.ts`), copied onto `MapFeature`
+      by the generator, which `MapView` draws from the map data it already gets. That drops the
+      new export, the constructor parameter and the size-0 placeholder in `FEATURE_STYLES`, and
+      the capture point's ring (still 45 m in `FEATURE_STYLES`) could use the same field. It also
+      suggested one shared camp post gap constant; done 2026-11-17 by the phase/3 merge
+      (`cornerCampRing.ts` reads `GUARD_LEASH.postGap`). Approve the ring field as a follow-up PR
+      (docs 06 and 07 updated with it), or keep the current wiring.
+  - **Answered 2026-11-20 by DEC-296** (PR #91 comments): the ring field is approved as a
+    follow-up PR, not built yet; the 22.5 m radius is approved.
 
 - [ ] **Teammate's boss spec (Aryan Walanj, 2026-11-11): amend reference 04?** A teammate's spec
       differs from `docs/reference/game-design/04-objectives-capture-points-and-bosses.md` in
@@ -113,7 +169,10 @@ Reply inline (`Decision: …`).
       are metres on the default 1600 × 900 world; on another world size `map/zoneArea.ts`
       stretches the floor and the leash does not follow.
 
-- [ ] AI56-F4 exemption for boss rows; claudiodh/Sam to confirm (asked on #99).
+- [x] AI56-F4 exemption for boss rows; claudiodh/Sam to confirm (asked on #99). Since
+      2026-11-17 (PR #91) the corner boss (`corner-boss`) is exempt too: it acquires across its
+      camp ring (`CORNER_CAMP_RING`), not leash less post gap (`aggroRules.test.ts`).
+  - **Answered 2026-11-20 by DEC-296** (PR #91 comments): the boss exemption is approved.
 
 - [ ] **Capture point boss: four better-than-design items (PR #99 critic, 2026-11-12) — Sam and
       the owner: approve or drop; no code change until then.** (1) **Zone lock read from state,
@@ -151,7 +210,7 @@ Reply inline (`Decision: …`).
       paths and no doc says which owns boss timing. Due before the zone-lock PR: pick one owner
       and update 07 §7 and 12 so only one mechanism is named.
 
-- [ ] **One guard plan per home, mates by `homeId` (`feat/zone-guard-homes` critic finding 3,
+- [x] **One guard plan per home, mates by `homeId` (`feat/zone-guard-homes` critic finding 3,
       2026-11-09) — accepted as interim.** `GuardRoster` looks plans up by the home's definition
       id, so a home has one plan, and `GuardController` (`ai/GuardController.ts`, `isMate`)
       treats every guard on a home as a mate. 18 §7.1 makes the capture point the home of the
@@ -159,6 +218,9 @@ Reply inline (`Decision: …`).
       cannot both be plans, and on one `homeId` they would count as mates across teams. 18 §7.1
       now records the limit. Due before checkpoint defenders get posts: key mates by plan or by
       team as well as home, and allow more than one plan per home if both must coexist.
+      **Done in PR #130 (2026-11-22):** defender posts carry `GuardSlot.checkpoint` and sit beside
+      the zone's plan; mates need the same home and team (`GuardController`), and a `group` plan's
+      group is the home's own posts only (`GroupGuardRespawn`).
 - [ ] **BUG-5 / SCRUM-438 (2026-11-12, `fix/bound-key-actions`) — two owner questions.** (1) Bound
       but unhandled actions: `toggle-developer-menu` (BUG-4, a feature), `sprint`, `interact`,
       `turret-toggle-control`, `turret-switch-ammo` (gameplay not built) and `toggle-perf-overlay`
@@ -179,12 +241,20 @@ Reply inline (`Decision: …`).
       break. No spec gives the inner walls their own value. Should the `'wall'` features inside the
       Stronghold ring keep the WallSegment value, or get their own (which number)?
   - **Answered 2026-11-13 by DEC-247** (chat, PR #96). Not built yet (BUG-2).
+  - Where it lives: the inner walls are `'wall'` map objects built by
+    `packages/core/src/map/MapBuildingInteriorBuilder.ts` (cathedral partitions, chapel and apse
+    walls) and `packages/core/src/map/MapPalaceRoomsBuilder.ts` (palace room walls); their health
+    is the `wall` entry of `packages/core/src/content/maps/mapObjectDefinitions.ts`. A side's own
+    pieces refusing its attacks (DEC-121 (a), `combat/FriendlyFireStep.ts`) can also look slow.
 
 - [x] **BUG-3: minions attack obstacles (2026-11-12, PR #96, SCRUM-436).** Today a stuck unit
       paths around an obstacle (DEC-193); minions never attack obstacles or props. The playtest
       asked for minions to attack them. Keep DEC-193, or should minions attack obstacles (and
       which ones: props only, or blocking obstacles too)?
   - **Answered 2026-11-13 by DEC-248** (chat, PR #96). Not built yet (BUG-3).
+  - Where it lives: the lane minion's aggro rules (`content/ai/aggro/laneMinion.ts`) and
+    `ai/aggroRank.ts` rank only Legends, minions, turrets and the lane objective today; no rule
+    targets a prop or an obstacle.
 
 - [x] **`refactor/durations-at-load` critic (2026-11-14), better than the design — built, sign-off
       asked; no decision blocks the PR.** #86's healing system divided its two rates
@@ -380,7 +450,7 @@ Reply inline (`Decision: …`).
       catalogue does not list `NoMapObjectOverlapInvariant` (`no-map-object-overlap`); a
       doc-gardening fix. Approve which to schedule, or drop them.
 
-- [ ] **Minion plan MVP gaps (1): zone level-up numbers (2026-11-06, refreshed 2026-11-12,
+- [x] **Minion plan MVP gaps (1): zone level-up numbers (2026-11-06, refreshed 2026-11-12,
       PR #81).** Zone level-up (reference 02, MVP) is designed in architecture 07 §7 and now
       scheduled as minion plan phase M10; `CaptureSystem` is on the phase branch (PR #64), so
       only your answers block it. (a) Which zones count: the Cathedral only, or all three central
@@ -391,11 +461,57 @@ Reply inline (`Decision: …`).
       events instead of 07 §7's status effect (one minion level with two sources, DEC-168 B3),
       and removing it on the same tick the zone is lost. Approve both, or keep 07 §7's status
       effect and say when the level is removed.
+  - **Answered 2026-11-15 by DEC-258** (chat): (a) all three central zones; (b) and (c)
+    approved as written. M10 is unblocked; not built yet.
 
-- [ ] **Minion plan MVP gaps (2): checkpoint defenders sign-off (2026-11-06, refreshed
+- [x] **Minion plan MVP gaps (2): checkpoint defenders sign-off (2026-11-06, refreshed
       2026-11-12, PR #81).** M6b (checkpoint defenders) no longer waits for PR #64, which merged
       on 2026-11-08. Sign off the recommendations of the "Minion M6" item (1) below (the leash is
       the zone's radius; defenders at an unowned point are neutral), and M6b can start.
+  - **Answered 2026-11-15 by DEC-257** (chat): both recommendations approved. Built on
+    `feat/minion-m6b-checkpoint-defenders`.
+
+- [ ] **Minion M6b follow-ups (`feat/minion-m6b-checkpoint-defenders`, 2026-11-15, critic).**
+      (1) `checkpoint-cleared` is never emitted, so killing a checkpoint's defenders gives no
+      checkpoint XP (07 §7, balancing.md 60 / 150 / 400). Who builds it? `Recommendation:` the
+      guard roster emits it as it emits `camp-cleared`, and `ProgressionSystem` pays it, in its
+      own PR. (2) balancing.md recommends that a checkpoint's defenders must be dead before the
+      next stage counts; 07 §7 does not adopt it and nothing enforces it. Adopt it, or drop it?
+      (3) **Better than the design (DEC-139), sign-off asked:** (a) a `never` guard respawn rule
+      (a third strategy beside `each` and `group`) for defender posts, instead of the inline
+      branch for a standing home with no plan; (b) key the defender tables by capture-point
+      definition id, then checkpoint, so the Cathedral and the outer forts can differ (DISC-11:
+      major and lesser zones are reward tables). Approve either, or leave as built.
+      **Update 2026-11-20 (PR #130 merge with #99):** (3)(a) is overtaken: phase/3 has the `never`
+      rule (`NeverGuardRespawn`, DEC-168), and defender posts now use it, marked by
+      `GuardSlot.checkpoint` instead of the inline branch. (3)(b) stays open. The despawn on an
+      owner change is gone (DEC-261 as changed 2026-11-20). (4) **Not built, needs an owner:**
+      DEC-260 as signed off 2026-11-20 makes neutral defenders and forest-camp mobs level
+      (changing DEC-165); `VeterancySystem.isLeveller` still skips neutral posts, which would also
+      level #99's capture point boss group. Build it in its own PR, and say whether the boss group
+      levels too. (5) **Better than the design (DEC-139), sign-off asked:** the defenders take any
+      enemy inside their leash (`shouldAcquireAcrossLeash`, DEC-260), which #99's boss and support
+      mobs lack (their fixed `acquisitionRadius` from `CAPTURE_POINT_COURT` only reaches enemies
+      near their post). Use the flag for #99's zone guards too? Not changed without your sign-off.
+      (6) **Question (critic, 2026-11-20):** a defender post the unit cap blocks waits and fills
+      when the cap frees, possibly after the point changed owner, so an old owner's defender
+      appears at a zone it lost. `Recommendation:` give such a post up on its due tick (counted as
+      suppressed once), since defenders answer one push. Built today: it waits. (7) **Better than
+      the design (DEC-139), sign-off asked:** with DEC-261 keeping living defenders, each owner
+      flip lets a checkpoint be reached again, so a contested point gains another set per flip
+      without bound. Cap it: skip a checkpoint's defenders while its earlier posts still hold
+      guards? (8) `GuardRoster.ts` is 332 lines (limit ~300): move `clearPost` into its own
+      helper in a tidy PR.
+      **Update 2026-11-22 (PR #130 review round 2):** (1), (4) and the answers to (6) and (7) are
+      planned as M6c (`feat/minion-m6c-defender-followups`, SamarjitBhogal, Phase 3 sprint 3; the
+      minion plan's §1.2 rows); (4)'s boss-group question, (6) and (7) still wait on the owner.
+      (8) is done: `clearGuardPost.ts` and `spawnPlanProblems.ts` hold the moved code
+      (`GuardRoster.ts` 275 lines, `SpawnSystem.ts` 318). (9) **Better than the design (DEC-139),
+      sign-off asked (review round 2, finding 5):** put the respawn rule on the post
+      (`GuardSlot.respawn`, set by `addPosts`), so `GuardRoster.update` needs no `checkpoint`
+      ternary and each rule counts only its own posts. Built today: `GroupGuardRespawn` counts
+      only the home's own posts (same `checkpoint` marker), which closes the gap with no new
+      field.
 
 - [ ] **Minion plan MVP gaps (3): who owns the zone cooldown reduction (2026-11-06, PR #81).**
       The zone's cooldown reduction (FR-041, 07 §7) is Legend-side, not minion work, and no plan
@@ -471,7 +587,7 @@ Reply inline (`Decision: …`).
   - **Answered 2026-11-04 by DEC-167** (chat, B66-F5): the restored march test's "first enemy
     objective" check is approved.
 
-- [ ] **Minion M6 (`feat/minion-m6-camps-defenders`, overnight 2026-10-30) — camps built,
+- [x] **Minion M6 (`feat/minion-m6-camps-defenders`, overnight 2026-10-30) — camps built,
       checkpoint defenders wait on your sign-off.** (1) **Sign-off needed:** checkpoint defenders
       need `CaptureSystem`, which is on the phase branch since PR #64 merged (2026-11-08; #49 was
       closed). Defenders are a guard plan per checkpoint asked for by `CaptureSystem`.
@@ -491,6 +607,8 @@ Reply inline (`Decision: …`).
     (2) by DEC-167: camps wake when the match countdown ends (no separate camp cooldown setting);
     camp mobs keep the lane-minion stats and XP as tuning defaults. Camp-mob kills count toward
     minion veterancy (DEC-165, amended 2026-11-04 evening).
+  - **Item (1) answered 2026-11-15 by DEC-257** (chat): the leash is the zone's reach;
+    defenders at an unowned point are neutral. Built on `feat/minion-m6b-checkpoint-defenders`.
 
 - [ ] **Minion M5b (`feat/minion-m5b-if-time`, overnight 2026-10-30) — built two of three, one
       blocked.** (1) **Tower Guardians are not built:** they need ranged attacks (no projectile

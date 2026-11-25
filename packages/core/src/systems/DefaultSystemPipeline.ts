@@ -39,6 +39,7 @@ import { StuckSystem } from './StuckSystem';
 import { VeterancySystem } from './VeterancySystem';
 import { loadMinionVeterancy } from '../content/mobs/loadMinionVeterancy';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
+import { CHECKPOINT_DEFENDERS } from '../content/structures/guardPlans';
 import { ZONE_LOCKING_MOBS } from '../content/zones/zoneLocks';
 import { loadGuardPlans } from '../content/structures/loadGuardPlans';
 import { StatusEffectSystem } from './StatusEffectSystem';
@@ -134,6 +135,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
               weights: LANE_ASSESSMENT_WEIGHTS,
               formationId: RANKS_FORMATION.id,
               guards: loadGuardPlans(tickRate, hordes.guards),
+              defenders: CHECKPOINT_DEFENDERS,
             }),
             new EnragedSystem(state, statuses, ENRAGING_STRUCTURES),
           ]),
