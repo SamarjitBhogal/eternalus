@@ -784,7 +784,9 @@ export type LevelScalingDefinition = {
 `Recommendation:` balancing.md), emits `level-up { entityId, level }`, raises the `Health` base
 max and `Abilities.maxAether` by the class's `LevelScalingDefinition`, and applies the
 `UltimateChargeRule`s (§6). Ability potency is read at cast time (`CastContext.potency`), so
-`AbilitySystem` needs no listener. The **ability tree** (post-MVP, D12) is an extension point,
+`AbilitySystem` needs no listener. A match mode can start every Legend at its curve's cap
+(`ProgressionContent.legendsStartAtMaxLevel`, a Duel's rule): `ProgressionSystem` raises each Legend
+as it spawns, with the same per-level raises, and announces no award. The **ability tree** (post-MVP, D12) is an extension point,
 not a design: an `AbilityUpgradeDefinition` (`{ id, abilityId, tier, unlockLevel, patches }`) is
 applied by `AbilityRegistry.resolve` exactly like a variety, `Progression.upgradeIds` records the
 choice, and an `upgrade-ability` command carries the `near-structure` restriction from §5; "only

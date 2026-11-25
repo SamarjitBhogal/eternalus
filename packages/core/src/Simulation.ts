@@ -227,7 +227,14 @@ export class Simulation {
           terminalPhases: TERMINAL_MATCH_PHASES,
         }),
         state: this.state,
-        progression: { units, curves, xpSources: XP_SOURCES },
+        progression: {
+          units,
+          curves,
+          xpSources: XP_SOURCES,
+          ...(duel === undefined
+            ? {}
+            : { legendsStartAtMaxLevel: DUEL_RULES.legendsStartAtMaxLevel }),
+        },
         director,
         ...(duelStarts === undefined ? {} : { duelStarts }),
         hordes: {
