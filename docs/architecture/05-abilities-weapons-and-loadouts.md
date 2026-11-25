@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-23
+last-reviewed: 2026-11-25
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -572,7 +572,8 @@ strength-by-distance curve), target statuses (`sundered`, `marked`, `hexed`), th
 entityId, killer: DamageSource }` and records the cause for `DeathSystem` (rule B). A death by
 attacker-less damage that credits a killer (the Cathedral gem's statuses, DEC-346) names the
 victim's last enemy damager inside the assist window as the attacker, keeping the gem's source kind
-and id; it is decided there, once, so every reader of `entity-died` sees the same killer. That is why
+and id; it is decided there, once, so every reader of `entity-died` sees the same killer. Only a
+hit in the victim's current life counts: a respawn or a Duel round reset forgets the last one. That is why
 every ability, weapon, status tick and gate fire names a `DamageSource`: "extra effective against
 Sentinels" and "reduces protections (stacks)" are modifiers, never branches in `CombatSystem`.
 
