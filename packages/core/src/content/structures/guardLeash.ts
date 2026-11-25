@@ -6,4 +6,5 @@ export const GUARD_LEASH = {
   tower: 8, // TUNE: balancing.md "leash radius 8 m"
   camp: 6, // TUNE: balancing.md camp leash
   postGap: 2, // TUNE: no reference value; just outside the footprint
+  checkpointPostRing: 2, // TUNE: no reference value; defenders' posts around a capture point's centre
 } as const;
