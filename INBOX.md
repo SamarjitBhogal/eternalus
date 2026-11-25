@@ -17,10 +17,9 @@ Each item below lists only what your 2026-10-09 answer left open, with your answ
 Reply inline (`Decision: …`).
 
 - [ ] **`feat/duel-arena-only-legends` (PR #145, SCRUM-445, SCRUM-446, SCRUM-447, SCRUM-450):
-      three owner items.** (Q1) What remains of the world outside the Cathedral in a Duel
-      (structures, trees, houses, camps, forts)? Only the mobs, capture objectives and the gem
-      are removed so far. (Q2) May a Legend break out through the Cathedral's walls, which stay
-      breakable (BUG-2)? Only the four doorways are closed. (Q3) The decisions-log row for
+      one owner item left.** Q1 and Q2 are answered and built: DEC-348 (2026-11-23: no
+      structures, no minions or host units, trees, houses and rocks stay, the gem stays; the
+      Cathedral's walls cannot break in a Duel). (Q3) The decisions-log row for
       SCRUM-449 (modifying DEC-78: a Duel result shows both players' final kill score and no
       countdown), and whether `DUEL_RULES.arena` and `startOffset` belong in the replay setup
       so a content change cannot alter an old Duel's replay. Decision: …

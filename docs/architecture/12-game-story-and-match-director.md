@@ -4,7 +4,7 @@ description: How a match unfolds over time - the MatchDirector state machine ove
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-25
 tags: [architecture, match, timeline, phases, scoring, story, lore]
 paths:
   [
@@ -473,20 +473,32 @@ numbers (target, countdown, start offset) are `DUEL_RULES` in `content/duel/duel
 this note left as generated (mobs, objectives, the crystal, the Cathedral's entrances) is the
 2026-11-20 note below; FR-115's inert world beyond that is not built.
 
-Implementation status, 2026-11-20 (branch `feat/duel-arena-only-legends`; the owner's feedback on
-the Duel demo of 2026-11-20, Jira SCRUM-445, SCRUM-446, SCRUM-447 and SCRUM-450, within DEC-36): a
-Duel keeps only its arena. `DUEL_RULES.arena` (`DuelArenaRules`, `content/duel/duelRules.types.ts`)
-holds one switch per part of the world, read where that part is built, never in a system's tick:
-no mobs (`spawnsMobs`: `DefaultSystemPipeline` leaves out `SpawnSystem`, so no minion, guard or
-camp unit spawns or respawns), no capture objectives (`hasCaptureObjectives`: `Simulation` spawns
-no zones, so `ObjectiveLostCondition` and the client's `ObjectiveTracker` have none; the tracker
-renders nothing in a Duel), no Cathedral crystal (`omittedStructureIds`, the structure definition ids a Duel does not build,
-`['cathedral']`: `Simulation` skips them, and the client's `CrystalStatus` renders nothing in a
-Duel; no gem exists in core yet, so the gem's body, scenery and view must check this list when
-they land) and a closed
-Cathedral (`isCathedralClosed`: `match/duelArena.ts` makes the Cathedral's four entrances, the map
-objects marked `isDuelBarrier`, block; 06 §10). Structures other than the gem still run as
-generated, and the Cathedral's interior walls stay breakable (BUG-2).
+Implementation status, 2026-11-25 (branch `feat/duel-arena-only-legends`; the owner's feedback on
+the Duel demo of 2026-11-20, Jira SCRUM-445, SCRUM-446 and SCRUM-450, and the owner's answers
+DEC-348, within DEC-36): a Duel keeps only its arena. `DUEL_RULES.arena` (`DuelArenaRules`,
+`content/duel/duelRules.types.ts`) holds one switch or id list per part of the world, read where
+that part is built, never in a system's tick:
+
+- no mobs (`spawnsMobs`: `DefaultSystemPipeline` leaves out `SpawnSystem`, so no minion, host unit,
+  guard or camp unit spawns or respawns);
+- no capture objectives (`hasCaptureObjectives`: `Simulation` spawns no zones, so
+  `ObjectiveLostCondition` and the client's `ObjectiveTracker` have none; the tracker renders
+  nothing in a Duel; DEC-348 removes the capture points with the structures, SCRUM-446);
+- no structure but the Cathedral's gem (DEC-348): `omittedStructureIds` lists the definition ids a
+  Duel does not build (towers, gates, camps and Strongholds). The gem (`cathedral`) is not listed,
+  so it stays, and the client's `CrystalStatus` draws in a Duel too;
+- none of their map objects (`omittedObjectKinds`, and `omitsSideObjects` for everything a side
+  built: each palace with its walls and rooms, the wall segments and turrets): `match/duelArena.ts`
+  drops them before `Simulation` builds the walk grid, the collision index and the world objects,
+  so no removed structure leaves an obstacle. Trees, houses and rocks stay;
+- a closed Cathedral (`isCathedralClosed`: the Cathedral's four entrances, the map objects marked
+  `isDuelBarrier`, block; 06 §10) whose walls cannot break (`unbreakableCathedralKinds`:
+  `duelMapObjects` marks the Cathedral's walls `MapObject.isUnbreakable`, `WorldObjectStore` makes
+  their colliders unbreakable and `BreakabilityStep` blocks every hit on them). A normal match is
+  unchanged.
+
+The removed structures' art is still drawn from the map presentation; hiding it in a Duel is not
+built.
 
 The human's Legend works like this (DEC-173): it is the roster's `human` slot (`RosterSlot.pilot`),
 at most one per roster and on `playerTeam`; a roster without one is sim mode. The client gives it

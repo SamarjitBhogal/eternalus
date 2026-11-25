@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-25
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -628,6 +628,11 @@ rules close the Cathedral (`DUEL_RULES.arena.isCathedralClosed`) makes them bloc
 (`match/duelArena.ts`) before `Simulation` builds the walk grid, the collision index and the world
 objects, so both Legends stay inside. The doorways look the same either way; the closed-door
 drawing is not built, and is requested in `INBOX.md` ("Duel closed-door drawing").
+
+**2026-11-25 (`feat/duel-arena-only-legends`, DEC-348).** A Duel also drops every structure's map
+object and everything a side built (`DUEL_RULES.arena.omittedObjectKinds`, `omitsSideObjects`), and
+marks the Cathedral's walls `MapObject.isUnbreakable`, all in `match/duelArena.ts` before the walk
+grid is built; trees, houses and rocks stay. The dropped objects' art is still drawn.
 
 ## Related
 
