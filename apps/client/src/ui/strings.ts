@@ -252,7 +252,7 @@ export const STRINGS = {
   characterSelect: {
     bannerTitle: 'Legend Selection',
     /** The locked view's line naming the weapon the player spawns with (SCRUM-31, 08). */
-    weaponLine: (weaponName: string): string => `Recommendation: ${weaponName}`,
+    weaponLine: (weaponName: string): string => `Weapon: ${weaponName}`,
     chooseClass: 'Choose Your Class',
     selectClass: 'Select Class',
     selectClassHint: 'Choose a class first.',

@@ -21,7 +21,6 @@ import { LOG_TAIL_RECORDS } from './data/logging/ErrorReporter.constants';
 import { logWindowErrors } from './data/logging/logWindowErrors';
 import { RingBufferSink } from './data/logging/RingBufferSink';
 import { SinkLogger } from './data/logging/SinkLogger';
-import { IndexedDbStorageAdapter } from './data/persistence/IndexedDbStorageAdapter';
 import { MemoryStorageAdapter } from './data/persistence/MemoryStorageAdapter';
 import { PersistenceController } from './data/persistence/PersistenceController';
 import { ASSET_LICENCES } from './data/resources/assetLicences';
@@ -105,8 +104,10 @@ connectBusToStore(eventBus, store.dispatch);
 // What the Loadout screen offers per class, and the rules loadouts are checked and repaired by (08).
 const displayContent = loadDisplayContent();
 const persistence = new PersistenceController({
-  adapter: IndexedDbStorageAdapter.inBrowser(),
-  fallback: () => new MemoryStorageAdapter(),
+  // Memory only until the settings layout (per group) and per-Legend loadout keys land: writing
+  // today's shape to players' browsers would need a migration for a schema that never shipped
+  // (owner answer 5, DEC-354). The follow-up PR turns IndexedDbStorageAdapter.inBrowser() on.
+  adapter: new MemoryStorageAdapter(),
   knownActions: new Set(INPUT_ACTIONS),
   now: () => Date.now(),
   warn: (body, attributes) => {
