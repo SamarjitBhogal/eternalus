@@ -767,6 +767,9 @@ Reply inline (`Decision: …`).
     happen as the owner wants. A dead Legend gets no structure XP today. The owner ruled that
     it is paid on respawn once respawn (GL-12) exists; a `ponytail:` note in
     `ProgressionSystem.ts` marks the stand-in.
+  - **Update 2026-11-22 (PR #100, DEC-186):** pay on respawn is built: XP a waiting Legend earns is
+    owed on its queue entry and paid in `ProgressionSystem`'s pass after it returns. The stand-in
+    note is removed.
 
 - [ ] **DEC-15 — camp placement, still open after your answer** (the rule is recorded as DEC-15,
       2026-10-10). (1) Does the random, parity-checked placement also apply to the corner camps?
@@ -3273,6 +3276,15 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
   UE-01's urgency on the character select and the match-start overlay, with UE-03 and the
   `uiEnhancements` switch built in the same PR; the bridge's countdown derivation is signed off.
   Reference 15 registers UE-01 as CD-48.
+
+- 2026-11-20 — **Legend respawn, interim (`fix/legend-respawn`, PR #100, GL-12).** Answered by
+  DEC-295 (owner, 2026-11-20): the same Legend object waits and returns reset (full health and
+  aether; ultimate charge kept apart), a bot laner re-plans its lane by the current threat, a
+  returning Legend ignores every cap, and a fallen Legend's body stays on the map greyed out. Built
+  in PR #100, with DEC-186's "pay on respawn". Critic items (a) `createWithId` and (d) the
+  factory coupling are gone with the redesign; (b) the ultimate charge waits for #123, which the
+  kept Legend object carries through death; (c) the loadout survives death, and of the cooldowns only the ultimate's charge and cooldown do, other abilities coming back fully cooled down (FR-117, no ability cooldown state exists yet); (e)
+  polling just before `DeathSystem` stays (it also keeps XP earned later in the same tick).
 
 - 2026-11-03 — **PR #56 — the `returning` state (DEC-144 G).** Decision (SamarjitBhogal,
   2026-11-03, recorded as DEC-155): (b) merge it into the resting state. `LeashBehaviour`, `MinionController` and
