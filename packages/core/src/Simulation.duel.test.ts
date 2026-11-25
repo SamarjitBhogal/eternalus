@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { DUEL_RULES } from './content/duel/duelRules';
 import { LEGEND_LEVEL_CURVE } from './content/progression/levelCurves';
+import { LEGEND_RESPAWN_SECONDS } from './content/progression/legendRespawn';
 import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { NullLogger } from './diagnostics/NullLogger';
 import { runReplay } from './diagnostics/replay';
@@ -13,6 +14,7 @@ import { Simulation } from './Simulation';
 import type { DuelOptions, RosterSlot } from './Simulation.types';
 import type { Snapshot } from './state/Snapshot.types';
 import type { PlayableTeam } from './teams/teams.types';
+import { TickRate } from './utils/TickRate';
 
 const ROSTER: readonly RosterSlot[] = (['light', 'dark'] as const).map((team) => ({
   pilot: 'human',
@@ -129,6 +131,31 @@ describe('Simulation: a Duel', () => {
           x: legendOf(sim, before, team).legend.transform?.x,
           y: legendOf(sim, before, team).legend.transform?.y,
         });
+      }
+    },
+    FIGHT_TIMEOUT_MS,
+  );
+
+  it(
+    'never queues a fallen Duel Legend to respawn: the round reset runs first, past the respawn delay too',
+    () => {
+      const sim = build({ killTarget: 5 });
+      const ids = (['light', 'dark'] as const).map((team) => sim.humanLegendIdOf(team));
+      const left: string[] = [];
+      const returned: string[] = [];
+      sim.on('entity-removed', ({ entityId }) => {
+        if (ids.includes(entityId)) left.push(entityId);
+      });
+      sim.on('legend-respawned', ({ entityId }) => returned.push(entityId));
+
+      fightUntil(sim, (snapshot) => (snapshot.match.duel?.kills.light ?? 0) > 0);
+      const delay = new TickRate(config.tickRate).toTicks(LEGEND_RESPAWN_SECONDS);
+      for (let tick = 0; tick <= delay + 30; tick += 1) sim.step();
+
+      expect(left).toEqual([]);
+      expect(returned).toEqual([]);
+      for (const team of ['light', 'dark'] as const) {
+        expect(legendOf(sim, sim.snapshot(), team).legend.health?.current).toBeGreaterThan(0);
       }
     },
     FIGHT_TIMEOUT_MS,
