@@ -111,6 +111,7 @@ export function testSessionDeps(
     createMatch: () => new FakeRunningMatch(),
     createDuelMatch: () => new FakeRunningMatch(),
     createDuelTransport: () => new FakeMessageTransport(),
+    guestIds: { load: () => Promise.resolve(null), save: () => Promise.resolve() },
     logger: new MemoryLogger(),
     resources: new ResourceController({
       manifest: { version: 'test', assets: [] },

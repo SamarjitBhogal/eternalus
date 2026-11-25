@@ -240,6 +240,8 @@ export type BridgeEventMap = {
   'duel-versus': DuelVersus;
   /** The Duel's scoreboard, on the HUD cadence; only in a Duel. */
   'duel-state': DuelHudState;
+  /** This player's Duel connection dropped and is reconnecting (DEC-349), or no longer is. */
+  'duel-connection': { readonly isReconnecting: boolean };
   /**
    * The match ended, once per match (13 §5): core's result, and its length in match seconds (the
    * bridge knows the tick rate, the UI does not; DEC-129 (1)), the countdown not counted (DEC-278).

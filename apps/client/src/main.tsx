@@ -114,6 +114,14 @@ const persistence = new PersistenceController({
     logger.log(makeLogRecord('WARN', 'client.persistence', body, { attributes }));
   },
 });
+// Settings, loadouts and the guest id load once storage is open.
+const storageOpen = persistence.open().catch((error: unknown) => {
+  logger.log(
+    makeLogRecord('ERROR', 'client.persistence', 'storage did not open', {
+      attributes: { error: String(error) },
+    }),
+  );
+});
 const settings = new SettingsController({
   bus: eventBus,
   persistence,
@@ -185,6 +193,10 @@ const session = new SessionController({
         ? duelServerUrl
         : DEFAULT_DUEL_SERVER_URL,
     ),
+  guestIds: {
+    load: () => storageOpen.then(() => persistence.loadGuestId()),
+    save: (guestId) => persistence.saveGuestId(guestId),
+  },
   logger,
   resources,
   credits: describeCredits(ASSET_MANIFEST.assets, ASSET_LICENCES),
@@ -194,16 +206,7 @@ session.start();
 
 // Settings and loadouts load in the background: the store has no bindings until the settings
 // event arrives, and the Loadout screen no choices until the loadouts event does.
-void persistence
-  .open()
-  .catch((error: unknown) => {
-    logger.log(
-      makeLogRecord('ERROR', 'client.persistence', 'storage did not open', {
-        attributes: { error: String(error) },
-      }),
-    );
-  })
-  .then(() => Promise.all([settings.start(), loadouts.start()]));
+void storageOpen.then(() => Promise.all([settings.start(), loadouts.start()]));
 
 const attachViewport = (viewport: MatchViewport): (() => void) => session.attachViewport(viewport);
 createRoot(rootElement).render(
