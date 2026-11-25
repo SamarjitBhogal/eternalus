@@ -67,7 +67,10 @@ type CommandPayloads = {
     readonly count: number;
     readonly origin: SpawnOrigin;
   };
-  /** Developer menu: remove an entity (cause `dev-removed`). */
+  /**
+   * Developer menu: remove an entity (cause `dev-removed`). A Legend a human plays is refused
+   * (`human-legend`): the human is removed only in sim mode (13 §4).
+   */
   readonly 'dev-remove-entity': { readonly entityId: EntityId };
   /** Developer menu: hand an entity to another controller (sim mode). */
   readonly 'dev-set-controller': { readonly entityId: EntityId; readonly controllerId: string };
@@ -100,4 +103,5 @@ export type CommandRejectReason =
   | 'cannot-attack'
   | 'invalid-target'
   | 'not-supported'
+  | 'human-legend'
   | 'match-ended';
