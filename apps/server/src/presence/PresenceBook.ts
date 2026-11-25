@@ -51,6 +51,14 @@ export class PresenceBook {
     const guest = this.byConnection.get(connection);
     if (guest === undefined) return;
     guest.isConnected = false;
+    const rival = this.options.host.rivalOf(connection);
+    const other = rival === null ? undefined : this.byConnection.get(rival);
+    if (other !== undefined && !other.isConnected) {
+      // The one who left first, while the other was still in the Duel, takes the loss (DEC-250 (4)).
+      this.drop(other);
+      this.drop(guest);
+      return;
+    }
     if (this.stateOf(guest) === 'online' || this.counts().held > this.options.maxHeldGuests) {
       this.drop(guest);
       return;
@@ -62,13 +70,6 @@ export class PresenceBook {
     });
     guest.cancelDrop = cancel;
     this.options.queue.hold(connection);
-    const rival = this.options.host.rivalOf(connection);
-    const other = rival === null ? undefined : this.byConnection.get(rival);
-    if (other !== undefined && !other.isConnected) {
-      // The one who left first, while the other was still in the Duel, takes the loss (DEC-250 (4)).
-      this.drop(other);
-      this.drop(guest);
-    }
   }
 
   /**
