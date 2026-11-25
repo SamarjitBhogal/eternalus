@@ -153,4 +153,47 @@ describe('DeveloperMenu buttons', () => {
       { kind: 'dev-command', command: { type: 'dev-remove-entity', entityId: 'e42' } },
     ]);
   });
+
+  it('Add sends exactly one dev-spawn-legend with the chosen team and class', () => {
+    const { container, intents, stop } = mount();
+    pick(container, 'Team', 'dark');
+    pick(container, 'Class', 'sentinel');
+    click(container, 'Add');
+    stop();
+    expect(intents).toEqual([
+      {
+        kind: 'dev-command',
+        command: { type: 'dev-spawn-legend', team: 'dark', definitionId: 'sentinel' },
+      },
+    ]);
+  });
+
+  it('Add with no edits sends the first selectable class for the light team, never the locked one', () => {
+    const { container, intents, stop } = mount();
+    expect([...field(container, 'Class').querySelectorAll('option')].map((o) => o.value)).toEqual([
+      'warrior',
+      'sentinel',
+      'magus',
+    ]);
+    click(container, 'Add');
+    stop();
+    expect(intents).toEqual([
+      {
+        kind: 'dev-command',
+        command: { type: 'dev-spawn-legend', team: 'light', definitionId: 'warrior' },
+      },
+    ]);
+  });
+
+  it('Remove Legend sends exactly one dev-remove-legend with the typed id, and nothing without one (DEC-293)', () => {
+    const { container, intents, stop } = mount();
+    click(container, 'Remove Legend');
+    expect(intents).toEqual([]);
+    type(container, 'Legend to remove', ' entity-7 ');
+    click(container, 'Remove Legend');
+    stop();
+    expect(intents).toEqual([
+      { kind: 'dev-command', command: { type: 'dev-remove-legend', entityId: 'entity-7' } },
+    ]);
+  });
 });

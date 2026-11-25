@@ -190,7 +190,7 @@ anything that only changes how the client shows or paces the simulation is a cli
 
 | Control                                          | Message                                                                                                                                               | Cap or rule                                                                                        | Status                        |
 | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ----------------------------- |
-| Add / remove a Legend                            | `dev-spawn-legend { team, definitionId, controllerId, at? }`, `dev-remove-legend { entityId }`                                                        | `maxLegendsPerTeam` (10, `TUNE`) → `command-rejected` shown inline; the human only in sim mode     | **MVP**                       |
+| Add / remove a Legend                            | `dev-spawn-legend { team, definitionId }` (a Rover bot at the team's Stronghold), `dev-remove-legend { entityId }` (DEC-293)                          | `maxLegendsPerTeam` (10, `TUNE`) → `command-rejected` shown inline; the human only in sim mode     | **MVP**                       |
 | Spawn mobs from an origin                        | `dev-spawn-mobs { team, definitionId, count, origin }` (structure id, `{ lane, t }` or cursor), spawned as one horde ([18](18-minion-system.md) §3.5) | `maxUnitsPerTeam` (144, `TUNE`): clipped, `spawn-suppressed` counted in `TeamState`, never a crash | **MVP**                       |
 | Sim mode: remove or add the human                | `dev-set-controller { entityId, controllerId }` (DISC-56)                                                                                             | at most one `player` controller (`SinglePlayerBrainInvariant`)                                     | **MVP**                       |
 | Invariant level; timeline jump                   | `dev-set-assert-level { level, heavyEvery? }`; `dev-set-phase { phase }` (forward only)                                                               | —                                                                                                  | **MVP**; jump **MVP-if-time** |
@@ -596,14 +596,21 @@ and the keybinding and settings stack of §6: `keybindings.ts`, `BindingResolver
   event; with the memory adapter that is immediate, with IndexedDB (S2) it needs a boot-time wait
   or the `degraded` path of [14](14-persistence-and-resources.md) §10.
 
+Developer menu (2026-11-13, slice 2): the menu also adds a bot Legend of a selectable class to a
+team (`dev-spawn-legend { team, definitionId }`, at the Stronghold, Rover controller, refused at
+`maxLegendsPerTeam`), and removes one with `dev-remove-legend { entityId }`, refused for the
+human's Legend outside sim mode (DEC-293, 2026-11-20, which also drops the `controllerId` and `at?`
+of the earlier spawn shape). FR-097 is met in part: a refusal reaches only the log, not the UI,
+and the removal cause is `dev-removed`, not FR-097's `developer-menu` (`INBOX.md` items (c), (f)).
+
 Developer menu (2026-11-13, slice 1): `DeveloperMenu` is enabled by `?dev=1` only (the
 persisted `settings.developer.menuEnabled` needs settings persistence, which does not exist) and
 opened by `toggle-developer-menu` (F1). Built controls: spawn mobs (`dev-spawn-mobs`) and remove an
 entity by id (`dev-remove-entity`), each sent as a `dev-command` intent that `Match` enqueues. The
 mob picker lists the lane minions of core's display content (`DisplayContent.laneMinions`). Core
 refuses `dev-remove-entity` for a Legend in a human seat (`human-legend`): the human is removed
-only in sim mode (the "Add / remove a Legend" row above). Not built: `dev-spawn-legend`
-and `dev-remove-legend`, sim mode, `dev-toggle`, invariant level, timeline jump, config overrides,
+only in sim mode (the "Add / remove a Legend" row above). Not built: sim mode, `dev-toggle`,
+invariant level, timeline jump, config overrides,
 and showing core's refusals in the UI. `bridge/events.ts` has no `dev-toggle` yet.
 
 HUD (2026-10-18): the `AbilityBar` cooldown sweep of §3 is the owner's Figma look, a vertical fill

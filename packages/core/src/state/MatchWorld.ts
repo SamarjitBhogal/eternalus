@@ -45,9 +45,9 @@ export class MatchWorld {
       : { facing: { x: target.x - position.x, y: target.y - position.y } };
   }
 
-  /** Where `team`'s Stronghold stands (a copy), or `undefined` when the map has none. */
+  /** Where `team`'s Stronghold stands (a copy), or `undefined` when the map has none for it. */
   public strongholdOf(team: PlayableTeam): Vec2 | undefined {
-    const position = this.strongholds.get(team);
-    return position === undefined ? undefined : { x: position.x, y: position.y };
+    const stronghold = this.strongholds.get(team);
+    return stronghold === undefined ? undefined : { x: stronghold.x, y: stronghold.y };
   }
 }
