@@ -1,4 +1,4 @@
-import type { MapDefinition, Simulation } from '@eternalus/core';
+import type { EntitySnapshot, MapDefinition, Simulation } from '@eternalus/core';
 
 import type { DeveloperMenuOption } from '../bridge/developerMenu.types';
 import type { BridgeEventMap } from '../bridge/events';
@@ -30,6 +30,9 @@ export class DeveloperMenuController {
 
   /** The Legend sim mode's Follow names, or `null`. */
   private followed: string | null = null;
+
+  /** The Legends in the match, for Follow's picker. */
+  private legends: readonly DeveloperMenuOption[] = [];
 
   private readonly stopListening: () => void;
 
@@ -63,11 +66,27 @@ export class DeveloperMenuController {
       isOpen: this.isOpen,
       humanLegendId: humanLegendId(),
       followedLegendId: this.followed,
+      legends: this.legends,
       controllerIds: SIM_MODE_CONTROLLER_IDS,
       origins: map.features.flatMap(({ id, kind, laneId }): DeveloperMenuOption[] =>
         laneId === undefined ? [] : [{ id, label: `${id} (${kind})` }],
       ),
     });
+  }
+
+  /** Reads the Legends of a snapshot for Follow's picker; publishes when they changed. */
+  public observeLegends(
+    entities: readonly Pick<EntitySnapshot, 'id' | 'family' | 'team' | 'definitionId'>[],
+  ): void {
+    const legends = entities
+      .filter(({ family }) => family === 'legend')
+      .map(({ id, team, definitionId }) => ({
+        id,
+        label: `${id} (${team ?? '-'} ${definitionId})`,
+      }));
+    if (legends.map(({ id }) => id).join() === this.legends.map(({ id }) => id).join()) return;
+    this.legends = legends;
+    this.publish();
   }
 
   /** The `toggle-developer-menu` key: opens or closes the menu; ignored while it is not enabled. */

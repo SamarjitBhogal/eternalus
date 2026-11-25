@@ -10,6 +10,7 @@ const STATE: DeveloperMenuState = {
   origins: [{ id: 'gate-a', label: 'gate-a (gate)' }],
   humanLegendId: 'entity-9',
   followedLegendId: null,
+  legends: [],
   controllerIds: { player: 'player', rover: 'rover' },
 };
 
@@ -41,8 +42,6 @@ describe('DeveloperMenu', () => {
       'Remove',
       'Remove human',
       'Take control',
-      'Follow',
-      'Stop following',
     ]);
   });
 });

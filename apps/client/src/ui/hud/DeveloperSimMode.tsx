@@ -10,16 +10,21 @@ import styles from './DeveloperMenu.module.css';
  * The developer menu's "Sim mode" section (13 §4, FR-099): Remove human hands the human's Legend
  * to the bots (the match runs on with no human); Take control puts the human on the Legend whose
  * id is typed. Each emits one `dev-set-controller`; core validates it. With no human, Follow makes
- * the camera follow the typed Legend and Stop following ends it (client-only `dev-follow`, no
- * `Command`).
+ * the camera follow the Legend picked from the match's Legends, None releases it (client-only
+ * `dev-follow`, no `Command`).
  */
 export function DeveloperSimMode({
   humanLegendId,
   followedLegendId,
+  legends,
   controllerIds,
-}: Pick<DeveloperMenuState, 'humanLegendId' | 'followedLegendId' | 'controllerIds'>): ReactElement {
+}: Pick<
+  DeveloperMenuState,
+  'humanLegendId' | 'followedLegendId' | 'legends' | 'controllerIds'
+>): ReactElement {
   const [controlId, setControlId] = useState('');
   const controlFieldId = useId();
+  const followFieldId = useId();
   const labels = STRINGS.developerMenu;
   return (
     <fieldset className={styles.group}>
@@ -67,22 +72,24 @@ export function DeveloperSimMode({
       >
         {labels.takeControl}
       </Button>
-      <Button
-        isDisabled={humanLegendId !== null || controlId === ''}
-        onClick={() => {
-          emitIntent({ kind: 'dev-follow', legendId: controlId });
-        }}
-      >
-        {labels.follow}
-      </Button>
-      <Button
-        isDisabled={humanLegendId !== null || followedLegendId === null}
-        onClick={() => {
-          emitIntent({ kind: 'dev-follow', legendId: null });
-        }}
-      >
-        {labels.stopFollowing}
-      </Button>
+      <div className={styles.field}>
+        <label htmlFor={followFieldId}>{labels.follow}</label>
+        <select
+          id={followFieldId}
+          disabled={humanLegendId !== null}
+          value={followedLegendId ?? ''}
+          onChange={(event) => {
+            emitIntent({ kind: 'dev-follow', legendId: event.currentTarget.value || null });
+          }}
+        >
+          <option value="">{labels.followNone}</option>
+          {legends.map(({ id, label }) => (
+            <option key={id} value={id}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </div>
     </fieldset>
   );
 }

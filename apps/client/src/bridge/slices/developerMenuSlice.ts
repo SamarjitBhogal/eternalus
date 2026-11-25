@@ -7,6 +7,7 @@ const initialState: DeveloperMenuState = {
   origins: [],
   humanLegendId: null,
   followedLegendId: null,
+  legends: [],
   controllerIds: { player: '', rover: '' },
 };
 
