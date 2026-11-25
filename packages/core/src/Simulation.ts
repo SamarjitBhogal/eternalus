@@ -56,6 +56,7 @@ import { ZONE_DEFINITIONS, ZONE_PLACEMENTS } from './content/zones/zoneCatalogue
 import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
 import { DUEL_RULES } from './content/duel/duelRules';
+import { duelMapObjects } from './match/duelArena';
 import { duelStartPoints } from './match/duelStartPoints';
 import { createDefaultMatchDirector } from './match/defaultMatchDirector';
 import { MatchTimeline } from './match/MatchTimeline';
@@ -143,7 +144,7 @@ export class Simulation {
     debug = RELEASE_DEBUG_CONFIG,
     content,
     map,
-    mapObjects,
+    mapObjects: authoredObjects,
     levelCurves,
     roster = [],
     weapons,
@@ -158,10 +159,20 @@ export class Simulation {
       seed,
       config: validConfig,
       ...(map === undefined ? {} : { map }),
-      ...(mapObjects === undefined ? {} : { mapObjects }),
+      ...(authoredObjects === undefined ? {} : { mapObjects: authoredObjects }),
       ...(roster.length === 0 ? {} : { roster }),
       ...(duel === undefined ? {} : { duel }),
     };
+    // A Duel keeps only the arena (DEC-36, DEC-348; SCRUM-445, SCRUM-446, SCRUM-450).
+    const arena = duel === undefined ? undefined : DUEL_RULES.arena;
+    const mapObjects =
+      authoredObjects === undefined || arena === undefined
+        ? authoredObjects
+        : duelMapObjects(
+            authoredObjects,
+            arena,
+            map?.features.find(({ kind }) => kind === 'cathedral')?.id,
+          );
     const { space, world, paths, walls, collisions } = Simulation.buildWorld(
       map,
       validConfig,
@@ -211,10 +222,15 @@ export class Simulation {
       weaponSource,
       LEGEND_SPECS,
     );
-    const owners = Simulation.spawnStructures(this.state, factory, structures, mapObjects);
+    const owners = Simulation.spawnStructures(this.state, factory, {
+      structures,
+      mapObjects,
+      omittedIds: arena?.omittedStructureIds ?? [],
+    });
     this.state.indexStructures();
     // Before the pipeline: zones can be guard homes, which SpawnSystem finds when it is built.
-    const zones = Simulation.spawnZones(this.state, factory);
+    const zones =
+      arena?.hasCaptureObjectives === false ? [] : Simulation.spawnZones(this.state, factory);
     this.commandContext = { state: this.state, factory };
     if (mapObjects !== undefined && map === undefined)
       throw new Error('Map objects require a generated map');
@@ -258,11 +274,19 @@ export class Simulation {
           terminalPhases: TERMINAL_MATCH_PHASES,
         }),
         state: this.state,
-        progression: { units, curves, xpSources: XP_SOURCES },
+        progression: {
+          units,
+          curves,
+          xpSources: XP_SOURCES,
+          ...(duel === undefined
+            ? {}
+            : { legendsStartAtMaxLevel: DUEL_RULES.legendsStartAtMaxLevel }),
+        },
         director,
         abilities: registry,
         validator,
         ...(duelStarts === undefined ? {} : { duelStarts }),
+        ...(arena === undefined ? {} : { spawnsMobs: arena.spawnsMobs }),
         hordes: {
           factory,
           space,
@@ -389,15 +413,23 @@ export class Simulation {
    * DEC-185 D; a gate's own outline, DEC-217 (17)). A blocking such object (a fort) is the
    * structure's body: it has no health of its own (one pool, DEC-185 B). Only towers share one
    * pool (DEC-217 (13)): the palace's and the gates' objects do not block, so they keep their own
-   * health.
+   * health. A Duel does not build the structures its `omittedStructureIds` list (DEC-348: towers,
+   * gates, camps and Strongholds; the Cathedral's gem stays).
    *
    * @returns Map object id → the id of the structure it is the body of.
    */
   private static spawnStructures(
     state: GameState,
     factory: EntityFactory,
-    structures: StructureSource,
-    mapObjects: readonly MapObject[] = [],
+    {
+      structures,
+      mapObjects = [],
+      omittedIds,
+    }: {
+      readonly structures: StructureSource;
+      readonly mapObjects?: readonly MapObject[] | undefined;
+      readonly omittedIds: readonly string[];
+    },
   ): ReadonlyMap<string, string> {
     const features = [...(state.world?.definition.features ?? [])].sort((a, b) =>
       compareById(a.id, b.id),
@@ -405,7 +437,7 @@ export class Simulation {
     const bodies = new Map(mapObjects.map((object) => [object.id, object]));
     const owners = new Map<string, string>();
     for (const { id, definitionId, position, team, laneId } of features) {
-      if (structures.has(definitionId)) {
+      if (structures.has(definitionId) && !omittedIds.includes(definitionId)) {
         const { kind, hasMapFootprint } = structures.get(definitionId);
         const placement = {
           position,
@@ -647,6 +679,7 @@ export class Simulation {
         position: feature.position,
         team: feature.team,
         area: zoneAreaOf(map, feature),
+        ...(feature.laneId !== undefined && { laneId: feature.laneId }),
       });
       state.entities.add(entity);
       spawned.push({ entityId: entity.id, kind, team: feature.team });
