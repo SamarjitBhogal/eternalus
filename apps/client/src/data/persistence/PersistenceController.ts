@@ -22,16 +22,15 @@ export class PersistenceController {
   public constructor(deps: PersistenceControllerDeps) {
     const { fallback, knownActions, now, warn } = deps;
     this.adapter =
-      fallback === undefined
-        ? deps.adapter
-        : new FallbackStorageAdapter(deps.adapter, fallback, warn);
+      fallback === undefined ? deps.adapter : new FallbackStorageAdapter(deps.adapter, fallback);
     this.settings = new SettingsRepository(this.adapter, knownActions, now, warn);
     this.loadouts = new LoadoutRepository(this.adapter, now, warn);
   }
 
   /**
-   * Opens storage, migrating it to the current schema. With an injected `fallback`, a failure
-   * warns and continues on the fallback (architecture 14 §10): nothing is saved past the session.
+   * Opens storage, migrating it to the current schema. With an injected `fallback`, a failure is
+   * reported at ERROR and storage continues on the fallback (architecture 14 §10): nothing is
+   * saved past the session.
    */
   public open(): Promise<void> {
     return this.adapter.open(STORAGE_SCHEMA);

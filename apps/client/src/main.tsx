@@ -21,7 +21,6 @@ import { LOG_TAIL_RECORDS } from './data/logging/ErrorReporter.constants';
 import { logWindowErrors } from './data/logging/logWindowErrors';
 import { RingBufferSink } from './data/logging/RingBufferSink';
 import { SinkLogger } from './data/logging/SinkLogger';
-import { IndexedDbStorageAdapter } from './data/persistence/IndexedDbStorageAdapter';
 import { MemoryStorageAdapter } from './data/persistence/MemoryStorageAdapter';
 import { PersistenceController } from './data/persistence/PersistenceController';
 import { ASSET_LICENCES } from './data/resources/assetLicences';
@@ -104,9 +103,10 @@ const developer = readDeveloperFlags(window.location.search);
 connectBusToStore(eventBus, store.dispatch);
 // What the Loadout screen offers per class, and the rules loadouts are checked and repaired by (08).
 const displayContent = loadDisplayContent();
+// Memory only, so nothing is saved past the session: disk saves (IndexedDB, with a memory fallback
+// that logs at ERROR) turn on after the settings and loadout layout changes (DEC-354 (5)).
 const persistence = new PersistenceController({
-  adapter: IndexedDbStorageAdapter.inBrowser(),
-  fallback: () => new MemoryStorageAdapter(),
+  adapter: new MemoryStorageAdapter(),
   knownActions: new Set(INPUT_ACTIONS),
   now: () => Date.now(),
   warn: (body, attributes) => {

@@ -18,37 +18,42 @@ function failingAdapter(): StorageAdapter {
 }
 
 describe('FallbackStorageAdapter', () => {
-  it('uses the primary when it opens, without warning', async () => {
-    const warn = vi.fn();
-    const adapter = new FallbackStorageAdapter(new MemoryStorageAdapter(), failingAdapter, warn);
+  it('uses the primary when it opens, without reporting', async () => {
+    const reportError = vi.fn();
+    const adapter = new FallbackStorageAdapter(new MemoryStorageAdapter(), {
+      build: failingAdapter,
+      reportError,
+    });
 
     await adapter.open(SCHEMA);
     await adapter.transaction(['things'], 'readwrite', (tx) => tx.put('things', { id: 'a' }));
 
-    expect(warn).not.toHaveBeenCalled();
+    expect(reportError).not.toHaveBeenCalled();
   });
 
-  it('warns and continues on the fallback when the primary rejects', async () => {
-    const warn = vi.fn();
-    const adapter = new FallbackStorageAdapter(
-      failingAdapter(),
-      () => new MemoryStorageAdapter(),
-      warn,
-    );
+  it('reports the failure and continues on the fallback when the primary rejects', async () => {
+    const reportError = vi.fn();
+    const adapter = new FallbackStorageAdapter(failingAdapter(), {
+      build: () => new MemoryStorageAdapter(),
+      reportError,
+    });
 
     await adapter.open(SCHEMA);
     await adapter.transaction(['things'], 'readwrite', (tx) => tx.put('things', { id: 'a' }));
     const read = await adapter.transaction(['things'], 'readonly', (tx) => tx.get('things', 'a'));
 
     expect(read).toEqual({ id: 'a' });
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('falling back'), {
+    expect(reportError).toHaveBeenCalledWith(expect.stringContaining('falling back'), {
       kind: 'unavailable',
       error: 'StorageError: no storage',
     });
   });
 
   it('rejects when the fallback fails too', async () => {
-    const adapter = new FallbackStorageAdapter(failingAdapter(), failingAdapter, vi.fn());
+    const adapter = new FallbackStorageAdapter(failingAdapter(), {
+      build: failingAdapter,
+      reportError: vi.fn(),
+    });
 
     await expect(adapter.open(SCHEMA)).rejects.toMatchObject({ kind: 'unavailable' });
   });

@@ -1,24 +1,22 @@
-import { FALLBACK_WARNING, UNKNOWN_ERROR_KIND } from './FallbackStorageAdapter.constants';
-import type { WarnReporter } from './repositories/readOrQuarantine.types';
+import { FALLBACK_ERROR, UNKNOWN_ERROR_KIND } from './FallbackStorageAdapter.constants';
+import type { StorageFallback } from './FallbackStorageAdapter.types';
 import type { StorageAdapter, StorageSchema, StorageTx } from './StorageAdapter.types';
 import { StorageError } from './StorageError';
 
 /**
- * A `StorageAdapter` that opens `primary` and, if that fails, warns and continues on the adapter
- * `fallback` builds (architecture 14 §10): nothing is saved past the session. Every later call goes
- * to whichever adapter opened.
+ * A `StorageAdapter` that opens `primary` and, if that fails, reports it at ERROR and continues on
+ * the adapter `fallback` builds (architecture 14 §10): nothing is saved past the session. Every
+ * later call goes to whichever adapter opened.
  */
 export class FallbackStorageAdapter implements StorageAdapter {
   private readonly primary: StorageAdapter;
-  private readonly fallback: () => StorageAdapter;
-  private readonly warn: WarnReporter;
+  private readonly fallback: StorageFallback;
   private active: StorageAdapter;
 
-  /** `warn` reports the switch; `fallback` is called at most once, from `open`. */
-  public constructor(primary: StorageAdapter, fallback: () => StorageAdapter, warn: WarnReporter) {
+  /** `fallback.build` is called at most once, from `open`. */
+  public constructor(primary: StorageAdapter, fallback: StorageFallback) {
     this.primary = primary;
     this.fallback = fallback;
-    this.warn = warn;
     this.active = primary;
   }
 
@@ -28,11 +26,11 @@ export class FallbackStorageAdapter implements StorageAdapter {
     try {
       await this.primary.open(schema);
     } catch (error: unknown) {
-      this.warn(FALLBACK_WARNING, {
+      this.fallback.reportError(FALLBACK_ERROR, {
         kind: error instanceof StorageError ? error.kind : UNKNOWN_ERROR_KIND,
         error: String(error),
       });
-      this.active = this.fallback();
+      this.active = this.fallback.build();
       await this.active.open(schema);
     }
   }

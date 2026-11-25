@@ -65,11 +65,15 @@ describe('PersistenceController', () => {
     );
   });
 
-  it('falls back to memory storage with one warning when the adapter does not open', async () => {
+  it('falls back to memory storage and reports it once at ERROR, not WARN (14 §10)', async () => {
+    const errors: string[] = [];
     const warnings: string[] = [];
     const persistence = new PersistenceController({
       adapter: new IndexedDbStorageAdapter(null),
-      fallback: () => new MemoryStorageAdapter(),
+      fallback: {
+        build: () => new MemoryStorageAdapter(),
+        reportError: (body) => errors.push(body),
+      },
       knownActions: new Set(['attack']),
       now: () => 0,
       warn: (body) => warnings.push(body),
@@ -79,9 +83,10 @@ describe('PersistenceController', () => {
     await persistence.saveSettings(SETTINGS);
 
     expect(await persistence.loadSettings()).toEqual(SETTINGS);
-    expect(warnings).toEqual([
+    expect(errors).toEqual([
       'storage unavailable, falling back to memory: progress will not be saved',
     ]);
+    expect(warnings).toEqual([]);
   });
 
   it('rejects a failed open when no fallback is injected', async () => {
