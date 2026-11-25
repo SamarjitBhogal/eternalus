@@ -433,8 +433,8 @@ Reply inline (`Decision: …`).
       still-connected guest is ignored (the new connection gets a fresh id), so nobody can kick a
       live player. Abuse bounds (critic): at most `MAX_HELD_GUESTS` = 100 held guests (beyond it a
       disconnect drops at once), and a match whose two seats are both held ends at once. (4) In-match: the new connection
-      takes the seat, is sent `match-found` again and then the next `state`; the opponent is not
-      told about the gap, and a queued guest whose slot is held can still be paired (the match
+      takes the seat, is sent `match-found` again and then the next `state`; the opponent is told
+      about the gap (`opponent-presence`, PR #118), and a queued guest whose slot is held can still be paired (the match
       starts with a seat that is waiting to come back). (5) New `forfeit` message (needs your confirmation; it only touches the sender's own match) so the queue-load
       bots (and a future "leave match" button) end a match at once instead of closing a socket the
       window now holds. (6) Storage: the id is saved through `PersistenceController` (new `guest`

@@ -27,6 +27,11 @@ describe('pauseMenuKeyIntent', () => {
     expect(pauseMenuKeyIntent('pause')).toEqual({ kind: 'close-overlay' });
     expect(pauseMenuKeyIntent('settings')).toEqual({ kind: 'open-overlay', overlay: 'pause' });
   });
+
+  it('opens and closes the leave confirmation in an online Duel', () => {
+    expect(pauseMenuKeyIntent(null, true)).toEqual({ kind: 'open-overlay', overlay: 'leave-duel' });
+    expect(pauseMenuKeyIntent('leave-duel', true)).toEqual({ kind: 'close-overlay' });
+  });
 });
 
 describe('pressPauseMenuKey', () => {
