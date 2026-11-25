@@ -1,7 +1,11 @@
 import { isPlayableTeam, type Snapshot } from '@eternalus/core';
 import type { MatchEndReason, RejectReason, ServerMessage } from '@eternalus/protocol';
 
-import { MAX_PLAYER_NAME_LENGTH, PLAYER_NAME_PATTERN } from '../../../bridge/domain.types';
+import {
+  GUEST_ID_PATTERN,
+  MAX_PLAYER_NAME_LENGTH,
+  PLAYER_NAME_PATTERN,
+} from '../../../bridge/domain.types';
 import { MATCH_END_REASONS, REJECT_REASONS } from './ServerMessageDecoder.constants';
 
 type Fields = Readonly<Record<string, unknown>>;
@@ -26,6 +30,10 @@ export class ServerMessageDecoder {
 
   private static toMessage(data: Fields): ServerMessage | null {
     switch (data.type) {
+      case 'welcome':
+        return typeof data.guestId === 'string' && GUEST_ID_PATTERN.test(data.guestId)
+          ? { type: 'welcome', guestId: data.guestId }
+          : null;
       case 'queue-waiting':
         return { type: 'queue-waiting' };
       case 'match-found': {
@@ -49,6 +57,13 @@ export class ServerMessageDecoder {
         return ServerMessageDecoder.isEndReason(reason) &&
           (winner === null || isPlayableTeam(winner))
           ? { type: 'match-ended', reason, winner }
+          : null;
+      }
+      case 'opponent-presence': {
+        const { status, graceMs } = data;
+        if (status === 'reconnected') return { type: 'opponent-presence', status };
+        return status === 'disconnected' && typeof graceMs === 'number' && graceMs >= 0
+          ? { type: 'opponent-presence', status, graceMs }
           : null;
       }
       case 'rejected':

@@ -4,7 +4,7 @@ description: How a match is scored and won, the capture points and their three c
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-04
+last-reviewed: 2026-11-22
 tags: [reference, game-design, objectives, capture-points, bosses, match-timeline]
 paths: ['packages/core/src/match/**']
 related:
@@ -216,8 +216,9 @@ planned match length (30 minutes, DEC-13).
 … → results`) driven by `MatchTimeline` content, not by hard-coded tick numbers. Adding a timed
   event is one timeline entry plus one handler class registered by event type.
 - `CaptureSystem` owns zone ownership and checkpoint progress and emits `capture-progressed`,
-  `capture-won`; the cooldown reduction and minion level-up are `StatusEffect`s applied by
-  handlers of those events, so the reward for holding a zone is content.
+  `capture-won`; the cooldown reduction is a `StatusEffect` applied by handlers of those events,
+  and the minion level-up is `ZoneLevelUpSystem`'s `minion-levels-granted` (DEC-258), so the
+  reward for holding a zone is content.
 - Bosses are `Boss` units with a `BossController` FSM over moves defined in content; zone lock is
   a `MovementStrategy` bound to the zone. Rewards (permanent team buff, XP, Eternal form) are
   handlers of `entity-died` with a `RemovalCause` that names the killer.

@@ -364,10 +364,22 @@ describe('Match lifecycle', () => {
 
     expect(scheduler.hasPendingFrame).toBe(false);
     expect(simulation.tick).toBe(0);
-    // The health bars' two subscriptions (DEC-195), the cut-scene's `greater-boss-summoned` and the
-    // bridge's `match-ended`; each is dropped once.
-    const types = ['damage-applied', 'entity-removed', 'greater-boss-summoned', 'match-ended'];
-    expect(on.mock.calls.map(([type]) => type)).toEqual(types);
-    expect(dropped).toEqual(types);
+    // The health bars' two subscriptions (DEC-195), the Legend bodies' `entity-removed`
+    // (DEC-295), the cut-scene's `greater-boss-summoned` and the bridge's `match-ended`; each is
+    // dropped once, the cut-scene's before the Legend bodies'.
+    expect(on.mock.calls.map(([type]) => type)).toEqual([
+      'damage-applied',
+      'entity-removed',
+      'entity-removed',
+      'greater-boss-summoned',
+      'match-ended',
+    ]);
+    expect(dropped).toEqual([
+      'damage-applied',
+      'entity-removed',
+      'greater-boss-summoned',
+      'entity-removed',
+      'match-ended',
+    ]);
   });
 });

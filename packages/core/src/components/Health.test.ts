@@ -151,4 +151,18 @@ describe('Health', () => {
     expect(health.max).toBe(120);
     expect(health.isDead).toBe(true);
   });
+
+  it('lowers the cap and clamps current health to it, never below 1 max (DEC-258)', () => {
+    const health = new Health(100);
+    health.raiseMaxAndHeal(10);
+    health.lowerMax(10);
+    expect(health.max).toBe(100);
+    expect(health.current).toBe(100);
+    health.lowerMax(500);
+    expect(health.max).toBe(1);
+    expect(health.current).toBe(1);
+    expect(() => {
+      health.lowerMax(-1);
+    }).toThrow();
+  });
 });

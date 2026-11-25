@@ -74,6 +74,17 @@ describe('KeyboardDevice', () => {
     expect(unbound.defaultPrevented).toBe(false);
   });
 
+  it('ignores keys typed into a text field: no preventDefault, no held key', () => {
+    const { device, target } = attachedKeyboard();
+    const typed = keyEvent('keydown', { code: 'KeyE', key: 'e' });
+    Object.defineProperty(typed, 'target', { value: { tagName: 'INPUT' } });
+
+    target.dispatchEvent(typed);
+
+    expect(typed.defaultPrevented).toBe(false);
+    expect(heldKeys(device).size).toBe(0);
+  });
+
   it('never prevents Tab, F5, F12 or Ctrl/Meta shortcuts, even when bound', () => {
     const { target } = attachedKeyboard();
     const events = [

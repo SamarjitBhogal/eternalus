@@ -41,7 +41,7 @@ const setUp = (owner: Team) => {
     team: 'neutral',
     area: AREA,
   });
-  point.getComponent(Capturable).setOwner(owner);
+  point.getComponent(Capturable).setOwner(owner, state.tick);
   state.entities.add(point);
   const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(TICK_RATE));
   const system = newSystem(state, factory, {
@@ -64,7 +64,7 @@ const setUp = (owner: Team) => {
     state.advanceTick();
   };
   const changeOwner = (to: Team) => {
-    const from = point.getComponent(Capturable).setOwner(to);
+    const from = point.getComponent(Capturable).setOwner(to, state.tick);
     state.events.emit('capture-point-owner-changed', { pointId: point.id, from, to });
     state.advanceTick();
   };

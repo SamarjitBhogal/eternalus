@@ -5,6 +5,7 @@ import { Health } from '../components/Health';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../config/matchPhases';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { loadScoring } from '../content/match/loadScoring';
 import { loadLevelCurves } from '../content/progression/loadLevelCurves';
 import { XP_SOURCES } from '../content/progression/xpSources';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
@@ -23,7 +24,7 @@ const config = createDefaultGameConfig();
 const UNITS = loadDefaultContent(config.tickRate);
 
 /** The match pipeline as a match builds it, a neutral gem, and a light and a dark Warrior. */
-const setUp = (assistWindowTicks?: number) => {
+const setUp = (assistWindowTicks = loadScoring(config.tickRate).assistWindowTicks) => {
   const logger = new MemoryLogger();
   const state = new GameState(config, 1);
   const pipeline = new DefaultSystemPipeline({
@@ -37,7 +38,7 @@ const setUp = (assistWindowTicks?: number) => {
     state,
     progression: { units: UNITS, curves: loadLevelCurves(), xpSources: XP_SOURCES },
     director: { update: () => undefined },
-    ...(assistWindowTicks === undefined ? {} : { assistWindowTicks }),
+    assistWindowTicks,
   });
   const registry = createDefaultEntityRegistry();
   const ids = new IdGenerator();

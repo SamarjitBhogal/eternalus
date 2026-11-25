@@ -3,7 +3,8 @@ import type { EntityId } from '../state/EntityStore.types';
 /**
  * The last enemy whose hit landed on this entity, and the tick it landed (DEC-346). `KillCredit`
  * adds it on the entity's first enemy hit and records each later one; it names the killer of a
- * death by the Cathedral gem. An entity without one has taken no enemy hit.
+ * death by the Cathedral gem. An entity without one has taken no enemy hit in this life:
+ * `LegendReset` removes it when a Legend respawns or a Duel round resets.
  */
 export class LastEnemyHit {
   /**

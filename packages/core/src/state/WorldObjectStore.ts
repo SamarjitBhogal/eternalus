@@ -1,3 +1,4 @@
+import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { TeamMembership } from '../components/TeamMembership';
@@ -20,7 +21,7 @@ export class WorldObjectStore {
    * Spawns physical objects through the existing registry/factory; terrain has no health entity.
    * An object named in `owners` gets no entity of its own: its health is its structure's (one pool,
    * DEC-185 B: a lane tower's fort map object; only towers, DEC-217 (13)), so a hit on it is a hit
-   * on the structure.
+   * on the structure. An `isUnbreakable` object's collider is unbreakable, so it takes no damage.
    *
    * @param options - The objects, how to spawn them, and the structures some of them are bodies of.
    */
@@ -54,6 +55,8 @@ export class WorldObjectStore {
       entity.addComponent(new MapObjectBody(object));
       // Stand-in for the Structure family's Team (07 §1, sprint 2.1): own-side attacks are refused.
       if (object.team !== undefined) entity.addComponent(new TeamMembership(object.team));
+      // A Duel's Cathedral wall (DEC-348): `BreakabilityStep` blocks every hit on it.
+      if (object.isUnbreakable === true) entity.getComponent(Collider).setUnbreakable(true);
       entities.add(entity);
       this.entityObjects.set(entity.id, object);
       this.records.push({

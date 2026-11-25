@@ -56,6 +56,7 @@ export class CathedralInteriorBuilder extends MapDecorationBuilder {
       G.northDoor.height,
       P.doorInlay,
     );
+    this.markDuelBarrier();
     this.rect(
       'cathedral-interior-south-door',
       G.southDoor.x,
@@ -64,6 +65,7 @@ export class CathedralInteriorBuilder extends MapDecorationBuilder {
       G.southDoor.height,
       P.doorInlay,
     );
+    this.markDuelBarrier();
     this.isFootprint = undefined;
     for (const [side, door] of [
       ['west', G.westDoor],
@@ -78,6 +80,7 @@ export class CathedralInteriorBuilder extends MapDecorationBuilder {
         door.height,
         P.doorInlay,
       );
+      this.markDuelBarrier();
     }
     this.isFootprint = undefined;
     this.ellipse('cathedral-interior-capture-border', G.cathedral.x, 450, 35, 35, P.doorInlay);

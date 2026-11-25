@@ -93,6 +93,27 @@ export class StateHasher {
       });
       parts.push(['guards', ...posts]);
     }
+    // Dead Legends waiting to respawn (DEC-295) are appended only while some wait, for the same
+    // reason: each one's team, return tick and owed XP, then the waiting Legend's own fields, as
+    // an entity in the store hashes them, since it is out of the store meanwhile.
+    if (state.respawns.size > 0) {
+      const waiting: unknown[] = [];
+      state.respawns.forEach(({ legend, team, returnsAtTick, owedXp }) => {
+        waiting.push([
+          team,
+          returnsAtTick,
+          owedXp.map(({ cause, victimId, victimTeam, xp, maxLevels }) => [
+            cause,
+            victimId,
+            victimTeam,
+            xp,
+            maxLevels ?? null,
+          ]),
+          StateHasher.fieldsOf(legend),
+        ]);
+      });
+      parts.push(['respawns', ...waiting]);
+    }
     // Ally damage (DEC-89) is appended only while some is counted, for the same reason.
     if (state.allyDamage.size > 0) {
       const tallies: unknown[] = [];
@@ -202,6 +223,8 @@ export class StateHasher {
         capture.reachedBy('light'),
         capture.reachedBy('dark'),
         capture.reachedBy('neutral'),
+        // The zone level-up's clock (DEC-258).
+        capture.ownedSinceTick,
       ]);
     }
     const gem = entity.findComponent(CathedralGemState);
@@ -210,7 +233,14 @@ export class StateHasher {
     }
     const veterancy = entity.findComponent(Veterancy);
     if (veterancy !== undefined) {
-      fields.push(['veterancy', veterancy.kills, veterancy.level]);
+      fields.push([
+        'veterancy',
+        veterancy.kills,
+        veterancy.level,
+        veterancy.earned,
+        veterancy.granted,
+        veterancy.grantedBy,
+      ]);
     }
     const progression = entity.findComponent(Progression);
     if (progression !== undefined) {

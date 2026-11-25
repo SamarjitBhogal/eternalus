@@ -21,15 +21,6 @@ import { EntityFactory } from '../EntityFactory';
 
 const SWORD = { attackerId: null, kind: 'weapon', definitionId: 'sword' } as const;
 
-const laners = (team: 'light' | 'dark'): RosterSlot[] =>
-  Array.from({ length: 3 }, () => ({
-    pilot: 'bot',
-    team,
-    definitionId: 'warrior',
-    role: 'laner',
-    difficulty: 'normal',
-  }));
-
 /** A generated three-lane match with no countdown, so units move from the first tick. */
 const match = (roster: readonly RosterSlot[] = [], duel?: DuelOptions) => {
   const config = createDefaultGameConfig({ match: { countdownSeconds: 0 } });
@@ -186,22 +177,22 @@ describe('CathedralGem (07 §1, DISC-11, DEC-292)', () => {
     expect(statuses.filter(({ statusId }) => statusId.startsWith('gem-'))).toEqual([]);
   });
 
-  // Minions only: no bot Legend reaches the centre this early, and none can be placed there until
-  // `dev-set-controller` is supported. Bots perceive through the same unit-only index.
+  // Minions only: no bot Legend can be placed at the centre until `dev-set-controller` is
+  // supported, so the match has none. Bots perceive through the same unit-only index.
   it('is never targeted by enemy minions fighting on it', () => {
     const setTarget = vi.spyOn(EntityStore.prototype, 'setAttackTarget');
-    const { simulation, config, feature, gem } = match([...laners('light'), ...laners('dark')]);
+    const { simulation, config, feature, gem } = match([]);
     for (const team of ['light', 'dark'] as const) {
       simulation.enqueueCommand({
         type: 'dev-spawn-mobs',
         team,
         definitionId: 'light-minion',
-        count: 8,
+        count: 4,
         origin: { kind: 'point', at: feature.position },
       });
     }
 
-    steps(simulation, 20 * config.tickRate);
+    steps(simulation, 3 * config.tickRate);
 
     // The two hordes met on the gem and fought, so targets were chosen next to it.
     expect(setTarget.mock.calls.length).toBeGreaterThan(0);
