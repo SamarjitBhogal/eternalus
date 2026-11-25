@@ -55,6 +55,12 @@ export function connectBusToStore(
     bus.on('duel-ended', (outcome) => dispatch(match.duelEnded(outcome))),
     bus.on('duel-versus', (names) => dispatch(match.versusChanged(names))),
     bus.on('duel-state', (state) => dispatch(match.duelHudChanged(state))),
+    bus.on('duel-opponent-presence', ({ graceMs }) =>
+      dispatch(match.opponentPresenceChanged(graceMs)),
+    ),
+    bus.on('duel-connection', ({ isReconnecting }) =>
+      dispatch(match.connectionChanged(isReconnecting)),
+    ),
     bus.on('hud-state', ({ player }) => dispatch(hudSlice.actions.hudStateChanged(player))),
     bus.on('structure-state', ({ structures }) => dispatch(match.structuresChanged(structures))),
     bus.on('capture-state', ({ points }) => dispatch(match.capturePointsChanged(points))),

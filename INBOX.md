@@ -16,6 +16,19 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **`feat/duel-arena-only-legends` (PR #145, SCRUM-445, SCRUM-446, SCRUM-447, SCRUM-450):
+      one owner item left.** Q1 and Q2 are answered and built: DEC-348 (2026-11-23: no
+      structures, no minions or host units, trees, houses and rocks stay, the gem stays; the
+      Cathedral's walls cannot break in a Duel). (Q3) The decisions-log row for
+      SCRUM-449 (modifying DEC-78: a Duel result shows both players' final kill score and no
+      countdown), and whether `DUEL_RULES.arena` and `startOffset` belong in the replay setup
+      so a content change cannot alter an old Duel's replay. Decision: …
+
+- [ ] **Duel closed-door drawing (request, from PR #145, SCRUM-450).** The four Cathedral
+      doorways block in a Duel but look open. Draw them closed in a Duel or confirm the look is
+      fine. Also: PR #118 adds `bridge/selectors/selectIsDuel.ts`; PR #145 carries the same file
+      byte for byte, so one selector remains whichever merges first.
+
 - [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu-legends`) — developer menu, slice 2
       (add/remove Legends, FR-097) built; decisions for the owner.** (a) `dev-spawn-legend` takes
       `{ team, definitionId }`, not the `{ team, definitionId, controllerId, at? }` of 13 section
@@ -37,6 +50,7 @@ Reply inline (`Decision: …`).
       outside sim mode (`human-legend`). DEC-355 (2026-11-23, Owner Calls page) closes (c), (d)
       and (e): "Keep all three as built" (`dev-removed` stays, the character-select class list,
       one Team control). (f) and (g) stay open.
+
 - [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu`) — developer menu, slice 1 built;
       the rest needs owner and core work.** Built: `?dev=1` enables the menu, F1
       (`toggle-developer-menu`) opens it, and it spawns a horde of lane minions at a map structure
@@ -382,6 +396,87 @@ Reply inline (`Decision: …`).
   - **(2) done by DEC-234** (#85, 2026-11-09): the inside test runs once, in `aimPointOf`, which
     returns an `AimedAt` tag; `isInReach` and `facingPointOf` read it. The tidy PR builds no
     helper for it.
+- [ ] **Server image and the connection cap behind a platform proxy (SCRUM-404, 2026-11-13) — owner
+      decision before deploying.** `apps/server/Dockerfile` builds the Duel server image (tested:
+      it runs, `HEALTHCHECK` is healthy and two bots finish a Duel against it). Open: (1)
+      `ClientAddress` reads `X-Forwarded-For` only when the peer is loopback (`tailscale serve`).
+      On Fly.io or Render the peer is the platform's proxy, not loopback, so every player would
+      share one address and the per-IP cap of 10 would limit the whole server to about 10
+      connections. Either add an environment switch that reads the forwarded address from the
+      platform's proxy (never from a directly reachable server) or raise the cap for that
+      deployment; this touches ADR 0016 point 7, so it is yours to choose. (2) The platform's
+      health check cannot reach `/health` (it listens on the container's loopback, `OPS_HOST`);
+      use a TCP check on the WebSocket port, or tell me to make `OPS_HOST` configurable. (3) TLS is
+      the platform's job; the client must be built with `VITE_DUEL_SERVER_URL=wss://<host>`. (4)
+      Which platform: see the comparison on SCRUM-404.
+
+- [ ] **Glicko-2 rating and skill-based pairing (SCRUM-431, 2026-11-13) — interim choices, owner to
+      confirm or change.** (1) Storage: ratings and records live in memory by guest id
+      (`PlayerRatings`); the server has no database, so a restart loses them, and a guest id only
+      survives a reconnect, not a new session: persistence needs plan question 35 (database) and
+      real accounts. (2) Rating period: each match is its own period (simple); a batch per day
+      would be closer to Glickman's advice. (3) Results: a leaver or disconnect-after-window counts
+      as a loss for the leaver and a win for the other; a draw (no winner, or a failed simulation
+      step) scores 0.5 and clears the streak. (4) Pairing: closest rating first; allowed gap =
+      100 + 25 per second of the longer waiter, unlimited after 30 s, checked on join and every 1 s
+      (all `// TUNE:` in `DuelQueue.constants.ts`). (5) Glicko-2 defaults 1500 / 350 / 0.06, tau 0.5
+      (`Glicko2.constants.ts`). (6) Nothing shows ratings to players and `match-found` does not carry
+      the opponent's rating (no protocol change); say if you want either. (7) The seat order is
+      still arrival order (question 45).
+      (8) Known limit: one person with two connections can farm wins when both seats are held (the
+      guest who disconnects second is dropped first), and a forfeit-then-return loop re-enters as a
+      fresh 1500 / 350; bounded because ratings are not shown. (9) Streak and matches are stored but
+      pairing does not use them yet (DEC-36 groundwork). (10) Plan question 47 (how long a player
+      waits) is answered by the 30 s timeout, pending your confirmation. (11) A held (disconnected)
+      queued guest can still be paired, and the sweeps make that likelier.
+  - **Answered in part 2026-11-20 by DEC-297 (3)**: the in-memory pairing is accepted as an
+    interim until sprint 4; FR-118 (ratings in a database) is scheduled for sprint 4; question 35
+    must be answered before sprint 4 starts. Still open: (2), (5), (6), (7), (10).
+  - **Changed by the PR #104 review fixes (2026-11-20)**: (1) a guest id and its rating now also
+    survive the end of a Duel and a new connection (every match end closes both sockets, which
+    used to forget them), for the newest `MAX_KNOWN_GUESTS` (10 000, `// TUNE:`, a memory bound)
+    gone guests, until a server restart. (8) When both seats end up held, the guest who left first
+    takes the loss (DEC-250 (4)); a forfeit-then-return now keeps the lower rating. (11) A held
+    queued guest is never paired; it keeps its place and wait time.
+
+- [ ] **Guest identity, presence and reconnect (SCRUM-430, 2026-11-13) — interim choices, owner to
+      confirm or change.** (1) Id: `randomUUID` (122 random bits), sent as `welcome`, a bearer token
+      never logged; a malformed or unknown id gets a fresh one. (2) Window: `RECONNECT_WINDOW_MS` =
+      10 s (`// TUNE:`), timed on the existing `TickScheduler` as a one-shot; plan question 44
+      (window, forfeit stats, deploys) is still yours. (3) Duplicate: only a HELD guest can be resumed; the id of a
+      still-connected guest is ignored (the new connection gets a fresh id), so nobody can kick a
+      live player. Abuse bounds (critic): at most `MAX_HELD_GUESTS` = 100 held guests (beyond it a
+      disconnect drops at once), and a match whose two seats are both held ends at once. (4) In-match: the new connection
+      takes the seat, is sent `match-found` again and then the next `state`; the opponent is told
+      about the gap (`opponent-presence`, PR #118), and a queued guest whose slot is held can still be paired (the match
+      starts with a seat that is waiting to come back). (5) New `forfeit` message (needs your confirmation; it only touches the sender's own match) so the queue-load
+      bots (and a future "leave match" button) end a match at once instead of closing a socket the
+      window now holds. (6) Storage: the id is saved through `PersistenceController` (new `guest`
+      store), which is in memory until IndexedDB lands, so it survives a reconnect but not a page
+      reload yet. (7) The client still ends the Duel as lost on a dropped socket; automatic rejoin
+      is a follow-up.
+  - **Answered in part 2026-11-20 by DEC-297 (1), (2)**: (2) the 10 s window is approved, and a
+    timed-out drop is a leave and a loss (DEC-250 (4)): the player who stayed wins after 10 s.
+    (5) `forfeit` is approved as built (the sender's own match only). Still open: (1), (3), (6),
+    (7), and the rest of plan question 44 (forfeit stats, deploys).
+  - **Changed by the PR #104 review fixes (2026-11-20)**: (4) a queued guest whose slot is held
+    is no longer paired; on a resume `welcome` comes before `queue-waiting` or `match-found`.
+  - **Changed by the PR #104 review round 3 (2026-11-22)**: only a guest with a finished match
+    (a `PlayerRatings` record) is remembered after its socket closes, so idle connect-and-close
+    loops cannot push rated guests out; an unrated guest that comes back gets a fresh id. Still
+    open for the owner: how long a remembered guest id should live (a time limit, not just the
+    `MAX_KNOWN_GUESTS` cap), and whether the game reconnects a dropped Duel player on its own (7).
+  - **Answered 2026-11-23 by DEC-349**: (7) the client reconnects on its own: "Build automatic
+    reconnect now, before this work merges: the player sees "Reconnecting..." and gets back in with
+    no click". Built in PR #104 (2026-11-25): `DuelSession` `reconnecting`, back-off retries inside
+    the 10 s window, the HUD's "Reconnecting...", lost only when the window ends. Still open: how
+    long a remembered guest id should live, and the architecture critic's pass on that lifetime
+    (the B1 design, a remembered rated guest; not yet run). New, for the team: the server notices a
+    half-open socket only through the heartbeat (`HEARTBEAT_INTERVAL_MS`, 15 s), longer than the
+    10 s window, so a reconnect after a drop the server has not seen is queued, not seated; the
+    client leaves that queue and retries, and if the server never sees the drop inside the window
+    the Duel is lost. Shorten the heartbeat, or end the old seat when its guest id comes back?
+
 - [ ] **Per-address connection cap and `X-Forwarded-For` (SCRUM-432 critic, 2026-11-12) — owner /
       security, not introduced by this branch.** `ClientAddress.resolve` (`apps/server/src/transport/`)
       takes the FIRST `X-Forwarded-For` entry when the peer is loopback. Behind `tailscale serve`
@@ -401,6 +496,32 @@ Reply inline (`Decision: …`).
       the `MAX_CONNECTIONS = 500` cap. DEC-37 asks for "hundreds or thousands" of players. Approve
       a follow-up that finds the cause: an `onClose` handler in the bots, or a refusal counter in
       the server.
+
+- [ ] **Tick time: bench evidence, four questions (`chore/minion-perf-check`, PR #83; rewritten
+      2026-11-22 to the current state).** `npm run bench` runs a 3-lane match with the shipped bot
+      roster (10 bot Legends per team), fills each team to 144 mobs, then to the cap, and times 900
+      ticks of the fight from the first death after the countdown. Latest run (2026-11-22, AMD
+      Ryzen AI 9 HX 370, Node 24, load about 6): p95 4.50 ms at 144/team (143/144 → 92/98 mobs over
+      the window), p95 4.85 ms / max 8.59 ms at 290/team (no target, DEC-137 (1)). This is
+      combat-window evidence, not an NFR-021 pass. NFR-025's per-system split (AI ≤ 1.5 ms) is not
+      measured: it waits for the `Profiler` port (15 §6). The 2026-11-07 figures in `PROGRESS.md`
+      are not comparable (that bench later lost its bots). Questions:
+      (1) **Reference laptop:** the targets name "the reference dev laptop"; which machine is it?
+      (2) **Sampling rule (CodeRabbit on PR #83):** the population falls during the timed fight.
+      Does NFR-021's "at 144 units per team" mean the fill, or must the bench hold 144 per team for
+      the whole window (respawning the dead)?
+      (3) **CI step sign-off:** the bench step in `ci.yml` (17 to 19 s per job) and the root `vite`
+      devDependency rest on the author's PR description (ADR 0018 (3)). Do you also want an ADR or
+      a DEC row, or should the step move to `workflow_dispatch` only? The `ci.yml` header and the
+      guardrails "CI gate" row still say CI mirrors `npm run check` one-to-one; they get one line
+      each once you answer.
+      (4) **Better than the design (DEC-139), optional:** move the bench scenario (roster, fill,
+      wait for contact) into a typed core module with a vitest test, leaving only the clock in the
+      `.mjs`; `tsc` would then catch API changes such as DEC-173's `pilot`, and a test would prove
+      the hordes fight without a timed CI step. Recommendation: yes, after (3).
+  - Answered 2026-11-23 (Owner Calls page, relayed on PR #83), recorded as DEC-351: (1) the CI
+    runner (`ubuntu-latest`); (2) the fill is enough, report the start and end counts; (3) the
+    step stays on every pull request, as built. Done in PR #83. Only (4) stays open.
 
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on
@@ -483,6 +604,25 @@ Reply inline (`Decision: …`).
       ternary and each rule counts only its own posts. Built today: `GroupGuardRespawn` counts
       only the home's own posts (same `checkpoint` marker), which closes the gap with no new
       field.
+      **Update 2026-11-23 (owner answers, relayed on PR #130):** (4)'s boss-group question, (6)
+      and (7) are answered as DEC-350: the boss group levels; a late team defender appears only
+      while its team still owns the point, and is cancelled when the point changes owner; at most
+      10 defenders per capture point. They are built in M6c. (3)(b), (5) and (9) still wait for
+      sign-off.
+
+- [x] **Minion M10 better-than-design items (`feat/minion-m10-zone-level-up`, 2026-11-15,
+      critic; DEC-139) — sign-off per item.** (a) A `MinionLevelSystem` after
+      `ZoneLevelUpSystem` that owns every minion level change: `VeterancySystem` would announce
+      kill levels by event too, so no listener changes state inside a handler (it removes 03 §4's
+      one exception). (b) `StatusEffects.removeStacks(id, n)` through the applier, so a lost level
+      emits one event, not a `status-expired` plus one `status-applied` per remaining level.
+      (c) The zone level-up's hold time and levels as fields of each capture-point
+      `ZoneDefinition`, looked up by id (balancing.md's knob table), not one global constant.
+      Approve any, or leave as built. Leaving (a) as built keeps 03 §4's one exception (a
+      listener that changes state in its handler), which then needs your sign-off in your own
+      words (PR #131 review S2, 2026-11-22).
+      **Answered 2026-11-23 (owner, relayed on PR #131), DEC-353:** "Build all three in #131
+      before it merges". Done in PR #131.
 
 - [ ] **Minion plan MVP gaps (3): who owns the zone cooldown reduction (2026-11-06, PR #81).**
       The zone's cooldown reduction (FR-041, 07 §7) is Legend-side, not minion work, and no plan
@@ -769,6 +909,18 @@ Reply inline (`Decision: …`).
     shield bars and anything else on the Legend (no ability cooldowns exist yet to reset).
     (9) `DUEL_RULES.startOffset` is read from live content, not the replay setup, so retuning it
     changes old Duel replays.
+  - 2026-11-20 (claudiodh, `feat/duel-legend-max-level`, SCRUM-444): every Legend in a Duel
+    starts at its level curve's cap (`DUEL_RULES.legendsStartAtMaxLevel`); a Duel has no minions
+    (owner, 2026-11-23). Decisions I took, each to confirm or change: (1) the start is
+    no XP award and no level-up, so it emits no `xp-gained` and no `level-up` (a later level-up
+    sound or toast would otherwise fire 49 times at the start). (2) The rule applies to every
+    Legend that spawns in a Duel, bots included (a Duel roster has none today). (3) Like
+    `startOffset`, the rule is read from live content, not the replay setup, so changing it
+    changes old Duel replays. (4) Legends still earn XP in a Duel; at the cap it lifts nothing.
+    (5) Effect to check: level raises only health and aether (basic-attack scaling is not built),
+    so a max-level Legend has about 4.9 times its level-1 health against the same damage, and a
+    Duel kill takes about 2.5 to 3 times as long as before (the core Duel tests' fights went from
+    4–8 s to 12–18 s). Is that the Duel pace you want, or should `killTarget` or damage change?
 - [ ] **DEC-11 — still open after your answer** (the approvals are recorded as DEC-11 in
       `docs/reference/game-design/13-owner-decisions-log.md`, 2026-10-10; your chat clarifications
       of 2026-10-10 answered the former (1) and (2), see Done). (3) Your Roar row says Legends only
