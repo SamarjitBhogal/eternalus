@@ -1,6 +1,3 @@
-/** Milliseconds in a second. */
-export const MS_PER_SECOND = 1000;
-
 /** How long the run waits after closing the sockets, so the last messages land. */
 export const CLOSE_GRACE_MS = 300;
 

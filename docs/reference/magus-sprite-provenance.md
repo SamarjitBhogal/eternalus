@@ -42,7 +42,8 @@ Match byte allowance approved by Gurshaan on 2026-11-11; atlases registered unde
 
 ```
 
-The record above is from PR #134. In the PR #170 rebuild, ADR 0029 does not exist. The proposed
-byte budget for these atlases is in ADR 0027, which is a draft: the owner has not ruled on it
-(DEC-298 (6)). The approval of Gurshaan named above is not an owner approval. The match loads
-only the selected Legend's atlas, in its own asset group.
+The record above is from PR #134. Its draft ADR 0029 is not part of the PR #170 rebuild; the
+number 0029 now belongs to a different ADR (the tick bench). The proposed byte budget for these
+atlases is in ADR 0027, which is a draft: the owner has not ruled on it (DEC-298 (6)). The
+approval of Gurshaan named above is not an owner approval. The match loads only the selected
+Legend's atlas, in its own asset group.
