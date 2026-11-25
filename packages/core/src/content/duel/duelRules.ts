@@ -7,8 +7,8 @@ export const DUEL_RULES = {
   /** How far each Legend starts from the Cathedral's centre, light west, dark east, in world units. */
   startOffset: 50, // TUNE: inside the transept, outside the capture floor (radius 31)
   /**
-   * Every Legend enters a Duel at its level curve's cap (SCRUM-444). Minions and other mobs keep
-   * their normal level and veterancy.
+   * Every Legend enters a Duel at its level curve's cap (SCRUM-444). Only Legends are raised; a
+   * mob added from the developer menu keeps its normal level.
    */
   legendsStartAtMaxLevel: true,
 } as const;

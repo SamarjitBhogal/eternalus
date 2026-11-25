@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { DUEL_RULES } from './content/duel/duelRules';
-import { MOB_DEFINITIONS } from './content/mobs/mobCatalogue';
 import { LEGEND_LEVEL_CURVE } from './content/progression/levelCurves';
 import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { NullLogger } from './diagnostics/NullLogger';
@@ -80,7 +79,7 @@ describe('Simulation: a Duel', () => {
     expect(snapshot.match.duel).toEqual({ kills: { light: 0, dark: 0 }, killTarget: 2 });
   });
 
-  it('starts both Legends at max level and spawns minions at their normal level (SCRUM-444)', () => {
+  it('starts both Legends at max level (SCRUM-444)', () => {
     const duel = build();
     const ordinary = new Simulation({
       config,
@@ -91,10 +90,8 @@ describe('Simulation: a Duel', () => {
       mapObjects,
       roster: ROSTER,
     });
-    const isMinion = (entity: Snapshot['entities'][number]) =>
-      entity.definitionId.endsWith('-minion');
     for (const sim of [duel, ordinary]) {
-      for (let i = 0; i < 300 && !sim.snapshot().entities.some(isMinion); i += 1) sim.step();
+      for (let i = 0; i < 10; i += 1) sim.step();
     }
     const duelSnapshot = duel.snapshot();
     const ordinarySnapshot = ordinary.snapshot();
@@ -107,12 +104,6 @@ describe('Simulation: a Duel', () => {
       expect(legend.health?.max).toBeGreaterThan(usual.health?.max ?? Infinity);
       expect(legend.health?.current).toBe(legend.health?.max);
       expect(legend.aether?.max).toBeGreaterThan(usual.aether?.max ?? Infinity);
-    }
-    const minions = duelSnapshot.entities.filter(isMinion);
-    expect(minions.length).toBeGreaterThan(0);
-    for (const minion of minions) {
-      expect(minion.progression).toBeNull();
-      expect(minion.health?.max).toBe(MOB_DEFINITIONS.get(minion.definitionId).baseHealth);
     }
   });
 
