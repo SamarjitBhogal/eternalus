@@ -83,7 +83,7 @@ describe('LockedSelectStep', () => {
     const html = render({ classId: 'magus', specId: 'oracle' }, TEST_CONTENT, loadouts);
 
     expect(html).toContain(`class="${styles.weapon ?? '-'}"`);
-    expect(html).toContain(text.weaponLine('Wuuthrad'));
+    expect(html).toContain('Weapon: Wuuthrad');
   });
 
   it('renders nothing before a class is picked', () => {
