@@ -42,6 +42,18 @@ describe('MatchWorld', () => {
     expect(world.grid.isWalkableAt(42, 20)).toBe(true);
   });
 
+  it('finds the Stronghold of each team, as a copy', () => {
+    const grid = (map: typeof TWO_LANE_MAP) =>
+      MatchGrid.build(map, [], { cellSize: 2, features: {} });
+    const world = new MatchWorld(TWO_LANE_MAP, grid(TWO_LANE_MAP));
+
+    expect(world.strongholdOf('light')).toEqual({ x: 10, y: 30 });
+    expect(world.strongholdOf('dark')).toEqual({ x: 190, y: 30 });
+    expect(world.strongholdOf('light')).not.toBe(world.strongholdOf('light'));
+    const noFeatures = { ...TWO_LANE_MAP, features: [] };
+    expect(new MatchWorld(noFeatures, grid(noFeatures)).strongholdOf('light')).toBeUndefined();
+  });
+
   it('faces a unit toward the enemy Stronghold at spawn, and a neutral one nowhere (DEC-216 (6))', () => {
     const matchGrid = MatchGrid.build(TWO_LANE_MAP, [], { cellSize: 2, features: {} });
     const world = new MatchWorld(TWO_LANE_MAP, matchGrid);
