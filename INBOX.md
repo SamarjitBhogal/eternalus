@@ -73,6 +73,19 @@ Reply inline (`Decision: …`).
       status, `persistenceSlice` or "progress will not be saved" banner is built; the fallback
       is only logged.
 
+- [ ] **`feat/duel-arena-only-legends` (PR #145, SCRUM-445, SCRUM-446, SCRUM-447, SCRUM-450):
+      one owner item left.** Q1 and Q2 are answered and built: DEC-348 (2026-11-23: no
+      structures, no minions or host units, trees, houses and rocks stay, the gem stays; the
+      Cathedral's walls cannot break in a Duel). (Q3) The decisions-log row for
+      SCRUM-449 (modifying DEC-78: a Duel result shows both players' final kill score and no
+      countdown), and whether `DUEL_RULES.arena` and `startOffset` belong in the replay setup
+      so a content change cannot alter an old Duel's replay. Decision: …
+
+- [ ] **Duel closed-door drawing (request, from PR #145, SCRUM-450).** The four Cathedral
+      doorways block in a Duel but look open. Draw them closed in a Duel or confirm the look is
+      fine. Also: PR #118 adds `bridge/selectors/selectIsDuel.ts`; PR #145 carries the same file
+      byte for byte, so one selector remains whichever merges first.
+
 - [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu-legends`) — developer menu, slice 2
       (add/remove Legends, FR-097) built; decisions for the owner.** (a) `dev-spawn-legend` takes
       `{ team, definitionId }`, not the `{ team, definitionId, controllerId, at? }` of 13 section
@@ -94,6 +107,7 @@ Reply inline (`Decision: …`).
       outside sim mode (`human-legend`). DEC-355 (2026-11-23, Owner Calls page) closes (c), (d)
       and (e): "Keep all three as built" (`dev-removed` stays, the character-select class list,
       one Team control). (f) and (g) stay open.
+
 - [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu`) — developer menu, slice 1 built;
       the rest needs owner and core work.** Built: `?dev=1` enables the menu, F1
       (`toggle-developer-menu`) opens it, and it spawns a horde of lane minions at a map structure
@@ -490,8 +504,8 @@ Reply inline (`Decision: …`).
       still-connected guest is ignored (the new connection gets a fresh id), so nobody can kick a
       live player. Abuse bounds (critic): at most `MAX_HELD_GUESTS` = 100 held guests (beyond it a
       disconnect drops at once), and a match whose two seats are both held ends at once. (4) In-match: the new connection
-      takes the seat, is sent `match-found` again and then the next `state`; the opponent is not
-      told about the gap, and a queued guest whose slot is held can still be paired (the match
+      takes the seat, is sent `match-found` again and then the next `state`; the opponent is told
+      about the gap (`opponent-presence`, PR #118), and a queued guest whose slot is held can still be paired (the match
       starts with a seat that is waiting to come back). (5) New `forfeit` message (needs your confirmation; it only touches the sender's own match) so the queue-load
       bots (and a future "leave match" button) end a match at once instead of closing a socket the
       window now holds. (6) Storage: the id is saved through `PersistenceController` (new `guest`
@@ -647,6 +661,25 @@ Reply inline (`Decision: …`).
       ternary and each rule counts only its own posts. Built today: `GroupGuardRespawn` counts
       only the home's own posts (same `checkpoint` marker), which closes the gap with no new
       field.
+      **Update 2026-11-23 (owner answers, relayed on PR #130):** (4)'s boss-group question, (6)
+      and (7) are answered as DEC-350: the boss group levels; a late team defender appears only
+      while its team still owns the point, and is cancelled when the point changes owner; at most
+      10 defenders per capture point. They are built in M6c. (3)(b), (5) and (9) still wait for
+      sign-off.
+
+- [x] **Minion M10 better-than-design items (`feat/minion-m10-zone-level-up`, 2026-11-15,
+      critic; DEC-139) — sign-off per item.** (a) A `MinionLevelSystem` after
+      `ZoneLevelUpSystem` that owns every minion level change: `VeterancySystem` would announce
+      kill levels by event too, so no listener changes state inside a handler (it removes 03 §4's
+      one exception). (b) `StatusEffects.removeStacks(id, n)` through the applier, so a lost level
+      emits one event, not a `status-expired` plus one `status-applied` per remaining level.
+      (c) The zone level-up's hold time and levels as fields of each capture-point
+      `ZoneDefinition`, looked up by id (balancing.md's knob table), not one global constant.
+      Approve any, or leave as built. Leaving (a) as built keeps 03 §4's one exception (a
+      listener that changes state in its handler), which then needs your sign-off in your own
+      words (PR #131 review S2, 2026-11-22).
+      **Answered 2026-11-23 (owner, relayed on PR #131), DEC-353:** "Build all three in #131
+      before it merges". Done in PR #131.
 
 - [ ] **Minion plan MVP gaps (3): who owns the zone cooldown reduction (2026-11-06, PR #81).**
       The zone's cooldown reduction (FR-041, 07 §7) is Legend-side, not minion work, and no plan
@@ -870,6 +903,18 @@ Reply inline (`Decision: …`).
     shield bars and anything else on the Legend (no ability cooldowns exist yet to reset).
     (9) `DUEL_RULES.startOffset` is read from live content, not the replay setup, so retuning it
     changes old Duel replays.
+  - 2026-11-20 (claudiodh, `feat/duel-legend-max-level`, SCRUM-444): every Legend in a Duel
+    starts at its level curve's cap (`DUEL_RULES.legendsStartAtMaxLevel`); a Duel has no minions
+    (owner, 2026-11-23). Decisions I took, each to confirm or change: (1) the start is
+    no XP award and no level-up, so it emits no `xp-gained` and no `level-up` (a later level-up
+    sound or toast would otherwise fire 49 times at the start). (2) The rule applies to every
+    Legend that spawns in a Duel, bots included (a Duel roster has none today). (3) Like
+    `startOffset`, the rule is read from live content, not the replay setup, so changing it
+    changes old Duel replays. (4) Legends still earn XP in a Duel; at the cap it lifts nothing.
+    (5) Effect to check: level raises only health and aether (basic-attack scaling is not built),
+    so a max-level Legend has about 4.9 times its level-1 health against the same damage, and a
+    Duel kill takes about 2.5 to 3 times as long as before (the core Duel tests' fights went from
+    4–8 s to 12–18 s). Is that the Duel pace you want, or should `killTarget` or damage change?
 - [ ] **DEC-11 — still open after your answer** (the approvals are recorded as DEC-11 in
       `docs/reference/game-design/13-owner-decisions-log.md`, 2026-10-10; your chat clarifications
       of 2026-10-10 answered the former (1) and (2), see Done). (3) Your Roar row says Legends only

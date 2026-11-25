@@ -77,7 +77,13 @@ export class SessionController {
             allies: [],
             enemies: [],
           });
+          // The setup reset the match slice: tell it again about an opponent who dropped during VERSUS.
+          const graceMs = this.duel.opponentDisconnectedGraceMs;
+          if (graceMs !== null) deps.bus.emit('duel-opponent-presence', { graceMs });
           this.transition('match-loading', null);
+        },
+        opponentPresence: (graceMs) => {
+          deps.bus.emit('duel-opponent-presence', { graceMs });
         },
         reconnecting: () => {
           deps.bus.emit('duel-connection', { isReconnecting: true });
@@ -135,6 +141,9 @@ export class SessionController {
       },
       leaveDuelQueue: () => {
         this.duel.leave();
+      },
+      forfeitDuel: () => {
+        this.duel.forfeit();
       },
       lockIn: () => {
         this.lockIn();
