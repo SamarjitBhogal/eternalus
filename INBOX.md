@@ -410,6 +410,16 @@ Reply inline (`Decision: …`).
     loops cannot push rated guests out; an unrated guest that comes back gets a fresh id. Still
     open for the owner: how long a remembered guest id should live (a time limit, not just the
     `MAX_KNOWN_GUESTS` cap), and whether the game reconnects a dropped Duel player on its own (7).
+  - **Answered 2026-11-23 by DEC-349**: (7) the client reconnects on its own: "Build automatic
+    reconnect now, before this work merges: the player sees "Reconnecting..." and gets back in with
+    no click". Built in PR #104 (2026-11-25): `DuelSession` `reconnecting`, back-off retries inside
+    the 10 s window, the HUD's "Reconnecting...", lost only when the window ends. Still open: how
+    long a remembered guest id should live, and the architecture critic's pass on that lifetime
+    (the B1 design, a remembered rated guest; not yet run). New, for the team: the server notices a
+    half-open socket only through the heartbeat (`HEARTBEAT_INTERVAL_MS`, 15 s), longer than the
+    10 s window, so a reconnect after a drop the server has not seen is queued, not seated; the
+    client leaves that queue and retries, and if the server never sees the drop inside the window
+    the Duel is lost. Shorten the heartbeat, or end the old seat when its guest id comes back?
 
 - [ ] **Per-address connection cap and `X-Forwarded-For` (SCRUM-432 critic, 2026-11-12) — owner /
       security, not introduced by this branch.** `ClientAddress.resolve` (`apps/server/src/transport/`)
