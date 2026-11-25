@@ -649,4 +649,29 @@ describe('StateHasher', () => {
       expect(new Set(hashes).size).toBe(5);
     });
   });
+
+  describe('defender damage (07 §7)', () => {
+    const withTally = (set: string, legend: string, amount: number): number => {
+      const { state } = stateWithSoldier();
+      state.defenderDamage.add(set, legend, amount);
+      return hasher.hash(state);
+    };
+
+    it('hashes a taken tally as none, and changes with the set, the Legend and the amount', () => {
+      const { state } = stateWithSoldier();
+      const none = hasher.hash(state);
+      state.defenderDamage.add('set-1', 'legend-a', 9);
+      state.defenderDamage.take('set-1');
+      const hashes = [
+        none,
+        withTally('set-1', 'legend-a', 5),
+        withTally('set-2', 'legend-a', 5),
+        withTally('set-1', 'legend-b', 5),
+        withTally('set-1', 'legend-a', 6),
+      ];
+
+      expect(hasher.hash(state)).toBe(none);
+      expect(new Set(hashes).size).toBe(5);
+    });
+  });
 });

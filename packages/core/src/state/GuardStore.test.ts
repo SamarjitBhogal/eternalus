@@ -17,6 +17,7 @@ const POST = {
   leashRadius: 8,
   leashTolerance: 2,
   respawnTicks: 3600,
+  canLevel: false,
 } as const;
 
 describe('GuardStore', () => {

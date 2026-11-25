@@ -184,6 +184,7 @@ describe('LevelMatchesXpInvariant', () => {
           leashRadius: 6,
           leashTolerance: 0,
           respawnTicks: 3600,
+          canLevel: false,
         });
         if (post < held || isDefender) {
           fixture.state.guards.fill(post, `entity-${String(6 + post)}`);
@@ -225,6 +226,58 @@ describe('LevelMatchesXpInvariant', () => {
 
       expect(check()).toEqual([
         'Entity "entity-1" gained camp XP for "entity-2", which is no cleared camp.',
+      ]);
+    });
+  });
+
+  describe('checkpoint award (07 §7)', () => {
+    /** Point `entity-5` with one checkpoint-1 defender post, held (`entity-6`) or given up for good. */
+    const pointWith = (isHeld: boolean) => {
+      const fixture = setUp();
+      const point = fixture.spawn('entity-5', 'neutral');
+      fixture.state.guards.add(
+        {
+          checkpoint: 1,
+          defenceId: 'set-1',
+          id: 'post-0',
+          homeId: point.id,
+          team: 'neutral',
+          mobId: 'medium-assist-mob',
+          row: 0,
+          indexInRow: 0,
+          postX: 0,
+          postY: 0,
+          homeX: 0,
+          homeY: 0,
+          homeRadius: 0,
+          leashRadius: 6,
+          leashTolerance: 0,
+          respawnTicks: 0,
+          canLevel: true,
+        },
+        0,
+      );
+      fixture.state.guards.fill(0, 'entity-6');
+      if (!isHeld) {
+        fixture.state.guards.vacate(0, null);
+      }
+      fixture.state.events.emit('xp-gained', {
+        entityId: fixture.hero.id,
+        amount: 36,
+        victimId: point.id,
+        victimTeam: 'neutral',
+        cause: 'checkpoint-cleared',
+      });
+      return fixture;
+    };
+
+    it('rule 2: passes a checkpoint award for a point that lost a defender for good', () => {
+      expect(pointWith(false).check()).toEqual([]);
+    });
+
+    it('rule 2: flags a checkpoint award for a point whose defenders all stand', () => {
+      expect(pointWith(true).check()).toEqual([
+        'Entity "entity-1" gained checkpoint XP for "entity-5", which lost no defender.',
       ]);
     });
   });

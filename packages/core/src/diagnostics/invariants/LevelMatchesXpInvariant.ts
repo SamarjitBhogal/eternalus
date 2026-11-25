@@ -10,7 +10,7 @@ import type { Invariant, Violation } from '../Invariant.types';
  * gives on its curve; and every `xp-gained` of this tick (2) is backed by an `entity-died` this tick
  * whose killer is the recipient (a structure award, DEC-186, instead needs the structure gone; a
  * team-kill award, DEC-237, a killer on the recipient's team; a camp award, a guard home with no guard
- * left; XP owed while waiting to respawn, DEC-186, a recipient that is back in the store), (3)
+ * left; a checkpoint award, 07 §7, a capture point with a defender post given up for good; XP owed while waiting to respawn, DEC-186, a recipient that is back in the store), (3)
  * is the only award for that kill, and (4) is not for a self-kill or an ally kill (O5). It keeps
  * no scratch: everything comes from the state and this tick's events.
  * Runs every tick, since rules 2–4 read this tick's events.
@@ -117,6 +117,15 @@ export class LevelMatchesXpInvariant implements Invariant {
             ),
           );
         }
+      } else if (award.cause === 'checkpoint-cleared') {
+        if (!LevelMatchesXpInvariant.hasLostDefender(state, victimId)) {
+          violations.push(
+            this.violation(
+              entityId,
+              `Entity "${entityId}" gained checkpoint XP for "${victimId}", which lost no defender.`,
+            ),
+          );
+        }
       } else if (state.killerOf(victimId)?.attackerId !== entityId) {
         violations.push(
           this.violation(
@@ -157,6 +166,21 @@ export class LevelMatchesXpInvariant implements Invariant {
       held += isCampPost && guardId !== null ? 1 : 0;
     });
     return posts > 0 && held === 0;
+  }
+
+  /**
+   * Whether capture point `pointId` has a checkpoint-defender post emptied for good (no guard, no
+   * respawn tick): what a cleared set leaves behind (`CheckpointGuardRespawn`).
+   */
+  private static hasLostDefender(state: GameState, pointId: string): boolean {
+    let lost = 0;
+    state.guards.forEach(({ homeId, checkpoint, guardId, respawnAtTick }) => {
+      lost +=
+        homeId === pointId && checkpoint !== undefined && guardId === null && respawnAtTick === null
+          ? 1
+          : 0;
+    });
+    return lost > 0;
   }
 
   /** The level `xp` gives on `curve`, recomputed independently of `Progression`. */

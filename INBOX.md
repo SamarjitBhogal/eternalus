@@ -615,6 +615,24 @@ Reply inline (`Decision: …`).
       while its team still owns the point, and is cancelled when the point changes owner; at most
       10 defenders per capture point. They are built in M6c. (3)(b), (5) and (9) still wait for
       sign-off.
+      **Update 2026-11-25 (M6c, `feat/minion-m6c-defender-followups`):** (1), (4), (6) and (7)
+      are built: `checkpoint-cleared` and its XP, DEC-260 levelling (with DEC-350's boss group)
+      and DEC-350's limit and cancelling. The calls M6c made where the sources are silent are
+      under "Minion M6c interpretations" below. (2), (3)(b), (5) and (9) still wait.
+
+- [ ] **Minion M6c interpretations (`feat/minion-m6c-defender-followups`, 2026-11-25) — sign-off
+      per item.** Built so, each changeable in content or one rule: (a) balancing.md's
+      checkpoint share takes "allies within 10 m" as the clearing team's living Legends within
+      10 m of where the set's **last defender fell**. (b) `totalDamage` is the damage those
+      Legends dealt to the set, so the shares always add up to the checkpoint's XP; when they
+      dealt none (minions or turrets cleared it), an even split. Nobody is paid when no Legend is
+      in range or the killer is unknown. (c) The clearing team is the team of whoever killed the
+      last defender. (d) DEC-260 names forest-camp mobs, so the **corner boss does not level**
+      (`canLevel: false` on `corner-camp`). (e) A guard that levels also gets and gives the
+      `rallied` aura, as DEC-165 tied the two: forest-camp mobs and defenders now rally their own
+      side's levellers nearby. (f) A set whose last waiting defenders are cancelled (DEC-350)
+      after its last living one died is never announced cleared, so it pays no checkpoint XP.
+      `Recommendation:` approve (a) to (f) as built.
 
 - [x] **Minion M10 better-than-design items (`feat/minion-m10-zone-level-up`, 2026-11-15,
       critic; DEC-139) — sign-off per item.** (a) A `MinionLevelSystem` after
