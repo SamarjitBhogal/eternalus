@@ -43,4 +43,9 @@ export const DUEL_RULES = {
   startOffset: 50, // TUNE: inside the transept, outside the capture floor (radius 31)
   /** What of the normal match's world a Duel keeps. */
   arena: DUEL_ARENA,
+  /**
+   * Every Legend enters a Duel at its level curve's cap (SCRUM-444). Only Legends are raised; a
+   * mob added from the developer menu keeps its normal level.
+   */
+  legendsStartAtMaxLevel: true,
 } as const;

@@ -9649,6 +9649,22 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `prettier --check` and `npm run docs:check` on this file.
 - Next step: the owner pushes the branch (`push-125-r3.sh`), then merges PR #125.
 
+### 2026-11-20 — Phase 3 / Duel: Legends start at max level (SCRUM-444) — feat/duel-legend-max-level — claudiodh + Claude Code
+
+- What was done: in a Duel every Legend now enters at its level curve's cap, minions at their
+  normal level. `DUEL_RULES.legendsStartAtMaxLevel` (content) is passed by `Simulation` as
+  `ProgressionContent.legendsStartAtMaxLevel` only for a Duel; `ProgressionSystem` then raises
+  each spawned Legend to the cap with the usual per-level health and aether raises, emitting no
+  `xp-gained` or `level-up`. Mobs have no `Progression` and are untouched. Test: `Simulation: a
+Duel` > "starts both Legends at max level and spawns minions at their normal level
+  (SCRUM-444)" (red with the rule off: level 1, not 50). Architecture 05 §13 and 12 updated;
+  `INBOX.md` (DEC-36 item) lists the decisions taken. Max-level Legends have about 4.9 times the
+  health against the same damage, so Duel kills take about 3 times as many ticks; the three
+  fight tests in `Simulation.duel.test.ts` got a 180 s timeout (`FIGHT_TIMEOUT_MS`), since the
+  kill-target test passed the 60 s default under coverage.
+- Checks run: full `npm run check` (see the PR).
+- Next step: the pre-PR gate (critic, ponytail), then the PR into `phase/3-sprint-3-work`.
+
 ### 2026-11-19 — Phase 3 / the match-start countdown overlay (DEC-278) — feat/match-start-countdown — sholtzman + Claude Code
 
 - What was done: built the owner's ruling of 2026-11-19 (DEC-278, written as its own batch in the
@@ -10316,6 +10332,33 @@ tick)`), and a minion records the point that granted its levels (`Veterancy.gran
   timed out in 120000ms"). Rerun alone: "Tests 11 passed (11)". Then `npm run build` ("✓ built in
   4.49s") and `npm run docs:check` ("Documentation check passed.").
 - Next step: Aryan pushes `feat/bosses-p3` and asks the reviewers to re-review PR #91.
+
+### 2026-11-15 — Phase 3 / bug tracker — docs/bug-citadel-side-entrances — SamarjitBhogal + Claude Code
+
+- What was done: logged BUG-8 as Task SCRUM-443 under SCRUM-433 (label `bug`, screenshot
+  attached): units spawned inside the Citadel cannot reach its side gates and walk into walls
+  until they find the middle exit. Cause not confirmed: the palace walls leave a gap toward each
+  gate. The row names the related plan item, M4 Flow fields (Stronghold-to-gate ground).
+- Pre-PR gate: critic (`architecture-reviewer`) request-changes, no blockers; its three
+  should-fix rows (last-reviewed bump, M4 wording, this checks line) and one nit applied.
+  Ponytail: nothing to cut (one table row).
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code
+  style!"; "Tests 1582 passed (1582)"; client "Tests 1979 passed (1979)"; "✓ built in 350ms";
+  "Documentation check passed." Under Node 22 the client test `WebSocketTransport` fails on
+  `CloseEvent is not defined` (outside this diff; the repo requires Node 24).
+- Next step: assign SCRUM-443; find the blocker between the palace and the side gates.
+
+### 2026-11-20 — Phase 3 / bug tracker — docs/bug-citadel-side-entrances (PR #128 review round) — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (`5a7cc8dc`) into the branch; the only conflict
+  was this file (both sides appended, kept both, the phase entries first). Applied the review nit
+  from claudiodh and swholtzman: the BUG-8 row now says the wall-gap test covers the palace oval
+  only (`MapPalaceWallsBuilder.test.ts` probes `floorRadiusX/Y`, not the outer oval).
+- Checks run: `npm run check` (Node 24.21.0) on the merge → `EXIT=0`: "All matched files use
+  Prettier code style!"; core "Tests 1674 passed (1674)"; protocol "Tests 29 passed (29)";
+  client "Tests 2011 passed (2011)"; server "Tests 84 passed (84)"; "✓ built in 377ms";
+  "Documentation check passed."
+- Next step: re-request review on PR #128.
 
 ### 2026-11-07 — Phase 3 / unit-cap performance check (minion plan §1.2) — chore/minion-perf-check — SamarjitBhogal + Claude Code
 

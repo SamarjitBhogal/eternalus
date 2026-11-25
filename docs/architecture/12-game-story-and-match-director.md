@@ -471,7 +471,9 @@ Legends to their start points at full health at once, and `KillCountCondition` (
 the match at the target. The score is `state.match.duel` and `Snapshot.match.duel`. The shipped
 numbers (target, countdown, start offset) are `DUEL_RULES` in `content/duel/duelRules.ts`. What
 this note left as generated (mobs, objectives, the crystal, the Cathedral's entrances) is the
-2026-11-20 note below; FR-115's inert world beyond that is not built.
+2026-11-25 note below; FR-115's inert world beyond that is not built. Every Legend enters a Duel at
+its level curve's cap (`DUEL_RULES.legendsStartAtMaxLevel`, SCRUM-444; `ProgressionSystem` raises
+it when it spawns); only Legends are raised.
 
 Implementation status, 2026-11-25 (branch `feat/duel-arena-only-legends`; the owner's feedback on
 the Duel demo of 2026-11-20, Jira SCRUM-445, SCRUM-446 and SCRUM-450, and the owner's answers
