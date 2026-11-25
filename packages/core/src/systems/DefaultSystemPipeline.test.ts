@@ -142,6 +142,8 @@ describe('DefaultSystemPipeline', () => {
       'death',
       'capture',
       'cathedral-gem',
+      'zone-level-up',
+      'minion-level',
       'match-director',
       'invariants',
     ]);

@@ -33,6 +33,7 @@ import { EnragedSystem } from './EnragedSystem';
 import { HordeSystem } from './HordeSystem';
 import { InvariantSystem } from './InvariantSystem';
 import { MatchDirectorSystem } from './MatchDirectorSystem';
+import { MinionLevelSystem } from './MinionLevelSystem';
 import { MovementSystem } from './MovementSystem';
 import { OutOfCombatHealingSystem } from './OutOfCombatHealingSystem';
 import { PathingSystem } from './PathingSystem';
@@ -43,12 +44,14 @@ import { SpawnSystem } from './SpawnSystem';
 import { StructureSystem } from './StructureSystem';
 import { StuckSystem } from './StuckSystem';
 import { VeterancySystem } from './VeterancySystem';
+import { ZoneLevelUpSystem } from './ZoneLevelUpSystem';
 import { loadMinionVeterancy } from '../content/mobs/loadMinionVeterancy';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { CHECKPOINT_DEFENDERS } from '../content/structures/guardPlans';
 import { ZONE_LOCKING_MOBS } from '../content/zones/zoneLocks';
 import { TickRate } from '../utils/TickRate';
 import { loadGuardPlans } from '../content/structures/loadGuardPlans';
+import { loadZoneLevelUp } from '../content/zones/loadZoneLevelUp';
 import { StatusEffectSystem } from './StatusEffectSystem';
 import { SystemPipeline } from './SystemPipeline';
 
@@ -56,14 +59,14 @@ import { SystemPipeline } from './SystemPipeline';
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
  * progress, statuses, movement, collision (DEC-121 (c): every later reader sees resolved
  * positions), the neighbour index, stuck detection (DEC-193), steering, combat, map destruction,
- * progression (kill XP), minion veterancy, structure losses and breakability, spawning, enraging,
- * out-of-combat healing (DEC-188), respawn (queues the dead Legends, FR-051), death, capture
- * points, the Cathedral gem, the match director, then invariants last. Combat runs after movement,
- * so a unit with a target in reach faces it, not its own way (DEC-192). This is the one place a
- * system is added, at its position in the tick (architecture 02 §9). It builds the match's one
- * `DamagePipeline` and one `StatusEffectApplier` (with the status effects loaded for this match's
- * config) and hands them to the systems that need them, so a damage step applies to every hit and
- * every status event comes from one place.
+ * progression (kill XP), minion veterancy, structure losses and breakability, spawning (none in a
+ * Duel, SCRUM-445), enraging, out-of-combat healing (DEC-188), respawn (queues the dead Legends,
+ * FR-051), death, capture points, the Cathedral gem, the match director, then invariants last.
+ * Combat runs after movement, so a unit with a target in reach faces it, not its own way
+ * (DEC-192). This is the one place a system is added, at its position in the tick (architecture
+ * 02 §9). It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the
+ * status effects loaded for this match's config) and hands them to the systems that need them, so
+ * a damage step applies to every hit and every status event comes from one place.
  */
 export class DefaultSystemPipeline extends SystemPipeline {
   /** Creates the pipeline from its injected parts (`DefaultSystemPipelineOptions`). */
@@ -73,6 +76,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
     progression,
     director,
     duelStarts,
+    spawnsMobs = true,
     hordes,
     structures = STRUCTURE_DEFINITIONS,
     assistWindowTicks,
@@ -86,6 +90,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
         CATHEDRAL_GEM.statusIds,
       ),
     );
+    const veterancy = loadMinionVeterancy(tickRate);
     const loadedStatuses = loadStatusEffects(
       tickRate,
       map.spawnTowersPerLane + map.buffTowersPerLane,
@@ -140,21 +145,25 @@ export class DefaultSystemPipeline extends SystemPipeline {
       ...(state.worldObjects === undefined ? [] : [new MapDestructionSystem(state, damage)]),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
       new ProgressionSystem(state, progression),
-      new VeterancySystem(state, statuses, progression.units, loadMinionVeterancy(tickRate)),
+      new VeterancySystem(state, statuses, veterancy),
       new StructureSystem(structures),
       ...(hordes === undefined
         ? []
         : [
-            new SpawnSystem(state, hordes.factory, {
-              definitions: hordes.factory.definitions,
-              openingWave: OPENING_WAVE,
-              waves: loadSpawnWaves(tickRate),
-              steering: HORDE_STEERING,
-              weights: LANE_ASSESSMENT_WEIGHTS,
-              formationId: RANKS_FORMATION.id,
-              guards: loadGuardPlans(tickRate, hordes.guards),
-              defenders: CHECKPOINT_DEFENDERS,
-            }),
+            ...(spawnsMobs
+              ? [
+                  new SpawnSystem(state, hordes.factory, {
+                    definitions: hordes.factory.definitions,
+                    openingWave: OPENING_WAVE,
+                    waves: loadSpawnWaves(tickRate),
+                    steering: HORDE_STEERING,
+                    weights: LANE_ASSESSMENT_WEIGHTS,
+                    formationId: RANKS_FORMATION.id,
+                    guards: loadGuardPlans(tickRate, hordes.guards),
+                    defenders: CHECKPOINT_DEFENDERS,
+                  }),
+                ]
+              : []),
             new EnragedSystem(state, statuses, ENRAGING_STRUCTURES),
           ]),
       // Before death, so a fallen Duel Legend is healed and moved instead of removed.
@@ -173,6 +182,9 @@ export class DefaultSystemPipeline extends SystemPipeline {
       ...(duelStarts === undefined
         ? [new CathedralGemSystem(state, statuses, loadedStatuses, CATHEDRAL_GEM)]
         : []),
+      ...(hordes === undefined ? [] : [new ZoneLevelUpSystem(state, loadZoneLevelUp(tickRate))]),
+      // After every level source, so kill and zone levels land on the tick they are announced.
+      new MinionLevelSystem(state, statuses, progression.units, veterancy),
       // After death, so an objective lost this tick can end the match this tick (12 §1).
       new MatchDirectorSystem(director),
       new InvariantSystem(invariants),
