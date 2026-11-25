@@ -78,7 +78,8 @@ export class PresenceBook {
    * over the queue slot or seat (told `queue-waiting` or `match-found` again). If that guest is
    * remembered (gone, not held), `connection` becomes that guest too (`welcome` with the id back)
    * and keeps its rating, but has no slot to take over. The id of a guest that is still connected
-   * is ignored, so nobody can kick a live player.
+   * is not taken over, so nobody can kick a live player; its connection is probed instead, so a
+   * half-open one is closed and held in time for the client's next retry (DEC-349).
    * @returns Whether a queue slot or seat was taken over; `false` means `connection` should join.
    */
   public resume(connection: ClientConnection, guestId: string): boolean {
@@ -89,7 +90,11 @@ export class PresenceBook {
       return false;
     }
     const guest = this.byId.get(guestId);
-    if (guest === undefined || guest.isConnected) return false;
+    if (guest === undefined) return false;
+    if (guest.isConnected) {
+      this.options.probe(guest.connection);
+      return false;
+    }
     const previous = guest.connection;
     guest.cancelDrop?.();
     guest.cancelDrop = null;

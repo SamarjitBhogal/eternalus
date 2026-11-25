@@ -53,6 +53,8 @@ export class LoopbackBotLinks implements BotLinkFactory {
         reconnectWindowMs: RECONNECT_WINDOW_MS,
         maxHeldGuests: MAX_HELD_GUESTS,
         maxKnownGuests: MAX_KNOWN_GUESTS,
+        // Loopback links never go half-open: nothing to probe.
+        probe: () => undefined,
         newGuestId: () => `00000000-0000-4000-8000-${String((guests += 1)).padStart(12, '0')}`,
       }),
       newLimiter: () => new TokenBucket(clock, 1000, 1),

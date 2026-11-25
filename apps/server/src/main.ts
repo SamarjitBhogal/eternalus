@@ -21,7 +21,10 @@ import { IntervalTickScheduler } from './time/IntervalTickScheduler';
 import { SystemClock } from './time/SystemClock';
 import { MS_PER_SECOND } from './time/time.constants';
 import { ConnectionHeartbeat } from './transport/ConnectionHeartbeat';
-import { HEARTBEAT_INTERVAL_MS } from './transport/ConnectionHeartbeat.constants';
+import {
+  HEARTBEAT_INTERVAL_MS,
+  HEARTBEAT_PROBE_TIMEOUT_MS,
+} from './transport/ConnectionHeartbeat.constants';
 import { WsListener } from './transport/WsListener';
 
 // Composition root: the only place the adapters are chosen and wired.
@@ -43,6 +46,11 @@ const host = new DuelHost({
 });
 const queue = new DuelQueue({ starter: host, ratings, clock, scheduler });
 const stopQueueSweep = queue.start();
+const heartbeat = new ConnectionHeartbeat(
+  scheduler,
+  HEARTBEAT_INTERVAL_MS,
+  HEARTBEAT_PROBE_TIMEOUT_MS,
+);
 const presence = new PresenceBook({
   queue,
   host,
@@ -51,6 +59,9 @@ const presence = new PresenceBook({
   reconnectWindowMs: RECONNECT_WINDOW_MS,
   maxHeldGuests: MAX_HELD_GUESTS,
   maxKnownGuests: MAX_KNOWN_GUESTS,
+  probe: (connection) => {
+    heartbeat.probe(connection);
+  },
   newGuestId: randomUUID,
 });
 const gateway = new DuelGateway({
@@ -61,7 +72,6 @@ const gateway = new DuelGateway({
   newLimiter: () => new TokenBucket(clock, MESSAGE_BURST, MESSAGES_PER_SECOND),
 });
 
-const heartbeat = new ConnectionHeartbeat(scheduler, HEARTBEAT_INTERVAL_MS);
 const stopHeartbeat = heartbeat.start();
 const serverConfig = new ServerConfig(process.env);
 const listener = new WsListener(
