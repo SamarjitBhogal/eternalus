@@ -55,7 +55,7 @@ export class SessionController {
   private readonly duel: DuelSession;
   /** The name this player joined the Duel queue with, for the VERSUS screen. */
   private duelName = '';
-
+  /** The opponent's name from `match-found`, sent again with the final score for the results (DEC-347). */
   private duelOpponentName = '';
 
   /** Loads the content catalogue; nothing runs until `start()`. */
