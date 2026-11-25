@@ -22,7 +22,10 @@ const AIM_EAST: Aim = { point: { x: 5, y: 0 }, targetId: null };
 const setUp = (kit: AbilityKit = TEST_KIT) => {
   const { state, factory, caster } = casterState(kit);
   const validator = new CastValidator(testAbilityRegistry([new RecordingEffect('fake-strike')]));
-  const handlers = createDefaultCommandHandlers(validator);
+  const handlers = createDefaultCommandHandlers({
+    rover: { controllerId: 'rover', profileId: 'rover', memory: {} },
+    cast: validator,
+  });
   const rejected: string[] = [];
   state.events.on('command-rejected', ({ reason }) => rejected.push(reason));
   const cast = (slot: AbilitySlot, aim: Aim = AIM_EAST, actorId = caster.id): void => {

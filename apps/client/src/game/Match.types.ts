@@ -108,6 +108,8 @@ export type MatchDeps = {
   readonly renderer: Renderer;
   readonly camera: Camera;
   readonly input: IntentSource;
+  /** Whether the developer menu exists in this match (`?dev=1`, 13 §4); off when left out. */
+  readonly isDeveloperMenuEnabled?: boolean;
   /** Where client-side problems are reported (e.g. a kind drawn with the default view). */
   readonly logger: Logger;
   /** Every ability's display data (`DisplayCatalogue.abilities`): the range overlay draws from it. */

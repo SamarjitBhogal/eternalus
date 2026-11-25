@@ -2,7 +2,7 @@ import { randomInt } from 'node:crypto';
 import { createServer } from 'node:http';
 import { createDefaultGameConfig, DUEL_RULES, makeLogRecord } from '@eternalus/core';
 import { ClientMessageParser } from '@eternalus/protocol';
-import { OPS_HOST, OPS_PORT, SEED_LIMIT } from './config/ServerConfig.constants';
+import { SEED_LIMIT } from './config/ServerConfig.constants';
 import { ServerConfig } from './config/ServerConfig';
 import { DuelGateway } from './gateway/DuelGateway';
 import { MAX_CONNECTIONS, MAX_CONNECTIONS_PER_IP } from './limits/ConnectionLimiter.constants';
@@ -45,8 +45,9 @@ const gateway = new DuelGateway(
 
 const heartbeat = new ConnectionHeartbeat(scheduler, HEARTBEAT_INTERVAL_MS);
 const stopHeartbeat = heartbeat.start();
+const serverConfig = new ServerConfig(process.env);
 const listener = new WsListener(
-  new ServerConfig(process.env).duelListener(),
+  serverConfig.duelListener(),
   new ConnectionLimiter(MAX_CONNECTIONS, MAX_CONNECTIONS_PER_IP),
 );
 listener.listen((connection) => {
@@ -61,7 +62,8 @@ const ops = createServer((request, response) => {
     response.writeHead(404).end();
   }
 });
-ops.listen(OPS_PORT, OPS_HOST);
+const opsListener = serverConfig.opsListener();
+ops.listen(opsListener.port, opsListener.host);
 
 logger.log(makeLogRecord('INFO', 'server.main', 'Duel server started.'));
 

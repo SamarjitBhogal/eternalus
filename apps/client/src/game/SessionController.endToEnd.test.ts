@@ -1,5 +1,5 @@
 import { createDefaultGameConfig, NullLogger, Simulation } from '@eternalus/core';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { BridgeEventMap } from '../bridge/events';
 import { isSelectableClass } from '../bridge/selectionRules';
@@ -41,6 +41,12 @@ const viewport = (canvas: FakeViewportCanvas): MatchViewport => ({
 });
 
 describe('SessionController with the real match, end to end', () => {
+  // The tick-throws test spies on `Simulation.prototype.step`; the config's `restoreMocks` does not
+  // undo it, so a test that ran after it saw every tick throw (the result then hung on test order).
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   /** One build of the real `Match` and `MatchHost`, with every browser part a fake. */
   type Build = {
     readonly match: Match;
@@ -250,14 +256,15 @@ describe('SessionController with the real match, end to end', () => {
     expect(first?.scheduler.hasPendingFrame).toBe(false);
     expect(session.listeners(first, firstCanvas)).toBe(0);
     // The match's simulation subscriptions: the health bars' two (damage-applied, entity-removed,
-    // DEC-195) and the bridge's `match-ended`; its teardown drops each exactly once.
-    expect(first?.unsubscribed).toEqual([1, 1, 1]);
+    // DEC-195), the Legend bodies' entity-removed (DEC-295) and the bridge's `match-ended`; its
+    // teardown drops each exactly once.
+    expect(first?.unsubscribed).toEqual([1, 1, 1, 1]);
     expect(session.bus.listenerCount()).toBe(busWithOne);
 
     session.intent({ kind: 'leave-match' });
     expect(second?.scheduler.hasPendingFrame).toBe(false);
     expect(session.listeners(second, secondCanvas)).toBe(0);
-    expect(second?.unsubscribed).toEqual([1, 1, 1]);
+    expect(second?.unsubscribed).toEqual([1, 1, 1, 1]);
     expect(session.bus.listenerCount()).toBe(busBefore);
   });
 

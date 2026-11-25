@@ -1,10 +1,12 @@
+import { isEditableTarget } from './isEditableTarget';
 import type { InputDevice, MutableInputSnapshot } from './InputDevice.types';
 import { FOCUS_LOSS_EVENTS, NEVER_PREVENTED_CODES } from './KeyboardDevice.constants';
 
 /**
  * The keyboard adapter. Tracks held keys by `KeyboardEvent.code` (the physical key, so
  * bindings survive keyboard layouts), ignores auto-repeat, prevents the browser default only
- * for bound keys, and releases everything when the window loses focus or is hidden.
+ * for bound keys, ignores keys typed into text fields, and releases everything when the window
+ * loses focus or is hidden.
  */
 export class KeyboardDevice implements InputDevice {
   private readonly held = new Set<string>();
@@ -52,6 +54,7 @@ export class KeyboardDevice implements InputDevice {
   }
 
   private readonly onKeyDown = (event: Event): void => {
+    if (isEditableTarget(event)) return;
     const keyEvent = event as KeyboardEvent;
     const code = KeyboardDevice.codeOf(keyEvent);
     const isBrowserShortcut =

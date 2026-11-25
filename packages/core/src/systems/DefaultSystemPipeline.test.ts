@@ -181,6 +181,7 @@ describe('DefaultSystemPipeline', () => {
       'spawn',
       'enraged',
       'out-of-combat-healing',
+      'respawn',
       'death',
       'capture',
       'match-director',

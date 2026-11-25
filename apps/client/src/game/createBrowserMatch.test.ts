@@ -17,6 +17,7 @@ import { shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
 import { createBrowserMatch } from './createBrowserMatch';
 import { FakeSessionClock } from './engine/time/FakeSessionClock';
 import { FakeBrowserTarget } from './FakeBrowserTarget';
+import { fakeKeyEvent } from './engine/input/fakeKeyEvent';
 import { FakeViewportCanvas } from './FakeViewportCanvas';
 import { MS_PER_SECOND } from './Match.constants';
 import type { MatchObserver, PreparedWorld } from './Match.types';
@@ -46,7 +47,10 @@ function evidenceOf(running: RunningMatch): MatchEvidence {
 function setUp(
   canvas = new FakeViewportCanvas(),
   sinks: readonly LogSink[] = [],
-  castMode: CastMode | null = null,
+  {
+    castMode = null,
+    isDeveloperMenuEnabled = false,
+  }: { readonly castMode?: CastMode | null; readonly isDeveloperMenuEnabled?: boolean } = {},
 ) {
   const window = new FakeBrowserTarget();
   const document = new FakeBrowserTarget();
@@ -55,6 +59,7 @@ function setUp(
     window,
     document,
     gameConfig: CONFIG,
+    isDeveloperMenuEnabled,
     bus,
     settings: { bindings: null, castMode },
     clock: new FakeSessionClock(),
@@ -87,6 +92,24 @@ function setUp(
 }
 
 describe('createBrowserMatch', () => {
+  it.each([
+    { isDeveloperMenuEnabled: true, opened: [true] },
+    { isDeveloperMenuEnabled: false, opened: [] },
+  ])(
+    'passes ?dev=1 to the match: F1 opens the developer menu only when it is enabled ($isDeveloperMenuEnabled)',
+    ({ isDeveloperMenuEnabled, opened }) => {
+      const { window, bus, factory, viewport, request } = setUp(undefined, [], {
+        isDeveloperMenuEnabled,
+      });
+      const states: boolean[] = [];
+      bus.on('developer-menu', ({ isOpen }) => states.push(isOpen));
+      const running = factory(request(), viewport);
+      window.dispatchEvent(fakeKeyEvent('keydown', 'F1'));
+      expect(states.filter((isOpen) => isOpen)).toEqual(opened);
+      running.destroy();
+    },
+  );
+
   it('throws for a canvas without a 2D context and leaves nothing behind', () => {
     const { window, factory, viewport, request, listeners } = setUp(
       new FakeViewportCanvas(1280, 720, null),
@@ -165,11 +188,9 @@ describe('createBrowserMatch', () => {
   });
 
   it("starts with the settings' cast mode: aim-then-click selects an ability key instead of casting", () => {
-    const { window, bus, factory, viewport, request } = setUp(
-      new FakeViewportCanvas(),
-      [],
-      'aim-then-click',
-    );
+    const { window, bus, factory, viewport, request } = setUp(new FakeViewportCanvas(), [], {
+      castMode: 'aim-then-click',
+    });
     const slots: (string | null)[] = [];
     bus.on('aiming-slot', ({ slot }) => slots.push(slot));
     const running = factory(request(), viewport);

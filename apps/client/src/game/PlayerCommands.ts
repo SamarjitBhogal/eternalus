@@ -33,6 +33,9 @@ export class PlayerCommands implements PlayerActions {
   /** The unit or map object the held attack targeted last; `null` once released or stopped. */
   private attackTargetId: EntityId | null = null;
 
+  /** Whether the Legend was in the last snapshot: a Legend back from a respawn returns stopped. */
+  private wasPlayerPresent = false;
+
   /** Whether the canvas gestures own the main button's press (`setPointerClaimed`). */
   private isPointerClaimed = false;
 
@@ -65,6 +68,13 @@ export class PlayerCommands implements PlayerActions {
    */
   public apply(actorId: EntityId, snapshot: TargetSnapshot): boolean {
     const { move, isAttacking, aim, triggered } = this.input.read(this.camera);
+    const isPlayerPresent = snapshot.entities.some((entity) => entity.id === actorId);
+    if (isPlayerPresent && !this.wasPlayerPresent) {
+      // A Legend back from a respawn has no movement and no target: send the held input again.
+      this.lastMove = { x: 0, y: 0 };
+      this.attackTargetId = null;
+    }
+    this.wasPlayerPresent = isPlayerPresent;
     const isHeld = isAttacking === true && !this.isPointerClaimed;
     const isConsumed = this.casts.apply(actorId, { triggered, aim, isAttacking: isHeld });
     const attackAim = isHeld && !isConsumed ? aim : null;

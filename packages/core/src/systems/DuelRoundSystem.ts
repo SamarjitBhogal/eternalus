@@ -1,11 +1,8 @@
-import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
-import { Movement } from '../components/Movement';
-import { StatusEffects } from '../components/StatusEffects';
-import { Transform } from '../components/Transform';
 import { opponentOf, PLAYABLE_TEAMS } from '../teams/playableTeams';
 import type { PlayableTeam } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
+import { LegendReset } from './LegendReset';
 import type { System, SystemContext } from './System.types';
 
 /**
@@ -17,6 +14,8 @@ import type { System, SystemContext } from './System.types';
  */
 export class DuelRoundSystem implements System {
   public readonly name = 'duel-round';
+
+  private readonly reset = new LegendReset();
 
   /** @param starts - Where each team's Legend starts and returns to. */
   public constructor(private readonly starts: Readonly<Record<PlayableTeam, Vec2>>) {}
@@ -36,17 +35,7 @@ export class DuelRoundSystem implements System {
       return;
     }
     for (const { team, legend } of seats) {
-      const health = legend.getComponent(Health);
-      health.heal(health.max);
-      const movement = legend.findComponent(Movement);
-      movement?.stop();
-      movement?.endPushes();
-      legend.findComponent(Combat)?.setTarget(null);
-      const statuses = legend.findComponent(StatusEffects);
-      for (const { definition } of [...(statuses?.active ?? [])]) {
-        statuses?.remove(definition.id);
-      }
-      legend.getComponent(Transform).moveTo(this.starts[team]);
+      this.reset.apply(legend, this.starts[team]);
     }
   }
 }

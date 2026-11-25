@@ -6,6 +6,7 @@ import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { AETHER_REGEN } from '../content/abilities/aetherRegen';
 import { loadAbilities } from '../content/abilities/loadAbilities';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
+import { LEGEND_RESPAWN_SECONDS } from '../content/progression/legendRespawn';
 import { loadStuckDetection } from '../content/ai/loadStuckDetection';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
 import { loadOutOfCombatHealing } from '../content/healing/loadOutOfCombatHealing';
@@ -38,6 +39,7 @@ import { MovementSystem } from './MovementSystem';
 import { OutOfCombatHealingSystem } from './OutOfCombatHealingSystem';
 import { PathingSystem } from './PathingSystem';
 import { ProgressionSystem } from './ProgressionSystem';
+import { RespawnSystem } from './RespawnSystem';
 import { SpaceSystem } from './SpaceSystem';
 import { SpawnSystem } from './SpawnSystem';
 import { StructureSystem } from './StructureSystem';
@@ -45,7 +47,9 @@ import { StuckSystem } from './StuckSystem';
 import { VeterancySystem } from './VeterancySystem';
 import { loadMinionVeterancy } from '../content/mobs/loadMinionVeterancy';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
+import { CHECKPOINT_DEFENDERS } from '../content/structures/guardPlans';
 import { ZONE_LOCKING_MOBS } from '../content/zones/zoneLocks';
+import { TickRate } from '../utils/TickRate';
 import { loadGuardPlans } from '../content/structures/loadGuardPlans';
 import { StatusEffectSystem } from './StatusEffectSystem';
 import { SystemPipeline } from './SystemPipeline';
@@ -55,10 +59,10 @@ import { SystemPipeline } from './SystemPipeline';
  * progress, the queued casts, aether regeneration, statuses, movement, collision (DEC-121 (c):
  * every later reader sees resolved positions), the neighbour index, stuck detection (DEC-193),
  * steering, combat, map destruction, progression (kill XP), minion veterancy, structure losses and
- * breakability, spawning, enraging, out-of-combat healing (DEC-188), death, capture points, the
- * match director, then invariants last. Combat runs after movement, so a unit with a target in
- * reach faces it, not its own way (DEC-192). This is the one place a system is added, at its
- * position in the tick (architecture 02 §9).
+ * breakability, spawning, enraging, out-of-combat healing (DEC-188), respawn (queues the dead
+ * Legends, FR-051), death, capture points, the match director, then invariants last. Combat runs
+ * after movement, so a unit with a target in reach faces it, not its own way (DEC-192). This is
+ * the one place a system is added, at its position in the tick (architecture 02 §9).
  * It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the status effects
  * loaded for this match's config) and hands them to the systems that need them, so a damage step
  * applies to every hit and every status event comes from one place.
@@ -149,12 +153,19 @@ export class DefaultSystemPipeline extends SystemPipeline {
               weights: LANE_ASSESSMENT_WEIGHTS,
               formationId: RANKS_FORMATION.id,
               guards: loadGuardPlans(tickRate, hordes.guards),
+              defenders: CHECKPOINT_DEFENDERS,
             }),
             new EnragedSystem(state, statuses, ENRAGING_STRUCTURES),
           ]),
       // Before death, so a fallen Duel Legend is healed and moved instead of removed.
       ...(duelStarts === undefined ? [] : [new DuelRoundSystem(duelStarts)]),
       new OutOfCombatHealingSystem(state, loadOutOfCombatHealing(tickRate)),
+      // After the Duel round, which heals a fallen Duel Legend, so it is never queued; queues the
+      // Legends that died this tick before `DeathSystem` withdraws them.
+      new RespawnSystem(
+        new TickRate(tickRate).toTicks(LEGEND_RESPAWN_SECONDS),
+        LANE_ASSESSMENT_WEIGHTS,
+      ),
       new DeathSystem(),
       new CaptureSystem(state.config.match.capturePoints, tickRate, ZONE_LOCKING_MOBS),
       // After death, so an objective lost this tick can end the match this tick (12 §1).

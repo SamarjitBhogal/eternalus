@@ -1,5 +1,6 @@
 import {
   type AbilitySlot,
+  CORNER_CAMP_RING,
   createDefaultGameConfig,
   type InputIntent,
   loadDisplayContent,
@@ -466,6 +467,21 @@ describe('Match', () => {
     ).toBe(true);
   });
 
+  it("draws every corner camp's ring at core's ring diameter (Match injects it into MapView)", () => {
+    const { match, renderer, map } = setUp();
+
+    match.render(0);
+
+    const camps = map.features.filter(({ kind }) => kind === 'corner-camp');
+    const rings = renderer.calls.flatMap((call) =>
+      call.op === 'drawWorldGlyph' && camps.some(({ position }) => position === call.args[1])
+        ? [call.args[0]]
+        : [],
+    );
+    expect(camps.length).toBeGreaterThan(0);
+    expect(rings).toEqual(camps.map(() => ({ shape: 'ring', size: 2 * CORNER_CAMP_RING.radius })));
+  });
+
   it('centres the minimap on the player and keeps it there as the player moves (DEC-182)', () => {
     const { match, renderer, input } = setUp();
     match.tick();
@@ -487,7 +503,13 @@ describe('Match', () => {
   it('centres the minimap on the camera once the player is gone, and maps clicks around it', () => {
     const { match, renderer, simulation, camera, map } = setUp();
     match.tick();
-    simulation.enqueueCommand({ type: 'dev-remove-entity', entityId: match.playerEntityId ?? '' });
+    // Core refuses to remove the human's Legend outside sim mode (13 §4), so the snapshot drops it.
+    const playerId = match.playerEntityId;
+    const snapshot = simulation.snapshot.bind(simulation);
+    vi.spyOn(simulation, 'snapshot').mockImplementation(() => {
+      const real = snapshot();
+      return { ...real, entities: real.entities.filter(({ id }) => id !== playerId) };
+    });
     match.tick();
     expect(playerX(match)).toBeNaN();
     match.render(0);
