@@ -1,4 +1,5 @@
 import { createDefaultGameConfig } from '@eternalus/core';
+import { RECONNECT_WINDOW_MS } from '@eternalus/protocol';
 import { describe, expect, it } from 'vitest';
 
 import type { BridgeEventMap } from '../bridge/events';
@@ -13,6 +14,17 @@ import type { DuelMatchRequest, SessionControllerDeps } from './SessionControlle
 import { testSession } from './testSessionDeps';
 
 const CONFIG = createDefaultGameConfig();
+
+const GUEST_ID = '123e4567-e89b-42d3-a456-426614174000';
+
+const MATCH_FOUND = {
+  type: 'match-found',
+  opponentName: 'Rival',
+  matchId: 'm',
+  seed: 1234,
+  team: 'dark',
+  legendId: 'entity-7',
+} as const;
 
 const VIEWPORT = {
   canvas: new FakeViewportCanvas(),
@@ -58,6 +70,7 @@ async function setUp(overrides: Partial<SessionControllerDeps> = {}) {
   /** The server pairs the player and sends the first snapshot; the assets then load. */
   const startDuel = async (): Promise<void> => {
     session.intent({ kind: 'start-duel', name: 'Ana' });
+    transport().receive({ type: 'welcome', guestId: GUEST_ID });
     transport().receive({
       type: 'match-found',
       opponentName: 'Rival',
@@ -272,16 +285,48 @@ describe('SessionController, online Duel (ADR 0016)', () => {
     expect(session.transport().hasEnded).toBe(true);
   });
 
-  it('returns to the menu with a banner when the connection drops during the match', async () => {
+  it('returns to the menu with a banner when a dropped connection is not back within the reconnect window', async () => {
     const session = await setUp();
     await session.startDuel();
     session.controller.attachViewport(VIEWPORT);
 
     session.transport().drop();
+    expect(session.controller.phase).toBe('match');
+    expect(session.store.getState().match.isReconnecting).toBe(true);
+    session.clock.advance(RECONNECT_WINDOW_MS - 1);
+    for (const attempt of session.transports.slice(1)) attempt.drop();
+    expect(session.controller.phase).toBe('match');
+    session.clock.advance(1);
 
     expect(session.controller.phase).toBe('menu');
     expect(session.store.getState().session.reason).toBe('duel-unavailable');
+    expect(session.store.getState().match.isReconnecting).toBe(false);
     expect(session.matches[0]?.destroyCount).toBe(1);
+  });
+
+  it('shows "Reconnecting..." on a drop and returns to the same Duel with no click (DEC-349)', async () => {
+    const session = await setUp();
+    await session.startDuel();
+    session.controller.attachViewport(VIEWPORT);
+
+    session.transport().drop();
+    expect(session.store.getState().match.isReconnecting).toBe(true);
+    session.clock.advance(RECONNECT_WINDOW_MS / 2);
+    const retry = session.transports.at(-1);
+    if (retry === undefined || retry === session.transport())
+      throw new Error('No reconnect attempt');
+    expect(retry.sent).toEqual([{ type: 'queue-join', name: 'Ana', guestId: GUEST_ID }]);
+    retry.receive({ type: 'welcome', guestId: GUEST_ID });
+    retry.receive(MATCH_FOUND);
+    retry.receive({ type: 'state', snapshot: snapshotAtTick(40), ackSeq: 0 });
+
+    expect(session.store.getState().match.isReconnecting).toBe(false);
+    expect(session.controller.phase).toBe('match');
+    expect(session.matches).toHaveLength(1);
+    expect(session.matches[0]?.destroyCount).toBe(0);
+    expect(session.store.getState().session.reason).toBeNull();
+    session.clock.advance(RECONNECT_WINDOW_MS);
+    expect(session.controller.phase).toBe('match');
   });
 
   it('shows home again when the connection drops in the queue', async () => {

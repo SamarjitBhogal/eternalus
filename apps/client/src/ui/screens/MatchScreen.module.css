@@ -108,3 +108,9 @@
   top: 0;
   right: 0;
 }
+
+/* The connection status layer (DEC-349): over the HUD, the countdown and the pause overlay, never
+   inert. It reuses the HUD's container, so the notice keeps its `--hud-u` size. */
+.status {
+  composes: hud;
+}

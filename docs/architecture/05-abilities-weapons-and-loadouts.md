@@ -518,7 +518,8 @@ add (the `veteran` damage bonus, DEC-164); `value` counts once per stack, and a 
 ticks count from the first application. Every unit gets `StatusEffects`; anything without it
 (structures) is immune. The component recomputes its multiplier table and flags when its list
 changes, not per tick. `combat/StatusEffectApplier` (not in the sketch above) is the one way in and out and emits every
-status event: `apply` (by id) emits `status-applied`; `remove` ends a status early (auras, holds)
+status event: `apply` (by id) emits `status-applied`; `removeStacks` takes stacks off with one
+`status-stacks-lost` (a lost minion level, DEC-353), or `status-expired` when none stay; `remove` ends a status early (auras, holds)
 and `expire`, called by `StatusEffectSystem`, removes the timed-out ones, both with
 `status-expired`. `DefaultSystemPipeline` loads the statuses for the match's config and builds the
 one applier, next to the one `DamagePipeline`, so later producers (turret concussion 2.3, gate
