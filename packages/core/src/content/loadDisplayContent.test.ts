@@ -104,6 +104,14 @@ describe('loadDisplayContent', () => {
     );
   });
 
+  it('lists the three lane minions by id and display name', () => {
+    expect(loadDisplayContent().laneMinions).toEqual([
+      { id: 'light-minion', displayName: 'Light Minion' },
+      { id: 'medium-minion', displayName: 'Medium Minion' },
+      { id: 'heavy-minion', displayName: 'Heavy Minion' },
+    ]);
+  });
+
   it('names the two playable teams', () => {
     expect(loadDisplayContent().teamNames).toEqual({ light: 'Light', dark: 'Dark' });
   });
