@@ -16,6 +16,27 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu`) — developer menu, slice 1 built;
+      the rest needs owner and core work.** Built: `?dev=1` enables the menu, F1
+      (`toggle-developer-menu`) opens it, and it spawns a horde of lane minions at a map structure
+      (`dev-spawn-mobs`) and removes an entity by id (`dev-remove-entity`). Not built, and why:
+      (a) the persisted `settings.developer.menuEnabled` toggle, because settings persistence does
+      not exist yet (only the query flag enables the menu; there is no session toggle either);
+      (b) add/remove Legends with class and team pickers (FR-097), which needs a new core
+      `dev-spawn-legend` command; (c) sim mode / `dev-set-controller` (FR-099), unsupported in
+      core; (d) invariant level, timeline jump, overlays, time scale, replay dump and fixture
+      (FR-110), pre-match config overrides; (e) teleport, which no requirement names (SCRUM-437
+      says to raise it as a feature request); (f) showing core's refusals (unit cap clipping,
+      `command-rejected`): the bridge carries no diagnostic event yet. The mob picker reads
+      the lane minions from `DisplayContent.laneMinions`, which core now publishes through
+      `loadDisplayContent`; no client list remains. Decide: (1) the menu's name ("Architect's
+      Table" is still only proposed); (2) built: core publishes its mob list in
+      `loadDisplayContent` (`DisplayContent.laneMinions`); (3) whether the next slice adds
+      `dev-spawn-legend` (FR-097); (4) `?dev=1` also works in release builds (the same
+      flag already turns on the explorer chrome): add a build-time guard? Online play: a remote
+      (online Duel) match must always keep the menu disabled (`Match.isDeveloperMenuEnabled` is
+      optional and off by default, and the online match factory must not pass it), otherwise dev
+      commands would be a cheat path.
 - [ ] **Dependency audit (re-run 2026-11-20): approve one upgrade PR for the `eslint` family and
       `zod`, and say whether to turn on Dependabot alerts.** PR #113 already moved `vite` to 8.3.8
       and `vitest` to 5.1.0. `npm audit` on `phase/3-sprint-3-work` (`5a7cc8dc`) now reports 10
@@ -222,7 +243,7 @@ Reply inline (`Decision: …`).
       the zone's plan; mates need the same home and team (`GuardController`), and a `group` plan's
       group is the home's own posts only (`GroupGuardRespawn`).
 - [ ] **BUG-5 / SCRUM-438 (2026-11-12, `fix/bound-key-actions`) — two owner questions.** (1) Bound
-      but unhandled actions: `toggle-developer-menu` (BUG-4, a feature), `sprint`, `interact`,
+      but unhandled actions: `toggle-developer-menu` (handled since #107), `sprint`, `interact`,
       `turret-toggle-control`, `turret-switch-ammo` (gameplay not built) and `toggle-perf-overlay`
       (no overlay exists) are in `InputAction`, bound in `keybindings.ts` and shown as rebindable
       in settings, yet nothing handles them. Decide whether to hide them from the bindings screen
@@ -752,6 +773,9 @@ Reply inline (`Decision: …`).
     happen as the owner wants. A dead Legend gets no structure XP today. The owner ruled that
     it is paid on respawn once respawn (GL-12) exists; a `ponytail:` note in
     `ProgressionSystem.ts` marks the stand-in.
+  - **Update 2026-11-22 (PR #100, DEC-186):** pay on respawn is built: XP a waiting Legend earns is
+    owed on its queue entry and paid in `ProgressionSystem`'s pass after it returns. The stand-in
+    note is removed.
 
 - [ ] **DEC-15 — camp placement, still open after your answer** (the rule is recorded as DEC-15,
       2026-10-10). (1) Does the random, parity-checked placement also apply to the corner camps?
@@ -3258,6 +3282,15 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
   UE-01's urgency on the character select and the match-start overlay, with UE-03 and the
   `uiEnhancements` switch built in the same PR; the bridge's countdown derivation is signed off.
   Reference 15 registers UE-01 as CD-48.
+
+- 2026-11-20 — **Legend respawn, interim (`fix/legend-respawn`, PR #100, GL-12).** Answered by
+  DEC-295 (owner, 2026-11-20): the same Legend object waits and returns reset (full health and
+  aether; ultimate charge kept apart), a bot laner re-plans its lane by the current threat, a
+  returning Legend ignores every cap, and a fallen Legend's body stays on the map greyed out. Built
+  in PR #100, with DEC-186's "pay on respawn". Critic items (a) `createWithId` and (d) the
+  factory coupling are gone with the redesign; (b) the ultimate charge waits for #123, which the
+  kept Legend object carries through death; (c) the loadout survives death, and of the cooldowns only the ultimate's charge and cooldown do, other abilities coming back fully cooled down (FR-117, no ability cooldown state exists yet); (e)
+  polling just before `DeathSystem` stays (it also keeps XP earned later in the same tick).
 
 - 2026-11-03 — **PR #56 — the `returning` state (DEC-144 G).** Decision (SamarjitBhogal,
   2026-11-03, recorded as DEC-155): (b) merge it into the resting state. `LeashBehaviour`, `MinionController` and

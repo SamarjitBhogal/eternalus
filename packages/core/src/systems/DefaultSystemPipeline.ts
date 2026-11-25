@@ -2,6 +2,7 @@ import { DamagePipeline } from '../combat/DamagePipeline';
 import { Footprint } from '../components/Footprint';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
+import { LEGEND_RESPAWN_SECONDS } from '../content/progression/legendRespawn';
 import { loadStuckDetection } from '../content/ai/loadStuckDetection';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
 import { loadOutOfCombatHealing } from '../content/healing/loadOutOfCombatHealing';
@@ -33,6 +34,7 @@ import { MovementSystem } from './MovementSystem';
 import { OutOfCombatHealingSystem } from './OutOfCombatHealingSystem';
 import { PathingSystem } from './PathingSystem';
 import { ProgressionSystem } from './ProgressionSystem';
+import { RespawnSystem } from './RespawnSystem';
 import { SpaceSystem } from './SpaceSystem';
 import { SpawnSystem } from './SpawnSystem';
 import { StructureSystem } from './StructureSystem';
@@ -43,6 +45,7 @@ import { loadMinionVeterancy } from '../content/mobs/loadMinionVeterancy';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { CHECKPOINT_DEFENDERS } from '../content/structures/guardPlans';
 import { ZONE_LOCKING_MOBS } from '../content/zones/zoneLocks';
+import { TickRate } from '../utils/TickRate';
 import { loadGuardPlans } from '../content/structures/loadGuardPlans';
 import { loadZoneLevelUp } from '../content/zones/loadZoneLevelUp';
 import { StatusEffectSystem } from './StatusEffectSystem';
@@ -53,12 +56,13 @@ import { SystemPipeline } from './SystemPipeline';
  * progress, statuses, movement, collision (DEC-121 (c): every later reader sees resolved
  * positions), the neighbour index, stuck detection (DEC-193), steering, combat, map destruction,
  * progression (kill XP), minion veterancy, structure losses and breakability, spawning, enraging,
- * out-of-combat healing (DEC-188), death, capture points, the match director, then invariants
- * last. Combat runs after movement, so a unit with a target in reach faces it, not its own way
- * (DEC-192). This is the one place a system is added, at its position in the tick (architecture
- * 02 §9). It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the
- * status effects loaded for this match's config) and hands them to the systems that need them, so
- * a damage step applies to every hit and every status event comes from one place.
+ * out-of-combat healing (DEC-188), respawn (queues the dead Legends, FR-051), death, capture
+ * points, the match director, then invariants last. Combat runs after movement, so a unit with a
+ * target in reach faces it, not its own way (DEC-192). This is the one place a system is added, at
+ * its position in the tick (architecture 02 §9). It builds the match's one `DamagePipeline` and
+ * one `StatusEffectApplier` (with the status effects loaded for this match's config) and hands
+ * them to the systems that need them, so a damage step applies to every hit and every status
+ * event comes from one place.
  */
 export class DefaultSystemPipeline extends SystemPipeline {
   /** Creates the pipeline from its injected parts (`DefaultSystemPipelineOptions`). */
@@ -146,6 +150,12 @@ export class DefaultSystemPipeline extends SystemPipeline {
       // Before death, so a fallen Duel Legend is healed and moved instead of removed.
       ...(duelStarts === undefined ? [] : [new DuelRoundSystem(duelStarts)]),
       new OutOfCombatHealingSystem(state, loadOutOfCombatHealing(tickRate)),
+      // After the Duel round, which heals a fallen Duel Legend, so it is never queued; queues the
+      // Legends that died this tick before `DeathSystem` withdraws them.
+      new RespawnSystem(
+        new TickRate(tickRate).toTicks(LEGEND_RESPAWN_SECONDS),
+        LANE_ASSESSMENT_WEIGHTS,
+      ),
       new DeathSystem(),
       new CaptureSystem(state.config.match.capturePoints, tickRate, ZONE_LOCKING_MOBS),
       ...(hordes === undefined ? [] : [new ZoneLevelUpSystem(state, loadZoneLevelUp(tickRate))]),

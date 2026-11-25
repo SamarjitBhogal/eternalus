@@ -267,7 +267,9 @@ mob ever exists without its horde (MS-25).
 **Pipeline positions.** `CommandApplySystem` → `AiSystem` → `HordeSystem` → `StatusEffectSystem`
 → `MovementSystem` → `CollisionSystem` (10 §9, DEC-121 (c)) → `SpaceSystem` → `StuckSystem`
 (§5.2, DEC-193) → `PathingSystem` → … → `SpawnSystem` (schedule and fulfilment) →
-`EnragedSystem` (MS-16) → `OutOfCombatHealingSystem` (DEC-188) → `DeathSystem` →
+`EnragedSystem` (MS-16) → `OutOfCombatHealingSystem` (DEC-188) → `RespawnSystem` (FR-051,
+DEC-295: in every match, after the Duel round, so a fallen Duel Legend is never queued) →
+`DeathSystem` →
 `CaptureSystem` (07 §7) → `ZoneLevelUpSystem` (07 §7, DEC-258) → `MinionLevelSystem` (every minion level change, DEC-353) → `MatchDirectorSystem` (12 §1) → `InvariantSystem` → `SnapshotSystem`.
 A horde spawned on tick N has its members and record when the invariants and the snapshot of tick
 N run, and its first decisions in tick N+1.
