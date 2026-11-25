@@ -37,6 +37,13 @@ export abstract class MapDecorationBuilder {
     };
   }
 
+  /** Marks the just-authored doorway as one a Duel closes (SCRUM-450, `MapDecoration`). */
+  protected markDuelBarrier(): void {
+    const piece = this.pieces.at(-1);
+    if (piece !== undefined)
+      this.pieces[this.pieces.length - 1] = { ...piece, isDuelBarrier: true };
+  }
+
   protected markPassage(): void {
     const piece = this.pieces.at(-1);
     if (piece !== undefined) this.pieces[this.pieces.length - 1] = { ...piece, isPassage: true };
