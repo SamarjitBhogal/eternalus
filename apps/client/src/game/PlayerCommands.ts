@@ -1,5 +1,6 @@
 import {
   type EntityId,
+  findGemAt,
   findMapObjectAt,
   findUnitAt,
   type MapObject,
@@ -129,10 +130,14 @@ export class PlayerCommands implements PlayerActions {
     this.attackTargetId = targetId;
   }
 
-  /** The unit under `point`, else the map object there: a unit is drawn on top of a building. */
+  /**
+   * The unit under `point`, else the Cathedral gem there (DEC-292), else the map object there: a
+   * unit is drawn on top of the gem, and the gem on top of the building.
+   */
   private targetAt(actorId: EntityId, point: Vec2, snapshot: TargetSnapshot): EntityId | null {
     return (
       findUnitAt(snapshot.entities, actorId, point) ??
+      findGemAt(snapshot.entities, point) ??
       findMapObjectAt(this.mapObjects, snapshot.mapObjects ?? [], point)
     );
   }

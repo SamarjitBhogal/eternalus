@@ -25,6 +25,7 @@ describe('@eternalus/core public API', () => {
       'autoBuildLoadout',
       'createDefaultGameConfig',
       'findBuildingAt',
+      'findGemAt',
       'findMapObjectAt',
       'findUnitAt',
       'isPlayableTeam',

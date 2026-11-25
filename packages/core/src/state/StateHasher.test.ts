@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest';
 
 import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
+import { CathedralGemState } from '../components/CathedralGemState';
 import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { ChaseWatch } from '../components/ChaseWatch';
 import { Combat } from '../components/Combat';
 import { CombatClock } from '../components/CombatClock';
+import { LastEnemyHit } from '../components/LastEnemyHit';
 import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
@@ -214,6 +216,22 @@ describe('StateHasher', () => {
     expect(hashWith('raptor-talons')).not.toBe(hashWith(null));
     expect(hashWith('raptor-talons')).not.toBe(hashWith('wuuthrad'));
     expect(hashWith('wuuthrad')).toBe(hashWith('wuuthrad'));
+  });
+
+  it('changes with a last enemy hit and with each of its fields (DEC-346)', () => {
+    const { state, soldier } = stateWithSoldier();
+    const bare = hasher.hash(state);
+    const last = new LastEnemyHit('entity-7', 5);
+    soldier.addComponent(last);
+    const hit = hasher.hash(state);
+    last.record('entity-8', 5);
+    const byAnother = hasher.hash(state);
+
+    last.record('entity-8', 6);
+
+    expect(hit).not.toBe(bare);
+    expect(byAnother).not.toBe(hit);
+    expect(hasher.hash(state)).not.toBe(byAnother);
   });
 
   it('differs between seeds', () => {
@@ -575,6 +593,44 @@ describe('StateHasher', () => {
         expect(new Set([withRequest(2, 2), withRequest(3, 3), withRequest(2, 1)]).size).toBe(3);
       },
     );
+  });
+
+  it('hashes the Cathedral gem: holder, glow ticks left, glow hits and ticks since hit each change the hash', () => {
+    const stateWithGem = (): { state: GameState; gem: CathedralGemState } => {
+      const state = new GameState(createDefaultGameConfig(), 1);
+      const holder = new Bare('entity-1', 'bare');
+      holder.spawn({});
+      state.entities.add(holder);
+      const gem = new CathedralGemState();
+      holder.addComponent(gem);
+      return { state, gem };
+    };
+    const { state, gem } = stateWithGem();
+    const untouched = hasher.hash(state);
+
+    gem.hold('light');
+    const held = hasher.hash(state);
+    gem.struck(3);
+    const struck = hasher.hash(state);
+    gem.struck(3);
+    const struckTwice = hasher.hash(state);
+    gem.age();
+    const aged = hasher.hash(state);
+    gem.age();
+    gem.age();
+    const dark = hasher.hash(state);
+    gem.age(); // the glow is dark: only the ticks since the hit move
+    const later = hasher.hash(state);
+
+    expect(new Set([untouched, held, struck, struckTwice, aged, dark, later]).size).toBe(7);
+
+    // Each step above moves more than one field; these two gems differ in glow ticks left alone.
+    const struckFor = (glowTicks: number): number => {
+      const fresh = stateWithGem();
+      fresh.gem.struck(glowTicks);
+      return hasher.hash(fresh.state);
+    };
+    expect(struckFor(3)).not.toBe(struckFor(4));
   });
 
   it('hashes a capture point: owner, progress, checkpoint and reached marks each change the hash', () => {
