@@ -4,6 +4,7 @@ import type { Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
 import type { EntityId, RemovalCause } from './EntityStore.types';
 import type { MatchResult } from './MatchResult.types';
+import type { OwedXp } from './RespawnQueue.types';
 
 /**
  * Who or what dealt damage (architecture 05 §9). Every hit names one, so every death has a killer.
@@ -119,6 +120,16 @@ export type GameEventMap = {
   readonly 'status-expired': StatusPayload;
   readonly 'horde-spawned': HordePayload;
   readonly 'horde-dissolved': HordePayload;
+  /**
+   * A dead Legend came back at its Stronghold (FR-051, DEC-295): the same entity, with `owedXp`,
+   * the XP it earned while it waited, which `ProgressionSystem` pays now (DEC-186).
+   */
+  readonly 'legend-respawned': {
+    readonly entityId: EntityId;
+    readonly team: Team;
+    readonly position: Vec2;
+    readonly owedXp: readonly OwedXp[];
+  };
   readonly 'level-up': { readonly entityId: EntityId; readonly level: number };
   /**
    * XP reaching a Legend; one per award, so the invariant can audit every award. A kill pays its
@@ -130,7 +141,8 @@ export type GameEventMap = {
     readonly amount: number;
     readonly victimId: EntityId;
     readonly victimTeam: Team;
-    readonly cause: 'kill' | 'structure-destroyed' | 'team-kill';
+    /** `respawn`: XP owed while the Legend waited, paid as it returns (DEC-186). */
+    readonly cause: 'kill' | 'structure-destroyed' | 'team-kill' | 'respawn';
   };
   readonly 'team-changed': {
     readonly entityId: EntityId;
