@@ -16,6 +16,19 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **`feat/duel-arena-only-legends` (PR #145, SCRUM-445, SCRUM-446, SCRUM-447, SCRUM-450):
+      one owner item left.** Q1 and Q2 are answered and built: DEC-348 (2026-11-23: no
+      structures, no minions or host units, trees, houses and rocks stay, the gem stays; the
+      Cathedral's walls cannot break in a Duel). (Q3) The decisions-log row for
+      SCRUM-449 (modifying DEC-78: a Duel result shows both players' final kill score and no
+      countdown), and whether `DUEL_RULES.arena` and `startOffset` belong in the replay setup
+      so a content change cannot alter an old Duel's replay. Decision: …
+
+- [ ] **Duel closed-door drawing (request, from PR #145, SCRUM-450).** The four Cathedral
+      doorways block in a Duel but look open. Draw them closed in a Duel or confirm the look is
+      fine. Also: PR #118 adds `bridge/selectors/selectIsDuel.ts`; PR #145 carries the same file
+      byte for byte, so one selector remains whichever merges first.
+
 - [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu-legends`) — developer menu, slice 2
       (add/remove Legends, FR-097) built; decisions for the owner.** (a) `dev-spawn-legend` takes
       `{ team, definitionId }`, not the `{ team, definitionId, controllerId, at? }` of 13 section
@@ -37,6 +50,7 @@ Reply inline (`Decision: …`).
       outside sim mode (`human-legend`). DEC-355 (2026-11-23, Owner Calls page) closes (c), (d)
       and (e): "Keep all three as built" (`dev-removed` stays, the character-select class list,
       one Team control). (f) and (g) stay open.
+
 - [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu`) — developer menu, slice 1 built;
       the rest needs owner and core work.** Built: `?dev=1` enables the menu, F1
       (`toggle-developer-menu`) opens it, and it spawns a horde of lane minions at a map structure

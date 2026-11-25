@@ -55,14 +55,14 @@ import { SystemPipeline } from './SystemPipeline';
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
  * progress, statuses, movement, collision (DEC-121 (c): every later reader sees resolved
  * positions), the neighbour index, stuck detection (DEC-193), steering, combat, map destruction,
- * progression (kill XP), minion veterancy, structure losses and breakability, spawning, enraging,
- * out-of-combat healing (DEC-188), respawn (queues the dead Legends, FR-051), death, capture
- * points, the match director, then invariants last. Combat runs after movement, so a unit with a
- * target in reach faces it, not its own way (DEC-192). This is the one place a system is added, at
- * its position in the tick (architecture 02 §9). It builds the match's one `DamagePipeline` and
- * one `StatusEffectApplier` (with the status effects loaded for this match's config) and hands
- * them to the systems that need them, so a damage step applies to every hit and every status
- * event comes from one place.
+ * progression (kill XP), minion veterancy, structure losses and breakability, spawning (none in a
+ * Duel, SCRUM-445), enraging, out-of-combat healing (DEC-188), respawn (queues the dead Legends,
+ * FR-051), death, capture points, the match director, then invariants last. Combat runs after
+ * movement, so a unit with a target in reach faces it, not its own way (DEC-192). This is the one
+ * place a system is added, at its position in the tick (architecture 02 §9). It builds the
+ * match's one `DamagePipeline` and one `StatusEffectApplier` (with the status effects loaded for
+ * this match's config) and hands them to the systems that need them, so a damage step applies to
+ * every hit and every status event comes from one place.
  */
 export class DefaultSystemPipeline extends SystemPipeline {
   /** Creates the pipeline from its injected parts (`DefaultSystemPipelineOptions`). */
@@ -72,6 +72,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
     progression,
     director,
     duelStarts,
+    spawnsMobs = true,
     hordes,
     structures = STRUCTURE_DEFINITIONS,
   }: DefaultSystemPipelineOptions) {
@@ -135,16 +136,20 @@ export class DefaultSystemPipeline extends SystemPipeline {
       ...(hordes === undefined
         ? []
         : [
-            new SpawnSystem(state, hordes.factory, {
-              definitions: hordes.factory.definitions,
-              openingWave: OPENING_WAVE,
-              waves: loadSpawnWaves(tickRate),
-              steering: HORDE_STEERING,
-              weights: LANE_ASSESSMENT_WEIGHTS,
-              formationId: RANKS_FORMATION.id,
-              guards: loadGuardPlans(tickRate, hordes.guards),
-              defenders: CHECKPOINT_DEFENDERS,
-            }),
+            ...(spawnsMobs
+              ? [
+                  new SpawnSystem(state, hordes.factory, {
+                    definitions: hordes.factory.definitions,
+                    openingWave: OPENING_WAVE,
+                    waves: loadSpawnWaves(tickRate),
+                    steering: HORDE_STEERING,
+                    weights: LANE_ASSESSMENT_WEIGHTS,
+                    formationId: RANKS_FORMATION.id,
+                    guards: loadGuardPlans(tickRate, hordes.guards),
+                    defenders: CHECKPOINT_DEFENDERS,
+                  }),
+                ]
+              : []),
             new EnragedSystem(state, statuses, ENRAGING_STRUCTURES),
           ]),
       // Before death, so a fallen Duel Legend is healed and moved instead of removed.
