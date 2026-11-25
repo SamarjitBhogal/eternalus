@@ -3,6 +3,7 @@ import { type ReactElement, useRef } from 'react';
 import { useAppSelector } from '../../bridge/hooks';
 import { AbilityBar } from '../hud/AbilityBar';
 import { AetherBar } from '../hud/AetherBar';
+import { DeveloperMenu } from '../hud/DeveloperMenu';
 import { DuelHud } from '../hud/DuelHud';
 import { CrystalStatus } from '../hud/CrystalStatus';
 import { GadgetBar } from '../hud/GadgetBar';
@@ -74,6 +75,7 @@ export function MatchScreen({ viewport }: ScreenProps): ReactElement {
         </div>
         <MatchCountdown />
       </section>
+      <DeveloperMenu />
       <PauseOverlay openerRef={openerRef} />
     </main>
   );
