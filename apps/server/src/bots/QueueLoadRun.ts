@@ -1,6 +1,7 @@
 import type { BotOptions } from './BotOptions.types';
 import type { BotRunDeps } from './BotRun.types';
-import { CLOSE_GRACE_MS, EXIT_FAIL, EXIT_OK, MS_PER_SECOND } from './BotRun.constants';
+import { MS_PER_SECOND } from '../time/time.constants';
+import { CLOSE_GRACE_MS, EXIT_FAIL, EXIT_OK } from './BotRun.constants';
 import { QueueLoadBot } from './QueueLoadBot';
 import { QueueLoadChecks } from './QueueLoadChecks';
 import { QUEUE_POLL_MS, SETTLE_POLLS } from './QueueLoadRun.constants';
