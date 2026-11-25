@@ -229,6 +229,25 @@ describe('LevelMatchesXpInvariant', () => {
     });
   });
 
+  it('rule 2: passes owed XP paid to a Legend that is back, and flags one still waiting (DEC-186)', () => {
+    const { state, hero, check } = setUp();
+    const owed = (entityId: string) => {
+      state.events.emit('xp-gained', {
+        entityId,
+        amount: 120,
+        victimId: 'entity-77',
+        victimTeam: 'dark',
+        cause: 'respawn',
+      });
+    };
+    owed(hero.id);
+    owed('entity-3');
+
+    expect(check()).toEqual([
+      'Entity "entity-3" gained owed XP for "entity-77" while it is not in the match.',
+    ]);
+  });
+
   it('rule 3: flags a second award for the same kill', () => {
     const { hero, enemy, died, gained, check } = setUp();
     died(enemy.id, hero.id);
