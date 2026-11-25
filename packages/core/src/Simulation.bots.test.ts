@@ -69,8 +69,9 @@ describe('Simulation with bot laners (minion plan M3)', () => {
   });
 
   it('hits the enemy structures on its lane once its horde reaches them (11 §4.2 Push)', () => {
-    // No cathedral: its neutral checkpoint defenders (M6b) sit on lane 0's bend, and a bot they
-    // wound retreats for good until out-of-combat healing lands (PR #86), so it never pushes.
+    // No cathedral: its neutral checkpoint defenders (M6b) sit on lane 0's bend. A bot they wound
+    // falls back below its difficulty's `retreatHealthFraction` and heals out of combat (DEC-188)
+    // up to `rejoinHealthFraction` before it returns, which takes longer than these 90 s.
     const noCathedral: MapDefinition = {
       ...TWO_LANE_MAP,
       features: TWO_LANE_MAP.features.filter(({ kind }) => kind !== 'cathedral'),
