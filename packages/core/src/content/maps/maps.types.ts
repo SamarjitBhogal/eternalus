@@ -224,6 +224,11 @@ export type MapDecoration = {
   readonly object?: MapObjectArt;
   /** A bridge deck cuts a walkable corridor through otherwise solid decorative terrain. */
   readonly isPassage?: true;
+  /**
+   * A doorway a Duel closes (SCRUM-450): `MapObjectBuilder` makes it a map object that blocks only
+   * in a Duel whose rules close the Cathedral (`DUEL_RULES.arena.isCathedralClosed`).
+   */
+  readonly isDuelBarrier?: true;
   /** Authored lane surface replaces the main view's schematic screen-width lane line. */
   readonly isLaneSurface?: true;
   /** This artwork supplies the main-view drawing of a generated feature, without changing it. */
