@@ -277,8 +277,8 @@ export class Match implements LoopTarget {
   public destroy(): void {
     this.loop.destroy();
     this.healthBars.destroy();
-    this.developerMenu.destroy();
     this.bodies.destroy();
+    this.developerMenu.destroy();
     this.bridge.destroy();
   }
 

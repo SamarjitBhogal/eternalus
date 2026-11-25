@@ -210,6 +210,10 @@ describe('Simulation capture points', () => {
       });
       const owners: string[] = [];
       simulation.on('capture-point-owner-changed', ({ to }) => owners.push(to));
+      const died = new Set<string>();
+      simulation.on('entity-removed', ({ entityId, cause }) => {
+        if (cause === 'died') died.add(entityId);
+      });
       simulation.enqueueCommand({
         type: 'dev-spawn',
         kind: 'warrior',
@@ -226,6 +230,10 @@ describe('Simulation capture points', () => {
         simulation.step();
       }
       const atCapture = defendersOf();
+      const darkLegendsAtCapture = simulation
+        .snapshot()
+        .entities.filter(({ family, team }) => family === 'legend' && team === 'dark')
+        .map(({ id }) => id);
       const zoneAt = () =>
         zonesOf(simulation).find(({ definitionId }) => definitionId.includes('cathedral'))?.capture;
       const presenceAtCapture = zoneAt()?.presence;
@@ -236,6 +244,8 @@ describe('Simulation capture points', () => {
       return {
         simulation,
         owners,
+        died,
+        darkLegendsAtCapture,
         atCapture,
         presenceAtCapture,
         after: defendersOf(),
@@ -248,21 +258,10 @@ describe('Simulation capture points', () => {
     expect(first.atCapture.length).toBeGreaterThan(0);
     expect(first.atCapture.every(({ team }) => team === 'neutral')).toBe(true);
     expect(first.presenceAtCapture?.neutral).toBe(first.atCapture.length);
-    const darkLegends = first.simulation
-      .snapshot()
-      .entities.filter(({ family, team }) => family === 'legend' && team === 'dark');
-    // The four dark Legends died in the zone and came back at their Stronghold (FR-051, 10 s).
-    const darkStronghold = map.features.find(
-      ({ kind, team }) => kind === 'stronghold' && team === 'dark',
-    );
-    expect(darkLegends.map(({ id }) => id)).toHaveLength(4);
-    expect(
-      darkLegends.every(
-        ({ transform }) =>
-          transform?.x === darkStronghold?.position.x &&
-          transform?.y === darkStronghold?.position.y,
-      ),
-    ).toBe(true);
+    // The defenders kill every Legend that took the point (a dead Legend respawns at its
+    // Stronghold after 10 s, FR-051, so the test checks the deaths, not an empty world).
+    expect(first.darkLegendsAtCapture.length).toBeGreaterThan(0);
+    expect(first.darkLegendsAtCapture.every((id) => first.died.has(id))).toBe(true);
     expect(first.after.map(({ id }) => id)).toEqual(first.atCapture.map(({ id }) => id));
     expect(first.owners).toEqual(['dark', 'neutral']);
     expect(first.zone?.owner).toBe('neutral');
