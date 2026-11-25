@@ -10026,6 +10026,84 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   passed (2011)"; server "Tests 84 passed (84)"; "✓ built in 403ms"; "Documentation check passed."
 - Next step: re-request review on PR #130.
 
+### 2026-11-15 — Phase 3 / minion plan M10: zone level-up (DEC-258) — feat/minion-m10-zone-level-up — SamarjitBhogal + Claude Code
+
+- What was done: the owner's answer DEC-258 (recorded on `feat/minion-m6b-checkpoint-defenders`,
+  which merges first): every capture point counts, using balancing.md's numbers, applied by an
+  ownership-event handler. `content/zones/zoneLevelUp.ts` holds the hold time and the levels.
+  `CapturePoint` now carries its lane (from the map feature). `ZoneLevelUpSystem`, which runs after
+  `CaptureSystem`, emits `minion-levels-granted` for the owner's hordes spawned on the point's lane
+  once the point has been held for the hold time. It takes those levels back on the tick the point
+  changes owner, then restarts the clock. `VeterancySystem` applies the event: `Veterancy` keeps
+  earned and granted levels apart, a lost level lowers max health (`Health.lowerMax`) and keeps
+  one veteran stack per remaining level. Docs: 03 event catalogue, 07 §7, 18 implementation
+  status, minion plan gap row.
+- Checks run: `npm run check` exit 1. Core "Tests 1591 passed (1591)", protocol 18/18, server
+  79/79. Client "Tests 1 failed | 1978 passed (1979)": `WebSocketTransport.test.ts` "CloseEvent is
+  not defined" (local Node v22.19.0, as on M6b; no client file changed).
+- Next step: the pre-PR gate, then a draft PR that merges after M6b's (#130).
+
+### 2026-11-15 — Phase 3 / minion plan M10: critic rework — feat/minion-m10-zone-level-up — SamarjitBhogal + Claude Code
+
+- What was done: the pre-PR critic (base `80e0ea13`) found one blocker, now fixed: `Veterancy`'s
+  earned and granted levels were not hashed. All the zone level-up's lasting state now lives in
+  hashed match state: the hold clock is `Capturable.ownedSinceTick` (set by `setOwner(owner,
+tick)`), and a minion records the point that granted its levels (`Veterancy.grantedBy`;
+  `minion-levels-granted` carries `sourceId`). `ZoneLevelUpSystem` keeps only per-tick queues,
+  and on a loss it takes back each granted minion's `granted` levels. 03 §4 records the one
+  handler that changes state (`VeterancySystem` on `minion-levels-granted`). New tests: the hash
+  over a granted level at the cap; `VeterancySystem` going from level 3 back to 2 with its stacks
+  and health; the stack-counting helper now sums stacks; a full-pipeline scenario
+  (`Simulation.zoneLevelUp.test.ts`: capture, hold, a dev horde levelled, loss on the same tick,
+  the same hash twice). Three better-than-design items went to `INBOX.md`.
+- Checks run: `npm run check` exit 1: core "Tests 1595 passed (1595)", protocol 18/18, server 79/79,
+  client "Tests 1 failed | 1978 passed (1979)" (the same local-Node `CloseEvent` failure).
+- Next step: the critic re-checks, ponytail, then a draft PR after #130.
+
+### 2026-11-20 — Phase 3 / minion plan M10 — feat/minion-m10-zone-level-up (PR #131 review round) — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (`5a7cc8dc`; conflicts: `Capturable` keeps
+  `lockedByValue` and `ownedSinceValue`, the pipeline keeps `CaptureSystem(..., ZONE_LOCKING_MOBS)`
+  and adds `ZoneLevelUpSystem`, `loadMinionVeterancy` replaces `MINION_VETERANCY` in the pipeline
+  and the level-up test), then merged PR #130 (`27927e4f`), which holds DEC-258 (B1); #130's
+  defender test passes the tick to `setOwner`. B1: the scenario test clears the checkpoint
+  defenders (`clearCheckpointDefenders`). B2 withdrawn by the owner (2026-11-20): kept as built;
+  DEC-279 records the cap ruling and the minion answer in the decisions log; DEC-258's "Approve" is
+  on #130's row. S1: two `StateHasher` tests, `ownedSinceTick` and `grantedBy`; dropping either
+  hashed field fails its test (checked). Nits: `TickRate.toTicks` for the hold (N4); 03's event
+  catalogue has `sourceId` (N1); the M10 plan row says DEC-258 answered it (N2); 07's `paths`
+  lists the level-up system and content (N6); `VeterancySystem` TSDoc names the grant path (N7).
+  Not done: S2 (`INBOX.md` "Minion M10 better-than-design items" (a)–(c)) still waits for the
+  owner; N3's FR-041 citation is an owner call; N5 kept the second `play()` (no assertion dropped).
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code
+  style!"; core "Tests 1704 passed (1704)"; protocol "Tests 29 passed (29)"; client "Tests 2011
+  passed (2011)"; server "Tests 84 passed (84)"; "✓ built in 477ms"; "Documentation check passed."
+- Next step: re-request review on PR #131 after PR #130.
+
+### 2026-11-21 — Phase 3 / minion plan M10 — feat/minion-m10-zone-level-up (PR #131 review, remaining items) — SamarjitBhogal + Claude Code
+
+- What was done: N5: `Simulation.zoneLevelUp.test.ts` moves the determinism check into its own
+  test, and both tests share the first match (`playOnce`), so no single test plays two whole
+  matches against core's 60 s `testTimeout`; no assertion dropped. Re-checked the rest of the
+  2026-11-19 review against the head: B1, S1, N1, N2, N4, N6, N7 and N8 were applied on
+  2026-11-20; B2 was withdrawn by the owner (DEC-279); N3's OQ-47 is decided (DEC-258).
+- Still open: S2 (`INBOX.md` "Minion M10 better-than-design items" (a)–(c)) and N3's FR-041
+  citation wait for the owner; S3: GitHub shows the PR conflicting with `phase/3-sprint-3-work`
+  (not merged here); N9: the PR description should use the template before "Ready for review".
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code
+  style!"; core "Tests 1706 passed (1706)"; protocol "Tests 29 passed (29)"; client "Tests 2011
+  passed (2011)"; server "Tests 84 passed (84)"; "✓ built in 413ms"; "Documentation check passed."
+- Next step: merge `phase/3-sprint-3-work` to clear the conflicts, then re-request review.
+
+### 2026-11-21 — Phase 3 / minion plan M10: merge phase/3 (54615afa) — feat/minion-m10-zone-level-up (PR #131) — SamarjitBhogal + Claude Code
+
+- **What:** merged `phase/3-sprint-3-work` at `54615afa` to clear the PR's merge conflict (S3 of the
+  2026-11-19 review). Conflicts resolved: doc 03's `last-reviewed` keeps this branch's 2026-11-20;
+  the decisions log keeps DEC-279's 2026-11-20 batch above phase/3's 2026-11-19 batches (no
+  duplicate IDs); this file keeps both sides. PR description rewritten to the template (N9).
+- **Checks:** `npm run check` passes on the merged tree (Node 24.21.0).
+- **Next:** re-request review; S2 and N3 wait on the owner (`INBOX.md` "Minion M10 better-than-design items").
+
 ### 2026-11-21 — Phase 3 / minion plan M6b: merge phase/3 (54615afa) — feat/minion-m6b-checkpoint-defenders (PR #130) — SamarjitBhogal + Claude Code
 
 - **What:** merged `phase/3-sprint-3-work` at `54615afa` to clear the PR's merge conflict; only

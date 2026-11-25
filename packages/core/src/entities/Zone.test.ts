@@ -26,6 +26,7 @@ const DEFINITION: ZoneDefinition = {
   kind: 'capture-point',
   displayName: 'Fake Capture Point',
   minimapGlyph: { shape: 'ring', size: 5, colourRole: 'objective' },
+  levelUp: { holdSeconds: 90, levels: 1 },
 };
 
 describe('Zone', () => {
