@@ -23,6 +23,27 @@ Reply inline (`Decision: …`).
       built; (b) store the grid's version with the cache and search again when it changes (one more
       number in brain memory, one more search after each opening). Say which.
 
+- [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu-legends`) — developer menu, slice 2
+      (add/remove Legends, FR-097) built; decisions for the owner.** (a) `dev-spawn-legend` takes
+      `{ team, definitionId }`, not the `{ team, definitionId, controllerId, at? }` of 13 section
+      4: the Legend always plays with the Rover controller (it takes no lane, so it needs no lane
+      memory, and it starts at the Stronghold like a roster Rover) with the `rover` difficulty.
+      A controller picker, a lane for a laner bot and a spawn point other than the Stronghold are
+      left out. (b) Removal reuses `dev-remove-entity`; there is no `dev-remove-legend` (the
+      existing command removes any entity and emits `entity-removed`). (c) FR-097 and FR-105 call
+      the removal cause `developer-menu`; the code's `RemovalCause` is `dev-removed` (used by tests,
+      invariants and 03). Not renamed here: do you want the rename? (d) The class picker lists the
+      selectable classes of the display catalogue (a class id is the Legend definition id). (e) The
+      team picker is now one control above both the mob and the Legend sections. (f) Refusals
+      (`cap-exceeded`, `not-a-legend`, `no-stronghold`) still reach only the log: the bridge has
+      no diagnostic event. (g) Adding or removing the human Legend and sim mode
+      (`dev-set-controller`, FR-099) stay for slice 3.
+      Decision: DEC-293 (2026-11-20, Owner Calls page) answers (a) and (b): "Small spawn, plus
+      `dev-remove-legend` that refuses the human outside sim mode". Built in PR #109: the spawn
+      stays `{ team, definitionId }`; `dev-remove-legend { entityId }` refuses the human's Legend
+      outside sim mode (`human-legend`). DEC-355 (2026-11-23, Owner Calls page) closes (c), (d)
+      and (e): "Keep all three as built" (`dev-removed` stays, the character-select class list,
+      one Team control). (f) and (g) stay open.
 - [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu`) — developer menu, slice 1 built;
       the rest needs owner and core work.** Built: `?dev=1` enables the menu, F1
       (`toggle-developer-menu`) opens it, and it spawns a horde of lane minions at a map structure
@@ -761,6 +782,9 @@ Reply inline (`Decision: …`).
     happen as the owner wants. A dead Legend gets no structure XP today. The owner ruled that
     it is paid on respawn once respawn (GL-12) exists; a `ponytail:` note in
     `ProgressionSystem.ts` marks the stand-in.
+  - **Update 2026-11-22 (PR #100, DEC-186):** pay on respawn is built: XP a waiting Legend earns is
+    owed on its queue entry and paid in `ProgressionSystem`'s pass after it returns. The stand-in
+    note is removed.
 
 - [ ] **DEC-15 — camp placement, still open after your answer** (the rule is recorded as DEC-15,
       2026-10-10). (1) Does the random, parity-checked placement also apply to the corner camps?
@@ -3269,6 +3293,15 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
   UE-01's urgency on the character select and the match-start overlay, with UE-03 and the
   `uiEnhancements` switch built in the same PR; the bridge's countdown derivation is signed off.
   Reference 15 registers UE-01 as CD-48.
+
+- 2026-11-20 — **Legend respawn, interim (`fix/legend-respawn`, PR #100, GL-12).** Answered by
+  DEC-295 (owner, 2026-11-20): the same Legend object waits and returns reset (full health and
+  aether; ultimate charge kept apart), a bot laner re-plans its lane by the current threat, a
+  returning Legend ignores every cap, and a fallen Legend's body stays on the map greyed out. Built
+  in PR #100, with DEC-186's "pay on respawn". Critic items (a) `createWithId` and (d) the
+  factory coupling are gone with the redesign; (b) the ultimate charge waits for #123, which the
+  kept Legend object carries through death; (c) the loadout survives death, and of the cooldowns only the ultimate's charge and cooldown do, other abilities coming back fully cooled down (FR-117, no ability cooldown state exists yet); (e)
+  polling just before `DeathSystem` stays (it also keeps XP earned later in the same tick).
 
 - 2026-11-03 — **PR #56 — the `returning` state (DEC-144 G).** Decision (SamarjitBhogal,
   2026-11-03, recorded as DEC-155): (b) merge it into the resting state. `LeashBehaviour`, `MinionController` and

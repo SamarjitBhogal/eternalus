@@ -7,6 +7,7 @@ import { contentSlice } from '../../bridge/slices/contentSlice';
 import { developerMenuSlice } from '../../bridge/slices/developerMenuSlice';
 import type { PlayableTeam } from '../../bridge/domain.types';
 import { STRINGS } from '../strings';
+import { DeveloperLegends } from './DeveloperLegends';
 import styles from './DeveloperMenu.module.css';
 import { DeveloperRemoveEntity } from './DeveloperRemoveEntity';
 import { DeveloperSpawnMobs } from './DeveloperSpawnMobs';
@@ -15,10 +16,12 @@ const TEAMS: readonly PlayableTeam[] = ['light', 'dark'];
 
 /**
  * The developer menu (13 §4; Architect's Table is the proposed name): spawn a horde of mobs at a
- * map structure and remove an entity by id. Each button emits one `dev-command` intent; `Match`
- * enqueues it as a `Command` and core validates it. It renders nothing unless the session enabled
- * the menu (`?dev=1`) and the `toggle-developer-menu` key opened it, and it knows nothing of the
- * simulation: its pickers arrive in the `developer-menu` state and the display catalogue.
+ * map structure, add a bot Legend of a class at its team's Stronghold or remove a Legend (the team
+ * picker serves both adds), and remove an entity by id. Each button emits one `dev-command`
+ * intent; `Match` enqueues it as a `Command` and core validates it. It renders nothing unless the
+ * session enabled the menu (`?dev=1`) and the `toggle-developer-menu` key opened it, and it knows
+ * nothing of the simulation: its pickers arrive in the `developer-menu` state and the display
+ * catalogue.
  */
 export function DeveloperMenu(): ReactElement | null {
   const state = useAppSelector(developerMenuSlice.selectors.selectDeveloperMenu);
@@ -54,6 +57,7 @@ function DeveloperPanel({ origins }: Pick<DeveloperMenuState, 'origins'>): React
         </select>
       </div>
       <DeveloperSpawnMobs team={team} origins={origins} />
+      <DeveloperLegends team={team} />
       <DeveloperRemoveEntity />
     </aside>
   );
