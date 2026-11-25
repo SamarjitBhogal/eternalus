@@ -9649,6 +9649,22 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `prettier --check` and `npm run docs:check` on this file.
 - Next step: the owner pushes the branch (`push-125-r3.sh`), then merges PR #125.
 
+### 2026-11-20 — Phase 3 / Duel: Legends start at max level (SCRUM-444) — feat/duel-legend-max-level — claudiodh + Claude Code
+
+- What was done: in a Duel every Legend now enters at its level curve's cap, minions at their
+  normal level. `DUEL_RULES.legendsStartAtMaxLevel` (content) is passed by `Simulation` as
+  `ProgressionContent.legendsStartAtMaxLevel` only for a Duel; `ProgressionSystem` then raises
+  each spawned Legend to the cap with the usual per-level health and aether raises, emitting no
+  `xp-gained` or `level-up`. Mobs have no `Progression` and are untouched. Test: `Simulation: a
+Duel` > "starts both Legends at max level and spawns minions at their normal level
+  (SCRUM-444)" (red with the rule off: level 1, not 50). Architecture 05 §13 and 12 updated;
+  `INBOX.md` (DEC-36 item) lists the decisions taken. Max-level Legends have about 4.9 times the
+  health against the same damage, so Duel kills take about 3 times as many ticks; the three
+  fight tests in `Simulation.duel.test.ts` got a 180 s timeout (`FIGHT_TIMEOUT_MS`), since the
+  kill-target test passed the 60 s default under coverage.
+- Checks run: full `npm run check` (see the PR).
+- Next step: the pre-PR gate (critic, ponytail), then the PR into `phase/3-sprint-3-work`.
+
 ### 2026-11-19 — Phase 3 / the match-start countdown overlay (DEC-278) — feat/match-start-countdown — sholtzman + Claude Code
 
 - What was done: built the owner's ruling of 2026-11-19 (DEC-278, written as its own batch in the
