@@ -1,5 +1,5 @@
 import { MemoryLogger } from '@eternalus/core';
-import { ClientMessageParser } from '@eternalus/protocol';
+import { ClientMessageParser, RECONNECT_WINDOW_MS } from '@eternalus/protocol';
 import { describe, expect, it } from 'vitest';
 import { DuelGateway } from '../gateway/DuelGateway';
 import { TokenBucket } from '../limits/TokenBucket';
@@ -10,9 +10,14 @@ import { BASE_RATING_GAP } from '../queue/DuelQueue.constants';
 import { PlayerRatings } from '../rating/PlayerRatings';
 import { FakeClock } from '../time/FakeClock';
 import { FakeTickScheduler } from '../time/FakeTickScheduler';
+import { ConnectionHeartbeat } from '../transport/ConnectionHeartbeat';
+import {
+  HEARTBEAT_INTERVAL_MS,
+  HEARTBEAT_PROBE_TIMEOUT_MS,
+} from '../transport/ConnectionHeartbeat.constants';
 import { FakeConnection } from '../transport/FakeConnection';
 import { PresenceBook } from './PresenceBook';
-import { MAX_HELD_GUESTS, MAX_KNOWN_GUESTS, RECONNECT_WINDOW_MS } from './PresenceBook.constants';
+import { MAX_HELD_GUESTS, MAX_KNOWN_GUESTS } from './PresenceBook.constants';
 
 const join = (guestId?: string): string =>
   JSON.stringify({
@@ -45,6 +50,11 @@ function setup(maxHeldGuests = MAX_HELD_GUESTS, maxKnownGuests = MAX_KNOWN_GUEST
     clock: new FakeClock(),
     scheduler: new FakeTickScheduler(),
   });
+  const heartbeat = new ConnectionHeartbeat(
+    scheduler,
+    HEARTBEAT_INTERVAL_MS,
+    HEARTBEAT_PROBE_TIMEOUT_MS,
+  );
   let issued = 0;
   const presence = new PresenceBook({
     queue,
@@ -54,6 +64,9 @@ function setup(maxHeldGuests = MAX_HELD_GUESTS, maxKnownGuests = MAX_KNOWN_GUEST
     reconnectWindowMs: RECONNECT_WINDOW_MS,
     maxHeldGuests,
     maxKnownGuests,
+    probe: (connection) => {
+      heartbeat.probe(connection);
+    },
     newGuestId: () => `00000000-0000-4000-8000-${String((issued += 1)).padStart(12, '0')}`,
   });
   const gateway = new DuelGateway({
@@ -65,6 +78,7 @@ function setup(maxHeldGuests = MAX_HELD_GUESTS, maxKnownGuests = MAX_KNOWN_GUEST
   });
   const connect = (): FakeConnection => {
     const connection = new FakeConnection();
+    heartbeat.watch(connection);
     gateway.accept(connection);
     return connection;
   };
@@ -268,6 +282,42 @@ describe('PresenceBook', () => {
     expect(a2.sent.map(({ type }) => type)).toEqual(['welcome', 'welcome', 'match-found']);
   });
 
+  it('probes a seat whose socket still looks open; once that closes, a retry takes the seat', () => {
+    const { connect, guestIdOf, scheduler } = setup();
+    const [a, b] = [connect(), connect()];
+    const id = guestIdOf(a);
+    a.receive(join());
+    b.receive(join());
+    const early = connect();
+    early.receive(join(id));
+    expect(a.pings).toBe(1);
+    expect(early.sentOfType('match-found')).toEqual([]);
+    scheduler.tickEvery(HEARTBEAT_PROBE_TIMEOUT_MS);
+    expect(a.isTerminated).toBe(true);
+    early.receive(JSON.stringify({ type: 'queue-leave' }));
+    early.close();
+    const retry = connect();
+    retry.receive(join(id));
+    expect(guestIdOf(retry)).toBe(id);
+    expect(retry.sentOfType('match-found')).toHaveLength(1);
+    expect(b.sentOfType('match-ended')).toEqual([]);
+  });
+
+  it('keeps a live seat that answers the probe', () => {
+    const { connect, guestIdOf, scheduler } = setup();
+    const [a, b] = [connect(), connect()];
+    const id = guestIdOf(a);
+    a.receive(join());
+    b.receive(join());
+    const intruder = connect();
+    intruder.receive(join(id));
+    a.pong();
+    scheduler.tickEvery(HEARTBEAT_PROBE_TIMEOUT_MS);
+    expect(a.isTerminated).toBe(false);
+    expect(guestIdOf(intruder)).not.toBe(id);
+    expect(b.sentOfType('match-ended')).toEqual([]);
+  });
+
   it('forfeits an in-match guest after the window', () => {
     const { connect, scheduler, presence } = setup();
     const [a, b] = [connect(), connect()];
@@ -335,6 +385,19 @@ describe('PresenceBook', () => {
 
   it('records the loss for the one who left first when both seats end up held', () => {
     const { connect, guestIdOf, ratings } = setup();
+    const [a, b] = [connect(), connect()];
+    const [idA, idB] = [guestIdOf(a), guestIdOf(b)];
+    if (idA === undefined || idB === undefined) throw new Error('no ids');
+    a.receive(join());
+    b.receive(join());
+    a.close();
+    b.close();
+    expect(ratings.get(idA)).toMatchObject({ matches: 1, losses: 1 });
+    expect(ratings.get(idB)).toMatchObject({ matches: 1, wins: 1 });
+  });
+
+  it('records the loss for the one who left first even when the held-guest cap is full', () => {
+    const { connect, guestIdOf, ratings } = setup(1);
     const [a, b] = [connect(), connect()];
     const [idA, idB] = [guestIdOf(a), guestIdOf(b)];
     if (idA === undefined || idB === undefined) throw new Error('no ids');

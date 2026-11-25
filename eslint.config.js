@@ -124,7 +124,8 @@ export default defineConfig(
   },
 
   {
-    // Zero-dependency Node scripts (agent hooks, docs check). Plain ESM, no type checking.
+    // Node scripts (agent hooks, docs check; the tick bench, the only one importing a package:
+    // Vite). Plain ESM, no type checking.
     files: ['scripts/**/*.mjs'],
     languageOptions: {
       globals: {

@@ -1,7 +1,7 @@
 import { randomInt, randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
 import { createDefaultGameConfig, DUEL_RULES, makeLogRecord } from '@eternalus/core';
-import { ClientMessageParser } from '@eternalus/protocol';
+import { ClientMessageParser, RECONNECT_WINDOW_MS } from '@eternalus/protocol';
 import { SEED_LIMIT } from './config/ServerConfig.constants';
 import { ServerConfig } from './config/ServerConfig';
 import { DuelGateway } from './gateway/DuelGateway';
@@ -14,18 +14,17 @@ import { CoreDuelSimulationFactory } from './match/CoreDuelSimulationFactory';
 import { DuelHost } from './match/DuelHost';
 import { DUEL_VERSUS_MS } from './match/DuelHost.constants';
 import { PresenceBook } from './presence/PresenceBook';
-import {
-  MAX_HELD_GUESTS,
-  MAX_KNOWN_GUESTS,
-  RECONNECT_WINDOW_MS,
-} from './presence/PresenceBook.constants';
+import { MAX_HELD_GUESTS, MAX_KNOWN_GUESTS } from './presence/PresenceBook.constants';
 import { PlayerRatings } from './rating/PlayerRatings';
 import { DuelQueue } from './queue/DuelQueue';
 import { IntervalTickScheduler } from './time/IntervalTickScheduler';
 import { SystemClock } from './time/SystemClock';
 import { MS_PER_SECOND } from './time/time.constants';
 import { ConnectionHeartbeat } from './transport/ConnectionHeartbeat';
-import { HEARTBEAT_INTERVAL_MS } from './transport/ConnectionHeartbeat.constants';
+import {
+  HEARTBEAT_INTERVAL_MS,
+  HEARTBEAT_PROBE_TIMEOUT_MS,
+} from './transport/ConnectionHeartbeat.constants';
 import { WsListener } from './transport/WsListener';
 
 // Composition root: the only place the adapters are chosen and wired.
@@ -47,6 +46,11 @@ const host = new DuelHost({
 });
 const queue = new DuelQueue({ starter: host, ratings, clock, scheduler });
 const stopQueueSweep = queue.start();
+const heartbeat = new ConnectionHeartbeat(
+  scheduler,
+  HEARTBEAT_INTERVAL_MS,
+  HEARTBEAT_PROBE_TIMEOUT_MS,
+);
 const presence = new PresenceBook({
   queue,
   host,
@@ -55,6 +59,9 @@ const presence = new PresenceBook({
   reconnectWindowMs: RECONNECT_WINDOW_MS,
   maxHeldGuests: MAX_HELD_GUESTS,
   maxKnownGuests: MAX_KNOWN_GUESTS,
+  probe: (connection) => {
+    heartbeat.probe(connection);
+  },
   newGuestId: randomUUID,
 });
 const gateway = new DuelGateway({
@@ -65,7 +72,6 @@ const gateway = new DuelGateway({
   newLimiter: () => new TokenBucket(clock, MESSAGE_BURST, MESSAGES_PER_SECOND),
 });
 
-const heartbeat = new ConnectionHeartbeat(scheduler, HEARTBEAT_INTERVAL_MS);
 const stopHeartbeat = heartbeat.start();
 const serverConfig = new ServerConfig(process.env);
 const listener = new WsListener(

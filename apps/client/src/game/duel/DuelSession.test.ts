@@ -1,8 +1,9 @@
 import { MemoryLogger } from '@eternalus/core';
-import type { MatchEnding } from '@eternalus/protocol';
+import { type MatchEnding, RECONNECT_WINDOW_MS } from '@eternalus/protocol';
 import { describe, expect, it } from 'vitest';
 
 import { FakeMessageTransport } from '../engine/net/FakeMessageTransport';
+import { FakeSessionClock } from '../engine/time/FakeSessionClock';
 import { snapshotAtTick } from './__fixtures__/snapshots';
 import { DuelSession } from './DuelSession';
 import type { DuelSessionHandlers, GuestIdStore } from './DuelSession.types';
@@ -10,6 +11,17 @@ import type { DuelSessionHandlers, GuestIdStore } from './DuelSession.types';
 const INTENT = { move: { x: 1, y: 0 }, aim: null, triggered: [] };
 
 const GUEST_ID = '123e4567-e89b-42d3-a456-426614174000';
+
+const THROWAWAY_ID = '00000000-0000-4000-8000-000000000001';
+
+const MATCH_FOUND = {
+  type: 'match-found',
+  opponentName: 'Rival',
+  matchId: 'm1',
+  seed: 42,
+  team: 'dark',
+  legendId: 'entity-9',
+} as const;
 
 function setUp(
   guestIds: GuestIdStore = { load: () => Promise.resolve(null), save: () => Promise.resolve() },
@@ -26,9 +38,12 @@ function setUp(
       results.push(result);
     },
     opponentPresence: (graceMs) => calls.push(`opponent:${String(graceMs)}`),
+    reconnecting: () => calls.push('reconnecting'),
+    reconnected: () => calls.push('reconnected'),
     lost: () => calls.push('lost'),
   };
   const logger = new MemoryLogger();
+  const clock = new FakeSessionClock();
   const session = new DuelSession({
     createTransport: () => {
       const transport = new FakeMessageTransport();
@@ -36,6 +51,7 @@ function setUp(
       return transport;
     },
     guestIds,
+    clock,
     logger,
     handlers,
   });
@@ -56,7 +72,32 @@ function setUp(
     });
     transport().receive({ type: 'state', snapshot: snapshotAtTick(1), ackSeq: 0 });
   };
-  return { session, transport, transports, calls, paired, results, logger, pair };
+  /** The newest transport: the latest reconnect attempt once there is one. */
+  const latest = (): FakeMessageTransport => {
+    const last = transports.at(-1);
+    if (last === undefined) throw new Error('No transport was built');
+    return last;
+  };
+  /** Paired and started under the guest id `GUEST_ID`, so a drop can reconnect. */
+  const play = (): void => {
+    session.join('Ana');
+    transport().receive({ type: 'welcome', guestId: GUEST_ID });
+    transport().receive(MATCH_FOUND);
+    transport().receive({ type: 'state', snapshot: snapshotAtTick(1), ackSeq: 0 });
+  };
+  return {
+    session,
+    transport,
+    transports,
+    calls,
+    paired,
+    results,
+    logger,
+    clock,
+    pair,
+    play,
+    latest,
+  };
 }
 
 describe('DuelSession', () => {
@@ -186,7 +227,7 @@ describe('DuelSession', () => {
     expect(session.status).toBe('queued');
   });
 
-  it('reports a lost connection before the match ended, and resets', () => {
+  it('reports a lost connection at once when it has no guest id to reconnect with, and resets', () => {
     const { session, transport, calls, pair } = setUp();
     pair();
 
@@ -344,5 +385,162 @@ describe('DuelSession', () => {
     expect(transport().sent).toEqual([{ type: 'queue-join', name: 'Ana' }]);
     expect(session.status).toBe('queued');
     expect(logger.records.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe('DuelSession, automatic reconnect (DEC-349)', () => {
+  it('reconnects on a drop inside the window and goes on with the same Duel, with no click', () => {
+    const { session, transport, transports, calls, paired, clock, play, latest } = setUp();
+    play();
+
+    transport().drop();
+    expect(session.status).toBe('reconnecting');
+    expect(calls).toEqual(['started', 'reconnecting']);
+    session.sendIntent(INTENT);
+    clock.advance(250);
+    expect(transports).toHaveLength(2);
+    expect(latest().sent).toEqual([{ type: 'queue-join', name: 'Ana', guestId: GUEST_ID }]);
+    latest().receive({ type: 'welcome', guestId: THROWAWAY_ID });
+    latest().receive({ type: 'welcome', guestId: GUEST_ID });
+    latest().receive(MATCH_FOUND);
+    const resumed = snapshotAtTick(90);
+    latest().receive({ type: 'state', snapshot: resumed, ackSeq: 0 });
+    session.sendIntent(INTENT);
+
+    expect(session.status).toBe('started');
+    expect(calls).toEqual(['started', 'reconnecting', 'reconnected']);
+    expect(paired).toEqual(['Rival']);
+    expect(session.latestSnapshot()).toBe(resumed);
+    expect(latest().sent.at(-1)).toEqual({ type: 'intent', seq: 0, intent: INTENT });
+    clock.advance(RECONNECT_WINDOW_MS);
+    expect(calls).toEqual(['started', 'reconnecting', 'reconnected']);
+  });
+
+  it('loses the Duel only when a longer drop outlasts the window', () => {
+    const { session, transport, calls, clock, play, latest } = setUp();
+    play();
+    transport().drop();
+
+    for (let elapsed = 0; elapsed < RECONNECT_WINDOW_MS - 250; elapsed += 250) {
+      clock.advance(250);
+      if (latest() !== transport()) latest().drop();
+    }
+    expect(calls).toEqual(['started', 'reconnecting']);
+    clock.advance(250);
+
+    expect(calls).toEqual(['started', 'reconnecting', 'lost']);
+    expect(session.status).toBe('idle');
+    expect(latest().hasEnded).toBe(true);
+    clock.advance(RECONNECT_WINDOW_MS);
+    expect(calls).toEqual(['started', 'reconnecting', 'lost']);
+  });
+
+  it('backs off between failed attempts', () => {
+    const { transport, transports, clock, play, latest } = setUp();
+    play();
+    transport().drop();
+    const startedAt: number[] = [];
+
+    while (transports.length < 7) {
+      const count = transports.length;
+      clock.advance(1);
+      if (transports.length > count) {
+        startedAt.push(clock.now());
+        latest().drop();
+      }
+    }
+
+    expect(startedAt).toEqual([250, 750, 1750, 3750, 5750, 7750]);
+  });
+
+  it('leaves the queue and tries again when an attempt is queued instead of seated', () => {
+    const { session, transports, transport, clock, play, latest } = setUp();
+    play();
+    transport().drop();
+    clock.advance(250);
+    const queued = latest();
+
+    queued.receive({ type: 'welcome', guestId: THROWAWAY_ID });
+    queued.receive({ type: 'queue-waiting' });
+
+    expect(queued.sent.at(-1)).toEqual({ type: 'queue-leave' });
+    expect(queued.hasEnded).toBe(true);
+    expect(session.status).toBe('reconnecting');
+    clock.advance(500);
+    expect(transports).toHaveLength(3);
+    expect(latest().sent).toEqual([{ type: 'queue-join', name: 'Ana', guestId: GUEST_ID }]);
+  });
+
+  it('does not save the throwaway id an attempt is welcomed with', () => {
+    const saved: string[] = [];
+    const { transport, clock, play, latest } = setUp({
+      load: () => Promise.resolve(null),
+      save: (id) => {
+        saved.push(id);
+        return Promise.resolve();
+      },
+    });
+    play();
+    transport().drop();
+    clock.advance(250);
+
+    latest().receive({ type: 'welcome', guestId: THROWAWAY_ID });
+
+    expect(saved).toEqual([GUEST_ID]);
+  });
+
+  it('ignores a match-found while the Duel is already running', () => {
+    const { session, transport, calls, paired, play } = setUp();
+    play();
+
+    transport().receive({ ...MATCH_FOUND, legendId: 'entity-2' });
+
+    expect(session.status).toBe('started');
+    expect(session.legendId).toBe('entity-9');
+    expect(paired).toEqual(['Rival']);
+    expect(calls).toEqual(['started']);
+  });
+
+  it('reconnects during VERSUS and starts once the first snapshot arrives', () => {
+    const { session, transport, calls, paired, clock, latest } = setUp();
+    session.join('Ana');
+    transport().receive({ type: 'welcome', guestId: GUEST_ID });
+    transport().receive(MATCH_FOUND);
+
+    transport().drop();
+    clock.advance(250);
+    latest().receive(MATCH_FOUND);
+    expect(session.status).toBe('matched');
+    latest().receive({ type: 'state', snapshot: snapshotAtTick(1), ackSeq: 0 });
+
+    expect(paired).toEqual(['Rival']);
+    expect(calls).toEqual(['reconnecting', 'reconnected', 'started']);
+  });
+
+  it('reports the end of the match the server sends to a reconnect attempt', () => {
+    const { session, transport, calls, results, clock, play, latest } = setUp();
+    play();
+    transport().drop();
+    clock.advance(250);
+
+    latest().receive({ type: 'match-ended', reason: 'opponent-left', winner: 'dark' });
+    clock.advance(RECONNECT_WINDOW_MS);
+
+    expect(calls).toEqual(['started', 'reconnecting', 'ended']);
+    expect(results).toEqual([{ winner: 'dark', reason: 'opponent-left' }]);
+    expect(session.status).toBe('ended');
+  });
+
+  it('stops reconnecting when the owner closes the session', () => {
+    const { session, transport, transports, calls, clock, play } = setUp();
+    play();
+    transport().drop();
+
+    session.close();
+    clock.advance(RECONNECT_WINDOW_MS);
+
+    expect(transports).toHaveLength(1);
+    expect(calls).toEqual(['started', 'reconnecting']);
+    expect(session.status).toBe('idle');
   });
 });

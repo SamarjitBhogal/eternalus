@@ -206,6 +206,24 @@ export const STRINGS = {
     stay: 'Stay',
     leave: 'Leave',
   },
+  /** The developer menu (13 §4; `?dev=1` only). */
+  developerMenu: {
+    title: 'Developer menu',
+    spawnMobs: 'Spawn mobs',
+    team: 'Team',
+    mob: 'Mob',
+    count: 'Count',
+    origin: 'Origin',
+    spawn: 'Spawn',
+    legends: 'Legends',
+    legendClass: 'Class',
+    add: 'Add',
+    legendToRemove: 'Legend to remove',
+    removeLegend: 'Remove Legend',
+    removeEntity: 'Remove entity',
+    entityId: 'Entity id',
+    remove: 'Remove',
+  },
   pause: { title: 'Paused', resume: 'Resume', settings: 'Settings', leave: 'Leave match' },
   /** The match viewport; the explorer labels show only with the developer flag (13 §4, DEC-32). */
   viewport: {
@@ -290,6 +308,8 @@ export const STRINGS = {
     duelScore: 'Duel score',
     /** "3 - 1" with the target beside it: "first to 10". */
     duelFirstTo: (target: number): string => `first to ${String(target)}`,
+    /** While a dropped Duel connection is being restored (the owner's words, DEC-349). */
+    duelReconnecting: 'Reconnecting...',
     matchCountdown: 'Match start',
     countdownStart: 'START',
     health: 'Health',

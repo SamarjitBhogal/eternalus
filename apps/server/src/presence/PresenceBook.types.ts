@@ -1,4 +1,5 @@
 import type { DuelHost } from '../match/DuelHost';
+import type { ClientConnection } from '../transport/ClientConnection.types';
 import type { PlayerRatings } from '../rating/PlayerRatings';
 import type { DuelQueue } from '../queue/DuelQueue';
 import type { TickScheduler } from '../time/TickScheduler.types';
@@ -27,6 +28,11 @@ export type PresenceBookOptions = {
   readonly maxHeldGuests: number;
   /** How many gone guests keep their id and rating for a later connection; the oldest go first. */
   readonly maxKnownGuests: number;
+  /**
+   * Checks a connection now (`ConnectionHeartbeat.probe`): one that does not answer is closed
+   * soon after, which holds its guest for the reconnect window.
+   */
+  readonly probe: (connection: ClientConnection) => void;
   /** Makes a new, unguessable guest id (`randomUUID` in production). */
   readonly newGuestId: () => string;
 };

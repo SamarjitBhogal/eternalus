@@ -44,13 +44,21 @@ export class PresenceBook {
 
   /**
    * `connection` closed: an idle guest goes at once; a queued or in-match one is held for the
-   * window, unless too many guests are held already or the opponent is held too (a match with no
-   * one connected ends at once).
+   * window, unless the opponent is held too (a match with no one connected ends at once, the one
+   * who left first losing) or too many guests are held already.
    */
   public disconnect(connection: ClientConnection): void {
     const guest = this.byConnection.get(connection);
     if (guest === undefined) return;
     guest.isConnected = false;
+    const rival = this.options.host.rivalOf(connection);
+    const other = rival === null ? undefined : this.byConnection.get(rival);
+    if (other !== undefined && !other.isConnected) {
+      // The one who left first, while the other was still in the Duel, takes the loss (DEC-250 (4)).
+      this.drop(other);
+      this.drop(guest);
+      return;
+    }
     if (this.stateOf(guest) === 'online' || this.counts().held > this.options.maxHeldGuests) {
       this.drop(guest);
       return;
@@ -62,19 +70,11 @@ export class PresenceBook {
     });
     guest.cancelDrop = cancel;
     this.options.queue.hold(connection);
-    const rival = this.options.host.rivalOf(connection);
-    const other = rival === null ? undefined : this.byConnection.get(rival);
-    if (other !== undefined && !other.isConnected) {
-      // The one who left first, while the other was still in the Duel, takes the loss (DEC-250 (4)).
-      this.drop(other);
-      this.drop(guest);
-    } else {
-      rival?.send({
-        type: 'opponent-presence',
-        status: 'disconnected',
-        graceMs: this.options.reconnectWindowMs,
-      });
-    }
+    rival?.send({
+      type: 'opponent-presence',
+      status: 'disconnected',
+      graceMs: this.options.reconnectWindowMs,
+    });
   }
 
   /**
@@ -83,7 +83,8 @@ export class PresenceBook {
    * over the queue slot or seat (told `queue-waiting` or `match-found` again). If that guest is
    * remembered (gone, not held), `connection` becomes that guest too (`welcome` with the id back)
    * and keeps its rating, but has no slot to take over. The id of a guest that is still connected
-   * is ignored, so nobody can kick a live player.
+   * is not taken over, so nobody can kick a live player; its connection is probed instead, so a
+   * half-open one is closed and held in time for the client's next retry (DEC-349).
    * @returns Whether a queue slot or seat was taken over; `false` means `connection` should join.
    */
   public resume(connection: ClientConnection, guestId: string): boolean {
@@ -94,7 +95,11 @@ export class PresenceBook {
       return false;
     }
     const guest = this.byId.get(guestId);
-    if (guest === undefined || guest.isConnected) return false;
+    if (guest === undefined) return false;
+    if (guest.isConnected) {
+      this.options.probe(guest.connection);
+      return false;
+    }
     const previous = guest.connection;
     const rival = this.options.host.rivalOf(previous);
     guest.cancelDrop?.();

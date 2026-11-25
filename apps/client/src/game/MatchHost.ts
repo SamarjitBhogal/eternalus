@@ -1,6 +1,7 @@
 import type { InputAction } from '../bridge/Binding.types';
 import type { MatchEvidence } from '../data/logging/ErrorReport.types';
 import { CanvasPointerControls } from './CanvasPointerControls';
+import { isEditableTarget } from './engine/input/isEditableTarget';
 import { KEY_ZOOM_STEP } from './MatchHost.constants';
 import type { MatchHostDeps } from './MatchHost.types';
 import type { RunningMatch } from './SessionController.types';
@@ -10,8 +11,8 @@ import type { RunningMatch } from './SessionController.types';
  * the window and the mouse and pointer controls to the canvas, follows the player's bindings,
  * releases held input on focus loss, a hidden tab or pause, runs the client-only one-shot actions
  * on their key press (DEC-117; the developer explorer's hotkey, DEC-105, every build; the zoom
- * keys; the minimap key, DEC-147), and tears all of it down again, leaving 0 listeners and 0
- * frames (13 §2). It owns the match and the adapters it is given.
+ * keys; the minimap key, DEC-147; the developer menu key, 13 §4), and tears all of it down again,
+ * leaving 0 listeners and 0 frames (13 §2). It owns the match and the adapters it is given.
  */
 export class MatchHost implements RunningMatch {
   private readonly pointer: CanvasPointerControls;
@@ -41,6 +42,12 @@ export class MatchHost implements RunningMatch {
       'camera-zoom-out',
       () => {
         this.deps.match.controls.zoomBy(1 / KEY_ZOOM_STEP);
+      },
+    ],
+    [
+      'toggle-developer-menu',
+      () => {
+        this.deps.match.developerMenu.toggle();
       },
     ],
     [
@@ -144,7 +151,7 @@ export class MatchHost implements RunningMatch {
   /** A press (not a repeat) of a one-shot action's chord runs that action (DEC-117). */
   private readonly runOneShotAction = (event: Event): void => {
     const key = event as KeyboardEvent;
-    if (key.repeat) return;
+    if (key.repeat || isEditableTarget(event)) return;
     const entry = this.oneShotActions.find(([action]) => this.deps.mapper.isActionKey(action, key));
     if (entry === undefined) return;
     key.preventDefault();

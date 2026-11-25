@@ -36,7 +36,8 @@ import { SessionCrashes } from './session/SessionCrashes';
  * `attachViewport` in `match` creates the `Match`, leaving `match` destroys it. An online Duel
  * (`DuelSession`, ADR 0016) joins from `menu` and skips selection: when the server has paired the
  * player, `menu` goes straight to `match-loading`, and the server's `match-ended` leads to
- * `results`. Loads and releases
+ * `results`; a dropped connection shows "Reconnecting..." (`duel-connection`) while the session
+ * takes the seat back on its own (DEC-349). Loads and releases
  * the asset groups each phase needs through the resources facade. Keeps the setup as built (what a
  * rematch republishes) apart from the rosters LOCK IN fills (what the match is built from).
  */
@@ -59,6 +60,7 @@ export class SessionController {
     this.duel = new DuelSession({
       createTransport: deps.createDuelTransport,
       guestIds: deps.guestIds,
+      clock: deps.clock,
       logger: deps.logger,
       handlers: {
         matched: (opponent) => {
@@ -83,10 +85,18 @@ export class SessionController {
         opponentPresence: (graceMs) => {
           deps.bus.emit('duel-opponent-presence', { graceMs });
         },
+        reconnecting: () => {
+          deps.bus.emit('duel-connection', { isReconnecting: true });
+        },
+        reconnected: () => {
+          deps.bus.emit('duel-connection', { isReconnecting: false });
+        },
         ended: (ending) => {
+          deps.bus.emit('duel-connection', { isReconnecting: false });
           this.endDuel(ending);
         },
         lost: () => {
+          deps.bus.emit('duel-connection', { isReconnecting: false });
           this.loseDuel();
         },
       },
@@ -291,7 +301,8 @@ export class SessionController {
 
   private createMatch(viewport: MatchViewport, observer: MatchObserver): RunningMatch {
     const { setup, selection, rosters, world } = this;
-    if (this.duel.status === 'started') {
+    // A Duel that dropped during match-loading builds its match while it reconnects (DEC-349).
+    if (this.duel.status === 'started' || this.duel.status === 'reconnecting') {
       if (world === null) throw new Error('A Duel needs a prepared world');
       return this.deps.createDuelMatch(
         {
