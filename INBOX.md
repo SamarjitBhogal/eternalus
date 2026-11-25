@@ -389,6 +389,87 @@ Reply inline (`Decision: …`).
   - **(2) done by DEC-234** (#85, 2026-11-09): the inside test runs once, in `aimPointOf`, which
     returns an `AimedAt` tag; `isInReach` and `facingPointOf` read it. The tidy PR builds no
     helper for it.
+- [ ] **Server image and the connection cap behind a platform proxy (SCRUM-404, 2026-11-13) — owner
+      decision before deploying.** `apps/server/Dockerfile` builds the Duel server image (tested:
+      it runs, `HEALTHCHECK` is healthy and two bots finish a Duel against it). Open: (1)
+      `ClientAddress` reads `X-Forwarded-For` only when the peer is loopback (`tailscale serve`).
+      On Fly.io or Render the peer is the platform's proxy, not loopback, so every player would
+      share one address and the per-IP cap of 10 would limit the whole server to about 10
+      connections. Either add an environment switch that reads the forwarded address from the
+      platform's proxy (never from a directly reachable server) or raise the cap for that
+      deployment; this touches ADR 0016 point 7, so it is yours to choose. (2) The platform's
+      health check cannot reach `/health` (it listens on the container's loopback, `OPS_HOST`);
+      use a TCP check on the WebSocket port, or tell me to make `OPS_HOST` configurable. (3) TLS is
+      the platform's job; the client must be built with `VITE_DUEL_SERVER_URL=wss://<host>`. (4)
+      Which platform: see the comparison on SCRUM-404.
+
+- [ ] **Glicko-2 rating and skill-based pairing (SCRUM-431, 2026-11-13) — interim choices, owner to
+      confirm or change.** (1) Storage: ratings and records live in memory by guest id
+      (`PlayerRatings`); the server has no database, so a restart loses them, and a guest id only
+      survives a reconnect, not a new session: persistence needs plan question 35 (database) and
+      real accounts. (2) Rating period: each match is its own period (simple); a batch per day
+      would be closer to Glickman's advice. (3) Results: a leaver or disconnect-after-window counts
+      as a loss for the leaver and a win for the other; a draw (no winner, or a failed simulation
+      step) scores 0.5 and clears the streak. (4) Pairing: closest rating first; allowed gap =
+      100 + 25 per second of the longer waiter, unlimited after 30 s, checked on join and every 1 s
+      (all `// TUNE:` in `DuelQueue.constants.ts`). (5) Glicko-2 defaults 1500 / 350 / 0.06, tau 0.5
+      (`Glicko2.constants.ts`). (6) Nothing shows ratings to players and `match-found` does not carry
+      the opponent's rating (no protocol change); say if you want either. (7) The seat order is
+      still arrival order (question 45).
+      (8) Known limit: one person with two connections can farm wins when both seats are held (the
+      guest who disconnects second is dropped first), and a forfeit-then-return loop re-enters as a
+      fresh 1500 / 350; bounded because ratings are not shown. (9) Streak and matches are stored but
+      pairing does not use them yet (DEC-36 groundwork). (10) Plan question 47 (how long a player
+      waits) is answered by the 30 s timeout, pending your confirmation. (11) A held (disconnected)
+      queued guest can still be paired, and the sweeps make that likelier.
+  - **Answered in part 2026-11-20 by DEC-297 (3)**: the in-memory pairing is accepted as an
+    interim until sprint 4; FR-118 (ratings in a database) is scheduled for sprint 4; question 35
+    must be answered before sprint 4 starts. Still open: (2), (5), (6), (7), (10).
+  - **Changed by the PR #104 review fixes (2026-11-20)**: (1) a guest id and its rating now also
+    survive the end of a Duel and a new connection (every match end closes both sockets, which
+    used to forget them), for the newest `MAX_KNOWN_GUESTS` (10 000, `// TUNE:`, a memory bound)
+    gone guests, until a server restart. (8) When both seats end up held, the guest who left first
+    takes the loss (DEC-250 (4)); a forfeit-then-return now keeps the lower rating. (11) A held
+    queued guest is never paired; it keeps its place and wait time.
+
+- [ ] **Guest identity, presence and reconnect (SCRUM-430, 2026-11-13) — interim choices, owner to
+      confirm or change.** (1) Id: `randomUUID` (122 random bits), sent as `welcome`, a bearer token
+      never logged; a malformed or unknown id gets a fresh one. (2) Window: `RECONNECT_WINDOW_MS` =
+      10 s (`// TUNE:`), timed on the existing `TickScheduler` as a one-shot; plan question 44
+      (window, forfeit stats, deploys) is still yours. (3) Duplicate: only a HELD guest can be resumed; the id of a
+      still-connected guest is ignored (the new connection gets a fresh id), so nobody can kick a
+      live player. Abuse bounds (critic): at most `MAX_HELD_GUESTS` = 100 held guests (beyond it a
+      disconnect drops at once), and a match whose two seats are both held ends at once. (4) In-match: the new connection
+      takes the seat, is sent `match-found` again and then the next `state`; the opponent is told
+      about the gap (`opponent-presence`, PR #118), and a queued guest whose slot is held can still be paired (the match
+      starts with a seat that is waiting to come back). (5) New `forfeit` message (needs your confirmation; it only touches the sender's own match) so the queue-load
+      bots (and a future "leave match" button) end a match at once instead of closing a socket the
+      window now holds. (6) Storage: the id is saved through `PersistenceController` (new `guest`
+      store), which is in memory until IndexedDB lands, so it survives a reconnect but not a page
+      reload yet. (7) The client still ends the Duel as lost on a dropped socket; automatic rejoin
+      is a follow-up.
+  - **Answered in part 2026-11-20 by DEC-297 (1), (2)**: (2) the 10 s window is approved, and a
+    timed-out drop is a leave and a loss (DEC-250 (4)): the player who stayed wins after 10 s.
+    (5) `forfeit` is approved as built (the sender's own match only). Still open: (1), (3), (6),
+    (7), and the rest of plan question 44 (forfeit stats, deploys).
+  - **Changed by the PR #104 review fixes (2026-11-20)**: (4) a queued guest whose slot is held
+    is no longer paired; on a resume `welcome` comes before `queue-waiting` or `match-found`.
+  - **Changed by the PR #104 review round 3 (2026-11-22)**: only a guest with a finished match
+    (a `PlayerRatings` record) is remembered after its socket closes, so idle connect-and-close
+    loops cannot push rated guests out; an unrated guest that comes back gets a fresh id. Still
+    open for the owner: how long a remembered guest id should live (a time limit, not just the
+    `MAX_KNOWN_GUESTS` cap), and whether the game reconnects a dropped Duel player on its own (7).
+  - **Answered 2026-11-23 by DEC-349**: (7) the client reconnects on its own: "Build automatic
+    reconnect now, before this work merges: the player sees "Reconnecting..." and gets back in with
+    no click". Built in PR #104 (2026-11-25): `DuelSession` `reconnecting`, back-off retries inside
+    the 10 s window, the HUD's "Reconnecting...", lost only when the window ends. Still open: how
+    long a remembered guest id should live, and the architecture critic's pass on that lifetime
+    (the B1 design, a remembered rated guest; not yet run). New, for the team: the server notices a
+    half-open socket only through the heartbeat (`HEARTBEAT_INTERVAL_MS`, 15 s), longer than the
+    10 s window, so a reconnect after a drop the server has not seen is queued, not seated; the
+    client leaves that queue and retries, and if the server never sees the drop inside the window
+    the Duel is lost. Shorten the heartbeat, or end the old seat when its guest id comes back?
+
 - [ ] **Per-address connection cap and `X-Forwarded-For` (SCRUM-432 critic, 2026-11-12) — owner /
       security, not introduced by this branch.** `ClientAddress.resolve` (`apps/server/src/transport/`)
       takes the FIRST `X-Forwarded-For` entry when the peer is loopback. Behind `tailscale serve`
@@ -516,6 +597,25 @@ Reply inline (`Decision: …`).
       ternary and each rule counts only its own posts. Built today: `GroupGuardRespawn` counts
       only the home's own posts (same `checkpoint` marker), which closes the gap with no new
       field.
+      **Update 2026-11-23 (owner answers, relayed on PR #130):** (4)'s boss-group question, (6)
+      and (7) are answered as DEC-350: the boss group levels; a late team defender appears only
+      while its team still owns the point, and is cancelled when the point changes owner; at most
+      10 defenders per capture point. They are built in M6c. (3)(b), (5) and (9) still wait for
+      sign-off.
+
+- [x] **Minion M10 better-than-design items (`feat/minion-m10-zone-level-up`, 2026-11-15,
+      critic; DEC-139) — sign-off per item.** (a) A `MinionLevelSystem` after
+      `ZoneLevelUpSystem` that owns every minion level change: `VeterancySystem` would announce
+      kill levels by event too, so no listener changes state inside a handler (it removes 03 §4's
+      one exception). (b) `StatusEffects.removeStacks(id, n)` through the applier, so a lost level
+      emits one event, not a `status-expired` plus one `status-applied` per remaining level.
+      (c) The zone level-up's hold time and levels as fields of each capture-point
+      `ZoneDefinition`, looked up by id (balancing.md's knob table), not one global constant.
+      Approve any, or leave as built. Leaving (a) as built keeps 03 §4's one exception (a
+      listener that changes state in its handler), which then needs your sign-off in your own
+      words (PR #131 review S2, 2026-11-22).
+      **Answered 2026-11-23 (owner, relayed on PR #131), DEC-353:** "Build all three in #131
+      before it merges". Done in PR #131.
 
 - [ ] **Minion plan MVP gaps (3): who owns the zone cooldown reduction (2026-11-06, PR #81).**
       The zone's cooldown reduction (FR-041, 07 §7) is Legend-side, not minion work, and no plan
