@@ -23,6 +23,18 @@ Reply inline (`Decision: …`).
       become breakable (and if so, what happens to its mobs and respawns)? A breakable camp leaves
       the shared `NEVER_DAMAGED` spread with a one-line change.
 
+- [ ] **Better than design: four Cathedral gem items (#132 pre-PR critic, 2026-11-25).** Not
+      built in #132; each would be a small follow-up PR if you agree. (BTD3) One body: the gem's
+      movement block is a separate map-object plinth that copies the gem's radius; a static
+      blocking collider on `CathedralGem` itself would keep one shape. (BTD4) A flag on the status:
+      the credited sources are the list `CATHEDRAL_GEM.statusIds`; a per-status flag (for example
+      `creditsLastEnemyHitter`) would let a future hazard opt in with no pipeline edit. (BTD5)
+      Legends only: `LastEnemyHit` is kept on every unit an enemy hits, while your words were
+      "the dying legend"; should a minion or mob killed by the gem also count for its last enemy
+      damager (and pay XP), or only a Legend? (BTD6) Enemy status damage: an enemy's bleed tick
+      has no attacker, so it never counts as the last enemy hit; carrying the applier's id on
+      status damage would count it. Decision: …
+
 - [ ] **Better than design: two Cathedral gem items (#132 re-review, swholtzman, 2026-11-22).**
       (BTD1) The holder is stored twice: `CathedralGemState.holder` copies the capture zone's owner
       from `capture-point-owner-changed`, while the zone's `Capturable.owner` already holds it.

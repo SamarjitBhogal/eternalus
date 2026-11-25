@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-11-23
+last-reviewed: 2026-11-25
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [

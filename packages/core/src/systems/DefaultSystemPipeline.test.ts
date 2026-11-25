@@ -8,6 +8,7 @@ import { Movement } from '../components/Movement';
 import { Transform } from '../components/Transform';
 import { Progression } from '../components/Progression';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { loadScoring } from '../content/match/loadScoring';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../config/matchPhases';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { loadLevelCurves } from '../content/progression/loadLevelCurves';
@@ -32,6 +33,9 @@ import type { MapObject } from '../content/maps/mapObjects.types';
 import type { MapFeature } from '../content/maps/maps.types';
 import { WorldObjectStore } from '../state/WorldObjectStore';
 
+/** The match's assist window, as `Simulation` passes it (DEC-346). */
+const ASSIST_WINDOW_TICKS = loadScoring(createDefaultGameConfig().tickRate).assistWindowTicks;
+
 const UNIT_DEFINITIONS = loadDefaultContent(createDefaultGameConfig().tickRate);
 const newFactory = (): EntityFactory =>
   new EntityFactory(
@@ -49,6 +53,7 @@ describe('DefaultSystemPipeline', () => {
     const logger = new MemoryLogger();
     const state = new GameState(createDefaultGameConfig(), 1);
     const pipeline = new DefaultSystemPipeline({
+      assistWindowTicks: ASSIST_WINDOW_TICKS,
       invariants: new DefaultInvariantRunner({
         debug: TEST_DEBUG_CONFIG,
         logger,
@@ -101,6 +106,7 @@ describe('DefaultSystemPipeline', () => {
     });
 
     const pipeline = new DefaultSystemPipeline({
+      assistWindowTicks: ASSIST_WINDOW_TICKS,
       invariants: new DefaultInvariantRunner({
         debug: TEST_DEBUG_CONFIG,
         logger,
@@ -153,6 +159,7 @@ describe('DefaultSystemPipeline', () => {
     const logger = new MemoryLogger();
     const state = new GameState(createDefaultGameConfig(), 1);
     const pipeline = new DefaultSystemPipeline({
+      assistWindowTicks: ASSIST_WINDOW_TICKS,
       invariants: new DefaultInvariantRunner({
         debug: TEST_DEBUG_CONFIG,
         logger,
@@ -189,6 +196,7 @@ describe('DefaultSystemPipeline', () => {
     const logger = new MemoryLogger();
     const state = new GameState(createDefaultGameConfig(), 1);
     const pipeline = new DefaultSystemPipeline({
+      assistWindowTicks: ASSIST_WINDOW_TICKS,
       invariants: new DefaultInvariantRunner({
         debug: TEST_DEBUG_CONFIG,
         logger,
@@ -225,6 +233,7 @@ describe('DefaultSystemPipeline', () => {
     const logger = new MemoryLogger();
     const state = new GameState(createDefaultGameConfig(), 1);
     const pipeline = new DefaultSystemPipeline({
+      assistWindowTicks: ASSIST_WINDOW_TICKS,
       invariants: new DefaultInvariantRunner({
         debug: TEST_DEBUG_CONFIG,
         logger,
@@ -262,6 +271,7 @@ describe('DefaultSystemPipeline', () => {
     const logger = new MemoryLogger();
     const state = new GameState(createDefaultGameConfig(), 1);
     const pipeline = new DefaultSystemPipeline({
+      assistWindowTicks: ASSIST_WINDOW_TICKS,
       invariants: new DefaultInvariantRunner({
         debug: TEST_DEBUG_CONFIG,
         logger,
@@ -330,6 +340,7 @@ describe('DefaultSystemPipeline', () => {
     });
     const seenByDirector: boolean[] = [];
     const pipeline = new DefaultSystemPipeline({
+      assistWindowTicks: ASSIST_WINDOW_TICKS,
       invariants: new DefaultInvariantRunner({
         debug: TEST_DEBUG_CONFIG,
         logger,
@@ -358,6 +369,7 @@ describe('DefaultSystemPipeline', () => {
     const logger = new MemoryLogger();
     const state = new GameState(createDefaultGameConfig(), 1);
     const pipeline = new DefaultSystemPipeline({
+      assistWindowTicks: ASSIST_WINDOW_TICKS,
       invariants: new DefaultInvariantRunner({
         debug: TEST_DEBUG_CONFIG,
         logger,
@@ -463,6 +475,7 @@ describe('DefaultSystemPipeline', () => {
       const world = state.world?.grid;
       for (const footprint of house.footprints) world?.stampFootprint(footprint);
       const pipeline = new DefaultSystemPipeline({
+        assistWindowTicks: ASSIST_WINDOW_TICKS,
         invariants: new DefaultInvariantRunner({
           debug: TEST_DEBUG_CONFIG,
           logger: new MemoryLogger(),
@@ -527,6 +540,7 @@ describe('DefaultSystemPipeline', () => {
       });
       state.entities.add(fort);
       const pipeline = new DefaultSystemPipeline({
+        assistWindowTicks: ASSIST_WINDOW_TICKS,
         invariants: new DefaultInvariantRunner({
           debug: TEST_DEBUG_CONFIG,
           logger,

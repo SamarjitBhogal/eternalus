@@ -1,4 +1,5 @@
 import { DamagePipeline } from '../combat/DamagePipeline';
+import { createDefaultDamageSteps } from '../combat/defaultDamageSteps';
 import { KillCredit } from '../combat/KillCredit';
 import { Footprint } from '../components/Footprint';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
@@ -13,7 +14,6 @@ import { ENRAGING_STRUCTURES } from '../content/mobs/minionModifiers';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { CATHEDRAL_GEM } from '../content/structures/cathedralGem';
-import { loadScoring } from '../content/match/loadScoring';
 import { loadSpawnWaves } from '../content/structures/loadSpawnWaves';
 import { OPENING_WAVE } from '../content/structures/spawnWaves';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
@@ -84,11 +84,8 @@ export class DefaultSystemPipeline extends SystemPipeline {
     const { tickRate, map } = state.config;
     // A death by the gem counts for the victim's last enemy damager in the assist window (DEC-346).
     const damage = new DamagePipeline(
-      undefined,
-      new KillCredit(
-        assistWindowTicks ?? loadScoring(tickRate).assistWindowTicks,
-        CATHEDRAL_GEM.statusIds,
-      ),
+      createDefaultDamageSteps(),
+      new KillCredit(assistWindowTicks, CATHEDRAL_GEM.statusIds),
     );
     const veterancy = loadMinionVeterancy(tickRate);
     const loadedStatuses = loadStatusEffects(
