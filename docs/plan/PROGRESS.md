@@ -8885,6 +8885,10 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: `npm run check` (result in the PR comment).
 - Next step: reviewer re-review.
 
+### 2026-11-15 — Phase 3 / sync — fix/legend-respawn (PR #100) — claudiodh + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (80e0ea13) into this branch because #100 was CONFLICTING. Conflicts: `INBOX.md` (both sides kept); `MatchWorld.ts` and its test (both the `strongholdOf` and `startFacing` members kept); `DefaultSystemPipeline.ts` and its test (the out-of-combat healing system and the respawn system both kept, healing first, both before death).
+
 ### 2026-11-15 — Phase 3 / developer menu: sync with feat/developer-menu (PR #109) — feat/developer-menu-legends — claudiodh + Claude Code
 
 - What was done: merged `feat/developer-menu` (the text-field key fix and the `phase/3-sprint-3-work` sync) into this branch. Conflicts: `Simulation.ts` (kept `LegendSpawner`; the spawn's start facing, DEC-216 (6), moved into `LegendSpawner.spawn` so the roster and `dev-spawn-legend` both face the enemy Stronghold), `MatchWorld.test.ts` (kept the `strongholdOf` and `startFacing` tests) and `PROGRESS.md` (both sides kept).
@@ -8896,10 +8900,6 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - What was done: merged `feat/developer-menu-legends` (which carries the text-field key fix, so the sim-mode "Legend id" field can be typed into) into this branch. Conflicts: `MatchRecord.test.ts` and `PROGRESS.md` (both sides kept) and `11-game-ai.md` (later `last-reviewed`).
 - Checks run: `npm run check` (result in the PR).
 - Next step: reviewer approval.
-
-### 2026-11-15 — Phase 3 / sync — fix/legend-respawn (PR #100) — claudiodh + Claude Code
-
-- What was done: merged `phase/3-sprint-3-work` (80e0ea13) into this branch because #100 was CONFLICTING. Conflicts: `INBOX.md` (both sides kept); `MatchWorld.ts` and its test (both the `strongholdOf` and `startFacing` members kept); `DefaultSystemPipeline.ts` and its test (the out-of-combat healing system and the respawn system both kept, healing first, both before death).
 
 ### 2026-11-15 — Phase 3 / sync — fix/session-e2e-test-isolation (PR #111) — claudiodh + Claude Code
 
