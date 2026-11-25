@@ -153,6 +153,30 @@ describe('ProgressionSystem checkpoint XP through the guard roster (07 §7)', ()
     expect(violations).toEqual([]);
   });
 
+  it('pays nobody when no clearing Legend is in range, or the killer is unknown', () => {
+    const { state, step, legend, defend, hit, awards, violations } = setUp();
+    const far = legend(CENTER.x + RULE.shareRadius + 20);
+    for (const id of defend(1)) hit(far, id);
+    step();
+    step();
+    expect(awards).toEqual([]);
+
+    legend(CENTER.x);
+    for (const id of defend(2)) {
+      new DamagePipeline().apply(state, id, 1e6, {
+        attackerId: null,
+        kind: 'environment',
+        definitionId: 'lava',
+      });
+    }
+    step();
+    step();
+
+    expect(awards).toEqual([]);
+    expect(state.defenderDamage.size).toBe(0);
+    expect(violations).toEqual([]);
+  });
+
   it('pays one summed award when two sets of a point are cleared on the same tick', () => {
     const { step, legend, defend, hit, awards, violations } = setUp();
     const solo = legend(CENTER.x);

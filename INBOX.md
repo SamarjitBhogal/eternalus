@@ -631,7 +631,10 @@ Reply inline (`Decision: …`).
       (`canLevel: false` on `corner-camp`). (e) A guard that levels also gets and gives the
       `rallied` aura, as DEC-165 tied the two: forest-camp mobs and defenders now rally their own
       side's levellers nearby. (f) A set whose last waiting defenders are cancelled (DEC-350)
-      after its last living one died is never announced cleared, so it pays no checkpoint XP.
+      after its last living one died is never announced cleared, so it pays no checkpoint XP
+      (its damage tally is dropped). (g) For DEC-350 (6), a set reached on the pass that changes
+      the owner is the old owner's (DEC-257): its defenders that find room appear, and the ones
+      the unit cap blocks are cancelled at once.
       `Recommendation:` approve (a) to (f) as built.
 
 - [x] **Minion M10 better-than-design items (`feat/minion-m10-zone-level-up`, 2026-11-15,

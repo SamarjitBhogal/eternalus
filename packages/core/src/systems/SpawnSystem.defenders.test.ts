@@ -313,6 +313,46 @@ describe('SpawnSystem', () => {
     });
   });
 
+  describe('a checkpoint reached on the pass that changes the owner (DEC-257, DEC-350)', () => {
+    it("lets the old owner's defenders that find room appear and cancels the ones the cap blocks", () => {
+      const { state, step, reach, changeOwner, posts } = setUp('dark', 1);
+      reach(1);
+      changeOwner('light');
+      step();
+      for (let tick = 0; tick < 10 * TICK_RATE; tick += 1) {
+        step();
+      }
+
+      const [living, ...blocked] = posts();
+      expect(state.entities.teamOf(living?.guardId ?? '')).toBe('dark');
+      expect(blocked).toHaveLength(3);
+      for (const slot of blocked) {
+        expect([slot.guardId, slot.respawnAtTick]).toEqual([null, null]);
+      }
+    });
+
+    it('drops the damage tally of a set a cancel leaves with no defender, which is never announced', () => {
+      const { state, factory, step, reach, changeOwner, posts, kill } = setUp('light', 1);
+      const cleared: string[] = [];
+      state.events.on('checkpoint-cleared', ({ defenceId }) => cleared.push(defenceId));
+      reach(1);
+      step();
+      const [living] = posts();
+      state.defenderDamage.add(living?.defenceId ?? '', 'legend-1', 40);
+      // Another light unit keeps the cap full, so the set's other posts still wait.
+      state.entities.add(
+        factory.create('light-mob', 'light-minion', { team: 'light', position: CENTER }),
+      );
+      kill(living);
+      step();
+      changeOwner('dark');
+      step();
+
+      expect(cleared).toEqual([]);
+      expect(state.defenderDamage.size).toBe(0);
+    });
+  });
+
   describe('checkpoint-cleared (07 §7)', () => {
     it('announces a set once, when its last defender is lost, naming the killer, its team and where it fell', () => {
       const { state, point, factory, step, reach, posts, kill } = setUp('neutral');
@@ -336,6 +376,7 @@ describe('SpawnSystem', () => {
       kill(last, killer.id);
       step();
 
+      expect(state.guards.isCleared(last?.defenceId ?? '')).toBe(true);
       expect(cleared).toEqual([
         {
           pointId: point.id,

@@ -158,15 +158,19 @@ export class SpawnSystem implements System {
     for (const request of [...opening, ...this.dueWaves(state)]) {
       this.spawnHorde(state, routes, request);
     }
-    // Cancelled before the new sets are added: a checkpoint reached on the pass that changed the
-    // owner calls the old owner's defenders (DEC-257), and they still get their chance to wait.
-    for (const { pointId, from } of this.pointsLost.splice(0)) {
-      cancelWaitingDefenders(state, pointId, from);
-    }
+    // DEC-350: a lost owner's waiting defenders are cancelled before the posts fill, so none
+    // appears late; a set reached on the pass that changed the owner is the old owner's (DEC-257),
+    // so its defenders that find room appear now and the ones the cap blocks are cancelled after.
+    const lost = this.pointsLost.splice(0);
+    const cancel = (): void => {
+      for (const { pointId, from } of lost) cancelWaitingDefenders(state, pointId, from);
+    };
+    cancel();
     for (const { pointId, checkpoint, owner } of this.checkpointsReached.splice(0)) {
       this.guards.defend(state, pointId, checkpoint, owner);
     }
     this.guards.update(state);
+    cancel();
   }
 
   /**

@@ -12,7 +12,7 @@ import type { OwedXp } from '../state/RespawnQueue.types';
 import { isPlayableTeam, opponentOf } from '../teams/playableTeams';
 import { CheckpointAwards } from './CheckpointAwards';
 import type { System, SystemContext } from './System.types';
-import type { Award, ProgressionContent } from './ProgressionSystem.types';
+import type { Award, PersonalAward, ProgressionContent } from './ProgressionSystem.types';
 
 /**
  * Turns kills into XP and levels (architecture 05 §13). It listens to `entity-died`, prices the kill
@@ -166,7 +166,7 @@ export class ProgressionSystem implements System {
         }
         continue;
       }
-      if ('killerId' in award) {
+      if (ProgressionSystem.isPersonal(award)) {
         // O4 pays a Legend killed earlier: still in the store this tick, or waiting to respawn.
         const killer = state.entities.get(award.killerId);
         if (killer !== undefined) {
@@ -194,6 +194,13 @@ export class ProgressionSystem implements System {
     }
   }
 
+  /** Whether `award` is paid to one Legend by id (a kill, a camp bonus, a checkpoint share). */
+  private static isPersonal(award: Award): award is PersonalAward {
+    return (
+      award.kind === 'kill' || award.kind === 'camp-cleared' || award.kind === 'checkpoint-cleared'
+    );
+  }
+
   /** What a waiting Legend is owed for `award`. */
   private static owed(award: Exclude<Award, { readonly kind: 'respawn' }>): OwedXp {
     return {
@@ -213,7 +220,7 @@ export class ProgressionSystem implements System {
     }
     const curve = this.content.curves.get(progression.curveId);
     const capped =
-      'killerId' in award || award.maxLevels === undefined
+      ProgressionSystem.isPersonal(award) || award.maxLevels === undefined
         ? award
         : {
             ...award,

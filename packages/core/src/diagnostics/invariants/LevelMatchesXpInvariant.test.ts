@@ -231,8 +231,11 @@ describe('LevelMatchesXpInvariant', () => {
   });
 
   describe('checkpoint award (07 §7)', () => {
-    /** Point `entity-5` with one checkpoint-1 defender post, held (`entity-6`) or given up for good. */
-    const pointWith = (isHeld: boolean) => {
+    /**
+     * Point `entity-5` with one checkpoint-1 defender post: held by `entity-6`, emptied by a clear
+     * (`cleared`), or emptied by a cancel (DEC-350), which clears no set.
+     */
+    const pointWith = (post: 'held' | 'cleared' | 'cancelled') => {
       const fixture = setUp();
       const point = fixture.spawn('entity-5', 'neutral');
       fixture.state.guards.add(
@@ -258,8 +261,11 @@ describe('LevelMatchesXpInvariant', () => {
         0,
       );
       fixture.state.guards.fill(0, 'entity-6');
-      if (!isHeld) {
+      if (post !== 'held') {
         fixture.state.guards.vacate(0, null);
+      }
+      if (post === 'cleared') {
+        fixture.state.guards.markCleared('set-1');
       }
       fixture.state.events.emit('xp-gained', {
         entityId: fixture.hero.id,
@@ -271,14 +277,16 @@ describe('LevelMatchesXpInvariant', () => {
       return fixture;
     };
 
-    it('rule 2: passes a checkpoint award for a point that lost a defender for good', () => {
-      expect(pointWith(false).check()).toEqual([]);
+    it('rule 2: passes a checkpoint award for a point with a cleared defender set', () => {
+      expect(pointWith('cleared').check()).toEqual([]);
     });
 
-    it('rule 2: flags a checkpoint award for a point whose defenders all stand', () => {
-      expect(pointWith(true).check()).toEqual([
-        'Entity "entity-1" gained checkpoint XP for "entity-5", which lost no defender.',
-      ]);
+    it('rule 2: flags a checkpoint award for a point whose defenders stand, or were only cancelled', () => {
+      for (const post of ['held', 'cancelled'] as const) {
+        expect(pointWith(post).check()).toEqual([
+          'Entity "entity-1" gained checkpoint XP for "entity-5", which has no cleared defender set.',
+        ]);
+      }
     });
   });
 

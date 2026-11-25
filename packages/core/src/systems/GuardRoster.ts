@@ -59,7 +59,8 @@ export class GuardRoster {
    * @param plans - Each home's guard plan, keyed by structure or zone definition id (content, loaded
    *   in ticks).
    * @param defenders - Each capture-point checkpoint's defenders, keyed by checkpoint (content).
-   * @param defenderLimit - The most checkpoint defenders one capture point holds (content, DEC-350).
+   * @param defenderLimit - The most checkpoint defenders one capture point holds (content,
+   *   DEC-350).
    */
   public constructor(
     private readonly factory: EntityFactory,

@@ -87,6 +87,10 @@ export class StateHasher {
       });
       parts.push(['guards', ...posts]);
     }
+    // Cleared checkpoint defender sets (07 §7) are appended only once one exists.
+    if (state.guards.cleared.length > 0) {
+      parts.push(['clearedSets', ...state.guards.cleared]);
+    }
     // Dead Legends waiting to respawn (DEC-295) are appended only while some wait, for the same
     // reason: each one's team, return tick and owed XP, then the waiting Legend's own fields, as
     // an entity in the store hashes them, since it is out of the store meanwhile.

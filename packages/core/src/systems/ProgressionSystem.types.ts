@@ -62,5 +62,8 @@ type RespawnAward = {
   readonly maxLevels?: number;
 };
 
+/** An award paid to one Legend by id (its killer, or its share), owed while it waits to respawn. */
+export type PersonalAward = KillAward | CampAward | CheckpointAward;
+
 /** One award this system gives, waiting for its pass. */
 export type Award = KillAward | CampAward | CheckpointAward | TeamAward | RespawnAward;

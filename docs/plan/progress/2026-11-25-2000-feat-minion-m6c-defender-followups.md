@@ -31,6 +31,11 @@ PR #153) · SamarjitBhogal + Claude Code
   - Docs: 07 §7, 18 §7.1 and the M6 status note, the minion plan §1.2 table (closed rows
     removed, including the ones M6b, M10 and #85/#86 closed), INBOX "Minion M6b follow-ups"
     update and the new "Minion M6c interpretations" item.
-- Checks run: `npm run check` on Node 24.21.0, exit 0 (core 1801 tests, client 2179, server
+- Pre-PR gate: the critic approved with no blockers; its should-fix items are done (cancel the
+  cap-blocked defenders of a set reached on the owner-changing pass, DEC-350 (6); cleared sets
+  recorded in `GuardStore` so the invariant backs a checkpoint award with a cleared set; a
+  cancel that empties a set drops its tally; doc 03 §4 event rows; tests for nobody in range,
+  unknown killer, the same-pass order and the dropped tally). Ponytail review: no cuts.
+- Checks run: `npm run check` on Node 24.21.0, exit 0 (core 1806 tests, client 2179, server
   163).
-- Next step: the pre-PR gate; then the owner answers "Minion M6c interpretations".
+- Next step: review of the PR; the owner answers "Minion M6c interpretations".

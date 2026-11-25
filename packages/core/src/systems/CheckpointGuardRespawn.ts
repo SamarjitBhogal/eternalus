@@ -7,9 +7,9 @@ import type { GuardRespawnRule } from './GuardRoster.types';
  * The respawn of a capture point's checkpoint defenders (07 §7, DEC-261): a post whose defender
  * is lost stays empty for the rest of the match, as with `never`. When no post of its set
  * (`GuardSlot.defenceId`) still holds a defender or waits for one, the set is announced with
- * `checkpoint-cleared`, naming whoever killed that last defender, their team and where it fell.
- * A set whose last waiting posts are cancelled (DEC-350) after its last defender died is never
- * announced.
+ * `checkpoint-cleared`, naming whoever killed that last defender, their team and where it fell,
+ * and marked cleared in `state.guards`. A set whose last waiting posts are cancelled (DEC-350)
+ * after its last defender died is never announced (`cancelWaitingDefenders`).
  */
 export class CheckpointGuardRespawn implements GuardRespawnRule {
   /** Empties the post for good; if it was its set's last defender, announces the set cleared. */
@@ -31,6 +31,7 @@ export class CheckpointGuardRespawn implements GuardRespawnRule {
     // A killer whose team cannot be read (it left the store) is not named: both or neither.
     const team = killerId === null ? null : (state.entities.teamOf(killerId) ?? null);
     const position = state.entities.get(guardId)?.findComponent(Transform)?.position;
+    state.guards.markCleared(defenceId);
     state.events.emit('checkpoint-cleared', {
       pointId: slot.homeId,
       checkpoint,

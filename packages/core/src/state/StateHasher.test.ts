@@ -650,6 +650,17 @@ describe('StateHasher', () => {
     });
   });
 
+  it('changes when a checkpoint defender set is cleared, and with which set (07 §7)', () => {
+    const withCleared = (...sets: readonly string[]): number => {
+      const { state } = stateWithSoldier();
+      for (const set of sets) state.guards.markCleared(set);
+      return hasher.hash(state);
+    };
+
+    expect(new Set([withCleared(), withCleared('set-1'), withCleared('set-2')]).size).toBe(3);
+    expect(withCleared('set-1')).toBe(withCleared('set-1'));
+  });
+
   describe('defender damage (07 §7)', () => {
     const withTally = (set: string, legend: string, amount: number): number => {
       const { state } = stateWithSoldier();

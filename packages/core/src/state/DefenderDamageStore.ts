@@ -30,7 +30,7 @@ export class DefenderDamageStore {
     return tally;
   }
 
-  /** Every tally, sets in the order first hit, each set's Legends in the order they first hit it. */
+  /** Every tally: sets in the order first hit, each set's Legends in the order they hit it. */
   public forEach(visit: (defenceId: string, legendId: EntityId, amount: number) => void): void {
     this.tallies.forEach((tally, defenceId) => {
       tally.forEach((amount, legendId) => {

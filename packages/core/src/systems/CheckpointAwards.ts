@@ -1,4 +1,5 @@
 import { Transform } from '../components/Transform';
+import { distance } from '../utils/geometry';
 import type { XpSourcesDefinition } from '../content/progression/progression.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameEventMap } from '../state/GameEvents.types';
@@ -8,14 +9,16 @@ import type { Award } from './ProgressionSystem.types';
 type Hit = { readonly defenceId: string; readonly legendId: EntityId; readonly amount: number };
 
 /**
- * `ProgressionSystem`'s checkpoint XP (07 §7, balancing.md "Capture points"). It buffers each hit
- * a Legend lands on a checkpoint defender and each `checkpoint-cleared`; on `flush` (the system's
+ * `ProgressionSystem`'s checkpoint XP (07 §7, balancing.md "Capture points"). It buffers each hit a
+ * Legend lands on a checkpoint defender and each `checkpoint-cleared`; on `flush` (the system's
  * pass, 03 §4) it adds the hits to `state.defenderDamage`, then turns each cleared set into one
- * award per clearing-team Legend alive within `shareRadius` of where the last defender fell:
- * `xp × (evenShare / n + (1 − evenShare) × damage_i / totalDamage)`, where the damage is what each
- * of those Legends dealt to the set, or `xp / n` when they dealt none. A clear with no known killer,
+ * award per clearing-team Legend alive within `shareRadius` of where the last defender fell: `xp ×
+ * (evenShare / n + (1 − evenShare) × damage_i / totalDamage)`, where the damage is what each of
+ * those Legends dealt to the set, or `xp / n` when they dealt none. A clear with no known killer,
  * no position, or no XP for its checkpoint pays nobody. Two sets of one capture point cleared
  * together pay each Legend one summed award, as the invariant allows one award per point a tick.
+ * `SpawnSystem` runs after `ProgressionSystem`, so a clear is paid on the next tick, with the
+ * Legends' positions of that tick, as a camp bonus is.
  */
 export class CheckpointAwards {
   private readonly hits: Hit[] = [];
@@ -79,7 +82,7 @@ export class CheckpointAwards {
         state.entities.teamOf(entity.id) === team &&
         state.entities.isAlive(entity.id) &&
         at !== undefined &&
-        Math.hypot(at.x - position.x, at.y - position.y) <= this.rule.shareRadius
+        distance(at, position) <= this.rule.shareRadius
       ) {
         recipients.push(entity.id);
       }

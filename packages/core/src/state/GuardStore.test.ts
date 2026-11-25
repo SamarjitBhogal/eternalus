@@ -21,6 +21,16 @@ const POST = {
 } as const;
 
 describe('GuardStore', () => {
+  it('records the checkpoint defender sets announced cleared, in order', () => {
+    const store = new GuardStore();
+    expect(store.isCleared('set-1')).toBe(false);
+    store.markCleared('set-2');
+    store.markCleared('set-1');
+
+    expect(store.isCleared('set-1')).toBe(true);
+    expect(store.cleared).toEqual(['set-2', 'set-1']);
+  });
+
   it('adds an empty post, fills it, finds it by its guard and vacates it', () => {
     const store = new GuardStore();
     store.add(POST);
