@@ -615,6 +615,7 @@ export class Simulation {
         position: feature.position,
         team: feature.team,
         area: zoneAreaOf(map, feature),
+        ...(feature.laneId !== undefined && { laneId: feature.laneId }),
       });
       state.entities.add(entity);
       spawned.push({ entityId: entity.id, kind, team: feature.team });
