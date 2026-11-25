@@ -4,7 +4,7 @@ description: Sprint checklists for the performance pass against budgets, the hea
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-25
 tags: [plan, phase-6, performance, balance, art, audio, reliability, release]
 paths: ['packages/core/src/content/**', 'packages/core/src/diagnostics/**', 'apps/client/assets/**']
 related:
@@ -74,8 +74,10 @@ and the budget split of [Phase 3 sprint 3.8](phase-3-minions-hordes-and-ai.md#sp
       named in a progress entry with their numbers.
 
 **Success metric:** tick p95 ≤ 8 ms at 144 units per team + 20 Legends and 60 fps (median frame
-≤ one 60 Hz frame (DEC-328), no frame > 50 ms) over a 60 s segment of the busiest match state on
-the reference laptop; 0 per-tick allocations in the four hot systems.
+≤ one 60 Hz frame, no missed frame, no frame > 50 ms) over a 60 s segment of the busiest match
+state on the reference laptop; 0 per-tick allocations in the four hot systems.
+[Architecture 08](../architecture/08-game-engine.md) §9 defines "one 60 Hz frame" and "missed
+frame" (DEC-328, DEC-336).
 
 ## Sprint 6.2 — Balance pass via headless sim mode
 
@@ -229,19 +231,19 @@ a progress entry.
 
 ## Success metrics (phase level)
 
-| Metric                                                        | Target                                               |
-| ------------------------------------------------------------- | ---------------------------------------------------- |
-| Tick time at 144 units/team + 20 Legends                      | p95 ≤ 8 ms at 30 TPS on the reference laptop         |
-| Frame rate (busiest match state, 60 s)                        | median ≤ one 60 Hz frame (DEC-328), no frame > 50 ms |
-| Win rate light vs dark (200 seeds)                            | 45–55%                                               |
-| Match length (200 seeds)                                      | median 18–25 min, P95 < 35 min, 0 timeouts           |
-| Invariant violations (100 seeded matches at `heavy`)          | 0                                                    |
-| Unhandled exceptions (100 matches + 30-min play × 3 browsers) | 0                                                    |
-| Licensed assets                                               | 100% of manifest entries with licence and source     |
-| Docs check                                                    | 0 errors, 0 staleness warnings                       |
-| README quick start                                            | verified on macOS, Windows and Linux                 |
-| Coverage                                                      | core ≥ 90%, client ≥ 70% (roadmap ratchet)           |
-| Release                                                       | `v0.1.0-mvp` on green `main`; deliverables submitted |
+| Metric                                                        | Target                                                                                           |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Tick time at 144 units/team + 20 Legends                      | p95 ≤ 8 ms at 30 TPS on the reference laptop                                                     |
+| Frame rate (busiest match state, 60 s)                        | median ≤ one 60 Hz frame, no missed frame, no frame > 50 ms (terms: architecture 08 §9; DEC-336) |
+| Win rate light vs dark (200 seeds)                            | 45–55%                                                                                           |
+| Match length (200 seeds)                                      | median 18–25 min, P95 < 35 min, 0 timeouts                                                       |
+| Invariant violations (100 seeded matches at `heavy`)          | 0                                                                                                |
+| Unhandled exceptions (100 matches + 30-min play × 3 browsers) | 0                                                                                                |
+| Licensed assets                                               | 100% of manifest entries with licence and source                                                 |
+| Docs check                                                    | 0 errors, 0 staleness warnings                                                                   |
+| README quick start                                            | verified on macOS, Windows and Linux                                                             |
+| Coverage                                                      | core ≥ 90%, client ≥ 70% (roadmap ratchet)                                                       |
+| Release                                                       | `v0.1.0-mvp` on green `main`; deliverables submitted                                             |
 
 ## Exit criteria
 

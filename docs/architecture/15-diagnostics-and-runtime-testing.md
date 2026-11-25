@@ -4,7 +4,7 @@ description: Testing while the game is running - the Invariant interface and the
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-12
+last-reviewed: 2026-11-25
 tags: [architecture, diagnostics, invariants, logging, performance, replays, soak-tests, testing]
 paths: ['packages/core/src/diagnostics/**']
 related:
@@ -262,14 +262,16 @@ other than `NullProfiler` is injected (plan Phase 6, sprint 6.1); `Match` wraps 
 which satisfies the port structurally (L1 may not import core; `Match.test.ts` asserts the
 assignability) and implements it with `performance.mark`/`performance.measure(name, { start,
 end, detail: { devtools } })`, so measures appear on a custom track in Chrome's Performance
-panel; a fixed-bucket histogram per label (< 8, < 16, < 33, < 50, ≥ 50 ms); a
+panel; a fixed-bucket histogram per label (< 8, < 16, < 33, < 50, ≥ 50 ms); a frame-interval
+histogram with the bucket edges of [08](08-game-engine.md) §9 (DEC-336); a
 `PerformanceObserver` on `{ type: 'long-animation-frame', buffered: true }` (feature-detected via
 `PerformanceObserver.supportedEntryTypes`; the buffer holds 200 entries, so observe rather than
 poll) keeping the last frame's `blockingDuration` and script attribution; and, only when
 `crossOriginIsolated`, `performance.measureUserAgentSpecificMemory()` sampled at a random
 interval to spot leaks over a session ([research C2](../research/persistence-input-diagnostics-research.md#c2-structured-logging-timing-memory-and-a-developer-overlay)).
 `Match` publishes a `perf-sample` every 30 ticks; `PerfOverlay` renders it against the budget
-table of [08](08-game-engine.md) §9 (tick ≤ 8 ms p95, render ≤ 8 ms p95, no frame > 50 ms). The
+table of [08](08-game-engine.md) §9 (tick ≤ 8 ms p95, render ≤ 8 ms p95, median frame ≤ one
+60 Hz frame, no missed frame, no frame > 50 ms). The
 headless bench (`npm run bench`, plan Phase 1) injects a `Profiler` backed by `process.hrtime`.
 
 ## 7. Replay-hash regression tests

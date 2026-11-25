@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-25
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -267,20 +267,39 @@ flowchart LR
 Targets at the MVP cap (144 units per team plus 20 Legends, ~300 units; "engineered for
 hundreds"). **Recommendation:** these are the numbers the plan's phase gates check.
 
-| Metric                                                   | Budget                                       | Where measured                                                           |
-| -------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------ |
-| `Simulation.step()` at 300 units                         | ≤ 8 ms (p95)                                 | `performance.measure('tick')` in `Match`                                 |
-| `Match.render()` at 1080p, DPR 2                         | ≤ 8 ms (p95)                                 | `performance.measure('render')`                                          |
-| Frame time                                               | ≤ one 60 Hz frame (DEC-328); no LoAF > 50 ms | `PerformanceObserver('long-animation-frame')`                            |
-| Allocations in hot paths (steering, collision, snapshot) | zero per tick after warm-up                  | heap sampling in the Performance panel; soak test counters               |
-| Flow-field rebuild after terrain change                  | ≤ 2 ms per tick (time-sliced)                | `performance.measure('flow-rebuild')` in core via `Logger` timing events |
-| Minimap redraw                                           | ≤ 1 ms every 6th frame                       | `performance.measure('minimap')`                                         |
+| Metric                                                   | Budget                                                                                            | Where measured                                                                   |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `Simulation.step()` at 300 units                         | ≤ 8 ms (p95)                                                                                      | `performance.measure('tick')` in `Match`                                         |
+| `Match.render()` at 1080p, DPR 2                         | ≤ 8 ms (p95)                                                                                      | `performance.measure('render')`                                                  |
+| Frame time                                               | median ≤ one 60 Hz frame; no missed frame (both defined below; DEC-328, DEC-336); no LoAF > 50 ms | the `PerfMonitor` frame histogram; `PerformanceObserver('long-animation-frame')` |
+| Allocations in hot paths (steering, collision, snapshot) | zero per tick after warm-up                                                                       | heap sampling in the Performance panel; soak test counters                       |
+| Flow-field rebuild after terrain change                  | ≤ 2 ms per tick (time-sliced)                                                                     | `performance.measure('flow-rebuild')` in core via `Logger` timing events         |
+| Minimap redraw                                           | ≤ 1 ms every 6th frame                                                                            | `performance.measure('minimap')`                                                 |
+
+**Frame terms (DEC-336).** This is the one definition. The plan's gates
+([README](../plan/README.md) §5, phase 1, phase 6) and rule 7 of the
+[UI enhancements plan](../plan/ui-enhancements-plan.md) point here.
+
+- **Frame interval:** the time from one animation frame's timestamp to the next.
+- **One 60 Hz frame:** a frame interval of 1/60 s (16.67 ms). Chrome rounds the timestamps of a
+  page that is not cross-origin isolated to 0.1 ms, with jitter, so the same frame reads 16.5 to
+  16.8 ms there. The game page is such a page (§10), so in the game an interval of at most
+  16.8 ms, as Chrome reads it, is one 60 Hz frame. On a cross-origin isolated page the limit is
+  16.67 ms. Only Chrome is measured.
+- **Missed frame:** a frame interval over 25 ms, the midpoint between one 60 Hz frame and two.
+  The player sees it as a stutter.
 
 `PerfMonitor` (`engine/time/`) wraps `performance.mark`/`measure` with a `detail.devtools` track,
-keeps a fixed-bucket frame histogram (< 8, < 16, < 33, < 50, ≥ 50 ms) and subscribes a
-`PerformanceObserver` to `long-animation-frame` (feature-detected via `supportedEntryTypes`); the
-`PerfOverlay` HUD reads it through the bridge store
+keeps a fixed-bucket histogram of frame intervals and subscribes a `PerformanceObserver` to
+`long-animation-frame` (feature-detected via `supportedEntryTypes`); the `PerfOverlay` HUD reads
+it through the bridge store
 ([research C2](../research/persistence-input-diagnostics-research.md#c2-structured-logging-timing-memory-and-a-developer-overlay)).
+The frame histogram has three bucket edges: one 60 Hz frame, 25 ms and 50 ms. Its four buckets
+are: at most one 60 Hz frame; over that, up to 25 ms; over 25 ms, up to 50 ms; over 50 ms. The
+last two buckets hold the missed frames, so `PerfOverlay` reads the frame gates from the
+histogram: the median is within one 60 Hz frame when the first bucket holds at least half of the
+frames, and the missed-frame count is the sum of the last two buckets. The edges are named
+constants beside `PerfMonitor`.
 GC-free hot paths come from pooling (projectiles, particles, events), pre-allocated typed arrays
 (spatial hash, flow fields, snapshot buffers) and scratch vectors in steering
 ([research §6](../research/game-architecture-and-performance-research.md#6-object-pooling-and-gc-avoidance)).

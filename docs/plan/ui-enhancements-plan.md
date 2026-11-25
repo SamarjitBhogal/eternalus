@@ -4,7 +4,7 @@ description: Specification of the follow-up pull request that adds data-selectab
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-25
 tags: [plan, ui, hud, character-select, accessibility, motion, follow-up]
 related:
   - 'docs/reference/game-design/15-figma-frames-and-creative-decisions.md'
@@ -102,7 +102,9 @@ information stay (§2 rule 3); his changes to UE-01, UE-07, UE-08 and UE-12 are 
    60 Hz frame (≤ 16.67 ms, on headless Chrome's 60 Hz frame clock). The enhancements on also have
    no more missed frames (intervals over 25 ms) than the control at the same CPU speed: count the
    missed frames over the same number of runs for each condition, with on and off runs alternating
-   (DEC-328). Serve the test page cross-origin isolated (COOP and COEP headers). Then Chrome rounds
+   (DEC-328). [Architecture 08](../architecture/08-game-engine.md) §9 holds the one definition of
+   "one 60 Hz frame" and "missed frame" (DEC-336). Serve the test page cross-origin isolated (COOP
+   and COEP headers). Then Chrome rounds
    its timestamps to 0.005 ms and a 60 Hz frame reads 16.66 to 16.67 ms. Without isolation Chrome
    rounds them to 0.1 ms, with jitter, and the same frame reads 16.5 to 16.8 ms (`PROGRESS.md`,
    2026-11-21, "Rule 7 frame latency").

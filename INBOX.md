@@ -16,19 +16,22 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
-- [ ] **HC-B28 — Better than the design, not built, sign-off asked: one definition of "one 60 Hz
-      frame" and "missed frame" (`docs/rule7-frame-latency` critic on DEC-328, 2026-11-22); no
-      decision blocks the PR.** (1) The planned `PerfMonitor` frame histogram (architecture 08 §9,
-      not built yet) has buckets < 8, < 16, < 33, < 50 and ≥ 50 ms. A 16.67 ms frame falls in
-      < 33, and no edge marks a missed frame, so `PerfOverlay` cannot check the "one 60 Hz frame"
-      gates. (2) Define "one 60 Hz frame" and "missed frame" once, in 08 §9, and let the README,
-      phase 1 and phase 6 gates point to that definition. The game page is not cross-origin
-      isolated (08 §10), so in the game a frame reads 16.5 to 16.8 ms. (3) A median of frame
-      intervals fails only when more than half the frames are missed. The phase 1 and phase 6
-      gates could also count missed frames, as rule 7 does (DEC-328). (a) Do (1) to (3): buckets
-      with edges at one frame, 25 ms (missed) and 50 ms, one definition in 08 §9, and the gates
-      count missed frames. (b) Do (1) and (2) only; the gates keep the median. (c) Keep the design
-      as it is. Agent's recommendation: (a).
+- [ ] **HC-B44 — Better than the design, not built, sign-off asked: three follow-ups to the frame
+      checks (`docs/rule7-frame-latency` critic on DEC-336, 2026-11-25); no decision blocks the
+      PR.** (1) How many missed frames may a 60 s gate run have? DEC-336 took zero as a default.
+      Three facts speak against a plain zero. One recorded run missed a frame on a quiet machine
+      with every enhancement off (CPU slowed fourfold; not explained). Phase 3 and phase 6
+      accept frames of up to 50 ms when the terrain changes. The first frame after a pause or
+      a hidden tab is always long. (a) Zero stays, and the count skips the first frame after the
+      loop starts or resumes. (b) As (a), and a terrain change in the run may cause one frame of
+      up to 50 ms. (c) A small limit that you name (for example 3 in 60 s). (2) A frame that reads
+      exactly 16.8 ms can fall over the first histogram edge through floating-point noise (the
+      rule-7 script had this fault at 16.7 ms). Proposal: `PerfMonitor` rounds each interval to
+      the clock's step before it picks a bucket, and it takes the 16.8 ms or the 16.67 ms limit
+      from `crossOriginIsolated`. Only Chrome is measured; other browsers round differently.
+      (3) The phase 6 gate for the oldest laptop says "median frame ≤ 33 ms". Two 60 Hz frames
+      are 33.3 ms, so a laptop that holds 30 fps fails it. Proposal: write "two 60 Hz frames".
+      Agent's recommendation: (1) (b), (2) yes, (3) yes.
 - [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu-legends`) — developer menu, slice 2
       (add/remove Legends, FR-097) built; decisions for the owner.** (a) `dev-spawn-legend` takes
       `{ team, definitionId }`, not the `{ team, definitionId, controllerId, at? }` of 13 section
@@ -3248,6 +3251,22 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-11-25 — **Your pick on HC-B28, frame checks** (`docs/rule7-frame-latency`, PR #149):
+  recorded as DEC-336. "Fix all three: bucket edges at one frame, 25 ms (missed) and 50 ms; one
+  definition in 08 §9; the gates count missed frames". `PerfMonitor` is not built, so the change
+  is docs only. These are your design docs: architecture 08 §9 (the two definitions, the new
+  histogram edges, the frame-time budget row), architecture 15 §6 (points to the new edges), the
+  plan README §5 "Render frame rate" row, phase 1 (sprint 1.4: the success metric and the
+  `PerfOverlay` task; the phase table), phase 6 (sprint 6.1 success metric and the phase table)
+  and rule 7 of the UI enhancements plan (a pointer to 08 §9). Seven points are not your words,
+  so DEC-336 records them as defaults: the gates keep the median and add "no missed frame"; the
+  limit is zero missed frames in the 60 s segment (a `Recommendation:` number); in the game "one
+  60 Hz frame" means at most 16.8 ms as Chrome reads it, because the game page is not
+  cross-origin isolated; the tick and render histograms of architecture 15 keep their buckets;
+  rule 7 points to 08 §9; a bucket holds the frames up to and including its edge; the overlay
+  reads the median from the first bucket. The critic's three follow-ups are card HC-B44 (open,
+  above).
 
 - 2026-11-22 — **Your pick on HC-B22, how rule 7 measures performance** (`docs/rule7-frame-latency`):
   recorded as DEC-328. Option A: rule 7 is now "p95 within one 60 Hz frame, and no more missed
